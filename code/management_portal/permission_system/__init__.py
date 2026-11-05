@@ -149,11 +149,11 @@ def _upload_read(declaration, arguments, context):
     """
     if declaration.name not in {"ReadResource", "ResolveResource"}:
         return False
-    from management_portal.resources import upload_files
+    from management_portal import file_access_policy
 
-    if upload_files.file_reference(arguments.get("address")) is None:
+    if file_access_policy.file_reference(arguments.get("address")) is None:
         return False
-    upload_files.authorize(arguments["address"], actor=context.caller)
+    file_access_policy.authorize(arguments["address"], actor=context.caller)
     return True
 
 

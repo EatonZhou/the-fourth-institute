@@ -194,13 +194,32 @@
     if (!factory) throw new Error(`Unsupported Preview presentation: ${kind}`);
     return factory(options);
   }
-  function displayDocument(request) {
-    const intent = window.PortalDisplayProtocol.normalizeIntent(request.displayIntent);
+  async function resolveDisplayIntent(value, {readOnly = false, signal} = {}) {
+    const intent = window.PortalDisplayProtocol.normalizeIntent(value);
+    if (intent.view !== "explanation") return {intent};
+    // The package is storage, while the report owns the public identity. Old
+    // buttons resolve the same fixed package; restoring history is read-only.
+    const endpoint = "/api/home-report/explanations";
+    let response = await fetch(`${endpoint}?${new URLSearchParams(intent.target)}`, {
+      credentials:"same-origin", cache:"no-store", signal,
+    });
+    if (response.status === 404 && !readOnly) response = await fetch(endpoint, {
+      method:"POST", credentials:"same-origin", signal, headers:{"Content-Type":"application/json"},
+      body:JSON.stringify(intent.target),
+    });
+    const result = await response.json();
+    if (!response.ok) throw Object.assign(new Error(typeof result.error === "string" ? result.error : result.error?.message || "无法读取汇报资源"), {status:response.status});
+    const fixed = window.PortalDisplayProtocol.normalizeIntent(result.reference);
+    if (fixed.view !== "report" || fixed.target.kind !== "report" || !fixed.target.revision) throw new Error("汇报资源缺少固定版本引用");
+    return {intent:fixed, reference:result.reference};
+  }
+  async function displayDocument(request) {
+    const {intent, reference} = await resolveDisplayIntent(request.displayIntent, request);
     if (intent.action === "back") throw new Error("返回操作需要当前展示历史");
     const locator = window.PortalDisplayProtocol.previewRequest(intent);
     return contract.normalizeDocument({source:"display", displayIntent:intent, identity:locator.identity,
       messageOrigin:window.PortalDisplayProtocol.normalizeMessageOrigin(request.messageOrigin),
-      path:locator.path, title:window.PortalDisplayProtocol.label(intent),
+      path:locator.path, title:reference?.title || window.PortalDisplayProtocol.label(intent),
       capabilities:{edit:false,save:false,download:false,refresh:true}});
   }
 
@@ -561,6 +580,7 @@
     registerRenderer,
     registerPresentation,
     createPresentation,
+    resolveDisplayIntent,
     displayDocument,
     openFileMenu,
     registerSource,

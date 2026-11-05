@@ -58,7 +58,8 @@ def test_effect_failure_keeps_committed_identity_and_retries_durably(deletion, m
         calls.append('failed')
         raise OSError('effect unavailable')
     if failed_effect == 'relations':
-        monkeypatch.setattr(portal_features, 'contributions', lambda key: [('test', fail)])
+        monkeypatch.setattr(portal_features, 'contributions',
+                            lambda key: [('test', fail)] if key == 'project.relations' else [])
     else:
         monkeypatch.setattr(effects, '_' + failed_effect, fail)
     result = isa.delete_project(inv)
@@ -67,7 +68,8 @@ def test_effect_failure_keeps_committed_identity_and_retries_durably(deletion, m
     assert is_deleted('Example')
     assert get_registry_store().get('project_deletions', 'Example')['effects']['errors']
     if failed_effect == 'relations':
-        monkeypatch.setattr(portal_features, 'contributions', lambda key: [('test', lambda entry: ['kept-object'])])
+        monkeypatch.setattr(portal_features, 'contributions',
+                            lambda key: [('test', lambda entry: ['kept-object'])] if key == 'project.relations' else [])
     else:
         monkeypatch.setattr(effects, '_' + failed_effect, lambda entry: calls.append('retried'))
     # Simulate another process using the durable receipt and no external grants.
@@ -115,7 +117,7 @@ def test_paper_objects_survive_relation_removal(deletion, monkeypatch, tmp_path)
         manifests[name] = path
     papers = paper_store.PaperStore(tmp_path / 'papers')
     monkeypatch.setattr(portal_features, 'contributions', lambda key: [
-        ('paper', lambda project: papers.replace_project(project, ''))])
+        ('paper', lambda project: papers.replace_project(project, ''))] if key == 'project.relations' else [])
     result = isa.delete_project(inv)
     assert sorted(result['unlinked']['paper']) == ['paper_only', 'paper_shared']
     assert {name: [item['project_id'] for item in json.loads(path.read_text())['relations']['projects']]
@@ -150,10 +152,12 @@ def test_relation_retries_delegate_to_original_feature_owner(deletion, monkeypat
     def unlink(project_id):
         calls.append(project_id)
         raise OSError('map owner unavailable')
-    monkeypatch.setattr(portal_features, 'contributions', lambda key: [('projects', unlink)])
+    monkeypatch.setattr(portal_features, 'contributions',
+                        lambda key: [('projects', unlink)] if key == 'project.relations' else [])
     result = isa.delete_project(inv)
     assert result['effects']['status'] == 'pending'
-    monkeypatch.setattr(portal_features, 'contributions', lambda key: [('projects', lambda project_id: ['direction_kept'])])
+    monkeypatch.setattr(portal_features, 'contributions',
+                        lambda key: [('projects', lambda project_id: ['direction_kept'])] if key == 'project.relations' else [])
     effects.run_pending()
     assert isa.delete_project(inv)['unlinked']['projects'] == ['direction_kept']
     assert calls == ['Example']

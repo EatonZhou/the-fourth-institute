@@ -8,6 +8,14 @@ from .scheduler_changes import install_change_triggers
 
 EXECUTION_STORE_SCHEMA_VERSION = "19"
 
+# Tables owned by this installer. ExecutionSettings shares the schema but has
+# an independent lifecycle: its service_settings table is not a Scheduler store.
+EXECUTION_STORE_TABLES = (
+    "execution_store_meta", "executions", "execution_workers",
+    "capacity_dispatch_state", "capacity_settings", "execution_actor_dispatch_state",
+    "execution_account_usage_hourly", "execution_token_usage_events", "execution_input_controls",
+)
+
 
 def _transaction_lock(connection: Any, scope: str) -> None:
     """Serialize schema initialization across starting services."""
@@ -18,10 +26,12 @@ def _transaction_lock(connection: Any, scope: str) -> None:
 
 
 def initialize_execution_store(connection: Any) -> None:
-    """Create tables and notifications only for an empty store."""
+    """Install an absent Scheduler store; leave existing owned storage untouched."""
     _transaction_lock(connection, "schema-init")
     if connection.execute(
-        "SELECT 1 FROM information_schema.tables WHERE table_schema=current_schema() LIMIT 1"
+        "SELECT 1 FROM information_schema.tables WHERE table_schema=current_schema() "
+        "AND table_name = ANY(%s) LIMIT 1",
+        (list(EXECUTION_STORE_TABLES),),
     ).fetchone() is not None:
         return
     _create_store(connection)

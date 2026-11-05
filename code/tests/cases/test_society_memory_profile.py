@@ -125,7 +125,7 @@ def test_profile_stops_at_lease_deadline_and_leaves_only_aggregate_rows(monkeypa
             self.target = target
         def start(self):
             self.target()
-    monkeypatch.setattr(memory_profile.threading, "Thread", ImmediateThread)
+    monkeypatch.setattr(memory_profile, "threading", SimpleNamespace(Thread=ImmediateThread))
     folder = tmp_path / "diagnostics"
     folder.mkdir(mode=0o700)
     (folder / "society-memory-profile.json").write_text('{"expires_at":45,"interval_seconds":20}')
@@ -167,7 +167,7 @@ def test_allocator_only_lease_never_starts_tracing_and_rejects_overlapping_captu
             self.target = target
         def start(self):
             pending.append(self.target)
-    monkeypatch.setattr(memory_profile.threading, 'Thread', DeferredThread)
+    monkeypatch.setattr(memory_profile, 'threading', SimpleNamespace(Thread=DeferredThread))
     folder = tmp_path / 'diagnostics'
     folder.mkdir()
     (folder / 'society-memory-profile.json').write_text(json.dumps({

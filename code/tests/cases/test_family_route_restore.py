@@ -163,6 +163,38 @@ def test_withdrawal_after_saved_recovery_intent_wins(family, failed_route, monke
     assert root not in family_facade.relay_links(_record(family))
 
 
+def test_slow_recovery_keeps_request_ownership_but_releases_facade_state(family, failed_route, monkeypatch):
+    """慢转交保留单消息归属，取消仍可取得门面短锁并提交，不重新领取自己。"""
+    from concurrent.futures import ThreadPoolExecutor
+    from threading import Event
+    from management_portal.society_service import invariant_locks, resident_record_domain
+    root, repo = failed_route
+    started, release = Event(), Event()
+
+    def deliver(*args, **kwargs):
+        started.set()
+        assert release.wait(5)
+        assert repo.input_state(family['facade'], root)['state'] == 'cancelled'
+        return {'status': 'withdrawn', 'member_id': family['right']}
+
+    def withdraw():
+        with resident_record_domain.state_lock(family['facade']):
+            repo.set_input_state(family['facade'], root, 'cancelled')
+
+    monkeypatch.setattr(family_quota, '_relay_message', deliver)
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        recovery = pool.submit(_recover, family, root)
+        try:
+            assert started.wait(5)
+            with invariant_locks.family_reassignment_lock(family['facade'], root) as owned:
+                assert not owned
+            pool.submit(withdraw).result(timeout=2)
+        finally:
+            release.set()
+        assert recovery.result(timeout=5).raise_for_error()['status'] == 'withdrawn'
+    assert root not in family_facade.relay_links(_record(family))
+
+
 def test_own_steward_can_recover_without_being_original_author(family, failed_route, monkeypatch):
     root, repo = failed_route
     monkeypatch.setattr(family_recovery, "can_recover", lambda *_: False)

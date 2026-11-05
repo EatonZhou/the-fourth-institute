@@ -15071,8 +15071,8 @@
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260726__decision__ResourceService_调用协议：查询、读取、变更与动作__decision_b6e74d78f7b6.md",
-      "sha256": "32aae51b4f402bdfca1dbf5dc5913ddc9d6fe27da9545f70e95a65ce611af0a6",
-      "size": 34774
+      "sha256": "1403a603585dd393670522d2b1f6342cc1b42e40d51b65170a68499ac772b8a3",
+      "size": 36556
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260726__decision__工作交接由单一Handoff对象统一记录__decision_7ef392b5f60d.md",
@@ -15246,8 +15246,8 @@
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260902__decision__LineageService的领域边界_交互与并发模型__decision_d918ebebc062.md",
-      "sha256": "b2c95921a611cd1de17c66990da2880fe88b0ca35d9bf9687616477eab112688",
-      "size": 36228
+      "sha256": "e04a4c0a6d703550fcdf81b8270675fa6148f6d8bb4186df38c230cfd40b499a",
+      "size": 36897
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260902__decision__Portal_Test_Case、Catalog_与运行证据协议__decision_8273271b67b1.md",
@@ -15751,8 +15751,8 @@
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260930__decision__Resident_运行设置：模型、推理强度、速度、权限与协作模式__decision_8b2fa224616b.md",
-      "sha256": "acb73168316903d778d94f9f1f37ae0f4bd66d68f49dedcbdf303812d60c0497",
-      "size": 47921
+      "sha256": "ce6d988b1e9a86271cb9a539ff709cdbba6d34daba14ab2716d50a73e2a9aa42",
+      "size": 48104
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20261001__decision__Family：把多个_Resident_组合为对外一个_Resident__decision_44cf587c1721.md",
@@ -15831,8 +15831,8 @@
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20261018__decision__HATG_ISA：Family_内部机制指令__decision_b77fde81e7a0.md",
-      "sha256": "57c209f7eb7620c084bee7a31110fdb61f9f4b233be752ca508e6a633dcb808d",
-      "size": 16250
+      "sha256": "f2d96f109eb98f42e6671ff922af2fb8e898090b31b6f67446fbe22eeed72bbe",
+      "size": 16703
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20261018__decision__HATG_ISA：Mailbox_指令__decision_c54e68a82d7a.md",
@@ -15846,8 +15846,8 @@
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20261018__decision__The_Fourth_Institute_开源发行：命名、发行单元、首次部署与发布工作台__decision_15aab18c0ab3.md",
-      "sha256": "a92c9a38b1206a6fbcbe7993aa360352f1b9253cbe244e1fd8b1e053f662512f",
-      "size": 48492
+      "sha256": "675167c110b19c166cb3ac625d3847ee563650dbda810179a23c9e4b791caf47",
+      "size": 49024
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20261018__decision__资源类型注册：声明文件、提供者绑定与管理页__decision_355ed742bca5.md",
@@ -15891,8 +15891,8 @@
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20261102__decision__目录与路径协议__decision_4aa13bc21e8e.md",
-      "sha256": "71e73a2d30619a86bbd0e3eb7ab4aaf824b135eb16bd989664ea409b95c5a35a",
-      "size": 30217
+      "sha256": "c40c92ab31ad2c557acd8c902cf2a57d1e38e4baa1d1a1a606fae96815f721d8",
+      "size": 33470
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20261104__decision__对话驱动的_Portal_主页与右侧展示区（目标设计）__decision_b12782e7f490.md",

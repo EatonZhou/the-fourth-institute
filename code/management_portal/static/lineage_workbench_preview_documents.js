@@ -132,7 +132,7 @@
       if (!restored) return null;
       const path = restored.path;
       if (restored.sourceType === "display") {
-        return {...restored, load: async () => window.PortalPreview.displayDocument(restored)};
+        return {...restored, load: async () => window.PortalPreview.displayDocument({...restored, readOnly:true})};
       }
       if (restored.sourceType === "resident") {
         if (!restored.residentId) return null;

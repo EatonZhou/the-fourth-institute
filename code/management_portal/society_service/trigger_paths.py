@@ -434,6 +434,31 @@ def resident_input(lineage_id: str, resident_id: str, message_id: str) -> dict[s
     return rows[0] if rows else None
 
 
+def operator_input_owner(lineage_id: str, resident_id: str, message_id: str) -> str | None:
+    """Find the logical Operator that durably admitted this exact executor input.
+
+    An Operator asks its executor through a handoff edge named after itself.
+    Its ordinary downstream deliveries instead use a route wire ID. Ownership
+    survives a popped pending delivery and edits to the current definition.
+    """
+    with data_store().database.read_current() as connection:
+        rows = connection.execute(
+            "SELECT DISTINCT parent.node_id AS operator_id FROM trigger_path_steps leaf "
+            "JOIN trigger_paths path ON path.trigger_path_id=leaf.trigger_path_id "
+            "JOIN trigger_path_step_edges edge ON edge.target_step_id=leaf.step_id "
+            "AND edge.trigger_path_id=leaf.trigger_path_id "
+            "JOIN trigger_path_steps parent ON parent.step_id=edge.source_step_id "
+            "AND parent.trigger_path_id=edge.trigger_path_id "
+            "WHERE path.lineage_id=%s AND leaf.kind='resident' AND leaf.node_id=%s "
+            "AND leaf.input_message_id=%s AND parent.kind='operator' "
+            "AND edge.wire_id=parent.node_id LIMIT 2",
+            (lineage_id, resident_id, message_id),
+        ).fetchall()
+    if len(rows) > 1:
+        raise ValueError("Resident input belongs to more than one Packet Operator")
+    return str(rows[0]["operator_id"]) if rows else None
+
+
 def settle_input(lineage_id: str, resident_id: str, message_id: str, *, status: str, at: str,
                  execution_id: str = "") -> list[dict[str, Any]]:
     if not execution_id:

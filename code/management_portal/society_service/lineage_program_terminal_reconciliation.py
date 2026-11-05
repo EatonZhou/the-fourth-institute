@@ -986,6 +986,17 @@ def prepare_resident_terminal(
                     claim = lineage_program_execution.prepare_operator_completion(
                         current_lid, node_id, mid, actor_id, ports=ports.flow.program_execution_ports(),
                     )
+                    if claim is None and trigger_paths.operator_input_owner(current_lid, node_id, mid):
+                        # A consumed Operator decision keeps its durable input
+                        # ownership. A duplicate is never an ordinary output of
+                        # the executor Resident, even after its pending is gone.
+                        # The exact executor handoff still needs its terminal
+                        # receipt, including failed admission/cancelled inputs.
+                        lineage_program_resident_inputs.settle_resident_handoffs(
+                            current_lid, resident_id=node_id, message_id=mid,
+                            status=status, completed_at=at,
+                        )
+                        continue
                     invocations = []
                     if status != "completed" or claim is None:
                         # Consume the exact handoff while recovery's comparison

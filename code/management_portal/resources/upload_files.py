@@ -1,100 +1,18 @@
 """Uploads as authenticated files, without introducing another resource identity.
 
-The upload owner owns address validation, readiness and no-follow byte access.
-ResourceService and HTTP use this boundary; upload creation keeps its existing
-mutable metadata protocol in isa.read_upload.
+Address and identity checks come from file_access_policy; this owner checks
+readiness and no-follow byte access. ResourceService and HTTP use this boundary;
+upload creation keeps its existing mutable metadata protocol in isa.read_upload.
 """
 from __future__ import annotations
 
 import json
 import os
-import re
 import stat
-from collections.abc import Mapping
 from contextlib import contextmanager
-from urllib.parse import parse_qsl, urlsplit
 
 from management_common import secure_paths
-
-_HANDLE = re.compile(r"upload_[0-9a-f]{24}\Z")
-_URL_PATH = re.compile(r"/api/uploads/(upload_[0-9a-f]{24})\Z")
-
-
-def _origin(value):
-    parsed = urlsplit(value)
-    if (parsed.scheme not in {"http", "https"} or not parsed.hostname
-            or parsed.username is not None or parsed.password is not None):
-        raise ValueError("Upload URL requires an official Portal origin")
-    return parsed.scheme, parsed.hostname.lower(), parsed.port or (443 if parsed.scheme == "https" else 80)
-
-
-def _origins():
-    from management_common.instance_manifest import current_instance
-    from management_common.site_config import read_site_config
-    from management_portal.portal_session_auth import authentication_setting
-
-    instance = current_instance()
-    origins = {_origin(instance.internal_web_origin())}
-    public = authentication_setting("public_origin")
-    if public:
-        origins.add(_origin(public))
-    aliases = read_site_config().get("deployment", {}).get("auth", {}).get("public_origin_aliases", [])
-    if not isinstance(aliases, list):
-        raise ValueError("deployment.auth.public_origin_aliases must be a list of origins")
-    for alias in aliases:
-        if not isinstance(alias, str):
-            raise ValueError("Public origin aliases must be strings")
-        parsed = urlsplit(alias)
-        if parsed.path not in {"", "/"} or parsed.query or parsed.fragment:
-            raise ValueError("Public origin aliases cannot contain paths, queries or fragments")
-        origins.add(_origin(alias))
-    return origins
-
-
-def file_reference(address):
-    """Return the canonical upload reference, or None for another address domain.
-
-    No network request is made. Invalid upload-looking addresses fail closed;
-    URLs from other sites never become references to this instance's files.
-    """
-    if isinstance(address, Mapping):
-        if "upload_id" not in address:
-            return None
-        if set(address) != {"upload_id"}:
-            raise ValueError("Upload file reference accepts only upload_id")
-        handle = address["upload_id"]
-    elif isinstance(address, str):
-        if not (address.startswith(("http:", "https:", "//", "/api/uploads/"))):
-            return None
-        if any(ord(char) < 32 for char in address) or "\\" in address:
-            raise ValueError("Invalid upload URL")
-        parsed = urlsplit(address)
-        match = _URL_PATH.fullmatch(parsed.path)
-        if not match or parsed.fragment or "#" in address:
-            raise ValueError("Invalid upload URL path or fragment")
-        if parsed.netloc or parsed.scheme:
-            if _origin(address) not in _origins():
-                raise ValueError("Upload URL belongs to another Portal origin")
-        query = parse_qsl(parsed.query, keep_blank_values=True, strict_parsing=True)
-        if query and query != [("download", "1")]:
-            raise ValueError("Unsupported upload URL query")
-        handle = match.group(1)
-    else:
-        return None
-    if not isinstance(handle, str) or not _HANDLE.fullmatch(handle):
-        raise ValueError("Invalid upload handle")
-    return {"upload_id": handle}
-
-
-def authorize(address, *, actor):
-    """Domain read rule: every active authenticated User or Resident may read."""
-    reference = file_reference(address)
-    if reference is None:
-        raise ValueError("Expected an upload file reference")
-    from .access import require_identity
-
-    require_identity(actor)
-    return reference
+from management_portal.file_access_policy import authorize, file_reference
 
 
 def _regular(info):

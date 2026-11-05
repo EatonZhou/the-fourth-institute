@@ -254,12 +254,16 @@ def test_execution_rpc_timeout_budgets(
         return json.dumps({"id": request["id"], "ok": True, "result": {"ok": True}}).encode()
 
     connection.makefile.return_value.readline.side_effect = response
-    with mock.patch("management_portal.execution.transport.socket.socket", return_value=connection):
+    with mock.patch(
+        "management_portal.execution.transport.connect_service",
+        return_value=(connection, tmp_path / "budgets.sock"),
+    ) as connect_service:
         result = client.health() if method == "health" else client.request(method, timeout=request_timeout)
     assert result == {"ok": True}
-    assert connection.settimeout.call_args_list == [
-        mock.call(connect_timeout), mock.call(response_timeout),
-    ]
+    connect_service.assert_called_once()
+    assert connect_service.call_args.kwargs["timeout"] == connect_timeout
+    assert connect_service.call_args.args[0] == (tmp_path / "budgets.sock",)
+    connection.settimeout.assert_called_once_with(response_timeout)
     connection.close.assert_called_once()
 
 
@@ -859,6 +863,7 @@ def test_execution_service_health_is_read_only_and_maintenance_projects_terminal
         service_type="agent_session",
         provider="kimi",
         operation="turn",
+        session=SessionOptions(backend_route_id="kimi_default"),
     )
     scheduler.submit(request)
     agent_data.begin_execution(
@@ -919,6 +924,7 @@ def test_execution_maintenance_preserves_worker_terminal_fact_after_stale_scan(t
     request = ExecutionRequest.new(
         actor="sample_admin", prompt="terminal race", service_type="agent_session",
         provider="kimi", operation="turn",
+        session=SessionOptions(backend_route_id="kimi_default"),
     )
     scheduler.submit(request)
     store.begin_execution(

@@ -220,7 +220,26 @@ def test_scheduler_does_not_install_or_reenable_existing_notifications(change):
         assert trigger is None if change.startswith("DROP") else trigger[0] == "D"
 
 
-@pytest.mark.parametrize("state", ["core_missing", "settings_only"])
+def test_scheduler_first_install_after_execution_settings_preserves_settings():
+    from management_portal.execution.scheduler import Scheduler
+    from management_portal.execution.service_settings import ExecutionSettings
+
+    settings = ExecutionSettings()
+    settings.update(False)
+    before = settings.get()
+    scheduler = Scheduler()
+    assert scheduler.latest_runtime_root(["unknown-binding"]) == ""
+    assert ExecutionSettings().get() == before
+    with connect(scheduler) as connection:
+        assert connection.execute(
+            "SELECT value FROM execution_store_meta WHERE key='schema_version'"
+        ).fetchone()[0] == "19"
+        assert connection.execute("SELECT count(*) FROM pg_trigger "
+            "WHERE tgrelid IN (SELECT oid FROM pg_class WHERE relnamespace=current_schema()::regnamespace) "
+            "AND NOT tgisinternal").fetchone()[0] == 5
+
+
+@pytest.mark.parametrize("state", ["core_missing", "meta_only", "workers_only"])
 def test_scheduler_missing_core_fails_only_on_actual_access(state):
     from management_common.portal_database import portal_database
     from management_portal.execution.scheduler import Scheduler
@@ -231,7 +250,15 @@ def test_scheduler_missing_core_fails_only_on_actual_access(state):
             connection.execute("DROP TABLE executions CASCADE")
     else:
         portal_database(schema="execution_runtime").write(
-            lambda c: c.execute("CREATE TABLE service_settings (key TEXT PRIMARY KEY)"))
+            lambda c: c.execute(
+                "CREATE TABLE execution_store_meta (key TEXT PRIMARY KEY)" if state == "meta_only"
+                else "CREATE TABLE execution_workers (worker_id TEXT PRIMARY KEY)"))
     reopened = Scheduler()
+    with connect(reopened) as connection:
+        assert connection.execute("SELECT to_regclass('executions')").fetchone()[0] is None
+        if state != "core_missing":
+            assert connection.execute(
+                "SELECT count(*) FROM information_schema.tables WHERE table_schema=current_schema()"
+            ).fetchone()[0] == 1
     with pytest.raises(UndefinedTable, match="executions"):
         reopened.latest_runtime_root(["unknown-binding"])

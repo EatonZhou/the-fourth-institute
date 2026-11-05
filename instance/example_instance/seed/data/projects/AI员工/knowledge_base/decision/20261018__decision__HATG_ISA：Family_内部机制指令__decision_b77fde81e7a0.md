@@ -4,12 +4,12 @@ type: decision
 project: AI员工
 created_at: '2026-10-18'
 version:
-  number: 19
+  number: 20
   created_at: "2026-10-18"
   created_by:
     user: ""
     agent: "resident_7765faecc45a"
-  updated_at: "2026-11-04T05:50:51Z"
+  updated_at: "2026-11-05T11:15:47Z"
   updated_by:
     user: ""
     agent: "resident_2e9ea0072551"
@@ -89,6 +89,9 @@ Event 类型、Watch 对象、触发参数、Route 到 Effect 的连线及各场
 
 - 参数：`resident_id`（门面）、`message_id`（原请求）、`member_id`（所选成员，`notice=true` 时不填）；可选 `notice`、`quota_reviewed`、`scope_gap`、`scope_reviewed`、`reassign`、`recover`、`reason`。
 - `recover=true` 在 Router 或转交失败后，把尚未转交的同一原请求恢复给已核定的 `member_id`。必须填写 `reason`，限原发送者、本 Family Steward 或门面管理者；不能与 `notice`、`reassign` 同用。它先持久保存原失败回执、操作者、理由、时间和目标，再重新开放原输入并进入通常的成员、接单、附件、额度及职责准入，不改变原作者、时间、正文或附件，不复制业务请求；失败回执仍保留在 Conversation 事件和恢复审计中。恢复结果附带 `recovery` 审计对象。相同目标重复调用或保存意图后中断重试，复用原转交身份，不重复派发；已取消请求返回 `withdrawn`，活动或完成的无转交请求不能恢复，已有承接关系不能被恢复覆盖。恢复已选目标后，旧 Router 失败和原输入到达重放不能再次启动路由；改派已有承接关系使用 `reassign`。
+
+失败恢复复用当前原请求已经取得的消息级转交归属，不递归领取同一归属。门面状态锁只覆盖鉴权、原回执复核、恢复意图保存和输入重新开放；成员输入准备、额度查询与实际转交在状态锁外进行。慢转交期间取消仍可提交，通常准入和最终关联提交继续核对当前取消状态；恢复意图和转交身份用于中断重试，不能重新创造业务请求。
+
 - 不要求成员行动的消息由门面收下：对方完成工作后的结果报告、已发布或已交付的通知、无问题无待办的进展说明。Router 输出 `disposition="notice"`，转交 Effect 以 `notice=true` 调用，门面记下这条告知、在门面 Conversation 中显示并结束它，返回 status=kept。它不选成员、不建成员输入、不做额度复核，之后也不能再转交；`notice` 不能与 `member_id` 或复核、改派参数同用。门面保留最近 20 条告知，`GetFamilySummaryInputs` 把它们作为门面摘要的来源，成员从门面摘要和门面 Conversation 查到它们。含提问、待确认事项或要求复核、接手、修改的消息仍按请求转交。
 - `scope_gap` 使请求等待 steward 安排职责；只有本 Family steward 可以用 `scope_reviewed=true` 或 `quota_reviewed=true` 并填写理由放行。`reassign=true` 显式改派，原成员正在执行时须先停止；改派记录保留来源。
 - 默认先检查成员实际绑定账号的周额度；低于 10% 时保留门面请求，并以门面身份向 steward 发出一次判断请求。返回 status=waiting_for_quota_review 和 steward_message_id，成员尚未收到原请求。

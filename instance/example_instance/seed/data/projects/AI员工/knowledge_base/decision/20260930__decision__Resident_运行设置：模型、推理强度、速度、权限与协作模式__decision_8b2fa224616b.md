@@ -4,15 +4,15 @@ type: decision
 project: AI员工
 created_at: '2026-09-30'
 version:
-  number: 44
+  number: 45
   created_at: "2026-09-30T11:40:00Z"
   created_by:
     user: "weihao"
     agent: "resident_57f585eb8ae9"
-  updated_at: "2026-11-05T02:02:48Z"
+  updated_at: "2026-11-05T10:45:08Z"
   updated_by:
     user: ""
-    agent: "resident_62dbdb2288fb"
+    agent: "resident_2e9ea0072551"
 importance: 8
 metaness: 2
 ai_generated: false
@@ -254,7 +254,7 @@ Society 的 resident_reporting.prompt 在每条主输入和运行中追加输入
 
 high 检查者须独立于作者，按理解任务实际打开、操作和核对固定成果。changes_requested 要求作者实际修改为新固定版并以 --previous-review-id 关联前轮复审，直到当前版本正式记录 passed；submitted、可打开或媒体 ready 不等于通过。取消时停止；缺权限、无法实际验证等原因保留 blocked，不伪称达标。页面通过不能替代用户所请求视频的独立成片检查。模板、媒体、固定版本和审查记录仍由各业务 owner 保存；提示已经送达只能证明作者获得了指导，不能证明模型遵循或作品通过。
 
-新增 nullable reporting_json 列由 Society 正式升级入口处理。未升级的读取按默认 off/medium、configured=false 解释，无汇报字段的普通设置写入继续工作；显式保存汇报策略缺列时返回真实错误，不能声称配置成功。非法非空值不默认化。`scripts/migrate_resident_reporting.py` 默认事务预演回滚，`--apply` 才提交；使用初始化锁和有界锁等待，按本次增列需要的表、字段和类型核对，不依赖描述性 schema 标签相等。列已存在且类型合法时不再 ALTER，不重写已有策略。旧安装转换与新安装 seed 使用同一 owner 结构，实例特殊策略通过正式 UpdateResidentSettings 设置，不硬编码本站 AMA 身份。
+新增 nullable reporting_json 列由 Society 正式升级入口处理。未升级的读取按默认 off/medium、configured=false 解释，无汇报字段的普通设置写入继续工作；显式保存汇报策略缺列时返回真实错误，不能声称配置成功。非法非空值不默认化。`scripts/migrate_resident_reporting.py` 默认事务预演回滚，`--apply` 才提交；使用初始化锁和有界锁等待，按本次增列需要的表、字段和类型核对，不依赖描述性 schema 标签相等。增列入口兼容旧库增列使用的 nullable TEXT 与新安装 owner 创建的 nullable JSONB；已有这两种合法列时不再 ALTER 或转换类型，不重写已有策略。其他类型或非空约束不满足本项列合同，明确拒绝。旧安装转换与新安装 seed 使用同一 owner 结构，实例特殊策略通过正式 UpdateResidentSettings 设置，不硬编码本站 AMA 身份。
 
 
 ### Family 内的审核职责

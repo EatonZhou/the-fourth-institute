@@ -155,13 +155,16 @@ def _relay_failed_route(facade_id: str, message_id: str, member_id: str, actor: 
             repository.reopen_input(facade_id, message_id)
         elif previous["state"] != "queued" or not entry:
             raise ValueError("仅可恢复尚未转交的失败请求，不能重启活动或完成的请求")
-        result = relay_message(facade_id, message_id, member_id, actor, reason=reason,
-            quota_reviewed=quota_reviewed, scope_gap=scope_gap, scope_reviewed=scope_reviewed,
-            continue_previous=continue_previous)
-        with store.family_relays.transaction(facade["lineage_id"], facade_id) as ledger:
-            entry = ledger["route_restorations"][message_id][-1]
-            entry.update(status=result["status"], result=result)
-        return {**result, "recovery": entry}
+    # relay_message already owns this exact request. Re-entering its public
+    # non-blocking ownership gate would reject our own recovery. Slow intake
+    # runs outside the facade state lock, so withdrawal can still commit.
+    result = _relay_owned(facade_id, message_id, member_id, actor, reason=reason,
+        quota_reviewed=quota_reviewed, scope_gap=scope_gap, scope_reviewed=scope_reviewed,
+        recover=False, continue_previous=continue_previous)
+    with store.family_relays.transaction(facade["lineage_id"], facade_id) as ledger:
+        entry = ledger["route_restorations"][message_id][-1]
+        entry.update(status=result["status"], result=result)
+    return {**result, "recovery": entry}
 
 def _relay_message(facade_id: str, message_id: str, member_id: str, actor: str,
                    *, quota_reviewed: bool, reason: str, scope_gap: str = "",

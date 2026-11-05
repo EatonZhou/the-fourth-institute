@@ -65,7 +65,7 @@ TIERS = (
     identity_store project_registry resident_view_projection semantic_search_surfaces shared_state
     workflow_bindings_store
     """),
-    ("policy", "permission_system permission_system.* portal_access_control user_enrollment"),
+    ("policy", "permission_system permission_system.* portal_access_control user_enrollment file_access_policy"),
     ("resources", """
     resources resources.* hatg.kernel hatg.maintenance hatg.routing hatg.slow_call_profile hatg.socket_rpc
     avatar_database avatar_store device_identity_backend isa_client project_rename project_seeds resident_avatar provider_session_relocation directory_move_owner
@@ -310,6 +310,41 @@ def test_imports_point_to_own_or_lower_tiers():
         if _tier(target) > _tier(source) and (_short(source), _short(target)) not in ALLOWED
     ]
     assert not upward, f"Imports must point to the module's own tier or lower: {upward}"
+
+
+def test_file_authentication_policy_has_no_provider_dependency():
+    """认证与上传地址规则只直接依赖低层事实，PAR 不再回调上传 provider。"""
+    edges = _imports()
+    policy = f"{PORTAL}.file_access_policy"
+    engine = f"{PORTAL}.permission_system"
+    upload = f"{PORTAL}.resources.upload_files"
+    access = f"{PORTAL}.resources.access"
+    assert _tier(policy) == _tier(engine)
+    assert not {target for target in edges[policy] if _tier(target) >= _tier(policy)}
+    assert engine not in edges[policy]
+    assert policy in edges[engine] and upload not in edges[engine]
+    assert policy in edges[upload] and access not in edges[upload]
+    assert policy in edges[access]
+    # Match the existing architecture contract, including only its already
+    # declared cross-owner callbacks. A new indirect route through another
+    # policy module must not recreate the authentication cycle.
+    pending, reachable = [policy], {policy}
+    while pending:
+        source = pending.pop()
+        for target in edges[source]:
+            if target in reachable or (_short(source), _short(target)) in ALLOWED:
+                continue
+            reachable.add(target)
+            pending.append(target)
+    assert engine not in reachable and access not in reachable
+
+
+def test_project_deletion_uses_feature_contract_without_presentation_import():
+    """删除协调器由正式 contribution 调展示功能，不直接导入该功能实现。"""
+    edges = _imports()
+    owner = f"{PORTAL}.resources.project_deletion_effects"
+    assert f"{PORTAL}.portal_features" in edges[owner]
+    assert not {target for target in edges[owner] if _tier(target) > _tier(owner)}
 
 
 def test_core_packages_form_no_import_cycle():

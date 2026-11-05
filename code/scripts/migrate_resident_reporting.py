@@ -4,7 +4,7 @@ Select the instance with PORTAL_INSTANCE_ROOT. Run --apply before saving reporti
 settings on a database without the column; reading uses off/medium defaults.
 Only the configuration table's required fields and types are prerequisites;
 descriptive metadata may be missing or carry a different version. A valid existing
-nullable TEXT column causes no ALTER. Existing policy values, configurations and
+nullable TEXT or owner-created JSONB column causes no ALTER. Existing policy values, configurations and
 metadata are never rewritten; use UpdateResidentSettings to configure policies.
 The transaction retains the schema-init mutex and a five-second lock timeout.
 """

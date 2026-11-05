@@ -74,6 +74,13 @@ Hooks:
     resource IDs that would change.  ``related_types`` names the feature's
     resource types a Project lists but does not own: deleting the Project
     drops their relation instead of unregistering them.
+``project.deletion_effects`` ``{cursor: (receipt, *, write=True) -> object}``
+    Idempotent effects for a committed Project deletion. The receipt contains
+    the identities frozen by its owner before deletion; callbacks must not
+    rediscover targets from the current Project. Cursor names are unique and
+    stable across releases: completed/errors in saved receipts use these keys,
+    not feature keys. ``write=False`` previews without mutations. Core journals
+    each callback independently and retries failures from the same receipt.
 ``user.deleted`` ``(username) -> object``
     Remove what the feature keeps for a deleted User; a truthy result means
     something was removed.
@@ -146,6 +153,11 @@ FEATURES += (PortalFeature('home_report', 'Persistent Reports', {
     'permission.records': 'management_portal.home_report_store:permission_records',
     'resource.portal_routes': 'management_portal.home_report_http:RESOURCE_ROUTES',
 }, related_types=('report',), modules=('management_portal.home_report*', 'management_portal.resources.providers.report')),)
+
+FEATURES += (PortalFeature('presentation', 'Presentation preferences', {
+    'project.deletion_effects': 'management_portal.presentation_store:PROJECT_DELETION_EFFECTS',
+}, modules=('management_portal.presentation_store',)),)
+
 
 def _load(reference: str) -> Any | None:
     """The attribute a reference names, or None when its module is not installed."""

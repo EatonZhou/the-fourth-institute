@@ -4,12 +4,12 @@ type: decision
 project: AI员工
 created_at: '2026-09-02'
 version:
-  number: 56
+  number: 58
   created_at: "2026-09-02"
   created_by:
     user: ""
     agent: ""
-  updated_at: "2026-11-05T10:22:39Z"
+  updated_at: "2026-11-05T10:51:49Z"
   updated_by:
     user: ""
     agent: "resident_2e9ea0072551"
@@ -179,6 +179,8 @@ Domain RPC 使用 Portal 内部 RPC 的传输方式：本机 Unix socket 上每�
 7. **变化通知只在成功提交之后发出。** 事务失败、对象冲突和权限拒绝不发通知。提交后的多个后续效果中有一个失败时，其他效果照常执行，再报告第一个错误。
 
 变化收集器应包在执行授权边界之外，使延后回调在授权释放后运行；`lineage_scope`／`lineage_scopes` 仅收集延后动作，不充当互斥锁。Operator pending 的读取与领取还须在其持久事务内比较原像，替换或取消后不得弹出后继记录。已取得的领取不恢复旧 pending；后续投递继续使用当前 Route、局部执行令牌和路径终态检查，不能把一次先前领取当成忽略取消或拓扑变化的授权。
+
+Operator 执行器输入的角色由持久 Trigger Path 的精确输入步骤和前驱关系确定：同一 Lineage、Resident 与 message_id 的输入，前驱须为 Operator 步骤，交接边名须等于该逻辑 Operator ID。领取后 pending 消失、当前定义变化或重复回调均不改变这个归属。无法再次领取但仍有该归属证据的回调，仍按可靠终态结算该精确执行器交接，但不能改走普通 Resident 完成、通知或输出派发，也不重做 Operator 决策；不同 Operator 占用同一输入时明确报错，不猜测。普通下游消息沿真实 Route 边登记，继续按普通 Resident 输入处理。
 
 ### Resident 投递准入
 

@@ -132,7 +132,7 @@
     function bindWorkspacePreviewHost() {
       currentLineageWorkbench()?.getPanel("preview")?.registerPreviewHost("lineage", async request => {
         if (request.displayIntent) {
-          const document = window.PortalPreview.displayDocument(request);
+          const document = await window.PortalPreview.displayDocument(request);
           ensurePreviewVisible();
           await openAgentPreviewDocument({key:document.identity, path:document.path, title:document.title,
             mode:request.mode, sourceType:"display", displayIntent:document.displayIntent,

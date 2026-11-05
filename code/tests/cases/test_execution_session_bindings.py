@@ -154,7 +154,7 @@ def test_session_manager_rejects_backend_session_replacement_contracts(tmp_path,
             "read_harness_artifact",
             "search_harness_artifact",
         )
-    with subtests.test(contract='test_scheduler_rejects_noncurrent_store_without_rewriting_it'), isolated_portal_case() as case_path:
+    with subtests.test(contract='test_scheduler_reports_local_column_errors_without_rewriting_storage'), isolated_portal_case() as case_path:
         tmp_path = case_path
         with monkeypatch.context() as isolated:
             isolated.setenv(
@@ -167,8 +167,10 @@ def test_session_manager_rejects_backend_session_replacement_contracts(tmp_path,
                     "CREATE TABLE executions (execution_id TEXT PRIMARY KEY)"
                 )
 
-            with pytest.raises(RuntimeError, match="current contract"):
-                Scheduler()
+            from psycopg.errors import UndefinedColumn
+            scheduler = Scheduler()
+            with pytest.raises(UndefinedColumn):
+                scheduler.latest_runtime_root(["resident:missing-binding"])
 
             with connect(database) as connection:
                 tables = {

@@ -26,7 +26,7 @@
   function create({root, onOpen, onSelection, onReference}) {
     if (!root) throw new Error('报告容器不存在');
     root.classList.add('home-report');
-    let target, report, media, video, mediaRegion, banner, list, sourceRegion, mediaAction;
+    let target, report, media, video, mediaRegion, banner, list, sourceRegion, mediaAction, explanation;
     let requestedTarget, originKey = '', originContext = null, readOnly = true, reportQuality = 'medium', videoQuality = 'medium';
     let presented = true, destroyed = false, epoch = 0, controller, externalSignal, externalAbort;
     let refreshTimer, mediaTimer, query = '', status = '', busy = false, rechecking = false;
@@ -70,7 +70,7 @@
         const token = epoch;
         try {
           const data = await request(isVideo ? `${API}/reports/${report.report_id}/${report.revision}/media/high` : `${API}?${new URLSearchParams({kind:'report',id:report.report_id,revision:report.revision})}`);
-          if(active(token)) {if(isVideo) renderMedia(data); else accept(data);}
+          if(active(token)) {if(isVideo) renderMedia(data); else await accept(data);}
         } catch(error) {if(active(token)) section.append(el('p',error.message));}
       };
       controls.append(button('读取审核结果',reload));
@@ -373,12 +373,22 @@
       } finally { if (token === epoch) busy = false; }
     }
     function schedule() { clearTimeout(refreshTimer); if (presented && !destroyed) refreshTimer = setTimeout(() => validate().catch(() => {}), 20000); }
-    function accept(result) {
+    async function accept(result) {
       reportQuality = result.quality || 'medium'; videoQuality = result.media?.quality || 'medium';
       report = result; target = {...result.target, ...(requestedTarget.focus ? {focus:requestedTarget.focus} : {})};
       if (result.reference) {
         requestedTarget = {...result.reference.target, ...(requestedTarget.focus ? {focus:requestedTarget.focus} : {})};
         onReference?.({...result.reference,target:{...requestedTarget}});
+      }
+      explanation?.destroy(); explanation = null;
+      root.classList.toggle('home-report', result.content_kind !== 'explanation');
+      if (result.content_kind === 'explanation') {
+        const token = epoch, body = el('div'); root.replaceChildren(body);
+        const view = await window.PortalPreview.createPresentation('explanation', {root:body,onOpen,onSelection});
+        if (!active(token)) {view.destroy();return;}
+        explanation = view;
+        await view.show(result.explanation_target, {signal:controller.signal});
+        schedule(); return;
       }
       media = result.media || null; render(); if (media) renderMedia(media);
       if (media?.status === 'pending') mediaTimer = setTimeout(() => pollMedia(epoch),1000);
@@ -390,7 +400,7 @@
       originKey ||= `home-request/v1:${requestUUID()}`;
       try {
         const result = await request(`${API}/save`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({target,version:report?.source_version || report?.version,origin_key:originKey,quality:reportQuality,...(originContext ? {origin_context:originContext} : {})})});
-        if (active(token)) accept(result);
+        if (active(token)) await accept(result);
         return result;
       } catch(error) {if(active(token)) {banner.hidden=false;banner.textContent=`保存失败：${error.message}`;} throw error;}
     }
@@ -415,15 +425,16 @@
         const validation = await request(`${API}/validate`, {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(report.report_id ? {report_id:report.report_id,revision:report.revision} : {sources:report.sources})});
         const fresh = report.report_id ? null : await request(`${API}?${new URLSearchParams({...target,quality:report.quality || 'medium'})}`);
         if (!active(token)) return;
-        if (validation.source_changed || fresh && fresh.version !== report.version) {
+        if (!explanation && (validation.source_changed || fresh && fresh.version !== report.version)) {
           banner.hidden = false; banner.replaceChildren(el('span', '来源已有新版本；当前报告保留原快照。'), button('生成新版', () => report.report_id ? refresh() : load().catch(() => {})));
         }
         root.hidden = false;
-      } catch (error) { if (active(token)) { message(`来源暂不可读，已撤去报告：${error.message}`, true); root.hidden = false; } }
+      } catch (error) { if (active(token)) { explanation?.destroy(); explanation = null; message(`来源暂不可读，已撤去报告：${error.message}`, true); root.hidden = false; } }
       finally { if (token === epoch) {rechecking = false; schedule();} }
     }
     async function load() {
-      stop(); if (!presented || destroyed || !requestedTarget || externalSignal?.aborted) return;
+      stop(); explanation?.destroy(); explanation = null;
+      if (!presented || destroyed || !requestedTarget || externalSignal?.aborted) return;
       controller = new AbortController(); const token = epoch;
       message('正在读取来源…'); root.hidden = false;
       try {
@@ -433,7 +444,7 @@
         else if (originKey) result = await request(`${API}/save`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({target:requestedTarget,origin_key:originKey,quality:reportQuality,...(originContext ? {origin_context:originContext} : {})})});
         else result = await request(`${API}?${new URLSearchParams({...requestedTarget,quality:reportQuality})}`);
         if (!active(token)) return;
-        accept(result);
+        await accept(result);
       } catch (error) { if (active(token)) {
         if(error.status===404 && originKey && readOnly && requestedTarget.kind!=='report') {
           message('这次汇报尚未生成。',true);
@@ -446,7 +457,7 @@
       if (destroyed) throw new Error('报告组件已关闭');
       externalSignal?.removeEventListener('abort', externalAbort);
       externalSignal = options.signal;
-      externalAbort = () => {stop(); stopMedia(); root.replaceChildren();};
+      externalAbort = () => {stop(); stopMedia(); explanation?.destroy(); explanation = null; root.replaceChildren();};
       externalSignal?.addEventListener('abort', externalAbort, {once:true});
       requestedTarget = {...nextTarget}; target = {...nextTarget}; originKey=options.originKey || '';readOnly=options.readOnly !== false;
       originContext = options.originContext || null;
@@ -459,11 +470,11 @@
     async function setPresented(value) {
       if (destroyed) return;
       presented = !!value;
-      if (!presented) {stop(); video?.pause(); root.hidden = true; return;}
+      if (!presented) {stop(); video?.pause(); explanation?.setPresented(false); root.hidden = true; return;}
       // History restoration keeps the instance, but permission precedes reveal.
       if (externalSignal?.aborted) { root.replaceChildren(); return; }
       controller = new AbortController();
-      if (report) {await validate(); if (media?.status === 'pending') pollMedia(epoch);}
+      if (report) {await validate(); if (explanation) await load(); else if (media?.status === 'pending') pollMedia(epoch);}
       else await load();
     }
     const recheck = () => {if (presented) {root.hidden = true; video?.pause(); validate().catch(() => {});}};
@@ -473,7 +484,7 @@
     window.addEventListener('portal:identity-changed', recheck);
     document.addEventListener('visibilitychange', visibility);
     return {show, setPresented, destroy() {
-      destroyed = true; stop(); stopMedia(); root.replaceChildren();
+      destroyed = true; stop(); stopMedia(); explanation?.destroy(); explanation = null; root.replaceChildren();
       externalSignal?.removeEventListener('abort', externalAbort);
       window.removeEventListener('focus', recheck); window.removeEventListener('portal:permissions-changed', recheck);
       window.removeEventListener('portal:identity-changed', recheck); document.removeEventListener('visibilitychange', visibility);

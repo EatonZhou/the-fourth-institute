@@ -183,11 +183,24 @@ def test_solo_can_switch_and_clear_after_member_leaves(family_chat, monkeypatch)
     assert p.change(f['resident_id'], ACTOR, second, 'solo', False)['solo_member_id'] == ''
 
 
-def test_explicit_schema_migration_preserves_legacy_routing_and_rolls_back_preview(family_chat):
+@pytest.fixture
+def legacy_family_chat(request, monkeypatch, tmp_path):
+    # A failed migration must not leave legacy DDL in the shared test schema.
+    # Truncating rows between cases cannot restore column definitions.
+    import os
+    from uuid import uuid4
+    monkeypatch.setenv("PORTAL_DATABASE_NAMESPACE",
+        os.environ["PORTAL_DATABASE_NAMESPACE"][:24] + "_" + uuid4().hex[:12])
+    from tests.cases.account_registration_test_support import register_site_defaults
+    register_site_defaults(monkeypatch, tmp_path)
+    return request.getfixturevalue("family_chat")
+
+
+def test_explicit_schema_migration_preserves_legacy_routing_and_rolls_back_preview(legacy_family_chat):
     from scripts.migrate_family_chat_controls import migrate
     from management_portal.society_service import family_chat_preferences as p
     from management_portal.society_service.state_store import get_lineage_data_store, LineageDataStore
-    f, m = family_chat
+    f, m = legacy_family_chat
     p.change(f['resident_id'], ACTOR, m, 'mute', True)
     p.change(f['resident_id'], ACTOR, m, 'solo', True)
     request = {'message_id':'msg_migration', 'author_id':ACTOR}

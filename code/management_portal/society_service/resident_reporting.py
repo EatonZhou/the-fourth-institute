@@ -203,9 +203,11 @@ def install_schema(connection: Any) -> dict:
     for name, types in expected.items():
         if name not in columns or columns[name]["data_type"] not in types:
             raise ValueError(f"Unexpected Resident configuration column: {name}")
-    if "reporting_json" in columns and (columns["reporting_json"]["data_type"] != "text"
+    # Fresh owner schemas store objects as JSONB; the additive legacy upgrade
+    # uses TEXT. Both are readable/writable by the same configuration owner.
+    if "reporting_json" in columns and (columns["reporting_json"]["data_type"] not in {"text", "jsonb"}
                                        or columns["reporting_json"]["is_nullable"] != "YES"):
-        raise ValueError("Reporting column must be nullable TEXT")
+        raise ValueError("Reporting column must be nullable TEXT or JSONB")
     version = None
     if connection.execute("SELECT to_regclass(quote_ident(current_schema()) || '.lineage_meta') AS name").fetchone()["name"]:
         version = connection.execute(

@@ -465,6 +465,7 @@ modules:
     instruction_owners: []
     code_paths:
       - "management_portal/resources/access.py"
+      - "management_portal/file_access_policy.py"
       - "management_portal/resources/action.py"
       - "management_portal/resources/index.py"
       - "management_portal/resources/index_runtime.py"

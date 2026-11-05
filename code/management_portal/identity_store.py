@@ -58,6 +58,14 @@ def database():
     return _database(os.getenv('PORTAL_DATABASE_URL'), os.getenv('PORTAL_DATABASE_NAMESPACE'))
 
 
+def user_status(username: str) -> str | None:
+    """Read current account status by primary key, without secrets or a cache."""
+    with database().read() as connection:
+        row = connection.execute('SELECT status FROM user_accounts WHERE username=%s',
+                                 (username,)).fetchone()
+    return row['status'] if row is not None else None
+
+
 def lock_active_user(connection, username: str) -> None:
     """Pin an authenticated authorization issuer until the caller's transaction commits.
 

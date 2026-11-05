@@ -289,9 +289,26 @@ def test_reporting_upgrade_rejects_real_structure_errors(reporting_upgrade_datab
                "CREATE VIEW resident_execution_configuration AS SELECT * FROM configuration_source",
         "missing_field":"ALTER TABLE resident_execution_configuration DROP COLUMN harness_config_json",
         "wrong_field_type":"ALTER TABLE resident_execution_configuration ALTER COLUMN resident_id TYPE INTEGER USING 1",
-        "wrong_reporting_type":"ALTER TABLE resident_execution_configuration ADD COLUMN reporting_json JSONB",
+        "wrong_reporting_type":"ALTER TABLE resident_execution_configuration ADD COLUMN reporting_json INTEGER",
         "not_nullable":"ALTER TABLE resident_execution_configuration ADD COLUMN reporting_json TEXT NOT NULL DEFAULT '{}'",
     }
     database.write(lambda c: c.execute(commands[damage]))
     with pytest.raises(ValueError, match="configuration|Reporting column"):
         migrate(database, apply=True)
+
+
+def test_reporting_upgrade_accepts_fresh_owner_jsonb_without_ddl(reporting_upgrade_database):
+    """新安装的正式对象列和旧库增列入口兼容，不改类型、策略或其他配置"""
+    from management_portal.society_service import resident_storage
+    from tests.cases.database_test_support import QueryGuard
+    database = reporting_upgrade_database
+    with database.transaction() as c:
+        c.execute("DROP TABLE resident_execution_configuration")
+        c.execute("CREATE TABLE residents (resident_id TEXT PRIMARY KEY)")
+        resident_storage.create_table(c, "resident_execution_configuration", resident_storage.CONFIGURATION_FIELDS)
+        c.execute("INSERT INTO residents VALUES ('resident_probe')")
+        c.execute("INSERT INTO resident_execution_configuration (resident_id,reporting_json) "
+                  "VALUES ('resident_probe','{\"initiative\":\"high\",\"quality\":\"high\"}')")
+        before = dict(c.execute("SELECT * FROM resident_execution_configuration").fetchone())
+        assert reporting.install_schema(QueryGuard(c, forbidden=("alter table",)))["changed"] is False
+        assert dict(c.execute("SELECT * FROM resident_execution_configuration").fetchone()) == before

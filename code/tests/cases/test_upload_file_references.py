@@ -98,6 +98,34 @@ def test_invalid_deployment_origin_aliases_fail_closed(files, monkeypatch, alias
         upload_files.file_reference("https://portal.example/api/uploads/" + HANDLE)
 
 
+def test_public_origin_configuration_and_environment_override(files, monkeypatch):
+    from management_common import site_config
+
+    monkeypatch.setattr(site_config, "read_site_config", lambda: {
+        "deployment": {"auth": {"public_origin": "https://configured.example"}}})
+    monkeypatch.delenv("PORTAL_PUBLIC_ORIGIN")
+    configured = "https://configured.example/api/uploads/" + HANDLE
+    assert files.call(address=configured).raise_for_error()["text"] == "hello upload"
+    monkeypatch.setenv("PORTAL_PUBLIC_ORIGIN", "https://override.example")
+    assert files.call(address="https://override.example/api/uploads/" + HANDLE).raise_for_error()["text"] == "hello upload"
+    with pytest.raises(ValueError, match="another Portal origin"):
+        upload_files.file_reference(configured)
+    monkeypatch.setenv("PORTAL_PUBLIC_ORIGIN", "")
+    with pytest.raises(ValueError, match="another Portal origin"):
+        upload_files.file_reference(configured)
+
+
+@pytest.mark.parametrize("public_origin", [None, 42, []])
+def test_invalid_configured_public_origin_fails_closed(files, monkeypatch, public_origin):
+    from management_common import site_config
+
+    monkeypatch.setattr(site_config, "read_site_config", lambda: {
+        "deployment": {"auth": {"public_origin": public_origin}}})
+    monkeypatch.delenv("PORTAL_PUBLIC_ORIGIN")
+    with pytest.raises(ValueError, match="public_origin must be a string"):
+        upload_files.file_reference("https://portal.example/api/uploads/" + HANDLE)
+
+
 @pytest.mark.parametrize("actor", ["", "nobody", "resident_ffffffffffff", "service:portal"])
 def test_anonymous_and_unregistered_principals_rejected_before_files(files, monkeypatch, actor):
     inspect = Mock(side_effect=AssertionError("anonymous read reached files"))
@@ -119,6 +147,70 @@ def test_deleted_resident_is_rejected_on_isa_and_ranges(files):
     assert files.call(actor=RESIDENT).status == "failed"
     with pytest.raises(PermissionError):
         files.service.read_content_range(files.reference, actor=RESIDENT, start=0, end=2)
+
+
+@pytest.mark.parametrize("status", ["disabled", "deleted"])
+def test_inactive_users_rejected_by_permission_and_file_owners(files, monkeypatch, status):
+    from management_portal.portal_access_control import get_portal_access_store
+    from management_portal.resources.access import require_identity
+
+    access = get_portal_access_store()
+    if status == "deleted":
+        access.delete_user("bob", actor="test-actor")
+    else:
+        access.upsert_user("bob", status=status, actor="test-actor")
+    inspect = Mock(side_effect=AssertionError("inactive caller reached files"))
+    monkeypatch.setattr(upload_files.secure_paths, "open_directory", inspect)
+    with pytest.raises(PermissionError):
+        require_identity("bob")
+    for instruction in ("ReadResource", "ResolveResource"):
+        assert files.call(instruction, "bob").status == "failed"
+    with pytest.raises(PermissionError):
+        files.service.read_content_range(files.reference, actor="bob", start=0, end=2)
+    decisions = permission_system.authorize_reads(catalog.declaration("ReadResource"),
+        [{"address": files.reference}], InstructionContext(caller="bob", entry="web"))
+    assert decisions[0] is not None
+    inspect.assert_not_called()
+
+
+def test_file_authentication_reads_current_status_by_key_only(files, monkeypatch):
+    from contextlib import contextmanager
+    from management_portal import identity_store
+    from management_portal.resources.access import require_identity
+    from management_portal.portal_access_control import get_portal_access_store
+
+    database = identity_store.database()
+    statements = []
+
+    @contextmanager
+    def read():
+        with database.read() as connection:
+            def execute(sql, parameters):
+                statements.append((sql, parameters))
+                return connection.execute(sql, parameters)
+            yield SimpleNamespace(execute=execute)
+
+    def check(expected):
+        with monkeypatch.context() as patch:
+            patch.setattr(identity_store, 'database', lambda: SimpleNamespace(read=read))
+            patch.setattr(identity_store.IdentityState, 'read',
+                          lambda *args: pytest.fail('authentication read all accounts'))
+            patch.setattr(identity_store, 'read_rows',
+                          lambda *args: pytest.fail('authentication scanned an account table'))
+            if expected:
+                assert require_identity('bob').id == 'bob'
+            else:
+                with pytest.raises(PermissionError):
+                    require_identity('bob')
+            with pytest.raises(PermissionError):
+                require_identity('unregistered')
+
+    check(True)
+    get_portal_access_store().upsert_user('bob', status='disabled', actor='test-actor')
+    check(False)
+    assert statements == [
+        ('SELECT status FROM user_accounts WHERE username=%s', (actor,))
+        for actor in ('bob', 'unregistered', 'bob', 'unregistered')]
 
 
 def test_metadata_and_binary_preview_never_open_payload(files, monkeypatch):

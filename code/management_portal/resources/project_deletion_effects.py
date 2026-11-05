@@ -50,19 +50,21 @@ def _index(entry):
     return index.project_unregistered('project', entry['project_id'])
 
 
-def _favorites(entry):
-    from management_portal import presentation_store
-    for resource_id in entry.get('workbench_ids', ()):
-        presentation_store.forget_favorite_target('workbench', resource_id)
-
-
 def _effects():
     from management_portal import portal_features
-    return [
+    effects = [
         *[('relation:' + feature, lambda entry, relate=relate: relate(entry['project_id']))
           for feature, relate in portal_features.contributions('project.relations')],
-        ('permissions', _permissions), ('avatar', _avatar), ('favorites', _favorites), ('index', _index),
+        ('permissions', _permissions), ('avatar', _avatar),
     ]
+    claimed = {name for name, _apply in effects} | {'index'}
+    for feature, callbacks in portal_features.contributions('project.deletion_effects'):
+        for cursor, apply in callbacks.items():
+            if not isinstance(cursor, str) or not cursor or cursor in claimed:
+                raise ValueError(f'Duplicate or invalid Project deletion cursor from {feature}: {cursor}')
+            claimed.add(cursor)
+            effects.append((cursor, apply))
+    return [*effects, ('index', _index)]
 
 
 def run(project_id):

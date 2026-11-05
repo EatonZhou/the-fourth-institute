@@ -483,7 +483,7 @@
 .chatRoundViewport > .paneBody { scrollbar-width:none; padding-inline-end:4px; }
 .chatRoundViewport > .paneBody > .messageList { padding-inline-end:4px; }
 .chatRoundViewport > .paneBody::-webkit-scrollbar { display:none; }
-.chatRoundRail { position:relative; flex:0 0 46px; width:46px; min-height:0; color:var(--muted, #687887); background:var(--panel, transparent); }
+.chatRoundRail { position:relative; flex:0 0 46px; width:46px; min-height:0; color:var(--muted, #687887); background:var(--panel, transparent); font:.875rem/1.5 var(--portal-shell-font, system-ui, sans-serif); }
 .chatRoundDirectory,.chatRoundOlder { position:absolute; left:0; width:30px; height:30px; display:grid; place-items:center; padding:0; border:0; border-radius:5px; background:transparent; color:inherit; cursor:pointer; }
 .chatRoundOlder { top:0; }
 .chatRoundDirectory { bottom:4px; }

@@ -574,6 +574,9 @@
       }, 550) };
     });
     on(window, 'pointermove', event => {
+      // Movement outside the marks also ends the post-click rest. Waiting for
+      // a move inside would reject re-entry at the original click coordinates.
+      if (pointerRest && Math.hypot(event.clientX - pointerRest.x, event.clientY - pointerRest.y) >= 1) pointerRest = null;
       if (press && Math.hypot(event.clientX - press.x, event.clientY - press.y) > 7) { if (activation) activation.cancelled = true; cancelPress(); }
       if (!dragging || event.pointerId !== dragging.id) return;
       const range = Math.max(0, viewport.scrollHeight - viewport.clientHeight);

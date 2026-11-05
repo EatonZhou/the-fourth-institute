@@ -40,6 +40,13 @@ def _view(family, message_id):
     return family_recovery.view(facade, family_recovery.records(facade)[message_id])
 
 
+def _prepared_inputs(work):
+    # Closed intake retains the next input as a dispatchable preparation head;
+    # it belongs to the same waiting work as the rest of its queue.
+    return [item for item in [work, *resident_execution_work.normalized_queue(work)]
+            if item.get("user_message_id")]
+
+
 def test_continue_preserves_the_actual_relayed_input_after_execution(family, monkeypatch):
     """真实转交的接收封装进入 Conversation 后，失败恢复保留同一输入。"""
     import copy
@@ -96,10 +103,10 @@ def test_continue_preserves_the_actual_relayed_input_after_execution(family, mon
     assert repository.input_state(member_id, member_message)["state"] == "queued"
     assert repository.message(member_id, member_message)["content_parts"] == current["content_parts"]
     restored = resident_execution_work.read(record)
-    assert [item["user_message_id"] for item in resident_execution_work.normalized_queue(restored)] == [member_message]
-    assert resident_execution_work.normalized_queue(restored)[0]["input_message"] == original
+    assert [item["user_message_id"] for item in _prepared_inputs(restored)] == [member_message]
+    assert _prepared_inputs(restored)[0]["input_message"] == original
     _send(family, "continue")
-    assert [item["user_message_id"] for item in resident_execution_work.normalized_queue(
+    assert [item["user_message_id"] for item in _prepared_inputs(
         resident_execution_work.read(record))] == [member_message]
 
 
@@ -123,7 +130,7 @@ def test_continue_requeues_failed_member_once_and_keeps_original_link(family):
     family_recovery.handle(_record(family), command)
     second = _send(family, "continue")
     work = resident_execution_work.read(_find_resident(family["wrong"]))
-    assert [item["user_message_id"] for item in resident_execution_work.normalized_queue(work)] == [member_message]
+    assert [item["user_message_id"] for item in _prepared_inputs(work)] == [member_message]
     assert _view(family, second)["original_message_id"] == root
     assert _view(family, second)["status"] == "queued"
     assert repository.input_state(family["facade"], command)["state"] == "completed"

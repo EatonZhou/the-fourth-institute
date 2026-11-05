@@ -89,6 +89,34 @@ if (output) fs.mkdirSync(output, { recursive: true });
     const settle = () => page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
     const check = (name, value) => { assert.ok(value, name); checks.push(name); };
     const shot = async name => { if (output) await page.screenshot({ path: path.join(output, name + '.png') }); };
+    if (process.env.RAIL_POINTER_ONLY) {
+      const node = page.locator('[data-round-key="h2"]');
+      const rect = await node.boundingBox(), point = { x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 };
+      await page.mouse.click(point.x, point.y); await page.waitForTimeout(300);
+      check('click at rest does not reopen preview', !await page.locator('.chatRoundPreview').isVisible());
+      await node.dispatchEvent('pointerover', { pointerType: 'mouse', clientX: point.x, clientY: point.y });
+      await page.waitForTimeout(260);
+      check('stationary layout over does not reopen preview', !await page.locator('.chatRoundPreview').isVisible());
+      await page.mouse.move(10, 10); await page.mouse.move(point.x, point.y);
+      await page.locator('.chatRoundPreview').waitFor({ state: 'visible' });
+      check('leave and return to exact click coordinates opens preview', await page.locator('.chatRoundPreview').isVisible());
+      await page.locator('.chatRoundPreview').hover(); await page.waitForTimeout(280);
+      check('preview remains enterable', await page.locator('.chatRoundPreview').isVisible());
+      await page.keyboard.press('Escape');
+      const touchNode = await node.boundingBox();
+      const before = await page.evaluate(() => ({ flag: workspace.isRoundFollowed('h2'), top: workspace.els.messages.scrollTop }));
+      const touchClient = await context.newCDPSession(page);
+      await touchClient.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: touchNode.x + touchNode.width / 2, y: touchNode.y + touchNode.height / 2 }] });
+      await page.waitForTimeout(620);
+      await touchClient.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+      await touchClient.detach(); await settle();
+      check('touch long press toggles once without navigation', await page.evaluate(before => workspace.isRoundFollowed('h2') !== before.flag && workspace.els.messages.scrollTop === before.top, before));
+      check('touch does not open hover preview', !await page.locator('.chatRoundPreview').isVisible());
+      assert.deepEqual(errors, []);
+      if (output) fs.writeFileSync(path.join(output, 'pointer-result.json'), JSON.stringify({ checks, errors }, null, 2));
+      console.log('Round rail pointer checks passed: ' + checks.length);
+      await context.close(); return;
+    }
     if (process.env.RAIL_HIT_ONLY) {
       await require('./chat_round_hit.browser.cjs')({ page, context, browser, setup, output, errors });
       await context.close(); return;

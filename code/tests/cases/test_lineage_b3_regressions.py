@@ -207,7 +207,7 @@ def test_departed_resident_terminal_input_settles_invocation(monkeypatch):
         input_state=lambda rid, mid: {"state": "completed", "updated_at": "2026-10-11T00:00:00Z"}))
     monkeypatch.setattr(terminal, "_compiled_program", lambda _: {})
     monkeypatch.setattr(terminal, "reconcile_terminal_absorption_edges", lambda *a, **kw: 0)
-    state = Mock(lineage_scope=lambda _: nullcontext(), read_lineage=lambda *a, **kw: graph,
+    state = Mock(lineage_scope=lambda *a, **kw: nullcontext(), read_lineage=lambda *a, **kw: graph,
                  ensure_manager=lambda *_: None)
     ports = terminal.ProgramTerminalPorts(state=state, resident=Mock(),
         directory=Mock(lineage_execution_authority=lambda _: nullcontext()),

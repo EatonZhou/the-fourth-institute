@@ -116,6 +116,18 @@ const check = (actual, expected, message) => {
       }
       await page.locator('#host').evaluate(el=>el.className='');
     }
+    // Typography belongs to the component, but continues to follow the user's
+    // root font size rather than freezing navigation at a pixel size.
+    const scaled = await page.evaluate(() => {
+      const controls = [...document.querySelectorAll('.chatRoundDirectory,.chatRoundOlder,.chatRoundNode')];
+      const before = controls.map(el => parseFloat(getComputedStyle(el).fontSize));
+      document.documentElement.style.fontSize = '20px';
+      const after = controls.map(el => parseFloat(getComputedStyle(el).fontSize));
+      document.documentElement.style.fontSize = '';
+      return before.map((font, index) => ({ font, scaled: after[index] }));
+    });
+    check(scaled.length > 0 && scaled.every(row => row.scaled > row.font), true, 'rail controls follow root font enlargement');
+    report.samples.push({ rootFontScaling: scaled });
     await page.locator('#host').evaluate(el=>el.className='homeDialogue');
     const fold = page.locator('[data-message-fold-toggle="long"]');
     await fold.click(); check(await fold.getAttribute('aria-expanded'),'true','fold click expands');

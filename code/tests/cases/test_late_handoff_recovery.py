@@ -35,7 +35,8 @@ def recover(monkeypatch, finished_at, *, facade=False):
     monkeypatch.setattr(reconciliation, "settle_program_paths", lambda *_args: [])
     lineage = {"lineage_id": LINEAGE, "nodes": [{"id": MEMBER}]}
     ports = SimpleNamespace(
-        state=SimpleNamespace(read_lineage=lambda *_args, **_kwargs: lineage, ensure_manager=lambda *_args: None),
+        state=SimpleNamespace(read_lineage=lambda *_args, **_kwargs: lineage, ensure_manager=lambda *_args: None,
+                              lineage_scope=lambda *_args, **_kwargs: nullcontext()),
         directory=SimpleNamespace(lineage_execution_authority=lambda _lineage: nullcontext()),
         # The Context was cleared since, so the Chat no longer shows the turn.
         resident=SimpleNamespace(
