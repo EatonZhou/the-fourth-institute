@@ -494,18 +494,26 @@
           const region = section("视频讲解", String(++index).padStart(2, "0"));
           tasks.push(moduleTask(region, () => value.video ? renderVideo(region, value.video, key) : plannedVideo(region, value.video_plan, key), key));
         }
-        if (value.interaction) {
-          const region = section(value.interaction.title || "动手探索", String(++index).padStart(2, "0"));
+        if (value.interaction || value.supplement) {
+          const region = section("图文解释", String(++index).padStart(2, "0"));
           tasks.push(moduleTask(region, async () => {
-            const content = await read(value.interaction, limits.interaction, key);
-            if (!current(key)) return;
-            const panel = node("div", null, "homeExplanationDemo"); region.append(panel);
-            disposers.add(mountInteraction(panel, decode(content.bytes), value.interaction.title || t("交互演示"), value.interaction.height));
-          }, key));
-        }
-        if (value.supplement) {
-          const region = section("图片与文字解释补充", String(++index).padStart(2, "0"));
-          tasks.push(moduleTask(region, async () => {
+            // The interactive document owns the complete illustrated narrative.
+            // Markdown is its static reading alternative, not a second chapter.
+            if (value.interaction) {
+              let panel;
+              try {
+                const content = await read(value.interaction, limits.interaction, key);
+                if (!current(key)) return;
+                panel = node("div", null, "homeExplanationDemo"); region.append(panel);
+                const dispose = mountInteraction(panel, decode(content.bytes), value.interaction.title || t("图文解释"), value.interaction.height);
+                disposers.add(dispose);
+                return;
+              } catch (error) {
+                panel?.remove();
+                if (!current(key) || error.name === "AbortError" || !value.supplement) throw error;
+                failure(region, error);
+              }
+            }
             const content = await read(value.supplement, limits.text, key);
             if (!current(key)) return;
             const body = node("div", null, "homeExplanationSupplement"); region.append(body);

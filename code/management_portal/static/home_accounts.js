@@ -261,6 +261,7 @@
 
     const accountIntakePending = new Map();
     const accountConcurrencyEdits = new Map();
+    const accountThresholdEdits = new Map();
     let accountDetails = null;
 
     function accountConcurrencyRows(account) {
@@ -310,6 +311,88 @@
       } catch (error) {
         edit.error = true;
         edit.feedback = window.PortalUI.errorMessage(window.PortalI18n.t("保存并行数"), error);
+      } finally {
+        edit.pending = false;
+        renderAccountDetails();
+      }
+    }
+
+    function accountThresholdHtml(account) {
+      const rows = accountConcurrencyRows(account);
+      if (!rows.length) return "";
+      return window.PortalI18n.html`<section class="account-concurrency account-close-threshold"><h4>Close 阈值</h4>${rows.map(row => {
+        const state = accountDetails?.thresholds?.get(row.account_id);
+        const threshold = state ? state.route?.close_threshold : row.close_threshold;
+        const edit = accountThresholdEdits.get(row.account_id);
+        const known = threshold?.supported && Number.isFinite(threshold.value) && ["percent", "balance"].includes(threshold.metric) && threshold.unit;
+        const label = threshold?.metric === "balance" ? window.PortalI18n.t("剩余余额") : window.PortalI18n.t("剩余额度");
+        const changedUnit = edit?.value !== undefined && (edit.metric !== threshold?.metric || edit.unit !== threshold?.unit);
+        const disabled = !currentCanSetScheduler() || !known || state?.loading || edit?.pending;
+        return window.PortalI18n.html`<form data-account-threshold="${esc(row.account_id)}" data-threshold-metric="${esc(threshold?.metric)}" data-threshold-unit="${esc(threshold?.unit)}">
+          <label><span>${account.details_scope === "model_api" ? window.PortalI18n.html`${esc(row.account_id)} · ` : ""}${esc(label)}${threshold?.unit ? window.PortalI18n.html` (${esc(threshold.unit)})` : ""}</span><input type="number" name="close_threshold" min="0" ${threshold?.metric === "percent" ? 'max="100"' : ""} step="any" required aria-label="${esc(window.PortalI18n.text`${row.account_id} Close 阈值 (${threshold?.unit || "—"})`)}" value="${esc(edit?.value ?? (known ? threshold.value : ""))}" ${disabled ? "disabled" : ""}></label>
+          ${currentCanSetScheduler() ? window.PortalI18n.html`<button type="submit" class="portalButton is-compact" ${disabled || changedUnit ? "disabled" : ""}>${edit?.pending ? window.PortalI18n.t("保存中…") : window.PortalI18n.t("保存")}</button>` : ""}
+          ${state?.loading ? window.PortalI18n.markup('<p role="status">正在读取阈值…</p>') : state?.error ? window.PortalI18n.html`<p role="alert">${esc(state.error)}</p>` : changedUnit ? window.PortalI18n.markup('<p role="alert">阈值单位已变化，请重新输入</p>') : edit?.feedback ? window.PortalI18n.html`<p role="${edit.error ? "alert" : "status"}">${esc(edit.feedback)}</p>` : !known ? window.PortalI18n.markup('<p role="status">当前账号的阈值设置暂不可用，请刷新</p>') : ""}
+        </form>`;
+      }).join("")}<p class="account-details-note">剩余量达到阈值时自动暂停接单；设为 0 关闭阈值保护，额度耗尽仍会暂停。</p></section>`;
+    }
+
+    async function loadAccountThresholds(details, version) {
+      const account = executionAccounts(currentAgentStatusData()).find(row => row.account_id === details.accountId);
+      details.thresholds ||= new Map();
+      await Promise.all(accountConcurrencyRows(account).map(async row => {
+        const id = row.account_id;
+        if (accountThresholdEdits.get(id)?.pending) return;
+        const state = {loading: true};
+        details.thresholds.set(id, state);
+        try {
+          const result = await window.PortalInstructionClient.execute("ListProviderAccounts", {account_id: id}, {signal: details.abort.signal});
+          if (version !== details.requestVersion || details !== accountDetails || !details.popover.isOpen() || details.thresholds.get(id) !== state) return;
+          state.route = result.accounts?.find(item => item.account_id === id);
+          if (!state.route?.close_threshold) throw new Error("阈值设置不可用，请刷新后重试");
+        } catch (error) {
+          state.error = window.PortalUI.errorMessage(window.PortalI18n.t("读取 Close 阈值"), error);
+        } finally {
+          state.loading = false;
+          if (version === details.requestVersion && details === accountDetails && details.popover.isOpen()) renderAccountDetails();
+        }
+      }));
+    }
+
+    async function saveAccountThreshold(form) {
+      const id = form.dataset.accountThreshold;
+      if (!currentCanSetScheduler() || accountThresholdEdits.get(id)?.pending || form.elements.close_threshold.disabled || !form.reportValidity()) return;
+      const value = Number(form.elements.close_threshold.value);
+      const {thresholdMetric: metric, thresholdUnit: unit} = form.dataset;
+      if (!Number.isFinite(value) || value < 0 || (metric === "percent" && value > 100)) return;
+      const previous = accountThresholdEdits.get(id);
+      if (previous?.value !== undefined && (previous.metric !== metric || previous.unit !== unit)) return;
+      const edit = {value, metric, unit, pending: true};
+      accountThresholdEdits.set(id, edit);
+      const state = accountDetails?.thresholds?.get(id);
+      renderAccountDetails();
+      try {
+        const latest = await window.PortalInstructionClient.execute("ListProviderAccounts", {account_id: id});
+        const route = latest.accounts?.find(row => row.account_id === id);
+        const threshold = route?.close_threshold;
+        if (!threshold?.supported || !["percent", "balance"].includes(metric) || threshold.metric !== metric || threshold.unit !== unit) throw new Error("阈值单位不可用或已变化，请刷新后重新输入");
+        if (!Number.isInteger(route.max_concurrency) || ![route.dispatch_interval_min_seconds, route.dispatch_interval_max_seconds].every(Number.isFinite)) throw new Error("执行账号设置不可用，请刷新后重试");
+        const result = await window.PortalInstructionClient.execute("UpdateProviderAccount", {
+          account_id: id, max_concurrency: route.max_concurrency,
+          dispatch_interval_min_seconds: route.dispatch_interval_min_seconds,
+          dispatch_interval_max_seconds: route.dispatch_interval_max_seconds,
+          [metric === "percent" ? "close_threshold_percent" : "close_threshold_amount"]: value,
+        }, {idempotencyKey: `account-threshold:${id}:${globalThis.PortalUIPrimitives.randomUUID()}`});
+        if (state) state.route = {...route, ...result.settings};
+        for (const account of executionAccounts(currentAgentStatusData())) {
+          for (const row of accountConcurrencyRows(account)) {
+            if (row.account_id === id) Object.assign(row, result.settings);
+          }
+        }
+        edit.value = undefined;
+        edit.feedback = window.PortalI18n.t("已保存");
+      } catch (error) {
+        edit.error = true;
+        edit.feedback = window.PortalUI.errorMessage(window.PortalI18n.t("保存 Close 阈值"), error);
       } finally {
         edit.pending = false;
         renderAccountDetails();
@@ -418,7 +501,7 @@
       }
       details.trigger?.setAttribute("aria-expanded", "false");
       details.panel.replaceChildren();
-      Object.assign(details, { accountId, trigger: button, snapshot: null, error: "", result: "", moreExpanded: false });
+      Object.assign(details, { accountId, trigger: button, snapshot: null, error: "", result: "", moreExpanded: false, thresholds: new Map() });
       const bounds = button.getBoundingClientRect();
       details.popover.open({ x: bounds.left, y: bounds.bottom });
       syncAccountDetailsButtons();
@@ -440,6 +523,7 @@
       }
       details.loading = true;
       details.error = "";
+      void loadAccountThresholds(details, version);
       renderAccountDetails();
       try {
         const scope = executionAccounts(currentAgentStatusData()).find(item => item.account_id === accountId)?.details_scope;
@@ -487,9 +571,10 @@
       const focusedElement = details.panel.contains(document.activeElement) ? document.activeElement : null;
       const focused = focusedElement?.dataset.accountAction;
       const focusedRoute = focusedElement?.closest("[data-account-concurrency]")?.dataset.accountConcurrency;
+      const focusedThreshold = focusedElement?.closest("[data-account-threshold]")?.dataset.accountThreshold;
       const focusedControl = focusedElement?.tagName;
       details.panel.innerHTML = window.PortalI18n.html`<header><strong>${esc(details.accountId)} · ${window.PortalI18n.t("详情")}</strong><button class="portalButton is-compact" type="button" data-account-action="close" aria-label="关闭账号详情">×</button></header>
-    <div class="account-details-body">${accountQuotaWarning(account, true)}${accountCreditsHtml(account)}${accountConcurrencyHtml(account)}${body}${details.result ? window.PortalI18n.html`<p role="status" data-account-result>${esc(details.result)}</p>` : ""}</div>
+    <div class="account-details-body">${accountQuotaWarning(account, true)}${accountCreditsHtml(account)}${accountConcurrencyHtml(account)}${accountThresholdHtml(account)}${body}${details.result ? window.PortalI18n.html`<p role="status" data-account-result>${esc(details.result)}</p>` : ""}</div>
     <footer><div class="account-details-actions"><button class="portalButton is-compact" type="button" data-account-action="refresh" ${details.loading || busy ? "disabled" : ""}>刷新</button>
       ${billingUrl ? window.PortalI18n.html`<a class="portalButton is-compact" data-account-action="billing" href="${esc(billingUrl)}" title="${esc(billingUrl)}" target="_blank" rel="noopener noreferrer">充值 / 账单</a>` : ""}
       </div>
@@ -503,6 +588,14 @@
         form.addEventListener("input", () => accountConcurrencyEdits.set(form.dataset.accountConcurrency, {value: form.elements.max_concurrency.value}));
         form.addEventListener("submit", event => { event.preventDefault(); void saveAccountConcurrency(form); });
         if (form.dataset.accountConcurrency === focusedRoute) form.querySelector(`${focusedControl}:not(:disabled)`)?.focus({preventScroll: true});
+      });
+      details.panel.querySelectorAll('[data-account-threshold]').forEach(form => {
+        form.addEventListener("input", () => {
+          accountThresholdEdits.set(form.dataset.accountThreshold, {value: form.elements.close_threshold.value, metric: form.dataset.thresholdMetric, unit: form.dataset.thresholdUnit});
+          form.querySelector('button')?.removeAttribute("disabled");
+        });
+        form.addEventListener("submit", event => { event.preventDefault(); void saveAccountThreshold(form); });
+        if (form.dataset.accountThreshold === focusedThreshold) form.querySelector(`${focusedControl}:not(:disabled)`)?.focus({preventScroll: true});
       });
       details.panel.querySelector(".account-details-more")?.addEventListener("toggle", event => {
         if (!event.currentTarget.isConnected) return;

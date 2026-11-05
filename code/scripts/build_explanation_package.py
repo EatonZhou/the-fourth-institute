@@ -62,7 +62,7 @@ def build(directory: Path, address: str, *, title: str, summary: str = "", revis
         if filename:
             manifest[key] = asset(filename)
     if interaction:
-        manifest["interaction"]["title"] = "交互图解"
+        manifest["interaction"]["title"] = "图文解释"
     if captions:
         manifest["video"]["captions"] = asset(captions)
     if transcript:

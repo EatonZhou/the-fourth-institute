@@ -135,6 +135,37 @@ const check = (name, actual, expected) => { assert.deepEqual(actual, expected, n
       window.adapter = PortalHomeExplanationView.create({ root: document.getElementById('root'), onOpen: x => opens.push(x), onChange: x => changes.push(x.accessStatus) });
       await adapter.show(target, { requestId: 'fixture-request' });
     }, target);
+    if (process.argv.includes('--illustrated-only')) {
+      const headings = () => page.locator('.homeExplanationSectionHead h2').allTextContents();
+      await setup(planned);
+      check('one illustrated narrative follows the optional video', await headings(), ['视频讲解', '图文解释']);
+      check('interactive document replaces duplicated static chapter', await page.locator('.homeExplanationSupplement').count(), 0);
+      const demo = () => page.frameLocator('.homeExplanationInteraction').frameLocator('iframe');
+      await demo().getByRole('button', { name: '沙发', exact: true }).click();
+      check('the unified narrative remains interactive', await demo().locator('#answer').textContent(), '沙发 · 20%');
+      if (out) await page.screenshot({ path: path.join(out, 'illustrated-desktop.png'), fullPage: true });
+      await page.setViewportSize({ width: 390, height: 844 });
+      await page.evaluate(() => { document.documentElement.dataset.theme = 'dark'; document.documentElement.style.setProperty('--portal-font-size', '24px'); });
+      check('unified section has no horizontal overflow', await page.locator('#root').evaluate(el => el.scrollWidth <= el.clientWidth + 1), true);
+      if (out) await page.screenshot({ path: path.join(out, 'illustrated-390.png'), fullPage: true });
+      await setup(manifest('text-only', { ...base, quality: 'low', interaction: undefined, video_plan: undefined }));
+      check('static reading uses the same single section', await headings(), ['图文解释']);
+      check('static reading remains available', await page.locator('.homeExplanationSupplement article').count(), 1);
+      check('static reading remains escaped', await page.evaluate(() => !!window.injected), false);
+      deniedAddress = interaction.address; await setup(planned);
+      check('unreadable interaction preserves readable prose in the same section', await headings(), ['视频讲解', '图文解释']);
+      check('failure preserves the static reading alternative', await page.locator('.homeExplanationSupplement article').count(), 1);
+      check('failure is visible rather than silently replaced', await page.getByText('当前账号无权读取此内容。', { exact: true }).count(), 1);
+      deniedAddress = ''; await page.getByRole('button', { name: '重试', exact: true }).click();
+      await demo().getByRole('button', { name: '沙发', exact: true }).waitFor();
+      check('successful retry removes the static alternative', await page.locator('.homeExplanationSupplement').count(), 0);
+      await setup(manifest('interactive-only', { ...base, supplement: undefined }));
+      check('interactive-only packages need no extra prose file', await headings(), ['视频讲解', '图文解释']);
+      check('reading and retries do not request generation or review', requests.filter(r => r.method === 'POST').length, 0);
+      check('unified narrative has no browser errors', errors, []);
+      console.log(JSON.stringify({ checks, errors }));
+      return;
+    }
     if (process.argv.includes('--preview-only')) {
       await setup(fixed);
       await page.evaluate(() => { adapter.destroy(); delete window.PortalHomeExplanationView; });
@@ -403,7 +434,7 @@ const check = (name, actual, expected) => { assert.deepEqual(actual, expected, n
       return;
     }
     check('no implicit generation', requests.filter(r => r.method === 'POST').length, 0);
-    check('plan opens native supplement and interactive page', await page.locator('.homeExplanationSupplement article').count(), 1);
+    check('plan opens one interactive narrative without a duplicated chapter', await page.locator('.homeExplanationSupplement article').count(), 0);
     check('native Home host gives interactive diagram the reading width', await page.locator('.homeExplanationInteraction').evaluate(el => el.getBoundingClientRect().width > Math.min(800, innerWidth * .7)), true);
     check('normal markdown stays escaped', await page.evaluate(() => !!window.injected), false);
     const demo = () => page.frameLocator('.homeExplanationInteraction').frameLocator('iframe');
@@ -484,8 +515,8 @@ const check = (name, actual, expected) => { assert.deepEqual(actual, expected, n
     deny = true; await setup(fixed);
     check('revoked manifest hides all old content', await page.locator('.homeExplanationSection').count(), 0);
     deny = false; await page.getByRole('button', { name: '重试', exact: true }).click();
-    await page.locator('.homeExplanationSupplement article').waitFor();
-    check('retry uses fresh authorization', await page.locator('.homeExplanationSupplement article').count(), 1);
+    await page.locator('.homeExplanationInteraction').waitFor();
+    check('retry uses fresh authorization', await page.locator('.homeExplanationInteraction').count(), 1);
     state = { status: 'generating', job_id: 'fixture-job' }; await setup(planned);
     const pollCount = requests.filter(r => r.url).length;
     state = { status: 'ready', job_id: 'fixture-job', video_url: '/api/resources/content?address=' + encodeURIComponent(videoRef.address) };
@@ -498,7 +529,7 @@ const check = (name, actual, expected) => { assert.deepEqual(actual, expected, n
     check('identity switch never fetches old history as new actor', requests.length, requestCount);
     check('identity switch discards content', await page.locator('video,iframe,article').count(), 0);
     await page.evaluate(() => { viewer = 'fixture'; });
-    delayed = supplement.address;
+    delayed = interaction.address;
     await page.evaluate(target => { adapter.destroy(); adapter = PortalHomeExplanationView.create({ root: document.getElementById('root') }); window.pending = adapter.show(target); }, fixed);
     await page.waitForFunction(() => !!document.querySelector('.homeExplanationHeader'));
     await page.evaluate(() => adapter.destroy()); releases.forEach(release => release()); releases = []; delayed = '';

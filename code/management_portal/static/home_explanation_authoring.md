@@ -22,6 +22,12 @@ medium/high 解释页即使尚未编写 `video_plan` 也保留“生成讲解视
 
 这些作品提供质量参照，不规定固定配色、图表类型或模块数量。不得复制整页内容或把其中的研究结论移植为自己的实验结果。D3 是实现数据驱动图形的工具；是否使用它不决定作品质量。
 
+## 一个完整的图文解释区
+
+“图文解释”是统一的解释正文，文字、图片、公式、图表与可操作的图解沿同一条叙事组织。使用交互文档时，把必要的背景、推导、结论与适用边界直接写进该文档，让读者在说明旁操作和观察；不要把它做成独立小演示，再在下方重复一篇“解释补充”。视频讲解仍是单独的可选区域。
+
+清单的 `interaction` 是这个区域的完整交互文档；`supplement` 是没有交互文档时的静态正文，或交互文档读取失败时的可读副本。同包两者并存时，正常页面只呈现 `interaction`，不会另外渲染补充章节；供阅读理解所必需的内容必须在交互文档中完整表达。来源与延伸阅读仍可单列。字段名属于素材合同，不代表两个页面区域，旧固定包和审核记录保持原样。
+
 ## 先定义读者要弄懂什么
 
 动手前用三句话写清：读者当前困惑；他读完后能做出的判断；怎样用一个具体例子验证这种理解。随后选取能揭示该关系的表达。
@@ -131,8 +137,7 @@ high 质量的独立检查在生成内容完成后读取固定版本、实际打
   "summary": "读者将理解的关系",
   "revision": 1,
   "quality": "medium",
-  "interaction": {"address": "workspace_ID/file/包目录/interaction.html", "sha256": "实际64位SHA256", "title": "互动图解"},
-  "supplement": {"address": "workspace_ID/file/包目录/supplement.md", "sha256": "实际64位SHA256"},
+  "interaction": {"address": "workspace_ID/file/包目录/interaction.html", "sha256": "实际64位SHA256", "title": "图文解释"},
   "video_plan": {"address": "workspace_ID/file/包目录/generation-plan.json", "sha256": "实际64位SHA256"},
   "sources": [{"label": "原始材料", "url": "https://原始材料页面"}]
 }
@@ -158,17 +163,17 @@ audio 为同包固定 MP3 或 PCM16 WAV 的正式 address/sha256。Portal检查�
 
 high 视频保存完成后，服务使用经核验负责 Resident 所属 Family 的“讲解视频独立检查”成员，并发送固定 manifest、视频、字幕、讲稿及来源引用；审核角色已在正式高质量创作请求受理时准备，缺失时由同一 Family 机制补齐，不再全局找人。检查员使用自身权限。`submitted` 表示任务已投递，只有固定版本的正式审核记录为 `passed` 才表示通过。`changes_requested` 要求作者另存修订后重审；`blocked`、`cancelled`、`submission_failed` 保留真实原因，不自动降级。low/medium 不要求独立送审。页面的独立检查重试对应 `POST /api/home-explanation/media/review`，提交 `{address,sha256,quality}`，按原请求 actor 重试，保留播放器、不重编码；送检重试有上限。GET、刷新和重开不自动投递。
 
-常用构建入口（占位值需替换为自己正式绑定与文件）：
+常用构建入口（占位值需替换为自己正式绑定与文件；无交互的纯图文用 `--supplement reading.md` 替代 `--interaction`，需要静态可读副本时才同时传两者）：
 
 ```bash
 python3 scripts/build_explanation_package.py '<包目录>' \
   --address 'workspace_ID/file/<包目录>' --title '<主题>' \
-  --interaction interaction.html --supplement supplement.md \
+  --interaction interaction.html \
   --video-plan generation-plan.json --resident-id '<自己的ResidentID>' \
   --quality high --task '<读者当前困惑、读完能判断什么>'
 ```
 
-构建命令必须显式填写 `--quality`，采用本次有效质量要求；省略时在写入前报错，避免遗漏参数把 high 默认为 medium 并跳过审查。构建器核对文件、生成固定摘要清单，再经当前作者身份的 HATG ReadResource 回读；选择 high 时触发独立检查，low/medium 不强制送审。它用 SearchResidents 发现唯一可投递的“解释页独立检查”；也可用 `--reviewer` 指定已正式查得的检查 Resident。检查者不能是作者本人。不直接读取别人的凭据，也不代签通过。
+构建命令必须显式填写 `--quality`，采用本次有效质量要求；省略时在写入前报错，避免遗漏参数把 high 默认为 medium 并跳过审查。构建器核对文件、生成固定摘要清单，再经当前作者身份的 HATG ReadResource 回读；选择 high 时触发独立检查，low/medium 不强制送审。它使用负责 Resident 本 Family 内已准备的“解释页独立检查”；`--reviewer` 也必须与该 Family 对应审核角色一致。检查者不能是作者本人。不直接读取别人的凭据，也不代签通过。
 
 完成视频创作任务时，负责 Resident 本人在上述构建命令中增加 `--authoring-id '<正式任务ID>'`，并使用任务规定的 `--quality medium` 或 `--quality high`、新包目录与修订。构建器先保存并回读新清单，再回填创作任务；选择 high 时，回填成功后才送独立检查。回填失败须保留失败，不把已保存的包视为已完成任务，也不继续送审。
 

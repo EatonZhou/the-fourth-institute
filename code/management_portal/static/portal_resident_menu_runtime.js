@@ -66,6 +66,24 @@
             const root = $id("nodeMenuRuntime");
             const focus = root.contains(document.activeElement) ? document.activeElement?.dataset.menuRuntime : null;
             root.innerHTML = rows.map(([label, value]) => window.PortalI18n.html`<button class="residentMenuSetting" type="button" data-menu-runtime="${label}" aria-haspopup="dialog" ${disabled ? "disabled" : ""}><span>${label}</span><strong>${esc(value)}</strong><span aria-hidden="true">›</span></button>`).join("");
+            const quotaSwitch = view.quotaSwitch;
+            if (typeof quotaSwitch?.auto_switch_on_quota === "boolean") {
+              const row = document.createElement("div"); row.className = "familyAutoMigrateSetting";
+              const label = document.createElement("span"); label.textContent = window.PortalI18n.t("在当前帐号额度用完时是否自动切换");
+              const toggle = document.createElement("button"); toggle.type = "button";
+              toggle.className = "portalButton residentMenuToggle"; toggle.dataset.menuQuotaSwitch = "1";
+              toggle.setAttribute("role", "switch"); toggle.setAttribute("aria-label", label.textContent);
+              toggle.setAttribute("aria-checked", String(quotaSwitch.auto_switch_on_quota));
+              toggle.disabled = disabled || !view.canEdit;
+              toggle.title = window.PortalI18n.t("开启后仅按默认帐号选择排序切换；关闭时额度不足会打开手动选择。未修改时沿用既有策略。");
+              toggle.onclick = async () => {
+                toggle.disabled = true;
+                try { await context.runtimeController.saveSettings({auto_switch_on_quota: !quotaSwitch.auto_switch_on_quota}); }
+                catch (error) { if (menuState.nodeMenuContext === context) nodeMenuNotice(error.message); }
+                finally { if (menuState.nodeMenuContext === context) context.runtimeController.load().catch(() => {}); }
+              };
+              row.append(label, toggle); root.append(row);
+            }
             if (focus) root.querySelector(`[data-menu-runtime="${CSS.escape(focus)}"]`)?.focus();
           },
           onChanged: () => { if (menuState.nodeMenuContext === context) void loadNodeMenuSession({force: true}); },
