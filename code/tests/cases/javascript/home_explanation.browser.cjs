@@ -135,6 +135,65 @@ const check = (name, actual, expected) => { assert.deepEqual(actual, expected, n
       window.adapter = PortalHomeExplanationView.create({ root: document.getElementById('root'), onOpen: x => opens.push(x), onChange: x => changes.push(x.accessStatus) });
       await adapter.show(target, { requestId: 'fixture-request' });
     }, target);
+    if (process.argv.includes('--document-flow-only')) {
+      const paragraphs = Array.from({ length: 25 }, (_, i) => `<section><h3>第${i + 1}步：比较两条轨迹</h3><p>同一条规则，从相近起点出发。改变初始条件，再比较两次计算的轨迹与差值；规则、时间和坐标尺度保持一致。</p></section>`).join('');
+      const reading = put('flow.html', `<!doctype html><style>html,body{height:100%;overflow:auto}body{margin:0;font:inherit}section{margin:28px 0}h3{margin:0}p{margin:12px 0}button{font:inherit}svg{display:block;width:100%;height:120px}#extra{height:600px;background:var(--panel)}</style><h2>两条轨迹，同一条规则</h2><p>从正文开始，沿图示读到结论。</p><button id="expand">展开推导</button><div id="extra" hidden>展开内容增高后，下面的正文自然下移。</div><svg viewBox="0 0 600 120" aria-label="轨迹"><path d="M0 90 Q150 0 300 90 T600 90" fill="none" stroke="blue" stroke-width="3"/></svg>${paragraphs}<button id="end">读到结尾</button><output id="done"></output><script>document.getElementById('expand').onclick=()=>{const el=document.getElementById('extra');el.hidden=!el.hidden};document.getElementById('end').onclick=()=>document.getElementById('done').textContent='结尾操作完成';</script>`, 'text/html');
+      const target = manifest('flow', { ...base, interaction: { ...reading, height: 240 }, video_plan: undefined, supplement: undefined });
+      await setup(target);
+      const demo = () => page.frameLocator('.homeExplanationInteraction').frameLocator('iframe');
+      const size = () => page.locator('.homeExplanationInteraction').evaluate(el => el.getBoundingClientRect().height);
+      const settled = async () => {
+        await page.waitForFunction(() => document.querySelector('.homeExplanationInteraction')?.getBoundingClientRect().height > 240);
+        await demo().locator('body').evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+      };
+      await settled();
+      const initial = await size();
+      check('long illustrated prose extends beyond the old fixed viewport', initial > 2500, true);
+      check('no visible frame border or clipped demo region', await page.locator('.homeExplanationDemo').evaluate(el => {
+        const s = getComputedStyle(el); return [s.borderTopWidth, s.overflowY];
+      }), ['0px', 'visible']);
+      check('document contents fit the expanded surface', await demo().locator('body').evaluate(el => el.scrollHeight <= innerHeight + 1), true);
+      const surface = page.locator('.homeExplanationInteraction');
+      await page.locator('#root').evaluate(el => { el.scrollTop = el.querySelector('.homeExplanationDemo').offsetTop - el.offsetTop - 100; });
+      const box = await surface.boundingBox();
+      await page.mouse.move(box.x + 100, Math.max(120, box.y + 80));
+      const beforeWheel = await page.locator('#root').evaluate(el => el.scrollTop);
+      await page.mouse.wheel(0, 700);
+      await page.waitForFunction(before => document.getElementById('root').scrollTop > before + 400, beforeWheel);
+      check('wheel over illustrated content scrolls the report only', await demo().locator('html').evaluate(() => scrollY), 0);
+      await demo().locator('#expand').click();
+      await page.waitForFunction(initial => document.querySelector('.homeExplanationInteraction').offsetHeight >= initial + 599, initial);
+      check('expanded derivation becomes part of the report height', await size() >= initial + 599, true);
+      await demo().locator('#expand').click();
+      await page.waitForFunction(initial => Math.abs(document.querySelector('.homeExplanationInteraction').offsetHeight - initial) <= 1, initial);
+      checks.push('collapsing derivation shrinks the report without a viewport height floor');
+      await demo().locator('#end').focus(); await page.keyboard.press('Enter');
+      check('keyboard can reach and operate the end of long prose', await demo().locator('#done').textContent(), '结尾操作完成');
+      const endBounds = await demo().locator('#end').boundingBox();
+      check('last control is visible through report scrolling', endBounds.y >= 0 && endBounds.y + endBounds.height <= 1000, true);
+      if (out) await page.screenshot({ path: path.join(out, 'flow-end-desktop.png') });
+      await page.locator('#root').evaluate(el => { el.scrollTop = 0; });
+      if (out) await page.screenshot({ path: path.join(out, 'flow-start-desktop.png') });
+      await page.setViewportSize({ width: 390, height: 844 });
+      await page.locator('#root').evaluate(el => { el.style.fontSize = '24px'; });
+      await setup(target); await settled();
+      check('inherited prose typography follows the report font size', await demo().locator('body').evaluate(el => getComputedStyle(el).fontSize), '24px');
+      check('narrow large-text prose has no horizontal overflow', await demo().locator('body').evaluate(el => el.scrollWidth <= innerWidth + 1), true);
+      check('narrow host has one vertical scrolling surface', await page.locator('#root').evaluate(el => el.scrollHeight > el.clientHeight && el.scrollWidth <= el.clientWidth + 1), true);
+      check('long narrow prose remains fully expanded', await demo().locator('body').evaluate(el => el.scrollHeight <= innerHeight + 1), true);
+      await page.locator('#root').evaluate(el => { el.scrollTop = el.querySelector('.homeExplanationDemo').offsetTop - el.offsetTop - 100; });
+      if (out) await page.screenshot({ path: path.join(out, 'flow-390.png') });
+      const heightBefore = await size();
+      await page.evaluate(() => window.postMessage({ type: 'portal-explanation-layout', height: 999999, channel: 'wrong' }, '*'));
+      await page.waitForTimeout(60);
+      check('unrelated layout messages cannot resize the explanation', await size(), heightBefore);
+      await page.evaluate(() => adapter.destroy());
+      check('closing the report removes the layout source', await page.locator('iframe').count(), 0);
+      check('continuous prose has no browser errors', errors, []);
+      check('reading continuous prose does not generate or resubmit', requests.filter(r => r.method === 'POST').length, 0);
+      console.log(JSON.stringify({ checks, errors }));
+      return;
+    }
     if (process.argv.includes('--mount-lifecycle-only')) {
       await setup(planned);
       const target = manifest('detached', { ...base, video_plan: undefined });

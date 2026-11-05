@@ -50,7 +50,7 @@
 .homeExplanationChapters .homeExplanationButton { display: inline-flex; gap: 10px; align-items: baseline; font-size: .86em; }
 .homeExplanationChapters span { color: var(--muted, #536078); font-variant-numeric: tabular-nums; }
 .homeExplanationInteraction { display: block; width: 100%; border: 0; background: var(--panel, #fff); }
-.homeExplanationDemo { border: 1px solid var(--border, #d6dde8); border-radius: 12px; overflow: hidden; }
+.homeExplanationDemo { min-width: 0; }
 .homeExplanation .homeExplanationSupplement { padding: 0; border: 0; background: transparent; max-height: none; }
 .homeExplanationSupplement .markdownBody { font-size: inherit; line-height: 1.75; }
 .homeExplanationSupplement pre { max-width: 100%; overflow-x: auto; }

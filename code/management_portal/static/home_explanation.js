@@ -89,10 +89,40 @@
     return url.href;
   }
 
-  // Local demos use the same opaque-inner / trusted-empty-outer boundary as
+  // Runs inside the opaque document. Only its layout size crosses the boundary;
+  // it receives no host credentials, resource API or document access.
+  function observeInteractionLayout(channel) {
+    let pending = false, previous = 0;
+    const measure = () => {
+      pending = false;
+      const body = document.body;
+      if (!body) return;
+      // Do not measure documentElement.scrollHeight: it includes the old iframe
+      // viewport, preventing the document from shrinking when details collapse.
+      const bounds = body.getBoundingClientRect();
+      const height = Math.max(1, Math.ceil(Math.max(bounds.height, body.scrollHeight) + Math.max(0, bounds.top + scrollY)));
+      if (height !== previous) {
+        previous = height;
+        parent.parent.postMessage({ type: "portal-explanation-layout", channel, height }, "*");
+      }
+    };
+    const schedule = () => {
+      if (!pending) { pending = true; requestAnimationFrame(measure); }
+    };
+    document.addEventListener("DOMContentLoaded", () => {
+      new ResizeObserver(schedule).observe(document.body);
+      new MutationObserver(schedule).observe(document.body, { subtree: true, childList: true, attributes: true, characterData: true });
+      document.addEventListener("load", schedule, true);
+      document.fonts?.ready.then(schedule);
+      schedule();
+    }, { once: true });
+    window.addEventListener("resize", schedule);
+  }
+
+  // Interactive prose uses the same opaque-inner / trusted-empty-outer boundary as
   // projection_host. The outer frame's CSP also blocks inner self-navigation.
   // No SDK, host callbacks, credentials or business APIs enter this document.
-  function mountInteraction(container, html, title, height) {
+  function mountInteraction(container, html, title) {
     // Template contents are inert even for image loads during parsing.
     const template = document.createElement("template"); template.innerHTML = html;
     const parsed = document.implementation.createHTMLDocument(""); parsed.body.append(template.content);
@@ -104,11 +134,21 @@
     const style = parsed.createElement("style");
     const computed = getComputedStyle(container.isConnected ? container : document.body);
     const color = name => computed.getPropertyValue(name).trim().replace(/[;{}<>]/g, "");
-    style.textContent = `:root{color-scheme:${computed.colorScheme || "light"};--bg:${color("--panel") || "#fff"};--panel:${color("--panel") || "#fff"};--text:${color("--text") || "#192234"};--muted:${color("--muted") || "#536078"};--border:${color("--border") || "#d6dde8"};--accent:${color("--accent") || "#365edb"}}*{box-sizing:border-box}body{margin:0;padding:16px;background:var(--panel);color:var(--text);font:${computed.fontSize} / 1.6 system-ui,sans-serif}button,input,select{font:inherit}button,input[type=range],select{min-height:44px}button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--accent);outline-offset:2px}img,svg,canvas{max-width:100%}@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}`;
+    style.textContent = `:root{font-size:${computed.fontSize};color-scheme:${computed.colorScheme || "light"};--bg:${color("--panel") || "#fff"};--panel:${color("--panel") || "#fff"};--text:${color("--text") || "#192234"};--muted:${color("--muted") || "#536078"};--border:${color("--border") || "#d6dde8"};--accent:${color("--accent") || "#365edb"}}*{box-sizing:border-box}body{display:flow-root;margin:0;background:var(--panel);color:var(--text);font:${computed.fontSize} / 1.6 system-ui,sans-serif}button,input,select{font:inherit}button,input[type=range],select{min-height:44px}button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--accent);outline-offset:2px}img,svg,canvas{max-width:100%}@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}`;
     parsed.head.prepend(policy, style);
+    // The report owns vertical scrolling. The authored document contributes its
+    // full natural height instead of introducing another viewport or frame border.
+    const flow = parsed.createElement("style");
+    flow.textContent = "html,body{height:auto!important;min-height:0!important;max-height:none!important}html{overflow:hidden!important}body{overflow:visible!important;margin:0!important;padding:0!important}";
+    parsed.body.append(flow);
+    const channel = Array.from(crypto.getRandomValues(new Uint32Array(4)), value => value.toString(16)).join("-");
+    const layout = parsed.createElement("script");
+    layout.textContent = `(${observeInteractionLayout.toString()})(${JSON.stringify(channel)});`;
+    parsed.head.append(layout);
     const surface = node("iframe", null, "homeExplanationInteraction");
     surface.title = title; surface.referrerPolicy = "no-referrer";
-    surface.style.height = `${Math.min(1200, Math.max(240, Number(height) || 480))}px`;
+    surface.setAttribute("scrolling", "no");
+    surface.style.height = "1px";
     // Preview may finish loading before its host is connected, and a host can
     // later be reparented. Serialize the trusted wrapper instead of touching an
     // about:blank contentDocument that is absent (or discarded) in those states.
@@ -120,11 +160,28 @@
     outer.body.style.cssText = "margin:0;height:100%;overflow:hidden";
     const inner = outer.createElement("iframe"); inner.title = title;
     inner.setAttribute("sandbox", "allow-scripts"); inner.referrerPolicy = "no-referrer";
+    inner.setAttribute("scrolling", "no");
     inner.style.cssText = "display:block;width:100%;height:100%;border:0";
     outer.body.append(inner); inner.srcdoc = "<!doctype html>" + parsed.documentElement.outerHTML;
     surface.srcdoc = "<!doctype html>" + outer.documentElement.outerHTML;
+    let pending = 0, nextHeight = 1;
+    const receiveLayout = event => {
+      const message = event.data;
+      if (event.source !== surface.contentWindow?.[0] || message?.type !== "portal-explanation-layout"
+        || message.channel !== channel || !Number.isFinite(message.height) || message.height < 1 || message.height > 10000000) return;
+      nextHeight = Math.ceil(message.height);
+      if (!pending) pending = requestAnimationFrame(() => {
+        pending = 0;
+        surface.style.height = `${nextHeight}px`;
+      });
+    };
+    window.addEventListener("message", receiveLayout);
     container.append(surface);
-    return () => surface.remove();
+    return () => {
+      window.removeEventListener("message", receiveLayout);
+      cancelAnimationFrame(pending);
+      surface.remove();
+    };
   }
 
   function create({ root, onOpen, onSelection, onChange }) {
@@ -509,7 +566,7 @@
                 const content = await read(value.interaction, limits.interaction, key);
                 if (!current(key)) return;
                 panel = node("div", null, "homeExplanationDemo"); region.append(panel);
-                const dispose = mountInteraction(panel, decode(content.bytes), value.interaction.title || t("图文解释"), value.interaction.height);
+                const dispose = mountInteraction(panel, decode(content.bytes), value.interaction.title || t("图文解释"));
                 disposers.add(dispose);
                 return;
               } catch (error) {
