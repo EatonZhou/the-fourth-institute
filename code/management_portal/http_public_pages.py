@@ -354,7 +354,6 @@ class PublicPagesHttp:
                     '/static/portal_ui_primitives.js',
                     '/static/portal_workbench.css',
                     *script_groups.scripts("portal-workbench"),
-                    '/static/portal_document_statistics.js',
                     *script_groups.scripts("portal-workspace-surface"),
                     '/static/projection_host.js',
                     '/static/projection_sdk.js',
