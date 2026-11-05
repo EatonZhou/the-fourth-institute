@@ -128,6 +128,10 @@ class WorkflowBindings:
         incoming wire is not. Refuse deletion if someone shared those objects.
         The ordinary Resident lifecycle finalizes sessions, folders and receipts.
         """
+        # Re-read authoritative state on each explicit recovery. A definitive
+        # failure can be retried after its cause is fixed, even if the graph
+        # revision did not advance. Transport retries retain these attempt keys.
+        attempt = secrets.token_hex(8)
         try:
             record = isa_client.call(actor, 'GetResident', {'resident_id': resident_id})['resident']
         except InstructionError as exc:
@@ -141,7 +145,7 @@ class WorkflowBindings:
             # immutable deletion; projection retries inside this call retain
             # this attempt's key.
             return isa_client.call(actor, 'DeleteResident', {'lineage_id': lineage_id, 'resident_id': resident_id},
-                                   key=f'release:{resident_id}:finalize:{secrets.token_hex(8)}')
+                                   key=f'release:{resident_id}:finalize:{attempt}')
         lineage_id = record['lineage_id']
         keep = {Path(path).resolve(strict=False) for path in preserve_paths}
         bindings = record.get('workspaces', [])
@@ -160,7 +164,7 @@ class WorkflowBindings:
                 continue
             wid = binding['workspace_id']
             isa_client.call(actor, 'UnbindWorkspace', {'resident_id': resident_id, 'workspace_id': wid},
-                            key=f'release:{resident_id}:unbind:{wid}')
+                            key=f'release:{resident_id}:unbind:{wid}:{attempt}')
         # Unbinding can advance the Lineage revision. Read it only afterwards;
         # on lost replies a fresh GetResident resumes the remaining bindings.
         with self.lineage_lock(lineage_id):
@@ -181,11 +185,11 @@ class WorkflowBindings:
                 digest = hashlib.sha256(json.dumps(operations, sort_keys=True).encode()).hexdigest()[:24]
                 isa_client.call(actor, 'ApplyLineageChanges', {
                     'lineage_id': lineage_id, 'operations': operations,
-                }, version=graph['revision'], key=f'release:{resident_id}:{graph["revision"]}:{digest}')
+                }, version=graph['revision'], key=f'release:{resident_id}:{graph["revision"]}:{digest}:{attempt}')
             # This also resumes lifecycle finalization after a committed graph
             # edit whose response was lost. Do not drop associations on failure.
             isa_client.call(actor, 'DeleteResident', {'lineage_id': lineage_id, 'resident_id': resident_id},
-                            key=f'release:{resident_id}:finalize')
+                            key=f'release:{resident_id}:finalize:{attempt}')
 
     def install(self, *, actor, lineage_id, resident_id, name, title, prompt, lend_temporary_credentials=False):
         identity = hashlib.sha256(json.dumps([lineage_id, resident_id, name]).encode()).hexdigest()

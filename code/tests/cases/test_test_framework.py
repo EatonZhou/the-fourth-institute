@@ -935,7 +935,7 @@ def test_local_plan_shards_pytest_files(tmp_path: Path) -> None:
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_text("def test_one(): pass\n")
             budget_selected.append(_local_item(f"{source}::test_one"))
-        assert len(plan_groups(budget_selected, root=tmp_path)) == 4
+        assert len(plan_groups(budget_selected, root=tmp_path)) == 6
 
 
 def test_host_slots_bound_concurrency_across_executors(tmp_path: Path, monkeypatch) -> None:
@@ -973,7 +973,7 @@ def test_host_slots_bound_concurrency_across_executors(tmp_path: Path, monkeypat
 
     select_instance(monkeypatch, tmp_path / "global-slots")
     monkeypatch.delenv("PORTAL_TEST_MAX_CONCURRENCY", raising=False)
-    assert slots.max_concurrency() == 4
+    assert slots.max_concurrency() == 32
     monkeypatch.setenv("PORTAL_TEST_MAX_CONCURRENCY", "2")
     assert slots.max_concurrency() == 2
     browser = slots.acquire("browser", 2, stop=lambda: False)
@@ -981,11 +981,11 @@ def test_host_slots_bound_concurrency_across_executors(tmp_path: Path, monkeypat
     assert slots.acquire("pytest", 1, stop=lambda: True, poll_seconds=0.01) is None
     browser.release()
     pytest_lease = slots.acquire("pytest", 1, stop=lambda: False)
-    tau_lease = slots.acquire("tau", 1, stop=lambda: False)
-    assert pytest_lease is not None and tau_lease is not None
+    browser_lease = slots.acquire("browser", 1, stop=lambda: False)
+    assert pytest_lease is not None and browser_lease is not None
     assert slots.acquire("live", 1, stop=lambda: True, poll_seconds=0.01) is None
     pytest_lease.release()
-    tau_lease.release()
+    browser_lease.release()
     for value in ("0", "33", "invalid"):
         monkeypatch.setenv("PORTAL_TEST_MAX_CONCURRENCY", value)
         with pytest.raises(ValueError, match="PORTAL_TEST_MAX_CONCURRENCY"):
@@ -1076,11 +1076,13 @@ def test_tau_campaign_runs_modules_concurrently_and_cases_in_module_order(tmp_pa
         "product_severity": {"blocking": 1, "impact": 0, "minor": 0},
     }
     assert record["report"]["execution"]["account"] == "test-actor"
-    assert record["report"]["execution"]["target"] == "DEV"
+    # This campaign adapter supplies no verified target evidence.
+    assert record["report"]["execution"]["target"] == "not_recorded"
 
 
-def test_tau_campaign_bounds_parallel_modules(tmp_path: Path) -> None:
+def test_tau_campaign_bounds_parallel_modules(tmp_path: Path, monkeypatch) -> None:
     """TAU 运行同时执行的模块数不超过 max_parallel_modules"""
+    monkeypatch.setenv("PORTAL_TEST_MAX_CONCURRENCY", "1")
     source = "tests/cases/test_test_framework.py"
     digest = hashlib.sha256((ROOT / source).read_bytes()).hexdigest()
     modules = ["module-a", "module-b", "module-c"]
@@ -1438,7 +1440,7 @@ def test_shared_tau_identity_is_exclusive_without_consuming_test_capacity(tmp_pa
             assert independent
         with slots.exclusive("tau-module:resident.chat", stop=lambda: True) as cancelled:
             assert not cancelled
-        lease = slots.acquire("tau", 1, stop=lambda: True)
+        lease = slots.acquire("pytest", 1, stop=lambda: True)
         assert lease is not None
         lease.release()
     worker.join(timeout=2)
@@ -1640,7 +1642,7 @@ def test_tau_campaign_resumes_the_same_resident_invocation_after_restart(tmp_pat
     assert record["report"]["schema"] == "tfi.portal-tau-report.v2"
 
 
-def test_agent_use_profile_requires_a_private_storage_state_contracts(tmp_path, subtests, isolated_portal_case):
+def test_agent_use_profile_requires_a_private_storage_state_contracts(tmp_path, subtests, isolated_portal_case, monkeypatch):
     """TAU 登录状态文件须存在且权限为 0600，Resident 取消或失败分别记为取消和用例结果"""
     with subtests.test(contract='test_agent_use_profile_requires_a_private_storage_state'), isolated_portal_case() as case_path:
         tmp_path = case_path
@@ -1675,6 +1677,11 @@ def test_agent_use_profile_requires_a_private_storage_state_contracts(tmp_path, 
             raise RuntimeError('provider usage limit reached')
         output = []
         cancelled_inputs = []
+        from management_portal.test_framework import runner_adapters
+        monkeypatch.setattr(
+            runner_adapters, '_confirmed_terminal_input',
+            lambda resident_id, message_id: (resident_id, 'test-actor', message_id) in cancelled_inputs,
+        )
         outcome = TauAdapter(
             _tau_config(storage), invoke,
             lambda _storage: _verified_dev_target(),
@@ -2256,16 +2263,23 @@ def test_tau_reconnection_obeys_cancellation(tmp_path, monkeypatch, subtests, is
                 storage.write_text("{}", encoding="utf-8")
                 storage.chmod(0o600)
                 calls, delays = [], []
+                cancelled_inputs = set()
 
                 def resume(**kwargs):
                     calls.append(kwargs["message_id"])
                     raise unavailable_error("service restarting")
 
                 monkeypatch.setattr(runner_adapters.time, "sleep", delays.append)
+                monkeypatch.setattr(runner_adapters, '_confirmed_terminal_input',
+                                    lambda resident_id, message_id: (resident_id, message_id) in cancelled_inputs)
+                def cancel_input(resident_id, actor, message_id):
+                    assert actor == 'test-actor'
+                    cancelled_inputs.add((resident_id, message_id))
+                    return {'state': 'cancelled'}
                 outcome = TauAdapter(
                     _tau_config(storage), lambda **_kwargs: pytest.fail("must not resubmit"),
                     lambda _storage: _verified_dev_target(), resume=resume,
-                    cancel_invocation=lambda *args: {"state": "cancelled"},
+                    cancel_invocation=cancel_input,
                 ).execute(
                     run_id="testrun_000000000000000b", planned={
                         "case_id": "test_00000000000c", "case_title": "cancel reconnect", "description": "Bound reconnect waiting.",

@@ -5,6 +5,8 @@
 :design: decision_d19b9909a674
 """
 import pytest
+from contextlib import nullcontext
+from types import SimpleNamespace
 from management_portal import lineage_workflows
 from management_portal.hatg.contracts import InstructionError
 
@@ -42,3 +44,28 @@ def test_release_does_not_replace_an_access_error_with_a_delete(monkeypatch):
         lineage_workflows.WorkflowBindings().delete_resident(actor='denied',
             resident_id='resident_0123456789ab', lineage_id='lineage_0123456789ab')
     assert calls == ['GetResident']
+
+
+def test_existing_resident_release_retries_definitive_graph_failure(monkeypatch):
+    """清理在图提交前失败、版本未变化时，修复后也能重试而非永久重放旧错误。"""
+    rid, lid = 'resident_0123456789ab', 'lineage_0123456789ab'
+    attempts = []
+    graph = {'revision': 7, 'nodes': [{'id': rid}], 'program': {}}
+    monkeypatch.setattr(lineage_workflows, 'lineage_graph', lambda *_: graph)
+    bindings = object.__new__(lineage_workflows.WorkflowBindings)
+    store = SimpleNamespace(for_resident=lambda *_: [], lineage_lock=lambda *_: nullcontext())
+    monkeypatch.setattr(lineage_workflows.WorkflowBindings, 'store', property(lambda _: store))
+    def call(actor, instruction, arguments, **options):
+        if instruction == 'GetResident':
+            return {'resident': {'resident_id': rid, 'lineage_id': lid}}
+        if instruction == 'ApplyLineageChanges':
+            assert options['version'] == 7
+            attempts.append(options['key'])
+            if len(attempts) == 1:
+                raise InstructionError('instruction.invalid_arguments', 'old directory contract', commit_state='not_committed')
+        return {}
+    monkeypatch.setattr(lineage_workflows.isa_client, 'call', call)
+    with pytest.raises(InstructionError, match='old directory contract'):
+        bindings.delete_resident(actor='allowed', resident_id=rid, lineage_id=lid)
+    bindings.delete_resident(actor='allowed', resident_id=rid, lineage_id=lid)
+    assert len(set(attempts)) == 2

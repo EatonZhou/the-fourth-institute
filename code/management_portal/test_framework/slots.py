@@ -1,4 +1,4 @@
-"""Concurrency budget shared by every Test executor of the instance (Dev and Release).
+"""Concurrency budget for local test processes of the instance (Dev and Release).
 
 Each slot is one lock file; a holder keeps an exclusive ``flock`` on it for as
 long as its test process runs. The kernel releases the lock when the holder
@@ -23,10 +23,8 @@ CAPACITY = {
     "browser": 32,
     # Live tests act on the selected instance as test-actor, one process at a time.
     "live": 1,
-    # One TAU slot is one active module group.
-    "tau": 32,
 }
-DEFAULT_MAX_CONCURRENCY = 4
+DEFAULT_MAX_CONCURRENCY = 32
 MAX_CONCURRENCY_CEILING = 32
 
 

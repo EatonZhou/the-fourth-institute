@@ -41,7 +41,7 @@ def test_saved_invocation_resumes_before_fresh_campaigns(tmp_path, monkeypatch, 
             entered_fresh.set()
         return "passed", ""
 
-    monkeypatch.setattr(executor, "_execute_group_in_slot", execute)
+    monkeypatch.setattr(executor, "_execute_group", execute)
 
     def run(run_id, spec):
         try:
@@ -80,7 +80,7 @@ def test_cancelled_saved_invocation_still_reaches_the_withdrawal_path(tmp_path, 
     executor = TauCampaignExecutor(records, tmp_path / "artifacts", object())
     monkeypatch.setattr(executor, "_is_cancelled", lambda _run_id: True)
     calls = []
-    monkeypatch.setattr(executor, "_execute_group_in_slot", lambda *args: calls.append(args[0]) or ("cancelled", ""))
+    monkeypatch.setattr(executor, "_execute_group", lambda *args: calls.append(args[0]) or ("cancelled", ""))
     assert executor._execute_group_with_slot(run_id, group, [], tmp_path, "alice") == ("cancelled", "")
     assert calls == [run_id]
 

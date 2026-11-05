@@ -25,6 +25,12 @@ The formal runner uses Linux namespaces to isolate local regression from live
 network services and credentials. Missing isolation dependencies must produce
 an unavailable result, never fallback execution against the host instance.
 
+Local test processes share a default budget of 32 across executors; an explicit
+`PORTAL_TEST_MAX_CONCURRENCY` may lower it. TAU does not consume that budget.
+TAU modules use the requested Campaign parallelism and ordinary Provider account
+capacity; the same module remains exclusive across Campaigns to protect fixtures
+and already accepted inputs.
+
 ## TAU
 
 Follow [the browser setup and target contract](../management_portal/test_framework/tau_runtime/README.md).

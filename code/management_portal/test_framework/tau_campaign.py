@@ -141,7 +141,7 @@ class TauCampaignExecutor:
                     limit = int(execution.get("max_parallel_modules"))
                 except (TypeError, ValueError):
                     limit = tau_max_parallel_modules()
-                workers = min(len(pending_specs), max(1, limit), slots.max_concurrency())
+                workers = min(len(pending_specs), max(1, limit))
                 with ThreadPoolExecutor(max_workers=workers, thread_name_prefix=f"tau-{run_id}") as pool:
                     futures = [
                         pool.submit(self._execute_group_with_slot, run_id, group, selected, run_dir,
@@ -247,7 +247,7 @@ class TauCampaignExecutor:
                     error = f"前次 TAU 资源清理尚未完成：{exc}"
                     self.records.update_group(run_id, group_id, {"status": "error", "error": error})
                     return "error", error
-                return self._execute_group_in_slot(run_id, group_spec, selected, run_dir, actor)
+                return self._execute_group(run_id, group_spec, selected, run_dir, actor)
 
     def _recover_module_cleanup(self, run_id: str, group_id: str) -> None:
         """Finish failed fixture cleanup before reusing a module's Resident."""
@@ -280,26 +280,6 @@ class TauCampaignExecutor:
                         continue
                     cleanup(run_dir=case_dir, emit=lambda text: self._append_group(run_id, group_id, text))
                     self._append_group(run_id, group_id, f"已补完前次测试的资源清理：{previous_id}/{result['case_id']}\n")
-
-    def _execute_group_in_slot(
-        self, run_id: str, group_spec: dict[str, Any], selected: list[dict[str, Any]],
-        run_dir: Path, actor: str,
-    ) -> tuple[str, str]:
-        group_id = str(group_spec["group_id"])
-        self.records.update_group(run_id, group_id, {
-            "waiting": "等待主机共享测试并发名额（上限 %s）" % slots.max_concurrency(),
-        })
-        try:
-            lease = slots.acquire("tau", 1, stop=lambda: self._is_cancelled(run_id))
-        finally:
-            self.records.update_group(run_id, group_id, {"waiting": ""})
-        if lease is None:
-            # The normal path still withdraws a resumed invocation and runs cleanup.
-            return self._execute_group(run_id, group_spec, selected, run_dir, actor)
-        try:
-            return self._execute_group(run_id, group_spec, selected, run_dir, actor)
-        finally:
-            lease.release()
 
     def _execute_group(
         self,
