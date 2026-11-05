@@ -182,6 +182,10 @@ Section "Platform"
       MessageBox MB_ICONSTOP "无法停止正在运行的实例，未更新程序。请关闭 Portal 后重试。$\r$\nCould not stop the running instances; the program was not updated." /SD IDOK
       Abort
     update_stopped:
+    DetailPrint "Removing previous program files..."
+    ; Large Provider trees contain tens of thousands of files. Per-file detail
+    ; list insertion/repaint makes deletion itself wait on the installer UI.
+    SetDetailsPrint none
     RMDir /r "$INSTDIR\code"
     RMDir /r "$INSTDIR\branding"
     RMDir /r "$INSTDIR\dependencies\python"
@@ -189,6 +193,7 @@ Section "Platform"
     RMDir /r "$INSTDIR\.build\w"
     Delete "$INSTDIR\example-engineering.zip"
     Delete "$INSTDIR\base-engineering.zip"
+    SetDetailsPrint lastused
   ${EndIf}
   SetOutPath "$INSTDIR"
   File /r /x example-engineering.zip /x base-engineering.zip "${PAYLOAD}/*"
@@ -240,6 +245,10 @@ Section "Uninstall"
   ; ExecToLog has waited for Python to release its runtime and launcher lock.
   ; Python already removed deep preparation trees using extended Windows paths.
   ; Remove its remaining lock/logs and runtime only after it exits.
+  DetailPrint "Removing program and selected dependency caches..."
+  ; Keep synchronous filesystem deletion, but do not append/repaint one detail
+  ; row per file. Restore details before reporting residuals or completion.
+  SetDetailsPrint none
   ${If} $RemoveInstances == ${BST_CHECKED}
     RMDir /r "$INSTDIR\.build"
     RMDir /r "$INSTDIR\dependencies"
@@ -258,6 +267,8 @@ Section "Uninstall"
   Delete "$INSTDIR\INSTALL.md"
   Delete "$INSTDIR\README.md"
   Delete "$INSTDIR\README_CN.md"
+  SetDetailsPrint lastused
+  DetailPrint "Checking remaining installation files..."
   ; A newer preview may live in a different folder. Only remove shared shell
   ; entries when this installation still owns the registered location.
   ReadRegStr $1 HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\TheFourthInstitute" "InstallLocation"

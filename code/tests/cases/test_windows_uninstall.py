@@ -272,6 +272,11 @@ def test_native_uninstall_cleanup_is_gated_and_checks_for_residuals():
     assert section.index("SetErrorLevel 1") < section.index("Platform, instances, dependencies, caches and logs removed.")
     assert "Call un.ListResiduals" in section
     assert "Remaining:$ResidualItems" in section
+    # Bulk deletion must not build an unbounded per-file native UI log. Failure
+    # diagnostics must resume before the final residual check.
+    assert after_stop.index('SetDetailsPrint none') < after_stop.index('RMDir /r')
+    assert after_stop.index('Delete "$INSTDIR\\README_CN.md"') < after_stop.index('SetDetailsPrint lastused')
+    assert after_stop.index('SetDetailsPrint lastused') < after_stop.index('Call un.ListResiduals')
     assert "$LOCALAPPDATA\\TFI\\instances" in section
 
 
