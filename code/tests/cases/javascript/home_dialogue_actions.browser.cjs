@@ -196,6 +196,8 @@ const server=http.createServer((req,res)=>{
       await page.getByRole('button',{name:'打开解释页',exact:true}).click();
       await page.locator('.homeExplanationHeader h1').waitFor();
       check('Home uses Preview presentation for explanation',await page.locator('.homeExplanationHeader h1').innerText(),'共享解释页');
+      check('Home uses the shared Preview resource identity',await page.locator('.homeDialogueResourcePath .portalPreviewResourceId').innerText(),'report_abcdefabcdef');
+      check('Home identity preserves the fixed revision',await page.locator('.homeDialogueResourcePath .portalPreviewResourcePath').innerText(),'/revision/1');
       await page.evaluate(()=>{
         host.destroy();
         document.querySelector('#root').innerHTML='<div id="native-chat"></div><div id="native-preview"></div>';

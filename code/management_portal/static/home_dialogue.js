@@ -23,6 +23,8 @@
     const current = node("summary", "未选择展示", "homeDialogueCurrent");
     const identityMenu = node("details", "", "homeDialogueIdentity"), identityBody = node("div", "", "homeDialogueIdentityBody");
     identityMenu.append(current, identityBody);
+    const resourcePath = node("div", "", "portalPreviewDocumentPath homeDialogueResourcePath");
+    resourcePath.hidden = true;
     const contentActions = node("div", "", "homeDialogueContentActions");
     const history = node("select"), stage = node("div", "", "homeDialogueStage"); history.setAttribute("aria-label", "展示历史");
     const viewNames = { report: "汇报", map: "研究地图", frontier: t("Lineage Map"), preview: "文件/资源", explanation: "解释页" };
@@ -130,7 +132,7 @@
       select(state.entries.at(-1) || null, true);
     }
     const closeDisplay = button(tools, "关闭当前展示", closeCurrentDisplay);
-    displayBar.append(identityMenu, contentActions, opener, more);
+    displayBar.append(identityMenu, resourcePath, contentActions, opener, more);
     left.append(chatStatus, chatRoot); right.append(displayBar, status, stage); columns.append(left, divider, right); root.append(tabs, columns);
     function setRatio(value) {
       ratio = Math.max(25, Math.min(70, value));
@@ -208,6 +210,12 @@
       current.title = state.active?.label || "未选择展示";
       current.setAttribute("aria-label", `展示详情：${current.title}`);
       identityBody.textContent = state.active ? `${current.title}\n${state.active.intent.target.id || state.active.intent.target.address}` : "选择资源或在对话中请求展示";
+      const activeTarget = state.active?.intent.target;
+      const path = activeTarget?.kind === "report"
+        ? activeTarget.id + (activeTarget.revision ? `/revision/${activeTarget.revision}` : "")
+        : activeTarget?.address || activeTarget?.id || "";
+      window.PortalPreview.renderPath(resourcePath, path);
+      resourcePath.hidden = !path;
       switchView.replaceChildren();
       if (state.active) {
         const choices = ["lineage", "project"].includes(state.active.intent.target.kind) ? ["report", "map", "frontier"] : [state.active.intent.view];

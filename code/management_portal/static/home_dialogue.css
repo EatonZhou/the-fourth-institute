@@ -26,6 +26,8 @@ button.homeDialogueControl { cursor:pointer; }
 .homeDialogueTabs { display:none; }
 .homeDialogueDisplayBar { display:flex; align-items:center; gap:6px; padding:4px 8px; flex:none; position:relative; font-size:.875rem; line-height:1.35; background:var(--panel, #fff); border-bottom:1px solid var(--border, #ccc); }
 .homeDialogueIdentity { flex:1 1 0; min-width:0; }
+.homeDialogueResourcePath { flex:0 1 auto; min-width:0; max-width:45%; overflow:hidden; white-space:nowrap; }
+.homeDialogueResourcePath .portalPreviewResourcePath { overflow:hidden; text-overflow:ellipsis; }
 .homeDialogueDisplayBar .homeDialogueCurrent { display:block; min-width:0; padding:5px 2px; border-color:transparent; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
 .homeDialogueDisplayBar > details:not(.homeDialogueIdentity),.homeDialogueContentActions { flex:none; }
 .homeDialogueContentActions { display:flex; align-items:center; gap:6px; }

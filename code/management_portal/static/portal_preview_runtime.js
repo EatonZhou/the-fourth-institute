@@ -570,7 +570,22 @@
     return true;
   }
 
+  // Both the workbench and composed Home host show the same resource identity.
+  function renderPath(root, value) {
+    const text = String(value || "");
+    root.textContent = text;
+    const resource = /^([a-z][a-z0-9_]*_[a-f0-9]{12})(\/.*)?$/.exec(text);
+    if (resource) {
+      const id = document.createElement("span"); id.className = "portalPreviewResourceId"; id.textContent = resource[1];
+      const suffix = document.createElement("span"); suffix.className = "portalPreviewResourcePath"; suffix.textContent = resource[2] || "";
+      root.replaceChildren(id, suffix);
+    }
+    root.title = text;
+    return text;
+  }
+
   window.PortalPreview = Object.freeze({
+    renderPath,
     configureDownloadLink,
     createFrameCoalescer,
     dispose,
