@@ -47,6 +47,9 @@ def test_facade_injected_page_gets_its_reply_without_loading_original(team, deli
     assert [item["message_id"] for item in page] == ["msg_facade_append", "msg_correction"]
     assert page[1]["family_reply"]["request_message_id"] == "msg_facade_append"
     assert page[1]["display_reply_to_message_id"] == "msg_facade_append"
+    single = family_facade.projected_reply(facade, "msg_correction")
+    assert single["family_reply"] == page[1]["family_reply"]
+    assert single["display_reply_to_message_id"] == page[1]["display_reply_to_message_id"]
 
 
 def test_request_blocks_browser():

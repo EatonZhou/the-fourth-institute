@@ -205,6 +205,10 @@ const checks = {
       event(3, 'conversation.message.appended', 'request-d', 'Appended same durable ID');
       check([REQUEST_A, REQUEST_B, 'request-c', 'request-d'], 'Appended same durable ID');
       assert.deepEqual(current.family_reply.request_message_ids, [REQUEST_B], 'raw server response is unchanged');
+      const moved = app.window.PortalResidentProtocol.mergeMessageAssociations(
+        { ...current, family_reply: { ...current.family_reply, request_message_id: REQUEST_A, response_input_message_id: 'input-before' } },
+        { ...current, family_reply: { ...current.family_reply, request_message_id: REQUEST_B, response_input_message_id: 'input-correction' } });
+      assert.deepEqual(Array.from(moved.family_reply.request_message_ids), [REQUEST_B], 'new response owner replaces stale cached associations');
     } finally { subscription?.destroy(); await app.close(); }
   },
   async 'injection-order'(routeScript) {

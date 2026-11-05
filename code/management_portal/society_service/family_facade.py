@@ -1000,7 +1000,7 @@ def relayed_reply(facade: Mapping[str, Any], message_id: str) -> dict[str, Any] 
         reply = repository.message(worker_id, clean)
         if reply is None or reply.get("role") != "agent":
             continue
-        reply_to = str(reply.get("reply_to_message_id") or "")
+        reply_to = str(reply.get("display_reply_to_message_id") or reply.get("reply_to_message_id") or "")
         found = requests.get(reply_to)
         if found is None:
             members = resident_mailbox.members_of({"resident_id": worker_id}, reply_to)
@@ -1033,7 +1033,7 @@ def _reply_by_source(facade, message_id, repository):
         reply = repository.message(worker_id, message_id)
         if not reply or reply.get("role") != "agent":
             continue
-        reply_to = str(reply.get("reply_to_message_id") or "")
+        reply_to = str(reply.get("display_reply_to_message_id") or reply.get("reply_to_message_id") or "")
         if not reply_to:
             continue
         members = resident_mailbox.members_of({"resident_id": worker_id}, reply_to)
@@ -1204,6 +1204,7 @@ def _facade_reply(
             **({"reassigned_from": list(relay["reassigned_from"])} if relay.get("reassigned_from") else {}),
             "request_message_id": request_message_id,
             "request_message_ids": [request_message_id],
+            "response_input_message_id": str(reply.get("display_reply_to_message_id") or reply.get("reply_to_message_id") or ""),
         },
     )
     return projected
