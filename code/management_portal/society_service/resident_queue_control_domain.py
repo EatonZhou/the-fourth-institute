@@ -113,7 +113,7 @@ def _cancel_resident_queue_item(resident_id: str, actor: str, queue_item_id: str
             selected = next((item for item in resident_execution_work.normalized_queue(execution)
                              if resident_input_queue_domain.queue_item_matches(item, target_item_id)), None)
             if selected is None:
-                raise KeyError("queue item not found")
+                return _withdraw_group_member(record, execution, target_item_id, now)
             message_id = str(selected["user_message_id"])
             resident_input_queue_domain.withdraw_waiting_inputs(record, execution, [message_id], now)
     if held_head:
@@ -121,6 +121,43 @@ def _cancel_resident_queue_item(resident_id: str, actor: str, queue_item_id: str
             resident_id, actor_id, message_id, continue_queue=True,
         ))
     return resident_input_queue_domain.resident_operation_result(resident_id, message_id=message_id, cancelled=True)
+
+
+def _withdraw_group_member(record, job, message_id: str, now: str) -> dict:
+    """Under the Resident lock, withdraw one original and preserve its siblings.
+
+    The immutable old group ends as split; remaining originals occupy its
+    position in the same order. Queue publication and terminal facts commit
+    together, so promotion cannot acquire a partially withdrawn group.
+    """
+    from . import resident_catalog
+
+    resident_id = record["resident_id"]
+    repository = resident_conversation_stream.get_repository()
+    group_id = resident_mailbox.group_of(record, message_id)
+    queue = resident_execution_work.normalized_queue(job)
+    position = next((index for index, item in enumerate(queue)
+                     if item.get("user_message_id") == group_id), -1)
+    if not group_id or position < 0:
+        raise KeyError("queue item not found")
+    if repository.input_state(resident_id, message_id).get("state") in resident_mailbox.TERMINAL_STATES:
+        return {"resident_id": resident_id, "message_id": message_id, "already_terminal": True}
+    members = resident_mailbox.expand(queue, [group_id])
+    if not any(item.get("user_message_id") == message_id for item in members):
+        raise ValueError("这条消息已不在当前等待群体中")
+
+    def commit():
+        job["queue"] = queue[:position] + members + queue[position + 1:]
+        resident_input_queue_domain.withdraw_waiting_inputs(record, job, [message_id], now)
+        repository.set_input_state(
+            resident_id, group_id, "cancelled", updated_at=now,
+            error={"code": resident_mailbox.SPLIT_REASON, "message": "撤回一条原消息，剩余成员按原顺序等待"},
+        )
+
+    resident_catalog.get_catalog().state_store.transaction(commit)
+    return resident_input_queue_domain.resident_operation_result(
+        resident_id, message_id=message_id, cancelled=True, split_group_message_id=group_id,
+    )
 
 
 def _reordered_ids(

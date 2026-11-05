@@ -1598,6 +1598,37 @@ def cancel_resident_input(
 ) -> dict[str, Any]:
     resident_record_domain.resolve_resident_admission_target(resident_id, actor, require_visible=True)
     if resident_input_scope.get(resident_id, message_id):
+        return _cancel_ungrouped_resident_input(resident_id, actor, message_id)
+    # A Family relay retains the original copy ID even after Mailbox merges.
+    # Resolve membership under the merge/split lock, including terminal guards:
+    # waiting members can be withdrawn individually; a delivered group is one
+    # immutable turn and stopping it must address that turn's actual input.
+    from . import resident_mailbox
+    with resident_record_domain.state_lock(resident_id):
+        record = resident_record_domain.find_resident_for_admission(resident_id)
+        if not record:
+            raise KeyError("resident not found")
+        group_id = resident_mailbox.group_of(record, message_id)
+        if group_id:
+            state = _stored_resident_input_state(resident_id, message_id)
+            if state.get("state") not in {"queued", "running"}:
+                return {"resident_id": resident_id, "message_id": message_id,
+                        "already_terminal": True, "input_state": state}
+            job = resident_execution_work.read(record)
+            waiting = any(item.get("user_message_id") == group_id
+                          for item in resident_execution_work.normalized_queue(job))
+            if waiting:
+                result = cancel_resident_queue_item(resident_id, actor, message_id)
+            else:
+                result = cancel_resident_execution(resident_id, actor, group_id)
+            return {**dict(result), "message_id": message_id,
+                    "selected_message_id": message_id if waiting else group_id,
+                    "input_state": _stored_resident_input_state(resident_id, message_id)}
+        return _cancel_ungrouped_resident_input(resident_id, actor, message_id)
+
+
+def _cancel_ungrouped_resident_input(resident_id: str, actor: str, message_id: str) -> dict[str, Any]:
+    if resident_input_scope.get(resident_id, message_id):
         for _attempt in range(3):
             state = _stored_resident_input_state(resident_id, message_id)
             if state["state"] not in {"queued", "running"}:

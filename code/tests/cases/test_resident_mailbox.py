@@ -359,7 +359,7 @@ def test_cancel_input_ends_an_input_nothing_holds_and_leaves_held_ones(team):
     assert get_lineage_data_store().mailbox_entry(resident_id, dropped) is None
 
     instruction(team, "CancelInput", {"resident_id": resident_id, "message_id": waiting})
-    assert "error" not in repository.input_state(resident_id, waiting)
+    assert repository.input_state(resident_id, waiting)["error"]["code"] == "queue_withdrawn"
     assert _waiting(resident_id) == []
 
 
