@@ -10,6 +10,16 @@ import sys
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 
+def program_roots(instance):
+    """Code and its sibling runtimes belong to the platform installer."""
+    return {Path(deployment['code_root']).parent for deployment in instance.deployments.values()}
+
+
+def program_dependency(path, instance):
+    from management_common.instance_manifest import overlaps
+    return any(overlaps(path, root) for root in program_roots(instance))
+
+
 def external_owned_directories(connection, instance):
     from management_common.instance_manifest import AREAS
     from management_common.portal_database import _database_schema
@@ -20,6 +30,8 @@ def external_owned_directories(connection, instance):
     found = {}
     def collect(owner, path):
         absolute = Path(located_path(path))
+        if program_dependency(absolute, instance):
+            return
         if not any(absolute.is_relative_to(root) for root in boundaries):
             from management_common.directory_paths import validate_removal
             validate_removal(absolute)
@@ -77,7 +89,8 @@ def cleanup_external_owned():
         boundaries = [instance.root, *(instance.area(area) for area in AREAS)]
         for task in queue.status(connection=connection):
             path = cleanup_path(task['location'])
-            if not task['completed_at'] and not any(path.is_relative_to(root) for root in boundaries):
+            if (not task['completed_at'] and not program_dependency(path, instance)
+                    and not any(path.is_relative_to(root) for root in boundaries)):
                 directories[str(path)] = task['owner_id']
         ids = [enqueue_directory_cleanup(path, owner_id=owner, operation_id='instance-retire:' + instance.instance_id,
                              actor='instance-retirement', connection=connection) for path, owner in directories.items()]
