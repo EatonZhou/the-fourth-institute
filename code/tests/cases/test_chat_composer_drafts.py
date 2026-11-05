@@ -21,3 +21,13 @@ def test_composer_drafts_are_saved_when_they_change():
         capture_output=True, text=True, timeout=60,
     )
     assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_quoted_draft_survives_browser_navigation():
+    """引用与未发送正文在离开页面和整页刷新后恢复；取消、仅引用草稿及用户隔离保持一致。"""
+    result = subprocess.run(
+        ["node", str(Path(__file__).with_name("javascript") / "chat_quote_drafts.browser.cjs")],
+        input=json.dumps({"routeScript": portal_route_script().decode()}),
+        capture_output=True, text=True, timeout=60,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr

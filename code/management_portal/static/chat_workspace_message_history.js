@@ -228,10 +228,14 @@
     window.addEventListener("portal:chat-pins-changed", renderPinnedMessages);
     window.addEventListener(window.PortalIdentity?.eventName || "portal:identity-changed", renderPinnedMessages);
 
-    // The message the composition quotes, per conversation; not saved with the draft.
+    // The displayed quote is restored and persisted by the composition's draft owner.
     const composerQuotes = new Map();
     const composerQuoteScope = () => historyScope() || state.activeDraftScope || "";
-    const composerQuote = () => composerQuotes.get(composerQuoteScope()) || null;
+    const composerQuote = (scope = composerQuoteScope()) => composerQuotes.get(scope) || null;
+    const restoreQuote = (quote, scope = composerQuoteScope()) => {
+      if (quote) composerQuotes.set(scope, quote);
+      else composerQuotes.delete(scope);
+    };
     // The quote bar shows the quote of the conversation shown.
     const renderComposerQuote = () => {
       renderPinnedMessages();
@@ -253,6 +257,7 @@
       if (!scope || !messageId || !text) return false;
       composerQuotes.set(scope, { message_id: messageId, author_id: String(quote.author_id || ""), text });
       renderComposerQuote();
+      currentController()?.saveDraft();
       els.input?.focus?.();
       return true;
     };
@@ -262,6 +267,7 @@
       if (!current || (messageId && current.message_id !== messageId)) return false;
       composerQuotes.delete(scope);
       renderComposerQuote();
+      currentController()?.clearDraftQuote(scope, current.message_id);
       return true;
     };
 
@@ -303,7 +309,7 @@
     };
 
     return {
-      revealMessage, cancelMessageNavigation, navigateUserMessage, inheritanceViewFor, composerQuote, renderComposerQuote, setQuote, clearQuote, messageQuoteTarget, toggleMessagePin, isMessagePinned, renderPinnedMessages, destroyMessageHistory,
+      revealMessage, cancelMessageNavigation, navigateUserMessage, inheritanceViewFor, composerQuote, renderComposerQuote, setQuote, clearQuote, messageQuoteTarget, toggleMessagePin, isMessagePinned, renderPinnedMessages, destroyMessageHistory, restoreQuote,
     };
   }
 

@@ -13,7 +13,7 @@
   // listening to the page.
   const DEPENDENCIES = Object.freeze([
     "composerSelectionSnapshot", "createDraftStore", "els", "id", "normalizeWorkspaceDraft", "options",
-    "persistedDraftAttachments", "refsPayload", "serializeComposerInput", "state", "workspaceDraftHasContent",
+    "persistedDraftAttachments", "refsPayload", "serializeComposerInput", "state", "workspaceDraftHasContent", "draftQuote",
   ]);
 
   function createComposerDrafts(dependencies) {
@@ -21,7 +21,7 @@
     if (missing.length) throw new Error(`PortalChatWorkspaceComposerDrafts is missing: ${missing.join(", ")}`);
     const {
       composerSelectionSnapshot, createDraftStore, els, id, normalizeWorkspaceDraft, options,
-      persistedDraftAttachments, refsPayload, serializeComposerInput, state, workspaceDraftHasContent,
+      persistedDraftAttachments, refsPayload, serializeComposerInput, state, workspaceDraftHasContent, draftQuote,
     } = dependencies;
 
     const draftStore = options.draftStore || createDraftStore({
@@ -36,6 +36,7 @@
       text: draft.text,
       attachments: draft.attachments,
       refs: draft.refs,
+      quote: draft.quote || null,
     });
     const draftSignatures = draft => ({
       content: draftContentSignature(draft),
@@ -49,6 +50,7 @@
         text: serializeComposerInput(els.input, state.attachments, { mode: "draft" }),
         attachments: persistedDraftAttachments(state.attachments),
         refs: refsPayload(state.refs),
+        quote: draftQuote(),
         selection: composerSelectionSnapshot(els.input),
         input_height: state.composerInputHeight,
       };
@@ -108,6 +110,14 @@
       if (scope === state.activeDraftScope) markDraftSaved();
       return true;
     };
+    const clearDraftQuote = (scope, messageId) => {
+      if (scope === state.activeDraftScope) {
+        saveActiveDraft({ immediate: true });
+        return;
+      }
+      const draft = draftStore.read(scope);
+      if (draft.quote?.message_id === messageId) draftStore.write(scope, { ...draft, quote: null });
+    };
 
     // A send that failed in the conversation shown: the input, put back, is
     // kept as the draft of the message it tried to send.
@@ -143,7 +153,7 @@
 
     return {
       captureWorkspaceDraft, saveActiveDraft, markDraftSaved, openDraftScope, clearActiveDraft, clearDraft,
-      recoverSubmission, keepSubmissionDraft, forgetConfirmedSubmission, destroyComposerDrafts,
+      recoverSubmission, keepSubmissionDraft, forgetConfirmedSubmission, destroyComposerDrafts, clearDraftQuote,
     };
   }
 

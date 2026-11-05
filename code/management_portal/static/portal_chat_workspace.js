@@ -765,10 +765,11 @@
 
     const {
       captureWorkspaceDraft, saveActiveDraft, markDraftSaved, openDraftScope, clearActiveDraft, clearDraft,
-      recoverSubmission, keepSubmissionDraft, forgetConfirmedSubmission, destroyComposerDrafts,
+      recoverSubmission, keepSubmissionDraft, forgetConfirmedSubmission, destroyComposerDrafts, clearDraftQuote,
     } = chatWorkspaceModule("PortalChatWorkspaceComposerDrafts").createComposerDrafts({
       composerSelectionSnapshot, createDraftStore, els, id, normalizeWorkspaceDraft, options,
       persistedDraftAttachments, refsPayload, serializeComposerInput, state, workspaceDraftHasContent,
+      draftQuote: () => composerQuote(state.activeDraftScope),
     });
 
     const {
@@ -799,7 +800,7 @@
     });
 
     const {
-      revealMessage, cancelMessageNavigation, navigateUserMessage, inheritanceViewFor, composerQuote, renderComposerQuote, setQuote, clearQuote, messageQuoteTarget, toggleMessagePin, isMessagePinned, renderPinnedMessages, destroyMessageHistory,
+      revealMessage, cancelMessageNavigation, navigateUserMessage, inheritanceViewFor, composerQuote, renderComposerQuote, setQuote, clearQuote, messageQuoteTarget, toggleMessagePin, isMessagePinned, renderPinnedMessages, destroyMessageHistory, restoreQuote,
     } = chatWorkspaceModule("PortalChatWorkspaceMessageHistory").createMessageHistory({
       bindResourceChips, composerQuoteHtml, currentController: () => controller, els, historyScope, inheritanceCardHtml, prepareMessageNavigation,
       messageRenderKey, messageQuoteExcerpt, messageQuotable, messageRole, contractResidentId, messageViewportAtTail, options, state, syncMessageScrollMode, toggleMessageFold,
@@ -995,6 +996,7 @@
         withoutAttachmentReconcile(() => {
           state.attachments = normalizeComposerAttachments(draft.attachments);
           state.refs = normalizeRefs(draft.refs);
+          restoreQuote(draft.quote, nextScope);
           if (draft.input_height > 0) state.composerInputHeight = draft.input_height;
           setComposerDraftInput(els.input, draft.text, state.attachments, {
             ...attachmentPreviewOptions(),
@@ -1351,10 +1353,12 @@
         // Clear only this unedited recovery, leaving a newer shared draft intact.
         clearComposerInput({ focus: false });
         state.refs = normalizeRefs({});
+        restoreQuote(null, scope);
         controller.refreshRefs();
         markDraftSaved();
       },
       quote: composerQuote,
+      clearDraftQuote,
       messageQuoteTarget,
       toggleMessagePin,
       isMessagePinned,
@@ -1395,20 +1399,21 @@
           controller.clearQuote({ scope });
           clearActiveDraft();
         }
-        const submittedSignature = composerMutationSignature();
+        const submissionComposerSignature = () => JSON.stringify([
+          composerMutationSignature(), composerQuote(state.activeDraftScope),
+        ]);
+        const submittedSignature = submissionComposerSignature();
         if (!optimistic && submitOptions.busy !== false) controller.setBusy(true);
         if (optimistic && submitOptions.focus !== false) els.input?.focus?.();
         let committed = false;
         const accept = () => {
-          const clearedSignature = composerMutationSignature();
           if (!optimistic && submitOptions.clearRefsOnSuccess && state.activeDraftScope === scope) {
             const refsUnchanged = JSON.stringify(refsPayload(state.refs)) === JSON.stringify(refsSnapshot);
             if (refsUnchanged) {
               state.refs = normalizeRefs({});
               controller.refreshRefs();
             }
-            if (composerMutationSignature() === clearedSignature && refsUnchanged) clearActiveDraft();
-            else saveActiveDraft({ immediate: true });
+            saveActiveDraft({ immediate: true });
           }
         };
         try {
@@ -1430,7 +1435,7 @@
         } catch (error) {
           context.error = error;
           const sameScope = state.activeDraftScope === scope;
-          const composerUntouched = composerMutationSignature() === submittedSignature;
+          const composerUntouched = submissionComposerSignature() === submittedSignature;
           if (!committed && !optimistic && submitOptions.clear !== false && sameScope && composerUntouched && state.submissionSequence === sequence) {
             restoreComposerSnapshot(snapshot);
             state.refs = normalizeRefs(refsSnapshot);

@@ -346,6 +346,10 @@
         text,
         attachments,
         refs: refsPayload(draft.refs),
+        quote: draft.quote?.message_id && draft.quote?.text ? {
+          message_id: String(draft.quote.message_id), author_id: String(draft.quote.author_id || ""),
+          text: String(draft.quote.text),
+        } : null,
         selection: draft.selection && typeof draft.selection === "object" ? draft.selection : null,
         input_height: Math.max(0, Number(draft.input_height || 0)),
         submitted_message_id: String(draft.submitted_message_id || ""),
@@ -357,6 +361,7 @@
       const value = normalizeWorkspaceDraft(draft);
       return !!(
         value.text
+        || value.quote
         || value.attachments.length
         || value.refs.skills.length
         || value.refs.agents.length

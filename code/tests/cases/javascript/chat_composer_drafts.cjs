@@ -275,7 +275,120 @@ const switchTo = async (next, workspace) => {
       assert.equal(stored('conversation-a').text, 'written meanwhile', 'it does not write over a draft written there meanwhile');
       reopened.destroy();
     }
-    console.log('PASS a Chat saves the message being written when it changes, and only then');
+    {
+      // A quote belongs to the saved composition, even before any text is typed.
+      scope = 'quote-a';
+      const quote = { message_id: 'reply-a', author_id: 'resident_aaaaaaaaaaaa', text: 'Quoted answer, not loaded in history' };
+      let workspace = mount();
+      await settle();
+      assert.equal(workspace.setQuote(quote), true);
+      assert.deepEqual(JSON.parse(JSON.stringify(stored(scope).quote)), quote, 'a quote-only draft is saved');
+      workspace.destroy();
+      workspace = mount();
+      await settle();
+      assert.equal(workspace.quote().message_id, quote.message_id, 'a new instance restores the quote without loading its source');
+      assert.ok(w.document.querySelector('[data-composer-quote-host]').textContent.includes(quote.text));
+      await type('reply draft');
+      await switchTo('quote-b', workspace);
+      assert.equal(workspace.quote(), null, 'another conversation has no quote');
+      const otherQuote = { ...quote, message_id: 'reply-b', text: 'Another answer' };
+      workspace.setQuote(otherQuote);
+      await type('other reply');
+      await switchTo('quote-a', workspace);
+      assert.equal(workspace.quote().message_id, 'reply-a');
+      assert.equal(composer().textContent, 'reply draft');
+      assert.equal(stored('quote-b').quote.message_id, 'reply-b', 'switching preserves each quote with its own text');
+      assert.equal(w.PortalChatWorkspace.createDraftStore({ owner: 'someone-else', namespace: 'chat' }).read(scope).quote, null);
+      assert.equal(w.PortalChatWorkspace.createDraftStore({ owner: 'viewer', namespace: 'another-chat' }).read(scope).quote, null);
+      workspace.clearQuote();
+      workspace.destroy();
+      workspace = mount();
+      await settle();
+      assert.equal(workspace.quote(), null, 'a cancelled quote stays cancelled after remount');
+      assert.equal(composer().textContent, 'reply draft', 'cancelling keeps the written reply');
+      workspace.clear();
+      workspace.setQuote(quote);
+      workspace.clearQuote();
+      assert.equal(stored(scope), null, 'cancelling a quote-only draft removes the empty draft');
+
+      workspace.setQuote(quote);
+      const older = mount('other');
+      await settle();
+      workspace.setQuote(otherQuote);
+      older.destroy();
+      assert.equal(stored(scope).quote.message_id, 'reply-b', 'an untouched old view cannot overwrite a newer quote');
+
+      await type('send with quote');
+      let acknowledge;
+      const sending = workspace.submit(() => new Promise(resolve => { acknowledge = resolve; }), { optimistic: true });
+      await settle();
+      assert.equal(workspace.quote(), null, 'an optimistic send clears its quote');
+      assert.equal(stored(scope), null);
+      workspace.setQuote(quote);
+      acknowledge({});
+      await sending;
+      workspace.destroy();
+      workspace = mount();
+      await settle();
+      assert.equal(workspace.quote().message_id, 'reply-a', 'a pending send receipt cannot clear the next quote');
+
+      await type('failed reply');
+      let attempt;
+      await assert.rejects(workspace.submit((_payload, context) => {
+        attempt = context.messageIdentity;
+        throw new Error('offline');
+      }), /offline/);
+      workspace.destroy();
+      workspace = mount();
+      await settle();
+      assert.equal(workspace.quote().message_id, 'reply-a', 'a failed send restores the complete composition');
+      workspace.confirmSubmittedMessages([attempt]);
+      assert.equal(workspace.quote(), null, 'confirming a recovered send clears its quote');
+      assert.equal(stored(scope), null);
+
+      workspace.setQuote(quote);
+      await type('failed but changed');
+      await assert.rejects(workspace.submit((_payload, context) => {
+        attempt = context.messageIdentity;
+        throw new Error('offline');
+      }), /offline/);
+      workspace.setQuote(otherQuote);
+      workspace.confirmSubmittedMessages([attempt]);
+      assert.equal(workspace.quote().message_id, 'reply-b', 'changing only a recovered quote creates a new draft');
+      assert.equal(composer().textContent, 'failed but changed');
+      await switchTo('quote-b', workspace);
+      await switchTo('quote-a', workspace);
+      workspace.clearQuote({ scope: 'quote-b', messageId: 'reply-b' });
+      assert.equal(stored('quote-b').quote, null, 'clearing an inactive quote persists in its own conversation');
+      assert.equal(stored('quote-b').text, 'other reply');
+      assert.equal(workspace.quote().message_id, 'reply-b');
+
+      let fail;
+      const failedLater = workspace.submit(() => new Promise((_resolve, reject) => { fail = reject; }));
+      await settle();
+      workspace.setQuote(quote);
+      fail(new Error('offline'));
+      await assert.rejects(failedLater, /offline/);
+      assert.equal(composer().textContent, '', 'a failure cannot restore an old reply into a new quote-only draft');
+      assert.equal(stored(scope).submitted_message_id, '');
+      assert.equal(stored(scope).quote.message_id, 'reply-a');
+
+      await type('a room reply');
+      const roomSend = workspace.submit(() => new Promise(resolve => { acknowledge = resolve; }), {
+        clearRefsOnSuccess: true,
+        onSuccess: () => workspace.clearQuote({ scope: 'quote-a', messageId: 'reply-a' }),
+      });
+      await settle();
+      workspace.setQuote(otherQuote);
+      acknowledge({});
+      await roomSend;
+      workspace.destroy();
+      workspace = mount();
+      await settle();
+      assert.equal(workspace.quote().message_id, 'reply-b', 'a Chatroom receipt preserves a new quote-only draft across re-entry');
+      workspace.destroy();
+    }
+    console.log('PASS Chat draft edits and quoted replies survive re-entry, remain isolated, and clear with their composition');
   } finally {
     for (const view of views.values()) view.destroy();
     for (const observer of observers) observer.disconnect();
