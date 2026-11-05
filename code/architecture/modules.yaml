@@ -251,6 +251,7 @@ modules:
       - "management_portal/society_service/coordinator.py"
       - "management_portal/society_service/__init__.py"
       - "management_portal/society_service"
+      - "management_common/memory_observation.py"
       - "management_portal/permission_system/personal_ama.py"
       - "management_portal/resources/workspace_files.py"
     designs:
