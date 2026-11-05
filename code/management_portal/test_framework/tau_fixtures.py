@@ -42,9 +42,29 @@ def _release_resource(resource_id: str, key: str) -> None:
         raise ValueError('Resource cleanup journal identity changed')
     if state.get('completed'):
         return
+    if state and not state.get('rejected'):
+        # An old RPC failure may not have carried a reliable commit_state.
+        # Resolve its durable execution before renewing a cleanup attempt;
+        # executing/unknown requests retain their original key.
+        from management_portal import isa_client
+        instruction = {'project': 'DeleteProject', 'family': 'Unfamilize'}.get(
+            _resource_type(resource_id), 'UnregisterResource')
+        try:
+            previous = isa_client.call(TAU_ACTOR, 'GetInstructionExecution', {
+                'instruction': instruction, 'idempotency_key': state['key'],
+            })
+        except InstructionError:
+            previous = {}
+        if previous.get('status') == 'failed':
+            state['rejected'] = previous.get('instruction_id') or 'failed'
+            state.setdefault('previous_attempts', []).append({
+                'key': state['key'], 'execution': previous,
+            })
+            atomic_replace_json(path, state)
     if not state or state.get('rejected'):
-        state = {'resource_id': resource_id, 'scope_key': key,
+        state = {**state, 'resource_id': resource_id, 'scope_key': key,
                  'key': key + ':' + uuid.uuid4().hex}
+        state.pop('rejected', None)
         atomic_replace_json(path, state)
     try:
         _release_resource_once(resource_id, state['key'])

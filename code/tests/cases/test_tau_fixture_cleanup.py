@@ -532,7 +532,10 @@ def test_ambiguous_cleanup_resumes_original_instruction_after_restart(tmp_path, 
     rid = 'review_abcdefabcdef'
     allocate(tmp_path, rid)
     calls = []
-    def release(actor, name, args, *, key):
+    def release(actor, name, args, *, key=None):
+        if name == 'GetInstructionExecution':
+            assert args['idempotency_key'] == calls[0]
+            return {'status': 'committed'}
         calls.append(key)
         if len(calls) == 1:
             raise ConnectionError('committed reply unknown')

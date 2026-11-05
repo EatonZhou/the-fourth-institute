@@ -43,6 +43,10 @@ def test_project_cleanup_failure_is_not_absence(monkeypatch, outcome):
     monkeypatch.setattr(wall_backend, 'projects', lambda actor: {'projects': []})
     def call(actor, name, arguments, **options):
         calls.append(name)
+        assert actor == 'test-actor' and arguments == {'project_id': pid}
+        if name == 'GetProjectDeletion':
+            assert outcome == 'denied'
+            raise InstructionError('instruction.forbidden', 'receipt denied')
         assert name == 'DeleteProject'
         codes = {'missing': 'instruction.not_found', 'denied': 'instruction.forbidden',
                  'no_permit': 'instruction.not_found', 'unavailable': 'instruction.owner_unavailable'}
@@ -58,6 +62,32 @@ def test_project_cleanup_failure_is_not_absence(monkeypatch, outcome):
         with pytest.raises((InstructionError, RuntimeError, ValueError)):
             tau_fixtures._release_resource(pid, 'project-failure')
     assert 'UnregisterResource' not in calls
+    assert calls == (['DeleteProject', 'GetProjectDeletion'] if outcome == 'denied' else ['DeleteProject'])
+
+
+@pytest.mark.parametrize('receipt', ['denied', 'pending', 'wrong_identity', 'still_registered', 'complete'])
+def test_denied_project_cleanup_requires_same_actor_completed_receipt(monkeypatch, receipt):
+    """删除权限事实已消失时，仅同主体确认的完整 owner 回执可结算清理。"""
+    pid = 'TAU-project-receipt-' + receipt
+    calls = []
+
+    def call(actor, name, arguments, **options):
+        calls.append(name)
+        assert actor == 'test-actor' and arguments == {'project_id': pid}
+        if name == 'DeleteProject' or receipt == 'denied':
+            raise InstructionError('instruction.forbidden', 'not allowed')
+        assert name == 'GetProjectDeletion'
+        return {'project_id': 'other' if receipt == 'wrong_identity' else pid,
+                'registration_status': 'registered' if receipt == 'still_registered' else 'unregistered',
+                'effects': {'status': 'pending' if receipt == 'pending' else 'complete'}}
+
+    monkeypatch.setattr(isa_client, 'call', call)
+    if receipt == 'complete':
+        tau_fixtures._release_resource(pid, 'receipt-confirmation')
+    else:
+        with pytest.raises((InstructionError, RuntimeError)):
+            tau_fixtures._release_resource(pid, 'receipt-confirmation')
+    assert calls == ['DeleteProject', 'GetProjectDeletion']
 
 
 def test_case_and_run_cleanup_share_project_owner(tmp_path, monkeypatch):
@@ -99,6 +129,9 @@ def test_pending_project_effects_retry_same_deletion_receipt(monkeypatch):
     """
     keys = []
     def call(actor, name, arguments, **options):
+        if name == 'GetInstructionExecution':
+            assert arguments['idempotency_key'] == keys[0]
+            return {'status': 'committed'}
         assert name == 'DeleteProject'
         keys.append(options['key'])
         return {'project_id': arguments['project_id'], 'registration_status': 'unregistered',
