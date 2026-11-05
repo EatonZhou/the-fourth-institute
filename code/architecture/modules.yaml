@@ -1340,6 +1340,7 @@ modules:
       - "management_portal/execution/harness_activity_card.py"
       - "management_portal/execution/message_projection.py"
       - "management_portal/execution/chat_position_index.py"
+      - "management_portal/execution/chat_reply_placement.py"
       - "management_common/agent_data_schema.py"
       - "management_common/provider_subagent_runs.py"
       - "management_common/provider_turn_artifacts.py"
