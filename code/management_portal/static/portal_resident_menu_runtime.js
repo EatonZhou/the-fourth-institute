@@ -137,11 +137,11 @@
             <div class="residentReportingRow">
               <span class="residentReportingLabel" aria-hidden="true">汇报主动性</span>
               <div class="residentReportingLevels">
-                ${choice("initiative", "off", "不主动", "0（不主动汇报）")}${choice("initiative", "low", "低")}${choice("initiative", "medium", "中")}${choice("initiative", "high", "高")}
+                ${choice("initiative", "off", "不开启")}${choice("initiative", "low", "低")}${choice("initiative", "medium", "中")}${choice("initiative", "high", "高")}
               </div>
               <button class="residentReportingHelp" type="button" aria-label="汇报主动性说明" aria-controls="resident-reporting-initiative-note" aria-expanded="false">?</button>
             </div>
-            <p class="residentReportingNote" id="resident-reporting-initiative-note" hidden>主动性只影响主动汇报；用户明确要求的汇报仍会执行。高主动性也按实际价值判断，不保证每次请求都生成汇报。</p>
+            <p class="residentReportingNote" id="resident-reporting-initiative-note" hidden>不开启时，该 Resident 不生成汇报，无论收到什么消息。开启后按所选主动性与任务需要决定是否生成；质量档位决定成果要求。</p>
           </fieldset>
           <fieldset class="residentReportingQuality">
             <legend>汇报质量</legend>
@@ -191,7 +191,7 @@
             const latest = await window.PortalResidentService.runtimeSettings(context.residentId);
             if (!current()) return;
             if (!latest.settings?.reporting || latest.settings_revision == null) throw new Error(window.PortalI18n.t("汇报设置暂不可用，请重试。"));
-            const names = {off: "0（不主动汇报）", low: "低", medium: "中", high: "高"};
+            const names = {off: "不开启", low: "低", medium: "中", high: "高"};
             note.textContent = window.PortalI18n.text`当前已保存：主动性 ${window.PortalI18n.t(names[latest.settings.reporting.initiative])}；质量 ${window.PortalI18n.t(names[latest.settings.reporting.quality])}。请核对后选择。`;
             const choose = (label, apply) => {
               const button = document.createElement("button");

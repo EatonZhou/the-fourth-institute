@@ -96,12 +96,27 @@ def _sender_line(job: dict[str, Any]) -> str:
 
 
 def build_resident_prompt(record: dict[str, Any], job: dict[str, Any]) -> str:
-    from . import family_quality_reviewers, resident_reporting
+    """Materialize current business policy for an input appended to a live turn."""
+    return "\n\n".join([*(part.content for part in reporting_instructions(record, job).parts),
+                          build_resident_message(record, job)])
+
+
+def reporting_instructions(record: dict[str, Any], job: dict[str, Any]):
+    """The same Portal-owned part is used by normal turns, append and Preview."""
+    from management_portal.execution.contracts import InjectionPart, SystemInstructions
+    from . import resident_reporting_policy
+    return SystemInstructions(parts=(InjectionPart(
+        "reporting_policy", resident_reporting_policy.prompt(record, job), "every_turn", "prompt_prefix",
+    ),)).validate()
+
+
+def build_resident_message(record: dict[str, Any], job: dict[str, Any]) -> str:
+    """Message body; formal turn assembly injects reporting separately."""
+    from .domain_ports import resident_domain_port
     # A reviewer's duties follow current canonical Family membership. Reading
     # them has no provisioning side effects, including during prompt preview.
     return "\n\n".join(part for part in (
-        resident_reporting.prompt(record, job),
-        family_quality_reviewers.instructions(record),
+        resident_domain_port.family_reviewer_instructions(record),
         _build_resident_prompt(record, job),
     ) if part)
 

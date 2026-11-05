@@ -255,7 +255,8 @@ def test_isa_reads_changes_and_previews_the_prompt_injection(resident_record) ->
     pure = update(preset="pure")["prompt_injection"]
     assert pure["preset"] == "pure"
     bare = residents.preview_prompt_injection(_invocation("PreviewPromptInjection", resident_id=resident_id))
-    assert bare["parts"] == [] and bare["system_prompt"] == ""
+    assert [part["id"] for part in bare["parts"]] == ["reporting_policy"]
+    assert bare["parts"][0]["sent"] and bare["system_prompt"] == ""
     # Reporting is current business intent, independent of optional envelope
     # and session rule-injection timing.
     assert bare["prompt"].endswith("（本轮消息）")

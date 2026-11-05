@@ -32,8 +32,8 @@ for(const family of [false,true]) test(`${family?'Family facade':'Resident'} aut
  const write=f.calls.find(c=>c.changes);assert.equal(write.id,f.state.nodeMenuContext.residentId);assert.equal(write.expected,7);
  assert.deepEqual(JSON.parse(JSON.stringify(write.changes)),{reporting:{initiative:'off',quality:'low'}});
  assert.equal(f.calls.filter(c=>c.read).length,2);assert.equal([...f.form.elements.quality].every(r => r.disabled),false);
- assert.match(f.form.textContent,/用户明确要求的汇报仍会执行/);
- assert.match(f.form.textContent,/高主动性也按实际价值判断/);
+ assert.match(f.form.textContent,/不开启时，该 Resident 不生成汇报，无论收到什么消息/);
+ assert.match(f.form.textContent,/开启后按所选主动性与任务需要决定是否生成/);
  assert.match(f.form.textContent,/独立 Resident 审查与修改直至达标/);
  await f.select('quality','high');assert.equal(f.calls.filter(c=>c.changes).at(-1).expected,8);
  assert.equal(f.reporting.initiative,'off');assert.equal(f.reporting.quality,'high');

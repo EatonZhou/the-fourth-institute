@@ -584,9 +584,8 @@ def preflight_resident_input(resident_id: str, actor: str, envelope: Mapping[str
     File staging, session creation, queue writes and model calls are deferred
     to real intake; observations here never promise subsequent acceptance.
     """
-    from . import resident_protocol
     resident_message_contract.validate_delivery_message(envelope)
-    content, media, refs, runtime, skills, cwd = resident_protocol._input_parts(envelope)
+    content, media, refs, runtime, skills, cwd = resident_message_contract.input_parts(envelope)
     request = _input_request(
         resident_id, actor, content, refs, cwd, runtime, skills, "enqueue_and_trigger",
         "", media, str(envelope.get("message_id") or ""),
@@ -906,8 +905,8 @@ def _deliver_to_facade(
             request.lending.replay(record_id, facade_message_id)
         def resume_facade():
             if not family_recovery.handle(record, facade_message_id):
-                from . import family_direct_delivery
-                family_direct_delivery.resume(record, facade_message_id, request.actor_id)
+                from .domain_ports import resident_domain_port
+                resident_domain_port.resume_direct_family_delivery(record, facade_message_id, request.actor_id)
         invariant_locks.defer_until_state_unlock(resume_facade)
         return _receipt(request, deferred_delivery=True)
 
@@ -928,8 +927,8 @@ def _deliver_to_facade(
         # requests need the Router to choose a member.
         family_facade.show_request(request.resident_id, facade_message_id)
         if not family_recovery.handle(record, facade_message_id):
-            from . import family_direct_delivery
-            family_direct_delivery.resume(record, facade_message_id, request.actor_id)
+            from .domain_ports import resident_domain_port
+            resident_domain_port.resume_direct_family_delivery(record, facade_message_id, request.actor_id)
 
     invariant_locks.defer_until_state_unlock(publish_for_router)
     invariant_locks.defer_until_state_unlock(

@@ -59,7 +59,7 @@ def test_each_later_input_and_scoped_input_receives_current_policy(resident_reco
     job = {"user_message_id":"msg_report", "message":"请写汇报", "raw_message":"原始输入"}
     first = prompts.build_resident_prompt(resident_record, job)
     assert '"initiative": "off"' in first
-    assert "用户明确请求" in first and "原始输入" in first
+    assert "明确要求汇报" in first and "本轮不得新建" in first and "原始输入" in first
     reporting.update(rid, "CASE-A", {"runtime_settings":{"reporting":{"initiative":"high","quality":"high"}}})
     later = prompts.build_resident_prompt(resident_record, job)
     assert '"initiative": "high"' in later and "绝不每轮固定生成" in later
@@ -72,7 +72,8 @@ def test_each_later_input_and_scoped_input_receives_current_policy(resident_reco
     assert "--quality" in later and "--previous-review-id" in later
     reporting.update(rid, "CASE-A", {"runtime_settings":{"reporting":{"initiative":"off","quality":"low"}}})
     lowered = _running_turn_prompt(resident_record, job)["actual_sent_prompt"]
-    assert '"quality": "low"' in lowered and "汇报使用清晰的 Markdown" in lowered
+    assert '"quality": "low"' in lowered and "汇报功能：不开启" in lowered
+    assert "汇报使用清晰的 Markdown" not in lowered
     assert "高质量汇报与解释成果须交独立 Resident 审查" not in lowered
 
 
@@ -121,10 +122,10 @@ def test_non_home_prompt_links_existing_authoring_entry_for_concise_high_artifac
     from scripts.build_explanation_package import build
 
     rid = resident_record["resident_id"]
-    reporting.update(rid, "CASE-A", {"runtime_settings":{"reporting":{"initiative":"off","quality":"high"}}})
+    reporting.update(rid, "CASE-A", {"runtime_settings":{"reporting":{"initiative":"high","quality":"high"}}})
     text = prompts.build_resident_prompt(resident_record, {"message":"完成之前委托的解释"})
     policy = json.loads(text.split("<reporting-policy>\n", 1)[1].split("\n", 1)[0])
-    assert policy["initiative"] == "off" and policy["quality"] == "high"
+    assert policy["initiative"] == "high" and policy["quality"] == "high"
     code_root = Path(__file__).resolve().parents[2]
     for relative in ("management_portal/static/home_explanation_authoring.md",
                      "scripts/build_explanation_package.py", "scripts/submit_explanation_review.py"):

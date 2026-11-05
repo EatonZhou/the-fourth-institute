@@ -3,43 +3,11 @@ from __future__ import annotations
 
 import hashlib
 import json
-from pathlib import Path
 from typing import Any
 
 from . import resident_record_domain as records
 
-DEFAULT = {"initiative": "off", "quality": "medium"}
-
-
-def normalize(value: Any) -> dict[str, str]:
-    if not isinstance(value, dict) or set(value) != set(DEFAULT):
-        raise ValueError("reporting requires exactly initiative and quality")
-    if value["initiative"] not in ("off", "low", "medium", "high"):
-        raise ValueError("invalid reporting.initiative")
-    if value["quality"] not in ("low", "medium", "high"):
-        raise ValueError("invalid reporting.quality")
-    return dict(value)
-
-
-def configured(record: dict) -> dict[str, str]:
-    value = record.get("reporting")
-    return dict(DEFAULT) if value is None or value == {} else normalize(value)
-
-
-def effective(resident_id: str, message_id: str = "") -> dict:
-    from . import family_facade
-    source = resident_id
-    if message_id:
-        chain = family_facade.relay_sources_of(resident_id, message_id)
-        if chain:
-            source = chain[-1][0]
-    record = records.find_resident(source)
-    if not record:
-        return {"state": "unknown", "source_resident_id": source}
-    return {**configured(record), "state": "known", "source_resident_id": source,
-            "source": "family_facade" if family_facade.is_facade(record) else "resident",
-            "configured": bool(record.get("reporting")),
-            "application": "next_input"}
+from .resident_reporting_policy import DEFAULT, normalize, configured, effective, prompt, creation_allowed  # noqa: F401 - public policy surface
 
 
 def _authorized(resident_id: str, actor: str, operation: str = "GetResidentSettings") -> dict:
@@ -81,10 +49,12 @@ def read(resident_id: str, actor: str) -> dict:
         result = execution.read_resident_runtime_settings(target, actor) if target else {
             "runtime_settings": {}, "application": {}, "settings_revision": "",
         }
-        result["runtime_settings"] = {**result["runtime_settings"], "reporting": configured(record)}
+        policy = effective(resident_id)
+        selected = {key: policy[key] for key in DEFAULT}
+        result["runtime_settings"] = {**result["runtime_settings"], "reporting": selected}
         result["runtime_settings_access"] = "available" if target else "unavailable"
-        result["reporting_effective"] = effective(resident_id)
-        digest = json.dumps([result["settings_revision"], configured(record), bool(record.get("reporting"))], sort_keys=True)
+        result["reporting_effective"] = policy
+        digest = json.dumps([result["settings_revision"], selected, bool(record.get("reporting"))], sort_keys=True)
         result["settings_revision"] = hashlib.sha256(digest.encode()).hexdigest()
         result["application"] = {**result["application"],
             "schema": "tfi.resident-application.v1", "settings_revision": result["settings_revision"],
@@ -125,14 +95,19 @@ def update(resident_id: str, actor: str, payload: dict) -> dict:
             from management_portal import permission_system
             if not permission_system.allows(actor, "UpdateResidentSettings", {"resident_id": target}):
                 raise PermissionError("无权修改该执行 Resident 的运行设置")
+        before_revision = before["settings_revision"]
+
+    # Catalog validation may perform RPC; it precedes the short CAS commit.
+    prepared = execution.prepare_resident_runtime_settings_change(target, actor, {"runtime_settings": changes}) if changes else None
+    with records.state_lock(resident_id):
+        record = _authorized(resident_id, actor, "UpdateResidentSettings")
+        if read(resident_id, actor)["settings_revision"] != before_revision or _runtime_target(record, actor) != target:
+            raise LineageConflictError("Resident settings changed during validation", resource="resident_runtime_settings")
         changed = policy is not None and (not record.get("reporting") or policy != configured(record))
         def commit():
             next_fields = []
             if changes:
-                current = execution.read_resident_runtime_settings(target, actor)
-                saved = execution.change_resident_runtime_settings(target, actor, {
-                    "runtime_settings": changes, "expected_revision": current["settings_revision"],
-                })
+                saved = prepared()
                 next_fields.extend(saved.get("next_turn_fields", []))
             if changed:
                 fresh = records.find_resident(resident_id)
@@ -141,50 +116,10 @@ def update(resident_id: str, actor: str, payload: dict) -> dict:
                 next_fields.append("reporting")
             result = read(resident_id, actor)
             result["next_turn_fields"] = next_fields
+            result["active_turn_fields"] = []
+            result["active_turn_settings_update"] = {"requested": False, "status": "next_turn" if next_fields else "unchanged"}
             return result
         return resident_catalog.get_catalog().state_store.transaction(commit)
-
-
-def prompt(record: dict, job: dict) -> str:
-    policy = effective(record["resident_id"], str(job.get("user_message_id") or ""))
-    initiative = {
-        "off": "不主动额外生成汇报；用户明确请求的汇报、普通回答及业务最终交付照常完成。",
-        "low": "仅在重要成果、重大风险或需要用户决策时主动汇报。",
-        "medium": "在有实质阶段成果且有助用户理解或决策时主动汇报，避免重复。",
-        "high": "积极判断有价值的汇报机会，但仍按语义、信息增量和用户需要决定，绝不每轮固定生成。",
-    }
-    quality = {
-        "low": "汇报使用清晰的 Markdown。",
-        "medium": "汇报与解释页使用现有交互网页模板，按理解任务选择有用的表达，并按正式入口保存和关联成果。",
-        "high": (
-            "高质量汇报与解释成果须交独立 Resident 审查。解释页先读作者指南及其中三篇参考，"
-            "保存 quality=high 的固定包，由检查者实际打开、操作并检查内容和表达是否完成理解任务。"
-            "已委托的高质量解释即使采用简洁文字，也须保存实际成果并独立检查，不能降为 Markdown 绕过审查。"
-            "收到 changes_requested 后实际修改、新建固定版并关联原 review_id 复审，直至当前版本 passed；"
-            "submitted、可打开或媒体 ready 均不表示通过。取消时停止，权限或验证条件不足如实保留 blocked，"
-            "审查失败或未完成不可声称达标。页面检查不能替代所请求视频的独立成片检查。"
-        ),
-    }
-    if policy.get("state") != "known":
-        return "<reporting-policy>汇报策略未知，不推断个人 AMA 身份或主动汇报授权；显式请求与正常业务答复照常处理。</reporting-policy>"
-    code_root = Path(__file__).resolve().parents[2]
-    return ("<reporting-policy>\n" + json.dumps(policy, ensure_ascii=False) + "\n"
-            + initiative[policy["initiative"]] + "\n" + quality[policy["quality"]]
-            + "\n主动性只决定是否额外发起汇报；质量约束已经决定制作的汇报、解释页及明确委托的解释成果。"
-            + "简单事实可直接简答，不因档位或关键词强制造页。已接受的高质量解释、页面或视频要求"
-            + "在消息转交和后续输入中继续有效；不能因缺少 Home 上下文，或称为普通答复、业务最终交付而免除。"
-            + "用户明确变更要求或取消时遵循该请求。"
-            + f"\n通用作者入口（不依赖 Home 注入）：先读 `{code_root}/management_portal/static/home_explanation_authoring.md`"
-            + "（浏览器同源 `/static/home_explanation_authoring.md`），按指南选择模块与参考标准。"
-            + f"在自己有写权的 Workspace 创作，运行 `{code_root}/scripts/build_explanation_package.py`，"
-            + "显式传本次有效 `--quality`、自己的 `--resident-id`、正式 Workspace 地址和理解任务 `--task`；"
-            + "其余参数见指南，high 构建完成后通过正式入口送独立检查。"
-            + f"已有固定包用 `{code_root}/scripts/submit_explanation_review.py` 送检，"
-            + "用 `--read <review_id>` 回读结论，修订送检带 `--previous-review-id <review_id>`；"
-            + "缺入口或权限时报告具体缺口，不借身份、不自行签通过。"
-            + "\n本策略由 Portal 按本次输入提供，替代本会话之前的主动汇报偏好；页面上下文不覆盖它。"
-            + "明确请求指定格式时遵循该请求；普通答复或业务最终交付不自动成为额外主动汇报，"
-            + "这一分类不取消上述已委托成果的质量要求。\n</reporting-policy>")
 
 
 def install_schema(connection: Any) -> dict:

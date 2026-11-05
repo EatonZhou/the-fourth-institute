@@ -22,6 +22,18 @@ EXECUTION_SETTING_FIELDS = frozenset({
 })
 RUNTIME_SETTING_FIELDS = EXECUTION_SETTING_FIELDS | {"agent_harness"}
 
+REPORTING_DEFAULT = {"initiative": "off", "quality": "medium"}
+
+
+def normalize_reporting(value: Any) -> dict[str, str]:
+    if not isinstance(value, dict) or set(value) != set(REPORTING_DEFAULT):
+        raise ValueError("reporting requires exactly initiative and quality")
+    if value["initiative"] not in ("off", "low", "medium", "high"):
+        raise ValueError("invalid reporting.initiative")
+    if value["quality"] not in ("low", "medium", "high"):
+        raise ValueError("invalid reporting.quality")
+    return dict(value)
+
 
 def split_runtime_settings(settings: Mapping[str, Any]) -> tuple[dict[str, Any], dict[str, Any]]:
     from management_portal.execution import resident_runtime_settings

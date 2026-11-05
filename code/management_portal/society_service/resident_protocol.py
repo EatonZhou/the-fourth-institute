@@ -44,8 +44,8 @@ FORWARD_MESSAGE_LIMIT = 20
 
 
 def ensure_family_reviewers(resident_id: str, actor: str, *, kind: str, reviewer_id: str = "") -> dict:
-    from .family_quality_reviewers import ensure
-    return ensure(resident_id, actor, kind=kind, reviewer_id=reviewer_id)
+    from .domain_ports import resident_domain_port
+    return resident_domain_port.ensure_family_reviewers(resident_id, actor, kind=kind, reviewer_id=reviewer_id)
 
 FORWARD_MESSAGE_CHAR_LIMIT = 6000
 FORWARD_TOTAL_CHAR_LIMIT = 60000
@@ -99,12 +99,12 @@ def _conversation_controls(
     allowed, problem = _send_problem(target.record, actor, allowed=allowed)
     active_message_id = str(state.get("active_message_id") or "")
     closed = state.get("intake_state") == "closed"
-    from . import family_quota
+    from .domain_ports import resident_domain_port
     if family_facade.is_facade(target.record):
         from . import family_quota_projection
         quota_switch = {"targets": []} if closed or not allowed else family_quota_projection.quota_switch(target.record, actor)
     else:
-        quota_switch = family_quota.quota_switch_state(
+        quota_switch = resident_domain_port.quota_switch_state(
             target.record, execution_gate=state.get("execution_gate") or {},
         )
     if (closed or not allowed) and not family_facade.is_facade(target.record):
@@ -275,92 +275,7 @@ def _with_conversation_controls(
     return response
 
 
-def _input_parts(
-    message: Mapping[str, Any],
-) -> tuple[
-    str,
-    list[dict[str, Any]],
-    dict[str, Any],
-    str,
-    list[str],
-    str,
-]:
-    parts = message.get("content_parts")
-    if not isinstance(parts, list) or not parts:
-        raise ValueError("message.content_parts required")
-    resident_message_contract.validate_content_parts(parts)
-    text_parts: list[str] = []
-    media: list[dict[str, Any]] = []
-    context_refs: dict[str, Any] = {}
-    context_text: list[str] = []
-    instruction_skills: list[str] = []
-    working_directory = ""
-    for raw in parts:
-        part = dict(raw)
-        part_type = str(part.get("type") or "").strip().casefold()
-        if part_type == "text":
-            value = str(part.get("text") or "")
-            text_parts.append(value)
-        elif part_type in {"image", "file"}:
-            media.append(part)
-        elif part_type == "turn_review":
-            if not isinstance(part.get("segment_id"), str) or not part["segment_id"]:
-                raise ValueError("turn review requires a source Segment")
-            text_parts.append("审查指定轮次的修改快照")
-        elif part_type in {
-            "artifact_reference",
-            "resource_reference",
-            "context_reference",
-        }:
-            if (
-                part_type == "context_reference"
-                and isinstance(part.get("context"), Mapping)
-            ):
-                context = dict(part["context"])
-                raw_context_text = str(
-                    context.pop(CONTEXT_TEXT_FIELD, "") or ""
-                ).strip()
-                if raw_context_text:
-                    context_text.append(raw_context_text)
-                raw_instruction_skills = context.pop(
-                    INSTRUCTION_SKILLS_FIELD,
-                    (),
-                )
-                if isinstance(raw_instruction_skills, (list, tuple)):
-                    for skill in raw_instruction_skills:
-                        skill_id = str(skill or "").strip()
-                        if skill_id and skill_id not in instruction_skills:
-                            instruction_skills.append(skill_id)
-                supplied_working_directory = str(
-                    context.pop(WORKING_DIRECTORY_FIELD, "") or ""
-                ).strip()
-                if supplied_working_directory:
-                    if (
-                        working_directory
-                        and supplied_working_directory != working_directory
-                    ):
-                        raise ValueError(
-                            "Resident input contains conflicting working directories"
-                        )
-                    working_directory = supplied_working_directory
-                context_refs.update(context)
-            else:
-                context_refs.setdefault("resources", []).append(part)
-        else:
-            context_refs.setdefault("content_parts", []).append(part)
-    # The stored part lengths locate inline attachments in the captured input.
-    # Validation must not change the body that those lengths describe.
-    content = "\n".join(text_parts)
-    if not content.strip():
-        raise ValueError("Resident input requires a text content part")
-    return (
-        content,
-        media,
-        context_refs,
-        "\n\n".join(context_text),
-        instruction_skills,
-        working_directory,
-    )
+_input_parts = resident_message_contract.input_parts
 
 
 def deliver_resident_input(
@@ -997,6 +912,43 @@ def get_resident_runtime_settings(
 ) -> dict[str, Any]:
     from . import resident_reporting
     return resident_reporting.read(resident_id, actor)
+
+
+def reporting_creation_allowed(resident_id: str, actor: str, message_id: str = "") -> bool:
+    """Read one trusted policy without opening runtime settings or a Router.
+
+    A message-specific policy is available only to its executing Resident and
+    only for inputs owned by its current submitted turn. Browser callers use
+    the target's current policy without a message selector.
+    """
+    from . import resident_reporting, resident_execution_work
+    if not isinstance(resident_id, str) or not isinstance(actor, str) or not isinstance(message_id, str):
+        raise ValueError("Resident, actor and message identity must be strings")
+    actor_id = canonical_actor_id(actor)
+    try:
+        record = resident_catalog.get_catalog().get_admission(resident_id)
+    except KeyError:
+        return False
+    if not resident_catalog.registration_ready(record) or not resident_access.resident_visible_to_actor(record, actor_id):
+        return False
+    if message_id:
+        # A readable conversation or a quoted job in message text is not an
+        # execution grant. Read the durable Job, not a caller-supplied job.
+        if actor_id != record["resident_id"]:
+            return False
+        job = resident_execution_work.read(record)
+        if not resident_execution_work.is_active(job) or not resident_execution_work.submitted_execution_id(job):
+            return False
+        def turn_inputs(item):
+            yield str(item.get("user_message_id") or "")
+            for member in item.get("mailbox_members") or []:
+                yield from turn_inputs(member)
+        if message_id not in turn_inputs(job):
+            return False
+        stored = resident_conversation_stream.get_repository().message(resident_id, message_id)
+        if not stored or stored.get("role") != "user":
+            return False
+    return resident_reporting.creation_allowed(resident_id, message_id)
 
 
 def get_actual_sent_prompt(

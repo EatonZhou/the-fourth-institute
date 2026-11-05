@@ -1,11 +1,9 @@
 /* File presentation shared by Home and native Preview hosts. */
 .portalFileView { display:flex; flex-direction:column; min-height:0; }
-.portalFileView [hidden],.portalFilePreviewActions[hidden],.portalFilePreviewMenu[hidden] { display:none !important; }
+.portalFileView [hidden] { display:none !important; }
 .portalFileDocument { flex:1; overflow:auto; padding:8px; background:var(--panel, #fff); }
 .portalFileEditor { flex:1; min-height:180px; resize:none; font:14px/1.5 monospace; background:var(--panel, #fff); color:inherit; padding:12px; }
-.portalFilePreviewActions { display:flex; align-items:center; gap:6px; }
 .portalFileSaveStatus { font-size:.8em; color:var(--muted, #666); white-space:nowrap; }
-.portalFilePreviewMenu { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
 .portalFilePreviewError { margin:0; padding:6px 8px; color:var(--muted, #666); }
 .portalFilePreviewFailure { box-sizing:border-box; width:calc(100% - 32px); max-width:36rem; margin:clamp(24px,8vh,80px) auto; padding:clamp(16px,3vw,28px); border:1px solid var(--border,#ccc); border-radius:12px; background:var(--panel,#fff); overflow-wrap:anywhere; line-height:1.6; }
 .portalFilePreviewFailure h3 { margin:0 0 8px; font-size:1.15rem; color:var(--text,#222); }
@@ -18,3 +16,4 @@
 .portalFilePreviewFailure details p { margin:8px 0 0; white-space:pre-wrap; }
 :where(button).portalFileControl { font:inherit; color:inherit; background:var(--panel,#fff); border:1px solid var(--border,#ccc); border-radius:5px; padding:5px 9px; cursor:pointer; }
 .portalFileControl:disabled { opacity:.55; cursor:default; }
+.portalFileDocument.is-nowrap pre { white-space:pre; overflow:auto; }

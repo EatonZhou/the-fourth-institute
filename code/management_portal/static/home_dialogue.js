@@ -9,7 +9,7 @@
     // nonce to that submission, never to a Resident-wide FIFO or mutable target.
     const submissionRequests = new WeakMap();
     let destroyed = false, presented = true, suspended = false, chat = null, selection = null, assistant = null, lastDetail = null;
-    let pageState = null, restoring = true, navigationReady = Promise.resolve(), opening = null;
+    let pageState = null, restoring = true, navigationReady = Promise.resolve();
     let narrow = false, ratio = 40, dragging = null;
     root.classList.add("homeDialogue"); root.dataset.pane = "conversation";
     const tabs = node("div", "", "homeDialogueTabs");
@@ -20,120 +20,40 @@
     divider.setAttribute("aria-valuemin", "25"); divider.setAttribute("aria-valuemax", "70");
     const chatRoot = node("div", "", "homeDialogueChat"), chatStatus = node("p", "正在读取个人门面…"), status = node("p", "选择资源或在对话中请求展示", "homeDialogueStatus");
     status.setAttribute("role", "status"); chatStatus.setAttribute("role", "status");
-    const current = node("summary", "未选择展示", "homeDialogueCurrent");
-    const identityMenu = node("details", "", "homeDialogueIdentity"), identityBody = node("div", "", "homeDialogueIdentityBody");
-    identityMenu.append(current, identityBody);
-    const resourcePath = node("div", "", "portalPreviewDocumentPath homeDialogueResourcePath");
-    resourcePath.hidden = true;
-    const contentActions = node("div", "", "homeDialogueContentActions");
-    const history = node("select"), stage = node("div", "", "homeDialogueStage"); history.setAttribute("aria-label", "展示历史");
-    const viewNames = { report: "汇报", map: "研究地图", frontier: t("Lineage Map"), preview: "文件/资源", explanation: "解释页" };
-    const displayBar = node("div", "", "homeDialogueDisplayBar"), switchView = node("select");
-    switchView.setAttribute("aria-label", "当前视图");
-    const opener = node("details", "", "homeDialogueOpener"), openLabel = node("summary", "打开…");
-    opener.append(openLabel);
     function button(parent, title, fn) { const el = node("button", title); el.type = "button"; el.addEventListener("click", fn); parent.append(el); return el; }
     button(tabs, "对话", () => setPane("conversation")); button(tabs, "展示", () => setPane("display"));
-    const form = node("form", "", "homeDialogueChooser"), view = node("select"), kind = node("select"), target = node("input");
-    view.setAttribute("aria-label", "展示类型"); kind.setAttribute("aria-label", "目标类型"); target.setAttribute("aria-label", "目标 ID 或文件资源地址");
-    for (const [id, label] of Object.entries(viewNames)) view.add(new Option(label, id));
-    for (const [id, label] of [["task", "任务"], ["lineage", "Lineage"], ["project", "Project"]]) kind.add(new Option(label, id));
-    target.placeholder = "目标 ID 或资源地址"; target.required = true;
-    form.append(view, kind, target); const openButton = node("button", "展示"); openButton.type = "submit"; form.append(openButton);
-    view.onchange = () => { kind.hidden = ["preview", "explanation"].includes(view.value); if (["map", "frontier"].includes(view.value)) kind.value = view.value === "map" ? "project" : "lineage"; };
-    form.onsubmit = async event => {
-      event.preventDefault(); opening?.abort();
-      const controller = opening = new AbortController(), chosenView = view.value, chosenAddress = target.value.trim();
-      let chosenTarget = ["preview", "explanation"].includes(chosenView) ? { address: chosenAddress } : { kind: kind.value, id: chosenAddress };
-      state.manual(); openButton.disabled = true;
-      try {
-        if (chosenView === "explanation") {
-          // Manual file selection pins the bytes that were actually read. The
-          // history/protocol always carries that fixed version, never a hash
-          // that the user has to copy into a form.
-          window.PortalHomeDialogueState.normalizeIntent({ view: chosenView, target: { ...chosenTarget, sha256: "0".repeat(64) } });
-          const response = await window.PortalAPI.raw(`/api/resources/content?address=${encodeURIComponent(chosenAddress)}`, { credentials: "same-origin", cache: "no-store", redirect: "error", signal: controller.signal });
-          if (!response.ok) throw new Error(`无法读取解释页 (${response.status})`);
-          const reader = response.body.getReader(), chunks = []; let size = 0;
-          for (;;) { const { value, done } = await reader.read(); if (done) break; size += value.byteLength;
-            if (size > 1024 * 1024) { await reader.cancel(); throw new Error("解释页清单过大"); } chunks.push(value); }
-          const bytes = new Uint8Array(size); let offset = 0;
-          for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.byteLength; }
-          if (JSON.parse(new TextDecoder().decode(bytes)).schema !== "portal-explanation/v1") throw new Error("所选文件不是解释页清单");
-          const { sha256 } = await import("./portal_sha256.js");
-          chosenTarget = { address: chosenAddress, sha256: await sha256(bytes) };
-        }
-        if (!destroyed && !controller.signal.aborted && opener.open && view.value === chosenView && target.value.trim() === chosenAddress)
-          if (navigate({ view: chosenView, target: chosenTarget }, true)) opener.open = false;
-      } catch (error) {
-        if (!destroyed && !controller.signal.aborted) { status.dataset.notice = "true"; status.hidden = false; status.textContent = error.message; }
-      } finally { if (opening === controller) { opening = null; openButton.disabled = false; } }
-    };
-    opener.append(form);
-    const tools = node("div", "", "homeDialogueToolbar"), more = node("details", "", "homeDialogueMore");
-    more.append(node("summary", "更多"), tools);
-    const viewLabel = node("label", "视图"), historyLabel = node("label", "历史");
-    viewLabel.append(switchView); historyLabel.append(history); tools.append(viewLabel, historyLabel);
-    function closeMore() { more.open = false; more.querySelector("summary").focus(); }
-    const previous = button(tools, "返回上一展示", () => { closeMore(); back(true); });
-    const pin = button(tools, "固定展示", () => { state.pin(!state.pinned); closeMore(); refresh(); });
-    const expand = button(tools, "展开", () => {
-      const expanded = root.classList.toggle("homeDialogueExpanded");
-      expand.textContent = expanded ? "返回原布局" : "展开";
-      closeMore(); resize(); persist();
+    const previewRoot = node("div");
+    const preview = window.PortalWorkspaceSurface.panelPackages.preview.create({
+      root: previewRoot, id: `home-preview-${window.PortalUIPrimitives.randomUUID()}`, explorer: false,
+      onPreviewRequest: request => navigate(request.displayIntent || {view:"preview", target:{address:request.resourceAddress || request.path || request.href}}, true),
     });
-    const menus = [opener, more, identityMenu], menuGroup = `home-dialogue-${window.PortalUIPrimitives.randomUUID()}`;
-    for (const menu of menus) {
-      menu.name = menuGroup;
-      menu.addEventListener("toggle", () => {
-        if (menu.open) for (const other of menus) if (other !== menu) other.open = false;
-        if (menu === opener && !menu.open) opening?.abort();
-      });
-      menu.addEventListener("keydown", event => {
-        if (event.key !== "Escape" || !menu.open) return;
-        event.preventDefault(); event.stopPropagation(); menu.open = false; menu.querySelector("summary").focus();
-      });
-    }
-    function dismissMenus(event) {
-      for (const menu of menus) if (menu.open && !menu.contains(event.target)) menu.open = false;
-    }
-    document.addEventListener("pointerdown", dismissMenus, true);
-    document.addEventListener("focusin", dismissMenus, true);
-    switchView.onchange = () => {
-      if (!state.active) return;
-      const intent = { view: switchView.value, target: state.active.intent.target };
-      const existing = state.entries.find(e => e.intent.view === intent.view && JSON.stringify(e.intent.target) === JSON.stringify(intent.target));
-      if (existing) { select(existing, true); setPane("display"); } else navigate(intent, true);
-    };
-    const cite = button(tools, "引用到对话", () => {
-      if (!selection || !chat) return;
-      if (state.active?.intent.view === "preview") {
-        chat.workspace.addReference({ title: selection.label || selection.address, path: selection.address, text: selection.text || selection.label || selection.address });
-      } else {
-        // Domain selections are quoted context, not filesystem locators. Preserve
-        // target, focus and verified sources even when no resource address exists.
-        const domain = { target: selection.target || state.active?.intent.target, focus: selection.focus,
-          address: selection.address, version: selection.version, checked_at: selection.checked_at, sources: selection.sources || [] };
-        chat.workspace.addReference({ title: `展示引用 · ${selection.label || domain.target?.id || "当前对象"}`,
-          text: `${selection.text || selection.label || ""}\n来源与目标：${JSON.stringify(domain)}`,
-          source_message_ids: domain.target?.kind === "task" ? [domain.target.id.split("/")[1]] : [] });
-      }
-      more.open = false;
-      setPane("conversation");
-    }); cite.disabled = true;
-    async function closeCurrentDisplay() {
-      closeMore();
-      const entry = state.active;
+    previewRoot.classList.add("homeDialoguePreview");
+    const stage = preview.surface.element("preview");
+    stage.replaceChildren(status); stage.classList.add("homeDialogueStage");
+    left.append(chatStatus, chatRoot); right.append(previewRoot); columns.append(left, divider, right); root.append(tabs, columns);
+    const focusPreview = () => (preview.surface.element("tabs").querySelector('.is-active button') || preview.surface.element("toolbarState"))?.focus({preventScroll:true});
+    function chooseResource() { preview.surface.element("toolbarState").click(); }
+    function expandPreview() { root.classList.toggle("homeDialogueExpanded"); resize(); persist(); }
+    async function closeEntry(entry) {
       if (!entry || (entry.adapter?.canClose && !await entry.adapter.canClose())) return;
-      if (!entry.adapter?.canClose && entry.adapter?.snapshot?.().dirty && !await window.PortalUI.confirm({ title: "关闭有未保存修改的展示？", message: "关闭后将丢失尚未保存的修改。", confirmLabel: "关闭", tone: "danger" })) return;
-      if (destroyed || entry !== state.active) return;
+      if (!entry.adapter?.canClose && entry.adapter?.snapshot?.().dirty && !await window.PortalUI.confirm({title:"关闭有未保存修改的展示？",message:"关闭后将丢失尚未保存的修改。",confirmLabel:"关闭",tone:"danger"})) return;
+      if (destroyed || !state.entries.includes(entry)) return;
+      const wasActive = state.active === entry;
       state.manual(); entry.controller.abort(); entry.adapter?.destroy(); entry.root.remove();
-      state.entries.splice(state.entries.indexOf(entry), 1); state.select(null, false);
-      select(state.entries.at(-1) || null, true);
+      state.entries.splice(state.entries.indexOf(entry), 1);
+      if (wasActive) select(state.entries.at(-1) || null, true); else refresh();
     }
-    const closeDisplay = button(tools, "关闭当前展示", closeCurrentDisplay);
-    displayBar.append(identityMenu, resourcePath, contentActions, opener, more);
-    left.append(chatStatus, chatRoot); right.append(displayBar, status, stage); columns.append(left, divider, right); root.append(tabs, columns);
+    const selectionToolbar = preview.surface.element("selectionToolbar");
+    selectionToolbar.onclick = () => {
+      if (!selection || !chat) return;
+      const address = selection.address;
+      chat.workspace.addReference({title:selection.label || address || "展示引用",
+        ...(state.active?.intent.view === "preview" && address ? {path:address} : {}),
+        text:state.active?.intent.view === "preview" ? selection.text || selection.label || address
+          : `${selection.text || selection.label || ""}\n来源与目标：${JSON.stringify({target:selection.target || state.active?.intent.target,focus:selection.focus,address,version:selection.version,checked_at:selection.checked_at,sources:selection.sources || []})}`,
+        source_message_ids:selection.target?.kind === "task" ? [selection.target.id.split("/")[1]] : []});
+      setPane("conversation");
+    };
     function setRatio(value) {
       ratio = Math.max(25, Math.min(70, value));
       root.style.setProperty("--home-dialogue-left", `${ratio}%`);
@@ -183,7 +103,6 @@
         const saved = pageState.read();
         if (![1, 2].includes(saved.schemaVersion) || !Array.isArray(saved.entries) || state.entries.length) return;
         root.classList.toggle("homeDialogueExpanded", saved.expanded === true);
-        expand.textContent = saved.expanded === true ? "返回原布局" : "展开";
         root.dataset.pane = "conversation";
         if (Number.isFinite(saved.ratio)) setRatio(saved.ratio);
         resize();
@@ -205,37 +124,25 @@
     function dirty() { return !!state.active?.adapter?.snapshot?.().dirty; }
     function refresh() {
       if (destroyed) return;
-      pin.setAttribute("aria-pressed", String(state.pinned)); pin.textContent = state.pinned ? "取消固定" : "固定展示";
-      current.textContent = state.active?.label || "未选择展示";
-      current.title = state.active?.label || "未选择展示";
-      current.setAttribute("aria-label", `展示详情：${current.title}`);
-      identityBody.textContent = state.active ? `${current.title}\n${state.active.intent.target.id || state.active.intent.target.address}` : "选择资源或在对话中请求展示";
-      const activeTarget = state.active?.intent.target;
-      const path = activeTarget?.kind === "report"
-        ? activeTarget.id + (activeTarget.revision ? `/revision/${activeTarget.revision}` : "")
-        : activeTarget?.address || activeTarget?.id || "";
-      window.PortalPreview.renderPath(resourcePath, path);
-      resourcePath.hidden = !path;
-      switchView.replaceChildren();
-      if (state.active) {
-        const choices = ["lineage", "project"].includes(state.active.intent.target.kind) ? ["report", "map", "frontier"] : [state.active.intent.view];
-        for (const id of choices) switchView.add(new Option(viewNames[id], id));
-        switchView.value = state.active.intent.view;
-      }
-      viewLabel.hidden = !state.active || switchView.options.length < 2;
-      historyLabel.hidden = !state.entries.length;
-      for (const entry of state.entries) if (entry.controls) {
-        entry.controls.primary.hidden = entry.controls.secondary.hidden = state.active !== entry;
-      }
-      previous.disabled = state.entries.indexOf(state.active) <= 0;
-      closeDisplay.disabled = !state.active;
-      history.replaceChildren(new Option(`历史 (${state.entries.length})`, ""));
-      for (const entry of state.entries) {
-        const draft = entry.adapter?.snapshot?.().dirty ? " · 草稿" : "";
-        history.add(new Option(`${viewNames[entry.intent.view]} · ${entry.label} · ${entry.status}${entry.queued ? " · 待查看" : ""}${draft}`, entry.id));
-      }
-      history.value = "";
-      cite.disabled = !selection || !chat;
+      const entry = state.active, target = entry?.intent.target;
+      const path = target?.kind === "report" ? target.id + (target.revision ? `/revision/${target.revision}` : "") : target?.address || target?.id || "";
+      const file = entry?.adapter?.toolbar?.() || {};
+      preview.setPresentation({
+        tabs: state.entries.map(item => ({key:item.id,label:item.label,title:`${item.label} · ${item.status}${item.queued ? " · 待查看" : ""}`,
+          active:item === entry,dirty:item.adapter?.snapshot?.().dirty === true,pinned:item === entry && state.pinned})),
+        path, document:file.document, download:file.download, pinned:state.pinned,
+        onSelect: key => { select(state.entries.find(item => item.id === key), true); setPane("display"); },
+        onClose: key => closeEntry(state.entries.find(item => item.id === key)),
+        onPin: entry ? () => {state.pin(!state.pinned); refresh();} : null,
+        actions:{
+          visual:{active:true,disabled:true},
+          open:{run:expandPreview,disabled:!entry},
+          back:{run:() => back(true),disabled:state.entries.indexOf(entry) <= 0},
+          refresh:{run:() => load(entry),disabled:!entry || entry.status === "读取中"},
+          ...file.actions,
+        },
+      });
+      selectionToolbar.hidden = !selection || !chat;
       if (!state.active) status.textContent = "选择资源或在对话中请求展示";
       status.hidden = !!state.active && !status.dataset.notice;
       persist();
@@ -265,7 +172,6 @@
     }
     function select(entry, manual) {
       state.select(entry, manual); selection = entry?.selection || null; delete status.dataset.notice;
-      for (const menu of menus) menu.open = false;
       if (entry) entry.queued = false;
       present(); refresh();
       if (entry?.deferred) { entry.deferred = false; void load(entry); }
@@ -275,10 +181,6 @@
       if (index > 0) select(state.entries[index - 1], manual);
       else if (manual) state.manual();
     }
-    history.onchange = () => {
-      const entry = state.entries.find(entry => entry.id === history.value);
-      if (entry) { select(entry, true); setPane("display"); }
-    };
     async function updateLabel(entry) {
       if (!entry.presented || destroyed || entry.controller.signal.aborted) return;
       if (["preview", "explanation"].includes(entry.intent.view)) {
@@ -313,12 +215,7 @@
           pageState?.writeSnapshot();
         }
         if (!entry.adapterPromise) {
-          if (entry.intent.view === "preview") {
-            entry.controls = { primary: node("div", "", "portalFilePreviewActions"), secondary: node("div", "", "portalFilePreviewMenu") };
-            entry.controls.primary.hidden = entry.controls.secondary.hidden = state.active !== entry;
-            contentActions.append(entry.controls.primary); tools.append(entry.controls.secondary);
-          }
-          entry.adapterPromise = window.PortalPreview.createPresentation(entry.intent.view, { root: entry.content, controls: entry.controls,
+          entry.adapterPromise = window.PortalPreview.createPresentation(entry.intent.view, { root: entry.content,
             onOpen: intent => { if (presented && !suspended && state.active === entry) navigate(intent, true); },
             onReference: reference => {
               if (destroyed || entry.controller.signal.aborted || entry.intent.view !== "report") return;
@@ -337,10 +234,7 @@
             onSelection: value => {
               entry.selection = value;
               if (state.active === entry) { selection = value; if (value) state.manual(); refresh(); }
-            }, onChoose: () => {
-              view.value = "preview"; view.onchange(); target.value = entry.intent.target.address;
-              opener.open = true; target.focus(); target.select();
-            }, onClose: closeCurrentDisplay, onChange: snapshot => {
+            }, onChoose: chooseResource, onClose: () => closeEntry(entry), onChange: snapshot => {
               if (["preview", "explanation"].includes(entry.intent.view) && snapshot?.accessStatus) {
                 entry.notice.hidden = entry.retry.hidden = true;
                 entry.notice.textContent = "";
@@ -421,13 +315,13 @@
       // earlier send cannot become the newest presentation request on return.
       const requestId = state.issue(residentId, (lastDetail?.snapshot?.messages || []).map(m => m.message_id || m.id));
       submissionRequests.set(submittedTarget, requestId);
-      let reporting = { initiative: "off", quality: "medium" }, reportingRead = "unavailable", settingsRevision = "", reportingError = "";
+      let reporting = null, reportingRead = "unavailable", settingsRevision = "", reportingError = "";
       try {
         const result = await window.PortalInstructionClient.execute("GetResidentSettings", { resident_id: residentId });
         const value = result.settings?.reporting;
         if (value && ["off", "low", "medium", "high"].includes(value.initiative) && ["low", "medium", "high"].includes(value.quality)) {
           reporting = { initiative: value.initiative, quality: value.quality }; reportingRead = "verified";
-        } else if (result.settings && value === undefined) reportingRead = "default";
+        } else if (result.settings && value === undefined) reportingError = "missing_reporting_settings";
         else reportingError = "invalid_reporting_settings";
         settingsRevision = result.settings_revision || "";
       } catch (error) {
@@ -436,30 +330,14 @@
         reportingError = error?.status === 403 || error?.code === "no_permit" ? "no_permit" : "settings_unavailable";
       }
       if (destroyed || residentId !== assistant?.resident_id) return null;
-      const protocol = { protocol: "portal-home-display/v1", request_id: requestId, version: 1, action: "open", view: "report", quality: reporting.quality, target: { kind: "lineage", id: "<真实资源ID>" } };
-      const initiativeGuidance = {
-        off: "主动性 off：不主动制作汇报或解释页；用户明确要求生成、展示或视觉讲解时仍可在授权范围完成。普通聊天只回答，不因右侧可用而创建文件。",
-        low: "主动性 low：只有明显值得持久阅读的重要结果才考虑制作；其余直接聊天回答，避免打断。",
-        medium: "主动性 medium：根据理解任务、复杂度与上下文判断，图示、对照或分步示例明显有帮助时主动制作。",
-        high: "主动性 high：积极判断哪些结果值得制作与展示，但仍自行判断价值；高主动性不等于每轮必生成。",
-      }[reporting.initiative];
+      const protocol = { protocol: "portal-home-display/v1", request_id: requestId, version: 1, action: "open", view: "report", quality: reporting?.quality, target: { kind: "lineage", id: "<真实资源ID>" } };
+      // Reporting policy is materialized by the Resident prompt owner. This
+      // host contributes navigation context, never a competing policy prompt.
       return { reporting, reporting_read: reportingRead, settings_revision: settingsRevision,
         ...(reportingError ? { reporting_error: reportingError } : {}), context_text: [
-        "当前入口是 Home 对话与展示。提交时核对的汇报策略：" + JSON.stringify(reporting) + "；读取状态：" + reportingRead + "。执行时正式服务端有效设置优先，Home指导不覆盖后续策略变更或用户限制。",
-        initiativeGuidance,
-        ...(reportingRead === "default" ? ["设置响应尚无reporting字段；这里仅采用正式缺省off/medium，不代表已读取到用户配置或新策略已部署。"] : []),
-        ...(reportingRead === "unavailable" ? ["未能核实当前汇报策略，禁止据此主动生成或送审；可以正常回答，显式生成请求先重新核对设置与权限，失败如实说明。"] : []),
-        "由 Resident 根据问题和实际收益选择形式，不以关键词列表代替判断。报告质量 low：直接Markdown，保存真实可读文件后以preview引用；medium：现有交互网页模板与必要图文；high：按Transformer Circuits/Distill标准完成后，由另一个Resident实际审查、作者修改、再审直到达标或真实阻塞。当前报告质量：" + reporting.quality + "。low/medium不强制送独立审核；high不能仅写高质量prompt或以受理冒充passed。",
-        "首次来源汇报的展示指令显式带顶层quality，按执行时有效策略选择；已固定report引用只读取原revision及其质量，不按新设置重生成。同一消息的首次生成身份跨quality保持不变；改变质量须显式刷新新revision，不能以更换origin绕过冲突。",
-        "按实际需要选择内容和形式：聊天中简短文字已足以回答时直接回答，不为每次问答创建文件；用户明确要求只用文字、不创建文件或不切换右侧时遵从其限制。已有合适材料可直接打开，明确要求展示、生成汇报、切换、聚焦或返回时按意图处理。生成材料后在聊天中简要说明关键结论和可查看的内容；生成与自动切换是两件事，固定、草稿、手选及迟到保护始终有效。",
-        "解释材料的生成路径：仅在有效主动性允许或用户明确请求时制作；按当前 Resident 身份调用 GetInstructionSchema 核对工具，用 GetResident 查询自己的已登记 Workspace/绑定；只在本次请求允许且自己有写权限的 Workspace 新建独立解释包目录。可用 UpdateWorkspaceFile({address:真实workspace_ID/file/相对路径,content:文本}) 保存包内文件，不猜 Workspace ID/路径、不覆盖无关文件、不借用用户或其他 Resident 身份。没有现成解释文件不是要求用户提供 Project/task 的理由，确实缺少必要范围时才询问。",
-        "medium/high解释页用 view:explanation：页面组合视频、可选交互、图文补充；low直接Markdown即可。初开先呈现交互与图文，用户点击‘生成讲解视频’才生成视频，不在打开或回复时抢先生成；视频及字幕持久保存，重开恢复已有成果。视频按钮的质量独立选择：low自由发挥、medium加强3b1b-style、high对齐3b1b级别并独立实际审查与修改再审。选择属于固定生成版本，不能跨质量复用ready。交互应帮助理解因果，例如选择查询词、调整温度或遮罩，真实重算注意力权重及结果。按内容选择有效呈现，不用无意义滑块、占位视频或空模块凑模板。",
-        "通用创作标准：先写清读者要看懂或判断什么，再按所选质量选择形式。medium/high的操作、图形、数值、算式和文字同步反馈并能核对来源；机制用过程与参数探索，方案比较用同尺度对照，架构用结构导航与细节，不照抄注意力样例或固定卡片布局。low直接Markdown同样要求内容准确。可把本地D3库打包进交互文件并保留许可，禁止远程依赖。交付前检查事实、计算、密度、键盘/触屏/大字体、减少动态效果和性能；隐藏时停止活动，不用持续动画代替解释。完整创作与包格式入口：当前 Portal 同源 /static/home_explanation_authoring.md。",
-        "high报告创作参考 Transformer Circuits Global Workspace、Distill Paths Perspective on Value Learning 和 Distill Handwriting；简单事情不强行复杂。视频质量由生成按钮单独选择：medium增强3Blue1Brown风格提示，high再要求独立成片审查；low不强制该风格。作者提交固定音频文件与真实字幕时间。页面检查、编码成功与可播放均不能代签内容或听感。",
-        "仅high质量必须触发独立检查 Resident：构建 scripts/build_explanation_package.py 时显式传 --quality；high由脚本送检，手写high清单或重试用 scripts/submit_explanation_review.py，传自己的 --resident-id、正式 --address、清单 --sha256 与读者 --task。有效质量为high时，清单必须记录high，不能省略而沿用medium默认。作者不能审核自己。按固定版本与摘要幂等投递，作者回读匹配此版本的独立报告，changes_requested后修改成新固定版再审，持续交代具体欠缺和修改结果；旧pass对修改后的内容失效。submitted只表示受理，缺权限、取消、生成失败或未实际操作不能说通过，不自动降级，不无限忙重试。普通打开与恢复历史不重投检查。medium/high未准备video_plan时仍由宿主显示视频按钮，点击后才请求正式作者创作分镜与固定音轨；不要为了显示按钮抢先生成音轨。",
-        "解释包清单是 UTF-8 JSON：{schema:'portal-explanation/v1',title,summary,revision:1,quality:'low'|'medium'|'high',interaction?:{address,sha256,title},supplement?:{address,sha256},video_plan?:{address,sha256},video?:{address,sha256,captions?:{address,sha256},transcript?:{address,sha256},chapters?:[{time,title}]},sources?:[{label,url或address}]}。address 均为实际 workspace_ID/file/...；sha256 是对应文件字节的 SHA-256。low包仅Markdown supplement；medium/high交互使用独立自包含 HTML/CSS/JS，在隔离沙箱中运行，不能联网、访问父页面/凭据或导航外部页面；把所需数据写入交互文件，用语义控件支持键盘、窄屏和减少动态效果。supplement 引用 Markdown。video_plan 引用已保存的声明式视频生成计划，计划与其 WAV 音轨必须与 manifest 在同一 Workspace 同一包目录，scene start/end 与 cues 使用真实配音时间；具体生成合同见解释页创作指南，不要把可执行脚本当生成计划。普通 Preview 的 HTML/JS 文件只按文本/代码展示，其边界保持不变。",
-        "写入成功后用 ReadResource 回读清单和各文件，核对内容/媒体、摘要及可读性；成功才输出 view:explanation、action:open、target:{address:真实workspace_ID/file/.../manifest.json,sha256:清单字节SHA256} 的 portal-home-display 围栏，沿用下方本次 request_id。每次新解释使用独立持久目录，历史固定该清单与材料版本；不把临时下载凭据写进引用。已有普通文件仍可用 view:preview 打开。若工具缺失、权限不足、写入/回读失败，不输出成功打开指令、不声称已经生成；明确具体失败和现有可读内容，不把只改提示或只完成图文说成完整解释页交付。",
-        "展示协议只导航已存在且可读的目标，不执行协议内 HTML/脚本、不授予写权限；实际生成通过正式文件工具完成，不能把页面正文、脚本或凭据塞进协议。概念解释不为它伪造 Project、Lineage 或 task 来源。已有来源的状态汇报仍走 report：首次意图由报告适配器按稳定来源身份持久化，已有报告必须引用确定 report_ID+revision，显式刷新另建版本且保留旧引用。未知的已有资源目标先查询，无法确认才询问。",
+        "当前入口是 Home 对话与展示。提交时读取的汇报设置快照：" + JSON.stringify(reporting) + "；读取状态：" + reportingRead + "。生成规则与质量要求由标准 Resident Prompt 注入提供；本入口不改变规则。",
+        "展示协议只导航已存在且可读的目标，不授予权限。实际创作通过正式作者入口完成；解释包创作合同见当前 Portal 同源 /static/home_explanation_authoring.md。",
+        "固定汇报引用使用真实 report_ID 和 revision；来源首次生成使用稳定来源身份，重开只读，不重生内容或检查。未知目标先查询，不能伪造资源ID。",
         "示例结构：" + JSON.stringify(protocol),
         "action 允许 open/generate/focus/back；view 允许 report/map/frontier/preview/explanation；首次汇报/地图 target 为 {kind:task|lineage|project,id,focus?:节点ID}；已有汇报用 view:report 和 target:{kind:report,id:真实report_ID,revision:正整数,focus?:节点ID} 引用固定版本。task 的 id 必须匹配 /^resident_[a-f0-9]{12}\\/msg_[a-f0-9]{12,64}$/，来自 GetMessage/GetInputState 的一次真实请求，不能使用 task_ 或 MailboxTodo；preview 使用 {address:资源嵌套地址或文件链接}；explanation 使用 {address:清单的正式Workspace文件地址,sha256:64位小写字节摘要}。back 无须 view/target。version 是本次请求内递增整数。",
         "宿主只接受本次 request_id，自动结果不会覆盖固定、草稿或用户手选展示。", 
@@ -477,7 +355,7 @@
           title: target.title || "个人门面", submissionContext, onDetail: consume, onDisplayAction: action => {
             if (destroyed || !presented || suspended) return false;
             navigate(action.intent, true, true, {messageOrigin: action.messageOrigin});
-            setPane("display"); current.focus({preventScroll:true}); return true;
+            setPane("display"); focusPreview(); return true;
           },
           onAcknowledgement: (_result, submitted) => {
             const requestId = submissionRequests.get(submitted.target);
@@ -495,7 +373,7 @@
       if (!presented || suspended || destroyed) return false;
       navigate(request.displayIntent || { view: "preview", target: { address: request.resourceAddress || request.path || request.href } }, true, true, {messageOrigin:request.messageOrigin}); setPane("display"); return true;
     }, { priority: 80 });
-    function lifecycle(event) { presented = event.detail.phase === "show"; if (!presented) { root.classList.remove("homeDialogueExpanded"); expand.textContent = "展开"; } resize(); }
+    function lifecycle(event) { presented = event.detail.phase === "show"; if (!presented) root.classList.remove("homeDialogueExpanded"); resize(); }
     function beforeUnload(event) {
       if (state.entries.some(entry => entry.adapter?.snapshot?.().dirty)) { event.preventDefault(); event.returnValue = ""; }
     }
@@ -514,11 +392,10 @@
     void mountChat(); refresh();
     return { destroy() {
       pageState?.writeSnapshot(); pageState?.destroy();
-      destroyed = true; opening?.abort(); unregister(); chat?.destroy();
+      destroyed = true; unregister(); chat?.destroy();
       for (const entry of state.entries) { entry.controller.abort(); entry.adapter?.destroy(); }
-      state.clear(); root.removeEventListener("portal:home-panel-lifecycle", lifecycle);
+      state.clear(); preview.destroy(); root.removeEventListener("portal:home-panel-lifecycle", lifecycle);
       observer.disconnect(); window.removeEventListener("beforeunload", beforeUnload);
-      document.removeEventListener("pointerdown", dismissMenus, true); document.removeEventListener("focusin", dismissMenus, true);
       window.removeEventListener("pagehide", pageHide); window.removeEventListener("pageshow", pageShow);
       root.classList.remove("homeDialogueExpanded"); root.replaceChildren();
     } };

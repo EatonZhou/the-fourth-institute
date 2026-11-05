@@ -148,7 +148,7 @@ def validate_record_fields(record: Mapping[str, Any]) -> None:
         from .resident_settings_contract import runtime_settings_from_parts
         runtime_settings_from_parts({**record["execution_settings"], "backend": record.get("backend", "")}, record.get("harness_config") or {})
     if record.get("reporting"):
-        from .resident_reporting import normalize
+        from .resident_settings_contract import normalize_reporting as normalize
         normalize(record["reporting"])
     if record.get("quota_reserve_override"):
         from management_portal.execution.account_quota import normalize_quota_override

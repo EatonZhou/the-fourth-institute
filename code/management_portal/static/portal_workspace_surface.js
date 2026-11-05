@@ -565,6 +565,9 @@
       return 0;
     }
     const byKey = new Map();
+    const focused = root.contains(document.activeElement) ? document.activeElement : null;
+    const focusedTab = focused?.dataset.portalDocumentTab;
+    const focusedClose = focused?.dataset.portalDocumentClose;
     root.innerHTML = items.map((item, index) => {
       const key = String(item?.key ?? index);
       const label = String(item?.label || key.split("/").at(-1) || key);
@@ -583,6 +586,8 @@
       </div>`;
     }).join("");
     window.PortalUIPrimitives?.mountIcons?.(root);
+    if (focusedTab) root.querySelector(`[data-portal-document-tab="${CSS.escape(focusedTab)}"]`)?.focus({preventScroll:true});
+    else if (focusedClose) root.querySelector(`[data-portal-document-close="${CSS.escape(focusedClose)}"]`)?.focus({preventScroll:true});
     root.querySelectorAll("[data-portal-document-tab]").forEach(button => {
       button.addEventListener("click", event => {
         event.stopPropagation();

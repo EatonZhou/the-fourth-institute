@@ -1,11 +1,11 @@
 (() => {
   "use strict";
-  function create({ root, controls, onOpen, onSelection, onChange, onChoose, onClose }) {
+  function create({ root, onOpen, onSelection, onChange, onChoose, onClose }) {
     root.classList.add("portalFileView");
     const node = (tag, text) => { const el = document.createElement(tag); if (text) el.textContent = text; return el; };
-    const toolbar = controls?.primary || node("div"), secondary = controls?.secondary || node("div"), status = node("p"), progress = node("span"), body = node("div"), editor = node("textarea");
+    const status = node("p"), progress = node("span"), body = node("div"), editor = node("textarea");
     const renderRoot = node("div"); body.append(renderRoot);
-    toolbar.className = "portalFilePreviewActions"; secondary.className = "portalFilePreviewMenu"; body.className = "portalFileDocument";
+    body.className = "portalFileDocument";
     editor.className = "portalFileEditor"; editor.setAttribute("aria-label", "文件草稿"); editor.hidden = true;
     status.className = "portalFilePreviewError"; status.setAttribute("role", "status");
     const failure = node("section"), failureTitle = node("h3"), explanation = node("p"), targetLabel = node("p", "目标文件"), targetAddress = node("code"), details = node("details"), reason = node("p"), recovery = node("div");
@@ -15,9 +15,8 @@
     details.append(node("summary", "查看错误详情"), reason);
     failure.append(failureTitle, explanation, targetLabel, targetAddress, recovery, details);
     progress.className = "portalFileSaveStatus"; progress.setAttribute("role", "status");
-    if (!controls) root.append(toolbar, secondary);
-    root.append(status, failure, body, editor);
-    const button = (title, fn, parent = toolbar) => { const el = node("button", title); el.classList.add("portalFileControl"); el.type = "button"; el.onclick = fn; parent.append(el); return el; };
+    root.append(status, progress, failure, body, editor);
+    const button = (title, fn, parent = recovery) => { const el = node("button", title); el.classList.add("portalFileControl"); el.type = "button"; el.onclick = fn; parent.append(el); return el; };
     const identityKey = () => {
       const identity = window.PortalIdentity?.peek?.() || {};
       return JSON.stringify([identity.principal?.kind || "user", identity.principal?.id || identity.username || window.PortalIdentity?.username?.() || ""]);
@@ -33,19 +32,17 @@
     });
     const readable = () => presented && authorized && !destroyed && identityKey() === ownerIdentity;
     const editable = () => readable() && !!verified && source.canEdit(verified);
-    const edit = button("编辑", () => session.beginEdit());
-    const save = button("保存", () => session.save({ save: ({ payload, draft }) => source.save(payload, draft) }));
-    const cancel = button("返回预览", () => { session.cancelEdit(); const menu = secondary.closest("details"); if (menu) { menu.open = false; menu.querySelector("summary").focus(); } }, secondary);
+    let wordWrap = true;
+    const setEditing = value => value ? session.beginEdit() : session.cancelEdit();
+    const saveFile = () => session.save({save:({payload,draft}) => source.save(payload,draft)});
+    const editHistory = command => { if (!editable()) return; editor.focus(); document.execCommand(command); session.updateDraft(editor.value); };
     const retry = button("重试访问", () => { void revalidate(); });
     const choose = button("打开其他内容", () => onChoose?.(), recovery); choose.hidden = !onChoose;
     const close = button("关闭此展示", () => onClose?.(), recovery); close.hidden = !onClose;
-    const link = node("a", "打开原文件 ↗"); link.target = "_blank"; link.rel = "noopener"; link.hidden = true; secondary.append(link); toolbar.append(progress);
+    const link = node("a", "打开原文件 ↗"); link.target = "_blank"; link.rel = "noopener"; link.hidden = true; recovery.append(link);
     function update(state = session?.snapshot() || {}) {
       if (destroyed) return;
       const allowed = readable(), canEdit = editable();
-      edit.hidden = !allowed || !canEdit || state.editing;
-      save.hidden = cancel.hidden = !allowed || !state.editing;
-      save.disabled = !canEdit || !state.dirty || state.saving; cancel.disabled = state.saving;
       editor.hidden = !allowed || !state.editing; body.hidden = !allowed || state.editing;
       editor.disabled = !canEdit || state.saving;
       if (allowed && state.editing && editor.value !== state.draft) editor.value = state.draft;
@@ -61,7 +58,9 @@
             : "读取未完成。可以重试，或打开其他内容继续使用展示区。";
         targetAddress.textContent = address; reason.textContent = accessError;
         recovery.prepend(retry);
-      } else if (retry.parentElement !== toolbar) toolbar.prepend(retry);
+      } else {
+        root.insertBefore(retry, progress);
+      }
       status.textContent = accessError ? "" : state.error || state.readError || editError || "";
       progress.textContent = checking ? "核验中" : state.status === "loading" ? "读取中" : state.saving ? "保存中" : state.dirty ? "未保存" : state.editing ? "已保存" : allowed && !canEdit ? "只读" : "";
       progress.title = checking ? "正在核对当前访问权限" : state.dirty ? "有未保存草稿，切换展示会保留" : progress.textContent;
@@ -181,7 +180,20 @@
     const events = ["portal:identity-changed", "portal:permissions-changed", "portal:history-restored", "portal:history-restored-error"];
     for (const event of events) window.addEventListener(event, accessChanged);
     window.addEventListener("focus", focus); document.addEventListener("visibilitychange", visibility);
-    return { show, handlesReadErrors: true, snapshot: session.snapshot, canClose: () => session.guardDiscard(),
+    return { show, handlesReadErrors: true, snapshot: session.snapshot,
+      toolbar() {
+        const state = session.snapshot(), allowed = readable(), canEdit = editable();
+        return {document:allowed ? state.payload : null,
+          download:allowed ? {url:source.rawUrl(state.payload || {}),filename:state.payload?.title} : null,
+          actions:{
+            code:{run:() => setEditing(true),disabled:!canEdit || state.saving,active:state.editing},
+            visual:{run:() => setEditing(false),disabled:!allowed || state.saving,active:!state.editing},
+            save:{run:saveFile,disabled:!canEdit || !state.dirty || state.saving},
+            undo:{run:() => editHistory("undo"),disabled:!canEdit || !state.editing || state.saving},
+            redo:{run:() => editHistory("redo"),disabled:!canEdit || !state.editing || state.saving},
+            wrap:{run:() => { wordWrap = !wordWrap; editor.wrap = wordWrap ? "soft" : "off"; body.classList.toggle("is-nowrap",!wordWrap); update(); },disabled:!allowed,pressed:wordWrap},
+          }};
+      }, canClose: () => session.guardDiscard(),
       setPresented(value) {
         const next = !!value;
         if (next === presented || destroyed) return;
@@ -194,7 +206,7 @@
         for (const event of events) window.removeEventListener(event, accessChanged);
         window.removeEventListener("focus", focus); document.removeEventListener("visibilitychange", visibility);
         root.removeEventListener("mouseup", selection); root.removeEventListener("keyup", selection);
-        root.classList.remove("portalFileView"); session.destroy(); disposeView(); toolbar.remove(); secondary.remove(); root.replaceChildren();
+        root.classList.remove("portalFileView"); session.destroy(); disposeView(); root.replaceChildren();
       },
     };
   }

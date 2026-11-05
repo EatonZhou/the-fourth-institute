@@ -46,7 +46,7 @@ from management_portal.execution.requests import (
     build_agent_turn_request,
     build_chat_completion_request,
 )
-from typing import Any, Mapping
+from typing import Any, Callable, Mapping
 import copy
 from management_portal.execution import resident_runtime_settings, slash_commands
 import sys
@@ -81,8 +81,7 @@ def read_resident_runtime_settings(
             default_runtime_settings = resident_runtime_settings.read_only_runtime_settings(
                 default_runtime_settings
             )
-        from . import family_quota
-        quota_switch = family_quota.quota_switch_state(record)
+        quota_switch = resident_domain_port.quota_switch_state(record)
         revision = resident_runtime_domain.resident_settings_revision(record, runtime_settings)
         return {
             "resident_id": target.resident_id,
@@ -96,7 +95,12 @@ def read_resident_runtime_settings(
         }
 
 
-def change_resident_runtime_settings(resident_id: str, actor: str = "", payload: object = None) -> dict:
+def prepare_resident_runtime_settings_change(resident_id: str, actor: str = "", payload: object = None) -> Callable[[], dict]:
+    """Validate outside the mutation lock; return a reauthorized CAS commit.
+
+    The settings facade may enlist the commit in its reporting transaction.
+    No caller receives or mutates the captured validation snapshot.
+    """
     from . import resident_access
     actor_id = canonical_actor_id(actor)
     if not actor_id:
@@ -123,38 +127,38 @@ def change_resident_runtime_settings(resident_id: str, actor: str = "", payload:
     if not requested_updates and requested_route is None:
         raise ValueError("runtime_settings required")
 
-    for _attempt in range(3):
-        with resident_record_domain.state_lock(resident_id):
-            target = resident_record_domain.resolve_resident_runtime_target(
-                resident_id,
-                actor_id,
-                require_visible=True,
-            )
-            record = target.record
-            if not resident_access.has_resident_workspace_authority(record, actor_id):
-                raise manage_refusal(record)
-            validation_record = copy.deepcopy(record)
-            validation_current = resident_runtime_domain.read_resident_runtime_settings(record)
-            if expected_revision is not None and expected_revision != resident_runtime_domain.resident_settings_revision(record, validation_current):
-                raise LineageConflictError("Resident settings revision changed; read current settings before saving",
-                                           resource="resident_runtime_settings")
-            validation_key = runtime_settings_validation_key(record)
-
-        # Provider catalogs come from ExecutionService and can perform I/O.
-        # Keep that read outside the Resident invariant lock, then commit only
-        # if both the selected Provider route and settings still match.
-        validation_updates = dict(requested_updates)
-        if requested_route is not None:
-            if resident_backend.execution_backend(validation_record) != "provider_api":
-                raise ValueError("backend_route_id settings are only supported by Model API")
-            validation_record["backend_route_id"] = requested_route.strip()
-            validation_updates.setdefault("model", validation_current.get("model", ""))
-        validated_updates = resident_runtime_domain.validate_backend_runtime_updates(
-            validation_record,
-            validation_current,
-            validation_updates,
+    with resident_record_domain.state_lock(resident_id):
+        target = resident_record_domain.resolve_resident_runtime_target(
+            resident_id,
+            actor_id,
+            require_visible=True,
         )
+        record = target.record
+        if not resident_access.has_resident_workspace_authority(record, actor_id):
+            raise manage_refusal(record)
+        validation_record = copy.deepcopy(record)
+        validation_current = resident_runtime_domain.read_resident_runtime_settings(record)
+        if expected_revision is not None and expected_revision != resident_runtime_domain.resident_settings_revision(record, validation_current):
+            raise LineageConflictError("Resident settings revision changed; read current settings before saving",
+                                       resource="resident_runtime_settings")
+        validation_key = runtime_settings_validation_key(record)
 
+    # Provider catalogs come from ExecutionService and can perform I/O.
+    # Keep that read outside the Resident invariant lock, then commit only
+    # if both the selected Provider route and settings still match.
+    validation_updates = dict(requested_updates)
+    if requested_route is not None:
+        if resident_backend.execution_backend(validation_record) != "provider_api":
+            raise ValueError("backend_route_id settings are only supported by Model API")
+        validation_record["backend_route_id"] = requested_route.strip()
+        validation_updates.setdefault("model", validation_current.get("model", ""))
+    validated_updates = resident_runtime_domain.validate_backend_runtime_updates(
+        validation_record,
+        validation_current,
+        validation_updates,
+    )
+
+    def commit() -> dict:
         with resident_record_domain.state_lock(resident_id):
             target = resident_record_domain.resolve_resident_runtime_target(
                 resident_id,
@@ -172,7 +176,8 @@ def change_resident_runtime_settings(resident_id: str, actor: str = "", payload:
                 current != validation_current
                 or runtime_settings_validation_key(record) != validation_key
             ):
-                continue
+                raise LineageConflictError("Resident runtime settings changed during Provider validation",
+                                           resource="resident_runtime_settings")
 
             now = resident_domain_common.now_iso()
             next_settings = resident_runtime_settings.merge_settings(
@@ -223,10 +228,18 @@ def change_resident_runtime_settings(resident_id: str, actor: str = "", payload:
             ]
             return result
 
-    raise LineageConflictError(
-        "Resident runtime settings changed during Provider validation",
-        resource="resident_runtime_settings",
-    )
+    return commit
+
+
+def change_resident_runtime_settings(resident_id: str, actor: str = "", payload: object = None) -> dict:
+    for attempt in range(3):
+        prepared = prepare_resident_runtime_settings_change(resident_id, actor, payload)
+        try:
+            return prepared()
+        except LineageConflictError:
+            if attempt == 2 or (isinstance(payload, dict) and "expected_revision" in payload):
+                raise
+    raise AssertionError("unreachable")
 
 
 def _lineage_terminal_fact_fields(job: dict[str, Any]) -> dict[str, str]:
@@ -1432,6 +1445,7 @@ def resident_system_instructions(
             family_role = (record.get("family") or {}).get("role") in {"router", "steward"}
             parts.append(InjectionPart("personal_assistant", personal,
                 "session_start" if family_role else "every_turn", "prompt_prefix" if family_role else "system"))
+    parts.extend(resident_prompt_domain.reporting_instructions(record, job).parts)
     return SystemInstructions(parts=tuple(parts)).validate()
 
 
@@ -1467,7 +1481,7 @@ def preview_prompt_injection(record: dict[str, Any], actor: str, turn: str = "fi
     definition = AGENT_PROVIDERS.get(backend)
     plan = plan_injection(
         parts,
-        resident_prompt_domain.build_resident_prompt(record, job),
+        resident_prompt_domain.build_resident_message(record, job),
         generation=True,
         first_injection=turn == "first",
         injected_at="2000-01-01T00:00:00Z",
@@ -1480,6 +1494,7 @@ def preview_prompt_injection(record: dict[str, Any], actor: str, turn: str = "fi
     if system_in_prompt and plan.attach_system_context:
         actual_prompt = f"{plan.system_context}\n\n{actual_prompt}"
     labels = {name: label for name, (label, _description, _choices) in prompt_injection.CATEGORIES.items()}
+    labels["reporting_policy"] = "汇报策略（正式配置，每轮）"
     settings = resident_runtime_domain.read_resident_runtime_settings(record)
     return {
         "resident_id": resident_domain_common.record_resident_id(record),
@@ -1909,7 +1924,7 @@ def _prepare_resident_prompt(
 
     prepared = dict(job)
     prepared["message"] = str(job.get("effective_message") or job.get("raw_message") or job.get("message") or "")
-    prepared["actual_sent_prompt"] = resident_prompt_domain.build_resident_prompt(record, prepared)
+    prepared["actual_sent_prompt"] = resident_prompt_domain.build_resident_message(record, prepared)
     prepared.pop("runtime_context", None)
     prepared["message"] = prepared["actual_sent_prompt"]
     prepared["prompt_built_at"] = resident_domain_common.now_iso()

@@ -27,10 +27,55 @@
       sanitizeNavigationLocator, selectionControllers, surface, tabControllers, updateBackAction,
     } = dependencies;
 
+    // A host may supply live presentation sessions instead of file sessions.
+    // Their navigation/admission policy stays with the host; all Preview chrome
+    // and action dispatch stay here, using the same tabs and toolbar as files.
+    let presentation = null, tabSignature = "";
+    const runPresentationAction = key => {
+      const action = presentation?.actions?.[key];
+      if (!action || action.disabled) return;
+      Promise.resolve().then(() => action.run?.()).catch(error => surface.setReadError(error?.message || String(error)));
+    };
+    function setPresentation(value) {
+      presentation = value;
+      const items = value.tabs || [];
+      const signature = JSON.stringify(items);
+      if (signature !== tabSignature) {
+        tabSignature = signature;
+        window.PortalWorkspaceSurface.renderDocumentTabs({ root: surface.element("tabs"), items,
+          onSelect: key => presentation?.onSelect?.(key),
+          onClose: key => Promise.resolve(presentation?.onClose?.(key)).catch(error => surface.setReadError(error?.message || String(error))),
+        });
+      }
+      surface.element("tabsShell").hidden = false;
+      surface.setPath(value.path || "");
+      surface.setDocumentStatistics(value.document || null);
+      const pin = surface.element("pin");
+      pin.disabled = !value.onPin;
+      pin.setAttribute("aria-disabled", String(pin.disabled));
+      pin.setAttribute("aria-pressed", String(!!value.pinned));
+      pin.setAttribute("aria-label", window.PortalI18n.t(value.pinned ? "解除当前文件锁定" : "锁定当前文件"));
+      pin.title = pin.getAttribute("aria-label");
+      const backButton = root.querySelector(`#${CSS.escape(ids.back)}`);
+      backButton.disabled = !value.actions?.back || value.actions.back.disabled === true;
+      backButton.setAttribute("aria-disabled", String(backButton.disabled));
+      for (const key of surface.actionKeys) {
+        if (key === "download") continue;
+        const element = surface.action(key), action = value.actions?.[key];
+        if (!element) continue;
+        element.disabled = !action || action.disabled === true;
+        element.setAttribute("aria-disabled", String(element.disabled));
+        element.classList.toggle("active", action?.active === true);
+        if (element.classList.contains("portalDocumentMode")) element.setAttribute("aria-pressed", String(action?.active === true));
+        if (typeof action?.pressed === "boolean") element.setAttribute("aria-pressed", String(action.pressed));
+      }
+      surface.setDownload(value.download?.url || "", value.download?.filename || "");
+    }
     const controller = Object.freeze({
       root,
       ids,
       surface,
+      setPresentation,
       createDocumentSession: createOwnedDocumentSession,
       createDocumentTabsController: createOwnedTabsController,
       createDocumentEditorTools,
@@ -145,8 +190,14 @@
 
     // The back and refresh buttons run the panel's commands, or the controller without them.
     function bindToolbar() {
+      surface.element("pin")?.addEventListener("click", () => presentation?.onPin?.());
+      for (const key of surface.actionKeys) {
+        if (["refresh", "download"].includes(key)) continue;
+        surface.action(key)?.addEventListener("click", () => runPresentationAction(key));
+      }
       [ids.back].forEach(id => {
         root.querySelector(`#${CSS.escape(id)}`)?.addEventListener("click", event => {
+          if (presentation) return runPresentationAction("back");
           const operation = options.commands?.execute
             ? options.commands.execute("back", { event, source: "preview-toolbar" })
             : controller.goBack();
@@ -156,6 +207,7 @@
         });
       });
       surface.action("refresh")?.addEventListener("click", event => {
+        if (presentation) return runPresentationAction("refresh");
         const operation = options.commands?.execute
           ? options.commands.execute("reload", { event, source: "preview-toolbar" })
           : controller.reload();

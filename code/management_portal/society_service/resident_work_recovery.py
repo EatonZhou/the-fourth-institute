@@ -144,30 +144,29 @@ def reconcile_failed_work(residents: list[dict[str, Any]] | None = None, *, jobs
 
 
 def _commit_switch_result(record, message_id, *, expected_pending=None, **values):
-    from . import family_quota, resident_record_domain
+    from . import resident_record_domain
     gate = {"state": "closed", "reason": "quota_used_up"}
     with resident_record_domain.state_lock(record["resident_id"]):
         current = resident_record_domain.find_resident(record["resident_id"])
         if not current or (expected_pending is not None and recovery_entry(current, message_id).get("pending_restart") != expected_pending):
             return
-        explicit = family_quota.quota_switch_policy(current) is True
-        before = family_quota.quota_switch_state(current, execution_gate=gate) if explicit else {}
+        explicit = resident_domain_port.quota_switch_policy(current) is True
+        before = resident_domain_port.quota_switch_state(current, execution_gate=gate) if explicit else {}
         if not explicit:
             values.pop("switch_reason", None)
         set_recovery_entry(current, message_id, **values)
         resident_record_domain.save_resident_record(current)
     if explicit:
-        family_quota._publish_quota_switch(current, gate, before)
+        resident_domain_port.publish_quota_switch(current, gate, before)
 
 
 def _restart_quota_recovery(record, message_id, payload):
-    from . import family_quota
     rid = record["resident_id"]
     try:
         resident_domain_port.restart_resident_session(rid, rid, payload, portal_reason="steward_quota_recovery")
     except Exception as error:
-        if (family_quota.quota_switch_policy(record) is not True
-                or not family_quota.definitive_migration_failure(error)):
+        if (resident_domain_port.quota_switch_policy(record) is not True
+                or not resident_domain_port.definitive_migration_failure(error)):
             raise
         _commit_switch_result(record, message_id, expected_pending=payload, pending_restart=None, switch_reason="migration_failed")
         return False
@@ -257,8 +256,7 @@ def _reconcile_failed_work(residents: list[dict[str, Any]], context: dict[str, A
                 ))
             changed += 1
         elif usage and can_migrate:
-            from . import family_quota
-            explicit = family_quota.quota_switch_policy(record) is True
+            explicit = resident_domain_port.quota_switch_policy(record) is True
             if explicit and recovery.get("switch_reason") == "migration_failed":
                 continue
             switches = int(recovery.get("switch_attempts") or 0)

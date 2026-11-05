@@ -4,6 +4,8 @@ from pathlib import Path
 from typing import Any
 
 from . import (
+    family_direct_delivery,
+    family_quality_reviewers,
     family_quota,
     resident_directory_domain,
     resident_execution_domain,
@@ -24,12 +26,29 @@ from . import (
 class ResidentDomainHost:
     """Application adapter for capabilities owned by the Resident domain."""
 
+    @staticmethod
+    def ensure_family_reviewers(resident_id, actor, *, kind, reviewer_id=""):
+        return family_quality_reviewers.ensure(resident_id, actor, kind=kind, reviewer_id=reviewer_id)
+
+    @staticmethod
+    def family_reviewer_instructions(record):
+        return family_quality_reviewers.instructions(record)
+
+    @staticmethod
+    def resume_direct_family_delivery(record, message_id, actor):
+        return family_direct_delivery.resume(record, message_id, actor)
+
+    @staticmethod
+    def publish_quota_switch(record, gate, before):
+        return family_quota._publish_quota_switch(record, gate, before)
+
     _delegates = {
         name: module
         for module, names in (
             (family_quota, (
                 "ensure_role_reserve", "reconcile_role_reserves", "reserve_candidate",
                 "auto_migration_enabled", "auto_migration_priority",
+                "quota_switch_state", "quota_switch_policy", "definitive_migration_failure",
             )),
             (resident_directory_domain, (
                 "get_resident_user_message_count", "get_resident_user_message_counts",

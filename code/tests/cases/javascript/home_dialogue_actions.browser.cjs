@@ -123,7 +123,7 @@ const server=http.createServer((req,res)=>{
     await action('预览幻灯片').click();await page.locator('.portalFileDocument:visible').waitFor();
     check('preview reads fresh source',await page.evaluate(()=>previewCalls[0].allowCached),false);
     await page.screenshot({path:path.join(out,'01-actions-preview-1440.png')});
-    await page.getByRole('button',{name:'编辑',exact:true}).click();await page.getByLabel('文件草稿').fill('保留未保存的手动草稿');
+    await page.getByRole('button',{name:'编辑当前文件的源码',exact:true}).click();await page.getByLabel('文件草稿').fill('保留未保存的手动草稿');
     await action('查看汇报').click();await page.locator('.home-report h2').waitFor();
     check('report action uses real adapter',await page.locator('.home-report h2').innerText(),'示例项目的真实组件汇报');
     await homeAction(page,'返回上一展示');
@@ -168,7 +168,7 @@ const server=http.createServer((req,res)=>{
     await action('预览幻灯片').focus();await page.screenshot({path:path.join(out,'03-action-390-large-font.png')});
     const box=await action('预览幻灯片').boundingBox();check('small screen action fits width',box.x>=0&&box.x+box.width<=390,true);
     await action('预览幻灯片').press('Enter');await page.locator('.portalFileDocument:visible').waitFor();
-    check('keyboard transfers focus to displayed target',await page.locator('.homeDialogueCurrent').evaluate(e=>e===document.activeElement),true);
+    check('keyboard transfers focus to displayed target',await page.locator('.homeDialoguePreview .portalDocumentTab.is-active button').first().evaluate(e=>e===document.activeElement),true);
     await page.screenshot({path:path.join(out,'04-opened-390-large-font.png')});
     await page.locator('.homeDialogueTabs').getByRole('button',{name:'对话',exact:true}).click();
     await page.evaluate(()=>window.deny=true);await action('预览幻灯片').click();
@@ -196,8 +196,20 @@ const server=http.createServer((req,res)=>{
       await page.getByRole('button',{name:'打开解释页',exact:true}).click();
       await page.locator('.homeExplanationHeader h1').waitFor();
       check('Home uses Preview presentation for explanation',await page.locator('.homeExplanationHeader h1').innerText(),'共享解释页');
-      check('Home uses the shared Preview resource identity',await page.locator('.homeDialogueResourcePath .portalPreviewResourceId').innerText(),'report_abcdefabcdef');
-      check('Home identity preserves the fixed revision',await page.locator('.homeDialogueResourcePath .portalPreviewResourcePath').innerText(),'/revision/1');
+      check('Home uses the shared Preview resource identity',await page.locator('.homeDialoguePreview .portalPreviewDocumentPath .portalPreviewResourceId').innerText(),'report_abcdefabcdef');
+      check('Home identity preserves the fixed revision',await page.locator('.homeDialoguePreview .portalPreviewDocumentPath .portalPreviewResourcePath').innerText(),'/revision/1');
+      check('Home mounts the complete shared Preview package',await page.locator('.homeDialoguePreview').evaluate(el=>!!el.__portalWorkbenchPreviewPanel),true);
+      check('Home has no parallel title toolbar',await page.locator('.homeDialogueDisplayBar,.homeDialogueMore,.homeDialogueIdentity').count(),0);
+      check('Home exposes native document tabs',await page.locator('.homeDialoguePreview [role="tablist"] [role="tab"]').count()>0,true);
+      check('native Visual mode is selected',await page.getByRole('button',{name:'以只读视觉模式查看当前文件',exact:true}).getAttribute('aria-pressed'),'true');
+      const sharedChrome = await page.locator('.homeDialoguePreview .portalDocumentToolbar').evaluate(el=>[...el.querySelectorAll('button')].map(x=>x.getAttribute('aria-label')));
+      await page.screenshot({path:path.join(out,'home-complete-preview.png')});
+      await page.evaluate(()=>{
+        const el=document.createElement('div');el.id='chrome-comparison';document.body.append(el);
+        window.chromeComparison=PortalWorkspaceSurface.panelPackages.preview.create({root:el,explorer:false});
+      });
+      check('Home uses the identical native toolbar controls',sharedChrome,await page.locator('#chrome-comparison .portalDocumentToolbar').evaluate(el=>[...el.querySelectorAll('button')].map(x=>x.getAttribute('aria-label'))));
+      await page.evaluate(()=>{chromeComparison.destroy();document.querySelector('#chrome-comparison').remove();});
       await page.evaluate(()=>{
         host.destroy();
         document.querySelector('#root').innerHTML='<div id="native-chat"></div><div id="native-preview"></div>';
@@ -294,15 +306,10 @@ const server=http.createServer((req,res)=>{
     const nonces=instructions.map(t=>JSON.parse(t.split('示例结构：')[1].split('\n')[0]).request_id);
     check('each native send has a fresh request nonce',new Set(nonces).size,presentationRequests.length);
     check('same verified policy applies across user wording',new Set(instructions.map(t=>t.split('示例结构：')[0])).size,1);
-    check('off never unconditionally requires generation',instructions.every(t=>t.includes('主动性 off：不主动制作')&&t.includes('用户明确要求生成')&&!t.includes('就主动生成并在右侧打开')),true);
-    check('simple answers and explicit opt-outs remain available',instructions.every(t=>t.includes('简短文字已足以回答时直接回答')&&t.includes('不为每次问答创建文件')&&t.includes('不创建文件或不切换右侧时遵从其限制')),true);
-    check('generation does not override user navigation',instructions.every(t=>t.includes('生成与自动切换是两件事')&&t.includes('固定、草稿、手选及迟到保护始终有效')),true);
-    check('persist read back then fixed explanation guidance reaches transport',instructions.every(t=>t.includes('UpdateWorkspaceFile({address:')&&t.includes('ReadResource 回读')&&t.includes('成功才')&&t.includes('view:explanation')&&t.includes('清单字节SHA256')&&t.includes('本次 request_id')),true);
-    check('generation failure and fixed-report guidance reach transport',instructions.every(t=>t.includes('不声称已经生成')&&t.includes('report_ID+revision')&&t.includes('不为它伪造')),true);
-    check('composed explanation and on-demand media reach actual transport',instructions.every(t=>t.includes('portal-explanation/v1')&&t.includes('supplement')&&t.includes('video_plan')&&t.includes('用户点击‘生成讲解视频’才生成视频')&&t.includes('真实重算注意力权重')&&t.includes('HTML/JS 文件只按文本/代码')&&t.includes('不授予写权限')),true);
-    check('authoring standard generalizes beyond the attention example',instructions.every(t=>t.includes('先写清读者要看懂或判断什么')&&t.includes('方案比较')&&t.includes('架构用结构导航')&&t.includes('不照抄注意力样例')&&t.includes('/static/home_explanation_authoring.md')),true);
-    check('only high mandates actual independent review',instructions.every(t=>t.includes('仅high质量必须')&&t.includes('low/medium不强制')&&t.includes('作者不能审核自己')&&t.includes('旧pass对修改后的内容失效')&&t.includes('submitted 只表示受理')&&t.includes('普通打开与恢复历史不重投检查')),true);
-    check('video quality is independently selected and pinned',instructions.every(t=>t.includes('low自由发挥')&&t.includes('medium加强3b1b-style')&&t.includes('high对齐3b1b级别')&&t.includes('不能跨质量复用ready')),true);
+    check('Home carries verified reporting settings without a second policy prompt',contexts.every(c=>c[0].context.reporting.initiative==='off'),true);
+    check('Home delegates rules to standard Resident injection',instructions.every(t=>t.includes('标准 Resident Prompt 注入')&&!t.includes('主动性 off：')&&!t.includes('仅high质量必须')),true);
+    check('Home points to the formal authoring contract',instructions.every(t=>t.includes('/static/home_explanation_authoring.md')),true);
+    check('Home preserves navigation and fixed resource references',instructions.every(t=>t.includes('固定汇报引用使用真实 report_ID 和 revision')&&t.includes('自动结果不会覆盖固定、草稿或用户手选展示')),true);
     evidence.policySubmissions=await page.evaluate(async()=>{
       const results=[];
       for(const initiative of ['off','low','medium','high'])for(const quality of ['low','medium','high']) {
@@ -316,19 +323,19 @@ const server=http.createServer((req,res)=>{
       window.reportingDenied=false;return results;
     });
     check('fresh effective policy reaches every native send',evidence.policySubmissions.slice(0,12).map(c=>c.reporting),['off','low','medium','high'].flatMap(initiative=>['low','medium','high'].map(quality=>({initiative,quality}))));
-    check('high initiative keeps Resident judgment',evidence.policySubmissions[11].context_text.includes('高主动性不等于每轮必生成'),true);
-    check('permission failure preserves chat but forbids automatic generation',evidence.policySubmissions.at(-1).reporting_read==='unavailable'&&evidence.policySubmissions.at(-1).reporting.initiative==='off'&&evidence.policySubmissions.at(-1).reporting_error==='no_permit',true);
+    check('Home does not duplicate high-initiative prompt',evidence.policySubmissions[11].context_text.includes('高主动性不等于每轮必生成'),false);
+    check('permission failure preserves chat but forbids automatic generation',evidence.policySubmissions.at(-1).reporting_read==='unavailable'&&evidence.policySubmissions.at(-1).reporting===null&&evidence.policySubmissions.at(-1).reporting_error==='no_permit',true);
     check('explicit invalid policy is unavailable rather than configured default',await page.evaluate(async()=>{
       window.reportingPolicy={initiative:'always',quality:'high'};
       const context=await chatOptions.submissionContext({resident_id:'resident_0123456789ab'});
       window.reportingPolicy={initiative:'off',quality:'medium'};
       return context.reporting_read;
     }),'unavailable');
-    check('legacy missing policy is labelled default rather than verified',await page.evaluate(async()=>{
+    check('missing effective policy is unavailable rather than a fabricated default',await page.evaluate(async()=>{
       window.reportingMissing=true;
       const context=await chatOptions.submissionContext({resident_id:'resident_0123456789ab'});
-      window.reportingMissing=false;return [context.reporting_read,context.settings_revision,context.context_text.includes('不代表已读取到用户配置')];
-    }),['default','legacy-fixture',true]);
+      window.reportingMissing=false;return [context.reporting_read,context.settings_revision,context.reporting];
+    }),['unavailable','legacy-fixture',null]);
     check('quality changes retain the same message generation identity',await page.evaluate(async()=>{
       const origin={residentId:'resident_0123456789ab',messageId:'msg_0123456789abcdef',fenceIndex:0};
       const intent={view:'report',target:{kind:'project',id:'demo'}};

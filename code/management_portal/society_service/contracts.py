@@ -86,7 +86,7 @@ DOMAIN_OPERATIONS = {
             list_resident_forward_targets list_resident_conversation_activity
         """),
         (Operation('read', 'resident', implementation='management_portal.society_service.resident_protocol'), """
-            get_resident_states
+            get_resident_states reporting_creation_allowed
         """),
         (Operation('read', 'resident', implementation='management_portal.society_service.resident_access'), """
             filter_visible_resident_ids

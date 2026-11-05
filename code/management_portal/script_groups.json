@@ -37,6 +37,7 @@
     "/static/portal_workbench.js"
   ],
   "portal-workspace-surface": [
+    "/static/portal_document_statistics.js",
     "/static/portal_workspace_surface_browser_markup.js",
     "/static/portal_workspace_surface_browser_explorer.js",
     "/static/portal_workspace_surface_panel_chrome.js",
