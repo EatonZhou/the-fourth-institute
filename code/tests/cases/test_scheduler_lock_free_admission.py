@@ -1,7 +1,8 @@
-"""Claims run side by side; only an execution row and its session binding are atomic.
+"""Unpaced claims run side by side; execution and binding ownership stay atomic.
 
-Capacity, quota and dispatch pacing are read without a lock, so concurrent
-claims may briefly exceed them. A claim that pauses mid-transaction must not
+Capacity and quota are read without a lock, so concurrent claims may briefly
+exceed them. Paced accounts additionally serialize their own countdown through
+a nonblocking account reservation. A claim that pauses mid-transaction must not
 hold up other Workers, an execution is claimed once, and one session binding
 never runs two executions.
 

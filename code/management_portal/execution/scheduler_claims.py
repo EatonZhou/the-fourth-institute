@@ -77,9 +77,9 @@ class Claims:
         duration = max(15, int(lease_seconds or self.default_lease_seconds))
         # Claims run side by side. Expired leases and stale Workers are
         # recovered by maintain(); capacity, quota and dispatch pacing are
-        # read without a lock, so concurrent claims may briefly exceed them.
-        # Only the execution row (claimed once) and its session binding (one
-        # execution at a time) are decided atomically.
+        # read without a global lock. Paced accounts reserve their dispatch
+        # window without waiting, then reread the deadline before claiming.
+        # The execution row and its session binding are also atomic.
         with self.changes.connect() as connection:
             now_epoch = time.time()
             worker = connection.execute(
@@ -138,7 +138,15 @@ class Claims:
             token = secrets.token_hex(24)
             now = execution_timestamp()
             candidate = None
+            dispatch_blocked_keys: set[str] = set()
+            interrupt_ids = {row["execution_id"] for row in interrupt_candidates}
             for option in [*interrupt_candidates, *fair_candidates]:
+                if option["execution_id"] not in interrupt_ids:
+                    key = self.capacity.capacity_key(requests[option["execution_id"]])
+                    if key in dispatch_blocked_keys or not self.capacity.try_dispatch(connection, key):
+                        dispatch_blocked_keys.add(key)
+                        dispatch_interval_blocked = True
+                        continue
                 if self._claim_candidate(
                     connection, option, requests[option["execution_id"]],
                     worker_id=worker_id, token=token,
@@ -173,7 +181,7 @@ class Claims:
                 else self.capacity.reserve_capacity_dispatch(
                     connection,
                     capacity_key,
-                    now_epoch=now_epoch,
+                    now_epoch=time.time(),
                 )
             )
             if not interrupt_only:

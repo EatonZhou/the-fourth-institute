@@ -105,7 +105,7 @@ def with_quote(text: str, quote: Mapping[str, Any] | None) -> str:
     from . import resident_record_domain
 
     author = str(quote.get("author_id") or "")
-    title = str((resident_record_domain.find_resident(author) or {}).get("title") or "") if author.startswith("resident_") else ""
+    title = str((resident_record_domain.find_resident_for_admission(author) or {}).get("title") or "") if author.startswith("resident_") else ""
     return f"{quote_block(quote, author_title=title)}\n\n{text}"
 
 
@@ -128,7 +128,9 @@ def relay_quote(source: tuple[str, str] | None, member_id: str) -> dict[str, str
         return {}
     excerpt = {"author_id": quote["author_id"], "text": quote["text"]}
     quoted_id = quote.get("message_id", "")
-    facade, member = resident_record_domain.find_resident(facade_id), resident_record_domain.find_resident(member_id)
+    # Quotes need canonical identity/Family membership, never Workspace paths.
+    facade, member = (resident_record_domain.find_resident_for_admission(rid)
+                      for rid in (facade_id, member_id))
     if not quoted_id or not facade or not member:
         return excerpt
     link = family_facade.relay_links(facade).get(quoted_id) or {}

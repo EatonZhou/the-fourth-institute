@@ -103,7 +103,7 @@ def validate_relay(business_ref: object, actor: str) -> tuple[str, str] | None:
     source = parse_relay_mark(business_ref)
     if source is None:
         return None
-    facade = resident_record_domain.find_resident(source[0])
+    facade = resident_record_domain.find_resident_for_admission(source[0])
     if not is_facade(facade):
         return None
     message = resident_conversation_stream.get_repository().message(source[0], source[1])
@@ -295,7 +295,7 @@ def relay_delegates(source: tuple[str, str] | None, member_id: str) -> bool:
 
     if source is None:
         return False
-    facade = resident_record_domain.find_resident(source[0])
+    facade = resident_record_domain.find_resident_for_admission(source[0])
     if not facade:
         return False
     return is_relay_target(facade, member_id)

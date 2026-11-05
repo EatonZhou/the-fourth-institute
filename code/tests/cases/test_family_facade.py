@@ -47,6 +47,44 @@ def facade(input_delivery):
     return _find_resident(resident_id)
 
 
+def test_facade_send_receipt_does_not_read_display_controls(facade, monkeypatch):
+    """持久受理和到达事件不等待历史额度按钮计算，重放仍只有一条输入。"""
+    from management_portal.society_service import family_quota_projection, resident_protocol
+
+    def display_read(*args, **kwargs):
+        pytest.fail("send must not traverse historical quota controls")
+
+    monkeypatch.setattr(family_quota_projection, "quota_switch", display_read)
+    repository = resident_conversation_stream.get_repository()
+    monkeypatch.setattr(repository, "current_projection", display_read)
+    payload = {"resident_id": facade["resident_id"], "message": {
+        "message_id": "msg_" + "e" * 32,
+        "role": "user", "content_parts": [{"type": "text", "text": "A new routed request"}],
+    }}
+    first = resident_protocol.deliver_resident_input(payload, "CASE-A")
+    replay = resident_protocol.deliver_resident_input(payload, "CASE-A")
+    assert first["accepted"] and replay["message_id"] == first["message_id"]
+    assert not {"controls", "state", "queue", "cursor"}.intersection(first)
+    assert repository.input_state(facade["resident_id"], first["message_id"])["state"] == "queued"
+    assert len(repository.input_states(facade["resident_id"])) == 1
+    assert any(event["payload"].get("message", {}).get("message_id") == first["message_id"]
+               for event in repository.events_after(facade["resident_id"], 0)["events"])
+
+
+def test_relay_validation_uses_identity_without_workspace_hydration(facade, monkeypatch):
+    from management_portal.society_service import lineage_data_residents
+
+    mid = "msg_" + "d" * 32
+    backend.deliver_resident_message_content(facade["resident_id"], "CASE-A", "route", message_id=mid)
+    monkeypatch.setattr(lineage_data_residents, "residents_from_rows",
+                        lambda *args, **kwargs: pytest.fail("relay authorization must not hydrate Workspace"))
+    source = family_facade.validate_relay(family_facade.relay_mark(facade["resident_id"], mid), "CASE-A")
+    assert source == (facade["resident_id"], mid)
+    monkeypatch.setattr(family_facade, "is_relay_target", lambda record, member: member == MEMBER)
+    assert family_facade.relay_delegates(source, MEMBER)
+    assert not family_facade.relay_delegates(source, "resident_ffffffffffff")
+
+
 
 def test_facade_message_waits_without_starting_a_turn(facade):
     """门面收到消息只排队不开始执行

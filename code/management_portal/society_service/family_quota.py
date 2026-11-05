@@ -113,7 +113,7 @@ def _relay_failed_route(facade_id: str, message_id: str, member_id: str, actor: 
     from . import family_chat_preferences, family_recovery, resident_conversation_stream, resident_record_domain
     from datetime import datetime, timezone
 
-    facade = resident_record_domain.find_resident(facade_id)
+    facade = resident_record_domain.find_resident_for_admission(facade_id)
     if not family_facade.is_facade(facade):
         raise ValueError("目标必须是 Family 门面")
     repository = resident_conversation_stream.get_repository()
@@ -170,7 +170,7 @@ def _relay_message(facade_id: str, message_id: str, member_id: str, actor: str,
     from management_common.async_questions import answered_set
     from . import resident_record_domain
 
-    facade = resident_record_domain.find_resident(facade_id)
+    facade = resident_record_domain.find_resident_for_admission(facade_id)
     if not family_facade.is_facade(facade):
         raise ValueError("目标必须是 Family 门面")
     steward_id = family_facade.family_steward_id(facade)
@@ -193,7 +193,7 @@ def _relay_message(facade_id: str, message_id: str, member_id: str, actor: str,
         raise KeyError("门面消息不存在")
     # An inner facade routes without running a model; its final member owns quota admission.
     to_steward = bool(steward_id) and member_id == steward_id
-    to_facade = family_facade.is_facade(resident_record_domain.find_resident(member_id))
+    to_facade = family_facade.is_facade(resident_record_domain.find_resident_for_admission(member_id))
     if not family_facade.is_relay_target(facade, member_id):
         raise ValueError("所选 Resident 已不属于这个 Family")
     state = repository.input_state(facade_id, message_id)

@@ -898,7 +898,7 @@ def _deliver_to_facade(
         if request.lending is not None:
             request.lending.replay(record_id, facade_message_id)
         invariant_locks.defer_until_state_unlock(lambda: family_recovery.handle(record, facade_message_id))
-        return _receipt(request)
+        return _receipt(request, deferred_delivery=True)
 
     from .state_store import get_lineage_data_store
     with invariant_locks.resident_conversation_lock(record_id), get_lineage_data_store().database.transaction() as connection:
@@ -921,7 +921,9 @@ def _deliver_to_facade(
     invariant_locks.defer_until_state_unlock(
         lambda: lineage_message_events.wake_watchers(record, facade_message_id)
     )
-    return _receipt(request)
+    # Arrival publication/routing above is reliable and retains its ordering.
+    # The sender need not wait for a second aggregate/UI controls read.
+    return _receipt(request, deferred_delivery=True)
 
 
 def _hold_info(request: ResidentInput, record: dict[str, Any]) -> dict[str, Any]:

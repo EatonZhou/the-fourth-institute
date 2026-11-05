@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import random
 import threading
+import time
 from typing import Any
 
 from management_common.database_time import epoch_seconds, instant, iso_time
@@ -261,6 +262,24 @@ class SchedulerCapacity:
             return lower
         return random.uniform(lower, upper)
 
+    def try_dispatch(self, connection: Any, capacity_key: str) -> bool:
+        """Reserve a paced account until commit, then reread its deadline.
+
+        A missing row is an idle account, not a new waiting window. The
+        account lock also covers that first dispatch; different accounts and
+        explicitly unpaced work remain independent.
+        """
+        if self.dispatch_interval_range(connection, capacity_key)[1] <= 0:
+            return True
+        row = connection.execute(
+            "SELECT pg_try_advisory_xact_lock(hashtextextended("
+            "current_schema() || ':dispatch:' || %s, 0)) AS reserved",
+            (capacity_key,),
+        ).fetchone()
+        if not row["reserved"]:
+            return False
+        return capacity_dispatch_state(connection, capacity_key)["next_dispatch_at"] <= time.time()
+
     def reserve_capacity_dispatch(
         self,
         connection: Any,
@@ -270,14 +289,29 @@ class SchedulerCapacity:
     ) -> dict[str, float]:
         interval_seconds = self.next_dispatch_interval_seconds(connection, capacity_key)
         next_dispatch_at = now_epoch + interval_seconds
-        record_dispatch_row(
-            connection, "capacity_dispatch_state", {"capacity_key": capacity_key}, {
-                "last_dispatched_at": instant(now_epoch),
-                "next_dispatch_at": instant(next_dispatch_at),
-                "interval_seconds": interval_seconds,
-                "updated_at": execution_timestamp(),
-            },
-        )
+        if interval_seconds > 0:
+            # A paced claim holds try_dispatch's account lock. Its deadline
+            # must commit with the claim, even if another writer touched the
+            # row; dropping the record would permit an immediate second send.
+            connection.execute(
+                "INSERT INTO capacity_dispatch_state "
+                "(capacity_key, last_dispatched_at, next_dispatch_at, interval_seconds, updated_at) "
+                "VALUES (%s, %s, %s, %s, %s) ON CONFLICT(capacity_key) DO UPDATE SET "
+                "last_dispatched_at=excluded.last_dispatched_at, "
+                "next_dispatch_at=excluded.next_dispatch_at, "
+                "interval_seconds=excluded.interval_seconds, updated_at=excluded.updated_at",
+                (capacity_key, instant(now_epoch), instant(next_dispatch_at),
+                 interval_seconds, execution_timestamp()),
+            )
+        else:
+            record_dispatch_row(
+                connection, "capacity_dispatch_state", {"capacity_key": capacity_key}, {
+                    "last_dispatched_at": instant(now_epoch),
+                    "next_dispatch_at": instant(next_dispatch_at),
+                    "interval_seconds": interval_seconds,
+                    "updated_at": execution_timestamp(),
+                },
+            )
         return {
             "last_dispatched_at": now_epoch,
             "next_dispatch_at": next_dispatch_at,
