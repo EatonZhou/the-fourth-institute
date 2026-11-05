@@ -210,11 +210,7 @@ python3 scripts/submit_explanation_review.py --resident-id '<检查者自己的R
 
 high 质量生成链路须完成上述独立检查，手写 high 清单也要送检。不要在打开历史、刷新页面或普通读取时重复触发检查。独立检查与产品正式 User TAU 分开，不能代替真实门面对话验证。
 
-成果入口使用 `portal-home-display` fenced block，内容为 `portal-home-display/v1`、`view:report` 与 `target:{kind:"report",id:"服务返回的report_ID",revision:实际修订号}`。构建客户端保存固定包、执行要求的独立送检后，会通过正式汇报域登记并返回该引用；直接采用返回值，不把 Workspace 容器 ID 当作汇报 ID，也不自行编造 ID。Workspace 地址和 SHA 仍用于固定文件、视频及审核。
-
-已有包可用 `python3 scripts/register_explanation_report.py --resident-id '<本人>' --address '<原manifest正式地址>' --sha256 '<原摘要>'` 补登记。此操作只关联现有固定成果，重复提交复用原汇报，不生成视频、不重新送检。失败保留原包，并按真实权限补齐后重试登记，不能重建或覆盖旧成果。旧 `view:explanation` 按钮仍可在显式打开时沿相同接口登记；历史恢复及 GET 只定位已有汇报。
-
-共享 Chat Workspace 在 Home、Society 等宿主把有效 Agent 入口呈现为按钮，点击交给共享 Preview，地址栏显示汇报自身的 `report_ID` 与固定修订。普通 JSON 代码和引用示例保持代码。Home 自动展示仍使用本次 Home request_id。正文只展示读者需要的结论、页面入口和真实检查状态；不把内部协议当作品。固定展示、未保存草稿、手动选择和迟到保护仍由 Home 宿主管理。
+成果入口使用 `portal-home-display` fenced block，内容为 `portal-home-display/v1`、`view:explanation` 与 `target:{address,sha256}`。共享 Chat Workspace 在 Home、Society 等宿主把有效 Agent 入口呈现为按钮，点击交给共享 Preview；普通 JSON 代码和引用示例保持代码。Home 自动展示仍使用本次 Home request_id。正文只展示读者需要的结论、页面入口和真实检查状态；不把内部协议当作品。固定展示、未保存草稿、手动选择和迟到保护仍由 Home 宿主管理。
 
 来源汇报由 User 点击聊天按钮保存时，创建者仍是该 User。Home 附带对话 Resident、真实消息 ID 和代码围栏序号作为待核对的出处；服务须以当前身份回读正式消息，验证展示意图后绑定负责修订的 Resident，不能信任客户端 `author` 或按名称猜测个人门面。审核反馈和 medium 视频分镜修改任务发给该已核验的负责者。作者要据固定报告与具体反馈实际修改图形、讲稿和分镜，保存新版本后再生成或送审；修改质量标签或收到任务均不等于完成。手动来源没有可核验回复时应明确待指定负责者，保留可读报告，不把通知 User 算作 Resident 修订闭环。
 
