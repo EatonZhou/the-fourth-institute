@@ -635,7 +635,7 @@ html[lang="en"] .residentReportingLevels { grid-template-columns:repeat(4,minmax
   .residentReportingRow { grid-template-columns:minmax(0,1fr) 28px; gap:6px 8px; }
   .residentReportingRow > .residentReportingHelp { grid-column:2; grid-row:1; }
   .residentReportingLevels, .residentReportingFormats { grid-column:1 / -1; grid-row:2; }
-  html[lang="en"] .residentReportingLevels { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  html[lang="en"] .residentReportingLevels, html[lang="en"] .residentReportingFormats { grid-template-columns:repeat(2,minmax(0,1fr)); }
 }
 @container (max-width:210px) {
   .residentReportingLevels, .residentReportingFormats { grid-template-columns:repeat(2,minmax(0,1fr)); }

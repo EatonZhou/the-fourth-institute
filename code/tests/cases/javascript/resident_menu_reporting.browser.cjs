@@ -74,8 +74,9 @@ const evidence = process.env.REPORTING_MENU_EVIDENCE;
       const metrics = await page.locator('.residentMenuReportingForm').evaluate(form => {
         const body = form.closest('.nodeSettingsBody'), fr = form.getBoundingClientRect();
         const controls = [...form.querySelectorAll('label')].map(label => {
-          const r = label.getBoundingClientRect();
+          const r = label.getBoundingClientRect(), text = label.querySelector('strong');
           return { width: r.width, height: r.height, inside: r.left >= fr.left - 1 && r.right <= fr.right + 1,
+            unbroken: text.getBoundingClientRect().height <= parseFloat(getComputedStyle(text).lineHeight) + 1,
             selected: label.querySelector('input').checked, border: getComputedStyle(label).borderColor };
         });
         const fonts = [...form.querySelectorAll('legend, strong, small, p, button')].filter(e => e.textContent.trim())
@@ -96,6 +97,7 @@ const evidence = process.env.REPORTING_MENU_EVIDENCE;
       });
       observations.push({ width, theme, language, ...metrics });
       assert.ok(metrics.controls.every(c => c.inside && c.height >= 40), 'visible choices fit the content column');
+      assert.ok(metrics.controls.every(c => c.unbroken), 'short option labels do not break inside words');
       assert.ok(metrics.fonts.every(f => f.size >= 13), 'all explanatory text stays legible');
       assert.ok(metrics.overflow <= 1 && metrics.bottomReachable, 'no outer horizontal scroll and save stays reachable');
       assert.deepEqual(metrics.selected, [['initiative', 'medium'], ['quality', 'high']]);
