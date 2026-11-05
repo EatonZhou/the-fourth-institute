@@ -4,15 +4,15 @@ type: decision
 project: AI员工
 created_at: '2026-10-19'
 version:
-  number: 23
+  number: 25
   created_at: "2026-10-19"
   created_by:
     user: ""
     agent: "resident_4b1da6140cf2"
-  updated_at: "2026-11-05T08:55:56Z"
+  updated_at: "2026-11-05T09:37:08Z"
   updated_by:
     user: ""
-    agent: "resident_2e9ea0072551"
+    agent: "resident_6199a7a36480"
 importance: 8
 ai_generated: true
 links:

@@ -198,22 +198,7 @@
 }
 .familyRelay.familyReply .familyRelayStatus {
   font-size: 11px;
-  color: var(--muted);
 }
-.familyReply .messageMetaLink { color: var(--muted); }
-.familyReplyContext { margin: 6px 0 12px; padding: 10px 12px; border-left: 3px solid var(--accent); background: var(--surface-soft, #f4f6fa); border-radius: 4px; }
-.familyReplyKind { display: block; font-size: 13px; margin-bottom: 6px; }
-.familyReplyQuestions { display: grid; gap: 6px; }
-.familyReplyQuestion { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 12px; text-align: left; background: transparent; border: 0; color: var(--text); cursor: pointer; padding: 3px 0; font: inherit; font-size: 13px; overflow-wrap: anywhere; }
-.familyReplyQuestion small { grid-column: 1; color: var(--muted); font-size: 11px; }
-.familyReplyQuestionAction { grid-column: 2; grid-row: 1 / 3; align-self: center; color: var(--accent); }
-.familyReplyQuestion:hover { text-decoration: underline; }
-.familyReplyQuestion:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-.messageItem:has(.familyReplyContext) > .messageHead { color: var(--muted); font-size: 12px; }
-.familyRequestStateTitle { display: block; font-weight: 600; color: var(--text); margin-bottom: 3px; }
-.familyRequestStatus .messageMetaLink { font-size: 12px; color: var(--muted); }
-.messageItem.familyRequestStatus { border: 1px solid var(--border, #cbd5e1); border-radius: 6px; background: var(--surface-soft, #f4f6fa); box-shadow: none; padding: 10px 12px; margin: 12px 0; }
-.familyRequestActivity summary { cursor: pointer; color: var(--muted); font-size: 12px; }
 
 /* Navigable message metadata shares the Chat's typography and theme. */
 .messageMetaLink,
