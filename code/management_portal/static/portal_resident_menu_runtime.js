@@ -126,31 +126,49 @@
         const canEdit = detail.allows?.UpdateResidentSettings ?? Boolean(detail.chat_workspace?.actions?.runtime_settings);
         context.reportingRevision = result.settings_revision;
         context.reportingCommitted = false;
-        const choice = (name, value, label, description = "") => `<label class="residentReportingChoice">
-          <input type="radio" name="${name}" value="${value}" ${canEdit ? "" : "disabled"}>
-          <span><strong>${esc(window.PortalI18n.t(label))}</strong>${description ? `<small>${esc(window.PortalI18n.t(description))}</small>` : ""}</span>
+        const choice = (name, value, label, accessibleLabel = label) => `<label class="residentReportingChoice">
+          <input type="radio" name="${name}" value="${value}" ${accessibleLabel !== label ? `aria-label="${esc(window.PortalI18n.t(accessibleLabel))}"` : ""} ${canEdit ? "" : "disabled"}>
+          <strong>${esc(window.PortalI18n.t(label))}</strong>
         </label>`;
         root.innerHTML = window.PortalI18n.html`<form class="residentMenuReportingForm">
           <h3>汇报设置</h3>
           <fieldset class="residentReportingInitiative" aria-describedby="resident-reporting-initiative-note">
             <legend>汇报主动性</legend>
-            <div class="residentReportingLevels">
-              ${choice("initiative", "off", "0（不主动汇报）")}${choice("initiative", "low", "低")}${choice("initiative", "medium", "中")}${choice("initiative", "high", "高")}
+            <div class="residentReportingRow">
+              <span class="residentReportingLabel" aria-hidden="true">汇报主动性</span>
+              <div class="residentReportingLevels">
+                ${choice("initiative", "off", "不主动", "0（不主动汇报）")}${choice("initiative", "low", "低")}${choice("initiative", "medium", "中")}${choice("initiative", "high", "高")}
+              </div>
+              <button class="residentReportingHelp" type="button" aria-label="汇报主动性说明" aria-controls="resident-reporting-initiative-note" aria-expanded="false">?</button>
             </div>
-            <p class="residentReportingNote" id="resident-reporting-initiative-note">主动性只影响主动汇报；用户明确要求的汇报仍会执行。高主动性也按实际价值判断，不保证每次请求都生成汇报。</p>
+            <p class="residentReportingNote" id="resident-reporting-initiative-note" hidden>主动性只影响主动汇报；用户明确要求的汇报仍会执行。高主动性也按实际价值判断，不保证每次请求都生成汇报。</p>
           </fieldset>
           <fieldset class="residentReportingQuality">
             <legend>汇报质量</legend>
-            <div class="residentReportingFormats">
-              ${choice("quality", "low", "低", "直接输出 Markdown")}
-              ${choice("quality", "medium", "中", "使用网页交互模板")}
-              ${choice("quality", "high", "高", "独立 Resident 审查与修改直至达标")}
+            <div class="residentReportingRow">
+              <span class="residentReportingLabel" aria-hidden="true">汇报质量</span>
+              <div class="residentReportingFormats">
+                ${choice("quality", "low", "低")}${choice("quality", "medium", "中")}${choice("quality", "high", "高")}
+              </div>
+              <button class="residentReportingHelp" type="button" aria-label="汇报质量说明" aria-controls="resident-reporting-quality-note" aria-expanded="false">?</button>
+            </div>
+            <div class="residentReportingNote" id="resident-reporting-quality-note" hidden>
+              <p><strong>低</strong> · <span>直接输出 Markdown</span></p>
+              <p><strong>中</strong> · <span>使用网页交互模板</span></p>
+              <p><strong>高</strong> · <span>独立 Resident 审查与修改直至达标</span></p>
             </div>
           </fieldset>
           <div data-reporting-conflict hidden></div>
           <footer class="residentReportingActions"><button class="portalButton is-primary" type="submit" ${canEdit ? "" : "disabled"}>保存汇报设置</button><p role="status" data-reporting-status></p></footer>
         </form>`;
         const form = root.querySelector("form");
+        form.querySelectorAll(".residentReportingHelp").forEach(button => {
+          button.addEventListener("click", () => {
+            const note = form.querySelector(`#${button.getAttribute("aria-controls")}`);
+            note.hidden = !note.hidden;
+            button.setAttribute("aria-expanded", String(!note.hidden));
+          });
+        });
         context.reportingForm = form;
         form.elements.initiative.value = reporting.initiative;
         form.elements.quality.value = reporting.quality;

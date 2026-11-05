@@ -56,9 +56,21 @@ const evidence = process.env.REPORTING_MENU_EVIDENCE;
     });
     await page.locator('.residentMenuReportingForm input').first().waitFor();
     if (evidence) fs.mkdirSync(evidence, { recursive: true });
-    for (const [width, theme] of [[1280, 'light'], [734, 'light'], [390, 'light'], [734, 'dark']]) {
+    for (const [width, theme, language = 'zh-CN'] of [[1280, 'light'], [734, 'light'], [390, 'light'], [734, 'dark'], [734, 'light', 'en'], [390, 'light', 'en']]) {
       await page.setViewportSize({ width, height: 960 });
       await page.evaluate(theme => { document.documentElement.dataset.portalTheme = theme; }, theme);
+      await page.evaluate(async language => {
+        if (PortalI18n.locale() === language) return;
+        PortalI18n.apply(language);
+        menuState.nodeMenuContext = { residentId: 'resident_fixture', family: {} };
+        await runtime.loadNodeMenuRuntime();
+      }, language);
+      await page.locator('.residentMenuReportingForm input').first().waitFor();
+      if (language === 'en') {
+        assert.equal(await page.locator('.residentReportingLabel').first().textContent(), 'Reporting initiative');
+        assert.equal(await page.locator('.residentReportingChoice strong').first().textContent(), 'Off');
+        assert.equal(await page.getByRole('button', { name: 'About reporting quality' }).count(), 1);
+      }
       const metrics = await page.locator('.residentMenuReportingForm').evaluate(form => {
         const body = form.closest('.nodeSettingsBody'), fr = form.getBoundingClientRect();
         const controls = [...form.querySelectorAll('label')].map(label => {
@@ -72,17 +84,48 @@ const evidence = process.env.REPORTING_MENU_EVIDENCE;
         const submit = form.querySelector('[type=submit]').getBoundingClientRect();
         const bottomReachable = submit.bottom <= body.getBoundingClientRect().bottom + 1;
         body.scrollTop = 0;
-        return { controls, fonts, overflow: body.scrollWidth - body.clientWidth, bottomReachable,
+        const rows = [...form.querySelectorAll('.residentReportingRow')].map(row => {
+          const label = row.querySelector('.residentReportingLabel').getBoundingClientRect();
+          const choices = [...row.querySelectorAll('.residentReportingChoice')].map(e => e.getBoundingClientRect());
+          return { height: row.getBoundingClientRect().height,
+            choicesOnOneLine: choices.every(r => Math.abs(r.top - choices[0].top) < 1),
+            labelAlongside: label.top >= choices[0].top && label.bottom <= choices[0].bottom };
+        });
+        return { controls, fonts, rows, height: fr.height, overflow: body.scrollWidth - body.clientWidth, bottomReachable,
           selected: [...form.querySelectorAll('input:checked')].map(e => [e.name, e.value]) };
       });
-      observations.push({ width, theme, ...metrics });
+      observations.push({ width, theme, language, ...metrics });
       assert.ok(metrics.controls.every(c => c.inside && c.height >= 40), 'visible choices fit the content column');
       assert.ok(metrics.fonts.every(f => f.size >= 13), 'all explanatory text stays legible');
       assert.ok(metrics.overflow <= 1 && metrics.bottomReachable, 'no outer horizontal scroll and save stays reachable');
       assert.deepEqual(metrics.selected, [['initiative', 'medium'], ['quality', 'high']]);
       assert.notEqual(metrics.controls[0].border, metrics.controls[2].border, 'selected level has a visible border');
-      if (evidence) await page.screenshot({ path: path.join(evidence, `${width}-${theme}.png`) });
+      assert.equal(metrics.rows.length, 2);
+      if (language !== 'en' || width >= 734) assert.ok(metrics.rows.every(r => r.choicesOnOneLine), 'each group remains a single compact option row');
+      if (width >= 734) assert.ok(metrics.rows.every(r => r.labelAlongside && r.height <= 48), `normal widths show two compact settings rows: ${JSON.stringify({ width, language, rows: metrics.rows })}`);
+      assert.ok(metrics.height < (width >= 734 ? 260 : 390), 'collapsed explanations do not occupy the settings card');
+      assert.equal(await page.locator('.residentReportingHelp[aria-expanded=false]').count(), 2);
+      if (evidence) await page.screenshot({ path: path.join(evidence, `${width}-${theme}${language === 'en' ? '-en' : ''}.png`) });
     }
+    await page.evaluate(async () => {
+      PortalI18n.apply('zh-CN');
+      menuState.nodeMenuContext = { residentId: 'resident_fixture', family: {} };
+      await runtime.loadNodeMenuRuntime();
+    });
+    await page.locator('.residentMenuReportingForm input').first().waitFor();
+    await page.setViewportSize({ width: 390, height: 960 });
+    const initiativeHelp = page.getByRole('button', { name: '汇报主动性说明' });
+    await initiativeHelp.click();
+    assert.ok(await page.locator('#resident-reporting-initiative-note').isVisible(), 'help expands in narrow layout');
+    await initiativeHelp.focus(); await page.keyboard.press('Enter');
+    assert.ok(await page.locator('#resident-reporting-initiative-note').isHidden(), 'help collapses with keyboard');
+    const qualityHelp = page.getByRole('button', { name: '汇报质量说明' });
+    await qualityHelp.click();
+    assert.ok(await page.locator('#resident-reporting-quality-note').isVisible());
+    assert.match(await page.locator('#resident-reporting-quality-note').textContent(), /独立 Resident 审查与修改直至达标/);
+    assert.equal(await page.evaluate(() => calls.length), 0, 'help never submits a setting change');
+    if (evidence) await page.screenshot({ path: path.join(evidence, '390-help.png') });
+    await qualityHelp.click();
     await page.setViewportSize({ width: 1280, height: 960 });
     const medium = page.locator('[name=initiative][value=medium]');
     await medium.focus(); await page.keyboard.press('ArrowRight');
@@ -103,9 +146,11 @@ const evidence = process.env.REPORTING_MENU_EVIDENCE;
     });
     await page.waitForFunction(() => document.querySelector('[data-reporting-status]')?.textContent === '无权限');
     for (const radio of await page.locator('.residentMenuReportingForm input').all()) assert.ok(await radio.isDisabled());
+    await page.getByRole('button', { name: '汇报质量说明' }).click();
+    assert.ok(await page.locator('#resident-reporting-quality-note').isVisible(), 'read-only viewers can still read help');
     assert.deepEqual(errors, []);
     if (evidence) fs.writeFileSync(path.join(evidence, 'report.json'), JSON.stringify({ status: 'passed', observations, errors,
-      behavior: ['native radio keys', 'CAS save/readback', 'failed save draft', 'read-only'],
+      behavior: ['two compact rows', 'narrow layout', 'expandable help without writes', 'English labels', 'native radio keys', 'CAS save/readback', 'failed save draft', 'read-only'],
       boundary: 'Real menu shell and reporting component; local service fixture, no user setting changed' }, null, 2));
     console.log(JSON.stringify({ status: 'passed', views: observations.length, errors }));
   } finally { await browser.close(); }

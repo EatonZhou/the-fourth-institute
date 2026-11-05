@@ -348,10 +348,10 @@
         })(),
       ]);
     }
-    function videoReview(region, review, key, quality, page = false) {
+    function videoReview(region, review, key, quality, page = false, mediaTarget = target) {
       if (!current(key)) return;
       const area = node("div", null, page ? "homeExplanationPageReview" : "homeExplanationVideoReview"); region.append(area);
-      const endpoint = `/api/home-explanation/${page ? "reviews" : "media"}?address=${encodeURIComponent(target.address)}&sha256=${target.sha256}&quality=${quality}`;
+      const endpoint = `/api/home-explanation/${page ? "reviews" : "media"}?address=${encodeURIComponent(mediaTarget.address)}&sha256=${mediaTarget.sha256}&quality=${quality}`;
       const unpack = result => page ? result?.review : (result?.media === undefined ? result : result.media)?.review;
       let releaseEvidence = [];
       const clearEvidence = () => { releaseEvidence.forEach(dispose => dispose()); releaseEvidence = []; };
@@ -457,7 +457,7 @@
           area.querySelectorAll("button").forEach(el => { el.disabled = true; });
           try {
             const result = await window.PortalAPI.post(page ? "/api/home-explanation/reviews" : "/api/home-explanation/media/review", {
-              address: target.address, sha256: target.sha256, quality,
+              address: mediaTarget.address, sha256: mediaTarget.sha256, quality,
             }, { signal: controller.signal });
             if (current(key)) draw(unpack(result));
           } catch (error) {
@@ -473,28 +473,42 @@
       // Reading a plan only verifies provenance. A POST requires a button click.
       if (plan) await read(plan, limits.text, key);
       const content = node("div", null, "homeExplanationMediaState"); region.append(content);
-      let busy = false, attempts = 0;
+      let busy = false, attempts = 0, mediaTarget = target;
       const qualityControl = window.PortalUIPrimitives.radioGroup({label: t("视频质量"),
         value: ["low", "medium", "high"].includes(manifest?.quality) ? manifest.quality : "medium",
         choices: [["low", t("低")], ["medium", t("中")], ["high", t("高")]],
-        onChange: () => { attempts = 0; clearTimeout(mediaTimer); void fetchState(); }});
+        onChange: () => { attempts = 0; mediaTarget = target; clearTimeout(mediaTimer); void fetchState(); }});
       qualityControl.root.classList.add("homeExplanationQuality"); region.insertBefore(qualityControl.root, content);
-      async function fetchState(generate = false) {
+      async function fetchState(generate = false, initial = false) {
         if (!current(key) || busy) return;
         busy = true; qualityControl.disabled = true; clearTimeout(mediaTimer);
-        const quality = qualityControl.value;
+        let quality = qualityControl.value;
         const endpoint = `/api/home-explanation/media?address=${encodeURIComponent(target.address)}&sha256=${target.sha256}&quality=${quality}`;
         content.querySelectorAll("button").forEach(el => { el.disabled = true; });
         try {
           const result = generate
-            ? await window.PortalAPI.post("/api/home-explanation/media", { address: target.address, sha256: target.sha256, quality }, { signal: controller.signal })
+            ? await window.PortalAPI.post("/api/home-explanation/media", { ...mediaTarget, quality }, { signal: controller.signal })
             : await window.PortalAPI.get(endpoint, { signal: controller.signal, cache: "no-store" });
           if (!current(key)) return;
-          const media = result?.media === undefined ? result : result.media;
+          let media = result?.media === undefined ? result : result.media;
+          // Page quality and video quality are independent. On first open,
+          // discover an existing job if the preferred tier has no job at all.
+          // Explicit tier changes remain exact reads and never trigger generation.
+          if (initial && !media) {
+            const alternatives = await Promise.all(["low", "medium", "high"].filter(value => value !== quality).map(async value => {
+              const response = await window.PortalAPI.get(`/api/home-explanation/media?address=${encodeURIComponent(target.address)}&sha256=${target.sha256}&quality=${value}`, { signal: controller.signal, cache: "no-store" });
+              return {quality:value, media:response?.media === undefined ? response : response.media};
+            }));
+            if (!current(key)) return;
+            const existing = alternatives.find(value => value.media?.status === "ready") || alternatives.find(value => ["generating", "authored", "awaiting_authoring"].includes(value.media?.status));
+            if (existing) { quality = existing.quality; media = existing.media; qualityControl.value = quality; }
+          }
+          mediaTarget = media?.result_target || mediaTarget;
           content.replaceChildren();
+          if (media?.result_target) content.append(button("查看视频对应版本", () => onOpen?.({ view: "explanation", target: media.result_target })));
           if (media?.status === "ready") {
             await renderVideo(content, media, key, true);
-            if (current(key)) videoReview(content, media.review, key, quality);
+            if (current(key)) videoReview(content, media.review, key, quality, false, mediaTarget);
           } else if (media?.status === "generating") {
             const progress = node("p", t("讲解视频正在生成，可以先探索交互和图文。"), "homeExplanationMuted"); progress.setAttribute("role", "status");
             content.append(progress);
@@ -502,7 +516,7 @@
             else content.append(button("刷新生成状态", () => { attempts = 0; void fetchState(); }));
             content.append(button("取消生成", async () => {
               clearTimeout(mediaTimer);
-              try { await window.PortalAPI.post("/api/home-explanation/media/cancel", { ...target, quality }, { signal: controller.signal }); if (current(key)) void fetchState(); }
+              try { await window.PortalAPI.post("/api/home-explanation/media/cancel", { ...mediaTarget, quality }, { signal: controller.signal }); if (current(key)) void fetchState(); }
               catch (error) { if (current(key)) failure(content, error); }
             }));
           } else if (media?.status === "awaiting_authoring") {
@@ -516,7 +530,7 @@
               catch (error) { if (current(key)) failure(content, error); }
             }));
           } else {
-            content.append(node("p", media?.error || t(media?.status === "cancelled" ? "视频生成已取消。" : "需要连续讲解时，可以生成带字幕的视频。"), "homeExplanationMuted"));
+            content.append(node("p", media?.error || t(media?.status === "cancelled" ? "视频生成已取消。" : media?.status === "authored" ? "分镜已完成，可以生成讲解视频。" : "需要连续讲解时，可以生成带字幕的视频。"), "homeExplanationMuted"));
             content.append(button(media?.status === "failed" ? "重试生成视频" : "生成讲解视频", () => { void fetchState(true); }));
           }
         } catch (error) {
@@ -525,7 +539,7 @@
           }
         } finally { busy = false; qualityControl.disabled = false; }
       }
-      await fetchState();
+      await fetchState(false, true);
     }
     async function load(key) {
       try {

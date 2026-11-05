@@ -606,6 +606,7 @@
       option.append(input, document.createTextNode(title)); root.append(option);
     }
     return {root, get value() { return root.querySelector(":checked")?.value; },
+      set value(value) { for (const input of root.querySelectorAll('input')) input.checked = input.value === value; },
       set disabled(value) { root.disabled = !!value; }};
   }
 

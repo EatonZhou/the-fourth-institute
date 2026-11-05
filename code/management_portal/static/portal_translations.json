@@ -1,4 +1,10 @@
 {
+  "不主动": {"zh-CN":"不主动","en":"Off"},
+  "汇报主动性说明": {"zh-CN":"汇报主动性说明","en":"About reporting initiative"},
+  "汇报质量说明": {"zh-CN":"汇报质量说明","en":"About reporting quality"},
+  "直接输出 Markdown": {"zh-CN":"直接输出 Markdown","en":"A Markdown response"},
+  "使用网页交互模板": {"zh-CN":"使用网页交互模板","en":"An interactive web template"},
+  "独立 Resident 审查与修改直至达标": {"zh-CN":"独立 Resident 审查与修改直至达标","en":"Independent Resident review and revisions until the quality standard is met"},
   "Lineage Map": {"zh-CN":"Lineage Map","en":"Lineage Map"},
   "查看 Lineage Map": {"zh-CN":"查看 Lineage Map","en":"View Lineage Map"},
   "团队 Map": {"zh-CN":"团队 Map","en":"Team Map"},
