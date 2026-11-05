@@ -212,9 +212,12 @@ class LineageDefinitions:
         if not ids:
             return result
         with self.database.read_transaction() as connection:
-            rows = connection.execute("""SELECT lineage_id,node_id FROM lineage_nodes WHERE lineage_id=ANY(%s) AND node_type='resident'
-                AND EXISTS (SELECT 1 FROM residents r WHERE r.resident_id=node_id AND r.deleted_at IS NULL)
-                UNION SELECT lineage_id,node_id FROM lineage_node_references WHERE lineage_id=ANY(%s) ORDER BY lineage_id,node_id""", (ids,ids)).fetchall()
+            # The graph owns liveness for both home nodes and structural
+            # references. Historical references must not resurrect identities
+            # that the full graph already excludes.
+            rows = sorted((row for row in graph_storage.active_nodes(connection, ids)
+                           if row['node_type'] == 'resident'),
+                          key=lambda row: (row['lineage_id'], row['node_id']))
             for row in rows:
                 result[row['lineage_id']]['lineage_node_ids'].append(row['node_id'])
             for lid, summary in result.items():
