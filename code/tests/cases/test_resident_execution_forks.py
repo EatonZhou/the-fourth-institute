@@ -212,6 +212,8 @@ def test_exact_resident_native_fork_uses_cross_lineage_source_binding(
         create_between_bindings,
     )
 
+    monkeypatch.setattr("management_portal.society_service.resident_initialization_credits.synchronize",
+                        lambda *_: None)
     result = resident_session_backend_domain.create_exact_resident_session(target, job)
 
     assert result["id"] == "01a00000-0000-7000-8000-000000000299"

@@ -63,7 +63,7 @@ function mount(routeScript, messages, { older = [], family = true, transform = (
   window.eval(routeScript);
   try {
     for (const name of ['portal_state.js', 'portal_page_state.js', 'portal_text.js', 'portal_ui_primitives.js', 'portal_ui.js',
-      'portal_overlay.js', 'portal_resource_chips.js', 'portal_image_editor.js',
+      'portal_overlay.js', 'portal_file_links.js', 'portal_resource_chips.js', 'portal_image_editor.js',
       'portal_editor_open_service.js', 'portal_command_registry.js', 'portal_workbench_context.js',
       ...portalWorkbenchScripts(), 'resident_protocol.js', ...chatWorkspaceScripts()]) {
       window.eval(transform(name, fs.readFileSync(path.join(staticRoot, name), 'utf8')) + `\n//# sourceURL=${name}`);

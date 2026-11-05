@@ -10,6 +10,7 @@ from management_portal.society_service import graph_storage
 from management_portal.society_service.lineage_data_runtime import RuntimeCASConflict
 from management_portal.society_service.state_store import get_lineage_data_store
 from tests.cases.test_family_familize import lineage, future_creation_store, resident  # noqa: F401
+from tests.cases.isa_test_support import ok
 
 
 def test_deleted_component_and_wire_keep_ids_and_reject_late_writes(lineage):
@@ -54,7 +55,9 @@ def test_typed_handoff_round_trip_and_noop(lineage):
     """
     store=get_lineage_data_store(); a=resident(lineage,'A');b=resident(lineage,'B')
     value=store.lineage_definition(lineage)
-    item={'item_id':'source','label':'Code','source':{'workspace_id':'workspace_112233445566','path':'/share/test','scope':'.'},'transfer':{'mode':'copy','method':'git_worktree','parameters':{'branch':'task'}},'target':{'scope':'.','label':'Copy'}}
+    # A persisted Workspace ID resolves its current registered location.
+    workspace = ok('GetResident', {'resident_id': a})['resident']['workspaces'][0]
+    item={'item_id':'source','label':'Code','source':{'workspace_id':workspace['workspace_id'],'path':workspace['path'],'scope':'.'},'transfer':{'mode':'copy','method':'git_worktree','parameters':{'branch':'task'}},'target':{'scope':'.','label':'Copy'}}
     value['edges']=[{'id':'handoff_112233445566','type':'handoff','source':a,'target':b,'items':[item],'note':'Review'}]
     store.put_lineage_definition(lineage,value,{})
     actual=store.lineage_definition(lineage)

@@ -4,35 +4,35 @@ type: decision
 project: AI员工
 created_at: '2026-09-03'
 version:
-  number: 15
-  created_at: '2026-09-03'
+  number: 16
+  created_at: "2026-09-03"
   created_by:
-    user: ''
-    agent: ''
-  updated_at: '2026-11-01T03:38:37Z'
+    user: ""
+    agent: ""
+  updated_at: "2026-11-05T13:42:36Z"
   updated_by:
-    user: ''
-    agent: resident_24014e2b9bf6
+    user: ""
+    agent: "resident_6199a7a36480"
 importance: 7
 metaness: 2
 ai_generated: false
 links:
   source:
-  - ${code_root}/management_portal/resources/server.py
-  - ${code_root}/management_portal/resource_auto_registration.py
-  - ${code_root}/management_portal/article_auto_registration.py
-  - ${code_root}/management_portal/portal_features.py
-  - ${code_root}/tests/cases/test_resource_auto_registration_optional.py
-  - ${code_root}/management_portal/resources/registration.py
-  - ${code_root}/management_portal/resources/providers/repo.py
-  - ${code_root}/management_portal/resources/providers/article.py
-  - ${code_root}/management_portal/resource_identity_backend.py
-  - ${code_root}/management_portal/article_registration.py
-  - ${code_root}/management_portal/article_sections.py
-  - ${code_root}/tests/cases/test_resource_auto_registration.py
-  - ${code_root}/tests/cases/test_repo_workspace_backend.py
-  - ${code_root}/tests/cases/test_article_identity_backend.py
-  - ${code_root}/tests/cases/test_exported_repo_source.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/resources/server.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/resource_auto_registration.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/article_auto_registration.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/portal_features.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_resource_auto_registration_optional.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/resources/registration.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/resources/providers/repo.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/resources/providers/article.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/resource_identity_backend.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/article_registration.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/article_sections.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_resource_auto_registration.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_repo_workspace_backend.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_article_identity_backend.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_exported_repo_source.py
   related:
   - decision_b0997bc3a922
   - decision_cf27d39e39cd
@@ -57,7 +57,7 @@ Project 的文件树里常常已经有 Git 仓库或论文稿件目录，但它�
 - **Article 目录**：Project 根目录本身或它的直接子目录中，名称为 `article`、`articles`、`artical`、`artical_arxiv`，或以 `article_`、`artical_` 开头的目录。这样的目录还必须包含一个 `.tex`、`.md` 或 `.markdown` 主稿件文件，才是有效的 Article；否则记为跳过项。
 - **Git 仓库**：Project 文件树中包含有效 `.git` 的目录。扫描时跳过 `node_modules`、`.venv`、`venv`、`build`、`dist`、`site-packages`、`__pycache__` 和各类缓存目录，不跟随符号链接。
 - **Repo 内容来源**：`tfi.repo.v1` 中省略 `source_kind` 或明确为 `git_checkout` 时，按 Git 工作副本判断；明确为 `exported_tree` 时，按非空、绝对路径 `canonical_checkout` 指定的导出源码根判断。未知或空的类型值拒绝，不自动推断为 Git 或导出源码。来源与能力的完整合同见 `decision_6476c69b33da`。
-- **忽略记录**：按资源类型保存的一组路径，表示“后台不要再自动登记这些路径”。它只影响后台任务，不删除目录，也不阻止用户手动登记。
+- **忽略记录**：按资源类型保存的一组路径，表示“后台不要再自动登记这些路径”。忽略记录本身不删除目录；清除忽略只解除扫描过滤，不能解除待清理目录占位或已注销身份的墓碑。用户手动登记同样遵守目录责任方的路径可用性检查。
 
 ## 设计点
 
@@ -91,8 +91,8 @@ Article 未安装时，不读取 Article 登记、不发现或登记稿件，也
 - **Git 副本的有效性**：必须具有可读取的 Git 元数据，且 Git 返回的仓库根目录与登记路径一致。目录消失、路径变为普通文件、`.git` 消失、Git 标记损坏或 worktree 指向的 Git 目录失效，都属于失效。无 remote、尚无 commit、detached HEAD 或没有 push 权限的有效仓库继续保留。
 - **导出源码来源（`exported_tree`）**：只检查非空、绝对 `canonical_checkout` 指定的目录。目录存在即可保留，不要求 `.git`；根消失、路径变为普通文件或父路径不再是目录时，按正式注销流程处理。其他 checkout 路径、来源 Git 元数据或远端不能替代该根，不允许回退到别的副本。
 - **不能确认失效时保留并报告**：未知 `source_kind`、损坏的规范根声明、权限不足、Git 检查超时及其他读取错误，写入 `resource_errors`，操作为 `validate`；不据此注销，不静默修正登记。下一轮重新检查。
-- **自动注销只移除 Portal 登记和相应搜索投影，保留目录、文件与 Git 历史。** 后台通过 ResourceService 调用正式注销流程，不直接删除磁盘内容。
-- **自动清理不留下永久忽略记录。** Git 工作副本恢复后，只要位于扫描范围，下一轮可重新登记并获得新的 Repo ID。无 `.git` 的导出源码不属于自动发现候选，须由明确的导出/导入登记流程建立记录；不自动恢复已注销 ID。用户主动注销留下的忽略记录仍由手动登记解除。
+- **自动核对通过 ResourceService 调用正式注销流程。** 该流程注销资源身份与相应搜索投影，并按目录与路径协议（decision_4aa13bc21e8e）将所属文件排入后台清理；扫描器不直接删除磁盘内容。请求返回时文件可能仍在，清理进度与失败由目录清理队列维护。
+- **自动清理不留下永久扫描忽略，但保留正式清理占位与注销墓碑。** 在清理未完成时恢复 Git 元数据，不会取消清理或允许重新登记。清理完成后重新建立的有效 Git 仓库，位于扫描范围且通过目录可用性检查时，才可获得新的 Repo ID。无 `.git` 的导出源码不属于自动发现候选，须由明确的导出/导入登记流程建立记录；不自动恢复已注销 ID。用户主动注销留下的忽略记录仍由正式手动登记流程处理。
 
 ### 迁移中的登记维护
 
@@ -102,7 +102,7 @@ Article 未安装时，不读取 Article 登记、不发现或登记稿件，也
 
 - **一个已登记 Repo 的全部登记内容路径（Git 的全部 checkout，或导出源码的唯一 canonical 根）都位于 Article 边界之内时，后台注销这个 Repo，并把它的 ID 记入报告的 `removed`。**
 - **Git Repo 只有部分工作副本位于 Article 边界之内时，保留这个 Repo。** 它还有独立的工作副本，自动注销会丢失这部分内容。
-- **清理成功后，后台清除这些路径在 Repo 忽略记录中的条目。** 注销 Repo 时领域实现会把它的路径写入忽略记录（见下文），而这里的注销是在纠正分类，这些路径以后若不再属于稿件目录，仍应能重新被识别为 Repo。
+- **既有 Repo 登记仍拥有这些目录；纠正分类调用同一注销与文件清理流程。** 注销成功后，后台清除这些路径在 Repo 扫描忽略记录中的条目，但不解除清理占位。清理完成前不能将同一路径重新登记为 Article 或 Repo；报告保留 `DirectoryPendingCleanup` 原始错误。清理完成后重新建立的有效稿件目录可按 Article 规则登记，其他有效 Git 仓库按 Repo 规则登记；这里不承诺保留原目录的原地身份转换。
 - 注销失败时保留原登记，错误写入报告的 `resource_errors`。
 
 ### 登记新的 Repo 和 Article
@@ -116,7 +116,7 @@ Article 未安装时，不读取 Article 登记、不发现或登记稿件，也
 ### 忽略记录由注销和手动登记维护
 
 - **用户注销一个 Repo 或 Article 时，领域实现把它的全部路径写入忽略记录。** 后台以后不会把用户刚刚注销的目录重新登记回来。
-- **用户手动登记一个路径时，领域实现清除该路径的忽略记录。** 用户的明确操作优先于之前的注销。
+- **用户手动登记一个路径时，领域实现按正式流程清除该路径的忽略记录。** 清除忽略不能越过目录清理占位或复活已注销身份；是否可登记仍由目录责任方核验。
 - 忽略记录保存在 PostgreSQL 资源登记表的 `auto_registration_ignore` 集合，新写入的格式标识为 `tfi.resource-auto-ignores.v1`；已有忽略记录继续读取，不因标签更名而重写。当前命名与部署配置规则见 decision_15aab18c0ab3，每项包含资源类型、规范路径、被注销资源的统一 ID 和写入时间。
 
 ### 无效的 Git 标记会被报告

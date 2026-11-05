@@ -72,14 +72,6 @@ def reporting(workspace, monkeypatch, tmp_path):
 def test_http_and_isa_creation_use_authenticated_creator_and_keep_source_checks(reporting, monkeypatch, actor):
     p, store = reporting.permissions, reporting.store
     reporting.current['actor'] = actor
-    capability_calls = []
-    if actor == AUTHOR:
-        from management_portal import society_service
-        def creation_allowed(responsible, caller, message_id=''):
-            capability_calls.append((responsible, caller, message_id))
-            return (responsible, caller, message_id) == (AUTHOR, AUTHOR, '')
-        monkeypatch.setattr(society_service, 'get_society_service', lambda: SimpleNamespace(
-            resident=SimpleNamespace(reporting_creation_allowed=creation_allowed)))
     fields = {'explanation_target': reporting.ref}
     args = {'resource_type': 'report', 'fields': fields}
     parent = AUTHOR if actor == AUTHOR else personal_space(actor)
@@ -114,8 +106,6 @@ def test_http_and_isa_creation_use_authenticated_creator_and_keep_source_checks(
         store.get(identifier, actor)
     denied = reporting.workspace.call('RegisterResource', args, actor=actor)
     assert denied.status == 'failed'
-    if actor == AUTHOR:
-        assert capability_calls == []  # Existing package registration is not new creation.
 
 
 def test_payload_cannot_choose_creator_placement_and_deny_is_enforced(reporting):

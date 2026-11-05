@@ -7,6 +7,7 @@ from __future__ import annotations
 import copy
 import hashlib
 import json
+from unittest.mock import Mock
 
 import pytest
 
@@ -16,6 +17,7 @@ from management_portal.resources.content_changes import ContentChangeStore
 from management_portal.resources.errors import ResourceVersionConflict
 from management_portal.resources.providers import knowledge
 from management_portal.resources.service import ResourceService
+from management_portal.resources.index import ResourceIndex
 from tests.cases.test_knowledge_versioning import KNOWLEDGE_ID, _frontmatter, _markdown
 
 
@@ -29,7 +31,7 @@ def version_case(tmp_path, monkeypatch):
     damaged = knowledge_versions.stamp_knowledge_version(original, creating=True)
     primary.write_text(damaged)
     record = {"address": KNOWLEDGE_ID, "kb_id": KNOWLEDGE_ID, "type": "thinking",
-              "project_ids": ["AI员工"], "path": str(primary), "selected_path": str(primary), "selected_file_id": "primary"}
+              "project_ids": ["AlignMe"], "path": str(primary), "selected_path": str(primary), "selected_file_id": "primary"}
     monkeypatch.setattr(backend, "resolve_item_address", lambda *a, **k: record)
     monkeypatch.setattr(backend, "resolve_item_record", lambda *a, **k: record)
     store = ContentChangeStore()
@@ -44,7 +46,7 @@ def version_case(tmp_path, monkeypatch):
                for cid, before, after in (("1" * 32, original, body), ("2" * 32, body, damaged))]
     for change in changes:
         store.append("execution-original", ACTOR, change)
-    service = ResourceService()
+    service = ResourceService(index_provider=Mock(spec=ResourceIndex))
     knowledge.install_mutation_provider(service)
     monkeypatch.setattr(service, "_notify_mutation", lambda **kwargs: None)
     return primary, original, damaged, store, service, changes
@@ -62,11 +64,16 @@ def test_versioned_primary_rejects_header_loss_without_write_or_receipt(version_
     monkeypatch.setattr(content_changes, "get_execution_service", lambda: type("Execution", (), {
         "status": lambda self, *a, **k: {"status": "running", "request": {"agent_id": ACTOR}}
     })())
+    # The public writer rejects the removed project metadata first. The
+    # version owner independently rejects the same incomplete document.
+    with pytest.raises(ValueError, match="complete Markdown"):
+        knowledge_versions.stamp_knowledge_version(text, previous_text=original)
     with execution_scope("execution-rejected"):
-        with pytest.raises(ValueError, match="complete Markdown"):
+        with pytest.raises(ValueError, match="knowledge.move"):
             service.update(KNOWLEDGE_ID, {"text": text, "expected_version": 14}, actor=ACTOR)
     assert primary.read_text() == original
     assert not store.for_execution("execution-rejected", ACTOR)
+    service._index().project_updated.assert_not_called()
 
 
 def test_normal_primary_update_uses_server_version_and_creation_audit(version_case):
@@ -78,6 +85,7 @@ def test_normal_primary_update_uses_server_version_and_creation_audit(version_ca
     proposal = original.replace("number: 14", "number: 99999")
     proposal = proposal.replace('user: "sample_admin"', 'user: "forged"')
     updated = service.update(KNOWLEDGE_ID, {"text": proposal, "expected_version": 14}, actor=ACTOR)
+    service._index().project_updated.assert_called_once_with("thinking", updated)
     version = _frontmatter(updated["text"])["version"]
     assert version["number"] == 15
     assert version["created_by"] == _frontmatter(original)["version"]["created_by"]

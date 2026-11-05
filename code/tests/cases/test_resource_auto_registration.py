@@ -102,9 +102,28 @@ def test_existing_projects_are_reconciled_without_treating_articles_as_repos(
 
     report = registrar.reconcile()
 
-    assert not report["resource_errors"], report["resource_errors"]
-    assert len(report["registered"]) == 2
+    # Directory ownership applies to scanned and explicitly registered resources.
+    # Correcting this old classification unregisters its owned root first; the
+    # same path cannot become an Article before the queued cleanup completes.
+    from management_common.directory_cleanup_store import get_directory_cleanup_store, DirectoryPendingCleanup
+    cleanup = get_directory_cleanup_store()
+    pending = cleanup.pending_at(article)
+    assert pending
+    assert report["resource_errors"] == [{
+        "resource_type": "article", "resource_id": "", "path": str(article),
+        "operation": "register", "error": str(DirectoryPendingCleanup(pending[0])),
+    }]
+    assert len(report["registered"]) == 1
     assert report["removed"] == [misclassified_article_repo]
+    assert article_registry.load_article_records() == []
+    assert (article / "main.tex").is_file()
+    cleanup.run_pending()
+    assert not article.exists()
+    _make_git(article, article=True)
+    new_article = registrar.reconcile()
+    assert not new_article["resource_errors"], new_article["resource_errors"]
+    assert len(new_article["registered"]) == 1
+    assert new_article["registered"][0].startswith("article_")
     repo_records = resource_identity_backend.load_repo_records()
     article_records = article_registry.load_article_records()
     assert {
@@ -129,7 +148,6 @@ def test_existing_projects_are_reconciled_without_treating_articles_as_repos(
 
     with pytest.raises(ValueError, match="project_ids"):
         service.register("repo", {"path": str(code)}, actor="resource-auto-registration")
-    from management_common.directory_cleanup_store import get_directory_cleanup_store, DirectoryPendingCleanup
     with pytest.raises(DirectoryPendingCleanup):
         service.register('repo', {'path': str(code), 'project_ids': ['@public']}, actor='resource-auto-registration')
     get_directory_cleanup_store().run_pending()
@@ -193,10 +211,10 @@ def test_suppression_ends_when_its_directory_is_removed(tmp_path: Path) -> None:
 
 
 @pytest.mark.parametrize("failure", ["deleted_checkout", "removed_git", "broken_gitfile"])
-def test_unavailable_repo_is_unregistered_without_deleting_files_and_can_return(
+def test_unavailable_repo_cleanup_reserves_path_until_files_are_removed(
     tmp_path: Path, failure: str,
 ) -> None:
-    """不可用仓库注销后保留文件且恢复后可重新登记"""
+    """不可用仓库注销后锁定待清理目录，清理后新建内容可获得新身份。"""
     project = tmp_path / "ExistingProject"
     checkout = project / "code"
     _make_git(checkout)
@@ -222,6 +240,19 @@ def test_unavailable_repo_is_unregistered_without_deleting_files_and_can_return(
     if failure == "broken_gitfile":
         (checkout / ".git").unlink()
     subprocess.run(["git", "init", "-q", "-b", "main", str(checkout)], check=True)
+    restored = registrar.reconcile()
+    assert restored["registered"] == []
+    assert not restored["resource_errors"], restored["resource_errors"]
+    # A new Git marker does not cancel the old resource's durable cleanup.
+    from management_common.directory_cleanup_store import get_directory_cleanup_store, DirectoryPendingCleanup
+    cleanup = get_directory_cleanup_store()
+    assert cleanup.pending_at(checkout)
+    with pytest.raises(DirectoryPendingCleanup):
+        resource_identity_backend.register_repo_checkout(checkout)
+    cleanup.run_pending()
+    assert not checkout.exists()
+    assert not cleanup.pending_at(checkout)
+    _make_git(checkout)
     restored = registrar.reconcile()
     assert len(restored["registered"]) == 1
     assert restored["registered"][0] != repo_id

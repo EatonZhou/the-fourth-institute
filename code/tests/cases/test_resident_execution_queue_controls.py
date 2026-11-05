@@ -303,11 +303,12 @@ def test_inject_queue_message_does_not_stop_current_execution(
     assert "queue_reason" not in stored
     assert stored["execution_id"] == "execution-111111111111111111111111"
     assert stored["queue"] == []
-    assert calls == [(
-        "execution-111111111111111111111111",
-        "CASE-A",
-        [{"type": "text", "text": "<user-message>\n补充检查移动端\n</user-message>"}],
-    )]
+    assert len(calls) == 1
+    assert calls[0][:2] == ("execution-111111111111111111111111", "CASE-A")
+    assert len(calls[0][2]) == 1 and calls[0][2][0]["type"] == "text"
+    assert calls[0][2][0]["text"].startswith("<reporting-policy>")
+    assert calls[0][2][0]["text"].endswith("<user-message>\n补充检查移动端\n</user-message>")
+    initial_calls = list(calls)
     conversation = resident_conversation_stream.get_repository().read_messages(
         resident_id
     )
@@ -336,11 +337,7 @@ def test_inject_queue_message_does_not_stop_current_execution(
         queued_message_id,
     ))
     assert retried["already_injected"] is True
-    assert calls == [(
-        "execution-111111111111111111111111",
-        "CASE-A",
-        [{"type": "text", "text": "<user-message>\n补充检查移动端\n</user-message>"}],
-    )]
+    assert calls == initial_calls
 
 
 def test_a_send_now_input_the_execution_refuses_waits_for_the_next_turn(
@@ -636,11 +633,11 @@ def test_inject_queue_message_waits_durably_for_execution_binding(
         "execution-333333333333333333333333",
     )
 
-    assert calls == [(
-        "execution-333333333333333333333333",
-        "CASE-A",
-        [{"type": "text", "text": "<user-message>\n追加到尚未绑定的 turn\n</user-message>"}],
-    )]
+    assert len(calls) == 1
+    assert calls[0][:2] == ("execution-333333333333333333333333", "CASE-A")
+    assert len(calls[0][2]) == 1 and calls[0][2][0]["type"] == "text"
+    assert calls[0][2][0]["text"].startswith("<reporting-policy>")
+    assert calls[0][2][0]["text"].endswith("<user-message>\n追加到尚未绑定的 turn\n</user-message>")
     assert "pending_active_turn_inputs" not in resident_execution_work.read(resident_record)
     assert resident_input_queue_domain.reconcile_queued_turn_inputs(resident_id, "execution-333333333333333333333333")
     assert resident_execution_work.read(resident_record)["queue"] == []

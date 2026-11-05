@@ -313,14 +313,13 @@ def test_answer_and_organization_requests_can_reach_own_steward(quota_family, ty
         # its question set: only the validated unchanged Family relay can.
         with pytest.raises(ValueError, match="问题不存在"):
             prepare_question_answer(f.steward, repo.message(f.facade, answer), repo)
-        # Reproduce the old single-member selection: failed admission leaves
-        # a delivery review, but never a member copy. Retrying to the Steward
-        # must be possible without duplicating or replacing the original.
+        # The explicit quote has already delivered to the Steward. A later
+        # attempt to select a different member must preserve that ownership.
         f.accounts[0] = _account("one", 70)
-        with pytest.raises(ValueError, match="问题不存在"):
+        with pytest.raises(ValueError, match="该门面请求已经投给其他成员"):
             family_quota.relay_message(f.facade, answer, f.member, ACTOR)
         assert repo.message(f.member, answer) is None
-        assert answer not in family_facade.relay_links(facade)
+        assert family_facade.relay_links(facade)[answer]["resident_id"] == f.steward
     with pytest.raises(ValueError, match="不属于"):
         family_quota.relay_message(f.facade, f.message, "resident_ffffffffffff", ACTOR)
 
@@ -737,6 +736,7 @@ def test_ordinary_resident_automatic_selection_preserves_context_and_fixed_waits
     from management_portal.society_service import resident_backend
     monkeypatch.setattr(resident_backend, 'session_record', lambda _: {'backend_route_id': 'one', 'backend_session_id': 'existing'})
     one, two = _account('one', 0), _account('two', 80)
+    one['quota_reserve']['used_up'] = True
     two['selection_catalog'] = {'fresh': True, 'models': ['same-model']}
     calls = []
     monkeypatch.setattr(resident_restart_domain, 'restart_resident_session', lambda *a, **k: calls.append(a[2]))
@@ -786,15 +786,15 @@ def test_automatic_api_without_balance_resumes_original_input(quota_family, monk
     assert f.accounts[0]["quota_reserve"]["remaining"] is None
 
 
-@pytest.mark.parametrize("change", [
-    {"enabled": False}, {"status": "unavailable"},
-    {"quota_reserve": {"status": "reserved"}},
-    {"quota_reserve": {"used_up": True}},
-    {"quota_reserve": {"automatic_paused": True}},
-    {"quota_reserve": {"remaining": 0}},
-    {"quota_reserve": {"close_threshold": {"metric": "balance", "value": 5}}},
+@pytest.mark.parametrize("change,blocked", [
+    ({"enabled": False}, True), ({"status": "unavailable"}, False),
+    ({"quota_reserve": {"status": "reserved"}}, True),
+    ({"quota_reserve": {"used_up": True}}, True),
+    ({"quota_reserve": {"automatic_paused": True}}, True),
+    ({"quota_reserve": {"remaining": 0}}, False),
+    ({"quota_reserve": {"close_threshold": {"metric": "balance", "value": 5}}}, False),
 ])
-def test_automatic_api_reserve_check_keeps_real_account_restrictions(quota_family, change):
+def test_automatic_api_reserve_check_keeps_real_account_restrictions(quota_family, change, blocked):
     from tests.cases.test_account_selection import api_account
 
     f = quota_family
@@ -807,4 +807,6 @@ def test_automatic_api_reserve_check_keeps_real_account_restrictions(quota_famil
             row[key].update(value)
         else:
             row[key] = value
-    assert family_quota.ensure_role_reserve(record, [row])
+    # Raw monitor observations are advisory. Authoritative admission flags
+    # block automatic selection, including for APIs without quota percentages.
+    assert bool(family_quota.ensure_role_reserve(record, [row])) is blocked

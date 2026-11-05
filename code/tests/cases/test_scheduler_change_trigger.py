@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import os
-import uuid
 
 import psycopg
 
@@ -9,10 +8,10 @@ from management_portal.execution import scheduler as scheduler_module, scheduler
 from management_portal.execution.contracts import ExecutionRequest
 
 
-def test_shared_scheduler_trigger_handles_all_row_shapes_and_suppresses_only_worker_heartbeats(monkeypatch):
+def test_shared_scheduler_trigger_handles_all_row_shapes_and_suppresses_only_worker_heartbeats():
     """调度表的增删改都触发调度变更通知，只有 Worker 心跳更新不通知"""
-    channel = "scheduler_test_" + uuid.uuid4().hex
-    monkeypatch.setattr(scheduler_changes, "SCHEDULER_CHANGE_CHANNEL", channel)
+    # Existing storage retains its installed trigger, including its channel.
+    channel = scheduler_changes.SCHEDULER_CHANGE_CHANNEL
     scheduler = scheduler_module.Scheduler(dispatch_interval_min_seconds=0, dispatch_interval_max_seconds=0)
     request = ExecutionRequest.new(actor="trigger-test", prompt="test", provider="test-api",
                                    service_type="chat_completion", operation="generate")

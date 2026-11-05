@@ -45,25 +45,30 @@ const flush = async () => { for (let i = 0; i < 5; i++) await new Promise(resolv
 
     rejection = {reason: 'account.role_in_use', roles: ['default', 'router_fast']};
     deleteButton('accounts').click(); await flush(); await choose(true);
-    let alert = section('accounts').querySelector('[role=alert]');
+    let alert = section('accounts').querySelector('[role=alert]:not([hidden])');
     assert(alert, 'deletion errors stay beside the account, not only above the scrolled table');
     assert.match(alert.textContent, /default/); assert.match(alert.textContent, /router_fast/);
     assert.equal(d.activeElement, alert, 'a failed deletion focuses its visible explanation');
     assert.equal(accounts.length, 1);
+    await flush();
+    assert(alert.isConnected && !alert.hidden, 'refusal and recovery stay visible after background work settles');
     const rolesLink = [...section('accounts').querySelectorAll('button')].find(b => b.textContent === '查看 Backend 角色');
+    const roleReads = calls.filter(c => c.name === 'ListBackendRoles').length;
     assert(rolesLink); rolesLink.click(); await flush();
+    assert(calls.filter(c => c.name === 'ListBackendRoles').length > roleReads,
+      'explicit recovery loads current role references before navigating');
     assert(section('roles').closest('details').open, 'referencing roles can be reached from the refusal');
 
     rejection = {reason: 'account.busy', session_count: 2, execution_count: 1};
     deleteButton('accounts').click(); await flush(); await choose(true);
-    alert = section('accounts').querySelector('[role=alert]');
+    alert = section('accounts').querySelector('[role=alert]:not([hidden])');
     assert.match(alert.textContent, /2/); assert.match(alert.textContent, /1/);
     assert.equal(accounts.length, 1);
     assert(!calls.some(c => /RestartSession|CancelInput|UpdateBackendRole/.test(c.name)), 'no implicit migration or cascading');
 
     rejection = {reason: 'account.api_in_use', account_ids: ['my-ai']};
     deleteButton('apis').click(); await flush(); await choose(true);
-    alert = section('apis').querySelector('[role=alert]');
+    alert = section('apis').querySelector('[role=alert]:not([hidden])');
     assert.match(alert.textContent, /my-ai/);
     assert.equal(apis.length, 1);
     assert([...section('apis').querySelectorAll('button')].some(b => b.textContent === '查看已接入的 AI'));

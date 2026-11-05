@@ -53,13 +53,6 @@ class Resources:
 def rig(tmp_path, monkeypatch):
     from management_portal import home_explanation_media as module, home_explanation_http as http
     from management_portal.society_service import lineage_access_policy
-    from management_portal import society_service
-    from types import SimpleNamespace
-    def creation_allowed(resident_id, actor, message_id=''):
-        assert message_id == ''
-        return resident_id == AUTHOR and actor in {AUTHOR, 'fixture-user'}
-    monkeypatch.setattr(society_service, 'get_society_service', lambda: SimpleNamespace(
-        resident=SimpleNamespace(reporting_creation_allowed=creation_allowed)))
     root = tmp_path/'workspace'; root.mkdir()
     runtime = tmp_path/'runtime'; runtime.mkdir()
     resources = Resources(root)

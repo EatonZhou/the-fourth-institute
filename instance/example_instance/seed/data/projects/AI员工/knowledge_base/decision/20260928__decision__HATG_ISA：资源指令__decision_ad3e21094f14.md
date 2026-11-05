@@ -4,22 +4,22 @@ type: decision
 project: AI员工
 created_at: '2026-09-28'
 version:
-  number: 45
+  number: 46
   created_at: "2026-09-28T10:45:00Z"
   created_by:
     user: "weihao"
     agent: "resident_2a1fc6cd272d"
-  updated_at: "2026-11-04T11:12:12Z"
+  updated_at: "2026-11-05T13:23:37Z"
   updated_by:
     user: ""
-    agent: "resident_83d75ad3a6c7"
+    agent: "resident_6199a7a36480"
 importance: 8
 metaness: 2
 ai_generated: false
 links:
   source:
-  - ${code_root}/tests/cases/test_isa_g7_audit.py
-  - ${code_root}/tests/cases/test_isa_uploads.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_isa_g7_audit.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_isa_uploads.py
   related:
   - decision_355ed742bca5
   - decision_4648f7fa3295
@@ -68,6 +68,9 @@ links:
 | `RunResourceAction` | 按动作声明 | 执行资源类型声明的专用动作 | 对 `resource_id` 有 @contributor |
 | `CreateUpload` | 是 | 开始一次文件上传，取得上传地址 | 免检 |
 | `UpdateWorkspaceFile` | 是 | 写入工作区中的文本文件 | 对 `address` 有 @contributor |
+| `CorrectResourceLifecycleAssociation` | 是 | 原生命周期调用者凭owner核验的持久Project根依赖证据解除错误夹具关联；仅关闭准入后可用，保留审计，不注销或删除Workspace，不完成scope。 | 免检；对 `resource_id` 有 `@viewer` |
+| `GetResourceCreation` | 否 | 读取父 Lineage 中的资源创建状态与 writer 证据状态。 | 对 `lineage_id` 有 `@viewer` |
+| `CancelResourceCreation` | 是 | 持久撤销未登记的资源创建并阻止继续或重试；文件清理须证明 writer 已停止，证据不足保持 pending。 | 对 `lineage_id` 有 `@contributor` |
 
 ## 查找与读取
 
@@ -259,6 +262,18 @@ Workspace 支持 `UnregisterResource(resource_id=workspace_id)`，要求目标 W
 - 结果：写入后的内容摘要和修改时间。
 - 路径必须位于该工作区内。`address` 只接受 Workspace 文件地址，绝对路径返回 `instruction.invalid_arguments`（weihao 2026-10-18）；页面拿到的链接文件和 Watchboard 配置由服务端给出所在 Workspace 的文件地址（链接文件的 `file_address`、配置的 `address`），不在任何登记 Workspace 中的文件只读。文件的版本令牌是内容的 SHA-256。需要避免覆盖别人刚写入的内容时，可以在调用中附带 `expected_version`（`ReadResource` 返回的文件版本）；内容已经变化时返回 `instruction.version_conflict`，文件保持不变。一般调用不需要提供。
 
+### `CorrectResourceLifecycleAssociation`
+
+按 `scope_id`、`resource_id` 定位错误生命周期关联。固定槽免检，目标 Workspace 仍需 `@viewer`。资源 owner 在目录锁内核验目标是早于本生命周期已登记的持久 Project 根所使用的隐式 Workspace；调用者必须为原生命周期调用者，准入已关闭且不存在活动请求。核验通过后记录原序号、理由、证据与纠正时间，再解除关联；重试返回原审计。此操作不注销或删除 Workspace，不改变其版本，不完成生命周期。原调用者不符、准入仍开、有活动请求、待处理关联缺失或证据不符均拒绝。
+
+### `GetResourceCreation`
+
+以 `lineage_id`、`resource_id` 读取父 Lineage 中尚未完成的 Resident 创建记录，返回 `creation` 中的创建状态与 writer 证据。要求父 Lineage 的 `@viewer`；读取不重启创建或清理。
+
+### `CancelResourceCreation`
+
+以 `lineage_id`、`resource_id` 持久取消尚未登记的创建，要求父 Lineage 的 `@contributor`。可选 `originating_instruction_id` 指向原创建指令，由 owner 读取正式回执核验；调用者不能自行声明 writer 已停止。取消阻止创建继续或重试，只有已有 writer 停止证据时才清理文件。证据不足时保持 pending cleanup，可重试；返回 `creation`，分别报告创建取消与文件清理状态。
+
 ## 参数名契约
 
 下表列出 arguments 内的顶层参数名；必填条件、类型和枚举以 GetInstructionSchema 为准。调用信封中的 expected_version、idempotency_key 与 wait_seconds 不列入 arguments。
@@ -280,6 +295,9 @@ Workspace 支持 `UnregisterResource(resource_id=workspace_id)`，要求目标 W
 | `RunResourceAction` | `resource_id`、`action`、`arguments` |
 | `CreateUpload` | `purpose`、`target`、`source_address`、`file_name`、`media_type`、`size` |
 | `UpdateWorkspaceFile` | `address`、`content` |
+| `CorrectResourceLifecycleAssociation` | `scope_id`、`resource_id`、`reason` |
+| `GetResourceCreation` | `lineage_id`、`resource_id` |
+| `CancelResourceCreation` | `lineage_id`、`resource_id`、`originating_instruction_id` |
 
 ### Project 知识迁移动作
 

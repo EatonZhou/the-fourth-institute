@@ -28,7 +28,6 @@ def test_builder_cli_pins_only_explicit_review_assets(tmp_path, monkeypatch, cap
     import sys
     from scripts import build_explanation_package as builder
     calls = []
-    monkeypatch.setattr(builder, 'require_creation', lambda resident_id: None)
     monkeypatch.setattr(builder, 'register_report', lambda *args: calls.append(args) or {
         'reference': {'view': 'report', 'target': {'kind': 'report', 'id': 'report_0123456789ab', 'revision': 1}}})
     (tmp_path/'notes.md').write_text('Explanation')

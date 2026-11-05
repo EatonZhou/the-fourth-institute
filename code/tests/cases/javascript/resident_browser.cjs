@@ -8,10 +8,44 @@ const os = require("node:os");
 const path = require("node:path");
 const http = require("node:http");
 const childProcess = require("node:child_process");
+const { EventEmitter } = require("node:events");
+const { waitForNativeEndpoint } = require("../../../scripts/resident_browser_files.cjs");
 const { chromium } = require("../../../management_portal/test_framework/tau_runtime/node_modules/playwright");
 
 (async () => {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), "resident-browser-test-"));
+  const profile = fs.mkdtempSync(path.join(os.tmpdir(), "resident-debugger-readiness-"));
+  try {
+    const browser = new EventEmitter();
+    browser.isConnected = () => true;
+    const endpointFile = path.join(profile, "DevToolsActivePort");
+    const waiting = waitForNativeEndpoint(browser, profile);
+    let ready = false;
+    waiting.then(() => { ready = true; });
+    await new Promise(resolve => setImmediate(resolve));
+    assert.equal(ready, false, "pipe readiness cannot substitute for debugger endpoint publication");
+    fs.writeFileSync(endpointFile, "43210\n/devtools/browser/fixture-id\n");
+    assert.equal(await waiting, "ws://127.0.0.1:43210/devtools/browser/fixture-id");
+    assert.equal(browser.listenerCount("disconnected"), 0);
+    fs.unlinkSync(endpointFile);
+    const closing = waitForNativeEndpoint(browser, profile);
+    browser.emit("disconnected");
+    await assert.rejects(closing, /closed before debugger endpoint/);
+    assert.equal(browser.listenerCount("disconnected"), 0);
+    await assert.rejects(waitForNativeEndpoint(browser, profile, 25), error => {
+      assert.match(error.message, /not published before deadline/);
+      assert.equal(error.cause.code, "ENOENT");
+      return true;
+    });
+    fs.writeFileSync(endpointFile, "43210\n/devtools/browser/fixture-id\n");
+    assert.equal(await waitForNativeEndpoint(browser, profile), "ws://127.0.0.1:43210/devtools/browser/fixture-id");
+    fs.writeFileSync(endpointFile, "43210\nws://foreign.invalid/endpoint\n");
+    await assert.rejects(waitForNativeEndpoint(browser, profile), /Invalid native CDP endpoint/);
+    browser.isConnected = () => false;
+    await assert.rejects(waitForNativeEndpoint(browser, profile), /closed before debugger endpoint/);
+    assert.equal(browser.listenerCount("disconnected"), 0);
+    console.log("PASS deterministic debugger publication, close, deadline, invalid endpoint and cleanup");
+  } finally { fs.rmSync(profile, { recursive: true, force: true }); }
   const tokenPath = path.join(directory, "fixture.token");
   const residentId = "resident_0123456789ab";
   fs.writeFileSync(tokenPath, "synthetic-browser-fixture", { mode: 0o600 });

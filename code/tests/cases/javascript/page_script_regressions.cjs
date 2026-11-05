@@ -245,8 +245,9 @@ test('Family canvas actions load the Menu owner before confirming and cancellati
   assert.deepEqual(JSON.parse(JSON.stringify(mutations[0][1])), {lineage_id: 'lineage_one', family_id: 'fbi_one'});
   await nav.removeFamily({...options, action: 'delete'});
   assert.equal(prompts[2].title, '删除整个 Family？');
-  assert.match(prompts[2].message, /Portal 创建的连同嵌套对象永久删除/);
-  assert.match(prompts[2].message, /接入的现成目录只注销、保留文件/);
+  assert.match(prompts[2].message, /所属目录及其嵌套对象按资源归属永久删除/);
+  assert.match(prompts[2].message, /共享目录中的其他文件保留/);
+  assert.match(prompts[2].message, /对话和运行轨迹保留/);
   assert.match(prompts[2].message, /绑定同步解除/);
   assert.doesNotMatch(prompts[2].message, /仍被引用的 Workspace 保留/);
   assert.equal(mutations[1][0], 'DeleteFamily');

@@ -22,7 +22,7 @@ def test_claude_signature_reuse_idle_recreate_active_reject(claude_owner, monkey
     """Claude 会话参数不变时复用，参数变化时空闲则重建、有活动轮次则拒绝"""
     owner = claude_owner
     profile = {"id": "fixture-route", "default_model": "fixture", "models": [
-        {"id": name, "enabled": True} for name in ("fixture", "other-model")
+        {"id": name, "enabled": True, "support_efforts": ["high"]} for name in ("fixture", "other-model")
     ]}
     monkeypatch.setattr(owner, "_provider_profile", lambda *_args: profile)
     monkeypatch.setattr(owner, "_provider_environment", lambda *_args: ({}, profile))

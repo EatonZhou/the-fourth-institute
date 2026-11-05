@@ -19,6 +19,8 @@ def action_for(resource_id, fallback):
     if call is None:
         return fallback
     from management_portal import permission_system
+    if permission_system.configured_mode() == permission_system.OPEN:
+        return fallback
     scheme, _engine, _instance = permission_system.active().current()
     actions = []
     for slot in scheme.slots(call[0]):
@@ -34,6 +36,8 @@ def action_for(resource_id, fallback):
 
 def action_for_parameter(instruction, parameter):
     from management_portal import permission_system
+    if permission_system.configured_mode() == permission_system.OPEN:
+        return instruction
     scheme, _engine, _instance = permission_system.active().current()
     actions = {slot.element for slot in scheme.slots(instruction) if slot.argument == parameter and not slot.via}
     return next(iter(actions)) if len(actions) == 1 else instruction

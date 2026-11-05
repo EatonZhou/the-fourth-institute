@@ -143,6 +143,7 @@ def _account(provider, route, remaining, **quota):
     return {"account_id": provider + "_" + route, "provider": provider, "backend_route_id": route, "kind": "subscription_login", "login_state": "logged_in",
             "selection_catalog": {"fresh": True, "default_model": "default", "models": ["default"]},
             "quota_reserve": {"status": "available", "fresh": True, "remaining": remaining,
+                              "used_up": type(remaining) in (int, float) and remaining <= 0,
                               "windows": [{"window": "seven_day", "remaining_percent": remaining}], **quota}}
 
 
@@ -156,12 +157,14 @@ def test_steward_quota_failure_migrates_without_calling_its_model(team, monkeypa
     resident_id, message_id = _failed(team, monkeypatch, "You've hit your weekly limit")
     record = _record(resident_id)
     record["backend_route_id"] = "one"
+    record["execution_settings"] = {**record.get("execution_settings", {})}
+    record["execution_settings"].pop("auto_switch_on_quota", None)
     resident_record_domain.save_resident_record(record)
     from tests.cases.family_test_support import set_role
     set_role(team.source["resident_id"], family_id="fbi_recovery", actor=ACTOR)
     set_role(resident_id, family_id="fbi_recovery", role=role, actor=ACTOR)
     from management_portal.society_service.state_store import get_lineage_data_store
-    get_lineage_data_store().database.write(lambda c: c.execute("UPDATE families SET auto_migrate=%s WHERE family_id='fbi_recovery'", (enabled,)))
+    get_lineage_data_store().database.write(lambda c: c.execute("UPDATE families SET auto_migrate=%s,auto_migrate_priority=%s WHERE family_id='fbi_recovery'", (enabled, ["codex:subscription_login"])))
     from management_portal.society_service import resident_input_queue_domain
     resident_input_queue_domain.commit_resident_intake_state(_record(team.source["resident_id"]), "open")
     accounts = [_account("codex", "one", 0), _account("claude", "claude_one", 90), _account("codex", "two", 80)]
@@ -214,9 +217,9 @@ def test_fallback_requires_fresh_positive_agent_quota_and_can_change_provider():
     """
     accounts = [_account("codex", "one", 0), _account("codex", "two", 99, fresh=False),
                 _account("codex", "three", True), _account("claude", "claude_one", 50)]
-    assert recovery.fallback_account(accounts, "codex", "one", []) == {}
-    assert recovery.fallback_account(accounts, "codex", "one", [], priority=["claude:subscription_login"])["provider"] == "claude"
-    assert recovery.fallback_account(accounts, "codex", "one", ["claude_claude_one"]) == {}
+    assert recovery.fallback_account(accounts, "codex", "one", [], reserve=True) == {}
+    assert recovery.fallback_account(accounts, "codex", "one", [], reserve=True, priority=["claude:subscription_login"])["provider"] == "claude"
+    assert recovery.fallback_account(accounts, "codex", "one", ["claude_claude_one"], reserve=True) == {}
 
 
 @pytest.mark.parametrize("automatic", [True, False])
@@ -351,6 +354,14 @@ def test_steward_migration_intent_survives_interruption_without_new_request(team
     from tests.cases.family_test_support import set_role
     set_role(team.source["resident_id"], family_id="fbi_recovery", actor=ACTOR)
     set_role(resident_id, family_id="fbi_recovery", role="steward", actor=ACTOR)
+    record = _record(resident_id)
+    record["backend_route_id"] = "one"
+    record["execution_settings"].pop("auto_switch_on_quota", None)
+    resident_record_domain.save_resident_record(record)
+    from management_portal.society_service.state_store import get_lineage_data_store
+    get_lineage_data_store().database.write(lambda c: c.execute(
+        "UPDATE families SET auto_migrate=TRUE,auto_migrate_priority=%s WHERE family_id='fbi_recovery'",
+        (["codex:subscription_login"],)))
     from management_portal.society_service import resident_input_queue_domain
     resident_input_queue_domain.commit_resident_intake_state(_record(team.source["resident_id"]), "open")
     accounts = [_account("codex", "one", 0), _account("codex", "two", 80)]

@@ -1,6 +1,6 @@
 """Formal report resources use the report view inside shared Preview.
 
-:module: interface.content
+:module: workbench.preview
 :design: decision_61e50306cc79
 :design: decision_e3ced6d30f6b
 :profiles: local.fixture

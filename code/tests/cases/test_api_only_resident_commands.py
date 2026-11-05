@@ -71,8 +71,11 @@ def test_api_only_user_can_save_and_read_back_harness_on_unbound_ama(api_only, f
     assert resident_catalog.get_catalog().get(ama["resident_id"])["backend_route_id"] == ""
 
 
-def test_model_command_still_requires_the_selected_native_account(api_only):
-    with pytest.raises(ValueError, match="No enabled default Codex account"):
+def test_model_command_still_requires_the_selected_native_account(api_only, monkeypatch):
+    from management_portal.execution import account_selection
+    from management_portal.execution.accounts import DefaultAccountUnavailable
+    monkeypatch.setattr(account_selection, "observations", lambda: [])
+    with pytest.raises(DefaultAccountUnavailable, match="No compatible account"):
         commands.handle_resident_native_command(
             {"backend": "codex", "backend_route_id": ""}, "/model", {},
             session_id="", cwd="/tmp", actor="test", can_update_runtime=True,

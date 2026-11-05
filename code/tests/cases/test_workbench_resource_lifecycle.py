@@ -95,7 +95,7 @@ def test_browser_http_routes_complete_resource_lifecycle(lifecycle, monkeypatch)
 
 
 def test_page_mutations_use_real_rpc_and_one_resource_lifecycle(lifecycle, monkeypatch):
-    """工作台创建、更新、发布和删除经 ResourceService RPC 完成登记、变更通知与注销"""
+    """工作台创建、更新、发布和删除经 ResourceService RPC 完成登记、同步索引与注销"""
     runtime, store, resources, client = lifecycle
     app = create_page()
     app_id = app["workbench_id"]
@@ -111,21 +111,27 @@ def test_page_mutations_use_real_rpc_and_one_resource_lifecycle(lifecycle, monke
     }, "alice")
     assert updated["revision"] == 2
     assert updated["published_revision"] is None
-    notify.assert_called_once_with(resource_id=app_id, resource_type="workbench", kind="updated")
-    notify.reset_mock()
+    resources._index().project_updated.assert_called_once_with("workbench", mock.ANY)
+    assert resources._index().project_updated.call_args.args[1]["resource_id"] == app_id
+    assert resources._index().project_updated.call_args.args[1]["title"] == "Updated"
+    notify.assert_not_called()
+    resources._index().project_updated.reset_mock()
 
     published = http.post("/api/workbenches/publish", {"id": app_id, "expected_revision": 2}, "alice")
     assert published["published_revision"] == published["revision"] == 2
     assert store.get(app_id, "alice", published=True)["title"] == "Updated"
-    notify.assert_called_once_with(resource_id=app_id, resource_type="workbench", kind="updated")
-    notify.reset_mock()
+    resources._index().project_updated.assert_called_once_with("workbench", mock.ANY)
+    assert resources._index().project_updated.call_args.args[1]["resource_id"] == app_id
+    assert resources._index().project_updated.call_args.args[1]["published_revision"] == 2
+    notify.assert_not_called()
 
     forget = mock.Mock(wraps=resources._registrations.forget)
     monkeypatch.setattr(resources._registrations, "forget", forget)
     monkeypatch.setattr(service, "isa", lambda *args, **kwargs: pytest.fail("Deleting a page must not change Lineage"))
     assert http.post("/api/workbenches/delete", {"id": app_id}, "alice") == {"deleted": app_id}
     forget.assert_called_once_with(app_id)
-    notify.assert_called_once_with(resource_id=app_id, resource_type="workbench", kind="deleted")
+    resources._index().project_unregistered.assert_called_once_with("workbench", app_id)
+    notify.assert_not_called()
     with pytest.raises(ResourceOperationError) as raised:
         client.resolve(app_id, actor="alice")
     assert raised.value.http_status == 404

@@ -67,6 +67,8 @@ def test_registration_and_retry_do_not_start_a_model_turn(
     payload = {**_new_session_payload("No hidden initialization"), "backend": backend}
     if backend == "claude":
         payload["backend_route_id"] = "claude_one"
+    elif backend == "kimi":
+        payload["backend_route_id"] = "kimi_default"
     if member:
         parent = resident_domain.register_resident(_new_session_payload("Parent"), "sample_admin")
         created = lineage_resident_nodes.create_lineage_resident(parent["lineage_id"], payload, "sample_admin")["resident"]

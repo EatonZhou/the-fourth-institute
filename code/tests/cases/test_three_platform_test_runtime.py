@@ -402,7 +402,7 @@ class BrowserOwnerFailures(unittest.TestCase):
                 child=Mock(pid=123);child.poll.return_value=None
                 stdin=Mock();stdin.buffer.readline.return_value=b'start\n'
                 with patch.object(sys,'stdin',stdin),patch.object(owner,'_identity',return_value={'pid':123,'created_at':1}), \
-                     patch.object(owner.time,'monotonic',side_effect=[0,61]), \
+                     patch.object(owner,'time',SimpleNamespace(monotonic=Mock(side_effect=[0,61]))), \
                      patch.object(process_runtime,'install_shutdown_handlers'),patch.object(process_runtime,'restore_shutdown_handlers'), \
                      patch.object(process_runtime,'spawn_process',return_value=child,side_effect=OSError('denied') if failure=='spawn' else None) as spawn, \
                      patch.object(process_runtime,'terminate_process_tree') as stop:

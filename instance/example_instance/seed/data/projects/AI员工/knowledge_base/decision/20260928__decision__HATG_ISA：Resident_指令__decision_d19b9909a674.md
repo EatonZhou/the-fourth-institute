@@ -26,12 +26,12 @@ links:
   - decision_898b8911a2ff
   - thinking_ca8f397a47de
 version:
-  number: 70
+  number: 71
   created_at: "2026-09-28T10:45:00Z"
   created_by:
     user: "weihao"
     agent: "resident_2a1fc6cd272d"
-  updated_at: "2026-11-04T18:34:47Z"
+  updated_at: "2026-11-05T13:23:38Z"
   updated_by:
     user: ""
     agent: "resident_6199a7a36480"
@@ -290,12 +290,18 @@ Family 内部检查成员摘要的 CheckResidentWorkSummary 和读取门面汇�
 
 ### `RetryResidentInitialization`
 
+`expected_initialization_id`：确认 credits 时必填：刚读取的初始化尝试 ID；状态变化后须重新确认。
+
+`credits_consent`：仅人类：{account_id:本次目标稳定账号ID,confirmed:true}；须有幂等键，仅授权本次初始化及其目标Session，不重发业务输入，不继承给后续会话。
+
 - 参数：`resident_id`（必填）。要求目标 Resident 的 @contributor；修改权限拒绝返回 `instruction.forbidden`。内置默认权限方案分别将这两条指令分类为 @viewer 与 @contributor；实际调用仍按当前启用方案鉴权。
 - 恢复既有 Resident 的初始化，不重发原业务。返回最小可持久受理回执：`resident_id`、`initialization_id`、`status`、`phase`、`candidate_agent_id`、`candidate_binding_id`；同幂等键重放该回执，当前状态用 `GetResidentInitialization` 读取。进行中的 attempt 被复用，显式失败／取消后的重试才可建立新候选。
 - 当前生命周期或业务工作活动、原执行仍活动、绑定已变化、冻结 Fork 凭据不匹配等冲突阻止重叠恢复。原压缩完成事实可核实则直接收敛；原生结果不明时使用隔离候选 Session，验证规范压缩与绑定后原子提升。失败保留旧绑定和原输入，完整恢复合同见 decision_5bf5bfbd52cb。
 - 接收开关保持原值；关闭接收也可显式恢复初始化，完成后业务仍等待开放。受理不等于初始化或排队任务已完成。
 
 ### `RestartSession`
+
+`credits_consent`：仅已登录人类可提交：{account_id:目标稳定账号ID,confirmed:true}；明确授权本次新建/迁移目标Session使用credits，必须携带幂等键，不继承给后续Session。
 
 **切换 Resident 的账号或 Backend，或显式重新开始会话；原生目标建立新会话，Model API 目标直接保存调用配置，并按选定的上下文方案决定历史边界。**
 
@@ -372,8 +378,8 @@ Family 内部检查成员摘要的 CheckResidentWorkSummary 和读取门面汇�
 | `UpdateResidentSettings` | `resident_id`、`expected_revision`、`changes` |
 | `PreviewPromptInjection` | `resident_id`、`turn` |
 | `GetResidentInitialization` | `resident_id` |
-| `RetryResidentInitialization` | `resident_id` |
-| `RestartSession` | `resident_id`、`operation`、`provider`、`account_id`、`model`、`reasoning_effort`、`collaboration_mode`、`service_tier`、`permission_preset`、`prompt_context`、`backend_options`、`context_strategy`、`active_execution_policy`、`resume_failed_input` |
+| `RetryResidentInitialization` | `resident_id`、`expected_initialization_id`、`credits_consent` |
+| `RestartSession` | `resident_id`、`operation`、`provider`、`account_id`、`model`、`reasoning_effort`、`collaboration_mode`、`service_tier`、`permission_preset`、`prompt_context`、`backend_options`、`context_strategy`、`active_execution_policy`、`resume_failed_input`、`credits_consent` |
 | `GetSessionRestart` | `resident_id` |
 | `CancelSessionRestart` | `resident_id`、`restart_id` |
 | `BindWorkspace` | `resident_id`、`path`、`purpose` |

@@ -9,10 +9,7 @@ import math
 from typing import Any, Mapping
 
 
-def mode(value: object = "auto") -> str:
-    if not isinstance(value, str) or value not in {"auto", "fixed"}:
-        raise ValueError("account_selection must be auto or fixed")
-    return str(value)
+from .account_selection_contract import mode  # public policy surface
 
 
 def finite(value: Any) -> bool:

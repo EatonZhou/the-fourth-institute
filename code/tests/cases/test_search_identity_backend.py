@@ -324,6 +324,8 @@ def test_paper_collection_jobs_are_listed_to_everyone_without_an_owner_list() ->
         "direction": "shared collection",
         "created_by": "alice",
         "status": "done",
+        # A completed writer persists its terminal clock for retention reconciliation.
+        "updated_at": 1793836800.0,
     })
 
     [job] = paper_collection_jobs.list_paper_collection_jobs("bob")["jobs"]

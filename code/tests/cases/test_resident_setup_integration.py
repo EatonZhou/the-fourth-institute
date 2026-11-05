@@ -46,8 +46,11 @@ def test_saved_request_carries_one_revision_and_prompt_provenance_after_settings
         lambda: execution._build_resident_execution_request(resident_record, job))
     snapshot = first.runtime_options["resident_assembly"]
     current = residents.get_resident_settings(_invocation("GetResidentSettings", resident_id=rid))
-    assert snapshot["settings_revision"] == current["settings_revision"]
-    assert first.runtime_options["runtime_settings"] == current["settings"]
+    # The assembly digest covers executable settings; the formal settings CAS
+    # revision additionally covers the Society reporting policy.
+    owner_settings = execution.read_resident_runtime_settings(rid, "CASE-A")
+    assert snapshot["settings_revision"] == owner_settings["settings_revision"]
+    assert owner_settings["runtime_settings"] == {key: value for key, value in current["settings"].items() if key != "reporting"}
     assert snapshot["prompt_parts"]
     assert all(part["content_digest"] and part["content_location"]["execution_id"] == first.execution_id
                for part in snapshot["prompt_parts"])

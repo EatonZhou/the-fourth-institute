@@ -16,7 +16,7 @@ def test_get_conversation_retains_history_without_default_or_selected_account(ca
     for row in account_registrations.registrations('codex'):
         account_registrations.delete_registration(row['account_id'])
     record = resident_catalog.get_catalog().get(rid)
-    with pytest.raises(ValueError, match='No enabled default Codex account|unknown Codex account route'):
+    with pytest.raises(ValueError, match='No compatible account is available|unknown Codex account route'):
         resident_backend.execution_account(record)
     repository = resident_conversation_stream.get_repository()
     before = repository.snapshot(rid)

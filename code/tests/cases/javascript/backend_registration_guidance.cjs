@@ -117,10 +117,10 @@ const click = text => {const b = [...window.document.querySelectorAll('button')]
   checkFails = false;
   click('测试并完成'); await flush(); assert(!window.document.querySelector('dialog'));
   const defaultUpdate = calls.find(c => c.name === 'UpdateBackendRole');
-  assert.deepEqual(defaultUpdate.args, {backend_role: 'default', account_id: 'example-api', model: 'example-model', verification_execution_id: 'execution_api_check'});
+  assert.deepEqual(defaultUpdate.args, {backend_role: 'default', account_id: 'example-api', account_selection: 'auto', model: 'example-model', verification_execution_id: 'execution_api_check'});
   assert.equal(defaultUpdate.expectedVersion, 1);
   assert(!window.document.querySelector('[data-backend-default-missing]'));
-  assert.match(window.document.querySelector('[data-backend-account="example-api"]').textContent, /默认 AI/);
+  assert(window.document.querySelector('[data-backend-account-selection]'), 'default selection remains visible in its shared policy control');
   roles[0].reasoning_effort = 'high';
   const retest = [...window.document.querySelector('[data-backend-account="example-api"]').querySelectorAll('button')]
     .find(b => b.textContent === '设置与测试');
@@ -141,11 +141,14 @@ const click = text => {const b = [...window.document.querySelectorAll('button')]
   assert.equal(calls.filter(c => c.name === 'RegisterProviderAccount').length, before);
   const savedOnly = window.document.querySelector('[data-backend-account="api-only"]');
   assert(savedOnly, 'saving without continuing setup still refreshes the server-provisioned accounts');
-  const makeDefault = [...savedOnly.querySelectorAll('button')].find(b => b.textContent === '设为默认 AI');
+  assert(![...savedOnly.querySelectorAll('button')].some(b => b.textContent === '设为默认 AI'), 'retired per-route default action stays absent');
+  const makeDefault = [...savedOnly.querySelectorAll('button')].find(b => b.textContent === '设置与测试');
   assert(makeDefault && !makeDefault.disabled);
   const defaultUpdates = calls.filter(c => c.name === 'UpdateBackendRole').length;
   makeDefault.click(); await flush();
-  assert(window.document.querySelector('[name=use_default]').checked, 'the action selects this account even when another default exists');
+  const useDefault = window.document.querySelector('[name=use_default]');
+  assert(!useDefault.checked, 'testing another account does not silently replace the default');
+  useDefault.checked = true; useDefault.dispatchEvent(new window.Event('change'));
   assert.equal(calls.filter(c => c.name === 'UpdateBackendRole').length, defaultUpdates, 'opening default setup does not skip the real check');
   click('关闭');
   click('编辑'); form = window.document.querySelector('dialog form');

@@ -26,14 +26,30 @@ module.exports=async function(page,out,viewport) {
   const reveal=async()=>{const r=await stack.boundingBox();await page.mouse.move(r.x+r.width-70,r.y+2);};
   const result={viewport,mobile:await page.evaluate(()=>document.documentElement.dataset.portalViewport==='mobile')};
   if(result.mobile) {
-    // Touch retains the bottom switcher and the dialogue close/header path.
-    await page.evaluate(()=>PortalWorkbench.get('home').focusPanel('dialogue-display'));
-    await tabs.waitFor({state:'visible'});
-    result.touch=await snap();
-    assert.equal(result.touch.transform,'none');assert.equal(result.touch.position,'static');
+    // Mobile uses the native bottom switcher and layout menu, not desktop tabs.
+    const switcher=page.locator('#homeWorkbenchRoot > .portalWorkbenchStage > .portalWorkbenchMobileSwitcher');
+    await switcher.waitFor({state:'visible'});
+    assert.equal(await tabs.isVisible(),false,'desktop tabs stay hidden on touch layouts');
+    const panel=id=>switcher.locator(`[data-portal-workbench-mobile-panel="${id}"]`);
+    for(const id of ['agent-status','dialogue-display']) {
+      await panel(id).tap();
+      assert.equal(await panel(id).getAttribute('aria-pressed'),'true','touch switches the active native panel');
+    }
+    result.touch=await switcher.evaluate(el=>{
+      const r=el.getBoundingClientRect();const button=el.querySelector('[aria-pressed="true"]');
+      const b=button.getBoundingClientRect(),hit=document.elementFromPoint(b.x+b.width/2,b.y+b.height/2);
+      return {rect:r.toJSON(),viewport:innerWidth,scrollWidth:document.documentElement.scrollWidth,
+        hit:hit===button||button.contains(hit)};
+    });
+    assert.ok(result.touch.hit,'active switcher accepts a real pointer');
+    assert.ok(result.touch.rect.left>=0&&result.touch.rect.right<=result.touch.viewport,'switcher fits the viewport');
+    assert.ok(result.touch.scrollWidth<=result.touch.viewport,'mobile layout has no horizontal page overflow');
     await page.screenshot({path:path.join(out,`tabs-touch-${viewport.width}.png`)});
-    await tabs.locator('.portalWorkbenchTabClose[aria-label$="对话与展示"]').tap();
+    await page.locator('[data-portal-workbench-chrome="home"] .portalWorkbenchCustomizeButton').tap();
+    const menu=page.getByRole('dialog',{name:'工作区布局',exact:true});
+    await menu.locator('[data-workbench-panel-toggle="dialogue-display"]').tap();
     assert.ok(await page.evaluate(()=>PortalWorkbench.get('home').getState().hidden.includes('dialogue-display')));
+    assert.equal(await panel('dialogue-display').count(),0,'closing removes the mobile panel entry');
     return result;
   }
   await leave();result.hidden=await snap();

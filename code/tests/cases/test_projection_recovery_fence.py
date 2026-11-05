@@ -21,6 +21,8 @@ from management_portal.society_service import (
 from management_portal.society_service import lineage_aggregate
 from management_portal.resources.collaboration_registry import CollaborationDescriptorStore
 from management_portal.resources.service import ResourceService
+from management_portal.resource_index_backend import IndexStore, ResourceIndexService
+from management_portal.resource_index_registries import CollaborationRegistryAdapter
 from tests.cases.society_service_test_support import install_resource_boundary
 from tests.cases.instance_test_support import lineage_folders
 
@@ -50,13 +52,22 @@ def fence_fixture(tmp_path, monkeypatch, isolate_portal_databases):
     for name, method in RESOURCE_METHODS.items():
         monkeypatch.setattr(resource_client, name, method)
     monkeypatch.setattr(lineage_state, "_sync_lineage_resource_identity", SYNC_LINEAGE_IDENTITY)
-    service = ResourceService(
-
-        collaboration_store=CollaborationDescriptorStore(),
-    )
+    index = ResourceIndexService(store=IndexStore(),
+                                 adapters=[CollaborationRegistryAdapter()], start_worker=False)
+    index.adapter_layer._on_projection_changed = None
+    service = ResourceService(collaboration_store=CollaborationDescriptorStore(), index_provider=index)
     mutations = []
     notifications = []
-    monkeypatch.setattr(service, "_notify_mutation", lambda **kwargs: mutations.append(kwargs))
+    original_project = index.project_updated
+
+    def project(resource_type, payload):
+        result = original_project(resource_type, payload)
+        mutations.append((resource_type, payload))
+        return result
+
+    # Collaboration writes publish the committed descriptor directly into
+    # the index; the generic queued mutation notification is no longer used.
+    monkeypatch.setattr(index, "project_updated", project)
     monkeypatch.setattr(resource_client, "get_resource_service", lambda: service)
     monkeypatch.setattr(changes, "lineage_changed", lambda *args, **kwargs: notifications.append(kwargs))
     reset_kernels()

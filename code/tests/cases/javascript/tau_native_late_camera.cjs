@@ -6,7 +6,7 @@ module.exports = async ({page, releaseCatalog, errors}) => {
   const panel=page.getByRole('region',{name:'HATG',exact:true});
   await panel.locator('[data-node-id]').waitFor({state:'visible'});
   await page.waitForFunction(()=>!document.querySelector('.portalHatgPanelComponent[aria-busy="true"]'));
-  await panel.getByRole('button',{name:'Fit all HATG nodes',exact:true}).click();
+  await panel.locator('#graphFitBtn').click();
   await page.waitForFunction(()=>document.getElementById('hatgCanvas')?.dataset.zoom==='1.000');
   const before=await panel.locator('#hatgCanvas').getAttribute('data-zoom');
   const response=page.waitForResponse(r=>new URL(r.url()).pathname==='/api/agent-workbench/favorites');

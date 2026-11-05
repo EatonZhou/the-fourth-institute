@@ -35,10 +35,10 @@ SOURCE = ROOT / "management_portal" / "society_service"
 LAYERS = (
     # Contracts, configuration, identities, locks and value rules.
     """
-    application_target_configuration changes config contracts domain_ports effect_artifacts errors
+    allocator_memory application_target_configuration changes config contracts domain_ports effect_artifacts errors memory_profile
     family_definition folder_removal identity_contract invariant_locks lineage_effect_syntax
     lineage_execution_authority lineage_member_projection lineage_placement lineage_values
-    principal_hierarchy project_folders read_snapshot resident_access_scope resident_credential_answers resident_backend resident_capability_materials
+    principal_hierarchy project_folders read_snapshot resident_access_scope resident_backend resident_capability_materials
     resident_context resident_context.embedder resident_context.evidence resident_context.summary_layers
     resident_default_backend resident_hatg_credentials resident_intake_admission resident_message_contract
     resident_project_domain resident_projection resident_resource_changes resident_runtime_payload
@@ -99,10 +99,10 @@ LAYERS = (
     """,
     # Resident records, the Family facade and messages out, which Programs deliver through.
     """
-    family_activity family_facade family_familize family_owners family_tasks message_quotes outward_messages
+    family_activity family_continuation family_facade family_familize family_owners family_tasks message_quotes outward_messages
     personal_history resident_access resident_execution_gate resident_execution_work
     resident_fork_inheritance resident_held_infos resident_input_checkpoints resident_lineage
-    resident_mailbox resident_record_domain resident_unread resident_work_origin
+    resident_mailbox resident_record_domain resident_unread resident_user_authorization resident_work_origin
     """,
     # Program execution and the definition rules it checks.
     """
@@ -118,10 +118,10 @@ LAYERS = (
     resident_context.work_summary resident_context_evidence resident_conversation_event_relay
     resident_conversation_projection_domain resident_deferred_restart resident_delivery_work
     resident_directory_domain resident_execution_domain resident_execution_engine_domain
-    resident_fork_domain resident_initialization resident_input_queue_domain resident_input_recovery
+    resident_fork_domain resident_initialization resident_initialization_credits resident_input_queue_domain resident_input_recovery
     resident_intake_domain resident_lifecycle_domain resident_lifecycle_steps_domain
     resident_management_domain resident_media_domain resident_message_lending resident_prompt_domain resident_protocol
-    resident_questions resident_queue_control_domain resident_registration_domain resident_restart_domain
+    resident_questions resident_queue_control_domain resident_registration_domain resident_reporting resident_reporting_policy resident_restart_domain
     resident_restart_handoff resident_runtime_domain resident_session_backend_domain resident_session_credits
     resident_watchboard_domain resident_work_recovery resident_workspace_domain
     """,
@@ -134,7 +134,7 @@ LAYERS = (
     """,
     # Family, template, Function Block, Project and principal operations.
     """
-    family_progress family_quota family_quota_projection family_reassign family_resource_projection family_supervision
+    family_direct_delivery family_progress family_quality_reviewers family_quota family_quota_projection family_reassign family_resource_projection family_review family_route_facts family_supervision
     family_task_dispatches function_block_domain lineage_resident_operations principal_hierarchy_domain
     project_domain resident_domain templates templates.builtins templates.explore templates.familize
     templates.kinds templates.prompt templates.registry templates.rewrite templates.script templates.store

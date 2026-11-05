@@ -21,12 +21,17 @@ def expand(*paths, root=ROOT):
 
 
 def test_chat_entry_modules_and_their_group_list_publish_together():
-    """选中 Chat 入口脚本、任一 Chat 模块或脚本组清单时，三者整组发布，页面不随行"""
+    """Chat 与脚本组完整发布；共享 Preview 引用使 Lineage/Home 兼容单元一起闭合。"""
     modules = {path.relative_to(ROOT).as_posix()
                for path in (ROOT / 'management_portal/static').glob('chat_workspace_*.js')}
     assert SEARCH in modules
+    expected = expand(ENTRY)
+    assert {GROUPS, ENTRY, *modules} <= expected
+    assert {'management_portal/lineage.html', 'management_portal/static/portal_preview_runtime.js',
+            'management_portal/static/home_report.js'} <= expected
+    assert 'management_portal/static/repo_workspace.js' not in expected
     for selected in (SEARCH, ENTRY, GROUPS):
-        assert expand(selected) == {GROUPS, ENTRY, *modules}
+        assert expand(selected) == expected
 
 
 def test_chat_unit_follows_the_group_list_of_the_published_tree(tmp_path):
@@ -56,7 +61,8 @@ def test_workspace_surface_root_and_parts_publish_together():
     scripts = {f'management_portal{source}' for source in listed}
     files = {path.relative_to(ROOT).as_posix()
              for path in (ROOT / 'management_portal/static').glob('portal_workspace_surface*.js')}
-    assert 'management_portal/static/portal_workspace_surface.js' in scripts and scripts == files
+    assert 'management_portal/static/portal_workspace_surface.js' in scripts
+    assert scripts == files | {'management_portal/static/portal_document_statistics.js'}
     for selected in scripts:
         assert expand(selected) == scripts
 
@@ -109,10 +115,10 @@ def test_page_unit_follows_the_page_of_the_published_tree(tmp_path):
 
 
 def test_lineage_and_server_publications_stay_apart_from_the_chat():
-    """发布 Lineage 页面不带上 Chat，发布服务端文件不带上任何单元"""
+    """Lineage/Chat 共享浏览器运行时闭合，服务端发布仍不携带浏览器单元。"""
     lineage = expand('management_portal/static/lineage_workbench.js')
     assert 'management_portal/lineage.html' in lineage
-    assert ENTRY not in lineage
+    assert {ENTRY, SEARCH, GROUPS} <= lineage
     assert expand('management_portal/serve_management_portal.py') == {'management_portal/serve_management_portal.py'}
     assert expand('scripts/tfi_dev.py') == {'scripts/tfi_dev.py'}
 

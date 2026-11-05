@@ -65,6 +65,7 @@ def test_resident_discovery_client_reports_an_unreachable_society_service(monkey
 
 class _ResponseHarness:
     def __init__(self, body: bytes):
+        self.command = "POST"
         self.path = "/api/agent-workbench/resident-discovery/search"
         self.headers = {"Content-Type": "application/json", "Content-Length": str(len(body))}
         self.rfile = BytesIO(body)
@@ -84,7 +85,7 @@ class _ResponseHarness:
 def _dispatch_discovery_post(handler: _ResponseHarness):
     parsed = urlparse(handler.path)
     return portal._PORTAL_HTTP_ROUTES.dispatch(
-        "POST", parsed.path, handler, parsed, "", phase="protected"
+        "POST", parsed.path, handler, parsed, "", phase="dual-auth"
     )
 
 

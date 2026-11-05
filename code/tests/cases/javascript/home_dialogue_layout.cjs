@@ -35,9 +35,12 @@ const server=http.createServer(async(req,res)=>{
     for(const viewport of [{width:1440,height:1000},{width:390,height:844},{width:720,height:500}]) {
       const page=await browser.newPage({viewport,locale:'zh-CN',hasTouch:true});page.setDefaultTimeout(5000);const errors=[];page.on('pageerror',e=>errors.push(e.message));
       await page.goto(`http://127.0.0.1:${server.address().port}/?home_component=dialogue-display`);
-      await page.locator('.homeDialogueMore').waitFor({state:'attached'});
+      await page.locator('.homeDialoguePreview .portalDocumentToolbar').waitFor({state:'attached'});
       await page.emulateMedia({reducedMotion:'reduce'});
       await page.evaluate(()=>document.documentElement.style.fontSize='20px');
+      // The native toolbar opens an active document; an empty preview has no document to expand.
+      await page.evaluate(id=>PortalPreview.request(PortalDisplayProtocol.previewRequest({view:'frontier',target:{kind:'lineage',id}})),lineage);
+      await page.locator('.homeMapSurface:not([hidden]) .graphNode[data-kind="seed"]').waitFor();
       if(process.env.HOME_TAB_FOLD_ONLY==='1') {
         evidence.push(await require('./home_tab_autohide.cjs')(page,out,viewport));
         assert.deepEqual(errors,[]);await page.close();continue;
@@ -60,11 +63,7 @@ const server=http.createServer(async(req,res)=>{
       if(viewport.width!==720) {
         const tabs=page.locator('.homeDialogueTabs');
         if(await tabs.isVisible())await tabs.getByRole('button',{name:'展示',exact:true}).click();
-        await page.locator('.homeDialogueOpener > summary').click();
-        await page.getByLabel('展示类型',{exact:true}).selectOption('frontier');
-        await page.getByLabel('目标类型',{exact:true}).selectOption('lineage');
-        await page.getByLabel('目标 ID 或文件资源地址').fill(lineage);
-        await page.locator('.homeDialogueChooser').getByRole('button',{name:'展示',exact:true}).click();
+        await page.evaluate(id=>PortalPreview.request(PortalDisplayProtocol.previewRequest({view:'frontier',target:{kind:'lineage',id}})),lineage);
         const surface=page.locator('.homeMapSurface:not([hidden])');
         const seed=surface.locator('.graphNode[data-kind="seed"]');
         await seed.waitFor();await surface.getByRole('button',{name:'适应',exact:true}).click();await seed.click();

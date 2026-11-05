@@ -38,6 +38,9 @@ def test_open_mode_never_loads_the_permission_system():
 import sys
 from management_portal import permission_system as ps
 ps.configured_mode = lambda: ps.OPEN
+def unexpected_engine():
+    raise AssertionError("Open mode must not instantiate the PAR engine")
+ps.active = unexpected_engine
 import management_portal.serve_management_portal, management_portal.resources.server
 import management_portal.society_service.server, management_portal.execution.service
 from management_portal.hatg.catalog import instruction_catalog

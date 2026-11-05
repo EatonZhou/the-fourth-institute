@@ -50,7 +50,7 @@ MODULE_GROUPS = (
     ModuleGroup("resource", "4. 资源注册、搜索与内容管理", (
         node("resource.identity", "统一资源身份、解析与授权", "decision_4a9ba5dfada6", "decision_a4e5f03c8b9b"),
         node("resource.service", "ResourceService、Adapter 与资源协作", "decision_cf27d39e39cd", "decision_b6e74d78f7b6", "decision_36f46b395d8e", "decision_b0997bc3a922",
-             "decision_355ed742bca5", "decision_4aa13bc21e8e"),
+             "decision_355ed742bca5", "decision_4aa13bc21e8e", "decision_e3ced6d30f6b"),
         node("resource.index-search", "资源索引、搜索与内容投影", "decision_8dc6b3d03ca7", "decision_eb066fbea4ed"),
     )),
     ModuleGroup("resident", "5. Resident、Session 与 Conversation", (
@@ -84,10 +84,10 @@ MODULE_GROUPS = (
     )),
     ModuleGroup("workbench", "9. Portal 前端与工作台", (
         node("workbench.components", "前端组件系统与通用交互", "decision_741b04821171", "decision_b3022c27d22f", "decision_daba6706a788", "decision_fd9851ae01c0"),
-        node("workbench.panels", "Workbench、Panel 与打开语义", "decision_4348ed990621", "decision_538e155e1102", "decision_79de71d9890d", "decision_f67ae5e70793", "decision_7a5ae487e2e9", "decision_13e1a748cf04", "decision_78134209e5c9"),
+        node("workbench.panels", "Workbench、Panel 与打开语义", "decision_4348ed990621", "decision_538e155e1102", "decision_79de71d9890d", "decision_f67ae5e70793", "decision_7a5ae487e2e9", "decision_13e1a748cf04", "decision_78134209e5c9", "decision_82deabe891a5"),
         node("workbench.chat", "Agent Console、Inbox 与共享 Chat", "decision_f560803947c6", "decision_18abbdef3da3", "decision_ce44377c3257", "decision_15f7df737ed5",
-             "decision_1e2eb869bc10", "decision_8b2fa224616b"),
-        node("workbench.notifications", "Home 与通知", "decision_00546e28e1e0", "decision_865ac8ebef25", "decision_5d2bf4a72f09", "decision_605810a1292b", "decision_152d5c046a23", "decision_e30897dd3dc3", "decision_4dea0db1f45a", "decision_fc26f883773d", "decision_481dc4e6292c", "decision_ed57c4ad1001"),
+             "decision_1e2eb869bc10", "decision_8b2fa224616b", "decision_11b944fd33e4"),
+        node("workbench.notifications", "Home 与通知", "decision_00546e28e1e0", "decision_865ac8ebef25", "decision_5d2bf4a72f09", "decision_605810a1292b", "decision_152d5c046a23", "decision_e30897dd3dc3", "decision_4dea0db1f45a", "decision_fc26f883773d", "decision_481dc4e6292c", "decision_ed57c4ad1001", "decision_b12782e7f490"),
         node("workbench.preview", "文件、Preview、Resource Detail 与 Workspace", "decision_61e50306cc79", "decision_dca903d71575", "decision_e5f66e2f6a5e", "decision_864d4fe41934", "decision_2f67ed28db67", "decision_769a35d6b5c7", "decision_f22e45dfd382"),
         node("workbench.user-state", "页面状态、关联与恢复", "decision_6e230393221c", "decision_9f6135cbbb22", "decision_bd179998ba08", "decision_f25266e5a0e7"),
         node("workbench.shell", "Portal Shell、导航与搜索", "decision_27253e25f016", "decision_e486671af066", "decision_a144bf700017"),

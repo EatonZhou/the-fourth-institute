@@ -77,7 +77,7 @@ const last = name => calls.filter(c => c.name === name).at(-1).args;
   assert.equal(form.elements.harness.value, 'provider_api', 'removing a protocol clears the incompatible selection');
   form.elements.harness.value = 'codex';
   submit(form); await flush();
-  assert.deepEqual(last('CreateModelApi').protocols, {openai_responses: {}});
+  assert.deepEqual(last('CreateModelApi').protocols, {openai_chat: {supports_prompt_cache_key: true}, openai_responses: {}});
   assert.match(form.querySelector('[role=alert]').textContent, /接口已保存.*重试保存/);
   assert(!form.elements.account_id, 'the server owns the API account identities');
   assert(form.elements.api_id.disabled, 'a route retry keeps the saved connection identity');
@@ -104,7 +104,7 @@ const last = name => calls.filter(c => c.name === name).at(-1).args;
   form.elements.anthropic_auth.value = 'x-api-key';
   submit(form); await flush();
   assert.deepEqual(last('UpdateModelApi').changes.protocols,
-    {openai_responses: {}, anthropic_messages: {auth: 'x-api-key'}});
+    {openai_chat: {supports_prompt_cache_key: true}, openai_responses: {}, anthropic_messages: {auth: 'x-api-key'}});
 
   // A harness account lists only the APIs that speak its protocol.
   click('新增执行账号'); form = window.document.querySelector('dialog form');

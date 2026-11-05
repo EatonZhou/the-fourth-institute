@@ -1,4 +1,4 @@
-"""Resource metadata reads and deleted-marker rejection preserve existing rows.
+"""Resource metadata labels do not gate reads or rewrite existing rows.
 
 :design: decision_15aab18c0ab3
 """
@@ -60,7 +60,7 @@ def test_new_store_writes_tfi_marker_and_reopen_is_read_only(marker_store):
 
 @pytest.mark.parametrize("namespace", ["archive", "tfi"])
 def test_existing_marker_and_documents_keep_value_and_xmin(marker_store, namespace):
-    """资源注册与索引只接受规范标记，重复读取或拒绝均保原值和事务版本"""
+    """资源注册与索引按实际表结构读取，历史标签和事务版本均不改写。"""
     kind, database, reopen, table, suffix, rows = marker_store
     store = reopen()
     if kind == "registry":
@@ -74,18 +74,13 @@ def test_existing_marker_and_documents_keep_value_and_xmin(marker_store, namespa
     with database.transaction() as connection:
         connection.execute(f"UPDATE {table} SET value=%s WHERE key='schema'", (namespace + "." + suffix,))
     before_marker, before_rows = marker(database, table), snapshot(database, rows)
-    if namespace == 'archive':
-        for _ in range(2):
-            with pytest.raises(RuntimeError, match='schema'):
-                reopen()
-            assert marker(database, table) == before_marker
-            assert snapshot(database, rows) == before_rows
-        return
     reopened = reopen()
     assert marker(database, table) == before_marker
     assert snapshot(database, rows) == before_rows
     if kind == "index":
         assert reopened.internal_get("skill_0123456789ab")["resource_id"] == "skill_0123456789ab"
+    else:
+        assert reopened.get("fixture", "original") == {"schema": "archive.fixture.v1", "value": "unchanged"}
     reopen()
     assert marker(database, table) == before_marker
     assert snapshot(database, rows) == before_rows
@@ -96,12 +91,21 @@ def test_existing_marker_and_documents_keep_value_and_xmin(marker_store, namespa
     "tfi.resource-index-store.v2", "archive.resource-index-store.v0",
     "foreign.resource-index-store.v1", " tfi.resource-registry.v2", "7", "",
 ])
-def test_wrong_name_version_or_prefix_is_rejected_without_rewrite(marker_store, value):
-    _kind, database, reopen, table, _suffix, _rows = marker_store
-    reopen()
+def test_marker_name_version_or_prefix_does_not_gate_reads_or_rewrite(marker_store, value):
+    kind, database, reopen, table, _suffix, rows = marker_store
+    store = reopen()
+    if kind == "registry":
+        with store.writer("fixture") as writer:
+            writer.put("fixture", "original", {"value": "unchanged"})
+    else:
+        store.publish_snapshot("skill", [_record("skill_0123456789ab", "skill", adapter="skill")], {})
     with database.transaction() as connection:
         connection.execute(f"UPDATE {table} SET value=%s WHERE key='schema'", (value,))
-    before = marker(database, table)
-    with pytest.raises(RuntimeError, match="schema"):
-        reopen()
-    assert marker(database, table) == before
+    before_marker, before_rows = marker(database, table), snapshot(database, rows)
+    reopened = reopen()
+    if kind == "registry":
+        assert reopened.get("fixture", "original") == {"value": "unchanged"}
+    else:
+        assert reopened.internal_get("skill_0123456789ab")["resource_id"] == "skill_0123456789ab"
+    assert marker(database, table) == before_marker
+    assert snapshot(database, rows) == before_rows

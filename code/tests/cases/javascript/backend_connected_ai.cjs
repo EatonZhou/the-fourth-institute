@@ -74,7 +74,8 @@ const click = (root, text) => {const control = [...root.querySelectorAll('button
     assert.equal(row('gateway-codex-1').children[1].textContent, 'gateway-codex-1', 'two accounts for one runner remain distinguishable');
     assert.equal(row('gateway-kimi-2').children[0].textContent, 'Kimi Code');
     assert.match(row('gateway-kimi-2').children[2].textContent, /已停用/);
-    assert.match(row('gateway-codex-0').children[2].textContent, /默认路线/);
+    assert.match(row('gateway-codex-0').children[2].textContent, /已启用/);
+    assert.equal(section().querySelectorAll('[data-backend-account-selection]').length, 1, 'default selection belongs to one policy control, not route badges');
     assert.match(group('other-gateway').querySelector('header').textContent, /已停用/);
     assert(!row('subscription').closest('[data-backend-api-connection]'));
     assert(!row('unbound').closest('[data-backend-api-connection]'));

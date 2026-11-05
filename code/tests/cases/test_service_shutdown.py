@@ -559,7 +559,7 @@ def test_lineage_repair_pass_stops_between_invocations_and_resumes_on_the_next_p
     monkeypatch.setattr(terminal, "_compiled_program", lambda _: {})
     absorption = Mock(return_value=0)
     monkeypatch.setattr(terminal, "reconcile_terminal_absorption_edges", absorption)
-    state = Mock(lineage_scope=lambda _: nullcontext(), read_lineage=lambda *a, **kw: graph,
+    state = Mock(lineage_scope=lambda _, **kwargs: nullcontext(), read_lineage=lambda *a, **kw: graph,
                  ensure_manager=lambda *_: None)
     ports = terminal.ProgramTerminalPorts(state=state, resident=Mock(),
                                           directory=Mock(lineage_execution_authority=lambda _: nullcontext()),

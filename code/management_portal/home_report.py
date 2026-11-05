@@ -198,6 +198,7 @@ class ReportReader:
                 try:
                     ref = self.resolve(output["resource_id"])
                 except Exception:
+                    self.warnings.append("部分成果当前不可读，未计入报告。")
                     continue
                 refs.append(ref)
                 artifacts.append(ref)
@@ -208,6 +209,7 @@ class ReportReader:
                 try:
                     refs.extend(self.resolve(address) for address in note.get("refs", []))
                 except Exception:
+                    self.warnings.append("部分研究记录的来源当前不可读，相关记录未展示。")
                     continue
                 notes.append(text(note.get("text"), 800))
             rows.append({"id": key, "title": text(direction.get("title"), 200), "group": "研究方向",

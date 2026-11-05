@@ -36,7 +36,7 @@ def test_an_account_at_its_quota_reserve_stops_preparation_with_the_reason(confi
     replace = mock.Mock(side_effect=AssertionError("replaced an executor the quota reserve closed"))
     configured.restart.side_effect = AssertionError("restarted an executor the quota reserve closed")
 
-    with pytest.raises(RuntimeError, match="额度已到保留线（剩余 0%）"):
+    with pytest.raises(tau_runtime.CaseNotSent, match="额度已到保留线（剩余 0%）"):
         tau_runtime.prepare_configuration(
             configured.assignment, cancelled=lambda: False, emit=lambda _message: None, poll_interval=0,
             refresh_assignment=lambda: configured.assignments.assignment("workbench.panels"),

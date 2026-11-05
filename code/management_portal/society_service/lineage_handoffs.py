@@ -347,7 +347,12 @@ def execute_handoff(
 ) -> dict[str, Any]:
     """Prepare and bind Workspace items without dispatching a Resident task."""
     with _handoff_lease(lineage_id, handoff_id, actor):
-        return _execute_handoff(lineage_id, handoff_id, actor)
+        result = _execute_handoff(lineage_id, handoff_id, actor)
+    # Leaving the lease commits the writer's end receipt. Return the same
+    # durable definition/runtime snapshot as Get and ready replay, rather than
+    # the attempt's normalized in-memory candidate from before that commit.
+    result.update(get_handoff(lineage_id, handoff_id, actor))
+    return result
 
 
 @contextmanager

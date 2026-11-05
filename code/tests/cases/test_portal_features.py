@@ -181,7 +181,7 @@ def test_web_starts_without_any_feature():
     assert web["chatroom_search"] == "instruction.invalid_arguments"
     feature_paths = ("/paper", "/projects", "/api/articles", "/resource/article", "/api/repos", "/resource/repo",
                      "/api/resource-backup", "/resource/backup", "/api/wall/", "/static/wall.", "/static/test_",
-                     "/test/api/", "/api/notice-board/")
+                     "/test/api/", "/api/notice-board/", "/home-report", "/api/home-report")
     assert not [path for path in web["paths"] if path.startswith(feature_paths)]
     assert {"/", "/api/health", "/lineage", "/settings"} <= set(web["paths"])
 
@@ -196,12 +196,12 @@ def test_installed_features_serve_their_routes_before_the_shell_fallbacks():
 
     routes = shell._portal_route_definitions()
     contributed = {key for key, _ in portal_features.contributions("web.routes")}
-    assert contributed == {"paper", "projects", "article", "repo", "backup", "wall", "test_framework", "notice_board"}
+    assert contributed == {"paper", "projects", "article", "repo", "backup", "wall", "test_framework", "notice_board", "home_report"}
     assert "robolab" not in contributed
     fallbacks = [index for index, route in enumerate(routes) if route.group == "portal-fallback"]
     paths = [route.path for route in routes]
     for path in ("/paper/api/library", "/api/articles", "/api/wall/", "/test/api/run",
-                 "/api/resource-backup/overview", "/api/notice-board/image", "/static/test_page.js"):
+                 "/api/resource-backup/overview", "/api/notice-board/image", "/static/test_page.js", "/api/home-report", "/home-report"):
         assert paths.index(path) < min(fallbacks), path
 
 

@@ -4,15 +4,15 @@ type: decision
 project: AI员工
 created_at: '2026-10-16'
 version:
-  number: 89
+  number: 91
   created_at: "2026-10-16T09:28:31Z"
   created_by:
     user: "weihao"
     agent: "resident_0d928ae486ba"
-  updated_at: "2026-11-05T02:13:25Z"
+  updated_at: "2026-11-05T16:01:45Z"
   updated_by:
     user: ""
-    agent: "resident_83d75ad3a6c7"
+    agent: "resident_2e9ea0072551"
 importance: 9
 metaness: 3
 ai_generated: false
@@ -127,6 +127,8 @@ Portal 业务层（ISA 内核、领域服务、页面入口、ResourceService）
 **关闭就是没有权限系统**（weihao 2026-10-18）。端口不导入引擎，只检查已登录（有效的 User、Resident 或 Portal 自身）和上面的管理员名单规则。其余一律放行，包括 OpenTerminal；指令声明中没有按 User 分类的例外，GetInstructionSchema 的 `permission` 报告不需要权限（Portal 管理员保底照样写出）。一般用户与实习用户之间的分类调整同样放行（weihao 2026-10-18），开启时由方案对 UpdateUser 的要求判定。`allows` 对已登录主体都为真，`permitted` 对已登录主体的每个资源都通过。
 
 “个人 AMA 归所有者”不是权限规则，端口中没有它（weihao 2026-10-26）。它是 Society 对个人 AMA 的规定。共用的登记所有者查询和私有性判定函数位于 `permission_system/personal_ama.py`：Society 在进入权限端口前执行私有性判定，权限实现复用登记所有者查询来判定主体代表关系。私有性判定在开关开或关时都生效；所有者本人或其既有 AMA 签发的精确资源/动作临时委托由私有边界核对活跃临时行，其余主体仍隔离；别人的 AMA 对其余主体不存在，拒绝报告为 not found，不说成权限问题。开关开启时，规定放过的对象再按方案判定（Lineage 问 GetLineage，Resident 问 GetResident），列表、目录和监控按同一读判定隐去调用者读不到的对象；这类过滤调用 `readable_ids`，被过滤掉的对象不写“permission refused”日志。规定的内容与投递例外见第 5.5 节和 decision_bd5217d08c09。
+
+私人 AMA 的所有者隔离属于独立的领域规则，开关关闭时仍生效：仅所有者、代表所有者的 AMA 与 Portal 自身可达。该分支不加载权限引擎、活跃方案或临时凭证；关闭期间保存的凭证不改变实际私域可达性。
 
 关闭期间方案和实例照常可以查看和编辑，只是不在当前系统中生效。全部权限指令（第 3.7 节）在两种模式下由同一份代码处理，区别只在调用者校验：开启时按指令的判定槽与启用方案的分类判定，关闭时任何已登录主体都可以调用，不检查调用者在实例上的权限。方案的创建、修改、删除和启用与开启时相同，编译错误和版本冲突的返回也相同；ActivatePermissionScheme 只记录开启时使用哪套方案，并报告开启时补齐将新增、移动、删除多少节点和表项；GetPermissionSystem 返回 `enabled: false`、`mode: open` 和这套方案，方案列表与读取也把它标为启用。表项写入启用方案（或指定方案）保存的实例，开启时随实例生效；GetPermissionNode、SearchPermissionNodes、ListPermissionEntries 读取的也是这份实例。关闭期间对象变化不维护实例（只记录创建者），所以实例中缺少关闭期间新建的对象，开启时补齐。理由是关闭期间任何已登录主体都能修改并启用方案，方案能改变全部规则，单独收紧表项不增加保护；开启开关的人可以用 ListPermissionEntries 和 ActivatePermissionScheme 的 dry_run 查看将生效的实例。临时凭证照常签发、续期和撤销，写入这份实例，开启后生效；有效权限、试判定和临时凭证列表按这份实例作答。
 
@@ -440,4 +442,4 @@ Society 证明已认证 User 原消息及其与当前执行的关系。`role=use
 
 个人 AMA 的所有者可据此向其他主体临时委托精确资源与动作。私有边界只接受登记所有者或其既有 AMA 实际签发给当前主体（或其原有代表的 User）、仍活跃且未停用的临时 permit；永久 grant、管理员身份、其他签发者、group、父资源继承和再次转借均不能打开 AMA。父子在同批检查中也逐个核对精确 `r`。登记所有者、其 AMA 与 Portal 原有路径不变。
 
-`personal_ama.reaches(actor, owner, resource_id='', *, action='ReadResource')` 和 `hidden(actor, owners, *, action='ReadResource')` 只回答私有边界是否可达。省略资源 ID 保持原所有者规则。Society 对受委托对象传精确资源及本次实际 A 元素，多槽指令传该资源的 `slot.element`；调用上下文结束立即复位，模糊的 manage 默认不能推定具体操作。Resource 列表使用读动作；查看一个精确 Resident 不因此打开它的父 Lineage、兄弟、Workspace 或文件。启用 PAR 后仍继续正常动作授权；OPEN 下私有边界仍按临时行 A 范围和 deny 判定，不能把 viewer 扩成管理权限。到期逐次看时钟，撤销和停用随实例版本立即失效。
+`personal_ama.reaches(actor, owner, resource_id='', *, action='ReadResource')` 和 `hidden(actor, owners, *, action='ReadResource')` 只回答私有边界是否可达。省略资源 ID 保持原所有者规则。Society 对受委托对象传精确资源及本次实际 A 元素，多槽指令传该资源的 `slot.element`；调用上下文结束立即复位，模糊的 manage 默认不能推定具体操作。Resource 列表使用读动作；查看一个精确 Resident 不因此打开它的父 Lineage、兄弟、Workspace 或文件。权限系统开启时，私有边界核对当前临时凭证的精确资源、动作范围及 deny，随后继续正常动作授权；不能把 viewer 扩成管理权限。到期逐次看时钟，撤销和停用随实例版本立即失效。OPEN 下只执行独立的所有者隔离：所有者、代表所有者的既有 AMA 和 Portal 自身可达，其他主体保持隐藏；不加载权限引擎或临时凭证，已保存的委托不会在 OPEN 模式开放他人的私人 AMA。

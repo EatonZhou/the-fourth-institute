@@ -140,7 +140,7 @@ def test_copy_runs_only_after_all_users_stop_and_intake_restores(users, monkeypa
     def move():
         with lifecycle.directory_move_execution_scope([users.records[0]], actor='alice') as terminate:
             return mover.move(users.source, target, owner_id=users.records[0]['lineage_id'],
-                origin='created', actor='alice', terminate=terminate, database=users.database,
+                actor='alice', terminate=terminate, database=users.database,
                 update=update, dependencies=dependencies)
     if failure:
         with pytest.raises(RuntimeError, match=failure):
@@ -213,7 +213,7 @@ def test_active_preparation_without_submission_blocks_copy(users, monkeypatch):
     with lifecycle.directory_move_execution_scope([users.records[0]], actor='alice') as terminate:
         with pytest.raises(RuntimeError, match='preparation is not yet stopped'):
             DirectoryMoveStore().prepare(users.source, users.source.with_name('moved'),
-                owner_id=record['resident_id'], origin='created', actor='alice', terminate=terminate)
+                owner_id=record['resident_id'], actor='alice', terminate=terminate)
     assert users.source.is_dir()
     assert resident_catalog.get_catalog().get(record['resident_id'])['intake_open'] is True
 
@@ -226,7 +226,7 @@ def test_unconfirmed_script_termination_blocks_copy(users, monkeypatch):
     with lifecycle.directory_move_execution_scope([users.records[0]], actor='alice') as terminate:
         with pytest.raises(RuntimeError, match='Script termination is not yet confirmed'):
             DirectoryMoveStore().prepare(users.source, users.source.with_name('moved'),
-                owner_id=users.records[0]['resident_id'], origin='created', actor='alice', terminate=terminate)
+                owner_id=users.records[0]['resident_id'], actor='alice', terminate=terminate)
     assert users.source.is_dir()
     assert [resident_catalog.get_catalog().get(r['resident_id'])['intake_open'] for r in users.records] == [True, True, False]
 
@@ -285,7 +285,7 @@ def test_project_rename_rpc_owns_cross_lineage_stop_and_restore(users, monkeypat
     from tests.cases.registry_support import write_projects
 
     write_projects({'schema_version': 1, 'projects': [{'id': 'Old', 'path': str(users.source),
-        'directory': {'owner_id': 'Old', 'origin': 'created'}}]})
+        'directory': {'owner_id': 'Old'}}]})
     monkeypatch.setattr(project_rename, 'PROJECTS_ROOT', users.source.parent)
     monkeypatch.setattr(project_rename, 'external_blockers', lambda *_: [])
     monkeypatch.setattr(project_rename, 'external_references', lambda *_: [])

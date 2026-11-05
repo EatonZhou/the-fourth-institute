@@ -4,15 +4,15 @@ type: decision
 project: AI员工
 created_at: '2026-09-30'
 version:
-  number: 45
+  number: 49
   created_at: "2026-09-30T11:40:00Z"
   created_by:
     user: "weihao"
     agent: "resident_57f585eb8ae9"
-  updated_at: "2026-11-05T10:45:08Z"
+  updated_at: "2026-11-05T18:10:06Z"
   updated_by:
     user: ""
-    agent: "resident_2e9ea0072551"
+    agent: "resident_81934cf449c0"
 importance: 8
 metaness: 2
 ai_generated: false
@@ -238,23 +238,25 @@ Portal Web 通过已鉴权 SocietyService 接口读取当前 Provider、稳定�
 Codex 开始新一轮时，Provider 适配器把协作模式、模型和推理强度写入 `turn/start` 请求的 `collaborationMode`，并把 `settings.developer_instructions` 设为 `null`，让 Codex 使用自己内置的模式说明。从 Plan 切回 Default 时同样显式传 `default`，不依赖 Codex 线程沿用上一轮的模式。Resident 不需要调用任何 Portal 接口来切换模式。
 
 
-## 汇报主动性、质量与门面策略
+## 汇报主动性、质量与可信请求标准提示
 
-`settings.reporting` 与 `changes.reporting` 使用完整对象 `{initiative, quality}`。主动性 `off|low|medium|high` 与质量 `low|medium|high` 独立设置，缺省为 off/medium。Society 保存 `resident_execution_configuration.reporting_json`，统一版本校验覆盖本次可读运行参数、汇报策略及是否已配置。非法值和未知字段拒绝；显式保存默认值同样记录为配置。页面保存冲突时保留草稿，回读最新值，由用户选择采用最新内容或按新版本重试，不静默覆盖。
+`settings.reporting` 与 `changes.reporting` 使用完整对象 `{initiative, quality}`。主动性 `off|low|medium|high` 与质量 `low|medium|high` 独立设置。普通 Resident 未配置时使用 off/medium；所有 User 的真实个人 AMA 门面未配置时使用 medium/high。AMA 默认由 canonical personal owner、实际 Lineage leader/成员及 Family 门面关系只读计算，创建、GetResidentSettings、effective 与实际注入共用同一入口，不按标题或消息文本推断，不批量回填 NULL；显式保存的值保持不变。Society 保存 `resident_execution_configuration.reporting_json`，统一版本校验覆盖本次可读运行参数、汇报策略及是否已配置。非法值和未知字段拒绝；显式保存默认值同样记录为配置。页面保存冲突时保留草稿，回读最新值，由用户选择采用最新内容或按新版本重试，不静默覆盖。
 
 Family 门面拥有自身汇报策略。调用者只需门面 viewer/contributor 即可读取或保存该策略；Router 模型参数另按原有权限核验，不因策略授权而泄露。没有 Router 读取权限时返回可读的 reporting，并明确运行设置与 Prompt 注入观察 unavailable。`reporting_effective` 保存来源 Resident、resident/family_facade 来源类型、known/unknown、configured 与 next_input 生效说明，默认不能冒充显式配置。
 
-执行成员依据已核验的持久转交链取得最外层门面在本次输入上的策略。直接成员输入使用其自身策略，不向成员批量复制门面配置。每条主输入与追加输入都由 Society 重新物化策略提示；已送达内容不重写，保存不重启模型、不生成报告、不发起审查。该业务约束独立于可选 message envelope 和 pure 注入预设；Execution 接收物化后的提示，不解释主动性、报告质量或审核业务。Home 上下文只提供能力与展示合同，不覆盖执行时的权威策略。
+未转交的普通输入使用目标 Resident 自身配置。可信 Family 转交输入通过成员输入的正式 business_ref、来源门面身份及门面持久 relay ledger 的精确目标 Resident/message 绑定选择请求来源；嵌套转交沿既有可信链选择最外层请求门面配置。请求目标已开启时，协作成员自身 off 不阻止该请求的标准 Prompt；来源 off 同样不能被成员自身开启覆盖。未完成的转交、伪造正文或来源声明、无关输入及缺失的精确 ledger 绑定不能借用其他 Resident 的配置，回到自身策略。该选择只影响本次 Prompt，不改写任何 Resident 配置。Society 每轮按可信 effective 重新物化标准提示；主输入、运行中追加输入与 Preview 使用相同选择。已送达内容不重写，保存不重启模型、不创建汇报或审查。pure 不关闭标准提示。Execution 接收物化提示，不解释汇报业务；Home 上下文不覆盖可信 effective。
 
-主动性只决定是否额外发起汇报。off 保留普通答复、任务交付与用户显式请求；低档仅在重要成果、风险或决策有汇报价值时考虑；中档在实质成果和解释能帮助理解时考虑；高档更积极判断信息增量与用户需要，仍不要求每次请求生成。简单事实可直接简答，不按档位或关键词强制生成复杂页面。用户明确的格式、取消及展示限制优先。
+off 的展示名称为“不开启”，在当前可信 effective 的标准 Prompt 中指示不开启汇报创作；任何用户消息、显式创作请求、旧委托、引用或转发均不能临时开启。普通业务处理和答复继续，已有成果读取仍按原资源 ACL。非 off 才按主动性档位判断：低档仅在重要成果、风险或决策有汇报价值时考虑；中档在实质成果和解释能帮助理解时考虑；高档更积极判断信息增量与用户需要，仍不要求每次请求生成。简单事实可直接简答，不按关键词设创作特例。
 
-质量约束已经决定制作的汇报、解释页及明确委托的解释成果。已接受的高质量解释、页面或视频要求在消息转交及后续输入中继续有效，除非用户明确变更或取消；缺少 Home 上下文、改称普通答复或业务最终交付均不免除已有委托。质量低使用 Markdown，中使用现有交互网页模板并按理解任务选择有用的表达，高由独立 Resident 检查内容与形式是否足以完成理解任务。高档委托采用简洁文字时仍保存实际成果的固定包并独立检查，不以降为 Markdown 绕过审查。没有该委托的简单事实回答不因此增加报告或审查任务。
+在汇报能力开启时，质量约束已经决定制作的汇报、解释页及明确委托的解释成果。已接受的高质量解释、页面或视频要求在消息转交及后续输入中继续有效，除非用户明确变更或取消；缺少 Home 上下文、改称普通答复或业务最终交付均不免除已有委托。质量低使用 Markdown，中使用现有交互网页模板并按理解任务选择有用的表达，高由独立 Resident 检查内容与形式是否足以完成理解任务。高档委托采用简洁文字时仍保存实际成果的固定包并独立检查，不以降为 Markdown 绕过审查。没有该委托的简单事实回答不因此增加报告或审查任务。
 
-Society 的 resident_reporting.prompt 在每条主输入和运行中追加输入中提供统一作者入口，独立于 Home 前端上下文、可选消息外壳和输入隔离模式。提示从当前代码根定位 management_portal/static/home_explanation_authoring.md，同时给出同源 /static/home_explanation_authoring.md；该指南拥有解释创作标准及三篇参考。构建入口 scripts/build_explanation_package.py 显式接收本次 --quality、作者自己的 --resident-id、正式 Workspace 地址和 --task，保存固定包，high 经正式入口送检。已有固定包由 scripts/submit_explanation_review.py 送检和 --read 回读；代码根随实际运行部署解析，不依赖某个实例绝对路径或 Home 注入。提示只指向这些既有 owner，不复制其媒体实现，不增加身份或资源权限。
+Society 按可信 effective 策略选择 `society_service/prompt_templates/reporting/` 下 initiative_off/low/medium/high、quality_low/medium/high、enabled 和 unknown 九份标准模板。`resident_prompt_domain.reporting_instructions(record, job)` 统一物化正式 SystemInstructions 的 `reporting_policy` part（every_turn、prompt_prefix），pure 不关闭。首轮、后续轮、压缩后、设置切换及 Preview 使用相同物化入口；运行中追加输入也使用同一 helper，正式请求正文不重复拼接。off 只物化关闭模板，unknown 不推断开启；Home 只提供声明性协议、已核配置和指南引用，不硬拼档位正文或以本地默认冒充已核策略。开启状态提供统一作者入口，独立于 Home 前端上下文、可选消息外壳和输入隔离模式。提示从当前代码根定位 management_portal/static/home_explanation_authoring.md，同时给出同源 /static/home_explanation_authoring.md；该指南拥有解释创作标准及三篇参考。构建入口 scripts/build_explanation_package.py 显式接收本次 --quality、作者自己的 --resident-id、正式 Workspace 地址和 --task，保存固定包，high 经正式入口送检。已有固定包由 scripts/submit_explanation_review.py 送检和 --read 回读；代码根随实际运行部署解析，不依赖某个实例绝对路径或 Home 注入。提示只指向这些既有 owner，不复制其媒体实现，不增加身份或资源权限。
+
+汇报配置及可信请求的继承只控制标准 Prompt 的指导内容。Web、Report、Media、Authoring、CLI 及其读写/创作路径均不以 initiative/quality、effective 或 active context 作为业务准入；不提供 reporting_creation_allowed RPC 或 creation_allowed 策略门禁。实际资源权限、认证身份、负责者 proof、摘要、固定版本与 CAS 继续由原 owner 校验，读取已有成果仍按原 ACL。Prompt 指导不授予权限，也不替代这些校验。
 
 high 检查者须独立于作者，按理解任务实际打开、操作和核对固定成果。changes_requested 要求作者实际修改为新固定版并以 --previous-review-id 关联前轮复审，直到当前版本正式记录 passed；submitted、可打开或媒体 ready 不等于通过。取消时停止；缺权限、无法实际验证等原因保留 blocked，不伪称达标。页面通过不能替代用户所请求视频的独立成片检查。模板、媒体、固定版本和审查记录仍由各业务 owner 保存；提示已经送达只能证明作者获得了指导，不能证明模型遵循或作品通过。
 
-新增 nullable reporting_json 列由 Society 正式升级入口处理。未升级的读取按默认 off/medium、configured=false 解释，无汇报字段的普通设置写入继续工作；显式保存汇报策略缺列时返回真实错误，不能声称配置成功。非法非空值不默认化。`scripts/migrate_resident_reporting.py` 默认事务预演回滚，`--apply` 才提交；使用初始化锁和有界锁等待，按本次增列需要的表、字段和类型核对，不依赖描述性 schema 标签相等。增列入口兼容旧库增列使用的 nullable TEXT 与新安装 owner 创建的 nullable JSONB；已有这两种合法列时不再 ALTER 或转换类型，不重写已有策略。其他类型或非空约束不满足本项列合同，明确拒绝。旧安装转换与新安装 seed 使用同一 owner 结构，实例特殊策略通过正式 UpdateResidentSettings 设置，不硬编码本站 AMA 身份。
+新增 nullable reporting_json 列由 Society 正式升级入口处理。未升级的读取按相应 Resident/真实 AMA 的计算默认及 configured=false 解释，无汇报字段的普通设置写入继续工作；显式保存汇报策略缺列时返回真实错误，不能声称配置成功。非法非空值不默认化。`scripts/migrate_resident_reporting.py` 默认事务预演回滚，`--apply` 才提交；使用初始化锁和有界锁等待，按本次增列需要的表、字段和类型核对，不依赖描述性 schema 标签相等。增列入口兼容旧库增列使用的 nullable TEXT 与新安装 owner 创建的 nullable JSONB；已有这两种合法列时不再 ALTER 或转换类型，不重写已有策略。其他类型或非空约束不满足本项列合同，明确拒绝。旧安装转换与新安装 seed 使用同一 owner 结构，实例特殊策略通过正式 UpdateResidentSettings 设置，不硬编码本站 AMA 身份。
 
 
 ### Family 内的审核职责

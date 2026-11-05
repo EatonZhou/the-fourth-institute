@@ -324,9 +324,8 @@ class Media:
                 task = review.AuthoringService(resources=self.service).read(authoring_id, actor)
                 if task and task['status'] in {'submitted', 'cancelled'}:
                     return self.response(ctx, existing, actor)
-        from management_portal.home_report_creation import explanation_responsible, require_creation
-        responsible = explanation_responsible(ctx['ref'], actor)
-        require_creation(actor, responsible=responsible)
+        from management_portal.home_report_explanations import registered_responsible
+        registered_responsible(ctx['ref'], actor)  # Keep registered Report/source authorization.
         authored = existing.get('authoring_proof') if existing else None
         try:
             if ctx['plan'] is None:

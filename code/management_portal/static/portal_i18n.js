@@ -195,8 +195,16 @@
       }
       for (const element of root.querySelectorAll("[data-portal-i18n-attrs], [data-portal-i18n-text]")) {
         if (registeredStatic.has(element)) continue;
-        if (element.dataset.portalI18nAttrs) staticAttributes.push([element, JSON.parse(element.dataset.portalI18nAttrs)]);
-        if (element.dataset.portalI18nText) staticTexts.push([element, JSON.parse(element.dataset.portalI18nText)]);
+        if (element.dataset.portalI18nAttrs) {
+          try { staticAttributes.push([element, JSON.parse(element.dataset.portalI18nAttrs)]); }
+          catch { /* An invalid annotation must not block the rest of a lazy panel. */ }
+        }
+        if (element.dataset.portalI18nText) {
+          const source = element.dataset.portalI18nText;
+          let text = source;
+          try { text = JSON.parse(source); } catch { /* Authored labels may be plain text. */ }
+          staticTexts.push([element, text]);
+        }
         registeredStatic.add(element);
       }
     }

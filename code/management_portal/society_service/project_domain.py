@@ -244,8 +244,8 @@ def delete_project(project_id: str, actor: str) -> dict[str, Any]:
         from management_portal.resources.registry_store import get_registry_store
         registry = get_registry_store()
         registry._ensure()
-        from management_portal.workbench_projections.store import Store as WorkbenchStore
-        workbenches = WorkbenchStore()
+        from management_portal.portal_features import contributions
+        project_deletion_owners = [prepare() for _feature, prepare in contributions("project.deletion_transaction")]
         with ExitStack() as preparation:
             from . import invariant_locks
             preparation.enter_context(lineage_aggregate.execution_authorities([*ordinary, *principals]))
@@ -271,7 +271,8 @@ def delete_project(project_id: str, actor: str) -> dict[str, Any]:
                 directory_metadata(project_record.get('directory'), registry_id)
                 from management_common.directory_move_store import cancel_owner_moves
                 cancel_owner_moves(connection, registry_id)
-                workbench_ids = workbenches.delete_project(registry_id, connection=connection, actor=actor_id)
+                workbench_ids = sorted({resource_id for delete in project_deletion_owners
+                                        for resource_id in delete(registry_id, connection=connection, actor=actor_id)})
                 from management_portal.resources.directory_registrations import unregister_tree
                 nested = unregister_tree(
                     [project_root],

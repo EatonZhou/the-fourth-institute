@@ -21,6 +21,7 @@ const catalogGate = lateCameraSamples ? new Promise(resolve => { releaseCatalog 
 const sessionId = 'opaque.full-session-id-for-native-menu';
 const childId = 'resident_333333333333';
 let forked = false;
+let appearance = {language:'en'};
 const residentTitles=new Map();
 const deletedResidents = new Set();
 const runtimeState = () => ({work_state:'idle', execution_gate:graphReadinessSamples
@@ -53,7 +54,11 @@ const runtimeState = () => ({work_state:'idle', execution_gate:graphReadinessSam
       const nodes = [makeResident(residentId), ...(forked || graphReadinessSamples ? [makeResident(childId)] : [])];
       let result = {};
       if (u.pathname === '/api/agent-workbench/favorites') await catalogGate;
-      if (u.pathname === '/api/me') result = { username: 'fixture' };
+      if (u.pathname === '/api/me') result = { username: 'fixture', preferences:{appearance} };
+      if (u.pathname === '/api/preferences') {
+        if (req.method() === 'POST') appearance = {...appearance,...body.preferences?.appearance};
+        result = {preferences:{appearance}};
+      }
       if (u.pathname === '/api/agent-workbench/residents') result = { ready: true, residents: nodes,
         lineages: [{lineage_id:lineageId, title:'Fixture Lineage', leader_resident_id:residentId, project_id:'sample-project', allows:{CreateResident:true}}],
         principal_hierarchy: { projects: readinessSamples ? [{project_id:'sample-project', title:'Sample Project',

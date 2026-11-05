@@ -190,7 +190,7 @@ function requestProgress() {
 function familyControls() {
   const { familyExecution } = w.PortalChatWorkspaceResidentMessages;
   const request = (message_id, relay, role = 'user') => ({ message_id, role, relay });
-  const execution = familyExecution({ messages: [
+  const execution = familyExecution({ family_facade: {}, messages: [
     request('a', { state: 'running', title: 'M1' }),
     request('b', { state: 'running', work_state: 'stopping' }),
     request('c', { state: 'routing', resident_id: 'resident_x' }),

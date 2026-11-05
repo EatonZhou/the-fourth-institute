@@ -3,6 +3,7 @@ from pathlib import Path
 from types import SimpleNamespace
 import json
 import subprocess
+import sys
 import uuid
 
 import pytest
@@ -299,10 +300,16 @@ def test_bootstrap_admission_starts_unless_intake_is_closed(input_team, closed):
 def test_handoff_isa_prepares_durable_binding_and_idempotent_delivery(team, mode, monkeypatch):
     """PrepareWorkspaceHandoff 持久绑定目标且重放不发送消息"""
     def local_git_only(arguments, *args, **kwargs):
-        assert arguments[0] == "git"
-        assert arguments[1] == "-C"
-        assert Path(arguments[2]).resolve().is_relative_to(team.owners.root)
-        assert arguments[3] in {"rev-parse", "status", "branch", "rev-list", "log"}
+        command = arguments
+        if arguments[:4] == [sys.executable, '-I', '-S', '-c']:
+            from management_common import _process_posix
+            assert len(arguments) == 8 and arguments[4] == _process_posix._EXEC_GATE
+            executable, command = json.loads(arguments[7])
+            assert executable == command[0] == 'git'
+        assert command[0] == "git"
+        assert command[1] == "-C"
+        assert Path(command[2]).resolve().is_relative_to(team.owners.root)
+        assert command[3] in {"rev-parse", "status", "branch", "rev-list", "log"}
         return LOCAL_POPEN(arguments, *args, **kwargs)
 
     monkeypatch.setattr(subprocess, "Popen", local_git_only)
@@ -320,7 +327,7 @@ def test_handoff_isa_prepares_durable_binding_and_idempotent_delivery(team, mode
     prepared = instruction(team, "PrepareWorkspaceHandoff", {"lineage_id": team.lineage_id, "handoff_id": handoff_id})
     assert prepared.status == "committed", prepared.to_payload()
     handoff = prepared.result
-    assert handoff["status"] == "ready"
+    assert handoff["status"] == "ready", handoff
     output = Path(handoff["items"][0]["result"]["target_path"])
     assert (output / "handoff.txt").read_text() == "original bytes"
     record = resident_record_domain.find_resident(team.target["resident_id"])

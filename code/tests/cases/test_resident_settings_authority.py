@@ -225,6 +225,8 @@ def test_frozen_fork_creates_an_independent_session_after_source_is_gone(monkeyp
         "fork_mode": "full",
     }
     calls = []
+    monkeypatch.setattr("management_portal.society_service.resident_initialization_credits.synchronize",
+                        lambda *_: None)
     monkeypatch.setattr(resident_runtime_domain, "resident_working_directory", lambda _: "/own-workspace")
     monkeypatch.setattr(resident_access, "has_resident_workspace_authority", lambda *_: True)
     monkeypatch.setattr(resident_execution_engine_domain, "resident_execution_runtime_options", lambda *_args, **_kwargs: {})
@@ -232,7 +234,7 @@ def test_frozen_fork_creates_an_independent_session_after_source_is_gone(monkeyp
         "backend_session_id": "independent-session", "backend_route_id": "one",
     })
     result = resident_session_backend_domain.create_exact_resident_session(record, {
-        "operation": "context_fork_create", "actor": "CASE-A",
+        "operation": "context_fork_create", "actor": "CASE-A", "execution_id": "execution-fork",
     })
     assert result["id"] == "independent-session"
     assert calls[0]["operation"] == "create"

@@ -63,7 +63,8 @@ def test_a_kimi_or_dsh_handover_does_not_interrupt_the_turn(provider) -> None:
     request = ExecutionRequest.new(
         actor="sample_admin", prompt="the original task", service_type="agent_session", provider=provider,
         operation="turn", agent_id="resident:test", cwd="/workspace",
-        session=SessionOptions(mode="persistent", binding_id="resident:test"),
+        session=SessionOptions(mode="persistent", binding_id="resident:test",
+                               backend_route_id="kimi_default" if provider == "kimi" else "deepseek"),
     )
     scheduler.submit(request)
     claim = scheduler.claim(worker_id="dev:old", capabilities=[capability])

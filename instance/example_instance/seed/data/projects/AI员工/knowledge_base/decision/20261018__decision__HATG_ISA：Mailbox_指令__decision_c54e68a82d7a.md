@@ -4,15 +4,15 @@ type: decision
 project: AI员工
 created_at: '2026-10-18'
 version:
-  number: 12
-  created_at: '2026-10-18'
+  number: 14
+  created_at: "2026-10-18"
   created_by:
-    user: ''
-    agent: resident_7765faecc45a
-  updated_at: '2026-10-20T18:03:19Z'
+    user: ""
+    agent: "resident_7765faecc45a"
+  updated_at: "2026-11-05T13:23:38Z"
   updated_by:
-    user: ''
-    agent: resident_2e9ea0072551
+    user: ""
+    agent: "resident_6199a7a36480"
 importance: 5
 ai_generated: false
 links:
@@ -21,7 +21,6 @@ links:
   supersedes: []
   derived_from: []
 ---
-
 # HATG ISA：Mailbox 指令
 
 Mailbox 指令读取和整理两种收件：User 的 Mailbox 列出这位用户的对话和通知，Resident 的 Mailbox 保存它还没处理的请求、群体与 info。两种 Mailbox 的模型、页面和未读规则见 decision_15f7df737ed5。所有指令共同遵守的调用格式、执行流程和错误语义见 decision_898b8911a2ff；停止一条消息（包括撤回等待中的消息）用 Resident 执行类的 `CancelInput`（decision_2a3ff353165c）。
@@ -43,6 +42,7 @@ Mailbox 指令读取和整理两种收件：User 的 Mailbox 列出这位用户�
 | --- | --- | --- | --- |
 | `GetMailbox` | 否 | 读取一个 Resident 或一位 User 的 Mailbox | 对 `resident_id` 有 @viewer；对 `user_id` 有 @admin |
 | `WatchMailbox` | 否（流式） | 从返回游标继续等待 User Mailbox 变化 | 对 `user_id` 有 @admin |
+| `MuteMailboxItem` | 是 | 设置调用者对话的消息免打扰，保留消息与实际未读 | 免检 |
 | `PinMailboxItem` | 是 | 置顶或取消置顶调用者 Mailbox 中的对话，最多 50 个，通知不支持置顶 | 免检 |
 | `MarkMailboxItemRead` | 是 | 把调用者 Mailbox 中的条目标为已读或未读 | 免检 |
 | `ClearMailbox` | 是 | 清空一个 Mailbox：Resident 的全部等待消息，或 User 的 Mailbox 条目与未读状态 | 对 `resident_id` 有 @contributor；对 `user_id` 有 @admin |
@@ -96,6 +96,15 @@ Mailbox 指令读取和整理两种收件：User 的 Mailbox 列出这位用户�
 - 结果：更新后的条目 `item`。
 - 只有“对话”栏的条目可以置顶，通知拒绝置顶；每位用户最多置顶 50 个对话。置顶独立于已读。可以固定尚未交谈的可见 Resident。
 
+### `MuteMailboxItem`
+
+**为调用者自己的 User Mailbox 对话开启或关闭消息免打扰。**
+
+- 参数：`key`、`muted`（必填布尔值）。仅支持当前用户可见的 Resident 对话和聊天室；单向通知与不存在的条目拒绝操作，不能指定另一个用户。
+- 结果：更新后的 `item`，带 `muted`、`unread`、`attention_unread` 和 `read_revision`。同一幂等键重试不会再次修改偏好。
+- 偏好与阅读状态持久保存在同一用户回执行，修改后发布原有 Mailbox / viewer-state 变化供其他浏览器刷新；聊天室委托其原有成员设置事务。
+- 开启后保留消息与实际未读，普通未读不计入 Mailbox 提醒汇总；聊天室 @ 提及仍提醒。关闭后既有未读重新计入。不会停止 Resident、关闭接单、自动已读或修改单向通知、Todo。
+
 ### `MarkMailboxItemRead`
 
 **把调用者 Mailbox 中的一个条目标为已读，或重新标为未读。**
@@ -108,7 +117,7 @@ Mailbox 指令读取和整理两种收件：User 的 Mailbox 列出这位用户�
 
 ### `ClearMailbox`
 
-**清空一个 Mailbox，整次清理是一个原子操作**（TFI portal 10-18）。`resident_id` 与 `user_id` 必须且只能给一个：
+**清空一个 Mailbox，整次清理是一个原子操作**（weihao 10-18）。`resident_id` 与 `user_id` 必须且只能给一个：
 
 - **带 `resident_id`：取消这个 Resident 全部可以撤回的等待消息。** 由 SocietyService 在一个事务里执行，需要对该 Resident 有 contributor。不接受 `mode` 和 `section`。结果中 `cancelled` 为被取消数量，并返回 `resident_id`、`cursor`、完整 Resident `state`、`controls` 和当前 `queue`。已经开始执行或正在确认投递的消息不受影响，接单开关也保持不变。
 - **带 `user_id`：清理这个 User 的 Mailbox。** 由 Portal Web 执行，需要对该 User 账号有 admin。`mode` 必填：`unread` 把未读条目标为已读，`all` 从 Mailbox 移除未置顶的条目；`section`（`conversation` 或 `notification`）限定清理的栏，省略时作用于两栏，不影响 Todo。结果是清理结果 `status`、实际处理的条目数 `cleared` 和 `items`。清理针对条目当前的活动；之后出现新活动的条目会重新出现在 Mailbox 中。
@@ -176,7 +185,7 @@ Mailbox 指令读取和整理两种收件：User 的 Mailbox 列出这位用户�
 Todo 是可编辑的清单记录，不是 Conversation 消息，不会启动 Resident 工作。`GetMailbox`、`WatchMailbox`、`ClearMailbox` 和消息已读指令只处理对话与通知。待办指令由 Portal Web 执行，和页面使用同一个存储与校验模块。
 
 - `ListMailboxTodos(user_id)`：读取 `user_id` 指定 User 的待办，默认方案要求调用者对这个 User 有 `@admin`；返回 `items` 和 `pending_count`。每项包含 `todo_id`、`user_id`、`text`、`date`、`completed`、`position`、`indent`、`created_by`、`created_at`、`updated_at`。按日期从新到旧、同日个人顺序排序；完成状态变化不重新排序。`indent` 为 0–4 的视觉缩进层级，默认 0，不定义父子关系或联动其他条目。
-- `CreateMailboxTodo(text, user_id, date?)`：`user_id` 必填（TFI portal 2026-10-18）。User 只能写自己的用户名，给自己添加；Resident 指定已登记且启用的接收 User。文字去掉首尾空白后为 1–100 个 Unicode 字符；日期为 `YYYY-MM-DD`，省略时使用香港时区当天。初始为未完成，同组末尾追加，返回 `item`。创建者取自认证调用者，不能自报。
+- `CreateMailboxTodo(text, user_id, date?)`：`user_id` 必填（weihao 2026-10-18）。User 只能写自己的用户名，给自己添加；Resident 指定已登记且启用的接收 User。文字去掉首尾空白后为 1–100 个 Unicode 字符；日期为 `YYYY-MM-DD`，省略时使用香港时区当天。初始为未完成，同组末尾追加，返回 `item`。创建者取自认证调用者，不能自报。
 - `UpdateMailboxTodo(todo_id, changes)`：只可修改自己的待办，`changes` 为非空对象，只允许 `text`、`date`、`completed`、`indent`；`completed` 必须为布尔值，`indent` 必须为 0–4 的整数（不接受布尔值）；返回 `item`。
 - `DeleteMailboxTodo(todo_id)`：删除自己的待办，返回 `todo_id`。
 - `MoveMailboxTodo(todo_id, direction?, before_todo_id?, after_todo_id?)`：三个定位参数必须且只能提供一个。`before_todo_id` / `after_todo_id` 指定调用者自己的另一条待办，一次事务将源项放到其前面或后面；若目标日期不同，同步修改源项日期。不得以自己为锚点，目标不存在或不属于调用者时不修改任何顺序。`direction` 为 `up` 或 `down`，与同日的相邻待办交换位置，到边界时保持不变。移动不改变完成状态或缩进；返回 `item`。
@@ -215,6 +224,7 @@ Resident 的添加能力不授予读取、修改、删除或调序用户已有�
 | `DeleteMailboxTodo` | `todo_id` |
 | `MoveMailboxTodo` | `todo_id`、`direction`、`before_todo_id`、`after_todo_id` |
 | `CreateNotification` | `title`、`message`、`recipients`、`lineage_id`、`severity`、`notification_id` |
+| `MuteMailboxItem` | `key`、`muted` |
 
 格式名与版本须精确匹配当前规范值，校验规则见 decision_86aed2f0e8c7；本篇同时校验各字段和结构版本，不接受历史前缀或其他版本。
 

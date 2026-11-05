@@ -199,7 +199,7 @@ def test_failures_retry_and_worker_lease_release(setup):
     assert done(media, ref)['status'] == 'ready'
 
 
-def test_revoked_write_during_render_does_not_publish(setup):
+def test_revoked_write_during_render_does_not_publish(setup, caplog):
     service, ref, _ = setup
     def revoke(plan, stage, audio):
         service.writes = False
@@ -208,6 +208,9 @@ def test_revoked_write_during_render_does_not_publish(setup):
     media.start(**ref, actor='reader')
     assert done(media, ref)['status'] == 'failed'
     assert not list((service.root/'explanation-media').rglob('video.mp4'))
+    assert 'failure state could not be saved' in caplog.text
+    assert str(service.root) not in caplog.text
+    assert ref['address'] not in caplog.text
 
 
 def test_audio_permission_checked_on_reopen_and_audio_hash_checked_on_start(setup):
@@ -397,30 +400,45 @@ def test_auto_review_failure_retry_and_delivery_dedup(setup, monkeypatch):
     media = Media(service, fake_render)
     media.start(**ref, actor='reader', quality='high')
     state = done(media, ref, quality='high')
-    assert state['status'] == 'ready' and state['review']['status'] == 'submission_failed'
-    assert 'private' not in state['review']['error']
-    assert state['review']['requested_by'] == 'reader'
+    assert state['status'] == 'ready' and state['review']['status'] == 'unavailable'
+    assert state['quality_met'] is False
+    assert not any(state['review']['capabilities'].values())
+    # This stub exercises media delivery retries, not the review owner's store.
+    # A cached receipt without a canonical review ID must never confer a verdict.
+    ctx = media.context(ref['address'], ref['sha256'], 'reader', 'high')
+    cached = media._state(ctx, 'reader')['review']
+    assert cached['status'] == 'submission_failed'
+    assert 'private' not in cached['error']
+    assert cached['requested_by'] == 'reader'
     receipt = media.retry_review(**ref, actor='reader', quality='high')
-    assert receipt['status'] == 'ready' and receipt['review']['status'] == 'submitted'
-    assert receipt['review']['message_id'] == 'msg_review_committed'
+    assert receipt['status'] == 'ready' and receipt['review']['status'] == 'unavailable'
+    cached = media._state(ctx, 'reader')['review']
+    assert cached['status'] == 'submitted'
+    assert cached['message_id'] == 'msg_review_committed'
     assert calls[0] == calls[1]
     media.retry_review(**ref, actor='reader', quality='high')
     assert len(calls) == 2
     assert 'passed' not in receipt['review'].values()
 
 
-def test_review_revocation_does_not_fail_ready_media(setup, monkeypatch):
+def test_review_revocation_does_not_fail_ready_media(setup, monkeypatch, caplog):
     from management_portal import home_explanation_media as module
     service, ref, _ = setup
     def revoked(*args):
         service.writes = False
-        raise PermissionError('revoked')
+        raise PermissionError('private-review-detail')
     monkeypatch.setattr(module.review.ReviewService, 'submit', revoked)
     media = Media(service, fake_render)
     media.start(**ref, actor='reader', quality='high')
     state = done(media, ref, quality='high')
     assert state['status'] == 'ready'
-    assert state['review']['status'] == 'submission_failed'
+    assert service.writes is False  # delivery reached the revoking owner
+    assert state['review']['status'] == 'unavailable'
+    assert state['quality_met'] is False
+    assert not any(state['review']['capabilities'].values())
+    assert 'review state could not be saved' in caplog.text
+    assert 'private-review-detail' not in caplog.text
+    assert str(service.root) not in caplog.text
     with pytest.raises(PermissionError):
         media.retry_review(**ref, actor='reader', quality='high')
     with media.file(**ref, name='video.mp4', actor='reader', quality='high') as (stream, _, _):

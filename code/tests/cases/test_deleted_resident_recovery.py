@@ -57,7 +57,8 @@ def test_a_handoff_to_a_deleted_resident_without_its_input_settles_cancelled(mon
     monkeypatch.setattr(reconciliation, "settle_program_paths", lambda *_args: None)
     lineage = {"lineage_id": LINEAGE, "nodes": []}
     ports = SimpleNamespace(
-        state=SimpleNamespace(read_lineage=lambda *_args, **_kwargs: lineage, ensure_manager=lambda *_args: None),
+        state=SimpleNamespace(read_lineage=lambda *_args, **_kwargs: lineage, ensure_manager=lambda *_args: None,
+                              lineage_scope=lambda *_args, **_kwargs: nullcontext()),
         directory=SimpleNamespace(lineage_execution_authority=lambda _lineage: nullcontext()),
     )
     result = reconciliation._reconcile_resident_handoffs(LINEAGE, "sample_admin", ports=ports, recovery_only=False)

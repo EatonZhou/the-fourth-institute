@@ -60,9 +60,16 @@ function functionSource(file, name) {
 
 test('late HATG forms, tooltips, and accessibility labels translate without touching input', async t => {
   const w = await harness(t), host = w.document.getElementById('host');
+  const invalid = w.document.createElement('span');
+  invalid.setAttribute('data-portal-i18n-attrs', '{invalid');
+  invalid.textContent = '用户内容';
+  host.append(invalid);
   const doc = new w.DOMParser().parseFromString(read('management_portal/hatg-panel.html'), 'text/html');
   for (const node of doc.body.children) if (!['SCRIPT', 'HEADER'].includes(node.tagName)) host.append(w.document.importNode(node, true));
   w.PortalI18n.renderStatic(host);
+  assert.equal(invalid.textContent, '用户内容', 'invalid metadata never rewrites user content or blocks later annotations');
+  const label = host.querySelector('[data-portal-i18n-text="Map"]');
+  assert.equal(label.textContent, 'Map', 'plain authored labels remain valid annotations');
   assert.equal(host.querySelector('#lineageNameInput').placeholder, 'Leave blank to use “Untitled Lineage”.');
   assert.equal(host.querySelector('#lineageDescriptionInput').placeholder, 'What problem will this Lineage work on together?');
   assert.match(host.querySelector('#graphEmpty').textContent, /This HATG has no nodes yet/);

@@ -1,8 +1,9 @@
-"""The author CLI checks current authenticated policy before touching a package."""
+"""Authoring uses existing authenticated services, without a settings admission API."""
+import hashlib
 import io
 import json
 import sys
-from urllib.error import HTTPError, URLError
+from urllib.error import HTTPError
 
 import pytest
 
@@ -34,78 +35,80 @@ def transport(monkeypatch):
     return calls, install
 
 
-def test_creation_check_uses_authenticated_identity_and_empty_body(transport):
-    calls, install = transport
-    install({'allowed': True})
-    builder.require_creation(ACTOR)
-    request, = calls
-    assert request.full_url == client.isa.DEFAULT_PORTAL_URL + '/api/home-report/creation-check'
-    assert request.get_method() == 'POST'
-    assert json.loads(request.data) == {}
-    assert request.get_header('Authorization') == 'Bearer fixture-token'
-    assert request.get_header('X-portal-lineage-id') == LINEAGE
+REFERENCE = {'view': 'report', 'target': {
+    'kind': 'report', 'id': 'report_0123456789ab', 'revision': 1}}
+ADDRESS = 'workspace_0123456789ab/file/lesson'
+
+
+def build_args(tmp_path, monkeypatch, quality):
+    (tmp_path / 'body.md').write_text('Fixture body')
+    monkeypatch.setattr(sys, 'argv', ['build_explanation_package.py', str(tmp_path),
+        '--address', ADDRESS, '--title', 'Fixture', '--quality', quality,
+        '--task', 'Understand', '--resident-id', ACTOR, '--supplement', 'body.md'])
 
 
 @pytest.mark.parametrize('quality', ['low', 'medium', 'high'])
-@pytest.mark.parametrize('response', [
-    {'allowed': False}, {}, {'allowed': 'true'}, None,
-    HTTPError('http://fixture/creation-check', 403, 'Disabled', {}, None),
-    URLError('bridge unavailable'),
-])
-def test_denied_or_unknown_creation_never_builds_writes_or_submits(tmp_path, monkeypatch, transport, quality, response):
+def test_build_uses_existing_registration_and_requested_quality(tmp_path, monkeypatch, transport, capsys, quality):
     calls, install = transport
-    install(response)
-    tmp_path = tmp_path / 'package'
-    tmp_path.mkdir()
-    original = b'existing fixed package'
-    (tmp_path / 'existing.json').write_bytes(original)
-    def forbidden(*args, **kwargs):
-        pytest.fail('creation continued after a failed policy check')
-    monkeypatch.setattr(builder, 'build', forbidden)
-    monkeypatch.setattr(builder, 'register_report', forbidden)
-    monkeypatch.setattr(sys, 'argv', ['build_explanation_package.py', str(tmp_path),
-        '--address', 'workspace_0123456789ab/file/lesson', '--title', 'Fixture',
-        '--quality', quality, '--task', 'Understand', '--resident-id', ACTOR])
-    with pytest.raises(SystemExit) as stopped:
-        builder.main()
-    assert stopped.value.code == 1
-    assert len(calls) == 1
-    assert list(tmp_path.iterdir()) == [tmp_path / 'existing.json']
-    assert (tmp_path / 'existing.json').read_bytes() == original
+    install({'reference': REFERENCE})
+    from scripts import submit_explanation_review as review
+    reviews = []
+    def submit(address, digest, task, actor, **kwargs):
+        assert quality == 'high', 'lower quality must not request independent review'
+        assert calls == [], 'review precedes report registration'
+        assert actor == ACTOR and task == 'Understand'
+        assert address == ADDRESS + '/manifest.json'
+        assert digest == hashlib.sha256((tmp_path / 'manifest.json').read_bytes()).hexdigest()
+        reviews.append((address, digest))
+        return {'status': 'submitted'}
+    monkeypatch.setattr(review, 'submit', submit)
+    build_args(tmp_path, monkeypatch, quality)
+    builder.main()
+    manifest = json.loads((tmp_path / 'manifest.json').read_text())
+    assert manifest['quality'] == quality
+    assert manifest['supplement']['sha256'] == hashlib.sha256((tmp_path / 'body.md').read_bytes()).hexdigest()
+    request, = calls
+    assert request.full_url == client.isa.DEFAULT_PORTAL_URL + '/api/home-report/explanations'
+    assert request.get_method() == 'POST'
+    assert request.get_header('Authorization') == 'Bearer fixture-token'
+    assert request.get_header('X-portal-lineage-id') == LINEAGE
+    assert json.loads(request.data) == {'address': ADDRESS + '/manifest.json',
+        'sha256': hashlib.sha256((tmp_path / 'manifest.json').read_bytes()).hexdigest()}
+    output = json.loads(capsys.readouterr().out)
+    assert output['target'] == REFERENCE['target']
+    assert output['review']['status'] == ('submitted' if quality == 'high' else 'not_required')
+    assert len(reviews) == (1 if quality == 'high' else 0)
 
 
 def test_injected_identity_cannot_be_overridden(transport):
     calls, install = transport
-    install({'allowed': True})
+    install({'reference': REFERENCE})
     with pytest.raises(RuntimeError):
-        builder.require_creation('resident_abcdefabcdef')
+        client.register(ADDRESS + '/manifest.json', 'a' * 64, 'resident_abcdefabcdef')
     assert calls == []
 
 
-@pytest.mark.parametrize('quality', ['low', 'medium'])
-def test_allowed_creation_checks_before_build_and_does_not_request_review(tmp_path, monkeypatch, transport, quality):
+def test_source_permission_denial_retains_fixed_package_without_claiming_registration(tmp_path, monkeypatch, transport, capsys):
     calls, install = transport
-    install({'allowed': True})
-    (tmp_path / 'body.md').write_text('Fixture body')
-    original_build = builder.build
-    def build(*args, **kwargs):
-        assert len(calls) == 1 and calls[0].full_url.endswith('/creation-check')
-        return original_build(*args, **kwargs)
-    monkeypatch.setattr(builder, 'build', build)
-    from scripts import submit_explanation_review as review
-    monkeypatch.setattr(review, 'submit', lambda *args, **kwargs: pytest.fail('lower quality must not request independent review'))
-    monkeypatch.setattr(builder, 'register_report', lambda *args: {'reference': {
-        'view': 'report', 'target': {'kind': 'report', 'id': 'report_0123456789ab', 'revision': 1}}})
-    monkeypatch.setattr(sys, 'argv', ['build_explanation_package.py', str(tmp_path),
-        '--address', 'workspace_0123456789ab/file/lesson', '--title', 'Fixture',
-        '--quality', quality, '--task', 'Understand', '--resident-id', ACTOR, '--supplement', 'body.md'])
-    builder.main()
-    assert json.loads((tmp_path / 'manifest.json').read_text())['quality'] == quality
+    install(HTTPError('http://fixture/explanations', 403, 'Source denied', {}, None))
+    build_args(tmp_path, monkeypatch, 'medium')
+    with pytest.raises(SystemExit) as stopped:
+        builder.main()
+    assert stopped.value.code == 1
+    output = capsys.readouterr()
+    assert output.out == ''
+    assert 'report registration pending' in output.err and '403' in output.err
+    fixed = (tmp_path / 'manifest.json').read_bytes()
+    assert json.loads(fixed)['quality'] == 'medium'
+    assert [request.full_url.rsplit('/', 1)[-1] for request in calls] == ['explanations']
+    with pytest.raises(FileExistsError):
+        builder.main()
+    assert (tmp_path / 'manifest.json').read_bytes() == fixed
+    assert len(calls) == 1
 
 
-def test_existing_package_registration_does_not_require_creation_check(transport):
+def test_existing_package_registration_uses_existing_endpoint(transport):
     calls, install = transport
-    install({'reference': {'view': 'report', 'target': {
-        'kind': 'report', 'id': 'report_0123456789ab', 'revision': 1}}})
-    client.register('workspace_0123456789ab/file/lesson/manifest.json', 'a' * 64, ACTOR)
+    install({'reference': REFERENCE})
+    assert client.register(ADDRESS + '/manifest.json', 'a' * 64, ACTOR)['reference'] == REFERENCE
     assert [request.full_url.rsplit('/', 1)[-1] for request in calls] == ['explanations']

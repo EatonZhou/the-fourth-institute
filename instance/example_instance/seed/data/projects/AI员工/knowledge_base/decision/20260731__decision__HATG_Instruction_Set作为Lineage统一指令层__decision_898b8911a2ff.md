@@ -55,15 +55,15 @@ links:
   derived_from:
   - thinking_ca8f397a47de
 version:
-  number: 97
+  number: 99
   created_at: "2026-07-31"
   created_by:
     user: ""
     agent: ""
-  updated_at: "2026-11-04T14:07:29Z"
+  updated_at: "2026-11-05T13:23:40Z"
   updated_by:
     user: ""
-    agent: "resident_0bb0b71cb03c"
+    agent: "resident_6199a7a36480"
 metaness: 2
 ---
 # HATG ISA：指令格式、调用入口与执行规则
@@ -302,6 +302,10 @@ Python 入口将失败的指令结果转为业务异常时，保留外层回执�
 | `Unfunctionalize` | 展开 Function Block | `Unfunctionalize` |
 | `Unregister` | 取消登记，外部对象本身保留 | `UnregisterResource` |
 | `Watch` | 流式等待变化 | `WatchMailbox` |
+| `Accept` | 接受当前真实用户输入中的明确授权并签发凭证 | `AcceptUserAuthorization` |
+| `Correct` | 依据 owner 核验的证据纠正已有错误关联并保留审计 | `CorrectResourceLifecycleAssociation` |
+| `Mute` | 设置调用者自己的提醒抑制状态，保留消息与未读事实 | `MuteMailboxItem` |
+| `Relocate` | 将已登记对象归位，保留身份、内容和关联 | `RelocateWorkspaceHandoff` |
 
 - **预览与诊断使用明确名称。** `PreviewPromptInjection` 读取提示预览，`GetLineageDiagnostics` 返回图诊断；修改仍在提交时校验。
 - **不为同一操作设置多个名称。** 调用者不同、入口不同或选项不同时，仍使用同一条指令；例如五种 Fork 方式都使用 `ForkResident`，由 `fork_mode` 参数区分。
@@ -391,13 +395,13 @@ Python 入口将失败的指令结果转为业务异常时，保留外层回执�
 
 在“命名规则”和“调用格式”之外，指令声明还要满足：
 
-- **目标对象用统一 ID 指定，且必填。** 指令作用的对象写在参数中，用统一 ID 或资源地址。不允许省略参数时默认为调用者自己；读取自己的资料也写明自己的 ID。唯一的例外是 RunScript 的 `lineage_id`：Effect 内由激活确定，Resident 省略时取其所在 Lineage（decision_8b510cbd9c58）；入口按这样确定的 Lineage 判定（weihao 2026-10-19 起要求对它有 `@admin`），User 省略时拒绝，不落到其他节点或免检。声明的 `target` 指向这个参数；修改已有对象的指令都声明 `target`，调用信封的单个 `expected_version` 按它比较。没有单一目标对象的修改不声明：认领摘要队列、新开终端、按周期与条目键指定的 Pulse 条目、重启 Portal 实例，以及全站执行设置和知识标签列表。
+- **目标对象用统一 ID 指定，且必填。** 指令作用的对象写在参数中，用统一 ID 或资源地址。不允许省略参数时默认为调用者自己；读取自己的资料也写明自己的 ID。唯一的例外是 RunScript 的 `lineage_id`：Effect 内由激活确定，Resident 省略时取其所在 Lineage（decision_8b510cbd9c58）；入口按这样确定的 Lineage 判定（weihao 2026-10-19 起要求对它有 `@admin`），User 省略时拒绝，不落到其他节点或免检。声明的 `target` 指向这个参数；修改已有对象的指令都声明 `target`，调用信封的单个 `expected_version` 按它比较。没有单一目标对象的修改不声明：认领摘要队列、新开终端、按周期与条目键指定的 Pulse 条目、重启 Portal 实例，以及全站执行设置和知识标签列表。`AcceptUserAuthorization` 依据当前真实授权输入签发新凭证，不修改证据消息；`CorrectResourceLifecycleAssociation` 修改 `(scope_id, resource_id)` 定位的关联审计，不修改证据 Workspace，因此两者不声明单一资源 `target`。前者仍核验当前输入、签发者权限及重复签发；后者仍由生命周期准入锁与关联事务保证并发和幂等。此规则仅适用于这些明确语义，不按动词类别普遍豁免 target。
 - **一个对象只有一种写法。** 同一个对象不能既用 ID、又用路径、账号编号或执行编号指定。指令可以作用于不同类型的对象时，每种类型一个参数，声明为“恰好给一个”，每个参数都有判定槽。例如 `GetMailbox` 用 `resident_id` 或 `user_id`。按多个条件筛选的读取指令可以声明“至少给一个”，给出的每个参数都按它的判定槽判定，例如 `ListPermissionEntries` 的 `p` 和 `r`。
 - **同一类对象在所有指令中使用同一个参数名。** 例如 Resident 一律用 `resident_id`，Project 一律用 `project_id`。
 - **分页读取一组条目用 `cursor`、`limit` 和 `next_cursor`（weihao 2026-10-19）。** `limit` 是每页最多的条数；`cursor` 是上一页结果中的 `next_cursor`，原样交回，不填时读第一页；还有下一页时结果带 `next_cursor`，它不出现或为空就表示已经读完。cursor 是不透明的字符串，调用者不解析、不自己拼写。不用 `offset`、`page_token`、`before` 这类其他名字；结果可以另外给出总数 `total`。例如 `GetConversation` 返回的 `next_cursor` 交给 `ListMessages` 继续往前读，`ListPermissionEntries` 一页页列出表项。三种读取不属于这条：按位置读取一个对象内部序列的指令用 `offset`，调用者可以从任意位置读起——`ReadScriptRunOutput`（日志的字节位置）、`GetSubagentRun`（子 agent 轨迹，界面直接从末尾附近读）、`GetTriggerPath`（一个流程的步骤、边与执行四个列表共用一个位置）；只取前几条、不翻页的读取只有 `limit`；读取某个位置之后的新变化用 Watch 指令的 `after_cursor`（见“流式指令”），`ListChatroomMessages` 的 `after` 与 `change_cursor` 读取某个位置之后的新消息和变更，也不是翻页。
-- **创建指令必须给出新对象的位置。** 位置指所属的 Project、Lineage 或父对象，由参数给出，不由调用者身份推断。全局对象（例如 Project、User、聊天室、帖子、模型接口）没有所属对象，按固定槽判定，方案给固定槽指定 R 树分类节点。只有系统内部创建的对象例外，例如账号的个人 AMA。
+- **创建指令必须给出新对象的位置。** 位置指所属的 Project、Lineage 或父对象，通常由显式参数给出并核验。`RegisterResource` 对要求本人归属的资源，允许 `place` 使用单独的 `$caller`，关系仅限 `resident` 与 `personal_space`；平台从当前认证主体解析，不接受调用者代填其他身份，也不能与请求字段混用。全局对象（例如 Project、User、聊天室、帖子、模型接口）没有所属对象，按固定槽判定，方案给固定槽指定 R 树分类节点。只有系统内部创建的对象例外，例如账号的个人 AMA。
 - **判定对象可以来自已保存的记录。** 目标是一条记录、记录又属于另一个对象时，按记录所属的对象判定。这一步在入口完成：判定槽声明“这个参数是记录 ID，判定时用记录所属的对象”，入口读出记录所属的对象，再和其他请求一起交给引擎；处理代码不再问引擎（weihao 2026-10-18）。例如 `UpdatePermissionEntry`、`DeletePermissionEntry` 按表项已保存的 r 判定，修改 r 时新 r 也判定；`GetInstructionExecution` 读取 Lineage 范围的执行回执时按回执所属的 Lineage 判定，调用者作用域的回执只向原调用者开放。写法：判定槽写 `via="<记录>.<字段>"`，不写类型，记录字段必须在权限词汇的 `records` 中登记；字段可能为空的记录（`records` 中标 `may_be_unowned`，例如 `instruction_execution.lineage`）为空时不生成请求（`optional` 只管参数没给的情况，与此无关），调用没有其他请求就按未归类判定、只有管理员能通过，所以这类指令另有固定槽。两条都由声明规则测试逐条核对。
-- **判定槽写在声明中。** 声明的 `decides` 列出这条指令按什么判定，每项是一个判定槽：`On(参数, 类型…, optional=, via=, place=)` 按参数指向的对象判定，参数可以是点分路径（如 `fields.project_id`）；`types` 限定对象类型，`via` 按已保存记录的字段判定（见上一条），`place` 按新对象将要放在哪里判定（创建与登记指令，参数是新对象的类型，`place` 写关系对象类型到参数路径）；`Fixed(名称)` 不指向对象，按方案给它的 R 树分类节点判定。“恰好给一个”与“至少给一个”仍写在参数声明中。每个判定槽是一个 A 元素：只有一个槽时元素名就是指令名，有多个槽时是 `指令:参数` 或 `指令:固定槽名`（例如 `DeliverMessage:resident_id`、`CreateTemplate:@public`）。方案只给 A 元素分类，不能改写判定槽（decision_b820faf42218 §3.2）。增删判定槽使槽数在一个和多个之间变化时，A 元素改名：同一提交更新默认方案的分类，并在提交说明中写明旧元素名；自定义方案中旧元素的分类和以它为 A 的表项、临时凭证不再生效。
+- **判定槽写在声明中。** 声明的 `decides` 列出这条指令按什么判定，每项是一个判定槽：`On(参数, 类型…, optional=, via=, place=)` 按参数指向的对象判定，参数可以是点分路径（如 `fields.project_id`）；`types` 限定对象类型，`via` 按已保存记录的字段判定（见上一条），`place` 按新对象将要放在哪里判定（创建与登记指令，参数是新对象的类型，`place` 写关系对象类型到参数路径，或上述本人归属资源允许的单独 `$caller` 认证主体落点）；`Fixed(名称)` 不指向对象，按方案给它的 R 树分类节点判定。“恰好给一个”与“至少给一个”仍写在参数声明中。每个判定槽是一个 A 元素：只有一个槽时元素名就是指令名，有多个槽时是 `指令:参数` 或 `指令:固定槽名`（例如 `DeliverMessage:resident_id`、`CreateTemplate:@public`）。方案只给 A 元素分类，不能改写判定槽（decision_b820faf42218 §3.2）。增删判定槽使槽数在一个和多个之间变化时，A 元素改名：同一提交更新默认方案的分类，并在提交说明中写明旧元素名；自定义方案中旧元素的分类和以它为 A 的表项、临时凭证不再生效。
 - **列表与搜索的范围由参数或固定节点决定。** 给出所属对象时按它判定；列出全局对象的指令按固定槽判定。结果可以只包含调用者有权看到的对象，例如 `SearchResources`、`ListUsers`。不允许的是“省略参数时只列调用者自己的”这类由调用者身份决定范围的写法；要列自己的，就把自己的 ID 写在参数里。
 - **结果中能找到对象 ID。** 创建指令的结果中能找到新对象的 ID；修改指令的结果中能找到被修改对象的 ID，对象有版本令牌时同时返回新版本。ID 可以直接是结果字段，也可以在返回的对象里。
 - **说明完整。** 指令有一句话说明，每个参数和结果字段都有说明；取值有限的参数写 `enum`，数值参数写明范围。

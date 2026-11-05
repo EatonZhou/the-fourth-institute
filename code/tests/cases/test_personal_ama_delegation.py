@@ -45,16 +45,26 @@ def lend(world, *, resource=AMA, a="@viewer", issuer="owner", recipient=CALLER, 
 
 @pytest.mark.parametrize("mode", [permission_system.PAR, permission_system.OPEN])
 @pytest.mark.parametrize("a,can_write", [("@viewer", False), ("@contributor", True)])
-def test_owner_loan_is_exact_and_action_limited_even_when_permissions_off(world, monkeypatch, mode, a, can_write):
+def test_owner_loan_requires_enabled_scheme_and_is_exact_and_action_limited(world, monkeypatch, mode, a, can_write):
     monkeypatch.setattr(permission_system, "configured_mode", lambda: mode)
     targets = {AMA: "owner", OTHER_AMA: "owner", LINEAGE: "owner", WORKSPACE: "owner"}
     assert personal_ama.hidden(CALLER, targets) == set(targets)
     loan = lend(world, a=a, seconds=120)
     assert loan["issued_by"] == "owner" and loan["principal_id"] == CALLER
-    assert personal_ama.hidden(CALLER, targets) == set(targets) - {AMA}
-    assert personal_ama.reaches(CALLER, "owner", AMA, action="GetResident")
-    assert personal_ama.reaches(CALLER, "owner", AMA, action="GetConversation")
-    assert personal_ama.reaches(CALLER, "owner", AMA, action="@contributor") is can_write
+    if mode == permission_system.OPEN:
+        # Disabling PAR does not turn its saved loans into private owner access.
+        monkeypatch.setattr(permission_system, "active", lambda: pytest.fail("Open loaded PAR"))
+        assert personal_ama.hidden(CALLER, targets) == set(targets)
+        assert not personal_ama.reaches(CALLER, "owner", AMA, action="GetResident")
+        assert not personal_ama.reaches(CALLER, "owner", AMA, action="GetConversation")
+        assert not personal_ama.reaches(CALLER, "owner", AMA, action="@contributor")
+        assert personal_ama.reaches("owner", "owner", AMA)
+        assert personal_ama.reaches(OWNER_AMA, "owner", AMA)
+    else:
+        assert personal_ama.hidden(CALLER, targets) == set(targets) - {AMA}
+        assert personal_ama.reaches(CALLER, "owner", AMA, action="GetResident")
+        assert personal_ama.reaches(CALLER, "owner", AMA, action="GetConversation")
+        assert personal_ama.reaches(CALLER, "owner", AMA, action="@contributor") is can_write
     assert not personal_ama.reaches(CALLER, "owner", AMA, action="@admin")
     assert not personal_ama.reaches(CALLER, "owner")
     assert not personal_ama.reaches(OTHER_CALLER, "owner", AMA)

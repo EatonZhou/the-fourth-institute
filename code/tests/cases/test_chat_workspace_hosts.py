@@ -12,7 +12,7 @@ from management_portal import script_groups
 
 ROOT = Path(__file__).resolve().parents[2]
 ENTRY = "/static/portal_chat_workspace.js"
-CHAT_SCRIPT = re.compile(r"/static/(?:chat_workspace_[a-z_]+|portal_chat_workspace)\.js")
+CHAT_SCRIPT = re.compile(r"/static/(?:chat_workspace_[a-z_]+|portal_chat_workspace|portal_display_protocol)\.js")
 GROUP = script_groups.scripts("chat-workspace")
 
 
@@ -66,7 +66,7 @@ def test_chat_group_lists_every_module_once_before_the_entry_script():
     modules = {f"/static/{path.name}" for path in (ROOT / "management_portal/static").glob("chat_workspace_*.js")}
     assert GROUP[-1] == ENTRY
     assert len(set(GROUP)) == len(GROUP)
-    assert set(GROUP[:-1]) == modules
+    assert set(GROUP[:-1]) == modules | {"/static/portal_display_protocol.js"}
 
 
 def test_pages_name_the_chat_group_instead_of_its_scripts():

@@ -1,4 +1,4 @@
-"""A shared Family reply must retain both request positions during DOM reconciliation."""
+"""A shared Family reply retains all request associations with one durable DOM identity."""
 import json
 from pathlib import Path
 import subprocess
@@ -7,7 +7,7 @@ from management_portal.resources.portal import portal_route_script
 
 
 def test_family_reply_instances_keep_projected_order():
-    """同一 Family 回复显示在多个请求下时，刷新、更新和折叠后仍按投影顺序排列"""
+    """共享回复唯一显示并保留全部关联，刷新、更新与翻页后保持位置和独立折叠。"""
     result = subprocess.run(
         ["node", str(Path(__file__).with_name("javascript") / "chat_reply_instances.cjs")],
         input=json.dumps({"routeScript": portal_route_script().decode()}),

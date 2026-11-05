@@ -224,8 +224,9 @@ def test_hatg_graph_nodes_use_only_id_for_resident_identity() -> None:
     assert duplicate_identity_literals == []
 
 
-def test_project_list_requires_explicit_current_projection_schema(monkeypatch) -> None:
-    """项目列表要求显式采用当前投影版本"""
+@pytest.mark.parametrize('schema_tag', [None, 1, 99, 'legacy'])
+def test_project_list_consumes_fields_without_schema_tag_gate(monkeypatch, schema_tag) -> None:
+    """描述性标签不阻断项目读取，实际投影字段仍须满足格式要求"""
     from types import SimpleNamespace
 
     from management_portal.resources import isa as resource_isa
@@ -242,10 +243,18 @@ def test_project_list_requires_explicit_current_projection_schema(monkeypatch) -
     service = ProjectService()
     monkeypatch.setattr(resource_isa, "_service", lambda: service)
     invocation = SimpleNamespace(caller="alice", argument=lambda _name: None)
-    with pytest.raises(RuntimeError, match="requires schema_version 1"):
-        resource_isa.list_projects(invocation)
+    assert resource_isa.list_projects(invocation) == {"projects": [], "status_vocab": []}
     service.state = {"schema_version": 1, "project_ids": [], "status_vocab": ["active"]}
+    if schema_tag is None:
+        service.state.pop('schema_version')
+    else:
+        service.state['schema_version'] = schema_tag
     assert resource_isa.list_projects(invocation) == {"projects": [], "status_vocab": ["active"]}
+    for key in ('project_ids', 'status_vocab'):
+        with monkeypatch.context() as scoped:
+            scoped.setattr(service, 'state', {**service.state, key: 'broken'})
+            with pytest.raises(RuntimeError, match=f'{key} must be an array'):
+                resource_isa.list_projects(invocation)
 
 
 def test_lineage_reads_require_an_explicit_actor() -> None:

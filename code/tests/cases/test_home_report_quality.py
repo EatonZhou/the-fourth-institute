@@ -31,14 +31,6 @@ MESSAGE='```portal-home-display\n'+json.dumps({'protocol':'portal-home-display/v
 @pytest.fixture
 def auditing(reports, tmp_path, monkeypatch):
     store, state = reports
-    from types import SimpleNamespace
-    from management_portal import society_service
-    state['reporting_enabled'] = True
-    def creation_allowed(resident_id, actor, message_id=''):
-        assert message_id == ''
-        return resident_id == RESPONSIBLE and actor in {'alice', RESPONSIBLE} and state['reporting_enabled']
-    monkeypatch.setattr(society_service, 'get_society_service', lambda: SimpleNamespace(
-        resident=SimpleNamespace(reporting_creation_allowed=creation_allowed)))
     original_read=store.read
     def read(name,args):
         if name=='GetMessage' and args=={'resident_id':RESPONSIBLE,'message_id':ORIGIN['message_id']}:

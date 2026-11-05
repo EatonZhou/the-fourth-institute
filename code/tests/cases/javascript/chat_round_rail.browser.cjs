@@ -655,8 +655,17 @@ if (output) fs.mkdirSync(output, { recursive: true });
       await page.locator('.chatRoundDirectory').click();
       const popup = page.locator('.chatRoundPreview'), first = popup.locator('.chatRoundPreviewItem').first();
       const desktop = await popup.evaluate(n => ({ width: n.clientWidth, height: n.clientHeight, itemHeights: [...n.querySelectorAll('article')].map(r => r.getBoundingClientRect().height), text: n.innerText }));
-      check('compact preview width and rows', desktop.width >= 300 && desktop.width <= 340 && desktop.itemHeights.every(h => h < 115));
-      check('short local time and clean attachment display', !/2026-|\[image:|\/api\/uploads/.test(desktop.text) && await first.locator('.chatRoundAttachments').innerText() === '图片 · 图片');
+      console.log('RAIL_VISUAL_DESKTOP', JSON.stringify(desktop));
+      // The current rail Design reuses real Chat media refs, whose thumbnails
+      // contribute height. Bound the text itself and plain rows, not media.
+      check('compact preview width and rows', desktop.width >= 300 && desktop.width <= 340
+        && await popup.locator('.chatRoundPreviewItem').evaluateAll(rows => rows.every(row => {
+          const text = row.querySelector('.chatRoundPreviewJump');
+          return text.clientHeight <= parseFloat(getComputedStyle(text).lineHeight) * 2 + 1
+            && (row.querySelector('[data-message-attachment-path]') || row.getBoundingClientRect().height < 115);
+        })));
+      check('short local time and clean attachment display', !/2026-|\[image:|\/api\/uploads/.test(desktop.text)
+        && await first.locator('[data-message-attachment-kind="image"]').count() === 2);
       check('no repeated follow text or tooltip', !(desktop.text.includes('标记本轮关注')) && await page.locator('.chatRoundNode:not([data-portal-tooltip-opt-out="1"])').count() === 0);
       await togglePreviewFlag(page, first.locator('.chatRoundMarkerChoices')); await settle();
       check('compact flag is an actual action', await page.evaluate(() => workspace.isRoundFollowed('v1')));

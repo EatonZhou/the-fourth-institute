@@ -9,8 +9,6 @@ import hashlib
 import json
 import os
 from pathlib import Path, PureWindowsPath
-import socket
-import subprocess
 import sys
 import tempfile
 import unittest
@@ -48,8 +46,8 @@ class SeedSelection(unittest.TestCase):
                                      for name in zipped.namelist() for p in excluded))
                 for row in spec['inventory']:
                     contents = zipped.read(row['path'])
-                    self.assertEqual(len(contents), row['size'])
-                    self.assertEqual(hashlib.sha256(contents).hexdigest(), row['sha256'])
+                    self.assertEqual(len(contents), row['size'], row['path'])
+                    self.assertEqual(hashlib.sha256(contents).hexdigest(), row['sha256'], row['path'])
             # The program's extraction and the default instance root's area copies.
             program = PureWindowsPath(r'C:\Users\weihaozhang\AppData\Local\TheFourthInstitute')
             instance = PureWindowsPath(r'C:\Users\weihaozhang\AppData\Local\TFI\instances\example_instance')
@@ -115,34 +113,30 @@ INSERT INTO "s"."t" ("a") VALUES ('body\nINSERT INTO "x"."y" ("z") VALUES (1);')
 
 
 
-@unittest.skipUnless(os.getenv('TFI_TEST_POSTGRES_ROOT'), 'Requires an explicit disposable PostgreSQL binary directory')
 class SeedDatabase(unittest.TestCase):
     def test_selected_seed_imports_with_all_constraints_and_no_dangling_nodes(self):
         """真实 PostgreSQL 导入无案例种子并检查关联完整性。"""
-        native = Path(os.environ['TFI_TEST_POSTGRES_ROOT'])
-        env = {**os.environ, 'LD_LIBRARY_PATH': str(native / 'lib')}
-        with tempfile.TemporaryDirectory(prefix='tfi-case-db-') as temporary:
-            root = Path(temporary)
-            with socket.socket() as probe:
-                probe.bind(('127.0.0.1', 0))
-                port = probe.getsockname()[1]
-            def run(name, *args, **kwargs):
-                return subprocess.run([str(native / 'bin' / name), *map(str, args)], env=env,
-                                      check=True, capture_output=True, **kwargs)
-            run('initdb', '-D', root / 'pg', '-L', native / 'share', '--auth=trust', '--no-locale', '--encoding=UTF8', '--no-sync')
-            run('pg_ctl', '-D', root / 'pg', '-l', root / 'pg.log', '-o', f"-F -k {root} -p {port} -h ''", 'start', '-w')
-            try:
-                seed = REPO / 'instance/example_instance/seed'
-                manifest = json.loads((seed / 'manifest.json').read_text())['engineering']
-                _, sql, _ = selection.plan(seed, manifest, include_examples=False)
-                for key in (*manifest['files'], 'code_root'):
-                    sql = sql.replace('${' + key + '}', str(root / key))
-                run('psql', '-h', root, '-p', port, '-d', 'postgres', '-X', '-v', 'ON_ERROR_STOP=1', '-1', input=sql.encode())
-                checks = """SELECT count(*) FROM lineage.lineages WHERE project_id='元胞自动机研究';
+        import psycopg
+        from tests.cases.postgres_test_database import start_disposable_cluster
+        from scripts.tfi_release_install import map_directories
+
+        seed = REPO / 'instance/example_instance/seed'
+        manifest = json.loads((seed / 'manifest.json').read_text())['engineering']
+        _, sql, _ = selection.plan(seed, manifest, include_examples=False)
+        sql = map_directories(sql, {
+            entry['placeholder']: '/isolated-seed/' + entry['root']
+            for entry in manifest['directory_mappings']
+        })
+        # Always exercise the real PostgreSQL import using the shared disposable
+        # test-cluster helper. No native-root environment opt-in or service access.
+        with psycopg.connect(start_disposable_cluster()) as connection:
+            connection.execute(sql, prepare=False)
+            checks = """SELECT count(*) FROM lineage.lineages WHERE project_id='元胞自动机研究';
 SELECT count(*) FROM lineage.lineage_nodes n LEFT JOIN lineage.lineages l USING(lineage_id) WHERE l.lineage_id IS NULL;
 SELECT count(*) FROM lineage.lineage_resident_nodes n LEFT JOIN lineage.residents r ON r.resident_id=n.node_id WHERE r.resident_id IS NULL;
 SELECT count(*) FROM lineage.residents r LEFT JOIN workspace.workspaces w ON r.owned_workspace_id=w.workspace_id WHERE r.owned_workspace_id IS NOT NULL AND w.workspace_id IS NULL;"""
-                result = run('psql', '-h', root, '-p', port, '-d', 'postgres', '-XAt', '-v', 'ON_ERROR_STOP=1', input=checks.encode())
-                self.assertEqual(result.stdout.decode().split(), ['0'] * 4)
-            finally:
-                run('pg_ctl', '-D', root / 'pg', 'stop', '-m', 'fast', '-w')
+            for check in checks.split(';'):
+                if check.strip():
+                    with self.subTest(query=check.strip()):
+                        self.assertEqual(connection.execute(check).fetchone()[0], 0)
+            connection.rollback()

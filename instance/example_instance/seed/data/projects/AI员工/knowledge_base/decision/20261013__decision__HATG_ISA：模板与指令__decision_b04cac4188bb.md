@@ -4,23 +4,23 @@ type: decision
 project: AI员工
 created_at: '2026-10-13'
 version:
-  number: 18
-  created_at: '2026-10-13'
+  number: 21
+  created_at: "2026-10-13"
   created_by:
-    user: ''
-    agent: resident_e8fc8c899f00
-  updated_at: '2026-10-31T01:59:19Z'
+    user: ""
+    agent: "resident_e8fc8c899f00"
+  updated_at: "2026-11-05T13:54:32Z"
   updated_by:
-    user: ''
-    agent: resident_73cb83291316
+    user: ""
+    agent: "resident_2e9ea0072551"
 importance: 8
 ai_generated: false
 links:
   source:
-  - ${code_root}/management_portal/hatg/catalog/template.py
-  - ${code_root}/management_portal/society_service/templates
-  - ${code_root}/management_portal/static/lineage_templates.js
-  - ${code_root}/management_portal/static/lineage_template_graph.js
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/hatg/catalog/template.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/templates
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/lineage_templates.js
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/lineage_template_graph.js
   related:
   - decision_898b8911a2ff
   - decision_5b5653c3eaa5
@@ -30,7 +30,6 @@ links:
   supersedes: []
   derived_from: []
 ---
-
 # HATG ISA：模板与指令
 
 模板是跨 Lineage 共享的可编辑配方：把可复用的提示词、结构、脚本或组队行为保存为一份资料，施加时将参数与当前目标交给对应模块执行。模板独立存储，不属于某个 Lineage，也不依赖创建者继续存在。模板指令由 SocietyService 执行，指令类别为 `template`；共同调用格式与错误语义见 decision_898b8911a2ff。
@@ -45,7 +44,7 @@ links:
 
 ## 数据与目标
 
-每份模板的内容字段为 `kind`、`category`、`title`、`description`、`targets`、`parameters`、`body`。`template_id` 是稳定身份；`version`、`created_at`、`created_by`、`updated_at`、`updated_by` 记录版本和真实调用者。内置条目还带 `builtin_key` 与 `builtin_source`。返回给界面时附加 `behavior` 与 `editor`，它们由模块按当前内容计算，不是第二份存储事实。
+每份模板的内容字段为 `kind`、`category`、`title`、`description`、`targets`、`parameters`、`body`。`template_id` 是稳定身份；`version`、`created_at`、`created_by`、`updated_at`、`updated_by` 记录版本和真实调用者。内置条目还带 `builtin_key` 与 `builtin_source`。返回给界面时附加 `behavior`、`editor` 与 `application_parameters`，它们由模块按当前内容计算，不是第二份存储事实。`application_parameters` 是本次施加可接受的完整参数说明，原生施加表单与服务端校验使用同一份说明；模板编辑器仍保存原始 `parameters`，不把派生施加说明写回配方。
 
 `kind` 决定执行模块，现有值为 `prompt`、`structure`、`script`、`explore`、`familize`。`category` 只决定货架分组，可取 `apply`、`structure`、`team`，不参与执行派发。单份模板的 `targets` 必须是模块支持目标的非空子集。
 
@@ -75,6 +74,7 @@ links:
 - `normalize(template) -> dict`：校验和补齐该模块的 `body`。
 - `describe(template) -> dict`：返回施加行为，包含 `steps`、`persistent`，需要时附加角色说明。
 - `editor() -> dict`：返回正文编辑字段和新建角色说明。
+- 可选的 `application_parameters(template) -> list`：按配方计算施加参数说明；未提供时使用配方的 `parameters`。模块负责补充自己支持的创建选项，不能修改传入配方。
 - `apply(ctx: ApplyContext) -> dict`：执行施加并返回统一结果。
 
 `ApplyContext` 包含 `lineage_id`、完整 `template`、已校验的 `parameters`、规范化 `target`、真实 `actor`、结果 `title`、`resident_settings`，以及施加者为“恰好一条”的已有连线选定的候选 `match_choices`。新增一种执行类型只需实现一个行为模块并登记其 `KIND`；类型特有的校验、说明、编辑字段与施加逻辑都留在该模块。通用存储与七条模板指令不复制这种行为，也不要求建立新的模板专属运行引擎。
@@ -83,9 +83,11 @@ links:
 
 ### prompt
 
-`body` 为 `{message, activation_policy?}`。`message` 是非空文本，可引用模板参数与当前目标。`activation_policy` 默认 `queue`，表示排队并触发处理；`attach_to_next` 表示随下一条请求附加送达。模块逐个目标渲染消息，以施加者身份投递，返回 Resident 与消息 ID，不创建组件或 Function Block。
+`ApplyTemplate` 的指令执行契约使用 `body: {message, activation_policy?}`。`message` 是非空文本，可引用模板参数与当前目标。`activation_policy` 默认 `queue`，表示排队并触发处理；`attach_to_next` 表示随下一条请求附加送达。模块逐个目标渲染消息，以施加者身份投递，返回 Resident 与消息 ID，不创建组件或 Function Block。
 
-需要每次施加时修改提示词，可把正文写成 `{{param.prompt}}` 或 `{{param.message}}`，并定义相应文本参数。没有参数且不需要新建角色的模板可以直接施加；其固定正文在模板编辑器中修改。
+提示词模板在货架中的拖放用于填写聊天草稿。正文直接用 `[音频文件]`、`[条目类型]` 等中括号标出需要用户填写的内容；已有 `{{param.name}}` 引用拖入时转换为参数名称或说明对应的中括号提示，保存的模板正文和指令渲染规则保持原样。
+
+拖到聊天输入框时，以纯文本插入当前编辑位置，沿用输入框的附件、草稿持久化和撤销机制。拖到可访问的 Resident 节点时，打开该节点的 Chat，将正文追加到已有草稿，保留附件并聚焦输入框；即使画布有多个已选节点，也只使用鼠标实际落下的节点。聊天切换未成功或已切到另一个目标时不填入。用户补齐占位项后显式发送；拖放不调用 `ApplyTemplate`，也不自动投递消息。显式调用 `ApplyTemplate` 的消息投递语义仍按上段执行。
 
 ### structure
 
@@ -142,7 +144,9 @@ match 的每一项有局部 `key` 与 `kind`，以及：
 
 ### familize
 
-`body` 为 `{goal, route_threshold, review_interval_seconds}`，默认分别为空文本、60、86400。路由阈值为 0–100 的整数，回顾间隔为正整数秒。该模块使用这些明确字段，Family 参数不承载任意结构或脚本。
+`body` 包含 `goal`、`route_threshold`、`review_interval_seconds`、`auto_migrate`、`auto_migrate_priority` 与可选 `resident_settings`；前三项默认分别为空文本、60、86400，自动迁移默认开启，优先级及角色设置遵守 Family Design。路由阈值为 0–100 的整数，回顾间隔为正整数秒。该模块使用这些明确字段，Family 参数不承载任意结构或脚本。
+
+Family 的施加说明提供布尔参数 `auto_migrate`。配方已声明该参数时保留其显式默认；未声明时从 `body.auto_migrate` 计算默认值。原生施加表单允许为本次新建 Family 选择是否自动迁移，选择在首次角色执行前生效；省略参数按上述默认处理。该选项适用于已编辑的内置模板和自定义 Family 模板，不需要改写它们的存储内容、全局账号默认或既有 Family。
 
 施加保留选中的成员，新建门面、steward 与 Router，生成普通组件与连线，并将成员、内部协作元素及仅服务这些成员的普通工作流纳入 Function Block；块带来源 `template_id` 与 Family 事实投影。已有 Family 可作为嵌套成员，使用其门面参与上层协作。先按 decision_44cf587c1721 的专属组件边界完成收纳，保留内部执行目标；只有外部来源指向成员的 route/target 连线改接门面，门面负责对外身份与消息入口，Router 选择成员，steward 承担内部协调和回顾。Family 生命周期及成员维护由 Family 模块负责。
 
@@ -209,7 +213,7 @@ Effect DSL 内的替换使用脚本专用转义器。在带引号的脚本文本
 
 模板标题、说明、行为步骤、角色说明、施加结果和服务端错误在显示时经过 Portal 的界面翻译：内置模板的中文文案在英文界面显示对应英文。翻译只作用于显示，模板正文、参数值和施加内容保持原文。
 
-编辑器提供通用标题、说明、分组、目标范围、参数页与模块内容页，标题旁显示模板的鸽子。Prompt 编辑消息与投递方式；脚本使用代码编辑区；专用模块使用 editor.fields。结构模板有图、列表、JSON 三种视图，默认是图视图：
+编辑器提供通用标题、说明、分组、目标范围、参数页与模块内容页，标题旁显示模板的鸽子。Prompt 编辑消息正文，并说明中括号占位和填入草稿的用法；脚本使用代码编辑区；专用模块使用 editor.fields。结构模板有图、列表、JSON 三种视图，默认是图视图：
 
 - 图视图用 HATG 编辑区的图形引擎画出模板表示的图。角色画成 Resident 卡片，组件画成原语节点，连线带着端口画出；节点 ID 就是模板内的 key。
 - 工具条添加角色（目标 Resident、Lineage Leader、新建 Resident、Fork）和组件（Event、Effect、循环、Filter、Selector、Reducer）。组件可以点击加入，也可以拖进图中落在指定位置。Fork 角色以当前选中的角色或第一个角色为来源。
@@ -231,7 +235,7 @@ Effect DSL 内的替换使用脚本专用转义器。在带引号的脚本文本
 
 `editor.fields` 的字段说明包含 `name`、`type`、`label`，并可带 `default`、`options`、`multiline`、`language`、数值范围等。需要配置新建角色时，结构模板读取 body.roles 中的 new/fork；其他模块提供 `editor.resident_roles`，每项含 `key`、`title`、`from`，以及可选 Provider、账号、settings、说明。Family 提供 steward/router，探索提供 explorer。新增模块的角色表单复用这一描述。
 
-施加时存在参数或新建角色则展示参数与起始设置表单，同时显示行为预览；持续结构可填写结果标题。没有参数也没有新建角色时直接施加。带已有元素的结构模板在施加前总是打开施加表单：表单以 `ApplyTemplate` 的 dry_run 按目标列出会找到、修改、删除的元素和将新建的数量，同时在画布上标出这些元素；某个“恰好一条”的连线找到多条时，表单提供候选下拉框，选定结果作为 `match_choices` 提交。编辑器支持另存为副本、删除与恢复内置；删除或恢复只改变货架资料。改变 kind 需要创建另一份模板，不能在已有条目上换执行类型。
+提示词以外的模板施加时存在参数或新建角色则展示参数与起始设置表单，同时显示行为预览；持续结构可填写结果标题。没有参数也没有新建角色时直接施加。带已有元素的结构模板在施加前总是打开施加表单：表单以 `ApplyTemplate` 的 dry_run 按目标列出会找到、修改、删除的元素和将新建的数量，同时在画布上标出这些元素；某个“恰好一条”的连线找到多条时，表单提供候选下拉框，选定结果作为 `match_choices` 提交。编辑器支持另存为副本、删除与恢复内置；删除或恢复只改变货架资料。改变 kind 需要创建另一份模板，不能在已有条目上换执行类型。
 
 施加表单的行为说明代入当前填写的参数，并随输入更新。例如间隔填写 300 时，说明显示 300 秒。预览先翻译模板说明，再把参数值作为纯文本插入；空参数保留引用以提示尚未填写。模板编辑器继续显示参数引用，施加预览不改写模板正文或已保存的默认值。
 
@@ -334,3 +338,8 @@ Effect DSL 内的替换使用脚本专用转义器。在带引号的脚本文本
 ```
 
 `removed` 包含连带删除的连线；`ambiguous` 列出仍需选定的 key 与候选；没有标签的连线以“来源标题 → 目标标题”作为 title，便于区分候选；某个目标找不到已有元素时，`error` 给出原因，其他目标照常预览。模板编辑时的正文预览仍通过 CreateTemplate/UpdateTemplate 的 dry_run 完成。
+
+
+## 结构模板的 Resident 设置归属
+
+结构模板可保存角色的执行设置与 Society 汇报策略，但施加时不把 `reporting` 作为 Execution 的创建参数。执行字段继续交正式 Resident 创建入口；汇报字段先按同一设置契约校验，再由 Society 的正式运行设置入口按本次真实调用者与目标权限保存，不借模板创建者或 User 身份。后续配置失败时清理本次新建角色并传播失败，不能把半配置角色当作模板成功结果。模板、Fork 的既有失败清理路径保持一致；设置字段的具体语义与应用时机沿各自 owner 的现行合同。

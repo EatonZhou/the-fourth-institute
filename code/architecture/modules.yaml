@@ -1414,7 +1414,6 @@ modules:
       - "management_portal/home_report_reasoning.py"
       - "management_portal/home_report_visual.py"
       - "management_portal/home_report_store.py"
-      - "management_portal/home_report_creation.py"
       - "management_portal/home_report_explanations.py"
       - "management_portal/home_report_quality.py"
       - "management_portal/home_report_review.py"
@@ -2387,7 +2386,7 @@ protocols:
     related_designs:
       - "decision_3dd52c0692c1"
       - "decision_8b2fa224616b"
-    description: "Resident execution_settings/harness_config 是 Lineage 配置真值；执行准备通过 Provider 声明和账号 runtime_catalog 验证 model/effort/tier/options，再解析已绑定会话路由。四个原生入口（Family chat、Family menu/settings、Resident menu/settings、Resident composer）以选中成员 resident_id 绑定 interface.conversation 的 ResidentRuntimeController；控制器统一 settings/catalog、权限、差量保存、过期目标与缓存失效。interface.shell 的 PortalResidentService 独占 ISA/HTTP 及既有重启幂等、pending receipt、取消与观察；视图仅适配挂载、焦点和刷新，不另造运行状态机。能力选择沿用统一设置；执行前固定本轮装配快照，Provider 已确认、已发送与未知分开记录。保存配置不启动模型推理；账号切换通过既有 Session 控制，保留上下文准备失败时保留旧绑定，不静默降级。汇报策略 reporting 由 Society 单独保存，通过同一 Get/UpdateResidentSettings 读取与条件更新；Family 门面拥有自身策略，可信转交链决定当前输入的有效来源，不能借此读取或修改无权访问的 Router 模型配置。Society 将策略物化为输入提示，Execution 不解释汇报业务；Home 的展示协议与生成入口遵循该权威策略。"
+    description: "Resident execution_settings/harness_config 是 Lineage 配置真值；执行准备通过 Provider 声明和账号 runtime_catalog 验证 model/effort/tier/options，再解析已绑定会话路由。四个原生入口（Family chat、Family menu/settings、Resident menu/settings、Resident composer）以选中成员 resident_id 绑定 interface.conversation 的 ResidentRuntimeController；控制器统一 settings/catalog、权限、差量保存、过期目标与缓存失效。interface.shell 的 PortalResidentService 独占 ISA/HTTP 及既有重启幂等、pending receipt、取消与观察；视图仅适配挂载、焦点和刷新，不另造运行状态机。能力选择沿用统一设置；执行前固定本轮装配快照，Provider 已确认、已发送与未知分开记录。保存配置不启动模型推理；账号切换通过既有 Session 控制，保留上下文准备失败时保留旧绑定，不静默降级。汇报策略 reporting 由 Society 单独保存，通过同一 Get/UpdateResidentSettings 读取与条件更新；普通输入使用目标 Resident 自身汇报配置；可信转交请求通过既有持久 ledger 与输入绑定沿原请求选择有效策略，协作成员自身配置不否决该请求，也不因此取得其他 Resident 配置读写权。Society 将有效策略物化为标准输入提示，Execution 不解释汇报业务；Web、Report、Media、Authoring 与 CLI 不把汇报配置当作业务准入，资源权限、身份、摘要和版本校验保持独立。"
     example: "四视图 → ResidentRuntimeController → PortalResidentService → Get/UpdateResidentSettings 或 RestartSession/CancelSessionRestart → split_runtime_settings → resident_storage/state_store 提交 → codex_runtime_settings/native_options 对照账号目录 → BackendInvocation；已有 binding 继续解释实际运行账号。"
 
   - id: "execution-account-observation"

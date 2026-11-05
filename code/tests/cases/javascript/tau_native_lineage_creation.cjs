@@ -5,7 +5,7 @@ module.exports=async({page,requests,errors})=>{
   const nav=page.getByRole('region',{name:'Lineage navigation',exact:true});
   await nav.getByRole('button',{name:/^Add Lineage in /}).click();
   const form=page.getByRole('dialog',{name:'New Lineage',exact:true});
-  await form.getByRole('textbox',{name:'Name (optional)',exact:true}).fill('New Sample Lineage');
+  await form.locator('#lineageNameInput').fill('New Sample Lineage');
   await form.getByRole('checkbox').uncheck();
   await form.getByRole('button',{name:'Create Lineage',exact:true}).click();
   const node=page.getByRole('dialog',{name:'New node',exact:true});

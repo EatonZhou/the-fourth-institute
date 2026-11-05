@@ -7,7 +7,7 @@ from typing import Any
 
 from . import resident_record_domain as records
 
-from .resident_reporting_policy import DEFAULT, normalize, configured, effective, prompt, creation_allowed  # noqa: F401 - public policy surface
+from .resident_reporting_policy import DEFAULT, normalize, configured, effective, prompt  # noqa: F401 - public policy surface
 
 
 def _authorized(resident_id: str, actor: str, operation: str = "GetResidentSettings") -> dict:

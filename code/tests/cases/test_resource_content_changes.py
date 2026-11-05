@@ -13,6 +13,7 @@ from management_common.provider_turn_artifacts import review_target
 from management_portal.resources import content_changes
 from management_portal.resources.content_changes import ContentChangeStore, capture_content_changes, record_text_change
 from management_portal.resources.service import ResourceService
+from management_portal.resources.index import ResourceIndex
 from management_portal.resources.errors import ResourceVersionConflict
 from management_portal.resources.providers.knowledge import _update_knowledge
 from management_portal.resources.server import ResourceServiceServer
@@ -181,7 +182,8 @@ def test_display_budget_does_not_truncate_stored_snapshots(receipt_store):
 def test_signed_resource_update_propagates_execution_and_returns_own_receipts(receipt_store, tmp_path, monkeypatch):
     """签名资源更新传递执行标识且仅返回本执行者回执"""
     monkeypatch.setenv("PORTAL_RESOURCE_SERVICE_PROCESS", "1")
-    service = ResourceService()
+    index = Mock(spec=ResourceIndex)
+    service = ResourceService(index_provider=index)
     monkeypatch.setattr(service, "_existing_identity", lambda resource_id, *a, **k: service.validate_id(resource_id))
     monkeypatch.setattr(service, "_require_mutation_actor", Mock())
     monkeypatch.setattr(service, "_notify_mutation", Mock(return_value={}))
@@ -197,6 +199,7 @@ def test_signed_resource_update_propagates_execution_and_returns_own_receipts(re
         with execution_scope("execution-resource-test"):
             result = client.update(KNOWLEDGE_ID, {"text": "after"}, actor=ACTOR)
         assert result["text"] == "after"
+        index.project_updated.assert_called_once_with("thinking", result)
         changes = client.execution_content_changes("execution-resource-test", actor=ACTOR)
         assert changes[0]["after"]["text"] == "after"
         assert not client.execution_content_changes("execution-resource-test", actor="resident_ffffffffffff")

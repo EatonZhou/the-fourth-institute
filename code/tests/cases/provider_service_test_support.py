@@ -12,6 +12,7 @@ import json
 import os
 from pathlib import Path
 import subprocess
+from types import SimpleNamespace
 
 from management_common import code_environment
 from tests.cases.instance_test_support import write_instance
@@ -41,6 +42,29 @@ def provider_instance(monkeypatch, tmp_path, *, components=()):
     monkeypatch.setattr(updates, 'RUNTIMES', runtimes)
     monkeypatch.setattr(updates, 'STATE_ROOT', root / 'data/provider-state')
     return root, runtimes
+
+
+def installed_claude_sdk(monkeypatch):
+    """An installed SDK and package validator, without installing or executing it.
+
+    Native lifecycle cases exercise the real package builder, link owner and
+    service definitions; SDK execution belongs to the adapter's own tests.
+    """
+    from management_portal.execution import provider_updates as updates
+    from scripts import portal_service_units as units
+
+    monkeypatch.setattr(updates.ClaudeRuntime, 'installed', lambda _: ('fixture-sdk',))
+
+    def validate(command, **kwargs):
+        runtime = updates.ClaudeRuntime().link()
+        assert command[0] == str(updates.venv_python(runtime))
+        assert command[1:4] == ['-I', '-B', '-c']
+        candidate = Path(command[-1])
+        assert (candidate / 'management_portal/claude_code_daemon.py').is_file()
+        assert (candidate / 'VERSION').read_text().strip() == command[-2]
+        return subprocess.CompletedProcess(command, 0, stdout='')
+
+    monkeypatch.setattr(units, 'subprocess', SimpleNamespace(run=validate, PIPE=subprocess.PIPE, STDOUT=subprocess.STDOUT))
 
 
 class FakeControl:

@@ -4,15 +4,15 @@ type: decision
 project: AI员工
 created_at: '2026-07-26'
 version:
-  number: 31
+  number: 32
   created_at: "2026-07-26"
   created_by:
     user: ""
     agent: ""
-  updated_at: "2026-11-02T15:16:00Z"
+  updated_at: "2026-11-05T13:53:50Z"
   updated_by:
     user: ""
-    agent: "resident_dbcd3920b7cc"
+    agent: "resident_2e9ea0072551"
 importance: 8
 metaness: 2
 ai_generated: false
@@ -93,6 +93,7 @@ Workspace Handoff（工作区交接）让同一个 Lineage 中的一个 Resident
 
 - **准备开始后，交接项不能再修改。** 交接处于正在准备或 ready 时，修改交接项报错“交接已准备或正在准备，不能再修改交接项；需要交接其他内容时删除这条交接后重新建立”。说明和标签仍可以修改。
 - **ready 的交接不会重新准备。** 对 ready 的交接再次准备，直接返回现有结果；原执行者仍持有准备租约时再次准备，报错“Handoff 正在准备，请等待当前 attempt 完成”。原执行进程已经退出时，重新准备沿用同一 attempt 和创建操作身份，从持久进度继续。草稿和明确失败的交接可以准备或重试；失败后的新尝试使用新的创建操作身份，不复活已注销的副本。
+- **成功准备返回正式持久快照。** `PrepareWorkspaceHandoff` 在准备租约收尾与 writer 结束回执提交之后，通过同一正式读取路径返回交接和 Lineage。首次成功、Get 与不同幂等键的 ready 重放使用同一交接项字段合同，包含参数与 attempt 回执；不能先返回内存候选、再让租约退出修改其可观察结果。
 
 ### 失败不留下半成品
 

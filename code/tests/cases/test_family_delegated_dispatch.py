@@ -25,8 +25,12 @@ def test_exact_facade_loan_dispatches_without_opening_parent(world, monkeypatch,
     sent = []
     monkeypatch.setattr(family_task_dispatches, 'deliver', lambda *args, **kw: sent.append((args, kw)) or {'message_id': 'msg_task'})
     lend(world, resource=AMA, a=grant)
+    if mode == permission_system.OPEN:
+        # Saved PAR loans are inactive in Open; the private owner boundary
+        # remains authoritative without consulting the disabled engine.
+        monkeypatch.setattr(permission_system, 'active', lambda: pytest.fail('Open loaded PAR'))
     assert not personal_ama.reaches(CALLER, 'owner', LINEAGE)
-    if allowed:
+    if allowed and mode == permission_system.PAR:
         result = family_task_dispatches.dispatch(AMA, 'quota', CALLER, source_message_id='msg_original')
         assert result['message_id'] == 'msg_task'
         assert sent[0][0][3]['message_id'] == 'msg_original'
@@ -35,3 +39,9 @@ def test_exact_facade_loan_dispatches_without_opening_parent(world, monkeypatch,
         with pytest.raises(KeyError):
             family_task_dispatches.dispatch(AMA, 'quota', CALLER, source_message_id='msg_original')
         assert not sent
+    if mode == permission_system.OPEN:
+        result = family_task_dispatches.dispatch(AMA, 'quota', 'owner', source_message_id='msg_owner')
+        assert result['message_id'] == 'msg_task'
+        assert len(sent) == 1
+        assert sent[0][0][3]['message_id'] == 'msg_owner'
+        assert sent[0][0][4] == 'owner'

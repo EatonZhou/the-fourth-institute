@@ -4,15 +4,15 @@ type: decision
 project: AI员工
 created_at: '2026-10-18'
 version:
-  number: 20
+  number: 21
   created_at: "2026-10-18"
   created_by:
     user: ""
     agent: "resident_7765faecc45a"
-  updated_at: "2026-11-05T11:15:47Z"
+  updated_at: "2026-11-05T13:23:39Z"
   updated_by:
     user: ""
-    agent: "resident_2e9ea0072551"
+    agent: "resident_6199a7a36480"
 importance: 5
 ai_generated: false
 links:
@@ -85,6 +85,8 @@ Event 类型、Watch 对象、触发参数、Route 到 Effect 的连线及各场
 
 ### `RelayFamilyMessage`
 
+`continue_previous`：仅当前请求明确依赖同一发送者上一轮 previous_round 时设 true；默认 false，证据不足按独立任务。不追溯更早历史，不因同一成员、相邻或相似话题判定延续；换成员执行仍可 true。平台保存正判并附可信上一轮背景，后续恢复、职责安排与额度放行的缺省 false 不清除已冻结正判；不能与 notice 或 reassign 同用。
+
 按 Family Router 的选择转交门面原请求；当前成员和本 Family Steward 都是合法承接者，组织工作归 Steward，并在成员周额度低于 10% 时进行执行前复核（decision_a64b3ea2c3c5）。
 
 - 参数：`resident_id`（门面）、`message_id`（原请求）、`member_id`（所选成员，`notice=true` 时不填）；可选 `notice`、`quota_reviewed`、`scope_gap`、`scope_reviewed`、`reassign`、`recover`、`reason`。
@@ -125,7 +127,7 @@ Steward 先归纳到期成员，再读取所需 Family 材料汇总门面；材�
 | --- | --- |
 | `DispatchFamilyTask` | `resident_id`、`trigger`、`facts`、`source_message_id`、`message_id`、`event` |
 | `ResolveFamilyRequest` | `resident_id`、`message_id`、`steward_message_id`、`reason` |
-| `RelayFamilyMessage` | `resident_id`、`message_id`、`member_id`、`notice`、`quota_reviewed`、`scope_gap`、`scope_reviewed`、`reassign`、`recover`、`reason` |
+| `RelayFamilyMessage` | `resident_id`、`message_id`、`member_id`、`notice`、`continue_previous`、`quota_reviewed`、`scope_gap`、`scope_reviewed`、`reassign`、`recover`、`reason` |
 | `CheckFamilyReview` | `lineage_id`、`family_id`、`event` |
 | `CheckFamilyProgress` | `lineage_id`、`family_id`、`event`、`every_turns` |
 | `PublishFamilyProgress` | `lineage_id`、`family_id`、`batch_id`、`report`、`summary`、`expected_revision`、`source_versions` |

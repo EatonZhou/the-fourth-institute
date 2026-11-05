@@ -57,8 +57,6 @@ def convert(connection, *, relocate_legacy_articles=False, expected_article_plan
     from scripts.migrate_directory_protocol import migrate_schema as directories
     from scripts.migrate_family_chat_controls import convert as family
     from management_portal.society_service import state_store
-    from management_portal.resources import registry_store
-    from management_common.format_tags import schema_matches
 
     if state_store.LINEAGE_DATA_SCHEMA != 'tfi.lineage-data.v66':
         raise ValueError('This converter requires the v66 owner code')
@@ -85,15 +83,9 @@ def convert(connection, *, relocate_legacy_articles=False, expected_article_plan
     report['family'] = family(connection)
     from scripts.directory_protocol_lifecycle_migration import validate_project_locations
     validate_project_locations(connection)
-    # Family conversion validates the complete Lineage schema, not just its fields.
-    schema = _database_schema('resource_registry')
-    tables = {row[0] for row in connection.execute(
-        "SELECT table_name FROM information_schema.tables WHERE table_schema=%s AND table_type='BASE TABLE'",
-        (schema,)).fetchall()}
-    row = connection.execute(sql.SQL("SELECT value FROM {}.registry_meta WHERE key='schema'").format(
-        sql.Identifier(schema))).fetchone()
-    if tables != registry_store._TABLES or not row or not schema_matches(row[0], registry_store.SCHEMA_VERSION):
-        raise ValueError('Converted resource registry does not match its owner schema')
+    # Each delegated conversion checks its own DDL preimage and accesses the
+    # registry fields it needs. A descriptive format label or unrelated table
+    # inventory cannot establish whether those operations are valid.
     after = preservation_facts(connection)
     if before != after:
         raise ValueError('Protected instance business fields changed during conversion')

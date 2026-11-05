@@ -272,11 +272,8 @@ def test_attachments_are_the_authors_uploads_to_this_chatroom(lineage):
             chatroom_backend.post_message(ALICE, chatroom_id, [*text("附件"), {"type": "file", "upload_id": upload_id}])
     assert chatroom_backend.can_read(chatroom_id, BOB)
     assert chatroom_backend.can_read(chatroom_id, DAVE)
-    # The upload endpoint lets every reader of the Chatroom open its attachments.
-    from management_portal.asgi import _upload_readable
-
-    meta = {"created_by": ALICE, "target": chatroom_id, "purpose": "conversation_attachment"}
-    assert _upload_readable(meta, BOB) and _upload_readable(meta, DAVE)
+    # Shared upload authentication is covered by the file access owner's tests;
+    # this domain verifies room membership and author/target/ready admission.
 
 
 def test_message_pages_go_back_and_forward_by_position(lineage):

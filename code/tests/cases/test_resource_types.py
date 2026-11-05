@@ -20,7 +20,7 @@ def test_declarations_are_complete_and_bind_real_providers(isolated_portal_case)
     assert set(declarations) == registry.types | registry.id_exception_types
     for kind, declaration in declarations.items():
         assert declaration['type'] == kind
-        assert declaration['catalog_section'] in {'', 'knowledge', 'skill', 'repo', 'article', 'experiment', 'device'}
+        assert declaration['catalog_section'] in {'', 'knowledge', 'skill', 'repo', 'article', 'experiment', 'device', 'report'}
         if declaration['provider']:
             module, attribute = declaration['provider'].split(':')
             assert callable(getattr(import_module(module), attribute))

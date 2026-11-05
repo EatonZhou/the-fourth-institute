@@ -20,13 +20,7 @@ from management_portal.native_agent_transport import NativeAgentUnavailable
 REGISTRY = "https://raw.githubusercontent.com/agentclientprotocol/registry/main/antigravity-acp/agent.json"
 
 
-def platform_key():
-    # macOS's global Google keychain entry is not yet verified to isolate accounts.
-    os_name = {"linux": "linux", "win32": "windows"}.get(sys.platform)
-    arch = identify_host()["architecture"]
-    if not os_name or arch not in {"x86_64", "aarch64"}:
-        raise RuntimeError("Antigravity account isolation is supported on Linux and Windows only")
-    return f"{os_name}-{arch}"
+from management_common.antigravity_platform import platform_key
 
 
 def manifest():

@@ -39,7 +39,7 @@ class ExamplePaths(unittest.TestCase):
         from management_portal.society_service.state_store import (
             LINEAGE_DATA_SCHEMA, lineage_data_schema_matches,
         )
-        from management_portal.resources.registry_store import _TABLES as registry_tables
+        from management_portal.resources.registry_store import SCHEMA_VERSION as registry_schema
         from management_portal.society_service.directory_owner import directory_metadata
         from management_common.json_columns import json_value
         from scripts.tfi_seed_selection import plan
@@ -75,18 +75,22 @@ class ExamplePaths(unittest.TestCase):
                         self.assertTrue(records)
                         for row in records:
                             self.assertEqual(directory_metadata(row['directory_json'], row[identity]),
-                                             {'origin': 'created', 'owner_id': row[identity]})
+                                             {'owner_id': row[identity]})
                     workspaces = connection.execute(
-                        'SELECT w.origin,w.owner_id,w.operation_id,r.resident_id '
+                        'SELECT w.owner_id,w.operation_id,r.resident_id '
                         'FROM workspace.workspaces w '
                         'LEFT JOIN residents r ON r.owned_workspace_id=w.workspace_id'
                     ).fetchall()
                     self.assertTrue(workspaces)
                     for row in workspaces:
                         self.assertIsNotNone(row['resident_id'])
-                        self.assertEqual(row['origin'], 'created')
                         self.assertEqual(row['owner_id'], row['resident_id'])
                         self.assertIsNone(row['operation_id'])
+                    workspace_columns = {row['column_name'] for row in connection.execute(
+                        "SELECT column_name FROM information_schema.columns "
+                        "WHERE table_schema='workspace' AND table_name='workspaces'"
+                    ).fetchall()}
+                    self.assertNotIn('origin', workspace_columns)
                     for row in connection.execute(
                         "SELECT collection,document_json FROM resource_registry.registry_documents "
                         "WHERE collection IN ('project_registry','repo','article')"
@@ -95,14 +99,13 @@ class ExamplePaths(unittest.TestCase):
                         if row['collection'] == 'project_registry':
                             for project in document['projects']:
                                 self.assertEqual(project['directory'],
-                                                 {'origin': 'created', 'owner_id': project['id']})
+                                                 {'owner_id': project['id']})
                         else:
                             locations = document['checkouts' if row['collection'] == 'repo' else 'roots']
                             for location in locations:
-                                # The shared installed code is adopted; example
-                                # content is created by copying the seed areas.
-                                expected_origin = 'adopted' if location['path'] == replacements['${code_root}'] else 'created'
-                                self.assertEqual(location['origin'], expected_origin)
+                                # Registration has one ownership contract for
+                                # copied areas and existing installed code.
+                                self.assertNotIn('origin', location)
                                 self.assertEqual(location['owner_id'], document['id'])
                     # A seed import bypasses state_store._create_schema. Its
                     # cross-owner deletion trigger must therefore be present in
@@ -131,7 +134,32 @@ class ExamplePaths(unittest.TestCase):
                         "SELECT table_name FROM information_schema.tables "
                         "WHERE table_schema='resource_registry'"
                     ).fetchall()}
-                    self.assertEqual(actual_registry_tables, registry_tables)
+                    # Registry startup accepts additional owner tables. Check
+                    # the operations a fresh installation needs rather than a
+                    # removed private table-inventory constant.
+                    self.assertTrue({'registry_meta', 'registry_collections',
+                                     'registry_documents', 'deleted_identities'} <= actual_registry_tables)
+                    self.assertEqual(connection.execute(
+                        "SELECT value FROM resource_registry.registry_meta WHERE key='schema'"
+                    ).fetchone()['value'], registry_schema)
+                    connection.execute(
+                        "INSERT INTO resource_registry.registry_collections(collection,revision) "
+                        "VALUES ('seed_regression',nextval('resource_registry.registry_revision_seq'))")
+                    connection.execute(
+                        "INSERT INTO resource_registry.registry_documents "
+                        "(collection,document_id,revision,document_json) "
+                        "SELECT collection,'article_000000000001',revision,'{\"id\":\"article_000000000001\"}'::jsonb "
+                        "FROM resource_registry.registry_collections WHERE collection='seed_regression'")
+                    with self.assertRaises(psycopg.errors.UniqueViolation), connection.transaction():
+                        connection.execute(
+                            "INSERT INTO resource_registry.registry_documents "
+                            "SELECT * FROM resource_registry.registry_documents WHERE collection='seed_regression'")
+                    connection.execute(
+                        "INSERT INTO resource_registry.deleted_identities(resource_id) VALUES ('article_000000000001')")
+                    self.assertEqual(connection.execute(
+                        "SELECT resource_id FROM resource_registry.deleted_identities "
+                        "WHERE resource_id='article_000000000001'"
+                    ).fetchone()['resource_id'], 'article_000000000001')
                     connection.rollback()
 
     def test_seed_metadata_initializes_only_storage_schema(self):
@@ -223,7 +251,11 @@ class ExamplePaths(unittest.TestCase):
     def test_inventory_and_path_budget(self):
         """安装与实例回归：inventory and path budget。"""
         rows = [r for r in inventory(self.seed) if r["path"] != "manifest.json"]
-        self.assertEqual(rows, sorted(self.manifest["inventory"], key=lambda row: row["path"]))
+        expected = sorted(self.manifest["inventory"], key=lambda row: row["path"])
+        self.assertEqual([row['path'] for row in rows], [row['path'] for row in expected])
+        for actual, recorded in zip(rows, expected):
+            with self.subTest(path=actual['path']):
+                self.assertEqual(actual, recorded)
         self.assertLessEqual(max(len(r["path"]) for r in rows), 175)
         self.assertFalse(any("release-runtime-v1/workspace_" in r["path"] for r in rows))
 

@@ -117,7 +117,8 @@ try {
     workspace.setMessages([...older, ...shown]);
     assert.ok(row('r-first').querySelector('[data-portal-work-group-toggle="request-r"]'), 'the older reply heads it now');
     assert.equal(row('r-later').querySelector('[data-portal-work-group-toggle]'), null, 'the later reply no longer does');
-    assert.equal(row('r-later').classList.contains('continued'), true, 'it continues the work');
+    assert.equal(row('r-later').classList.contains('continued'), false, 'an intervening user input restores the sender header');
+    assert.equal(row('r-later').dataset.workGroupId, 'request-r', 'visual interruption preserves the actual work association');
   }
   {
     // Older messages load as a turn starts: the tail gets the live runtime too.

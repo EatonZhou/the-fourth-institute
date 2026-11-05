@@ -110,10 +110,10 @@ def test_registration_rejects_invalid_identity_and_sensitive_config(tmp_path):
 
 def test_rejected_registration_does_not_reserve_account_directory(tmp_path, monkeypatch):
     """Invalid names and unsupported hosts fail before either record or directory creation."""
-    from management_portal import antigravity_runtime
+    from management_common import antigravity_platform
     from management_portal.execution import account_registrations as store, isa
 
-    monkeypatch.setattr(antigravity_runtime, "sys", SimpleNamespace(platform="darwin"))
+    monkeypatch.setattr(antigravity_platform, "sys", SimpleNamespace(platform="darwin"))
     directory = tmp_path / "selected-account"
     arguments = {"account_id": "Gemini Zero", "provider": "antigravity", "kind": "subscription_login",
                  "config": {"account_dir": str(directory)}}
@@ -191,10 +191,32 @@ def test_delete_checks_real_session_bindings_and_scheduler_work(tmp_path):
 
 def test_model_api_secret_is_private_file_only(tmp_path, monkeypatch):
     """一次性密钥只进入权限 600 的文件，登记和返回值只保留路径。"""
-    from management_portal.execution import isa
+    from management_portal.execution import isa, account_hosting, codex_api_accounts, provider_updates
+    from management_portal.execution.agent_data_store import get_agent_data_store
+    from management_portal.execution.scheduler_schema import initialize_execution_store
+    from management_common.portal_database import portal_database
     from management_portal import model_api_store
     from tests.cases.instance_test_support import select_instance
     secrets = select_instance(monkeypatch, tmp_path / "instance").directory("secrets")
+    # Exercise the real busy checks and configuration refresh, but keep the
+    # process/service adapters local to this test. No installed Codex or
+    # deployed service is needed to rotate a fixture credential.
+    get_agent_data_store()
+    portal_database(schema="execution_runtime").write(initialize_execution_store)
+    lifecycle = []
+    logins = []
+    monkeypatch.setattr(provider_updates, "runtime_available", lambda provider: provider == "codex")
+    monkeypatch.setattr(account_hosting, "stop_codex_instance", lambda account_id: lifecycle.append(("stop", account_id)))
+    monkeypatch.setattr(account_hosting, "start_codex_instance", lambda account_id: lifecycle.append(("start", account_id)))
+
+    def login_process(argv, **kwargs):
+        assert argv[-2:] == ["login", "--with-api-key"]
+        assert kwargs["input"] == b"rotated-test-placeholder\n"
+        assert Path(kwargs["env"]["CODEX_HOME"]).is_relative_to(tmp_path)
+        logins.append("rotated")
+        return SimpleNamespace(returncode=0)
+
+    monkeypatch.setattr(codex_api_accounts, "run_process", login_process)
     arguments = {"api_id": "sample", "base_url": "https://invalid.example", "default_model": "sample",
                  "secret": "test-only-placeholder"}
     inv = SimpleNamespace(caller="alice", argument=lambda name, default=None: arguments.get(name, default))
@@ -206,6 +228,12 @@ def test_model_api_secret_is_private_file_only(tmp_path, monkeypatch):
     arguments = {"api_id": "sample", "changes": {}, "secret": "rotated-test-placeholder"}
     result = isa.update_model_api(inv)
     assert result["version"] == 2 and path.read_text() == "rotated-test-placeholder"
+    assert path.stat().st_mode & 0o777 == 0o600
+    assert "rotated-test-placeholder" not in str(model_api_store.apis()) + str(result)
+    accounts = codex_api_accounts.api_accounts("sample")
+    assert len(accounts) == 1
+    assert lifecycle == [("stop", accounts[0]["account_id"]), ("start", accounts[0]["account_id"])]
+    assert logins == ["rotated"]
 
 
 

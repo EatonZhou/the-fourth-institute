@@ -253,7 +253,7 @@ def test_create_then_first_turn_injects_session_start_instructions(
     client = Mock()
     client.start_thread.return_value = {"thread": {"id": "019f0000-0000-7000-8000-000000000411"}}
     accounts = Mock()
-    accounts.candidates.return_value = [SimpleNamespace(account_id="one", socket_path=tmp_path / "codex.sock")]
+    accounts.default_for_new_session.return_value = SimpleNamespace(account_id="one", socket_path=tmp_path / "codex.sock")
     backend = CodexBackend(account_registry=accounts, client_factory=lambda path: client)
 
     class RecordingBackend:

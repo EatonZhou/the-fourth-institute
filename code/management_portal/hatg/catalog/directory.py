@@ -25,8 +25,14 @@ DECLARATIONS = tuple(D(
     description='原生命周期调用者凭owner核验的持久Project根依赖证据解除错误夹具关联；仅关闭准入后可用，保留审计，不注销或删除Workspace，不完成scope。',
     parameters=(R('scope_id', description='原运行生命周期ID'), R('resource_id', description='错误关联的Workspace ID'),
                 R('reason', description='本次纠正的明确理由', max_length=2000)),
-    result=(R('scope_id'), R('resource_id'), R('actor'), R('reason'), R('evidence', 'object'),
-            R('original_ordinal', 'integer'), R('corrected_at'), R('outcome')),
+    result=(R('scope_id', description='被纠正关联所属的运行生命周期 ID'),
+            R('resource_id', description='解除错误生命周期关联的 Workspace ID；资源本身保留'),
+            R('actor', description='通过核验的原生命周期调用者，来自持久纠正审计'),
+            R('reason', description='首次纠正时保存的理由；重试返回原审计值'),
+            R('evidence', 'object', '资源 owner 核验并保存的持久 Project 根依赖证据'),
+            R('original_ordinal', 'integer', '原生命周期资源关联的序号，保留用于审计'),
+            R('corrected_at', description='首次完成纠正的时间，ISO 8601 格式'),
+            R('outcome', description='association_corrected，表示关联已纠正；不表示资源删除或生命周期完成')),
 ),)
 
 

@@ -54,12 +54,13 @@ TIERS = (
     ("common", "management_common.*"),
     ("contracts", """
     hatg hatg.catalog hatg.catalog.* hatg.contracts hatg.declarations hatg.lineage_versions hatg.resource_actions
-    portal_features service_invocation_contract execution.config resources.config society_service.config
+    portal_features service_invocation_contract execution.config execution.account_migration_types execution.account_selection_contract
+    resources.config society_service.config
     """),
     ("stores", """
     hatg.store execution.service_settings execution.account_registrations notifications notifications.*
     resources.collaboration_registry resources.domain_projection_evidence resources.errors resources.portal
-    resources.registry_store resources.deleted_identity_boundary resources.schema resources.timing
+    resources.registry_store resources.directory_ownership_upgrade resources.deleted_identity_boundary resources.schema resources.timing
     resources.workspace_store
     access_audit_store agent_token_auth application_targets conversation_read_state conversation_receipt_store
     identity_store project_registry resident_view_projection semantic_search_surfaces shared_state
@@ -72,14 +73,15 @@ TIERS = (
     """),
     ("execution", """
     execution execution.* agent_prompt_context agent_skill_context ai_provider_registry antigravity_* business_tasks
-    claude_* codex_* dsh_* jev_provider kimi_* model_api_store native_agent_transport opencode_* prompt_injection
+    claude_* codex_* dsh_* jev_provider kimi_* model_api_store model_api_wire model_api_bridge model_api_stream
+    native_agent_transport opencode_* prompt_injection provider_daemon_host
     provider_transport_diagnostics provider_websocket resident_shell_environment resource_refs usage_read_model
     """),
     ("society", "society_service society_service.* agent_context_selection resources.providers.collaboration"),
     ("features", """
     * resources.providers.article resources.providers.chatroom resources.providers.direction resources.providers.notice
     resources.providers.paper resources.providers.repo resources.providers.review resources.providers.search
-    resources.providers.test resources.providers.workbench resources.repo_recovery
+    resources.providers.test resources.providers.workbench resources.providers.report resources.repo_recovery
     """),
 )
 FEATURES = len(TIERS) - 1

@@ -76,8 +76,6 @@ class ReviewService:
             raise ValueError('创作准备须显式选择high及page或video')
         if not isinstance(task, str) or not task.strip() or len(task) > 4000:
             raise ValueError('创作准备须说明本次实际理解任务，最多4000字符')
-        from management_portal.home_report_creation import require_creation
-        require_creation(actor)
         scope = self.ensure_reviewers({'kind': 'explanation_video' if kind == 'video' else 'explanation',
             'author': actor, 'responsible_resident_id': actor}, actor)
         return {'status': 'prepared', 'kind': kind, 'quality': quality, **scope}
@@ -609,13 +607,8 @@ class AuthoringService(ReviewService):
         ref = {'address': subject['ref'], 'sha256': subject['digest']}
         if subject['version'] != ref['sha256'] or ref not in subject['assets']:
             raise ValueError('解释创作必须绑定同一固定清单地址与摘要')
-        from management_portal.home_report_creation import explanation_responsible
-        return explanation_responsible(ref, actor)
-
-    @staticmethod
-    def _require_creation(responsible, actor):
-        from management_portal.home_report_creation import require_creation
-        require_creation(actor, responsible=responsible)
+        from management_portal.home_report_explanations import registered_responsible
+        return registered_responsible(ref, actor)
 
     def submit(self, subject, actor):
         subject = self.subject(subject)
@@ -630,10 +623,6 @@ class AuthoringService(ReviewService):
             return existing
         if not subject['responsible_resident_id'] and subject['kind'] == 'explanation_video':
             subject['responsible_resident_id'] = self._registered_responsible(subject, actor)
-        if subject['responsible_resident_id']:
-            # No lock directory, task state, reviewer role or delivery may be
-            # created until the authenticated Society capability allows it.
-            self._require_creation(subject['responsible_resident_id'], actor)
         with self._lock(identifier):
             record = self._load(identifier)
             if record and record['requested_by'] != actor:

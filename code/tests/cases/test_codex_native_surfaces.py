@@ -356,7 +356,7 @@ def test_nested_delivery_retains_exact_message_identity(resident_record):
 def test_runtime_catalog_uses_authorized_society_service_route(resident_record, monkeypatch):
     """运行模型目录按调用者有权访问的 Resident 路由读取，无权时返回 403"""
     from management_portal import serve_management_portal as portal
-    from management_portal import http_auth, web_clients
+    from management_portal import web_clients
     from tests.cases.test_portal_security_repair_wave6 import _ResponseHarness
 
     resident_id = resident_record["resident_id"]
@@ -373,11 +373,10 @@ def test_runtime_catalog_uses_authorized_society_service_route(resident_record, 
     ))
     monkeypatch.setattr(web_clients, "resident_api", SimpleNamespace(get_resident_runtime_route=route))
     monkeypatch.setattr(web_clients, "execution_api", SimpleNamespace(runtime_catalog=catalog))
-    monkeypatch.setattr(http_auth, "_get_session_username", lambda _handler: "test-actor")
     monkeypatch.setattr(resident_record_domain, "resolve_resident_runtime_target", Mock(side_effect=AssertionError("Web cannot access Lineage runtime ports")))
     handler = _ResponseHarness()
     parsed = urlparse(f"/api/agent-workbench/agent-runtime-catalog?resident_id={resident_id}")
-    portal._AGENT_WORKBENCH_HTTP.runtime_catalog(handler, parsed, '')
+    portal._AGENT_WORKBENCH_HTTP.runtime_catalog(handler, parsed, 'test-actor')
     assert handler.status == 200
     payload = json.loads(handler.wfile.getvalue())
     assert payload["account_id"] == "bound-route"
@@ -389,6 +388,6 @@ def test_runtime_catalog_uses_authorized_society_service_route(resident_record, 
     catalog.assert_called_once_with(account_id="bound-route", backend="codex", include_backends=False)
     route.side_effect = PermissionError("not visible")
     denied = _ResponseHarness()
-    portal._AGENT_WORKBENCH_HTTP.runtime_catalog(denied, parsed, '')
+    portal._AGENT_WORKBENCH_HTTP.runtime_catalog(denied, parsed, 'test-actor')
     assert denied.status == 403
     assert catalog.call_count == 1

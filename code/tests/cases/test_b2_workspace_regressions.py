@@ -85,7 +85,7 @@ def test_fork_watchboard_survives_source_removal(tmp_path, monkeypatch):
     root = watchboard._watchboard_root(source)
     root.mkdir(parents=True)
     (root / 'script.py').write_text('fixture')
-    watchboard.inherit_watchboard(source, child)
+    watchboard.inherit_watchboard(source, resident_folder=Path(child['folder']))
     shutil.rmtree(tmp_path / 'source')
     assert not watchboard.has_watchboard(child)
     assert (watchboard._watchboard_root(child) / 'script.py').read_text() == 'fixture'

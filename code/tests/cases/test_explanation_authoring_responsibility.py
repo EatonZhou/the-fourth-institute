@@ -65,20 +65,12 @@ def authoring_case(personal, workspace, monkeypatch, tmp_path):
         return {'address': record['owned_workspace_id'] + '/file/' + name,
                 'sha256': hashlib.sha256(data).hexdigest()}
 
-    calls, provisions, capability_calls = [], [], []
-    original_capability = resident_protocol.reporting_creation_allowed
-
-    def creation_allowed(resident_id, actor, message_id=''):
-        capability_calls.append((resident_id, actor, message_id))
-        return original_capability(resident_id, actor, message_id)
-
-    # Observe the real authenticated service bridge; do not bypass its policy.
-    monkeypatch.setattr(resident_protocol, 'reporting_creation_allowed', creation_allowed)
+    calls, provisions = [], []
 
     def set_policy(initiative):
         resident_reporting.update(author, 'newcomer', {'reporting': {'initiative': initiative, 'quality': 'medium'}})
 
-    set_policy('medium')
+    set_policy('off')
 
     def dispatch(actor, name, args, key=''):
         try:
@@ -109,7 +101,7 @@ def authoring_case(personal, workspace, monkeypatch, tmp_path):
                            permissions=permissions, root=root, source=record['owned_workspace_id'],
                            authoring=authoring, reviews=reviews, media=media, post=post, calls=calls,
                            provisions=provisions, workspace=workspace, set_policy=set_policy,
-                           capability_calls=capability_calls, policy_owner=resident_reporting_policy)
+                           policy_owner=resident_reporting_policy)
 
 
 def test_medium_user_request_uses_authenticated_fixed_report_creator_once(authoring_case):
@@ -293,129 +285,70 @@ def test_authoring_dispatch_still_checks_formal_delivery_permission(authoring_ca
 
 @pytest.mark.parametrize('state', ['off', 'unknown'])
 @pytest.mark.parametrize('quality', ['medium', 'high'])
-def test_disabled_or_unknown_capability_creates_no_state_or_delivery(authoring_case, monkeypatch, state, quality):
+def test_authoring_uses_resource_and_role_permissions_not_prompt_settings(authoring_case, monkeypatch, state, quality):
     e = authoring_case
     ref = e.package()
     e.api.register(ref, e.author)
-    if state == 'off':
-        e.set_policy('off')
-    else:
+    if state == 'unknown':
         monkeypatch.setattr(e.policy_owner, 'effective', lambda *a, **kw: {'state': 'unknown'})
-    before = sorted(str(p.relative_to(e.root)) for p in e.root.rglob('*'))
-    with pytest.raises(PermissionError, match='汇报能力未开启或配置未确认'):
-        e.media.start(**ref, actor='newcomer', quality=quality)
-    assert not e.authoring.root.exists()
-    assert before == sorted(str(p.relative_to(e.root)) for p in e.root.rglob('*'))
-    assert e.capability_calls == [(e.author, 'newcomer', '')]
-    assert not e.calls and not e.provisions
+    if quality == 'high':
+        with pytest.raises(PermissionError, match='synthetic reviewer provisioning refused'):
+            e.media.start(**ref, actor='newcomer', quality=quality)
+        assert len(e.provisions) == 1 and not e.calls
+    else:
+        task = e.media.start(**ref, actor='newcomer', quality=quality)['authoring']
+        assert task['status'] == 'submitted'
+        assert task['subject']['responsible_resident_id'] == e.author
+        assert task['requested_by'] == 'newcomer'
+        assert len(e.calls) == 1 and not e.provisions
 
 
-def test_disabled_capability_does_not_mutate_or_replay_existing_authoring(authoring_case):
+def test_prompt_setting_changes_do_not_mutate_or_replay_existing_authoring(authoring_case):
     e = authoring_case
     ref = e.package()
     e.api.register(ref, e.author)
     task = e.media.start(**ref, actor='newcomer')['authoring']
     path = e.authoring.root / (task['id'] + '.json')
     original = path.read_bytes()
-    e.set_policy('off')
-    calls = len(e.capability_calls)
+    e.set_policy('high')
     assert e.authoring.read(task['id'], 'newcomer')['id'] == task['id']
     assert e.media.status(**ref, actor='newcomer')['authoring']['id'] == task['id']
     assert e.media.start(**ref, actor='newcomer')['authoring']['id'] == task['id']
     assert path.read_bytes() == original
-    assert len(e.calls) == 1 and len(e.capability_calls) == calls
+    assert len(e.calls) == 1 and not e.provisions
 
 
 @pytest.mark.parametrize('state', ['off', 'unknown'])
-def test_disabled_capability_rejects_failed_delivery_retry_without_mutation(authoring_case, monkeypatch, state):
+def test_retry_preserves_formal_delivery_denial_regardless_of_prompt_setting(authoring_case, monkeypatch, state):
     e = authoring_case
     ref = e.package()
     e.api.register(ref, e.author)
     e.permissions.deny('newcomer', e.author, '@message')
-    attempted_delivery = []
-
+    attempted = []
     def dispatch(actor, name, args, key=''):
-        attempted_delivery.append((actor, name, args['resident_id'], key))
+        attempted.append((actor, name, args['resident_id'], key))
         return review.invoke(actor, name, args, key)
-
     e.authoring.call = dispatch
+    if state == 'unknown':
+        monkeypatch.setattr(e.policy_owner, 'effective', lambda *a, **kw: {'state': 'unknown'})
     status, body = e.post(ref, message_id='msg_untrusted_body_selector')
     assert status == 200
     task = body['media']['authoring']
-    assert task['status'] == 'submission_failed'
-    expected_call = (e.author, 'newcomer', '')
-    assert e.capability_calls and all(call == expected_call for call in e.capability_calls)
-    initial_checks = len(e.capability_calls)
-    assert attempted_delivery == [('newcomer', 'DeliverMessage', e.author, 'quality-authoring:' + task['id'])]
-    original = {str(p): p.read_bytes() for p in e.authoring.root.rglob('*') if p.is_file()}
-    original_media = {str(p): p.read_bytes() for p in e.root.rglob('*') if p.is_file()}
-    if state == 'off':
-        e.set_policy('off')
-    else:
-        monkeypatch.setattr(e.policy_owner, 'effective', lambda *a, **kw: {'state': 'unknown'})
-    with pytest.raises(PermissionError, match='汇报能力未开启或配置未确认'):
-        e.media.start(**ref, actor='newcomer')
-    assert original == {str(p): p.read_bytes() for p in e.authoring.root.rglob('*') if p.is_file()}
-    assert original_media == {str(p): p.read_bytes() for p in e.root.rglob('*') if p.is_file()}
-    assert e.authoring.read(task['id'], 'newcomer')['attempts'] == 1
-    assert len(e.capability_calls) > initial_checks
-    assert all(call == expected_call for call in e.capability_calls)
-    assert len(attempted_delivery) == 1
-    assert e.calls == [] and e.provisions == []
-
-
-@pytest.mark.parametrize('quality', ['medium', 'high'])
-def test_creation_bridge_exception_fails_before_new_state_or_dispatch(authoring_case, monkeypatch, quality):
-    e = authoring_case
-    ref = e.package()
-    e.api.register(ref, e.author)
-    observed = []
-
-    def unavailable(resident_id, actor, message_id=''):
-        observed.append((resident_id, actor, message_id))
-        raise RuntimeError('synthetic creation bridge unavailable')
-
-    monkeypatch.setattr(resident_protocol, 'reporting_creation_allowed', unavailable)
-    before = {str(p): p.read_bytes() for p in e.root.rglob('*') if p.is_file()}
-    with pytest.raises(PermissionError, match='无法确认汇报创作能力') as denied:
-        e.media.start(**ref, actor='newcomer', quality=quality)
-    assert 'synthetic creation bridge unavailable' not in str(denied.value)
-    assert observed == [(e.author, 'newcomer', '')]
-    assert not e.authoring.root.exists()
-    assert before == {str(p): p.read_bytes() for p in e.root.rglob('*') if p.is_file()}
-    assert not e.calls and not e.provisions
-
-
-def test_unavailable_creation_bridge_is_not_used_to_read_submitted_task(authoring_case, monkeypatch):
-    e = authoring_case
-    ref = e.package()
-    e.api.register(ref, e.author)
-    task = e.media.start(**ref, actor='newcomer')['authoring']
-    original = {str(p): p.read_bytes() for p in e.authoring.root.rglob('*') if p.is_file()}
-
-    def forbidden(*args, **kwargs):
-        pytest.fail('existing authoring must not query the creation bridge')
-
-    monkeypatch.setattr(resident_protocol, 'reporting_creation_allowed', forbidden)
-    assert e.authoring.read(task['id'], 'newcomer')['id'] == task['id']
-    assert e.media.status(**ref, actor='newcomer')['authoring']['id'] == task['id']
-    assert e.media.start(**ref, actor='newcomer')['authoring']['id'] == task['id']
-    assert original == {str(p): p.read_bytes() for p in e.authoring.root.rglob('*') if p.is_file()}
-    assert len(e.calls) == 1 and not e.provisions
+    assert task['status'] == 'submission_failed' and task['attempts'] == 1
+    again = e.media.start(**ref, actor='newcomer')['authoring']
+    assert again['id'] == task['id'] and again['status'] == 'submission_failed'
+    assert again['attempts'] == 2 and 'message_id' not in again
+    assert attempted == [('newcomer', 'DeliverMessage', e.author, 'quality-authoring:' + task['id'])] * 2
+    assert not e.provisions
 
 
 @pytest.mark.parametrize('denied', ['source', 'report'])
-def test_source_and_proof_authorization_precedes_creation_bridge(authoring_case, monkeypatch, denied):
+def test_source_and_registered_report_authorization_still_precede_authoring(authoring_case, denied):
     e = authoring_case
     ref = e.package()
     saved = e.api.register(ref, e.author)
     e.api.register(ref, 'newcomer')
     e.permissions.deny('newcomer', e.source if denied == 'source' else saved['report_id'])
-
-    def forbidden(*args, **kwargs):
-        pytest.fail('creation bridge must not precede source and Report authorization')
-
-    monkeypatch.setattr(resident_protocol, 'reporting_creation_allowed', forbidden)
     with pytest.raises(PermissionError):
         e.media.start(**ref, actor='newcomer')
     assert not e.authoring.root.exists()

@@ -3,12 +3,27 @@
 :module: resource.service
 :importance: P1
 """
+import os
+import uuid
+
 import pytest
 
 from management_common.portal_database import portal_database, _database_schema
 from scripts.migrate_installed_database import convert, preservation_facts
 from tests.cases.test_family_chat_preferences import family_chat, lineage, charters, future_creation_store  # noqa: F401
 from tests.cases.test_workspace_resource_rename import workspace  # noqa: F401
+
+
+@pytest.fixture(autouse=True)
+def isolated_storage_namespace(isolate_portal_databases, monkeypatch, tmp_path):
+    # Installed-upgrade probes deliberately commit historical table shapes.
+    # A failed preview must not leave those shapes in the next case's schema.
+    monkeypatch.setenv('PORTAL_DATABASE_NAMESPACE',
+                       os.environ['PORTAL_DATABASE_NAMESPACE'][:24] + '_' + uuid.uuid4().hex[:12])
+    # The session's default accounts belong to the previous namespace. Register
+    # the same explicit synthetic site in this case's fresh schema as well.
+    from tests.cases.account_registration_test_support import register_site_defaults
+    register_site_defaults(monkeypatch, tmp_path / 'migration-accounts')
 
 
 def test_preservation_digest_ignores_retired_columns_and_accepts_their_absence(workspace):
@@ -31,7 +46,11 @@ def test_installed_v65_preview_commit_and_reentry_preserve_records(family_chat, 
     from tests.cases.isa_test_support import ACTOR
     from scripts import migrate_deleted_identities
     facade, member = family_chat
-    controls.change(facade['resident_id'], ACTOR, member, 'exclude', True)
+    # Build the historical stored policy directly: Exclude is no longer a
+    # public control, but its durable value must survive an installed upgrade.
+    with get_lineage_data_store().database.transaction() as c:
+        c.execute('INSERT INTO family_chat_preferences(facade_id,actor,excluded_member_ids) VALUES (%s,%s,%s)',
+                  (facade['resident_id'], ACTOR, [member]))
     message = {'message_id': 'legacy_migration_request', 'author_id': ACTOR}
     routing = family_facade.routing_snapshot(facade, message)
     registry = get_registry_store()
@@ -59,6 +78,11 @@ def test_installed_v65_preview_commit_and_reentry_preserve_records(family_chat, 
         c.execute('CREATE TABLE IF NOT EXISTS resource_index_records(record_json TEXT)')
     database = get_lineage_data_store().database
     with database.transaction() as c:
+        # Registry format labels are descriptive; only the structures used by
+        # this controlled migration establish its compatibility. Unrelated
+        # installed features may own additional tables in the same schema.
+        c.execute(f"UPDATE \"{registry.database.schema}\".registry_meta SET value='fixture.descriptive' WHERE key='schema'")
+        c.execute(f'CREATE TABLE "{registry.database.schema}".fixture_unrelated (id TEXT PRIMARY KEY)')
         c.execute(f'ALTER TABLE "{registry.database.schema}".deleted_identities RENAME TO retired_identities')
         c.execute(f'ALTER INDEX "{registry.database.schema}".deleted_identities_pkey RENAME TO retired_identities_pkey')
         c.execute('ALTER TABLE family_chat_preferences DROP COLUMN muted_member_ids')
@@ -103,7 +127,14 @@ def test_installed_v65_preview_commit_and_reentry_preserve_records(family_chat, 
         applied = convert(c, relocate_legacy_articles=True, expected_article_plan=proposal, require_article_targets=True)
         assert applied['preservation'] == before
         LineageDataStore._initialize(c)
-    assert controls.read(facade, ACTOR)['excluded_member_ids'] == [member]
+    assert controls.read(facade, ACTOR)['muted_member_ids'] == [member]
+    with database.read() as c:
+        assert c.execute('SELECT excluded_member_ids FROM family_chat_preferences WHERE facade_id=%s AND actor=%s',
+                         (facade['resident_id'], ACTOR)).fetchone()[0] == [member]
+        assert c.execute(f'SELECT value FROM "{registry.database.schema}".registry_meta WHERE key=%s',
+                         ('schema',)).fetchone()[0] == 'fixture.descriptive'
+        assert c.execute('SELECT to_regclass(%s)',
+                         (f'"{registry.database.schema}".fixture_unrelated',)).fetchone()[0]
     assert family_facade.routing_snapshot(facade, message) == routing
     record = registry.get('article', article_id)
     assert record['canonical_root'] == str(target)
@@ -137,6 +168,38 @@ def test_installed_v65_preview_commit_and_reentry_preserve_records(family_chat, 
         row = c.execute(f'SELECT document_json FROM "{registry.database.schema}".registry_documents '
                         "WHERE collection='project_registry' AND document_id='projects'").fetchone()
         assert next(p for p in articles.stored_json(row[0])['projects'] if p['id'] == project_id)['path'] == 'projects:' + project_id
+
+
+@pytest.mark.parametrize('damage', ['missing_document_field', 'missing_identity_index'])
+def test_installed_conversion_rolls_back_required_registry_damage(lineage, workspace, monkeypatch, damage):
+    """Actual migration dependencies fail locally and never leave half-renamed identities."""
+    from psycopg.errors import UndefinedColumn, UndefinedTable
+    from management_portal.resources.registry_store import get_registry_store
+    from management_portal.society_service.state_store import get_lineage_data_store
+    from scripts import migrate_deleted_identities
+
+    registry = get_registry_store()
+    registry._ensure()
+    schema = registry.database.schema
+    database = get_lineage_data_store().database
+    with database.transaction() as c:
+        c.execute(f'ALTER TABLE "{schema}".deleted_identities RENAME TO retired_identities')
+        c.execute(f'ALTER INDEX "{schema}".deleted_identities_pkey RENAME TO retired_identities_pkey')
+        if damage == 'missing_document_field':
+            c.execute(f'ALTER TABLE "{schema}".registry_documents RENAME COLUMN document_json TO saved_json')
+        else:
+            c.execute(f'ALTER TABLE "{schema}".retired_identities DROP CONSTRAINT retired_identities_pkey')
+    monkeypatch.setattr(migrate_deleted_identities, 'require_database_alone', lambda _c: None)
+    error = UndefinedColumn if damage == 'missing_document_field' else UndefinedTable
+    with pytest.raises(error):
+        with database.transaction() as c:
+            convert(c)
+    with database.read() as c:
+        assert c.execute('SELECT to_regclass(%s)', (f'"{schema}".retired_identities',)).fetchone()[0]
+        assert c.execute('SELECT to_regclass(%s)', (f'"{schema}".deleted_identities',)).fetchone()[0] is None
+        if damage == 'missing_document_field':
+            assert c.execute('SELECT column_name FROM information_schema.columns WHERE table_schema=%s '
+                             "AND table_name='registry_documents' AND column_name='document_json'", (schema,)).fetchone() is None
 
 
 def test_unrecognized_schema_refuses_before_changes(future_creation_store, workspace):

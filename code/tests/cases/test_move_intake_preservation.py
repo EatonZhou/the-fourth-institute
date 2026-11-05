@@ -27,7 +27,7 @@ def test_unwound_process_does_not_leave_directory_users_intake_closed(users, mon
             patch.setattr(module.shutil,'copytree',lambda *a,**kw: (_ for _ in ()).throw(SystemExit('process lost')))
             patch.setattr(mover,'abort',lambda *_:None)
             with pytest.raises(SystemExit):
-                mover.prepare(users.source,users.source.with_name('target'),owner_id='move-owner',origin='created',actor='alice',terminate=stop)
+                mover.prepare(users.source,users.source.with_name('target'),owner_id='move-owner',actor='alice',terminate=stop)
         DirectoryMoveStore().recover(dependencies=lambda *_:None)
         assert intake(users) == [True,True,False]
     finally:

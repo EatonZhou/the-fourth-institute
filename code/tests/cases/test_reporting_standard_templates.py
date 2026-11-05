@@ -45,7 +45,6 @@ def test_standard_template_matrix_uses_effective_settings(resident_record, initi
     for path in paths:
         body = Template(path.read_text()).substitute(code_root=str(Path(__file__).resolve().parents[2])).strip()
         assert body in part.content
-    assert reporting.creation_allowed(rid) is (initiative != "off")
     if initiative == "off":
         assert "汇报功能：不开启" in part.content and "明确要求汇报" in part.content
         assert "普通答复、业务处理及业务产物照常完成" in part.content
@@ -109,13 +108,11 @@ def test_unconfigured_personal_entries_use_computed_default_without_writes(futur
     read = reporting.read(rid, owner)
     assert read["runtime_settings"]["reporting"] == policies.AMA_DEFAULT
     assert read["reporting_effective"]["configured"] is False
-    assert reporting.creation_allowed(rid)
     assert _policy(prompts.build_resident_prompt(records.find_resident(rid), {"message": "请汇报"}))["quality"] == "high"
     assert resident_catalog.get_catalog().state_store.resident_record(rid) == before
     reporting.update(rid, owner, {"reporting": {"initiative": "off", "quality": "low"}})
     assert reporting.effective(rid)["initiative"] == "off"
     assert reporting.read(rid, owner)["runtime_settings"]["reporting"] == {"initiative": "off", "quality": "low"}
-    assert not reporting.creation_allowed(rid)
 
 
 def test_title_and_forged_personal_metadata_do_not_change_defaults(resident_record):
@@ -124,7 +121,6 @@ def test_title_and_forged_personal_metadata_do_not_change_defaults(resident_reco
                "family": {"role": "facade", "personal_ama_id": rid, "family_id": "arbitrary"}}
     assert policies.configured(pretend) == policies.DEFAULT
     assert reporting.effective(rid)["initiative"] == "off"
-    assert not reporting.creation_allowed("resident_missing")
 
 
 def test_reviewer_protocol_uses_real_owner_and_read_is_not_provisioning(future_creation_store, charters, monkeypatch):

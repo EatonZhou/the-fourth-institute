@@ -21,10 +21,10 @@ def test_move_recovery_preserves_replacement_at_delete_boundary(workspace, monke
             patch.setattr(module.shutil, "copytree", lambda *a, **k: (_ for _ in ()).throw(SystemExit("crash")))
             patch.setattr(mover, "abort", lambda *_: None)
             with pytest.raises(SystemExit):
-                mover.prepare(workspace.root, target, owner_id=WID, origin="created", actor="alice", terminate=lambda _: None, operation_id="boundary")
+                mover.prepare(workspace.root, target, owner_id=WID, actor="alice", terminate=lambda _: None, operation_id="boundary")
         path = cleanup_path(mover.get("boundary")["staging"])
     else:
-        mover.prepare(workspace.root, target, owner_id=WID, origin="created", actor="alice", terminate=lambda _: None, operation_id="boundary")
+        mover.prepare(workspace.root, target, owner_id=WID, actor="alice", terminate=lambda _: None, operation_id="boundary")
         path = target
     original = module.remove_path
     injected = []

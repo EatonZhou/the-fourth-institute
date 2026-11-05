@@ -75,7 +75,7 @@ def test_cleanup_waits_for_move_and_does_not_starve_other_locations(workspace):
     retention.declare(artifact, category='background', owner_id='job', finished_at=now)
     mover = DirectoryMoveStore()
     target = workspace.root.with_name('moved')
-    operation = mover.prepare(workspace.root, target, owner_id=WID, origin='created',
+    operation = mover.prepare(workspace.root, target, owner_id=WID,
                               actor='alice', terminate=lambda _: None)
     retention.sweep(now=now + timedelta(days=8))
     other = workspace.root.with_name('independent-cleanup')

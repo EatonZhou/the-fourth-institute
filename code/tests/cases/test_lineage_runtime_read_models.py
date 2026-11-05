@@ -101,7 +101,7 @@ def test_control_reads_exclude_contents_and_follow_external_writes(tmp_path):
 def test_lineage_data_health_reports_its_schema_without_reading_table_sizes(monkeypatch):
     """LineageData 健康信息只报告 schema 与数据库
 
-    健康信息只含 schema 版本和数据库名，不报告任何表的行数；读取时只查询 lineage_meta 一条语句。
+    健康信息只含 schema 版本和数据库名；允许元数据表存在性探测，不读取业务表或表大小。
 
     :aspects: functional
     """
@@ -116,7 +116,9 @@ def test_lineage_data_health_reports_its_schema_without_reading_table_sizes(monk
 
     monkeypatch.setattr(store.database, 'read', traced_read)
     assert store.health() == {'schema': LINEAGE_DATA_SCHEMA, 'database': store.database.display_name}
-    assert len(statements) == 1 and 'lineage_meta' in statements[0]
+    assert len(statements) == 2
+    assert 'to_regclass' in statements[0] and 'lineage_meta' in statements[0]
+    assert statements[1] == "select value from lineage_meta where key='schema'"
 
 
 def test_relay_uses_committed_sequence_and_never_reuses_deleted_tail(tmp_path):

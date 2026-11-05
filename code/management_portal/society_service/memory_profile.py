@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import gc
 import json
+import logging
 import os
 from pathlib import Path
 import signal
@@ -24,6 +25,7 @@ import tracemalloc
 from management_common.file_permissions import atomic_write_private_bytes, create_private_file, ensure_private_directory
 from management_common.instance_manifest import instance_runtime_root
 
+_LOG = logging.getLogger(__name__)
 _running = threading.Lock()
 _role = 'main'
 _runtime_provider = None
@@ -214,8 +216,9 @@ def start() -> threading.Thread | None:
         target = folder / f"society-memory-profile-{os.getpid()}-{time.time_ns()}.jsonl"
         if trace_allocations:
             tracemalloc.start(4)
-    except Exception:
+    except Exception as exc:
         # Optional observation must not prevent the business owner from starting.
+        _LOG.warning('Optional memory capture setup failed (%s)', type(exc).__name__)
         _running.release()
         return None
 
@@ -254,7 +257,8 @@ def start() -> threading.Thread | None:
     thread = threading.Thread(target=run, name="society-memory-profile", daemon=True)
     try:
         thread.start()
-    except Exception:
+    except Exception as exc:
+        _LOG.warning('Optional memory capture thread failed to start (%s)', type(exc).__name__)
         if trace_allocations:
             tracemalloc.stop()
         _running.release()

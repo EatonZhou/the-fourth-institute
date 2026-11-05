@@ -159,10 +159,10 @@ def test_real_entries_refuse_persistent_reservations(admission_world, monkeypatc
         if phase == 'recovery':
             with pytest.raises(SystemExit):
                 mover.prepare(world.source, world.target, owner_id=world.moving['resident_id'],
-                    origin='created', actor='alice', terminate=terminate, operation_id=operation)
+                    actor='alice', terminate=terminate, operation_id=operation)
         else:
             mover.prepare(world.source, world.target, owner_id=world.moving['resident_id'],
-                origin='created', actor='alice', terminate=terminate, operation_id=operation)
+                actor='alice', terminate=terminate, operation_id=operation)
     if phase == 'recovery':
         # A new store/process still sees the durable reservation after scope exit.
         assert DirectoryMoveStore().get(operation)['phase'] == 'prepared'
@@ -231,7 +231,7 @@ def test_move_drains_real_admission_without_lock_inversion(admission_world, monk
                 lifecycle.directory_move_execution_scope([world.moving], actor='alice') as stop:
             mover = DirectoryMoveStore()
             operation = mover.prepare(world.source, world.target, owner_id=world.moving['resident_id'],
-                origin='created', actor='alice', terminate=stop)
+                actor='alice', terminate=stop)
             mover.abort(operation)
 
     with ThreadPoolExecutor(max_workers=2) as pool:
@@ -264,7 +264,7 @@ def test_unrelated_directory_can_submit_and_launch_while_copying(admission_world
     with lifecycle.directory_move_execution_scope([world.moving], actor='alice') as stop:
         mover = DirectoryMoveStore()
         operation = mover.prepare(world.source, world.target, owner_id=world.moving['resident_id'],
-            origin='created', actor='alice', terminate=stop)
+            actor='alice', terminate=stop)
         mover.abort(operation)
     assert world.calls == ['submit']
     assert len(world.launches) == 1
@@ -286,7 +286,7 @@ def test_resident_created_after_snapshot_cannot_enter_source_or_target(admission
     with lifecycle.directory_move_execution_scope([world.moving], actor='alice') as stop:
         mover = DirectoryMoveStore()
         operation = mover.prepare(world.source, world.target, owner_id=world.moving['resident_id'],
-            origin='created', actor='alice', terminate=stop)
+            actor='alice', terminate=stop)
         mover.abort(operation)
     assert checked == [world.source, world.target]
     assert world.calls == []

@@ -22,6 +22,8 @@ RULE_DIGESTS = {
     3: "44faacdd2f32322e64a43d798b747fc0419de8bb4b84d69b5ad671046de7fa0d",
     # Event payloads keep continued_member_id and direct_member_id.
     4: "b0655f0fa0faa073538a847dd4887e05df53ac028e7f2721179f763a322e5d24",
+    # Pending events retain their durable owner-recovery decision.
+    5: "7555731d1abde62368ee6ae2fca9540c12446ca81727d92b6e753cfbaa7674f2",
 }
 
 
@@ -148,6 +150,7 @@ def test_reads_normalize_when_another_rule_wrote_the_stored_runtime(database, mo
     number in lineage_meta, so it keeps normalizing what it reads.
     """
     held = {"claim_token": "claim_original", "cursor": "held_cursor",
+            "owner_recovery_checked": True,
             "recovery_blocked": {"reason": "manual_recovery"}, "opaque_history": {"keep": True}}
     expired = {"wire_id": "wire", "cursor": "expired_cursor",
                "recovery_blocked": {"reason": "manual_recovery"}, "opaque_history": ["keep"]}

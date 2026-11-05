@@ -199,10 +199,10 @@ def _preflight_providers(ctx, targets, leader):
 
 
 def create_role(ctx, role, roles, near=""):
+    from .. import resident_protocol
+
     chosen = ctx.resident_settings.get(role["key"], {})
     if role["from"] == "fork":
-        from .. import resident_protocol
-
         source = roles[role["fork_of"]]["id"]
         provider = _fork_provider(
             role, chosen, resident_protocol.get_resident(source, ctx.actor)["provider"]
@@ -219,11 +219,21 @@ def create_role(ctx, role, roles, near=""):
     }
     account = chosen.get("account") or role.get("account", "")
     title = str(_render(role.get("title") or ctx.title, ctx, roles))
+    rendered_settings = _render(settings, ctx, roles)
+    follow_up_settings = rendered_settings
     if role["from"] == "new":
+        # Creation accepts Execution settings only. Reporting belongs to the
+        # Resident and is configured through its authorized settings owner.
+        runtime_settings = dict(rendered_settings)
+        follow_up_settings = {}
+        if "reporting" in runtime_settings:
+            from .. import resident_reporting
+
+            follow_up_settings["reporting"] = resident_reporting.normalize(runtime_settings.pop("reporting"))
         payload = {
             "title": title,
             "backend": provider,
-            "runtime_settings": _render(settings, ctx, roles),
+            "runtime_settings": runtime_settings,
         }
         if near:
             payload["near_resident_id"] = near
@@ -249,22 +259,22 @@ def create_role(ctx, role, roles, near=""):
             payload["backend_route_id"] = account
         created = lineage_branches().fork_lineage_resident(ctx.lineage_id, payload, ctx.actor)
         resident_id = created["created_resident"]["id"]
-        if settings:
-            try:
-                resident_protocol.update_resident_runtime_settings(
-                    resident_id,
-                    ctx.actor,
-                    {"runtime_settings": _render(settings, ctx, roles)},
-                )
-            except Exception:
-                lineage_graph_edits().commit_lineage_edit(
-                    ctx.lineage_id,
-                    ctx.actor,
-                    lambda body: None,
-                    reason="清理设置失败的模板 Fork",
-                    resident_ids=[resident_id],
-                )
-                raise
+    if follow_up_settings:
+        try:
+            resident_protocol.update_resident_runtime_settings(
+                resident_id,
+                ctx.actor,
+                {"runtime_settings": follow_up_settings},
+            )
+        except Exception:
+            lineage_graph_edits().commit_lineage_edit(
+                ctx.lineage_id,
+                ctx.actor,
+                lambda body: None,
+                reason="清理设置失败的模板 Resident",
+                resident_ids=[resident_id],
+            )
+            raise
     return {"id": resident_id, "title": title}
 
 

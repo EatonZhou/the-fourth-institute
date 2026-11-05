@@ -20,10 +20,23 @@ from management_portal import portal_features
 
 _NAVIGATION_SCRIPT = b"/static/portal_nav.js"
 
+CORE_BUILTINS = {
+    "development": {"title": "Portal 开发投影", "path": "/development", "description": "Portal 的架构、阶段进展与未来方向工作台"},
+    "studio": {"title": "投影工坊", "path": "/workbenches?panel=studio", "description": "Workbenches 中由普通 Lineage 提供的 AI 页面生成模块"},
+}
+
+
+@cache
+def builtins() -> dict[str, dict]:
+    """Core page entries plus installed features, shared with the Workbench store."""
+    found = dict(CORE_BUILTINS)
+    for _feature, builtin in portal_features.contributions("workbench.builtin"):
+        found[builtin["name"]] = {key: builtin[key] for key in ("title", "path", "description")}
+    return found
+
 
 @cache
 def manifest() -> dict:
-    from management_portal.workbench_projections.store import CORE_BUILTINS, builtins
     from management_common.distribution_features import included_features
 
     return {

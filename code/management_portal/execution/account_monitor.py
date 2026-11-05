@@ -116,7 +116,11 @@ class AccountMonitor:
                     catalog = {"fresh": True, "checked_at": time.time(),
                                "models": [m if isinstance(m, str) else m["id"] for m in native.get("models", []) if isinstance(m, str) or m.get("enabled", True)],
                                "efforts_by_model": native.get("efforts_by_model", {}), "default_model": native.get("default_model", "")}
-                except Exception:
+                except Exception as error:
+                    # Catalog exceptions may contain credentials or URLs. Keep
+                    # the failure observable without retaining their raw text.
+                    logger.warning("Account catalog read failed for %s (%s): %s",
+                                   account.account_id, account.provider, type(error).__name__)
                     catalog = {"fresh": False, "checked_at": time.time(), "models": []}
             sample["selection_catalog"] = catalog
             with self._lock:

@@ -4,32 +4,32 @@ type: decision
 project: AI员工
 created_at: '2026-09-01'
 version:
-  number: 42
-  created_at: '2026-09-01'
+  number: 49
+  created_at: "2026-09-01"
   created_by:
-    user: ''
-    agent: ''
-  updated_at: '2026-10-30T19:19:38Z'
+    user: ""
+    agent: ""
+  updated_at: "2026-11-05T13:46:51Z"
   updated_by:
-    user: ''
-    agent: resident_73cb83291316
+    user: ""
+    agent: "resident_2e9ea0072551"
 importance: 10
 metaness: 2
 ai_generated: false
 links:
   source:
-  - ${code_root}/management_portal/execution/provider_failures.py
-  - ${code_root}/management_portal/execution/diagnostics.py
-  - ${code_root}/management_portal/execution/provider_catalog.py
-  - ${code_root}/management_portal/execution/transport.py
-  - ${code_root}/management_portal/execution/contracts.py
-  - ${code_root}/management_portal/execution/scheduler.py
-  - ${code_root}/management_portal/execution/service.py
-  - ${code_root}/management_portal/execution/runtime.py
-  - ${code_root}/tests/cases/test_execution_service_contracts.py
-  - ${code_root}/tests/cases/test_execution_worker_control.py
-  - ${code_root}/tests/cases/test_execution_context.py
-  - ${code_root}/management_portal/execution/requests.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/execution/provider_failures.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/execution/diagnostics.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/execution/provider_catalog.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/execution/transport.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/execution/contracts.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/execution/scheduler.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/execution/service.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/execution/runtime.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_execution_service_contracts.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_execution_worker_control.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_execution_context.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/execution/requests.py
   related:
   - decision_ae422b92c6f3
   - decision_f1331d57be89
@@ -106,7 +106,7 @@ queued ──claim──> claimed ──start──> running ──finish──>
 
 ## 执行请求（ExecutionRequest）
 
-当前请求使用 `tfi.execution-request.v8`（`schema_version` 为 `8`）。原带 `provider_route_constraint` 的 v9 独立路线已移除，历史状态见 decision_6c2f91a7d84e，不再作为当前请求格式接受。`ExecutionRequest.new()` 自动生成 `execution-` 加 24 位小写十六进制的 ID；没有显式给出 `agent_id` 时，依次使用 `binding_id` 和新生成的执行 ID。
+当前请求生产者写出 `tfi.execution-request.v8`（`schema_version` 为 `8`）。描述性数字标签不选择另一解析分支：读取器按实际字段消费同族 `tfi.execution-request.v<数字>` 标签，结构版本须为非负整数且不得为布尔值；其他格式前缀、非法结构与缺失必需业务字段仍拒绝。原带 `provider_route_constraint` 的独立路线已移除，历史状态见 decision_6c2f91a7d84e；接受同族标签不恢复旧路线能力。`ExecutionRequest.new()` 自动生成 `execution-` 加 24 位小写十六进制的 ID；没有显式给出 `agent_id` 时，依次使用 `binding_id` 和新生成的执行 ID。
 
 ### 通用字段
 
@@ -116,7 +116,7 @@ queued ──claim──> claimed ──start──> running ──finish──>
 | `actor` | 必填，提交者身份，去掉空白后非空，最长 120 字符。它是执行的所有者，控制类方法用它核对调用方。 |
 | `agent_id` | 必填，执行者身份，最长 240 字符，不含 NUL。Resident 的执行使用它的 `resident_*` ID。 |
 | `prompt` | 必填，去掉空白后非空。ExecutionService 不设置独立的字符数上限，保留调用方的完整输入；实际模型上下文容量由 Provider 与 Harness 处理，无法处理时返回真实执行错误，不静默截短。 |
-| `service_type` | `agent_session`（持续会话）或 `chat_completion`（一次性生成）。 |
+| `service_type` | `agent_session`（持续会话）或 `chat_completion`（一次性文本生成）。 |
 | `provider` | Provider ID：小写字母开头，最长 64 字符，可含数字、下划线和连字符。 |
 | `operation` | 操作名，受服务类型和 Provider 的组合限制，见下表。 |
 | `priority` | 默认 0，范围 -1,000,000 到 1,000,000；数值越大越先领取。 |
@@ -128,7 +128,7 @@ queued ──claim──> claimed ──start──> running ──finish──>
 | `session` | 会话对象，见下文。 |
 | `system_instructions` | 调用方已经生成好的系统指令及附加策略。 |
 | `metadata` | JSON 对象，放业务归因和追踪信息，例如 `resident_id`、`business_type`。 |
-| `schema`、`schema_version` | 当前请求格式与结构版本；完整格式名及结构版本均须与当前规范值精确一致。 |
+| `schema`、`schema_version` | 生产者的默认格式与结构版本。读取器接受同族数字格式标签和非负整数结构版本，并校验实际消费字段；不以数字标签对齐代替数据合法性。 |
 
 请求在传输中必须携带 `identity` 对象（`tfi.operation-identity.v1`），记录这次执行的执行者、发起者和产生它的服务。它由 `agent_id` 和 `actor` 推导出来；缺少 `identity` 或它与这两个字段不一致时请求被拒绝。归属规则见 decision_ae422b92c6f3。
 
@@ -244,8 +244,6 @@ Runtime 只在 `turn` 和 `generate` 上附加指令；会话操作不计为注�
 ### 领取、开始和续租
 
 - **`scheduler.claim.wait`**：按 Worker 状态、能力、延迟时间、同一会话串行、账号额度保护、容量、派发间隔、优先级和提交者公平性领取执行。等待时间限制在 0.1 到 30 秒，默认 15 秒；租约默认 90 秒，最短 15 秒。没有可领取执行时返回空结果和原因：`worker_not_registered`、`worker_not_active`、`quota_reserve`、`capacity`、`dispatch_interval`、`deferred`、`empty` 或 `service_closing`。后者表示本服务代次正在关闭，不开始新领取；Worker 资格和能力参数仍先校验。与关闭并发但已经提交的领取必须返回原 `claimed=true` 及完整领取回执，不得改为空结果或丢弃租约。
-
-服务代次开始关闭时，在本地条件锁内设置等待关闭标记并唤醒领取、执行观察及 Worker 控制三类长轮询，不等待各轮询时限耗尽。`execution.wait` 仍先校验原 actor，按原 full/quiet 形状返回当前快照；`scheduler.control.wait` 仍先验证 Worker 与 claim_token，返回当前真实 status、cancel_requested、handover_requested 及待投递控制，不用关闭标记伪造取消、交接或终态。关闭后的新等待不再休眠。等待关闭标记只属于当前服务进程，不写执行、Worker 或租约表；新代次继续依共享持久事实工作。已经受理的变更 RPC 仍排空并返回结果，服务保留非 daemon 请求线程和原关闭等待约束。
 - **`scheduler.start`**：当前 Worker 用领取令牌把 `claimed` 原子地改为 `running`。令牌已经失效的 Worker 收到“领取资格已变化”。
 - **`scheduler.heartbeat`**：当前持有者延长 Worker 和这次执行的租约，返回是否已请求取消（`cancel_requested`）。运行中输入和交接指示通过 `scheduler.control.wait` 获取。
 
@@ -350,4 +348,15 @@ Execution 的完成状态、请求的操作类型和实际接纳的输入是不�
 
 旧 Worker 已中断的轮次也使用同一份无进展恢复预算。原生快照不能确认工具交付时，不发送继续输入，也不重做工具；每次延后计入持久预算，重新领取队列和回放已有结果不能重置次数。连续三次无新工作后明确报告恢复耗尽，保留原 Execution 与工具证据。
 
-格式名与版本须精确匹配当前规范值，校验规则见 decision_86aed2f0e8c7；本篇同时校验各字段和结构版本，不接受历史前缀或其他版本。
+请求本体采用上述同族数字标签与实际字段校验；其他前缀不接受。追加输入、轮次设置等控制封套仍精确匹配其操作格式，身份、权限、轮次、租约、取消 token、CAS 与固定内容摘要校验不变，不能将描述性版本放宽推成控制授权放宽。
+
+## 服务关闭时的长轮询
+
+服务代次开始关闭时，在本地条件锁内设置等待关闭标记并唤醒领取、执行观察及 Worker 控制三类长轮询，不等待各轮询时限耗尽。`execution.wait` 仍先校验原 actor，按原 full/quiet 形状返回当前快照；`scheduler.control.wait` 仍先验证 Worker 与 claim_token，返回当前真实 status、cancel_requested、handover_requested 及待投递控制，不用关闭标记伪造取消、交接或终态。关闭后的新等待不再休眠。等待关闭标记只属于当前服务进程，不写执行、Worker 或租约表；新代次继续依共享持久事实工作。已经受理的变更 RPC 仍排空并返回结果，服务保留非 daemon 请求线程和原关闭等待约束。
+
+
+## Worker运行环境
+
+WorkerManager 每次启动替换 Worker 时，由当前 source_root 的代码依赖指纹选择已准备好的 Python 环境，不继承长期运行管理进程的 sys.executable。依赖变更必须在发布前准备；缺少环境时替换失败并保留旧 Worker，不把无法加载新依赖的进程当作已就绪。已有 ready/activate/drain 交接语义保持不变。
+
+外部Resident工具不增加核心执行服务类型。其实现、依赖与工具专用记录由扩展自身负责，不进入Portal核心代码和发布；安装或外部服务可用性不成为Portal运行前提，工具请求失败只影响调用它的任务。

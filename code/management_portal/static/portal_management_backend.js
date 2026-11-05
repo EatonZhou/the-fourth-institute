@@ -541,7 +541,9 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
   function deleteControl(title, id, instruction, argument, reload, disabled, disabledReason = "当前身份没有删除权限。") {
     const control = node("div", undefined, {class: "backendDelete"});
     const feedback = node("p", "", {role: "alert", tabindex: "-1", hidden: true});
-    const recovery = button("查看 Backend 角色", () => {
+    const recovery = button("查看 Backend 角色", async () => {
+      await refresh(recovery.dataset.section);
+      if (destroyed) return;
       const target = sections[recovery.dataset.section].output.parentElement;
       const details = target.closest("details"); if (details) details.open = true;
       target.tabIndex = -1; target.scrollIntoView?.({block: "nearest"}); target.focus();
@@ -558,7 +560,6 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
         recovery.dataset.section = section;
         recovery.textContent = t(section === "roles" ? "查看 Backend 角色" : "查看已接入的 AI");
         recovery.hidden = false;
-        void refresh(section);
       }
     }}), disabled);
     if (disabled) remove.title = t(disabledReason);

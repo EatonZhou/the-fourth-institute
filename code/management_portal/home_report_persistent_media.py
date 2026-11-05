@@ -156,8 +156,6 @@ class PersistentMedia:
             if not require_authored(self.store,snapshot,actor,quality):
                 return submit_authoring(self.store,identifier,number,actor,quality)
             if quality == 'high':
-                from management_portal.home_report_creation import require_report_creation
-                require_report_creation(self.store, snapshot, actor)
                 from management_portal.home_report_review import ReviewService, responsible
                 ReviewService().ensure_reviewers({'kind': 'report_video',
                     'author': snapshot.get('author'),
@@ -167,8 +165,6 @@ class PersistentMedia:
             previous = self.status(identifier, number, actor, quality=quality)
             if previous and (previous['status'] in {'ready','cancelled'} or self.active(identifier,number,quality) or not retry):
                 return previous
-            from management_portal.home_report_creation import require_report_creation
-            require_report_creation(self.store, snapshot, actor)
             if not _SLOTS.acquire(blocking=False):
                 raise RuntimeError('视频生成繁忙，请稍后重试')
             directory = self.store.directory(identifier) / str(number)

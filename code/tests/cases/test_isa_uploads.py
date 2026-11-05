@@ -229,15 +229,24 @@ def test_version_envelope_only_compares_the_target_resource(monkeypatch, tmp_pat
     assert looked_up == []
 
 
-def test_upload_target_and_purpose_rules_are_checked_before_bytes_are_kept(monkeypatch):
+def test_upload_target_and_purpose_rules_are_checked_before_bytes_are_kept(monkeypatch, upload_root):
     """保存上传字节前检查目标权限、用途和文件类型"""
+    checked = []
+
+    class Residents:
+        def get_resident(self, target, caller):
+            checked.append((target, caller))
+            raise PermissionError("Resident is not visible to this caller")
+
     monkeypatch.setattr(
         "management_portal.society_service.get_society_service",
-        lambda: type("Service", (), {"resident": _Residents()})(),
+        lambda: type("Service", (), {"resident": Residents()})(),
     )
     with pytest.raises(InstructionError) as hidden:
         create("conversation_attachment", b"x", caller="stranger", target="resident_aaaaaaaaaaaa")
     assert hidden.value.code == "instruction.not_found"
+    assert checked == [("resident_aaaaaaaaaaaa", "stranger")]
+    assert not upload_root.exists()
     pdf = create("paper_pdf", b"not a pdf", media_type="application/pdf")
     with pytest.raises(InstructionError):
         resource_isa.complete_upload(pdf, b"not a pdf", actor="alice")

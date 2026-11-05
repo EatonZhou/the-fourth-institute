@@ -7,6 +7,45 @@ const path = require("node:path");
 const FILE_PATHS = new Set(["/api/resources/content", "/api/agent-workbench/link-file-raw"]);
 const REDIRECTS = new Set([301, 302, 303, 307, 308]);
 
+// Playwright's pipe is ready before Chromium necessarily publishes its separate
+// TCP debugger endpoint. Observe that publication, bounded by browser lifetime.
+function waitForNativeEndpoint(browser, profile, timeout = 10000) {
+  return new Promise((resolve, reject) => {
+    let watcher, timer, finished = false, missing;
+    function finish(error, value) {
+      if (finished) return;
+      finished = true;
+      watcher?.close();
+      clearTimeout(timer);
+      browser.off("disconnected", disconnected);
+      if (error) reject(error); else resolve(value);
+    }
+    function disconnected() { finish(new Error("Native Chromium closed before debugger endpoint was ready")); }
+    function read() {
+      try {
+        const [port, endpoint] = fs.readFileSync(path.join(profile, "DevToolsActivePort"), "utf8").trim().split(/\r?\n/);
+        if (!/^\d+$/.test(port) || Number(port) < 1 || Number(port) > 65535 ||
+            !/^\/devtools\/browser\/[a-zA-Z0-9-]+$/.test(endpoint)) throw new Error("Invalid native CDP endpoint");
+        finish(null, "ws://127.0.0.1:" + port + endpoint);
+      } catch (error) {
+        if (error.code === "ENOENT") missing = error;
+        else finish(error);
+      }
+    }
+    browser.once("disconnected", disconnected);
+    if (!browser.isConnected()) return disconnected();
+    try {
+      // Install before reading so creation between the two cannot be missed.
+      watcher = fs.watch(profile, (_event, name) => {
+        if (!finished && (!name || String(name) === "DevToolsActivePort")) read();
+      });
+      watcher.once("error", error => finish(error));
+      timer = setTimeout(() => finish(new Error("Native Chromium debugger endpoint was not published before deadline", { cause: missing })), timeout);
+      read();
+    } catch (error) { finish(error); }
+  });
+}
+
 async function installNativeFiles(context, origin) {
   const bootstrap = await context.browser().newBrowserCDPSession();
   let args;
@@ -15,9 +54,7 @@ async function installNativeFiles(context, origin) {
   // This is the fresh helper-owned profile, never a human browser profile.
   const profile = args.find(arg => arg.startsWith("--user-data-dir="))?.slice(16);
   if (!profile) throw new Error("Native Chromium profile unavailable");
-  const [port, endpoint] = fs.readFileSync(path.join(profile, "DevToolsActivePort"), "utf8").trim().split(/\r?\n/);
-  if (!/^\d+$/.test(port) || !/^\/devtools\/browser\/[a-zA-Z0-9-]+$/.test(endpoint)) throw new Error("Invalid native CDP endpoint");
-  const socket = new WebSocket("ws://127.0.0.1:" + port + endpoint);
+  const socket = new WebSocket(await waitForNativeEndpoint(context.browser(), profile));
   const pending = new Map();
   let sequence = 0;
   let closed = false;
@@ -85,8 +122,16 @@ async function installNativeFiles(context, origin) {
   });
   context.once("close", () => { closed = true; socket.close(); });
   await new Promise((resolve, reject) => {
-    socket.addEventListener("open", resolve, { once: true });
-    socket.addEventListener("error", () => reject(new Error("Native file guard connection failed")), { once: true });
+    function cleanup() {
+      socket.removeEventListener("open", opened);
+      socket.removeEventListener("error", failed);
+      socket.removeEventListener("close", failed);
+    }
+    function opened() { cleanup(); resolve(); }
+    function failed() { cleanup(); reject(new Error("Native file guard connection failed")); }
+    socket.addEventListener("open", opened, { once: true });
+    socket.addEventListener("error", failed, { once: true });
+    socket.addEventListener("close", failed, { once: true });
   });
   await send("Target.setAutoAttach", { autoAttach: true, waitForDebuggerOnStart: true, flatten: true, filter });
   return {
@@ -95,4 +140,4 @@ async function installNativeFiles(context, origin) {
   };
 }
 
-module.exports = { installNativeFiles };
+module.exports = { installNativeFiles, waitForNativeEndpoint };

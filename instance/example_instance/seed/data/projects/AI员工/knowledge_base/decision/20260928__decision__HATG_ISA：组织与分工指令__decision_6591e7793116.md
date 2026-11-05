@@ -4,22 +4,22 @@ type: decision
 project: AI员工
 created_at: '2026-09-28'
 version:
-  number: 48
-  created_at: '2026-09-28T10:45:00Z'
+  number: 50
+  created_at: "2026-09-28T10:45:00Z"
   created_by:
-    user: tfi-exported-user
-    agent: resident_2a1fc6cd272d
-  updated_at: '2026-10-31T18:16:12Z'
+    user: "weihao"
+    agent: "resident_2a1fc6cd272d"
+  updated_at: "2026-11-04T14:26:01Z"
   updated_by:
-    user: ''
-    agent: resident_24014e2b9bf6
+    user: ""
+    agent: "resident_dbcd3920b7cc"
 importance: 8
 metaness: 2
 ai_generated: false
 links:
   source:
-  - ${code_root}/management_portal/application_targets.py
-  - ${code_root}/management_portal/society_service/application_target_configuration.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/application_targets.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/application_target_configuration.py
   related:
   - decision_2fe6fd5367fb
   - decision_46c37026e8ea
@@ -57,6 +57,7 @@ links:
 | `GetProject` | 否 | 读取 Project 信息、摘要、团队、资源数量与最近修改的资源 | 对 `project_id` 有 @viewer |
 | `UpdateProject` | 是 | 修改 Project 的状态、截止日期、类型、说明、标签、摘要或头像 | 对 `project_id` 有 @admin |
 | `DeleteProject` | 是 | 删除一个 Project 及其全部内容 | 对 `project_id` 有 @admin |
+| `GetProjectDeletion` | 否 | 原删除者查询已注销项目的后续效果 | 入口免检；owner 仅允许原删除者且名称尚未重新登记 |
 | `RenameProject` | 是 | 修改 Project 的 ID 并移动项目目录，Portal 中的引用一起改 | 对 `project_id` 有 @admin |
 | `GetKnowledgeTags` | 否 | 读取 Project 登记中的知识标签 | 对“共享”有 @viewer |
 | `UpdateKnowledgeTags` | 是 | 用一份完整列表替换 Project 登记中的知识标签 | 对“共享”有 @admin |
@@ -125,6 +126,15 @@ Project 的资源操作由 ResourceService 执行；GetKnowledgeTags 与 UpdateK
 - 删除可以处理有内容的项目。项目中的 Resident 完成或停止排队任务、运行任务和 Fork 创建任务，相关迁移结束后，可以删除其 Lineage。先注销项目下的资源登记，再删除全部 Lineage（包括 Project 层 Lineage）及其中的 Resident，最后删除项目目录下的全部文件和目录。Lineage 与 Resident 目录同样直接删除，不保留任何归档；项目登记同时移除，并写入审计记录。完整顺序见 decision_4648f7fa3295。
 - 删除后不能恢复。谁可以执行由权限系统决定：默认模板要求对该 Project 有 admin，即创建者、管理员或经实例中增加的表项、临时凭证取得 admin 的主体。
 - 中途失败时返回错误，已经删除的内容不恢复；再次调用会继续删除剩余部分。资源注销失败时返回 `instruction.failed`，`details.failed` 列出失败的资源，项目文件保持不动。
+
+### `GetProjectDeletion`
+
+**原删除者只读核对 Project 已注销后的效果，不重新执行删除。**
+
+- 参数：`project_id`。
+- 结果：`project_id`、`registration_status=unregistered`、`deleted_at` 与原回执的 `effects`（status、completed、errors、attempts）。`pending` 保持未完成，不能替代 `complete`。目录清理另外查询 `GetDirectoryCleanup`。
+- ResourceService 依据持久删除回执中的 `deleted_by` 核对真实认证调用者。只有原删除者且该名称当前未重新登记时返回；其他主体、缺失回执和同名新项目均返回 `instruction.not_found`。不要求已移除对象上的权限，不泄露其他删除者的审计，也不授予删除现有项目的权限。
+- 查询不运行效果、不重试业务、不重建权限或目录。调用方不能把 DeleteProject/ResolveResource 的权限拒绝、权限隐藏的不存在或过滤列表当作完成。
 
 ### `RenameProject`
 
@@ -224,9 +234,16 @@ Notice Board 分类与 Which Resident 推荐的功能开关由当前目标 Resid
 | `GetProject` | `project_id`、`include_resources` |
 | `UpdateProject` | `project_id`、`changes` |
 | `DeleteProject` | `project_id` |
+| `GetProjectDeletion` | `project_id` |
 | `RenameProject` | `project_id`、`new_project_id`、`dry_run` |
 | `GetKnowledgeTags` | 无 |
 | `UpdateKnowledgeTags` | `tags` |
 | `MoveResident` | `lineage_id`、`resident_id`、`target_lineage_id`、`allow_empty_source` |
 | `MoveLineageObjects` | `lineage_id`、`object_ids`、`target_lineage_id` |
 | `GetMoveOperation` | `operation_id` |
+
+## Project 改名的区域登记一致性
+
+RenameProject 搬迁项目目录时，同步更新当前登记中的 `projects:<旧项目>/…` 区域引用和绝对路径。目录或文件已经不存在的登记也按前缀搬迁，不能按文件存在性跳过。Project、Workspace、Repo 与 Resident 的 ID 和绑定关系保持不变；数据库 JSON、登记文档及当前引用使用同一重写规则。历史消息、执行记录与删除时的历史事实保留原文。名称只是以旧项目名开头的其他项目不变。
+
+改名后的验收包括：全部存活 Resident 的默认 Workspace 可解析且存在，项目及附属登记均指向新路径；随后 DeleteProject 按新目录删除，不能因登记仍在旧路径而留下孤儿目录。

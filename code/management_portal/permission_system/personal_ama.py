@@ -2,12 +2,11 @@
 
 A personal AMA — its Lineage, its Residents and Families, the Workspaces in
 its folder — reaches its owner User, that User's AMA Residents and the
-Portal itself. Its owner may also lend a specific action on a specific
-resource to another principal with a temporary credential. Everyone else
-sees it as not found. This boundary holds whether the permission system is
-on or off; delegation always checks the live credential and its action.
-With the permission system on, the scheme also judges what the rule lets
-through, as it judges any other object.
+Portal itself. With the permission system on, its owner may also lend a
+specific action on a specific resource with a temporary credential; the
+scheme checks the live credential and also judges what the rule lets
+through. With it off, only the owner boundary applies and no permission
+engine or credentials are loaded. Everyone else sees it as not found.
 
 Everyone may deliver a message to an AMA's Resident (DeliverMessage); the
 sender gets the receipt of its own message and nothing of the Conversation.
@@ -133,6 +132,10 @@ def hidden(actor: object, owners: Mapping[str, object], *, action: str = "ReadRe
             kept[resource_id] = key
     if not kept:
         return set()
+    from management_portal.permission_system import OPEN, configured_mode
+
+    if configured_mode() == OPEN:
+        return set(kept)
     from management_portal.permission_system import active, temporary
 
     _scheme, engine, _instance = active().current()

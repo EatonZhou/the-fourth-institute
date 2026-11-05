@@ -265,22 +265,30 @@ def test_application_http_transport_preserves_identity_and_error_contract(monkey
     for error, status in [(None, 200), (PermissionError("denied"), 403), (ValueError("invalid"), 400), (KeyError("missing"), 404), (InstructionError("instruction.conflict", "stale contact"), 409)]:
         with subtests.test(error=error, status=status), isolated_portal_case() as case_path:
             with monkeypatch.context() as monkeypatch:
-                from management_portal import serve_management_portal as portal
                 from management_portal import http_auth, http_responses
+                from management_portal.http_agent_workbench import AgentWorkbenchHttp
+                from management_portal.http_routes import RouteDispatcher
 
                 payload = {"resident_id": RESIDENT_ID, "application_id": "notes", "operation": "save", "args": {"date": "2026-09-09"}, "actor": "spoofed"}
                 invoke = Mock(return_value={"accepted": True}, side_effect=error)
-                # The route reads its body through the Agent Workbench adapter's JSON reader.
-                monkeypatch.setattr(portal._AGENT_WORKBENCH_HTTP, "read_json", lambda *args, **kwargs: payload)
+                # Exercise this surface's registered native route and real principal
+                # boundary without booting unrelated public/static route owners.
+                adapter = AgentWorkbenchHttp.__new__(AgentWorkbenchHttp)
+                adapter.read_json = lambda *args, **kwargs: payload
+                adapter.json_max_bytes = 1024
+                adapter.body_too_large = ValueError
+                adapter.watchboard_applications = lambda: SimpleNamespace(action=invoke)
+                adapter.respond = lambda handler, code, body: (code, body)
+                adapter.error = http_responses._serve_agent_workbench_error
                 monkeypatch.setattr(http_auth, "_get_session_username", lambda handler: "alice")
-                monkeypatch.setattr(portal.watchboard_applications, "action", invoke)
                 monkeypatch.setattr(http_responses, "_serve_json", lambda handler, code, body: (code, body))
                 parsed = urlparse("/api/agent-workbench/residents/watchboard-application")
-                handler = object.__new__(portal.Handler)
-                handler.headers = {}
-                response = portal._PORTAL_HTTP_ROUTES.dispatch(
-                    "POST", parsed.path, handler, parsed, "spoofed", phase="protected"
+                handler = SimpleNamespace(headers={})
+                routes = RouteDispatcher(adapter.routes(http_auth._principal_route))
+                response = routes.dispatch(
+                    "POST", parsed.path, handler, parsed, "spoofed", phase="dual-auth"
                 )
                 assert response[0] == status
                 invoke.assert_called_once_with(RESIDENT_ID, "alice", "notes", "save", {"date": "2026-09-09"})
                 assert response[1] == ({"accepted": True} if error is None else {"error": str(error)})
+                assert handler._portal_authenticated_actor is None

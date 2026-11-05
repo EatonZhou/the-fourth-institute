@@ -42,7 +42,12 @@ module.exports=async({page,residentId,childId,lineageId,errors})=>{
   assert.ok(mismatch.length>=2 && mismatch.every(s=>!s.ready));
   assert.equal((await readHatgViewSnapshot(panel,{lineageId:'lineage_wrong'})).identity_ready,false);
   assert.equal((await readHatgViewSnapshot(panel.locator('#hatgCanvas'),{lineageId})).identity_ready,false);
-  await panel.locator('button[data-semantic-zoom="overview"]').click();
+  // Semantic detail follows the actual camera scale; the former preset
+  // toolbar is retired. Reach overview using the native zoom controls.
+  for (let i=0;i<4;i++) {
+    await panel.locator('#graphZoomOutBtn').click();
+    await page.waitForTimeout(260);
+  }
   await page.waitForFunction(()=>document.getElementById('hatgCanvas')?.dataset.semanticZoom==='overview');
   assert.ok(await panel.locator('[data-execution-gate]').evaluateAll(nodes=>nodes.length>0 && nodes.every(n=>!n.checkVisibility())));
   const overview=await readHatgViewSnapshot(panel,{lineageId});

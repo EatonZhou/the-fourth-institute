@@ -70,6 +70,10 @@ def test_worker_health_mismatch_never_activates_replacement(tmp_path, monkeypatc
                 manager.ready_timeout = 0.1
                 manager.kill_grace = 0.0
                 manager._stopping = threading.Event()
+                manager._draining = []
+                # Synthetic children must not reach native process cleanup.
+                cleanup = Mock()
+                monkeypatch.setattr(worker_manager.process_runtime, 'terminate_process_tree', cleanup)
                 previous = object()
                 manager._current = previous
                 manager._spawn = Mock(return_value=candidate)
@@ -83,6 +87,9 @@ def test_worker_health_mismatch_never_activates_replacement(tmp_path, monkeypatc
                 assert manager._current is previous
                 manager._activate_replacement.assert_not_called()
                 manager._write_health.assert_not_called()
+                cleanup.assert_called_once_with(process, timeout=manager.kill_grace)
+                assert candidate.tree_stopped is True
+                assert not health_path.exists()
 
 
 @pytest.fixture

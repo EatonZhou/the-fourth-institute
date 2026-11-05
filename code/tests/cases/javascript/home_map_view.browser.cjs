@@ -27,15 +27,24 @@ if (homeNarrow) Object.assign(state.items[0], {
 let denied = false, sourceDenied = false, conflict = false;
 const calls = [];
 const scripts = ['portal_state', 'portal_text', 'portal_translations', 'portal_i18n', 'portal_api', 'portal_instruction_client', 'portal_page_state', 'portal_ui_primitives', 'portal_ui', 'project_common', 'project_map_layout', 'project_map_drawer', 'project_map', 'home_map_view'];
+const groups=JSON.parse(readFileSync(path.join(staticRoot,'../script_groups.json'),'utf8'));
+const {portalWorkbenchScripts}=require('./portal_workbench_scripts.cjs');
+const homeScripts=[...new Set([...scripts,'portal_overlay','portal_resource_routes','portal_resource_chips',
+  'portal_image_editor','portal_editor_open_service','portal_command_registry','portal_workbench_context',
+  ...portalWorkbenchScripts(staticRoot).map(n=>n.replace(/\.js$/,'')),
+  'portal_display_protocol','portal_preview_contract','portal_preview_runtime','portal_pdf_preview','portal_preview_renderers',
+  ...groups['portal-workspace-surface'].map(n=>n.replace('/static/','').replace(/\.js$/,'')),
+  'home_dialogue_state','portal_file_preview','home_dialogue'])];
+const homeCss=[...readFileSync(path.join(staticRoot,'../index.html'),'utf8').matchAll(/href="(\/static\/[^"?]+\.css)"/g)].map(m=>m[1]);
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, 'http://localhost');
   if (url.pathname === '/') {
     res.setHeader('Content-Type', 'text/html');
     if(homeNarrow) return res.end(`<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-      ${['portal_components','portal_design_system','portal_workbench','project','project_map','home_dialogue'].map(n=>`<link rel="stylesheet" href="/static/${n}.css">`).join('')}
+      ${homeCss.map(href=>`<link rel="stylesheet" href="${href}">`).join('')}
       <style>body{margin:0;font:1rem system-ui;--panel:white;--text:#123;--border:#ccc;--accent:teal;--muted:#567}
       #fixture-nav{position:static;height:82px;box-sizing:border-box;padding:8px}#frame{height:calc(100dvh - 90px);padding:0}</style>
-      ${[...scripts,'home_dialogue_state','home_dialogue'].map(n=>`<script src="/static/${n}.js"></script>`).join('')}
+      ${homeScripts.map(n=>`<script src="/static/${n}.js"></script>`).join('')}
       <header id="fixture-nav" class="portalSiteHeader">Home</header><div id="frame" class="portalWorkbenchPanelFrame"><section id="root" data-home-component="dialogue-display" data-portal-workbench-panel="dialogue-display"></section></div>`);
     return res.end(`<!doctype html><meta charset="utf-8">${['portal_components','portal_design_system','project','project_map',...(narrow?['home_dialogue']:[])].map(n=>`<link rel="stylesheet" href="/static/${n}.css">`).join('')}<style>body{margin:0;font:${narrow ? '1rem' : '14px'} system-ui;--panel:white;--text:#123;--border:#ccc;--accent:teal;--muted:#567}#root{height:${narrow?540:760}px;max-width:100%}</style>${scripts.map(n=>`<script src="/static/${n}.js"></script>`).join('')}<div id="root" class="${narrow?'homeDialogue':''}"></div><script>window.events=[];window.opens=[];window.view=PortalHomeMapView.create({root:document.querySelector('#root'),onSelection:x=>events.push(x),onOpen:x=>opens.push(x)});</script>`);
   }
@@ -64,8 +73,9 @@ const server = http.createServer(async (req, res) => {
     res.writeHead(200,{'Content-Type':'application/json'});return res.end(JSON.stringify({status:'committed',result}));
   }
   if(url.pathname.startsWith('/api/')) {res.writeHead(200,{'Content-Type':'application/json'});return res.end(JSON.stringify({username:'fixture'}));}
+  if(url.pathname==='/static/portal_resource_routes.js') {res.setHeader('Content-Type','text/javascript');return res.end('window.PortalResourceRoutes={schema:"tfi.resource-portal-routes.v1",routes:[],text_resource_types:[],identity_parameters:[]};');}
   if(url.pathname.startsWith('/static/')) {
-    try {const candidate=path.join(sourceRoot,url.pathname.slice(8)),file=existsSync(candidate)?candidate:path.join(staticRoot,url.pathname.slice(8));res.writeHead(200,{'Content-Type':file.endsWith('.css')?'text/css':'text/javascript'});return res.end(readFileSync(file));}catch{}
+    try {const candidate=path.join(sourceRoot,url.pathname.slice(8)),file=existsSync(candidate)?candidate:path.join(staticRoot,url.pathname.slice(8));const data=readFileSync(file);res.writeHead(200,{'Content-Type':file.endsWith('.css')?'text/css':'text/javascript'});return res.end(data);}catch{}
   }
   res.writeHead(404);res.end();
 });

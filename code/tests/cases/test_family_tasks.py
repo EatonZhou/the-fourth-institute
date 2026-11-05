@@ -360,12 +360,25 @@ def test_quota_recovery_only_checks_roles_with_unadmitted_input(configured_famil
     monkeypatch.setattr(family_quota, "ensure_role_reserve", lambda record, accounts: checked.append(record["resident_id"]) or True)
     jobs = {}
     monkeypatch.setattr(family_quota.resident_execution_work, "read", lambda record: jobs.get(record["resident_id"], {}))
+    # A submitted job has already been admitted. Its real execution snapshot,
+    # rather than a submitted_at guess, establishes that it is running.
+    snapshot = {"status": "running"}
+    monkeypatch.setattr(family_quota.resident_execution_work, "execution_snapshot",
+                        lambda job: dict(snapshot) if job.get("submitted_at") else {})
     assert family_quota.reconcile_role_reserves(records) == 0
     assert reads == [] and checked == []  # Idle roles do not query accounts.
     jobs[family["router"]] = {"execution_id": "waiting", "user_message_id": "original"}
     jobs[family["steward"]] = {"execution_id": "running", "user_message_id": "other", "submitted_at": "2026-10-19T00:00:00Z"}
     assert family_quota.reconcile_role_reserves(records) == 1
     assert len(reads) == 1 and checked == [family["router"]]
+    snapshot.clear()
+    checked.clear()
+    assert family_quota.reconcile_role_reserves(records) == 1
+    assert checked == [family["router"]]  # Unknown is not proof of queued work.
+    snapshot["status"] = "queued"
+    checked.clear()
+    assert family_quota.reconcile_role_reserves(records) == 2
+    assert checked == [family["router"], family["steward"]]
 
 
 def test_stale_quota_retains_incident_and_funded_backend_resolves_it(configured_family, monkeypatch):

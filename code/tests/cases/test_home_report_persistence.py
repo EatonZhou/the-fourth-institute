@@ -426,15 +426,8 @@ def test_creation_keeps_user_initiator_and_syncs_permissions_in_own_transaction(
     store=explanations.store
     from management_common.execution_association import execution_scope
     from management_portal.society_service import resident_work_origin
-    from management_portal import permission_system, society_service
-    from types import SimpleNamespace
+    from management_portal import permission_system
     resident='resident_000000000001'
-    capability_calls=[]
-    def creation_allowed(responsible, actor, message_id=''):
-        capability_calls.append((responsible, actor, message_id))
-        return (responsible, actor, message_id) == (resident, resident, '')
-    monkeypatch.setattr(society_service, 'get_society_service', lambda: SimpleNamespace(
-        resident=SimpleNamespace(reporting_creation_allowed=creation_allowed)))
     monkeypatch.setattr(resident_work_origin,'execution_initiator',lambda rid,execution_id:'bob')
     captured=[]
     def sync(record,*,resource_type,connection):
@@ -449,7 +442,6 @@ def test_creation_keeps_user_initiator_and_syncs_permissions_in_own_transaction(
         record=store.create(RID,{'explanation_target':explanations.ref},resident)
     assert record['created_by']==resident and record['created_for']=='bob'
     assert captured[0]['created_for']=='bob'
-    assert capability_calls == []  # Registering an existing package is not new creation.
 
 
 def test_media_lease_is_visible_across_processes_and_process_exit_allows_retry(reports):

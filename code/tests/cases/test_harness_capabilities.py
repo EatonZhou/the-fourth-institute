@@ -386,7 +386,7 @@ def test_image_input_capability_follows_the_route(monkeypatch: pytest.MonkeyPatc
     同一 Provider 的不同路线可以有不同的图片输入能力，计划按实际路线判断。
     """
     claude = AGENT_PROVIDERS["claude"]
-    monkeypatch.setattr(type(claude), "catalog", lambda self, route="": {"capabilities": {"media": route == "with_images"}})
+    monkeypatch.setattr(type(claude), "capability_catalog", lambda self, route="": {"capabilities": {"media": route == "with_images"}})
     assert capabilities.NATIVE_IMAGE_INPUT in claude.harness_capabilities("with_images")
     assert capabilities.NATIVE_IMAGE_INPUT not in claude.harness_capabilities("text_only")
     # An image that reaches the Provider as a path in the prompt is not a local attachment.
@@ -806,10 +806,15 @@ def test_provider_tool_events_are_translated_to_one_shape() -> None:
     }})
     image = translator.translate({"type": "response_item", "payload": {
         "type": "function_call_output", "call_id": "c4",
-        "output": [{"type": "image", "source": {"type": "base64", "data": "QUJD"}}],
+        "output": [{"type": "image", "source": {"type": "base64", "media_type": "image/png", "data": "QUJD"}}],
     }})[0]["params"]["item"]
     assert image["type"] == "dynamicToolCall"
-    assert image["contentItems"] == [{"type": "inputImage", "imageUrl": "data:image/unknown;base64,QUJD"}]
+    assert image["contentItems"] == [{"type": "inputImage", "imageUrl": "data:image/png;base64,QUJD"}]
+    with pytest.raises(ValueError, match="explicit URL or base64 MIME type"):
+        translator.translate({"type": "response_item", "payload": {
+            "type": "function_call_output", "call_id": "c5",
+            "output": [{"type": "image", "source": {"type": "base64", "data": "QUJD"}}],
+        }})
 
     assert translator.translate({"method": "turn/completed", "params": {}}) == [{"method": "turn/completed", "params": {}}]
     assert translator.translate({"method": "item/completed", "params": {"item": {"type": "agentMessage"}}}) == []

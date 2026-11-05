@@ -128,6 +128,7 @@ def test_nested_family_state_and_events_follow_the_original_request(monkeypatch)
             return {"state": {"active_message_id": leaf, "work_state": "running", "work_phase": "starting_session"}, "activities": []}
     monkeypatch.setattr(resident_conversation_stream, "get_repository", lambda: Repository())
     monkeypatch.setattr(resident_record_domain, "find_resident", lambda rid: records[rid])
+    monkeypatch.setattr(resident_record_domain, "find_resident_for_admission", lambda rid: records[rid])
     monkeypatch.setattr(family_facade, "is_facade", lambda r: r["resident_id"] in links)
     monkeypatch.setattr(family_facade, "relay_links", lambda r: links.get(r["resident_id"], {}))
     monkeypatch.setattr(resident_protocol.resident_mailbox, "project_input_state", lambda r, mid, state: state)

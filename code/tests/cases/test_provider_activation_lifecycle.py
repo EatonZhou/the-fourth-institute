@@ -61,6 +61,8 @@ def test_native_absent_stopped_and_running_daemons(native):
 
 def test_native_first_start_rolls_back_failed_health(native, monkeypatch):
     from management_common.instance_manifest import load
+    from tests.cases.provider_service_test_support import installed_claude_sdk
+    installed_claude_sdk(monkeypatch)
     adapter, root, controller, directory = native
     document = json.loads((root / 'instance.json').read_text())
     document['services']['components'].remove('claude-code')

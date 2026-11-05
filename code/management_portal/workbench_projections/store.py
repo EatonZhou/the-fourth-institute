@@ -9,7 +9,6 @@ import hashlib
 import json
 import re
 from contextlib import contextmanager
-from functools import cache
 
 from management_common.portal_database import portal_database
 from management_common.clock import utc_now_iso
@@ -19,21 +18,7 @@ from management_portal.portal_access_control import is_active_user_or_resident
 
 IDENTITY = re.compile(r"^workbench_[0-9a-f]{12}$")
 ALIAS = re.compile(r"^[a-z][a-z0-9_-]{0,63}$")
-CORE_BUILTINS = {
-    "development": {"title": "Portal 开发投影", "path": "/development", "description": "Portal 的架构、阶段进展与未来方向工作台"},
-    "studio": {"title": "投影工坊", "path": "/workbenches?panel=studio", "description": "Workbenches 中由普通 Lineage 提供的 AI 页面生成模块"},
-}
-
-
-@cache
-def builtins() -> dict[str, dict]:
-    """The built-in workbenches by name: the core ones, then the installed features' (workbench.builtin)."""
-    from management_portal import portal_features
-
-    found = dict(CORE_BUILTINS)
-    for _feature, builtin in portal_features.contributions("workbench.builtin"):
-        found[builtin["name"]] = {key: builtin[key] for key in ("title", "path", "description")}
-    return found
+from management_portal.frontend_manifest import CORE_BUILTINS, builtins
 # Directory stars live with the other personal favorites (presentation_store).
 FAVORITE_SURFACE = "workbench"
 DEFINITION_FIELDS = frozenset({

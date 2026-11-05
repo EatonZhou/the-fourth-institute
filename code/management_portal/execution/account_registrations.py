@@ -155,7 +155,7 @@ def create_registration(data, actor, *, require_existing=False):
         data["route_id"] = str(data.get("account_id") or "").removeprefix("codex_") if data.get("provider") == "codex" else data.get("account_id", "")
     _validate(data)
     if data["provider"] == "antigravity":
-        from management_portal.antigravity_runtime import platform_key
+        from management_common.antigravity_platform import platform_key
         try:
             platform_key()
         except RuntimeError:
@@ -256,7 +256,7 @@ def _check_version(object_id, current, expected, message):
 
 
 def update_role(role, account_id, model, reasoning_effort, expected_version, actor, account_selection="auto", backend_priority=None):
-    from .account_selection import mode
+    from .account_selection_contract import mode
     account_selection = mode(account_selection)
     if backend_priority is not None:
         from .account_migration_types import validate_priority

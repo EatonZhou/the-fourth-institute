@@ -1,4 +1,4 @@
-"""Canonical resource writers and byte-preserving rejection of old formats.
+"""Canonical writes, field-based reads, and exact retained replay evidence.
 
 :design: decision_15aab18c0ab3
 """
@@ -59,20 +59,26 @@ def test_writer_deletion_retry_keeps_original_receipts_and_xmin(projection, stor
     item = _writer_seed_delete(projection, stored_namespace)
     original = _writer_registry_snapshot(projection.registry)
     incoming = {**item, 'schema': f'{incoming_namespace}.collaboration-descriptor.v2'}
-    if stored_namespace == incoming_namespace == 'tfi':
+    if stored_namespace == 'tfi':
         result = projection.service.sync_collaboration_resources([{'descriptor': incoming}], domain_identity='society-service')
         assert result['resources'][0]['descriptor']['title'] == item['title']
     else:
-        with pytest.raises(ValueError, match='unsupported collaboration descriptor schema'):
+        # A format label is not a parser gate, but old proof bytes do not
+        # become an authenticated canonical deletion receipt through a read.
+        with pytest.raises(ValueError, match='Stale domain tombstone'):
             projection.service.sync_collaboration_resources([{'descriptor': incoming}], domain_identity='society-service')
     assert _writer_registry_snapshot(projection.registry) == original
     # A valid format must still exercise stale-content and identity checks.
     incoming = _writer_seed_delete(projection, 'tfi')
     original = _writer_registry_snapshot(projection.registry)
-    for patch in ({'title':'forged'}, {'updated_at':T2}, {'schema':'tfi.collaboration-descriptor.v3'}, {'schema':4}):
-        reason = 'unsupported collaboration descriptor schema' if 'schema' in patch else 'Stale domain tombstone'
-        with pytest.raises(ValueError, match=reason):
+    for patch in ({'title':'forged'}, {'updated_at':T2}):
+        with pytest.raises(ValueError, match='Stale domain tombstone'):
             projection.service.sync_collaboration_resources([{'descriptor': {**incoming, **patch}}], domain_identity='society-service')
+        assert _writer_registry_snapshot(projection.registry) == original
+    for label in ('tfi.collaboration-descriptor.v3', 4):
+        result = projection.service.sync_collaboration_resources(
+            [{'descriptor': {**incoming, 'schema': label}}], domain_identity='society-service')
+        assert result['resources'][0]['descriptor']['title'] == incoming['title']
         assert _writer_registry_snapshot(projection.registry) == original
     with pytest.raises(PermissionError):
         projection.service.sync_collaboration_resources([{'descriptor':incoming}], domain_identity='forged-service')
@@ -102,11 +108,8 @@ def test_writer_live_retry_keeps_later_independent_edit_and_original_source(proj
     before = _writer_registry_snapshot(projection.registry)
     for prefix in ('archive','tfi'):
         incoming = {**item,'schema':f'{prefix}.collaboration-descriptor.v2'}
-        if prefix == 'archive':
-            with pytest.raises(ValueError, match='unsupported collaboration descriptor schema'):
-                projection.service.sync_collaboration_resources([{'descriptor':incoming}], domain_identity='society-service')
-        elif namespace == 'archive':
-            with pytest.raises(ValueError, match='unsupported collaboration descriptor schema'):
+        if namespace == 'archive':
+            with pytest.raises(ValueError, match='Stale canonical domain projection'):
                 projection.service.sync_collaboration_resources([{'descriptor':incoming}], domain_identity='society-service')
         else:
             result = projection.service.sync_collaboration_resources([{'descriptor':incoming}], domain_identity='society-service')
@@ -251,8 +254,7 @@ def test_writer_registered_repo_article_device_and_ignores_keep_existing_rows(tm
     snapshot = _writer_registry_snapshot(registry)
     assert repos.resolve_repo_address(repo['id'])['schema'] == 'tfi.resource_resolution.v2'
     assert article_sections.resolve_article_address(article['id'])['schema'] == 'tfi.resource_resolution.v2'
-    with pytest.raises(ValueError, match='invalid schema'):
-        devices.resolve_device_address(device['id'])
+    assert devices.resolve_device_address(device['id'])['schema'] == 'tfi.resource_resolution.v2'
     assert str(checkout) in auto.suppressed_paths('repo')
     assert _writer_registry_snapshot(registry) == snapshot
 

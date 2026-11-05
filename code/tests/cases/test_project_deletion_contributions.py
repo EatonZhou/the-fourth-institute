@@ -1,6 +1,6 @@
 """Feature-owned deletion effects replay the Project owner's frozen receipt.
 
-:module: resources.access
+:module: resource.service
 :design: decision_4aa13bc21e8e
 """
 from copy import deepcopy

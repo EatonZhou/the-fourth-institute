@@ -56,12 +56,20 @@ def test_every_instruction_declares_what_it_is_judged_on():
 def test_slot_arguments_are_declared():
     """判定槽引用的每个参数都在指令声明中存在
 
-    槽写的是点分路径时，根参数必须已声明；根参数声明了 properties 时，下一层字段也必须在其中。按落点判定的槽在 place 中写的参数路径同样检查。
+    槽写的是点分路径时，根参数必须已声明；根参数声明了 properties 时，下一层字段也必须在其中。
+    place 中的普通参数路径同样检查；单独用于 resident/personal_space 的 $caller 来自认证上下文。
     """
     catalog = instruction_catalog()
     missing = []
     for name, slot in _argument_slots():
-        for argument in (slot.argument, *(path for _related, paths in slot.place for path in paths)):
+        paths = [slot.argument]
+        for related, related_paths in slot.place:
+            if "$caller" in related_paths:
+                assert related in {"resident", "personal_space"}, name
+                assert related_paths == ("$caller",), name
+            else:
+                paths.extend(related_paths)
+        for argument in paths:
             root, *rest = argument.split(".")
             parameter = catalog[name].parameter_map.get(root)
             if parameter is None:
@@ -69,6 +77,37 @@ def test_slot_arguments_are_declared():
             elif rest and parameter.properties is not None and rest[0] not in parameter.properties:
                 missing.append((name, argument))
     assert missing == []
+
+
+@pytest.mark.parametrize("related,paths", [
+    ("project", ("$caller",)),
+    ("resident", ("$caller", "fields.project_id")),
+    ("personal_space", ("fields.user_id", "$caller")),
+])
+def test_caller_placement_rejects_other_relations_and_caller_supplied_paths(related, paths):
+    """认证落点不能挪到其他关系，也不能混入调用者提交的归属参数。"""
+    from dataclasses import replace
+    from management_portal.hatg.declarations import On
+
+    declaration = instruction_catalog()["RegisterResource"]
+    with pytest.raises(RuntimeError, match=r"\$caller 落点必须单独用于"):
+        replace(declaration, decides=(On("resource_type", place={related: paths}),))
+
+
+def test_authenticated_placement_is_not_an_input_parameter():
+    """RegisterResource 的本人归属只能由认证主体推导，不能在 arguments 指定 $caller。"""
+    from dataclasses import replace
+    from management_portal.hatg.contracts import InstructionError
+    from management_portal.hatg.declarations import On
+
+    declaration = instruction_catalog()["RegisterResource"]
+    places = dict(next(slot for slot in declaration.decides if slot.place).place)
+    assert places["resident"] == places["personal_space"] == ("$caller",)
+    assert "$caller" not in declaration.parameter_map
+    with pytest.raises(RuntimeError, match="未声明参数"):
+        replace(declaration, decides=(On("$caller", "resident"),))
+    with pytest.raises(InstructionError):
+        declaration.validate_arguments({"resource_type": "report", "fields": {}, "$caller": "someone_else"})
 
 
 def test_slot_types_and_places_are_registered():
@@ -215,8 +254,13 @@ def test_each_object_has_one_parameter_name():
 # Changes with no single object to name: a work queue, a new terminal session,
 # a Pulse item addressed by period, key and item, a Portal instance, and the
 # Portal-wide settings, Telepus service enablement and knowledge tag list.
+# AcceptUserAuthorization creates credentials from a verified input; it does
+# not modify that message. CorrectResourceLifecycleAssociation changes the
+# (scope_id, resource_id) allocation, not the Workspace used as read evidence.
+# Neither operation has a single resource version to use as scalar CAS.
 WITHOUT_TARGET = {"ClaimResidentSummaryJobs", "OpenTerminal", "PublishPulseItem", "RestartPortal",
-                  "SetTelepusEnabled", "UpdateExecutionSettings", "UpdateKnowledgeTags"}
+                  "SetTelepusEnabled", "UpdateExecutionSettings", "UpdateKnowledgeTags",
+                  "AcceptUserAuthorization", "CorrectResourceLifecycleAssociation"}
 
 
 def test_changes_to_an_existing_object_declare_it_as_target():

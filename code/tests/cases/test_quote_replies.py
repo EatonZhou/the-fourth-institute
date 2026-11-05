@@ -244,8 +244,8 @@ def test_a_quote_of_a_members_message_goes_straight_back_to_that_member(family, 
 
     # A deleted member, gone from the Family, or not reading the request's images is passed over.
     with monkeypatch.context() as patched:
-        find = resident_record_domain.find_resident
-        patched.setattr(resident_record_domain, "find_resident", lambda rid: None if rid == member else find(rid))
+        find = resident_record_domain.find_resident_for_admission
+        patched.setattr(resident_record_domain, "find_resident_for_admission", lambda rid: None if rid == member else find(rid))
         assert routed("msg_00000000000001d1") == ""
     family["members"].clear()
     assert routed("msg_00000000000001d1") == ""

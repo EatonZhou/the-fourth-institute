@@ -10,6 +10,7 @@ import pytest
 
 from management_portal.execution.accounts import DefaultAccountUnavailable, default_execution_accounts
 from management_portal.execution.account_registrations import registrations
+from management_portal.execution import account_selection
 from management_portal.execution.service import ExecutionService, ExecutionServiceServer
 from management_portal.society_service import resident_intake_domain as intake
 from tests.cases.account_registration_test_support import register_codex
@@ -26,6 +27,13 @@ class RpcExecutionService(ExecutionService):
 @pytest.fixture
 def unassigned_site(resident_record, tmp_path, monkeypatch):
     registry = register_codex(monkeypatch, tmp_path, default="")
+    # Automatic selection no longer needs a configured default. Registered
+    # accounts with no usable login represent a genuinely unassigned site;
+    # existing session bindings still belong to their original account.
+    observed = account_selection.observations
+    monkeypatch.setattr(account_selection, "observations", lambda: [
+        {**row, "login_state": "logged_out"} for row in observed()
+    ])
     accounts = default_execution_accounts(account_registry=registry)
     catalog = [{**asdict(a), "backend_route_id": a.route_id} for a in accounts.accounts()]
     server = object.__new__(ExecutionServiceServer)
@@ -37,7 +45,7 @@ def unassigned_site(resident_record, tmp_path, monkeypatch):
 
 
 def test_account_details_exclude_unassigned_and_hidden_residents(unassigned_site, resident_record, monkeypatch):
-    """Explicit session ownership survives unrelated Residents without defaults."""
+    """Bound ownership survives unrelated Residents with no available account."""
     accounts, service, _ = unassigned_site
     before = registrations("codex")
     unassigned = {**resident_record, "resident_id": "resident_bbbbbbbbbbbb"}
@@ -70,11 +78,33 @@ def test_read_only_resolution_caches_unassigned_but_execution_stays_strict(unass
     resolve.assert_called_once()
     assert resolve.call_args.kwargs["allow_unassigned"] is True
     assert service.resolve_account("codex", "zero", allow_unassigned=True)["account_id"] == "codex_zero"
-    with pytest.raises(ValueError, match="No enabled default Codex account"):
+    with pytest.raises(ValueError, match="No compatible account"):
         service.resolve_account("codex")
     with pytest.raises(ValueError, match="unknown Codex account route"):
         service.resolve_account("codex", "missing", allow_unassigned=True)
     assert accounts.resident_selection("codex")["default_account_id"] == ""
+
+
+def test_account_details_include_visible_automatic_selection(unassigned_site, resident_record, monkeypatch):
+    """An available automatic route counts only visible, unbound Residents."""
+    _, _, catalog = unassigned_site
+    monkeypatch.setattr(account_selection, "observations", lambda: [
+        {**row, "kind": "subscription_login", "login_state": "logged_in"}
+        for row in catalog if row["account_id"] == "codex_one"
+    ])
+    automatic = {**resident_record, "resident_id": "resident_bbbbbbbbbbbb"}
+    hidden = {**resident_record, "resident_id": "resident_cccccccccccc"}
+    monkeypatch.setattr(intake.resident_lineage, "all", lambda: [resident_record, automatic, hidden])
+    monkeypatch.setattr(intake, "_resident_visible_to_actor", lambda record, actor:
+                        actor == "viewer" and record["resident_id"] != hidden["resident_id"])
+    summary = intake.get_account_resident_summary("codex_one", "viewer")
+    assert summary["total"] == 1
+    # No intake snapshot exists for the synthetic unbound Resident. It is
+    # counted for ownership, but must not become a bulk OpenIntake target.
+    assert summary["open_resident_ids"] == []
+    assert summary["intake"] == {"open": 0, "closed": 0, "unknown": 1}
+    assert summary["without_session"] == 1
+    assert intake.get_account_resident_summary("codex_zero", "viewer")["open_resident_ids"] == [resident_record["resident_id"]]
 
 
 @pytest.mark.parametrize("error", [ValueError("Multiple default Codex accounts"), RuntimeError("Execution unavailable")])

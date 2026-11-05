@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 import fcntl
 from contextlib import contextmanager
 
@@ -155,3 +156,18 @@ class ExplanationReports:
             return self.bind(value, actor, self.lookup(value, actor))
         identifier = result.get('resource_id') or result['resource']['resource_id']
         return self.store.response(identifier, actor, 1)
+
+
+def registered_responsible(ref, actor):
+    """Use the authenticated creator of a currently readable fixed Report."""
+    from management_portal.home_report_store import ReportStore
+    store = ReportStore()
+    try:
+        saved = ExplanationReports(store).lookup(ref, actor)
+    except FileNotFoundError:
+        return ''
+    record, _, snapshot = store.get(saved['report_id'], actor, saved['revision'])
+    if snapshot.get('content_kind') != 'explanation' or snapshot.get('explanation_target') != ref:
+        raise ValueError('汇报登记与解释创作的固定来源不一致')
+    creator = record.get('created_by', '')
+    return creator if re.fullmatch(r'resident_[0-9a-f]{12}', creator) else ''

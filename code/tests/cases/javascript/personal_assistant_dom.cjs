@@ -463,6 +463,6 @@ test("a facade's Stop follows the requests this viewer sees, not the Family-wide
   await app.panel.stopFamily();
   assert.match(dialog.message, /全部 1 条请求/);
   assert.match(dialog.description, /只想停止某位成员时.*状态栏里的“停止”/);
-  assert.match(dialog.description, /被 Mute／Solo 隐藏的成员不受影响/);
+  assert.match(dialog.description, /Solo 视图以外的成员不受影响/);
   assert.deepEqual(app.requests.filter(r => r.instruction === "CancelInput").map(r => r.args.message_id), ["msg_solo"]);
 });

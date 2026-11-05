@@ -102,6 +102,8 @@ def test_facade_only_permissions_and_actual_relay_member(team, monkeypatch):
             "content_parts":[{"type":"text","text":"report"}],
             **({"business_ref":family_facade.relay_mark(facade,root)} if rid==member else {})})
         repo.set_input_state(rid, mid, "queued")
+    # A copied relay mark without its trusted ledger cannot select facade policy.
+    assert reporting.effective(member, leaf)["source_resident_id"] == member
     family_facade.complete_relay((facade,root), member,leaf)
     policy = reporting.effective(member,leaf)
     assert policy["source_resident_id"] == facade and policy["quality"] == "high"
@@ -110,12 +112,22 @@ def test_facade_only_permissions_and_actual_relay_member(team, monkeypatch):
     materialized = prompts.build_resident_prompt(records.find_resident(member), {
         "user_message_id":leaf,"message":"请汇报"})
     assert '"source_resident_id": "'+facade+'"' in materialized
-    assert "高质量汇报与解释成果须交独立 Resident 审查" in materialized
-    assert "home_explanation_authoring.md" in materialized and "build_explanation_package.py" in materialized
+    assert "build_explanation_package.py" in materialized
     from management_portal.society_service.resident_input_queue_domain import _running_turn_prompt
     appended = _running_turn_prompt(records.find_resident(member), {
         "user_message_id":leaf,"raw_message":"解释一个新问题"})["actual_sent_prompt"]
     assert appended.split("</reporting-policy>")[0] == materialized.split("</reporting-policy>")[0]
+    reporting.update(facade, ACTOR, {"reporting": {"initiative": "off", "quality": "low"}})
+    member_record = records.find_resident(member)
+    member_record["reporting"] = {"initiative": "high", "quality": "high"}
+    records.save_resident_record(member_record, commit_configuration=True)
+    inherited = reporting.effective(member, leaf)
+    assert inherited["source_resident_id"] == facade and inherited["initiative"] == "off"
+    assert inherited["quality"] == "low"
+    disabled = prompts.build_resident_prompt(member_record, {"user_message_id": leaf, "message": "Continue"})
+    assert "汇报功能：不开启" in disabled
+    assert reporting.effective(member)["initiative"] == "high"
+    assert reporting.effective(member, "msg_" + "c" * 32)["source_resident_id"] == member
 
 
 def test_non_home_prompt_links_existing_authoring_entry_for_concise_high_artifact(resident_record, tmp_path):

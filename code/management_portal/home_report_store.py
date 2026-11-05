@@ -232,8 +232,6 @@ class ReportStore:
                 raise ResourceVersionConflict('汇报已有新版本，请重新读取',
                                               expected_version=expected, current_version=record['revision'])
             reauthorize(snapshot, actor=actor, read=self.read)
-            from management_portal.home_report_creation import require_report_creation
-            require_report_creation(self, snapshot, actor)
             number = expected + 1
             if str(number) in record['revisions']:
                 raise ValueError('汇报版本登记不一致，不能覆盖已有版本')

@@ -5,6 +5,7 @@
 """
 from copy import deepcopy
 from types import SimpleNamespace
+from unittest.mock import Mock
 
 from management_common.portal_database import portal_database
 from management_portal import permission_system
@@ -32,9 +33,9 @@ def test_rename_owned_and_bound_workspaces_read_back_through_get_resident(future
     rid = original["resident_id"]
     catalog = resident_catalog.get_catalog()
     before = catalog.get(rid)
-    service = ResourceService(index_provider=SimpleNamespace(supports_type=lambda kind: True),
+    index = SimpleNamespace(supports_type=lambda kind: True, project_updated=Mock())
+    service = ResourceService(index_provider=index,
                               resolver_loader=install_resolvers, mutation_provider_loader=install_mutation_providers)
-    monkeypatch.setattr(service, "notify_source_changed", lambda **kw: {"targets": [], "finished": False})
     monkeypatch.setattr(resource_isa, "_service", lambda: service)
     resource = InstructionKernel(resource_isa.binding(), store=ExecutionStore(portal_database(schema="rename_resource")))
     lineage = InstructionKernel(lineage_isa.binding(), store=ExecutionStore(portal_database(schema="rename_lineage")))
@@ -51,6 +52,10 @@ def test_rename_owned_and_bound_workspaces_read_back_through_get_resident(future
             "resource_id": wid, "changes": {"title": title, "expected_version": record["version"]},
         })
         assert result["resource"]["title"] == title
+        kind, projected = index.project_updated.call_args.args
+        assert kind == "workspace"
+        assert projected["resource_id"] == wid and projected["title"] == title
+    assert index.project_updated.call_count == len(targets)
     result = call(lineage, "GetResident", {"resident_id": rid})["resident"]
     roots = result["workspaces"]
     assert {root["workspace_id"]: root["title"] for root in roots} == targets

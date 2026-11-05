@@ -606,7 +606,7 @@ def _ensure_quota_switch(record: dict[str, Any], accounts: list[dict[str, Any]] 
     if resident_record_domain.lifecycle_operations().pending(rid):
         return True
     job = resident_execution_work.read(record)
-    if job.get("stop_requested_at") or job.get("status") == "running":
+    if job.get("stop_requested_at") or not _quota_switch_can_prepare(job):
         return False
     service = execution_port.service()
     if accounts is None:
@@ -928,6 +928,14 @@ def restore_role_intakes(residents: list[dict[str, Any]]) -> list[dict[str, Any]
     return roles
 
 
+def _quota_switch_can_prepare(job: Mapping[str, Any]) -> bool:
+    """Submitted execution status belongs to Execution, never the job snapshot."""
+    if not resident_execution_work.submitted_execution_id(job):
+        return True
+    snapshot = resident_execution_work.execution_snapshot(job)
+    return snapshot.get("status") == "queued"
+
+
 def reconcile_role_reserves(residents: list[dict[str, Any]] | None = None) -> int:
     """Retry quota admission for durable pending inputs, never for idle roles."""
     if residents is None:
@@ -943,7 +951,7 @@ def reconcile_role_reserves(residents: list[dict[str, Any]] | None = None) -> in
         if (resident_execution_work.is_active(job)
                 and (resident_execution_work.can_preserve_for_session_restart(job) or
                      (quota_switch_policy(record) is True
-                      and job.get("status") != "running"))
+                      and _quota_switch_can_prepare(job)))
                 and not job.get("stop_requested_at")):
             roles.append(record)
     if not roles:

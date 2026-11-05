@@ -320,7 +320,7 @@ const openSetup = async () => {
   assert(![...window.document.querySelectorAll('button')].some(el => ['设为默认路线', '设为默认 AI'].includes(el.textContent)));
   assert.match(window.document.querySelector('[data-backend-account-selection]').textContent, /不同种类 AI 后端默认选择\/自动切换的排序可手动调整/);
   for (const policy of ['fixed', 'auto']) {
-    click('账号选择设置'); await flush();
+    click('默认帐号选择排序'); await flush();
     const form = window.document.querySelector('dialog form');
     form.elements.account_id.value = 'existing';
     form.elements.account_selection.value = policy;
@@ -339,13 +339,13 @@ const openSetup = async () => {
     assert.equal(saved.options.expectedVersion, roles[0].version - 1);
     if (policy === 'auto') assert.deepEqual(Array.from(saved.args.backend_priority), ['codex:subscription_login', 'claude:subscription_login', 'claude:api_profile:api']);
   }
-  click('账号选择设置'); await flush();
+  click('默认帐号选择排序'); await flush();
   assert.equal(window.document.querySelector('[data-backend-priority-kind]').dataset.backendPriorityKind, 'codex:subscription_login');
   const beforeCancel = calls.filter(call => call.name === 'UpdateBackendRole').length;
   window.document.querySelector('[data-backend-priority-kind] [data-direction="1"]').click();
   click('关闭'); await flush();
   assert.equal(calls.filter(call => call.name === 'UpdateBackendRole').length, beforeCancel);
-  click('账号选择设置'); await flush();
+  click('默认帐号选择排序'); await flush();
   assert.equal(window.document.querySelector('[data-backend-priority-kind]').dataset.backendPriorityKind, 'codex:subscription_login');
   click('关闭');
   console.log('provider onboarding UI passed');

@@ -34,7 +34,10 @@ def test_operation_catalog_is_complete_and_binds_real_domain_signatures():
 # instruction. A write that duplicates an ISA instruction would bypass its
 # policy check; adding one here means first checking that no instruction does it.
 DOMAIN_RPC_WRITES = {
-    "resident": {"cancel_resident_service_input", "request_resident_summary_rebuild", "submit_routing_eval_correction"},
+    # Reporting quality needs an internal reviewer-provisioning operation;
+    # no public ISA instruction provisions those Family roles.
+    "resident": {"cancel_resident_service_input", "request_resident_summary_rebuild", "submit_routing_eval_correction",
+                 "ensure_family_reviewers"},
     "workspace": {"save_workspace_attachment", "save_workspace_pasted_image"},
     # ResourceService's RenameProject instruction delegates Society-owned
     # membership and execution coordination to this domain operation.

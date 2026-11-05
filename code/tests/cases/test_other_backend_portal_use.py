@@ -31,7 +31,15 @@ KIMI_HOME = Path("/nonexistent/kimi-account")
 def test_kimi_account_is_found_by_the_id_the_account_list_shows() -> None:
     """Kimi Code 与 DSH Resident 的 Portal 使用"""
     assert resolve_account_configuration("kimi", "kimi_default")["account_id"] == "kimi_default"
-    assert resolve_account_configuration("kimi", "")["account_id"] == "kimi_default"
+    from management_portal.execution.accounts import DefaultAccountUnavailable
+    # A service account is selected explicitly; an implicit native subscription
+    # must never silently switch account kind.
+    service = {"account_id": "kimi_default", "provider": "kimi", "kind": "service", "enabled": True}
+    with mock.patch("management_portal.execution.account_selection.observations", return_value=[service]):
+        from management_portal.execution.account_selection import select
+        assert select("kimi", anchor="kimi_default")["account_id"] == "kimi_default"
+        with pytest.raises(DefaultAccountUnavailable, match="No compatible account"):
+            resolve_account_configuration("kimi", "")
     with pytest.raises(ValueError, match="Unknown Kimi account"):
         resolve_account_configuration("kimi", "kimi_primary")
 

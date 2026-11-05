@@ -1,6 +1,6 @@
 """Composite explanation page: fixed content, local demo isolation and media lifetime.
 
-:module: home.dialogue
+:module: workbench.preview
 :importance: P1
 """
 from pathlib import Path

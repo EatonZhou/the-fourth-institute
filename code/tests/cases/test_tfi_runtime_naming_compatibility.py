@@ -1,4 +1,4 @@
-"""Runtime readers accept canonical formats and reject deleted tags without writes."""
+"""Runtime readers preserve descriptive versions and enforce each wire contract."""
 from __future__ import annotations
 
 from copy import deepcopy
@@ -29,8 +29,8 @@ def tagged(old, namespace):
     return namespace + '.' + old.split('.', 1)[1]
 
 
-def checked(namespace, read):
-    if namespace != 'tfi':
+def checked(namespace, read, *, numeric_versions=False):
+    if namespace == 'archive' or (namespace == 'wrong_version' and not numeric_versions):
         with pytest.raises((ValueError, RuntimeError)):
             read()
         return None
@@ -54,12 +54,13 @@ def test_execution_contract_round_trip(namespace, kind):
     payload = obj.to_payload()
     payload['schema'] = tagged(obj.schema, namespace)
     original = deepcopy(payload)
-    parsed = checked(namespace, lambda: type(obj).from_payload(payload))
+    parsed = checked(namespace, lambda: type(obj).from_payload(payload), numeric_versions=kind == 'request')
     if parsed is not None:
         assert parsed.to_payload() == original
         if kind == 'request':
+            assert ExecutionRequest.from_payload({**payload, 'schema_version': 999}).schema_version == 999
             with pytest.raises(ValueError):
-                ExecutionRequest.from_payload({**payload, 'schema_version': 999})
+                ExecutionRequest.from_payload({**payload, 'schema_version': True})
     assert payload == original
 
 
@@ -68,7 +69,7 @@ def test_seed_preserves_payload_and_validates_references(namespace):
             'segments': [{'segment_id': 'segment_fixture'}], 'prompt': 'frozen', 'portable_prompt': 'portable'}
     request = SimpleNamespace(metadata={'fork_context_input': seed})
     before = deepcopy(seed)
-    result = checked(namespace, lambda: context_seed(request))
+    result = checked(namespace, lambda: context_seed(request), numeric_versions=True)
     if result is not None:
         assert result == before
         request.metadata['fork_context_input'] = {**seed, 'segments': [{}]}
@@ -142,7 +143,7 @@ def test_society_readers_keep_non_schema_validation(tmp_path, monkeypatch, names
         catalog = resident_catalog.ResidentCatalog(tmp_path, LineageDataStore())
         read = lambda: catalog._normalize(value)
     before = deepcopy(value)
-    result = checked(namespace, read)
+    result = checked(namespace, read, numeric_versions=kind == 'runtime')
     assert value == before
     if result is not None:
         assert result
@@ -169,8 +170,9 @@ def test_conversation_readers(namespace, reader):
              'resident_id': 'resident_aaaaaaaaaaaa', 'cursor': 5}
     before = deepcopy(value)
     result = checked(namespace, lambda: (project_conversation_messages(value)
-        if reader == 'evidence' else resident_conversation_records.conversation_event_notification(value)))
-    if namespace == 'tfi':
+        if reader == 'evidence' else resident_conversation_records.conversation_event_notification(value)),
+        numeric_versions=True)
+    if result is not None:
         assert result == ([] if reader == 'evidence' else value)
     assert value == before
 
@@ -211,7 +213,8 @@ def test_existing_postgres_marker_is_read_only(factory, table, old, namespace):
         with store.database.transaction() as connection:
             connection.execute(f"UPDATE {table} SET value=%s WHERE key='schema'", (marker,))
         before = facts()
-        checked(namespace, factory)
+        # Metadata describes the installed store; startup neither gates on nor rewrites it.
+        factory()
         assert facts() == before
     finally:
         # Test-only namespace; never leave the synthetic tag for other fixtures.

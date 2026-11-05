@@ -70,7 +70,11 @@ def test_resident_recovers_published_files_after_transaction_failure(future_crea
         assert folder.is_dir()
         (folder / 'resident.md').write_text('user edited identity')
         (folder / 'diary.md').write_text('user diary')
-        assert scope_store.pending(scope) == []
+        # A root's separately committed Workspace remains associated with the
+        # creation intent while the Resident transaction is retried.
+        pending = scope_store.pending(scope)
+        assert len(pending) == (0 if member else 1)
+        assert all(identity.startswith("workspace_") for identity in pending)
         assert resident_record_domain.find_resident(attempted['resident_id']) is None
         # Reconstruct the owner and intent stores, retaining only PostgreSQL/files.
         monkeypatch.setattr(state_store, '_STORE', state_store.LineageDataStore())

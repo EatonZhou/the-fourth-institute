@@ -4,15 +4,15 @@ type: decision
 project: AI员工
 created_at: '2026-08-25'
 version:
-  number: 67
+  number: 68
   created_at: "2026-08-25"
   created_by:
     user: ""
     agent: ""
-  updated_at: "2026-11-04T19:19:31Z"
+  updated_at: "2026-11-05T13:46:51Z"
   updated_by:
     user: ""
-    agent: "resident_6199a7a36480"
+    agent: "resident_2e9ea0072551"
 importance: 10
 metaness: 3
 ai_generated: true
@@ -158,7 +158,7 @@ Program 工作状态按对象加锁和读取。每个事件源、连线、算子
 
 Program 工作对象在写入时规范化，读取时直接使用已存内容。规范化做的是：校验 ID，去重并截断游标列表，把计数限制为非负整数，按限额整理待投递内容。写入事务在加载和提交时对它触碰的每个对象都做一遍，提交的始终是规范化后的对象。规范化规则有一个版本号 `RUNTIME_NORMALIZATION`，`lineage_meta` 的 `program_runtime_normalization` 记录已存数据是哪个版本的规则写成的。只有两者相等时，`read_runtime` 和单对象读取才不再规范化；不相等时照旧边读边规范化。进程每分钟重新核对一次这个记录。
 
-修改规范化规则（`_normalize` 及它调用的函数和限额）时，必须把版本号加一并更新测试里记录的规则摘要，`test_lineage_program_runtime_normalization` 会拦住漏改。发布后，Release SocietyService 启动时逐个 Lineage 用新规则重写已存对象，只写回有变化的对象，全部完成后再更新 `lineage_meta` 的记录。迁移完成之前，读取按新规则规范化。Dev 不执行这项迁移，因为它可能运行未发布的规则；Dev 规则版本与记录不一致时，它的读取也保持规范化。2026-10-19 上线时，现网 33 个有运行数据的非个人 Lineage 的已存对象都已经是规范化结果。
+修改规范化规则（`_normalize` 及它调用的函数和限额）时，必须把版本号加一并更新测试里记录的规则摘要，`test_lineage_program_runtime_normalization` 会拦住漏改。发布后，Release SocietyService 启动时逐个 Lineage 用新规则重写已存对象，只写回有变化的对象，全部完成后再更新 `lineage_meta` 的记录。迁移完成之前，读取按新规则规范化。Dev 不执行这项迁移，因为它可能运行未发布的规则；Dev 规则版本与记录不一致时，它的读取也保持规范化。当前规范化规则编号为 `5`；本次规则保留 `owner_recovery_checked` 已有恢复核验标记。该编号用于选择是否需要执行真实规范化，不作为现存库或服务启动的版本对齐门禁；实际对象字段、并发写入与摘要校验仍按其 owner 合同处理。2026-10-19 上线时，现网 33 个有运行数据的非个人 Lineage 的已存对象都已经是规范化结果。
 
 ### Resident
 

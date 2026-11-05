@@ -81,7 +81,9 @@ def test_register_exported_source_through_resource_service(tmp_path, monkeypatch
     assert record["source_kind"] == "exported_tree"
     assert record["canonical_checkout"] == str(root)
     assert record["project_ids"] == ["Music"]
-    assert record["checkouts"][0]["origin"] == "adopted"
+    assert record["checkouts"][0]["path"] == str(root)
+    assert record["checkouts"][0]["owner_id"] == first["resource_id"]
+    assert "origin" not in record["checkouts"][0]
     assert record["remotes"] == [] and not record["push_enabled"] and not record["ssh_key"]
     assert not (root / ".git").exists()
     assert service.read_content(first["resource_id"] + "/file/README.txt", actor="test-reader")[0] == b"Source from a user archive\n"

@@ -207,9 +207,9 @@ def test_store_deletion_rejects_unknown_identity_and_rolls_back_the_batch(future
     assert not get_directory_cleanup_store().status(owner_id=before["owned_workspace_id"])
 
 
-@pytest.mark.parametrize("origin", ["created", "adopted"])
+@pytest.mark.parametrize("registration", ["create", "register"])
 def test_resident_deletion_event_time_reaches_owned_and_nested_workspaces(
-    future_creation_store, tmp_path, origin,
+    future_creation_store, tmp_path, registration,
 ):
     """同一注销事件时间传到外部 owned 与嵌套 Workspace，文件按来源异步清理。"""
     owner = resident_domain.register_resident(_new_session_payload("Deletion time owner"), "sample_admin")
@@ -218,13 +218,16 @@ def test_resident_deletion_event_time_reaches_owned_and_nested_workspaces(
     owned = Path(owner["owned_workspace"]["path"])
     nested = owned.parent / "nested"
     external = tmp_path / "external"
-    nested.mkdir()
-    external.mkdir()
-    nested_id, external_id = "workspace_aabbccddeeff", "workspace_112233445566"
+    if registration == "register":
+        nested.mkdir()
+        external.mkdir()
+    from management_portal.resources.workspace_creation_store import WorkspaceCreationStore
+    creation = WorkspaceCreationStore()
     # The nested registration belongs to itself; the outer created Resident
     # folder still owns its removal. The external one follows its owner ID.
-    workspaces.ensure(nested_id, str(nested), origin=origin)
-    workspaces.ensure(external_id, str(external), origin=origin, owner_id=owner["resident_id"])
+    register = getattr(creation, registration)
+    nested_id = register(path=nested, owner_id="", actor="sample_admin", operation_id="nested-deletion")["workspace_id"]
+    external_id = register(path=external, owner_id=owner["resident_id"], actor="sample_admin", operation_id="external-deletion")["workspace_id"]
     deleted_at = "2026-10-08T01:02:03.456789Z"
     store.remove_residents([{
         "resident_id": owner["resident_id"], "deleted_at": deleted_at, "deleted_by": "sample_admin",
@@ -238,4 +241,4 @@ def test_resident_deletion_event_time_reaches_owned_and_nested_workspaces(
     outcomes = get_directory_cleanup_store().run_pending()
     assert outcomes and all(job["status"] == "completed" for job in outcomes)
     assert not owned.exists() and not nested.exists()
-    assert external.exists() == (origin == "adopted")
+    assert not external.exists()

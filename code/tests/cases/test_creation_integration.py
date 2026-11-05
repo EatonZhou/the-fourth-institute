@@ -345,6 +345,7 @@ def test_generated_identity_only_allocates_when_owner_commits(experiment_service
 def test_process_exit_before_postgres_commit_recovers_from_new_store(tmp_path):
     import subprocess
     import sys
+    from management_common import host_instances
     from management_portal.paper_store import PaperStore
     from management_portal.resources.registry_store import get_registry_store
     script = '''
@@ -353,6 +354,9 @@ from pathlib import Path
 import os, sys
 from management_portal.resources.creation import Creation
 from management_portal.paper_store import PaperStore
+from management_common import host_instances
+# Exec children must inherit the fixture's isolated host registry as well as PG.
+host_instances.user_home = lambda: Path(sys.argv[2])
 original = Creation.registration
 @contextmanager
 def interrupted(self, connection):
@@ -364,7 +368,8 @@ PaperStore(Path(sys.argv[1])).register(
     {'id': 'paper_abc012345678', 'title': 'Process exit'}, 'alice', operation_id='process-exit')
 '''
     # The child inherits only this pytest session's isolated DB/instance.
-    result = subprocess.run([sys.executable, '-c', script, str(tmp_path / 'papers')],
+    result = subprocess.run([sys.executable, '-c', script, str(tmp_path / 'papers'),
+                             str(host_instances.user_home())],
                             capture_output=True, text=True, timeout=30)
     assert result.returncode == 91, result.stderr
     path, = (tmp_path / 'papers').rglob('manifest.json')

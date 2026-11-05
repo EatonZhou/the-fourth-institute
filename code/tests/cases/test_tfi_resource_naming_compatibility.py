@@ -1,4 +1,4 @@
-"""Canonical reads and rejected old formats leave stored evidence untouched.
+"""Field-based reads and strict evidence protocols leave stored data untouched.
 
 :design: decision_15aab18c0ab3
 """
@@ -52,27 +52,22 @@ def invalid_tags(suffix):
 
 @pytest.mark.parametrize("namespace", ["archive", "tfi"])
 def test_descriptor_get_accepts_both_tags_without_persisting(namespace):
-    """协作描述符读取只接受规范 tfi 标签，旧 archive 标签被拒；两种情况都不写回存储、不改动原载荷"""
+    """协作描述符按字段读取，两种标签均不写回存储、不改动原载荷。"""
     raw = descriptor(f"{namespace}.collaboration-descriptor.v2")
     registry = ReadOnlyRows({("resident", RESIDENT): raw})
     before = copy.deepcopy(registry.rows)
     store = CollaborationDescriptorStore(registry=registry)
-    if namespace == "archive":
-        with pytest.raises(ValueError, match="unsupported collaboration descriptor schema"):
-            store.get(RESIDENT)
-    else:
-        assert store.get(RESIDENT) == descriptor("tfi.collaboration-descriptor.v2")
+    assert store.get(RESIDENT) == descriptor("tfi.collaboration-descriptor.v2")
     assert registry.rows == before
     assert raw["schema"] == f"{namespace}.collaboration-descriptor.v2"
 
 
-def test_descriptor_read_rejects_other_versions_types_and_invalid_payloads():
+def test_descriptor_read_ignores_format_labels_but_rejects_invalid_fields():
     store = CollaborationDescriptorStore(registry=ReadOnlyRows({}))
     for tag in invalid_tags("collaboration-descriptor"):
         raw = descriptor(tag)
         before = copy.deepcopy(raw)
-        with pytest.raises(ValueError, match="schema"):
-            store.normalize(raw)
+        assert store.normalize(raw) == descriptor("tfi.collaboration-descriptor.v2")
         assert raw == before
     for patch in ({"status": "unknown"}, {"attributes": {"owner_service": "forged"}},
                   {"resource_id": KNOWLEDGE}, {"unexpected": True}):

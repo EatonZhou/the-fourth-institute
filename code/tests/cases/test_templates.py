@@ -485,6 +485,10 @@ def test_from_selection_copies_resident_settings_and_rewrites_references(lineage
     from management_portal.society_service import templates
 
     source = resident(lineage, "Source")
+    policy = {"initiative": "low", "quality": "high"}
+    ok('UpdateResidentSettings', {'resident_id': source, 'changes': {
+        'reporting': policy, 'collaboration_mode': 'plan',
+    }})
     component = ok(
         "CreateComponent",
         {
@@ -502,7 +506,8 @@ def test_from_selection_copies_resident_settings_and_rewrites_references(lineage
         {"from_selection": {"lineage_id": lineage, "element_ids": [source, component]}},
     )["template"]
     role = template["body"]["roles"][0]
-    assert role["settings"]
+    assert role["settings"]['reporting'] == policy
+    assert role["settings"]['collaboration_mode'] == 'plan'
     assert (
         "{{role." + role["key"] + ".id}}"
         in template["body"]["components"][0]["config"]["script"]
@@ -527,8 +532,37 @@ def test_from_selection_copies_resident_settings_and_rewrites_references(lineage
     )
     assert applied["created"]["resident_ids"][0] in copied["config"]["script"]
     assert source not in copied["config"]["script"]
+    copied_settings = ok('GetResidentSettings', {
+        'resident_id': applied['created']['resident_ids'][0],
+    })['settings']
+    assert copied_settings['reporting'] == policy
+    assert copied_settings['collaboration_mode'] == 'plan'
 
 
+
+
+def test_selection_template_cleans_new_role_when_reporting_update_is_denied(lineage, monkeypatch):
+    """汇报设置保存被拒时保留原错误并清理新角色，不留下半成品。"""
+    from management_portal.society_service import resident_protocol, templates
+
+    source = resident(lineage, "Original")
+    template = ok('CreateTemplate', {
+        'from_selection': {'lineage_id': lineage, 'element_ids': [source]},
+    })['template']
+    before = {node['id'] for node in graph(lineage)['nodes']}
+    attempted = []
+
+    def deny(identity, actor, payload):
+        assert actor == ACTOR
+        assert set(payload['runtime_settings']) == {'reporting'}
+        attempted.append(identity)
+        raise PermissionError('reporting settings denied')
+
+    monkeypatch.setattr(resident_protocol, 'update_resident_runtime_settings', deny)
+    with pytest.raises(PermissionError, match='reporting settings denied'):
+        templates.apply(lineage, template['template_id'], {'kind': 'canvas'}, ACTOR)
+    assert len(attempted) == 1 and attempted[0] not in before
+    assert {node['id'] for node in graph(lineage)['nodes']} == before
 
 
 def test_structure_layout_keeps_only_drawn_keys_and_rejects_bad_points(lineage):

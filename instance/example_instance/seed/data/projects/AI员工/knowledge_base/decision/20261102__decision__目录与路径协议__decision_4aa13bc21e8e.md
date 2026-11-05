@@ -4,12 +4,12 @@ type: decision
 project: AI员工
 created_at: '2026-11-02'
 version:
-  number: 18
+  number: 19
   created_at: "2026-11-02"
   created_by:
     user: ""
     agent: "resident_24014e2b9bf6"
-  updated_at: "2026-11-05T11:42:47Z"
+  updated_at: "2026-11-05T14:03:07Z"
   updated_by:
     user: ""
     agent: "resident_6199a7a36480"
@@ -152,6 +152,8 @@ Portal 在主机上为各种对象保存文件，例如项目资料、Resident �
 2. **后台删除文件。** 文件由后台清理任务删除。删除失败会自动重试，Portal 重启后继续，直到删完。
 
 删除结果分两部分报告：登记是否已经注销；文件删到了哪一步，失败原因是什么。例如文件被占用时，结果显示“登记已注销，文件清理待重试”。登记注销以后，不会因为文件删不掉而恢复。
+
+**Project 注销事务通过功能声明接入 Workbench owner。** 已安装功能用 `project.deletion_transaction` 提供无参 `prepare()`；协调器在开启注销事务前完成 owner 准备，得到 `delete(project_id, *, connection, actor)` 回调。调用时传入原请求已核验的真实 actor 和同一个注销事务连接。Workbench owner 按事务内当前版本的所属记录确定目标，完成注销并返回实际 Workbench ID，协调器将其冻结进原收据的 `workbench_ids`，不依赖搜索索引或旧发布版本猜测归属。回调不另开提交事务、不另造身份或放宽权限；任何失败使 Project、嵌套登记、Workbench 与清理收据一并回滚。可选功能未安装时不强制加载其实现。该声明只负责同事务注销；提交后的收藏清理仍遵守下述独立副作用合同。
 
 **Project 删除后的功能清理由冻结收据驱动。** 身份注销事务保存的收据是后续副作用的唯一目标来源。可选功能通过 `project.deletion_effects` 提供 `{cursor: callback(receipt, *, write=True)}`；协调器按游标保存成功与失败，从同一收据重试，不直接依赖功能实现。游标必须唯一、跨版本稳定，并与功能名称独立。已完成游标跳过；重试成功清除对应旧错误；功能暂未提供回调时保留其旧错误，不把未执行视为成功。
 

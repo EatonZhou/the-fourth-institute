@@ -1,5 +1,6 @@
 // Actual Home host + native Frontier. Transport/chat are isolated fixtures;
 // all layout, view lifecycle, selection and edit dialog code is the real component.
+const homeAction=require('./home_dialogue_controls.cjs');
 const {writeFileSync} = require('node:fs');
 const path = require('node:path'), assert = require('node:assert/strict');
 module.exports = async ({page,out,lineage,teamTitle,checks,calls}) => {
@@ -12,7 +13,6 @@ module.exports = async ({page,out,lineage,teamTitle,checks,calls}) => {
     await page.addStyleTag({content:evidence.diagnosticOverride});
   }
   await page.evaluate(title=>{
-    window.PortalPreview={registerHost:()=>()=>{}};
     window.PortalNav={personalAssistantTarget:async()=>({resident_id:'resident_0123456789ab',title:'Fixture chat'})};
     window.PortalResourceChips={loadReference:async()=>({title})};
     window.PortalChatWorkspace={panelPackage:{create:({root})=>{
@@ -22,16 +22,12 @@ module.exports = async ({page,out,lineage,teamTitle,checks,calls}) => {
     window.host=PortalHomeDialogue.connect({root:document.querySelector('#root'),context:{currentUserReady:Promise.resolve({username:'fixture'})}});
   },teamTitle);
   const display=page.locator('.homeDialogueDisplay');
-  await display.locator('.homeDialogueOpener > summary').click();
-  await page.getByLabel('展示类型',{exact:true}).selectOption('frontier');
-  await page.getByLabel('目标 ID 或文件资源地址').fill(lineage);
-  await page.locator('.homeDialogueChooser').getByRole('button',{name:'展示',exact:true}).click();
+  await page.evaluate(id=>PortalPreview.request(PortalDisplayProtocol.previewRequest({view:'frontier',target:{kind:'lineage',id}})),lineage);
   const surface=page.locator('.homeMapSurface:not([hidden])');
   const seed=surface.locator('.graphNode[data-kind="seed"]');
   await seed.waitFor();await surface.getByRole('button',{name:'适应',exact:true}).click();await seed.click();
   await surface.getByRole('button',{name:'缩小',exact:true}).click();
-  await display.locator('.homeDialogueMore > summary').click();
-  await display.getByRole('button',{name:'展开',exact:true}).click();
+  await homeAction(page,'展开');
   await page.setViewportSize({width:390,height:844});
   await page.emulateMedia({reducedMotion:'reduce'});
   await page.evaluate(()=>document.documentElement.style.fontSize='20px');

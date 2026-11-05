@@ -185,7 +185,7 @@ def test_monitor_keeps_quota_independent_of_usage_and_retains_reserve_on_failure
     account = scheduler.accounts.get("codex_one")
     with mock.patch("management_portal.codex_app_server_client.client_for_socket", return_value=SimpleNamespace(request=read)):
         monitor.refresh_account(account)
-    assert calls == ["account/rateLimits/read", "account/usage/read"]
+    assert calls == ["account/rateLimits/read", "model/list", "account/usage/read"]
     window = scheduler.health()["capacity_partitions"]["codex:one"]["quota_reserve"]["windows"][0]
     assert window["window_duration_mins"] == 10080
     assert window["resets_at"] == 2000000000
@@ -193,6 +193,36 @@ def test_monitor_keeps_quota_independent_of_usage_and_retains_reserve_on_failure
         monitor.refresh_account(account)
     submit(scheduler)
     assert claim(scheduler)["reason"] == "quota_reserve"
+
+
+def test_catalog_failure_is_observable_without_exposing_exception_text(scheduler, caplog):
+    """目录失败记录账号和异常类型，不泄漏异常正文；显式刷新成功可恢复。"""
+    monitor = AccountMonitor(scheduler.accounts, scheduler)
+    account = scheduler.accounts.get("codex_one")
+    with mock.patch.object(scheduler.accounts, "observe", return_value={"status": "ok"}), \
+            mock.patch.object(scheduler.accounts, "runtime_catalog",
+                              side_effect=RuntimeError("authorization=fixture-private")) as catalog, \
+            mock.patch.object(monitor, "refresh_usage") as usage:
+        monitor.refresh_account(account)
+        catalog.assert_called_once_with(account.account_id)
+        usage.assert_called_once_with(account)
+        failure = next(row for row in monitor.snapshot()["accounts"] if row["account_id"] == account.account_id)
+        assert failure["selection_catalog"]["fresh"] is False
+        assert failure["selection_catalog"]["models"] == []
+        assert ("management_portal.execution.account_monitor", 30,
+                "Account catalog read failed for codex_one (codex): RuntimeError") in caplog.record_tuples
+        assert "fixture-private" not in caplog.text
+        assert "authorization=" not in caplog.text
+
+        caplog.clear()
+        catalog.side_effect = None
+        catalog.return_value = {"models": ["fixture-model"]}
+        monitor.refresh_account(account, force=True)
+        assert catalog.call_count == 2
+        recovered = next(row for row in monitor.snapshot()["accounts"] if row["account_id"] == account.account_id)
+        assert recovered["selection_catalog"]["fresh"] is True
+        assert recovered["selection_catalog"]["models"] == ["fixture-model"]
+        assert not caplog.records
 
 
 def test_health_exposes_scheduler_owned_quota_state(scheduler):

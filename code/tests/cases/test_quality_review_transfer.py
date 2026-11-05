@@ -152,7 +152,7 @@ def test_real_page_post_uses_authenticated_resident_not_workspace_owner(exchange
     assert not unbound.get('handoff')
 
 
-def test_user_reads_authors_fixed_quality_and_video_task_returns_to_author(exchange, permissions):
+def test_user_reads_authors_fixed_quality_and_video_task_returns_to_author(exchange, permissions, monkeypatch):
     owner, resources, subject, roots, put, request, calls = exchange
     user = 'isolated_reader'
     permissions.place(Fact('user', user))
@@ -180,6 +180,7 @@ def test_user_reads_authors_fixed_quality_and_video_task_returns_to_author(excha
     with pytest.raises(HTTPError) as denied:
         request(OTHER, 'reviews?' + urlencode(manifest))
     assert denied.value.code == 403
+    before = len(calls)
     result = request(user, 'media', {**manifest, 'quality': 'high', 'author': OTHER,
                                     'responsible_resident_id': OTHER})
     assert result['status'] == 'awaiting_authoring'

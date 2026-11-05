@@ -50,20 +50,6 @@ def _explanations(request, parsed, actor):
         return http_responses._serve_exception_json(request, exc)
 
 
-def _creation_check(request, parsed, actor):
-    try:
-        body = http_request_body._read_bounded_json_object(request, max_bytes=1024)
-        from management_portal.home_report_creation import RESIDENT, require_creation
-        if body:
-            raise ValueError('创作准入仅使用当前认证身份，不接受主体或消息参数')
-        if not RESIDENT.fullmatch(actor or ''):
-            raise PermissionError('解释包构建需要当前认证Resident')
-        require_creation(actor)
-        return http_responses._serve_json(request, 200, {'allowed': True})
-    except Exception as exc:
-        return http_responses._serve_exception_json(request, exc)
-
-
 def _generate(request, parsed, actor):
     try:
         body = http_request_body._read_bounded_json_object(request, max_bytes=4096)
@@ -262,7 +248,6 @@ def _page(request, parsed, actor):
 def routes(_shell=None):
     route = http_auth._principal_route
     return (route("GET", "/api/home-report", _get, "home-report"),
-            route('POST','/api/home-report/creation-check',_creation_check,'home-report'),
             route('GET','/api/home-report/explanations',_explanations,'home-report'),
             route('POST','/api/home-report/explanations',_explanations,'home-report'),
             route('GET','/api/home-report/origin',_origin,'home-report'),

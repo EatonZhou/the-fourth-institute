@@ -129,6 +129,8 @@ def test_engineering_package_includes_dsh_wrapper_and_common_transport():
 
 def test_windows_claude_cold_start_defines_native_service_without_restart(windows, monkeypatch):
     from management_common.instance_manifest import load
+    from tests.cases.provider_service_test_support import installed_claude_sdk
+    installed_claude_sdk(monkeypatch)
     document = json.loads((windows.root / "instance.json").read_text())
     document["services"]["components"].remove("claude-code")
     (windows.root / "instance.json").write_text(json.dumps(document))

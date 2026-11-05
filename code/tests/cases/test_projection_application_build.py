@@ -301,7 +301,7 @@ def test_bubblewrap_unavailable_has_no_host_execution_fallback(project, monkeypa
     :profiles: local.fixture
     """
     application = project.commit()
-    original = builder.subprocess.Popen
+    original = builder.process_runtime.run_process
     launches = []
 
     def unavailable(argv, **kwargs):
@@ -311,7 +311,7 @@ def test_bubblewrap_unavailable_has_no_host_execution_fallback(project, monkeypa
             raise PermissionError("namespace unavailable")
         return original(argv, **kwargs)
 
-    monkeypatch.setattr(builder.subprocess, "Popen", unavailable)
+    monkeypatch.setattr(builder.process_runtime, "run_process", unavailable)
     with pytest.raises(ProjectionError, match="宿主"):
         builder.build_application(application, ACTOR)
     assert any("/usr/bin/bwrap" in argv for argv in launches)

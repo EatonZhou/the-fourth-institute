@@ -96,14 +96,21 @@ def test_identity_upgrade_is_atomic_preserves_owners_and_reenters(future_creatio
             raw = json.loads(raw)
         assert raw['projects'][0] == {**document['projects'][0], 'directory': {'owner_id': project_id}}
     assert project_registry.load()['projects'][0]['directory'] == {'owner_id': project_id}
-    # The running owners must also upgrade at activation, without a separate
-    # installer having to call these hooks manually.
+    # Startup leaves existing rows intact. The explicit offline owner performs
+    # the upgrade in its caller's transaction and can safely be rerun.
     from management_portal.society_service.state_store import LineageDataStore
+    from scripts.directory_protocol_lifecycle_migration import migrate
     with database.transaction() as connection:
         for table, key in (('residents', 'resident_id'), ('lineages', 'lineage_id')):
             connection.execute(f'UPDATE {table} SET directory_json=%s WHERE {key}=%s',
                 (Jsonb({'owner_id': resident[key], 'origin': legacy}), resident[key]))
         LineageDataStore._initialize(connection)
+        for table, key in (('residents', 'resident_id'), ('lineages', 'lineage_id')):
+            row = connection.execute(f'SELECT directory_json FROM {table} WHERE {key}=%s',
+                                     (resident[key],)).fetchone()
+            assert json_value(row['directory_json']) == {'owner_id': resident[key], 'origin': legacy}
+        assert migrate(connection)['retired_classification'] == {'residents': 1, 'lineages': 1, 'projects': 0}
+        assert migrate(connection)['retired_classification'] == {'residents': 0, 'lineages': 0, 'projects': 0}
         assert directory_owner.upgrade_ownership(connection) == {'residents': 0, 'lineages': 0}
     with registry.writer(project_registry.COLLECTION) as writer:
         writer.put(project_registry.COLLECTION, project_registry.DOCUMENT_ID, document)

@@ -589,8 +589,11 @@ def test_completed_resident_turn_reuses_its_stable_final_message(
         if event["event_type"] == "resident.state.changed"
         and event["payload"]["state"]["work_state"] == "idle"
     ]
-    assert len(completed) == len(idle) == 1
-    assert completed[0]["payload"]["input_state"]["reply_message_ids"] == [first["message_id"]]
+    # Work projection refreshes may republish a completed input. The stable
+    # reply identity and single transition to idle must remain unchanged.
+    assert completed and len(idle) == 1
+    assert all(event["payload"]["input_state"]["reply_message_ids"] == [first["message_id"]]
+               for event in completed)
     assert appended[0]["cursor"] < completed[0]["cursor"] < idle[0]["cursor"]
 
 

@@ -8,10 +8,11 @@ from management_portal.society_service.lineage_program_effect_execution import _
 def interrupted(kernel):
     call = scheduler_call(idempotency_key="owner-reconciliation")
     first = kernel.execute(call, CONTEXT)
+    assert first.status == "committed", first.error
     kernel.store.database.write(lambda c: c.execute(
         "UPDATE instruction_executions SET status='executing', error_json='null' WHERE instruction_id=%s",
         (first.instruction_id,)))
-    kernel.store.settle_interrupted(now="2026-11-04T00:00:00Z")
+    assert kernel.store.settle_interrupted(now="2026-11-04T00:00:00Z") == 1
     return call, first
 
 
@@ -22,9 +23,10 @@ def test_owner_reconciliation_is_serialized_and_uses_original_id(kernel, fake):
         calls.append(inv.instruction_id)
         return {"account_id": "original-account"}
     kernel.binding.recover_interrupted[call.instruction] = reconcile
-    with kernel.store.active_execution(first.instruction_id):
+    with kernel.store.active_execution(first.instruction_id) as acquired:
+        assert acquired, "The fixture must own the original instruction's activity lock"
         pending = kernel.execute(call, CONTEXT)
-    assert pending.error["details"]["reason"] == "interrupted_recovery_pending"
+    assert pending.error and pending.error.get("details", {}).get("reason") == "interrupted_recovery_pending", pending.error
     attempt = _CallAttempt(CONTEXT, "")
     assert attempt.executed_entry(pending)["status"] == "unresolved"
     assert not attempt.final_receipt

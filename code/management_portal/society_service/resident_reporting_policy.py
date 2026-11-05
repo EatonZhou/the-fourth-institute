@@ -66,12 +66,6 @@ INITIATIVE_TEMPLATES = {name: f"initiative_{name}.md" for name in ("off", "low",
 QUALITY_TEMPLATES = {name: f"quality_{name}.md" for name in ("low", "medium", "high")}
 
 
-def creation_allowed(resident_id: str, message_id: str = "") -> bool:
-    """Read trusted policy; callers still own actor identity and source ACL checks."""
-    policy = effective(resident_id, message_id)
-    return policy.get("state") == "known" and policy["initiative"] != "off"
-
-
 def template_paths(policy: dict) -> tuple[Path, ...]:
     """Select only shipped templates, never a path supplied by message text."""
     if policy.get("state") != "known":

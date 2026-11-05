@@ -4,30 +4,30 @@ type: decision
 project: AI员工
 created_at: '2026-09-28'
 version:
-  number: 56
-  created_at: '2026-09-28T10:45:00Z'
+  number: 61
+  created_at: "2026-09-28T10:45:00Z"
   created_by:
-    user: tfi-exported-user
-    agent: resident_2a1fc6cd272d
-  updated_at: '2026-11-01T03:39:42Z'
+    user: "weihao"
+    agent: "resident_2a1fc6cd272d"
+  updated_at: "2026-11-05T13:23:39Z"
   updated_by:
-    user: ''
-    agent: resident_24014e2b9bf6
+    user: ""
+    agent: "resident_6199a7a36480"
 importance: 8
 metaness: 2
 ai_generated: false
 links:
   source:
-  - ${code_root}/management_portal/runtime_capacity.py
-  - ${code_root}/management_portal/web_isa.py
-  - ${code_root}/management_portal/hatg/catalog/environment.py
-  - ${code_root}/tests/cases/test_isa_g7_audit.py
-  - ${code_root}/scripts/tfi_dev.py
-  - ${code_root}/tests/cases/test_portal_web_isa_environment.py
-  - ${code_root}/scripts/portal_services
-  - ${code_root}/scripts/tfi_development_runtime.py
-  - ${code_root}/management_portal/agent_status_backend.py
-  - ${code_root}/management_portal/execution/chat_completion_service.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/runtime_capacity.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/web_isa.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/hatg/catalog/environment.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_isa_g7_audit.py
+  - /opt/tfi/the-fourth-institute-dev/code/scripts/tfi_dev.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_portal_web_isa_environment.py
+  - /opt/tfi/the-fourth-institute-dev/code/scripts/portal_services
+  - /opt/tfi/the-fourth-institute-dev/code/scripts/tfi_development_runtime.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/agent_status_backend.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/execution/chat_completion_service.py
   related:
   - decision_8ac0b5a6c0e5
   - decision_fc26f883773d
@@ -265,6 +265,8 @@ Portal 服务指令由 Portal Web 执行。Dev 与 Release 两个部署各有自
 
 ### `CreateModelApi`
 
+`kind`：主要协议：openai_compatible_chat（默认）、openai_responses、anthropic_messages 或 typesafe_system_one。
+
 **登记一个新的模型接口。**
 
 - 参数：`api_id`、`base_url`、`default_model`、`secret_file`（密钥文件路径）、`secret`（可选，一次性密钥：Portal 原子写入站点密钥目录下的 `<api_id>.key` 并把路径记为 `secret_file`，不回显）、`provider`（可选，Provider 标识）、`routes`（可选，每项明确给出 `backend` 和 `route_id`）、`models`（可选，模型目录；每项含唯一 `id`，可声明 `reasoning_efforts` 与 `enabled`）、`protocols`（可选，Agent Harness 可用的其他协议：`openai_responses` 为 `{}`，供 Codex；`anthropic_messages` 可含 `base_url` 与 `auth`（`bearer` 或 `x-api-key`），供 Claude Code；Chat Completions 无需声明）、`default_parameters`（可选，协议允许的默认生成参数）、`timeout_seconds`（可选）、`retries`（可选）、`headers`（可选，不含密钥）、`enabled`（可选，默认 `true`）。
@@ -306,6 +308,20 @@ Portal 服务指令由 Portal Web 执行。Dev 与 Release 两个部署各有自
 - 每种协议向 Agent Harness 实际使用的地址发一次很短的非流式请求：`<base_url>/chat/completions`、`<base_url>/responses` 与 `<anthropic_base_url 或去掉 /v1 的 base_url>/v1/messages`。Anthropic 先以 Bearer 认证，被拒绝时再以 `x-api-key` 认证。返回 2xx 且内容符合该协议的格式才算支持；部分网关对未知路径返回网页，按不支持处理。
 - 检测会调用模型，可能产生少量费用。它不修改登记；密钥不进入结果和日志，`message` 中出现的密钥替换为 `***`。
 
+### `ListProviders` 的参数补充
+
+`include_runtime`：默认 true；false 只读接入目录，不探测版本或准备状态，并忽略 refresh。
+
+### `RegisterProviderAccount` 的参数补充
+
+`reuse_existing`：默认 false；为 true 时仅复用显式指定的现有订阅登录目录，禁止空值落到默认新建目录。
+
+### `UpdateBackendRole` 的参数补充
+
+`account_selection`：auto（默认）：按后端种类顺序及可用额度选择；fixed：固定账号。
+
+`backend_priority`：有序账号种类 ID，用于默认选择及自动切换；跨种类使用目标默认模型，API/服务种类须明确列入；省略保留原值，空数组限制在参考账号同类。
+
 ## 参数名契约
 
 下表列出 arguments 内的顶层参数名；必填条件、类型和枚举以 GetInstructionSchema 为准。调用信封中的 expected_version、idempotency_key 与 wait_seconds 不列入 arguments。
@@ -321,7 +337,7 @@ Portal 服务指令由 Portal Web 执行。Dev 与 Release 两个部署各有自
 | `GetDeviceStatus` | `kind`、`device_id`、`refresh` |
 | `OpenTerminal` | `device_id`、`cwd`、`cols`、`rows` |
 | `ListModelApis` | 无 |
-| `CreateModelApi` | `api_id`、`base_url`、`default_model`、`secret_file`、`secret`、`provider`、`routes`、`models`、`protocols`、`default_parameters`、`timeout_seconds`、`retries`、`headers`、`enabled` |
+| `CreateModelApi` | `api_id`、`base_url`、`kind`、`default_model`、`secret_file`、`secret`、`provider`、`routes`、`models`、`protocols`、`default_parameters`、`timeout_seconds`、`retries`、`headers`、`enabled` |
 | `UpdateModelApi` | `api_id`、`changes`、`secret` |
 | `DeleteModelApi` | `api_id` |
 | `CompleteChat` | `api_id`、`model`、`messages`、`options`、`response_schema` |
@@ -329,12 +345,12 @@ Portal 服务指令由 Portal Web 执行。Dev 与 Release 两个部署各有自
 | `ListProviderAccounts` | `account_id`、`refresh` |
 | `GetProviderUsageEvents` | `account_id`、`since`、`until`、`cursor`、`limit` |
 | `UpdateProviderAccount` | `account_id`、`max_concurrency`、`dispatch_interval_min_seconds`、`dispatch_interval_max_seconds`、`close_threshold_percent`、`close_threshold_amount` |
-| `ListProviders` | `refresh` |
+| `ListProviders` | `refresh`、`include_runtime` |
 | `PrepareProviderRuntime` | `provider` |
 | `GetProviderAccountSetup` | `account_id` |
 | `CheckProviderAccount` | `account_id`、`model` |
 | `GetProviderAccountCheck` | `account_id`、`execution_id` |
-| `RegisterProviderAccount` | `account_id`、`provider`、`kind`、`route_id`、`config`、`max_concurrency`、`enabled`、`secret` |
+| `RegisterProviderAccount` | `account_id`、`provider`、`kind`、`route_id`、`config`、`max_concurrency`、`reuse_existing`、`enabled`、`secret` |
 | `UpdateProviderAccountRegistration` | `account_id`、`changes` |
 | `DeleteProviderAccount` | `account_id` |
 | `OpenProviderAccountLogin` | `account_id`、`region` |
@@ -342,7 +358,7 @@ Portal 服务指令由 Portal Web 执行。Dev 与 Release 两个部署各有自
 | `GetProviderAccountLogin` | `account_id` |
 | `CancelProviderAccountLogin` | `account_id` |
 | `ListBackendRoles` | 无 |
-| `UpdateBackendRole` | `backend_role`、`account_id`、`model`、`reasoning_effort`、`verification_execution_id` |
+| `UpdateBackendRole` | `backend_role`、`account_id`、`account_selection`、`backend_priority`、`model`、`reasoning_effort`、`verification_execution_id` |
 | `GetUsage` | `period`、`group_by`、`provider`、`account_id`、`include_cached` |
 | `GetTelepusStatus` | 无 |
 | `SetTelepusEnabled` | `enabled` |

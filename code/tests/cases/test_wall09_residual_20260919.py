@@ -58,10 +58,9 @@ def test_project_deletion_rejects_instance_area_root_before_side_effects(monkeyp
     assert deleted == []
 
 
-@pytest.mark.parametrize('origin', ['created', 'adopted'])
 @pytest.mark.parametrize('internal', [False, True])
-def test_project_deletion_follows_origin_inside_and_outside_areas(monkeypatch, tmp_path, origin, internal):
-    """项目按目录来源删除；区域内外均只清理 created，adopted 文件保留。"""
+def test_project_deletion_cleans_owned_directory_inside_and_outside_areas(monkeypatch, tmp_path, internal):
+    """注销项目后清理其明确登记的自有目录，区域内外均保留相邻内容。"""
     from management_common.instance_manifest import current_instance
     from management_common.directory_cleanup_store import get_directory_cleanup_store
     _, registry, _, _ = _configure_project(monkeypatch, tmp_path)
@@ -72,7 +71,7 @@ def test_project_deletion_follows_origin_inside_and_outside_areas(monkeypatch, t
     neighbor.mkdir()
     (neighbor / 'keep.md').write_text('neighbor')
     document = yaml.safe_load(registry.read_text())
-    document['projects'][0].update(path=str(root), directory={'origin': origin, 'owner_id': 'Example'})
+    document['projects'][0].update(path=str(root), directory={'owner_id': 'Example'})
     registry.write_text(yaml.safe_dump(document))
 
     project_domain.delete_project('Example', 'alice')
@@ -81,14 +80,11 @@ def test_project_deletion_follows_origin_inside_and_outside_areas(monkeypatch, t
     assert (root / 'content.md').read_text() == 'owned or adopted content'
     cleanup = get_directory_cleanup_store()
     jobs = cleanup.status(owner_id='Example')
-    assert bool(jobs) == (origin == 'created')
+    assert jobs
     assert all(job['status'] == 'pending' for job in jobs)
     cleanup.run_pending()
-    assert root.exists() == (origin == 'adopted')
-    if origin == 'adopted':
-        assert (root / 'content.md').read_text() == 'owned or adopted content'
-    else:
-        assert all(job['status'] == 'completed' for job in cleanup.status(owner_id='Example'))
+    assert not root.exists()
+    assert all(job['status'] == 'completed' for job in cleanup.status(owner_id='Example'))
     assert (neighbor / 'keep.md').read_text() == 'neighbor'
 
 
@@ -516,7 +512,8 @@ def test_reference_registration_reuses_or_registers_and_returns_detail(monkeypat
 
 def test_collector_job_listed_and_deleted_by_other_users_keeps_runtime_binding(monkeypatch):
     """其他用户可以查看和删除论文收集任务，创建者与 Resident、Lineage 绑定保持不变"""
-    state = {"job_id": "fixture", "created_by": "alice", "status": "done", "resident_id": "resident_fixture", "lineage_id": "lineage_fixture"}
+    state = {"job_id": "fixture", "created_by": "alice", "status": "done", "updated_at": 1700000000.0,
+             "resident_id": "resident_fixture", "lineage_id": "lineage_fixture"}
     monkeypatch.setattr(paper_collection_jobs, "_paper_collection_job_by_id", lambda *_args: dict(state))
     monkeypatch.setattr(paper_collection_jobs, "_all_paper_collection_jobs", lambda: [dict(state)])
     monkeypatch.setattr(paper_collection_jobs, "_set_paper_collection_job", lambda _identity, patch: state.update(patch) or dict(state))

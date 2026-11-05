@@ -182,19 +182,29 @@ def test_tfi_framework_format_writers_live_descriptor(tmp_path, monkeypatch):
 
 
 @pytest.mark.parametrize("safe", [False, True])
-def test_tfi_framework_format_writers_checkpoint(tmp_path, safe):
+def test_tfi_framework_format_writers_checkpoint(tmp_path, safe, monkeypatch):
     """执行原 checkpoint 写入，保留内层原句柄与清理状态。"""
     # Only the case run's writer: executing the case would verify live DEV
     # and invoke a Resident, outside this unit contract.
     case_run = runner_adapters._TauCaseRun.__new__(runner_adapters._TauCaseRun)
     case_run.run_dir = tmp_path
-    handle = {"schema": "tfi.fixture-handle.v1", "message_id": "msg_original", "idempotency_key": "original-key"}
+    handle = {"schema": "tfi.fixture-handle.v1", "resident_id": "resident_0123456789ab",
+              "message_id": "msg_original", "idempotency_key": "original-key"}
+    checks = []
+    def terminal(resident_id, message_id):
+        checks.append((resident_id, message_id))
+        return True
+    monkeypatch.setattr(runner_adapters, '_confirmed_terminal_input', terminal)
     original = deepcopy(handle)
     case_run.save_checkpoint(handle, safe=safe)
     path = tmp_path / "tau-invocation.json"
     assert json.loads(path.read_text()) == {"schema": "tfi.tau-invocation-checkpoint.v1",
                                            "handle": handle, "safe_to_cleanup": safe}
     assert runner_adapters.TauAdapter.cleanup_ready(run_dir=tmp_path) is safe
+    assert checks == ([(handle['resident_id'], handle['message_id'])] if safe else [])
+    # Even a safe checkpoint cannot clean up a requeued/nonterminal input.
+    monkeypatch.setattr(runner_adapters, '_confirmed_terminal_input', lambda *_: False)
+    assert not runner_adapters.TauAdapter.cleanup_ready(run_dir=tmp_path)
     assert handle == original
 
 

@@ -45,8 +45,9 @@ module.exports = async ({page, root, residentId, childId, sessionId, errors, req
   assert.equal(menuSession.session_id, sessionId);
   const deletionExplanation=await menu.getByRole('button',{name:'Delete node',exact:true})
     .getAttribute('data-portal-tooltip');
-  assert.match(deletionExplanation,/Portal-created directories and their nested objects are permanently deleted/);
-  assert.match(deletionExplanation,/adopted directories are unregistered and their files preserved/);
+  assert.match(deletionExplanation,/Owned directories and their nested objects are permanently deleted according to resource ownership/);
+  assert.match(deletionExplanation,/unrelated files in shared directories are preserved/);
+  assert.match(deletionExplanation,/Conversations and execution traces are retained/);
   assert.doesNotMatch(deletionExplanation,/referenced Workspaces are retained/);
   assert.equal((await readResidentMenuSession(menu, {residentId:childId})).ready, false);
   await page.evaluate(() => { window.sampleCopied = []; PortalUI.copyText = async value => { sampleCopied.push(value); }; });
@@ -93,13 +94,13 @@ module.exports = async ({page, root, residentId, childId, sessionId, errors, req
   const {readSessionLineageIdentity:readOpeningIdentity}=require('../../../management_portal/test_framework/tau_evidence');
   const hiddenGraph=page.getByRole('region',{name:'HATG',exact:true});
   assert.equal((await readOpeningIdentity(hiddenGraph,{lineageId:'lineage_222222222222'})).identity_ready,false);
-  await page.evaluate(() => PortalI18n.apply('zh-CN'));
+  await page.evaluate(() => PortalI18n.set('zh-CN',{reload:false}));
   await page.reload();
   await page.getByRole('button',{name:'显示 HATG',exact:true}).waitFor({state:'visible'});
   const localizedShow=await nativeHatgShowControl(page);
   assert.equal(await localizedShow.getAttribute('aria-label'),'显示 HATG');
   assert.equal(await hiddenGraph.isVisible(),false,'discovery must not change layout');
-  await page.evaluate(() => PortalI18n.apply('en'));
+  await page.evaluate(() => PortalI18n.set('en',{reload:false}));
   await page.reload();
   await page.getByRole('button',{name:'Show HATG',exact:true}).waitFor({state:'visible'});
   const showGraph=await nativeHatgShowControl(page);

@@ -4,24 +4,24 @@ type: decision
 project: AI员工
 created_at: '2026-09-28'
 version:
-  number: 45
-  created_at: '2026-09-28T10:45:00Z'
+  number: 46
+  created_at: "2026-09-28T10:45:00Z"
   created_by:
-    user: tfi-exported-user
-    agent: resident_2a1fc6cd272d
-  updated_at: '2026-10-31T18:14:45Z'
+    user: "weihao"
+    agent: "resident_2a1fc6cd272d"
+  updated_at: "2026-11-05T13:23:38Z"
   updated_by:
-    user: ''
-    agent: resident_24014e2b9bf6
+    user: ""
+    agent: "resident_6199a7a36480"
 importance: 8
 metaness: 2
 ai_generated: false
 links:
   source:
-  - ${code_root}/tests/cases/test_isa_audit_g4.py
-  - ${code_root}/management_portal/society_service/isa/definition.py
-  - ${code_root}/management_portal/society_service/lineage_program.py
-  - ${code_root}/management_portal/society_service/lineage_handoff_backend.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_isa_audit_g4.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/isa/definition.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/lineage_program.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/lineage_handoff_backend.py
   related:
   - decision_8838269736d3
   - decision_7ef392b5f60d
@@ -104,6 +104,7 @@ Lineage 定义的合并提交、显式 `expected_version`、冲突详情和多 L
 | `GetLineageDiagnostics` | 否 | 读取当前定义的诊断，包括 Effect 脚本的字面量参数校验 | 对 `lineage_id` 有 @viewer |
 | `ApplyLineageChanges` | 是 | 一次原子提交多项修改 | 对 `lineage_id` 有 @contributor |
 | `WatchLineage` | 否（流式） | 订阅 Lineage 定义的变化 | 对 `lineage_id` 有 @viewer |
+| `RelocateWorkspaceHandoff` | 是 | 将已有交接副本归位到所属 Lineage 的 handoff-workspaces，保留 Workspace ID、内容、绑定和尝试历史；活跃使用者阻止搬迁。 | 对 `lineage_id` 有 `@contributor`；对 `workspace_id` 有 `@contributor` |
 
 Lineage 不保存待确认的修改方案。需要先让人确认的团队结构，由 Resident 在回复里给出方案，确认后再用 `ApplyLineageChanges` 等指令提交（核心 Skill `tfi-agent-rule` 的 `portal-resident.md` 中的“创建团队”协议）。
 
@@ -316,6 +317,10 @@ Lineage 不保存待确认的修改方案。需要先让人确认的团队结构
 
 Resident、Event Source、Filter、Reducer 的普通出端口为 output；Selector 使用 branch:<id>，Loop 使用 continue／stop。Route 接收端通常为 invoke，Loop 也接受 done。参数映射可以读取 packet.message.text、packet.message.data.* 与 packet.events.0.type；Watch 和 Target 绑定不传输 Packet。包格式与算子合同见 decision_4adcc1ff2f2c。
 
+### `RelocateWorkspaceHandoff`
+
+将交接项已有副本归位到所属 Lineage 的 handoff-workspaces。参数为 `lineage_id`、`handoff_id`、`item_id`、`workspace_id`、`expected_workspace_version`。Lineage 与 Workspace 都要求 `@contributor`，Workspace 版本必须匹配，活跃使用者阻止搬迁。保留 Workspace ID、内容、绑定与尝试历史，不创建第二份身份，也不重新准备交接。返回字段由当前 `GetInstructionSchema` 声明。
+
 ## 参数名契约
 
 下表列出 arguments 内的顶层参数名；必填条件、类型和枚举以 GetInstructionSchema 为准。
@@ -344,3 +349,4 @@ Resident、Event Source、Filter、Reducer 的普通出端口为 output；Select
 | `GetLineageDiagnostics` | `lineage_id` |
 | `ApplyLineageChanges` | `lineage_id`、`operations`、`near_resident_id`、`placement`、`x`、`y` |
 | `WatchLineage` | `lineage_id`、`after_cursor` |
+| `RelocateWorkspaceHandoff` | `lineage_id`、`handoff_id`、`item_id`、`workspace_id`、`expected_workspace_version` |

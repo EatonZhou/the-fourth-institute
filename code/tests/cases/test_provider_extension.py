@@ -85,7 +85,7 @@ out["requests"] = [request("turn"), request("fork")]
 from management_portal.execution.accounts import default_execution_accounts
 accounts = default_execution_accounts()
 row = next(row for row in accounts.runtime_catalog(include_backends=True)["backends"] if row["backend"] == hp.PROVIDER)
-account = accounts.resolve(hp.PROVIDER, "")
+account = accounts.resolve(hp.PROVIDER, hp.ROUTE)
 out["catalog"] = {"label": row["label"], "settings": row["runtime_settings"], "routes": [route["models"] for route in row["routes"]],
                   "account_models": accounts.runtime_catalog(account.account_id)["models"]}
 

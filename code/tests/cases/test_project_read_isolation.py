@@ -3,7 +3,10 @@
 :module: resource.index-search
 """
 from types import SimpleNamespace
-from urllib.parse import urlparse
+import json
+import threading
+from http.server import ThreadingHTTPServer
+from urllib.request import urlopen
 
 import pytest
 
@@ -45,15 +48,26 @@ def test_http_catalog_and_suggestions_hide_denied_projects_and_knowledge(resourc
     """实际 HTTP 列表与联想在分页前隐藏被拒绝项目及知识资源"""
     from management_portal import serve_management_portal as portal
     monkeypatch.setattr(portal._RESOURCE_HTTP, "resource_service", lambda: resources)
-    monkeypatch.setattr(portal._RESOURCE_HTTP, "respond", lambda request, status, value: (status, value))
-    for path in ("/api/resource-index/query?limit=1", "/api/resource-index/suggest?q=Hidden"):
-        parsed = urlparse(path)
-        status, result = portal._PORTAL_HTTP_ROUTES.dispatch(
-            "GET", parsed.path, SimpleNamespace(headers={}), parsed, "intern", phase="protected")
-        assert status == 200
-        assert {row["resource_id"] for row in result["resources"]} == ({"Allowed"} if "query" in path else set())
-        if "query" in path:
-            assert result["total"] == 1
+    from management_portal import http_auth
+
+    monkeypatch.setattr(http_auth, "_check_session", lambda request: True)
+    monkeypatch.setattr(http_auth, "_get_session_username", lambda request: "intern")
+    server = ThreadingHTTPServer(("127.0.0.1", 0), portal.Handler)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    try:
+        base = f"http://127.0.0.1:{server.server_address[1]}"
+        for path in ("/api/resource-index/query?limit=1", "/api/resource-index/suggest?q=Hidden"):
+            with urlopen(base + path, timeout=5) as response:
+                assert response.status == 200
+                result = json.load(response)
+            assert {row["resource_id"] for row in result["resources"]} == ({"Allowed"} if "query" in path else set())
+            if "query" in path:
+                assert result["total"] == 1
+    finally:
+        server.shutdown()
+        server.server_close()
+        thread.join(timeout=2)
 
 
 def test_direct_resource_read_hides_denied_knowledge(resources):
