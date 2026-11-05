@@ -64,3 +64,53 @@ def test_request_blocks_browser():
         input=json.dumps({"routeScript": portal_route_script().decode()}),
         env={**os.environ, "CHAT_REPLY_BLOCKS_ONLY": "1"}, timeout=60)
     assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_delivered_collaboration_keeps_user_reply_block(team, delivered_work, monkeypatch):
+    """A live reply and later results stay under the user request after a colleague arrives."""
+    from management_portal.execution.appended_input_projection import materialize_delivered_input
+    from management_portal.execution.contracts import ExecutionInputControl
+    rid, repo, store, head, appended, execution, turn = delivered_work
+    colleague = 'resident_abcdefabcdef'
+    facade = team.source
+    monkeypatch.setattr(family_facade, 'relay_links', lambda _: {
+        'msg_facade_user': {'resident_id': rid, 'message_id': appended},
+    })
+    request = {'message_id': 'msg_facade_user', 'role': 'user', 'author_id': 'CASE-A'}
+
+    def output(identity):
+        repo.append_message(rid, {'message_id': identity, 'role': 'agent', 'author_id': rid,
+            'reply_to_message_id': head, 'execution_id': execution,
+            'content_parts': [{'type': 'text', 'text': identity}]})
+
+    def deliver(identity, sender):
+        repo.append_message(rid, {'message_id': identity, 'role': 'user', 'author_id': sender['id'],
+            'origin': {'schema': 'tfi.message-origin.v1', 'sender': sender,
+                       'producer': {'kind': 'service', 'id': 'portal'}},
+            'content_parts': [{'type': 'text', 'text': identity}]})
+        control = ExecutionInputControl.new(execution_id=execution, actor=colleague,
+            expected_turn_id=turn, source_segment_id=store.chat_message_provenance(rid, identity)['segment_id'],
+            input=[{'type': 'text', 'text': identity}])
+        materialize_delivered_input(store, {**control.to_payload(), 'status': 'delivered',
+            'updated_at': '2026-10-01T00:00:03Z'})
+
+    output('msg_before_collaboration')
+    deliver('msg_collaboration', {'kind': 'resident', 'id': colleague})
+    output('msg_after_collaboration')
+    expected = ['msg_before_collaboration', 'msg_after_collaboration']
+    assert [m['message_id'] for m in repo.reply_blocks([(rid, appended)])[(rid, appended)]['replies']] == expected
+    page = family_facade.project_messages(facade, [request, {
+        'message_id': 'msg_facade_info', 'role': 'user', 'author_id': colleague, 'held_info': True,
+    }])
+    assert [m['message_id'] for m in page] == ['msg_facade_user', *expected, 'msg_facade_info']
+    for identity in expected:
+        assert repo.message(rid, identity)['display_reply_to_message_id'] == appended
+        assert family_facade.projected_reply(facade, identity)['family_reply']['request_message_id'] == 'msg_facade_user'
+
+    # A genuine user correction delivered by a Resident still establishes a new block.
+    deliver('msg_user_correction', {'kind': 'user', 'id': 'CASE-A'})
+    output('msg_after_correction')
+    blocks = repo.reply_blocks([(rid, appended), (rid, 'msg_user_correction')])
+    assert [m['message_id'] for m in blocks[(rid, appended)]['replies']] == expected
+    assert [m['message_id'] for m in blocks[(rid, 'msg_user_correction')]['replies']] == ['msg_after_correction']
+    assert repo.message(rid, 'msg_after_correction')['reply_to_message_id'] == head

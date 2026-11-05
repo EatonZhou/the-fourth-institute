@@ -1,12 +1,15 @@
 """Chat reply placement, independent of the execution's original input.
 
-Only a confirmed Provider append in the same durable trace can change the
-display request. Mailbox arrival, timestamps and current runtime state cannot.
+Only a confirmed user-authored Provider append in the same durable trace can
+change the display request. Resident collaboration does not replace that request.
+Mailbox arrival, timestamps and current runtime state cannot.
 Execution outcome/retry associations remain untouched.
 """
 from __future__ import annotations
 
 from typing import Any
+
+from .conversation_projection import TYPED_BY_USER
 
 
 def reply_placements(connection: Any, segment_ids: list[str]) -> dict[str, str]:
@@ -19,6 +22,7 @@ def reply_placements(connection: Any, segment_ids: list[str]) -> dict[str, str]:
         "AND position.sequence_id=occurrence.sequence_id AND position.source_kind='segment' "
         "WHERE input.execution_id=output.execution_id AND input.created_by_agent_id=output.created_by_agent_id "
         "AND input.metadata_json::jsonb->>'kind'='appended_provider_input' "
+        f"AND {TYPED_BY_USER.format(metadata='input.metadata_json')} "
         "AND position.ordinal<occurrence.ordinal "
         "ORDER BY position.ordinal DESC LIMIT 1) appended "
         "WHERE output.segment_id=ANY(%s) AND output.segment_type='model'",
@@ -39,6 +43,7 @@ def reply_windows(connection: Any, windows: list[tuple]) -> list[tuple]:
         "AND position.sequence_id=requested.sequence_id AND position.source_kind='segment' "
         "WHERE appended.execution_id=COALESCE(NULLIF(source.execution_id,''), reservation.execution_id) "
         "AND appended.metadata_json::jsonb->>'kind'='appended_provider_input' "
+        f"AND {TYPED_BY_USER.format(metadata='appended.metadata_json')} "
         "AND position.ordinal>requested.after_ordinal) AS end_ordinal "
         "FROM unnest(%s::text[],%s::text[],%s::bigint[]) requested(sequence_id,message_id,after_ordinal) "
         "JOIN chat_message_positions current ON current.sequence_id=requested.sequence_id "

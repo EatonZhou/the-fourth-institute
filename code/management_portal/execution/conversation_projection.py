@@ -12,6 +12,9 @@ from __future__ import annotations
 # may display reasoning, tools or every Segment instead.
 CHAT_PREDICATE = "jsonb_typeof(metadata_json::jsonb -> 'message') = 'object'"
 CHAT_SEGMENT = "jsonb_typeof(segment.metadata_json::jsonb -> 'message') = 'object'"
+# Message authorship, independent of who delivered or injected its input.
+# Older messages without sender records retain the existing user classification.
+TYPED_BY_USER = "COALESCE(({metadata})::jsonb #>> '{{message,origin,sender,kind}}', 'user') = 'user'"
 # Turn/changes/subagent cards describe work in the UI; they cannot answer an
 # input or supersede its textual/structured reply merely by arriving later.
 REPLY_SEGMENT = """NOT (segment.metadata_json::jsonb->'message' ? 'harness_input') AND NOT EXISTS (

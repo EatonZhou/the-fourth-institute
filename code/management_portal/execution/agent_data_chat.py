@@ -10,7 +10,7 @@ from .agent_data_messages import chat_role
 from .agent_data_segments import existing_segment_ids, read_segments
 from .agent_data_store import canonical_json, in_batches
 from .agent_data_traces import PROVIDER_TURN_SQL, trace_id
-from .conversation_projection import CHAT_PREDICATE
+from .conversation_projection import CHAT_PREDICATE, TYPED_BY_USER
 from .message_projection import project_message
 from . import chat_position_index
 
@@ -25,12 +25,6 @@ from . import chat_position_index
 # message (``{"message": {...}}``).  The queries that find messages in
 # Segments use ``CHAT_PREDICATE``, so that the partial indexes of
 # agent_data_tables apply; its statistics objects size their lookups.
-
-
-# An input a User typed, by the metadata of its Segment: a Resident's delivery,
-# a Mailbox group or a service notice is an input too but names another sender.
-# Messages from before sender records name none.
-TYPED_BY_USER = "COALESCE(({metadata})::jsonb #>> '{{message,origin,sender,kind}}', 'user') = 'user'"
 
 
 # A projected message Chat shows: every one but a final answer Segment
