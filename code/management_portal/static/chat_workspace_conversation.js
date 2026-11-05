@@ -158,7 +158,7 @@
         const replies = [...new Set(requests.flatMap(({ item, relay }) => (outputs.get(item.id) || [])
           .filter(index => !messages[index].family_reply.resident_id || !relay.resident_id
             || messages[index].family_reply.resident_id === relay.resident_id)))];
-        const end = Math.max(...requests.map(request => request.index), ...replies);
+        const end = replies.length ? Math.max(...replies) : owner.index;
         status.set(end, { ...owner.relay, request_message_id: owner.item.id });
         // Outputs of a request its member is running stay open, like a running turn's.
         if (owner.relay.state === "running") replies.forEach(output => live.add(output));
@@ -171,20 +171,35 @@
       } : item));
     }
 
-    function orderFamilyMessages(messages) {
-      // Snapshots are already ordered. Merging older pages must also preserve
-      // the member's input/output order when an injection splits a live round.
-      const members = new Map();
+    function orderRequestBlocks(messages) {
+      // All Chat hosts use explicit reply placement. Inputs keep their order;
+      // late replies return to their request, including after history merges.
+      const inputs = new Map(messages.filter(item => item.role === 'user').map((item, index) => [item.id, index]));
+      const blocks = new Map();
+      const placed = new Set();
+      const shared = new Map();
       messages.forEach((item, index) => {
-        const position = item?.family_position;
-        if (!position?.resident_id || !Number.isSafeInteger(position.ordinal)) return;
-        if (!members.has(position.resident_id)) members.set(position.resident_id, []);
-        members.get(position.resident_id).push(index);
+        if (item.role === 'user' || item.recipients?.length) return;
+        const family = item.family_reply;
+        const associations = family ? [...new Set([family.request_message_id, ...(family.request_message_ids || [])])]
+          : [item.display_reply_to_message_id || item.reply_to_message_id];
+        const request = associations.filter(id => inputs.has(id)).sort((a, b) => inputs.get(a) - inputs.get(b))[0];
+        if (!request) return;
+        const shown = family ? { ...item, family_reply: { ...family, request_message_id: request },
+          display_reply_to_message_id: request } : item;
+        if (!blocks.has(request)) blocks.set(request, []);
+        blocks.get(request).push(shown);
+        associations.filter(id => id !== request && inputs.has(id)).forEach(id => {
+          if (!shared.has(id)) shared.set(id, shown.id);
+        });
+        placed.add(index);
       });
-      const result = messages.slice();
-      members.forEach(indices => {
-        const ordered = indices.map(index => messages[index]).sort((a, b) => a.family_position.ordinal - b.family_position.ordinal);
-        indices.forEach((index, order) => { result[index] = ordered[order]; });
+      const result = [];
+      messages.forEach((item, index) => {
+        if (placed.has(index)) return;
+        result.push(shared.has(item.id) ? { ...item, shared_reply_message_id: shared.get(item.id) } : item);
+        const replies = blocks.get(item.id);
+        if (replies) result.push(...replies);
       });
       return result;
     }
@@ -230,7 +245,8 @@
           known.add(message.message_id);
         }
       }
-      const messages = facade ? withFamilyRequestStatus(orderFamilyMessages(projected)) : projected;
+      const ordered = orderRequestBlocks(projected);
+      const messages = facade ? withFamilyRequestStatus(ordered) : ordered;
       const activities = !facade && Array.isArray(snapshot.activities) ? snapshot.activities : [];
       const state = window.PortalResidentProtocol.stateView(snapshot.state);
       const controls = snapshot.controls || {};

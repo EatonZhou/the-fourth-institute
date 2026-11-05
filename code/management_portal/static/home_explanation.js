@@ -350,7 +350,11 @@
     }
     function videoReview(region, review, key, quality, page = false, mediaTarget = target) {
       if (!current(key)) return;
-      const area = node("div", null, page ? "homeExplanationPageReview" : "homeExplanationVideoReview"); region.append(area);
+      if (quality !== "high" && (!review || review.status === "not_required")) return;
+      const disclosure = node("details", null, "homeExplanationReviewDetails");
+      const caption = node("summary", t("审核记录"));
+      const area = node("div", null, page ? "homeExplanationPageReview" : "homeExplanationVideoReview");
+      disclosure.append(caption, area); region.append(disclosure);
       const endpoint = `/api/home-explanation/${page ? "reviews" : "media"}?address=${encodeURIComponent(mediaTarget.address)}&sha256=${mediaTarget.sha256}&quality=${quality}`;
       const unpack = result => page ? result?.review : (result?.media === undefined ? result : result.media)?.review;
       let releaseEvidence = [];
@@ -362,6 +366,7 @@
         clearEvidence();
         area.replaceChildren();
         const state = value?.status || "not_requested";
+        caption.textContent = t(state === "passed" ? "审核记录" : "审核记录 · 尚未通过");
         const can = name => value?.capabilities ? value.capabilities[name] === true : !value?.id;
         const labels = {
           pending: "视频质量检查等待提交。",
@@ -478,7 +483,7 @@
         value: ["low", "medium", "high"].includes(manifest?.quality) ? manifest.quality : "medium",
         choices: [["low", t("低")], ["medium", t("中")], ["high", t("高")]],
         onChange: () => { attempts = 0; mediaTarget = target; clearTimeout(mediaTimer); void fetchState(); }});
-      qualityControl.root.classList.add("homeExplanationQuality"); region.insertBefore(qualityControl.root, content);
+      qualityControl.root.classList.add("homeExplanationQuality"); region.querySelector(".homeExplanationSectionHead").append(qualityControl.root);
       async function fetchState(generate = false, initial = false) {
         if (!current(key) || busy) return;
         busy = true; qualityControl.disabled = true; clearTimeout(mediaTimer);
@@ -505,10 +510,16 @@
           }
           mediaTarget = media?.result_target || mediaTarget;
           content.replaceChildren();
-          if (media?.result_target) content.append(button("查看视频对应版本", () => onOpen?.({ view: "explanation", target: media.result_target })));
+
           if (media?.status === "ready") {
             await renderVideo(content, media, key, true);
-            if (current(key)) videoReview(content, media.review, key, quality, false, mediaTarget);
+            if (current(key)) {
+              if (media.result_target) {
+                const link = button("查看视频对应版本", () => onOpen?.({ view: "explanation", target: media.result_target }));
+                link.classList.add("homeExplanationTextAction"); content.append(link);
+              }
+              videoReview(content, media.review, key, quality, false, mediaTarget);
+            }
           } else if (media?.status === "generating") {
             const progress = node("p", t("讲解视频正在生成，可以先探索交互和图文。"), "homeExplanationMuted"); progress.setAttribute("role", "status");
             content.append(progress);
@@ -521,8 +532,8 @@
             }));
           } else if (media?.status === "awaiting_authoring") {
             content.append(node("p", media.authoring?.error || t(media.authoring?.status === "submitted"
-              ? "已将质量要求送交负责Resident修改分镜；尚未生成新视频。"
-              : "分镜创作等待正式负责Resident处理，尚未生成新视频。"), "homeExplanationMuted"));
+              ? "正在准备分镜，完成后即可生成视频。"
+              : "分镜创作等待处理。"), "homeExplanationMuted"));
             content.append(button("刷新生成状态", () => { void fetchState(); }));
             if (media.authoring?.status === "submission_failed") content.append(button("重试分镜创作请求", () => { void fetchState(true); }));
             content.append(button("取消生成", async () => {
@@ -551,12 +562,13 @@
           || ![value.video, value.video_plan, value.interaction, value.supplement].some(Boolean)) throw new Error(t("解释页内容包格式无效。"));
         manifest = value; root.replaceChildren();
         const header = node("header", null, "homeExplanationHeader");
-        header.append(node("p", t("探索与理解"), "homeExplanationEyebrow"), node("h1", value.title));
+        header.append(node("h1", value.title));
         if (typeof value.summary === "string" && value.summary.trim()) header.append(node("p", value.summary.slice(0, 4000), "homeExplanationSummary"));
         root.append(header);
-        const tasks = []; let index = 0;
+        const tasks = []; let index = 0, pageReviewArea;
         if (value.quality === "high") {
-          const reviewArea = node("div"); header.append(reviewArea);
+          const reviewArea = node("div", null, "homeExplanationReviewFooter");
+          pageReviewArea = reviewArea;
           tasks.push(moduleTask(reviewArea, async () => {
             const result = await window.PortalAPI.get(`/api/home-explanation/reviews?address=${encodeURIComponent(target.address)}&sha256=${target.sha256}`, { signal: controller.signal, cache: "no-store" });
             if (current(key)) videoReview(reviewArea, result?.review, key, "high", true);
@@ -613,6 +625,7 @@
           }
           if (sources.childElementCount > 1) root.append(sources);
         }
+        if (pageReviewArea) root.append(pageReviewArea);
         notify();
         await Promise.all(tasks);
         if (current(key)) { status = "ready"; root.scrollTop = scrollTop; notify(); }

@@ -225,6 +225,8 @@
 
     return Object.freeze({
       messageViewportMeasurable, syncMessageScrollMode, resetMessageScrollGesture,
+      captureReadingPosition: captureWorkbenchViewport,
+      restoreReadingPosition: restoreWorkbenchViewport,
       prepareMessageNavigation: () => {
         dropPendingWorkbenchViewport();
         resetMessageScrollGesture();

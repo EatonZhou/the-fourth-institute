@@ -10,5 +10,17 @@
   "独立 Resident 审查与修改直至达标": {
     "zh-CN": "独立 Resident 审查与修改直至达标",
     "en": "Independent Resident review and revisions until the quality standard is met"
+  },
+  "已加载当前保存的设置。": {
+    "zh-CN": "已加载当前保存的设置。",
+    "en": "Loaded the currently saved settings."
+  },
+  "设置已提交，暂时无法确认结果，请重试读取。": {
+    "zh-CN": "设置已提交，暂时无法确认结果，请重试读取。",
+    "en": "Settings were submitted, but the result could not be confirmed. Retry reading."
+  },
+  "汇报设置未保存：{p0}": {
+    "zh-CN": "汇报设置未保存：{p0}",
+    "en": "Reporting settings were not saved: {p0}"
   }
 }

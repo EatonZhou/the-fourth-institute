@@ -12,6 +12,7 @@
   // afterMessagesDrawn, which binds what was drawn, measures its folds and tells
   // the host. redrawMessages draws the whole list again from what is shown.
   const DEPENDENCIES = Object.freeze([
+    "captureReadingPosition", "restoreReadingPosition",
     "addFiles", "bindAttachmentRefs", "bindLinkPreview", "bindMessageAvatars", "bindResourceChips",
     "bindResponseSourcePaths", "contractResidentId", "currentController", "currentConversationSearch", "els",
     "familyWorkGroups", "historyScope", "inheritanceViewFor", "measureMessageFolds", "messageAfterKey",
@@ -27,6 +28,7 @@
     const missing = DEPENDENCIES.filter(name => dependencies?.[name] === undefined);
     if (missing.length) throw new Error(`PortalChatWorkspaceMessageDrawing is missing: ${missing.join(", ")}`);
     const {
+      captureReadingPosition, restoreReadingPosition,
       addFiles, bindAttachmentRefs, bindLinkPreview, bindMessageAvatars, bindResourceChips,
       bindResponseSourcePaths, contractResidentId, currentController, currentConversationSearch, els,
       familyWorkGroups, historyScope, inheritanceViewFor, measureMessageFolds, messageAfterKey,
@@ -265,6 +267,7 @@
     };
 
     const setMessages = (messages, renderOptions = {}) => {
+      const readingPosition = captureReadingPosition();
       const previousMessages = state.messages;
       const previousSignatures = state.messageItemSignatures;
       const previousContext = state.messageRenderContext;
@@ -351,6 +354,8 @@
       afterMessagesDrawn(reconciled ? reconciled.changedRoots : [els.messages]);
       if (followTail && messageViewportMeasurable()) {
         els.messages.scrollTop = els.messages.scrollHeight;
+      } else if (!scopeChanged && readingPosition?.anchorKey) {
+        restoreReadingPosition(readingPosition);
       } else if (prependOnly && messageViewportMeasurable()) {
         els.messages.scrollTop = previousScrollTop + Math.max(
           0,

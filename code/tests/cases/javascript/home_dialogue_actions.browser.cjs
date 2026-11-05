@@ -14,7 +14,7 @@ const modules=[...new Set(['portal_state.js','portal_page_state.js','portal_text
   'portal_ui_primitives.js','portal_ui.js','portal_overlay.js','portal_resource_routes.js','portal_resource_chips.js','portal_image_editor.js',
   'portal_editor_open_service.js','portal_command_registry.js','portal_workbench_context.js',...portalWorkbenchScripts(),
   'portal_resident_service.js','resident_protocol.js','markdown.js',...chatWorkspaceScripts(),
-  'portal_preview_contract.js','portal_preview_runtime.js','portal_pdf_preview.js','portal_preview_renderers.js',
+  'portal_document_statistics.js','portal_preview_contract.js','portal_preview_runtime.js','portal_pdf_preview.js','portal_preview_renderers.js',
   ...groups['portal-workspace-surface'].map(s=>s.replace('/static/','')),'portal_agent_preview_source.js',
   'project_common.js','project_map_layout.js','project_map_drawer.js','project_map.js','home_map_view.js',
   'lineage_workbench_preview_chat_links.js','home_report.js','home_dialogue_state.js','portal_file_preview.js','home_dialogue.js'])];
@@ -213,6 +213,16 @@ const server=http.createServer((req,res)=>{
       await native.getByRole('button',{name:'打开解释页',exact:true}).click();
       await page.locator('#native-preview').getByText(/文件内容已改变/).first().waitFor();
       check('digest mismatch cannot run old interaction',await page.locator('#native-preview iframe').count(),0);
+      await page.evaluate(async()=>{
+        const el=document.createElement('div'); el.id='identity-preview'; document.body.append(el);
+        window.identityPanel=PortalWorkspaceSurface.panelPackages.preview.create({root:el});
+        await identityPanel.setDocument({source:'resource',path:'workspace_0123456789ab/file/shared-display/manifest.json',title:'Resource',contentKind:'code',content:'{}'});
+      });
+      check('shared Preview separates actual resource ID from file path',await page.locator('#identity-preview .portalPreviewResourceId').innerText(),'workspace_0123456789ab');
+      check('editable Preview address retains the entire resource file locator',await page.locator('#identity-preview [data-portal-preview-path]').getAttribute('data-portal-preview-path'),'workspace_0123456789ab/file/shared-display/manifest.json');
+      await page.locator('#identity-preview [data-portal-preview-path]').click();
+      check('resource address can still be copied and edited',await page.locator('#identity-preview .portalPreviewPathInput').inputValue(),'workspace_0123456789ab/file/shared-display/manifest.json');
+      await page.keyboard.press('Escape');
       check('shared presentation has no page errors',evidence.errors,[]);
       evidence.status='passed';
       console.log('PASS shared Resident actions, Society Preview host, Home presentation, fixed SHA and interactive content');

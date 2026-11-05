@@ -126,6 +126,12 @@
       if (!toolbarState) return "";
       const text = String(value || "");
       toolbarState.textContent = text;
+      const resource = path && /^([a-z][a-z0-9_]*_[a-f0-9]{12})(\/.*)?$/.exec(text);
+      if (resource) {
+        const id = document.createElement("span"); id.className = "portalPreviewResourceId"; id.textContent = resource[1];
+        const suffix = document.createElement("span"); suffix.className = "portalPreviewResourcePath"; suffix.textContent = resource[2] || "";
+        toolbarState.replaceChildren(id, suffix);
+      }
       if (path && text) {
         toolbarState.dataset.portalPreviewPath = text;
         toolbarState.title = openPath

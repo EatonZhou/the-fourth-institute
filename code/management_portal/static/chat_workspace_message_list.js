@@ -223,8 +223,9 @@
       if ((previousSender || nextSender) && previousSender !== nextSender) return false;
       // A message sent to someone stands on its own, apart from any reply (decision_c524c775e0be).
       if (previous?.recipients?.length || next?.recipients?.length) return false;
-      return String(previous?.family_reply?.request_message_id || "")
-        === String(next?.family_reply?.request_message_id || "");
+      if (String(previous?.family_reply?.resident_id || '') !== String(next?.family_reply?.resident_id || '')) return false;
+      return String(previous?.family_reply?.request_message_id || previous?.display_reply_to_message_id || previous?.reply_to_message_id || "")
+        === String(next?.family_reply?.request_message_id || next?.display_reply_to_message_id || next?.reply_to_message_id || "");
     }
 
     function consecutiveAgentGroups(items, options = {}) {
@@ -408,6 +409,7 @@
           ? window.PortalI18n.html`<div class="messageDividerRow"><div class="messageDivider" role="separator" aria-label="${escapeHtml(options.assistantName || "Agent")} 继续回复"></div>${groupToggleHtml}${actionsHtml}</div>`
           : actionsHtml;
         const messageBodyHtml = `${continued ? "" : messageQuoteHtml(item?.quote, options)}${bodyBlockHtml}
+        ${item.shared_reply_message_id ? `<button type="button" class="messageQuote" data-message-quote="${escapeHtml(item.shared_reply_message_id)}">${window.PortalI18n.t("查看共同回复")}</button>` : ""}
         ${responseSourcesHtml(item?.response_sources)}
         ${messageContextRefsHtml(item?.context_refs || {}, options)}
         ${messageAttachmentsHtml(item?.context_refs?.attachments || item?.attachments || [], options)}`;

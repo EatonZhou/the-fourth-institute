@@ -343,14 +343,6 @@
     "zh-CN": "中 · 3b1b式讲解",
     "en": "Medium · 3b1b-style explanation"
   },
-  "已将质量要求送交负责Resident修改分镜；尚未生成新视频。": {
-    "zh-CN": "已将质量要求送交负责Resident修改分镜；尚未生成新视频。",
-    "en": "The quality requirements were sent to the responsible Resident for storyboard revision. No new video has been generated."
-  },
-  "分镜创作等待正式负责Resident处理，尚未生成新视频。": {
-    "zh-CN": "分镜创作等待正式负责Resident处理，尚未生成新视频。",
-    "en": "Storyboard creation is awaiting the responsible Resident. No new video has been generated."
-  },
   "重试分镜创作请求": {
     "zh-CN": "重试分镜创作请求",
     "en": "Retry storyboard request"
@@ -359,16 +351,52 @@
     "zh-CN": "刷新生成状态",
     "en": "Refresh generation status"
   },
-  "解释页质量检查等待提交。": {"zh-CN": "解释页质量检查等待提交。", "en": "Explanation review is pending submission."},
-  "解释页已提交独立检查，尚未通过。": {"zh-CN": "解释页已提交独立检查，尚未通过。", "en": "The explanation was submitted for independent review; it has not passed yet."},
-  "解释页检查暂未提交。": {"zh-CN": "解释页检查暂未提交。", "en": "The explanation review has not been submitted."},
-  "解释页尚未经过独立检查，不能视为高质量达标。": {"zh-CN": "解释页尚未经过独立检查，不能视为高质量达标。", "en": "This explanation has not been independently reviewed; high quality is not yet verified."},
-  "提交解释页独立检查": {"zh-CN": "提交解释页独立检查", "en": "Submit explanation for independent review"},
-  "查看审核证据": {"zh-CN": "查看审核证据", "en": "View review evidence"},
-  "恢复独立检查": {"zh-CN": "恢复独立检查", "en": "Resume independent review"},
-  "审核状态暂不可读，尚未通过。": {"zh-CN": "审核状态暂不可读，尚未通过。", "en": "The review status is currently unavailable; approval is not verified."},
+  "解释页质量检查等待提交。": {
+    "zh-CN": "解释页质量检查等待提交。",
+    "en": "Explanation review is pending submission."
+  },
+  "解释页已提交独立检查，尚未通过。": {
+    "zh-CN": "解释页已提交独立检查，尚未通过。",
+    "en": "The explanation was submitted for independent review; it has not passed yet."
+  },
+  "解释页检查暂未提交。": {
+    "zh-CN": "解释页检查暂未提交。",
+    "en": "The explanation review has not been submitted."
+  },
+  "解释页尚未经过独立检查，不能视为高质量达标。": {
+    "zh-CN": "解释页尚未经过独立检查，不能视为高质量达标。",
+    "en": "This explanation has not been independently reviewed; high quality is not yet verified."
+  },
+  "提交解释页独立检查": {
+    "zh-CN": "提交解释页独立检查",
+    "en": "Submit explanation for independent review"
+  },
+  "查看审核证据": {
+    "zh-CN": "查看审核证据",
+    "en": "View review evidence"
+  },
+  "恢复独立检查": {
+    "zh-CN": "恢复独立检查",
+    "en": "Resume independent review"
+  },
+  "审核状态暂不可读，尚未通过。": {
+    "zh-CN": "审核状态暂不可读，尚未通过。",
+    "en": "The review status is currently unavailable; approval is not verified."
+  },
   "视频生成已取消。": {
     "zh-CN": "视频生成已取消。",
     "en": "Video generation was cancelled."
+  },
+  "审核记录": {
+    "en": "Review record"
+  },
+  "审核记录 · 尚未通过": {
+    "en": "Review record · Not yet passed"
+  },
+  "正在准备分镜，完成后即可生成视频。": {
+    "en": "Preparing the storyboard. The video can be generated when it is ready."
+  },
+  "分镜创作等待处理。": {
+    "en": "Storyboard preparation is pending."
   }
 }

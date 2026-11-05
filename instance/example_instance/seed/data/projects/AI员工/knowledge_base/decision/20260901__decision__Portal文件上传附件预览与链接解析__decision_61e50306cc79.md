@@ -4,12 +4,12 @@ type: decision
 project: AI员工
 created_at: '2026-09-01'
 version:
-  number: 46
+  number: 47
   created_at: "2026-09-01"
   created_by:
     user: ""
     agent: ""
-  updated_at: "2026-11-05T08:29:51Z"
+  updated_at: "2026-11-05T09:52:00Z"
   updated_by:
     user: ""
     agent: "resident_62dbdb2288fb"
@@ -256,3 +256,6 @@ PPT 和 PPTX 以只读的静态幻灯片显示。服务端在本机用 LibreOffi
 ## 预览工具栏
 
 工具栏布局、文件路径显示和选区加入 Chat 由文档工作区统一负责，见 decision_769a35d6b5c7「布局」与「标签页、编辑工具与选区引用」。预览来源只提供文档能力，渲染器只提供内容显示与选区；页面不另建工具栏或无选区的整份文档引用入口。
+
+
+资源地址栏对根资源 ID 与其文件子路径分别排版，根 ID 始终可辨识，长文件路径可省略显示。点击编辑、复制与打开仍使用完整正式地址。解释包作为 Workspace 内固定文件展示时显示真实 Workspace ID 与文件路径，不伪造独立 report ID，也不把内部展示意图当作资源 ID。

@@ -721,6 +721,7 @@
 
     const {
       messageViewportMeasurable, syncMessageScrollMode, resetMessageScrollGesture, prepareMessageNavigation, followTailAfterResize,
+      captureReadingPosition, restoreReadingPosition,
       destroyMessageViewport,
     } = chatWorkspaceModule("PortalChatWorkspaceMessageViewport").createMessageViewport({
       els, messageInstanceSelector, messageNodeKey, messageViewportAtTail, root, state,
@@ -835,6 +836,7 @@
         messageRenderKey, messageRole, messageViewportMeasurable, normalizeMessageStream, openImagePreview, options,
         patchSubagentLive, preserveRuntimeDisclosureState, reconcileMessageList, rememberSubagentPlaces,
         requestWorkspacePreview, requireImageEditor, resetMessageScrollGesture,
+        captureReadingPosition, restoreReadingPosition,
         restoreDraftScope: (...args) => restoreDraftScope(...args), revealFinishedSubagents, runtimeStreamHtml,
         showMessageFoldDefaults, state, syncHistory: (...args) => syncHistory(...args), syncMessageScrollMode,
         updateMessageFoldDefaults,

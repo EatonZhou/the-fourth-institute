@@ -131,7 +131,7 @@
           <strong>${esc(window.PortalI18n.t(label))}</strong>
         </label>`;
         root.innerHTML = window.PortalI18n.html`<form class="residentMenuReportingForm">
-          <header class="residentReportingHeader"><h3>汇报设置</h3><button class="portalButton is-primary" type="submit" ${canEdit ? "" : "disabled"}>保存汇报设置</button></header>
+          <header class="residentReportingHeader"><h3>汇报设置</h3><span class="residentReportingAutosave">选择后自动保存</span></header>
           <fieldset class="residentReportingInitiative" aria-describedby="resident-reporting-initiative-note">
             <legend>汇报主动性</legend>
             <div class="residentReportingRow">
@@ -160,8 +160,14 @@
           </fieldset>
           <div data-reporting-conflict hidden></div>
           <p class="residentReportingStatus" role="status" data-reporting-status></p>
+          <button class="portalButton is-compact" type="button" data-reporting-retry hidden>重试保存</button>
         </form>`;
         const form = root.querySelector("form");
+        const retrySave = form.querySelector("[data-reporting-retry]");
+        retrySave.addEventListener("click", () => form.requestSubmit());
+        form.addEventListener("change", event => {
+          if (event.target.matches('input[type="radio"]')) form.requestSubmit();
+        });
         form.querySelectorAll(".residentReportingHelp").forEach(button => {
           button.addEventListener("click", () => {
             const note = form.querySelector(`#${button.getAttribute("aria-controls")}`);
@@ -196,7 +202,6 @@
                 context.reportingRevision = latest.settings_revision;
                 context.reportingConflict = false;
                 conflictRoot.replaceChildren(); conflictRoot.hidden = true;
-                form.querySelector('[type="submit"]').disabled = false;
                 apply();
               };
               conflictRoot.append(button);
@@ -204,7 +209,7 @@
             choose("加载最新设置，替换当前编辑", () => {
               form.elements.initiative.value = latest.settings.reporting.initiative;
               form.elements.quality.value = latest.settings.reporting.quality;
-              form.querySelector("[data-reporting-status]").textContent = window.PortalI18n.t("已加载最新设置，尚未提交修改。");
+              form.querySelector("[data-reporting-status]").textContent = window.PortalI18n.t("已加载当前保存的设置。");
             });
             choose("保留当前编辑，按最新版本重试保存", () => form.requestSubmit());
           } catch (error) {
@@ -221,6 +226,8 @@
           if (!canEdit || context.reportingSaving || context.reportingConflict || menuState.nodeMenuContext !== context) return;
           const selected = {initiative: form.elements.initiative.value, quality: form.elements.quality.value};
           const status = form.querySelector("[data-reporting-status]");
+          retrySave.hidden = true;
+          status.textContent = window.PortalI18n.t("正在保存…");
           context.reportingSaving = true;
           context.saving = true;
           $id("nodeMenuRuntime").inert = true;
@@ -248,11 +255,14 @@
           } catch (error) {
             if (Number(error.status) >= 400 && Number(error.status) < 500 && Number(error.status) !== 408) context.reportingPending = null;
             if (menuState.nodeMenuContext === context) status.textContent = context.reportingCommitted
-              ? window.PortalI18n.t("设置已提交，回读失败；再次保存只重试读取。") : error.message;
+              ? window.PortalI18n.t("设置已提交，暂时无法确认结果，请重试读取。")
+              : context.reportingPending ? window.PortalI18n.t("保存结果待确认，请重试原设置。") : window.PortalI18n.text`汇报设置未保存：${error.message}`;
             if (!context.reportingCommitted && (Number(error.status) === 409 || error.code === "instruction.version_conflict" || error.code === "instruction.conflict")) {
               context.reportingConflict = true;
               await refreshConflict();
             }
+            retrySave.hidden = Boolean(context.reportingConflict);
+            retrySave.textContent = window.PortalI18n.t(context.reportingCommitted ? "重试读取" : "重试保存");
           } finally {
             context.reportingSaving = false;
             context.saving = Boolean(context.runtimeSaving);
@@ -260,7 +270,6 @@
               $id("nodeMenuRuntime").inert = false;
               form.querySelectorAll("input, button").forEach(control => {
                 control.disabled = Boolean(context.reportingCommitted || context.reportingPending) && control.tagName === "INPUT";
-                if (context.reportingConflict && control.type === "submit") control.disabled = true;
               });
             }
           }

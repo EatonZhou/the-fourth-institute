@@ -9,7 +9,7 @@ const out = process.env.HOME_EXPLANATION_EVIDENCE;
 if (out) fs.mkdirSync(out, { recursive: true });
 const scripts = ['portal_state.js', 'portal_text.js', 'portal_i18n.js', 'portal_ui_primitives.js', 'portal_api.js', 'markdown.js',
   'portal_preview_contract.js', 'portal_preview_runtime.js', 'portal_pdf_preview.js', 'portal_preview_renderers.js', 'home_explanation.js'];
-const css = ['portal_themes.css', 'portal_design_system.css', 'portal_components.css', 'portal_components_markdown.css', 'home_dialogue.css', 'home_explanation.css'];
+const css = ['portal_themes.css', 'portal_design_system.css', 'portal_components.css', 'portal_components_markdown.css', 'portal_workbench.css', 'home_dialogue.css', 'home_explanation.css'];
 const records = new Map(), requests = [], checks = [], errors = [];
 const sha = bytes => createHash('sha256').update(bytes).digest('hex');
 const prefix = 'workspace_0123456789ab/file/explanation/';
@@ -38,7 +38,7 @@ const server = http.createServer((req, res) => {
   if (url.pathname === '/') {
     res.writeHead(200, { 'Content-Type': 'text/html' });
     res.end('<!doctype html><html lang="zh-CN" data-portal-theme="light"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">' + css.map(n => `<link rel="stylesheet" href="/static/${n}">`).join('')
-      + '<style>html,body{margin:0;height:100%;font-family:system-ui}#root{height:100dvh;width:100%}</style><main id="root" class="homeDialogueEntryContent"></main>'
+      + '<style>html,body{margin:0;height:100%;font-family:system-ui}#root{height:100dvh;width:100%}</style><main id="root" class="homeDialogueEntryContent previewBox"></main>'
       + scripts.map(n => `<script src="/static/${n}"></script>`).join('')); return;
   }
   if (url.pathname.startsWith('/static/')) {
@@ -123,7 +123,7 @@ const check = (name, actual, expected) => { assert.deepEqual(actual, expected, n
     videoRef = put('video.webm', Buffer.from(bytes), 'video/webm');
     const planned = manifest('planned', base);
     const fixed = manifest('fixed', { ...base, video_plan: undefined, video: { ...videoRef, captions, transcript, chapters: [{ time: 0, title: '匹配' }, { time: 1, title: '汇总' }] } });
-    const setup = async target => page.evaluate(async target => {
+    const setup = async target => { await page.evaluate(async target => {
       window.viewer ||= 'fixture'; window.PortalIdentity = { peek: () => ({ principal: { kind: 'resident', id: viewer } }) };
       window.opens = []; window.changes = []; window.urls ||= []; window.revoked ||= [];
       if (!window.urlInstrumented) {
@@ -135,6 +135,8 @@ const check = (name, actual, expected) => { assert.deepEqual(actual, expected, n
       window.adapter = PortalHomeExplanationView.create({ root: document.getElementById('root'), onOpen: x => opens.push(x), onChange: x => changes.push(x.accessStatus) });
       await adapter.show(target, { requestId: 'fixture-request' });
     }, target);
+      if (process.argv.some(arg => ['--review-transfer-only','--page-workflow-only','--review-only'].includes(arg))) await page.locator('.homeExplanationReviewDetails').evaluateAll(nodes => nodes.forEach(el => el.open = true));
+    };
     if (process.argv.includes('--document-flow-only')) {
       const paragraphs = Array.from({ length: 25 }, (_, i) => `<section><h3>第${i + 1}步：比较两条轨迹</h3><p>同一条规则，从相近起点出发。改变初始条件，再比较两次计算的轨迹与差值；规则、时间和坐标尺度保持一致。</p></section>`).join('');
       const reading = put('flow.html', `<!doctype html><style>html,body{height:100%;overflow:auto}body{margin:0;font:inherit}section{margin:28px 0}h3{margin:0}p{margin:12px 0}button{font:inherit}svg{display:block;width:100%;height:120px}#extra{height:600px;background:var(--panel)}</style><h2>两条轨迹，同一条规则</h2><p>从正文开始，沿图示读到结论。</p><button id="expand">展开推导</button><div id="extra" hidden>展开内容增高后，下面的正文自然下移。</div><svg viewBox="0 0 600 120" aria-label="轨迹"><path d="M0 90 Q150 0 300 90 T600 90" fill="none" stroke="blue" stroke-width="3"/></svg>${paragraphs}<button id="end">读到结尾</button><output id="done"></output><script>document.getElementById('expand').onclick=()=>{const el=document.getElementById('extra');el.hidden=!el.hidden};document.getElementById('end').onclick=()=>document.getElementById('done').textContent='结尾操作完成';</script>`, 'text/html');
@@ -390,11 +392,43 @@ const check = (name, actual, expected) => { assert.deepEqual(actual, expected, n
       return;
     }
     await setup(planned);
+    if (process.argv.includes('--presentation-only')) {
+      const subject = manifest('reader-presentation', {...base, quality:'high', title:'The beauty of chaos: two worlds, one rule'});
+      pageReviewState = {status:'passed', feedback:'内部核SHA及检查过程不进入阅读正文。'};
+      state = {status:'ready', quality:'medium', video_url:'/api/resources/content?address='+encodeURIComponent(videoRef.address),
+        captions_url:'/api/resources/content?address='+encodeURIComponent(captions.address), transcript_url:'/api/resources/content?address='+encodeURIComponent(transcript.address),
+        chapters:['Simple rules, intricate paths','Same start: the control','Change one millionth','Player 1: paths separate','Player 2: feedback carries the change','Structure without a repeating script'].map((title,i)=>({title,time:i*.3})), review:{status:'not_required'}};
+      qualityStates={medium:state}; state=null;
+      await setup(subject);
+      check('reader header has neither slogan nor audit prose', await page.locator('.homeExplanationHeader').innerText().then(t=>/探索与理解|审核|SHA/.test(t)), false);
+      check('audit feedback is available only on demand', await page.getByText(pageReviewState.feedback).isVisible(),false);
+      check('unneeded video audit prose is absent', await page.getByText('此质量档位无需独立审核。').count(),0);
+      check('Preview code typography does not leak into prose',await page.locator('#root').evaluate(el=>{const s=getComputedStyle(el);return [s.whiteSpace,s.fontFamily.includes('monospace')]}),['normal',false]);
+      for (const width of [1440,390]) {
+        await page.setViewportSize({width,height:1000});
+        await page.evaluate(width=>{document.documentElement.style.fontSize=width===390?'24px':'16px';document.getElementById('root').scrollTop=0;},width);
+        check(`reading layout ${width} has no horizontal overflow`,await page.locator('#root').evaluate(el=>el.scrollWidth<=el.clientWidth+1),true);
+        check(`quality labels ${width} remain on one line`,await page.locator('.homeExplanationQuality label').evaluateAll(els=>new Set(els.map(el=>el.getBoundingClientRect().y)).size),1);
+        check(`header ${width} uses normal document flow`,await page.locator('.homeExplanationHeader').evaluate(el=>parseFloat(getComputedStyle(el).paddingBottom)<=18),true);
+        if(out) await page.screenshot({path:path.join(out,`reader-${width}.png`)});
+      }
+      await page.locator('.homeExplanationChapters button').nth(1).click();
+      check('compact chapter navigation still seeks',await page.locator('video').evaluate(v=>v.currentTime>=.3),true);
+      await page.locator('.homeExplanationReviewDetails summary').click();
+      check('reader can explicitly inspect audit record',await page.getByText(pageReviewState.feedback).isVisible(),true);
+      qualityStates=null; state={status:'awaiting_authoring',authoring:{status:'submitted'}}; await setup(subject);
+      check('waiting state gives a short user-facing explanation',await page.getByText('正在准备分镜，完成后即可生成视频。').isVisible(),true);
+      if(out) await page.screenshot({path:path.join(out,'waiting-390.png')});
+      check('presentation reads never dispatch generation',requests.filter(r=>r.method==='POST').length,0);
+      check('presentation has no script errors',errors,[]);
+      if(out) fs.writeFileSync(path.join(out,'presentation-result.json'),JSON.stringify({checks,errors},null,2));
+      return;
+    }
     if (process.argv.includes('--authoring-only')) {
       state = { status: 'awaiting_authoring', quality: 'medium', quality_met: false,
         authoring: { status: 'submitted', id: 'a'.repeat(64) } };
       await setup(planned);
-      await page.getByText('已将质量要求送交负责Resident修改分镜；尚未生成新视频。', { exact: true }).waitFor();
+      await page.getByText('正在准备分镜，完成后即可生成视频。', { exact: true }).waitFor();
       check('authoring receipt is not a playable ready movie', await page.locator('video').count(), 0);
       await page.getByRole('button', { name: '刷新生成状态', exact: true }).click();
       check('authoring refresh does not dispatch or generate', requests.filter(r => r.method === 'POST').length, 0);
@@ -493,7 +527,7 @@ const check = (name, actual, expected) => { assert.deepEqual(actual, expected, n
         { ...pageOnly, quality: 'high' });
       state = { status: 'awaiting_authoring', authoring: { status: 'submitted' } };
       await setup(pageOnly);
-      await page.getByText('已将质量要求送交负责Resident修改分镜；尚未生成新视频。', { exact: true }).waitFor();
+      await page.getByText('正在准备分镜，完成后即可生成视频。', { exact: true }).waitFor();
       check('reopen retains feedback without resubmitting', requests.filter(r => r.url === '/api/home-explanation/reviews' && r.method === 'POST').length, 1);
       await page.setViewportSize({ width: 390, height: 844 });
       await page.evaluate(() => { document.documentElement.style.fontSize = '20px'; });
