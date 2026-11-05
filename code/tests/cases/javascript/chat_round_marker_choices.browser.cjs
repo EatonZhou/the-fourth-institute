@@ -65,16 +65,15 @@ if (output) fs.mkdirSync(output, { recursive: true });
     };
     const settle = page => page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
     const marker = (page, id) => page.locator(`[data-round-key="${id}"]`);
+    const choices = (page, id) => page.locator(`[data-round-follow="${id}"]`);
     const open = async (page, id, touch = false) => {
       await page.keyboard.press('Escape');
       if (touch) await page.locator('.chatRoundDirectory').tap(); else await page.locator('.chatRoundDirectory').click();
-      const trigger = page.locator(`[data-round-follow="${id}"]`);
-      if (touch) await trigger.tap(); else await trigger.click();
-      await page.waitForSelector('.chatRoundMarkerMenu');
+      await choices(page, id).waitFor({state:'visible'});
     };
     const choose = async (page, id, kind, touch = false) => {
       await open(page, id, touch);
-      const option = page.locator(`[data-round-marker="${kind}"][role="menuitemradio"]`);
+      const option = choices(page, id).locator(`[data-round-marker="${kind}"]`);
       if (touch) await option.tap(); else await option.click();
       await settle(page);
     };
@@ -83,8 +82,17 @@ if (output) fs.mkdirSync(output, { recursive: true });
     check('legacy flag renders without write-on-read', await marker(page, 'one').getAttribute('data-round-marker') === 'flag'
       && await page.evaluate(() => Array.isArray(JSON.parse(localStorage.getItem(flagKey())))));
     await open(page, 'one');
-    check('four radio choices and current selection', await page.getByRole('menuitemradio').count() === 4
-      && await page.locator('[data-round-marker="flag"][role="menuitemradio"]').getAttribute('aria-checked') === 'true');
+    check('four choices are already visible in each preview header', await choices(page,'one').getByRole('button').count() === 4
+      && await choices(page,'one').locator('[data-round-marker="flag"]').getAttribute('aria-pressed') === 'true'
+      && await page.locator('.chatRoundMarkerMenu').count() === 0);
+    const header = await choices(page,'one').evaluate(n=>{
+      const bounds=[...n.children].map(b=>b.getBoundingClientRect());
+      const meta=n.closest('.chatRoundPreviewMeta'),time=meta.querySelector('time').getBoundingClientRect();
+      const text=meta.parentElement.querySelector('.chatRoundPreviewJump').getBoundingClientRect();
+      return {sameRow:bounds.every(r=>r.y===bounds[0].y),rightOfTime:bounds[0].x>time.right,aboveText:bounds.every(r=>r.bottom<=text.top)};
+    });
+    check('icons sit side by side at the right of time above the message', header.sameRow && header.rightOfTime && header.aboveText);
+    await choices(page,'one').locator('[data-round-marker="flag"]').focus();
     await page.keyboard.press('ArrowRight'); await page.keyboard.press('Enter'); await settle(page);
     check('keyboard selects star and migrates legacy storage', await marker(page, 'one').getAttribute('data-round-marker') === 'star'
       && await page.evaluate(() => JSON.parse(localStorage.getItem(flagKey())).version === 2));
@@ -101,12 +109,11 @@ if (output) fs.mkdirSync(output, { recursive: true });
     check('running and queued retain authoritative status with custom marker', icons[1].classes.includes('is-running') && icons[1].halo === '3.6s' && icons[2].classes.includes('is-queued'));
     await open(page, 'four'); await shot(page, 'desktop-light');
     await page.keyboard.press('Escape');
-    await page.waitForFunction(() => document.activeElement.dataset.roundFollow === 'four');
-    check('Escape closes selector and restores preview trigger focus', await page.locator('.chatRoundMarkerMenu').count() === 0
-      && await page.evaluate(() => document.activeElement.dataset.roundFollow === 'four'));
+    check('Escape closes preview and restores directory focus', await page.locator('.chatRoundPreview').isHidden()
+      && await page.evaluate(() => document.activeElement.classList.contains('chatRoundDirectory')));
     await page.evaluate(() => document.documentElement.dataset.portalTheme = 'dark');
     await open(page, 'two'); await shot(page, 'desktop-dark');
-    await page.getByRole('menuitem', { name: '取消Flag', exact: true }).click(); await settle(page);
+    await choices(page,'two').locator('[aria-pressed="true"]').click(); await settle(page);
     check('cancel removes chosen icon', !(await marker(page, 'two').getAttribute('class')).includes('is-followed'));
     await page.keyboard.press('Escape');
     await page.locator('[data-message-key="two"]').click({ button: 'right' });
@@ -131,13 +138,13 @@ if (output) fs.mkdirSync(output, { recursive: true });
       window.savedStorage = Storage.prototype.setItem;
       Storage.prototype.setItem = function(key, value) { if (key.includes('round-flags')) throw new Error('quota'); return savedStorage.call(this, key, value); };
     });
-    await page.getByRole('menuitemradio', { name: '章鱼', exact: true }).click(); await settle(page);
+    await choices(page,'one').getByRole('button', { name: '章鱼', exact: true }).click(); await settle(page);
     check('failed save keeps prior icon and reports failure', await marker(page, 'one').getAttribute('data-round-marker') === 'turtle'
       && await page.evaluate(() => toasts.at(-1).includes('未保存')));
     await page.evaluate(() => Storage.prototype.setItem = savedStorage);
     await open(page, 'one');
     await page.evaluate(() => Storage.prototype.setItem = function(key, value) { if (!key.includes('round-flags')) savedStorage.call(this, key, value); });
-    await page.getByRole('menuitemradio', { name: '星星', exact: true }).click(); await settle(page);
+    await choices(page,'one').getByRole('button', { name: '星星', exact: true }).click(); await settle(page);
     check('silently dropped write fails readback and preserves saved kind', await marker(page, 'one').getAttribute('data-round-marker') === 'turtle'
       && await page.evaluate(() => JSON.parse(localStorage.getItem(flagKey())).markers.find(m => m.id === 'one').icon === 'turtle'));
     await page.evaluate(() => {
@@ -153,7 +160,7 @@ if (output) fs.mkdirSync(output, { recursive: true });
     await page.evaluate(() => { scope = 'resident:markers'; window.dispatchEvent(new Event('portal:identity-changed')); workspace.setRequestProgress(contract.request_progress); }); await settle(page);
     check('returning to conversation restores marker choices', await marker(page, 'four').getAttribute('data-round-marker') === 'octopus');
     await choose(page, 'three', 'turtle'); await open(page, 'three');
-    await page.getByRole('menuitem', { name: '取消Flag', exact: true }).click(); await settle(page);
+    await choices(page,'three').locator('[aria-pressed="true"]').click(); await settle(page);
     check('cancel queued marker restores hollow diamond', await marker(page, 'three').evaluate(n => {
       const s = getComputedStyle(n.querySelector('.chatRoundCore'), '::after'); return s.display !== 'none' && s.borderRadius === '0px' && s.transform !== 'none';
     }));
@@ -163,7 +170,7 @@ if (output) fs.mkdirSync(output, { recursive: true });
     await mobile.evaluate(() => document.documentElement.style.fontSize = '20px');
     await choose(mobile, 'one', 'flag', true); await choose(mobile, 'two', 'star', true); await choose(mobile, 'three', 'turtle', true); await choose(mobile, 'four', 'octopus', true);
     await open(mobile, 'four', true);
-    const narrow = await mobile.locator('.chatRoundMarkerMenu').evaluate(n => {
+    const narrow = await choices(mobile,'four').evaluate(n => {
       const r = n.getBoundingClientRect(); return { x:r.x, y:r.y, right:r.right, bottom:r.bottom, width:innerWidth, height:innerHeight,
         controls: [...n.querySelectorAll('button')].map(b => ({ width:b.getBoundingClientRect().width,height:b.getBoundingClientRect().height })) };
     }); geometry.push({ narrow });
@@ -172,12 +179,13 @@ if (output) fs.mkdirSync(output, { recursive: true });
     check('tap selects exact custom icon', await marker(mobile, 'four').getAttribute('data-round-marker') === 'octopus');
     await shot(mobile, '390-light');
     await mobile.evaluate(() => document.documentElement.dataset.portalTheme = 'dark'); await shot(mobile, '390-dark');
+    await choices(mobile,'four').locator('[data-round-marker="octopus"]').focus();
     await mobile.keyboard.press('Home'); await mobile.keyboard.press('ArrowRight'); await mobile.keyboard.press('Enter'); await settle(mobile);
     check('390 keyboard selection shares tap behavior', await marker(mobile, 'four').getAttribute('data-round-marker') === 'star');
     await open(mobile, 'four', true); await mobile.evaluate(() => workspace.setRoundRailPresented(false));
-    check('hidden rail releases selector overlay', await mobile.locator('.chatRoundMarkerMenu').count() === 0);
+    check('hidden rail releases inline choices', await mobile.locator('.chatRoundMarkerChoices').count() === 0);
     await page.evaluate(() => workspace.destroy());
-    check('destroy releases overlays and marker nodes', await page.locator('.chatRoundMarkerMenu,.chatRoundNode').count() === 0);
+    check('destroy releases choices and marker nodes', await page.locator('.chatRoundMarkerChoices,.chatRoundNode').count() === 0);
     check('no script errors', errors.length === 0);
     if (output) fs.writeFileSync(path.join(output, 'result.json'), JSON.stringify({ checks, errors, geometry, boundary:'native Chat with isolated data; no business API writes' }, null, 2));
     console.log('Marker choices passed: ' + checks.length);

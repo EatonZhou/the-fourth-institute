@@ -90,9 +90,9 @@ if (output) fs.mkdirSync(output, { recursive: true });
       await context.close(); return;
     }
     const togglePreviewFlag = async (target, trigger, touch = false) => {
-      const followed = await trigger.getAttribute('aria-pressed') === 'true';
-      if (touch) await trigger.tap(); else await trigger.click();
-      const choice = target.locator(followed ? '.chatRoundMarkerRemove' : '.chatRoundMarkerChoice[data-round-marker="flag"]');
+      const group = trigger.locator('xpath=ancestor-or-self::*[@data-round-follow][1]');
+      const selected = group.locator('[aria-pressed="true"]');
+      const choice = await selected.count() ? selected : group.locator('[data-round-marker="flag"]');
       if (touch) await choice.tap(); else await choice.click();
     };
     if (process.env.RAIL_HISTORY_ONLY) {
@@ -329,7 +329,7 @@ if (output) fs.mkdirSync(output, { recursive: true });
             + '\n第二行包含很长的地址：https://example.invalid/' + 'long-path-'.repeat(35)
             + '\n<img src=x onerror=alert(1)> 只是用户原文，不应执行。\n[image:/api/uploads/preview-test.png]';
           items = [human('short', '谢谢。'), human('long', previewSource),
-            human('medium', '请解释这段文字的实际含义和上下文联系'), human('multiline', '第一行\n第二行\n第三行\n第四行'), agent('reply', 'short')];
+            human('medium', '请解释这段文字的实际含义和上下文联系，并说明关键概念之间的关系。'), human('multiline', '第一行\n第二行\n第三行\n第四行'), agent('reply', 'short')];
           workspace.setMessages(items);
         }); await target.locator('.chatRoundDirectory').click();
       };
@@ -339,9 +339,9 @@ if (output) fs.mkdirSync(output, { recursive: true });
       check('short prose has no ineffective expand button', await short.locator('.chatRoundExpand').count() === 0);
       check('long and multiline prose expose explicit expand', await long.getByRole('button', { name: '展开', exact: true }).count() === 1
         && await card(page, 'multiline').getByRole('button', { name: '展开', exact: true }).count() === 1);
-      check('preview exposes marker chooser', await short.locator('.chatRoundFollow').getAttribute('aria-label') === '选择标记');
-      await togglePreviewFlag(page, short.locator('.chatRoundFollow'));
-      check('preview shows selected flag', await short.locator('.chatRoundFollow').getAttribute('aria-pressed') === 'true');
+      check('preview exposes inline marker choices', await short.getByRole('toolbar', {name:'选择标记'}).getByRole('button').count() === 4);
+      await togglePreviewFlag(page, short.locator('.chatRoundMarkerChoices'));
+      check('preview shows selected flag', await short.locator('[data-round-marker="flag"]').getAttribute('aria-pressed') === 'true');
       await page.keyboard.press('Escape');
       await page.locator('[data-message-key="reply"]').click({ button: 'right' });
       const menu = page.locator('body > [data-portal-message-menu]');
@@ -363,7 +363,7 @@ if (output) fs.mkdirSync(output, { recursive: true });
       check('attachment retained as a native Chat reference without placeholder leakage', await long.locator('[data-message-attachment-path="/api/uploads/preview-test.png"]').count() === 1
         && !(await long.locator('.chatRoundPreviewJump').innerText()).includes('[image:') && await page.evaluate(() => items[1].content === previewSource));
       await shot('preview-expanded-desktop');
-      await togglePreviewFlag(page, long.locator('.chatRoundFollow'));
+      await togglePreviewFlag(page, long.locator('.chatRoundMarkerChoices'));
       check('flag refresh preserves inline expansion', await long.locator('.chatRoundPreviewJump').evaluate(n => n.classList.contains('is-expanded')));
       await long.locator('.chatRoundExpand').focus(); await page.keyboard.press('Enter');
       check('keyboard collapses same text', await long.locator('.chatRoundExpand').getAttribute('aria-expanded') === 'false'
@@ -382,8 +382,8 @@ if (output) fs.mkdirSync(output, { recursive: true });
       await page.evaluate(() => document.documentElement.dataset.portalTheme = 'dark'); await shot('preview-collapsed-desktop-dark');
       await page.keyboard.press('Escape'); await page.evaluate(() => PortalI18n.apply('en'));
       await page.locator('.chatRoundDirectory').click();
-      check('English catalog exposes marker choices', await short.locator('.chatRoundFollow').getAttribute('aria-label') === 'Choose marker'
-        && await long.locator('.chatRoundFollow').getAttribute('aria-label') === 'Choose marker · Flag');
+      check('English catalog exposes inline marker choices', await short.locator('.chatRoundMarkerChoices').getAttribute('aria-label') === 'Choose marker'
+        && await long.getByRole('button', {name:'Flag', exact:true}).getAttribute('aria-pressed') === 'true');
       await page.keyboard.press('Escape'); await page.locator('[data-message-key="long"]').click({ button: 'right' });
       check('English message menu uses same Unflag', await menu.locator('[data-portal-message-action="round-follow"]').innerText() === 'Unflag');
       await page.keyboard.press('Escape');
@@ -622,12 +622,12 @@ if (output) fs.mkdirSync(output, { recursive: true });
       check('compact preview width and rows', desktop.width >= 300 && desktop.width <= 340 && desktop.itemHeights.every(h => h < 115));
       check('short local time and clean attachment display', !/2026-|\[image:|\/api\/uploads/.test(desktop.text) && await first.locator('.chatRoundAttachments').innerText() === '图片 · 图片');
       check('no repeated follow text or tooltip', !(desktop.text.includes('标记本轮关注')) && await page.locator('.chatRoundNode:not([data-portal-tooltip-opt-out="1"])').count() === 0);
-      await togglePreviewFlag(page, first.locator('.chatRoundFollow')); await settle();
+      await togglePreviewFlag(page, first.locator('.chatRoundMarkerChoices')); await settle();
       check('compact flag is an actual action', await page.evaluate(() => workspace.isRoundFollowed('v1')));
       await shot('preview-desktop-light');
       await first.locator('.chatRoundExpand').focus(); await page.keyboard.press('Enter');
       check('keyboard exposes full original prose inline', await first.locator('.chatRoundPreviewJump').evaluate(n => n.classList.contains('is-expanded')) && await first.locator('.chatRoundExpand').innerText() === '收起');
-      await togglePreviewFlag(page, first.locator('.chatRoundFollow'));
+      await togglePreviewFlag(page, first.locator('.chatRoundMarkerChoices'));
       check('flag preserves expanded prose and source unchanged', await first.locator('.chatRoundPreviewJump').evaluate(n => n.classList.contains('is-expanded')) && await page.evaluate(() => items[0].content === originalText));
       await first.locator('.chatRoundExpand').click(); await page.mouse.move(10, 10);
       await first.locator('.chatRoundExpand').hover(); await page.waitForTimeout(570);
@@ -644,10 +644,10 @@ if (output) fs.mkdirSync(output, { recursive: true });
       await small.evaluate(() => document.documentElement.style.fontSize = '20px'); await seed(small);
       await small.locator('.chatRoundDirectory').tap();
       const narrow = await small.locator('.chatRoundPreview').evaluate(n => ({ x: n.getBoundingClientRect().x, right: n.getBoundingClientRect().right, bottom: n.getBoundingClientRect().bottom, width: n.clientWidth,
-        targets: [...n.querySelectorAll('.chatRoundFollow,.chatRoundExpand,.chatRoundPreviewHead button')].map(b => ({ w: b.getBoundingClientRect().width, h: b.getBoundingClientRect().height })) }));
+        targets: [...n.querySelectorAll('.chatRoundMarkerChoice,.chatRoundExpand,.chatRoundPreviewHead button')].map(b => ({ w: b.getBoundingClientRect().width, h: b.getBoundingClientRect().height })) }));
       geometry.push({ desktop, narrow });
       check('390 large type keeps preview and touch targets reachable', narrow.x >= 0 && narrow.right <= 390 && narrow.bottom <= 844 && narrow.targets.every(r => r.w >= 44 && r.h >= 44));
-      await togglePreviewFlag(small, small.locator('.chatRoundFollow').first(), true);
+      await togglePreviewFlag(small, small.locator('.chatRoundMarkerChoices').first(), true);
       check('touch flag action works without double tap', await small.evaluate(() => workspace.isRoundFollowed('v1')));
       if (output) await small.screenshot({ path: path.join(output, 'preview-390-font20-light.png') });
       await small.locator('.chatRoundExpand').first().focus(); await small.keyboard.press('Enter');
@@ -748,7 +748,7 @@ if (output) fs.mkdirSync(output, { recursive: true });
     check('hover shows enterable preview', await page.locator('.chatRoundPreview').isVisible());
     await page.locator('.chatRoundPreview').hover(); await page.waitForTimeout(280);
     check('preview survives pointer transfer', await page.locator('.chatRoundPreview').isVisible());
-    await togglePreviewFlag(page, page.locator('.chatRoundPreview').getByRole('button', { name: '选择标记', exact: true }));
+    await togglePreviewFlag(page, page.locator('.chatRoundPreview').getByRole('toolbar', { name: '选择标记', exact: true }));
     await settle(); check('preview flag synchronized', (await node.getAttribute('class')).includes('is-followed'));
     await page.keyboard.press('Escape');
     check('escape closes preview', !(await page.locator('.chatRoundPreview').isVisible()));

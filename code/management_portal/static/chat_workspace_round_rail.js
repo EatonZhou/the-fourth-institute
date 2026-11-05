@@ -68,7 +68,7 @@
     const observedRows = new Set(), sizes = new WeakMap(); let observedList = null;
     let hoverTimer = 0, closeTimer = 0, press = null, dragging = null, popup = null, navigation = 0, restoringFocus = false;
     let hoverKey = '', activation = null, pointerRest = null, laneTop = 0;
-    let previewFrame = 0, markerMenu = null;
+    let previewFrame = 0;
     let historyRequest = null;
     const previewSizes = new WeakMap();
     const identity = () => String(window.PortalIdentity?.username?.() || '');
@@ -202,49 +202,35 @@
     const textFor = previewText;
     const description = row => [textFor(row.item).slice(0, 120) || t('附件消息'), t(labels[statusFor(row.item)] || '状态待确认'),
       flags.has(row.key) ? t(markerLabels[flags.get(row.key)]) : ''].filter(Boolean).join(' · ');
-    function closeMarkerMenu() {
-      const current = markerMenu; markerMenu = null;
-      if (current) { current.binding.destroy(); current.panel.remove(); }
-    }
-    function openMarkerMenu(key, trigger) {
-      if (markerMenu?.trigger === trigger) { closeMarkerMenu(); return; }
-      closeMarkerMenu(); clearTimeout(closeTimer); clearTimeout(hoverTimer);
-      if (popup) popup.explicit = true;
-      const panel = el('div', 'chatRoundMarkerMenu'); panel.setAttribute('role', 'menu');
-      panel.setAttribute('aria-label', t('选择标记')); wrapper.append(panel);
+    function markerChoices(key) {
       const selected = flags.get(requestFor(key));
-      const choices = el('div', 'chatRoundMarkerChoices'); panel.append(choices);
-      const choose = value => {
-        closeMarkerMenu(); setMarker(key, value);
-        preview.querySelector(`[data-round-follow="${CSS.escape(key)}"]`)?.focus({ preventScroll: true });
-      };
+      const choices = el('div', 'chatRoundMarkerChoices');
+      choices.dataset.roundFollow = key;
+      choices.setAttribute('role', 'toolbar'); choices.setAttribute('aria-label', t('选择标记'));
       for (const kind of Object.keys(markerPaths)) {
         const item = button('chatRoundMarkerChoice', t(markerLabels[kind]), ''); item.dataset.roundMarker = kind;
-        item.setAttribute('role', 'menuitemradio'); item.setAttribute('aria-checked', String(selected === kind));
-        item.tabIndex = -1; item.innerHTML = markerIcon(kind); item.append(el('span', '', t(markerLabels[kind])));
-        item.onclick = () => choose(kind); choices.append(item);
+        item.setAttribute('aria-pressed', String(selected === kind));
+        item.tabIndex = kind === (selected || 'flag') ? 0 : -1; item.innerHTML = markerIcon(kind);
+        item.onclick = () => {
+          clearTimeout(closeTimer); clearTimeout(hoverTimer);
+          if (popup) popup.explicit = true;
+          setMarker(key, flags.get(requestFor(key)) === kind ? null : kind);
+        };
+        choices.append(item);
       }
-      const remove = button('chatRoundMarkerRemove', t('取消Flag')); remove.setAttribute('role', 'menuitem'); remove.tabIndex = -1;
-      remove.disabled = !selected; remove.onclick = () => choose(null); panel.append(remove);
-      const binding = window.PortalOverlay.bindPopover({ trigger, panel, portal: true, placement: 'bottom-end',
-        closeOnOutside: true, closeOnEscape: true, onClose: () => { closeMarkerMenu(); } });
-      markerMenu = { panel, trigger, binding }; binding.open();
-      const enabled = () => [...panel.querySelectorAll('button:not(:disabled)')];
-      const focus = item => { enabled().forEach(node => node.tabIndex = node === item ? 0 : -1); item.focus({ preventScroll: true }); };
-      focus(panel.querySelector('[aria-checked="true"]') || enabled()[0]);
-      panel.addEventListener('keydown', event => {
-        if (event.key === 'Tab') { closeMarkerMenu(); trigger.focus({ preventScroll: true }); return; }
+      const focus = item => { [...choices.children].forEach(node => node.tabIndex = node === item ? 0 : -1); item.focus({ preventScroll: true }); };
+      choices.addEventListener('keydown', event => {
         if (!['ArrowRight', 'ArrowLeft', 'ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) return;
-        event.preventDefault(); const items = enabled(), index = items.indexOf(document.activeElement);
+        event.preventDefault(); event.stopPropagation(); const items = [...choices.children], index = items.indexOf(document.activeElement);
         focus(items[event.key === 'Home' ? 0 : event.key === 'End' ? items.length - 1
           : (index + (['ArrowRight', 'ArrowDown'].includes(event.key) ? 1 : -1) + items.length) % items.length]);
       });
+      return choices;
     }
     function cancelPress() {
       if (press) { clearTimeout(press.timer); press.node.classList.remove('is-pressing'); press = null; }
     }
     function closePreview(returnFocus = false) {
-      closeMarkerMenu();
       hoverKey = '';
       clearTimeout(hoverTimer); clearTimeout(closeTimer);
       previewResize.disconnect(); cancelAnimationFrame(previewFrame); previewFrame = 0;
@@ -298,8 +284,9 @@
     }
     function showPreview(items, trigger, explicit = false) {
       if (disposed || dragging) return;
-      closeMarkerMenu();
-      const focusedFlag = preview.contains(document.activeElement) ? document.activeElement.dataset.roundFollow : '';
+      const focusedChoice = preview.contains(document.activeElement) ? document.activeElement : null;
+      const focusedFlag = focusedChoice?.closest('[data-round-follow]')?.dataset.roundFollow;
+      const focusedKind = focusedChoice?.dataset.roundMarker;
       const expanded = popup?.trigger === trigger ? popup.expanded : new Set();
       clearTimeout(hoverTimer); clearTimeout(closeTimer);
       previewResize.disconnect(); cancelAnimationFrame(previewFrame); previewFrame = 0;
@@ -328,20 +315,16 @@
         }
         card.append(main);
         const request = requestFor(row.key);
-        if (request) {
-          const kind = flags.get(request);
-          const flag = button('chatRoundFollow', t('选择标记') + (kind ? ' · ' + t(markerLabels[kind]) : ''), '');
-          flag.innerHTML = markerIcon(kind);
-          flag.dataset.roundFollow = row.key;
-          flag.setAttribute('aria-haspopup', 'menu'); flag.setAttribute('aria-expanded', 'false');
-          flag.setAttribute('aria-pressed', String(!!kind)); flag.onclick = () => openMarkerMenu(row.key, flag); card.append(flag);
-        }
+        if (request) meta.append(markerChoices(row.key));
         list.append(card);
       }
       if (!items.length) list.append(el('p', 'chatRoundEmpty', t('暂无已加载轮次')));
       preview.append(list); popup.list = list; bindPreview(list); measurePreview();
       for (const { jump } of popup.contents) previewResize.observe(jump);
-      if (focusedFlag) preview.querySelector(`[data-round-follow="${CSS.escape(focusedFlag)}"]`)?.focus({ preventScroll: true });
+      if (focusedFlag && focusedKind) {
+        const choice = preview.querySelector(`[data-round-follow="${CSS.escape(focusedFlag)}"] [data-round-marker="${CSS.escape(focusedKind)}"]`);
+        if (choice) { [...choice.parentElement.children].forEach(item => item.tabIndex = item === choice ? 0 : -1); choice.focus({ preventScroll: true }); }
+      }
       else if (explicit) { preview.tabIndex = -1; (preview.querySelector('.chatRoundPreviewJump') || preview).focus({ preventScroll: true }); }
     }
     function applyExpanded(content, value) {
@@ -554,7 +537,7 @@
     on(marks, 'pointerout', event => {
       if (marks.contains(event.relatedTarget)) return;
       if (press && activation) activation.cancelled = true;
-      hoverKey = ''; cancelPress(); clearTimeout(hoverTimer); closeTimer = setTimeout(() => { if (!popup?.explicit && !markerMenu) closePreview(); }, 240);
+      hoverKey = ''; cancelPress(); clearTimeout(hoverTimer); closeTimer = setTimeout(() => { if (!popup?.explicit && !preview.contains(document.activeElement)) closePreview(); }, 240);
     });
     on(preview, 'pointerenter', () => clearTimeout(closeTimer));
     on(preview, 'pointerleave', () => { closeTimer = setTimeout(() => { if (!popup?.explicit && !preview.contains(document.activeElement)) closePreview(); }, 240); });
@@ -616,7 +599,7 @@
         }
       }
     });
-    const outsidePreview = target => !preview.contains(target) && !rail.contains(target) && !markerMenu?.panel.contains(target);
+    const outsidePreview = target => !preview.contains(target) && !rail.contains(target);
     on(document, 'pointerdown', event => { if (outsidePreview(event.target)) closePreview(); });
     on(document, 'focusin', event => { if (outsidePreview(event.target)) closePreview(); });
     on(viewport, 'wheel', () => { if (activation) activation.cancelled = true; cancelPress(); }, { passive: true });
