@@ -407,7 +407,8 @@
           : continued
           ? window.PortalI18n.html`<div class="messageDividerRow"><div class="messageDivider" role="separator" aria-label="${escapeHtml(options.assistantName || "Agent")} 继续回复"></div>${groupToggleHtml}${actionsHtml}</div>`
           : actionsHtml;
-        const messageBodyHtml = `${continued ? "" : messageQuoteHtml(item?.quote, options)}${bodyBlockHtml}
+        const familyContext = window.PortalChatWorkspaceResidentMessages?.familyReplyContextHtml(item, callbackMessages, escapeHtml) || "";
+        const messageBodyHtml = `${familyContext}${continued ? "" : messageQuoteHtml(item?.quote, options)}${bodyBlockHtml}
         ${responseSourcesHtml(item?.response_sources)}
         ${messageContextRefsHtml(item?.context_refs || {}, options)}
         ${messageAttachmentsHtml(item?.context_refs?.attachments || item?.attachments || [], options)}`;

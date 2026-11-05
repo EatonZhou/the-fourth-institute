@@ -131,7 +131,7 @@
           <strong>${esc(window.PortalI18n.t(label))}</strong>
         </label>`;
         root.innerHTML = window.PortalI18n.html`<form class="residentMenuReportingForm">
-          <h3>汇报设置</h3>
+          <header class="residentReportingHeader"><h3>汇报设置</h3><button class="portalButton is-primary" type="submit" ${canEdit ? "" : "disabled"}>保存汇报设置</button></header>
           <fieldset class="residentReportingInitiative" aria-describedby="resident-reporting-initiative-note">
             <legend>汇报主动性</legend>
             <div class="residentReportingRow">
@@ -159,7 +159,7 @@
             </div>
           </fieldset>
           <div data-reporting-conflict hidden></div>
-          <footer class="residentReportingActions"><button class="portalButton is-primary" type="submit" ${canEdit ? "" : "disabled"}>保存汇报设置</button><p role="status" data-reporting-status></p></footer>
+          <p class="residentReportingStatus" role="status" data-reporting-status></p>
         </form>`;
         const form = root.querySelector("form");
         form.querySelectorAll(".residentReportingHelp").forEach(button => {

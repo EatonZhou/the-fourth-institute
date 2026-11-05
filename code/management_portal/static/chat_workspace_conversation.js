@@ -159,7 +159,10 @@
           .filter(index => !messages[index].family_reply.resident_id || !relay.resident_id
             || messages[index].family_reply.resident_id === relay.resident_id)))];
         const end = Math.max(...requests.map(request => request.index), ...replies);
-        status.set(end, { ...owner.relay, request_message_id: owner.item.id });
+        status.set(end, { ...owner.relay, request_message_id: owner.item.id,
+          request_questions: requests.map(({ item }) => ({ id: item.id,
+            excerpt: item.withdrawn ? "" : Array.from(String(item.content || "").replace(/\s+/g, " ").trim()).slice(0, 80).join("") })),
+        });
         // Outputs of a request its member is running stay open, like a running turn's.
         if (owner.relay.state === "running") replies.forEach(output => live.add(output));
       });

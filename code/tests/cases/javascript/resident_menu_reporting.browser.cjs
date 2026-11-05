@@ -77,7 +77,8 @@ const evidence = process.env.REPORTING_MENU_EVIDENCE;
           const r = label.getBoundingClientRect(), text = label.querySelector('strong');
           return { width: r.width, height: r.height, inside: r.left >= fr.left - 1 && r.right <= fr.right + 1,
             unbroken: text.getBoundingClientRect().height <= parseFloat(getComputedStyle(text).lineHeight) + 1,
-            selected: label.querySelector('input').checked, border: getComputedStyle(label).borderColor };
+            selected: label.querySelector('input').checked, color: getComputedStyle(label).color,
+            borderless: parseFloat(getComputedStyle(label).borderWidth) === 0 && getComputedStyle(label).backgroundColor === 'rgba(0, 0, 0, 0)' };
         });
         const fonts = [...form.querySelectorAll('legend, strong, small, p, button')].filter(e => e.textContent.trim())
           .map(e => ({ size: parseFloat(getComputedStyle(e).fontSize), text: e.textContent.slice(0, 35) }));
@@ -85,6 +86,10 @@ const evidence = process.env.REPORTING_MENU_EVIDENCE;
         const submit = form.querySelector('[type=submit]').getBoundingClientRect();
         const bottomReachable = submit.bottom <= body.getBoundingClientRect().bottom + 1;
         body.scrollTop = 0;
+        const title = form.querySelector('.residentReportingHeader h3').getBoundingClientRect();
+        const save = form.querySelector('[type=submit]').getBoundingClientRect();
+        const header = { sameLine: Math.abs((title.top + title.bottom) / 2 - (save.top + save.bottom) / 2) < 1,
+          saveOnRight: save.left > title.right, inside: save.right <= fr.right + 1 };
         const rows = [...form.querySelectorAll('.residentReportingRow')].map(row => {
           const label = row.querySelector('.residentReportingLabel').getBoundingClientRect();
           const choices = [...row.querySelectorAll('.residentReportingChoice')].map(e => e.getBoundingClientRect());
@@ -92,7 +97,7 @@ const evidence = process.env.REPORTING_MENU_EVIDENCE;
             choicesOnOneLine: choices.every(r => Math.abs(r.top - choices[0].top) < 1),
             labelAlongside: label.top >= choices[0].top && label.bottom <= choices[0].bottom };
         });
-        return { controls, fonts, rows, height: fr.height, overflow: body.scrollWidth - body.clientWidth, bottomReachable,
+        return { controls, fonts, rows, header, height: fr.height, overflow: body.scrollWidth - body.clientWidth, bottomReachable,
           selected: [...form.querySelectorAll('input:checked')].map(e => [e.name, e.value]) };
       });
       observations.push({ width, theme, language, ...metrics });
@@ -101,7 +106,9 @@ const evidence = process.env.REPORTING_MENU_EVIDENCE;
       assert.ok(metrics.fonts.every(f => f.size >= 13), 'all explanatory text stays legible');
       assert.ok(metrics.overflow <= 1 && metrics.bottomReachable, 'no outer horizontal scroll and save stays reachable');
       assert.deepEqual(metrics.selected, [['initiative', 'medium'], ['quality', 'high']]);
-      assert.notEqual(metrics.controls[0].border, metrics.controls[2].border, 'selected level has a visible border');
+      assert.ok(metrics.controls.every(c => c.borderless), 'choices have no surrounding border or card fill');
+      assert.notEqual(metrics.controls[0].color, metrics.controls[2].color, 'selected level retains a visible accent');
+      assert.ok(metrics.header.sameLine && metrics.header.saveOnRight && metrics.header.inside, 'save stays on the title row at the right without overflow');
       assert.equal(metrics.rows.length, 2);
       if (language !== 'en' || width >= 734) assert.ok(metrics.rows.every(r => r.choicesOnOneLine), 'each group remains a single compact option row');
       if (width >= 734) assert.ok(metrics.rows.every(r => r.labelAlongside && r.height <= 48), `normal widths show two compact settings rows: ${JSON.stringify({ width, language, rows: metrics.rows })}`);
@@ -152,7 +159,7 @@ const evidence = process.env.REPORTING_MENU_EVIDENCE;
     assert.ok(await page.locator('#resident-reporting-quality-note').isVisible(), 'read-only viewers can still read help');
     assert.deepEqual(errors, []);
     if (evidence) fs.writeFileSync(path.join(evidence, 'report.json'), JSON.stringify({ status: 'passed', observations, errors,
-      behavior: ['two compact rows', 'narrow layout', 'expandable help without writes', 'English labels', 'native radio keys', 'CAS save/readback', 'failed save draft', 'read-only'],
+      behavior: ['borderless options', 'save on title row', 'two compact rows', 'narrow layout', 'expandable help without writes', 'English labels', 'native radio keys', 'CAS save/readback', 'failed save draft', 'read-only'],
       boundary: 'Real menu shell and reporting component; local service fixture, no user setting changed' }, null, 2));
     console.log(JSON.stringify({ status: 'passed', views: observations.length, errors }));
   } finally { await browser.close(); }

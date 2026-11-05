@@ -603,7 +603,9 @@
 .familyMigrationPriority li > span { flex:1; min-width:0; overflow-wrap:anywhere; }
 .familyMigrationPriority li > button { flex:none; }
 .residentMenuReportingForm { display:grid; gap:12px; min-width:0; padding:16px 0; margin-bottom:16px; border-bottom:1px solid var(--border); color:var(--text); font-size:14px; line-height:1.6; container-type:inline-size; }
-.residentMenuReportingForm > h3 { margin:0; font-size:18px; line-height:1.4; font-weight:650; }
+.residentReportingHeader { display:flex; align-items:center; justify-content:space-between; gap:12px; max-width:600px; min-width:0; }
+.residentReportingHeader > h3 { min-width:0; margin:0; font-size:18px; line-height:1.4; font-weight:650; }
+.residentReportingHeader > button { flex:0 1 auto; max-width:55%; white-space:normal; }
 .residentMenuReportingForm fieldset { min-width:0; margin:0; padding:0; border:0; }
 .residentMenuReportingForm legend { position:absolute; width:1px; height:1px; padding:0; overflow:hidden; clip-path:inset(50%); white-space:nowrap; }
 .residentReportingRow { display:grid; grid-template-columns:100px minmax(0,1fr) 28px; align-items:center; gap:12px; max-width:600px; }
@@ -612,12 +614,11 @@
 .residentReportingLevels { grid-template-columns:1.7fr repeat(3,minmax(0,1fr)); }
 html[lang="en"] .residentReportingLevels { grid-template-columns:repeat(4,minmax(0,1fr)); }
 .residentReportingFormats { grid-template-columns:repeat(3,minmax(0,1fr)); }
-.residentMenuReportingForm .residentReportingChoice { display:flex; align-items:center; justify-content:center; gap:4px; min-width:0; min-height:40px; box-sizing:border-box; padding:6px 4px; border:1px solid var(--border); border-radius:8px; background:var(--panel); cursor:pointer; }
+.residentMenuReportingForm .residentReportingChoice { display:flex; align-items:center; justify-content:center; gap:4px; min-width:0; min-height:40px; box-sizing:border-box; padding:6px 4px; border:0; background:transparent; cursor:pointer; }
 .residentReportingChoice > input { appearance:auto; flex:none; width:16px; height:16px; min-height:0; margin:0; padding:0; accent-color:var(--accent); }
 .residentReportingChoice strong { display:block; font-size:14px; font-weight:550; line-height:1.5; overflow-wrap:anywhere; }
-.residentReportingChoice:has(input:checked) { border-color:var(--accent); background:color-mix(in srgb,var(--accent) 7%,var(--panel)); }
-.residentReportingChoice:has(input:focus-visible) { outline:2px solid var(--accent); outline-offset:3px; }
-.residentReportingChoice:hover:not(:has(input:disabled)) { border-color:var(--accent); }
+.residentReportingChoice:has(input:checked), .residentReportingChoice:hover:not(:has(input:disabled)) { color:var(--accent); }
+.residentReportingChoice > input:focus-visible { outline:2px solid var(--accent); outline-offset:3px; }
 .residentReportingChoice:has(input:disabled) { opacity:.6; cursor:not-allowed; }
 .residentMenuReportingForm .residentReportingHelp { display:grid; place-items:center; width:28px; height:28px; min-height:0; padding:0; border:1px solid var(--border); border-radius:50%; background:transparent; color:var(--muted); font-size:14px; cursor:pointer; }
 .residentReportingHelp:hover, .residentReportingHelp[aria-expanded="true"] { color:var(--accent); border-color:var(--accent); }
@@ -625,8 +626,8 @@ html[lang="en"] .residentReportingLevels { grid-template-columns:repeat(4,minmax
 .residentMenuReportingForm .residentReportingNote { margin:8px 0 0; padding:10px 12px; border-radius:8px; background:var(--panel-2); color:var(--muted); font-size:13px; line-height:1.7; overflow-wrap:anywhere; }
 .residentReportingNote[hidden] { display:none; }
 .residentReportingNote > p { margin:0; }
-.residentReportingActions { display:flex; flex-wrap:wrap; align-items:center; gap:12px; }
-.residentReportingActions > p { margin:0; font-size:14px; overflow-wrap:anywhere; }
+.residentReportingStatus { margin:0; font-size:14px; overflow-wrap:anywhere; }
+.residentReportingStatus:empty { display:none; }
 .residentMenuReportingForm [data-reporting-conflict] { padding:14px; border:1px solid var(--border); border-radius:10px; background:var(--panel-2); }
 .residentMenuReportingForm [data-reporting-conflict][hidden] { display:none; }
 .residentMenuReportingForm [data-reporting-conflict] p { margin:0 0 10px; }

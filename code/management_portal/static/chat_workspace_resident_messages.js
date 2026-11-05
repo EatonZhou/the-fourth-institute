@@ -21,6 +21,20 @@
     return (via.length ? `（经 ${via.join(" → ")}）` : "") + (moved.length ? `（改派自 ${moved[moved.length - 1]}）` : "");
   }
 
+  function familyReplyContextHtml(item, items, escapeHtml) {
+    const reply = item?.family_reply;
+    if (!reply) return "";
+    const ids = [...new Set([reply.request_message_id, ...(reply.request_message_ids || [])].filter(Boolean))];
+    const kind = { final: "最终答复", progress: "处理进展" }[reply.reply_kind] || "回复";
+    const questions = ids.map(id => {
+      const original = items.find(message => String(message.id || message.message_id || "") === id && message.role === "user");
+      const text = original && !original.withdrawn ? memberText(original).replace(/\s+/g, " ").trim() : "";
+      const excerpt = text ? `${Array.from(text).slice(0, 80).join("")}${Array.from(text).length > 80 ? "…" : ""}` : "";
+      return `<button type="button" class="familyReplyQuestion" data-message-quote="${escapeHtml(id)}"><span>${escapeHtml(excerpt || window.PortalI18n.t("查看原问题"))}</span><small>${escapeHtml(id)}</small><span class="familyReplyQuestionAction">${escapeHtml(window.PortalI18n.t("查看"))} ↑</span></button>`;
+    }).join("");
+    return `<section class="familyReplyContext" aria-label="${escapeHtml(window.PortalI18n.t("回复关联"))}"><strong class="familyReplyKind" data-family-reply-kind="${escapeHtml(reply.reply_kind || "message")}">${escapeHtml(window.PortalI18n.t(kind))}</strong>${questions ? `<div class="familyReplyQuestions">${questions}</div>` : ""}</section>`;
+  }
+
   // What a facade's Stop stops: every request the Family is executing - run by a
   // member or still being routed - and, for the confirmation, what stays queued.
   function familyExecution(snapshot) {
@@ -171,10 +185,7 @@
     // open its status block names the member.
     function familyReplyFooter(item, index = -1, items = []) {
       const reply = item && typeof item.family_reply === "object" ? item.family_reply : null;
-      if (!reply || item.family_status) return "";
-      const request = String(reply.request_message_id || "");
-      const next = index >= 0 && Array.isArray(items) ? items[index + 1] : null;
-      if (request && String(next?.family_reply?.request_message_id || "") === request) return "";
+      if (!reply) return "";
       const title = String(reply.title || reply.resident_id || window.PortalI18n.t("成员"));
       const source = messageRole(item) === "agent" ? `由 ${title} 回复` : `来自 ${title}`;
       const residentId = String(reply.resident_id || "");
@@ -354,8 +365,9 @@
         ? `<a class="messageMetaLink" data-family-request-source href="/lineage?${escapeHtml(new URLSearchParams({ resident: String(status.resident_id), open_chat: "1" }).toString())}" title="${escapeHtml(window.PortalI18n.t("打开执行成员的对话"))}">${escapeHtml(label)}</a>`
         : escapeHtml(label);
       return window.PortalI18n.html`<article class="messageItem agent liveRuntime familyRequestStatus"${keyAttrs}${residentAttr} data-family-request="${escapeHtml(String(status.request_message_id || ""))}" data-family-request-state="${escapeHtml(stopping ? "stopping" : state)}">
-      <div class="messageHead"><span class="messageTitle familyRequestLabel">${labelHtml}</span><span class="messageHeadRight">${withActions ? actions : ""}</span></div>
-      ${body ? `<div class="familyRequestActivity"${context.workCollapsed ? " hidden" : ""}>${body}</div>` : ""}
+      <div class="messageHead"><span class="messageTitle familyRequestLabel"><span class="familyRequestStateTitle">${window.PortalI18n.t(state === "running" && !stopping ? "处理状态 · 仍在处理" : "处理状态")}</span>${labelHtml}</span><span class="messageHeadRight">${withActions ? actions : ""}</span></div>
+      ${(status.request_questions || []).map(question => `<button type="button" class="familyReplyQuestion" data-message-quote="${escapeHtml(question.id)}"><span>${escapeHtml(question.excerpt || window.PortalI18n.t("查看原问题"))}</span><small>${escapeHtml(question.id)}</small></button>`).join("")}
+      ${body ? `<div class="familyRequestActivity"${context.workCollapsed ? " hidden" : ""}>${state === "running" ? `<details data-message-disclosure="family-tools"><summary>${window.PortalI18n.t("查看工具与活动详情")}</summary>${body}</details>` : body}</div>` : ""}
     </article>`;
     }
 
@@ -377,6 +389,6 @@
   }
 
   window.PortalChatWorkspaceResidentMessages = Object.freeze({
-    createResidentMessages, dependencies: DEPENDENCIES, familyExecution, formatTokenCount,
+    createResidentMessages, dependencies: DEPENDENCIES, familyExecution, formatTokenCount, familyReplyContextHtml,
   });
 })();
