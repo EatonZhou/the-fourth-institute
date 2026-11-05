@@ -134,19 +134,34 @@
       const live = new Set();
       const outputs = new Map();
       messages.forEach((item, index) => {
-        const request = item?.family_reply?.request_message_id;
-        if (!request) return;
-        if (!outputs.has(request)) outputs.set(request, []);
-        outputs.get(request).push(index);
+        const reply = item?.family_reply;
+        const requests = new Set([reply?.request_message_id, ...(reply?.request_message_ids || [])].filter(Boolean));
+        requests.forEach(request => {
+          if (!outputs.has(request)) outputs.set(request, []);
+          outputs.get(request).push(index);
+        });
       });
+      const groups = new Map();
       messages.forEach((item, index) => {
         const relay = item?.relay && typeof item.relay === "object" ? item.relay : null;
         if (item?.role !== "user" || !relay || !FAMILY_VISIBLE_REQUEST_STATES.has(String(relay.state || ""))) return;
-        const replies = outputs.get(item.id) || [];
-        const end = replies.length ? replies[replies.length - 1] : index;
-        status.set(end, { ...relay, request_message_id: item.id });
+        const input = relay.grouped_into_message_id || relay.message_id || item.id;
+        const key = JSON.stringify([relay.resident_id || "", input]);
+        if (!groups.has(key)) groups.set(key, []);
+        groups.get(key).push({ item, index, relay });
+      });
+      groups.forEach(requests => {
+        // Prefer the actual group input for controls when it is visible; a
+        // grouped sibling still carries its facade identity, never a worker ID.
+        const owner = requests.find(({ relay }) => !relay.grouped_into_message_id
+          || relay.grouped_into_message_id === relay.message_id) || requests[0];
+        const replies = [...new Set(requests.flatMap(({ item, relay }) => (outputs.get(item.id) || [])
+          .filter(index => !messages[index].family_reply.resident_id || !relay.resident_id
+            || messages[index].family_reply.resident_id === relay.resident_id)))];
+        const end = Math.max(...requests.map(request => request.index), ...replies);
+        status.set(end, { ...owner.relay, request_message_id: owner.item.id });
         // Outputs of a request its member is running stay open, like a running turn's.
-        if (relay.state === "running") replies.forEach(output => live.add(output));
+        if (owner.relay.state === "running") replies.forEach(output => live.add(output));
       });
       if (!status.size) return messages;
       return messages.map((item, index) => (status.has(index) || live.has(index) ? {
@@ -194,11 +209,26 @@
         const owner = chain.find(id => memberIds.has(id) || id === solo);
         return !owner || (solo ? owner === solo : !muted.has(owner));
       };
-      const projected = foldDeliveredInfos((Array.isArray(snapshot.messages) ? snapshot.messages : []).filter(visible),
+      const unique = [];
+      const positions = new Map();
+      for (const message of Array.isArray(snapshot.messages) ? snapshot.messages : []) {
+        const id = String(message?.message_id || "");
+        if (id && positions.has(id)) {
+          const index = positions.get(id);
+          unique[index] = window.PortalResidentProtocol.mergeMessageAssociations(unique[index], message);
+        } else {
+          if (id) positions.set(id, unique.length);
+          unique.push(message);
+        }
+      }
+      const projected = foldDeliveredInfos(unique.filter(visible),
         { handedToSteward: facade }).map(residentProtocolMessageToWorkspace);
       const known = new Set(projected.map(message => message.id));
       for (const message of snapshot.local_submissions || []) {
-        if (!known.has(message.message_id) && visible(message)) projected.push(residentProtocolMessageToWorkspace(message));
+        if (!known.has(message.message_id) && visible(message)) {
+          projected.push(residentProtocolMessageToWorkspace(message));
+          known.add(message.message_id);
+        }
       }
       const messages = facade ? withFamilyRequestStatus(orderFamilyMessages(projected)) : projected;
       const activities = !facade && Array.isArray(snapshot.activities) ? snapshot.activities : [];

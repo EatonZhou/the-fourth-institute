@@ -73,4 +73,3 @@
 }
 @media (prefers-reduced-motion: reduce) { .homeExplanation, .homeExplanation * { scroll-behavior: auto !important; } }
 .homeExplanationQuality { display:flex; align-items:center; flex-wrap:wrap; gap:8px; margin-block:8px; }
-.homeExplanationQuality select { min-height:44px; max-width:100%; font:inherit; color:var(--text); background:var(--panel); border:1px solid var(--border); border-radius:6px; padding:6px 10px; }

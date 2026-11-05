@@ -4,8 +4,8 @@
 .homeDialogueToolbar,.homeDialogueChooser,.homeDialogueTabs { display:flex; align-items:center; gap:8px; flex-wrap:wrap; padding:8px; }
 /* Only Home-created controls use this skin. Mounted Chat, reports and editors
    keep their own control styles, including hover/pressed/disabled states. */
-:where(button, select, input).homeDialogueControl,.homeDialogueMessageAction { font:inherit; color:inherit; background:var(--panel, #fff); border:1px solid var(--border, #ccc); border-radius:5px; padding:5px 9px; }
-button.homeDialogueControl,.homeDialogueMessageAction { cursor:pointer; }
+:where(button, select, input).homeDialogueControl { font:inherit; color:inherit; background:var(--panel, #fff); border:1px solid var(--border, #ccc); border-radius:5px; padding:5px 9px; }
+button.homeDialogueControl { cursor:pointer; }
 .homeDialogueControl:disabled { opacity:.55; cursor:default; }
 .homeDialogueControl[aria-pressed="true"] { outline:2px solid var(--accent, #5871b8); }
 .homeDialogueColumns { display:grid; grid-template-columns:minmax(0, var(--home-dialogue-left,40%)) 8px minmax(0,1fr); flex:1; min-height:0; overflow:hidden; }
@@ -60,5 +60,3 @@ summary.homeDialogueControl { cursor:pointer; white-space:nowrap; padding:5px 7p
 html[data-portal-viewport="mobile"] #homeWorkbenchRoot .portalWorkbenchStack[data-portal-mobile-active="true"]:has(.homeDialogue) { grid-template-rows:28px minmax(0,1fr); }
 html[data-portal-viewport="mobile"] #homeWorkbenchRoot .portalWorkbenchStack:has(.homeDialogue) > .portalWorkbenchTabs { display:flex; }
 @media(max-width:760px) { .homeDialogueExpanded { inset:var(--home-dialogue-top, 8px) 0 0; } }
-.homeDialogue .homeDialogueMessageAction { display:inline-flex; align-items:center; max-width:100%; margin:.25rem .375rem .25rem 0; padding:.375rem .625rem; min-height:2rem; white-space:normal; overflow-wrap:anywhere; text-align:start; font:inherit; }
-.homeDialogue .homeDialogueMessageNotice { display:block; color:var(--muted, #666); font-size:.875em; padding:.25rem 0; overflow-wrap:anywhere; }

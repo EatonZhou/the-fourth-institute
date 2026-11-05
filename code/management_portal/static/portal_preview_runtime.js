@@ -7,6 +7,7 @@
   const hosts = new Map();
   const sources = new Map();
   const renderers = [];
+  const presentations = new Map();
   const mounted = new WeakMap();
   const contract = window.PortalPreviewContract;
   let fileMenu = null;
@@ -180,6 +181,26 @@
       const index = renderers.indexOf(entry);
       if (index >= 0) renderers.splice(index, 1);
     };
+  }
+
+  // Semantic document presenters are the same in a Workbench tab and Home's
+  // right pane. Hosts supply layout/navigation, never select a parallel viewer.
+  function registerPresentation(kind, factory) {
+    if (presentations.has(kind) || typeof factory !== "function") throw new TypeError("Invalid Preview presentation registration");
+    presentations.set(kind, factory);
+  }
+  async function createPresentation(kind, options) {
+    const factory = presentations.get(kind);
+    if (!factory) throw new Error(`Unsupported Preview presentation: ${kind}`);
+    return factory(options);
+  }
+  function displayDocument(request) {
+    const intent = window.PortalDisplayProtocol.normalizeIntent(request.displayIntent);
+    if (intent.action === "back") throw new Error("返回操作需要当前展示历史");
+    return contract.normalizeDocument({source:"display", displayIntent:intent,
+      messageOrigin:window.PortalDisplayProtocol.normalizeMessageOrigin(request.messageOrigin),
+      path:request.path || request.identity, title:window.PortalDisplayProtocol.label(intent),
+      capabilities:{edit:false,save:false,download:false,refresh:true}});
   }
 
   function rendererFor(document, context = {}) {
@@ -537,6 +558,9 @@
     normalizeDocument: contract.normalizeDocument,
     registerHost,
     registerRenderer,
+    registerPresentation,
+    createPresentation,
+    displayDocument,
     openFileMenu,
     registerSource,
     render,

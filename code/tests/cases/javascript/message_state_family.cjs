@@ -124,6 +124,89 @@ function mount(routeScript, messages, { older = [], family = true, transform = (
 }
 
 const checks = {
+  async 'shared-replies'(routeScript) {
+    const placed = (item, ordinal) => ({ ...item, family_position: { resident_id: MEMBER, ordinal } });
+    const a = placed(request(REQUEST_A, { message_id: 'worker-a' }), 1);
+    const b = placed(request(REQUEST_B, { message_id: 'worker-b', grouped_into_message_id: 'worker-a' }), 1);
+    const first = placed(reply('shared', REQUEST_A), 2);
+    const duplicate = { ...first, family_reply: { ...first.family_reply,
+      request_message_id: REQUEST_B, request_message_ids: [REQUEST_B] } };
+    const sameText = placed({ ...reply('same-text-distinct-id', REQUEST_A), content_parts: first.content_parts }, 3);
+    const independent = request('other-round', { message_id: 'worker-next-round' });
+    const otherId = 'resident_444444444444';
+    const otherMember = request('other-member', { resident_id: otherId, message_id: 'worker-a' });
+    const independentReply = reply('other-round-output', 'other-round');
+    const otherReply = { ...reply('other-member-output', 'other-member'),
+      family_reply: { ...reply('', '').family_reply, resident_id: otherId, request_message_id: 'other-member' } };
+    const app = mount(routeScript, [a, first, b, duplicate, sameText, independent,
+      independentReply, otherMember, otherReply]);
+    try {
+      const check = () => {
+        const items = app.window.PortalChatWorkspace.projectResidentConversation({}, app.snapshot).messages;
+        assert.deepEqual(Array.from(items, item => item.id), [REQUEST_A, REQUEST_B, 'shared',
+          'same-text-distinct-id', 'other-round', 'other-round-output', 'other-member', 'other-member-output']);
+        assert.deepEqual(Array.from(items.find(item => item.id === 'shared').family_reply.request_message_ids), [REQUEST_A, REQUEST_B]);
+        assert.equal(app.root.querySelectorAll('article[data-message-key="shared"]').length, 1);
+        app.output('same-text-distinct-id'); // identical text is still a distinct durable message
+        assert.equal(app.root.querySelectorAll('.familyRequestStatus').length, 3);
+        assert.equal(app.progress(REQUEST_A).dataset.messageAfterOf, 'same-text-distinct-id');
+        assert.equal(app.root.querySelectorAll(`.familyRequestStatus[data-family-request="${REQUEST_B}"]`).length, 0);
+        assert.equal(app.progress('other-round').dataset.messageAfterOf, 'other-round-output');
+        assert.equal(app.progress('other-member').dataset.messageAfterOf, 'other-member-output');
+        assert.equal(items.find(item => item.id === 'shared').live_output, true);
+      };
+      check(); app.render(); check();
+      assert.equal(first.family_reply.request_message_ids, undefined, 'projection never mutates raw messages');
+      // A hidden output must not become a progress anchor.
+      app.snapshot.family_facade.chat_preferences = { muted_member_ids: [otherId] };
+      app.snapshot.family_facade.members = [{ resident_id: MEMBER }, { resident_id: otherId }];
+      app.render();
+      assert.equal(app.root.querySelectorAll('.familyRequestStatus').length, 2);
+      assert.equal(app.progress(REQUEST_A).dataset.messageAfterOf, 'same-text-distinct-id');
+    } finally { await app.close(); }
+  },
+  async 'shared-protocol'(routeScript) {
+    const app = mount(routeScript, []);
+    let subscription;
+    try {
+      const current = reply('shared', REQUEST_B);
+      current.family_reply.request_message_ids = [REQUEST_B];
+      const earlier = reply('shared', REQUEST_A);
+      earlier.family_reply.request_message_ids = [REQUEST_A];
+      const snapshot = { resident: { resident_id: FACADE }, cursor: 1,
+        state: { work_state: 'idle' }, controls: {}, queue: { items: [] }, input_states: [],
+        family_facade: {}, messages: [request(REQUEST_B), current], next_page_token: 'older' };
+      app.window.PortalResidentService = { snapshot: async () => snapshot };
+      app.window.PortalResidentService.conversationMessages = async () => ({ resident_id: FACADE,
+        messages: [request(REQUEST_A), earlier, earlier], input_states: [], next_page_token: '' });
+      subscription = app.window.PortalResidentProtocol.acquire(FACADE, () => {}, { load: false });
+      await subscription.load();
+      await subscription.loadOlder();
+      const check = (ids, body) => {
+        const loaded = subscription.snapshot();
+        assert.deepEqual(Array.from(loaded.messages, item => item.message_id), [REQUEST_A, REQUEST_B, 'shared']);
+        const message = loaded.messages.find(item => item.message_id === 'shared');
+        assert.deepEqual(Array.from(message.family_reply.request_message_ids).sort(), ids.slice().sort());
+        if (body) assert.equal(message.content_parts[0].text, body);
+        Object.assign(app.snapshot, loaded);
+        app.render();
+        assert.equal(app.root.querySelectorAll('article[data-message-key="shared"]').length, 1);
+      };
+      check([REQUEST_A, REQUEST_B]);
+      const event = (cursor, event_type, requestId, body) => {
+        const message = reply('shared', requestId);
+        message.content_parts = [{ type: 'text', text: body }];
+        app.window.dispatchEvent(new app.window.CustomEvent('portal:change', { detail: {
+          resident_events: [{ resident_id: FACADE, cursor, event_type, payload: { message_id: 'shared', message } }],
+        } }));
+      };
+      event(2, 'conversation.message.updated', 'request-c', 'Updated durable body');
+      check([REQUEST_A, REQUEST_B, 'request-c'], 'Updated durable body');
+      event(3, 'conversation.message.appended', 'request-d', 'Appended same durable ID');
+      check([REQUEST_A, REQUEST_B, 'request-c', 'request-d'], 'Appended same durable ID');
+      assert.deepEqual(current.family_reply.request_message_ids, [REQUEST_B], 'raw server response is unchanged');
+    } finally { subscription?.destroy(); await app.close(); }
+  },
   async 'injection-order'(routeScript) {
     const placed = (item, ordinal) => ({ ...item, family_position: { resident_id: MEMBER, ordinal } });
     const original = placed(request(REQUEST_A), 1);

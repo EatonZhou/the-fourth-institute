@@ -301,6 +301,45 @@
     } catch (_) { return ""; }
   }
 
+  const asset = (name, global) => window.PortalUIPrimitives.loadAsset(`/static/${name}`, global ? {ready:()=>Boolean(window[global])} : {});
+  for (const [kind, script, global, css] of [
+    ["preview", "portal_file_preview.js", "PortalFilePreview", "home_dialogue.css"],
+    ["explanation", "home_explanation.js", "PortalHomeExplanationView", "home_explanation.css"],
+    ["report", "home_report.js", "PortalHomeReportView", "home_report.css"],
+    ["map", "home_map_view.js", "PortalHomeMapView", "project_map.css"],
+    ["frontier", "home_map_view.js", "PortalHomeMapView", "project_map.css"],
+  ]) window.PortalPreview.registerPresentation(kind, async options => {
+    await asset("portal_display_protocol.js", "PortalDisplayProtocol");
+    if (kind === "map" || kind === "frontier") {
+      for (const [file, name] of [["project_common.js","PortalProjectCommon"],["project_map_layout.js","PortalProjectMapLayout"],
+        ["project_map_drawer.js","PortalProjectMapDrawer"],["project_map.js","PortalProjectMap"]]) await asset(file, name);
+    }
+    await Promise.all([asset(css), asset(script, global)]);
+    return window[global].create(options);
+  });
+
+  // These descriptors contain an intent, not trusted HTML or permission. Each
+  // presenter performs its normal authorized, version-pinned source reads.
+  register({id:"display", priority:110, accepts:document => document.source === "display" && !!document.displayIntent,
+    render(root, document, context) {
+      const controller = new AbortController(); let view;
+      root.className = "previewBox";
+      const promise = (async () => {
+        const intent = window.PortalDisplayProtocol.normalizeIntent(document.displayIntent);
+        view = await window.PortalPreview.createPresentation(intent.view, {root,
+          onOpen: value => context.onPreviewRequest(window.PortalDisplayProtocol.previewRequest(value)),
+        });
+        if (controller.signal.aborted) { view.destroy(); return; }
+        const origin = document.messageOrigin;
+        const originKey = origin && intent.view === "report" ? await window.PortalDisplayProtocol.messageOriginKey(origin,intent) : undefined;
+        return view.show(intent.target, {view:intent.view, quality:intent.quality, signal:controller.signal,
+          readOnly:intent.target?.kind === "report", originKey,
+          ...(origin ? {originContext:{resident_id:origin.residentId,message_id:origin.messageId,fence_index:origin.fenceIndex}} : {})});
+      })();
+      return {promise, dispose() {controller.abort();view?.destroy();}};
+    },
+  });
+
   register({
     id: "explanation",
     priority: 86,
@@ -311,17 +350,12 @@
       root.className = "previewBox";
       root.textContent = window.PortalI18n.t("正在读取解释页…");
       const promise = (async () => {
-        const [{ sha256 }] = await Promise.all([
-          import("/static/portal_sha256.js"),
-          window.PortalUIPrimitives.loadAsset("/static/home_explanation.css"),
-          window.PortalUIPrimitives.loadAsset("/static/home_explanation.js", { ready: () => Boolean(window.PortalHomeExplanationView) }),
-        ]);
-        if (controller.signal.aborted) return;
+        const {sha256} = await import("/static/portal_sha256.js");
         const digest = await sha256(new TextEncoder().encode(document.content));
         if (controller.signal.aborted) return;
-        view = window.PortalHomeExplanationView.create({ root, onOpen: value => context.onPreviewRequest?.({
-          resourceAddress: value.target.address, path: value.target.address,
-        }) });
+        view = await window.PortalPreview.createPresentation("explanation", {root,
+          onOpen: value => context.onPreviewRequest?.(window.PortalDisplayProtocol.previewRequest(value))});
+        if (controller.signal.aborted) {view.destroy();return;}
         await view.show({ address: explanationAddress(document), sha256: digest }, { signal: controller.signal });
       })();
       return { promise, dispose() { controller.abort(); view?.destroy(); } };
@@ -350,21 +384,15 @@
         || (address[2] && String(revision) !== address[2])) {
         throw new Error(window.PortalI18n.t("汇报版本与资源地址不一致，请刷新后重试。"));
       }
-      const frame = window.document.createElement("iframe");
-      frame.title = snapshot.title || document.title || window.PortalI18n.t("汇报");
-      // Pin a root reference to the revision just authorized and read. Reopening
-      // is read-only; the existing report owner handles permissions and actions.
-      frame.src = `/home-report?${new URLSearchParams({ kind: "report", id: address[1], revision })}`;
-      frame.style.cssText = "width:100%;height:100%;min-height:32rem;border:0";
+      const controller = new AbortController(); let view;
       root.className = "previewBox reportPreview";
-      root.replaceChildren(frame);
-      const events = ["portal:permissions-changed", "portal:identity-changed"];
-      const recheck = event => frame.contentWindow?.dispatchEvent(new Event(event.type));
-      events.forEach(type => window.addEventListener(type, recheck));
-      return { dispose() {
-        events.forEach(type => window.removeEventListener(type, recheck));
-        frame.remove();
-      } };
+      const promise = (async () => {
+        view = await window.PortalPreview.createPresentation("report", {root,
+          onOpen:value => window.PortalPreview.request(window.PortalDisplayProtocol.previewRequest(value))});
+        if (controller.signal.aborted) {view.destroy();return;}
+        return view.show({kind:"report",id:address[1],revision}, {view:"report",readOnly:true,signal:controller.signal});
+      })();
+      return {promise, dispose() {controller.abort();view?.destroy();}};
     },
   });
 

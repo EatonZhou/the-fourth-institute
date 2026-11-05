@@ -1732,9 +1732,10 @@
         "root", "id", "panelId", "target", "autoLoad", "title", "emptyText", "placeholder",
         "draftOwner", "historyLimit", "residentFeatures", "pendingHistoryScope",
         "resolveResident", "resolveBeforeSend", "initialContext", "submissionContext", "onDetail", "onAcknowledgement", "emit",
-        "onSent", "onRollback", "onError", "onForkCreated", "conversationView", "onWatchboardAction", "onInteractionChange",
+        "onSent", "onRollback", "onError", "onForkCreated", "conversationView", "onDisplayAction", "onWatchboardAction", "onInteractionChange",
       ].filter(key => Object.prototype.hasOwnProperty.call(options, key)).map(key => [key, options[key]]));
       this.options = hostOptions;
+      this.displayActions = window.PortalChatDisplayActions.create({residentId: () => this.target().resident_id, onOpen: action => this.options.onDisplayAction?.(action)});
       this.initialContext = null;
       this.selectionController = null;
       this.selectionRoot = null;
@@ -1799,7 +1800,8 @@
         attachmentUploadContext: controller => ({ resident_id: controller.target().resident_id }),
         previewUrlForPath: path => window.PortalFileLinks.imagePreviewUrl(path),
         renderMarkdown: (text, renderOptions) => window.MD?.render?.(text, renderOptions) || escapeHtml(text).replace(/\n/g, window.PortalI18n.markup("<br>")),
-        renderMessageBody: (item, context) => this.conversationView()?.renderMessageBody?.(item, context)
+        renderMessageBody: (item, context) => this.displayActions.render(item, context)
+          ?? this.conversationView()?.renderMessageBody?.(item, context)
           ?? residentMessageBody(item, context),
         pinMessages: true,
         renderMessageFooter: residentMessageFooter,
@@ -1842,6 +1844,8 @@
         onSubagentFinished: run => this.noticeSubagentFinished(run),
       }).mount();
       this.workspace.root?.addEventListener("click", event => this.onSubagentClick(event));
+      this.openDisplayAction = event => { void this.displayActions.open(event).catch(error => this.reportError(error)); };
+      this.workspace.root?.addEventListener("click", this.openDisplayAction);
       this.questions = new ResidentQuestionCards(this);
       this.readObserver = new ResidentReadObserver(this);
       if (options.autoLoad !== false && this.workspace.target().resident_id) {
@@ -3463,6 +3467,8 @@
     setStatus(value) { return this.workspace.setStatus(value); }
     updateControls() { return this.workspace.updateControls(); }
     destroy() {
+      this.displayActions.clear();
+      this.workspace.root?.removeEventListener("click", this.openDisplayAction);
       this.readObserver.destroy();
       this.updateFamilyStatus(null);
       this.selectionController?.destroy();

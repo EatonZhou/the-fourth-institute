@@ -58,6 +58,8 @@
     "/static/portal_workspace_surface.js"
   ],
   "chat-workspace": [
+    "/static/portal_display_protocol.js",
+    "/static/chat_workspace_display_actions.js",
     "/static/chat_workspace_message_content.js",
     "/static/chat_workspace_composer.js",
     "/static/chat_workspace_composer_menus.js",

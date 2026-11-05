@@ -473,19 +473,16 @@
       // Reading a plan only verifies provenance. A POST requires a button click.
       if (plan) await read(plan, limits.text, key);
       const content = node("div", null, "homeExplanationMediaState"); region.append(content);
-      const controls = node("label", t("视频质量"), "homeExplanationQuality");
-      const select = node("select"); select.setAttribute("aria-label", t("视频质量"));
-      for (const [value, label] of [["low", "低 · 自由发挥"], ["medium", "中 · 3b1b式讲解"], ["high", "高 · 独立审核"]]) {
-        const option = node("option", t(label)); option.value = value; select.append(option);
-      }
-      select.value = ["low", "medium", "high"].includes(manifest?.quality) ? manifest.quality : "medium";
-      controls.append(select); region.insertBefore(controls, content);
       let busy = false, attempts = 0;
-      select.onchange = () => { attempts = 0; clearTimeout(mediaTimer); void fetchState(); };
+      const qualityControl = window.PortalUIPrimitives.radioGroup({label: t("视频质量"),
+        value: ["low", "medium", "high"].includes(manifest?.quality) ? manifest.quality : "medium",
+        choices: [["low", t("低")], ["medium", t("中")], ["high", t("高")]],
+        onChange: () => { attempts = 0; clearTimeout(mediaTimer); void fetchState(); }});
+      qualityControl.root.classList.add("homeExplanationQuality"); region.insertBefore(qualityControl.root, content);
       async function fetchState(generate = false) {
         if (!current(key) || busy) return;
-        busy = true; select.disabled = true; clearTimeout(mediaTimer);
-        const quality = select.value;
+        busy = true; qualityControl.disabled = true; clearTimeout(mediaTimer);
+        const quality = qualityControl.value;
         const endpoint = `/api/home-explanation/media?address=${encodeURIComponent(target.address)}&sha256=${target.sha256}&quality=${quality}`;
         content.querySelectorAll("button").forEach(el => { el.disabled = true; });
         try {
@@ -526,7 +523,7 @@
           if (current(key) && error.name !== "AbortError") {
             content.replaceChildren(); failure(content, error, () => fetchState(false));
           }
-        } finally { busy = false; select.disabled = false; }
+        } finally { busy = false; qualityControl.disabled = false; }
       }
       await fetchState();
     }

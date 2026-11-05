@@ -1153,6 +1153,9 @@ def test_the_facade_conversation_reads_like_a_resident_answering_its_requests(mo
     # This fixture isolates reply grouping; real role health is covered through
     # the conversation API in test_resident_quota_gate.
     monkeypatch.setattr(family_facade, "chat_presentation", lambda _: {})
+    # The synthetic facade has no persisted routing policy; its queued request
+    # is deliberately waiting for Router, outside this projection-only fixture.
+    monkeypatch.setattr(family_facade, "direct_member", lambda *_: "")
 
     def request(message_id, at, text):
         return {"message_id": message_id, "role": "user", "created_at": at, "author_id": "CASE-A",
@@ -1184,6 +1187,7 @@ def test_the_facade_conversation_reads_like_a_resident_answering_its_requests(mo
     assert answer["family_reply"] == {
         "resident_id": first, "title": "权限内核", "message_id": "msg_0000000000000a01", "via": [],
         "request_message_id": "msg_0000000000000f01",
+        "request_message_ids": ["msg_0000000000000f01"],
     }
     assert replies[(first, "msg_0000000000000a01")]["author_id"] == first
     # The selected rounds are read together, including queued/running ones.

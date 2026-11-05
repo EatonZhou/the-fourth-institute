@@ -8,7 +8,6 @@
     // that same object to submissionContext and onAcknowledgement. Bind the
     // nonce to that submission, never to a Resident-wide FIFO or mutable target.
     const submissionRequests = new WeakMap();
-    const messageActions = new Map();
     let destroyed = false, presented = true, suspended = false, chat = null, selection = null, assistant = null, lastDetail = null;
     let pageState = null, restoring = true, navigationReady = Promise.resolve(), opening = null;
     let narrow = false, ratio = 40, dragging = null;
@@ -297,16 +296,12 @@
           pageState?.writeSnapshot();
         }
         if (!entry.adapter) {
-          const api = entry.intent.view === "preview" ? window.PortalHomeDialoguePreview
-            : entry.intent.view === "explanation" ? window.PortalHomeExplanationView
-            : entry.intent.view === "report" ? window.PortalHomeReportView : window.PortalHomeMapView;
-          if (!api) throw new Error("展示组件尚未加载，请重试或刷新页面");
           if (entry.intent.view === "preview") {
             entry.controls = { primary: node("div", "", "homeDialoguePreviewActions"), secondary: node("div", "", "homeDialoguePreviewMenu") };
             entry.controls.primary.hidden = entry.controls.secondary.hidden = state.active !== entry;
             contentActions.append(entry.controls.primary); tools.append(entry.controls.secondary);
           }
-          entry.adapter = api.create({ root: entry.content, controls: entry.controls,
+          entry.adapter = await window.PortalPreview.createPresentation(entry.intent.view, { root: entry.content, controls: entry.controls,
             onOpen: intent => { if (presented && !suspended && state.active === entry) navigate(intent, true); },
             onReference: reference => {
               if (destroyed || entry.controller.signal.aborted || entry.intent.view !== "report") return;
@@ -339,6 +334,7 @@
             },
           });
         }
+        if (destroyed || entry.controller.signal.aborted) {entry.adapter?.destroy(); return;}
         entry.presented = presented && !suspended && state.active === entry && (!narrow || root.dataset.pane === "display");
         if (!entry.presented) await entry.adapter.setPresented(false);
         const messageOrigin = window.PortalHomeDialogueState.normalizeMessageOrigin(entry.messageOrigin);
@@ -389,8 +385,6 @@
     function consume(detail) {
       lastDetail = detail;
       if (!assistant || destroyed) return;
-      const messageIds = new Set((detail?.snapshot?.messages || []).map(message => message.message_id || message.id));
-      for (const id of messageActions.keys()) if (!messageIds.has(id)) messageActions.delete(id);
       for (const result of window.PortalHomeDialogueState.results(detail?.snapshot?.messages)) {
         try {
           const accepted = state.accept(result.value, { residentId: assistant.resident_id, messageId: result.messageId, dirty: dirty() });
@@ -402,43 +396,6 @@
     // Rendering and automatic consumption share the Markdown fence structure
     // and command schema. A historical click is a new, explicit navigation;
     // it never acknowledges or re-admits the old request nonce.
-    const conversationView = {
-      renderMessageBody(item, rendering) {
-        const id = item.message_id || item.id;
-        if (!id || !["assistant", "agent"].includes(item.role)) return null;
-        const previousActions = messageActions.get(id) || [], actions = [];
-        let recognized = false, fenceIndex = 0;
-        const html = rendering.renderContent(rendering.content, { renderCodeFence(block) {
-          if (block.info !== "portal-home-display") return null;
-          const index = fenceIndex++;
-          recognized = true;
-          if (!block.complete) return '<span class="homeDialogueMessageNotice" role="status">正在准备展示…</span>';
-          const command = window.PortalHomeDialogueState.displayCommand(block);
-          if (!command) return '<span class="homeDialogueMessageNotice" role="status">展示操作暂不可用：指令格式无效或当前版本不支持。</span>';
-          const prior = previousActions[actions.length];
-          const action = { token: prior?.source === block.source ? prior.token : window.PortalUIPrimitives.randomUUID(), source: block.source, intent: command.intent,
-            messageOrigin: { residentId: assistant?.resident_id, messageId: id, fenceIndex: index } };
-          actions.push(action);
-          const intent = action.intent;
-          const label = intent.action === "back" ? "返回上一展示" : intent.view === "preview"
-            ? /(?:slides?|\.pptx?)(?:[/.?#]|$)/i.test(intent.target.address) ? "预览幻灯片" : "预览文件/资源"
-            : ({ report: "查看汇报", explanation: "打开解释页", map: "打开研究地图", frontier: t("查看 Lineage Map") })[intent.view];
-          return `<button type="button" class="homeDialogueMessageAction btn" data-home-display-action="${window.MD.esc(action.token)}">${window.MD.esc(label)}</button>`;
-        } });
-        messageActions.set(id, actions);
-        return recognized ? html : null;
-      },
-    };
-    function openMessageAction(event) {
-      const button = event.target.closest?.("button[data-home-display-action]");
-      if (!button || !chatRoot.contains(button) || destroyed || !presented || suspended) return;
-      const action = [...messageActions.values()].flat().find(value => value.token === button.dataset.homeDisplayAction);
-      if (!action) return;
-      event.preventDefault();
-      navigate(action.intent, true, true, { messageOrigin: action.messageOrigin });
-      setPane("display"); current.focus({ preventScroll: true });
-    }
-    chatRoot.addEventListener("click", openMessageAction);
     async function submissionContext(submittedTarget) {
       if (!submittedTarget || submittedTarget.resident_id !== assistant?.resident_id) return null;
       const residentId = submittedTarget.resident_id;
@@ -499,7 +456,11 @@
         if (!target) throw new Error("当前用户尚未配置个人门面，请先在个人设置中配置");
         assistant = target;
         chat = window.PortalChatWorkspace.panelPackage.create({ root: chatRoot, id: "home-dialogue-assistant", panelId: "home-dialogue-assistant", target,
-          title: target.title || "个人门面", submissionContext, onDetail: consume, conversationView: () => conversationView,
+          title: target.title || "个人门面", submissionContext, onDetail: consume, onDisplayAction: action => {
+            if (destroyed || !presented || suspended) return false;
+            navigate(action.intent, true, true, {messageOrigin: action.messageOrigin});
+            setPane("display"); current.focus({preventScroll:true}); return true;
+          },
           onAcknowledgement: (_result, submitted) => {
             const requestId = submissionRequests.get(submitted.target);
             if (state.acknowledge(requestId, submitted.target.resident_id)) {
@@ -514,7 +475,7 @@
     const retryChat = button(left, "重试个人门面", () => { retryChat.hidden = true; mountChat(); }); retryChat.hidden = true;
     const unregister = window.PortalPreview.registerHost("home-dialogue", request => {
       if (!presented || suspended || destroyed) return false;
-      navigate({ view: "preview", target: { address: request.resourceAddress || request.path || request.href } }, true); return true;
+      navigate(request.displayIntent || { view: "preview", target: { address: request.resourceAddress || request.path || request.href } }, true, true, {messageOrigin:request.messageOrigin}); setPane("display"); return true;
     }, { priority: 80 });
     function lifecycle(event) { presented = event.detail.phase === "show"; if (!presented) { root.classList.remove("homeDialogueExpanded"); expand.textContent = "展开"; } resize(); }
     function beforeUnload(event) {
@@ -536,7 +497,6 @@
     return { destroy() {
       pageState?.writeSnapshot(); pageState?.destroy();
       destroyed = true; opening?.abort(); unregister(); chat?.destroy();
-      chatRoot.removeEventListener("click", openMessageAction); messageActions.clear();
       for (const entry of state.entries) { entry.controller.abort(); entry.adapter?.destroy(); }
       state.clear(); root.removeEventListener("portal:home-panel-lifecycle", lifecycle);
       observer.disconnect(); window.removeEventListener("beforeunload", beforeUnload);

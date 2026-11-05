@@ -41,7 +41,8 @@
       select.value = value; select.onchange = () => change(select.value); wrapper.append(select); return wrapper;
     }
     function mediaActions(state = null) {
-      mediaAction.replaceChildren(qualitySelect('视频质量', videoQuality, async value => {
+      mediaAction.replaceChildren(window.PortalUIPrimitives.radioGroup({label: '视频质量', value: videoQuality,
+        choices: [['low','低'],['medium','中'],['high','高']], onChange: async value => {
         videoQuality = value; clearTimeout(mediaTimer); stopMedia();
         const token = epoch;
         try {
@@ -51,7 +52,7 @@
           if (found) {renderMedia(found); if (found.status === 'pending') mediaTimer = setTimeout(() => pollMedia(token), 1000);}
           else {mediaRegion.replaceChildren(); mediaRegion.hidden = true; mediaActions();}
         } catch(error) {if(active(token) && videoQuality===value) renderMedia({status:'failed',error:error.message,quality:value});}
-      }));
+      }}).root);
       if (state?.status === 'ready') mediaAction.append(el('span', state.quality === 'high' && state.review?.status !== 'passed' ? '视频已生成 · 高质量未通过审核' : '视频已保存','hr-muted'));
       else if (state?.status === 'pending') mediaAction.append(el('span','视频生成中','hr-muted'));
       else if (state?.status === 'cancelled') mediaAction.append(el('span','生成已取消','hr-muted'));

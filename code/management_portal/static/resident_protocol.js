@@ -7,6 +7,19 @@
   let actorRevision = 0;
   const MAX_CACHED_RESIDENTS = 32;
 
+  // The same durable reply can answer several facade requests. Its body and
+  // primary association follow the incoming record; pagination/events only add
+  // associations, and must not discard those learned from another page.
+  function mergeMessageAssociations(previous, incoming) {
+    const result = clone(incoming);
+    if (!previous?.family_reply || !incoming?.family_reply) return result;
+    const ids = [previous.family_reply, incoming.family_reply].flatMap(reply => [
+      reply.request_message_id, ...(Array.isArray(reply.request_message_ids) ? reply.request_message_ids : []),
+    ]).filter(id => typeof id === "string" && id);
+    result.family_reply.request_message_ids = [...new Set(ids)];
+    return result;
+  }
+
   function mergeInputState(previous, incoming, { authoritative = false } = {}) {
     if (!previous) return clone(incoming);
     // Delivery and execution advance independently. In particular, pagination
@@ -1189,7 +1202,7 @@
               message => String(message?.message_id || "") === messageId,
             );
             if (index < 0) this.snapshot.messages.push(clone(payload.message));
-            else this.snapshot.messages[index] = clone(payload.message);
+            else this.snapshot.messages[index] = mergeMessageAssociations(this.snapshot.messages[index], payload.message);
           }
           break;
         case "conversation.message.updated": {
@@ -1202,7 +1215,7 @@
           if (index < 0 && payload.removed === true) break;
           if (index < 0) throw new Error(`Message update target is absent: ${messageId}`);
           if (payload.removed === true) this.snapshot.messages.splice(index, 1);
-          else if (payload.message?.message_id) this.snapshot.messages[index] = clone(payload.message);
+          else if (payload.message?.message_id) this.snapshot.messages[index] = mergeMessageAssociations(this.snapshot.messages[index], payload.message);
           else throw new Error("Message update is incomplete");
           break;
         }
@@ -1250,13 +1263,20 @@
 
     mergeHistoryPage(snapshot, page, removed = new Set()) {
       if (String(page?.resident_id || "") !== this.residentId) throw new Error("Resident message page target mismatch");
-      const existing = new Set((snapshot.messages || []).map(message => String(message?.message_id || "")));
-      const older = (Array.isArray(page.messages) ? page.messages : []).filter(message => {
+      const current = snapshot.messages || [];
+      const existing = new Map(current.map(message => [String(message?.message_id || ""), message]));
+      const older = [];
+      for (const message of Array.isArray(page.messages) ? page.messages : []) {
         const id = String(message?.message_id || "");
-        if (!id || existing.has(id) || removed.has(id)) return false;
-        existing.add(id); return true;
-      });
-      snapshot.messages = [...clone(older), ...(snapshot.messages || [])];
+        if (!id || removed.has(id)) continue;
+        if (existing.has(id)) {
+          existing.set(id, mergeMessageAssociations(message, existing.get(id)));
+        } else {
+          existing.set(id, message);
+          older.push(message);
+        }
+      }
+      snapshot.messages = [...older, ...current].map(message => clone(existing.get(String(message.message_id || ""))));
       const inputs = new Map((snapshot.input_states || []).map(input => [input.message_id, input]));
       for (const input of page.input_states || []) {
         if (!removed.has(input.message_id)) inputs.set(input.message_id, mergeInputState(inputs.get(input.message_id), input));
@@ -1797,6 +1817,7 @@
     subscriptionSnapshot,
     invalidateViewerState,
     watchInputState,
+    mergeMessageAssociations,
   });
   window.addEventListener(window.PortalIdentity?.eventName || "portal:identity-changed", resetActorState);
 })();

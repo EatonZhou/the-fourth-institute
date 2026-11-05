@@ -131,6 +131,14 @@
 
     function bindWorkspacePreviewHost() {
       currentLineageWorkbench()?.getPanel("preview")?.registerPreviewHost("lineage", async request => {
+        if (request.displayIntent) {
+          const document = window.PortalPreview.displayDocument(request);
+          ensurePreviewVisible();
+          await openAgentPreviewDocument({key:document.path, path:document.path, title:document.title,
+            mode:request.mode, sourceType:"display", load:async()=>document});
+          return true;
+        }
+
         if (String(request.locatorKind || "") === "lineage-workspace") {
           const lineageId = String(request.lineageId || "").trim();
           const residentId = String(request.residentId || "").trim();

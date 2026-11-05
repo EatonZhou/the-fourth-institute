@@ -28,6 +28,16 @@ def test_interleaved_append_preserves_independent_groups():
     _run("interleaved-append")
 
 
+def test_shared_reply_identity_and_actual_execution_progress():
+    """共用回复按身份归并，群体运行条唯一，独立轮次、成员及同文消息仍分别显示。"""
+    _run("shared-replies")
+
+
+def test_shared_reply_associations_survive_paging_and_live_updates():
+    """真实 Protocol 分页与同 ID 更新追加关联，不丢旧关联或重复显示消息。"""
+    _run("shared-protocol")
+
+
 def test_injected_request_precedes_later_output_after_history_merge():
     """门面即时注入按实际位置显示，跨页加载及刷新后仍在后续回复之前。
 

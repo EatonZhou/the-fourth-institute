@@ -786,6 +786,7 @@ def project_messages(
                 and str(message.get("message_id") or "") in links}
     projected = _relay_views(selected, repository, members)
     result: list[Any] = []
+    shared_replies: dict[tuple[str, str], dict[str, Any]] = {}
     for message in messages:
         result.append(message)
         if not isinstance(message, dict) or message.get("role") != "user":
@@ -824,7 +825,20 @@ def project_messages(
         if relay.get("withdrawn"):
             result[-1] = _withdrawn_request(message)
             continue
-        result.extend(_facade_reply(facade_id, reply, relay, message_id) for reply in reply_messages)
+        for reply in reply_messages:
+            # Several original requests can share one Mailbox execution. The
+            # reply remains one message, with all visible request associations.
+            key = (str(relay.get("resident_id") or ""), str(reply.get("message_id") or ""))
+            existing = shared_replies.get(key) if key[1] else None
+            if existing is not None:
+                requests = existing["family_reply"]["request_message_ids"]
+                if message_id not in requests:
+                    requests.append(message_id)
+                continue
+            shown = _facade_reply(facade_id, reply, relay, message_id)
+            result.append(shown)
+            if key[1]:
+                shared_replies[key] = shown
     return _order_member_messages(result, repository)
 
 
@@ -1130,6 +1144,7 @@ def _facade_reply(
             "via": list(relay.get("via") or []),
             **({"reassigned_from": list(relay["reassigned_from"])} if relay.get("reassigned_from") else {}),
             "request_message_id": request_message_id,
+            "request_message_ids": [request_message_id],
         },
     )
     return projected

@@ -126,7 +126,15 @@ def test_running_group_projects_relay_reply_progress_and_runtime(grouped_family,
     assert relay["work_phase"] == "starting_session"
     if inner_id:
         assert [item["resident_id"] for item in relay["via"]] == [inner_id]
-    assert any(item.get("role") == "agent" and item["message_id"] == reply["message_id"] for item in messages)
+    replies = [item for item in messages if item["message_id"] == reply["message_id"]]
+    assert len(replies) == 1
+    request_ids = [item["message_id"] for item in case.requests]
+    assert replies[0]["family_reply"]["request_message_ids"] == request_ids
+    assert [item["message_id"] for item in messages] == request_ids + [reply["message_id"]]
+    stored = case.repository.message(case.member_id, reply["message_id"])
+    assert stored["author_id"] == case.member_id
+    assert stored["reply_to_message_id"] == case.group_id
+    assert "family_reply" not in stored
     runtime = family_facade._project_runtime(case.facade, {"state": {"work_state": "idle"}}, {})
     assert runtime["state"]["work_state"] == "running"
     assert runtime["state"]["active_message_id"] in {item["message_id"] for item in case.requests}
@@ -179,6 +187,23 @@ def test_running_group_projects_relay_reply_progress_and_runtime(grouped_family,
     assert set(state_targets) == set(targets)
 
 
+def test_shared_reply_pages_keep_identity_and_distinct_equal_text(grouped_family):
+    case = grouped_family
+    first = _run_group(case)
+    second = {**deepcopy(first), "message_id": "msg_" + uuid.uuid4().hex}
+    case.repository.append_message(case.member_id, second)
+    replies = [item for item in _messages(case) if item.get("family_reply")]
+    assert [item["message_id"] for item in replies] == [first["message_id"], second["message_id"]]
+    assert replies[0]["content_parts"] == replies[1]["content_parts"]
+    for request in case.requests:
+        page = family_facade.project_messages(case.facade, [deepcopy(request)])
+        page_replies = [item for item in page if item.get("family_reply")]
+        assert [item["message_id"] for item in page_replies] == [first["message_id"], second["message_id"]]
+        assert all(item["family_reply"]["request_message_ids"] == [request["message_id"]]
+                   for item in page_replies)
+        assert [item["family_position"] for item in page_replies] == [item["family_position"] for item in replies]
+
+
 def test_queued_group_reports_group_queue_position(grouped_family):
     case = grouped_family
     case.repository.set_state(case.member_id, {"work_state": "running", "active_message_id": case.head})
@@ -210,7 +235,7 @@ def test_group_terminal_projects_before_and_after_member_receipts(grouped_family
             projected = next(item for item in messages if item["message_id"] == request["message_id"])
             assert projected["relay"]["state"] == terminal
             assert projected["relay"]["message_id"] == original_id
-            assert any(item.get("reply_to_message_id") == request["message_id"]
+            assert any(request["message_id"] in (item.get("family_reply") or {}).get("request_message_ids", [])
                        and item["message_id"] == reply["message_id"] for item in messages)
         assert family_facade.relay_activity(case.facade_id) == {"active": False}
         assert family_facade._project_runtime(case.facade, {"state": {}}, {}) == {}
