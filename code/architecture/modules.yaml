@@ -1411,6 +1411,7 @@ modules:
       - "management_portal/home_report_reasoning.py"
       - "management_portal/home_report_visual.py"
       - "management_portal/home_report_store.py"
+      - "management_portal/home_report_explanations.py"
       - "management_portal/home_report_quality.py"
       - "management_portal/home_report_review.py"
       - "management_portal/home_report_origin.py"

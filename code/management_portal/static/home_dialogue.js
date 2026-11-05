@@ -287,6 +287,15 @@
     async function load(entry) {
       entry.status = "读取中"; refresh();
       try {
+        if (entry.intent.view === "explanation") {
+          const resolved = await window.PortalPreview.resolveDisplayIntent(entry.intent, {
+            readOnly:entry.readOnly, signal:entry.controller.signal,
+          });
+          if (destroyed || entry.controller.signal.aborted) return;
+          entry.intent = resolved.intent; entry.readOnly = true;
+          entry.label = resolved.reference.title;
+          pageState?.writeSnapshot(); refresh();
+        }
         if (entry.intent.view === "report" && entry.intent.target.kind !== "report") {
           if (!entry.originKey && entry.messageOrigin) entry.originKey = await window.PortalHomeDialogueState.messageOriginKey(entry.messageOrigin, entry.intent);
           await navigationReady;

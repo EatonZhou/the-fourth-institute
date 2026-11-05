@@ -39,6 +39,22 @@ def _get(request, parsed, actor):
         return http_responses._serve_exception_json(request, exc)
 
 
+def _explanations(request, parsed, actor):
+    try:
+        from management_portal.home_report_explanations import ExplanationReports
+        service = ExplanationReports(ReportStore())
+        if request.command == 'POST':
+            value = http_request_body._read_bounded_json_object(request, max_bytes=8192)
+            result = service.register(value, actor)
+        else:
+            query = parse_qs(parsed.query)
+            value = {key: query.get(key, [''])[0] for key in ('address', 'sha256')}
+            result = service.lookup(value, actor)
+        return http_responses._serve_json(request, 200, result)
+    except Exception as exc:
+        return http_responses._serve_exception_json(request, exc)
+
+
 def _generate(request, parsed, actor):
     try:
         body = http_request_body._read_bounded_json_object(request, max_bytes=4096)
@@ -63,6 +79,8 @@ def _validate(request, parsed, actor):
         body = http_request_body._read_bounded_json_object(request, max_bytes=256000)
         if body.get('report_id'):
             record, number, snapshot = ReportStore().get(body['report_id'],actor,body.get('revision'))
+            if snapshot.get('content_kind') == 'explanation':
+                return http_responses._serve_json(request,200,{'readable':True,'source_changed':False,'latest_revision':record['revision']})
             fresh = build_report(snapshot['target'],actor=actor)
             return http_responses._serve_json(request,200,{'readable':True,'source_changed':fresh['version'] != snapshot.get('source_version',snapshot['version']), 'latest_revision':record['revision']})
         sources = body.get("sources")
@@ -98,7 +116,7 @@ def _save(request, parsed, actor):
             # HTTP retries must not replay a permanently failed ISA response.
             return get_resource_service().register('report',fields,actor=actor,operation_id=operation)
         result = store.materialize(body,actor,register)
-        if result.get('quality') == 'high':
+        if result.get('quality') == 'high' and result.get('content_kind') != 'explanation':
             from management_portal.home_report_review import submit
             result['review'] = submit(store, result['report_id'], result['revision'], actor)
         return http_responses._serve_json(request,200,result)
@@ -221,19 +239,34 @@ def _media(request, parsed, actor, params):
 
 def _page(request, parsed, actor):
     # Standalone QA/deep-link entry uses exactly the same component as Home.
-    page = '''<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>来源汇报 · TFI Portal</title><link rel="stylesheet" href="/static/portal_components.css">
+    page = '''<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title data-portal-site-title='["来源汇报"]'>来源汇报</title><link rel="stylesheet" href="/static/portal_components.css">
 <link rel="stylesheet" href="/static/home_report.css">
+<link rel="stylesheet" href="/static/home_explanation.css">
 <link rel="stylesheet" href="/static/portal_components_markdown.css">
-<script src="/static/portal_text.js"></script><script src="/static/portal_ui_primitives.js"></script>
+<script data-portal-script-group="portal-foundation"></script>
+<script src="/static/portal_api.js"></script>
+<script src="/static/portal_ui_primitives.js"></script>
+<script src="/static/portal_toolbar.js"></script>
+<script src="/static/portal_resource_routes.js"></script>
+<script src="/static/portal_preview_contract.js"></script>
+<script src="/static/portal_resource_chips.js"></script>
+<script src="/static/portal_file_links.js"></script>
+<script src="/static/portal_preview_runtime.js"></script>
+<script src="/static/portal_pdf_preview.js"></script>
+<script src="/static/portal_preview_renderers.js"></script>
 <script src="/static/markdown.js"></script>
-<main data-home-report-standalone></main><script src="/static/home_report.js"></script></html>'''
-    return http_responses._serve_payload(request, 200, page.encode(), "text/html; charset=utf-8")
+</head><body><main data-home-report-standalone></main><script src="/static/home_explanation.js"></script>
+<script src="/static/home_report.js"></script></body></html>'''
+    from management_portal.http_documents import _serve_bytes
+    return _serve_bytes(request, 200, page.encode(), "text/html; charset=utf-8")
 
 
 def routes():
     route = http_auth._principal_route
     return (route("GET", "/api/home-report", _get, "home-report"),
+            route('GET','/api/home-report/explanations',_explanations,'home-report'),
+            route('POST','/api/home-report/explanations',_explanations,'home-report'),
             route('GET','/api/home-report/origin',_origin,'home-report'),
             route('POST','/api/home-report/save',_save,'home-report'),
             route('POST','/api/home-report/refresh',_refresh,'home-report'),

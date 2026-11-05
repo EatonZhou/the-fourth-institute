@@ -26,6 +26,11 @@ const interactionAddress='workspace_0123456789ab/file/shared-display/body.html';
 const interaction='<h2>共享图文解释</h2><button id="compare">比较两条路径</button><output id="answer"></output><script>document.getElementById("compare").onclick=()=>document.getElementById("answer").textContent="观察到不同结果";</script>';
 const digest=value=>createHash('sha256').update(value).digest('hex');
 const explanation=JSON.stringify({schema:'portal-explanation/v1',title:'共享解释页',revision:1,quality:'medium',interaction:{address:interactionAddress,sha256:digest(interaction)}});
+const explanationReport={schema:'tfi.home-report.v1',content_kind:'explanation',report_id:'report_abcdefabcdef',revision:1,
+  target:{kind:'report',id:'report_abcdefabcdef',revision:1},
+  reference:{view:'report',title:'共享解释页',target:{kind:'report',id:'report_abcdefabcdef',revision:1}},
+  explanation_target:{address:explanationAddress,sha256:digest(explanation)}};
+let registeredExplanation=false;
 const quotaOnly=process.argv.includes('--send-quota-only');
 const contextOnly=quotaOnly||process.argv.includes('--submission-context-only');
 evidence.scope=contextOnly?'submission context and Preview script boundary':'message actions, submission context and Preview script boundary';
@@ -34,6 +39,19 @@ const server=http.createServer((req,res)=>{
   const url=new URL(req.url,'http://fixture');
   if(url.pathname==='/') {res.setHeader('Content-Type','text/html');return res.end('<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'+css.map(s=>`<link rel="stylesheet" href="${s}">`).join('')+'<style>body{margin:0}#root{height:calc(100dvh - 16px);margin:8px}</style>'+modules.map(s=>`<script src="/static/${s}"></script>`).join('')+'<main id="root" data-portal-workbench-panel="dialogue-display"></main>');}
   if(url.pathname==='/static/portal_resource_routes.js'){res.setHeader('Content-Type','text/javascript');return res.end('window.PortalResourceRoutes={schema:"tfi.resource-portal-routes.v1",routes:[],text_resource_types:[],identity_parameters:[]};');}
+  if(url.pathname==='/api/home-report/explanations') {
+    evidence.requests.push(req.method+' '+url.pathname);
+    res.setHeader('Content-Type','application/json');
+    if(req.method==='POST') {let body='';req.on('data',data=>body+=data);req.on('end',()=>{
+      assert.deepEqual(JSON.parse(body),explanationReport.explanation_target);
+      registeredExplanation=true;res.end(JSON.stringify(explanationReport));});return;}
+    if(url.searchParams.get('sha256')!==digest(explanation)) {res.statusCode=409;return res.end(JSON.stringify({error:'文件内容已改变'}));}
+    if(!registeredExplanation) {res.statusCode=404;return res.end('{}');}
+    return res.end(JSON.stringify(explanationReport));
+  }
+  if(url.pathname==='/api/home-report' && url.searchParams.get('id')===explanationReport.report_id) {
+    res.setHeader('Content-Type','application/json');return res.end(JSON.stringify(explanationReport));
+  }
   if(['/api/home-report','/api/home-report/save'].includes(url.pathname)) {evidence.requests.push(url.pathname+url.search);res.setHeader('Content-Type','application/json');return res.end(JSON.stringify({report_id:'report_0123456789ab',revision:1,latest_revision:1,reference:{view:'report',target:{kind:'report',id:'report_0123456789ab',revision:1}},title:'示例项目的真实组件汇报',target:{kind:'project',id:'demo'},version:'v1',checked_at:'2026-11-04T00:00:00Z',warnings:[],sources:[],counts:{},rows:[{id:'work',title:'已核对来源',body:'组件读取了指定项目',sources:[]}]}));}
   if(url.pathname==='/api/resources/content') {
     const address=url.searchParams.get('address');
@@ -209,10 +227,12 @@ const server=http.createServer((req,res)=>{
       await frame.getByRole('button',{name:'比较两条路径'}).click();
       check('opened page remains interactive',await frame.locator('#answer').innerText(),'观察到不同结果');
       await page.screenshot({path:path.join(out,'society-shared-display.png')});
-      await page.evaluate(()=>{snap.messages=[message('msg_bbbbbbbbbbbbbbbb',displayFence(command('wrong',{view:'explanation',target:{address:'workspace_0123456789ab/file/shared-display/manifest.json',sha256:'0'.repeat(64)}})))];nativePanel.applySnapshot(snap);});
-      await native.getByRole('button',{name:'打开解释页',exact:true}).click();
-      await page.locator('#native-preview').getByText(/文件内容已改变/).first().waitFor();
-      check('digest mismatch cannot run old interaction',await page.locator('#native-preview iframe').count(),0);
+      check('Society opens the actual report resource identity',await page.evaluate(()=>nativeRequest.path),'report_abcdefabcdef/revision/1');
+      check('Home and Society reuse one report registration',evidence.requests.filter(v=>v==='POST /api/home-report/explanations').length,1);
+      const wrong=await page.evaluate(async()=>{try {
+        await PortalPreview.displayDocument({displayIntent:{view:'explanation',target:{address:'workspace_0123456789ab/file/shared-display/manifest.json',sha256:'0'.repeat(64)}}});
+      } catch(error){return error.message;}});
+      check('digest mismatch cannot resolve a report identity',wrong,'文件内容已改变');
       await page.evaluate(async()=>{
         const el=document.createElement('div'); el.id='identity-preview'; document.body.append(el);
         window.identityPanel=PortalWorkspaceSurface.panelPackages.preview.create({root:el});
@@ -223,6 +243,8 @@ const server=http.createServer((req,res)=>{
       await page.locator('#identity-preview [data-portal-preview-path]').click();
       check('resource address can still be copied and edited',await page.locator('#identity-preview .portalPreviewPathInput').inputValue(),'workspace_0123456789ab/file/shared-display/manifest.json');
       await page.keyboard.press('Escape');
+      await page.evaluate(async()=>identityPanel.setDocument(await nativeRequest.load()));
+      check('report toolbar shows its own ID',await page.locator('#identity-preview .portalPreviewResourceId').innerText(),'report_abcdefabcdef');
       check('shared presentation has no page errors',evidence.errors,[]);
       evidence.status='passed';
       console.log('PASS shared Resident actions, Society Preview host, Home presentation, fixed SHA and interactive content');

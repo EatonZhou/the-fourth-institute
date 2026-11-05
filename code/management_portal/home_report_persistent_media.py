@@ -142,6 +142,7 @@ class PersistentMedia:
     def start(self, identifier, number, actor, *, retry=False, quality='medium'):
         quality = normalize_quality(quality)
         _, number, snapshot = self.store.get(identifier, actor, number)
+        self.store.require_template(snapshot)
         self.store.authorize(actor, 'UpdateResource', identifier)
         if quality != 'low':
             from management_portal.home_report_review import require_authored, submit_authoring

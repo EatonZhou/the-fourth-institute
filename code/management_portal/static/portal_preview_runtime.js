@@ -199,7 +199,19 @@
     if (intent.view !== "explanation") return {intent};
     // The package is storage, while the report owns the public identity. Old
     // buttons resolve the same fixed package; restoring history is read-only.
-    return {intent}; // Keep legacy package reads until paired Report registration is released.
+    const endpoint = "/api/home-report/explanations";
+    let response = await fetch(`${endpoint}?${new URLSearchParams(intent.target)}`, {
+      credentials:"same-origin", cache:"no-store", signal,
+    });
+    if (response.status === 404 && !readOnly) response = await fetch(endpoint, {
+      method:"POST", credentials:"same-origin", signal, headers:{"Content-Type":"application/json"},
+      body:JSON.stringify(intent.target),
+    });
+    const result = await response.json();
+    if (!response.ok) throw Object.assign(new Error(typeof result.error === "string" ? result.error : result.error?.message || "无法读取汇报资源"), {status:response.status});
+    const fixed = window.PortalDisplayProtocol.normalizeIntent(result.reference);
+    if (fixed.view !== "report" || fixed.target.kind !== "report" || !fixed.target.revision) throw new Error("汇报资源缺少固定版本引用");
+    return {intent:fixed, reference:result.reference};
   }
   async function displayDocument(request) {
     const {intent, reference} = await resolveDisplayIntent(request.displayIntent, request);

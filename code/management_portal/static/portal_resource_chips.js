@@ -702,7 +702,21 @@
     const reference = options.reference || await loadReference(clean, options);
     if (!resourceSupportsPreview(clean, reference)) return null;
     if (resourceSupportsTextPreview(clean, reference)) {
-      return loadTextPreview(clean, { ...options, reference });
+      const document = await loadTextPreview(clean, { ...options, reference });
+      if (/^workspace_[a-f0-9]{12}\/file\/.+/.test(clean) && global.PortalPreview?.resolveDisplayIntent) {
+        let manifest;
+        try { manifest = JSON.parse(document.content); } catch (_) {}
+        if (manifest?.schema === 'portal-explanation/v1') {
+          const {sha256} = await import('/static/portal_sha256.js');
+          try {
+            const resolved = await global.PortalPreview.resolveDisplayIntent({view:'explanation', target:{
+              address:clean, sha256:await sha256(new TextEncoder().encode(document.content)),
+            }}, {readOnly:true});
+            return {...await global.PortalPreview.displayDocument({displayIntent:resolved.intent}), title:resolved.reference.title};
+          } catch (error) {if(error.status !== 404) throw error;}
+        }
+      }
+      return document;
     }
     const kind = resourcePreviewKind("", clean, reference);
     if (!RESOURCE_LAZY_PREVIEW_KINDS.has(kind)) return null;

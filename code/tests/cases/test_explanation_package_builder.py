@@ -27,6 +27,9 @@ def test_builder_cli_pins_only_explicit_review_assets(tmp_path, monkeypatch, cap
     import json
     import sys
     from scripts import build_explanation_package as builder
+    calls = []
+    monkeypatch.setattr(builder, 'register_report', lambda *args: calls.append(args) or {
+        'reference': {'view': 'report', 'target': {'kind': 'report', 'id': 'report_0123456789ab', 'revision': 1}}})
     (tmp_path/'notes.md').write_text('Explanation')
     (tmp_path/'alignment.json').write_text('{"start":0,"end":2}')
     (tmp_path/'source.txt').write_text('Actual fixture source')
@@ -39,7 +42,10 @@ def test_builder_cli_pins_only_explicit_review_assets(tmp_path, monkeypatch, cap
     result = json.loads((tmp_path/'manifest.json').read_text())
     assert result['review_assets'] == [{'address': 'workspace_0123456789ab/file/lesson/'+name,
         'sha256': hashlib.sha256((tmp_path/name).read_bytes()).hexdigest()} for name in ('alignment.json', 'source.txt')]
-    assert json.loads(capsys.readouterr().out)['review']['status'] == 'not_required'
+    output = json.loads(capsys.readouterr().out)
+    assert output['review']['status'] == 'not_required'
+    assert output['view'] == 'report' and output['target']['id'] == 'report_0123456789ab'
+    assert calls[0][:2] == (output['explanation_target']['address'], hashlib.sha256((tmp_path/'manifest.json').read_bytes()).hexdigest())
 
 
 @pytest.mark.parametrize('filename', ['../outside', '/absolute', 'link', 'directory/linked'])

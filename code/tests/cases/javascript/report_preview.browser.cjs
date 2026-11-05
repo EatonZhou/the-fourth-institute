@@ -4,9 +4,15 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const http = require('node:http');
 const path = require('node:path');
+const {createHash} = require('node:crypto');
 const { chromium } = require('../../../management_portal/test_framework/tau_runtime/node_modules/playwright');
 const base = path.resolve(__dirname, '../../../management_portal/static');
 const id = 'report_123456789abc';
+const packageAddress='workspace_123456789abc/file/lesson/manifest.json';
+const notesAddress='workspace_123456789abc/file/lesson/notes.md';
+const notes='## 解释内容\n\n这是固定解释包的正文。';
+const sha=value=>createHash('sha256').update(value).digest('hex');
+const manifest=JSON.stringify({schema:'portal-explanation/v1',title:'汇报中的解释',revision:1,quality:'low',supplement:{address:notesAddress,sha256:sha(notes)}});
 const snapshot = { schema: 'tfi.home-report.v1', report_id: id, revision: 3, latest_revision: 4,
   title: '本轮进展', goal: '阅读已保存的成果', quality: 'medium', format: 'interactive',
   target: { kind: 'project', id: 'fixture' }, version: 'a'.repeat(64), checked_at: '2026-11-05T00:00:00Z',
@@ -22,7 +28,7 @@ window.PortalResourceRoutes={schema:'tfi.resource-portal-routes.v1',text_resourc
 window.PortalAPI={raw:(url,options)=>fetch(url,options)};
 </script>${scripts.map(name => `<script src="/static/${name}.js"></script>`).join('')}`;
 (async () => {
-  const requests = []; let denied = false;
+  const requests = []; let denied = false, explanationMode=false;
   const server = http.createServer((req, res) => {
     const url = new URL(req.url, 'http://localhost');
     requests.push({ path: url.pathname, query: url.search, method: req.method });
@@ -32,8 +38,23 @@ window.PortalAPI={raw:(url,options)=>fetch(url,options)};
       return res.end(fs.readFileSync(filename));
     }
     if (url.pathname === '/api/resources/content' || url.pathname === '/api/home-report') {
+      const address=url.searchParams.get('address');
+      if(address===packageAddress || address===notesAddress) {
+        res.setHeader('Content-Type',address===packageAddress?'application/json':'text/markdown');
+        return res.end(address===packageAddress?manifest:notes);
+      }
       res.writeHead(denied ? 403 : 200, { 'Content-Type': 'application/json' });
-      return res.end(JSON.stringify(denied ? { error: '权限已撤回' } : snapshot));
+      return res.end(JSON.stringify(denied ? { error: '权限已撤回' } : explanationMode ? {
+        ...snapshot,content_kind:'explanation',explanation_target:{address:packageAddress,sha256:sha(manifest)},
+        reference:{view:'report',target:{kind:'report',id,revision:3}}
+      } : snapshot));
+    }
+    if(url.pathname==='/api/home-report/explanations') {
+      res.setHeader('Content-Type','application/json');
+      return res.end(JSON.stringify({reference:{view:'report',title:'汇报中的解释',target:{kind:'report',id,revision:3}}}));
+    }
+    if(url.pathname==='/api/home-explanation/media') {
+      res.setHeader('Content-Type','application/json');return res.end('{"media":null}');
     }
     if (url.pathname === '/api/home-report/validate') {
       res.writeHead(denied ? 403 : 200, { 'Content-Type': 'application/json' });
@@ -84,6 +105,22 @@ window.PortalAPI={raw:(url,options)=>fetch(url,options)};
       return { normal: normal.renderer, file: file.renderer, removed, mismatch };
     });
     assert.deepEqual(checks, { normal: 'text', file: 'text', removed: true, mismatch: true });
+    denied=false; explanationMode=true;
+    const canonical=await page.evaluate(async address=>{
+      const document=await PortalResourceChips.loadPreview(address,{reference:{resource_type:'report',content_kind:'json',media_type:'application/json',filename:'manifest.json'}});
+      window.explanationHandle=PortalPreview.render({root:'#preview',document});
+      await explanationHandle.promise;
+      return document.path;
+    },packageAddress);
+    assert.equal(canonical,id+'/revision/3','legacy package lookup reads the report identity without a write');
+    await page.getByRole('heading',{name:'汇报中的解释',exact:true}).waitFor();
+    await page.getByText('这是固定解释包的正文。',{exact:true}).waitFor();
+    assert.equal(requests.filter(r=>r.method!=='GET' && r.path!=='/api/home-report/validate').length,0);
+    denied=true;
+    await page.evaluate(()=>window.dispatchEvent(new Event('portal:permissions-changed')));
+    await page.getByText(/来源暂不可读，已撤去报告/).waitFor();
+    assert.equal(await page.getByRole('heading',{name:'汇报中的解释',exact:true}).count(),0,
+      'report permission withdrawal removes the delegated explanation even while its Workspace remains readable');
     console.log('report preview: fixed revision, interactive report, read-only reopen, permission withdrawal, disposal and JSON isolation passed');
   } finally {
     await browser.close();

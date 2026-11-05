@@ -26,6 +26,7 @@ from management_portal.resources.registry_store import get_registry_store
 
 COLLECTION = "report"
 ORIGINS = "report_origin"
+EXPLANATIONS = "report_explanation"
 IDENTITY = re.compile(r"report_[0-9a-f]{12}")
 
 
@@ -89,7 +90,7 @@ class ReportStore:
         """Short directory/registry transaction; no long media work in this lock."""
         from management_portal.resources.directory_registrations import directory_writer, is_deleted
         from management_common.directory_cleanup_store import get_directory_cleanup_store
-        with directory_writer(COLLECTION, ORIGINS) as writer:
+        with directory_writer(COLLECTION, ORIGINS, EXPLANATIONS) as writer:
             if is_deleted(identifier, connection=writer.connection):
                 raise FileNotFoundError('汇报已删除')
             get_directory_cleanup_store().assert_available(self.directory(identifier), connection=writer.connection)
@@ -130,8 +131,17 @@ class ReportStore:
         if stored is None:
             raise FileNotFoundError("汇报版本不存在")
         snapshot = copy.deepcopy(stored["report"])
-        reauthorize(snapshot, actor=actor, read=self.read)
+        if snapshot.get('content_kind') == 'explanation':
+            from management_portal.home_report_explanations import load
+            load(snapshot['explanation_target'], actor)
+        else:
+            reauthorize(snapshot, actor=actor, read=self.read)
         return record, number, snapshot
+
+    @staticmethod
+    def require_template(snapshot):
+        if snapshot.get('content_kind') == 'explanation':
+            raise ValueError('此汇报引用固定解释包；请通过explanation_target使用解释页的创作、审核和媒体入口')
 
     def reference(self, identifier, number, snapshot):
         return {"view": "report", "target": {"kind": "report", "id": identifier, "revision": number},
@@ -141,6 +151,10 @@ class ReportStore:
 
     def response(self, identifier, actor, revision=None):
         record, number, snapshot = self.get(identifier, actor, revision)
+        if snapshot.get('content_kind') == 'explanation':
+            return {**snapshot, 'report_id': identifier, 'revision': number, 'latest_revision': record['revision'],
+                    'reference': self.reference(identifier, number, snapshot),
+                    'exports': self.exports(identifier, number, snapshot)}
         from management_portal.home_report_persistent_media import PersistentMedia
         from management_portal.home_report_review import status
         return {**snapshot, "report_id": identifier, "revision": number, "latest_revision": record["revision"],
@@ -152,6 +166,8 @@ class ReportStore:
     @staticmethod
     def exports(identifier, number, snapshot):
         base = f"/api/home-report/reports/{identifier}/{number}/file/"
+        if snapshot.get('content_kind') == 'explanation':
+            return [{'name': 'report.json', 'url': base + 'report.json'}]
         names = ['report.html','report.json','slides.pptx'] + [a['filename'] for a in snapshot.get('attachments',[])]
         if snapshot.get('quality') == 'low':
             names = ['report.json'] + [a['filename'] for a in snapshot.get('attachments',[])]
@@ -169,7 +185,7 @@ class ReportStore:
             if previous.get('version') != snapshot.get('version'):
                 raise FileExistsError('未完成版本与当前快照不符，需要恢复原创建请求')
             names = ['report.json','report.html','slides.pptx'] + [item['filename'] for item in previous.get('attachments',[])]
-            if previous.get('quality') == 'low':
+            if previous.get('quality') == 'low' or previous.get('content_kind') == 'explanation':
                 names = ['report.json'] + [item['filename'] for item in previous.get('attachments',[])]
             if 'markdown' in previous:
                 names.append('report.md')
@@ -178,7 +194,10 @@ class ReportStore:
         stage = parent / (".revision-" + uuid.uuid4().hex)
         stage.mkdir(mode=0o700)
         try:
-            write_exports(snapshot, stage)
+            if snapshot.get('content_kind') == 'explanation':
+                (stage / 'report.json').write_text(json.dumps(snapshot, ensure_ascii=False, indent=2), encoding='utf-8')
+            else:
+                write_exports(snapshot, stage)
             for name, content in (attachments or {}).items():
                 if not re.fullmatch(r'attachment-[1-9][0-9]*\.pptx',name):
                     raise ValueError('无效PPT资产名')
@@ -224,6 +243,34 @@ class ReportStore:
         return record
 
     def create(self, identifier, payload, actor):
+        if 'explanation_target' in payload:
+            from management_portal.home_report_explanations import ExplanationReports, fields, snapshot as explanation_snapshot, load
+            normalized = fields(payload['explanation_target'])
+            if set(payload) - {'explanation_target', 'origin_key'} or payload.get('origin_key', normalized['origin_key']) != normalized['origin_key']:
+                raise ValueError('解释包登记仅接受固定explanation_target；来源键由Report生成')
+            explanations = ExplanationReports(self)
+            with explanations.creation_lock(normalized['explanation_target']), self.lock(identifier):
+                existing = self.registry.get(COLLECTION, identifier)
+                if existing:
+                    _, _, original = self.get(identifier, actor)
+                    if original.get('explanation_target') != normalized['explanation_target']:
+                        raise ResourceVersionConflict('固定身份已绑定其他解释包')
+                    return self.metadata(existing)
+                try:
+                    explanations.lookup(normalized['explanation_target'], actor)
+                except FileNotFoundError:
+                    pass
+                else:
+                    raise FileExistsError('此解释包已有可读汇报；请查询固定解释包引用')
+                frozen = self.directory(identifier) / '1/report.json'
+                if frozen.exists():
+                    snapshot = json.loads(frozen.read_text(encoding='utf-8'))
+                    if snapshot.get('explanation_target') != normalized['explanation_target']:
+                        raise ResourceVersionConflict('未完成创建的解释包与重试不一致')
+                    load(snapshot['explanation_target'], actor)
+                else:
+                    snapshot = explanation_snapshot(normalized['explanation_target'], actor)
+                return self._create_locked(identifier, normalized, actor, snapshot)
         allowed = {"target", "version", "import_job", "origin_key", "quality", "origin_context"}
         if set(payload) - allowed:
             raise ValueError("汇报创建仅接受target/version/import_job")
@@ -261,7 +308,7 @@ class ReportStore:
         if payload.get("import_job"):
             from management_portal.home_report_persistent_media import import_candidate
             imported = import_candidate(payload["import_job"], snapshot, actor, read=self.read)
-        else:
+        elif snapshot.get('content_kind') != 'explanation':
             from management_portal.home_report_persistent_media import discover_candidate
             imported = discover_candidate(snapshot,actor,read=self.read)
         with self.writer(identifier, creating=True) as writer:
@@ -271,6 +318,8 @@ class ReportStore:
                     raise FileNotFoundError("已删除身份不能复活")
                 self.get(identifier, actor)
                 return self.metadata(existing)
+            if payload.get('origin_key') and writer.get(ORIGINS, self.origin_id(actor, payload['origin_key'])):
+                raise FileExistsError('此来源已绑定报告；请读取原固定引用')
             stored = self._save_revision(identifier, 1, snapshot)
             snapshot = stored['report']
             from management_portal import permission_system
@@ -297,6 +346,11 @@ class ReportStore:
                 if writer.get(ORIGINS,origin):
                     raise FileExistsError('此来源已绑定报告')
                 writer.put(ORIGINS,origin,{'report_id':identifier,'revision':1,'created_by':actor})
+            if snapshot.get('content_kind') == 'explanation':
+                key = payload['origin_key']
+                index = writer.get(EXPLANATIONS, key) or {'bindings': []}
+                index['bindings'].append({'report_id': identifier, 'revision': 1})
+                writer.put(EXPLANATIONS, key, index)
         return self.metadata(record)
 
     def attach(self, identifier, actor, expected_revision, address):
@@ -304,6 +358,7 @@ class ReportStore:
         if not isinstance(address,str) or not address or address.startswith('/') or len(address)>2048:
             raise ValueError('请提供正式PPT资源地址')
         record, old_number, snapshot = self.get(identifier,actor)
+        self.require_template(snapshot)
         self.authorize(actor,'UpdateResource',identifier)
         from management_portal.resources import get_resource_service
         content, mime, metadata = get_resource_service().read_content(address,actor=actor,max_bytes=32*1024*1024)
@@ -338,6 +393,7 @@ class ReportStore:
 
     def refresh(self, identifier, actor, expected_revision, *, quality_level=None, content=None):
         record, _, previous = self.get(identifier, actor)
+        self.require_template(previous)
         self.authorize(actor, "UpdateResource", identifier)
         level = quality(quality_level if quality_level is not None else previous.get('quality'))
         attachments = None
@@ -379,6 +435,8 @@ class ReportStore:
 
     def file(self, identifier, number, name, actor):
         record, number, snapshot = self.get(identifier, actor, number)
+        if snapshot.get('content_kind') == 'explanation' and name != 'report.json':
+            raise FileNotFoundError('此汇报的页面与媒体由原解释包提供')
         from management_portal.home_report_media import FILES
         matched = re.fullmatch(r'(low|medium|high)-(.+)', name)
         if matched and matched[2] in FILES:

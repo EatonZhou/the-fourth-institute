@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
 """Pin an authored explanation's local files to their formal Workspace addresses.
 
-This is an artifact builder, not a registration or permission bypass. The caller
-must already be allowed to write the package directory. Home rechecks every
-formal address and digest when the package is opened.
+The caller must be allowed to write the package directory. After pinning, the
+formal report service registers its identity and checks every source permission.
 """
 from __future__ import annotations
 
@@ -15,6 +14,7 @@ import re
 import sys
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from management_portal.home_explanation_quality import quality as normalize_quality
+from scripts.register_explanation_report import register as register_report
 
 
 def build(directory: Path, address: str, *, title: str, summary: str = "", revision: int = 1,
@@ -114,7 +114,12 @@ def main() -> None:
     except (RuntimeError, ValueError, OSError) as exc:
         parser.exit(1, f"Package saved; independent review pending: {exc}\n"
                        "Retry submit_explanation_review.py with this manifest; do not overwrite it.\n")
-    print(json.dumps({"view": "explanation", "target": target, "review": review}, ensure_ascii=False))
+    try:
+        registered = register_report(target['address'], target['sha256'], resident_id)
+    except (RuntimeError, ValueError, OSError) as exc:
+        parser.exit(1, f"Package saved; report registration pending: {exc}\n"
+                       f"Retry register_explanation_report.py --address {target['address']} --sha256 {target['sha256']} with your own --resident-id; do not rebuild.\n")
+    print(json.dumps({**registered['reference'], "explanation_target": target, "review": review}, ensure_ascii=False))
     if review.get('status') in {'submission_failed', 'blocked', 'cancelled', 'invalidated'}:
         parser.exit(1, 'Package saved; independent review is not complete. Read the fixed review result before continuing.\n')
 

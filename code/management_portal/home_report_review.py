@@ -11,6 +11,7 @@ def responsible(store, snapshot, actor):
 
 def subject(store, identifier, number, actor, *, media=None):
     record, number, snapshot = store.get(identifier, actor, number)
+    store.require_template(snapshot)
     base = f'{identifier}/revision/{number}/file/'
     assets = record['revisions'][str(number)]['assets']
     if media is None:
@@ -71,6 +72,7 @@ def submit(store, identifier, number, actor, *, media=None, service=None):
 
 def authoring_subject(store, identifier, number, actor, quality):
     record,number,snapshot=store.get(identifier,actor,number)
+    store.require_template(snapshot)
     ref=f'{identifier}/revision/{number}/file/report.json'
     return {'kind':'report_video','ref':ref,'version':number,'digest':snapshot['version'],
             'quality':quality,'author':snapshot.get('author') or record['created_by'],
