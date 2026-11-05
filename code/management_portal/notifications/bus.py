@@ -42,6 +42,14 @@ class NotificationHub:
         with self._condition:
             return self._sequence
 
+    def memory_diagnostics(self) -> dict:
+        from management_common.memory_observation import json_footprint
+        with self._condition:
+            payloads = [item.payload for item in self._items]
+            counts = {'retained_notifications': len(self._items), 'notification_limit': self._items.maxlen,
+                      'subscribers': len(self._subscribers)}
+        return {**counts, **json_footprint(payloads)}
+
     def publish(self, subject: str, payload: dict[str, Any]) -> Notification:
         with self._condition:
             self._sequence += 1

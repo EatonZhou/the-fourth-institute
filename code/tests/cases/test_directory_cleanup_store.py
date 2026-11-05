@@ -109,7 +109,7 @@ def test_boundary_errors_are_durable_and_do_not_delete(store, boundary):
     assert path.exists()
 
 
-def test_concurrent_registration_waits_for_cleanup_to_commit(store, tmp_path, monkeypatch):
+def test_concurrent_registration_rejects_pending_cleanup_then_allows_reuse(store, tmp_path, monkeypatch):
     root = tmp_path / 'owned'
     root.mkdir()
     enqueue(store, root)
@@ -128,12 +128,15 @@ def test_concurrent_registration_waits_for_cleanup_to_commit(store, tmp_path, mo
     with ThreadPoolExecutor(max_workers=2) as pool:
         worker = pool.submit(store.run_pending)
         assert removing.wait(10)
-        writer = pool.submit(register)
-        assert checking.wait(10)
-        assert not writer.done()
-        proceed.set()
+        try:
+            writer = pool.submit(register)
+            assert checking.wait(10)
+            with pytest.raises(cleanup.DirectoryPendingCleanup):
+                writer.result(2)
+        finally:
+            proceed.set()
         worker.result(10)
-        writer.result(10)
+    register()
     assert root.exists()
 
 
@@ -155,4 +158,81 @@ def test_cleanup_reserves_case_aliases(tmp_path, monkeypatch):
     with queue.database.transaction() as connection:
         queue.enqueue(tmp_path / 'Reserved', owner_id='owner', operation_id='case-cleanup', actor='actor', connection=connection)
     assert queue.pending_at(tmp_path / 'reserved' / 'child')
+
+
+def test_slow_cleanup_does_not_hold_unrelated_registration_lock(store, tmp_path, monkeypatch):
+    root, sibling = tmp_path / 'owned', tmp_path / 'unrelated'
+    root.mkdir()
+    enqueue(store, root)
+    removing, proceed = Event(), Event()
+    remove = cleanup.remove_path
+    def paused(path):
+        removing.set()
+        assert proceed.wait(10)
+        remove(path)
+    def register_sibling():
+        with store.database.transaction() as connection:
+            store.assert_available(sibling, connection=connection)
+            sibling.mkdir()
+    monkeypatch.setattr(cleanup, 'remove_path', paused)
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        worker = pool.submit(store.run_pending)
+        assert removing.wait(5)
+        try:
+            pool.submit(register_sibling).result(2)
+        finally:
+            proceed.set()
+        worker.result(5)
+    assert sibling.exists() and not root.exists()
+
+
+def test_interrupted_worker_reservation_is_recoverable(store, tmp_path, monkeypatch):
+    root = tmp_path / 'interrupted'
+    root.mkdir()
+    identifier = enqueue(store, root)
+    remove = cleanup.remove_path
+    def interrupted(path):
+        raise RuntimeError('worker interrupted before its outcome committed')
+    monkeypatch.setattr(cleanup, 'remove_path', interrupted)
+    with pytest.raises(RuntimeError, match='worker interrupted'):
+        store.run_pending()
+    assert store.status(cleanup_id=identifier)[0]['status'] == 'pending'
+    with store.database.transaction() as connection:
+        with pytest.raises(cleanup.DirectoryPendingCleanup):
+            store.assert_available(root, connection=connection)
+    monkeypatch.setattr(cleanup, 'remove_path', remove)
+    assert cleanup.DirectoryCleanupStore().run_pending()[0]['status'] == 'completed'
+    with store.database.read() as connection:
+        assert not connection.execute(f'SELECT 1 FROM {store.reservations} WHERE operation_id=%s',
+                                      ('cleanup-worker:' + identifier,)).fetchall()
+    assert not root.exists()
+
+
+def test_overlapping_cleanup_is_excluded_without_blocking_a_sibling(store, tmp_path, monkeypatch):
+    root, sibling = tmp_path / 'outer', tmp_path / 'sibling'
+    nested = root / 'inner'
+    nested.mkdir(parents=True)
+    sibling.mkdir()
+    outer_id = enqueue(store, root, operation='outer')
+    inner_id = enqueue(store, nested, operation='inner')
+    sibling_id = enqueue(store, sibling, operation='sibling')
+    removing, proceed = Event(), Event()
+    remove = cleanup.remove_path
+    def paused(path):
+        if path == root:
+            removing.set()
+            assert proceed.wait(10)
+        remove(path)
+    monkeypatch.setattr(cleanup, 'remove_path', paused)
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        worker = pool.submit(lambda: store.run_pending(cleanup_id=outer_id, limit=1))
+        assert removing.wait(5)
+        try:
+            assert pool.submit(lambda: store.run_pending(cleanup_id=inner_id)).result(2) == []
+            assert pool.submit(lambda: store.run_pending(cleanup_id=sibling_id)).result(2)[0]['status'] == 'completed'
+        finally:
+            proceed.set()
+        assert worker.result(5)[0]['status'] == 'completed'
+    assert store.run_pending(cleanup_id=inner_id)[0]['status'] == 'completed'
+    assert not root.exists() and not sibling.exists()
 

@@ -282,6 +282,7 @@ def test_unqualified_tree_deletion_has_no_claim_journal(tmp_path, monkeypatch):
 def test_abrupt_child_exit_after_native_claim_is_recovered(tmp_path, kind):
     import subprocess
     import sys
+    from management_common import host_instances
     target, outside = tmp_path / 'artifact', tmp_path / 'outside'
     outside.write_text('outside')
     make(target, kind, outside)
@@ -289,8 +290,12 @@ def test_abrupt_child_exit_after_native_claim_is_recovered(tmp_path, kind):
     child = '''
 import os, sys
 from pathlib import Path
+from management_common import host_instances
 from management_common import secure_paths as fs
 from management_common.directory_paths import remove_path
+# Match the parent's isolated host-registry fixture, including when pytest's
+# temporary directory is physically beneath a deployed instance's runtime.
+host_instances.user_home = lambda: Path(sys.argv[4])
 rename = fs.rename_child_no_replace
 def crash(*args):
     rename(*args)
@@ -298,7 +303,8 @@ def crash(*args):
 fs.rename_child_no_replace = crash
 remove_path(Path(sys.argv[1]), identity=[int(sys.argv[2]), int(sys.argv[3])])
 '''
-    result = subprocess.run([sys.executable, '-c', child, str(target), *map(str, expected)],
+    result = subprocess.run([sys.executable, '-c', child, str(target), *map(str, expected),
+                             str(host_instances.user_home())],
                             capture_output=True, text=True, timeout=30)
     assert result.returncode == 73, result.stderr
     assert not os.path.lexists(target)

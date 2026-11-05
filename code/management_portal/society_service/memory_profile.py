@@ -72,6 +72,16 @@ def holdings_summary() -> dict:
                 owners[label] = provider()
             except Exception as error:
                 owners[label] = {'diagnostic_error_type': type(error).__name__}
+    for label, module_name, method in [
+        ('web_read_caches', 'management_portal.web_read_caches', 'memory_diagnostics'),
+        ('web_runtime', 'management_portal.asgi', 'memory_diagnostics')]:
+        module = sys.modules.get(module_name)
+        provider = getattr(module, method, None) if module is not None else None
+        if provider is not None:
+            try:
+                owners[label] = provider()
+            except Exception as error:
+                owners[label] = {'diagnostic_error_type': type(error).__name__}
     provider = _runtime_provider() if _runtime_provider is not None else None
     if provider is not None:
         try:
@@ -88,7 +98,7 @@ def install(*, role: str = 'main') -> bool:
     private operator lease; Windows retains the startup-lease entry.
     """
     global _role
-    if role not in {'main', 'read', 'index'}:
+    if role not in {'main', 'read', 'index', 'web'}:
         raise ValueError('unknown diagnostic role')
     _role = role
     if not hasattr(signal, 'SIGUSR1') or signal.getsignal(signal.SIGUSR1) != signal.SIG_DFL:

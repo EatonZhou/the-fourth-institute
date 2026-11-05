@@ -688,6 +688,19 @@ def end_realtime_streams(state) -> None:
         fanout.close()
 
 
+def memory_diagnostics() -> dict:
+    state = app.state
+    fanout = getattr(state, 'notification_fanout', None)
+    executors = {}
+    for name in ('http_handler_executor', 'instruction_executor', 'static_handler_executor', 'sse_payload_executor'):
+        executor = getattr(state, name, None)
+        if executor is not None:
+            executors[name] = {'threads': len(executor._threads), 'queued': executor._work_queue.qsize(),
+                               'capacity': executor._max_workers}
+    return {'notifications': get_notification_hub().memory_diagnostics(),
+            'fanout': fanout.memory_diagnostics() if fanout is not None else {}, 'executors': executors}
+
+
 @asynccontextmanager
 async def lifespan(_app: Starlette):
     # Features run their background work while Web runs (``web.lifespan``).

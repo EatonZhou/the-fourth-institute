@@ -141,6 +141,14 @@ class AsyncNotificationFanout:
     def subscriber_count(self) -> int:
         return len(self._subscribers)
 
+    def memory_diagnostics(self) -> dict:
+        subscribers = tuple(self._subscribers.values())
+        with self._lock:
+            pending = len(self._pending)
+        return {'subscribers': len(subscribers), 'pending': pending, 'pending_limit': self._pending_limit,
+                'queued_notifications': sum(subscription._queue.qsize() for subscription in subscribers),
+                'queue_limit_per_subscriber': self._subscriber_queue_size, 'closed': self._closed}
+
     def start(self) -> None:
         loop = asyncio.get_running_loop()
         with self._lock:

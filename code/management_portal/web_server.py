@@ -24,6 +24,8 @@ class PortalWebServer(uvicorn.Server):
     async def startup(self, sockets=None) -> None:
         self.event_loop = asyncio.get_running_loop()
         await super().startup(sockets=sockets)
+        from .society_service.memory_profile import start
+        start()
 
     def handle_exit(self, sig, frame) -> None:
         super().handle_exit(sig, frame)
@@ -38,6 +40,8 @@ def main(argv: list[str] | None = None) -> None:
     parser.add_argument("--port", type=int, required=True)
     parser.add_argument("--timeout-graceful-shutdown", type=int, default=GRACEFUL_SHUTDOWN_SECONDS)
     args = parser.parse_args(argv)
+    from .society_service.memory_profile import install
+    install(role='web')
     PortalWebServer(uvicorn.Config(APP, host=args.host, port=args.port, access_log=False,
                                    timeout_graceful_shutdown=args.timeout_graceful_shutdown)).run()
 

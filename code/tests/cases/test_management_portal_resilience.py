@@ -14,6 +14,14 @@ from management_portal import serve_management_portal as portal
 from management_portal import http_auth, http_responses, web_inbox, web_read_caches
 
 
+@pytest.fixture(autouse=True)
+def isolated_active_agent_cache(monkeypatch):
+    cache = web_read_caches._CoalescingReadCache(5)
+    monkeypatch.setattr(web_read_caches, '_ACTIVE_AGENTS_CACHE', cache)
+    yield
+    cache.invalidate()
+
+
 class _ResponseHarness:
     def __init__(self, path: str, body: dict[str, object] | None = None) -> None:
         encoded = json.dumps(body or {}).encode("utf-8")
@@ -43,8 +51,8 @@ def test_active_agent_refresh_bursts_share_a_short_cache_without_locking_project
     calls: list[str] = []
 
     def collect_active_agents(*, actor: str) -> dict[str, object]:
-        assert web_read_caches._ACTIVE_AGENTS_CACHE_LOCK.acquire(blocking=False)
-        web_read_caches._ACTIVE_AGENTS_CACHE_LOCK.release()
+        assert web_read_caches._ACTIVE_AGENTS_CACHE._lock.acquire(blocking=False)
+        web_read_caches._ACTIVE_AGENTS_CACHE._lock.release()
         calls.append(actor)
         return {"status": "ok", "actor": actor}
 
@@ -52,9 +60,9 @@ def test_active_agent_refresh_bursts_share_a_short_cache_without_locking_project
         projection=SimpleNamespace(collect_active_agents=collect_active_agents),
     )
     monkeypatch.setattr(web_read_caches, "get_society_service", lambda: service)
-    with web_read_caches._ACTIVE_AGENTS_CACHE_LOCK:
-        web_read_caches._ACTIVE_AGENTS_CACHE.clear()
-        web_read_caches._ACTIVE_AGENTS_INFLIGHT.clear()
+    with web_read_caches._ACTIVE_AGENTS_CACHE._lock:
+        web_read_caches._ACTIVE_AGENTS_CACHE._values.clear()
+        web_read_caches._ACTIVE_AGENTS_CACHE._inflight.clear()
 
     first = web_read_caches._cached_active_agents("reader")
     second = web_read_caches._cached_active_agents("reader")
@@ -382,10 +390,10 @@ def test_active_agent_cache_serves_expired_snapshot_while_one_refreshes(
         projection=SimpleNamespace(collect_active_agents=collect_active_agents),
     )
     monkeypatch.setattr(web_read_caches, "get_society_service", lambda: service)
-    monkeypatch.setattr(web_read_caches, "_ACTIVE_AGENTS_CACHE_TTL_SECONDS", 0.0)
-    with web_read_caches._ACTIVE_AGENTS_CACHE_LOCK:
-        web_read_caches._ACTIVE_AGENTS_CACHE.clear()
-        web_read_caches._ACTIVE_AGENTS_INFLIGHT.clear()
+    monkeypatch.setattr(web_read_caches._ACTIVE_AGENTS_CACHE, "ttl_seconds", 0.0)
+    with web_read_caches._ACTIVE_AGENTS_CACHE._lock:
+        web_read_caches._ACTIVE_AGENTS_CACHE._values.clear()
+        web_read_caches._ACTIVE_AGENTS_CACHE._inflight.clear()
 
     assert web_read_caches._cached_active_agents("reader")["revision"] == 1
     assert web_read_caches._cached_active_agents("reader")["revision"] == 1
@@ -394,12 +402,12 @@ def test_active_agent_cache_serves_expired_snapshot_while_one_refreshes(
     release.set()
     deadline = time.monotonic() + 2
     while time.monotonic() < deadline:
-        with web_read_caches._ACTIVE_AGENTS_CACHE_LOCK:
-            if not web_read_caches._ACTIVE_AGENTS_INFLIGHT:
+        with web_read_caches._ACTIVE_AGENTS_CACHE._lock:
+            if not web_read_caches._ACTIVE_AGENTS_CACHE._inflight:
                 break
         time.sleep(0.01)
-    with web_read_caches._ACTIVE_AGENTS_CACHE_LOCK:
-        assert web_read_caches._ACTIVE_AGENTS_CACHE["reader"][1]["revision"] == 2
+    with web_read_caches._ACTIVE_AGENTS_CACHE._lock:
+        assert web_read_caches._ACTIVE_AGENTS_CACHE._values["reader"][1]["revision"] == 2
 
 
 def test_active_agent_change_detaches_stale_refresh_before_home_rereads(
@@ -425,9 +433,9 @@ def test_active_agent_change_detaches_stale_refresh_before_home_rereads(
         projection=SimpleNamespace(collect_active_agents=collect_active_agents),
     )
     monkeypatch.setattr(web_read_caches, "get_society_service", lambda: service)
-    with web_read_caches._ACTIVE_AGENTS_CACHE_LOCK:
-        web_read_caches._ACTIVE_AGENTS_CACHE.clear()
-        web_read_caches._ACTIVE_AGENTS_INFLIGHT.clear()
+    with web_read_caches._ACTIVE_AGENTS_CACHE._lock:
+        web_read_caches._ACTIVE_AGENTS_CACHE._values.clear()
+        web_read_caches._ACTIVE_AGENTS_CACHE._inflight.clear()
 
     with ThreadPoolExecutor(max_workers=1) as pool:
         stale_refresh = pool.submit(web_read_caches._cached_active_agents, "reader")
@@ -497,15 +505,14 @@ def test_active_agent_failed_refresh_returns_stale_rows_with_error(monkeypatch):
     def fail(**kwargs):
         raise RuntimeError('projection unavailable')
     monkeypatch.setattr(web_read_caches, 'get_society_service', lambda: SimpleNamespace(projection=SimpleNamespace(collect_active_agents=fail)))
-    with web_read_caches._ACTIVE_AGENTS_CACHE_LOCK:
-        web_read_caches._ACTIVE_AGENTS_CACHE['failed-reader'] = (0, {'revision': 1})
-        web_read_caches._ACTIVE_AGENTS_INFLIGHT.pop('failed-reader', None)
+    web_read_caches._ACTIVE_AGENTS_CACHE.get('failed-reader', lambda: {'revision': 1})
+    web_read_caches._ACTIVE_AGENTS_CACHE.expire('failed-reader')
     original_thread = web_read_caches.threading.Thread
     def thread(*args, **kwargs):
         target = kwargs['target']
-        def wrapped():
+        def wrapped(*args, **kwargs):
             try:
-                target()
+                target(*args, **kwargs)
             finally:
                 done.set()
         return original_thread(*args, **{**kwargs, 'target': wrapped})

@@ -6,8 +6,9 @@ System's scheduled RunScript drains it alongside the declared retention work.
 """
 from __future__ import annotations
 
-from contextlib import nullcontext
+from contextlib import ExitStack, contextmanager, nullcontext
 from functools import lru_cache
+from hashlib import sha256
 from uuid import uuid4
 
 from .directory_paths import cleanup_location, cleanup_path, contains, lexical_path, overlaps, remove_path
@@ -70,8 +71,8 @@ class DirectoryCleanupStore:
         initialize_directory_schema(connection, self.database.schema)
 
     def lock(self, connection):
-        # Shared by all registration writers and the filesystem worker. A
-        # hierarchy can span objects, so locking only one object ID is unsafe.
+        # Serialize short path decisions, never the physical filesystem walk.
+        # Durable reservations protect overlapping paths between transactions.
         connection.execute('SELECT pg_advisory_xact_lock(hashtextextended(%s,0))',
                            (self.table + ':paths',))
 
@@ -147,35 +148,77 @@ class DirectoryCleanupStore:
                  'status': 'completed' if row['completed_at'] else ('retry' if row['attempts'] else 'pending')}
                 for row in rows]
 
-    def run_pending(self, *, limit=100, cleanup_id=None):
-        outcomes = []
-        for _ in range(limit):
+    def _worker_lease(self, cleanup_id):
+        key = int.from_bytes(sha256((self.table + ':worker:' + cleanup_id).encode()).digest()[:8],
+                             'big', signed=True)
+        return self.database.advisory_lock(key, blocking=False)
+
+    @contextmanager
+    def _claim_pending(self, cleanup_id):
+        """Commit an overlap reservation while a crash-released session owns the walk."""
+        selected = None
+        with ExitStack() as leases:
             with self.database.transaction() as connection:
                 self.lock(connection)
                 candidates = connection.execute(f'SELECT * FROM {self.table} '
                     'WHERE completed_at IS NULL AND available_at <= clock_timestamp() '
                     'AND (%s::text IS NULL OR cleanup_id=%s) '
                     'ORDER BY available_at,cleanup_id FOR UPDATE SKIP LOCKED', (cleanup_id, cleanup_id)).fetchall()
-                reserved = [cleanup_path(item['location']) for item in connection.execute(
-                    f'SELECT location FROM {self.reservations}').fetchall()]
+                reserved = connection.execute(f'SELECT * FROM {self.reservations}').fetchall()
                 # A move may temporarily vacate its source before committing
                 # new locations. Never complete an expiry snapshot against
                 # that temporary absence, or delete a copy still in flight.
                 # Skip blocked entries instead of starving unrelated cleanup.
-                row = next((item for item in candidates if not any(
-                    overlaps(cleanup_path(item['location']), path) for path in reserved)), None)
+                for row in candidates:
+                    operation = 'cleanup-worker:' + row['cleanup_id']
+                    if any(item['operation_id'] != operation and
+                           overlaps(cleanup_path(row['location']), cleanup_path(item['location']))
+                           for item in reserved):
+                        continue
+                    with ExitStack() as attempt:
+                        if not attempt.enter_context(self._worker_lease(row['cleanup_id'])):
+                            continue
+                        own = [item for item in reserved if item['operation_id'] == operation]
+                        if own and (len(own) != 1 or own[0]['location'] != row['location']
+                                    or own[0]['purpose'] != 'directory-cleanup'):
+                            raise ValueError('Cleanup worker reservation identity changed')
+                        connection.execute(f'INSERT INTO {self.reservations}(operation_id,location,purpose) '
+                                           'VALUES (%s,%s,%s) ON CONFLICT DO NOTHING',
+                                           (operation, row['location'], 'directory-cleanup'))
+                        leases.enter_context(attempt.pop_all())
+                        selected = row
+                        break
+            # A crashed worker leaves the row pending and its reservation intact.
+            # The next worker can adopt it only after obtaining the same session lease.
+            yield selected
+
+    def _finish_attempt(self, row, error, *, reservation, release_on_error):
+        with self.database.transaction() as connection:
+            self.lock(connection)
+            if error is not None:
+                connection.execute(f'UPDATE {self.table} SET attempts=attempts+1,last_error=%s,'
+                    "available_at=clock_timestamp()+least(3600,30*power(2,least(attempts,7)))*interval '1 second' "
+                    'WHERE cleanup_id=%s', (str(error)[:4000], row['cleanup_id']))
+            else:
+                connection.execute(f'UPDATE {self.table} SET attempts=attempts+1,last_error=\'\','
+                                   'completed_at=clock_timestamp() WHERE cleanup_id=%s', (row['cleanup_id'],))
+            if error is None or release_on_error:
+                self.release(reservation, connection=connection)
+            return self.status(cleanup_id=row['cleanup_id'], connection=connection)[0]
+
+    def run_pending(self, *, limit=100, cleanup_id=None):
+        outcomes = []
+        for _ in range(limit):
+            with self._claim_pending(cleanup_id) as row:
                 if row is None:
                     break
+                error = None
                 try:
                     remove_path(cleanup_path(row['location']))
-                except (OSError, ValueError) as error:
-                    connection.execute(f'UPDATE {self.table} SET attempts=attempts+1,last_error=%s,'
-                        "available_at=clock_timestamp()+least(3600,30*power(2,least(attempts,7)))*interval '1 second' "
-                        'WHERE cleanup_id=%s', (str(error)[:4000], row['cleanup_id']))
-                else:
-                    connection.execute(f'UPDATE {self.table} SET attempts=attempts+1,last_error=\'\','
-                        'completed_at=clock_timestamp() WHERE cleanup_id=%s', (row['cleanup_id'],))
-                outcomes.extend(self.status(cleanup_id=row['cleanup_id'], connection=connection))
+                except (OSError, ValueError) as failure:
+                    error = failure
+                outcomes.append(self._finish_attempt(row, error,
+                    reservation='cleanup-worker:' + row['cleanup_id'], release_on_error=True))
         return outcomes
 
     def run_reserved(self, *, cleanup_id, operation_id, identity):
@@ -187,31 +230,30 @@ class DirectoryCleanupStore:
         """
         from .owned_path_deletion import OwnedPathDeletionStore
         deletion = OwnedPathDeletionStore()
-        with self.database.transaction() as connection:
-            self.lock(connection)
-            row = connection.execute(f'SELECT *,available_at<=clock_timestamp() AS ready FROM {self.table} '
-                                     'WHERE cleanup_id=%s FOR UPDATE', (cleanup_id,)).fetchone()
-            if row is None or row['operation_id'] != operation_id:
-                raise ValueError('Reserved cleanup requires its allocation operation')
-            reservations = connection.execute(f'SELECT * FROM {self.reservations}').fetchall()
-            if not any(item['operation_id'] == operation_id and item['location'] == row['location']
-                       for item in reservations):
-                raise ValueError('Allocation cleanup reservation is missing')
-            if row['completed_at']:
-                self.release(operation_id, connection=connection)
-            elif row['ready'] and not any(item['operation_id'] != operation_id and
-                    overlaps(cleanup_path(item['location']), cleanup_path(row['location'])) for item in reservations):
-                try:
-                    deletion.remove(cleanup_path(row['location']), identity)
-                except (OSError, ValueError) as error:
-                    connection.execute(f'UPDATE {self.table} SET attempts=attempts+1,last_error=%s,'
-                        "available_at=clock_timestamp()+least(3600,30*power(2,least(attempts,7)))*interval '1 second' "
-                        'WHERE cleanup_id=%s', (str(error)[:4000], cleanup_id))
-                else:
-                    connection.execute(f'UPDATE {self.table} SET attempts=attempts+1,last_error=\'\','
-                                       'completed_at=clock_timestamp() WHERE cleanup_id=%s', (cleanup_id,))
+        with self._worker_lease(cleanup_id) as acquired:
+            with self.database.transaction() as connection:
+                self.lock(connection)
+                row = connection.execute(f'SELECT *,available_at<=clock_timestamp() AS ready FROM {self.table} '
+                                         'WHERE cleanup_id=%s FOR UPDATE', (cleanup_id,)).fetchone()
+                if row is None or row['operation_id'] != operation_id:
+                    raise ValueError('Reserved cleanup requires its allocation operation')
+                reservations = connection.execute(f'SELECT * FROM {self.reservations}').fetchall()
+                if not any(item['operation_id'] == operation_id and item['location'] == row['location']
+                           for item in reservations):
+                    raise ValueError('Allocation cleanup reservation is missing')
+                if row['completed_at']:
                     self.release(operation_id, connection=connection)
-            return self.status(cleanup_id=cleanup_id, connection=connection)[0]
+                if row['completed_at'] or not acquired or not row['ready'] or any(
+                        item['operation_id'] != operation_id and
+                        overlaps(cleanup_path(item['location']), cleanup_path(row['location']))
+                        for item in reservations):
+                    return self.status(cleanup_id=cleanup_id, connection=connection)[0]
+            error = None
+            try:
+                deletion.remove(cleanup_path(row['location']), identity)
+            except (OSError, ValueError) as failure:
+                error = failure
+            return self._finish_attempt(row, error, reservation=operation_id, release_on_error=False)
 
 
 @lru_cache(maxsize=16)
