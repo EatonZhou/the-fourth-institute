@@ -8,19 +8,19 @@ const {chromium} = require('../../../management_portal/test_framework/tau_runtim
   try {
     const page = await browser.newPage();
     await page.setContent('<main id="root"></main>');
-    await page.addScriptTag({path:path.resolve(__dirname,'../../../management_portal/static/home_report.js')});
+    for(const file of ['portal_state.js','portal_text.js','portal_i18n.js','portal_ui_primitives.js','home_report.js']) await page.addScriptTag({path:path.resolve(__dirname,'../../../management_portal/static/'+file)});
     const result = await page.evaluate(async () => {
       const root = document.querySelector('#root');
       const pending = [], requests = [], selected = [], opened = [];
       window.fetch = (url, options) => {requests.push({url,options});return new Promise(resolve => pending.push(resolve));};
       const reply = (body, status=200) => ({ok:status<400,status,json:async()=>body});
-      const report = title => ({title,goal:'实际来源在服务端核对',target:{kind:'project',id:title},version:title,checked_at:'2026-11-04T00:00:00Z',warnings:[],sources:[],reasoning:{available:true,mode:'insufficient',question:'测试来源',assumption:'本地演示',rule:'仅 depends_on',limit:'当前范围',seed:'r1',nodes:[{id:'r1',title:'测试对象',x:.4,y:.5}],edges:[],before:{reached:[],trace:[]},after:{reached:[],trace:[]},unconnected:[]},counts:{'已有回复':1},rows:[{id:'r1',title:'<img src=x onerror=alert(1)>',body:'第一条正文',group:'任务',status:'已有回复',sources:[],open:{view:'map',target:{id:title}}}]});
+      const report = title => ({title,report_id:'report_123456789abc',revision:1,goal:'实际来源在服务端核对',target:{kind:'project',id:title},version:title,checked_at:'2026-11-04T00:00:00Z',warnings:[],sources:[],reasoning:{available:true,mode:'insufficient',question:'测试来源',assumption:'本地演示',rule:'仅 depends_on',limit:'当前范围',seed:'r1',nodes:[{id:'r1',title:'测试对象',x:.4,y:.5}],edges:[],before:{reached:[],trace:[]},after:{reached:[],trace:[]},unconnected:[]},counts:{'已有回复':1},rows:[{id:'r1',title:'<img src=x onerror=alert(1)>',body:'第一条正文',group:'任务',status:'已有回复',sources:[],open:{view:'map',target:{id:title}}}]});
       const view = PortalHomeReportView.create({root,onOpen:v=>opened.push(v),onSelection:v=>selected.push(v)});
       await view.setPresented(false);
-      await view.show({kind:'project',id:'old'},{requestId:'old'});
+      await view.show({kind:'report',id:'report_123456789abc',revision:1},{requestId:'old'});
       const hiddenRequests = requests.length;
       const restore = view.setPresented(true);
-      const newer = view.show({kind:'project',id:'new'},{requestId:'new'});
+      const newer = view.show({kind:'report',id:'report_123456789abc',revision:1},{requestId:'new'});
       pending[1](reply(report('new'))); await newer;
       pending[0](reply(report('old'))); await restore;
       const finalTitle = root.querySelector('h2').textContent;
@@ -31,15 +31,14 @@ const {chromium} = require('../../../management_portal/test_framework/tau_runtim
       pending[2](reply({error:'encoder temporarily unavailable'},503)); await new Promise(r=>setTimeout(r,0));
       const textSurvivesVideoFailure = root.querySelector('.hr-text').textContent.includes('第一条正文') && root.textContent.includes('重试视频');
       const aborter = new AbortController();aborter.abort();
-      await view.show({kind:'project',id:'aborted'},{signal:aborter.signal});
+      await view.show({kind:'report',id:'report_123456789abc',revision:1},{signal:aborter.signal});
       const abortClears = root.childElementCount === 0;
-      const show = view.show({kind:'project',id:'again'});pending[3](reply(report('again')));await show;
+      const show = view.show({kind:'report',id:'report_123456789abc',revision:1});pending[3](reply(report('again')));await show;
       window.dispatchEvent(new Event('portal:permissions-changed'));
-      pending[4](reply({readable:true}));await new Promise(r=>setTimeout(r,0));
-      pending[5](reply(report('fresh')));await new Promise(r=>setTimeout(r,0));
+      pending[4](reply({readable:true,source_changed:true}));await new Promise(r=>setTimeout(r,0));
       const historyRetained=root.querySelector('h2').textContent==='again' && root.textContent.includes('来源已有新版本');
       window.dispatchEvent(new Event('portal:permissions-changed'));
-      pending[6](reply({error:'revoked'},403)); await new Promise(r=>setTimeout(r,0));
+      pending[5](reply({error:'revoked'},403)); await new Promise(r=>setTimeout(r,0));
       const permissionClears = !root.querySelector('.hr-card') && root.textContent.includes('已撤去');
       view.destroy();
       const count = requests.length; await view.setPresented(true);

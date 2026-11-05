@@ -32,6 +32,7 @@ const explanationReport={schema:'tfi.home-report.v1',content_kind:'explanation',
   explanation_target:{address:explanationAddress,sha256:digest(explanation)}};
 let registeredExplanation=false;
 const quotaOnly=process.argv.includes('--send-quota-only');
+const addressOnly=process.argv.includes('--address-only');
 const contextOnly=quotaOnly||process.argv.includes('--submission-context-only');
 evidence.scope=contextOnly?'submission context and Preview script boundary':'message actions, submission context and Preview script boundary';
 function check(name,actual,expected){evidence.checks.push({name,actual,expected});assert.deepEqual(actual,expected,name);}
@@ -90,7 +91,6 @@ const server=http.createServer((req,res)=>{
         return {};
       }};
       window.PortalResourceChips={...PortalResourceChips,loadReference:async address=>({title:address}),
-      resourceAddressFromPreviewRequest:r=>r.resourceAddress||'',
       loadPreview:async(address,options)=>{
         previewCalls.push({address,allowCached:options.allowCached});
         if(deny)throw Object.assign(new Error('当前来源不可读'),{status:403});
@@ -112,8 +112,13 @@ const server=http.createServer((req,res)=>{
       window.displayFence=value=>'```portal-home-display\n'+JSON.stringify(value)+'\n```';
       window.message=(id,text,role='agent')=>({message_id:id,role,created_at:'2026-11-04T00:00:00Z',content_parts:[{type:'text',text}]});
       window.render=()=>panel.applySnapshot(snap);
-      snap.messages=[message('msg_0123456789abcdef','可以先预览材料，再查看汇报。\n\n'+displayFence(command())+'\n\n'+displayFence(command('older',{view:'report',target:{kind:'project',id:'demo'}})))];render();
+      snap.messages=[message('msg_0123456789abcdef','可以先预览材料，再查看汇报。\n\n'+displayFence(command())+'\n\n'+displayFence(command('older',{view:'report',target:{kind:'report',id:'report_0123456789ab',revision:1}})))];render();
     });
+    if(addressOnly) {
+      await require('./preview_typed_resource.cjs')(page,assert);
+      assert.deepEqual(evidence.errors,[]);
+      return;
+    }
     if(!contextOnly) {
     const action=name=>page.locator('.homeDialogueChat').getByRole('button',{name,exact:true});
     await action('预览幻灯片').waitFor();
@@ -311,7 +316,7 @@ const server=http.createServer((req,res)=>{
     check('Home carries verified reporting settings without a second policy prompt',contexts.every(c=>c[0].context.reporting.initiative==='off'),true);
     check('Home delegates rules to standard Resident injection',instructions.every(t=>t.includes('标准 Resident Prompt 注入')&&!t.includes('主动性 off：')&&!t.includes('仅high质量必须')),true);
     check('Home points to the formal authoring contract',instructions.every(t=>t.includes('/static/home_explanation_authoring.md')),true);
-    check('Home preserves navigation and fixed resource references',instructions.every(t=>t.includes('固定汇报引用使用真实 report_ID 和 revision')&&t.includes('自动结果不会覆盖固定、草稿或用户手选展示')),true);
+    check('Home preserves navigation and fixed resource references',instructions.every(t=>t.includes('汇报引用使用正式作者入口返回的 report_ID 和 revision')&&t.includes('自动结果不会覆盖固定、草稿或用户手选展示')),true);
     evidence.policySubmissions=await page.evaluate(async()=>{
       const results=[];
       for(const initiative of ['off','low','medium','high'])for(const quality of ['low','medium','high']) {
@@ -325,6 +330,7 @@ const server=http.createServer((req,res)=>{
       window.reportingDenied=false;return results;
     });
     check('fresh effective policy reaches every native send',evidence.policySubmissions.slice(0,12).map(c=>c.reporting),['off','low','medium','high'].flatMap(initiative=>['low','medium','high'].map(quality=>({initiative,quality}))));
+    check('report example opens a registered fixed package',JSON.parse(evidence.policySubmissions[11].context_text.split('示例结构：')[1].split('\n')[0]).target.kind,'report');
     check('Home does not duplicate high-initiative prompt',evidence.policySubmissions[11].context_text.includes('高主动性不等于每轮必生成'),false);
     check('permission failure preserves chat but forbids automatic generation',evidence.policySubmissions.at(-1).reporting_read==='unavailable'&&evidence.policySubmissions.at(-1).reporting===null&&evidence.policySubmissions.at(-1).reporting_error==='no_permit',true);
     check('explicit invalid policy is unavailable rather than configured default',await page.evaluate(async()=>{

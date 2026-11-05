@@ -261,6 +261,7 @@
   function resourceAddressFromPreviewRequest(request = {}) {
     return (
       normalizeResourceAddress(request.resourceAddress || request.address)
+      || normalizeResourceAddress(request.href || request.path || "")
       || resourceAddressFromPortalHref(request.href || request.path || "")
     );
   }

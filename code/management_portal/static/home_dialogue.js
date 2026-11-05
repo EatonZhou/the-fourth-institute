@@ -391,16 +391,16 @@
         reportingError = error?.status === 403 || error?.code === "no_permit" ? "no_permit" : "settings_unavailable";
       }
       if (destroyed || residentId !== assistant?.resident_id) return null;
-      const protocol = { protocol: "portal-home-display/v1", request_id: requestId, version: 1, action: "open", view: "report", quality: reporting?.quality, target: { kind: "lineage", id: "<真实资源ID>" } };
+      const protocol = { protocol: "portal-home-display/v1", request_id: requestId, version: 1, action: "open", view: "report", quality: reporting?.quality, target: { kind: "report", id: "<正式登记返回的report_ID>", revision: 1 } };
       // Reporting policy is materialized by the Resident prompt owner. This
       // host contributes navigation context, never a competing policy prompt.
       return { reporting, reporting_read: reportingRead, settings_revision: settingsRevision,
         ...(reportingError ? { reporting_error: reportingError } : {}), context_text: [
         "当前入口是 Home 对话与展示。提交时读取的汇报设置快照：" + JSON.stringify(reporting) + "；读取状态：" + reportingRead + "。生成规则与质量要求由标准 Resident Prompt 注入提供；本入口不改变规则。",
         "展示协议只导航已存在且可读的目标，不授予权限。实际创作通过正式作者入口完成；解释包创作合同见当前 Portal 同源 /static/home_explanation_authoring.md。",
-        "固定汇报引用使用真实 report_ID 和 revision；来源首次生成使用稳定来源身份，重开只读，不重生内容或检查。未知目标先查询，不能伪造资源ID。",
+        "汇报引用使用正式作者入口返回的 report_ID 和 revision。来源快照不作为新汇报交付；重开只读，不重生内容或检查。未知目标先查询，不能伪造资源ID。",
         "示例结构：" + JSON.stringify(protocol),
-        "action 允许 open/generate/focus/back；view 允许 report/map/frontier/preview/explanation；首次汇报/地图 target 为 {kind:task|lineage|project,id,focus?:节点ID}；已有汇报用 view:report 和 target:{kind:report,id:真实report_ID,revision:正整数,focus?:节点ID} 引用固定版本。task 的 id 必须匹配 /^resident_[a-f0-9]{12}\\/msg_[a-f0-9]{12,64}$/，来自 GetMessage/GetInputState 的一次真实请求，不能使用 task_ 或 MailboxTodo；preview 使用 {address:资源嵌套地址或文件链接}；explanation 使用 {address:清单的正式Workspace文件地址,sha256:64位小写字节摘要}。back 无须 view/target。version 是本次请求内递增整数。",
+        "action 使用 open/focus/back；view 允许 report/map/frontier/preview/explanation；地图 target 为 {kind:project,id,focus?:节点ID}，frontier 为 {kind:lineage,id}；汇报用 view:report 和 target:{kind:report,id:真实report_ID,revision:正整数,focus?:节点ID} 引用固定版本。task 的 id 必须匹配 /^resident_[a-f0-9]{12}\\/msg_[a-f0-9]{12,64}$/，来自 GetMessage/GetInputState 的一次真实请求，不能使用 task_ 或 MailboxTodo；preview 使用 {address:资源嵌套地址或文件链接}；explanation 使用 {address:清单的正式Workspace文件地址,sha256:64位小写字节摘要}。back 无须 view/target。version 是本次请求内递增整数。",
         "宿主只接受本次 request_id，自动结果不会覆盖固定、草稿或用户手选展示。", 
         "当前展示：" + JSON.stringify(state.active?.intent || null), "当前选择：" + JSON.stringify(selection),
       ].join("\n") };

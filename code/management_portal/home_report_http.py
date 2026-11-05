@@ -5,11 +5,9 @@ from urllib.parse import parse_qs
 
 from management_portal import http_auth, http_request_body, http_responses
 from management_portal.home_report import build_report, reauthorize, isa_reader
-from management_portal.home_report_store import ReportStore, revision_number
+from management_portal.home_report_store import ReportStore, revision_number, authored_package_required
 from management_portal.home_report_persistent_media import PersistentMedia
 from management_portal.home_report_media import MediaStore
-from management_portal.media_tools import capabilities
-from management_portal.home_report_quality import bind
 from management_portal.resources.errors import ResourceVersionConflict
 from management_portal.http_media_range import plan_media_response
 
@@ -31,10 +29,7 @@ def _get(request, parsed, actor):
         if target['kind'] == 'report' or target['id'].startswith('report_'):
             report = ReportStore().response(target['id'], actor, query.get('revision', [None])[0])
             return http_responses._serve_json(request, 200, report)
-        report = bind(build_report(target, actor=actor), query.get('quality', [None])[0], author=actor)
-        available = capabilities()
-        report["media_capability"] = {key: available[key] for key in ("available", "missing")}
-        return http_responses._serve_json(request, 200, report)
+        authored_package_required()
     except Exception as exc:
         return http_responses._serve_exception_json(request, exc)
 
@@ -118,21 +113,9 @@ def _origin(request, parsed, actor):
 def _save(request, parsed, actor):
     try:
         body = http_request_body._read_bounded_json_object(request,max_bytes=8192)
-        from management_portal import permission_system
-        from management_portal.resources import get_resource_service
-        store = ReportStore()
-        operation = 'home-report-origin:' + store.origin_id(actor,body.get('origin_key'))
-        def register(fields):
-            arguments={'resource_type':'report','fields':fields}
-            if not permission_system.allows(actor,'RegisterResource',arguments):
-                raise PermissionError('无权创建汇报')
-            # The Resource owner reserves the same ID across interrupted writes.
-            # HTTP retries must not replay a permanently failed ISA response.
-            return get_resource_service().register('report',fields,actor=actor,operation_id=operation)
-        result = store.materialize(body,actor,register)
-        if result.get('quality') == 'high' and result.get('content_kind') != 'explanation':
-            from management_portal.home_report_review import submit
-            result['review'] = submit(store, result['report_id'], result['revision'], actor)
+        # Old save controls may reopen an existing fixed binding. New works
+        # use the explanation registration endpoint; no automatic review here.
+        result = ReportStore().reopen_origin(body, actor)
         return http_responses._serve_json(request,200,result)
     except ResourceVersionConflict as exc:
         return http_responses._serve_json(request,409,{'error':str(exc)})

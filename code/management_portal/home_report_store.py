@@ -19,7 +19,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from management_common.portal_paths import path as portal_path
-from management_portal.home_report import build_report, reauthorize, normalize_target
+from management_portal.home_report import build_report, reauthorize
 from management_portal.home_report_quality import bind, quality, correction
 from management_portal.resources.errors import ResourceVersionConflict
 from management_portal.resources.registry_store import get_registry_store
@@ -28,6 +28,16 @@ COLLECTION = "report"
 ORIGINS = "report_origin"
 EXPLANATIONS = "report_explanation"
 IDENTITY = re.compile(r"report_[0-9a-f]{12}")
+
+
+def authored_package_required():
+    """A source snapshot is evidence, not a newly authored deliverable."""
+    from management_portal.resources.errors import ResourceOperationError
+    raise ResourceOperationError(
+        'report.authored_package_required',
+        '新汇报需要作者完成的固定解释包；请使用 /api/home-report/explanations 登记 address 与 sha256。',
+        422,
+    )
 
 
 def now():
@@ -69,21 +79,15 @@ class ReportStore:
             raise ResourceOperationError('report.deleted','此请求的汇报已删除；新汇报需要新的请求',410)
         return self.response(binding["report_id"], actor, binding["revision"])
 
-    def materialize(self, payload, actor, register):
-        """The source is consulted only for an origin's very first materialization."""
+    def reopen_origin(self, payload, actor):
+        """Compatibility for existing saved origins; never materialize a source."""
         origin = self.origin_id(actor, payload.get("origin_key"))
-        locks = self.root / ".locks"
-        locks.mkdir(parents=True, exist_ok=True, mode=0o700)
-        with (locks / ("origin-" + origin)).open("a") as stream:
-            fcntl.flock(stream, fcntl.LOCK_EX)
-            if self.registry.get(ORIGINS, origin):
-                existing = self.origin(actor, payload["origin_key"])
-                if 'quality' in payload and quality(payload['quality']) != existing.get('quality', 'medium'):
-                    raise ResourceVersionConflict('此请求已绑定其他质量的固定汇报；请显式刷新为新版本')
-                return existing
-            result = register(payload)
-            identifier = result.get("resource_id") or result["resource"]["resource_id"]
-            return self.response(identifier, actor, 1)
+        if not self.registry.get(ORIGINS, origin):
+            authored_package_required()
+        existing = self.origin(actor, payload['origin_key'])
+        if 'quality' in payload and quality(payload['quality']) != existing.get('quality', 'medium'):
+            raise ResourceVersionConflict('此请求已绑定其他质量的固定汇报；请显式刷新为新版本')
+        return existing
 
     @contextmanager
     def writer(self, identifier, *, creating=False):
@@ -276,34 +280,16 @@ class ReportStore:
         allowed = {"target", "version", "import_job", "origin_key", "quality", "origin_context"}
         if set(payload) - allowed:
             raise ValueError("汇报创建仅接受target/version/import_job")
-        # RegisterResource reserves this identity for its idempotent operation.
-        # A transaction may roll back after exports have been atomically written;
-        # retry the exact first snapshot even if the live source has since changed.
-        with self.lock(identifier):
-            existing = self.registry.get(COLLECTION, identifier)
-            if existing:
-                _, _, original = self.get(identifier, actor)
-                if 'quality' in payload and quality(payload['quality']) != original.get('quality','medium'):
-                    raise ResourceVersionConflict('固定身份的质量不能通过重试改写')
-                return self.metadata(existing)
-            frozen = self.directory(identifier) / '1/report.json'
-            if frozen.exists():
-                snapshot = json.loads(frozen.read_text(encoding='utf-8'))
-                if snapshot['target'] != normalize_target(payload.get('target')):
-                    raise ValueError('未完成创建的目标与重试不一致')
-                reauthorize(snapshot, actor=actor, read=self.read)
-            else:
-                snapshot = bind(build_report(payload.get("target"), actor=actor, read=self.read), payload.get('quality'), author=actor)
-                from management_portal.home_report_origin import verified_source
-                from management_portal.home_report_quality import fingerprint
-                snapshot['authoring'] = verified_source(actor,payload.get('origin_context'),payload.get('origin_key'),snapshot['target'],read=self.read)
-                snapshot['origin_key'] = payload.get('origin_key')
-                snapshot['version'] = fingerprint(snapshot)
-            if snapshot.get('quality', 'medium') != quality(payload.get('quality')):
-                raise ResourceVersionConflict('生成请求质量与已冻结版本不一致')
-            from management_portal.home_report_creation import require_report_creation
-            require_report_creation(self, snapshot, actor)
-            return self._create_locked(identifier, payload, actor, snapshot)
+        # Previously committed resources retain read/idempotent-save semantics.
+        # Reserved IDs and uncommitted disk snapshots are not existing reports;
+        # they cannot resume the retired source-to-deliverable creation path.
+        existing = self.registry.get(COLLECTION, identifier)
+        if existing:
+            _, _, original = self.get(identifier, actor)
+            if 'quality' in payload and quality(payload['quality']) != original.get('quality', 'medium'):
+                raise ResourceVersionConflict('固定身份的质量不能通过重试改写')
+            return self.metadata(existing)
+        authored_package_required()
 
     def _create_locked(self, identifier, payload, actor, snapshot):
         if payload.get("version") is not None and payload["version"] not in {snapshot["version"], snapshot.get('source_version')}:

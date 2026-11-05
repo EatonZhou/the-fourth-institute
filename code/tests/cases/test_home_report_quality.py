@@ -81,7 +81,12 @@ def auditing(reports, tmp_path, monkeypatch):
 
 
 def create(store, level):
-    return store.materialize({'target':TARGET,'origin_key':KEY,'origin_context':ORIGIN,'quality':level},'alice',lambda fields:store.create(RID,fields,'alice'))
+    from tests.cases.historical_report_support import seed_historical_report
+    from management_portal.home_report_store import ORIGINS
+    payload = {'target': TARGET, 'origin_key': KEY, 'origin_context': ORIGIN, 'quality': level}
+    if not store.registry.get(ORIGINS, store.origin_id('alice', KEY)):
+        seed_historical_report(store, RID, payload)
+    return store.reopen_origin(payload, 'alice')
 
 
 def test_quality_origin_revision_and_markdown_are_fixed(reports, auditing):
@@ -369,7 +374,8 @@ process.stdout.write(JSON.stringify({intent,key}));"""
 def test_unassigned_user_report_cannot_pretend_resident_editing_loop(reports,auditing):
     store,_=reports
     _,calls,_=auditing
-    store.create(RID,{'target':TARGET,'quality':'high'},'alice')
+    from tests.cases.historical_report_support import seed_historical_report
+    seed_historical_report(store,RID,{'target':TARGET,'quality':'high'})
     assert review.submit(store,RID,1,'alice')['status']=='awaiting_author'
     media=PersistentMedia(store,lambda *args:pytest.fail('no unassigned renderer'))
     state=media.start(RID,1,'alice',quality='medium')
@@ -437,6 +443,7 @@ def test_real_http_quality_save_read_and_refresh(reports,auditing,monkeypatch):
     def send(path,payload=None):
         req=Request(f'http://127.0.0.1:{server.server_port}'+path,data=json.dumps(payload).encode() if payload else None,headers={'Content-Type':'application/json'})
         with urlopen(req) as response: return response.status,json.load(response)
+    create(store,'low')  # Existing resource; HTTP save only reopens it.
     try:
         code,first=send('/api/home-report/save',{'target':TARGET,'origin_key':KEY,'origin_context':ORIGIN,'quality':'low'})
         assert code==200 and first['quality']=='low'

@@ -20,6 +20,8 @@ from management_portal.home_report_media import FILES
 from management_portal.home_report_persistent_media import PersistentMedia
 from management_portal.resources.errors import ResourceVersionConflict
 from tests.cases.test_workspace_resource_rename import workspace
+from tests.cases.test_report_explanations import explanations
+from tests.cases.historical_report_support import seed_historical_report
 
 RID = 'report_123456789abc'
 TARGET = {'kind':'task','id':'resident_123456789abc/msg_123456789abc'}
@@ -45,16 +47,16 @@ def reports(tmp_path):
 
 
 def create(store, key=KEY, identifier=RID):
-    return store.materialize({'target':TARGET,'origin_key':key},'alice',
-                             lambda fields:store.create(identifier,fields,'alice'))
+    """Install a historical snapshot, then exercise current public readers."""
+    seed_historical_report(store, identifier, {'target': TARGET, 'origin_key': key})
+    return store.response(identifier, 'alice')
 
 
 def test_origin_returns_first_snapshot_when_sources_change_and_is_actor_scoped(reports):
     store,state = reports
     first = create(store)
     state['body'] = '新的业务事实'
-    second = store.materialize({'target':TARGET,'origin_key':KEY,'version':'outdated'},'alice',
-                               lambda fields:pytest.fail('origin must not create again'))
+    second = store.reopen_origin({'target':TARGET,'origin_key':KEY,'version':'outdated'},'alice')
     assert first['version'] == second['version']
     assert second['revision'] == 1
     assert second['goal'] == first['goal']
@@ -84,26 +86,32 @@ def test_refresh_keeps_original_binding_assets_and_rejects_stale_cas(reports):
         store.file(RID,1,'../report.json','alice')
 
 
-def test_report_and_origin_commit_together_on_interrupted_creation(reports, monkeypatch):
-    store,state = reports
+def test_report_and_origin_commit_together_on_interrupted_creation(explanations, monkeypatch):
+    from management_portal.home_report_explanations import fields
+    from management_portal.home_report_store import EXPLANATIONS
     from management_portal.resources.registry_store import RegistryWriter
+    e = explanations
+    store = e.store
+    payload = fields(e.ref)
     original = RegistryWriter.put
-    def fail(writer,collection,identifier,value):
+    def fail(writer, collection, identifier, value):
         if collection == ORIGINS:
             raise RuntimeError('simulated before origin commit')
-        return original(writer,collection,identifier,value)
+        return original(writer, collection, identifier, value)
     with monkeypatch.context() as patch:
-        patch.setattr(RegistryWriter,'put',fail)
+        patch.setattr(RegistryWriter, 'put', fail)
         with pytest.raises(RuntimeError):
-            create(store)
-    assert store.registry.get(COLLECTION,RID) is None
-    assert store.registry.get(ORIGINS,store.origin_id('alice',KEY)) is None
-    original_snapshot=json.loads((store.directory(RID)/'1/report.json').read_text())
-    state['body']='中断后来源已经改变，仍须恢复首次快照'
-    restored = create(store)
-    assert restored['report_id'] == RID
-    assert restored['version']==original_snapshot['version']
-    assert restored['checked_at']==original_snapshot['checked_at']
+            store.create(RID, payload, 'alice')
+    assert store.registry.get(COLLECTION, RID) is None
+    assert store.registry.get(ORIGINS, store.origin_id('alice', payload['origin_key'])) is None
+    assert store.registry.get(EXPLANATIONS, payload['origin_key']) is None
+    original_snapshot = json.loads((store.directory(RID)/'1/report.json').read_text())
+    restored = store.create(RID, payload, 'alice')
+    assert restored['resource_id'] == RID
+    snapshot = store.response(RID, 'alice')
+    assert snapshot['version'] == original_snapshot['version']
+    assert snapshot['checked_at'] == original_snapshot['checked_at']
+    assert snapshot['explanation_target'] == e.ref
     assert list(store.record(RID)['revisions']) == ['1']
 
 
@@ -279,9 +287,9 @@ def test_formal_resource_registration_reopen_and_directory_cleanup(workspace,rep
     from management_portal.resources.providers import report as provider
     monkeypatch.setattr(provider,'ReportStore',lambda:store)
     workspace.service._index().project_registered=lambda *args:None
-    fields={'target':TARGET,'origin_key':KEY}
-    registered=workspace.call('RegisterResource',{'resource_type':'report','fields':fields},idempotency_key='report-fixture-create').raise_for_error()
-    identifier=registered['resource_id']
+    # Existing snapshot lifecycle remains a Resource ISA responsibility.
+    create(store)
+    identifier=RID
     assert identifier.startswith('report_')
     assert store.origin('alice',KEY)['report_id']==identifier
     from management_portal.home_report_store import REGISTRY_PROJECTION
@@ -304,33 +312,29 @@ def test_formal_resource_registration_reopen_and_directory_cleanup(workspace,rep
     assert not store.directory(identifier).exists()
 
 
-def test_http_origin_retry_uses_same_formal_reservation_after_interruption(workspace,reports,monkeypatch):
-    from management_portal import home_report_http, resources
-    from management_portal.resources.providers import report as provider
+def test_http_origin_retry_uses_same_formal_reservation_after_interruption(explanations, monkeypatch):
+    from types import SimpleNamespace
+    from management_portal import home_report_http
     from management_portal.resources.registry_store import RegistryWriter
-    store,state=reports
-    monkeypatch.setattr(provider,'ReportStore',lambda:store)
-    monkeypatch.setattr(home_report_http,'ReportStore',lambda:store)
-    monkeypatch.setattr(resources,'get_resource_service',lambda:workspace.service)
-    workspace.service._index().project_registered=lambda *args:None
-    payload={'target':TARGET,'origin_key':KEY}
-    monkeypatch.setattr(home_report_http.http_request_body,'_read_bounded_json_object',lambda *a,**kw:payload)
-    monkeypatch.setattr(home_report_http.http_responses,'_serve_json',lambda req,status,value:(status,value))
-    monkeypatch.setattr(home_report_http.http_responses,'_serve_exception_json',lambda req,exc:(500,str(exc)))
-    original=RegistryWriter.put
-    def fail(writer,collection,identifier,value):
-        if collection==ORIGINS: raise RuntimeError('controlled commit interruption')
-        return original(writer,collection,identifier,value)
+    e = explanations
+    store = e.store
+    monkeypatch.setattr(home_report_http.http_request_body, '_read_bounded_json_object', lambda *a, **kw: e.ref)
+    original = RegistryWriter.put
+    def fail(writer, collection, identifier, value):
+        if collection == ORIGINS:
+            raise RuntimeError('controlled commit interruption')
+        return original(writer, collection, identifier, value)
+    request = SimpleNamespace(command='POST')
     with monkeypatch.context() as patch:
-        patch.setattr(RegistryWriter,'put',fail)
-        assert home_report_http._save(None,None,'alice')[0]==500
-    [directory]=[p for p in store.root.iterdir() if p.name.startswith('report_')]
-    first=json.loads((directory/'1/report.json').read_text())
-    state['body']='中断之后的最新来源'
-    status,response=home_report_http._save(None,None,'alice')
-    assert status==200,response
-    assert response['report_id']==directory.name and response['version']==first['version']
-    assert list(store.registry.documents(COLLECTION))==[directory.name]
+        patch.setattr(RegistryWriter, 'put', fail)
+        assert home_report_http._explanations(request, None, 'alice')[0] == 500
+    [directory] = [p for p in store.root.iterdir() if p.name.startswith('report_')]
+    first = json.loads((directory/'1/report.json').read_text())
+    status, response = home_report_http._explanations(request, None, 'alice')
+    assert status == 200, response
+    assert response['report_id'] == directory.name and response['version'] == first['version']
+    assert response['explanation_target'] == e.ref
+    assert list(store.registry.documents(COLLECTION)) == [directory.name]
 
 
 def test_explicit_ppt_attachment_preserves_bytes_sources_and_old_revision(reports,monkeypatch):
@@ -360,7 +364,7 @@ def test_explicit_ppt_attachment_preserves_bytes_sources_and_old_revision(report
 
 
 @pytest.mark.parametrize('legacy_audio',[False,True],ids=['silent-cache','existing-audio-cache'])
-def test_existing_cache_is_discovered_only_for_same_actor_and_exact_snapshot(reports,legacy_audio):
+def test_existing_cache_is_discovered_only_for_same_actor_and_exact_snapshot(reports,legacy_audio,caplog):
     store,state=reports
     from management_portal.home_report import build_report
     from management_portal.home_report_media import MediaStore
@@ -388,24 +392,64 @@ def test_existing_cache_is_discovered_only_for_same_actor_and_exact_snapshot(rep
     state['body']='不同请求内容'
     unmatched=create(store,KEY[:-1]+'e','report_123456789abe')
     assert unmatched['media'] is None
+    assert 'Skipped unavailable or incompatible legacy report media cache' in caplog.text
+    assert str(directory) not in caplog.text
 
 
-def test_creation_keeps_user_initiator_and_syncs_permissions_in_own_transaction(reports,monkeypatch):
-    store,state=reports
+@pytest.mark.parametrize('failure', [PermissionError, FileNotFoundError])
+def test_project_report_warns_when_references_cannot_be_read(failure):
+    from management_portal.home_report import ReportReader
+    def read(name, args):
+        if name == 'GetProject':
+            return {'project': {'title': '研究项目'}}
+        if name == 'GetResearchMap':
+            return {'directions': [{'direction_id': 'd1', 'title': '方向'}],
+                    'outputs': {'d1': [{'resource_id': 'unreadable'}, {'resource_id': 'readable'}]},
+                    'notes': [{'direction_id': 'd1', 'refs': ['unreadable'], 'text': 'private note'},
+                              {'direction_id': 'd1', 'refs': ['readable'], 'text': '可读记录'}]}
+        if name == 'ResolveResource':
+            if args['address'] == 'unreadable':
+                raise failure('private-source-detail')
+            return {'resource': {'title': '可读成果'}}
+        raise AssertionError(name)
+    reader = ReportReader(read)
+    _, _, rows, _ = reader.project('project')
+    assert len(rows[0]['artifacts']) == 1
+    assert rows[0]['notes'] == ['可读记录']
+    assert len(reader.warnings) == 2
+    assert all('不可读' in warning for warning in reader.warnings)
+    assert 'private-source-detail' not in json.dumps(reader.warnings)
+    assert 'private note' not in json.dumps(rows)
+
+
+def test_creation_keeps_user_initiator_and_syncs_permissions_in_own_transaction(explanations,monkeypatch):
+    store=explanations.store
     from management_common.execution_association import execution_scope
     from management_portal.society_service import resident_work_origin
-    from management_portal import permission_system
+    from management_portal import permission_system, society_service
+    from types import SimpleNamespace
     resident='resident_000000000001'
+    capability_calls=[]
+    def creation_allowed(responsible, actor, message_id=''):
+        capability_calls.append((responsible, actor, message_id))
+        return (responsible, actor, message_id) == (resident, resident, '')
+    monkeypatch.setattr(society_service, 'get_society_service', lambda: SimpleNamespace(
+        resident=SimpleNamespace(reporting_creation_allowed=creation_allowed)))
     monkeypatch.setattr(resident_work_origin,'execution_initiator',lambda rid,execution_id:'bob')
     captured=[]
     def sync(record,*,resource_type,connection):
         assert connection.in_transaction
         captured.append(record)
     monkeypatch.setattr(permission_system,'sync_resource',sync)
+    from tests.cases.test_workspace_resource_rename import WID
+    from management_portal.permission_system.facts import Fact
+    explanations.permissions.place(Fact('resident',resident))
+    explanations.permissions.grant(resident,WID,'@viewer')
     with execution_scope('report-input-fixture'):
-        record=store.create(RID,{'target':TARGET},resident)
+        record=store.create(RID,{'explanation_target':explanations.ref},resident)
     assert record['created_by']==resident and record['created_for']=='bob'
     assert captured[0]['created_for']=='bob'
+    assert capability_calls == []  # Registering an existing package is not new creation.
 
 
 def test_media_lease_is_visible_across_processes_and_process_exit_allows_retry(reports):
@@ -471,11 +515,13 @@ def test_actual_par_report_actions_and_read_revocation(reports,monkeypatch):
         create(store)
         assert store.record(RID)['created_by']=='alice'
         assert store.get(RID,'alice')[1]==1
-        # Default shared discovery does not grant mutation rights. The report
-        # owner obeys the active scheme instead of inventing a creator ACL.
-        with pytest.raises(PermissionError): store.authorize('alice','UpdateResource',RID)
-        permissions.grant('alice',RID,a='@admin')
+        # Formal creation places a User's report under their personal space.
+        # Creator mutation rights come from PAR, while outsiders stay denied.
         store.authorize('alice','UpdateResource',RID)
+        with pytest.raises(PermissionError): store.authorize('bob','UpdateResource',RID)
+        permissions.grant('bob',RID,a='@contributor')
+        store.authorize('bob','UpdateResource',RID)
+        permissions.deny('bob',RID,a='@contributor')
         with pytest.raises(PermissionError): store.authorize('bob','UpdateResource',RID)
         permissions.deny('alice',RID)
         with pytest.raises(PermissionError): store.response(RID,'alice',1)

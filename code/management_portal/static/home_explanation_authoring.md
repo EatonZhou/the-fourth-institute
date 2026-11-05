@@ -212,6 +212,8 @@ python3 scripts/submit_explanation_review.py --resident-id '<检查者自己的R
 
 high 质量生成链路须完成上述独立检查，手写 high 清单也要送检。不要在打开历史、刷新页面或普通读取时重复触发检查。独立检查与产品正式 User TAU 分开，不能代替真实门面对话验证。
 
+新汇报统一由作者使用本文模板与构建入口制作固定解释包，再登记为正式 Report。task、Lineage、Project 是创作来源；不能通过旧 `/api/home-report/save` 或来源目标的展示指令自动拼装为新汇报。已有快照型 Report 仅保留其固定身份的读取与合法编辑。
+
 成果入口使用 `portal-home-display` fenced block，内容为 `portal-home-display/v1`、`view:report` 与 `target:{kind:"report",id:"服务返回的report_ID",revision:实际修订号}`。构建客户端保存固定包、执行要求的独立送检后，会通过正式汇报域登记并返回该引用；直接采用返回值，不把 Workspace 容器 ID 当作汇报 ID，也不自行编造 ID。Workspace 地址和 SHA 仍用于固定文件、视频及审核。
 
 已有包可用 `python3 scripts/register_explanation_report.py --resident-id '<本人>' --address '<原manifest正式地址>' --sha256 '<原摘要>'` 补登记。此操作只关联现有固定成果，重复提交复用原汇报，不生成视频、不重新送检。失败保留原包，并按真实权限补齐后重试登记，不能重建或覆盖旧成果。旧 `view:explanation` 按钮仍可在显式打开时沿相同接口登记；历史恢复及 GET 只定位已有汇报。

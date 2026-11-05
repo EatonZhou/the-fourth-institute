@@ -5,6 +5,8 @@ registration, report snapshots, registry transactions and permission decisions
 use their real owners against isolated PostgreSQL.
 """
 from types import SimpleNamespace
+import json
+import hashlib
 
 import pytest
 
@@ -15,7 +17,7 @@ from management_portal.home_report_store import ReportStore
 from management_portal.permission_system.facts import Fact, fact_from_record, personal_space
 from management_portal.permission_system.requests import requests
 from tests.cases.permission_test_support import enable
-from tests.cases.test_workspace_resource_rename import workspace
+from tests.cases.test_workspace_resource_rename import workspace, WID
 
 AUTHOR = 'resident_123456789abc'
 OTHER = 'resident_abcdef123456'
@@ -32,6 +34,16 @@ def reporting(workspace, monkeypatch, tmp_path):
         Fact('lineage', 'lineage_123456789abc', {'project': 'ReportTeam'}),
         Fact('resident', AUTHOR, {'lineage': 'lineage_123456789abc'}), Fact('resident', OTHER))
     permissions.grant('alice', AUTHOR, '@viewer')
+    permissions.place(Fact('workspace', WID))
+    permissions.grant(AUTHOR, WID, '@viewer')
+    permissions.grant('alice', WID, '@viewer')
+    page = b'<html><body>Authored package fixture</body></html>'
+    (tmp_path/'page.html').write_bytes(page)
+    package = {'schema': 'portal-explanation/v1', 'quality': 'medium', 'title': 'Authored',
+        'interaction': {'address': WID+'/file/page.html', 'sha256': hashlib.sha256(page).hexdigest()}}
+    data = json.dumps(package).encode()
+    (tmp_path/'manifest.json').write_bytes(data)
+    ref = {'address': WID+'/file/manifest.json', 'sha256': hashlib.sha256(data).hexdigest()}
     current = {'actor': AUTHOR}
 
     def read(name, args):
@@ -53,14 +65,22 @@ def reporting(workspace, monkeypatch, tmp_path):
     def raise_error(request, exc):
         raise exc
     monkeypatch.setattr(home_report_http.http_responses, '_serve_exception_json', raise_error)
-    return SimpleNamespace(permissions=permissions, store=store, current=current, workspace=workspace)
+    return SimpleNamespace(permissions=permissions, store=store, current=current, workspace=workspace, ref=ref, package=package)
 
 
 @pytest.mark.parametrize('actor', [AUTHOR, 'alice'])
 def test_http_and_isa_creation_use_authenticated_creator_and_keep_source_checks(reporting, monkeypatch, actor):
     p, store = reporting.permissions, reporting.store
     reporting.current['actor'] = actor
-    fields = {'target': TARGET, 'origin_key': KEY}
+    capability_calls = []
+    if actor == AUTHOR:
+        from management_portal import society_service
+        def creation_allowed(responsible, caller, message_id=''):
+            capability_calls.append((responsible, caller, message_id))
+            return (responsible, caller, message_id) == (AUTHOR, AUTHOR, '')
+        monkeypatch.setattr(society_service, 'get_society_service', lambda: SimpleNamespace(
+            resident=SimpleNamespace(reporting_creation_allowed=creation_allowed)))
+    fields = {'explanation_target': reporting.ref}
     args = {'resource_type': 'report', 'fields': fields}
     parent = AUTHOR if actor == AUTHOR else personal_space(actor)
     assert not p.holds(actor, '@contributor', '@shared')
@@ -71,8 +91,8 @@ def test_http_and_isa_creation_use_authenticated_creator_and_keep_source_checks(
         'instruction': 'RegisterResource', 'arguments': args}, actor=actor, enforce=False)
     assert checked['allowed']
 
-    monkeypatch.setattr(home_report_http.http_request_body, '_read_bounded_json_object', lambda *a, **kw: fields)
-    status, report = home_report_http._save(None, None, actor)
+    monkeypatch.setattr(home_report_http.http_request_body, '_read_bounded_json_object', lambda *a, **kw: reporting.ref)
+    status, report = home_report_http._explanations(SimpleNamespace(command='POST'), None, actor)
     assert status == 200, report
     identifier = report['report_id']
     assert store.record(identifier)['created_by'] == actor
@@ -80,21 +100,27 @@ def test_http_and_isa_creation_use_authenticated_creator_and_keep_source_checks(
         {'resident': AUTHOR} if actor == AUTHOR else {'personal_space': parent})
     assert permission_system.allows(actor, 'UpdateResource', {'resource_id': identifier})
     assert not permission_system.allows(OTHER, 'UpdateResource', {'resource_id': identifier})
-    assert home_report_http._save(None, None, actor)[1]['report_id'] == identifier
+    assert home_report_http._explanations(SimpleNamespace(command='POST'), None, actor)[1]['report_id'] == identifier
 
+    data = json.dumps({**reporting.package, 'title': 'Second authored package'}).encode()
+    (reporting.workspace.root/'second.json').write_bytes(data)
+    second_ref = {'address': WID+'/file/second.json', 'sha256': hashlib.sha256(data).hexdigest()}
     second = reporting.workspace.call('RegisterResource', {'resource_type': 'report',
-        'fields': {'target': TARGET}}, actor=actor).raise_for_error()
+        'fields': {'explanation_target': second_ref}}, actor=actor).raise_for_error()
     assert second['resource_id'] != identifier
     p.deny(actor, AUTHOR, '@viewer')
+    p.deny(actor, WID, '@viewer')  # Authored source bytes remain protected.
     with pytest.raises((InstructionError, PermissionError)):
         store.get(identifier, actor)
     denied = reporting.workspace.call('RegisterResource', args, actor=actor)
     assert denied.status == 'failed'
+    if actor == AUTHOR:
+        assert capability_calls == []  # Existing package registration is not new creation.
 
 
 def test_payload_cannot_choose_creator_placement_and_deny_is_enforced(reporting):
     p = reporting.permissions
-    forged = {'resource_type': 'report', 'fields': {'target': TARGET,
+    forged = {'resource_type': 'report', 'fields': {'explanation_target': reporting.ref,
         'created_by': OTHER, 'resident_id': OTHER, 'personal_space': 'personal_space:bob'},
         '$caller': OTHER}
     assert [r.resource for r in requests(p.scheme, 'RegisterResource', forged, caller=AUTHOR)] == [AUTHOR]
@@ -104,7 +130,7 @@ def test_payload_cannot_choose_creator_placement_and_deny_is_enforced(reporting)
     p.deny(AUTHOR, AUTHOR, '@contributor')
     assert not permission_system.allows(AUTHOR, 'RegisterResource', {'resource_type': 'report'})
     assert reporting.workspace.call('RegisterResource', {'resource_type': 'report',
-        'fields': {'target': TARGET}}, actor=AUTHOR).status == 'failed'
+        'fields': {'explanation_target': reporting.ref}}, actor=AUTHOR).status == 'failed'
     # Other registerable types retain their original placement.
     assert not permission_system.allows(AUTHOR, 'RegisterResource', {'resource_type': 'device'})
     assert [r.resource for r in requests(p.scheme, 'RegisterResource',

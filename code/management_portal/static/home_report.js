@@ -11,12 +11,6 @@
   };
   const button = (label, action) => { const b = el('button', label); b.type = 'button'; b.onclick = action; return b; };
   const date = value => value ? new Date(value).toLocaleString() : '时间未登记';
-  const requestUUID = () => {
-    if(crypto.randomUUID) return crypto.randomUUID();
-    const bytes=crypto.getRandomValues(new Uint8Array(16));bytes[6]=(bytes[6]&15)|64;bytes[8]=(bytes[8]&63)|128;
-    const value=Array.from(bytes,b=>b.toString(16).padStart(2,'0')).join('');
-    return `${value.slice(0,8)}-${value.slice(8,12)}-${value.slice(12,16)}-${value.slice(16,20)}-${value.slice(20)}`;
-  };
   async function json(url, options) {
     const response = await fetch(url, {credentials: 'same-origin', cache: 'no-store', ...options});
     const data = await response.json();
@@ -27,7 +21,7 @@
     if (!root) throw new Error('报告容器不存在');
     root.classList.add('home-report');
     let target, report, media, video, mediaRegion, banner, list, sourceRegion, mediaAction, explanation;
-    let requestedTarget, originKey = '', originContext = null, readOnly = true, reportQuality = 'medium', videoQuality = 'medium';
+    let requestedTarget, originKey = '', reportQuality = 'medium', videoQuality = 'medium';
     let presented = true, destroyed = false, epoch = 0, controller, externalSignal, externalAbort;
     let refreshTimer, mediaTimer, query = '', status = '', busy = false, rechecking = false;
     const active = token => !destroyed && presented && token === epoch && !controller?.signal.aborted;
@@ -242,7 +236,6 @@
       const actions = el('div', null, 'hr-actions');
       actions.append(qualitySelect('报告质量', reportQuality, value => {reportQuality = value;}));
       if (report.report_id) actions.append(button('刷新为新版本', () => refresh()));
-      else actions.append(button('保存汇报', () => save().catch(() => {})));
       mediaAction=el('span');actions.append(mediaAction);
       mediaActions(report.media);
       for (const item of report.exports || []) {
@@ -359,7 +352,7 @@
       busy = true; const token = epoch, level = videoQuality;
       mediaRegion.hidden = false; mediaRegion.replaceChildren(el('p', '正在核对来源并准备讲解…', 'hr-notice'));
       try {
-        if (!report.report_id) {await save(); videoQuality = level;}
+        if (!report.report_id) throw new Error('请先通过正式作者入口登记汇报。');
         if (!active(token) || !report?.report_id) return;
         const state = await request(`${API}/media`, {method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({report_id:report.report_id, revision:report.revision, quality:level, retry})});
         if (!active(token) || videoQuality !== level) return;
@@ -393,16 +386,6 @@
       media = result.media || null; render(); if (media) renderMedia(media);
       if (media?.status === 'pending') mediaTimer = setTimeout(() => pollMedia(epoch),1000);
       schedule();
-    }
-    async function save() {
-      if (report?.report_id) return report;
-      const token = epoch;
-      originKey ||= `home-request/v1:${requestUUID()}`;
-      try {
-        const result = await request(`${API}/save`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({target,version:report?.source_version || report?.version,origin_key:originKey,quality:reportQuality,...(originContext ? {origin_context:originContext} : {})})});
-        if (active(token)) await accept(result);
-        return result;
-      } catch(error) {if(active(token)) {banner.hidden=false;banner.textContent=`保存失败：${error.message}`;} throw error;}
     }
     async function refresh(content) {
       if (!report?.report_id || busy || destroyed) return;
@@ -440,15 +423,13 @@
       try {
         let result;
         if (requestedTarget.kind === 'report') result = await request(`${API}?${new URLSearchParams(requestedTarget)}`);
-        else if (originKey && readOnly) result = await request(`${API}/origin?${new URLSearchParams({origin_key:originKey})}`);
-        else if (originKey) result = await request(`${API}/save`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({target:requestedTarget,origin_key:originKey,quality:reportQuality,...(originContext ? {origin_context:originContext} : {})})});
-        else result = await request(`${API}?${new URLSearchParams({...requestedTarget,quality:reportQuality})}`);
+        else if (originKey) result = await request(`${API}/origin?${new URLSearchParams({origin_key:originKey})}`);
+        else throw new Error('请由作者按正式模板制作并登记汇报，再打开返回的汇报引用。');
         if (!active(token)) return;
         await accept(result);
       } catch (error) { if (active(token)) {
-        if(error.status===404 && originKey && readOnly && requestedTarget.kind!=='report') {
-          message('这次汇报尚未生成。',true);
-          root.append(button('生成汇报',()=>{readOnly=false;load().catch(()=>{});}));
+        if(error.status===404 && originKey && requestedTarget.kind!=='report') {
+          message('这条旧入口没有已登记汇报，请由作者按正式模板制作并登记后提供汇报引用。',true);
         } else message(`报告暂不可读：${error.message}`, true);
         throw error;
       } }
@@ -459,8 +440,7 @@
       externalSignal = options.signal;
       externalAbort = () => {stop(); stopMedia(); explanation?.destroy(); explanation = null; root.replaceChildren();};
       externalSignal?.addEventListener('abort', externalAbort, {once:true});
-      requestedTarget = {...nextTarget}; target = {...nextTarget}; originKey=options.originKey || '';readOnly=options.readOnly !== false;
-      originContext = options.originContext || null;
+      requestedTarget = {...nextTarget}; target = {...nextTarget}; originKey=options.originKey || '';
       reportQuality = ['low','medium','high'].includes(options.quality) ? options.quality : 'medium'; videoQuality = 'medium';
       query = ''; status = ''; report = null; media = null;
       root.dataset.requestId = options.requestId || '';

@@ -99,11 +99,15 @@ def test_http_check_uses_authenticated_resident_and_rejects_selectors(monkeypatc
     assert len(calls) == 2
 
 
-def test_template_create_denied_without_record_or_exports(reports, auditing):
+@pytest.mark.parametrize('enabled', [False, True])
+def test_retired_template_create_denied_without_record_or_exports(reports, auditing, enabled):
     store, state = reports
-    state['reporting_enabled'] = False
-    with pytest.raises(PermissionError, match='汇报能力'):
-        create(store, 'low')
+    state['reporting_enabled'] = enabled
+    from management_portal.resources.errors import ResourceOperationError
+    from tests.cases.test_home_report_quality import TARGET, KEY, ORIGIN
+    with pytest.raises(ResourceOperationError) as failure:
+        store.create(RID, {'target': TARGET, 'origin_key': KEY, 'origin_context': ORIGIN, 'quality': 'low'}, 'alice')
+    assert failure.value.code == 'report.authored_package_required'
     assert store.registry.get('report', RID) is None
     assert not store.directory(RID).exists()
 
