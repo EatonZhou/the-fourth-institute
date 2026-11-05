@@ -93,7 +93,9 @@ const evidence = process.env.REPORTING_MENU_EVIDENCE;
         const rows = [...form.querySelectorAll('.residentReportingRow')].map(row => {
           const label = row.querySelector('.residentReportingLabel').getBoundingClientRect();
           const choices = [...row.querySelectorAll('.residentReportingChoice')].map(e => e.getBoundingClientRect());
+          const group = row.querySelector('.residentReportingLevels, .residentReportingFormats').getBoundingClientRect();
           return { height: row.getBoundingClientRect().height,
+            rightAligned: Math.abs(choices.at(-1).right - group.right) < 1,
             choicesOnOneLine: choices.every(r => Math.abs(r.top - choices[0].top) < 1),
             labelAlongside: label.top >= choices[0].top && label.bottom <= choices[0].bottom };
         });
@@ -110,6 +112,7 @@ const evidence = process.env.REPORTING_MENU_EVIDENCE;
       assert.notEqual(metrics.controls[0].color, metrics.controls[2].color, 'selected level retains a visible accent');
       assert.ok(metrics.header.sameLine && metrics.header.saveOnRight && metrics.header.inside, 'save stays on the title row at the right without overflow');
       assert.equal(metrics.rows.length, 2);
+      assert.ok(metrics.rows.every(r => r.rightAligned), 'each option group aligns with the right edge');
       if (language !== 'en' || width >= 734) assert.ok(metrics.rows.every(r => r.choicesOnOneLine), 'each group remains a single compact option row');
       if (width >= 734) assert.ok(metrics.rows.every(r => r.labelAlongside && r.height <= 48), `normal widths show two compact settings rows: ${JSON.stringify({ width, language, rows: metrics.rows })}`);
       assert.ok(metrics.height < (width >= 734 ? 260 : 390), 'collapsed explanations do not occupy the settings card');

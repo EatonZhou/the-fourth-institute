@@ -610,11 +610,8 @@
 .residentMenuReportingForm legend { position:absolute; width:1px; height:1px; padding:0; overflow:hidden; clip-path:inset(50%); white-space:nowrap; }
 .residentReportingRow { display:grid; grid-template-columns:100px minmax(0,1fr) 28px; align-items:center; gap:12px; max-width:600px; }
 .residentReportingLabel { font-weight:600; line-height:1.4; overflow-wrap:anywhere; }
-.residentReportingLevels, .residentReportingFormats { display:grid; gap:4px; min-width:0; }
-.residentReportingLevels { grid-template-columns:1.7fr repeat(3,minmax(0,1fr)); }
-html[lang="en"] .residentReportingLevels { grid-template-columns:repeat(4,minmax(0,1fr)); }
-.residentReportingFormats { grid-template-columns:repeat(3,minmax(0,1fr)); }
-.residentMenuReportingForm .residentReportingChoice { display:flex; align-items:center; justify-content:center; gap:4px; min-width:0; min-height:40px; box-sizing:border-box; padding:6px 4px; border:0; background:transparent; cursor:pointer; }
+.residentReportingLevels, .residentReportingFormats { display:flex; flex-wrap:wrap; justify-content:flex-end; gap:8px 16px; min-width:0; }
+.residentMenuReportingForm .residentReportingChoice { display:flex; flex:none; align-items:center; justify-content:center; gap:4px; min-width:0; min-height:40px; box-sizing:border-box; padding:6px 4px; border:0; background:transparent; cursor:pointer; }
 .residentReportingChoice > input { appearance:auto; flex:none; width:16px; height:16px; min-height:0; margin:0; padding:0; accent-color:var(--accent); }
 .residentReportingChoice strong { display:block; font-size:14px; font-weight:550; line-height:1.5; overflow-wrap:anywhere; }
 .residentReportingChoice:has(input:checked), .residentReportingChoice:hover:not(:has(input:disabled)) { color:var(--accent); }
@@ -635,9 +632,5 @@ html[lang="en"] .residentReportingLevels { grid-template-columns:repeat(4,minmax
 @container (max-width:420px) {
   .residentReportingRow { grid-template-columns:minmax(0,1fr) 28px; gap:6px 8px; }
   .residentReportingRow > .residentReportingHelp { grid-column:2; grid-row:1; }
-  .residentReportingLevels, .residentReportingFormats { grid-column:1 / -1; grid-row:2; }
-  html[lang="en"] .residentReportingLevels, html[lang="en"] .residentReportingFormats { grid-template-columns:repeat(2,minmax(0,1fr)); }
-}
-@container (max-width:210px) {
-  .residentReportingLevels, .residentReportingFormats { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .residentReportingLevels, .residentReportingFormats { grid-column:1 / -1; grid-row:2; gap:4px 8px; }
 }
