@@ -242,13 +242,10 @@
       return authorId ? resourceChips.resourceLabelHtml(authorId, options) : escapeHtml(fallbackTitle);
     }
 
-    function messageAuthorHeaderHtml(item, label, system, options = {}) {
+    function messageAuthorHeaderHtml(item, label, system) {
       const residentId = !system && messageResidentAuthorId(item);
-      // In a Resident's own Chat its name opens nothing: the Chat is already open.
-      const own = Boolean(residentId) && residentId === options.chatResidentId;
-      const linked = residentId && !own;
       const content = window.PortalI18n.html`${messageAvatarHtml(item, label)}<span class="messageTitle">${messageAuthorHtml(item, label, { focusable: !residentId })}</span>`;
-      if (linked) {
+      if (residentId) {
         const href = `/lineage?${new URLSearchParams({ resident: residentId, open_chat: "1" })}`;
         return window.PortalI18n.html`<a class="messageAuthor messageAuthorLink" href="${escapeHtml(href)}" title="打开 Resident 对话">${content}</a>`;
       }

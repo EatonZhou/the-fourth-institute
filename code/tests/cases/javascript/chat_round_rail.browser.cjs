@@ -82,6 +82,10 @@ if (output) fs.mkdirSync(output, { recursive: true });
       await page.waitForSelector(baseline ? '.messageList > [data-message-key]' : '.chatRoundNode');
     };
     await setup(page);
+    if (process.env.CHAT_AUTHOR_LINKS_ONLY) {
+      await require('./chat_author_links.browser.cjs')({ page, errors });
+      await context.close(); return;
+    }
     if (process.env.CHAT_REPLY_BLOCKS_ONLY) {
       await require('./chat_reply_blocks.browser.cjs')({ page, output, errors });
       await context.close(); return;
