@@ -296,6 +296,11 @@ class ChatReads:
         metadata = {str(row["segment_id"]): json_value(row["metadata_json"]) for row in rows}
         with self.database.read() as connection:
             contents = message_contents(connection, [row["segment_id"] for row in rows])
+            from .chat_reply_placement import reply_placements
+            reply_segments = [identity for identity, value in metadata.items()
+                              if value.get("message", {}).get("role") == "agent"
+                              and value.get("message", {}).get("execution_id")]
+            placement = reply_placements(connection, reply_segments) if reply_segments else {}
             executions = list({item.get("message", {}).get("execution_id") for item in metadata.values()
                                if item.get("message", {}).get("execution_id")})
             endings = connection.execute(
@@ -320,6 +325,8 @@ class ChatReads:
         messages = [chat_payload(row["segment_id"], row["metadata_json"], contents[row["segment_id"]]) for row in rows]
         for message in messages:
             message.update(extras.get(message["segment_id"], {}))
+            if message["segment_id"] in placement and not message.get("recipients"):
+                message["display_reply_to_message_id"] = placement[message["segment_id"]]
             counted = usage.get((message.get("execution_id"), message.get("message_id")))
             if counted:
                 message["usage"] = counted

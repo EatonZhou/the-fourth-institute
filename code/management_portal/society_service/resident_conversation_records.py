@@ -370,7 +370,7 @@ PRIVATE_FIELDS = (
 )
 
 
-DISPLAY_FIELDS = ("released_with", "grouped_into_message_id", "harness_input")
+DISPLAY_FIELDS = ("released_with", "grouped_into_message_id", "harness_input", "display_reply_to_message_id")
 
 
 def message_for_storage(

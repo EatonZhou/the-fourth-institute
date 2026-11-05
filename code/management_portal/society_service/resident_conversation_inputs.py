@@ -412,6 +412,7 @@ class ConversationInputs:
 
     def reply_rounds(
         self, requests: Sequence[tuple[str, str]], *, limit: int = 20,
+        _display_blocks: bool = False,
     ) -> dict[tuple[str, str], dict[str, Any]]:
         """Selected rounds, retained replies, and cancellation before delivery (withdrawal)."""
         requested = list(dict.fromkeys(requests))
@@ -423,7 +424,8 @@ class ConversationInputs:
             final = list(state.get("reply_message_ids") or []) if state.get("state") in TERMINAL_INPUT_STATES else []
             final_ids[(resident, message)] = final
             windows.setdefault(resident, {})[message] = final[-1] if final else ""
-        replies = self.agent_data.chat_replies_many(windows, limit=limit)
+        read_replies = self.agent_data.chat_reply_blocks_many if _display_blocks else self.agent_data.chat_replies_many
+        replies = read_replies(windows, limit=limit)
         missing: dict[str, list[str]] = {}
         for key, final in final_ids.items():
             resident, message = key
@@ -445,6 +447,9 @@ class ConversationInputs:
             shown = {item["message_id"] for item in outputs}
             outputs.extend(retained[resident][identity] for identity in final_ids[key][:limit]
                            if identity not in shown and identity in retained.get(resident, {}))
+            if _display_blocks:
+                outputs = [item for item in outputs
+                           if (item.get("display_reply_to_message_id") or item.get("reply_to_message_id")) == message]
             result[key] = {"input_state": states.get(key, {}),
                            "replies": [message_from_storage(item) for item in outputs]}
             if (states.get(key, {}).get("state") == "cancelled"

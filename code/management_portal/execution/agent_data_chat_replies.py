@@ -139,6 +139,7 @@ class ChatReplies:
 
     def chat_replies_many(
         self, requests: Mapping[str, Mapping[str, str]], *, limit: int = 20,
+        _display_blocks: bool = False,
     ) -> dict[str, dict[str, list[dict[str, Any]]]]:
         """Read bounded reply windows together; each input keeps its own limit and order.
 
@@ -176,18 +177,23 @@ class ChatReplies:
                 for agent, sequence in traces.items() for message, until in wanted[agent].items()
                 if (sequence, message) in positions
             ]
+            if _display_blocks:
+                from .chat_reply_placement import reply_windows
+                windows = reply_windows(connection, windows)
+            else:
+                windows = [(*window, window[1]) for window in windows]
             for chunk in in_batches(windows):
                 # Each input's newest replies by chat_message_positions_reply_idx.
                 rows = connection.execute(
                     f"""
                     SELECT requested.agent_id,requested.message_id,reply.*
-                    FROM unnest(%s::text[],%s::text[],%s::text[],%s::integer[],%s::integer[])
-                         requested(agent_id,message_id,sequence_id,after_ordinal,until_ordinal)
+                    FROM unnest(%s::text[],%s::text[],%s::text[],%s::bigint[],%s::bigint[],%s::text[])
+                         requested(agent_id,message_id,sequence_id,after_ordinal,until_ordinal,reply_to)
                     CROSS JOIN LATERAL (
                         SELECT position.ordinal,position.source_id AS segment_id,
                                {POSITION_METADATA} AS metadata_json
                         FROM chat_message_positions position
-                        WHERE position.sequence_id=requested.sequence_id AND position.reply_to=requested.message_id
+                        WHERE position.sequence_id=requested.sequence_id AND position.reply_to=requested.reply_to
                           AND position.segment_type='model'
                           AND (position.reply_candidate OR EXISTS (
                               SELECT 1 FROM jsonb_array_elements(

@@ -82,6 +82,10 @@ if (output) fs.mkdirSync(output, { recursive: true });
       await page.waitForSelector(baseline ? '.messageList > [data-message-key]' : '.chatRoundNode');
     };
     await setup(page);
+    if (process.env.CHAT_REPLY_BLOCKS_ONLY) {
+      await require('./chat_reply_blocks.browser.cjs')({ page, output, errors });
+      await context.close(); return;
+    }
     const settle = () => page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
     const check = (name, value) => { assert.ok(value, name); checks.push(name); };
     const shot = async name => { if (output) await page.screenshot({ path: path.join(output, name + '.png') }); };

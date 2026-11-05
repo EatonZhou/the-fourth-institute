@@ -362,7 +362,7 @@ class InputProjection:
                 for key in self.requests if (state := states.get(key)) is not None}
 
     def rounds(self, *, limit: int) -> dict[tuple[str, str], dict[str, Any]]:
-        rounds = self.repository.reply_rounds(self.read_requests, limit=limit)
+        rounds = self.repository.reply_blocks(self.read_requests, limit=limit)
         sources = self.reply_sources({key: value["input_state"] for key, value in rounds.items()})
         result = {}
         for key in self.requests:

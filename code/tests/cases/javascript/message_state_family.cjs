@@ -143,8 +143,8 @@ const checks = {
     try {
       const check = () => {
         const items = app.window.PortalChatWorkspace.projectResidentConversation({}, app.snapshot).messages;
-        assert.deepEqual(Array.from(items, item => item.id), [REQUEST_A, REQUEST_B, 'shared',
-          'same-text-distinct-id', 'other-round', 'other-round-output', 'other-member', 'other-member-output']);
+        assert.deepEqual(Array.from(items, item => item.id), [REQUEST_A, 'shared',
+          'same-text-distinct-id', REQUEST_B, 'other-round', 'other-round-output', 'other-member', 'other-member-output']);
         assert.deepEqual(Array.from(items.find(item => item.id === 'shared').family_reply.request_message_ids), [REQUEST_A, REQUEST_B]);
         assert.equal(app.root.querySelectorAll('article[data-message-key="shared"]').length, 1);
         app.output('same-text-distinct-id'); // identical text is still a distinct durable message
@@ -212,7 +212,7 @@ const checks = {
     const original = placed(request(REQUEST_A), 1);
     const before = placed(reply('before-inject', REQUEST_A), 2);
     const injected = placed(request(REQUEST_B, { state: 'completed' }), 3);
-    const after = placed(reply('after-inject', REQUEST_A), 4);
+    const after = placed(reply('after-inject', REQUEST_B), 4);
     // A history page containing the original round can arrive after the page
     // containing the injected request. Timestamps are deliberately identical.
     const app = mount(routeScript, [injected], { older: [original, before, after] });
@@ -222,15 +222,15 @@ const checks = {
       const check = () => {
         const items = projected();
         assert.deepEqual(Array.from(items, item => item.id), [REQUEST_A, 'before-inject', REQUEST_B, 'after-inject']);
-        assert.equal(items[3].family_status.request_message_id, REQUEST_A);
+        assert.equal(items[1].family_status.request_message_id, REQUEST_A);
         assert.equal(items[1].live_output, true);
-        assert.equal(items[3].live_output, true);
+        assert.ok(!items[3].live_output);
         assert.ok(!items[2].live_output && !items[2].family_status);
         const nodes = [app.output(REQUEST_A), app.output('before-inject'), app.output(REQUEST_B), app.output('after-inject')];
         for (let i = 1; i < nodes.length; i++) {
           assert.ok(nodes[i - 1].compareDocumentPosition(nodes[i]) & app.window.Node.DOCUMENT_POSITION_FOLLOWING);
         }
-        assert.ok(app.output('after-inject').compareDocumentPosition(app.progress(REQUEST_A)) & app.window.Node.DOCUMENT_POSITION_FOLLOWING);
+        assert.ok(app.output('before-inject').compareDocumentPosition(app.progress(REQUEST_A)) & app.window.Node.DOCUMENT_POSITION_FOLLOWING);
         assert.ok(app.output('after-inject').querySelector('.messageHead'), 'reply after an injection shows its sender again');
       };
       check();

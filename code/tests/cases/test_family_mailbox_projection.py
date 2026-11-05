@@ -130,7 +130,7 @@ def test_running_group_projects_relay_reply_progress_and_runtime(grouped_family,
     assert len(replies) == 1
     request_ids = [item["message_id"] for item in case.requests]
     assert replies[0]["family_reply"]["request_message_ids"] == request_ids
-    assert [item["message_id"] for item in messages] == request_ids + [reply["message_id"]]
+    assert [item["message_id"] for item in messages] == [request_ids[0], reply["message_id"], request_ids[1]]
     stored = case.repository.message(case.member_id, reply["message_id"])
     assert stored["author_id"] == case.member_id
     assert stored["reply_to_message_id"] == case.group_id
@@ -298,7 +298,7 @@ def test_multiple_relay_requests_batch_group_and_reply_reads(grouped_family, mon
     calls = {"rounds": [], "states": [], "groups": []}
     repository_type = type(case.repository)
     inputs_type = type(case.repository.inputs)
-    original_rounds = repository_type.reply_rounds
+    original_rounds = repository_type.reply_blocks
     original_states = inputs_type.input_states_by_id
     data_type = type(case.repository.agent_data)
     original_groups = data_type.message_groups
@@ -318,7 +318,7 @@ def test_multiple_relay_requests_batch_group_and_reply_reads(grouped_family, mon
         calls["groups"].append((resident_id, message_ids))
         return original_groups(self, resident_id, message_ids)
 
-    monkeypatch.setattr(repository_type, "reply_rounds", rounds)
+    monkeypatch.setattr(repository_type, "reply_blocks", rounds)
     monkeypatch.setattr(inputs_type, "input_states_by_id", states)
     monkeypatch.setattr(data_type, "message_groups", groups)
     projected = _messages(case)

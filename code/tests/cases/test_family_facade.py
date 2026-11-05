@@ -112,8 +112,8 @@ def test_facade_message_waits_without_starting_a_turn(facade):
 
 
 @pytest.mark.parametrize("state", ["running", "completed"])
-def test_facade_injected_request_keeps_member_conversation_position(facade, monkeypatch, state):
-    """门面注入消息按成员实际接收位置穿插，回复仍关联原请求；刷新与分页保留位置。
+def test_facade_preserves_request_blocks_without_confirmed_append(facade, monkeypatch, state):
+    """普通输入即使相邻且完成，也不能替代明确回复关联；原请求区块连续。
 
     :design: decision_9ad68dd077d4
     """
@@ -141,7 +141,7 @@ def test_facade_injected_request_keeps_member_conversation_position(facade, monk
     repository.set_input_state(MEMBER, queued, "queued")
     requests = [message(original[head]), message(outside, "agent"),
                 *[message(original[identity]) for identity in [injected, injected_again, queued]]]
-    expected = [original[head], before, injected, after, injected_again, final]
+    expected = [original[head], before, after, final, injected, injected_again]
     expected = [original.get(identity, identity) for identity in expected]
     # The unrelated facade message keeps its slot; the waiting input has no
     # member trace position and must never jump ahead of delivered output.
@@ -157,7 +157,7 @@ def test_facade_injected_request_keeps_member_conversation_position(facade, monk
     newer = family_facade.project_messages(facade, requests[2:])
     positions = {item["message_id"]: item["family_position"]["ordinal"]
                  for item in older + newer if item.get("family_position")}
-    assert sorted(expected, key=positions.__getitem__) == expected
+    assert sorted(expected, key=positions.__getitem__) == [original[head], before, original[injected], after, original[injected_again], final]
 
 
 def test_facade_rejects_injection_and_infos_carrying_more_than_text(facade):
@@ -929,7 +929,7 @@ def test_a_nested_family_follows_the_relay_chain_to_the_member_doing_the_work(mo
         def message_business_ref(self, resident_id, message_id):
             return refs.get((resident_id, message_id), "")
 
-        def reply_rounds(self, requests, *, limit=20):
+        def reply_blocks(self, requests, *, limit=20):
             assert requests == [(MEMBER, "msg_00000000000000c1")]
             return {requests[0]: {
                 "input_state": {"state": "completed", "reply_message_ids": ["m_reply"]},
@@ -960,7 +960,7 @@ def test_a_nested_family_follows_the_relay_chain_to_the_member_doing_the_work(mo
     assert reply["author_id"] == outer and reply["content_parts"][0]["text"] == "用品牌主色"
     assert reply["family_reply"]["title"] == "前端"
     assert reply["family_reply"]["via"] == [{"resident_id": inner, "title": "内层 Family"}]
-    monkeypatch.setattr(Repository, "reply_rounds", lambda self, requests, **kwargs: {
+    monkeypatch.setattr(Repository, "reply_blocks", lambda self, requests, **kwargs: {
         key: {"input_state": {"state": "cancelled"}, "replies": [], "withdrawn": True} for key in requests
     })
     withdrawn, = family_facade.project_messages({"resident_id": outer}, [
@@ -1008,7 +1008,7 @@ def test_facade_batches_only_the_page_and_reuses_nested_member_lookups(monkeypat
     monkeypatch.setattr(family_facade, "is_facade", lambda record: record.get("resident_id") in links)
     monkeypatch.setattr(family_facade, "relay_links", relays)
     monkeypatch.setattr(resident_conversation_stream, "get_repository", lambda: SimpleNamespace(
-        reply_rounds=replies, message_positions=lambda requests: {}))
+        reply_blocks=replies, message_positions=lambda requests: {}))
     monkeypatch.setattr(family_facade.resident_mailbox, "_groups_of", lambda *_: {})
     messages = [{"message_id": f"outer_{i}", "role": "user"} for i in range(90, 100)]
     shown = family_facade.project_messages({"resident_id": outer}, messages)
@@ -1117,7 +1117,7 @@ def test_the_facade_conversation_reads_like_a_resident_answering_its_requests(mo
         def input_states_by_id(self, requests):
             return {key: self.input_state(*key) for key in requests}
 
-        def reply_rounds(self, requests, *, limit=20):
+        def reply_blocks(self, requests, *, limit=20):
             reads.append(list(requests))
             return {key: {"input_state": self.input_state(*key), "replies": [
                 item for (owner, _), item in replies.items()

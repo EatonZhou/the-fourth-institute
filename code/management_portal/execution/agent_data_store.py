@@ -673,6 +673,10 @@ class AgentDataStore:
     ) -> dict[str, dict[str, list[dict[str, Any]]]]:
         return self.replies.chat_replies_many(requests, limit=limit)
 
+    def chat_reply_blocks_many(self, requests: Mapping[str, Mapping[str, str]], *, limit: int = 20) -> dict:
+        """Replies grouped by the confirmed input they currently respond to."""
+        return self.replies.chat_replies_many(requests, limit=limit, _display_blocks=True)
+
     # Chat writes
 
     def display_chat_message(

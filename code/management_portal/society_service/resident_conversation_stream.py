@@ -208,6 +208,10 @@ class ResidentConversationRepository:
     ) -> dict[tuple[str, str], dict[str, Any]]:
         return self.inputs.reply_rounds(requests, limit=limit)
 
+    def reply_blocks(self, requests: Sequence[tuple[str, str]], *, limit: int = 20) -> dict:
+        """Display replies following confirmed inputs, without changing outcomes."""
+        return self.inputs.reply_rounds(requests, limit=limit, _display_blocks=True)
+
     def input_states(
         self,
         resident_id: object,
