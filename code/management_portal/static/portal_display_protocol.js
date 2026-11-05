@@ -95,7 +95,8 @@
     if (intent.action === "back") return {displayIntent:intent, identity:"display:back"};
     if (intent.view === "preview") return {resourceAddress:intent.target.address, path:intent.target.address, title:label(intent)};
     return {displayIntent:intent, messageOrigin:normalizeMessageOrigin(messageOrigin),
-      identity:"display:"+JSON.stringify(intent), path:"display:"+JSON.stringify(intent), title:label(intent)};
+      identity:"display:"+JSON.stringify(intent),
+      path:intent.target.address || (intent.target.id + (intent.target.revision ? `/revision/${intent.target.revision}` : "")), title:label(intent)};
   }
   window.PortalDisplayProtocol = Object.freeze({normalizeIntent, displayCommand, results,
     messageOriginKey, normalizeOriginKey, normalizeMessageOrigin, label, previewRequest});

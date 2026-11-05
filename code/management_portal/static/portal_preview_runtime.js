@@ -197,9 +197,10 @@
   function displayDocument(request) {
     const intent = window.PortalDisplayProtocol.normalizeIntent(request.displayIntent);
     if (intent.action === "back") throw new Error("返回操作需要当前展示历史");
-    return contract.normalizeDocument({source:"display", displayIntent:intent,
+    const locator = window.PortalDisplayProtocol.previewRequest(intent);
+    return contract.normalizeDocument({source:"display", displayIntent:intent, identity:locator.identity,
       messageOrigin:window.PortalDisplayProtocol.normalizeMessageOrigin(request.messageOrigin),
-      path:request.path || request.identity, title:window.PortalDisplayProtocol.label(intent),
+      path:locator.path, title:window.PortalDisplayProtocol.label(intent),
       capabilities:{edit:false,save:false,download:false,refresh:true}});
   }
 

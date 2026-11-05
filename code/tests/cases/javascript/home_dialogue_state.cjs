@@ -89,3 +89,14 @@ assert.equal(stored.hidden.length, 1, 'migration does not mutate caller state');
 assert.equal(api.migrateHomeState({contentSchemaVersion:2, hidden:[]}).hidden.length, 0, 'explicitly added component stays visible');
 console.log('Home dialogue navigation, protocol and layout migration passed');
 dom.window.close();
+
+// The visible preview locator is the resource, never the serialized intent.
+{
+  const w = {};
+  require('node:vm').runInNewContext(require('node:fs').readFileSync(require('node:path').resolve(__dirname,'../../../management_portal/static/portal_display_protocol.js'),'utf8'), {window:w});
+  const input={view:'explanation',target:{address:'workspace_0123456789ab/file/example/manifest.json',sha256:'a'.repeat(64)}};
+  const request=w.PortalDisplayProtocol.previewRequest(input);
+  require('node:assert/strict').equal(request.path,input.target.address);
+  require('node:assert/strict').ok(!request.path.includes('{'));
+  require('node:assert/strict').notEqual(request.identity,w.PortalDisplayProtocol.previewRequest({...input,target:{...input.target,sha256:'b'.repeat(64)}}).identity);
+}

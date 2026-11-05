@@ -134,7 +134,7 @@
         if (request.displayIntent) {
           const document = window.PortalPreview.displayDocument(request);
           ensurePreviewVisible();
-          await openAgentPreviewDocument({key:document.path, path:document.path, title:document.title,
+          await openAgentPreviewDocument({key:document.identity, path:document.path, title:document.title,
             mode:request.mode, sourceType:"display", displayIntent:document.displayIntent,
             messageOrigin:document.messageOrigin, load:async()=>document});
           return true;
