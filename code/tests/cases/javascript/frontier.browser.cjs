@@ -113,7 +113,7 @@ const server=http.createServer(async(req,res)=>{
     await page.locator('[data-kind="new"]').waitFor();
     assert.equal(await page.locator('[data-kind="seed"]').count(),0);
     await page.screenshot({path:path.join(out,'empty.png'),fullPage:true});
-    await page.getByRole('button',{name:'添加第一个地图节点',exact:true}).click();
+    await page.getByRole('button',{name:'添加第一个 Map 节点',exact:true}).click();
     assert.ok(await page.locator('#editor').isVisible());
     assert.deepEqual(errors,[]);
     console.log('PASS: render, relationships, personal defer/restore, conflict preserves draft, dispatch receipt, result convergence, permission loss, mobile overflow. Fixture execution only; no live messages.');

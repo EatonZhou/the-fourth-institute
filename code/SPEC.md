@@ -124,7 +124,7 @@
 - [Project 的创建、Summary 与删除](/r/decision_4648f7fa3295)
 - [项目页：项目列表、项目页与 Project Resident 对话](/r/decision_46c37026e8ea)
 - [研究地图：项目研发方向的地图、修订与指令](/r/decision_9d15ae2053c4)
-- [地图：Lineage 探索、介入与执行回执](/r/decision_82deabe891a5)
+- [Map：Lineage 探索、介入与执行回执](/r/decision_82deabe891a5)
 - [WALL 语义搜索](/r/decision_1a2730dcd3d1)
 - [Home 页的信息结构与加载方式](/r/decision_00546e28e1e0)
 - [对话驱动的 Portal 主页与右侧展示区（目标设计）](/r/decision_b12782e7f490)
