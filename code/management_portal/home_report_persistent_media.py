@@ -1,6 +1,7 @@
 """Version-owned report media. Successful bundles are write-once and persistent."""
 import hashlib
 import json
+import logging
 import shutil
 import time
 import uuid
@@ -12,6 +13,8 @@ from management_portal import business_tasks
 from management_portal.home_report import digest, reauthorize
 from management_portal.home_report_media import FILES, MediaStore, render, _SLOTS, bundle_files
 from management_portal.home_report_quality import quality as normalize_quality
+
+_LOG = logging.getLogger(__name__)
 
 
 def _atomic(path, value):
@@ -58,6 +61,7 @@ def discover_candidate(current, actor, *, read=None):
         except Exception:
             # A retired/unreadable cache is not a failure of the newly checked
             # report. Explicit import still surfaces its exact failure.
+            _LOG.warning('Skipped unavailable or incompatible legacy report media cache.')
             continue
     return None
 
@@ -152,6 +156,8 @@ class PersistentMedia:
             if not require_authored(self.store,snapshot,actor,quality):
                 return submit_authoring(self.store,identifier,number,actor,quality)
             if quality == 'high':
+                from management_portal.home_report_creation import require_report_creation
+                require_report_creation(self.store, snapshot, actor)
                 from management_portal.home_report_review import ReviewService, responsible
                 ReviewService().ensure_reviewers({'kind': 'report_video',
                     'author': snapshot.get('author'),
@@ -161,6 +167,8 @@ class PersistentMedia:
             previous = self.status(identifier, number, actor, quality=quality)
             if previous and (previous['status'] in {'ready','cancelled'} or self.active(identifier,number,quality) or not retry):
                 return previous
+            from management_portal.home_report_creation import require_report_creation
+            require_report_creation(self.store, snapshot, actor)
             if not _SLOTS.acquire(blocking=False):
                 raise RuntimeError('视频生成繁忙，请稍后重试')
             directory = self.store.directory(identifier) / str(number)

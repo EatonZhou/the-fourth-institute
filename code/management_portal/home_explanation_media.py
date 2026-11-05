@@ -12,6 +12,7 @@ from collections import OrderedDict
 import fcntl
 import hashlib
 import json
+import logging
 import os
 from pathlib import Path
 import re
@@ -35,6 +36,7 @@ FILES = {'video.mp4': 'video/mp4', 'captions.vtt': 'text/vtt; charset=utf-8',
          'transcript.txt': 'text/plain; charset=utf-8', 'poster.png': 'image/png'}
 _VERIFIED = OrderedDict()
 _VERIFIED_LOCK = threading.Lock()
+_LOG = logging.getLogger(__name__)
 
 
 def verify_stream(stream, info, digest):
@@ -316,6 +318,15 @@ class Media:
         existing = self._state(ctx, actor)
         if existing and existing['status'] == 'ready':
             return self.response(ctx, existing, actor)
+        if existing and existing['status'] in {'awaiting_authoring', 'cancelled'}:
+            authoring_id = (existing.get('authoring') or {}).get('id')
+            if authoring_id:
+                task = review.AuthoringService(resources=self.service).read(authoring_id, actor)
+                if task and task['status'] in {'submitted', 'cancelled'}:
+                    return self.response(ctx, existing, actor)
+        from management_portal.home_report_creation import explanation_responsible, require_creation
+        responsible = explanation_responsible(ctx['ref'], actor)
+        require_creation(actor, responsible=responsible)
         authored = existing.get('authoring_proof') if existing else None
         try:
             if ctx['plan'] is None:
@@ -454,7 +465,8 @@ class Media:
                 self._save(ctx, actor, {**state, 'status': 'failed', 'updated_at': time.time(),
                                        'error': '视频生成失败或权限已变化，请检查生成计划、音轨和媒体依赖后重试。'})
             except Exception:
-                pass  # revocation must not be bypassed to record an error
+                # Do not expose source paths or bypass revocation to save errors.
+                _LOG.warning('Explanation media generation failed; failure state could not be saved.')
         finally:
             os.close(lease)
             os.close(slot)
@@ -506,7 +518,7 @@ class Media:
         except Exception:
             # Preserve the last ready state when permission is revoked. A stale
             # pending state is exposed as retryable, never as passed.
-            pass
+            _LOG.warning('Explanation media review state could not be saved; persisted media state retained.')
         return updated
 
     def retry_review(self, address, sha256, actor, quality='medium'):

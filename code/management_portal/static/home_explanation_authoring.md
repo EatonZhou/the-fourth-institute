@@ -177,6 +177,8 @@ python3 scripts/build_explanation_package.py '<包目录>' \
   --quality high --task '<读者当前困惑、读完能判断什么>'
 ```
 
+构建命令在读取包文件和写入 manifest 前，以实际认证 Resident 调用正式创作准入检查。当前配置为“不开启”、无法确认配置或检查失败时立即退出，不构建、写入、登记或送审；`--resident-id` 不能替代注入身份。已有固定包的读取与登记仍按原权限处理。
+
 构建命令必须显式填写 `--quality`，采用本次有效质量要求；省略时在写入前报错，避免遗漏参数把 high 默认为 medium 并跳过审查。构建器核对文件、生成固定摘要清单，再经当前作者身份的 HATG ReadResource 回读；选择 high 时触发独立检查，low/medium 不强制送审。它使用负责 Resident 本 Family 内已准备的“解释页独立检查”；`--reviewer` 也必须与该 Family 对应审核角色一致。检查者不能是作者本人。不直接读取别人的凭据，也不代签通过。
 
 完成视频创作任务时，负责 Resident 本人在上述构建命令中增加 `--authoring-id '<正式任务ID>'`，并使用任务规定的 `--quality medium` 或 `--quality high`、新包目录与修订。构建器先保存并回读新清单，再回填创作任务；选择 high 时，回填成功后才送独立检查。回填失败须保留失败，不把已保存的包视为已完成任务，也不继续送审。

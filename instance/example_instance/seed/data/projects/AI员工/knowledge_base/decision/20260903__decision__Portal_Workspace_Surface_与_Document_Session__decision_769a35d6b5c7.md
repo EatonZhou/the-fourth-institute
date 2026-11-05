@@ -4,28 +4,28 @@ type: decision
 project: AI员工
 created_at: '2026-09-03'
 version:
-  number: 27
-  created_at: '2026-09-03'
+  number: 28
+  created_at: "2026-09-03"
   created_by:
-    user: ''
-    agent: ''
-  updated_at: '2026-10-30T17:23:11Z'
+    user: ""
+    agent: ""
+  updated_at: "2026-11-05T16:23:00Z"
   updated_by:
-    user: ''
-    agent: resident_60ae6d0cdf74
+    user: ""
+    agent: "resident_62dbdb2288fb"
 importance: 9
 metaness: 2
 ai_generated: false
 links:
   source:
-  - ${code_root}/management_portal/static/lineage_workbench.js
-  - ${code_root}/management_portal/static/portal_workspace_surface.js
-  - ${code_root}/management_portal/static/portal_code_editor.js
-  - ${code_root}/management_portal/static/portal_preview_contract.js
-  - ${code_root}/management_portal/static/portal_preview_runtime.js
-  - ${code_root}/management_portal/static/portal_preview_renderers.js
-  - ${code_root}/management_portal/static/portal_workbench.js
-  - ${code_root}/management_portal/static/portal_toolbar.js
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/lineage_workbench.js
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/portal_workspace_surface.js
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/portal_code_editor.js
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/portal_preview_contract.js
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/portal_preview_runtime.js
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/portal_preview_renderers.js
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/portal_workbench.js
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/portal_toolbar.js
   related:
   - decision_f22e45dfd382
   - decision_864d4fe41934
@@ -83,7 +83,7 @@ Document Session（文档会话）记录一份打开的文档当前处于什么�
 
 - **打开同一份文档只激活原来的标签页。** 需要重新读取时显式调用 `reload`，重新读取同样经过放弃确认。
 - **通过文件右键菜单选择“在新标签页打开”时保留当前文档。** 当前文档与新文档都固定，当前草稿不触发放弃确认；点击标签即可切换。目标已打开时激活并固定已有标签，不生成同一文档的副本。菜单与下载归 decision_61e50306cc79 管理。
-- **普通点击时，没有固定的当前标签页会被下一份文档替换。** 这样连续浏览文件时不会堆积标签页；固定当前标签页后，新打开的文档使用新的标签页，并同样处于固定状态。
+- **普通点击时，没有固定的当前标签页会被下一份文档替换。** 这样连续浏览文件时不会堆积标签页；固定当前标签页后，新打开的文档使用新的标签页，并同样处于固定状态。 Home 与 Society 都由同一文档标签页控制器实施这条规则；返回历史只存定位信息，不把每次浏览记录画成一个新标签。读取过程中切换锁定状态后，先前发起的替换不能再覆盖当前文档。
 - **替换或重新读取有未保存修改的文档前，先询问是否放弃。** 用户选择留下时，目标文档、草稿、标签页和地址都保持原样。固定的标签页保留自己的草稿，打开其他文档不会丢弃它。
 - **快速连续打开时，只显示最后打开的文档。** 较早发出的读取晚到时被丢弃；读取失败时，错误显示在这个标签页中。
 - **关闭标签页后选择相邻的标签页。** 关闭当前标签页时优先选右边，没有再选左边；关闭最后一个时通知页面（`onEmpty`）。关闭有未保存修改的标签页前，先由它自己的 Document Session 询问；用户选择留下时，标签页顺序和当前文档不变。
@@ -153,6 +153,8 @@ Document Session（文档会话）记录一份打开的文档当前处于什么�
 ## 标签页、编辑工具与选区引用
 
 `createDocumentTabsController(options)` 管理一组标签页：每份文档、标签页顺序、当前标签页、固定状态和各自的 Document Session。`open` 接受 `mode: "new-tab"` 表示显式保留文档；其他打开请求沿用复用规则，恢复时按记录中的固定状态还原。它提供 `open`、`activate`、`active`、`isActive`、`get`、`close`、`togglePin`、`render`、`snapshot`、`persistenceSnapshot`、`restorePersistence` 和 `destroy`。页面提供 `serializeDocument` 把文档转换为可以保存的定位信息，提供 `restoreDocument` 把定位信息转换回读取请求。`togglePin` 同步按钮的 `aria-pressed`；控制器销毁时销毁全部 Document Session。
+
+宿主可用 `open({activate:false})` 接收待查看结果或恢复尚未读取的定位项：控制器保留当前选择与在途前台读取，不替换活动标签。是否立即读取由该文档的 Session 负责；Home 的恢复项在用户选择后才重新鉴权读取。后台投递不等同于聊天中的显式打开。
 
 `createDocumentEditorTools` 为编辑器提供分组的撤销/重做和自动换行偏好。使用 Monaco 编辑器时，精确的行选择和自动换行交给 Monaco 管理。`renderDocumentTabs`、`renderExplorer`、`entryVisible` 和 `parentPaths` 是只负责界面、不读取数据的辅助函数。
 

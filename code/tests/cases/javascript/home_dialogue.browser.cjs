@@ -48,6 +48,12 @@ const server = http.createServer((req,res) => {
       window.controller=PortalHomeDialogue.connect({root:document.querySelector('#root'),context:{currentUserReady:Promise.resolve()}});
     });
     await page.waitForFunction(()=>!!window.chatOptions);
+    if (process.argv.includes('--tabs-only')) {
+      await require('./home_preview_tabs.cjs')(page, assert, homeAction);
+      assert.deepEqual(errors, []);
+      console.log('Home shared Preview replacement/pinning/dedup/dirty/error/race/history passed');
+      return;
+    }
     // Manual navigation and pinned late result.
     await page.evaluate(()=>PortalPreview.request(PortalDisplayProtocol.previewRequest({view:'report',target:{kind:'lineage',id:'lineage_0123456789ab'}})));
     await page.waitForFunction(()=>pending.length > 0).catch(async error=>{console.error(await page.locator('#root').innerText());console.error(errors);throw error;});
@@ -93,17 +99,17 @@ const server = http.createServer((req,res) => {
     assert.ok((await page.locator('.homeDialoguePreview [data-portal-preview-path]').textContent()).includes('0123456789ab'));
     // Existing preview/session editing, failed save, history preservation, then actual save contract.
     await page.evaluate(()=>PortalPreview.request({resourceAddress:'article_0123456789ab'}));
-    await page.getByRole('button',{name:'编辑当前文件的源码',exact:true}).click(); await page.getByLabel('文件草稿').fill('draft kept');
+    await page.getByRole('button',{name:'编辑当前文件的源码',exact:true}).click(); await page.getByRole('textbox',{name:'文件草稿',exact:true}).fill('draft kept');
     await page.evaluate(()=>{window.rejectSave=true;}); await page.getByRole('button',{name:'保存当前文件',exact:true}).click(); await page.getByText('保存冲突',{exact:true}).waitFor();
     await homeAction(page,'返回上一展示');
     const values=await page.locator('.homeDialoguePreview [data-portal-document-tab]').evaluateAll(options=>options.map(o=>o.dataset.portalDocumentTab));
-    await page.locator(`[data-portal-document-tab="${values.at(-1)}"]`).click(); assert.equal(await page.getByLabel('文件草稿').inputValue(),'draft kept');
+    await page.locator(`[data-portal-document-tab=${JSON.stringify(values.at(-1))}]`).click(); assert.equal(await page.getByRole('textbox',{name:'文件草稿',exact:true}).inputValue(),'draft kept');
     await page.evaluate(()=>{window.rejectSave=false;}); await page.getByRole('button',{name:'保存当前文件',exact:true}).click();
     await page.waitForFunction(()=>calls.filter(c=>c.name==='UpdateResource').length===2);
     assert.equal(await page.evaluate(()=>calls.filter(c=>c.name==='UpdateResource').at(-1).args.changes.text),'draft kept');
-    await page.evaluate(()=>{window.rejectPresentation=true;}); await page.locator(`[data-portal-document-tab="${values[1]}"]`).click();
+    await page.evaluate(()=>{window.rejectPresentation=true;}); await page.locator(`[data-portal-document-tab=${JSON.stringify(values[1])}]`).click();
     await page.getByText('地图恢复失败',{exact:true}).waitFor();
-    await page.evaluate(()=>{window.rejectPresentation=false;}); await page.locator(`[data-portal-document-tab="${values.at(-1)}"]`).click(); await page.getByLabel('文件草稿').waitFor({state:'visible'});
+    await page.evaluate(()=>{window.rejectPresentation=false;}); await page.locator(`[data-portal-document-tab=${JSON.stringify(values.at(-1))}]`).click(); await page.getByRole('textbox',{name:'文件草稿',exact:true}).waitFor({state:'visible'});
     // Keyboard and pointer resizing; narrow component in a wide desktop viewport.
     const divider=page.getByRole('separator',{name:'调整对话与展示宽度',includeHidden:true});
     await divider.focus(); await divider.press('ArrowRight'); assert.equal(await divider.getAttribute('aria-valuenow'),'45');
@@ -117,7 +123,7 @@ const server = http.createServer((req,res) => {
     assert.equal(await page.evaluate(()=>calls.filter(c=>'reportPresented' in c).length),beforeResize,'resize does not reload hidden history adapters');
     await page.setViewportSize({width:480,height:800}); await page.locator('.homeDialogueTabs').getByRole('button',{name:'对话',exact:true}).click();
     assert.equal(await page.locator('.homeDialogueDisplay').isVisible(),false);
-    await page.locator('.homeDialogueTabs').getByRole('button',{name:'展示',exact:true}).click(); assert.equal(await page.getByLabel('文件草稿').inputValue(),'draft kept');
+    await page.locator('.homeDialogueTabs').getByRole('button',{name:'展示',exact:true}).click(); assert.equal(await page.getByRole('textbox',{name:'文件草稿',exact:true}).inputValue(),'draft kept');
     await page.evaluate(()=>controller.destroy()); assert.equal(await page.locator('#root').textContent(),'');
     // The real host and preview own a single recoverable failure, including restoration.
     await page.setViewportSize({width:945,height:860});
@@ -184,22 +190,22 @@ const server = http.createServer((req,res) => {
     // Real DocumentSession + Preview access lifecycle. No cached content is revealed before the new read.
     await page.evaluate(()=>{window.access=mountFilePreview(); access.setPresented(false); window.readsBefore=previewReads; return access.show({address:'article_0123456789ab'});});
     assert.equal(await page.evaluate(()=>previewReads),await page.evaluate(()=>readsBefore),'hidden preview does not read');
-    await page.evaluate(()=>access.setPresented(true)); await page.getByRole('button',{name:'编辑当前文件的源码',exact:true}).click(); await page.getByLabel('文件草稿').fill('recoverable draft');
+    await page.evaluate(()=>access.setPresented(true)); await page.getByRole('button',{name:'编辑当前文件的源码',exact:true}).click(); await page.getByRole('textbox',{name:'文件草稿',exact:true}).fill('recoverable draft');
     assert.ok(await page.evaluate(()=>calls.filter(c=>c.previewOptions).every(c=>c.previewOptions.allowCached===false && c.previewOptions.readOnly===false)),'fresh server capabilities determine editing');
     await page.evaluate(()=>{access.setPresented(false); window.denyPreview=true;}); await page.evaluate(()=>access.setPresented(true));
-    assert.equal(await page.getByLabel('文件草稿').isVisible(),false); assert.equal(await page.locator('.portalFileDocument').textContent(),'');
+    assert.equal(await page.getByRole('textbox',{name:'文件草稿',exact:true}).isVisible(),false); assert.equal(await page.locator('.portalFileDocument').textContent(),'');
     assert.equal(await page.evaluate(()=>access.snapshot().draft),'recoverable draft');
-    await page.evaluate(()=>{window.denyPreview=false;}); await page.getByRole('button',{name:'重试访问',exact:true}).click(); await page.getByLabel('文件草稿').waitFor({state:'visible'});
-    assert.equal(await page.getByLabel('文件草稿').inputValue(),'recoverable draft');
+    await page.evaluate(()=>{window.denyPreview=false;}); await page.getByRole('button',{name:'重试访问',exact:true}).click(); await page.getByRole('textbox',{name:'文件草稿',exact:true}).waitFor({state:'visible'});
+    assert.equal(await page.getByRole('textbox',{name:'文件草稿',exact:true}).inputValue(),'recoverable draft');
     await page.evaluate(()=>{window.canEditPreview=false; window.dispatchEvent(new CustomEvent('portal:permissions-changed'));});
     await page.waitForFunction(()=>document.querySelector('.portalFileEditor').disabled);
     assert.equal(await page.getByRole('button',{name:'保存当前文件',exact:true}).isEnabled(),false);
     await page.evaluate(()=>{window.fixtureIdentity='other-user'; window.dispatchEvent(new CustomEvent('portal:identity-changed'));});
-    assert.equal(await page.getByLabel('文件草稿').isVisible(),false); assert.equal(await page.getByLabel('文件草稿').inputValue(),'');
-    await page.evaluate(()=>{window.fixtureIdentity='home-fixture'; window.canEditPreview=true; window.dispatchEvent(new CustomEvent('portal:identity-changed'));}); await page.getByLabel('文件草稿').waitFor({state:'visible'});
-    assert.equal(await page.getByLabel('文件草稿').inputValue(),'recoverable draft');
+    assert.equal(await page.getByRole('textbox',{name:'文件草稿',exact:true}).isVisible(),false); assert.equal(await page.getByRole('textbox',{name:'文件草稿',exact:true,includeHidden:true}).inputValue(),'');
+    await page.evaluate(()=>{window.fixtureIdentity='home-fixture'; window.canEditPreview=true; window.dispatchEvent(new CustomEvent('portal:identity-changed'));}); await page.getByRole('textbox',{name:'文件草稿',exact:true}).waitFor({state:'visible'});
+    assert.equal(await page.getByRole('textbox',{name:'文件草稿',exact:true}).inputValue(),'recoverable draft');
     await page.evaluate(()=>{access.setPresented(false); window.holdPreview=true; window.restoring=access.setPresented(true);});
-    assert.equal(await page.getByLabel('文件草稿').isVisible(),false);
+    assert.equal(await page.getByRole('textbox',{name:'文件草稿',exact:true}).isVisible(),false);
     await page.evaluate(async()=>{access.destroy(); finishPreview(); await restoring;});
     assert.equal(await page.locator('#root').textContent(),'','late authorization completion never recreates a destroyed view');
     // Workspace resources expose no UpdateResource text capability. Use the
@@ -209,7 +215,7 @@ const server = http.createServer((req,res) => {
       window.filePreview=mountFilePreview();
       await filePreview.show({address:workspaceAddress});
     });
-    await page.getByRole('button',{name:'编辑当前文件的源码',exact:true}).click(); await page.getByLabel('文件草稿').fill('workspace saved');
+    await page.getByRole('button',{name:'编辑当前文件的源码',exact:true}).click(); await page.getByRole('textbox',{name:'文件草稿',exact:true}).fill('workspace saved');
     await page.getByRole('button',{name:'保存当前文件',exact:true}).click();
     await page.waitForFunction(()=>calls.some(c=>c.name==='UpdateWorkspaceFile'));
     const fileSave=await page.evaluate(()=>calls.find(c=>c.name==='UpdateWorkspaceFile'));

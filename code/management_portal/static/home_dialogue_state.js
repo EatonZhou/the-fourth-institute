@@ -28,7 +28,7 @@
     return {
       issue, acknowledge, accept, entries,
       add(entry) { entries.push(entry); return entry; },
-      select(entry, manual = true) { if (manual) epoch++; active = entry; },
+      select(entry, manual = true) { if (manual) epoch++; active = entry; pinned = entry?.document?.pinned === true; },
       manual() { epoch++; },
       pin(value) { pinned = !!value; epoch++; },
       get active() { return active; }, get pinned() { return pinned; },

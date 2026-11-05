@@ -14,7 +14,13 @@ import re
 import sys
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from management_portal.home_explanation_quality import quality as normalize_quality
-from scripts.register_explanation_report import register as register_report
+from scripts.register_explanation_report import register as register_report, request_report
+
+
+def require_creation(resident_id):
+    result = request_report('creation-check', resident_id, {})
+    if not isinstance(result, dict) or result.get('allowed') is not True:
+        raise PermissionError('汇报能力未开启或配置未确认，未构建解释包')
 
 
 def build(directory: Path, address: str, *, title: str, summary: str = "", revision: int = 1,
@@ -98,6 +104,10 @@ def main() -> None:
     authoring_id = values.pop('authoring_id')
     directory = values.pop("directory")
     resident_id, reviewer, task = (values.pop(key) for key in ("resident_id", "reviewer", "task"))
+    try:
+        require_creation(resident_id)
+    except (RuntimeError, ValueError, OSError) as exc:
+        parser.exit(1, f"Creation denied; no package built or saved: {exc}\n")
     manifest = build(directory, **values)
     if Path(output).name != output or output in {".", ".."}:
         parser.error("output must be a filename")

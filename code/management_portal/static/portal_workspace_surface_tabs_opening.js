@@ -35,7 +35,10 @@
       return true;
     };
     const open = async (request = {}) => {
-      const navigation = ++documentTabsState.navigationSequence;
+      // Background deliveries/restored locators must not steal selection or
+      // invalidate a foreground read already in flight.
+      const background = request.activate === false;
+      const navigation = background ? documentTabsState.navigationSequence : ++documentTabsState.navigationSequence;
       const restoring = request.__portalPreviewRestoreToken === restoreToken;
       if (!restoring) documentTabsState.restoreSequence += 1;
       const key = String(request.key || "").trim();
@@ -43,7 +46,7 @@
       const existing = documents.get(key);
       if (existing) {
         if (request.mode === "new-tab") existing.pinned = true;
-        activate(key, { reason: "open-existing", request });
+        if (!background) activate(key, { reason: "open-existing", request });
         if (request.reload === true) {
           const result = await existing.session?.open?.(request);
           render();
@@ -57,7 +60,7 @@
         };
       }
 
-      const previous = active();
+      const previous = background ? null : active();
       const inheritedPin = previous?.pinned === true;
       const newTab = request.mode === "new-tab";
       const replacing = previous && !previous.pinned && !restoring && !newTab;
@@ -129,6 +132,11 @@
       }
       documents.set(key, documentState);
       documentTabsState.tabs.splice(insertIndex, 0, key);
+      if (background) {
+        notify("open-background", { document: documentState, request });
+        render();
+        return await documentState.session.open(request);
+      }
       documentTabsState.activeKey = key;
       notify("open-create", { document: documentState, request });
       options.onActivate?.(
@@ -171,6 +179,7 @@
     const togglePin = () => {
       const documentState = active();
       if (!documentState || options.canPin?.(documentState) === false) return false;
+      documentTabsState.navigationSequence += 1;
       documentState.pinned = !documentState.pinned;
       notify("pin-change", { document: documentState, pinned: documentState.pinned });
       options.onPinChange?.(documentState, documentState.pinned);

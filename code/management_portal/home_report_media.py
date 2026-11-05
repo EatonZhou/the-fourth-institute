@@ -184,6 +184,8 @@ class MediaStore:
                 return previous
             if previous and not retry:
                 return previous
+            from management_portal.home_report_creation import require_creation
+            require_creation(actor)
             if not _SLOTS.acquire(blocking=False):
                 raise RuntimeError("视频生成繁忙；文字报告已可阅读，请稍后重试")
             try:

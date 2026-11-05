@@ -228,6 +228,8 @@ class ReportStore:
                 raise ResourceVersionConflict('汇报已有新版本，请重新读取',
                                               expected_version=expected, current_version=record['revision'])
             reauthorize(snapshot, actor=actor, read=self.read)
+            from management_portal.home_report_creation import require_report_creation
+            require_report_creation(self, snapshot, actor)
             number = expected + 1
             if str(number) in record['revisions']:
                 raise ValueError('汇报版本登记不一致，不能覆盖已有版本')
@@ -299,6 +301,8 @@ class ReportStore:
                 snapshot['version'] = fingerprint(snapshot)
             if snapshot.get('quality', 'medium') != quality(payload.get('quality')):
                 raise ResourceVersionConflict('生成请求质量与已冻结版本不一致')
+            from management_portal.home_report_creation import require_report_creation
+            require_report_creation(self, snapshot, actor)
             return self._create_locked(identifier, payload, actor, snapshot)
 
     def _create_locked(self, identifier, payload, actor, snapshot):

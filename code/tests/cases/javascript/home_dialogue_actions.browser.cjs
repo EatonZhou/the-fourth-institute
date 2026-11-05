@@ -123,15 +123,16 @@ const server=http.createServer((req,res)=>{
     await action('预览幻灯片').click();await page.locator('.portalFileDocument:visible').waitFor();
     check('preview reads fresh source',await page.evaluate(()=>previewCalls[0].allowCached),false);
     await page.screenshot({path:path.join(out,'01-actions-preview-1440.png')});
-    await page.getByRole('button',{name:'编辑当前文件的源码',exact:true}).click();await page.getByLabel('文件草稿').fill('保留未保存的手动草稿');
+    await page.getByRole('button',{name:'编辑当前文件的源码',exact:true}).click();await page.getByRole('textbox',{name:'文件草稿',exact:true}).fill('保留未保存的手动草稿');
+    await homeAction(page,'固定展示');
     await action('查看汇报').click();await page.locator('.home-report h2').waitFor();
     check('report action uses real adapter',await page.locator('.home-report h2').innerText(),'示例项目的真实组件汇报');
     await homeAction(page,'返回上一展示');
-    check('manual history action retains document draft',await page.getByLabel('文件草稿').inputValue(),'保留未保存的手动草稿');
+    check('manual history action retains document draft',await page.getByRole('textbox',{name:'文件草稿',exact:true}).inputValue(),'保留未保存的手动草稿');
     // Unknown nonce click is explicit manual navigation, never an automatic ack.
     await page.evaluate(async()=>{window.submitted={resident_id:'resident_0123456789ab'};window.current=JSON.parse((await chatOptions.submissionContext(submitted)).context_text.split('示例结构：')[1].split('\n')[0]);chatOptions.onAcknowledgement({}, {target:submitted});});
     await action('查看汇报').click();await page.locator('.home-report:visible h2').waitFor();
-    await homeAction(page,'固定展示');
+    check('locked source keeps the new report locked',await page.getByRole('button',{name:'解除当前文件锁定',exact:true}).getAttribute('aria-pressed'),'true');
     const before=await page.locator('.homeDialogueEntry').count();
     await page.evaluate(()=>{snap.messages.push(message('msg_late',displayFence(command(current.request_id,{target:{address:'article_abcdefabcdef'}}))));render();});
     await page.waitForFunction(n=>document.querySelectorAll('.homeDialogueEntry').length===n+1,before);
@@ -167,7 +168,8 @@ const server=http.createServer((req,res)=>{
     await page.locator('.homeDialogueTabs').getByRole('button',{name:'对话',exact:true}).click();
     await action('预览幻灯片').focus();await page.screenshot({path:path.join(out,'03-action-390-large-font.png')});
     const box=await action('预览幻灯片').boundingBox();check('small screen action fits width',box.x>=0&&box.x+box.width<=390,true);
-    await action('预览幻灯片').press('Enter');await page.locator('.portalFileDocument:visible').waitFor();
+    await action('预览幻灯片').press('Enter');await page.getByRole('textbox',{name:'文件草稿',exact:true}).waitFor();
+    check('reopening an existing target preserves its unsaved draft',await page.getByRole('textbox',{name:'文件草稿',exact:true}).inputValue(),'保留未保存的手动草稿');
     check('keyboard transfers focus to displayed target',await page.locator('.homeDialoguePreview .portalDocumentTab.is-active button').first().evaluate(e=>e===document.activeElement),true);
     await page.screenshot({path:path.join(out,'04-opened-390-large-font.png')});
     await page.locator('.homeDialogueTabs').getByRole('button',{name:'对话',exact:true}).click();

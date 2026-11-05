@@ -31,6 +31,14 @@ MESSAGE='```portal-home-display\n'+json.dumps({'protocol':'portal-home-display/v
 @pytest.fixture
 def auditing(reports, tmp_path, monkeypatch):
     store, state = reports
+    from types import SimpleNamespace
+    from management_portal import society_service
+    state['reporting_enabled'] = True
+    def creation_allowed(resident_id, actor, message_id=''):
+        assert message_id == ''
+        return resident_id == RESPONSIBLE and actor in {'alice', RESPONSIBLE} and state['reporting_enabled']
+    monkeypatch.setattr(society_service, 'get_society_service', lambda: SimpleNamespace(
+        resident=SimpleNamespace(reporting_creation_allowed=creation_allowed)))
     original_read=store.read
     def read(name,args):
         if name=='GetMessage' and args=={'resident_id':RESPONSIBLE,'message_id':ORIGIN['message_id']}:
@@ -332,19 +340,22 @@ def test_origin_after_python_fence_matches_host_ordinal_and_utf16_focus(reports,
     import subprocess
     from management_portal.home_report_origin import verified_source
     store,state=reports
-    host=Path(__file__).resolve().parents[2]/'management_portal/static/home_dialogue_state.js'
+    static=Path(__file__).resolve().parents[2]/'management_portal/static'
+    host=static/'home_dialogue_state.js'
     raw={**INTENT,'target':{**TARGET,'focus':focus},'quality':'high'}
     for index,extra in [(0,''),(1,'```portal-home-display\n{}\n```\n')]:
         context={**ORIGIN,'fence_index':index}
         # Actual Host normalizeIntent, with JSON.stringify/TextEncoder-equivalent
         # Node SHA, avoids duplicating Python's normalization in the assertion.
         javascript="""const fs=require('node:fs'),vm=require('node:vm'),crypto=require('node:crypto');
-global.window={};vm.runInThisContext(fs.readFileSync(process.argv[1],'utf8'));
+global.window={};
+vm.runInThisContext(fs.readFileSync(process.argv[2],'utf8'));
+vm.runInThisContext(fs.readFileSync(process.argv[1],'utf8'));
 const v=JSON.parse(fs.readFileSync(0,'utf8'));
 const {quality,...intent}=window.PortalHomeDialogueState.normalizeIntent(v.raw);
 const key='home-message/v1:'+crypto.createHash('sha256').update(JSON.stringify([v.resident,v.message,v.index,intent]),'utf8').digest('hex');
 process.stdout.write(JSON.stringify({intent,key}));"""
-        expected=json.loads(subprocess.check_output(['node','-e',javascript,str(host)],input=json.dumps({
+        expected=json.loads(subprocess.check_output(['node','-e',javascript,str(host),str(static/'portal_display_protocol.js')],input=json.dumps({
             'raw':raw,'resident':RESPONSIBLE,'message':ORIGIN['message_id'],'index':index}).encode()))
         state['origin_text']='```python\nprint("ordinary code")\n```\n'+extra+'```portal-home-display\n'+json.dumps({
             'protocol':'portal-home-display/v1','request_id':'r','version':1,**raw})+'\n```'

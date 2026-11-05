@@ -10,7 +10,8 @@
     const submissionRequests = new WeakMap();
     let destroyed = false, presented = true, suspended = false, chat = null, selection = null, assistant = null, lastDetail = null;
     let pageState = null, restoring = true, navigationReady = Promise.resolve();
-    let narrow = false, ratio = 40, dragging = null;
+    let narrow = false, ratio = 40, dragging = null, documentTabs = null;
+    const history = [];
     root.classList.add("homeDialogue"); root.dataset.pane = "conversation";
     const tabs = node("div", "", "homeDialogueTabs");
     const columns = node("div", "", "homeDialogueColumns"), left = node("section", "", "homeDialogueConversation"), right = node("section", "", "homeDialogueDisplay");
@@ -25,7 +26,7 @@
     const previewRoot = node("div");
     const preview = window.PortalWorkspaceSurface.panelPackages.preview.create({
       root: previewRoot, id: `home-preview-${window.PortalUIPrimitives.randomUUID()}`, explorer: false,
-      onPreviewRequest: request => navigate(request.displayIntent || {view:"preview", target:{address:request.resourceAddress || request.path || request.href}}, true),
+      onPreviewRequest: request => navigate(request.displayIntent || {view:"preview", target:{address:request.resourceAddress || request.path || request.href}}, true, true, {mode:request.mode}),
     });
     previewRoot.classList.add("homeDialoguePreview");
     const stage = preview.surface.element("preview");
@@ -34,15 +35,49 @@
     const focusPreview = () => (preview.surface.element("tabs").querySelector('.is-active button') || preview.surface.element("toolbarState"))?.focus({preventScroll:true});
     function chooseResource() { preview.surface.element("toolbarState").click(); }
     function expandPreview() { root.classList.toggle("homeDialogueExpanded"); resize(); persist(); }
-    async function closeEntry(entry) {
-      if (!entry || (entry.adapter?.canClose && !await entry.adapter.canClose())) return;
-      if (!entry.adapter?.canClose && entry.adapter?.snapshot?.().dirty && !await window.PortalUI.confirm({title:"关闭有未保存修改的展示？",message:"关闭后将丢失尚未保存的修改。",confirmLabel:"关闭",tone:"danger"})) return;
-      if (destroyed || !state.entries.includes(entry)) return;
-      const wasActive = state.active === entry;
-      state.manual(); entry.controller.abort(); entry.adapter?.destroy(); entry.root.remove();
-      state.entries.splice(state.entries.indexOf(entry), 1);
-      if (wasActive) select(state.entries.at(-1) || null, true); else refresh();
+    function descriptor(entry) {
+      return {intent:entry.intent, originKey:entry.originKey, messageOrigin:entry.messageOrigin};
     }
+    function disposeEntry(entry) {
+      if (entry.disposed) return;
+      entry.disposed = true;
+      entry.controller.abort(); entry.adapter?.destroy(); entry.root.remove();
+      const index = state.entries.indexOf(entry);
+      if (index >= 0) state.entries.splice(index, 1);
+    }
+    async function guardEntry(entry) {
+      if (entry.adapter?.canClose) return entry.adapter.canClose();
+      return !entry.adapter?.snapshot?.().dirty || window.PortalUI.confirm({title:"关闭有未保存修改的展示？",message:"关闭后将丢失尚未保存的修改。",confirmLabel:"关闭",tone:"danger"});
+    }
+    function closeEntry(entry) { return documentTabs.close(entry?.document?.key); }
+    documentTabs = window.PortalWorkspaceSurface.createDocumentTabsController({
+      createDocument: request => ({entry:request.entry, label:request.entry.label}),
+      createSession: (document, request) => {
+        const entry = request.entry; entry.document = document;
+        return {
+          snapshot: () => ({...entry.adapter?.snapshot?.(), payload:entry.intent}),
+          guardDiscard: () => guardEntry(entry),
+          async open() {
+            if (entry.deferred) return {accepted:true,payload:entry.intent};
+            entry.loadingForNavigation = state.active !== entry && !entry.queued;
+            try { return await load(entry); }
+            finally { entry.loadingForNavigation = false; }
+          },
+          destroy: () => disposeEntry(entry),
+        };
+      },
+      onActivate: (document, _snapshot, meta) => {
+        const previous = state.active, entry = document.entry;
+        if (previous && previous !== entry && !meta.request?.back && !String(meta.reason || "").startsWith("close")) {
+          history.push(descriptor(previous)); if (history.length > 32) history.shift();
+        }
+        select(entry, meta.request?.manual !== false);
+      },
+      onPinChange: (_document, pinned) => {state.pin(pinned); refresh();},
+      onEmpty: () => select(null, true),
+      onRender: () => {if (documentTabs) refresh();},
+      onError: error => {status.dataset.notice="true"; status.hidden=false; status.textContent=error.message;},
+    });
     const selectionToolbar = preview.surface.element("selectionToolbar");
     selectionToolbar.onclick = () => {
       if (!selection || !chat) return;
@@ -84,10 +119,10 @@
     function snapshot() {
       // Page State stores only navigation descriptors. Domain content, drafts,
       // credentials and submitted-request nonces never become restoration input.
-      return { schemaVersion: 2, entries: state.entries.map(entry => ({ intent: entry.intent, queued: entry.queued,
+      return { schemaVersion: 3, entries: (documentTabs?.snapshot().documents || []).map(document => { const entry=document.entry; return { intent: entry.intent, queued: entry.queued, pinned:document.pinned,
         ...(entry.originKey ? { originKey: entry.originKey } : {}),
-        ...(entry.messageOrigin ? { messageOrigin: window.PortalHomeDialogueState.normalizeMessageOrigin(entry.messageOrigin) } : {}) })),
-        pinned: state.pinned, ratio,
+        ...(entry.messageOrigin ? { messageOrigin: window.PortalHomeDialogueState.normalizeMessageOrigin(entry.messageOrigin) } : {}) }; }),
+        history, ratio,
         expanded: root.classList.contains("homeDialogueExpanded"), pane: root.dataset.pane };
     }
     function persist() { if (!restoring && !destroyed) pageState?.debounceSnapshot(); }
@@ -101,21 +136,23 @@
         // provides installation/user isolation and the current state transaction.
         pageState = window.PortalPageState.create("home-dialogue-display", { user: () => user, snapshot });
         const saved = pageState.read();
-        if (![1, 2].includes(saved.schemaVersion) || !Array.isArray(saved.entries) || state.entries.length) return;
+        if (![1, 2, 3].includes(saved.schemaVersion) || !Array.isArray(saved.entries) || state.entries.length) return;
         root.classList.toggle("homeDialogueExpanded", saved.expanded === true);
         root.dataset.pane = "conversation";
         if (Number.isFinite(saved.ratio)) setRatio(saved.ratio);
         resize();
-        saved.entries.forEach(item => {
+        for (const item of saved.entries) {
           let intent;
-          try { intent = window.PortalHomeDialogueState.normalizeIntent(item?.intent); } catch { return; }
-          if (intent.action === "back") return;
-          const entry = navigate(intent, false, false, { readOnly: true, deferred: true,
+          try { intent = window.PortalHomeDialogueState.normalizeIntent(item?.intent); } catch { continue; }
+          if (intent.action === "back") continue;
+          const entry = await navigate(intent, false, false, { readOnly: true, deferred: true, pinned:item.pinned === true,
             originKey: window.PortalHomeDialogueState.normalizeOriginKey(item.originKey),
             messageOrigin: window.PortalHomeDialogueState.normalizeMessageOrigin(item.messageOrigin) });
-          entry.queued = item.queued === true;
-        });
-        state.pin(saved.pinned === true);
+          if (entry) entry.queued = item.queued === true;
+        }
+        for (const item of (Array.isArray(saved.history) ? saved.history : []).slice(-32)) {
+          try {history.push({...item,intent:window.PortalHomeDialogueState.normalizeIntent(item.intent)});} catch {}
+        }
         // Saved addresses are history, not a new request to open a file.
         // Create no domain adapter or reads until the user selects an entry.
         select(null, false);
@@ -128,16 +165,16 @@
       const path = target?.kind === "report" ? target.id + (target.revision ? `/revision/${target.revision}` : "") : target?.address || target?.id || "";
       const file = entry?.adapter?.toolbar?.() || {};
       preview.setPresentation({
-        tabs: state.entries.map(item => ({key:item.id,label:item.label,title:`${item.label} · ${item.status}${item.queued ? " · 待查看" : ""}`,
-          active:item === entry,dirty:item.adapter?.snapshot?.().dirty === true,pinned:item === entry && state.pinned})),
+        tabs: (documentTabs?.snapshot().documents || []).map(document => { const item=document.entry; return {key:document.key,label:item.label,title:`${item.label} · ${item.status}${item.queued ? " · 待查看" : ""}`,
+          active:item === entry,dirty:item.adapter?.snapshot?.().dirty === true,pinned:document.pinned}; }),
         path, document:file.document, download:file.download, pinned:state.pinned,
-        onSelect: key => { select(state.entries.find(item => item.id === key), true); setPane("display"); },
-        onClose: key => closeEntry(state.entries.find(item => item.id === key)),
-        onPin: entry ? () => {state.pin(!state.pinned); refresh();} : null,
+        onSelect: key => { documentTabs.activate(key); setPane("display"); },
+        onClose: key => documentTabs.close(key),
+        onPin: entry ? () => documentTabs.togglePin() : null,
         actions:{
           visual:{active:true,disabled:true},
           open:{run:expandPreview,disabled:!entry},
-          back:{run:() => back(true),disabled:state.entries.indexOf(entry) <= 0},
+          back:{run:() => back(true),disabled:history.length === 0},
           refresh:{run:() => load(entry),disabled:!entry || entry.status === "读取中"},
           ...file.actions,
         },
@@ -150,7 +187,7 @@
     function present() {
       chat?.setPresented(presented && !suspended && (!narrow || root.dataset.pane === "conversation"));
       for (const entry of state.entries) {
-        const visible = presented && !suspended && state.active === entry && (!narrow || root.dataset.pane === "display");
+        const visible = presented && !suspended && (state.active === entry || entry.loadingForNavigation) && (!narrow || root.dataset.pane === "display");
         entry.root.hidden = state.active !== entry;
         if (entry.adapter && entry.presented !== visible) {
           entry.presented = visible;
@@ -176,10 +213,12 @@
       present(); refresh();
       if (entry?.deferred) { entry.deferred = false; void load(entry); }
     }
-    function back(manual) {
-      const index = state.entries.indexOf(state.active);
-      if (index > 0) select(state.entries[index - 1], manual);
-      else if (manual) state.manual();
+    async function back(manual) {
+      const previous = history.at(-1);
+      if (!previous) {if (manual) state.manual(); return;}
+      const entry = await navigate(previous.intent, manual, true, {...previous, readOnly:true, back:true});
+      if (entry && state.active === entry && history.at(-1) === previous) history.pop();
+      refresh();
     }
     async function updateLabel(entry) {
       if (!entry.presented || destroyed || entry.controller.signal.aborted) return;
@@ -247,7 +286,7 @@
         }
         entry.adapter = await entry.adapterPromise;
         if (destroyed || entry.controller.signal.aborted) {entry.adapter?.destroy(); return;}
-        entry.presented = presented && !suspended && state.active === entry && (!narrow || root.dataset.pane === "display");
+        entry.presented = presented && !suspended && (state.active === entry || entry.loadingForNavigation) && (!narrow || root.dataset.pane === "display");
         if (!entry.presented) await entry.adapter.setPresented(false);
         const messageOrigin = window.PortalHomeDialogueState.normalizeMessageOrigin(entry.messageOrigin);
         const result = await entry.adapter.show(entry.intent.target, { view: entry.intent.view, signal: entry.controller.signal, requestId: entry.id,
@@ -261,13 +300,16 @@
         entry.status = result?.error ? "读取失败" : entry.presented ? "已读取" : "待查看"; entry.notice.textContent = ""; entry.notice.hidden = true;
         void updateLabel(entry);
         entry.retry.hidden = true;
+        refresh();
+        return {accepted:true, payload:entry.intent, error:result?.error};
       } catch (error) {
         if (destroyed || entry.controller.signal.aborted) return;
         entry.status = "读取失败"; entry.notice.textContent = error.message || String(error); entry.notice.hidden = false; entry.retry.hidden = false;
+        refresh(); return {accepted:true,error};
       }
       refresh();
     }
-    function navigate(value, manual = false, allowed = true, provenance = {}) {
+    async function navigate(value, manual = false, allowed = true, provenance = {}) {
       if (destroyed) return;
       let intent;
       try { intent = window.PortalHomeDialogueState.normalizeIntent(value); }
@@ -276,7 +318,19 @@
         if (allowed) back(manual); else status.textContent = "返回请求已完成；当前展示已固定或手动切换，保持当前内容。";
         return;
       }
-      // Independent roots retain drafts, video position and camera across history.
+      if (manual) state.manual();
+      const identity = value => { const request=window.PortalDisplayProtocol.previewRequest(value); return request.identity || `preview:${request.resourceAddress}`; };
+      const keyForIntent = identity(intent);
+      const existing = documentTabs.snapshot().documents.find(document =>
+        identity(document.entry.intent) === keyForIntent);
+      const key = existing?.key || keyForIntent;
+      if (existing || documentTabs.get(key)) {
+        await documentTabs.open({key, manual, back:provenance.back, mode:provenance.mode, activate:allowed});
+        if (manual) setPane("display");
+        return documentTabs.get(key).entry;
+      }
+      // Each live tab retains its own domain view and draft; navigation history
+      // stores locators only. The shared controller decides replacement/pinning.
       const sourceReport = intent.view === "report" && intent.target.kind !== "report";
       const entry = { id: window.PortalUIPrimitives.randomUUID(), intent, queued: !allowed, deferred: provenance.deferred === true,
         originKey: window.PortalHomeDialogueState.normalizeOriginKey(provenance.originKey)
@@ -288,11 +342,18 @@
         content: node("div", "", "homeDialogueEntryContent"), notice: node("p", "", "homeDialogueEntryNotice") };
       entry.notice.hidden = true; entry.root.append(entry.notice); entry.retry = button(entry.root, "重试读取", () => load(entry)); entry.retry.hidden = true; entry.root.append(entry.content);
       entry.root.hidden = true; stage.append(entry.root); state.add(entry);
-      if (allowed) select(entry, manual);
-      else { refresh(); }
-      if (!provenance.deferred) void load(entry);
       if (manual) setPane("display");
-      return entry;
+      let result;
+      try {
+        result = await documentTabs.open({key,entry,manual,mode:provenance.mode,back:provenance.back,
+          activate:allowed,pinned:provenance.pinned});
+      } catch (error) {
+        status.dataset.notice = "true"; status.hidden = false; status.textContent = error.message;
+        result = {accepted:false,error};
+      }
+      if (!documentTabs.get(key)) disposeEntry(entry);
+      refresh();
+      return result?.accepted === false || result?.error || result?.stale ? null : entry;
     }
     function consume(detail) {
       lastDetail = detail;
@@ -371,7 +432,7 @@
     const retryChat = button(left, "重试个人门面", () => { retryChat.hidden = true; mountChat(); }); retryChat.hidden = true;
     const unregister = window.PortalPreview.registerHost("home-dialogue", request => {
       if (!presented || suspended || destroyed) return false;
-      navigate(request.displayIntent || { view: "preview", target: { address: request.resourceAddress || request.path || request.href } }, true, true, {messageOrigin:request.messageOrigin}); setPane("display"); return true;
+      navigate(request.displayIntent || { view: "preview", target: { address: request.resourceAddress || request.path || request.href } }, true, true, {messageOrigin:request.messageOrigin,mode:request.mode}); setPane("display"); return true;
     }, { priority: 80 });
     function lifecycle(event) { presented = event.detail.phase === "show"; if (!presented) root.classList.remove("homeDialogueExpanded"); resize(); }
     function beforeUnload(event) {
@@ -393,7 +454,8 @@
     return { destroy() {
       pageState?.writeSnapshot(); pageState?.destroy();
       destroyed = true; unregister(); chat?.destroy();
-      for (const entry of state.entries) { entry.controller.abort(); entry.adapter?.destroy(); }
+      documentTabs.destroy();
+      for (const entry of [...state.entries]) disposeEntry(entry);
       state.clear(); preview.destroy(); root.removeEventListener("portal:home-panel-lifecycle", lifecycle);
       observer.disconnect(); window.removeEventListener("beforeunload", beforeUnload);
       window.removeEventListener("pagehide", pageHide); window.removeEventListener("pageshow", pageShow);

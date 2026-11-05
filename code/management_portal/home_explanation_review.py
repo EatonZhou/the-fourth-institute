@@ -76,6 +76,8 @@ class ReviewService:
             raise ValueError('创作准备须显式选择high及page或video')
         if not isinstance(task, str) or not task.strip() or len(task) > 4000:
             raise ValueError('创作准备须说明本次实际理解任务，最多4000字符')
+        from management_portal.home_report_creation import require_creation
+        require_creation(actor)
         scope = self.ensure_reviewers({'kind': 'explanation_video' if kind == 'video' else 'explanation',
             'author': actor, 'responsible_resident_id': actor}, actor)
         return {'status': 'prepared', 'kind': kind, 'quality': quality, **scope}
@@ -597,17 +599,51 @@ class AuthoringService(ReviewService):
         subject['quality'] = value['quality']
         return subject
 
+    def _registered_responsible(self, subject, actor):
+        """Use the authenticated creator of this readable fixed explanation.
+
+        Medium pages do not submit a page review, so a review binding is not
+        required for authorship. Report owns the registration proof; neither
+        the package's author text nor its Workspace owner supplies it.
+        """
+        ref = {'address': subject['ref'], 'sha256': subject['digest']}
+        if subject['version'] != ref['sha256'] or ref not in subject['assets']:
+            raise ValueError('解释创作必须绑定同一固定清单地址与摘要')
+        from management_portal.home_report_creation import explanation_responsible
+        return explanation_responsible(ref, actor)
+
+    @staticmethod
+    def _require_creation(responsible, actor):
+        from management_portal.home_report_creation import require_creation
+        require_creation(actor, responsible=responsible)
+
     def submit(self, subject, actor):
         subject = self.subject(subject)
+        if subject['kind'] == 'explanation_video' and subject['author'] != actor:
+            raise PermissionError('解释创作请求者必须是当前认证主体')
         self._authorize(subject, actor, verify=True)
         identifier = self.identifier(subject)
+        existing = self._load(identifier)
+        if existing and existing['requested_by'] != actor:
+            raise PermissionError('仅原请求者可重试创作任务')
+        if existing and existing['status'] in {'submitted', 'cancelled'}:
+            return existing
+        if not subject['responsible_resident_id'] and subject['kind'] == 'explanation_video':
+            subject['responsible_resident_id'] = self._registered_responsible(subject, actor)
+        if subject['responsible_resident_id']:
+            # No lock directory, task state, reviewer role or delivery may be
+            # created until the authenticated Society capability allows it.
+            self._require_creation(subject['responsible_resident_id'], actor)
         with self._lock(identifier):
             record = self._load(identifier)
-            if record and record['status'] in {'submitted', 'cancelled'}:
-                return record
             if record and record['requested_by'] != actor:
                 raise PermissionError('仅原请求者可重试创作任务')
+            if record and record['status'] in {'submitted', 'cancelled'}:
+                return record
             record = record or {'id': identifier, 'subject': subject, 'requested_by': actor, 'attempts': 0}
+            # Keep the original request identity: late proof must not bypass
+            # cancellation or create a second authoring delivery.
+            record['subject'] = subject
             responsible = subject['responsible_resident_id']
             if not responsible:
                 record.update(status='awaiting_author', error='缺少经核验的负责Resident，无法投递分镜创作任务。')

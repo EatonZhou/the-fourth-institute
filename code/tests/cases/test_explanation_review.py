@@ -48,6 +48,7 @@ def test_builder_requires_quality_before_writing_or_submitting(tmp_path, monkeyp
 def test_builder_retains_fixed_package_and_fails_when_high_submission_fails(tmp_path, monkeypatch, capsys):
     import sys
     from scripts import build_explanation_package as builder, submit_explanation_review as sender
+    monkeypatch.setattr(builder, 'require_creation', lambda resident_id: None)
     monkeypatch.setattr(builder, 'register_report', lambda *args: {'reference': {
         'view': 'report', 'target': {'kind': 'report', 'id': 'report_0123456789ab', 'revision': 1}}})
     (tmp_path/'explanation.md').write_text('A fixed explanation.', encoding='utf-8')
@@ -110,6 +111,7 @@ def test_builder_completes_formal_authoring_before_high_review(tmp_path, monkeyp
     from scripts import build_explanation_package as builder
     (tmp_path/'explanation.md').write_text('Changed fixed explanation.', encoding='utf-8')
     calls = []
+    monkeypatch.setattr(builder, 'require_creation', lambda resident_id: None)
     monkeypatch.setattr(builder, 'register_report', lambda *args: calls.append(('register', args)) or {
         'reference': {'view': 'report', 'target': {'kind': 'report', 'id': 'report_0123456789ab', 'revision': 1}}})
     monkeypatch.setattr(client, 'accept_authoring', lambda *args: calls.append(('authoring', args)))
