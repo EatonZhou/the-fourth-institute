@@ -488,6 +488,10 @@ button.messageQuote:focus-visible {
 .familyStatusAccount > span:last-child { flex-shrink: 0; }
 .familyStatusRuntime { display: flex; margin-top: 0; color: var(--muted); font-weight: 400; white-space: nowrap; text-align: left; }
 .familyStatusPanel td .familyStatusRuntime { font-size: 11px; font-weight: 400; }
+.familyStatusWork { display: flex; align-items: center; gap: 5px; line-height: 1.5; overflow-wrap: anywhere; }
+.familyStatusWork[data-working="true"] { color: var(--accent); font-weight: 600; }
+.familyStatusWork[data-working="true"]::before { content: ""; width: 6px; height: 6px; flex-shrink: 0; border-radius: 50%; background: currentColor; }
+.familyStatusQueue { color: var(--muted); font-size: 11px; line-height: 1.5; }
 .familyStatusPanel td .familyStatusIntake { display: inline-flex; align-items: center; gap: 5px; padding: 2px 0; border: 0; background: transparent; box-shadow: none; font-size: 11px; cursor: default; }
 .familyIntakeTrack { position: relative; width: 25px; height: 14px; border-radius: 8px; background: var(--muted); flex-shrink: 0; }
 .familyIntakeTrack::after { content: ""; position: absolute; left: 2px; top: 2px; width: 10px; height: 10px; border-radius: 50%; background: var(--panel); transition: transform .12s ease; }

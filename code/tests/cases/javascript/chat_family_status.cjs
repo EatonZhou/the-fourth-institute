@@ -112,11 +112,13 @@ w.PortalResidentRuntimeController = {
   },
 };
 const released = [];
+const memberListeners = new Map();
 w.PortalResidentProtocol = {
   ...w.PortalResidentProtocol,
-  acquire: (residentId, _listener, options) => {
+  acquire: (residentId, listener, options) => {
     calls.push(['acquire', residentId, options.consumer]);
-    return { load: async () => JSON.parse(JSON.stringify(snapshots[residentId])), destroy: () => released.push(residentId) };
+    memberListeners.set(residentId, listener);
+    return { load: async () => JSON.parse(JSON.stringify(snapshots[residentId])), destroy: () => { memberListeners.delete(residentId); released.push(residentId); } };
   },
 };
 let chatPreference = {muted_member_ids: [], solo_member_id: ''};
@@ -141,7 +143,7 @@ const familyStatus = w.PortalChatWorkspaceFamilyStatus.createFamilyStatus({
 });
 const row = (root, id) => root.querySelector(`[data-family-status-row="${id}"]`);
 const cells = (root, id) => [...row(root, id).children];
-const work = (root, id) => row(root, id).querySelector('[data-family-status-detail]').title.split(' · ')[0];
+const work = (root, id) => text(row(root, id).querySelector('.familyStatusWork'));
 
 async function membersQuotaAndSummary() {
   const summaries = [];
@@ -166,6 +168,18 @@ async function membersQuotaAndSummary() {
       ['空闲', '工作中', '等待执行', '停止中', '空闲', '失败', '迁移中', '等待本轮后迁移']);
     assert.deepEqual([...root().querySelectorAll('th')].map(text), ['节点', 'backend', '周剩余', '工作状态', '静音 / 对话']);
     assert.equal(summaries.at(-1), '运行 2 · 排队 3 · 需关注 5', 'the summary counts work, queue and members that need attention');
+    assert.equal(text(row(root(), 'res_run').querySelector('.familyStatusQueue')), '排队 2');
+    assert.equal(row(root(), 'res_run').querySelector('.familyStatusWork').dataset.working, 'true');
+    assert.equal(row(root(), 'res_idle').querySelector('.familyStatusWork').dataset.working, 'false');
+    // A nested Family can be working while its facade is idle and intake is
+    // closed. The visible row follows the same projection as the Chat badge.
+    memberListeners.get('res_idle')({snapshot: {state: state({work_state: 'idle', intake_state: 'closed',
+      family_activity: {work_state: 'running'}}), messages: []}});
+    assert.equal(work(root(), 'res_idle'), '工作中');
+    assert.equal(row(root(), 'res_idle').querySelector('[data-family-status-intake]').getAttribute('aria-checked'), 'false');
+    assert.equal(summaries.at(-1), '运行 3 · 排队 3 · 需关注 5');
+    memberListeners.get('res_idle')({snapshot: snapshots.res_idle});
+    assert.equal(work(root(), 'res_idle'), '空闲', 'live completion changes the visible status without opening details');
 
     const quota = id => cells(root(), id)[2];
     assert.equal(text(quota('res_run').querySelector('.familyStatusQuotaValue')), '35%', 'the lowest weekly window counts');

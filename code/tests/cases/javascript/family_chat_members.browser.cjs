@@ -68,12 +68,15 @@ const root = path.resolve(__dirname, '../../../management_portal/static');
       }};
       window.PortalAPI = {get: async () => ({accounts: []})};
       const intake = {};
+      window.memberStates = {router: {work_state: 'idle'}, member_0: {work_state: 'running', queued_count: 2},
+        member_1: {work_state: 'idle', family_activity: {work_state: 'running'}}};
+      window.memberListeners = new Map();
       window.PortalResidentService = {projection: async () => facadeDetail(), setIntake: async args => {
         if (window.failIntake) { window.failIntake = false; throw new Error('Intake failed'); }
         intake[args.resident_id] = args.open ? 'open' : 'closed';
       }};
-      window.PortalResidentRuntimeController = {bind: () => ({
-        state: () => ({}), load: async () => ({detail: {resident: {backend: 'codex'}, allows: {OpenIntake: true}}, settings: {}}), close() {}, destroy() {},
+      window.PortalResidentRuntimeController = {bind: id => ({
+        state: () => ({}), load: async () => ({detail: {resident: {backend: 'codex', ...(id === 'member_1' ? {family: {role: 'facade'}} : {})}, allows: {OpenIntake: true}}, settings: {}}), close() {}, destroy() {},
       })};
       window.PortalResidentProtocol = {...PortalResidentProtocol,
         loadSnapshot: async (id, opts) => {
@@ -84,7 +87,11 @@ const root = path.resolve(__dirname, '../../../management_portal/static');
             panel.updateFamilyStatus(facadeDetail());
           }
         },
-        acquire: id => ({load: async () => ({state: {work_state: 'idle', intake_state: intake[id] || 'open'}, messages: []}), destroy() {}}),
+        acquire: (id, listener) => {
+          memberListeners.set(id, listener);
+          return {load: async () => ({state: {...memberStates[id], intake_state: intake[id] || 'open'}, messages: []}),
+            destroy() { memberListeners.delete(id); }};
+        },
       };
       window.panel = PortalChatWorkspace.panelPackage.create({root: document.getElementById('chat'), id: 'chat', title: 'Chat Workspace · 架构与实现', autoLoad: false, target: {resident_id: 'member_0'}});
       panel.updateFamilyStatus(memberDetail());
@@ -160,7 +167,8 @@ const root = path.resolve(__dirname, '../../../management_portal/static');
     await button('member_0', 'solo', popover).click(); await pressed('member_0', 'solo', true, popover);
     const proxy = page.locator('[data-family-solo="header"]');
     await proxy.waitFor({state: 'visible'});
-    assert.match(await proxy.innerText(), /Family → 成员 0/);
+    assert.match(await proxy.innerText(), /→ 成员 0.*Solo/);
+    assert.match(await proxy.getAttribute('title'), /Family → 成员 0/);
     assert.equal(await page.locator('[data-family-solo="composer"]').count(), 0, 'Solo target and exit stay in the header');
     // Remount the facade UI: policy is read from the server, not local mode state.
     await page.evaluate(() => { panel.updateFamilyStatus(memberDetail()); panel.updateFamilyStatus(facadeDetail()); });
@@ -212,11 +220,22 @@ const root = path.resolve(__dirname, '../../../management_portal/static');
     await page.evaluate(async () => { menu = await PortalChatWorkspace.openFamilyStatus('facade', {anchor: document.getElementById('family-anchor')}); });
     await pressed('member_0', 'solo', true, popover);
     assert.deepEqual(await popover.locator('th').allTextContents(), ['节点', 'backend', '周剩余', '工作状态', '静音 / 对话']);
+    const work = id => popover.locator(`[data-family-status-row="${id}"] .familyStatusWork`);
+    assert.equal(await work('router').innerText(), '空闲');
+    assert.equal(await work('member_0').innerText(), '工作中');
+    assert.equal(await work('member_1').innerText(), '工作中', 'nested facade shows its Family activity');
+    assert.equal(await popover.locator('[data-family-status-row="member_0"] .familyStatusQueue').innerText(), '排队 2');
+    assert.equal(await work('member_0').isVisible(), true, 'no hover or expansion is needed');
+    await page.evaluate(() => memberListeners.get('member_0')({snapshot: {state: {work_state: 'idle', intake_state: 'closed'}, messages: []}}));
+    assert.equal(await work('member_0').innerText(), '空闲');
+    await page.evaluate(() => memberListeners.get('member_0')({snapshot: {state: {...memberStates.member_0, intake_state: 'open'}, messages: []}}));
+    assert.equal(await work('member_0').innerText(), '工作中');
     assert.equal(await popover.locator('[data-family-status-row="member_0"] td:last-child [data-family-mix]').count(), 2);
     const intakeSwitch = popover.locator('[data-family-status-intake="member_0"]');
     await intakeSwitch.click();
     await page.waitForFunction(() => document.querySelector('[data-family-status-intake="member_0"]').getAttribute('aria-checked') === 'false');
     assert.equal(await intakeSwitch.innerText(), 'closed');
+    assert.equal(await work('member_0').innerText(), '工作中', 'closing intake leaves the running work visible');
     await page.evaluate(() => { failIntake = true; });
     await intakeSwitch.click();
     await page.waitForFunction(() => toasts.includes('Intake failed'));
@@ -224,8 +243,13 @@ const root = path.resolve(__dirname, '../../../management_portal/static');
     await intakeSwitch.click();
     await page.waitForFunction(() => document.querySelector('[data-family-status-intake="member_0"]').getAttribute('aria-checked') === 'true');
     if (process.env.FAMILY_CHAT_SCREENSHOTS) {
+      fs.mkdirSync(process.env.FAMILY_CHAT_SCREENSHOTS, {recursive: true});
+      for (const width of [1200, 390]) {
+        await page.setViewportSize({width, height: 900});
+        await work('member_0').scrollIntoViewIfNeeded();
+        await popover.screenshot({path: path.join(process.env.FAMILY_CHAT_SCREENSHOTS, `member-menu-${width}.png`)});
+      }
       await page.setViewportSize({width: 1200, height: 900});
-      await popover.screenshot({path: path.join(process.env.FAMILY_CHAT_SCREENSHOTS, 'member-menu.png')});
     }
     await button('member_0', 'solo', popover).click();
     await page.evaluate(() => { panel.updateFamilyStatus(facadeDetail()); menu.close(); });
