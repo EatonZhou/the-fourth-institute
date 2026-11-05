@@ -9,8 +9,9 @@ code directories, by default in the OS user's data directory.
 
 A code update replaces code and restarts services; services update the database
 themselves. There is no separate upgrade operation. Retiring stops services,
-deletes their definitions, unregisters the instance and deletes its root; host
-resources (account directories, models, Workspaces outside the root) remain.
+deletes their definitions and root, then unregisters the instance. Host account
+directories and platform programs remain; instance-owned external directories
+are removed through the directory owner before its database is deleted.
 """
 from __future__ import annotations
 
@@ -678,6 +679,10 @@ def retire(instance, *, delete_external_areas=False):
     if not (instance.root / "instance.json").is_file() or len(instance.root.parts) < 3:
         raise ValueError("Refusing to delete an unrecognized directory")
     instance_services.lifecycle("stop", instance.root)
+    if windows():
+        # Old Provider hosts can outlive their registered supervisor. Stop only
+        # processes whose runtime environment proves this exact instance.
+        code_child(instance, 'instance_process_cleanup.py')
     # The object directory registry must still exist while external owned
     # directories are removed. Occupied files keep the instance for retry.
     external_owned = {'external_owned_deleted': []}
@@ -693,8 +698,17 @@ def retire(instance, *, delete_external_areas=False):
     removed = instance_services.remove_definitions(instance)
     external = [str(instance.area(area)) for area in AREAS
                 if not instance.area(area).is_relative_to(instance.root) and instance.area(area).exists()]
+    original_identity=instance.root.stat()
+    try:
+        remove_tree(instance.root)
+    except OSError:
+        # Keep the manifest needed to retry after partial filesystem cleanup.
+        # Never recreate metadata in a replacement directory.
+        if instance.root.is_dir() and instance.root.stat().st_ino==original_identity.st_ino:
+            if not (instance.root/'instance.json').exists():
+                atomic_json(instance.root/'instance.json',instance.document)
+        raise
     host_instances.unregister(instance)
-    remove_tree(instance.root)
     if delete_external_areas:
         for path in external:
             remove_tree(path)

@@ -295,6 +295,18 @@ def test_retire_cleanup_failure_keeps_registry_and_database_for_retry(creation, 
     assert events == ['postgres-start', 'postgres-stop']
 
 
+def test_retire_partial_file_failure_preserves_registration_and_manifest(creation,monkeypatch):
+    installer.create(creation.engineering,name='accept_tmp',postgres=creation.postgres,skip_file_verification=True)
+    instance=host_instances.find('accept_tmp')
+    def failed(root):
+        (root/'instance.json').unlink()
+        raise PermissionError('occupied runtime log')
+    monkeypatch.setattr(installer,'remove_tree',failed)
+    with pytest.raises(PermissionError,match='occupied'):
+        installer.retire(instance)
+    assert host_instances.find(instance.name).document==instance.document
+
+
 def test_ports_change_only_while_stopped_and_follow_into_database_url(host, tmp_path, monkeypatch):
     root = write_instance(tmp_path / "site")
     instance = load(root)
