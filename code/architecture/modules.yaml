@@ -116,6 +116,9 @@ id_migrations:
 # 发行包可以摘掉的功能，与 management_portal/portal_features.py 的 FEATURES 一一对应（decision_15aab18c0ab3）。
 # modules 列出承载该功能代码的模块；核对脚本要求功能的每个模块文件都在所列模块的 code_paths 中。
 features:
+  - id: "workbench"
+    title: "Workbench"
+    modules: ["web.projections"]
   - id: "presentation"
     title: "Presentation preferences"
     modules: ["web.projections"]
