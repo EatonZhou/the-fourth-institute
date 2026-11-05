@@ -944,8 +944,18 @@ def get_resident_input_state(
         # registration. Its sender must still be able to read the retained
         # state after deletion, including a nonterminal state during cleanup.
         # Do not infer termination from a missing identity or a saved checkpoint.
-        if not scoped or not resident_catalog.get_catalog().get_historical(resident_id).get('deleted_at'):
+        if not resident_catalog.get_catalog().get_historical(resident_id).get('deleted_at'):
             raise
+        if not scoped:
+            actor_id = canonical_actor_id(actor)
+            if not get_portal_access_store().is_active(actor_id):
+                raise
+            message = resident_conversation_stream.get_repository().message(resident_id, message_id) or {}
+            if message.get('role') != 'user' or message.get('author_id') != actor_id:
+                raise
+            # A sender receipt includes its own input's fate, never the removed
+            # Resident's context or unrelated progress (same SENDER_RECEIPT rule).
+            include_progress = include_context = False
         return _stored_resident_input_state(
             resident_id, message_id, include_progress=include_progress, include_context=include_context,
         )
