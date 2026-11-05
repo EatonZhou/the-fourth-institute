@@ -38,6 +38,10 @@ const server=http.createServer(async(req,res)=>{
       await page.locator('.homeDialogueMore').waitFor({state:'attached'});
       await page.emulateMedia({reducedMotion:'reduce'});
       await page.evaluate(()=>document.documentElement.style.fontSize='20px');
+      if(process.env.HOME_TAB_FOLD_ONLY==='1') {
+        evidence.push(await require('./home_tab_autohide.cjs')(page,out,viewport));
+        assert.deepEqual(errors,[]);await page.close();continue;
+      }
       assert.equal(await page.locator('.homeDialogue > header').count(),0,'component header is removed, not visually hidden');
       const layout=await page.evaluate(()=>JSON.stringify(PortalWorkbench.get('home').getState().layout));
       const close=page.locator('.portalWorkbenchTabClose[aria-label$="对话与展示"]');
@@ -95,10 +99,13 @@ const server=http.createServer(async(req,res)=>{
       }
       await page.screenshot({path:path.join(out,`expanded-${viewport.width}.png`)});
       await homeAction(page,'返回原布局');
+      // Desktop headers retract inside the stack. Native keyboard focus must
+      // reveal the close control below navigation, without forced clicks.
+      await close.focus();
       const after=await geometry();entry.after=after;
       await page.screenshot({path:path.join(out,`returned-${viewport.width}.png`)});
       if(process.env.HOME_DIALOGUE_EXPECT_OBSTRUCTION==='1'){assert.equal(after.hit,false);break;}
-      assert.equal(after.hit,true,'close center must be unobstructed without hover, keyboard or forced click');
+      assert.equal(after.hit,true,'revealed close center must be unobstructed without a forced click');
       assert.ok(after.rect.y>=after.headerBottom,'tab has space below navigation');
       assert.equal(await page.evaluate(()=>JSON.stringify(PortalWorkbench.get('home').getState().layout)),layout);
       await close.click();

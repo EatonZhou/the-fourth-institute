@@ -4,7 +4,7 @@
   if (global.PortalWorkbenchTabDrag) return;
 
   // Dragging tabs: drop zones on stacks and tab strips, moving a Panel to
-  // where it is dropped, and revealing the tab strip of a single-tab stack.
+  // where it is dropped, and revealing auto-hidden tab strips.
 
   const DEPENDENCIES = Object.freeze([
     "canvas", "clone", "descriptors", "findNode", "isLayoutLocked", "normalizeCurrent", "panelNode",
@@ -15,6 +15,7 @@
     const missing = DEPENDENCIES.filter(name => dependencies?.[name] === undefined);
     if (missing.length) throw new Error(`PortalWorkbenchTabDrag is missing: ${missing.join(", ")}`);
     const {
+      autoHideTabHeader = false,
       canvas, clone, descriptors, findNode, isLayoutLocked, normalizeCurrent, panelNode, removePanelFromNode, render,
       replaceNode, shellState, splitNode, stackNode,
     } = dependencies;
@@ -132,7 +133,11 @@
     }
 
     function bindSingleTabReveal(stackElement, tabs, stack) {
-      if (stack.children.length !== 1) return;
+      if (autoHideTabHeader) {
+        stackElement.dataset.autoHideTabs = "true";
+        tabs.dataset.portalOverlayLayer = "sticky";
+      }
+      if (stack.children.length !== 1 && !autoHideTabHeader) return;
       const reveal = () => { if (!isLayoutLocked()) stackElement.classList.add("is-tab-strip-revealed"); };
       const conceal = () => stackElement.classList.remove("is-tab-strip-revealed");
       stackElement.addEventListener("pointermove", event => {
@@ -143,10 +148,11 @@
           return;
         }
         const nestedControl = event.target instanceof Element
-          ? event.target.closest("button, a, input, select, textarea, [role='tab'], [role='button']")
+          ? event.target.closest("button, a, input, select, textarea, summary, label, [role='tab'], [role='button']")
           : null;
-        const ownerWorkbench = stackElement.closest(".portalWorkbench");
-        if (nestedControl && nestedControl.closest(".portalWorkbench") !== ownerWorkbench) return;
+        // Content toolbars can sit directly below the reveal edge without
+        // owning another Workbench. Do not cover their controls on approach.
+        if (nestedControl) { conceal(); return; }
         if (localY <= 16) reveal();
         else if (localY > 34) conceal();
       }, true);

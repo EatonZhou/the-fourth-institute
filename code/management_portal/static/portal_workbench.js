@@ -968,6 +968,7 @@
     const {
       bindSingleTabReveal, bindStackDrop, bindTabDrag, bindTabGroupDrop,
     } = workbenchPart("PortalWorkbenchTabDrag").createTabDrag({
+      autoHideTabHeader: options.autoHideTabHeader === true,
       canvas, clone, descriptors, findNode, isLayoutLocked, normalizeCurrent, panelNode, removePanelFromNode,
       render: (...args) => render(...args), replaceNode, shellState, splitNode, stackNode,
     });

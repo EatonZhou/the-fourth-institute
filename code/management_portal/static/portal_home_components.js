@@ -363,6 +363,7 @@
           toolbarPlacement: definition.toolbarPlacement,
           toolbarRight: definition.toolbarRight,
           showSingleTabHeader: definition.showSingleTabHeader,
+          autoHideTabHeader: definition.autoHideTabHeader,
           insets: { top: 0, right: 0, bottom: 0, left: 0 },
           onWorkspaceApplied(workspace) {
             const preset = (definition.presets || []).find(item => String(item.id) === workspace.id);

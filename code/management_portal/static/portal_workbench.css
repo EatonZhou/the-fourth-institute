@@ -400,11 +400,11 @@
   box-shadow: var(--portal-workbench-stack-shadow);
 }
 
-.portalWorkbenchStack[data-tab-count="1"] {
+.portalWorkbenchStack:is([data-tab-count="1"], [data-auto-hide-tabs="true"]) {
   grid-template-rows: minmax(0, 1fr);
 }
 
-.portalWorkbenchStack[data-tab-count="1"] > .portalWorkbenchTabs {
+.portalWorkbenchStack:is([data-tab-count="1"], [data-auto-hide-tabs="true"]) > .portalWorkbenchTabs {
   position: absolute;
   top: 0;
   right: 0;
@@ -416,10 +416,10 @@
   transition: transform 150ms ease, opacity 120ms ease, box-shadow 150ms ease;
 }
 
-.portalWorkbenchStack[data-tab-count="1"] > .portalWorkbenchTabs:is(:hover, :focus-within),
-.portalWorkbenchStack[data-tab-count="1"].is-tab-strip-revealed > .portalWorkbenchTabs,
-.draggingWorkbenchTab .portalWorkbenchStack[data-tab-count="1"] > .portalWorkbenchTabs,
-.portalWorkbenchStack[data-tab-count="1"][data-portal-workbench-drop-zone="center"] > .portalWorkbenchTabs {
+.portalWorkbenchStack:is([data-tab-count="1"], [data-auto-hide-tabs="true"]) > .portalWorkbenchTabs:is(:hover, :has(:focus-visible)),
+.portalWorkbenchStack:is([data-tab-count="1"], [data-auto-hide-tabs="true"]).is-tab-strip-revealed > .portalWorkbenchTabs,
+.draggingWorkbenchTab .portalWorkbenchStack:is([data-tab-count="1"], [data-auto-hide-tabs="true"]) > .portalWorkbenchTabs,
+.portalWorkbenchStack:is([data-tab-count="1"], [data-auto-hide-tabs="true"])[data-portal-workbench-drop-zone="center"] > .portalWorkbenchTabs {
   transform: translateY(0);
   opacity: var(--portal-workbench-single-tab-revealed-opacity);
 }
@@ -1336,6 +1336,14 @@ html[data-portal-viewport="mobile"] .portalWorkbenchTabs {
   display: none;
 }
 
+html[data-portal-viewport="mobile"] .portalWorkbenchStack[data-auto-hide-tabs="true"] > .portalWorkbenchTabs {
+  position: static;
+  height: auto;
+  transform: none;
+  opacity: 1;
+  box-shadow: none;
+}
+
 html[data-portal-viewport="mobile"] .portalWorkbenchMobileSwitcher {
   display: flex;
   min-width: 0;
@@ -1383,7 +1391,7 @@ html[data-portal-viewport="mobile"] .portalWorkbenchMobilePanel.is-active {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .portalWorkbenchStack[data-tab-count="1"] > .portalWorkbenchTabs { transition: none; }
+  .portalWorkbenchStack:is([data-tab-count="1"], [data-auto-hide-tabs="true"]) > .portalWorkbenchTabs { transition: none; }
 }
 
 .splitter {
