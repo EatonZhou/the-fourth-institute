@@ -172,20 +172,27 @@
     }
 
     function orderRequestBlocks(messages) {
+      // A command input event can precede its receipt. The receipt explicitly
+      // places that exchange; apply it to the already loaded input as well.
+      const exchanges = new Map(messages.filter(item => item.role === 'system'
+        && item.reply_to_message_id && item.conversation_context)
+        .map(item => [item.reply_to_message_id, item.conversation_context]));
+      messages = messages.map(item => !item.conversation_context && exchanges.has(item.id)
+        ? { ...item, conversation_context: exchanges.get(item.id) } : item);
       // All Chat hosts use explicit reply placement. Inputs keep their order;
       // late replies return to their request, including after history merges.
-      const inputs = new Map(messages.filter(item => item.role === 'user').map((item, index) => [item.id, index]));
+      const inputs = new Map(messages.filter(item => item.role === 'user' && !item.conversation_context).map((item, index) => [item.id, index]));
       const blocks = new Map();
       const placed = new Set();
       const shared = new Map();
       messages.forEach((item, index) => {
-        if (item.role === 'user' || item.recipients?.length) return;
-        const family = item.family_reply;
+        if ((item.role === 'user' && !item.conversation_context) || item.recipients?.length) return;
+        const family = item.family_reply || item.family_context;
         const associations = family ? [...new Set([family.request_message_id, ...(family.request_message_ids || [])])]
-          : [item.display_reply_to_message_id || item.reply_to_message_id];
+          : [item.conversation_context?.request_message_id || item.display_reply_to_message_id || item.reply_to_message_id];
         const request = associations.filter(id => inputs.has(id)).sort((a, b) => inputs.get(a) - inputs.get(b))[0];
         if (!request) return;
-        const shown = family ? { ...item, family_reply: { ...family, request_message_id: request },
+        const shown = item.family_reply ? { ...item, family_reply: { ...family, request_message_id: request },
           display_reply_to_message_id: request } : item;
         if (!blocks.has(request)) blocks.set(request, []);
         blocks.get(request).push(shown);
@@ -193,6 +200,21 @@
           if (!shared.has(id)) shared.set(id, shown.id);
         });
         placed.add(index);
+      });
+      // Only reorder occurrences of the same member within their own request.
+      // Trace ordinals never compare across Residents or move request blocks.
+      blocks.forEach(items => {
+        const members = new Map();
+        items.forEach((item, index) => {
+          const position = item.conversation_position || item.family_position;
+          if (!position?.resident_id || !Number.isFinite(position.ordinal)) return;
+          if (!members.has(position.resident_id)) members.set(position.resident_id, []);
+          members.get(position.resident_id).push({ item, index, ordinal: position.ordinal });
+        });
+        members.forEach(entries => {
+          const ordered = [...entries].sort((a, b) => a.ordinal - b.ordinal);
+          entries.forEach((entry, index) => { items[entry.index] = ordered[index].item; });
+        });
       });
       const result = [];
       messages.forEach((item, index) => {
@@ -219,7 +241,7 @@
       const muted = new Set(policy?.muted_member_ids || []);
       const memberIds = new Set((familyMembers || []).map(m => m.resident_id));
       const visible = message => {
-        const relay = message.family_reply || message.relay || message.family_history || {};
+        const relay = message.family_reply || message.family_context || message.relay || message.family_history || {};
         const chain = [...(relay.via || []).map(m => m.resident_id), relay.resident_id, message.origin?.initiated_by?.id];
         const owner = chain.find(id => memberIds.has(id) || id === solo);
         return !owner || (solo ? owner === solo : !muted.has(owner));

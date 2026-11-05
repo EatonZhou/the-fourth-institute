@@ -98,11 +98,17 @@ def test_delivered_collaboration_keeps_user_reply_block(team, delivered_work, mo
     deliver('msg_collaboration', {'kind': 'resident', 'id': colleague})
     output('msg_after_collaboration')
     expected = ['msg_before_collaboration', 'msg_after_collaboration']
-    assert [m['message_id'] for m in repo.reply_blocks([(rid, appended)])[(rid, appended)]['replies']] == expected
+    timeline = ['msg_before_collaboration', 'msg_collaboration', 'msg_after_collaboration']
+    assert [m['message_id'] for m in repo.reply_blocks([(rid, appended)])[(rid, appended)]['replies']] == timeline
     page = family_facade.project_messages(facade, [request, {
         'message_id': 'msg_facade_info', 'role': 'user', 'author_id': colleague, 'held_info': True,
     }])
-    assert [m['message_id'] for m in page] == ['msg_facade_user', *expected, 'msg_facade_info']
+    assert [m['message_id'] for m in page] == ['msg_facade_user', *timeline, 'msg_facade_info']
+    context = page[2]
+    assert context['origin']['sender']['id'] == colleague
+    assert context['conversation_context']['request_message_id'] == 'msg_facade_user'
+    assert 'family_reply' not in context
+    assert family_facade.projected_reply(facade, 'msg_collaboration')['conversation_context'] == context['conversation_context']
     for identity in expected:
         assert repo.message(rid, identity)['display_reply_to_message_id'] == appended
         assert family_facade.projected_reply(facade, identity)['family_reply']['request_message_id'] == 'msg_facade_user'
@@ -111,6 +117,42 @@ def test_delivered_collaboration_keeps_user_reply_block(team, delivered_work, mo
     deliver('msg_user_correction', {'kind': 'user', 'id': 'CASE-A'})
     output('msg_after_correction')
     blocks = repo.reply_blocks([(rid, appended), (rid, 'msg_user_correction')])
-    assert [m['message_id'] for m in blocks[(rid, appended)]['replies']] == expected
+    assert [m['message_id'] for m in blocks[(rid, appended)]['replies']] == timeline
     assert [m['message_id'] for m in blocks[(rid, 'msg_user_correction')]['replies']] == ['msg_after_correction']
     assert repo.message(rid, 'msg_after_correction')['reply_to_message_id'] == head
+
+
+def test_runtime_exchange_keeps_trace_position_without_owning_work(delivered_work):
+    rid, repo, _, head, appended, execution, _ = delivered_work
+    for message in [
+        {'message_id': 'before', 'role': 'agent', 'reply_to_message_id': head, 'execution_id': execution},
+        {'message_id': 'fast', 'role': 'user'},
+        {'message_id': 'receipt', 'role': 'system', 'reply_to_message_id': 'fast'},
+        {'message_id': 'after', 'role': 'agent', 'reply_to_message_id': head, 'execution_id': execution},
+    ]:
+        repo.append_message(rid, {**message, 'author_id': rid,
+            'content_parts': [{'type': 'text', 'text': '/fast' if message['message_id'] == 'fast' else message['message_id']}]})
+    items = repo.reply_blocks([(rid, appended)])[(rid, appended)]['replies']
+    assert [m['message_id'] for m in items] == ['before', 'fast', 'receipt', 'after']
+    assert items[1]['conversation_context'] == items[2]['conversation_context'] == {'request_message_id': appended}
+    assert repo.message(rid, 'after')['display_reply_to_message_id'] == appended
+    assert items[2]['reply_to_message_id'] == 'fast'
+    positions = [m['conversation_position']['ordinal'] for m in items]
+    assert positions == sorted(positions)
+
+    # A task originally sent by another Resident is also a valid work context.
+    from management_portal.execution import execution_inputs
+    primary = 'resident_task'
+    repo.append_message(rid, {'message_id': primary, 'role': 'user', 'author_id': rid,
+        'origin': {'schema': 'tfi.message-origin.v1', 'sender': {'kind': 'resident', 'id': rid},
+                   'producer': {'kind': 'service', 'id': 'portal'}},
+        'content_parts': [{'type': 'text', 'text': 'task'}]})
+    store = repo.agent_data
+    eid = 'execution-' + 'b' * 24
+    store.begin_execution(execution_id=eid, agent_id=rid, actor_ref='CASE-A', provider='codex', started_at='2026-10-01T00:01:00Z')
+    execution_inputs.attach(store, eid, [{'message_id': primary, 'role': 'primary'}])
+    repo.append_message(rid, {'message_id': 'fast2', 'role': 'user', 'author_id': 'CASE-A',
+        'content_parts': [{'type': 'text', 'text': '/fast'}]})
+    repo.append_message(rid, {'message_id': 'receipt2', 'role': 'system', 'reply_to_message_id': 'fast2',
+        'content_parts': [{'type': 'text', 'text': 'applied'}]})
+    assert repo.message(rid, 'fast2')['conversation_context'] == {'request_message_id': primary}

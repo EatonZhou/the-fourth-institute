@@ -12,15 +12,16 @@
   // associations, and must not discard those learned from another page.
   function mergeMessageAssociations(previous, incoming) {
     const result = clone(incoming);
-    if (!previous?.family_reply || !incoming?.family_reply) return result;
+    const key = incoming?.family_context ? 'family_context' : 'family_reply';
+    if (!previous?.[key] || !incoming?.[key]) return result;
     // A corrected response owner supersedes cached placement. Only pages of
     // the same delivered input/group can contribute additional associations.
-    const input = incoming.family_reply.response_input_message_id;
-    if (input && input !== previous.family_reply.response_input_message_id) return result;
-    const ids = [previous.family_reply, incoming.family_reply].flatMap(reply => [
+    const input = incoming[key].response_input_message_id;
+    if (input && input !== previous[key].response_input_message_id) return result;
+    const ids = [previous[key], incoming[key]].flatMap(reply => [
       reply.request_message_id, ...(Array.isArray(reply.request_message_ids) ? reply.request_message_ids : []),
     ]).filter(id => typeof id === "string" && id);
-    result.family_reply.request_message_ids = [...new Set(ids)];
+    result[key].request_message_ids = [...new Set(ids)];
     return result;
   }
 

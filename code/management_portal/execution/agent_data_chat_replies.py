@@ -183,6 +183,7 @@ class ChatReplies:
             else:
                 windows = [(*window, window[1]) for window in windows]
             for chunk in in_batches(windows):
+                context_predicate = "OR position.segment_type IN ('input','harness')" if _display_blocks else ""
                 # Each input's newest replies by chat_message_positions_reply_idx.
                 rows = connection.execute(
                     f"""
@@ -193,7 +194,7 @@ class ChatReplies:
                         SELECT position.ordinal,position.source_id AS segment_id,
                                {POSITION_METADATA} AS metadata_json
                         FROM chat_message_positions position
-                        WHERE position.sequence_id=requested.sequence_id AND position.reply_to=requested.reply_to
+                        WHERE position.sequence_id=requested.sequence_id AND ((position.reply_to=requested.reply_to
                           AND position.segment_type='model'
                           AND (position.reply_candidate OR EXISTS (
                               SELECT 1 FROM jsonb_array_elements(
@@ -201,7 +202,7 @@ class ChatReplies:
                               ) part WHERE part->>'type' IN ('tool_call','tool_result')
                                 AND part->>'tool_name' IN ('request_user_input','request_approval','mcp_elicitation')
                           ))
-                          AND position.reply_to IS NOT NULL AND position.source_kind<>'sync'
+                          AND position.reply_to IS NOT NULL) {context_predicate}) AND position.source_kind<>'sync'
                           AND position.ordinal > requested.after_ordinal AND position.ordinal <= requested.until_ordinal
                           AND {SHOWN_POSITION}
                         ORDER BY position.ordinal DESC LIMIT %s
@@ -214,6 +215,7 @@ class ChatReplies:
                 messages = {message["segment_id"]: message for message in self.chat.messages_from_rows(list(unique.values()))}
                 for row in rows:
                     message = messages[row["segment_id"]]
-                    if message["role"] == "agent":
+                    if message["role"] == "agent" or (_display_blocks and
+                            message.get("conversation_context", {}).get("request_message_id") == row["message_id"]):
                         result[row["agent_id"]][row["message_id"]].append(dict(message))
         return result

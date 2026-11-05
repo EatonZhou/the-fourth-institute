@@ -449,7 +449,8 @@ class ConversationInputs:
                            if identity not in shown and identity in retained.get(resident, {}))
             if _display_blocks:
                 outputs = [item for item in outputs
-                           if (item.get("display_reply_to_message_id") or item.get("reply_to_message_id")) == message]
+                           if (item.get("conversation_context", {}).get("request_message_id")
+                               or item.get("display_reply_to_message_id") or item.get("reply_to_message_id")) == message]
             result[key] = {"input_state": states.get(key, {}),
                            "replies": [message_from_storage(item) for item in outputs]}
             if (states.get(key, {}).get("state") == "cancelled"

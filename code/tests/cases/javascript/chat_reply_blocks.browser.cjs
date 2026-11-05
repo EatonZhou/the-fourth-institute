@@ -19,13 +19,31 @@ module.exports = async ({ page, output, errors }) => {
       const projected = PortalChatWorkspace.projectResidentConversation({}, blockSnapshot);
       workspace.setMessages(projected.messages);
     };
+    const position = ordinal => ({ resident_id: 'resident_111111111111', ordinal });
+    blockSnapshot.messages.find(m => m.message_id === 'improve-before').conversation_position = position(2);
+    const context = (id, ordinal, role, text) => ({ message_id: id, role,
+      author_id: role === 'user' ? 'resident_444444444444' : 'portal',
+      origin: { sender: { kind: role === 'user' ? 'resident' : 'service', id: role === 'user' ? 'resident_444444444444' : 'portal' } },
+      content_parts: [{ type: 'text', text }], conversation_position: position(ordinal),
+      conversation_context: { request_message_id: 'improve' },
+      family_context: { request_message_id: 'improve', resident_id: 'resident_111111111111', title: '处理成员' } });
+    // History/event arrival order is intentionally different from trace order.
+    blockSnapshot.messages.push(
+      { ...reply('improve-after', 'improve', '收到协作后继续工作。'), conversation_position: position(6) },
+      context('receipt', 5, 'system', 'Fast 已开启'),
+      { ...context('fast', 4, 'user', '/fast'), author_id: 'weihao', origin: { sender: { kind: 'user', id: 'weihao' } } },
+      context('collaboration', 3, 'user', '来自同事的补充。'),
+    );
     drawBlocks();
   });
   const ids = () => page.locator('.messageList > article').evaluateAll(nodes => nodes.map(n => n.dataset.messageKey));
-  const expected = ['video', 'video-late', 'improve', 'improve-before', 'rollback', 'rollback-after'];
+  const expected = ['video', 'video-late', 'improve', 'improve-before', 'collaboration', 'fast', 'receipt', 'improve-after', 'rollback', 'rollback-after'];
   assert.deepEqual(await ids(), expected);
   await page.evaluate(() => drawBlocks());
   assert.deepEqual(await ids(), expected);
+  assert.ok((await page.locator('[data-message-key="collaboration"]').innerText()).includes('处理成员 的工作期间'));
+  assert.equal(await page.evaluate(() => PortalChatWorkspace.projectResidentConversation({}, blockSnapshot).messages
+    .find(m => m.id === 'improve-after').display_reply_to_message_id), 'improve');
   if (output) await page.screenshot({ path: path.join(output, 'request-blocks-desktop.png') });
   await page.setViewportSize({ width: 390, height: 844 });
   assert.deepEqual(await ids(), expected);

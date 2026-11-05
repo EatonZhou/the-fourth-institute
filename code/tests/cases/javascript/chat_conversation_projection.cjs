@@ -35,6 +35,23 @@ const text = value => ({ type: 'text', text: value });
 const project = (snapshot, metadata = {}) => plain(chat.projectResidentConversation(metadata, snapshot));
 const byId = messages => Object.fromEntries(messages.map(message => [message.id, message]));
 
+function runtimeOccurrences() {
+  const event = (id, role, ordinal, extra = {}) => ({ message_id: id, role, ...extra,
+    conversation_position: { resident_id: 'resident_a', ordinal } });
+  const context = { conversation_context: { request_message_id: 'request' } };
+  const messages = [event('request', 'user', 1),
+    event('before', 'agent', 2, { display_reply_to_message_id: 'request' }),
+    event('after', 'agent', 6, { display_reply_to_message_id: 'request' }),
+    event('fast', 'user', 4), event('receipt', 'system', 5, { ...context, reply_to_message_id: 'fast' }),
+    event('colleague', 'user', 3, context),
+    event('unrelated', 'user', 7),
+  ];
+  const expected = ['request', 'before', 'colleague', 'fast', 'receipt', 'after', 'unrelated'];
+  assert.deepEqual(project({ messages }).messages.map(m => m.id), expected);
+  assert.deepEqual(project({ messages: messages.slice(2) }).messages.map(m => m.id), messages.slice(2).map(m => m.message_id), 'missing request does not discard occurrences');
+  assert.equal(byId(project({ messages }).messages).after.display_reply_to_message_id, 'request');
+}
+
 function familyModes() {
   const members = ['a', 'b'].map(resident_id => ({resident_id}));
   const messages = [
@@ -219,6 +236,7 @@ async function loading() {
     // The page's enhancers start once the document has loaded, as on a real page.
     if (w.document.readyState === 'loading') await new Promise(resolve => w.document.addEventListener('DOMContentLoaded', resolve, { once: true }));
     protocolMessages();
+    runtimeOccurrences();
     localSubmissions();
     deliveredInfos();
     familyRequests();

@@ -12,6 +12,47 @@ from typing import Any
 from .conversation_projection import TYPED_BY_USER
 
 
+def message_contexts(connection: Any, segment_ids: list[str], message_ids: list[str]) -> dict[str, dict]:
+    """Durable trace position and the work containing a received side input.
+
+    Context is an occurrence, not reply ownership. Confirmed collaboration and
+    synchronous Portal exchanges retain their position without becoming requests.
+    """
+    rows = connection.execute(
+        "SELECT position.source_id AS segment_id,trace.agent_id,position.ordinal,context.message_id AS context_id "
+        "FROM chat_message_positions position LEFT JOIN segments source "
+        "ON position.source_id=source.segment_id AND position.source_kind='segment' "
+        "JOIN agents trace ON trace.trace_sequence_id=position.sequence_id "
+        "AND (source.segment_id IS NULL OR trace.agent_id=source.created_by_agent_id) "
+        "LEFT JOIN LATERAL (SELECT candidate.message_id FROM chat_message_positions candidate "
+        "JOIN segments input ON input.segment_id=candidate.source_id "
+        "LEFT JOIN LATERAL (SELECT primary_input.execution_id FROM execution_inputs primary_input "
+        "JOIN executions execution USING(execution_id) WHERE primary_input.message_id=candidate.message_id "
+        "AND primary_input.role='primary' AND execution.agent_id=trace.agent_id "
+        "ORDER BY execution.created_at DESC LIMIT 1) reserved ON TRUE "
+        "WHERE candidate.sequence_id=position.sequence_id AND candidate.source_kind='segment' "
+        "AND candidate.segment_type='input' AND candidate.ordinal<position.ordinal "
+        "AND ((input.metadata_json::jsonb->>'kind'='appended_provider_input' "
+        f"AND {TYPED_BY_USER.format(metadata='input.metadata_json')}) OR reserved.execution_id IS NOT NULL) "
+        "AND (NULLIF(source.execution_id,'') IS NULL "
+        "OR source.execution_id=COALESCE(NULLIF(input.execution_id,''),reserved.execution_id)) "
+        "ORDER BY candidate.ordinal DESC LIMIT 1) context ON ("
+        "(source.metadata_json::jsonb->>'kind'='appended_provider_input' "
+        f"AND NOT ({TYPED_BY_USER.format(metadata='source.metadata_json')})) "
+        "OR (NULLIF(source.execution_id,'') IS NULL AND ("
+        "(position.segment_type='input' AND EXISTS (SELECT 1 FROM chat_message_positions receipt "
+        "WHERE receipt.sequence_id=position.sequence_id AND receipt.segment_type='harness' "
+        "AND receipt.reply_to=position.message_id)) "
+        "OR (position.segment_type='harness' AND position.reply_to IS NOT NULL)))) "
+        "WHERE position.message_id=ANY(%s) AND position.source_id=ANY(%s) "
+        "AND position.source_kind<>'sync'", (message_ids, segment_ids),
+    ).fetchall()
+    return {str(row['segment_id']): {
+        'conversation_position': {'resident_id': str(row['agent_id']), 'ordinal': int(row['ordinal'])},
+        **({'conversation_context': {'request_message_id': str(row['context_id'])}} if row['context_id'] else {}),
+    } for row in rows}
+
+
 def reply_placements(connection: Any, segment_ids: list[str]) -> dict[str, str]:
     rows = connection.execute(
         "SELECT output.segment_id, appended.message_id FROM segments output "

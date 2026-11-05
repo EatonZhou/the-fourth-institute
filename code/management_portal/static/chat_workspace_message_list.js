@@ -329,7 +329,9 @@
         const key = messageRenderKey(item);
         const historical = item.family_history;
         const historyBoundary = !historical && callbackMessages[callbackIndex - 1]?.family_history;
-        const historyPrefix = historical
+        const historyPrefix = item.family_context
+          ? `<div class="personalAssistantHistorySource" data-family-context="${escapeHtml(item.family_context.resident_id)}">${escapeHtml(window.PortalI18n.text`${item.family_context.title || item.family_context.resident_id} 的工作期间`)}</div>`
+          : historical
           ? `<div class="personalAssistantHistorySource" data-family-history="${escapeHtml(historical.resident_id)}">${escapeHtml(window.PortalI18n.text`${historical.title || "AMA"} 的历史`)}</div>`
           : historyBoundary ? `<div class="personalAssistantHistoryBoundary" data-family-history-boundary role="separator">${window.PortalI18n.t("个人助手从此处接续对话")}${historyBoundary.before_at ? ` · ${escapeHtml(footerTime(historyBoundary.before_at))}` : ""}</div>` : "";
         if (role === "human" && item?.withdrawn) {
@@ -343,7 +345,7 @@
         const previousRole = idx > 0 ? messageRole(items[idx - 1]) : "";
         // An injected user message interrupts the visual run, even while the
         // following output still belongs to the original Family work group.
-        const continued = work ? !isWorkHead && previousRole !== "human"
+        const continued = work ? !isWorkHead && previousRole === "agent"
           : role === "agent" && previousRole === "agent" && sameAgentRun(items[idx - 1], item);
         const group = work ? null : agentGroups.get(idx) || null;
         const isGroupEnd = !!group && group.end === idx;

@@ -831,7 +831,7 @@ def project_messages(
             key = (str(relay.get("resident_id") or ""), str(reply.get("message_id") or ""))
             existing = shared_replies.get(key) if key[1] else None
             if existing is not None:
-                requests = existing["family_reply"]["request_message_ids"]
+                requests = (existing.get("family_context") or existing["family_reply"])["request_message_ids"]
                 if message_id not in requests:
                     requests.append(message_id)
                 continue
@@ -848,7 +848,7 @@ def _with_member_positions(messages: list[Any], repository: Any) -> list[Any]:
     for index, message in enumerate(messages):
         if not isinstance(message, dict) or message.get("withdrawn"):
             continue
-        source = message.get("family_reply") or message.get("relay") or {}
+        source = message.get("family_reply") or message.get("family_context") or message.get("relay") or {}
         resident_id = str(source.get("resident_id") or "")
         message_id = str(source.get("grouped_into_message_id") or source.get("message_id") or "")
         if resident_id and message_id:
@@ -998,9 +998,10 @@ def relayed_reply(facade: Mapping[str, Any], message_id: str) -> dict[str, Any] 
     # A message lives in one Conversation: each Resident doing the Family's work is read once.
     for worker_id, requests in carried.items():
         reply = repository.message(worker_id, clean)
-        if reply is None or reply.get("role") != "agent":
+        if reply is None or (reply.get("role") != "agent" and not reply.get("conversation_context")):
             continue
-        reply_to = str(reply.get("display_reply_to_message_id") or reply.get("reply_to_message_id") or "")
+        reply_to = str(reply.get("conversation_context", {}).get("request_message_id")
+                       or reply.get("display_reply_to_message_id") or reply.get("reply_to_message_id") or "")
         found = requests.get(reply_to)
         if found is None:
             members = resident_mailbox.members_of({"resident_id": worker_id}, reply_to)
@@ -1031,9 +1032,10 @@ def _reply_by_source(facade, message_id, repository):
         return None
     for worker_id in owners:
         reply = repository.message(worker_id, message_id)
-        if not reply or reply.get("role") != "agent":
+        if not reply or (reply.get("role") != "agent" and not reply.get("conversation_context")):
             continue
-        reply_to = str(reply.get("display_reply_to_message_id") or reply.get("reply_to_message_id") or "")
+        reply_to = str(reply.get("conversation_context", {}).get("request_message_id")
+                       or reply.get("display_reply_to_message_id") or reply.get("reply_to_message_id") or "")
         if not reply_to:
             continue
         members = resident_mailbox.members_of({"resident_id": worker_id}, reply_to)
@@ -1207,6 +1209,16 @@ def _facade_reply(
             "response_input_message_id": str(reply.get("display_reply_to_message_id") or reply.get("reply_to_message_id") or ""),
         },
     )
+    if reply.get("conversation_context"):
+        # A received message is shown as itself, never as the facade's answer.
+        projected["origin"] = copy.deepcopy(reply.get("origin") or {})
+        projected["author_id"] = reply.get("author_id", "")
+        projected.pop("display_reply_to_message_id", None)
+        projected.pop("reply_to_message_id", None)
+        if reply.get("reply_to_message_id"):
+            projected["reply_to_message_id"] = reply["reply_to_message_id"]
+        projected["conversation_context"] = {"request_message_id": request_message_id}
+        projected["family_context"] = projected.pop("family_reply")
     return projected
 
 

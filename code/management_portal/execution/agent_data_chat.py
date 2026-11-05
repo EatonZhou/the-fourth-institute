@@ -290,7 +290,9 @@ class ChatReads:
         metadata = {str(row["segment_id"]): json_value(row["metadata_json"]) for row in rows}
         with self.database.read() as connection:
             contents = message_contents(connection, [row["segment_id"] for row in rows])
-            from .chat_reply_placement import reply_placements
+            from .chat_reply_placement import message_contexts, reply_placements
+            contexts = message_contexts(connection, list(metadata),
+                [value.get("message", {}).get("message_id", "") for value in metadata.values()])
             reply_segments = [identity for identity, value in metadata.items()
                               if value.get("message", {}).get("role") == "agent"
                               and value.get("message", {}).get("execution_id")]
@@ -318,6 +320,7 @@ class ChatReads:
             ).fetchall()}
         messages = [chat_payload(row["segment_id"], row["metadata_json"], contents[row["segment_id"]]) for row in rows]
         for message in messages:
+            message.update(contexts.get(message["segment_id"], {}))
             message.update(extras.get(message["segment_id"], {}))
             if message["segment_id"] in placement and not message.get("recipients"):
                 message["display_reply_to_message_id"] = placement[message["segment_id"]]
