@@ -25,6 +25,8 @@
   const markerKind = value => Object.hasOwn(markerPaths, value) ? value : 'flag';
   const markerIcon = value => '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="' + markerPaths[markerKind(value)]
     + '" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  const controlIcon = path => '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="' + path
+    + '" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   function shortTime(value) {
     if (!value) return '';
     const date = new Date(value); if (!Number.isFinite(date.getTime())) return '';
@@ -38,7 +40,11 @@
     const wrapper = el('div', 'chatRoundViewport');
     viewport.before(wrapper); wrapper.append(viewport);
     const rail = el('nav', 'chatRoundRail'); rail.setAttribute('aria-label', t('轮次导航'));
-    const directory = button('chatRoundDirectory', t('浏览已加载轮次'), '⋮');
+    const older = button('chatRoundOlder', t('加载更早消息'), '');
+    older.innerHTML = controlIcon('M10 16V4m-5 5 5-5 5 5');
+    const directory = button('chatRoundDirectory', t('浏览已加载轮次'), '');
+    directory.innerHTML = controlIcon('M7 5h9M7 10h9M7 15h9M3 5h.1M3 10h.1M3 15h.1');
+    directory.setAttribute('aria-haspopup', 'dialog'); directory.setAttribute('aria-expanded', 'false');
     const lane = el('div', 'chatRoundLane');
     const marks = el('div', 'chatRoundMarks'); lane.append(marks);
     const scroll = el('div', 'chatRoundScroll');
@@ -46,10 +52,11 @@
     thumb.setAttribute('role', 'scrollbar'); thumb.setAttribute('aria-orientation', 'vertical');
     thumb.setAttribute('aria-label', t('滚动对话')); thumb.setAttribute('aria-valuemin', '0');
     if (viewport.id) thumb.setAttribute('aria-controls', viewport.id);
-    scroll.append(thumb); rail.append(directory, lane, scroll); wrapper.append(rail);
+    scroll.append(thumb); rail.append(older, directory, lane, scroll); wrapper.append(rail);
     const preview = el('section', 'chatRoundPreview'); preview.hidden = true;
     preview.setAttribute('role', 'dialog'); preview.setAttribute('aria-label', t('轮次预览')); wrapper.append(preview);
     const notice = el('div', 'chatRoundNotice'); notice.setAttribute('role', 'status'); wrapper.append(notice);
+    const historyNotice = el('div', 'chatRoundHistoryNotice'); historyNotice.setAttribute('role', 'status'); wrapper.append(historyNotice);
     const cleanups = [];
     const on = (node, type, fn, options) => { node.addEventListener(type, fn, options); cleanups.push(() => node.removeEventListener(type, fn, options)); };
     let disposed = false, frame = 0, currentScope = '', flags = new Map(), rows = [], search = [];
@@ -62,6 +69,7 @@
     let hoverTimer = 0, closeTimer = 0, press = null, dragging = null, popup = null, navigation = 0, restoringFocus = false;
     let hoverKey = '', activation = null, pointerRest = null, laneTop = 0;
     let previewFrame = 0, markerMenu = null;
+    let historyRequest = null;
     const previewSizes = new WeakMap();
     const identity = () => String(window.PortalIdentity?.username?.() || '');
     const scopeKey = () => JSON.stringify([identity(), String(scope())]);
@@ -89,6 +97,7 @@
     function resetScope() {
       if (currentScope === scopeKey()) return;
       currentScope = scopeKey(); flags = new Map(); flags = readFlags(); progress.clear(); cursor = -1;
+      historyRequest = null; historyNotice.textContent = ''; paintHistory();
       uncertain = false; awaitingRefresh = false; refreshing = false; refreshEpoch++; search = []; navigation++; closePreview(); cancelPress(); signature = ''; layoutDirty = statusDirty = searchDirty = true;
     }
     function toggle(key) {
@@ -241,6 +250,7 @@
       previewResize.disconnect(); cancelAnimationFrame(previewFrame); previewFrame = 0;
       if (popup?.list) releasePreview(popup.list);
       const trigger = popup?.trigger; popup = null; preview.hidden = true; preview.replaceChildren();
+      directory.setAttribute('aria-expanded', 'false');
       if (returnFocus && trigger?.isConnected) { restoringFocus = true; trigger.focus({ preventScroll: true }); restoringFocus = false; }
     }
     async function locate(key) {
@@ -254,6 +264,38 @@
         if (!disposed && revision === navigation && expected === scopeKey()) notice.textContent = t('定位失败') + ': ' + error.message;
       }
     }
+    function paintHistory() {
+      const history = state.messageRenderOptions?.history;
+      const busy = !!historyRequest || !!history?.loading;
+      older.setAttribute('aria-busy', String(busy));
+      older.setAttribute('aria-disabled', String(busy || !history?.can_load_older));
+      older.setAttribute('aria-label', t(busy ? '正在加载…' : history?.can_load_older ? '加载更早消息' : '没有更早消息'));
+    }
+    async function requestOlder() {
+      resetScope();
+      if (historyRequest || state.messageRenderOptions?.history?.loading) return;
+      cancelPress(); closePreview();
+      historyNotice.classList.remove('is-directory');
+      if (!state.messageRenderOptions?.history?.can_load_older) {
+        historyNotice.textContent = t('没有更早消息'); return;
+      }
+      const request = { scope: scopeKey() }; historyRequest = request;
+      historyNotice.textContent = t('正在加载…'); paintHistory();
+      const current = () => !disposed && historyRequest === request && request.scope === scopeKey();
+      try {
+        // The existing host/protocol loads exactly one page. The message
+        // viewport alone preserves its reading anchor when the page arrives.
+        await loadOlder();
+        if (current()) {
+          historyNotice.textContent = t(state.messageRenderOptions?.history?.can_load_older ? '已加载更早消息' : '没有更早消息');
+          invalidate();
+        }
+      } catch (error) {
+        if (current()) historyNotice.textContent = t('加载失败') + ': ' + error.message;
+      } finally {
+        if (current()) { historyRequest = null; paintHistory(); }
+      }
+    }
     function showPreview(items, trigger, explicit = false) {
       if (disposed || dragging) return;
       closeMarkerMenu();
@@ -263,16 +305,10 @@
       previewResize.disconnect(); cancelAnimationFrame(previewFrame); previewFrame = 0;
       if (popup?.list) releasePreview(popup.list);
       popup = { items, trigger, explicit, expanded, contents: [] }; preview.replaceChildren(); preview.hidden = false;
-      const head = el('div', 'chatRoundPreviewHead', window.PortalI18n.text`${items.length} 条消息`);
-      const close = button('portalButton is-icon is-quiet', t('关闭'), '×'); close.onclick = () => closePreview(true); head.append(close); preview.append(head);
-      if (trigger === directory && state.messageRenderOptions?.history?.can_load_older) {
-        const earlier = button('portalButton is-quiet', t('加载更早消息'));
-        earlier.onclick = async () => {
-          const expected = scopeKey(); earlier.disabled = true;
-          try { await loadOlder(); if (!disposed && expected === scopeKey()) { measure(); showPreview(rows, directory, true); } }
-          catch (err) { if (!disposed && expected === scopeKey()) { notice.textContent = t('加载失败') + ': ' + err.message; earlier.disabled = false; } }
-        }; preview.append(earlier);
-      }
+      directory.setAttribute('aria-expanded', String(trigger === directory));
+      const head = el('div', 'chatRoundPreviewHead', trigger === directory ? t('浏览已加载轮次') : window.PortalI18n.text`${items.length} 条消息`);
+      const close = button('chatRoundClose', t('关闭'), ''); close.innerHTML = controlIcon('m5 5 10 10M15 5 5 15');
+      close.onclick = () => closePreview(true); head.append(close); preview.append(head);
       const list = el('div', 'chatRoundPreviewList');
       for (const row of items) {
         const card = el('article', 'chatRoundPreviewItem');
@@ -302,11 +338,11 @@
         }
         list.append(card);
       }
-      if (!items.length) list.append(el('p', '', t('暂无已加载轮次')));
+      if (!items.length) list.append(el('p', 'chatRoundEmpty', t('暂无已加载轮次')));
       preview.append(list); popup.list = list; bindPreview(list); measurePreview();
       for (const { jump } of popup.contents) previewResize.observe(jump);
       if (focusedFlag) preview.querySelector(`[data-round-follow="${CSS.escape(focusedFlag)}"]`)?.focus({ preventScroll: true });
-      else if (explicit) (preview.querySelector('.chatRoundPreviewJump') || close).focus({ preventScroll: true });
+      else if (explicit) { preview.tabIndex = -1; (preview.querySelector('.chatRoundPreviewJump') || preview).focus({ preventScroll: true }); }
     }
     function applyExpanded(content, value) {
       if (value) popup.expanded.add(content.key); else popup.expanded.delete(content.key);
@@ -407,8 +443,7 @@
       metrics = { total, client: viewport.clientHeight, track: scroll.clientHeight, hit, available,
         thumb: Math.min(scroll.clientHeight, Math.max(32, scroll.clientHeight * viewport.clientHeight / total)) };
       thumb.style.height = metrics.thumb + 'px'; thumb.setAttribute('aria-valuemax', String(Math.max(0, total - metrics.client)));
-      directory.setAttribute('aria-label', t(state.messageRenderOptions?.history?.can_load_older ? '仅显示已加载范围；可加载更早消息' : '浏览已加载轮次'));
-      directory.textContent = state.messageRenderOptions?.history?.can_load_older ? '↑' : '⋮';
+      paintHistory();
       layoutDirty = false; statusDirty = searchDirty = true;
       positionPreview();
     }
@@ -495,7 +530,14 @@
         tick.onclick = () => group.items.length > 1 ? showPreview(group.items, tick, true) : locate(group.items[0].key); lane.append(tick);
       }
     }
-    on(directory, 'click', () => showPreview(rows, directory, true));
+    on(older, 'click', requestOlder);
+    on(directory, 'click', () => {
+      cancelPress(); closePreview();
+      if (!rows.length) {
+        historyNotice.classList.add('is-directory'); historyNotice.textContent = t('暂无已加载轮次'); return;
+      }
+      historyNotice.textContent = ''; showPreview(rows, directory, true);
+    });
     // Refresh only this origin on entry/down (e.g. after outer-page scrolling),
     // never read layout per pointermove or per conversation scroll.
     on(rail, 'pointerenter', () => { laneTop = lane.getBoundingClientRect().top; });

@@ -72,7 +72,7 @@ if (output) fs.mkdirSync(output, { recursive: true });
           request_progress: { cursor: 10, relays: [workInput('h4', 'running')], input_states: [workInput('h1', 'completed'), workInput('h2', 'running'), workInput('h3', 'queued')] } };
         window.workspace = PortalChatWorkspace.createWorkspace({ root: document.getElementById('chat'), id: 'rail',
           title: 'Chat · 轮次阅读', historyScope: () => scope, refs: false, pinMessages: true, foldLongMessages: false,
-          onLoadOlder: async () => { loads++; if (window.deferOlder) await new Promise(resolve => window.finishOlder = resolve); },
+          onLoadOlder: async () => { loads++; if (window.loadOlderAction) return window.loadOlderAction(); if (window.deferOlder) await new Promise(resolve => window.finishOlder = resolve); },
           onRoundStatusRefresh: () => new Promise(resolve => { window.refreshCalls = (window.refreshCalls || 0) + 1; window.finishRefresh = resolve; }),
           onSearchMessages: async query => query === 'slow' ? await new Promise(resolve => window.slowSearch = resolve)
             : { messages: query === 'none' ? [] : [items[0], items[1], { ...human('not-loaded'), content: 'unloaded match' }] },
@@ -95,6 +95,136 @@ if (output) fs.mkdirSync(output, { recursive: true });
       const choice = target.locator(followed ? '.chatRoundMarkerRemove' : '.chatRoundMarkerChoice[data-round-marker="flag"]');
       if (touch) await choice.tap(); else await choice.click();
     };
+    if (process.env.RAIL_HISTORY_ONLY) {
+      const setHistory = async (target, empty = false) => {
+        await target.evaluate(empty => {
+          workspace.setMessages(empty ? [] : items, { history: { can_load_older: true } });
+          window.loadOlderAction = () => new Promise((resolve, reject) => { window.olderResolve = resolve; window.olderReject = reject; });
+        }, empty);
+        await target.waitForTimeout(100);
+      };
+      if (process.env.RAIL_HISTORY_BASELINE) {
+        await setHistory(page, true);
+        await page.locator('.chatRoundDirectory').click();
+        const observed = await page.evaluate(() => ({ loads, text: document.querySelector('.chatRoundPreview').textContent,
+          preview: !document.querySelector('.chatRoundPreview').hidden }));
+        assert.equal(observed.loads, 0); assert.equal(observed.preview, true);
+        if (output) { await page.screenshot({ path: path.join(output, 'baseline-empty-arrow.png') }); fs.writeFileSync(path.join(output, 'baseline.json'), JSON.stringify(observed, null, 2)); }
+        console.log('Baseline reproduced: arrow opens empty directory without loading'); return;
+      }
+      if (process.env.RAIL_HISTORY_EMPTY_ONLY) {
+        const emptyCheck = async (target, prefix) => {
+          await setHistory(target, true);
+          const directory = target.locator('.chatRoundDirectory');
+          if (prefix === '390') await directory.tap(); else { await directory.focus(); await target.keyboard.press('Enter'); }
+          check(prefix + ' empty directory is a compact notice without popup or request', !await target.locator('.chatRoundPreview').isVisible()
+            && await target.evaluate(() => loads === 0) && await target.locator('.chatRoundHistoryNotice').textContent() === '暂无已加载轮次');
+          const box = await target.locator('.chatRoundHistoryNotice').boundingBox(); geometry.push({ prefix, notice: box });
+          check(prefix + ' empty notice fits', box.height < 80 && box.x >= 0 && box.x + box.width <= (prefix === '390' ? 390 : 1000));
+          for (const theme of ['light', 'dark']) {
+            await target.evaluate(theme => document.documentElement.dataset.portalTheme = theme, theme);
+            if (output) await target.screenshot({ path: path.join(output, prefix + '-empty-' + theme + '.png') });
+          }
+          await setHistory(target);
+          await directory.click();
+          check(prefix + ' independent directory opens populated rounds only', await target.locator('.chatRoundPreviewItem').count() === 4 && await target.locator('.chatRoundHistoryNotice').textContent() === '');
+          await target.locator('.chatRoundClose').focus(); await target.keyboard.press('Tab'); await target.keyboard.press('Shift+Tab');
+          check(prefix + ' close focus remains compact', await target.locator('.chatRoundClose').evaluate(n => getComputedStyle(n).outlineWidth === '1px' && n.getBoundingClientRect().width <= 44));
+          if (output) await target.screenshot({ path: path.join(output, prefix + '-directory-dark.png') });
+          await target.keyboard.press('Escape');
+          check(prefix + ' Escape restores directory focus', await directory.evaluate(n => n === document.activeElement));
+          await target.evaluate(() => workspace.setMessages([], { history: { can_load_older: false } })); await target.waitForTimeout(80);
+          await target.locator('.chatRoundOlder').click({ force: true });
+          check(prefix + ' history end remains request-free', await target.evaluate(() => loads === 0) && await target.locator('.chatRoundHistoryNotice').textContent() === '没有更早消息');
+        };
+        await emptyCheck(page, 'desktop');
+        const mobile = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
+        const small = await mobile.newPage(); small.on('pageerror', error => errors.push(error.message)); await setup(small);
+        await small.evaluate(() => document.documentElement.style.fontSize = '20px');
+        await emptyCheck(small, '390'); await mobile.close();
+        assert.deepEqual(errors, []);
+        if (output) fs.writeFileSync(path.join(output, 'result.json'), JSON.stringify({ checks, geometry, errors, boundary: 'Empty-directory increment only; other pagination checks reuse prior history result.' }, null, 2));
+        console.log('Empty-directory increment passed: ' + checks.length); return;
+      }
+      const arrow = page.locator('.chatRoundOlder');
+      await setHistory(page);
+      await page.locator('.paneBody').first().hover(); await page.mouse.wheel(0, -600);
+      await page.waitForTimeout(120);
+      const anchor = await page.locator('[data-message-key="h2"]').evaluate(n => n.getBoundingClientRect().top);
+      await arrow.click();
+      await arrow.dispatchEvent('click');
+      check('arrow immediately loads one page and repeat click is coalesced', await page.evaluate(() => loads === 1));
+      check('loading is compact, accessible and never opens directory', await arrow.getAttribute('aria-busy') === 'true'
+        && await page.locator('.chatRoundHistoryNotice').textContent() === '正在加载…' && !await page.locator('.chatRoundPreview').isVisible());
+      await page.evaluate(() => {
+        items = [human('older1', '更早的一轮'), agent('older2', 'older1'), ...items];
+        workspace.setMessages(items, { history: { can_load_older: true } }); olderResolve();
+      });
+      await page.waitForTimeout(180);
+      check('prepend keeps existing reading anchor', Math.abs(await page.locator('[data-message-key="h2"]').evaluate(n => n.getBoundingClientRect().top) - anchor) < 2);
+      check('load success is announced without opening a popup', await page.locator('.chatRoundHistoryNotice').textContent() === '已加载更早消息' && !await page.locator('.chatRoundPreview').isVisible());
+      await arrow.focus(); await page.keyboard.press('Enter');
+      await page.evaluate(() => olderReject(new Error('fixture denied'))); await page.waitForTimeout(100);
+      check('failure stays readable and retryable', (await page.locator('.chatRoundHistoryNotice').textContent()).includes('fixture denied') && await arrow.getAttribute('aria-disabled') === 'false');
+      if (output) await page.screenshot({ path: path.join(output, 'desktop-failure.png') });
+      await arrow.click();
+      await page.evaluate(() => { workspace.setMessages(items, { history: { can_load_older: false } }); olderResolve(); });
+      await page.waitForTimeout(100);
+      const calls = await page.evaluate(() => loads); await arrow.click({ force: true });
+      check('end of history never loads or opens empty directory', await page.evaluate(() => loads) === calls
+        && await page.locator('.chatRoundHistoryNotice').textContent() === '没有更早消息' && !await page.locator('.chatRoundPreview').isVisible());
+      await setHistory(page, true); await page.locator('.chatRoundDirectory').click();
+      check('empty directory uses a notice instead of a zero-message popup', !await page.locator('.chatRoundPreview').isVisible()
+        && await page.locator('.chatRoundHistoryNotice').textContent() === '暂无已加载轮次');
+      await arrow.click();
+      await page.evaluate(() => { window.oldResolve = olderResolve; scope = 'resident:next'; workspace.setMessages([human('next')], { history: { can_load_older: true } }); });
+      await page.waitForTimeout(100); await arrow.click();
+      await page.evaluate(() => oldResolve()); await page.waitForTimeout(80);
+      check('late old success cannot clear new request loading', await arrow.getAttribute('aria-busy') === 'true' && await page.locator('.chatRoundHistoryNotice').textContent() === '正在加载…');
+      await page.evaluate(() => olderReject(new Error('new failure'))); await page.waitForTimeout(80);
+      await arrow.click();
+      await page.evaluate(() => { window.oldReject = olderReject; scope = 'resident:third'; workspace.setMessages([], { history: { can_load_older: false } }); });
+      await page.waitForTimeout(100); await page.evaluate(() => oldReject(new Error('late private error'))); await page.waitForTimeout(80);
+      check('late failure after conversation switch is isolated', await page.locator('.chatRoundHistoryNotice').textContent() === '');
+      await page.locator('.chatRoundDirectory').click();
+      if (output) await page.screenshot({ path: path.join(output, 'desktop-empty.png') });
+      await setHistory(page); await page.locator('.chatRoundDirectory').click();
+      await page.locator('.chatRoundClose').focus(); await page.keyboard.press('Tab'); await page.keyboard.press('Shift+Tab');
+      const closeGeometry = await page.locator('.chatRoundClose').evaluate(n => ({ focus: n === document.activeElement, outline: getComputedStyle(n).outlineWidth, width: n.getBoundingClientRect().width }));
+      geometry.push({ closeGeometry });
+      assert.deepEqual(closeGeometry, { focus: true, outline: '1px', width: 32 }); checks.push('close has compact visible keyboard focus');
+      await page.evaluate(() => document.documentElement.dataset.portalTheme = 'dark');
+      if (output) await page.screenshot({ path: path.join(output, 'desktop-empty-dark.png') });
+      const mobile = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
+      const small = await mobile.newPage(); small.on('pageerror', error => errors.push(error.message)); await setup(small);
+      await small.evaluate(() => document.documentElement.style.fontSize = '20px');
+      await setHistory(small, true); await small.locator('.chatRoundOlder').tap();
+      check('390 touch loads directly without popup', await small.evaluate(() => loads === 1) && !await small.locator('.chatRoundPreview').isVisible());
+      const box = await small.locator('.chatRoundOlder').boundingBox();
+      check('touch history control has 44px target', box.width >= 44 && box.height >= 44);
+      if (output) await small.screenshot({ path: path.join(output, '390-loading-light.png') });
+      await small.evaluate(() => { workspace.setMessages([], { history: { can_load_older: false } }); olderResolve(); });
+      await small.waitForTimeout(80); await small.locator('.chatRoundDirectory').tap();
+      const previewBox = await small.locator('.chatRoundHistoryNotice').boundingBox(); geometry.push({ previewBox, arrow: box });
+      check('390 20px empty notice fits without a popup', !await small.locator('.chatRoundPreview').isVisible() && previewBox.height < 80 && previewBox.x >= 0 && previewBox.x + previewBox.width <= 390);
+      for (const theme of ['light', 'dark']) {
+        await small.evaluate(theme => document.documentElement.dataset.portalTheme = theme, theme);
+        if (output) await small.screenshot({ path: path.join(output, '390-empty-' + theme + '.png') });
+      }
+      await setHistory(small); await small.locator('.chatRoundDirectory').tap();
+      check('independent directory keeps every loaded round', await small.locator('.chatRoundPreviewItem').count() === 4);
+      if (output) await small.screenshot({ path: path.join(output, '390-directory-dark.png') });
+      await small.locator('.chatRoundPreviewJump').first().tap();
+      check('directory still locates exact selected message', await small.locator('[data-message-key="h1"]').evaluate(n => n.classList.contains('messageQuoteTarget')));
+      await small.locator('.chatRoundOlder').tap();
+      await small.evaluate(() => { workspace.destroy(); olderReject(new Error('destroyed request')); });
+      await small.waitForTimeout(80);
+      check('destroyed workspace ignores pending page failure', await small.locator('.chatRoundHistoryNotice').count() === 0);
+      await mobile.close();
+      assert.deepEqual(errors, []);
+      if (output) fs.writeFileSync(path.join(output, 'result.json'), JSON.stringify({ checks, geometry, errors, boundary: 'Native shared Chat/styles; isolated synthetic pagination. No User session, business writes or formal Run.' }, null, 2));
+      console.log('History entry checks passed: ' + checks.length); return;
+    }
     if (process.env.RAIL_REFERENCES_ONLY) {
       const mediaRequests = [];
       await page.route('**/api/uploads/**', route => {

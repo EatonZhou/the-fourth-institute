@@ -484,8 +484,13 @@
 .chatRoundViewport > .paneBody > .messageList { padding-inline-end:4px; }
 .chatRoundViewport > .paneBody::-webkit-scrollbar { display:none; }
 .chatRoundRail { position:relative; flex:0 0 46px; width:46px; min-height:0; color:var(--muted, #687887); background:var(--panel, transparent); }
-.chatRoundDirectory { position:absolute; top:0; left:0; width:30px; height:30px; padding:0; border:0; background:transparent; color:inherit; cursor:pointer; font-size:1.1rem; }
-.chatRoundLane { position:absolute; top:32px; bottom:8px; left:0; width:30px; }
+.chatRoundDirectory,.chatRoundOlder { position:absolute; left:0; width:30px; height:30px; display:grid; place-items:center; padding:0; border:0; border-radius:5px; background:transparent; color:inherit; cursor:pointer; }
+.chatRoundOlder { top:0; }
+.chatRoundDirectory { bottom:4px; }
+.chatRoundDirectory svg,.chatRoundOlder svg,.chatRoundClose svg { width:18px; height:18px; pointer-events:none; }
+.chatRoundOlder[aria-disabled=true] { opacity:.5; cursor:default; }
+.chatRoundOlder:hover,.chatRoundDirectory:hover,.chatRoundClose:hover { background:var(--bg, #8291a414); }
+.chatRoundLane { position:absolute; top:34px; bottom:38px; left:0; width:30px; }
 .chatRoundLane::before { content:''; position:absolute; left:14.5px; top:0; bottom:0; width:1px; background:var(--border, #8291a426); pointer-events:none; }
 .chatRoundNode { position:absolute; transform:translateY(-50%); left:0; width:30px; height:26px; border:0; padding:0; background:transparent; color:inherit; cursor:pointer; touch-action:pan-y; }
 .chatRoundNode > span { pointer-events:none; }
@@ -512,8 +517,10 @@
 .chatRoundPreview { position:absolute; z-index:25; right:48px; width:min(328px, calc(100% - 56px)); max-height:calc(100% - 8px); display:flex; flex-direction:column; color:var(--text, #243343); background:var(--panel, #fff); border:1px solid var(--border, #8291a44d); border-radius:8px; box-shadow:0 4px 18px #0002; overflow:hidden; }
 .chatRoundPreview[hidden] { display:none; }
 .chatRoundPreview { background:rgb(from var(--panel, #fff) r g b / 1); }
-.chatRoundPreviewHead { display:flex; align-items:center; justify-content:space-between; padding:2px 8px 2px 12px; font-size:.75rem; color:var(--muted); flex:0 0 auto; }
-.chatRoundPreviewHead > button { width:32px; height:32px; padding:0; font-weight:400; }
+.chatRoundPreviewHead { display:flex; align-items:center; justify-content:space-between; gap:8px; padding:4px 6px 4px 12px; font-size:.75rem; color:var(--muted); flex:0 0 auto; }
+.chatRoundClose { display:grid; place-items:center; flex:0 0 32px; width:32px; height:32px; padding:0; border:0; border-radius:4px; color:inherit; background:transparent; cursor:pointer; }
+.chatRoundPreview:focus { outline:none; }
+.chatRoundEmpty { margin:0; padding:6px 12px 14px; color:var(--muted); font-size:.8rem; line-height:1.5; }
 .chatRoundPreviewList { overflow:auto; min-height:0; overscroll-behavior:contain; }
 .chatRoundPreviewItem { display:flex; align-items:flex-start; gap:8px; padding:6px 8px 8px 12px; border-top:1px solid var(--border, #8291a426); }
 .chatRoundPreviewContent { flex:1 1 auto; min-width:0; }
@@ -543,18 +550,23 @@
 .chatRoundPreview button:focus-visible { outline:2px solid var(--accent, #578fcf); outline-offset:1px; }
 .chatRoundNotice { position:absolute; bottom:0; left:8px; right:48px; font-size:.8rem; background:var(--panel, #fff); color:var(--text, #243343); }
 .chatRoundNotice:empty { display:none; }
+.chatRoundHistoryNotice { position:absolute; z-index:26; top:6px; right:48px; width:max-content; max-width:calc(100% - 64px); padding:6px 10px; border:1px solid var(--border); border-radius:6px; color:var(--text); background:var(--panel, #fff); background:rgb(from var(--panel, #fff) r g b / 1); font-size:.75rem; line-height:1.4; overflow-wrap:anywhere; pointer-events:none; }
+.chatRoundHistoryNotice:empty { display:none; }
+.chatRoundHistoryNotice.is-directory { top:auto; bottom:6px; }
+.chatRoundPreview .chatRoundClose:focus-visible { outline:1px solid var(--accent, #578fcf); outline-offset:-3px; box-shadow:none; }
 .is-paused .chatRoundCore::before { animation-play-state:paused !important; }
 @media (prefers-reduced-motion:reduce) { .chatRoundCore::before { animation:none !important; opacity:.16 !important; } }
 @media (pointer:coarse) {
   .chatRoundRail { flex-basis:62px; width:62px; }
-  .chatRoundDirectory,.chatRoundNode { width:44px; min-height:44px; }
-  .chatRoundLane { width:44px; top:48px; }
+  .chatRoundDirectory,.chatRoundOlder,.chatRoundNode { width:44px; min-height:44px; }
+  .chatRoundLane { width:44px; top:48px; bottom:52px; }
   .chatRoundLane::before { left:20.5px; }
   .chatRoundCore { left:18px; }
   .chatRoundNode.is-current::after { left:15px; }
   .chatRoundNode.is-current.is-followed::after { left:13px; }
   .chatRoundFlag { left:14px; }
   .chatRoundPreview { right:64px; width:min(328px, calc(100% - 72px)); }
+  .chatRoundHistoryNotice { right:64px; max-width:calc(100% - 80px); }
   .chatRoundPreview button { min-height:44px; }
   .chatRoundPreviewHead > button,.chatRoundFollow { width:44px; flex-basis:44px; }
   .chatRoundFollow { margin-top:42px; }

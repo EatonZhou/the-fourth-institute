@@ -23146,6 +23146,8 @@
     "en": "Load more results",
     "zh-CN": "加载更多结果"
   },
+  "已加载更早消息": {"zh-CN": "已加载更早消息", "en": "Earlier messages loaded"},
+  "没有更早消息": {"zh-CN": "没有更早消息", "en": "No earlier messages"},
   "加载更早消息": {
     "en": "Load earlier messages",
     "zh-CN": "加载更早消息"
