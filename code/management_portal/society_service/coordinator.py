@@ -393,6 +393,25 @@ class LineageCoordinator:
             self._pending_lineages.clear()
         return residents, lineages, terminals
 
+    def diagnostics(self) -> dict[str, Any]:
+        """Owner counts only, without retaining facts, IDs or Future results."""
+        with self._lock:
+            result = {'active_work': len(self._work),
+                      'pending_arrivals': len(self._pending_arrivals),
+                      'pending_cancellations': len(self._pending_cancellations),
+                      'pending_terminals': len(self._pending_terminals),
+                      'pending_residents': len(self._pending_residents),
+                      'pending_lineages': len(self._pending_lineages),
+                      'retry_lineages': len(self._lineage_retries),
+                      'wake_lineages': len(self._lineage_wakes)}
+            executors = [('coordination', self._executor), ('lifecycle', self._lifecycle_executor),
+                         ('cancellation', self._cancellation_executor), ('arrival', self._arrival_executor)]
+        result['executors'] = {name: {'threads': len(executor._threads),
+                                      'queued': executor._work_queue.qsize(),
+                                      'capacity': executor._max_workers}
+                               for name, executor in executors if executor is not None}
+        return result
+
     def snapshot(self) -> dict[str, Any]:
         with self._lock:
             snapshot = {

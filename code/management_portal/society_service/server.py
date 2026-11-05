@@ -65,12 +65,15 @@ from .resident_resource_projection import ResidentResourceProjectionWorker
 from . import execution_client, principal_hierarchy_domain, resource_client
 
 
-def _initialize_read_worker() -> None:
+def _initialize_read_worker(role: str = 'read') -> None:
     """Initialize one read-only Lineage projection process."""
 
     loaded_modules.track()
     os.environ["PORTAL_LINEAGE_READ_WORKER"] = "1"
     configure_default_domain_ports()
+    from . import memory_profile
+    memory_profile.install(role=role)
+    memory_profile.start()
     # Stores initialize on the first real read. Warming an otherwise idle
     # projection process opens several domain pools in each service generation.
 
@@ -157,8 +160,9 @@ def _read_instruction_response(params: dict[str, Any], request_id: str, verified
 class LineageReadProcessPool:
     """Fixed multi-process execution boundary for canonical read projections."""
 
-    def __init__(self, workers: int) -> None:
+    def __init__(self, workers: int, *, role: str = 'read') -> None:
         self.workers = max(0, int(workers))
+        self._role = role
         self._lock = threading.Lock()
         self._executor: concurrent.futures.ProcessPoolExecutor | None = None
         self._closed = False
@@ -174,6 +178,7 @@ class LineageReadProcessPool:
             max_workers=self.workers,
             mp_context=multiprocessing.get_context("spawn"),
             initializer=_initialize_read_worker,
+            initargs=(self._role,),
         )
 
     def _start(self) -> None:
@@ -645,7 +650,15 @@ class SocietyServiceServer(LocalServiceSocketMixin, DrainingStreamServer):
         # Full Inbox activity pages cannot occupy the workers that serve Chat;
         # several pages are read at once (one process queued them behind
         # each other into 504s).
-        self.conversation_index_pool = LineageReadProcessPool(min(CONVERSATION_INDEX_WORKERS, read_workers))
+        self.conversation_index_pool = LineageReadProcessPool(min(CONVERSATION_INDEX_WORKERS, read_workers), role='index')
+        from .memory_profile import configure_runtime
+        configure_runtime(self.memory_diagnostics)
+
+    def memory_diagnostics(self) -> dict:
+        with self._requests_lock:
+            connections = len(self._requests)
+        return {'rpc_connections': connections, 'coordinator': self.coordinator.diagnostics(),
+                'read_pool': self.read_pool.health(), 'index_pool': self.conversation_index_pool.health()}
 
     def serve_forever(self, poll_interval: float = 0.2) -> None:
         from .system_workflow_switches import restore

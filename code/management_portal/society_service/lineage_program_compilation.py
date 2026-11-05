@@ -112,6 +112,14 @@ _COMPILED_PLANS_LOCK = threading.Lock()
 _COMPILED_NODE_FIELDS = ("id", "operator_executor")
 
 
+def plan_cache_diagnostics() -> dict:
+    from management_common.memory_observation import json_footprint
+    with _COMPILED_PLANS_LOCK:
+        plans = list(_COMPILED_PLANS.values())
+    return {'entries': len(plans), 'max_entries': _COMPILED_PLAN_LIMIT,
+            **json_footprint(plans)}
+
+
 def compile_program(
     program: object,
     nodes: Iterable[dict[str, Any]],

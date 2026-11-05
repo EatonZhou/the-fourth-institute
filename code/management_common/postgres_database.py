@@ -32,6 +32,20 @@ _POOL_REGISTRY: dict[tuple[int, str, str, int, int, float, bool], _SharedPool] =
 _READY_SCHEMAS: set[tuple[int, str, str]] = set()
 
 
+def pool_diagnostics() -> dict:
+    """Numeric ownership/capacity counters; never expose DSNs or parameters."""
+    with _POOL_REGISTRY_LOCK:
+        records = [(key[2] or 'shared', shared.references, shared.pool)
+                   for key, shared in _POOL_REGISTRY.items() if key[0] == os.getpid()]
+    pools = []
+    for schema, references, pool in records:
+        stats = pool.get_stats()
+        pools.append({'schema': schema, 'owners': references,
+                      'closed': bool(pool.closed),
+                      'stats': {key: value for key, value in stats.items() if type(value) is int}})
+    return {'pool_count': len(pools), 'pools': pools}
+
+
 def close_all_database_pools() -> None:
     """Close every PostgreSQL pool owned by the current process.
 

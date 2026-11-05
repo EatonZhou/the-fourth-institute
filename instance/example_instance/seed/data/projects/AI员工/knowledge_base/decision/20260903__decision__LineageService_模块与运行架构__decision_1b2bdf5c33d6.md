@@ -4,15 +4,15 @@ type: decision
 project: AI员工
 created_at: '2026-09-03'
 version:
-  number: 42
+  number: 43
   created_at: "2026-09-03"
   created_by:
     user: ""
     agent: ""
-  updated_at: "2026-11-04T19:19:32Z"
+  updated_at: "2026-11-05T04:04:00Z"
   updated_by:
     user: ""
-    agent: "resident_6199a7a36480"
+    agent: "resident_dbcd3920b7cc"
 importance: 10
 metaness: 3
 ai_generated: false
@@ -258,16 +258,13 @@ SocietyService 按数据一致性边界保护提交；锁种类、取锁顺序�
 
 ### 有界内存诊断
 
-SocietyService 的正常启动不启用分配跟踪或采样。实例操作员可以在 runtime/diagnostics/society-memory-profile.json 写入短期诊断租约（expires_at 为 Unix 秒，剩余有效期最多240秒，interval_seconds 为20至60秒），在下一次该组件正式加载时观察当前服务主进程；读取 worker 不启动该采样器。最多采集八次：首尾记录源码位置的分配字节聚合，中间只读取当前/峰值分配、跟踪器元数据、OS 占用与 GC 计数，避免反复生成大型统计快照。源码调用栈最多四层，最大聚合项数量固定。到期关闭跟踪并写出停止回执。
+Society与独立读取进程共用一个诊断owner，默认不采样、不跟踪分配、不轮询租约。操作员在私有runtime/diagnostics/society-memory-profile.json写入有期限租约。分配跟踪模式最多240秒、八个样本；仅分配器计量模式 trace_allocations=false 最多1800秒、24个样本，间隔20至300秒。到期退出并写停止回执，采集本身不重启服务、不改变分配器策略或业务缓存。
 
-诊断不枚举活对象或调用 gc.get_objects/get_referrers/get_referents，不取得构造中对象的强引用；仅为聚合而保留这些引用也可能干扰 CPython 对 tuple 等对象的构造。诊断不记录对象值、repr、locals、消息正文或原始堆，不强制GC或释放业务缓存。输出以私有文件写入同一诊断目录，操作员结束后移走证据并删除租约；跟踪器元数据与采样耗时单独列出。
+主进程、读worker和索引worker分别记录自己的PID、创建时刻、monotonic时点及固定role。Linux只在SIGUSR1未被占用时安装操作员触发入口，targets将PID映射到创建时刻毫秒，身份失配拒绝采集；同代后续观察不需要重载。Windows在必要组件加载时可使用include_workers=true的启动租约，同时要求capture_id和created_after，旧进程不接纳新启动窗口。传统不含worker范围的租约只观察主进程，不使worker意外采样。capture_id只接受有界安全标识，各行与停止回执保留归属。
 
-tracemalloc 活分配、跟踪器开销与 OS 私有内存是不同口径，不能直接相加或将差值宣称为泄漏。诊断只观察当前代际；已有服务没有启用跟踪时，不能用另一个 Python 进程的堆替代它。组件加载遵守已有执行恢复与正在进行任务的检查点，诊断不改变输入、接单开关、历史或权限。
+计量读取CPython 3.12小对象arena/已用块/空闲块/pool，Linux glibc已用/空闲/mmap，Windows默认进程堆已分配/提交/保留及OS内存。CPython计量持有GIL，通过独立FILE读取固定大小级表，不重定向服务日志。分配器容量与RSS不是同一口径，glibc已用可能含Python大对象及线程tcache，统计之间有重叠；API不支持时明确不可用。
 
-
-诊断同时读取分配器自身的数值计量：CPython 3.12 的小对象 arena 容量、已用块、空闲块及未用pool；Linux glibc 的 arena 已用/空闲与 mmap 容量；Windows 默认进程堆的已分配/提交/保留容量。CPython统计持有GIL，通过独立私有FILE流读取固定大小级表，不重定向服务日志、不枚举对象。版本或API不支持时明确记录不可用。glibc的已用块可包含Python的大对象与线程tcache，统计不提供所有native对象的类型；这些容量与RSS、tracemalloc互有重叠，不能简单相加。
-
-租约可指定严格布尔值 trace_allocations=false，仅采集分配器、OS和GC计数，不启动或停止tracemalloc。每个服务同一时刻只接受一份有界采集。Linux在SIGUSR1未被使用时安装操作员触发入口：确认已加载此能力及当前进程创建身份后，写入新短期租约并发送SIGUSR1，可观察同一代际的后续业务/空闲，无需再次重载；没有有效租约不执行采集。Windows沿普通桌面加载时读取租约。所有入口保持240秒与八个样本上限，到期退出并保留停止回执，不轮询租约、不改变分配器策略或回收业务对象。
+线程观察只读取线程注册表及源码文件/函数/行号并按职责归组；不读取locals或值，不加载源码正文。任务、RPC连接、数据库池、Lineage短期投影及编译计划只由各自owner导出计数/容量；已完成JSON缓存的大小遍历限制节点数与时间，截断时输出下界标志。观察器不导出DSN、环境、命令行、请求或知识内容，不通过GC枚举寻找对象，不强制GC或清理缓存。跟踪器与观察开销单列；操作员归档后精确移除自己的租约和输出。
 
 ### 读取性能
 

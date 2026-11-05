@@ -58,6 +58,10 @@ LINEAGE_FOLDER_SCHEMA = "lineage-folder-v3"
 _LINEAGE_READ_CACHE = lineage_read_cache.LineageReadCache()
 
 
+def read_cache_diagnostics() -> dict:
+    return _LINEAGE_READ_CACHE.diagnostics()
+
+
 def _now_iso() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
 

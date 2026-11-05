@@ -8,6 +8,7 @@ import json
 import threading
 import time
 import weakref
+from management_common.memory_observation import json_footprint
 from pathlib import Path
 from typing import Any, Callable
 
@@ -96,6 +97,17 @@ class LineageReadCache:
     def clear(self, kind: str) -> None:
         with self._lock:
             self._records[kind].clear()
+
+    def diagnostics(self) -> dict:
+        """Inspect only this owner's completed cache records, within a budget."""
+        now = time.monotonic()
+        with self._lock:
+            records = [record for cache in self._records.values() for record in cache.values()]
+            kinds = {kind: {'entries': len(cache),
+                           'expired': sum(record['expires_at'] <= now for record in cache.values())}
+                     for kind, cache in self._records.items()}
+        return {'kinds': kinds, 'max_entries_per_kind': self._max_entries,
+                'ttl_seconds': self._ttl_seconds, **json_footprint(records)}
 
 
 def definition_fingerprint(

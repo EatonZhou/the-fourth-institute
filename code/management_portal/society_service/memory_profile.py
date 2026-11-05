@@ -13,6 +13,10 @@ import os
 from pathlib import Path
 import signal
 import sys
+import re
+import math
+import weakref
+from collections import Counter
 import threading
 import time
 import tracemalloc
@@ -21,14 +25,72 @@ from management_common.file_permissions import atomic_write_private_bytes, creat
 from management_common.instance_manifest import instance_runtime_root
 
 _running = threading.Lock()
+_role = 'main'
+_runtime_provider = None
 
 
-def install() -> bool:
+def configure_runtime(provider) -> None:
+    global _runtime_provider
+    _runtime_provider = weakref.WeakMethod(provider)
+
+
+def thread_summary() -> dict:
+    """Known live threads and source positions, never locals or object values."""
+    groups = Counter()
+    frames = sys._current_frames()
+    threads = threading.enumerate()
+    try:
+        for thread in threads:
+            name = re.sub(r'[0-9]+', '#', thread.name)
+            frame = frames.get(thread.ident)
+            stack = []
+            for _ in range(5):
+                if frame is None:
+                    break
+                stack.append((_location(frame.f_code.co_filename), frame.f_code.co_name, frame.f_lineno))
+                frame = frame.f_back
+            groups[(name, tuple(stack))] += 1
+    finally:
+        frame = None
+        frames.clear()
+    return {'python_threads': len(threads), 'groups': [
+        {'name': key[0], 'count': count,
+         'stack': [{'file': file, 'function': function, 'line': line} for file, function, line in key[1]]}
+        for key, count in groups.most_common(64)]}
+
+
+def holdings_summary() -> dict:
+    owners = {}
+    for label, module_name, method in [
+        ('database_pools', 'management_common.postgres_database', 'pool_diagnostics'),
+        ('lineage_read_cache', 'management_portal.society_service.lineage_state', 'read_cache_diagnostics'),
+        ('compiled_plans', 'management_portal.society_service.lineage_program_compilation', 'plan_cache_diagnostics')]:
+        module = sys.modules.get(module_name)
+        provider = getattr(module, method, None) if module is not None else None
+        if provider is not None:
+            try:
+                owners[label] = provider()
+            except Exception as error:
+                owners[label] = {'diagnostic_error_type': type(error).__name__}
+    provider = _runtime_provider() if _runtime_provider is not None else None
+    if provider is not None:
+        try:
+            owners['runtime'] = provider()
+        except Exception as error:
+            owners['runtime'] = {'diagnostic_error_type': type(error).__name__}
+    return owners
+
+
+def install(*, role: str = 'main') -> bool:
     """POSIX operator trigger: sample an existing generation under a new lease.
 
     SIGUSR1 is installed only when unused. It does no work without a current
     private operator lease; Windows retains the startup-lease entry.
     """
+    global _role
+    if role not in {'main', 'read', 'index'}:
+        raise ValueError('unknown diagnostic role')
+    _role = role
     if not hasattr(signal, 'SIGUSR1') or signal.getsignal(signal.SIGUSR1) != signal.SIG_DFL:
         return False
     signal.signal(signal.SIGUSR1, lambda *_: start())
@@ -89,8 +151,10 @@ def sample(*, detailed: bool = True) -> dict:
     except ImportError:
         native = {"available": False}
     return {"pid": os.getpid(), "sample_epoch": time.time(), "allocated_blocks": sys.getallocatedblocks(),
+            "monotonic": time.monotonic(), 'role': _role,
             "allocations": allocations, "gc": garbage_collection, "process": native,
             "allocators": allocators,
+            'threads': thread_summary(), 'holdings': holdings_summary(),
             "sampling_seconds": time.monotonic() - started}
 
 
@@ -100,12 +164,37 @@ def start() -> threading.Thread | None:
     try:
         lease = json.loads((folder / "society-memory-profile.json").read_text(encoding="utf-8"))
         remaining = float(lease["expires_at"]) - time.time()
-        if not 0 < remaining <= 240 or tracemalloc.is_tracing():
-            return None
-        interval = max(20.0, min(float(lease.get("interval_seconds", 30)), 60.0))
         trace_allocations = lease.get("trace_allocations", True)
         if not isinstance(trace_allocations, bool):
             return None
+        if not 0 < remaining <= (240 if trace_allocations else 1800) or tracemalloc.is_tracing():
+            return None
+        requested_interval = float(lease.get('interval_seconds', 30))
+        if not math.isfinite(requested_interval):
+            return None
+        interval = max(20.0, min(requested_interval, 60.0 if trace_allocations else 300.0))
+        limit = lease.get('sample_limit', 8)
+        if type(limit) is not int or not 1 <= limit <= (8 if trace_allocations else 24):
+            return None
+        capture_id = lease.get('capture_id')
+        if capture_id is not None and (not isinstance(capture_id, str) or
+                re.fullmatch(r'[A-Za-z0-9_.-]{1,80}', capture_id) is None):
+            return None
+        if lease.get('include_workers') is True and (capture_id is None or 'created_after' not in lease):
+            return None
+        targets = lease.get('targets')
+        if targets is not None:
+            import psutil
+            expected = targets.get(str(os.getpid())) if isinstance(targets, dict) else None
+            if type(expected) is not int or abs(int(psutil.Process().create_time() * 1000) - expected) > 10:
+                return None
+        elif _role != 'main' and lease.get('include_workers') is not True:
+            return None
+        if 'created_after' in lease:
+            import psutil
+            created_after = float(lease['created_after'])
+            if not math.isfinite(created_after) or psutil.Process().create_time() < created_after:
+                return None
     except (OSError, ValueError, TypeError, KeyError):
         return None
     if not _running.acquire(blocking=False):
@@ -124,14 +213,16 @@ def start() -> threading.Thread | None:
         deadline = time.monotonic() + remaining
         try:
             with create_private_file(target) as stream:
-                for index in range(8):
+                for index in range(limit):
                     try:
                         # Snapshot aggregation allocates temporary objects too.
                         # Use cheap live counters between the first/last detail.
-                        row = sample(detailed=index in (0, 7) or deadline - time.monotonic() <= interval)
+                        row = sample(detailed=index in (0, limit - 1) or deadline - time.monotonic() <= interval)
                     except Exception as error:
                         # The exception's message/locals may contain business data.
                         row = {"diagnostic_error_type": type(error).__name__}
+                    if capture_id is not None:
+                        row['capture_id'] = capture_id
                     stream.write((json.dumps(row, separators=(",", ":")) + "\n").encode())
                     stream.flush()
                     delay = min(interval, deadline - time.monotonic())
@@ -146,6 +237,7 @@ def start() -> threading.Thread | None:
                     tracemalloc.stop()
                 atomic_write_private_bytes(target.with_suffix(".done.json"), json.dumps({
                     "pid": os.getpid(), "stopped_epoch": time.time(), "tracing": tracemalloc.is_tracing(),
+                    **({'capture_id': capture_id} if capture_id is not None else {}),
                 }).encode())
             finally:
                 _running.release()
