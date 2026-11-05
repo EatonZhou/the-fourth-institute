@@ -140,6 +140,12 @@ def test_recovery_revalidates_handoff_under_admission_lock(tmp_path, monkeypatch
         assert authority._OWNERS[lid] == get_ident()
         assert lineage_instruction_context.current_event_identity() == saved_identity
         settled.append((args, kwargs))
+        return "committed-terminal-work"
+
+    def follow_up(prepared, **kwargs):
+        assert prepared == "committed-terminal-work"
+        assert lid not in authority._OWNERS
+        assert lineage_instruction_context.current_event_identity() == saved_identity
         return {}
 
     def edit():
@@ -164,7 +170,7 @@ def test_recovery_revalidates_handoff_under_admission_lock(tmp_path, monkeypatch
 
     ports = terminal.ProgramTerminalPorts(
         state=SimpleNamespace(read_lineage=lambda *a, **k: deepcopy(graph), ensure_manager=lambda *_: None,
-                              lineage_scope=lambda _: nullcontext()),
+                              lineage_scope=lambda *a, **kw: nullcontext()),
         resident=SimpleNamespace(resident_input_reconciliation_state=read_evidence,
                                  handle_resident_message_terminal=settle,
                                  node_has_active_execution=lambda *_: False,
@@ -176,6 +182,8 @@ def test_recovery_revalidates_handoff_under_admission_lock(tmp_path, monkeypatch
     monkeypatch.setattr(lineage_program_resident_inputs, "pending_resident_handoffs", lambda _: deepcopy(current))
     monkeypatch.setattr(terminal.trigger_paths, "resident_inputs", lambda *a, **k: deepcopy(current))
     monkeypatch.setattr(terminal, "_compiled_program", lambda _: {})
+    monkeypatch.setattr(terminal, "prepare_resident_terminal", settle)
+    monkeypatch.setattr(terminal, "finish_resident_terminal", follow_up)
     with ThreadPoolExecutor(max_workers=2) as pool:
         recovery = pool.submit(terminal.reconcile_runtime_with_authority, lid, "sample_admin", ports=ports, recovery_only=True)
         try:

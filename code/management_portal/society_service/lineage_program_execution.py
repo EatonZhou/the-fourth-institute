@@ -1,6 +1,7 @@
 """Program Operator and Resident execution policy. Aggregate writes remain in the supplied authority ports."""
 from __future__ import annotations
 
+import json
 import logging
 from collections.abc import Iterable
 from contextlib import AbstractContextManager
@@ -508,6 +509,7 @@ def _claim_operator_delivery(
         lineage_id,
         turn.operator_id,
         expected_execution_id,
+        expected=pending,
     )
     if not pending:
         return None
@@ -595,6 +597,42 @@ def _first_failed_route(routed: dict[str, Any]) -> dict[str, Any] | None:
     )
 
 
+@dataclass(frozen=True)
+class OperatorCompletionClaim:
+    """One accepted completion; its JSON snapshot cannot be mutated by callers."""
+
+    lineage_id: str
+    executor_resident_id: str
+    message_id: str
+    actor: str
+    snapshot_json: str
+
+
+def prepare_operator_completion(
+    lineage_id: str,
+    executor_resident_id: str,
+    expected_execution_id: str,
+    actor: str,
+    *,
+    ports: ProgramExecutionPorts,
+) -> OperatorCompletionClaim | None:
+    """Re-read definition and atomically take the pending completion under short authority."""
+    with ports.state.lineage_scope(lineage_id), ports.state.lineage_execution_authority(lineage_id):
+        turn = _executor_turn(lineage_id, executor_resident_id, expected_execution_id, actor, ports=ports)
+        if turn is None:
+            return None
+        claimed = _claim_operator_delivery(lineage_id, turn, executor_resident_id, expected_execution_id, ports=ports)
+        if claimed is None:
+            return None
+        pending, event, resumed_actor = claimed
+        snapshot = {"turn": {"operator_id": turn.operator_id, "operator": turn.operator,
+                             "lineage_snapshot": turn.lineage_snapshot,
+                             "executor_snapshot": turn.executor_snapshot, "plan": turn.plan},
+                    "pending": pending, "event": event.to_dict()}
+        return OperatorCompletionClaim(lineage_id, executor_resident_id, expected_execution_id,
+                                       resumed_actor, json.dumps(snapshot, ensure_ascii=False))
+
+
 def complete_operator_invocation(
     lineage_id: str,
     executor_resident_id: str,
@@ -604,13 +642,23 @@ def complete_operator_invocation(
     terminal_status: str = "completed",
     ports: ProgramExecutionPorts,
 ) -> dict[str, Any] | None:
-    turn = _executor_turn(lineage_id, executor_resident_id, expected_execution_id, actor, ports=ports)
-    if turn is None:
-        return None
-    claim = _claim_operator_delivery(lineage_id, turn, executor_resident_id, expected_execution_id, ports=ports)
-    if claim is None:
-        return None
-    pending, event, actor = claim
+    claim = prepare_operator_completion(lineage_id, executor_resident_id, expected_execution_id, actor, ports=ports)
+    return finish_operator_completion(claim, terminal_status=terminal_status, ports=ports) if claim else None
+
+
+def finish_operator_completion(
+    claim: OperatorCompletionClaim,
+    *,
+    terminal_status: str = "completed",
+    ports: ProgramExecutionPorts,
+) -> dict[str, Any]:
+    """Read reply, route output and notify after the caller releases its authority."""
+    lineage_id, executor_resident_id = claim.lineage_id, claim.executor_resident_id
+    expected_execution_id, actor = claim.message_id, claim.actor
+    snapshot = json.loads(claim.snapshot_json)
+    turn = _ExecutorTurn(**snapshot["turn"])
+    pending = snapshot["pending"]
+    event = lineage_primitives.normalize_event(snapshot["event"])
     trigger_path_id = lineage_program_identity.event_path_id(lineage_id, event)
     if terminal_status != "completed":
         _settle_operator_turn(lineage_id, executor_resident_id, expected_execution_id, terminal_status, event=event, ports=ports)
@@ -692,7 +740,28 @@ def complete_agent_invocations(
     *,
     ports: ProgramExecutionPorts,
 ) -> dict[str, Any]:
-    """Adapt an ordinary Resident terminal output to Packet and Run facts."""
+    """Settle an ordinary Resident input, then finish its output outside authority."""
+    invocations = lineage_program_resident_inputs.settle_resident_handoffs(
+        lineage_id, message_id=message_id, resident_id=source_node_id,
+        status="completed", completed_at=completed_at,
+    )
+    return finish_agent_completion(
+        lineage_id, source_node_id, source_node, message_id, actor, completed_at, invocations, ports=ports,
+    )
+
+
+def finish_agent_completion(
+    lineage_id: str,
+    source_node_id: str,
+    source_node: dict[str, Any],
+    message_id: str,
+    actor: str,
+    completed_at: str,
+    invocations: list[dict[str, Any]],
+    *,
+    ports: ProgramExecutionPorts,
+) -> dict[str, Any]:
+    """Read evidence, notify and route already settled handoffs; never settle again."""
     _lineage_scope = ports.state.lineage_scope
     _read_lineage = ports.state.read_lineage
     _notify_program_resident_invocation_terminal = ports.resident.notify_program_resident_invocation_terminal
@@ -703,14 +772,6 @@ def complete_agent_invocations(
         evidence = _completed_message_evidence(source_node, message_id, actor)
     except (KeyError, PermissionError, ValueError):
         evidence = {}
-    invocations = lineage_program_resident_inputs.settle_resident_handoffs(
-        lineage_id,
-        message_id=message_id,
-        resident_id=source_node_id,
-        status="completed",
-        completed_at=completed_at,
-        output=evidence,
-    )
     # Chat-initiated turns have no incoming HATG invocation; their Output
     # still starts a fresh Packet path after the Resident completes.
     if invocations:

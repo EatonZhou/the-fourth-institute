@@ -208,7 +208,7 @@ def _reconcile_resident_handoffs(
                           "canceled": "cancelled", "interrupted": "cancelled"}.get(status, status)
                 if status not in {"completed", "failed", "cancelled"}:
                     continue
-                with ports.directory.lineage_execution_authority(lineage_id):
+                with ports.state.lineage_scope(lineage_id, operation="resident.recovery.claim"), ports.directory.lineage_execution_authority(lineage_id):
                     # Compare the exact accepted leaves, including identity, execution
                     # links and status. Deletion, replacement or another reconciler
                     # invalidates this observation; never settle its successor.
@@ -224,13 +224,12 @@ def _reconcile_resident_handoffs(
                     if bool(current_node) != bool(node):
                         continue
                     completed_at = str(state.get("completed_at") or (state.get("evidence") or {}).get("completed_at") or "")
+                    prepared = None
                     if current_node and not by_receipt:
-                        settled = ports.resident.handle_resident_message_terminal(
+                        prepared = prepare_resident_terminal(
                             resident_id, invocation_actor, message_id, completed_at=completed_at,
-                            lineage_id=lineage_id, terminal_status=status,
+                            lineage_id=lineage_id, terminal_status=status, ports=ports,
                         )
-                        for key in ("program_created_count", "operator_result_count", "removed_absorption_count"):
-                            result[key] += int(settled.get(key) or 0)
                     else:
                         finished = lineage_program_resident_inputs.settle_resident_handoffs(
                             lineage_id, resident_id=resident_id, message_id=message_id,
@@ -241,6 +240,10 @@ def _reconcile_resident_handoffs(
                         settle_program_paths(lineage_id, {item["trigger_path_id"] for item in finished if item.get("trigger_path_id")})
                     result["checked_node_count"] += 1
                     result["recovered_handoff_count"] += 1
+                if prepared is not None:
+                    settled = finish_resident_terminal(prepared, ports=ports)
+                    for key in ("program_created_count", "operator_result_count", "removed_absorption_count"):
+                        result[key] += int(settled.get(key) or 0)
         except (KeyError, PermissionError, ValueError) as exc:
             result["recovery_failures"].append({"message_id": message_id, "error": str(exc)})
     return result
@@ -720,18 +723,15 @@ def _complete_node_turn(
     program_event_source_ids: set[str] | None,
     *,
     ports: ProgramTerminalPorts,
+    prepared: _TerminalNode,
 ) -> None:
     """Complete one node's invocation by the turn, then report the turn to the Event Sources watching it."""
 
     # A turn a Packet Operator asked for belongs to that operator; any
     # other turn is an ordinary Resident invocation.
-    completed_operator = lineage_program_execution.complete_operator_invocation(
-        current_lineage_id,
-        source_node_id,
-        source_message_id,
-        actor_id,
-        ports=ports.flow.program_execution_ports(),
-    )
+    completed_operator = (lineage_program_execution.finish_operator_completion(
+        prepared.operator_claim, ports=ports.flow.program_execution_ports(),
+    ) if prepared.operator_claim is not None else None)
     if completed_operator:
         work.operator_results.append(completed_operator)
         if completed_operator.get("trigger_path_id"):
@@ -739,13 +739,14 @@ def _complete_node_turn(
                 str(completed_operator["trigger_path_id"])
             )
     else:
-        completed_agent = lineage_program_execution.complete_agent_invocations(
+        completed_agent = lineage_program_execution.finish_agent_completion(
             current_lineage_id,
             source_node_id,
             source_node,
             source_message_id,
             actor_id,
             source_completed_at,
+            prepared.invocations,
             ports=ports.flow.program_execution_ports(),
         )
         if completed_agent:
@@ -799,37 +800,28 @@ def _drain_backlogs(lineage_ids: Iterable[str], actor_id: str, *, ports: Program
 
 
 def handle_node_message_completed(
-    resident_id: str,
-    actor: str,
-    message_id: str,
-    *,
-    completed_at: str = "",
-    lineage_id: str = "",
-    program_event_source_ids: set[str] | None = None,
+    resident_id: str, actor: str, message_id: str, *, completed_at: str = "",
+    lineage_id: str = "", program_event_source_ids: set[str] | None = None,
     ports: ProgramTerminalPorts,
 ) -> dict[str, Any]:
-    """Translate a Resident idle transition into Program-owned Events."""
-
-    actor_id = _safe_actor(actor)
-    exact_resident_id = _text(resident_id, 180)
-    source_message_id = _text(message_id, 180)
-    source_completed_at = _text(completed_at, 80) or ports.state.now_iso()
-    if not exact_resident_id or not source_message_id:
-        raise ValueError("节点完成事件缺少 Resident 或源 message_id")
-
-    lineage_ids = (
-        [lineage_id]
-        if lineage_id
-        else ports.directory.lineage_ids_for_resident(exact_resident_id)
+    return handle_resident_message_terminal(
+        resident_id, actor, message_id, completed_at=completed_at, lineage_id=lineage_id,
+        terminal_status="completed", program_event_source_ids=program_event_source_ids, ports=ports,
     )
-    matched_sources, matched_node_count, removed_absorption_count = _mark_sources_idle(
-        lineage_ids, exact_resident_id, source_message_id, source_completed_at, actor, actor_id, ports=ports,
-    )
+
+
+def _finish_completed_terminal(prepared: ResidentTerminalWork, *, ports: ProgramTerminalPorts) -> dict[str, Any]:
+    actor_id, source_message_id = prepared.actor, prepared.message_id
+    source_completed_at, program_event_source_ids = prepared.completed_at, prepared.event_source_ids
+    matched_node_count, removed_absorption_count = prepared.matched_count, prepared.removed_count
+    matched_sources = [(n.lineage_id, n.node_id, n.node) for n in prepared.nodes]
+    by_node = {(n.lineage_id, n.node_id): n for n in prepared.nodes}
     work = _CompletedWork()
     for current_lineage_id, source_node_id, source_node in matched_sources:
         _complete_node_turn(
             work, current_lineage_id, source_node_id, source_node, source_message_id, actor_id,
             source_completed_at, program_event_source_ids, ports=ports,
+            prepared=by_node[(current_lineage_id, source_node_id)],
         )
 
     program_created_count = sum(
@@ -935,162 +927,125 @@ def _match_terminal_nodes(
     return match
 
 
-def _settle_terminal_handoffs(
-    terminal_nodes: set[tuple[str, str]],
-    source_message_id: str,
-    status: str,
-    terminal_at: str,
-    *,
-    ports: ProgramTerminalPorts,
-) -> tuple[int, dict[str, set[str]]]:
-    """Settle the Program's handoffs to each node and tell their senders; (count, paths by Lineage)."""
-
-    ordinary_terminal_count = 0
-    terminal_path_ids_by_lineage: dict[str, set[str]] = {}
-    for current_lineage_id, source_node_id in sorted(
-        terminal_nodes
-    ):
-        invocations = lineage_program_resident_inputs.settle_resident_handoffs(
-            current_lineage_id,
-            message_id=source_message_id,
-            resident_id=source_node_id,
-            status=status,
-            completed_at=terminal_at,
-        )
-        if not invocations:
-            continue
-        terminal_path_ids_by_lineage.setdefault(
-            current_lineage_id, set()
-        ).update(
-            str(item.get("trigger_path_id") or "")
-            for item in invocations
-            if str(item.get("trigger_path_id") or "")
-        )
-        ordinary_terminal_count += len(invocations)
-        ports.resident.notify_program_resident_invocation_terminal(
-            current_lineage_id,
-            source_node_id,
-            source_message_id,
-            invocations,
-            status=status,
-        )
-    return ordinary_terminal_count, terminal_path_ids_by_lineage
 
 
-def _complete_terminal_operators(
-    operator_nodes: set[tuple[str, str]],
-    source_message_id: str,
-    actor_id: str,
-    status: str,
-    *,
-    ports: ProgramTerminalPorts,
-) -> list[dict[str, Any]]:
-    """End the Packet Operator invocations the turn was running."""
-
-    operator_results: list[dict[str, Any]] = []
-    for current_lineage_id, source_node_id in sorted(
-        operator_nodes
-    ):
-        completed_operator = lineage_program_execution.complete_operator_invocation(
-            current_lineage_id,
-            source_node_id,
-            source_message_id,
-            actor_id,
-            terminal_status=status,
-            ports=ports.flow.program_execution_ports(),
-        )
-        if completed_operator:
-            operator_results.append(completed_operator)
-    return operator_results
 
 
-def handle_resident_message_terminal_locked(
-    resident_id: str,
-    actor: str,
-    message_id: str,
-    *,
-    completed_at: str = "",
-    lineage_id: str = "",
-    terminal_status: str = "completed",
-    program_event_source_ids: set[str] | None = None,
-    ports: ProgramTerminalPorts,
-) -> dict[str, Any]:
-    """Consume one durable Resident terminal fact in Program runtime."""
+@dataclass(frozen=True)
+class _TerminalNode:
+    lineage_id: str
+    node_id: str
+    node: dict[str, Any]
+    operator_claim: Any
+    invocations: list[dict[str, Any]]
 
+
+@dataclass(frozen=True)
+class ResidentTerminalWork:
+    """Committed input claims; subsequent evidence, effects and notifications run outside authority."""
+    actor: str
+    message_id: str
+    status: str
+    completed_at: str
+    event_source_ids: set[str] | None
+    nodes: tuple[_TerminalNode, ...]
+    matched_count: int
+    removed_count: int
+
+
+def prepare_resident_terminal(
+    resident_id: str, actor: str, message_id: str, *, completed_at: str = "",
+    lineage_id: str = "", terminal_status: str = "completed",
+    program_event_source_ids: set[str] | None = None, ports: ProgramTerminalPorts,
+) -> ResidentTerminalWork:
     status = _terminal_status(terminal_status)
     if status not in {"completed", "failed", "cancelled"}:
         raise ValueError("Resident terminal_status 无效")
-    if status == "completed":
-        return handle_node_message_completed(
-            resident_id,
-            actor,
-            message_id,
-            completed_at=completed_at,
-            lineage_id=lineage_id,
-            program_event_source_ids=program_event_source_ids,
-            ports=ports,
-        )
-
-    actor_id = _safe_actor(actor)
-    exact_resident_id = _text(resident_id, 180)
-    source_message_id = _text(message_id, 180)
-    if not exact_resident_id or not source_message_id:
+    rid, mid, actor_id = _text(resident_id, 180), _text(message_id, 180), _safe_actor(actor)
+    if not rid or not mid:
         raise ValueError("节点终态事件缺少 Resident 或源 message_id")
+    at = _text(completed_at, 80) or ports.state.now_iso()
+    ids = [lineage_id] if lineage_id else ports.directory.lineage_ids_for_resident(rid)
+    nodes, matched_count, removed_count = [], 0, 0
+    for lid in sorted(set(ids)):
+        # The outer effect collector flushes only after the short authority
+        # exits. No reply reads, dispatch, notifications or backlog work here.
+        with ports.state.lineage_scope(lid, operation="resident.terminal.claim"):
+            with ports.directory.lineage_execution_authority(lid):
+                if status == "completed":
+                    sources, count, removed = _mark_sources_idle(
+                        [lid], rid, mid, at, actor, actor_id, ports=ports,
+                    )
+                else:
+                    match = _match_terminal_nodes([lid], rid, mid, status, actor, actor_id, ports=ports)
+                    sources = [(l, n, {}) for l, n in sorted(match.terminal_nodes)]
+                    count, removed = match.matched_node_count, match.removed_absorption_count
+                matched_count += count
+                removed_count += removed
+                for current_lid, node_id, node in sources:
+                    claim = lineage_program_execution.prepare_operator_completion(
+                        current_lid, node_id, mid, actor_id, ports=ports.flow.program_execution_ports(),
+                    )
+                    invocations = []
+                    if status != "completed" or claim is None:
+                        # Consume the exact handoff while recovery's comparison
+                        # is still protected. Finishing never settles again.
+                        invocations = lineage_program_resident_inputs.settle_resident_handoffs(
+                            current_lid, resident_id=node_id, message_id=mid,
+                            status=status, completed_at=at,
+                        )
+                    nodes.append(_TerminalNode(current_lid, node_id, node, claim, invocations))
+    return ResidentTerminalWork(actor_id, mid, status, at, program_event_source_ids,
+                               tuple(nodes), matched_count, removed_count)
 
-    lineage_ids = (
-        [lineage_id]
-        if lineage_id
-        else ports.directory.lineage_ids_for_resident(exact_resident_id)
-    )
-    match = _match_terminal_nodes(
-        lineage_ids, exact_resident_id, source_message_id, status, actor, actor_id, ports=ports,
-    )
-    terminal_at = _text(completed_at, 80) or ports.state.now_iso()
-    ordinary_terminal_count, terminal_path_ids_by_lineage = _settle_terminal_handoffs(
-        match.terminal_nodes, source_message_id, status, terminal_at, ports=ports,
-    )
-    operator_results = _complete_terminal_operators(
-        match.operator_nodes, source_message_id, actor_id, status, ports=ports,
-    )
-    terminal_event_type = (
-        "resident.work_failed"
-        if status == "failed"
-        else "resident.work_cancelled"
-    )
-    program_events: list[dict[str, Any]] = []
-    for current_lineage_id, source_node_id in sorted(
-        match.terminal_nodes
-    ):
-        program_events.extend(
-            dispatch_program_resident_terminal_event(
-                current_lineage_id,
-                source_node_id,
-                source_message_id,
-                actor_id,
-                event_type=terminal_event_type,
-                completed_at=terminal_at,
-                ports=ports,
+
+def finish_resident_terminal(prepared: ResidentTerminalWork, *, ports: ProgramTerminalPorts) -> dict[str, Any]:
+    """Run only the already claimed terminal work, with no Lineage-wide authority."""
+    if prepared.status == "completed":
+        return _finish_completed_terminal(prepared, ports=ports)
+    operator_results, events, paths = [], [], {}
+    ordinary_count = 0
+    for item in prepared.nodes:
+        if item.invocations:
+            ordinary_count += len(item.invocations)
+            paths.setdefault(item.lineage_id, set()).update(
+                str(row["trigger_path_id"]) for row in item.invocations if row.get("trigger_path_id")
             )
-        )
+            ports.resident.notify_program_resident_invocation_terminal(
+                item.lineage_id, item.node_id, prepared.message_id,
+                item.invocations, status=prepared.status,
+            )
+        if item.operator_claim is not None:
+            result = lineage_program_execution.finish_operator_completion(
+                item.operator_claim, terminal_status=prepared.status,
+                ports=ports.flow.program_execution_ports(),
+            )
+            if result:
+                operator_results.append(result)
+        events.extend(dispatch_program_resident_terminal_event(
+            item.lineage_id, item.node_id, prepared.message_id, prepared.actor,
+            event_type="resident.work_failed" if prepared.status == "failed" else "resident.work_cancelled",
+            completed_at=prepared.completed_at, ports=ports,
+        ))
+    settled = _settle_paths_by_lineage(paths)
+    backlog = _drain_backlogs((n.lineage_id for n in prepared.nodes), prepared.actor, ports=ports)
+    return {"terminal_status": prepared.status, "matched_node_count": prepared.matched_count,
+            "removed_absorption_count": prepared.removed_count, "created_count": 0,
+            "operator_result_count": len(operator_results), "agent_result_count": ordinary_count,
+            "program_events": events, "operator_results": operator_results,
+            "settled_trigger_path_ids": settled, "program_event_backlog": backlog}
 
-    settled_trigger_path_ids = _settle_paths_by_lineage(terminal_path_ids_by_lineage)
-    # The Resident is free again whatever the outcome: Events that waited for
-    # it on a latest or queue wire go now, as after a completed turn.
-    program_event_backlog = _drain_backlogs(
-        (lineage_id for lineage_id, _node_id in match.terminal_nodes), actor_id, ports=ports,
+
+def handle_resident_message_terminal(
+    resident_id: str, actor: str, message_id: str, *, completed_at: str = "",
+    lineage_id: str = "", terminal_status: str = "completed",
+    program_event_source_ids: set[str] | None = None, ports: ProgramTerminalPorts,
+) -> dict[str, Any]:
+    prepared = prepare_resident_terminal(
+        resident_id, actor, message_id, completed_at=completed_at, lineage_id=lineage_id,
+        terminal_status=terminal_status, program_event_source_ids=program_event_source_ids, ports=ports,
     )
-    return {
-        "terminal_status": status,
-        "matched_node_count": match.matched_node_count,
-        "removed_absorption_count": match.removed_absorption_count,
-        "created_count": 0,
-        "operator_result_count": len(operator_results),
-        "agent_result_count": ordinary_terminal_count,
-        "program_events": program_events,
-        "operator_results": operator_results,
-        "settled_trigger_path_ids": settled_trigger_path_ids,
-        "program_event_backlog": program_event_backlog,
-    }
+    return finish_resident_terminal(prepared, ports=ports)
 
 
 def _watching_sources(

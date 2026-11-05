@@ -4,52 +4,52 @@ type: decision
 project: AI员工
 created_at: '2026-09-02'
 version:
-  number: 53
-  created_at: '2026-09-02'
+  number: 56
+  created_at: "2026-09-02"
   created_by:
-    user: ''
-    agent: ''
-  updated_at: '2026-10-30T08:30:50Z'
+    user: ""
+    agent: ""
+  updated_at: "2026-11-05T10:22:39Z"
   updated_by:
-    user: ''
-    agent: resident_73cb83291316
+    user: ""
+    agent: "resident_2e9ea0072551"
 importance: 10
 metaness: 2
 ai_generated: false
 links:
   source:
-  - ${code_root}/management_portal/society_service/service_invocation_domain.py
-  - ${code_root}/management_portal/hatg/store.py
-  - ${code_root}/management_portal/hatg/kernel.py
-  - ${code_root}/management_portal/society_service/contracts.py
-  - ${code_root}/management_portal/society_service/server.py
-  - ${code_root}/management_portal/society_service/domain_ports.py
-  - ${code_root}/management_portal/society_service/invariant_locks.py
-  - ${code_root}/management_portal/society_service/state_store.py
-  - ${code_root}/management_portal/society_service/transport.py
-  - ${code_root}/management_portal/society_service/resident_protocol.py
-  - ${code_root}/management_portal/society_service/resident_execution_work.py
-  - ${code_root}/management_portal/society_service/resident_conversation_stream.py
-  - ${code_root}/management_portal/society_service/workspace_domain.py
-  - ${code_root}/management_portal/society_service/project_domain.py
-  - ${code_root}/management_portal/society_service/lineage_domain.py
-  - ${code_root}/management_portal/society_service/lineage_state.py
-  - ${code_root}/management_portal/society_service/lineage_reads.py
-  - ${code_root}/management_portal/hatg/declarations.py
-  - ${code_root}/tests/cases/test_society_service_process.py
-  - ${code_root}/management_portal/society_service/changes.py
-  - ${code_root}/management_portal/society_service/coordinator.py
-  - ${code_root}/management_portal/society_service/runtime/contracts.py
-  - ${code_root}/tests/cases/test_lineage_lock_boundaries.py
-  - ${code_root}/tests/cases/test_society_service_coordinator.py
-  - ${code_root}/management_portal/society_service/lineage_definition_merge.py
-  - ${code_root}/tests/cases/test_lineage_definition_merge.py
-  - ${code_root}/tests/cases/test_lineage_concurrent_writes.py
-  - ${code_root}/management_portal/society_service/resident_storage.py
-  - ${code_root}/management_portal/society_service/resident_workspace_storage.py
-  - ${code_root}/management_portal/society_service/resident_lifecycle_domain.py
-  - ${code_root}/management_portal/society_service/resident_registration_domain.py
-  - ${code_root}/management_portal/society_service/resident_fork_domain.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/service_invocation_domain.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/hatg/store.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/hatg/kernel.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/contracts.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/server.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/domain_ports.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/invariant_locks.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/state_store.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/transport.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/resident_protocol.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/resident_execution_work.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/resident_conversation_stream.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/workspace_domain.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/project_domain.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/lineage_domain.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/lineage_state.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/lineage_reads.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/hatg/declarations.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_society_service_process.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/changes.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/coordinator.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/runtime/contracts.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_lineage_lock_boundaries.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_society_service_coordinator.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/lineage_definition_merge.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_lineage_definition_merge.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_lineage_concurrent_writes.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/resident_storage.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/resident_workspace_storage.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/resident_lifecycle_domain.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/resident_registration_domain.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/resident_fork_domain.py
   related:
   - decision_3e07c6d35cac
   - decision_96a887d83e8a
@@ -63,7 +63,8 @@ links:
   - decision_4adcc1ff2f2c
   - decision_d19b9909a674
   supersedes: []
-  derived_from: []
+  derived_from:
+  - insight_ee85097d560b
 ---
 # SocietyService Domain RPC 与并发控制协议
 
@@ -163,7 +164,7 @@ Domain RPC 使用 Portal 内部 RPC 的传输方式：本机 Unix socket 上每�
 | `resident:<id>` | 一个 Resident 的输入接收、运行设置、执行绑定、停止意图、结果归并和跨存储投影的授权 |
 | `resident-conversation:<id>` | 一个 Resident 的消息、输入状态、队列、当前活动和递增的事件游标，由唯一的写入者按顺序提交 |
 | `catalog:<name>` | 登记目录自身的一致性，例如跨 Lineage 的唯一性检查；`catalog:principal-hierarchy` 让 Project 主图的唯一性检查与组织结构修改依次进行 |
-| Program 执行权（每个 Lineage 一个文件锁） | Program 的运行处理：终态处理、对账、Program 控制端口和事件源回收。改变执行契约的定义写入（例如删除或重连正在运行的组件）只在提交和契约清理期间持有它 |
+| Program 执行权（每个 Lineage 一个文件锁） | 仅保护最终投递的 Route 复核与提交、终态精确领取／账本消费、观察游标提交，以及改变执行契约时的提交和清理。终态处理、对账与脚本推进不能整轮持有它 |
 
 上面的锁由进程内的可重入锁和 `PORTAL_LINEAGE_ROOT/.locks/` 下的文件锁组成，同一线程可以重复进入，多个 Portal 进程之间也互斥。另有两种“归属锁”，以尝试获取的方式使用，取不到就说明另一个进程已经在做这件事，本次放弃：`resident-continuation:<id>` 保证每个 Resident 同时只有一个完成等待者，`resident-lifecycle:<operation_id>` 保证每个生命周期操作同时只有一个执行者。等待或持有超过 `PORTAL_LINEAGE_SLOW_LOCK_SECONDS`（默认 1 秒）的情况计入健康统计的近期慢事件。
 
@@ -177,6 +178,8 @@ Domain RPC 使用 Portal 内部 RPC 的传输方式：本机 Unix socket 上每�
 6. **读取不取写锁。** 对话快照、分页和状态查询不占用 Resident 或对话写入锁。只做判断的读取也一样：执行是否仍是当前工作、是否已请求停止、Send now 有无待处理回执，都读取已提交的执行控制态，不进入 Resident 锁；判断结果在返回时就可能过期，持锁读取不会让它更准，真正的修改在提交前重新核对。同时读取 AgentData 与 LineageData 时，用事件游标在读取前后核对，最多重读一次，之后由游标补读收敛。是否使用读进程池不改变调用者的可见范围和读取结果的含义。
 7. **变化通知只在成功提交之后发出。** 事务失败、对象冲突和权限拒绝不发通知。提交后的多个后续效果中有一个失败时，其他效果照常执行，再报告第一个错误。
 
+变化收集器应包在执行授权边界之外，使延后回调在授权释放后运行；`lineage_scope`／`lineage_scopes` 仅收集延后动作，不充当互斥锁。Operator pending 的读取与领取还须在其持久事务内比较原像，替换或取消后不得弹出后继记录。已取得的领取不恢复旧 pending；后续投递继续使用当前 Route、局部执行令牌和路径终态检查，不能把一次先前领取当成忽略取消或拓扑变化的授权。
+
 ### Resident 投递准入
 
 Program Route 的消息准备与正式入队使用不同的临界区。路由生成固定消息 ID，在锁外执行指令鉴权、引用解析、附件准备和回执投影；Resident 输入接收者在每次持久变更前进入同一进程中绑定的投递准入边界，先取得来源 Lineage 执行权、重新读取并校验 Route，再取得目标 Resident 锁。准备期间路由被删除或重连时，旧输入在提交前拒绝。普通人类消息不携带图投递准入条件。
@@ -185,7 +188,7 @@ Program Route 的消息准备与正式入队使用不同的临界区。路由生
 
 ### Program 恢复的临界区与永久失败
 
-恢复 Resident 交接和观察完成消息时，先在执行准入锁外读取当前输入状态与完成证据，再进入 Lineage 执行准入锁核对当前定义、成员、交接步骤和执行绑定。定义在读取期间改变时，本轮丢弃该定义对应的完成观察，后续协调重新读取。结果投影在释放执行锁后组装；消费游标、推进执行和提交终态仍由执行授权边界保护。
+恢复 Resident 交接和观察完成消息时，先在执行准入锁外读取当前输入状态与完成证据，再进入 Lineage 执行准入锁核对当前定义、成员、交接步骤和执行绑定。定义在读取期间改变时，本轮丢弃该定义对应的完成观察，后续协调重新读取。终态处理分为精确领取与锁外推进：短执行授权边界内重读成员及当前 Operator／pending 原像，比较后原子领取，并消费本次精确交接；领取结果冻结为本次后继工作的材料。退出授权边界后才读取回复、通知、生成输出 Packet、派发事件或处理积压。普通 Resident 完成结果沿用已消费的交接清单，锁外阶段不重新选择或结算新交接。恢复先核精确旧步骤、执行绑定及成员关系，在同一短边界内领取，再退出后继续，不能先释放复核锁再无条件重做整个终态处理。
 
 持久事件缺少已验证身份、或身份结构无效时，该事件需要显式重新签发。恢复负责人给待投递、到期通知、算子待办和 Resident 交接记录写入 `recovery_blocked`，保留原事件、错误、时间和 `requires_reissue`；重复扫描不再自动恢复它，不补造身份，也不把它计入可调度队列。未阻塞的新事件继续调度，阻塞记录仍可查阅或按已有管理接口清理。恢复候选查询排除只剩这些阻塞工作的记录。
 
@@ -243,6 +246,14 @@ Fork、迁移与删除先校验成员关系，并保存可恢复的操作意图�
 ### 指令的重复提交
 
 SocietyService 的 ISA 执行使用统一指令内核，幂等键、活动调用锁、中断判定、投影恢复、Effect 恢复保护及到期防重的完整合同以 decision_898b8911a2ff 为准。Domain RPC 不另定义 ISA 重试窗口或固定中断等待时间，也不因响应未知自动重执行业务。SocietyService 所属恢复表与 Effect 清理事务见 decision_71aa039e3211。
+
+### 页面提交回执与图重读
+
+原生画布通过统一浏览器服务提交定义变更。收到成功的 ISA 回执后，页面可以结束这次提交的按钮等待并显示“修改已提交，正在更新图”，完整图通过后续 GetLineage 收敛；图尚未返回时不能宣布新节点已经显示或定位完成。浏览器服务的普通调用仍返回重读后的图；画布的 `defer_refresh` 仅为浏览器内部选项，返回原提交结果和 `refresh` Promise，不进入 ISA 参数或改变服务端响应。
+
+同一 Lineage 的并发读取共享在途请求，但变更提交前启动的读取不能作为本次提交的刷新确认，必须在其结束后另读。下一项定义变更遇到前一项尚未完成的刷新时先等待或恢复读取；它在操作构造时捕获的版本前提保持不变。`expected_version` 只能来自实际展示的定义或表单自己的构造版本，后台读缓存中的新 revision 不得抬高旧草稿的前提。冲突只重读并保留草稿，不自动重放变更。
+
+刷新失败与写入失败分别报告。已经提交的操作保留回执并提示重读，不能邀请用户再次创建或删除；前置恢复读取失败而尚未发出的新操作标为未提交。迟到的图更新不能切回已离开的 Lineage、抢走用户后来改变的选中状态或清除新编辑的草稿。只有依赖新图内容的后续动作（例如按保存后端口继续连线）等待图收敛，布局和视口保存失败也不重放定义写入。
 
 ## 授权层次
 

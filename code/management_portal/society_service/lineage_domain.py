@@ -720,46 +720,11 @@ def _handle_resident_message_terminal(
     terminal_status: str = "completed",
     program_event_source_ids: set[str] | None = None,
 ) -> dict[str, Any]:
-    def matching_lineage_ids() -> set[str]:
-        return set(lineage_aggregate.lineage_catalog_store().lineage_ids_for_resident(resident_id))
-
-    requested_lineage_id = str(lineage_id or "").strip()
-    if requested_lineage_id:
-        with lineage_aggregate.execution_authority(requested_lineage_id):
-            with lineage_aggregate.lineage_scope(requested_lineage_id):
-                return lineage_program_terminal_reconciliation.handle_resident_message_terminal_locked(
-                    resident_id,
-                    actor,
-                    message_id,
-                    completed_at=completed_at,
-                    lineage_id=requested_lineage_id,
-                    terminal_status=terminal_status,
-                    program_event_source_ids=program_event_source_ids,
-                    ports=_program_terminal_ports(),
-                )
-
-    # A callback without lineage_id may fan out to every HATG containing the
-    # Resident view. Acquire only those Lineage authorities and aggregate locks
-    # in canonical order, then verify the committed membership snapshot again.
-    while True:
-        authority_ids = matching_lineage_ids()
-        with lineage_aggregate.execution_authorities(authority_ids):
-            with _lineage_scopes(
-                authority_ids,
-                operation="resident.message_terminal",
-            ):
-                if matching_lineage_ids() != authority_ids:
-                    continue
-                return lineage_program_terminal_reconciliation.handle_resident_message_terminal_locked(
-                    resident_id,
-                    actor,
-                    message_id,
-                    completed_at=completed_at,
-                    lineage_id="",
-                    terminal_status=terminal_status,
-                    program_event_source_ids=program_event_source_ids,
-                    ports=_program_terminal_ports(),
-                )
+    return lineage_program_terminal_reconciliation.handle_resident_message_terminal(
+        resident_id, actor, message_id, completed_at=completed_at,
+        lineage_id=str(lineage_id or "").strip(), terminal_status=terminal_status,
+        program_event_source_ids=program_event_source_ids, ports=_program_terminal_ports(),
+    )
 
 
 def handle_resident_message_completion(

@@ -370,10 +370,15 @@ def pop_pending_delivery(
     lineage_id: str,
     operator_id: str,
     message_id: str,
+    *,
+    expected: Mapping[str, Any] | None = None,
 ) -> dict[str, Any] | None:
+    """Take this exact pending record, leaving a concurrent replacement intact."""
     clean_id = _operator_id(operator_id)
     clean_message_id = _item_id(message_id, field="message_id")
     with _runtime_transaction(lineage_id, clean_id) as runtime:
+        if expected is not None and runtime["pending_deliveries"].get(clean_message_id) != expected:
+            return None
         removed = runtime["pending_deliveries"].pop(clean_message_id, None)
     return copy.deepcopy(removed)
 
