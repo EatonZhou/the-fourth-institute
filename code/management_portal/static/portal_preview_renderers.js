@@ -292,6 +292,82 @@
     registrations.push(window.PortalPreview.registerRenderer(renderer));
   }
 
+  function explanationAddress(document) {
+    const address = String(document.resource_address || document.address || "");
+    if (document.source !== "resource" || document.contentKind !== "json"
+      || !/^workspace_[0-9a-f]{12}\/file\/.+/.test(address)) return "";
+    try {
+      return JSON.parse(document.content).schema === "portal-explanation/v1" ? address : "";
+    } catch (_) { return ""; }
+  }
+
+  register({
+    id: "explanation",
+    priority: 86,
+    accepts: document => Boolean(explanationAddress(document)),
+    render(root, document, context) {
+      const controller = new AbortController();
+      let view;
+      root.className = "previewBox";
+      root.textContent = window.PortalI18n.t("正在读取解释页…");
+      const promise = (async () => {
+        const [{ sha256 }] = await Promise.all([
+          import("/static/portal_sha256.js"),
+          window.PortalUIPrimitives.loadAsset("/static/home_explanation.css"),
+          window.PortalUIPrimitives.loadAsset("/static/home_explanation.js", { ready: () => Boolean(window.PortalHomeExplanationView) }),
+        ]);
+        if (controller.signal.aborted) return;
+        const digest = await sha256(new TextEncoder().encode(document.content));
+        if (controller.signal.aborted) return;
+        view = window.PortalHomeExplanationView.create({ root, onOpen: value => context.onPreviewRequest?.({
+          resourceAddress: value.target.address, path: value.target.address,
+        }) });
+        await view.show({ address: explanationAddress(document), sha256: digest }, { signal: controller.signal });
+      })();
+      return { promise, dispose() { controller.abort(); view?.destroy(); } };
+    },
+  });
+
+  // A formal report is JSON for reading/export, but its visual presentation is
+  // owned by the report component. Do not interpret arbitrary JSON as a report.
+  function reportAddress(document) {
+    if (document.source !== "resource" || document.resource_type !== "report") return null;
+    return /^(report_[0-9a-f]{12})(?:\/revision\/([1-9][0-9]*))?$/.exec(
+      String(document.resource_address || document.address || document.path || ""),
+    );
+  }
+
+  register({
+    id: "report",
+    priority: 85,
+    accepts: document => Boolean(reportAddress(document)),
+    render(root, document) {
+      const address = reportAddress(document);
+      const snapshot = JSON.parse(document.content);
+      const revision = snapshot.revision;
+      if (snapshot.schema !== "tfi.home-report.v1" || snapshot.report_id !== address[1]
+        || !Number.isSafeInteger(revision) || revision < 1
+        || (address[2] && String(revision) !== address[2])) {
+        throw new Error(window.PortalI18n.t("汇报版本与资源地址不一致，请刷新后重试。"));
+      }
+      const frame = window.document.createElement("iframe");
+      frame.title = snapshot.title || document.title || window.PortalI18n.t("汇报");
+      // Pin a root reference to the revision just authorized and read. Reopening
+      // is read-only; the existing report owner handles permissions and actions.
+      frame.src = `/home-report?${new URLSearchParams({ kind: "report", id: address[1], revision })}`;
+      frame.style.cssText = "width:100%;height:100%;min-height:32rem;border:0";
+      root.className = "previewBox reportPreview";
+      root.replaceChildren(frame);
+      const events = ["portal:permissions-changed", "portal:identity-changed"];
+      const recheck = event => frame.contentWindow?.dispatchEvent(new Event(event.type));
+      events.forEach(type => window.addEventListener(type, recheck));
+      return { dispose() {
+        events.forEach(type => window.removeEventListener(type, recheck));
+        frame.remove();
+      } };
+    },
+  });
+
   register({
     id: "remote-link",
     priority: 100,

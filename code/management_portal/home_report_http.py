@@ -223,6 +223,9 @@ def _page(request, parsed, actor):
     # Standalone QA/deep-link entry uses exactly the same component as Home.
     page = '''<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>来源汇报 · TFI Portal</title><link rel="stylesheet" href="/static/home_report.css">
+<link rel="stylesheet" href="/static/portal_components_markdown.css">
+<script src="/static/portal_text.js"></script><script src="/static/portal_ui_primitives.js"></script>
+<script src="/static/markdown.js"></script>
 <main data-home-report-standalone></main><script src="/static/home_report.js"></script></html>'''
     return http_responses._serve_payload(request, 200, page.encode(), "text/html; charset=utf-8")
 

@@ -135,6 +135,28 @@ const check = (name, actual, expected) => { assert.deepEqual(actual, expected, n
       window.adapter = PortalHomeExplanationView.create({ root: document.getElementById('root'), onOpen: x => opens.push(x), onChange: x => changes.push(x.accessStatus) });
       await adapter.show(target, { requestId: 'fixture-request' });
     }, target);
+    if (process.argv.includes('--preview-only')) {
+      await setup(fixed);
+      await page.evaluate(() => { adapter.destroy(); delete window.PortalHomeExplanationView; });
+      const writes = requests.filter(item => item.method === 'POST').length;
+      const selected = await page.evaluate(async ({ address, content }) => {
+        const handle = PortalPreview.render({ root: '#root', document: {
+          source: 'resource', resource_type: 'workspace', address, resource_address: address,
+          contentKind: 'json', content,
+        } });
+        await handle.promise;
+        return handle.renderer;
+      }, { address: fixed.address, content: records.get(fixed.address).bytes.toString() });
+      check('manifest enters native explanation through shared Preview', selected, 'explanation');
+      await page.frameLocator('.homeExplanationInteraction').frameLocator('iframe').getByRole('button', { name: '沙发', exact: true }).click();
+      check('preview reopen does not create media or reviews', requests.filter(item => item.method === 'POST').length, writes);
+      await page.evaluate(() => PortalPreview.render({ root: '#root', document: { contentKind: 'text', content: 'next document' } }));
+      check('switching Preview destroys interaction frames', await page.locator('iframe').count(), 0);
+      check('switching Preview releases asset URLs', await page.evaluate(() => urls.every(url => revoked.includes(url))), true);
+      check('no uncaught preview errors', errors, []);
+      console.log(JSON.stringify({ checks }));
+      return;
+    }
     if (process.argv.includes('--captions-only')) {
       const first = '两路频率没有改变。把同样宽的窗口移到零点二五秒，频差累积了半圈相位。原来的两条曲线上下相反，合成曲线几乎压平；窗口起点恰好抵消。'.repeat(3);
       const second = '窗口继续移动，比较两条声波和它们的和。';
