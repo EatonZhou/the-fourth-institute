@@ -1187,6 +1187,7 @@ modules:
       - "management_portal/service_runtime.py"
       - "scripts/instance_services.py"
       - "scripts/instance_service_definitions.py"
+      - "scripts/instance_process_cleanup.py"
       - "scripts/tfi_shutdown.py"
       - "scripts/tfi_instance_manager.py"
       - "management_common/portal_release_events.py"
