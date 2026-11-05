@@ -1,4 +1,10 @@
 {
+  "选择后自动保存": {"zh-CN":"选择后自动保存","en":"Changes save automatically"},
+  "重试保存": {"zh-CN":"重试保存","en":"Retry save"},
+  "已加载当前保存的设置。": {"zh-CN":"已加载当前保存的设置。","en":"Current saved settings loaded."},
+  "设置已提交，暂时无法确认结果，请重试读取。": {"zh-CN":"设置已提交，暂时无法确认结果，请重试读取。","en":"Settings were submitted. Retry reading to confirm the result."},
+  "保存结果待确认，请重试原设置。": {"zh-CN":"保存结果待确认，请重试原设置。","en":"The save result is unconfirmed. Retry the same settings."},
+  "汇报设置未保存：{p0}": {"zh-CN":"汇报设置未保存：{p0}","en":"Reporting settings were not saved: {p0}"},
   "不主动": {"zh-CN":"不主动","en":"Off"},
   "汇报主动性说明": {"zh-CN":"汇报主动性说明","en":"About reporting initiative"},
   "汇报质量说明": {"zh-CN":"汇报质量说明","en":"About reporting quality"},

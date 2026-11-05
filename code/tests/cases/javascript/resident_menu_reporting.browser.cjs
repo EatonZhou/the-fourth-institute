@@ -35,11 +35,14 @@ const evidence = process.env.REPORTING_MENU_EVIDENCE;
       document.getElementById('nodeDisplayPanel').hidden = false;
       document.getElementById('nodeSettingsForm').hidden = true;
       // Keep the real Menu layout and real reporting renderer. Only service data is local.
-      window.calls = []; window.reject = false; window.readOnly = false;
+      window.calls = []; window.reject = false; window.readOnly = false; window.failRead = false;
       let reporting = { initiative: 'medium', quality: 'high' }, revision = 7;
       window.PortalResidentService = {
         projection: async () => ({ allows: { UpdateResidentSettings: !readOnly } }),
-        runtimeSettings: async () => ({ settings: { reporting }, settings_revision: revision }),
+        runtimeSettings: async () => {
+          if (failRead) throw Error('read offline');
+          return { settings: { reporting }, settings_revision: revision };
+        },
         updateRuntimeSettings: async (id, changes, key, expected) => {
           calls.push({ id, changes, key, expected });
           if (reject) throw Object.assign(Error('保存失败，请重试'), { status: 403 });
@@ -82,14 +85,7 @@ const evidence = process.env.REPORTING_MENU_EVIDENCE;
         });
         const fonts = [...form.querySelectorAll('legend, strong, small, p, button')].filter(e => e.textContent.trim())
           .map(e => ({ size: parseFloat(getComputedStyle(e).fontSize), text: e.textContent.slice(0, 35) }));
-        body.scrollTop = body.scrollHeight;
-        const submit = form.querySelector('[type=submit]').getBoundingClientRect();
-        const bottomReachable = submit.bottom <= body.getBoundingClientRect().bottom + 1;
-        body.scrollTop = 0;
-        const title = form.querySelector('.residentReportingHeader h3').getBoundingClientRect();
-        const save = form.querySelector('[type=submit]').getBoundingClientRect();
-        const header = { sameLine: Math.abs((title.top + title.bottom) / 2 - (save.top + save.bottom) / 2) < 1,
-          saveOnRight: save.left > title.right, inside: save.right <= fr.right + 1 };
+        const noSaveButton = !form.querySelector('[type=submit]');
         const rows = [...form.querySelectorAll('.residentReportingRow')].map(row => {
           const label = row.querySelector('.residentReportingLabel').getBoundingClientRect();
           const choices = [...row.querySelectorAll('.residentReportingChoice')].map(e => e.getBoundingClientRect());
@@ -99,18 +95,19 @@ const evidence = process.env.REPORTING_MENU_EVIDENCE;
             choicesOnOneLine: choices.every(r => Math.abs(r.top - choices[0].top) < 1),
             labelAlongside: label.top >= choices[0].top && label.bottom <= choices[0].bottom };
         });
-        return { controls, fonts, rows, header, height: fr.height, overflow: body.scrollWidth - body.clientWidth, bottomReachable,
+        return { controls, fonts, rows, noSaveButton, height: fr.height, overflow: body.scrollWidth - body.clientWidth,
           selected: [...form.querySelectorAll('input:checked')].map(e => [e.name, e.value]) };
       });
       observations.push({ width, theme, language, ...metrics });
       assert.ok(metrics.controls.every(c => c.inside && c.height >= 40), 'visible choices fit the content column');
       assert.ok(metrics.controls.every(c => c.unbroken), 'short option labels do not break inside words');
       assert.ok(metrics.fonts.every(f => f.size >= 13), 'all explanatory text stays legible');
-      assert.ok(metrics.overflow <= 1 && metrics.bottomReachable, 'no outer horizontal scroll and save stays reachable');
+      assert.ok(metrics.overflow <= 1, 'no outer horizontal scroll');
       assert.deepEqual(metrics.selected, [['initiative', 'medium'], ['quality', 'high']]);
       assert.ok(metrics.controls.every(c => c.borderless), 'choices have no surrounding border or card fill');
       assert.notEqual(metrics.controls[0].color, metrics.controls[2].color, 'selected level retains a visible accent');
-      assert.ok(metrics.header.sameLine && metrics.header.saveOnRight && metrics.header.inside, 'save stays on the title row at the right without overflow');
+      assert.ok(metrics.noSaveButton, 'changes save automatically without a manual save button');
+      assert.ok(await page.locator('[data-reporting-retry]').isHidden(), 'retry is only shown when needed');
       assert.equal(metrics.rows.length, 2);
       assert.ok(metrics.rows.every(r => r.rightAligned), 'each option group aligns with the right edge');
       if (language !== 'en' || width >= 734) assert.ok(metrics.rows.every(r => r.choicesOnOneLine), 'each group remains a single compact option row');
@@ -142,16 +139,30 @@ const evidence = process.env.REPORTING_MENU_EVIDENCE;
     const medium = page.locator('[name=initiative][value=medium]');
     await medium.focus(); await page.keyboard.press('ArrowRight');
     assert.ok(await page.locator('[name=initiative][value=high]').isChecked(), 'native keyboard navigation');
-    await page.locator('[name=quality][value=low]').check();
-    await page.locator('.residentMenuReportingForm [type=submit]').click();
-    await page.waitForFunction(() => document.querySelector('[data-reporting-status]').textContent.includes('已保存'));
-    assert.deepEqual(await page.evaluate(() => calls[0].changes), { reporting: { initiative: 'high', quality: 'low' } });
+    await page.waitForFunction(() => calls.length === 1 && document.querySelector('[data-reporting-status]').textContent.includes('已保存'));
+    assert.deepEqual(await page.evaluate(() => calls[0].changes), { reporting: { initiative: 'high', quality: 'high' } });
     assert.equal(await page.evaluate(() => calls[0].expected), 7);
+    await page.locator('[name=quality][value=low]').check();
+    await page.waitForFunction(() => calls.length === 2 && document.querySelector('[data-reporting-status]').textContent.includes('已保存'));
+    assert.deepEqual(await page.evaluate(() => calls[1].changes), { reporting: { initiative: 'high', quality: 'low' } });
+    assert.equal(await page.evaluate(() => calls[1].expected), 8);
     await page.evaluate(() => { reject = true; });
     await page.locator('[name=quality][value=high]').check();
-    await page.locator('.residentMenuReportingForm [type=submit]').click();
     await page.waitForFunction(() => document.querySelector('[data-reporting-status]').textContent.includes('保存失败'));
     assert.ok(await page.locator('[name=quality][value=high]').isChecked(), 'failure keeps edited choice');
+    assert.ok(await page.locator('[data-reporting-retry]').isVisible(), 'failed automatic save offers an explicit retry');
+    await page.evaluate(() => { reject = false; });
+    await page.locator('[data-reporting-retry]').click();
+    await page.waitForFunction(() => calls.length === 4 && document.querySelector('[data-reporting-status]').textContent.includes('已保存'));
+    assert.ok(await page.locator('[data-reporting-retry]').isHidden());
+    await page.evaluate(() => { failRead = true; });
+    await page.locator('[name=quality][value=medium]').check();
+    await page.waitForFunction(() => document.querySelector('[data-reporting-status]').textContent.includes('设置已提交'));
+    assert.ok(await page.locator('[name=quality][value=medium]').isDisabled());
+    await page.evaluate(() => { failRead = false; });
+    await page.getByRole('button', { name: '重试读取', exact: true }).click();
+    await page.waitForFunction(() => document.querySelector('[data-reporting-status]').textContent.includes('已保存'));
+    assert.equal(await page.evaluate(() => calls.length), 5, 'readback retry does not write again');
     await page.evaluate(() => {
       readOnly = true; menuState.nodeMenuContext = { residentId: 'readonly_fixture', family: {} };
       return runtime.loadNodeMenuRuntime();
@@ -162,7 +173,7 @@ const evidence = process.env.REPORTING_MENU_EVIDENCE;
     assert.ok(await page.locator('#resident-reporting-quality-note').isVisible(), 'read-only viewers can still read help');
     assert.deepEqual(errors, []);
     if (evidence) fs.writeFileSync(path.join(evidence, 'report.json'), JSON.stringify({ status: 'passed', observations, errors,
-      behavior: ['borderless options', 'save on title row', 'two compact rows', 'narrow layout', 'expandable help without writes', 'English labels', 'native radio keys', 'CAS save/readback', 'failed save draft', 'read-only'],
+      behavior: ['borderless right-aligned options', 'automatic save on radio change', 'two compact rows', 'narrow layout', 'expandable help without writes', 'English labels', 'native radio keys', 'CAS save/readback', 'failed save retry', 'readback retry without rewrite', 'read-only'],
       boundary: 'Real menu shell and reporting component; local service fixture, no user setting changed' }, null, 2));
     console.log(JSON.stringify({ status: 'passed', views: observations.length, errors }));
   } finally { await browser.close(); }
