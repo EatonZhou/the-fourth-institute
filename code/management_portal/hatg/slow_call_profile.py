@@ -21,7 +21,7 @@ from typing import Any, Iterator
 SAMPLE_AFTER = 0.5
 INTERVAL = 0.05
 LOG_AFTER = 2.0
-_PORTAL = str(Path(__file__).resolve().parents[2]) + "/"
+_PORTAL = Path(__file__).resolve().parents[2].as_posix() + "/"
 
 _guard = threading.Lock()
 _running: dict[int, dict[str, Any]] = {}
@@ -29,8 +29,32 @@ _wake = threading.Event()
 _sampler: threading.Thread | None = None
 
 
+def _sample_calls(due: list[dict[str, Any]]) -> None:
+    # A frame keeps its request locals alive. Confine the snapshot to this
+    # call so the long-lived sampler never holds completed requests while idle.
+    frames = sys._current_frames()
+    try:
+        for call in due:
+            frame = frames.get(call['thread_id'])
+            if frame is None:
+                continue
+            try:
+                stack = traceback.StackSummary.extract(traceback.walk_stack(frame), lookup_lines=False)
+                stack.reverse()
+            finally:
+                del frame
+            portal = [_frame(entry) for entry in stack
+                      if _PORTAL in entry.filename.replace('\\', '/')
+                      and '/site-packages/' not in entry.filename.replace('\\', '/')]
+            call['samples'] += 1
+            call['inclusive'].update(set(portal))
+            call['innermost'][' < '.join([_frame(stack[-1]), *reversed(portal[-3:])])] += 1
+    finally:
+        frames.clear()
+
+
 def _frame(entry: traceback.FrameSummary) -> str:
-    path = entry.filename
+    path = entry.filename.replace('\\', '/')
     if "/site-packages/" in path:
         path = path.split("/site-packages/", 1)[1]
     elif _PORTAL in path:
@@ -51,18 +75,7 @@ def _sample() -> None:
                 _wake.clear()
         if not due:
             continue
-        frames = sys._current_frames()
-        for call in due:
-            frame = frames.get(call["thread_id"])
-            if frame is None:
-                continue
-            stack = traceback.extract_stack(frame)
-            portal = [_frame(entry) for entry in stack
-                      if _PORTAL in entry.filename and "/site-packages/" not in entry.filename]
-            call["samples"] += 1
-            call["inclusive"].update(set(portal))
-            # The innermost Portal frames and whatever they were waiting in.
-            call["innermost"][" < ".join([_frame(stack[-1]), *reversed(portal[-3:])])] += 1
+        _sample_calls(due)
 
 
 @contextmanager

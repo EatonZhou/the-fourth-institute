@@ -60,6 +60,8 @@ class LineageReadCache:
         self._ttl_seconds = ttl_seconds
         self._max_entries = max_entries
         self._build_locks = weakref.WeakValueDictionary()
+        self._expiry_timer: threading.Timer | None = None
+        self._expiry_token: object | None = None
         self._records: dict[str, dict[CacheKey, dict[str, Any]]] = {
             "state": {}, "view": {}, "message_counts": {},
         }
@@ -68,35 +70,88 @@ class LineageReadCache:
         # Only equal reads share a calculation lock. The cache-wide lock never
         # covers storage/RPC work; unused calculation locks leave no entries.
         with self._lock:
-            return self._build_locks.setdefault((kind, key), threading.RLock())
+            lock = self._build_locks.get((kind, key))
+            if lock is None:
+                lock = threading.RLock()
+                self._build_locks[(kind, key)] = lock
+            return lock
+
+    @staticmethod
+    def _expire(owner: weakref.ReferenceType[LineageReadCache], token: object) -> None:
+        cache = owner()
+        if cache is None:
+            return
+        with cache._lock:
+            if cache._expiry_token is not token:
+                return
+            cache._expiry_timer = None
+            cache._expiry_token = None
+            cache._purge_expired(time.monotonic())
+            cache._schedule_expiry()
+
+    def _purge_expired(self, now: float) -> None:
+        for cache in self._records.values():
+            for key in [key for key, record in cache.items() if record['expires_at'] <= now]:
+                del cache[key]
+
+    def _schedule_expiry(self) -> None:
+        # At most one timer per cache, holding only a weak owner reference.
+        # Expiration must also release projections when a worker goes idle.
+        if self._expiry_timer is not None:
+            return
+        deadline = min((record['expires_at'] for cache in self._records.values()
+                        for record in cache.values()), default=None)
+        if deadline is not None:
+            token = object()
+            timer = threading.Timer(max(0.001, deadline - time.monotonic()),
+                                    self._expire, args=(weakref.ref(self), token))
+            timer.name = 'lineage-read-cache-expiry'
+            timer.daemon = True
+            self._expiry_timer = timer
+            self._expiry_token = token
+            timer.start()
+
+    def _cancel_if_empty(self) -> None:
+        if not any(self._records.values()) and self._expiry_timer is not None:
+            self._expiry_timer.cancel()
+            self._expiry_timer = None
+            self._expiry_token = None
 
     def get(self, kind: str, key: CacheKey, fingerprint: object) -> dict[str, Any] | None:
         with self._lock:
             record = self._records[kind].get(key)
-            if not record or record["expires_at"] <= time.monotonic() or record.get("fingerprint") != fingerprint:
+            if record and record['expires_at'] <= time.monotonic():
+                del self._records[kind][key]
+                self._cancel_if_empty()
+                return None
+            if not record or record.get("fingerprint") != fingerprint:
                 return None
             return record
 
     def put(self, kind: str, key: CacheKey, value: dict[str, Any]) -> None:
         with self._lock:
+            self._purge_expired(time.monotonic())
             cache = self._records[kind]
-            if len(cache) >= self._max_entries:
+            if key not in cache and len(cache) >= self._max_entries:
                 oldest = sorted(cache, key=lambda item: float(cache[item].get("expires_at") or 0))[
                     : max(1, self._max_entries // 4)
                 ]
                 for item in oldest:
                     cache.pop(item, None)
             cache[key] = {**value, "expires_at": time.monotonic() + self._ttl_seconds}
+            self._schedule_expiry()
 
     def invalidate(self, lineage_id: str) -> None:
         with self._lock:
             for cache in self._records.values():
                 for key in [key for key in cache if key[1] == lineage_id]:
                     cache.pop(key, None)
+            self._cancel_if_empty()
 
     def clear(self, kind: str) -> None:
         with self._lock:
             self._records[kind].clear()
+            self._cancel_if_empty()
 
     def diagnostics(self) -> dict:
         """Inspect only this owner's completed cache records, within a budget."""
