@@ -41,6 +41,12 @@ from . import resident_conversation_records
 
 
 FORWARD_MESSAGE_LIMIT = 20
+
+
+def ensure_family_reviewers(resident_id: str, actor: str, *, kind: str, reviewer_id: str = "") -> dict:
+    from .family_quality_reviewers import ensure
+    return ensure(resident_id, actor, kind=kind, reviewer_id=reviewer_id)
+
 FORWARD_MESSAGE_CHAR_LIMIT = 6000
 FORWARD_TOTAL_CHAR_LIMIT = 60000
 

@@ -57,14 +57,16 @@ def auditing(reports, tmp_path, monkeypatch):
             return store.file(RID, number, name, 'alice')[0].read_bytes(), '', {}
     def call(actor, instruction, args, key=''):
         calls.append((actor,instruction,args,key))
-        if instruction == 'SearchResidents':
-            return {'residents':[{'resident_id':'resident_123456789abd','title':'解释页独立检查','can_send':True}]}
         if instruction == 'DeliverMessage':
             if state.get('submit_failed'): raise PermissionError('not permitted')
             return {'message_id':'msg_review'}
         raise AssertionError(instruction)
-    service = ReviewService(root=tmp_path/'reviews', resources=Resources(), call=call)
-    authoring = AuthoringService(root=tmp_path/'authoring', resources=Resources(), call=call)
+    def ensure(resident_id, actor, *, kind, reviewer_id=''):
+        return {'family_id': 'fbi_111111111111', 'lineage_id': 'lineage_111111111111',
+                'reviewer_id': reviewer_id or 'resident_123456789abd',
+                'reviewers': {'page': 'resident_123456789abd', 'video': 'resident_123456789abd'}}
+    service = ReviewService(root=tmp_path/'reviews', resources=Resources(), call=call, ensure=ensure)
+    authoring = AuthoringService(root=tmp_path/'authoring', resources=Resources(), call=call, ensure=ensure)
     monkeypatch.setattr(review,'ReviewService',lambda:service)
     monkeypatch.setattr(review,'AuthoringService',lambda:authoring)
     return service, calls, [{'address':'workspace_123456789abc/file/evidence.md','sha256':hashlib.sha256(evidence).hexdigest()}]
@@ -234,7 +236,15 @@ def test_media_quality_has_separate_fixed_bytes_and_never_reuses_other_ready(rep
     monkeypatch.setattr(home_report_store,'build_report',lambda *a,**kw:original)
     create(store,'medium')
     levels=[]
+    family_checks=[]
+    original_ensure=auditing[0].ensure
+    def ensure(resident_id,actor,**kwargs):
+        family_checks.append((resident_id,actor,kwargs))
+        return original_ensure(resident_id,actor,**kwargs)
+    auditing[0].ensure=ensure
     def render(snapshot,path):
+        if snapshot['media_quality']=='high':
+            assert family_checks[-1]==(RESPONSIBLE,'alice',{'kind':'video','reviewer_id':''})
         levels.append(snapshot['media_quality'])
         value=renderer({**snapshot,'version':snapshot['version']+snapshot['media_quality']},path)
         return value
@@ -260,6 +270,7 @@ def test_media_quality_has_separate_fixed_bytes_and_never_reuses_other_ready(rep
         assert result['status']=='ready', result
         if level=='high': assert result['review']['status']!='passed'
     assert levels==['low','medium','high']
+    assert family_checks and all(item[:2]==(RESPONSIBLE,'alice') for item in family_checks)
     assert len({media.file(RID,fixed[q],'video.mp4','alice',quality=q)[0].read_bytes() for q in levels})==3
     assert media.start(RID,1,'alice',quality='low')['status']=='ready'
     assert len(levels)==3

@@ -96,8 +96,14 @@ def _sender_line(job: dict[str, Any]) -> str:
 
 
 def build_resident_prompt(record: dict[str, Any], job: dict[str, Any]) -> str:
-    from . import resident_reporting
-    return resident_reporting.prompt(record, job) + "\n\n" + _build_resident_prompt(record, job)
+    from . import family_quality_reviewers, resident_reporting
+    # A reviewer's duties follow current canonical Family membership. Reading
+    # them has no provisioning side effects, including during prompt preview.
+    return "\n\n".join(part for part in (
+        resident_reporting.prompt(record, job),
+        family_quality_reviewers.instructions(record),
+        _build_resident_prompt(record, job),
+    ) if part)
 
 
 def _build_resident_prompt(record: dict[str, Any], job: dict[str, Any]) -> str:

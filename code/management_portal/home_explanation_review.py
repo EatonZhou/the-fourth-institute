@@ -18,9 +18,6 @@ from management_common.portal_paths import path as portal_path
 from management_portal.home_explanation_quality import policy
 from management_portal.quality_review_transfer import TransferStore, selection
 
-TITLE = '讲解视频独立检查'
-
-
 def invoke(actor, instruction, arguments, key=''):
     from management_portal.hatg.contracts import InstructionCall, InstructionContext
     from management_portal.hatg.routing import execute_or_raise
@@ -28,19 +25,11 @@ def invoke(actor, instruction, arguments, key=''):
                             InstructionContext(caller=actor, entry='web'))
 
 
-def discover(actor, owner='', reviewer='', call=invoke, title=TITLE, excluded=()):
-    arguments = {'resident_ids': [reviewer], 'can_send': True, 'limit': 1} if reviewer else {
-        'q': title, 'can_send': True, 'limit': 50}
-    found = call(actor, 'SearchResidents', arguments).get('residents', [])
-    candidates = [r['resident_id'] for r in found if r.get('resident_id') not in {actor, owner, *excluded}
-                  and r.get('can_send') is True
-                  and (r.get('resident_id') == reviewer if reviewer else r.get('title') == title)]
-    if len(candidates) != 1 or len(found) >= 50:
-        raise ValueError('需要唯一可投递且独立于作者的讲解视频检查Resident')
-    return candidates[0]
-
-
-
+def ensure_family_reviewers(resident_id, actor, *, kind, reviewer_id=''):
+    """Society alone owns direct Family membership, provisioning and permission."""
+    from management_portal.society_service import get_society_service
+    return get_society_service().resident.ensure_family_reviewers(
+        resident_id, actor, kind=kind, reviewer_id=reviewer_id)
 
 class ReviewService:
     """One durable review authority for reports, explanations and their videos.
@@ -50,13 +39,46 @@ class ReviewService:
     """
     TERMINAL = {'passed', 'changes_requested', 'blocked', 'cancelled'}
 
-    def __init__(self, *, root=None, resources=None, call=invoke):
+    def __init__(self, *, root=None, resources=None, call=invoke, ensure=None):
         if resources is None:
             from management_portal.resources import get_resource_service
             resources = get_resource_service()
         self.root = Path(root) if root is not None else portal_path('features') / 'quality-reviews'
         self.resources, self.call = resources, call
+        self.ensure = ensure or ensure_family_reviewers
         self.transfers = TransferStore(self.root, resources)
+
+    def ensure_reviewers(self, subject, actor, reviewer=''):
+        """Only mutation callers pass a domain-verified responsible Resident."""
+        responsible = subject.get('responsible_resident_id', '')
+        if not re.fullmatch('resident_[0-9a-f]{12}', str(responsible)):
+            raise ValueError('缺少经核验的负责Resident，无法确定审核Family')
+        kind = 'video' if 'video' in subject['kind'] else 'page'
+        scope = self.ensure(responsible, actor, kind=kind, reviewer_id=reviewer)
+        chosen = scope.get('reviewer_id', '')
+        if (not scope.get('family_id') or not scope.get('lineage_id')
+                or not re.fullmatch('resident_[0-9a-f]{12}', str(chosen))
+                or chosen in {actor, subject.get('author'), responsible}
+                or chosen != scope.get('reviewers', {}).get(kind)
+                or (reviewer and chosen != reviewer)):
+            raise ValueError('Society未返回独立的直属Family审核者')
+        return scope
+
+    def prepare(self, actor, *, kind, quality, task):
+        """An authenticated Resident explicitly starts a high-quality creation.
+
+        No artifact exists yet. This provisions roles, not a review or verdict;
+        the caller cannot nominate another Resident or another Family.
+        """
+        if not re.fullmatch('resident_[0-9a-f]{12}', str(actor)):
+            raise PermissionError('创作准备仅限已认证Resident本人发起')
+        if quality != 'high' or not isinstance(kind, str) or kind not in {'page', 'video'}:
+            raise ValueError('创作准备须显式选择high及page或video')
+        if not isinstance(task, str) or not task.strip() or len(task) > 4000:
+            raise ValueError('创作准备须说明本次实际理解任务，最多4000字符')
+        scope = self.ensure_reviewers({'kind': 'explanation_video' if kind == 'video' else 'explanation',
+            'author': actor, 'responsible_resident_id': actor}, actor)
+        return {'status': 'prepared', 'kind': kind, 'quality': quality, **scope}
 
     @classmethod
     def subject(cls, value):
@@ -368,9 +390,8 @@ class ReviewService:
         record.update(status='pending', attempts=record['attempts']+1)
         self._save(record)
         try:
-            chosen = discover(actor, subject['author'], reviewer or record.get('reviewer', ''),
-                              self.call, TITLE if 'video' in subject['kind'] else '解释页独立检查',
-                              excluded=(subject['responsible_resident_id'],))
+            scope = self.ensure_reviewers(subject, actor, reviewer or record.get('reviewer', ''))
+            chosen = scope['reviewer_id']
             if record.get('handoff'):
                 if chosen != record['handoff']['reviewer'] or time.time() >= record['handoff']['expires_at']:
                     raise PermissionError('固定交接检查者已变更或授权到期，须显式续审')
@@ -379,6 +400,7 @@ class ReviewService:
                 record['handoff'] = {'subject': frozen, 'requested_by': actor, 'reviewer': chosen,
                     'expires_at': time.time() + 7 * 24 * 3600}
             record['reviewer'] = chosen
+            record['reviewer_scope'] = scope
             self._save(record)
             payload = {'schema': 'portal-quality-review/v1', 'review_id': identifier,
                        'subject': subject, 'round': record['round'], 'policy': policy('high', video='video' in subject['kind']),
@@ -443,7 +465,9 @@ class ReviewService:
                     'task_context': self._task_context(previous['subject'], previous),
                     'resumes_review_id': review_id}
                 if record.get('status') != 'submitted':
-                    record = self._dispatch(record, actor, reviewer or previous.get('reviewer', ''))
+                    # An explicit new round uses today's direct Family. The old
+                    # reviewer and snapshot stay frozen on the previous record.
+                    record = self._dispatch(record, actor, reviewer)
                 if expired:
                     previous.update(status='blocked', feedback='本轮检查读取授权到期，由请求者显式续审。')
                 previous['continuation_review_id'] = identifier
@@ -561,9 +585,9 @@ class AuthoringService(ReviewService):
     Only a domain that verified the message/owner association may supply the
     responsible Resident. No public endpoint accepts an arbitrary recipient.
     """
-    def __init__(self, *, root=None, resources=None, call=invoke):
+    def __init__(self, *, root=None, resources=None, call=invoke, ensure=None):
         super().__init__(root=root if root is not None else portal_path('features') / 'quality-authoring',
-                         resources=resources, call=call)
+                         resources=resources, call=call, ensure=ensure)
 
     @classmethod
     def subject(cls, value):
@@ -590,6 +614,10 @@ class AuthoringService(ReviewService):
                 return self._save(record)
             if record['attempts'] >= 3:
                 return record
+            if subject['quality'] == 'high':
+                # Provision at request acceptance, before author work is sent.
+                # Authorization failures are real failures, not a global fallback.
+                record['reviewer_scope'] = self.ensure_reviewers(subject, actor)
             record.update(status='pending', attempts=record['attempts']+1)
             self._save(record)
             payload = {'schema': 'portal-quality-authoring/v1', 'authoring_id': identifier, 'subject': subject,

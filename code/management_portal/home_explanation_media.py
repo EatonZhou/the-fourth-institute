@@ -323,6 +323,10 @@ class Media:
             return self.response(ctx, state, actor)
         if not ctx['plan'].get('audio'):
             raise ValueError('视频需要固定音轨文件')
+        if quality == 'high':
+            review.ReviewService(resources=self.service).ensure_reviewers({
+                'kind': 'explanation_video', 'author': actor,
+                'responsible_resident_id': (authored or {}).get('resident_id', '')}, actor)
         audio = self.read(ctx['plan']['audio'], actor, 64*1024*1024)
         lease = self._lease(ctx, actor)
         if lease is None:

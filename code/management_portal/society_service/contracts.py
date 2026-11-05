@@ -94,6 +94,9 @@ DOMAIN_OPERATIONS = {
         (Operation('write', 'resident', 'resident', 'resident_id', implementation='management_portal.society_service.resident_protocol'), """
             cancel_resident_service_input
         """),
+        (Operation('write', 'resident', implementation='management_portal.society_service.resident_protocol'), """
+            ensure_family_reviewers
+        """),
         # Resident discovery (resident_context): searches use the embedding
         # model held by the service process.
         (Operation('read', 'resident', implementation='management_portal.society_service.resident_context.domain', in_process=True), """

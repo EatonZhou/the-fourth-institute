@@ -4,15 +4,15 @@ type: decision
 project: AI员工
 created_at: '2026-09-30'
 version:
-  number: 43
+  number: 44
   created_at: "2026-09-30T11:40:00Z"
   created_by:
     user: "weihao"
     agent: "resident_57f585eb8ae9"
-  updated_at: "2026-11-04T21:41:47Z"
+  updated_at: "2026-11-05T02:02:48Z"
   updated_by:
     user: ""
-    agent: "resident_6199a7a36480"
+    agent: "resident_62dbdb2288fb"
 importance: 8
 metaness: 2
 ai_generated: false
@@ -256,6 +256,12 @@ high 检查者须独立于作者，按理解任务实际打开、操作和核对
 
 新增 nullable reporting_json 列由 Society 正式升级入口处理。未升级的读取按默认 off/medium、configured=false 解释，无汇报字段的普通设置写入继续工作；显式保存汇报策略缺列时返回真实错误，不能声称配置成功。非法非空值不默认化。`scripts/migrate_resident_reporting.py` 默认事务预演回滚，`--apply` 才提交；使用初始化锁和有界锁等待，按本次增列需要的表、字段和类型核对，不依赖描述性 schema 标签相等。列已存在且类型合法时不再 ALTER，不重写已有策略。旧安装转换与新安装 seed 使用同一 owner 结构，实例特殊策略通过正式 UpdateResidentSettings 设置，不硬编码本站 AMA 身份。
 
+
+### Family 内的审核职责
+
+高质量实际请求进入时，由 Society 按已核验的实际负责 Resident 的直接 Family 确保“生成内容审核”和“视频内容审核”两类正式成员存在，后续请求复用；正式 high 创作、生成与送审入口沿同一能力补齐。只读配置、提示预览、历史恢复不创建成员。Family 生命周期维护真实名册与私人保护，ReviewService 按该 Family 的角色选择独立检查者，不能全局按名称发现或借用开发团队。页面和视频各用自己的检查角色，不得由作者、请求者或负责修改者自审。
+
+User 生成请求沿正式作者关联定位负责 Resident；缺少关联、归属或实际权限时如实失败，不从用户身份或外部转发者猜 Family。high 对固定审核角色的要求不授予读取私人历史、扩大源 Workspace ACL 或任意组织调整的权限。角色准备和作品审查分别判断：已有固定审查不自动迁移、重送或恢复，新固定版与显式新轮次才采用当前 Family 角色。完整请求与角色合同见 decision_b12782e7f490。
 
 ### 独立检查的固定成果交接
 

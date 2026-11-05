@@ -4,12 +4,12 @@ type: decision
 project: AI员工
 created_at: '2026-11-04'
 version:
-  number: 36
+  number: 38
   created_at: "2026-11-04"
   created_by:
     user: ""
     agent: "resident_37dd0dcc31bf"
-  updated_at: "2026-11-04T23:01:55Z"
+  updated_at: "2026-11-05T02:21:13Z"
   updated_by:
     user: ""
     agent: "resident_62dbdb2288fb"
@@ -293,11 +293,17 @@ Home 传入 `origin_context={resident_id,message_id,fence_index}`；报告服务
 
 作者指南位于 Portal 同源 /static/home_explanation_authoring.md。三个参照为 [Transformer Circuits Global Workspace](https://transformer-circuits.pub/2026/workspace/index.html)、[Distill Paths Perspective on Value Learning](https://distill.pub/2019/paths-perspective-on-value-learning/) 和 [Distill Handwriting](https://distill.pub/2016/handwriting/)。学习其图文论证、可检验操作与因果反馈；不把某个主题、固定布局、D3、视频或控件数量作为质量门槛。简单事情采用清楚而完整的简单表达，复杂关系提供足以理解的交互与材料。
 
-高质量解释包由作者使用 build_explanation_package.py 构建与送检；已有高质量清单经 submit_explanation_review.py 送检。低、中质量不强制另发独立审核。脚本用作者当前正式身份回读清单、核对 SHA，通过 SearchResidents 发现可投递的独立检查 Resident（本站已登记 resident_5607a890718c），用 DeliverMessage 按作者、检查者、清单地址及 SHA 的稳定幂等键触发一次检查。作者不能检查自己；检查者以自身身份读取，不继承作者凭据或扩大资源权限。每个实例正式登记自己的检查者，不能以本站 ID 充当其他实例的授权。
+高质量请求的两类检查者属于实际负责 Resident 自己的直接 Family，分别承担“生成内容审核”和“视频内容审核”。Society 负责 Family 解析、真实成员生命周期与按角色幂等补齐；首次实际 high 请求进入时一次确保两类成员存在，后续请求复用同一 Family 的对应成员。显式 high 创作、生成和送审入口使用同一能力补齐，普通 GET、历史恢复、设置保存和提示预览不创建成员。用户选择 high 所要求的固定审核角色由该请求创建，不等同于授权 steward 自由调整其他组织成员。
+
+Family 归属取自服务端已核验的负责 Resident，不取外部转发者、开发团队、Workspace owner 或客户端指定的 Family。User 发起生成时沿正式来源绑定定位负责 Resident；无法确定负责人或 Family 时保留具体错误，不按名称猜测 AMA。角色创建使用稳定 Family/角色标识，并发和中断重试不重复创建；页面与视频审核者相互独立，且都不得是作者、请求者或负责修改者。创建经现有 Society 生命周期加入真实名册，继承该 Family 的组织与私人保护；不通过新增显示行、临时借调或放宽私域 ACL 模拟成员。
+
+作者接受自然语言的高质量页面或视频制作请求后，在创作开始前调用正式 `POST /api/home-explanation/reviews/prepare`；客户端为 `submit_explanation_review.py --resident-id <本人> --prepare page|video --quality high --task <理解任务>`。此入口只以实际鉴权 Resident 本人确定 Family，不接受替代负责者或 Family 参数，复用 Society 的同一角色准备能力；返回成员就绪，不生成作品、不创建审核记录、不派发审核或表示质量通过。结构化视频创作请求由服务在向作者派工前自动执行相同准备。单纯保存 high 偏好或不含制作行为的普通聊天不扩充成员。
+
+高质量解释包由作者使用 build_explanation_package.py 构建与送检；已有高质量清单经 submit_explanation_review.py 送检。低、中质量不强制另发独立审核。ReviewService 只向已确定 Family 的对应审核角色投递；显式指定审核者同样须符合本 Family、角色和独立性要求，不再全局 SearchResidents 按名称发现，不含本站检查者 ID。私人 Family 成员无需进入公开找人候选才能收到审核。创建或权限失败保留具体失败状态，不回退到外部检查者或以 submitted 冒充通过。已有固定审查保留原检查者、资产、结论与历史，不因修复机制自动迁移、重送或恢复；新固定版或显式新审查轮次才使用当前 Family 的角色。
 
 检查者实际打开固定版并操作，围绕理解任务检查事实、来源、图形语义、关键互动与联动反馈、信息层次、可访问性和性能。视频尚未由用户点击生成时不要求补做视频。报告记录版本、实际操作、截图、发现与未验范围，结论分 passed、changes_requested、blocked。作者回读同一清单摘要对应的报告，修复意见形成新固定版再送检；受理回执不等于检查通过，权限不足明确前提。普通打开、恢复历史或页面刷新不触发新的检查。该流程检查生成作品，不接管产品正式 User TAU。
 
-高质量视频编码完成后，生成服务以实际生成主体经正式 SearchResidents 与 DeliverMessage 触发独立“讲解视频独立检查”，固定清单、视频、字幕与讲稿的地址和摘要。检查者不继承生成者凭据，以自己的权限真实播放并检查解释质量、数学与视觉对应、镜头连续性、字幕与旁白同步；只有实际听辨才能评价音质。页面检查不替代成片检查。检查投递状态 pending、submitted、submission_failed、not_requested 与生成状态分开；submitted 不表示通过。权限或服务故障不撤销已保存视频，允许显式重试检查且不重新编码；普通 GET、历史恢复不重复发消息，浏览器不能自报 passed。报告必须匹配该成片摘要，修改产生新版。
+高质量视频编码完成后，生成服务以实际生成主体经同一 Family 审核角色入口与正式投递触发独立视频检查，固定清单、视频、字幕与讲稿的地址和摘要。检查者不继承生成者凭据，以自己的权限真实播放并检查解释质量、数学与视觉对应、镜头连续性、字幕与旁白同步；只有实际听辨才能评价音质。页面检查不替代成片检查。检查投递状态 pending、submitted、submission_failed、not_requested 与生成状态分开；submitted 不表示通过。权限或服务故障不撤销已保存视频，允许显式重试检查且不重新编码；普通 GET、历史恢复不重复发消息，浏览器不能自报 passed。报告必须匹配该成片摘要，修改产生新版。
 
 生成计划及固定音轨必须与清单位于同一 Workspace、同一包目录。音轨场景 start/end 与逐句 cues 使用实际时间；每次媒体请求重新鉴权来源，不能通过视频生成跨目录复制更私有材料。
 

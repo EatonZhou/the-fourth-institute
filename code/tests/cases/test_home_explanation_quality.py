@@ -59,11 +59,13 @@ def rig(tmp_path, monkeypatch):
     calls = []
     def isa(actor, name, args, key=''):
         calls.append((actor, name, args, key))
-        if name == 'SearchResidents':
-            return {'residents': [{'resident_id': CHECKER, 'can_send': True, 'title': args.get('q', '')}]}
+        assert name != 'SearchResidents'
         return {'message_id': 'msg_' + sha(key.encode())[:32]}
-    reviews = ReviewService(root=tmp_path/'reviews', resources=resources, call=isa)
-    authoring = AuthoringService(root=tmp_path/'authoring', resources=resources, call=isa)
+    def ensure(resident_id, actor, *, kind, reviewer_id=''):
+        return {'family_id': 'fbi_111111111111', 'lineage_id': 'lineage_111111111111',
+                'reviewer_id': reviewer_id or CHECKER, 'reviewers': {'page': CHECKER, 'video': CHECKER}}
+    reviews = ReviewService(root=tmp_path/'reviews', resources=resources, call=isa, ensure=ensure)
+    authoring = AuthoringService(root=tmp_path/'authoring', resources=resources, call=isa, ensure=ensure)
     renders = []
     def render(plan, stage, audio):
         renders.append(plan)
@@ -464,10 +466,11 @@ def test_rejected_versions_continue_past_three_rounds_and_require_real_predecess
                     quality='high', author=AUTHOR, assets=[asset], **({'previous_review_id': previous} if previous else {}))
     with pytest.raises(ValueError, match='不存在'):
         reviews.submit(subject(0, '0'*64), AUTHOR)
-    original_call = reviews.call
-    reviews.call = lambda *args: {'residents': [{'resident_id': AUTHOR, 'can_send': True, 'title': '解释页独立检查'}]}
+    original_ensure = reviews.ensure
+    reviews.ensure = lambda *args, **kwargs: {'family_id': 'fbi_111111111111',
+        'lineage_id': 'lineage_111111111111', 'reviewer_id': AUTHOR, 'reviewers': {'page': AUTHOR, 'video': AUTHOR}}
     assert reviews.submit(subject(0), AUTHOR)['status'] == 'submission_failed'
-    reviews.call = original_call
+    reviews.ensure = original_ensure
     previous = None
     evidence = put('bounded-review.md', b'Reviewer requires a new concrete explanatory contrast.')
     for n in range(1, 4):

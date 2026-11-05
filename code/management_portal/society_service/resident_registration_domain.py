@@ -386,6 +386,12 @@ def _publish_registration(
                 (stage / 'LINEAGE.md').touch()
                 (stage / 'runtime').mkdir()
             resident_workspace_domain.ensure_resident_workspace(record, folder=folder)
+            if payload.get("initial_instructions"):
+                # Only the newly staged creation folder is written. Replays do
+                # not replace an existing Resident's user-owned instructions.
+                from management_common.filesystem_paths import filesystem_path
+                filesystem_path(folder / resident_domain_common.RESIDENT_INSTRUCTIONS_FILE).write_text(
+                    str(payload["initial_instructions"]), encoding="utf-8")
         creation.publish(initialize)
         resident_runtime_domain.write_resident_runtime_settings(record, runtime_settings)
         if bool(payload.get("initialize_from_source")) and not intent.snapshot.get('context_prepared'):

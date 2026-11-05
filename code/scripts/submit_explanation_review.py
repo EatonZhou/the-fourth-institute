@@ -43,6 +43,11 @@ def submit(address, sha256, task, resident_id, *, reviewer='', previous_review_i
     return (call or request)(resident_id, 'reviews', {'address': address, 'sha256': sha256, 'task': task, 'reviewer': reviewer, 'previous_review_id': previous_review_id})
 
 
+def prepare(kind, quality, task, resident_id, *, call=None):
+    """Prepare this authenticated Resident's Family before writing an artifact."""
+    return (call or request)(resident_id, 'reviews/prepare', {'kind': kind, 'quality': quality, 'task': task})
+
+
 def accept_authoring(address, sha256, quality, authoring_id, resident_id):
     return request(resident_id, 'media/authoring', {'address': address, 'sha256': sha256,
         'quality': quality, 'authoring_id': authoring_id})
@@ -85,6 +90,8 @@ def main():
     parser.add_argument('--address')
     parser.add_argument('--sha256')
     parser.add_argument('--task', default='')
+    parser.add_argument('--prepare', choices=('page', 'video'), help='prepare Family reviewers before high creation')
+    parser.add_argument('--quality', choices=('high',), help='required explicitly with --prepare')
     parser.add_argument('--previous-review-id')
     parser.add_argument('--read', metavar='REVIEW_ID')
     parser.add_argument('--read-authoring', metavar='AUTHORING_ID')
@@ -96,7 +103,14 @@ def main():
     parser.add_argument('--verdict-file', type=Path)
     args = parser.parse_args()
     try:
-        if args.export:
+        if args.prepare:
+            if args.quality != 'high' or not args.task.strip():
+                parser.error('--prepare requires --quality high and --task')
+            if any((args.export, args.resume, args.verdict_file, args.cancel, args.read,
+                    args.read_authoring, args.address, args.sha256, args.previous_review_id, args.reviewer)):
+                parser.error('--prepare cannot be combined with artifact or review operations')
+            value = prepare(args.prepare, args.quality, args.task, args.resident_id)
+        elif args.export:
             if not args.output_dir:
                 parser.error('--export requires --output-dir (a new directory in your Workspace)')
             value = export(args.export, args.output_dir, args.resident_id, group=args.group)

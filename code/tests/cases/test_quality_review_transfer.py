@@ -56,16 +56,17 @@ def exchange(tmp_path, monkeypatch, permissions):
     calls = []
     def isa(actor, instruction, args, key=''):
         calls.append((actor, instruction, args, key))
-        if instruction == 'SearchResidents':
-            return {'residents': [{'resident_id': args.get('resident_ids', [CHECKER])[0], 'can_send': True,
-                                    'title': args.get('q', '')}]}
+        assert instruction != 'SearchResidents'
         return {'message_id': 'msg_' + sha(key.encode())[:32]}
-    owner = ReviewService(root=tmp_path / 'reviews', resources=resources, call=isa)
+    def ensure(resident_id, actor, *, kind, reviewer_id=''):
+        return {'family_id': 'fbi_111111111111', 'lineage_id': 'lineage_111111111111',
+                'reviewer_id': reviewer_id or CHECKER, 'reviewers': {'page': CHECKER, 'video': CHECKER}}
+    owner = ReviewService(root=tmp_path / 'reviews', resources=resources, call=isa, ensure=ensure)
     monkeypatch.setattr(http, 'ReviewService', lambda: owner)
     from management_portal.home_explanation_media import Media
     monkeypatch.setattr(http, 'Media', lambda: Media(resources))
     from management_portal import home_explanation_review as review_module
-    authoring = review_module.AuthoringService(root=tmp_path / 'authoring', resources=resources, call=isa)
+    authoring = review_module.AuthoringService(root=tmp_path / 'authoring', resources=resources, call=isa, ensure=ensure)
     monkeypatch.setattr(review_module, 'ReviewService', lambda **kw: owner)
     monkeypatch.setattr(review_module, 'AuthoringService', lambda **kw: authoring)
     class Handler(BaseHTTPRequestHandler):
@@ -428,6 +429,11 @@ def test_expired_round_can_only_resume_explicitly_and_replaces_checker(exchange)
     count = len(calls)
     owner.submit(subject, AUTHOR)
     assert len(calls) == count
+    # The Family owner has reassigned this page-review role. An arbitrary
+    # same-Family member or the video role would not be a valid substitution.
+    owner.ensure = lambda *args, **kwargs: {'family_id': 'fbi_111111111111',
+        'lineage_id': 'lineage_111111111111', 'reviewer_id': OTHER,
+        'reviewers': {'page': OTHER, 'video': CHECKER}}
     new = owner.resume(old['id'], AUTHOR, reviewer=OTHER)
     assert owner.read(old['id'], AUTHOR)['status'] == 'blocked'
     assert new['reviewer'] == OTHER and new['status'] == 'submitted'

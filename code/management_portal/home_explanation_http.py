@@ -137,6 +137,18 @@ def _review_file(request, parsed, actor):
         return http_responses._serve_exception_json(request, exc)
 
 
+def _prepare(request, parsed, actor):
+    try:
+        body = http_request_body._read_bounded_json_object(request, max_bytes=16384)
+        if set(body) - {'kind', 'quality', 'task'}:
+            raise ValueError('创作准备只接受kind、quality、task；身份与Family由服务端核验')
+        value = ReviewService().prepare(actor, kind=body.get('kind'),
+            quality=body.get('quality'), task=body.get('task'))
+        return http_responses._serve_json(request, 200, {'review': value})
+    except Exception as exc:
+        return http_responses._serve_exception_json(request, exc)
+
+
 def _authoring(request, parsed, actor):
     try:
         value = AuthoringService().read(parse_qs(parsed.query).get('id', [''])[0], actor)
@@ -165,6 +177,7 @@ def routes():
             route('GET', '/api/home-explanation/reviews', _reviews, 'home-explanation'),
             route('GET', '/api/home-explanation/authoring', _authoring, 'home-explanation'),
             route('POST', '/api/home-explanation/reviews', _reviews, 'home-explanation'),
+            route('POST', '/api/home-explanation/reviews/prepare', _prepare, 'home-explanation'),
             route('POST', '/api/home-explanation/reviews/verdict', _reviews, 'home-explanation'),
             route('POST', '/api/home-explanation/reviews/cancel', _reviews, 'home-explanation'),
             route('POST', '/api/home-explanation/reviews/resume', _reviews, 'home-explanation'),

@@ -81,6 +81,20 @@ high 质量的成片由独立视频检查 Resident 检查，页面检查结论�
 
 ## 独立 Resident 的检查方式
 
+high 请求由 Portal 在实际负责 Resident 自己的直接 Family 中确保“生成内容审核”和“视频内容审核”两类成员存在；缺少时创建，后续请求复用。两者是正式 Family 成员，独立于作者及负责修改者。不要自行全局搜索同名检查者、借用开发团队成员或把请求转给其他 Family 代审。User 点击生成时由已核验的作者关联确定负责 Resident；无法确定 Family 或创建失败时保留具体错误。
+
+接到高质量页面或视频制作请求后，作者在开始创作前执行：
+
+```bash
+python /opt/tfi/the-fourth-institute-dev/code/scripts/submit_explanation_review.py \
+  --resident-id '<自己的ResidentID>' --prepare page --quality high \
+  --task '<本次理解任务>'
+```
+
+视频改用 `--prepare video`。该命令调用正式 `POST /api/home-explanation/reviews/prepare`，只以当前鉴权 Resident 本人确定 Family，返回两类成员和对应审核者；不能传另一个负责者或 Family。准备可重复调用，只创建缺少的成员，不生成作品或投递审核。随后按原构建和送审入口完成实际作品。单纯保存高质量偏好、普通聊天和读取设置不调用此制作准备入口。
+
+角色准备不表示作品通过。页面与视频仍分别提交固定成果并接受实际检查；只读查询、恢复历史和提示预览不创建角色或投递检查。既有审核记录和结论保持原版本，新固定版或显式新轮次才使用当前 Family 的审核角色。
+
 high 质量的独立检查在生成内容完成后读取固定版本、实际打开页面并操作，检查者不能是作者本人。检查范围按理解任务确定；若只有一段短说明，检验其准确、清楚、完整即可。视频未被用户要求生成时，不把缺少视频判为失败。
 
 检查者要回答：
@@ -142,7 +156,7 @@ audio 为同包固定 MP3 或 PCM16 WAV 的正式 address/sha256。Portal检查�
 
 新增送审依赖会改变 manifest 摘要，须保存新固定版本。旧 blocked 轮的快照和结论保持不变；仅恢复同一轮不会凭空补齐材料。内容实际修订沿 `changes_requested` 关联复审；补全依赖的新包按新版本正式提交，不能将旧 blocked 伪作修改意见链。页面检查与视频检查分别绑定各自固定对象，不能用已通过的页面结论代替成片检查。
 
-high 视频保存完成后，服务按实际生成 actor 查找唯一、可投递的“讲解视频独立检查” Resident，并发送固定 manifest、视频、字幕、讲稿及来源引用。检查员使用自身权限。`submitted` 表示任务已投递，只有固定版本的正式审核记录为 `passed` 才表示通过。`changes_requested` 要求作者另存修订后重审；`blocked`、`cancelled`、`submission_failed` 保留真实原因，不自动降级。low/medium 不要求独立送审。页面的独立检查重试对应 `POST /api/home-explanation/media/review`，提交 `{address,sha256,quality}`，按原请求 actor 重试，保留播放器、不重编码；送检重试有上限。GET、刷新和重开不自动投递。
+high 视频保存完成后，服务使用经核验负责 Resident 所属 Family 的“讲解视频独立检查”成员，并发送固定 manifest、视频、字幕、讲稿及来源引用；审核角色已在正式高质量创作请求受理时准备，缺失时由同一 Family 机制补齐，不再全局找人。检查员使用自身权限。`submitted` 表示任务已投递，只有固定版本的正式审核记录为 `passed` 才表示通过。`changes_requested` 要求作者另存修订后重审；`blocked`、`cancelled`、`submission_failed` 保留真实原因，不自动降级。low/medium 不要求独立送审。页面的独立检查重试对应 `POST /api/home-explanation/media/review`，提交 `{address,sha256,quality}`，按原请求 actor 重试，保留播放器、不重编码；送检重试有上限。GET、刷新和重开不自动投递。
 
 常用构建入口（占位值需替换为自己正式绑定与文件）：
 

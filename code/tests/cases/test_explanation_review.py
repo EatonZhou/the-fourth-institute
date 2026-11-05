@@ -6,6 +6,28 @@ import io
 import json
 
 
+def test_prepare_cli_requires_explicit_creation_and_never_supplies_another_identity(monkeypatch, capsys):
+    import sys
+    actor = 'resident_111111111111'
+    calls = []
+    def request(current, path, body):
+        calls.append((current, path, body))
+        return {'status': 'prepared', 'quality': 'high', 'kind': 'page'}
+    monkeypatch.setattr(client, 'request', request)
+    args = ['submit_explanation_review.py', '--resident-id', actor, '--prepare', 'page', '--task', 'Observe the central relation']
+    monkeypatch.setattr(sys, 'argv', args)
+    with pytest.raises(SystemExit) as error: client.main()
+    assert error.value.code == 2 and not calls
+    capsys.readouterr()
+    monkeypatch.setattr(sys, 'argv', args + ['--quality', 'high'])
+    client.main()
+    assert json.loads(capsys.readouterr().out)['status'] == 'prepared'
+    assert calls == [(actor, 'reviews/prepare', {'kind': 'page', 'quality': 'high', 'task': 'Observe the central relation'})]
+    monkeypatch.setattr(sys, 'argv', args + ['--quality', 'high', '--read', 'a' * 64])
+    with pytest.raises(SystemExit) as error: client.main()
+    assert error.value.code == 2 and len(calls) == 1
+
+
 def test_builder_requires_quality_before_writing_or_submitting(tmp_path, monkeypatch, capsys):
     import sys
     from scripts import build_explanation_package as builder

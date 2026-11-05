@@ -150,6 +150,11 @@ class PersistentMedia:
                 return existing
             if not require_authored(self.store,snapshot,actor,quality):
                 return submit_authoring(self.store,identifier,number,actor,quality)
+            if quality == 'high':
+                from management_portal.home_report_review import ReviewService, responsible
+                ReviewService().ensure_reviewers({'kind': 'report_video',
+                    'author': snapshot.get('author'),
+                    'responsible_resident_id': responsible(self.store, snapshot, actor)}, actor)
         task = self.task(identifier, number, quality)
         with self.store.lock(identifier):
             previous = self.status(identifier, number, actor, quality=quality)

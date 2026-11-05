@@ -15751,8 +15751,8 @@
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260930__decision__Resident_运行设置：模型、推理强度、速度、权限与协作模式__decision_8b2fa224616b.md",
-      "sha256": "6b1b594fb85a3d8aff5118554348c46fe683d4015753903907ed416874c8d08e",
-      "size": 46791
+      "sha256": "acb73168316903d778d94f9f1f37ae0f4bd66d68f49dedcbdf303812d60c0497",
+      "size": 47921
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20261001__decision__Family：把多个_Resident_组合为对外一个_Resident__decision_44cf587c1721.md",
@@ -15875,6 +15875,11 @@
       "size": 12282
     },
     {
+      "path": "data/projects/AI员工/knowledge_base/decision/20261019__decision__私人_Family_与个人助手__decision_328fb2548b8f.md",
+      "sha256": "c8605ee7643e2dd060dbfbc248b8fe77855f6221d1eea4660eeae2ce647a5fd2",
+      "size": 8670
+    },
+    {
       "path": "data/projects/AI员工/knowledge_base/decision/20261020__decision__共享代码与实例状态隔离__decision_d88306d0bd17.md",
       "sha256": "d1e1362667f929614cb812e38892d0ee7b47ac4555b3ce34f8a83508d67daa22",
       "size": 39495
@@ -15891,8 +15896,8 @@
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20261104__decision__对话驱动的_Portal_主页与右侧展示区（目标设计）__decision_b12782e7f490.md",
-      "sha256": "aed37d8705e2ae53e3478017ebda9a29ff253bee03aedfaa089238967a9fcc4f",
-      "size": 42865
+      "sha256": "203ce91737a7c69eaeed04298c005c38ca3f395136abc0c2f24380083b12104f",
+      "size": 44922
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20261104__decision__汇报资源、版本与成果目录__decision_e3ced6d30f6b.md",

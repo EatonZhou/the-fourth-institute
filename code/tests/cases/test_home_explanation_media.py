@@ -83,7 +83,7 @@ def setup(tmp_path, monkeypatch):
     # These fixtures isolate byte/lease/permission ownership. The authenticated
     # authoring gate and actual-plan revisions have their own quality contracts.
     monkeypatch.setattr(Media, 'require_authored', lambda *args: True)
-    monkeypatch.setattr(module.review, 'discover', lambda *args: 'resident_aaaaaaaaaaaa')
+    monkeypatch.setattr(module.review.ReviewService, 'ensure_reviewers', lambda *args: {})
 
     def put(name, value):
         data = json.dumps(value).encode() if isinstance(value, dict) else value
@@ -427,19 +427,26 @@ def test_review_revocation_does_not_fail_ready_media(setup, monkeypatch):
         assert stream.read() == b'movie-content'
 
 
-def test_review_discovery_and_instruction_use_actual_actor(tmp_path, monkeypatch):
+def test_review_family_service_and_instruction_use_actual_actor(tmp_path, monkeypatch):
     from management_portal import home_explanation_review as helper
     from management_portal.hatg import routing
+    from management_portal import society_service
+    from types import SimpleNamespace
     calls = []
+    ensured = []
+    def ensure(resident_id, actor, *, kind, reviewer_id=''):
+        ensured.append((resident_id, actor, kind, reviewer_id))
+        return {'family_id': 'fbi_111111111111', 'lineage_id': 'lineage_111111111111',
+                'reviewer_id': 'resident_aaaaaaaaaaaa',
+                'reviewers': {'page': 'resident_bbbbbbbbbbbb', 'video': 'resident_aaaaaaaaaaaa'}}
+    monkeypatch.setattr(society_service, 'get_society_service',
+                        lambda: SimpleNamespace(resident=SimpleNamespace(ensure_family_reviewers=ensure)))
     def execute(call, context):
         calls.append((call, context))
-        if call.instruction == 'SearchResidents':
-            return {'residents': [{'resident_id': 'resident_aaaaaaaaaaaa', 'title': helper.TITLE, 'can_send': True}]}
+        assert call.instruction == 'DeliverMessage'
         return {'message_id': 'msg_review'}
     monkeypatch.setattr(routing, 'execute_or_raise', execute)
     for actor in ('weihao', 'resident_0123456789ab'):
-        reviewer = helper.discover(actor)
-        from types import SimpleNamespace
         content = b'fixed review video bytes'
         checksum = hashlib.sha256(content).hexdigest()
         service = helper.ReviewService(root=tmp_path/actor,
@@ -449,20 +456,17 @@ def test_review_discovery_and_instruction_use_actual_actor(tmp_path, monkeypatch
                    'digest': checksum, 'quality': 'high', 'author': actor,
                    'responsible_resident_id': 'resident_0123456789ab',
                    'assets': [{'address': RID+'/file/video.mp4', 'sha256': checksum}]}
-        assert service.submit(subject, actor, reviewer)['message_id'] == 'msg_review'
+        assert service.submit(subject, actor)['message_id'] == 'msg_review'
+        assert ensured[-1] == ('resident_0123456789ab', actor, 'video', '')
         count = len(calls)
-        service.submit(subject, actor, reviewer)
-        assert len(calls) == count
+        ensure_count = len(ensured)
+        service.submit(subject, actor)
+        assert len(calls) == count and len(ensured) == ensure_count
         assert calls[-1][1].caller == actor and calls[-1][1].entry == 'web'
         assert 'temporary_credentials' not in calls[-1][0].arguments
         payload = json.loads(calls[-1][0].arguments['message']['content_parts'][0]['text'])
         assert payload['subject']['assets'][0]['sha256'] == checksum
         assert payload['subject']['author'] == actor
-    for results in ([], [{'resident_id': 'resident_aaaaaaaaaaaa', 'title': helper.TITLE, 'can_send': True}]*2):
-        with pytest.raises(ValueError):
-            helper.discover('weihao', call=lambda *args: {'residents': results})
-    with pytest.raises(ValueError):
-        helper.discover('resident_aaaaaaaaaaaa')
 
 
 def test_http_review_endpoint_passes_authenticated_actor(monkeypatch):
