@@ -1,22 +1,23 @@
 (() => {
   "use strict";
   function create({ root, controls, onOpen, onSelection, onChange, onChoose, onClose }) {
+    root.classList.add("portalFileView");
     const node = (tag, text) => { const el = document.createElement(tag); if (text) el.textContent = text; return el; };
     const toolbar = controls?.primary || node("div"), secondary = controls?.secondary || node("div"), status = node("p"), progress = node("span"), body = node("div"), editor = node("textarea");
     const renderRoot = node("div"); body.append(renderRoot);
-    toolbar.className = "homeDialoguePreviewActions"; secondary.className = "homeDialoguePreviewMenu"; body.className = "homeDialogueDocument";
-    editor.className = "homeDialogueEditor"; editor.setAttribute("aria-label", "文件草稿"); editor.hidden = true;
-    status.className = "homeDialoguePreviewError"; status.setAttribute("role", "status");
+    toolbar.className = "portalFilePreviewActions"; secondary.className = "portalFilePreviewMenu"; body.className = "portalFileDocument";
+    editor.className = "portalFileEditor"; editor.setAttribute("aria-label", "文件草稿"); editor.hidden = true;
+    status.className = "portalFilePreviewError"; status.setAttribute("role", "status");
     const failure = node("section"), failureTitle = node("h3"), explanation = node("p"), targetLabel = node("p", "目标文件"), targetAddress = node("code"), details = node("details"), reason = node("p"), recovery = node("div");
-    failure.className = "homeDialoguePreviewFailure"; failure.setAttribute("role", "status"); failure.hidden = true;
-    targetLabel.className = "homeDialoguePreviewTargetLabel"; targetAddress.className = "homeDialoguePreviewTarget";
-    recovery.className = "homeDialoguePreviewRecovery";
+    failure.className = "portalFilePreviewFailure"; failure.setAttribute("role", "status"); failure.hidden = true;
+    targetLabel.className = "portalFilePreviewTargetLabel"; targetAddress.className = "portalFilePreviewTarget";
+    recovery.className = "portalFilePreviewRecovery";
     details.append(node("summary", "查看错误详情"), reason);
     failure.append(failureTitle, explanation, targetLabel, targetAddress, recovery, details);
-    progress.className = "homeDialogueSaveStatus"; progress.setAttribute("role", "status");
+    progress.className = "portalFileSaveStatus"; progress.setAttribute("role", "status");
     if (!controls) root.append(toolbar, secondary);
     root.append(status, failure, body, editor);
-    const button = (title, fn, parent = toolbar) => { const el = node("button", title); el.classList.add("homeDialogueControl"); el.type = "button"; el.onclick = fn; parent.append(el); return el; };
+    const button = (title, fn, parent = toolbar) => { const el = node("button", title); el.classList.add("portalFileControl"); el.type = "button"; el.onclick = fn; parent.append(el); return el; };
     const identityKey = () => {
       const identity = window.PortalIdentity?.peek?.() || {};
       return JSON.stringify([identity.principal?.kind || "user", identity.principal?.id || identity.username || window.PortalIdentity?.username?.() || ""]);
@@ -193,7 +194,7 @@
         for (const event of events) window.removeEventListener(event, accessChanged);
         window.removeEventListener("focus", focus); document.removeEventListener("visibilitychange", visibility);
         root.removeEventListener("mouseup", selection); root.removeEventListener("keyup", selection);
-        session.destroy(); disposeView(); toolbar.remove(); secondary.remove(); root.replaceChildren();
+        root.classList.remove("portalFileView"); session.destroy(); disposeView(); toolbar.remove(); secondary.remove(); root.replaceChildren();
       },
     };
   }

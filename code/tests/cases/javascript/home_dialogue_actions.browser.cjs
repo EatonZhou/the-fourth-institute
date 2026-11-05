@@ -3,6 +3,7 @@
 // report adapter. Synthetic conversation and resource transport; no User session
 // or provider, and no formal TAU browser is used.
 const fs=require('node:fs'), path=require('node:path'), http=require('node:http'), assert=require('node:assert/strict');
+const {createHash}=require('node:crypto');
 const {chromium}=require('../../../management_portal/test_framework/tau_runtime/node_modules/playwright');
 const {chatWorkspaceScripts}=require('./chat_workspace_modules.cjs');
 const {portalWorkbenchScripts}=require('./portal_workbench_scripts.cjs');
@@ -16,10 +17,15 @@ const modules=[...new Set(['portal_state.js','portal_page_state.js','portal_text
   'portal_preview_contract.js','portal_preview_runtime.js','portal_pdf_preview.js','portal_preview_renderers.js',
   ...groups['portal-workspace-surface'].map(s=>s.replace('/static/','')),'portal_agent_preview_source.js',
   'project_common.js','project_map_layout.js','project_map_drawer.js','project_map.js','home_map_view.js',
-  'home_report.js','home_dialogue_state.js','home_dialogue_preview.js','home_dialogue.js'])];
+  'lineage_workbench_preview_chat_links.js','home_report.js','home_dialogue_state.js','portal_file_preview.js','home_dialogue.js'])];
 const css=[...fs.readFileSync(path.join(root,'index.html'),'utf8').matchAll(/href="(\/static\/[^"?]+\.css)"/g)].map(m=>m[1]);
 const out=process.env.HOME_DIALOGUE_EVIDENCE||'/tmp/home-dialogue-actions';fs.mkdirSync(out,{recursive:true});
 const evidence={boundary:'real components; synthetic conversation/resource transport; no borrowed User or TAU session',checks:[],errors:[],requests:[]};
+const explanationAddress='workspace_0123456789ab/file/shared-display/manifest.json';
+const interactionAddress='workspace_0123456789ab/file/shared-display/body.html';
+const interaction='<h2>共享图文解释</h2><button id="compare">比较两条路径</button><output id="answer"></output><script>document.getElementById("compare").onclick=()=>document.getElementById("answer").textContent="观察到不同结果";</script>';
+const digest=value=>createHash('sha256').update(value).digest('hex');
+const explanation=JSON.stringify({schema:'portal-explanation/v1',title:'共享解释页',revision:1,quality:'medium',interaction:{address:interactionAddress,sha256:digest(interaction)}});
 const quotaOnly=process.argv.includes('--send-quota-only');
 const contextOnly=quotaOnly||process.argv.includes('--submission-context-only');
 evidence.scope=contextOnly?'submission context and Preview script boundary':'message actions, submission context and Preview script boundary';
@@ -29,6 +35,12 @@ const server=http.createServer((req,res)=>{
   if(url.pathname==='/') {res.setHeader('Content-Type','text/html');return res.end('<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'+css.map(s=>`<link rel="stylesheet" href="${s}">`).join('')+'<style>body{margin:0}#root{height:calc(100dvh - 16px);margin:8px}</style>'+modules.map(s=>`<script src="/static/${s}"></script>`).join('')+'<main id="root" data-portal-workbench-panel="dialogue-display"></main>');}
   if(url.pathname==='/static/portal_resource_routes.js'){res.setHeader('Content-Type','text/javascript');return res.end('window.PortalResourceRoutes={schema:"tfi.resource-portal-routes.v1",routes:[],text_resource_types:[],identity_parameters:[]};');}
   if(['/api/home-report','/api/home-report/save'].includes(url.pathname)) {evidence.requests.push(url.pathname+url.search);res.setHeader('Content-Type','application/json');return res.end(JSON.stringify({report_id:'report_0123456789ab',revision:1,latest_revision:1,reference:{view:'report',target:{kind:'report',id:'report_0123456789ab',revision:1}},title:'示例项目的真实组件汇报',target:{kind:'project',id:'demo'},version:'v1',checked_at:'2026-11-04T00:00:00Z',warnings:[],sources:[],counts:{},rows:[{id:'work',title:'已核对来源',body:'组件读取了指定项目',sources:[]}]}));}
+  if(url.pathname==='/api/resources/content') {
+    const address=url.searchParams.get('address');
+    res.setHeader('Content-Type',address===explanationAddress?'application/json':'text/html');
+    return res.end(address===explanationAddress?explanation:interaction);
+  }
+  if(url.pathname==='/api/home-explanation/media') {res.setHeader('Content-Type','application/json');return res.end('{"media":null}');}
   if(url.pathname==='/api/home-report/validate'){res.setHeader('Content-Type','application/json');return res.end('{"readable":true}');}
   const file=path.resolve(root,'.'+url.pathname);
   if(file.startsWith(root+'/static/')&&fs.existsSync(file)&&fs.statSync(file).isFile()){res.setHeader('Content-Type',file.endsWith('.css')?'text/css':file.endsWith('.js')?'text/javascript':'application/octet-stream');return res.end(fs.readFileSync(file));}
@@ -41,6 +53,7 @@ const server=http.createServer((req,res)=>{
     page.on('pageerror',error=>{evidence.errors.push(error.message);console.error(error.message);});
     await page.goto('http://127.0.0.1:'+server.address().port);
     await page.evaluate(()=>{
+      PortalI18n.apply('original');
       window.PortalIdentity={peek:()=>({username:'fixture'}),username:()=> 'fixture'};
       window.PortalAPI={get:async()=>({config:{},restart:null}),post:async()=>({})};
       window.previewCalls=[];window.deny=false;
@@ -66,7 +79,7 @@ const server=http.createServer((req,res)=>{
         return {source:'resource',resource_address:address,resource_id:address.split('/')[0],title:address.includes('slides')?'研究汇报幻灯片':'来源笔记',kind:'text',content:'# 研究进展\n\n来自经过授权的内容读取入口。',content_url:'/content',version:1,capabilities:{edit:true,save:true}};
       }};
       window.PortalNav={personalAssistantTarget:async()=>({resident_id:'resident_0123456789ab',title:'个人门面'})};
-      const create=PortalChatWorkspace.panelPackage.create;
+      const create=PortalChatWorkspace.panelPackage.create; window.nativeCreate=create;
       window.PortalChatWorkspace={...PortalChatWorkspace,panelPackage:{...PortalChatWorkspace.panelPackage,create(options){
         window.chatOptions=options;window.panel=create({...options,autoLoad:false});return panel;
       }}};
@@ -86,10 +99,10 @@ const server=http.createServer((req,res)=>{
     if(!contextOnly) {
     const action=name=>page.locator('.homeDialogueChat').getByRole('button',{name,exact:true});
     await action('预览幻灯片').waitFor();
-    check('valid directives are compact actions',await page.locator('.homeDialogueMessageAction').count(),2);
+    check('valid directives are compact actions',await page.locator('.chatDisplayAction').count(),2);
     check('normal reply contains no internal JSON',await page.locator('.homeDialogueChat').innerText().then(t=>t.includes('portal-home-display/v1')),false);
     check('historical replies never auto-open',await page.locator('.homeDialogueEntry').count(),0);
-    await action('预览幻灯片').click();await page.locator('.homeDialogueDocument:visible').waitFor();
+    await action('预览幻灯片').click();await page.locator('.portalFileDocument:visible').waitFor();
     check('preview reads fresh source',await page.evaluate(()=>previewCalls[0].allowCached),false);
     await page.screenshot({path:path.join(out,'01-actions-preview-1440.png')});
     await page.getByRole('button',{name:'编辑',exact:true}).click();await page.getByLabel('文件草稿').fill('保留未保存的手动草稿');
@@ -120,8 +133,8 @@ const server=http.createServer((req,res)=>{
         message('msg_quote',displayFence(command()).split('\n').map(l=>'> '+l).join('\n'))];render();
     });
     await page.getByText('正在准备展示…',{exact:true}).waitFor();
-    check('incomplete and unavailable blocks have no actions',await page.locator('.homeDialogueMessageAction').count(),0);
-    check('unknown and invalid explain unavailable',await page.locator('.homeDialogueMessageNotice').filter({hasText:'暂不可用'}).count(),2);
+    check('incomplete and unavailable blocks have no actions',await page.locator('.chatDisplayAction').count(),0);
+    check('unknown and invalid explain unavailable',await page.locator('.chatDisplayNotice').filter({hasText:'暂不可用'}).count(),2);
     const code=await page.locator('.homeDialogueChat pre code').allTextContents();
     check('user and ordinary code stay literal',code.some(t=>t.includes('"request_id":"ordinary"'))&&code.some(t=>t.includes('"request_id":"historical"')),true);
     check('outer fenced example stays one literal block',code.some(t=>t.startsWith('```portal-home-display')),true);
@@ -136,25 +149,75 @@ const server=http.createServer((req,res)=>{
     await page.locator('.homeDialogueTabs').getByRole('button',{name:'对话',exact:true}).click();
     await action('预览幻灯片').focus();await page.screenshot({path:path.join(out,'03-action-390-large-font.png')});
     const box=await action('预览幻灯片').boundingBox();check('small screen action fits width',box.x>=0&&box.x+box.width<=390,true);
-    await action('预览幻灯片').press('Enter');await page.locator('.homeDialogueDocument:visible').waitFor();
+    await action('预览幻灯片').press('Enter');await page.locator('.portalFileDocument:visible').waitFor();
     check('keyboard transfers focus to displayed target',await page.locator('.homeDialogueCurrent').evaluate(e=>e===document.activeElement),true);
     await page.screenshot({path:path.join(out,'04-opened-390-large-font.png')});
     await page.locator('.homeDialogueTabs').getByRole('button',{name:'对话',exact:true}).click();
     await page.evaluate(()=>window.deny=true);await action('预览幻灯片').click();
-    await page.getByText('当前来源不可读',{exact:true}).first().waitFor();
-    check('explicit click still observes source denial',await page.locator('.homeDialogueEntry:not([hidden]) .homeDialogueDocument:visible').count(),0);
+    await page.getByText('暂时无法访问此文件',{exact:true}).first().waitFor();
+    check('explicit click still observes source denial',await page.locator('.homeDialogueEntry:not([hidden]) .portalFileDocument:visible').count(),0);
     await page.locator('.homeDialogueTabs').getByRole('button',{name:'对话',exact:true}).click();
     await page.evaluate(()=>{snap.messages=[message('msg_map',displayFence(command('map-history',{view:'map',target:{kind:'project',id:'demo'}})))];render();});
     await action('打开研究地图').click();
     await page.locator('.homeMapSurface:not([hidden]) svg.mapEdges').waitFor();
     check('map action loads through the real native adapter',await page.evaluate(()=>instructionCalls.some(c=>c.name==='GetResearchMap'&&c.args.project_id==='demo')),true);
     await page.screenshot({path:path.join(out,'05-map-action-390.png')});
-    // Without Home's conversationView the exact same assistant output is code.
+    // The general Markdown renderer still treats protocol examples as code.
     check('global Markdown is unchanged for ordinary callers',await page.evaluate(()=>MD.render(displayFence(command())).includes('<pre>')),true);
     }
     // Exercise the native Chat send -> Protocol prepare -> service boundary,
     // not a direct call to submissionContext. Only transport is substituted;
     // no model or private conversation is involved.
+    if(process.argv.includes('--shared-display-only')) {
+      await page.setViewportSize({width:1440,height:1000});
+      await page.evaluate(({address,sha})=>{
+        window.deny=false;
+        PortalAPI.raw=(url,options)=>fetch(url,options);
+        snap.messages=[message('msg_aaaaaaaaaaaaaaaa',displayFence(command('fixed',{view:'explanation',target:{address,sha256:sha}})))];render();
+      },{address:explanationAddress,sha:digest(explanation)});
+      await page.getByRole('button',{name:'打开解释页',exact:true}).click();
+      await page.locator('.homeExplanationHeader h1').waitFor();
+      check('Home uses Preview presentation for explanation',await page.locator('.homeExplanationHeader h1').innerText(),'共享解释页');
+      await page.evaluate(()=>{
+        host.destroy();
+        document.querySelector('#root').innerHTML='<div id="native-chat"></div><div id="native-preview"></div>';
+        document.querySelector('#root').style.cssText='display:grid;grid-template-columns:1fr 1fr;height:950px';
+        window.nativePanel=nativeCreate({root:document.querySelector('#native-chat'),target:{resident_id:'resident_0123456789ab'},autoLoad:false});
+        nativePanel.protocol={snapshot:()=>snap,destroy(){}};
+        nativePanel.residentProjection={resident:{resident_id:'resident_0123456789ab'},chat_workspace:{schema:'portal.chat_workspace.v3',target:{kind:'resident',id:'resident_0123456789ab'},header:{title:'Society Resident'},messages:[],composer:{can_send:true}}};
+        const dependencies=Object.fromEntries(PortalLineageWorkbenchPreviewChatLinks.dependencies.map(key=>[key,()=>null]));
+        Object.assign(dependencies,{currentLineageWorkbench:()=>({getPanel:()=>({registerPreviewHost:PortalPreview.registerHost})}),
+          ensurePreviewVisible:()=>{window.previewVisible=true;},
+          openAgentPreviewDocument:async request=>{
+            window.nativeRequest=request;
+            const document=await request.load();
+            window.nativePreview=PortalPreview.render({root:window.document.querySelector('#native-preview'),document});
+            await nativePreview.promise;
+          }});
+        PortalLineageWorkbenchPreviewChatLinks.createPreviewChatLinks(dependencies).bindWorkspacePreviewHost();
+        nativePanel.applySnapshot(snap);
+      });
+      const native=page.locator('#native-chat');
+      await native.getByRole('button',{name:'打开解释页',exact:true}).waitFor();
+      check('Society shared Chat hides internal protocol',await native.innerText().then(t=>t.includes('portal-home-display/v1')),false);
+      check('shared action has visible button affordance',await native.getByRole('button',{name:'打开解释页',exact:true}).evaluate(el=>{const s=getComputedStyle(el);return s.borderStyle==='solid'&&parseFloat(s.borderWidth)>=1;}),true);
+      check('native historical message does not auto-open',await page.evaluate(()=>!!window.nativePreview),false);
+      await native.getByRole('button',{name:'打开解释页',exact:true}).press('Enter');
+      await page.locator('#native-preview .homeExplanationHeader h1').waitFor();
+      check('Society native host uses shared Preview renderer',await page.evaluate(()=>[previewVisible,nativePreview.renderer]),[true,'display']);
+      const frame=page.frameLocator('#native-preview iframe').frameLocator('iframe');
+      await frame.getByRole('button',{name:'比较两条路径'}).click();
+      check('opened page remains interactive',await frame.locator('#answer').innerText(),'观察到不同结果');
+      await page.screenshot({path:path.join(out,'society-shared-display.png')});
+      await page.evaluate(()=>{snap.messages=[message('msg_bbbbbbbbbbbbbbbb',displayFence(command('wrong',{view:'explanation',target:{address:'workspace_0123456789ab/file/shared-display/manifest.json',sha256:'0'.repeat(64)}})))];nativePanel.applySnapshot(snap);});
+      await native.getByRole('button',{name:'打开解释页',exact:true}).click();
+      await page.locator('#native-preview').getByText(/文件内容已改变/).first().waitFor();
+      check('digest mismatch cannot run old interaction',await page.locator('#native-preview iframe').count(),0);
+      check('shared presentation has no page errors',evidence.errors,[]);
+      evidence.status='passed';
+      console.log('PASS shared Resident actions, Society Preview host, Home presentation, fixed SHA and interactive content');
+      return;
+    }
     const presentationRequests=[
       '注意力机制里的查询、键和值怎样共同工作？',
       '帮我理解这两种方案的差别。',

@@ -19,7 +19,7 @@ const modules=[...new Set(['portal_state.js','portal_page_state.js','portal_text
   'portal_ui_primitives.js','portal_ui.js','portal_overlay.js','portal_resource_routes.js','portal_resource_chips.js',
   'portal_command_registry.js','portal_workbench_context.js',...portalWorkbenchScripts(),
   'portal_resident_service.js','resident_protocol.js','markdown.js',...chatWorkspaceScripts(),
-  'portal_preview_contract.js','portal_preview_runtime.js','home_report.js','home_dialogue_state.js','home_dialogue.js'])];
+  'portal_preview_contract.js','portal_preview_runtime.js','portal_pdf_preview.js','portal_preview_renderers.js','home_report.js','home_dialogue_state.js','home_dialogue.js'])];
 const css=[...fs.readFileSync(path.join(root,'index.html'),'utf8').matchAll(/href="(\/static\/[^"?]+\.css)"/g)].map(m=>m[1]);
 const records=new Map(),origins=new Map(),requests=[],checks=[],errors=[];
 let sequence=0,live=1,denied=false,delay=0,videoBytes;
@@ -88,7 +88,7 @@ function check(name,actual,expected){checks.push({name,actual,expected});assert.
       snap.messages=[message('msg_0123456789abcdef',displayFence(command())+'\n\n'+displayFence(command()))];panel.applySnapshot(snap);
     });
   }
-  const action=p=>p.locator('.homeDialogueMessageAction');
+  const action=p=>p.locator('.chatDisplayAction');
   const fixed=()=>page.locator('.homeDialogueEntry:not([hidden]) .home-report h2');
   try{
     page=await browser.newPage({viewport:{width:1440,height:1000}});page.setDefaultTimeout(8000);page.on('pageerror',e=>errors.push(e.message));

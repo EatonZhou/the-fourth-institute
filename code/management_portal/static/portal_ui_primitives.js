@@ -594,6 +594,21 @@
     };
   }
 
+  // A native radio group: selection never implies executing the selected action.
+  function radioGroup({label, value, choices, onChange}) {
+    const root = document.createElement("fieldset"); root.className = "portalChoiceGroup";
+    const legend = document.createElement("legend"); legend.textContent = label; root.append(legend);
+    const name = randomUUID();
+    for (const [key, title] of choices) {
+      const option = document.createElement("label"), input = document.createElement("input");
+      input.type = "radio"; input.name = name; input.value = key; input.checked = key === value;
+      input.addEventListener("change", () => { if (input.checked) onChange?.(input.value); });
+      option.append(input, document.createTextNode(title)); root.append(option);
+    }
+    return {root, get value() { return root.querySelector(":checked")?.value; },
+      set disabled(value) { root.disabled = !!value; }};
+  }
+
   const api = Object.freeze({
     ICONS,
     ICON_ALIASES,
@@ -611,6 +626,7 @@
     mountIcons,
     objectOf,
     randomUUID,
+    radioGroup,
     registerEnhancer,
     renderAsyncState,
     staticAssetUrl,

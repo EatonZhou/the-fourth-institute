@@ -10,7 +10,9 @@ const base=path.resolve(__dirname,'../../../management_portal/static');
   for(const width of [1440,390]){
    const page=await browser.newPage({viewport:{width,height:900}});
    await page.setContent('<style>html{font-size:20px}body{margin:0}</style><main id="root"></main>');
+   await page.addStyleTag({path:path.join(base,'portal_components.css')});
    await page.addStyleTag({path:path.join(base,'home_report.css')});
+   for (const file of ['portal_state.js','portal_text.js','portal_i18n.js','portal_ui_primitives.js']) await page.addScriptTag({path:path.join(base,file)});
    await page.addScriptTag({path:path.join(base,'home_report.js')});
    await page.evaluate(()=>{
     window.sent=[];window.opened=[];window.mode='low';window.mediaMode='failed';window.mediaState=null;
@@ -45,7 +47,7 @@ const base=path.resolve(__dirname,'../../../management_portal/static');
    assert.equal(await page.locator('.hr-reasoning').count(),1);
    assert.ok(await page.getByText('需要修改后重新审核',{exact:true}).isVisible());
    const x=await page.locator('g[data-node="a"] rect').first().getAttribute('x');assert.ok(Math.abs(Number(x)-134.6)<.001);
-   await page.getByLabel('视频质量',{exact:true}).selectOption('high');
+   await page.getByRole('group',{name:'视频质量'}).locator('input[value=high]').check();
    await page.getByRole('button',{name:'生成讲解视频',exact:true}).click();
    const media=await page.evaluate(()=>sent.findLast(r=>r.url.endsWith('/media')&&r.method==='POST'));
    assert.equal(media.body.quality,'high');assert.equal(media.body.revision,2);
@@ -56,7 +58,7 @@ const base=path.resolve(__dirname,'../../../management_portal/static');
    await page.keyboard.press('Enter');
    assert.equal(await page.evaluate(()=>sent.at(-1).body.content.markdown),'# 新版\n\n修改后重新审核。');
    await page.evaluate(()=>{mediaMode='authoring';mediaState=null;});
-   await page.getByLabel('视频质量',{exact:true}).selectOption('medium');
+   await page.getByRole('group',{name:'视频质量'}).locator('input[value=medium]').check();
    await page.getByRole('button',{name:'生成讲解视频',exact:true}).click();
    assert.ok(await page.getByText('分镜任务已交给负责Resident；受理不代表已生成或达标。',{exact:true}).isVisible());
    const postCount=await page.evaluate(()=>sent.filter(item=>item.method==='POST').length);

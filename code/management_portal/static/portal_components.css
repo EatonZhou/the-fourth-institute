@@ -930,3 +930,10 @@ body.portalBoardShell .filter-active-dot {
 .portalChatQuotaRow > span { min-width: 0; overflow-wrap: anywhere; }
 .portalChatQuotaRow > button { flex-shrink: 0; }
 .portalChatQuotaRow > button[hidden] { display: none; }
+
+/* Native choice groups share keyboard navigation and one selected value. */
+.portalChoiceGroup { border:0; padding:0; margin:8px 0; display:flex; flex-wrap:wrap; align-items:center; gap:8px; min-width:0; }
+.portalChoiceGroup legend { float:inline-start; padding:0; margin-inline-end:12px; line-height:44px; }
+.portalChoiceGroup > label { display:inline-flex; align-items:center; gap:6px; min-height:44px; padding:0 8px; cursor:pointer; white-space:nowrap; }
+.portalChoiceGroup input { accent-color:var(--accent); }
+.portalChoiceGroup:disabled { opacity:.65; }

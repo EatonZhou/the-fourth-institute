@@ -4,39 +4,39 @@ type: decision
 project: AI员工
 created_at: '2026-09-01'
 version:
-  number: 43
+  number: 46
   created_at: "2026-09-01"
   created_by:
     user: ""
     agent: ""
-  updated_at: "2026-11-04T11:12:12Z"
+  updated_at: "2026-11-05T08:29:51Z"
   updated_by:
     user: ""
-    agent: "resident_83d75ad3a6c7"
+    agent: "resident_62dbdb2288fb"
 importance: 9
 metaness: 2
 ai_generated: false
 links:
   source:
-  - ${code_root}/management_portal/hatg/catalog/resource.py
-  - ${code_root}/management_portal/http_media_range.py
-  - ${code_root}/management_portal/static/portal_chat_workspace.js
-  - ${code_root}/management_portal/static/portal_instruction_client.js
-  - ${code_root}/management_portal/asgi.py
-  - ${code_root}/management_portal/resources/isa.py
-  - ${code_root}/management_portal/serve_management_portal.py
-  - ${code_root}/management_portal/resources/service.py
-  - ${code_root}/management_portal/resources/providers/workspace.py
-  - ${code_root}/management_portal/static/portal_agent_preview_source.js
-  - ${code_root}/management_portal/static/portal_resource_chips.js
-  - ${code_root}/management_portal/static/portal_preview_contract.js
-  - ${code_root}/management_portal/static/portal_preview_runtime.js
-  - ${code_root}/management_portal/static/portal_preview_renderers.js
-  - ${code_root}/management_portal/static/portal_workspace_surface.js
-  - ${code_root}/management_portal/static/portal_file_links.js
-  - ${code_root}/management_portal/static/lineage_workbench.js
-  - ${code_root}/management_portal/society_service/workspace_contracts.py
-  - ${code_root}/tests/cases/test_paper_registration_upload.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/hatg/catalog/resource.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/http_media_range.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/portal_chat_workspace.js
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/portal_instruction_client.js
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/asgi.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/resources/isa.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/serve_management_portal.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/resources/service.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/resources/providers/workspace.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/portal_agent_preview_source.js
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/portal_resource_chips.js
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/portal_preview_contract.js
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/portal_preview_runtime.js
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/portal_preview_renderers.js
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/portal_workspace_surface.js
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/portal_file_links.js
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/lineage_workbench.js
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/workspace_contracts.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_paper_registration_upload.py
   related:
   - decision_e5f66e2f6a5e
   - decision_864d4fe41934
@@ -122,6 +122,8 @@ Windows 驱动器绝对路径（如 `C:/Users/example/draft.md` 或 `C:\Users\ex
 
 ## 预览运行时：`PortalPreview`
 
+Preview 统一拥有文件、固定解释包、汇报、研究地图和团队地图的展示工厂及资源加载生命周期。共享 Chat 的成果按钮产生经过校验的展示意图，原生预览宿主将其作为语义文档打开；Home 的右栏组合相同展示工厂，不另建领域渲染路径。展示意图只保存目标、固定版本和必要的原消息定位，不包含授权或已信任的 HTML。恢复时重新读取并校验来源；固定解释包摘要不匹配不得执行其交互。切换或关闭取消读取、销毁视图与监听，页面身份或权限变化仍由领域组件复核。普通文件预览不因此执行 HTML/JS。
+
 - **宿主**：`registerHost(name, handler, { priority })` 登记一个宿主，同名再次登记时替换；注销只移除仍属于自己的那次登记。`request` 按优先级从高到低依次询问宿主（同优先级按登记顺序），宿主返回 `false` 时继续询问下一个，全部拒绝时返回 `false`。
 - **来源**：`registerSource(adapter)` 要求来源 ID 唯一，注销只移除这次登记，重复注销没有作用。`load` 遇到未知来源时报错，读取结果再经过 `normalizeDocument`。来源没有保存能力时 `save` 返回只读错误；草稿先转成字符串，保存结果也重新整理。
 - **下载链接**：`configureDownloadLink(link, { url, filename })` 是工具栏、文件菜单与不支持预览时的降级按钮共同使用的下载设置方法。地址为空时隐藏链接并去掉 `href`、`download`、`target` 和 `rel`；地址有效时使用 `target="_blank"` 和 `rel="noopener noreferrer"`，保留当前文档。HTTP(S) 原始文件通过普通导航请求下载，由服务端 `Content-Disposition: attachment` 提供原始文件名，链接不使用 HTML `download` 属性；下载请求与其他原生页面请求经过同一主体认证与领域授权。`blob:`、`data:` 等浏览器生成文件使用 `download` 属性，建议文件名只取最后一段。该方法不读取资源、不判断权限，下载地址由宿主从已经授权的文档中取得；来源适配器提供真正的原始附件地址，不能拿预览转换地址或错误JSON冒作文件下载。
@@ -140,7 +142,7 @@ Windows 驱动器绝对路径（如 `C:/Users/example/draft.md` 或 `C:\Users\ex
 
 ## 标准渲染器
 
-渲染器按优先级选择：远程链接 100、目录 90、PDF 与 Office 80、图片视频音频 70、文本 50、不支持 -1000。
+渲染器按优先级选择：远程链接 100、目录 90、解释页 86、汇报 85、PDF 与 Office 80、图片视频音频 70、文本 50、不支持 -1000。
 
 | 渲染器 | 显示方式 |
 | --- | --- |
@@ -155,6 +157,14 @@ Windows 驱动器绝对路径（如 `C:/Users/example/draft.md` 或 `C:\Users\ex
 - **Markdown 中的 HTML 和图片来源只接受许可列表中的内容。** 链接目标两侧意外多出的空格（例如 `[播放]( /api/resources/content?... )`）会被去掉，再经过同一套地址检查；代码块、行内代码和检查不通过的目标保持原样或显示为纯文本。所有使用共享 Markdown 渲染器的页面采用同一规则。
 - **Markdown 表格可以横向滚动。** 单元格中连续的数字、标识符和文件名不在任意字符处断行。
 - **文本的放大查看复制当前已渲染的文档和 Portal 样式**，不把文本文件交给只用于媒体和下载的原始字节地址。
+
+## 汇报资源的可视预览
+
+正式 report 根地址和 report_ID/revision/N 仍由资源来源读取 JSON 快照；共享 Preview 的 report 渲染器使用快照中的已解析修订，直接挂载共享汇报呈现组件的固定版本视图。普通预览因此提供正文、条目筛选和既有汇报操作，不把汇报当作普通 JSON 代码展示。打开不创建、刷新报告或生成媒体；显式操作仍由汇报领域授权与执行。
+
+渲染器只接受资源来源声明为 report 的正式根或修订地址，并核对快照 schema、身份和修订。任意 JSON、Workspace 文件与 report 的导出文件继续使用各自原有渲染器。切换或关闭时销毁汇报呈现视图与事件监听；宿主身份和权限变化转交汇报视图重新核验，失权后撤去内容。原始 JSON 的读取和下载保持资源协议。
+
+Workspace 中声明 portal-explanation/v1 的 JSON 内容包由解释页渲染器接管。渲染器计算当前所读字节的摘要，按需加载既有解释页组件，将正式地址和固定摘要交给该组件；它重新授权、核对所有资产摘要，并沿原隔离边界挂载交互页。宿主不直接执行 manifest 中的脚本，不生成视频或审核任务；任意其他 JSON 保持原始可视预览。切换或关闭取消未完成读取并销毁视图和 Blob URL。独立汇报入口同时加载共享 Markdown 组件及样式，使正文与资源链接可阅读。
 
 ## 演示文稿预览
 

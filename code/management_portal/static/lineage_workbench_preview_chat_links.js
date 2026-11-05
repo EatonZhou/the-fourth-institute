@@ -135,7 +135,8 @@
           const document = window.PortalPreview.displayDocument(request);
           ensurePreviewVisible();
           await openAgentPreviewDocument({key:document.path, path:document.path, title:document.title,
-            mode:request.mode, sourceType:"display", load:async()=>document});
+            mode:request.mode, sourceType:"display", displayIntent:document.displayIntent,
+            messageOrigin:document.messageOrigin, load:async()=>document});
           return true;
         }
 

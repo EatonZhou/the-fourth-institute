@@ -189,6 +189,7 @@
       "resource",
       "link-card",
       "lineage-workspace",
+      "display",
     ]);
     if (!supported.has(sourceType)) return null;
     const path = String(request.path || embedded.path || "").trim();
@@ -199,6 +200,13 @@
       title: String(request.title || request.label || embedded.title || embedded.label || path || "").trim(),
       sourceType,
     };
+    if (sourceType === "display") {
+      try {
+        locator.displayIntent = window.PortalDisplayProtocol.normalizeIntent(request.displayIntent || embedded.displayIntent);
+        if (locator.displayIntent.action === "back") return null;
+        locator.messageOrigin = window.PortalDisplayProtocol.normalizeMessageOrigin(request.messageOrigin || embedded.messageOrigin);
+      } catch (_) { return null; }
+    }
     locator.residentId = String(
       request.residentId || request.resident_id || embedded.residentId || embedded.resident_id || "",
     ).trim();

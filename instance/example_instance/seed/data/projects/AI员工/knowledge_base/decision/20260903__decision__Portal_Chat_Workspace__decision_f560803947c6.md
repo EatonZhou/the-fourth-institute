@@ -4,28 +4,28 @@ type: decision
 project: AI员工
 created_at: '2026-09-03'
 version:
-  number: 153
+  number: 155
   created_at: "2026-09-03"
   created_by:
     user: ""
     agent: ""
-  updated_at: "2026-11-05T02:01:06Z"
+  updated_at: "2026-11-05T08:29:51Z"
   updated_by:
     user: ""
-    agent: "resident_2546a3558662"
+    agent: "resident_62dbdb2288fb"
 importance: 9
 metaness: 2
 ai_generated: false
 links:
   source:
-  - ${code_root}/management_portal/execution/event_projection.py
-  - ${code_root}/management_portal/static/portal_chat_workspace.js
-  - ${code_root}/management_portal/static/resident_protocol.js
-  - ${code_root}/management_portal/society_service/resident_conversation_stream.py
-  - ${code_root}/management_portal/society_service/resident_execution_work.py
-  - ${code_root}/management_portal/society_service/runtime_read_models.py
-  - ${code_root}/management_portal/resident_chat_projection.py
-  - ${code_root}/management_portal/portal_chat_workspace_projection.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/execution/event_projection.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/portal_chat_workspace.js
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/resident_protocol.js
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/resident_conversation_stream.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/resident_execution_work.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/runtime_read_models.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/resident_chat_projection.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/portal_chat_workspace_projection.py
   related:
   - decision_a6bebf4ac283
   - decision_8fe87d812a4c
@@ -121,6 +121,8 @@ Chat Workspace 的区域可访问名称由当前标题元素提供，切换 Resi
 - **一个页面元素只归一个 Workspace 实例。** 在同一元素上再次创建时，先销毁旧实例。实例 ID 优先使用宿主给出的值，否则由 Workbench 和面板身份推出。
 
 ### 消息显示与阅读位置
+
+Agent 回复中的完整 `portal-home-display` 协议块由共享消息呈现职责转换为可键盘操作的成果按钮，Home、Society 和其他 Chat Workspace 宿主使用同一实现。点击携带经过共享协议校验的展示意图和原消息定位，交给共享 Preview；它仍需按当前身份读取来源与核对固定版本。协议不是授权凭据。普通代码、用户消息、引用示例、未完成或无效的协议不执行。历史消息只提供手动入口；自动切换由 Home 按当前请求、固定状态及迟到规则决定，不属于 Chat。
 
 - **Resident Chat 支持个人置顶对话。** 回复的右键菜单提供“置顶消息”，已经置顶时显示“取消置顶”。置顶与“引用回复”使用同一消息解析入口，以相同的 message_id、作者和正文摘录为目标；一轮内的连续多段回复仍各自独立，不把整轮或整个回复组当作一条消息。标题下的置顶区显示所选回复的摘要；点击摘要定位原消息，必要时加载早期历史并展开所在回复组，原消息已不可读取时明确提示。每个置顶项提供“引用回复”，使用同一消息 ID 和已有 Composer 引用流程，另有取消置顶按钮。置顶区限制高度并可滚动，为消息正文保留阅读空间。
 - **置顶是当前用户的浏览器阅读状态。** 按用户与对话稳定作用域分别保存消息 ID、作者和引用文本，刷新和同浏览器标签页共享；不同用户及不同对话互相隔离。它不修改服务端消息、Family 路由或其他成员的界面，不随输入草稿或发送而清空。存储失败提示错误；历史跳转沿用当前对话的读取权限与失效处理。置顶的状态、历史定位与引用共同由共享消息历史模块维护。
@@ -223,6 +225,7 @@ Session 重启或跨账号迁移的请求、进度和结果由 Resident 服务�
 - **同一作用域的草稿以最后一次编辑为准。** 其他实例延迟的保存或关闭，不会覆盖更新的草稿。
 - **还没有 Resident 的业务对象也可以保存草稿。** 页面用固定的作用域把草稿绑定到业务对象，如 WALL 讨论用 `wall:<工程>:<设计点 ID>`，实现对话用 `wall-work:<工程>:<设计点 ID>:<resident_id>`。整页重新加载后打开同一对象，编辑器恢复未发送的草稿。
 - **发送后，只清理这次提交的草稿。** Resident 点击发送时清空已提交的正文、附件、Refs 和引用条；随后的回执或事件只更新对应气泡，不能清空新草稿、附件、Refs、引用条或抢走焦点。失败消息保留在聊天中，草稿恢复机制不把它覆盖到用户后来的编辑上。
+- **额度提示使用本次成功发送的回执。** Resident Chat 将已受理的消息 ID 经 Workspace 封装传给共享额度提示控制，随后继续完成成功回执和发送完成通知；不得因封装缺少接口而中断通知或重发原消息。切换会话后，旧回执不触发新会话的额度提示。
 - **只有已经得到文件 ID 或路径的附件进入保存的草稿。** 上传中、失败或没有稳定身份的附件只保留在当前页面。
 - **输入法组合期间，Ctrl/⌘+Enter 不发送。** 组合结束时立即重新计算能否发送，用户可以马上点击发送或按快捷键。
 - **输入框中的 Alt/Option+↑ / Alt/Option+↓ 定位用户消息。** 按当前 Chat 已加载消息的显示顺序跳到上一条或下一条人类用户发言，展开目标正文并短暂高亮，输入框的文字、附件、引用、选区与焦点保持不变。多人会话包括其他人类用户的发言，跳过 Agent、系统与 Resident 投递的消息。停在最新消息时 Alt/Option+↑ 从最后一条用户消息开始；连续按键以刚定位的消息为基准，手动滚动后从当前阅读位置继续。到达已加载记录的边界时停留，不循环、不自动请求旧页；用户仍可通过加载更早消息扩展范围。切换会话重新确定位置，新回复不把正在阅读历史的视图拉回末尾。macOS 使用 Option；输入法组合期间不触发，普通上下箭头保留输入历史语义。`/portal-help` 的 Chat 快捷键组说明这一区别。

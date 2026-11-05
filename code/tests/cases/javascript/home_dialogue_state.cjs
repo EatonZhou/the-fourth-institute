@@ -5,6 +5,7 @@ const context=dom.getInternalVMContext();
 vm.runInContext(fs.readFileSync(path.resolve(__dirname, '../../../management_portal/static/portal_text.js'), 'utf8'), context);
 vm.runInContext(fs.readFileSync(path.resolve(__dirname, '../../../management_portal/static/portal_ui_primitives.js'), 'utf8'), context);
 vm.runInContext(fs.readFileSync(path.resolve(__dirname, '../../../management_portal/static/markdown.js'), 'utf8'), context);
+vm.runInContext(fs.readFileSync(path.resolve(__dirname, '../../../management_portal/static/portal_display_protocol.js'), 'utf8'), context);
 vm.runInContext(fs.readFileSync(path.resolve(__dirname, '../../../management_portal/static/home_dialogue_state.js'), 'utf8'), context);
 const api = context.window.PortalHomeDialogueState;
 const explanation = {view:'explanation',target:{address:'workspace_0123456789ab/file/explanation/manifest.json',sha256:'b'.repeat(64)}};

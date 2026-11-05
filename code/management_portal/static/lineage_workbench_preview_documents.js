@@ -131,6 +131,9 @@
       const restored = previewPersistenceLocator(locator);
       if (!restored) return null;
       const path = restored.path;
+      if (restored.sourceType === "display") {
+        return {...restored, load: async () => window.PortalPreview.displayDocument(restored)};
+      }
       if (restored.sourceType === "resident") {
         if (!restored.residentId) return null;
         return {

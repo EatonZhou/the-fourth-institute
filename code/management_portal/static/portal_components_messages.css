@@ -632,3 +632,9 @@ button.messageSourceChip.path:hover {
   text-overflow: clip;
   white-space: normal;
 }
+
+.chatDisplayAction {display:inline-flex;align-items:center;max-width:100%;margin:.25rem .375rem .25rem 0;padding:.375rem .625rem;min-height:44px;white-space:normal;overflow-wrap:anywhere;text-align:start;font:inherit;cursor:pointer;color:var(--accent,#4864cc);background:var(--panel,#fff);border:1px solid var(--border,#cbd5e1);border-radius:5px;}
+.chatDisplayNotice {display:block;color:var(--muted);font-size:.875em;padding:.25rem 0;overflow-wrap:anywhere;}
+
+.chatDisplayAction:focus-visible {outline:2px solid var(--accent,#4864cc);outline-offset:2px;}
+.chatDisplayAction:hover {background:var(--hover,#eef2ff);}

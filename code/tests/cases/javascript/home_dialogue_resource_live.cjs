@@ -45,14 +45,14 @@ const html = fs.readFileSync(path.join(portal,'index.html'),'utf8')
     });
     // Read the actual long-title resource from the feedback, without editing it.
     await page.evaluate(()=>PortalPreview.request({resourceAddress:'decision_b12782e7f490'}));
-    await page.locator('.homeDialogueDocument:visible').waitFor();
+    await page.locator('.portalFileDocument:visible').waitFor();
     await page.waitForFunction(()=>document.querySelector('.homeDialogueCurrent').textContent.includes('对话'));
     await homeAction(page,'展开');
     evidence.density=[];
     async function measurePreview(label) {
       const measurement=await page.evaluate(()=>{
         const rect=selector=>document.querySelector(selector).getBoundingClientRect().toJSON();
-        const bar=document.querySelector('.homeDialogueDisplayBar'), body=document.querySelector('.homeDialogueEntry:not([hidden]) .homeDialogueDocument');
+        const bar=document.querySelector('.homeDialogueDisplayBar'), body=document.querySelector('.homeDialogueEntry:not([hidden]) .portalFileDocument');
         const edit=[...bar.querySelectorAll('button')].find(b=>b.textContent==='编辑'&&!b.hidden);
         const r=edit?.getBoundingClientRect(),hit=r&&document.elementFromPoint(r.x+r.width/2,r.y+r.height/2);
         return {viewport:{width:innerWidth,height:innerHeight},font:getComputedStyle(document.documentElement).fontSize,
@@ -80,7 +80,7 @@ const html = fs.readFileSync(path.join(portal,'index.html'),'utf8')
       await page.getByLabel('文件草稿').waitFor({state:'visible'});
       assert.equal(await page.getByRole('button',{name:'保存',exact:true}).isEnabled(),false,'unchanged actual Design is never saved');
       await homeAction(page,'返回预览');
-      await page.locator('.homeDialogueDocument:visible').waitFor();
+      await page.locator('.portalFileDocument:visible').waitFor();
       await page.locator('.homeDialogueMore > summary').click();
       const original=page.getByRole('link',{name:'打开原文件 ↗',exact:true});
       await original.waitFor();assert.ok(await original.getAttribute('href'));
@@ -95,7 +95,7 @@ const html = fs.readFileSync(path.join(portal,'index.html'),'utf8')
     const saved=before+`\n本身份资源地址保存回读：${new Date().toISOString()}\n`;
     await activeEditor.fill(saved); await page.getByRole('button',{name:'保存',exact:true}).click();
     await page.waitForFunction(()=>document.querySelector('.homeDialogueEntryNotice')?.textContent==='');
-    await page.waitForFunction(()=>{const save=[...document.querySelectorAll('button')].find(b=>b.textContent==='保存'&&b.checkVisibility());return save?.disabled&&!document.querySelector('.homeDialogueEntry:not([hidden]) .homeDialogueEditor')?.disabled;});
+    await page.waitForFunction(()=>{const save=[...document.querySelectorAll('button')].find(b=>b.textContent==='保存'&&b.checkVisibility());return save?.disabled&&!document.querySelector('.homeDialogueEntry:not([hidden]) .portalFileEditor')?.disabled;});
     const readback=await page.evaluate(async address=>{
       const response=await PortalAPI.raw('/api/resources/content?address='+encodeURIComponent(address),{cache:'no-store'});
       if(!response.ok)throw new Error('readback '+response.status);return response.text();

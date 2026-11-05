@@ -9,7 +9,7 @@ const homeHtml = fs.readFileSync(path.join(root,'index.html'),'utf8').replace(/<
 const scripts = ['portal_state.js','portal_page_state.js','portal_text.js','portal_translations.js','portal_i18n.js','portal_ui_primitives.js',
   'portal_preview_contract.js','portal_preview_runtime.js','portal_pdf_preview.js','portal_preview_renderers.js',
   ...groups['portal-workspace-surface'].map(x=>x.replace(/^\/static\//,'')),
-  'portal_agent_preview_source.js','markdown.js','home_dialogue_state.js','home_dialogue_preview.js','home_dialogue.js'];
+  'portal_agent_preview_source.js','markdown.js','portal_display_protocol.js','home_dialogue_state.js','portal_file_preview.js','home_dialogue.js'];
 const server = http.createServer((req,res) => {
   const pathname = new URL(req.url,'http://localhost').pathname;
   if(pathname === '/static/portal_resource_routes.js') {res.setHeader('Content-Type','text/javascript');return res.end('window.PortalResourceRoutes={schema:"tfi.resource-portal-routes.v1",routes:[],text_resource_types:[],identity_parameters:[]};');}
@@ -51,6 +51,7 @@ const server = http.createServer((req,res) => {
     // Manual navigation and pinned late result.
     await page.locator('.homeDialogueOpener > summary').click();
     await page.getByLabel('目标类型',{exact:true}).selectOption('lineage'); await page.getByLabel('目标 ID 或文件资源地址').fill('lineage_0123456789ab'); await page.getByRole('button',{name:'展示',exact:true}).last().click();
+    await page.waitForFunction(()=>pending.length > 0);
     await page.evaluate(async()=>{
       pending.shift().resolve();
       const failedTarget={resident_id:'resident_0123456789ab'}, sentTarget={resident_id:'resident_0123456789ab'};
@@ -96,6 +97,7 @@ const server = http.createServer((req,res) => {
     });
     assert.equal(await page.evaluate(()=>calls.filter(c=>'reportShowPresented' in c).at(-1).reportShowPresented),false,'queued report receives hidden state before show');
     assert.ok((await page.locator('.homeDialogueCurrent').textContent()).includes('0123456789ab'));
+    await page.waitForFunction(()=>pending.length > 0);
     await page.evaluate(()=>pending.shift().resolve());
     assert.ok((await page.locator('.homeDialogueCurrent').textContent()).includes('0123456789ab'));
     // Existing preview/session editing, failed save, history preservation, then actual save contract.
@@ -140,11 +142,11 @@ const server = http.createServer((req,res) => {
     await page.waitForFunction(()=>document.querySelectorAll('.homeDialogueEntry').length===1);
     assert.equal(await page.evaluate(()=>previewReads),await page.evaluate(()=>readsBeforeRestore),'saved targets do not trigger a default read');
     assert.equal(await page.locator('.homeDialogueCurrent').textContent(),'未选择展示');
-    assert.equal(await page.locator('.homeDialoguePreviewFailure').count(),0,'no default failure or preview adapter');
+    assert.equal(await page.locator('.portalFilePreviewFailure').count(),0,'no default failure or preview adapter');
     if(process.env.SCREENSHOT_DIR){fs.mkdirSync(process.env.SCREENSHOT_DIR,{recursive:true});await page.screenshot({path:path.join(process.env.SCREENSHOT_DIR,'preview-idle-945.png')});}
     await page.locator('.homeDialogueMore > summary').click();
     await page.getByLabel('展示历史').selectOption({index:1});
-    const failure=page.locator('.homeDialoguePreviewFailure');
+    const failure=page.locator('.portalFilePreviewFailure');
     await failure.getByRole('heading',{name:'暂时无法访问此文件'}).waitFor();
     assert.equal(await failure.locator('code').textContent(),'article_0123456789ab');
     assert.equal(await page.getByRole('button',{name:'重试访问',exact:true}).count(),1);
@@ -167,11 +169,11 @@ const server = http.createServer((req,res) => {
     await page.evaluate(()=>{window.denyPreview=false;});
     await failure.getByRole('button',{name:'重试访问',exact:true}).click();
     await failure.waitFor({state:'hidden'});
-    await page.waitForFunction(()=>document.querySelector('.homeDialogueDocument').textContent.includes('original'));
+    await page.waitForFunction(()=>document.querySelector('.portalFileDocument').textContent.includes('original'));
     assert.ok(!(await page.getByLabel('展示历史').textContent()).includes('读取失败'),'successful internal retry updates the host status');
     await page.evaluate(()=>{window.denyPreview=true;window.dispatchEvent(new Event('portal:permissions-changed'));});
     await failure.waitFor({state:'visible'});
-    assert.equal(await page.locator('.homeDialogueDocument').textContent(),'','permission loss clears the previously rendered content');
+    assert.equal(await page.locator('.portalFileDocument').textContent(),'','permission loss clears the previously rendered content');
     await failure.getByRole('button',{name:'打开其他内容',exact:true}).click();
     assert.equal(await page.getByLabel('目标 ID 或文件资源地址').inputValue(),'article_0123456789ab');
     await page.locator('.homeDialogueOpener > summary').click();
@@ -180,17 +182,17 @@ const server = http.createServer((req,res) => {
     assert.equal(await page.getByRole('button',{name:'重试访问',exact:true}).count(),0);
     await page.evaluate(()=>{controller.destroy();window.denyPreview=false;});
     // Real DocumentSession + Preview access lifecycle. No cached content is revealed before the new read.
-    await page.evaluate(()=>{window.access=PortalHomeDialoguePreview.create({root:document.querySelector('#root')}); access.setPresented(false); window.readsBefore=previewReads; return access.show({address:'article_0123456789ab'});});
+    await page.evaluate(()=>{window.access=PortalFilePreview.create({root:document.querySelector('#root')}); access.setPresented(false); window.readsBefore=previewReads; return access.show({address:'article_0123456789ab'});});
     assert.equal(await page.evaluate(()=>previewReads),await page.evaluate(()=>readsBefore),'hidden preview does not read');
     await page.evaluate(()=>access.setPresented(true)); await page.getByRole('button',{name:'编辑',exact:true}).click(); await page.getByLabel('文件草稿').fill('recoverable draft');
     assert.ok(await page.evaluate(()=>calls.filter(c=>c.previewOptions).every(c=>c.previewOptions.allowCached===false && c.previewOptions.readOnly===false)),'fresh server capabilities determine editing');
     await page.evaluate(()=>{access.setPresented(false); window.denyPreview=true;}); await page.evaluate(()=>access.setPresented(true));
-    assert.equal(await page.getByLabel('文件草稿').isVisible(),false); assert.equal(await page.locator('.homeDialogueDocument').textContent(),'');
+    assert.equal(await page.getByLabel('文件草稿').isVisible(),false); assert.equal(await page.locator('.portalFileDocument').textContent(),'');
     assert.equal(await page.evaluate(()=>access.snapshot().draft),'recoverable draft');
     await page.evaluate(()=>{window.denyPreview=false;}); await page.getByRole('button',{name:'重试访问',exact:true}).click(); await page.getByLabel('文件草稿').waitFor({state:'visible'});
     assert.equal(await page.getByLabel('文件草稿').inputValue(),'recoverable draft');
     await page.evaluate(()=>{window.canEditPreview=false; window.dispatchEvent(new CustomEvent('portal:permissions-changed'));});
-    await page.waitForFunction(()=>document.querySelector('.homeDialogueEditor').disabled);
+    await page.waitForFunction(()=>document.querySelector('.portalFileEditor').disabled);
     assert.equal(await page.getByRole('button',{name:'保存',exact:true}).isEnabled(),false);
     await page.evaluate(()=>{window.fixtureIdentity='other-user'; window.dispatchEvent(new CustomEvent('portal:identity-changed'));});
     assert.equal(await page.getByLabel('文件草稿').isVisible(),false); assert.equal(await page.getByLabel('文件草稿').inputValue(),'');
@@ -204,7 +206,7 @@ const server = http.createServer((req,res) => {
     // server-resolved Workspace address and current-actor file permission.
     await page.evaluate(async()=>{
       window.holdPreview=false; window.workspaceAddress='workspace_0123456789ab/file/notes 100%25.md';
-      window.filePreview=PortalHomeDialoguePreview.create({root:document.querySelector('#root')});
+      window.filePreview=PortalFilePreview.create({root:document.querySelector('#root')});
       await filePreview.show({address:workspaceAddress});
     });
     await page.getByRole('button',{name:'编辑',exact:true}).click(); await page.getByLabel('文件草稿').fill('workspace saved');
@@ -214,11 +216,11 @@ const server = http.createServer((req,res) => {
     assert.equal(fileSave.args.address,'workspace_0123456789ab/file/notes 100%25.md'); assert.equal(fileSave.args.content,'workspace saved');
     assert.equal(fileSave.options.expectedVersion[fileSave.args.address],require('node:crypto').createHash('sha256').update('workspace original').digest('hex'));
     assert.deepEqual(await page.evaluate(()=>calls.filter(c=>c.name==='CheckPermission').at(-1).args),{principal_id:'home-fixture',a:'UpdateWorkspaceFile',resource_id:'workspace_0123456789ab'});
-    await page.evaluate(async()=>{filePreview.destroy(); window.filePreview=PortalHomeDialoguePreview.create({root:document.querySelector('#root')}); await filePreview.show({address:workspaceAddress});});
+    await page.evaluate(async()=>{filePreview.destroy(); window.filePreview=PortalFilePreview.create({root:document.querySelector('#root')}); await filePreview.show({address:workspaceAddress});});
     assert.equal(await page.evaluate(()=>filePreview.snapshot().payload.content),'workspace saved','fresh read returns saved file content');
-    assert.ok((await page.locator('.homeDialogueDocument').innerText()).includes('workspace saved'));
+    assert.ok((await page.locator('.portalFileDocument').innerText()).includes('workspace saved'));
     await page.evaluate(async()=>{window.canEditPreview=false; filePreview.setPresented(false); await filePreview.setPresented(true);});
-    assert.equal(await page.getByRole('button',{name:'编辑',exact:true}).isVisible(),false); assert.equal(await page.locator('.homeDialogueDocument').isVisible(),true,'readable but not writable stays read-only');
+    assert.equal(await page.getByRole('button',{name:'编辑',exact:true}).isVisible(),false); assert.equal(await page.locator('.portalFileDocument').isVisible(),true,'readable but not writable stays read-only');
     await page.evaluate(async()=>{window.canEditPreview=true; window.failPermission=true; filePreview.setPresented(false); await filePreview.setPresented(true);});
     assert.equal(await page.getByRole('button',{name:'编辑',exact:true}).isVisible(),false); await page.getByText('文件可读，但无法核对编辑权限：权限服务暂不可用',{exact:true}).waitFor();
     await page.evaluate(()=>{window.failPermission=false;}); await page.getByRole('button',{name:'重试访问',exact:true}).click(); await page.getByRole('button',{name:'编辑',exact:true}).waitFor();

@@ -37,10 +37,10 @@ const html = fs.readFileSync(path.join(portal,'index.html'),'utf8').replace(/<sc
     });
     await page.waitForSelector('.homeDialogueChooser',{state:'attached'});
     await page.evaluate(()=>PortalPreview.request({resourceAddress:'decision_b12782e7f490'}));
-    await page.waitForFunction(()=>document.querySelector('.homeDialogueDocument')?.textContent.includes('对话'));
+    await page.waitForFunction(()=>document.querySelector('.portalFileDocument')?.textContent.includes('对话'));
     await page.screenshot({path:path.join(out,'preview.png'),fullPage:true});
     const evidence={principal:client.identity.principal,origin,scope:'Dev source HTML/static harness, real authenticated API; no user session',
-      preview:await page.locator('.homeDialogueDocument').innerText(),
+      preview:await page.locator('.portalFileDocument').innerText(),
       assistant:await page.locator('.homeDialogueConversation').innerText(),errors,failures};
     await page.locator('.homeDialogueOpener > summary').click();
     await page.getByLabel('目标类型',{exact:true}).selectOption('lineage');
@@ -63,8 +63,8 @@ const html = fs.readFileSync(path.join(portal,'index.html'),'utf8').replace(/<sc
     await homeAction(page,'固定展示');
     assert.equal(await page.getByRole('button',{name:'取消固定',exact:true,includeHidden:true}).getAttribute('aria-pressed'),'true');
     await homeAction(page,'返回上一展示');
-    await page.locator('.homeDialogueDocument:visible').waitFor();
-    assert.equal(await page.locator('.homeDialogueDocument:visible').count(),1);
+    await page.locator('.portalFileDocument:visible').waitFor();
+    assert.equal(await page.locator('.portalFileDocument:visible').count(),1);
     await page.locator('.homeDialogueMore > summary').click(); await page.getByLabel('展示历史',{exact:true}).selectOption(entries[2]);
     await search.waitFor({state:'visible'}); assert.equal(await search.inputValue(),'研究');
     await homeAction(page,'取消固定');

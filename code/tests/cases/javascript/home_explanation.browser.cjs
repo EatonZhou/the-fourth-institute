@@ -500,15 +500,16 @@ const check = (name, actual, expected) => { assert.deepEqual(actual, expected, n
       return;
     }
     if (process.argv.includes('--quality-only')) {
-      const quality = page.getByRole('combobox', { name: '视频质量' });
-      check('initial read medium without POST', [await quality.inputValue(), requests.filter(r => r.method === 'POST').length], ['medium', 0]);
+      const quality = page.getByRole('group', {name:'视频质量'});
+      const choose = value => quality.locator(`input[value=${value}]`).check();
+      check('initial read medium without POST', [await quality.locator('input:checked').inputValue(), requests.filter(r => r.method === 'POST').length], ['medium', 0]);
       for (const value of ['low', 'high', 'medium']) {
-        await quality.selectOption(value);
+        await choose(value);
         await page.waitForTimeout(80);
         check('selection '+value+' is read only', requests.filter(r => r.method === 'POST').length, 0);
         check('GET binds quality '+value, requests.filter(r => r.url === '/api/home-explanation/media').at(-1).quality, value);
       }
-      await quality.selectOption('high'); await page.waitForTimeout(80);
+      await choose('high'); await page.waitForTimeout(80);
       await page.getByRole('button', { name: '生成讲解视频', exact: true }).click();
       await page.waitForTimeout(120);
       check('explicit click carries fixed version and high', requests.filter(r => r.method === 'POST').at(-1).body,
@@ -524,9 +525,9 @@ const check = (name, actual, expected) => { assert.deepEqual(actual, expected, n
       await page.setViewportSize({ width: 390, height: 844 });
       await page.evaluate(() => { document.documentElement.style.fontSize = '20px'; });
       if (out) await page.screenshot({ path: path.join(out, 'quality-390.png') });
-      check('narrow quality select inside viewport', await quality.evaluate(el => { const r=el.getBoundingClientRect(); return r.left>=0 && r.right<=innerWidth && r.height>=44; }), true);
+      check('narrow quality radios inside viewport', await quality.evaluate(el => { const r=el.getBoundingClientRect(); return r.left>=0 && r.right<=innerWidth && r.height>=44; }), true);
       const count = requests.filter(r => r.method === 'POST').length;
-      await quality.selectOption('low'); await page.waitForTimeout(100);
+      await choose('low'); await page.waitForTimeout(100);
       check('quality switch does not replay generation', requests.filter(r => r.method === 'POST').length, count);
       check('no script errors', errors, []);
       if (out) fs.writeFileSync(path.join(out, 'quality-result.json'), JSON.stringify({ checks, requests, errors }, null, 2));

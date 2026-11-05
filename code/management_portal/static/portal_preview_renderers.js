@@ -303,7 +303,7 @@
 
   const asset = (name, global) => window.PortalUIPrimitives.loadAsset(`/static/${name}`, global ? {ready:()=>Boolean(window[global])} : {});
   for (const [kind, script, global, css] of [
-    ["preview", "portal_file_preview.js", "PortalFilePreview", "home_dialogue.css"],
+    ["preview", "portal_file_preview.js", "PortalFilePreview", "portal_file_preview.css"],
     ["explanation", "home_explanation.js", "PortalHomeExplanationView", "home_explanation.css"],
     ["report", "home_report.js", "PortalHomeReportView", "home_report.css"],
     ["map", "home_map_view.js", "PortalHomeMapView", "project_map.css"],
@@ -314,6 +314,7 @@
       for (const [file, name] of [["project_common.js","PortalProjectCommon"],["project_map_layout.js","PortalProjectMapLayout"],
         ["project_map_drawer.js","PortalProjectMapDrawer"],["project_map.js","PortalProjectMap"]]) await asset(file, name);
     }
+    if (kind === "report" || kind === "explanation") await asset("markdown.js", "MD");
     await Promise.all([asset(css), asset(script, global)]);
     return window[global].create(options);
   });

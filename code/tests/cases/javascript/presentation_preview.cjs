@@ -10,6 +10,7 @@ w.PortalI18n = { t: text => text, html: template, text: template };
 w.PortalUIPrimitives = { escapeHtml: value => String(value).replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('"', '&quot;') };
 const renderers = [];
 w.PortalPreview = {
+  registerPresentation: () => {},
   registerRenderer: renderer => { renderers.push(renderer); return () => {}; },
   mountZoom: () => ({ setEnabled() {}, dispose() {} }),
 };

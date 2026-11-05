@@ -295,13 +295,13 @@
           // document only resolves this binding; it never replays the write.
           pageState?.writeSnapshot();
         }
-        if (!entry.adapter) {
+        if (!entry.adapterPromise) {
           if (entry.intent.view === "preview") {
-            entry.controls = { primary: node("div", "", "homeDialoguePreviewActions"), secondary: node("div", "", "homeDialoguePreviewMenu") };
+            entry.controls = { primary: node("div", "", "portalFilePreviewActions"), secondary: node("div", "", "portalFilePreviewMenu") };
             entry.controls.primary.hidden = entry.controls.secondary.hidden = state.active !== entry;
             contentActions.append(entry.controls.primary); tools.append(entry.controls.secondary);
           }
-          entry.adapter = await window.PortalPreview.createPresentation(entry.intent.view, { root: entry.content, controls: entry.controls,
+          entry.adapterPromise = window.PortalPreview.createPresentation(entry.intent.view, { root: entry.content, controls: entry.controls,
             onOpen: intent => { if (presented && !suspended && state.active === entry) navigate(intent, true); },
             onReference: reference => {
               if (destroyed || entry.controller.signal.aborted || entry.intent.view !== "report") return;
@@ -332,8 +332,9 @@
               }
               refresh();
             },
-          });
+          }).catch(error => {entry.adapterPromise = null; throw error;});
         }
+        entry.adapter = await entry.adapterPromise;
         if (destroyed || entry.controller.signal.aborted) {entry.adapter?.destroy(); return;}
         entry.presented = presented && !suspended && state.active === entry && (!narrow || root.dataset.pane === "display");
         if (!entry.presented) await entry.adapter.setPresented(false);

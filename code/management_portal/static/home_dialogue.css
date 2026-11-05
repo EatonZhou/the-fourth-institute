@@ -19,8 +19,6 @@ button.homeDialogueControl { cursor:pointer; }
 .homeDialogueChooser input { flex:1; min-width:120px; }
 .homeDialogueToolbar select { min-width:0; width:0; max-width:100%; flex:1; }
 .homeDialogueStage,.homeDialogueEntry,.homeDialogueEntryContent { flex:1; display:flex; flex-direction:column; min-height:0; overflow:auto; }
-.homeDialogueDocument { flex:1; overflow:auto; padding:8px; background:var(--panel, #fff); }
-.homeDialogueEditor { flex:1; min-height:180px; resize:none; font:14px/1.5 monospace; background:var(--panel, #fff); color:inherit; padding:12px; }
 .homeDialogueExpanded { position:fixed; inset:var(--home-dialogue-top, 8px) 8px 8px; width:auto !important; max-width:none !important; height:auto; z-index:900; box-shadow:0 6px 30px #0004; border:1px solid var(--border, #ccc); }
 /* In the native workbench, fixed insets must size the expanded Home panel,
    overriding the mounted panel's 100% height without changing other panels. */
@@ -30,20 +28,8 @@ button.homeDialogueControl { cursor:pointer; }
 .homeDialogueIdentity { flex:1 1 0; min-width:0; }
 .homeDialogueDisplayBar .homeDialogueCurrent { display:block; min-width:0; padding:5px 2px; border-color:transparent; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
 .homeDialogueDisplayBar > details:not(.homeDialogueIdentity),.homeDialogueContentActions { flex:none; }
-.homeDialogueContentActions,.homeDialoguePreviewActions { display:flex; align-items:center; gap:6px; }
+.homeDialogueContentActions { display:flex; align-items:center; gap:6px; }
 .homeDialogueContentActions:not(:has(> :not([hidden]))) { display:none; }
-.homeDialogueSaveStatus { font-size:.8em; color:var(--muted, #666); white-space:nowrap; }
-.homeDialoguePreviewMenu { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
-.homeDialoguePreviewError { margin:0; padding:6px 8px; color:var(--muted, #666); }
-.homeDialoguePreviewFailure { box-sizing:border-box; width:calc(100% - 32px); max-width:36rem; margin:clamp(24px,8vh,80px) auto; padding:clamp(16px,3vw,28px); border:1px solid var(--border,#ccc); border-radius:12px; background:var(--panel,#fff); overflow-wrap:anywhere; line-height:1.6; }
-.homeDialoguePreviewFailure h3 { margin:0 0 8px; font-size:1.15rem; color:var(--text,#222); }
-.homeDialoguePreviewFailure p { margin:0 0 16px; color:var(--muted,#666); }
-.homeDialoguePreviewFailure .homeDialoguePreviewTargetLabel { font-size:.8rem; margin-bottom:4px; }
-.homeDialoguePreviewTarget { display:block; padding:10px 12px; border-radius:6px; background:var(--bg,#f4f6fa); white-space:pre-wrap; font-size:.8rem; }
-.homeDialoguePreviewRecovery { display:flex; flex-wrap:wrap; gap:8px; margin:20px 0 16px; }
-.homeDialoguePreviewFailure details { color:var(--muted,#666); font-size:.8rem; }
-.homeDialoguePreviewFailure summary { cursor:pointer; }
-.homeDialoguePreviewFailure details p { margin:8px 0 0; white-space:pre-wrap; }
 .homeDialogueToolbar > label { display:flex; align-items:center; gap:6px; min-width:0; width:100%; }
 summary.homeDialogueControl { cursor:pointer; white-space:nowrap; padding:5px 7px; border:1px solid var(--border,#ccc); border-radius:5px; }
 .homeDialogueDisplayBar summary { list-style:none; padding:5px 6px; font-size:inherit; }
