@@ -14,7 +14,7 @@ export function graphData(rows,{title,project,map,teams=[]}={}) {
   const nodes=[],edges=[];
   const add=(id,kind,label,x,y,extra={})=>{const node={id,kind,label,x,y,...extra};nodes.push(node);return node;};
   const link=(source,target,kind,label='')=>edges.push({id:source+'|'+target+'|'+kind,source,target,kind,label});
-  add('scope','scope',title || t('地图'),0,0,{subtitle:project?'项目目标':'团队探索'});
+  add('scope','scope',title || t('Map'),0,0,{subtitle:project?'项目目标':'团队探索'});
   const groups=new Map();
   rows.forEach(r=>{const key=r._lineage+'|'+r.line;if(!groups.has(key))groups.set(key,[]);groups.get(key).push(r);});
   let cursor=0;
@@ -56,7 +56,7 @@ export function graphData(rows,{title,project,map,teams=[]}={}) {
   for(const r of rows)if(r.parent&&rows.some(p=>p._lineage===r._lineage&&p.id===r.parent))link(r._lineage+':'+r.parent,itemKey(r),r.relation,({builds_on:'发展',depends_on:'依赖',converges:'汇合'})[r.relation]);
   const bottom=Math.max(cursor,...nodes.map(n=>n.y),0);
   nodes[0].y=bottom/2;
-  if(!rows.length && !project) {add('new','new',t('添加第一个地图节点'),350,bottom/2,{subtitle:'从一个问题或判断开始'});link('scope','new','membership');}
+  if(!rows.length && !project) {add('new','new',t('添加第一个 Map 节点'),350,bottom/2,{subtitle:'从一个问题或判断开始'});link('scope','new','membership');}
   return {nodes,edges};
 }
 
@@ -66,7 +66,7 @@ export function createGraph(host,{onSelect,onNew,onDirection,onTeam,onLayout}={}
   function wrap(label) {
     const result=[''];for(const char of label){const i=result.length-1;if(measure.measureText(result[i]+char).width>210){if(i===1){result[i]=result[i].slice(0,-1)+'…';break;}result.push(char);}else result[i]+=char;}return result;
   }
-  const svg=d3.select(host).append('svg').attr('class','frontierCanvas').attr('aria-label',t('地图')).attr('tabindex',0);
+  const svg=d3.select(host).append('svg').attr('class','frontierCanvas').attr('aria-label',t('Map')).attr('tabindex',0);
   const defs=svg.append('defs');
   const marker='frontierArrow-'+crypto.randomUUID();
   defs.append('marker').attr('id',marker).attr('viewBox','0 0 10 10').attr('refX',9).attr('refY',5).attr('markerWidth',6).attr('markerHeight',6).attr('orient','auto').append('path').attr('d','M0 0L10 5L0 10Z').attr('fill','currentColor');
@@ -133,7 +133,7 @@ export function createGraph(host,{onSelect,onNew,onDirection,onTeam,onLayout}={}
       .on('click',(event,n)=>{event.stopPropagation();activate(n);}).on('keydown',(event,n)=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();activate(n);}})
       .call(d3.drag().on('start',(event,n)=>{event.sourceEvent.stopPropagation();undo.push(structuredClone(positions));}).on('drag',(event,n)=>{n.x+=event.dx;n.y+=event.dy;location();}).on('end',(event,n)=>{positions[n.id]={x:n.x,y:n.y};onLayout?.(positions);}));
     ns.select('title').text(n=>n.label+(n.row?'\n'+n.row.next:''));
-    ns.select('.nodeMeta').text(n=>n.row?({decision:'需要决定',optional:'可以介入',explore:'留待探索'})[n.row.attention]:({scope:t('地图'),line:collapsed.has(n.id)?'＋ 展开工作线':'− 收起工作线',direction:'研究方向',team:'负责团队',teamCollection:'项目团队',new:t('新节点')})[n.kind]);
+    ns.select('.nodeMeta').text(n=>n.row?({decision:'需要决定',optional:'可以介入',explore:'留待探索'})[n.row.attention]:({scope:t('Map'),line:collapsed.has(n.id)?'＋ 展开工作线':'− 收起工作线',direction:'研究方向',team:'负责团队',teamCollection:'项目团队',new:t('新节点')})[n.kind]);
     ns.select('.nodeTitle').each(function(n){const el=d3.select(this);el.selectAll('*').remove();wrap(n.label).forEach((line,i)=>el.append('tspan').attr('x',-106).attr('dy',i?17:0).text(line));});
     ns.select('.nodeSub').text(n=>n.row?n.row._status:n.subtitle||'');
     location();

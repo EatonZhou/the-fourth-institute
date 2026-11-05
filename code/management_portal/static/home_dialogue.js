@@ -26,7 +26,7 @@
     identityMenu.append(current, identityBody);
     const contentActions = node("div", "", "homeDialogueContentActions");
     const history = node("select"), stage = node("div", "", "homeDialogueStage"); history.setAttribute("aria-label", "展示历史");
-    const viewNames = { report: "汇报", map: "研究地图", frontier: t("Lineage 地图"), preview: "文件/资源", explanation: "解释页" };
+    const viewNames = { report: "汇报", map: "研究地图", frontier: t("Lineage Map"), preview: "文件/资源", explanation: "解释页" };
     const displayBar = node("div", "", "homeDialogueDisplayBar"), switchView = node("select");
     switchView.setAttribute("aria-label", "当前视图");
     const opener = node("details", "", "homeDialogueOpener"), openLabel = node("summary", "打开…");
@@ -422,7 +422,7 @@
           const intent = action.intent;
           const label = intent.action === "back" ? "返回上一展示" : intent.view === "preview"
             ? /(?:slides?|\.pptx?)(?:[/.?#]|$)/i.test(intent.target.address) ? "预览幻灯片" : "预览文件/资源"
-            : ({ report: "查看汇报", explanation: "打开解释页", map: "打开研究地图", frontier: t("查看 Lineage 地图") })[intent.view];
+            : ({ report: "查看汇报", explanation: "打开解释页", map: "打开研究地图", frontier: t("查看 Lineage Map") })[intent.view];
           return `<button type="button" class="homeDialogueMessageAction btn" data-home-display-action="${window.MD.esc(action.token)}">${window.MD.esc(label)}</button>`;
         } });
         messageActions.set(id, actions);

@@ -12,7 +12,7 @@ export function isHistory(item, input) {
   return !!item.closed || ['completed','cancelled'].includes(input?.state);
 }
 export function validateItem(item, items = []) {
-  if (!/^[a-zA-Z0-9_-]{1,64}$/.test(item.id || '')) throw new Error(t('地图节点局部标识无效。'));
+  if (!/^[a-zA-Z0-9_-]{1,64}$/.test(item.id || '')) throw new Error(t('Map 节点局部标识无效。'));
   for (const field of ['title','line','progress','reason','next']) {
     if (!String(item[field] || '').trim()) throw new Error('请填写问题、工作线、进展、理由和下一步。');
   }
@@ -20,13 +20,13 @@ export function validateItem(item, items = []) {
   if (!item.sources?.length || item.sources.length > 8 || item.sources.some(s => !/^[a-z][a-z0-9_]*_[a-f0-9]{12}(\/[^\s]*)?$/.test(s))) throw new Error('请填写 1–8 个有效资源地址。');
   if (item.parent && (!items.some(x => x.id === item.parent) || item.parent === item.id)) throw new Error(t('关联节点不存在或指向自身。'));
   if (item.parent && !RELATIONS[item.relation]) throw new Error('关联类型无效。');
-  if (items.some(x => x.id !== item.id && x.title.trim() === item.title.trim() && x.sources.join('\n') === item.sources.join('\n'))) throw new Error(t('这条来源下已有同一问题，请更新原地图节点。'));
+  if (items.some(x => x.id !== item.id && x.title.trim() === item.title.trim() && x.sources.join('\n') === item.sources.join('\n'))) throw new Error(t('这条来源下已有同一问题，请更新原 Map 节点。'));
   if (new TextEncoder().encode(JSON.stringify(item)).length > 12000) throw new Error('单条内容过长，请精简判断，完整材料通过来源关联。');
   return item;
 }
 export function readItems(doc) {
   if (doc == null) return [];
-  if (doc.schema !== 'tfi.exploration-frontier.v1' || !Array.isArray(doc.items)) throw new Error(t('地图节点数据格式不受支持。'));
+  if (doc.schema !== 'tfi.exploration-frontier.v1' || !Array.isArray(doc.items)) throw new Error(t('Map 节点数据格式不受支持。'));
   for (const item of doc.items) validateItem(item,doc.items);
   return doc.items;
 }

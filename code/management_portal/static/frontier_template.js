@@ -3,15 +3,15 @@ export default `
   <main class="graphWorkspace">
     <div class="graphToolbar">
       <div class="graphTools"><button id="zoom-out" aria-label="缩小">−</button><output id="zoom-level">100%</output><button id="zoom-in" aria-label="放大">＋</button><button id="fit" title="适应全图 (F)">适应</button><button id="undo" title="撤销上次节点移动">↶</button><button id="arrange" title="恢复自动布局">整理</button></div>
-      <div class="graphTools"><input id="search" type="search" aria-label="搜索地图" placeholder="搜索问题、工作线"><button id="focus" aria-pressed="false">局部</button><button id="refresh">刷新</button><button id="new" class="primary" disabled>＋ 节点</button></div>
+      <div class="graphTools"><input id="search" type="search" aria-label="搜索 Map" placeholder="搜索问题、工作线"><button id="focus" aria-pressed="false">局部</button><button id="refresh">刷新</button><button id="new" class="primary" disabled>＋ 节点</button></div>
     </div>
-    <nav id="filters" aria-label="地图筛选"></nav>
+    <nav id="filters" aria-label="Map 筛选"></nav>
     <div id="notice" role="status" aria-live="polite"></div>
     <div class="graphStage"><div id="graph"></div><aside id="detail" hidden aria-label="节点详情"><div id="detail-body"></div></aside></div>
     <footer class="graphFooter"><span class="legend"><i></i>发展 <i class="dependency"></i>依赖 <i class="merge"></i>汇合 <i class="team"></i>团队关联</span><span id="checked">正在读取…</span><span>拖动画布 · 滚轮缩放 · 点击节点查看</span></footer>
   </main>
   <dialog id="source"><div class="dialog-heading"><h2>来源原文</h2><button type="button" data-close="source" aria-label="关闭">×</button></div><pre id="source-text" style="white-space:pre-wrap;overflow-wrap:anywhere;font:inherit;line-height:1.9"></pre></dialog>
-  <dialog id="editor"><form id="edit-form"><div class="dialog-heading"><h2 id="edit-title">新增地图节点</h2><button type="button" data-close="editor" aria-label="关闭">×</button></div><p class="muted">围绕一个推进目标持续更新，让下一次思考有所依据。</p>
+  <dialog id="editor"><form id="edit-form"><div class="dialog-heading"><h2 id="edit-title">新增 Map 节点</h2><button type="button" data-close="editor" aria-label="关闭">×</button></div><p class="muted">围绕一个推进目标持续更新，让下一次思考有所依据。</p>
     <label>正在探索什么<input name="title" required maxlength="120" placeholder="一个值得继续追问的问题"></label>
     <div class="form-grid"><label>工作线<input name="line" required maxlength="80" placeholder="例如：长期研究判断"></label><label>介入要求<select name="attention"><option value="optional">可以介入 · 已授权工作继续</option><option value="decision">需要决定 · 对应选择等待</option><option value="explore">留待探索 · 尚未启动</option></select></label></div>
     <label>已经推进到哪里<textarea name="progress" required maxlength="1200" rows="2"></textarea></label>

@@ -31,7 +31,7 @@
     }
     function open(entry, value) { if (entry === active && presented) onOpen?.(value); }
     function heading(entry) {
-      const name = entry.label || (entry.target.kind === 'project' ? entry.target.id : t('团队地图'));
+      const name = entry.label || (entry.target.kind === 'project' ? entry.target.id : t('团队 Map'));
       title.textContent = name;
       title.setAttribute('aria-label', name + '，查看目标信息');
       fullName.textContent = name; idValue.value = entry.target.id;

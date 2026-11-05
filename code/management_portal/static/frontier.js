@@ -23,7 +23,7 @@ const call = async (...args) => {
 let presented = true, openDialogs = [], loading, editDocument;
 const uid = () => crypto.randomUUID().replaceAll('-','');
 let lineage='', project='', doc=null, rows=[], members=[], selected=null, editing=null, filter='all', epoch=0, busy=false, actor='', prefs, later=[];
-let graph, positions={}, scopeTitle=config.title||t('地图'), projectMap=config.map, projectTeams=[];
+let graph, positions={}, scopeTitle=config.title||t('Map'), projectMap=config.map, projectTeams=[];
 const states=new Map(), sources=new Map();
 const labels={all:t('全部节点'),decision:'需要决定',active:'正在推进',explore:'留待探索',later:'稍后关注',history:'结果与历史'};
 const notice = text => {$('#notice').textContent=text;};
@@ -47,7 +47,7 @@ function render() {
   $('#filters').innerHTML=Object.entries(labels).map(([key,label])=>`<button data-filter="${key}" aria-current="${filter===key}">${label}<small>${available.filter(r=>visible(r,key)).length}</small></button>`).join('');
   const shown=available.filter(r=>visible(r)).map(r=>({...r,_status:progressOf(r,inputOf(r))}));
   const hidden=rows.length-available.length;
-  if(hidden) notice(`${hidden} 个地图节点的来源暂不可读，内容已隐藏。刷新可重新核对权限或来源状态。`);
+  if(hidden) notice(`${hidden} 个 Map 节点的来源暂不可读，内容已隐藏。刷新可重新核对权限或来源状态。`);
   graph?.update(graphData(shown,{title:scopeTitle,project,map:projectMap,teams:projectTeams}),positions);
   if($('#search').value)graph?.search($('#search').value);
 }
@@ -91,7 +91,7 @@ async function load() {
           catch {incomplete=true;return [];}
         }));rows.push(...batches.flat());
       }
-    } else {notice(t('选择一个项目，打开它的地图。')); return;}
+    } else {notice(t('选择一个项目，打开它的 Map。')); return;}
     await verify(rows);
     if(generation!==epoch)return;
     config.onTitleChange?.(scopeTitle);
@@ -121,7 +121,7 @@ function edit(item=null) {
   editDocument=structuredClone(doc);
   editing=item ? structuredClone(doc.items.find(r=>r.id===item.id)) : null;
   const form=$('#edit-form');form.reset();form.querySelector('.form-error').textContent='';
-  $('#edit-title').textContent=item?t('更新节点'):t('新增地图节点');
+  $('#edit-title').textContent=item?t('更新节点'):t('新增 Map 节点');
   form.elements.owner.innerHTML='<option value="">暂不指定</option>'+options(members);
   form.elements.parent.innerHTML='<option value="">独立线索</option>'+rows.filter(r=>r.id!==item?.id && permitted(r)).map(r=>`<option value="${r.id}">${esc(r.title)}</option>`).join('');
   if(item) for(const key of ['title','line','attention','progress','reason','next','owner','parent','relation','closed']) form.elements[key].value=item[key]||'';
@@ -167,7 +167,7 @@ $('#dispatch-form').onsubmit=async e=>{
     // viewers recover this exact message ID; a lost receipt cannot duplicate work.
     if(!item.dispatch) {
       const owner=form.elements.owner.value;if(!owner)throw new Error('请选择负责 Agent。');
-      item={...item,dispatch:{owner,message_id:'msg_'+uid(),text:`${item.title}\n\n${form.elements.instruction.value.trim()}\n\n依据：\n${item.sources.join('\n')}\n\n地图入口：/lineage?view=frontier&lineage=${lineage}`,created_at:new Date().toISOString()}};
+      item={...item,dispatch:{owner,message_id:'msg_'+uid(),text:`${item.title}\n\n${form.elements.instruction.value.trim()}\n\n依据：\n${item.sources.join('\n')}\n\nMap 入口：/lineage?view=frontier&lineage=${lineage}`,created_at:new Date().toISOString()}};
       await commit(item);
     }
     await deliver(call,item);$('#dispatch').close();detail.hidden=true;await load();notice(t('已接收。执行与结果可在节点详情中查看。'));
@@ -217,10 +217,10 @@ async function init() {
     positions=layoutPrefs.read({positions:{}}).positions;
     graph=createGraph($('#graph'),{
       onSelect:r=>openDetail(rowKey(r)),onNew:()=>edit(),
-      onDirection:d=>{config.onSelection?.({address:d.direction_id,label:d.title,kind:'direction',project_id:project});contextDetail(d.title,d.question || t('通过负责团队展开地图节点。团队关联不表示每个地图节点都直接属于该方向。'),config.onDirection?{label:'管理研究方向',run:()=>config.onDirection(d.direction_id)}:null);},
+      onDirection:d=>{config.onSelection?.({address:d.direction_id,label:d.title,kind:'direction',project_id:project});contextDetail(d.title,d.question || t('通过负责团队展开 Map 节点。团队关联不表示每个 Map 节点都直接属于该方向。'),config.onDirection?{label:'管理研究方向',run:()=>config.onDirection(d.direction_id)}:null);},
       onTeam:n=>{
-        if(!n.teams){config.onSelection?.({address:n.lineage,label:n.label,kind:'lineage'});return contextDetail(n.label,'团队的工作线与探索问题在右侧展开。',{label:t('进入团队地图'),run:()=>{if(config.onOpen)config.onOpen({view:'frontier',target:{kind:'lineage',id:n.lineage}});else location.href='/lineage?view=frontier&lineage='+encodeURIComponent(n.lineage);}});}
-        contextDetail(n.label,t('这些团队当前没有可展示的地图节点。可以进入团队查看或记录新的问题；部分读取失败时以顶部提示为准。'));
+        if(!n.teams){config.onSelection?.({address:n.lineage,label:n.label,kind:'lineage'});return contextDetail(n.label,'团队的工作线与探索问题在右侧展开。',{label:t('进入团队 Map'),run:()=>{if(config.onOpen)config.onOpen({view:'frontier',target:{kind:'lineage',id:n.lineage}});else location.href='/lineage?view=frontier&lineage='+encodeURIComponent(n.lineage);}});}
+        contextDetail(n.label,t('这些团队当前没有可展示的 Map 节点。可以进入团队查看或记录新的问题；部分读取失败时以顶部提示为准。'));
         const list=document.createElement('ul');for(const team of n.teams){const li=document.createElement('li'),a=document.createElement('a');a.textContent=team.title||team.lineage_id;a.href='/lineage?view=frontier&lineage='+encodeURIComponent(team.lineage_id);li.append(a);list.append(li);}$('#detail-body').append(list);
       },
       onLayout:value=>{positions=value;layoutPrefs.write({positions:value});}

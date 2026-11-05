@@ -135,6 +135,77 @@ const check = (name, actual, expected) => { assert.deepEqual(actual, expected, n
       window.adapter = PortalHomeExplanationView.create({ root: document.getElementById('root'), onOpen: x => opens.push(x), onChange: x => changes.push(x.accessStatus) });
       await adapter.show(target, { requestId: 'fixture-request' });
     }, target);
+    if (process.argv.includes('--mount-lifecycle-only')) {
+      await setup(planned);
+      const target = manifest('detached', { ...base, video_plan: undefined });
+      const beforeAttach = await page.evaluate(async target => {
+        adapter.destroy();
+        window.detachedRoot = document.createElement('div');
+        adapter = PortalHomeExplanationView.create({ root: detachedRoot });
+        await adapter.show(target);
+        return { connected: detachedRoot.isConnected, text: detachedRoot.textContent,
+          frames: detachedRoot.querySelectorAll('.homeExplanationInteraction').length };
+      }, target);
+      check('detached host does not fail while preparing the interaction', beforeAttach.text.includes("Cannot read properties of null"), false);
+      check('detached host prepares exactly one interaction', beforeAttach.frames, 1);
+      check('show resolves before the host is attached', beforeAttach.connected, false);
+      await page.evaluate(() => document.getElementById('root').replaceChildren(detachedRoot));
+      const demo = () => page.frameLocator('.homeExplanationInteraction').frameLocator('iframe');
+      await demo().getByRole('button', { name: '沙发', exact: true }).click();
+      check('interaction runs after late host attachment', await demo().locator('#answer').textContent(), '沙发 · 20%');
+      check('successful mount does not duplicate static reading', await page.locator('.homeExplanationSupplement').count(), 0);
+      await page.evaluate(() => { detachedRoot.remove(); document.getElementById('root').append(detachedRoot); });
+      await demo().getByRole('button', { name: '小猫', exact: true }).click();
+      check('reparented host recreates a usable interaction', await demo().locator('#answer').textContent(), '小猫 · 80%');
+      await page.evaluate(() => adapter.setPresented(false));
+      check('hidden host removes both frame layers', await page.locator('iframe').count(), 0);
+      await page.evaluate(() => adapter.setPresented(true));
+      await demo().getByRole('button', { name: '隔离检查', exact: true }).click();
+      await demo().locator('#safe').filter({ hasText: 'true,true,true' }).waitFor();
+      checks.push('restored interaction still isolates parent, storage and network');
+      if (out) await page.screenshot({ path: path.join(out, 'attached-interaction.png'), fullPage: true });
+      await demo().locator('body').evaluate(() => { location.href = '/escape-navigation'; });
+      await page.waitForTimeout(150);
+      check('inner self-navigation remains blocked', requests.filter(r => r.forbidden?.startsWith('/escape')).length, 0);
+      const hostile = put('detached-hostile.html', '<img src="/escape-image"><style>body{background-image:url(/escape-css)}</style><button id="popup">popup</button><script>document.querySelector("#popup").onclick=()=>window.open("/escape-popup");fetch("/escape-fetch").catch(()=>{});</script>', 'text/html');
+      await page.evaluate(async target => {
+        adapter.destroy(); adapter = PortalHomeExplanationView.create({ root: detachedRoot });
+        await adapter.show(target);
+      }, manifest('hostile', { ...base, video_plan: undefined, interaction: hostile }));
+      await demo().locator('#popup').click();
+      await page.waitForTimeout(150);
+      check('wrapper serialization does not enable external requests', requests.filter(r => r.forbidden?.startsWith('/escape')).length, 0);
+      check('opaque interaction cannot open another window', page.context().pages().length, 1);
+      const preview = await page.evaluate(async ({ address, content }) => {
+        adapter.destroy(); detachedRoot.remove();
+        window.previewRoot = document.createElement('div');
+        window.previewHandle = PortalPreview.render({ root: previewRoot, document: {
+          source: 'resource', resource_type: 'workspace', address, resource_address: address,
+          contentKind: 'json', content,
+        } });
+        await previewHandle.promise;
+        const connected = previewRoot.isConnected;
+        document.getElementById('root').replaceChildren(previewRoot);
+        return { renderer: previewHandle.renderer, connected };
+      }, { address: target.address, content: records.get(target.address).bytes.toString() });
+      check('native Preview can finish loading before attachment', preview, { renderer: 'explanation', connected: false });
+      await demo().getByRole('button', { name: '沙发', exact: true }).click();
+      check('late-mounted native Preview is interactive', await demo().locator('#answer').textContent(), '沙发 · 20%');
+      await page.evaluate(() => PortalPreview.dispose(previewRoot));
+      check('native Preview disposal removes the nested frames', await page.locator('iframe').count(), 0);
+      const cancelled = await page.evaluate(async target => {
+        const root = document.createElement('div');
+        const view = PortalHomeExplanationView.create({ root });
+        await view.show(target); view.destroy();
+        document.getElementById('root').replaceChildren(root);
+        return root.querySelectorAll('iframe').length;
+      }, target);
+      check('disposed detached content cannot start after attachment', cancelled, 0);
+      check('mount lifecycle does not submit generation or reviews', requests.filter(r => r.method === 'POST').length, 0);
+      check('mount lifecycle has no uncaught errors', errors, []);
+      console.log(JSON.stringify({ checks, errors }));
+      return;
+    }
     if (process.argv.includes('--illustrated-only')) {
       const headings = () => page.locator('.homeExplanationSectionHead h2').allTextContents();
       await setup(planned);

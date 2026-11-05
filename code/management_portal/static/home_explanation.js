@@ -102,15 +102,17 @@
     policy.httpEquiv = "Content-Security-Policy";
     policy.content = "default-src 'none'; script-src 'unsafe-inline'; script-src-attr 'none'; style-src 'unsafe-inline'; img-src data:; media-src 'none'; connect-src 'none'; form-action 'none'; base-uri 'none'; frame-src 'none'; object-src 'none'; worker-src 'none'; font-src 'none'";
     const style = parsed.createElement("style");
-    const computed = getComputedStyle(container);
+    const computed = getComputedStyle(container.isConnected ? container : document.body);
     const color = name => computed.getPropertyValue(name).trim().replace(/[;{}<>]/g, "");
     style.textContent = `:root{color-scheme:${computed.colorScheme || "light"};--bg:${color("--panel") || "#fff"};--panel:${color("--panel") || "#fff"};--text:${color("--text") || "#192234"};--muted:${color("--muted") || "#536078"};--border:${color("--border") || "#d6dde8"};--accent:${color("--accent") || "#365edb"}}*{box-sizing:border-box}body{margin:0;padding:16px;background:var(--panel);color:var(--text);font:${computed.fontSize} / 1.6 system-ui,sans-serif}button,input,select{font:inherit}button,input[type=range],select{min-height:44px}button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--accent);outline-offset:2px}img,svg,canvas{max-width:100%}@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}`;
     parsed.head.prepend(policy, style);
     const surface = node("iframe", null, "homeExplanationInteraction");
     surface.title = title; surface.referrerPolicy = "no-referrer";
     surface.style.height = `${Math.min(1200, Math.max(240, Number(height) || 480))}px`;
-    container.append(surface);
-    const outer = surface.contentDocument;
+    // Preview may finish loading before its host is connected, and a host can
+    // later be reparented. Serialize the trusted wrapper instead of touching an
+    // about:blank contentDocument that is absent (or discarded) in those states.
+    const outer = document.implementation.createHTMLDocument("");
     const navigation = outer.createElement("meta");
     navigation.httpEquiv = "Content-Security-Policy"; navigation.content = "frame-src 'none'";
     outer.head.append(navigation);
@@ -120,6 +122,8 @@
     inner.setAttribute("sandbox", "allow-scripts"); inner.referrerPolicy = "no-referrer";
     inner.style.cssText = "display:block;width:100%;height:100%;border:0";
     outer.body.append(inner); inner.srcdoc = "<!doctype html>" + parsed.documentElement.outerHTML;
+    surface.srcdoc = "<!doctype html>" + outer.documentElement.outerHTML;
+    container.append(surface);
     return () => surface.remove();
   }
 
