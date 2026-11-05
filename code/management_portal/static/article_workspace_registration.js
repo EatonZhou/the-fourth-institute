@@ -123,7 +123,7 @@
       if (!article || unregisteringArticles.has(article.id)) return;
       if (!await window.PortalUI.confirm({
         title: window.PortalI18n.t("解除 Article 注册？"),
-        message: window.PortalI18n.text`解除「${article.title || article.id}」的 Article 注册？\n原始目录和文件不会被删除。`,
+        message: window.PortalI18n.text`删除「${article.title || article.id}」的 Article 注册及其所属目录？\n目录和文件将永久删除，无法恢复。`,
         confirmLabel: window.PortalI18n.t("解除注册"),
         tone: "danger",
       })) return;
@@ -142,7 +142,7 @@
           updateUrl("");
         }
         await loadArticles({ preserve: !stillSelected, reloadSelected: stillSelected });
-        showToast(window.PortalI18n.t("Article 注册已解除；原始目录和文件保持不变。"), "success");
+        showToast(window.PortalI18n.t("Article 已注销；所属目录和文件已进入删除流程。"), "success");
       } catch (error) {
         showToast(error.message || error, "error");
       } finally {

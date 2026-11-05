@@ -841,12 +841,15 @@ def _resources(actor: str, **query: Any) -> Iterator[dict[str, Any]]:
 
 
 def _project_record(project_id: str, actor: str) -> dict[str, Any]:
-    result = _service().query(actor=actor, resource_types=["project"], q=project_id, limit=20,
-                              include_attributes=True)
-    for item in result.get("resources") or []:
-        if project_id in {str(item.get("resource_id") or ""), str(item.get("title") or "")}:
-            return item
-    raise not_found(f"Project 不存在：{project_id}")
+    # An exact ID lookup must not depend on search tokenization, ranking or the
+    # first page of matches, particularly immediately after a Project rename.
+    try:
+        record = _service().get(project_id, actor=actor)
+    except KeyError:
+        raise not_found(f"Project 不存在：{project_id}") from None
+    if record.get('resource_type') != 'project':
+        raise not_found(f"Project 不存在：{project_id}")
+    return record
 
 
 def _modified_at(item: dict[str, Any]) -> str:

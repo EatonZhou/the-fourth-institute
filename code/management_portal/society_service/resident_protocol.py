@@ -914,43 +914,6 @@ def get_resident_runtime_settings(
     return resident_reporting.read(resident_id, actor)
 
 
-def reporting_creation_allowed(resident_id: str, actor: str, message_id: str = "") -> bool:
-    """Read one trusted policy without opening runtime settings or a Router.
-
-    A message-specific policy is available only to its executing Resident and
-    only for inputs owned by its current submitted turn. Browser callers use
-    the target's current policy without a message selector.
-    """
-    from . import resident_reporting, resident_execution_work
-    if not isinstance(resident_id, str) or not isinstance(actor, str) or not isinstance(message_id, str):
-        raise ValueError("Resident, actor and message identity must be strings")
-    actor_id = canonical_actor_id(actor)
-    try:
-        record = resident_catalog.get_catalog().get_admission(resident_id)
-    except KeyError:
-        return False
-    if not resident_catalog.registration_ready(record) or not resident_access.resident_visible_to_actor(record, actor_id):
-        return False
-    if message_id:
-        # A readable conversation or a quoted job in message text is not an
-        # execution grant. Read the durable Job, not a caller-supplied job.
-        if actor_id != record["resident_id"]:
-            return False
-        job = resident_execution_work.read(record)
-        if not resident_execution_work.is_active(job) or not resident_execution_work.submitted_execution_id(job):
-            return False
-        def turn_inputs(item):
-            yield str(item.get("user_message_id") or "")
-            for member in item.get("mailbox_members") or []:
-                yield from turn_inputs(member)
-        if message_id not in turn_inputs(job):
-            return False
-        stored = resident_conversation_stream.get_repository().message(resident_id, message_id)
-        if not stored or stored.get("role") != "user":
-            return False
-    return resident_reporting.creation_allowed(resident_id, message_id)
-
-
 def get_actual_sent_prompt(
     resident_id: str,
     actor: str,
@@ -970,10 +933,22 @@ def get_resident_input_state(
     include_context: bool = False,
 ) -> dict[str, Any]:
     # Same read-access rule as the conversation snapshot that references this input.
-    require_visible = not resident_input_scope.permits(resident_id, actor, message_id) and not (
+    scoped = resident_input_scope.permits(resident_id, actor, message_id)
+    require_visible = not scoped and not (
         get_portal_access_store().is_service_actor(canonical_actor_id(actor))
     )
-    target = resident_record_domain.resolve_resident_runtime_target(resident_id, actor, require_visible=require_visible)
+    try:
+        target = resident_record_domain.resolve_resident_runtime_target(resident_id, actor, require_visible=require_visible)
+    except KeyError:
+        # The immutable grant belongs to this input, not to the Resident's live
+        # registration. Its sender must still be able to read the retained
+        # state after deletion, including a nonterminal state during cleanup.
+        # Do not infer termination from a missing identity or a saved checkpoint.
+        if not scoped or not resident_catalog.get_catalog().get_historical(resident_id).get('deleted_at'):
+            raise
+        return _stored_resident_input_state(
+            resident_id, message_id, include_progress=include_progress, include_context=include_context,
+        )
     return _stored_resident_input_state(
         target.resident_id, message_id, include_progress=include_progress, include_context=include_context,
     )

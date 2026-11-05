@@ -285,7 +285,7 @@
       const name = state.overview.name || state.selectedId;
       if (!await window.PortalUI.confirm({
         title: window.PortalI18n.t("解除 Repo 注册？"),
-        message: window.PortalI18n.text`解除「${name}」的 Repo 注册？\nGit checkout、分支、提交和文件不会被删除。`,
+        message: window.PortalI18n.text`删除「${name}」的 Repo 注册及其所属目录？\nGit checkout、分支、提交和工作文件将永久删除，无法恢复。`,
         confirmLabel: window.PortalI18n.t("解除注册"),
         tone: "danger",
       })) return;
@@ -300,8 +300,8 @@
         await loadRepos({ keepWorkspace: false });
         const pendingIndex = result.index_projection?.status === "unconfirmed";
         showToast(window.PortalI18n.t(pendingIndex
-          ? "Repo 注册已解除；checkout 保持不变，索引通知尚未完成。"
-          : "Repo 注册已解除；checkout 保持不变。"), pendingIndex ? "warning" : "success");
+          ? "Repo 已注销；所属目录已进入删除流程，索引通知尚未完成。"
+          : "Repo 已注销；所属目录已进入删除流程。"), pendingIndex ? "warning" : "success");
       } catch (error) {
         showToast(error.message || error, "error");
       }

@@ -525,7 +525,7 @@
         <section class="repoSettingsCard danger">
           <header><h3>解除 Repo 注册</h3><span>DANGER ZONE</span></header>
           <div class="repoDangerRow">
-            <div><strong>从 Resource 中移除此 Repo</strong><p>只删除注册记录。Git checkout、分支、提交和工作文件都会保留。</p></div>
+            <div><strong>删除此 Repo 及其目录</strong><p>删除注册记录，并永久删除所属 Git checkout、分支、提交和工作文件，无法恢复。</p></div>
             <button class="portalButton is-danger" type="button" data-repo-action="unregister">解除注册</button>
           </div>
         </section>
