@@ -202,6 +202,22 @@ class Media:
             if actor and result['authoring'].get('id'):
                 result['authoring'] = review.AuthoringService(resources=self.service).read(result['authoring']['id'], actor) or result['authoring']
             result['quality_met'] = False
+            task = result['authoring']
+            if actor and state.get('status') == 'awaiting_authoring' and task.get('status') == 'submitted' and task.get('result'):
+                subject = task['subject']
+                if (subject['ref'], subject['digest'], subject['quality']) != (ctx['ref']['address'], ctx['ref']['sha256'], ctx['quality']):
+                    raise ValueError('创作结果与原固定请求不匹配')
+                target = task['result']
+                destination = self.context(target['address'], target['sha256'], actor, ctx['quality'])
+                completed = self._state(destination, actor)
+                proof = (completed or {}).get('authoring_proof') or {}
+                if (proof.get('id'), proof.get('source_digest'), proof.get('resident_id'), proof.get('quality'), proof.get('plan_digest')) != (
+                        task['id'], ctx['ref']['sha256'], subject['responsible_resident_id'], ctx['quality'], self.plan_digest(destination['plan'])):
+                    raise ValueError('创作结果缺少匹配的固定分镜证明')
+                # Project the explicitly linked result, never replace the source
+                # package or infer a successor from a title/directory search.
+                linked = self.response(destination, completed, actor)
+                return {**linked, 'result_target': destination['ref']}
         if result.get('status') == 'generating' and not self.active(ctx):
             # Re-read is done by status/start under the active lease; the state
             # can only change to ready while the generation lock is held.
@@ -219,9 +235,9 @@ class Media:
                 # Media caches never confer review access or prove a verdict.
                 # Missing canonical records must not expose their private copy.
                 result['review'] = {
-                    'status': 'unavailable' if cached_review else 'not_requested',
+                    'status': 'not_required' if ctx['quality'] != 'high' else 'unavailable' if cached_review else 'not_requested',
                     'capabilities': dict.fromkeys(('can_cancel', 'can_resume', 'can_retry', 'can_read_evidence'), False)}
-                if cached_review:
+                if cached_review and ctx['quality'] == 'high':
                     result['review']['error'] = '审查记录不可确认；不能依据媒体缓存判定质量通过。'
             result['quality_met'] = ctx['quality'] != 'high' or result['review'].get('status') == 'passed'
         return result
@@ -392,12 +408,19 @@ class Media:
             if self.plan_digest(source['plan']) == self.plan_digest(ctx['plan']):
                 raise ValueError('必须修改实际分镜或音画内容，不能只改标题、摘要或质量标签')
             previous = self._state(ctx, actor)
-            if previous and previous.get('status') == 'ready':
-                raise ValueError('已生成固定视频不能回填更换创作证明')
             proof = {'id': authoring_id, 'resident_id': actor, 'quality': quality,
                      'source_digest': subject['digest'], 'plan_digest': self.plan_digest(ctx['plan'])}
-            state = {'status': 'authored', 'generation_actor': actor, 'authoring_proof': proof}
-            self._save(ctx, actor, state)
+            if record.get('result') and record['result'] != ctx['ref']:
+                raise ValueError('创作任务已关联另一固定结果，不能替换')
+            if previous and previous.get('authoring_proof') != proof:
+                raise ValueError('已有视频状态的创作证明不匹配，不能替换')
+            if not previous:
+                state = {'status': 'authored', 'generation_actor': actor, 'authoring_proof': proof}
+                self._save(ctx, actor, state)
+            # Idempotent completion also repairs older accepted results. Ready
+            # media, job IDs, audio and review records remain byte-for-byte intact.
+            record['result'] = ctx['ref']
+            service._save(record)
             return {'status': 'authored', 'quality': quality, 'authoring_proof': proof, 'target': ctx['ref']}
 
     def _generate(self, ctx, actor, state, audio, lease, slot):

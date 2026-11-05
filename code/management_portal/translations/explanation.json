@@ -1,4 +1,12 @@
 {
+  "查看视频对应版本": {
+    "zh-CN": "查看视频对应版本",
+    "en": "Open this video's edition"
+  },
+  "分镜已完成，可以生成讲解视频。": {
+    "zh-CN": "分镜已完成，可以生成讲解视频。",
+    "en": "The storyboard is ready. You can generate the video."
+  },
   "交互文件必须是自包含页面，不能嵌套页面或加载外部脚本。": {
     "zh-CN": "交互文件必须是自包含页面，不能嵌套页面或加载外部脚本。",
     "en": "Interactive pages must be self-contained, without embedded pages or external scripts."

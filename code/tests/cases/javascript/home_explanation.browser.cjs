@@ -27,7 +27,7 @@ const base = { schema: 'portal-explanation/v1', revision: 1, title: '注意力�
   video_plan: plan, interaction: { ...interaction, title: '改变匹配，观察信息的分配', height: 360 }, supplement,
   sources: [{ label: '原理说明', url: 'https://example.org/paper' }] };
 const manifest = (name, value) => put(name + '.json', JSON.stringify(value), 'application/json');
-let state = null, deny = false, deniedAddress = '', delayed = '', releases = [], videoRef;
+let state = null, qualityStates = null, deny = false, deniedAddress = '', delayed = '', releases = [], videoRef;
 let reviewDenied = false, delayReview = false, reviewRelease;
 let pageReviewState = null;
 let pageReviewReadDenied = false;
@@ -67,7 +67,7 @@ const server = http.createServer((req, res) => {
   }
   if (url.pathname === '/api/home-explanation/media') {
     const entry = { url: url.pathname, method: req.method, quality: url.searchParams.get('quality') }; requests.push(entry);
-    const respond = () => { res.writeHead(deny ? 403 : 200, { 'Content-Type': 'application/json' }); res.end(JSON.stringify(deny ? { error: 'no permit' } : { media: state })); };
+    const respond = () => { res.writeHead(deny ? 403 : 200, { 'Content-Type': 'application/json' }); res.end(JSON.stringify(deny ? { error: 'no permit' } : { media: qualityStates ? qualityStates[entry.quality] || null : state })); };
     if (req.method === 'POST') { let body = ''; req.on('data', data => { body += data; }); req.on('end', () => { entry.body = JSON.parse(body); state = { status: 'generating', job_id: 'fixture-job', quality: entry.body.quality }; respond(); }); }
     else respond(); return;
   }
@@ -405,6 +405,22 @@ const check = (name, actual, expected) => { assert.deepEqual(actual, expected, n
       await page.getByText('视频生成已取消。', { exact: true }).waitFor();
       check('explicit cancel pins fixed reference and quality', requests.find(r => r.url?.endsWith('/cancel')).body,
         { address: planned.address, sha256: planned.sha256, quality: 'medium' });
+      const successor = manifest('successor-video', {...base, quality:'medium'});
+      const original = manifest('original-high-page', {...base, quality:'high', video_plan:undefined});
+      qualityStates = {medium:{status:'ready',quality:'medium',result_target:successor,
+        video_url:'/api/resources/content?address='+encodeURIComponent(videoRef.address),review:{status:'not_required'}}};
+      const postCount = requests.filter(r=>r.method==='POST').length;
+      await setup(original);
+      await page.locator('video').waitFor();
+      check('opening high page discovers existing medium video', await page.getByRole('group',{name:'视频质量'}).locator(':checked').inputValue(), 'medium');
+      await page.getByRole('button',{name:'查看视频对应版本',exact:true}).click();
+      check('video link opens exact authored successor', await page.evaluate(()=>opens.at(-1)), {view:'explanation',target:successor});
+      if(out) await page.screenshot({path:path.join(out,'authored-result-390.png')});
+      await page.getByRole('group',{name:'视频质量'}).locator('input[value=high]').check();
+      await page.getByRole('button',{name:'生成讲解视频',exact:true}).waitFor();
+      check('explicit high selection never relabels medium movie', await page.locator('video').count(),0);
+      check('result discovery and tier selection never generate',requests.filter(r=>r.method==='POST').length,postCount);
+      qualityStates = null;
       check('authoring UI has no script errors', errors, []);
       if (out) fs.writeFileSync(path.join(out, 'authoring-result.json'), JSON.stringify({ checks, requests, errors }, null, 2));
       return;

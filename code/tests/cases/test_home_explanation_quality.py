@@ -84,7 +84,7 @@ def rig(tmp_path, monkeypatch):
         value = json.dumps(content, ensure_ascii=False).encode() if isinstance(content, dict) else content
         (root/name).write_bytes(value)
         return {'address': RID + '/file/' + name, 'sha256': sha(value)}
-    def package(n, visual=True, authored=True):
+    def package(n, visual=True, authored=True, qualities=('medium', 'high')):
         audio = put('voice.wav', b'fixed audio')
         scene = {'title': '信息汇聚', 'speech': '来源的信息进入当前对象', 'start': 0, 'end': 2}
         plan = {'schema': 'portal-explanation-video/v1', 'title': '固定版本'+str(n), 'audio': audio,
@@ -100,7 +100,7 @@ def rig(tmp_path, monkeypatch):
                                        'video_plan': put(f'plan{n}.json', plan)})
         if visual and authored:
             source = package(-n-100, False, False)
-            for quality in ('medium', 'high'):
+            for quality in qualities:
                 task = authoring.submit(dict(kind='explanation_video', ref=source['address'], version=source['sha256'],
                     digest=source['sha256'], author=AUTHOR, quality=quality, assets=[source]), AUTHOR)
                 media.accept_authoring(**ref, actor=AUTHOR, quality=quality, authoring_id=task['id'])
@@ -375,7 +375,7 @@ def test_http_rejection_author_notification_new_version_rereview_and_recovery(ri
         count = len(calls)
         assert request('authoring?id='+author_request['id'])['authoring']['subject']['quality'] == 'medium'
         assert len(calls) == count
-        ref = package(1)
+        ref = package(1, qualities=('high',))
         completion = {**ref, 'quality': 'medium', 'authoring_id': author_request['id']}
         with pytest.raises(HTTPError) as not_author:
             request('media/authoring', completion, CHECKER)
@@ -607,8 +607,35 @@ def test_valid_old_plan_needs_actual_author_revision_for_new_quality(rig):
     accepted = media.accept_authoring(**changed, actor=AUTHOR, quality='medium', authoring_id=task['id'])
     assert accepted['status'] == 'authored'
     assert accepted['authoring_proof']['plan_digest'] != media.plan_digest(media.context(**original, actor=AUTHOR)['plan'])
+    linked = media.status(**original, actor=AUTHOR, quality='medium')
+    assert linked['status'] == 'authored' and linked['result_target'] == changed
     media.start(**changed, actor=AUTHOR, quality='medium')
     assert done(changed, 'medium')['status'] == 'ready'
+    linked = media.status(**original, actor=AUTHOR, quality='medium')
+    assert linked['status'] == 'ready' and linked['result_target'] == changed
+    assert changed['sha256'] in linked['video_url'] and original['sha256'] not in linked['video_url']
+    assert media.status(**original, actor=AUTHOR, quality='high') is None
+    # Older completed tasks have a target-side proof but no source result link.
+    # The same authenticated completion repairs the link without touching media.
+    from management_portal import home_explanation_media as module
+    owner = module.review.AuthoringService()
+    record = owner.read(task['id'], AUTHOR); record.pop('result'); owner._save(record)
+    assert media.status(**original, actor=AUTHOR, quality='medium')['status'] == 'awaiting_authoring'
+    ctx = media.context(**changed, actor=AUTHOR, quality='medium')
+    before = copy.deepcopy(media._state(ctx, AUTHOR))
+    media.accept_authoring(**changed, actor=AUTHOR, quality='medium', authoring_id=task['id'])
+    assert media._state(ctx, AUTHOR) == before
+    assert media.status(**original, actor=AUTHOR, quality='medium')['job_id'] == before['job_id']
+    with pytest.raises(ValueError, match='另一固定结果'):
+        media.accept_authoring(**package(43, authored=False), actor=AUTHOR, quality='medium', authoring_id=task['id'])
+    read = resources.read_content
+    def denied_target(address, **kwargs):
+        if address == changed['address']: raise PermissionError('target revoked')
+        return read(address, **kwargs)
+    resources.read_content = denied_target
+    with pytest.raises(PermissionError, match='target revoked'):
+        media.status(**original, actor=AUTHOR, quality='medium')
+    resources.read_content = read
     count = len(calls)
     assert media.status(**changed, actor=AUTHOR, quality='medium')['status'] == 'ready'
     assert len(calls) == count
