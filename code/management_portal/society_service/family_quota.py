@@ -308,7 +308,7 @@ def _relay_message(facade_id: str, message_id: str, member_id: str, actor: str,
         if approved and review.get("status") not in {"waiting", "delivering"}:
             raise ValueError("该请求没有待放行的额度复核")
         if not review:
-            account = resident_account(resident_record_domain.find_resident(member_id) or {}, accounts)
+            account = resident_account(resident_record_domain.find_resident_for_admission(member_id) or {}, accounts)
             # The steward keeps its own reserve (ensure_role_reserve) and does not review itself.
             remaining = None if to_steward or to_facade else reserve_remaining(account)
             review = {"member_id": member_id, "account_id": account.get("account_id", ""),

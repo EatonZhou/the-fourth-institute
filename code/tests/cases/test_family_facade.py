@@ -940,6 +940,7 @@ def test_a_nested_family_follows_the_relay_chain_to_the_member_doing_the_work(mo
     monkeypatch.setattr(family_facade.resident_mailbox, "_groups_of", lambda *_: {})
     monkeypatch.setattr(resident_record_domain, "find_resident",
                         lambda resident_id: {"resident_id": resident_id, "title": titles.get(resident_id, "")})
+    monkeypatch.setattr(resident_record_domain, "find_resident_for_admission", resident_record_domain.find_resident)
     monkeypatch.setattr(family_facade, "is_facade", lambda record: (record or {}).get("resident_id") in links)
     monkeypatch.setattr(family_facade, "relay_links", lambda record: links.get(record["resident_id"], {}))
     monkeypatch.setattr(family_facade, "facade_configuration", lambda record: {"family_id": "fbi_outer"})
@@ -1003,6 +1004,7 @@ def test_facade_batches_only_the_page_and_reuses_nested_member_lookups(monkeypat
         return {key: {"input_state": {"state": "completed"}, "replies": []} for key in requests}
 
     monkeypatch.setattr(resident_record_domain, "find_resident", record)
+    monkeypatch.setattr(resident_record_domain, "find_resident_for_admission", record)
     monkeypatch.setattr(family_facade, "is_facade", lambda record: record.get("resident_id") in links)
     monkeypatch.setattr(family_facade, "relay_links", relays)
     monkeypatch.setattr(resident_conversation_stream, "get_repository", lambda: SimpleNamespace(
@@ -1045,6 +1047,7 @@ def test_facade_outcomes_read_each_resident_on_the_relay_path_once(monkeypatch):
         return {MEMBER: {"message_id": "input_19", "state": "completed", "updated_at": "2026-10-16T00:00:00Z"}}
 
     monkeypatch.setattr(resident_record_domain, "find_resident", record)
+    monkeypatch.setattr(resident_record_domain, "find_resident_for_admission", record)
     monkeypatch.setattr(family_facade, "is_facade", lambda record: record.get("resident_id") in links)
     monkeypatch.setattr(family_facade, "relay_links", lambda record: links.get(record["resident_id"], {}))
     monkeypatch.setattr(family_facade, "get_lineage_data_store", lambda: SimpleNamespace(
@@ -1146,6 +1149,11 @@ def test_the_facade_conversation_reads_like_a_resident_answering_its_requests(mo
     monkeypatch.setattr(resident_record_domain, "find_resident", lambda resident_id: {
         "resident_id": resident_id, "title": {first: "权限内核", second: "admin 页面"}.get(resident_id, "门面"),
     })
+    monkeypatch.setattr(resident_record_domain, "find_resident_for_admission", resident_record_domain.find_resident)
+    # This fixture represents legacy messages without a persisted identity
+    # lookup; it deliberately exercises the historical projection path.
+    from types import SimpleNamespace
+    Repository.agent_data = SimpleNamespace(chat=SimpleNamespace(message_agent_ids=lambda _: []))
     monkeypatch.setattr(family_facade, "is_facade", lambda record: (record or {}).get("resident_id") == facade_id)
     monkeypatch.setattr(family_facade, "relay_links", lambda record: links if record.get("resident_id") == facade_id else {})
     monkeypatch.setattr(family_facade, "facade_configuration", lambda record: {"family_id": "fbi_family0001"})
@@ -1512,7 +1520,8 @@ def test_withdrawing_or_stopping_a_relayed_request_reaches_the_member_doing_the_
         return {"cancelled": True}
 
     monkeypatch.setattr("management_portal.society_service.resident_record_domain.find_resident",
-                        lambda resident_id: {"resident_id": resident_id})
+                        lambda resident_id: {"resident_id": resident_id, "lineage_id": "lineage_000000000001"})
+    monkeypatch.setattr(resident_record_domain, "find_resident_for_admission", resident_record_domain.find_resident)
     monkeypatch.setattr(family_facade, "is_facade", lambda record: (record or {}).get("resident_id") in links)
     monkeypatch.setattr(family_facade, "relay_links", lambda record: links.get(record["resident_id"], {}))
     monkeypatch.setattr(execution, "lineage_of_resident", lambda _: "lineage_000000000001")

@@ -4,15 +4,15 @@ type: decision
 project: AI员工
 created_at: '2026-10-19'
 version:
-  number: 22
+  number: 23
   created_at: "2026-10-19"
   created_by:
     user: ""
     agent: "resident_4b1da6140cf2"
-  updated_at: "2026-11-05T08:13:04Z"
+  updated_at: "2026-11-05T08:55:56Z"
   updated_by:
     user: ""
-    agent: "resident_6199a7a36480"
+    agent: "resident_2e9ea0072551"
 importance: 8
 ai_generated: true
 links:
@@ -103,7 +103,7 @@ Router 分别判断执行成员与是否延续上一轮，`continue_previous` �
 
 续谈候选与关系在同一原请求下冻结；迟到消息不替换候选。额度、职责复核与失败恢复的缺省重试不抹掉已确认关系，已经按独立任务受理的请求也不能改写为续谈。显式改派沿原请求携带已确认背景；取消检查与副本幂等规则仍先于受理。成员职责、摘要、状态和纠正记录继续由 Router 按需读取，读取它们不扩大本次续谈判断范围。
 
-每条消息到达后即时触发路由，Lineage 对账作为漏送补偿，共用事件幂等键。route 和 relay 连线并行接收，Router Resident 自己按队列回答，不因另一条投递等待而丢弃后续请求。Router 模型与账号属于该 Resident 的运行设置；门面设置兼容接口读写 Router 的设置，脚本不自行调用模型。
+已保存并核验目标的定向消息（Solo、合法引用回信或确定的续接）在受理提交、原消息发布及恢复请求判定后，由 Family 转交 owner 立即原样投递到目标，不等待到达 Event、Proposal、Effect 脚本或 Router 模型。owner 使用本次真实调用身份，重新检查原消息权限、成员归属、取消、额度、附件及转交深度，沿用确定性副本 ID 和转交收据；嵌套门面逐层采用同一机制。没有确定目标的消息才触发 Router 选择；到达事件与 Lineage 对账保留为通知和漏送补偿，已提交转交不重复派发。定向尝试失败不把已持久接收的消息伪报为拒收，记录失败并保留原到达恢复路径。Router Resident 自己按队列回答，不因另一条投递等待而丢弃后续请求。Router 模型与账号属于该 Resident 的运行设置；门面设置兼容接口读写 Router 的设置，脚本不自行调用模型。
 
 ## 转交、职责缺口与低置信度
 

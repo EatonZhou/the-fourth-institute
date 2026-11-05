@@ -4,12 +4,12 @@ type: decision
 project: AI员工
 created_at: '2026-08-27'
 version:
-  number: 94
+  number: 95
   created_at: '2026-08-27'
   created_by:
     user: ''
     agent: ''
-  updated_at: '2026-11-05T07:40:47Z'
+  updated_at: '2026-11-05T08:56:52Z'
   updated_by:
     user: ''
     agent: resident_2e9ea0072551
@@ -231,7 +231,7 @@ WatchConversationEvents 的首批立即返回；每批末尾提供检查点 `{cu
 - **正常发送（`enqueue_and_trigger`）：** Resident 空闲且接单打开时立即开始处理；正在忙时按接收顺序排队，轮到后自动开始，不需要再发一条消息唤醒。执行容量、全局节流和接单开关各自生效，发送本身不增加等待或延迟。接单关闭时消息照常接收并等待，打开后推进。
 - **注入（`inject_active_turn`）：** 要求目标 Provider 支持、并且确实有正在进行的处理；Codex、Claude Code、Kimi Code、DSH 和 OpenCode 支持。只注入文字，带图片的注入消息改为下一轮处理。Provider 不支持、Resident 空闲、没有执行绑定、正在停止或正在压缩上下文时，在接收消息之前就明确拒绝，调用者可以改用正常发送。被接收的注入消息与队列中的“立即注入”（`InjectMailboxItem`）使用同一套持久回执和幂等身份：回执 `pending` 表示正在等当前处理接收，不等于已经送达；注入意图持久化时消息从普通队列转入在途输入，受理回执为 `accepted=true, injected=false, delivery_status=pending`；对话中的展示不表示执行端已经接收。如果当前处理在接收前结束，同一条消息退回普通队首，等待下一轮处理，客户端从后续队列投影和 Input state 观察结果，不重新生成消息，也不重复调用模型。为业务调用隔离的输入不能注入别的处理上下文。
 - **随下一次请求送达（`attach_to_next`）：** 用于 info 消息，只能包含消息内容，不能带引用、媒体、运行上下文或附加 Skill，也不能是授权调用的隔离输入。消息进入对话、保持 `queued`，不开始处理；下一条请求生成执行请求时，所有等待中的 info 作为背景更新放在请求正文之前一起送达，之后记为 `completed`。每个 Resident 最多积压 200 条，超过时拒绝。
-- **Family 门面接受和任何 Resident 一样的消息内容。** 门面不执行，请求等待 Family Router 转交。请求可以带图片、文件和引用：门面收到时按发送者检查每个附件和引用（只能发送自己上传的附件，工作区路径须在门面的 Workspace 内），不通过的整条拒收；info 消息和发给任何 Resident 的 info 一样只包含消息内容。Router 原样（`content_parts` 不变）转交时，成员按原发送者的权限读取其中的附件和引用，如同发送者直接发给它；消息带 `quote` 时，被引用的是承接成员自己的回复或它承接过的请求，转交副本的 `quote` 指向成员对话中的那条消息，否则只保留作者和摘录；转交时改动了消息的，按转交者自己的权限读取。成员读不了的附件照常被拒绝（图片要求 `accepts_images`，文件要求 `accepts_files`）。`inject_active_turn`、授权调用的隔离输入，以及门面所属 steward 发来的消息仍被拒绝（decision_44cf587c1721）。
+- **Family 门面接受和任何 Resident 一样的消息内容。** 门面不执行；平台已核实明确目标时，受理后通过转交 owner 直接投递，不等待路由事件或 Router 模型；需要选择目标的请求才等待 Family Router。请求可以带图片、文件和引用：门面收到时按发送者检查每个附件和引用（只能发送自己上传的附件，工作区路径须在门面的 Workspace 内），不通过的整条拒收；info 消息和发给任何 Resident 的 info 一样只包含消息内容。Router 原样（`content_parts` 不变）转交时，成员按原发送者的权限读取其中的附件和引用，如同发送者直接发给它；消息带 `quote` 时，被引用的是承接成员自己的回复或它承接过的请求，转交副本的 `quote` 指向成员对话中的那条消息，否则只保留作者和摘录；转交时改动了消息的，按转交者自己的权限读取。成员读不了的附件照常被拒绝（图片要求 `accepts_images`，文件要求 `accepts_files`）。`inject_active_turn`、授权调用的隔离输入，以及门面所属 steward 发来的消息仍被拒绝（decision_44cf587c1721）。
 - **发给用户。** 给出 `user_id` 时，调用者必须是 Resident，`activation_policy` 只能省略或为 `enqueue_and_trigger`，`content_parts` 只包含文字和资源引用（`text`、`resource_reference`），并且有非空文字。消息不进入任何队列，也不开始工作：它以发送方的身份写入发送方自己的对话，`role` 为 `agent`，没有 `reply_to_message_id`，立即显示，`recipients` 记录这位用户；发送方在 Family 内时，按下一条规则写入门面的对话，以门面身份发出（decision_44cf587c1721）。收件用户必须能查看这段对话，否则以无权限拒绝。省略 `message_id` 并带幂等键时，ID 由收件用户、调用者和幂等键推导，重试得到同一条消息；同一 ID 换了正文返回冲突。结果中的 `resident_id` 是消息所在的对话（发送方或门面），`sender_id` 是实际署名，`recipients` 是收件人，`input_state` 为空对象。用户的 Mailbox 把发给自己、尚未读的消息算作未读（decision_15f7df737ed5）；用户在这段对话中回复，回复是发给这个 Resident 或门面的普通消息。给 Resident 和给用户发消息使用同一条指令，不另设通道。
 - **Family 内的成员或 steward 发给 Family 外的 Resident 时，以门面身份发出。** 署名的门面是包含发送者、但不包含收件方的最外层 Family 的门面；来源的 `sender` 记为门面，`initiated_by` 记为实际发出者。发送者自己必须能向收件方发消息，门面不替它取得权限；门面本身也要通过对收件方的检查。消息带的附件和引用按发送者本人的权限核对和读取：只能带发送者自己上传的附件，门面或别人上传的不行；只有平台代发的这次投递如此，门面以成员为发起者的其他操作仍按门面自己的权限。发到另一个 Family 的门面时，那边的 Router 原样转交，成员同样按这位发送者的权限读取，前提是署名的门面仍代表它。门面对话同时记下一条门面署名、`role` 为 `agent`、`recipients` 写明收件 Resident、正文相同的消息（记录的消息 ID 由门面和投递的消息 ID 推导，重试不重复记录）。门面 Chat 把这条记录显示为一行“发给 <收件 Resident> · 由 <实际发出者> 发出”，点开才显示正文；发给用户的消息照常展开，也不把这条记录当作最新回复展开。结果中的 `sender_id` 是门面。以下情况保留本人身份：Family 内部互发（包括成员发给自己的门面）；Family Router 带转交标注的投递；授权调用的隔离输入；收件方最近一次亲自（不经门面转交）写信的对象是发送者本人。收件方最近写给某个内层门面时，以那个内层门面发出；最近写给外层门面或从没亲自写过时，以最外层门面发出。Fork 复制来的历史早于新 Resident 的创建，不算收件方写给它。
 - **回复不自动送回发送者。** 收到消息的一方是否回复、回复给谁，由它自己决定；发送者记在来源 `origin.sender`，代为发起者记在 `initiated_by`，需要回复时用 `DeliverMessage` 发给对方。消息来自 Resident 时，收件方每轮的提示写明：本轮回复只留在它自己的对话里，不会自动送回发送者，要让发送者收到须用 `DeliverMessage` 发给它。回复 Family 门面代成员发来的消息时，平台把回复和那条消息关联起来，门面直接交给写它的成员：在处理那条消息的一轮里发给这个门面，自动引用门面的发件记录（那一轮处理的消息中恰有一条来自这个门面时）；以后的轮次用 `reply_to_message_id` 指明。这类消息的包装带一段 `<reply-hint>`，写明这两种回复方式和要填的消息 ID。

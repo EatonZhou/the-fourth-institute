@@ -538,7 +538,7 @@ def relay_source_of(member_id: str, member_message_id: str) -> tuple[str, str] |
     )
     if source is None:
         return None
-    facade = resident_record_domain.find_resident(source[0])
+    facade = resident_record_domain.find_resident_for_admission(source[0])
     if not is_facade(facade):
         return None
     link = relay_links(facade).get(source[1]) or {}
@@ -593,7 +593,7 @@ class _RelayBatch:
     def record(self, resident_id: str) -> dict[str, Any]:
         from . import resident_record_domain
         if resident_id not in self.records:
-            self.records[resident_id] = resident_record_domain.find_resident(resident_id) or {}
+            self.records[resident_id] = resident_record_domain.find_resident_for_admission(resident_id) or {}
         return self.records[resident_id]
 
     def member_view(self, resident_id: str) -> dict[str, str]:
@@ -998,10 +998,17 @@ def relayed_reply(facade: Mapping[str, Any], message_id: str) -> dict[str, Any] 
     if not clean:
         return None
     repository = resident_conversation_stream.get_repository()
+    found = _reply_by_source(facade, clean, repository)
+    if found is not None:
+        return found
+    # Historical inputs can lack relay marks. Preserve their projection,
+    # sharing graph facts across requests rather than hydrating every path.
     carried: dict[str, dict[str, tuple[str, str, list[str]]]] = {}
-    for request_id, link in relay_links(facade).items():
+    links = relay_links(facade)
+    batch = _RelayBatch(links)
+    for request_id, link in links.items():
         member_id = str(link.get("resident_id") or "")
-        via, (worker_id, worker_message_id) = relay_holder(member_id, str(link.get("message_id") or ""))
+        via, (worker_id, worker_message_id) = batch.holders[request_id]
         carried.setdefault(worker_id, {})[worker_message_id] = (request_id, member_id, via)
     # A message lives in one Conversation: each Resident doing the Family's work is read once.
     for worker_id, requests in carried.items():
@@ -1021,6 +1028,72 @@ def relayed_reply(facade: Mapping[str, Any], message_id: str) -> dict[str, Any] 
         return {"request_message_id": request_id, "member_id": member_id, "worker_id": worker_id,
                 "via": via, "reply": reply}
     return None
+
+
+def _reply_by_source(facade, message_id, repository):
+    """Invert one reply's durable relay chain, without visiting other requests.
+
+    An identity lookup only finds candidates. Every edge must be both the
+    input's stored mark and the facade's current accepted relay. Reassignment
+    therefore cannot make an old worker's output belong to the new worker.
+    """
+    facade_id = resident_lineage.resident_id(facade)
+    matches = []
+    owners = repository.agent_data.chat.message_agent_ids(message_id)
+    if len(owners) != 1:
+        # Repeated identities across Chats retain the ledger's original
+        # ordering; a global candidate lookup must not choose their owner.
+        return None
+    for worker_id in owners:
+        reply = repository.message(worker_id, message_id)
+        if not reply or reply.get("role") != "agent":
+            continue
+        reply_to = str(reply.get("reply_to_message_id") or "")
+        if not reply_to:
+            continue
+        members = resident_mailbox.members_of({"resident_id": worker_id}, reply_to)
+        if members:
+            # Mixed legacy/current marks in a shared group cannot establish
+            # the ledger's chosen request from just one reverse chain.
+            return None
+        current = (worker_id, reply_to)
+        via = []
+        seen = {current}
+        for _ in range(MAX_RELAY_HOPS):
+            source = _reply_relay_source(*current, repository)
+            if source is None or source in seen:
+                break
+            seen.add(source)
+            if source[0] == facade_id:
+                matches.append({"request_message_id": source[1], "member_id": current[0],
+                                "worker_id": worker_id, "via": list(reversed(via)), "reply": reply})
+                break
+            via.append(source[0])
+            current = source
+    return matches[0] if len(matches) == 1 else None
+
+
+def _reply_relay_source(member_id, input_id, repository):
+    from management_common.json_columns import json_value
+    from . import resident_record_domain
+
+    source = parse_relay_mark(repository.message_business_ref(member_id, input_id))
+    if source is None:
+        return None
+    record = resident_record_domain.find_resident_for_admission(source[0])
+    if not is_facade(record):
+        return None
+    # Read exactly one ledger edge, not the complete historical JSON document.
+    with get_lineage_data_store().database.read() as connection:
+        row = connection.execute(
+            "SELECT relay_json::jsonb #> %s::text[] AS link FROM family_relays "
+            "WHERE lineage_id=%s AND resident_id=%s",
+            (["links", source[1]], resident_lineage.lineage_id(record), source[0]),
+        ).fetchone()
+    link = json_value(row["link"]) if row and row["link"] is not None else {}
+    if not isinstance(link, Mapping):
+        return None
+    return source if (link.get("resident_id"), link.get("message_id")) == (member_id, input_id) else None
 
 
 def projection_targets(event: Mapping[str, Any]) -> list[str]:
@@ -1153,7 +1226,7 @@ def _facade_reply(
 def _member_view(resident_id: str) -> dict[str, str]:
     from . import resident_record_domain
 
-    record = resident_record_domain.find_resident(resident_id) or {}
+    record = resident_record_domain.find_resident_for_admission(resident_id) or {}
     return {"title": str(record.get("title") or "")}
 
 
@@ -1331,7 +1404,7 @@ def _can_take(member_id: str, message: Mapping[str, Any]) -> bool:
     from . import resident_execution_provider
     from . import resident_record_domain
 
-    record = resident_record_domain.find_resident(member_id)
+    record = resident_record_domain.find_resident_for_admission(member_id)
     if not record or record.get("deleted_at"):
         return False
     capabilities = resident_execution_provider.provider_for(record).capabilities

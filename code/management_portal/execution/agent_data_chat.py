@@ -230,6 +230,25 @@ class ChatReads:
     def __init__(self, database: Any) -> None:
         self.database = database
 
+    def message_agent_ids(self, message_id: str) -> list[str]:
+        """Candidate Chats for an exact identity, never proof of visibility.
+
+        Callers must read the message through the Chat owner afterwards:
+        resets, transformed inputs and stale projection marks still apply.
+        The identity index avoids walking the Chats or their message history.
+        """
+        clean = str(message_id or "").strip()
+        if not clean:
+            return []
+        with self.database.read() as connection:
+            rows = connection.execute(
+                "SELECT DISTINCT agent.agent_id FROM chat_message_positions position "
+                "JOIN agents agent ON agent.trace_sequence_id=position.sequence_id "
+                "WHERE position.message_id=%s AND position.source_kind<>'sync' "
+                "ORDER BY agent.agent_id", (clean,),
+            ).fetchall()
+        return [str(row["agent_id"]) for row in rows]
+
     def chat_traces(self, agent_ids: Sequence[str]) -> dict[str, str]:
         """Each Agent's trace, its message projection current; an Agent that never had one is left out.
 

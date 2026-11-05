@@ -897,7 +897,11 @@ def _deliver_to_facade(
     if existing_resident_delivery(record_id, facade_item):
         if request.lending is not None:
             request.lending.replay(record_id, facade_message_id)
-        invariant_locks.defer_until_state_unlock(lambda: family_recovery.handle(record, facade_message_id))
+        def resume_facade():
+            if not family_recovery.handle(record, facade_message_id):
+                from . import family_direct_delivery
+                family_direct_delivery.resume(record, facade_message_id, request.actor_id)
+        invariant_locks.defer_until_state_unlock(resume_facade)
         return _receipt(request, deferred_delivery=True)
 
     from .state_store import get_lineage_data_store
@@ -913,9 +917,12 @@ def _deliver_to_facade(
     def publish_for_router() -> None:
         # Infos that came before this request are shown with it.
         resident_held_infos.release_with(record, facade_message_id)
-        # Its sender sees it at once; the Router still chooses a member.
+        # Show the accepted request before delivering it; only unaddressed
+        # requests need the Router to choose a member.
         family_facade.show_request(request.resident_id, facade_message_id)
-        family_recovery.handle(record, facade_message_id)
+        if not family_recovery.handle(record, facade_message_id):
+            from . import family_direct_delivery
+            family_direct_delivery.resume(record, facade_message_id, request.actor_id)
 
     invariant_locks.defer_until_state_unlock(publish_for_router)
     invariant_locks.defer_until_state_unlock(
