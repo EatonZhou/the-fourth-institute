@@ -150,7 +150,7 @@ def _commit_switch_result(record, message_id, *, expected_pending=None, **values
         current = resident_record_domain.find_resident(record["resident_id"])
         if not current or (expected_pending is not None and recovery_entry(current, message_id).get("pending_restart") != expected_pending):
             return
-        explicit = (current.get("execution_settings") or {}).get("auto_switch_on_quota") is True
+        explicit = family_quota.quota_switch_policy(current) is True
         before = family_quota.quota_switch_state(current, execution_gate=gate) if explicit else {}
         if not explicit:
             values.pop("switch_reason", None)
@@ -166,7 +166,7 @@ def _restart_quota_recovery(record, message_id, payload):
     try:
         resident_domain_port.restart_resident_session(rid, rid, payload, portal_reason="steward_quota_recovery")
     except Exception as error:
-        if ((record.get("execution_settings") or {}).get("auto_switch_on_quota") is not True
+        if (family_quota.quota_switch_policy(record) is not True
                 or not family_quota.definitive_migration_failure(error)):
             raise
         _commit_switch_result(record, message_id, expected_pending=payload, pending_restart=None, switch_reason="migration_failed")
@@ -257,7 +257,8 @@ def _reconcile_failed_work(residents: list[dict[str, Any]], context: dict[str, A
                 ))
             changed += 1
         elif usage and can_migrate:
-            explicit = (record.get("execution_settings") or {}).get("auto_switch_on_quota") is True
+            from . import family_quota
+            explicit = family_quota.quota_switch_policy(record) is True
             if explicit and recovery.get("switch_reason") == "migration_failed":
                 continue
             switches = int(recovery.get("switch_attempts") or 0)

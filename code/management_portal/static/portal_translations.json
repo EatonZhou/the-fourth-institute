@@ -1,4 +1,6 @@
 {
+  "正在切换 AI 后端": {"zh-CN": "正在切换 AI 后端", "en": "Switching AI backend"},
+  "额度自动切换由 Family 设置管理": {"zh-CN": "额度自动切换由 Family 设置管理", "en": "Quota auto-switching is managed in Family settings"},
   "全屏观看": {"zh-CN":"全屏观看","en":"Watch fullscreen"},
   "退出全屏": {"zh-CN":"退出全屏","en":"Exit fullscreen"},
   "播放位置": {"zh-CN":"播放位置","en":"Playback position"},
@@ -41599,6 +41601,18 @@
   "视频": {
     "zh-CN": "视频",
     "en": "Video"
+  },
+  "Family 默认策略；成员明确设置的开关优先。未自定义排序时使用站点“默认帐号选择排序”。": {
+    "zh-CN": "Family 默认策略；成员明确设置的开关优先。未自定义排序时使用站点“默认帐号选择排序”。",
+    "en": "Family default policy; explicit member settings take precedence. Without a custom order, use the site's default account order."
+  },
+  "已自定义 Family 排序；成员明确设置的开关优先。": {
+    "zh-CN": "已自定义 Family 排序；成员明确设置的开关优先。",
+    "en": "Custom Family order; explicit member settings take precedence."
+  },
+  "使用站点默认帐号选择排序；保存下方顺序后改为 Family 自定义排序。": {
+    "zh-CN": "使用站点默认帐号选择排序；保存下方顺序后改为 Family 自定义排序。",
+    "en": "Using the site's default account order. Save the order below to set a custom Family order."
   },
   "音频": {
     "zh-CN": "音频",

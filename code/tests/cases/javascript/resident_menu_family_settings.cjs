@@ -90,7 +90,12 @@ test('automatic switching lists only subscriptions until the user allows another
   assert.deepEqual([...root.querySelectorAll('[data-priority-allow]')].map(node=>node.dataset.priorityAllow),['kimi:service','codex:api_profile:openai']);
   root.querySelector('[data-priority-save]').click();
   for(let i=0;i<5;i++)await new Promise(resolve=>setImmediate(resolve));
-  assert.deepEqual(saved,[],'the default order stores no explicit kinds');
+  assert.deepEqual(saved,['claude:subscription_login','codex:subscription_login'],'saving the preview explicitly customizes the Family order');
+  details.open=true;
+  root.querySelector('[data-priority-default]').click();
+  root.querySelector('[data-priority-save]').click();
+  for(let i=0;i<5;i++)await new Promise(resolve=>setImmediate(resolve));
+  assert.deepEqual(saved,[],'restore default follows the site order instead of persisting the preview');
   details.open=true;
   root.querySelector('[data-priority-allow="codex:api_profile:openai"]').click();
   assert.deepEqual(listed(),['Claude Code · 订阅','Codex · 订阅','Codex · API（openai）']);

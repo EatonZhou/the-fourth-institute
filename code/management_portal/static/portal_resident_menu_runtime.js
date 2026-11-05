@@ -67,7 +67,13 @@
             const focus = root.contains(document.activeElement) ? document.activeElement?.dataset.menuRuntime : null;
             root.innerHTML = rows.map(([label, value]) => window.PortalI18n.html`<button class="residentMenuSetting" type="button" data-menu-runtime="${label}" aria-haspopup="dialog" ${disabled ? "disabled" : ""}><span>${label}</span><strong>${esc(value)}</strong><span aria-hidden="true">›</span></button>`).join("");
             const quotaSwitch = view.quotaSwitch;
-            if (typeof quotaSwitch?.auto_switch_on_quota === "boolean") {
+            const facade = context.node?.family?.role === "facade" || view.detail?.resident?.family?.role === "facade"
+              || !!view.detail?.family_facade?.family_id;
+            if (facade) {
+              const note = document.createElement("p");
+              note.textContent = window.PortalI18n.t("额度自动切换由 Family 设置管理"); root.append(note);
+            }
+            if (!facade && typeof quotaSwitch?.auto_switch_on_quota === "boolean") {
               const row = document.createElement("div"); row.className = "familyAutoMigrateSetting";
               const label = document.createElement("span"); label.textContent = window.PortalI18n.t("在当前帐号额度用完时是否自动切换");
               const toggle = document.createElement("button"); toggle.type = "button";

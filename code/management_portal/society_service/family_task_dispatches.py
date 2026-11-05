@@ -18,6 +18,23 @@ class FamilyTaskTargetChanged(ValueError):
     """The role changed after the caller captured its task intent."""
 
 
+def request_tasks(facade, message_ids):
+    """Read exact role-task owners for these requests, without dispatching them."""
+    if not message_ids:
+        return []
+    from management_common.json_columns import json_value
+    from .state_store import get_lineage_data_store
+    with get_lineage_data_store().database.read() as connection:
+        rows = connection.execute(
+            "SELECT message_id, intent_json FROM family_task_dispatches WHERE lineage_id=%s "
+            "AND intent_json->'request'->>'facade'=%s "
+            "AND intent_json->'request'->'facts'->>'message_id'=ANY(%s)",
+            (facade['lineage_id'], facade['resident_id'], list(message_ids)),
+        ).fetchall()
+    return [{"message_id": row["message_id"], **json_value(row["intent_json"])["request"]}
+            for row in rows]
+
+
 def accepted_receipt(facade_id, target_id, trigger, message_id, *, family_id, facts):
     """Verify a persisted dispatch and intake receipt without admitting it again."""
     from management_common.json_columns import json_value

@@ -134,7 +134,7 @@ LAYERS = (
     """,
     # Family, template, Function Block, Project and principal operations.
     """
-    family_progress family_quota family_reassign family_resource_projection family_supervision
+    family_progress family_quota family_quota_projection family_reassign family_resource_projection family_supervision
     family_task_dispatches function_block_domain lineage_resident_operations principal_hierarchy_domain
     project_domain resident_domain templates templates.builtins templates.explore templates.familize
     templates.kinds templates.prompt templates.registry templates.rewrite templates.script templates.store
@@ -152,6 +152,8 @@ LAYERS = (
 LAYER = {name: row for row, names in enumerate(LAYERS) for name in names.split()}
 
 UPWARD = {
+    ("resident_protocol", "family_quota_projection"):
+        "conversation controls compose read-only quota state of durable Family request owners",
     ("lineage_data_executions", "resident_execution_links"):
         "admitting an Execution links the trigger path steps of its inputs in the same transaction",
     ("lineage_data_mailbox", "state_store"):

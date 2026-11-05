@@ -382,11 +382,26 @@ def _finish_relay(facade, message_id, member_id, delivered_id, repository):
         return dict(review["result"])
 
 
+def quota_switch_policy(record: dict) -> bool | None:
+    """Resident override, then its direct Family default; None is legacy intent."""
+    explicit = (record.get("execution_settings") or {}).get("auto_switch_on_quota")
+    if type(explicit) is bool:
+        return explicit
+    family = record.get("family") or {}
+    if family.get("role") in {"member", "router", "steward"} and not family_facade.is_facade(record):
+        with get_lineage_data_store().database.read() as connection:
+            row = connection.execute("SELECT auto_migrate FROM families WHERE family_id=%s AND deleted_at IS NULL",
+                                     (family["family_id"],)).fetchone()
+        if row:
+            return bool(row["auto_migrate"])
+    return None
+
+
 def auto_migration_enabled(record: dict) -> bool:
     """Explicit Resident intent wins; absent intent retains the existing policy."""
     if record.get("deleted_at") or family_facade.is_facade(record):
         return False
-    explicit = (record.get("execution_settings") or {}).get("auto_switch_on_quota")
+    explicit = quota_switch_policy(record)
     if type(explicit) is bool:
         return explicit
     from .resident_default_backend import selection_mode
@@ -395,31 +410,25 @@ def auto_migration_enabled(record: dict) -> bool:
         return False
     if mode == "auto" and not record.get("deleted_at"):
         return True
-    family = record.get("family") or {}
-    if family.get("role") not in {"member", "router", "steward"} or record.get("deleted_at"):
-        return False
-    with get_lineage_data_store().database.read() as connection:
-        row = connection.execute("SELECT auto_migrate FROM families WHERE family_id=%s AND deleted_at IS NULL",
-                                 (family["family_id"],)).fetchone()
-    return bool(row and row["auto_migrate"])
+    return False
 
 
 def auto_migration_priority(record: dict) -> list[str]:
-    """Use the site role for automatic selection, otherwise the explicit Family policy."""
+    """Explicit switch uses site order; otherwise preserve a direct Family's custom order."""
     from .resident_default_backend import selection_mode, selection_priority
     if (record.get("execution_settings") or {}).get("auto_switch_on_quota") is True:
         # The explicit switch uses the site default, never a named role's or
         # Family's order. selection_priority already handles a missing default.
         return selection_priority({"execution_settings": {"backend_role": "default"}})
-    if selection_mode(record) == "auto":
-        return selection_priority(record)
     family = record.get("family") or {}
     if family.get("role") not in {"member", "router", "steward"} or record.get("deleted_at"):
-        return []
+        return selection_priority(record) if selection_mode(record) == "auto" else []
     with get_lineage_data_store().database.read() as connection:
         row = connection.execute("SELECT auto_migrate_priority FROM families WHERE family_id=%s AND deleted_at IS NULL",
                                  (family["family_id"],)).fetchone()
-    return list(row["auto_migrate_priority"]) if row else []
+    if row:
+        return list(row["auto_migrate_priority"]) or selection_priority({"execution_settings": {"backend_role": "default"}})
+    return selection_priority(record) if selection_mode(record) == "auto" else []
 
 
 def _follow_facade_quota_release(record: dict[str, Any], facade: dict[str, Any]) -> dict[str, Any]:
@@ -624,7 +633,7 @@ def _ensure_quota_switch(record: dict[str, Any], accounts: list[dict[str, Any]] 
     with resident_record_domain.state_lock(rid), get_lineage_data_store().family_quota_migrations.transaction(record["lineage_id"], rid) as state:
         current = resident_record_domain.find_resident(rid)
         if (not current or not _intake_allows_recovery(current)
-                or (current.get("execution_settings") or {}).get("auto_switch_on_quota") is not True
+                or quota_switch_policy(current) is not True
                 or resident_account(current, accounts).get("account_id") != account["account_id"]
                 or auto_migration_priority(current) != priority):
             return False
@@ -647,6 +656,7 @@ def _ensure_quota_switch(record: dict[str, Any], accounts: list[dict[str, Any]] 
             if not payload and state.get("switch_reason") != "migration_failed":
                 target = fallback_account(accounts, str(account["provider"]), str(account.get("backend_route_id") or ""),
                                           state["tried_accounts"], priority=priority, priority_only=True,
+                                          subscription_only=bool((current.get("family") or {}).get("role")),
                                           model=(current.get("execution_settings") or {}).get("model", ""),
                                           effort=(current.get("execution_settings") or {}).get("reasoning_effort", ""))
                 if target:
@@ -714,6 +724,11 @@ def ensure_role_reserve(record: dict[str, Any], accounts: list[dict[str, Any]] |
             return True
     account = resident_account(record, accounts)
     migration = role_migration(record)
+    # Family reserve headroom remains preventive. Confirmed exhaustion uses
+    # the same Scheduler gate and durable handoff as an explicit Resident switch.
+    reserve = (account or {}).get("quota_reserve") or {}
+    if quota_switch_policy(record) is True and reserve.get("fresh") and reserve.get("used_up"):
+        return _ensure_quota_switch(record, accounts)
     if not account:
         reason = "尚未配置可用的 AI 账号；请在设置中连接 AI 并设为默认。原任务已保留，配置后将自动继续。"
         if record.get("backend_route_id"):
@@ -924,7 +939,7 @@ def reconcile_role_reserves(residents: list[dict[str, Any]] | None = None) -> in
         job = resident_execution_work.read(record)
         if (resident_execution_work.is_active(job)
                 and (resident_execution_work.can_preserve_for_session_restart(job) or
-                     ((record.get("execution_settings") or {}).get("auto_switch_on_quota") is True
+                     (quota_switch_policy(record) is True
                       and job.get("status") != "running"))
                 and not job.get("stop_requested_at")):
             roles.append(record)

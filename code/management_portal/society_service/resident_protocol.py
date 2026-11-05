@@ -100,10 +100,14 @@ def _conversation_controls(
     active_message_id = str(state.get("active_message_id") or "")
     closed = state.get("intake_state") == "closed"
     from . import family_quota
-    quota_switch = family_quota.quota_switch_state(
-        target.record, execution_gate=state.get("execution_gate") or {},
-    )
-    if closed or not allowed:
+    if family_facade.is_facade(target.record):
+        from . import family_quota_projection
+        quota_switch = {"targets": []} if closed or not allowed else family_quota_projection.quota_switch(target.record, actor)
+    else:
+        quota_switch = family_quota.quota_switch_state(
+            target.record, execution_gate=state.get("execution_gate") or {},
+        )
+    if (closed or not allowed) and not family_facade.is_facade(target.record):
         quota_switch = {**quota_switch, "state": "unavailable", "reason": "manual" if closed else "forbidden", "message": ""}
     stop_allowed = allowed
     if target.record.get("personal_owner_id"):

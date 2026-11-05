@@ -143,7 +143,7 @@ Steward 自己失败、收不到恢复任务、恢复后仍不能接单，或显
 | --- | --- |
 | 业务成员 | RelayFamilyMessage 在直达、引用直交、模型选人后统一检查五小时、周等所有新鲜窗口的最低剩余额度；低于 5% 时保存复核记录，原请求留在门面，派发 quota 给 Steward。恰好 5% 不触发该复核；未知不当作零 |
 | 业务成员、Router、Steward | auto_migrate 开启且有待执行原输入时，在实际执行入口检查真实绑定账号；任一新鲜额度窗口不高于 5%，或按量余额耗尽时，平台寻找安全备用账号。空闲时不查询额度或迁移。resident.state_changed(intake) 与每分钟 timer 只经 CheckFamilyRoleAvailability 维护接单，不再设置额度 Watch |
-| 备用账号 | 已登记、观测新鲜、可用，所有已知额度窗口严格高于 5%；按量后端有确认的正余额。自动切换只在订阅账号之间进行：服务账号和 API 只有在用户把该种类列入 Family.auto_migrate_priority，或与原账号同种类时才可选。优先同账号种类的安全备用账号；同种类不可用时按 auto_migrate_priority 选择，未列出的订阅种类补在末尾，默认按 Claude Code、Codex、Kimi Code 排序 |
+| 备用账号 | 已登记、观测新鲜、可用，所有已知额度窗口严格高于 5%；按量后端有确认的正余额。自动切换只在订阅账号之间进行：服务账号和 API 只有在用户把该种类列入 Family.auto_migrate_priority，或与原账号同种类时才可选。优先同账号种类的安全备用账号；同种类不可用时按有效排序选择：成员显式开启使用站点 default.backend_priority，否则非空 auto_migrate_priority 优先，空数组使用站点默认 |
 
 **门面的人工额度放行覆盖 Router 与 Steward。** 有人在门面上人工打开接单时记录的额度放行（`quota_reserve_override`），由平台同步给本 Family 的 Router 和 Steward：每个角色以自己的 binding（`resident:<角色 ID>`）和递增的 revision 写入同一份三字段放行，并交给 Execution Scheduler；门面停用放行时同样同步为停用。门面没有放行记录时不改动角色自己的设置。同步发生在平台每次维护角色接单时，Family 暂停期间也照常同步。
 
@@ -151,17 +151,21 @@ Steward 自己失败、收不到恢复任务、恢复后仍不能接单，或显
 
 **Router、Steward 找不到账号时由门面管理者选择。** 角色的额度经新鲜读数确认不足，且找不到安全账号或迁移次数已用完时，平台除了向 Family 创建人发送 Lineage 通知，还以门面名义在门面对话里发一组问题卡片（`family_role_quota_questions`），写明角色、账号、剩余额度、预计重置时间和等待中的工作数，选项为“用当前账号的 credits 继续”“等额度重置”“我去补账号”。每个额度窗口只发一次；额度读数未知或过期时不发。门面管理者都能回答：回答留在门面对话里，标为已完成，不交给 Router；DeliverMessage 随后执行选择——选择 credits 继续时，以回答者自己的门面管理权对门面做人工放行，Router、Steward 按上段同步后继续运行；选择等待只回复确认；选择补账号回复首页 AI 账号入口。执行结果作为门面消息写回对话。角色恢复安全账号或进入新的额度窗口时，未回答的卡片关闭。业务成员仍按原方式通知创建人。
 
-所有 Resident 都受 ExecutionService 的通用额度准入保护；该调度门槛取自账号配置，区别于 Family 的 5% 预防线。底层账号额度观测仍维护新鲜快照；取消的是额外的运行图 usage 轮询。自动转组以本 Family 的 auto_migrate 为准，默认开启；成员的直接工作流输入也经过执行前检查。业务额度复核由本 Family Steward 在该策略内决定是否迁移；核对迁移完成后用 quota_reviewed=true 和理由放行原请求，仍检查取消及附件权限。
+所有 Resident 都受 ExecutionService 的通用额度准入保护；该调度门槛取自账号配置，区别于 Family 的 5% 预防线。底层账号额度观测仍维护新鲜快照；取消的是额外的运行图 usage 轮询。自动转组先读取执行者 execution_settings.auto_switch_on_quota 的显式布尔值；未设置时继承直属 Family.auto_migrate，默认开启。内层门面不执行模型，内层成员、Router、Steward 使用内层 Family 默认，不借用外层策略；成员的直接工作流输入也经过执行前检查。业务额度复核由本 Family Steward 在该策略内决定是否迁移；核对迁移完成后用 quota_reviewed=true 和理由放行原请求，仍检查取消及附件权限。
 
 首次安装尚未配置默认 AI，或持续角色绑定的账号已不存在时，Router、Steward 的已受理输入保持待执行。后台把账号缺失保存为 `family_quota_migrations.account_wait`，角色可用性显示账号配置提示；不会将它记成 coordinator 故障、消耗额度迁移次数或选择其他账号。其他 Resident 和 Lineage 仍按各自状态恢复。后续扫描观察到账号后，仅移除这项等待标记，再执行原有额度保护；既有额度事故与迁移记录继续保留，取消、停止及已准入工作维持原语义。尚未绑定的角色按当前默认 Backend 的实际 Provider 和账号查询额度，支持默认 AI 从 Codex 占位配置切换到其他 Provider。
 
-Family 执行成员迁移沿用账号策略和 Restart 领域，跨 Provider 或跨账号种类显式选择目标账号当前默认 model，使用 compact 交接上下文；已准入工作先完成，未准入 job、消息与发送者跨迁移保留。family_quota_migrations 持久保存账号窗口、尝试次数、已试账号、幂等迁移意图和通知去重；同一账号窗口最多尝试两个备用账号。角色已迁离原 Lineage 的旧记录不能再启动迁移；未知或过期观测不能清除已登记的不可用状态。
+Family 执行成员迁移沿用账号策略和 Restart 领域，跨 Provider 或跨账号种类显式选择目标账号当前默认 model，使用 preserve 保留上下文；已准入工作先完成，未准入 job、消息与发送者跨迁移保留。family_quota_migrations 持久保存账号窗口、尝试次数、已试账号、幂等迁移意图和通知去重；5% 预防性迁移在同一账号窗口最多尝试两个备用账号；确认耗尽后的共享切换按有效排序逐个尝试，保存失败原因并在无候选或无法保留上下文时等待人工选择。角色已迁离原 Lineage 的旧记录不能再启动迁移；未知或过期观测不能清除已登记的不可用状态。
 
 门面菜单的 Family 页签提供“额度不足时自动转组”，通过 `UpdateFamily(auto_migrate=bool)` 保存。所有现有和新建 Family 默认开启。关闭后停止新的自动迁移，包括 quota failure 恢复中的换账号；原任务和队列仍等待原账号恢复，额度保护继续有效。已开始的生命周期迁移可完成；不撤销人工操作。Steward 每轮任务带开关事实，行动前按 GetLineage 重读；人工暂停、取消、已完成输入和迁移幂等边界保持不变。没有确定证据区分取消原因时，不将历史 cancelled 输入自动恢复。
 
 ### 账号种类优先级
 
-门面 Menu → Settings 在自动转组开关下提供可展开的“账号种类优先级”；Family Function Block 使用同一编辑器。列表只含订阅种类；服务账号和 API 种类列在下方，用户点“允许自动切换”后才加入列表参与排序，“不再允许”将其移出。上下移动后保存，取消不写入；恢复默认需要保存确认。通过 UpdateFamily(auto_migrate_priority=[...]) 保存到本 Family，空数组表示只用订阅、按默认顺序；列入数组的非订阅种类就是用户的明确允许。此策略同时适用于业务成员、Router 和 Steward 的执行前检查、额度失败恢复与 Steward 迁移判断；关闭 auto_migrate 仍阻止新的自动迁移。
+门面是统一操作入口，实际切换目标为原请求的成员、Router 或 Steward，门面没有模型 Session。成员显式 execution_settings.auto_switch_on_quota 优先；未设置时继承直属 Family.auto_migrate。嵌套执行者使用内层默认。Family 非空 auto_migrate_priority 保留，空数组跟随站点 default.backend_priority；成员显式开启时使用站点默认顺序。恢复默认保存空数组，保存列表则设为自定义顺序。
+
+确认额度耗尽后的自动切换和失败恢复复用普通 Resident 的 Scheduler 准入、持久迁移意图和 preserve 会话迁移。5% 预防性迁移继续有效。关闭或无候选时，门面仅沿尚未完成的真实请求关联显示阻塞执行者，按该执行者的当前管理权限打开现有账号卡；未知、过期额度及其他故障不触发手选卡。多请求保留各自目标与原输入，内层门面继续沿实际转交链定位，不能任取后台成员。
+
+门面 Menu → Settings 在自动转组开关下提供可展开的“账号种类优先级”；Family Function Block 使用同一编辑器。列表只含订阅种类；服务账号和 API 种类列在下方，用户点“允许自动切换”后才加入列表参与排序，“不再允许”将其移出。上下移动后保存，取消不写入；恢复默认需要保存确认。通过 UpdateFamily(auto_migrate_priority=[...]) 保存到本 Family，空数组表示跟随站点 default.backend_priority；保留非空数组的既有自定义排序；列入数组的非订阅种类就是用户的明确允许。此策略同时适用于业务成员、Router 和 Steward 的执行前检查、额度失败恢复与 Steward 迁移判断；关闭 auto_migrate 仍阻止新的自动迁移。
 
 Execution 的 ListProviderAccounts 为可执行 Agent 账号提供 migration_type（id、label、default_priority）。订阅按 Provider 分组，API 接入按 Provider＋Model API 身份分组，服务账号单独分组。Claude Code 订阅和 Claude Code＋DeepSeek API 因而属于不同种类；不能用 harness 相同推导为同类。相同 Provider 绑定同一个 Model API 的多个账号属于同类。未接入的已保存种类保留，不自动删除配置。
 

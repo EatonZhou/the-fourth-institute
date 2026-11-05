@@ -3,7 +3,7 @@
   const esc = value => window.PortalUIPrimitives.escapeHtml(value);
   // Both Family menus edit the same persisted policy using the account catalog's types.
   function mountMigrationPriority(root, {lineageId, familyId, readonly = false, saved = () => {}}) {
-    let disposed = false, loaded = false, busy = false, baseline = [], order = [], types = new Map();
+    let disposed = false, loaded = false, busy = false, baseline = [], order = [], siteDefault = false, types = new Map();
     const current = () => !disposed && root.isConnected;
     const t = value => window.PortalI18n.t(value);
     const execute = (...args) => window.PortalInstructionClient.execute(...args);
@@ -18,25 +18,28 @@
     const label = key => types.get(key)?.label || key;
     const draw = () => {
       const others = [...types.values()].filter(item => !order.includes(item.id)).sort(byDefault).map(item => item.id);
-      panel.innerHTML = `<p class="paneNote">${esc(t("自动切换只在订阅账号之间进行：先换同种类的可用账号，再按以下顺序切换。"))}</p>
+      panel.innerHTML = `<p class="paneNote">${esc(baseline.length ? t("已自定义 Family 排序；成员明确设置的开关优先。") : t("使用站点默认帐号选择排序；保存下方顺序后改为 Family 自定义排序。"))}</p><p class="paneNote">${esc(t("自动切换只在订阅账号之间进行：先换同种类的可用账号，再按以下顺序切换。"))}</p>
         <ol>${order.map((key, i) => `<li><span>${esc(types.get(key)?.label || key + '（当前不可用）')}</span><button class="portalButton is-compact" type="button" data-priority-move="${i}" data-direction="-1" aria-label="${esc(t('上移') + ' ' + label(key))}"${readonly || busy || !i ? ' disabled' : ''}>↑</button><button class="portalButton is-compact" type="button" data-priority-move="${i}" data-direction="1" aria-label="${esc(t('下移') + ' ' + label(key))}"${readonly || busy || i === order.length - 1 ? ' disabled' : ''}>↓</button>${subscription(key) ? '' : `<button class="portalButton is-compact" type="button" data-priority-revoke="${esc(key)}" aria-label="${esc(t('不再允许') + ' ' + label(key))}"${readonly || busy ? ' disabled' : ''}>${esc(t('不再允许'))}</button>`}</li>`).join('')}</ol>
         ${others.length ? `<p class="paneNote">${esc(t("以下种类不会自动切换，需要明确允许："))}</p>
         <ul>${others.map(key => `<li><span>${esc(label(key))}</span><button class="portalButton is-compact" type="button" data-priority-allow="${esc(key)}" aria-label="${esc(t('允许自动切换') + ' ' + label(key))}"${readonly || busy ? ' disabled' : ''}>${esc(t('允许自动切换'))}</button></li>`).join('')}</ul>` : ''}
         <p role="alert" data-priority-error hidden></p>
         <div><button type="button" class="portalButton is-compact" data-priority-save${readonly || busy ? ' disabled' : ''}>${esc(t('保存顺序'))}</button> <button type="button" class="portalButton is-compact" data-priority-cancel${busy ? ' disabled' : ''}>${esc(t('取消'))}</button> <button type="button" class="portalButton is-compact" data-priority-default${readonly || busy ? ' disabled' : ''}>${esc(t('恢复默认'))}</button></div>`;
       panel.querySelectorAll('[data-priority-move]').forEach(button => button.onclick = () => {
+        siteDefault = false;
         const i = Number(button.dataset.priorityMove), j = i + Number(button.dataset.direction);
         [order[i], order[j]] = [order[j], order[i]]; draw();
         panel.querySelector(`[data-priority-move="${j}"][data-direction="${button.dataset.direction}"]`)?.focus();
       });
       panel.querySelectorAll('[data-priority-allow]').forEach(button => button.onclick = () => {
+        siteDefault = false;
         order = [...order, button.dataset.priorityAllow]; draw();
       });
       panel.querySelectorAll('[data-priority-revoke]').forEach(button => button.onclick = () => {
+        siteDefault = false;
         order = order.filter(key => key !== button.dataset.priorityRevoke); draw();
       });
-      panel.querySelector('[data-priority-cancel]').onclick = () => { order = expand(baseline); draw(); root.querySelector('details').open = false; };
-      panel.querySelector('[data-priority-default]').onclick = () => { order = defaults(); draw(); };
+      panel.querySelector('[data-priority-cancel]').onclick = () => { siteDefault = false; order = expand(baseline); draw(); root.querySelector('details').open = false; };
+      panel.querySelector('[data-priority-default]').onclick = () => { siteDefault = true; order = defaults(); draw(); };
       panel.querySelector('[data-priority-save]').onclick = async () => {
         if (busy || readonly) return;
         busy = true; draw();
@@ -46,10 +49,10 @@
           const block = snapshot.function_blocks.find(item => item.id === familyId);
           if (!block) throw new Error(t('Family 已不存在，请重新打开菜单。'));
           if (JSON.stringify(block.family.auto_migrate_priority || []) !== JSON.stringify(baseline)) throw new Error(t('顺序已被其他人修改，请重新打开菜单后保存。'));
-          const priority = JSON.stringify(order) === JSON.stringify(defaults()) ? [] : [...order];
+          const priority = siteDefault ? [] : [...order];
           const result = await execute('UpdateFamily', {lineage_id: lineageId, family_id: familyId, auto_migrate_priority: priority}, {expectedVersion: snapshot.revision});
           if (!current()) return;
-          baseline = priority; busy = false; draw(); root.querySelector('details').open = false;
+          baseline = priority; siteDefault = false; busy = false; draw(); root.querySelector('details').open = false;
           await saved(result);
         } catch (error) {
           if (!current()) return;

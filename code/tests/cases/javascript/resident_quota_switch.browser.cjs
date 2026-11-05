@@ -23,9 +23,9 @@ const root = path.resolve(__dirname, '../../../management_portal/static');
       const catalog = {models: ['m'], default_model: 'm', efforts_by_model: {}, service_tiers_by_model: {}, runtime_capabilities: {settings: ['model']}};
       const contextOptions = [{id: 'preserve', enabled: true, description: '完整保留上下文'}];
       let settings = {model: 'm'}, revision = 'r0';
-      window.saves = []; window.switches = []; window.toasts = []; window.canEdit = true;
+      window.saves = []; window.switches = []; window.toasts = []; window.canEdit = true; window.canSwitch = true; window.optionTargets = []; window.currentResident = "fixture";
       PortalUI.toast = message => toasts.push(message);
-      const detail = () => ({resident: {backend: 'codex'}, execution_account: {account_id: 'one'}, chat_workspace: {actions: {runtime_settings: {}}}, allows: {UpdateResidentSettings: canEdit, RestartSession: true}});
+      const detail = () => ({resident: {backend: 'codex'}, family_facade: {}, execution_account: {account_id: 'one'}, chat_workspace: {actions: {runtime_settings: {}}}, allows: {UpdateResidentSettings: canEdit, RestartSession: canSwitch}});
       window.PortalResidentProjection = {load: async () => detail(), invalidate() {}};
       const read = () => ({settings: {...settings}, settings_revision: revision, quota_switch: {auto_switch_on_quota: settings.auto_switch_on_quota ?? false}});
       window.PortalResidentService = {
@@ -36,18 +36,18 @@ const root = path.resolve(__dirname, '../../../management_portal/static');
           if (expected !== revision) throw new Error('stale revision');
           saves.push({id, changes, key, expected}); settings = {...settings, ...changes}; revision += '1'; return read();
         },
-        sessionRestartOptions: async () => ({resident_id: 'fixture', source: {provider: 'codex', account_id: 'one', has_session: true},
+        sessionRestartOptions: async id => { optionTargets.push(id); if (window.holdOptions) await new Promise(resolve => window.releaseOptions = resolve); return ({resident_id: id, source: {provider: 'codex', account_id: 'one', has_session: true},
           providers: [{id: 'codex', label: 'Codex'}, {id: 'claude', label: 'Claude'}],
-          accounts: {codex: [{id: 'one', label: 'Current', context_options: contextOptions}, {id: 'outside-default', label: 'Outside default ordering', context_options: contextOptions}], claude: [{id: 'claude-one', label: 'Claude One', context_options: contextOptions}]}}),
+          accounts: {codex: [{id: 'one', label: 'Current', context_options: contextOptions}, {id: 'outside-default', label: 'Outside default ordering', context_options: contextOptions}], claude: [{id: 'claude-one', label: 'Claude One', context_options: contextOptions}]}}); },
         restartSession: async value => {switches.push(value); return {status: 'completed', restart_id: 'op1'};},
       };
       const api = PortalChatWorkspaceRuntimeSettings.createRuntimeSettings({escapeHtml: PortalUIPrimitives.escapeHtml});
       window.PortalChatWorkspace = api;
-      const context = {residentId: 'fixture', node: {backend: 'codex'}};
+      const context = window.menuContext = {residentId: 'fixture', node: {backend: 'codex'}};
       const menu = PortalResidentMenuRuntime.createRuntime({$id: id => document.getElementById(id), esc: PortalUIPrimitives.escapeHtml, menuState: {nodeMenuContext: context}, nodeMenuNotice: text => toasts.push(text), renderFamilySettings() {}});
       window.reloadMenu = () => menu.loadNodeMenuRuntime();
       window.state = {contract: {actions: {session_restart: {instruction: 'RestartSession'}}, composer: {}}};
-      window.controls = PortalChatWorkspaceRuntimeControls.createRuntimeControls({contractResidentId: () => 'fixture', createSessionRestartProgress: api.createSessionRestartProgress,
+      window.controls = PortalChatWorkspaceRuntimeControls.createRuntimeControls({contractResidentId: () => currentResident, createSessionRestartProgress: api.createSessionRestartProgress,
         currentController: () => null, els: {composer: document.getElementById('composer'), status: document.getElementById('status'), refresh: document.getElementById('refresh')},
         options: {}, residentRuntimeStatusText: api.residentRuntimeStatusText, sessionRestartActive: api.sessionRestartActive, state});
       window.quota = value => {state.contract.composer.quota_switch = value; controls.followContractResident();};
@@ -112,9 +112,68 @@ const root = path.resolve(__dirname, '../../../management_portal/static');
       controls.followContractResident(); quota({state: 'disabled', reason: 'auto_switch_disabled'});
     });
     assert.equal(await page.locator('.portalSessionRestartOverlay:visible').count(), 0, 'completed work cannot trigger a later quota popup');
+    // Family facades use exact target controls, never the facade's unused Session.
+    await page.evaluate(() => {
+      currentResident = 'facade'; state.contract.actions = {};
+      window.target = (id, message = 'f1', extra = {}) => ({target_resident_id: id, target_title: id + ' name',
+        target_role: 'member', target_role_label: '成员', can_manage: true, request_message_ids: [message],
+        state: 'disabled', reason: 'auto_switch_disabled', ...extra});
+      quota({targets: [target('worker'), target('router', 'f1', {target_role: 'router', target_role_label: 'Router'})]});
+      controls.quotaSubmitted('f1');
+    });
+    assert.equal(await page.locator('.portalChatQuotaRow').count(), 2);
+    assert.equal(await page.locator('.portalSessionRestartOverlay:visible').count(), 0, 'multiple blockers do not pick a member');
+    assert.match(await page.locator('[data-quota-target="router"]').innerText(), /Router · router name/);
+    if (process.env.PORTAL_FAMILY_UI_EVIDENCE) await page.screenshot({path: process.env.PORTAL_FAMILY_UI_EVIDENCE, fullPage: true});
+    await page.locator('[data-quota-target="worker"] button').click();
+    await page.locator('[data-session-target]').waitFor({state: 'visible'});
+    assert.equal(await page.evaluate(() => optionTargets.at(-1)), 'worker');
+    await page.locator('[data-session-target]').selectOption(JSON.stringify(['codex', 'outside-default']));
+    await page.waitForFunction(() => !document.querySelector('[data-session-restart-submit]').disabled);
+    await page.locator('[data-session-restart-submit]').click();
+    await page.waitForFunction(() => switches.length === 2);
+    assert.equal(await page.evaluate(() => switches.at(-1).resident_id), 'worker');
+    await page.evaluate(() => {
+      quota({targets: []}); controls.quotaSubmitted('f2');
+      state.contract.request_progress = {input_states: [{message_id: 'f2', state: 'completed'}]};
+      quota({targets: [target('steward', 'f2', {state: 'manual_required', reason: 'default_backends_unavailable'})]});
+    });
+    await page.locator('[data-session-target]').waitFor({state: 'visible'});
+    assert.equal(await page.evaluate(() => optionTargets.at(-1)), 'steward', 'exhaustion opens unique target despite completed facade relay receipt');
+    await page.locator('[data-session-restart-close]').last().click();
+    await page.evaluate(() => controls.followContractResident());
+    assert.equal(await page.locator('.portalSessionRestartOverlay:visible').count(), 0, 'same submission never reopens');
+    await page.evaluate(() => {
+      quota({targets: [target('worker', 'unrelated')]}); controls.quotaSubmitted('f3');
+    });
+    assert.equal(await page.locator('.portalSessionRestartOverlay:visible').count(), 0, 'unrelated request cannot auto-open');
+    await page.evaluate(() => quota({targets: [target('worker', 'f3', {can_manage: false})]}));
+    assert.equal(await page.locator('.portalChatQuotaRow button:visible').count(), 0, 'non-manager has no manual action');
+    await page.evaluate(() => {canSwitch = false; quota({targets: [target('worker', 'unrelated')]});});
+    await page.locator('.portalChatQuotaRow button').click();
+    await page.waitForFunction(() => toasts.some(text => /权限/.test(text)));
+    assert.equal(await page.locator('.portalSessionRestartOverlay:visible').count(), 0, 'actual target permission is rechecked by shared picker');
+    await page.evaluate(() => {canSwitch = true; holdOptions = true;});
+    await page.locator('.portalChatQuotaRow button').click();
+    await page.waitForFunction(() => typeof releaseOptions === 'function');
+    await page.evaluate(() => {quota({targets: []}); holdOptions = false; releaseOptions();});
+    await page.waitForTimeout(50);
+    assert.equal(await page.locator('.portalSessionRestartOverlay:visible').count(), 0, 'removed blocker cancels pending picker');
+    await page.evaluate(() => {quota({targets: [target('worker', 'unrelated')]}); holdOptions = true; releaseOptions = null;});
+    await page.locator('.portalChatQuotaRow button').click();
+    await page.waitForFunction(() => typeof releaseOptions === 'function');
+    await page.evaluate(() => {controls.releaseRuntimeTarget(); holdOptions = false; releaseOptions();});
+    await page.waitForTimeout(50);
+    assert.equal(await page.locator('.portalSessionRestartOverlay:visible').count(), 0, 'retargeting cancels pending target picker');
+    assert.equal(await page.locator('.portalChatQuotaRow').count(), 0);
+    await page.evaluate(() => {menuContext.node.family = {role: 'facade'}; return reloadMenu();});
+    await page.waitForFunction(() => !document.querySelector('[data-menu-quota-switch]'));
+    assert.match(await page.locator('#nodeMenuRuntime').innerText(), /Family 设置管理|Family settings/);
+    await page.evaluate(() => {menuContext.node.family = {role: 'member'}; return reloadMenu();});
+    await toggle.waitFor({state: 'visible'});
     await page.evaluate(() => {canEdit = false; PortalResidentRuntimeController.invalidate('fixture');});
     await page.waitForFunction(() => !document.querySelector('[data-menu-quota-switch]') || document.querySelector('[data-menu-quota-switch]').disabled);
     assert.deepEqual(errors, []);
-    console.log('PASS quota Settings save/readback; off send opens existing all-account card; cancel/no duplicate; unknown/switching silent; exhausted exact copy; manual switch preserves context/no replay; permission disabled.');
+    console.log('PASS Family exact targets/roles/multiple/read-only/permission/lifecycle/facade settings; quota Settings save/readback; off send opens existing all-account card; cancel/no duplicate; unknown/switching silent; exhausted exact copy; manual switch preserves context/no replay; permission disabled.');
   } finally {await browser.close();}
 })().catch(error => {console.error(error); process.exitCode = 1;});
