@@ -121,6 +121,10 @@ def normalize_settings(raw: object) -> dict[str, Any]:
         out["runtime_settings_authority_by"] = authority_by
     if "allow_subagents" in data:
         out["allow_subagents"] = boolean_setting(data["allow_subagents"], default=False)
+    if "auto_switch_on_quota" in data:
+        if type(data["auto_switch_on_quota"]) is not bool:
+            raise ValueError("auto_switch_on_quota must be a boolean")
+        out["auto_switch_on_quota"] = data["auto_switch_on_quota"]
     if "account_selection" in data:
         from .account_selection import mode
         out["account_selection"] = mode(data["account_selection"])
@@ -195,6 +199,7 @@ def merge_settings(base: object, updates: object, *, actor: str = "", updated_at
         "prompt_context",
         "backend_options",
         "account_selection",
+        "auto_switch_on_quota",
         "backend_role",
         "backend_role_fallback",
     ):

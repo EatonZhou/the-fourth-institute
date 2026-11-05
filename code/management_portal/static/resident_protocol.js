@@ -323,6 +323,7 @@
     if (!Object.hasOwn(state || {}, "execution_gate")
       && state?.intake_state === previousState?.intake_state) {
       next.send_hint = previous?.send_hint || next.send_hint || "";
+      if (previous?.quota_switch) next.quota_switch = clone(previous.quota_switch);
     }
     return next;
   }
@@ -668,7 +669,7 @@
           : { ...this.snapshot.state, execution_gate: clone(this.stateProjection.execution_gate
             || { state: "unknown", reason: "quota_unknown" }) };
         this.snapshot.controls = older
-          ? { ...this.snapshot.controls, send_hint: controls.send_hint || "" }
+          ? { ...this.snapshot.controls, send_hint: controls.send_hint || "", quota_switch: clone(controls.quota_switch || {}) }
           : clone(controls);
         this.emit({ type: "state_snapshot", snapshot: clone(this.snapshot) });
       }

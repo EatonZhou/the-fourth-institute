@@ -67,17 +67,19 @@ def sufficient_reserve(account: Mapping[str, Any]) -> bool:
 
 def fallback_account(accounts: list[dict[str, Any]], provider: str, route: str,
                      tried: list[str], *, reserve: bool = False, priority: list[str] | None = None,
-                     subscription_only: bool = False, model: str = "", effort: str = "") -> dict[str, Any]:
+                     subscription_only: bool = False, model: str = "", effort: str = "",
+                     priority_only: bool = False) -> dict[str, Any]:
     from management_portal.execution.account_selection import candidates
     source = next((a for a in accounts if a.get("provider") == provider
                    and str(a.get("backend_route_id") or "") == route), {})
     if not source:
         return {}
     excluded = [*tried, source["account_id"]]
-    own = candidates(accounts, source, model=model, effort=effort, excluded=excluded,
-                     reserve=MIGRATION_RESERVE_PERCENT if reserve else 0)
-    if own:
-        return own[0]
+    if not priority_only:
+        own = candidates(accounts, source, model=model, effort=effort, excluded=excluded,
+                         reserve=MIGRATION_RESERVE_PERCENT if reserve else 0)
+        if own:
+            return own[0]
     # Both site and Family orders explicitly authorize crossing kind boundaries.
     from management_portal.execution.account_selection import priority_candidates
     ordered = priority_candidates(accounts, priority or [], source=source, model=model, effort=effort,

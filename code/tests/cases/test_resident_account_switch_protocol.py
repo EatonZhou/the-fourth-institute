@@ -488,8 +488,9 @@ def test_explicit_false_disables_inherited_recovery_only_after_success(
     ('codex', 'preserve', 'one'), ('codex', 'native', 'zero'),
     ('claude', 'compact', 'deepseek_primary'), ('provider_api', 'fresh', 'test-api'),
 ])
+@pytest.mark.parametrize('auto_switch_on_quota', [True, False])
 def test_candidate_retains_platform_settings_and_freezes_revision(
-    monkeypatch, isolated_portal_case, tmp_path, provider, strategy, account,
+    monkeypatch, isolated_portal_case, tmp_path, provider, strategy, account, auto_switch_on_quota,
 ):
     from management_portal.society_service import resident_runtime_domain, resident_record_domain
     from management_portal.execution.resident_capability_settings import normalize_capability_config, settings_revision
@@ -504,6 +505,7 @@ def test_candidate_retains_platform_settings_and_freezes_revision(
         monkeypatch.setattr(resident_record_domain, 'sessions_path', lambda *_a: tmp_path)
         settings = resident_runtime_domain.read_resident_runtime_settings(record)
         shared = {
+            'auto_switch_on_quota': auto_switch_on_quota,
             'capability_config': normalize_capability_config({
                 'schema': 'tfi.resident-capabilities.v1',
                 'tools': [{'ref': 'portal:hatg_instruction', 'required': True}],
@@ -530,6 +532,7 @@ def test_candidate_retains_platform_settings_and_freezes_revision(
                 target, backend=provider, backend_route_id=account,
             )
         else:
+            assert record['execution_settings']['auto_switch_on_quota'] is auto_switch_on_quota
             for name in ('capability_config', 'prompt_injection', 'prompt_context'):
                 assert record['execution_settings'][name].items() >= shared[name].items()
             assert record['harness_config'] == shared['agent_harness']

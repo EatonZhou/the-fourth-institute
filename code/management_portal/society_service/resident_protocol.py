@@ -99,6 +99,12 @@ def _conversation_controls(
     allowed, problem = _send_problem(target.record, actor, allowed=allowed)
     active_message_id = str(state.get("active_message_id") or "")
     closed = state.get("intake_state") == "closed"
+    from . import family_quota
+    quota_switch = family_quota.quota_switch_state(
+        target.record, execution_gate=state.get("execution_gate") or {},
+    )
+    if closed or not allowed:
+        quota_switch = {**quota_switch, "state": "unavailable", "reason": "manual" if closed else "forbidden", "message": ""}
     stop_allowed = allowed
     if target.record.get("personal_owner_id"):
         stop_allowed = allowed and resident_access.can_manage_resident(target.record, actor, operation="CancelInput")
@@ -113,6 +119,7 @@ def _conversation_controls(
         "accepts_images": capabilities.supports_media,
         "accepts_files": capabilities.local_tools,
         "disabled_reason": problem if allowed else "当前对话无发送权限。",
+        "quota_switch": quota_switch,
         "send_hint": resident_execution_gate.HINTS.get(
             'manual' if closed else (state.get('execution_gate') or {}).get('reason'), ''
         ) if not problem else "",

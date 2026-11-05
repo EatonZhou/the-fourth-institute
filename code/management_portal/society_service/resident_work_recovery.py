@@ -143,6 +143,38 @@ def reconcile_failed_work(residents: list[dict[str, Any]] | None = None, *, jobs
     return changed
 
 
+def _commit_switch_result(record, message_id, *, expected_pending=None, **values):
+    from . import family_quota, resident_record_domain
+    gate = {"state": "closed", "reason": "quota_used_up"}
+    with resident_record_domain.state_lock(record["resident_id"]):
+        current = resident_record_domain.find_resident(record["resident_id"])
+        if not current or (expected_pending is not None and recovery_entry(current, message_id).get("pending_restart") != expected_pending):
+            return
+        explicit = (current.get("execution_settings") or {}).get("auto_switch_on_quota") is True
+        before = family_quota.quota_switch_state(current, execution_gate=gate) if explicit else {}
+        if not explicit:
+            values.pop("switch_reason", None)
+        set_recovery_entry(current, message_id, **values)
+        resident_record_domain.save_resident_record(current)
+    if explicit:
+        family_quota._publish_quota_switch(current, gate, before)
+
+
+def _restart_quota_recovery(record, message_id, payload):
+    from . import family_quota
+    rid = record["resident_id"]
+    try:
+        resident_domain_port.restart_resident_session(rid, rid, payload, portal_reason="steward_quota_recovery")
+    except Exception as error:
+        if ((record.get("execution_settings") or {}).get("auto_switch_on_quota") is not True
+                or not family_quota.definitive_migration_failure(error)):
+            raise
+        _commit_switch_result(record, message_id, expected_pending=payload, pending_restart=None, switch_reason="migration_failed")
+        return False
+    _commit_switch_result(record, message_id, expected_pending=payload, pending_restart=None, switch_reason="")
+    return True
+
+
 def _reconcile_failed_work(residents: list[dict[str, Any]], context: dict[str, Any]) -> int:
     """Recheck only eligible failed rounds; no model or sleeping worker required."""
     from . import family_facade, resident_catalog
@@ -200,12 +232,7 @@ def _reconcile_failed_work(residents: list[dict[str, Any]], context: dict[str, A
         if pending and not can_migrate:
             continue
         if pending:
-            resident_domain_port.restart_resident_session(resident_id, resident_id, pending, portal_reason="steward_quota_recovery")
-            with resident_record_domain.state_lock(resident_id):
-                current = resident_record_domain.find_resident(resident_id)
-                set_recovery_entry(current, message_id, pending_restart=None)
-                resident_record_domain.save_resident_record(current)
-            changed += 1
+            changed += int(_restart_quota_recovery(record, message_id, pending))
             continue
         if net:
             key = (provider, route)
@@ -230,39 +257,55 @@ def _reconcile_failed_work(residents: list[dict[str, Any]], context: dict[str, A
                 ))
             changed += 1
         elif usage and can_migrate:
+            explicit = (record.get("execution_settings") or {}).get("auto_switch_on_quota") is True
+            if explicit and recovery.get("switch_reason") == "migration_failed":
+                continue
             switches = int(recovery.get("switch_attempts") or 0)
-            if switches >= MAX_RECOVERY_ATTEMPTS:
+            receipt = record.get("session_restart") or {}
+            if (explicit and receipt.get("request_id") == f"work-recovery:{message_id}:{switches}"
+                    and receipt.get("status") in {"failed", "cancelled"}):
+                _commit_switch_result(record, message_id, switch_reason="migration_failed")
+                continue
+            if not explicit and switches >= MAX_RECOVERY_ATTEMPTS:
                 _notify_steward_blocked(record, message_id, "steward 备用后端切换已失败两次")
                 continue
             tried = list(recovery.get("tried_accounts") or [])
             # A Family switches only between subscriptions unless the user listed another kind.
             from .resident_default_backend import selection_mode
-            automatic = selection_mode(record) == "auto"
+            automatic = explicit or selection_mode(record) == "auto"
             target = fallback_account(accounts or [], provider, route, tried, reserve=not automatic,
                                       priority=resident_domain_port.auto_migration_priority(record),
+                                      priority_only=explicit,
                                       subscription_only=bool((record.get("family") or {}).get("role")),
                               model=(record.get("execution_settings") or {}).get("model", ""),
                               effort=(record.get("execution_settings") or {}).get("reasoning_effort", ""))
             if not target:
+                if explicit:
+                    _commit_switch_result(record, message_id, switch_reason="default_backends_unavailable")
                 _notify_steward_blocked(record, message_id, "没有已确认有可用额度的备用账号或后端")
                 continue
             # Reserve the migration intent before starting it. A crash retries
             # the same idempotent RestartSession, not a new initialization.
-            payload = {**migration_target_options(target, provider, resident_account(record, accounts or [])), "active_execution_policy": "wait",
+            try:
+                options = migration_target_options(target, provider, resident_account(record, accounts or []))
+            except (KeyError, ValueError):
+                if not explicit:
+                    raise
+                _commit_switch_result(record, message_id, switch_reason="migration_failed")
+                continue
+            payload = {**options, "active_execution_policy": "wait",
                        "resume_failed_input": True,
                        "idempotency_key": f"work-recovery:{message_id}:{switches + 1}"}
             with resident_record_domain.state_lock(resident_id):
                 current = resident_record_domain.find_resident(resident_id)
-                if not current or _recoverable_input(current) != failed:
+                if (not current or _recoverable_input(current) != failed
+                        or not resident_domain_port.auto_migration_enabled(current)
+                        or not _intake_allows_recovery(current)):
                     continue
                 set_recovery_entry(current, message_id, pending_restart=payload,
+                                   switch_reason="",
                                    switch_attempts=switches + 1,
                                    tried_accounts=[*tried, str(target["account_id"])])
                 resident_record_domain.save_resident_record(current)
-            resident_domain_port.restart_resident_session(resident_id, resident_id, payload, portal_reason="steward_quota_recovery")
-            with resident_record_domain.state_lock(resident_id):
-                current = resident_record_domain.find_resident(resident_id)
-                set_recovery_entry(current, message_id, pending_restart=None)
-                resident_record_domain.save_resident_record(current)
-            changed += 1
+            changed += int(_restart_quota_recovery(current, message_id, payload))
     return changed

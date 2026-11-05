@@ -81,12 +81,15 @@ def read_resident_runtime_settings(
             default_runtime_settings = resident_runtime_settings.read_only_runtime_settings(
                 default_runtime_settings
             )
+        from . import family_quota
+        quota_switch = family_quota.quota_switch_state(record)
         revision = resident_runtime_domain.resident_settings_revision(record, runtime_settings)
         return {
             "resident_id": target.resident_id,
             "runtime_settings": runtime_settings,
             "default_runtime_settings": default_runtime_settings,
             "settings_revision": revision,
+            "quota_switch": quota_switch,
             "application": settings_application(
                 runtime_settings, backend=str(record.get("backend") or ""), revision=revision,
             ),
@@ -215,7 +218,8 @@ def change_resident_runtime_settings(resident_id: str, actor: str = "", payload:
             result["active_turn_settings_update"] = active_turn_settings_update
             result["active_turn_fields"] = []
             result["next_turn_fields"] = [
-                name for name in next_turn_fields if name not in result["active_turn_fields"]
+                name for name in next_turn_fields
+                if name not in result["active_turn_fields"] and name != "auto_switch_on_quota"
             ]
             return result
 

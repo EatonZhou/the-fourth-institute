@@ -127,7 +127,7 @@ def validate_api_parameters(parameters: Mapping[str, Any], protocol: str, *, req
 
 def validate_api_settings(route: str, current: Mapping[str, Any], updates: Mapping[str, Any]) -> dict[str, Any]:
     from management_portal.ai_provider_registry import AIProviderRegistry, shared_ai_provider_registry
-    unknown = set(updates) - set(API_RUNTIME_SETTINGS) - {"allow_subagents", "backend_role", "backend_role_fallback", "account_selection"}
+    unknown = set(updates) - set(API_RUNTIME_SETTINGS) - {"allow_subagents", "backend_role", "backend_role_fallback", "account_selection", "auto_switch_on_quota"}
     if unknown or updates.get("allow_subagents") is True:
         raise ValueError("Model API does not support requested settings: " + ", ".join(sorted(unknown or {"allow_subagents"})))
     entry = shared_ai_provider_registry.get(route)

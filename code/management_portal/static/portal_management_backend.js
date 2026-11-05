@@ -1120,7 +1120,7 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
     });
   }
   function roleEditor(role = null) {
-    const {view, form} = newEditor(role?.role === "default" ? "账号选择设置" : role ? "编辑 Backend 角色" : "新增 Backend 角色");
+    const {view, form} = newEditor(role?.role === "default" ? "默认帐号选择排序" : role ? "编辑 Backend 角色" : "新增 Backend 角色");
     form.classList.add("backendSelectionForm");
     const name = field(form, "角色", "role", role?.role || "", {required: true, readOnly: Boolean(role)});
     if (role?.role === "default") name.parentElement.hidden = true;
@@ -1214,11 +1214,11 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
       const role = state.roles.find(row => row.role === "default") || {role: "default", version: 0};
       const summary = node("div", undefined, {class: "backendSelectionSummary", "data-backend-account-selection": ""});
       summary.append(node("p", t("不同种类 AI 后端默认选择/自动切换的排序可手动调整，同种 AI 后端的选择由当前额度自动选择"), {class: "backendHint"}),
-        button("账号选择设置", () => roleEditor(role), !canWrite));
+        button("默认帐号选择排序", () => roleEditor(role), !canWrite));
       output.append(summary);
     }
     if (rolesReady && !state.roles.some(role => role.role === "default" && role.account_id)) {
-      output.append(node("p", t("尚未配置默认模型偏好。请在账号的“设置与测试”中完成接入，或打开“账号选择设置”。"), {class: "backendHint", "data-backend-default-missing": "", role: "status"}));
+      output.append(node("p", t("尚未配置默认模型偏好。请在账号的“设置与测试”中完成接入，或打开“默认帐号选择排序”。"), {class: "backendHint", "data-backend-default-missing": "", role: "status"}));
     }
     if (!state.accounts.length) { output.append(node("p", t("暂无登记"))); return; }
     const standalone = [], groups = new Map();

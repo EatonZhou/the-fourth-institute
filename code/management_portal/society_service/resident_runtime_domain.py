@@ -126,7 +126,7 @@ def assign_derived_resident_account_route(
         if not route:
             raise ValueError("切换到 Model API 时必须选择账号")
         # Model API owns validation, defaults and conversation-history policy.
-        updates = {key: inherited[key] for key in API_RUNTIME_SETTINGS if key in inherited}
+        updates = {key: inherited[key] for key in (*API_RUNTIME_SETTINGS, "auto_switch_on_quota") if key in inherited}
         if not same_provider or route != source_route:
             updates.pop("model", None)
             updates.pop("backend_options", None)
@@ -468,6 +468,11 @@ def validate_backend_runtime_updates(
     from management_portal.execution.resident_capability_settings import normalize_capability_config
     capability_updates = {}
     updates = dict(updates)
+    if "auto_switch_on_quota" in updates:
+        value = updates.pop("auto_switch_on_quota")
+        if type(value) is not bool:
+            raise ValueError("auto_switch_on_quota must be a boolean")
+        capability_updates["auto_switch_on_quota"] = value
     if "capability_config" in updates:
         capability_updates["capability_config"] = normalize_capability_config(updates.pop("capability_config"))
     if not updates:

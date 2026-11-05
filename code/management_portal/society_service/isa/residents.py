@@ -439,6 +439,7 @@ def get_resident_settings(inv: Invocation) -> dict[str, Any]:
     return {"settings": settings, "prompt_injection": _prompt_injection_view(settings),
             "settings_revision": result.get("settings_revision", ""),
             "application": result.get("application", {}),
+            "quota_switch": result.get("quota_switch", {}),
             "reporting_effective": result["reporting_effective"],
             "runtime_settings_access": result["runtime_settings_access"]}
 
@@ -481,6 +482,7 @@ def update_resident_settings(inv: Invocation) -> dict[str, Any]:
             "prompt_injection": _prompt_injection_view(dict(settings)),
             "settings_revision": result.get("settings_revision", ""),
             "application": result.get("application", {}),
+            "quota_switch": result.get("quota_switch", {}),
             "reporting_effective": result["reporting_effective"],
             "runtime_settings_access": result["runtime_settings_access"]}
 

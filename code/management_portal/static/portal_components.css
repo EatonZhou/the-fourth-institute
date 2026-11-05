@@ -923,3 +923,7 @@ body.portalBoardShell .filter-active-dot {
     margin-left: auto;
   }
 }
+
+.portalChatQuotaNotice { display: flex; align-items: center; justify-content: space-between; gap: .75rem; padding: .5rem .75rem; flex: 0 0 auto; border-top: 1px solid var(--border); font-size: .9rem; }
+.portalChatQuotaNotice[hidden] { display: none; }
+.portalChatQuotaNotice > button { flex-shrink: 0; }

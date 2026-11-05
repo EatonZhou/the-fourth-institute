@@ -16,7 +16,7 @@ EXECUTION_SETTING_FIELDS = frozenset({
     "sandbox_explicit", "profile", "permission_preset",
     "prompt_injection", "capability_config", "allow_subagents", "updated_at", "updated_by",
     "prompt_context", "backend_options",
-    "backend_role", "backend_role_fallback", "account_selection",
+    "backend_role", "backend_role_fallback", "account_selection", "auto_switch_on_quota",
     "runtime_settings_authority", "runtime_settings_authority_at",
     "runtime_settings_authority_by",
 })

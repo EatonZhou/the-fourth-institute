@@ -5,7 +5,8 @@ const root=process.env.SOURCE_ROOT||require('path').resolve(__dirname,'../../..'
 (async()=>{
 const dom=new JSDOM('',{url:'https://quota.fixture.invalid',runScripts:'outside-only',pretendToBeVisual:true}),w=dom.window;
 const calls=[],updates=[];let gate={state:'closed',reason:'quota_used_up',used_up:true},cursor=5,canSend=true;
-const snapshot=()=>({resident:{resident_id:'member'},cursor,state:{work_state:'idle',intake_state:'open',execution_gate:gate},controls:{can_send:canSend,can_stop:false,disabled_reason:canSend?'':'denied',send_hint:gate.state==='open'?'':'backend queue hint'},messages:[],input_states:[]});
+let quotaSwitch={state:'disabled',reason:'auto_switch_disabled',auto_switch_on_quota:false};
+const snapshot=()=>({resident:{resident_id:'member'},cursor,state:{work_state:'idle',intake_state:'open',execution_gate:gate},controls:{can_send:canSend,can_stop:false,disabled_reason:canSend?'':'denied',send_hint:gate.state==='open'?'':'backend queue hint',quota_switch:quotaSwitch},messages:[],input_states:[]});
 w.PortalI18n={t:s=>s};w.PortalIdentity={load:async()=>{},username:()=> 'fixture'};
 w.PortalEvents={watchResident:()=>()=>{}};
 w.PortalResidentService={snapshot:async()=>{calls.push('snapshot');return snapshot()},loadStates:async ids=>{calls.push(['batch',ids]);return {states:ids.map(resident_id=>({resident_id,cursor,state:snapshot().state,controls:snapshot().controls,viewer_state:{unread:false}}))}},loadEvents:async()=>({events:[]})};
@@ -26,19 +27,22 @@ event({work_state:'queued',intake_state:'open'});
 assert.equal(sub.snapshot().state.execution_gate.state,'closed','gate-less event preserves conversation gate');
 assert.equal(p.stateSnapshot('member').state.execution_gate.state,'closed','gate-less event preserves graph state');
 assert.equal(sub.snapshot().controls.send_hint,'backend queue hint');
+assert.equal(sub.snapshot().controls.quota_switch.reason,'auto_switch_disabled','gate-less event preserves authoritative quota choice');
 // The quota read is newer even with an unchanged conversation cursor.
 gate={state:'unknown',reason:'quota_recovery_unconfirmed'};await states.load({force:true});
 assert.equal(sub.snapshot().state.execution_gate.state,'unknown','batch refresh reaches conversation');
-gate={state:'open',override_enabled:true};await states.load({force:true});
+gate={state:'open',override_enabled:true};quotaSwitch={state:'ready',reason:'',auto_switch_on_quota:true};await states.load({force:true});
 assert.equal(sub.snapshot().state.execution_gate.state,'open');assert.equal(sub.snapshot().controls.send_hint,'');
+assert.equal(sub.snapshot().controls.quota_switch.state,'ready','fresh read removes old manual prompt');
 assert.equal(sub.snapshot().controls.can_send,true);
 gate={state:'closed',reason:'quota_reserved'};canSend=false;await states.load({force:true});assert.equal(sub.snapshot().controls.can_send,false);
 // A minimal control receipt cannot erase protection or queue permissions.
 w.PortalResidentService.cancelInput=async()=>({resident_id:'member',cursor,state:{intake_state:'open',work_state:'idle'},controls:{can_send:false,send_hint:''}});
 await p.cancelInput({resident_id:'member'});assert.equal(sub.snapshot().state.execution_gate.state,'closed');
 // A new quota read must survive an advanced conversation cursor without rolling work back.
-event({intake_state:'open',work_state:'running'});const eventCursor=cursor;cursor--;gate={state:'unknown',reason:'quota_unknown'};await states.load({force:true});
+event({intake_state:'open',work_state:'running'});const eventCursor=cursor;cursor--;gate={state:'unknown',reason:'quota_unknown'};quotaSwitch={state:'unavailable',reason:'quota_unknown',auto_switch_on_quota:true};await states.load({force:true});
 assert.equal(sub.snapshot().state.execution_gate.state,'unknown');assert.equal(sub.snapshot().state.work_state,'running');cursor=eventCursor;
+assert.equal(sub.snapshot().controls.quota_switch.reason,'quota_unknown','new quota policy read survives advanced conversation cursor');
 // Failed state reconciliation remains retryable; it does not clear known protection.
 const originalLoad=w.PortalResidentService.loadStates;w.PortalResidentService.loadStates=async()=>{throw new TypeError('fixture offline')};
 await assert.rejects(states.load({force:true}),/offline/);assert.equal(sub.snapshot().state.execution_gate.state,'unknown');w.PortalResidentService.loadStates=originalLoad;

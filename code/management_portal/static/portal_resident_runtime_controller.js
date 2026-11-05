@@ -26,7 +26,7 @@
       restart: options => window.PortalChatWorkspace.createSessionRestartDialog(options),
     };
     const state = e => ({ residentId: e.id, detail: e.detail, settings: e.settings, catalog: e.catalog,
-      settings_revision: e.settingsRevision, application: e.application,
+      settings_revision: e.settingsRevision, application: e.application, quotaSwitch: e.quotaSwitch,
       canEdit: mayEdit(e.detail), canRestart: e.detail?.allows?.RestartSession === true,
       loading: !!e.loading, busy: !!e.saving || !!e.opening, restart: e.restart, error: e.error });
     const notify = e => e.bindings.forEach(b => b.adapters.onState?.(state(e)));
@@ -62,7 +62,7 @@
         if (e.revision !== revision) return;
         e.detail = detail; e.settings = clone(result.settings || result.runtime_settings || {});
         if (e.pendingSave && Object.entries(e.pendingSave.changes).every(([k, v]) => equal(v, e.settings[k]))) e.pendingSave = null;
-        e.settingsRevision = result.settings_revision; e.application = result.application;
+        e.settingsRevision = result.settings_revision; e.application = result.application; e.quotaSwitch = result.quota_switch;
         e.catalog = catalog; e.valid = true; e.error = "";
         if (e.bindings.size) observe(e);
       })();
@@ -126,7 +126,9 @@
             e.pendingSave = null;
             version.revision = result.settings_revision;
             invalidate(id); await load(e).catch(() => {}); changed(e, result);
-            window.PortalChatWorkspace?.notifyRuntimeSettingsSaved?.(result);
+            if (Object.hasOwn(changes, "auto_switch_on_quota") && Object.keys(changes).length === 1) {
+              window.PortalUI.toast(window.PortalI18n.t("额度自动切换设置已保存。"));
+            } else window.PortalChatWorkspace?.notifyRuntimeSettingsSaved?.(result);
             return result;
           } catch (error) {
             if (Number(error.status) >= 400 && Number(error.status) < 500 && Number(error.status) !== 408) e.pendingSave = null;
@@ -219,6 +221,13 @@
         return load(e);
       }, state: () => state(e),
         openSettings: focusTarget => open("settings", focusTarget), openRestart: focusTarget => open("restart", focusTarget),
+        async saveSettings(changes) {
+          if (b.disposed || e.opening) throw stale();
+          await load(e);
+          if (!mayEdit(e.detail)) throw denied();
+          return save(changes, clone(e.settings), b.generation, identityRevision,
+            routeKey(e.detail), {revision: e.settingsRevision});
+        },
         close, destroy() {
           if (b.disposed) return;
           b.disposed = true; close(); e.bindings.delete(b);
