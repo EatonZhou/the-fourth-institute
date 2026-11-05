@@ -249,6 +249,7 @@
             disabled_reason: controls.disabled_reason || "",
             send_hint: controls.send_hint ? window.PortalI18n.t(controls.send_hint) : "",
             execution_gate: state.execution_gate,
+            quota_switch: controls.quota_switch,
             intake_state: state.intake_state,
             can_stop: controls.can_stop === true,
             queue,

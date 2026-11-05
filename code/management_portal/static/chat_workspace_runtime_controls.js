@@ -73,6 +73,43 @@
       return !runtimeTargetPending && !!contractResidentId() && !!(action?.instruction || action?.url);
     };
 
+    // Quota state is a read projection from Society. Only a locally accepted
+    // send arms the automatic manual-picker prompt; opening history never does.
+    const quotaNotice = document.createElement("div");
+    quotaNotice.className = "portalChatQuotaNotice"; quotaNotice.hidden = true;
+    quotaNotice.setAttribute("role", "status");
+    const quotaText = document.createElement("span"), quotaChoose = document.createElement("button");
+    quotaChoose.type = "button"; quotaChoose.className = "portalButton is-compact";
+    quotaChoose.textContent = window.PortalI18n.t("手动选择 AI 后端");
+    quotaChoose.onclick = () => openResidentDialog("restart");
+    quotaNotice.append(quotaText, quotaChoose); els.composer.before(quotaNotice);
+    let quotaSubmissionId = "", quotaScope = "", promptedSubmission = "";
+    const syncQuotaSwitch = () => {
+      const id = contractResidentId();
+      if (quotaScope !== id) { quotaScope = id; quotaSubmissionId = ""; promptedSubmission = ""; }
+      // A Provider can report failure before the quota gate refresh arrives.
+      // Keep that local send armed; only the confirmed gate may request a picker.
+      const terminal = state.contract?.request_progress?.input_states?.some(item =>
+        item.message_id === quotaSubmissionId && ["completed", "cancelled"].includes(item.state));
+      if (terminal) quotaSubmissionId = "";
+      const value = state.contract?.composer?.quota_switch;
+      const manual = value?.state === "manual_required"
+        || (value?.state === "disabled" && value.reason === "auto_switch_disabled");
+      quotaNotice.hidden = !manual;
+      quotaText.textContent = manual ? window.PortalI18n.t(value.message || "当前账号额度不足，请手动选择 AI 后端。") : "";
+      quotaChoose.disabled = !sessionRestartAvailable();
+      if (manual && quotaSubmissionId && promptedSubmission !== quotaSubmissionId) {
+        promptedSubmission = quotaSubmissionId;
+        if (value.state === "disabled" && sessionRestartAvailable()) void openResidentDialog("restart");
+        else window.PortalUI.toast(quotaText.textContent, "warning");
+      }
+    };
+    const quotaSubmitted = messageId => {
+      if (quotaScope !== contractResidentId()) syncQuotaSwitch();
+      quotaSubmissionId = messageId;
+      syncQuotaSwitch();
+    };
+
     const restartService = window.PortalResidentService;
     const restartProgress = createSessionRestartProgress({
       compact: true,
@@ -122,6 +159,7 @@
       runtimeTargetPending = false;
       if (runtimeResidentId && runtimeResidentId !== contractResidentId()) releaseResidentRuntime();
       syncSessionRestartObservation();
+      syncQuotaSwitch();
     };
     const releaseRuntimeTarget = () => {
       releaseResidentRuntime();
@@ -133,10 +171,11 @@
       releaseResidentRuntime();
       restartUnobserve?.();
       restartProgress.destroy();
+      quotaNotice.remove();
       els.refresh?.removeEventListener("click", handleRefreshClick);
     };
 
-    return { sessionRestartAvailable, bindRuntimeButton, followContractResident, releaseRuntimeTarget, destroyRuntimeControls };
+    return { quotaSubmitted, sessionRestartAvailable, bindRuntimeButton, followContractResident, releaseRuntimeTarget, destroyRuntimeControls };
   }
 
   window.PortalChatWorkspaceRuntimeControls = Object.freeze({ createRuntimeControls, dependencies: DEPENDENCIES });

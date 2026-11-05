@@ -417,6 +417,10 @@
         return residentSessionScope(this.residentTarget);
       }
 
+      quotaSubmitted(messageId) {
+        return this.controller?.quotaSubmitted?.(messageId);
+      }
+
       inputHistoryScope() {
         if (this.historyTarget?.resident_id) return residentSessionScope(this.historyTarget);
         const pending = typeof this.options.pendingHistoryScope === "function"

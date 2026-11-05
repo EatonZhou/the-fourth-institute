@@ -625,7 +625,7 @@
       loading: root.querySelector("[data-workspace-loading]"),
     };
     const {
-      sessionRestartAvailable, bindRuntimeButton, followContractResident, releaseRuntimeTarget, destroyRuntimeControls,
+      quotaSubmitted, sessionRestartAvailable, bindRuntimeButton, followContractResident, releaseRuntimeTarget, destroyRuntimeControls,
     } = chatWorkspaceModule("PortalChatWorkspaceRuntimeControls").createRuntimeControls({
       contractResidentId, createSessionRestartProgress, currentController: () => controller, els, options,
       residentRuntimeStatusText, sessionRestartActive, state,
@@ -1502,6 +1502,7 @@
         state.updateRevision = revision;
         return true;
       },
+      quotaSubmitted,
       applyContract(contract, renderOptions = {}) {
         if (!contract || typeof contract !== "object") return;
         state.contract = contract;
@@ -3306,7 +3307,10 @@
         clearRefsOnSuccess: submitOptions.clearRefsOnSuccess !== false,
         onSuccess: (result, context) => {
           pending.acknowledged = true;
-          if (context.scope === this.workspace.sessionScope()) this.initialContext = null;
+          if (context.scope === this.workspace.sessionScope()) {
+            this.initialContext = null;
+            this.workspace.quotaSubmitted(context.messageIdentity);
+          }
           if (steer) this.sendSubagentSteerNow(target, context.messageIdentity);
           // Host callbacks describe the submitted conversation even if this
           // Editor was retargeted while waiting for its acknowledgement.

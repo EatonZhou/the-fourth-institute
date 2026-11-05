@@ -20,7 +20,8 @@ const modules=[...new Set(['portal_state.js','portal_page_state.js','portal_text
 const css=[...fs.readFileSync(path.join(root,'index.html'),'utf8').matchAll(/href="(\/static\/[^"?]+\.css)"/g)].map(m=>m[1]);
 const out=process.env.HOME_DIALOGUE_EVIDENCE||'/tmp/home-dialogue-actions';fs.mkdirSync(out,{recursive:true});
 const evidence={boundary:'real components; synthetic conversation/resource transport; no borrowed User or TAU session',checks:[],errors:[],requests:[]};
-const contextOnly=process.argv.includes('--submission-context-only');
+const quotaOnly=process.argv.includes('--send-quota-only');
+const contextOnly=quotaOnly||process.argv.includes('--submission-context-only');
 evidence.scope=contextOnly?'submission context and Preview script boundary':'message actions, submission context and Preview script boundary';
 function check(name,actual,expected){evidence.checks.push({name,actual,expected});assert.deepEqual(actual,expected,name);}
 const server=http.createServer((req,res)=>{
@@ -164,6 +165,12 @@ const server=http.createServer((req,res)=>{
     ];
     evidence.submissions=await page.evaluate(async requests=>{
       window.sentBodies=[];
+      window.acceptedMessages=[]; window.sentMessages=[]; window.quotaMessages=[];
+      const onAcknowledgement=panel.options.onAcknowledgement, onSent=panel.options.onSent;
+      panel.options.onAcknowledgement=(result,context,...rest)=>{acceptedMessages.push(context.messageIdentity);return onAcknowledgement?.(result,context,...rest);};
+      panel.options.onSent=(result,instance,context)=>{sentMessages.push(context.messageIdentity);return onSent?.(result,instance,context);};
+      const quotaSubmitted=panel.workspace.controller.quotaSubmitted;
+      panel.workspace.controller.quotaSubmitted=messageId=>{quotaMessages.push(messageId);return quotaSubmitted(messageId);};
       window.PortalResidentService={...PortalResidentService,sendInput:async body=>{
         sentBodies.push(structuredClone(body));
         return {resident_id:body.resident_id,message_id:body.message.message_id};
@@ -174,6 +181,15 @@ const server=http.createServer((req,res)=>{
       return sentBodies;
     },presentationRequests);
     check('native Chat sends each request to the current facade',evidence.submissions.map(s=>s.resident_id),presentationRequests.map(()=>'resident_0123456789ab'));
+    const messageIds=evidence.submissions.map(s=>s.message.message_id);
+    check('successful sends reach runtime quota controls once',await page.evaluate(()=>quotaMessages),messageIds);
+    check('quota notification does not interrupt acknowledgement callbacks',await page.evaluate(()=>acceptedMessages),messageIds);
+    check('quota notification does not interrupt sent callbacks',await page.evaluate(()=>sentMessages),messageIds);
+    if(quotaOnly) {
+      check('native send has no page errors',evidence.errors,[]);
+      console.log('PASS native send through ResidentChatWorkspace: quota notification, acknowledgement and sent callbacks each run once; no page error or resend.');
+      return;
+    }
     check('native send preserves user wording and presentation constraints',evidence.submissions.map(s=>s.message.content_parts.filter(p=>p.type==='text').map(p=>p.text).join('')),presentationRequests);
     const contexts=evidence.submissions.map(s=>s.message.content_parts.filter(p=>p.type==='context_reference'));
     check('native Protocol prepare attaches exactly one Home context',contexts.map(c=>c.length),presentationRequests.map(()=>1));
