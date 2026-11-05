@@ -7,7 +7,7 @@ from copy import deepcopy
 
 import pytest
 
-from management_portal import portal_features, presentation_store, project_registry
+from management_portal import portal_features, presentation_store, presentation_project_deletion, project_registry
 from management_portal.resources import project_deletion_effects as effects
 from management_portal.resources.registry_store import get_registry_store
 
@@ -15,7 +15,7 @@ from management_portal.resources.registry_store import get_registry_store
 @pytest.fixture
 def favorites(monkeypatch):
     declared = portal_features.contributions('project.deletion_effects')
-    assert ('presentation', presentation_store.PROJECT_DELETION_EFFECTS) in declared
+    assert ('presentation', presentation_project_deletion.PROJECT_DELETION_EFFECTS) in declared
     monkeypatch.setattr(portal_features, 'contributions',
                         lambda hook: declared if hook == 'project.deletion_effects' else ())
     # A Project name can be reused after deletion. These effects may consume
@@ -42,7 +42,7 @@ def save(receipt):
 
 def test_contribution_previews_without_mutating_favorites(favorites):
     before = deepcopy(favorites)
-    callback = presentation_store.PROJECT_DELETION_EFFECTS['favorites']
+    callback = presentation_project_deletion.PROJECT_DELETION_EFFECTS['favorites']
     assert callback(favorites, write=False) == favorites['workbench_ids']
     assert favorites == before
     for actor in ('alice', 'bob'):

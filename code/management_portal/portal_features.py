@@ -155,8 +155,8 @@ FEATURES += (PortalFeature('home_report', 'Persistent Reports', {
 }, related_types=('report',), modules=('management_portal.home_report*', 'management_portal.resources.providers.report')),)
 
 FEATURES += (PortalFeature('presentation', 'Presentation preferences', {
-    'project.deletion_effects': 'management_portal.presentation_store:PROJECT_DELETION_EFFECTS',
-}, modules=('management_portal.presentation_store',)),)
+    'project.deletion_effects': 'management_portal.presentation_project_deletion:PROJECT_DELETION_EFFECTS',
+}, modules=('management_portal.presentation_project_deletion',)),)
 
 
 def _load(reference: str) -> Any | None:

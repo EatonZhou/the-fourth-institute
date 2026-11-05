@@ -77,21 +77,3 @@ def delete_actor_favorites(actor):
     """A deleted User's favorites on every surface."""
     with database().transaction('favorites:' + actor) as connection:
         return bool(connection.execute('DELETE FROM favorites WHERE actor=%s', (actor,)).rowcount)
-
-
-def delete_project_favorites(receipt, *, write=True):
-    """Apply only the workbench identities frozen by the Project's deletion.
-
-    Preview never mutates preferences. Replays are idempotent and do not query
-    the current Project, whose name may already identify a new registration.
-    """
-    targets = list(receipt.get('workbench_ids', ()))
-    if write:
-        for resource_id in targets:
-            forget_favorite_target('workbench', resource_id)
-    return targets
-
-
-# This cursor is persisted in existing deletion receipts, independent of the
-# feature's key. Keep completed/error cursors valid across owner refactoring.
-PROJECT_DELETION_EFFECTS = {'favorites': delete_project_favorites}
