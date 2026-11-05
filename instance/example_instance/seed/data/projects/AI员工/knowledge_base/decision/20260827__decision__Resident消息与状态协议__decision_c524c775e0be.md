@@ -4,49 +4,49 @@ type: decision
 project: AI员工
 created_at: '2026-08-27'
 version:
-  number: 95
-  created_at: '2026-08-27'
+  number: 96
+  created_at: "2026-08-27"
   created_by:
-    user: ''
-    agent: ''
-  updated_at: '2026-11-05T08:56:52Z'
+    user: ""
+    agent: ""
+  updated_at: "2026-11-05T09:45:55Z"
   updated_by:
-    user: ''
-    agent: resident_2e9ea0072551
+    user: ""
+    agent: "resident_2e9ea0072551"
 importance: 10
 metaness: 2
 ai_generated: false
 links:
   source:
-  - ${code_root}/management_common/principal.py
-  - ${code_root}/management_portal/society_service/resident_input_scope.py
-  - ${code_root}/management_portal/society_service/isa/conversation.py
-  - ${code_root}/management_portal/hatg/catalog/conversation.py
-  - ${code_root}/management_portal/static/portal_resident_service.js
-  - ${code_root}/management_portal/society_service/resident_protocol.py
-  - ${code_root}/management_portal/society_service/resident_domain.py
-  - ${code_root}/management_portal/society_service/resident_execution_work.py
-  - ${code_root}/management_portal/society_service/active_agent_projection.py
-  - ${code_root}/management_portal/society_service/resident_conversation_stream.py
-  - ${code_root}/management_portal/society_service/resident_conversation_event_relay.py
-  - ${code_root}/management_portal/static/resident_protocol.js
-  - ${code_root}/management_portal/static/home.js
-  - ${code_root}/management_portal/static/lineage_workbench.js
-  - ${code_root}/tests/cases/test_resident_execution_requests.py
-  - ${code_root}/tests/cases/test_resident_execution_transcript.py
-  - ${code_root}/tests/cases/test_resident_execution_forks.py
-  - ${code_root}/tests/cases/test_resident_execution_media.py
-  - ${code_root}/tests/cases/test_resident_execution_queue_controls.py
-  - ${code_root}/tests/cases/test_resident_execution_input_activation.py
-  - ${code_root}/tests/cases/test_resident_execution_state_projection.py
-  - ${code_root}/tests/cases/test_resident_execution_stop.py
-  - ${code_root}/tests/cases/test_resident_execution_usage_accounts.py
-  - ${code_root}/tests/cases/test_resident_execution_completion.py
-  - ${code_root}/tests/cases/test_resident_execution_recovery.py
-  - ${code_root}/tests/cases/test_resident_state_contract.py
-  - ${code_root}/tests/cases/test_resident_activity_contract.py
-  - ${code_root}/tests/cases/test_agent_status_active_agents.py
-  - ${code_root}/tests/cases/test_resident_sse.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_common/principal.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/resident_input_scope.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/isa/conversation.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/hatg/catalog/conversation.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/portal_resident_service.js
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/resident_protocol.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/resident_domain.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/resident_execution_work.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/active_agent_projection.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/resident_conversation_stream.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/resident_conversation_event_relay.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/resident_protocol.js
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/home.js
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/lineage_workbench.js
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_resident_execution_requests.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_resident_execution_transcript.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_resident_execution_forks.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_resident_execution_media.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_resident_execution_queue_controls.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_resident_execution_input_activation.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_resident_execution_state_projection.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_resident_execution_stop.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_resident_execution_usage_accounts.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_resident_execution_completion.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_resident_execution_recovery.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_resident_state_contract.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_resident_activity_contract.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_agent_status_active_agents.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_resident_sse.py
   related:
   - decision_ae422b92c6f3
   - decision_6591e7793116
@@ -228,6 +228,7 @@ WatchConversationEvents 的首批立即返回；每批末尾提供检查点 `{cu
 - **消息 ID 由调用者给出，或由入口生成。** 省略 `message.message_id` 时，调用带幂等键则由目标 Resident、调用者和幂等键推导出固定 ID，重试得到同一条消息；不带幂等键则生成新 ID。`role` 可以省略，给出时必须是 `user`；`content_parts` 必须是数组，并且合成后有非空文本。`message` 和参数中出现未声明的字段时拒绝。
 - **提交前依次检查：** 调用者身份、权限系统对目标 Resident 的授权、消息结构、媒体与目标 Provider 的能力。每条被接收的输入都保存为不可变的消息和处理状态；不会只产生一条模型永远不会处理的聊天通知。
 - **普通异步请求的受理回执只确认持久接收。** `accepted=true`、`resident_id` 和 `message_id` 表示输入、处理状态与后续发布任务已经提交；回执可以不带完整 `message`、`queue`、`state`、`controls` 和 `cursor`。客户端通过后续快照、Input state 和事件流补齐展示，不能把受理当成模型已开始处理或已完成。展示发布失败由后台恢复，不影响已提交的输入。输入检查点保存仅处理可重排的原消息与状态，不在受理回调中读取运行目录或清理图片。后台发布待办加载完整 Resident 与 Workspace 投影后，按检查点保留窗口清理过期图片，再确认本次发布；目录解析或清理失败保留同一待办供重试，不把已受理消息报告为拒收，也不重新派发输入。Family 门面的消息受理也只确认持久接收，不在发送回执中重新生成聚合状态或遍历历史转交来计算额度按钮；到达通知及路由仍按门面原有路径可靠发布。info 消息、原生命令和同步 Provider 保留各自的处理语义，需要返回完整状态时仍按读取者生成 controls。转交的权限、成员归属与引用标题检查只读取当前身份、配置和 Family 关系，运行目录与 Workspace 路径由实际附件或执行准备按需读取。
+- **受理读取边界：** 无显式引用且不回答问题卡的输入，引用准备只使用目标地址，不重复装配 Resident 身份或读取引用历史；正式受理在提交边界读取当前身份并核验存在、注册和投递权限。显式引用、问题卡答复、原样转交的引用继承及不可变消息重试仍由对应 owner 核验，不使用跨提交的身份缓存代替核权。
 - **正常发送（`enqueue_and_trigger`）：** Resident 空闲且接单打开时立即开始处理；正在忙时按接收顺序排队，轮到后自动开始，不需要再发一条消息唤醒。执行容量、全局节流和接单开关各自生效，发送本身不增加等待或延迟。接单关闭时消息照常接收并等待，打开后推进。
 - **注入（`inject_active_turn`）：** 要求目标 Provider 支持、并且确实有正在进行的处理；Codex、Claude Code、Kimi Code、DSH 和 OpenCode 支持。只注入文字，带图片的注入消息改为下一轮处理。Provider 不支持、Resident 空闲、没有执行绑定、正在停止或正在压缩上下文时，在接收消息之前就明确拒绝，调用者可以改用正常发送。被接收的注入消息与队列中的“立即注入”（`InjectMailboxItem`）使用同一套持久回执和幂等身份：回执 `pending` 表示正在等当前处理接收，不等于已经送达；注入意图持久化时消息从普通队列转入在途输入，受理回执为 `accepted=true, injected=false, delivery_status=pending`；对话中的展示不表示执行端已经接收。如果当前处理在接收前结束，同一条消息退回普通队首，等待下一轮处理，客户端从后续队列投影和 Input state 观察结果，不重新生成消息，也不重复调用模型。为业务调用隔离的输入不能注入别的处理上下文。
 - **随下一次请求送达（`attach_to_next`）：** 用于 info 消息，只能包含消息内容，不能带引用、媒体、运行上下文或附加 Skill，也不能是授权调用的隔离输入。消息进入对话、保持 `queued`，不开始处理；下一条请求生成执行请求时，所有等待中的 info 作为背景更新放在请求正文之前一起送达，之后记为 `completed`。每个 Resident 最多积压 200 条，超过时拒绝。

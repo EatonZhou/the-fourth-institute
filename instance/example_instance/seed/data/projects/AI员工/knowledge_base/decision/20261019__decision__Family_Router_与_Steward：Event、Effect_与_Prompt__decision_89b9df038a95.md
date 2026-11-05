@@ -4,12 +4,12 @@ type: decision
 project: AI员工
 created_at: '2026-10-19'
 version:
-  number: 24
+  number: 25
   created_at: "2026-10-19"
   created_by:
     user: ""
     agent: "resident_4b1da6140cf2"
-  updated_at: "2026-11-04T10:55:08Z"
+  updated_at: "2026-11-05T09:45:55Z"
   updated_by:
     user: ""
     agent: "resident_2e9ea0072551"
@@ -58,7 +58,7 @@ R1 是 Router 唯一的业务选人入口。背景 info 由服务直接交给 St
 引用直交、嵌套引用归属及原请求 DispatchFamilyTask 选人的调用身份与跨 Project 权限边界统一见 [消息路由](/resource/knowledge?item=decision_9ad68dd077d4)；不修改通用 ISA 权限或给外部发件人授权。
 
 1. `router` Effect 绑定门面的原 `message_id`。有效引用直接交回被引用成员；Resident 发送者的延续请求直接交给承接其上一条请求的成员，规则见 [消息路由](/resource/knowledge?item=decision_9ad68dd077d4)；其余调用 `DispatchFamilyTask`，空名册或单成员也需区分 Steward 组织职责。经过门面深度达到脚本限制时失败，不继续循环投递。
-2. Router 按需用 `GetLineage`、`GetResidentSummaries`、`ListResidentStates` 看名册、职责和状态；必要时用 `GetMessage`、`ListRecentRounds` 查上下文，用 `GetSharedState` 读 `family_corrections_<facade>`。材料不整包塞入每轮 Prompt。
+2. 任务准备按实际 Router 的读取权限批量取得本层候选：ID、角色、名称、有界职责摘要及其修订／新鲜度、工作／接单状态、图片与文件能力，并附有界近期纠正示例。候选只包含本次允许的直属成员与 Steward；不可读或缺失不推断为空闲。普通请求材料充分时直接输出 Packet，不例行调用 `GetLineage`、`GetResidentSummaries`、`ListResidentStates` 或 `GetSharedState`；只有缺失、截断、过期或歧义影响选择时才补查必要对象。原请求与完整候选名册不截断，描述和示例有预算。首次赢得受理的事实随渲染文本冻结，重试不因状态或摘要变化改写输入；实际转交仍检查当前权限、成员归属、额度和取消。
 3. Router 输出一个完整 Packet：
    ```xml
    <packet>{"key":"route","message":{"text":"简短理由","data":{"target":"当前业务成员或本Family Steward ID","confidence":90,"scope":"in"}}}</packet>

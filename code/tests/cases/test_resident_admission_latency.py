@@ -65,6 +65,51 @@ def test_plain_admission_uses_real_command_and_context_preparation(resident_reco
     )["state"] == "queued"
 
 
+def test_unquoted_preparation_leaves_identity_check_to_admission(input_delivery, monkeypatch):
+    """无引用准备不重复读身份；真实受理仍读取当前身份并检查权限。"""
+    from management_portal.society_service import resident_intake_domain, resident_record_domain
+
+    reads = []
+    original = resident_record_domain.find_resident_for_admission
+
+    def read(rid):
+        reads.append(rid)
+        return original(rid)
+
+    monkeypatch.setattr(resident_record_domain, "find_resident_for_admission", read)
+    request = resident_intake_domain._input_request(
+        input_delivery["resident_id"], "CASE-A", "No quote", None, "", "", (),
+        "enqueue_and_trigger", "", None, "msg_" + "d" * 32, None, "", "", None,
+    )
+    assert not reads and not request.quote
+    assert resident_intake_domain._admit_input(request)["accepted"]
+    assert input_delivery["resident_id"] in reads
+    monkeypatch.setattr(resident_record_domain, "resolve_resident_admission_target",
+                        lambda *a, **kw: pytest.fail("duplicate delivery resolution"))
+    assert send(input_delivery, "e")["accepted"]
+
+
+def test_unquoted_delivery_does_not_skip_fresh_missing_target(input_delivery, monkeypatch):
+    from management_portal.society_service import resident_record_domain
+
+    monkeypatch.setattr(resident_record_domain, "find_resident_for_admission", lambda rid: None)
+    with pytest.raises(KeyError, match="resident not found"):
+        send(input_delivery)
+    assert resident_conversation_stream.get_repository().message(
+        input_delivery["resident_id"], "msg_" + "a" * 32,
+    ) is None
+
+
+def test_empty_quote_does_not_read_chat_history(monkeypatch):
+    from management_portal.society_service import message_quotes
+
+    monkeypatch.setattr(resident_conversation_stream, "get_repository",
+                        lambda: pytest.fail("unused quote history lookup"))
+    for quote in (None, {}):
+        assert message_quotes.accept({"resident_id": "resident_000000000001"}, quote,
+                                     reader="CASE-A", message_id="msg_" + "a" * 32) == {}
+
+
 def test_image_cleanup_failure_retries_without_rejecting_admitted_input(input_delivery, monkeypatch):
     """图片清理仅在后台加载完整记录后执行，失败保留发布待办。"""
     from management_portal.society_service import resident_media_domain

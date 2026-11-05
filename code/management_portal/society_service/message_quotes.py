@@ -70,12 +70,14 @@ def accept(
     record, without opening the rest of the facade Conversation.
     """
 
+    # An unquoted ordinary input has no quote identity to recover. Relay
+    # retries still read their saved quote below before inheriting a source.
+    if requested in (None, {}) and relay_source is None:
+        return {}
     resident_id = str(record.get("resident_id") or "")
     existing = resident_conversation_stream.get_repository().message(resident_id, message_id) if message_id else None
     kept = message_quote(existing) if existing else {}
     if requested is None or requested == {}:
-        if relay_source is None:
-            return {}
         return kept if existing else relay_quote(relay_source, resident_id)
     if not isinstance(requested, Mapping) or set(requested) != {"message_id"}:
         raise ValueError("quote 只给出被引用消息的 message_id，作者和摘录由平台填写")

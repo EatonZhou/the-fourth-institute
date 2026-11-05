@@ -643,7 +643,14 @@ def _input_request(
     # only what it says.  The quote is checked and filled in once, here.
     if request.requested_quote not in (None, {}) and (activation.waits_as_info or isolated):
         raise ValueError("info 消息和授权调用的输入不带引用")
-    quote_record = resident_record_domain.find_resident_for_admission(resident_id) or {"resident_id": resident_id}
+    from management_common.async_questions import answered_set
+    # Quote permissions and facade question answers require current identity;
+    # an unquoted input needs only its address here. Admission independently
+    # checks the fresh identity and permissions under the commit boundary.
+    needs_quote_identity = request.requested_quote not in (None, {}) or answered_set(protocol_input)
+    quote_record = ((resident_record_domain.find_resident_for_admission(resident_id) or {})
+                    if needs_quote_identity else {})
+    quote_record = {"resident_id": resident_id, **quote_record}
     request = _with_accepted_quote(request, quote_record)
     if request.relay.sender and request.relay.source:
         from . import family_continuation
@@ -1459,15 +1466,10 @@ def deliver_resident_message_content(
 ) -> dict[str, Any]:
     """Send to one exact Resident; genealogy never participates in routing."""
 
-    target = resident_record_domain.resolve_resident_admission_target(
-        resident_id,
-        actor,
-        # The normalized request validates an exact relay before deciding
-        # whether direct visibility is required (_deliverable_record).
-        require_visible=False,
-    )
     result = persist_resident_input(
-        target.resident_id,
+        # Existence, registration and delivery permissions are checked by
+        # _deliverable_record after relay validation, not by a duplicate read.
+        str(resident_id or "").strip(),
         actor,
         content,
         context_refs,

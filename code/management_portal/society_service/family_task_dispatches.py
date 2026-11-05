@@ -212,8 +212,12 @@ def deliver(facade, target, trigger, facts, actor, *, business_ref, message_id="
             ):
                 raise resident_message_contract.MessageIdentityConflict("Family task message_id refers to a different request")
         else:
-            text = family_tasks.render(target, trigger, facts)
             prior = repository.message(target_id, mid)
+            render_facts = copy.deepcopy(facts)
+            if trigger == "route" and prior is None:
+                from . import family_route_facts
+                render_facts["routing"].update(family_route_facts.snapshot(facade, target, facts["routing"]))
+            text = family_tasks.render(target, trigger, render_facts)
             if prior is not None:
                 text = _legacy_text(target, trigger, facts, prior, text)
             original, _candidate = _validate_original(repository, target_id, facade_id, mid, text, business_ref)
@@ -224,6 +228,11 @@ def deliver(facade, target, trigger, facts, actor, *, business_ref, message_id="
                 # template, preserving its historical guide digest as well.
                 initiator = str(((original.get("origin") or {}).get("initiated_by") or {}).get("id") or facade_id)
             intent = {"request": request, "text": text, "initiated_by": initiator}
+            # Volatile preparation belongs to the winning rendered input, not
+            # the caller's immutable request identity. Replays reuse this text
+            # without fresh state/summary reads, including concurrent callers.
+            if render_facts != facts:
+                intent["rendered_facts"] = render_facts
             # Commit the winning request before attempting admission. A process
             # interruption resumes this same intent, never a freshly rendered one.
             database.write(lambda connection: connection.execute(

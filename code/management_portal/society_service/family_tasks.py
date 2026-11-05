@@ -24,6 +24,16 @@ ROUTER_CONTINUATION_CONTRACT = (
     '独立任务示例：{"target":"当前成员ID","confidence":90,"scope":"in","continue_previous":false}。'
 )
 
+ROUTER_FACTS_CONTRACT = (
+    "路由取材：facts.routing.candidates 是本轮按 Router 自己的读取权限批量取得的本层候选，"
+    "包含当前职责摘要、接单/工作状态和图片文件能力；corrections 是本门面近期改派示例。"
+    "普通请求优先依据这些事实直接输出选择，无须例行重复 GetLineage、GetResidentSummaries、"
+    "ListResidentStates 或 GetSharedState。只有职责缺失、摘要过期/截断且影响判断，或确有歧义时，"
+    "才针对必要对象补查；不得为选人扫描全部历史。busy 不等于职责缺口；unknown/unavailable 不表示空闲。"
+    "这份输入是受理时的事实快照，不授予新权限；最终投递仍核当前名册和约束。"
+    "只处理本次原请求并输出一次路由结果，不执行正文业务，不另作计划或进度说明。"
+)
+
 
 # trigger -> (canonical route key, role, title, guide, per-turn objective)
 TASKS = {
@@ -297,6 +307,8 @@ def render(record: dict, trigger: str, facts: dict, *, guide_version: str | None
     if trigger == "route":
         # Existing sessions may already have received an older first-turn guide.
         prompt += "\n" + ROUTER_CONTINUATION_CONTRACT
+        if "candidates" in facts.get("routing", {}):
+            prompt += "\n" + ROUTER_FACTS_CONTRACT
     if entry["role"] == "steward":
         enabled = block["family"].get("auto_migrate", True)
         prompt += "\n行动前用 GetLineage 核对当前 auto_migrate。Family 自动转组：" + ("开启。" if enabled else "关闭。不得自动更换账号；等待额度恢复或用户明确授权。")
