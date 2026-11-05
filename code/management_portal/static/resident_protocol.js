@@ -383,6 +383,10 @@
       this.streamStarted = false;
       this.releaseConversationInterest = null;
       this.historyLoading = null;
+      this.historyWindow = null;
+      this.historyRemoved = new Set();
+      this.conversationRevision = 0;
+      this.subscriptionRevision = 0;
       this.stateProjection = null;
       this.viewerState = null;
       this.stateCursor = null;
@@ -547,6 +551,7 @@
         if (!this.listeners.delete(listener)) return;
         this.refCount = Math.max(0, this.refCount - 1);
         if (!this.refCount) {
+          this.subscriptionRevision += 1;
           window.clearTimeout(this.submissionTimer);
           this.submissionTimer = null;
           this.resetConversationRequests();
@@ -562,12 +567,22 @@
     }
 
     dispose() {
+      this.subscriptionRevision += 1;
       this.resetConversationRequests();
       this.stopStream();
       stores.delete(this.residentId);
     }
 
+    resetHistoryWindow() {
+      this.conversationRevision += 1;
+      this.historyWindow = null;
+      this.historyLoading = null;
+      this.historyRemoved.clear();
+    }
+
     resetConversationRequests() {
+      this.resetHistoryWindow();
+      this.snapshotHistoryLimit = 0;
       if (this.recoveryTimer !== null) window.clearTimeout(this.recoveryTimer);
       if (this.snapshotRetryTimer !== null) window.clearTimeout(this.snapshotRetryTimer);
       if (this.projectionRefreshTimer) window.clearTimeout(this.projectionRefreshTimer);
@@ -720,7 +735,20 @@
     }
 
     async load({ force = false, historyLimit } = {}) {
+      const subscriptionRevision = this.subscriptionRevision;
       await window.PortalIdentity?.load?.();
+      // Initial Identity.load itself emits identity-changed. Establish the
+      // actor/window generation after it settles, but never revive a released
+      // subscription that happened to be waiting for that same initialization.
+      if (subscriptionRevision !== this.subscriptionRevision) throw new DOMException("Resident request superseded", "AbortError");
+      const requestConversationRevision = this.conversationRevision;
+      // Serialize page admission with snapshot replacement. A successful page
+      // expands the user's window before recovery determines its lower bound.
+      if (this.historyLoading) {
+        const revision = this.conversationRevision, actor = actorRevision;
+        await this.historyLoading.catch(() => {});
+        if (revision !== this.conversationRevision || actor !== actorRevision) throw new DOMException("Resident request superseded", "AbortError");
+      }
       // Identity initialization can resume a reader and an internal recovery
       // together. Reuse that reader's depth after the identity wait settles;
       // only an explicit request for more history expands the shared snapshot.
@@ -738,13 +766,18 @@
       this.loadingForce = force;
       this.recovering = this.loadingForce;
       const requestActorRevision = actorRevision;
+      const current = () => requestActorRevision === actorRevision
+        && requestConversationRevision === this.conversationRevision && this.loading === request;
       const request = window.PortalResidentService.snapshot(this.residentId, { historyLimit })
-        .then(snapshot => {
-          if (requestActorRevision !== actorRevision || this.loading !== request) throw new DOMException("Resident request superseded", "AbortError");
+        .then(async snapshot => {
+          if (!current()) throw new DOMException("Resident request superseded", "AbortError");
           if (String(snapshot?.resident?.resident_id || "") !== this.residentId) {
             throw new Error("Resident Snapshot target mismatch");
           }
           if (!this.refCount) return clone(snapshot);
+          snapshot = await this.restoreHistoryWindow(snapshot, current);
+          if (!current()) throw new DOMException("Resident request superseded", "AbortError");
+          if (this.historyWindow && this.historyWindow.source !== String(snapshot.family_history?.resident_id || "")) this.historyWindow = null;
           this.snapshot = clone(snapshot);
           this.snapshotHistoryLimit = historyLimit;
           if (this.snapshotRetryTimer !== null) window.clearTimeout(this.snapshotRetryTimer);
@@ -899,6 +932,13 @@
         // State and Chat are projections of the same ordered event stream,
         // but either Snapshot may be loading independently.
         if (!this.refCount) continue;
+        if (event.event_type === "conversation.context.cleared" && Number(event.cursor) > (this.cursor ?? -1)) {
+          // In particular, a cleared AMA facade no longer exposes personal
+          // history. Cancel pages based on that obsolete continuation first.
+          this.resetHistoryWindow();
+          if (this.loading) this.reloadRequested = true;
+          this.refreshSnapshotInBackground();
+        }
         if (
           !this.snapshot
           || this.cursor == null
@@ -1156,6 +1196,9 @@
           const index = this.snapshot.messages.findIndex(
             message => String(message?.message_id || "") === messageId
           );
+          if (payload.removed === true && this.historyLoading) this.historyRemoved.add(messageId);
+          // A fresh page may already omit a deletion buffered during recovery.
+          if (index < 0 && payload.removed === true) break;
           if (index < 0) throw new Error(`Message update target is absent: ${messageId}`);
           if (payload.removed === true) this.snapshot.messages.splice(index, 1);
           else if (payload.message?.message_id) this.snapshot.messages[index] = clone(payload.message);
@@ -1204,11 +1247,84 @@
       }
     }
 
+    mergeHistoryPage(snapshot, page, removed = new Set()) {
+      if (String(page?.resident_id || "") !== this.residentId) throw new Error("Resident message page target mismatch");
+      const existing = new Set((snapshot.messages || []).map(message => String(message?.message_id || "")));
+      const older = (Array.isArray(page.messages) ? page.messages : []).filter(message => {
+        const id = String(message?.message_id || "");
+        if (!id || existing.has(id) || removed.has(id)) return false;
+        existing.add(id); return true;
+      });
+      snapshot.messages = [...clone(older), ...(snapshot.messages || [])];
+      const inputs = new Map((snapshot.input_states || []).map(input => [input.message_id, input]));
+      for (const input of page.input_states || []) {
+        if (!removed.has(input.message_id)) inputs.set(input.message_id, mergeInputState(inputs.get(input.message_id), input));
+      }
+      snapshot.input_states = [...inputs.values()];
+      snapshot.next_page_token = String(page.next_page_token || "");
+      return snapshot;
+    }
+
+    async restoreHistoryWindow(snapshot, current) {
+      const expanded = this.historyWindow;
+      if (!expanded || !snapshot.next_page_token
+        || expanded.source !== String(snapshot.family_history?.resident_id || "")) return snapshot;
+      const result = clone(snapshot);
+      // Continuations are opaque (including the AMA personal-history boundary).
+      // Ask the saved continuation for the first still-visible row OUTSIDE the
+      // expanded window. This sentinel bounds the fresh walk even if the old
+      // boundary row was deleted or new messages changed the page alignment.
+      const read = async (pageToken, limit) => {
+        const page = await window.PortalResidentService.conversationMessages(this.residentId, { pageToken, limit });
+        if (!current()) throw new DOMException("Resident request superseded", "AbortError");
+        if (String(page?.resident_id || "") !== this.residentId) throw new Error("Resident message page target mismatch");
+        return page;
+      };
+      let sentinel = "", probe = expanded.floor;
+      const probed = new Set();
+      while (probe && !sentinel) {
+        if (probed.has(probe)) throw new Error("Conversation page did not advance");
+        probed.add(probe);
+        // Filters can produce empty pages. After the cheap one-row probe,
+        // cross those pages in normal batches, not one request per hidden row.
+        const page = await read(probe, probed.size === 1 ? 1 : expanded.limit);
+        sentinel = String(page.messages?.at(-1)?.message_id || "");
+        probe = String(page.next_page_token || "");
+      }
+      // The default head can already cover more than the former window after
+      // filtering/deletion. Keep that authoritative head without shrinking it.
+      if (sentinel && result.messages.some(message => message.message_id === sentinel)) return result;
+      const visited = new Set();
+      while (result.next_page_token) {
+        const token = String(result.next_page_token);
+        if (visited.has(token)) throw new Error("Conversation page did not advance");
+        visited.add(token);
+        const page = await read(token, expanded.limit);
+        const boundary = sentinel ? (page.messages || []).findIndex(message => message.message_id === sentinel) : -1;
+        if (boundary >= 0) {
+          const messages = page.messages.slice(boundary + 1);
+          const ids = new Set(messages.map(message => message.message_id));
+          this.mergeHistoryPage(result, { ...page, messages,
+            input_states: (page.input_states || []).filter(input => ids.has(input.message_id)),
+            next_page_token: expanded.floor });
+          return result;
+        }
+        this.mergeHistoryPage(result, page);
+      }
+      // A concurrent deletion of the sentinel invalidates this read, not the
+      // user's boundary. Never silently replace it with all remaining history.
+      if (sentinel) throw new Error("Conversation history changed during refresh");
+      return result;
+    }
+
     async loadOlder({ limit = 200 } = {}) {
+      const revision = this.conversationRevision, requestActorRevision = actorRevision;
+      if (this.loading) await this.loading;
+      if (revision !== this.conversationRevision || requestActorRevision !== actorRevision) throw new DOMException("Resident request superseded", "AbortError");
       const pageToken = String(this.snapshot?.next_page_token || "").trim();
       if (!pageToken) return clone(this.snapshot);
       if (this.historyLoading) return this.historyLoading;
-      const requestActorRevision = actorRevision;
+      this.historyRemoved.clear();
       const request = window.PortalResidentService.conversationMessages(this.residentId, {
         pageToken,
         limit,
@@ -1219,24 +1335,13 @@
         if (String(page?.resident_id || "") !== this.residentId) {
           throw new Error("Resident message page target mismatch");
         }
-        const existing = new Set(
-          (this.snapshot?.messages || []).map(message => String(message?.message_id || "")),
-        );
-        const older = (Array.isArray(page?.messages) ? page.messages : [])
-          .filter(message => message?.message_id && !existing.has(String(message.message_id)))
-          .map(clone);
-        this.snapshot.messages = [...older, ...(this.snapshot?.messages || [])];
-        const inputStates = new Map((this.snapshot.input_states || []).map(input => [input.message_id, input]));
-        for (const input of page.input_states || []) {
-          const existingInput = inputStates.get(input.message_id);
-          inputStates.set(input.message_id, mergeInputState(existingInput, input));
-        }
-        this.snapshot.input_states = [...inputStates.values()];
-        this.snapshot.next_page_token = String(page?.next_page_token || "");
+        this.mergeHistoryPage(this.snapshot, page, this.historyRemoved);
+        this.historyWindow = { floor: this.snapshot.next_page_token, limit,
+          source: String(this.snapshot.family_history?.resident_id || "") };
         this.emit({ type: "history", snapshot: clone(this.snapshot) });
         return clone(this.snapshot);
       }).finally(() => {
-        if (this.historyLoading === request) this.historyLoading = null;
+        if (this.historyLoading === request) { this.historyLoading = null; this.historyRemoved.clear(); }
       });
       this.historyLoading = request;
       return request;
