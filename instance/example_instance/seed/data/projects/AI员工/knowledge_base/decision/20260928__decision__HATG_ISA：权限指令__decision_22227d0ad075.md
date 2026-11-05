@@ -4,26 +4,26 @@ type: decision
 project: AI员工
 created_at: '2026-09-28'
 version:
-  number: 66
+  number: 68
   created_at: "2026-09-28T10:45:00Z"
   created_by:
     user: "weihao"
     agent: "resident_2a1fc6cd272d"
-  updated_at: "2026-11-02T17:47:44Z"
+  updated_at: "2026-11-05T02:13:47Z"
   updated_by:
-    user: ''
-    agent: resident_83d75ad3a6c7
+    user: ""
+    agent: "resident_83d75ad3a6c7"
 importance: 8
 metaness: 2
 ai_generated: false
 links:
   source:
-  - ${code_root}/management_portal/hatg/catalog/permission.py
-  - ${code_root}/management_portal/permission_system/schemes.py
-  - ${code_root}/management_portal/permission_system/authdiff.py
-  - ${code_root}/management_portal/permission_system/management.py
-  - ${code_root}/management_portal/permission_system/temporary.py
-  - ${code_root}/management_portal/resources/isa.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/hatg/catalog/permission.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/permission_system/schemes.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/permission_system/authdiff.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/permission_system/management.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/permission_system/temporary.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/resources/isa.py
   related:
   - decision_b820faf42218
   - decision_600ae27b0538
@@ -77,11 +77,12 @@ links:
 | `GetEffectivePermissions` | 否 | 主体在各 A 分类节点上被授权的 R 节点与洞（`coverage`）、全部表项、有效的临时凭证，User 另有 `user_category`；Package 的奖章读取这里；`principal_id` 必填 | 对该主体有 @admin |
 | `CheckPermission` | 否 | 判定一个主体能否执行一条指令，或在一个资源上是否持有某个 A 节点；返回每个请求的结果、原因（permitted、no_permit、denied）与命中的表项；Portal 管理员保底放行的调用返回 `portal_admin: true`、`requests` 为空；`principal_id` 必填 | 对该主体有 @admin |
 | `AcceptUserAuthorization` | 是 | Resident 理解当前执行中真实 User 的自然语言授权后，提交源 message_id、原文 evidence 与准确 credentials；Society 核验来源与执行关系，权限 owner 检查 User 持有并原子签发、审计。凭证只给调用 Resident，默认随当前任务，明确时长可给 expires_in_seconds；重试不重签，附件不阻止授权 | 免检；处理器证明当前 User 来源及执行归属，引擎核验签发者持有 |
-| `AcceptUserAuthorization` | 是 | Resident 理解当前执行中真实 User 的自然语言授权后，提交源 message_id、原文 evidence 与准确 credentials；Society 核验来源与执行关系，权限 owner 检查 User 持有并原子签发、审计。凭证只给调用 Resident，默认随当前任务，明确时长可给 expires_in_seconds；重试不重签，附件不阻止授权 | 免检；处理器证明当前 User 来源及执行归属，引擎核验签发者持有 |
 | `IssueTemporaryCredential` | 是 | 把自己在一个资源上持有的一个 A 节点临时交给另一个主体：只核对签发者此刻持有，随即写入一行 (接收者, A 节点, 资源, permit)，带签发者和过期时间。给出 `message_id`（接收 Resident 正在处理的、发给它的消息）时凭证随任务：这条消息的输入进入完成、失败或取消时在同一事务中删除；否则按 `expires_in_seconds` 到期（默认一天）。两种都最迟在签发 7 天后失效。DeliverMessage 的 `temporary_credentials` 在投递时以同样方式签发（decision_2fe6fd5367fb） | 免检；由引擎核对签发者持有 |
 | `RenewTemporaryCredential` | 是 | 签发者在按时长签发的凭证到期前续期：新的过期时间为此刻加 `expires_in_seconds`，不晚于签发后 7 天；随任务签发的凭证不能续期 | 免检；只有签发者 |
 | `RevokeTemporaryCredential` | 是 | 撤销一张临时凭证：签发者撤回，接收者做完事后交还 | 免检；处理器只允许签发者或接收者（固定角色，开关关闭时同样生效） |
 | `ListTemporaryCredentials` | 否 | 一个主体签发的和收到的有效临时凭证；`principal_id` 必填 | 对该主体有 @admin |
+
+`AcceptUserAuthorization.message_id` 可以是当前执行已送达的正式 Family 转交副本、中间副本或原始 User 消息 ID。Society 逐跳校验持久化 business_ref 与 family_relays 的源消息、目标 Resident、目标消息一致，抵达原始消息后核验真实 User 来源和直接正文 evidence。回执以原始消息 ID 和正文摘要去重，仍绑定接收者当前执行；换用副本 ID 重试不会重复签发，撤销或过期后不能换 ID 重签。普通转发、引用、附件自述及没有完整正式转交记录的消息不能授权。
 
 表中“免检”是默认方案的显式分类（放在“免检”节点下，固定槽对 Portal 节点判定）；默认方案给全部 A 元素分类，没有分类的 A 元素只有 Portal 管理员能调用（见 decision_600ae27b0538）。写表项的要求按表项所在的方案区分：启用方案实例中的行按上表；其他方案实例中的行，调用者要能通过 UpdatePermissionScheme。查看主体的指令（GetEffectivePermissions、CheckPermission、ListTemporaryCredentials）都要求写明 `principal_id`，查看自己也写自己的 ID，不再有“省略即自己”（weihao 2026-10-18）；它们把 `principal_id` 当作 R 树上的这个 User 或 Resident 判定，处理器不再另问其他指令：默认方案中账号本人对自己的账号有 @admin，Project 中的 Resident 对本 Project 有 @admin，个人 AMA 中的 Resident 与所有者相同，所以查看自己总能通过。默认方案把每个 User 按分类放在 P 树的 Portal 管理员、一般用户或实习用户节点下，并把“共享”上的全部动作交给 Portal 管理员节点，所以方案管理等指令默认只有 Portal 管理员满足。
 
@@ -145,7 +146,6 @@ UpdatePermissionScheme 和 ActivatePermissionScheme 的结果带 `auth_diff`，�
 | `DeletePermissionEntry` | `scheme_id`、`entry_id`、`entry_ids` |
 | `GetEffectivePermissions` | `principal_id` |
 | `CheckPermission` | `principal_id`、`instruction`、`arguments`、`a`、`resource_id` |
-| `AcceptUserAuthorization` | `message_id`、`evidence`、`credentials`、`expires_in_seconds` |
 | `AcceptUserAuthorization` | `message_id`、`evidence`、`credentials`、`expires_in_seconds` |
 | `IssueTemporaryCredential` | `principal_id`、`a`、`resource_id`、`message_id`、`expires_in_seconds` |
 | `RenewTemporaryCredential` | `credential_id`、`expires_in_seconds` |

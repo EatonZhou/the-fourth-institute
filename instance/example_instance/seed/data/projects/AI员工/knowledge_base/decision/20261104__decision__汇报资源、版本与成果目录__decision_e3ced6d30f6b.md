@@ -4,15 +4,15 @@ type: decision
 project: AI员工
 created_at: '2026-11-04'
 version:
-  number: 3
+  number: 4
   created_at: "2026-11-04"
   created_by:
     user: ""
     agent: "resident_2546a3558662"
-  updated_at: "2026-11-04T19:16:29Z"
+  updated_at: "2026-11-05T02:06:30Z"
   updated_by:
     user: ""
-    agent: "resident_6199a7a36480"
+    agent: "resident_83d75ad3a6c7"
 importance: 5
 ai_generated: true
 links:
@@ -78,6 +78,8 @@ Home 传入 `origin_context={resident_id,message_id,fence_index}`；报告服务
 模板报告带 authoring_id 提交实际 presentation 修改，保留来源拓扑；新的 revision 才能完成作者任务。解释视频由作者将新固定 manifest 经 `POST /api/home-explanation/media/authoring` 回填；服务核验本人、源摘要、质量、未取消任务和真实分镜语义变化。仅改变标题、注释、JSON 排版或质量标签不算完成。回填成功后再显式生成新版本，读取及重开不投递任务。
 
 ## 权限和生命周期
+
+汇报的创建归属由认证创建者固定。Resident 创建的报告位于该 Resident 的 R 树位置之下，随其 Lineage 和 Project 或个人 AMA 的归属管理；User 直接创建的报告位于该 User 的个人空间。登记前按相同父节点检查 RegisterResource 的协作权限，登记后从服务写入的 created_by 派生同一归属。请求体中的作者、项目或归属字段不能替换认证创建者，来源消息的负责 Resident 也不代替创建者。既有报告按保存的创建者恢复归属；缺少合法创建者的导入记录保留默认落点。报告来源当前权限仍独立核验。
 
 访问时以实际主体核验报告权限及原快照所引用来源的当前权限，包括正文、媒体分段、字幕和导出下载。报告不是绕过源权限的副本。写入、刷新、生成、关联与删除遵守对应正式权限；不得把持有链接或资源摘要当作授权。不同主体的来源绑定彼此隔离，分享使用既有资源授权机制。
 

@@ -112,18 +112,24 @@ def _delivered_inputs(connection, repository, caller: str, execution_id: str, jo
 
 
 def _resolve_source(connection, repository, caller: str, execution_id: str, job: Mapping, message_id: str):
+    """Resolve a delivered input or accepted relay alias to its original source."""
     from . import family_facade
 
     for delivered_id, message, actor in _delivered_inputs(connection, repository, caller, execution_id, job):
-        if delivered_id == message_id:
-            return caller, message, actor
         holder, held_id = caller, delivered_id
         visited = {(holder, held_id)}
-        for _ in range(family_facade.MAX_RELAY_HOPS):
+        matched = held_id == message_id
+        for hops in range(family_facade.MAX_RELAY_HOPS + 1):
             # A business_ref alone is not authority. Validate the accepted
             # reverse link and retain its row through permission commit.
             source = family_facade.parse_relay_mark(repository.message_business_ref(holder, held_id))
-            if source is None or source in visited:
+            if source is None:
+                if matched:
+                    if hops:
+                        message, actor = _original(repository, holder, held_id), ""
+                    return holder, held_id, message, actor
+                break
+            if source in visited or hops == family_facade.MAX_RELAY_HOPS:
                 break
             source_resident, source_id = source
             ledger = connection.execute(
@@ -133,9 +139,8 @@ def _resolve_source(connection, repository, caller: str, execution_id: str, job:
             if not link or (link.get("resident_id"), link.get("message_id")) != (holder, held_id):
                 break
             visited.add(source)
-            if source_id == message_id:
-                return source_resident, _original(repository, source_resident, source_id), ""
             holder, held_id = source
+            matched = matched or held_id == message_id
     _refuse("a delivered input or its persisted accepted Family relay source")
 
 
@@ -195,12 +200,12 @@ def accept(*, caller: str, execution_id: str, message_id: str,
         ).fetchone()
         if not execution or execution["agent_id"] != caller or execution["status"] != "running":
             _refuse("this Resident's running execution")
-        source_resident, source_message, source_actor = _resolve_source(
+        source_resident, source_id, source_message, source_actor = _resolve_source(
             connection, repository, caller, execution_id, job, message_id,
         )
-        issuer, source_digest = _source_proof(source_message, message_id, evidence, actor=source_actor)
+        issuer, source_digest = _source_proof(source_message, source_id, evidence, actor=source_actor)
         return permission_system.accept_user_authorization(
-            connection, issuer=issuer, resident_id=caller, message_id=message_id,
+            connection, issuer=issuer, resident_id=caller, message_id=source_id,
             bound_input_message_id=bound, execution_id=execution_id, source_resident_id=source_resident,
             credentials=credentials, evidence=evidence, source_digest=source_digest,
             expires_in_seconds=expires_in_seconds,

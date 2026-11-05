@@ -19,7 +19,7 @@ from management_portal.execution import execution_inputs
 from management_portal.execution.agent_data_store import get_agent_data_store
 from management_portal.permission_system import inline
 from management_portal.society_service import (
-    resident_conversation_stream, resident_execution_work, resident_user_authorization as authorization,
+    resident_conversation_stream, resident_execution_work,
 )
 from management_portal.society_service.isa import conversation
 from tests.cases.resident_execution_test_support import resident_record  # noqa: F401
@@ -277,7 +277,7 @@ def test_info_requires_consumption_and_binds_live_task_not_completed_source(acti
     assert not loans(active)
 
 
-def family_chain(active, *, depth=2):
+def family_chain(active, *, depth=2, original=None):
     """Actual immutable source segments plus the Society accepted-relay ledger."""
     from management_portal.society_service.family_facade import relay_mark
     previous_resident, previous_id = active.resident, MESSAGE
@@ -286,9 +286,15 @@ def family_chain(active, *, depth=2):
         facade = "resident_" + str(index + 3) * 12
         source_id = "msg_" + str(index + 3) * 32
         active.agent.ensure_agent(facade, actor_ref="lender")
-        active.agent.display_chat_message(facade, {**deepcopy(first_message), "message_id": source_id})
+        message = deepcopy(first_message)
+        if index < depth - 1:
+            message["origin"] = message_origin("lender", initiated_by="resident_" + str(index + 4) * 12)
+        elif original is not None:
+            message.update(deepcopy(original))
+        active.agent.display_chat_message(facade, {**message, "message_id": source_id})
         if index == 0:
             active.job["input_message"]["business_ref"] = relay_mark(facade, source_id)
+            active.job["input_message"]["origin"] = message_origin("lender", initiated_by=facade)
             # In real delivery private business_ref is stored with the source.
             accepted = active.repository.stored_message(active.resident, MESSAGE)
             active.agent.display_chat_message(active.resident, accepted)
@@ -300,13 +306,17 @@ def family_chain(active, *, depth=2):
             ledger["links"] = {source_id: {"resident_id": previous_resident, "message_id": previous_id,
                                            "relayed_at": "2026-11-03T00:00:00Z"}}
         previous_resident, previous_id = facade, source_id
+    save(active)
     active.arguments["message_id"] = previous_id
     return previous_resident, previous_id
 
 
 @pytest.mark.parametrize("depth", [1, 2, 4])
-def test_persisted_family_relay_chain_reaches_exact_original_user(active, depth):
+@pytest.mark.parametrize("reference", ["original", "delivered"])
+def test_persisted_family_relay_chain_reaches_exact_original_user(active, depth, reference):
     source_resident, source_id = family_chain(active, depth=depth)
+    if reference == "delivered":
+        active.arguments["message_id"] = MESSAGE
     conversation.accept_user_authorization(active.inv)
     assert active.calls[0]["source_resident_id"] == source_resident
     assert active.calls[0]["message_id"] == source_id
@@ -314,16 +324,19 @@ def test_persisted_family_relay_chain_reaches_exact_original_user(active, depth)
     assert active.calls[0]["bound_input_message_id"] == MESSAGE
 
 
+@pytest.mark.parametrize("reference", ["original", "delivered"])
 @pytest.mark.parametrize("breakage", ["missing_link", "different_recipient", "different_message", "resident_source"])
-def test_family_mark_alone_or_untrusted_original_is_not_authority(active, breakage):
-    source_resident, source_id = family_chain(active, depth=1)
+def test_family_mark_alone_or_untrusted_original_is_not_authority(active, breakage, reference):
+    original = None
     if breakage == "resident_source":
-        # This is a real Resident-sent source despite its user conversational role.
-        original = authorization._original(active.repository, source_resident, source_id)
-        original.update(author_id=active.resident, origin=message_origin(active.resident, initiated_by="lender"))
-        # Exercise the provenance check independently of the immutable segment writer.
+        original = {"author_id": active.resident, "origin": message_origin(active.resident, initiated_by="lender")}
+    source_resident, source_id = family_chain(active, depth=1, original=original)
+    if reference == "delivered":
+        active.arguments["message_id"] = MESSAGE
+    if breakage == "resident_source":
         with pytest.raises(PermissionError):
-            authorization._source_proof(original, source_id, TEXT)
+            conversation.accept_user_authorization(active.inv)
+        assert not active.calls and not loans(active)
         return
     with active.repository.state_store.family_relays.transaction(active.record["lineage_id"], source_resident) as ledger:
         if breakage == "missing_link":
@@ -333,6 +346,65 @@ def test_family_mark_alone_or_untrusted_original_is_not_authority(active, breaka
     with pytest.raises(PermissionError):
         conversation.accept_user_authorization(active.inv)
     assert not active.calls
+
+
+def test_relay_aliases_share_receipt_and_cannot_reissue_after_revocation(active):
+    source_resident, source_id = family_chain(active, depth=3)
+    active.arguments["message_id"] = MESSAGE
+    first = conversation.accept_user_authorization(active.inv)
+    for alias in ("msg_" + "3" * 32, source_id):
+        active.arguments["message_id"] = alias
+        repeated = conversation.accept_user_authorization(active.inv)
+        assert repeated["replayed"]
+        assert repeated["authorization_id"] == first["authorization_id"]
+        assert repeated["credentials"] == first["credentials"]
+    assert len(loans(active)) == 1
+    assert {facts["message_id"] for facts in active.calls} == {source_id}
+    assert {facts["source_resident_id"] for facts in active.calls} == {source_resident}
+    permission_system.manage("RevokeTemporaryCredential",
+        {"credential_id": first["credentials"][0]["credential_id"]}, actor="lender")
+    active.arguments["message_id"] = "msg_" + "4" * 32
+    with pytest.raises(PermissionError, match="已失效"):
+        conversation.accept_user_authorization(active.inv)
+    assert not active.permissions.holds(active.resident, REQUEST["a"], REQUEST["resource_id"])
+
+
+@pytest.mark.parametrize("source", ["quote", "context_reference", "image", "changed_text"])
+def test_relay_evidence_must_be_in_original_direct_text(active, source):
+    original = {"content_parts": [{"type": "text", "text": "Please read this reference."}]}
+    if source == "quote":
+        original["quote"] = {"message_id": "msg_prior", "author_id": "lender", "text": TEXT}
+    elif source != "changed_text":
+        original["content_parts"].append({"type": source, "text": TEXT})
+    family_chain(active, depth=2, original=original)
+    # The delivered copy still contains TEXT, but only the original can grant it.
+    active.arguments["message_id"] = MESSAGE
+    with pytest.raises(PermissionError, match="verbatim"):
+        conversation.accept_user_authorization(active.inv)
+    assert not active.calls and not loans(active)
+
+
+@pytest.mark.parametrize("breakage", ["cycle", "too_deep", "missing_mark", "unrelated_message"])
+def test_relay_alias_requires_complete_bounded_delivery_chain(active, breakage):
+    from management_portal.society_service.family_facade import relay_mark, MAX_RELAY_HOPS
+
+    depth = MAX_RELAY_HOPS + 1 if breakage == "too_deep" else 2
+    source_resident, source_id = family_chain(active, depth=depth)
+    active.arguments["message_id"] = MESSAGE
+    if breakage == "cycle":
+        original = active.repository.stored_message(source_resident, source_id)
+        active.agent.update_chat_message(source_resident, source_id,
+            {**original, "business_ref": relay_mark(active.resident, MESSAGE)})
+        with active.repository.state_store.family_relays.transaction(active.record["lineage_id"], active.resident) as ledger:
+            ledger["links"] = {MESSAGE: {"resident_id": source_resident, "message_id": source_id}}
+    elif breakage == "missing_mark":
+        accepted = active.repository.stored_message(active.resident, MESSAGE)
+        active.agent.update_chat_message(active.resident, MESSAGE, {**accepted, "business_ref": "ordinary-forward"})
+    elif breakage == "unrelated_message":
+        active.arguments["message_id"] = "msg_" + "8" * 32
+    with pytest.raises(PermissionError):
+        conversation.accept_user_authorization(active.inv)
+    assert not active.calls and not loans(active)
 
 
 def test_explicit_lifetime_is_passed_to_permission_owner_with_proven_source(active):

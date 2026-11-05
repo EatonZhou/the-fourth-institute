@@ -4,15 +4,15 @@ type: decision
 project: AI员工
 created_at: '2026-10-16'
 version:
-  number: 87
+  number: 89
   created_at: "2026-10-16T09:28:31Z"
   created_by:
     user: "weihao"
     agent: "resident_0d928ae486ba"
-  updated_at: "2026-11-04T13:35:55Z"
+  updated_at: "2026-11-05T02:13:25Z"
   updated_by:
     user: ""
-    agent: "resident_2e9ea0072551"
+    agent: "resident_83d75ad3a6c7"
 importance: 9
 metaness: 3
 ai_generated: false
@@ -135,6 +135,8 @@ Portal 业务层（ISA 内核、领域服务、页面入口、ResourceService）
 开关保持开启（weihao 2026-10-19，2575e9af 走查时打开）。WALL 与 Test 归在 AI员工 Project 下，开启后其他 Project 的 Resident 对它们只有 viewer：不为此加实例中的编辑，也不把这些 Resident 加入 AI员工；需要写入时，由有权限的主体签发临时凭证（第 3.6 节）。
 
 ### 3.2 请求适配层
+
+创建判定槽的 `place` 可用唯一的 `$caller` 路径取得认证创建者关系：`resident` 取 Resident ID，`personal_space` 取 User 个人空间，另一种主体时不产生该关系。它不读取请求体同名字段，也不与其他参数路径混合。执行与按钮查询使用实际 actor；CheckPermission 使用被查询 principal，而非查询接口的调用者。资源自己的事实适配层按已保存创建者派生相同关系，保证创建前的落点检查与登记后的 R 树归属一致。汇报采用此规则；其他资源继续按各自类型的放置规则解释关系，权限层级与 permit/deny 表项不因该上下文来源而改变。
 
 
 一条 ISA 指令按它声明的判定槽拆成一组请求（weihao 2026-10-19）。判定槽写在指令声明的 `decides` 中（decision_898b8911a2ff“声明格式”），随代码发布：参数槽按参数所指的对象判定，可带类型限定、`optional`、`via`（按已保存记录的字段判定）或 `place`（按新对象将要落下的位置判定）；固定槽不指向对象。每个判定槽是一个 A 元素：指令只有一个槽时，元素就是指令名；有多个槽时，元素是 `指令:参数` 或 `指令:固定槽名`。方案只给 A 元素分类：把它放在一个 A 树分类节点下，固定槽另指定一个 R 树分类节点（例如默认方案中 CreateUser 在“管理”下、对“共享”判定）。参数槽所指的每个资源（地址取根 ID，列表取每一项）是一个 r，资源类型不符或必填参数缺失时返回 `instruction.invalid_arguments`。拥有服务可以在判定前补上调用者能省略、由服务推导的参数（`OwnerBinding.authorization_arguments`），记录的调用和处理代码仍用调用者给出的参数：目前只有 RunScript，按运行所属的 Lineage 判定，这个 Lineage 与处理代码使用的由同一个函数确定（decision_8b510cbd9c58）。因此 AI员工 实例中的编辑（AI员工，@admin，“Portal 运维”）不再让 AI员工 的 Resident 在其他 Project 的 Lineage 中运行 RunScript。weihao 2026-10-23 定：保持现状，不为此增加实例中的编辑；需要时由对方签发临时凭证。方案没有分类的 A 元素放在 A 树的默认节点下，没有分类的固定槽按 R 树的默认节点判定，参数槽仍按声明拆出对象：默认方案为“未归类”和“共享”，只有管理员表项覆盖，新增指令忘记分类时只有管理员能用。所有人都能调用的指令必须显式放在免检节点下（默认方案写成 `{"a": "@free", "r": "@portal"}`）。编译后的方案对有未归类元素的指令，`describe` 带 `unmapped: true`；GetPermissionScheme 与方案指令的 `dry_run` 列出未归类的 A 元素。一组请求在一次引擎调用中判定，全部允许才放行；读指令被拒时报告 `instruction.not_found`，写指令报告 `instruction.forbidden`，details 带目标、动作、要求挂靠的 A 节点（`a`）和原因（`no_permit` 或 `denied`）。CancelInput 要求对目标 Resident 有 `@contributor`，输入的发起人不另外放行。
@@ -406,7 +408,7 @@ weihao 2026-10-18 定稿。5.1 至 5.3、5.5 与 5.6 已实现，第 3 节按实
   只改标题或说明时报告为中性。指令元素是 A 树上的元素（thinking_3cbdd375ebf8 §14），改指令分类就是移动 A 元素，授权随之改变：实例不变时也读取现有实例比较移动的元素（见“报什么”）。要求改变了的指令另列在 `remapped`，每项的 before/after 列出各 A 元素（`element`）的判定槽与分类。临时凭证不参与比较。
 - **报什么。** ΔAuth⁺（新得到的权限）和 ΔAuth⁻（失去的权限）按 §14.4 在节点层面汇总成盒子。组分两种：
   - **实例变化的组。** 每组是一个主体集合、一个资源集合和一次 A 层级变化。A 取分类节点（@viewer、@contributor、@admin、@message 等），以及被某条表项直接点名的 A 节点（例如一条只授予某条指令的表项，这条指令的 ID 会出现在得到或失去的节点里）。其余指令不逐条列出：没有被点名、也没有移动的指令，判定等于它路径上最近的被点名节点，所以不会漏掉变化。每组给出变化前后允许的最高分类节点（例如 `@admin` → `@contributor`）、得到和失去的分类节点、主体数、资源数和变化类别。
-  - **移动元素的组。** 一个 A 元素换了分类节点，或固定槽换了 R 节点，就按元素单独比较：旧侧取它在旧实例中原来的位置，新侧取它在新实例中的新位置，对同样的主体类和资源类各判定一次，得出（主体节点，该元素，资源节点）的得失盒子。参数槽只计声明类型的对象（例如 DeleteLineage 只计 Lineage）。place 槽判定新对象将落下的位置：新对象是可登记的类型（`vocabulary.REGISTERABLE_TYPES`），计这些类型放置时所属的关系对象（RegisterResource 为 Project），以及没有关系对象时落下的分类节点（默认方案为“共享”“公共内容”“全部 Project”）；落点按旧方案和新方案各算一次，分类节点在旧侧取旧落点、新侧取新落点判定。via 槽判定记录字段指向的对象，字段声明了类型时只计这些类型（回执的 lineage 只计 Lineage）。没有声明类型的 via 字段（表项的 r）和参数槽可以指向任何 R 节点，计全部对象和全部分类节点。分类节点每个单独成组，组的 r 就是这个节点。固定槽的资源是它要求的 R 节点；固定槽和分类节点的组里资源数都记 1，不计入整份报告的资源数。移动的元素不再参与实例变化的组。每组另带 `element`、`instruction` 和分类的变化 `a: {before, after}`，固定槽还有 `resource: {before, after}`；`before`/`after`/`gained`/`lost` 中出现的是这个元素本身。例如把 DeleteLineage 从 @admin 改到 @viewer，能查看某个 Lineage 但不能管理它的主体在该 Lineage 上得到 DeleteLineage，报告放宽。
+  - **移动元素的组。** 一个 A 元素换了分类节点，或固定槽换了 R 节点，就按元素单独比较：旧侧取它在旧实例中原来的位置，新侧取它在新实例中的新位置，对同样的主体类和资源类各判定一次，得出（主体节点，该元素，资源节点）的得失盒子。参数槽只计声明类型的对象（例如 DeleteLineage 只计 Lineage）。place 槽判定新对象将落下的位置：新对象是可登记的类型（`vocabulary.REGISTERABLE_TYPES`），计这些类型放置时所属的关系对象（RegisterResource 的显式归属为 Project，汇报的创建者归属为调用 Resident 或 User 个人空间），以及没有关系对象时落下的分类节点（默认方案为“共享”“公共内容”“全部 Project”）；落点按旧方案和新方案各算一次，分类节点在旧侧取旧落点、新侧取新落点判定。via 槽判定记录字段指向的对象，字段声明了类型时只计这些类型（回执的 lineage 只计 Lineage）。没有声明类型的 via 字段（表项的 r）和参数槽可以指向任何 R 节点，计全部对象和全部分类节点。分类节点每个单独成组，组的 r 就是这个节点。固定槽的资源是它要求的 R 节点；固定槽和分类节点的组里资源数都记 1，不计入整份报告的资源数。含 `$caller` 的 place 槽按具体主体与其自身归属关联计算，不把其他 Resident 或个人空间计成该主体可选择的创建落点；相同权限路径的主体在这里仍分别计算。移动的元素不再参与实例变化的组。每组另带 `element`、`instruction` 和分类的变化 `a: {before, after}`，固定槽还有 `resource: {before, after}`；`before`/`after`/`gained`/`lost` 中出现的是这个元素本身。例如把 DeleteLineage 从 @admin 改到 @viewer，能查看某个 Lineage 但不能管理它的主体在该 Lineage 上得到 DeleteLineage，报告放宽。
   
   主体集合和资源集合用新树里容纳它们的最低节点描述。需要时再注明只计哪些对象类型（kinds），以及除去哪些节点（except）。两种组按涉及的三元组数一起排序，一起受 `diff_limit` 和时间上限限制，一起计入顶层计数和类别。整份报告的类别：两个集合都为空是中性，只失去是收紧，只得到是放宽，两者都有是混合。
 - **例子。** 9d7dd4c1 把属于 Project 的 Workbench 从“公共内容”移到所属 Project 下。在线上实例上，这次变化的报告是收紧，共四组：

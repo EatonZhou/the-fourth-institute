@@ -211,6 +211,22 @@ def test_moved_place_and_via_elements_count_only_what_they_can_judge(off):
     assert judged == {LINEAGE: ("tightening", 1), OTHER_LINEAGE: ("tightening", 1)}
 
 
+def test_caller_placement_diff_counts_only_each_residents_own_report_parent(off):
+    original = rules("team", without={"project_members"})
+    original["instructions"]["RegisterResource"] = {"a": "@admin"}
+    call("CreatePermissionScheme", scheme_id="team", rules=original)
+    changed = copy.deepcopy(original)
+    changed["instructions"]["RegisterResource"] = {"a": "@viewer"}
+    report = call("UpdatePermissionScheme", scheme_id="team", rules=changed,
+                  dry_run=True, diff_limit=100)["auth_diff"]
+    for resident in ("resident_000000000001", "resident_000000000002"):
+        groups = [item for item in report["groups"]["items"]
+                  if item.get("element") == "RegisterResource" and item["r"]["node"] == resident]
+        assert len(groups) == 1
+        assert groups[0]["p"]["node"] == resident
+        assert (groups[0]["principals"], groups[0]["resources"]) == (1, 1)
+
+
 def test_a_moved_place_slot_counts_only_the_class_nodes_a_registerable_type_lands_at(off):
     """移动的 place 槽只计可登记类型实际会落下的分类节点
 

@@ -236,6 +236,12 @@ def compare(before: View, after: View, *, limit: int, budget: float = BUDGET,
         kinds[(tree, element)] = kind
     p_classes = _classes(principals, "P", old, new, old.p_named, new.p_named, (represents or _owners)(principals))
     r_classes = _classes(resources, "R", old, new, old.r_named, new.r_named)
+    # Caller-derived placements correlate a principal with one particular R
+    # object. Equal rule paths alone no longer make those objects interchangeable.
+    if any("$caller" in paths for _name, was, slot in moves
+           for side in (was, slot) for _related, paths in side.place):
+        p_classes = [(was, now, [member]) for was, now, members in p_classes for member in members]
+        r_classes = [(was, now, [member]) for was, now, members in r_classes for member in members]
     moved = [index for index, (was, now, _members) in enumerate(r_classes) if was != now]
 
     cells: dict[tuple[int, int, int], list[int]] = {}
@@ -465,6 +471,31 @@ def _moved_cells(moves, before: View, after: View, p_classes, r_classes, kinds, 
         landed.append((path(before, old, was_node), path(after, new, now_node), [now_node]))
         reach.append(bits)
     classes = [*r_classes, *landed]
+    caller_places = {}
+    caller_moves = [(position, was, slot) for position, (_name, was, slot) in enumerate(moves)
+                    if any("$caller" in paths for side in (was, slot) for _related, paths in side.place)]
+    land_pairs = list(lands)
+
+    def reachable(view, slot, principal, resource):
+        if not any("$caller" in paths for _related, paths in slot.place):
+            return True
+        key = (id(view), slot.place, principal)
+        if key not in caller_places:
+            from .facts import creator_owners
+
+            caller = creator_owners(principal)
+            fixed = {related: caller[related] for related, paths in slot.place
+                     if "$caller" in paths and related in caller}
+            names = [related for related, paths in slot.place if "$caller" not in paths]
+            targets = set()
+            for size in range(len(names) + 1):
+                for given in combinations(names, size):
+                    owners = {**fixed, **{name: _GIVEN + name for name in given}}
+                    targets.update(view.scheme.placement("R", kind, owners) for kind in REGISTERABLE_TYPES)
+            caller_places[key] = targets
+        targets = caller_places[key]
+        return resource in targets or _GIVEN + kinds.get(("R", resource), "") in targets
+
     checked = 0
     for p_index, (was, now, _members) in enumerate(p_classes):
         if time.monotonic() > deadline:
@@ -480,6 +511,13 @@ def _moved_cells(moves, before: View, after: View, p_classes, r_classes, kinds, 
         for r_index, (r_was, r_now, _resources) in enumerate(classes):
             a = _allowed(old_grants, r_was) & ~old_mask | old_at
             b = _allowed(new_grants, r_now) & ~new_mask | new_at
+            for position, was_slot, now_slot in caller_moves:
+                old_resource, new_resource = (land_pairs[r_index - len(r_classes)]
+                                              if r_index >= len(r_classes) else (_resources[0], _resources[0]))
+                if not reachable(before, was_slot, _members[0], old_resource):
+                    a &= ~(1 << position)
+                if not reachable(after, now_slot, _members[0], new_resource):
+                    b &= ~(1 << position)
             changed = (a ^ b) & reach[r_index]
             while changed:
                 position = (changed & -changed).bit_length() - 1

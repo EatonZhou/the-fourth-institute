@@ -803,7 +803,8 @@ def test_a_place_slot_judges_where_a_new_resource_will_sit(store):
     """
     from management_portal.permission_system.requests import Unresolved, requests
 
-    slot = {"argument": "resource_type", "a": "@contributor", "place": {"project": ["fields.project_id", "fields.project_ids"]}}
+    slot = {"argument": "resource_type", "a": "@contributor", "place": {"project": ["fields.project_id", "fields.project_ids"],
+            "resident": ["$caller"], "personal_space": ["$caller"]}}
     scheme = compile_scheme(builtin_documents()["default"])
     assert scheme.describe("RegisterResource")["requirements"] == [{"element": "RegisterResource", **slot}]
 

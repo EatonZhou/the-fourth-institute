@@ -214,6 +214,21 @@
           "under": "resident"
         },
         {
+          "id": "@resident_report",
+          "parent": "@resident",
+          "title": "Resident 创建的汇报",
+          "each": "report",
+          "under": "resident"
+        },
+        {
+          "id": "@personal_report",
+          "parent": "@personal_space",
+          "title": "User 创建的汇报",
+          "each": "report",
+          "under": "personal_space",
+          "otherwise": "@shared"
+        },
+        {
           "id": "@project_workbench",
           "parent": "@project",
           "title": "Project 内的 Workbench",

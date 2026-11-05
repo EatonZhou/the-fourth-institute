@@ -109,8 +109,8 @@ class PARPermissions:
 
     # -- entry checks -------------------------------------------------------------------
 
-    def _requests(self, scheme: CompiledScheme, name: str, arguments: Mapping[str, Any]) -> list[Request]:
-        return requests(scheme, name, arguments, readers=self._readers())
+    def _requests(self, scheme: CompiledScheme, name: str, arguments: Mapping[str, Any], *, caller: str = "") -> list[Request]:
+        return requests(scheme, name, arguments, readers=self._readers(), caller=caller)
 
     def _readers(self) -> dict[str, Any]:
         """Who reads each record a ``via`` slot names (vocabulary.RECORDS): the code that keeps it."""
@@ -153,7 +153,7 @@ class PARPermissions:
             per_call.clear()
             for index, args in enumerate(arguments):
                 try:
-                    per_call.append(self._requests(scheme, declaration.name, args))
+                    per_call.append(self._requests(scheme, declaration.name, args, caller=context.caller))
                 except Unresolved as exc:
                     errors[index] = InstructionError("instruction.invalid_arguments", str(exc))
                     per_call.append([])
@@ -496,7 +496,7 @@ class PARPermissions:
             return True
 
         def build(scheme: CompiledScheme) -> list[tuple[str, str]]:
-            return [(request.action, request.resource) for request in self._requests(scheme, instruction, arguments or {})]
+            return [(request.action, request.resource) for request in self._requests(scheme, instruction, arguments or {}, caller=actor)]
 
         try:
             return all(decision.allowed for decision in self._decide_built(actor, build)[2])

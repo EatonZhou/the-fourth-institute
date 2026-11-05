@@ -63,14 +63,22 @@ def _owners(slot: Slot, identifiers: list[str], arguments: Mapping[str, Any],
     return owners
 
 
-def _placed_under(slot: Slot, arguments: Mapping[str, Any]) -> dict[str, str]:
+def _placed_under(slot: Slot, arguments: Mapping[str, Any], caller: str = "") -> dict[str, str]:
     """The related objects a creating call names for ``slot.place``: the first ID each related type's paths give.
 
     A class node such as ``@public`` names no object, so the new object takes
     its pattern's fallback, as the fact adapter places it.
+    ``$caller`` is supplied only by the authenticated call context (or the
+    principal being queried), independently of all submitted arguments.
     """
     owners = {}
     for related, paths in slot.place:
+        if "$caller" in paths:
+            from .facts import creator_owners
+
+            if given := creator_owners(caller).get(related):
+                owners[related] = given
+            continue
         given = next((values[0] for path in paths if (values := _resources(arguments, path))), "")
         if not given or given.startswith("@"):
             continue
@@ -117,7 +125,7 @@ def _resources(arguments: Mapping[str, Any], path: str) -> list[str]:
 
 
 def requests(scheme: CompiledScheme, instruction: str, arguments: Mapping[str, Any], *,
-             readers: Mapping[str, RecordReader] | None = None) -> list[Request]:
+             readers: Mapping[str, RecordReader] | None = None, caller: str = "") -> list[Request]:
     """The requests one call makes under ``scheme``; ``readers`` read the records ``via`` slots name."""
     slots = scheme.slots(instruction)
     if not slots:
@@ -136,7 +144,7 @@ def requests(scheme: CompiledScheme, instruction: str, arguments: Mapping[str, A
             found.extend(Request(slot.element, owner, slot) for owner in _owners(slot, identifiers, arguments, readers))
             continue
         if slot.place:
-            owners = _placed_under(slot, arguments)
+            owners = _placed_under(slot, arguments, caller)
             found.extend(Request(slot.element, scheme.placement("R", kind, owners), slot) for kind in identifiers)
             continue
         named = next((kind for kind in slot.types if kind in NAMED_TYPES), "")

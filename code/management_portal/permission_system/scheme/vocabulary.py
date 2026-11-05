@@ -45,6 +45,7 @@ PLACEMENTS: dict[str, dict[str, str]] = {
     # A Workbench names the Projects of the Lineages it binds; the first one places it.
     "workbench": {"project": "belongs", "lineage": "belongs"},
     "workspace": {"resident": "belongs"},
+    "report": {"resident": "owner", PERSONAL_SPACE: "owner"},
     PERSONAL_SPACE: {"user": "owner"},
 }
 

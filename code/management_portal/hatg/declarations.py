@@ -148,6 +148,8 @@ class DecisionSlot:
     object judged is what each record names in that field; with ``place``
     (related type -> parameter paths) the argument is the type of an object
     about to be created and the object judged is the R node it will sit under.
+    A sole ``$caller`` path uses the authenticated creator's Resident or User
+    personal space; it never reads a field from the request body.
 
     A fixed slot (``fixed``) names no object: the scheme says which R node it
     asks about.  Its name only tells the slots of one instruction apart.
@@ -308,8 +310,10 @@ class InstructionDeclaration:
             if (slot.via or slot.place) and (slot.types or (slot.via and slot.place)):
                 raise RuntimeError(f"{self.name} 的判定槽 {slot.argument}：via、place、types 互斥")
             for _related, paths in slot.place:
+                if "$caller" in paths and (paths != ("$caller",) or _related not in {"resident", "personal_space"}):
+                    raise RuntimeError(f"{self.name} 的 $caller 落点必须单独用于 resident 或 personal_space")
                 for path in paths:
-                    if path.split(".")[0] not in names:
+                    if path != "$caller" and path.split(".")[0] not in names:
                         raise RuntimeError(f"{self.name} 的落点参数 {path} 未声明")
 
     @property

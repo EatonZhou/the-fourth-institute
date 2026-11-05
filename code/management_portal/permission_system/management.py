@@ -70,7 +70,7 @@ class Management:
                         "portal_admin": True}
             try:
                 items = [(request.action, request.resource)
-                         for request in self.permissions._requests(scheme, instruction, call)]
+                         for request in self.permissions._requests(scheme, instruction, call, caller=principal)]
             except Unresolved as exc:
                 raise ValueError(str(exc)) from exc
             except RecordNotFound as exc:

@@ -74,6 +74,16 @@ def principal_id(value: Any) -> str:
     return principal.id if principal.kind in {"user", "resident"} else ""
 
 
+def creator_owners(actor: str) -> dict[str, str]:
+    """The authenticated creator's Resident or personal space; never payload fields."""
+    creator = principal_id(actor)
+    if not creator:
+        return {}
+    if creator.startswith("resident_"):
+        return {"resident": creator}
+    return {PERSONAL_SPACE: personal_space(creator)}
+
+
 def live(record: Mapping[str, Any]) -> bool:
     """Whether the record describes an object that has not been deleted."""
     attributes = record.get("attributes") if isinstance(record.get("attributes"), Mapping) else {}
@@ -149,7 +159,9 @@ def fact_from_record(record: Mapping[str, Any], kind: str) -> Fact:
     creator = principal_id(attributes.get("created_by") or record.get("created_by") or record.get("author"))
     created_for = principal_id(attributes.get("created_for") or record.get("created_for")) if creator else ""
     owners = {}
-    if kind == "lineage" and _text(attributes.get("lineage_membership")).lower() == "personal":
+    if kind == "report":
+        owners = creator_owners(creator)
+    elif kind == "lineage" and _text(attributes.get("lineage_membership")).lower() == "personal":
         # A personal AMA belongs to its owner User, not to a Project.
         if creator and not creator.startswith("resident_"):
             owners = {PERSONAL_SPACE: personal_space(creator), "user": creator}

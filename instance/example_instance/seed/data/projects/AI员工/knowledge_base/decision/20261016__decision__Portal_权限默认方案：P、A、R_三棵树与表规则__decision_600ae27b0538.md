@@ -4,30 +4,32 @@ type: decision
 project: AI员工
 created_at: 2026-10-16
 version:
-  number: 51
+  number: 52
   created_at: "2026-10-16T16:03:37Z"
   created_by:
     user: "weihao"
     agent: "resident_9c94c8b365fe"
-  updated_at: "2026-11-04T17:30:50Z"
+  updated_at: "2026-11-05T02:06:30Z"
   updated_by:
-    user: ''
-    agent: resident_83d75ad3a6c7
+    user: ""
+    agent: "resident_83d75ad3a6c7"
 importance: 8
 metaness: 2
 ai_generated: false
 links:
   source:
-  - ${code_root}/management_portal/permission_system/scheme/builtin/default.json
-  - ${code_root}/management_portal/permission_system/scheme/vocabulary.py
-  - ${code_root}/management_portal/permission_system/facts.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/permission_system/scheme/builtin/default.json
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/permission_system/scheme/vocabulary.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/permission_system/facts.py
   related:
   - decision_b820faf42218
   - decision_22227d0ad075
+  - thinking_3cbdd375ebf8
   - decision_bd5217d08c09
   - decision_44cf587c1721
   supersedes: []
-  derived_from: []
+  derived_from:
+  - thinking_3cbdd375ebf8
 ---
 
 # Portal 权限默认方案：P、A、R 三棵树与表规则
@@ -79,6 +81,8 @@ Lineage Effect 的执行身份、事件归属和自动运行边界以 decision_a
 
 ## 2. R 树：按对象归属分层
 
+汇报按认证创建者归属：Resident 的报告放在该 Resident 下，User 的报告放在其个人空间下。RegisterResource 的 place 声明额外使用 `resident: ("$caller",)` 和 `personal_space: ("$caller",)`；请求适配器只从认证主体取得这些关系。登记事实从不可由调用方改写的 created_by 取得同一位置，创建和后续访问沿用该父节点现有权限，不新增创建者的全局放行表项。旧报告按已记录创建者重新放置，无合法创建者的记录仍落到共享。来源内容的读取权限继续由报告服务逐次检查。
+
 ```text
 R 根（Portal）
 ├── 共享
@@ -110,7 +114,7 @@ R 根（Portal）
 - R 根下先分成“共享”和“个人”两部分。面向全员和管理员的授权写在“共享”节点上，个人空间因此天然不被覆盖，不需要 deny 表项。
 - 所有 Project 都在“全部 Project”节点下。授权写在这个节点上，就覆盖现有的和以后新建的每个 Project 及其中的全部资源。
 - 每个资源只有一个父节点。所属对象不止一个时（例如一篇论文关联多个 Project）取记录中的第一个；缺少所属对象时不在“全部 Project”下。每个规则节点写一条放置规则（decision_b820faf42218 §5.9）：`under` 写放在哪类关系对象之下，`otherwise` 写没有这个关系时放到本树哪个分类节点。“Project 内的知识条目”、“Project 内的 Workbench”和“每个 Workbench”写 `otherwise: @public`（公共内容），“Project 内的论文”写 `otherwise: @papers`（公共内容下的论文库），“每个 Lineage”写 `otherwise: @shared`；挂在 Lineage 下的 Resident、Family 和挂在 Resident 下的 Workspace 不写 `otherwise`，没有关系时放到树的兜底节点“共享”。不为尚未登记的所属对象预留位置；关系对象未在实例中时按引擎的缺省放置处理，后续同步或补齐恢复自然归属。具体事务与补齐边界见 decision_b820faf42218 §3.3、§5.7，文件型资源不承诺与权限实例共享事务。
-- 登记新资源时按它将要落下的位置判定（weihao 2026-10-19，ee804aeb）：调用者要在新资源的 R 树父节点上有 `@contributor`。父节点和登记后入树时的计算相同：按资源类型找放置规则，调用给出了所属对象时是那个对象（`fields.project_id`，没有时取 `fields.project_ids` 的第一项），没有时是规则的 `otherwise` 节点，类型不在任何放置规则里时是“共享”。`@public` 这类分类节点不是对象，按没有所属对象处理。所以登记 device 落在“共享”上，只有 Portal 管理员能登记；不带 Project 的知识条目、repo 落在公共内容上，所有人都能登记；带 Project 的落在那个 Project 上，Workbench 也是这样（例如带 `project_ids: [P1, P2]` 的 Workbench 落在 P1 上，要求 P1 的 `@contributor`）；不带 Project 的 Workbench 落在公共内容上。RegisterResource 声明按落点判定的槽：`On("resource_type", place={"project": ("fields.project_id", "fields.project_ids")})`，默认方案把它放在 `@contributor` 下；`place` 的键必须是放置规则中出现的关系对象类型（词汇 `place_related`），不与 `via`、类型同写。
+- 登记新资源时按它将要落下的位置判定（weihao 2026-10-19，ee804aeb）：调用者要在新资源的 R 树父节点上有 `@contributor`。父节点和登记后入树时的计算相同：按资源类型找放置规则，调用给出了所属对象时是那个对象（`fields.project_id`，没有时取 `fields.project_ids` 的第一项），没有时是规则的 `otherwise` 节点，类型不在任何放置规则里时是“共享”。`@public` 这类分类节点不是对象，按没有所属对象处理。所以登记 device 落在“共享”上，只有 Portal 管理员能登记；不带 Project 的知识条目、repo 落在公共内容上，所有人都能登记；带 Project 的落在那个 Project 上，Workbench 也是这样（例如带 `project_ids: [P1, P2]` 的 Workbench 落在 P1 上，要求 P1 的 `@contributor`）；不带 Project 的 Workbench 落在公共内容上。RegisterResource 声明按落点判定的槽：`On("resource_type", place={"project": ("fields.project_id", "fields.project_ids"), "resident": ("$caller",), "personal_space": ("$caller",)})`，默认方案把它放在 `@contributor` 下；`place` 的键必须是放置规则中出现的关系对象类型（词汇 `place_related`），不与 `via`、类型同写。
 - 公共内容是不归属任何 Project 的共享内容，所有 User 和 Resident 都能修改、删除（weihao 2026-10-17）。账号、聊天室、帖子、全部 Project 不在其中；个人 AMA 在所有者的个人空间下，也不在其中；方案规则中没有出现的对象类型落在“共享”下，只有全员可读。
 - Resident 挂在它当前所在的 Lineage 下；移动到其他 Lineage 时随之移动，它的子树一起移动。
 - Workbench 挂在它记录的第一个 Project 下（weihao 2026-10-19，9d7dd4c1）。Workbench 登记时记下所绑定 Lineage 所属的 Project（`project_ids`），所以它通常和这些 Lineage 在同一个 Project 中。方案里“Project 内的 Workbench”排在“每个 Workbench”之前，同时有 Project 和 Lineage 时按 Project 放置；没有 Project 时挂在它登记的主 Lineage 下，两者都没有时在公共内容下。被其他 Lineage 绑定只是使用关系，不改变它在树上的位置。
