@@ -203,6 +203,7 @@ class Store:
         from management_portal.resources.deleted_identity_boundary import require_live_identity
         parents = [rid for binding in data.get('bindings', {}).values()
                    for rid in [binding['lineage_id'], *binding.get('residents', {}).values()]]
+        parents.extend(data.get('project_ids', ()))
         require_live_identity(connection, resource_id, parents=parents)
 
     def create(self, resource_id: str, payload: dict, actor: str) -> dict:
@@ -384,24 +385,49 @@ class Store:
         return self.get(app_id, actor)
 
     def delete(self, app_id: str, actor: str) -> dict:
-        from .application_retention import reconcile
         from management_common.directory_retention import RetentionStore
         retention = RetentionStore()
         self.require_write(self.get(app_id, actor), actor)
         with self.connect() as connection:
             retention.queue.lock(connection)
-            connection.execute("SELECT pg_advisory_xact_lock(hashtextextended(current_schema(), 0))")
-            if connection.execute('SELECT 1 FROM native_entrypoints WHERE app_id=%s', (app_id,)).fetchone():
-                raise ProjectionError("projection.active_entrypoint", "不能删除正在使用的权威业务入口；请先显式切换到已验证的工作台", 409)
-            builds = [json.loads(row[0]) for row in connection.execute('SELECT build FROM application_packages WHERE app_id=%s', (app_id,))]
-            connection.execute('DELETE FROM apps WHERE id=%s', (app_id,))
-            connection.execute('DELETE FROM versions WHERE app_id=%s', (app_id,))
-            connection.execute('DELETE FROM preferences WHERE app_id=%s', (app_id,))
-            connection.execute('DELETE FROM role_requests WHERE workbench_id=%s', (app_id,))
-            reconcile(connection, deleted_hashes=[build['artifact_hash'] for build in builds if build.get('artifact_hash')])
+            self._delete_rows(connection, [app_id], actor)
         from management_portal import presentation_store
         presentation_store.forget_favorite_target(FAVORITE_SURFACE, app_id)
         return {"deleted": app_id}
+
+    def delete_project(self, project_id: str, *, connection, actor: str) -> list[str]:
+        """Enlist current Project-owned workbenches in the Project transaction.
+
+        The owner tables, rather than a possibly stale search index or an old
+        published revision, decide membership. No second commit or permission
+        check may separate this cascade from the already-authorized Project.
+        """
+        schema = self.database.schema
+        rows = connection.execute(f'''SELECT a.id FROM "{schema}".apps a
+            JOIN "{schema}".projects p ON p.app_id=a.id AND p.revision=a.revision
+            WHERE p.project_id=%s ORDER BY a.id FOR UPDATE OF a''', (project_id,)).fetchall()
+        ids = [row['id'] for row in rows]
+        self._delete_rows(connection, ids, actor)
+        return ids
+
+    def _delete_rows(self, connection, app_ids, actor):
+        """The common transactional owner boundary for direct and Project deletion."""
+        if not app_ids:
+            return
+        from .application_retention import reconcile
+        from management_portal.resources.directory_registrations import unregister_identity
+        schema = self.database.schema
+        connection.execute('SELECT pg_advisory_xact_lock(hashtextextended(%s, 0))', (schema,))
+        if connection.execute(f'SELECT 1 FROM "{schema}".native_entrypoints WHERE app_id=ANY(%s)', (app_ids,)).fetchone():
+            raise ProjectionError("projection.active_entrypoint", "不能删除正在使用的权威业务入口；请先显式切换到已验证的工作台", 409)
+        builds = [json.loads(row[0]) for row in connection.execute(
+            f'SELECT build FROM "{schema}".application_packages WHERE app_id=ANY(%s)', (app_ids,))]
+        connection.execute(f'DELETE FROM "{schema}".apps WHERE id=ANY(%s)', (app_ids,))
+        connection.execute(f'DELETE FROM "{schema}".preferences WHERE app_id=ANY(%s)', (app_ids,))
+        connection.execute(f'DELETE FROM "{schema}".role_requests WHERE workbench_id=ANY(%s)', (app_ids,))
+        reconcile(connection, deleted_hashes=[build['artifact_hash'] for build in builds if build.get('artifact_hash')])
+        for app_id in app_ids:
+            unregister_identity(app_id, connection=connection, actor=actor)
 
     def require_write(self, app: dict, actor: str) -> None:
         if not self.authorized(app, actor, "manage"):

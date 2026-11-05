@@ -244,6 +244,8 @@ def delete_project(project_id: str, actor: str) -> dict[str, Any]:
         from management_portal.resources.registry_store import get_registry_store
         registry = get_registry_store()
         registry._ensure()
+        from management_portal.workbench_projections.store import Store as WorkbenchStore
+        workbenches = WorkbenchStore()
         with ExitStack() as preparation:
             from . import invariant_locks
             preparation.enter_context(lineage_aggregate.execution_authorities([*ordinary, *principals]))
@@ -269,6 +271,7 @@ def delete_project(project_id: str, actor: str) -> dict[str, Any]:
                 directory_metadata(project_record.get('directory'), registry_id)
                 from management_common.directory_move_store import cancel_owner_moves
                 cancel_owner_moves(connection, registry_id)
+                workbench_ids = workbenches.delete_project(registry_id, connection=connection, actor=actor_id)
                 from management_portal.resources.directory_registrations import unregister_tree
                 nested = unregister_tree(
                     [project_root],
@@ -287,7 +290,8 @@ def delete_project(project_id: str, actor: str) -> dict[str, Any]:
                     "description": str(project_record.get("description") or ""),
                     "lineage_ids": lineage_ids,
                     "resident_ids": resident_ids,
-                    "resource_ids": sorted(set([registry_id, *lineage_ids, *resident_ids, *nested['resource_ids']])),
+                    "resource_ids": sorted(set([registry_id, *lineage_ids, *resident_ids, *nested['resource_ids'], *workbench_ids])),
+                    "workbench_ids": workbench_ids,
                     "effects": {"status": "pending", "completed": {}, "errors": {}, "attempts": 0},
                 }
                 document["projects"] = _registry_without_project(document, registry_id)["projects"]

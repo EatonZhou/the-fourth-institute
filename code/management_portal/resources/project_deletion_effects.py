@@ -44,7 +44,16 @@ def _avatar(entry):
 
 def _index(entry):
     from . import get_resource_service
-    return get_resource_service()._index().project_unregistered('project', entry['project_id'])
+    index = get_resource_service()._index()
+    for resource_id in entry.get('workbench_ids', ()):
+        index.project_unregistered('workbench', resource_id)
+    return index.project_unregistered('project', entry['project_id'])
+
+
+def _favorites(entry):
+    from management_portal import presentation_store
+    for resource_id in entry.get('workbench_ids', ()):
+        presentation_store.forget_favorite_target('workbench', resource_id)
 
 
 def _effects():
@@ -52,7 +61,7 @@ def _effects():
     return [
         *[('relation:' + feature, lambda entry, relate=relate: relate(entry['project_id']))
           for feature, relate in portal_features.contributions('project.relations')],
-        ('permissions', _permissions), ('avatar', _avatar), ('index', _index),
+        ('permissions', _permissions), ('avatar', _avatar), ('favorites', _favorites), ('index', _index),
     ]
 
 
