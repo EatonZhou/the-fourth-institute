@@ -83,7 +83,12 @@ def release_resource(resource_id: str, *, actor: str) -> set[str]:
                 raise
             lineage_id = value['lineage_id']
         app_id = (value.get('metadata') or {}).get('workbench_id')
-        if app_id:
+        from management_portal.resources.directory_registrations import is_deleted
+        # A Workbench can be removed in the same Project transaction as the
+        # discussed resource. Its roles are already absent: requiring a read
+        # of that tombstoned app would keep the release outbox pending forever.
+        # A denied or unavailable live app still fails and retains the retry.
+        if app_id and not is_deleted(app_id):
             from .service import get_service
             service = get_service()
             app = service.store.get(app_id, actor)

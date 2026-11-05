@@ -142,6 +142,36 @@ def test_resource_release_preserves_resident_reused_by_shared_role(projection, m
     assert not any(c[0] in {'ApplyLineageChanges', 'DeleteResident'} for c in projection.calls)
 
 
+def test_release_finishes_when_its_workbench_was_deleted_with_the_project(projection, monkeypatch):
+    """A committed Workbench tombstone does not block discussion cleanup."""
+    from management_portal.workbench_projections import service
+    from management_portal.resources import directory_registrations
+    associate(projection, 'workbench_111111111111')
+    entry = projection.store.get('alice', resident_handoff.INVOCATION_ASSOCIATION_NAMESPACE, 'discussion')['value']
+    entry['metadata'].update(workbench_id='workbench_111111111111', workbench_role='chat')
+    projection.store.put('alice', resident_handoff.INVOCATION_ASSOCIATION_NAMESPACE, 'discussion', entry)
+    monkeypatch.setattr(directory_registrations, 'is_deleted', lambda rid: rid == 'workbench_111111111111')
+    monkeypatch.setattr(service, 'get_service', lambda: pytest.fail('Never read a deleted Workbench'))
+    assert resource_lifecycle.release_resource('workbench_111111111111', actor='owner') == {RID}
+    assert not projection.store.list_namespace(resident_handoff.INVOCATION_ASSOCIATION_NAMESPACE)
+
+
+def test_live_workbench_read_failure_is_not_treated_as_deletion(projection, monkeypatch):
+    from management_portal.workbench_projections import service
+    from management_portal.resources import directory_registrations
+    associate(projection, 'paper_111111111111')
+    entry = projection.store.get('alice', resident_handoff.INVOCATION_ASSOCIATION_NAMESPACE, 'discussion')['value']
+    entry['metadata'].update(workbench_id='workbench_111111111111', workbench_role='chat')
+    projection.store.put('alice', resident_handoff.INVOCATION_ASSOCIATION_NAMESPACE, 'discussion', entry)
+    monkeypatch.setattr(directory_registrations, 'is_deleted', lambda rid: False)
+    def denied(*args):
+        raise PermissionError('denied')
+    monkeypatch.setattr(service, 'get_service', lambda: SimpleNamespace(store=SimpleNamespace(get=denied)))
+    with pytest.raises(PermissionError, match='denied'):
+        resource_lifecycle.release_resource('paper_111111111111', actor='owner')
+    assert projection.store.list_namespace(resident_handoff.INVOCATION_ASSOCIATION_NAMESPACE)
+
+
 def test_failed_release_keeps_association_and_graph_for_retry(projection):
     """Lineage 修改失败时保留资源关联和图结构，重试后完成释放"""
     associate(projection, 'plan_111111111111')
