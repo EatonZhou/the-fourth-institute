@@ -35,7 +35,7 @@ def test_activity_icons_keep_identity_links_with_fallback_avatars() -> None:
 
 
 def test_account_details_edit_route_concurrency_without_overwriting_other_settings() -> None:
-    """并行数按执行账号保存，保留草稿、派发间隔和失败状态。
+    """并行数与 Close 阈值按执行账号保存，保留草稿、其他设置和失败状态。
 
     :design: decision_4dea0db1f45a
     """

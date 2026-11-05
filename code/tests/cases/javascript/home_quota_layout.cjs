@@ -5,7 +5,7 @@ const root = path.resolve(__dirname, '../../..');
 const {chromium} = require(path.join(root, 'management_portal/test_framework/tau_runtime/node_modules/playwright'));
 const functions = ['executionAccounts','accountQuotaWindowIsStale','accountQuotaWindows',
   'accountSummaryQuotaWindows','accountQuotaWarning','accountQuotaBlockers','accountLimitStatus','refreshAccountQuotaWindows','accountQuotaWindow','accountLimitRow',
-  'accountRows','accountApiRow','accountBalanceHtml','accountCreditsHtml','accountConcurrencyRows','accountConcurrencyHtml','renderAccountDetails'];
+  'accountRows','accountApiRow','accountBalanceHtml','accountCreditsHtml','accountConcurrencyRows','accountConcurrencyHtml','accountThresholdHtml','saveAccountThreshold','renderAccountDetails'];
 const renderer = homeStatements().filter(({node:n})=>n.type==='FunctionDeclaration' && functions.includes(n.id.name)).map(s=>s.source).join('\n');
 (async()=>{
   const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
@@ -13,7 +13,7 @@ const renderer = homeStatements().filter(({node:n})=>n.type==='FunctionDeclarati
     const page=await browser.newPage();
     await page.setContent('<main data-home-component="agent-accounts"><div class="agent-status-limit-list"></div></main>');
     await page.addStyleTag({content:'body {margin:16px;font:14px Arial;--muted:#687584;--border:#ccd6de;--chip:#f1f4f6;}'});
-    for(const file of ['home_workbench.css','home.css']) await page.addStyleTag({path:path.join(root,'management_portal/static',file)});
+    for(const file of ['portal_components.css','home_workbench.css','portal_design_system.css','portal_themes.css','home.css']) await page.addStyleTag({path:path.join(root,'management_portal/static',file)});
     await page.addScriptTag({content:`
       const tag=(parts,...values)=>parts.reduce((s,p,i)=>s+p+(values[i]??''),'');
       window.PortalI18n={t:x=>x,html:tag,text:tag,markup:x=>x};
@@ -24,6 +24,7 @@ const renderer = homeStatements().filter(({node:n})=>n.type==='FunctionDeclarati
       const currentAgentStatusData=()=>data;
       const accountIntakePending=new Map();
       const accountConcurrencyEdits=new Map();
+      const accountThresholdEdits=new Map();
       const syncAccountDetailsButtons=()=>{};
       let accountDetails=null;
       ${renderer}
@@ -157,8 +158,8 @@ const renderer = homeStatements().filter(({node:n})=>n.type==='FunctionDeclarati
     await page.evaluate(()=>{
       canWriteSettings=true;
       Object.assign(data.accounts[0],{details_scope:'model_api',execution_accounts:[
-        {account_id:'deepseek_primary',max_concurrency:4},
-        {account_id:'a_very_long_harness_account_using_deepseek',max_concurrency:8}]});
+        {account_id:'deepseek_primary',max_concurrency:4,close_threshold:{metric:'balance',unit:'CNY',value:0,supported:true}},
+        {account_id:'a_very_long_harness_account_using_deepseek',max_concurrency:8,close_threshold:{metric:'balance',unit:'CNY',value:12.5,supported:true}}]});
       accountDetails.accountId='deepseek';renderAccountDetails();
     });
     assert.equal(await page.locator('[data-account-concurrency]').count(),2);
@@ -167,12 +168,39 @@ const renderer = homeStatements().filter(({node:n})=>n.type==='FunctionDeclarati
     await page.evaluate(()=>refreshAccountQuotaWindows());
     assert.equal(await concurrent.inputValue(),'12','live refresh keeps unsaved concurrency');
     assert.equal(await concurrent.evaluate(el=>el===document.activeElement),true);
+    assert.equal(await page.locator('[data-account-threshold]').count(),2);
+    const closeThreshold=page.locator('[data-account-threshold="deepseek_primary"] input');
+    assert.equal(await closeThreshold.inputValue(),'0');
+    await closeThreshold.fill('8.5');
+    await page.evaluate(()=>refreshAccountQuotaWindows());
+    assert.equal(await closeThreshold.inputValue(),'8.5','live refresh keeps threshold draft');
+    assert.equal(await closeThreshold.evaluate(el=>el===document.activeElement),true);
     for(const width of [1440,390,320]) {
       await page.setViewportSize({width,height:900});
       assert.equal(await page.locator('.account-details-body').evaluate(el=>el.scrollWidth>el.clientWidth),false);
       assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
     }
-    if (process.env.PORTAL_LAYOUT_SCREENSHOT) { await page.setViewportSize({width:1440,height:650}); await page.screenshot({path:process.env.PORTAL_LAYOUT_SCREENSHOT}); }
+    await page.evaluate(()=>{
+      Object.assign(data.accounts[3],{max_concurrency:1,close_threshold:{metric:'percent',unit:'%',value:2,supported:true}});
+      accountDetails.accountId='kimi-code';renderAccountDetails();
+      window.PortalUIPrimitives={randomUUID:()=> 'threshold-browser'};
+      window.PortalInstructionClient={execute:async(name,args)=>{
+        if(name==='ListProviderAccounts') return {accounts:[{...data.accounts[3],dispatch_interval_min_seconds:2,dispatch_interval_max_seconds:6}]};
+        return {settings:{...args,close_threshold:{metric:'percent',unit:'%',value:args.close_threshold_percent,supported:true}}};
+      }};
+    });
+    const kimi=page.locator('[data-account-threshold="kimi-code"]');
+    assert.match(await kimi.innerText(),/剩余额度.*%/);
+    await kimi.locator('input').fill('5');
+    await kimi.locator('button').click();
+    await page.waitForFunction(()=>document.querySelector('[data-account-threshold="kimi-code"]').textContent.includes('已保存'));
+    assert.equal(await kimi.locator('input').inputValue(),'5');
+    for(const width of [1440,390,320]) {
+      await page.setViewportSize({width,height:900});
+      assert.equal(await page.locator('.account-details-body').evaluate(el=>el.scrollWidth>el.clientWidth),false);
+      assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
+      if (process.env.PORTAL_LAYOUT_SCREENSHOT) await page.locator('.account-details').screenshot({path:process.env.PORTAL_LAYOUT_SCREENSHOT.replace('.png',`-${width}.png`)});
+    }
     console.log('Omitted quota exhaustion, stale/unknown/recovery and details refresh pass; compact summaries and six widths pass');
   } finally {await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});

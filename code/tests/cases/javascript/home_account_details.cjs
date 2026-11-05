@@ -12,12 +12,12 @@ const account = {account_id:'api',capabilities:{resident_details:true,scheduler_
 const context = vm.createContext({document,URL,window:{PortalI18n:{t:x=>x,html:tag,text:tag,markup:x=>x}},
   esc:x=>String(x??'').replaceAll('&','&amp;').replaceAll('"','&quot;').replaceAll('<','&lt;'), formatDateTime:()=>'', executionAccounts:d=>d.accounts,
   currentAgentStatusData:()=>({accounts:[account]}),accountIntakePending:new Map(),
-  currentCanSetScheduler:()=>false,accountConcurrencyEdits:new Map(),
+  currentCanSetScheduler:()=>false,accountConcurrencyEdits:new Map(),accountThresholdEdits:new Map(),
   syncAccountDetailsButtons:()=>{}, loadAgentStatus:()=>{},loadAccountDetails:()=>actions.push('refresh'),
   changeAccountResidentsIntake:(_,action)=>actions.push(action),
   accountDetails:{accountId:'api',panel:document.querySelector('#panel'),snapshot,
     popover:{isOpen:()=>true,reposition:()=>{},close:()=>{}}}});
-for (const name of ['accountConcurrencyRows', 'accountConcurrencyHtml', 'accountQuotaWindowIsStale', 'accountQuotaWindows', 'accountSummaryQuotaWindows', 'accountQuotaWarning', 'accountCreditsHtml', 'renderAccountDetails', 'refreshAccountQuotaWindows']) {
+for (const name of ['accountConcurrencyRows', 'accountConcurrencyHtml', 'accountThresholdHtml', 'accountQuotaWindowIsStale', 'accountQuotaWindows', 'accountSummaryQuotaWindows', 'accountQuotaWarning', 'accountCreditsHtml', 'renderAccountDetails', 'refreshAccountQuotaWindows']) {
   vm.runInContext(homeStatements().find(({node:n})=>n.type==='FunctionDeclaration' && n.id.name===name).source,context);
 }
 try {

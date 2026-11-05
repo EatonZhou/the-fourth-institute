@@ -274,10 +274,11 @@
       return window.PortalI18n.html`<section class="account-concurrency"><h4>并行数</h4>${rows.map(row => {
         const edit = accountConcurrencyEdits.get(row.account_id);
         const known = Number.isInteger(row.max_concurrency) && row.max_concurrency >= 1;
+        const pending = edit?.pending || accountThresholdEdits.get(row.account_id)?.pending;
         const label = account.details_scope === "model_api" ? row.account_id : window.PortalI18n.t("最大并行数");
         return window.PortalI18n.html`<form data-account-concurrency="${esc(row.account_id)}">
-          <label><span>${esc(label)}</span><input type="number" name="max_concurrency" min="1" max="256" step="1" required aria-label="${esc(window.PortalI18n.text`${row.account_id} 最大并行数`)}" value="${esc(edit?.value ?? (known ? row.max_concurrency : ""))}" ${!currentCanSetScheduler() || !known || edit?.pending ? "disabled" : ""}></label>
-          ${currentCanSetScheduler() ? window.PortalI18n.html`<button type="submit" class="portalButton is-compact" ${!known || edit?.pending ? "disabled" : ""}>${edit?.pending ? window.PortalI18n.t("保存中…") : window.PortalI18n.t("保存")}</button>` : ""}
+          <label><span>${esc(label)}</span><input type="number" name="max_concurrency" min="1" max="256" step="1" required aria-label="${esc(window.PortalI18n.text`${row.account_id} 最大并行数`)}" value="${esc(edit?.value ?? (known ? row.max_concurrency : ""))}" ${!currentCanSetScheduler() || !known || pending ? "disabled" : ""}></label>
+          ${currentCanSetScheduler() ? window.PortalI18n.html`<button type="submit" class="portalButton is-compact" ${!known || pending ? "disabled" : ""}>${edit?.pending ? window.PortalI18n.t("保存中…") : window.PortalI18n.t("保存")}</button>` : ""}
           ${edit?.feedback ? window.PortalI18n.html`<p role="${edit.error ? "alert" : "status"}">${esc(edit.feedback)}</p>` : !known ? window.PortalI18n.markup('<p role="status">并行数暂不可用，请刷新</p>') : ""}
         </form>`;
       }).join("")}</section>`;
@@ -285,7 +286,7 @@
 
     async function saveAccountConcurrency(form) {
       const id = form.dataset.accountConcurrency;
-      if (!currentCanSetScheduler() || accountConcurrencyEdits.get(id)?.pending || !form.reportValidity()) return;
+      if (!currentCanSetScheduler() || accountConcurrencyEdits.get(id)?.pending || accountThresholdEdits.get(id)?.pending || !form.reportValidity()) return;
       const value = Number(form.elements.max_concurrency.value);
       if (!Number.isInteger(value) || value < 1 || value > 256) return;
       const edit = {value, pending: true, feedback: "", error: false};
@@ -327,11 +328,11 @@
         const known = threshold?.supported && Number.isFinite(threshold.value) && ["percent", "balance"].includes(threshold.metric) && threshold.unit;
         const label = threshold?.metric === "balance" ? window.PortalI18n.t("剩余余额") : window.PortalI18n.t("剩余额度");
         const changedUnit = edit?.value !== undefined && (edit.metric !== threshold?.metric || edit.unit !== threshold?.unit);
-        const disabled = !currentCanSetScheduler() || !known || state?.loading || edit?.pending;
+        const disabled = !currentCanSetScheduler() || !known || state?.loading || edit?.pending || accountConcurrencyEdits.get(row.account_id)?.pending;
         return window.PortalI18n.html`<form data-account-threshold="${esc(row.account_id)}" data-threshold-metric="${esc(threshold?.metric)}" data-threshold-unit="${esc(threshold?.unit)}">
           <label><span>${account.details_scope === "model_api" ? window.PortalI18n.html`${esc(row.account_id)} · ` : ""}${esc(label)}${threshold?.unit ? window.PortalI18n.html` (${esc(threshold.unit)})` : ""}</span><input type="number" name="close_threshold" min="0" ${threshold?.metric === "percent" ? 'max="100"' : ""} step="any" required aria-label="${esc(window.PortalI18n.text`${row.account_id} Close 阈值 (${threshold?.unit || "—"})`)}" value="${esc(edit?.value ?? (known ? threshold.value : ""))}" ${disabled ? "disabled" : ""}></label>
           ${currentCanSetScheduler() ? window.PortalI18n.html`<button type="submit" class="portalButton is-compact" ${disabled || changedUnit ? "disabled" : ""}>${edit?.pending ? window.PortalI18n.t("保存中…") : window.PortalI18n.t("保存")}</button>` : ""}
-          ${state?.loading ? window.PortalI18n.markup('<p role="status">正在读取阈值…</p>') : state?.error ? window.PortalI18n.html`<p role="alert">${esc(state.error)}</p>` : changedUnit ? window.PortalI18n.markup('<p role="alert">阈值单位已变化，请重新输入</p>') : edit?.feedback ? window.PortalI18n.html`<p role="${edit.error ? "alert" : "status"}">${esc(edit.feedback)}</p>` : !known ? window.PortalI18n.markup('<p role="status">当前账号的阈值设置暂不可用，请刷新</p>') : ""}
+          ${state?.loading ? window.PortalI18n.markup('<p role="status">正在读取阈值…</p>') : state?.error ? window.PortalI18n.html`<p role="alert">${esc(state.error)}</p>` : !known ? window.PortalI18n.markup('<p role="status">当前账号的阈值设置暂不可用，请刷新</p>') : changedUnit ? window.PortalI18n.markup('<p role="alert">阈值单位已变化，请重新输入</p>') : edit?.feedback ? window.PortalI18n.html`<p role="${edit.error ? "alert" : "status"}">${esc(edit.feedback)}</p>` : ""}
         </form>`;
       }).join("")}<p class="account-details-note">剩余量达到阈值时自动暂停接单；设为 0 关闭阈值保护，额度耗尽仍会暂停。</p></section>`;
     }
