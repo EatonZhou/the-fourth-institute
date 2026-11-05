@@ -471,6 +471,10 @@ def _commit_registration(
         with invariant_locks.catalog_lock(f"resident-registration:{resident_id}", operation="resident.register.commit"):
             store = resident_catalog.get_catalog().state_store
             with store.database.transaction() as connection, directory_creation_scope(creation.key):
+                # Membership writers acquire the Lineage row before reserving
+                # directory paths. Normalization can register paths too, so
+                # acquire this row before entering any of the publication work.
+                store.lock_lineage_definition(lineage_id)
                 commit_registration()
                 with creation.registration(connection):
                     intent.complete(connection)
