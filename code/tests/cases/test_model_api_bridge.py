@@ -61,6 +61,16 @@ def test_chat_reasoning_survives_responses_history_and_tool_continuation():
     assert converted['messages'][1]['tool_call_id'] == 'call-read'
 
 
+def test_responses_developer_instructions_keep_system_priority_in_chat():
+    request = {'model': 'chat-model', 'input': [
+        {'role': 'developer', 'content': 'Follow the tool policy'},
+        {'role': 'user', 'content': 'Read a file'},
+    ]}
+    payload = wire.encode(wire.request(request, wire.RESPONSES), wire.CHAT)
+    assert [message['role'] for message in payload['messages']] == ['system', 'user']
+    assert payload['messages'][0]['content'][0]['text'] == 'Follow the tool policy'
+
+
 def _reply(protocol, tool, name="read_file", arguments=None, reasoning=False):
     arguments = arguments or {"path": "hello.txt"}
     encoded = json.dumps(arguments)

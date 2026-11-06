@@ -284,6 +284,10 @@ def encode(value, protocol):
     items = []
     for message in value["messages"]:
         role = message["role"]
+        if protocol == CHAT and role == "developer":
+            # Responses' developer instructions have system priority. Older
+            # Chat contracts accept system, but reject the developer role.
+            role = "system"
         pending = []
         def flush():
             if pending:
