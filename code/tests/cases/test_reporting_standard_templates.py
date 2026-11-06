@@ -39,8 +39,8 @@ def test_standard_template_matrix_uses_effective_settings(resident_record, initi
         "initiative": initiative, "quality": quality,
     }
     paths = policies.template_paths(reporting.effective(rid))
-    assert [path.name for path in paths] == (["initiative_off.md"] if initiative == "off" else [
-        f"initiative_{initiative}.md", f"quality_{quality}.md", "enabled.md",
+    assert [path.name for path in paths] == (["scope.md", "initiative_off.md"] if initiative == "off" else [
+        "scope.md", f"initiative_{initiative}.md", f"quality_{quality}.md", "enabled.md",
     ])
     for path in paths:
         body = Template(path.read_text()).substitute(code_root=str(Path(__file__).resolve().parents[2])).strip()
@@ -52,6 +52,24 @@ def test_standard_template_matrix_uses_effective_settings(resident_record, initi
     else:
         assert "汇报功能已开启" in part.content
         assert "炫酷介绍" not in part.content
+
+
+@pytest.mark.parametrize("message", [
+    "执行具名工作项《整理进展摘要》",  # scheduled task
+    "[HATG Packet] portal.release_published：更新阶段进展",  # publication event
+    "修复阶段进展停更并补齐遗漏",  # direct business request
+])
+def test_disabled_policy_keeps_business_maintenance_and_report_creation_separate(resident_record, message):
+    before = records.find_resident(resident_record["resident_id"])
+    text = policies.prompt(before, {"message": message})
+    assert _policy(text)["initiative"] == "off"
+    assert text.index("本策略只控制") < text.index("汇报功能：不开启")
+    assert "阶段进展、进展摘要、运行记录和索引属于业务产物" in text
+    assert "核对真实来源并补齐遗漏，不要求用户开启汇报功能" in text
+    assert "本策略范围内的汇报与解释作品" in text
+    assert "不能开启这项能力" in text
+    assert "不自动创建正式 report 资源、解释包、媒体或主动通知" in text
+    assert records.find_resident(before["resident_id"]) == before
 
 
 def test_preview_and_actual_first_later_and_switch_share_one_part(resident_record, monkeypatch):

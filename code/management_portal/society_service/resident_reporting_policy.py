@@ -68,10 +68,11 @@ QUALITY_TEMPLATES = {name: f"quality_{name}.md" for name in ("low", "medium", "h
 
 def template_paths(policy: dict) -> tuple[Path, ...]:
     """Select only shipped templates, never a path supplied by message text."""
+    scope = (TEMPLATE_ROOT / "scope.md",)
     if policy.get("state") != "known":
-        return (TEMPLATE_ROOT / "unknown.md",)
+        return (*scope, TEMPLATE_ROOT / "unknown.md")
     normalize({key: policy[key] for key in DEFAULT})
-    paths = (TEMPLATE_ROOT / INITIATIVE_TEMPLATES[policy["initiative"]],)
+    paths = (*scope, TEMPLATE_ROOT / INITIATIVE_TEMPLATES[policy["initiative"]])
     if policy["initiative"] == "off":
         return paths
     return (*paths, TEMPLATE_ROOT / QUALITY_TEMPLATES[policy["quality"]], TEMPLATE_ROOT / "enabled.md")
