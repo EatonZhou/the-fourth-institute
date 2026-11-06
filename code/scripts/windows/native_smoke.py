@@ -351,6 +351,11 @@ def exercise(exe, root, included, evidence):
 
 
 def main():
+    # Worker phases can be launched directly from an English Windows shell;
+    # their Unicode progress must not depend on the caller's UTF-8 mode.
+    for stream in (sys.stdout, sys.stderr):
+        if stream is not None and hasattr(stream, 'reconfigure'):
+            stream.reconfigure(encoding='utf-8')
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--installer', type=Path)
     parser.add_argument('--work', type=Path)

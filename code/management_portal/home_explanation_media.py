@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from contextlib import contextmanager
 from collections import OrderedDict
-import fcntl
+from management_common.file_lock import lock_descriptor, try_lock_descriptor, unlock_descriptor
 import hashlib
 import json
 import logging
@@ -184,12 +184,14 @@ class Media:
     @staticmethod
     def active(ctx):
         try:
-            with secure_paths.open_target(ctx['root'], (*ctx['output'], 'generation.lock')) as (fd, _):
+            with secure_paths.open_directory(ctx['root'], ctx['output']) as directory:
+                fd = secure_paths.open_child(directory, 'generation.lock', os.O_RDWR)
                 try:
-                    fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
-                except BlockingIOError:
-                    return True
-                fcntl.flock(fd, fcntl.LOCK_UN)
+                    if not try_lock_descriptor(fd):
+                        return True
+                    unlock_descriptor(fd)
+                finally:
+                    os.close(fd)
         except FileNotFoundError:
             pass
         return False
@@ -274,7 +276,7 @@ class Media:
         with secure_paths.open_directory(ctx['root'], ctx['output'], create=True) as directory:
             fd = secure_paths.open_child(directory, 'state.lock', os.O_RDWR | os.O_CREAT, 0o600)
             try:
-                fcntl.flock(fd, fcntl.LOCK_EX)
+                lock_descriptor(fd)
                 old = self._state(ctx, actor)
                 if old and old.get('status') == 'cancelled' and old.get('job_id') == state.get('job_id') and state['status'] != 'cancelled':
                     return False
@@ -291,8 +293,11 @@ class Media:
             with secure_paths.open_directory(ctx['root'], ctx['output'], create=True) as directory:
                 fd = secure_paths.open_child(directory, 'generation.lock', os.O_RDWR | os.O_CREAT, 0o664)
         try:
-            fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
-        except BlockingIOError:
+            acquired = try_lock_descriptor(fd)
+        except BaseException:
+            os.close(fd)
+            raise
+        if not acquired:
             os.close(fd)
             return None
         return fd
@@ -306,10 +311,13 @@ class Media:
             for number in range(2):
                 fd = secure_paths.open_child(directory, f'{number}.lock', os.O_RDWR | os.O_CREAT, 0o600)
                 try:
-                    fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
-                    return fd
-                except BlockingIOError:
+                    acquired = try_lock_descriptor(fd)
+                except BaseException:
                     os.close(fd)
+                    raise
+                if acquired:
+                    return fd
+                os.close(fd)
         raise RuntimeError('视频生成繁忙，请稍后重试')
 
     def start(self, address, sha256, actor, quality='medium', previous_review_id=None):

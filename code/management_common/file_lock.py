@@ -103,10 +103,8 @@ def unlock_descriptor(descriptor: int) -> None:
         fcntl.flock(descriptor, fcntl.LOCK_UN)
 
 
-@contextmanager
-def lock_stream(stream: IO[object]) -> Iterator[None]:
-    """Block until acquired, then release on every exit from the body."""
-    descriptor = stream.fileno()
+def lock_descriptor(descriptor: int) -> None:
+    """Block until acquired; the owner releases or closes this descriptor."""
     if os.name == "nt":
         # LK_LOCK fails after a fixed retry window, unlike flock(LOCK_EX).
         while not try_lock_descriptor(descriptor):
@@ -115,6 +113,13 @@ def lock_stream(stream: IO[object]) -> Iterator[None]:
         import fcntl
 
         fcntl.flock(descriptor, fcntl.LOCK_EX)
+
+
+@contextmanager
+def lock_stream(stream: IO[object]) -> Iterator[None]:
+    """Block until acquired, then release on every exit from the body."""
+    descriptor = stream.fileno()
+    lock_descriptor(descriptor)
     try:
         yield
     finally:

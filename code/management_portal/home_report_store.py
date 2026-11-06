@@ -6,7 +6,7 @@ No caller-supplied file path, HTML or source snapshot is accepted for writes.
 from __future__ import annotations
 
 import copy
-import fcntl
+from management_common.file_lock import lock_stream
 import hashlib
 import json
 import re
@@ -116,8 +116,7 @@ class ReportStore:
         self.directory(identifier)
         locks = self.root / ".locks"
         locks.mkdir(parents=True, exist_ok=True, mode=0o700)
-        with (locks / identifier).open("a") as stream:
-            fcntl.flock(stream, fcntl.LOCK_EX)
+        with (locks / identifier).open("a+b") as stream, lock_stream(stream):
             yield
 
     def record(self, identifier):

@@ -8,7 +8,7 @@ from __future__ import annotations
 import hashlib
 import json
 import re
-import fcntl
+from management_common.file_lock import lock_stream
 from contextlib import contextmanager
 
 from management_portal.home_explanation_media import Media, MAX_BUNDLE, pointer
@@ -114,8 +114,7 @@ class ExplanationReports:
         key = fields(value)['origin_key'].split(':', 1)[1]
         locks = self.store.root / '.locks'
         locks.mkdir(parents=True, exist_ok=True, mode=0o700)
-        with (locks / ('explanation-' + key)).open('a') as stream:
-            fcntl.flock(stream, fcntl.LOCK_EX)
+        with (locks / ('explanation-' + key)).open('a+b') as stream, lock_stream(stream):
             yield
 
     def bind(self, value, actor, result):

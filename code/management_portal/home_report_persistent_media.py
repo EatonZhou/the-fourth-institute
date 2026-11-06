@@ -5,7 +5,7 @@ import logging
 import shutil
 import time
 import uuid
-import fcntl
+from management_common.file_lock import lock_descriptor, try_lock_descriptor
 from pathlib import Path
 from management_common.portal_paths import path as portal_path
 
@@ -109,11 +109,8 @@ class PersistentMedia:
     def active(self,identifier,number,quality='medium'):
         path=self.lease_path(identifier,number,quality)
         if not path.exists(): return False
-        with path.open('r') as stream:
-            try:
-                fcntl.flock(stream,fcntl.LOCK_EX|fcntl.LOCK_NB)
-            except BlockingIOError:
-                return True
+        with path.open('r+b') as stream:
+            return not try_lock_descriptor(stream.fileno())
         return False
 
     def status(self, identifier, number, actor, *, quality='medium', include_review=True):
@@ -172,8 +169,8 @@ class PersistentMedia:
             lease=None
             state = {'status':'pending','version':snapshot['version'], 'quality':quality}
             try:
-                lease=self.lease_path(identifier,number,quality).open('a')
-                fcntl.flock(lease,fcntl.LOCK_EX)
+                lease=self.lease_path(identifier,number,quality).open('a+b')
+                lock_descriptor(lease.fileno())
                 with self.store.writer(identifier):
                     _atomic(directory / pending_name, state)
             except BaseException:
