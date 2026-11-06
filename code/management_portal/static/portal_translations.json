@@ -1,4 +1,8 @@
 {
+  "例如：接收方 Resident 尚未空闲；筛选、分支或归并节点的上一轮投递还未完成；本连线还有更早的内容等待投递。": {
+    "en": "Examples: the receiving Resident is not idle yet; a Filter, Selector or Reducer still has a delivery in progress; or earlier content is waiting on this wire.",
+    "zh-CN": "例如：接收方 Resident 尚未空闲；筛选、分支或归并节点的上一轮投递还未完成；本连线还有更早的内容等待投递。"
+  },
   "Family 默认开关仅在成员未显式设置时生效；成员显式开启时按站点默认排序切换。": {"zh-CN":"Family 默认开关仅在成员未显式设置时生效；成员显式开启时按站点默认排序切换。","en":"The Family switch applies only when a member has no explicit setting. Members who explicitly enable switching use the site's default order."},
   "来源：Resident 显式开启；按站点默认排序切换。": {"zh-CN":"来源：Resident 显式开启；按站点默认排序切换。","en":"Source: explicitly enabled for this Resident; switches follow the site's default order."},
   "来源：Resident 显式关闭；不会自动切换账号。": {"zh-CN":"来源：Resident 显式关闭；不会自动切换账号。","en":"Source: explicitly disabled for this Resident; accounts will not switch automatically."},
@@ -8,7 +12,7 @@
     "en": "When the queue is full, new content is discarded. Already queued content keeps its order.",
     "zh-CN": "队列已满时，丢弃新到的内容；已排队的内容保留原顺序。"
   },
-  "排序仅表示候选优先级，不保证切换成功。目标需有可用额度和兼容模型，并能完整保留当前上下文；跨 Provider 时可能需手动选择交接方式。": {"zh-CN":"排序仅表示候选优先级，不保证切换成功。目标需有可用额度和兼容模型，并能完整保留当前上下文；跨 Provider 时可能需手动选择交接方式。","en":"The order expresses candidate priority, not a guarantee of a successful switch. The target needs available quota, a compatible model and full preservation of the current context. Switching Providers may require you to choose a handoff method manually."},
+  "排序仅表示候选优先级，不保证切换成功。目标仍需有可用额度和兼容模型；自动切换优先完整保留上下文，无法直接保留时自动整理交接并继续原输入，旧会话历史保留。": {"zh-CN":"排序仅表示候选优先级，不保证切换成功。目标仍需有可用额度和兼容模型；自动切换优先完整保留上下文，无法直接保留时自动整理交接并继续原输入，旧会话历史保留。","en":"The order expresses candidate priority, not a guarantee of a successful switch. The target still needs available quota and a compatible model. Automatic switching preserves the full context where possible; otherwise it automatically prepares a handoff and continues the original input. The old session history is retained."},
   "保存后恢复站点默认帐号选择排序。下列仅为排序草稿，不代表站点当前生效顺序。": {"zh-CN":"保存后恢复站点默认帐号选择排序。下列仅为排序草稿，不代表站点当前生效顺序。","en":"Saving restores the site's default account order. The list below is only an editable draft, not the site's current effective order."},
   "已自定义 Family 排序；未排序的订阅种类按默认顺序追加。": {"zh-CN":"已自定义 Family 排序；未排序的订阅种类按默认顺序追加。","en":"This Family uses a custom order. Unordered subscription kinds are appended in default order."},
   "当前继承站点默认帐号选择排序。下列仅为可编辑草稿，不代表站点当前生效顺序；保存后改为 Family 自定义排序。": {"zh-CN":"当前继承站点默认帐号选择排序。下列仅为可编辑草稿，不代表站点当前生效顺序；保存后改为 Family 自定义排序。","en":"Currently inheriting the site's default account order. The list below is only an editable draft, not the site's current effective order. Saving applies a custom Family order."},
@@ -28303,9 +28307,9 @@
     "en": "Order acceptance status",
     "zh-CN": "接单状态"
   },
-  "接收方暂时无法接收时": {
-    "en": "When the receiver cannot accept delivery yet",
-    "zh-CN": "接收方暂时无法接收时"
+  "无法立即投递时，如何处理新内容": {
+    "en": "How to handle new content when immediate delivery is blocked",
+    "zh-CN": "无法立即投递时，如何处理新内容"
   },
   "接收方恢复可消费后，Portal 会按边策略投递。": {
     "en": "After the receiver becomes consumable again, Portal delivers according to edge policy.",
@@ -32807,9 +32811,9 @@
     "en": "Target workspace or resource address",
     "zh-CN": "目标工作区或资源地址"
   },
-  "接收方暂时无法接收时，丢弃本次待投递内容，不在本连线上排队等待。": {
-    "en": "When the receiver cannot accept delivery yet, discard this pending content without queuing it on this wire.",
-    "zh-CN": "接收方暂时无法接收时，丢弃本次待投递内容，不在本连线上排队等待。"
+  "新到内容立即丢弃，不在本连线上排队；不会中断接收方正在处理的工作。": {
+    "en": "Discard new content immediately without queuing it on this wire. Work already in progress at the receiver is not interrupted.",
+    "zh-CN": "新到内容立即丢弃，不在本连线上排队；不会中断接收方正在处理的工作。"
   },
   "目标必须是 Family 门面": {
     "en": "The target must be a Family facade",
