@@ -95,6 +95,7 @@ def test_declared_google_native_sdks_preserve_gateway_prefix_and_model_identity(
         _call(isa.create_model_api, **args, protocols={'google_genai': {}})
     created = _call(isa.create_model_api, **args,
                     protocols={'google_genai': {'base_url': 'https://native.invalid/prefix/'}})
+    assert 'google_genai' in created['api']['harness_protocols']
     kimi = next(row for row in created['accounts'] if row['provider'] == 'kimi')
     config = kimi_provider_catalog.runtime_config(kimi, 'test-key')
     assert config['providers']['portal_api']['type'] == 'google-genai'

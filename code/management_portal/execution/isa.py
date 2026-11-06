@@ -68,9 +68,9 @@ def _public_api(item: dict[str, Any], version: int) -> dict[str, Any]:
             result[public] = copy.deepcopy(item[stored])
     result.setdefault("enabled", True)
     result["version"] = version
-    from management_portal.ai_provider_registry import HARNESS_PROTOCOLS, AIProviderRegistry
+    from management_portal.ai_provider_registry import DECLARED_PROTOCOL_OPTIONS, AIProviderRegistry
     offered = AIProviderRegistry.harness_protocols(item)
-    result["harness_protocols"] = [name for name in HARNESS_PROTOCOLS if name in offered]
+    result["harness_protocols"] = [name for name in DECLARED_PROTOCOL_OPTIONS if name in offered]
     result["compatible_harness_protocols"] = AIProviderRegistry.compatible_harness_protocols(item)
     result["harness_parameter_contracts"] = AIProviderRegistry.harness_parameter_contracts(item)
     routes = model_api_store.route_bindings(result["api_id"])

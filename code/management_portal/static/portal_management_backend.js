@@ -1033,7 +1033,7 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
     const anthropicAuth = select(options, "Anthropic 认证方式", "anthropic_auth",
       [["bearer", "Authorization: Bearer"], ["x-api-key", "x-api-key"]], anthropicOptions.auth || "bearer");
     const google = field(options, "提供 Google 原生接口（Kimi / OpenCode）", "protocol_google_genai", "", {type: "checkbox"});
-    google.checked = offered.has("google_genai");
+    google.checked = Boolean(api?.protocols?.google_genai) || offered.has("google_genai");
     const googleUrl = field(options, "Google SDK 根地址（不含 /v1beta）", "google_base_url", api?.protocols?.google_genai?.base_url || "",
       {type: "url", placeholder: "https://generativelanguage.googleapis.com"});
     hint(google, "原生 Google SDK 保留多轮工具调用所需的思考签名；仅在接口确实提供此协议时开启。");
