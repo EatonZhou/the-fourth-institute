@@ -24,12 +24,23 @@ def _society_service_resolved_path(value: object, label: str) -> Path:
 
 
 def _serve_media_file(handler: SimpleHTTPRequestHandler, path: Path, content_type: str) -> None:
+    return _serve_local_file(handler, path, content_type)
+
+
+def _serve_local_file(
+    handler: SimpleHTTPRequestHandler, path: Path, content_type: str, *, download: bool = False,
+) -> None:
     try:
         stat = path.stat()
     except OSError:
         return http_responses._send_empty(handler, 404)
-    response = plan_media_response(handler, size=stat.st_size, mtime_ns=stat.st_mtime_ns)
-    response.send_headers(handler, content_type)
+    response = plan_media_response(
+        handler, size=stat.st_size, mtime_ns=stat.st_mtime_ns, download=download,
+    )
+    response.send_headers(
+        handler, content_type,
+        content_disposition=_download_content_disposition(path.name) if download else "",
+    )
     if response.status not in {200, 206} or not http_responses._response_body_allowed(handler):
         return
     try:
@@ -149,31 +160,8 @@ def _download_content_disposition(filename: object) -> str:
 
 
 def _serve_download_file(handler: SimpleHTTPRequestHandler, path: Path) -> None:
-    try:
-        size = path.stat().st_size
-    except OSError:
-        return http_responses._send_empty(handler, 404)
     content_type = mimetypes.guess_type(str(path))[0] or "application/octet-stream"
-    try:
-        handler.send_response(200)
-        handler.send_header("Content-Type", content_type)
-        handler.send_header("Cache-Control", "no-store")
-        handler.send_header("Content-Length", str(size))
-        handler.send_header(
-            "Content-Disposition",
-            _download_content_disposition(path.name),
-        )
-        handler.end_headers()
-        if not http_responses._response_body_allowed(handler):
-            return
-        with path.open("rb") as f:
-            while True:
-                chunk = f.read(1024 * 256)
-                if not chunk:
-                    break
-                handler.wfile.write(chunk)
-    except (BrokenPipeError, ConnectionResetError):
-        return
+    return _serve_local_file(handler, path, content_type, download=True)
 
 
 def _media_content_type(path: Path) -> str:
