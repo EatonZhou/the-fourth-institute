@@ -731,12 +731,6 @@
   function projectGraph(programValue, residentNodes = []) {
     const program = normalizeProgram(programValue);
     const components = program.components.map(projectComponent);
-    const executorResidentIds = new Set(
-      components
-        .filter(component => PACKET_OPERATOR_KINDS.includes(component.kind))
-        .map(component => text(object(component.config).resident_executor_id))
-        .filter(Boolean),
-    );
     const functionBlocks = list(programValue?.function_blocks).map(block => ({
       ...clone(block),
       x: finiteNumber(block.x, 50),
@@ -748,10 +742,9 @@
     }));
     const nodes = [
       ...list(residentNodes)
-        .filter(node => (
-          !object(node?.operator_executor).component_id
-          && !executorResidentIds.has(text(node?.id))
-        ))
+        // Only dedicated executors are represented by an operator card.
+        // An ordinary member can serve several operators and remain a Leader.
+        .filter(node => !object(node?.operator_executor).component_id)
         .map(node => ({
           ...node,
           primitive_kind: "agent",
