@@ -26,7 +26,9 @@ def test_workbench_http_uses_public_operation_error_contract(monkeypatch, subtes
 
     :design-point:"""
     for status in [400, 404, 409]:
-        for remote in [False, True]:
+        # The HTTP adapter treats restored remote errors identically. Cover the
+        # restoration once; retain every local status and the structured details.
+        for remote in ([False, True] if status == 409 else [False]):
             with subtests.test(status=status, remote=remote), isolated_portal_case() as case_path:
                 with monkeypatch.context() as monkeypatch:
                     from management_portal import serve_management_portal
@@ -88,7 +90,8 @@ def test_workbench_http_update_separates_target_from_command(monkeypatch, subtes
     :design: decision_4bc03b20c30f, decision_34158fdd4078
     :design-point:
     """
-    for command in [{"navigation": "top"}, {"title": "Updated"}]:
+    # One command proves all business fields survive the same id-only filter.
+    for command in [{"navigation": "top", "title": "Updated"}]:
         with subtests.test(command=command), isolated_portal_case() as case_path:
             with monkeypatch.context() as monkeypatch:
                 from unittest.mock import Mock

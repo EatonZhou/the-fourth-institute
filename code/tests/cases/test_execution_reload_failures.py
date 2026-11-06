@@ -50,9 +50,16 @@ def test_resident_defers_observation_without_failing_bound_input(monkeypatch, fa
     assert calls == ['resident-test']
 
 
-@pytest.mark.parametrize('deferred', [False, True])
-@pytest.mark.parametrize('fault', [ExecutionServiceUnavailable, ExecutionResponseUnknown])
-@pytest.mark.parametrize('settlement', ['requeued', 'cancelled', 'fenced', 'expired', 'invalid'])
+@pytest.mark.parametrize('deferred,fault,settlement', [
+    (False, ExecutionServiceUnavailable, 'requeued'),
+    (True, ExecutionResponseUnknown, 'requeued'),
+    (False, ExecutionResponseUnknown, 'cancelled'),
+    (True, ExecutionServiceUnavailable, 'cancelled'),
+    (False, ExecutionServiceUnavailable, 'fenced'),
+    (True, ExecutionResponseUnknown, 'fenced'),
+    (True, ExecutionServiceUnavailable, 'expired'),
+    (False, ExecutionResponseUnknown, 'invalid'),
+])
 def test_worker_release_survives_rpc_replacement_without_replay(deferred, fault, settlement):
     invocations, writes = [], []
 

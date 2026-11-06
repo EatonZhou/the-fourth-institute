@@ -111,12 +111,12 @@ def test_tfi_projection_format_compatibility_libraries_accepts_exact_tag(tmp_pat
     assert before == {p: (p.read_bytes(), p.stat().st_mtime_ns) for p in before}
 
 
+# Detailed string/type classification belongs to schema_matches tests. Each
+# reader retains representative failures plus its own error and read-only contract.
 @pytest.mark.parametrize("tag", [
     "archive.projection.v2",
-    "archive.projection.v1", "tfi.projection.v1", "archive.projection.v3", "tfi.projection.v3",
-    "tfi.projection.v02", "tfi.projection.v2.extra", "tfi.projection-libraries.v2",
-    "other.projection.v2", "TFI.projection.v2", " tfi.projection.v2", "tfi.projection.v2 ",
-    None, 2, [], {"schema": "tfi.projection.v2"},
+    "tfi.projection.v3", "tfi.projection.v2.extra", "tfi.projection-libraries.v2",
+    {"schema": "tfi.projection.v2"},
 ])
 def test_tfi_projection_format_compatibility_page_rejects_other_tags(tag):
     value = _definition("tfi")
@@ -132,10 +132,8 @@ def test_tfi_projection_format_compatibility_page_rejects_other_tags(tag):
 
 @pytest.mark.parametrize("tag", [
     "archive.projection-libraries.v1",
-    "archive.projection-libraries.v2", "tfi.projection-libraries.v2",
-    "tfi.projection-libraries.v01", "tfi.projection-libraries.v1.extra",
-    "tfi.projection.v1", "other.projection-libraries.v1", "TFI.projection-libraries.v1",
-    " tfi.projection-libraries.v1", "tfi.projection-libraries.v1 ", None, 1, [], {},
+    "tfi.projection-libraries.v2", "tfi.projection-libraries.v1.extra",
+    "tfi.projection.v1", {},
 ])
 def test_tfi_projection_format_compatibility_library_rejects_other_tags(tmp_path, monkeypatch, tag):
     manifest_path, asset, _ = _library_root(tmp_path, monkeypatch, tag)

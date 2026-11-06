@@ -31,9 +31,9 @@ def transport(monkeypatch, store, body):
     monkeypatch.setattr(home_report_http.http_responses, '_serve_json', lambda r, status, value: (status, value))
 
 
-@pytest.mark.parametrize('actor', ['alice', 'resident_123456789abc'])
-@pytest.mark.parametrize('quality', ['low', 'medium', 'high'])
-def test_source_target_cannot_create_a_deliverable(reports, monkeypatch, actor, quality):
+# New source targets are rejected before quality selection or actor-specific reads.
+@pytest.mark.parametrize('actor,quality', [('alice', 'low'), ('resident_123456789abc', 'high')])
+def test_source_target_cannot_create_a_deliverable(reports, actor, quality):
     store, state = reports
     with pytest.raises(ResourceOperationError) as error:
         store.create(RID, {'target': TARGET, 'quality': quality, 'origin_key': KEY}, actor)

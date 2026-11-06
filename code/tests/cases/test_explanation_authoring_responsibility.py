@@ -34,7 +34,7 @@ def authoring_case(personal, workspace, monkeypatch, tmp_path):
     from management_portal.permission_system import personal_ama
     from management_portal.resources.providers import report as provider
     from management_portal.society_service import resident_catalog, lineage_reads, resource_client
-    from management_portal.society_service import resident_reporting, resident_reporting_policy
+    from management_portal.society_service import resident_reporting
 
     ama, _assistant = personal
     # Provisioning fixtures suppress charters; restore actual isolated intake
@@ -100,8 +100,7 @@ def authoring_case(personal, workspace, monkeypatch, tmp_path):
     return SimpleNamespace(author=author, store=store, api=ExplanationReports(store), package=package,
                            permissions=permissions, root=root, source=record['owned_workspace_id'],
                            authoring=authoring, reviews=reviews, media=media, post=post, calls=calls,
-                           provisions=provisions, workspace=workspace, set_policy=set_policy,
-                           policy_owner=resident_reporting_policy)
+                           provisions=provisions, workspace=workspace, set_policy=set_policy)
 
 
 def test_medium_user_request_uses_authenticated_fixed_report_creator_once(authoring_case):
@@ -283,14 +282,13 @@ def test_authoring_dispatch_still_checks_formal_delivery_permission(authoring_ca
     assert not e.provisions
 
 
-@pytest.mark.parametrize('state', ['off', 'unknown'])
 @pytest.mark.parametrize('quality', ['medium', 'high'])
-def test_authoring_uses_resource_and_role_permissions_not_prompt_settings(authoring_case, monkeypatch, state, quality):
+def test_authoring_uses_resource_and_role_permissions_not_prompt_settings(authoring_case, quality):
     e = authoring_case
     ref = e.package()
     e.api.register(ref, e.author)
-    if state == 'unknown':
-        monkeypatch.setattr(e.policy_owner, 'effective', lambda *a, **kw: {'state': 'unknown'})
+    # The fixture's off setting covers independence from Prompt configuration;
+    # medium delivery and high reviewer provisioning are separate business paths.
     if quality == 'high':
         with pytest.raises(PermissionError, match='synthetic reviewer provisioning refused'):
             e.media.start(**ref, actor='newcomer', quality=quality)
@@ -318,8 +316,7 @@ def test_prompt_setting_changes_do_not_mutate_or_replay_existing_authoring(autho
     assert len(e.calls) == 1 and not e.provisions
 
 
-@pytest.mark.parametrize('state', ['off', 'unknown'])
-def test_retry_preserves_formal_delivery_denial_regardless_of_prompt_setting(authoring_case, monkeypatch, state):
+def test_retry_preserves_formal_delivery_denial_regardless_of_prompt_setting(authoring_case):
     e = authoring_case
     ref = e.package()
     e.api.register(ref, e.author)
@@ -329,8 +326,6 @@ def test_retry_preserves_formal_delivery_denial_regardless_of_prompt_setting(aut
         attempted.append((actor, name, args['resident_id'], key))
         return review.invoke(actor, name, args, key)
     e.authoring.call = dispatch
-    if state == 'unknown':
-        monkeypatch.setattr(e.policy_owner, 'effective', lambda *a, **kw: {'state': 'unknown'})
     status, body = e.post(ref, message_id='msg_untrusted_body_selector')
     assert status == 200
     task = body['media']['authoring']

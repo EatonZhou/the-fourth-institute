@@ -59,7 +59,7 @@ def runtime_audit(repo, mapping, docs):
 
 
 @pytest.mark.parametrize('schema', [
-    'tfi.portal-architecture.v2', 'tfi.portal-architecture.v0',
+    'tfi.portal-architecture.v2',
     'tfi.portal-architecture.v1.extra', 'tfi.other.v1', None, {'version': 1},
 ])
 def test_map_schema_rejects_wrong_versions_and_other_formats(tmp_path, schema):

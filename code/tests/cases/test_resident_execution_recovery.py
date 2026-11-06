@@ -191,8 +191,16 @@ def _record_harness_execution(
     )
 
 
-@pytest.mark.parametrize('mode', ['auto', 'manual'])
-@pytest.mark.parametrize('enabled,first_status,error,input_accepted', [pytest.param(True, 'failed', 'Selected model is at capacity', True, id='capacity'), pytest.param(True, 'failed', 'Codex context compaction did not finish within 300 seconds', True, id='compact-timeout'), pytest.param(True, 'failed', "name 'unknown_symbol' is not defined", True, id='unexpected-error'), pytest.param(True, 'failed', 'provider unavailable', True, id='retry-also-fails'), pytest.param(False, 'failed', 'provider unavailable', True, id='disabled'), pytest.param(True, 'cancelled', 'cancelled by owner', True, id='cancelled'), pytest.param(True, 'completed', '', True, id='success'), pytest.param(True, 'failed', 'Codex app-server turn/start timed out', False, id='start-not-accepted'), pytest.param(True, 'failed', 'ExecutionService unavailable: timed out', False, id='dispatch-not-accepted'), pytest.param(True, 'failed', 'invalid model configuration', False, id='configuration-not-accepted')])
+# Terminal projection does not classify Provider error text or retry by mode.
+# Keep each terminal/acceptance branch and both settings values without the
+# historical error-message × mode matrix from the deleted retry policy.
+@pytest.mark.parametrize('mode,enabled,first_status,error,input_accepted', [
+    pytest.param('auto', True, 'failed', 'Selected model is at capacity', True, id='accepted-failure'),
+    pytest.param('manual', False, 'failed', 'provider unavailable', True, id='disabled-failure'),
+    pytest.param('manual', True, 'cancelled', 'cancelled by owner', True, id='cancelled'),
+    pytest.param('auto', True, 'completed', '', True, id='success'),
+    pytest.param('auto', True, 'failed', 'turn/start timed out', False, id='unaccepted-failure'),
+])
 def test_lineage_projects_terminal_execution_without_harness_recovery(resident_record: dict[str, object], monkeypatch: pytest.MonkeyPatch, mode: str, enabled: bool, first_status: str, error: str, input_accepted: bool) -> None:
     """Lineage 投影执行终态且不合成技术重试输入
 

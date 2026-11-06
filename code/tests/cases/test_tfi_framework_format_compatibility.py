@@ -107,10 +107,11 @@ def test_framework_reads_exact_namespace_without_rewriting(reader, tmp_path):
         assert result == expected
 
 
-@pytest.mark.parametrize("bad", ["archive.{tag}.v1", "archive.{tag}.v2", "tfi.{tag}.v2", "tfi.{tag}.v01",
-                                  "tfi.unrelated.v1", "other.{tag}.v1", "tfi.{tag}.v1 ", None, ["tfi"]])
+# Each reader must enforce the shared predicate; lexical/type variants belong
+# to test_format_tag_compatibility rather than a reader × spelling product.
+@pytest.mark.parametrize("bad", ["archive.{tag}.v1", "tfi.{tag}.v2"])
 def test_framework_rejects_other_tags_and_versions_without_rewriting(reader, bad):
-    """标签不接受宽松前缀、其他版本、空值或非字符串。"""
+    """每个读取入口都拒绝旧前缀和不匹配版本，且不改写原文件。"""
     tag, path, document, read, _ = reader
     document["schema"] = bad.format(tag=tag) if isinstance(bad, str) else bad
     original = write_document(path, document)

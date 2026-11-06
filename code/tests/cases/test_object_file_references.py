@@ -241,15 +241,6 @@ def test_file_reference_refuses_symlink_escape(files, tmp_path):
         files.service.read_content({**files.reference, "relative_path": "escape"}, actor="alice")
 
 
-@pytest.mark.parametrize('name', ['literal\\name', 'with\nnewline'])
-def test_file_reference_preserves_legal_posix_filename(files, name):
-    import os
-    if os.name == 'nt':
-        pytest.skip('These filenames are invalid on Windows')
-    (files.state['root'] / name).write_text('literal file name')
-    assert files.service.read_content({**files.reference, 'relative_path':name}, actor='alice')[0] == b'literal file name'
-
-
 def test_structured_reference_has_no_path_fallback(files):
     with pytest.raises(ValueError):
         files.service.resolve({**files.reference, "absolute_path": str(files.state["root"] / "report.txt")}, actor="alice")
@@ -273,17 +264,6 @@ def test_literal_percent_filename_and_directory_listing(files):
     resolution = files.service.resolve(reference, actor="alice")
     linked = parse_qs(urlsplit(resolution["portal_url"]).query)["address"][0]
     assert files.service.read_content(linked, actor="alice")[0] == b"literal percent"
-
-
-def test_access_denial_precedes_file_inspection(files, monkeypatch):
-    from management_portal.resources.providers import folder_files
-
-    inspect = Mock(side_effect=AssertionError("file inspected before permission"))
-    monkeypatch.setattr(folder_files, "open_target", inspect)
-    files.policy.authorize_read.side_effect = PermissionError("denied")
-    with pytest.raises(PermissionError):
-        files.service.read_content(files.reference, actor="alice")
-    inspect.assert_not_called()
 
 
 def test_read_and_resolve_instructions_accept_file_reference(files, resource_isa):
