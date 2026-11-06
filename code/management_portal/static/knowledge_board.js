@@ -628,6 +628,7 @@ async function init() {
   await loadIndex();
   document.body.classList.remove("knowledgeInitializing");
   if (targetItemId) openDetail(targetItemId, { updateHistory: false }).catch(alertError);
+  else detailHistory.restoreReturnPosition();
 }
 
 init();
