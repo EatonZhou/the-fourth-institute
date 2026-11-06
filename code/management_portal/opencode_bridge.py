@@ -1206,17 +1206,18 @@ def native_status(status):
             (k == 'type' and isinstance(v, str) and v in {'busy', 'idle', 'retry'}) or
             (k in {'attempt', 'next'} and type(v) in {int, float})}
     if result.get('type') == 'retry':
+        from management_portal.execution.provider_failures import is_usage_limit_failure
         message = str(status.get('message') or '').lower()
+        if is_usage_limit_failure(message):
+            result['reason'] = 'quota_exhausted'
+            return result
         for reason, markers in (
-                ('quota_exhausted', ('free usage exceeded', 'usage limit exceeded', 'quota exhausted')),
                 ('rate_limited', ('rate limit', 'too many requests')),
                 ('upstream_unavailable', ('service unavailable', 'overloaded', 'bad gateway')),
                 ('network_failure', ('fetch failed', 'unable to connect', 'connection error', 'tls', 'certificate'))):
             if any(marker in message for marker in markers):
                 result['reason'] = reason
                 break
-        if 'free usage' in message and 'exceeded' in message:
-            result['reason'] = 'quota_exhausted'
     return result
 
 

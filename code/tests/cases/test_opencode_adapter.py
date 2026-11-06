@@ -149,6 +149,23 @@ def test_retry_diagnostics_keep_only_a_fixed_reason():
             'http_status': 429, 'retryable': True, 'retry_after_seconds': 3600}
 
 
+@pytest.mark.parametrize('message', [
+    'Your account is suspended due to insufficient balance, please recharge your account',
+    'Your credit balance is too low to access the API',
+    'insufficient_quota',
+])
+def test_native_prepaid_quota_is_terminal_without_leaking_provider_text(message):
+    from management_portal.opencode_bridge import native_status
+    assert native_status({'type': 'retry', 'message': message}) == {
+        'type': 'retry', 'reason': 'quota_exhausted'}
+
+
+def test_native_rate_limit_remains_retryable():
+    from management_portal.opencode_bridge import native_status
+    assert native_status({'type': 'retry', 'message': '429 Too Many Requests: rate limit'}) == {
+        'type': 'retry', 'reason': 'rate_limited'}
+
+
 def test_an_opencode_turn_serves_its_portal_tools_and_reports_its_own_tool_calls(opencode) -> None:
     """OpenCode 一轮对话提供 Portal 工具并以通用形状报告自身工具调用
 

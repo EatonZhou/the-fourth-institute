@@ -94,7 +94,8 @@ def is_usage_limit_failure(error: object, *, code: str = "") -> bool:
     if normalized_code in _USAGE_LIMIT_CODES:
         return True
     message = failure_message(error).casefold()
-    return any(marker in message for marker in _USAGE_LIMIT_MARKERS)
+    return (any(marker in message for marker in _USAGE_LIMIT_MARKERS)
+            or ('free usage' in message and 'exceeded' in message))
 
 
 def is_egress_block_failure(error: object) -> bool:
