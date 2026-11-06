@@ -84,6 +84,19 @@ def connect_transport(path, *, timeout=15.0, platform=None):
         raise
 
 
+def _codex_command(binary: Path, *, platform=None) -> list[str]:
+    if _platform(platform) == "win32" and binary.suffix.lower() in {".cmd", ".bat"}:
+        # npm's batch wrapper forwards %*, which cannot preserve arbitrary
+        # literal TOML overrides. Invoke its official JS entry with packaged Node.
+        from management_common.code_environment import native_binary
+        entry = binary.parent / "node_modules/@openai/codex/bin/codex.js"
+        if not entry.is_file():
+            raise ValueError("Codex npm JavaScript entry is missing")
+        node = native_binary(Path(__file__).resolve().parents[1], "node")
+        return [str(node), str(entry)]
+    return [str(binary)]
+
+
 def run_host(path, binary, account_home, stop_event, *, platform=None, startup_timeout=90.0,
              config_overrides=(), extra_env=None):
     windows = _platform(platform) == "win32"
@@ -110,7 +123,7 @@ def run_host(path, binary, account_home, stop_event, *, platform=None, startup_t
     startup_path = None if windows else unix_socket_path(path.with_name("." + secrets.token_hex(4)), platform=platform)
     if startup_path is not None:
         ensure_private_directory(startup_path.parent)
-    command = [str(binary), "app-server", "--listen", "ws://127.0.0.1:0" if windows else f"unix://{startup_path}"]
+    command = _codex_command(binary, platform=platform) + ["app-server", "--listen", "ws://127.0.0.1:0" if windows else f"unix://{startup_path}"]
     for override in config_overrides:
         command += ["-c", override]
     if windows:

@@ -12,6 +12,26 @@ from management_common.file_permissions import atomic_write_private_bytes
 from management_portal import codex_app_server_host as host
 
 
+def test_windows_npm_entry_preserves_literal_api_overrides(tmp_path, monkeypatch):
+    from management_common import code_environment, _windows_command
+    binary = tmp_path / "Codex 中文" / "codex.cmd"
+    entry = binary.parent / "node_modules/@openai/codex/bin/codex.js"
+    entry.parent.mkdir(parents=True)
+    entry.write_text("// npm entry")
+    node = tmp_path / "node.exe"
+    monkeypatch.setattr(code_environment, "native_binary", lambda code, name: node)
+    override = 'model_providers.portal_api.base_url="http://127.0.0.1:1234/a%20b?x=1&y=2"'
+    command = host._codex_command(binary, platform="win32") + ["app-server", "-c", override]
+    argv, executable = _windows_command.prepare(command)
+    assert argv == [str(node), str(entry), "app-server", "-c", override]
+    assert executable == str(node)
+
+
+def test_windows_npm_entry_missing_is_explicit(tmp_path):
+    with pytest.raises(ValueError, match="JavaScript entry"):
+        host._codex_command(tmp_path / "codex.cmd", platform="win32")
+
+
 @pytest.fixture
 def fake_codex(tmp_path, monkeypatch):
     script = tmp_path / "codex.py"
