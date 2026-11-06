@@ -317,7 +317,8 @@ def _lineage(lineage_id: str) -> dict:
     state_store.get_lineage_data_store().put_lineage_definition(
         lineage_id,
         {"schema": "tfi.lineage.v1", "schema_version": 1, "lineage_id": lineage_id,
-         "title": "Effect script test", "nodes": [], "edges": [], "program": {}},
+         "title": "Effect script test", "nodes": [], "edges": [], "program": {
+             "components": [{"id": "effect_aaaaaaaaaaaa", "kind": "effect", "config": {"script": "Ping"}}]}},
         {"schema": "tfi.lineage-runtime.v1", "lineage_id": lineage_id},
     )
     return {"lineage_id": lineage_id}

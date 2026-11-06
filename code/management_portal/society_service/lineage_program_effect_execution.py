@@ -409,6 +409,26 @@ class _EffectRun:
             return self._fail(failure_error)
         return self._succeed(outcome)
 
+    def _admit_activation(self, **arguments: Any) -> dict[str, Any]:
+        from .state_store import get_lineage_data_store
+        store = get_lineage_data_store()
+        # A Route's snapshot can outlive graph deletion. Serialize journal
+        # creation with the definition write that cancels existing journals.
+        with store.database.transaction():
+            current = store.lock_lineage_definition(self.lineage_id)
+            exists = any(c.get("id") == self.effect_id and c.get("kind") == "effect"
+                         for c in ((current or {}).get("program") or {}).get("components", []))
+            if not exists:
+                previous = lineage_effect_script_journal.load(self.lineage_id, self.activation_key)
+                if previous.get("status") in lineage_effect_script_journal.FINISHED_STATES:
+                    return previous
+                if previous:
+                    raise lineage_effect_script_journal.RecoveryPending("Removed Effect still has unsettled work")
+                return {"status": "cancelled", "calls": {},
+                        "trigger_path_id": arguments["trigger_path_id"],
+                        "outputs": {"diagnostic": "Effect node deleted"}}
+            return lineage_effect_script_journal.begin(self.lineage_id, self.activation_key, **arguments)
+
     def _begin(self) -> tuple[dict[str, Any], lineage_effect_syntax.Script]:
         """Open the resume journal; the activation then carries its Trigger Path."""
 
@@ -418,9 +438,7 @@ class _EffectRun:
         script = _parsed_script(script_text)
         event = self.event
         try:
-            journal = lineage_effect_script_journal.begin(
-                self.lineage_id,
-                self.activation_key,
+            journal = self._admit_activation(
                 effect_id=self.effect_id,
                 trigger_path_id=str(event.payload.get("trigger_path_id") or ""),
                 script_sha=hashlib.sha256(script_text.encode("utf-8")).hexdigest(),
@@ -447,6 +465,9 @@ class _EffectRun:
 
     def _replay_finished(self) -> dict[str, Any]:
         journal = self.journal
+        if journal.get("status") == "cancelled" and not journal.get("disposition"):
+            return {"status": "discarded", "effect_id": self.effect_id,
+                    "reason": "Effect node deleted", "replayed": True, "resident_invocations": []}
         if journal.get("disposition"):
             return {"status": "executed" if journal["status"] == "succeeded" else "failed",
                     "replayed": True, "retryable": False, "disposition": journal["disposition"],
@@ -527,13 +548,19 @@ class _EffectRun:
             # Admit the call atomically with the same durable control
             # transaction used by PauseComponent. External work starts
             # only after this short transaction is released.
-            with lineage_program_runtime.operator_state_transaction(self.lineage_id, self.effect_id) as state:
-                if state.get("paused"):
-                    raise _EffectPaused("Effect 已关闭")
-                lineage_effect_script_journal.record_call_started(self.lineage_id, self.activation_key, request.position,
-                    {"instruction": request.instruction, "index": request.index, "line": request.line,
-                     "instruction_id": attempt.instruction_id,
-                     "caller": attempt.context.caller, "started_at": attempt.started_at, "sequence": self.sequence + 1})
+            from .state_store import get_lineage_data_store
+            store = get_lineage_data_store()
+            with store.database.transaction():
+                # Same order as graph deletion: definition, operator, journal.
+                # Deletion then sees an admitted call as in flight.
+                store.lock_lineage_definition(self.lineage_id)
+                with lineage_program_runtime.operator_state_transaction(self.lineage_id, self.effect_id) as state:
+                    if state.get("paused"):
+                        raise _EffectPaused("Effect 已关闭")
+                    lineage_effect_script_journal.record_call_started(self.lineage_id, self.activation_key, request.position,
+                        {"instruction": request.instruction, "index": request.index, "line": request.line,
+                         "instruction_id": attempt.instruction_id,
+                         "caller": attempt.context.caller, "started_at": attempt.started_at, "sequence": self.sequence + 1})
         except _EffectPaused:
             raise
         except Exception as exc:
