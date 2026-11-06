@@ -107,7 +107,7 @@
       return true;
     }
 
-    function resetAgentPreviewToEmpty() {
+    function resetAgentPreviewToEmpty(meta = {}) {
       previewAuxiliaryController?.destroy?.();
       previewAuxiliaryController = createAgentPreviewSession();
       previewState.previewController = previewAuxiliaryController;
@@ -118,6 +118,15 @@
       previewState.previewSelectionController?.hide?.();
       $id("previewBox").className = "previewBox";
       $id("previewBox").textContent = window.PortalI18n.t("选择文件后显示内容。");
+      const failure = meta.restoreErrors?.[0];
+      if (failure) {
+        const path = String(failure.record?.value?.path || failure.record?.key || "");
+        const error = String(failure.error?.message || failure.error || window.PortalI18n.t("无法读取文件"));
+        previewAuxiliaryController.show({ status: "error", error });
+        setPreviewTitle(window.PortalI18n.t("预览失败"));
+        $id("previewPath").textContent = path;
+        $id("previewBox").textContent = window.PortalI18n.text`预览失败：${error}`;
+      }
       previewState.previewTabsController?.render?.();
       renderPreviewActions();
     }
@@ -246,7 +255,7 @@
           || documentState.path
         ),
         onActivate: (documentState, snapshot) => activateAgentPreviewDocument(documentState, snapshot),
-        onEmpty: () => resetAgentPreviewToEmpty(),
+        onEmpty: meta => resetAgentPreviewToEmpty(meta),
         onRender: snapshot => {
           const shell = $id("agentPreviewTabsShell");
           if (!snapshot.documents.length && shell) shell.hidden = true;

@@ -198,7 +198,7 @@ test('explicit parent fallback works and a post-delete refresh failure never reb
   }
 });
 
-function previewFixture({restoreDocument} = {}) {
+function previewFixture({restoreDocument, onEmpty} = {}) {
   const emptySnapshots = [], rendered = [], saved = [];
   const ctx = vm.createContext({window: {PortalI18n: i18n, PortalPreview: {dispose: noop}}, console,
     options: {emit: event => {
@@ -233,6 +233,7 @@ function previewFixture({restoreDocument} = {}) {
     onError: error => errors.push(error.message),
     serializeDocument: doc => ({path: doc.path}),
     restoreDocument,
+    onEmpty,
     onChange: snapshot => {if (!snapshot.documents.length) emptySnapshots.push({...ctx.binding});},
   });
   return {ctx, tabs, rendered, emptySnapshots, errors, saved, setDirty: value => {dirty = value;}};
@@ -328,6 +329,32 @@ test('Preview restoration never saves a partially restored tab collection', asyn
   assert.equal(f.tabs.isRestoring(), false);
   assert.equal(f.saved.at(-1).binding.path, '/A');
   assert.deepEqual(f.saved.at(-1).tabs.documents.map(d => d.value.path), ['/A', '/B']);
+});
+
+test('unreadable restored Preview explains the failed file without retaining its content', async () => {
+  const f = previewFixture({
+    restoreDocument: value => ({key: value.path, path: value.path, load: async () => {throw Error('403 file access denied');}}),
+    onEmpty: meta => f.ctx.resetAgentPreviewToEmpty(meta),
+  });
+  const elements = new Map();
+  Object.assign(f.ctx, {
+    previewAuxiliaryController: null, previewState: {},
+    createAgentPreviewSession: () => f.ctx.createDocumentSession({}),
+    stopPreviewRefresh: noop, setPreviewTitle: noop, setPreviewOpenInput: noop, renderPreviewActions: noop,
+    $id: id => {if (!elements.has(id)) elements.set(id, {}); return elements.get(id);},
+  });
+  vm.runInContext(declarations('lineage_workbench_preview_documents.js', ['resetAgentPreviewToEmpty']), f.ctx);
+  await f.tabs.restorePersistence({schemaVersion: 1, activeKey: '/denied.txt', documents: [
+    {key: '/denied.txt', value: {path: '/denied.txt'}},
+  ]});
+  assert.equal(f.tabs.snapshot().documents.length, 0);
+  assert.equal(f.ctx.previewState.previewController.snapshot().payload, null);
+  assert.equal(elements.get('previewPath').textContent, '/denied.txt');
+  assert.match(elements.get('previewBox').textContent, /403 file access denied/);
+  assert.equal(f.ctx.previewState.previewController.snapshot().status, 'error');
+  f.ctx.resetAgentPreviewToEmpty();
+  assert.equal(elements.get('previewPath').textContent, '');
+  assert.equal(elements.get('previewBox').textContent, '选择文件后显示内容。');
 });
 
 test('last Preview tab clears its persistent binding before observers run; cancelled closes keep it', async () => {

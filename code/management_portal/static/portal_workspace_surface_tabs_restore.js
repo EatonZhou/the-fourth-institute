@@ -33,6 +33,7 @@
         ? persisted.documents
         : [];
       const sequence = ++documentTabsState.restoreSequence;
+      const restoreErrors = [];
       documentTabsState.restoringSequence = sequence;
       orderedDocuments().forEach(documentState => documentState.session?.destroy?.());
       documents.clear();
@@ -66,6 +67,7 @@
             if (documentTabsState.activeKey === key) documentTabsState.activeKey = "";
           }
           reportRestoreError(error, record);
+          restoreErrors.push({ error, record });
         }
         if (sequence !== documentTabsState.restoreSequence) return snapshot();
       }
@@ -77,7 +79,7 @@
         activate(documentTabsState.tabs.at(-1), { reason: "restore-fallback" });
       } else {
         notify("restore-empty");
-        options.onEmpty?.({ reason: "restore-empty" });
+        options.onEmpty?.({ reason: "restore-empty", restoreErrors });
       }
       render();
       return snapshot();
