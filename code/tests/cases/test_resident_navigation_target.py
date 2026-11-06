@@ -6,6 +6,7 @@ from management_portal.society_service import resident_catalog, resident_domain,
 
 
 from management_portal.society_service import resident_workspace_domain
+from tests.cases.resident_execution_test_support import resident_record  # noqa: F401
 
 
 def test_navigation_target_identity_read_does_not_initialize_agent(monkeypatch, isolated_portal_case):
@@ -18,7 +19,7 @@ def test_navigation_target_identity_read_does_not_initialize_agent(monkeypatch, 
             'lineage_id': 'lineage_bbbbbbbbbbbb',
             'registration_state': 'ready',
         }
-        monkeypatch.setattr(resident_record_domain, 'find_resident', lambda _id: record)
+        monkeypatch.setattr(resident_record_domain, 'find_resident_for_admission', lambda _id: record)
         monkeypatch.setattr(resident_record_domain, '_resident_visible_to_actor', lambda *_args: True)
         monkeypatch.setattr(resident_catalog, 'ensure_resident_agent',
                             lambda _record: pytest.fail('navigation must not initialize Agent data'))
@@ -34,7 +35,7 @@ def test_resolve_resident_identity_uses_chat_protocol_identity_contracts(monkeyp
         with monkeypatch.context() as monkeypatch:
             record = {'resident_id': 'resident_branch', 'lineage_id': 'lineage_live', 'source_resident_id': 'resident_root'}
             calls: list[tuple[str, str, bool]] = []
-            monkeypatch.setattr(resident_record_domain, 'resolve_resident_runtime_target', lambda resident_id, actor, *, require_visible: calls.append((resident_id, actor, require_visible)) or resident_domain.ResidentRuntimeTarget(resident_id, record))
+            monkeypatch.setattr(resident_record_domain, 'resolve_resident_admission_target', lambda resident_id, actor, *, require_visible: calls.append((resident_id, actor, require_visible)) or resident_domain.ResidentRuntimeTarget(resident_id, record))
             monkeypatch.setattr(resident_lineage, 'lineage_id', lambda value: value['lineage_id'])
             assert resident_domain.resolve_resident_identity('resident_branch', 'sample_admin') == {'resident_id': 'resident_branch', 'lineage_id': 'lineage_live'}
             assert calls == [('resident_branch', 'sample_admin', True)]
@@ -42,13 +43,13 @@ def test_resolve_resident_identity_uses_chat_protocol_identity_contracts(monkeyp
         with monkeypatch.context() as monkeypatch:
             def missing(*_args, **_kwargs):
                 raise KeyError('resident not found')
-            monkeypatch.setattr(resident_record_domain, 'resolve_resident_runtime_target', missing)
+            monkeypatch.setattr(resident_record_domain, 'resolve_resident_admission_target', missing)
             with pytest.raises(KeyError, match='resident not found'):
                 resident_domain.resolve_resident_identity('resident_deleted', 'sample_admin')
     with subtests.test(contract='test_resolve_resident_identity_hides_an_unreadable_resident'), isolated_portal_case() as case_path:
         with monkeypatch.context() as monkeypatch:
             resident_id = 'resident_private'
-            monkeypatch.setattr(resident_record_domain, 'find_resident', lambda value: {'resident_id': value})
+            monkeypatch.setattr(resident_record_domain, 'find_resident_for_admission', lambda value: {'resident_id': value})
             monkeypatch.setattr(resident_record_domain, '_resident_visible_to_actor', lambda _record, _actor: False)
             # Answered like a missing Resident, as denied ISA reads are; only a
             # caller who is not signed in hears that it must sign in.
@@ -56,3 +57,26 @@ def test_resolve_resident_identity_uses_chat_protocol_identity_contracts(monkeyp
                 resident_domain.resolve_resident_identity(resident_id, 'sample_admin')
             with pytest.raises(PermissionError):
                 resident_domain.resolve_resident_identity(resident_id, '')
+
+
+def test_navigation_identity_avoids_runtime_workspace_assembly(resident_record, monkeypatch):
+    """真实身份持久层解析不加载 Workspace；同一身份的权限仍逐次核对。"""
+    from management_portal.society_service import lineage_data_residents
+
+    monkeypatch.setattr(lineage_data_residents, 'residents_from_rows',
+                        lambda *_args: pytest.fail('identity read hydrated runtime Workspaces'))
+    checks = []
+
+    def visible(record, actor):
+        checks.append((record['resident_id'], actor))
+        return actor == 'allowed'
+
+    monkeypatch.setattr(resident_record_domain, '_resident_visible_to_actor', visible)
+    monkeypatch.setattr(resident_record_domain, 'actor_can_manage_residents', lambda actor: bool(actor))
+    rid = resident_record['resident_id']
+    assert resident_workspace_domain.resolve_resident_identity(rid, 'allowed') == {
+        'resident_id': rid, 'lineage_id': resident_record['lineage_id'],
+    }
+    with pytest.raises(KeyError, match='resident not found'):
+        resident_workspace_domain.resolve_resident_identity(rid, 'denied')
+    assert checks == [(rid, 'allowed'), (rid, 'denied')]

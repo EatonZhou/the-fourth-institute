@@ -36,7 +36,9 @@ def resolve_resident_identity(
 ) -> dict[str, str]:
     """Resolve the exact visible Resident and its Lineage identity."""
 
-    target = resident_record_domain.resolve_resident_runtime_target(
+    # Identity reads need the same current membership/access checks as input
+    # admission, not runtime Workspace assembly (and its filesystem/RPC reads).
+    target = resident_record_domain.resolve_resident_admission_target(
         resident_id,
         actor,
         require_visible=True,
