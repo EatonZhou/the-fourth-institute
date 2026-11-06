@@ -34,7 +34,6 @@ def test_remote_stream_cancellation_interrupts_blocking_read():
     try:
         with (
             mock.patch.object(socket_rpc, "request_params", return_value={}),
-            mock.patch.object(socket_rpc, "_signed", return_value={}),
             mock.patch.object(socket_rpc, "_open", side_effect=open_stream),
             ThreadPoolExecutor(max_workers=1) as executor,
         ):

@@ -113,20 +113,25 @@ def _signed(owner: str, params: dict[str, Any], context: InstructionContext) -> 
     return {"auth": request_auth(METHOD, params, socket_path=owner_socket(owner), actor=context.caller)}
 
 
-def _open(owner: str, payload: dict[str, Any], timeout: float) -> tuple[socket.socket, Any]:
-    encoded = json.dumps(payload, ensure_ascii=False, separators=(",", ":")).encode("utf-8") + b"\n"
+def _open(owner: str, payload: dict[str, Any], timeout: float, context: InstructionContext) -> tuple[socket.socket, Any]:
     connection: socket.socket | None = None
     sending = False
     try:
         # An owner that is restarting gets waited for, as a request to it has
         # not been sent yet.
         connection, _path = connect_service(owner_socket(owner), timeout=timeout)
+        payload = {**payload, **_signed(owner, payload["params"], context)}
+        encoded = json.dumps(payload, ensure_ascii=False, separators=(",", ":")).encode("utf-8") + b"\n"
         sending = True
         connection.sendall(encoded)
         return connection, connection.makefile("rb")
     except OSError as exc:
         if connection is not None:
             connection.close()
+            if not sending:
+                # Signing failures are local authentication errors, not an
+                # unavailable owner or an instruction eligible for replay.
+                raise
         raise InstructionError(
             "instruction.owner_unavailable",
             f"拥有该指令的服务暂时不可用（{owner}）",
@@ -135,6 +140,10 @@ def _open(owner: str, payload: dict[str, Any], timeout: float) -> tuple[socket.s
             # sendall may have delivered the entire request before raising.
             commit_state="unknown" if sending else "not_committed",
         ) from exc
+    except BaseException:
+        if connection is not None:
+            connection.close()
+        raise
 
 
 def _unavailable(owner: str, message: str) -> InstructionError:
@@ -180,9 +189,9 @@ def call_remote(
     request_id = f"isa-{secrets.token_hex(10)}"
     params = request_params(call, context)
     params["instruction_id"] = instruction_id
-    payload = {"id": request_id, "method": METHOD, "params": params, **_signed(owner, params, context)}
+    payload = {"id": request_id, "method": METHOD, "params": params}
     try:
-        connection, stream = _open(owner, payload, timeout)
+        connection, stream = _open(owner, payload, timeout, context)
         try:
             try:
                 raw = stream.readline()
@@ -205,10 +214,10 @@ def release_recovery_remote(owner: str, recovery_key: str, instruction_ids: list
     request_id = f"isa-ack-{secrets.token_hex(10)}"
     params = _context_params(context)
     params["recovery_release"] = {"key": recovery_key, "instruction_ids": instruction_ids}
-    payload = {"id": request_id, "method": METHOD, "params": params, **_signed(owner, params, context)}
+    payload = {"id": request_id, "method": METHOD, "params": params}
     # This is a short metadata acknowledgement, not an instruction that may
     # execute a long-running script. Failed acknowledgements remain queued.
-    connection, stream = _open(owner, payload, 10.0)
+    connection, stream = _open(owner, payload, 10.0, context)
     try:
         response = _decode(owner, stream.readline(), request_id)
         return int(response["result"]["released"])
@@ -225,8 +234,8 @@ def stream_remote(
         return
     request_id = f"isa-{secrets.token_hex(10)}"
     params = request_params(call, context)
-    payload = {"id": request_id, "method": METHOD, "params": params, **_signed(owner, params, context)}
-    connection, stream = _open(owner, payload, idle_timeout)
+    payload = {"id": request_id, "method": METHOD, "params": params}
+    connection, stream = _open(owner, payload, idle_timeout, context)
     if cancellation is not None:
         cancellation.bind(connection)
     try:

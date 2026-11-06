@@ -140,14 +140,7 @@ class ResourceServiceClient:
             "method": method_name,
             "params": clean_params,
         }
-        if signing_key is not None:
-            payload["auth"] = sign_rpc_auth(
-                signing_key,
-                payload["method"],
-                clean_params,
-                actor=actor,
-            )
-        elif actor:
+        if signing_key is None and actor:
             payload["params"]["actor"] = actor
         connection: socket.socket | None = None
         stream = None
@@ -157,6 +150,10 @@ class ResourceServiceClient:
                 timeout=self.timeout if timeout is None else max(0.1, float(timeout)),
                 restart_wait=restart_wait,
             )
+            if signing_key is not None:
+                payload["auth"] = sign_rpc_auth(
+                    signing_key, payload["method"], clean_params, actor=actor,
+                )
             connection.sendall(
                 json.dumps(payload, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
                 + b"\n"
