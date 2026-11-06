@@ -4,15 +4,15 @@ type: decision
 project: AI员工
 created_at: '2026-09-01'
 version:
-  number: 22
+  number: 23
   created_at: "2026-09-01"
   created_by:
     user: ""
     agent: ""
-  updated_at: "2026-11-04T11:12:12Z"
+  updated_at: "2026-11-06T01:17:37Z"
   updated_by:
     user: ""
-    agent: "resident_83d75ad3a6c7"
+    agent: "resident_60ae6d0cdf74"
 importance: 10
 metaness: 3
 ai_generated: false
@@ -20,7 +20,7 @@ links:
   source:
   - ${code_root}/management_portal/http_resources.py
   - ${code_root}/management_portal/resources/isa.py
-  - /share/Skills/tfi-unified-id/SKILL.md
+  - ${code_root}/core_skills/tfi-unified-id/SKILL.md
   - ${code_root}/config/resource-types/_registry.json
   - ${code_root}/management_common/resource_identity.py
   - ${code_root}/management_portal/resources/address.py

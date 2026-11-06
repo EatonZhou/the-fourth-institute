@@ -4,15 +4,15 @@ type: decision
 project: AI员工
 created_at: '2026-08-25'
 version:
-  number: 19
-  created_at: '2026-08-25'
+  number: 20
+  created_at: "2026-08-25"
   created_by:
-    user: ''
-    agent: ''
-  updated_at: '2026-11-01T03:39:14Z'
+    user: ""
+    agent: ""
+  updated_at: "2026-11-06T01:17:38Z"
   updated_by:
-    user: ''
-    agent: resident_24014e2b9bf6
+    user: ""
+    agent: "resident_60ae6d0cdf74"
 importance: 9
 metaness: 2
 ai_generated: false
@@ -20,7 +20,7 @@ links:
   source:
   - ${code_root}/management_common/portal_network.py
   - ${code_root}/management_portal/http_admin.py
-  - ${code_root}/scripts/portal_instance_storage.py
+  - ${code_root}/management_common/instance_manifest.py
   - ${code_root}/tests/cases/test_portal_network_settings.py
   - ${code_root}/scripts/portal_user.py
   - ${code_root}/scripts/portal_service_units.py
@@ -68,13 +68,13 @@ Portal 可以从 TFI Portal 主机所在的局域网访问，也可以经受控�
   → 域名与 HTTPS
   → VPS 边界网关上的 Nginx（TLS 终止）
   → WireGuard 私有隧道
-  → TFI Portal 主机 Nginx（WireGuard 地址 ${lan_host}:18087）
+  → TFI Portal 主机 Nginx（WireGuard 地址 10.77.0.2:18087）
   → 本机 Portal Router（127.0.0.1:18084）
   → 选中的 Portal 实例（Dev 或 Release）
   → Portal 登录认证与授权
 ```
 
-局域网 HTTPS 先连接主机 Nginx 的 443 端口（${lan_host}、${lan_host}、${lan_host}），再到本机 Router 18084；这些地址的 80 端口只返回 301，跳转到 HTTPS。局域网还可以用 HTTP 直接连接配对 Router（28399），以及 Dev、Release 两个 Web（28401、28400），这三个端口监听所有地址，不经过 Nginx。无论从哪个入口进入，Portal 都执行同样的登录会话、Resident Bearer 令牌、权限系统和领域业务边界检查；直连时请求方不是回环地址，它自报的转发头被忽略，Cookie 也不带 `Secure`。
+局域网 HTTPS 先连接主机 Nginx 的 443 端口（192.168.115.134、10.138.30.36、172.16.0.95），再到本机 Router 18084；这些地址的 80 端口只返回 301，跳转到 HTTPS。局域网还可以用 HTTP 直接连接配对 Router（28399），以及 Dev、Release 两个 Web（28401、28400），这三个端口监听所有地址，不经过 Nginx。无论从哪个入口进入，Portal 都执行同样的登录会话、Resident Bearer 令牌、权限系统和领域业务边界检查；直连时请求方不是回环地址，它自报的转发头被忽略，Cookie 也不带 `Secure`。
 
 ## 设计点
 

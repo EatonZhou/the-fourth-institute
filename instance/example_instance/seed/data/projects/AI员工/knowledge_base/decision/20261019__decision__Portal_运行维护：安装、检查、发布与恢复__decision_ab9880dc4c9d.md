@@ -4,15 +4,15 @@ type: decision
 project: AI员工
 created_at: '2026-10-19'
 version:
-  number: 21
-  created_at: '2026-10-19'
+  number: 22
+  created_at: "2026-10-19"
   created_by:
-    user: ''
-    agent: resident_20bd82ebf4c6
-  updated_at: '2026-11-01T03:39:34Z'
+    user: ""
+    agent: "resident_20bd82ebf4c6"
+  updated_at: "2026-11-06T01:17:37Z"
   updated_by:
-    user: ''
-    agent: resident_24014e2b9bf6
+    user: ""
+    agent: "resident_60ae6d0cdf74"
 importance: 7
 ai_generated: true
 links:
@@ -21,12 +21,11 @@ links:
   - scripts/tfi_dev.py
   - scripts/tfi_development_runtime.py
   - scripts/tfi_release_install.py
-  - scripts/tfi_application_upgrade.py
-  - scripts/tfi_application_freeze.py
-  - scripts/tfi_application_clients.py
-  - scripts/tfi_application_admission.py
-  - scripts/tfi_application_work.py
-  - scripts/tfi_application_snapshot.py
+  - scripts/tfi_instance_manager.py
+  - scripts/instance_services.py
+  - scripts/tfi_move_area.py
+  - management_common/instance_manifest.py
+  - management_portal/http_admin.py
   related:
   - decision_08bb2d9141f9
   - decision_6febe7bb57f9
@@ -52,7 +51,7 @@ python3 scripts/bootstrap_portal doctor core test tau provider article embedding
 
 可用 `--venv <目录>` 指向已有环境，`install --dry-run` 预览，`doctor --json` 获取机器可读结果。`doctor` 检查所选档的依赖，不代表数据库、外部 Provider 或所有服务已就绪。新主机的服务由安装器 `scripts/install_tfi_release`（实现在 `scripts/tfi_release_install.py`）在安装阶段按平台注册：Linux 为 systemd 用户服务，macOS 为 launchd，Windows 为 SCM；组件为 postgres、nats、resource、execution、society、worker、web，服务名为 `<service_prefix>-<组件>.service`（Windows 不带 `.service` 后缀）。需要 Dev 部署的实例再运行 `scripts/tfi_development_runtime.py configure --root <实例安装根目录>`（目前只支持 Linux 用户服务），注册 `<service_prefix>-dev-web.service` 和 `<service_prefix>-router.service`，并用同一脚本的 `activate --root <实例安装根目录>` 完成首次激活。Linux 单元中处理请求的服务（postgres、nats、resource、execution、society、web，以及 dev-web、router）设 `CPUWeight=1000`；worker 运行 Provider 适配器，保持默认的 100；测试运行用 20（`management_portal/test_framework/executor.py`）。测试占满主机时，请求路径上的服务仍先得到 CPU。旧安装器写的、只缺这一行的单元仍算本实例所有：安装器 `start` 注册服务时把它们改写为当前定义，dev-web 与 router 由 `configure` 重新生成；systemd 在 daemon-reload 时把新权重应用到运行中的服务，不需要重启。数据库连接来自站点环境中的 `PORTAL_DATABASE_URL`。测试用 `PORTAL_DATABASE_NAMESPACE` 隔离 schema，不对生产 schema 做实验。
 
-数据目录在 Portal 管理 → 数据目录中查看和修改。页面显示实例根目录和各区域的位置、大小与所在磁盘的剩余空间。管理员给某个区域填写新的绝对路径后，控制作业执行「移动区域」（《Portal 实例协议》）：停止使用该区域的服务、复制、检查复制结果、更新清单、启动服务，服务在新位置正常运行后删除原目录。提交后从页面跟踪作业，失败时先看作业记录，不要手动删除源目录。现在的页面仍按旧的四个数据根显示和迁移，按 `plan_4d1990717dc0` 第六步改为区域。
+数据目录在 Portal 管理 → 数据目录中查看和修改。页面显示实例根目录和各区域的位置、大小与所在磁盘的剩余空间。管理员给某个区域填写新的绝对路径后，控制作业执行「移动区域」（《Portal 实例协议》）：停止使用该区域的服务、复制、检查复制结果、更新清单、启动服务，服务在新位置正常运行后删除原目录。提交后从页面跟踪作业，失败时先看作业记录，不要手动删除源目录。页面按实例清单中的区域显示，迁移请求交给 `scripts/tfi_move_area.py`；区域列表与路径不再由旧四根配置推断。
 
 ## 规范环境变量与旧运行数据迁移
 

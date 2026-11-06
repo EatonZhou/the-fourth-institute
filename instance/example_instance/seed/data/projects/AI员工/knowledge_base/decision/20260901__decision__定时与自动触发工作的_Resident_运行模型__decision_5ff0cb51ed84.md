@@ -4,15 +4,15 @@ type: decision
 project: AI员工
 created_at: '2026-09-01'
 version:
-  number: 35
-  created_at: '2026-09-01'
+  number: 36
+  created_at: "2026-09-01"
   created_by:
-    user: ''
-    agent: ''
-  updated_at: '2026-10-31T14:02:58Z'
+    user: ""
+    agent: ""
+  updated_at: "2026-11-06T01:17:38Z"
   updated_by:
-    user: ''
-    agent: resident_73cb83291316
+    user: ""
+    agent: "resident_60ae6d0cdf74"
 importance: 9
 metaness: 3
 ai_generated: false
@@ -23,7 +23,6 @@ links:
   - ${code_root}/management_portal/scheduled_triggered_monitor.py
   - ${code_root}/management_portal/backup_lineage.py
   - ${code_root}/scripts/resource_backup_lineage.py
-  - ${code_root}/scripts/portal_pulse_lineage.py
   - ${code_root}/management_portal/society_service/lineage_event_dispatch_rules.py
   - ${code_root}/management_portal/society_service/templates/builtins.py
   - ${code_root}/management_portal/society_service/lineage_program_runtime.py
@@ -114,7 +113,7 @@ Portal System 中的“运行容量预警”Function Block 用每五分钟一次
 - **首次超限与恢复各通知一次，升为紧急级别时补发一次。** 默认数据库使用率 80% 预警、90% 紧急、降至 70% 及以下恢复；磁盘使用率 85% 预警、95% 紧急、降至 80% 及以下恢复。预警和恢复均需相邻有效观察持续至少五分钟；数据库与磁盘的紧急阈值即时通知。执行队列达到 20 项预警、50 项紧急，超限需持续至少十五分钟；降至 5 项及以下持续五分钟后恢复。
 - **观察中断不能被当作健康恢复。** 来源读取失败时保留其既有容量告警并中断待确认计时，连续五分钟不可读取产生该来源的采集异常通知；恢复读取持续五分钟后解除采集异常。两次有效观察相隔超过十五分钟时重新计时，重复或倒序快照不累加时长。
 - **告警状态与待发通知在 Lineage 共享状态中持久保存。** 单元 `runtime_capacity_alerts` 保存最新快照、阈值、各指标当前级别与候选状态、通知序号和待发列表。先以比较并交换写入状态与待发通知，再调用 `CreateNotification`，最后确认已发送。通知使用稳定 ID；请求结果丢失或进程重启后重发同一 ID，Mailbox 中仍只有一条。并行读写冲突重新读取，不覆盖较新的观察。
-- **接收人和阈值由 Effect 的 RunScript arguments 明确配置。** 初始接收人为 TFI portal，阈值采用上述默认值；调整配置不创建第二套功能开关。定时 Event 控制自动检查，手动 Event 保留即时检查入口；Effect 关闭后两种入口均不再运行。RunScript 使用同一独占键避免同时启动，运行记录包含实际采样与通知结果。
+- **接收人和阈值由 Effect 的 RunScript arguments 明确配置。** 初始接收人为 weihao，阈值采用上述默认值；调整配置不创建第二套功能开关。定时 Event 控制自动检查，手动 Event 保留即时检查入口；Effect 关闭后两种入口均不再运行。RunScript 使用同一独占键避免同时启动，运行记录包含实际采样与通知结果。
 - **失败保留可恢复的事实。** 某个容量源不可读不阻断其他来源；共享状态或通知调用失败使脚本失败，沿既有脚本失败处理流程通知管理员，下一轮从待发列表继续。既有告警不因临时缺失指标、通知失败或暂停流程而宣告恢复。
 
 ## 一次定时工作怎样完成

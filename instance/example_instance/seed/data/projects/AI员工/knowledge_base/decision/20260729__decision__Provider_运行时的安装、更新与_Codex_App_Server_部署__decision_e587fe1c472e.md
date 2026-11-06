@@ -4,23 +4,26 @@ type: decision
 project: AI员工
 created_at: '2026-07-29'
 version:
-  number: 22
-  created_at: '2026-07-29'
+  number: 26
+  created_at: "2026-07-29"
   created_by:
-    user: ''
-    agent: ''
-  updated_at: '2026-10-31T18:15:07Z'
+    user: ""
+    agent: ""
+  updated_at: "2026-11-06T01:17:37Z"
   updated_by:
-    user: ''
-    agent: resident_24014e2b9bf6
+    user: ""
+    agent: "resident_60ae6d0cdf74"
 importance: 9
 metaness: 2
 ai_generated: false
 links:
   source:
-  - ${code_root}/config/systemd/portal-codex-app-server@.service.in
+  - ${code_root}/scripts/instance_service_definitions.py
   - ${code_root}/scripts/portal_service_units.py
-  - ${code_root}/scripts/portal_instance_storage.py
+  - ${code_root}/scripts/instance_services.py
+  - ${code_root}/scripts/tfi_release_platform_linux.py
+  - ${code_root}/management_portal/service_runtime.py
+  - ${code_root}/management_common/instance_manifest.py
   - ${code_root}/management_portal/execution/account_hosting.py
   - ${code_root}/management_portal/execution/account_registrations.py
   - ${code_root}/tests/cases/test_provider_updates.py
@@ -34,9 +37,11 @@ links:
   - decision_6b9e42f1c8a7
   - decision_3948ce9b9443
   - decision_3dd52c0692c1
+  - information_de50748841c9
   - decision_3e8c2a7f91d4
   supersedes: []
-  derived_from: []
+  derived_from:
+  - information_de50748841c9
 ---
 # Provider 运行时的安装、依赖更新与 Codex App Server 部署
 
@@ -58,7 +63,7 @@ Codex 会话协议见 decision_3e8c2a7f91d4，Codex 账号选择见 decision_3dd
 | --- | --- | --- | --- | --- |
 | Codex | npm 包 `@openai/codex` 的 `latest` 版本 | `codex-cli-<版本>` | 站点 `providers.codex_binary` 或已解析的 Codex 可执行入口；Windows 使用运行时根中的 `codex-cli-current`，安装布局由平台适配器决定 | 已登记且正在运行的 `portal-codex-app-server@<account_id>.service` 实例 |
 | Claude Code | PyPI 包 `claude-agent-sdk`，安装在独立的 Python 虚拟环境中 | `claude-agent-sdk-<版本>` | `claude-agent-sdk-current` | `portal-claude-code.service` |
-| Kimi Code | npm 包 `@moonshot-ai/kimi-code` 的 `latest` 版本 | `kimi-code-<版本>` | `kimi-code-current` | `portal-kimi-code.service` |
+| Kimi Code | npm 包 `@moonshot-ai/kimi-code` 中当前原生适配器支持的最新稳定版本 | `kimi-code-<版本>` | `kimi-code-current` | `portal-kimi-code.service` |
 | DSH | npm 包 `@deepseek-ai/dsh` 与 `@deepseek-ai/dsh-llm` 的 `next` 版本，加上 Portal 仓库中的桥接脚本 `management_portal/dsh_runtime/bridge.mjs` | `dsh-runtime-<dsh 版本>-<dsh-llm 版本>` | `dsh-runtime-current` | 没有常驻服务；每个 DSH 会话按需启动自己的进程 |
 | OpenCode | npm 包 `opencode-ai` 的 `latest` 版本；安装时同时记录各服务可调用工具的模型清单 | `opencode-<版本>` | `opencode-current` | 没有常驻服务；每个 Portal 会话由 `management_portal/opencode_bridge.py` 启动一个 `opencode serve` |
 | Google Antigravity | ACP 注册表中 `antigravity-acp` 的 `agent.json` 声明的版本，归档只从 `dl.google.com` 下载 | `antigravity-<版本>` | `antigravity-current`，校验通过后写入 `.portal-validated` 才计为已安装 | 没有常驻服务；ACP 适配器为每个绑定启动原生 agent |
@@ -83,7 +88,7 @@ Codex 全部账号共用站点 `codex_binary` 和运行时版本，各账号仍�
 
   通过后写入验证标记。已有验证标记的目录不再重复安装，只重新检查。
 - **切换只在这个 Provider 没有进行中的执行时发生。** ExecutionService 中还有该 Provider 的排队、已领取或运行中的执行，或者 Claude Code 守护进程报告有运行中的轮次时，新版本进入“待切换”状态，当前版本继续服务。
-- **切换范围由 Provider 的运行时更新器给出。** 检查程序把当前链接原子地换成新版本目录，依次重启更新器返回的服务，并确认它们处于运行状态。Codex 更新器从账号登记查询模板实例，只选择当前 `active` 的实例：已停用登记但仍在服务的进程也更新，原本停止的实例保持停止。账号之间隔离身份与会话，共用运行时版本；验证更新生效时核对被更新实例实际运行的二进制和版本。静态安装器单独渲染共享模板，不把运行中的实例名当作仓库 unit 文件。
+- **切换范围由 Provider 的运行时更新器给出。** 检查程序把当前链接原子地换成新版本目录，依次重启更新器返回的服务，并确认它们处于运行状态。Codex 更新器从账号登记查询模板实例，只选择当前 `active` 的实例：已停用登记但仍在服务的进程也更新，原本停止的实例保持停止。账号之间隔离身份与会话，共用运行时版本；验证更新生效时核对被更新实例实际运行的二进制和版本。服务定义由实例清单与平台渲染器生成，按已登记账号组件选择，不把运行中的实例名当作仓库 unit 文件。
 - **切换失败时退回原版本。** 任一服务重启失败，检查程序把当前链接改回原来的目录并再次重启这些服务，然后报告错误；安装失败时当前版本保持不变。
 - **待切换的版本会在空闲后自动启用。** 出现待切换版本时，检查程序启动临时的 systemd 用户服务 `portal-provider-pending-activation`，每 30 秒尝试切换一次，最多等待 24 小时。该服务通过 `EnvironmentFile` 加载 Portal 的 PostgreSQL 环境文件，默认路径为 `~/.config/tfi/portal-postgres.env`，可由 `PORTAL_POSTGRES_ENV_FILE` 指定。数据库连接用于检查 Provider 的活动 Execution；连接不可用时报告错误并保留待切换状态。连接凭据不写入启动命令参数。
 - **同一时间只运行一次检查。** 检查程序持有文件锁 `provider-updates.lock`，位于 provider-state 区域的根目录；另一次检查正在运行时，新的调用立即返回 `busy`。待切换的版本和最近一次检查时间保存在同目录的 `provider-updates.json`。
@@ -91,6 +96,16 @@ Codex 全部账号共用站点 `codex_binary` 和运行时版本，各账号仍�
 更新检查由 `scripts/update_provider_runtimes.py` 执行一次（加 `--activate-pending` 时只尝试启用待切换的版本）。它输出 JSON 结果，列出每个 Provider 的已安装版本与可用版本、本次启用的 Provider、仍在等待的 Provider 和错误；有错误或检查正忙时以非零状态退出。
 
 Provider 声明了仓库内的运行时包（`AgentProvider.runtime_package`，目前只有 DSH 的 `management_portal/dsh_runtime`）时，第一次部署由 `scripts/prepare_agent_runtimes.py` 按仓库中的开放版本声明安装这个目录，并在这个 Provider 的当前链接不存在时让它指向这个目录；之后的版本切换由更新检查负责。
+
+## 原生运行时的协议兼容边界
+
+ProviderRuntime 同时声明可安装版本的来源与已安装版本是否符合当前 Adapter 的原生协议。程序能输出版本、文件存在与原生协议受支持分别判断；不兼容版本不能计为 ready。安装与更新选择受支持范围内的最新稳定版本，沿同一 stage、空闲切换和失败回退流程恢复，保留账号、会话与持久执行身份。
+
+当前 Kimi Adapter 使用原始实时事件与 snapshot 合同，兼容版本范围为 `<2.5.0`。2.4.1 的 server_hello 虽声明 protocol_version=2，仍提供 accepted_subscriptions 确认、原始事件及 snapshot/status；该版本受支持。2.5 移除这些旧合同，改用 transcript 订阅和控制合同，需要完整适配后才能扩展支持范围。握手版本号不能单独判断两者兼容性。client_hello 的空成功 ACK 不代表已订阅一个 Session；遇到不支持的协议明确拒绝，不能依赖历史拼装提供流式完成结果。当前首次接入选择该范围内最新稳定版，既有兼容运行时继续复用。
+
+Antigravity 登录先运行 Portal 的 Python ACP 包装入口。隔离环境必须只补入选中实例的非秘密 PORTAL_INSTANCE_ROOT，确保运行时路径模块可导入；不继承服务环境、数据库凭据或其他账号认证。
+
+Claude 原生 session/close 指定 session_id 时释放该确切原生会话的所有空闲客户端，包括交接准备绑定与正式 Resident 绑定下的客户端。存在活跃客户端时不部分释放；旧 session_id 不得关闭同 key 的新会话。释放进程和注销目录分别回读，不能将目录失败重试当作已删除。
 
 ## 首次接入的环境准备
 
@@ -123,21 +138,21 @@ Codex 的每个执行账号由登记中的 `account_id` 标识，并关联供会
 | --- | --- |
 | 账号目录 `CODEX_HOME` | 账号登记中的 `config.account_dir`，保存该账号的凭据、配置与原生会话；放在哪里由主机用户决定（《Portal 实例协议》「执行账号目录」） |
 | Unix socket | 实例 `runtime/` 下的 `s/codex-<account_id>.sock`，供客户端连接该账号实例 |
-| 模板源 | `config/systemd/portal-codex-app-server@.service.in`，声明所有账号共用的进程设置 |
-| 已安装模板 | 用户 systemd 目录中的 `portal-codex-app-server@.service`，由服务控制面按站点路径、Codex 可执行文件和出口配置渲染 |
+| 定义来源 | `scripts/instance_service_definitions.py` 遍历实例清单的 `services.components`，交给对应平台渲染器生成各组件定义 |
+| 已安装定义 | Linux 用户 systemd 目录中的 `<service_prefix>-codex-app-server@<account_id>.service`；每个已登记账号有独立定义。`scripts/instance_services.py` 安装并核对归属，`service_runtime` 从清单解析程序与账号目录 |
 
-账号登记入口与登录完成流程经 `account_hosting` 调用服务控制面；服务控制面负责安装模板、启停和移除实例。常规模板安装只安装并 reload 定义，实例的启停属于显式账号生命周期操作。登记停用只阻止新工作派发，保留现有进程；删除必须满足账号空闲条件，具体规则见 decision_7956d7cb4bde。
+账号登记入口与登录完成流程经 `account_hosting` 调用服务控制面；服务控制面负责登记组件、安装定义、启停和移除实例。常规定义安装只安装并 reload，实例的启停属于显式账号生命周期操作。登记停用只阻止新工作派发，保留现有进程；删除必须满足账号空闲条件，具体规则见 decision_7956d7cb4bde。
 
-所有实例使用同一份模板、当前 Codex 运行时与 `management_portal.codex_app_server_host` 启动入口；可执行文件从当前部署配置派生，账号目录取自账号登记。Host 在账号目录作为进程工作目录的条件下启动 `codex app-server`，线程任务的工作目录继续由每次请求单独设置。每个实例有独立的账号目录与 socket，登录身份、连接和原生会话不会在账号间混用。
+所有账号组件使用同一套平台渲染规则、当前 Codex 运行时与 `management_portal.codex_app_server_host` 启动入口；可执行文件从当前部署配置派生，账号目录取自账号登记。Host 在账号目录作为进程工作目录的条件下启动 `codex app-server`，线程任务的工作目录继续由每次请求单独设置。每个实例有独立的账号目录与 socket，登录身份、连接和原生会话不会在账号间混用。
 
 | 设置 | 值与作用 |
 | --- | --- |
-| 启动条件 | 对应账号目录存在 `auth.json`，所有账号遵循同一条件 |
-| 启动前 | 创建 socket 父目录并删除自己的旧 socket 文件 |
-| `Restart` / `RestartSec` | `always` / 2 秒 |
-| `TimeoutStopSec` | 15 秒 |
+| 启动配置 | 账号组件必须已登记，`service_runtime` 按该账号解析目录、程序与 socket；账号认证就绪另由账号接入流程检查 |
+| 进程入口 | 平台定义启动 `management_portal.service_runtime --component codex-app-server@<account_id>`，再进入该账号的 `codex_app_server_host` |
+| Linux `Restart` / `RestartSec` | `always` / 3 秒 |
+| Linux `TimeoutStopSec` | 270 秒 |
 | `MemoryHigh` / `MemoryMax` / `MemorySwapMax` | 32 GiB / 36 GiB / 1 GiB |
-| 网络出口 | 渲染器按站点配置的 `PORTAL_PROVIDER_EGRESS_ENV_FILE` 生成 `EnvironmentFile`；未配置时不写入该指令。出口配置须保留本机连接的绕过规则 |
+| 网络出口 | 平台定义由实例清单生成服务环境，`service_runtime` 按本站配置准备 Provider 进程环境；出口配置须保留本机连接的绕过规则 |
 
 旧的固定账号 unit、仓库账号 YAML 与旧路径不是部署来源。迁移保留的旧目录反向链接和旧 socket 别名仅承接存量引用；相关检查、迁移和恢复操作统一见 `decision_ab9880dc4c9d`。
 
@@ -171,4 +186,4 @@ Codex 原生 `threads.rollout_path` 保存 `sessions/...`、`archived_sessions/.
 
 迁移先用 SQLite 在线备份保存原索引，再核对账号内文件名与 session_meta 的 thread 身份，按旧值条件更新；缺文件、身份不符、路径越界或存在歧义时保留原记录并报告。备份在该账号的 `portal-index-backups/` 下。历史 JSONL、线程 ID、Portal 会话绑定与任务工作区不因索引迁移而变化。当前原生协议依赖进程启动目录解析相对路径；运行时更新须验证历史读取、resume 和 fork，以及迁移账号目录后保持这些行为。
 
-POSIX Host 使用私有临时端点完成准备后再发布正式端点；原生 CLI 提供指向其私有 daemon socket 的符号链接时，核对 socket 与父目录归属和写权限。Windows 在相同准备完成后发布私有连接描述符。Linux 模板显式部署刷新可以替换经本站 HOME、账号目录和配置位置核验的自有定义；普通账号启动不会覆盖不同的服务定义。
+POSIX Host 使用私有临时端点完成准备后再发布正式端点；原生 CLI 提供指向其私有 daemon socket 的符号链接时，核对 socket 与父目录归属和写权限。Windows 在相同准备完成后发布私有连接描述符。Linux 服务定义显式部署刷新可以替换经本站清单与组件归属核验的自有定义；普通账号启动不会覆盖不同的服务定义。

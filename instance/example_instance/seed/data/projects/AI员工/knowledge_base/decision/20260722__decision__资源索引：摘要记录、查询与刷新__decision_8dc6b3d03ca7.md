@@ -4,15 +4,15 @@ type: decision
 project: AI员工
 created_at: '2026-07-22'
 version:
-  number: 42
-  created_at: '2026-07-22'
+  number: 45
+  created_at: "2026-07-22"
   created_by:
-    user: ''
-    agent: ''
-  updated_at: '2026-10-31T18:14:36Z'
+    user: ""
+    agent: ""
+  updated_at: "2026-11-06T01:17:37Z"
   updated_by:
-    user: ''
-    agent: resident_24014e2b9bf6
+    user: ""
+    agent: "resident_60ae6d0cdf74"
 importance: 9
 metaness: 3
 ai_generated: false
@@ -21,7 +21,7 @@ links:
   - ${code_root}/management_portal/resources/timing.py
   - ${code_root}/management_portal/resources/access.py
   - ${code_root}/management_portal/resources/service.py
-  - skills:tfi-unified-id/SKILL.md
+  - ${code_root}/core_skills/tfi-unified-id/SKILL.md
   - ${code_root}/management_portal/resource_index_backend.py
   - ${code_root}/management_portal/resource_index_store.py
   - ${code_root}/management_portal/resource_index_refresh.py
@@ -50,6 +50,8 @@ links:
   related:
   - decision_b820faf42218
   - decision_600ae27b0538
+  - insight_327126fdc927
+  - idea_667af2768a43
   - decision_4a9ba5dfada6
   - decision_b6e74d78f7b6
   - decision_8273271b67b1
@@ -184,18 +186,18 @@ Resident、Lineage 和工作区的删除与恢复由协作领域（SocietyServic
 
 ## 记录怎样进入索引
 
-### 登记同步投影与三种刷新触发
+### 单对象同步投影与后台刷新
 
 ```text
-正式登记成功 ─→ 所属适配器生成单条摘要 ─→ 索引存储持久化 ─→ 登记返回并可立即查询
+正式登记、修改、注销或协作描述提交 ─→ 所属适配器投影单对象 ─→ 持久化 ─→ 返回
 
-领域修改成功后的变化通知 ─┐
+领域外的变化通知          ─┐
 文件变化观察              ─┼─→ 刷新队列 ─→ 适配器读取来源 ─→ 索引存储提交 ─→ 查询与等待者看到新记录
 启动与周期核对            ─┘
 ```
 
-- **登记同步投影。** ResourceService 在领域提交并同步授权后，让所属适配器从已提交的单个对象生成摘要，直接写入索引存储；持久化完成后才返回登记成功。Knowledge 与 Experiment 按新文件路径读取，Repo、Article、Device、Project 和 Workbench 使用各自适配器的单对象投影。登记不等待串行刷新队列，也不要求扫描该类型的全部资源；索引投影失败时，返回带 `domain_committed: true` 和 `stage: index_projection` 的提交后错误，不把成功伪装为 `unconfirmed`。
-- **变化通知。** 修改、撤销登记和领域外的资源变化，按资源 ID、类型或路径找到负责的适配器并请求刷新；登记表通知携带单条记录的变化键，由适配器读取这一条（`decision_b6e74d78f7b6`）。按路径寻找适配器时，变化路径只解析一次，各适配器根目录的解析结果复用 30 秒，大量并发通知不会因反复的文件系统调用而互相拖慢。
+- **单对象同步投影。** ResourceService 在领域提交并同步授权后，让所属适配器从已提交的单个对象生成摘要，直接写入索引存储；登记、更新和注销都在对应摘要持久化完成后返回成功。Knowledge 与 Experiment 按新文件路径读取，Repo、Article、Device、Project 、Workbench 和 Workspace 使用各自适配器的单对象投影。单对象变更不等待串行刷新队列，也不要求扫描该类型的全部资源；索引投影失败时，返回带 `domain_committed: true` 和 `stage: index_projection` 的提交后错误，不把成功伪装为 `unconfirmed`。
+- **变化通知。** 领域外的资源变化，按资源 ID、类型或路径找到负责的适配器并请求刷新；登记表通知携带单条记录的变化键，由适配器读取这一条（`decision_b6e74d78f7b6`）。按路径寻找适配器时，变化路径只解析一次，各适配器根目录的解析结果复用 30 秒，大量并发通知不会因反复的文件系统调用而互相拖慢。
 - **文件变化观察。** 索引默认观察各适配器声明的目录（环境变量 `PORTAL_RESOURCE_INDEX_WATCH` 设为 `0`、`false` 或 `no` 时关闭）；文件变化后，按路径找到负责的适配器并刷新这个路径。观察事件溢出、可能漏掉变化时，对全部适配器请求强制刷新。每次完整扫描后，观察的目录随来源更新。
 - **启动与周期核对。** 服务进程启动时，对全部适配器请求一次普通刷新，停机期间的修改因此立即补上。之后按时钟每 300 秒核对一次（可用 `PORTAL_RESOURCE_INDEX_RECONCILE_SECONDS` 调大，小于 300 时按 300），对当时既未排队也未运行的适配器请求普通刷新；已经排队或运行的适配器完成自己的刷新。核对不要求队列先空闲：知识库持续编辑时队列可能一直有请求，文件变化观察漏掉的修改（例如新 Fork 的 Resident）仍在一个周期内补上。
 
@@ -226,11 +228,15 @@ Resident、Lineage 和工作区的删除与恢复由协作领域（SocietyServic
 - **每次成功提交推进这个适配器的版本代次（generation），并记录成功时间。** 代次是确认来源进度的依据；`projection_state(adapter)` 返回它。
 - **记录先在内存中批量更新，持久化后再发布变化。** 后台刷新完成后，索引把记录写入 PostgreSQL，再通知等待者和订阅者。
 - **注销同步删除。** 领域删除提交后，ResourceService 同步清除该资源的索引摘要，再返回注销成功。一个资源类型可以由多个适配器提供，例如 Knowledge 与 Paper 都提供 Review；单条摘要仍只有一个来源所有者。已有摘要按记录的来源执行删除，并为所有声明该类型的适配器记录该资源 ID 的删除代次；摘要尚未入索引时也记录删除代次。早于注销开始的扫描不能重新写入已删除资源，其他资源和来源不受影响。索引清理失败保留领域已提交的事实，并返回提交后错误供后续处置。
-- **早于同步登记开始的扫描不能覆盖登记结果。** 索引记录单条同步投影的代次；后台完整快照或局部变化提交时，跳过扫描开始之后已被同步投影的资源 ID，防止旧扫描结果把刚登记的记录删除或改回旧值。
+- **早于同步变更开始的扫描不能覆盖变更结果。** 索引记录单条同步投影的代次；后台完整快照或局部变化提交时，跳过扫描开始之后已被同步投影的资源 ID，防止旧扫描结果把刚登记或更新的记录删除、改回旧值，或复活已注销身份。
+- **同一资源的修改和投影有共同顺序。** ResourceService 按资源 ID 串行执行领域更新、授权同步和单对象投影；注销使用同一个边界，不同资源可并行。单对象适配器在这个边界内读取当前来源并持久化，延迟到达的协作投影重新读取当前描述。协作描述重复提交时仍确认索引，补齐此前领域已提交而投影失败的部分。
 - **查询不等待数据库写入和刷新中的复制。** 索引存储的内存锁只用于交换记录引用：持久化在锁内取出待写的变化，数据库写入及其与另一 Portal 实例共享的 schema 级 advisory lock 都在锁外完成；刷新在锁内取得现有记录的引用，复制、比较和来源路径解析在锁外进行。存储中的记录只整体替换、从不原地修改，所以这些引用在锁外仍然一致。写入期间产生的变化以更新的代次等待下一次持久化；写入失败时，没有写入的变化放回待写集合，已被同一记录或适配器的更新变化取代的除外。
 - **记录变化后广播一条通知。** ResourceService 进程通过 Portal 的通知总线发布 `projection_updated` 事件，内容包括适配器名称、新增与删除的数量，以及变化的资源 ID。变化超过 128 个时不列出 ID，改为 `snapshot_required: true`，订阅者需要重新读取完整结果。事件只用来提示变化，查询仍以索引为准。
 
 ## 持久化、健康与恢复
+
+适配器检查时间与索引内容更新时间分别持久化。来源无变化的检查仍记录适配器新鲜度和检查点；`index_updated_at` 值未变时，不为该元数据行生成新的PostgreSQL行版本。真实索引内容变化继续保存记录、适配器进度及改变后的内容时间；持久化失败仍按原待写集合恢复，不丢弃并发变化。
+
 
 - **新建索引存储写入 `tfi.resource-index-store.v1` 标记**，保存在资源 schema 中。已有标记必须精确等于 `tfi.resource-index-store.v1`；初始化遇到既有行不更新 value，不因启动或重试改写历史 marker。读取校验不执行数据迁移、不改变数据库 DDL 或版本号。
 - **健康状态按适配器报告**：记录数、版本代次、最近检查、最近成功、来源级错误和 `resource_error_count`，以及正在运行和排队中的适配器。

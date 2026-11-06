@@ -4,23 +4,24 @@ type: decision
 project: AI员工
 created_at: '2026-09-06'
 version:
-  number: 7
-  created_at: '2026-09-06'
+  number: 8
+  created_at: "2026-09-06"
   created_by:
-    user: ''
-    agent: ''
-  updated_at: '2026-10-31T01:31:39Z'
+    user: ""
+    agent: ""
+  updated_at: "2026-11-06T01:17:37Z"
   updated_by:
-    user: ''
-    agent: resident_73cb83291316
+    user: ""
+    agent: "resident_60ae6d0cdf74"
 importance: 8
 ai_generated: false
 links:
   source:
   - ${code_root}/IMPROVE.md
-  - skills:manage-knowledge-base/archive-plan-item.md
+  - ${code_root}/core_skills/manage-knowledge-base/archive-plan-item.md
   related:
   - decision_ef80c6d3b5ee
+  supersedes:
   derived_from: []
 metaness: 6
 ---

@@ -943,6 +943,7 @@ modules:
       - "management_portal/resident_recommendation_backend.py"
       - "management_portal/application_bindings.py"
       - "management_portal/lineage_workflows.py"
+      - "management_portal/portal_execution_client.py"
       - "management_portal/resource_views.py"
       - "management_portal/http_knowledge.py"
       - "management_portal/board_semantic_search_backend.py"
@@ -2504,6 +2505,17 @@ protocols:
       - "decision_152d5c046a23"
     description: "浏览器/业务入口提交正式 Resident 搜索；Lineage 上下文目录保存摘要证据、嵌入和版本，SearchResidents 以当前主体过滤结果。嵌入器加载固定本地模型，是目录检索组件，和运行账号模型目录无关。"
     example: "portal_resident_discovery_service/SearchResidents → Lineage context.store → evidence 有界摘要 + embedder → 结果 ID/摘要/关联范围 → Home/工作台选择。"
+
+  - id: "instance-area-control"
+    title: "实例区域读取与迁移提交"
+    modules:
+      - "web.identity"
+      - "delivery.services"
+    designs: []
+    related_designs:
+      - "decision_ab9880dc4c9d"
+    description: "管理端在管理员鉴权后，从实例清单读取区域位置与容量；区域迁移提交给部署控制面，由服务拥有者环境中的 tfi_move_area 执行持久作业，Web 不自行复制目录或启停服务。"
+    example: "http_admin.paths_get → instance_areas.area_report(load())；paths_post → _move_area_command → tfi_move_area submit → 返回作业入口。"
 
   - id: "site-configuration-read"
     title: "站点配置读取与公开名称投影"

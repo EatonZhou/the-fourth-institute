@@ -4,23 +4,23 @@ type: decision
 project: AI员工
 created_at: '2026-09-03'
 version:
-  number: 20
-  created_at: '2026-09-03'
+  number: 21
+  created_at: "2026-09-03"
   created_by:
-    user: ''
-    agent: ''
-  updated_at: '2026-10-31T18:15:36Z'
+    user: ""
+    agent: ""
+  updated_at: "2026-11-06T01:17:20Z"
   updated_by:
-    user: ''
-    agent: resident_24014e2b9bf6
+    user: ""
+    agent: "resident_60ae6d0cdf74"
 importance: 8
 metaness: 2
 ai_generated: true
 links:
   source:
   - ${code_root}/management_portal/portal_feature_switches.py
-  - lineages:lineage_ed619225d417/residents/resident_e267c94e7252/workspace/duties/pulse.md
-  - lineages:lineage_ed619225d417/residents/resident_e267c94e7252/workspace/tools/pulsetool.py
+  - resident_e267c94e7252/file/workspace/duties/pulse.md
+  - resident_e267c94e7252/file/workspace/tools/pulsetool.py
   - ${code_root}/management_portal/portal_pulse_backend.py
   - ${code_root}/management_portal/pulse_publication_store.py
   - ${code_root}/management_portal/web_isa.py

@@ -4,20 +4,22 @@ type: decision
 project: AI员工
 created_at: '2026-09-03'
 version:
-  number: 11
-  created_at: '2026-09-03'
+  number: 12
+  created_at: "2026-09-03"
   created_by:
-    user: ''
-    agent: ''
-  updated_at: '2026-11-04T18:56:09Z'
+    user: ""
+    agent: ""
+  updated_at: "2026-11-06T01:17:37Z"
   updated_by:
-    user: ''
-    agent: resident_83d75ad3a6c7
+    user: ""
+    agent: "resident_60ae6d0cdf74"
 importance: 8
 metaness: 1
 ai_generated: true
 links:
   source:
+  - resident_e9e3b30b9adf/file/workspace/duties/daily_research.md
+  - resident_e9e3b30b9adf/file/workspace/tools/robottool.py
   - ${code_root}/management_portal/http_overview.py
   - ${code_root}/management_portal/static/home.js
   - ${code_root}/management_portal/static/portal_home_components.js

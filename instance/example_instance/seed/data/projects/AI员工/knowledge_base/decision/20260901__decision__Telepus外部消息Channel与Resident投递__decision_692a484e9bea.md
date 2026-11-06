@@ -11,9 +11,9 @@ links:
   - ${code_root}/management_portal/telepus_instructions.py
   - ${code_root}/management_portal/telepus_web_isa.py
   - ${code_root}/tests/cases/test_watchboard_applications.py
-  - projects:AI员工/knowledge_base/agents/lineage_c625a4bee56b/script/src/portal_facade.py
-  - projects:AI员工/knowledge_base/agents/lineage_c625a4bee56b/script/src/telegram_adapter.py
-  - projects:AI员工/knowledge_base/agents/lineage_c625a4bee56b/script/src/portal_resident_instructions.py
+  - projects:AI员工/agents/lineage_c625a4bee56b/script/src/portal_facade.py
+  - projects:AI员工/agents/lineage_c625a4bee56b/script/src/telegram_adapter.py
+  - projects:AI员工/agents/lineage_c625a4bee56b/script/src/portal_resident_instructions.py
   - ${code_root}/management_portal/isa_client.py
   - ${code_root}/management_portal/http_agent_workbench.py
   - ${code_root}/management_portal/static/watchboard_applications/telepus.js
@@ -39,15 +39,15 @@ links:
   supersedes: []
   derived_from: []
 version:
-  number: 23
-  created_at: '2026-09-01'
+  number: 24
+  created_at: "2026-09-01"
   created_by:
-    user: ''
-    agent: ''
-  updated_at: '2026-10-31T18:15:18Z'
+    user: ""
+    agent: ""
+  updated_at: "2026-11-06T01:17:36Z"
   updated_by:
-    user: ''
-    agent: resident_24014e2b9bf6
+    user: ""
+    agent: "resident_60ae6d0cdf74"
 metaness: 2
 ---
 # Telepus 外部消息、联系人映射与 Resident 投递

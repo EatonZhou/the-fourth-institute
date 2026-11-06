@@ -4,22 +4,22 @@ type: decision
 project: AI员工
 created_at: '2026-08-19'
 version:
-  number: 9
-  created_at: '2026-08-19'
+  number: 11
+  created_at: "2026-08-19"
   created_by:
-    user: ''
-    agent: ''
-  updated_at: '2026-10-27T12:58:30Z'
+    user: ""
+    agent: ""
+  updated_at: "2026-11-06T01:17:37Z"
   updated_by:
-    user: ''
-    agent: resident_73cb83291316
+    user: ""
+    agent: "resident_60ae6d0cdf74"
 importance: 9
 metaness: 5
 ai_generated: false
 links:
   source:
   - ${code_root}/SPEC.md
-  - skills:tfi-agent-rule/portal-development.md
+  - ${code_root}/core_skills/tfi-agent-rule/portal-development.md
   related:
   - decision_34158fdd4078
   supersedes: []
@@ -42,6 +42,7 @@ Design 正文保存在 AI员工项目的知识库中，使用 `decision` 资源�
 - **设计思考可以作为补充材料进入索引。** 对设计理念、理解方式或哲学背景的讨论，可以保存为独立的 `thinking_*` 知识库条目，并在 `SPEC.md` 的相关领域中单独列出。这类条目帮助读者理解 Design，但不定义 Portal 当前行为，也不替代当前 Design。
 - **本文位于索引首项。** 开发者先通过本文了解 Design 的含义、写法和更新方式，再阅读具体领域的设计。
 - **明确的记录请求会触发 Design 更新。** 当用户要求“记录规范”或表达相同意图时，Portal 开发者先查看 `SPEC.md` 和相关 Design。新内容延续现有设计时更新原条目，形成新的责任范围时创建条目，并同步索引和条目之间的关联。开发者同时也需要阅读本Design，理解生成规范的规范。
+- **Design 只写设计，不记录实现差距。** 正文不写“现在的代码仍……”这类现状注释，也不引用代码行号。代码与 Design 不一致时，需要改代码的直接改代码；不需要改代码的，删掉 Design 中相应叙述，使两者一致。
 - **设计变化与实现变化保持一致。** 开发 Agent 在修改 Portal 行为前读取相关 Design；实现、测试和 Design 表达不同含义时，修改已经失真的部分，使三者重新描述同一套行为。
 - **Portal 必须提供从当前索引生成软件系统文档的可操作入口。** 用户在 WALL 选择工程，点击“生成发布文档”，查看预览并下载带来源版本的文档；生成结果保留当前 Design 的语义，不取代知识库中的正文。
 

@@ -4,15 +4,15 @@ type: decision
 project: AI员工
 created_at: '2026-09-01'
 version:
-  number: 43
-  created_at: '2026-09-01'
+  number: 45
+  created_at: "2026-09-01"
   created_by:
-    user: ''
-    agent: ''
-  updated_at: '2026-10-31T03:25:51Z'
+    user: ""
+    agent: ""
+  updated_at: "2026-11-06T01:17:36Z"
   updated_by:
-    user: ''
-    agent: resident_73cb83291316
+    user: ""
+    agent: "resident_60ae6d0cdf74"
 importance: 7
 metaness: 2
 ai_generated: false
@@ -24,7 +24,7 @@ links:
   - ${code_root}/management_portal/society_service/resident_context/worker.py
   - ${code_root}/management_portal/society_service/resident_context/embedder.py
   - ${code_root}/management_portal/society_service/isa/residents.py
-  - lineages:lineage_ed619225d417/residents/resident_fbaf22f40dc6/workspace/duties/resident-summary.md
+  - resident_fbaf22f40dc6/file/workspace/duties/resident-summary.md
   - ${code_root}/management_portal/static/home.js
   - ${code_root}/management_portal/resident_recommendation_backend.py
   - ${code_root}/management_portal/resident_discovery_client.py
@@ -47,6 +47,7 @@ links:
   - decision_d19b9909a674
   - decision_44cf587c1721
   - decision_bd5217d08c09
+  - plan_7dddf00a1913
   supersedes: []
   derived_from: []
 ---
@@ -239,6 +240,8 @@ Family 成员用 GetResidentSummaries（include_maintenance）读取版本与漏
 目录只收录能接收工作的 Resident：已删除 Resident 不出现在搜索和推荐候选中，也不再更新摘要；删除后不提供恢复入口。从目录消失的 Resident 立即标为不活跃，退出搜索和推荐。每次目录同步时，发现模块再向 SocietyService 查询这些不活跃 Resident 是否已有删除记录（内部服务方法 `list_removed_discovery_residents`）：Resident 本身已删除、所在 Lineage 已删除，或者已没有它的记录，就在这次同步中删除它的摘要和向量，Portal 不保留存档。没有删除记录的 Resident 只是因为所在 Lineage 这一次读取失败才没出现在目录里，它的摘要和向量一直保留，Lineage 恢复可读后它重新出现，摘要可以继续使用。
 
 `resident_context.residents` 只投影摘要检索需要的身份、标题、Lineage 名称/简介、项目、状态及调度字段；元数据指纹由这组明确字段计算。目录不保存重复的 `metadata_json`，也不保留已删除的 `goal`、`deliverable`、`origin_seed_id`。摘要、向量、证据与认领任务继续由各自的表保存，目录精简不清除已有摘要。
+
+目录同步只为真正变化的投影生成新行版本。身份元数据、active、discovery_visible及global_summary_managed在同一UPSERT中比较并更新；全部相同的再次刷新不执行物理UPDATE。可见性或重新激活即使元数据指纹未变也须生效，不能用指纹相等提前跳过这些字段；元数据及全局摘要归属变化继续按原规则排摘要/向量任务，Family归属取消全局摘要任务。调度检查时间、租约和真实新事实仍由各自流程按需要记录。
 
 每份全局认领有 30 分钟租约，到期未提交的退回队列。放弃或失败稍后重试，连续 6 次失败后搁置，直到该 Resident 的对话再次变化。认领记录其依据的摘要内容版本；提交时若该版本已变，拒绝旧结果并重新排队。写作运行的 Provider、模型、推理强度和账号等证据元数据保存在 snapshots，累计内容及实际作者保存在 work_summaries；换写作模型仍通过承担者运行设置或更换承担者完成。
 
