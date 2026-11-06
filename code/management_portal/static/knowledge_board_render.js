@@ -423,8 +423,11 @@ function renderAll() {
       el.empty.textContent = window.PortalI18n.t("没有匹配的条目");
     }
   }
-  el.empty.style.display = items.length ? "none" : "block";
+  // Keep the outgoing content until its replacement has a layout. Otherwise a
+  // paged result can briefly collapse the document and clamp its scroll offset.
+  if (!items.length) el.empty.style.display = "block";
   renderProjects(items);
+  if (items.length) el.empty.style.display = "none";
   if (state.knowledgeMap.open) {
     buildKnowledgeMapControls();
     renderKnowledgeMap();
