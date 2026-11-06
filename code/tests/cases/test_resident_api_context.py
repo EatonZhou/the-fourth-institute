@@ -58,7 +58,8 @@ def test_history_read_fence_does_not_include_current_or_future_messages():
     assert store.read_chat_messages_through_turn(RID, ['missing'], limit=200, include_turn=False) == []
 
 
-def test_two_requests_pass_history_once_and_keep_system_instructions(monkeypatch):
+@pytest.mark.parametrize('forked', [False, True])
+def test_two_requests_pass_history_once_and_keep_system_instructions(monkeypatch, forked):
     """连续两次模型 API 请求各带一次历史，并都保留固定的 system 指令"""
     from copy import deepcopy
     from management_portal.society_service import resident_execution_domain as execution, resident_runtime_domain
@@ -83,18 +84,28 @@ def test_two_requests_pass_history_once_and_keep_system_instructions(monkeypatch
         return {'choices': [{'message': {'content': 'ok'}}], 'usage': {}}
     service = ChatCompletionService(SimpleNamespace(get=lambda pid: {'id': pid, 'kind': 'openai_compatible_chat'}, request=request))
     record = {'resident_id': RID, 'lineage_id': 'lineage_abcdef123456', 'backend': 'provider_api', 'backend_route_id': 'api'}
+    if forked:
+        record['source_resident_id'] = 'resident_source'
     for mid in ('first', 'second'):
-        req = execution._build_resident_execution_request(record, {'actor': 'CASE-A', 'job_id': mid, 'user_message_id': mid, 'raw_message': mid})
+        job = {'actor': 'CASE-A', 'job_id': mid, 'user_message_id': mid, 'raw_message': mid}
+        if forked:
+            job['fork_context_input'] = {'portable_prompt': 'Inherited BLUE\nCurrent input: ' + mid}
+        req = execution._build_resident_execution_request(record, job)
         # A Resident request passes Resident capability assembly, which reads the
         # whole invocation and records its plan on the backend context.
         session = RuntimeSession(mode='stateless', binding_id='', backend_session_id='',
                                  is_new_backend_session=True, backend_route_id='api')
-        invocation = BackendInvocation(request=req, session=session, user_prompt=mid, system_context='Fixed instructions',
+        invocation = BackendInvocation(request=req, session=session, user_prompt=req.prompt, system_context='Fixed instructions',
                                        attach_system_context=True, is_new_backend_session=True)
         service.execute(invocation, SimpleNamespace(is_cancelled=lambda: False, emit=lambda *args: None,
                                                     record_capability_assembly=lambda plan: None))
-    assert payloads[0]['messages'] == [{'role': 'system', 'content': 'Fixed instructions'}, {'role': 'user', 'content': 'first'}]
-    assert payloads[1]['messages'] == [{'role': 'system', 'content': 'Fixed instructions'}, {'role': 'user', 'content': 'Remember BLUE'}, {'role': 'assistant', 'content': 'BLUE'}, {'role': 'user', 'content': 'second'}]
+    if forked:
+        for mid, payload in zip(('first', 'second'), payloads):
+            assert payload['messages'] == [{'role': 'system', 'content': 'Fixed instructions'},
+                                           {'role': 'user', 'content': 'Inherited BLUE\nCurrent input: ' + mid}]
+    else:
+        assert payloads[0]['messages'] == [{'role': 'system', 'content': 'Fixed instructions'}, {'role': 'user', 'content': 'first'}]
+        assert payloads[1]['messages'] == [{'role': 'system', 'content': 'Fixed instructions'}, {'role': 'user', 'content': 'Remember BLUE'}, {'role': 'assistant', 'content': 'BLUE'}, {'role': 'user', 'content': 'second'}]
 
 
 def test_cleared_chat_is_not_resent_as_api_history():

@@ -1613,7 +1613,7 @@ def _build_resident_execution_request(
         options["context_history"] = history
         return build_chat_completion_request(
             actor=resident_execution_work.request_actor(job), agent_id=resident_domain_common.record_resident_id(record),
-            prompt=str(job.get("raw_message") or "") if scope else str(job.get("actual_sent_prompt") or job.get("message") or job.get("raw_message") or ""),
+            prompt=prompt,
             provider=resident_backend.execution_provider(record), correlation_id=str(job.get("execution_id") or ""),
             runtime_options=options,
             system_instructions=resident_system_instructions(record, job),

@@ -49,6 +49,18 @@ def test_restart_model_api_uses_profile_identity_without_native_route(monkeypatc
     assert target.account['account_id'] == 'test-api'
 
 
+def test_model_api_restart_defaults_to_current_api_profile(monkeypatch):
+    record = {'backend': 'provider_api', 'backend_route_id': 'test-api'}
+    monkeypatch.setattr(resident_backend, 'execution_account', lambda *args: {'backend_route_id': ''})
+    source = resident_restart_domain._session_restart_source(record, {})
+    assert source['account_id'] == 'test-api'
+    assert source['has_session'] is False
+    monkeypatch.setattr(resident_restart_domain, 'resolve_account_configuration',
+                        lambda provider, route: {'account_id': provider, 'backend_route_id': route})
+    target = resident_restart_domain._restart_target({}, source, 'provider_api', 'provider_api')
+    assert target.route == 'test-api'
+
+
 def _store(tmp_path: Path) -> AgentDataStore:
     return AgentDataStore()
 

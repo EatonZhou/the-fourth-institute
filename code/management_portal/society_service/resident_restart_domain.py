@@ -120,7 +120,10 @@ def _session_restart_provider(value: object) -> str:
 def _session_restart_source(record: dict[str, Any], binding: Mapping[str, Any]) -> dict[str, Any]:
     has_session = bool(resident_backend.session_id(binding.get("backend_session_id")))
     provider = str(binding.get("provider") or "") if has_session else resident_backend.execution_backend(record)
-    account = str(binding.get("backend_route_id") or "") if has_session else str(resident_backend.execution_account(record, binding).get("backend_route_id") or "")
+    if provider == "provider_api":
+        account = resident_backend.execution_provider(record)
+    else:
+        account = str(binding.get("backend_route_id") or "") if has_session else str(resident_backend.execution_account(record, binding).get("backend_route_id") or "")
     return {
         "provider": provider, "account_id": account,
         "has_session": has_session,
