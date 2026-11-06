@@ -143,6 +143,8 @@
         observer = new global.ResizeObserver(apply);
         observer.observe(global.document.documentElement);
         if (global.document.body) observer.observe(global.document.body);
+        const collection = global.document.querySelector("main");
+        if (collection) observer.observe(collection);
       }
       // A genuinely shorter collection must not retain observers indefinitely.
       deadline = global.setTimeout(stop, 2000);
