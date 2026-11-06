@@ -1603,7 +1603,8 @@ def test_tau_campaign_resumes_the_same_resident_invocation_after_restart(tmp_pat
     })
     records.update_group(
         created["run_id"], "module:operations.test-workbench",
-        {"status": "error" if mode == "group_error" else "running", "current_case_id": "test_000000000008", "active_invocation": handle, "case_started_at_epoch": 1000.0},
+        {"status": "error" if mode == "group_error" else "running", "current_case_id": "test_000000000008", "active_invocation": handle, "case_started_at_epoch": 1000.0,
+         "error": "previous observation failed" if mode == "group_error" else ""},
     )
 
     # The executor unit ended with the Campaign unfinished; Web relaunches it.
@@ -1625,6 +1626,7 @@ def test_tau_campaign_resumes_the_same_resident_invocation_after_restart(tmp_pat
     class ResumingAdapter:
         def execute(self, **kwargs):
             assert kwargs["planned"]["_started_at_epoch"] == 1000.0
+            assert records.get(created['run_id'])['groups'][0]['error'] == ''
             observed.update(kwargs["planned"]["_resume_invocation"])
             # A cancelled Campaign still hands the submitted case to the
             # adapter, which withdraws that Resident input.

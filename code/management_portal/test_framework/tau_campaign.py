@@ -297,7 +297,7 @@ class TauCampaignExecutor:
         prior_statuses = [str(item.get("status") or "") for item in prior_results]
         status = aggregate_status(prior_statuses) if prior_statuses else "reported"
         error = ""
-        self.records.update_group(run_id, group_id, {"status": "running"})
+        self.records.update_group(run_id, group_id, {"status": "running", "error": ""})
         try:
             for item_index in group_spec.get("item_indexes") or []:
                 if any(int(result.get("item_index", -1)) == int(item_index) for result in prior_results):
