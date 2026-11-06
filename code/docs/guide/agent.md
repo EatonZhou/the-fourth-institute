@@ -324,9 +324,9 @@ Repo 和 Article 分别用 `repo_id`、`article_id` 替换 `workspace_id`，一�
 
 对象移动后引用按当前登记目录解析，不回退到旧绝对路径。字符串资源地址仍是合法入口。保存结构引用时使用返回的 `file_reference`，不保存解析得到的主机路径作为后备地址。
 
-`CreateWorkspace` 在空位置新建目录，`RegisterWorkspace` 将现成目录登记为新的 Workspace。两者都传 `path`（绝对目录路径）和稳定的 `operation_id`，可选 `title` 和 `owner_id`；同一调用者用相同操作 ID 和参数重试会沿用同一对象。`owner_id` 是目录所属 Resident、Lineage 或 Project，省略时属于 Workspace 自己；它不是权限 owner，不授予访问权限。创建可以在实例区域外，来源为 `created`；登记要求目录已存在，来源为 `adopted`，不能接入其他实例的实例根或区域。来源和所属对象在资源的 `attributes.directory` 中返回。
+`CreateWorkspace` 在空位置新建目录，`RegisterWorkspace` 将现成目录登记为新的 Workspace。两者都传 `path`（绝对目录路径）和稳定的 `operation_id`，可选 `title` 和 `owner_id`；同一调用者用相同操作 ID 和参数重试会沿用同一对象。`owner_id` 是目录所属 Resident、Lineage 或 Project，省略时属于 Workspace 自己；它不是权限 owner，不授予访问权限。创建和登记均可位于实例区域外；登记要求目录已存在，不能接入其他实例的实例根或区域。资源不记录创建方式分类，所属对象在资源的 `attributes.directory` 中返回。
 
-有目标 Workspace 的 `@admin` 权限时，可以用 `UnregisterResource(resource_id=workspace_id)` 注销。`created` 目录整树进入后台清理，`adopted` 目录保留文件；归属决定生命周期，区域内外不决定删留。嵌套登记与绑定按目录协议注销和解除，不受引用保护。注销和文件清理分别报告，用 `GetDirectoryCleanup(resource_id=workspace_id)` 查询清理进度与重试原因；区域根、实例根及其上级目录不能删除。
+有目标 Workspace 的 `@admin` 权限时，可以用 `UnregisterResource(resource_id=workspace_id)` 注销。目录及其拥有的文件整树进入后台清理；创建与接入遵循相同的归属生命周期，区域内外不决定删留。嵌套登记与绑定按目录协议注销和解除，不受引用保护。注销和文件清理分别报告，用 `GetDirectoryCleanup(resource_id=workspace_id)` 查询清理进度与重试原因；区域根、实例根及其上级目录不能删除。
 
 ### 7.3 聊天室
 
