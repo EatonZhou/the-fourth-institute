@@ -496,7 +496,7 @@ def test_send_now_recovers_intent_committed_before_append(
     assert service.append_input.call_args.kwargs["control_id"] == resident_input_queue_domain.resident_input_control_id(resident_id, message_id)
     delivered = service.append_input.call_args.kwargs["input"]
     assert len(delivered) == 1 and delivered[0]["type"] == "text"
-    assert delivered[0]["text"].startswith("<reporting-policy>")
+    assert "<reporting-policy>" not in delivered[0]["text"]
     assert delivered[0]["text"].endswith("<user-message>\nfollow-up\n</user-message>")
     assert resident_input_queue_domain.reconcile_queued_turn_inputs(resident_id, original['execution_id'])
     current = resident_execution_work.read(resident_record)

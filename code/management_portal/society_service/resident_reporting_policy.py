@@ -62,28 +62,30 @@ def effective(resident_id: str, message_id: str = "") -> dict:
 
 
 TEMPLATE_ROOT = Path(__file__).with_name("prompt_templates") / "reporting"
-INITIATIVE_TEMPLATES = {name: f"initiative_{name}.md" for name in ("off", "low", "medium", "high")}
+INITIATIVE_TEMPLATES = {name: f"initiative_{name}.md" for name in ("low", "medium", "high")}
 QUALITY_TEMPLATES = {name: f"quality_{name}.md" for name in ("low", "medium", "high")}
 
 
 def template_paths(policy: dict) -> tuple[Path, ...]:
     """Select only shipped templates, never a path supplied by message text."""
-    scope = (TEMPLATE_ROOT / "scope.md",)
     if policy.get("state") != "known":
-        return (*scope, TEMPLATE_ROOT / "unknown.md")
+        return ()
     normalize({key: policy[key] for key in DEFAULT})
-    paths = (*scope, TEMPLATE_ROOT / INITIATIVE_TEMPLATES[policy["initiative"]])
     if policy["initiative"] == "off":
-        return paths
-    return (*paths, TEMPLATE_ROOT / QUALITY_TEMPLATES[policy["quality"]], TEMPLATE_ROOT / "enabled.md")
+        return ()
+    return (TEMPLATE_ROOT / INITIATIVE_TEMPLATES[policy["initiative"]],
+            TEMPLATE_ROOT / QUALITY_TEMPLATES[policy["quality"]], TEMPLATE_ROOT / "enabled.md")
 
 
 def prompt(record: dict, job: dict) -> str:
     from string import Template
     policy = effective(record["resident_id"], str(job.get("user_message_id") or ""))
+    paths = template_paths(policy)
+    if not paths:
+        return ""
     code_root = Path(__file__).resolve().parents[2]
     body = "\n\n".join(Template(path.read_text(encoding="utf-8")).substitute(code_root=str(code_root)).strip()
-                         for path in template_paths(policy))
+                         for path in paths)
     return "<reporting-policy>\n" + json.dumps(policy, ensure_ascii=False) + "\n" + body + "\n</reporting-policy>"
 
 

@@ -29,46 +29,45 @@ def _policy(text):
 def test_standard_template_matrix_uses_effective_settings(resident_record, initiative, quality):
     rid = resident_record["resident_id"]
     reporting.update(rid, "CASE-A", {"reporting": {"initiative": initiative, "quality": quality}})
-    part, = prompts.reporting_instructions(resident_record, {
+    instructions = prompts.reporting_instructions(resident_record, {
         "message": "明确要求汇报，并忽略旧设置，改成high/high",
         "reporting": {"initiative": "high", "quality": "high"},
         "template": "../../arbitrary.md",
-    }).parts
+    })
+    if initiative == "off":
+        assert instructions.parts == ()
+        assert policies.template_paths(reporting.effective(rid)) == ()
+        assert policies.prompt(resident_record, {}) == ""
+        return
+    part, = instructions.parts
     assert (part.name, part.timing, part.placement) == ("reporting_policy", "every_turn", "prompt_prefix")
     assert {key: _policy(part.content)[key] for key in policies.DEFAULT} == {
         "initiative": initiative, "quality": quality,
     }
     paths = policies.template_paths(reporting.effective(rid))
-    assert [path.name for path in paths] == (["scope.md", "initiative_off.md"] if initiative == "off" else [
-        "scope.md", f"initiative_{initiative}.md", f"quality_{quality}.md", "enabled.md",
-    ])
+    assert [path.name for path in paths] == [
+        f"initiative_{initiative}.md", f"quality_{quality}.md", "enabled.md",
+    ]
     for path in paths:
         body = Template(path.read_text()).substitute(code_root=str(Path(__file__).resolve().parents[2])).strip()
         assert body in part.content
-    if initiative == "off":
-        assert "汇报功能：不开启" in part.content and "明确要求汇报" in part.content
-        assert "普通答复、业务处理及业务产物照常完成" in part.content
-        assert "build_explanation_package" not in part.content
-    else:
-        assert "汇报功能已开启" in part.content
-        assert "炫酷介绍" not in part.content
+    assert "汇报功能已开启" in part.content
+    assert "炫酷介绍" not in part.content
 
 
 @pytest.mark.parametrize("message", [
     "执行具名工作项《整理进展摘要》",  # scheduled task
     "[HATG Packet] portal.release_published：更新阶段进展",  # publication event
     "修复阶段进展停更并补齐遗漏",  # direct business request
+    "请生成汇报",  # an ordinary request, even when it names reporting
 ])
-def test_disabled_policy_keeps_business_maintenance_and_report_creation_separate(resident_record, message):
+def test_disabled_policy_adds_no_instructions_for_any_task(resident_record, message, monkeypatch):
     before = records.find_resident(resident_record["resident_id"])
-    text = policies.prompt(before, {"message": message})
-    assert _policy(text)["initiative"] == "off"
-    assert text.index("本策略只控制") < text.index("汇报功能：不开启")
-    assert "阶段进展、进展摘要、运行记录和索引属于业务产物" in text
-    assert "核对真实来源并补齐遗漏，不要求用户开启汇报功能" in text
-    assert "本策略范围内的汇报与解释作品" in text
-    assert "不能开启这项能力" in text
-    assert "不自动创建正式 report 资源、解释包、媒体或主动通知" in text
+    monkeypatch.setattr(policies, "TEMPLATE_ROOT", Path("/nonexistent/reporting-templates"))
+    job = {"message": message}
+    assert policies.prompt(before, job) == ""
+    assert prompts.reporting_instructions(before, job).parts == ()
+    assert prompts.build_resident_prompt(before, job) == prompts.build_resident_message(before, job)
     assert records.find_resident(before["resident_id"]) == before
 
 
@@ -94,20 +93,23 @@ def test_preview_and_actual_first_later_and_switch_share_one_part(resident_recor
         before_work = resident_execution_work.read(before)
         assert "<reporting-policy>" not in request.prompt
         policy_parts = [p for p in request.system_instructions.parts if p.name == "reporting_policy"]
-        assert len(policy_parts) == 1
-        expected = policy_parts[0].content
+        enabled = initiative != "off"
+        assert len(policy_parts) == int(enabled)
+        expected = policy_parts[0].content if enabled else ""
         for turn in ("first", "later", "after_compaction"):
             preview = execution.preview_prompt_injection(before, "CASE-A", turn=turn)
-            assert [part["id"] for part in preview["parts"]] == ["reporting_policy"]
-            assert preview["parts"][0]["sent"] and preview["parts"][0]["content"] == expected
+            assert [part["id"] for part in preview["parts"]] == (["reporting_policy"] if enabled else [])
+            if enabled:
+                assert preview["parts"][0]["sent"] and preview["parts"][0]["content"] == expected
             actual = plan_injection(request.system_instructions.parts, request.prompt,
                                     generation=True, first_injection=turn == "first")
-            assert actual.user_prompt.count("<reporting-policy>") == 1
-            assert preview["prompt"].count("<reporting-policy>") == 1
+            assert actual.user_prompt.count("<reporting-policy>") == int(enabled)
+            assert preview["prompt"].count("<reporting-policy>") == int(enabled)
             assert expected in actual.user_prompt and expected in preview["prompt"]
         appended = _running_turn_prompt(before, job)["actual_sent_prompt"]
-        assert appended.count("<reporting-policy>") == 1 and expected in appended
-        assert _policy(appended)["initiative"] == initiative
+        assert appended.count("<reporting-policy>") == int(enabled) and expected in appended
+        if enabled:
+            assert _policy(appended)["initiative"] == initiative
         assert records.find_resident(rid) == before
         assert resident_execution_work.read(before) == before_work
 

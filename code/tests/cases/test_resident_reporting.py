@@ -58,8 +58,8 @@ def test_each_later_input_and_scoped_input_receives_current_policy(resident_reco
     monkeypatch.setattr(prompts.resident_input_scope, "get", lambda *_a: {"scoped":True})
     job = {"user_message_id":"msg_report", "message":"请写汇报", "raw_message":"原始输入"}
     first = prompts.build_resident_prompt(resident_record, job)
-    assert '"initiative": "off"' in first
-    assert "明确要求汇报" in first and "本轮不得新建" in first and "原始输入" in first
+    assert "<reporting-policy>" not in first
+    assert "原始输入" in first
     reporting.update(rid, "CASE-A", {"runtime_settings":{"reporting":{"initiative":"high","quality":"high"}}})
     later = prompts.build_resident_prompt(resident_record, job)
     assert '"initiative": "high"' in later and "绝不每轮固定生成" in later
@@ -72,7 +72,7 @@ def test_each_later_input_and_scoped_input_receives_current_policy(resident_reco
     assert "--quality" in later and "--previous-review-id" in later
     reporting.update(rid, "CASE-A", {"runtime_settings":{"reporting":{"initiative":"off","quality":"low"}}})
     lowered = _running_turn_prompt(resident_record, job)["actual_sent_prompt"]
-    assert '"quality": "low"' in lowered and "汇报功能：不开启" in lowered
+    assert "<reporting-policy>" not in lowered
     assert "汇报使用清晰的 Markdown" not in lowered
     assert "高质量汇报与解释成果须交独立 Resident 审查" not in lowered
 
@@ -125,7 +125,7 @@ def test_facade_only_permissions_and_actual_relay_member(team, monkeypatch):
     assert inherited["source_resident_id"] == facade and inherited["initiative"] == "off"
     assert inherited["quality"] == "low"
     disabled = prompts.build_resident_prompt(member_record, {"user_message_id": leaf, "message": "Continue"})
-    assert "汇报功能：不开启" in disabled
+    assert "<reporting-policy>" not in disabled
     assert reporting.effective(member)["initiative"] == "high"
     assert reporting.effective(member, "msg_" + "c" * 32)["source_resident_id"] == member
 
@@ -158,7 +158,8 @@ def test_non_home_prompt_links_existing_authoring_entry_for_concise_high_artifac
 def test_unknown_source_is_explicit(monkeypatch):
     monkeypatch.setattr(records, "find_resident", lambda *_a: None)
     assert reporting.effective("resident_missing")["state"] == "unknown"
-    assert "不推断个人 AMA" in reporting.prompt({"resident_id":"resident_missing"}, {} )
+    assert reporting.prompt({"resident_id":"resident_missing"}, {}) == ""
+    assert prompts.reporting_instructions({"resident_id":"resident_missing"}, {}).parts == ()
 
 
 def test_policy_and_execution_settings_share_cas(resident_record):

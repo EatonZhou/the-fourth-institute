@@ -105,8 +105,11 @@ def reporting_instructions(record: dict[str, Any], job: dict[str, Any]):
     """The same Portal-owned part is used by normal turns, append and Preview."""
     from management_portal.execution.contracts import InjectionPart, SystemInstructions
     from . import resident_reporting_policy
+    content = resident_reporting_policy.prompt(record, job)
+    if not content:
+        return SystemInstructions(parts=()).validate()
     return SystemInstructions(parts=(InjectionPart(
-        "reporting_policy", resident_reporting_policy.prompt(record, job), "every_turn", "prompt_prefix",
+        "reporting_policy", content, "every_turn", "prompt_prefix",
     ),)).validate()
 
 
