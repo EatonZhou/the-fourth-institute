@@ -104,7 +104,9 @@
       };
       global.history.replaceState(state, "", relativeUrl(currentUrl()));
     };
+    let cancelReturnRestore = () => {};
     const restoreReturnPosition = () => {
+      cancelReturnRestore();
       if (currentValue()) return false;
       const position = returnPosition(global.history.state);
       if (!position) return false;
@@ -114,11 +116,37 @@
       // Consumers close their modal and release the body scroll lock in the
       // popstate turn. Restore one frame later than focus restoration so focus
       // cannot scroll the collection away from its saved viewport.
-      schedule(() => schedule(() => global.scrollTo({
-        left: position.x,
-        top: position.y,
-        behavior: "instant",
-      })));
+      let stopped = false;
+      let observer;
+      let deadline;
+      const stopEvents = ["pointerdown", "wheel", "keydown", "popstate", "pagehide"];
+      const stop = () => {
+        stopped = true;
+        observer?.disconnect();
+        global.clearTimeout(deadline);
+        stopEvents.forEach(name => global.removeEventListener(name, stop));
+      };
+      cancelReturnRestore = stop;
+      const apply = () => {
+        if (stopped) return;
+        if (currentValue()) { stop(); return; }
+        const root = global.document.scrollingElement;
+        // Cross-document returns can render the collection after the history
+        // traversal. Do not consume its saved position against an empty layout.
+        if (root && (root.scrollHeight - root.clientHeight < position.y
+          || root.scrollWidth - root.clientWidth < position.x)) return;
+        global.scrollTo({ left: position.x, top: position.y, behavior: "instant" });
+        stop();
+      };
+      stopEvents.forEach(name => global.addEventListener(name, stop, { passive: true }));
+      if (typeof global.ResizeObserver === "function") {
+        observer = new global.ResizeObserver(apply);
+        observer.observe(global.document.documentElement);
+        if (global.document.body) observer.observe(global.document.body);
+      }
+      // A genuinely shorter collection must not retain observers indefinitely.
+      deadline = global.setTimeout(stop, 2000);
+      schedule(() => schedule(apply));
       return true;
     };
     const nextState = (detailValue, { managed, depth } = {}) => {
