@@ -3,6 +3,8 @@ from __future__ import annotations
 import json
 import os
 import re
+import threading
+from concurrent.futures import Future
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable
@@ -21,6 +23,11 @@ EXPECTED_PAGE_FINGERPRINT = "component-v2"
 from management_portal.test_framework.compatibility import test_actor
 
 EXPECTED_ACTOR = test_actor()
+
+# Share only an in-flight observation, never a previously verified identity.
+# Twelve module starts must not each abandon and repeat the same page render.
+_PREFLIGHT_LOCK = threading.Lock()
+_PREFLIGHTS: dict[tuple, Future] = {}
 
 
 class DevTargetError(RuntimeError):
@@ -123,7 +130,7 @@ HttpGet = Callable[[str, dict[str, str]], bytes]
 
 def _http_get(url: str, headers: dict[str, str]) -> bytes:
     request = Request(url, headers={"Accept": "application/json, text/html", **headers})
-    with urlopen(request, timeout=5) as response:
+    with urlopen(request, timeout=60) as response:
         return response.read()
 
 
@@ -179,6 +186,35 @@ class DevTargetVerifier:
     def verify(self, storage_state: Path) -> VerifiedDevTarget:
         deployment = resolve_unique_dev(self.registry_path)
         expected_build = self.build_id(self.source_root) if self.build_id else deployment.build_id
+        storage_state = Path(storage_state)
+        try:
+            state = storage_state.stat()
+            identity = (state.st_dev, state.st_ino, state.st_mtime_ns, state.st_size)
+        except OSError:
+            identity = None  # The normal verifier supplies the diagnostic.
+        key = (deployment.origin, deployment.deployment_id, expected_build,
+               str(storage_state.resolve()), identity, self.http_get)
+        with _PREFLIGHT_LOCK:
+            pending = _PREFLIGHTS.get(key)
+            owner = pending is None
+            if owner:
+                pending = _PREFLIGHTS[key] = Future()
+        if not owner:
+            return pending.result()
+        try:
+            result = self._verify(storage_state, deployment, expected_build)
+        except BaseException as exc:
+            pending.set_exception(exc)
+            raise
+        else:
+            pending.set_result(result)
+            return result
+        finally:
+            with _PREFLIGHT_LOCK:
+                del _PREFLIGHTS[key]
+
+    def _verify(self, storage_state: Path, deployment: PortalDeployment,
+                expected_build: str) -> VerifiedDevTarget:
         observed: dict[str, str] = {
             "deployment": deployment.deployment_id,
             "expected_build_id": expected_build,
