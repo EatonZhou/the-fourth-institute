@@ -47,6 +47,11 @@
       });
   }
 
+  function popoverLayer(trigger) {
+    const parent = sortedActive().reverse().find(entry => entry.element.contains(trigger));
+    return parent && KIND_ORDER[parent.kind] > KIND_ORDER.popover ? parent.kind : "popover";
+  }
+
   let sequence = 0;
 
   function createsStackingContext(element) {
@@ -409,12 +414,8 @@
       trigger,
       open(context) {
         point = context?.point || null;
-        const parentOverlay = sortedActive().reverse().find(entry => entry.element.contains(trigger));
-        const effectiveLayer = parentOverlay && KIND_ORDER[parentOverlay.kind] > KIND_ORDER.popover
-          ? parentOverlay.kind
-          : "popover";
         panel.dataset.portalOverlayKind = "popover";
-        overlay.update({ kind: effectiveLayer });
+        overlay.update({ kind: popoverLayer(trigger) });
         if (opened) {
           overlay.activate(context);
           position();
@@ -595,6 +596,7 @@
       open(context = {}) {
         lastContext = context || {};
         panel.dataset.portalOverlayKind = "popover";
+        overlay.update({ kind: popoverLayer(context?.trigger) });
         if (opened) {
           overlay.activate(context);
           reposition();

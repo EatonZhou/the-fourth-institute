@@ -145,7 +145,7 @@
 - [Portal Lineage 浏览器客户端与 Catalog 共享读取](/r/decision_fd9851ae01c0)
 - [Portal 前端组件系统、命令与生命周期](/r/decision_741b04821171)
 - [Portal Overlay、表单与 Toolbar 通用交互](/r/decision_b3022c27d22f)
-- [Portal 全局资源搜索](/r/decision_a144bf700017)
+- [Portal 全局资源搜索（含结果右键在 Preview 标签页打开）](/r/decision_a144bf700017)
 - [Portal UI Association 的服务端存储与并发](/r/decision_bd179998ba08)
 - [Portal Workbench 模块与运行架构](/r/decision_4348ed990621)
 - [Portal 中英文界面与语言偏好](/r/decision_27253e25f016)

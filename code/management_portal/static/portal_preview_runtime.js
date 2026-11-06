@@ -119,7 +119,7 @@
           popover.close();
           context = next;
           const downloadable = next.target.resourceAddress || window.PortalFileLinks?.describe(next.target.path);
-          panel.innerHTML = window.PortalI18n.html`<button type="button" role="menuitem" class="portalEditorOpenMenuAction" data-preview-file-action="new-tab">在新标签页打开</button>${downloadable ? window.PortalI18n.html`<button type="button" role="menuitem" class="portalEditorOpenMenuAction" data-preview-file-action="download">下载</button>` : ""}${window.PortalI18n.html`<button type="button" role="menuitem" class="portalEditorOpenMenuAction" data-preview-file-action="copy-path">复制路径</button>`}`;
+          panel.innerHTML = window.PortalI18n.html`<button type="button" role="menuitem" class="portalEditorOpenMenuAction" data-preview-file-action="new-tab">在preview里打开标签页</button>${downloadable ? window.PortalI18n.html`<button type="button" role="menuitem" class="portalEditorOpenMenuAction" data-preview-file-action="download">下载</button>` : ""}${window.PortalI18n.html`<button type="button" role="menuitem" class="portalEditorOpenMenuAction" data-preview-file-action="copy-path">复制路径</button>`}`;
           const copyPath = panel.querySelector("[data-preview-file-action=copy-path]");
           const copyValue = fileMenuPath(next.target);
           if (copyValue) copyPath.title = copyValue;
@@ -128,7 +128,7 @@
           const point = next.event?.type === "contextmenu" && (next.event.clientX || next.event.clientY)
             ? { x: next.event.clientX, y: next.event.clientY }
             : { x: rect?.right || 0, y: rect?.bottom || 0 };
-          popover.open(point);
+          popover.open({ ...point, trigger: next.trigger });
           panel.querySelector("[role=menuitem]")?.focus({ preventScroll: true });
         },
       };

@@ -1,0 +1,126 @@
+'use strict';
+// Actual search, overlay, resource reader, Home Preview host and document tabs.
+// Only network resource records and the unrelated Chat are isolated fixtures.
+const fs = require('node:fs'), path = require('node:path'), http = require('node:http');
+const assert = require('node:assert/strict');
+const { chromium } = require('../../../management_portal/test_framework/tau_runtime/node_modules/playwright');
+const root = path.resolve(__dirname, '../../../management_portal');
+const groups = JSON.parse(fs.readFileSync(path.join(root, 'script_groups.json')));
+const scripts = ['portal_state.js', 'portal_page_state.js', 'portal_text.js', 'portal_translations.js', 'portal_i18n.js',
+  'portal_ui_primitives.js', 'portal_ui.js', 'portal_overlay.js', 'portal_form_controls.js', 'portal_command_registry.js',
+  'portal_resource_routes.js', 'portal_preview_contract.js', 'portal_resource_chips.js',
+  'portal_preview_runtime.js', 'portal_pdf_preview.js', 'portal_preview_renderers.js', 'portal_document_statistics.js',
+  ...groups['portal-workspace-surface'].map(x => x.replace('/static/', '')),
+  'portal_agent_preview_source.js', 'markdown.js', 'portal_display_protocol.js',
+  'home_dialogue_state.js', 'portal_file_preview.js', 'home_dialogue.js', 'portal_command_palette.js'];
+const css = [...fs.readFileSync(path.join(root, 'index.html'), 'utf8').matchAll(/href="(\/static\/[^"?]+\.css)"/g)].map(x => x[1]);
+const records = [
+  { resource_id: 'thinking_111111111111', title: '第一条检索结果' },
+  { resource_id: 'thinking_222222222222', title: '第二条检索结果：在 Preview 打开' },
+  { resource_id: 'resident_333333333333', title: '仅导航的 Resident' },
+].map(r => ({ ...r, resource_type: r.resource_id.split('_')[0], address: r.resource_id,
+  summary: '隔离测试数据，不读取真实用户资源', url: '/destination/' + r.resource_id,
+  content_kind: 'markdown', content_type: 'text/markdown', version: '1', capabilities: { edit: false, save: false } }));
+let deny = false;
+const reads = [];
+const server = http.createServer((req, res) => {
+  const url = new URL(req.url, 'http://fixture');
+  const json = value => { res.setHeader('Content-Type', 'application/json'); res.end(JSON.stringify(value)); };
+  if (url.pathname === '/api/resource-index/status') return json({ resource_types: ['thinking', 'resident'] });
+  if (url.pathname === '/api/resource-index/suggest') return json({ resources: records });
+  if (url.pathname === '/api/resources/reference') return json(records.find(r => r.address === url.searchParams.get('address')));
+  if (url.pathname === '/api/resources/content') {
+    const address = url.searchParams.get('address'); reads.push(address);
+    if (deny) { res.statusCode = 403; return json({ error: '当前来源不可读' }); }
+    res.setHeader('Content-Type', 'text/markdown');
+    return res.end('# ' + records.find(r => r.address === address).title + '\n\n预览正文来自所选资源 ' + address);
+  }
+  if (url.pathname.startsWith('/destination/')) { res.setHeader('Content-Type', 'text/html'); return res.end('原有页面导航'); }
+  if (url.pathname === '/static/portal_resource_routes.js') {
+    res.setHeader('Content-Type', 'text/javascript');
+    return res.end('window.PortalResourceRoutes={schema:"tfi.resource-portal-routes.v1",routes:[],text_resource_types:["thinking"],navigation_resource_types:["resident"],identity_parameters:[]};');
+  }
+  if (url.pathname.startsWith('/static/')) {
+    const file = path.join(root, url.pathname);
+    if (fs.existsSync(file)) { res.setHeader('Content-Type', file.endsWith('.css') ? 'text/css' : 'text/javascript'); return res.end(fs.readFileSync(file)); }
+    res.statusCode = 404; return res.end();
+  }
+  res.setHeader('Content-Type', 'text/html');
+  res.end('<!doctype html><html data-portal-theme="light"><meta charset="utf-8">' + css.map(s => `<link rel="stylesheet" href="${s}">`).join('')
+    + '<style>body{margin:0}#root{height:90vh;margin:16px}</style>'
+    + scripts.map(s => `<script src="/static/${s}"></script>`).join('') + '<main id="root"></main>');
+});
+(async () => {
+  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+  const browser = await chromium.launch({ headless: true });
+  const output = process.env.SEARCH_PREVIEW_EVIDENCE;
+  if (output) fs.mkdirSync(output, { recursive: true });
+  try {
+    const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+    page.setDefaultTimeout(8000);
+    const errors = []; page.on('pageerror', e => { errors.push(e.message); console.error('pageerror', e.message); });
+    const url = 'http://127.0.0.1:' + server.address().port;
+    const prepare = async () => {
+      await page.goto(url);
+      await page.evaluate(() => {
+        PortalI18n.apply('original');
+        window.PortalIdentity = { peek: () => ({ username: 'isolated-fixture' }) };
+        window.PortalResidentService = {};
+        window.PortalAPI = { post: async () => { throw new Error('Unexpected write'); }, raw: (url, options) => fetch(url, options), get: async (url, options) => { const response = await fetch(url, options); if (!response.ok) throw new Error('当前来源不可读'); return response.json(); } };
+        window.PortalNav = { personalAssistantTarget: async () => ({ resident_id: 'resident_444444444444' }) };
+        window.PortalChatWorkspace = { panelPackage: { create: ({ root }) => { root.textContent = 'Chat（隔离测试）'; return { setPresented() {}, destroy() {} }; } } };
+        window.controller = PortalHomeDialogue.connect({ root: document.querySelector('#root'), context: { currentUserReady: Promise.resolve() } });
+      });
+    };
+    const search = async () => {
+      await page.evaluate(() => PortalCommandPalette.open());
+      await page.locator('#portalCommandInput').fill('检索结果');
+      await page.locator('[data-command-index="2"]').waitFor();
+    };
+    const menu = page.locator('[data-preview-file-action="new-tab"]');
+    const tabs = page.locator('.homeDialoguePreview [data-portal-document-tab]');
+    await prepare();
+    await page.evaluate(address => PortalPreview.request({ resourceAddress: address }), records[0].address);
+    await page.waitForFunction(() => [...document.querySelectorAll('.portalFileDocument')].some(n => n.textContent.includes('预览正文来自所选资源')))
+      .catch(async error => { console.error((await page.locator('body').innerText()).slice(-2400)); throw error; });
+    await search();
+    await page.locator('[data-command-index="1"]').click({ button: 'right' });
+    // The shared floating menu must sit above the search Dialog, with Escape closing it first.
+    await menu.waitFor();
+    assert.equal(await menu.textContent(), '在preview里打开标签页');
+    await page.keyboard.press('Escape');
+    assert.equal(await menu.isVisible(), false);
+    assert.equal(await page.locator('#portalCommandOverlay').isVisible(), true);
+    await page.locator('[data-command-index="1"]').click({ button: 'right' });
+    if (output) await page.screenshot({ path: path.join(output, 'search-context-menu.png') });
+    await menu.click();
+    await page.waitForFunction(() => document.querySelector('.portalFileDocument:not([hidden])')?.textContent.includes('thinking_222222222222')
+      || [...document.querySelectorAll('.portalFileDocument')].some(n => n.getClientRects().length && n.textContent.includes('thinking_222222222222'))).catch(async error => { console.error('reads', reads, (await page.locator('body').innerText()).slice(-2500)); throw error; });
+    assert.equal(await tabs.count(), 2, 'new tab retains the existing document');
+    assert.equal(await page.locator('#portalCommandOverlay').isVisible(), false);
+    assert.deepEqual(reads.slice(0, 2), records.slice(0, 2).map(r => r.address));
+    if (output) await page.screenshot({ path: path.join(output, 'search-preview-tab.png') });
+    // Navigation-only resources keep the browser's ordinary context behavior.
+    await search();
+    await page.locator('[data-command-index="2"]').click({ button: 'right' });
+    assert.equal(await menu.isVisible(), false);
+    await page.mouse.move(10, 10);
+    await page.locator('#portalCommandInput').press('ArrowUp');
+    await Promise.all([page.waitForURL('**/destination/thinking_222222222222'), page.locator('#portalCommandInput').press('Enter')]);
+    await prepare(); await search();
+    await Promise.all([page.waitForURL('**/destination/thinking_111111111111'), page.locator('[data-command-index="0"]').click()]);
+    // Exact-ID results use the same path; denial shows the host's existing error tab.
+    await prepare();
+    await page.evaluate(() => PortalCommandPalette.open());
+    await page.locator('#portalCommandInput').fill(records[1].address);
+    await page.locator('[data-command-index="0"]').waitFor();
+    assert.equal(await page.locator('[data-command-index]').count(), 1);
+    deny = true;
+    await page.locator('[data-command-index="0"]').click({ button: 'right' }); await menu.click();
+    await page.locator('.portalFilePreviewFailure').waitFor();
+    assert.equal(await page.locator('.portalFileDocument:visible').count(), 0, 'denial never renders resource content');
+    assert((await page.locator('.portalFilePreviewFailure').innerText()).includes('当前账号未获准读取这个文件'));
+    assert.deepEqual(errors, []);
+    console.log('PASS right-click target, menu stacking/Escape, actual resource content in second Preview tab, click/Enter, navigation-only and denied read');
+  } finally { await browser.close(); await new Promise(resolve => server.close(resolve)); }
+})().catch(error => { console.error(error); process.exitCode = 1; });

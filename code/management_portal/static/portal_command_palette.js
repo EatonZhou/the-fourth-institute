@@ -265,6 +265,21 @@
         event.preventDefault();
       });
       btn.addEventListener("click", () => activate(item));
+      btn.addEventListener("contextmenu", event => {
+        if (!window.PortalResourceChips?.resourceSupportsPreview(item.address)) return;
+        const identityRevision = state.identityRevision;
+        window.PortalPreview?.openFileMenu({
+          event,
+          trigger: btn,
+          request: { resourceAddress: item.address, title: item.title, source: "resource" },
+          onOpen: async request => {
+            if (identityRevision !== state.identityRevision || !state.open) return;
+            const handled = await window.PortalPreview.request(request);
+            if (handled) closePalette();
+            return handled;
+          },
+        });
+      });
     });
   }
 
