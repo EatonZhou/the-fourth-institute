@@ -23,6 +23,23 @@
   padding-left: 1.35em;
 }
 
+.messageContent blockquote {
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: 8px;
+  background: var(--panel-2);
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+
+.messageContent blockquote > :last-child {
+  margin-bottom: 0;
+}
+
 .markdownBody code,
 .markdown-rendered code {
   font-family: var(--mono, ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace);

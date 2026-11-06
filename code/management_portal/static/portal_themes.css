@@ -308,7 +308,7 @@ html:root[data-portal-theme="moonwalker"] {
 :is(html[data-portal-theme="auto"], [data-portal-auto-preview]) .messageItem.human:not(.messageIncoming) > .messageBubble a {
   color: var(--accent);
 }
-:is(html[data-portal-theme="auto"], [data-portal-auto-preview]) .messageItem.human:not(.messageIncoming) > .messageBubble .messageQuote {
+:is(html[data-portal-theme="auto"], [data-portal-auto-preview]) .messageItem.human:not(.messageIncoming) > .messageBubble :is(.messageQuote, .messageContent blockquote) {
   --text: var(--portal-message-quote-text);
   --muted: var(--portal-message-quote-text);
   --accent: var(--portal-message-quote-text);

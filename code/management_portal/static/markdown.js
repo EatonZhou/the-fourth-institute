@@ -411,11 +411,11 @@
 
     function flushBlockquote() {
       if (!blockquote.length) return;
-      out.push(
-        "<blockquote>" +
-          blockquote.map(function (l) { return "<p>" + renderInline(l) + "</p>"; }).join("") +
-          "</blockquote>"
-      );
+      // The quote marker is a container boundary, not a paragraph boundary.
+      // Parse its contents as blocks too, preserving tables, lists and fences.
+      // Quoted examples remain source text, never message-level action fences.
+      const quoteOptions = { ...activeRenderOptions, renderCodeFence: undefined };
+      out.push("<blockquote>" + render(blockquote.join("\n"), quoteOptions) + "</blockquote>");
       blockquote = [];
     }
 
