@@ -36,6 +36,19 @@ from management_portal.society_service import resident_restart_domain, resident_
 from management_portal.execution import codex_runtime_settings
 from tests.cases.model_api_test_support import DEEPSEEK_PRIMARY, register_apis
 
+
+def test_restart_model_api_uses_profile_identity_without_native_route(monkeypatch):
+    def configuration(provider, route):
+        assert provider == 'test-api'
+        assert route == '', 'completion profiles reject native session routes'
+        return {'account_id': 'test-api', 'backend_route_id': ''}
+    monkeypatch.setattr(resident_restart_domain, 'resolve_account_configuration', configuration)
+    target = resident_restart_domain._restart_target(
+        {'target_account': 'test-api'}, {'account_id': 'kimi-code'}, 'kimi', 'provider_api')
+    assert target.route == 'test-api'
+    assert target.account['account_id'] == 'test-api'
+
+
 def _store(tmp_path: Path) -> AgentDataStore:
     return AgentDataStore()
 

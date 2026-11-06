@@ -620,7 +620,10 @@ def _restart_target(
     requested_route = str(body.get("target_account") or (source_route if source_provider == target_provider else ""))
     if target_provider == "provider_api" and not requested_route:
         raise ValueError("请选择 Model API 账号")
-    selected_account = resolve_account_configuration(requested_route if target_provider == "provider_api" else target_provider, requested_route)
+    selected_account = resolve_account_configuration(
+        requested_route if target_provider == "provider_api" else target_provider,
+        "" if target_provider == "provider_api" else requested_route,
+    )
     return _RestartTarget(
         source_provider=source_provider,
         source_route=source_route,
