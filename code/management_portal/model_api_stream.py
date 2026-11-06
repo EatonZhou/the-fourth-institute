@@ -155,9 +155,21 @@ def decode(events, protocol):
                 yield from block(key, {"type": "text", "text": ""})
                 yield delta(key, text=part["content"])
             for tool in part.get("tool_calls") or []:
-                key = ("tool", tool["index"])
+                if "index" in tool:
+                    key = ("tool", tool["index"])
+                elif tool.get("id"):
+                    # Google's Chat compatibility stream emits complete calls
+                    # with IDs, but omits OpenAI's numeric delta index.
+                    key = ("tool_id", tool["id"])
+                elif len(chat_tools) == 1:
+                    key = next(iter(chat_tools))
+                else:
+                    raise WireError("Tool delta has neither an index nor an unambiguous call ID")
                 state = chat_tools.setdefault(key, {"id": "", "name": "", "arguments": ""})
-                state["id"] += tool.get("id", "")
+                if key[0] == "tool_id":
+                    state["id"] = tool.get("id") or state["id"]
+                else:
+                    state["id"] += tool.get("id", "")
                 state["name"] += (tool.get("function") or {}).get("name", "")
                 if "extra_content" in tool:
                     state["extra_content"] = tool["extra_content"]
@@ -171,6 +183,8 @@ def decode(events, protocol):
                     yield delta(key, arguments=arguments)
             if choice.get("finish_reason"):
                 reason = {"tool_calls": "tool_use", "length": "max_tokens", "stop": "end_turn", "content_filter": "refusal"}.get(choice["finish_reason"], "end_turn")
+                if reason == "end_turn" and chat_tools:
+                    reason = "tool_use"
                 finished = True
             # The usage-only chunk follows finish_reason, before [DONE].
         else:

@@ -71,7 +71,8 @@ def test_responses_developer_instructions_keep_system_priority_in_chat():
     assert payload['messages'][0]['content'][0]['text'] == 'Follow the tool policy'
 
 
-def test_chat_tool_signatures_survive_persisted_responses_and_parallel_calls():
+@pytest.mark.parametrize('omit_index', [False, True])
+def test_chat_tool_signatures_survive_persisted_responses_and_parallel_calls(omit_index):
     metadata = {'google': {'thought_signature': 'genuine-upstream-state'}}
     chunks = [
         {'choices': [{'delta': {'tool_calls': [
@@ -80,6 +81,12 @@ def test_chat_tool_signatures_survive_persisted_responses_and_parallel_calls():
         {'choices': [{'delta': {'tool_calls': [
             {'index': 0, 'function': {'arguments': '}'}, 'extra_content': metadata}]}, 'finish_reason': 'tool_calls'}]},
     ]
+    if omit_index:
+        for chunk in chunks:
+            for tool in chunk['choices'][0]['delta']['tool_calls']:
+                index = tool.pop('index')
+                tool['id'] = ('first', 'second')[index]
+        chunks[-1]['choices'][0]['finish_reason'] = 'stop'
     writer = stream.Writer(wire.RESPONSES, 'gemini')
     for kind, value in stream.decode(chunks, wire.CHAT):
         list(writer.take(kind, value))
@@ -92,6 +99,20 @@ def test_chat_tool_signatures_survive_persisted_responses_and_parallel_calls():
     assert calls[0]['extra_content'] == metadata
     assert 'extra_content' not in calls[1]
     assert [message['tool_call_id'] for message in converted['messages'][1:]] == ['first', 'second']
+
+
+def test_indexless_tool_deltas_require_an_unambiguous_call():
+    first = {'choices': [{'delta': {'tool_calls': [
+        {'id': 'first', 'function': {'name': 'read', 'arguments': '{'}}]}}]}
+    continuation = {'choices': [{'delta': {'tool_calls': [{'function': {'arguments': '}'}}]}, 'finish_reason': 'stop'}]}
+    writer = stream.Writer(wire.RESPONSES, 'gemini')
+    for event in stream.decode([first, continuation], wire.CHAT):
+        list(writer.take(*event))
+    assert writer.result['output'][0]['arguments'] == '{}'
+    ambiguous = json.loads(json.dumps(first))
+    ambiguous['choices'][0]['delta']['tool_calls'].append({'id': 'second', 'function': {'name': 'list', 'arguments': '{}'}})
+    with pytest.raises(wire.WireError, match='unambiguous'):
+        list(stream.decode([ambiguous, continuation], wire.CHAT))
 
 
 def _reply(protocol, tool, name="read_file", arguments=None, reasoning=False):
