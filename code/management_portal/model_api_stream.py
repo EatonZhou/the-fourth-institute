@@ -159,6 +159,8 @@ def decode(events, protocol):
                 state = chat_tools.setdefault(key, {"id": "", "name": "", "arguments": ""})
                 state["id"] += tool.get("id", "")
                 state["name"] += (tool.get("function") or {}).get("name", "")
+                if "extra_content" in tool:
+                    state["extra_content"] = tool["extra_content"]
                 arguments = (tool.get("function") or {}).get("arguments", "")
                 if key not in opened:
                     state["arguments"] += arguments
@@ -175,6 +177,16 @@ def decode(events, protocol):
             raise WireError(f"Unsupported stream protocol: {protocol}")
     if not started or not finished:
         raise WireError("Upstream model stream ended without a completion event")
+    if protocol == CHAT:
+        metadata = {state["id"]: {"extra_content": state["extra_content"]}
+                    for state in chat_tools.values() if "extra_content" in state}
+        if metadata:
+            # The native harness persists opaque reasoning items with history.
+            # Carry genuine upstream continuation state there, scoped by call ID;
+            # no process-local history cache or fabricated signatures are needed.
+            yield from block(("chat_tool_metadata", 0), {
+                "type": "thinking", "thinking": "", "source_protocol": CHAT,
+                "chat_state": {"tool_metadata": metadata}})
     for key, index in opened.items():
         if key not in closed:
             yield "close", {"index": index}
@@ -255,7 +267,7 @@ class Writer:
             else:
                 item["arguments"] = block.get("arguments", "")
             return item
-        state = (_opaque(CHAT, {"reasoning_content": block.get("thinking", "")})
+        state = (_opaque(CHAT, block.get("chat_state") or {"reasoning_content": block.get("thinking", "")})
                  if block.get("source_protocol") == CHAT else _opaque("anthropic", block))
         return {"id": identity, "type": "reasoning", "summary": [{"type": "summary_text", "text": block.get("thinking", "")}],
                 "encrypted_content": state}

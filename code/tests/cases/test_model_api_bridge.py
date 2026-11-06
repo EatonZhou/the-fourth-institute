@@ -71,6 +71,29 @@ def test_responses_developer_instructions_keep_system_priority_in_chat():
     assert payload['messages'][0]['content'][0]['text'] == 'Follow the tool policy'
 
 
+def test_chat_tool_signatures_survive_persisted_responses_and_parallel_calls():
+    metadata = {'google': {'thought_signature': 'genuine-upstream-state'}}
+    chunks = [
+        {'choices': [{'delta': {'tool_calls': [
+            {'index': 0, 'id': 'first', 'function': {'name': 'read', 'arguments': '{'}},
+            {'index': 1, 'id': 'second', 'function': {'name': 'list', 'arguments': '{}'}}]}}]},
+        {'choices': [{'delta': {'tool_calls': [
+            {'index': 0, 'function': {'arguments': '}'}, 'extra_content': metadata}]}, 'finish_reason': 'tool_calls'}]},
+    ]
+    writer = stream.Writer(wire.RESPONSES, 'gemini')
+    for kind, value in stream.decode(chunks, wire.CHAT):
+        list(writer.take(kind, value))
+    # Serialize as a harness does, then decode without any live bridge/cache.
+    output = json.loads(json.dumps(writer.result['output']))
+    output += [{'type': 'function_call_output', 'call_id': cid, 'output': 'ok'} for cid in ('first', 'second')]
+    converted = wire.encode(wire.request({'model': 'gemini', 'input': output}, wire.RESPONSES), wire.CHAT)
+    calls = converted['messages'][0]['tool_calls']
+    assert [call['id'] for call in calls] == ['first', 'second']
+    assert calls[0]['extra_content'] == metadata
+    assert 'extra_content' not in calls[1]
+    assert [message['tool_call_id'] for message in converted['messages'][1:]] == ['first', 'second']
+
+
 def _reply(protocol, tool, name="read_file", arguments=None, reasoning=False):
     arguments = arguments or {"path": "hello.txt"}
     encoded = json.dumps(arguments)

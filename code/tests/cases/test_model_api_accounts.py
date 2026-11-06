@@ -84,3 +84,26 @@ def test_api_identity_collision_does_not_save_an_unusable_interface():
     with pytest.raises(InstructionError):
         _call(isa.create_model_api, api_id='taken', base_url='https://example.invalid', default_model='chat')
     assert model_api_store.api_version('taken') is None
+
+
+def test_declared_google_native_sdks_preserve_gateway_prefix_and_model_identity():
+    from management_portal import kimi_provider_catalog, opencode_provider_catalog
+    from management_portal.ai_provider_registry import AIProviderRegistry
+    from management_portal.hatg.contracts import InstructionError
+    args = dict(api_id='gemini', base_url='https://gateway.invalid/openai/v1', default_model='gemini-test')
+    with pytest.raises(InstructionError, match='base_url'):
+        _call(isa.create_model_api, **args, protocols={'google_genai': {}})
+    created = _call(isa.create_model_api, **args,
+                    protocols={'google_genai': {'base_url': 'https://native.invalid/prefix/'}})
+    kimi = next(row for row in created['accounts'] if row['provider'] == 'kimi')
+    config = kimi_provider_catalog.runtime_config(kimi, 'test-key')
+    assert config['providers']['portal_api']['type'] == 'google-genai'
+    assert config['providers']['portal_api']['base_url'] == 'https://native.invalid/prefix'
+    assert config['models']['gemini-test']['model'] == 'gemini-test'
+    opencode = next(row for row in created['accounts'] if row['provider'] == 'opencode')
+    provider = next(iter(opencode_provider_catalog.provider_config(opencode['route_id']).values()))
+    assert provider['npm'] == '@ai-sdk/google'
+    assert provider['options']['baseURL'] == 'https://native.invalid/prefix/v1beta'
+    # Existing Chat gateways retain their URL and native protocol unchanged.
+    assert AIProviderRegistry.harness_endpoint(kimi_provider_catalog.profile(kimi), 'openai_chat') == (
+        'https://gateway.invalid/openai/v1', 'bearer')

@@ -17,7 +17,8 @@ from management_portal.provider_transport_diagnostics import ProviderTransportOb
 HARNESS_PROTOCOLS = ("openai_chat", "openai_responses", "anthropic_messages")
 # Options a registration may declare per protocol; chat follows ``kind``.
 DECLARED_PROTOCOL_OPTIONS = {"openai_chat": frozenset({"supports_prompt_cache_key"}), "openai_responses": frozenset(),
-                             "anthropic_messages": frozenset({"base_url", "auth"})}
+                             "anthropic_messages": frozenset({"base_url", "auth"}),
+                             "google_genai": frozenset({"base_url"})}
 ANTHROPIC_AUTH = ("bearer", "x-api-key")
 
 
@@ -149,6 +150,13 @@ class AIProviderRegistry:
         options = AIProviderRegistry.harness_protocols(item).get(protocol)
         if options is None:
             raise ValueError(f"Model API {item.get('id')} does not offer {protocol}")
+        if protocol == "google_genai":
+            # Native SDK origin/prefix, before the SDK's v1beta API version.
+            # Never derive a native endpoint from an OpenAI gateway URL.
+            url = str(options.get("base_url") or "").strip().rstrip("/")
+            if not url:
+                raise ValueError("google_genai requires an explicit base_url")
+            return url, "x-goog-api-key"
         if protocol != "anthropic_messages":
             return AIProviderRegistry.base_url(item), "bearer"
         if not AIProviderRegistry.declares_protocols(item) and item.get("kind") != "anthropic_messages":

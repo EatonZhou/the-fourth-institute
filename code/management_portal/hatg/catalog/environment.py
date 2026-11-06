@@ -85,7 +85,7 @@ DECLARATIONS = (
         P("models", "array", "模型目录；每项含唯一的 id，可选 reasoning_efforts（该模型接受的推理强度，"
           "如 low、medium、high）、enabled 等", items={"type": "object"}),
         P("protocols", "object", "上游原生支持的附加协议：openai_chat（可声明 supports_prompt_cache_key 布尔值；Google默认不接收此缓存路由提示，业务字段原样保留）、openai_responses（{}）、"
-          "anthropic_messages（可含 base_url 与 auth=bearer|x-api-key）。Claude Code 与 Codex 可经本机转换使用其他协议，无需虚报原生支持"),
+          "anthropic_messages（可含 base_url 与 auth=bearer|x-api-key）；google_genai（必填 base_url，SDK 根地址不含 v1beta；Kimi/OpenCode 使用原生 Google SDK 保留工具思考签名）。Claude Code 与 Codex 可经本机转换使用其他协议，无需虚报原生支持"),
         P("default_parameters", "object", "协议允许的默认生成参数"),
         P("timeout_seconds", "number", "单次请求超时秒数，默认 360", minimum=1),
         P("retries", "integer", "请求失败后的重试次数，默认 0", minimum=0),

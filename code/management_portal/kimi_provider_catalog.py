@@ -40,11 +40,14 @@ def catalog(account):
 
 
 def runtime_config(account, key, *, base_url=None):
-    """Explicit generic OpenAI transport, with no bundled Kimi model assumptions."""
+    """Use a declared native SDK when its continuation state is protocol-specific."""
     entry = profile(account)
     models = catalog(account)
+    native_google = "google_genai" in AIProviderRegistry.harness_protocols(entry)
+    if native_google:
+        base_url, _ = AIProviderRegistry.harness_endpoint(entry, "google_genai")
     return {"default_model": models["default_model"],
-            "providers": {"portal_api": {"type": "openai", "base_url": base_url or AIProviderRegistry.base_url(entry),
+            "providers": {"portal_api": {"type": "google-genai" if native_google else "openai", "base_url": base_url or AIProviderRegistry.base_url(entry),
                                          "api_key": key, "custom_headers": entry.get("default_headers") or {}}},
             "models": {m: {"provider": "portal_api", "model": m,
                             "max_context_size": models["context_windows"][m]} for m in models["models"]},
@@ -60,9 +63,13 @@ def write_config(account, target):
         return
     from .model_api_bridge import connection
     entry = profile(account)
-    base, auth, key = connection(entry, 'openai_chat', account_id=account['account_id'])
-    if auth != 'bearer':
-        raise ValueError('Kimi Chat transport requires bearer authentication')
+    if "google_genai" in AIProviderRegistry.harness_protocols(entry):
+        base, _ = AIProviderRegistry.harness_endpoint(entry, "google_genai")
+        key = shared_ai_provider_registry.read_secret(shared_ai_provider_registry.secret_path(entry))
+    else:
+        base, auth, key = connection(entry, 'openai_chat', account_id=account['account_id'])
+        if auth != 'bearer':
+            raise ValueError('Kimi Chat transport requires bearer authentication')
     config = runtime_config(account, key, base_url=base)
     lines = []
     def table(value, parents=()):

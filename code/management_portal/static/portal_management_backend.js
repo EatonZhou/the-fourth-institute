@@ -355,7 +355,21 @@ function browseHostDirectory(initialPath, onSelect) {
 
 export function openLogin(accountId, {onChanged = () => {}} = {}) {
   if (logins.has(accountId)) return logins.get(accountId);
-  let timer, closed = false, terminal = false, pending = true, generation = 0;
+  let timer, closed = false, terminal = false, pending = true, generation = 0, paused = false, reading = false;
+  const denied = error => [401, 403, 404].includes(Number(error.status));
+  const schedulePoll = delay => {
+    clearTimeout(timer); timer = null;
+    if (closed || terminal) return;
+    if (document.hidden) { paused = true; return; }
+    paused = false;
+    timer = setTimeout(() => { timer = null; void poll(); }, delay);
+  };
+  const syncPollingVisibility = () => {
+    if (document.hidden) {
+      if (timer != null) { clearTimeout(timer); timer = null; paused = true; }
+    } else if (paused && !closed && !terminal) { paused = false; void poll(); }
+  };
+  document.addEventListener('visibilitychange', syncPollingVisibility);
   let regionSelect, startButton, startedAt = Date.now();
   const waiting = () => t("正在获取登录授权信息…已等待 {p0} 秒。显示授权链接或设备码后，请在浏览器完成授权。", {
     p0: Math.floor((Date.now() - startedAt) / 1000)});
@@ -364,6 +378,7 @@ export function openLogin(accountId, {onChanged = () => {}} = {}) {
   const abort = new AbortController();
   const view = dialog(t("账号登录：{p0}", {p0: accountId}), () => {
     closed = true; clearTimeout(timer); clearInterval(progressTimer); abort.abort(); logins.delete(accountId);
+    document.removeEventListener('visibilitychange', syncPollingVisibility);
   });
   const status = node("p", waiting(), {role: "status", "data-backend-login-state": "", "aria-busy": "true"});
   const code = node("code", "", {"data-backend-login-code": ""});
@@ -380,7 +395,10 @@ export function openLogin(accountId, {onChanged = () => {}} = {}) {
     const args = {account_id: accountId, authorization_code: response.value}; response.value = ""; submit.disabled = true;
     clearTimeout(timer);
     try { render(await call("UpdateProviderAccountLogin", args, {signal: abort.signal})); }
-    catch (_) { if (!closed) { status.textContent = t("授权码提交失败，请重试。"); submit.disabled = false; timer = setTimeout(poll, 2000); } }
+    catch (error) { if (!closed) {
+      if (denied(error)) { terminal = true; failed(error); }
+      else { status.textContent = t("授权码提交失败，请重试。"); submit.disabled = false; schedulePoll(2000); }
+    } }
     finally { delete args.authorization_code; }
   });
   const cancel = button("取消登录", async () => {
@@ -421,19 +439,27 @@ export function openLogin(accountId, {onChanged = () => {}} = {}) {
     submit.disabled = session.state !== "awaiting_user";
     if (session.state === "succeeded") { code.textContent = ""; link.hidden = true; onChanged(); }
     if (regionSelect) { regionSelect.disabled = session.state === "succeeded"; startButton.disabled = session.state === "succeeded"; }
-    if (!terminal) timer = setTimeout(poll, 2000);
+    if (!terminal) schedulePoll(2000);
   };
   const poll = async () => {
+    if (closed || terminal) return;
+    if (document.hidden) { paused = true; return; }
+    if (reading) { schedulePoll(2000); return; }
+    reading = true;
     const current = generation;
     try {
       const result = await call("GetProviderAccountLogin", {account_id: accountId}, {signal: abort.signal});
       if (current === generation) render(result);
-    } catch (error) { if (current === generation && !closed && !terminal) { pending = false; status.setAttribute("aria-busy", "false"); status.textContent = errorText(error); timer = setTimeout(poll, 4000); } }
+    } catch (error) { if (current === generation && !closed && !terminal) {
+      if (denied(error)) { terminal = true; failed(error); }
+      else { pending = false; status.setAttribute("aria-busy", "false"); status.textContent = errorText(error); schedulePoll(4000); }
+    } } finally { reading = false; }
   };
   const failed = error => {
     pending = false; clearInterval(progressTimer); status.setAttribute("aria-busy", "false");
     if (!closed) {
       status.textContent = errorText(error);
+      if (terminal) { clearTimeout(timer); cancel.disabled = true; authorization.hidden = true; response.value = ""; }
       if (regionSelect) { regionSelect.disabled = false; startButton.disabled = false; }
     }
   };
@@ -620,10 +646,24 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
     });
   }
   function setupEditor(accountId, {useDefault: requestedDefault = false} = {}) {
-    let timer, progressTimer, closed = false, checking = false, working = false, setup = null;
+    let timer, progressTimer, closed = false, checking = false, working = false, setup = null, nextPoll = null;
+    function schedulePoll(work, delay) {
+      clearTimeout(timer); timer = null; nextPoll = work;
+      if (closed || document.hidden) return;
+      timer = setTimeout(() => {
+        timer = null;
+        if (closed || document.hidden) return;
+        nextPoll = null; void work();
+      }, delay);
+    }
+    function syncPollingVisibility() {
+      if (document.hidden) { clearTimeout(timer); timer = null; }
+      else if (nextPoll && !closed) schedulePoll(nextPoll, 0);
+    }
+    document.addEventListener('visibilitychange', syncPollingVisibility);
     let preparationRequested = false, setupFailed = false;
     let progressMessage = "", startedAt = 0;
-    const {view, form} = newEditor("接入并启用 AI", () => { closed = true; clearTimeout(timer); clearInterval(progressTimer); clearInterval(preparationTimer); });
+    const {view, form} = newEditor("接入并启用 AI", () => { closed = true; nextPoll = null; clearTimeout(timer); clearInterval(progressTimer); clearInterval(preparationTimer); document.removeEventListener('visibilitychange', syncPollingVisibility); });
     form.append(node("p", accountId));
     const preparationPhases = {prerequisites: "检查系统依赖", download: "获取运行环境版本", dependency_install: "下载并安装运行依赖",
       executable_validation: "校验运行程序", service_activation: "启动并检查后台服务"};
@@ -702,7 +742,7 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
     async function perform(work, message = "正在检查运行环境与登录状态…", quiet = false) {
       if (closed || working) return;
       working = true; setupFailed = false;
-      clearTimeout(timer); clearInterval(progressTimer);
+      clearTimeout(timer); nextPoll = null; clearInterval(progressTimer);
       if (!quiet) {
         setButtons(); startedAt = Date.now(); progressMessage = message;
         status.setAttribute("aria-busy", "true");
@@ -755,7 +795,7 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
       if (!setup.runtime_ready && canWrite) {
         if (["preparing", "pending"].includes(setup.preparation?.status)) {
           preparationRequested = true;
-          timer = setTimeout(() => void perform(reload, undefined, true), 2000);
+          schedulePoll(() => perform(reload, undefined, true), 2000);
         } else if (!preparationRequested) {
           preparationRequested = true;
           progressMessage = "正在自动准备运行环境…";
@@ -765,7 +805,7 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
             // Another runtime update owns the lock; observe and retry without user action.
             preparationRequested = false;
             status.textContent = t("运行环境正在更新，完成后将自动继续。");
-            timer = setTimeout(() => void perform(reload, undefined, true), 2000);
+            schedulePoll(() => perform(reload, undefined, true), 2000);
           } else {
             await reload();
           }
@@ -776,6 +816,7 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
     }
     async function pollCheck(executionId) {
       if (closed) return;
+      if (document.hidden) { schedulePoll(() => pollCheck(executionId), 2000); return; }
       try {
         const result = await execute("GetProviderAccountCheck", {account_id: accountId, execution_id: executionId});
         if (closed) return;
@@ -786,7 +827,7 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
           nextStep.textContent = t(result.check.next_step || "");
           nextStep.hidden = !result.check.next_step;
           progressMessage = result.check.message;
-          timer = setTimeout(() => void pollCheck(executionId), 2000); return;
+          schedulePoll(() => pollCheck(executionId), 2000); return;
         }
         if (!result.check.passed) {
           nextStep.textContent = t(result.check.next_step || "请复制下方测试编号交给管理员排查；无需重新注册或再次发送 API Key。");
@@ -991,7 +1032,14 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
       {type: "url", placeholder: t("留空使用去掉 /v1 的接口基础地址")});
     const anthropicAuth = select(options, "Anthropic 认证方式", "anthropic_auth",
       [["bearer", "Authorization: Bearer"], ["x-api-key", "x-api-key"]], anthropicOptions.auth || "bearer");
-    const protocolState = () => JSON.stringify([primary.value, chat.checked, responses.checked, anthropic.checked, anthropicUrl.value.trim(), anthropicAuth.value, cacheHint.checked]);
+    const google = field(options, "提供 Google 原生接口（Kimi / OpenCode）", "protocol_google_genai", "", {type: "checkbox"});
+    google.checked = offered.has("google_genai");
+    const googleUrl = field(options, "Google SDK 根地址（不含 /v1beta）", "google_base_url", api?.protocols?.google_genai?.base_url || "",
+      {type: "url", placeholder: "https://generativelanguage.googleapis.com"});
+    hint(google, "原生 Google SDK 保留多轮工具调用所需的思考签名；仅在接口确实提供此协议时开启。");
+    const showGoogle = () => { googleUrl.parentElement.hidden = !google.checked; googleUrl.required = google.checked; };
+    showGoogle(); google.addEventListener("change", showGoogle);
+    const protocolState = () => JSON.stringify([primary.value, chat.checked, responses.checked, anthropic.checked, anthropicUrl.value.trim(), anthropicAuth.value, cacheHint.checked, google.checked, googleUrl.value.trim()]);
     const declaredProtocols = protocolState();
     const primaryWire = () => ({openai_compatible_chat: "openai_chat", openai_responses: "openai_responses", anthropic_messages: "anthropic_messages"})[primary.value];
     const showAnthropic = () => {
@@ -1087,6 +1135,7 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
         if (responses.checked && !responses.parentElement.hidden) changes.protocols.openai_responses = {};
         if (anthropic.checked || primary.value === "anthropic_messages") changes.protocols.anthropic_messages = {auth: anthropicAuth.value,
           ...(anthropicUrl.value.trim() ? {base_url: anthropicUrl.value.trim()} : {})};
+        if (google.checked) changes.protocols.google_genai = {base_url: googleUrl.value.trim()};
       }
       if (path.value.trim()) changes.secret_file = path.value.trim();
       if (secret.value) changes.secret = secret.value; secret.value = "";

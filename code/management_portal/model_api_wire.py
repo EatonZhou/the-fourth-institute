@@ -282,6 +282,7 @@ def encode(value, protocol):
             payload["stop_sequences"] = value["stop"]
         return payload
     items = []
+    chat_tool_metadata = {}
     for message in value["messages"]:
         role = message["role"]
         if protocol == CHAT and role == "developer":
@@ -314,8 +315,10 @@ def encode(value, protocol):
             elif kind == "reasoning" and protocol == RESPONSES:
                 items.append(part["responses"])
             elif kind == "chat_reasoning" and protocol == CHAT:
-                items.append({"role": "assistant", "content": None,
-                              "reasoning_content": part["reasoning_content"]})
+                chat_tool_metadata.update(part.get("tool_metadata") or {})
+                if "reasoning_content" in part:
+                    items.append({"role": "assistant", "content": None,
+                                  "reasoning_content": part["reasoning_content"]})
             elif kind in ("thinking", "redacted_thinking"):
                 raise WireError("Anthropic thinking state belongs to a different upstream")
             elif kind != "reasoning":
@@ -356,6 +359,11 @@ def encode(value, protocol):
                 merged[-1]["tool_calls"].extend(item["tool_calls"])
             else:
                 merged.append(item)
+        for message in merged:
+            for tool in message.get("tool_calls") or []:
+                metadata = chat_tool_metadata.get(tool["id"]) or {}
+                if "extra_content" in metadata:
+                    tool["extra_content"] = metadata["extra_content"]
         payload.update(messages=merged, stream_options={"include_usage": True})
         if tools:
             payload["tools"] = [{"type": "function", "function": {"name": t["name"], "description": t["description"], "parameters": t["input_schema"]}} for t in tools]

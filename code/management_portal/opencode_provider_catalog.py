@@ -147,7 +147,10 @@ def provider_config(route: str) -> dict:
     entry = _custom_entry(route)
     if entry is None:
         return {}
-    base_url, _auth = AIProviderRegistry.harness_endpoint(entry, "openai_chat")
+    native_google = "google_genai" in AIProviderRegistry.harness_protocols(entry)
+    base_url, _auth = AIProviderRegistry.harness_endpoint(entry, "google_genai" if native_google else "openai_chat")
+    if native_google:
+        base_url += "/v1beta"
     options: dict = {"baseURL": base_url}
     headers = {str(name): str(value).strip() for name, value in (entry.get("default_headers") or {}).items()
                if str(value or "").strip()}
@@ -156,7 +159,7 @@ def provider_config(route: str) -> dict:
     models = {model: {"name": model, **({"limit": {"context": window, "output": min(window, CUSTOM_OUTPUT_TOKENS)}}
                                          if window else {})}
               for model, window in _declared_models(entry).items()}
-    return {service(route): {"npm": "@ai-sdk/openai-compatible", "name": str(entry.get("label") or entry["id"]),
+    return {service(route): {"npm": "@ai-sdk/google" if native_google else "@ai-sdk/openai-compatible", "name": str(entry.get("label") or entry["id"]),
                              "options": options, "models": models}}
 
 

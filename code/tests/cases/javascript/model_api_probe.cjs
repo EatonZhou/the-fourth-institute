@@ -5,7 +5,8 @@ const dom = new JSDOM('<main></main>', {url: 'http://portal.invalid/'});
 const {window} = dom, calls = [];
 let probe = {};
 const apis = [{api_id: 'gateway', base_url: 'https://gateway.invalid/v1', default_model: 'gpt-test',
-  harness_protocols: ['openai_chat'], version: 1}];
+  harness_protocols: ['openai_chat', 'google_genai'],
+  protocols: {google_genai: {base_url: 'https://native.invalid/prefix'}}, version: 1}];
 const accounts = [
   {account_id: 'codex_one', provider: 'codex', kind: 'subscription_login', route_id: 'one', enabled: true,
    config: {is_default: true}, version: 2, login_state: 'logged_in'},
@@ -50,6 +51,13 @@ const status = id => row(id).children[2].textContent;
   // A new API is probed with the form's values; the result ticks the protocols and the harnesses follow.
   click('新增模型 API');
   let form = window.document.querySelector('dialog form');
+  assert.equal(form.elements.protocol_google_genai.checked, false);
+  assert.equal(form.elements.google_base_url.value, '', 'never guess a native endpoint from a Chat URL');
+  assert(form.elements.google_base_url.parentElement.hidden);
+  form.elements.protocol_google_genai.click();
+  assert(!form.elements.google_base_url.parentElement.hidden);
+  assert(form.elements.google_base_url.required);
+  form.elements.protocol_google_genai.click();
   form.elements.base_url.value = 'https://new.invalid/v1'; form.querySelector('[data-backend-model-id]').value = 'gpt-new';
   form.elements.secret.value = 'sk-draft';
   probe = {openai_chat: {status: 'supported', http_status: 200}, openai_responses: {status: 'supported', http_status: 200},
@@ -75,6 +83,8 @@ const status = id => row(id).children[2].textContent;
 
   // Editing probes the saved API: its stored key is used unless a new one is typed.
   click('编辑'); form = window.document.querySelector('dialog form');
+  assert.equal(form.elements.protocol_google_genai.checked, true);
+  assert.equal(form.elements.google_base_url.value, 'https://native.invalid/prefix');
   click('检测接口协议', form); await flush();
   assert.deepEqual(last('ProbeModelApi').args, {api_id: 'gateway', base_url: 'https://gateway.invalid/v1', default_model: 'gpt-test'});
   click('关闭');

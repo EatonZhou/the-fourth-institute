@@ -115,6 +115,10 @@ def _validate_protocols(protocols: Any) -> None:
         raise invalid("protocols.anthropic_messages.base_url 必须是 http(s) 地址")
     if anthropic.get("auth", "bearer") not in ANTHROPIC_AUTH:
         raise invalid("protocols.anthropic_messages.auth 只能是 " + "、".join(ANTHROPIC_AUTH))
+    if "google_genai" in protocols:
+        url = protocols["google_genai"].get("base_url")
+        if not isinstance(url, str) or not re.fullmatch(r"https?://\S+", url.strip()):
+            raise invalid("protocols.google_genai.base_url 必须明确填写 http(s) SDK 根地址（不含 v1beta）")
 
 
 def _check_api_kind(entry: dict[str, Any]) -> None:
