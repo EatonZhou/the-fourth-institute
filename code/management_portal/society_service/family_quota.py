@@ -629,8 +629,15 @@ def _ensure_quota_switch(record: dict[str, Any], accounts: list[dict[str, Any]] 
     if submitted and resident_execution_work.execution_snapshot(job).get("status") != "queued":
         return False  # A running/claimed turn is never a quota-waiting input.
     priority = auto_migration_priority(record)
+    # A Family's inherited switch keeps its same-kind-first contract. Only
+    # the Resident's explicit switch opts into the site's strict ordering.
+    strict_priority = (record.get("execution_settings") or {}).get("auto_switch_on_quota") is True
     windows = [(w.get("window"), w.get("resets_at")) for w in (account.get("quota_reserve") or {}).get("windows") or []]
     epoch = f"{account['account_id']}:{windows}:{priority}"
+    if not strict_priority:
+        # Retire failures made under the old priority-only candidate policy;
+        # re-evaluate queued work without replaying an admitted/running turn.
+        epoch += ":same-kind-first"
     now = time.time()
     payload = None
     with resident_record_domain.state_lock(rid), get_lineage_data_store().family_quota_migrations.transaction(record["lineage_id"], rid) as state:
@@ -638,6 +645,7 @@ def _ensure_quota_switch(record: dict[str, Any], accounts: list[dict[str, Any]] 
         if (not current or not _intake_allows_recovery(current)
                 or quota_switch_policy(current) is not True
                 or resident_account(current, accounts).get("account_id") != account["account_id"]
+                or ((current.get("execution_settings") or {}).get("auto_switch_on_quota") is True) != strict_priority
                 or auto_migration_priority(current) != priority):
             return False
         current_job = resident_execution_work.read(current)
@@ -658,7 +666,7 @@ def _ensure_quota_switch(record: dict[str, Any], accounts: list[dict[str, Any]] 
             payload = state.get("pending_restart")
             if not payload and state.get("switch_reason") != "migration_failed":
                 target = fallback_account(accounts, str(account["provider"]), str(account.get("backend_route_id") or ""),
-                                          state["tried_accounts"], priority=priority, priority_only=True,
+                                          state["tried_accounts"], priority=priority, priority_only=strict_priority,
                                           subscription_only=bool((current.get("family") or {}).get("role")),
                                           model=(current.get("execution_settings") or {}).get("model", ""),
                                           effort=(current.get("execution_settings") or {}).get("reasoning_effort", ""))

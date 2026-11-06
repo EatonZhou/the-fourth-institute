@@ -105,6 +105,46 @@ def test_admission_uses_family_type_order(quota_family, monkeypatch):
     assert calls[0]['model'] == 'kimi-default'
 
 
+@pytest.mark.parametrize('previous_failure', [False, True])
+def test_exhausted_family_tries_same_kind_before_preferred_provider(quota_family, monkeypatch, previous_failure):
+    from types import SimpleNamespace
+    from management_portal.society_service import family_quota, resident_restart_domain
+    from management_portal.society_service.state_store import get_lineage_data_store
+    from management_portal.society_service.domain_ports import execution_port
+    f = quota_family
+    store = get_lineage_data_store()
+    priority = ['claude:subscription_login']
+    store.database.write(lambda c: c.execute(
+        "UPDATE families SET auto_migrate_priority=%s WHERE family_id='fbi_test'", (priority,)))
+    accounts = [account('codex', 'one', remaining=0), account('codex', 'two', remaining=80),
+                account('claude', 'claude_one', remaining=90)]
+    accounts[0]['quota_reserve']['used_up'] = True
+    record = _record(f.steward)
+    if previous_failure:
+        windows = [(w.get('window'), w.get('resets_at')) for w in accounts[0]['quota_reserve']['windows']]
+        with store.family_quota_migrations.transaction(record['lineage_id'], f.steward) as state:
+            state.update(epoch=f"one:{windows}:{priority}", source_account='one',
+                         attempts=1, tried_accounts=['claude_one'], status='unavailable',
+                         switch_reason='migration_failed', checked_at=0)
+    gate = {'state': 'closed', 'reason': 'quota_used_up', 'account_id': 'one'}
+    monkeypatch.setattr(execution_port, 'service', lambda: SimpleNamespace(
+        accounts=lambda: {'accounts': accounts}, binding_quota_states=lambda bindings: {
+            'resident:' + f.steward: gate}))
+    calls = []
+    monkeypatch.setattr(resident_restart_domain, 'restart_resident_session',
+                        lambda target, actor, payload, **kwargs: calls.append((target, actor, payload)))
+    assert family_quota.ensure_role_reserve(record, accounts)
+    assert len(calls) == 1
+    target, actor, payload = calls[0]
+    assert target == actor == f.steward
+    assert (payload['target_provider'], payload['target_account']) == ('codex', 'two')
+    assert payload['context_strategy'] == 'preserve'
+    assert payload['active_execution_policy'] == 'wait'
+    assert payload['resume_failed_input'] is False
+    assert _record(f.steward)['backend_route_id'] == 'one'
+    assert family_quota.auto_migration_priority(_record(f.steward)) == priority
+
+
 def test_configured_adapter_preserves_registration_kind(monkeypatch):
     from types import SimpleNamespace
     from dataclasses import asdict

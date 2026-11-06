@@ -164,7 +164,7 @@ def test_steward_quota_failure_migrates_without_calling_its_model(team, monkeypa
     set_role(team.source["resident_id"], family_id="fbi_recovery", actor=ACTOR)
     set_role(resident_id, family_id="fbi_recovery", role=role, actor=ACTOR)
     from management_portal.society_service.state_store import get_lineage_data_store
-    get_lineage_data_store().database.write(lambda c: c.execute("UPDATE families SET auto_migrate=%s,auto_migrate_priority=%s WHERE family_id='fbi_recovery'", (enabled, ["codex:subscription_login"])))
+    get_lineage_data_store().database.write(lambda c: c.execute("UPDATE families SET auto_migrate=%s,auto_migrate_priority=%s WHERE family_id='fbi_recovery'", (enabled, ["claude:subscription_login"])))
     from management_portal.society_service import resident_input_queue_domain
     resident_input_queue_domain.commit_resident_intake_state(_record(team.source["resident_id"]), "open")
     accounts = [_account("codex", "one", 0), _account("claude", "claude_one", 90), _account("codex", "two", 80)]
@@ -361,7 +361,7 @@ def test_steward_migration_intent_survives_interruption_without_new_request(team
     from management_portal.society_service.state_store import get_lineage_data_store
     get_lineage_data_store().database.write(lambda c: c.execute(
         "UPDATE families SET auto_migrate=TRUE,auto_migrate_priority=%s WHERE family_id='fbi_recovery'",
-        (["codex:subscription_login"],)))
+        (["claude:subscription_login"],)))
     from management_portal.society_service import resident_input_queue_domain
     resident_input_queue_domain.commit_resident_intake_state(_record(team.source["resident_id"]), "open")
     accounts = [_account("codex", "one", 0), _account("codex", "two", 80)]

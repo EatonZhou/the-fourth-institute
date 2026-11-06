@@ -274,7 +274,7 @@ def _reconcile_failed_work(residents: list[dict[str, Any]], context: dict[str, A
             automatic = explicit or selection_mode(record) == "auto"
             target = fallback_account(accounts or [], provider, route, tried, reserve=not automatic,
                                       priority=resident_domain_port.auto_migration_priority(record),
-                                      priority_only=explicit,
+                                      priority_only=(record.get("execution_settings") or {}).get("auto_switch_on_quota") is True,
                                       subscription_only=bool((record.get("family") or {}).get("role")),
                               model=(record.get("execution_settings") or {}).get("model", ""),
                               effort=(record.get("execution_settings") or {}).get("reasoning_effort", ""))
