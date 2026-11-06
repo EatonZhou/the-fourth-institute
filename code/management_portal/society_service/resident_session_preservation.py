@@ -77,7 +77,9 @@ def preserve_route_error(source, target_provider, target_route, *, has_context):
     same_route = source["account_id"] == target_route
     if (same_route and source["has_session"] and capability.get("same_account_native_fork")) or capability.get("canonical_import"):
         return ""
-    if same_route and capability.get("context_owner") == "portal":
+    if capability.get("context_owner") == "portal":
+        # A stateless API account never owns the transcript. Changing its API
+        # route leaves the same Resident's canonical history in Portal.
         return ""
     return "目标账号不支持完整上下文导入；原会话已保留。请选择明确的交接方式或取消切换。"
 

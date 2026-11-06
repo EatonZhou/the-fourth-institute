@@ -61,6 +61,18 @@ def test_model_api_restart_defaults_to_current_api_profile(monkeypatch):
     assert target.route == 'test-api'
 
 
+def test_api_account_switch_keeps_portal_owned_history_without_import():
+    from management_portal.society_service import resident_session_preservation as preservation
+    source = {'provider': 'provider_api', 'account_id': 'api-a', 'has_session': False}
+    assert preservation.preserve_route_error(source, 'provider_api', 'api-b', has_context=True) == ''
+    options = preservation.context_options(source, 'provider_api', 'api-b', has_context=True)
+    assert next(option for option in options if option['id'] == 'preserve')['enabled']
+    # This does not claim a lossless import of a native provider's tool state.
+    assert preservation.preserve_route_error(
+        {'provider': 'codex', 'account_id': 'codex-a', 'has_session': True},
+        'provider_api', 'api-b', has_context=True)
+
+
 def _store(tmp_path: Path) -> AgentDataStore:
     return AgentDataStore()
 
