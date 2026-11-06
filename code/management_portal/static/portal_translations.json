@@ -1,4 +1,19 @@
 {
+  "Family 默认开关仅在成员未显式设置时生效；成员显式开启时按站点默认排序切换。": {"zh-CN":"Family 默认开关仅在成员未显式设置时生效；成员显式开启时按站点默认排序切换。","en":"The Family switch applies only when a member has no explicit setting. Members who explicitly enable switching use the site's default order."},
+  "来源：Resident 显式开启；按站点默认排序切换。": {"zh-CN":"来源：Resident 显式开启；按站点默认排序切换。","en":"Source: explicitly enabled for this Resident; switches follow the site's default order."},
+  "来源：Resident 显式关闭；不会自动切换账号。": {"zh-CN":"来源：Resident 显式关闭；不会自动切换账号。","en":"Source: explicitly disabled for this Resident; accounts will not switch automatically."},
+  "来源：继承 Family 开关；开启时先选同种类账号，再按 Family 排序。": {"zh-CN":"来源：继承 Family 开关；开启时先选同种类账号，再按 Family 排序。","en":"Source: inherited from the Family switch; when enabled, try the same account kind first, then the Family order."},
+  "来源：沿用既有账号选择策略。": {"zh-CN":"来源：沿用既有账号选择策略。","en":"Source: existing account selection policy."},
+  "队列已满时，丢弃新到的内容；已排队的内容保留原顺序。": {
+    "en": "When the queue is full, new content is discarded. Already queued content keeps its order.",
+    "zh-CN": "队列已满时，丢弃新到的内容；已排队的内容保留原顺序。"
+  },
+  "排序仅表示候选优先级，不保证切换成功。目标需有可用额度和兼容模型，并能完整保留当前上下文；跨 Provider 时可能需手动选择交接方式。": {"zh-CN":"排序仅表示候选优先级，不保证切换成功。目标需有可用额度和兼容模型，并能完整保留当前上下文；跨 Provider 时可能需手动选择交接方式。","en":"The order expresses candidate priority, not a guarantee of a successful switch. The target needs available quota, a compatible model and full preservation of the current context. Switching Providers may require you to choose a handoff method manually."},
+  "保存后恢复站点默认帐号选择排序。下列仅为排序草稿，不代表站点当前生效顺序。": {"zh-CN":"保存后恢复站点默认帐号选择排序。下列仅为排序草稿，不代表站点当前生效顺序。","en":"Saving restores the site's default account order. The list below is only an editable draft, not the site's current effective order."},
+  "已自定义 Family 排序；未排序的订阅种类按默认顺序追加。": {"zh-CN":"已自定义 Family 排序；未排序的订阅种类按默认顺序追加。","en":"This Family uses a custom order. Unordered subscription kinds are appended in default order."},
+  "当前继承站点默认帐号选择排序。下列仅为可编辑草稿，不代表站点当前生效顺序；保存后改为 Family 自定义排序。": {"zh-CN":"当前继承站点默认帐号选择排序。下列仅为可编辑草稿，不代表站点当前生效顺序；保存后改为 Family 自定义排序。","en":"Currently inheriting the site's default account order. The list below is only an editable draft, not the site's current effective order. Saving applies a custom Family order."},
+  "此排序仅用于继承 Family 开关的成员；成员显式开启额度自动切换时使用站点默认排序。": {"zh-CN":"此排序仅用于继承 Family 开关的成员；成员显式开启额度自动切换时使用站点默认排序。","en":"This order applies only to members inheriting the Family switch. Members who explicitly enable automatic quota switching use the site's default order."},
+  "先选同种类可用账号，再按下列顺序切换；跨种类使用 API 或服务账号须在此明确允许。": {"zh-CN":"先选同种类可用账号，再按下列顺序切换；跨种类使用 API 或服务账号须在此明确允许。","en":"Try available accounts of the same kind first, then follow the order below. Switching to an API or service account of another kind requires explicit permission here."},
   "不开启": {"zh-CN":"不开启","en":"Off"},
   "字符串资源地址，或 {workspace_id|repo_id|article_id, relative_path} 文件引用；上传文件推荐 {upload_id: 原上传句柄}，也接受 /api/uploads/<句柄> 或本实例正式 public/internal origin 或显式登记的 public_origin_aliases 的完整URL（可加 download=1，不接受其他参数或片段）。上传句柄不是资源ID，沿用所有已认证User/Resident可读规则；relative_path 不接受绝对路径或 ..": {"zh-CN":"字符串资源地址，或 {workspace_id|repo_id|article_id, relative_path} 文件引用；上传文件推荐 {upload_id: 原上传句柄}，也接受 /api/uploads/<句柄> 或本实例正式 public/internal origin 或显式登记的 public_origin_aliases 的完整URL（可加 download=1，不接受其他参数或片段）。上传句柄不是资源ID，沿用所有已认证User/Resident可读规则；relative_path 不接受绝对路径或 ..","en":"A resource address string or a {workspace_id|repo_id|article_id, relative_path} file reference. For uploads, prefer {upload_id: original upload handle}; /api/uploads/<handle> and full URLs using this instance's official public/internal origin or explicitly registered public_origin_aliases are also accepted (only download=1 is allowed; other query parameters and fragments are rejected). An upload handle is not a resource ID; uploads remain readable by all authenticated Users and Residents. relative_path must not be absolute or contain .."},
   "字符串资源地址，或 {workspace_id|repo_id|article_id, relative_path} 文件引用；上传文件推荐 {upload_id: 原上传句柄}，也接受 /api/uploads/<句柄> 或本实例正式 public/internal origin 或显式登记的 public_origin_aliases 的完整URL（可加 download=1，不接受其他参数或片段）。上传文件对所有已认证User/Resident可读，支持meta_only、preview和超限下载；普通资源权限保持不变": {"zh-CN":"字符串资源地址，或 {workspace_id|repo_id|article_id, relative_path} 文件引用；上传文件推荐 {upload_id: 原上传句柄}，也接受 /api/uploads/<句柄> 或本实例正式 public/internal origin 或显式登记的 public_origin_aliases 的完整URL（可加 download=1，不接受其他参数或片段）。上传文件对所有已认证User/Resident可读，支持meta_only、preview和超限下载；普通资源权限保持不变","en":"A resource address string or a {workspace_id|repo_id|article_id, relative_path} file reference. For uploads, prefer {upload_id: original upload handle}; /api/uploads/<handle> and full URLs using this instance's official public/internal origin or explicitly registered public_origin_aliases are also accepted (only download=1 is allowed; other query parameters and fragments are rejected). Uploads are readable by all authenticated Users and Residents, supporting meta_only, preview, and download when content exceeds the read limit. Permissions for ordinary resources are unchanged."},
@@ -1698,9 +1713,9 @@
     "en": "0 items",
     "zh-CN": "0 条"
   },
-  "0 表示不自动过期；只作用于这条边上尚未投递的 Packet。": {
-    "en": "0 means no automatic expiration; applies only to undelivered Events on this edge.",
-    "zh-CN": "0 表示不自动过期；只作用于这条边上尚未投递的 Packet。"
+  "从内容进入本连线的等待队列时开始计时，超时后不再投递；0 表示不限时。连线本身和已投递的内容不受影响。": {
+    "en": "Time starts when content enters this wire's waiting queue. Expired content is no longer delivered; 0 means no time limit. The wire itself and already delivered content are unaffected.",
+    "zh-CN": "从内容进入本连线的等待队列时开始计时，超时后不再投递；0 表示不限时。连线本身和已投递的内容不受影响。"
   },
   "0 表示完全不触发；不限次数请关闭开关。": {
     "en": "0 means no trigger at all; turn off the switch for unlimited times.",
@@ -28136,9 +28151,9 @@
     "en": "Filter graph by relationship",
     "zh-CN": "按关系筛选图谱"
   },
-  "按到达顺序积压；目标每次恢复可消费时投递队首。": {
-    "en": "Backlog in arrival order; deliver the queue head each time the target becomes consumable again.",
-    "zh-CN": "按到达顺序积压；目标每次恢复可消费时投递队首。"
+  "内容按到达顺序排队，待接收方可接收时依次投递。": {
+    "en": "Queue content in arrival order and deliver it in that order when the receiver can accept it.",
+    "zh-CN": "内容按到达顺序排队，待接收方可接收时依次投递。"
   },
   "按名称、目标、上下文摘要或 Agent id 查找节点": {
     "en": "Find nodes by name, target, context summary, or Agent id",
@@ -28288,9 +28303,9 @@
     "en": "Order acceptance status",
     "zh-CN": "接单状态"
   },
-  "接收方不可消费时": {
-    "en": "When the receiver cannot consume",
-    "zh-CN": "接收方不可消费时"
+  "接收方暂时无法接收时": {
+    "en": "When the receiver cannot accept delivery yet",
+    "zh-CN": "接收方暂时无法接收时"
   },
   "接收方恢复可消费后，Portal 会按边策略投递。": {
     "en": "After the receiver becomes consumable again, Portal delivers according to edge policy.",
@@ -32792,9 +32807,9 @@
     "en": "Target workspace or resource address",
     "zh-CN": "目标工作区或资源地址"
   },
-  "目标当前不能消费 Invoke 时，这次触发直接消失。": {
-    "en": "When the target currently cannot consume Invoke, this trigger disappears directly.",
-    "zh-CN": "目标当前不能消费 Invoke 时，这次触发直接消失。"
+  "接收方暂时无法接收时，丢弃本次待投递内容，不在本连线上排队等待。": {
+    "en": "When the receiver cannot accept delivery yet, discard this pending content without queuing it on this wire.",
+    "zh-CN": "接收方暂时无法接收时，丢弃本次待投递内容，不在本连线上排队等待。"
   },
   "目标必须是 Family 门面": {
     "en": "The target must be a Family facade",
@@ -33476,9 +33491,9 @@
     "en": "Awaiting an answer",
     "zh-CN": "等待回答"
   },
-  "等待多久后自动消失（秒）": {
-    "en": "How long to wait before auto-dismiss (seconds)",
-    "zh-CN": "等待多久后自动消失（秒）"
+  "待投递内容有效期（秒）": {
+    "en": "Pending content expiry (seconds)",
+    "zh-CN": "待投递内容有效期（秒）"
   },
   "等待完成": {
     "en": "Waiting to complete",
@@ -36004,9 +36019,9 @@
     "en": "Output order",
     "zh-CN": "输出顺序"
   },
-  "边上至多等待一个触发；新触发会替换旧触发。": {
-    "en": "At most one trigger waits on the edge; a new trigger replaces the old one.",
-    "zh-CN": "边上至多等待一个触发；新触发会替换旧触发。"
+  "本连线仅保留最新一份待投递内容；新内容替换旧内容，待接收方可接收时投递。": {
+    "en": "Keep only the latest pending content on this wire. New content replaces the previous content and is delivered when the receiver can accept it.",
+    "zh-CN": "本连线仅保留最新一份待投递内容；新内容替换旧内容，待接收方可接收时投递。"
   },
   "达到上限后，新到的 Event 会被丢弃，已有顺序保持不变。": {
     "en": "After the limit is reached, newly arriving Events are dropped and the existing order stays unchanged.",

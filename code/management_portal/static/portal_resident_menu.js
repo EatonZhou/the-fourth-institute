@@ -18,7 +18,11 @@
     const label = key => types.get(key)?.label || key;
     const draw = () => {
       const others = [...types.values()].filter(item => !order.includes(item.id)).sort(byDefault).map(item => item.id);
-      panel.innerHTML = `<p class="paneNote">${esc(baseline.length ? t("已自定义 Family 排序；成员明确设置的开关优先。") : t("使用站点默认帐号选择排序；保存下方顺序后改为 Family 自定义排序。"))}</p><p class="paneNote">${esc(t("自动切换只在订阅账号之间进行：先换同种类的可用账号，再按以下顺序切换。"))}</p>
+      const policyNote = siteDefault ? "保存后恢复站点默认帐号选择排序。下列仅为排序草稿，不代表站点当前生效顺序。"
+        : baseline.length ? "已自定义 Family 排序；未排序的订阅种类按默认顺序追加。"
+          : "当前继承站点默认帐号选择排序。下列仅为可编辑草稿，不代表站点当前生效顺序；保存后改为 Family 自定义排序。";
+      panel.innerHTML = `<p class="paneNote">${esc(t(policyNote))}</p><p class="paneNote">${esc(t("此排序仅用于继承 Family 开关的成员；成员显式开启额度自动切换时使用站点默认排序。"))}</p><p class="paneNote">${esc(t("先选同种类可用账号，再按下列顺序切换；跨种类使用 API 或服务账号须在此明确允许。"))}</p>
+        <p class="paneNote">${esc(t("排序仅表示候选优先级，不保证切换成功。目标需有可用额度和兼容模型，并能完整保留当前上下文；跨 Provider 时可能需手动选择交接方式。"))}</p>
         <ol>${order.map((key, i) => `<li><span>${esc(types.get(key)?.label || key + '（当前不可用）')}</span><button class="portalButton is-compact" type="button" data-priority-move="${i}" data-direction="-1" aria-label="${esc(t('上移') + ' ' + label(key))}"${readonly || busy || !i ? ' disabled' : ''}>↑</button><button class="portalButton is-compact" type="button" data-priority-move="${i}" data-direction="1" aria-label="${esc(t('下移') + ' ' + label(key))}"${readonly || busy || i === order.length - 1 ? ' disabled' : ''}>↓</button>${subscription(key) ? '' : `<button class="portalButton is-compact" type="button" data-priority-revoke="${esc(key)}" aria-label="${esc(t('不再允许') + ' ' + label(key))}"${readonly || busy ? ' disabled' : ''}>${esc(t('不再允许'))}</button>`}</li>`).join('')}</ol>
         ${others.length ? `<p class="paneNote">${esc(t("以下种类不会自动切换，需要明确允许："))}</p>
         <ul>${others.map(key => `<li><span>${esc(label(key))}</span><button class="portalButton is-compact" type="button" data-priority-allow="${esc(key)}" aria-label="${esc(t('允许自动切换') + ' ' + label(key))}"${readonly || busy ? ' disabled' : ''}>${esc(t('允许自动切换'))}</button></li>`).join('')}</ul>` : ''}

@@ -89,6 +89,16 @@
                 finally { if (menuState.nodeMenuContext === context) context.runtimeController.load().catch(() => {}); }
               };
               row.append(label, toggle); root.append(row);
+              const explicit = view.settings?.auto_switch_on_quota;
+              const familyRole = (view.detail?.resident?.family || context.node?.family)?.role;
+              const source = typeof explicit === "boolean"
+                ? (explicit ? "来源：Resident 显式开启；按站点默认排序切换。" : "来源：Resident 显式关闭；不会自动切换账号。")
+                : ["member", "router", "steward"].includes(familyRole)
+                  ? "来源：继承 Family 开关；开启时先选同种类账号，再按 Family 排序。"
+                  : "来源：沿用既有账号选择策略。";
+              const note = document.createElement("p"); note.className = "paneNote";
+              note.dataset.menuQuotaSource = "1";
+              note.textContent = window.PortalI18n.t(source); root.append(note);
             }
             if (focus) root.querySelector(`[data-menu-runtime="${CSS.escape(focus)}"]`)?.focus();
           },

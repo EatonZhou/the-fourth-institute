@@ -433,7 +433,7 @@
         <section class="functionBlockSource"><div><h3>来源模板</h3><p>${esc(functionBlockSourceTitle(block))}</p></div>${block.template_id ? '<button class="portalButton is-quiet" type="button" data-function-block-source>查看来源模板</button>' : ""}</section>
         ${functionBlockInsideResidentsHtml(block)}
         ${roles ? window.PortalI18n.html`<div class="familyAutoMigrateSetting"><span>当前 AI 后端额度不足时自动转到别的后端</span><button class="portalButton residentMenuToggle" type="button" role="switch" aria-label="额度不足时自动转组" aria-checked="${autoMigrate}" data-family-auto-migrate${readonly ? " disabled" : ""}></button></div>` : ""}
-        ${roles ? window.PortalI18n.html`<p class="paneNote">Family 默认策略；成员明确设置的开关优先。未自定义排序时使用站点“默认帐号选择排序”。</p><div data-family-priority></div>` : ""}
+        ${roles ? window.PortalI18n.html`<p class="paneNote">Family 默认开关仅在成员未显式设置时生效；成员显式开启时按站点默认排序切换。</p><div data-family-priority></div>` : ""}
         ${functionBlockOverviewWorkflowHtml(block, readonly, taskDrafts, expandedTasks)}
         <div class="functionBlockInstanceActions">
           <button class="portalButton" type="button" data-function-block-save-template${readonly ? " disabled" : ""}>存为模板</button>
