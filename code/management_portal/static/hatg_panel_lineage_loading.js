@@ -11,7 +11,7 @@
   const DEPENDENCIES = Object.freeze([
     "$id", "activateLineageEdits", "bindLineageProjectionSubscription", "bindResidentStateCollection",
     "clearGraphNodeSearch", "clearNodeSelection", "displayProgramComponentById",
-    "displayProgramWireById", "functionBlockInstanceById", "lineageEditQueue", "loadHatgViewPreference",
+    "displayProgramWireById", "functionBlockInstanceById", "lineageEditQueue", "loadHatgViewPreference", "loadWorkspaceGraphBindings",
     "nodeResidentId", "panelHost", "programFeature", "publishLocation", "renderControls",
     "renderLineageProjectOptions", "renderLineageSurface", "renderNodeProviderFields", "selectNode",
     "selectProgramObject", "setSyncStatus", "setWorkspaceViewLoading", "societyService", "state",
@@ -24,7 +24,7 @@
     const {
       $id, activateLineageEdits, bindLineageProjectionSubscription, bindResidentStateCollection,
       clearGraphNodeSearch, clearNodeSelection, displayProgramComponentById, displayProgramWireById,
-      functionBlockInstanceById, lineageEditQueue, loadHatgViewPreference, nodeResidentId, panelHost,
+      functionBlockInstanceById, lineageEditQueue, loadHatgViewPreference, loadWorkspaceGraphBindings, nodeResidentId, panelHost,
       programFeature, publishLocation, renderControls, renderLineageProjectOptions,
       renderLineageSurface, renderNodeProviderFields, selectNode, selectProgramObject, setSyncStatus,
       setWorkspaceViewLoading, societyService, state, toast, updateLineageSummary,
@@ -83,7 +83,7 @@
       activateLineageEdits();
       state.graphFocusMode = false;
       state.graphRelationFilter = "all";
-      state.graphViewMode = new URLSearchParams(location.search).get("view") === "frontier" ? "frontier" : "context";
+      state.graphViewMode = window.PortalHatgPanelState.viewModeFromLocation();
       state.selectedEdgeId = "";
       state.selectedProgramObjectId = "";
       programFeature.clearForLineageChange();
@@ -185,6 +185,30 @@
         state.globalStopInFlight = false;
         state.nodeStopInFlight = new Set();
         state.selectedSeedId = "";
+        // A restored Workspace view needs the same Binding read as an explicit
+        // tab switch. Do not render it as an empty graph while that read waits.
+        if (state.graphViewMode === "workspace") {
+          const viewSequence = state.graphViewRequestSeq;
+          setWorkspaceViewLoading(true);
+          try {
+            const result = await loadWorkspaceGraphBindings(lineage, { render: false, fit: false });
+            if (sequence !== state.detailSeq) return;
+            if (viewSequence === state.graphViewRequestSeq && !result?.complete) {
+              state.graphViewMode = "context";
+              toast(window.PortalI18n.t("Workspace 视图暂未恢复：节点 Binding 尚未完整到齐，请重试。"), "error", 5600);
+            }
+          } catch (error) {
+            if (sequence !== state.detailSeq) return;
+            if (viewSequence === state.graphViewRequestSeq) {
+              state.graphViewMode = "context";
+              toast(window.PortalI18n.text`Workspace 视图加载失败：${error.message || error}`, "error", 5600);
+            }
+          } finally {
+            if (sequence === state.detailSeq && viewSequence === state.graphViewRequestSeq) {
+              setWorkspaceViewLoading(false);
+            }
+          }
+        }
         const requestedProgramExists = Boolean(
           requestedProgramItemId
           && (

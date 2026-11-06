@@ -467,7 +467,7 @@
   } = hatgModule("PortalHatgPanelLineageLoading").createLineageLoading({
     $id, activateLineageEdits, bindLineageProjectionSubscription, bindResidentStateCollection,
     clearGraphNodeSearch, clearNodeSelection, displayProgramComponentById, displayProgramWireById,
-    functionBlockInstanceById, lineageEditQueue, loadHatgViewPreference, nodeResidentId, panelHost,
+    functionBlockInstanceById, lineageEditQueue, loadHatgViewPreference, loadWorkspaceGraphBindings, nodeResidentId, panelHost,
     programFeature, publishLocation, renderControls, renderLineageProjectOptions, renderLineageSurface,
     renderNodeProviderFields, selectNode, selectProgramObject, setSyncStatus, setWorkspaceViewLoading,
     societyService, state, toast, updateLineageSummary,

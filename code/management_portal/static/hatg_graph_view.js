@@ -788,7 +788,7 @@
       state.graphViewMode = next;
       if (/^\/lineage\/?$/.test(location.pathname)) {
         const url = new URL(location.href);
-        if (next === 'frontier') url.searchParams.set('view', 'frontier');
+        if (next !== 'context') url.searchParams.set('view', next);
         else url.searchParams.delete('view');
         history.replaceState(history.state, '', url);
       }

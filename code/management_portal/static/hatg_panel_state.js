@@ -3,6 +3,12 @@
 
   if (window.PortalHatgPanelState) return;
 
+  function viewModeFromLocation() {
+    if (!/^\/lineage\/?$/.test(window.location?.pathname || "")) return "context";
+    const mode = new URLSearchParams(window.location.search).get("view");
+    return ["workspace", "frontier"].includes(mode) ? mode : "context";
+  }
+
   function createState() {
     const featureFactory = window.PortalHatgPanelFeatures;
     if (!featureFactory) throw new Error("PortalHatgPanelFeatures is not loaded.");
@@ -74,7 +80,7 @@
     editingRoleTemplateScope: "",
     roleNodeActionsInFlight: new Set(),
     nodeIntakeActionsInFlight: new Set(),
-    graphViewMode: "context",
+    graphViewMode: viewModeFromLocation(),
     graphViewRequestSeq: 0,
     workspaceViewLoading: false,
     selectedWorkspaceId: "",
@@ -107,5 +113,5 @@
     return featureFactory.attachAliases(state, features);
   }
 
-  window.PortalHatgPanelState = Object.freeze({ createState });
+  window.PortalHatgPanelState = Object.freeze({ createState, viewModeFromLocation });
 })();

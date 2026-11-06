@@ -12,3 +12,10 @@ def test_workspace_result_paths_and_reads():
     script = Path(__file__).with_name('javascript') / 'hatg_workspace_results.cjs'
     result = subprocess.run(['node', '--test', str(script)], capture_output=True, text=True, timeout=30)
     assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_workspace_view_refresh_restores_bindings():
+    """Workspace 刷新保留视图并读取 Binding，加载失败及中途切换不覆盖新视图"""
+    script = Path(__file__).with_name('javascript') / 'hatg_view_restore.cjs'
+    result = subprocess.run(['node', '--test', str(script)], capture_output=True, text=True, timeout=30)
+    assert result.returncode == 0, result.stdout + result.stderr
