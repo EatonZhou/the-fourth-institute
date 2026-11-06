@@ -25,3 +25,11 @@ def test_explanation_manifest_visual_preview():
         capture_output=True, text=True, timeout=40,
     )
     assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_report_wheel_scroll_in_file_preview():
+    result = subprocess.run(
+        ['node', str(Path(__file__).with_name('javascript') / 'report_preview.browser.cjs'), '--scroll-only'],
+        capture_output=True, text=True, timeout=40,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr

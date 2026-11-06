@@ -5,7 +5,8 @@
   min-width: 0;
   height: 100%;
   overflow: auto;
-  overscroll-behavior: contain;
+  /* A flow-sized explanation delegates scrolling to its enclosing Preview. */
+  overscroll-behavior: auto;
   color: var(--text, #192234);
   background: var(--panel, #fff);
   padding: clamp(16px, 2.4vw, 28px);
