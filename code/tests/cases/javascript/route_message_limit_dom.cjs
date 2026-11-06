@@ -53,6 +53,7 @@ function serverBoundary() {
       assert.equal(body.arguments.wire_id, WIRE);
       const expected = [0, 5, null][control.saves++];
       assert.equal(body.arguments.changes.config.max_messages, expected, 'save transmits zero, finite limit, then explicit null');
+      assert.equal(body.arguments.changes.config.unavailable_policy, 'queue', 'saving a wire with no authored policy persists the queue default');
       assert.equal(body.expected_version, 3, 'definition save retains its revision');
       Object.assign(server.program.wires[0], plain(body.arguments.changes));
       const projections = [
@@ -127,6 +128,7 @@ async function documentFixture(boundary, transform = (_name, source) => source) 
     const api = {
       state: runtime.state, activateLineageEdits: runtime.get('activateLineageEdits'),
       renderProgramInspector: runtime.get('renderProgramInspector'),
+      graphVisibleModel: runtime.get('graphVisibleModel'),
       load: id => runtime.get('societyService').loadLineage(id),
     };
     // New document always reads the persisted fixture through production clients.
@@ -158,6 +160,33 @@ async function contract(transform) {
       && boundary.server.program.wires[0].config.max_messages === expected, 'saved configured limit');
   };
   try {
+    const fields = h.window.PortalLineageElementFields;
+    const program = h.window.PortalLineageProgram;
+    assert.equal(q('[name="unavailable_policy"]').value, 'queue', 'missing policy defaults to queue in the real inspector');
+    assert.equal(q('[name="unavailable_policy"] option[value="queue"]').textContent, '按顺序排队（默认）');
+    assert.equal(q('[name="unavailable_policy"] option[value="drop"]').textContent, '直接丢弃');
+    assert.equal(q('[data-event-queue-limit]').hidden, false, 'default queue limit is visible');
+    assert.equal(q('[name="queue_limit"]').value, '10');
+    assert.equal(q('[name="expires_after_seconds"]').value, '0');
+    assert.equal(fields.deliveryConfigFromFields(h.window.document.createElement('div')).unavailable_policy, 'queue', 'absent form control uses the same default');
+    for (const policy of [undefined, 'drop', 'latest', 'queue']) {
+      const config = policy === undefined ? {} : { unavailable_policy: policy };
+      const root = h.window.document.createElement('div');
+      root.innerHTML = fields.deliveryFieldsHtml({ config }, false);
+      fields.syncDeliveryFields(root);
+      const expected = policy || 'queue';
+      assert.equal(root.querySelector('[name="unavailable_policy"]').value, expected);
+      assert.equal(fields.deliveryConfigFromFields(root).unavailable_policy, expected, 'explicit choices survive form round trip');
+      assert.equal(root.querySelector('[data-event-queue-limit]').hidden, expected !== 'queue');
+      const authored = plain(boundary.server.program);
+      authored.wires[0].config = config;
+      assert.equal(program.normalizeProgram(authored).wires[0].config.unavailable_policy, expected, 'normalization preserves explicit choices');
+      h.api.state.lineage = { ...h.api.state.lineage, program: authored, program_invoke_wire_runtime: {} };
+      assert.equal(h.api.graphVisibleModel().edges.find(edge => edge.id === WIRE).event_unavailable_policy, expected, 'graph displays the same policy');
+    }
+    h.api.state.lineage = { ...h.api.state.lineage, program_invoke_wire_runtime: { [WIRE]: { unavailable_policy: 'latest' } } };
+    assert.equal(h.api.graphVisibleModel().edges.find(edge => edge.id === WIRE).event_unavailable_policy, 'latest', 'runtime explicit policy takes precedence');
+    h.api.state.lineage = await h.api.load(LINEAGE);
     assert.ok(input() instanceof h.window.HTMLInputElement);
     assert.equal(input().value, '');
     assert.equal(input().placeholder, '无限次');

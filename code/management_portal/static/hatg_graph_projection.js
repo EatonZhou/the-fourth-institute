@@ -159,7 +159,7 @@
           event_unavailable_policy: String(
             runtime.unavailable_policy
             || edge.config?.unavailable_policy
-            || "drop",
+            || "queue",
           ),
           event_queue_limit: Number(
             runtime.queue_limit || edge.config?.queue_limit || 10,

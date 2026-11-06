@@ -1691,13 +1691,15 @@ def test_event_wire_and_effect_envelope_opt_out_round_trip_through_program() -> 
     assert "include_envelope" not in components["effect_compatible_default"]
     assert wires["wire_plain_event_effect"]["config"] == {
         "include_envelope": False,
-        "unavailable_policy": "drop",
+        "unavailable_policy": "queue",
+        "queue_limit": 10,
         "expires_after_seconds": 0,
     }
     assert deliver_script_parts(components["effect_plain"]["config"]["script"])[1] == "Effect default task."
     assert "config" not in wires["wire_plain_effect_target"]
     assert wires["wire_default_event_effect"]["config"] == {
-        "unavailable_policy": "drop",
+        "unavailable_policy": "queue",
+        "queue_limit": 10,
         "expires_after_seconds": 0,
     }
     assert "config" not in wires["wire_default_effect_target"]
@@ -1705,7 +1707,8 @@ def test_event_wire_and_effect_envelope_opt_out_round_trip_through_program() -> 
         "subscriber_routes"
     ][0]["config"] == {
         "include_envelope": False,
-        "unavailable_policy": "drop",
+        "unavailable_policy": "queue",
+        "queue_limit": 10,
         "expires_after_seconds": 0,
     }
     assert deliver_script_parts(plan["effects"]["effect_plain"]["script"])[1] == "Effect default task."

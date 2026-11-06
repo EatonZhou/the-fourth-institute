@@ -14,6 +14,7 @@ from .lineage_program_occurrences import _subscriber_cursor, _subscriber_occurre
 from .lineage_program_runtime import (
     MAX_EVENT_CURSORS, _iso_now, _item_id, _normalize_pending_delivery, _utc_now,
 )
+from .lineage_program_vocabulary import DEFAULT_EVENT_UNAVAILABLE_POLICY
 
 
 MAX_PENDING_EVENTS_PER_WIRE = 100
@@ -161,7 +162,7 @@ def defer_event_for_wire(
         subscriber_id or clean_wire_id,
         field="event subscriber",
     )
-    clean_policy = str(policy or "").strip().lower() or "drop"
+    clean_policy = str(policy or "").strip().lower() or DEFAULT_EVENT_UNAVAILABLE_POLICY
     if clean_policy not in {"drop", "latest", "queue"}:
         raise ValueError("event unavailable policy is invalid")
     clean_event = deepcopy(event) if isinstance(event, dict) else {}
@@ -642,7 +643,7 @@ def event_wire_runtime_view(
         ]
         result[wire_id] = {
             "unavailable_policy": str(
-                config.get("unavailable_policy") or "drop"
+                config.get("unavailable_policy") or DEFAULT_EVENT_UNAVAILABLE_POLICY
             ),
             "queue_limit": int(config.get("queue_limit") or 10),
             "expires_after_seconds": int(

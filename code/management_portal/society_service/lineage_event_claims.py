@@ -94,19 +94,13 @@ def defer_program_event_route(
     """Apply the wire's unavailable policy to one Event occurrence."""
     config = route.get("config") if isinstance(route.get("config"), dict) else {}
     wire_id = str(route.get("wire_id") or "")
-    # Someone asked for a manual run on purpose: while the target is busy it
-    # waits for its turn instead of being dropped without a trace.
-    default_policy = (
-        "queue" if event.type == "manual.triggered"
-        else lineage_program_vocabulary.DEFAULT_EVENT_UNAVAILABLE_POLICY
-    )
     result = lineage_program_wire_queue.defer_event_for_wire(
         lineage_id,
         event_source_id,
         wire_id,
         cursor,
         event.to_dict(),
-        policy=str(config.get("unavailable_policy") or default_policy),
+        policy=str(config.get("unavailable_policy") or lineage_program_vocabulary.DEFAULT_EVENT_UNAVAILABLE_POLICY),
         queue_limit=int(
             config.get("queue_limit") or lineage_program_vocabulary.DEFAULT_EVENT_QUEUE_LIMIT
         ),

@@ -620,11 +620,11 @@
     const type = text(source.kind, "unknown");
     const authoredUnavailablePolicy = text(
       sourceConfig.unavailable_policy,
-      "drop",
+      "queue",
     );
     const unavailablePolicy = ["drop", "latest", "queue"].includes(
       authoredUnavailablePolicy,
-    ) ? authoredUnavailablePolicy : "drop";
+    ) ? authoredUnavailablePolicy : "queue";
     const deliveryConfig = ["route"].includes(type)
       ? {
           include_envelope: sourceConfig.include_envelope !== false,

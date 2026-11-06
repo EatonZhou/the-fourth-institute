@@ -269,7 +269,8 @@ def test_normalize_program_preserves_one_event_fanout_and_exact_effect_target_co
             wires["wire_event_role_b"]["target"],
         } == {ROLE_A, ROLE_B}
         assert wires["wire_event_role_a"]["config"] == {
-            "unavailable_policy": "drop",
+            "unavailable_policy": "queue",
+            "queue_limit": 10,
             "expires_after_seconds": 0,
         }
         assert wires["wire_effect_target"] == {

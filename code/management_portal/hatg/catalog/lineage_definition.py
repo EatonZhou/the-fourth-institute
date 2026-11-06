@@ -75,7 +75,7 @@ DECLARATIONS = (
         R("target", description="激活的接收节点或绑定对象 ID；watch 可观察 Resident、组件、投递连线、工作区交接"),
         P("target_port", description="仅 route 使用：invoke 或 Loop.done；watch/target 直接绑定对象，省略此字段"),
         R("kind", description="route 激活连线；target 绑定 Effect 端点；watch 观察对象", enum=WIRE_KINDS),
-        P("config", "object", "参数映射、include_envelope（默认 true）与忙碌策略（drop、latest、queue）；指向 Invoke 端口的连线写明任务"),
+        P("config", "object", "参数映射、include_envelope（默认 true）与无法立即投递时的策略（queue 默认按顺序排队、latest 仅保留最新、drop 丢弃）；指向 Invoke 端口的连线写明任务"),
         P("label", description="连线上显示的名称"),
         P("client_key", description="调用者的审计标记，不代替连线 ID"),
     ), (R("wire_id", description="新连线的 ID"),
