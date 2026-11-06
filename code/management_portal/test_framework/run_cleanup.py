@@ -30,7 +30,14 @@ def finish_run(run_id):
         return _finish_run(store, run_id)
 
 
-def _finish_run(store, run_id):
+def finish_closing_scopes(run_id):
+    """Retry closed cases without terminating other cases of a live Campaign."""
+    store = LifecycleStore()
+    with store.db.advisory_lock(store.lock_key('finish-run:' + run_id)):
+        return _finish_run(store, run_id, finalize_run=False)
+
+
+def _finish_run(store, run_id, *, finalize_run=True):
     from .tau_fixtures import _release_resource, resource_release_order
     from management_common.directory_retention import RetentionStore
     from management_portal.resources.creation import finish_scope_creations
@@ -51,6 +58,8 @@ def _finish_run(store, run_id):
         return failures
 
     for scope in store.for_run(run_id):
+        if not finalize_run and scope['state'] != 'closing':
+            continue
         store.request_close(scope['id'])
         # Stop owned work before asking for the exclusive seal. Otherwise a
         # long-running child can hold its allocation lease forever while cleanup
@@ -76,12 +85,13 @@ def _finish_run(store, run_id):
     retention = RetentionStore()
     generated = 0
     if not errors and not creation_errors:
-        generated = retention.release_run(run_id)
-        retention.finish(run_id)
+        if finalize_run:
+            generated = retention.release_run(run_id)
+            retention.finish(run_id)
         for scope_id in completed_scopes:
             store.complete(scope_id)
     # Immediate temporary-file cleanup; other categories keep their deadlines.
-    temporary = retention.sweep(owner_id=run_id, categories=['runtime_tmp'])
+    temporary = retention.sweep(owner_id=run_id, categories=['runtime_tmp']) if finalize_run else {'queued': 0}
     outcomes = retention.queue.run_pending() if temporary['queued'] or released or generated else []
     return {'status': 'error' if errors else ('incomplete' if creation_errors else 'complete'),
             'resources': released, 'errors': errors + creation_errors,

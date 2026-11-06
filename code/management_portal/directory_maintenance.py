@@ -32,7 +32,7 @@ def run(*, now=None, test_roots=None):
     from management_portal.test_framework.records import RunRecords, RunCoordinator, TERMINAL
     from management_portal.society_service.script_runs import store as scripts
     from management_common.resource_lifecycle import LifecycleStore
-    from management_portal.test_framework.run_cleanup import finish_run
+    from management_portal.test_framework.run_cleanup import finish_closing_scopes
     retention = RetentionStore()
     report = {'tests': [], 'scripts': [], 'errors': []}
     from management_common.file_retention import recover_temporary_directories
@@ -84,7 +84,7 @@ def run(*, now=None, test_roots=None):
     # Allocation cleanup survives the seven-day evidence limit independently.
     for run_id in LifecycleStore().closing_runs():
         try:
-            outcome = finish_run(run_id)
+            outcome = finish_closing_scopes(run_id)
             report['errors'].extend(outcome['errors'])
         except Exception as error:
             report['errors'].append(f'{run_id}: {error}')
