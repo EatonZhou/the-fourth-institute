@@ -22,10 +22,8 @@ def resource_creation(lineage_id, resource_id, actor, *, cancel=False, originati
         if intent.request.get('payload', {}).get('lineage_id') != lineage_id:
             raise PermissionError('Creation does not belong to the authorized parent Lineage')
         def validate(row, connection):
-            if row['payload'] != intent.request:
-                raise ValueError('Creation journal does not match frozen allocation')
-            if intent.snapshot.get('completed') or resident_record_domain.find_resident(resource_id) is not None:
-                raise ValueError('Creation was registered or recovered')
+            from .resident_creation_recovery import validate_unregistered_creation
+            validate_unregistered_creation(intent, resource_id, row)
         if cancel:
             return cancel_resource_creation(resource_id, validate=validate,
                 record_cancellation=lambda row, conn: record_intent_cancellation(intent, actor, conn),

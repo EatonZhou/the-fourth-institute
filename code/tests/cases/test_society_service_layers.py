@@ -102,7 +102,7 @@ LAYERS = (
     family_activity family_continuation family_facade family_familize family_owners family_tasks message_quotes outward_messages
     personal_history resident_access resident_execution_gate resident_execution_work
     resident_fork_inheritance resident_held_infos resident_input_checkpoints resident_lineage
-    resident_mailbox resident_record_domain resident_unread resident_user_authorization resident_work_origin
+    resident_creation_recovery resident_mailbox resident_record_domain resident_unread resident_user_authorization resident_work_origin
     """,
     # Program execution and the definition rules it checks.
     """

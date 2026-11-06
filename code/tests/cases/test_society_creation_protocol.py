@@ -43,6 +43,180 @@ def test_member_creation_refuses_existing_user_directory(future_creation_store, 
 
 
 @pytest.mark.parametrize('member', [False, True])
+def test_terminal_member_cas_failure_cancels_creation(future_creation_store, monkeypatch, member):
+    from management_portal.hatg.contracts import InstructionError
+    from management_portal.resources.creation import get_resource_creation
+    from management_common.portal_database import portal_database
+    from management_portal.resources.workspace_store import get_workspace_store
+    parent = resident_domain.register_resident(_new_session_payload('Parent'), 'sample_admin')
+    attempted = []
+    original = resident_record_domain.save_resident_record
+    def conflict(record, *args, **kwargs):
+        attempted.append(dict(record))
+        original(record, *args, **kwargs)
+        raise InstructionError('instruction.conflict', 'Lineage changed',
+            details={'object_id': parent['lineage_id'], 'expected_version': 1, 'current_version': 2})
+    def create():
+        if member:
+            return lineage_resident_nodes.create_lineage_resident(parent['lineage_id'],
+                _new_session_payload('Failed member'), 'sample_admin')
+        return resident_domain.register_resident(_new_session_payload('Failed root'), 'sample_admin')
+    with creation_operation('terminal-member-cas'):
+        with monkeypatch.context() as patch:
+            patch.setattr(resident_record_domain, 'save_resident_record', conflict)
+            with pytest.raises(InstructionError, match='Lineage changed'):
+                create()
+        record = attempted[0]
+        row = get_resource_creation(record['resident_id'])
+        assert row['aborted'] and row['cleanup_complete']
+        assert not resident_record_domain.resident_folder_path(record).exists()
+        assert resident_record_domain.find_resident(record['resident_id']) is None
+        assert not get_workspace_store().rows([record['owned_workspace_id']])
+        with portal_database(schema='directory_lifecycle').read() as conn:
+            assert not conn.execute('SELECT 1 FROM path_reservations WHERE operation_id=%s',
+                                    (row['operation_id'],)).fetchone()
+        with pytest.raises(ValueError, match='cancelled'):
+            create()
+
+
+@pytest.mark.parametrize('commit_state,retryable', [('unknown', False), ('not_committed', True)])
+def test_nonterminal_member_failure_remains_recoverable(future_creation_store, monkeypatch, commit_state, retryable):
+    from management_portal.hatg.contracts import InstructionError
+    from management_portal.resources.creation import get_resource_creation
+    parent = resident_domain.register_resident(_new_session_payload('Parent'), 'sample_admin')
+    attempted = []
+    def fail(record, *args, **kwargs):
+        attempted.append(dict(record))
+        raise InstructionError('instruction.failed', 'Recoverable failure',
+                               commit_state=commit_state, retryable=retryable)
+    with creation_operation('recoverable-member-failure'):
+        with monkeypatch.context() as patch:
+            patch.setattr(resident_registration_domain, '_commit_registration', fail)
+            with pytest.raises(InstructionError):
+                lineage_resident_nodes.create_lineage_resident(parent['lineage_id'],
+                    _new_session_payload('Recover member'), 'sample_admin')
+        record = attempted[0]
+        assert not get_resource_creation(record['resident_id'])['aborted']
+        assert resident_record_domain.resident_folder_path(record).exists()
+        recovered = lineage_resident_nodes.create_lineage_resident(parent['lineage_id'],
+            _new_session_payload('Recover member'), 'sample_admin')['resident']
+        assert recovered['resident_id'] == record['resident_id']
+
+
+def test_terminal_creation_cleanup_failure_is_durable(future_creation_store, monkeypatch):
+    from management_portal.hatg.contracts import InstructionError
+    from management_portal.resources import creation
+    parent = resident_domain.register_resident(_new_session_payload('Parent'), 'sample_admin')
+    attempted = []
+    def conflict(record, *args, **kwargs):
+        attempted.append(dict(record))
+        raise InstructionError('instruction.conflict', 'Lineage changed')
+    with monkeypatch.context() as patch:
+        patch.setattr(resident_registration_domain, '_commit_registration', conflict)
+        patch.setattr(creation, '_remove_owned', lambda *args: (_ for _ in ()).throw(OSError('busy file')))
+        with pytest.raises(InstructionError) as caught:
+            lineage_resident_nodes.create_lineage_resident(parent['lineage_id'],
+                _new_session_payload('Pending cleanup'), 'sample_admin')
+    record = attempted[0]
+    row = creation.get_resource_creation(record['resident_id'])
+    assert row['aborted'] and not row['cleanup_complete']
+    assert caught.value.details['creation_cleanup']['cancelled']
+    assert 'busy file' in str(caught.value.details['creation_cleanup']['errors'])
+    assert creation.finish_deleted_creations() == []
+    assert creation.get_resource_creation(record['resident_id'])['cleanup_complete']
+    assert not resident_record_domain.resident_folder_path(record).exists()
+
+
+@pytest.mark.parametrize('member', [False, True])
+def test_plain_business_failure_cancels_published_directory(future_creation_store, monkeypatch, member):
+    from management_portal.resources.creation import get_resource_creation
+    parent = resident_domain.register_resident(_new_session_payload('Parent'), 'sample_admin')
+    identity = 'resident_0123456789ab'
+    monkeypatch.setattr(resident_registration_domain, 'unique_resident_id', lambda: identity)
+    payload = {**_new_session_payload('Invalid fork'), 'initialize_from_source': True}
+    with pytest.raises(ValueError, match='requires source_resident_id'):
+        if member:
+            lineage_resident_nodes.create_lineage_resident(parent['lineage_id'], payload, 'sample_admin')
+        else:
+            resident_domain.register_resident(payload, 'sample_admin')
+    row = get_resource_creation(identity)
+    assert row['aborted'] and row['cleanup_complete']
+    from management_common.directory_paths import cleanup_path
+    assert all(not cleanup_path(a['path']).exists() for a in row['artifacts'])
+
+
+@pytest.mark.parametrize('explicit_key', [False, True, 'retry'])
+def test_outbox_recovers_failure_before_cancellation_is_persisted(future_creation_store, monkeypatch, explicit_key):
+    from management_portal.hatg.contracts import InstructionCall, InstructionContext, InstructionError
+    from management_portal.society_service.isa import build_kernel
+    from management_portal.society_service.creation_intents import CreationIntent, resident_creation_intent
+    from management_portal.resources.creation import get_resource_creation
+    from management_portal.society_service.resident_lifecycle_steps_domain import apply_resident_lifecycle_step
+    parent = resident_domain.register_resident(_new_session_payload('Parent'), 'sample_admin')
+    attempted = []
+    def conflict(record, *args, **kwargs):
+        attempted.append(dict(record))
+        raise InstructionError('instruction.conflict', 'Lineage changed')
+    save = CreationIntent.save
+    def unavailable(intent):
+        if intent.snapshot.get('cancellation_requested'):
+            raise RuntimeError('database unavailable before cancellation')
+        return save(intent)
+    kernel = build_kernel()
+    kernel.binding.handlers['CreateComponent'] = lambda inv: lineage_resident_nodes.create_lineage_resident(
+        parent['lineage_id'], {**_new_session_payload('Failed via kernel'),
+                              **({'creation_key': 'fixed-request'} if explicit_key else {})}, inv.caller)
+    call = InstructionCall('CreateComponent', {
+        'lineage_id': parent['lineage_id'], 'kind': 'seed', 'title': 'Pending'})
+    context = InstructionContext(caller='sample_admin', entry='web')
+    if explicit_key == 'retry':
+        def retryable(*args, **kwargs):
+            raise InstructionError('instruction.conflict', 'Retry original allocation', retryable=True)
+        with monkeypatch.context() as patch:
+            patch.setattr(resident_registration_domain, '_commit_registration', retryable)
+            prior = kernel.execute(call, context)
+        assert prior.status == 'failed' and prior.error['retryable']
+    with monkeypatch.context() as patch:
+        patch.setattr(resident_registration_domain, '_commit_registration', conflict)
+        patch.setattr(CreationIntent, 'save', unavailable)
+        result = kernel.execute(call, context)
+    assert result.status == 'failed' and result.error['code'] == 'instruction.conflict', result.error
+    record = attempted[0]
+    assert not get_resource_creation(record['resident_id'])['aborted']
+    with resident_creation_intent(record['resident_id']) as intent:
+        assert not intent.snapshot.get('cancellation_requested')
+        key = intent.key
+    # Re-enter only the durable lifecycle owner, using the kernel's real receipt.
+    resident_record_domain.lifecycle_operations().run(key, apply_resident_lifecycle_step)
+    row = get_resource_creation(record['resident_id'])
+    assert row['aborted'] and row['cleanup_complete']
+    assert not resident_record_domain.resident_folder_path(record).exists()
+    assert not resident_record_domain.lifecycle_operations().pending(record['resident_id'])
+
+
+def test_terminal_failure_after_intent_completion_uses_rollback_snapshot(future_creation_store, monkeypatch):
+    from management_portal.hatg.contracts import InstructionError
+    from management_portal.society_service.creation_intents import CreationIntent, resident_creation_intent
+    from management_portal.resources.creation import get_resource_creation
+    parent = resident_domain.register_resident(_new_session_payload('Parent'), 'sample_admin')
+    identity = 'resident_0123456789ab'
+    monkeypatch.setattr(resident_registration_domain, 'unique_resident_id', lambda: identity)
+    complete = CreationIntent.complete
+    def fail_after_completion(intent, connection):
+        complete(intent, connection)
+        raise InstructionError('instruction.conflict', 'Failure before commit')
+    monkeypatch.setattr(CreationIntent, 'complete', fail_after_completion)
+    with pytest.raises(InstructionError):
+        lineage_resident_nodes.create_lineage_resident(parent['lineage_id'],
+            _new_session_payload('Rolled back'), 'sample_admin')
+    row = get_resource_creation(identity)
+    assert row['aborted'] and row['cleanup_complete'] and not row['completed']
+    with resident_creation_intent(identity) as intent:
+        assert not intent.snapshot.get('completed')
+        assert intent.snapshot['cancellation']
+
+
+@pytest.mark.parametrize('member', [False, True])
 def test_resident_recovers_published_files_after_transaction_failure(future_creation_store, monkeypatch, member):
     from management_portal.society_service import resident_catalog, state_store, lineage_aggregate
     from management_common.resource_lifecycle import LifecycleStore, lifecycle_scope

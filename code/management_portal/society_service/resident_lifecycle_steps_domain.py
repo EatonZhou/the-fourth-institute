@@ -165,6 +165,8 @@ def _compensate_resident_registration(operation_id: str, step: dict[str, Any]) -
     # A registration-abort path is not proof of filesystem ownership, even
     # for preparations written before Creation. Leave it untouched. Creation
     # retains the inode evidence and exclusively owns staged-file recovery.
+    from .resident_creation_recovery import recover_registration
+    recover_registration(step)
 
 
 def resident_execution_session_key(record: dict[str, Any]) -> str:

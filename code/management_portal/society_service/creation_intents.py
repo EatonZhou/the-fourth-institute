@@ -42,7 +42,10 @@ class CreationIntent:
         from management_common.portal_database import portal_database
         self.db = portal_database(schema='directory_lifecycle')
         self.table = f'"{self.db.schema}".society_creation_intents'
-        self.key = kind + ':' + hashlib.sha256((actor + '\0' + operation_identity(operation_id)).encode()).hexdigest()
+        invocation_operation = operation_identity()
+        self.source_operation_id = operation_id or invocation_operation
+        self.instruction_id = invocation_operation if invocation_operation.startswith('inst_') else ''
+        self.key = kind + ':' + hashlib.sha256((actor + '\0' + self.source_operation_id).encode()).hexdigest()
         self.request = request
         with self.db.read() as conn:
             ready = conn.execute("SELECT to_regclass('society_creation_intents')").fetchone()[0]
@@ -59,7 +62,7 @@ class CreationIntent:
                 if row['request'] != self.request:
                     raise ValueError('Creation operation ID was already used with different arguments')
                 self.snapshot = row['snapshot']
-                if self.snapshot.get('cancellation'):
+                if self.snapshot.get('cancellation') or self.snapshot.get('cancellation_requested'):
                     raise ValueError('Creation operation was cancelled')
                 if not self.snapshot.get('completed') and row['scope_id'] != current_lifecycle():
                     raise ValueError('Unfinished creation belongs to another resource lifecycle')
@@ -72,6 +75,15 @@ class CreationIntent:
 
     def save(self):
         self.db.write(self._save_open)
+
+    def refresh(self):
+        """Discard in-memory completion from a rolled-back registration transaction."""
+        with self.db.read() as connection:
+            row = connection.execute(f'SELECT snapshot FROM {self.table} WHERE operation_id=%s',
+                                     (self.key,)).fetchone()
+        if row is None:
+            raise KeyError(self.key)
+        self.snapshot = row['snapshot']
 
     def _save_open(self, connection):
         cursor = connection.execute(

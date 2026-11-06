@@ -687,6 +687,7 @@ modules:
       - "management_portal/society_service/resident_user_authorization.py"
       - "management_portal/society_service/resident_record_domain.py"
       - "management_portal/society_service/resident_registration_domain.py"
+      - "management_portal/society_service/resident_creation_recovery.py"
       - "management_portal/society_service/resident_released_executions.py"
       - "management_portal/society_service/resident_resource_changes.py"
       - "management_portal/society_service/resident_restart_domain.py"

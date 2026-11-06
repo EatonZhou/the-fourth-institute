@@ -369,7 +369,7 @@ def test_registration_failure_rolls_back_graph_and_identity(future_creation_stor
 
 
 def test_failed_registration_keeps_staging_evidence_and_existing_member(future_creation_store, monkeypatch):
-    """成员准备失败保留 staging 证据；生命周期补偿不触碰目录。"""
+    """结果未知时保留 staging 证据及其生命周期 owner，不触碰已有成员。"""
     monkeypatch.setattr(project_folders, "project_root_for_id", lambda _: future_creation_store)
     parent = resident_domain.register_resident(_new_session_payload("Kept parent"), "sample_admin")
     parent_folder = resident_record_domain.resident_folder_path(parent)
@@ -393,7 +393,8 @@ def test_failed_registration_keeps_staging_evidence_and_existing_member(future_c
     operations = resident_record_domain.lifecycle_operations()
     keys = operations.ready()
     assert len(keys) == 1
-    assert operations.run(keys[0], resident_lifecycle_steps_domain.apply_resident_lifecycle_step)
+    assert not operations.run(keys[0], resident_lifecycle_steps_domain.apply_resident_lifecycle_step)
+    assert operations.health()['pending'] == 1
     assert created[0].exists()
     assert not list(created[0].parent.glob('.aborted-*'))
     assert (created[0] / "partial.txt").read_text(encoding="utf-8") == "partial preparation"

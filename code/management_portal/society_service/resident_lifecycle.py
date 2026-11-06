@@ -84,6 +84,28 @@ class ResidentLifecycleOperations:
                 self._insert(operation_id, resident_id, rollback_steps(operation_id))
             yield operation_id
 
+    def record_creation_attempt(self, operation_id: str, *, request_id: str, instruction_id: str) -> None:
+        """Associate this attempt with the frozen allocation before initialization.
+
+        An explicit creation key may be retried by a different HATG instruction.
+        Keep Provider compensation evidence while replacing only that association.
+        The caller holds this operation's preparation lease.
+        """
+        def record(connection):
+            row = connection.execute('SELECT payload_json FROM resident_lifecycle_operations '
+                                     'WHERE operation_id=%s FOR UPDATE', (operation_id,)).fetchone()
+            if row is None:
+                raise RuntimeError('Registration preparation no longer exists')
+            payload = json_value(row['payload_json'])
+            if payload['next_step'] != 0 or payload['steps'][0]['kind'] != 'registration_abort':
+                raise ValueError('Registration preparation already consumed')
+            payload['steps'][0].update(creation_operation_id=operation_id,
+                                      creation_request_id=request_id, creation_instruction_id=instruction_id)
+            connection.execute('UPDATE resident_lifecycle_operations SET payload_json=%s, '
+                               "available_at=clock_timestamp(),last_error='' WHERE operation_id=%s",
+                               (json_text(payload), operation_id))
+        self.store.database.write(record)
+
     def stage_preparation_execution(self, operation_id: str, request: dict[str, Any]) -> None:
         """Write the immutable request before dispatch, retaining its receipt."""
         def stage(connection):

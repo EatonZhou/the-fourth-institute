@@ -129,10 +129,30 @@ def _register_resident_and_lineage(
             )
         intent.snapshot.update(record=record, runtime_settings=runtime_settings)
         intent.save()
-    registered_lineage = _publish_registration(
-        record, payload, workspace_path, runtime_settings, actor_id,
-        lineage_node=lineage_node, personal_owner=personal_owner, creation_key=creation_key, intent=intent,
-    )
+    from management_common.operation_errors import OperationError, failure_payload
+    from .resident_creation_recovery import cancel_failed_registration, terminal_failure
+    try:
+        registered_lineage = _publish_registration(
+            record, payload, workspace_path, runtime_settings, actor_id,
+            lineage_node=lineage_node, personal_owner=personal_owner, creation_key=creation_key, intent=intent,
+        )
+    except Exception as error:
+        failure = failure_payload(error)
+        if terminal_failure(failure):
+            try:
+                cleanup = cancel_failed_registration(intent, actor_id, failure)
+            except Exception as cleanup_error:
+                # The compensation outbox was saved before initialization and
+                # will resolve this instruction once its failure is durable.
+                cleanup = {
+                    'resource_id': record['resident_id'], 'cleanup_complete': False,
+                    'errors': [str(cleanup_error)],
+                }
+            if isinstance(error, OperationError):
+                error.details['creation_cleanup'] = cleanup
+            else:
+                error.add_note('Creation cleanup: ' + str(cleanup))
+        raise
     # Resource acknowledgement is outside state locks. A failed publication
     # retains the committed identity and outbox for exact-identity recovery.
     _confirm_registered_resident_resources(
@@ -361,7 +381,8 @@ def _publish_registration(
 ) -> dict[str, Any] | None:
     """Prepare the Resident's folders and context, then commit its identity and Lineage membership.
 
-    Failed attempts retain their creation evidence and Provider compensation.
+    Interrupted attempts retain evidence for recovery. Definitive business
+    failures are cancelled by the caller after this writer stack has unwound.
     Returns the Lineage the Resident joined.
     """
 
@@ -374,10 +395,15 @@ def _publish_registration(
     operations = resident_record_domain.lifecycle_operations()
     with creation.prepare([(target, 'directory')]), operations.prepare(resident_id, lambda operation_id: [{
         "kind": "registration_abort", "record": dict(record), "actor": actor_id,
+        "creation_operation_id": intent.key,
+        "creation_request_id": intent.source_operation_id,
+        "creation_instruction_id": intent.instruction_id,
         # Creation alone owns directory evidence. Provider compensation must
         # never rename or delete an unproven target (including a replacement).
         "source": "",
     }], operation_id=intent.key) as preparation_id:
+        operations.record_creation_attempt(preparation_id, request_id=intent.source_operation_id,
+                                           instruction_id=intent.instruction_id)
         def initialize(_index, stage):
             from management_common.filesystem_paths import filesystem_path
             stage = filesystem_path(stage)
