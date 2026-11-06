@@ -75,6 +75,7 @@
 
     function renderPreviewActions() {
       previewState.agentPreviewPanelComponent?.setReadError(activePreviewSnapshot().readError);
+      previewState.agentPreviewPanelComponent?.setSaveError(activePreviewSnapshot().editing ? activePreviewSnapshot().error : "");
       const editBtn = $id("editPreviewBtn");
       const visualBtn = $id("visualPreviewBtn");
       const saveBtn = $id("savePreviewBtn");

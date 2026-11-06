@@ -117,6 +117,7 @@
         <div class="portalDocumentToolbarState portalPreviewDocumentPath" id="${escapeHtml(ids.toolbarState)}" title="${escapeHtml(initialState)}">${escapeHtml(initialState)}</div>
       </div>
       <div data-preview-read-error hidden></div>
+      <div data-preview-save-error hidden></div>
       <div class="previewBox${options.previewClass ? ` ${escapeHtml(options.previewClass)}` : ""}" id="${escapeHtml(ids.preview)}">${options.emptyHtml || escapeHtml(options.emptyText || window.PortalI18n.t("选择文件后显示内容。"))}</div>
       <div class="portalPreviewStatus" hidden><span data-preview-stat="words" title="中文逐字、英文按词；不计标点和空白"></span></div>
       <button class="portalPreviewSelectionToolbar" id="${escapeHtml(ids.selectionToolbar)}" type="button" hidden>${escapeHtml(options.selectionLabel || window.PortalI18n.t("发送到对话"))}</button>`;
@@ -247,6 +248,20 @@
         else window.PortalUIPrimitives.renderAsyncState(notice, {
           state: "error",
           title: window.PortalI18n.t("刷新失败，当前显示内容尚未更新。"),
+          message,
+          density: "compact",
+        });
+      },
+      setSaveError(value) {
+        const notice = root.querySelector("[data-preview-save-error]");
+        const message = String(value || "");
+        if (notice.dataset.error === message) return;
+        notice.dataset.error = message;
+        notice.hidden = !message;
+        if (!message) notice.replaceChildren();
+        else window.PortalUIPrimitives.renderAsyncState(notice, {
+          state: "error",
+          title: window.PortalI18n.t("保存失败，未保存的修改仍保留在编辑器中。"),
           message,
           density: "compact",
         });

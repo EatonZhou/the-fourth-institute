@@ -238,6 +238,48 @@ function previewFixture({restoreDocument} = {}) {
   return {ctx, tabs, rendered, emptySnapshots, errors, saved, setDirty: value => {dirty = value;}};
 }
 
+test('Preview save conflict explains failure and keeps the draft on its document', async () => {
+  const f = previewFixture(), notices = [], renderedErrors = [];
+  const session = f.ctx.createDocumentSession({});
+  session.present({content: 'version one', path: 'notes.txt'});
+  session.beginEdit();
+  session.updateDraft('my unsaved changes');
+  f.ctx.window.PortalUI = {toast: message => notices.push(message), errorMessage: (_action, error) => error.message};
+  f.ctx.previewState = {previewController: session, agentPreviewSource: {
+    save: async () => {throw new Error('文件版本冲突，请重新读取后再保存');},
+  }, agentPreviewPanelComponent: {setReadError: noop, setSaveError: value => renderedErrors.push(value), setDownload: noop, setPath: noop}};
+  f.ctx.loadFolder = () => assert.fail('failed save must not replace content');
+  vm.runInContext(declarations('lineage_workbench_preview_editing.js', ['savePreviewEdit']), f.ctx);
+  const result = await f.ctx.savePreviewEdit();
+  assert.ok(result.error);
+  assert.deepEqual(notices, ['文件版本冲突，请重新读取后再保存']);
+  assert.equal(session.snapshot().draft, 'my unsaved changes');
+  assert.equal(session.snapshot().dirty, true);
+
+  const element = () => ({classList: {toggle: noop}, setAttribute: noop});
+  Object.assign(f.ctx, {$id: element, activePreviewSnapshot: () => session.snapshot(),
+    activePreviewPayload: () => session.snapshot().payload, previewIsEditable: () => true,
+    previewDownloadUrl: () => '', previewExternalUrl: () => '', previewRefreshKey: () => '',
+    previewUsesTextLayout: () => true, applyPreviewWordWrap: noop});
+  vm.runInContext(declarations('lineage_workbench_preview_rendering.js', ['renderPreviewActions']), f.ctx);
+  f.ctx.renderPreviewActions();
+  assert.equal(renderedErrors.at(-1), notices[0]);
+  // Switching to another tab clears its notice; returning keeps the first
+  // session's failure, without copying either tab's draft or error.
+  const other = f.ctx.createDocumentSession({});
+  other.present({content: 'another document'});
+  f.ctx.activePreviewSnapshot = () => other.snapshot();
+  f.ctx.renderPreviewActions();
+  assert.equal(renderedErrors.at(-1), '');
+  f.ctx.activePreviewSnapshot = () => session.snapshot();
+  f.ctx.renderPreviewActions();
+  assert.equal(renderedErrors.at(-1), notices[0]);
+  await session.save({save: async () => ({content: 'my unsaved changes'})});
+  f.ctx.renderPreviewActions();
+  assert.equal(renderedErrors.at(-1), '');
+  assert.equal(session.snapshot().dirty, false);
+});
+
 test('Preview commits, tab choices and closes save locators without a layout edit', async () => {
   const f = previewFixture();
   const settle = () => new Promise(resolve => setImmediate(resolve));
