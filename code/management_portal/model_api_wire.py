@@ -138,6 +138,10 @@ def request(payload, protocol):
             elif kind in ("function_call_output", "custom_tool_call_output"):
                 _append(messages, "user", {"type": "tool_result", "id": item["call_id"], "content": blocks(item["output"], protocol)})
             elif kind == "reasoning":
+                chat_state = _restore(CHAT, item.get("encrypted_content"))
+                if chat_state is not None:
+                    _append(messages, "assistant", {"type": "chat_reasoning", **chat_state})
+                    continue
                 native = _restore("anthropic", item.get("encrypted_content"))
                 _append(messages, "assistant", native or {"type": "reasoning", "responses": item})
             elif kind == "compaction":
@@ -305,6 +309,9 @@ def encode(value, protocol):
                     items.append({"role": "tool", "tool_call_id": part["id"], "content": content})
             elif kind == "reasoning" and protocol == RESPONSES:
                 items.append(part["responses"])
+            elif kind == "chat_reasoning" and protocol == CHAT:
+                items.append({"role": "assistant", "content": None,
+                              "reasoning_content": part["reasoning_content"]})
             elif kind in ("thinking", "redacted_thinking"):
                 raise WireError("Anthropic thinking state belongs to a different upstream")
             elif kind != "reasoning":
@@ -332,7 +339,16 @@ def encode(value, protocol):
         # Keep parallel calls in a single assistant message for Chat endpoints.
         merged = []
         for item in items:
-            if item.get("tool_calls") and merged and merged[-1].get("tool_calls"):
+            if (merged and merged[-1].get("role") == item.get("role") == "assistant"
+                    and "reasoning_content" in merged[-1]):
+                previous = merged[-1]
+                if item.get("tool_calls"):
+                    previous.setdefault("tool_calls", []).extend(item["tool_calls"])
+                if item.get("content") is not None:
+                    previous["content"] = (previous.get("content") or []) + item["content"]
+                if "reasoning_content" in item:
+                    previous["reasoning_content"] += item["reasoning_content"]
+            elif item.get("tool_calls") and merged and merged[-1].get("tool_calls"):
                 merged[-1]["tool_calls"].extend(item["tool_calls"])
             else:
                 merged.append(item)

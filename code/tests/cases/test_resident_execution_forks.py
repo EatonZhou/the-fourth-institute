@@ -24,6 +24,20 @@ import pytest
 
 pytestmark = pytest.mark.usefixtures("registered_execution_defaults")
 
+
+def test_model_api_fork_inherits_api_identity_without_native_route(monkeypatch):
+    from management_portal.society_service import resident_runtime_domain as runtime
+    monkeypatch.setattr(runtime, 'resident_session_account_id', lambda record: '')
+    monkeypatch.setattr(resident_backend, 'execution_account', lambda record: {'backend_route_id': ''})
+    monkeypatch.setattr(runtime, 'read_resident_runtime_settings', lambda record: {'model': 'api-model'})
+    monkeypatch.setattr(runtime, 'resident_runtime_settings_from_register_payload',
+                        lambda record, payload, *args: payload['runtime_settings'])
+    monkeypatch.setattr(runtime, 'stage_runtime_settings', lambda *args: None)
+    source = {'backend': 'provider_api', 'backend_route_id': 'test-api'}
+    derived = {'backend': 'provider_api'}
+    assert runtime.assign_derived_resident_account_route(source, derived, source) == 'test-api'
+    assert derived['backend_route_id'] == 'test-api'
+
 from management_portal.society_service import (
     lineage_resident_nodes,
     resident_hatg_credentials,

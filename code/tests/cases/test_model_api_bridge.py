@@ -24,6 +24,43 @@ from management_portal import model_api_stream as stream, model_api_wire as wire
 from management_portal.model_api_bridge import Bridge
 
 
+def test_rejection_contract_terms_never_echo_provider_body_values():
+    from management_portal.model_api_bridge import rejection_terms
+    terms = rejection_terms(b'reasoning_content required; max_completion_tokens unsupported; thought_signature missing. private-user secret-token')
+    assert terms == ['reasoning_content', 'required', 'max_completion_tokens', 'unsupported', 'thought_signature']
+
+
+def test_converted_responses_identify_final_answers_and_tool_commentary():
+    for with_tool in (False, True):
+        writer = stream.Writer(wire.RESPONSES, 'test-model')
+        list(writer.take('start', {}))
+        list(writer.take('block', {'index': 0, 'block': {'type': 'text', 'text': 'answer'}}))
+        if with_tool:
+            list(writer.take('block', {'index': 1, 'block': {
+                'type': 'tool_use', 'id': 'call-test', 'name': 'read', 'arguments': '{}'}}))
+        events = list(writer.take('close', {'index': 0}))
+        done = next(event['item'] for event in events if event['type'] == 'response.output_item.done')
+        assert done['phase'] == ('commentary' if with_tool else 'final_answer')
+        assert writer._response('completed')['output'][0]['id'] == done['id']
+
+
+def test_chat_reasoning_survives_responses_history_and_tool_continuation():
+    chunks = [
+        {'id': 'chat-test', 'model': 'deepseek', 'choices': [{'delta': {'reasoning_content': 'inspect then read'}, 'finish_reason': None}]},
+        {'choices': [{'delta': {'tool_calls': [{'index': 0, 'id': 'call-read', 'function': {'name': 'read', 'arguments': '{}'}}]}, 'finish_reason': 'tool_calls'}]},
+    ]
+    writer = stream.Writer(wire.RESPONSES, 'deepseek')
+    for kind, value in stream.decode(chunks, wire.CHAT):
+        list(writer.take(kind, value))
+    history = writer.result['output'] + [{'type': 'function_call_output', 'call_id': 'call-read', 'output': 'file contents'}]
+    converted = wire.encode(wire.request({'model': 'deepseek', 'input': history}, wire.RESPONSES), wire.CHAT)
+    assistant = converted['messages'][0]
+    assert assistant['role'] == 'assistant'
+    assert assistant['reasoning_content'] == 'inspect then read'
+    assert assistant['tool_calls'][0]['id'] == 'call-read'
+    assert converted['messages'][1]['tool_call_id'] == 'call-read'
+
+
 def _reply(protocol, tool, name="read_file", arguments=None, reasoning=False):
     arguments = arguments or {"path": "hello.txt"}
     encoded = json.dumps(arguments)

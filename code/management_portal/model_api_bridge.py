@@ -99,6 +99,7 @@ def rejection_terms(raw):
                   'tools', 'function', 'function_declarations', 'declarations', 'schema', 'role',
                   'contents', 'messages', 'reasoning_effort', 'thinking', 'thinking_budget',
                   'prompt_cache_key', 'tool_choice', 'parallel_tool_calls', 'model'}
+    vocabulary.update({'reasoning_content', 'thought_signature', 'max_completion_tokens', 'max_tokens'})
     text = raw.decode('utf-8', errors='replace').lower()
     return list(dict.fromkeys(word for word in re.findall(r'[a-z_][a-z_-]*', text) if word in vocabulary))[:40]
 
@@ -221,7 +222,7 @@ class _Handler(BaseHTTPRequestHandler):
         except urllib.error.HTTPError as error:
             # Provider bodies can echo authorization or request data. Return the
             # status without exposing credentials/prompts or retrying a model call.
-            terms = rejection_terms(error.read(65536)) if error.code == 400 else []
+            terms = rejection_terms(error.read(65536)) if error.code in (400, 422) else []
             detail = ('; contract terms: ' + ', '.join(terms)) if terms else ''
             self._error(error.code if 400 <= error.code <= 599 else 502, f"Selected Model API returned HTTP {error.code}" + detail)
             error.close()

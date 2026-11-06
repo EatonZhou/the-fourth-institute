@@ -110,6 +110,10 @@ def assign_derived_resident_account_route(
     source_route = (resident_session_account_id(source_record) or str(
         resident_backend.execution_account(source_record).get("backend_route_id") or ""
     )) if same_provider else ""
+    if same_provider and backend == "provider_api":
+        # Completion profiles identify the API itself; their execution adapter
+        # intentionally has no native session route to inherit.
+        source_route = resident_backend.execution_provider(source_record)
     # Workspace authority was already applied while preparing this Fork.
     # Account selection validates the staged configuration; it must not infer
     # a second permission policy from an absent actor.

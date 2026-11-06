@@ -146,6 +146,10 @@ def decode(events, protocol):
                 continue
             choice = choices[0]
             part = choice.get("delta") or {}
+            if part.get("reasoning_content"):
+                key = ("chat_reasoning", 0)
+                yield from block(key, {"type": "thinking", "thinking": "", "source_protocol": CHAT})
+                yield delta(key, thinking=part["reasoning_content"])
             if part.get("content"):
                 key = ("text", 0)
                 yield from block(key, {"type": "text", "text": ""})
@@ -237,6 +241,7 @@ class Writer:
         kind = block["type"]
         if kind == "text":
             return {"id": identity, "type": "message", "role": "assistant", "status": status,
+                    "phase": "commentary" if any(b["type"] == "tool_use" for b in self.blocks) else "final_answer",
                     "content": [{"type": "output_text", "text": block["text"], "annotations": [], "logprobs": []}]}
         if kind == "tool_use":
             tool = self.tool_map.get(block["name"], {"type": "function", "name": block["name"]})
@@ -250,8 +255,10 @@ class Writer:
             else:
                 item["arguments"] = block.get("arguments", "")
             return item
+        state = (_opaque(CHAT, {"reasoning_content": block.get("thinking", "")})
+                 if block.get("source_protocol") == CHAT else _opaque("anthropic", block))
         return {"id": identity, "type": "reasoning", "summary": [{"type": "summary_text", "text": block.get("thinking", "")}],
-                "encrypted_content": _opaque("anthropic", block)}
+                "encrypted_content": state}
 
     def take(self, kind, value):
         if kind == "start":
