@@ -108,6 +108,20 @@ def bundle_native_dependencies(repo, destination, native_cache, *, target="windo
     return bundled
 
 
+def prepare_python_runtime(runtime):
+    """Keep platform detection independent of optional COM/WMI permissions.
+
+    CPython 3.12's _wmi worker may outlive its stack-owned query data after
+    ConnectServer times out for an ordinary Windows user. This can crash the
+    entire process later, even after platform.system() returned successfully.
+    The stdlib explicitly supports importing platform without _wmi and then
+    uses Windows version/registry/environment APIs. Package that supported path
+    for every process (including third-party imports), without monkeypatching
+    platform or changing the host's WMI permissions.
+    """
+    (runtime / 'DLLs/_wmi.pyd').unlink()
+
+
 def stage(repo, destination, archive, *, source_commit=None, source_dirty=None, native_cache=None, python_cache=None):
     if destination.exists():
         raise ValueError("Use a new staging directory")
@@ -131,6 +145,7 @@ def stage(repo, destination, archive, *, source_commit=None, source_dirty=None, 
                 raise ValueError("Unexpected Python runtime member")
         bundle.extractall(destination / "dependencies", filter="data")
     runtime = destination / "dependencies/python"
+    prepare_python_runtime(runtime)
     for relative in ("python.exe", "pythonw.exe", "DLLs/_tkinter.pyd", "tcl/tcl8.6/init.tcl",
                      "tcl/tk8.6/tk.tcl", "Lib/venv/__init__.py", "vcruntime140.dll", "LICENSE.txt"):
         if not (runtime / relative).is_file():
@@ -149,6 +164,7 @@ def stage(repo, destination, archive, *, source_commit=None, source_dirty=None, 
             ["git", "status", "--porcelain", "--", "code", "prepare_install.py", "code/scripts/windows"], cwd=repo)),
         "source_tree_sha256": hashlib.sha256(json.dumps(source_inventory(repo / "code"), sort_keys=True).encode()).hexdigest(),
         "python": json.loads((repo / "code/scripts/windows/runtime.json").read_text(encoding="utf-8")),
+        "python_omitted_optional_extensions": ["_wmi"],
         "engineering_sha256": digest(destination / "example-engineering.zip"),
         "base_engineering_sha256": digest(destination / "base-engineering.zip"),
         "engineering_prepared_at_build": True,
