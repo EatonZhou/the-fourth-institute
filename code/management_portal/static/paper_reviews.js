@@ -129,8 +129,15 @@
         if (state.mode === "review") renderWorkspace();
       } catch (error) {
         if (String(state.selectedId || "") !== String(paperId)) return;
-        state.reviewPollError = "暂时无法获取评审状态；任务可能仍在运行，正在重试。";
-        scheduleReviewPoll(paperId);
+        clearTimeout(state.reviewPollTimer);
+        state.reviewPollTimer = 0;
+        if ([401, 403, 404].includes(Number(error.status))) {
+          // A rejected read says nothing about the job's execution outcome.
+          state.reviewPollError = error.message || String(error);
+        } else {
+          state.reviewPollError = window.PortalI18n.t("暂时无法获取评审状态；任务可能仍在运行，正在重试。");
+          scheduleReviewPoll(paperId);
+        }
         if (state.mode === "review") renderWorkspace();
         throw error;
       }
@@ -160,8 +167,9 @@
     }
 
     async function createExp() {
+      const paperId = String(state.selectedId || "");
       await startExp();
-      setMode("exp");
+      if (paperId && String(state.selectedId || "") === paperId) setMode("exp");
     }
 
     async function deleteReview(reviewId) {
@@ -193,11 +201,13 @@
     }
 
     async function refreshDeepReadProjection() {
+      const paperId = String(state.selectedId || "");
       const previousStatus = String(state.deepReadStatus?.status || "");
-      const status = await loadDeepReadStatus(state.selectedId, { render: false });
+      const status = await loadDeepReadStatus(paperId, { render: false });
+      if (String(state.selectedId || "") !== paperId) return status;
       const currentStatus = String(status?.status || "");
       if (currentStatus === "done" && ["queued", "running"].includes(previousStatus)) {
-        await loadDetailSections(state.selectedId, ["analysis", "summary"], { render: false, force: true });
+        await loadDetailSections(paperId, ["analysis", "summary"], { render: false, force: true });
         await loadLibrary({ keepDetail: true });
         renderWorkspace();
         return status;
@@ -208,10 +218,12 @@
 
     async function startDeepRead() {
       if (!state.selectedId) return;
+      const paperId = String(state.selectedId);
       const job = await paperApi.request("/paper/api/deep-read/start", {
         method: "POST",
-        body: JSON.stringify({ paper_id: state.selectedId }),
+        body: JSON.stringify({ paper_id: paperId }),
       });
+      if (String(state.selectedId || "") !== paperId) return;
       state.deepReadStatus = job;
       updateDeepReadControls();
     }
@@ -230,11 +242,13 @@
     }
 
     async function refreshExpProjection({ snapshot = false } = {}) {
+      const paperId = String(state.selectedId || "");
       const previousStatus = String(state.expStatus?.status || "");
-      const status = await loadExpStatus(state.selectedId, { render: false });
+      const status = await loadExpStatus(paperId, { render: false });
+      if (String(state.selectedId || "") !== paperId) return status;
       const currentStatus = String(status?.status || "");
       if (currentStatus === "done" && (snapshot || ["queued", "running"].includes(previousStatus))) {
-        await loadDetailSections(state.selectedId, ["exp"], { render: false, force: true });
+        await loadDetailSections(paperId, ["exp"], { render: false, force: true });
         await loadLibrary({ keepDetail: true });
         renderWorkspace();
         return status;
@@ -245,10 +259,12 @@
 
     async function startExp() {
       if (!state.selectedId) return;
+      const paperId = String(state.selectedId);
       const job = await paperApi.request("/paper/api/exp/start", {
         method: "POST",
-        body: JSON.stringify({ paper_id: state.selectedId }),
+        body: JSON.stringify({ paper_id: paperId }),
       });
+      if (String(state.selectedId || "") !== paperId) return;
       state.expStatus = job;
       renderWorkspace();
     }

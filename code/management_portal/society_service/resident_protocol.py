@@ -113,6 +113,12 @@ def _conversation_controls(
     if target.record.get("personal_owner_id"):
         stop_allowed = allowed and resident_access.can_manage_resident(target.record, actor, operation="CancelInput")
     capabilities = resident_execution_provider.provider_for(target.record).capabilities
+    send_hint = resident_execution_gate.HINTS.get(
+        'manual' if closed else (state.get('execution_gate') or {}).get('reason'), '',
+    ) if not problem else ""
+    if (allowed and not closed and not problem and quota_switch.get('auto_switch_on_quota') is True
+            and (state.get('execution_gate') or {}).get('reason') in {'quota_used_up', 'quota_reserved'}):
+        send_hint = quota_switch.get('message') or "账号额度受限；发送的消息将排队，系统会按自动切换策略处理，请勿重复发送。"
     return {
         "can_send": allowed and not problem,
         # A facade routing a request has nothing running yet; its Stop withdraws that request.
@@ -122,11 +128,9 @@ def _conversation_controls(
         # images or files only to a member that reads them.
         "accepts_images": capabilities.supports_media,
         "accepts_files": capabilities.local_tools,
-        "disabled_reason": problem if allowed else "当前对话无发送权限。",
+        "disabled_reason": problem or ("" if allowed else "当前对话无发送权限。"),
         "quota_switch": quota_switch,
-        "send_hint": resident_execution_gate.HINTS.get(
-            'manual' if closed else (state.get('execution_gate') or {}).get('reason'), ''
-        ) if not problem else "",
+        "send_hint": send_hint,
     }
 
 

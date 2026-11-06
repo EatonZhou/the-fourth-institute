@@ -101,7 +101,12 @@
         if (current()) onSelection?.(entry.selection);
         return current();
       } catch (error) {
-        if (current()) { await hide(active); message(error.message || String(error)); retry.hidden = false; }
+        if (current()) {
+          await hide(active);
+          // Hiding a native surface may await cleanup. Navigation or cancellation
+          // during that wait owns the status by the time cleanup finishes.
+          if (current()) { message(error.message || String(error)); retry.hidden = false; }
+        }
         throw error;
       } finally { signal?.removeEventListener('abort', abort); }
     }
@@ -113,7 +118,10 @@
       else if (active) return show({ ...active.target, focus: active.pendingFocus }, { requestId: active.requestId, view: active.pendingLayer }).catch(error => ({ error }));
     }
     report.onclick = () => { if (active) open(active, { view: 'report', target: active.target }); };
-    retry.onclick = () => { if (active) void show(active.target).catch(() => {}); };
+    retry.onclick = () => {
+      if (active) void show({ ...active.target, focus: active.pendingFocus },
+        { requestId: active.requestId, view: active.pendingLayer }).catch(() => {});
+    };
     return { show, setPresented, snapshot: () => ({ dirty: !!active?.view?.editing?.() }), destroy() {
       if (destroyed) return; destroyed = true; generation++;
       entries.forEach(entry => entry.view?.destroy()); entries.clear(); shell.remove();

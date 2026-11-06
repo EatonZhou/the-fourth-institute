@@ -45,6 +45,21 @@ def test_conversation_controls_belong_to_society_service(monkeypatch, subtests, 
                         assert "controls" not in state
 
 
+def test_deleted_conversation_controls_explain_deletion_without_granting_actions(monkeypatch):
+    target = SimpleNamespace(record={'resident_id': 'resident_111111111111',
+                                     'backend': 'codex', 'deleted_at': '2026-11-06T00:00:00Z'})
+    state = {'intake_state': 'open', 'active_message_id': 'active-input'}
+    controls = resident_protocol._conversation_controls(target, 'CASE-A', state, allowed=True)
+    assert not controls['can_send'] and not controls['can_stop']
+    assert '已删除' in controls['disabled_reason']
+    assert controls['quota_switch']['reason'] == 'forbidden'
+    assert not controls['send_hint']
+    target.record.pop('deleted_at')
+    controls = resident_protocol._conversation_controls(target, 'CASE-A', state, allowed=False)
+    assert '无发送权限' in controls['disabled_reason']
+    assert not controls['can_send'] and not controls['can_stop']
+
+
 def test_native_command_acknowledgement_contains_actor_controls(monkeypatch, subtests, isolated_portal_case):
     """投递输入和清空队列的回执附带调用者的对话控制，不改动原响应"""
     for allowed in [True, False]:

@@ -114,9 +114,13 @@
       };
       async function save(selected, initial, token, identity, route, version) {
         check(token, identity);
-        if (e.saving) return e.saving;
         const changes = Object.fromEntries(Object.entries(selected).filter(([k, v]) => !equal(v, initial[k])));
         if (!Object.keys(changes).length) return { settings: e.settings };
+        if (e.saving) {
+          if (equal(changes, e.savingChanges)) return e.saving;
+          throw new Error(window.PortalI18n.t("正在保存其他设置，请等待完成后重试。"));
+        }
+        e.savingChanges = clone(changes);
         e.saving = (async () => {
           await freshDetail(token, identity, route);
           if (e.pendingSave && !equal(changes, e.pendingSave.changes)) throw stale();
@@ -136,7 +140,7 @@
           }
         })();
         notify(e);
-        try { return await e.saving; } finally { e.saving = null; notify(e); }
+        try { return await e.saving; } finally { e.saving = null; e.savingChanges = null; notify(e); }
       }
       function present(kind, token, focusTarget, config) {
         const identity = identityRevision, route = routeKey(e.detail);

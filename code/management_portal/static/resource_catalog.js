@@ -899,6 +899,7 @@
     const controller = new AbortController();
     state.requestController = controller;
     const requestSequence = state.requestSequence;
+    const detailSequence = state.detailSequence;
     const current = queryState();
     state.collectionQuery = current;
     elements.query.value = current.q;
@@ -922,8 +923,16 @@
       });
       if (requestSequence !== state.requestSequence) return;
       renderResults(payload);
-      if (keepDetail && current.item) await openInitialDetail(current.item);
-      else if (!current.item) closeDetail({ updateUrl: false });
+      if (detailSequence === state.detailSequence) {
+        if (keepDetail && current.item) {
+          try {
+            await openInitialDetail(current.item);
+          } catch (error) {
+            if (resourceServiceRecovery.isUnavailable(error)) throw error;
+            showToast(error.message || error, "error");
+          }
+        } else if (!current.item) closeDetail({ updateUrl: false });
+      }
     } catch (error) {
       if (requestSequence !== state.requestSequence) return;
       if (resourceServiceRecovery.isUnavailable(error)) {
@@ -1533,6 +1542,7 @@
   }
 
   function closeDetail({ updateUrl = true } = {}) {
+    state.detailSequence += 1;
     if (SHARED_DETAIL_CATEGORIES.has(state.category) && frameDetailHost?.snapshot().status !== "empty") {
       closeFrameDetail({ updateLocation: updateUrl });
       return;
@@ -1542,6 +1552,7 @@
 
   async function openDetail(record, options = {}) {
     if (!record) return;
+    state.detailSequence += 1;
     const id = String(record.resource_id || "");
     if (SHARED_DETAIL_CATEGORIES.has(state.category)) {
       openFrameDetail(id, options);
@@ -1571,16 +1582,21 @@
   }
 
   async function openInitialDetail(id, options = {}) {
+    const detailSequence = ++state.detailSequence;
+    const requestSequence = state.requestSequence;
+    const isCurrent = () => detailSequence === state.detailSequence
+      && requestSequence === state.requestSequence;
     let record = state.records.find(item => item.resource_id === id);
     if (!record) {
       try {
         const candidate = await getJson(`/api/resource-index/resources/${encodeURIComponent(id)}`);
         if (candidate.resource_type === state.category) record = candidate;
-      } catch (_) {
-        return;
+      } catch (error) {
+        if (!isCurrent()) return;
+        throw error;
       }
     }
-    if (record) await openDetail(record, {
+    if (isCurrent() && record) await openDetail(record, {
       updateLocation: options.updateLocation === true,
     });
   }

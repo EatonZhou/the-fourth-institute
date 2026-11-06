@@ -7,6 +7,7 @@ const sourceRoot = process.env.HOME_MAP_SOURCE_ROOT || staticRoot;
 const out = process.env.HOME_MAP_EVIDENCE || '/tmp/home-map-evidence'; mkdirSync(out, { recursive: true });
 const lineage = 'lineage_0123456789ab', direction = 'direction_0123456789ab';
 const homeNarrow = process.argv.includes('--home-narrow');
+const recovery = process.argv.find(arg => arg.startsWith('--recovery='))?.split('=')[1];
 const narrow = homeNarrow || process.argv.includes('--narrow');
 const mark = '[TAU:testrun_8a0424367731dab5:workbench.notifications]';
 const teamTitle = narrow ? mark + ' Home独占测试团队' : 'Test team';
@@ -171,6 +172,12 @@ async function checkNarrow(page, checks) {
   const errors=[],checks=[];page.on('pageerror',e=>errors.push(e.message));
   try {
     await page.goto(`http://127.0.0.1:${server.address().port}`);
+    if (recovery) {
+      await require('./home_map_view_recovery.cjs')({page,mode:recovery,out,direction,checks,setDenied:value=>{denied=value;}});
+      assert.deepEqual(errors,[]);
+      writeFileSync(path.join(out,'report.json'),JSON.stringify({checks,errors,calls},null,2));
+      console.log(JSON.stringify({checks,errors}));return;
+    }
     if (homeNarrow) {
       await require('./home_map_view_home_narrow.cjs')({page,out,lineage,teamTitle,checks,calls});
       assert.deepEqual(errors,[]);

@@ -1,4 +1,7 @@
 {
+  "账号额度受限；发送的消息将排队，系统会按自动切换策略处理，请勿重复发送。": {"zh-CN":"账号额度受限；发送的消息将排队，系统会按自动切换策略处理，请勿重复发送。","en":"Account quota is limited. Sent messages will queue while the automatic switching policy is applied. Do not resend."},
+  "这个 Resident 已删除，不能发送消息。": {"zh-CN":"这个 Resident 已删除，不能发送消息。","en":"This Resident has been deleted and cannot receive messages."},
+  "正在保存其他设置，请等待完成后重试。": {"zh-CN":"正在保存其他设置，请等待完成后重试。","en":"Other settings are being saved. Wait for completion, then retry."},
   "例如：接收方 Resident 尚未空闲；筛选、分支或归并节点的上一轮投递还未完成；本连线还有更早的内容等待投递。": {
     "en": "Examples: the receiving Resident is not idle yet; a Filter, Selector or Reducer still has a delivery in progress; or earlier content is waiting on this wire.",
     "zh-CN": "例如：接收方 Resident 尚未空闲；筛选、分支或归并节点的上一轮投递还未完成；本连线还有更早的内容等待投递。"

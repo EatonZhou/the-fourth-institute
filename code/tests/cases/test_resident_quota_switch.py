@@ -42,6 +42,24 @@ def switching(team, monkeypatch):
     return SimpleNamespace(record=record, accounts=accounts, gate=gate, order=order, calls=calls, service=service)
 
 
+def test_conversation_quota_hint_follows_automatic_policy_and_current_receipt(switching):
+    from management_portal.society_service import resident_protocol
+    f = switching
+    target = SimpleNamespace(record=f.record)
+    state = {'intake_state': 'open', 'execution_gate': f.gate}
+    controls = resident_protocol._conversation_controls(target, 'CASE-A', state, allowed=True)
+    assert '自动切换' in controls['send_hint']
+    assert controls['can_send']
+    assert quota.ensure_role_reserve(f.record, f.accounts)
+    receipt = quota.quota_switch_state(f.record, execution_gate=f.gate)
+    # The hint carries the actual operation receipt, not an unrelated quota slogan.
+    assert resident_protocol._conversation_controls(target, 'CASE-A', state, allowed=True)['send_hint'] == receipt['message']
+    f.record['execution_settings']['auto_switch_on_quota'] = False
+    assert '人工放行' in resident_protocol._conversation_controls(target, 'CASE-A', state, allowed=True)['send_hint']
+    state['intake_state'] = 'closed'
+    assert '关闭接单' in resident_protocol._conversation_controls(target, 'CASE-A', state, allowed=True)['send_hint']
+
+
 def test_explicit_toggle_overrides_fixed_and_named_role_but_missing_keeps_legacy(switching, monkeypatch):
     f = switching
     f.record["execution_settings"]["backend_role"] = "special"

@@ -239,6 +239,35 @@ if (process.argv.includes('--progress')) {
   await assert.rejects(() => staleSave({model: 'm5'}), /变更/);
   assert.equal(updates.length, before, 'changed account must not receive stale settings');
   a.destroy();
+  // Two views may share a Resident without sharing the user's mutation intent.
+  {
+    const w={addEventListener(){},PortalI18n:{t:s=>s},PortalUI:{toast(){}},PortalUIPrimitives:{randomUUID:()=> 'concurrent-save'}};
+    vm.runInNewContext(fs.readFileSync(src,'utf8'),{window:w});
+    let value={model:'m'},revision=3,release,entered;
+    const gate=new Promise(resolve=>release=resolve),started=new Promise(resolve=>entered=resolve),writes=[];
+    const s={projection:async()=>({resident:{backend:'codex'},execution_account:{account_id:'acct'},allows:{UpdateResidentSettings:true},chat_workspace:{actions:{runtime_settings:true}}}),
+      runtimeSettings:async()=>({settings:value,settings_revision:revision}),runtimeCatalog:async()=>({}),
+      updateRuntimeSettings:async(id,changes,key,expected)=>{writes.push({id,changes,key,revision:expected});entered();await gate;value={...value,...changes};return{settings:value,settings_revision:++revision};}};
+    const c=w.PortalResidentRuntimeController.create({service:s}),left=c.bind('a'),right=c.bind('a');
+    await Promise.all([left.load(),right.load()]);
+    const first=left.saveSettings({model:'m2'});await started;
+    const different=right.saveSettings({auto_switch_on_quota:false}).then(()=>({status:'resolved'}),error=>({status:'rejected',message:error.message}));
+    const same=right.saveSettings({model:'m2'});
+    // Settle competing calls before resolving the actual transport.
+    await new Promise(resolve=>setImmediate(resolve));release();
+    await Promise.all([first,same]);
+    const outcome=await different;
+    assert.equal(outcome.status,'rejected','different settings must not borrow another save success');
+    assert.match(outcome.message,/正在保存其他设置/);
+    assert.equal(writes.length,1,'identical in-flight changes still share one mutation');
+    assert.equal(writes[0].revision,3,'the original CAS premise is preserved');
+    assert.equal(value.auto_switch_on_quota,undefined,'conflicting intent was not submitted');
+    await right.saveSettings({auto_switch_on_quota:false});
+    assert.equal(writes.length,2,'a later explicit retry is allowed after the first save settles');
+    assert.equal(writes[1].revision,4);
+    assert.equal(value.auto_switch_on_quota,false);
+    left.destroy();right.destroy();
+  }
   console.log('unknown save identity, conflicting retry, committed readback and changed account guards passed');
 })().catch(e => {console.error(e); process.exitCode=1});
 } else {

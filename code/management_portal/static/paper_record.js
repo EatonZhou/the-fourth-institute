@@ -84,9 +84,10 @@
         const form = new FormData();
         form.append("paper_id", paperId);
         form.append("file", file, file.name || "paper.pdf");
-        mergeDetailPayload(await paperApi.postForm("/paper/api/papers/upload-pdf", form), { replace: true });
-        state.selectedId = state.detail.paper.id;
-        await loadDeepReadStatus(state.selectedId, { render: false });
+        const payload = await paperApi.postForm("/paper/api/papers/upload-pdf", form);
+        if (String(state.selectedId || "") !== paperId) return;
+        mergeDetailPayload(payload, { replace: true });
+        await loadDeepReadStatus(paperId, { render: false });
         await loadLibrary({ keepDetail: true });
         renderTree();
         renderAssistantContext();
@@ -106,11 +107,12 @@
       state.pdfDeleteInFlight = true;
       renderWorkspace();
       try {
-        mergeDetailPayload(await paperApi.request("/paper/api/papers/delete-pdf", {
+        const payload = await paperApi.request("/paper/api/papers/delete-pdf", {
           method: "POST",
           body: JSON.stringify({ paper_id: paperId }),
-        }), { replace: true });
-        state.selectedId = state.detail.paper.id;
+        });
+        if (String(state.selectedId || "") !== paperId) return;
+        mergeDetailPayload(payload, { replace: true });
         state.deepReadStatus = null;
         await loadLibrary({ keepDetail: true });
         renderTree();

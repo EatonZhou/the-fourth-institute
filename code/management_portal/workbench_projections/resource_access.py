@@ -80,6 +80,15 @@ def _batch(resources, operation, arguments, actor):
 
 def dispatch(resources, operation, arguments, actor, *, check_workbench):
     """The HTTP actor and Workbench check are supplied only by the host route."""
+    result = _dispatch(resources, operation, arguments, actor)
+    # A read may outlive its initial Workbench authorization. Apply the same
+    # return boundary to single reads, queries and unavailable resolutions as
+    # to batches; do not release results after access has been revoked.
+    check_workbench()
+    return result
+
+
+def _dispatch(resources, operation, arguments, actor):
     if not isinstance(arguments, dict):
         raise ProjectionError("projection.resource_arguments", "资源参数必须是对象")
     if {"actor", "registry_root", "automatic", "principal_id"}.intersection(arguments):
@@ -87,14 +96,10 @@ def dispatch(resources, operation, arguments, actor, *, check_workbench):
     if operation == "configuration":
         if arguments:
             raise ProjectionError("projection.resource_arguments", "公开读取配置不接受参数")
-        check_workbench()
         # No deployment value may enable a historical format or identifier.
         return {"format_namespaces": []}
     if operation in {"resolve_many", "read_many"}:
-        result = _batch(resources, operation, arguments, actor)
-        # Discard all collected data if Workbench access was revoked in-flight.
-        check_workbench()
-        return result
+        return _batch(resources, operation, arguments, actor)
     if operation == "resolve":
         try:
             return _resolve(resources, str(arguments["address"]), actor)
