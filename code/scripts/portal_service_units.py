@@ -96,7 +96,8 @@ def _define(component: str) -> list[str]:
     """Register the component, then create or refresh its owned definition."""
     from management_common.host_instances import add_service_component
     from scripts.instance_services import install_definitions
-    instance = add_service_component(_instance().root, component)
+    options = {'listener_bind': '127.0.0.1'} if component in {'kimi', 'kimi-code'} else {}
+    instance = add_service_component(_instance().root, component, **options)
     return install_definitions(instance, (component,))
 
 
@@ -193,13 +194,15 @@ def _start_daemon(component, prepare_definition, *, wait_ready=None) -> None:
     lock_name = component.removesuffix('-code') + '-backend-install.lock'
     with (STATE_ROOT / lock_name).open("a+") as stream, lock_stream(stream):
         instance = _instance()
-        if provider_runtime_services('portal-' + component + '.service'):
+        needs_listener = (component in {'kimi', 'kimi-code'}
+                          and component not in instance.document['network'].get('listeners', {}))
+        if not needs_listener and provider_runtime_services('portal-' + component + '.service'):
             if wait_ready:
                 wait_ready()
             return
         created = not (component in instance.document['services']['components']
                        and _definition_path(instance, component).exists())
-        if created:
+        if created or needs_listener:
             prepare_definition()
         instance = _instance()
         name = unit_name(instance, component)

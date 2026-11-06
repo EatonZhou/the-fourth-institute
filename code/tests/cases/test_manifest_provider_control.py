@@ -12,6 +12,27 @@ from scripts.instance_service_definitions import render
 from tests.cases.instance_test_support import write_instance
 
 
+def test_optional_listener_is_allocated_once_and_removed_with_its_component(tmp_path, monkeypatch):
+    root = write_instance(tmp_path / 'instance')
+    monkeypatch.setattr(host_instances, 'registry_path', lambda: tmp_path / 'host/instances.json')
+    first = host_instances.add_service_component(root, 'kimi-code', listener_bind='127.0.0.1')
+    listener = first.listener('kimi-code')
+    assert listener['bind'] == '127.0.0.1' and 0 < listener['port'] < 65536
+    again = host_instances.add_service_component(root, 'kimi-code', listener_bind='127.0.0.1')
+    assert again.document == first.document
+    host_instances.remove_service_component(root, 'kimi-code')
+    assert 'kimi-code' not in load(root).document['network'].get('listeners', {})
+
+
+def test_existing_component_without_listener_can_be_completed(tmp_path, monkeypatch):
+    root = write_instance(tmp_path / 'instance')
+    monkeypatch.setattr(host_instances, 'registry_path', lambda: tmp_path / 'host/instances.json')
+    host_instances.add_service_component(root, 'kimi-code')
+    ready = host_instances.add_service_component(root, 'kimi-code', listener_bind='127.0.0.1')
+    assert ready.listener('kimi-code')['port'] > 0
+    assert ready.document['services']['components'].count('kimi-code') == 1
+
+
 def test_new_account_definition_is_accepted_by_instance_control(tmp_path, monkeypatch):
     root = write_instance(tmp_path / 'instance')
     monkeypatch.setenv('PORTAL_INSTANCE_ROOT', str(root))

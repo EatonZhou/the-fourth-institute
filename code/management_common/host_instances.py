@@ -208,7 +208,7 @@ def replace_manifest(instance: InstanceManifest, *, expected: dict) -> None:
         atomic_json(instance.root / 'instance.json', instance.document)
 
 
-def add_service_component(root: Path, component: str) -> InstanceManifest:
+def add_service_component(root: Path, component: str, *, listener_bind: str | None = None) -> InstanceManifest:
     """Register an account daemon before its owner installs a service definition."""
     from copy import deepcopy
     from .configuration_files import atomic_json
@@ -217,10 +217,28 @@ def add_service_component(root: Path, component: str) -> InstanceManifest:
     descriptor = os.open(root / '.configuration.lock', os.O_CREAT | os.O_RDWR | getattr(os, 'O_NOFOLLOW', 0), 0o600)
     with os.fdopen(descriptor, 'r+b') as stream, lock_stream(stream), _locked_registry():
         current = load(root)
-        if component in current.document['services']['components']:
+        if (component in current.document['services']['components']
+                and (listener_bind is None or component in current.document['network'].get('listeners', {}))):
             return current
         document = deepcopy(current.document)
-        document['services']['components'].append(component)
+        if component not in document['services']['components']:
+            document['services']['components'].append(component)
+        if listener_bind is not None:
+            import ipaddress
+            import socket
+            bind = str(ipaddress.ip_address(listener_bind))
+            allocated = ports(current)
+            for other_root in read_registry().values():
+                allocated.update(ports(load(other_root)))
+            for _ in range(64):
+                with socket.socket(socket.AF_INET6 if ':' in bind else socket.AF_INET) as probe:
+                    probe.bind((bind, 0))
+                    port = probe.getsockname()[1]
+                if port not in allocated:
+                    break
+            else:
+                raise RuntimeError('No available service listener port')
+            document['network'].setdefault('listeners', {})[component] = {'bind': bind, 'port': port}
         updated = validate(root, document)
         validate_allocation(updated)
         atomic_json(root / 'instance.json', updated.document)
@@ -236,4 +254,5 @@ def remove_service_component(root: Path, component: str) -> None:
     document = deepcopy(current.document)
     document['services']['components'].remove(component)
     document['services'].get('programs', {}).pop(component, None)
+    document['network'].get('listeners', {}).pop(component, None)
     replace_manifest(InstanceManifest(current.root, document), expected=current.document)
