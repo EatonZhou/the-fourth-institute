@@ -1567,7 +1567,7 @@ def test_tau_retries_only_failed_cleanup_of_finished_runs(tmp_path, receipt_sour
     assert records.get(previous)["results"][0]["status"] == "error"
 
 
-@pytest.mark.parametrize("mode", ["resume", "source_changed", "cancelling", "group_error"])
+@pytest.mark.parametrize("mode", ["resume", "source_changed", "cancelling", "group_error", "pending", "observation_error"])
 def test_tau_campaign_resumes_the_same_resident_invocation_after_restart(tmp_path: Path, mode: str) -> None:
     """执行器重启后 TAU 运行接续原 Resident 消息，源码变化或正在取消时也不重新发送
 
@@ -1629,16 +1629,27 @@ def test_tau_campaign_resumes_the_same_resident_invocation_after_restart(tmp_pat
             # A cancelled Campaign still hands the submitted case to the
             # adapter, which withdraws that Resident input.
             assert kwargs["cancelled"]() == (mode == "cancelling")
+            if mode == "observation_error":
+                raise RuntimeError('observation is unavailable')
+            if mode == "pending":
+                return AdapterResult(status='pending', details={'conversation': handle})
             return AdapterResult(status="cancelled" if kwargs["cancelled"]() else "reported")
 
     executor = TauCampaignExecutor(records, tmp_path / "artifacts", ResumingAdapter())
-    assert executor.run(created["run_id"]) == ("cancelled" if mode == "cancelling" else "reported")
+    expected_status = ('running' if mode in {'pending', 'observation_error'} else
+                       'cancelled' if mode == 'cancelling' else 'reported')
+    assert executor.run(created["run_id"]) == expected_status
     record = records.get(created["run_id"])
 
-    assert record["status"] == ("cancelled" if mode == "cancelling" else "reported")
+    assert record["status"] == expected_status
     assert observed["resident_id"] == "resident-stable"
     assert observed["message_id"] == "message-existing"
-    assert record["groups"][0]["active_invocation"] == {}
+    if expected_status == 'running':
+        assert record['active_case_ids'] == [case['case_id']]
+        assert record['groups'][0]['active_invocation']['message_id'] == 'message-existing'
+        assert not record['finished_at']
+    else:
+        assert record["groups"][0]["active_invocation"] == {}
     assert record["report"]["schema"] == "tfi.portal-tau-report.v2"
 
 

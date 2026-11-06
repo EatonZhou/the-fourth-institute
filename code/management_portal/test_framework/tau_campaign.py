@@ -160,11 +160,10 @@ class TauCampaignExecutor:
         final_patch: dict[str, Any] = {
             "status": status,
             "error": error,
-            "current_case_id": "",
-            "active_case_ids": [],
             "finished_at": now_iso() if status in TERMINAL else "",
         }
         if status in TERMINAL:
+            final_patch.update(current_case_id="", active_case_ids=[])
             self._report_unstarted_cases(run_id, status, error)
         final_patch["report"] = tau_report({**self.records.get(run_id), **final_patch})
         # Publish the terminal status and its report in one record update so

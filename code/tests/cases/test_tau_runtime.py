@@ -760,6 +760,66 @@ def test_tau_preparation_reconciles_after_dependency_recovers_without_restarting
     configured.update_settings.assert_not_called()
 
 
+@pytest.mark.parametrize('scope_state', ['open', 'closing', 'complete'])
+def test_tau_resume_observes_closed_scope_without_recreating_fixtures(configured, tmp_path, monkeypatch, scope_state):
+    """结果落盘前重启可读取原输入，已关闭资源边界不重开，也不复活已清理目录。"""
+    import json
+    from management_common.resource_lifecycle import LifecycleStore
+    from management_portal.test_framework import runner_adapters
+    from tests.cases.test_test_framework import _verified_dev_target
+
+    monkeypatch.setattr(tau.TauConfig, 'unavailable_reason', lambda _self: '')
+    run_id, case_id = 'testrun_0123456789abcdef', 'test_0123456789ab'
+    store = LifecycleStore()
+    scope = store.open(str(tmp_path.resolve()), actor=runner_adapters.TAU_ACTOR, run_id=run_id, case_id=case_id)
+    if scope_state != 'open':
+        store.request_close(scope)
+    if scope_state == 'complete':
+        store.complete(scope)
+    handle = {'resident_id': configured.assignment['resident_id'], 'lineage_id': configured.assignment['lineage_id'],
+              'message_id': 'msg_existing'}
+    planned = {'case_id': case_id, 'case_title': 'resume', 'module': 'workbench.panels',
+               'implementation': {'task_prompt': 'Use the page'}, '_resume_invocation': handle}
+    context = {'resource_lifecycle_id': scope, 'build_id': 'original'}
+    (tmp_path / 'run-context.json').write_text(json.dumps(context))
+    invoke = mock.Mock(side_effect=AssertionError('resubmitted input'))
+    resume = mock.Mock(return_value={**handle, 'message': 'PORTAL_TAU_RESULT: {"status":"reported","process":{"status":"completed"},"summary":"done","issues":[],"evidence":[]}'})
+    adapter = runner_adapters.TauAdapter(tau.TauConfig(tmp_path / 'storage.json'), invoke,
+                                        lambda _storage: _verified_dev_target(), configured.assignments, resume)
+    outcome = adapter.execute(run_id=run_id, planned=planned, run_dir=tmp_path,
+                              actor='case-owner', emit=lambda _text: None, cancelled=lambda: False)
+    assert outcome.status == 'reported'
+    assert store.scope(scope)['state'] == scope_state
+    assert json.loads((tmp_path / 'run-context.json').read_text()) == context
+    assert not (tmp_path / 'helpers').exists()
+    assert not (tmp_path / 'fixture-content.json').exists()
+    invoke.assert_not_called()
+    assert resume.call_args.kwargs['message_id'] == 'msg_existing'
+    if scope_state != 'open':
+        with pytest.raises(ValueError, match='already closed'):
+            store.open(str(tmp_path.resolve()), actor=runner_adapters.TAU_ACTOR, run_id=run_id, case_id=case_id)
+
+
+@pytest.mark.parametrize('field', ['actor', 'run_id', 'case_id'])
+def test_tau_resume_rejects_a_lifecycle_owned_by_another_operation(tmp_path, field):
+    """只读接续也不接受同路径下归属其他操作的资源生命周期。"""
+    from management_common.resource_lifecycle import LifecycleStore
+    from management_portal.test_framework import runner_adapters
+
+    owner = {'actor': runner_adapters.TAU_ACTOR, 'run_id': 'testrun_0123456789abcdef',
+             'case_id': 'test_0123456789ab'}
+    owner[field] = 'another-operation'
+    store = LifecycleStore()
+    scope = store.open(str(tmp_path.resolve()), **owner)
+    case = runner_adapters._TauCaseRun(None, run_id='testrun_0123456789abcdef',
+        planned={'case_id': 'test_0123456789ab', '_resume_invocation': {'message_id': 'existing'}},
+        run_dir=tmp_path, actor='case-owner', emit=lambda _text: None,
+        cancelled=lambda: False, on_submitted=None)
+    with pytest.raises(ValueError, match='belongs to another operation'):
+        case._open_lifecycle()
+    assert store.scope(scope)['state'] == 'open'
+
+
 @pytest.mark.parametrize("resuming", [False, True])
 @pytest.mark.parametrize("required_account", [None, "five", "three"])
 def test_tau_waits_for_transient_dev_health_and_keeps_confirmed_message(configured, tmp_path, monkeypatch, resuming, required_account):
@@ -781,7 +841,11 @@ def test_tau_waits_for_transient_dev_health_and_keeps_confirmed_message(configur
         planned["resident_account_id"] = required_account
     if resuming:
         planned["_resume_invocation"] = handle
-        (tmp_path / 'run-context.json').write_text(json.dumps({'build_id': 'original-build', 'original_evidence': True}))
+        import hashlib
+        (tmp_path / 'run-context.json').write_text(json.dumps({
+            'build_id': 'original-build', 'original_evidence': True,
+            'resource_lifecycle_id': hashlib.sha256(str(tmp_path.resolve()).encode()).hexdigest(),
+        }))
     else:
         configured.state.options["source"]["account_id"] = "five"
         configured.state.runtime["service_tier"] = "priority"

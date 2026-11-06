@@ -458,12 +458,24 @@ class _TauCaseRun:
         return None
 
     def _open_lifecycle(self) -> None:
+        import hashlib
         from management_common.resource_lifecycle import LifecycleStore
 
-        self.lifecycle_id = LifecycleStore().open(str(self.run_dir.resolve()), actor=TAU_ACTOR,
-                                                  run_id=self.run_id, case_id=str(self.planned['case_id']))
-        if self.resume_handle and self.resume_handle.get('resident_id'):
-            LifecycleStore().bind(self.lifecycle_id, self.resume_handle['resident_id'])
+        store = LifecycleStore()
+        if self.resume_handle:
+            # Observing an accepted input allocates nothing. Its case may have
+            # finished cleanup before the executor persisted the result. Keep
+            # that closed admission boundary, and never rebind a module that
+            # may already belong to its next operation.
+            self.lifecycle_id = hashlib.sha256(str(self.run_dir.resolve()).encode()).hexdigest()
+            scope = store.scope(self.lifecycle_id)
+            if scope and (scope['actor'], scope['run_id'], scope['case_id']) != (
+                TAU_ACTOR, self.run_id, str(self.planned['case_id']),
+            ):
+                raise ValueError('Resource lifecycle belongs to another operation')
+            return
+        self.lifecycle_id = store.open(str(self.run_dir.resolve()), actor=TAU_ACTOR,
+                                       run_id=self.run_id, case_id=str(self.planned['case_id']))
 
     def _restore_resumed_submission(self) -> None:
         resume_handle = self.resume_handle
@@ -644,7 +656,8 @@ class _TauCaseRun:
     def _resume(self) -> dict[str, Any]:
         if self.adapter.resume is None:
             raise RuntimeError("TAU adapter has no Resident resume capability")
-        self.write_run_context()
+        # The original context was written before submission. Recreating its
+        # helpers/content on observation would resurrect already cleaned files.
         return self.adapter.resume(
             actor=TAU_ACTOR,
             resident_id=self.submitted.get("resident_id", ""),
