@@ -443,38 +443,23 @@
   border-bottom: 0;
 }
 
+/* Keep pinning subtle; hover and keyboard focus are the strongest row highlight. */
+.portalAgentInboxItem:where(:has([data-agent-inbox-pinned])) {
+  background: color-mix(in srgb, var(--accent, #2563eb) 7%, var(--panel, #fff));
+}
+
 .portalAgentInboxItem:hover,
 .portalAgentInboxItem:focus-visible {
-  background: color-mix(in srgb, var(--accent, #2563eb) 7%, transparent);
-}
-
-.portalAgentInboxItem.unread {
-  background: color-mix(in srgb, var(--accent, #2563eb) 5%, transparent);
-}
-
-/* Use the existing pin marker; terminal warnings below retain their priority. */
-.portalAgentInboxItem:has([data-agent-inbox-pinned]) {
   background: color-mix(in srgb, var(--accent, #2563eb) 16%, var(--panel, #fff));
 }
 
-.portalAgentInboxItem:has([data-agent-inbox-pinned]):hover,
-.portalAgentInboxItem:has([data-agent-inbox-pinned]):focus-visible {
-  background: color-mix(in srgb, var(--accent, #2563eb) 23%, var(--panel, #fff));
-}
-
-.portalAgentInboxItem:has([data-agent-inbox-pinned]) .portalAgentInboxItemBody > small,
-.portalAgentInboxItem:has([data-agent-inbox-pinned]) .portalAgentInboxItemType {
+.portalAgentInboxItem:is(:hover, :focus-visible) .portalAgentInboxItemBody > small,
+.portalAgentInboxItem:is(:hover, :focus-visible) .portalAgentInboxItemType {
   color: color-mix(in srgb, var(--text, #111827) 25%, var(--muted, #64748b));
 }
 
 .portalAgentInboxItem.terminalIssue {
   box-shadow: inset 3px 0 0 color-mix(in srgb, var(--danger, #dc2626) 78%, transparent);
-  background: color-mix(in srgb, var(--danger, #dc2626) 7%, var(--panel, #fff));
-}
-
-.portalAgentInboxItem.terminalIssue:hover,
-.portalAgentInboxItem.terminalIssue:focus-visible {
-  background: color-mix(in srgb, var(--danger, #dc2626) 11%, var(--panel, #fff));
 }
 
 .portalAgentInboxItem.terminalIssue .portalAgentInboxItemIcon {
@@ -484,7 +469,6 @@
 
 .portalAgentInboxItem.interrupted {
   box-shadow: inset 3px 0 0 color-mix(in srgb, var(--danger, #dc2626) 58%, transparent);
-  background: color-mix(in srgb, var(--danger, #dc2626) 5%, var(--panel, #fff));
 }
 
 .portalAgentInboxItemIcon {
