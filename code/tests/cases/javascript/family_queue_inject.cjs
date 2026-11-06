@@ -68,18 +68,18 @@ async function main() {
       via: [{ resident_id: 'resident_333333333333', title: 'Nested facade' }] } };
   let refreshes = 0;
   let snapshot = { family_facade: { resident_id: FACADE }, messages: [message] };
-  // Healthy model roles must not conceal an unusable escalation channel.
+  // The chat header shows role availability, not alert-contact configuration.
   const metadata = { chat_workspace: { header: { subtitle_parts: [{ identity: 'family', text: 'Family' }] }, composer: {} } };
   const healthSnapshot = { ...snapshot, family_facade: { ...snapshot.family_facade,
     alert_contact: { status: 'missing' }, nodes: [{ role: 'router', availability: { status: 'available' } }] } };
   const healthLabel = () => w.PortalChatWorkspace.projectResidentConversation(metadata, healthSnapshot)
     .chat_workspace.header.subtitle_parts.find(part => part.identity === 'family_availability')?.text || '';
-  assert.equal(healthLabel(), '未登记真人告警联系人');
+  assert.equal(healthLabel(), '', 'missing alert contact does not add a header notice');
   healthSnapshot.family_facade.nodes.push({ role: 'steward', availability: { status: 'unavailable', reason: '额度已用尽' } });
-  assert.match(healthLabel(), /Steward：额度已用尽；未登记真人告警联系人/);
+  assert.equal(healthLabel(), 'Steward：额度已用尽');
   healthSnapshot.family_facade.alert_contact.status = 'configured';
   healthSnapshot.family_facade.nodes.pop();
-  assert.equal(healthLabel(), '', 'a configured contact and healthy roles clear the notice');
+  assert.equal(healthLabel(), '', 'healthy roles clear the notice');
   // An open facade keeps its projection metadata while roster snapshots change.
   const rosterMetadata = { chat_workspace: { header: { subtitle_parts: [
     { identity: 'family', text: 'Family 门面（2 位成员）' },

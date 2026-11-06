@@ -232,10 +232,9 @@
       const familyMembers = Array.isArray(snapshot.family_facade?.members) ? snapshot.family_facade.members : null;
       const roleIssues = (snapshot.family_facade?.nodes || []).filter(node =>
         node.availability?.status && node.availability.status !== "available");
-      const familyIssueLabel = [
-        ...roleIssues.map(node => `${node.role === "router" ? "Router" : "Steward"}：${node.availability.reason}`),
-        snapshot.family_facade?.alert_contact?.status === "missing" ? window.PortalI18n.t("未登记真人告警联系人") : "",
-      ].filter(Boolean).join("；");
+      const familyIssueLabel = roleIssues
+        .map(node => `${node.role === "router" ? "Router" : "Steward"}：${node.availability.reason}`)
+        .join("；");
       const policy = snapshot.family_facade?.chat_preferences;
       const solo = policy?.solo_member_id || '';
       const muted = new Set(policy?.muted_member_ids || []);
