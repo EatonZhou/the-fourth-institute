@@ -7,6 +7,7 @@
     const readerId = `mailbox-todos-${++readerSequence}`;
     const controller = new AbortController();
     const { signal } = controller;
+    let readBlocked = false;
     const t = source => window.PortalI18n.t(source);
     const state = { items: [], loaded: false, visible: false, active: false, busy: false, editing: null, saving: null, drag: null, revision: 0, request: null, closed: new Set(), pendingCompletion: new Map() };
     const today = () => new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Hong_Kong", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
@@ -99,18 +100,27 @@
       onChange(snapshot());
     }
     async function refresh(force = false, reason = "explicit_read") {
+      const automatic = !["explicit_read", "mutation", "panel_visible"].includes(reason);
+      if (automatic && readBlocked) return;
+      if (!automatic) readBlocked = false;
       if (signal.aborted || state.busy || (!force && (state.editing || state.drag))) return;
       if (state.request) return state.request;
       const revision = state.revision;
-      const request = window.PortalIdentity.userId().then(userId => window.PortalInstructionClient.execute("ListMailboxTodos", {
+      const request = window.PortalIdentity.userId().then(userId => {
+        if (signal.aborted || revision !== state.revision || (automatic && (!state.visible || document.hidden))) return null;
+        return window.PortalInstructionClient.execute("ListMailboxTodos", {
         user_id: userId,
-      }, { readObservation: { consumer: "mailbox_todos", reader_id: readerId, reasons: [reason] } })).then(payload => {
-        if (signal.aborted || revision !== state.revision) return;
+      }, { signal, readObservation: { consumer: "mailbox_todos", reader_id: readerId, reasons: [reason] } });
+      }).then(payload => {
+        if (!payload || signal.aborted || revision !== state.revision) return;
         state.items = payload.items || [];
         state.loaded = true;
         error(); render();
       }).catch(reason => {
-        if (!signal.aborted && revision === state.revision) { error(reason.message || t("读取待办失败")); render(); }
+        if (!signal.aborted && revision === state.revision) {
+          readBlocked = [401, 403, 404].includes(Number(reason.status));
+          error(reason.message || t("读取待办失败")); render();
+        }
       }).finally(() => { if (state.request === request) state.request = null; });
       state.request = request;
       return request;
@@ -304,6 +314,7 @@
     window.addEventListener("focus", () => refreshVisible("focus"), { signal });
     document.addEventListener("visibilitychange", () => refreshVisible("visibilitychange"), { signal });
     window.addEventListener("portal:identity-changed", () => {
+      readBlocked = false;
       state.revision += 1;
       Object.assign(state, { request: null, busy: false, items: [], loaded: false, editing: null, saving: null, drag: null, pendingCompletion: new Map() });
       state.closed.clear(); resetForm(); error(); render(); refreshVisible("identity_changed");

@@ -106,16 +106,25 @@
         `;
     }
 
+    let reviewPollTarget = '';
+    const currentReview = paperId => !state.leaving && !document.hidden && String(state.selectedId || '') === String(paperId);
     function scheduleReviewPoll(paperId) {
       clearTimeout(state.reviewPollTimer);
+      if (!currentReview(paperId)) {state.reviewPollTimer = 0; return;}
       state.reviewPollTimer = setTimeout(() => loadReviewStatus(paperId).catch(() => {}), 3000);
     }
 
+    function resumeReviewPolling() {
+      if (reviewPollTarget) scheduleReviewPoll(reviewPollTarget);
+    }
+
     async function loadReviewStatus(paperId) {
-      if (!paperId || String(state.selectedId || "") !== String(paperId)) return;
+      if (!paperId || !currentReview(paperId)) return;
+      reviewPollTarget = paperId;
+      const pollEpoch = state.paperPollEpoch || 0;
       try {
         const response = await paperApi.get(`/paper/api/reviews/status?paper_id=${encodeURIComponent(paperId)}`);
-        if (String(state.selectedId || "") !== String(paperId)) return;
+        if (!currentReview(paperId) || pollEpoch !== (state.paperPollEpoch || 0)) return;
         const previous = state.reviewJob;
         state.reviewJob = response.job || null;
         state.reviewPollError = "";
@@ -123,15 +132,17 @@
         clearTimeout(state.reviewPollTimer);
         state.reviewPollTimer = 0;
         if (state.reviewInFlight) scheduleReviewPoll(paperId);
+        else reviewPollTarget = '';
         if (state.reviewJob?.status === "done" && (previous?.job_id !== state.reviewJob.job_id || previous?.status !== "done" || !(state.detail?.reviews || []).some(review => review.review_id === state.reviewJob.review_id))) {
           await loadDetailSections(paperId, ["reviews"], { force: true });
         }
         if (state.mode === "review") renderWorkspace();
       } catch (error) {
-        if (String(state.selectedId || "") !== String(paperId)) return;
+        if (!currentReview(paperId) || pollEpoch !== (state.paperPollEpoch || 0)) return;
         clearTimeout(state.reviewPollTimer);
         state.reviewPollTimer = 0;
         if ([401, 403, 404].includes(Number(error.status))) {
+          reviewPollTarget = '';
           // A rejected read says nothing about the job's execution outcome.
           state.reviewPollError = error.message || String(error);
         } else {
@@ -270,7 +281,7 @@
     }
 
     return Object.freeze({
-      createExp, createReview, deleteReview, loadDeepReadStatus, loadExpStatus, loadReviewStatus,
+      createExp, createReview, deleteReview, loadDeepReadStatus, loadExpStatus, loadReviewStatus, resumeReviewPolling,
       refreshDeepReadProjection, refreshExpProjection, renderExpMode, renderReviewMode, startDeepRead,
     });
   }

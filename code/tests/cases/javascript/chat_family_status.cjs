@@ -451,6 +451,33 @@ async function absentAccountIdentityDoesNotBorrowQuota() {
   } finally { family = previousFamily; w.PortalResidentRuntimeController.bind = originalBind; }
 }
 
+async function quotaPollingLifecycle() {
+  const nativeInterval = w.setInterval, nativeClear = w.clearInterval;
+  const pulses = new Map(); let sequence = 0, hidden = false;
+  Object.defineProperty(w.document, 'hidden', {configurable: true, get: () => hidden});
+  w.setInterval = (fn, delay) => delay === 15000 ? (pulses.set(--sequence, fn), sequence) : nativeInterval.call(w, fn, delay);
+  w.clearInterval = id => { if (!pulses.delete(id)) nativeClear.call(w, id); };
+  const reads = () => calls.filter(call => call[0] === 'get' && call[1] === '/api/agent-status').length;
+  const pulse = async () => { for (const fn of pulses.values()) fn(); await settle(); };
+  const visibility = async value => { hidden = !value; w.document.dispatchEvent(new w.Event('visibilitychange')); await settle(); };
+  const container = w.document.createElement('section'); w.document.body.append(container);
+  const view = w.PortalChatWorkspace.mountFamilyStatus('res_facade', container);
+  try {
+    await settle();
+    await visibility(false); const before = reads(); await pulse(); assert.equal(reads(), before, 'hidden Family status does not sample quota');
+    await visibility(true); assert.equal(reads(), before + 1, 'visible Family status resumes one read');
+    for (const status of [401, 403, 404]) {
+      quotaFailure = Object.assign(new Error('quota denied'), {status});
+      await pulse(); const denied = reads(); await pulse(); await visibility(false); await visibility(true);
+      assert.equal(reads(), denied, `Family HTTP ${status} stops automatic reads`);
+      quotaFailure = null; view.refresh(); await settle(); assert.equal(reads(), denied + 1, 'explicit Family refresh recovers');
+    }
+    view.close(); const closed = reads(); await pulse(); assert.equal(reads(), closed, 'closed Family view is quiet');
+    view.destroy(); assert.equal(pulses.size, 0);
+    await visibility(false); await visibility(true); assert.equal(reads(), closed, 'destroyed Family view stays quiet');
+  } finally { quotaFailure = null; view.destroy(); container.remove(); w.setInterval = nativeInterval; w.clearInterval = nativeClear; }
+}
+
 const watchdog = setTimeout(() => { console.error('Family status test did not complete'); process.exit(1); }, 15000);
 (async () => {
   try {
@@ -461,6 +488,7 @@ const watchdog = setTimeout(() => { console.error('Family status test did not co
     await nestedFacadeHasNoExecutionAccount();
     await nestedFacadeHasNoExecutionAccount(true);
     await absentAccountIdentityDoesNotBorrowQuota();
+    await quotaPollingLifecycle();
     console.log('PASS: Family status, quota, intake, details and lifecycle');
   } finally {
     observers.forEach(observer => observer.disconnect());

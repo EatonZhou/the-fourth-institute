@@ -1,6 +1,6 @@
 export async function mount(container) {
   const t = text => window.PortalI18n.t(text);
-  let destroyed = false, pending = false, timer = null, stoppingSelf = false;
+  let destroyed = false, pending = false, timer = null, stoppingSelf = false, pollingBlocked = false;
   const controller = new AbortController();
   container.innerHTML = window.PortalI18n.html`
     <section class="settingsSection">
@@ -23,7 +23,7 @@ export async function mount(container) {
       ...(body ? {headers: {"Content-Type": "application/json"}, body: JSON.stringify(body)} : {})
     });
     const value = await response.json();
-    if (!response.ok) throw new Error(value.error || t("实例操作失败"));
+    if (!response.ok) throw Object.assign(new Error(value.error || t("实例操作失败")), {status: response.status});
     return value;
   }
   const element = (tag, text, parent) => {
@@ -64,8 +64,15 @@ export async function mount(container) {
       }
     }
   }
-  async function refresh() {
+  const visible = () => !document.hidden && container.isConnected && !container.closest('[hidden]');
+  function scheduleRefresh(delay) {
+    clearTimeout(timer); timer = null;
+    if (!destroyed && !stoppingSelf && !pollingBlocked && visible()) timer = setTimeout(() => refresh(true), delay);
+  }
+  async function refresh(automatic = false) {
     if (destroyed || pending || stoppingSelf) return;
+    if (automatic === true && (pollingBlocked || !visible())) return;
+    if (automatic !== true) pollingBlocked = false;
     clearTimeout(timer);
     pending = true; reload.disabled = true;
     try {
@@ -75,9 +82,9 @@ export async function mount(container) {
       render(value.instances);
       message.textContent = "";
       // Refresh state while the page is open, including changes made by the CLI.
-      timer = setTimeout(refresh, 5000);
+      scheduleRefresh(5000);
     } catch (error) {
-      if (!destroyed) message.textContent = error.message;
+      if (!destroyed) { pollingBlocked = [401, 403, 404].includes(Number(error.status)); message.textContent = error.message; }
     } finally { pending = false; reload.disabled = false; }
   }
   async function change(item, action) {
@@ -103,15 +110,20 @@ export async function mount(container) {
     } catch (error) {
       if (!destroyed) {
         failed = true;
+        pollingBlocked = [401, 403, 404].includes(Number(error.status));
         message.textContent = error.message;
       }
     } finally {
       pending = false;
-      if (!stoppingSelf && !destroyed) { reload.disabled = false; timer = setTimeout(refresh, failed ? 5000 : 500); }
+      if (!stoppingSelf && !destroyed) { reload.disabled = false; scheduleRefresh(failed ? 5000 : 500); }
     }
   }
   reload.addEventListener("click", refresh);
-  await refresh();
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) { clearTimeout(timer); timer = null; }
+    else void refresh(true);
+  }, {signal: controller.signal});
+  if (visible()) await refresh();
   return {
     refresh, isBusy: () => pending, hasUnsavedChanges: () => false,
     destroy() { destroyed = true; clearTimeout(timer); controller.abort(); }

@@ -17,8 +17,12 @@
       $, loadLibrary, mergeDetailPayload, paperApi, paperDialog, setMode, state, syncPaperLocation,
     } = dependencies;
     let submission = null;
+    let registrationEpoch = 0;
+    const currentForm = epoch => epoch === registrationEpoch && !state.leaving && !$("paperModal")?.hidden;
+    const currentDraft = (uploadId, epoch) => !document.hidden && currentForm(epoch) && state.registrationUploadId === uploadId;
 
     function openPaperModal() {
+      registrationEpoch += 1;
       submission = null;
       $("paperForm").reset();
       state.registrationEditedFields.clear();
@@ -33,6 +37,7 @@
     }
 
     function closePaperModal() {
+      registrationEpoch += 1;
       if (state.registrationDraftPollTimer) clearTimeout(state.registrationDraftPollTimer);
       state.registrationDraftPollTimer = 0;
       state.registrationDraftInFlight = false;
@@ -74,21 +79,29 @@
       });
     }
 
-    function schedulePaperRegistrationDraftPoll(uploadId) {
+    function schedulePaperRegistrationDraftPoll(uploadId, epoch = registrationEpoch) {
       if (state.registrationDraftPollTimer) clearTimeout(state.registrationDraftPollTimer);
+      state.registrationDraftPollTimer = 0;
+      if (!currentDraft(uploadId, epoch)) return;
       state.registrationDraftPollTimer = setTimeout(() => {
-        pollPaperRegistrationDraft(uploadId).catch(error => {
-          if (state.registrationUploadId !== uploadId) return;
+        state.registrationDraftPollTimer = 0;
+        const pollEpoch = state.paperPollEpoch || 0;
+        pollPaperRegistrationDraft(uploadId, epoch).catch(error => {
+          if (!currentDraft(uploadId, epoch) || pollEpoch !== (state.paperPollEpoch || 0)) return;
           setPaperRegistrationUploadStatus(`Metadata status unavailable: ${error.message || error}`, { error: true });
-          schedulePaperRegistrationDraftPoll(uploadId);
+          if ([401, 403, 404].includes(Number(error.status))) {
+            state.registrationDraftInFlight = false;
+            setPaperRegistrationControlsBusy(false);
+          } else schedulePaperRegistrationDraftPoll(uploadId, epoch);
         });
       }, 1500);
     }
 
-    async function pollPaperRegistrationDraft(uploadId) {
-      if (!uploadId || state.registrationUploadId !== uploadId || $("paperModal")?.hidden) return;
+    async function pollPaperRegistrationDraft(uploadId, epoch) {
+      if (!uploadId || !currentDraft(uploadId, epoch)) return;
+      const pollEpoch = state.paperPollEpoch || 0;
       const draft = await paperApi.get(`/paper/api/papers/registration-draft?upload_id=${encodeURIComponent(uploadId)}`);
-      if (state.registrationUploadId !== uploadId) return;
+      if (!currentDraft(uploadId, epoch) || pollEpoch !== (state.paperPollEpoch || 0)) return;
       const status = String(draft.status || "");
       applyPaperRegistrationMetadata(draft.metadata || {}, { preserveEdits: true });
       if (["done", "partial", "error"].includes(status)) {
@@ -108,7 +121,7 @@
         return;
       }
       setPaperRegistrationUploadStatus(`${draft.filename || "PDF"} · ${draft.step || "extracting metadata"} · AI 尚未完成，可核对填写后直接登记，无需等待。登记采用当前表单，不会被后续提取结果覆盖。`);
-      schedulePaperRegistrationDraftPoll(uploadId);
+      schedulePaperRegistrationDraftPoll(uploadId, epoch);
     }
 
     async function uploadPaperRegistrationPdf(file) {
@@ -118,6 +131,7 @@
         return;
       }
       state.registrationDraftInFlight = true;
+      const epoch = registrationEpoch;
       state.registrationUploadId = "";
       setPaperRegistrationControlsBusy(true);
       setPaperRegistrationUploadStatus(`${file.name || "PDF"} · uploading`);
@@ -125,6 +139,7 @@
         const form = new FormData();
         form.append("file", file, file.name || "paper.pdf");
         const draft = await paperApi.postForm("/paper/api/papers/registration-draft", form);
+        if (!currentForm(epoch)) return;
         const uploadId = String(draft.upload_id || "").trim();
         if (!uploadId) throw new Error("Paper registration upload did not return an id");
         state.registrationUploadId = uploadId;
@@ -132,8 +147,9 @@
         const hidden = $("paperForm")?.elements?.namedItem("registration_upload_id");
         if (hidden) hidden.value = uploadId;
         setPaperRegistrationUploadStatus(`${draft.filename || file.name || "PDF"} · ${draft.step || "queued"}`);
-        schedulePaperRegistrationDraftPoll(uploadId);
+        schedulePaperRegistrationDraftPoll(uploadId, epoch);
       } catch (error) {
+        if (!currentForm(epoch)) return;
         state.registrationDraftInFlight = false;
         setPaperRegistrationControlsBusy(false);
         setPaperRegistrationUploadStatus(error.message || String(error), { error: true });
@@ -173,8 +189,14 @@
       }
     }
 
+    function resumePaperRegistrationPolling() {
+      if (state.registrationDraftInFlight && state.registrationUploadId) {
+        schedulePaperRegistrationDraftPoll(state.registrationUploadId);
+      }
+    }
+
     return Object.freeze({
-      closePaperModal, openPaperModal, submitPaper, uploadPaperRegistrationPdf,
+      closePaperModal, openPaperModal, resumePaperRegistrationPolling, submitPaper, uploadPaperRegistrationPdf,
     });
   }
 

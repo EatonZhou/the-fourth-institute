@@ -19,6 +19,7 @@ function fixture() {
   };
   const context = {
     window,
+    document: { hidden: false },
     FormData: class { append() {} },
     setTimeout: callback => { timers.set(++timerId, callback); return timerId; },
     clearTimeout: id => timers.delete(id),

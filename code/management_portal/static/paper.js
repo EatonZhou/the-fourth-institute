@@ -383,7 +383,7 @@
   });
 
   const {
-    createExp, createReview, deleteReview, loadDeepReadStatus, loadExpStatus, loadReviewStatus,
+    createExp, createReview, deleteReview, loadDeepReadStatus, loadExpStatus, loadReviewStatus, resumeReviewPolling,
     refreshDeepReadProjection, refreshExpProjection, renderExpMode, renderReviewMode, startDeepRead,
   } = paperModule("PortalPaperReviews").createReviews({
     $, chip, detailSectionLoadingHtml, detailSectionsLoaded, esc, loadDetailSections, loadLibrary, md,
@@ -418,7 +418,7 @@
   });
 
   const {
-    closePaperModal, openPaperModal, submitPaper, uploadPaperRegistrationPdf,
+    closePaperModal, openPaperModal, resumePaperRegistrationPolling, submitPaper, uploadPaperRegistrationPdf,
   } = paperModule("PortalPaperRegistration").createRegistration({
     $, loadLibrary, mergeDetailPayload, paperApi, paperDialog, setMode, state, syncPaperLocation,
   });
@@ -435,7 +435,7 @@
   } = paperModule("PortalPaperProjection").createProjection({
     alertError, assetsJobRunning, cancelPdfRendering, ccfPaperEnrichment, ensureCcfPaperEnrichment,
     loadCollectorJobs, loadDetailSections, refreshAssetsProjection, refreshDeepReadProjection,
-    refreshExpProjection, refreshFigureProjection, state,
+    refreshExpProjection, refreshFigureProjection, resumePaperRegistrationPolling, resumeReviewPolling, state,
   });
 
   const {

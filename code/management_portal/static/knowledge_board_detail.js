@@ -45,7 +45,8 @@ const DETAIL_NON_EDITABLE_KINDS = new Set([
 ]);
 
 function detailSelectedFileEditable() {
-  return !state.detailSelectedFileLinked
+  return !state.detailReadOnly
+    && !state.detailSelectedFileLinked
     && !DETAIL_NON_EDITABLE_KINDS.has(state.detailSelectedFileKind);
 }
 
@@ -118,6 +119,8 @@ function finalizeDetailClose(context = {}) {
 }
 
 function syncDetailButtons() {
+  const snapshot = detailDocumentSession?.snapshot?.();
+  const available = !!snapshot?.payload && !["empty", "loading", "error"].includes(snapshot.status);
   const selectedType = String((state.selected || {}).type || "");
   const deleteProtected = ["article", "experiment"].includes(selectedType);
   const selectedFile = detailFiles().find(value => String(value.address || "") === state.detailSelectedFileId);
@@ -129,11 +132,11 @@ function syncDetailButtons() {
       || state.selected?.filename
       || state.detailSelectedFileId,
   });
-  el.mEdit.hidden = !state.detailSelectedFileId
+  el.mEdit.hidden = !available || !state.detailSelectedFileId
     || state.detailSelectedFileLinked
     || state.detailEditing
     || !detailSelectedFileEditable();
-  el.mDelete.hidden = deleteProtected || !state.detailFileId || state.detailFileId !== state.detailSelectedFileId || state.detailEditing;
+  el.mDelete.hidden = !available || state.detailReadOnly || deleteProtected || !state.detailFileId || state.detailFileId !== state.detailSelectedFileId || state.detailEditing;
   el.mCancelEdit.hidden = !state.detailEditing;
   el.mSave.hidden = !state.detailEditing;
   el.mSave.disabled = state.detailSaving || state.detailDeleting || !detailIsDirty();
@@ -237,23 +240,25 @@ function renderDetailBody() {
   void previewHandle.promise.catch(alertError);
 }
 
+function resetDetailEditorDraft() {
+  if (!usesPackageStyleEditor()
+    && state.detailSelectedFileId === state.detailFileId
+    && state.detailSelectedFileKind === "markdown") {
+    const parsed = splitDetailMarkdown(state.detailText);
+    state.detailMetaDraft = parsed.meta;
+    state.detailBodyDraft = parsed.body;
+  } else {
+    state.detailMetaDraft = null;
+    state.detailBodyDraft = state.detailText;
+  }
+}
+
 async function setDetailEditing(editing) {
   if (!state.detailSelectedFileId || state.detailSaving) return;
-  if (editing && state.detailSelectedFileLinked) return;
   if (editing && !detailSelectedFileEditable()) return;
   if (editing) {
     if (!detailDocumentSession.beginEdit()) return;
-    if (usesPackageStyleEditor()) {
-      state.detailMetaDraft = null;
-      state.detailBodyDraft = state.detailText;
-    } else if (state.detailSelectedFileId === state.detailFileId && state.detailSelectedFileKind === "markdown") {
-      const parsed = splitDetailMarkdown(state.detailText);
-      state.detailMetaDraft = parsed.meta;
-      state.detailBodyDraft = parsed.body;
-    } else {
-      state.detailMetaDraft = null;
-      state.detailBodyDraft = state.detailText;
-    }
+    resetDetailEditorDraft();
   } else {
     if (!await detailDocumentSession.cancelEdit()) return;
     state.detailBodyDraft = "";
@@ -264,54 +269,73 @@ async function setDetailEditing(editing) {
 
 async function saveDetail() {
   if (!state.detailSelectedFileId || state.detailSelectedFileLinked) return;
+  const resourceId = state.detailFileId;
+  const address = state.detailSelectedFileId;
   return detailDocumentSession.save({
     save: async ({ draft }) => {
       const data = await knowledgeApi.request("/knowledge/api/detail/save", {
         method: "POST",
-        body: JSON.stringify({ kb_id: state.detailSelectedFileId, text: draft }),
+        body: JSON.stringify({ kb_id: address, text: draft }),
       });
       return { ...data, content: String(data.text || "") };
     },
-    onSaved: async () => {
-    state.detailBodyDraft = "";
-    state.detailMetaDraft = null;
-    detailResourceGuest?.changed({
-      resourceId: state.detailFileId,
-      kind: "updated",
-    });
-    let item = state.selected;
-    if (!detailResourceGuest?.embedded()) {
-      await loadIndex({ refresh: true });
-      item = byId(state.detailFileId) || state.selected;
-      state.selected = item;
-    }
-    if (item) {
-      renderKnowledgeResourceIdentity(item, state.detailFileId);
-      const file = detailFiles().find(value => String(value.address || "") === String(state.detailSelectedFileId || ""));
-      el.mSub.textContent = `${item.project || ""} · ${item.type || ""} · ${file?.relative_path || item.filename || ""}`;
-    }
-    renderDetailFileTree();
-    if (detailGraphEnabled()) loadDetailGraph(state.detailFileId).catch(() => {});
-    if (detailChatPayload()) loadDetailChat(state.detailFileId, { silent: true }).catch(() => {});
+    onSaved: async (_payload, saved) => {
+      // The session stays in edit mode. Rebuild from the acknowledged text,
+      // including server-written metadata, before another input is accepted.
+      resetDetailEditorDraft();
+      renderDetailBody();
+      detailResourceGuest?.changed({ resourceId, kind: "updated" });
       window.PortalUI.toast(window.PortalI18n.t("资源已保存"));
+      const stillCurrent = () => {
+        const current = detailDocumentSession.snapshot();
+        return current.requestId === saved.requestId && current.payload === saved.payload;
+      };
+      let item = state.selected;
+      if (!detailResourceGuest?.embedded()) {
+        try {
+          await loadIndex({ refresh: true });
+        } catch (error) {
+          // The write was acknowledged; an index failure must not replay it.
+          if (stillCurrent()) alertError(error);
+          return;
+        }
+        if (!stillCurrent()) return;
+        item = byId(resourceId) || state.selected;
+        state.selected = item;
+      }
+      if (item) {
+        renderKnowledgeResourceIdentity(item, resourceId);
+        const file = detailFiles().find(value => String(value.address || "") === address);
+        el.mSub.textContent = `${item.project || ""} · ${item.type || ""} · ${file?.relative_path || item.filename || ""}`;
+      }
+      renderDetailFileTree();
+      if (detailGraphEnabled()) loadDetailGraph(resourceId).catch(() => {});
+      if (detailChatPayload()) loadDetailChat(resourceId, { silent: true }).catch(() => {});
     },
-    onError: err => window.PortalUI.toast(window.PortalUI.errorMessage(window.PortalI18n.t("保存"), err), "error", {
-      retry: saveDetail,
+    onError: (err, failed) => window.PortalUI.toast(window.PortalUI.errorMessage(window.PortalI18n.t("保存"), err), "error", {
+      retry: () => {
+        const current = detailDocumentSession.snapshot();
+        if (current.requestId === failed.requestId && current.payload === failed.payload
+          && current.editing && current.draft === failed.draft) return saveDetail();
+      },
     }),
   });
 }
 
 async function deleteDetail() {
-  if (!state.detailFileId || state.detailSaving || state.detailDeleting) return;
-  const item = byId(state.detailFileId) || state.selected || {};
-  const title = item.title || item.filename || state.detailFileId;
+  if (!state.detailFileId || state.detailReadOnly || state.detailSaving || state.detailDeleting) return;
+  const fileId = state.detailFileId;
+  const selectedFileId = state.detailSelectedFileId;
+  const item = byId(fileId) || state.selected || {};
+  const title = item.title || item.filename || fileId;
   const isSkill = String(item.type || "") === "skill";
   if (!await window.PortalUI.confirmAction("delete", title, {
     consequence: isSkill
       ? "整个 Skill（包括附属文件）会移动到对应来源的 .trash/，不会直接永久删除。"
       : "文件会移动到项目 knowledge_base/.trash/，不会直接永久删除。",
   })) return;
-  const fileId = state.detailFileId;
+  if (state.detailFileId !== fileId || state.detailSelectedFileId !== selectedFileId
+    || state.detailReadOnly || state.detailSaving || state.detailDeleting) return;
   state.detailDeleting = true;
   syncDetailButtons();
   try {

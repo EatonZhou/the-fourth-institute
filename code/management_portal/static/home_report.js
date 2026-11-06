@@ -23,7 +23,7 @@
     let target, report, media, video, mediaRegion, banner, list, sourceRegion, mediaAction, explanation;
     let requestedTarget, originKey = '', reportQuality = 'medium', videoQuality = 'medium';
     let presented = true, destroyed = false, epoch = 0, controller, externalSignal, externalAbort;
-    let refreshTimer, mediaTimer, query = '', status = '', busy = false, rechecking = false;
+    let refreshTimer, mediaTimer, mediaEpoch = 0, query = '', status = '', busy = false, rechecking = false;
     const active = token => !destroyed && presented && token === epoch && !controller?.signal.aborted;
     const request = (url, options = {}) => json(url, {...options, signal: controller.signal});
     function qualitySelect(label, value, change) {
@@ -43,7 +43,7 @@
           const found = report.report_id ? await request(`${API}/reports/${report.report_id}/${report.revision}/media/${value}`) : null;
           if (!active(token) || videoQuality !== value) return;
           media = found;
-          if (found) {renderMedia(found); if (found.status === 'pending') mediaTimer = setTimeout(() => pollMedia(token), 1000);}
+          if (found) {renderMedia(found); scheduleMedia(token, 1000);}
           else {mediaRegion.replaceChildren(); mediaRegion.hidden = true; mediaActions();}
         } catch(error) {if(active(token) && videoQuality===value) renderMedia({status:'failed',error:error.message,quality:value});}
       }}).root);
@@ -86,7 +86,8 @@
       return section;
     }
     function stopMedia() { if (video) { video.pause(); video.removeAttribute('src'); video.load(); video = null; } }
-    function stop() { ++epoch; controller?.abort(); clearTimeout(refreshTimer); clearTimeout(mediaTimer); busy = false; rechecking = false; }
+    function stopMediaPolling() { ++mediaEpoch; clearTimeout(mediaTimer); }
+    function stop() { ++epoch; controller?.abort(); clearTimeout(refreshTimer); stopMediaPolling(); busy = false; rechecking = false; }
     function message(value, retry) {
       stopMedia(); root.replaceChildren(el('p', value, 'hr-notice'));
       root.hidden = false;
@@ -285,6 +286,7 @@
       root.append(sourceRegion);
     }
     function renderMedia(state) {
+      stopMediaPolling();
       media = state;
       if(mediaAction) mediaActions(state);
       mediaRegion.hidden = false;
@@ -338,15 +340,23 @@
       }
       mediaRegion.append(downloads);
     }
-    async function pollMedia(token) {
-      if (!active(token) || !report?.report_id || !media) return;
+    function scheduleMedia(token, delay) {
+      clearTimeout(mediaTimer);
+      const generation = mediaEpoch;
+      if (active(token) && !document.hidden && media?.status === 'pending') mediaTimer = setTimeout(() => pollMedia(token, generation), delay);
+    }
+    async function pollMedia(token, generation = mediaEpoch) {
+      if (!active(token) || generation !== mediaEpoch || document.hidden || !report?.report_id || media?.status !== 'pending') return;
       try {
         const level = videoQuality;
         const state = await request(`${API}/reports/${report.report_id}/${report.revision}/media/${level}`);
-        if (!active(token) || level !== videoQuality || !state) return;
-        if (state.status === 'pending') mediaTimer = setTimeout(() => pollMedia(token), 3000);
+        if (!active(token) || generation !== mediaEpoch || document.hidden || level !== videoQuality || !state) return;
+        if (state.status === 'pending') scheduleMedia(token, 3000);
         else renderMedia(state);
-      } catch (error) { if (active(token)) message(`来源暂不可读，已撤去报告：${error.message}`, true); }
+      } catch (error) { if (active(token) && generation === mediaEpoch && !document.hidden) {
+        stop(); explanation?.destroy(); explanation = null; report = null; media = null;
+        message(`来源暂不可读，已撤去报告：${error.message}`, true);
+      } }
     }
     async function generate(retry) {
       if (!presented || !report || busy || destroyed) return;
@@ -358,7 +368,7 @@
         const state = await request(`${API}/media`, {method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({report_id:report.report_id, revision:report.revision, quality:level, retry})});
         if (!active(token) || videoQuality !== level) return;
         stopMedia(); renderMedia(state);
-        if (state.status === 'pending') mediaTimer = setTimeout(() => pollMedia(token), 1000);
+        scheduleMedia(token, 1000);
       } catch (error) {
         if (active(token) && videoQuality === level) {
           if ([401,403,404].includes(error.status)) message('来源已不可读，报告已撤去。', true);
@@ -366,8 +376,9 @@
         }
       } finally { if (token === epoch) busy = false; }
     }
-    function schedule() { clearTimeout(refreshTimer); if (presented && !destroyed) refreshTimer = setTimeout(() => validate().catch(() => {}), 20000); }
+    function schedule() { clearTimeout(refreshTimer); if (presented && !destroyed && !document.hidden) refreshTimer = setTimeout(() => validate().catch(() => {}), 20000); }
     async function accept(result) {
+      stopMediaPolling();
       reportQuality = result.quality || 'medium'; videoQuality = result.media?.quality || 'medium';
       report = result; target = {...result.target, ...(requestedTarget.focus ? {focus:requestedTarget.focus} : {})};
       if (result.reference) {
@@ -385,7 +396,7 @@
         if (active(token)) schedule(); return;
       }
       media = result.media || null; render(); if (media) renderMedia(media);
-      if (media?.status === 'pending') mediaTimer = setTimeout(() => pollMedia(epoch),1000);
+      scheduleMedia(epoch, 1000);
       schedule();
     }
     async function refresh(content) {
@@ -401,7 +412,7 @@
       finally {if(token===epoch) busy=false;}
     }
     async function validate() {
-      if (!presented || destroyed || !target || !report || rechecking) return;
+      if (!presented || destroyed || document.hidden || !target || !report || rechecking) return;
       rechecking = true; const token = epoch;
       try {
         // Reopen old snapshot dependencies as well as the new target. A source
@@ -461,13 +472,13 @@
     }
     // Focus can return before the first read finishes or while its retry UI is
     // shown. There is no accepted report to hide or validate in either state.
-    const recheck = () => {if (presented && report) {root.hidden = true; video?.pause(); validate().catch(() => {});}};
+    const recheck = () => {if (presented && report) {root.hidden = true; video?.pause(); return validate().catch(() => {});}};
     const accessChanged = () => {
       if (!presented || destroyed) return;
       if (report) recheck();
       else load().catch(() => {}); // Discard reads started under the old identity.
     };
-    const visibility = () => {if (document.hidden) {clearTimeout(refreshTimer); clearTimeout(mediaTimer); video?.pause();} else if (presented) recheck();};
+    const visibility = () => {if (document.hidden) {clearTimeout(refreshTimer); stopMediaPolling(); video?.pause();} else if (presented) recheck()?.then(() => scheduleMedia(epoch, 1000));};
     window.addEventListener('focus', recheck);
     window.addEventListener('portal:permissions-changed', accessChanged);
     window.addEventListener('portal:identity-changed', accessChanged);

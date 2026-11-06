@@ -144,6 +144,7 @@
     } catch { }
   }
   async function preview() {
+    if (disposed) return;
     frame?.destroy(); frame = null;
     const root = element("previewRoot");
     if (builtinPaths[app?.builtin] && !app.manifest && !app.html) {
@@ -151,7 +152,11 @@
       root.innerHTML = window.PortalI18n.html`<div class="projectionEmpty"><h2>${escape(app.title)}</h2><p>内置页面已绑定普通 Lineage，页面配置统一在这里维护。</p><a class="portalButton" href="${path}">打开页面</a></div>`;
     } else if (!app?.html && !app?.manifest) {
       root.innerHTML = window.PortalI18n.markup('<div class="projectionEmpty"><h2>工作台预览</h2><p>选择团队 → 描述需求 → AI 生成 → 预览与发布</p></div>');
-    } else frame = await window.PortalProjectionHost.mount(root, app, { preview: true });
+    } else {
+      const mounted = await window.PortalProjectionHost.mount(root, app, { preview: true });
+      if (disposed) mounted.destroy();
+      else frame = mounted;
+    }
   }
   // Fields the user has typed into since they were last filled or submitted.
   // A later refresh (a generation observed at load, a reverse apply) must not
@@ -232,6 +237,7 @@
   }
   async function refreshGeneration(job) {
     clearTimeout(polling);
+    if (disposed) return;
     const revision = ++observationRevision;
     try {
       const snapshot = await request(`generation?id=${encodeURIComponent(job.id)}`);
@@ -461,8 +467,10 @@
       const requirements = element("requirements").value.trim();
       if (!lineage_id || !requirements) throw new Error("请选择 Lineage 并描述工作台需求");
       const job = await request("generate", { request_id: globalThis.PortalUIPrimitives.randomUUID(), lineage_id, requirements, title: element("appTitle").value.trim(), workbench_id: app?.workbench_id || "" });
+      if (disposed) return;
       typedFields.delete("appTitle"); // submitted with the generation request
       app = await request(`detail?id=${encodeURIComponent(job.workbench_id)}`);
+      if (disposed) return;
       history.replaceState(null, "", settingsUrl(app.workbench_id));
       refreshEditor(); await observe(job);
     });
@@ -511,11 +519,13 @@
     }, true);
     if (params.get("id")) {
       app = await request(`detail?id=${encodeURIComponent(params.get("id"))}`);
+      if (disposed) return;
       element("targetLineage").value = app.bindings.main?.lineage_id || "";
       element("requirements").value = app.description || "";
     }
     element("generationDetails").open = !app;
     refreshEditor(); await preview();
+    if (disposed) return;
     let saved;
     try { saved = JSON.parse(sessionStorage.getItem("portal.projection.generation") || "null"); } catch { sessionStorage.removeItem("portal.projection.generation"); }
     if (saved && app?.workbench_id === saved.workbench_id) await observe(await request(`generation?id=${encodeURIComponent(saved.id)}`));

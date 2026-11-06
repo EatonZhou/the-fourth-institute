@@ -82,6 +82,7 @@
   let connected = false;
   let leader = false;
   let stopped = false;
+  let terminalSubscriptionUrl = "";
   let lockPending = false;
   let lockAbort = null;
   let releaseLeadership = null;
@@ -155,6 +156,7 @@
 
   function resubscribe() {
     const url = subscriptionUrl();
+    if (url === terminalSubscriptionUrl) return;
     if (url === sourceUrl) {
       closeNextSource("subscription_unchanged");
       return;
@@ -307,14 +309,16 @@
   }
 
   function openSource() {
+    const url = subscriptionUrl();
     if (
       source
       || stopped
+      || url === terminalSubscriptionUrl
       || document.hidden
       || (sharedLeadership && !leader)
     ) return;
     markStreamSignal();
-    sourceUrl = subscriptionUrl();
+    sourceUrl = url;
     source = createSource(sourceUrl);
     startWatchdog();
   }
@@ -368,6 +372,19 @@
       if (created === source) markStreamSignal();
     });
     created.onerror = () => {
+      // CLOSED means the browser will not reconnect this transport (unlike
+      // CONNECTING for transient errors). Do not turn a terminal rejection
+      // into new requests from the watchdog or subscription lease refresh.
+      if (created.readyState === (EventSource.CLOSED ?? 2) && (created === source || created === nextSource)) {
+        // Reject this exact subscription until explicit retry. A different
+        // target set may still be valid, so navigation can subscribe once.
+        terminalSubscriptionUrl = created === nextSource ? nextSourceUrl : sourceUrl;
+        reconnectAttempts += 1;
+        if (created === nextSource) closeNextSource("terminal_stream_error");
+        else closeSource("terminal_stream_error");
+        publishEvent("portal:events-error", { attempt: reconnectAttempts, terminal: true });
+        return;
+      }
       if (created === nextSource) {
         restartSource("next_stream_error");
         return;
@@ -514,6 +531,7 @@
     isConnected: () => connected,
     isLeader: () => leader,
     retry: () => {
+      terminalSubscriptionUrl = "";
       reconnectAttempts = 0;
       closeSource("retry");
       connect();

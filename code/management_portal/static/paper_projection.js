@@ -9,7 +9,7 @@
   const DEPENDENCIES = Object.freeze([
     "alertError", "assetsJobRunning", "cancelPdfRendering", "ccfPaperEnrichment", "ensureCcfPaperEnrichment",
     "loadCollectorJobs", "loadDetailSections", "refreshAssetsProjection", "refreshDeepReadProjection",
-    "refreshExpProjection", "refreshFigureProjection", "state",
+    "refreshExpProjection", "refreshFigureProjection", "resumePaperRegistrationPolling", "resumeReviewPolling", "state",
   ]);
 
   function createProjection(dependencies) {
@@ -18,11 +18,12 @@
     const {
       alertError, assetsJobRunning, cancelPdfRendering, ccfPaperEnrichment, ensureCcfPaperEnrichment,
       loadCollectorJobs, loadDetailSections, refreshAssetsProjection, refreshDeepReadProjection,
-      refreshExpProjection, refreshFigureProjection, state,
+      refreshExpProjection, refreshFigureProjection, resumePaperRegistrationPolling, resumeReviewPolling, state,
     } = dependencies;
 
     let paperProjectionSyncTimer = 0;
     let paperProjectionSyncRunning = false;
+    let paperProjectionEpoch = 0;
     let paperProjectionSnapshotPending = false;
     let paperProjectionEventsBound = false;
     let pendingPaperProjectionChanges = new Map();
@@ -54,6 +55,9 @@
     }
 
     async function syncPaperProjection(snapshot, changes) {
+      const epoch = paperProjectionEpoch;
+      const current = () => !state.leaving && !document.hidden && epoch === paperProjectionEpoch;
+      if (!current()) return;
       const fields = new Set();
       changes.forEach(items => items.forEach(field => fields.add(field)));
       const selectedId = String(state.selectedId || "");
@@ -61,23 +65,29 @@
 
       if (snapshot || fields.has("collector")) {
         await loadCollectorJobs({ render: true });
+        if (!current()) return;
       }
 
       if (selectedChanged) {
         const selectedFields = changes.get(selectedId) || new Set();
         const refreshBase = snapshot || [...selectedFields].some(field => !["deep_read", "exp", "figures"].includes(field));
         if (refreshBase) await refreshAssetsProjection(selectedId);
+        if (!current()) return;
         if (snapshot || selectedFields.has("deep_read")) {
           await refreshDeepReadProjection();
+          if (!current()) return;
         }
         if (snapshot || selectedFields.has("exp")) {
           await refreshExpProjection({ snapshot });
+          if (!current()) return;
         }
         if (snapshot || selectedFields.has("figures")) {
           await refreshFigureProjection();
+          if (!current()) return;
         }
         if (selectedFields.has("review") && state.mode === "review") {
           await loadDetailSections(selectedId, ["reviews"], { render: true, force: true });
+          if (!current()) return;
         }
         if (
           selectedFields.has("run:assets")
@@ -85,6 +95,7 @@
           && ["refs", "figures"].includes(state.mode)
         ) {
           await loadDetailSections(selectedId, [state.mode], { render: true, force: true });
+          if (!current()) return;
         }
       }
 
@@ -101,7 +112,7 @@
     }
 
     async function flushPaperProjectionSync() {
-      if (paperProjectionSyncRunning) return;
+      if (paperProjectionSyncRunning || state.leaving || document.hidden) return;
       paperProjectionSyncRunning = true;
       const snapshot = paperProjectionSnapshotPending;
       const changes = pendingPaperProjectionChanges;
@@ -134,6 +145,12 @@
     }
 
     function suspendPaperUpdates({ includeDeferred = true, includePdf = true } = {}) {
+      paperProjectionEpoch += 1;
+      state.paperPollEpoch = (state.paperPollEpoch || 0) + 1;
+      clearTimeout(state.registrationDraftPollTimer);
+      state.registrationDraftPollTimer = 0;
+      clearTimeout(state.reviewPollTimer);
+      state.reviewPollTimer = 0;
       if (includePdf) cancelPdfRendering();
       window.clearTimeout(paperProjectionSyncTimer);
       paperProjectionSyncTimer = 0;
@@ -149,6 +166,8 @@
 
     function resumePaperUpdates() {
       schedulePaperProjectionSync({ snapshot: true });
+      resumePaperRegistrationPolling();
+      resumeReviewPolling();
     }
 
     return Object.freeze({

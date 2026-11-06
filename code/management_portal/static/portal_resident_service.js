@@ -162,6 +162,8 @@
           }
         } catch (_) {}
       }
+      const visibleObserver = () => entry.listeners.size > 0 && !window.document?.hidden;
+      const awaitingRestart = () => entry.pending || ["accepted", "cancelling"].includes(entry.restart?.status);
       entry.refresh = () => {
         if (entry.inflight) return entry.inflight;
         clearTimeout(entry.timer);
@@ -172,6 +174,7 @@
           entry.config = { ...config, restart: entry.restart };
           entry.lastSyncedAt = Date.now();
           entry.error = "";
+          entry.denied = false;
           if (entry.pending && config.restart?.request_id === entry.pending.payload.idempotency_key) {
             entry.pending = null;
             persistPending(entry);
@@ -179,23 +182,32 @@
         }).catch(error => {
           if (revision !== entry.revision) return;
           entry.error = String(error.message || error);
-          if (Number(error.status) === 403 || Number(error.status) === 404) entry.denied = true;
+          if ([401, 403, 404].includes(Number(error.status))) entry.denied = true;
         }).finally(() => {
           entry.inflight = null;
           notifyRestart(entry);
-          if (!entry.denied && (entry.pending || ["accepted", "cancelling"].includes(entry.restart?.status))) {
-            entry.timer = setTimeout(entry.refresh, 1500);
+          if (!entry.denied && visibleObserver() && awaitingRestart()) {
+            entry.timer = setTimeout(() => {
+              if (visibleObserver() && !entry.denied && awaitingRestart()) entry.refresh();
+            }, 1500);
           }
         });
         return entry.inflight;
       };
       entry.onChange = event => {
+        if (!visibleObserver() || entry.denied) return;
         const detail = event?.detail || {};
         const scopes = detail.resident_changes?.[residentId];
         const restartChanged = Array.isArray(scopes) && scopes.includes("session_restart");
         if (restartChanged || (detail.snapshot_required && (entry.pending || entry.restart?.status === "accepted"))) {
           entry.refresh();
         }
+      };
+      // The operation and its idempotency key are durable; closing or hiding
+      // its UI only suspends reads. Reopening reconciles the original request.
+      entry.onVisibility = () => {
+        clearTimeout(entry.timer);
+        if (visibleObserver()) entry.refresh();
       };
       restarts.set(residentId, entry);
       return entry;
@@ -635,15 +647,20 @@
       },
       observeSessionRestart(residentId, listener) {
         const entry = restartEntry(required(residentId, "resident_id"));
-        if (!entry.listeners.size) window.addEventListener("portal:change", entry.onChange);
+        if (!entry.listeners.size) {
+          window.addEventListener("portal:change", entry.onChange);
+          window.document?.addEventListener("visibilitychange", entry.onVisibility);
+        }
         entry.listeners.add(listener);
         notifyRestartListener(entry, listener);
-        entry.refresh();
+        if (!window.document?.hidden) entry.refresh();
         return () => {
           entry.listeners.delete(listener);
-          if (!entry.listeners.size) window.removeEventListener("portal:change", entry.onChange);
-          if (!entry.listeners.size && !entry.pending
-            && !["accepted", "cancelling"].includes(entry.restart?.status)) clearTimeout(entry.timer);
+          if (!entry.listeners.size) {
+            window.removeEventListener("portal:change", entry.onChange);
+            window.document?.removeEventListener("visibilitychange", entry.onVisibility);
+            clearTimeout(entry.timer);
+          }
         };
       },
       refreshSessionRestart(residentId) {

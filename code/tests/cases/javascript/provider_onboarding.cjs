@@ -1,7 +1,7 @@
 const assert = require('node:assert/strict');
 const fs = require('node:fs'), vm = require('node:vm');
 const {JSDOM} = require('jsdom');
-const dom = new JSDOM('<main></main>', {url: 'http://portal.invalid/'});
+const dom = new JSDOM('<main></main>', {url: 'http://portal.invalid/', pretendToBeVisual: true});
 const {window} = dom;
 const calls = [];
 let missing = false, fail = false, roles = [], finishCheck, holdCheck = false;
@@ -11,6 +11,9 @@ let preparation = 'missing', prepareResult = 'ready', loginState = 'logged_in', 
 let holdPrepare = false, finishPrepare;
 let provider = 'claude', emptyCatalog = false, holdSetup = false, finishSetup, loginSession;
 let kimiRegion, holdLoginPoll = false, finishLoginPoll, failLoginStart = false;
+let loginReadStatus = 0, hidden = false;
+Object.defineProperty(window.document, 'hidden', {get: () => hidden});
+const visibility = value => { hidden = !value; window.document.dispatchEvent(new window.Event('visibilitychange')); };
 const kimiOptions = () => ({regions: [{id:'mainland-cn', label:'中国区'}, {id:'global', label:'国际区'}], region: kimiRegion || 'mainland-cn'});
 const kimiResult = () => ({login_options: kimiOptions(), session: kimiRegion ? {state:'awaiting_user',
   verification_code: kimiRegion, verification_url: `https://www.kimi.${kimiRegion === 'global' ? 'ai' : 'com'}/code/authorize_device`} : null});
@@ -56,6 +59,7 @@ window.PortalInstructionClient = {execute: async (name, args, options) => {
         if (holdLoginPoll) return new Promise(resolve => { finishLoginPoll = resolve; });
         return kimiResult();
       }
+      if (loginReadStatus) throw Object.assign(new Error('login read denied'), {status: loginReadStatus});
       if (loginError) throw new Error('暂时无法读取登录状态');
       if (loginSession) return {session: loginSession};
       return {session: {state: loginCancelled ? 'cancelled' : 'pending'}};
@@ -120,6 +124,12 @@ const openSetup = async () => {
   const modelOption = window.document.querySelector('datalist option');
   const draft = window.document.querySelector('input[name=model]');
   draft.value = 'custom-model'; draft.focus();
+  const preparationReads = calls.filter(call => call.name === 'GetProviderAccountSetup').length;
+  visibility(false); await flush();
+  assert.equal(timers.size, 0, 'hidden preparation pauses its network timer');
+  visibility(true); await flush();
+  assert.equal(timers.size, 1, 'visibility restores one scheduled read');
+  assert.equal(calls.filter(call => call.name === 'GetProviderAccountSetup').length, preparationReads);
   holdSetup = true; tick(); await flush();
   assert.equal(preparingStatus.textContent, preparingText, 'background polling must not replace the current status with a loading screen');
   assert.equal(preparingStatus.getAttribute('aria-busy'), 'false');
@@ -149,6 +159,12 @@ const openSetup = async () => {
   click('收起详细日志'); assert(log.hidden);
   // A new attempt must not present a stale failure log while polling.
   queued = true; click('测试并完成'); await flush();
+  const queuedReads = calls.filter(call => call.name === 'GetProviderAccountCheck').length;
+  visibility(false); await flush();
+  assert.equal(timers.size, 0, 'hidden account check removes its polling timer');
+  visibility(true); await flush();
+  assert.equal(timers.size, 1, 'account check resumes with one scheduled observation');
+  assert.equal(calls.filter(call => call.name === 'GetProviderAccountCheck').length, queuedReads);
   assert(log.hidden && !log.value);
   assert([...window.document.querySelectorAll('button')].find(el => el.textContent === '显示详细日志').hidden);
   queued = false; tick(); await flush(); await flush();
@@ -267,6 +283,23 @@ const openSetup = async () => {
   assert([...window.document.querySelectorAll('button')].find(el => el.textContent === '取消登录').disabled);
   retryLogin.close();
   loginCancelled = false;
+  const pausedLogin = context.openLogin('existing'); await flush();
+  const beforeHidden = calls.filter(call => call.name === 'GetProviderAccountLogin').length;
+  visibility(false); await flush();
+  assert.equal(timers.size, 0, 'hidden login removes its polling timer');
+  visibility(true); await flush();
+  assert.equal(calls.filter(call => call.name === 'GetProviderAccountLogin').length, beforeHidden + 1, 'visible login resumes one read');
+  pausedLogin.close();
+  for (const status of [401, 403, 404]) {
+    const deniedLogin = context.openLogin('existing'); await flush();
+    loginReadStatus = status; tick(); await flush();
+    assert.equal(timers.size, 0, `login HTTP ${status} must not retry automatically`);
+    assert.equal(intervals.size, 0, 'terminal read failure stops local waiting animation');
+    assert.match(window.document.querySelector('[data-backend-login-state]').textContent, /denied/);
+    visibility(false); visibility(true); await flush();
+    assert.equal(timers.size, 0, 'visibility cannot revive a denied login');
+    loginReadStatus = 0; deniedLogin.close();
+  }
   const googleLogin = context.openLogin('antigravity_one'); await flush();
   loginSession = {state: 'awaiting_user', requires_code_input: true, input_kind: 'callback_url',
     input_hint: '使用 Google 登录后，若浏览器无法打开 localhost，请粘贴地址栏中的完整回调 URL。',

@@ -333,8 +333,10 @@
         if (focusKey && action) root.querySelector(`[data-family-status-${action}="${CSS.escape(focusKey)}"]`)?.focus({ preventScroll: true });
       };
       mix = acquireMixState(residentId, render);
-      let quotaRequest = null;
+      let quotaRequest = null, quotaBlocked = false;
       const loadQuota = () => {
+        if (disposed || !isOpen() || document.hidden) return;
+        if (quotaBlocked) return;
         if (quotaRequest) return quotaRequest;
         // Home owns quota sampling and freshness. Reads here reuse its cached summary.
         quotaRequest = window.PortalAPI.get("/api/agent-status").then(summary => {
@@ -342,6 +344,7 @@
           accounts = summary.accounts || []; quotaError = ""; render();
         }).catch(error => {
           if (disposed) return;
+          quotaBlocked = [401, 403, 404].includes(Number(error.status));
           accounts = []; quotaError = error.message; render();
         }).finally(() => { quotaRequest = null; });
         return quotaRequest;
@@ -455,18 +458,22 @@
           }
         } catch (error) { window.PortalUI?.toast?.(error.message, "error"); }
       });
-      const freshnessTimer = window.setInterval(() => { if (isOpen()) { render(); void loadQuota(); } }, 15000);
+      const refreshVisibleQuota = () => { if (!document.hidden && isOpen()) { render(); void loadQuota(); } };
+      const freshnessTimer = window.setInterval(refreshVisibleQuota, 15000);
+      document.addEventListener('visibilitychange', refreshVisibleQuota);
       function cleanup() {
         if (disposed) return;
         window.clearInterval(freshnessTimer);
+        document.removeEventListener('visibilitychange', refreshVisibleQuota);
         disposed = true;
         mix.release();
         rows.forEach(row => row.stops?.forEach(stop => stop?.()));
         popover?.destroy(); root.remove();
       }
-      return { open() { if (container) root.hidden = false; else popover.open(); if (!loading) void load(); },
+      return { open() { quotaBlocked = false; if (container) root.hidden = false; else popover.open(); if (!loading) void load(); },
         refresh() {
           if (disposed || !isOpen()) return;
+          quotaBlocked = false;
           if (loading) reloadRequested = true;
           else void load();
         },
