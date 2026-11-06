@@ -290,7 +290,7 @@ Paper、Repo、WALL 等使用产品绑定的固定 Lineage/Resident。
 用户任务：
 {task_prompt}
 
-完成后先给出自然语言使用报告，然后单独一行输出 JSON（不使用代码围栏）：
+完成后以普通答复返回框架必需的测试执行回执，单独一行输出 JSON（不使用代码围栏）。这是业务结果，不要求生成汇报页面或独立使用报告，不修改当前汇报设置：
 {RESULT_MARKER} {{"status":"reported","summary":"使用总结","process":{{"status":"completed 或 blocked 或 not_started","steps":[],"stopped_at":"","reason":""}},"issues":[{{"category":"product 或 case 或 execution 或 tool","severity":"blocking 或 impact 或 minor","step":"发生步骤","symptom":"现象","evidence":[]}}],"performance":[{{"step":"关键步骤","duration_ms":null,"observation":"未记录"}}],"evidence":[],"evidence_gaps":[]}}
 问题分别归为产品问题、用例问题、执行偏差、工具问题，严重程度为阻断、影响使用、小问题。
 没有问题时 issues 为空。流程未走完时说明卡在哪一步及原因，不输出 PASS/FAIL。

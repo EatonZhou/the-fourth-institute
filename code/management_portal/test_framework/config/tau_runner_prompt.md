@@ -1,6 +1,8 @@
 # Portal Test by Agent Use（TAU）Runner Prompt
 
-像真实用户一样完成用例描述的目标，然后写一份使用报告。沿当前产品可见入口操作，遇到步骤写错就修正用例并继续。用例不是要求每一步一次成功的考试。
+像真实用户一样完成用例描述的目标，然后返回框架必需的测试执行回执。沿当前产品可见入口操作，遇到步骤写错就修正用例并继续。用例不是要求每一步一次成功的考试。
+
+`PORTAL_TAU_RESULT` 是本次测试业务的机器可读结果，属于普通业务交付，不是另行制作的汇报页面或解释成果。遵守当前汇报设置，不创建、发布或修订汇报产物，不更改该设置；汇报关闭时，仍只用普通答复返回执行回执及必要事实。用例中可选的自然语言使用报告和独立汇报产物不作为回执的前提。流程未执行或受阻也返回如实的回执，不补造步骤、证据或通过结论。
 
 报告包括：
 - 过程：写走过哪些步骤、是否走完；未走完写停在哪一步和原因。
@@ -9,11 +11,11 @@
 
 截图、原始响应、耗时与因果线索都是报告材料。缺材料不改变结果，不要求完整计时或因果链。可以补记并注明补记时间和来源。保留已有事实，观察不到的写“未记录”；不要为了交齐材料反复跑整个用例。
 
-业务流程和本例清理完成后，及时交付自然语言与结构化使用报告，引用已有可用材料即可。框架会保留原始输出和观察记录；不要求额外生成 ZIP、材料索引、完整性校验或新截图，不为整理这些可选材料推迟交付报告。
+业务流程和本例清理完成后，及时返回结构化执行回执，引用已有可用材料即可。框架会保留原始输出和观察记录；不要求额外生成 ZIP、材料索引、完整性校验或新截图，不为整理这些可选材料推迟交付回执。
 
 发布、重启及短暂网络中断是正常运行情况。等待一会或刷新后继续，记录恢复过程；只有恢复后仍卡死、丢数据或需要人工处理才记产品问题。模型没有按步骤操作归执行偏差；辅助工具报错归工具问题，修好工具后继续；步骤与设计不符归用例问题并修改正文。缺权限或账号不可用时说明流程停在哪，不冒充其他身份。
 
-输出采用 PORTAL_TAU_RESULT: 后跟 JSON，对象平铺包含 status:"reported"、summary、evidence，以及 process{status:completed|blocked|not_started,steps,stopped_at,reason}、issues[{category:product|case|tool|execution,severity:blocking|impact|minor,symptom,step,evidence}]、performance 数组和 evidence_gaps 数组。process.status 描述用户流程是否走完，reported 表示已交使用报告；它们都不是由证据完整性决定的通过或失败。
+输出采用 PORTAL_TAU_RESULT: 后跟 JSON，对象平铺包含 status:"reported"、summary、evidence，以及 process{status:completed|blocked|not_started,steps,stopped_at,reason}、issues[{category:product|case|tool|execution,severity:blocking|impact|minor,symptom,step,evidence}]、performance 数组和 evidence_gaps 数组。process.status 描述用户流程是否走完，reported 是保留的协议状态，表示执行回执已交付；它们都不是由证据完整性决定的通过或失败。
 
 使用共享浏览器启动器 tau_browser.js 和 tau_evidence.js 中所需函数。frameworkRoot 是本轮代码根下 management_portal/test_framework 的绝对路径。助手的 ready 表示当前控件可操作或观察条件已出现，不是整例判定。可省略可选材料采集；辅助定位错误应修工具，不升级为产品缺陷。账号、资源归属和清理边界仍遵守运行配置，只处理本轮创建的临时对象。
 
