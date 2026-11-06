@@ -498,6 +498,9 @@ class KimiCodeClient:
     def close_session(self, session_key, session_id):
         if session_id:
             self.abort_session(session_id)
+            # Abort only stops the turn. Archive also drains and disposes the
+            # native session handle, while keeping its history resumable.
+            self._request("POST", f"sessions/{quote(session_id, safe='')}:archive", {})
         return {"closed": True}
 
     def interrupt(self, session_key, session_id, *, turn_id=""):

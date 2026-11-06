@@ -785,5 +785,28 @@ class KimiCodeClientTest(unittest.TestCase):
         )
 
 
+class KimiSessionReleaseTests(unittest.TestCase):
+    def test_release_disposes_native_session_instead_of_only_cancelling(self):
+        client = KimiCodeClient("http://127.0.0.1:1/api/v1")
+        with mock.patch.object(client, "_request", return_value={}) as request:
+            self.assertEqual(client.close_session("binding", "session_probe"), {"closed": True})
+        self.assertEqual(request.call_args_list, [
+            mock.call("POST", "sessions/session_probe:abort", {}),
+            mock.call("POST", "sessions/session_probe:archive", {}),
+        ])
+
+    def test_archive_failure_must_not_be_reported_as_successful_release(self):
+        client = KimiCodeClient("http://127.0.0.1:1/api/v1")
+        with mock.patch.object(client, "_request", side_effect=[{}, KimiCodeUnavailable("offline")]):
+            with self.assertRaises(KimiCodeUnavailable):
+                client.close_session("binding", "session_probe")
+
+    def test_release_without_native_session_does_not_create_or_call_one(self):
+        client = KimiCodeClient("http://127.0.0.1:1/api/v1")
+        with mock.patch.object(client, "_request") as request:
+            self.assertEqual(client.close_session("binding", ""), {"closed": True})
+        request.assert_not_called()
+
+
 if __name__ == "__main__":
     unittest.main()
