@@ -46,6 +46,7 @@ def test_page_loads_its_parts_before_the_root_script():
     "knowledge_detail_graph_budget.cjs",
     "knowledge_search_card.cjs",
     "knowledge_collection_return.cjs",
+    "resource_return_layout.cjs",
 ])
 def test_board_scripts_pass_their_node_checks(script):
     """Knowledge 页面脚本的删除刷新、详情关系图布局和搜索卡片导航检查通过"""
