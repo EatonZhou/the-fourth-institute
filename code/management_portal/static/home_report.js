@@ -89,6 +89,7 @@
     function stop() { ++epoch; controller?.abort(); clearTimeout(refreshTimer); clearTimeout(mediaTimer); busy = false; rechecking = false; }
     function message(value, retry) {
       stopMedia(); root.replaceChildren(el('p', value, 'hr-notice'));
+      root.hidden = false;
       if (retry) root.append(button('重新读取', () => load().catch(() => {})));
     }
     function sourceButton(source) {
@@ -377,11 +378,11 @@
       root.classList.toggle('home-report', result.content_kind !== 'explanation');
       if (result.content_kind === 'explanation') {
         const token = epoch, body = el('div'); root.replaceChildren(body);
-        const view = await window.PortalPreview.createPresentation('explanation', {root:body,onOpen,onSelection});
+        const view = await window.PortalPreview.createPresentation('explanation', {root:body,onOpen,onSelection,signal:controller.signal});
         if (!active(token)) {view.destroy();return;}
         explanation = view;
         await view.show(result.explanation_target, {signal:controller.signal});
-        schedule(); return;
+        if (active(token)) schedule(); return;
       }
       media = result.media || null; render(); if (media) renderMedia(media);
       if (media?.status === 'pending') mediaTimer = setTimeout(() => pollMedia(epoch),1000);
@@ -412,12 +413,13 @@
           banner.hidden = false; banner.replaceChildren(el('span', '来源已有新版本；当前报告保留原快照。'), button('生成新版', () => report.report_id ? refresh() : load().catch(() => {})));
         }
         root.hidden = false;
-      } catch (error) { if (active(token)) { explanation?.destroy(); explanation = null; message(`来源暂不可读，已撤去报告：${error.message}`, true); root.hidden = false; } }
+      } catch (error) { if (active(token)) { stop(); explanation?.destroy(); explanation = null; report = null; message(`来源暂不可读，已撤去报告：${error.message}`, true); } }
       finally { if (token === epoch) {rechecking = false; schedule();} }
     }
     async function load() {
       stop(); explanation?.destroy(); explanation = null;
       if (!presented || destroyed || !requestedTarget || externalSignal?.aborted) return;
+      report = null;
       controller = new AbortController(); const token = epoch;
       message('正在读取来源…'); root.hidden = false;
       try {
@@ -457,17 +459,24 @@
       if (report) {await validate(); if (explanation) await load(); else if (media?.status === 'pending') pollMedia(epoch);}
       else await load();
     }
-    const recheck = () => {if (presented) {root.hidden = true; video?.pause(); validate().catch(() => {});}};
+    // Focus can return before the first read finishes or while its retry UI is
+    // shown. There is no accepted report to hide or validate in either state.
+    const recheck = () => {if (presented && report) {root.hidden = true; video?.pause(); validate().catch(() => {});}};
+    const accessChanged = () => {
+      if (!presented || destroyed) return;
+      if (report) recheck();
+      else load().catch(() => {}); // Discard reads started under the old identity.
+    };
     const visibility = () => {if (document.hidden) {clearTimeout(refreshTimer); clearTimeout(mediaTimer); video?.pause();} else if (presented) recheck();};
     window.addEventListener('focus', recheck);
-    window.addEventListener('portal:permissions-changed', recheck);
-    window.addEventListener('portal:identity-changed', recheck);
+    window.addEventListener('portal:permissions-changed', accessChanged);
+    window.addEventListener('portal:identity-changed', accessChanged);
     document.addEventListener('visibilitychange', visibility);
     return {show, setPresented, destroy() {
-      destroyed = true; stop(); stopMedia(); explanation?.destroy(); explanation = null; root.replaceChildren();
+      destroyed = true; stop(); stopMedia(); explanation?.destroy(); explanation = null; root.replaceChildren(); root.hidden = false;
       externalSignal?.removeEventListener('abort', externalAbort);
-      window.removeEventListener('focus', recheck); window.removeEventListener('portal:permissions-changed', recheck);
-      window.removeEventListener('portal:identity-changed', recheck); document.removeEventListener('visibilitychange', visibility);
+      window.removeEventListener('focus', recheck); window.removeEventListener('portal:permissions-changed', accessChanged);
+      window.removeEventListener('portal:identity-changed', accessChanged); document.removeEventListener('visibilitychange', visibility);
     }};
   }
   window.PortalHomeReportView = {create};

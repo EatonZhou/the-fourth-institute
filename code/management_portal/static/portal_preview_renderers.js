@@ -309,6 +309,7 @@
     ["map", "home_map_view.js", "PortalHomeMapView", "project_map.css"],
     ["frontier", "home_map_view.js", "PortalHomeMapView", "project_map.css"],
   ]) window.PortalPreview.registerPresentation(kind, async options => {
+    options.signal?.throwIfAborted();
     await asset("portal_display_protocol.js", "PortalDisplayProtocol");
     if (kind === "map" || kind === "frontier") {
       for (const [file, name] of [["project_common.js","PortalProjectCommon"],["project_map_layout.js","PortalProjectMapLayout"],
@@ -316,6 +317,8 @@
     }
     if (kind === "report" || kind === "explanation") await asset("markdown.js", "MD");
     await Promise.all([asset(css), asset(script, global)]);
+    // Loading assets is shared; mounting belongs only to the live request.
+    options.signal?.throwIfAborted();
     return window[global].create(options);
   });
 
@@ -327,7 +330,7 @@
       root.className = "previewBox";
       const promise = (async () => {
         const intent = window.PortalDisplayProtocol.normalizeIntent(document.displayIntent);
-        view = await window.PortalPreview.createPresentation(intent.view, {root,
+        view = await window.PortalPreview.createPresentation(intent.view, {root, signal:controller.signal,
           onOpen: value => context.onPreviewRequest(window.PortalDisplayProtocol.previewRequest(value)),
         });
         if (controller.signal.aborted) { view.destroy(); return; }
@@ -354,7 +357,7 @@
         const {sha256} = await import("/static/portal_sha256.js");
         const digest = await sha256(new TextEncoder().encode(document.content));
         if (controller.signal.aborted) return;
-        view = await window.PortalPreview.createPresentation("explanation", {root,
+        view = await window.PortalPreview.createPresentation("explanation", {root, signal:controller.signal,
           onOpen: value => context.onPreviewRequest?.(window.PortalDisplayProtocol.previewRequest(value))});
         if (controller.signal.aborted) {view.destroy();return;}
         await view.show({ address: explanationAddress(document), sha256: digest }, { signal: controller.signal });
@@ -388,7 +391,7 @@
       const controller = new AbortController(); let view;
       root.className = "previewBox reportPreview";
       const promise = (async () => {
-        view = await window.PortalPreview.createPresentation("report", {root,
+        view = await window.PortalPreview.createPresentation("report", {root, signal:controller.signal,
           onOpen:value => window.PortalPreview.request(window.PortalDisplayProtocol.previewRequest(value))});
         if (controller.signal.aborted) {view.destroy();return;}
         return view.show({kind:"report",id:address[1],revision}, {view:"report",readOnly:true,signal:controller.signal});

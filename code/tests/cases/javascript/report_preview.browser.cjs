@@ -12,6 +12,7 @@ const packageAddress='workspace_123456789abc/file/lesson/manifest.json';
 const notesAddress='workspace_123456789abc/file/lesson/notes.md';
 const notes='## 解释内容\n\n这是固定解释包的正文。';
 const scrollOnly=process.argv.includes('--scroll-only');
+const lifecycle=process.argv.find(value=>value.startsWith('--lifecycle='))?.split('=')[1];
 const interactionAddress='workspace_123456789abc/file/lesson/interaction.html';
 const interaction='<h2>图文起点</h2>'+Array.from({length:30},(_,i)=>`<p style="padding:24px">第${i+1}步：继续向下阅读长图文。</p>`).join('')+'<button id="end">图文结尾</button>';
 const sha=value=>createHash('sha256').update(value).digest('hex');
@@ -31,7 +32,7 @@ window.PortalResourceRoutes={schema:'tfi.resource-portal-routes.v1',text_resourc
 window.PortalAPI={raw:(url,options)=>fetch(url,options)};
 </script>${scripts.map(name => `<script src="/static/${name}.js"></script>`).join('')}`;
 (async () => {
-  const requests = []; let denied = false, explanationMode=scrollOnly;
+  const requests = []; let denied = false, explanationMode=scrollOnly || Boolean(lifecycle);
   const server = http.createServer((req, res) => {
     const url = new URL(req.url, 'http://localhost');
     requests.push({ path: url.pathname, query: url.search, method: req.method });
@@ -75,6 +76,12 @@ window.PortalAPI={raw:(url,options)=>fetch(url,options)};
     const errors=[];
     page.on('pageerror', error => { errors.push(error.message);console.error('browser:', error.message); });
     await page.goto(`http://127.0.0.1:${server.address().port}/`);
+    if(lifecycle) {
+      await require('./report_preview_lifecycle.cjs')({page,id,packageAddress,lifecycle});
+      assert.deepEqual(errors,[],'no unhandled browser errors');
+      assert.equal(requests.filter(r=>r.method!=='GET' && r.path!=='/api/home-report/validate').length,0,'opening and retrying never creates content');
+      return;
+    }
     const observed = await page.evaluate(async id => {
       const payload = await PortalResourceChips.loadPreview(id, { reference: {
         resource_type: 'report', content_kind: 'json', media_type: 'application/json', filename: 'report.json', title: '本轮进展'
