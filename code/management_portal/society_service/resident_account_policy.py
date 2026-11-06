@@ -67,7 +67,7 @@ def sufficient_reserve(account: Mapping[str, Any]) -> bool:
 
 def fallback_account(accounts: list[dict[str, Any]], provider: str, route: str,
                      tried: list[str], *, reserve: bool = False, priority: list[str] | None = None,
-                     subscription_only: bool = False, model: str = "", effort: str = "",
+                     append_subscriptions: bool = False, model: str = "", effort: str = "",
                      priority_only: bool = False) -> dict[str, Any]:
     from management_portal.execution.account_selection import candidates
     source = next((a for a in accounts if a.get("provider") == provider
@@ -82,7 +82,11 @@ def fallback_account(accounts: list[dict[str, Any]], provider: str, route: str,
             return own[0]
     # Both site and Family orders explicitly authorize crossing kind boundaries.
     from management_portal.execution.account_selection import priority_candidates
-    ordered = priority_candidates(accounts, priority or [], source=source, model=model, effort=effort,
+    order = priority or []
+    if append_subscriptions and not priority_only:
+        from management_portal.execution.account_migration_types import subscription_priority
+        order = subscription_priority(accounts, order)
+    ordered = priority_candidates(accounts, order, source=source, model=model, effort=effort,
                                   excluded=excluded, reserve=MIGRATION_RESERVE_PERCENT if reserve else 0)
     return ordered[0] if ordered else {}
 

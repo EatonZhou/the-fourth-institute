@@ -520,7 +520,10 @@ def restart_resident_session(
     target_runtime_settings = _target_runtime_settings(record, body, restart_target, actor_id)
     if body.get("target_account") and not portal_reason:
         target_runtime_settings["account_selection"] = "fixed"
-    strategy, unbound_previous_session = _restart_strategy(record, source, restart_target, requested_strategy)
+    strategy, unbound_previous_session = _restart_strategy(
+        record, source, restart_target, requested_strategy,
+        automatic_handoff=portal_reason in {"quota_switch", "steward_weekly_reserve", "steward_quota_recovery"},
+    )
     intent = _restart_intent(body, operation, source, restart_target, strategy, active_execution_policy)
     failed_input = _failed_input_to_resume(record, body, intent, restart_target)
     pending = _pending_restart(resident_id, actor_id, record, intent)
@@ -698,6 +701,8 @@ def _restart_strategy(
     source: Mapping[str, Any],
     target: _RestartTarget,
     requested_strategy: str,
+    *,
+    automatic_handoff: bool = False,
 ) -> tuple[str, bool]:
     """How context moves to the new session, and whether an unbound previous session holds work."""
 
@@ -720,7 +725,13 @@ def _restart_strategy(
     if strategy == "preserve" and (source["has_session"] or unbound_previous_session):
         error = preservation.preserve_route_error(source, target_provider, target.route, has_context=True)
         if error:
-            raise ValueError(error)
+            if automatic_handoff and target_provider != "provider_api":
+                # Automatic quota recovery prepares a handoff turn on the
+                # healthy target account instead of requiring user selection.
+                # The old binding remains until that target is ready.
+                strategy = "compact"
+            else:
+                raise ValueError(error)
         if same_native_route and source["has_session"]:
             strategy = "native"
     if target_provider == "provider_api" and strategy in {"compact", "visible"}:

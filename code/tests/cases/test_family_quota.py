@@ -62,7 +62,7 @@ def test_family_switching_stays_among_subscriptions_unless_a_kind_is_allowed():
     api = {**_account("api", 90), "kind": "api_profile", "billing_account_id": "openai"}
     service = _account("svc", 95, provider="kimi", kind="service")
     pick = lambda accounts, **kwargs: accounts_policy.fallback_account(
-        accounts, "codex", "one", [], reserve=True, subscription_only=True, **kwargs).get("account_id", "")
+        accounts, "codex", "one", [], reserve=True, append_subscriptions=True, **kwargs).get("account_id", "")
     assert pick([_account("one", 5), api, service]) == ""
     assert pick([_account("one", 5), api, service, _account("two", 40, provider="claude")]) == ""
     assert pick([_account("one", 5), api, service], priority=["codex:api_profile:openai"]) == "codex_api"

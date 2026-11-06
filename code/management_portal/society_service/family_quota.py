@@ -633,7 +633,7 @@ def _ensure_quota_switch(record: dict[str, Any], accounts: list[dict[str, Any]] 
     # the Resident's explicit switch opts into the site's strict ordering.
     strict_priority = (record.get("execution_settings") or {}).get("auto_switch_on_quota") is True
     windows = [(w.get("window"), w.get("resets_at")) for w in (account.get("quota_reserve") or {}).get("windows") or []]
-    epoch = f"{account['account_id']}:{windows}:{priority}"
+    epoch = f"{account['account_id']}:{windows}:{priority}:automatic-handoff"
     if not strict_priority:
         # Retire failures made under the old priority-only candidate policy;
         # re-evaluate queued work without replaying an admitted/running turn.
@@ -667,7 +667,7 @@ def _ensure_quota_switch(record: dict[str, Any], accounts: list[dict[str, Any]] 
             if not payload and state.get("switch_reason") != "migration_failed":
                 target = fallback_account(accounts, str(account["provider"]), str(account.get("backend_route_id") or ""),
                                           state["tried_accounts"], priority=priority, priority_only=strict_priority,
-                                          subscription_only=bool((current.get("family") or {}).get("role")),
+                                          append_subscriptions=bool((current.get("family") or {}).get("role")),
                                           model=(current.get("execution_settings") or {}).get("model", ""),
                                           effort=(current.get("execution_settings") or {}).get("reasoning_effort", ""))
                 if target:
@@ -773,7 +773,7 @@ def ensure_role_reserve(record: dict[str, Any], accounts: list[dict[str, Any]] |
         # quota release still lets the turn run.
         return ((automatic or bool(role_migration(record).get("status")))
                 and not override_enabled(record))
-    epoch = f"{account['account_id']}:{[(w.get('window'), w.get('resets_at')) for w in (account.get('quota_reserve') or {}).get('windows') or []]}"
+    epoch = f"{account['account_id']}:{[(w.get('window'), w.get('resets_at')) for w in (account.get('quota_reserve') or {}).get('windows') or []]}:automatic-handoff"
     now = time.time()
     expired: tuple[Any, Any] = (None, None)
     with resident_record_domain.state_lock(resident_id), get_lineage_data_store().family_quota_migrations.transaction(record['lineage_id'], resident_id) as migration:
@@ -803,7 +803,7 @@ def ensure_role_reserve(record: dict[str, Any], accounts: list[dict[str, Any]] |
         if not payload and int(migration["attempts"]) < MAX_MIGRATIONS:
             target = fallback_account(accounts, str(account["provider"]), str(account.get("backend_route_id") or ""),
                                       migration["tried_accounts"], reserve=not automatic,
-                                      priority=auto_migration_priority(current), subscription_only=True,
+                                      priority=auto_migration_priority(current), append_subscriptions=True,
                                       model=(current.get("execution_settings") or {}).get("model", ""),
                                       effort=(current.get("execution_settings") or {}).get("reasoning_effort", ""))
             if target:

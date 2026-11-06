@@ -21,6 +21,17 @@ def migration_type(account):
     return {"id": key, "label": label, "default_priority": rank}
 
 
+def subscription_priority(accounts, priority):
+    """Complete a custom Family order without opting into new billing kinds."""
+    if not priority:
+        return []  # An absent site order does not authorize cross-kind selection.
+    types = {item["id"]: item for account in accounts
+             if account.get("kind") == "subscription_login"
+             for item in (migration_type(account),)}
+    defaults = sorted(types, key=lambda key: (types[key]["default_priority"], key))
+    return list(dict.fromkeys([*priority, *defaults]))
+
+
 def validate_priority(value):
     if (not isinstance(value, list) or len(value) > 128
             or any(not isinstance(key, str) or len(key) > 256

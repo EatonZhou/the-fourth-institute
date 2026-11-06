@@ -48,6 +48,26 @@ def test_priority_round_trip_values():
     assert _values({'auto_migrate_priority':order})['auto_migrate_priority']==order
 
 
+def test_family_custom_order_appends_subscriptions_without_new_billing_kinds():
+    source = account('codex', 'source', remaining=0)
+    claude = account('claude', 'preferred', remaining=0)
+    kimi = account('kimi', 'subscription')
+    paid = account('claude', 'paid', 'api_profile', api='paid_api')
+    service = account('kimi', 'service', 'service')
+    accounts = [source, claude, paid, service, kimi]
+    priority = ['missing:subscription_login', 'claude:subscription_login']
+    def pick(**kwargs):
+        return fallback_account(accounts, 'codex', 'source', [], reserve=True,
+                                priority=priority, append_subscriptions=True, **kwargs)
+    assert pick() == kimi  # The same appended subscription displayed by the menu.
+    assert priority == ['missing:subscription_login', 'claude:subscription_login']
+    assert pick(priority_only=True) == {}  # Explicit Resident/site policy stays strict.
+    kimi['enabled'] = False
+    assert pick() == {}  # No implicit API or service authorization.
+    priority.append('kimi:service')
+    assert pick() == service
+
+
 def test_api_types_share_identity_only_with_the_same_api():
     from management_portal.execution.account_migration_types import migration_type
     first = account('claude', 'route_one', 'api_profile', api='deepseek_primary')
@@ -123,7 +143,7 @@ def test_exhausted_family_tries_same_kind_before_preferred_provider(quota_family
     if previous_failure:
         windows = [(w.get('window'), w.get('resets_at')) for w in accounts[0]['quota_reserve']['windows']]
         with store.family_quota_migrations.transaction(record['lineage_id'], f.steward) as state:
-            state.update(epoch=f"one:{windows}:{priority}", source_account='one',
+            state.update(epoch=f"one:{windows}:{priority}:same-kind-first", source_account='one',
                          attempts=1, tried_accounts=['claude_one'], status='unavailable',
                          switch_reason='migration_failed', checked_at=0)
     gate = {'state': 'closed', 'reason': 'quota_used_up', 'account_id': 'one'}

@@ -4,12 +4,12 @@ type: decision
 project: AI员工
 created_at: '2026-10-19'
 version:
-  number: 23
+  number: 27
   created_at: "2026-10-19"
   created_by:
     user: ""
     agent: "resident_4b1da6140cf2"
-  updated_at: "2026-11-04T05:50:51Z"
+  updated_at: "2026-11-06T10:49:32Z"
   updated_by:
     user: ""
     agent: "resident_2e9ea0072551"
@@ -109,7 +109,7 @@ Mailbox 操作和授权由 [Mailbox Design](/resource/knowledge?item=decision_15
 
 恢复使用原消息 ID、原文、发送者与已保存的输出，不发送替代任务。RestartSession 默认在成功后恢复最近失败输入；取消迁移、初始化失败、明确停止、已经完成或已排队的输入不得重复放回。用户取消本次失败恢复的选择持久保存。详细迁移、接单持有与取消协议由 [Session 重启 Design](/resource/knowledge?item=decision_c47a13e8b962) 定义。
 
-Steward 先查当前输入、账号与 Family.auto_migrate_priority，再按账号种类策略选择已登记 Agent 账号，用 compact 交接迁移，并检查 GetSessionRestart 与原输入状态。环境已经修复但原输入仍失败时，显式 RequeueMessage 继续原输入。
+Steward 先查当前输入、账号与执行者有效自动切换策略，再按账号种类策略选择已登记 Agent 账号，自动完成交接并检查 GetSessionRestart 与原输入状态。能够完整导入时优先 preserve；不支持完整导入时，由目标账号执行 compact 整理交接，目标会话准备好后再切换并继续原任务，不等待用户选择交接方式。旧会话和历史保留，不自动采用空白 fresh 重开。环境已经修复但原输入仍失败时，显式 RequeueMessage 继续原输入。
 
 平台每十分钟复查环境原因导致的失败输入及准入前因额度策略挂起的输入。网络未恢复时不消耗恢复次数；原账号额度恢复后继续原输入。后台对同输入的自动恢复及备用迁移有持久的次数限制，达到上限后不再盲试。显式 RequeueMessage 或显式 RestartSession 按正常权限执行，不受后台计数限制，也不重置后台计数。
 
@@ -155,21 +155,23 @@ Steward 自己失败、收不到恢复任务、恢复后仍不能接单，或显
 
 首次安装尚未配置默认 AI，或持续角色绑定的账号已不存在时，Router、Steward 的已受理输入保持待执行。后台把账号缺失保存为 `family_quota_migrations.account_wait`，角色可用性显示账号配置提示；不会将它记成 coordinator 故障、消耗额度迁移次数或选择其他账号。其他 Resident 和 Lineage 仍按各自状态恢复。后续扫描观察到账号后，仅移除这项等待标记，再执行原有额度保护；既有额度事故与迁移记录继续保留，取消、停止及已准入工作维持原语义。尚未绑定的角色按当前默认 Backend 的实际 Provider 和账号查询额度，支持默认 AI 从 Codex 占位配置切换到其他 Provider。
 
-Family 执行成员迁移沿用账号策略和 Restart 领域，跨 Provider 或跨账号种类显式选择目标账号当前默认 model，使用 preserve 保留上下文；已准入工作先完成，未准入 job、消息与发送者跨迁移保留。family_quota_migrations 持久保存账号窗口、尝试次数、已试账号、幂等迁移意图和通知去重；5% 预防性迁移在同一账号窗口最多尝试两个备用账号；确认耗尽后的共享切换按有效排序逐个尝试，保存失败原因并在无候选或无法保留上下文时等待人工选择。角色已迁离原 Lineage 的旧记录不能再启动迁移；未知或过期观测不能清除已登记的不可用状态。
+Family 执行成员迁移沿用账号策略和 Restart 领域，跨 Provider 或跨账号种类显式选择目标账号当前默认 model，优先使用 preserve 完整保留上下文，不支持完整导入时自动在目标账号执行 compact 交接；已准入工作先完成，未准入 job、消息与发送者跨迁移保留。family_quota_migrations 持久保存账号窗口、尝试次数、已试账号、幂等迁移意图和通知去重；5% 预防性迁移在同一账号窗口最多尝试两个备用账号；确认耗尽后的共享切换按有效排序逐个尝试，保存失败原因；无可用候选时保留原任务并等待账号恢复，跨 Provider 不支持完整导入时自动整理交接，不因上下文策略要求人工选择。实际初始化失败或权限拒绝继续按原失败与幂等协议处理。角色已迁离原 Lineage 的旧记录不能再启动迁移；未知或过期观测不能清除已登记的不可用状态。
 
-门面菜单的 Family 页签提供“额度不足时自动转组”，通过 `UpdateFamily(auto_migrate=bool)` 保存。所有现有和新建 Family 默认开启。关闭后停止新的自动迁移，包括 quota failure 恢复中的换账号；原任务和队列仍等待原账号恢复，额度保护继续有效。已开始的生命周期迁移可完成；不撤销人工操作。Steward 每轮任务带开关事实，行动前按 GetLineage 重读；人工暂停、取消、已完成输入和迁移幂等边界保持不变。没有确定证据区分取消原因时，不将历史 cancelled 输入自动恢复。
+门面菜单的 Family 页签提供“额度不足时自动转组”，通过 `UpdateFamily(auto_migrate=bool)` 保存。所有现有和新建 Family 默认开启。关闭后，未显式覆盖的直属执行者停止新的自动迁移，包括 quota failure 恢复中的换账号；原任务和队列仍等待原账号恢复，额度保护继续有效。已开始的生命周期迁移可完成；不撤销人工操作。Steward 每轮任务带开关事实，行动前按 GetLineage 重读；人工暂停、取消、已完成输入和迁移幂等边界保持不变。没有确定证据区分取消原因时，不将历史 cancelled 输入自动恢复。
+
+### 门面统一切换入口
+
+门面没有模型 Session。额度切换的实际目标始终是承接原消息的业务成员、Router 或 Steward。门面按尚未完成的输入、转交记录与角色工作关联投影实际阻塞者；多条请求分别保留目标，不把任意后台成员当成当前请求的阻塞者。嵌套门面沿已建立的转交链定位内层执行者。
+
+确认额度耗尽时，自动开启的执行者复用普通 Resident 的 Scheduler 准入检查、持久迁移意图与 RestartSession preserve 协议；失败恢复读取同一个有效策略，不重新投递历史业务。Family 原有 5% 预防检查继续有效。关闭自动切换或无候选时，在门面显示具体执行者及其额度状态，按当前用户对该执行者的管理权限打开现有账号选择卡。未知、过期额度和其他错误不触发手选提示，门面原输入及已经转交的任务归属保留。
 
 ### 账号种类优先级
 
-门面是统一操作入口，实际切换目标为原请求的成员、Router 或 Steward，门面没有模型 Session。成员显式 execution_settings.auto_switch_on_quota 优先；未设置时继承直属 Family.auto_migrate。嵌套执行者使用内层默认。Family 非空 auto_migrate_priority 保留，空数组跟随站点 default.backend_priority；成员显式开启时使用站点默认顺序。恢复默认保存空数组，保存列表则设为自定义顺序。
-
-确认额度耗尽后的自动切换和失败恢复复用普通 Resident 的 Scheduler 准入、持久迁移意图和 preserve 会话迁移。5% 预防性迁移继续有效。关闭或无候选时，门面仅沿尚未完成的真实请求关联显示阻塞执行者，按该执行者的当前管理权限打开现有账号卡；未知、过期额度及其他故障不触发手选卡。多请求保留各自目标与原输入，内层门面继续沿实际转交链定位，不能任取后台成员。
-
-门面 Menu → Settings 在自动转组开关下提供可展开的“账号种类优先级”；Family Function Block 使用同一编辑器。列表只含订阅种类；服务账号和 API 种类列在下方，用户点“允许自动切换”后才加入列表参与排序，“不再允许”将其移出。上下移动后保存，取消不写入；恢复默认需要保存确认。通过 UpdateFamily(auto_migrate_priority=[...]) 保存到本 Family，空数组表示跟随站点 default.backend_priority；保留非空数组的既有自定义排序；列入数组的非订阅种类就是用户的明确允许。此策略同时适用于业务成员、Router 和 Steward 的执行前检查、额度失败恢复与 Steward 迁移判断；关闭 auto_migrate 仍阻止新的自动迁移。
+门面 Menu → Settings 在自动转组开关下提供可展开的“账号种类优先级”；Family Function Block 使用同一编辑器。列表只含订阅种类；服务账号和 API 种类列在下方，用户点“允许自动切换”后才加入列表参与排序，“不再允许”将其移出。上下移动后保存，取消不写入；恢复默认需要保存确认。通过 UpdateFamily(auto_migrate_priority=[...]) 保存到本 Family，空数组表示跟随站点 default.backend_priority；保留非空数组的既有自定义排序；列入数组的非订阅种类就是用户的明确允许。此策略同时适用于业务成员、Router 和 Steward 的执行前检查、额度失败恢复与 Steward 迁移判断；关闭 auto_migrate 会阻止未显式覆盖的直属执行者发起新的自动迁移。
 
 Execution 的 ListProviderAccounts 为可执行 Agent 账号提供 migration_type（id、label、default_priority）。订阅按 Provider 分组，API 接入按 Provider＋Model API 身份分组，服务账号单独分组。Claude Code 订阅和 Claude Code＋DeepSeek API 因而属于不同种类；不能用 harness 相同推导为同类。相同 Provider 绑定同一个 Model API 的多个账号属于同类。未接入的已保存种类保留，不自动删除配置。
 
-选择先过滤不可用、额度观测过期、已尝试或低于安全线的候选，保留“同种类有安全账号先换同类”的行为；同类耗尽后按用户排序选择。同类内部取额度余量较高者，再以账号 ID 稳定排序。排序不绕过五小时、周窗口或余额保护。新增但未排序的种类按默认顺序追加；只在下一次尚未保存迁移意图的选择时应用新排序，已开始的迁移仍沿原幂等意图完成。
+选择先过滤不可用、额度观测过期、已尝试或低于安全线的候选，保留“同种类有安全账号先换同类”的行为；同类耗尽后按用户排序选择。同类内部取额度余量较高者，再以账号 ID 稳定排序。排序不绕过五小时、周窗口或余额保护。非空 Family 有效排序中，已登记但未排序的订阅种类按默认顺序追加；服务账号和 API 不自动追加。成员显式开启时使用严格的站点默认排序，不追加种类；站点默认排序为空时不从编辑器草稿推定跨种类授权。只在下一次尚未保存迁移意图的选择时应用新排序，已开始的迁移仍沿原幂等意图完成。
 
 保存使用当前 Lineage revision，并核对编辑时的原排序；冲突保留草稿，不覆盖其他人的顺序。浏览器、Steward 与确定性恢复路径共同读取这一配置，不分别维护另一个优先级来源。
 

@@ -4,15 +4,15 @@ type: decision
 project: AI员工
 created_at: '2026-08-22'
 version:
-  number: 45
+  number: 47
   created_at: "2026-08-22"
   created_by:
     user: ""
     agent: ""
-  updated_at: "2026-11-02T21:33:17Z"
+  updated_at: "2026-11-06T10:50:39Z"
   updated_by:
     user: ""
-    agent: "resident_dbcd3920b7cc"
+    agent: "resident_2e9ea0072551"
 importance: 9
 metaness: 2
 ai_generated: false
@@ -97,28 +97,34 @@ Resident Menu、Chat 运行摘要和 Family 成员入口共用运行控制器。
 - **普通输入沿用当前会话。** 工具名称记录缺失、为空或不包含 `hatg_instruction`，均不得自动关闭接单、创建替代 Session 或执行精简交接。会话工具元数据不构成自动重建的触发条件；显式 `RestartSession` 的策略选择、已受理迁移的恢复与原会话故障恢复各自遵守原有契约。历史自动工具刷新记录保留用于审计，不据此发起新的重建。
 - **重启期间 Resident 暂停开始新工作。** 发起重启时，Portal 关闭这个 Resident 的接单开关；新消息照常排队，等新会话切换完成或旧会话恢复后才执行。完成后，Portal 只重新打开由本次重启关闭、且之后没有被人工改动过的接单开关。
 - **跨 Provider 显式选择模型。** 目标 Provider 与账号来自已鉴权目录；同 Provider 未指定账号时沿用当前账号，跨 Provider 的目标账号和模型由调用方明确选择，不静默采用默认模型。完整保存平台能力与 Prompt 配置，逐项校验目标 Model、Effort、Mode、Speed、Permissions 及 Provider 专属参数；不兼容时明确拒绝，不静默丢字段。准备时冻结目标配置，成功提交后才替换当前 Provider、账号和配置。
-- **创建新会话使用目标账号的通用额度保护。** 目标账号具备额度保护能力时，Portal 读取 Scheduler 的 `quota_reserve`。未提供本次credits授权时，Close阈值为正须额度状态可用或处于预留区、数据新鲜且remaining严格大于零；阈值为零时跳过数值检查，但已确认额度用完仍拒绝。人类可以在会话设置明确确认本次目标账号与新建/迁移Session使用credits；确认、采样保护及范围契约统一见decision_d40f59f5508f。`remaining` 的单位沿用账号的百分比或原币金额。受理记录的 `quota_admission` 保存本次实际读取的完整额度快照，包括状态、剩余值、阈值、新鲜度和采样时间，供调用方核对；不支持额度保护的账号记录为空。准备中的新会话获得临时binding放行，重启结束后撤销。付费确认的候选例外只允许目标账号的唯一准备Execution，成功后才持久绑定到实际提升的目标Session，取消或失败不产生目标授权。账号契约见 decision_d40f59f5508f。
+- **普通会话创建直接提交执行，额度准入由 Scheduler 拥有。** Society 不在创建或迁移受理前读取健康快照检查剩余额度，也不为普通候选 binding 自动放行。只有人类明确确认本次目标 Session 使用 credits 时，验证一次最新认证及可用 credits，记录实际读取的完整 `quota_admission` 快照，并给唯一准备 Execution 授予范围例外；普通操作的 `quota_admission` 为空。付费确认的范围、成功提升后的 Session 授权、取消和失败不提升规则见 decision_d40f59f5508f。
 - **已有一次重启没有完成时，相同参数返回已有记录，不同参数先取消旧重启。** 通过 `RestartSession` 发起的新请求等待旧重启的生命周期清理完成后再开始；清理超过本次调用的等待期限时返回冲突，调用者稍后重试。
 - **Codex 原生目标在重启后暂停。** Resident 有进行中的 Codex 原生目标（`/goal`）时，切换完成后该目标变为暂停，原因记为 `session_restart`，避免新会话在没有确认的情况下自动继续旧目标。
 
 ### 上下文方案
 
-上下文方案区分完整保留、明确发起的模型交接和空白开始。界面优先 preserve，目标只支持摘要交接时先说明影响并显示“交接并切换”；API 的 preserve 仍是严格保留合同，不能在执行失败后隐式降级。
+上下文方案区分完整保留、模型交接和空白开始。手动界面优先 preserve，目标只支持摘要交接时先说明影响并显示“交接并切换”；手动 API 的 preserve 仍是严格保留合同，不能在执行失败后隐式降级。已开启的额度自动切换按下述全自动交接策略选择实际方案。
 
 | 方案 | 用途 | 新会话怎样建立 |
 | --- | --- | --- |
 | `preserve`（默认） | 保留有效上下文 | 使用可验证的原生完整 Fork，或严格的 canonical history 导入；不执行总结模型轮次。 |
 | `smart`（旧调用兼容） | preserve 的旧名称映射 | 归一为 preserve；不得自动选择 compact。新界面不提供该选项。 |
 | `native` | 显式原生 Fork | 仅在同 Provider、同账号且已验证支持时使用；不支持则拒绝，原绑定不变。 |
-| `compact` | 显式精简交接 | 独立、可审计的模型交接，输入最多最近 12 条可见消息、24,000 字符，并说明可能丢失细节。 |
+| `compact` | 模型整理交接 | 独立、可审计的模型交接，输入最多最近 12 条可见消息、24,000 字符；手动提交说明可能丢失细节，已开启的额度自动切换可按自动策略采用。 |
 | `visible` | 显式可见对话交接 | 独立模型交接，最多 36 条可见消息、60,000 字符；不声称完整保留。 |
 | `fresh` | 显式空白开始 | 通常提交清空有效上下文边界并进入pending_create，由下一条真实输入懒建；本次人类credits确认时先以无模型候选创建固定目标Session，再条件提交清空边界与授权，不执行整理或空白初始化轮次。 |
 
 preserve 保留已有清除、压缩边界之后的有效摘要、消息、工具调用与对应结果、必要媒体及来源。canonical history 导入必须核对内容类型、调用/结果配对、顺序、媒体可读性和目标容量，并取得可验证的导入结果；历史工具调用只作为记录，不重新执行。不能用截断的文本历史、隐式 compact 或确认话术代替完整导入。
 
-Codex 跨账号可使用严格、可验证的 canonical history 导入。其他 Provider 的跨账号及跨 Provider 完整导入当前未支持时，明确拒绝 preserve，保持原绑定和配置；不能自动降级到 compact、visible 或 fresh。源会话不存在时仍须验证有效上下文，单有旧 session ID 不构成恢复证据。 对 Portal 已记录且明确为空的 Provider 上下文，保留重建可以创建无模型轮次的新线程，不要求空线程已有 rollout；仍待交付的 Fork 来源材料保留在原有效上下文中，供首条真实输入交付。未知或无法验证的上下文不能按空上下文处理。
+### 自动额度交接
 
-只有用户明确发起 compact 或 visible 才发送模型交接输入（账号切换页通过已说明影响的“交接并切换”提交 compact）；它以 `[Portal Session Initialization Context]` 标明身份、方案与目的，要求整理事实、进度、决定、未决问题和约束。这轮有独立输入、用量与结果记录，不派发业务任务或启动后台目标。超过各方案上限时按该显式交接合同截取，成功后后续消息沿用新会话。
+用户开启 Resident 或 Family 的有效额度自动切换策略后，确认耗尽、低额度预防和失败输入恢复均自行完成交接。运行时的可信 `quota_switch`、`steward_weekly_reserve`、`steward_quota_recovery` 调用优先完整原生 Fork 或 canonical 导入；当前 Provider/账号组合不支持完整导入且目标支持模型交接时，在受理阶段自动选择 compact，由可用目标账号整理已有摘要和近期对话，不等待用户选择交接方式。来源账号额度耗尽不要求来源模型另行生成总结。
+
+该策略属于自动切换授权，不改变手动 preserve 的严格含义，也不把整理后的上下文声称为完整逐字保留。目标会话准备成功后才条件提升绑定，旧会话和历史保留；实际采用的方案、独立交接轮次和用量记入正式回执。已准入工作继续等待，原输入及调用身份沿原持久交接协议恢复，取消和幂等约束不变，不自动采用 fresh。权限拒绝、真实初始化失败和没有可用候选仍保留原任务与失败事实，不能伪造迁移成功。
+
+Codex 跨账号可使用严格、可验证的 canonical history 导入。其他 Provider 的跨账号及跨 Provider 完整导入当前未支持时，明确拒绝 preserve，保持原绑定和配置；手动 preserve 不自动降级到 compact、visible 或 fresh；额度自动切换适用下述自动交接策略。源会话不存在时仍须验证有效上下文，单有旧 session ID 不构成恢复证据。 对 Portal 已记录且明确为空的 Provider 上下文，保留重建可以创建无模型轮次的新线程，不要求空线程已有 rollout；仍待交付的 Fork 来源材料保留在原有效上下文中，供首条真实输入交付。未知或无法验证的上下文不能按空上下文处理。
+
+手动操作只有用户明确发起 compact 或 visible 才发送模型交接输入；额度自动切换也可按自动交接策略采用 compact（账号切换页通过已说明影响的“交接并切换”提交 compact）；它以 `[Portal Session Initialization Context]` 标明身份、方案与目的，要求整理事实、进度、决定、未决问题和约束。这轮有独立输入、用量与结果记录，不派发业务任务或启动后台目标。超过各方案上限时按该显式交接合同截取，成功后后续消息沿用新会话。
 
 fresh 也可显式放弃尚未交付的 Fork 来源材料（decision_5bf5bfbd52cb）。没有材料或接收确认的历史初始化失败保持可审计，不能伪造完成。fresh 提交成功时在 AgentData 记录一次 `provider_context_reset` 操作，作为有效上下文清除边界，保留页面历史和来源证明；失败或取消保留原状态。没有本次credits确认时，由之后真实输入创建空白会话；明确确认时沿候选创建协议固定目标空Session。
 
@@ -150,7 +156,7 @@ Model API 继续使用统一设置与已登记路线 ID，配置目录展示其�
 延迟迁移按 Resident 独立推进。一个 Resident 的交接回执暂时不可确认或发生身份冲突时，保留其持久意图供后续核对并记录对应 Resident 的错误，不中断其他迁移或后续执行恢复扫描。独立上下文（例如定时触发）的 Resident turn 可以是无会话绑定的 stateless 执行。交接这类未启动输入时，须由不可变 Execution 请求同时确认 agent_id、metadata.resident_id、business_type=resident 及原输入 client_user_message_id，且逻辑 binding_id 必须属于同一 Resident；缺原输入归属、其他业务和跨 Resident 均不得交接。普通 stateless 调用仍返回未撤回并保留原执行，持久会话的绑定不匹配仍拒绝。两类合法交接都必须在同一行锁下确认尚未领取、尝试次数为零、无 checkpoint、无 Stop，保留原输入与随附 info、唯一替代 Execution 及幂等回执；迁移失败/取消则按原交接合同在保留账号上恢复准备。任何错误都不能被解释成已撤回或迁移成功。
 
 - **受理后在后台准备候选。** 返回 `status=accepted`、`restart_id` 和实际方案；页面查询同一操作，只有 `completed` 才显示切换成功。刷新、断线或 HTTP 504 不撤销操作，也不证明失败。
-- **进度反映实际动作。** 等待、排队、创建或导入、核验与切换分别可观察；只有显式 compact/visible 才有模型交接阶段。终态为 completed、failed 或 cancelled，取消处理期间为 cancelling。无模型轮次的 preserve/fresh 不展示正在模型初始化。
+- **进度反映实际动作。** 等待、排队、创建或导入、核验与切换分别可观察；只有实际采用 compact/visible 才有模型交接阶段。终态为 completed、failed 或 cancelled，取消处理期间为 cancelling。无模型轮次的 preserve/fresh 不展示正在模型初始化。
 - **取消指向确切 restart_id。** 取消候选不提升新绑定、不检查额度；等待时取消不停止原工作，按本次接单开关编号释放等待。已提升并接受目标输入后，不能用取消回滚历史；返回旧账号需要新的操作。关闭面板不等于取消。
 
 ## 清空上下文
@@ -185,7 +191,7 @@ RestartSession（SocietyService，会话操作 owner）
   2. 默认等待当前工作结束；持久保存请求并关闭由本操作管理的接单。
   3. 在短锁内冻结源绑定、设置版本、有效上下文边界与目标配置快照。
   4. 锁外准备：preserve 验证原生 Fork 或严格导入；
-     compact/visible 才提交显式模型交接；fresh通常准备清空边界与懒建状态，本次credits确认则先创建无模型候选Session。
+     compact/visible 才提交可审计的模型交接；fresh通常准备清空边界与懒建状态，本次credits确认则先创建无模型候选Session。
   5. 验证候选绑定、上下文与能力装配回执；
      按源绑定与设置版本做 CAS，拒绝过期候选。
   6. 原子提交目标 Provider、账号、完整配置及上下文状态；

@@ -481,6 +481,23 @@ def test_unified_summary_default_migration_preserves_custom_guides(trigger, cust
     if trigger == "summary":
         assert "prompt" not in family_tasks.saved_fields(trigger, {"prompt": family_tasks._PRE_UNIFIED_SUMMARY_PROMPT})
 
+
+def test_quota_guide_preserves_context_and_migrates_only_shipped_defaults(configured_family):
+    _, block = configured_family
+    for old in (family_tasks._PRE_SUBSCRIPTION_QUOTA_GUIDE, family_tasks._PRE_PRESERVE_QUOTA_GUIDE):
+        assert family_tasks.saved_fields('quota', {'guide': old}) == {}
+    custom = {'guide': '保留人工额度处理指南', 'prompt': '人工任务 ${facts}'}
+    assert family_tasks.saved_fields('quota', custom) == custom
+    steward = _find_resident(block['family']['steward'])
+    guide = family_tasks.configured(*family_tasks.context(steward))['quota']['guide']
+    assert '优先完整保留上下文' in guide
+    assert 'context_strategy=compact' in guide
+    assert '不等待用户选择，不空白重开' in guide
+    prompt = family_tasks.render(steward, 'quota', {})
+    assert '成员明确设置优先' in prompt
+    assert '空数组跟随站点默认排序' in prompt
+    assert '不支持时自动整理交接，不等待用户选择' in prompt
+
 def test_mute_limits_router_facts_and_solo_skips_model(configured_family, monkeypatch):
     from management_portal.society_service import family_chat_preferences as p, family_quota, family_task_dispatches
     _, block = configured_family

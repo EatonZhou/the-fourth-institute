@@ -556,6 +556,43 @@ def test_restart_options_show_unbound_residents_configured_account_contracts(mon
             assert saved[-1]['session_restart']['target'] == {'provider': 'claude', 'account_id': 'deepseek_primary'}
 
 
+@pytest.mark.parametrize('reason', ['quota_switch', 'steward_weekly_reserve', 'steward_quota_recovery'])
+def test_automatic_quota_handoff_uses_target_model_without_manual_choice(monkeypatch, reason):
+    record, operations, saved = _restart_domain(monkeypatch)
+    payload = {'target_provider': 'claude', 'model': 'deepseek-v4-pro',
+               'context_strategy': 'preserve', 'active_execution_policy': 'wait',
+               'idempotency_key': 'automatic-handoff'}
+    result = resident_restart_domain.restart_resident_session(
+        record['resident_id'], 'alice', payload, portal_reason=reason)
+    assert result['status'] == 'accepted'
+    assert result['context_strategy'] == 'compact'
+    assert record['backend'] == 'codex'  # Old binding stays until target readiness.
+    assert operations[0]['backend'] == 'claude'
+    assert operations[0]['operation'] == 'turn'
+    assert 'old request' in operations[0]['prompt']
+    assert 'old result' in operations[0]['prompt']
+    assert payload['context_strategy'] == 'preserve'  # Caller intent stays immutable.
+    replay = resident_restart_domain.restart_resident_session(
+        record['resident_id'], 'alice', payload, portal_reason=reason)
+    assert replay['restart_id'] == result['restart_id']
+    assert len(operations) == 1
+    resident_restart_domain.resume_resident_session_restart(operations[0]['step'])
+    assert saved[-1]['session_restart']['status'] == 'completed'
+    assert saved[-1]['backend'] == 'claude'
+    assert saved[-1]['session_restart']['context_strategy'] == 'compact'
+
+
+def test_user_payload_cannot_enable_automatic_handoff(monkeypatch):
+    record, operations, _ = _restart_domain(monkeypatch)
+    with pytest.raises(ValueError, match='无法完整保留上下文'):
+        resident_restart_domain.restart_resident_session(record['resident_id'], 'alice', {
+            'target_provider': 'claude', 'model': 'deepseek-v4-pro',
+            'context_strategy': 'preserve', 'portal_reason': 'quota_switch',
+        })
+    assert not operations
+    assert record['backend'] == 'codex'
+
+
 @pytest.mark.parametrize("save_failure", [False, True])
 def test_fresh_restart_resets_model_context_only_after_success(monkeypatch, save_failure):
     """全新重启提交配置后清空上下文，下一输入才创建会话"""

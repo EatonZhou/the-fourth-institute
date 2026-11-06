@@ -109,7 +109,7 @@ TASKS = {
         "关闭整个 Family 门面表示暂停自维护，单个成员关闭不再自动免除恢复职责。",
         "核验并处理当前未解决故障。"),
     "quota": ("recheck_recovery", "steward", "业务成员额度不足",
-        "先用 GetLineage 核对 Family.auto_migrate；关闭时不自动更换账号，等待原额度或用户明确授权。同种类可用账号优先，否则按 auto_migrate_priority 的种类顺序；自动更换只在订阅账号之间进行，服务账号和 API 只在与原账号同种类或用户已列入 auto_migrate_priority 时可选，否则等待原额度或请用户明确授权；用 ListProviderAccounts.migration_type 区分订阅、服务账号及不同 API 接入，不能只按 harness 选择。检查五小时、周等所有窗口，必要时 RestartSession(context_strategy=compact) 迁移；跨 Provider 须明确目标账号的默认 model，"
+        "先用 GetResidentSettings 核对执行者有效自动切换策略，并用 GetLineage 读取 Family 配置；成员明确设置的开关优先，关闭时等待原额度或用户明确授权。继承 Family 时同种类可用账号优先，否则按有效种类排序；成员明确开启时使用站点默认排序。未排序的订阅种类按默认顺序追加，服务账号和 API 只在与原账号同种类或有效排序明确允许时可选。用 ListProviderAccounts.migration_type 区分订阅、服务账号及不同 API 接入，不能只按 harness 选择。检查五小时、周等所有窗口，自动迁移优先完整保留上下文；不支持完整导入时自动在目标账号整理交接，不等待用户选择，不空白重开；旧会话和历史保留，目标准备好后继续原任务。Steward 必要时使用 RestartSession(context_strategy=compact) 完成跨后端交接；跨 Provider 须明确目标账号的默认 model，"
         "完成后 RelayFamilyMessage(quota_reviewed=true, reason=理由) 继续原请求。"
         "Router 和 Steward 自身的可用性由运行时保障；无可用后端时通知实际创建人。",
         "评估额度受限成员，安排原请求继续执行。"),
@@ -156,6 +156,11 @@ _PRE_SUBSCRIPTION_QUOTA_GUIDE = (
     "完成后 RelayFamilyMessage(quota_reviewed=true, reason=理由) 继续原请求。"
     "Router 和 Steward 自身的可用性由运行时保障；无可用后端时通知实际创建人。")
 
+_PRE_PRESERVE_QUOTA_GUIDE = (
+    "先用 GetLineage 核对 Family.auto_migrate；关闭时不自动更换账号，等待原额度或用户明确授权。同种类可用账号优先，否则按 auto_migrate_priority 的种类顺序；自动更换只在订阅账号之间进行，服务账号和 API 只在与原账号同种类或用户已列入 auto_migrate_priority 时可选，否则等待原额度或请用户明确授权；用 ListProviderAccounts.migration_type 区分订阅、服务账号及不同 API 接入，不能只按 harness 选择。检查五小时、周等所有窗口，必要时 RestartSession(context_strategy=compact) 迁移；跨 Provider 须明确目标账号的默认 model，"
+    "完成后 RelayFamilyMessage(quota_reviewed=true, reason=理由) 继续原请求。"
+    "Router 和 Steward 自身的可用性由运行时保障；无可用后端时通知实际创建人。")
+
 
 _PRE_CONTINUATION_ROUTE_GUIDE = (
     "判断原请求由哪个当前成员或本 Family Steward 承接。创建成员、调整分工等组织请求"
@@ -184,7 +189,7 @@ def saved_fields(trigger: str, saved: dict) -> dict:
                 "recovery": {"guide": (_OLD_RECOVERY_GUIDE, _PRE_DIRECT_RECOVERY_GUIDE)},
                 "queue": {"guide": (_OLD_QUEUE_GUIDE, _PRE_UNIFIED_QUEUE_GUIDE), "prompt": _OLD_QUEUE_PROMPT},
                 "review": {"guide": _PRE_UNIFIED_REVIEW_GUIDE},
-                "quota": {"guide": _PRE_SUBSCRIPTION_QUOTA_GUIDE},
+                "quota": {"guide": (_PRE_SUBSCRIPTION_QUOTA_GUIDE, _PRE_PRESERVE_QUOTA_GUIDE)},
                 "summary": {"guide": _PRE_UNIFIED_SUMMARY_GUIDE, "prompt": _PRE_UNIFIED_SUMMARY_PROMPT}}.get(trigger, {})
     for field, old in previous.items():
         if fields.get(field) in (old if isinstance(old, tuple) else (old,)):
@@ -311,7 +316,7 @@ def render(record: dict, trigger: str, facts: dict, *, guide_version: str | None
             prompt += "\n" + ROUTER_FACTS_CONTRACT
     if entry["role"] == "steward":
         enabled = block["family"].get("auto_migrate", True)
-        prompt += "\n行动前用 GetLineage 核对当前 auto_migrate。Family 自动转组：" + ("开启。" if enabled else "关闭。不得自动更换账号；等待额度恢复或用户明确授权。")
-        prompt += "\n账号种类优先级 auto_migrate_priority：" + json.dumps(block["family"].get("auto_migrate_priority", []), ensure_ascii=False) + "。先选同种类可用账号，再按排序；自动更换只在订阅账号之间进行，服务账号和 API 只有列在此数组中（用户明确允许）或与原账号同种类时才可选；空数组表示只用订阅、按默认顺序。读取 ListProviderAccounts 的 migration_type，不将同 harness 的不同 API 与订阅混为一类。"
+        prompt += "\n行动前用 GetLineage 核对当前 auto_migrate，并用 GetResidentSettings 核对执行者有效自动切换开关；成员明确设置优先。Family 默认自动切换：" + ("开启。" if enabled else "关闭；未明确覆盖的执行者等待额度恢复或用户授权。")
+        prompt += "\n账号种类优先级 auto_migrate_priority：" + json.dumps(block["family"].get("auto_migrate_priority", []), ensure_ascii=False) + "。继承 Family 时先选同种类可用账号，再按排序；空数组跟随站点默认排序，非空排序末尾补未排序订阅种类。成员明确开启时按站点默认排序。服务账号和 API 只有有效排序明确允许或与原账号同种类时才可选。读取 ListProviderAccounts 的 migration_type，不将同 harness 的不同 API 与订阅混为一类；自动迁移优先完整保留上下文，不支持时自动整理交接，不等待用户选择；旧会话和历史保留，不空白重开。"
     return Template(prompt).substitute(facts=json.dumps(facts, ensure_ascii=False),
         guide_path=path, guide_version=version if guide_version is None else guide_version)
