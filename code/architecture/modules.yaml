@@ -2171,6 +2171,19 @@ protocols:
     description: "resource_views通过service.query/get读取正式资源，构建Knowledge/Paper/Project业务视图；ProjectsHttp调用其project_index。 类型页面通过各自接口读取业务视图：Paper 仍走 /paper/api/papers/detail（id、sections），其他页面按已声明资源接口读取；不将所有页面描述成直接 ISA。"
     example: "打开 Project 目录：resource_views 使用当前 actor 分页查询正式资源，再投影目录字段；页面状态不能增加资源可见性。"
 
+  - id: "telepus-personal-assistant"
+    title: "Telegram 个人助手入口与 Family 对话投影"
+    modules:
+      - "web.community"
+      - "web.workflows"
+      - "lineage.family"
+    designs:
+      - "decision_66f5be947b67"
+    related_designs:
+      - "decision_692a484e9bea"
+    description: "Telepus 按联系人对应的 User 读取 Portal 个人助手入口关联，经正式 ISA 向门面或精确 Resident 投递；私人 Family 拥有选人、转交和门面对话投影，桥接只管理 Telegram 模式、游标与消息对应，不复制目录或执行权限。"
+    example: "Telegram update → 联系人 User → personal_ama.personal_assistant_target → DeliverMessage → Family 门面对话 → WatchConversationEvents → Telegram 分段回复。"
+
   - id: "web-http-handler-binding"
     title: "Web路由与领域HTTP处理器接口"
     modules:

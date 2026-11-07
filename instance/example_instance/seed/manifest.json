@@ -15226,8 +15226,8 @@
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260901__decision__Telepus外部消息Channel与Resident投递__decision_692a484e9bea.md",
-      "sha256": "cf41fd3e1cb36645bcaf07f2aa8d7a9abd31c44982a36a29ff554fda1bef61fa",
-      "size": 20565
+      "sha256": "3065b78c83f4ef683b0bfd5a2098c6de31fad8b1efb746ad6d669de9f9f78b3c",
+      "size": 20521
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260901__decision__WhichResident可见目录推荐与纠正闭环__decision_8fe87d812a4c.md",
@@ -15903,6 +15903,11 @@
       "path": "data/projects/AI员工/knowledge_base/decision/20261104__decision__汇报资源、版本与成果目录__decision_e3ced6d30f6b.md",
       "sha256": "7c6973dfe068e05cf5e5b2f2a72f35efc703f7244c8a24bfc163b00cbb90e865",
       "size": 14412
+    },
+    {
+      "path": "data/projects/AI员工/knowledge_base/decision/20261107__decision__Telepus个人助手与精准路由__decision_66f5be947b67.md",
+      "sha256": "581f2d73fd29d0a45753e22bee217532d601bf0f11424c49a823ad6d4b62f767",
+      "size": 12994
     },
     {
       "path": "data/projects/AI员工/knowledge_base/idea/20260910__idea__从工作台行为反向整理_Lineage，让界面与_Agent_协作共同演化__idea_4bafb08b38d5.md",

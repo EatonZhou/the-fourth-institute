@@ -11,9 +11,8 @@ links:
   - ${code_root}/management_portal/telepus_instructions.py
   - ${code_root}/management_portal/telepus_web_isa.py
   - ${code_root}/tests/cases/test_watchboard_applications.py
-  - projects:AI员工/agents/lineage_c625a4bee56b/script/src/portal_facade.py
+  - projects:AI员工/agents/lineage_c625a4bee56b/script/src/portal_client.py
   - projects:AI员工/agents/lineage_c625a4bee56b/script/src/telegram_adapter.py
-  - projects:AI员工/agents/lineage_c625a4bee56b/script/src/portal_resident_instructions.py
   - ${code_root}/management_portal/isa_client.py
   - ${code_root}/management_portal/http_agent_workbench.py
   - ${code_root}/management_portal/static/watchboard_applications/telepus.js
@@ -26,6 +25,7 @@ links:
   - ${code_root}/tests/cases/test_resident_forward_contacts.py
   - ${code_root}/tests/cases/test_resident_watchboard.py
   related:
+  - decision_66f5be947b67
   - decision_4527448ad07f
   - decision_898b8911a2ff
   - decision_0571f3741e23
@@ -39,12 +39,12 @@ links:
   supersedes: []
   derived_from: []
 version:
-  number: 24
+  number: 25
   created_at: "2026-09-01"
   created_by:
     user: ""
     agent: ""
-  updated_at: "2026-11-06T01:17:36Z"
+  updated_at: "2026-11-07T12:09:58Z"
   updated_by:
     user: ""
     agent: "resident_60ae6d0cdf74"
@@ -66,7 +66,7 @@ Telepus 是 Portal 的 Telegram 入口。用户在 Telegram 中给 Telepus 机�
 | 联系人表 | PostgreSQL 表 `telepus.telegram_contacts`，每个联系人一行：`telegram_user_id`、`name`、`portal_actor`。 |
 | Contacts 区域 | Portal 在 Telepus 的 Watchboard 中提供的联系人管理界面。 |
 
-Watchboard 是 Resident 的扩展面板：Resident 可以安装一套脚本，Portal 在工作台中显示脚本的状态、配置和命令，并可以为特定 Resident 附加专用界面（Watchboard 应用）。Telepus 的联系人管理就是这样一个应用（Watchboard 见 decision_0571f3741e23）。Telepus 的展示清单不提供通用运行命令，消息桥接由 router、portal-refresh、breakglass-worker 三个 systemd 服务承担。通用 Watchboard 的 Lineage/RunScript 安装流程不迁移或停止它们；令牌、桥接数据库、联系人代表身份和故障恢复由基础服务边界另行定义。
+Watchboard 是 Resident 的扩展面板：Resident 可以安装一套脚本，Portal 在工作台中显示脚本的状态、配置和命令，并可以为特定 Resident 附加专用界面（Watchboard 应用）。Telepus 的联系人管理就是这样一个应用（Watchboard 见 decision_0571f3741e23）。Telepus 的展示清单不提供通用运行命令，消息桥接由 router、portal-refresh 两个 systemd 服务承担。通用 Watchboard 的 Lineage/RunScript 安装流程不迁移或停止它们；令牌、桥接数据库、联系人代表身份和故障恢复由基础服务边界另行定义。
 
 ```text
 Telegram 用户
@@ -89,15 +89,15 @@ Portal 用户 ──Contacts 区域──> 联系人表 <──读取── Tele
 
 ### 管理范围
 
-Telepus 的服务开关管理本站 Linux 用户级 systemd 中的三个固定服务：`telepus-breakglass-worker.service`、`telepus-portal-refresh.service`、`telepus-telegram-router.service`。它独立于 Resident 的接收开关、联系人绑定和 Watchboard 展示开关；服务状态直接读取 systemd，不用页面缓存或另存的布尔值代替实际状态。
+Telepus 的服务开关管理本站 Linux 用户级 systemd 中的两个固定服务：`telepus-portal-refresh.service`、`telepus-telegram-router.service`。它独立于 Resident 的接收开关、联系人绑定和 Watchboard 展示开关；服务状态直接读取 systemd，不用页面缓存或另存的布尔值代替实际状态。
 
-开启表示启用并启动这三个服务；关闭表示停止并禁用其中已安装的服务。关闭保留账号、令牌、联系人映射、桥接数据库和已有消息数据，也不取消已经投递到 Resident 的工作。开关不负责安装服务或依赖，不迁移运行目录，不改写联系人代表身份。
+开启表示启用并启动这两个服务；关闭表示停止并禁用其中已安装的服务。关闭保留账号、令牌、联系人映射、桥接数据库和已有消息数据，也不取消已经投递到 Resident 的工作。开关不负责安装服务或依赖，不迁移运行目录，不改写联系人代表身份。
 
 ### 正式指令与权限
 
 | 指令 | 参数 | 返回 | 行为 |
 | --- | --- | --- | --- |
-| `GetTelepusStatus` | 无 | `{status: object}` | 只读查询三个服务的启用、运行和安装状态。 |
+| `GetTelepusStatus` | 无 | `{status: object}` | 只读查询两个服务的启用、运行和安装状态。 |
 | `SetTelepusEnabled` | 必填 `enabled: boolean` | `{status: object}` | `true` 启用并启动，`false` 停止并禁用；返回操作后的真实状态。 |
 
 两条指令属于运行环境分类，是无对象 target 的全局服务指令。它们使用固定判定槽，按当前权限方案配置判定，不属于免检接口；处理接口还要求调用者为 Portal 管理员，否则返回 `instruction.forbidden`。指令分类、命名和参数总表见 decision_4527448ad07f 与 decision_898b8911a2ff，本篇约定 Telepus 的运行行为。
@@ -112,8 +112,8 @@ Telepus 的服务开关管理本站 Linux 用户级 systemd 中的三个固定�
 | `units` | 每个固定服务的 `name`、`loaded`、`active`、`enabled`。分别对应已加载、正在运行和已启用；`enabled-runtime` 也计为已启用。 |
 | `missing` | 未加载的固定服务名称列表。 |
 | `enabled` | 任一服务已启用或正在运行即为 `true`，用于表示尚有服务处于开启状态；不代表整体健康。 |
-| `running` | 三个服务均正在运行。 |
-| `complete` | 三个服务均已安装、已启用且正在运行。只有此状态满足完整开启要求。 |
+| `running` | 两个服务均正在运行。 |
+| `complete` | 两个服务均已安装、已启用且正在运行。只有此状态满足完整开启要求。 |
 | `error` | 查询失败或平台能力不足的诊断；查询成功时为空字符串。 |
 
 非 Linux 平台，或 `systemctl --user show` 不可执行、超时、返回失败时，`available=false`、`units=[]`、`missing` 列出全部固定服务，三个聚合布尔值均为 `false`，并给出 `error`。这些值表示状态不可读取，不能据此认定服务已经停止。查询的超时上限为 45 秒。
@@ -122,7 +122,7 @@ Telepus 的服务开关管理本站 Linux 用户级 systemd 中的三个固定�
 
 每次设置先读取状态。无法查询时拒绝操作，返回 `telepus.service_unavailable`（HTTP 503）；请求开启但有服务缺失时返回 `telepus.service_missing`（HTTP 409，`commit_state=not_committed`），不执行控制命令，也不自动安装。
 
-开启对全部三个固定服务执行 `systemctl --user enable --now`；关闭只对已加载的服务执行 `systemctl --user disable --now`，因而部分服务缺失不妨碍关闭剩余服务。关闭时若没有已加载服务，则直接返回查询结果。控制命令的超时上限为 135 秒。
+开启对全部两个固定服务执行 `systemctl --user enable --now`；关闭只对已加载的服务执行 `systemctl --user disable --now`，因而部分服务缺失不妨碍关闭剩余服务。关闭时若没有已加载服务，则直接返回查询结果。控制命令的超时上限为 135 秒。
 
 控制命令不可执行、超时或返回失败时，返回 `telepus.service_control_failed`（HTTP 503）。命令返回成功后仍须重新查询：开启必须达到 `complete=true`，关闭必须达到 `enabled=false`；查询不可用或未达到请求状态时返回 `telepus.service_control_incomplete`（HTTP 503），不以命令成功代替状态确认。
 
@@ -214,22 +214,20 @@ Telegram 程序处理每条消息的过程：
 
 1. 从 Telegram 拉取新消息（长轮询）。
 2. 按联系人表找到发信人对应的 Portal 用户；没有对应时回复未授权说明。
-3. 确定目标 Resident：已经有目标时继续发给它；否则可以直接描述问题，由程序推荐合适的 Resident，也可以用 `/router` 浏览目录、用 `/route <resident_id>` 或直接发送 Resident ID 指定。
+3. 确定目标 Resident：默认读取当前 Portal 用户的个人助手门面关联；用户用 `/route <resident_id>` 或仅发送 Resident ID 时进入精准路由，用 `/home` 返回个人助手。Telepus 不推荐目标或浏览 Resident 目录，个人助手门面的选人和改派由用户私人 Family 完成（decision_66f5be947b67）。
 4. 以联系人对应的 Portal User 为 caller，通过 `isa_client.call` 调用 `DeliverMessage`，指定 `activation_policy=enqueue_and_trigger`。桥接进程使用 socket 路由，由 Portal 的 ISA 客户端对 `instruction.execute` 请求签名，再交给拥有该指令的服务（decision_96a887d83e8a）。消息中的图片先下载到 Portal 的共享上传目录，以 `[image: <路径>]` 的形式附在文字后。
-5. 读取目标的最新回复，按每段最多 3000 个字符分段发回 Telegram。
+5. 按聊天保存的门面或精准目标对话事件游标逐条读取本聊天输入的回复和发给本人的主动消息，按每段最多 3000 个字符分段发回 Telegram；消息对应、引用、历史读取和恢复以 decision_66f5be947b67 为准。
 
 Resident 信息通过 `GetResident` 读取，对话通过 `GetConversation` 读取；状态、单条输入、队列和队列操作分别调用对应的 HATG ISA。桥接只转换 Telegram 所需的显示结果，消息作者和执行权限由 Portal 按 caller 确定。发送消息使用该消息 ID 对应的幂等键；指令拒绝或服务不可用时直接返回错误，不更换 caller 重试。
 
 这些调用使用普通入口 `entry=web`，不依赖系统入口豁免。权限由权限系统按这位 User 自己的表项判定（decision_b820faf42218）。消息投递、Mailbox 整理和取消的默认要求分别见 decision_2fe6fd5367fb、decision_c54e68a82d7a、decision_2a3ff353165c；`CancelInput` 按目标 Resident 的 contributor 要求判定，Telepus 不因消息发送者身份另外放行。覆盖 Resident 所在 Lineage 或 Project 的表项按同一方案生效；能发送不代表能执行所有队列操作。
 
-程序还提供查看和管理目标队列（`/queue`）、向当前任务插入补充内容（`/now`）、停止当前任务（`/stop`）、查看当前目标（`/where`）、拉取最新回复（`/refresh`）、最近使用的 Resident（`/recent`）等命令，发送 `/help` 可以看到完整列表。另有 Breakglass 通道，在 Portal 故障时提供一个独立的 Agent，同一时间只由一位用户使用。
-
-程序把不属于任何 Project、标题为“Ask Me Anything”的 Lineage 中的 Resident 当作用户的个人入口；这与 Portal 页面按个人入口关联确定 Ask Me Anything 的方式（decision_bd5217d08c09）不同。
+程序的 `/home`、`/route`、`/history`、`/queue`、`/stop`、`/now`、`/where`、`/refresh` 等命令按个人助手与精准路由两种模式工作，精确行为见 decision_66f5be947b67。个人入口从 Portal 的用户关联读取，不按 Lineage 标题、Project 缺失或其他规则猜测。Breakglass 通道已退役，服务开关不再包含该 worker。
 
 ## 职责划分
 
 - **Portal 负责**联系人界面和联系人表的写入、目标 Resident 的权限检查、消息的排队与执行。
-- **Telegram 程序负责**与 Telegram 的连接、命令解析、目标选择和回复的发送。Resident 完成回复不代表 Telegram 已经送达。
+- **Telegram 程序负责**与 Telegram 的连接、命令解析、目标模式和回复的发送；选人与改派属于 Portal 私人 Family。Resident 完成回复不代表 Telegram 已经送达。
 
 ## 故障与恢复
 
@@ -238,5 +236,5 @@ Resident 信息通过 `GetResident` 读取，对话通过 `GetConversation` 读�
 | 数据库不可用 | 页面读取或保存联系人时报错；Telegram 程序无法确认发信人，消息不会投递给 Resident | 数据库恢复后重新保存或重新发送 |
 | 保存时 ID 或用户重复 | 页面保留对话框并显示错误，原联系人不变 | 改用其他 ID 或先删除旧联系人 |
 | 页面响应丢失 | 不确定是否保存成功 | 重新打开 Watchboard，以联系人表为准；重复删除是安全的 |
-| 目标 Resident 已删除或不可见 | 程序提示目标不可用 | 重新选择目标 |
-| Telegram 发送失败 | Resident 的回复已完成但用户没有收到 | 用户发送 `/refresh` 重新拉取最新回复 |
+| 精准路由目标已删除或不可见 | 程序提示目标不可用并回到个人助手模式 | 用 `/route` 指定新目标 |
+| Telegram 发送失败 | 该段回复未送达，事件游标不前进 | 下轮重试，或用户发送 `/refresh` |
