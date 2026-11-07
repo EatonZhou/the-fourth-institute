@@ -93,7 +93,42 @@ DISK_RESOURCE_POOL: tuple[dict[str, Any], ...] = (
 )
 
 
-DISK_RESOURCE_MAP = {str(item["resource_id"]): item for item in DISK_RESOURCE_POOL}
+def _disk_resources() -> list[dict[str, Any]]:
+    """Monitor targets are owned by this deployment, not the Home renderer."""
+    configured = read_site_config().get("deployment", {}).get("disk_resources")
+    if configured is None:
+        return deepcopy(list(DISK_RESOURCE_POOL))
+    if not isinstance(configured, list):
+        raise ValueError("deployment.disk_resources must be a list")
+    resources = []
+    seen = set()
+    for raw in configured:
+        if not isinstance(raw, dict) or set(raw) - {
+            "resource_id", "display_name", "host_label", "kind", "paths", "ssh_config", "ssh_host",
+        }:
+            raise ValueError("Invalid disk resource configuration")
+        resource = deepcopy(raw)
+        key = resource.get("resource_id")
+        if not isinstance(key, str) or not re.fullmatch(r"[a-zA-Z0-9_-]+", key) or key in seen:
+            raise ValueError("Disk resource IDs must be nonempty and unique")
+        seen.add(key)
+        if resource.get("kind") not in {"local", "ssh"}:
+            raise ValueError("Disk resource kind must be local or ssh")
+        paths = resource.get("paths")
+        if not isinstance(paths, list) or not paths or any(
+            not isinstance(path, str) or not Path(path).is_absolute()
+            or any(c in path for c in "\n\r\0") for path in paths
+        ):
+            raise ValueError("Disk resource paths must be absolute paths")
+        if resource["kind"] == "ssh":
+            host = resource.get("ssh_host")
+            config = resource.get("ssh_config")
+            if not isinstance(host, str) or not re.fullmatch(r"[a-zA-Z0-9_][a-zA-Z0-9_.@-]*", host):
+                raise ValueError("Disk resource requires an SSH host")
+            if not isinstance(config, str) or not Path(config).is_absolute():
+                raise ValueError("Disk resource requires an absolute SSH config path")
+        resources.append(resource)
+    return resources
 
 
 def _now_ts() -> float:
@@ -407,6 +442,8 @@ def _read_gpu_status_direct(
         raise FileNotFoundError(str(GPU_STATUS_SCRIPT))
     command = [str(GPU_STATUS_SCRIPT)] if os.access(GPU_STATUS_SCRIPT, os.X_OK) else ["python3", str(GPU_STATUS_SCRIPT)]
     ssh = device_identity_backend.ssh_access_for_record(server)
+    if (server.get("monitor") or {}).get("transport") == "local":
+        command.append("--local")
     config_path = str(ssh.get("config_path") or "").strip()
     host = str(ssh.get("host") or "").strip()
     if config_path:
@@ -481,7 +518,7 @@ def _collect_gpu_status(
 
 
 def _disk_resource_by_id(resource_id: str) -> dict[str, Any] | None:
-    return DISK_RESOURCE_MAP.get(str(resource_id or "").strip())
+    return next((item for item in _disk_resources() if item["resource_id"] == str(resource_id or "").strip()), None)
 
 
 def _disk_resource_public(resource: dict[str, Any]) -> dict[str, Any]:
@@ -521,7 +558,7 @@ def _run_disk_script(resource: dict[str, Any], script: str, args: list[str]) -> 
     if kind == "ssh":
         ssh_config = str(resource.get("ssh_config") or "").strip()
         if not ssh_config or not Path(ssh_config).is_file():
-            ssh_config = _thor_ssh_config()
+            raise ValueError("disk resource SSH config not found")
         ssh_host = str(resource.get("ssh_host") or "").strip()
         if not ssh_host:
             raise ValueError("missing ssh host")
@@ -1174,7 +1211,7 @@ def _aggregate_disk_resources(resources: list[dict[str, Any]]) -> dict[str, Any]
 
 def get_disk_resource_status(*, force_refresh: bool = False, resource_id: str = "") -> dict[str, Any]:
     selected = _disk_resource_by_id(resource_id) if resource_id else None
-    resources = [selected] if selected else list(DISK_RESOURCE_POOL)
+    resources = [selected] if selected else _disk_resources()
     resources = [item for item in resources if item]
     statuses = [
         _collect_disk_status(

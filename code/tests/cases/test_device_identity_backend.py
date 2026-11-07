@@ -26,6 +26,50 @@ GPU_ID = "device_abcdef012345"
 GPU_UUID = "GPU-01234567-89ab-cdef-0123-456789abcdef"
 
 
+def test_register_local_gpu_inventory_atomically(isolated_portal_case, monkeypatch):
+    with isolated_portal_case():
+        _registry()
+        payload = {
+            "name": "Local GPU server", "device_kind": "gpu_server",
+            "hostname": "test-local", "monitor": {"transport": "local"},
+            "gpus": [{"gpu_index": 0, "gpu_uuid": "GPU-local", "model": "Test GPU"}],
+        }
+        registered = device_identity_backend.register_device(payload)
+        records = device_identity_backend.load_device_records()
+        children = device_identity_backend.gpu_children(registered["device_id"], records=records)
+        assert len(children) == 1
+        assert children[0]["gpu_uuid"] == "GPU-local"
+        assert registered["monitor"]["expected_gpu_count"] == 1
+        assert registered["access_methods"] == {}
+        monkeypatch.setattr(agent_status_backend, "_summarize_gpu_status", lambda value, *a, **k: value)
+        with mock.patch.object(agent_status_backend.subprocess, "run", return_value=subprocess.CompletedProcess([], 0, '{"status":"ok"}', '')) as run:
+            assert agent_status_backend._read_gpu_status_direct(registered)["status"] == "ok"
+        assert "--local" in run.call_args.args[0]
+        with pytest.raises(ValueError, match="duplicate GPU UUID"):
+            device_identity_backend.register_device(payload)
+        assert device_identity_backend.load_device_records() == records
+        with pytest.raises(ValueError, match="SSH host"):
+            device_identity_backend.register_device({**payload, "monitor": {"transport": "ssh"}})
+        assert device_identity_backend.load_device_records() == records
+
+
+def test_register_remote_gpu_inventory_requires_complete_topology(isolated_portal_case):
+    with isolated_portal_case():
+        payload = {
+            "name": "Remote server", "device_kind": "gpu_server",
+            "access_methods": {"ssh": {"host": "test-gpu"}},
+            "gpus": [{"gpu_index": 0, "gpu_uuid": "GPU-remote", "model": "Test GPU"}],
+        }
+        with pytest.raises(ValueError, match="nonempty"):
+            device_identity_backend.register_device({**payload, "gpus": []})
+        with pytest.raises(ValueError, match="duplicate GPU slot"):
+            device_identity_backend.register_device({**payload, "gpus": [*payload["gpus"], {"gpu_index": 0, "gpu_uuid": "GPU-remote2", "model": "Test GPU"}]})
+        assert device_identity_backend.load_device_records() == []
+        server = device_identity_backend.register_device(payload)
+        assert server["monitor"]["transport"] == "ssh"
+        assert len(device_identity_backend.gpu_children(server["device_id"])) == 1
+
+
 def test_registered_ssh_paths_are_shared_by_parent_access_and_gpu_probe(monkeypatch):
     server = {
         'device_id': SERVER_ID,

@@ -330,12 +330,13 @@ main()
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Return current Thor GPU usage as JSON.",
+        description="Return current NVIDIA GPU usage as JSON, locally or over SSH.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     parser.add_argument("--ssh-config", default=DEFAULT_SSH_CONFIG)
     parser.add_argument("--host", default=DEFAULT_SSH_HOST)
     parser.add_argument("--identity-file", default="")
+    parser.add_argument("--local", action="store_true", help="Collect on this host without SSH.")
     parser.add_argument("--pretty", action="store_true", help="Pretty-print JSON output.")
     parser.add_argument("--timeout", type=float, default=45.0)
     return parser.parse_args()
@@ -344,7 +345,7 @@ def parse_args() -> argparse.Namespace:
 def main() -> int:
     args = parse_args()
     ssh_config = Path(args.ssh_config)
-    if not ssh_config.exists():
+    if not args.local and not ssh_config.exists():
         print(json.dumps({
             "status": "error",
             "error": f"ssh config not found: {ssh_config}",
@@ -362,10 +363,12 @@ def main() -> int:
     if args.identity_file:
         command.extend(["-i", args.identity_file])
     command.extend([args.host, "python3", "-"])
+    if args.local:
+        command = [sys.executable, "-"]
     try:
         result = subprocess.run(command, input=REMOTE_SCRIPT, text=True, capture_output=True, timeout=args.timeout)
     except subprocess.TimeoutExpired:
-        print(json.dumps({"status": "error", "error": f"ssh timed out after {args.timeout:g}s"}))
+        print(json.dumps({"status": "error", "error": f"GPU collection timed out after {args.timeout:g}s"}))
         return 1
     if result.returncode != 0:
         print(json.dumps({

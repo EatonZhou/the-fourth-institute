@@ -240,7 +240,7 @@ def _normalize_record(raw: dict[str, Any], document_id: str) -> dict[str, Any]:
     access_methods = {"ssh": normalized_ssh} if ssh_host else {}
 
     monitor = _mapping(raw.get("monitor"), field="monitor")
-    unknown_monitor = sorted(set(monitor) - {"kind", "expected_gpu_count"})
+    unknown_monitor = sorted(set(monitor) - {"kind", "expected_gpu_count", "transport"})
     if unknown_monitor:
         raise ValueError(
             f"device registry {document_id} contains unsupported monitor fields: "
@@ -255,7 +255,10 @@ def _normalize_record(raw: dict[str, Any], document_id: str) -> dict[str, Any]:
     monitor = {
         "kind": stripped_text(monitor.get("kind")),
         "expected_gpu_count": expected_gpu_count,
+        "transport": stripped_text(monitor.get("transport")) or "ssh",
     }
+    if monitor["transport"] not in {"local", "ssh"}:
+        raise ValueError("GPU monitor transport must be local or ssh")
 
     parent_device_id = stripped_text(raw.get("parent_device_id"))
     if parent_device_id:
@@ -275,7 +278,7 @@ def _normalize_record(raw: dict[str, Any], document_id: str) -> dict[str, Any]:
             raise ValueError(f"GPU server {device_id} cannot be a child GPU")
         if monitor["kind"] != "nvidia_smi" or expected_gpu_count < 1:
             raise ValueError(f"GPU server {device_id} has no valid monitor configuration")
-        if not access_methods.get("ssh", {}).get("host"):
+        if monitor["transport"] == "ssh" and not access_methods.get("ssh", {}).get("host"):
             raise ValueError(f"GPU server {device_id} has no SSH host")
     elif device_kind == "gpu":
         if not parent_device_id:
@@ -418,16 +421,19 @@ def register_device(
         raise ValueError("device name required")
     if not _KIND_RE.fullmatch(device_kind):
         raise ValueError("invalid device kind")
-    if device_kind in {"gpu", "gpu_server"}:
-        raise ValueError(
-            "GPU devices must be registered through the GPU inventory workflow"
-        )
+    if device_kind == "gpu":
+        raise ValueError("Register GPUs together with their gpu_server inventory")
     allowed_fields = {
         "name", "description", "device_kind", "lifecycle", "hostname",
         "location", "primary_ip", "access_methods", "model",
     }
+    if device_kind == "gpu_server":
+        allowed_fields |= {"monitor", "gpus"}
     if set(payload) - allowed_fields:
         raise ValueError("device registration payload does not match current contract")
+    gpus = payload.get("gpus", [])
+    if device_kind == "gpu_server" and (not isinstance(gpus, list) or not gpus):
+        raise ValueError("GPU server registration requires a nonempty gpus inventory")
     with get_registry_store().writer(DEVICE_COLLECTION) as writer:
         documents = writer.documents(DEVICE_COLLECTION)
         records, errors = _validate_registry(documents)
@@ -461,12 +467,29 @@ def register_device(
             "created_at": now,
             "updated_at": now,
         }
+        additions = {device_id: record}
+        if device_kind == "gpu_server":
+            record["monitor"] = {
+                **_mapping(payload.get("monitor"), field="monitor"),
+                "kind": "nvidia_smi", "expected_gpu_count": len(gpus),
+            }
+            for gpu in gpus:
+                if not isinstance(gpu, dict) or set(gpu) != {"gpu_index", "gpu_uuid", "model"}:
+                    raise ValueError("Each GPU requires gpu_index, gpu_uuid and model")
+                child_id = _RESOURCE_SERVICE.new_id("device", [*existing_ids, *additions])
+                additions[child_id] = {
+                    "schema": REGISTRY_SCHEMA, "device_id": child_id,
+                    "name": f"{name} GPU {gpu['gpu_index']}", "device_kind": "gpu",
+                    "parent_device_id": device_id, "lifecycle": record["lifecycle"],
+                    "created_at": now, "updated_at": now, **gpu,
+                }
         normalized = _normalize_record(record, device_id)
-        _records, errors = _validate_registry({**documents, device_id: record})
+        _records, errors = _validate_registry({**documents, **additions})
         if errors:
             raise ValueError(errors[0]["error"])
-        writer.put(DEVICE_COLLECTION, device_id, record)
-    announce_registry_changes(DEVICE_COLLECTION, {device_id: "created"}, resource_type="device")
+        for added_id, added in additions.items():
+            writer.put(DEVICE_COLLECTION, added_id, added)
+    announce_registry_changes(DEVICE_COLLECTION, {key: "created" for key in additions}, resource_type="device")
     return {"id": device_id, **normalized}
 
 
