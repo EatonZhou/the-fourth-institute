@@ -1243,19 +1243,6 @@
         font-size: 10.5px;
         line-height: 1.35;
       }
-      @container portal-chat-workspace (max-width: 780px) {
-        .watchboardSplitter.open { display: none; }
-        .watchboard.open:not(.collapsed) {
-          flex: 0 0 auto;
-          min-width: 0;
-          max-width: none;
-          /* The composer/question card is outside this body. Reserve most of
-             the remaining body for messages, even in a short split panel. */
-          max-height: max(38px, min(35%, 240px));
-          border-left: 0;
-          border-top: 1px solid var(--border);
-        }
-      }
       @media (max-width: 720px) {
         .residentFormGrid { grid-template-columns: 1fr; }
         .residentRuntimeGrid { grid-template-columns: 1fr 1fr; }

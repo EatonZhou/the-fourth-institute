@@ -18,13 +18,18 @@
     submitChatPrompt,
     writeUiState: writeLineageUiState,
   }) {
+      // Saved docking is only applicable when the chat has room for a sidebar.
+      // The frame's responsive direction is the single owner of the breakpoint.
+      let watchboardCompact = false;
+      const watchboardCollapsed = () => watchboardCompact || state.watchboardCollapsed !== false;
+      const compactFrame = body => getComputedStyle(body).flexDirection === "column";
       const watchboardApplications = window.PortalWatchboardApplications.create({
         escapeHtml: esc, ui: portalUi, api: residentService,
         view: {
           dashboard: watchboardPayload, residentId: selectedResidentId,
           render: () => renderWatchboard(state.detail || {}), accept: mergeWatchboardResponse,
           refresh: scheduleWatchboardRefresh, reload: refreshWatchboard,
-          get collapsed() { return !!state.watchboardCollapsed; },
+          get collapsed() { return watchboardCollapsed(); },
           get username() { return state.me || ""; },
         },
         commands: {
@@ -233,7 +238,7 @@
       function watchboardGenericHtml(dashboard, extraHtml = "") {
         if (!dashboard?.enabled) return "";
 
-        const collapsed = !!state.watchboardCollapsed;
+        const collapsed = watchboardCollapsed();
         const manifest = dashboard.manifest || {};
         const statusPayload = dashboard.status?.payload || {};
         const statusError = dashboard.status?.error || "";
@@ -314,9 +319,9 @@
         const contains = target => trigger.contains(target) || box.contains(target);
         const cancelClose = () => { clearTimeout(closeTimer); closeTimer = 0; };
         function setShown(value) {
-          const next = !!value && !trigger.hidden && !!state.watchboardCollapsed;
+          const next = !!value && !trigger.hidden && watchboardCollapsed();
           box.classList.toggle("peeking", next);
-          box.inert = !!state.watchboardCollapsed && !next;
+          box.inert = watchboardCollapsed() && !next;
           trigger.setAttribute("aria-expanded", String(next));
           if (next === shown) return;
           shown = next;
@@ -364,13 +369,19 @@
           if (!contains(event.target) && !watchboardModalDialog) close();
         }, { capture: true, signal });
         window.addEventListener("blur", close, { signal });
+        const resize = new ResizeObserver(() => {
+          if (compactFrame(body) === watchboardCompact) return;
+          close();
+          renderWatchboard(state.detail || {});
+        });
+        resize.observe(body);
         watchboardEdge = { box, close, scheduleClose,
           sync(visible) {
-            trigger.hidden = !visible || !state.watchboardCollapsed;
+            trigger.hidden = !visible || !watchboardCollapsed();
             if (trigger.hidden) close();
-            box.inert = !visible || (!!state.watchboardCollapsed && !shown);
+            box.inert = !visible || (watchboardCollapsed() && !shown);
           },
-          destroy() { close(); events.abort(); overlay.destroy(); trigger.remove(); },
+          destroy() { resize.disconnect(); close(); events.abort(); overlay.destroy(); trigger.remove(); },
         };
         return watchboardEdge;
       }
@@ -379,11 +390,12 @@
         const box = getChatElement("watchboard");
         const body = getChatElement("body");
         if (!box || !body) return false;
+        watchboardCompact = compactFrame(body);
         const splitter = getChatElement("watchboardSplitter");
         body.classList.toggle("hasWatchboard", !!dashboard);
-        splitter?.classList.toggle("open", !!dashboard && !state.watchboardCollapsed);
+        splitter?.classList.toggle("open", !!dashboard && !watchboardCollapsed());
         box.classList.toggle("open", !!dashboard);
-        box.classList.toggle("collapsed", !!dashboard && !!state.watchboardCollapsed);
+        box.classList.toggle("collapsed", !!dashboard && watchboardCollapsed());
         bindWatchboardEdge(box, body).sync(!!dashboard);
         if (dashboard) {
           bindWatchboardSplitter();
@@ -417,7 +429,8 @@
           const application = watchboardApplications.resolve(visibleDashboard);
           const signature = JSON.stringify({
             application: [application?.id || "", application?.key?.(visibleDashboard) || ""],
-            collapsed: !!state.watchboardCollapsed,
+            collapsed: watchboardCollapsed(),
+            compact: watchboardCompact,
             running: state.watchboardRunInFlight || "",
             modeConfigSaving: state.watchboardModeConfigSaving || "",
             dashboard: dashboard.signature || "",
@@ -457,11 +470,20 @@
           });
         });
         const toggle = box.querySelector("[data-watchboard-dashboard-toggle]");
-        if (toggle && state.watchboardCollapsed) {
+        if (toggle && watchboardCompact) {
+          toggle.setAttribute("aria-label", window.PortalI18n.t("收起 Watchboard"));
+          toggle.title = window.PortalI18n.t("收起 Watchboard");
+          toggle.innerHTML = window.PortalUIPrimitives.iconHtml("chevron-right");
+          toggle.removeAttribute("data-portal-icon");
+        } else if (toggle && watchboardCollapsed()) {
           toggle.setAttribute("aria-label", window.PortalI18n.t("固定展开 Watchboard"));
           toggle.title = window.PortalI18n.t("固定展开 Watchboard");
         }
         toggle?.addEventListener("click", () => {
+          if (watchboardCompact) {
+            watchboardEdge?.close();
+            return;
+          }
           state.watchboardCollapsed = !state.watchboardCollapsed;
           writeLineageUiState({ watchboardCollapsed: state.watchboardCollapsed });
           box.dataset.signature = "";

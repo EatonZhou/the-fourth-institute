@@ -362,7 +362,7 @@
         restoreWhichResidentState(saved.whichResident);
         const savedSideView = window.PortalNavigation.normalizeLineageView(saved.lastSideView || saved.sideView);
         if (!preserveSideView) state.sideView = savedSideView;
-        if (typeof saved.watchboardCollapsed === "boolean") state.watchboardCollapsed = saved.watchboardCollapsed;
+        state.watchboardCollapsed = saved.watchboardCollapsed !== false;
         if (Array.isArray(saved.watchboardHiddenResidents)) {
           state.watchboardHiddenResidents = new Set(saved.watchboardHiddenResidents.map(value => String(value || "").trim()).filter(Boolean));
         }

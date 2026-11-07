@@ -7,9 +7,9 @@ import subprocess
 
 
 def test_watchboard_respects_panel_width_and_collapse():
-    """真实 WireGuard 面板在窄分栏、手机和短聊天区为消息与提问卡片保留空间。
+    """Watchboard 默认和恢复旧偏好都不挤占窄聊天区，Telepus 与 WireGuard 共用边缘浮出。
 
-    覆盖边缘小标、悬停浮出、点击/触屏、键盘/Esc、独立滚动、固定展开与 Resident 切换清理。
+    覆盖默认/已存两种值、刷新/缩放、点击/触屏、键盘/Esc、独立滚动、宽屏固定展开与清理。
 
     :risk: no-external-side-effects
     :profiles: local.fixture

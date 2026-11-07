@@ -117,7 +117,7 @@
         actualSentPromptView: false,
         loadAllSeq: 0,
         sideViewInteractionSeq: 0,
-        watchboardCollapsed: false,
+        watchboardCollapsed: true,
         watchboardMutationInFlight: false,
         watchboardHiddenResidents: new Set(),
         watchboardRunInFlight: "",
