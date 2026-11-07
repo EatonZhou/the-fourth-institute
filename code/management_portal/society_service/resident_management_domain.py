@@ -136,6 +136,7 @@ def reset_resident_context(resident_id: str, actor: str) -> dict:
         next_record["context_reset_at"] = datetime.now(timezone.utc).isoformat(
             timespec="milliseconds").replace("+00:00", "Z")
         for key in (
+            "last_token_usage", "last_token_usage_at",
             "last_runtime_error", "last_turn_usage", "last_turn_usage_at",
             "last_model_context_window", "session_created_via",
         ):

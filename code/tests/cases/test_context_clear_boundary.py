@@ -90,6 +90,51 @@ def test_a_restart_after_a_clear_hands_over_no_compaction_summary(monkeypatch) -
     assert "压缩摘要" not in prompt
 
 
+def test_clear_context_resets_persisted_heat_and_lineage_badge(future_creation_store, monkeypatch):
+    """清空后无新任务时，热度和图徽章不得沿用旧上下文用量。"""
+    from management_portal.society_service import resident_directory_domain, lineage_reads
+
+    source = resident_domain.register_resident(_new_session_payload("Clear heat"), "sample_admin")
+    resident_id = source["resident_id"]
+    record = resident_record_domain.find_resident(resident_id)
+    record.update(last_token_usage={"input_tokens": 170_700},
+                  last_token_usage_at="2026-01-01T00:00:00Z",
+                  last_turn_usage={"input_tokens": 170_700},
+                  last_turn_usage_at="2026-01-01T00:00:00Z",
+                  last_model_context_window=200_000)
+    resident_record_domain.save_resident_record(record)
+    assert resident_directory_domain.get_resident_context_pressures([resident_id], "sample_admin")[resident_id]["heat_level"] == "hot"
+    lineage_reads.get_node_message_counts(source["lineage_id"], "sample_admin")
+    _clear(resident_id, monkeypatch, expected_releases=0)
+    cleared = resident_record_domain.find_resident(resident_id)
+    assert not cleared.get("last_token_usage")
+    assert not cleared.get("last_token_usage_at")
+    pressure = resident_directory_domain.get_resident_context_pressures([resident_id], "sample_admin")[resident_id]
+    assert pressure["context_tokens"] == 0 and pressure["heat_level"] == "normal"
+    nodes = lineage_reads.get_node_message_counts(source["lineage_id"], "sample_admin")["sessions"]
+    node = next(item for item in nodes if item["resident_id"] == resident_id)
+    assert node["context_pressure"]["context_tokens"] == 0
+    assert node["context_pressure"]["heat_level"] == "normal"
+
+
+@pytest.mark.parametrize("observed_at,expected", [
+    ("2026-01-01T00:00:00Z", 0), ("", 0),
+    ("2026-01-02T00:00:00.000Z", 170_700),
+    ("2026-01-03T00:00:00Z", 170_700),
+])
+def test_context_heat_observations_respect_clear_boundary(observed_at, expected):
+    """已清空节点的历史用量不需再清空一次；新轮观测照常显示。"""
+    from management_portal.society_service import resident_directory_domain
+
+    pressure = resident_directory_domain._resident_scope_context_pressure({
+        "context_reset_at": "2026-01-02T00:00:00Z",
+        "last_token_usage": {"input_tokens": 170_700},
+        "last_token_usage_at": observed_at,
+    })
+    assert pressure["context_tokens"] == expected
+    assert pressure["heat_level"] == ("normal" if not expected else "warm")
+
+
 def test_a_restart_right_after_a_clear_only_configures(monkeypatch) -> None:
     """清空后立即重启只应用配置"""
     from tests.cases.test_session_restart import _restart_domain

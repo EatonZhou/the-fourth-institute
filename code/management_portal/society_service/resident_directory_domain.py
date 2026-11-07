@@ -411,6 +411,12 @@ def _resident_scope_context_pressure(
     updated_at = str(scope.get(usage_at_field) or "")
     if not stored_usage and projection.get("context_updated_at"):
         updated_at = str(projection["context_updated_at"])
+    # A persisted observation belongs to the context in which it was taken.
+    # Older clears may have left that observation behind; they must not require
+    # another destructive clear to remove a stale heat badge.
+    reset_at = instant(scope.get("context_reset_at"))
+    if reset_at and (not updated_at or instant(updated_at) < reset_at):
+        return _session_context_pressure({})
     return _session_context_pressure(
         context_usage,
         updated_at=updated_at,
