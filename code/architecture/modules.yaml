@@ -902,7 +902,7 @@ modules:
       - "management_portal/chatroom_*.py"
       - "management_portal/notice_*.py"
       - "management_portal/mailbox_todos.py"
-      - "management_portal/telepus_*.py"
+      - "management_portal/telepus/*.py"
       - "management_portal/portal_pulse_backend.py"
       - "management_portal/pulse_*.py"
       - "management_portal/discussion_residents.py"
@@ -2181,7 +2181,7 @@ protocols:
       - "decision_66f5be947b67"
     related_designs:
       - "decision_692a484e9bea"
-    description: "Telepus 按联系人对应的 User 读取 Portal 个人助手入口关联，经正式 ISA 向门面或精确 Resident 投递；私人 Family 拥有选人、转交和门面对话投影，桥接只管理 Telegram 模式、游标与消息对应，不复制目录或执行权限。"
+    description: "Telepus（management_portal/telepus，两个内置服务 telepus-telegram-router 与 telepus-portal-refresh）按联系人对应的 User 读取 Portal 个人助手入口关联，经正式 ISA 向门面或精确 Resident 投递；私人 Family 拥有选人、转交和门面对话投影，桥接只管理 Telegram 模式、游标、问答卡片与消息对应，不复制目录或执行权限。"
     example: "Telegram update → 联系人 User → personal_ama.personal_assistant_target → DeliverMessage → Family 门面对话 → WatchConversationEvents → Telegram 分段回复。"
 
   - id: "web-http-handler-binding"

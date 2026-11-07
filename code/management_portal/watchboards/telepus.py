@@ -5,7 +5,7 @@ import re
 from management_common.site_config import read_site_config
 
 from management_common.actor_identity import canonical_actor_id, same_actor
-from management_portal import telepus_contacts_store
+from management_portal.telepus import contacts_store as telepus_contacts_store
 from management_portal.portal_access_control import get_portal_access_store
 
 

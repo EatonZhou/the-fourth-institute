@@ -282,7 +282,7 @@ def test_admin_delete_user_removes_only_account_private_data(
     avatar_store = avatars.user_avatar_store()
     avatar_store.update("engineer", {"kind": "sprite", "sprite_index": 1})
     colleague_avatar = avatar_store.update("colleague", {"kind": "sprite", "sprite_index": 2})
-    from management_portal import telepus_contacts_store as telegram
+    from management_portal.telepus import contacts_store as telegram
     with telegram.database().transaction(telegram.LOCK) as connection:
         telegram.save(connection, {"telegram_user_id": "1111111", "name": "engineer", "portal_actor": "Engineer"})
         telegram.save(connection, {"telegram_user_id": "2222222", "name": "colleague", "portal_actor": "colleague"})

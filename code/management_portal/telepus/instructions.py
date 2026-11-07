@@ -4,7 +4,7 @@ Binding a User to a Telegram ID belongs to the user instructions;
 controlling Telepus's own services belongs to the environment instructions.
 (decision_6eac174d85bf); it is Telepus's part of the instruction catalog
 (``isa.instructions`` in ``portal_features.py``).  Every service reads it,
-Portal Web runs the handlers in ``telepus_web_isa.py``; a Portal without
+Portal Web runs the handlers in ``telepus/web_isa.py``; a Portal without
 Telepus has none of these instructions.
 """
 from __future__ import annotations
@@ -22,9 +22,9 @@ def _d(name, description, parameters=(), result=(), *, mutates=False, target="",
 
 
 DECLARATIONS = (
-    _d("GetTelepusStatus", "读取 Telepus 的三个用户服务的启用和运行状态。", (),
+    _d("GetTelepusStatus", "读取 Telepus 的两个用户服务的启用和运行状态。", (),
        (R("status", "object", "Telepus 服务状态、缺失的服务和错误"),), category="environment"),
-    _d("SetTelepusEnabled", "启用并启动或停止并禁用 Telepus 的三个用户服务；保留已有联系人和数据。", (
+    _d("SetTelepusEnabled", "启用并启动或停止并禁用 Telepus 的两个用户服务；保留已有联系人和数据。", (
         R("enabled", "boolean", "是否开启 Telepus"),
     ), (R("status", "object", "切换后的 Telepus 服务状态"),), mutates=True, category="environment"),
     _d("BindTelepusContactForUser", "为已登记的活动 User 绑定 Telegram；替换时原 ID 必须仍属于目标用户。", (

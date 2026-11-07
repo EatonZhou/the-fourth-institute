@@ -1,6 +1,6 @@
 """Portal Web handlers of the Telepus instructions (``web.instructions``).
 
-The declarations are in ``telepus_instructions.py``.  A contact is versioned
+The declarations are in ``telepus/instructions.py``.  A contact is versioned
 by its User record, as the core user instructions are.
 """
 from __future__ import annotations
@@ -19,14 +19,14 @@ def _require_admin(inv: Invocation) -> None:
 
 
 def get_telepus_status(inv: Invocation) -> dict[str, Any]:
-    from management_portal.telepus_runtime import TelepusRuntime
+    from management_portal.telepus.runtime import TelepusRuntime
 
     _require_admin(inv)
     return {"status": TelepusRuntime().status()}
 
 
 def set_telepus_enabled(inv: Invocation) -> dict[str, Any]:
-    from management_portal.telepus_runtime import TelepusRuntime
+    from management_portal.telepus.runtime import TelepusRuntime
 
     _require_admin(inv)
     return {"status": TelepusRuntime().set_enabled(inv.argument("enabled"))}

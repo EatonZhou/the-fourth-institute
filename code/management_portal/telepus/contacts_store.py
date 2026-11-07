@@ -3,8 +3,8 @@
 Portal owns this table and writes every binding (BindTelepusContactForUser,
 UnbindTelepusContactForUser and the Telepus Watchboard's own-contact action).
 The Telepus Telegram router reads it to authorize each Telegram message, so
-the table lives in the router's schema (its ``TELEPUS_DATABASE_SCHEMA``,
-``telepus``); Portal never touches the router's other tables.
+the table lives in the bridge's schema (``telepus``); the Portal Web side
+never touches the bridge's other tables.
 """
 from __future__ import annotations
 

@@ -1,4 +1,4 @@
-"""Control the two user services that make up the optional Telepus bridge."""
+"""Telepus settings and control of the two user services that make up the bridge."""
 from __future__ import annotations
 
 import subprocess
@@ -6,6 +6,12 @@ import sys
 from typing import Any, Callable
 
 from management_common.operation_errors import OperationError
+
+
+def setting(name: str, default: Any = None) -> Any:
+    """A value from the instance's ``deployment.telepus`` site settings."""
+    from management_common.instance_manifest import load
+    return load().site_settings().get('deployment', {}).get('telepus', {}).get(name, default)
 
 
 # The bridge's logical unit names; an isolated installation runs them with its

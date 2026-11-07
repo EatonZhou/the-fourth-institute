@@ -35,7 +35,7 @@ def call(runtime, name, actor="alice", key="", **args):
 
 
 def test_telepus_switch_requires_admin_and_uses_feature_runtime(enabled_runtime, permissions, monkeypatch, tmp_path):
-    from management_portal.telepus_runtime import TelepusRuntime
+    from management_portal.telepus.runtime import TelepusRuntime
     import json
     from tests.cases.instance_test_support import select_instance
     instance = select_instance(monkeypatch, tmp_path / 'instance')

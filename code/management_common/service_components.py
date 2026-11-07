@@ -1,7 +1,11 @@
-"""Built-in service launchers; functional services supply an instance program."""
+"""Built-in service launchers; other functional services supply an instance program."""
 import re
 
 MODULES = {
+    # Telepus (management_portal.telepus) is part of the Portal code; an
+    # installation runs these two only when it registers the components.
+    'telepus-telegram-router': 'management_portal.telepus.router_service',
+    'telepus-portal-refresh': 'management_portal.telepus.refresh_service',
     'resource': 'management_portal.resources.server',
     'execution': 'management_portal.execution.service',
     'society': 'management_portal.society_service.server',

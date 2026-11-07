@@ -4,7 +4,7 @@ import subprocess
 import pytest
 
 from management_common.operation_errors import OperationError
-from management_portal.telepus_runtime import TelepusRuntime, UNITS
+from management_portal.telepus.runtime import TelepusRuntime, UNITS
 
 
 class Systemd:
