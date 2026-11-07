@@ -101,6 +101,26 @@ def test_update_device_ssh_registration_and_reject_invalid_paths(isolated_portal
         assert device_identity_backend.effective_ssh_access(GPU_ID)['config_path'] == '/host/user/.ssh/config'
 
 
+def test_rename_device_preserves_topology_access_and_cached_observation(isolated_portal_case):
+    with isolated_portal_case():
+        before = _registry()
+        server = next(item for item in before if item['device_id'] == SERVER_ID)
+        device_identity_backend.store_gpu_server_status(
+            SERVER_ID, agent_status_backend._normalize_gpu_observation(_observation(), server))
+        updated = device_identity_backend.update_device(SERVER_ID, {'name': 'RTX PRO 5000'})
+        assert updated['name'] == 'RTX PRO 5000'
+        for field in ('device_id', 'access_methods', 'monitor', 'network'):
+            assert updated[field] == server[field]
+        assert device_identity_backend.gpu_children(SERVER_ID)[0]['device_id'] == GPU_ID
+        current = agent_status_backend._collect_gpu_status(updated)
+        assert current['display_name'] == 'RTX PRO 5000'
+        assert current['gpus'][0]['uuid'] == GPU_UUID
+        for changes in ({'name': ''}, {'name': '   '}, {'device_kind': 'device'}, {}):
+            with pytest.raises(ValueError):
+                device_identity_backend.update_device(SERVER_ID, changes)
+        assert device_identity_backend.resolve_device_address(SERVER_ID)['name'] == 'RTX PRO 5000'
+
+
 def _write_device(record: dict) -> None:
     put_registry_document(device_identity_backend.DEVICE_COLLECTION, record["device_id"], record)
 

@@ -517,15 +517,17 @@ def unregister_device(
 
 
 def update_device(device_id: str, changes: dict[str, Any]) -> dict[str, Any]:
-    """Change a device's SSH registration through UpdateResource."""
+    """Change a device's name or SSH registration without changing its identity."""
     _RESOURCE_SERVICE.validate_id(device_id, 'device')
-    if not isinstance(changes, dict) or set(changes) != {'access_methods'}:
-        raise ValueError('Device update requires access_methods')
+    if not isinstance(changes, dict) or not changes or set(changes) - {'name', 'access_methods'}:
+        raise ValueError('Device update requires name or access_methods')
+    if 'name' in changes and (not isinstance(changes['name'], str) or not changes['name'].strip()):
+        raise ValueError('Device name must be a nonempty string')
     with get_registry_store().writer(DEVICE_COLLECTION) as writer:
         documents = writer.documents(DEVICE_COLLECTION)
         if device_id not in documents:
             raise KeyError(device_id)
-        record = {**documents[device_id], 'access_methods': copy.deepcopy(changes['access_methods']),
+        record = {**documents[device_id], **copy.deepcopy(changes),
                   'updated_at': utc_now_iso()}
         normalized = _normalize_record(record, device_id)
         _, errors = _validate_registry({**documents, device_id: record})

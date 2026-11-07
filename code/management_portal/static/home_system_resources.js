@@ -259,6 +259,8 @@
     function diskSingleResourceHtml(resource) {
       const checked = formatDateTime(resource?.updated_at);
       const rows = Array.isArray(resource?.filesystems) ? resource.filesystems : [];
+      const showDetails = ["warn", "critical"].includes(resource?.status)
+        || rows.some(row => ["warn", "critical"].includes(row?.status));
       const targets = Array.isArray(resource?.transfer_targets) ? resource.transfer_targets : [];
       const suggestions = Array.isArray(resource?.suggestions) ? resource.suggestions : [];
       const statusText = resource?.status === "loading" ? "loading" : resource?.status === "error" ? "unavailable" : resource?.status || window.PortalI18n.t("not checked");
@@ -271,7 +273,7 @@
       ${resource?.error ? window.PortalI18n.html`<div class="agent-status-error">${esc(resource.error)}</div>` : ""}
       ${resource?.refresh_error ? window.PortalI18n.html`<div class="agent-status-error">${esc(resource.refresh_error)}</div>` : ""}
       ${resource?.warning ? window.PortalI18n.html`<div class="agent-status-muted">${esc(resource.warning)}</div>` : ""}
-      ${diskStageHtml(resource, "capacity", window.PortalI18n.t("文件系统容量"))}
+      ${showDetails ? window.PortalI18n.html`${diskStageHtml(resource, "capacity", window.PortalI18n.t("文件系统容量"))}
       ${rows.length && ["pending", "running"].includes(resource?.stages?.capacity?.status) ? window.PortalI18n.html`<div class="agent-status-muted">显示上次容量，正在更新。</div>` : ""}
       <div class="agent-status-gpu-grid">${rows.length ? rows.map(diskRowHtml).join("") : window.PortalI18n.html`<div class="agent-status-muted">No filesystem data.</div>`}</div>
       <div class="agent-status-gpu-row">
@@ -284,7 +286,7 @@
         <div class="agent-status-gpu-title"><span>Lazy transfer suggestions</span><span>${suggestions.length}</span></div>
         ${diskStageHtml(resource, "suggestions", window.PortalI18n.t("迁移建议"))}
         ${suggestions.map(item => window.PortalI18n.html`<div class="agent-status-gpu-process">${esc(item)}</div>`).join("")}
-      </div>` : ""}
+      </div>` : ""}` : ""}
     </div>`;
     }
 
