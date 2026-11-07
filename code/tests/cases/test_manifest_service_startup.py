@@ -227,6 +227,9 @@ def test_functional_listeners_share_one_allocation_and_client_location(instance,
     from management_common.host_instances import ports
     document = json.loads(json.dumps(instance.document))
     document['services']['components'] += ['kimi-code', 'knowledge-archive-agent', 'ai-socket-relay']
+    document['services']['programs'] = {'knowledge-archive-agent': {
+        'entrypoint': 'lineages:archive/main.py', 'arguments': [],
+        'working_directory': 'lineages:archive'}}
     document['network']['listeners'] = {
         'kimi-code': {'bind': '127.0.0.1', 'port': 29561},
         'knowledge-archive-agent': {'bind': '::1', 'port': 28767},

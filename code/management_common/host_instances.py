@@ -159,6 +159,8 @@ def _write(source: Path, registry: dict[str, str]) -> None:
 
 
 def register(instance: InstanceManifest) -> None:
+    from .instance_manifest import validate
+    instance = validate(instance.root, instance.document)
     with _locked_registry() as source:
         registry = read_registry()
         validate_allocation(instance, registry)
@@ -208,22 +210,31 @@ def replace_manifest(instance: InstanceManifest, *, expected: dict) -> None:
         atomic_json(instance.root / 'instance.json', instance.document)
 
 
-def add_service_component(root: Path, component: str, *, listener_bind: str | None = None) -> InstanceManifest:
-    """Register an account daemon before its owner installs a service definition."""
+def add_service_component(root: Path, component: str, *, program: dict | None = None,
+                          listener: dict | None = None,
+                          listener_bind: str | None = None) -> InstanceManifest:
+    """Commit a component, its program and listener in one validated transaction.
+
+    Built-in account daemons need no program. Functional services supply their
+    complete program here rather than editing a live programs map separately.
+    """
     from copy import deepcopy
     from .configuration_files import atomic_json
     from .instance_manifest import validate
+    if listener is not None and listener_bind is not None:
+        raise ValueError('Choose an explicit listener or an allocated listener bind')
     root = Path(root)
     descriptor = os.open(root / '.configuration.lock', os.O_CREAT | os.O_RDWR | getattr(os, 'O_NOFOLLOW', 0), 0o600)
     with os.fdopen(descriptor, 'r+b') as stream, lock_stream(stream), _locked_registry():
         current = load(root)
-        if (component in current.document['services']['components']
-                and (listener_bind is None or component in current.document['network'].get('listeners', {}))):
-            return current
         document = deepcopy(current.document)
         if component not in document['services']['components']:
             document['services']['components'].append(component)
-        if listener_bind is not None:
+        if program is not None:
+            document['services'].setdefault('programs', {})[component] = deepcopy(program)
+        if listener is not None:
+            document['network'].setdefault('listeners', {})[component] = deepcopy(listener)
+        if listener_bind is not None and component not in document['network'].get('listeners', {}):
             import ipaddress
             import socket
             bind = str(ipaddress.ip_address(listener_bind))
@@ -241,7 +252,8 @@ def add_service_component(root: Path, component: str, *, listener_bind: str | No
             document['network'].setdefault('listeners', {})[component] = {'bind': bind, 'port': port}
         updated = validate(root, document)
         validate_allocation(updated)
-        atomic_json(root / 'instance.json', updated.document)
+        if updated.document != current.document:
+            atomic_json(root / 'instance.json', updated.document)
         return updated
 
 

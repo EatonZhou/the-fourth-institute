@@ -164,11 +164,13 @@ def operation(root):
 
 
 def inspect_instance(name, current=""):
+    from management_common.instance_manifest import service_configuration_errors
     root, state = state_for(name)
     services = instance_services.status(state)
+    errors = service_configuration_errors(state)
     live = [s["active"] in {"active", "activating", "deactivating"} or s["pid"]
             for s in services.values()]
-    running = all(s["active"] == "active" for s in services.values())
+    running = not errors and all(s["active"] == "active" for s in services.values())
     status = "running" if running else "partial" if any(live) else "stopped"
     job = operation(root)
     busy = job and job["status"] in {"queued", "running"}
@@ -176,6 +178,7 @@ def inspect_instance(name, current=""):
     # The entry is the gateway of paired deployments, otherwise the Release Web.
     entry = "gateway" if "gateway" in services else "web"
     return {"name": name, "status": status, "current": str(root) == current,
+            "configuration_errors": errors,
             "can_start": not busy and not blocker and not running,
             "can_stop": not busy and any(live), "start_blocker": blocker,
             "stopped_services": sorted(component for component, s in services.items() if s["active"] != "active")

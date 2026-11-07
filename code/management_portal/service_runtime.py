@@ -7,23 +7,9 @@ import sys
 
 from management_common import code_environment
 from management_common.instance_manifest import InstanceManifest, load
+from management_common.service_components import MODULES
 
 from management_common.secret_environment import secret_environment
-
-MODULES = {
-    'resource': 'management_portal.resources.server',
-    'execution': 'management_portal.execution.service',
-    'society': 'management_portal.society_service.server',
-    'worker': 'management_portal.execution.worker_manager',
-    'kimi': 'management_portal.kimi_code_server',
-    'kimi-code': 'management_portal.kimi_code_server',
-    'claude': 'management_portal.claude_code_daemon',
-    'claude-code': 'management_portal.claude_code_daemon',
-    'gateway': 'management_portal.portal_deployment_router',
-    'ai-socket-relay': 'management_portal.ai_socket_relay',
-}
-
-
 
 def clean_environment(instance: InstanceManifest, *, component: str = '', postgres: bool = False) -> dict[str, str]:
     """Keep the OS user environment and select exactly one instance.

@@ -16,6 +16,8 @@ import re
 from stat import S_ISREG
 from typing import Any
 
+from .service_components import is_builtin
+
 SCHEMA = "tfi.instance.v1"
 AREAS = ("projects", "lineages", "skills", "papers", "uploads", "features", "provider-state")
 FIXED_DIRECTORIES = ("secrets", "database", "cache", "runtime")
@@ -76,7 +78,7 @@ class InstanceManifest:
 
     def service_name(self, component: str) -> str:
         if component not in self.document["services"]["components"]:
-            raise ValueError("Service component is not registered in this instance")
+            raise ValueError(f"Service component {component!r} is not registered in this instance")
         return f"{self.service_prefix}-{component}"
 
     def directory(self, name: str) -> Path:
@@ -95,16 +97,32 @@ class InstanceManifest:
         return Path(self.deployments[selected]["code_root"])
 
     def service_code(self, component: str) -> Path:
-        self.service_name(component)
+        validate_service(self, component)
         deployment = {"web": "release", "dev-web": "dev"}.get(component)
         return self.code_root(deployment)
 
     def service_program(self, component: str) -> dict | None:
         self.service_name(component)
-        return self.document['services'].get('programs', {}).get(component)
+        programs = self.document['services'].get('programs', {})
+        if component not in programs:
+            return None
+        try:
+            program = _object(programs[component], 'service program')
+            if set(program) != {'entrypoint', 'arguments', 'working_directory'}:
+                raise ValueError('Service program requires entrypoint, arguments and working_directory')
+            for key in ('entrypoint', 'working_directory'):
+                reference = program[key]
+                if self.reference(self.resolve(reference)) != reference:
+                    raise ValueError('Program locations inside areas must use area references')
+            if not isinstance(program['arguments'], list) or any(
+                    not isinstance(arg, str) or '\0' in arg for arg in program['arguments']):
+                raise ValueError('Service program arguments must be a list of strings')
+            return program
+        except ValueError as exc:
+            raise ValueError(f'Service {component!r}: {exc}') from exc
 
     def service_environment(self, component: str) -> dict[str, str]:
-        self.service_name(component)
+        validate_service(self, component)
         result = {"PORTAL_INSTANCE_ROOT": str(self.root)}
         if component in {"web", "dev-web"}:
             deployment = "dev" if component == "dev-web" else "release"
@@ -125,9 +143,23 @@ class InstanceManifest:
     def listener(self, component: str) -> dict:
         self.service_name(component)
         try:
-            return self.document['network']['listeners'][component]
+            listeners = self.document['network'].get('listeners', {})
+            listener = _validate_listener(listeners[component])
+            other_ports = _core_ports(self.document)
+            for other, value in listeners.items():
+                if other == component:
+                    continue
+                try:
+                    other_ports.append(_validate_listener(value)['port'])
+                except ValueError:
+                    continue  # An unrelated invalid listener cannot supply a port.
+            if listener['port'] in other_ports:
+                raise ValueError('Instance ports must be distinct nonprivileged port numbers')
+            return listener
         except KeyError:
-            raise ValueError('Configure the registered service listener in the instance manifest') from None
+            raise ValueError(f'Service {component!r}: configure the registered service listener in the instance manifest') from None
+        except ValueError as exc:
+            raise ValueError(f'Service {component!r}: {exc}') from exc
 
     def service_origin(self, component: str) -> str:
         listener = self.listener(component)
@@ -178,7 +210,34 @@ class InstanceManifest:
         return _object(json.loads(path.read_text(encoding="utf-8")), "site.json")
 
 
-def validate(root: str | Path, document: dict) -> InstanceManifest:
+def _core_ports(document: dict) -> list[int]:
+    network = document['network']
+    deployments = document['deployments']
+    ports = [entry['web_port'] for entry in deployments.values()]
+    ports += [network['postgres_port'], network['nats_port']]
+    if len(deployments) > 1 or network['entry_port'] != deployments['release']['web_port']:
+        ports.append(network['entry_port'])
+    return ports
+
+
+def _validate_listener(value: Any) -> dict:
+    listener = _object(value, 'service listener')
+    if set(listener) != {'bind', 'port'}:
+        raise ValueError('Service listener requires bind and port')
+    if not isinstance(listener['bind'], str):
+        raise ValueError('Service listener bind must be an IP address')
+    ipaddress.ip_address(listener['bind'])
+    if type(listener['port']) is not int or not 1024 <= listener['port'] <= 65535:
+        raise ValueError('Service listener requires a nonprivileged port number')
+    return listener
+
+
+def validate_core(root: str | Path, document: dict) -> InstanceManifest:
+    """Validate shared identity, deployments and storage, independently of services.
+
+    Service maps must be objects, but their entries belong to their respective
+    service. Reading a cache path must not validate an unrelated service program.
+    """
     root = absolute_path(root)
     doc = _object(document, "instance.json")
     required = {"instance_id", "name", "created_at", "deployments", "network", "services", "dependencies"}
@@ -194,7 +253,6 @@ def validate(root: str | Path, document: dict) -> InstanceManifest:
     deployments = _object(doc["deployments"], "deployments")
     if "release" not in deployments or deployments.keys() - {"release", "dev"}:
         raise ValueError("An instance requires Release and optionally Dev")
-    ports = []
     code_roots = []
     for name, deployment in deployments.items():
         entry = _object(deployment, "deployment")
@@ -204,24 +262,15 @@ def validate(root: str | Path, document: dict) -> InstanceManifest:
         if overlaps(root, code.parent):
             raise ValueError("Instance root must be outside the code directory")
         code_roots.append(code.parent)
-        ports.append(entry["web_port"])
     network = _object(doc["network"], "network")
     required_network = {"bind", "entry_port", "postgres_port", "nats_port"}
     if not required_network <= network.keys() or network.keys() - required_network - {'listeners'}:
         raise ValueError("Invalid network definition")
     ipaddress.ip_address(network["bind"])
-    ports += [network["postgres_port"], network["nats_port"]]
-    listeners = _object(network.get('listeners', {}), 'service listeners')
-    for listener in listeners.values():
-        if not isinstance(listener, dict) or set(listener) != {'bind', 'port'}:
-            raise ValueError('Service listener requires bind and port')
-        ipaddress.ip_address(listener['bind'])
-        ports.append(listener['port'])
+    _object(network.get('listeners', {}), 'service listeners')
     # A single deployment may itself serve the public entry; a gateway uses a
     # separate port and must be a managed component.
-    entry_port = network["entry_port"]
-    if len(deployments) > 1 or entry_port != deployments["release"]["web_port"]:
-        ports.append(entry_port)
+    ports = _core_ports(doc)
     if any(type(p) is not int or not 1024 <= p <= 65535 for p in ports) or len(set(ports)) != len(ports):
         raise ValueError("Instance ports must be distinct nonprivileged port numbers")
     services = _object(doc["services"], "services")
@@ -234,8 +283,7 @@ def validate(root: str | Path, document: dict) -> InstanceManifest:
         raise ValueError("Invalid service component list")
     if len(deployments) > 1 and "gateway" not in components:
         raise ValueError("Paired deployments require a managed gateway")
-    if listeners.keys() - set(components):
-        raise ValueError('Service listeners must belong to registered components')
+    _object(services.get('programs', {}), 'service programs')
     dependencies = _object(doc["dependencies"], "dependencies")
     if dependencies.keys() - {"postgres", "backup"} or "postgres" not in dependencies:
         raise ValueError("Only data-bound dependencies belong in the instance manifest")
@@ -252,19 +300,6 @@ def validate(root: str | Path, document: dict) -> InstanceManifest:
     for value in areas.values():
         absolute_path(value)
     instance = InstanceManifest(root, doc)
-    programs = _object(services.get('programs', {}), 'service programs')
-    for component, program in programs.items():
-        instance.service_name(component)
-        program = _object(program, 'service program')
-        if set(program) != {'entrypoint', 'arguments', 'working_directory'}:
-            raise ValueError('Service program requires entrypoint, arguments and working_directory')
-        for key in ('entrypoint', 'working_directory'):
-            reference = program[key]
-            if instance.reference(instance.resolve(reference)) != reference:
-                raise ValueError('Program locations inside areas must use area references')
-        if not isinstance(program['arguments'], list) or any(
-                not isinstance(arg, str) or '\0' in arg for arg in program['arguments']):
-            raise ValueError('Service program arguments must be a list of strings')
     for name in FIXED_DIRECTORIES:
         absolute_path(instance.directory(name))
     area_paths = [instance.area(area) for area in AREAS]
@@ -279,7 +314,39 @@ def validate(root: str | Path, document: dict) -> InstanceManifest:
     return instance
 
 
+def validate_service(instance: InstanceManifest, component: str) -> None:
+    """Validate the selected service before rendering or launching it."""
+    if instance.service_program(component) is None and not is_builtin(component):
+        raise ValueError(f'Service {component!r}: a functional service requires a program definition')
+    if component in instance.document['network'].get('listeners', {}):
+        instance.listener(component)
+
+
+def service_configuration_errors(instance: InstanceManifest) -> dict[str, str]:
+    """Report service-local errors without invalidating the shared instance."""
+    services = instance.document['services']
+    components = (set(services['components']) | set(services.get('programs', {}))
+                  | set(instance.document['network'].get('listeners', {})))
+    errors = {}
+    for component in sorted(components):
+        try:
+            validate_service(instance, component)
+        except (ValueError, OSError) as exc:
+            errors[component] = str(exc)
+    return errors
+
+
+def validate(root: str | Path, document: dict) -> InstanceManifest:
+    """Validate the complete candidate before any configuration is committed."""
+    instance = validate_core(root, document)
+    errors = service_configuration_errors(instance)
+    if errors:
+        raise ValueError('; '.join(errors.values()))
+    return instance
+
+
 def load(root: str | Path | None = None) -> InstanceManifest:
+    """Read current core configuration; service access validates its own entries."""
     value = root if root is not None else os.environ.get("PORTAL_INSTANCE_ROOT")
     if not value:
         raise ValueError("Select an instance with PORTAL_INSTANCE_ROOT or --instance")
@@ -287,7 +354,7 @@ def load(root: str | Path | None = None) -> InstanceManifest:
     source = path / "instance.json"
     if source.is_symlink():
         raise ValueError("Instance manifest must not be a symbolic link")
-    return validate(path, json.loads(source.read_text(encoding="utf-8")))
+    return validate_core(path, json.loads(source.read_text(encoding="utf-8")))
 
 
 @lru_cache(maxsize=4)
@@ -300,8 +367,8 @@ def _current_manifest(root: str, signature: tuple[int, ...]) -> InstanceManifest
 def current_instance() -> InstanceManifest:
     """Reuse the selected manifest until its file revision changes.
 
-    Runtime path projections share this cache. Administrative validation still
-    uses load(); live file traversal and authorization retain their own checks.
+    Runtime path projections share this cache. Configuration writes use full
+    validate(); live file traversal and authorization retain their own checks.
     """
     root = os.environ.get("PORTAL_INSTANCE_ROOT") or ""
     if not root:

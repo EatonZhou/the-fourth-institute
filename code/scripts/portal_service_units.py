@@ -94,11 +94,10 @@ def _run(*args: str, check: bool = True, capture: bool = True) -> subprocess.Com
 
 def _define(component: str) -> list[str]:
     """Register the component, then create or refresh its owned definition."""
-    from management_common.host_instances import add_service_component
-    from scripts.instance_services import install_definitions
+    from scripts.instance_services import register_component
     options = {'listener_bind': '127.0.0.1'} if component in {'kimi', 'kimi-code'} else {}
-    instance = add_service_component(_instance().root, component, **options)
-    return install_definitions(instance, (component,))
+    _, units = register_component(_instance().root, component, **options)
+    return units
 
 
 def _undefine(component: str) -> None:

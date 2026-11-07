@@ -70,7 +70,7 @@ class InstanceManifestTests(unittest.TestCase):
 
     def test_runtime_path_readers_share_one_validated_manifest_revision(self):
         with patch.dict(os.environ, {"PORTAL_INSTANCE_ROOT": str(self.root)}), \
-                patch.object(instance_manifest, "validate", wraps=validate) as validating:
+                patch.object(instance_manifest, "validate_core", wraps=instance_manifest.validate_core) as validating:
             for _ in range(100):
                 self.assertEqual(portal_paths.path("projects"), self.root / "data/projects")
                 self.assertEqual(instance_locations.located_path("projects:demo"),

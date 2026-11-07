@@ -655,6 +655,16 @@ def select(name=None):
     return host_instances.find(name) if name else load()
 
 
+def register_service(instance, component, program, *, listener=None, listener_bind=None):
+    """Register a complete functional service and install only its definition."""
+    if not isinstance(program, dict):
+        raise ValueError('Functional service registration requires a complete program object')
+    updated, units = instance_services.register_component(
+        instance.root, component, program=program, listener=listener, listener_bind=listener_bind)
+    return {'status': 'registered', 'name': updated.name, 'component': component,
+            'units': units, 'listener': updated.document['network'].get('listeners', {}).get(component)}
+
+
 def lifecycle(action, instance):
     if action == "start":
         result = instance_services.lifecycle("start", instance.root)
@@ -828,7 +838,7 @@ def main(argv=None):
             sub.add_argument("--offline", action="store_true", help="Use only dependencies bundled with the code")
             sub.add_argument("--no-start", action="store_true")
             sub.add_argument("--freeze-evidence", type=Path)
-    for command in ("status", "start", "stop", "retire", "first-admin", "configure-ports", "update-code", "relocate", "repair-lineage-events"):
+    for command in ("status", "start", "stop", "retire", "first-admin", "configure-ports", "update-code", "relocate", "repair-lineage-events", "register-service"):
         sub = commands.add_parser(command)
         sub.add_argument("--instance", required=command == "retire",
                          help="Registered instance name; otherwise PORTAL_INSTANCE_ROOT")
@@ -850,6 +860,13 @@ def main(argv=None):
         if command == "repair-lineage-events":
             sub.add_argument('--seed-manifest', type=Path, required=True,
                              help='Original frozen seed manifest used to create this instance')
+        if command == "register-service":
+            sub.add_argument('--component', required=True)
+            sub.add_argument('--program', type=Path, required=True,
+                             help='JSON object with entrypoint, arguments and working_directory')
+            listener = sub.add_mutually_exclusive_group()
+            listener.add_argument('--listener', type=Path, help='JSON object with bind and port')
+            listener.add_argument('--listener-bind', help='Allocate a free port on this IP address')
     commands.add_parser("list")
     args = parser.parse_args(argv)
     try:
@@ -882,6 +899,13 @@ def main(argv=None):
             elif args.command == "relocate":
                 from scripts.tfi_relocate_instance import relocate
                 result = relocate(instance, args.target)
+            elif args.command == "register-service":
+                listener = json.loads(args.listener.read_text(encoding='utf-8')) if args.listener else None
+                if args.listener and not isinstance(listener, dict):
+                    raise ValueError('Service listener must be an object with bind and port')
+                result = register_service(
+                    instance, args.component, json.loads(args.program.read_text(encoding='utf-8')),
+                    listener=listener, listener_bind=args.listener_bind)
             else:
                 result = lifecycle(args.command, instance)
         print(json.dumps(result, ensure_ascii=True, indent=2))

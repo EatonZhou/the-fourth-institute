@@ -16,7 +16,7 @@ import sys
 import subprocess
 import time
 
-from management_common.instance_manifest import load
+from management_common.instance_manifest import load, service_configuration_errors
 from management_common import host_instances
 from scripts.instance_service_definitions import components, render
 
@@ -155,6 +155,20 @@ def configuration_lock(root):
         yield
 
 
+def register_component(root, component, *, program=None, listener=None, listener_bind=None):
+    """Commit registration, then render the latest configuration under its lock.
+
+    Native installation can be retried if it fails; the committed manifest is
+    always complete. A concurrent edit cannot make us install a stale snapshot.
+    """
+    host_instances.add_service_component(
+        root, component, program=program, listener=listener, listener_bind=listener_bind)
+    with configuration_lock(root):
+        instance = load(root)
+        units = install_definitions(instance, (component,))
+    return instance, units
+
+
 def status(instance):
     control = controller(instance)
     return {component: control.status(unit_name(instance, component)) for component in components(instance)}
@@ -254,9 +268,11 @@ def lifecycle(action, root, *, shutdown_timeout=20.0, excluded_components=(), cr
         raise ValueError('Only startup accepts excluded components')
     if action == 'status':
         states = status(instance)
+        errors = service_configuration_errors(instance)
+        healthy = not errors and all(row['active'] == 'active' for row in states.values())
         return {'instance_id': instance.instance_id, 'name': instance.name, 'services': states,
-                'status': 'healthy' if all(row['active'] == 'active' for row in states.values()) else 'unhealthy',
-                'ok': all(row['active'] == 'active' for row in states.values())}
+                'configuration_errors': errors,
+                'status': 'healthy' if healthy else 'unhealthy', 'ok': healthy}
     if action == 'start' and not creating and start_blocker(instance):
         raise ValueError(start_blocker(instance))
     with configuration_lock(instance.root):

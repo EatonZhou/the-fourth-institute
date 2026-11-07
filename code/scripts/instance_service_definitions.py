@@ -11,7 +11,7 @@ if str(Path(__file__).resolve().parents[1]) not in sys.path:
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from management_common.instance_manifest import InstanceManifest, load, validate
-from management_portal.service_runtime import MODULES
+from management_common.service_components import is_builtin
 
 ORDER = ('postgres', 'nats', 'resource', 'execution', 'society', 'worker',
          'claude-code', 'claude', 'kimi-code', 'kimi', 'dev-web', 'web', 'gateway')
@@ -36,8 +36,7 @@ def dependencies(instance: InstanceManifest, component: str) -> tuple[str, ...]:
 
 
 def missing_launchers(instance: InstanceManifest) -> list[str]:
-    return [c for c in components(instance) if c not in {'postgres', 'nats', 'web', 'dev-web', *MODULES}
-            and not c.startswith('codex-app-server@') and instance.service_program(c) is None]
+    return [c for c in components(instance) if not is_builtin(c) and instance.service_program(c) is None]
 
 
 def render(instance: InstanceManifest, platform: str, *, windows_mode='user', windows_account='') -> dict[str, str]:

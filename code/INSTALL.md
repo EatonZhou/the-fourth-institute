@@ -72,6 +72,29 @@ python3 code/scripts/tfi_release_install.py start  --instance my_portal
 python3 code/scripts/tfi_release_install.py configure-ports --instance my_portal --release-port 28300
 ```
 
+### 注册附加服务
+
+将完整程序定义保存为 JSON，例如 `service-program.json`：
+
+```json
+{
+  "entrypoint": "lineages:example/script/main.py",
+  "arguments": ["serve"],
+  "working_directory": "lineages:example/script"
+}
+```
+
+```bash
+python3 code/scripts/tfi_release_install.py register-service --instance my_portal \
+  --component example-worker --program service-program.json
+```
+
+需要监听时，加 `--listener <JSON文件>` 提供 `bind` 和 `port`，或加
+`--listener-bind 127.0.0.1` 分配端口。组件、程序和监听在一次配置事务中提交；
+缺失程序、非法定义或端口冲突会拒绝整个修改。不要分别编辑在线清单中的组件和程序。
+命令只安装该服务的单元，原生安装失败时可重试；启动和重启继续由服务生命周期入口负责。
+服务定义错误按组件显示在实例状态的 `configuration_errors` 中，无关页面继续使用核心配置。
+
 ## 代码更新
 
 实例没有单独的“升级”操作。代码按开发流程或安装包更新后，运行：
