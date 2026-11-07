@@ -166,10 +166,10 @@ DECLARATIONS = (
     ), (
         R("run", "object", "trace_ref、total（记录总数）、offset、updated_at 与 steps；steps 每项的 kind 为 input、tool、message 或 thinking"),
     ), target="resident_id"),
-    _d("ClearContext", ON_RESIDENT, "归档 Resident 当前的对话，清空模型上下文，Resident 身份保持不变。", (
+    _d("ClearContext", ON_RESIDENT, "提交上下文重置并归档当前对话；后续输入待清理完成后从新的模型上下文开始，Resident 身份保持不变。此操作不保证删除 Provider 端保留的会话历史。", (
         R("resident_id", description="要清除上下文的 Resident"),
     ), (
-        R("cleanup_pending", "boolean", "归档对话与释放会话的后续清理已排队"),
+        R("cleanup_pending", "boolean", "归档对话与释放旧会话绑定已排队；新输入可排队等待清理，不表示 Provider 端历史已删除"),
         R("operation_id", description="这次后续清理的生命周期操作 ID"),
     ), mutates=True, target="resident_id"),
     _d("AbsorbContext", (On("source_resident_id", "resident"), On("target_resident_id", "resident")), "让目标 Resident 吸收来源 Resident 在 Fork 之后的讨论和工作理解。", (

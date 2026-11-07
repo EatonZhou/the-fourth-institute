@@ -27,6 +27,23 @@ def test_intake_state_contract_is_canonical() -> None:
         resident_state.intake_state_for_transition("pause")
 
 
+def test_stopping_projection_does_not_retain_a_start_or_queue_phase():
+    """停止意图生效后状态不再同时宣称启动或容量等待，终态随后收敛 idle。"""
+    from management_portal.society_service import resident_execution_work, resident_conversation_records
+    job = {'execution_id': 'execution-stopping-phase', 'submitted_at': '2026-11-07T13:42:00Z',
+           'user_message_id': 'msg_stopping_phase', 'actor': 'sample_admin', 'queue': [],
+           'stop_requested_at': '2026-11-07T13:44:00Z'}
+    for status, reason in [('submitting', ''), ('claimed', ''), ('queued', 'ready'),
+                           ('queued', 'capacity'), ('queued', 'dispatch_interval'), ('queued', 'quota_reserve')]:
+        state = resident_execution_work.conversation_state(job, intake_state='open',
+            snapshot={'status': status, 'scheduler': {'queue_reason': reason}})
+        assert state['work_state'] == 'stopping'
+        assert state == resident_conversation_records.normalized_state(state, strict=True), (status, reason, state)
+        assert 'work_phase' not in state
+    state = resident_execution_work.conversation_state({**job, 'outcome': 'cancelled'}, intake_state='open')
+    assert state == {'work_state': 'idle', 'active_message_id': '', 'queued_count': 0, 'intake_state': 'open'}
+
+
 def test_conversation_controls_belong_to_society_service(monkeypatch, subtests, isolated_portal_case):
     """对话控制按管理权限决定能否发送，有进行中的输入才能停止，intake 关闭时给出发送提示"""
     for allowed in [True, False]:

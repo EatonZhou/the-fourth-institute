@@ -257,6 +257,21 @@ def test_resume_uses_native_history_without_replaying_it(agent):
     assert len([r for r in rows if r["method"] == "session/load"]) == 1
 
 
+def test_release_keeps_provider_history_but_a_cleared_binding_starts_a_new_session(agent):
+    """释放不发远端删除；Portal 清除绑定后下一输入使用 session/new 而非旧会话 load。"""
+    backend = AntigravityBackend()
+    first = backend.execute(invocation(agent), context()[0])
+    before = requests(agent)
+    release = invocation(agent, sid=first.backend_session_id, execution='execution-release')
+    release.request.operation = 'release'
+    backend.execute(release, context()[0])
+    assert requests(agent) == before, 'release must not contact Google or delete its stored history'
+    backend.execute(invocation(agent, 'new context', sid='', execution='execution-after-clear'), context()[0])
+    rows = requests(agent)
+    assert len([r for r in rows if r['method'] == 'session/new']) == 2
+    assert not [r for r in rows if r['method'] == 'session/load']
+
+
 def test_tool_progress_is_separate_from_final_answer(agent):
     ctx, events, _ = context()
     result = AntigravityBackend().execute(invocation(agent, "multi-step"), ctx)

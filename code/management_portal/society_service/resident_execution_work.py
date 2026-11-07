@@ -438,6 +438,10 @@ def conversation_state(
         "queued_count": len(queue),
         "intake_state": resident_state.normalize_intake_state(intake_state),
     }
+    # A Stop remains pending until its exact execution is acknowledged, but
+    # it supersedes startup/capacity phases in the public state contract.
+    if state["work_state"] == "stopping":
+        return state
     queue_reason = str(execution_state.get("queue_reason") or "").lower()
     if status in {"submitting", "claimed"} or (
         status == "queued" and queue_reason == "ready"
