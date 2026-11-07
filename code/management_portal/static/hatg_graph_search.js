@@ -237,6 +237,7 @@
         closeOnEscape: true,
         onClose: cancelGraphNodeSearch,
       });
+      bindGraphNodeSearchToggle();
       $id("graphNodeSearchInput").addEventListener("input", handleGraphNodeSearchInput);
       $id("graphNodeSearchResults").addEventListener("click", event => {
         const button = event.target.closest("[data-graph-search-node]");
@@ -254,6 +255,38 @@
         event.preventDefault();
         focusGraphNode(first.id);
       });
+    }
+
+    // The search field starts folded into an icon. The icon opens and focuses
+    // it; leaving it empty (blur, or Escape on an empty field) folds it again.
+    // A field holding a query stays open so its results remain reachable.
+    function setGraphNodeSearchExpanded(expanded, { focus = false } = {}) {
+      const cluster = $id("graphNodeSearchCluster");
+      const toggle = $id("graphNodeSearchToggle");
+      const input = $id("graphNodeSearchInput");
+      if (!cluster || !toggle || !input) return;
+      const next = expanded || !!input.value;
+      cluster.dataset.expanded = next ? "true" : "false";
+      toggle.setAttribute("aria-expanded", next ? "true" : "false");
+      if (next && focus) input.focus();
+      else if (!next && focus) toggle.focus();
+    }
+
+    function bindGraphNodeSearchToggle() {
+      const cluster = $id("graphNodeSearchCluster");
+      const toggle = $id("graphNodeSearchToggle");
+      const input = $id("graphNodeSearchInput");
+      if (!cluster || !toggle || !input) return;
+      toggle.addEventListener("click", () => setGraphNodeSearchExpanded(true, { focus: true }));
+      input.addEventListener("keydown", event => {
+        if (event.key !== "Escape" || input.value) return;
+        setGraphNodeSearchExpanded(false, { focus: true });
+      });
+      input.addEventListener("blur", () => {
+        if (!input.value) setGraphNodeSearchExpanded(false);
+      });
+      // Writing a value programmatically (restored state, automation) opens it.
+      input.addEventListener("input", () => { if (input.value) setGraphNodeSearchExpanded(true); });
     }
 
     // A redrawn canvas refreshes the open results, whose nodes may have changed.

@@ -37,15 +37,25 @@
   left: var(--hatg-navigation-inset);
   right: var(--hatg-navigation-inset);
   display: flex;
-  align-items: center;
+  align-items: flex-start;
+  justify-content: space-between;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 6px;
   min-width: 0;
-  min-height: 38px;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  /* Only the floating groups take input; the gaps between them stay canvas. */
+  pointer-events: none;
+}
+
+.graphViewportCluster,
+.graphNavigator {
+  min-height: 31px;
   border: 1px solid color-mix(in srgb, var(--border) 85%, transparent);
-  border-radius: 10px;
+  border-radius: 9px;
   background: color-mix(in srgb, var(--panel) 92%, transparent);
-  box-shadow: 0 5px 16px color-mix(in srgb, #0b1020 10%, transparent);
+  box-shadow: 0 3px 10px color-mix(in srgb, #0b1020 9%, transparent);
   backdrop-filter: blur(9px);
   padding: 3px;
   pointer-events: auto;
@@ -105,15 +115,23 @@
 .graphNavigator {
   display: flex;
   align-items: center;
-  flex: 1 1 300px;
+  flex: 0 1 auto;
   flex-wrap: wrap;
   gap: 4px;
   min-width: 0;
   max-width: 100%;
+  margin-left: auto;
 }
 
-.graphNodeSearchCluster { display: flex; flex: 1 1 150px; align-items: center; gap: 3px; min-width: 0; }
-.graphNodeSearch { position: relative; width: 100%; }
+/* Search starts as an icon; the toggle opens the field, which closes again
+   when it is left empty. */
+.graphNodeSearchCluster { display: flex; flex: 0 1 auto; align-items: center; gap: 3px; min-width: 0; }
+.graphNodeSearchCluster:not([data-expanded="true"]) > .graphNodeSearch { display: none; }
+.graphNodeSearchCluster[data-expanded="true"] > .graphNodeSearchToggle { display: none; }
+.graphNodeSearchCluster[data-expanded="true"] { flex: 1 1 200px; }
+.graphNodeSearch { position: relative; width: min(240px, 100%); }
+.graphNodeSearchToggle { width: 25px; }
+.graphNodeSearchToggle:disabled { opacity: .52; }
 .graphNodeSearch input { min-height: 0; }
 .graphNavigator .graphNavigatorToolBtn {
   appearance: none;

@@ -40,12 +40,21 @@ const root = path.resolve(__dirname, '../../../management_portal');
       samples.push(await page.evaluate(() => {
         const viewport = document.getElementById('hatgViewport'), nav = document.getElementById('graphNavigationBar'), canvas = document.getElementById('hatgCanvas');
         const v = viewport.getBoundingClientRect(), n = nav.getBoundingClientRect(), c = canvas.getBoundingClientRect();
-        return { width: v.width, navHeight: n.height, reserved: parseFloat(viewport.style.getPropertyValue('--hatg-navigation-height')), canvasTop: c.top, navBottom: n.bottom };
+        const groups = [...nav.querySelectorAll(':scope > .graphViewportCluster, :scope > .graphNavigator')]
+          .map(group => ({ rect: group.getBoundingClientRect().toJSON(), input: getComputedStyle(group).pointerEvents }));
+        return { width: v.width, navHeight: n.height, reserved: parseFloat(viewport.style.getPropertyValue('--hatg-navigation-height')),
+          canvasTop: c.top, viewportTop: v.top, viewportLeft: v.left, viewportRight: v.right,
+          barInput: getComputedStyle(nav).pointerEvents, groups };
       }));
     }
     for (const s of samples) {
-      assert.ok(Math.abs(s.reserved - s.navHeight) < 1, 'reserve the measured toolbar height');
-      assert.ok(s.canvasTop >= s.navBottom, 'toolbar cannot overlap the canvas');
+      assert.ok(Math.abs(s.reserved - s.navHeight) < 1, 'keep the measured toolbar height for overlays below it');
+      assert.ok(Math.abs(s.canvasTop - s.viewportTop) < 1, 'the canvas fills the viewport under the floating toolbar');
+      assert.equal(s.barInput, 'none', 'gaps between the floating groups pass input to the canvas');
+      for (const group of s.groups) {
+        assert.notEqual(group.input, 'none', 'each floating group stays operable');
+        assert.ok(group.rect.left >= s.viewportLeft - 1 && group.rect.right <= s.viewportRight + 1, `groups stay inside the canvas (${s.width})`);
+      }
     }
     const errors = await page.evaluate(() => window.resizeErrors);
     console.log(JSON.stringify({ samples, errors }));

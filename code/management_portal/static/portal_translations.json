@@ -28512,6 +28512,10 @@
     "en": "Search and locate node…",
     "zh-CN": "搜索并定位节点…"
   },
+  "搜索节点": {
+    "en": "Search nodes",
+    "zh-CN": "搜索节点"
+  },
   "搜索引用": {
     "en": "Search references",
     "zh-CN": "搜索引用"

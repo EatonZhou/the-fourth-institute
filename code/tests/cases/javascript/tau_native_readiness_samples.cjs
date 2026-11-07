@@ -119,6 +119,7 @@ module.exports = async ({page, root, residentId, childId, sessionId, errors, req
   await newNode.waitFor({state:'visible'});
   await page.waitForFunction(() => !document.getElementById('addNodeBtn')?.disabled);
   const searchAbsentId='resident_999999999999';
+  await hatg.locator('#graphNodeSearchToggle').click();
   await hatg.locator('#graphNodeSearchInput').fill(searchAbsentId);
   await page.getByText('No matching nodes',{exact:true}).waitFor({state:'visible'});
   const {readSessionGraphSnapshot:readEmptySearch}=require('../../../management_portal/test_framework/tau_evidence');

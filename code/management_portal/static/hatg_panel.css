@@ -87,14 +87,25 @@
   display: grid;
   grid-template-columns: auto minmax(150px, 1fr) auto minmax(0, max-content);
   align-items: center;
-  gap: 12px;
-  min-height: 50px;
-  padding: 5px 11px;
+  gap: 8px;
+  min-height: 42px;
+  padding: 3px 8px;
 }
 
 .hatgTitleBlock {
   flex: 1 1 190px;
-  min-width: 150px;
+  min-width: 120px;
+}
+
+/* The header is one line: the Lineage ID stays in the DOM for readers and
+   automation, the title tooltip shows it and double-clicking the title copies it. */
+.hatgTitleBlock .portalResourceIdentityId {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
 .hatgTitleRow {
@@ -114,13 +125,16 @@
 
 .hatgTitleRow h1 {
   min-width: 0;
-  margin: 2px 0 0;
-  overflow-wrap: anywhere;
+  margin: 0;
+  overflow: hidden;
   color: var(--text);
   font-size: 15px;
   line-height: 1.25;
-  white-space: normal;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
+
+.hatgTitleRow h1[data-portal-resource-id] { cursor: default; }
 
 .lineageSettingsBtn {
   width: 25px;
@@ -157,8 +171,8 @@
   border-radius: 6px;
   background: transparent;
   color: var(--muted);
-  padding: 5px 8px;
-  text-align: left;
+  padding: 4px 10px;
+  text-align: center;
 }
 
 .hatgViewTab span { font-size: 9.5px; font-weight: 780; }
@@ -442,10 +456,13 @@
 
 .hatgCanvas.isViewportMoving { cursor: grabbing; }
 
-/* Navigation has its own strip. Panning/focusing may clip a card at the
-   canvas edge, but must never draw its title behind the toolbar. The panel's
-   ResizeObserver measures the strip, including narrow-screen wrapping. */
-.hatgViewport > .hatgCanvas { top: var(--hatg-navigation-bottom); }
+/* The canvas fills the viewport; navigation floats over it as small groups
+   whose gaps pass pointer input to the canvas. Fit, focus and auto layout
+   take the measured navigation bounds as their top inset (graph view
+   viewportInsets), so placed cards land below the groups; the panel's
+   ResizeObserver keeps --hatg-navigation-height current for overlays that
+   sit below navigation. */
+.hatgViewport > .hatgCanvas { top: 0; }
 
 .hatgCanvas.isBoxSelecting {
   cursor: crosshair;

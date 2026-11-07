@@ -75,6 +75,14 @@
         typeId: "activeLineageType",
         idId: "activeLineageSubtitle",
       });
+      // The header shows one line; the visually hidden ID line stays for
+      // readers, and the title carries the ID in its tooltip and copy gesture.
+      const heading = $id("activeLineageTitle");
+      if (heading && lineageId) {
+        heading.dataset.portalResourceId = lineageId;
+        heading.dataset.portalResourceCopyLabel = "lineage_id";
+        heading.title = `${cleanTitle}\n${lineageId}`;
+      }
     }
 
     function renderControls() {

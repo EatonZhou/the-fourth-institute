@@ -136,7 +136,8 @@
               </div>
             </div>
             <div class="graphNavigator" id="graphNavigator" aria-label="大图导航" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;大图导航&quot;}">
-              <div class="graphNodeSearchCluster">
+              <div class="graphNodeSearchCluster" id="graphNodeSearchCluster" data-expanded="false">
+                <button class="graphViewportBtn graphNodeSearchToggle" data-portal-icon="search" id="graphNodeSearchToggle" type="button" aria-label="搜索节点" title="搜索节点" aria-expanded="false" aria-controls="graphNodeSearchInput" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;搜索节点&quot;, &quot;title&quot;: &quot;搜索节点&quot;}"></button>
                 <div class="graphNodeSearch" data-portal-search-field data-portal-search-density="micro">
                   <input data-portal-search-input id="graphNodeSearchInput" type="search" autocomplete="off" placeholder="名称或自然语言" aria-label="按名称、目标、上下文摘要或 Agent id 查找节点" aria-controls="graphNodeSearchResults"  data-portal-i18n-attrs="{&quot;placeholder&quot;: &quot;名称或自然语言&quot;, &quot;aria-label&quot;: &quot;按名称、目标、上下文摘要或 Agent id 查找节点&quot;}"/>
                   <div class="graphNodeSearchResults portalHatgOverlayComponent" id="graphNodeSearchResults" hidden></div>

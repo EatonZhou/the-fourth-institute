@@ -61,8 +61,9 @@ const portal = path.resolve(__dirname, '../../../management_portal');
         });
         const geometry = await page.evaluate(() => Object.fromEntries(['hatgCanvas', 'graphNavigationBar', 'programMutationStatus', 'hatgViewport']
           .map(id => [id, document.getElementById(id).getBoundingClientRect().toJSON()])));
-        assert.ok(geometry.hatgCanvas.top >= geometry.graphNavigationBar.bottom,
-          `toolbar cannot cover titles while panning or focusing (${width}, inspector ${inspectorOpen}): ${JSON.stringify(geometry)}`);
+        assert.ok(Math.abs(geometry.hatgCanvas.top - geometry.hatgViewport.top) < 1
+            && geometry.graphNavigationBar.bottom < geometry.hatgViewport.bottom,
+          `the toolbar floats over a full-height canvas (${width}, inspector ${inspectorOpen}): ${JSON.stringify(geometry)}`);
         assert.ok(geometry.programMutationStatus.bottom <= geometry.hatgViewport.top,
           'success feedback occupies layout space above the canvas and palette');
         assert.ok(geometry.hatgCanvas.height > 100, 'wrapped navigation leaves a usable canvas');

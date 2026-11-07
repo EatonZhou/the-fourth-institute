@@ -251,6 +251,8 @@
       filter.disabled = !hasLineage;
       filter.value = state.graphRelationFilter;
       search.disabled = !hasLineage;
+      const searchToggle = $id("graphNodeSearchToggle");
+      if (searchToggle) searchToggle.disabled = !hasLineage;
       $id("collaborationGraphLegend").hidden = (
         state.graphViewMode !== "context"
         || state.graphRelationFilter === "program"

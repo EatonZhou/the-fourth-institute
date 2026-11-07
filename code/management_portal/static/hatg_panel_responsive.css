@@ -1,37 +1,32 @@
 /* Lineage panel: narrow pane, narrow window and reduced motion overrides. Pages load this file
    right after hatg_panel_dialogs.css. */
 @scope (:is(.portalHatgPanelComponent, .portalHatgOverlayComponent)) {
+/* Narrow panes keep the header on one line: the title gives up width first,
+   the Context / Workspace / Map switch stays beside it and secondary actions
+   collapse to icons or the toolbar's "more" menu. */
 @container lineage-hatg-pane (max-width: 760px) {
   .hatgToolbar {
-    grid-template-columns: auto minmax(0, 1fr) minmax(0, max-content);
-    grid-template-areas:
-      "rail title actions"
-      "view view view";
+    grid-template-columns: auto minmax(64px, 1fr) auto minmax(0, max-content);
     gap: 6px;
   }
 
-  .hatgPaneRailControls { grid-area: rail; }
-
   .hatgTitleBlock {
-    grid-area: title;
     display: block;
     min-width: 0;
   }
 
   .hatgViewSwitch {
-    grid-area: view;
     min-width: 0;
-    grid-template-columns: repeat(3, minmax(48px, 1fr));
+    grid-template-columns: repeat(3, minmax(44px, auto));
   }
 
   .hatgToolbar > .graphActions {
-    grid-area: actions;
     justify-self: end;
   }
 
   .hatgViewTab {
     min-width: 0;
-    padding: 6px;
+    padding: 4px 7px;
     text-align: center;
   }
 
@@ -54,6 +49,20 @@
     padding: 0 3px;
     font-size: 7px;
   }
+}
+
+@container lineage-hatg-pane (max-width: 480px) {
+  .hatgToolbar {
+    grid-template-columns: auto minmax(0, 1fr) minmax(0, max-content);
+    grid-template-areas:
+      "rail title actions"
+      "view view view";
+  }
+
+  .hatgPaneRailControls { grid-area: rail; }
+  .hatgTitleBlock { grid-area: title; }
+  .hatgViewSwitch { grid-area: view; grid-template-columns: repeat(3, minmax(44px, 1fr)); }
+  .hatgToolbar > .graphActions { grid-area: actions; }
 }
 
 @container lineage-hatg-pane (max-width: 420px) {
@@ -102,7 +111,7 @@
   .graphAction.autoLayoutAction span { display: inline; }
   .hatgTitleBlock { flex-basis: 180px; }
   .hatgViewSwitch { grid-template-columns: repeat(3, minmax(48px, 1fr)); }
-  .hatgViewTab { padding: 6px; text-align: center; }
+  .hatgViewTab { padding: 4px 8px; text-align: center; }
   .graphViewportHint { display: none; }
   .graphVisibilitySummary { display: none; }
 }
