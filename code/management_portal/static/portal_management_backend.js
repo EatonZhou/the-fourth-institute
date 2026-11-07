@@ -1170,7 +1170,8 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
     });
   }
   function roleEditor(role = null) {
-    const {view, form} = newEditor(role?.role === "default" ? "默认帐号选择排序" : role ? "编辑 Backend 角色" : "新增 Backend 角色");
+    const catalogAbort = new AbortController();
+    const {view, form} = newEditor(role?.role === "default" ? "默认帐号选择排序" : role ? "编辑 Backend 角色" : "新增 Backend 角色", () => catalogAbort.abort());
     form.classList.add("backendSelectionForm");
     const name = field(form, "角色", "role", role?.role || "", {required: true, readOnly: Boolean(role)});
     if (role?.role === "default") name.parentElement.hidden = true;
@@ -1179,7 +1180,7 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
       .map(a => [a.migration_type.id, a.migration_type]));
     const defaults = [...types.values()].filter(a => a.id.split(":")[1] === "subscription_login")
       .sort((a, b) => a.default_priority - b.default_priority || a.id.localeCompare(b.id)).map(a => a.id);
-    let order = role?.backend_priority?.length ? [...role.backend_priority] : defaults;
+    let order = Array.isArray(role?.backend_priority) ? [...role.backend_priority] : defaults;
     const priority = node("fieldset", undefined, {class: "backendPriority", "data-backend-priority": ""});
     priority.append(node("legend", t("AI 后端优先级")), node("p", t("默认按从上到下的顺序选择。额度不足时，先尝试同类账号，再按此顺序切换；跨后端使用目标默认模型并保留上下文。"), {class: "backendHint"}));
     const list = node("ol", undefined, {class: "backendPriorityList"});
@@ -1203,7 +1204,7 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
         if (key.split(":")[1] !== "subscription_login") controls.append(button("移除", () => { order = order.filter(k => k !== key); draw(); }));
         row.append(node("span", String(i + 1), {class: "backendPriorityNumber", "aria-hidden": "true"}), title, controls); list.append(row);
       }
-      if (!order.length) list.append(node("p", t("暂无可排序的订阅后端，可在下方加入其他后端。"), {class: "backendHint"}));
+      if (!order.length) list.append(node("p", t("尚未保存跨后端自动切换顺序。可点击“恢复推荐顺序”后保存。"), {class: "backendHint"}));
       const others = [...types.values()].filter(a => !order.includes(a.id));
       if (others.length) {
         other.append(node("p", t("其他后端仅在加入后参与选择和切换；API 用量将按对应账户计费。"), {class: "backendHint"}));
@@ -1227,9 +1228,74 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
     };
     selection.addEventListener("change", syncSelection); syncSelection();
     hint(account, "模型和推理强度仅用于此账号同类的后端；其他种类使用各自默认模型。固定模式不会自动切换。");
-    const model = field(options, "模型偏好（可选）", "model", role?.model || "");
-    const effort = field(options, "推理强度（可选）", "reasoning_effort", role?.reasoning_effort || "");
-    saveButton(form); form.addEventListener("submit", event => { event.preventDefault(); void run(async () => {
+    const model = select(options, "模型偏好（可选）", "model", [["", t("使用账号默认模型")]]);
+    const effort = select(options, "推理强度（可选）", "reasoning_effort", [["", t("使用模型默认强度")]]);
+    const catalogStatus = node("p", "", {class: "backendHint", role: "status", "data-backend-role-catalog": ""});
+    const reloadCatalog = button("重新加载模型列表", () => void loadCatalog(
+      catalogFailed ? requestedPreference.model : model.value, catalogFailed ? requestedPreference.effort : effort.value));
+    options.append(catalogStatus, reloadCatalog);
+    saveButton(form);
+    const save = form.querySelector('[type="submit"]');
+    let catalog = {}, catalogRequest = 0, catalogLoading = false, catalogFailed = false;
+    let requestedPreference = {};
+    const choices = (control, values, value, placeholder) => {
+      control.replaceChildren(node("option", t(placeholder), {value: ""}),
+        ...values.map(item => node("option", item, {value: item})));
+      const unavailable = Boolean(value && !values.includes(value));
+      if (unavailable) control.append(node("option", value + " · " + t("当前不可用"), {value, disabled: true}));
+      control.value = value || "";
+      control.setCustomValidity(unavailable ? t("请选择当前账号支持的选项，或使用默认值。") : "");
+    };
+    const syncEfforts = (value = "") => {
+      const values = catalog.efforts_by_model?.[model.value || catalog.default_model] || [];
+      choices(effort, values, value, values.length ? "使用模型默认强度" : "此模型不提供推理强度选项");
+      effort.disabled = !values.length && !value;
+    };
+    async function loadCatalog(preferredModel = "", preferredEffort = "") {
+      const request = ++catalogRequest;
+      requestedPreference = {model: preferredModel, effort: preferredEffort};
+      catalogLoading = true; catalogFailed = false;
+      model.disabled = effort.disabled = save.disabled = true;
+      catalogStatus.textContent = t("正在读取账号支持的模型…");
+      reloadCatalog.hidden = true;
+      try {
+        if (!account.value) {
+          catalog = {};
+          choices(model, [], "", "使用账号默认模型"); syncEfforts();
+          catalogStatus.textContent = t("请先选择模型偏好参考账号。");
+          return;
+        }
+        // Use the same account runtime catalog as Resident Settings; do not
+        // infer models or effort levels from the Provider name.
+        const result = await window.PortalAPI.get('/api/agent-workbench/agent-runtime-catalog?' +
+          new URLSearchParams({account_id: account.value}), {signal: catalogAbort.signal, cache: "no-store"});
+        if (request !== catalogRequest || editor !== view || destroyed) return;
+        catalog = result;
+        const models = [...new Set((catalog.models || []).filter(item => typeof item === "string" || item.enabled !== false)
+          .map(item => typeof item === "string" ? item : item.id).filter(Boolean))];
+        choices(model, models, preferredModel, "使用账号默认模型"); syncEfforts(preferredEffort);
+        catalogStatus.textContent = models.length ? "" : t("该账号尚未提供可选模型，可使用账号默认值或重新加载。");
+      } catch (error) {
+        if (request !== catalogRequest || editor !== view || destroyed) return;
+        catalogFailed = true;
+        catalogStatus.textContent = errorText(error);
+      } finally {
+        if (request === catalogRequest && editor === view && !destroyed) {
+          catalogLoading = false;
+          model.disabled = catalogFailed || !account.value;
+          if (catalogFailed) effort.disabled = true;
+          save.disabled = catalogFailed;
+          reloadCatalog.hidden = !account.value;
+        }
+      }
+    }
+    model.addEventListener("change", () => { model.setCustomValidity(""); syncEfforts(); });
+    effort.addEventListener("change", () => effort.setCustomValidity(""));
+    account.addEventListener("change", () => void loadCatalog());
+    void loadCatalog(role?.model || "", role?.reasoning_effort || "");
+    form.addEventListener("submit", event => { event.preventDefault();
+      if (catalogLoading || catalogFailed || !form.reportValidity()) return;
+      void run(async () => {
       await execute("UpdateBackendRole", {backend_role: name.value.trim(), account_id: account.value, account_selection: selection.value,
         backend_priority: order, model: model.value.trim(), reasoning_effort: effort.value.trim()}, {expectedVersion: role?.version || 0});
       view.close(); await refresh("roles");

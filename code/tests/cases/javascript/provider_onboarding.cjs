@@ -12,6 +12,23 @@ let holdPrepare = false, finishPrepare;
 let provider = 'claude', emptyCatalog = false, holdSetup = false, finishSetup, loginSession;
 let kimiRegion, holdLoginPoll = false, finishLoginPoll, failLoginStart = false;
 let loginReadStatus = 0, hidden = false;
+const catalogRequests = [];
+let catalogError = false, holdCatalog = false;
+const pendingCatalogs = new Map();
+const runtimeCatalogs = {
+  existing: {models: ['claude-model', 'claude-fast'], default_model: 'claude-model',
+    efforts_by_model: {'claude-model': ['low', 'high'], 'claude-fast': []}},
+  codex: {models: ['codex-model'], default_model: 'codex-model', efforts_by_model: {'codex-model': ['medium', 'xhigh']}},
+  paid: {models: ['paid-model'], default_model: 'paid-model', efforts_by_model: {}},
+};
+window.PortalAPI = {get: async (path, options) => {
+  const accountId = new URL(path, 'http://portal.invalid').searchParams.get('account_id');
+  assert.equal(new URL(path, 'http://portal.invalid').pathname, '/api/agent-workbench/agent-runtime-catalog');
+  catalogRequests.push({accountId, signal: options.signal});
+  if (holdCatalog) return new Promise(resolve => pendingCatalogs.set(accountId, resolve));
+  if (catalogError) throw Error('模型目录读取失败');
+  return runtimeCatalogs[accountId] || {models: ['model'], default_model: 'model', efforts_by_model: {}};
+}};
 Object.defineProperty(window.document, 'hidden', {get: () => hidden});
 const visibility = value => { hidden = !value; window.document.dispatchEvent(new window.Event('visibilitychange')); };
 const kimiOptions = () => ({regions: [{id:'mainland-cn', label:'中国区'}, {id:'global', label:'国际区'}], region: kimiRegion || 'mainland-cn'});
@@ -70,7 +87,9 @@ window.PortalInstructionClient = {execute: async (name, args, options) => {
       log: fail ? 'execution_check\nHTTP 401: [REDACTED]\n<script>not markup</script>' : ''}};
     case 'UpdateBackendRole':
       if (holdDefault) await new Promise(resolve => { finishDefault = resolve; });
-      roles = [{role: 'default', account_id: args.account_id, account_selection: args.account_selection, backend_priority: args.backend_priority, version: (roles[0]?.version || 0) + 1}];
+      roles = [{role: 'default', account_id: args.account_id, account_selection: args.account_selection,
+        backend_priority: args.backend_priority, model: args.model, reasoning_effort: args.reasoning_effort,
+        version: (roles[0]?.version || 0) + 1}];
       return {role: roles[0]};
     case 'PrepareProviderRuntime':
       if (holdPrepare) return new Promise(resolve => { finishPrepare = resolve; });
@@ -81,7 +100,7 @@ window.PortalInstructionClient = {execute: async (name, args, options) => {
 }};
 const context = vm.createContext({window, document: window.document, Node: window.Node, AbortController,
   setTimeout: fn => later(fn, timers), clearTimeout: id => timers.delete(id),
-  setInterval: fn => later(fn, intervals), clearInterval: id => intervals.delete(id), URL, console});
+  setInterval: fn => later(fn, intervals), clearInterval: id => intervals.delete(id), URL, URLSearchParams, console});
 const source = fs.readFileSync('management_portal/static/portal_management_backend.js', 'utf8').replaceAll('export ', '');
 vm.runInContext(source, context);
 const flush = () => new Promise(resolve => setImmediate(resolve));
@@ -356,6 +375,9 @@ const openSetup = async () => {
     click('默认帐号选择排序'); await flush();
     const form = window.document.querySelector('dialog form');
     form.elements.account_id.value = 'existing';
+    form.elements.account_id.dispatchEvent(new window.Event('change')); await flush();
+    form.elements.model.value = '';
+    form.elements.model.dispatchEvent(new window.Event('change'));
     form.elements.account_selection.value = policy;
     form.elements.account_selection.dispatchEvent(new window.Event('change'));
     assert.match(form.elements.account_id.parentElement.textContent, policy === 'fixed' ? /固定账号/ : /参考账号/);
@@ -368,6 +390,7 @@ const openSetup = async () => {
     }
     form.dispatchEvent(new window.Event('submit', {bubbles: true, cancelable: true})); await flush();
     const saved = calls.filter(call => call.name === 'UpdateBackendRole').at(-1);
+    assert(saved, 'a valid role saves after its account catalog loads');
     assert.equal(saved.args.account_selection, policy);
     assert.equal(saved.options.expectedVersion, roles[0].version - 1);
     if (policy === 'auto') assert.deepEqual(Array.from(saved.args.backend_priority), ['codex:subscription_login', 'claude:subscription_login', 'claude:api_profile:api']);
@@ -380,6 +403,70 @@ const openSetup = async () => {
   assert.equal(calls.filter(call => call.name === 'UpdateBackendRole').length, beforeCancel);
   click('默认帐号选择排序'); await flush();
   assert.equal(window.document.querySelector('[data-backend-priority-kind]').dataset.backendPriorityKind, 'codex:subscription_login');
+  click('关闭');
+  // Models and efforts come from the selected account's shared runtime catalog.
+  click('默认帐号选择排序'); await flush();
+  const roleForm = window.document.querySelector('dialog form');
+  const modelSelect = roleForm.elements.model, effortSelect = roleForm.elements.reasoning_effort;
+  const accountSelect = roleForm.elements.account_id;
+  const change = (input, value) => { input.value = value; input.dispatchEvent(new window.Event('change')); };
+  assert.equal(modelSelect.tagName, 'SELECT'); assert.equal(effortSelect.tagName, 'SELECT');
+  assert.deepEqual([...modelSelect.options].map(o => o.value), ['', 'claude-model', 'claude-fast']);
+  change(modelSelect, 'claude-model'); change(effortSelect, 'high');
+  change(modelSelect, 'claude-fast');
+  assert.equal(effortSelect.value, ''); assert(effortSelect.disabled);
+  change(modelSelect, 'claude-model'); change(effortSelect, 'high');
+  change(accountSelect, 'codex'); await flush();
+  assert.deepEqual([...modelSelect.options].map(o => o.value), ['', 'codex-model']);
+  assert.equal(modelSelect.value, ''); assert.equal(effortSelect.value, '');
+  assert.deepEqual([...effortSelect.options].map(o => o.value), ['', 'medium', 'xhigh']);
+  change(modelSelect, 'codex-model'); change(effortSelect, 'xhigh');
+  roleForm.dispatchEvent(new window.Event('submit', {bubbles: true, cancelable: true})); await flush();
+  let savedRole = calls.filter(call => call.name === 'UpdateBackendRole').at(-1);
+  assert.equal(savedRole.args.model, 'codex-model'); assert.equal(savedRole.args.reasoning_effort, 'xhigh');
+  click('默认帐号选择排序'); await flush();
+  let form = window.document.querySelector('dialog form');
+  assert.equal(form.elements.model.value, 'codex-model'); assert.equal(form.elements.reasoning_effort.value, 'xhigh');
+  // A late response for an earlier account must not replace the current choices.
+  holdCatalog = true;
+  change(form.elements.account_id, 'existing');
+  change(form.elements.account_id, 'paid');
+  const savesBeforeLoad = calls.filter(call => call.name === 'UpdateBackendRole').length;
+  form.dispatchEvent(new window.Event('submit', {bubbles: true, cancelable: true})); await flush();
+  assert.equal(calls.filter(call => call.name === 'UpdateBackendRole').length, savesBeforeLoad);
+  pendingCatalogs.get('paid')(runtimeCatalogs.paid); await flush();
+  pendingCatalogs.get('existing')(runtimeCatalogs.existing); await flush();
+  assert.deepEqual([...form.elements.model.options].map(o => o.value), ['', 'paid-model']);
+  holdCatalog = false;
+  click('关闭');
+  assert(catalogRequests.at(-1).signal.aborted, 'closing cancels catalog reads');
+  // A failed load is retryable and keeps the saved preferences for that retry.
+  catalogError = true;
+  click('默认帐号选择排序'); await flush();
+  form = window.document.querySelector('dialog form');
+  assert.match(form.querySelector('[data-backend-role-catalog]').textContent, /模型目录读取失败/);
+  assert(form.querySelector('[type=submit]').disabled);
+  catalogError = false; click('重新加载模型列表'); await flush();
+  assert.equal(form.elements.model.value, 'codex-model');
+  assert.equal(form.elements.reasoning_effort.value, 'xhigh');
+  click('关闭');
+  // Removed catalog entries are visible but cannot silently be resubmitted.
+  runtimeCatalogs.codex = {models: ['replacement'], default_model: 'replacement', efforts_by_model: {}};
+  click('默认帐号选择排序'); await flush();
+  form = window.document.querySelector('dialog form');
+  assert(!form.elements.model.checkValidity());
+  assert(form.elements.model.selectedOptions[0].disabled);
+  change(form.elements.model, '');
+  assert(form.reportValidity());
+  click('关闭');
+  // A stored empty priority is displayed as empty, never as an unsaved recommendation.
+  roles[0].backend_priority = [];
+  click('默认帐号选择排序'); await flush();
+  form = window.document.querySelector('dialog form');
+  assert.equal(form.querySelectorAll('[data-backend-priority-kind]').length, 0);
+  assert.match(form.querySelector('[data-backend-priority]').textContent, /尚未保存跨后端自动切换顺序/);
+  click('恢复推荐顺序');
+  assert(form.querySelectorAll('[data-backend-priority-kind]').length > 0);
   click('关闭');
   console.log('provider onboarding UI passed');
 })().catch(error => {console.error(error); process.exitCode = 1;});
