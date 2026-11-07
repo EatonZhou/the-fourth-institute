@@ -1196,6 +1196,7 @@ modules:
       - "management_portal/home_report_dependencies.py"
       - "docs/deployment-configuration.md"
       - "management_portal/service_runtime.py"
+      - "management_common/service_components.py"
       - "scripts/instance_services.py"
       - "scripts/instance_service_definitions.py"
       - "scripts/instance_process_cleanup.py"
@@ -2174,6 +2175,7 @@ protocols:
   - id: "telepus-personal-assistant"
     title: "Telegram 个人助手入口与 Family 对话投影"
     modules:
+      - "delivery.services"
       - "web.community"
       - "web.workflows"
       - "lineage.family"
@@ -2181,7 +2183,7 @@ protocols:
       - "decision_66f5be947b67"
     related_designs:
       - "decision_692a484e9bea"
-    description: "Telepus（management_portal/telepus，两个内置服务 telepus-telegram-router 与 telepus-portal-refresh）按联系人对应的 User 读取 Portal 个人助手入口关联，经正式 ISA 向门面或精确 Resident 投递；私人 Family 拥有选人、转交和门面对话投影，桥接只管理 Telegram 模式、游标、问答卡片与消息对应，不复制目录或执行权限。"
+    description: "部署控制面持有 service_components 内置启动模块目录，按实例登记的组件启动 Telepus（management_portal/telepus）的 telepus-telegram-router 与 telepus-portal-refresh。Telepus 按联系人对应的 User 读取 Portal 个人助手入口关联，经正式 ISA 向门面或精确 Resident 投递；私人 Family 拥有选人、转交和门面对话投影，桥接只管理 Telegram 模式、游标、问答卡片与消息对应，不复制目录或执行权限。"
     example: "Telegram update → 联系人 User → personal_ama.personal_assistant_target → DeliverMessage → Family 门面对话 → WatchConversationEvents → Telegram 分段回复。"
 
   - id: "web-http-handler-binding"
