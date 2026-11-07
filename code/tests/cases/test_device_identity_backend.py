@@ -118,7 +118,8 @@ def test_rename_device_preserves_topology_access_and_cached_observation(isolated
         for changes in ({'name': ''}, {'name': '   '}, {'device_kind': 'device'}, {}):
             with pytest.raises(ValueError):
                 device_identity_backend.update_device(SERVER_ID, changes)
-        assert device_identity_backend.resolve_device_address(SERVER_ID)['name'] == 'RTX PRO 5000'
+        assert next(item for item in device_identity_backend.load_device_records()
+                    if item['device_id'] == SERVER_ID)['name'] == 'RTX PRO 5000'
 
 
 def _write_device(record: dict) -> None:
