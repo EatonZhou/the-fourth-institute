@@ -36,13 +36,20 @@ const root = path.resolve(__dirname, '../../..');
     const card = id => page.locator(`[data-disk-resource="${id}"]`);
     await render([healthy]);
     assert.match(await card('nuc_storage').innerText(), /nuc.*\nok/s);
-    assert.equal(await page.locator('.agent-status-progress').count(), 0);
-    assert.doesNotMatch(await page.locator('#resources').innerText(), /\/dev\/test|Diagnostic detail|Transfer suggestion|External targets/);
+    assert.equal(await page.locator('.agent-status-progress').count(), 1);
+    assert.match(await card('nuc_storage').innerText(), /5\.0%/);
+    assert.match(await card('nuc_storage').innerText(), /100 GiB free/);
+    assert.doesNotMatch(await card('nuc_storage').innerText(), /Diagnostic detail|Transfer suggestion|External targets/);
+    await render([{...healthy, triage: {findings: []}, suggestions: [], transfer_targets: []}]);
+    assert.equal(await page.locator('.agent-status-progress').count(), 1);
+    assert.doesNotMatch(await card('nuc_storage').innerText(), /Lightweight triage|Lazy transfer suggestions|External targets/);
     for (const status of ['warn', 'critical']) {
       const alert = {...healthy, resource_id: 'alert_storage', display_name: 'Alert disk', status,
         filesystems: [{...healthy.filesystems[0], status, used_percent: 95}]};
       await render([healthy, alert]);
-      assert.equal(await card('nuc_storage').locator('.agent-status-progress').count(), 0);
+      assert.equal(await card('nuc_storage').locator('.agent-status-progress').count(), 1);
+      assert.match(await card('nuc_storage').innerText(), /5\.0%/);
+      assert.doesNotMatch(await card('nuc_storage').innerText(), /Diagnostic detail|Transfer suggestion/);
       assert.equal(await card('alert_storage').locator('.agent-status-progress').count(), 1);
       assert.match(await card('alert_storage').innerText(), /Diagnostic detail/);
       assert.match(await card('alert_storage').innerText(), /Transfer suggestion/);
@@ -50,7 +57,7 @@ const root = path.resolve(__dirname, '../../..');
         for (const width of [945, 625]) {
           await page.setViewportSize({width, height: 1000});
           assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
-          const out = '/tmp/resident84-disk-alerts'; fs.mkdirSync(out, {recursive: true});
+          const out = '/tmp/resident84-disk-percentages'; fs.mkdirSync(out, {recursive: true});
           await page.screenshot({path: `${out}/${width}.png`, fullPage: true});
         }
       }
@@ -63,7 +70,9 @@ const root = path.resolve(__dirname, '../../..');
     assert.equal(await page.locator('.agent-status-progress').count(), 0);
     assert.match(await page.locator('#resources').innerText(), /unavailable.*Connection failed/s);
     await render([healthy]);
-    assert.equal(await page.locator('.agent-status-progress').count(), 0, 'recovery hides old details');
+    assert.equal(await page.locator('.agent-status-progress').count(), 1, 'recovery keeps capacity visible');
+    assert.match(await card('nuc_storage').innerText(), /5\.0%/);
+    assert.doesNotMatch(await card('nuc_storage').innerText(), /Diagnostic detail|Transfer suggestion/);
     console.log('Home disk rendering passed: healthy, alerts, recovery, stale/error and narrow layout');
   } finally {
     await browser.close();

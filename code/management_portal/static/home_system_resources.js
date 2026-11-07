@@ -259,7 +259,7 @@
     function diskSingleResourceHtml(resource) {
       const checked = formatDateTime(resource?.updated_at);
       const rows = Array.isArray(resource?.filesystems) ? resource.filesystems : [];
-      const showDetails = ["warn", "critical"].includes(resource?.status)
+      const showDiagnostics = ["warn", "critical"].includes(resource?.status)
         || rows.some(row => ["warn", "critical"].includes(row?.status));
       const targets = Array.isArray(resource?.transfer_targets) ? resource.transfer_targets : [];
       const suggestions = Array.isArray(resource?.suggestions) ? resource.suggestions : [];
@@ -273,10 +273,10 @@
       ${resource?.error ? window.PortalI18n.html`<div class="agent-status-error">${esc(resource.error)}</div>` : ""}
       ${resource?.refresh_error ? window.PortalI18n.html`<div class="agent-status-error">${esc(resource.refresh_error)}</div>` : ""}
       ${resource?.warning ? window.PortalI18n.html`<div class="agent-status-muted">${esc(resource.warning)}</div>` : ""}
-      ${showDetails ? window.PortalI18n.html`${diskStageHtml(resource, "capacity", window.PortalI18n.t("文件系统容量"))}
+      ${showDiagnostics ? diskStageHtml(resource, "capacity", window.PortalI18n.t("文件系统容量")) : ""}
       ${rows.length && ["pending", "running"].includes(resource?.stages?.capacity?.status) ? window.PortalI18n.html`<div class="agent-status-muted">显示上次容量，正在更新。</div>` : ""}
       <div class="agent-status-gpu-grid">${rows.length ? rows.map(diskRowHtml).join("") : window.PortalI18n.html`<div class="agent-status-muted">No filesystem data.</div>`}</div>
-      <div class="agent-status-gpu-row">
+      ${showDiagnostics ? window.PortalI18n.html`<div class="agent-status-gpu-row">
         <div class="agent-status-gpu-title"><span>External targets</span><span>${targets.length}</span></div>
         ${diskStageHtml(resource, "transfer_targets", window.PortalI18n.t("外接目标"))}
         ${targets.length ? targets.map(diskTargetHtml).join("") : resource?.stages?.transfer_targets?.status === "ok" ? window.PortalI18n.html`<div class="agent-status-muted">No mounted external disk detected.</div>` : ""}
