@@ -57,6 +57,11 @@
 
     // The Library pane: favorites, the favorite filter, refreshing, Collector jobs.
     function bindLibraryEvents() {
+      window.addEventListener("portal:resource-favorite-changed", event => {
+        if (event.detail?.address?.startsWith("paper_") && !event.detail.address.includes("/")) {
+          loadLibrary({ keepDetail: true, hydrateDetail: false }).catch(alertError);
+        }
+      });
       document.addEventListener("click", event => {
         const button = event.target.closest("[data-paper-favorite]");
         if (!button) return;

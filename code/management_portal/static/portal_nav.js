@@ -1406,6 +1406,7 @@
     hydrateWorkbenches();
     hydrateResourceTypes();
     window.PortalUIPrimitives.loadAsset("/static/portal_projections.js").catch(console.error);
+    window.PortalUIPrimitives.loadAsset("/static/portal_resource_favorites.js").catch(console.error);
     mountAgentInbox();
     document.querySelectorAll("[data-portal-site-header]").forEach(root => window.PortalPageBoot?.ready(root));
   }

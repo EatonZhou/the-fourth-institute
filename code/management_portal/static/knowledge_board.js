@@ -183,6 +183,7 @@ const el = {
   mGraphMeta: document.getElementById("mGraphMeta"),
   mText: document.getElementById("mText"),
   mDownload: document.getElementById("mDownload"),
+  mFavorite: document.getElementById("mFavorite"),
   mDelete: document.getElementById("mDelete"),
   mEdit: document.getElementById("mEdit"),
   mCancelEdit: document.getElementById("mCancelEdit"),

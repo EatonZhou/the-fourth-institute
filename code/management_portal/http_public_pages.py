@@ -345,6 +345,7 @@ class PublicPagesHttp:
                     '/static/portal_refresh_coordinator.js',
                     '/static/portal_resident_discovery_service.js',
                     '/static/portal_resource_chips.js',
+                    '/static/portal_resource_favorites.js',
                     '/static/portal_resource_header.js',
                     '/static/portal_state.js',
                     '/static/portal_theme.js',

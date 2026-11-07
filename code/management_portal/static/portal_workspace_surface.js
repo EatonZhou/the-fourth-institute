@@ -115,6 +115,7 @@
       <div class="portalDocumentToolbar" id="${escapeHtml(ids.toolbar)}">
         <div class="portalDocumentToolbarTools" data-portal-toolbar data-portal-toolbar-overflow="wrap">${actions.map(previewToolbarActionHtml).join("")}</div>
         <div class="portalDocumentToolbarState portalPreviewDocumentPath" id="${escapeHtml(ids.toolbarState)}" title="${escapeHtml(initialState)}">${escapeHtml(initialState)}</div>
+        <span class="portalPreviewFavorite" hidden></span>
       </div>
       <div data-preview-read-error hidden></div>
       <div data-preview-save-error hidden></div>
@@ -123,9 +124,21 @@
       <button class="portalPreviewSelectionToolbar" id="${escapeHtml(ids.selectionToolbar)}" type="button" hidden>${escapeHtml(options.selectionLabel || window.PortalI18n.t("发送到对话"))}</button>`;
     const statistics = root.querySelector(".portalPreviewStatus");
     const toolbarState = surfaceElement(root, ids.toolbarState);
+    const favoriteSlot = root.querySelector(".portalPreviewFavorite");
+    let favoriteAddress = "";
     const setToolbarValue = (value, { path = false } = {}) => {
       if (!toolbarState) return "";
       const text = String(value || "");
+      const address = path ? window.PortalResourceChips?.resourceAddressFromPreviewRequest({ resourceAddress: text, href: text }) || "" : "";
+      if (address !== favoriteAddress) {
+        favoriteAddress = address;
+        favoriteSlot.replaceChildren();
+        favoriteSlot.hidden = !address;
+        if (address) {
+          const favorite = document.createElement("span"); favorite.dataset.resourceFavorite = address;
+          favoriteSlot.append(favorite);
+        }
+      }
       if (path) window.PortalPreview.renderPath(toolbarState, text);
       else toolbarState.textContent = text;
       if (path && text) {

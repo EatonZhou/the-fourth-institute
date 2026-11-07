@@ -721,6 +721,7 @@
         state.favoriteLoadError = "";
         state.favoriteAgentIds = new Set((Array.isArray(result?.items) ? result.items : []).map(favoriteSelectionForObject).filter(Boolean));
         state.agentMenuId = "";
+        window.dispatchEvent(new CustomEvent("portal:user-navigation-changed", { detail: result }));
         renderAgentList();
         renderFavoriteList();
       } catch (err) {

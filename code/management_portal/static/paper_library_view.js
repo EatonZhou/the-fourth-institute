@@ -215,6 +215,7 @@
         });
         if (result.favorite) state.favoriteIds.add(paperId);
         else state.favoriteIds.delete(paperId);
+        window.dispatchEvent(new CustomEvent("portal:paper-favorite-changed"));
         saved = true;
       } finally {
         state.favoriteRevision += 1;

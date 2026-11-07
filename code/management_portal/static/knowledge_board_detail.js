@@ -2,6 +2,13 @@
 
 function renderKnowledgeResourceIdentity(item, fallbackId = "") {
   const resourceId = String(item?.kb_id || fallbackId || "").trim();
+  // Replace the observed container so the shared owner disposes the previous binding.
+  el.mFavorite.replaceChildren();
+  if (resourceId) {
+    const favorite = document.createElement("span");
+    favorite.dataset.resourceFavorite = resourceId;
+    el.mFavorite.appendChild(favorite);
+  }
   window.PortalResourceHeader?.mount?.(el.mResourceIdentity, {
     title: item?.title || item?.filename || resourceId || window.PortalI18n.t("Knowledge"),
     type: item?.type || "knowledge",
@@ -90,6 +97,7 @@ async function closeModal(context = {}) {
 }
 
 function finalizeDetailClose(context = {}) {
+  el.mFavorite.replaceChildren();
   state.selected = null;
   state.detailFileId = "";
   state.detailSelectedFileId = "";

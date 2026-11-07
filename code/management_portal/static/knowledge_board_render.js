@@ -39,6 +39,16 @@ function createKnowledgeCard(it) {
   title.className = "cardTitle";
   title.textContent = it.title || it.filename || it.kb_id;
 
+  const heading = document.createElement("div");
+  heading.className = "knowledgeCardHeading";
+  heading.appendChild(title);
+  if (it.kb_id) {
+    const favorite = document.createElement("span");
+    favorite.className = "knowledgeFavoriteSlot";
+    favorite.dataset.resourceFavorite = it.kb_id;
+    heading.appendChild(favorite);
+  }
+
   const meta = document.createElement("div");
   meta.className = "cardMeta";
   const left = document.createElement("div");
@@ -73,7 +83,7 @@ function createKnowledgeCard(it) {
   resourceId.textContent = it.kb_id || "";
   resourceId.title = it.kb_id || "";
 
-  card.appendChild(title);
+  card.appendChild(heading);
   card.appendChild(meta);
   card.appendChild(resourceId);
   card.appendChild(preview);

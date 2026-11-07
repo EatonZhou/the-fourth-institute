@@ -1223,6 +1223,14 @@
         state.favoriteAgentIds = new Set((event.detail?.items || []).map(favoriteSelectionForObject).filter(Boolean));
         renderAgentList(); renderFavoriteList();
       });
+      lineageStateController.listen("page", window, "portal:resource-favorite-changed", event => {
+        const { address, favorite } = event.detail || {};
+        if (!/^(resident|lineage)_[a-f0-9]{12}$/.test(address || "")) return;
+        const selection = favoriteSelectionForObject(address);
+        if (favorite) state.favoriteAgentIds.add(selection);
+        else state.favoriteAgentIds.delete(selection);
+        renderAgentList(); renderFavoriteList();
+      });
       lineageStateController.listen("page", window, "portal:change", event => {
         if (previewChangeMatches(event?.detail || {})) schedulePreviewRefresh();
         if ((event.detail?.changed?.lineage || []).includes(state.personalAssistant?.lineage_id)) void refreshPersonalAssistantShortcut();

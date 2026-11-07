@@ -937,3 +937,18 @@ body.portalBoardShell .filter-active-dot {
 .portalChoiceGroup > label { display:inline-flex; align-items:center; gap:6px; min-height:44px; padding:0 8px; cursor:pointer; white-space:nowrap; }
 .portalChoiceGroup input { accent-color:var(--accent); }
 .portalChoiceGroup:disabled { opacity:.65; }
+/* Personal resource bookmarks share the quiet icon button and sidebar rows. */
+.resourceFavoriteButton { color: var(--accent); }
+.resourceFavorites > summary { display: flex; gap: 8px; align-items: center; }
+.resourceFavorites > summary::before { content: "▸"; }
+.resourceFavorites[open] > summary::before { content: "▾"; }
+.resourceFavoriteRow, .portalCommandRow { display: flex; align-items: center; gap: 6px; }
+.portalCommandRow > .portalCommandItem { flex: 1; min-width: 0; }
+.resourceFavoriteRow { padding: 5px 8px; border-radius: 6px; }
+.resourceFavoriteRow:hover { background: var(--surface-hover, rgba(128,128,128,.08)); }
+.resourceFavoriteOpen { flex: 1; min-width: 0; border: 0; background: transparent; color: inherit; text-align: left; cursor: pointer; padding: 4px; }
+.resourceFavoriteTitle, .resourceFavoriteMeta { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.resourceFavoriteTitle { font-weight: 600; }
+.resourceFavoriteMeta { color: var(--muted); font-size: 12px; margin-top: 4px; }
+.resourceFavorites > summary { cursor: pointer; }
+.resourceFavoriteOpen:disabled { opacity: .6; cursor: default; }

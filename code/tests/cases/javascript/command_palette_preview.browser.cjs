@@ -12,7 +12,7 @@ const scripts = ['portal_state.js', 'portal_page_state.js', 'portal_text.js', 'p
   'portal_preview_runtime.js', 'portal_pdf_preview.js', 'portal_preview_renderers.js', 'portal_document_statistics.js',
   ...groups['portal-workspace-surface'].map(x => x.replace('/static/', '')),
   'portal_agent_preview_source.js', 'markdown.js', 'portal_display_protocol.js',
-  'home_dialogue_state.js', 'portal_file_preview.js', 'home_dialogue.js', 'portal_command_palette.js'];
+  'home_dialogue_state.js', 'portal_file_preview.js', 'home_dialogue.js', 'portal_command_palette.js', 'portal_resource_favorites.js'];
 const css = [...fs.readFileSync(path.join(root, 'index.html'), 'utf8').matchAll(/href="(\/static\/[^"?]+\.css)"/g)].map(x => x[1]);
 const records = [
   { resource_id: 'thinking_111111111111', title: '第一条检索结果' },
@@ -23,9 +23,18 @@ const records = [
   content_kind: 'markdown', content_type: 'text/markdown', version: '1', capabilities: { edit: false, save: false } }));
 let deny = false;
 const reads = [];
+const favorites = new Set();
 const server = http.createServer((req, res) => {
   const url = new URL(req.url, 'http://fixture');
   const json = value => { res.setHeader('Content-Type', 'application/json'); res.end(JSON.stringify(value)); };
+  if (url.pathname === '/api/resources/favorites') {
+    if (req.method === 'POST') {
+      let body = ''; req.on('data', chunk => body += chunk);
+      req.on('end', () => { const value = JSON.parse(body); if (value.favorite) favorites.add(value.address); else favorites.delete(value.address); json(value); });
+      return;
+    }
+    return json({ items: records.filter(r => favorites.has(r.address)).map(r => ({ ...r, status: 'available' })) });
+  }
   if (url.pathname === '/api/resource-index/status') return json({ resource_types: ['thinking', 'resident'] });
   if (url.pathname === '/api/resource-index/suggest') return json({ resources: records });
   if (url.pathname === '/api/resources/reference') return json(records.find(r => r.address === url.searchParams.get('address')));
@@ -66,7 +75,10 @@ const server = http.createServer((req, res) => {
         PortalI18n.apply('original');
         window.PortalIdentity = { peek: () => ({ username: 'isolated-fixture' }) };
         window.PortalResidentService = {};
-        window.PortalAPI = { post: async () => { throw new Error('Unexpected write'); }, raw: (url, options) => fetch(url, options), get: async (url, options) => { const response = await fetch(url, options); if (!response.ok) throw new Error('当前来源不可读'); return response.json(); } };
+        window.PortalAPI = { post: async (url, body) => {
+          if (url !== '/api/resources/favorites') throw new Error('Unexpected write');
+          return (await fetch(url, { method: 'POST', body: JSON.stringify(body), headers: { 'Content-Type': 'application/json' } })).json();
+        }, raw: (url, options) => fetch(url, options), get: async (url, options) => { const response = await fetch(url, options); if (!response.ok) throw new Error('当前来源不可读'); return response.json(); } };
         window.PortalNav = { personalAssistantTarget: async () => ({ resident_id: 'resident_444444444444' }) };
         window.PortalChatWorkspace = { panelPackage: { create: ({ root }) => { root.textContent = 'Chat（隔离测试）'; return { setPresented() {}, destroy() {} }; } } };
         window.controller = PortalHomeDialogue.connect({ root: document.querySelector('#root'), context: { currentUserReady: Promise.resolve() } });
@@ -120,6 +132,33 @@ const server = http.createServer((req, res) => {
     await page.locator('.portalFilePreviewFailure').waitFor();
     assert.equal(await page.locator('.portalFileDocument:visible').count(), 0, 'denial never renders resource content');
     assert((await page.locator('.portalFilePreviewFailure').innerText()).includes('当前账号未获准读取这个文件'));
+    // The shared favorites owner: search star -> persistence -> My Favorite -> real Preview.
+    deny = false;
+    await prepare(); await search();
+    const star = page.locator('#portalCommandList [data-resource-favorite="thinking_222222222222"] button');
+    await star.click();
+    await page.waitForFunction(() => document.querySelector('#portalCommandList [data-resource-favorite="thinking_222222222222"] button')?.getAttribute('aria-pressed') === 'true');
+    assert.equal(await page.locator('#portalCommandOverlay').isVisible(), true, 'star does not navigate');
+    await prepare(); // reload, without seeding browser favorite state
+    await page.evaluate(() => {
+      const root = document.createElement('aside'); root.dataset.resourceFavorites = ''; root.style.cssText = 'position:absolute;left:16px;top:16px;width:260px;background:white;z-index:10';
+      document.body.append(root);
+    });
+    const saved = page.locator('[data-resource-favorites] .resourceFavoriteOpen');
+    await saved.waitFor();
+    assert((await saved.innerText()).includes(records[1].title));
+    await saved.click();
+    await page.waitForFunction(() => [...document.querySelectorAll('.portalFileDocument')].some(n => n.getClientRects().length && n.textContent.includes('thinking_222222222222')));
+    const previewStar = page.locator('.portalPreviewFavorite button');
+    await previewStar.waitFor();
+    assert.equal(await previewStar.getAttribute('aria-pressed'), 'true');
+    if (output) await page.screenshot({ path: path.join(output, 'resource-favorites-preview.png') });
+    await previewStar.click();
+    await page.waitForFunction(() => !document.querySelector('[data-resource-favorites] .resourceFavoriteOpen'));
+    assert.equal(favorites.size, 0, 'unfavorite propagates to sidebar and server');
+    // Without a Preview host, the bookmark opens the authorized resource detail URL.
+    await page.evaluate(() => controller.destroy());
+    await Promise.all([page.waitForURL('**/destination/thinking_111111111111'), page.evaluate(() => PortalResourceFavorites.open('thinking_111111111111'))]);
     assert.deepEqual(errors, []);
     console.log('PASS right-click target, menu stacking/Escape, actual resource content in second Preview tab, click/Enter, navigation-only and denied read');
   } finally { await browser.close(); await new Promise(resolve => server.close(resolve)); }

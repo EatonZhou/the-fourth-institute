@@ -239,7 +239,21 @@ body[data-resource-detail-embedded] > #archiveModal {
   transform: translateY(-2px);
 }
 
+.knowledgeCardHeading {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.knowledgeFavoriteSlot {
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+}
+
 .cardTitle {
+  flex: 1;
   min-width: 0;
   display: -webkit-box;
   -webkit-box-orient: vertical;
@@ -248,7 +262,7 @@ body[data-resource-detail-embedded] > #archiveModal {
   overflow-wrap: anywhere;
   word-break: break-word;
   font-size: 14px;
-  margin: 0 0 6px;
+  margin: 0;
   line-height: 1.25;
   font-weight: 600;
 }

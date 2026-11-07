@@ -128,6 +128,23 @@ class ResourceHttp:
         except Exception as exc:
             return self.resource_error(request, exc)
 
+    def favorites(self, request, parsed, actor):
+        from management_portal import resource_favorites
+        try:
+            return self.respond(request, 200, resource_favorites.list_favorites(actor, self.reference_payload))
+        except Exception as exc:
+            return self.resource_error(request, exc)
+
+    def favorite(self, request, parsed, actor):
+        from management_portal import resource_favorites
+        try:
+            payload = self.read_json(request)
+            return self.respond(request, 200, resource_favorites.set_favorite(
+                actor, payload.get('address'), payload.get('favorite'), self.reference_payload,
+            ))
+        except Exception as exc:
+            return self.resource_error(request, exc)
+
     def content(self, request, parsed, actor):
         qs = parse_qs(parsed.query)
         address = str((qs.get('address') or [''])[0]).strip()
@@ -250,6 +267,8 @@ class ResourceHttp:
             principal_route("GET", "/api/resources/capabilities", self.capabilities, "portal-resources"),
             principal_route("GET", "/api/resources/resolve", self.resolve, "portal-resources"),
             principal_route("GET", "/api/resources/reference", self.reference, "portal-resources"),
+            principal_route("GET", "/api/resources/favorites", self.favorites, "portal-resources"),
+            principal_route("POST", "/api/resources/favorites", self.favorite, "portal-resources-post"),
             principal_route("GET", "/api/resources/content", self.content, "portal-resources"),
             RouteDefinition("GET", "/resource/knowledge", self.knowledge_page, "portal-pages-get", page=True),
             RouteDefinition("GET", "/resource/knowledge/", self.knowledge_page, "portal-pages-get", page=True),

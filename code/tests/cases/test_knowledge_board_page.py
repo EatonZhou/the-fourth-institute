@@ -46,6 +46,7 @@ def test_page_loads_its_parts_before_the_root_script():
     "knowledge_detail_graph_budget.cjs",
     "knowledge_search_card.cjs",
     "knowledge_collection_return.cjs",
+    "knowledge_favorites.cjs",
     "resource_return_layout.cjs",
 ])
 def test_board_scripts_pass_their_node_checks(script):

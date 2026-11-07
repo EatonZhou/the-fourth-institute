@@ -151,7 +151,7 @@
       const content = state.favoriteLoadError
         ? consoleStateHtml("收藏加载失败，请点击刷新重试。", { state: "error" })
         : favoriteResidentGroups().map(renderFavoriteResidentGroup).join("");
-      root.innerHTML = window.PortalI18n.html`<div class="agentList favoriteAgentList">${residentNavigationShortcutsHtml()}${content}</div>`;
+      root.innerHTML = window.PortalI18n.html`<div class="agentList favoriteAgentList">${residentNavigationShortcutsHtml()}<div data-resource-favorites></div>${content}</div>`;
       renderActivityRecentRail();
       root.querySelectorAll("[data-favorite-toggle]").forEach(btn => {
         btn.addEventListener("click", event => {

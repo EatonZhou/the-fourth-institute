@@ -245,14 +245,14 @@
       return;
     }
     list.innerHTML = items.map((item, idx) => window.PortalI18n.html`
-      <button class="portalCommandItem ${idx === state.selected ? "active" : ""}" type="button" data-command-index="${idx}">
+      <div class="portalCommandRow"><button class="portalCommandItem ${idx === state.selected ? "active" : ""}" type="button" data-command-index="${idx}">
         <span class="portalCommandKind">${esc(item.kind)}</span>
         <span class="portalCommandBody">
           <span class="portalCommandTitle">${esc(item.title)}</span>
           <span class="portalCommandSub">${esc(item.subtitle || item.id)}</span>
         </span>
         <span class="portalCommandShortcut">${idx === state.selected ? "Enter" : ""}</span>
-      </button>
+      </button><span data-resource-favorite="${esc(item.address)}"></span></div>
     `).join("");
     list.querySelectorAll("[data-command-index]").forEach(btn => {
       const item = items[Number(btn.dataset.commandIndex || 0)];
