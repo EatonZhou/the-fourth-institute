@@ -9,10 +9,14 @@
   display: none !important;
 }
 
+/* Inside a Workbench panel the host decides the height. The standalone page floor (660px shell,
+   300px canvas) would push the component shelf below the host's clipped edge, so the canvas
+   shrinks first and, once it reaches its own floor, the pane scrolls to keep the shelf reachable. */
 :scope .agentLineageShell {
   width: 100%;
   height: 100%;
   min-width: 0 !important;
+  min-height: 0;
   margin: 0;
 }
 
@@ -22,6 +26,12 @@
   border: 0;
   border-radius: 0;
   box-shadow: none;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+:scope .hatgViewport {
+  min-height: 160px;
 }
 
 .agentLineageShell {
