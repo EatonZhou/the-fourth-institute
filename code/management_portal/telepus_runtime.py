@@ -1,4 +1,4 @@
-"""Control the three user services that make up the optional Telepus bridge."""
+"""Control the two user services that make up the optional Telepus bridge."""
 from __future__ import annotations
 
 import subprocess
@@ -11,7 +11,6 @@ from management_common.operation_errors import OperationError
 # The bridge's logical unit names; an isolated installation runs them with its
 # service prefix (``tfi-<instance>-telepus-...``, scripts/portal_service_units.py).
 UNITS = (
-    "telepus-breakglass-worker.service",
     "telepus-portal-refresh.service",
     "telepus-telegram-router.service",
 )

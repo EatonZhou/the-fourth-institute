@@ -80,6 +80,46 @@ def provision_session(username: str) -> threading.Thread | None:
     return thread
 
 
+def personal_assistant_target(username: str) -> dict[str, str]:
+    """The User's personal assistant facade, checked the way the page checks it.
+
+    Reads the User's personal-assistant entry and confirms, as the User, that
+    the facade is readable and belongs to the entry's Lineage; {} when the
+    assistant is not ready. A missing entry gets the same idempotent setup the
+    pages run, at most once per SESSION_RETRY_SECONDS for each User.
+    """
+    from . import isa_client
+    from .society_service.personal_assistant import NAMESPACE as assistant_namespace
+    from .portal_ui_state import get_portal_ui_state_store
+
+    store = get_portal_ui_state_store()
+    entry = store.get(username, assistant_namespace, KEY)
+    if entry is None:
+        now = time.monotonic()
+        with _session_lock:
+            if not username or now < _session_next_attempt.get(username, 0.0):
+                return {}
+            _session_next_attempt[username] = now + SESSION_RETRY_SECONDS
+        if "error" in provision_account(username):
+            return {}
+        entry = store.get(username, assistant_namespace, KEY)
+        if entry is None:
+            return {}
+    value = entry.get("value") if isinstance(entry.get("value"), dict) else {}
+    resident_id = str(value.get("resident_id") or "")
+    lineage_id = str(value.get("lineage_id") or "")
+    if not resident_id.startswith("resident_") or not lineage_id.startswith("lineage_"):
+        return {}
+    try:
+        resident = isa_client.call(username, "GetResident", {"resident_id": resident_id}).get("resident") or {}
+    except Exception:  # noqa: BLE001 - an unreadable facade is an unavailable entry
+        return {}
+    if str(resident.get("lineage_id") or "") != lineage_id:
+        return {}
+    return {"resident_id": resident_id, "lineage_id": lineage_id,
+            "family_id": str(value.get("family_id") or ""), "title": str(resident.get("lineage_title") or "")}
+
+
 def _provision_session(username: str) -> None:
     from .society_service.personal_assistant import NAMESPACE as assistant_namespace
     from .portal_ui_state import get_portal_ui_state_store

@@ -40,7 +40,7 @@ def test_telepus_switch_requires_admin_and_uses_feature_runtime(enabled_runtime,
     from tests.cases.instance_test_support import select_instance
     instance = select_instance(monkeypatch, tmp_path / 'instance')
     document = instance.document
-    document['services']['components'] += ['telepus-breakglass-worker', 'telepus-portal-refresh', 'telepus-telegram-router']
+    document['services']['components'] += ['telepus-portal-refresh', 'telepus-telegram-router']
     (instance.root / 'instance.json').write_text(json.dumps(document))
 
     observed = []

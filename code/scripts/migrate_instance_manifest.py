@@ -85,8 +85,6 @@ def conversion_site(root: Path, *, gateway_network: Path | None = None, programs
     if functional:
         fields = {
             'TELEPUS_DATABASE_SCHEMA': 'database_schema',
-            'TELEPUS_BREAKGLASS_LEASE_SECONDS': 'breakglass_lease_seconds',
-            'TELEPUS_BREAKGLASS_INITIAL_CODEX_SESSION_ID': 'breakglass_initial_codex_session_id',
             'TELEPUS_TELEGRAM_UPLOAD_INTERFACE': 'telegram_upload_interface',
         }
         collected = {}
