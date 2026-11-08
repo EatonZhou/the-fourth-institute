@@ -233,9 +233,9 @@ test("a new page draws the assistant next to Mailbox from the last confirmed tar
   root = app.page();
   assert.equal(trigger(root).hidden, false, "drawn while the page's own request is still open");
   assert.equal(root.dataset.hasAssistant, "true");
-  assert.equal(trigger(root).dataset.portalTooltip, "我的私人助手");
+  assert.equal(trigger(root).dataset.portalTooltip, "我的私人助手 · 按住拖动到左侧或右侧");
   await app.answer({ ...target, title: "改名后的个人空间" });
-  assert.equal(trigger(root).dataset.portalTooltip, "改名后的个人空间");
+  assert.equal(trigger(root).dataset.portalTooltip, "改名后的个人空间 · 按住拖动到左侧或右侧");
   app.switchUser("someone-else");
   root = app.page();
   assert.equal(trigger(root).hidden, true, "another user of this browser never sees it");

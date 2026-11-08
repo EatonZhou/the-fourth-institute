@@ -1,6 +1,14 @@
 /* Shared components: the global conversation index (agent inbox), the personal assistant trigger
    and Mailbox todos. Pages load this file right after portal_components_resource_chips.css. */
 /* Global user conversation index. The closed footprint stays on the viewport edge. */
+body.portalAgentInboxMounted {
+  --portal-agent-inbox-left-clearance: 0px;
+  --portal-agent-inbox-right-clearance: 50px;
+}
+body.portalAgentInboxMounted:has(> .portalAgentInbox[data-dock-side="left"]) {
+  --portal-agent-inbox-left-clearance: 50px;
+  --portal-agent-inbox-right-clearance: 0px;
+}
 .portalAgentInbox {
   position: fixed;
   z-index: calc(var(--portal-layer-popover, 400) - 10);
@@ -12,6 +20,11 @@
   color: var(--text, #111827);
   font-family: inherit;
   pointer-events: none;
+}
+
+.portalAgentInbox[data-dock-side="left"] {
+  left: 0;
+  right: auto;
 }
 
 .portalAgentInboxTrigger {
@@ -91,7 +104,7 @@
   position: absolute;
   top: auto;
   bottom: 0;
-  right: 42px;
+  right: 100%;
   display: grid;
   width: min(332px, calc(100vw - 54px));
   height: min(640px, var(--portal-agent-inbox-panel-max-height, calc(100vh - 104px)));
@@ -149,6 +162,27 @@
   background: color-mix(in srgb, var(--accent, #2563eb) 26%, var(--panel, #fff));
 }
 .portalPersonalAssistantTrigger[hidden], [data-personal-assistant-unread][hidden] { display: none; }
+.portalAgentInbox[data-dock-side="left"] .portalAgentInboxTrigger {
+  border-left: 0;
+  border-right: 1px solid color-mix(in srgb, var(--border, #cbd5e1) 88%, transparent);
+  border-radius: 0 7px 7px 0;
+  box-shadow: 4px 6px 18px color-mix(in srgb, #0b1020 12%, transparent);
+}
+.portalAgentInbox[data-dock-side="left"][data-has-assistant="true"] {
+  border-radius: 0 7px 7px 0;
+  box-shadow: 4px 6px 18px color-mix(in srgb, #0b1020 12%, transparent);
+}
+.portalAgentInbox[data-dock-side="left"][data-has-assistant="true"] .portalAgentInboxTrigger { box-shadow: none; }
+.portalAgentInbox[data-dock-side="left"][data-has-assistant="true"] [data-agent-conversation-trigger] { border-radius: 0 7px 0 0; }
+.portalAgentInbox[data-dock-side="left"] .portalPersonalAssistantTrigger { border-radius: 0 0 7px 0; }
+@media (min-width: 641px) {
+  .portalAgentInbox[data-dock-side="left"] .portalAgentInboxPanel {
+    left: 100%;
+    right: auto;
+    border-radius: 0 8px 8px 0;
+    transform: translateX(-10px);
+  }
+}
 .portalPersonalAssistantTrigger > .portalAgentInboxUnreadDot { position: absolute; top: 5px; right: 5px; }
 .portalPersonalAssistantPanel {
   width: min(520px, calc(100vw - 50px));

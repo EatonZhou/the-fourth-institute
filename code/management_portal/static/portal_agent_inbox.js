@@ -19,6 +19,7 @@
     longPress: null,
     suppressEntryClickUntil: 0,
     verticalRatio: null,
+    dockSide: "right",
     dragging: false,
     suppressTriggerClickUntil: 0,
     suppressHoverUntil: 0,
@@ -59,14 +60,14 @@
     return Number.isFinite(ratio) ? clamp(ratio, 0, 1) : null;
   }
 
-  function persistVerticalRatio() {
+  function persistPosition() {
     if (Number.isFinite(state.verticalRatio)) {
-      window.PortalState?.write?.(POSITION_PAGE, "device", { verticalRatio: clamp(state.verticalRatio, 0, 1), section: state.filter });
+      window.PortalState?.write?.(POSITION_PAGE, "device", { verticalRatio: clamp(state.verticalRatio, 0, 1), dockSide: state.dockSide, section: state.filter });
     }
   }
 
   function verticalBounds() {
-    const height = state.assistant ? TRIGGER_HEIGHT * 2 : TRIGGER_HEIGHT;
+    const height = root?.getBoundingClientRect().height || (state.assistant ? TRIGGER_HEIGHT * 2 : TRIGGER_HEIGHT);
     const viewportHeight = Math.max(height + VIEWPORT_GAP * 2, window.innerHeight || 0);
     const header = document.querySelector(".portalSiteHeader, [data-portal-site-header]");
     const headerBottom = Math.max(0, Number(header?.getBoundingClientRect?.().bottom || 0));
@@ -133,7 +134,7 @@
     const trigger = root.querySelector("[data-personal-assistant-trigger]");
     trigger.hidden = !target;
     if (target) {
-      trigger.dataset.portalTooltip = target.title;
+      trigger.dataset.portalTooltip = `${target.title} · 按住拖动到左侧或右侧`;
       trigger.dataset.portalTooltipSource = "explicit";
       delete trigger.dataset.portalGeneratedTooltip;
     }
@@ -295,9 +296,19 @@
     let gesture = null;
     const finish = event => {
       if (!gesture || event.pointerId !== gesture.pointerId) return;
-      const moved = gesture.moved;
+      const { moved, originalRatio } = gesture;
+      const cancelled = event.type !== "pointerup";
+      if (moved && !cancelled) {
+        const rect = root.getBoundingClientRect();
+        state.dockSide = rect.left + rect.width / 2 < window.innerWidth / 2 ? "left" : "right";
+      } else if (cancelled) {
+        state.verticalRatio = originalRatio;
+      }
       gesture = null;
       state.dragging = false;
+      root.dataset.dockSide = state.dockSide;
+      root.style.removeProperty("left");
+      root.style.removeProperty("right");
       root?.removeAttribute("data-dragging");
       if (trigger.hasPointerCapture?.(event.pointerId)) trigger.releasePointerCapture(event.pointerId);
       if (moved) {
@@ -308,7 +319,7 @@
         state.suppressTriggerClickUntil = until;
         state.suppressHoverUntil = until;
         if (document.activeElement === trigger) trigger.blur();
-        persistVerticalRatio();
+        if (!cancelled) persistPosition();
         applyVerticalPosition();
       } else {
         state.hovered = event.pointerType !== "touch" && Boolean(root?.matches(":hover"));
@@ -316,13 +327,15 @@
       updateChrome();
     };
     trigger.addEventListener("pointerdown", event => {
-      if (event.isPrimary === false || (event.pointerType === "mouse" && event.button !== 0)) return;
-      const bounds = verticalBounds();
+      if (state.dragging || event.isPrimary === false || (event.pointerType === "mouse" && event.button !== 0)) return;
+      const rect = root.getBoundingClientRect();
       gesture = {
         pointerId: event.pointerId,
+        startX: event.clientX,
         startY: event.clientY,
-        startTop: Number(root?.getBoundingClientRect?.().top || defaultVerticalTop(bounds)),
-        bounds,
+        startLeft: rect.left,
+        startTop: rect.top,
+        originalRatio: state.verticalRatio,
         moved: false,
       };
       state.dragging = true;
@@ -333,16 +346,22 @@
     }, { signal });
     trigger.addEventListener("pointermove", event => {
       if (!gesture || event.pointerId !== gesture.pointerId) return;
-      const delta = event.clientY - gesture.startY;
-      if (!gesture.moved && Math.abs(delta) < 4) return;
+      const deltaX = event.clientX - gesture.startX;
+      const deltaY = event.clientY - gesture.startY;
+      if (!gesture.moved && Math.hypot(deltaX, deltaY) < 4) return;
       gesture.moved = true;
-      const top = clamp(gesture.startTop + delta, gesture.bounds.minimum, gesture.bounds.maximum);
-      state.verticalRatio = (top - gesture.bounds.minimum) / Math.max(1, gesture.bounds.maximum - gesture.bounds.minimum);
+      const bounds = verticalBounds();
+      const top = clamp(gesture.startTop + deltaY, bounds.minimum, bounds.maximum);
+      const maxLeft = Math.max(0, window.innerWidth - root.getBoundingClientRect().width);
+      root.style.left = `${clamp(gesture.startLeft + deltaX, 0, maxLeft)}px`;
+      root.style.right = "auto";
+      state.verticalRatio = (top - bounds.minimum) / Math.max(1, bounds.maximum - bounds.minimum);
       applyVerticalPosition();
       event.preventDefault();
     }, { signal });
     trigger.addEventListener("pointerup", finish, { signal });
     trigger.addEventListener("pointercancel", finish, { signal });
+    trigger.addEventListener("lostpointercapture", finish, { signal });
   }
 
   const esc = value => window.PortalUIPrimitives.escapeHtml(value);
@@ -741,7 +760,7 @@
     root.dataset.portalAgentInbox = "1";
     root.dataset.expanded = "false";
     root.setAttribute("aria-label", window.PortalI18n.t("我的 Mailbox"));
-    root.innerHTML = window.PortalI18n.html`<button class="portalAgentInboxTrigger" type="button" data-agent-conversation-trigger aria-label="展开我的 Mailbox" aria-expanded="false" title="我的 Mailbox · 按住可上下拖动" data-portal-tooltip="我的 Mailbox · 按住可上下拖动" data-portal-icon="chat-room"><span class="portalAgentInboxTriggerCount" data-agent-conversation-count hidden></span></button>
+    root.innerHTML = window.PortalI18n.html`<button class="portalAgentInboxTrigger" type="button" data-agent-conversation-trigger aria-label="展开我的 Mailbox" aria-expanded="false" title="我的 Mailbox · 按住拖动到左侧或右侧" data-portal-tooltip="我的 Mailbox · 按住拖动到左侧或右侧" data-portal-icon="chat-room"><span class="portalAgentInboxTriggerCount" data-agent-conversation-count hidden></span></button>
       <section class="portalAgentInboxPanel" aria-label="我的 Mailbox"><header><strong>Mailbox</strong><span class="portalAgentInboxHeaderCount" data-agent-conversation-count hidden></span><span class="portalAgentInboxHeaderSummary" data-agent-conversation-action-summary>0 条</span><button class="portalAgentInboxHeaderAction" type="button" data-agent-conversation-clear-unread title="保留消息，只清除未读状态">清除未读</button><button class="portalAgentInboxHeaderAction" type="button" data-agent-conversation-clear-all title="清除当前列表；有新活动时会重新出现">清除全部</button><button type="button" data-agent-conversation-refresh aria-label="刷新 Mailbox" title="刷新" data-portal-icon="refresh"></button></header>
       <div class="portalAgentInboxFilters" role="group" aria-label="Mailbox 栏目"><button type="button" data-agent-inbox-filter="messages" aria-pressed="true">消息 <span data-agent-section-count hidden></span></button><button type="button" data-agent-inbox-filter="todo" aria-pressed="false">Todo <span data-agent-section-count hidden></span></button></div>
       <div class="portalMailboxTodos" data-mailbox-todos hidden></div>
@@ -755,7 +774,10 @@
     document.body.classList.add("portalAgentInboxMounted");
     window.PortalUIPrimitives?.mountIcons?.(root);
     state.verticalRatio = readVerticalRatio();
-    const savedSection = window.PortalState?.read?.(POSITION_PAGE, "device", {})?.section;
+    const savedPosition = window.PortalState?.read?.(POSITION_PAGE, "device", {}) || {};
+    state.dockSide = savedPosition.dockSide === "left" ? "left" : "right";
+    root.dataset.dockSide = state.dockSide;
+    const savedSection = savedPosition.section;
     state.filter = savedSection === "todo" ? "todo" : "messages";
     showAssistant(cachedAssistant());
     applyVerticalPosition();
@@ -899,7 +921,7 @@
       if (filterButton) {
         state.filter = filterButton.dataset.agentInboxFilter;
         closeConversationMenu();
-        window.PortalState?.write?.(POSITION_PAGE, "device", {section: state.filter, ...(Number.isFinite(state.verticalRatio) ? {verticalRatio: state.verticalRatio} : {})});
+        persistPosition();
         renderList();
         return;
       }

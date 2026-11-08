@@ -7,9 +7,8 @@
 .wallWorkspaceViews, .wallWorkspaceView { display: flex; flex-direction: column; min-width: 0; min-height: 0; overflow: hidden; }
 .wallWorkspaceView { flex: 1; overflow-y: auto; }
 .wallWorkspaceView > .wallToolbar { flex: none; }
-/* The launcher may move vertically. Keep card actions clear along the entire
-   right edge, including in an embedded or narrow development view. */
-body:has(.portalAgentInbox:not([hidden])) .wallWorkspaceView { padding-right: 50px; }
+/* The shared launcher owns its edge clearance on both sides. */
+.wallWorkspaceView { padding-left: var(--portal-agent-inbox-left-clearance, 0px); padding-right: var(--portal-agent-inbox-right-clearance, 0px); }
 .wallWorkspaceView > .wallToolbar { border-bottom: 1px solid var(--border); background: var(--panel); }
 @media (max-width: 640px) { .wallWorkspace { gap: 6px; } }
 .wallToolbar { padding: 10px 18px 12px; display: grid; gap: 10px; }
