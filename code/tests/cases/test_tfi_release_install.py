@@ -180,7 +180,7 @@ def creation(host, tmp_path, monkeypatch):
                         lambda instance, sql: calls.append(("import", sql.read_text())))
     monkeypatch.setattr(installer, "initialize_features",
                         lambda instance, path, manifest, evidence=None: {"work_dispatched": False})
-    monkeypatch.setattr(instance_services, "install_definitions", lambda instance: calls.append(("define",)))
+    monkeypatch.setattr(instance_services, "install_definitions", lambda instance, selected_components=None: calls.append(("define",)))
     monkeypatch.setattr(instance_services, "controller", lambda instance: control)
     monkeypatch.setattr(instance_services, "wait_database", lambda instance: None)
     monkeypatch.setattr(instance_services, "lifecycle",
@@ -293,6 +293,34 @@ def test_retire_cleanup_failure_keeps_registry_and_database_for_retry(creation, 
     assert host_instances.find('accept_tmp').root == instance.root
     assert instance.root.exists()
     assert events == ['postgres-start', 'postgres-stop']
+
+
+def test_retire_retained_database_restores_only_its_service_definition(creation, monkeypatch):
+    installer.create(creation.engineering, name='accept_tmp', postgres=creation.postgres,
+                     skip_file_verification=True)
+    instance = host_instances.find('accept_tmp')
+    instance.directory('database').mkdir(parents=True, exist_ok=True)
+    (instance.directory('database') / 'PG_VERSION').write_text('16')
+    events = []
+    defined = set()  # Program-only uninstall removed the definitions.
+    def define(inst, selected_components):
+        assert inst.root == instance.root
+        assert selected_components == ('postgres',)
+        defined.update(selected_components)
+        events.append('define')
+    def start(unit):
+        assert 'postgres' in defined
+        events.append('start')
+    monkeypatch.setattr(instance_services, 'install_definitions', define)
+    monkeypatch.setattr(instance_services, 'controller', lambda _: SimpleNamespace(
+        start=start, stop=lambda _: events.append('stop')))
+    monkeypatch.setattr(instance_services, 'wait_database', lambda _: events.append('ready'))
+    monkeypatch.setattr(installer, 'code_child', lambda *a: events.append('cleanup') or '{"external_owned_deleted":[]}')
+    monkeypatch.setattr(instance_services, 'remove_definitions', lambda _: events.append('remove') or [])
+    installer.retire(instance)
+    assert events == ['define', 'start', 'ready', 'cleanup', 'stop', 'remove']
+    assert not instance.root.exists()
+    assert instance.name not in host_instances.read_registry()
 
 
 def test_retire_partial_file_failure_preserves_registration_and_manifest(creation,monkeypatch):

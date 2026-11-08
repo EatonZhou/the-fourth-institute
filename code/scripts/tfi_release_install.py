@@ -697,6 +697,10 @@ def retire(instance, *, delete_external_areas=False):
     # directories are removed. Occupied files keep the instance for retry.
     external_owned = {'external_owned_deleted': []}
     if (instance.directory('database') / 'PG_VERSION').is_file():
+        # A program-only uninstall removes service definitions while retaining
+        # instance data. Retirement still needs its database to clean owned
+        # external directories; restore only that stopped component.
+        instance_services.install_definitions(instance, ('postgres',))
         controller = instance_services.controller(instance)
         postgres_unit = instance_services.unit_name(instance, 'postgres')
         controller.start(postgres_unit)
