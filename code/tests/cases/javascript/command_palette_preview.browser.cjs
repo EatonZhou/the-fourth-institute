@@ -13,11 +13,12 @@ const scripts = ['portal_state.js', 'portal_page_state.js', 'portal_text.js', 'p
   ...groups['portal-workspace-surface'].map(x => x.replace('/static/', '')),
   'portal_agent_preview_source.js', 'markdown.js', 'portal_display_protocol.js',
   'home_dialogue_state.js', 'portal_file_preview.js', 'home_dialogue.js', 'portal_command_palette.js', 'portal_resource_favorites.js',
-  'lineage_workbench_sidebar_favorites.js'];
-const css = [...fs.readFileSync(path.join(root, 'index.html'), 'utf8').matchAll(/href="(\/static\/[^"?]+\.css)"/g)].map(x => x[1]);
+  'portal_navigation.js', 'lineage_workbench_sidebar_favorites.js'];
+const css = [...fs.readFileSync(path.join(root, process.env.FAVORITES_LAYOUT_ONLY ? 'lineage.html' : 'index.html'), 'utf8').matchAll(/href="(\/static\/[^"?]+\.css)"/g)].map(x => x[1]);
+if (process.env.FAVORITES_LAYOUT_ONLY) css.push('/static/home_dialogue.css');
 const records = [
   { resource_id: 'thinking_111111111111', title: '第一条检索结果' },
-  { resource_id: 'thinking_222222222222', title: '第二条检索结果：在 Preview 打开' },
+  { resource_id: 'thinking_222222222222', title: '第二条检索结果：面向多场景协作的知识整理与文件浏览设计，长中文标题在窄侧栏中仍然可以阅读' },
   { resource_id: 'resident_333333333333', title: '仅导航的 Resident' },
 ].map(r => ({ ...r, resource_type: r.resource_id.split('_')[0], address: r.resource_id,
   summary: '隔离测试数据，不读取真实用户资源', url: '/destination/' + r.resource_id,
@@ -101,6 +102,7 @@ const server = http.createServer((req, res) => {
     };
     const menu = page.locator('[data-preview-file-action="new-tab"]');
     const tabs = page.locator('.homeDialoguePreview [data-portal-document-tab]');
+    if (!process.env.FAVORITES_LAYOUT_ONLY) {
     await prepare();
     await page.evaluate(address => PortalPreview.request({ resourceAddress: address }), records[0].address);
     await page.waitForFunction(() => [...document.querySelectorAll('.portalFileDocument')].some(n => n.textContent.includes('预览正文来自所选资源')))
@@ -142,6 +144,7 @@ const server = http.createServer((req, res) => {
     await page.locator('.portalFilePreviewFailure').waitFor();
     assert.equal(await page.locator('.portalFileDocument:visible').count(), 0, 'denial never renders resource content');
     assert((await page.locator('.portalFilePreviewFailure').innerText()).includes('当前账号未获准读取这个文件'));
+    }
     // The shared favorites owner: search star -> persistence -> My Favorite -> real Preview.
     deny = false;
     const retained = [records[2].address, ...extraFavorites.map(r => r.address)];
@@ -153,24 +156,28 @@ const server = http.createServer((req, res) => {
     await page.waitForFunction(() => document.querySelector('#portalCommandList [data-resource-favorite="thinking_222222222222"] button')?.getAttribute('aria-pressed') === 'true');
     assert.equal(await page.locator('#portalCommandOverlay').isVisible(), true, 'star does not navigate');
     await prepare(); // reload, without seeding browser favorite state
-    await page.addStyleTag({path: path.join(root, 'static/lineage_workbench.css')});
+    if (!process.env.FAVORITES_LAYOUT_ONLY) await page.addStyleTag({path: path.join(root, 'static/lineage_workbench.css')});
     await page.evaluate(() => {
-      const root = document.createElement('aside'); root.id = 'favoriteAgentList'; root.style.cssText = 'position:absolute;left:16px;top:16px;width:300px;background:var(--surface,#fff);z-index:10';
+      // Use the production Navigation pane, header, scroll container and favorites controller.
+      const root = document.createElement('aside'); root.id = 'navigationHost';
+      root.style.cssText = 'position:absolute;left:16px;top:16px;width:310px;height:calc(100vh - 32px);z-index:10';
       document.body.append(root);
+      document.querySelector('#root').style.marginLeft = '342px';
+      window.navigation = PortalNavigation.mount({ root, variant: 'lineage', activeView: 'favorites' });
       const factory = PortalLineageWorkbenchSidebarFavorites;
       const dependencies = Object.fromEntries(factory.dependencies.map(name => [name, () => {}]));
       window.PortalPrincipalNavigation = { projectGroups: () => [{ title: '示例项目' }] };
       Object.assign(dependencies, { $id: id => document.getElementById(id), esc: x => x,
-        state: { favoriteAgentIds: new Set(['project:示例项目']), favoriteStatuses: {}, favoriteGroups: {} },
+        state: { favoriteAgentIds: new Set(['project:示例项目']), favoriteStatuses: {}, favoriteGroups: {favorite_lineage: false} },
         lineageSidebarRoots: () => [], projectFavoriteSelectionId: () => 'project:示例项目', isFavoriteAgent: () => true,
-        residentNavigationShortcutsHtml: () => '',
+        residentNavigationShortcutsHtml: () => '<div class="whichResidentWrap"><div class="agentItem"><div class="agentSelect"><span class="agentMain"><span class="agentTitle">Which Resident</span><span class="agentMeta">Resident</span></span></div></div></div><div class="agentItem personalAssistantResident active"><div class="agentSelect"><span class="agentMain"><span class="agentTitle">Ask Me Anything | My Lineage</span><span class="agentMeta">Resident</span></span></div></div>',
         projectCardHtml: () => '<div class="agentItem">示例项目</div>' });
       factory.createSidebarFavorites(dependencies).renderFavoriteList();
     });
     const entries = page.locator('[data-resource-favorites] .resourceFavoriteOpen');
     await page.waitForFunction(() => document.querySelectorAll('[data-resource-favorites] .resourceFavoriteOpen').length === 3);
     assert.equal(await page.locator('[data-resource-favorite-count]').innerText(), '3');
-    assert.deepEqual(await page.locator('#favoriteAgentList .residentGroupName').allTextContents(), ['Projects 与 Lineages', 'Knowledge']);
+    assert.deepEqual(await page.locator('#favoriteAgentList .favoriteGroupName').allTextContents(), ['Projects 与 Lineages', 'Knowledge']);
     assert.equal(await entries.filter({hasText: 'decision_aaaaaaaaaaaa'}).isDisabled(), true, 'revoked knowledge can still be removed');
     assert.equal(await entries.filter({hasText: '知识条目附属文件'}).count(), 1, 'nested knowledge file follows root identity');
     assert.equal(await entries.filter({hasText: '工作区文件'}).count(), 0);
@@ -178,6 +185,49 @@ const server = http.createServer((req, res) => {
     const saved = entries.filter({hasText: records[1].title});
     await saved.waitFor();
     assert((await saved.innerText()).includes(records[1].title));
+    // Narrow Navigation and browser-layout scaling: no min-content expansion or clipped controls.
+    // CSS zoom is explicit test scaling, not an assertion about the user's browser preference.
+    for (const width of [310, 220]) for (const scale of [1, 1.25, 1.5]) {
+      await page.evaluate(({width, scale}) => {
+        document.body.style.zoom = scale;
+        document.querySelector('#navigationHost').style.width = width + 'px';
+        document.querySelector('#navigationHost').style.height = `calc(100vh / ${scale} - 32px)`;
+      }, {width, scale});
+      const geometry = await page.locator('#favoriteAgentList').evaluate(root => {
+        const bounds = root.getBoundingClientRect();
+        const title = root.querySelector('.resourceFavoriteTitle');
+        const text = getComputedStyle(title);
+        const headings = [...root.querySelectorAll('.favoriteGroupHead')].map(n => n.getBoundingClientRect());
+        return {
+          width: root.clientWidth, scroll: root.scrollWidth,
+          titleFont: parseFloat(text.fontSize), residentFont: parseFloat(getComputedStyle(root.querySelector('.agentTitle')).fontSize),
+          multiline: title.getBoundingClientRect().height > parseFloat(text.lineHeight) * Number(document.body.style.zoom) * 1.5,
+          groupGap: headings[1].top - headings[0].bottom,
+          controlsFit: [...root.querySelectorAll('.resourceFavoriteButton')].every(n => {
+            const r = n.getBoundingClientRect(); return r.width >= 28 && r.left >= bounds.left && r.right <= bounds.right;
+          }),
+        };
+      });
+      assert(geometry.scroll <= geometry.width + 1, JSON.stringify({width, scale, geometry}));
+      assert.equal(geometry.titleFont, geometry.residentFont, 'knowledge and resident titles share font scale');
+      assert(geometry.multiline && geometry.controlsFit && geometry.groupGap >= 12, JSON.stringify(geometry));
+      const summary = page.locator('.resourceFavorites > summary');
+      await summary.click(); assert.equal(await saved.isVisible(), false, 'Knowledge collapses');
+      await summary.focus(); await page.keyboard.press('Enter'); assert.equal(await saved.isVisible(), true, 'keyboard reopens Knowledge');
+      if (output && scale === 1.5 && width === 220) await page.screenshot({path: path.join(output, 'favorites-narrow-150.png')});
+    }
+    await page.evaluate(() => {
+      document.body.style.zoom = '';
+      document.querySelector('#navigationHost').style.width = '310px';
+      document.querySelector('#navigationHost').style.height = 'calc(100vh - 32px)';
+    });
+    const projects = page.locator('[data-favorite-toggle="favorite_lineage"]');
+    await projects.click();
+    assert.equal(await projects.getAttribute('aria-expanded'), 'true');
+    assert.equal(await page.locator('[data-favorite-group] .favoriteGroupBody').isVisible(), true);
+    await projects.click();
+    assert.equal(await projects.getAttribute('aria-expanded'), 'false');
+    await saved.waitFor();
     await saved.click();
     await page.waitForFunction(() => [...document.querySelectorAll('.portalFileDocument')].some(n => n.getClientRects().length && n.textContent.includes('thinking_222222222222')));
     const previewStar = page.locator('.portalPreviewFavorite button');
@@ -191,6 +241,6 @@ const server = http.createServer((req, res) => {
     await page.evaluate(() => controller.destroy());
     await Promise.all([page.waitForURL('**/destination/thinking_111111111111'), page.evaluate(() => PortalResourceFavorites.open('thinking_111111111111'))]);
     assert.deepEqual(errors, []);
-    console.log('PASS right-click target, menu stacking/Escape, actual resource content in second Preview tab, click/Enter, navigation-only and denied read');
+    console.log('PASS real Navigation/My Favorite host: 310/220px × 100/125/150% CSS zoom; no overflow, matching title scale, multiline titles, visible stars, separated groups, mouse/keyboard collapse; persisted Knowledge -> actual Preview -> unfavorite sync; retained other categories and permission states.');
   } finally { await browser.close(); await new Promise(resolve => server.close(resolve)); }
 })().catch(error => { console.error(error); process.exitCode = 1; });
