@@ -81,35 +81,50 @@
         </section>`;
     }
 
-    function favoriteStar(selectionId) {
-      const favorite = isFavoriteAgent(selectionId);
-      return window.PortalI18n.html`<button type="button" class="agentFavoriteBtn ${favorite ? "active" : ""}" data-agent-favorite="${esc(selectionId)}" aria-pressed="${favorite}" aria-label="${favorite ? window.PortalI18n.t("取消收藏") : window.PortalI18n.t("添加到收藏")}" title="${favorite ? window.PortalI18n.t("取消收藏") : window.PortalI18n.t("添加到收藏")}" data-portal-icon="${favorite ? "star-filled" : "star"}"></button>`;
+    // Project and Lineage rows use the shared navigation tree rows
+    // (portalNavRow, portal_workbench.css); their star and menu are icon buttons.
+    function favoriteStar(selectionId, favorite = isFavoriteAgent(selectionId)) {
+      const label = favorite ? window.PortalI18n.t("取消收藏") : window.PortalI18n.t("添加到收藏");
+      return `<button type="button" class="portalButton is-icon is-quiet" data-nav-favorite data-agent-favorite="${esc(selectionId)}" aria-pressed="${favorite ? "true" : "false"}" aria-label="${esc(label)}" title="${esc(label)}" data-portal-icon="${favorite ? "star-filled" : "star"}"></button>`;
+    }
+
+    function rowMenuButton(menuId, label, disabled = false) {
+      return `<button type="button" class="portalButton is-icon is-quiet" data-agent-menu="${esc(menuId)}" aria-haspopup="menu" aria-expanded="${menuId === state.agentMenuId ? "true" : "false"}" aria-label="${esc(label)}" title="${esc(window.PortalI18n.t("更多"))}" data-portal-icon="more-horizontal" ${disabled ? "disabled" : ""}></button>`;
     }
 
     function projectCardHtml(project) {
       const open = !!state.query.trim() || state.residentProjectGroups[project.id] === true;
       const accessible = project.accessible !== false;
       const denied = !accessible && !project.can_initialize;
-      const canOpen = accessible && !!project.resident_id;
       const menuId = `project:${project.project_id}`;
-      return window.PortalI18n.html`<section class="residentSubgroup principalProject" data-resident-project-group="${esc(project.id)}">
-          <div class="agentItem principalProjectCard ${denied ? "locked" : ""} ${project.resident_id && state.chatTarget?.id === project.resident_id ? "active" : ""}">
-            <button type="button" class="agentSelect noStatusDot" data-resident-project-toggle="${esc(project.id)}" aria-expanded="${open}" ${project.unavailable ? "disabled" : ""}>
-              <span class="principalProjectChevron" data-portal-icon="${open ? "chevron-down" : "chevron-right"}"></span>
-              <span class="agentMain"><span class="agentTitle">${esc(project.title)}</span><span class="agentMeta"><span class="principalKind">Project</span><span class="principalMetaDetail" title="${project.unavailable ? window.PortalI18n.t("无访问权限") : window.PortalI18n.text`共 ${project.items.length} 个 Lineage`}" ${project.unavailable ? "" : window.PortalI18n.text`aria-label="共 ${project.items.length} 个 Lineage"`}>${project.unavailable ? window.PortalI18n.t("无访问权限") : window.PortalI18n.text`${project.items.length} 组`}</span></span></span>
+      const count = project.items.length;
+      const active = Boolean(project.resident_id) && state.chatTarget?.id === project.resident_id;
+      const countHtml = project.unavailable
+        ? `<span class="portalNavRowCount">${esc(window.PortalI18n.t("无访问权限"))}</span>`
+        : `<span class="portalNavRowCount ${count ? "" : "is-empty"}" title="${esc(window.PortalI18n.text`共 ${count} 个 Lineage`)}" aria-label="${esc(window.PortalI18n.text`共 ${count} 个 Lineage`)}">${count}</span>`;
+      const children = open && !project.unavailable
+        ? `<div class="portalNavTreeChildren">${project.items.map(item => renderRegisteredResidentItem(item, { asLineage: true })).join("") || window.PortalI18n.t('<div class="residentEmpty">暂无可访问的 Lineage。</div>')}</div>`
+        : "";
+      return `<section class="portalNavTreeGroup principalProject" data-resident-project-group="${esc(project.id)}">
+          <div class="portalNavRow is-group principalProjectCard ${denied ? "is-locked" : ""} ${active ? "is-active" : ""} ${menuId === state.agentMenuId ? "is-menu-open" : ""}" data-project-resident="${esc(project.resident_id || "")}">
+            <button type="button" class="portalNavRowMain" data-resident-project-toggle="${esc(project.id)}" aria-expanded="${open}" ${project.unavailable ? "disabled" : ""}>
+              <span class="portalNavRowChevron" data-portal-icon="${open ? "chevron-down" : "chevron-right"}"></span>
+              <span class="portalNavRowMark" style="--portal-nav-mark-hue:${window.PortalUIPrimitives.stableHue(project.project_id)}" aria-hidden="true">${esc(window.PortalUIPrimitives.titleGlyph(project.title))}</span>
+              <span class="portalNavRowLabel" title="${esc(project.title)}">${esc(project.title)}</span>
+              ${countHtml}
             </button>
-            ${!denied ? "" : window.PortalI18n.t('<span class="principalAccessLock" data-portal-icon="lock" aria-label="无访问权限" title="当前无权打开 Project 对话"></span>')}
-            ${favoriteStar(project.favoriteSelectionId || projectFavoriteSelectionId(project))}
-            <button type="button" class="principalCreateBtn" data-project-lineage-create="${esc(project.project_id)}" ${project.unavailable || project.project_readable === false ? "disabled" : ""} aria-label="在 ${esc(project.title)} 中添加 Lineage" title="添加 Lineage" data-portal-icon="plus"></button>
-            <button type="button" class="principalOpenBtn" data-principal-open="${esc(project.resident_id || "")}" ${canOpen ? "" : "disabled"} aria-label="打开 ${esc(project.title)} 对话和 HATG" title="打开 Project 对话和 HATG" data-portal-icon="arrow-right"></button>
-            <button type="button" class="agentMenuBtn" data-agent-menu="${esc(menuId)}" ${project.unavailable || project.project_readable === false ? "disabled" : ""} aria-label="${esc(project.title)} 菜单" data-portal-icon="more-horizontal"></button>
+            ${denied ? window.PortalI18n.t('<span class="portalNavRowLock principalAccessLock" data-portal-icon="lock" aria-label="无访问权限" title="当前无权打开 Project 对话"></span>') : ""}
+            <span class="portalNavRowActions">
+              ${favoriteStar(project.favoriteSelectionId || projectFavoriteSelectionId(project))}
+              ${rowMenuButton(menuId, window.PortalI18n.text`${project.title} 菜单`, project.unavailable || project.project_readable === false)}
+            </span>
           </div>
-          ${open && !project.unavailable ? window.PortalI18n.html`<div class="residentSubgroupBody">${project.items.map(item => renderRegisteredResidentItem(item, { asLineage: true })).join("") || window.PortalI18n.t('<div class="residentEmpty">暂无可访问的 Lineage。</div>')}</div>` : ""}
+          ${children}
         </section>`;
     }
 
     function renderProjectSubgroups(group) {
-      return window.PortalI18n.html`<div class="residentSubgroups">${(group.projectGroups || []).map(projectCardHtml).join("")}</div>`;
+      return `<div class="portalNavTree">${(group.projectGroups || []).map(projectCardHtml).join("")}</div>`;
     }
 
     function renderRegisteredResidentItem(item, options = {}) {
@@ -129,27 +144,32 @@
       const active = isPersonalAma
         ? selected && selected === activeChatTargetId()
         : (item?.lineage_node_ids || item?.lineage?.lineage_node_ids || []).includes(selectedResident);
-      const showMenu = true;
-      const menuOpen = showMenu && menuId === state.agentMenuId;
-      const titleIcons = "";
-      const title = esc(
-        isPersonalAma
-          ? (item.title || item.resident_id || window.PortalI18n.t("Ask Me Anything"))
-          : (item.lineage?.title || item.lineage_title || item.title || lineageId)
-      );
-      const titleHtml = titleIcons
-        ? window.PortalI18n.html`<span class="agentTitle withIcon"><span class="agentTitleText">${title}</span>${titleIcons}</span>`
-        : window.PortalI18n.html`<span class="agentTitle">${title}</span>`;
+      const menuOpen = menuId === state.agentMenuId;
+      if (!isPersonalAma) {
+        const title = item.lineage?.title || item.lineage_title || item.title || lineageId;
+        return `<div class="residentCardWrap" data-resident-card="${esc(residentId)}" data-lineage-card="${esc(lineageId)}">
+          <div class="portalNavRow is-leaf principalLineageCard ${active ? "is-active" : ""} ${menuOpen ? "is-menu-open" : ""}" data-resident-id="${esc(residentId)}">
+            <button type="button" class="portalNavRowMain" data-principal-open="${esc(lineageLeaderResidentId(item))}" data-lineage-open="${esc(lineageId)}" title="${esc(title)}">
+              <span class="portalNavRowLabel">${esc(title)}</span>
+              <span class="portalNavRowCount ${memberCount ? "" : "is-empty"}" title="${esc(memberLabel)}" aria-label="${esc(memberLabel)}">${memberCount}</span>
+            </button>
+            <span class="portalNavRowActions" data-reveal="hover">
+              ${favoriteStar(favoriteSelectionId, favorite)}
+              ${rowMenuButton(menuId, window.PortalI18n.t("Lineage 菜单"))}
+            </span>
+          </div>
+        </div>`;
+      }
+      const title = esc(item.title || item.resident_id || window.PortalI18n.t("Ask Me Anything"));
       return window.PortalI18n.html`<div class="residentCardWrap" data-resident-card="${esc(residentId)}" data-lineage-card="${esc(lineageId)}">
-        <div class="agentItem ${isPersonalAma ? "" : "principalLineageCard"} ${active ? "active" : ""} ${menuOpen ? "menuOpen" : ""}" data-resident-id="${esc(residentId)}">
-          <button type="button" class="agentSelect noStatusDot" ${isPersonalAma ? `data-resident-select="${esc(residentId)}"` : `data-principal-open="${esc(lineageLeaderResidentId(item))}" data-lineage-open="${esc(lineageId)}"`} title="${esc(isPersonalAma ? (item.workspace_path || "") : lineageId)}">
+        <div class="agentItem ${active ? "active" : ""} ${menuOpen ? "menuOpen" : ""}" data-resident-id="${esc(residentId)}">
+          <button type="button" class="agentSelect noStatusDot" data-resident-select="${esc(residentId)}" title="${esc(item.workspace_path || "")}">
             <span class="agentMain">
-              ${titleHtml}
-              <span class="agentMeta">${isPersonalAma ? `<span class="principalKind">Resident</span>` : window.PortalI18n.html`<span class="principalKind">Lineage</span><span class="principalMetaDetail" title="${esc(memberLabel)}" aria-label="${esc(memberLabel)}">${memberCount}</span>`}</span>
+              <span class="agentTitle">${title}</span>
+              <span class="agentMeta"><span class="principalKind">Resident</span></span>
             </span>
           </button>
-          ${isPersonalAma ? "" : window.PortalI18n.html`<button type="button" class="agentFavoriteBtn ${favorite ? "active" : ""}" data-agent-favorite="${esc(favoriteSelectionId)}" aria-pressed="${favorite ? "true" : "false"}" aria-label="${favorite ? window.PortalI18n.t("取消收藏") : window.PortalI18n.t("添加到收藏")}" title="${favorite ? window.PortalI18n.t("取消收藏") : window.PortalI18n.t("添加到收藏")}" data-portal-icon="${favorite ? "star-filled" : "star"}"></button>`}
-          ${showMenu ? window.PortalI18n.html`<button type="button" class="agentMenuBtn ${menuOpen ? "active" : ""}" data-agent-menu="${esc(menuId)}" aria-label="${isPersonalAma ? "Resident" : "Lineage"} 菜单" title="更多" data-portal-icon="more-horizontal"></button>` : ""}
+          <button type="button" class="agentMenuBtn ${menuOpen ? "active" : ""}" data-agent-menu="${esc(menuId)}" aria-label="Resident 菜单" title="更多" data-portal-icon="more-horizontal"></button>
         </div>
         </div>`;
     }
@@ -229,7 +249,7 @@
         state.residentGroups.lineage = true;
         $id("searchInput").value = "";
         writeLineageUiState({ projectFilter: "all", projectDisplayFilter: "all" });
-        window.PortalUI.toast(window.PortalI18n.t("Project 已创建，可在项目卡片中添加 Lineage。"), "success");
+        window.PortalUI.toast(window.PortalI18n.t("Project 已创建，可在它的「⋯」菜单中添加 Lineage。"), "success");
         try {
           await refreshResidentSidebarIfDue(true);
         } catch (error) {
@@ -250,16 +270,15 @@
         const root = $id(rootId);
         if (!root) continue;
         root.querySelectorAll(".residentCardWrap").forEach(card => {
-          const item = card.querySelector(".agentItem");
-          if (!item) return;
-          const personal = Boolean(item.querySelector("[data-resident-select]"));
-          item.classList.toggle("active", personal
-            ? card.dataset.residentCard === residentId
-            : Boolean(lineageId && card.dataset.lineageCard === lineageId));
+          const lineageRow = card.querySelector(".principalLineageCard");
+          if (lineageRow) {
+            lineageRow.classList.toggle("is-active", Boolean(lineageId && card.dataset.lineageCard === lineageId));
+            return;
+          }
+          card.querySelector(".agentItem")?.classList.toggle("active", card.dataset.residentCard === residentId);
         });
-        root.querySelectorAll(".principalProjectCard").forEach(card => {
-          card.classList.toggle("active",
-            card.querySelector("[data-principal-open]")?.dataset.principalOpen === residentId);
+        root.querySelectorAll(".principalProjectCard").forEach(row => {
+          row.classList.toggle("is-active", Boolean(row.dataset.projectResident) && row.dataset.projectResident === residentId);
         });
       }
       renderActivityRecentRail();

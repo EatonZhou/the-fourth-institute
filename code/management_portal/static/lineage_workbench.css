@@ -17,154 +17,6 @@
         overflow: hidden;
       }
       body.resizingComposer { cursor: row-resize; user-select: none; }
-      .activityBtn {
-        width: 38px;
-        height: 38px;
-        border: none;
-        border-radius: 7px;
-        background: transparent;
-        color: var(--muted);
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        position: relative;
-      }
-      .activityBtn[draggable="true"] { cursor: grab; user-select: none; }
-      .activityBtn.activityDragging { opacity: .38; cursor: grabbing; }
-      .activityBtn:hover { background: var(--panel-2); color: var(--text); }
-      .activityBtn.active { color: var(--accent-2); background: color-mix(in srgb, var(--accent) 10%, var(--panel)); }
-      .activityBtn.active::before {
-        content: "";
-        position: absolute;
-        left: -6px;
-        top: 7px;
-        bottom: 7px;
-        width: 3px;
-        border-radius: 999px;
-        background: var(--accent-2);
-      }
-      .activityBtn svg { width: 19px; height: 19px; stroke: currentColor; }
-      .activityRecentRail {
-        width: 100%;
-        min-height: 0;
-        margin-top: 4px;
-        padding-top: 9px;
-        border-top: 1px solid color-mix(in srgb, var(--border) 74%, transparent);
-        display: flex;
-        flex: 1 1 auto;
-        flex-direction: column;
-        align-items: center;
-        gap: 7px;
-        overflow: hidden;
-      }
-      .activityRecentRail:empty { display: none; }
-      .activityRecentSlot {
-        width: 32px;
-        height: 32px;
-        position: relative;
-        flex: 0 0 auto;
-      }
-      .activityRecentItem {
-        width: 32px;
-        height: 32px;
-        border: 1px solid color-mix(in srgb, var(--border) 86%, transparent);
-        border-radius: 8px;
-        background: color-mix(in srgb, var(--panel-2) 58%, var(--panel));
-        color: var(--muted);
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        padding: 0;
-        position: relative;
-        font-size: 11px;
-        font-weight: 800;
-        line-height: 1;
-      }
-      .activityRecentItem:hover {
-        color: var(--text);
-        border-color: color-mix(in srgb, var(--accent) 44%, var(--border));
-        background: color-mix(in srgb, var(--accent) 7%, var(--panel));
-      }
-      .activityRecentItem.active {
-        color: var(--accent-2);
-        border-color: color-mix(in srgb, var(--accent) 62%, var(--border));
-        background: color-mix(in srgb, var(--accent) 10%, var(--panel));
-      }
-      .activityRecentItem.fork::after,
-      .activityRecentItem.room::after,
-      .activityRecentItem.action::after {
-        content: attr(data-recent-kind-mark);
-        position: absolute;
-        right: -2px;
-        bottom: -2px;
-        min-width: 12px;
-        height: 12px;
-        border-radius: 999px;
-        background: var(--panel);
-        border: 1px solid color-mix(in srgb, var(--border) 82%, transparent);
-        color: var(--muted);
-        font-size: 8px;
-        font-weight: 800;
-        line-height: 10px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-      }
-      @keyframes activityRecentRunningPulse {
-        0%, 100% { transform: translateY(0); }
-        50% { transform: translateY(-2px); }
-      }
-      .activityRecentItem.running {
-        color: var(--accent);
-        border-color: color-mix(in srgb, var(--accent) 52%, var(--border));
-        box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 30%, transparent), 0 0 10px color-mix(in srgb, var(--accent) 18%, transparent);
-        animation: activityRecentRunningPulse 2.8s ease-in-out infinite;
-        animation-delay: var(--recent-delay, 0s);
-      }
-      .activityRecentUnreadDot {
-        position: absolute;
-        right: 3px;
-        top: 3px;
-        width: 6px;
-        height: 6px;
-        border-radius: 999px;
-        background: var(--accent-2);
-        box-shadow: 0 0 0 2px var(--panel);
-        pointer-events: none;
-      }
-      .activityRecentClose {
-        position: absolute;
-        right: -5px;
-        top: -5px;
-        width: 16px;
-        height: 16px;
-        border: 1px solid color-mix(in srgb, var(--border) 74%, transparent);
-        border-radius: 999px;
-        background: var(--panel);
-        color: var(--muted);
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        padding: 0;
-        font-size: 12px;
-        line-height: 1;
-        opacity: 0;
-        pointer-events: none;
-        transition: opacity 120ms ease, color 120ms ease, background 120ms ease;
-      }
-      .activityRecentSlot:hover .activityRecentClose,
-      .activityRecentSlot:focus-within .activityRecentClose {
-        opacity: 1;
-        pointer-events: auto;
-      }
-      .activityRecentClose:hover {
-        color: var(--danger);
-        background: var(--panel-2);
-      }
-      @media (prefers-reduced-motion: reduce) {
-        :root:not([data-portal-motion="full"]) .activityRecentItem.running { animation: none; }
-      }
-      :root[data-portal-motion="reduced"] .activityRecentItem.running { animation: none; }
       .agentsToolbar {
         position: relative;
         margin-left: auto;
@@ -486,11 +338,6 @@
       button.residentSubgroupCount {
         cursor: pointer;
       }
-      .residentSubgroupBody {
-        display: grid;
-        gap: 7px;
-        padding-left: 12px;
-      }
       .agentItem {
         width: 100%;
         text-align: left;
@@ -627,35 +474,6 @@
       .agentMenuBtn:hover,
       .agentMenuBtn.active { background: var(--panel-2); color: var(--accent); }
       .agentMenuBtn svg { width: 15px; height: 15px; stroke: currentColor; }
-      .agentFavoriteBtn {
-        position: absolute;
-        right: 5px;
-        bottom: 30px;
-        width: 25px;
-        height: 23px;
-        border: none;
-        border-radius: 6px;
-        background: transparent;
-        color: var(--muted);
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        padding: 0;
-        font-size: 14px;
-        line-height: 1;
-      }
-      .agentFavoriteBtn:hover {
-        background: var(--panel-2);
-        color: var(--accent-2);
-      }
-      .agentFavoriteBtn.active {
-        background: transparent;
-        color: #f5c518;
-      }
-      .agentFavoriteBtn.active:hover {
-        background: transparent;
-        color: #f5c518;
-      }
       .agentCardMenu {
         position: fixed;
         left: 0;
@@ -1251,70 +1069,21 @@
         .forkCreateModeGrid { grid-template-columns: 1fr; }
       }
 
-/* Principal hierarchy uses the existing Agent cards and Portal icon controls. */
-.principalProject .residentSubgroupBody { margin-left: 14px; padding-left: 8px; border-left: 1px solid var(--border); }
-.residentSubgroups:has(> .principalProject) { gap: var(--portal-space-2); }
-.principalProjectCard { margin: 0; }
-.agentItem.principalProjectCard, .agentItem.principalLineageCard {
-  --principal-card-accent: var(--accent);
-  border-color: color-mix(in srgb, var(--principal-card-accent) 25%, var(--border));
-  background: color-mix(in srgb, var(--principal-card-accent) 3%, var(--panel));
-  box-shadow: inset 2px 0 color-mix(in srgb, var(--principal-card-accent) 55%, transparent);
-}
-.agentItem.principalLineageCard { --principal-card-accent: var(--accent-2); }
-.agentItem:is(.principalProjectCard, .principalLineageCard):not(.locked, .principalUnavailableCard):hover {
-  border-color: color-mix(in srgb, var(--principal-card-accent) 50%, var(--border));
-  background: color-mix(in srgb, var(--principal-card-accent) 6%, var(--panel));
-}
-.agentItem.principalProjectCard.active, .agentItem.principalLineageCard.active {
-  border-color: var(--principal-card-accent);
-  background: color-mix(in srgb, var(--principal-card-accent) 9%, var(--panel));
-  box-shadow: inset 3px 0 var(--principal-card-accent);
-}
-.agentItem:is(.principalProjectCard, .principalLineageCard) .agentMeta {
-  display: flex;
-  align-items: center;
-  gap: var(--portal-space-1);
-  padding-right: 26px;
-}
+/* Project and Lineage rows use the shared navigation tree rows
+ * (portalNavRow, portal_workbench.css). The Resident entry cards above them
+ * (Which Resident, the personal assistant) keep the Agent card. */
 .principalKind {
   flex: 0 0 auto;
   padding: 1px var(--portal-space-1);
   border-radius: var(--portal-space-1);
-  background: color-mix(in srgb, var(--principal-card-accent) 12%, transparent);
-  color: color-mix(in srgb, var(--principal-card-accent) 35%, var(--text));
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  color: color-mix(in srgb, var(--accent) 35%, var(--text));
   font-size: 10px;
   line-height: 1.4;
   font-weight: 600;
 }
-.principalMetaDetail { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .principalUnavailableCard .agentSelect { display: block; cursor: default; }
 .principalUnavailableCard .agentMeta { white-space: normal; overflow-wrap: anywhere; }
 .principalUnavailableCard .principalAccessLock { position: absolute; right: 10px; bottom: 9px; width: 14px; height: 14px; color: var(--muted); }
-.principalProjectChevron { width: 14px; flex: 0 0 14px; color: var(--muted); }
-.principalOpenBtn, .principalCreateBtn { border: 0; background: transparent; color: var(--muted); cursor: pointer; width: 26px; height: 26px; padding: 4px; align-self: flex-end; flex: 0 0 26px; }
-.principalOpenBtn:hover, .principalCreateBtn:hover { color: var(--text); }
-.principalOpenBtn:disabled, .principalCreateBtn:disabled { opacity: .35; cursor: default; }
-.principalOpenBtn:focus-visible, .principalCreateBtn:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
-
-.agentItem .principalOpenBtn { position: absolute; right: 32px; bottom: 5px; }
-.agentItem .principalCreateBtn { position: absolute; right: 32px; top: 5px; }
-.principalProjectCard .agentTitle { padding-right: 26px; }
-.principalProjectCard .agentSelect { grid-template-columns: 14px minmax(0, 1fr); }
-.principalProjectCard .agentMenuBtn { display: block; }
-
-.principalProjectCard :is(.principalCreateBtn, .agentFavoriteBtn) {
-  top: 5px;
-  bottom: auto;
-  width: 26px;
-  height: 26px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  line-height: 1;
-}
-.principalProjectCard .agentFavoriteBtn { right: 5px; }
-.principalProjectCard .principalAccessLock { position: absolute; right: 38px; top: 10px; width: 14px; height: 14px; color: var(--muted); }
 .agentItem.locked .agentTitle { color: var(--muted); }
 .whichResidentRequestDetails { color: var(--muted); font-size: inherit; }

@@ -364,8 +364,6 @@ body.articleWorkbenchShell {
   border-radius: 8px;
   padding: 7px 5px;
   --portal-activity-indicator-left: -6px;
-  --portal-activity-indicator-radius: 0 999px 999px 0;
-  --portal-activity-indicator-color: var(--accent);
   --portal-activity-icon-size: 20px;
 }
 
@@ -376,7 +374,7 @@ body.articleWorkbenchShell {
   min-width: 16px;
   height: 16px;
   padding: 0 4px;
-  border: 2px solid var(--panel);
+  border: 2px solid var(--nav-surface);
   border-radius: 999px;
   background: var(--accent);
   color: var(--on-accent);

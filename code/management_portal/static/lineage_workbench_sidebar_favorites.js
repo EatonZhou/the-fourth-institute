@@ -78,7 +78,12 @@
         const status = target.item.status;
         const denied = status === "denied";
         const reason = { deleted: "已删除", missing: "资源不存在", denied: "无访问权限", available: "目录暂未载入", unavailable: "暂时无法确认状态" }[status] || "暂时无法确认状态";
-        return window.PortalI18n.html`<div class="agentItem principal${kind}Card principalUnavailableCard ${denied ? "locked" : ""}" data-favorite-status="${esc(status)}"><div class="agentSelect noStatusDot"><span class="agentMain"><span class="agentTitle">${esc(target.item.title || window.PortalI18n.text`${reason}的 ${kind}`)}</span><span class="agentMeta">${kind} · ${reason}</span></span></div>${denied ? window.PortalI18n.t('<span class="principalAccessLock" data-portal-icon="lock" aria-label="无访问权限"></span>') : ''}${favoriteStar(row.selectionId)}</div>`;
+        const title = target.item.title || window.PortalI18n.text`${reason}的 ${kind}`;
+        return `<div class="portalNavRow is-unavailable ${kind === "Project" ? "is-group" : "is-leaf"} principal${kind}Card ${denied ? "is-locked" : ""}" data-favorite-status="${esc(status)}">
+          <div class="portalNavRowMain" title="${esc(`${kind} · ${reason}`)}"><span class="portalNavRowLabel">${esc(title)}</span><span class="portalNavRowCount">${esc(`${kind} · ${reason}`)}</span></div>
+          ${denied ? window.PortalI18n.t('<span class="portalNavRowLock principalAccessLock" data-portal-icon="lock" aria-label="无访问权限"></span>') : ""}
+          <span class="portalNavRowActions">${favoriteStar(row.selectionId)}</span>
+        </div>`;
       }
       return renderRegisteredResidentItem(target.item, {
         asLineage: true,
@@ -108,7 +113,7 @@
               <button class="residentSubgroupName" type="button" data-favorite-project-toggle="${esc(group.id)}" aria-expanded="${open ? "true" : "false"}" title="${open ? window.PortalI18n.t("收起") : window.PortalI18n.t("展开")} ${esc(group.title)}">${esc(group.title)}</button>
               <span class="residentSubgroupCount">${group.rows.length}</span>
             </div>
-            ${open ? window.PortalI18n.html`<div class="residentSubgroupBody">${group.rows.map(favoriteTargetHtml).join("")}</div>` : ""}
+            ${open ? `<div class="portalNavTree">${group.rows.map(favoriteTargetHtml).join("")}</div>` : ""}
           </section>`;
         }).join("")}</div>`;
     }

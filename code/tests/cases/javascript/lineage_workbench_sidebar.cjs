@@ -66,6 +66,35 @@ test('both lists show Which Resident and the assistant facade, follow its title 
   assert.deepEqual(page.errors, []);
 });
 
+test('a Project row keeps only its star and menu; opening and adding a Lineage live in the menu', async t => {
+  const project = (digit, fields) => ({ project_id: `project_${digit.repeat(12)}`, lineage_id: `lineage_${digit.repeat(12)}`,
+    title: `Project ${digit}`, lineages: [], ...fields });
+  const page = startWorkbenchPage({ answers: {
+    '/api/me': { username: 'fixture' },
+    '/api/agent-workbench/residents': { ready: true, residents: [], lineages: [], principal_hierarchy: { user_residents: [], projects: [
+      project('3', { accessible: true, resident_id: 'resident_555555555555' }),
+    ] } },
+  } });
+  t.after(page.close);
+  const doc = page.document;
+  const row = () => doc.querySelector('#agentList [data-resident-project-group="lineage:project_333333333333"] .portalNavRow');
+  await page.until(() => row());
+  const actions = [...row().querySelectorAll('.portalNavRowActions > button')];
+  assert.deepEqual(actions.map(button => button.hasAttribute('data-agent-favorite') ? 'star' : button.dataset.agentMenu ? 'menu' : '?'),
+    ['star', 'menu'], 'the row keeps the star and the menu, in that order');
+  assert.equal(row().querySelector('[data-principal-open], [data-project-lineage-create]'), null, 'no standalone open or add buttons');
+  assert.equal(row().querySelector('.portalNavRowMark').textContent, 'Pr', 'the mark shows the title glyph');
+
+  row().querySelector('[data-agent-menu]').click();
+  const menuAction = name => doc.querySelector(`#agentFloatingMenu [data-agent-floating-action="${name}"]`);
+  await page.until(() => menuAction('open-project') && menuAction('create-lineage'));
+  const order = [...doc.querySelectorAll('#agentFloatingMenu [data-agent-floating-action]')].map(button => button.dataset.agentFloatingAction);
+  assert.deepEqual(order.slice(0, 2), ['open-project', 'create-lineage'], 'opening and adding come first in the menu');
+  assert.equal(menuAction('open-project').disabled, false);
+  assert.ok(row().classList.contains('is-menu-open'), 'the row stays highlighted while its menu is open');
+  assert.deepEqual(page.errors, []);
+});
+
 test('a Project without its conversation is not shown as denied, and only a reachable one opens', async t => {
   // Each Project has its own Lineage, so the default non-empty filter lists it.
   const project = (digit, fields) => ({ project_id: `project_${digit.repeat(12)}`, lineage_id: `lineage_${digit.repeat(12)}`,
@@ -82,12 +111,18 @@ test('a Project without its conversation is not shown as denied, and only a reac
   const card = digit => page.document.querySelector(`#agentList [data-resident-project-group="lineage:project_${digit.repeat(12)}"]`);
   await page.until(() => card('1') && card('2') && card('3'));
   const locked = digit => Boolean(card(digit).querySelector('.principalAccessLock'));
-  const opens = digit => !card(digit).querySelector('[data-principal-open]').disabled;
+  // Opening the Project conversation is the first action of the Project's menu.
+  const opens = async digit => {
+    card(digit).querySelector('[data-agent-menu]').click();
+    const action = () => page.document.querySelector('#agentFloatingMenu [data-agent-floating-action="open-project"]');
+    await page.until(() => card(digit).querySelector('[data-agent-menu]').getAttribute('aria-expanded') === 'true' && action());
+    return !action().disabled;
+  };
   assert.equal(locked('1'), false, 'a missing conversation binding is not denied access');
-  assert.equal(opens('1'), false, 'absence does not create a chat target');
+  assert.equal(await opens('1'), false, 'absence does not create a chat target');
   assert.equal(locked('2'), true, 'a Project the user may not read is locked');
   assert.equal(card('2').querySelector('[data-agent-menu]').disabled, true);
   assert.equal(locked('3'), false);
-  assert.equal(opens('3'), true);
+  assert.equal(await opens('3'), true);
   assert.deepEqual(page.errors, []);
 });

@@ -443,6 +443,29 @@
     return root.firstElementChild;
   }
 
+  // A short glyph standing for a title in compact identity marks: the first
+  // CJK character, the initials of two Latin words, or the first two letters.
+  function titleGlyph(label) {
+    const text = String(label || "").trim();
+    const characters = Array.from(text);
+    const firstMeaningful = characters.find(character => (
+      /[A-Za-z0-9㐀-䶿一-鿿豈-﫿]/u.test(character)
+    ));
+    if (/^[㐀-䶿一-鿿豈-﫿]$/u.test(firstMeaningful || "")) return firstMeaningful;
+    const englishWords = text.match(/[A-Za-z]+/g) || [];
+    if (englishWords.length >= 2) return `${englishWords[0][0]}${englishWords[1][0]}`.toUpperCase();
+    if (englishWords.length === 1) return englishWords[0].slice(0, 2);
+    return characters.slice(0, 2).join("").toUpperCase() || "?";
+  }
+
+  // A hue (0-359) that stays the same for the same stable key, so an object
+  // keeps its colour across lists, reloads and users.
+  function stableHue(key) {
+    let hash = 0;
+    for (const character of String(key || "")) hash = ((hash * 31) + character.codePointAt(0)) >>> 0;
+    return hash % 360;
+  }
+
   function randomUUID() {
     // getRandomValues is available on HTTP LAN origins as well as HTTPS.
     // Keep UUID entropy and format without relying on secure-context-only APIs.
@@ -630,8 +653,10 @@
     radioGroup,
     registerEnhancer,
     renderAsyncState,
+    stableHue,
     staticAssetUrl,
     statusHtml,
+    titleGlyph,
     toneForStatus,
   });
   global.PortalUIPrimitives = api;

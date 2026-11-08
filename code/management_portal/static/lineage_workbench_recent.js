@@ -68,33 +68,6 @@
     return 0;
   }
 
-  function recentTitleGlyph(label) {
-    const text = String(label || "").trim();
-    const characters = Array.from(text);
-    const firstMeaningful = characters.find(character => (
-      /[A-Za-z0-9\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff]/u.test(character)
-    ));
-    if (/^[\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff]$/u.test(firstMeaningful || "")) {
-      return firstMeaningful;
-    }
-    const englishWords = text.match(/[A-Za-z]+/g) || [];
-    if (englishWords.length >= 2) {
-      return `${englishWords[0][0]}${englishWords[1][0]}`.toUpperCase();
-    }
-    if (englishWords.length === 1) {
-      return englishWords[0].slice(0, 2);
-    }
-    return characters.slice(0, 2).join("").toUpperCase() || "?";
-  }
-
-  function recentAccentHue(key) {
-    let hash = 0;
-    for (const character of String(key || "")) {
-      hash = ((hash * 31) + character.codePointAt(0)) >>> 0;
-    }
-    return hash % 360;
-  }
-
   function recentIdentity(item) {
     return String(item?.residentId || "").trim();
   }
@@ -184,7 +157,7 @@
         derived: false,
         label,
         subtitle: "Resident",
-        glyph: resident.title ? recentTitleGlyph(resident.title) : residentId.slice(-2).toUpperCase(),
+        glyph: resident.title ? window.PortalUIPrimitives.titleGlyph(resident.title) : residentId.slice(-2).toUpperCase(),
         active,
         t: Number(entry.t || 0) || recentTimeMs(resident?.updated_at, resident?.created_at),
       };
@@ -263,7 +236,7 @@
             label: item.label,
             glyph: item.glyph,
             active: item.active,
-            accentHue: recentAccentHue(identity),
+            accentHue: window.PortalUIPrimitives.stableHue(identity),
             ariaLabel: [item.label, suffix ? window.PortalI18n.text`Resident 尾号 ${suffix}` : ""].filter(Boolean).join("，"),
             ariaDescription: timeLabel ? `最近使用 ${timeLabel}` : "",
             title: [item.label, item.subtitle, suffix ? window.PortalI18n.text`ID 尾号 ${suffix}` : "", timeLabel ? window.PortalI18n.text`最近使用 ${timeLabel}` : ""].filter(Boolean).join("\n"),

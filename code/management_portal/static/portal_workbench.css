@@ -8,10 +8,12 @@
 
 /* Page template shared by Lineage, projection pages and native view composition.
  * The grid owns both rail sizing and content allocation; pages only supply slots.
+ * The rail and the content's leftmost stack form one joined navigation frame:
+ * no gap between them, and the corners where they meet are square.
  */
 .portalWorkbenchPageLayout {
-  --portal-workbench-rail-width: 52px;
-  --portal-workbench-rail-gap: 10px;
+  --portal-workbench-rail-width: 56px;
+  --portal-workbench-rail-gap: 0px;
   box-sizing: border-box;
   position: relative;
   display: grid;
@@ -27,6 +29,20 @@
   width: var(--portal-workbench-rail-width);
   height: 100%;
   min-width: 0;
+  border-radius: var(--radius) 0 0 var(--radius);
+  box-shadow: none;
+}
+/* The stacks along the canvas's left edge: a lone stack, every stack of a
+ * top-level vertical split, or the first column of a top-level horizontal split. */
+@media (min-width: 781px) {
+  .portalWorkbenchPageLayout:has(> .portalActivityRail:not([hidden])) .portalWorkbenchCanvas > .portalWorkbenchStack,
+  .portalWorkbenchPageLayout:has(> .portalActivityRail:not([hidden])) .portalWorkbenchCanvas > .portalWorkbenchSplit[data-orientation="vertical"] > .portalWorkbenchStack,
+  .portalWorkbenchPageLayout:has(> .portalActivityRail:not([hidden])) .portalWorkbenchCanvas > .portalWorkbenchSplit[data-orientation="horizontal"] > .portalWorkbenchStack:first-child,
+  .portalWorkbenchPageLayout:has(> .portalActivityRail:not([hidden])) .portalWorkbenchCanvas > .portalWorkbenchSplit[data-orientation="horizontal"] > .portalWorkbenchSplit[data-orientation="vertical"]:first-child > .portalWorkbenchStack {
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+    border-left-color: transparent;
+  }
 }
 .portalWorkbenchPageLayout > .portalWorkbenchViewportRoot {
   min-width: 0;
@@ -42,6 +58,7 @@
   .portalWorkbenchPageLayout {
     grid-template-columns: minmax(0, 1fr);
     grid-template-rows: 44px minmax(0, 1fr);
+    --portal-workbench-rail-gap: 6px;
   }
   .portalWorkbenchPageLayout > .portalActivityRail {
     width: auto;
@@ -50,6 +67,7 @@
     flex-direction: row;
     justify-content: flex-start;
     padding-block: 3px;
+    border-radius: var(--radius);
   }
   .portalWorkbenchPageLayout > .portalActivityRail .portalActivityRailView {
     width: 34px;
@@ -971,10 +989,11 @@ body.resizingWorkspacePreview {
   flex-direction: column;
   align-items: center;
   gap: 7px;
-  border: 1px solid var(--border);
+  border: 1px solid var(--nav-surface);
   border-radius: var(--radius);
-  background: var(--panel);
+  background: var(--nav-surface);
   box-shadow: var(--shadow);
+  color: var(--nav-text);
   padding: 8px 6px;
   overflow: hidden;
 }
@@ -984,39 +1003,41 @@ body.resizingWorkspacePreview {
   height: 38px;
   flex: 0 0 38px;
   border: 0;
-  border-radius: 7px;
+  border-radius: 9px;
   background: transparent;
-  color: var(--muted);
+  color: var(--nav-text);
   display: inline-flex;
   align-items: center;
   justify-content: center;
   position: relative;
 }
 
-.portalActivityRailView:hover { background: var(--panel-2); color: var(--text); }
-.portalActivityRailView.active { color: var(--accent-2); background: color-mix(in srgb, var(--accent) 10%, var(--panel)); }
+.portalActivityRailView:hover { background: var(--nav-hover); color: var(--nav-text-strong); }
+.portalActivityRailView.active { color: var(--nav-text-strong); background: var(--nav-selected); }
+.portalActivityRailView:focus-visible { outline: 2px solid var(--nav-accent); outline-offset: 1px; }
 .portalActivityRailView.active::before {
   content: "";
   position: absolute;
-  left: var(--portal-activity-indicator-left, -6px);
-  top: var(--portal-activity-indicator-inset, 7px);
-  bottom: var(--portal-activity-indicator-inset, 7px);
+  left: var(--portal-activity-indicator-left, -7px);
+  top: var(--portal-activity-indicator-inset, 8px);
+  bottom: var(--portal-activity-indicator-inset, 8px);
   width: var(--portal-activity-indicator-width, 3px);
-  border-radius: var(--portal-activity-indicator-radius, 999px);
-  background: var(--portal-activity-indicator-color, var(--accent-2));
+  border-radius: var(--portal-activity-indicator-radius, 0 3px 3px 0);
+  background: var(--portal-activity-indicator-color, var(--nav-text-strong));
 }
 .portalActivityRailView .portalIcon {
   width: var(--portal-activity-icon-size, 19px);
   height: var(--portal-activity-icon-size, 19px);
 }
-.portalActivityRailView.activityDragging { opacity: .38; }
+.portalActivityRailView[draggable="true"] { cursor: grab; user-select: none; }
+.portalActivityRailView.activityDragging { opacity: .38; cursor: grabbing; }
 
 .portalActivityRailItems {
   width: 100%;
   min-height: 0;
   margin-top: 4px;
   padding-top: 9px;
-  border-top: 1px solid color-mix(in srgb, var(--border) 74%, transparent);
+  border-top: 1px solid var(--nav-divider);
   display: flex;
   flex: 1 1 auto;
   flex-direction: column;
@@ -1029,10 +1050,10 @@ body.resizingWorkspacePreview {
   width: 32px;
   height: 32px;
   flex: 0 0 32px;
-  border: 1px solid color-mix(in srgb, var(--border) 86%, transparent);
-  border-radius: 8px;
-  background: color-mix(in srgb, var(--panel-2) 58%, var(--panel));
-  color: var(--muted);
+  border: 1px dashed var(--nav-divider);
+  border-radius: 9px;
+  background: transparent;
+  color: var(--nav-text);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1046,20 +1067,22 @@ body.resizingWorkspacePreview {
   top: -7px;
   left: -4px;
   right: -4px;
-  border-top: 1px solid color-mix(in srgb, var(--border) 74%, transparent);
+  border-top: 1px solid var(--nav-divider);
   pointer-events: none;
 }
-.portalActivityRailItemsAction:hover { color: var(--accent-2); border-color: color-mix(in srgb, var(--accent) 58%, var(--border)); }
+.portalActivityRailItemsAction:hover { color: var(--nav-text-strong); background: var(--nav-hover); }
 .portalActivityRailItemsAction .portalIcon { width: 16px; height: 16px; }
 .portalActivityRailItemsAction[hidden] { display: none; }
 .portalActivityRailItemSlot { width: 32px; height: 32px; position: relative; flex: 0 0 auto; }
+/* Recent items are filled identity tiles; a stable hue keeps an object's tile
+ * colour the same wherever it is listed. */
 .portalActivityRailItem {
   width: 32px;
   height: 32px;
-  border: 1px solid color-mix(in srgb, var(--border) 86%, transparent);
-  border-radius: 8px;
-  background: color-mix(in srgb, var(--panel-2) 58%, var(--panel));
-  color: var(--muted);
+  border: 0;
+  border-radius: 9px;
+  background: var(--nav-selected);
+  color: var(--nav-text-strong);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1067,12 +1090,12 @@ body.resizingWorkspacePreview {
   position: relative;
   font-size: 11px;
   font-weight: 800;
+  line-height: 1;
 }
-.portalActivityRailItem:hover,
-.portalActivityRailItem.active { color: var(--accent-2); border-color: color-mix(in srgb, var(--accent) 58%, var(--border)); }
-.portalActivityRailItem.hasStableAccent {
-  box-shadow: inset 2px 0 0 hsl(var(--recent-accent-hue) 52% 48% / .72);
-}
+.portalActivityRailItem.hasStableAccent { background: hsl(var(--recent-accent-hue) 46% 42%); }
+.portalActivityRailItem:hover { filter: brightness(1.12); }
+.portalActivityRailItem.active { box-shadow: 0 0 0 2px var(--nav-surface), 0 0 0 4px var(--nav-accent); }
+.portalActivityRailItem:focus-visible { outline: 2px solid var(--nav-accent); outline-offset: 2px; }
 .portalActivityRailItem.marked::after {
   content: attr(data-recent-kind-mark);
   position: absolute;
@@ -1081,25 +1104,26 @@ body.resizingWorkspacePreview {
   min-width: 12px;
   height: 12px;
   border-radius: 999px;
-  background: var(--panel);
-  border: 1px solid var(--border);
-  color: var(--muted);
+  background: var(--nav-surface);
+  border: 1px solid var(--nav-divider);
+  color: var(--nav-text-strong);
   font-size: 8px;
   line-height: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
-.portalActivityRailItem.running { color: var(--accent); }
-.portalActivityRailItem.queued { color: var(--warn); }
-.portalActivityRailUnread { position: absolute; right: 3px; top: 3px; width: 6px; height: 6px; border-radius: 50%; background: var(--accent-2); box-shadow: 0 0 0 2px var(--panel); }
+.portalActivityRailUnread { position: absolute; right: 3px; top: 3px; width: 6px; height: 6px; border-radius: 50%; background: var(--nav-text-strong); box-shadow: 0 0 0 2px var(--nav-surface); }
 .portalActivityRailRunning {
   position: absolute;
   left: 3px;
   bottom: 3px;
   width: 7px;
   height: 7px;
-  border: 2px solid var(--accent);
+  border: 2px solid var(--nav-accent);
   border-radius: 50%;
-  background: var(--panel);
-  box-shadow: 0 0 0 1px var(--panel);
+  background: var(--nav-surface);
+  box-shadow: 0 0 0 1px var(--nav-surface);
   animation: portalActivityRailRunningPulse 1.45s ease-out infinite;
 }
 .portalActivityRailQueued {
@@ -1110,11 +1134,11 @@ body.resizingWorkspacePreview {
   height: 4px;
   border-radius: 999px;
   background: var(--warn);
-  box-shadow: 0 0 0 1px var(--panel);
+  box-shadow: 0 0 0 1px var(--nav-surface);
 }
 @keyframes portalActivityRailRunningPulse {
-  0%, 38% { box-shadow: 0 0 0 1px var(--panel), 0 0 0 1px color-mix(in srgb, var(--accent) 48%, transparent); }
-  100% { box-shadow: 0 0 0 1px var(--panel), 0 0 0 5px transparent; }
+  0%, 38% { box-shadow: 0 0 0 1px var(--nav-surface), 0 0 0 1px color-mix(in srgb, var(--nav-accent) 48%, transparent); }
+  100% { box-shadow: 0 0 0 1px var(--nav-surface), 0 0 0 5px transparent; }
 }
 @media (prefers-reduced-motion: reduce) {
   .portalActivityRailRunning { animation: none; }
@@ -1137,6 +1161,8 @@ body.resizingWorkspacePreview {
   pointer-events: none;
 }
 .portalActivityRailItemSlot:is(:hover, :focus-within) .portalActivityRailDismiss { opacity: 1; pointer-events: auto; }
+.portalActivityRailDismiss:hover { color: var(--danger); background: var(--panel-2); }
+.portalActivityRailDismiss .portalIcon { width: 10px; height: 10px; }
 
 .portalWorkbenchPanelFrame > [data-portal-workbench-panel] {
   box-sizing: border-box;
@@ -1526,6 +1552,120 @@ html[data-portal-viewport="mobile"] .portalWorkbenchMobilePanel.is-active {
 .portalFileRow.is-loading {
   cursor: progress;
   opacity: .72;
+}
+
+/* Navigation tree rows ------------------------------------------------------
+ * Borderless rows for organisational objects (groups that expand into
+ * children, and leaves that open). A row has one main button, an optional
+ * count, and an action slot; the slot may reveal itself only on hover/focus.
+ * Children hang from the parent under a hairline guide.
+ */
+.portalNavTree { display: grid; gap: 1px; min-width: 0; }
+.portalNavTreeGroup { display: grid; gap: 1px; min-width: 0; }
+.portalNavTreeChildren {
+  position: relative;
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+  margin-left: 15px;
+  padding-left: 9px;
+}
+.portalNavTreeChildren::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 2px;
+  bottom: 6px;
+  border-left: 1px solid var(--border);
+  pointer-events: none;
+}
+.portalNavRow {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  min-height: 32px;
+  border-radius: 7px;
+  color: var(--text);
+}
+.portalNavRow:hover,
+.portalNavRow.is-menu-open { background: var(--panel-2); }
+.portalNavRow.is-active {
+  background: color-mix(in srgb, var(--accent) 11%, var(--panel-2));
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+.portalNavRowMain {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 0;
+  border-radius: inherit;
+  background: transparent;
+  color: inherit;
+  padding: 6px 6px 6px 6px;
+  font: inherit;
+  font-size: 13px;
+  line-height: 1.3;
+  text-align: left;
+  cursor: pointer;
+}
+.portalNavRowMain:disabled { cursor: default; opacity: 1; }
+.portalNavRowMain:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.portalNavRowChevron { width: 12px; height: 12px; flex: 0 0 12px; color: var(--muted); }
+.portalNavRowMark {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 18px;
+  border-radius: 5px;
+  display: inline-grid;
+  place-items: center;
+  background: hsl(var(--portal-nav-mark-hue, 210) 46% 44%);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0;
+}
+.portalNavRowLabel { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.portalNavRow.is-group .portalNavRowLabel { font-weight: 600; }
+.portalNavRow.is-leaf { color: color-mix(in srgb, var(--text) 82%, var(--muted)); }
+.portalNavRow.is-leaf.is-active { color: var(--text); font-weight: 600; }
+.portalNavRow.is-locked .portalNavRowLabel,
+.portalNavRow.is-unavailable .portalNavRowLabel { color: var(--muted); }
+.portalNavRowCount {
+  margin-left: auto;
+  flex: 0 0 auto;
+  padding-left: 6px;
+  color: color-mix(in srgb, var(--muted) 82%, transparent);
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.portalNavRowCount.is-empty { color: color-mix(in srgb, var(--muted) 45%, transparent); }
+.portalNavRowLock { width: 13px; height: 13px; flex: 0 0 13px; color: var(--muted); margin-right: 2px; }
+.portalNavRowActions { display: flex; align-items: center; flex: 0 0 auto; padding-right: 3px; }
+.portalNavRowActions > .portalButton.is-icon {
+  width: 24px;
+  min-width: 24px;
+  height: 24px;
+  min-height: 24px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+}
+.portalNavRowActions > .portalButton.is-icon:hover:not(:disabled) { background: var(--panel-3); color: var(--text); }
+.portalNavRowActions > .portalButton.is-icon .portalIcon { width: 14px; height: 14px; }
+.portalNavRowActions > .portalButton[data-nav-favorite][aria-pressed="true"],
+.portalNavRowActions > .portalButton[data-nav-favorite][aria-pressed="true"]:hover { color: #f5c518; }
+/* Revealed actions stay out of sight until the row is pointed at or focused;
+ * a pressed toggle (a favourite) stays visible because it carries state. */
+.portalNavRowActions[data-reveal="hover"] > .portalButton:not([aria-pressed="true"]) { opacity: 0; }
+.portalNavRow:is(:hover, :focus-within, .is-menu-open) > .portalNavRowActions[data-reveal="hover"] > .portalButton { opacity: 1; }
+@media (hover: none) {
+  .portalNavRowActions[data-reveal="hover"] > .portalButton { opacity: 1; }
 }
 
 .portalFileRowShell {

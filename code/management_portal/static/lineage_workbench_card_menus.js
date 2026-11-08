@@ -153,43 +153,44 @@
       return {};
     }
 
-    function bindAgentCardControls(root) {
-      root.querySelectorAll("[data-project-lineage-create]").forEach(button => button.addEventListener("click", async event => {
-        event.stopPropagation();
-        button.disabled = true;
+    // Opens the HATG Lineage creation form with this Project preselected.
+    async function createProjectLineage(projectId) {
+      try {
+        if (!currentLineageWorkbench()?.isPanelVisible("hatg")) currentLineageWorkbench()?.showPanel("hatg", { zone: "right" });
+        const panel = currentLineageWorkbench()?.getPanel("hatg");
+        if (!panel?.createLineage) throw new Error("Lineage 创建面板尚未就绪，请刷新重试。");
+        await panel.createLineage({ projectId });
+      } catch (error) {
+        window.PortalUI.toast(window.PortalI18n.text`打开 Lineage 创建表单失败：${error.message || error}`, "error");
+      }
+    }
+
+    // Opens a Project's or Lineage's Leader conversation with its canvas; a
+    // Lineage without a Leader opens only its canvas.
+    async function openPrincipal({ residentId = "", lineageId = "" } = {}) {
+      if (!residentId && lineageId) {
         try {
           if (!currentLineageWorkbench()?.isPanelVisible("hatg")) currentLineageWorkbench()?.showPanel("hatg", { zone: "right" });
-          const panel = currentLineageWorkbench()?.getPanel("hatg");
-          if (!panel?.createLineage) throw new Error("Lineage 创建面板尚未就绪，请刷新重试。");
-          await panel.createLineage({ projectId: button.dataset.projectLineageCreate });
+          await currentLineageWorkbench().openResource({
+            type: "hatg",
+            mode: "reuse",
+            resource: { kind: "hatg", lineageId },
+          });
         } catch (error) {
-          window.PortalUI.toast(window.PortalI18n.text`打开 Lineage 创建表单失败：${error.message || error}`, "error");
-        } finally {
-          button.disabled = false;
+          window.PortalUI.toast(window.PortalI18n.text`打开 Lineage 失败：${error.message || error}`, "error");
         }
-      }));
-      root.querySelectorAll("[data-principal-open]").forEach(button => button.addEventListener("click", async event => {
+        return;
+      }
+      if (!residentId) return;
+      if (!currentLineageWorkbench()?.isPanelVisible("hatg")) currentLineageWorkbench()?.showPanel("hatg", { zone: "right" });
+      if (!currentLineageWorkbench()?.isPanelVisible("chat")) currentLineageWorkbench()?.showPanel("chat");
+      selectResident(residentId, { lineageId, forceView: true, revealInGraph: true }).catch(error => window.PortalUI.toast(error.message, "error"));
+    }
+
+    function bindAgentCardControls(root) {
+      root.querySelectorAll("[data-principal-open]").forEach(button => button.addEventListener("click", event => {
         event.stopPropagation();
-        let id = button.dataset.principalOpen;
-        const lineageId = button.dataset.lineageOpen || "";
-        if (!id && lineageId) {
-          try {
-            if (!currentLineageWorkbench()?.isPanelVisible("hatg")) currentLineageWorkbench()?.showPanel("hatg", { zone: "right" });
-            await currentLineageWorkbench().openResource({
-              type: "hatg",
-              mode: "reuse",
-              resource: { kind: "hatg", lineageId },
-            });
-          } catch (error) {
-            window.PortalUI.toast(window.PortalI18n.text`打开 Lineage 失败：${error.message || error}`, "error");
-          }
-          return;
-        }
-        if (id) {
-          if (!currentLineageWorkbench()?.isPanelVisible("hatg")) currentLineageWorkbench()?.showPanel("hatg", { zone: "right" });
-          if (!currentLineageWorkbench()?.isPanelVisible("chat")) currentLineageWorkbench()?.showPanel("chat");
-          selectResident(id, { lineageId, forceView: true, revealInGraph: true }).catch(error => window.PortalUI.toast(error.message, "error"));
-        }
+        openPrincipal({ residentId: button.dataset.principalOpen || "", lineageId: button.dataset.lineageOpen || "" });
       }));
       root.querySelectorAll("[data-resident-select]").forEach(btn => {
         let residentSelectTimer = 0;
@@ -273,7 +274,11 @@
         attributes: action => `data-agent-floating-action="${esc(action)}"`,
       });
       if (target?.type === "project") {
-        return `${target.item.lineage_id ? openActions : ""}${window.PortalI18n.html`<button class="agentCardAction" type="button" data-agent-floating-action="menu-scope" title="打开 Project Menu">Menu</button>`}`;
+        const project = target.item;
+        const canOpen = project.accessible !== false && Boolean(project.resident_id);
+        const projectActions = window.PortalI18n.html`<button class="agentCardAction" type="button" data-agent-floating-action="open-project" ${canOpen ? "" : "disabled"} title="打开 Project 对话和 HATG">打开对话和 HATG</button>
+          <button class="agentCardAction" type="button" data-agent-floating-action="create-lineage" title="在这个 Project 中新建 Lineage">添加 Lineage</button>`;
+        return `${projectActions}${project.lineage_id ? openActions : ""}${window.PortalI18n.html`<button class="agentCardAction" type="button" data-agent-floating-action="menu-scope" title="打开 Project Menu">Menu</button>`}`;
       }
       if (target?.type === "lineage") {
         const allows = lineageAllows(target.item?.lineage_id);
@@ -743,6 +748,13 @@
         renderAgentList(); renderFavoriteList();
         agentMenuButton(instanceId)?.focus();
         await window.PortalNav.openPrincipalBackpack({ principalId: residentExactId(item) });
+        return;
+      }
+      if (target.type === "project" && (action === "open-project" || action === "create-lineage")) {
+        renderAgentList();
+        renderFavoriteList();
+        if (action === "open-project") await openPrincipal({ residentId: String(item.resident_id || "") });
+        else await createProjectLineage(item.project_id);
         return;
       }
       if (action === "open-new-tab" || action === "open-side") {

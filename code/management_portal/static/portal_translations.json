@@ -1878,17 +1878,21 @@
     "en": "<span class=\"portalActivityRailRunning\" title=\"Running\" aria-hidden=\"true\"></span>",
     "zh-CN": "<span class=\"portalActivityRailRunning\" title=\"正在运行\" aria-hidden=\"true\"></span>"
   },
-  "<span class=\"portalActivityRailUnread activityRecentUnreadDot\" title=\"有未查看的新回复\" aria-hidden=\"true\"></span>": {
-    "en": "<span class=\"portalActivityRailUnread activityRecentUnreadDot\" title=\"New unread replies\" aria-hidden=\"true\"></span>",
-    "zh-CN": "<span class=\"portalActivityRailUnread activityRecentUnreadDot\" title=\"有未查看的新回复\" aria-hidden=\"true\"></span>"
+  "<span class=\"portalActivityRailUnread\" title=\"有未查看的新回复\" aria-hidden=\"true\"></span>": {
+    "en": "<span class=\"portalActivityRailUnread\" title=\"New unread replies\" aria-hidden=\"true\"></span>",
+    "zh-CN": "<span class=\"portalActivityRailUnread\" title=\"有未查看的新回复\" aria-hidden=\"true\"></span>"
   },
   "<span class=\"portalDocumentTabPin\" data-portal-icon=\"pin\" aria-label=\"已锁定\" title=\"已锁定\"></span>": {
     "en": "<span class=\"portalDocumentTabPin\" data-portal-icon=\"pin\" aria-label=\"Locked\" title=\"Locked\"></span>",
     "zh-CN": "<span class=\"portalDocumentTabPin\" data-portal-icon=\"pin\" aria-label=\"已锁定\" title=\"已锁定\"></span>"
   },
-  "<span class=\"principalAccessLock\" data-portal-icon=\"lock\" aria-label=\"无访问权限\" title=\"当前无权打开 Project 对话\"></span>": {
-    "en": "<span class=\"principalAccessLock\" data-portal-icon=\"lock\" aria-label=\"No access permission\" title=\"You currently do not have permission to open the Project conversation\"></span>",
-    "zh-CN": "<span class=\"principalAccessLock\" data-portal-icon=\"lock\" aria-label=\"无访问权限\" title=\"当前无权打开 Project 对话\"></span>"
+  "<span class=\"portalNavRowLock principalAccessLock\" data-portal-icon=\"lock\" aria-label=\"无访问权限\" title=\"当前无权打开 Project 对话\"></span>": {
+    "en": "<span class=\"portalNavRowLock principalAccessLock\" data-portal-icon=\"lock\" aria-label=\"No access permission\" title=\"You currently do not have permission to open the Project conversation\"></span>",
+    "zh-CN": "<span class=\"portalNavRowLock principalAccessLock\" data-portal-icon=\"lock\" aria-label=\"无访问权限\" title=\"当前无权打开 Project 对话\"></span>"
+  },
+  "<span class=\"portalNavRowLock principalAccessLock\" data-portal-icon=\"lock\" aria-label=\"无访问权限\"></span>": {
+    "en": "<span class=\"portalNavRowLock principalAccessLock\" data-portal-icon=\"lock\" aria-label=\"No access permission\"></span>",
+    "zh-CN": "<span class=\"portalNavRowLock principalAccessLock\" data-portal-icon=\"lock\" aria-label=\"无访问权限\"></span>"
   },
   "<span class=\"principalAccessLock\" data-portal-icon=\"lock\" aria-label=\"无访问权限\"></span>": {
     "en": "<span class=\"principalAccessLock\" data-portal-icon=\"lock\" aria-label=\"No access permission\"></span>",
@@ -8890,9 +8894,9 @@
     "en": "A Project-level Lineage must have a Leader: the one being removed is its last member. First add other Residents to this Lineage, or use DeleteProject to delete the entire Project",
     "zh-CN": "Project 层 Lineage 必须有 Leader：要移除的是它最后的成员。先在这个 Lineage 中加入其他 Resident，或用 DeleteProject 删除整个 Project"
   },
-  "Project 已创建，可在项目卡片中添加 Lineage。": {
-    "en": "Project created; you can add Lineages in the project card.",
-    "zh-CN": "Project 已创建，可在项目卡片中添加 Lineage。"
+  "Project 已创建，可在它的「⋯」菜单中添加 Lineage。": {
+    "en": "Project created; add Lineages from its \"⋯\" menu.",
+    "zh-CN": "Project 已创建，可在它的「⋯」菜单中添加 Lineage。"
   },
   "Project 已创建，导航刷新失败：{p0}": {
     "en": "Project created, navigation refresh failed: {p0}",
@@ -27339,6 +27343,22 @@
   "打开 Project 对话和 HATG": {
     "en": "Open Project conversation and HATG",
     "zh-CN": "打开 Project 对话和 HATG"
+  },
+  "打开对话和 HATG": {
+    "en": "Open conversation and HATG",
+    "zh-CN": "打开对话和 HATG"
+  },
+  "在这个 Project 中新建 Lineage": {
+    "en": "Create a Lineage in this Project",
+    "zh-CN": "在这个 Project 中新建 Lineage"
+  },
+  "{p0} 菜单": {
+    "en": "{p0} menu",
+    "zh-CN": "{p0} 菜单"
+  },
+  "Lineage 菜单": {
+    "en": "Lineage menu",
+    "zh-CN": "Lineage 菜单"
   },
   "打开 Prompt": {
     "en": "Open Prompt",
