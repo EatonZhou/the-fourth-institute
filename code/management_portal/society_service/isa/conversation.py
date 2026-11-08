@@ -117,11 +117,11 @@ def deliver_message(inv: Invocation) -> dict[str, Any]:
             raise invalid("临时凭证只随发给 Resident 的消息签发")
         return deliver_to_user(inv, inv.argument("user_id"), message)
     resident_id = inv.argument("resident_id")
-    _check_answer_credentials(resident_id, message, credentials)
+    recipient_id = _check_answer_credentials(resident_id, message, credentials)
     if credentials:
         _check_lendable(inv, credentials)
     from ..resident_message_lending import MessageLending
-    lending = MessageLending(inv.caller, credentials) if credentials else None
+    lending = MessageLending(inv.caller, credentials, recipient_id=recipient_id) if credentials else None
     result = deliver(inv, resident_id, message, business_ref=inv.argument("business_ref") or "",
                      reply_to=inv.argument("reply_to_message_id") or "", lending=lending)
     if lending is not None:
@@ -133,7 +133,7 @@ def deliver_message(inv: Invocation) -> dict[str, Any]:
     return result
 
 
-def _check_answer_credentials(resident_id: object, message: dict[str, Any], credentials: list[dict[str, str]]) -> None:
+def _check_answer_credentials(resident_id: object, message: dict[str, Any], credentials: list[dict[str, str]]) -> str:
     """An answer lends exactly the permissions its approved questions asked for (decision_1e2eb869bc10)."""
     from management_common.async_questions import ANSWER_PART, approved_credentials, question_set
     from management_portal.society_service import resident_conversation_stream
@@ -141,7 +141,8 @@ def _check_answer_credentials(resident_id: object, message: dict[str, Any], cred
     answer = next((part for part in message.get("content_parts") or []
                    if isinstance(part, dict) and part.get("type") == ANSWER_PART), None)
     if answer is None:
-        return
+        return str(resident_id)
+    recipient_id = str(resident_id)
     try:
         source = resident_conversation_stream.get_repository().message(
             resident_id, str(answer.get("source_message_id") or "").strip())
@@ -149,14 +150,14 @@ def _check_answer_credentials(resident_id: object, message: dict[str, Any], cred
         source = None  # Delivery reports the invalid Resident.
     questions = question_set(source)
     if questions is None:
-        # The same Family projection used by answer admission may show a
-        # member's question here. It permits ordinary answers, never lending.
+        # Resolve the actual author from the persisted Family projection,
+        # never from a recipient ID supplied by the browser.
         from .. import family_facade, resident_record_domain
         facade = resident_record_domain.find_resident_for_admission(resident_id)
         projected = family_facade.relayed_reply(facade, str(answer.get("source_message_id") or "").strip()) if facade and family_facade.is_facade(facade) else None
         questions = question_set(projected["reply"]) if projected else None
-        if questions and approved_credentials(questions["questions"], answer.get("answers")):
-            raise invalid("成员在 Family 内提出的权限请求不能经门面交出")
+        if questions:
+            recipient_id = str(projected["worker_id"])
     if questions is None:
         raise invalid("该 Resident 中的问题不存在或已不可用")
     requested = {(item["a"], item["resource_id"])
@@ -164,6 +165,7 @@ def _check_answer_credentials(resident_id: object, message: dict[str, Any], cred
     lent = [(item["a"], item["resource_id"]) for item in credentials]
     if set(lent) != requested or len(set(lent)) != len(lent):
         raise invalid("回答随消息交出的权限必须正好是所同意的问题请求的权限")
+    return recipient_id
 
 
 def _check_lendable(inv: Invocation, credentials: list[dict[str, str]]) -> None:

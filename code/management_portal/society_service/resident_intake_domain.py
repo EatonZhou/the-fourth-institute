@@ -885,6 +885,9 @@ def _deliver_to_facade(
         return _receipt(request)
     from . import family_recovery, family_role_quota_questions
 
+    if request.lending is not None and request.lending.recipient_id not in {"", record_id}:
+        return _deliver_projected_permission_answer(request, record, facade_item)
+
     if family_role_quota_questions.question_of(record_id, facade_message) is not None:
         if request.lending is not None:
             raise ValueError("门面额度回答立即结束，不能随它借出权限")
@@ -936,6 +939,39 @@ def _deliver_to_facade(
     )
     # Arrival publication/routing above is reliable and retains its ordering.
     # The sender need not wait for a second aggregate/UI controls read.
+    return _receipt(request, deferred_delivery=True)
+
+
+def _deliver_projected_permission_answer(request: ResidentInput, record: dict, message: dict) -> dict:
+    """Admit the facade trace, exact member answer and loans in one transaction.
+
+    Unlike an ordinary routed request, consent cannot wait for a Router to
+    choose its recipient. Every nested facade follows the original question;
+    normal relay admission still enforces membership, preferences and quota.
+    """
+    from management_common.async_questions import answered_set
+    from . import family_quota, family_recovery
+    from .state_store import get_lineage_data_store
+
+    resident_id, message_id = request.resident_id, request.message_id
+    projected = family_facade.relayed_reply(record, answered_set(message))
+    if not projected or projected["worker_id"] != request.lending.recipient_id:
+        raise ValueError("原问题的提问成员已不可用，请重新加载问题")
+    repository = resident_conversation_stream.get_repository()
+    # The outer state lock discards deferred publication/wakes on rollback.
+    # Nested admissions join this transaction, so no facade can accept an
+    # approval whose permissions failed to reach the final member.
+    with invariant_locks.resident_conversation_lock(resident_id), get_lineage_data_store().database.transaction():
+        if not existing_resident_delivery(resident_id, message):
+            resident_lifecycle_domain.accept_resident_user_message(resident_id, message)
+            family_recovery.register(record, message)
+            repository.set_input_state(resident_id, message_id, "queued")
+        result = family_quota.relay_message(resident_id, message_id, projected["member_id"],
+                                           request.actor_id, lending=request.lending)
+        if result.get("status") != "relayed":
+            raise ValueError("提问成员暂时不能接收授权回答，请稍后重试；尚未交出权限")
+    invariant_locks.defer_until_state_unlock(lambda: resident_held_infos.release_with(record, message_id))
+    invariant_locks.defer_until_state_unlock(lambda: lineage_message_events.wake_watchers(record, message_id))
     return _receipt(request, deferred_delivery=True)
 
 

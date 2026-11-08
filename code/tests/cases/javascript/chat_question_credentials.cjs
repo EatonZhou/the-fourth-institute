@@ -69,7 +69,8 @@ function check(name, actual, expected) {
         return { resident_id: args.resident_id, message_id: args.message.message_id, input_state: { state: 'queued' } };
       } };
       window.LEND = { a: '@contributor', resource_id: 'workbench_0123456789ab' };
-      window.asking = (id, familyReply = false) => ({ message_id: 'msg_' + id, role: 'agent', family_reply: familyReply,
+      window.asking = (id, familyReply = false) => ({ message_id: 'msg_' + id, role: 'agent',
+        family_reply: familyReply ? {resident_id: 'resident_222222222222', title: '资源与权限开发'} : null,
         content_parts: [{ type: 'text', text: 'Need your permission' }, { type: 'async_questions', answer_message_id: id, state: 'open',
           questions: [
             { question_index: 0, title: 'Lend to publish?', options: ['同意交出这些权限', '不交出'], credentials: [LEND] },
@@ -108,16 +109,33 @@ function check(name, actual, expected) {
     check('declining lends nothing', await page.evaluate(() => 'temporary_credentials' in delivered[1]), false);
 
     await page.evaluate(() => { snap.messages = [asking('answer_c', true)]; render(); });
-    check('a member request on a facade cannot be approved', await card().locator('[data-question-option="0"]').isDisabled(), true);
-    check('a member request on a facade says why', await card().locator('.residentQuestionCredentials > span').first().innerText(),
-      '成员在 Family 内提出的权限请求不能经门面交出');
+    check('a member request on a facade can be approved', await card().locator('[data-question-option="0"]').isEnabled(), true);
+    check('a member request identifies the actual recipient', await card().locator('.residentQuestionCredentials > span').first().innerText(),
+      '同意后，以下权限只交给提问成员：资源与权限开发 · resident_222222222222');
+    for (const width of [945, 625, 390]) {
+      await page.setViewportSize({width, height: 900});
+      check(`permission card fits at ${width}px`, await card().evaluate(element => element.scrollWidth <= element.clientWidth), true);
+      if (process.env.SCREENSHOT_DIR) {
+        fs.mkdirSync(process.env.SCREENSHOT_DIR, {recursive: true});
+        await card().screenshot({path: path.join(process.env.SCREENSHOT_DIR, `facade-permission-${width}.png`)});
+      }
+    }
+    await card().locator('[data-question-option="0"]').click();
+    await card().locator('[data-question-option="0"]').click();
+    await page.waitForFunction(() => delivered.length === 3);
+    check('facade approval retains its original question and exact credentials', await page.evaluate(() => ({
+      resident: delivered[2].resident_id, source: delivered[2].message.content_parts[1].source_message_id,
+      credentials: delivered[2].temporary_credentials,
+    })), {resident: 'resident_111111111111', source: 'msg_answer_c',
+      credentials: [{a: '@contributor', resource_id: 'workbench_0123456789ab'}]});
+    await page.evaluate(() => { snap.messages = [asking('answer_close', true)]; render(); });
     check('a member permission question can still be closed without lending', await card().locator('[data-question-close]').count(), 1);
     await card().locator('[data-question-close]').click();
     await page.waitForFunction(() => closedRequests.length === 1);
     check('close uses the facade and original source message', await page.evaluate(() => closedRequests[0]), {
-      resident_id: 'resident_111111111111', message_id: 'msg_answer_c', answers: {action: 'cancel'},
+      resident_id: 'resident_111111111111', message_id: 'msg_answer_close', answers: {action: 'cancel'},
     });
-    check('closed member question shows its outcome', await page.locator('[data-resident-question="answer_c"] .residentQuestionStatus').innerText(), '已关闭，不再回答');
+    check('closed member question shows its outcome', await page.locator('[data-resident-question="answer_close"] .residentQuestionStatus').innerText(), '已关闭，不再回答');
 
     await page.evaluate(() => {
       window.plain = id => {
@@ -148,7 +166,7 @@ function check(name, actual, expected) {
     await page.evaluate(() => { failClose = false; });
     await card().locator('[data-question-close]').click();
     check('active facade question is closed', await page.locator('[data-resident-question="close_active"] .residentQuestionStatus').innerText(), '已关闭，不再回答');
-    check('close never sends an answer or credentials', await page.evaluate(() => delivered.length), 2);
+    check('close never sends an answer or credentials', await page.evaluate(() => delivered.length), 3);
     await page.evaluate(() => {
       const message = plain('closed_on_server'); message.content_parts[1].state = 'closed';
       snap.messages = [message]; render();
@@ -157,7 +175,7 @@ function check(name, actual, expected) {
     await page.evaluate(() => { snap.messages = [plain('read_only')]; snap.controls.can_send = false; render(); });
     check('read-only viewers cannot close questions', await page.locator('[data-question-close]').count(), 0);
     check('browser errors', evidence.errors, []);
-    console.log('PASS permission requests and facade question closure without sending answers');
+    console.log('PASS permission requests through facade and closure without lending');
   } finally {
     if (browser) await browser.close(); server.closeAllConnections(); await new Promise(resolve => server.close(resolve));
     if (process.env.EVIDENCE_PATH) fs.writeFileSync(process.env.EVIDENCE_PATH, JSON.stringify(evidence, null, 2) + '\n');

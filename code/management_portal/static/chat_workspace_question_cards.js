@@ -101,8 +101,8 @@
                 // The server resolves facade replies to the original member's
                 // question set; closing uses the same conversation permission.
                 closable: true,
-                // Permissions are lent to the Resident this conversation belongs to, never through a facade.
-                lendable: !message.family_reply,
+                recipient_id: message.family_reply?.resident_id || message.author_id || "",
+                recipient_title: message.family_reply?.title || "",
                 questions: (part.questions || []).map(question => ({ id: question.question_index, title: question.title, options: question.options || [],
                   credentials: Array.isArray(question.credentials) ? question.credentials : [] })),
                 state: answered ? "answered" : closed.has(part.answer_message_id) ? "closed" : part.state || "open",
@@ -215,7 +215,7 @@
           host.replaceChildren(this.active.element);
         }
         const sending = this.sending.has(`${scope}:${group.key}`);
-        const signature = JSON.stringify([this.progressOf(group), sending, this.active.error]);
+        const signature = JSON.stringify([this.progressOf(group), sending, this.active.error, group.recipient_id, group.recipient_title]);
         if (this.active.signature !== signature) this.drawActive();
       }
 
@@ -228,7 +228,7 @@
         const { group, element, scope } = this.active;
         const progress = this.progressOf(group);
         const sending = this.sending.has(`${scope}:${group.key}`);
-        this.active.signature = JSON.stringify([progress, sending, this.active.error]);
+        this.active.signature = JSON.stringify([progress, sending, this.active.error, group.recipient_id, group.recipient_title]);
         const step = Math.min(progress.step, group.questions.length - 1);
         const question = group.questions[step];
         const chosen = progress.answers[question.id] || "";
@@ -236,8 +236,10 @@
         // A permission request: its fixed options are the server's own words, the
         // first approves, and only the exact permissions it lists can be lent.
         const lending = question.credentials?.length > 0;
+        const recipientId = group.recipient_id || this.active.target.resident_id;
+        const recipient = group.recipient_title ? `${group.recipient_title} · ${recipientId}` : recipientId;
         const credentials = lending ? window.PortalI18n.html`<div class="residentQuestionCredentials">
-          <span>${escapeHtml(group.lendable ? window.PortalI18n.t("同意后随这条回答交给 Resident 的权限：") : window.PortalI18n.t("成员在 Family 内提出的权限请求不能经门面交出"))}</span>
+          <span>${escapeHtml(window.PortalI18n.text`同意后，以下权限只交给提问成员：${recipient}`)}</span>
           <ul>${question.credentials.map(item => window.PortalI18n.html`<li><code>${escapeHtml(item.a)}</code> · <code>${escapeHtml(item.resource_id)}</code></li>`).join("")}</ul>
           <span class="residentQuestionCredentialScope">${escapeHtml(window.PortalI18n.t("只在 Resident 处理这条回答期间有效，处理完即失效。"))}</span>
         </div>` : "";
@@ -258,7 +260,6 @@
         <div class="residentQuestionChoices">${question.options.map((option, index) => window.PortalI18n.html`<button type="button" class="portalButton residentQuestionChoice" data-question-option="${index}" aria-pressed="${String(option === chosen)}">${index < 9 ? window.PortalI18n.html`<kbd>${index + 1}</kbd>` : ""}<span>${escapeHtml(lending ? window.PortalI18n.t(option) : option)}</span></button>`).join("")}</div>
         ${lending ? "" : window.PortalI18n.html`<div class="residentQuestionCustom"><input type="text" data-question-custom value="${escapeHtml(custom)}" placeholder="${escapeHtml(question.options.length ? window.PortalI18n.t("其他回答，按 Enter 确认") : window.PortalI18n.t("输入回答，按 Enter 确认"))}" aria-label="${escapeHtml(window.PortalI18n.text`回答：${question.title}`)}" /><button type="button" class="portalButton is-compact is-primary" data-question-confirm>${escapeHtml(step === group.questions.length - 1 ? window.PortalI18n.t("提交回答") : window.PortalI18n.t("下一题"))}</button></div>`}`;
         for (const control of element.querySelectorAll("button, input")) control.disabled = sending;
-        if (lending && !group.lendable) element.querySelector('[data-question-option="0"]').disabled = true;
         element.querySelectorAll("[data-question-option]").forEach(button => {
           let pointerStart = null;
           button.addEventListener("pointerdown", event => { pointerStart = { x: event.clientX, y: event.clientY }; });
@@ -354,7 +355,7 @@
         const answers = group.questions.map(question => ({ question_index: question.id, answer: progress.answers[question.id] }));
         // The user lends, as themself, exactly what each approved request lists.
         const lent = new Map();
-        if (group.lendable) {
+        if (group.kind === "async") {
           for (const question of group.questions) {
             if (!question.credentials?.length || progress.answers[question.id] !== question.options[0]) continue;
             for (const item of question.credentials) lent.set(`${item.a}\n${item.resource_id}`, { a: item.a, resource_id: item.resource_id });

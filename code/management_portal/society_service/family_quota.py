@@ -75,7 +75,7 @@ def role_availability(record: dict[str, Any], *, execution_gate: dict[str, Any] 
 def relay_message(facade_id: str, message_id: str, member_id: str, actor: str,
                   *, quota_reviewed: bool = False, reason: str = "", scope_gap: str = "",
                   scope_reviewed: bool = False, recover: bool = False,
-                  continue_previous: bool = False) -> dict[str, Any]:
+                  continue_previous: bool = False, lending=None) -> dict[str, Any]:
     from . import invariant_locks
     from management_portal.hatg.contracts import InstructionError
     # A resumed ordinary delivery and a reassignment must never publish two
@@ -85,19 +85,19 @@ def relay_message(facade_id: str, message_id: str, member_id: str, actor: str,
             raise InstructionError("instruction.in_progress", "原请求正在转交，请按原身份重试", retryable=True)
         return _relay_owned(facade_id, message_id, member_id, actor,
             quota_reviewed=quota_reviewed, reason=reason, scope_gap=scope_gap,
-            scope_reviewed=scope_reviewed, recover=recover, continue_previous=continue_previous)
+            scope_reviewed=scope_reviewed, recover=recover, continue_previous=continue_previous, lending=lending)
 
 
 def _relay_owned(facade_id: str, message_id: str, member_id: str, actor: str,
                  *, quota_reviewed: bool, reason: str, scope_gap: str,
-                 scope_reviewed: bool, recover: bool, continue_previous: bool) -> dict[str, Any]:
+                 scope_reviewed: bool, recover: bool, continue_previous: bool, lending=None) -> dict[str, Any]:
     if recover:
         return _relay_failed_route(facade_id, message_id, member_id, actor,
             reason=reason, quota_reviewed=quota_reviewed, scope_gap=scope_gap, scope_reviewed=scope_reviewed,
             continue_previous=continue_previous)
     result = _relay_message(facade_id, message_id, member_id, actor, quota_reviewed=quota_reviewed,
                             reason=reason, scope_gap=scope_gap, scope_reviewed=scope_reviewed,
-                            continue_previous=continue_previous)
+                            continue_previous=continue_previous, lending=lending)
     if result["status"] in {"waiting_for_quota_review", "waiting_for_steward"}:
         from . import changes
         changes.resident_changed(facade_id)
@@ -168,7 +168,7 @@ def _relay_failed_route(facade_id: str, message_id: str, member_id: str, actor: 
 
 def _relay_message(facade_id: str, message_id: str, member_id: str, actor: str,
                    *, quota_reviewed: bool, reason: str, scope_gap: str = "",
-                   scope_reviewed: bool = False, continue_previous: bool = False) -> dict[str, Any]:
+                   scope_reviewed: bool = False, continue_previous: bool = False, lending=None) -> dict[str, Any]:
     from . import outward_messages, resident_conversation_stream, resident_protocol
     from management_common.async_questions import answered_set
     from . import resident_record_domain
@@ -214,6 +214,8 @@ def _relay_message(facade_id: str, message_id: str, member_id: str, actor: str,
     if link:
         if link["resident_id"] != member_id:
             raise ValueError("该门面请求已经投给其他成员")
+        if lending is not None:
+            lending.replay(lending.recipient_id, message_id)
         return {"status": "relayed", "member_id": member_id, "message_id": link["message_id"]}
     from . import family_recovery
     restorations = family_recovery.route_restorations(facade).get(message_id) or []
@@ -235,6 +237,8 @@ def _relay_message(facade_id: str, message_id: str, member_id: str, actor: str,
         candidate = resident_intake_domain.preflight_resident_input(
             member_id, str(message["author_id"]), envelope, business_ref=mark)
         if resident_intake_domain.existing_resident_delivery(member_id, candidate):
+            if lending is not None:
+                lending.replay(lending.recipient_id, delivered_id)
             return _finish_relay(facade, message_id, member_id, delivered_id, repository)
     from . import family_chat_preferences
     family_chat_preferences.validate_target(facade, message, member_id)
@@ -365,7 +369,7 @@ def _relay_message(facade_id: str, message_id: str, member_id: str, actor: str,
             {"resident_id": member_id, "message": envelope,
              "activation_policy": "enqueue_and_trigger"}, author,
             delivery_context=resident_protocol.ResidentDeliveryContext(
-                lineage_id=facade["lineage_id"], business_ref=mark,
+                lineage_id=facade["lineage_id"], business_ref=mark, lending=lending,
             ),
         )
     return _finish_relay(facade, message_id, member_id, str(result.get("message_id") or delivered_id), repository)

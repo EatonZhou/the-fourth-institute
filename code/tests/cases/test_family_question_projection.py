@@ -122,8 +122,9 @@ def test_member_permission_approval_cannot_be_silently_delivered_without_credent
     repo.append_message(MEMBER, message)
     answer = {'content_parts': [{'type': 'async_question_answer', 'source_message_id': message['message_id'],
                                 'answers': [{'question_index': 0, 'answer': CREDENTIAL_APPROVE}]}]}
-    with pytest.raises(InstructionError, match='不能经门面交出'):
+    with pytest.raises(InstructionError, match='必须正好'):
         _check_answer_credentials(facade['resident_id'], answer, [])
+    assert _check_answer_credentials(facade['resident_id'], answer, requested) == MEMBER
     answer['content_parts'][0]['answers'][0]['answer'] = CREDENTIAL_DECLINE
     _check_answer_credentials(facade['resident_id'], answer, [])
 

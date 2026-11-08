@@ -12,7 +12,7 @@ def test_chat_question_credentials():
     """提问卡片展示权限请求，同意时随回答签发正好这些凭证
 
     卡片列出精确的 A 节点与资源，只提供固定的同意与不交出；同意后 DeliverMessage 带上请求的凭证，不交出不带；
-    门面中成员的权限请求不能同意。真实聊天面板与问题卡片，合成快照，DeliverMessage 只被截获。
+    门面中成员的权限请求显示实际获权成员并可同意，提交保留门面和原问题身份。真实聊天面板与问题卡片，合成快照，DeliverMessage 只被截获。
 
     :risk: no-external-side-effects
     :profiles: local.fixture
