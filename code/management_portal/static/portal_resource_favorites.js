@@ -122,12 +122,11 @@
       const row = node("div", "resourceFavoriteRow");
       const button = node("button", "resourceFavoriteOpen"); button.type = "button";
       const title = item.title || item.address;
-      button.append(node("span", "resourceFavoriteTitle", title));
       const status = item.status === "denied" ? text("无访问权限") : item.status === "missing" ? text("资源不存在") : "";
+      button.append(node("span", "resourceFavoriteTitle", status ? `${status} · ${title}` : title));
       const resourceType = item.resource_type || window.PortalResourceChips?.resourceTypeFromAddress?.(item.address);
       const meta = [resourceType, item.project || item.project_id, status].filter(Boolean).join(" · ");
-      button.append(node("span", "resourceFavoriteMeta", meta || item.address));
-      button.title = `${title}\n${item.address}`;
+      button.title = [title, meta, item.address].filter(Boolean).join("\n");
       button.disabled = !!status;
       button.addEventListener("click", () => open(item.address).catch(notifyError));
       const star = node("span"); star.dataset.resourceFavorite = item.address;
@@ -136,13 +135,12 @@
   }
   function mountList(root) {
     if (lists.has(root)) return;
-    const section = node("details", "favoriteGroup resourceFavorites"); section.open = true;
-    const summary = node("summary", "favoriteGroupHead");
-    const chevron = node("span", "favoriteGroupChevron"); chevron.dataset.portalIcon = "chevron-right";
-    summary.append(chevron, node("span", "favoriteGroupName", "Knowledge"));
-    const count = node("span", "favoriteGroupCount"); count.dataset.resourceFavoriteCount = "";
+    const section = node("details", "residentSection resourceFavorites"); section.open = true;
+    const summary = node("summary", "residentGroupHead");
+    summary.append(node("span", "residentGroupName", "Knowledge"));
+    const count = node("span", "residentSubgroupCount"); count.dataset.resourceFavoriteCount = "";
     summary.append(count);
-    const body = node("div", "favoriteGroupBody"); section.append(summary, body); root.replaceChildren(section);
+    const body = node("div", "residentGroupBody"); section.append(summary, body); root.replaceChildren(section);
     lists.set(root, body); renderList(root, body); void refresh();
   }
   function render() { syncButtons(); for (const [root, body] of lists) renderList(root, body); }

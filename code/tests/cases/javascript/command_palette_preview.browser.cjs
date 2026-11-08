@@ -177,7 +177,7 @@ const server = http.createServer((req, res) => {
     const entries = page.locator('[data-resource-favorites] .resourceFavoriteOpen');
     await page.waitForFunction(() => document.querySelectorAll('[data-resource-favorites] .resourceFavoriteOpen').length === 3);
     assert.equal(await page.locator('[data-resource-favorite-count]').innerText(), '3');
-    assert.deepEqual(await page.locator('#favoriteAgentList .favoriteGroupName').allTextContents(), ['Projects 与 Lineages', 'Knowledge']);
+    assert.deepEqual(await page.locator('#favoriteAgentList .residentGroupName').allTextContents(), ['Projects 与 Lineages', 'Knowledge']);
     assert.equal(await entries.filter({hasText: 'decision_aaaaaaaaaaaa'}).isDisabled(), true, 'revoked knowledge can still be removed');
     assert.equal(await entries.filter({hasText: '知识条目附属文件'}).count(), 1, 'nested knowledge file follows root identity');
     assert.equal(await entries.filter({hasText: '工作区文件'}).count(), 0);
@@ -197,12 +197,14 @@ const server = http.createServer((req, res) => {
         const bounds = root.getBoundingClientRect();
         const title = root.querySelector('.resourceFavoriteTitle');
         const text = getComputedStyle(title);
-        const headings = [...root.querySelectorAll('.favoriteGroupHead')].map(n => n.getBoundingClientRect());
+        const headings = [...root.querySelectorAll('.residentGroupHead')].map(n => getComputedStyle(n));
         return {
           width: root.clientWidth, scroll: root.scrollWidth,
           titleFont: parseFloat(text.fontSize), residentFont: parseFloat(getComputedStyle(root.querySelector('.agentTitle')).fontSize),
-          multiline: title.getBoundingClientRect().height > parseFloat(text.lineHeight) * Number(document.body.style.zoom) * 1.5,
-          groupGap: headings[1].top - headings[0].bottom,
+          singleLine: Math.abs(title.getBoundingClientRect().height - parseFloat(text.lineHeight) * Number(document.body.style.zoom)) < 1,
+          ellipsis: text.textOverflow === 'ellipsis' && text.whiteSpace === 'nowrap' && title.scrollWidth > title.clientWidth,
+          normalWeight: text.fontWeight === '400',
+          originalHeadings: headings.every(s => s.height === '22px' && s.backgroundColor === headings[0].backgroundColor),
           controlsFit: [...root.querySelectorAll('.resourceFavoriteButton')].every(n => {
             const r = n.getBoundingClientRect(); return r.width >= 28 && r.left >= bounds.left && r.right <= bounds.right;
           }),
@@ -210,7 +212,9 @@ const server = http.createServer((req, res) => {
       });
       assert(geometry.scroll <= geometry.width + 1, JSON.stringify({width, scale, geometry}));
       assert.equal(geometry.titleFont, geometry.residentFont, 'knowledge and resident titles share font scale');
-      assert(geometry.multiline && geometry.controlsFit && geometry.groupGap >= 12, JSON.stringify(geometry));
+      assert(geometry.singleLine && geometry.ellipsis && geometry.normalWeight && geometry.controlsFit && geometry.originalHeadings, JSON.stringify(geometry));
+      assert((await saved.getAttribute('title')).includes(records[1].title), 'hover retains the full title');
+      assert((await saved.getAttribute('title')).includes('thinking'), 'type remains available on hover');
       const summary = page.locator('.resourceFavorites > summary');
       await summary.click(); assert.equal(await saved.isVisible(), false, 'Knowledge collapses');
       await summary.focus(); await page.keyboard.press('Enter'); assert.equal(await saved.isVisible(), true, 'keyboard reopens Knowledge');
@@ -221,10 +225,10 @@ const server = http.createServer((req, res) => {
       document.querySelector('#navigationHost').style.width = '310px';
       document.querySelector('#navigationHost').style.height = 'calc(100vh - 32px)';
     });
-    const projects = page.locator('[data-favorite-toggle="favorite_lineage"]');
+    const projects = page.locator('.residentGroupName[data-favorite-toggle="favorite_lineage"]');
     await projects.click();
     assert.equal(await projects.getAttribute('aria-expanded'), 'true');
-    assert.equal(await page.locator('[data-favorite-group] .favoriteGroupBody').isVisible(), true);
+    assert.equal(await page.locator('[data-favorite-group] .residentGroupBody').isVisible(), true);
     await projects.click();
     assert.equal(await projects.getAttribute('aria-expanded'), 'false');
     await saved.waitFor();
@@ -241,6 +245,6 @@ const server = http.createServer((req, res) => {
     await page.evaluate(() => controller.destroy());
     await Promise.all([page.waitForURL('**/destination/thinking_111111111111'), page.evaluate(() => PortalResourceFavorites.open('thinking_111111111111'))]);
     assert.deepEqual(errors, []);
-    console.log('PASS real Navigation/My Favorite host: 310/220px × 100/125/150% CSS zoom; no overflow, matching title scale, multiline titles, visible stars, separated groups, mouse/keyboard collapse; persisted Knowledge -> actual Preview -> unfavorite sync; retained other categories and permission states.');
+    console.log('PASS real Navigation/My Favorite host: 310/220px × 100/125/150% CSS zoom; original headings, normal-weight single-line ellipsis, full hover text, visible stars, no overflow, mouse/keyboard collapse; persisted Knowledge -> actual Preview -> unfavorite sync; retained other categories and permission states.');
   } finally { await browser.close(); await new Promise(resolve => server.close(resolve)); }
 })().catch(error => { console.error(error); process.exitCode = 1; });

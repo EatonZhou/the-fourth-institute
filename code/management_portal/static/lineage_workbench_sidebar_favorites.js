@@ -120,13 +120,12 @@
         : group.rows.length
           ? group.rows.map(favoriteTargetHtml).join("")
           : window.PortalI18n.html`<div class="residentEmpty">${esc(group.empty)}</div>`;
-      return window.PortalI18n.html`<section class="favoriteGroup" data-favorite-group="${esc(group.id)}">
-          <button class="favoriteGroupHead" type="button" data-favorite-toggle="${esc(group.id)}" aria-expanded="${open ? "true" : "false"}" title="${open ? window.PortalI18n.t("收起") : window.PortalI18n.t("展开")} ${esc(group.title)}">
-            <span class="favoriteGroupChevron" data-portal-icon="${open ? "chevron-down" : "chevron-right"}"></span>
-            <span class="favoriteGroupName">${esc(group.title)}</span>
-            <span class="favoriteGroupCount">${group.rows.length}</span>
-          </button>
-          ${open ? window.PortalI18n.html`<div class="favoriteGroupBody">${bodyHtml}</div>` : ""}
+      return window.PortalI18n.html`<section class="residentSection ${open ? "open" : "collapsed"}" data-favorite-group="${esc(group.id)}">
+          <div class="residentGroupHead">
+            <button class="residentToggle" type="button" data-favorite-toggle="${esc(group.id)}" aria-expanded="${open ? "true" : "false"}" aria-label="${open ? window.PortalI18n.t("收起") : window.PortalI18n.t("展开")} ${esc(group.title)}" title="${open ? window.PortalI18n.t("收起") : window.PortalI18n.t("展开")}" data-portal-icon="${open ? "chevron-up" : "chevron-down"}" data-portal-icon-class="residentChevron"></button>
+            <button class="residentGroupName" type="button" data-favorite-toggle="${esc(group.id)}" aria-expanded="${open ? "true" : "false"}" title="${open ? window.PortalI18n.t("收起") : window.PortalI18n.t("展开")} ${esc(group.title)}">${esc(group.title)}</button>
+          </div>
+          ${open ? window.PortalI18n.html`<div class="residentGroupBody">${bodyHtml}</div>` : ""}
         </section>`;
     }
 
