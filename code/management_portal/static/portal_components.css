@@ -946,9 +946,10 @@ body.portalBoardShell .filter-active-dot {
 .portalCommandRow > .portalCommandItem { flex: 1; min-width: 0; }
 .resourceFavoriteRow { padding: 5px 8px; border-radius: 6px; }
 .resourceFavoriteRow:hover { background: var(--surface-hover, rgba(128,128,128,.08)); }
-.resourceFavoriteOpen { flex: 1; min-width: 0; border: 0; background: transparent; color: inherit; text-align: left; cursor: pointer; padding: 4px; }
+.resourceFavoriteOpen { flex: 1; min-width: 0; border: 0; background: transparent; color: inherit; font: inherit; font-size: 13px; line-height: 1.4; text-align: left; cursor: pointer; padding: 4px; }
 .resourceFavoriteTitle, .resourceFavoriteMeta { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.resourceFavoriteTitle { font-weight: 600; }
-.resourceFavoriteMeta { color: var(--muted); font-size: 12px; margin-top: 4px; }
+.resourceFavoriteTitle { font-weight: 500; }
+.resourceFavoriteMeta { color: var(--muted); font-size: 11px; margin-top: 2px; }
+.resourceFavorites .residentSubgroupCount { margin-left: auto; }
 .resourceFavorites > summary { cursor: pointer; }
 .resourceFavoriteOpen:disabled { opacity: .6; cursor: default; }

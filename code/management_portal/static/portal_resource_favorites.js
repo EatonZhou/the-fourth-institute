@@ -2,6 +2,9 @@
   "use strict";
   if (window.PortalResourceFavorites) return;
   const endpoint = "/api/resources/favorites";
+  const knowledgeTypes = new Set(window.PortalResourceRoutes.routes
+    .filter(route => route.detail_kind === "knowledge").map(route => route.resource_type));
+  const isKnowledge = address => knowledgeTypes.has(window.PortalResourceChips.resourceTypeFromAddress(address));
   const buttons = new Map(), lists = new Map(), pending = new Set();
   const text = value => window.PortalI18n.t(value);
   let items = [], loaded = false, loading = null, error = "", revision = 0, identity = 0;
@@ -63,6 +66,11 @@
 
   function mountButton(container, address = container.dataset.resourceFavorite) {
     if (container.dataset.resourceFavorite !== address) container.dataset.resourceFavorite = address;
+    container.hidden = !isKnowledge(address);
+    if (container.hidden) {
+      removeButton(container); container.replaceChildren();
+      return () => removeButton(container);
+    }
     if (buttons.has(container)) { syncButtons(); return () => removeButton(container); }
     const button = node("button", "portalButton is-icon is-quiet resourceFavoriteButton");
     button.type = "button";
@@ -97,11 +105,12 @@
   }
 
   function renderList(root, body) {
+    const knowledge = items.filter(item => isKnowledge(item.address));
     const count = root.querySelector("[data-resource-favorite-count]");
-    count.textContent = String(items.length);
+    count.textContent = String(knowledge.length);
     body.replaceChildren();
-    if (error || !items.length) {
-      const hint = node("div", "residentEmpty", error || text(loading ? "加载资源收藏…" : "暂无资源收藏。在资源旁点击星标即可添加。"));
+    if (error || !knowledge.length) {
+      const hint = node("div", "residentEmpty", error || text(loading ? "加载知识收藏…" : "暂无知识收藏。在知识条目或其文件旁点击星标即可添加。"));
       body.append(hint);
       if (error) {
         const retry = node("button", "portalButton is-quiet", text("重试"));
@@ -109,7 +118,7 @@
       }
       return;
     }
-    for (const item of items) {
+    for (const item of knowledge) {
       const row = node("div", "resourceFavoriteRow");
       const button = node("button", "resourceFavoriteOpen"); button.type = "button";
       const title = item.title || item.address;
@@ -128,7 +137,7 @@
     if (lists.has(root)) return;
     const section = node("details", "residentSection resourceFavorites"); section.open = true;
     const summary = node("summary", "residentGroupHead");
-    summary.append(node("span", "residentGroupName", "Resource"));
+    summary.append(node("span", "residentGroupName", "Knowledge"));
     const count = node("span", "residentSubgroupCount"); count.dataset.resourceFavoriteCount = "";
     summary.append(count);
     const body = node("div", "residentGroupBody"); section.append(summary, body); root.replaceChildren(section);

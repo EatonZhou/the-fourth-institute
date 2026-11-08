@@ -62,7 +62,7 @@
 - [PortalResourceRegistrationService 的浏览器资源登记与 Git 初始化确认](/r/decision_b0997bc3a922)
 - [资源类型注册：声明文件、提供者绑定与管理页](/r/decision_355ed742bca5)
 - [Resident 稳定身份、成员归属与字段边界](/r/decision_0f57656a2acd)
-- [Principal 五层组织、Project 层 Lineage、导航与 Resource 收藏](/r/decision_3e07c6d35cac)
+- [Principal 五层组织、Project 层 Lineage、导航与 Knowledge 收藏](/r/decision_3e07c6d35cac)
 - [Resident 输入、执行与 Conversation 运行架构](/r/decision_edc470e09f5a)
 - [Portal Resident Invocation 的共享业务调用与结果收敛](/r/decision_725dedbe89b2)
 - [Family：把多个 Resident 组合为对外一个 Resident](/r/decision_44cf587c1721)

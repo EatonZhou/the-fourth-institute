@@ -12,7 +12,8 @@ const scripts = ['portal_state.js', 'portal_page_state.js', 'portal_text.js', 'p
   'portal_preview_runtime.js', 'portal_pdf_preview.js', 'portal_preview_renderers.js', 'portal_document_statistics.js',
   ...groups['portal-workspace-surface'].map(x => x.replace('/static/', '')),
   'portal_agent_preview_source.js', 'markdown.js', 'portal_display_protocol.js',
-  'home_dialogue_state.js', 'portal_file_preview.js', 'home_dialogue.js', 'portal_command_palette.js', 'portal_resource_favorites.js'];
+  'home_dialogue_state.js', 'portal_file_preview.js', 'home_dialogue.js', 'portal_command_palette.js', 'portal_resource_favorites.js',
+  'lineage_workbench_sidebar_favorites.js'];
 const css = [...fs.readFileSync(path.join(root, 'index.html'), 'utf8').matchAll(/href="(\/static\/[^"?]+\.css)"/g)].map(x => x[1]);
 const records = [
   { resource_id: 'thinking_111111111111', title: '第一条检索结果' },
@@ -24,6 +25,15 @@ const records = [
 let deny = false;
 const reads = [];
 const favorites = new Set();
+const extraFavorites = [
+  { address: 'lineage_aaaaaaaaaaaa', resource_type: 'lineage', title: '组织收藏' },
+  { address: 'project_aaaaaaaaaaaa', resource_type: 'project', title: '项目收藏' },
+  { address: 'paper_aaaaaaaaaaaa', resource_type: 'paper', title: '论文收藏' },
+  { address: 'workbench_aaaaaaaaaaaa', resource_type: 'workbench', title: '工作台收藏' },
+  { address: 'workspace_aaaaaaaaaaaa/file/notes.md', resource_type: 'workspace', title: '工作区文件' },
+  { address: 'thinking_111111111111/file/notes.md', title: '知识条目附属文件', status: 'available' },
+  { address: 'decision_aaaaaaaaaaaa', status: 'denied' },
+];
 const server = http.createServer((req, res) => {
   const url = new URL(req.url, 'http://fixture');
   const json = value => { res.setHeader('Content-Type', 'application/json'); res.end(JSON.stringify(value)); };
@@ -33,7 +43,7 @@ const server = http.createServer((req, res) => {
       req.on('end', () => { const value = JSON.parse(body); if (value.favorite) favorites.add(value.address); else favorites.delete(value.address); json(value); });
       return;
     }
-    return json({ items: records.filter(r => favorites.has(r.address)).map(r => ({ ...r, status: 'available' })) });
+    return json({ items: [...records, ...extraFavorites].filter(r => favorites.has(r.address)).map(r => ({ status: 'available', ...r })) });
   }
   if (url.pathname === '/api/resource-index/status') return json({ resource_types: ['thinking', 'resident'] });
   if (url.pathname === '/api/resource-index/suggest') return json({ resources: records });
@@ -47,7 +57,7 @@ const server = http.createServer((req, res) => {
   if (url.pathname.startsWith('/destination/')) { res.setHeader('Content-Type', 'text/html'); return res.end('原有页面导航'); }
   if (url.pathname === '/static/portal_resource_routes.js') {
     res.setHeader('Content-Type', 'text/javascript');
-    return res.end('window.PortalResourceRoutes={schema:"tfi.resource-portal-routes.v1",routes:[],text_resource_types:["thinking"],navigation_resource_types:["resident"],identity_parameters:[]};');
+    return res.end('window.PortalResourceRoutes={schema:"tfi.resource-portal-routes.v1",routes:[{resource_type:"thinking",detail_kind:"knowledge",path:"/resource/knowledge",parameter:"item"},{resource_type:"decision",detail_kind:"knowledge",path:"/resource/knowledge",parameter:"item"}],text_resource_types:["thinking","decision"],navigation_resource_types:["resident"],identity_parameters:[]};');
   }
   if (url.pathname.startsWith('/static/')) {
     const file = path.join(root, url.pathname);
@@ -134,17 +144,38 @@ const server = http.createServer((req, res) => {
     assert((await page.locator('.portalFilePreviewFailure').innerText()).includes('当前账号未获准读取这个文件'));
     // The shared favorites owner: search star -> persistence -> My Favorite -> real Preview.
     deny = false;
+    const retained = [records[2].address, ...extraFavorites.map(r => r.address)];
+    retained.forEach(address => favorites.add(address));
     await prepare(); await search();
+    assert.equal(await page.locator('#portalCommandList [data-resource-favorite="resident_333333333333"] button').count(), 0, 'navigation resources have no generic star');
     const star = page.locator('#portalCommandList [data-resource-favorite="thinking_222222222222"] button');
     await star.click();
     await page.waitForFunction(() => document.querySelector('#portalCommandList [data-resource-favorite="thinking_222222222222"] button')?.getAttribute('aria-pressed') === 'true');
     assert.equal(await page.locator('#portalCommandOverlay').isVisible(), true, 'star does not navigate');
     await prepare(); // reload, without seeding browser favorite state
+    await page.addStyleTag({path: path.join(root, 'static/lineage_workbench.css')});
     await page.evaluate(() => {
-      const root = document.createElement('aside'); root.dataset.resourceFavorites = ''; root.style.cssText = 'position:absolute;left:16px;top:16px;width:260px;background:white;z-index:10';
+      const root = document.createElement('aside'); root.id = 'favoriteAgentList'; root.style.cssText = 'position:absolute;left:16px;top:16px;width:300px;background:var(--surface,#fff);z-index:10';
       document.body.append(root);
+      const factory = PortalLineageWorkbenchSidebarFavorites;
+      const dependencies = Object.fromEntries(factory.dependencies.map(name => [name, () => {}]));
+      window.PortalPrincipalNavigation = { projectGroups: () => [{ title: '示例项目' }] };
+      Object.assign(dependencies, { $id: id => document.getElementById(id), esc: x => x,
+        state: { favoriteAgentIds: new Set(['project:示例项目']), favoriteStatuses: {}, favoriteGroups: {} },
+        lineageSidebarRoots: () => [], projectFavoriteSelectionId: () => 'project:示例项目', isFavoriteAgent: () => true,
+        residentNavigationShortcutsHtml: () => '',
+        projectCardHtml: () => '<div class="agentItem">示例项目</div>' });
+      factory.createSidebarFavorites(dependencies).renderFavoriteList();
     });
-    const saved = page.locator('[data-resource-favorites] .resourceFavoriteOpen');
+    const entries = page.locator('[data-resource-favorites] .resourceFavoriteOpen');
+    await page.waitForFunction(() => document.querySelectorAll('[data-resource-favorites] .resourceFavoriteOpen').length === 3);
+    assert.equal(await page.locator('[data-resource-favorite-count]').innerText(), '3');
+    assert.deepEqual(await page.locator('#favoriteAgentList .residentGroupName').allTextContents(), ['Projects 与 Lineages', 'Knowledge']);
+    assert.equal(await entries.filter({hasText: 'decision_aaaaaaaaaaaa'}).isDisabled(), true, 'revoked knowledge can still be removed');
+    assert.equal(await entries.filter({hasText: '知识条目附属文件'}).count(), 1, 'nested knowledge file follows root identity');
+    assert.equal(await entries.filter({hasText: '工作区文件'}).count(), 0);
+    assert.deepEqual([...favorites], [...retained, records[1].address], 'classification does not mutate saved favorites');
+    const saved = entries.filter({hasText: records[1].title});
     await saved.waitFor();
     assert((await saved.innerText()).includes(records[1].title));
     await saved.click();
@@ -152,10 +183,10 @@ const server = http.createServer((req, res) => {
     const previewStar = page.locator('.portalPreviewFavorite button');
     await previewStar.waitFor();
     assert.equal(await previewStar.getAttribute('aria-pressed'), 'true');
-    if (output) await page.screenshot({ path: path.join(output, 'resource-favorites-preview.png') });
+    if (output) await page.screenshot({ path: path.join(output, 'knowledge-favorites-preview.png') });
     await previewStar.click();
-    await page.waitForFunction(() => !document.querySelector('[data-resource-favorites] .resourceFavoriteOpen'));
-    assert.equal(favorites.size, 0, 'unfavorite propagates to sidebar and server');
+    await page.waitForFunction(() => document.querySelectorAll('[data-resource-favorites] .resourceFavoriteOpen').length === 2);
+    assert.deepEqual([...favorites], retained, 'unfavorite removes only selected knowledge, preserving other categories');
     // Without a Preview host, the bookmark opens the authorized resource detail URL.
     await page.evaluate(() => controller.destroy());
     await Promise.all([page.waitForURL('**/destination/thinking_111111111111'), page.evaluate(() => PortalResourceFavorites.open('thinking_111111111111'))]);

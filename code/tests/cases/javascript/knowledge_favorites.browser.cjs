@@ -54,6 +54,9 @@ const id = 'concept_123456789abc', other = 'insight_abcdef123456';
       window.knowledgeBoardShell = {formatDateTime: () => '2026-11-08'};
       window.el = Object.fromEntries(['mFavorite', 'mResourceIdentity', 'modal'].map(id => [id, document.getElementById(id)]));
       window.state = {};
+      window.PortalResourceRoutes = { schema: 'tfi.resource-portal-routes.v1',
+        routes: ['concept', 'insight'].map(resource_type => ({resource_type, detail_kind: 'knowledge', path: '/resource/knowledge', parameter: 'item'})),
+        text_resource_types: ['concept', 'insight'], identity_parameters: [] };
       window.detailDocumentSession = window.detailResourceGuest = null;
       window.detailHistory = {close() {}};
       window.disposeDetailPreview = window.resetDetailGraph = window.resetDetailChat = () => {};
@@ -69,7 +72,7 @@ const id = 'concept_123456789abc', other = 'insight_abcdef123456';
       renderKnowledgeResourceIdentity({kb_id: id});
     }, {id});
     // Load the actual shared owners after Knowledge has already declared containers.
-    for (const name of ['portal_api.js', 'portal_ui_primitives.js', 'portal_resource_header.js', 'portal_resource_favorites.js']) {
+    for (const name of ['portal_state.js', 'portal_api.js', 'portal_ui_primitives.js', 'portal_resource_chips.js', 'portal_resource_header.js', 'portal_resource_favorites.js']) {
       await page.addScriptTag({content: source(name)});
     }
     await page.evaluate(({id}) => {
@@ -91,11 +94,11 @@ const id = 'concept_123456789abc', other = 'insight_abcdef123456';
     assert.equal(await cardStar.getAttribute('aria-label'), '取消收藏此资源');
     assert.deepEqual(await page.evaluate(() => navigations), [], 'star click cannot open the card');
     assert.ok(saved.has(id));
+    await page.evaluate(() => { el.modal.hidden = false; document.getElementById('mSub').textContent = 'AI员工 · concept'; });
     const artifacts = process.env.KNOWLEDGE_FAVORITES_ARTIFACT_DIR;
     if (artifacts) {
       fs.mkdirSync(artifacts, {recursive: true});
       await page.locator('.card').screenshot({path: path.join(artifacts, 'knowledge-favorite-card.png')});
-      await page.evaluate(() => { el.modal.hidden = false; document.getElementById('mSub').textContent = 'AI员工 · concept'; });
       await page.locator('#modal .portalDetailHeader').screenshot({path: path.join(artifacts, 'knowledge-favorite-detail.png')});
     }
     await detailStar.click({force: true});
