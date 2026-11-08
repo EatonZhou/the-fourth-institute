@@ -135,7 +135,7 @@
   }
   function mountList(root) {
     if (lists.has(root)) return;
-    const section = node("details", "residentSection resourceFavorites"); section.open = true;
+    const section = node("details", "residentSection favoriteDisclosure resourceFavorites"); section.open = true;
     const summary = node("summary", "residentGroupHead");
     summary.append(node("span", "residentGroupName", "Knowledge"));
     const count = node("span", "residentSubgroupCount"); count.dataset.resourceFavoriteCount = "";

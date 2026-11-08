@@ -169,6 +169,7 @@ const server = http.createServer((req, res) => {
       window.PortalPrincipalNavigation = { projectGroups: () => [{ title: '示例项目' }] };
       Object.assign(dependencies, { $id: id => document.getElementById(id), esc: x => x,
         state: { favoriteAgentIds: new Set(['project:示例项目']), favoriteStatuses: {}, favoriteGroups: {favorite_lineage: false} },
+        writeLineageUiState: value => { window.savedFavoriteState = JSON.parse(JSON.stringify(value)); },
         lineageSidebarRoots: () => [], projectFavoriteSelectionId: () => 'project:示例项目', isFavoriteAgent: () => true,
         residentNavigationShortcutsHtml: () => '<div class="whichResidentWrap"><div class="agentItem"><div class="agentSelect"><span class="agentMain"><span class="agentTitle">Which Resident</span><span class="agentMeta">Resident</span></span></div></div></div><div class="agentItem personalAssistantResident active"><div class="agentSelect"><span class="agentMain"><span class="agentTitle">Ask Me Anything | My Lineage</span><span class="agentMeta">Resident</span></span></div></div>',
         projectCardHtml: () => '<div class="agentItem">示例项目</div>' });
@@ -225,12 +226,26 @@ const server = http.createServer((req, res) => {
       document.querySelector('#navigationHost').style.width = '310px';
       document.querySelector('#navigationHost').style.height = 'calc(100vh - 32px)';
     });
-    const projects = page.locator('.residentGroupName[data-favorite-toggle="favorite_lineage"]');
+    const projects = page.locator('[data-favorite-group="favorite_lineage"] > summary');
+    const knowledge = page.locator('.resourceFavorites > summary');
+    const marker = locator => locator.evaluate(node => getComputedStyle(node, '::before').content);
     await projects.click();
-    assert.equal(await projects.getAttribute('aria-expanded'), 'true');
+    await page.waitForFunction(() => window.savedFavoriteState?.favoriteGroups.favorite_lineage === true);
+    assert.equal(await marker(projects), await marker(knowledge), 'expanded groups share the filled triangle');
     assert.equal(await page.locator('[data-favorite-group] .residentGroupBody').isVisible(), true);
-    await projects.click();
-    assert.equal(await projects.getAttribute('aria-expanded'), 'false');
+    await knowledge.click();
+    await projects.focus(); await page.keyboard.press('Enter');
+    await page.waitForFunction(() => window.savedFavoriteState?.favoriteGroups.favorite_lineage === false);
+    assert.equal(await marker(projects), await marker(knowledge), 'collapsed groups share the filled triangle');
+    assert.equal(await saved.isVisible(), false, 'toggling Projects retains Knowledge collapse state');
+    for (const summary of [projects, knowledge]) {
+      const style = await summary.evaluate(node => {
+        const s = getComputedStyle(node); return {line: s.borderBottomWidth, lineStyle: s.borderBottomStyle, color: s.borderBottomColor, background: s.backgroundColor};
+      });
+      assert.equal(style.line, '1px'); assert.equal(style.lineStyle, 'solid');
+      assert.notEqual(style.color, style.background, 'visible separator under each group bar');
+    }
+    await knowledge.focus(); await page.keyboard.press('Space');
     await saved.waitFor();
     await saved.click();
     await page.waitForFunction(() => [...document.querySelectorAll('.portalFileDocument')].some(n => n.getClientRects().length && n.textContent.includes('thinking_222222222222')));

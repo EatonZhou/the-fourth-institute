@@ -120,21 +120,10 @@
         : group.rows.length
           ? group.rows.map(favoriteTargetHtml).join("")
           : window.PortalI18n.html`<div class="residentEmpty">${esc(group.empty)}</div>`;
-      return window.PortalI18n.html`<section class="residentSection ${open ? "open" : "collapsed"}" data-favorite-group="${esc(group.id)}">
-          <div class="residentGroupHead">
-            <button class="residentToggle" type="button" data-favorite-toggle="${esc(group.id)}" aria-expanded="${open ? "true" : "false"}" aria-label="${open ? window.PortalI18n.t("收起") : window.PortalI18n.t("展开")} ${esc(group.title)}" title="${open ? window.PortalI18n.t("收起") : window.PortalI18n.t("展开")}" data-portal-icon="${open ? "chevron-up" : "chevron-down"}" data-portal-icon-class="residentChevron"></button>
-            <button class="residentGroupName" type="button" data-favorite-toggle="${esc(group.id)}" aria-expanded="${open ? "true" : "false"}" title="${open ? window.PortalI18n.t("收起") : window.PortalI18n.t("展开")} ${esc(group.title)}">${esc(group.title)}</button>
-          </div>
-          ${open ? window.PortalI18n.html`<div class="residentGroupBody">${bodyHtml}</div>` : ""}
-        </section>`;
-    }
-
-    function toggleFavoriteGroup(groupId) {
-      if (!Object.prototype.hasOwnProperty.call(state.favoriteGroups, groupId)) return;
-      state.favoriteGroups[groupId] = state.favoriteGroups[groupId] === false;
-      writeLineageUiState({ favoriteGroups: state.favoriteGroups });
-      state.agentMenuId = "";
-      renderFavoriteList();
+      return window.PortalI18n.html`<details class="residentSection favoriteDisclosure" data-favorite-group="${esc(group.id)}" ${open ? "open" : ""}>
+          <summary class="residentGroupHead"><span class="residentGroupName">${esc(group.title)}</span></summary>
+          <div class="residentGroupBody">${bodyHtml}</div>
+        </details>`;
     }
 
     function toggleFavoriteProjectGroup(groupId) {
@@ -153,10 +142,14 @@
         : favoriteResidentGroups().map(renderFavoriteResidentGroup).join("");
       root.innerHTML = window.PortalI18n.html`<div class="agentList favoriteAgentList">${residentNavigationShortcutsHtml()}${content}<div data-resource-favorites></div></div>`;
       renderActivityRecentRail();
-      root.querySelectorAll("[data-favorite-toggle]").forEach(btn => {
-        btn.addEventListener("click", event => {
-          event.stopPropagation();
-          toggleFavoriteGroup(btn.dataset.favoriteToggle || "");
+      root.querySelectorAll("details[data-favorite-group]").forEach(section => {
+        section.addEventListener("toggle", () => {
+          const groupId = section.dataset.favoriteGroup;
+          if (state.favoriteGroups[groupId] === section.open) return;
+          state.favoriteGroups[groupId] = section.open;
+          writeLineageUiState({ favoriteGroups: state.favoriteGroups });
+          state.agentMenuId = "";
+          renderAgentFloatingMenu();
         });
       });
       root.querySelectorAll("[data-favorite-project-toggle]").forEach(btn => {
