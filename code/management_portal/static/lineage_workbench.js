@@ -1240,7 +1240,9 @@
       });
       lineageStateController.listen("page", window, "portal:change", event => {
         if (previewChangeMatches(event?.detail || {})) schedulePreviewRefresh();
-        if ((event.detail?.changed?.lineage || []).includes(state.personalAssistant?.lineage_id)) void refreshPersonalAssistantShortcut();
+        const changed = event.detail?.changed || {};
+        if ((changed.lineage || []).includes(state.personalAssistant?.lineage_id)
+          || (changed.resident || []).includes(state.personalAssistant?.resident_id)) void refreshPersonalAssistantShortcut();
       });
       lineageStateController.listen("page", window, "portal:events-ready", event => {
         if (event?.detail?.snapshot_required) schedulePreviewRefresh();

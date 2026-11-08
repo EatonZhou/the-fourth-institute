@@ -124,6 +124,27 @@ function check(name, actual, expected) {
     check('explicit question switch still works', await input().getAttribute('aria-label'), '回答：answer_b');
     await page.evaluate(() => { snap.controls.can_send = false; render(); });
     check('permission loss removes answerable inputs', await input().count(), 0);
+    await page.evaluate(() => {
+      const message = question('family_answer');
+      message.author_id = 'resident_222222222222';
+      message.family_reply = { resident_id: message.author_id, title: '提问成员' };
+      snap = { messages: [message], controls: { can_send: true } }; render();
+    });
+    await prepare(input());
+    await page.evaluate(() => { snap.messages[0].content_parts[0].text += ' refreshed'; render(); });
+    check('Family question refresh preserves input and composition', await state(), stable);
+    await page.evaluate(() => {
+      originalInput.dispatchEvent(new CompositionEvent('compositionend', { bubbles: true, data: '输入' }));
+    });
+    let typed = '';
+    for (const character of 'abcdef') {
+      await page.keyboard.type(character);
+      typed += character;
+      await page.evaluate(() => { snap.messages[0].content_parts[0].text += '.'; render(); });
+      check('Family typing survives refresh after ' + typed, await state(), {
+        ...stable, value: '正在' + typed + ' draft', selection: [2 + typed.length, 2 + typed.length],
+      });
+    }
     await page.evaluate(() => { snap = { messages: [question('native_a', 'native')], controls: { can_send: true } }; render(); });
     await prepare(input());
     await page.evaluate(() => { snap.messages[0].content_parts[0].text += ' refreshed'; render(); });

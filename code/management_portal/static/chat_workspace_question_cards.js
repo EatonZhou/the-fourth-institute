@@ -214,9 +214,7 @@
           delete host.dataset.questionSummary;
           host.replaceChildren(this.active.element);
         }
-        const sending = this.sending.has(`${scope}:${group.key}`);
-        const signature = JSON.stringify([this.progressOf(group), sending, this.active.error, group.recipient_id, group.recipient_title]);
-        if (this.active.signature !== signature) this.drawActive();
+        if (this.active.signature !== this.activeSignature()) this.drawActive();
       }
 
       progressOf(group) {
@@ -224,11 +222,17 @@
         return this.progress.get(group.key);
       }
 
+      activeSignature() {
+        const { group, scope, error } = this.active;
+        return JSON.stringify([this.progressOf(group), this.sending.has(`${scope}:${group.key}`),
+          error, group.recipient_id, group.recipient_title]);
+      }
+
       drawActive() {
         const { group, element, scope } = this.active;
         const progress = this.progressOf(group);
         const sending = this.sending.has(`${scope}:${group.key}`);
-        this.active.signature = JSON.stringify([progress, sending, this.active.error, group.recipient_id, group.recipient_title]);
+        this.active.signature = this.activeSignature();
         const step = Math.min(progress.step, group.questions.length - 1);
         const question = group.questions[step];
         const chosen = progress.answers[question.id] || "";
@@ -286,7 +290,7 @@
           this.saveProgress();
           // This edit is already in the mounted input. A snapshot refresh must
           // preserve its node, selection and any ongoing IME composition.
-          this.active.signature = JSON.stringify([progress, sending, this.active.error]);
+          this.active.signature = this.activeSignature();
         });
         element.querySelector("[data-question-confirm]")?.addEventListener("click", () => {
           this.answer(input.value.trim() || (progress.drafts?.[question.id] === undefined ? chosen : ""));

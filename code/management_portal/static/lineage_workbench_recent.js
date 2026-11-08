@@ -115,11 +115,16 @@
       const key = `${actor}:${residentId}`;
       if (!actor || metadataReads.has(key)) return;
       metadataReads.add(key);
+      // A shortcut keeps the title it was saved with, so each page reads the
+      // current one once. Another User's personal assistant is not readable,
+      // but its name is public.
       void window.PortalInstructionClient.execute("GetResident", { resident_id: residentId })
-        .then(result => {
+        .then(result => result?.resident, () => window.PortalResidentService.publicIdentity(residentId)
+          .then(identity => (identity?.title ? { resident_id: residentId, title: identity.title } : null)))
+        .then(resident => {
           if (window.PortalIdentity.username() !== actor) return;
-          if (result?.resident?.resident_id !== residentId) return;
-          window.PortalConversationStore.updateRecentResident(result.resident);
+          if (resident?.resident_id !== residentId) return;
+          window.PortalConversationStore.updateRecentResident(resident);
         }).catch(() => {
           // Keep the shortcut reachable when metadata cannot be read. A later
           // page load can retry; an ID suffix remains distinguishable meanwhile.
@@ -223,7 +228,7 @@
       for (const item of items) {
         const resident = recentResident(item.residentId);
         if (resident.title) window.PortalConversationStore.updateRecentResident(resident);
-        else if (item.label === item.residentId) restoreRecentTitle(item.residentId);
+        restoreRecentTitle(item.residentId);
       }
       const glyphCounts = new Map();
       for (const item of items) glyphCounts.set(item.glyph, Number(glyphCounts.get(item.glyph) || 0) + 1);
