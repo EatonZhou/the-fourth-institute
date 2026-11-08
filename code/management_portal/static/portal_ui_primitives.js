@@ -466,6 +466,22 @@
     return hash % 360;
   }
 
+  // The attributes of an avatar mark for a Resident, Lineage or Project: the
+  // element shows `glyph` until paintAvatars finds the owner's saved avatar.
+  function avatarMarkAttributes({ kind, id, label = "", glyph = "", size = 24 } = {}) {
+    if (!kind || !id) return "";
+    return ` data-avatar-kind="${escapeHtml(kind)}" data-avatar-id="${escapeHtml(id)}" data-avatar-label="${escapeHtml(label)}" data-avatar-glyph="${escapeHtml(glyph)}" data-avatar-size="${Number(size) || 24}"`;
+  }
+
+  // Replace the avatar marks under root with saved avatars, loading the avatar
+  // module on first use; marks without a saved avatar keep their glyph.
+  function paintAvatars(root) {
+    if (!root?.querySelector?.("[data-avatar-kind][data-avatar-id]")) return Promise.resolve();
+    return loadAsset("/static/portal_avatar_editor.js", { ready: () => global.PortalAvatarEditor })
+      .then(() => global.PortalAvatarEditor.hydrate(root))
+      .catch(() => {});
+  }
+
   function randomUUID() {
     // getRandomValues is available on HTTP LAN origins as well as HTTPS.
     // Keep UUID entropy and format without relying on secure-context-only APIs.
@@ -649,6 +665,8 @@
     mountIcon,
     mountIcons,
     objectOf,
+    avatarMarkAttributes,
+    paintAvatars,
     randomUUID,
     radioGroup,
     registerEnhancer,

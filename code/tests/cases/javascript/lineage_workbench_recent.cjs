@@ -26,6 +26,8 @@ test('recent Residents appear newest first and dismiss one at a time', async t =
   await page.until(() => items().length === 2);
   assert.deepEqual(items().map(item => item.dataset.activityItem), [`resident:${B}`, `resident:${A}`], 'the latest command comes first');
   assert.match(items()[0].getAttribute('title') || '', /Beta/);
+  const mark = items()[0].querySelector('.portalAvatarMark').dataset;
+  assert.deepEqual([mark.avatarKind, mark.avatarId], ['resident', B], 'the shortcut shows the Resident avatar');
 
   // Navigation can unload the previous Resident as the user moves between
   // lineages. Its persisted shortcut still owns its display name.

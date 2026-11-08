@@ -92,6 +92,13 @@
       return `<button type="button" class="portalButton is-icon is-quiet" data-agent-menu="${esc(menuId)}" aria-haspopup="menu" aria-expanded="${menuId === state.agentMenuId ? "true" : "false"}" aria-label="${esc(label)}" title="${esc(window.PortalI18n.t("更多"))}" data-portal-icon="more-horizontal" ${disabled ? "disabled" : ""}></button>`;
     }
 
+    // A row's identity mark: the saved avatar of the Project or Lineage, else
+    // the glyph on a stable hue. Without a glyph the mark appears only once an
+    // avatar is found, so Lineage rows stay plain unless one was chosen.
+    function navRowMarkHtml({ kind, id, label, glyph = "" }) {
+      return `<span class="portalNavRowMark portalAvatarMark" style="--portal-nav-mark-hue:${window.PortalUIPrimitives.stableHue(id)}" aria-hidden="true"${window.PortalUIPrimitives.avatarMarkAttributes({ kind, id, label, glyph, size: 18 })}>${esc(glyph)}</span>`;
+    }
+
     function projectCardHtml(project) {
       const open = !!state.query.trim() || state.residentProjectGroups[project.id] === true;
       const accessible = project.accessible !== false;
@@ -109,7 +116,7 @@
           <div class="portalNavRow is-group principalProjectCard ${denied ? "is-locked" : ""} ${active ? "is-active" : ""} ${menuId === state.agentMenuId ? "is-menu-open" : ""}" data-project-resident="${esc(project.resident_id || "")}">
             <button type="button" class="portalNavRowMain" data-resident-project-toggle="${esc(project.id)}" aria-expanded="${open}" ${project.unavailable ? "disabled" : ""}>
               <span class="portalNavRowChevron" data-portal-icon="${open ? "chevron-down" : "chevron-right"}"></span>
-              <span class="portalNavRowMark" style="--portal-nav-mark-hue:${window.PortalUIPrimitives.stableHue(project.project_id)}" aria-hidden="true">${esc(window.PortalUIPrimitives.titleGlyph(project.title))}</span>
+              ${navRowMarkHtml({ kind: "project", id: project.project_id, label: project.title, glyph: window.PortalUIPrimitives.titleGlyph(project.title) })}
               <span class="portalNavRowLabel" title="${esc(project.title)}">${esc(project.title)}</span>
               ${countHtml}
             </button>
@@ -150,6 +157,7 @@
         return `<div class="residentCardWrap" data-resident-card="${esc(residentId)}" data-lineage-card="${esc(lineageId)}">
           <div class="portalNavRow is-leaf principalLineageCard ${active ? "is-active" : ""} ${menuOpen ? "is-menu-open" : ""}" data-resident-id="${esc(residentId)}">
             <button type="button" class="portalNavRowMain" data-principal-open="${esc(lineageLeaderResidentId(item))}" data-lineage-open="${esc(lineageId)}" title="${esc(title)}">
+              ${navRowMarkHtml({ kind: "lineage", id: lineageId, label: title })}
               <span class="portalNavRowLabel">${esc(title)}</span>
               <span class="portalNavRowCount ${memberCount ? "" : "is-empty"}" title="${esc(memberLabel)}" aria-label="${esc(memberLabel)}">${memberCount}</span>
             </button>
@@ -210,6 +218,7 @@
       const list = $id("agentList");
       const groups = residentGroups();
       list.innerHTML = window.PortalI18n.html`<div class="agentList">${residentNavigationShortcutsHtml()}${groups.map(renderResidentGroup).join("")}</div>`;
+      void window.PortalUIPrimitives.paintAvatars(list);
       list.querySelectorAll("[data-sidebar-search-clear], [data-sidebar-show-all]").forEach(button => {
         button.addEventListener("click", () => {
           if (button.hasAttribute("data-sidebar-show-all")) {

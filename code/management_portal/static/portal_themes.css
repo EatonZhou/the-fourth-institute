@@ -19,15 +19,15 @@ html:root[data-portal-theme] {
   --rail-shadow: color-mix(in srgb, var(--accent) 18%, transparent);
   --theme-button-bg: color-mix(in srgb, var(--accent) 12%, var(--panel));
   --theme-button-border: color-mix(in srgb, var(--accent) 58%, var(--border));
-  /* Navigation surface: a deep, accent-tinted band that stays darker than the
-   * panels in light and dark skins alike, with light content on top. */
-  --nav-surface: color-mix(in srgb, var(--accent) 14%, #070b10);
-  --nav-text: rgba(226, 232, 240, .66);
-  --nav-text-strong: #fff;
-  --nav-hover: rgba(255, 255, 255, .08);
-  --nav-selected: rgba(255, 255, 255, .14);
-  --nav-divider: rgba(255, 255, 255, .12);
-  --nav-accent: color-mix(in srgb, var(--accent) 52%, #fff);
+  /* Navigation surface: the skin's secondary panel with a faint accent tint,
+   * so the activity rail reads as part of the panels in every skin. */
+  --nav-surface: color-mix(in srgb, var(--accent) 5%, var(--panel-2));
+  --nav-text: var(--muted);
+  --nav-text-strong: var(--text);
+  --nav-hover: color-mix(in srgb, var(--text) 7%, transparent);
+  --nav-selected: color-mix(in srgb, var(--accent) 16%, transparent);
+  --nav-divider: var(--border);
+  --nav-accent: var(--accent);
 }
 
 html:root[data-portal-theme="auto"],

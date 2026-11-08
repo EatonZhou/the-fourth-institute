@@ -48,6 +48,36 @@
     window.dispatchEvent(new CustomEvent("portal:avatar-changed", {detail: {kind, id, avatar: avatar || null}}));
   }
 
+  // Avatar marks: <span class="portalAvatarMark" data-avatar-kind data-avatar-id
+  // data-avatar-size data-avatar-glyph> holding the owner's initials. A saved
+  // avatar replaces the initials; a mark whose avatar was removed shows them again.
+  const MARK = "[data-avatar-kind][data-avatar-id]";
+  function showMark(mark, avatar) {
+    if (!mark.isConnected) return;
+    const glyph = mark.dataset.avatarGlyph || "";
+    if (!avatar) {
+      if (mark.classList.contains("has-avatar")) mark.textContent = glyph;
+      mark.classList.remove("has-avatar");
+      return;
+    }
+    const size = Number(mark.dataset.avatarSize) || 24;
+    mark.innerHTML = window.PortalResidentAvatar.markup(avatar, {label: mark.dataset.avatarLabel || glyph, size});
+    mark.classList.add("has-avatar");
+  }
+  function hydrate(root) {
+    const marks = [...(root?.querySelectorAll?.(MARK) || [])];
+    if (root?.matches?.(MARK)) marks.unshift(root);
+    if (!marks.length) return Promise.resolve();
+    return loadAssets().then(() => Promise.all(marks.map(mark => read(mark.dataset.avatarKind, mark.dataset.avatarId)
+      .then(avatar => showMark(mark, avatar), () => {}))));
+  }
+  window.addEventListener("portal:avatar-changed", event => {
+    const {kind, id, avatar} = event.detail || {};
+    if (!kind || !id) return;
+    const marks = document.querySelectorAll(`[data-avatar-kind="${CSS.escape(kind)}"][data-avatar-id="${CSS.escape(id)}"]`);
+    if (marks.length) void loadAssets().then(() => marks.forEach(mark => showMark(mark, avatar))).catch(() => {});
+  });
+
   // The portrait of a saved avatar, or the initial when there is none.
   function paint(node, avatar, {label, size = 56} = {}) {
     if (!avatar) {
@@ -220,5 +250,5 @@
     };
   }
 
-  window.PortalAvatarEditor = Object.freeze({mount, read, remember, paint, loadAssets});
+  window.PortalAvatarEditor = Object.freeze({mount, read, remember, paint, hydrate, loadAssets});
 })();

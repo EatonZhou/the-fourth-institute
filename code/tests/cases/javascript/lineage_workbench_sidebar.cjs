@@ -84,6 +84,9 @@ test('a Project row keeps only its star and menu; opening and adding a Lineage l
     ['star', 'menu'], 'the row keeps the star and the menu, in that order');
   assert.equal(row().querySelector('[data-principal-open], [data-project-lineage-create]'), null, 'no standalone open or add buttons');
   assert.equal(row().querySelector('.portalNavRowMark').textContent, 'Pr', 'the mark shows the title glyph');
+  const mark = row().querySelector('.portalNavRowMark').dataset;
+  assert.deepEqual([mark.avatarKind, mark.avatarId, mark.avatarGlyph], ['project', 'project_333333333333', 'Pr'],
+    'the mark stands for the Project avatar, keeping the glyph without one');
 
   row().querySelector('[data-agent-menu]').click();
   const menuAction = name => doc.querySelector(`#agentFloatingMenu [data-agent-floating-action="${name}"]`);

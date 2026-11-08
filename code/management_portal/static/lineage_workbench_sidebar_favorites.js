@@ -146,6 +146,7 @@
         ? consoleStateHtml("收藏加载失败，请点击刷新重试。", { state: "error" })
         : favoriteResidentGroups().map(renderFavoriteResidentGroup).join("");
       root.innerHTML = window.PortalI18n.html`<div class="agentList favoriteAgentList">${residentNavigationShortcutsHtml()}${content}<div data-resource-favorites></div></div>`;
+      void window.PortalUIPrimitives.paintAvatars(root);
       renderActivityRecentRail();
       root.querySelectorAll("details[data-favorite-group]").forEach(section => {
         section.addEventListener("toggle", () => {

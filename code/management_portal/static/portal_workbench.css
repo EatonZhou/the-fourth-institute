@@ -989,7 +989,7 @@ body.resizingWorkspacePreview {
   flex-direction: column;
   align-items: center;
   gap: 7px;
-  border: 1px solid var(--nav-surface);
+  border: 1px solid var(--nav-divider);
   border-radius: var(--radius);
   background: var(--nav-surface);
   box-shadow: var(--shadow);
@@ -1023,7 +1023,7 @@ body.resizingWorkspacePreview {
   bottom: var(--portal-activity-indicator-inset, 8px);
   width: var(--portal-activity-indicator-width, 3px);
   border-radius: var(--portal-activity-indicator-radius, 0 3px 3px 0);
-  background: var(--portal-activity-indicator-color, var(--nav-text-strong));
+  background: var(--portal-activity-indicator-color, var(--nav-accent));
 }
 .portalActivityRailView .portalIcon {
   width: var(--portal-activity-icon-size, 19px);
@@ -1094,6 +1094,10 @@ body.resizingWorkspacePreview {
 }
 .portalActivityRailItem.hasStableAccent { background: hsl(var(--recent-accent-hue) 46% 42%); }
 .portalActivityRailItem:hover { filter: brightness(1.12); }
+/* A saved avatar replaces the initials; the tile then drops its fill. */
+.portalActivityRailItem:has(> .portalAvatarMark.has-avatar) { background: transparent; }
+.portalActivityRailItem:has(> .portalAvatarMark.has-avatar):hover { filter: none; background: var(--nav-hover); }
+.portalActivityRailGlyph.has-avatar { display: block; width: 32px; height: 32px; border-radius: 9px; }
 .portalActivityRailItem.active { box-shadow: 0 0 0 2px var(--nav-surface), 0 0 0 4px var(--nav-accent); }
 .portalActivityRailItem:focus-visible { outline: 2px solid var(--nav-accent); outline-offset: 2px; }
 .portalActivityRailItem.marked::after {
@@ -1113,7 +1117,7 @@ body.resizingWorkspacePreview {
   align-items: center;
   justify-content: center;
 }
-.portalActivityRailUnread { position: absolute; right: 3px; top: 3px; width: 6px; height: 6px; border-radius: 50%; background: var(--nav-text-strong); box-shadow: 0 0 0 2px var(--nav-surface); }
+.portalActivityRailUnread { position: absolute; right: 1px; top: 1px; width: 7px; height: 7px; border-radius: 50%; background: var(--nav-accent); box-shadow: 0 0 0 2px var(--nav-surface); }
 .portalActivityRailRunning {
   position: absolute;
   left: 3px;
@@ -1628,6 +1632,8 @@ html[data-portal-viewport="mobile"] .portalWorkbenchMobilePanel.is-active {
   line-height: 1;
   letter-spacing: 0;
 }
+/* A mark without a glyph stands only for a saved avatar (PortalUIPrimitives.paintAvatars). */
+.portalAvatarMark[data-avatar-glyph=""]:not(.has-avatar) { display: none; }
 .portalNavRowLabel { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .portalNavRow.is-group .portalNavRowLabel { font-weight: 600; }
 .portalNavRow.is-leaf { color: color-mix(in srgb, var(--text) 82%, var(--muted)); }

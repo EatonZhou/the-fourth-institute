@@ -11,6 +11,11 @@
   vertical-align: middle;
 }
 
+/* An avatar mark shows the owner's initials until PortalAvatarEditor.hydrate
+ * finds a saved avatar; the avatar then replaces the initials and the fill. */
+.portalAvatarMark.has-avatar { background: transparent; overflow: hidden; }
+.portalAvatarMark.has-avatar > .portalResidentAvatar { display: block; }
+
 /* An uploaded picture fills the same square, with softened corners. */
 .portalResidentAvatar.is-image {
   image-rendering: auto;

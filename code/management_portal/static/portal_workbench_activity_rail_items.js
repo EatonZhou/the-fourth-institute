@@ -36,6 +36,8 @@
       String(item.ariaDescription || ""),
       Number(item.accentHue),
       item.dismissible !== false,
+      String(item.avatar?.kind || ""),
+      String(item.avatar?.id || ""),
       index,
     ]);
     const itemHtml = (item, index) => {
@@ -44,7 +46,7 @@
       const accentHue = Number.isFinite(rawHue) ? ((Math.round(rawHue) % 360) + 360) % 360 : null;
       return window.PortalI18n.html`<div class="portalActivityRailItemSlot">
         <button class="portalActivityRailItem ${escapeHtml(kind)} ${item.mark ? "marked" : ""} ${accentHue !== null ? "hasStableAccent" : ""} ${item.active ? "active" : ""} ${item.running ? "running" : ""} ${item.queued ? "queued" : ""}" type="button" data-activity-item="${escapeHtml(item.key)}" data-recent-session="${escapeHtml(item.key)}" data-recent-kind-mark="${escapeHtml(item.mark || "")}" title="${escapeHtml(item.title || item.label || "")}" aria-label="${escapeHtml(item.ariaLabel || item.label || item.key)}"${item.ariaDescription ? ` aria-description="${escapeHtml(item.ariaDescription)}"` : ""} style="--recent-delay:${(index * 0.12).toFixed(2)}s${accentHue === null ? "" : `;--recent-accent-hue:${accentHue}`}" >
-          ${escapeHtml(item.glyph || "?")}${item.unread ? window.PortalI18n.t('<span class="portalActivityRailUnread" title="有未查看的新回复" aria-hidden="true"></span>') : ""}${item.running ? window.PortalI18n.t('<span class="portalActivityRailRunning" title="正在运行" aria-hidden="true"></span>') : ""}${item.queued ? window.PortalI18n.t('<span class="portalActivityRailQueued" title="排队中" aria-hidden="true"></span>') : ""}
+          <span class="portalActivityRailGlyph portalAvatarMark" aria-hidden="true"${window.PortalUIPrimitives.avatarMarkAttributes({ kind: item.avatar?.kind, id: item.avatar?.id, label: item.label || "", glyph: item.glyph || "?", size: 32 })}>${escapeHtml(item.glyph || "?")}</span>${item.unread ? window.PortalI18n.t('<span class="portalActivityRailUnread" title="有未查看的新回复" aria-hidden="true"></span>') : ""}${item.running ? window.PortalI18n.t('<span class="portalActivityRailRunning" title="正在运行" aria-hidden="true"></span>') : ""}${item.queued ? window.PortalI18n.t('<span class="portalActivityRailQueued" title="排队中" aria-hidden="true"></span>') : ""}
         </button>
         ${item.dismissible === false ? "" : window.PortalI18n.html`<button class="portalActivityRailDismiss" type="button" data-activity-dismiss="${escapeHtml(item.key)}" aria-label="从快捷栏移除 ${escapeHtml(item.label || item.key)}" title="从快捷栏移除" data-portal-icon="close"></button>`}
       </div>`;
@@ -103,6 +105,7 @@
       [...itemsRoot.children].forEach(slot => {
         if (!retained.has(slot)) slot.remove();
       });
+      void window.PortalUIPrimitives.paintAvatars(itemsRoot);
       if (pendingItemFocus) {
         const request = pendingItemFocus;
         pendingItemFocus = null;

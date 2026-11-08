@@ -235,6 +235,7 @@
             mark: duplicateGlyph ? suffix.slice(-2) : item.derived ? "D" : "",
             label: item.label,
             glyph: item.glyph,
+            avatar: { kind: "resident", id: identity },
             active: item.active,
             accentHue: window.PortalUIPrimitives.stableHue(identity),
             ariaLabel: [item.label, suffix ? window.PortalI18n.text`Resident 尾号 ${suffix}` : ""].filter(Boolean).join("，"),
