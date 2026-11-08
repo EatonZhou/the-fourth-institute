@@ -242,7 +242,7 @@ const server = http.createServer((req, res) => {
       const style = await summary.evaluate(node => {
         const s = getComputedStyle(node); return {line: s.borderBottomWidth, lineStyle: s.borderBottomStyle, color: s.borderBottomColor, background: s.backgroundColor};
       });
-      assert.equal(style.line, '1px'); assert.equal(style.lineStyle, 'solid');
+      assert.equal(style.line, '2px'); assert.equal(style.lineStyle, 'solid');
       assert.notEqual(style.color, style.background, 'visible separator under each group bar');
     }
     await knowledge.focus(); await page.keyboard.press('Space');

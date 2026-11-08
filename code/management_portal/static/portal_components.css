@@ -941,7 +941,7 @@ body.portalBoardShell .filter-active-dot {
 .resourceFavoriteButton { color: var(--accent); }
 .favoriteDisclosure, .favoriteDisclosure > .residentGroupBody { min-width: 0; grid-template-columns: minmax(0, 1fr); }
 .favoriteDisclosure:not([open]) { gap: 0; margin-bottom: 0; }
-.favoriteDisclosure > summary { display: flex; gap: 8px; align-items: center; list-style: none; cursor: pointer; border-bottom: 1px solid color-mix(in srgb, var(--accent) 65%, #000); }
+.favoriteDisclosure > summary { display: flex; gap: 8px; align-items: center; list-style: none; cursor: pointer; border-bottom: 2px solid color-mix(in srgb, var(--accent) 55%, #000); }
 .favoriteDisclosure > summary::-webkit-details-marker { display: none; }
 .favoriteDisclosure > summary::before { content: "▸"; flex: 0 0 10px; text-align: center; }
 .favoriteDisclosure[open] > summary::before { content: "▾"; }
