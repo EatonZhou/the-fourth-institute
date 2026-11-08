@@ -5,8 +5,10 @@ from __future__ import annotations
 from contextvars import copy_context
 from pathlib import Path
 import hashlib
+import json
 import re
 import secrets
+import yaml
 
 from management_portal import business_tasks, paper_state_store
 from management_portal.paper_detail import get_paper_detail
@@ -247,6 +249,71 @@ def _authorize_paper_job_status(job: dict | None, *, actor: str, job_id: str, pa
         raise ValueError("Paper job belongs to another paper")
 
 
+def refresh_deep_read_provenance(payload: dict, actor: str) -> dict:
+    """Refresh only the recorded generation metadata, with an explicit artifact CAS."""
+    from management_portal import isa_client, permission_system
+    from management_portal.paper_projection import input_receipt
+
+    paper_id, job_id, expected = (str(payload.get(k) or "").strip()
+                                  for k in ("paper_id", "job_id", "expected_analysis_sha256"))
+    if not all((paper_id, job_id, expected)):
+        raise ValueError("paper_id, job_id and expected_analysis_sha256 required")
+
+    def authorize():
+        if not actor or paper_id not in permission_system.permitted_ids(actor, "UpdateResource", "resource_id", [paper_id]):
+            raise PermissionError("Analysis provenance requires Paper contributor permission")
+
+    authorize()
+    original = _latest_deep_read_job(job_id=job_id)
+    if not original or original.get("paper_id") != paper_id or original.get("status") != "done":
+        raise ValueError("provenance requires the completed job of this Paper")
+    receipt = input_receipt(original.get("resident_handoff") or {})
+    resident_id, input_id = str(original.get("resident_id") or ""), str(original.get("resident_input_message_id") or "")
+    if (not resident_id or not input_id or receipt.get("resident_id") != resident_id
+            or receipt.get("input_message_id") != input_id or receipt.get("input_identity_status") != "delivered"):
+        raise ValueError("provenance requires a confirmed original input")
+    state = isa_client.call(actor, "GetInputState", {"resident_id": resident_id, "message_id": input_id}).get("input_state") or {}
+    if state.get("message_id") != input_id or state.get("state") != "completed":
+        raise ValueError("original input has not completed")
+    usage = dict(original.get("usage") or {})
+    # Read only the original canonical reply, never current Resident settings.
+    reply_id = str(receipt.get("usage_message_id") or "")
+    if reply_id and reply_id in (state.get("reply_message_ids") or []):
+        message = isa_client.call(actor, "GetMessage", {"resident_id": resident_id, "message_id": reply_id}).get("message") or {}
+        if (message.get("message_id") != reply_id or message.get("author_id") != resident_id
+                or message.get("reply_to_message_id") != input_id):
+            raise ValueError("generation reply identity changed")
+        # Preserve recovery selection and its provenance independently of usage.
+        for key in ("api_id", "provider", "account_id", "model"):
+            if (message.get("usage") or {}).get(key):
+                usage[key] = message["usage"][key]
+    usage["generation_source"] = {
+        "resident_id": resident_id, "input_message_id": input_id,
+        "reply_message_id": reply_id, "execution_id": str((state.get("work") or {}).get("execution_id") or ""),
+        "provider_turn_id": str((state.get("work") or {}).get("provider_turn_id") or ""),
+        "evidence": "original_input_and_reply_usage",
+    }
+    with LOCK, paper_state_store.locked("deep_read_jobs"):
+        authorize()
+        latest = _latest_deep_read_job(paper_id=paper_id)
+        if not latest or latest.get("job_id") != job_id or latest != original:
+            raise ValueError("Deep Read job changed; reload before updating provenance")
+        paper = get_paper_detail(paper_id)["paper"]
+        path = _paper_store_file(paper, "analysis")
+        if not path or not path.is_file() or hashlib.sha256(path.read_bytes()).hexdigest() != expected:
+            raise ValueError("Analysis changed; read and confirm the current artifact")
+        document = path.read_text()
+        match = re.match(r"\A---\n([\s\S]*?)\n---\n", document)
+        metadata = yaml.safe_load(match.group(1)) if match else None
+        if not isinstance(metadata, dict) or metadata.get("schema") != "tfi.paper_analysis.v1" or metadata.get("paper_id") != paper_id:
+            raise ValueError("Analysis has no matching managed provenance header")
+        metadata.update(_analysis_model_metadata(usage))
+        updated = "---\n" + yaml.safe_dump(metadata, allow_unicode=True, sort_keys=False) + "---\n" + document[match.end():]
+        path = _write_analysis_file(paper, updated, usage)
+        _update_paper_fields(paper_id, {"analysis_path": str(path)})
+        return _set_deep_read_job(job_id, {"usage": usage})
+
+
 def get_deep_read_status(*, actor: str, job_id: str = "", paper_id: str = "") -> dict:
     with LOCK:
         job = _latest_deep_read_job(paper_id=paper_id, job_id=job_id)
@@ -360,12 +427,14 @@ def _run_deep_read_job(job_id: str) -> None:
         content = str(result.get("message") or "").strip()
         if not content:
             raise RuntimeError("Deep Read AI execution returned empty output")
-        _require_artifact_sections(content, DEEP_READ_SECTIONS, "Deep Read")
         usage = (
             dict(result.get("usage"))
             if isinstance(result.get("usage"), dict)
             else {}
         )
+        # Keep reported generation facts even if artifact validation fails.
+        _set_deep_read_job(job_id, {"usage": usage})
+        _require_artifact_sections(content, DEEP_READ_SECTIONS, "Deep Read")
         print(f"[paper-deep-read] {job_id} writing analysis", flush=True)
         _set_deep_read_job(job_id, {"step": "writing analysis", "progress": 82})
         analysis_path = _save_deep_read_analysis(paper, content, usage)
@@ -423,6 +492,24 @@ def _save_deep_read_analysis(paper: dict, content: str, usage: dict) -> Path:
     return path
 
 
+def _analysis_model_metadata(usage: dict) -> dict:
+    source = usage.get("generation_source") or {}
+    recovery = usage.get("artifact_recovery") or {}
+    return {
+        "llm_api": str(usage.get("api_id") or "未记录"),
+        "llm_provider": str(usage.get("provider") or "未记录"),
+        "llm_account": str(usage.get("account_id") or "未记录"),
+        "llm_model": str(usage.get("model") or "未记录"),
+        "llm_model_evidence": "原始执行用量记录" if usage.get("model") else "原始记录未包含型号；未按当前配置推断",
+        "llm_resident_id": source.get("resident_id") or usage.get("resident_id") or "",
+        "llm_input_message_id": source.get("input_message_id") or recovery.get("input_message_id") or usage.get("input_message_id") or "",
+        "llm_reply_message_id": source.get("reply_message_id") or usage.get("usage_message_id") or "",
+        "llm_execution_id": source.get("execution_id") or "",
+        "llm_source_message_id": recovery.get("source_message_id") or "",
+        "llm_source_selection": recovery.get("selection") or "canonical_reply",
+    }
+
+
 def _deep_read_analysis_document(
     paper: dict,
     content: str,
@@ -433,8 +520,8 @@ def _deep_read_analysis_document(
         "schema: tfi.paper_analysis.v1\n"
         f"paper_id: {paper.get('id') or ''}\n"
         f"generated_at: {_now()}\n"
-        f"llm_api: {usage.get('api_id') or ''}\n"
-        f"llm_model: {usage.get('model') or ''}\n"
+        + "".join(f"{key}: {json.dumps(value, ensure_ascii=False)}\n" for key, value in _analysis_model_metadata(usage).items())
+        +
         "---\n\n"
     )
     return header + _strip_outer_markdown_fence(content).strip() + "\n"

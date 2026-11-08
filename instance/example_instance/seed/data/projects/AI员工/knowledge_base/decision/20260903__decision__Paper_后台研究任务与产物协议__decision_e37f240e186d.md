@@ -4,35 +4,35 @@ type: decision
 project: AI员工
 created_at: '2026-09-03'
 version:
-  number: 42
+  number: 43
   created_at: "2026-09-03"
   created_by:
     user: ""
     agent: ""
-  updated_at: "2026-11-08T15:26:59Z"
+  updated_at: "2026-11-08T15:55:27Z"
   updated_by:
     user: ""
-    agent: "resident_6199a7a36480"
+    agent: "resident_83d75ad3a6c7"
 importance: 9
 metaness: 2
 ai_generated: true
 links:
   source:
-  - ${code_root}/management_portal/shared_search_adapter.py
-  - ${code_root}/management_portal/paper_store.py
-  - ${code_root}/management_portal/paper_resident.py
-  - ${code_root}/management_portal/paper_summaries.py
-  - ${code_root}/management_portal/paper_reviews.py
-  - ${code_root}/management_portal/paper_reading_jobs.py
-  - ${code_root}/management_portal/paper_figure_jobs.py
-  - ${code_root}/management_portal/paper_assets.py
-  - ${code_root}/management_portal/paper_collection_jobs.py
-  - ${code_root}/management_portal/paper_state_store.py
-  - ${code_root}/management_portal/paper_projection.py
-  - ${code_root}/management_portal/serve_management_portal.py
-  - ${code_root}/tests/cases/test_paper_review_execution.py
-  - ${code_root}/tests/cases/test_paper_deep_read_execution_boundary.py
-  - ${code_root}/tests/cases/test_paper_ccf_enrichment_execution.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/shared_search_adapter.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/paper_store.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/paper_resident.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/paper_summaries.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/paper_reviews.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/paper_reading_jobs.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/paper_figure_jobs.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/paper_assets.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/paper_collection_jobs.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/paper_state_store.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/paper_projection.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/serve_management_portal.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_paper_review_execution.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_paper_deep_read_execution_boundary.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_paper_ccf_enrichment_execution.py
   related:
   - decision_1a2730dcd3d1
   - decision_f67ae5e70793
@@ -274,6 +274,12 @@ Review 解析器优先读取模型输出中的 JSON 代码块，再用 JSON 解�
 - 恢复只允许当前最新的失败 job；出现后继任务时拒绝。已有 Analysis 时必须提交其当前原始字节 `expected_analysis_sha256`，缺省只允许文件不存在，防止无意覆盖后继产物。若文件写入已完成但任务回执未提交，调用者须回读产物再明确确认恢复，不通过重跑模型解决。
 
 - Deep Read status 按任务关联的真实 Paper 检查当前 actor 的 viewer 权限，随后才能返回状态或恢复等待。按 job_id 查询也执行同一检查；同时给出 paper_id 时必须与任务所属论文一致。未找到指定任务返回 404，缺少定位参数或论文不匹配返回 400，无阅读权限返回 403。
+
+### Deep Read 的模型来源
+
+Analysis 的模型来源来自原始输入对应的已保存用量记录，不能读取功能 Resident 的当前配置来补写历史型号。`llm_provider`、`llm_account`、`llm_api`、`llm_model` 分别表示原记录中的 Provider、账号、API 与模型；缺失字段明确显示“未记录”，模型缺失时标明未按当前配置推断。原输入、规范回复、Execution 与显式选择的生成正文保持各自身份，转送正文不因此变成规范最终回复。正文校验失败前仍保存执行已返回的 usage，避免丢失已有模型事实。
+
+Contributor 可用 `POST /paper/api/deep-read/provenance` 提交 `{paper_id, job_id, expected_analysis_sha256}`，为当前已完成 Analysis 刷新来源。服务验证原输入完成、原规范回复属于该输入且作者一致，从允许读取的原用量取值；不调用模型、不读取受限的完整 prompt，也不接受请求自报型号。保存前重验当前权限、最新任务及文件原始字节 SHA，保留正文和生成时间，仅更新来源头部、usage 与任务回执。旧失败任务及 recovery 选择记录保持不变；状态读取不触发补写。
 
 ### Experiment：生成长期实验说明
 
