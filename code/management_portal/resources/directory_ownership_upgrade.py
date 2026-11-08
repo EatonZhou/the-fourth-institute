@@ -10,6 +10,7 @@ from psycopg import sql
 from psycopg.types.json import Jsonb
 
 from management_common.json_columns import json_value
+from management_common.location_records import stored_record
 
 
 def without_classification(value):
@@ -25,15 +26,22 @@ def upgrade_registry(connection, schema):
     """Enlist in the registry initialization transaction, bump changed revisions."""
     meta = sql.Identifier(schema, 'registry_meta')
     key = 'directory_ownership_v1'
-    if connection.execute(sql.SQL('SELECT 1 FROM {} WHERE key=%s').format(meta), (key,)).fetchone():
+    location_key = 'directory_ownership_locations_v1'
+    completed = {row['key'] for row in connection.execute(
+        sql.SQL('SELECT key FROM {} WHERE key=ANY(%s)').format(meta), ([key, location_key],)).fetchall()}
+    if completed == {key, location_key}:
         return 0
     table = sql.Identifier(schema, 'registry_documents')
     changed = 0
     for row in connection.execute(sql.SQL(
             'SELECT collection,document_id,document_json FROM {} WHERE collection=ANY(%s) FOR UPDATE'
             ).format(table), (['repo', 'article', 'paper', 'knowledge', 'knowledge_moves'],)).fetchall():
-        before = json_value(row['document_json'])
-        after = without_classification(before)
+        # Migration compares the stored representation. json_value is a runtime
+        # reader and expands area references; writing that result via Jsonb used
+        # to persist host paths. Also repair records processed by that version.
+        raw = row['document_json']
+        before = json.loads(raw) if isinstance(raw, str) else raw
+        after = stored_record(without_classification(before))
         if before == after:
             continue
         revision = connection.execute('SELECT nextval(%s)',
@@ -44,7 +52,9 @@ def upgrade_registry(connection, schema):
             'ON CONFLICT(collection) DO UPDATE SET revision=EXCLUDED.revision')
             .format(sql.Identifier(schema, 'registry_collections')), (row['collection'], revision))
         changed += 1
-    connection.execute(sql.SQL('INSERT INTO {}(key,value) VALUES (%s,%s)').format(meta), (key, 'complete'))
+    for marker in (key, location_key):
+        connection.execute(sql.SQL('INSERT INTO {}(key,value) VALUES (%s,%s) '
+            'ON CONFLICT(key) DO NOTHING').format(meta), (marker, 'complete'))
     return changed
 
 

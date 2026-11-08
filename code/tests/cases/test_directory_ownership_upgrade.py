@@ -1,10 +1,48 @@
 """Persisted directory classifications disappear without changing identities."""
+import json
+
+import pytest
 from psycopg.types.json import Jsonb
 
 from management_portal.resources.registry_store import RegistryStore, get_registry_store
 from management_portal.resources.workspace_store import WorkspaceStore
 from management_portal.resources.workspace_creation_store import WorkspaceCreationStore
 from management_portal.resources.directory_ownership_upgrade import upgrade_creations
+
+
+@pytest.mark.parametrize('already_migrated', [False, True])
+@pytest.mark.parametrize('text_column', [False, True])
+def test_registry_upgrade_preserves_and_repairs_stored_area_references(
+        tmp_path, monkeypatch, already_migrated, text_column):
+    from tests.cases.instance_test_support import select_instance
+    from management_portal.resources.directory_ownership_upgrade import upgrade_registry
+
+    instance = select_instance(monkeypatch, tmp_path / 'instance')
+    registry = get_registry_store()
+    rid = 'article_0123456789ab'
+    relative = 'projects:Example/articles/' + rid
+    absolute = str(instance.area('projects') / 'Example/articles' / rid)
+    directory = {'path': absolute if already_migrated else relative, 'owner_id': rid}
+    if not already_migrated:
+        directory['origin'] = 'created'
+    document = {'id': rid, 'canonical_root': directory['path'], 'roots': [directory],
+                'description': absolute, 'external_path': str(tmp_path / 'external')}
+    registry._ensure()
+    with registry.database.transaction() as connection:
+        if text_column:
+            connection.execute('ALTER TABLE registry_documents ALTER COLUMN document_json TYPE TEXT USING document_json::text')
+        connection.execute('INSERT INTO registry_documents VALUES (%s,%s,%s,%s)',
+                           ('article', rid, 0, json.dumps(document)))
+        connection.execute("DELETE FROM registry_meta WHERE key='directory_ownership_locations_v1'")
+        if not already_migrated:
+            connection.execute("DELETE FROM registry_meta WHERE key='directory_ownership_v1'")
+        assert upgrade_registry(connection, registry.database.schema) == 1
+        raw = connection.execute('SELECT document_json FROM registry_documents WHERE document_id=%s', (rid,)).fetchone()[0]
+        stored = json.loads(raw) if isinstance(raw, str) else raw
+        assert stored == {**document, 'canonical_root': relative,
+                          'roots': [{'path': relative, 'owner_id': rid}]}
+        assert upgrade_registry(connection, registry.database.schema) == 0
+    assert RegistryStore().get('article', rid)['canonical_root'] == absolute
 
 
 def test_registry_upgrade_revises_changed_documents_once(tmp_path):
