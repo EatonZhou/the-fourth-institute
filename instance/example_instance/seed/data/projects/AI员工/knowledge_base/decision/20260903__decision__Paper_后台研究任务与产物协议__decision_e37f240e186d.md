@@ -4,15 +4,15 @@ type: decision
 project: AI员工
 created_at: '2026-09-03'
 version:
-  number: 38
-  created_at: '2026-09-03'
+  number: 42
+  created_at: "2026-09-03"
   created_by:
-    user: ''
-    agent: ''
-  updated_at: '2026-10-31T01:59:40Z'
+    user: ""
+    agent: ""
+  updated_at: "2026-11-08T15:26:59Z"
   updated_by:
-    user: ''
-    agent: resident_73cb83291316
+    user: ""
+    agent: "resident_6199a7a36480"
 importance: 9
 metaness: 2
 ai_generated: true
@@ -83,6 +83,9 @@ Paper 的功能型 AI 统一由 Paper Lineage 中九个固定 Resident 执行，
 功能成员可以调用模型、检索工具、解析器、图片生成器或 Collector 程序作为执行工具，但这些工具不能另行拥有与 Paper Lineage 脱节的业务 Resident。模型或 provider 选择不改变角色、团队与会话归属。解析 PDF、提取已有图表、普通笔记写入等非 AI 操作仍可由领域服务直接处理。
 
 语义搜索不使用这九个角色，由 Portal 应用配置 `application_targets`（每个应用一行、指定其接收 Resident 或 Lineage 的配置表）中 `semantic_search:paper` 一行指定的公共搜索 Resident 提供；Research Chat 则按用户与论文动态绑定，两者不能落入通用的 `paper:background-ai` 替代团队。
+
+
+功能任务由业务适配器在每次输入明确指定交付位置：Resident 在本轮最终回复中返回完整正文或结构化结果，由业务服务校验并保存。向门面或其他成员 DeliverMessage 发送正文不构成该功能任务的产物交付；最终回复不能只包含完成简报。普通成员协作的消息回复约定不能替代本次业务交付协议。
 
 ### 谁发起、谁执行、谁保存结果
 
@@ -264,6 +267,11 @@ Review 解析器优先读取模型输出中的 JSON 代码块，再用 JSON 解�
 - Status 可以用 `job_id` 或 `paper_id` 定位，返回 `idle|queued|running|done|error`、step、progress、`analysis_path`、usage 和 error。
 - Status GET 命中非终态 job 时重新启动等待逻辑，不重复提交 Resident Input。
 - 成功时写 Analysis Markdown，并把 Paper 更新为 analysis-ready；提取、执行或写入失败时 job 进入 `error`。
+
+
+- 已完成模型输入但最终回复未形成 Analysis 时，contributor 可调用 `POST /paper/api/deep-read/recover`，明确提交失败 `job_id`、对应 `paper_id`、已确认 `input_message_id`、来源对话 `source_resident_id`、生成正文 `source_message_id` 和去除首尾空白后的正文 UTF-8 `content_sha256`。多段文本按两个换行连接。入口以当前 caller 核对 Paper 修改权、原输入已完成、来源消息可读及其作者等于原角色 Resident，并沿正常小节校验与保存逻辑提交；不启动模型或触发工作流。
+- 来源允许是明确选定的转送正文。保存记录将其记为 contributor 选择，保留来源消息和原输入，不能把转送消息标记成原输入的规范最终回复。原失败 job 与错误保持不变；恢复产生独立的 done job，usage 中 `artifact_recovery` 保存来源、原 job、原 input、摘要与真实操作者。重复同一恢复请求复用回执。
+- 恢复只允许当前最新的失败 job；出现后继任务时拒绝。已有 Analysis 时必须提交其当前原始字节 `expected_analysis_sha256`，缺省只允许文件不存在，防止无意覆盖后继产物。若文件写入已完成但任务回执未提交，调用者须回读产物再明确确认恢复，不通过重跑模型解决。
 
 - Deep Read status 按任务关联的真实 Paper 检查当前 actor 的 viewer 权限，随后才能返回状态或恢复等待。按 job_id 查询也执行同一检查；同时给出 paper_id 时必须与任务所属论文一致。未找到指定任务返回 404，缺少定位参数或论文不匹配返回 400，无阅读权限返回 403。
 

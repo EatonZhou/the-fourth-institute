@@ -133,6 +133,13 @@ def _completed_result(result: dict, previous: dict, requested_message_id: str = 
 
 
 def _call(method, options: dict) -> dict:
+    options = {**options, "prompt": (
+        "本次是 Paper 功能任务。业务服务读取本轮最终回复并校验、保存产物。"
+        "请在最终回复中直接返回本次要求的完整正文或结构化结果；"
+        "不要通过 DeliverMessage 向门面或其他 Resident 交付正文，也不要用完成简报替代产物。"
+        "本次交付约定优先于普通成员之间的消息回复方式。\n\n"
+        + str(options.get("prompt") or "")
+    )}
     requested = str(options.get("message_id") or "")
     assigned, submitted = options.get("on_assigned"), options.get("on_submitted")
     latest: dict = {}

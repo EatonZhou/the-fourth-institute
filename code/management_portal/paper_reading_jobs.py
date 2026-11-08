@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from contextvars import copy_context
 from pathlib import Path
+import hashlib
 import re
 import secrets
 
@@ -148,6 +149,89 @@ def _launch_deep_read_business_task(job: dict) -> dict:
     return _latest_deep_read_job(job_id=job_id) or job
 
 
+def recover_deep_read(payload: dict, actor: str) -> dict:
+    """Adopt an explicitly selected generated message; never submit an AI input.
+
+    The contributor selects the source, including a forwarded message. Authorship
+    is verified; this selection is recorded, not inferred to be a canonical reply.
+    A separate successful job preserves the original failed job and its error.
+    """
+    from management_portal import isa_client, permission_system
+    from management_portal.paper_projection import input_receipt
+
+    names = ("paper_id", "job_id", "input_message_id", "source_resident_id", "source_message_id", "content_sha256")
+    values = {name: str(payload.get(name) or "").strip() for name in names}
+    if not all(values.values()):
+        raise ValueError("paper_id, job_id, input_message_id, source_resident_id, source_message_id and content_sha256 required")
+    paper_id, job_id = values["paper_id"], values["job_id"]
+
+    def authorize():
+        if not actor or paper_id not in permission_system.permitted_ids(actor, "UpdateResource", "resource_id", [paper_id]):
+            raise PermissionError("Deep Read recovery requires Paper contributor permission")
+
+    authorize()
+    original = _latest_deep_read_job(job_id=job_id)
+    if not original:
+        raise KeyError("Deep Read job not found")
+    if original.get("paper_id") != paper_id or original.get("status") != "error":
+        raise ValueError("recovery requires the failed job of this Paper")
+    receipt = input_receipt(original.get("resident_handoff") or {})
+    resident_id = str(original.get("resident_id") or "")
+    if (not resident_id or receipt.get("resident_id") != resident_id
+            or receipt.get("input_identity_status") != "delivered"
+            or receipt.get("input_message_id") != values["input_message_id"]
+            or original.get("resident_input_message_id") != values["input_message_id"]):
+        raise ValueError("recovery requires the original confirmed input")
+    state = isa_client.call(actor, "GetInputState", {
+        "resident_id": resident_id, "message_id": values["input_message_id"],
+    }).get("input_state") or {}
+    if state.get("state") != "completed" or state.get("message_id") != values["input_message_id"]:
+        raise ValueError("original Resident input has not completed")
+    message = isa_client.call(actor, "GetMessage", {
+        "resident_id": values["source_resident_id"], "message_id": values["source_message_id"],
+    }).get("message") or {}
+    if message.get("message_id") != values["source_message_id"] or message.get("author_id") != resident_id:
+        raise ValueError("source message must be authored by the original role Resident")
+    content = "\n\n".join(str(part.get("text") or "") for part in message.get("content_parts") or []
+                          if part.get("type") == "text").strip()
+    if hashlib.sha256(content.encode()).hexdigest() != values["content_sha256"]:
+        raise ValueError("source content changed; read and confirm the message again")
+    _require_artifact_sections(content, DEEP_READ_SECTIONS, "Deep Read")
+    identity = "\0".join(values[name] for name in names)
+    recovery_id = "deep-read-recovered-" + hashlib.sha256(identity.encode()).hexdigest()[:24]
+    with LOCK, paper_state_store.locked("deep_read_jobs"):
+        authorize()
+        existing = _latest_deep_read_job(job_id=recovery_id)
+        if existing:
+            return existing
+        latest = _latest_deep_read_job(paper_id=paper_id)
+        if not latest or latest.get("job_id") != job_id or latest.get("status") != "error":
+            raise ValueError("Deep Read job changed; reload before recovery")
+        paper = get_paper_detail(paper_id)["paper"]
+        path = _paper_store_file(paper, "analysis")
+        if not path:
+            path = ANALYSIS_ROOT / f"{_slugify(str(paper.get('id') or paper.get('title') or 'paper'))}.md"
+        current_hash = hashlib.sha256(path.read_bytes()).hexdigest() if path.exists() else ""
+        if current_hash != str(payload.get("expected_analysis_sha256") or ""):
+            raise ValueError("Analysis changed; read and confirm the current artifact before recovery")
+        # Provenance is an explicit contributor selection. No forwarded text is
+        # relabelled as the canonical final reply, and no model usage is invented.
+        usage = {**dict(original.get("usage") or {}), "artifact_recovery": {
+            **values, "selected_by": actor, "selection": "explicit_generated_message",
+        }}
+        path = _save_deep_read_analysis(paper, content, usage)
+        recovered = {
+            "job_id": recovery_id, "paper_id": paper_id, "paper_title": str(paper.get("title") or ""),
+            "status": "done", "step": "recovered generated artifact", "progress": 100,
+            "created_by": actor, "created_at": _now(), "updated_at": _now(),
+            "analysis_path": str(path), "error": "", "usage": usage,
+            "resident_id": resident_id, "resident_input_message_id": values["input_message_id"],
+            "resident_handoff": receipt, "lineage_id": str(original.get("lineage_id") or ""),
+        }
+        paper_state_store.append("deep_read_jobs", recovered)
+        return _set_deep_read_job(recovery_id, {})
+
+
 def _authorize_paper_job_status(job: dict | None, *, actor: str, job_id: str, paper_id: str) -> None:
     if not str(actor or "").strip():
         raise PermissionError("Paper status requires an authenticated actor")
@@ -282,17 +366,9 @@ def _run_deep_read_job(job_id: str) -> None:
             if isinstance(result.get("usage"), dict)
             else {}
         )
-        analysis = _deep_read_analysis_document(paper, content, usage)
         print(f"[paper-deep-read] {job_id} writing analysis", flush=True)
         _set_deep_read_job(job_id, {"step": "writing analysis", "progress": 82})
-        analysis_path = _write_analysis_file(paper, analysis, usage)
-        _update_paper_fields(
-            paper_id,
-            {
-                "analysis_path": str(analysis_path),
-                "status": "analysis_ready",
-            },
-        )
+        analysis_path = _save_deep_read_analysis(paper, content, usage)
         _set_deep_read_job(
             job_id,
             {
@@ -338,6 +414,13 @@ Paper metadata:
 Extracted PDF text:
 {full_text}
 """
+
+
+def _save_deep_read_analysis(paper: dict, content: str, usage: dict) -> Path:
+    _require_artifact_sections(content, DEEP_READ_SECTIONS, "Deep Read")
+    path = _write_analysis_file(paper, _deep_read_analysis_document(paper, content, usage), usage)
+    _update_paper_fields(str(paper["id"]), {"analysis_path": str(path), "status": "analysis_ready"})
+    return path
 
 
 def _deep_read_analysis_document(

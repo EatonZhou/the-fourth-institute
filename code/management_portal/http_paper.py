@@ -381,6 +381,7 @@ def routes(portal):
         ("POST", "collector/start", post(http.collector_start)),
         ("POST", "collector/delete", backend(paper_collection_jobs, "delete_paper_collection_job")),
         ("POST", "deep-read/start", backend(paper_reading_jobs, "start_deep_read")),
+        ("POST", "deep-read/recover", backend(paper_reading_jobs, "recover_deep_read")),
     )
     return (
         *(RouteDefinition(method, f"/paper/api/{path}", handler, "paper", phase="dual-auth")
