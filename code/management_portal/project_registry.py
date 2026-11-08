@@ -113,7 +113,6 @@ def upgrade_directory_ownership(connection) -> int:
         if isinstance(directory, dict) and 'origin' in directory:
             del directory['origin']
         normalized = stored_record(item)
-        item.clear()
         item.update(normalized)
         if item != before:
             changed += 1

@@ -56,3 +56,19 @@ def test_project_edit_and_upgrade_keep_windows_persisted_references(windows_loca
         stored = json.loads(raw) if isinstance(raw, str) else raw
     expected = {**document['projects'][0], 'path': 'projects:AI员工', 'description': 'before' if legacy_absolute else 'after'}
     assert stored['projects'] == [expected]
+
+
+def test_project_upgrade_without_selected_instance_keeps_unmodified_fields(monkeypatch):
+    from management_portal import project_registry
+    from management_portal.resources.registry_store import get_registry_store
+    registry = get_registry_store()
+    document = {'projects': [{'id': 'Example', 'path': 'projects:Example',
+                             'directory': {'owner_id': 'Example', 'origin': 'created'}}]}
+    with registry.writer('project_registry') as writer:
+        writer.connection.execute('INSERT INTO registry_documents VALUES (%s,%s,%s,%s)',
+                                  ('project_registry', 'projects', 0, json.dumps(document)))
+        monkeypatch.delenv('PORTAL_INSTANCE_ROOT', raising=False)
+        assert project_registry.upgrade_directory_ownership(writer.connection) == 1
+        raw = writer.connection.execute("SELECT document_json FROM registry_documents WHERE collection='project_registry' AND document_id='projects'").fetchone()[0]
+        stored = json.loads(raw) if isinstance(raw, str) else raw
+        assert stored['projects'] == [{'id': 'Example', 'path': 'projects:Example', 'directory': {'owner_id': 'Example'}}]
