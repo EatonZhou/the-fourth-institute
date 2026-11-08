@@ -1,5 +1,5 @@
 {
-  "request": "20261103.2-et-macbook-unified-source",
-  "purpose": "Build unified main including registration fixes for ET MacBook. Replace the previous two-file hotfix with a complete verified package using the data-preserving upgrade. No per-Mac source patches and no GitHub Release.",
+  "request": "20261108.1-et-macbook-unified-refresh",
+  "purpose": "Build current unified main for ET MacBook native testing and data-preserving update without Lenia examples. Check common Windows packaging findings in shared source. No per-Mac source patches and no GitHub Release.",
   "delivery": "Actions artifacts only; no GitHub Release"
 }
