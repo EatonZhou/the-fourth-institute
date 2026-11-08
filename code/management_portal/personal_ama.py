@@ -59,8 +59,8 @@ def public_entry_title(resident_id: str) -> str:
 
     A personal AMA stays its owner's (decision_bd5217d08c09); only the name of
     the Resident the owner's entry opens — the personal assistant facade, or the
-    personal AMA itself — is public, like every avatar, so others can tell
-    whose assistant it is.  Any other Resident gets "".
+    personal AMA before its Family exists — is public, like every avatar, so
+    others can tell whose assistant it is.  Any other Resident gets "".
     """
     from .permission_system import personal_ama
     from .portal_ui_state import get_portal_ui_state_store
@@ -72,11 +72,11 @@ def public_entry_title(resident_id: str) -> str:
     if not owner:
         return ""
     store = get_portal_ui_state_store()
-    entries = {
+    # The facade is the entry once the Family exists; before that, the AMA.
+    entry = next((resident for resident in (
         str(((store.get(owner, namespace, KEY) or {}).get("value") or {}).get("resident_id") or "")
-        for namespace in (NAMESPACE, assistant_namespace)
-    }
-    if clean not in entries:
+        for namespace in (assistant_namespace, NAMESPACE)) if resident), "")
+    if clean != entry:
         return ""
     try:
         return str(CollaborationDescriptorStore().get(clean).get("title") or "")

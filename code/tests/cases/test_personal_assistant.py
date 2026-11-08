@@ -195,6 +195,7 @@ def test_entry_is_named_after_its_owner_once_and_the_name_is_public(personal, mo
     assert ama_permissions.owner_of(facade) == "newcomer"
     assert personal_ama.public_entry_title(facade) == "newcomer 的 AMA"
     assert personal_ama.public_entry_title(family["router"]) == ""
+    assert personal_ama.public_entry_title(ama["resident_id"]) == ""  # the facade is the entry now
     lineage_resident_nodes.rename_lineage_resident(assistant["lineage_id"], {"resident_id": facade, "title": "Dolty"}, "newcomer")
     principal_hierarchy_domain.ensure_personal_assistant("newcomer", ama["resident_id"], "newcomer")
     assert resident_catalog.get_catalog().get(facade)["title"] == "Dolty"
