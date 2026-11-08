@@ -448,10 +448,9 @@
   function titleGlyph(label) {
     const text = String(label || "").trim();
     const characters = Array.from(text);
-    const firstMeaningful = characters.find(character => (
-      /[A-Za-z0-9㐀-䶿一-鿿豈-﫿]/u.test(character)
-    ));
-    if (/^[㐀-䶿一-鿿豈-﫿]$/u.test(firstMeaningful || "")) return firstMeaningful;
+    // ASCII-only patterns: the script must parse even when served without a charset.
+    const firstMeaningful = characters.find(character => /[A-Za-z0-9]|\p{Script=Han}/u.test(character));
+    if (/^\p{Script=Han}$/u.test(firstMeaningful || "")) return firstMeaningful;
     const englishWords = text.match(/[A-Za-z]+/g) || [];
     if (englishWords.length >= 2) return `${englishWords[0][0]}${englishWords[1][0]}`.toUpperCase();
     if (englishWords.length === 1) return englishWords[0].slice(0, 2);

@@ -189,21 +189,18 @@
         padding-top: 0;
         border-top: 0;
       }
+      /* A section is named by a quiet small-caps label; its chevron shows on hover. */
       .residentGroupHead {
         width: auto;
         min-width: 0;
         height: 22px;
         display: flex;
         align-items: center;
-        gap: 5px;
-        margin: 0 -8px;
-        padding: 0 8px;
-        border-radius: 0;
-        background: var(--accent);
-        color: #fff;
+        gap: 2px;
+        padding: 0 2px;
+        color: var(--muted);
       }
-      .residentToggle,
-      .residentAddBtn {
+      .residentToggle {
         width: 19px;
         height: 19px;
         flex: 0 0 auto;
@@ -216,24 +213,21 @@
         justify-content: center;
         padding: 0;
       }
-      .residentToggle:hover,
-      .residentAddBtn:hover {
+      .residentToggle:hover {
         background: var(--panel-2);
         color: var(--accent);
       }
-      .residentGroupHead .residentToggle,
-      .residentGroupHead .residentAddBtn {
-        color: #fff;
-        opacity: 0.86;
+      .residentGroupHead .residentToggle {
+        order: 1;
+        width: 16px;
+        height: 16px;
+        opacity: 0;
+        transition: opacity 120ms ease;
       }
-      .residentGroupHead .residentToggle:hover,
-      .residentGroupHead .residentAddBtn:hover {
-        background: rgba(255, 255, 255, 0.13);
-        color: #fff;
-        opacity: 1;
-      }
-      .residentToggle svg,
-      .residentAddBtn svg {
+      .residentGroupHead:is(:hover, :focus-within) .residentToggle,
+      .residentSection.collapsed .residentGroupHead .residentToggle { opacity: 1; }
+      @media (hover: none) { .residentGroupHead .residentToggle { opacity: 1; } }
+      .residentToggle svg {
         width: 14px;
         height: 14px;
         stroke: currentColor;
@@ -241,14 +235,14 @@
       .residentChevron { transition: color 120ms ease; }
       .residentGroupName {
         min-width: 0;
-        flex: 1 1 auto;
+        flex: 0 1 auto;
         border: none;
         background: transparent;
-        padding: 0;
-        color: #fff;
+        padding: 0 4px;
+        color: var(--muted);
         font-family: inherit;
         font-size: 10.5px;
-        font-weight: 850;
+        font-weight: 700;
         letter-spacing: 0.08em;
         text-transform: uppercase;
         text-align: left;
@@ -256,7 +250,7 @@
         overflow: hidden;
         text-overflow: ellipsis;
       }
-      .residentGroupName:hover { color: #fff; }
+      .residentGroupName:hover { color: var(--text); }
       .residentGroupBody {
         display: grid;
         gap: 8px;

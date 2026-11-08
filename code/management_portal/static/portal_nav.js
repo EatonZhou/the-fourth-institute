@@ -1468,11 +1468,15 @@
       const read = lineageId => window.PortalInstructionClient.execute("GetLineage", { lineage_id: lineageId });
       const recorded = /^lineage_[0-9a-f]{12}$/.test(value.lineage_id || "") ? read(value.lineage_id) : null;
       recorded?.catch(() => {});
+      // The entry carries the facade's own name (the one the User gives it),
+      // falling back to the Lineage title when the Resident cannot be read.
+      const facade = window.PortalInstructionClient.execute("GetResident", { resident_id: value.resident_id })
+        .then(result => String(result?.resident?.title || "").trim(), () => "");
       const target = await window.PortalResidentService.navigationTarget(value.resident_id);
       if (target.resident_id !== value.resident_id || !/^lineage_[0-9a-f]{12}$/.test(target.lineage_id || "")) return null;
       const { lineage } = await (target.lineage_id === value.lineage_id ? recorded : read(target.lineage_id));
       return { resident_id: target.resident_id, lineage_id: target.lineage_id,
-        family_id: value.family_id, title: lineage?.title || target.lineage_id };
+        family_id: value.family_id, title: await facade || lineage?.title || target.lineage_id };
     })().finally(() => { personalAssistantRequest = null; });
     return personalAssistantRequest;
   }

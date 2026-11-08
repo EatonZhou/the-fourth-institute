@@ -204,6 +204,39 @@ def navigation(actor: str) -> dict[str, Any]:
             "levels": list(contract.LEVELS)}
 
 
+def personal_ama_title(username: str) -> str:
+    """The name of a User's personal assistant, so everyone can tell whose it is."""
+
+    return f"{username} 的 AMA"
+
+
+# Titles the personal assistant gets from setup; any other title the User chose.
+_DEFAULT_ENTRY_TITLES = frozenset({PERSONAL_AMA_TITLE, personal_assistant.TITLE})
+
+
+def _name_personal_entry(lineage_id: str, resident_id: str, username: str, actor: str) -> None:
+    """Name the personal assistant's facade after its User while it has a default title.
+
+    New assistants get the name at setup and existing ones on their owner's next
+    visit; a name the User chose stays.  The rename only changes the record and
+    the Family title, so a turn in progress continues.  A pending lifecycle
+    operation defers it to the next visit.
+    """
+
+    import logging
+    from . import lineage_resident_nodes, resident_catalog
+
+    title = str(resident_catalog.get_catalog().get(resident_id).get("title") or "").strip()
+    if title not in _DEFAULT_ENTRY_TITLES:
+        return
+    try:
+        lineage_resident_nodes.rename_lineage_resident(
+            lineage_id, {"resident_id": resident_id, "title": personal_ama_title(username)}, actor,
+        )
+    except ValueError as exc:
+        logging.getLogger(__name__).info("Personal assistant %s keeps its title for now: %s", resident_id, exc)
+
+
 def ensure_personal_assistant(username: str, ama_id: str, actor: str) -> dict[str, Any]:
     """Resume one user's Family setup without touching their AMA session or history."""
     from management_common.principal import actor_principal
@@ -239,6 +272,7 @@ def ensure_personal_assistant(username: str, ama_id: str, actor: str) -> dict[st
         else:
             block = blocks[0]
         family = block["family"]
+        _name_personal_entry(lineage_id, family["facade"], owner.id, actor)
         # Publication can fail after the graph committed. Retry it,
         # keeping the original roles and migration boundary.
         lineage_state._publish_lineage_resource_projection(lineage_id, None, actor=actor)

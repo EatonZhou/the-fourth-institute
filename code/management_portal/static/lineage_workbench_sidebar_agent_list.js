@@ -42,7 +42,7 @@
           isRunning: child => runningLineageIds().has(String(child.lineage_id || "")),
         },
       );
-      return [{ id: "lineage", title: window.PortalI18n.t("My Projects"), items: [], itemType: "resident", projectGroups,
+      return [{ id: "lineage", title: "Projects", items: [], itemType: "resident", projectGroups,
         empty: residentSidebarPendingText("Project") || (state.query.trim()
           ? window.PortalI18n.text`没有与「${state.query.trim()}」匹配的项目。`
           : state.projectFilter !== "all" || (state.projectDisplayFilter !== "all" && state.principalHierarchy?.projects?.length)
@@ -74,7 +74,6 @@
           <div class="residentGroupHead">
             <button class="residentToggle" type="button" data-resident-toggle="${esc(group.id)}" aria-expanded="${open ? "true" : "false"}" aria-label="${open ? window.PortalI18n.t("收起") : window.PortalI18n.t("展开")} ${esc(group.title)}" title="${open ? window.PortalI18n.t("收起") : window.PortalI18n.t("展开")}" data-portal-icon="${open ? "chevron-up" : "chevron-down"}" data-portal-icon-class="residentChevron"></button>
             <button class="residentGroupName" type="button" data-resident-toggle="${esc(group.id)}" aria-expanded="${open ? "true" : "false"}" title="${open ? window.PortalI18n.t("收起") : window.PortalI18n.t("展开")} ${esc(group.title)}">${esc(group.title)}</button>
-            ${group.id === "lineage" ? window.PortalI18n.html`<button class="residentAddBtn" type="button" data-project-create aria-label="创建 Project" title="创建 Project" data-portal-icon="plus"></button>` : ""}
           </div>
           ${queryActive ? window.PortalI18n.html`<div class="sidebarSearchSummary" role="status"><span>${window.PortalI18n.text`正在筛选：${esc(state.query.trim())}`}</span><span>${state.residentSidebarReady ? window.PortalI18n.text`匹配 ${group.projectGroups.length} 个项目` : window.PortalI18n.t(state.residentSidebarError ? "项目读取失败" : "正在读取项目…")}</span><button class="portalButton is-icon is-compact" type="button" data-sidebar-search-clear aria-label="清除搜索" title="清除搜索">×</button></div>` : ""}
           ${open ? window.PortalI18n.html`<div class="residentGroupBody">
@@ -102,9 +101,25 @@
       startRunningRefresh();
       return state.runningLineageIds instanceof Set ? state.runningLineageIds : new Set();
     }
-    function runningDotHtml() {
+    // Every Lineage row carries a status dot before its name: green while
+    // running, quiet otherwise.
+    function statusDotHtml(running) {
+      return `<span class="portalNavRowStatus ${running ? "is-running" : ""}"${statusDotLabel(running)}></span>`;
+    }
+    function statusDotLabel(running) {
+      if (!running) return ' aria-hidden="true"';
       const label = esc(window.PortalI18n.t("有 Resident 正在运行"));
-      return `<span class="portalNavRowStatus is-running" role="img" aria-label="${label}" title="${label}"></span>`;
+      return ` role="img" aria-label="${label}" title="${label}"`;
+    }
+    function setStatusDot(dot, running) {
+      dot.classList.toggle("is-running", running);
+      for (const name of ["role", "aria-label", "title", "aria-hidden"]) dot.removeAttribute(name);
+      if (running) {
+        const label = window.PortalI18n.t("有 Resident 正在运行");
+        dot.setAttribute("role", "img");
+        dot.setAttribute("aria-label", label);
+        dot.title = label;
+      } else dot.setAttribute("aria-hidden", "true");
     }
     function applyRunningLineages(activity) {
       const running = window.PortalResidentService.runningLineageIds(activity);
@@ -116,11 +131,8 @@
       }
       for (const rootId of ["agentList", "favoriteAgentList"]) {
         $id(rootId)?.querySelectorAll(".residentCardWrap[data-lineage-card]").forEach(card => {
-          const main = card.querySelector(".principalLineageCard > .portalNavRowMain");
-          if (!main) return;
-          const dot = main.querySelector(":scope > .portalNavRowStatus");
-          if (running.has(card.dataset.lineageCard) && !dot) main.insertAdjacentHTML("beforeend", runningDotHtml());
-          else if (!running.has(card.dataset.lineageCard)) dot?.remove();
+          const dot = card.querySelector(".principalLineageCard > .portalNavRowMain > .portalNavRowStatus");
+          if (dot) setStatusDot(dot, running.has(card.dataset.lineageCard));
         });
       }
     }
@@ -203,9 +215,9 @@
         return `<div class="residentCardWrap" data-resident-card="${esc(residentId)}" data-lineage-card="${esc(lineageId)}">
           <div class="portalNavRow is-leaf principalLineageCard ${active ? "is-active" : ""} ${menuOpen ? "is-menu-open" : ""}" data-resident-id="${esc(residentId)}">
             <button type="button" class="portalNavRowMain" data-principal-open="${esc(lineageLeaderResidentId(item))}" data-lineage-open="${esc(lineageId)}" title="${esc(title)}">
+              ${statusDotHtml(runningLineageIds().has(lineageId))}
               ${navRowMarkHtml({ kind: "lineage", id: lineageId, label: title })}
               <span class="portalNavRowLabel">${esc(title)}</span>
-              ${runningLineageIds().has(lineageId) ? runningDotHtml() : ""}
             </button>
             <span class="portalNavRowActions" data-reveal="hover">
               ${favoriteStar(favoriteSelectionId, favorite)}
@@ -312,7 +324,18 @@
         });
       });
       bindAgentCardControls(list);
-      list.querySelector("[data-project-create]")?.addEventListener("click", async event => {
+      bindProjectCreateButton();
+      bindWhichResidentControls(list);
+      refreshRecommendationChats();
+      renderAgentFloatingMenu();
+    }
+
+    // The pane header's “+” creates a Project; the header outlives list renders.
+    function bindProjectCreateButton() {
+      const createButton = $id("projectCreateBtn");
+      if (!createButton || createButton.dataset.bound) return;
+      createButton.dataset.bound = "1";
+      createButton.addEventListener("click", async event => {
         event.stopPropagation();
         const result = await window.PortalProjectCreation.open();
         if (!result) return;
@@ -329,9 +352,6 @@
           window.PortalUI.toast(window.PortalI18n.text`Project 已创建，导航刷新失败：${error.message || error}`, "error");
         }
       });
-      bindWhichResidentControls(list);
-      refreshRecommendationChats();
-      renderAgentFloatingMenu();
     }
 
     // A conversation selection changes only highlighting, not the contents

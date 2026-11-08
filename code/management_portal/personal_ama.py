@@ -54,6 +54,36 @@ def provision(username: str) -> dict[str, Any]:
     return {**result, "associated": associated, "personal_assistant": assistant}
 
 
+def public_entry_title(resident_id: str) -> str:
+    """The name of a User's personal assistant entry, which every signed-in viewer may see.
+
+    A personal AMA stays its owner's (decision_bd5217d08c09); only the name of
+    the Resident the owner's entry opens — the personal assistant facade, or the
+    personal AMA itself — is public, like every avatar, so others can tell
+    whose assistant it is.  Any other Resident gets "".
+    """
+    from .permission_system import personal_ama
+    from .portal_ui_state import get_portal_ui_state_store
+    from .resources.collaboration_registry import CollaborationDescriptorStore
+    from .society_service.personal_assistant import NAMESPACE as assistant_namespace
+
+    clean = str(resident_id or "").strip()
+    owner = personal_ama.owner_of(clean)
+    if not owner:
+        return ""
+    store = get_portal_ui_state_store()
+    entries = {
+        str(((store.get(owner, namespace, KEY) or {}).get("value") or {}).get("resident_id") or "")
+        for namespace in (NAMESPACE, assistant_namespace)
+    }
+    if clean not in entries:
+        return ""
+    try:
+        return str(CollaborationDescriptorStore().get(clean).get("title") or "")
+    except (KeyError, ValueError):
+        return ""
+
+
 def provision_account(username: str) -> dict[str, Any]:
     """Account creation or login committed; retry provision without blocking access."""
     try:
@@ -117,7 +147,9 @@ def personal_assistant_target(username: str) -> dict[str, str]:
     if str(resident.get("lineage_id") or "") != lineage_id:
         return {}
     return {"resident_id": resident_id, "lineage_id": lineage_id,
-            "family_id": str(value.get("family_id") or ""), "title": str(resident.get("lineage_title") or "")}
+            "family_id": str(value.get("family_id") or ""),
+            # The entry shows the facade's own name, the one its owner gives it.
+            "title": str(resident.get("title") or resident.get("lineage_title") or "")}
 
 
 def _provision_session(username: str) -> None:

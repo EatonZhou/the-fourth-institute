@@ -1026,6 +1026,19 @@
           event.preventDefault();
           setSearchOpen(false);
         });
+        // “/” opens the Agent view and focuses its search (the hint in the
+        // field); Ctrl/⌘K stays the site-wide command palette.
+        window.PortalCommandRegistry?.createScope({ id: "lineage-workbench.navigation" }).register({
+          id: "lineage.navigation.search",
+          title: window.PortalI18n.t("搜索 Project、Lineage"),
+          category: "Society",
+          keybindings: ["/"],
+          execute: () => {
+            setSideView("agents", { userInitiated: true });
+            setNavigationPanelVisible(true);
+            $id("searchInput")?.focus();
+          },
+        });
         $id("agentFilterPanel").addEventListener("click", event => {
           const target = event.target instanceof Element ? event.target : null;
           const btn = target?.closest("[data-project-filter]");

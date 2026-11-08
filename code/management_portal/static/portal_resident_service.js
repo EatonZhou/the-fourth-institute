@@ -400,6 +400,11 @@
       activeAgents() {
         return get("/api/agent-status/active-agents");
       },
+      // What any signed-in viewer may see of a Resident: its avatar, and the
+      // name when it is a User's personal assistant entry ({avatar, title?}).
+      publicIdentity(residentId) {
+        return get("/api/account/avatar", { principal: required(residentId, "resident_id") });
+      },
       // The live-update subscription for activeAgents(): Resident events and
       // changes to the active-agents projection, shared by every view of it.
       activeAgentsSubscription() {

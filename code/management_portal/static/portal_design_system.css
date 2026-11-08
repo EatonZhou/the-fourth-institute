@@ -516,6 +516,30 @@ textarea.portalControl {
   box-shadow: none;
 }
 
+/* A rounded search field, for navigation panes. */
+.portalSearchField[data-portal-search-shape="pill"] {
+  height: 34px;
+  border-radius: 999px;
+  padding-left: 12px;
+  background: var(--panel-2, #f1f5f9);
+  border-color: color-mix(in srgb, var(--border, #cbd5e1) 70%, transparent);
+}
+.portalSearchField[data-portal-search-shape="pill"]:focus-within { background: var(--panel, #fff); }
+.portalSearchField[data-portal-search-shape="pill"] input { height: 26px; }
+
+/* The key that focuses the field; it steps aside once the field is in use. */
+.portalSearchFieldHint {
+  margin-right: 6px;
+  padding: 1px 6px;
+  border: 1px solid var(--border, #cbd5e1);
+  border-radius: 5px;
+  background: var(--panel, #fff);
+  color: var(--muted, #64748b);
+  font: 600 10.5px/1.4 ui-sans-serif, system-ui, sans-serif;
+}
+.portalSearchField:focus-within > .portalSearchFieldHint,
+.portalSearchField:has(input:not(:placeholder-shown)) > .portalSearchFieldHint { display: none; }
+
 .portalSearchField[data-portal-search-density="compact"] {
   height: 32px;
   grid-template-columns: 18px minmax(80px, 1fr) auto;

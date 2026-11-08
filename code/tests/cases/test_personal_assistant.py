@@ -172,6 +172,35 @@ def test_custom_title_and_history_branch_remain_outside_family(future_creation_s
     assert assistant["resident_id"] != ama["resident_id"]
 
 
+def test_entry_is_named_after_its_owner_once_and_the_name_is_public(personal, monkeypatch):
+    """个人入口以“<用户> 的 AMA”命名，已自定义的名字不被覆盖，名字对其他用户可见"""
+    from management_portal import personal_ama
+    from management_portal.permission_system import personal_ama as ama_permissions
+    from management_portal.portal_ui_state import get_portal_ui_state_store
+    from management_portal.resources.collaboration_registry import CollaborationDescriptorStore
+    def descriptor(_store, rid):
+        # The fixture registers no descriptors; project the catalog record as registration does.
+        record = resident_catalog.get_catalog().get(rid)
+        return {"title": record["title"], "attributes": {"personal_owner_id": record.get("personal_owner_id", "")}}
+    monkeypatch.setattr(CollaborationDescriptorStore, "get", descriptor)
+    monkeypatch.setattr(ama_permissions, "_OWNERS", {})
+    ama, assistant = personal
+    graph = lineage_reads.get_lineage(assistant["lineage_id"], "newcomer")
+    family = graph["function_blocks"][0]["family"]
+    facade = family["facade"]
+    assert resident_catalog.get_catalog().get(facade)["title"] == principal_hierarchy_domain.personal_ama_title("newcomer")
+    store = get_portal_ui_state_store()
+    store.put("newcomer", personal_ama.NAMESPACE, personal_ama.KEY, {"resident_id": ama["resident_id"], "lineage_id": ama["lineage_id"]})
+    store.put("newcomer", personal_assistant.NAMESPACE, personal_ama.KEY, {"resident_id": facade, "lineage_id": assistant["lineage_id"]})
+    assert ama_permissions.owner_of(facade) == "newcomer"
+    assert personal_ama.public_entry_title(facade) == "newcomer 的 AMA"
+    assert personal_ama.public_entry_title(family["router"]) == ""
+    lineage_resident_nodes.rename_lineage_resident(assistant["lineage_id"], {"resident_id": facade, "title": "Dolty"}, "newcomer")
+    principal_hierarchy_domain.ensure_personal_assistant("newcomer", ama["resident_id"], "newcomer")
+    assert resident_catalog.get_catalog().get(facade)["title"] == "Dolty"
+    assert personal_ama.public_entry_title(facade) == "Dolty"
+
+
 def _append(rid, number, *, role="user", text="message"):
     mid = f"msg_{number:032x}"
     repository = resident_conversation_stream.get_repository()

@@ -98,7 +98,12 @@ class AccountHttp:
                 if identity.kind == "resident":
                     # Without an avatar a Resident shows its initial, like a Lineage or Project.
                     from management_portal.resident_avatar import get_existing_avatar
+                    from management_portal.personal_ama import public_entry_title
                     avatar = get_existing_avatar(target)
+                    # A personal assistant's name is public like its avatar; others' titles are not here.
+                    title = public_entry_title(target)
+                    if title:
+                        return self.respond(request, 200, {"avatar": avatar, "title": title})
                 elif identity.kind == "user":
                     avatar = store.get(target)
                 else:
