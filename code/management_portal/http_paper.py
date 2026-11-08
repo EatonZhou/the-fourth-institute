@@ -5,7 +5,7 @@ from pathlib import Path
 from urllib.parse import parse_qs
 
 from management_portal import (
-    http_auth, http_documents, http_files, http_request_body, http_responses, page_api_auth, paper_ccf,
+    http_auth, http_documents, http_files, http_request_body, http_responses, page_api_auth, paper_assets, paper_ccf,
     paper_ccf_enrichment, paper_collection_jobs, paper_detail, paper_favorites, paper_figure_jobs,
     paper_figures, paper_library, paper_notes, paper_reading_jobs, paper_refs, paper_registration,
     paper_resources, paper_reviews, semantic_search_jobs, web_accounts, web_resources,
@@ -368,6 +368,7 @@ def routes(portal):
         ("POST", "notes/create", backend(paper_notes, "create_note")),
         ("POST", "notes/delete", backend(paper_notes, "delete_note")),
         ("POST", "refs/extract", backend(paper_refs, "extract_refs")),
+        ("POST", "papers/assets/retry", backend(paper_assets, "retry_assets")),
         ("POST", "refs/register", backend(paper_refs, "register_ref")),
         ("POST", "figures/extract", backend(paper_figures, "extract_figures")),
         ("POST", "figures/explain", backend(paper_figure_jobs, "start_figure_explanation")),

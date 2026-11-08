@@ -4,15 +4,15 @@ type: decision
 project: AI员工
 created_at: '2026-09-01'
 version:
-  number: 25
-  created_at: '2026-09-01'
+  number: 26
+  created_at: "2026-09-01"
   created_by:
-    user: ''
-    agent: ''
-  updated_at: '2026-11-01T18:52:31Z'
+    user: ""
+    agent: ""
+  updated_at: "2026-11-08T04:47:48Z"
   updated_by:
-    user: ''
-    agent: resident_24014e2b9bf6
+    user: ""
+    agent: "resident_6199a7a36480"
 importance: 8
 metaness: 2
 ai_generated: true
@@ -236,6 +236,16 @@ Research Workspace 按论文与正式产物类型查询内容。通过 Lineage �
 
 `review_*` 的注销由 Paper 领域接管，通过 `UnregisterResource` 调用已有 Review 删除流程，释放关联工作、数据库记录及评审文档。Paper 已级联删除的 Review 再次注销可以成功；权限拒绝、工作尚未释放或记录仍存在时保留失败，不能报告清理完成。
 
+### PDF 资产任务中断与显式重试
+
+上传或替换 PDF 后，非 AI 资产任务提取 `text/pdf.raw.txt`、参考文献与图表。它不产生 `text/pdf.clean.txt`，不启动摘要或深读；clean 仍由对应研究流程按需生成。资产任务与每次执行尝试保存在 Paper 的 runs 中，记录任务 ID、原排队时间、执行进程身份、attempt 和当前调用者。
+
+详情读取只观察状态：执行进程已确认退出的 queued/running 显示为 interrupted；历史任务缺少可恢复的执行身份且本进程无活跃线程时，也显示 interrupted。未知或仍存活的进程不因排队时间长而被判死。查询不启动提取，不借用历史 actor 的身份。新任务按创建次序选取，旧任务迟到完成不替代当前 PDF 的任务。
+
+Contributor 使用 `POST /paper/api/papers/assets/retry`，提交详情中的 `{paper_id, job_id}`，以当前认证调用者重试同一个持久任务。目标已被新任务替换时返回 400，要求重新读取详情；当前任务活跃或已完成时幂等返回。interrupted/error/skipped 可以显式重试。每篇论文的跨进程接收锁合并并发重试；旧 attempt 或旧 PDF 的待执行任务不继续提取或覆盖新状态。开始实际提取前再次核对当前调用者的 contributor 权限。
+
+重试返回 `{paper_id, assets_job, reused}`，返回 queued 只表示已接收；调用者须继续读取详情确认 done/error/skipped。重试会重新执行 raw/参考文献/图表全流程，已单独提取的参考文献也可能再次提取。上传文件、原 PDF 和线上配置不因重试入口而被替换；任务没有输入 PDF 时明确 skipped。进程重启后采用显式授权重试，不自动重放用户业务。
+
 ## HTTP 接口
 
 - **Library 查询：** `GET /paper/api/library` 返回当前用户可见的 Paper 列表、filters、folder tree、workflow metadata 和个人 `favorite_ids`；`favorite=1` 将收藏与其他查询条件取交集。页面使用 `compact=1`：列表项只带显示与筛选所需字段，摘要截到 300 字，folder tree 只含各层名称和数量，session 下的论文由页面从列表分组得到。
@@ -246,6 +256,7 @@ Research Workspace 按论文与正式产物类型查询内容。通过 Lineage �
 - **正式登记：** `POST /paper/api/papers/register` 校验来源与关联 Project，复用既有 Paper 或创建新 Paper。
 - **CCF 登记：** `POST /paper/api/ccf/register` 把目录条目变为正式 Paper，复用或创建身份，并保留已有 `related_projects`。
 - **上传或替换 PDF：** `POST /paper/api/papers/upload-pdf` 要求 contributor，保存当前 PDF 并刷新派生文本状态。
+- **重试 PDF 资产：** `POST /paper/api/papers/assets/retry` 使用当前 contributor 与 `{paper_id, job_id}` 恢复已中断/失败的非 AI 资产任务；状态与幂等规则见上文。
 - **只删除 PDF：** `POST /paper/api/papers/delete-pdf` 要求 contributor，删除 PDF 和派生文本 cache，保留 manifest 与长期研究产物。
 - **删除 Paper：** `POST /paper/api/papers/delete` 要求 contributor，目录删除按《目录与路径协议》（decision_4aa13bc21e8e）处理，并通知统一资源索引。
 - **读取 asset：** `GET /paper/api/asset?id=&kind=&figure_id=&generated_id=` 校验 Paper viewer 和 bundle 路径后返回受控文件。

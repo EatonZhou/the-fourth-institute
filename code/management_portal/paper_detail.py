@@ -10,7 +10,7 @@ from management_portal.paper_figure_jobs import _recover_figure_tasks
 from management_portal.paper_figures import _figure_public, _load_figures
 from management_portal.paper_records import _is_url
 from management_portal.paper_store import (
-    LOCK, _latest_paper_run, _paper_bundle_path, _paper_by_id, _paper_public, _paper_root, _paper_store_file,
+    LOCK, _paper_bundle_path, _paper_by_id, _paper_public, _paper_root, _paper_store_file,
     _read_text_preview, _refs_for_paper, _safe_file_path, _summary_text,
 )
 
@@ -31,6 +31,8 @@ def _paper_detail_sections(sections: object = None) -> set[str]:
 
 
 def get_paper_detail(paper_id: str, sections: object = None) -> dict:
+    from management_portal.paper_assets import assets_job_status
+
     paper_id = str(paper_id or "").strip()
     requested = _paper_detail_sections(sections)
     with LOCK:
@@ -53,7 +55,7 @@ def get_paper_detail(paper_id: str, sections: object = None) -> dict:
             "analysis_url": analysis_source if _is_url(analysis_source) else "",
         },
         "loaded_sections": sorted(requested),
-        "assets_job": _latest_paper_run(str(paper.get("id") or ""), kind="assets"),
+        "assets_job": assets_job_status(str(paper.get("id") or "")),
     }
     if "analysis" in requested:
         analysis_path = _safe_file_path(analysis_source)
