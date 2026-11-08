@@ -1023,6 +1023,10 @@
           openCreateChatroomPicker().catch(error => window.PortalUI.toast(error.message || String(error), "error"));
         });
         $id("chatroomRefreshBtn").addEventListener("click", () => loadChatrooms());
+        $id("chatroomSearchInput").addEventListener("input", event => {
+          state.chatroomQuery = event.target.value || "";
+          renderChatroomList();
+        });
         $id("searchInput").addEventListener("input", event => {
           state.query = event.target.value || "";
           renderAgentList();

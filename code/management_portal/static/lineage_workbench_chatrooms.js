@@ -157,11 +157,11 @@
           panel, placement: "bottom-end", portal: true,
           onOpen: () => {
             chatroomMenuTarget.trigger.classList.add("active");
-            chatroomMenuTarget.trigger.closest(".chatroomCard")?.classList.add("menuOpen");
+            chatroomMenuTarget.trigger.closest(".chatroomCard")?.classList.add("is-menu-open");
           },
           onClose: () => {
             chatroomMenuTarget.trigger.classList.remove("active");
-            chatroomMenuTarget.trigger.closest(".chatroomCard")?.classList.remove("menuOpen");
+            chatroomMenuTarget.trigger.closest(".chatroomCard")?.classList.remove("is-menu-open");
           },
         });
         panel.addEventListener("click", event => {
@@ -176,6 +176,22 @@
       chatroomMenuPopover.open(trigger, event);
     }
 
+    // A Chatroom is drawn by up to two of its other members' avatars, stacked.
+    function chatroomAvatarsHtml(chatroom) {
+      const members = (chatroom.members || []).map(member => String(member || "").trim()).filter(Boolean);
+      const others = members.filter(member => !sameChatroomActor(member, state.me));
+      const shown = (others.length ? others : members).slice(0, 2);
+      const marks = shown.map(member => {
+        const label = /^resident_[0-9a-f]{12}$/.test(member) ? chatroomAuthorName(member) : chatroomUserName(member);
+        const glyph = window.PortalUIPrimitives.titleGlyph(label);
+        const kind = /^resident_[0-9a-f]{12}$/.test(member) ? "resident" : "user";
+        return `<span class="portalNavRowMark portalAvatarMark chatroomAvatar" style="--portal-nav-mark-hue:${window.PortalUIPrimitives.stableHue(member)}"${window.PortalUIPrimitives.avatarMarkAttributes({ kind, id: member, label, glyph, size: 20 })}>${esc(glyph)}</span>`;
+      });
+      return `<span class="chatroomAvatars${marks.length > 1 ? " is-stacked" : ""}" aria-hidden="true">${marks.join("") || `<span class="portalNavRowMark is-neutral chatroomAvatar" data-portal-icon="users"></span>`}</span>`;
+    }
+
+    // Each Chatroom is a navigation row (.portalNavRow): avatars, the name with
+    // the latest time, and the latest message with the unread count below it.
     function renderChatroomCard({ chatroom, pinnedAt }) {
       const id = String(chatroom.chatroom_id || "");
       const active = state.activeChatroomId === id;
@@ -187,86 +203,128 @@
       const last = chatroom.last_message || {};
       const meta = last.preview
         ? `${last.author_id === "portal" ? "" : `${chatroomAuthorName(last.author_id)}：`}${last.preview}`
-        : `${(chatroom.members || []).length} 位成员`;
+        : window.PortalI18n.text`${(chatroom.members || []).length} 位成员`;
       const activity = chatroomActivity(chatroom);
       const time = activity ? chatroomShortTime(activity) : "";
       const fullTime = activity
         ? (window.PortalUI?.formatDateTime?.(new Date(activity).toISOString(), { style: "calendar-minute" }) || "")
         : "";
+      const classes = ["portalNavRow", "chatroomCard", active ? "is-active" : "", pinnedAt ? "pinned" : "", attention ? "unread" : "", muted ? "muted" : ""];
       return window.PortalI18n.html`<div class="chatroomCardWrap" data-chatroom-card="${esc(id)}">
-          <div class="agentItem chatroomCard ${active ? "active" : ""} ${pinnedAt ? "pinned" : ""} ${attention ? "unread" : ""}">
-            <button type="button" class="agentSelect noStatusDot" data-chatroom-select="${esc(id)}">
-              <span class="chatroomEntryIcon" data-portal-icon="users" aria-hidden="true"></span>
-              <span class="agentMain">
+          <div class="${classes.filter(Boolean).join(" ")}">
+            <button type="button" class="portalNavRowMain chatroomRowMain" data-chatroom-select="${esc(id)}" ${active ? 'aria-current="true"' : ""}>
+              ${chatroomAvatarsHtml(chatroom)}
+              <span class="chatroomRowText">
                 <span class="chatroomEntryHead">
-                  <span class="agentTitle">${esc(chatroomDisplayTitle(chatroom))}</span>
-                  ${unread ? window.PortalI18n.html`<span class="chatroomUnreadCount${muted ? " is-muted" : ""}" aria-label="${unread} 条未读" title="${unread} 条未读">${unread > 99 ? "99+" : unread}</span>` : ""}
-                  ${mentions ? window.PortalI18n.html`<span class="chatroomMentionBadge" title="定位第一条未读 @ 消息">@我 ${mentions}</span>` : ""}
+                  <span class="portalNavRowLabel agentTitle">${esc(chatroomDisplayTitle(chatroom))}</span>
                   ${muted ? window.PortalI18n.t('<span class="chatroomMutedMark" data-portal-icon="bell-off" aria-label="消息免打扰" title="消息免打扰"></span>') : ""}
-                  ${pinnedAt ? window.PortalI18n.t('<span class="chatroomPinnedMark" data-portal-icon="pin" role="img" aria-label="已置顶"></span>') : ""}
+                  ${time ? window.PortalI18n.html`<span class="chatroomEntryTime" title="${esc(fullTime)}">${esc(time)}</span>` : ""}
                 </span>
                 <span class="chatroomEntryLine">
-                  <span class="agentMeta">${esc(meta)}</span>
-                  ${time ? window.PortalI18n.html`<span class="chatroomEntryTime" title="${esc(fullTime)}">${esc(time)}</span>` : ""}
+                  <span class="portalNavRowMeta agentMeta">${esc(meta)}</span>
+                  ${mentions ? window.PortalI18n.html`<span class="chatroomMentionBadge" title="${mentions} 条未读 @ 消息">@我</span>` : ""}
+                  ${unread ? window.PortalI18n.html`<span class="chatroomUnreadCount${muted ? " is-muted" : ""}" aria-label="${unread} 条未读" title="${unread} 条未读">${unread > 99 ? "99+" : unread}</span>` : ""}
                 </span>
               </span>
             </button>
-            <button type="button" class="agentMenuBtn" data-chatroom-menu="${esc(id)}" aria-label="打开聊天室操作菜单" title="打开聊天室操作菜单" data-portal-icon="more-horizontal"></button>
+            <span class="portalNavRowActions" data-reveal="hover">
+              <button type="button" class="portalButton is-icon is-quiet" data-chatroom-menu="${esc(id)}" aria-haspopup="menu" aria-label="打开聊天室操作菜单" title="打开聊天室操作菜单" data-portal-icon="more-horizontal"></button>
+            </span>
           </div>
         </div>`;
     }
 
+    // The search matches a Chatroom's name, its members and its latest message.
+    function chatroomMatches(chatroom, query) {
+      if (!query) return true;
+      const words = [
+        chatroomDisplayTitle(chatroom),
+        ...(chatroom.members || []).map(chatroomUserName),
+        chatroom.last_message?.preview || "",
+      ];
+      return words.some(word => String(word || "").toLowerCase().includes(query));
+    }
+
+    function chatroomSectionHtml(kind, label) {
+      return window.PortalI18n.html`<section class="portalNavSection chatroomSection" data-chatroom-section="${kind}">
+          <div class="portalNavSectionHead"><span class="portalNavSectionLabel">${label}</span><span class="portalNavSectionCount"></span></div>
+          <div class="portalNavSectionBody chatroomList" role="list"></div>
+        </section>`;
+    }
+
+    // Pinned Chatrooms form their own section above the rest; each section
+    // keeps its cards (and an open menu's anchor) across refreshes.
     function renderChatroomList() {
       const root = $id("chatroomList");
       if (!root) return;
-      const entries = chatroomEntries();
+      const query = String(state.chatroomQuery || "").trim().toLowerCase();
+      const all = chatroomEntries();
+      const entries = all.filter(entry => chatroomMatches(entry.chatroom, query));
       const ids = new Set(entries.map(entry => entry.chatroom.chatroom_id));
-      let list = root.querySelector(".chatroomList");
+      let sections = root.querySelector(".chatroomSections");
       if (!entries.length) {
         if (chatroomMenuTarget?.trigger.closest("#chatroomList")) chatroomMenuPopover?.close();
-        root.innerHTML = consoleStateHtml("还没有聊天室。点击加号新建。");
+        root.innerHTML = all.length
+          ? consoleStateHtml(window.PortalI18n.text`没有匹配“${query}”的聊天室。`)
+          : consoleStateHtml("还没有聊天室。点击加号新建。");
         return;
       }
-      if (!list) {
-        list = document.createElement("div");
-        list.className = "agentList chatroomList";
-        root.replaceChildren(list);
+      if (!sections) {
+        sections = document.createElement("div");
+        sections.className = "agentList chatroomSections";
+        sections.innerHTML = chatroomSectionHtml("pinned", window.PortalI18n.t("置顶")) + chatroomSectionHtml("all", window.PortalI18n.t("全部"));
+        root.replaceChildren(sections);
       }
-      const cards = new Map(Array.from(list.children).map(card => [card.dataset.chatroomCard, card]));
+      const cards = new Map(Array.from(sections.querySelectorAll(".chatroomCardWrap")).map(card => [card.dataset.chatroomCard, card]));
       for (const [id, card] of cards) {
         if (ids.has(id)) continue;
         if (card.contains(chatroomMenuTarget?.trigger)) chatroomMenuPopover?.close();
         card.remove();
       }
-      let before = list.firstElementChild;
-      for (const entry of entries) {
-        const id = entry.chatroom.chatroom_id;
-        const html = renderChatroomCard(entry);
-        let card = cards.get(id);
-        if (!card || card.renderedHtml !== html) {
-          const template = document.createElement("template");
-          template.innerHTML = html;
-          const next = template.content.firstElementChild;
-          if (card) {
-            // Keep the buttons and open popover anchor alive across refreshes.
-            const item = card.querySelector(".chatroomCard");
-            const menuOpen = item.classList.contains("menuOpen");
-            item.className = next.querySelector(".chatroomCard").className;
-            item.classList.toggle("menuOpen", menuOpen);
-            card.querySelector("[data-chatroom-select]").innerHTML = next.querySelector("[data-chatroom-select]").innerHTML;
-          } else {
-            card = next;
-            card.querySelector("[data-chatroom-select]").addEventListener("click", () => {
-              selectChatroom(id).catch(error => window.PortalUI.toast(window.PortalI18n.text`打开聊天室失败：${error.message || error}`, "error"));
-            });
-            const trigger = card.querySelector("[data-chatroom-menu]");
-            trigger.addEventListener("click", event => openChatroomMenu(trigger, id, event));
+      const pinnedCount = entries.filter(entry => entry.pinnedAt).length;
+      for (const kind of ["pinned", "all"]) {
+        const section = sections.querySelector(`[data-chatroom-section="${kind}"]`);
+        const list = section.querySelector(".chatroomList");
+        const members = entries.filter(entry => Boolean(entry.pinnedAt) === (kind === "pinned"));
+        section.hidden = !members.length;
+        // Without pinned rooms the list needs no section name.
+        section.querySelector(".portalNavSectionHead").hidden = kind === "all" && !pinnedCount;
+        section.querySelector(".portalNavSectionCount").textContent = String(members.length);
+        let before = list.firstElementChild;
+        for (const entry of members) {
+          const id = entry.chatroom.chatroom_id;
+          const html = renderChatroomCard(entry);
+          let card = cards.get(id);
+          if (!card || card.renderedHtml !== html) {
+            const template = document.createElement("template");
+            template.innerHTML = html;
+            const next = template.content.firstElementChild;
+            if (card) {
+              // Keep the buttons and open popover anchor alive across refreshes.
+              const item = card.querySelector(".chatroomCard");
+              const menuOpen = item.classList.contains("is-menu-open");
+              item.className = next.querySelector(".chatroomCard").className;
+              item.classList.toggle("is-menu-open", menuOpen);
+              const select = card.querySelector("[data-chatroom-select]");
+              const nextSelect = next.querySelector("[data-chatroom-select]");
+              select.innerHTML = nextSelect.innerHTML;
+              select.toggleAttribute("aria-current", nextSelect.hasAttribute("aria-current"));
+            } else {
+              card = next;
+              card.setAttribute("role", "listitem");
+              card.querySelector("[data-chatroom-select]").addEventListener("click", () => {
+                selectChatroom(id).catch(error => window.PortalUI.toast(window.PortalI18n.text`打开聊天室失败：${error.message || error}`, "error"));
+              });
+              const trigger = card.querySelector("[data-chatroom-menu]");
+              trigger.addEventListener("click", event => openChatroomMenu(trigger, id, event));
+            }
+            card.renderedHtml = html;
           }
-          card.renderedHtml = html;
+          if (card !== before) list.insertBefore(card, before);
+          before = card.nextElementSibling;
         }
-        if (card !== before) list.insertBefore(card, before);
-        before = card.nextElementSibling;
       }
+      void window.PortalUIPrimitives.paintAvatars(sections);
       renderChatroomMenu();
     }
 

@@ -44,6 +44,7 @@
         // Chatroom (decision_a6bebf4ac283): server records, personal pins and the open room.
         chatroomRecords: [],
         chatroomPins: new Map(),
+        chatroomQuery: "",
         chatroomRequestSeq: 0,
         chatroomUsers: [],
         activeChatroomId: "",

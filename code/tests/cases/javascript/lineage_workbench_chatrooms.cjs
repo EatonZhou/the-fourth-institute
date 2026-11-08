@@ -42,8 +42,32 @@ test('Chatrooms list pinned rooms first and pin from the card menu', async t => 
   await page.until(() => cards().length === 3);
   assert.deepEqual(titles(), ['Room 2', 'Room 3', 'Room 1'], 'pinned first, then the latest activity');
   assert.match(cards()[1].textContent, /Alice：later/, 'a card shows who said the latest message');
-  assert.match(cards()[0].textContent, /2 位成员/, 'a quiet room shows its members');
-  assert.ok(cards()[0].querySelector('.chatroomPinnedMark'));
+  assert.match(cards()[0].textContent, /2 (位成员|members)/, 'a quiet room shows its members, in the page language');
+  const section = card => card.closest('[data-chatroom-section]').dataset.chatroomSection;
+  assert.deepEqual(cards().map(section), ['pinned', 'all', 'all'], 'pinned rooms form their own section');
+  assert.ok(cards()[0].querySelector('.chatroomCard.portalNavRow'), 'a room is a shared navigation row');
+  assert.equal(page.document.querySelector('[data-chatroom-section="all"] .portalNavSectionHead').hidden, false,
+    'with pinned rooms, the rest are named too');
+  assert.ok(cards()[1].querySelector('.chatroomAvatars [data-avatar-kind="user"][data-avatar-id="alice"]'),
+    'a room shows its other members, not the viewer');
+
+  const search = page.document.getElementById('chatroomSearchInput');
+  search.value = 'alice';
+  search.dispatchEvent(new page.window.Event('input'));
+  assert.equal(cards().length, 3, 'the search matches members');
+  search.value = 'later';
+  search.dispatchEvent(new page.window.Event('input'));
+  assert.deepEqual(titles(), ['Room 3'], 'the search matches the latest message');
+  assert.equal(page.document.querySelector('[data-chatroom-section="pinned"]').hidden, true, 'an empty section hides');
+  assert.equal(page.document.querySelector('[data-chatroom-section="all"] .portalNavSectionHead').hidden, true,
+    'without pinned rooms the list needs no section name');
+  search.value = 'nothing-like-this';
+  search.dispatchEvent(new page.window.Event('input'));
+  assert.equal(cards().length, 0);
+  assert.match(page.document.getElementById('chatroomList').textContent, /nothing-like-this/);
+  search.value = '';
+  search.dispatchEvent(new page.window.Event('input'));
+  await page.until(() => cards().length === 3);
 
   cards()[1].querySelector('[data-chatroom-menu]').click();
   const pin = page.document.querySelector(`.chatroomCardMenu [data-chatroom-action="pin"][data-chatroom-id="${ROOMS[2].chatroom_id}"]`);

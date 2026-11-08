@@ -125,9 +125,9 @@
         : group.rows.length
           ? group.rows.map(favoriteTargetHtml).join("")
           : window.PortalI18n.html`<div class="residentEmpty">${esc(group.empty)}</div>`;
-      return window.PortalI18n.html`<details class="residentSection favoriteDisclosure" data-favorite-group="${esc(group.id)}" ${open ? "open" : ""}>
-          <summary class="residentGroupHead"><span class="residentGroupName">${esc(group.title)}</span></summary>
-          <div class="residentGroupBody">${bodyHtml}</div>
+      return window.PortalI18n.html`<details class="residentSection favoriteDisclosure portalNavSection" data-favorite-group="${esc(group.id)}" ${open ? "open" : ""}>
+          <summary class="residentGroupHead portalNavSectionHead"><span class="residentGroupName portalNavSectionLabel">${esc(group.title)}</span>${group.rows.length ? `<span class="portalNavSectionCount">${group.rows.length}</span>` : ""}</summary>
+          <div class="residentGroupBody portalNavSectionBody">${bodyHtml}</div>
         </details>`;
     }
 

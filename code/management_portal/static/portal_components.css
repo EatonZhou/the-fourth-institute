@@ -941,19 +941,18 @@ body.portalBoardShell .filter-active-dot {
 .resourceFavoriteButton { color: var(--accent); }
 .favoriteDisclosure, .favoriteDisclosure > .residentGroupBody { min-width: 0; grid-template-columns: minmax(0, 1fr); }
 .favoriteDisclosure:not([open]) { gap: 0; margin-bottom: 0; }
-.favoriteDisclosure > summary { display: flex; gap: 8px; align-items: center; list-style: none; cursor: pointer; border-bottom: 2px solid color-mix(in srgb, var(--accent) 55%, #000); }
+/* A disclosure section's summary is the shared section head (.portalNavSectionHead);
+ * its chevron follows the label and the count. */
+.favoriteDisclosure > summary { list-style: none; cursor: pointer; }
 .favoriteDisclosure > summary::-webkit-details-marker { display: none; }
-.favoriteDisclosure > summary::before { content: "▸"; flex: 0 0 10px; text-align: center; }
-.favoriteDisclosure[open] > summary::before { content: "▾"; }
-.favoriteDisclosure > summary:focus-visible { outline: 2px solid currentColor; outline-offset: -2px; }
-.resourceFavorites .residentSubgroupCount { margin-left: auto; }
+.favoriteDisclosure > summary::after { content: "▾"; order: 2; flex: 0 0 auto; color: var(--muted); font-size: 10px; opacity: .7; }
+.favoriteDisclosure:not([open]) > summary::after { content: "▸"; }
+.favoriteDisclosure > summary:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; border-radius: 6px; }
 .resourceFavoriteOpen:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
 .resourceFavoriteRow, .portalCommandRow { display: flex; align-items: center; gap: 6px; }
 .portalCommandRow > .portalCommandItem { flex: 1; min-width: 0; }
-.resourceFavoriteRow { min-width: 0; padding: 3px 4px; border-radius: 6px; background: color-mix(in srgb, var(--text) 4%, var(--panel)); }
+/* Knowledge bookmarks are navigation rows (.portalNavRow); the star keeps the row's right edge. */
+.resourceFavoriteRow { gap: 0; padding-right: 3px; }
 .resourceFavoriteRow > [data-resource-favorite] { flex: 0 0 auto; }
 .resourceFavoriteRow .resourceFavoriteButton { background: transparent; border-color: transparent; }
-.resourceFavoriteRow:hover { background: color-mix(in srgb, var(--text) 7%, var(--panel)); }
-.resourceFavoriteOpen { flex: 1; min-width: 0; border: 0; background: transparent; color: inherit; font: inherit; font-size: 13px; line-height: 1.5; text-align: left; cursor: pointer; padding: 4px; }
-.resourceFavoriteTitle { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 400; }
 .resourceFavoriteOpen:disabled { opacity: .6; cursor: default; }

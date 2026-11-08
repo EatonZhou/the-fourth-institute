@@ -13,7 +13,7 @@
       },
       {
         id: "chatrooms",
-        markup: window.PortalI18n.html`<div class="paneHead"><div class="paneTitle">Chatroom</div><div class="paneHeadActions agentsToolbar"><button class="portalButton is-icon is-quiet iconBtn" data-portal-icon="refresh" id="chatroomRefreshBtn" type="button" aria-label="刷新 Chatroom" title="刷新"></button><button class="portalButton is-icon is-quiet iconBtn" data-portal-icon="plus" id="chatroomCreateBtn" type="button" aria-label="新建聊天室" title="新建聊天室"></button></div></div><div class="paneBody" id="chatroomList"></div>`,
+        markup: window.PortalI18n.html`<div class="paneHead"><div class="paneTitle">Chatroom</div><div class="paneHeadActions agentsToolbar"><button class="portalButton is-icon is-quiet iconBtn" data-portal-icon="refresh" id="chatroomRefreshBtn" type="button" aria-label="刷新 Chatroom" title="刷新"></button><button class="portalButton is-icon is-quiet iconBtn" data-portal-icon="plus" id="chatroomCreateBtn" type="button" aria-label="新建聊天室" title="新建聊天室"></button></div></div><div class="searchWrap" id="chatroomSearchWrap"><div data-portal-search-field data-portal-search-shape="filled"><label for="chatroomSearchInput">搜索聊天室</label><input data-portal-search-input id="chatroomSearchInput" type="search" placeholder="搜索" title="搜索聊天室名称、成员或消息" autocomplete="off" /></div></div><div class="paneBody" id="chatroomList"></div>`,
       },
       {
         id: "favorites",

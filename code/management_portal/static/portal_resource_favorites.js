@@ -108,6 +108,7 @@
     const knowledge = items.filter(item => isKnowledge(item.address));
     const count = root.querySelector("[data-resource-favorite-count]");
     count.textContent = String(knowledge.length);
+    count.hidden = !knowledge.length;
     body.replaceChildren();
     if (error || !knowledge.length) {
       const hint = node("div", "residentEmpty", error || text(loading ? "加载知识收藏…" : "暂无知识收藏。在知识条目或其文件旁点击星标即可添加。"));
@@ -119,11 +120,11 @@
       return;
     }
     for (const item of knowledge) {
-      const row = node("div", "resourceFavoriteRow");
-      const button = node("button", "resourceFavoriteOpen"); button.type = "button";
+      const row = node("div", "portalNavRow resourceFavoriteRow");
+      const button = node("button", "portalNavRowMain resourceFavoriteOpen"); button.type = "button";
       const title = item.title || item.address;
       const status = item.status === "denied" ? text("无访问权限") : item.status === "missing" ? text("资源不存在") : "";
-      button.append(node("span", "resourceFavoriteTitle", status ? `${status} · ${title}` : title));
+      button.append(node("span", "portalNavRowLabel resourceFavoriteTitle", status ? `${status} · ${title}` : title));
       const resourceType = item.resource_type || window.PortalResourceChips?.resourceTypeFromAddress?.(item.address);
       const meta = [resourceType, item.project || item.project_id, status].filter(Boolean).join(" · ");
       button.title = [title, meta, item.address].filter(Boolean).join("\n");
@@ -135,12 +136,12 @@
   }
   function mountList(root) {
     if (lists.has(root)) return;
-    const section = node("details", "residentSection favoriteDisclosure resourceFavorites"); section.open = true;
-    const summary = node("summary", "residentGroupHead");
-    summary.append(node("span", "residentGroupName", "Knowledge"));
-    const count = node("span", "residentSubgroupCount"); count.dataset.resourceFavoriteCount = "";
+    const section = node("details", "residentSection favoriteDisclosure portalNavSection resourceFavorites"); section.open = true;
+    const summary = node("summary", "residentGroupHead portalNavSectionHead");
+    summary.append(node("span", "residentGroupName portalNavSectionLabel", "Knowledge"));
+    const count = node("span", "portalNavSectionCount"); count.dataset.resourceFavoriteCount = "";
     summary.append(count);
-    const body = node("div", "residentGroupBody"); section.append(summary, body); root.replaceChildren(section);
+    const body = node("div", "residentGroupBody portalNavSectionBody"); section.append(summary, body); root.replaceChildren(section);
     lists.set(root, body); renderList(root, body); void refresh();
   }
   function render() { syncButtons(); for (const [root, body] of lists) renderList(root, body); }

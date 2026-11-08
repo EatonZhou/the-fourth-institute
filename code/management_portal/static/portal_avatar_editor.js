@@ -26,11 +26,12 @@
     return spriteList;
   }
 
-  // A saved avatar: kind is resident, lineage or project; null when it has none.
-  // Lists reuse what this page read before; an editor asks again ({fresh: true}).
+  // A saved avatar: kind is user, resident, lineage or project; null when it has none.
+  // Users and Residents are both principals. Lists reuse what this page read
+  // before; an editor asks again ({fresh: true}).
   function read(kind, id, {fresh = false} = {}) {
     const key = `${kind}:${id}`;
-    const field = kind === "resident" ? "principal" : kind;
+    const field = kind === "resident" || kind === "user" ? "principal" : kind;
     if (fresh || !reads.has(key)) {
       reads.set(key, window.PortalAPI.get(`/api/account/avatar?${field}=${encodeURIComponent(id)}`)
         .then(result => result?.avatar || null, error => {

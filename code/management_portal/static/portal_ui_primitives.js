@@ -114,6 +114,7 @@
     terminal: strokeIcon('<path d="m5 7 4 4-4 4M11 17h8"/>'),
     "eye": strokeIcon('<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/>'),
     "eye-off": strokeIcon('<path d="m3 3 18 18"/><path d="M10.6 10.6a3 3 0 0 0 3.8 3.8"/><path d="M9.9 5.2A10 10 0 0 1 12 5c6.5 0 10 7 10 7a18 18 0 0 1-2.8 3.8M6.6 6.7C3.7 8.7 2 12 2 12s3.5 7 10 7a9.7 9.7 0 0 0 4.1-.9"/>'),
+    "bell-off": strokeIcon('<path d="m3 3 18 18"/><path d="M17 17H4.5c1-1 2-2.3 2-5.5V10a5.5 5.5 0 0 1 .7-2.7M9.5 4.9A5.5 5.5 0 0 1 17.5 10v1.5c0 1.2.1 2.1.4 2.9"/><path d="M10 20a2.2 2.2 0 0 0 4 0"/>'),
     lock: strokeIcon('<rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3M12 14v2"/>'),
     "shield-check": strokeIcon('<path d="M12 3 4.5 6v5.5c0 4.4 3 7.8 7.5 9.5 4.5-1.7 7.5-5.1 7.5-9.5V6Z"/><path d="m8.5 12 2.2 2.2 4.8-5"/>'),
     "alert-circle": strokeIcon('<circle cx="12" cy="12" r="9"/><path d="M12 7.75v5.5M12 16.5h.01"/>'),

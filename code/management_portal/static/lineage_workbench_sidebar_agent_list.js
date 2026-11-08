@@ -70,13 +70,15 @@
                 ? window.PortalI18n.html`<button class="portalButton is-compact" type="button" data-sidebar-show-all>${queryActive ? window.PortalI18n.t("清除搜索，显示全部项目") : window.PortalI18n.t("显示全部项目")}</button>` : "")
                 : state.residentSidebarError ? window.PortalI18n.html`<button class="portalButton is-compact" type="button" data-sidebar-retry>重新读取项目</button>` : ""}
             </div>`;
-      return window.PortalI18n.html`<section class="residentSection ${open ? "open" : "collapsed"}" data-resident-group="${esc(group.id)}">
-          <div class="residentGroupHead">
+      const count = hasProjectGroups ? group.projectGroups.length : group.items.length;
+      return window.PortalI18n.html`<section class="residentSection portalNavSection ${open ? "open" : "collapsed"}" data-resident-group="${esc(group.id)}">
+          <div class="residentGroupHead portalNavSectionHead">
             <button class="residentToggle" type="button" data-resident-toggle="${esc(group.id)}" aria-expanded="${open ? "true" : "false"}" aria-label="${open ? window.PortalI18n.t("收起") : window.PortalI18n.t("展开")} ${esc(group.title)}" title="${open ? window.PortalI18n.t("收起") : window.PortalI18n.t("展开")}" data-portal-icon="${open ? "chevron-up" : "chevron-down"}" data-portal-icon-class="residentChevron"></button>
-            <button class="residentGroupName" type="button" data-resident-toggle="${esc(group.id)}" aria-expanded="${open ? "true" : "false"}" title="${open ? window.PortalI18n.t("收起") : window.PortalI18n.t("展开")} ${esc(group.title)}">${esc(group.title)}</button>
+            <button class="residentGroupName portalNavSectionLabel" type="button" data-resident-toggle="${esc(group.id)}" aria-expanded="${open ? "true" : "false"}" title="${open ? window.PortalI18n.t("收起") : window.PortalI18n.t("展开")} ${esc(group.title)}">${esc(group.title)}</button>
+            ${state.residentSidebarReady && count ? `<span class="portalNavSectionCount">${count}</span>` : ""}
           </div>
           ${queryActive ? window.PortalI18n.html`<div class="sidebarSearchSummary" role="status"><span>${window.PortalI18n.text`正在筛选：${esc(state.query.trim())}`}</span><span>${state.residentSidebarReady ? window.PortalI18n.text`匹配 ${group.projectGroups.length} 个项目` : window.PortalI18n.t(state.residentSidebarError ? "项目读取失败" : "正在读取项目…")}</span><button class="portalButton is-icon is-compact" type="button" data-sidebar-search-clear aria-label="清除搜索" title="清除搜索">×</button></div>` : ""}
-          ${open ? window.PortalI18n.html`<div class="residentGroupBody">
+          ${open ? window.PortalI18n.html`<div class="residentGroupBody portalNavSectionBody">
             ${bodyHtml}
           </div>` : ""}
         </section>`;
