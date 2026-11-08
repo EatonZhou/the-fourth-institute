@@ -11,6 +11,11 @@ import subprocess
 from management_common import process_runtime
 
 
+def _has_pdf_header(data: bytes) -> bool:
+    """Match the ingestion signature; this is not a full PDF integrity check."""
+    return data.startswith(b"%PDF")
+
+
 def _poppler_command(name: str) -> str:
     executable = shutil.which(name)
     if not executable:

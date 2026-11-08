@@ -4,12 +4,12 @@ type: decision
 project: AI员工
 created_at: '2026-09-01'
 version:
-  number: 26
+  number: 27
   created_at: "2026-09-01"
   created_by:
     user: ""
     agent: ""
-  updated_at: "2026-11-08T04:47:48Z"
+  updated_at: "2026-11-08T12:11:37Z"
   updated_by:
     user: ""
     agent: "resident_6199a7a36480"
@@ -160,6 +160,8 @@ Library 响应还提供 folder tree、可用筛选词表和研究工作流摘要
 7. 命中现有论文时返回原 Paper ID，并合并允许补充的元数据、来源、标签或关系。全部 fingerprint 都未命中时才分配新 `paper_*` ID。命中现有论文且没有带来新 PDF 时只合并，不重新启动摘要与资产任务；每日论文搜集用这一点把已有论文关联到新的 Project。
    每次写入 manifest 时，`relations.projects` 只保留项目登记中存在的 Project ID；`project_ids`、`session` 或已有关联里的其他名称不会成为项目关联。Project 改名或删除时由 `RenameProject`、`DeleteProject` 同步改写或去掉关联（`decision_4648f7fa3295`）。
 8. 登记成功会消费草稿中的上传 PDF。草稿过期后不能继续登记，同一临时文件不会重复消费。
+
+PDF 入库统一检查内容是否以 `%PDF` 文件头开始，上传、直接本地登记和远端下载使用相同判据，不以扩展名或 HTTP Content-Type 代替内容检查；这项检查用于拒绝 HTML、空文件等明显错误内容，不保证整个 PDF 可解析。本地来源在分配 Paper 身份和创建目录前完成预检，复制后的文件还须通过同一检查才可发布为 `paper.pdf`。普通 `analysis.md` 来源保持文本入库规则。远端下载的空响应、非 PDF 内容或网络错误按下载失败处理：保留 Paper 身份及原始 URL，默认登记状态记为 `pdf-missing`，在 `source.pdf_download_error` 保存重试次数和原始错误，不留下无效的 `paper.pdf`；后续补传与 Creation 回执的身份连续性保持不变。
 
 参数错误返回 400，Project 权限失败返回 403，文件超过 512 MiB（536870912 字节） 返回 413。下载或解析失败保留在草稿或登记结果中，用户可以修正元数据、改用其他来源或重新上传。
 

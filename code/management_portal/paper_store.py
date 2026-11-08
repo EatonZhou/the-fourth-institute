@@ -19,7 +19,7 @@ from management_common.portal_paths import path as portal_path
 from management_common.scan_cancellation import check_scan_cancelled, walk_paths
 from management_portal import paper_state_store
 from management_portal.notifications import publish_local_projection_change
-from management_portal.paper_pdf import _extract_pdf_text_file
+from management_portal.paper_pdf import _extract_pdf_text_file, _has_pdf_header
 from management_portal.paper_records import (
     _arxiv_id_from_text, _coerce_timestamp, _is_non_project_tag, _is_project_relation_id, _is_project_tag,
     _is_url, _merge_paper_relations, _merge_project_tags, _normalize_fingerprint_text, _normalize_list,
@@ -485,7 +485,8 @@ class PaperStore:
         _write_json(paper_dir / "manifest.json", manifest)
         return manifest
 
-    def ingest_file(self, source: str, target: Path, *, retries: int = 3, retry_backoff_s: float = 2.0) -> bool:
+    def ingest_file(self, source: str, target: Path, *, retries: int = 3, retry_backoff_s: float = 2.0,
+                    require_pdf: bool = False) -> bool:
         text = str(source or "").strip()
         if not text or target.is_file():
             return False
@@ -499,6 +500,8 @@ class PaperStore:
                     with urllib.request.urlopen(req, timeout=270) as response:
                         data = response.read()
                     if data:
+                        if require_pdf and not _has_pdf_header(data):
+                            raise ValueError("remote PDF did not return PDF bytes")
                         tmp.write_bytes(data)
                         tmp.replace(target)
                         return True
@@ -514,7 +517,19 @@ class PaperStore:
             raise RuntimeError(f"download failed after {attempts} attempts: {last_error}") from last_error
         src = _safe_file_path(text)
         if src and src.is_file() and src.resolve(strict=False) != target.resolve(strict=False):
-            shutil.copy2(src, target)
+            if require_pdf:
+                # Validate the copied bytes, not only the earlier source read.
+                tmp = target.with_name(target.name + ".download")
+                try:
+                    shutil.copy2(src, tmp)
+                    with tmp.open("rb") as stream:
+                        if not _has_pdf_header(stream.read(4)):
+                            raise ValueError("registration PDF does not look like a PDF")
+                    tmp.replace(target)
+                finally:
+                    tmp.unlink(missing_ok=True)
+            else:
+                shutil.copy2(src, target)
             return True
         return False
 
@@ -544,6 +559,7 @@ class PaperStore:
     def register(self, payload: dict, actor: str, *, operation_id: str = '') -> dict:
         from .resources.creation import Creation, creation_operation_id
         from .resources.registration import ResourceRegistrationStore
+        _validate_local_pdf_source(str(payload.get("pdf_path") or ""))
         operation_id = creation_operation_id(operation_id)
         clean_payload = dict(payload)
         if not str(clean_payload.get("id") or "").strip():
@@ -598,8 +614,10 @@ class PaperStore:
         pdf_source = str(payload.get("pdf_path") or "")
         pdf_error = ""
         try:
-            self.ingest_file(pdf_source, paper_dir / "paper.pdf")
+            self.ingest_file(pdf_source, paper_dir / "paper.pdf", require_pdf=True)
         except Exception as exc:
+            if not _is_url(pdf_source):
+                raise
             pdf_error = str(exc)
             paper["_source_pdf_url"] = pdf_source if _is_url(pdf_source) else ""
             paper["_pdf_download_error"] = pdf_error
@@ -980,6 +998,23 @@ def _paper_public(paper: dict) -> dict:
     }
 
 
+def _validate_local_pdf_source(source: str) -> None:
+    """Reject invalid local input before reserving a Paper creation identity."""
+    source = source.strip()
+    if not source or _is_url(source):
+        return
+    path = _safe_file_path(source)
+    if not path or not path.is_file():
+        raise ValueError("registration PDF is unavailable; upload the PDF again")
+    try:
+        with path.open("rb") as stream:
+            header = stream.read(4)
+    except OSError as exc:
+        raise ValueError("registration PDF is unreadable; upload the PDF again") from exc
+    if not _has_pdf_header(header):
+        raise ValueError("registration PDF does not look like a PDF")
+
+
 def _local_pdf_for_paper(paper: dict) -> Path:
     pdf_path = str(paper.get("pdf_path") or "").strip()
     if _is_url(pdf_path):
@@ -996,7 +1031,7 @@ def _local_pdf_for_paper(paper: dict) -> Path:
                 req = urllib.request.Request(pdf_path, headers={"User-Agent": "TFIPortalPaperDeepRead/0.1"})
                 with urllib.request.urlopen(req, timeout=270) as response:
                     data = response.read()
-                if not data.startswith(b"%PDF"):
+                if not _has_pdf_header(data):
                     raise RuntimeError("remote PDF did not return PDF bytes")
                 path.write_bytes(data)
         return path

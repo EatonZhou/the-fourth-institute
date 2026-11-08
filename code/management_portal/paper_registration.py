@@ -6,19 +6,18 @@ import logging
 from pathlib import Path
 import re
 import secrets
-import shutil
 
 from management_common.principal import is_user_or_resident
 from management_portal.paper_assets import _start_assets_task
 from management_portal.paper_detail import get_paper_detail
-from management_portal.paper_pdf import _extract_pdf_text_file
+from management_portal.paper_pdf import _extract_pdf_text_file, _has_pdf_header
 from management_portal.paper_records import _is_url, _now
 from management_portal.paper_registration_metadata import (
     _ai_paper_registration_metadata, _deterministic_paper_registration_metadata,
     _heuristic_paper_registration_classification, _identifier_paper_registration_metadata,
 )
 from management_portal.paper_store import (
-    LOCK, PAPER_STORE, _load_json, _paper_store_file, _safe_file_path, _update_paper_fields, _write_json,
+    LOCK, PAPER_STORE, _load_json, _paper_store_file, _safe_file_path, _update_paper_fields, _validate_local_pdf_source, _write_json,
 )
 from management_portal.paper_summaries import _start_summary_task
 
@@ -51,17 +50,7 @@ def register_paper(payload: dict, actor: str, *, operation_id: str = "") -> dict
     if staged_pdf:
         clean_payload["pdf_path"] = str(staged_pdf)
     pdf_source = str(clean_payload.get("pdf_path") or "").strip()
-    if pdf_source and not _is_url(pdf_source):
-        source = _safe_file_path(pdf_source)
-        if not source or not source.is_file():
-            raise ValueError("registration PDF is unavailable; upload the PDF again")
-        # Reject an unreadable local source before creating the Paper or
-        # consuming its draft. Remote downloads retain their pending path.
-        try:
-            with source.open("rb") as stream:
-                stream.read(1)
-        except OSError as exc:
-            raise ValueError("registration PDF is unreadable; upload the PDF again") from exc
+    _validate_local_pdf_source(pdf_source)
     from management_portal.resources.directory_registrations import directory_writer
     with LOCK:
         # An existing creation operation owns its original identity and input.
@@ -82,7 +71,7 @@ def register_paper(payload: dict, actor: str, *, operation_id: str = "") -> dict
                 manifest_path, manifest = found
                 paper_dir = PAPER_STORE.paper_dir_from_manifest(manifest, manifest_path)
                 target = paper_dir / "paper.pdf"
-                shutil.copy2(staged_pdf, target)
+                PAPER_STORE.ingest_file(str(staged_pdf), target, require_pdf=True)
                 paper = PAPER_STORE.update_paper(
                     paper_id,
                     {"pdf_path": str(target), "status": "registered"},
@@ -111,7 +100,7 @@ def _validated_pdf_upload(payload: dict) -> tuple[bytes, str]:
     if filename and not filename.lower().endswith(".pdf"):
         raise ValueError("uploaded file must be a PDF")
     pdf = bytes(data)
-    if not pdf[:5].startswith(b"%PDF"):
+    if not _has_pdf_header(pdf):
         raise ValueError("uploaded file does not look like a PDF")
     return pdf, filename or "paper.pdf"
 
