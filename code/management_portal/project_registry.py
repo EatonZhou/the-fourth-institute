@@ -88,11 +88,13 @@ def upgrade_directory_ownership(connection) -> int:
     """Retire directory classification through the registry's writer transaction.
 
     The installer supplies the transaction, before new clients start. Decode
-    stored JSON without expanding location references; preserve every other fact.
+    stored JSON without expanding location references; repair area paths written
+    by older Windows serializers and preserve every other fact.
     """
     from management_common.portal_database import _database_schema
     from psycopg import sql
     from .resources.registry_store import RegistryWriter
+    from management_common.location_records import stored_record
     schema = _database_schema('resource_registry')
     connection.execute("SELECT pg_advisory_xact_lock(hashtextextended(%s, 0))",
                        (schema + ':registry:' + COLLECTION,))
@@ -106,9 +108,14 @@ def upgrade_directory_ownership(connection) -> int:
         document = json.loads(document)
     changed = 0
     for item in document.get('projects', []):
+        before = copy.deepcopy(item)
         directory = item.get('directory')
         if isinstance(directory, dict) and 'origin' in directory:
             del directory['origin']
+        normalized = stored_record(item)
+        item.clear()
+        item.update(normalized)
+        if item != before:
             changed += 1
     if changed:
         RegistryWriter(connection, (COLLECTION,), schema).put(COLLECTION, DOCUMENT_ID, document)

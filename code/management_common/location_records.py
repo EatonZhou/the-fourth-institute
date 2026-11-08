@@ -34,9 +34,12 @@ def stored_record(value):
         return value
     from .instance_locations import current_instance
     def locate(text):
-        if not text.startswith('/') or '\n' in text or '\0' in text:
+        if '\n' in text or '\0' in text:
             return text
-        path = Path(text).resolve()
+        path = Path(text)
+        if not path.is_absolute():
+            return text
+        path = path.resolve()
         instance = current_instance()
         from .instance_manifest import AREAS
         for area in AREAS:
