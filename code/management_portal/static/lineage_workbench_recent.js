@@ -9,7 +9,7 @@
   const DEPENDENCIES = Object.freeze([
     "fmtDateTime", "focusPreferredSidebarTarget", "registeredLineageIdForResident",
     "residentExactId", "residentRootForExactId", "selectedResidentId", "selectResident",
-    "setSideView", "state",
+    "setNavigationPanelVisible", "setSideView", "state",
   ]);
 
   const RECENT_AGENT_SESSION_LIMIT = 32;
@@ -77,7 +77,7 @@
     if (missing.length) throw new Error(`PortalLineageWorkbenchRecent is missing: ${missing.join(", ")}`);
     const {
       fmtDateTime, focusPreferredSidebarTarget, registeredLineageIdForResident, residentExactId,
-      residentRootForExactId, selectedResidentId, selectResident, setSideView, state,
+      residentRootForExactId, selectedResidentId, selectResident, setNavigationPanelVisible, setSideView, state,
     } = dependencies;
 
     let lineageActivityRail = null;
@@ -193,7 +193,11 @@
         ],
         itemLimit: RECENT_AGENT_SESSION_VISIBLE_LIMIT,
         itemFallbackView: "agents",
-        onViewSelect: view => setSideView(view, { userInitiated: true }),
+        onViewSelect: (view, _rail, { repeated = false } = {}) => {
+          // Clicking the open view again closes the navigation panel.
+          if (repeated && window.PortalResponsive?.isMobile?.() !== true) setNavigationPanelVisible(false);
+          else setSideView(view, { userInitiated: true });
+        },
         onItemDismiss: key => dismissRecentAgentSession(key),
         itemsAction: {
           icon: "trash",

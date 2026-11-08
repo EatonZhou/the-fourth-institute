@@ -21,3 +21,16 @@ def test_fixed_collapsed_sibling_selection():
     )
     print(result.stdout, end="")
     assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_rail_restored_panel_collapses_to_nothing():
+    """由活动轨恢复的面板折叠后不留折叠条，普通面板仍保留折叠条
+
+    :risk: no-external-side-effects
+    :profiles: local.fixture
+    """
+    source = Path(__file__).with_name("javascript") / "workbench_collapse_to_rail.cjs"
+    result = subprocess.run(
+        ["node", "--test", str(source)], capture_output=True, text=True, timeout=60,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr

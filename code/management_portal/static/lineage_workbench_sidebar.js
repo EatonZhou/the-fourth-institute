@@ -59,7 +59,7 @@
   }
 
   function normalizedProjectDisplayFilter(filter) {
-    return ["all", "non-empty"].includes(filter) ? filter : "non-empty";
+    return ["all", "non-empty", "running"].includes(filter) ? filter : "non-empty";
   }
 
   function projectFavoriteSelectionId(project) { return `project:${project.project_id}`; }

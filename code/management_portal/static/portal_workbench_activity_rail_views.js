@@ -42,9 +42,13 @@
       }).join("")}<div class="portalActivityRailItems" ${options.itemsId ? `id="${escapeHtml(options.itemsId)}"` : ""} data-activity-rail-items aria-label="${escapeHtml(options.itemsLabel || window.PortalI18n.t("Recent sessions"))}" hidden></div>${itemsAction ? window.PortalI18n.html`<button class="portalActivityRailItemsAction" type="button" data-activity-items-action data-portal-icon="${escapeHtml(itemsAction.icon || "trash")}" aria-label="${escapeHtml(itemsAction.label || window.PortalI18n.t("Clear recent items"))}" title="${escapeHtml(itemsAction.title || itemsAction.label || window.PortalI18n.t("Clear recent items"))}" hidden></button>` : ""}`;
       root.querySelectorAll("[data-activity-view]").forEach(button => {
         button.addEventListener("click", () => {
-          railState.activeView = String(button.dataset.activityView || "");
+          // A click on the current view is a toggle request: pages whose
+          // rail owns a collapsible panel close it, others reselect the view.
+          const view = String(button.dataset.activityView || "");
+          const repeated = view === railState.activeView;
+          railState.activeView = view;
           railState.controller.render();
-          options.onViewSelect?.(railState.activeView, railState.controller);
+          options.onViewSelect?.(view, railState.controller, { repeated });
         });
         button.addEventListener("dragstart", event => {
           event.dataTransfer?.setData("application/x-portal-activity-view", button.dataset.activityView || "");

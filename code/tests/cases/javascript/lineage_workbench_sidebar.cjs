@@ -40,12 +40,16 @@ test('both lists show Which Resident and the assistant facade, follow its title 
   const doc = page.document;
   const lists = () => ['agentList', 'favoriteAgentList'].map(id => doc.getElementById(id));
   const facade = list => list?.querySelector('.personalAssistantResident');
-  const shows = title => lists().every(list => facade(list)?.querySelector('.agentTitle')?.textContent === title);
+  const shows = title => lists().every(list => facade(list)?.querySelector('.portalNavRowLabel')?.textContent === title);
   await page.until(() => shows(assistant.title));
   for (const list of lists()) {
     assert.deepEqual([...list.firstElementChild.children].slice(0, 2).map(node => node.className),
       ['whichResidentWrap', 'personalAssistantResident'], 'Which Resident leads the list, the facade follows');
     assert.equal(facade(list).querySelector('[data-resident-select]').dataset.residentSelect, FACADE);
+    assert.match(facade(list).querySelector('.portalNavRowMeta').textContent, /^Resident · (个人助手|Personal assistant)$/);
+    assert.deepEqual(Object.values((({ avatarKind, avatarId }) => ({ avatarKind, avatarId }))(facade(list).querySelector('.portalNavRowMark').dataset)),
+      ['resident', FACADE], 'the entry shows the facade avatar');
+    assert.equal(list.querySelector('.whichResidentWrap .portalNavRowMark').textContent, '?');
     assert.equal(list.querySelector(`[data-resident-select="${AMA}"]`), null, 'the personal AMA is reached through its facade');
   }
 
@@ -69,11 +73,14 @@ test('both lists show Which Resident and the assistant facade, follow its title 
 test('a Project row keeps only its star and menu; opening and adding a Lineage live in the menu', async t => {
   const project = (digit, fields) => ({ project_id: `project_${digit.repeat(12)}`, lineage_id: `lineage_${digit.repeat(12)}`,
     title: `Project ${digit}`, lineages: [], ...fields });
+  const CHILD = { lineage_id: 'lineage_777777777777', project_id: 'project_333333333333', title: 'Child', resident_id: 'resident_777777777777',
+    leader_resident_id: 'resident_777777777777', lineage_node_ids: ['resident_777777777777'] };
   const page = startWorkbenchPage({ answers: {
     '/api/me': { username: 'fixture' },
-    '/api/agent-workbench/residents': { ready: true, residents: [], lineages: [], principal_hierarchy: { user_residents: [], projects: [
-      project('3', { accessible: true, resident_id: 'resident_555555555555' }),
+    '/api/agent-workbench/residents': { ready: true, residents: [], lineages: [CHILD], principal_hierarchy: { user_residents: [], projects: [
+      project('3', { accessible: true, resident_id: 'resident_555555555555', lineages: [CHILD] }),
     ] } },
+    '/api/agent-status/active-agents': { running_runs: [{ lineage_id: CHILD.lineage_id, status: 'running' }], account_groups: [] },
   } });
   t.after(page.close);
   const doc = page.document;
@@ -87,6 +94,17 @@ test('a Project row keeps only its star and menu; opening and adding a Lineage l
   const mark = row().querySelector('.portalNavRowMark').dataset;
   assert.deepEqual([mark.avatarKind, mark.avatarId, mark.avatarGlyph], ['project', 'project_333333333333', 'Pr'],
     'the mark stands for the Project avatar, keeping the glyph without one');
+  assert.equal(row().querySelector('.portalNavRowActions').dataset.reveal, 'hover', 'star and menu appear on hover');
+  assert.ok(row().lastElementChild.classList.contains('portalNavRowCount'), 'the count stays at the right edge, after the actions');
+
+  row().querySelector('[data-resident-project-toggle]').click();
+  const child = () => doc.querySelector('#agentList [data-lineage-card="lineage_777777777777"] .principalLineageCard');
+  await page.until(() => child()?.querySelector('.portalNavRowStatus.is-running'));
+  assert.ok(child().lastElementChild.classList.contains('portalNavRowCount'));
+  doc.querySelector('[data-project-display-filter="running"]').click();
+  assert.ok(child()?.querySelector('.portalNavRowStatus.is-running'), 'the running range keeps the running Lineage');
+  assert.match(doc.getElementById('agentFilterSummary').textContent, /运行中|Running/);
+  doc.querySelector('[data-project-display-filter="non-empty"]').click();
 
   row().querySelector('[data-agent-menu]').click();
   const menuAction = name => doc.querySelector(`#agentFloatingMenu [data-agent-floating-action="${name}"]`);

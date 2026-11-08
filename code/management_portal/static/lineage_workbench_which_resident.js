@@ -179,13 +179,18 @@
       const resident = state.recommendationResident;
       if (!resident && !state.residentSidebarReady) {
         const pending = residentSidebarPendingText("推荐服务");
-        return window.PortalI18n.html`<div class="agentItem principalUnavailableCard" aria-busy="${state.residentSidebarError ? "false" : "true"}"><div class="agentSelect noStatusDot"><span class="agentMain"><span class="agentTitle">Which Resident</span><span class="agentMeta" title="${esc(pending)}">${esc(pending)}</span></span></div></div>`;
+        return renderRegisteredResidentItem({ title: "Which Resident" }, {
+          asResident: true, glyph: "?", meta: pending, unavailable: true, busy: !state.residentSidebarError,
+        });
       }
       if (!resident) {
         const denied = state.recommendationStatus === "denied";
-        return window.PortalI18n.html`<div class="agentItem principalUnavailableCard ${denied ? "locked" : ""}"><div class="agentSelect noStatusDot"><span class="agentMain"><span class="agentTitle">Which Resident</span><span class="agentMeta" title="${denied ? window.PortalI18n.t("没有推荐 Resident 的访问权限") : window.PortalI18n.t("推荐服务暂不可用，请刷新重试")}">${denied ? window.PortalI18n.t("没有访问权限") : window.PortalI18n.t("推荐服务暂不可用")}</span></span></div>${denied ? window.PortalI18n.t('<span class="principalAccessLock" data-portal-icon="lock" aria-label="无访问权限"></span>') : ''}</div>`;
+        return renderRegisteredResidentItem({ title: "Which Resident" }, {
+          asResident: true, glyph: "?", unavailable: true, locked: denied,
+          meta: denied ? window.PortalI18n.t("没有访问权限") : window.PortalI18n.t("推荐服务暂不可用"),
+        });
       }
-      return renderRegisteredResidentItem({ ...resident, title: window.PortalI18n.t("Which Resident") }, { asResident: true });
+      return renderRegisteredResidentItem({ ...resident, title: window.PortalI18n.t("Which Resident") }, { asResident: true, glyph: "?" });
     }
 
     function recommendationConversationView(target, panel) {

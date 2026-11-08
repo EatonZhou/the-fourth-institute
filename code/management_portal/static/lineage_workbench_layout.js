@@ -6,14 +6,14 @@
   // The workbench layout: the Watchboard's width and splitter, and showing or
   // hiding the navigation and Preview panels.
   const DEPENDENCIES = Object.freeze([
-    "$id", "chatElement", "currentLineageLayoutStore", "currentLineageWorkbench", "state",
+    "$id", "chatElement", "currentActivityRail", "currentLineageLayoutStore", "currentLineageWorkbench", "state",
   ]);
 
   function createLayout(dependencies) {
     const missing = DEPENDENCIES.filter(name => dependencies?.[name] === undefined);
     if (missing.length) throw new Error(`PortalLineageWorkbenchLayout is missing: ${missing.join(", ")}`);
     const {
-      $id, chatElement, currentLineageLayoutStore, currentLineageWorkbench, state,
+      $id, chatElement, currentActivityRail, currentLineageLayoutStore, currentLineageWorkbench, state,
     } = dependencies;
 
     function saveLayoutState() {
@@ -40,14 +40,11 @@
       if (persist) saveLayoutState();
     }
 
+    // The activity rail opens and closes the navigation panel: its current
+    // view is marked only while the panel is open.
     function syncNavigationPanelControl() {
-      const collapsed = currentLineageWorkbench()?.isPanelCollapsed("navigation") === true;
-      document.querySelectorAll("[data-side-collapse-toggle]").forEach(btn => {
-        window.PortalWorkbench.layout.syncCollapseButton(btn, collapsed, {
-          expand: "展开左侧栏",
-          collapse: "折叠左侧栏",
-        });
-      });
+      const open = currentLineageWorkbench()?.isPanelExpanded("navigation") === true;
+      currentActivityRail()?.setActiveView?.(open ? state.sideView || "agents" : "");
     }
 
     function setNavigationPanelVisible(visible) {

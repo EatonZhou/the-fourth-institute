@@ -41,7 +41,7 @@ test('navigation search exposes its cause, clears safely and stays local to the 
   assert.equal(state.projectFilter,'all');
   assert.equal(state.projectDisplayFilter,'non-empty','clearing the Project preserves the display range');
   assert.equal(filterSummary().hidden,true);
-  doc.getElementById('searchToggleBtn').click();
+  assert.equal(doc.getElementById('searchToggleBtn'),null,'the search field is always shown, without a toggle');
   search('provider');
   assert.match(list().textContent,/正在筛选：provider/);
   assert.match(list().textContent,/匹配 0 个项目/);
@@ -53,7 +53,7 @@ test('navigation search exposes its cause, clears safely and stays local to the 
   search('Alpha');
   assert.match(list().textContent,/匹配 1 个项目/);
   assert.equal(list().querySelectorAll('.principalProjectCard').length,1);
-  doc.getElementById('searchToggleBtn').click();
+  input.dispatchEvent(new page.window.KeyboardEvent('keydown',{key:'Escape',bubbles:true}));
   assert.equal(input.value,'');assert.equal(state.query,'');
   assert.equal(list().querySelectorAll('.principalProjectCard').length,2);
   search('<img src=x onerror=alert(1)>');

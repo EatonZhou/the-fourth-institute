@@ -70,6 +70,7 @@
         `).join("");
       const displayOptions = [
         { value: "non-empty", label: window.PortalI18n.t("有内容") },
+        { value: "running", label: window.PortalI18n.t("运行中") },
         { value: "all", label: window.PortalI18n.t("全部") },
       ].map(item => window.PortalI18n.html`
           <button class="filterOption" type="button" data-project-display-filter="${esc(item.value)}" title="${esc(item.label)}">${esc(item.label)}</button>
@@ -86,14 +87,8 @@
     }
 
     function syncAgentTools() {
-      const searchWrap = $id("agentSearchWrap");
-      const searchBtn = $id("searchToggleBtn");
       const filterBtn = $id("filterToggleBtn");
       const filterPanel = $id("agentFilterPanel");
-      const queryActive = !!state.query.trim();
-      searchWrap.classList.toggle("open", state.searchOpen);
-      searchBtn.classList.toggle("is-active", state.searchOpen || queryActive);
-      searchBtn.setAttribute("aria-expanded", state.searchOpen ? "true" : "false");
       filterBtn.classList.toggle("is-active", state.filterOpen || state.projectFilter !== "all" || state.projectDisplayFilter === "non-empty");
       filterBtn.setAttribute("aria-expanded", state.filterOpen ? "true" : "false");
       filterPanel.classList.toggle("open", state.filterOpen);
@@ -107,6 +102,7 @@
       currentAgentFilterSummary()?.sync?.();
     }
 
+    // The search field is always shown; closing a search clears its text.
     function setSearchOpen(open) {
       state.searchOpen = !!open;
       if (!state.searchOpen) {

@@ -27360,6 +27360,22 @@
     "en": "Lineage menu",
     "zh-CN": "Lineage 菜单"
   },
+  "Resident 菜单": {
+    "en": "Resident menu",
+    "zh-CN": "Resident 菜单"
+  },
+  "Resident · 个人助手": {
+    "en": "Resident · Personal assistant",
+    "zh-CN": "Resident · 个人助手"
+  },
+  "有 Resident 正在运行": {
+    "en": "A Resident is running",
+    "zh-CN": "有 Resident 正在运行"
+  },
+  "搜索 Project、Lineage": {
+    "en": "Search Projects and Lineages",
+    "zh-CN": "搜索 Project、Lineage"
+  },
   "打开 Prompt": {
     "en": "Open Prompt",
     "zh-CN": "打开 Prompt"

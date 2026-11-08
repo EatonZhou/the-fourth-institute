@@ -30,7 +30,9 @@
     const view = presentation(avatar, size);
     const escape = window.PortalUIPrimitives.escapeHtml;
     const title = view.rarity ? `${label} · ${view.rarity}` : label;
-    return window.PortalI18n.html`<span class="${view.className}" style="${view.style}" role="img" aria-label="${escape(title)}" title="${escape(title)}" data-sprite-rarity="${view.rarity}"></span>`;
+    // The style carries url("...") for an uploaded picture, so it is escaped
+    // like any attribute value; unescaped quotes would cut the attribute short.
+    return window.PortalI18n.html`<span class="${view.className}" style="${escape(view.style)}" role="img" aria-label="${escape(title)}" title="${escape(title)}" data-sprite-rarity="${view.rarity}"></span>`;
   }
   window.PortalResidentAvatar = Object.freeze({ presentation, markup });
 })();

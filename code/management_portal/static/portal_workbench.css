@@ -38,7 +38,8 @@
   .portalWorkbenchPageLayout:has(> .portalActivityRail:not([hidden])) .portalWorkbenchCanvas > .portalWorkbenchStack,
   .portalWorkbenchPageLayout:has(> .portalActivityRail:not([hidden])) .portalWorkbenchCanvas > .portalWorkbenchSplit[data-orientation="vertical"] > .portalWorkbenchStack,
   .portalWorkbenchPageLayout:has(> .portalActivityRail:not([hidden])) .portalWorkbenchCanvas > .portalWorkbenchSplit[data-orientation="horizontal"] > .portalWorkbenchStack:first-child,
-  .portalWorkbenchPageLayout:has(> .portalActivityRail:not([hidden])) .portalWorkbenchCanvas > .portalWorkbenchSplit[data-orientation="horizontal"] > .portalWorkbenchSplit[data-orientation="vertical"]:first-child > .portalWorkbenchStack {
+  .portalWorkbenchPageLayout:has(> .portalActivityRail:not([hidden])) .portalWorkbenchCanvas > .portalWorkbenchSplit[data-orientation="horizontal"] > .portalWorkbenchSplit[data-orientation="vertical"]:first-child > .portalWorkbenchStack,
+  .portalWorkbenchPageLayout:has(> .portalActivityRail:not([hidden])) .portalWorkbenchCanvas > .portalWorkbenchSplit[data-orientation="horizontal"] > .portalWorkbenchStack[data-collapsed-to-rail]:first-child + .portalWorkbenchSplitHandle + .portalWorkbenchStack {
     border-top-left-radius: 0;
     border-bottom-left-radius: 0;
     border-left-color: transparent;
@@ -553,6 +554,8 @@
 }
 
 .portalWorkbenchStack.is-collapsed > .portalWorkbenchStackBody { display: none; }
+/* Panels restored from the page's activity rail leave no collapsed strip. */
+.portalWorkbenchStack.is-collapsed[data-collapsed-to-rail] { display: none; }
 
 .portalWorkbenchStack.is-collapsed[data-collapse-axis="horizontal"] {
   grid-template-rows: minmax(0, 1fr) !important;
@@ -1632,6 +1635,16 @@ html[data-portal-viewport="mobile"] .portalWorkbenchMobilePanel.is-active {
   line-height: 1;
   letter-spacing: 0;
 }
+.portalNavRowMark.is-neutral { background: color-mix(in srgb, var(--muted) 70%, var(--panel)); }
+/* Entry rows: a larger mark beside a title over a kind line, for the
+ * standing entries above the tree (Which Resident, the personal assistant). */
+.portalNavRow.is-entry { min-height: 46px; }
+.portalNavRow.is-entry .portalNavRowMain { gap: 10px; padding: 7px 8px; }
+.portalNavRow.is-entry .portalNavRowMark { width: 28px; height: 28px; flex-basis: 28px; border-radius: 8px; font-size: 12px; }
+.portalNavRowText { display: grid; gap: 1px; min-width: 0; }
+.portalNavRow.is-entry .portalNavRowLabel { font-size: 13.5px; font-weight: 650; }
+.portalNavRowMeta { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); font-size: 11.5px; font-weight: 400; }
+.portalNavRow.is-entry.is-active .portalNavRowLabel { color: var(--accent); }
 /* A mark without a glyph stands only for a saved avatar (PortalUIPrimitives.paintAvatars). */
 .portalAvatarMark[data-avatar-glyph=""]:not(.has-avatar) { display: none; }
 .portalNavRowLabel { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -1648,6 +1661,18 @@ html[data-portal-viewport="mobile"] .portalWorkbenchMobilePanel.is-active {
   font-size: 11.5px;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
+}
+/* A status dot after the label; running uses the theme's success colour. */
+.portalNavRowStatus {
+  width: 7px;
+  height: 7px;
+  flex: 0 0 7px;
+  border-radius: 50%;
+  background: var(--muted);
+}
+.portalNavRowStatus.is-running {
+  background: var(--ok);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ok) 18%, transparent);
 }
 .portalNavRowCount.is-empty { color: color-mix(in srgb, var(--muted) 45%, transparent); }
 .portalNavRowLock { width: 13px; height: 13px; flex: 0 0 13px; color: var(--muted); margin-right: 2px; }
@@ -1666,12 +1691,23 @@ html[data-portal-viewport="mobile"] .portalWorkbenchMobilePanel.is-active {
 .portalNavRowActions > .portalButton.is-icon .portalIcon { width: 14px; height: 14px; }
 .portalNavRowActions > .portalButton[data-nav-favorite][aria-pressed="true"],
 .portalNavRowActions > .portalButton[data-nav-favorite][aria-pressed="true"]:hover { color: #f5c518; }
-/* Revealed actions stay out of sight until the row is pointed at or focused;
- * a pressed toggle (a favourite) stays visible because it carries state. */
-.portalNavRowActions[data-reveal="hover"] > .portalButton:not([aria-pressed="true"]) { opacity: 0; }
-.portalNavRow:is(:hover, :focus-within, .is-menu-open) > .portalNavRowActions[data-reveal="hover"] > .portalButton { opacity: 1; }
+/* A row's count sits at the right edge; a count after the actions keeps the
+ * row's padding. Revealed actions take no room until the row is pointed at,
+ * focused or has its menu open, then open to the left of the count. They stay
+ * in the tab order so the keyboard can reach them. */
+.portalNavRowActions + .portalNavRowCount { margin-left: 0; padding-right: 9px; }
+.portalNavRowActions[data-reveal="hover"] {
+  max-width: 0;
+  overflow: hidden;
+  opacity: 0;
+  padding-right: 0;
+}
+.portalNavRow:is(:hover, :focus-within, .is-menu-open) > .portalNavRowActions[data-reveal="hover"] {
+  max-width: 64px;
+  opacity: 1;
+}
 @media (hover: none) {
-  .portalNavRowActions[data-reveal="hover"] > .portalButton { opacity: 1; }
+  .portalNavRowActions[data-reveal="hover"] { max-width: 64px; opacity: 1; }
 }
 
 .portalFileRowShell {

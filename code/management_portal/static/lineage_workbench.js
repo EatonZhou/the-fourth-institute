@@ -209,7 +209,8 @@
         applyWatchboardLayout, syncNavigationPanelControl, setNavigationPanelVisible,
         syncPreviewPanelControl, setPreviewPanelVisible, ensurePreviewVisible, bindWatchboardSplitter,
       } = workbenchModule("PortalLineageWorkbenchLayout").createLayout({
-        $id, chatElement, currentLineageLayoutStore: () => lineageLayoutStore,
+        $id, chatElement, currentActivityRail: () => currentLineageActivityRail(),
+        currentLineageLayoutStore: () => lineageLayoutStore,
         currentLineageWorkbench: () => lineageWorkbench, state,
       });
 
@@ -503,7 +504,7 @@
         initLineageActivityRail, renderActivityRecentRail, currentLineageActivityRail,
       } = workbenchModule("PortalLineageWorkbenchRecent").createRecent({
         fmtDateTime, focusPreferredSidebarTarget, registeredLineageIdForResident, residentExactId,
-        residentRootForExactId, selectedResidentId, selectResident, setSideView, state,
+        residentRootForExactId, selectedResidentId, selectResident, setNavigationPanelVisible, setSideView, state,
       });
 
       const {
@@ -996,13 +997,18 @@
               const option = projectFilterOptions().find(item => item.value === state.projectFilter);
               items.push({ label: window.PortalI18n.t("项目"), value: option?.label || state.projectFilter });
             }
+            if (state.projectDisplayFilter === "running") {
+              items.push({ label: window.PortalI18n.t("显示范围"), value: window.PortalI18n.t("运行中") });
+            }
             return items;
           },
           onClear: () => {
             state.projectFilter = "all";
+            if (state.projectDisplayFilter === "running") state.projectDisplayFilter = "non-empty";
             agentFilterDropdown?.close();
             writeLineageUiState({
               projectFilter: state.projectFilter,
+              projectDisplayFilter: state.projectDisplayFilter,
             });
             renderAgentList();
           },
@@ -1015,7 +1021,11 @@
           state.query = event.target.value || "";
           renderAgentList();
         });
-        $id("searchToggleBtn").addEventListener("click", () => setSearchOpen(!state.searchOpen));
+        $id("searchInput").addEventListener("keydown", event => {
+          if (event.key !== "Escape" || !$id("searchInput").value) return;
+          event.preventDefault();
+          setSearchOpen(false);
+        });
         $id("agentFilterPanel").addEventListener("click", event => {
           const target = event.target instanceof Element ? event.target : null;
           const btn = target?.closest("[data-project-filter]");
@@ -1028,9 +1038,6 @@
         });
         $id("refreshBtn").addEventListener("click", () => societyServiceRecovery.run(recoveryLoadAll));
         $id("favoriteRefreshBtn").addEventListener("click", () => societyServiceRecovery.run(recoveryLoadAll));
-        document.querySelectorAll("[data-side-collapse-toggle]").forEach(btn => {
-          btn.addEventListener("click", () => setNavigationPanelVisible(!lineageWorkbench?.isPanelExpanded("navigation")));
-        });
         $id("previewCollapseBtn")?.addEventListener("click", () => setPreviewPanelVisible(!lineageWorkbench?.isPanelExpanded("preview")));
         $id("editPreviewBtn").addEventListener("click", () => setPreviewMode("code"));
         $id("visualPreviewBtn").addEventListener("click", () => setPreviewMode("visual"));

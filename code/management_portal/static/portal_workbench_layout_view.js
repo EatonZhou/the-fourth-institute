@@ -57,6 +57,7 @@
         mobileOwnsStack,
       );
       if (activeCollapsed) element.dataset.collapseAxis = parentOrientation || "vertical";
+      element.toggleAttribute("data-collapsed-to-rail", activeCollapsed && compactExtentForNode(stack, "x", shellState.collapsed, descriptors) === 0);
       element.addEventListener("pointerdown", () => {
         shellState.focusedStackId = stack.id;
         const descriptor = descriptors.get(String(stack.activePanelId || ""));
@@ -128,6 +129,7 @@
       element.dataset.portalMobileActive = String(mobileOwnsStack);
       if (activeCollapsed) element.dataset.collapseAxis = parentOrientation || "vertical";
       else delete element.dataset.collapseAxis;
+      element.toggleAttribute("data-collapsed-to-rail", activeCollapsed && compactExtentForNode(stack, "x", shellState.collapsed, descriptors) === 0);
       const tabs = element.querySelector(":scope > .portalWorkbenchTabs");
       const body = element.querySelector(":scope > .portalWorkbenchStackBody");
       if (!tabs || !body) return false;
@@ -180,7 +182,7 @@
         sizes[index + 1] = afterSize;
         const edges = axis === "x" ? ["Left", "Right"] : ["Top", "Bottom"];
         const expanded = split.children.map((child, childIndex) => childIndex)
-          .filter(childIndex => compactExtentForNode(split.children[childIndex], axis, shellState.collapsed) === null);
+          .filter(childIndex => compactExtentForNode(split.children[childIndex], axis, shellState.collapsed, descriptors) === null);
         const weight = expanded.reduce((sum, childIndex) => sum + split.weights[childIndex], 0);
         expanded.forEach(childIndex => {
           const style = getComputedStyle(start.children[childIndex]);
@@ -248,7 +250,7 @@
         const childElement = renderNode(child, split.orientation);
         childElement.classList.add("portalWorkbenchSplitChild");
         const axis = split.orientation === "vertical" ? "y" : "x";
-        const compactExtent = compactExtentForNode(child, axis, shellState.collapsed);
+        const compactExtent = compactExtentForNode(child, axis, shellState.collapsed, descriptors);
         const childCompact = compactExtent !== null;
         childElement.style.flexGrow = childCompact ? "0" : String(Number(split.weights?.[index]) || 1);
         childElement.style.flexShrink = childCompact ? "0" : "1";
@@ -269,7 +271,7 @@
         handle.dataset.orientation = split.orientation;
         handle.setAttribute("aria-label", window.PortalI18n.t("调整工作区面板大小"));
         handle.hidden = [split.children[index], split.children[index + 1]].some(child => (
-          compactExtentForNode(child, split.orientation === "vertical" ? "y" : "x", shellState.collapsed) !== null
+          compactExtentForNode(child, split.orientation === "vertical" ? "y" : "x", shellState.collapsed, descriptors) !== null
         ));
         children[index].after(handle);
         bindSplitHandle(handle, split, split.children[index], split.children[index + 1], children[index], children[index + 1], index);
@@ -287,7 +289,7 @@
         const child = split.children[index];
         const childElement = children[index];
         const axis = split.orientation === "vertical" ? "y" : "x";
-        const compactExtent = compactExtentForNode(child, axis, shellState.collapsed);
+        const compactExtent = compactExtentForNode(child, axis, shellState.collapsed, descriptors);
         const childCompact = compactExtent !== null;
         childElement.style.flexGrow = childCompact ? "0" : String(Number(split.weights?.[index]) || 1);
         childElement.style.flexShrink = childCompact ? "0" : "1";
@@ -307,7 +309,7 @@
         handle.dataset.orientation = split.orientation;
         const axis = split.orientation === "vertical" ? "y" : "x";
         handle.hidden = [split.children[index], split.children[index + 1]].some(child => (
-          compactExtentForNode(child, axis, shellState.collapsed) !== null
+          compactExtentForNode(child, axis, shellState.collapsed, descriptors) !== null
         ));
       });
       return true;

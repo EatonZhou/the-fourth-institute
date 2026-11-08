@@ -38,12 +38,14 @@
         {
           query: state.query,
           projectFilter: state.projectFilter, nonEmptyOnly: state.projectDisplayFilter === "non-empty",
+          runningOnly: state.projectDisplayFilter === "running",
+          isRunning: child => runningLineageIds().has(String(child.lineage_id || "")),
         },
       );
       return [{ id: "lineage", title: window.PortalI18n.t("My Projects"), items: [], itemType: "resident", projectGroups,
         empty: residentSidebarPendingText("Project") || (state.query.trim()
           ? window.PortalI18n.text`没有与「${state.query.trim()}」匹配的项目。`
-          : state.projectFilter !== "all" || (state.projectDisplayFilter === "non-empty" && state.principalHierarchy?.projects?.length)
+          : state.projectFilter !== "all" || (state.projectDisplayFilter !== "all" && state.principalHierarchy?.projects?.length)
             ? window.PortalI18n.t("当前筛选条件下没有项目。") : window.PortalI18n.t("暂无可访问的 Project。")) }];
     }
 
@@ -92,6 +94,50 @@
       return `<button type="button" class="portalButton is-icon is-quiet" data-agent-menu="${esc(menuId)}" aria-haspopup="menu" aria-expanded="${menuId === state.agentMenuId ? "true" : "false"}" aria-label="${esc(label)}" title="${esc(window.PortalI18n.t("更多"))}" data-portal-icon="more-horizontal" ${disabled ? "disabled" : ""}></button>`;
     }
 
+    // Lineage running state: a Lineage runs while any of its Residents runs.
+    // It comes from the shared active-agents view (the one Home shows) and
+    // updates the dots in place, without rebuilding the list.
+    let runningRefresh = null;
+    function runningLineageIds() {
+      startRunningRefresh();
+      return state.runningLineageIds instanceof Set ? state.runningLineageIds : new Set();
+    }
+    function runningDotHtml() {
+      const label = esc(window.PortalI18n.t("有 Resident 正在运行"));
+      return `<span class="portalNavRowStatus is-running" role="img" aria-label="${label}" title="${label}"></span>`;
+    }
+    function applyRunningLineages(activity) {
+      const running = window.PortalResidentService.runningLineageIds(activity);
+      state.runningLineageIds = running;
+      // The “运行中” range lists only running Lineages, so it is rebuilt.
+      if (state.projectDisplayFilter === "running") {
+        renderAgentList();
+        return;
+      }
+      for (const rootId of ["agentList", "favoriteAgentList"]) {
+        $id(rootId)?.querySelectorAll(".residentCardWrap[data-lineage-card]").forEach(card => {
+          const main = card.querySelector(".principalLineageCard > .portalNavRowMain");
+          if (!main) return;
+          const dot = main.querySelector(":scope > .portalNavRowStatus");
+          if (running.has(card.dataset.lineageCard) && !dot) main.insertAdjacentHTML("beforeend", runningDotHtml());
+          else if (!running.has(card.dataset.lineageCard)) dot?.remove();
+        });
+      }
+    }
+    function startRunningRefresh() {
+      if (runningRefresh || !window.PortalRefreshCoordinator?.create || !window.PortalResidentService?.activeAgents) return;
+      runningRefresh = window.PortalRefreshCoordinator.create({
+        key: () => `lineage-running:${window.PortalIdentity?.username?.() || "anonymous"}`,
+        interval: 300000,
+        pauseWhenHidden: true,
+        fetch: () => window.PortalResidentService.activeAgents(),
+        apply: applyRunningLineages,
+        subscribe: window.PortalResidentService.activeAgentsSubscription(),
+      });
+      runningRefresh.start();
+      runningRefresh.refresh().catch(() => {});
+    }
+
     // A row's identity mark: the saved avatar of the Project or Lineage, else
     // the glyph on a stable hue. Without a glyph the mark appears only once an
     // avatar is found, so Lineage rows stay plain unless one was chosen.
@@ -118,13 +164,13 @@
               <span class="portalNavRowChevron" data-portal-icon="${open ? "chevron-down" : "chevron-right"}"></span>
               ${navRowMarkHtml({ kind: "project", id: project.project_id, label: project.title, glyph: window.PortalUIPrimitives.titleGlyph(project.title) })}
               <span class="portalNavRowLabel" title="${esc(project.title)}">${esc(project.title)}</span>
-              ${countHtml}
             </button>
             ${denied ? window.PortalI18n.t('<span class="portalNavRowLock principalAccessLock" data-portal-icon="lock" aria-label="无访问权限" title="当前无权打开 Project 对话"></span>') : ""}
-            <span class="portalNavRowActions">
+            <span class="portalNavRowActions" data-reveal="hover">
               ${favoriteStar(project.favoriteSelectionId || projectFavoriteSelectionId(project))}
               ${rowMenuButton(menuId, window.PortalI18n.text`${project.title} 菜单`, project.unavailable || project.project_readable === false)}
             </span>
+            ${countHtml}
           </div>
           ${children}
         </section>`;
@@ -159,26 +205,44 @@
             <button type="button" class="portalNavRowMain" data-principal-open="${esc(lineageLeaderResidentId(item))}" data-lineage-open="${esc(lineageId)}" title="${esc(title)}">
               ${navRowMarkHtml({ kind: "lineage", id: lineageId, label: title })}
               <span class="portalNavRowLabel">${esc(title)}</span>
-              <span class="portalNavRowCount ${memberCount ? "" : "is-empty"}" title="${esc(memberLabel)}" aria-label="${esc(memberLabel)}">${memberCount}</span>
+              ${runningLineageIds().has(lineageId) ? runningDotHtml() : ""}
             </button>
             <span class="portalNavRowActions" data-reveal="hover">
               ${favoriteStar(favoriteSelectionId, favorite)}
               ${rowMenuButton(menuId, window.PortalI18n.t("Lineage 菜单"))}
             </span>
+            <span class="portalNavRowCount ${memberCount ? "" : "is-empty"}" title="${esc(memberLabel)}" aria-label="${esc(memberLabel)}">${memberCount}</span>
           </div>
         </div>`;
       }
-      const title = esc(item.title || item.resident_id || window.PortalI18n.t("Ask Me Anything"));
-      return window.PortalI18n.html`<div class="residentCardWrap" data-resident-card="${esc(residentId)}" data-lineage-card="${esc(lineageId)}">
-        <div class="agentItem ${active ? "active" : ""} ${menuOpen ? "menuOpen" : ""}" data-resident-id="${esc(residentId)}">
-          <button type="button" class="agentSelect noStatusDot" data-resident-select="${esc(residentId)}" title="${esc(item.workspace_path || "")}">
-            <span class="agentMain">
-              <span class="agentTitle">${title}</span>
-              <span class="agentMeta"><span class="principalKind">Resident</span></span>
-            </span>
-          </button>
-          <button type="button" class="agentMenuBtn ${menuOpen ? "active" : ""}" data-agent-menu="${esc(menuId)}" aria-label="Resident 菜单" title="更多" data-portal-icon="more-horizontal"></button>
-        </div>
+      const title = String(item.title || item.resident_id || window.PortalI18n.t("Ask Me Anything"));
+      return `<div class="residentCardWrap" data-resident-card="${esc(residentId)}" data-lineage-card="${esc(lineageId)}">
+          ${residentEntryRowHtml({
+            residentId, title, active, menuId, menuOpen,
+            meta: options.meta || "Resident",
+            glyph: options.glyph || window.PortalUIPrimitives.titleGlyph(title),
+            hint: item.workspace_path || "",
+            unavailable: options.unavailable === true, locked: options.locked === true, busy: options.busy === true,
+          })}
+        </div>`;
+    }
+
+    // A Resident entry at the top of the list (Which Resident, the personal
+    // assistant): its avatar, a title over a kind line, and its menu. Without
+    // a residentId the entry is a status line that cannot be opened.
+    function residentEntryRowHtml({
+      residentId = "", title, meta = "", glyph = "?", active = false, menuId = "", menuOpen = false,
+      hint = "", unavailable = false, locked = false, busy = false,
+    }) {
+      const mark = `<span class="portalNavRowMark portalAvatarMark ${residentId ? "" : "is-neutral"}" style="--portal-nav-mark-hue:${window.PortalUIPrimitives.stableHue(residentId || title)}" aria-hidden="true"${window.PortalUIPrimitives.avatarMarkAttributes({ kind: residentId ? "resident" : "", id: residentId, label: title, glyph, size: 28 })}>${esc(glyph)}</span>`;
+      const text = `<span class="portalNavRowText"><span class="portalNavRowLabel">${esc(title)}</span><span class="portalNavRowMeta" title="${esc(meta)}">${esc(meta)}</span></span>`;
+      const classes = ["portalNavRow", "is-entry", "principalResidentCard", active ? "is-active" : "", menuOpen ? "is-menu-open" : "", unavailable ? "is-unavailable" : "", locked ? "is-locked" : ""].filter(Boolean).join(" ");
+      if (!residentId) {
+        return `<div class="${classes}"${busy ? ' aria-busy="true"' : ""}><div class="portalNavRowMain">${mark}${text}</div>${locked ? window.PortalI18n.t('<span class="portalNavRowLock principalAccessLock" data-portal-icon="lock" aria-label="无访问权限"></span>') : ""}</div>`;
+      }
+      return `<div class="${classes}" data-resident-id="${esc(residentId)}">
+          <button type="button" class="portalNavRowMain" data-resident-select="${esc(residentId)}" title="${esc(hint || title)}">${mark}${text}</button>
+          <span class="portalNavRowActions">${rowMenuButton(menuId, window.PortalI18n.t("Resident 菜单"))}</span>
         </div>`;
     }
 
@@ -209,7 +273,7 @@
 
     function residentNavigationShortcutsHtml() {
       const assistant = state.personalAssistant;
-      return window.PortalI18n.html`<div class="whichResidentWrap">${whichResidentCardHtml()}</div>${assistant ? `<div class="personalAssistantResident">${renderRegisteredResidentItem(assistant, { asResident: true })}</div>` : ""}`;
+      return `<div class="whichResidentWrap">${whichResidentCardHtml()}</div>${assistant ? `<div class="personalAssistantResident">${renderRegisteredResidentItem(assistant, { asResident: true, meta: window.PortalI18n.t("Resident · 个人助手") })}</div>` : ""}`;
     }
 
     function renderAgentList() {
@@ -284,7 +348,7 @@
             lineageRow.classList.toggle("is-active", Boolean(lineageId && card.dataset.lineageCard === lineageId));
             return;
           }
-          card.querySelector(".agentItem")?.classList.toggle("active", card.dataset.residentCard === residentId);
+          card.querySelector(".principalResidentCard")?.classList.toggle("is-active", card.dataset.residentCard === residentId);
         });
         root.querySelectorAll(".principalProjectCard").forEach(row => {
           row.classList.toggle("is-active", Boolean(row.dataset.projectResident) && row.dataset.projectResident === residentId);

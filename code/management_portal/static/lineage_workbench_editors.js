@@ -160,6 +160,8 @@
           type,
           title: binding.title || window.PortalI18n.t("Lineage 导航"),
           openSource: true,
+          // The activity rail's view buttons open and close it.
+          collapseToRail: true,
           options: { variant: "lineage", label: window.PortalI18n.t("Lineage 导航") },
         };
       }

@@ -400,6 +400,29 @@
       activeAgents() {
         return get("/api/agent-status/active-agents");
       },
+      // The live-update subscription for activeAgents(): Resident events and
+      // changes to the active-agents projection, shared by every view of it.
+      activeAgentsSubscription() {
+        return window.PortalRefreshCoordinator.portalSubscription({
+          domains: ["projection", "resident"],
+          refreshOnAttach: false,
+          debounceMs: 1500,
+          matches: detail => {
+            if (detail?.snapshot_required) return true;
+            if (Array.isArray(detail?.resident_events) && detail.resident_events.length > 0) return true;
+            const changes = detail?.projection_changes?.["active-agents"] || {};
+            return changes && typeof changes === "object" && Object.keys(changes).length > 0;
+          },
+        });
+      },
+      // The Lineages with a running (not only queued) Resident the viewer may read.
+      runningLineageIds(activity) {
+        const runs = [
+          ...(activity?.running_runs || []),
+          ...(activity?.account_groups || []).flatMap(group => group?.running_runs || []),
+        ];
+        return new Set(runs.map(run => String(run?.lineage_id || "").trim()).filter(Boolean));
+      },
       navigationTarget(residentId) {
         return get(residentPath("/navigation-target"), { id: required(residentId, "resident_id") });
       },

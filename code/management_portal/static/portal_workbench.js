@@ -457,16 +457,23 @@
     return splitNode("horizontal", [model, ...missing.map(panelId => stackNode([panelId]))]);
   }
 
-  function compactExtentForNode(node, axis, collapsed = new Set()) {
+  // A stack whose panels all collapse into the page's activity rail takes no
+  // room when collapsed; the rail's view buttons bring it back.
+  function collapsesToRail(node, descriptors) {
+    const panelIds = node.type === "panel" ? [node.panelId] : (node.children || []).map(child => child.panelId);
+    return Boolean(descriptors) && panelIds.length > 0
+      && panelIds.every(panelId => descriptors.get(String(panelId || ""))?.collapseToRail === true);
+  }
+
+  function compactExtentForNode(node, axis, collapsed = new Set(), descriptors = null) {
     if (!node) return null;
-    if (node.type === "panel") {
-      return collapsed.has(String(node.panelId || "")) ? COLLAPSED_PANEL_SIZE[axis] : null;
-    }
-    if (node.type === "stack") {
-      return collapsed.has(String(node.activePanelId || "")) ? COLLAPSED_PANEL_SIZE[axis] : null;
+    if (node.type === "panel" || node.type === "stack") {
+      const panelId = node.type === "panel" ? node.panelId : node.activePanelId;
+      if (!collapsed.has(String(panelId || ""))) return null;
+      return collapsesToRail(node, descriptors) ? 0 : COLLAPSED_PANEL_SIZE[axis];
     }
     if (node.type !== "split" || !node.children?.length) return null;
-    const childExtents = node.children.map(child => compactExtentForNode(child, axis, collapsed));
+    const childExtents = node.children.map(child => compactExtentForNode(child, axis, collapsed, descriptors));
     if (childExtents.some(value => value === null)) return null;
     const sameAxis = (axis === "x" && node.orientation === "horizontal")
       || (axis === "y" && node.orientation === "vertical");
@@ -477,7 +484,7 @@
 
   function minimumForNode(node, axis, descriptors, collapsed = new Set()) {
     if (!node) return 96;
-    const compactExtent = compactExtentForNode(node, axis, collapsed);
+    const compactExtent = compactExtentForNode(node, axis, collapsed, descriptors);
     if (compactExtent !== null) return compactExtent;
     if (node.type === "panel") {
       const descriptor = descriptors.get(node.panelId);
@@ -494,7 +501,7 @@
 
   function splitChildMinimumCss(split, child, index, descriptors, collapsed) {
     const axis = split.orientation === "vertical" ? "y" : "x";
-    const compactExtents = split.children.map(item => compactExtentForNode(item, axis, collapsed));
+    const compactExtents = split.children.map(item => compactExtentForNode(item, axis, collapsed, descriptors));
     if (compactExtents[index] !== null) return `${compactExtents[index]}px`;
     const expandedMinimum = split.children.reduce((sum, item, childIndex) => (
       sum + (compactExtents[childIndex] === null ? minimumForNode(item, axis, descriptors, collapsed) : 0)
@@ -825,6 +832,8 @@
       capabilities: panelPackage.capabilities,
       canHide: panelPackage.behavior.canHide && descriptor.canHide !== false && descriptor.required !== true,
       canCollapse: panelPackage.behavior.canCollapse && descriptor.canCollapse !== false,
+      // The page's activity rail restores this panel, so collapsing leaves no strip.
+      collapseToRail: descriptor.collapseToRail === true,
       canMove: panelPackage.behavior.canMove
         && !panelPackage.behavior.locked
         && descriptor.canMove !== false

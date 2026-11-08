@@ -292,17 +292,7 @@ function ensureActiveAgentStatusRefresh() {
     fetch: () => window.PortalResidentService.activeAgents(),
     apply: renderActiveAgentStatus,
     nextDelay: activeAgentStatusNextDelay,
-    subscribe: window.PortalRefreshCoordinator.portalSubscription({
-      domains: ["projection", "resident"],
-      refreshOnAttach: false,
-      debounceMs: 1500,
-      matches: detail => {
-        if (detail?.snapshot_required) return true;
-        if (Array.isArray(detail?.resident_events) && detail.resident_events.length > 0) return true;
-        const changes = detail?.projection_changes?.["active-agents"] || {};
-        return changes && typeof changes === "object" && Object.keys(changes).length > 0;
-      },
-    }),
+    subscribe: window.PortalResidentService.activeAgentsSubscription(),
   });
   return activeAgentStatusRefresh;
 }
