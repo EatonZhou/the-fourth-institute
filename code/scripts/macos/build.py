@@ -373,7 +373,7 @@ with tempfile.TemporaryDirectory() as tmp:
             smoke(executables / "TheFourthInstitute", destination, instance_root, included,
                   require_long_rpc_path=True)
     receipt["native_installation_smoke"] = "passed: temporary instance create/test/retire, native entry, long Unicode path, base/full, first administrator, AMA/PersonalFamily/project/chat reads, area move with session continuation, launcher exit survival, unregister/restart with password login, Unicode index worker, background log checks, code update with database row, GUI copy/retry"
-    receipt["api_only_chat_smoke"] = "passed: loopback fixture only, no Codex account, Harness-only settings, default-model API chat, model catalog/save, persisted chat after service restart; no real model or key"
+    receipt["api_only_chat_smoke"] = "passed: loopback API and its compatible Harness routes only, no external credentials, Harness-only settings, default-model direct API chat, model catalog/save, persisted chat after service restart; no real model or key"
     verify_app(contents.parent)
     receipt["app_signature_verification"] = "passed"
     (image_root / "Applications").symlink_to("/Applications", target_is_directory=True)

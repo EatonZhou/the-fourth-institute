@@ -81,8 +81,14 @@ class LocalModelApi:
                   for account in created.get('accounts', [])),
               'CreateModelApi did not provision its direct execution account')
         accounts = instruction('ListProviderAccounts', {})['accounts']
-        check(not any(account.get('provider') == 'codex' for account in accounts),
-              'API-only fixture unexpectedly has a Codex account')
+        # API registration also creates compatible native Harness routes.
+        # Isolation is about their credential source, not their Provider name.
+        created_ids = {account['account_id'] for account in created['accounts']}
+        check({account.get('account_id') or account.get('id') for account in accounts} == created_ids
+              and all(account.get('registration', {}).get('kind') == 'api_profile'
+                      and account['registration'].get('config', {}).get('api_id') == 'native_api_only'
+                      for account in accounts),
+              'API-only fixture unexpectedly has an account outside its disposable Model API')
         instruction('UpdateBackendRole', {'backend_role': 'default', 'account_id': 'native_api_only'})
 
     def chat(self, instruction, resident_id):

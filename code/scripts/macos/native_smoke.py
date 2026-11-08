@@ -103,7 +103,7 @@ class InstalledSession:
 
     def connect_and_chat(self):
         # Reuse the same loopback protocol fixture as Windows acceptance.
-        # Only this disposable API account exists; no Codex fallback can mask a bug.
+        # All routes belong to this disposable API; chat selects its direct route.
         self.model_api = LocalModelApi()
         self.model_api.register(self.instruction)
         self.instruction('UpdateResidentSettings', {'resident_id': self.ama['resident_id'],

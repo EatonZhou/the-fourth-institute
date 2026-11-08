@@ -1,5 +1,5 @@
 {
-  "request": "20261108.1-et-macbook-unified-refresh",
+  "request": "20261108.2-et-macbook-api-fixture-fix",
   "purpose": "Build current unified main for ET MacBook native testing and data-preserving update without Lenia examples. Check common Windows packaging findings in shared source. No per-Mac source patches and no GitHub Release.",
   "delivery": "Actions artifacts only; no GitHub Release"
 }
