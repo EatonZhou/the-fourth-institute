@@ -12,6 +12,15 @@ def test_sidebar_search_feedback_and_visit_lifetime():
     assert result.returncode == 0, result.stdout + result.stderr
 
 
+def test_navigation_slides_out_on_hover_until_pinned():
+    """鼠标设备上导航栏默认收在活动轨，悬停视图图标滑出、离开收回；图钉固定后停靠。"""
+    source = Path(__file__).with_name("javascript") / "lineage_navigation_flyout.cjs"
+    result = subprocess.run(
+        ["node", "--test", str(source)], capture_output=True, text=True, timeout=90,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
 def test_lineage_workbench_sidebar():
     """导航列表显示 Which Resident 和个人助手门面、跟随标题并在不可达时移除；缺少对话的 Project 不显示为无权限"""
     source = Path(__file__).with_name("javascript") / "lineage_workbench_sidebar.cjs"

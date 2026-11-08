@@ -96,12 +96,17 @@
       return complete;
     }
 
+    // A collapsed panel slid out beside the rail (setPanelFlyout) is shown.
+    const frameHidden = (descriptor, active, panelCollapsed) => (
+      !active || (panelCollapsed && shellState.flyoutPanelId !== descriptor.id)
+    );
+
     function renderPanelFrame(descriptor, active, panelCollapsed = false) {
       const frame = document.createElement("div");
       frame.className = `portalWorkbenchPanelFrame${descriptor.id === shellState.activeOpenTargetPanelId ? " is-open-target" : ""}`;
       frame.dataset.portalWorkbenchPanelFrame = descriptor.id;
       frame.dataset.portalWorkbenchInset = descriptor.inset;
-      frame.hidden = !active || panelCollapsed;
+      frame.hidden = frameHidden(descriptor, active, panelCollapsed);
       mountPanelElement(frame, descriptor.element);
       return frame;
     }
@@ -110,7 +115,7 @@
       if (!frame || frame.dataset.portalWorkbenchPanelFrame !== descriptor.id) return false;
       frame.classList.toggle("is-open-target", descriptor.id === shellState.activeOpenTargetPanelId);
       frame.dataset.portalWorkbenchInset = descriptor.inset;
-      frame.hidden = !active || panelCollapsed;
+      frame.hidden = frameHidden(descriptor, active, panelCollapsed);
       mountPanelElement(frame, descriptor.element);
       return true;
     }

@@ -556,6 +556,32 @@
 .portalWorkbenchStack.is-collapsed > .portalWorkbenchStackBody { display: none; }
 /* Panels restored from the page's activity rail leave no collapsed strip. */
 .portalWorkbenchStack.is-collapsed[data-collapsed-to-rail] { display: none; }
+/* …unless it slides out over the canvas beside the rail (setPanelFlyout). */
+.portalWorkbenchStack.is-collapsed[data-collapsed-to-rail][data-flyout-open] {
+  display: grid;
+  position: absolute;
+  z-index: 40;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: var(--portal-workbench-flyout-width, 300px);
+  max-width: calc(100% - 24px);
+  height: auto;
+  grid-template-rows: 0 minmax(0, 1fr) !important;
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+  box-shadow: 10px 0 28px color-mix(in srgb, var(--text) 16%, transparent);
+  animation: portalWorkbenchFlyoutIn 140ms ease-out;
+}
+.portalWorkbenchStack.is-collapsed[data-flyout-open] > .portalWorkbenchTabs { display: none !important; }
+.portalWorkbenchStack.is-collapsed[data-flyout-open] > .portalWorkbenchStackBody { display: block; }
+@keyframes portalWorkbenchFlyoutIn {
+  from { transform: translateX(-14px); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .portalWorkbenchStack.is-collapsed[data-flyout-open] { animation: none; }
+}
 
 .portalWorkbenchStack.is-collapsed[data-collapse-axis="horizontal"] {
   grid-template-rows: minmax(0, 1fr) !important;
@@ -1035,6 +1061,36 @@ body.resizingWorkspacePreview {
 .portalActivityRailView[draggable="true"] { cursor: grab; user-select: none; }
 .portalActivityRailView.activityDragging { opacity: .38; cursor: grabbing; }
 
+/* The pin sits between two rules: above it the views, below it the items. */
+.portalActivityRailPin {
+  width: 100%;
+  flex: 0 0 auto;
+  display: flex;
+  justify-content: center;
+  margin-top: 4px;
+  padding-top: 7px;
+  border-top: 1px solid var(--nav-divider);
+}
+.portalActivityRailPinButton {
+  width: 28px;
+  height: 24px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--nav-text);
+  opacity: .55;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.portalActivityRailPinButton .portalIcon { width: 15px; height: 15px; transform: rotate(35deg); transition: transform 120ms ease; }
+.portalActivityRailPinButton:hover { opacity: 1; background: var(--nav-hover); }
+.portalActivityRailPinButton[aria-pressed="true"] { opacity: 1; color: var(--nav-accent); }
+.portalActivityRailPinButton[aria-pressed="true"] .portalIcon { transform: none; }
+.portalActivityRailPinButton:focus-visible { outline: 2px solid var(--nav-accent); outline-offset: 1px; }
+@media (hover: none) { .portalActivityRailPin { display: none; } }
+.portalActivityRailPin + .portalActivityRailItems { margin-top: 0; padding-top: 7px; }
+
 .portalActivityRailItems {
   width: 100%;
   min-height: 0;
@@ -1479,6 +1535,17 @@ html[data-portal-viewport="mobile"] .portalWorkbenchMobilePanel.is-active {
 .sideView.active {
   display: flex;
 }
+
+/* A navigation view's header sits on the pane itself: no band or rule,
+ * title and actions aligned with the rows below. */
+.sideView > .paneHead {
+  --portal-pane-head-min-height: 50px;
+  flex-wrap: nowrap;
+  padding: 12px 8px 8px 14px;
+  border-bottom: 0;
+  background: transparent;
+}
+.sideView > .paneHead > .paneTitle { font-size: 15px; font-weight: 700; }
 
 .portalFileTree {
   display: grid;

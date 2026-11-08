@@ -7,9 +7,9 @@
   // user most recently sent a command to, kept per user and shown as shortcuts
   // that can be opened, dismissed or cleared.
   const DEPENDENCIES = Object.freeze([
-    "fmtDateTime", "focusPreferredSidebarTarget", "registeredLineageIdForResident",
-    "residentExactId", "residentRootForExactId", "selectedResidentId", "selectResident",
-    "setNavigationPanelVisible", "setSideView", "state",
+    "fmtDateTime", "focusPreferredSidebarTarget", "hoverNavigationView", "leaveNavigationView", "navigationPinned",
+    "registeredLineageIdForResident", "residentExactId", "residentRootForExactId", "selectedResidentId",
+    "selectNavigationView", "selectResident", "setNavigationPinned", "state",
   ]);
 
   const RECENT_AGENT_SESSION_LIMIT = 32;
@@ -76,8 +76,10 @@
     const missing = DEPENDENCIES.filter(name => dependencies?.[name] === undefined);
     if (missing.length) throw new Error(`PortalLineageWorkbenchRecent is missing: ${missing.join(", ")}`);
     const {
-      fmtDateTime, focusPreferredSidebarTarget, registeredLineageIdForResident, residentExactId,
-      residentRootForExactId, selectedResidentId, selectResident, setNavigationPanelVisible, setSideView, state,
+      fmtDateTime, focusPreferredSidebarTarget, hoverNavigationView, leaveNavigationView, navigationPinned,
+      registeredLineageIdForResident,
+      residentExactId, residentRootForExactId, selectedResidentId, selectNavigationView, selectResident,
+      setNavigationPinned, state,
     } = dependencies;
 
     let lineageActivityRail = null;
@@ -189,7 +191,7 @@
         label: window.PortalI18n.t("Society 工作台视图"),
         itemsId: "activityRecentRail",
         itemsLabel: window.PortalI18n.t("最近发出命令的 Society 工作台会话"),
-        activeView: state.sideView || "agents",
+        activeView: navigationPinned() ? state.sideView || "agents" : "",
         views: [
           { id: "agents", icon: "users", label: "Agent" },
           { id: "chatrooms", icon: "chat-room", label: "Chatroom" },
@@ -198,11 +200,17 @@
         ],
         itemLimit: RECENT_AGENT_SESSION_VISIBLE_LIMIT,
         itemFallbackView: "agents",
-        onViewSelect: (view, _rail, { repeated = false } = {}) => {
-          // Clicking the open view again closes the navigation panel.
-          if (repeated && window.PortalResponsive?.isMobile?.() !== true) setNavigationPanelVisible(false);
-          else setSideView(view, { userInitiated: true });
+        // The pin chooses how the views show the navigation panel: docked
+        // (click opens or closes it) or sliding out on hover.
+        pin: {
+          pinned: navigationPinned(),
+          pinnedLabel: window.PortalI18n.t("已固定导航栏，点击改为悬停滑出"),
+          unpinnedLabel: window.PortalI18n.t("固定导航栏"),
         },
+        onPinChange: pinned => setNavigationPinned(pinned),
+        onViewHover: view => hoverNavigationView(view),
+        onViewLeave: () => leaveNavigationView(),
+        onViewSelect: (view, _rail, meta = {}) => selectNavigationView(view, meta),
         onItemDismiss: key => dismissRecentAgentSession(key),
         itemsAction: {
           icon: "trash",

@@ -86,7 +86,8 @@ function findWorkbenchFunction(name, sources = workbenchSources()) {
 // and every script, page or console error is collected. Each workbench part's
 // factory (and that of each part a module script creates) is wrapped, so
 // `parts[global]` holds what the part was passed and what it returned.
-function startWorkbenchPage({ answers = {}, instructions = {}, url = 'https://portal.fixture.invalid/lineage' } = {}) {
+// hover: true makes the page a mouse device ((hover: hover) and (pointer: fine) match).
+function startWorkbenchPage({ answers = {}, instructions = {}, url = 'https://portal.fixture.invalid/lineage', hover = false } = {}) {
   const { JSDOM, VirtualConsole } = require('jsdom');
   const { execFileSync } = require('node:child_process');
   const python = code => execFileSync(process.env.TFI_TEST_PYTHON || 'python3', ['-c', code],
@@ -110,7 +111,9 @@ function startWorkbenchPage({ answers = {}, instructions = {}, url = 'https://po
     ResizeObserver: observer, IntersectionObserver: observer,
     EventSource: class extends w.EventTarget { close() {} },
     CSS: { escape: value => String(value).replace(/[^a-zA-Z0-9_-]/g, char => `\\${char}`), supports: () => false },
-    matchMedia: media => Object.assign(new w.EventTarget(), { media, matches: false, addListener() {}, removeListener() {} }),
+    matchMedia: media => Object.assign(new w.EventTarget(), {
+      media, matches: hover && /\(hover: hover\)/.test(media), addListener() {}, removeListener() {},
+    }),
     // The server injects the site's name and links into each page.
     PortalSite: { apply() {} },
   });

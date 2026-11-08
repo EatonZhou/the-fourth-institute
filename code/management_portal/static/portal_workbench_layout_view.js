@@ -58,6 +58,8 @@
       );
       if (activeCollapsed) element.dataset.collapseAxis = parentOrientation || "vertical";
       element.toggleAttribute("data-collapsed-to-rail", activeCollapsed && compactExtentForNode(stack, "x", shellState.collapsed, descriptors) === 0);
+      element.toggleAttribute("data-flyout-open", element.hasAttribute("data-collapsed-to-rail")
+        && Boolean(shellState.flyoutPanelId) && stack.children.some(child => child.panelId === shellState.flyoutPanelId));
       element.addEventListener("pointerdown", () => {
         shellState.focusedStackId = stack.id;
         const descriptor = descriptors.get(String(stack.activePanelId || ""));
@@ -130,6 +132,8 @@
       if (activeCollapsed) element.dataset.collapseAxis = parentOrientation || "vertical";
       else delete element.dataset.collapseAxis;
       element.toggleAttribute("data-collapsed-to-rail", activeCollapsed && compactExtentForNode(stack, "x", shellState.collapsed, descriptors) === 0);
+      element.toggleAttribute("data-flyout-open", element.hasAttribute("data-collapsed-to-rail")
+        && Boolean(shellState.flyoutPanelId) && stack.children.some(child => child.panelId === shellState.flyoutPanelId));
       const tabs = element.querySelector(":scope > .portalWorkbenchTabs");
       const body = element.querySelector(":scope > .portalWorkbenchStackBody");
       if (!tabs || !body) return false;

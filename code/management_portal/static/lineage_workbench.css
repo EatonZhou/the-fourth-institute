@@ -50,8 +50,9 @@
         border: 0;
       }
       /* The Lineages search field stays in view under the pane title. */
-      .searchWrap { padding: 2px 10px 8px; display: grid; gap: 8px; }
-      .agentList { display: grid; gap: 0; padding: 2px 8px 12px; }
+      /* The search field lines up with the rows under it (the list's 12px inset). */
+      .searchWrap { padding: 0 12px 6px; display: grid; gap: 8px; }
+      .agentList { display: grid; gap: 0; padding: 2px 0 12px; }
       .favoriteAgentList { grid-template-columns: minmax(0, 1fr); align-content: start; }
       .favoriteAgentList > * { min-width: 0; }
       .personalAssistantResident { margin-bottom: 8px; }

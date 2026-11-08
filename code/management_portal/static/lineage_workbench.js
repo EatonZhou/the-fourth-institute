@@ -207,11 +207,16 @@
 
       const {
         applyWatchboardLayout, syncNavigationPanelControl, setNavigationPanelVisible,
+        navigationPinned, setNavigationPinned, hoverNavigationView, leaveNavigationView, selectNavigationView, revealNavigation,
+        applyNavigationPin, closeNavigationFlyout,
         syncPreviewPanelControl, setPreviewPanelVisible, ensurePreviewVisible, bindWatchboardSplitter,
       } = workbenchModule("PortalLineageWorkbenchLayout").createLayout({
         $id, chatElement, currentActivityRail: () => currentLineageActivityRail(),
         currentLineageLayoutStore: () => lineageLayoutStore,
-        currentLineageWorkbench: () => lineageWorkbench, state,
+        currentLineageWorkbench: () => lineageWorkbench,
+        readLineageUiState: () => readLineageUiState(),
+        setSideView: (...args) => setSideView(...args), state,
+        writeLineageUiState: patch => writeLineageUiState(patch),
       });
 
       const {
@@ -504,7 +509,8 @@
         initLineageActivityRail, renderActivityRecentRail, currentLineageActivityRail,
       } = workbenchModule("PortalLineageWorkbenchRecent").createRecent({
         fmtDateTime, focusPreferredSidebarTarget, registeredLineageIdForResident, residentExactId,
-        residentRootForExactId, selectedResidentId, selectResident, setNavigationPanelVisible, setSideView, state,
+        hoverNavigationView, leaveNavigationView, navigationPinned, residentRootForExactId, selectedResidentId, selectResident,
+        selectNavigationView, setNavigationPinned, state,
       });
 
       const {
@@ -974,7 +980,7 @@
 
       function initPaneLayout() {
         initLineageWorkbench();
-        syncNavigationPanelControl();
+        applyNavigationPin();
         syncPreviewPanelControl();
         applyWatchboardLayout();
       }
@@ -1034,8 +1040,7 @@
           category: "Society",
           keybindings: ["/"],
           execute: () => {
-            setSideView("agents", { userInitiated: true });
-            setNavigationPanelVisible(true);
+            revealNavigation("agents");
             $id("searchInput")?.focus();
           },
         });
@@ -1133,7 +1138,8 @@
           // a repeated loadAll must not consume that URL before it is opened.
           if (!openingResource) pendingWorkspaceId = "";
           state.sideViewInteractionSeq += 1;
-          if (!lineageWorkbench?.isPanelExpanded("navigation")) setNavigationPanelVisible(true);
+          // An unpinned panel stays collapsed to the rail; the rail slides it out.
+          if (!lineageWorkbench?.isPanelExpanded("navigation") && navigationPinned()) setNavigationPanelVisible(true);
         }
         const activePanel = document.querySelector(`[data-side-panel="${next}"]`);
         const viewChanged = state.sideView !== next || !activePanel?.classList.contains("active");

@@ -35,11 +35,20 @@
       options.onViewOrderChange?.(railState.order.slice(), railState.controller);
     };
 
+    // A rail whose page slides its panel out on hover offers a pin between
+    // two rules: pinned keeps the panel docked, unpinned slides it out.
+    const pinHtml = () => {
+      if (!options.pin) return "";
+      const pinned = railState.pinned === true;
+      const label = pinned ? options.pin.pinnedLabel : options.pin.unpinnedLabel;
+      return `<div class="portalActivityRailPin"><button class="portalActivityRailPinButton" type="button" data-activity-pin data-portal-icon="pin" aria-pressed="${pinned ? "true" : "false"}" aria-label="${escapeHtml(label)}" title="${escapeHtml(label)}"></button></div>`;
+    };
+
     const render = () => {
       root.innerHTML = window.PortalI18n.html`${orderedViews().map(view => {
         const id = String(view.id || "");
         return window.PortalI18n.html`<button class="portalActivityRailView ${id === railState.activeView ? "active" : ""}" data-portal-icon="${escapeHtml(view.icon || "window")}" type="button" data-activity-view="${escapeHtml(id)}" data-side-view="${escapeHtml(id)}" aria-label="${escapeHtml(view.label || id)}" title="${escapeHtml(view.title || view.label || id)}" aria-pressed="${id === railState.activeView ? "true" : "false"}" draggable="true"></button>`;
-      }).join("")}<div class="portalActivityRailItems" ${options.itemsId ? `id="${escapeHtml(options.itemsId)}"` : ""} data-activity-rail-items aria-label="${escapeHtml(options.itemsLabel || window.PortalI18n.t("Recent sessions"))}" hidden></div>${itemsAction ? window.PortalI18n.html`<button class="portalActivityRailItemsAction" type="button" data-activity-items-action data-portal-icon="${escapeHtml(itemsAction.icon || "trash")}" aria-label="${escapeHtml(itemsAction.label || window.PortalI18n.t("Clear recent items"))}" title="${escapeHtml(itemsAction.title || itemsAction.label || window.PortalI18n.t("Clear recent items"))}" hidden></button>` : ""}`;
+      }).join("")}${pinHtml()}<div class="portalActivityRailItems" ${options.itemsId ? `id="${escapeHtml(options.itemsId)}"` : ""} data-activity-rail-items aria-label="${escapeHtml(options.itemsLabel || window.PortalI18n.t("Recent sessions"))}" hidden></div>${itemsAction ? window.PortalI18n.html`<button class="portalActivityRailItemsAction" type="button" data-activity-items-action data-portal-icon="${escapeHtml(itemsAction.icon || "trash")}" aria-label="${escapeHtml(itemsAction.label || window.PortalI18n.t("Clear recent items"))}" title="${escapeHtml(itemsAction.title || itemsAction.label || window.PortalI18n.t("Clear recent items"))}" hidden></button>` : ""}`;
       root.querySelectorAll("[data-activity-view]").forEach(button => {
         button.addEventListener("click", () => {
           // A click on the current view is a toggle request: pages whose
@@ -49,6 +58,15 @@
           railState.activeView = view;
           railState.controller.render();
           options.onViewSelect?.(view, railState.controller, { repeated });
+        });
+        // Mouse hover announces the view; touch and pen keep click only.
+        button.addEventListener("pointerenter", event => {
+          if (event.pointerType && event.pointerType !== "mouse") return;
+          options.onViewHover?.(String(button.dataset.activityView || ""), railState.controller);
+        });
+        button.addEventListener("pointerleave", event => {
+          if (event.pointerType && event.pointerType !== "mouse") return;
+          options.onViewLeave?.(String(button.dataset.activityView || ""), railState.controller);
         });
         button.addEventListener("dragstart", event => {
           event.dataTransfer?.setData("application/x-portal-activity-view", button.dataset.activityView || "");
@@ -67,6 +85,11 @@
           railState.controller.render();
         });
         button.addEventListener("dragend", () => button.classList.remove("activityDragging"));
+      });
+      root.querySelector("[data-activity-pin]")?.addEventListener("click", () => {
+        railState.pinned = railState.pinned !== true;
+        railState.controller.render();
+        options.onPinChange?.(railState.pinned, railState.controller);
       });
       root.querySelector("[data-activity-items-action]")?.addEventListener("click", () => {
         options.onItemsAction?.(railState.controller);

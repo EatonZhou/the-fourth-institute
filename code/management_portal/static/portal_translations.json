@@ -27376,6 +27376,18 @@
     "en": "Search Projects and Lineages",
     "zh-CN": "搜索 Project、Lineage"
   },
+  "搜索 Project、Lineage（/）": {
+    "en": "Search Projects and Lineages (/)",
+    "zh-CN": "搜索 Project、Lineage（/）"
+  },
+  "固定导航栏": {
+    "en": "Pin the navigation panel",
+    "zh-CN": "固定导航栏"
+  },
+  "已固定导航栏，点击改为悬停滑出": {
+    "en": "Navigation panel pinned; click to slide it out on hover instead",
+    "zh-CN": "已固定导航栏，点击改为悬停滑出"
+  },
   "打开 Prompt": {
     "en": "Open Prompt",
     "zh-CN": "打开 Prompt"

@@ -323,6 +323,7 @@
     // views, the active view and the controller.
     const railState = {
       views: null, items: [], order: null, activeView: null, controller: null,
+      pinned: options.pin?.pinned === true,
     };
     railState.views = Array.isArray(options.views) ? options.views.slice() : [];
     const itemsAction = options.itemsAction && typeof options.itemsAction === "object"
@@ -353,6 +354,8 @@
       },
       render,
       setActiveView(value) { railState.activeView = String(value || ""); return render(); },
+      isPinned: () => railState.pinned === true,
+      setPinned(value) { railState.pinned = value === true; return render(); },
       setItems(value) { railState.items = Array.isArray(value) ? value.slice() : []; return renderItems(); },
       getOrder: () => normalizeOrder(railState.order),
       setOrder(value, meta = {}) {
@@ -909,13 +912,16 @@
     // hidden and collapsed Panels, whether the host shows the workbench, Panel
     // moves waiting for their frame to connect, the focused stack, open
     // targets, the workspace name, whether the workbench is destroyed and the
-    // Panels whose runtimes are shown. The part that computes a field's first
+    // Panels whose runtimes are shown, and the collapsed Panel slid out beside
+    // the rail (flyoutPanelId). The part that computes a field's first
     // value sets it; each part keeps the rest of its state to itself.
     const shellState = {
       storageUser: null, storage: null, layoutLocked: null, controller: null, hidden: null, collapsed: null,
       model: null, hostVisible: null, pendingPanelMounts: [], focusedStackId: "", activeOpenTargetPanelId: null,
       mobileActivePanelId: null, activeWorkspaceName: null, destroyed: false, activeRuntimePanelIds: new Set(),
+      flyoutPanelId: "",
     };
+
 
     const { initialPanelStates, readStoredState, stored } = workbenchPart("PortalWorkbenchStorage").createStorage({
       SCHEMA_VERSION, defaultWorkbenchStore, id, options, shellState,
@@ -1090,6 +1096,16 @@
       commandScope,
       isPanelVisible: panelId => !shellState.hidden.has(String(panelId)),
       isPanelCollapsed: panelId => shellState.collapsed.has(String(panelId)),
+      // Slides a rail-collapsed panel out (or back); only one panel at a time.
+      setPanelFlyout(panelId, open) {
+        const next = open ? String(panelId || "") : "";
+        if (shellState.flyoutPanelId !== next) {
+          shellState.flyoutPanelId = next;
+          render("panel-flyout");
+        }
+        return shellState.flyoutPanelId;
+      },
+      panelFlyout: () => shellState.flyoutPanelId,
       isPanelExpanded: panelId => !shellState.hidden.has(String(panelId)) && !shellState.collapsed.has(String(panelId)),
       openCustomizer: openMenu,
       reset: () => applyWorkspace(defaultPreset || { name: options.label || window.PortalI18n.t("默认工作区"), layout: defaultLayout, hidden: [] }),
