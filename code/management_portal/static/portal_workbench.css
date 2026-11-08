@@ -1634,8 +1634,10 @@ html[data-portal-viewport="mobile"] .portalWorkbenchMobilePanel.is-active {
  * count, and an action slot; the slot may reveal itself only on hover/focus.
  * Children hang from the parent under a hairline guide.
  */
-.portalNavTree { display: grid; gap: 1px; min-width: 0; }
-.portalNavTreeGroup { display: grid; gap: 1px; min-width: 0; }
+/* Tree levels never grow past their pane: a long title ellipsizes in its row
+ * instead of widening the grid track (min-content of nowrap text). */
+.portalNavTree { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1px; min-width: 0; }
+.portalNavTreeGroup { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1px; min-width: 0; }
 .portalNavTreeChildren {
   position: relative;
   display: grid;
@@ -1646,7 +1648,8 @@ html[data-portal-viewport="mobile"] .portalWorkbenchMobilePanel.is-active {
 }
 /* Each child draws its stretch of the guide and an elbow into its row; the
  * last child stops at its own row, so the guide ends in └. */
-.portalNavTreeChildren > * { position: relative; }
+.portalNavTreeChildren { grid-template-columns: minmax(0, 1fr); }
+.portalNavTreeChildren > * { position: relative; min-width: 0; }
 .portalNavTreeChildren > *::before,
 .portalNavTreeChildren > *::after {
   content: "";
