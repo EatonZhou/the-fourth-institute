@@ -106,6 +106,7 @@ DECLARATIONS = (
         NEXT_CURSOR("还有更早的消息时返回")), target="resident_id"),
     _d("ListInputHistory", (On("resident_id", "resident", optional=True), On("chatroom_id", "chatroom", optional=True)), "读取调用者本人发过的输入，供输入框的上下箭头历史使用；resident_id 与 chatroom_id 二选一。"
        "带 resident_id：调用者作为用户在这个 Resident 会话里的输入，包括 Fork 继承的和清除上下文之前的输入，"
+       "完整或压缩继承的 Fork 可沿持久边界回溯可读来源中的更早本人输入，不扩展模型上下文；"
        "不含 Resident 投递、Mailbox 合并和系统消息。带 chatroom_id：调用者在这个聊天室发过的消息，撤回的消息返回撤回前的内容。", (
         P("resident_id", description="读取这个 Resident 会话里的输入"),
         P("chatroom_id", description="读取这个聊天室里的输入"),

@@ -540,6 +540,9 @@ class AgentDataStore:
     def frozen_fork_references(self, agent_id: str) -> list[dict[str, str]]:
         return self.forks.frozen_fork_references(agent_id)
 
+    def input_history_predecessor(self, agent_id: str) -> dict[str, Any]:
+        return self.forks.input_history_predecessor(agent_id)
+
     def initialization_session_fact(self, agent_id: str, binding_id: str) -> dict[str, Any]:
         return self.forks.initialization_session_fact(agent_id, binding_id)
 

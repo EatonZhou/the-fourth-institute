@@ -26,6 +26,7 @@ from . import (
     resident_execution_provider,
     resident_execution_work,
     resident_held_infos,
+    resident_input_history,
     resident_input_recovery,
     resident_intake_domain,
     resident_lineage,
@@ -872,8 +873,8 @@ def get_input_history(
     """What the caller typed in the conversation, newest first: the composer's input history."""
 
     target = _target(resident_id, actor)
-    page = resident_conversation_stream.get_repository().input_history_page(
-        target.resident_id, actor, page_token, limit=limit,
+    page = resident_input_history.input_history_page(
+        resident_conversation_stream.get_repository(), target.record, actor, page_token, limit=limit,
     )
     facade = family_facade.is_facade(target.record)
     page["messages"] = resident_held_infos.project_page(

@@ -100,6 +100,34 @@ class AgentForks:
                 (ids,),).fetchall()}
             return [{'segment_id': sid, 'provider_turn_id': turns[sid]} for sid in ids]
 
+    def input_history_predecessor(self, agent_id: str) -> dict[str, Any]:
+        """The source interval before this Fork's frozen first reference.
+
+        This is a read boundary for input recall, not additional model context.
+        Missing or transformed references cannot be reconstructed by timestamp.
+        The caller owns authorization and the choice of eligible Fork modes.
+        """
+        with self.database.snapshot() as c:
+            row = c.execute(
+                "SELECT data_json FROM agent_operations WHERE operation_id=%s AND kind='forked'",
+                (stable_segment_id('fork', agent_id),),
+            ).fetchone()
+            if row is None:
+                return {}
+            facts = json_value(row['data_json'])
+            try:
+                ids = self.frozen_fork_segments(agent_id)
+            except ValueError:
+                return {}
+            if not ids:
+                return {}
+            source_id = str(facts.get('source_agent_id') or '')
+            first = c.execute(
+                'SELECT ordinal FROM sequence_segments WHERE sequence_id=%s AND segment_id=%s',
+                (trace_id(c, source_id), ids[0]),
+            ).fetchone()
+            return {'source_agent_id': source_id, 'before_ordinal': int(first['ordinal'])} if first else {}
+
     def initialization_session_fact(self, agent_id: str, binding_id: str) -> dict[str, Any]:
         """Canonical facts only; a failed/expired Execution is not a native exit."""
         binding = self.sessions.provider_binding(binding_id)
