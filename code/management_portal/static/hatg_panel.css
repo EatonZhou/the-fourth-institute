@@ -549,8 +549,8 @@
   transform-origin: 0 0;
 }
 
-/* Keep camera gestures cheap, then let text and SVG repaint at the settled
-   scale. A permanent transform hint can magnify the world's cached bitmap. */
+/* Transform the cached layer during camera gestures. The camera commits the
+   final scale to layout zoom afterwards so text and SVG paint at that size. */
 .hatgCanvas.isViewportMoving .hatgWorld { will-change: transform; }
 
 .hatgEdges,

@@ -39,6 +39,9 @@
     let zoomDetailFrame = 0;
     let focusAnimation = null;
     let navigationSequence = 0;
+    let paintScale = 1;
+    const supportsLayoutZoom = window.CSS?.supports?.("zoom", "1") === true;
+    if (supportsLayoutZoom) world.style.zoom = "1";
 
     let centerOnNextRender = false;
     let pendingViewportFit = null;
@@ -92,10 +95,24 @@
       root.style.setProperty("--hatg-grid-y", `${state.transform.y % gridSize}px`);
     }
 
+    function worldTransform(transform) {
+      return `translate(${transform.x / paintScale}px, ${transform.y / paintScale}px) scale(${transform.k / paintScale})`;
+    }
+
+    function settlePaintScale() {
+      if (!supportsLayoutZoom || viewportMoving || focusAnimation || paintScale === state.transform.k) return;
+      // Bake the final magnification into layout. Text, SVG and independently
+      // composited running cards then paint at reading resolution, instead of
+      // relying on the browser to discard a previously scaled layer bitmap.
+      paintScale = state.transform.k;
+      world.style.zoom = String(paintScale);
+      world.style.transform = worldTransform(state.transform);
+    }
+
     function applyTransform(nextTransform) {
       const previousScale = state.transform.k;
       state.transform = nextTransform;
-      world.style.transform = `translate(${state.transform.x}px, ${state.transform.y}px) scale(${state.transform.k})`;
+      world.style.transform = worldTransform(state.transform);
       repositionQuickForkMenu();
       const scaleChanged = !root.dataset.zoom
         || Math.abs(previousScale - state.transform.k) > 1e-6;
@@ -107,6 +124,7 @@
       // The world keeps its geometry throughout a viewport gesture. Changing
       // card sizes here would force layout and reroute every edge mid-frame.
       if (!viewportMoving) {
+        settlePaintScale();
         syncGridPosition();
         lodChanged = syncZoomDetail();
       }
@@ -160,6 +178,7 @@
         window.cancelAnimationFrame(zoomDetailFrame);
         zoomDetailFrame = window.requestAnimationFrame(() => {
           zoomDetailFrame = 0;
+          settlePaintScale();
           syncZoomDetail();
         });
         if (event.sourceEvent) persistTransform();
@@ -175,7 +194,7 @@
       focusAnimation = null;
       rootSelection.call(
         zoomBehavior.transform,
-        d3.zoomIdentity.translate(visual.m41, visual.m42).scale(visual.a),
+        d3.zoomIdentity.translate(visual.m41 * paintScale, visual.m42 * paintScale).scale(visual.a * paintScale),
       );
     }
 
@@ -195,7 +214,11 @@
           [{ transform: from }, { transform: world.style.transform }],
           { duration: effectiveDuration, easing: "ease-out" },
         );
-        focusAnimation.onfinish = () => { focusAnimation = null; };
+        focusAnimation.onfinish = () => {
+          focusAnimation.cancel();
+          focusAnimation = null;
+          settlePaintScale();
+        };
         if (persist) persistTransform();
       } else {
         const transition = rootSelection.transition().duration(effectiveDuration).call(zoomBehavior.transform, target);
@@ -204,6 +227,7 @@
     }
 
     function zoomBy(factor) {
+      cancelFocusAnimation();
       rootSelection.interrupt().call(zoomBehavior.scaleBy, factor);
       persistTransform();
     }

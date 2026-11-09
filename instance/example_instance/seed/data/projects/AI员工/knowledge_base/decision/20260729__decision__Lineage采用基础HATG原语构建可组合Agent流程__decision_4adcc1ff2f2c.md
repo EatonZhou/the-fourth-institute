@@ -4,72 +4,72 @@ type: decision
 project: AI员工
 created_at: '2026-07-29'
 version:
-  number: 178
+  number: 180
   created_at: "2026-07-29"
   created_by:
     user: ""
     agent: ""
-  updated_at: "2026-11-06T11:17:02Z"
+  updated_at: "2026-11-09T08:37:35Z"
   updated_by:
     user: ""
-    agent: "resident_60ae6d0cdf74"
+    agent: "resident_877ef3f99082"
 importance: 10
 metaness: 3
 ai_generated: false
 links:
   source:
-  - ${code_root}/management_portal/static/portal_resident_service.js
-  - ${code_root}/management_portal/static/portal_workspace_menu.css
-  - ${code_root}/management_portal/static/portal_workspace_menu.js
-  - ${code_root}/tests/cases/test_resident_event_scope.py
-  - ${code_root}/management_portal/society_service/lineage_effect_script.py
-  - ${code_root}/management_portal/society_service/lineage_effect_script_journal.py
-  - ${code_root}/tests/cases/test_isa_audit_g4.py
-  - ${code_root}/management_portal/static/portal_hatg_loader.js
-  - ${code_root}/management_portal/static/lineage_graph.js
-  - ${code_root}/management_portal/hatg/catalog/lineage_run.py
-  - ${code_root}/management_portal/society_service/state_store.py
-  - ${code_root}/management_portal/society_service/function_block_domain.py
-  - ${code_root}/management_portal/society_service/templates/__init__.py
-  - ${code_root}/management_portal/society_service/lineage_operators.py
-  - ${code_root}/management_portal/society_service/lineage_program_effect_execution.py
-  - ${code_root}/management_portal/society_service/lineage_program_effect_rules.py
-  - ${code_root}/management_portal/society_service/lineage_primitives.py
-  - ${code_root}/management_portal/society_service/lineage_primitive_definitions.py
-  - ${code_root}/management_portal/static/lineage_primitive_definitions.json
-  - ${code_root}/management_portal/static/lineage_primitive_inspector.js
-  - ${code_root}/management_portal/static/lineage_invocation_inspector.js
-  - ${code_root}/management_portal/society_service/lineage_program.py
-  - ${code_root}/management_portal/society_service/lineage_program_runtime.py
-  - ${code_root}/management_portal/society_service/lineage_program_wire_queue.py
-  - ${code_root}/management_portal/society_service/lineage_execution_explanation.py
-  - ${code_root}/management_portal/society_service/lineage_domain.py
-  - ${code_root}/management_portal/society_service/lineage_graph_edits.py
-  - ${code_root}/management_portal/society_service/lineage_program_edits.py
-  - ${code_root}/management_portal/society_service/lineage_placement.py
-  - ${code_root}/tests/cases/test_lineage_layout_state_contract.py
-  - ${code_root}/management_portal/society_service/lineage_operator_runtime.py
-  - ${code_root}/management_portal/society_service/lineage_graph_state.py
-  - ${code_root}/management_portal/society_service/lineage_handoff_backend.py
-  - ${code_root}/management_portal/society_service/resident_message_contract.py
-  - ${code_root}/management_portal/society_service/resident_protocol.py
-  - ${code_root}/management_portal/static/lineage_program.js
-  - ${code_root}/management_portal/static/hatg_panel.js
-  - ${code_root}/management_portal/static/hatg_panel.css
-  - ${code_root}/management_portal/hatg-panel.html
-  - ${code_root}/management_portal/static/lineage_workbench.js
-  - ${code_root}/tests/cases/test_lineage_program_contracts.py
-  - ${code_root}/tests/cases/test_lineage_program_runtime_claims.py
-  - ${code_root}/tests/cases/test_lineage_generic_primitives.py
-  - ${code_root}/tests/cases/test_lineage_handoff_backend.py
-  - ${code_root}/management_portal/society_service/script_runs/events.py
-  - ${code_root}/management_common/portal_release_events.py
-  - ${code_root}/management_portal/society_service/lineage_release_events.py
-  - ${code_root}/scripts/tfi_development_runtime.py
-  - ${code_root}/tests/cases/test_portal_release_events.py
-  - ${code_root}/management_portal/society_service/trigger_paths.py
-  - ${code_root}/management_portal/society_service/trigger_path_storage.py
-  - ${code_root}/tests/cases/test_trigger_path_reconciliation.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/portal_resident_service.js
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/portal_workspace_menu.css
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/portal_workspace_menu.js
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_resident_event_scope.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/lineage_effect_script.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/lineage_effect_script_journal.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_isa_audit_g4.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/portal_hatg_loader.js
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/lineage_graph.js
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/hatg/catalog/lineage_run.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/state_store.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/function_block_domain.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/templates/__init__.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/lineage_operators.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/lineage_program_effect_execution.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/lineage_program_effect_rules.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/lineage_primitives.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/lineage_primitive_definitions.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/lineage_primitive_definitions.json
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/lineage_primitive_inspector.js
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/lineage_invocation_inspector.js
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/lineage_program.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/lineage_program_runtime.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/lineage_program_wire_queue.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/lineage_execution_explanation.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/lineage_domain.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/lineage_graph_edits.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/lineage_program_edits.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/lineage_placement.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_lineage_layout_state_contract.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/lineage_operator_runtime.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/lineage_graph_state.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/lineage_handoff_backend.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/resident_message_contract.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/resident_protocol.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/lineage_program.js
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/hatg_panel.js
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/hatg_panel.css
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/hatg-panel.html
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/lineage_workbench.js
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_lineage_program_contracts.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_lineage_program_runtime_claims.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_lineage_generic_primitives.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_lineage_handoff_backend.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/script_runs/events.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_common/portal_release_events.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/lineage_release_events.py
+  - /opt/tfi/the-fourth-institute-dev/code/scripts/tfi_development_runtime.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_portal_release_events.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/trigger_paths.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/trigger_path_storage.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_trigger_path_reconciliation.py
   related:
   - decision_6ad0384e020d
   - decision_c524c775e0be
@@ -549,12 +549,14 @@ Workbench 是 Lineage 页面里编辑 HATG 的工作区。页面只是能力的�
 
 ### 工具栏的响应式布局
 
-**Lineage 身份区始终可见。** 布局按 HATG 编辑区自身的可用宽度调整。空间不足时：
-- Lineage 名称和设置入口保持可见，Lineage ID 可以截断；
-- Context/Workspace 切换移到下一行；
-- 次要动作压缩为图标，或收进统一的"更多"菜单。
+**顶部只有一行导航。** HATG／预览标签下方是一行约 42 像素的导航：左侧是折叠按钮、Lineage 名称和设置入口，中间是 Context／Workspace／Map 切换，右侧是节点与运行操作。名称单行显示，过长时以省略号截断；Lineage ID 不单独占一行，悬停名称时显示，双击名称可以复制，读屏和自动化仍能读到它。布局按 HATG 编辑区自身的可用宽度调整。空间不足时：
+- 名称先让出宽度，设置入口和视图切换保持可见；
+- 次要动作压缩为图标，或收进统一的"更多"菜单；
+- 宽度不超过 480 像素时，视图切换才移到第二行。
 
-重新变宽后恢复单行排列。
+重新变宽后恢复单行排列。字号和按钮点击区域不随宽度缩小。
+
+**画布工具浮在画布上。** 画布占满导航下方的全部高度。缩放和适配是左上角的一组小浮条；搜索、关系筛选、整理、Leader 和邻域是右上角的另一组。两组之间的空隙属于画布，可以拖动和点击。搜索默认只显示放大镜按钮，点击、回车或触屏轻点后展开输入框并获得焦点；输入框为空时，失去焦点或按 Esc 会收回成按钮，焦点回到按钮上；输入了内容就保持展开，结果列表照常可用。Fit、聚焦和自动整理把浮条的实际范围当作顶部留白，摆放后的卡片位于浮条下方；用户平移画布时，卡片可以移到浮条下面。
 
 **多选时，选区操作单独占一行。** 画布进入多选状态后，封装、批量删除、迁移和取消多选成为主操作。它们占用独立的整行点击区域，可以随宽度换行，不与 Lineage 身份区、视图切换或覆盖层重叠。
 
@@ -1036,6 +1038,12 @@ Packet 条件编辑器使用完整字段路径，例如 `packet.events.0.type`�
 原语配置提交期间保留表单内容并暂停输入。普通校验或请求失败后恢复编辑，保留名称、条件、脚本等草稿；成功后才用已保存定义刷新。版本冲突时读取最新定义但保留用户未保存的字段，更新该草稿下一次显式保存所用的版本前置条件。刷新失败时保留草稿，并在显式保存时先重新读取最新版本；读取未成功不得提交无版本修改。冲突后不自动重放，也不因点击连线端口自动保存；用户核对并点击保存后才再次提交。
 
 Trigger Path 用组件或 Resident 名称呈现步骤，显示种类、状态和发生时间，按钮复用 Portal 共享控件。原始节点、消息和执行标识放在可展开详情内；长标识换行，不撑宽检查器。未知调用结果的处置入口继续可见，用户可按实际执行结果标记成功或失败。
+
+### 原生画布的缩放清晰度
+
+卡片文字保持网页文字，连线保持 SVG。缩放和平移手势期间允许临时变换已有图层；手势及聚焦动画结束后，按最终倍率重新布局和绘制，不能让阅读视图持续放大低倍率缓存。运行状态动画继续使用当前绘制倍率，避免节点单独合成的图层降低文字清晰度。
+
+相机对外的坐标与倍率保持不变。用于绘制的倍率与临时变换相乘后，必须与相机倍率一致；节点、端口、连线、标签、命中区域及拖动使用同一屏幕映射。中途取消聚焦动画时，从当前可见变换换算回相机坐标，保持视图连续。浏览器定向检查覆盖缩放按钮、滚轮、聚焦及其中断、拖动和重新挂载，并核对文字与 SVG 的实际屏幕倍率。
 
 ### 原生画布适配与小地图
 
