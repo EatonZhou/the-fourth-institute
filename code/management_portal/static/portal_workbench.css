@@ -1554,14 +1554,16 @@ html[data-portal-viewport="mobile"] .portalWorkbenchMobilePanel.is-active {
 
 /* A navigation view's header sits on the pane itself: no band or rule,
  * title and actions aligned with the rows below. */
-.sideView > .paneHead {
+.sideView > .paneHead,
+.portalPersonalWorkspaces > .paneHead {
   --portal-pane-head-min-height: 50px;
   flex-wrap: nowrap;
   padding: 12px 8px 8px 14px;
   border-bottom: 0;
   background: transparent;
 }
-.sideView > .paneHead > .paneTitle { font-size: 15px; font-weight: 700; }
+.sideView > .paneHead > .paneTitle,
+.portalPersonalWorkspaces > .paneHead > .paneTitle { font-size: 15px; font-weight: 700; }
 
 .portalFileTree {
   display: grid;
@@ -1574,18 +1576,17 @@ html[data-portal-viewport="mobile"] .portalWorkbenchMobilePanel.is-active {
 .portalWorkspacePreviewBrowser.is-document-only .portalDocumentTabsShell { padding-right: 0; }
 .portalWorkspacePreviewBrowser.is-document-only .portalPreviewPanelSectionHead { display: none; }
 .portalPersonalWorkspaces { display: flex; flex-direction: column; height: 100%; min-height: 0; min-width: 0; }
-.portalPersonalWorkspaceList { padding: 0; overflow: auto; min-height: 0; }
-.portalPersonalWorkspaceHeading {
-  display: flex; align-items: center; min-height: 30px;
-  border-top: 1px solid var(--border); background: var(--panel-2);
-}
+/* Each workspace is a navigation section (.portalNavSection): its name and
+ * folder count over a plate holding its file tree, like the other side views. */
+.portalPersonalWorkspaceList { padding: 2px 12px 12px; overflow: auto; min-height: 0; }
+.portalPersonalWorkspaceHeading { padding-right: 0; }
 .portalPersonalWorkspaceToggle {
   display: flex; align-items: center; gap: 6px; flex: 1; min-width: 0;
-  padding: 6px 8px; border: 0; border-radius: 0; background: transparent;
-  color: var(--text); font: inherit; font-size: 12px; font-weight: 600; text-align: left;
+  padding: 3px 0; border: 0; border-radius: 6px; background: transparent;
+  font: inherit; text-align: left; cursor: pointer;
 }
-.portalPersonalWorkspaceToggle span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.portalPersonalWorkspaceToggle .portalIcon { flex-shrink: 0; width: 14px; height: 14px; }
+.portalPersonalWorkspaceToggle:hover .portalNavSectionLabel { color: var(--text); }
+.portalPersonalWorkspaceToggle .portalIcon { flex-shrink: 0; width: 12px; height: 12px; color: var(--muted); opacity: .7; }
 .portalPersonalWorkspaceActions { display: flex; padding-right: 4px; }
 .portalPersonalWorkspace .portalButton.is-icon { width: 24px; height: 24px; min-width: 24px; padding: 3px; }
 .portalPersonalWorkspaceFolder { position: relative; }
@@ -1598,12 +1599,22 @@ html[data-portal-viewport="mobile"] .portalWorkbenchMobilePanel.is-active {
 .portalPersonalWorkspaceFolderActions > .portalButton[aria-pressed="true"] { opacity: 1; }
 .portalPersonalWorkspaceActions > .portalButton[aria-pressed="true"],
 .portalPersonalWorkspaceFolderActions > .portalButton[aria-pressed="true"] { color: var(--accent); }
-.portalPersonalWorkspaces .portalFileTree { padding: 2px 0; }
-.portalPersonalWorkspaces .portalFileRow { min-height: 26px; border-radius: 0; font-size: 12px; }
+.portalPersonalWorkspaces .portalFileTree.portalNavSectionBody { padding: 4px; }
+.portalPersonalWorkspaces .portalFileRow { min-height: 28px; border-radius: 7px; font-size: 12.5px; }
+.portalNavSectionBody .portalFileRow:hover { background: var(--portal-nav-plate-hover); }
+/* A file row's open menu is a quiet icon on the plate, shown with the row. */
+.portalNavSectionBody .portalFileRowShell > .portalResourceOpenTrigger { background: transparent; border-color: transparent; color: var(--muted); }
+.portalNavSectionBody .portalFileRowShell > .portalResourceOpenTrigger:hover { background: var(--portal-nav-raised); color: var(--text); }
+.portalNavSectionBody .portalFileRow.is-active {
+  color: var(--text);
+  background: var(--portal-nav-raised);
+  box-shadow: 0 1px 2px color-mix(in srgb, #000 10%, transparent),
+    0 0 0 1px color-mix(in srgb, var(--text) 5%, transparent);
+}
 .portalPersonalWorkspaces .portalFileRowShell > .portalFileRow { padding-right: 8px; }
 .portalPersonalWorkspaces .is-personal-workspace-root { font-weight: 600; }
 .portalPersonalWorkspace[data-workspace-source="personal"] .is-personal-workspace-root { padding-right: 56px !important; }
-.portalPersonalWorkspaces .portalFileInlineNote { margin: 6px 12px; font-size: 12px; color: var(--muted); }
+.portalPersonalWorkspaces .portalFileInlineNote { margin: 6px 8px; font-size: 12px; color: var(--muted); }
 @media (hover: none) {
   .portalPersonalWorkspaceActions > .portalButton,
   .portalPersonalWorkspaceFolderActions > .portalButton { opacity: 1; }
