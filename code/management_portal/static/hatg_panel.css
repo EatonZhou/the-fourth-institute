@@ -547,8 +547,11 @@
   width: var(--hatg-world-width);
   height: var(--hatg-world-height);
   transform-origin: 0 0;
-  will-change: transform;
 }
+
+/* Keep camera gestures cheap, then let text and SVG repaint at the settled
+   scale. A permanent transform hint can magnify the world's cached bitmap. */
+.hatgCanvas.isViewportMoving .hatgWorld { will-change: transform; }
 
 .hatgEdges,
 .hatgEdgeLabels,
