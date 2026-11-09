@@ -95,9 +95,11 @@
       $("articleRecompileScratch").title = reason;
       if (!issues.length) {
         host.innerHTML = window.PortalI18n.html`<strong>构建预检通过</strong><span>${(preflight.dependencies || []).length} 项依赖可解析</span>`;
-        return;
+      } else {
+        host.innerHTML = window.PortalI18n.html`<strong>${preflight.status === "blocked" ? window.PortalI18n.t("构建条件不完整") : window.PortalI18n.t("构建前提醒")}</strong>${issues.map(issue => window.PortalI18n.html`<span>${esc(issue.message || "")}</span>`).join("")}`;
       }
-      host.innerHTML = window.PortalI18n.html`<strong>${preflight.status === "blocked" ? window.PortalI18n.t("构建条件不完整") : window.PortalI18n.t("构建前提醒")}</strong>${issues.map(issue => window.PortalI18n.html`<span>${esc(issue.message || "")}</span>`).join("")}`;
+      renderBuildSummary();
+      if (!state.build?.pdf_available && state.outputView === "pdf") renderPdf().catch(error => showPdfError(error));
     }
 
     function renderSettings() {
@@ -153,7 +155,9 @@
       const counts = buildCounts();
       const status = build.status || "idle";
       const mode = build.compile_mode === "draft" ? window.PortalI18n.t("快速草稿 · 图片以空框显示") : "";
-      const summary = status === "idle"
+      const summary = status !== "running" && state.buildPreflight?.status === "blocked"
+        ? window.PortalI18n.t("构建条件不完整")
+        : status === "idle"
         ? window.PortalI18n.t("尚未编译")
         : status === "running"
           ? (build.compile_mode === "draft" ? window.PortalI18n.t("正在编译快速草稿…") : window.PortalI18n.t("编译中…"))

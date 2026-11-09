@@ -360,6 +360,38 @@ test('Family action load failures show one error without opening a confirmation'
   assert.deepEqual(notices, [['无法加载 Family 操作：asset unavailable', 'error']]);
 });
 
+test('Article preflight displays its blocker in the PDF pane and recovers when dependencies arrive', async () => {
+  const elements = new Map();
+  const $ = id => {
+    if (!elements.has(id)) elements.set(id, {dataset: {}, innerHTML: '', textContent: ''});
+    return elements.get(id);
+  };
+  const state = {selectedId: 'A', compilingArticles: new Set(), outputView: 'pdf', openFile: 'main.tex',
+    build: {status: 'idle'}, buildPreflight: {status: 'blocked', issues: [
+      {severity: 'error', message: 'Missing makecell.sty <file>'},
+    ]}};
+  const window = {PortalI18n: {...i18n, html: i18n.text}};
+  const esc = value => String(value).replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
+  const pdf = owner(ARTICLE_SCRIPTS, ['renderPdf'], {state, window, $, esc, pdfUrl: () => '',
+    cancelPdf: noop, updateArticlePdfZoomControls: noop});
+  const build = owner(ARTICLE_SCRIPTS, ['renderBuildPreflight', 'renderBuildSummary', 'buildCounts'], {
+    state, window, $, esc, renderPdf: pdf.renderPdf, showPdfError: error => {throw error;},
+    formatDate: () => '', updateArticlePdfZoomControls: noop, renderLog: noop, updateAllEditorMarkers: noop,
+  });
+  build.renderBuildPreflight();
+  assert.equal($('articleCompile').disabled, true);
+  assert.equal($('articleBuildSummary').textContent, '构建条件不完整');
+  assert.match($('articlePdfView').innerHTML, /Missing makecell.sty &lt;file&gt;/);
+  assert.doesNotMatch($('articlePdfView').innerHTML, /尚无 PDF/);
+  state.buildPreflight = {status: 'ready', issues: []};
+  build.renderBuildPreflight();
+  assert.equal($('articleCompile').disabled, false);
+  assert.equal($('articleCompile').title, '');
+  assert.equal($('articleBuildSummary').textContent, '尚未编译');
+  assert.match($('articlePdfView').innerHTML, /尚无 PDF/);
+  assert.doesNotMatch($('articlePdfView').innerHTML, /makecell/);
+});
+
 test('Article compile results and controls belong to the initiating Article', async () => {
   const state = {selectedId: 'A', compilingArticles: new Set(), build: {}, autoCompileQueued: false};
   const pending = new Map(), options = [], views = [];

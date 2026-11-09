@@ -49,8 +49,9 @@ def _synctex_command() -> str:
     raise RuntimeError("SyncTeX command line utility is not available")
 
 
-@functools.lru_cache(maxsize=1)
 def latex_environment() -> dict[str, Any]:
+    # Tools and packages can be installed while the Web process is running.
+    # A preflight must describe the current installation, including its profile.
     available: list[str] = []
     version = ""
     for compiler in SUPPORTED_LATEX_COMPILERS:
@@ -130,7 +131,6 @@ def latex_environment() -> dict[str, Any]:
     }
 
 
-@functools.lru_cache(maxsize=1024)
 def _kpsewhich_file(name: str) -> str:
     command = _tex_which("kpsewhich")
     if not command or not name or not re.fullmatch(r"[A-Za-z0-9_.+@/-]+", name):

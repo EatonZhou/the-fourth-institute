@@ -286,7 +286,13 @@
       if (!url) {
         cancelPdf();
         updateArticlePdfZoomControls({ available: false });
-        host.innerHTML = window.PortalI18n.html`<div class="articlePdfEmpty"><div class="articlePdfEmptyIcon">PDF</div><h2>尚无 PDF</h2><p>编译 Article 后将在此显示文档。</p></div>`;
+        const blocked = state.buildPreflight?.status === "blocked";
+        const issues = (state.buildPreflight?.issues || []).filter(issue => issue.severity === "error");
+        const title = window.PortalI18n.t(blocked ? "构建条件不完整" : "尚无 PDF");
+        const detail = blocked
+          ? issues.map(issue => `<p>${esc(issue.message || "")}</p>`).join("")
+          : window.PortalI18n.html`<p>编译 Article 后将在此显示文档。</p>`;
+        host.innerHTML = window.PortalI18n.html`<div class="articlePdfEmpty"><div class="articlePdfEmptyIcon">PDF</div><h2>${title}</h2>${detail}</div>`;
         return;
       }
       updateArticlePdfZoomControls({ available: true });

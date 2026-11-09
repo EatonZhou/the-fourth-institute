@@ -30,13 +30,15 @@ ASSETS = {
 PACKAGES = ('latexmk', 'synctex', 'ctex', 'fandol', 'geometry', 'amsmath', 'amsfonts',
             'amscls', 'mathtools', 'booktabs', 'tools', 'graphics', 'grfext', 'xcolor', 'pgf',
             'enumitem', 'fancyhdr', 'microtype', 'natbib', 'hyperref', 'caption', 'float',
-            'setspace', 'placeins', 'biber', 'biblatex')
+            'setspace', 'placeins', 'biber', 'biblatex', 'acmart', 'makecell',
+            'zref', 'draftwatermark', 'pbalance')
 TOOLS = ('pdflatex', 'xelatex', 'lualatex', 'latexmk', 'biber', 'kpsewhich', 'synctex', 'texlab')
 TEX_FILES = ('ctexbook.cls', 'geometry.sty', 'amsmath.sty', 'amssymb.sty', 'amsthm.sty',
              'mathtools.sty', 'booktabs.sty', 'longtable.sty', 'array.sty', 'tabularx.sty',
              # pdflatex's graphicx loads epstopdf-base, which needs grfext.
              'graphicx.sty', 'grfext.sty', 'xcolor.sty', 'tikz.sty', 'enumitem.sty', 'fancyhdr.sty',
-             'microtype.sty', 'natbib.sty', 'hyperref.sty', 'caption.sty', 'float.sty', 'setspace.sty', 'placeins.sty', 'biblatex.sty')
+             'microtype.sty', 'natbib.sty', 'hyperref.sty', 'caption.sty', 'float.sty', 'setspace.sty', 'placeins.sty', 'biblatex.sty',
+             'acmart.cls', 'makecell.sty', 'zref-savepos.sty', 'zref-user.sty', 'draftwatermark.sty', 'pbalance.sty')
 
 
 def tool_environment(home=None):

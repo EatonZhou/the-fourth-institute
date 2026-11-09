@@ -113,6 +113,29 @@ class OptionalDependencies(unittest.TestCase):
             tool.return_value = "/fixture/tool"
             self.assertEqual(article_build_profile.inspect_article_build_profile(root)["status"], "ready")
 
+    def test_article_package_lookup_recovers_after_installation_in_same_process(self):
+        from management_portal import article_toolchain
+        with patch.object(article_toolchain, "_tex_which", return_value="/fixture/kpsewhich"), \
+                patch.object(article_toolchain.subprocess, "run", side_effect=[
+                    subprocess.CompletedProcess([], 1, ""),
+                    subprocess.CompletedProcess([], 0, "/fixture/makecell.sty\n"),
+                ]):
+            self.assertEqual(article_toolchain._kpsewhich_file("makecell.sty"), "")
+            self.assertEqual(article_toolchain._kpsewhich_file("makecell.sty"), "/fixture/makecell.sty")
+
+    def test_article_environment_recovers_after_tools_added_in_same_process(self):
+        from management_portal import article_toolchain
+        with patch.object(article_toolchain, "_tex_which", return_value=None) as which, \
+                patch.object(article_toolchain.subprocess, "run", return_value=
+                    subprocess.CompletedProcess([], 0, "pdfTeX (TeX Live 2026)\n")):
+            missing = article_toolchain.latex_environment()
+            self.assertFalse(any(item["available"] for item in missing["available_compilers"]))
+            which.side_effect = lambda name: "/fixture/" + name if name in {"pdflatex", "latexmk"} else None
+            installed = article_toolchain.latex_environment()
+            self.assertEqual(installed["latexmk"], "/fixture/latexmk")
+            self.assertTrue(installed["available_compilers"][0]["available"])
+            self.assertNotEqual(missing["profile_id"], installed["profile_id"])
+
 
 if __name__ == "__main__":
     unittest.main()
