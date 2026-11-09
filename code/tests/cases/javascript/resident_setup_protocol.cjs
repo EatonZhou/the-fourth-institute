@@ -214,6 +214,18 @@ const plain = value => JSON.parse(JSON.stringify(value));
   click('[data-runtime-settings-submit]'); await flush();
   assert.equal(selectedSettings[0].account_selection, 'auto');
   selectable.destroy();
+  const fixedSelection = api.createSessionRestartDialog();
+  fixedSelection.open({...config, runtime_catalog: selectionCatalog,
+    runtime_settings: {...config.runtime_settings, account_selection: 'auto'},
+    onSave: async values => {selectedSettings.push(plain(values)); return {settings: values};}}, async () => ({}));
+  await flush();
+  click('[data-runtime-view="parameters"]');
+  const restoredSelection = w.document.querySelector('[data-runtime-panel="parameters"] [data-runtime-setting="account_selection"]');
+  assert.equal(restoredSelection.value, 'auto', 'saved automatic policy is shown when settings reopen');
+  restoredSelection.value = 'fixed';
+  click('[data-runtime-settings-submit]'); await flush();
+  assert.equal(selectedSettings[1].account_selection, 'fixed', 'switching back to fixed sends explicit policy');
+  fixedSelection.destroy();
   assert.deepEqual(errors, []);
   console.log('PASS explicit credits confirmation, canonical target account and non-inheritance');
 })().catch(error => {console.error(error); process.exitCode = 1;}).finally(async () => {await flush(); dom.window.close();});
