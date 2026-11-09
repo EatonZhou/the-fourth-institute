@@ -41728,5 +41728,6 @@
   "搜索聊天室名称、成员或消息": {"zh-CN":"搜索聊天室名称、成员或消息","en":"Search chatroom names, members or messages"},
   "没有匹配“{p0}”的聊天室。": {"zh-CN":"没有匹配“{p0}”的聊天室。","en":"No chatroom matches “{p0}”."},
   "@我": {"zh-CN":"@我","en":"@me"},
-  "{p0} 条未读 @ 消息": {"zh-CN":"{p0} 条未读 @ 消息","en":"{p0} unread @ mentions"}
+  "{p0} 条未读 @ 消息": {"zh-CN":"{p0} 条未读 @ 消息","en":"{p0} unread @ mentions"},
+  "帮你找合适的 Resident": {"zh-CN":"帮你找合适的 Resident","en":"Finds the right Resident for you"}
 }

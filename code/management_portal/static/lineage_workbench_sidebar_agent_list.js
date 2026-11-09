@@ -135,6 +135,8 @@
         $id(rootId)?.querySelectorAll(".residentCardWrap[data-lineage-card]").forEach(card => {
           const dot = card.querySelector(".principalLineageCard > .portalNavRowMain > .portalNavRowStatus");
           if (dot) setStatusDot(dot, running.has(card.dataset.lineageCard));
+          const entryRunning = card.querySelector("[data-entry-running]");
+          if (entryRunning) entryRunning.hidden = !running.has(card.dataset.lineageCard);
         });
       }
     }
@@ -237,6 +239,7 @@
             glyph: options.glyph || window.PortalUIPrimitives.titleGlyph(title),
             hint: item.workspace_path || "",
             unavailable: options.unavailable === true, locked: options.locked === true, busy: options.busy === true,
+            running: options.running,
           })}
         </div>`;
     }
@@ -246,17 +249,20 @@
     // a residentId the entry is a status line that cannot be opened.
     function residentEntryRowHtml({
       residentId = "", title, meta = "", glyph = "?", active = false, menuId = "", menuOpen = false,
-      hint = "", unavailable = false, locked = false, busy = false,
+      hint = "", unavailable = false, locked = false, busy = false, running,
     }) {
       const mark = `<span class="portalNavRowMark portalAvatarMark ${residentId ? "" : "is-neutral"}" style="--portal-nav-mark-hue:${window.PortalUIPrimitives.stableHue(residentId || title)}" aria-hidden="true"${window.PortalUIPrimitives.avatarMarkAttributes({ kind: residentId ? "resident" : "", id: residentId, label: title, glyph, size: 28 })}>${esc(glyph)}</span>`;
-      const text = `<span class="portalNavRowText"><span class="portalNavRowLabel">${esc(title)}</span><span class="portalNavRowMeta" title="${esc(meta)}">${esc(meta)}</span></span>`;
+      // An entry with a running state (the personal assistant) adds “· 运行中” to its kind line while it works.
+      const runningHtml = running === undefined ? ""
+        : `<span class="residentEntryRunning" data-entry-running ${running ? "" : "hidden"}> · ${statusDotHtml(true)} ${esc(window.PortalI18n.t("运行中"))}</span>`;
+      const text = `<span class="portalNavRowText"><span class="portalNavRowLabel">${esc(title)}</span><span class="portalNavRowMeta" title="${esc(meta)}">${esc(meta)}${runningHtml}</span></span>`;
       const classes = ["portalNavRow", "is-entry", "principalResidentCard", active ? "is-active" : "", menuOpen ? "is-menu-open" : "", unavailable ? "is-unavailable" : "", locked ? "is-locked" : ""].filter(Boolean).join(" ");
       if (!residentId) {
         return `<div class="${classes}"${busy ? ' aria-busy="true"' : ""}><div class="portalNavRowMain">${mark}${text}</div>${locked ? window.PortalI18n.t('<span class="portalNavRowLock principalAccessLock" data-portal-icon="lock" aria-label="无访问权限"></span>') : ""}</div>`;
       }
       return `<div class="${classes}" data-resident-id="${esc(residentId)}">
           <button type="button" class="portalNavRowMain" data-resident-select="${esc(residentId)}" title="${esc(hint || title)}">${mark}${text}</button>
-          <span class="portalNavRowActions">${rowMenuButton(menuId, window.PortalI18n.t("Resident 菜单"))}</span>
+          <span class="portalNavRowActions" data-reveal="hover">${rowMenuButton(menuId, window.PortalI18n.t("Resident 菜单"))}</span>
         </div>`;
     }
 
@@ -287,7 +293,12 @@
 
     function residentNavigationShortcutsHtml() {
       const assistant = state.personalAssistant;
-      return `<div class="whichResidentWrap">${whichResidentCardHtml()}</div>${assistant ? `<div class="personalAssistantResident">${renderRegisteredResidentItem(assistant, { asResident: true, meta: window.PortalI18n.t("Resident · 个人助手") })}</div>` : ""}`;
+      // The standing entries share one plate, like the sections below them:
+      // the personal assistant first, then Which Resident.
+      const assistantHtml = assistant
+        ? `<div class="personalAssistantResident">${renderRegisteredResidentItem(assistant, { asResident: true, meta: window.PortalI18n.t("个人助手"), running: runningLineageIds().has(lineageIdForResident(assistant)) })}</div>`
+        : "";
+      return `<section class="portalNavSection residentEntries"><div class="portalNavSectionBody">${assistantHtml}<div class="whichResidentWrap">${whichResidentCardHtml()}</div></div></section>`;
     }
 
     function renderAgentList() {

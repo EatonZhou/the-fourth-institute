@@ -190,7 +190,9 @@
           meta: denied ? window.PortalI18n.t("没有访问权限") : window.PortalI18n.t("推荐服务暂不可用"),
         });
       }
-      return renderRegisteredResidentItem({ ...resident, title: window.PortalI18n.t("Which Resident") }, { asResident: true, glyph: "?" });
+      return renderRegisteredResidentItem({ ...resident, title: window.PortalI18n.t("Which Resident") }, {
+        asResident: true, glyph: "?", meta: window.PortalI18n.t("帮你找合适的 Resident"),
+      });
     }
 
     function recommendationConversationView(target, panel) {

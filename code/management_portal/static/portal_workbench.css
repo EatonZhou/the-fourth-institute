@@ -1866,6 +1866,27 @@ html[data-portal-viewport="mobile"] .portalWorkbenchMobilePanel.is-active {
     0 0 0 1px color-mix(in srgb, var(--text) 5%, transparent);
 }
 .portalNavSectionBody .portalNavRowActions > .portalButton.is-icon:hover:not(:disabled) { background: var(--portal-nav-raised); }
+.portalNavSection[hidden],
+.portalNavSectionHead[hidden] { display: none; }
+/* Entry rows on a plate drop their card frame: the plate groups them, and
+ * the current entry is raised like any selected row. */
+.portalNavSectionBody .portalNavRow.is-entry {
+  min-height: 46px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  box-shadow: none;
+}
+.portalNavSectionBody .portalNavRow.is-entry .portalNavRowMark { width: 30px; height: 30px; flex-basis: 30px; border-radius: 9px; }
+.portalNavSectionBody .portalNavRow.is-entry:hover,
+.portalNavSectionBody .portalNavRow.is-entry.is-menu-open { background: var(--portal-nav-plate-hover); }
+.portalNavSectionBody .portalNavRow.is-entry.is-active {
+  border: 0;
+  background: var(--portal-nav-raised);
+  box-shadow: 0 1px 2px color-mix(in srgb, #000 10%, transparent),
+    0 0 0 1px color-mix(in srgb, var(--text) 5%, transparent);
+}
+.portalNavSectionBody .portalNavRow.is-entry.is-active .portalNavRowLabel { color: var(--text); }
 
 .portalFileRowShell {
   position: relative;

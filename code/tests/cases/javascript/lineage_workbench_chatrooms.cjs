@@ -43,11 +43,11 @@ test('Chatrooms list pinned rooms first and pin from the card menu', async t => 
   assert.deepEqual(titles(), ['Room 2', 'Room 3', 'Room 1'], 'pinned first, then the latest activity');
   assert.match(cards()[1].textContent, /Alice：later/, 'a card shows who said the latest message');
   assert.match(cards()[0].textContent, /2 (位成员|members)/, 'a quiet room shows its members, in the page language');
-  const section = card => card.closest('[data-chatroom-section]').dataset.chatroomSection;
-  assert.deepEqual(cards().map(section), ['pinned', 'all', 'all'], 'pinned rooms form their own section');
+  assert.equal(page.document.querySelectorAll('#chatroomList .portalNavSectionBody').length, 1, 'one list, no pinned section');
+  assert.equal(page.document.querySelector('#chatroomList .portalNavSectionHead'), null, 'the list has no section names');
+  assert.deepEqual(cards().map(card => !!card.querySelector('.chatroomCard.pinned .chatroomPinnedMark')), [true, false, false],
+    'like the Mailbox, a pinned room carries a pin mark');
   assert.ok(cards()[0].querySelector('.chatroomCard.portalNavRow'), 'a room is a shared navigation row');
-  assert.equal(page.document.querySelector('[data-chatroom-section="all"] .portalNavSectionHead').hidden, false,
-    'with pinned rooms, the rest are named too');
   assert.ok(cards()[1].querySelector('.chatroomAvatars [data-avatar-kind="user"][data-avatar-id="alice"]'),
     'a room shows its other members, not the viewer');
 
@@ -58,9 +58,6 @@ test('Chatrooms list pinned rooms first and pin from the card menu', async t => 
   search.value = 'later';
   search.dispatchEvent(new page.window.Event('input'));
   assert.deepEqual(titles(), ['Room 3'], 'the search matches the latest message');
-  assert.equal(page.document.querySelector('[data-chatroom-section="pinned"]').hidden, true, 'an empty section hides');
-  assert.equal(page.document.querySelector('[data-chatroom-section="all"] .portalNavSectionHead').hidden, true,
-    'without pinned rooms the list needs no section name');
   search.value = 'nothing-like-this';
   search.dispatchEvent(new page.window.Event('input'));
   assert.equal(cards().length, 0);

@@ -43,10 +43,12 @@ test('both lists show Which Resident and the assistant facade, follow its title 
   const shows = title => lists().every(list => facade(list)?.querySelector('.portalNavRowLabel')?.textContent === title);
   await page.until(() => shows(assistant.title));
   for (const list of lists()) {
-    assert.deepEqual([...list.firstElementChild.children].slice(0, 2).map(node => node.className),
-      ['whichResidentWrap', 'personalAssistantResident'], 'Which Resident leads the list, the facade follows');
+    const entries = list.firstElementChild.firstElementChild;
+    assert.ok(entries.matches('.residentEntries.portalNavSection'), 'the standing entries lead the list on one plate');
+    assert.deepEqual([...entries.querySelector('.portalNavSectionBody').children].map(node => node.className),
+      ['personalAssistantResident', 'whichResidentWrap'], 'the facade leads the plate, Which Resident follows');
     assert.equal(facade(list).querySelector('[data-resident-select]').dataset.residentSelect, FACADE);
-    assert.match(facade(list).querySelector('.portalNavRowMeta').textContent, /^Resident · (个人助手|Personal assistant)$/);
+    assert.match(facade(list).querySelector('.portalNavRowMeta').textContent, /^(个人助手|Personal assistant)/);
     assert.deepEqual(Object.values((({ avatarKind, avatarId }) => ({ avatarKind, avatarId }))(facade(list).querySelector('.portalNavRowMark').dataset)),
       ['resident', FACADE], 'the entry shows the facade avatar');
     assert.equal(list.querySelector('.whichResidentWrap .portalNavRowMark').textContent, '?');

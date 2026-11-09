@@ -55,8 +55,10 @@
       .agentList { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0; padding: 2px 0 12px; }
       .favoriteAgentList { grid-template-columns: minmax(0, 1fr); align-content: start; }
       .favoriteAgentList > * { min-width: 0; }
-      .personalAssistantResident { margin-bottom: 8px; }
-      .whichResidentWrap { display: grid; gap: var(--portal-space-2); margin-bottom: var(--portal-space-2); }
+      /* The standing entries (personal assistant, Which Resident) share one plate. */
+      .residentEntries { margin-bottom: 12px; }
+      .whichResidentWrap { display: grid; gap: var(--portal-space-2); }
+      .residentEntryRunning .portalNavRowStatus { display: inline-block; width: 6px; height: 6px; margin: 0 1px 1px; vertical-align: middle; box-shadow: none; }
       .whichResidentPanel { display: grid; gap: 8px; padding: 9px; border: 1px solid var(--border); border-radius: 8px; background: var(--panel-2); }
       .whichResidentPanel[hidden] { display: none; }
       .whichResidentPanel form { display: grid; gap: 7px; }
@@ -158,6 +160,9 @@
       .chatroomCard.unread .chatroomEntryLine .portalNavRowMeta { color: color-mix(in srgb, var(--text) 72%, var(--muted)); }
       .chatroomEntryTime { flex: 0 0 auto; margin-left: auto; color: var(--muted); font-size: 10.5px; font-variant-numeric: tabular-nums; white-space: nowrap; }
       .chatroomCard .chatroomMutedMark { width: 12px; height: 12px; }
+      /* Pinned rooms lead the list with a pin mark and a light accent tint, as in the User Mailbox. */
+      .chatroomCard.pinned:not(.is-active, :hover, .is-menu-open) { background: color-mix(in srgb, var(--accent) 7%, var(--portal-nav-plate, var(--panel))); }
+      .chatroomPinnedMark { flex: 0 0 auto; width: 11px; height: 11px; color: var(--accent); }
       .chatroomCard .chatroomMentionBadge {
         padding: 0 4px; border-radius: 5px; line-height: 16px;
         background: color-mix(in srgb, var(--accent) 13%, transparent);

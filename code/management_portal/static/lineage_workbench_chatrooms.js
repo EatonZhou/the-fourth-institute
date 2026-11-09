@@ -217,6 +217,7 @@
               <span class="chatroomRowText">
                 <span class="chatroomEntryHead">
                   <span class="portalNavRowLabel agentTitle">${esc(chatroomDisplayTitle(chatroom))}</span>
+                  ${pinnedAt ? window.PortalI18n.t('<span class="chatroomPinnedMark" data-portal-icon="pin" role="img" aria-label="已置顶" title="已置顶"></span>') : ""}
                   ${muted ? window.PortalI18n.t('<span class="chatroomMutedMark" data-portal-icon="bell-off" aria-label="消息免打扰" title="消息免打扰"></span>') : ""}
                   ${time ? window.PortalI18n.html`<span class="chatroomEntryTime" title="${esc(fullTime)}">${esc(time)}</span>` : ""}
                 </span>
@@ -245,15 +246,9 @@
       return words.some(word => String(word || "").toLowerCase().includes(query));
     }
 
-    function chatroomSectionHtml(kind, label) {
-      return window.PortalI18n.html`<section class="portalNavSection chatroomSection" data-chatroom-section="${kind}">
-          <div class="portalNavSectionHead"><span class="portalNavSectionLabel">${label}</span><span class="portalNavSectionCount"></span></div>
-          <div class="portalNavSectionBody chatroomList" role="list"></div>
-        </section>`;
-    }
-
-    // Pinned Chatrooms form their own section above the rest; each section
-    // keeps its cards (and an open menu's anchor) across refreshes.
+    // Like the User Mailbox, pinned Chatrooms come first in the one list and
+    // carry a pin mark and a light tint; there are no separate sections. The
+    // list keeps its cards (and an open menu's anchor) across refreshes.
     function renderChatroomList() {
       const root = $id("chatroomList");
       if (!root) return;
@@ -271,8 +266,8 @@
       }
       if (!sections) {
         sections = document.createElement("div");
-        sections.className = "agentList chatroomSections";
-        sections.innerHTML = chatroomSectionHtml("pinned", window.PortalI18n.t("置顶")) + chatroomSectionHtml("all", window.PortalI18n.t("全部"));
+        sections.className = "agentList portalNavSection chatroomSections";
+        sections.innerHTML = '<div class="portalNavSectionBody chatroomList" role="list"></div>';
         root.replaceChildren(sections);
       }
       const cards = new Map(Array.from(sections.querySelectorAll(".chatroomCardWrap")).map(card => [card.dataset.chatroomCard, card]));
@@ -281,48 +276,39 @@
         if (card.contains(chatroomMenuTarget?.trigger)) chatroomMenuPopover?.close();
         card.remove();
       }
-      const pinnedCount = entries.filter(entry => entry.pinnedAt).length;
-      for (const kind of ["pinned", "all"]) {
-        const section = sections.querySelector(`[data-chatroom-section="${kind}"]`);
-        const list = section.querySelector(".chatroomList");
-        const members = entries.filter(entry => Boolean(entry.pinnedAt) === (kind === "pinned"));
-        section.hidden = !members.length;
-        // Without pinned rooms the list needs no section name.
-        section.querySelector(".portalNavSectionHead").hidden = kind === "all" && !pinnedCount;
-        section.querySelector(".portalNavSectionCount").textContent = String(members.length);
-        let before = list.firstElementChild;
-        for (const entry of members) {
-          const id = entry.chatroom.chatroom_id;
-          const html = renderChatroomCard(entry);
-          let card = cards.get(id);
-          if (!card || card.renderedHtml !== html) {
-            const template = document.createElement("template");
-            template.innerHTML = html;
-            const next = template.content.firstElementChild;
-            if (card) {
-              // Keep the buttons and open popover anchor alive across refreshes.
-              const item = card.querySelector(".chatroomCard");
-              const menuOpen = item.classList.contains("is-menu-open");
-              item.className = next.querySelector(".chatroomCard").className;
-              item.classList.toggle("is-menu-open", menuOpen);
-              const select = card.querySelector("[data-chatroom-select]");
-              const nextSelect = next.querySelector("[data-chatroom-select]");
-              select.innerHTML = nextSelect.innerHTML;
-              select.toggleAttribute("aria-current", nextSelect.hasAttribute("aria-current"));
-            } else {
-              card = next;
-              card.setAttribute("role", "listitem");
-              card.querySelector("[data-chatroom-select]").addEventListener("click", () => {
-                selectChatroom(id).catch(error => window.PortalUI.toast(window.PortalI18n.text`打开聊天室失败：${error.message || error}`, "error"));
-              });
-              const trigger = card.querySelector("[data-chatroom-menu]");
-              trigger.addEventListener("click", event => openChatroomMenu(trigger, id, event));
-            }
-            card.renderedHtml = html;
+      const list = sections.querySelector(".chatroomList");
+      let before = list.firstElementChild;
+      for (const entry of entries) {
+        const id = entry.chatroom.chatroom_id;
+        const html = renderChatroomCard(entry);
+        let card = cards.get(id);
+        if (!card || card.renderedHtml !== html) {
+          const template = document.createElement("template");
+          template.innerHTML = html;
+          const next = template.content.firstElementChild;
+          if (card) {
+            // Keep the buttons and open popover anchor alive across refreshes.
+            const item = card.querySelector(".chatroomCard");
+            const menuOpen = item.classList.contains("is-menu-open");
+            item.className = next.querySelector(".chatroomCard").className;
+            item.classList.toggle("is-menu-open", menuOpen);
+            const select = card.querySelector("[data-chatroom-select]");
+            const nextSelect = next.querySelector("[data-chatroom-select]");
+            select.innerHTML = nextSelect.innerHTML;
+            select.toggleAttribute("aria-current", nextSelect.hasAttribute("aria-current"));
+          } else {
+            card = next;
+            card.setAttribute("role", "listitem");
+            card.querySelector("[data-chatroom-select]").addEventListener("click", () => {
+              selectChatroom(id).catch(error => window.PortalUI.toast(window.PortalI18n.text`打开聊天室失败：${error.message || error}`, "error"));
+            });
+            const trigger = card.querySelector("[data-chatroom-menu]");
+            trigger.addEventListener("click", event => openChatroomMenu(trigger, id, event));
           }
-          if (card !== before) list.insertBefore(card, before);
-          before = card.nextElementSibling;
+          card.renderedHtml = html;
         }
+        if (card !== before) list.insertBefore(card, before);
+        before = card.nextElementSibling;
       }
       void window.PortalUIPrimitives.paintAvatars(sections);
       renderChatroomMenu();
