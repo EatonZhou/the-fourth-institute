@@ -6,6 +6,25 @@
   const stores = new Map();
   let actorRevision = 0;
   const MAX_CACHED_RESIDENTS = 32;
+  const resumeSnapshots = new Map();
+  const RESUME_TTL_MS = 5 * 60 * 1000;
+
+  function retainSnapshot(store) {
+    resumeSnapshots.delete(store.residentId);
+    if (!store.snapshot || store.snapshot.cache_restored) return;
+    const value = JSON.stringify({ snapshot: store.snapshot, limit: store.snapshotHistoryLimit,
+      historyWindow: store.historyWindow });
+    // Bound both individual conversations and total retained memory. Never
+    // persist conversation bodies to browser storage.
+    if (value.length > 2_000_000) return;
+    resumeSnapshots.set(store.residentId, { value, at: Date.now() });
+    let size = [...resumeSnapshots.values()].reduce((sum, entry) => sum + entry.value.length, 0);
+    while (resumeSnapshots.size > 8 || size > 4_000_000) {
+      const key = resumeSnapshots.keys().next().value;
+      size -= resumeSnapshots.get(key).value.length;
+      resumeSnapshots.delete(key);
+    }
+  }
 
   // The same durable reply can answer several facade requests. Its body and
   // primary association follow the incoming record; pagination/events only add
@@ -570,6 +589,7 @@
         if (!this.listeners.delete(listener)) return;
         this.refCount = Math.max(0, this.refCount - 1);
         if (!this.refCount) {
+          retainSnapshot(this);
           this.subscriptionRevision += 1;
           window.clearTimeout(this.submissionTimer);
           this.submissionTimer = null;
@@ -586,6 +606,7 @@
     }
 
     dispose() {
+      resumeSnapshots.delete(this.residentId);
       this.subscriptionRevision += 1;
       this.resetConversationRequests();
       this.stopStream();
@@ -655,6 +676,11 @@
     }
 
     emitError(error) {
+      if ([401, 403, 404].includes(Number(error?.status)) || error?.code === "resident.deleted") {
+        resumeSnapshots.delete(this.residentId);
+        this.snapshot = null;
+        this.resetHistoryWindow();
+      }
       this.emit({ type: "error", error });
     }
 
@@ -753,7 +779,7 @@
       if (this.stateRefCount) this.emitState({ type: "invalid", reason });
     }
 
-    async load({ force = false, historyLimit } = {}) {
+    async load({ force = false, historyLimit, resume = false } = {}) {
       const subscriptionRevision = this.subscriptionRevision;
       await window.PortalIdentity?.load?.();
       // Initial Identity.load itself emits identity-changed. Establish the
@@ -772,6 +798,23 @@
       // together. Reuse that reader's depth after the identity wait settles;
       // only an explicit request for more history expands the shared snapshot.
       historyLimit ??= this.loadingHistoryLimit || this.snapshotHistoryLimit || 200;
+      const retained = resumeSnapshots.get(this.residentId);
+      resumeSnapshots.delete(this.residentId);
+      if (resume && !force && !this.snapshot && retained && Date.now() - retained.at < RESUME_TTL_MS) {
+        const saved = JSON.parse(retained.value);
+        if (saved.limit >= historyLimit) {
+          this.snapshot = saved.snapshot;
+          this.snapshot.cache_restored = true;
+          // Cached capabilities are not current authorization. Keep the
+          // restored body readable while waiting for fresh controls.
+          this.snapshot.controls = { can_send: false, can_stop: false };
+          this.snapshotHistoryLimit = saved.limit;
+          this.historyWindow = saved.historyWindow;
+          this.cursor = Number(this.snapshot.cursor || 0);
+          // The opting-in Panel starts authoritative refresh after installing
+          // its subscription, including its unavailable-target handler.
+        }
+      }
       if (this.snapshot && !force && this.snapshotHistoryLimit >= historyLimit) return clone(this.snapshot);
       if (this.loading) {
         if (historyLimit > this.loadingHistoryLimit) {
@@ -1699,6 +1742,7 @@
 
   function resetActorState() {
     actorRevision += 1;
+    resumeSnapshots.clear();
     const activeStores = [...stores.values()];
     for (const store of activeStores) {
       window.clearTimeout(store.submissionTimer);

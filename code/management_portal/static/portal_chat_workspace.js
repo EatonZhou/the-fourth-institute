@@ -1179,6 +1179,12 @@
       updateControls();
     };
     const controller = {
+      captureReadingPosition,
+      restoreReadingPosition(position) {
+        if (position) state.messageTailFollowIntent = position.followTail;
+        syncMessageScrollMode();
+        restoreReadingPosition(position);
+      },
       root,
       els,
       state,
@@ -2559,6 +2565,17 @@
       );
       const current = this.workspace.target();
       const sameTarget = residentSessionScope(current) === residentSessionScope(target);
+      this.readingPositions ||= new Map();
+      const readingKey = value => `${window.PortalIdentity?.username?.() || ""}:${residentSessionScope(value)}`;
+      if (!sameTarget && this.protocol) {
+        const position = this.workspace.controller.captureReadingPosition();
+        if (position) {
+          const { anchor, ...saved } = position;
+          this.readingPositions.delete(readingKey(current));
+          this.readingPositions.set(readingKey(current), saved);
+          while (this.readingPositions.size > 8) this.readingPositions.delete(this.readingPositions.keys().next().value);
+        }
+      }
       this.workspace.setHistoryTarget(target);
       if (sameTarget && this.protocol && options.force !== true) {
         if (this.pendingProtocol) {
@@ -2654,6 +2671,7 @@
           Promise.all([
             detailRequest,
             stagedProtocol.load({
+              resume: true,
               force: options.force === true,
               historyLimit: Number(
                 this.options.historyLimit || DEFAULT_RESIDENT_HISTORY_PAGE_SIZE,
@@ -2679,6 +2697,11 @@
         this.pendingProtocol = null;
         this.pendingSnapshot = stagedProtocol.snapshot?.() || stagedSnapshot || loadedSnapshot || null;
         this.applyDetail(detail && typeof detail === "object" ? detail : {});
+        if (loadedSnapshot?.cache_restored) {
+          this.workspace.controller.restoreReadingPosition(this.readingPositions.get(readingKey(target)));
+          this.workspace.controller.requestProgressDisconnected();
+          stagedProtocol.load({ force: true }).catch(() => {});
+        }
         this.options.emit?.("binding-ready");
         this.unsubscribeProjection = window.PortalResidentProjection?.subscribe?.(
           target.resident_id,

@@ -34,6 +34,11 @@ if (output) fs.mkdirSync(output, { recursive: true });
     const page = await browser.newPage({ viewport: { width: 1100, height: 820 } });
     page.on('pageerror', e => errors.push(e.message));
     await page.goto('http://127.0.0.1:' + server.address().port);
+    if (process.env.CHAT_RESUME_ONLY) {
+      await require('./chat_resume.browser.cjs')({ page, output });
+      assert.deepEqual(errors, []);
+      return;
+    }
     if (process.env.HISTORY_WINDOW_IDENTITY_ONLY) {
       await require('./chat_history_identity.cjs')({ page, repo, output });
       assert.deepEqual(errors, []);

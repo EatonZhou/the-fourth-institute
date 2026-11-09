@@ -28,3 +28,13 @@ def test_history_window_initial_identity():
         capture_output=True, text=True, timeout=30,
     )
     assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_chat_switch_resume():
+    result = subprocess.run(
+        ['node', str(Path(__file__).with_name('javascript') / 'chat_history_window.browser.cjs')],
+        input=json.dumps({'routeScript': portal_route_script().decode()}),
+        env={**os.environ, 'CHAT_RESUME_ONLY': '1'},
+        capture_output=True, text=True, timeout=30,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
