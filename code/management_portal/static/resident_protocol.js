@@ -11,13 +11,17 @@
 
   function retainSnapshot(store) {
     resumeSnapshots.delete(store.residentId);
-    if (!store.snapshot || store.snapshot.cache_restored) return;
+    if (!store.snapshot) return;
+    // Navigation can interrupt the background read of a restored snapshot.
+    // Keep that window reusable, without extending its original expiry.
+    const at = store.snapshot.cache_restored ? store.resumeSnapshotAt : Date.now();
+    if (!Number.isFinite(at) || Date.now() - at >= RESUME_TTL_MS) return;
     const value = JSON.stringify({ snapshot: store.snapshot, limit: store.snapshotHistoryLimit,
       historyWindow: store.historyWindow });
     // Bound both individual conversations and total retained memory. Never
     // persist conversation bodies to browser storage.
     if (value.length > 2_000_000) return;
-    resumeSnapshots.set(store.residentId, { value, at: Date.now() });
+    resumeSnapshots.set(store.residentId, { value, at });
     let size = [...resumeSnapshots.values()].reduce((sum, entry) => sum + entry.value.length, 0);
     while (resumeSnapshots.size > 8 || size > 4_000_000) {
       const key = resumeSnapshots.keys().next().value;
@@ -804,6 +808,7 @@
         const saved = JSON.parse(retained.value);
         if (saved.limit >= historyLimit) {
           this.snapshot = saved.snapshot;
+          this.resumeSnapshotAt = retained.at;
           this.snapshot.cache_restored = true;
           // Cached capabilities are not current authorization. Keep the
           // restored body readable while waiting for fresh controls.

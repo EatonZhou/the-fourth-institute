@@ -24,15 +24,26 @@ module.exports = async ({ page, output }) => {
   await page.locator('.paneBody').first().hover(); await page.mouse.wheel(0, -20); await page.waitForTimeout(100);
   const anchorY = await page.locator('[data-message-key="resident_111111111111-message8"]').evaluate(n => n.getBoundingClientRect().top);
   await page.evaluate(() => open('resident_222222222222'));
+  await page.evaluate(() => open('resident_333333333333'));
   const restored = await page.evaluate(async () => {
     gated = true; const start = performance.now(); await open('resident_111111111111');
     return { elapsed: performance.now() - start, cached: panel.protocol.snapshot().cache_restored, calls: calls.length, pending: pending.length };
   });
-  assert.equal(restored.cached, true); assert.equal(restored.pending, 1); assert.equal(restored.calls, 3);
+  assert.equal(restored.cached, true); assert.equal(restored.pending, 1); assert.equal(restored.calls, 4);
   assert.equal(await page.evaluate(() => panel.protocol.snapshot().controls.can_send), false);
   assert(Math.abs(await page.locator('[data-message-key="resident_111111111111-message8"]').evaluate(n => n.getBoundingClientRect().top) - anchorY) < 2);
   assert(await page.locator('[data-message-key="resident_111111111111-message"]').count());
   if (output) await page.screenshot({ path: path.join(output, 'cache-before-network.png') });
+  for (const id of ['resident_222222222222', 'resident_333333333333', 'resident_111111111111',
+    'resident_222222222222', 'resident_333333333333', 'resident_111111111111']) {
+    await page.evaluate(id => open(id), id);
+    assert.equal(await page.evaluate(() => panel.protocol.snapshot().cache_restored), true);
+    assert.equal(await page.evaluate(() => panel.protocol.snapshot().controls.can_send), false);
+  }
+  await page.evaluate(() => pending.splice(0, pending.length - 1).forEach(p => p.resolve(p.value)));
+  await page.waitForTimeout(50);
+  assert.equal(await page.evaluate(() => panel.protocol.snapshot().cache_restored), true, 'abandoned refreshes cannot authorize the current target');
+  assert(Math.abs(await page.locator('[data-message-key="resident_111111111111-message8"]').evaluate(n => n.getBoundingClientRect().top) - anchorY) < 2);
   await page.evaluate(() => { const p = pending.shift(); p.value.messages[0].content_parts[0].text = '权威更新后的内容'; p.resolve(p.value); });
   await page.waitForFunction(() => !panel.protocol.snapshot().cache_restored);
   assert((await page.locator('[data-message-key="resident_111111111111-message"]').textContent()).includes('权威更新'));
@@ -65,6 +76,12 @@ module.exports = async ({ page, output }) => {
     const now = Date.now; Date.now = () => now() + 6 * 60 * 1000;
     before = calls.length; sub = acquire('cache-9'); await sub.load({ resume: true, historyLimit: 2 });
     const expired = calls.length === before + 1; sub.destroy(); Date.now = now;
+    sub = acquire('expiry-repeat'); await sub.load({ historyLimit: 2 }); sub.destroy();
+    Date.now = () => now() + 4 * 60 * 1000;
+    sub = acquire('expiry-repeat'); await sub.load({ resume: true, historyLimit: 2 }); sub.destroy();
+    Date.now = () => now() + 6 * 60 * 1000;
+    before = calls.length; sub = acquire('expiry-repeat'); await sub.load({ resume: true, historyLimit: 2 });
+    const repeatExpired = calls.length === before + 1; sub.destroy(); Date.now = now;
     // A refresh finishing after navigation cannot replace the new window.
     sub = acquire('late'); await sub.load({ historyLimit: 2 }); sub.destroy();
     sub = acquire('late'); await sub.load({ resume: true, historyLimit: 2 });
@@ -72,8 +89,8 @@ module.exports = async ({ page, output }) => {
     await new Promise(resolve => setTimeout(resolve, 0)); sub.destroy();
     const p = pending.shift(); p.resolve(p.value);
     const result = await late; gated = false;
-    return { evicted, expired, late: result };
+    return { evicted, expired, repeatExpired, late: result };
   });
-  assert.deepEqual(boundaries, { evicted: true, expired: true, late: 'AbortError' });
+  assert.deepEqual(boundaries, { evicted: true, expired: true, repeatExpired: true, late: 'AbortError' });
   console.log(JSON.stringify({ restored, checks: ['A-B-A visible before network', 'one background read', 'fresh body replaces cache', '403 removes body and cache', 'identity clears retained snapshots'] }));
 };
