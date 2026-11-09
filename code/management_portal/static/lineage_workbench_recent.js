@@ -251,8 +251,9 @@
             kind: "resident",
             mark: duplicateGlyph ? suffix.slice(-2) : item.derived ? "D" : "",
             label: item.label,
+            // Recent shortcuts show the name's glyph, not the avatar: a short
+            // text mark tells similar Residents apart at rail size.
             glyph: item.glyph,
-            avatar: { kind: "resident", id: identity },
             active: item.active,
             accentHue: window.PortalUIPrimitives.stableHue(identity),
             ariaLabel: [item.label, suffix ? window.PortalI18n.text`Resident 尾号 ${suffix}` : ""].filter(Boolean).join("，"),
