@@ -138,7 +138,7 @@
     activeDiagnostic: null,
     entryKind: "file",
     autoCompileTimer: 0,
-    autoCompileQueued: false,
+    queuedCompile: null,
     compilingArticles: new Set(),
     stopRequested: false,
     wordWrap: true,
@@ -355,6 +355,7 @@
     saveAllDirtyDocuments, saveOpenFile, setEditorMode,
   } = articleModule("PortalArticleWorkspaceDocuments").createDocuments({
     $, articleAbsolutePath, articleModelUri, closeArticleGitDiff, detailResourceGuest, editorValue,
+    compileArticle: (...args) => compileArticle(...args),
     isMarkdownPath, languageForPath, loadSemanticIndex: (...args) => loadSemanticIndex(...args), monacoApi,
     openArticleLinkedReference, pdfUrl: (...args) => pdfUrl(...args), registerArticleLinkedFiles,
     renderEditorLayers: (...args) => renderEditorLayers(...args), renderFileTree,

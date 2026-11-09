@@ -7,7 +7,7 @@
   // editor, code and visual modes, linked files and resource previews, going
   // to a line, and saving one or every changed document.
   const DEPENDENCIES = Object.freeze([
-    "$", "articleAbsolutePath", "articleModelUri", "closeArticleGitDiff", "detailResourceGuest",
+    "$", "articleAbsolutePath", "articleModelUri", "closeArticleGitDiff", "compileArticle", "detailResourceGuest",
     "editorValue", "isMarkdownPath", "languageForPath", "loadSemanticIndex", "monacoApi",
     "openArticleLinkedReference", "pdfUrl", "registerArticleLinkedFiles", "renderEditorLayers",
     "renderFileTree", "renderSemanticNavigation", "request", "scheduleArticleGitRefresh",
@@ -18,7 +18,7 @@
     const missing = DEPENDENCIES.filter(name => dependencies?.[name] === undefined);
     if (missing.length) throw new Error(`PortalArticleWorkspaceDocuments is missing: ${missing.join(", ")}`);
     const {
-      $, articleAbsolutePath, articleModelUri, closeArticleGitDiff, detailResourceGuest, editorValue,
+      $, articleAbsolutePath, articleModelUri, closeArticleGitDiff, compileArticle, detailResourceGuest, editorValue,
       isMarkdownPath, languageForPath, loadSemanticIndex, monacoApi, openArticleLinkedReference, pdfUrl,
       registerArticleLinkedFiles, renderEditorLayers, renderFileTree, renderSemanticNavigation, request,
       scheduleArticleGitRefresh, scheduleTexlabSync, showToast, state, syncEditorScroll, updateCursorStatus,
@@ -499,53 +499,66 @@
 
     async function saveOpenFile({ silent = false } = {}) {
       if (!state.selectedId || !state.openFile) return false;
-      if (!updateDirtyState()) return true;
+      const articleId = state.selectedId;
+      const path = state.openFile;
       const documentState = activeDocument();
-      if (!documentState?.session) return false;
+      if (!documentState?.editable || !documentState.session) return false;
+      if (!updateDirtyState()) {
+        void compileArticle({ trigger: "save" });
+        return true;
+      }
       $("articleEditorState").textContent = window.PortalI18n.t("Saving…");
       const outcome = await documentState.session.save({
         save: async ({ draft, payload }) => {
-          const result = await request(`/api/articles/${encodeURIComponent(state.selectedId)}/file`, {
+          const result = await request(`/api/articles/${encodeURIComponent(articleId)}/file`, {
             method: "POST",
-            body: JSON.stringify({ path: state.openFile, content: draft }),
+            body: JSON.stringify({ path, content: draft }),
           });
           return { ...payload, ...result, content: draft };
         },
         onSaved: result => {
           const saved = documentState.session.snapshot().payload;
-          state.source = saved.content;
-          state.savedSource = saved.content;
           documentState.source = saved.content;
           documentState.savedSource = saved.content;
           documentState.revision = String(result.revision || documentState.revision || "");
           documentState.modifiedAt = String(result.modified_at || documentState.modifiedAt || "");
-        updateDirtyState();
-        scheduleTexlabSync(60);
-        loadSemanticIndex().catch(() => {});
-        scheduleArticleGitRefresh(0);
-        detailResourceGuest.changed({ resourceId: state.selectedId, path: result.path || state.openFile });
-        if (!silent) showToast(window.PortalI18n.text`${result.path} 已保存`, "success");
+          detailResourceGuest.changed({ resourceId: articleId, path: result.path || path });
+          if (articleId !== state.selectedId) return;
+          if (activeDocument() === documentState) {
+            state.source = saved.content;
+            state.savedSource = saved.content;
+          }
+          updateDirtyState();
+          scheduleTexlabSync(60);
+          loadSemanticIndex().catch(() => {});
+          scheduleArticleGitRefresh(0);
+          if (!silent) showToast(window.PortalI18n.text`${result.path} 已保存`, "success");
         },
         onError: error => window.PortalUI.toast(error.message || error, "error", {
           retry: () => saveOpenFile({ silent }),
         }),
       });
-      updateDirtyState();
+      if (articleId === state.selectedId) {
+        updateDirtyState();
+        if (outcome?.payload) void compileArticle({ trigger: "save" });
+      }
       return !!outcome?.payload;
     }
 
     async function saveAllDirtyDocuments({ silent = true } = {}) {
       captureActiveDocument();
+      const articleId = state.selectedId;
       const dirtyPaths = state.openTabs.filter(path => documentIsDirty(state.documents.get(path)));
       if (!dirtyPaths.length) return true;
       $("articleSaveFile").disabled = true;
       $("articleEditorState").textContent = window.PortalI18n.t("Saving…");
       try {
         for (const path of dirtyPaths) {
+          if (articleId !== state.selectedId) return false;
           const documentState = state.documents.get(path);
           const outcome = await documentState.session.save({
             save: async ({ draft, payload }) => {
-              const result = await request(`/api/articles/${encodeURIComponent(state.selectedId)}/file`, {
+              const result = await request(`/api/articles/${encodeURIComponent(articleId)}/file`, {
                 method: "POST",
                 body: JSON.stringify({ path, content: draft }),
               });
@@ -558,6 +571,7 @@
           documentState.savedSource = documentState.source;
           documentState.revision = String(result.revision || documentState.revision || "");
           documentState.modifiedAt = String(result.modified_at || documentState.modifiedAt || "");
+          if (articleId !== state.selectedId) return false;
           if (path === state.openFile) state.savedSource = documentState.source;
         }
         updateDirtyState();
@@ -568,8 +582,10 @@
         if (!silent) showToast(window.PortalI18n.text`${dirtyPaths.length} 个文件已保存`, "success");
         return true;
       } catch (error) {
-        updateDirtyState();
-        showToast(error.message || error, "error");
+        if (articleId === state.selectedId) {
+          updateDirtyState();
+          showToast(error.message || error, "error");
+        }
         return false;
       }
     }

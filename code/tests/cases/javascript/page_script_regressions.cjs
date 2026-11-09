@@ -393,11 +393,11 @@ test('Article preflight displays its blocker in the PDF pane and recovers when d
 });
 
 test('Article compile results and controls belong to the initiating Article', async () => {
-  const state = {selectedId: 'A', compilingArticles: new Set(), build: {}, autoCompileQueued: false};
+  const state = {selectedId: 'A', compilingArticles: new Set(), build: {}, queuedCompile: null};
   const pending = new Map(), options = [], views = [];
   const button = {disabled: false, dataset: {}, textContent: 'Compile'};
   const context = owner(ARTICLE_SCRIPTS, ['compileArticle'], {
-    state, window: {PortalI18n: i18n}, $: () => button,
+    state, window: {PortalI18n: i18n, clearTimeout: noop}, $: () => button,
     setCompileMenu: noop, hasDirtyDocuments: () => false, renderBuildSummary: noop,
     renderCompileMenu: noop, compileSettingValue: () => 'normal', showToast: noop,
     setOutputView: view => views.push(view), loadArticles: async () => {},
@@ -420,6 +420,165 @@ test('Article compile results and controls belong to the initiating Article', as
   assert.equal(state.build.pdf_url, '/B.pdf');
   assert.equal(state.compilingArticles.size, 0);
   assert.equal(button.disabled, false);
+});
+
+function articleSaveFixture() {
+  const {STATIC, portalWorkspaceSurfaceScripts} = require('./portal_workspace_surface_scripts.cjs');
+  const window = {PortalI18n: i18n, PortalUI: {toast: noop}, clearTimeout: noop};
+  const shared = owner('portal_workspace_surface.js', ['surfacePart', 'createDocumentSession'], {window});
+  portalWorkspaceSurfaceScripts().slice(0, -1).forEach(file =>
+    vm.runInContext(fs.readFileSync(path.join(STATIC, file), 'utf8'), shared));
+  const session = shared.createDocumentSession({continuousEdit: true, canEdit: () => true});
+  session.present({content: 'old', path: 'main.tex'});
+  session.updateDraft('new');
+  const documentState = {editable: true, session};
+  const state = {selectedId: 'A', openFile: 'main.tex', source: 'new', savedSource: 'old',
+    compilingArticles: new Set(), queuedCompile: null, settings: {auto_compile: false}};
+  const requests = [], notices = [], views = [], elements = new Map();
+  const $ = id => {
+    if (!elements.has(id)) elements.set(id, {dataset: {}, textContent: 'Compile'});
+    return elements.get(id);
+  };
+  const context = owner(ARTICLE_SCRIPTS,
+    ['saveOpenFile', 'compileArticle', 'scheduleAutoCompile', 'stopCompilation', 'updateCompilePreference'], {
+    state, window, $, activeDocument: () => documentState,
+    updateDirtyState: () => session.snapshot().dirty,
+    setCompileMenu: noop, hasDirtyDocuments: () => false,
+    renderBuildSummary: noop, renderCompileMenu: noop, renderSettings: noop,
+    compileSettingValue: key => state.settings[key], showToast: noop,
+    setOutputView: view => views.push(view), loadArticles: async () => {}, loadBuild: async () => {},
+    scheduleTexlabSync: noop, loadSemanticIndex: async () => {}, scheduleArticleGitRefresh: noop,
+    detailResourceGuest: {changed: value => notices.push(value)},
+    request: (url, options) => {const gate = deferred(); requests.push({url, options, ...gate}); return gate.promise;},
+  });
+  return {context, state, session, documentState, requests, notices, views};
+}
+
+test('Article explicit save waits for persistence then builds even with compile-on-edit off', async () => {
+  const f = articleSaveFixture();
+  const saved = f.context.saveOpenFile();
+  assert.deepEqual(f.requests.map(r => r.url), ['/api/articles/A/file']);
+  assert.deepEqual(JSON.parse(f.requests[0].options.body), {path: 'main.tex', content: 'new'});
+  f.requests[0].resolve({path: 'main.tex', revision: 'saved'});
+  assert.equal(await saved, true);
+  assert.equal(f.requests[1].url, '/api/articles/A/compile');
+  f.requests[1].resolve({pdf_url: '/new.pdf'});
+  await new Promise(setImmediate);
+  assert.equal(f.state.build.pdf_url, '/new.pdf');
+  assert.deepEqual(f.views, ['pdf']);
+  // Ctrl+S on already saved source still refreshes the PDF; read-only previews do not.
+  assert.equal(await f.context.saveOpenFile(), true);
+  assert.equal(f.requests[2].url, '/api/articles/A/compile');
+  f.requests[2].resolve({pdf_url: '/new.pdf'});
+  await new Promise(setImmediate);
+  f.documentState.editable = false;
+  assert.equal(await f.context.saveOpenFile(), false);
+  assert.equal(f.requests.length, 3);
+});
+
+test('Article failed save keeps the draft and never starts compilation', async () => {
+  const f = articleSaveFixture();
+  const saved = f.context.saveOpenFile();
+  f.requests[0].reject(new Error('write denied'));
+  assert.equal(await saved, false);
+  assert.equal(f.requests.length, 1);
+  assert.equal(f.session.snapshot().draft, 'new');
+  assert.equal(f.session.snapshot().dirty, true);
+});
+
+test('Article save response cannot overwrite or compile another selected Article', async () => {
+  const f = articleSaveFixture();
+  const saved = f.context.saveOpenFile();
+  f.state.selectedId = 'B'; f.state.source = 'B draft'; f.state.savedSource = 'B saved';
+  f.requests[0].resolve({path: 'main.tex'});
+  assert.equal(await saved, true);
+  assert.equal(f.requests.length, 1);
+  assert.equal(f.state.source, 'B draft');
+  assert.equal(f.state.savedSource, 'B saved');
+  assert.equal(f.notices[0].resourceId, 'A');
+});
+
+test('Article repeated saves coalesce into one follow-up build and survive disabling compile-on-edit', async () => {
+  const f = articleSaveFixture();
+  const building = f.context.compileArticle();
+  for (const content of ['second', 'third']) {
+    f.session.updateDraft(content);
+    const saved = f.context.saveOpenFile();
+    f.requests.at(-1).resolve({path: 'main.tex'});
+    await saved;
+  }
+  assert.equal(f.requests.filter(r => r.url.endsWith('/compile')).length, 1);
+  assert.equal(f.state.queuedCompile.trigger, 'save');
+  f.state.settings.auto_compile = true;
+  const toggled = f.context.updateCompilePreference({dataset: {compileSetting: 'auto_compile', compileValue: 'false'}});
+  f.requests.at(-1).resolve({auto_compile: false});
+  await toggled;
+  assert.equal(f.state.queuedCompile.trigger, 'save');
+  f.requests[0].resolve({pdf_url: '/first.pdf'});
+  await building;
+  const builds = f.requests.filter(r => r.url.endsWith('/compile'));
+  assert.equal(builds.length, 2);
+  assert.equal(f.session.snapshot().payload.content, 'third');
+  builds[1].resolve({pdf_url: '/latest.pdf'});
+  await new Promise(setImmediate);
+  assert.equal(f.state.build.pdf_url, '/latest.pdf');
+  assert.equal(f.state.queuedCompile, null);
+});
+
+test('Article stopped compilation clears the saved follow-up request', async () => {
+  const f = articleSaveFixture();
+  const building = f.context.compileArticle();
+  await f.context.compileArticle({trigger: 'save'});
+  const stopping = f.context.stopCompilation();
+  f.requests[1].resolve({stop_requested: true});
+  await stopping;
+  f.requests[0].reject(new Error('stopped'));
+  await building;
+  assert.equal(f.requests.filter(r => r.url.endsWith('/compile')).length, 1);
+  assert.equal(f.state.queuedCompile, null);
+});
+
+test('Article compile saves remaining dirty documents once and aborts on their save failure', async () => {
+  const f = articleSaveFixture();
+  const saving = deferred();
+  let saves = 0;
+  f.context.hasDirtyDocuments = () => true;
+  f.context.saveAllDirtyDocuments = () => {saves++; return saving.promise;};
+  const building = f.context.compileArticle({trigger: 'save'});
+  await f.context.compileArticle({trigger: 'save'});
+  assert.equal(saves, 1);
+  assert.equal(f.requests.length, 0);
+  saving.resolve(false);
+  await building;
+  assert.equal(f.requests.length, 0);
+  assert.equal(f.state.queuedCompile, null);
+  assert.equal(f.state.compilingArticles.size, 0);
+});
+
+test('Article compile-on-edit timer cannot build a subsequently selected Article', async () => {
+  const f = articleSaveFixture();
+  let fire;
+  f.state.settings.auto_compile = true;
+  f.context.window.setTimeout = callback => {fire = callback; return 1;};
+  f.context.scheduleAutoCompile();
+  f.state.selectedId = 'B';
+  fire();
+  assert.equal(f.requests.length, 0);
+});
+
+test('Article save-all stops at an Article switch without saving its other files into the new project', async () => {
+  const f = articleSaveFixture();
+  const documents = new Map([['main.tex', f.documentState], ['refs.bib', f.documentState]]);
+  f.state.openTabs = ['main.tex', 'refs.bib']; f.state.documents = documents;
+  const context = owner(ARTICLE_SCRIPTS, ['saveAllDirtyDocuments'], {
+    ...f.context, captureActiveDocument: noop, documentIsDirty: () => true,
+  });
+  const saving = context.saveAllDirtyDocuments();
+  f.state.selectedId = 'B'; f.state.savedSource = 'B saved';
+  f.requests[0].resolve({path: 'main.tex', content: 'new'});
+  assert.equal(await saving, false);
+  assert.equal(f.requests.length, 1);
+  assert.equal(f.state.savedSource, 'B saved');
 });
 
 function articleUnregisterFixture({confirm = true} = {}) {

@@ -4,39 +4,42 @@ type: decision
 project: AI员工
 created_at: '2026-09-01'
 version:
-  number: 13
-  created_at: '2026-09-01'
+  number: 17
+  created_at: "2026-09-01"
   created_by:
-    user: ''
-    agent: ''
-  updated_at: '2026-11-01T03:38:18Z'
+    user: ""
+    agent: ""
+  updated_at: "2026-11-09T16:10:57Z"
   updated_by:
-    user: ''
-    agent: resident_24014e2b9bf6
+    user: ""
+    agent: "resident_62dbdb2288fb"
 importance: 8
 metaness: 2
 ai_generated: true
 links:
   source:
-  - ${code_root}/management_portal/static/portal_resource_registration_service.js
-  - ${code_root}/management_portal/resource_auto_registration.py
-  - ${code_root}/management_portal/resources/providers/article.py
-  - ${code_root}/management_portal/http_articles.py
-  - ${code_root}/management_portal/article_files.py
-  - ${code_root}/management_portal/article_settings.py
-  - ${code_root}/management_portal/article_registration.py
-  - ${code_root}/management_portal/article_semantic_index.py
-  - ${code_root}/management_portal/article_build.py
-  - ${code_root}/management_portal/article_synctex.py
-  - ${code_root}/management_portal/article_git.py
-  - ${code_root}/management_portal/registry_sync.py
-  - ${code_root}/management_portal/article_texlab_backend.py
-  - ${code_root}/management_portal/article_workspace.html
-  - ${code_root}/management_portal/static/article_workspace.js
-  - ${code_root}/management_portal/repo_workspace_scoped_git.py
-  - ${code_root}/management_portal/serve_management_portal.py
-  - ${code_root}/tests/cases/test_article_identity_backend.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/resources/directory_registrations.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/article_workspace_registration.js
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/portal_resource_registration_service.js
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/resource_auto_registration.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/resources/providers/article.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/http_articles.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/article_files.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/article_settings.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/article_registration.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/article_semantic_index.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/article_build.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/article_synctex.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/article_git.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/registry_sync.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/article_texlab_backend.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/article_workspace.html
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/article_workspace.js
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/repo_workspace_scoped_git.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/serve_management_portal.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_article_identity_backend.py
   related:
+  - decision_4aa13bc21e8e
   - decision_ad3e21094f14
   - decision_eb066fbea4ed
   - decision_b6e74d78f7b6
@@ -89,20 +92,22 @@ Article 工作区是 Portal 中编写论文源码的页面，入口为 `/resourc
 - **Code**：编辑源码。编辑器优先使用浏览器内的 Monaco 代码编辑器；Monaco 加载失败时，改用普通文本框编辑。
 - **Visual**：用 Portal 共享的预览组件显示当前文件的渲染结果，例如 Markdown 渲染后的效果或图片本身。打开图片、PDF 等非文本文件时只有 Visual 模式。
 
-文件树标题旁的三个图标分别用于新建文件、新建目录和上传文件。点击文档标签只切换编辑内容，不保存；保存图标把当前内容写入文件；撤销、重做只作用于编辑历史；自动换行只改变显示。
+文件树标题旁的三个图标分别用于新建文件、新建目录和上传文件。点击文档标签只切换编辑内容，不保存；保存图标或 Ctrl+S（macOS 为 Cmd+S）保存当前文件后重新编译 Article，并更新右侧 PDF；撤销、重做只作用于编辑历史；自动换行只改变显示。
+
+显式保存后的编译不依赖“编辑时自动编译”开关。当前文件没有未保存修改时，保存快捷键仍可重新编译。编译前先保存该 Article 其他已打开文件的未保存修改；保存失败时保留编辑内容并显示错误，不启动本次编译。编译期间继续保存时，合并为当前编译结束后的一次后续编译，使用最新已保存内容；停止编译同时取消排队的编译。保存和编译结果始终归属于发起操作的 Article，切换文稿后旧请求不能覆盖新页面。
 
 ## 登记和选择 Article
 
 - **链接中显式指定 Article ID 时，页面始终打开这个资源。** 已在列表中时使用该记录；列表索引暂未收录时，通过 ResourceService 直接解析已登记资源，再加载其目录、构建配置和主文稿。资源不存在、无法读取或地址类型不符时保留原链接，显示加载错误。
 - **没有显式 ID 时，页面恢复上次选择的有效 Article。** 上次选择已不在列表时使用列表第一项；列表为空时显示未选择状态。
 
-**用户在页面上选择 Project 内的文稿目录登记后，Portal 为它创建一个 Article 身份；撤销登记只删除登记，保留全部源码。**
+**用户在页面上选择 Project 内的文稿目录登记后，Portal 为它创建一个 Article 身份。注销 Article 按《目录与路径协议》（decision_4aa13bc21e8e）处理：注销资源身份及其范围内的嵌套登记，并将其拥有的源码目录与文件排入持久清理；删除范围外的独立资源和未登记邻居不受影响。显式登记与扫描登记采用同一生命周期，不根据登记方式推断源码保留。**
 
 1. **登记前检查。** 用户打开“登记”对话框选择目录后，页面调用 `POST /api/articles/preflight` 列出主文稿候选和问题。这一步不创建身份；本机缺少 TeX 工具、宏包或字体只作为提示，不阻止登记。
 2. **提交登记。** 页面用 `RegisterResource`（资源类型 `article`）提交目录路径，可以同时指定所属 Project、主文稿和编译器。目录必须位于已登记的 Project 内，否则拒绝登记。
 3. **识别主文稿。** 没有指定主文稿时，服务在目录中寻找候选文件：`.tex`、`.md`、`.markdown` 文件都可以作为候选，`README.md` 除外。包含 `\documentclass` 的完整 `.tex` 文档优先；只有 Markdown 文稿时也可以登记，但不能编译成 PDF。标题从主文稿中提取，提取不到时使用“<Project> Article”或目录名。
 4. **合并变体。** 同一 Project 内标题相同的多个目录归为同一个 Article，已登记的目录按路径归回原 Article；同时对上两个 Article 时拒绝登记。登记中记录当前源码根和其余变体，匹配与写回由 Repo 和 Article 共用的 `registry_sync.py` 完成。调整源码根、变体或主文稿时，Article ID 保持不变。
-5. **撤销登记。** 用户在选择器中撤销登记时，页面调用 `UnregisterResource`。服务删除 Article 登记，保留源码，并把该文稿的主文稿路径加入自动登记的忽略列表（资源登记表的 `auto_registration_ignore` 集合），自动登记不会马上把它重新登记回来。之后用户手动登记同一目录时，服务从忽略列表中移除这些路径。
+5. **撤销登记。** 用户在选择器中确认永久删除所属目录与文件后，页面调用 `UnregisterResource`。服务按 decision_4aa13bc21e8e 在注销事务中删除 Article 登记、注销其范围内的嵌套登记和绑定，并持久保存所属目录的清理任务。登记注销与后台文件清理分别返回状态；文件清理失败保留任务并重试，不恢复登记。自动登记按规范目录位置保存忽略记录（资源登记表的 `auto_registration_ignore` 集合），已注销或待清理的资源不会被扫描重新登记。
 
 **自动登记**由 ResourceService 后台发现已登记 Project 中的有效稿件目录，复用 Article 正式登记入口。发现范围、目录判定、Article 与 Repo 的分类顺序、忽略记录和调度统一见 decision_36f46b395d8e。
 
@@ -151,6 +156,12 @@ Article 工作区是 Portal 中编写论文源码的页面，入口为 `/resourc
 - TexLab 主动推送的诊断只保存在进程内，Portal 重启后由下一次 `sync` 重新产生。
 - 参数错误或 TexLab 响应超时返回 400；TexLab 无法启动或不可用时返回 503，`status` 请求始终返回 `available` 和原因。TexLab 失败不会影响页面中的编辑内容。
 
+### 语言服务的操作归属与回收
+
+TexLab 由 Article 后端持有并通过共享进程运行器管理整个原生进程树。有界资源操作中的语言服务按“资源生命周期、Article”复用；不同操作以及普通编辑器各自保持独立的文档与诊断状态，不能把首个请求的生命周期租约转移给其他调用者。普通编辑器的语言服务由 Web 生命周期回收。
+
+所属资源生命周期进入关闭后，Article 后端等待当前语言请求结束，拒绝重新启动该会话，关闭 LSP 连接并回收全部原生后代，然后释放管理记录。清理失败保留进程所有权并重试；不能因为请求已返回、浏览器已关闭或数据库连接已释放就认定语言服务结束。资源生命周期封口等待语言服务释放同一执行租约，不清除租约文件绕过仍存活的进程。读取已有文稿不转移文稿所有权，回收语言服务不删除文稿或影响其他编辑器。
+
 ## Article 范围的 Git
 
 **Git 面板只显示和提交源码根内的变化，同一个 Git 仓库中源码根之外的文件不会被带进提交。**
@@ -165,10 +176,10 @@ Article 工作区是 Portal 中编写论文源码的页面，入口为 `/resourc
 | 组件 | 位置 | 职责 | 出错后 |
 | --- | --- | --- | --- |
 | Article 工作区页面 | `management_portal/article_workspace.html`、`static/article_workspace.js` | 图标栏、侧栏、编辑区、输出区、未保存内容和操作反馈 | 保存失败保留编辑内容；刷新后重新读取持久状态 |
-| Article 登记提供者 | ResourceService 中的 `resources/providers/article.py` | 登记、撤销登记、维护自动登记忽略列表 | 撤销登记保留源码 |
+| Article 登记提供者 | ResourceService 中的 `resources/providers/article.py` | 登记、按目录协议注销并排入所属文件清理、维护自动登记忽略列表 | 登记已注销而文件清理失败时，保留持久任务并重试 |
 | Article 后端 | 14 个 `article_*.py` 模块：文件读写与搜索 `article_files`、设置 `article_settings`、语义索引 `article_semantic_index`、构建 `article_build*`、SyncTeX `article_synctex`、Git `article_git`、登记 `article_registration` 等 | 源码根边界、文件读写、搜索、设置、语义索引、构建、SyncTeX 和 Git | 临时文件替换保存；语义索引可重建 |
 | 构建执行 | `article_build.py` | 每个 Article 最多一次编译、写构建缓存与报告 | 停止结束进程组；报告保留失败原因；从头构建只清空目标缓存 |
-| TexLab 管理 | `article_texlab_backend.py` | 每个源码根一个 TexLab 进程、同步编辑内容 | 进程退出或源码根变化时重启；下次 `sync` 恢复诊断 |
+| TexLab 管理 | `article_texlab_backend.py` | 按资源生命周期与 Article 复用语言服务；普通编辑器独立由 Web 生命周期持有，同步编辑内容与诊断 | 开放生命周期内可重建退出或源码根变化的服务；关闭后等待当前请求、禁止重启并回收进程树，失败保留所有权重试 |
 | 自动登记 | `resource_auto_registration.py` | 按 decision_36f46b395d8e 发现稿件并调用正式登记 | 跳过忽略列表中的路径 |
 | HTTP 接口 | `http_articles.py` | 校验 Article ID 与角色，调用后端，统一错误码 | — |
 

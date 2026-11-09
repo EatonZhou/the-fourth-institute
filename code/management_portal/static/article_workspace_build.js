@@ -291,13 +291,10 @@
       window.clearTimeout(state.autoCompileTimer);
       state.autoCompileTimer = 0;
       if (!compileSettingValue("auto_compile") || !state.selectedId || !state.openFile) return;
+      const articleId = state.selectedId;
       state.autoCompileTimer = window.setTimeout(() => {
         state.autoCompileTimer = 0;
-        if (state.compilingArticles.has(state.selectedId)) {
-          state.autoCompileQueued = true;
-          return;
-        }
-        compileArticle({ automatic: true });
+        if (articleId === state.selectedId) compileArticle({ trigger: "edit" });
       }, Math.max(150, Number(delay) || 2500));
     }
 
@@ -319,7 +316,7 @@
         if (key === "auto_compile" && !value) {
           window.clearTimeout(state.autoCompileTimer);
           state.autoCompileTimer = 0;
-          state.autoCompileQueued = false;
+          if (state.queuedCompile?.trigger === "edit") state.queuedCompile = null;
         }
       } catch (error) {
         showToast(error.message || error, "error");
@@ -355,6 +352,9 @@
       if (!state.selectedId || !state.compilingArticles.has(state.selectedId) || state.stopRequested) return;
       const articleId = state.selectedId;
       state.stopRequested = true;
+      state.queuedCompile = null;
+      window.clearTimeout(state.autoCompileTimer);
+      state.autoCompileTimer = 0;
       renderCompileMenu();
       try {
         const result = await request(`/api/articles/${encodeURIComponent(articleId)}/stop`, {
@@ -376,38 +376,50 @@
       }
     }
 
-    async function compileArticle({ fromScratch = false, automatic = false } = {}) {
+    async function compileArticle({ fromScratch = false, trigger = "manual" } = {}) {
       if (!state.selectedId) return;
+      const automatic = trigger === "edit";
       if (state.buildPreflight?.status === "blocked") {
         if (!automatic) showToast(window.PortalI18n.t("构建条件不完整，请查看编译设置中的预检提示。"), "warning");
         return;
       }
       const articleId = state.selectedId;
+      window.clearTimeout(state.autoCompileTimer);
+      state.autoCompileTimer = 0;
       if (state.compilingArticles.has(state.selectedId)) {
-        if (automatic) state.autoCompileQueued = true;
+        if (trigger !== "manual" && !state.stopRequested) {
+          // Explicit saves remain queued even when compile-on-edit is disabled.
+          const saved = state.queuedCompile?.articleId === articleId && state.queuedCompile.trigger === "save";
+          state.queuedCompile = { articleId, trigger: saved ? "save" : trigger };
+        }
         return;
       }
       setCompileMenu(false);
-      if (hasDirtyDocuments() && !(await saveAllDirtyDocuments({ silent: true }))) return;
-      if (articleId !== state.selectedId || state.compilingArticles.has(articleId)) return;
       state.compilingArticles.add(articleId);
       state.stopRequested = false;
       const compileButtons = [$("articleCompile")];
-      compileButtons.forEach(button => {
-        button.disabled = true;
-        button.dataset.previousLabel = button.textContent;
-        button.textContent = window.PortalI18n.t("编译中…");
-      });
-      state.build = {
-        ...(state.build || {}),
-        id: state.selectedId,
-        status: "running",
-        compile_mode: compileSettingValue("compile_mode"),
-        summary: "正在编译 PDF…",
-      };
-      renderBuildSummary();
-      renderCompileMenu();
       try {
+        if (hasDirtyDocuments() && !(await saveAllDirtyDocuments({ silent: true }))) {
+          if (state.queuedCompile?.articleId === articleId) state.queuedCompile = null;
+          return;
+        }
+        if (articleId !== state.selectedId) return;
+        // Requests received while saving are included in this build's snapshot.
+        state.queuedCompile = null;
+        compileButtons.forEach(button => {
+          button.disabled = true;
+          button.dataset.previousLabel = button.textContent;
+          button.textContent = window.PortalI18n.t("编译中…");
+        });
+        state.build = {
+          ...(state.build || {}),
+          id: state.selectedId,
+          status: "running",
+          compile_mode: compileSettingValue("compile_mode"),
+          summary: "正在编译 PDF…",
+        };
+        renderBuildSummary();
+        renderCompileMenu();
         const result = await request(`/api/articles/${encodeURIComponent(articleId)}/compile`, {
           method: "POST",
           timeoutMs: 540000,
@@ -440,9 +452,10 @@
           button.textContent = button.dataset.previousLabel || window.PortalI18n.t("重新编译");
         });
         renderCompileMenu();
-        if (state.autoCompileQueued) {
-          state.autoCompileQueued = false;
-          scheduleAutoCompile(250);
+        const queued = state.queuedCompile;
+        state.queuedCompile = null;
+        if (queued?.articleId === articleId) {
+          void compileArticle({ trigger: queued.trigger });
         }
       }
     }

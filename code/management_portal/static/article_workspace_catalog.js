@@ -239,7 +239,7 @@
       });
       window.clearTimeout(state.autoCompileTimer);
       state.autoCompileTimer = 0;
-      state.autoCompileQueued = false;
+      state.queuedCompile = null;
       state.files = [];
       state.filesByPath.clear();
       state.linkedFiles = new Map();
@@ -275,7 +275,7 @@
       state.selectedId = id;
       state.buildPreflight = null;
       state.stopRequested = false;
-      state.autoCompileQueued = false;
+      state.queuedCompile = null;
       window.clearTimeout(state.autoCompileTimer);
       $("articleCompile").textContent = state.compilingArticles.has(id) ? window.PortalI18n.t("编译中…") : window.PortalI18n.t("重新编译");
       state.buildLoading = Boolean(id);
