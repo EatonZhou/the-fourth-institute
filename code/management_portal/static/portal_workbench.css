@@ -1151,7 +1151,23 @@ body.resizingWorkspacePreview {
   font-weight: 800;
   line-height: 1;
 }
-.portalActivityRailItem.hasStableAccent { background: hsl(var(--recent-accent-hue) 46% 42%); }
+/* A stable hue tints the tile softly and colours its glyph, so recent items
+ * stay recognisable by colour without solid blocks competing in the rail;
+ * light-dark() follows each theme's color-scheme. The open item draws a ring
+ * in its own hue. */
+.portalActivityRailItem.hasStableAccent {
+  --rail-tint: light-dark(hsl(var(--recent-accent-hue) 55% 50% / .14), hsl(var(--recent-accent-hue) 55% 60% / .16));
+  background: var(--rail-tint);
+  color: light-dark(hsl(var(--recent-accent-hue) 45% 34%), hsl(var(--recent-accent-hue) 60% 76%));
+  font-weight: 750;
+}
+.portalActivityRailItem.hasStableAccent:hover {
+  filter: none;
+  background: light-dark(hsl(var(--recent-accent-hue) 55% 50% / .22), hsl(var(--recent-accent-hue) 55% 60% / .26));
+}
+.portalActivityRailItem.hasStableAccent.active {
+  box-shadow: inset 0 0 0 1.5px light-dark(hsl(var(--recent-accent-hue) 50% 45% / .7), hsl(var(--recent-accent-hue) 60% 70% / .8));
+}
 .portalActivityRailItem:hover { filter: brightness(1.12); }
 /* A saved avatar replaces the initials; the tile then drops its fill. */
 .portalActivityRailItem:has(> .portalAvatarMark.has-avatar) { background: transparent; }
