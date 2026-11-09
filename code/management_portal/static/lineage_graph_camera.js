@@ -39,6 +39,8 @@
     let zoomDetailFrame = 0;
     let focusAnimation = null;
     let navigationSequence = 0;
+    let nativePinch = null;
+    let touchContacts = 0;
     let paintScale = 1;
     const supportsLayoutZoom = window.CSS?.supports?.("zoom", "1") === true;
     if (supportsLayoutZoom) world.style.zoom = "1";
@@ -154,10 +156,31 @@
     }
 
     function zoomFilter(event) {
+      if (nativePinch) return false;
       if (event.type === "wheel") return true;
       if (event.button !== undefined && event.button !== 0) return false;
       if (event.shiftKey && state.model.selectionEnabled) return false;
       return !event.target?.closest?.(".hatgNode, .edgeLabelBtn, .graphEmpty, button, input, textarea, select");
+    }
+
+    function beginViewportMotion() {
+      window.cancelAnimationFrame(zoomDetailFrame);
+      zoomDetailFrame = 0;
+      viewportMoving = true;
+      root.classList.add("isViewportMoving");
+    }
+
+    function endViewportMotion(persist) {
+      viewportMoving = false;
+      root.classList.remove("isViewportMoving");
+      syncGridPosition();
+      window.cancelAnimationFrame(zoomDetailFrame);
+      zoomDetailFrame = window.requestAnimationFrame(() => {
+        zoomDetailFrame = 0;
+        settlePaintScale();
+        syncZoomDetail();
+      });
+      if (persist) persistTransform();
     }
 
     const zoomBehavior = d3.zoom()
@@ -165,27 +188,74 @@
       .filter(zoomFilter)
       .on("start.hatg", event => {
         if (event.sourceEvent) navigationSequence += 1;
-        window.cancelAnimationFrame(zoomDetailFrame);
-        zoomDetailFrame = 0;
-        viewportMoving = true;
-        root.classList.add("isViewportMoving");
+        beginViewportMotion();
       })
       .on("zoom.hatg", event => applyTransform(event.transform))
       .on("end.hatg", event => {
-        viewportMoving = false;
-        root.classList.remove("isViewportMoving");
-        syncGridPosition();
-        window.cancelAnimationFrame(zoomDetailFrame);
-        zoomDetailFrame = window.requestAnimationFrame(() => {
-          zoomDetailFrame = 0;
-          settlePaintScale();
-          syncZoomDetail();
-        });
-        if (event.sourceEvent) persistTransform();
+        if (!nativePinch) endViewportMotion(Boolean(event.sourceEvent));
       });
     rootSelection.call(zoomBehavior).on("dblclick.zoom", null);
     root.addEventListener("pointerdown", cancelFocusAnimation, true);
-    root.addEventListener("wheel", cancelFocusAnimation, { capture: true, passive: true });
+    root.addEventListener("wheel", handleWheel, { capture: true, passive: false });
+    for (const type of ["touchstart", "touchend", "touchcancel"]) {
+      root.addEventListener(type, trackTouchContacts, { capture: true, passive: true });
+    }
+    root.addEventListener("gesturestart", startNativePinch, { passive: false });
+    root.addEventListener("gesturechange", changeNativePinch, { passive: false });
+    root.addEventListener("gestureend", endNativePinch, { passive: false });
+
+    function trackTouchContacts(event) {
+      touchContacts = event.touches.length;
+    }
+
+    function handleWheel(event) {
+      cancelFocusAnimation();
+      // Some engines emit wheel events alongside GestureEvent. Apply only
+      // the native gesture's cumulative scale while that gesture is active.
+      if (nativePinch) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+      }
+    }
+
+    function startNativePinch(event) {
+      // Touchscreen pinches already use D3's touch path. Safari on macOS
+      // sends GestureEvent instead; cancel page magnification only here.
+      if (touchContacts) return;
+      event.preventDefault();
+      if (nativePinch) return;
+      rootSelection.interrupt();
+      cancelFocusAnimation();
+      const rect = root.getBoundingClientRect();
+      const point = [
+        Number.isFinite(event.clientX) ? event.clientX - rect.left - root.clientLeft : root.clientWidth / 2,
+        Number.isFinite(event.clientY) ? event.clientY - rect.top - root.clientTop : root.clientHeight / 2,
+      ];
+      nativePinch = {
+        point, anchor: state.transform.invert(point), transform: state.transform,
+        scale: Number.isFinite(event.scale) && event.scale > 0 ? event.scale : 1,
+      };
+      navigationSequence += 1;
+      beginViewportMotion();
+    }
+
+    function changeNativePinch(event) {
+      if (!nativePinch) return;
+      event.preventDefault();
+      if (!Number.isFinite(event.scale) || event.scale <= 0) return;
+      const { point, anchor, transform, scale } = nativePinch;
+      const k = clamp(transform.k * event.scale / scale, scaleExtent[0], scaleExtent[1]);
+      const next = d3.zoomIdentity.translate(point[0] - anchor[0] * k, point[1] - anchor[1] * k).scale(k);
+      rootSelection.property("__zoom", next);
+      applyTransform(next);
+    }
+
+    function endNativePinch(event) {
+      if (!nativePinch) return;
+      changeNativePinch(event);
+      nativePinch = null;
+      endViewportMotion(true);
+    }
 
     function cancelFocusAnimation() {
       if (!focusAnimation) return;
@@ -504,7 +574,15 @@
       resizeObserver?.disconnect();
       window.cancelAnimationFrame(resizeFrame);
       root.removeEventListener("pointerdown", cancelFocusAnimation, true);
-      root.removeEventListener("wheel", cancelFocusAnimation, true);
+      root.removeEventListener("wheel", handleWheel, true);
+      for (const type of ["touchstart", "touchend", "touchcancel"]) {
+        root.removeEventListener(type, trackTouchContacts, true);
+      }
+      root.removeEventListener("gesturestart", startNativePinch);
+      root.removeEventListener("gesturechange", changeNativePinch);
+      root.removeEventListener("gestureend", endNativePinch);
+      nativePinch = null;
+      root.classList.remove("isViewportMoving");
       rootSelection.on(".zoom", null).interrupt();
       focusAnimation?.cancel();
       focusAnimation = null;
