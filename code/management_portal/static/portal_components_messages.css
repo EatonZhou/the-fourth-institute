@@ -146,9 +146,10 @@
 .messageItem.chatSystemCard,
 .nativeTurnCard.chatSystemCard {
   --message-system-color: var(--accent, #0f766e);
-  border-color: color-mix(in srgb, var(--message-system-color) 22%, var(--border, #cbd5e1));
-  background: color-mix(in srgb, var(--message-system-color) 5%, var(--panel, #fff));
-  box-shadow: inset 3px 0 0 color-mix(in srgb, var(--message-system-color) 60%, transparent);
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
 }
 
 .messageItem[data-system-source="harness"] {
