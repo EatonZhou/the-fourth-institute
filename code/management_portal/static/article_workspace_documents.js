@@ -156,6 +156,11 @@
 
     function setEditorMode(mode) {
       const documentState = activeDocument();
+      const previewDocument = documentState?.previewDocument;
+      window.PortalPreview.configureDownloadLink($("articleDownloadFile"), {
+        url: previewDocument?.capabilities.download ? previewDocument.downloadUrl : "",
+        filename: previewDocument?.downloadName,
+      });
       const textDocument = Boolean(documentState?.textDocument);
       const visualAvailable = Boolean(documentState);
       const visual = visualAvailable && (!textDocument || mode === "visual");
