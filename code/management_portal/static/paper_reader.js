@@ -74,7 +74,7 @@
       try {
         const { openReader } = await import('/static/paper_fullscreen_reader.js');
         if (generation !== readerGeneration) return;
-        fullscreenReader = openReader({paper, anchor: viewState?.pdfAnchor,
+        fullscreenReader = openReader({paper, principal: session.account, anchor: viewState?.pdfAnchor,
           onReady: signal => {
             if (signal.instanceId !== fullscreenReader?.instanceId || signal.source !== fullscreenReader?.sourceWindow ||
                 signal.paperId !== paper.id || signal.pdfUrl !== new URL(paper.pdf_url, location.href).href || !signal.fingerprint) return;

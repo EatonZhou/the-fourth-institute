@@ -1,0 +1,81 @@
+import json
+import subprocess
+import threading
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from pathlib import Path
+from urllib.parse import urlsplit
+import pytest
+from tests.cases.test_paper_reader_hooks import setup_paper
+from tests.cases.test_portal_security_repair_wave1 import _configure_portal_session
+from management_portal import http_paper, web_accounts, http_auth
+from management_portal.portal_access_control import PortalAccessStore
+
+
+@pytest.mark.parametrize('browser', ['chromium', 'firefox'])
+def test_formal_fullscreen(tmp_path, monkeypatch, browser):
+    run_host(tmp_path, monkeypatch, browser, 'zotero_reader_fullscreen.cjs')
+
+
+@pytest.mark.parametrize('browser', ['chromium', 'firefox'])
+def test_page_recent(tmp_path, monkeypatch, browser):
+    run_host(tmp_path, monkeypatch, browser, 'zotero_reader_recent.cjs')
+
+
+def run_host(tmp_path, monkeypatch, browser, script):
+    paper, bundle, store = setup_paper(tmp_path, monkeypatch)
+    access = PortalAccessStore()
+    from management_portal import personal_ama
+    monkeypatch.setattr(personal_ama, 'provision_account', lambda *a, **k: None)
+    for user in ('reader_one', 'reader_two'): access.upsert_user(user, actor='CASE')
+    _configure_portal_session(tmp_path, monkeypatch, access)
+    tokens = [web_accounts._issue_session_token(u) for u in ('reader_one', 'reader_two')]
+    definitions = http_paper.routes(object())
+    from management_portal import paper_recent
+    monkeypatch.setattr(paper_recent, 'get_resource_service', lambda: type('R', (), {'get': lambda *a, **k: {'resource_id': paper}})())
+    monkeypatch.setattr(paper_recent, 'resource_index_papers_by_ids', lambda ids, **k: [{'id': i, 'title': i} for i in ids])
+    root = Path(__file__).resolve().parents[2]
+    (bundle / 'paper.pdf').write_bytes((root/'tests/cases/fixtures/paper-synthetic-means.pdf').read_bytes())
+    class Handler(BaseHTTPRequestHandler):
+        def log_message(self, *args): pass
+        def do_POST(self): self.dispatch()
+        def do_GET(self): self.dispatch()
+        def dispatch(self):
+            parsed = urlsplit(self.path)
+            if parsed.path == '/integration':
+                self.send_response(200); self.send_header('Content-Type','text/html'); self.end_headers()
+                self.wfile.write((root/'tests/cases/fixtures/paper-reader-recent.html').read_bytes()); return
+            if parsed.path == '/':
+                self.send_response(200); self.send_header('Content-Type', 'text/html'); self.end_headers()
+                self.wfile.write(('''<script type="module">import {openReader} from '/static/paper_fullscreen_reader.js';
+window.signals=[];window.openDocument=()=>{window.host=openReader({paper:''' + json.dumps({'id': paper, 'title': 'Synthetic', 'pdf_url': '/original.pdf'}) + ''',principal:'reader_one',onReady:s=>signals.push({paperId:s.paperId,fingerprint:s.fingerprint}),onClose:()=>window.readerClosed=true});};window.ready=true;</script>''').encode()); return
+            if parsed.path in ('/static/paper_fullscreen_reader.js', '/static/paper_reader.js', '/static/paper_personal.js'):
+                self.send_response(200); self.send_header('Content-Type','text/javascript'); self.end_headers()
+                self.wfile.write((root/'management_portal'/parsed.path.lstrip('/')).read_bytes()); return
+            for d in definitions:
+                if d.matches(self.command, parsed.path, 'dual-auth') or d.matches(self.command, parsed.path, 'protected'):
+                    if d.phase == 'protected' and not http_auth._check_session(self): self.send_error(401); return
+                    return d.handler(self, parsed, '')
+            self.send_error(404)
+    server = ThreadingHTTPServer(('127.0.0.1',0),Handler)
+    thread = threading.Thread(target=server.serve_forever,daemon=True); thread.start()
+    try:
+        result = subprocess.run(['node',str(root/'tests/cases/javascript'/script),
+            f'http://127.0.0.1:{server.server_port}',browser,http_auth._SESSION_COOKIE,*tokens],capture_output=True,text=True,timeout=90)
+        assert result.returncode == 0, result.stdout + result.stderr
+        from management_common.directory_cleanup_store import get_directory_cleanup_store
+        from management_portal import paper_reader_annotations
+        from management_portal.paper_reader_service import production_service
+        queue = get_directory_cleanup_store()
+        before = {r['cleanup_id'] for r in queue.status()}
+        original = paper_reader_annotations.purge_paper_records
+        def fail(*args): raise RuntimeError('interrupted after unregister')
+        monkeypatch.setattr(paper_reader_annotations, 'purge_paper_records', fail)
+        with pytest.raises(RuntimeError, match='interrupted after unregister'):
+            store.delete_paper(paper, actor='reader_one')
+        monkeypatch.setattr(paper_reader_annotations, 'purge_paper_records', original)
+        assert production_service().recover_pending_deletions() == [{'paper_id': paper, 'state': 'done'}]
+        ids = {r['cleanup_id'] for r in queue.status()} - before
+        assert ids
+        for cleanup_id in ids: queue.run_pending(cleanup_id=cleanup_id)
+        assert not bundle.exists()
+    finally: server.shutdown(); server.server_close(); thread.join()

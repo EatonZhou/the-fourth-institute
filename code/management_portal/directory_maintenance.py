@@ -122,6 +122,12 @@ def run(*, now=None, test_roots=None):
         report['errors'].extend(report['deleted_creations'])
     except Exception as error:
         report['errors'].append(f'deleted creations: {error}')
+    from management_portal.paper_reader_service import production_service
+    try:
+        report['paper_reader'] = production_service().recover_pending_deletions()
+        report['errors'].extend(f'paper reader: {item}' for item in report['paper_reader'] if item['state'] == 'pending')
+    except Exception as error:
+        report['errors'].append(f'paper reader: {error}')
     report['cleanup'] = retention.queue.run_pending()
     report['pending_cleanup'] = [row for row in retention.queue.status() if row['status'] != 'completed']
     report['ok'] = not report['errors'] and not report['pending_cleanup'] and not report.get('pending_projections')

@@ -2,6 +2,7 @@
 
 import re
 from pathlib import Path
+from management_portal.http_paper_reader import production_routes as reader_routes
 from urllib.parse import parse_qs
 
 from management_portal import (
@@ -420,6 +421,7 @@ def routes(portal):
         ("POST", "deep-read/provenance", backend(paper_reading_jobs, "refresh_deep_read_provenance")),
     )
     return (
+        *reader_routes(portal),
         *(RouteDefinition(method, f"/paper/api/{path}", handler, "paper", phase="dual-auth")
           for method, path, handler in api),
         # Bearer callers of a missing Paper API get 401/403 before 404, like the routes above.

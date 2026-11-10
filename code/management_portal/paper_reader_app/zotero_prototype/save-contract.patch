@@ -1,0 +1,147 @@
+diff --git a/src/common/annotation-manager.js b/src/common/annotation-manager.js
+index 9195ce8..1ca0f27 100644
+--- a/src/common/annotation-manager.js
++++ b/src/common/annotation-manager.js
+@@ -22,6 +22,7 @@ class AnnotationManager {
+ 		this._annotations = options.annotations;
+ 		this._onChangeFilter = options.onChangeFilter;
+ 		this._onSave = options.onSave;
++		this._onSaveError = options.onSaveError;
+ 		this._onDelete = options.onDelete;
+ 		this._onChangeHistory = options.onChangeHistory;
+ 		this._adjustTextAnnotationPosition = options.adjustTextAnnotationPosition;
+@@ -390,21 +391,11 @@ class AnnotationManager {
+ 		return false;
+ 	}
+ 
+-	async _triggerSaving() {
++	_triggerSaving() {
++		if (this._saveError || this._savePromise) return;
+ 		if (!this._unsavedAnnotations.size) {
+ 			return;
+ 		}
+-		if (this._savingInProgress) {
+-			// A mobile eraser gesture can save a partial stroke update, then request an
+-			// immediate deletion of another stroke while that save is still in progress.
+-			// _saveImmediately() clears its debounce bypass before the save completes,
+-			// so retain the request for the next batch instead of debouncing it again.
+-			// Otherwise a quick Undo can run before the deletion reaches the app.
+-			if (this._skipAnnotationSavingDebounce) {
+-				this._saveImmediatelyAfterSaving = true;
+-			}
+-			return;
+-		}
+ 		if ((Date.now() - this._lastChangeTime < DEBOUNCE_TIME)
+ 			&& (Date.now() - this._lastSaveTime < DEBOUNCE_MAX_TIME)
+ 			&& !this._skipAnnotationSavingDebounce
+@@ -422,34 +413,52 @@ class AnnotationManager {
+ 		clearTimeout(this._saveTimeout);
+ 		this._saveTimeout = null;
+ 		this._lastSaveTime = Date.now();
+-		this._savingInProgress = true;
+-
+-		let saveAnnotations = [];
+-		let deleteAnnotationIDs = [];
+-		for (let [id, annotation] of this._unsavedAnnotations) {
+-			if (annotation) {
+-				saveAnnotations.push(annotation);
+-				this._clientKnownAnnotationIDs?.add(id);
+-			}
+-			else {
+-				deleteAnnotationIDs.push(id);
+-			}
+-		}
+-
+-		this._unsavedAnnotations.clear();
+-
+-		this._onDelete(deleteAnnotationIDs);
++		this.flush().catch(error => this._onSaveError?.(error));
++	}
+ 
+-		let clonedAnnotations = saveAnnotations.map(x => JSON.parse(JSON.stringify(x)));
+-		for (let clonedAnnotation of clonedAnnotations) {
+-			if (this._highVolatilityAnnotationIDs.has(clonedAnnotation.id)) {
+-				clonedAnnotation.onlyTextOrComment = true;
++	flush() {
++		clearTimeout(this._saveTimeout);
++		this._saveTimeout = null;
++		if (this._savePromise) return this._savePromise;
++		this._saveError = null;
++		// Defer execution until the shared promise has been installed.
++		this._savePromise = Promise.resolve().then(async () => {
++			while (this._unsavedAnnotations.size) {
++				const batch = this._unsavedAnnotations;
++				this._unsavedAnnotations = new Map();
++				const volatility = this._highVolatilityAnnotationIDs;
++				this._highVolatilityAnnotationIDs = new Set();
++				try {
++					const deletes = [...batch].filter(([, value]) => !value).map(([id]) => id);
++					const saves = [...batch.values()].filter(Boolean).map(value => {
++						const copy = JSON.parse(JSON.stringify(value));
++						if (volatility.has(value.id)) copy.onlyTextOrComment = true;
++						return copy;
++					});
++					await this._onDelete(deletes);
++					await this._onSave(saves);
++					for (const value of saves) this._clientKnownAnnotationIDs?.add(value.id);
++				}
++				catch (error) {
++					// Newer edits and tombstones always win over failed operations.
++					for (const [id, value] of batch) {
++						const newer = this._unsavedAnnotations.get(id);
++						if (newer && value?.image && this._highVolatilityAnnotationIDs.has(id)) {
++							this._unsavedAnnotations.set(id, {...newer, image: value.image});
++							this._highVolatilityAnnotationIDs.delete(id);
++						}
++						if (!this._unsavedAnnotations.has(id)) {
++							this._unsavedAnnotations.set(id, value);
++							// Retry full records, including any unacknowledged image.
++							this._highVolatilityAnnotationIDs.delete(id);
++						}
++					}
++					this._saveError = error;
++					throw error;
++				}
+ 			}
+-		}
+-		this._highVolatilityAnnotationIDs.clear();
+-		await this._onSave(clonedAnnotations);
+-		this._savingInProgress = false;
+-		this._triggerSaving();
++		}).finally(() => {this._savePromise = null;});
++		return this._savePromise;
+ 	}
+ 
+ 	_getAnnotationByID(id) {
+diff --git a/src/common/reader.js b/src/common/reader.js
+index 058c72b..42eb7fb 100644
+--- a/src/common/reader.js
++++ b/src/common/reader.js
+@@ -355,6 +355,7 @@ class Reader {
+ 			annotations: options.annotations,
+ 			tools: this._tools,
+ 			onSave: this._onSaveAnnotations,
++			onSaveError: options.onAnnotationSaveError,
+ 			onDelete: this._handleDeleteAnnotations,
+ 			onRender: (annotations) => {
+ 				this._updateState({ annotations });
+@@ -2260,6 +2261,10 @@ class Reader {
+ 
+ 	}
+ 
++	flushAnnotations() {
++		return this._annotationManager.flush();
++	}
++
+ 	deleteAnnotations(ids) {
+ 		if (ids.length > 1) {
+ 			if (!this._onConfirm(
+@@ -2942,7 +2947,7 @@ class Reader {
+ 			primaryViewAnnotationPopup,
+ 			secondaryViewAnnotationPopup
+ 		});
+-		this._onDeleteAnnotations(ids);
++		return this._onDeleteAnnotations(ids);
+ 	};
+ 
+ 	_handleSetPrintPopup(state) {

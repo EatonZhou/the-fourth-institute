@@ -1,0 +1,14 @@
+<!doctype html><div id="folderTree"></div><div id="workspaceMain"></div>
+<script src="/static/paper_reader.js"></script><script src="/static/paper_personal.js"></script><script>
+window.state={principalId:'reader_one',favoriteIds:new Set(),favoritePending:new Set(),favoriteRevision:0,selectedId:'paper_0123456789ab',mode:'reader'};
+window.renders=[];window.posts=0;
+window.PortalI18n={t:x=>x,html:(s,...v)=>s.reduce((a,x,i)=>a+x+(v[i]??''),'')};
+window.PortalPreview={mountZoom:()=>({dispose(){},setEnabled(){}})};
+window.PortalPdfPreview={render:c=>{renders.push(c);return {root:c.root,promise:new Promise(()=>{}),cancel(){}}}};
+const api={request:async(url,o={})=>{if(url.endsWith('/open'))posts++;const r=await fetch(url,{method:o.method||'GET',headers:{'Content-Type':'application/json'},...(o.body?{body:JSON.stringify(o.body)}:{})});if(!r.ok)throw Error(await r.text());return r.json();}};
+const deps=Object.fromEntries(PortalPaperReader.dependencies.map(k=>[k,()=> '']));Object.assign(deps,{$:id=>document.getElementById(id),state,esc:String,md:String,detailSectionsLoaded:()=>true,alertError:console.error});
+window.reader=PortalPaperReader.createReader(deps);
+window.openPaper=id=>{state.selectedId=id;state.mode='reader';state.detail={paper:{id,title:'Synthetic',pdf_url:'/original.pdf'}};reader.renderReaderMode();};
+PortalPaperPersonal.mount({state,paperApi:api,loadDetail:async()=>{},setMode:m=>state.mode=m});
+window.ready=true;
+</script>

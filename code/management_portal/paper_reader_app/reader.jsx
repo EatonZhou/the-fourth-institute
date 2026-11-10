@@ -1,21 +1,19 @@
 import React, {useEffect, useRef, useState} from 'react';
 import {createRoot} from 'react-dom/client';
-import {connectViewer, VIEWER_URL} from './viewer_adapter.js';
-import {observeReadingReady} from './reading_ready.js';
+import {connectZotero, ZOTERO_URL} from './zotero_adapter.js';
 
-function Reader({paper, anchor, close, control, readingReady, frameReady}) {
+function Reader({paper, principal, anchor, close, control, readingReady, frameReady}) {
   const frame = useRef(null), bridge = useRef(null);
   const [status, setStatus] = useState('正在打开论文…');
   const [failed, setFailed] = useState(false);
   useEffect(() => {
     frameReady(frame.current.contentWindow);
-    const stopReadingReady = observeReadingReady(frame.current, paper, readingReady);
-    const connection = connectViewer({frame: frame.current, paper, anchor,
+    const connection = connectZotero({frame: frame.current, paper, principal, ready: readingReady,
       status: (message, error = false) => { setStatus(message); setFailed(error); }});
     bridge.current = connection;
     control(connection);
-    frame.current.src = `${VIEWER_URL}?file=${encodeURIComponent(paper.pdf_url)}`;
-    return () => { stopReadingReady(); connection.dispose(); };
+    frame.current.src = ZOTERO_URL;
+    return () => { connection.dispose(); };
   }, [paper.id]);
   return <div className="paperReadingApp">
     <header className="paperReadingToolbar">
@@ -30,7 +28,7 @@ function Reader({paper, anchor, close, control, readingReady, frameReady}) {
   </div>;
 }
 
-export function openReader({paper, anchor, onClose, onReady}) {
+export function openReader({paper, principal, anchor, onClose, onReady}) {
   const previousFocus = document.activeElement;
   const dialog = document.createElement('dialog');
   dialog.className = 'paperReadingDialog'; dialog.setAttribute('aria-label', '全屏论文阅读');
@@ -50,7 +48,7 @@ export function openReader({paper, anchor, onClose, onReady}) {
   };
   dialog.addEventListener('cancel', event => { event.preventDefault(); close(); });
   dialog.showModal();
-  root.render(<Reader paper={paper} anchor={anchor} close={close} control={value => { bridge = value; }}
+  root.render(<Reader paper={paper} principal={principal} anchor={anchor} close={close} control={value => { bridge = value; }}
     frameReady={value => { sourceWindow = value; }}
     readingReady={value => { if (!closed && !closing) onReady?.({...value, instanceId}); }} />);
   return {close, instanceId, get sourceWindow() { return sourceWindow; }};

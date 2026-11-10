@@ -700,7 +700,9 @@ class PaperStore:
         manifest_path, manifest = found
         paper_dir = self.paper_dir_from_manifest(manifest, manifest_path)
         from .resources.directory_registrations import unregister_owned
-        result = unregister_owned('paper', paper_id, actor=actor, projection_ids=projection_ids)
+        from .paper_reader_service import production_service
+        result = production_service().delete_if_used(paper_id,
+            lambda: unregister_owned('paper', paper_id, actor=actor, projection_ids=projection_ids))
         self.rebuild_fingerprint_index()
         return {
             "paper_id": str(manifest.get("paper_id") or paper_id),
