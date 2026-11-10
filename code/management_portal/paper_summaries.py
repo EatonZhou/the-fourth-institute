@@ -3,25 +3,58 @@
 from __future__ import annotations
 
 from pathlib import Path
+import hashlib
 import secrets
 import time
 
+from management_common.file_lock import lock_stream
 from management_portal.paper_records import _now
 from management_portal.paper_resident import _clean_summary_paragraph, _resident_reply
 from management_portal.paper_store import (
     _analysis_text, _paper_by_id, _paper_store_file, _pdf_text_for_paper, _update_paper_run_record,
-    _write_paper_run_record,
+    _write_paper_run_record, _paper_run_record_by_job_id, _paper_run_records, PAPER_STORE_ROOT,
 )
 from management_portal.shared_state import atomic_replace_json
 
 
-def _start_summary_task(paper_id: str, *, actor: str = "") -> None:
+def retry_summary(payload: dict, actor: str) -> dict:
+    """Explicitly retry one failed run; repeated requests observe the same retry."""
+    from management_portal import permission_system
+
+    paper_id = str(payload.get("paper_id") or "").strip()
+    previous_id = str(payload.get("job_id") or "").strip()
+    if not paper_id or not previous_id:
+        raise ValueError("paper_id and job_id required")
+    if paper_id not in permission_system.permitted_ids(actor, "UpdateResource", "resource_id", [paper_id]):
+        raise PermissionError("Paper summary retry requires contributor permission")
+    if not _paper_by_id(paper_id):
+        raise KeyError("paper not found")
+    digest = hashlib.sha256(f"{paper_id}\n{previous_id}".encode()).hexdigest()
+    retry_id = f"summary-retry-{digest[:24]}"
+    lock_dir = PAPER_STORE_ROOT / "_work" / "summary-retries"
+    lock_dir.mkdir(parents=True, exist_ok=True)
+    with (lock_dir / f"{digest}.lock").open("a+b") as stream, lock_stream(stream):
+        existing = _paper_run_record_by_job_id(paper_id, retry_id)
+        if existing:
+            return {"paper_id": paper_id, "summary_job": existing, "reused": True}
+        previous = _paper_run_record_by_job_id(paper_id, previous_id)
+        if previous.get("kind") != "summary" or previous.get("status") != "error":
+            raise ValueError("only a failed summary job can be retried")
+        records = _paper_run_records(paper_id, kind="summary", limit=0)
+        latest = max(records, key=lambda job: (float(job.get("queued_at") or 0), str(job.get("job_id") or "")), default={})
+        if latest.get("job_id") != previous_id:
+            raise ValueError("summary job changed; reload before retrying")
+        _start_summary_task(paper_id, actor=actor, job_id=retry_id, retry_of=previous_id)
+        return {"paper_id": paper_id, "summary_job": _paper_run_record_by_job_id(paper_id, retry_id), "reused": False}
+
+
+def _start_summary_task(paper_id: str, *, actor: str = "", job_id: str = "", retry_of: str = "") -> None:
     from management_portal import business_tasks
 
     paper_id = str(paper_id or "").strip()
     if not paper_id:
         return
-    job_id = f"summary-{int(time.time())}-{secrets.token_hex(5)}"
+    job_id = job_id or f"summary-{int(time.time())}-{secrets.token_hex(5)}"
     _write_paper_run_record(paper_id, {
         "job_id": job_id,
         "kind": "summary",
@@ -30,6 +63,7 @@ def _start_summary_task(paper_id: str, *, actor: str = "") -> None:
         "queued_at": _now(),
         "step": "queued",
         "error": "",
+        "retry_of": retry_of,
     })
     def fail(exc: BaseException) -> None:
         _update_paper_run_record(paper_id, {

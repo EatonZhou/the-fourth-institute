@@ -8,7 +8,7 @@ from management_portal import (
     http_auth, http_documents, http_files, http_request_body, http_responses, page_api_auth, paper_assets, paper_ccf,
     paper_ccf_enrichment, paper_collection_jobs, paper_detail, paper_favorites, paper_figure_jobs,
     paper_figures, paper_library, paper_notes, paper_reading_jobs, paper_refs, paper_registration,
-    paper_resources, paper_reviews, semantic_search_jobs, web_accounts, web_resources,
+    paper_resources, paper_reviews, paper_summaries, semantic_search_jobs, web_accounts, web_resources,
 )
 from management_portal.http_routes import ROUTE_NOT_FOUND, RouteDefinition
 from management_portal.paper_collector import authenticated_request
@@ -369,6 +369,7 @@ def routes(portal):
         ("POST", "notes/delete", backend(paper_notes, "delete_note")),
         ("POST", "refs/extract", backend(paper_refs, "extract_refs")),
         ("POST", "papers/assets/retry", backend(paper_assets, "retry_assets")),
+        ("POST", "papers/summary/retry", backend(paper_summaries, "retry_summary")),
         ("POST", "refs/register", backend(paper_refs, "register_ref")),
         ("POST", "figures/extract", backend(paper_figures, "extract_figures")),
         ("POST", "figures/explain", backend(paper_figure_jobs, "start_figure_explanation")),
