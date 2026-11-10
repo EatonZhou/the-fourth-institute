@@ -1,0 +1,4 @@
+/* Portal uses the upstream editor UI. Only personal highlights are persisted. */
+#editorFreeText, #editorInk, #editorStamp, #editorSignature, #editorComment,
+#secondaryOpenFile, #openFile, #viewsManagerAddFileButton,
+.commentButton, .addCommentButton { display: none !important; }

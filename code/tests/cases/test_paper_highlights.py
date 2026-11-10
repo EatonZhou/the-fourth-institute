@@ -84,3 +84,36 @@ def test_http_personal_route_uses_authenticated_actor(resource):
     assert len(highlights.list_highlights("alice", PAPER, DOC)["highlights"]) == 1
     assert highlights.list_highlights("bob", PAPER, DOC)["highlights"] == []
     http.require_resource.assert_not_called()  # Read-only users can annotate.
+
+
+NATIVE = {"annotationType": 9, "pageIndex": 0, "rotation": 0,
+          "rect": [10, 20, 30, 40], "color": [255, 228, 94], "opacity": 1, "thickness": 12,
+          "quadPoints": [10, 40, 30, 40, 10, 20, 30, 20]}
+
+
+def test_native_style_and_legacy_records_roundtrip(resource):
+    item = {**ITEM, "native": [NATIVE]}
+    save(highlight=item)
+    assert highlights.list_highlights("alice", PAPER, DOC)["highlights"] == [item]
+    free = {k: v for k, v in NATIVE.items() if k != "quadPoints"}
+    free["outlines"] = {"points": [[10, 20, 20, 25, 30, 40]]}
+    save(highlight={**ITEM, "native": [free]})
+    assert highlights.list_highlights("alice", PAPER, DOC)["highlights"][0]["native"] == [free]
+    save()  # The original rectangle-only format remains accepted unchanged.
+    assert highlights.list_highlights("alice", PAPER, DOC)["highlights"] == [ITEM]
+
+
+@pytest.mark.parametrize("field,value", [("annotationType", 3), ("pageIndex", 1),
+    ("rotation", 45), ("opacity", float("nan")), ("color", [256, 0, 0]),
+    ("quadPoints", [1, 2, 3]), ("rect", [30, 20, 10, 40])])
+def test_invalid_native_geometry_rejected(resource, field, value):
+    native = {**NATIVE, field: value}
+    with pytest.raises(ValueError): save(highlight={**ITEM, "native": [native]})
+
+
+def test_native_drops_untrusted_actions_and_bounds_freehand_size(resource):
+    save(highlight={**ITEM, "native": [{**NATIVE, "actions": {"JavaScript": "bad"}}]})
+    assert "actions" not in highlights.list_highlights("alice", PAPER, DOC)["highlights"][0]["native"][0]
+    free = {k: v for k, v in NATIVE.items() if k != "quadPoints"}
+    free["outlines"] = {"points": [[0] * 40002]}
+    with pytest.raises(ValueError): save(highlight={**ITEM, "native": [free]})

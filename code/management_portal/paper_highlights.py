@@ -54,7 +54,65 @@ def _highlight(value):
         if width <= 0 or height <= 0 or x + width > 1.000001 or y + height > 1.000001:
             raise ValueError("rectangle outside page")
         clean.append(dict(page=rect["page"], x=x, y=y, width=width, height=height))
-    return {"id": identity, "text": text.strip(), "rects": clean}
+    result = {"id": identity, "text": text.strip(), "rects": clean}
+    if "native" in value:
+        result["native"] = _native_highlights(value["native"], {r["page"] for r in clean})
+    return result
+
+
+def _native_highlights(parts, pages):
+    """Allow only PDF.js highlight geometry, never arbitrary editor/action objects."""
+    if not isinstance(parts, list) or not 1 <= len(parts) <= 500:
+        raise ValueError("invalid native highlights")
+    result = []
+
+    def numbers(values, size=None, maximum=40000):
+        if (not isinstance(values, list) or not 1 <= len(values) <= maximum
+                or (size is not None and len(values) != size)
+                or any(type(n) not in (int, float) or not math.isfinite(n) or abs(n) > 1e7 for n in values)):
+            raise ValueError("invalid native highlight coordinates")
+        return values
+
+    for part in parts:
+        if not isinstance(part, dict) or part.get("annotationType") != 9:
+            raise ValueError("only native highlights supported")
+        page = part.get("pageIndex")
+        if type(page) is not int or page + 1 not in pages:
+            raise ValueError("native highlight page mismatch")
+        rotation = part.get("rotation")
+        if type(rotation) is not int or rotation not in (0, 90, 180, 270):
+            raise ValueError("invalid highlight rotation")
+        rect = numbers(part.get("rect"), 4)
+        if rect[2] <= rect[0] or rect[3] <= rect[1]:
+            raise ValueError("invalid native highlight bounds")
+        color = numbers(part.get("color"), 3)
+        if any(type(n) is not int or not 0 <= n <= 255 for n in color):
+            raise ValueError("invalid highlight color")
+        opacity = part.get("opacity", 1)
+        thickness = part.get("thickness", 12)
+        for number, maximum in ((opacity, 1), (thickness, 1000)):
+            if type(number) not in (int, float) or not math.isfinite(number) or not 0 < number <= maximum:
+                raise ValueError("invalid highlight style")
+        clean = dict(annotationType=9, pageIndex=page, rotation=rotation, rect=rect,
+                     color=color, opacity=opacity, thickness=thickness)
+        quads = part.get("quadPoints")
+        if quads is not None:
+            numbers(quads, maximum=4000)
+            if len(quads) % 8:
+                raise ValueError("invalid highlight quadrilaterals")
+            clean["quadPoints"] = quads
+        else:
+            outlines = part.get("outlines")
+            if not isinstance(outlines, dict) or not isinstance(outlines.get("points"), list) or len(outlines["points"]) != 1:
+                raise ValueError("free highlight points required")
+            points = numbers(outlines["points"][0])
+            if len(points) < 4 or len(points) % 2:
+                raise ValueError("invalid free highlight points")
+            clean["outlines"] = {"points": [points]}
+        result.append(clean)
+    if {part["pageIndex"] + 1 for part in result} != pages:
+        raise ValueError("native highlight pages mismatch")
+    return result
 
 
 def save_highlight(actor, payload):
