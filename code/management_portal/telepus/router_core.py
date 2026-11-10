@@ -297,17 +297,33 @@ class RouterCore:
         status = str(input_state.get("state") or "")
         if not is_terminal(status):
             return []
+        work = input_state.get("work") or {}
+        work_state = str(work.get("state") or "unknown")
+        if status == "completed":
+            # Delivery to an active turn is completed before the work finishes.
+            # Keep the input tracked until the execution has an outcome.
+            if work_state in {"queued", "running"}:
+                return []
+            if work_state in {"failed", "cancelled"}:
+                status = work_state
         outgoing: list[dict[str, Any]] = []
         reply_ids = [str(item) for item in input_state.get("reply_message_ids") or []]
         if status == "completed" or reply_ids:
             shown = self.portal.conversation(actor, resident_id, input_message_id=message_id).get("messages") or []
             by_id = {str(item.get("message_id") or ""): item for item in shown if isinstance(item, dict)}
+            if any(reply_id not in by_id for reply_id in reply_ids):
+                # Input state and conversation are separate reads. A reply whose
+                # body is not visible yet must not be dropped or partly claimed.
+                return []
             replies = [by_id[reply_id] for reply_id in reply_ids if reply_id in by_id]
             if not replies:
                 # The projection names the reply differently; its last text answer to this input stands in.
                 found = next((item["reply"] for item in conversation_rounds(shown)
                               if item["input"].get("message_id") == message_id and item["reply"]), None)
                 replies = [found] if found else []
+            if not replies and work and work_state == "unknown":
+                # Missing execution evidence is not evidence of completion.
+                return []
             for reply in replies:
                 outgoing.extend(self._reply_messages(state, resident_id, reply, reply_to=entry["telegram_message_id"]))
         if status != "completed" and not outgoing:

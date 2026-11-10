@@ -217,6 +217,35 @@ def test_sender_dedup_uint64_reference_and_channel_isolation(bridge):
     assert not adapter.router.store.watched_chats()
 
 
+@pytest.mark.parametrize('work_state', ['queued', 'running', 'unknown'])
+def test_withdraw_then_resend_waits_for_work_and_delivers_reply_once(bridge, work_state):
+    adapter, server, portal, _ = bridge
+    incoming(adapter, server, 'first request', 1)
+    first = portal.delivered[-1][2]['message_id']
+    portal.states[(FACADE, first)] = {
+        'state': 'cancelled', 'reply_message_ids': [],
+        'error': {'code': 'queue_withdrawn'},
+        'work': {'state': 'cancelled', 'kind': 'primary', 'delivery': 'pending'},
+    }
+    incoming(adapter, server, 'replacement request', 2)
+    second = portal.delivered[-1][2]['message_id']
+    # Delivery can finish before the execution; this is not a final answer.
+    portal.states[(FACADE, second)] = {
+        'state': 'completed', 'reply_message_ids': [],
+        'work': {'state': work_state, 'kind': 'appended', 'delivery': 'delivered'},
+    }
+    adapter.refresh(ACTOR)
+    assert not adapter.router.store.input(first)['open']
+    assert adapter.router.store.input(second)['open']
+    portal.answer(FACADE, second, 'replacement-reply', 'replacement answer')
+    portal.states[(FACADE, second)]['work'] = {'state': 'completed'}
+    adapter.refresh(ACTOR)
+    adapter.refresh(ACTOR)
+    assert [msg['item_list'][0]['text_item']['text'] for msg in server.sent].count('replacement answer') == 1
+    assert not adapter.router.store.input(second)['open']
+    assert not adapter.store.pending(chat_key('bot'))
+
+
 def test_quota_pause_reopen_and_ordered_resume(bridge):
     adapter, server, portal, _ = bridge
     incoming(adapter, server)

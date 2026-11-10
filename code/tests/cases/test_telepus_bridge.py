@@ -62,6 +62,41 @@ def test_plain_message_goes_to_the_facade_and_member_replies_come_back_once(chat
     assert chat.store.open_inputs("c1") == []
 
 
+def test_reply_projection_lag_keeps_input_open_until_all_replies_are_readable(chat):
+    chat.send('reply arrives in a later projection')
+    request = chat.portal.delivered[-1][2]['message_id']
+    chat.portal.answer(FACADE, request, 'reply_1', 'first reply')
+    chat.portal.states[(FACADE, request)]['reply_message_ids'] = ['reply_1', 'reply_2']
+    assert chat.refresh() == []
+    assert chat.store.input(request)['open']
+    chat.portal.answer(FACADE, request, 'reply_2', 'second reply')
+    chat.portal.states[(FACADE, request)]['reply_message_ids'] = ['reply_1', 'reply_2']
+    assert [item['text'] for item in chat.refresh()] == ['first reply', 'second reply']
+    assert not chat.store.input(request)['open']
+    assert chat.refresh() == []
+
+
+@pytest.mark.parametrize('work_state,label', [('failed', '处理失败'), ('cancelled', '已停止')])
+def test_delivered_input_reports_execution_failure_or_cancellation(chat, work_state, label):
+    chat.send('delivered but execution did not complete')
+    request = chat.portal.delivered[-1][2]['message_id']
+    chat.portal.states[(FACADE, request)] = {
+        'state': 'completed', 'reply_message_ids': [], 'work': {'state': work_state},
+    }
+    assert label in chat.refresh()[0]['text']
+    assert not chat.store.input(request)['open']
+
+
+def test_completed_work_without_a_reply_closes_input(chat):
+    chat.send('no answer needed')
+    request = chat.portal.delivered[-1][2]['message_id']
+    chat.portal.states[(FACADE, request)] = {
+        'state': 'completed', 'reply_message_ids': [], 'work': {'state': 'completed'},
+    }
+    assert chat.refresh() == []
+    assert not chat.store.input(request)['open']
+
+
 def test_a_telegram_reply_quotes_the_portal_message_it_shows(chat):
     """Telepus 在 Telegram 中回复一条消息时，投递带上它对应 Portal 消息的引用"""
     chat.send("第一个问题")
