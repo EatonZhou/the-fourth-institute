@@ -108,8 +108,9 @@ def lineage_graph(actor: str, lineage_id: str) -> dict:
     return dict(isa_client.call(actor, "GetLineage", {"lineage_id": lineage_id}).get("lineage") or {})
 
 
-def _deliver_effect_config(prompt: str, *, lend_temporary_credentials: bool = False) -> dict:
-    return {"script": deliver_message_script(prompt, lend_temporary_credentials=lend_temporary_credentials),
+def _deliver_effect_config(prompt: str, *, lend_temporary_credentials: bool = False, execution_constraints=None) -> dict:
+    constants = {} if execution_constraints is None else {'execution_constraints': execution_constraints, 'context_policy': 'fresh'}
+    return {"script": deliver_message_script(prompt, lend_temporary_credentials=lend_temporary_credentials, **constants),
             "endpoints": ["target"]}
 
 
@@ -192,7 +193,9 @@ class WorkflowBindings:
                             key=f'release:{resident_id}:finalize:{attempt}')
 
     def install(self, *, actor, lineage_id, resident_id, name, title, prompt, lend_temporary_credentials=False,
-                context_policy=None):
+                context_policy=None, execution_constraints=None):
+        if execution_constraints is not None and (context_policy != 'fresh' or execution_constraints != {'version': 1, 'text_only': True, 'context': 'fresh'}):
+            raise ValueError('Constrained workflow requires v1 text_only and fresh')
         if context_policy not in (None, "session", "fresh"):
             raise ValueError("工作流 context_policy 必须为 session 或 fresh")
         identity = hashlib.sha256(json.dumps([lineage_id, resident_id, name]).encode()).hexdigest()
@@ -207,7 +210,8 @@ class WorkflowBindings:
             parts = deliver_script_parts(str((effect.get("config") or {}).get("script") or ""))
             invoke = next(wire for wire in current["program"]["wires"] if wire["id"] == state["steps"]["invoke"])
             policy_current = context_policy is None or (invoke.get("config") or {}).get("context_policy") == context_policy
-            if policy_current and (not lend_temporary_credentials or (parts and parts[2].get("lend_temporary_credentials")
+            constraint_current = execution_constraints is None or (parts and parts[2].get('execution_constraints') == execution_constraints)
+            if policy_current and constraint_current and (not lend_temporary_credentials or (parts and parts[2].get("lend_temporary_credentials")
                                                   and (invoke.get("config") or {}).get("include_envelope", True))):
                 return binding
         with self.lineage_lock(lineage_id):
@@ -239,7 +243,7 @@ class WorkflowBindings:
             }, "component_id")
             effect = step("effect", "CreateComponent", {
                 "kind": "effect", "title": title + " · 执行",
-                "config": _deliver_effect_config(prompt, lend_temporary_credentials=lend_temporary_credentials),
+                "config": _deliver_effect_config(prompt, lend_temporary_credentials=lend_temporary_credentials, execution_constraints=execution_constraints),
                 "near_resident_id": resident_id,
             }, "component_id")
             step("target", "CreateWire", {
@@ -253,6 +257,10 @@ class WorkflowBindings:
             current = lineage_graph(actor, lineage_id)
             binding = self._validated_binding(state, current)
             components = {item["id"]: item for item in current.get("program", {}).get("components", [])}
+            if execution_constraints is not None:
+                fixed = deliver_script_parts(str((components[effect].get('config') or {}).get('script') or ''))
+                if not fixed or fixed[2].get('execution_constraints') != execution_constraints:
+                    raise ValueError('Existing Effect must explicitly declare execution_constraints before use')
             self._keep_prompt_current(actor, lineage_id, identity, state, components[effect], prompt,
                                       lend_temporary_credentials=lend_temporary_credentials)
             if lend_temporary_credentials or context_policy is not None:

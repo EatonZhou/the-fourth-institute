@@ -70,6 +70,12 @@ class KimiBackend(NativeSocketBackend):
 
     def execute(self, invocation, context):
         request, session = invocation.request, invocation.session
+        from .native_options import kimi_text_only
+        restricted = kimi_text_only(request.runtime_options)
+        if restricted and (request.session.mode != 'stateless' or request.input_media):
+            raise ValueError('Kimi text_only requires fresh text execution')
+        if restricted and (request.runtime_options.get('tools') != [] or request.runtime_options.get('permission_mode') != 'manual'):
+            raise ValueError('Kimi text_only final native options were not restricted')
         route = str(request.runtime_options.get("provider_profile") or session.backend_route_id or "")
         if session.backend_route_id and session.backend_route_id != route:
             raise ValueError("Provider route changes require a session migration")
@@ -99,7 +105,11 @@ class KimiBackend(NativeSocketBackend):
             context.set_interrupt_target(session.backend_session_id)
             return BackendResult(output={"message": "", "provider": self.provider_id, "operation": "create"},
                                  backend_session_id=session.backend_session_id, backend_route_id=route)
-        return super().execute(invocation, context)
+        result = super().execute(invocation, context)
+        if restricted and request.operation == 'turn':
+            result = replace(result, output={**result.output, 'execution_constraints_receipt': {
+                'version': 1, 'text_only': True, 'settled_tools': [], 'source': 'kimi.session_tools'}})
+        return result
 
     def deliver_turn_input(self, **kwargs):
         if self._account_client is None:
@@ -117,6 +127,8 @@ class KimiBackend(NativeSocketBackend):
         return super().interrupt(**kwargs)
 
     def prepare_turn_tools(self, invocation, context):
+        from .native_options import kimi_text_only
+        if kimi_text_only(invocation.request.runtime_options): return [], None
         return self.offer_portal_tools(invocation, context, home=self.account_home())
 
     def turn_scope(self, session_id, catalog, dispatch):
@@ -125,6 +137,24 @@ class KimiBackend(NativeSocketBackend):
     def client_turn_options(self, invocation, context, catalog):
         from .native_options import KIMI_SUBAGENT_TOOLS
         options = invocation.request.runtime_options
+        from .native_options import kimi_text_only
+        if kimi_text_only(options):
+            if catalog: raise ValueError('Kimi text_only cannot offer Portal tools')
+            client = self.client_factory()
+            client.update_session_profile(invocation.session.backend_session_id, tools=[],
+                permission_mode='manual', model=str(options.get('model') or ''))
+            snapshot = client.get_snapshot(invocation.session.backend_session_id)
+            profile = (snapshot.get('session') or {}).get('agent_config') or {}
+            if profile.get('tools') != [] or profile.get('permission_mode') != 'manual':
+                raise ValueError('Kimi text_only profile was not settled')
+            raw = client._request('GET', 'tools', query={'session_id': invocation.session.backend_session_id}, timeout=15.0)
+            rows = raw.get('tools') if isinstance(raw, dict) else None
+            if not isinstance(rows, list) or any(not isinstance(t, dict) or not isinstance(t.get('name'), str)
+                    or not t['name'] or t.get('active') is not False for t in rows):
+                raise ValueError('Kimi text_only tools are active or unverified')
+            return {'native_tools': [], 'disabled_tools': sorted({t['name'] for t in rows}),
+                    'cancelled': context.is_cancelled,
+                    'prepend_system_prompt': invocation.attach_system_context and not invocation.is_new_backend_session}
         tools = list(options.get("tools") or [])
         profile = {"tools": tools, "permission_mode": str(options.get("permission_mode") or invocation.request.permission_profile),
                    "model": str(options.get("model") or "")}

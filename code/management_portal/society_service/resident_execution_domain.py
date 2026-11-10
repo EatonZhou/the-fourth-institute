@@ -1568,7 +1568,71 @@ def _lineage_delivery_profile(job: Mapping[str, Any]) -> dict[str, Any]:
     return lineage_program_resident_inputs.delivery_profile(lineage_id, message_id)
 
 
-def _build_resident_execution_request(
+def text_only_input_snapshot(resident_id, actor, *, text):
+    """Authenticated, read-only current assembly for the explicit text path.
+
+    Uses the same runtime authorization and system-parts owners as submission.
+    This is input/configuration evidence, never effective tool confirmation.
+    """
+    from management_portal.agent_prompt_context import system_parts_revision
+    current = read_resident_runtime_settings(resident_id, actor)
+    with resident_record_domain.state_lock(resident_id):
+        record = resident_record_domain.resolve_resident_runtime_target(resident_id, actor, require_visible=True).record
+        settings = resident_runtime_domain.read_resident_runtime_settings(record)
+        if resident_runtime_domain.resident_settings_revision(record, settings) != current['settings_revision']:
+            raise ValueError('Resident settings changed during text snapshot')
+        job = {'actor': actor, 'raw_message': text,
+               'execution_constraints': {'version': 1, 'text_only': True, 'context': 'fresh'}}
+        validate_text_only_input(job)
+        resident_execution_engine_domain.resident_execution_runtime_options(record, job, is_owner=True)
+        instructions = resident_system_instructions(record, job, settings=settings)
+        return {'settings_revision': current['settings_revision'],
+                'system_parts_revision': system_parts_revision(instructions),
+                'backend': resident_backend.execution_backend(record),
+                'account': resident_backend.execution_account(record),
+                'settings': settings}
+
+
+def validate_text_only_input(job):
+    """An explicit internal job contract; it does not attest disabled tools."""
+    constraints = job.get('execution_constraints')
+    if constraints is None:
+        return None
+    if constraints != {'version': 1, 'text_only': True, 'context': 'fresh'}:
+        raise ValueError('Unsupported execution constraints')
+    for field in ('input_media', 'context_refs', 'additional_skills', 'runtime_context', 'fork_context_input'):
+        value = job.get(field)
+        if field == 'context_refs' and isinstance(value, dict):
+            value = any(v for k, v in value.items() if k not in {'updated_at', 'updated_by'})
+        if value:
+            raise ValueError('text_only input cannot include ' + field)
+    if not isinstance(job.get('raw_message'), str) or not job['raw_message'].strip():
+        raise ValueError('text_only input requires explicit text')
+    return dict(constraints)
+
+
+def _build_resident_execution_request(record, job):
+    admitted = _lineage_delivery_profile(job).get('execution_constraints')
+    if admitted is not None:
+        if job.get('execution_constraints') is not None and job['execution_constraints'] != admitted:
+            raise ValueError('Job constraints differ from the admitted input')
+        job['execution_constraints'] = dict(admitted)
+    constraints = validate_text_only_input(job)
+    if constraints is not None:
+        delivery = _lineage_delivery_profile(job)
+        scoped = resident_input_scope.get(resident_domain_common.record_resident_id(record), str(job.get('user_message_id') or ''))
+        if not scoped and not delivery.get('isolated'):
+            raise ValueError('text_only requires an admitted fresh input')
+    request = _build_resident_execution_request_unrestricted(record, job)
+    if constraints is not None:
+        if request.session.mode != 'stateless' or request.input_media:
+            raise ValueError('text_only requires a stateless text execution')
+        request = replace(request, runtime_options={**request.runtime_options,
+                          'execution_constraints': constraints})
+    return request
+
+
+def _build_resident_execution_request_unrestricted(
     record: dict[str, Any],
     job: dict[str, Any],
 ) -> object:

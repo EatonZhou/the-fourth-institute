@@ -11,6 +11,7 @@ from management_common.json_columns import json_text, json_value
 
 COLUMNS = ("resident_id", "revision", "execution_id", "input_message_id", "event_cursor", "preparation_json", "progress_json")
 PREPARATION = frozenset({
+    "execution_constraints",
     "input_message", "raw_message",
     "effective_message", "actual_sent_prompt", "prompt_cwd", "context_refs", "input_media",
     "enqueued_at", "additional_skills", "runtime_context", "allow_subagents",

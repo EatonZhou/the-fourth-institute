@@ -3,6 +3,8 @@ from management_common.portal_paths import path as portal_path
 
 from collections.abc import Iterable
 import re
+import hashlib
+import json
 from pathlib import Path
 
 from management_common.skill_paths import CORE_SKILLS_ROOT, normalize_additional_skills
@@ -11,6 +13,19 @@ from management_portal.execution.contracts import InjectionPart, SystemInstructi
 
 
 _SKILL_RESOURCE_ID = re.compile(r"^skill_[0-9a-f]{12}$")
+
+
+def system_parts_revision(instructions: SystemInstructions) -> str:
+    """Digest actual ordered parts, including their lifecycle and placement.
+
+    No role selection, source reads or prompt prediction occurs here. Call
+    after all Resident-specific identity and authorization parts are added.
+    """
+    instructions.validate()
+    parts = [{'name': p.name, 'content': p.content, 'timing': p.timing,
+              'placement': p.placement} for p in instructions.parts]
+    return hashlib.sha256(json.dumps(parts, ensure_ascii=False, sort_keys=True,
+                                     separators=(',', ':')).encode()).hexdigest()
 
 
 def _resolve_skill_resource_path(skill_id: str, *, actor: str) -> str:

@@ -387,8 +387,10 @@ def durable_resident_execution_request(
     else:
         planned_id = resident_execution_work.ensure_execution_id(job)
         durable_request = replace(request_factory(), execution_id=planned_id).validate()
+        from management_portal.agent_prompt_context import system_parts_revision
         options = dict(durable_request.runtime_options)
         options["resident_assembly"] = {**dict(options.get("resident_assembly") or {}),
+            "system_parts_revision": system_parts_revision(durable_request.system_instructions),
             "prompt_parts": [{"id": part.name, "timing": part.timing, "placement": part.placement,
                               "content_digest": hashlib.sha256(part.content.encode()).hexdigest(),
                               "content_location": {"execution_id": planned_id, "field": "system_instructions.parts", "part_id": part.name},

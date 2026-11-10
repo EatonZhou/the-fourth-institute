@@ -204,6 +204,8 @@ def test_kimi_turn_counts_cached_input_of_every_main_agent_request(tmp_path) -> 
     assert usage == {
         "last": {"inputTokens": 38801, "cachedInputTokens": 37120, "outputTokens": 265, "totalTokens": 39066},
         "context": {"inputTokens": 19400, "cachedInputTokens": 19200, "outputTokens": 90, "totalTokens": 19490},
+        "model": "kimi-k2.7-code",
+        "model_source": "kimi.wire.usage.record",
     }
 
 

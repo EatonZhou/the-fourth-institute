@@ -400,7 +400,13 @@ def _normalize(raw: object) -> dict[str, Any]:
 
 
 def _delivery_profile(raw: dict[str, Any]) -> dict[str, Any]:
-    return {"isolated": bool(raw.get("isolated"))}
+    result = {"isolated": bool(raw.get("isolated"))}
+    if raw.get('execution_constraints') is not None:
+        constraints = raw['execution_constraints']
+        if not result['isolated'] or constraints != {'version': 1, 'text_only': True, 'context': 'fresh'}:
+            raise ValueError('Invalid constrained delivery profile')
+        result['execution_constraints'] = dict(constraints)
+    return result
 
 
 def _normalize_object(field: str, key: str, value: Any) -> Any:

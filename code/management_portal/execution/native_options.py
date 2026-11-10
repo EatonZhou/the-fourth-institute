@@ -285,6 +285,14 @@ KIMI_READER_TOOLS = ["Read", "ReadMediaFile", "Glob", "Grep", "WebSearch", "Fetc
 KIMI_SUBAGENT_TOOLS = frozenset({"Agent", "AgentSwarm"})
 
 
+def kimi_text_only(options):
+    constraints = options.get('execution_constraints')
+    if constraints is None: return False
+    if constraints != {'version': 1, 'text_only': True, 'context': 'fresh'}:
+        raise ValueError('Unsupported Kimi execution constraints')
+    return True
+
+
 class KimiOptions(NativeOptions):
     permission_labels = {"default": "Manual", "full-access": "Full Access"}
     native_permission_modes = {"default": "manual", "full-access": "yolo"}
@@ -292,7 +300,11 @@ class KimiOptions(NativeOptions):
 
     def prepare(self, invocation):
         options = dict(invocation.request.runtime_options)
+        restricted = kimi_text_only(options)
         if "runtime_settings" not in options:
+            if restricted:
+                options.update(tools=[], permission_mode='manual')
+                return replace(invocation, request=replace(invocation.request, runtime_options=options))
             return invocation
         settings = options.pop("runtime_settings")
         options.pop("authorization_scope", None)
@@ -305,6 +317,7 @@ class KimiOptions(NativeOptions):
         model = settings.get("model", "")
         options.update(model=model, provider_profile=route, permission_mode=self.native_permission_mode(settings),
                        tools=list(tools))
+        if restricted: options.update(tools=[], permission_mode='manual')
         return replace(invocation, request=replace(invocation.request, runtime_options=options))
 
 

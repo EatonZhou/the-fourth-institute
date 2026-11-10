@@ -395,8 +395,12 @@ def kimi_turn_usage(reported: object, observed: ObservedTurnUsage | None) -> dic
 
     last_query = kimi_reported_usage(reported)
     if observed is None or observed.turn.get("total_tokens", 0) < last_query.get("total_tokens", 0):
-        return usage_payload(last_query)
-    return usage_payload(observed.turn, observed.context, observed.context_window)
+        payload = usage_payload(last_query)
+    else:
+        payload = usage_payload(observed.turn, observed.context, observed.context_window)
+    if observed is not None and observed.model:
+        payload.update(model=observed.model, model_source='kimi.wire.usage.record')
+    return payload
 
 
 # DSH ------------------------------------------------------------------------

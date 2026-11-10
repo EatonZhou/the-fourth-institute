@@ -57,6 +57,9 @@ def deliver(
     if constraints is not None:
         if constraints != {'version': 1, 'text_only': True, 'context': 'fresh'} or inv.argument('context_policy') != 'fresh':
             raise invalid('execution_constraints requires the v1 text_only fresh contract')
+        if not body.get('content_parts') or any(not isinstance(part, dict) or part.get('type') != 'text'
+                                                for part in body['content_parts']):
+            raise invalid('text_only delivery only accepts explicit text parts')
     if inv.argument("context_policy") == "fresh":
         from .. import lineage_program_resident_inputs, resident_conversation_stream
 
