@@ -61,6 +61,9 @@ class FakePortal:
             raise KeyError(resident_id)
         return dict(self.residents[resident_id])
 
+    def family_chat_preferences(self, actor, resident_id):
+        return {'solo_member_id': ''}
+
     def deliver(self, actor, resident_id, message, *, activation_policy="enqueue_and_trigger", temporary_credentials=None):
         assert actor == self.actor
         self.delivered.append((resident_id, activation_policy, message, {"credentials": temporary_credentials}))

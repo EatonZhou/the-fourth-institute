@@ -10,6 +10,11 @@ from management_common.actor_identity import canonical_actor_id
 from . import family_chat_storage
 
 
+def _solo_notice_key(facade_id, actor):
+    import hashlib
+    return 'phone_solo_' + hashlib.sha256(f'{facade_id}:{canonical_actor_id(actor)}'.encode()).hexdigest()[:32]
+
+
 def _db():
     from .state_store import get_lineage_data_store
     return get_lineage_data_store().database
@@ -25,7 +30,12 @@ def get(facade_id, actor):
     target = resident_record_domain.resolve_resident_runtime_target(facade_id, actor, require_visible=True)
     if not family_facade.is_facade(target.record):
         raise ValueError('目标必须是 Family 门面')
-    return read(target.record, actor)
+    result = read(target.record, actor)
+    if (target.record.get('family') or {}).get('personal_ama_id'):
+        from . import lineage_graph_state
+        result['solo_notice_token'] = lineage_graph_state.read_cell(
+            target.record['lineage_id'], _solo_notice_key(facade_id, actor))['value'] or ''
+    return result
 
 
 def change(facade_id, actor, member_id, control, enabled):
@@ -54,6 +64,13 @@ def change(facade_id, actor, member_id, control, enabled):
             solo = member_id
         elif solo == member_id:
             solo = ''
+        if solo != policy['solo_member_id'] and (target.record.get('family') or {}).get('personal_ama_id'):
+            from . import lineage_graph_state
+            import secrets
+            # Companion notification generation; the actual preference stays
+            # in family_chat_preferences. Reopening the same Solo gets a new token.
+            lineage_graph_state.update_cell(target.record['lineage_id'], _solo_notice_key(facade_id, identity),
+                                            secrets.token_hex(16))
         c.execute('UPDATE family_chat_preferences SET muted_member_ids=%s,excluded_member_ids=%s,solo_member_id=%s WHERE facade_id=%s AND actor=%s',
                   (muted, [], solo, facade_id, identity))
         return {'muted_member_ids': muted, 'solo_member_id': solo}
@@ -72,6 +89,9 @@ def allowed(facade, policy):
 def validate_target(facade, message, member_id):
     from management_common.async_questions import answered_set
     from . import family_facade
+    from .personal_phone_assistant import is_mobile
+    if is_mobile(facade, message):
+        return  # Web preferences do not constrain mobile delivery; roster/quota still apply.
     policy = family_facade.routing_snapshot(facade, message)
     quoted = family_facade.quoted_member(facade, message)
     if answered_set(message) and quoted == member_id:
@@ -90,7 +110,12 @@ def filter_messages(facade, actor, messages):
     from . import family_facade
     members = set(family_facade.family_member_ids(facade))
     def visible(message):
+        from .personal_phone_assistant import is_mobile
+        if is_mobile(facade, message):
+            return True
         relay = message.get('family_reply') or message.get('relay') or message.get('family_history') or {}
+        if (relay.get('request_channel') or {}).get('kind') in {'weixin', 'telegram'}:
+            return True
         chain = [item.get('resident_id') for item in relay.get('via', [])] + [relay.get('resident_id'), (message.get('origin', {}).get('initiated_by') or {}).get('id')]
         owner = next((rid for rid in chain if rid in members or rid == solo), '')
         if not owner:

@@ -79,6 +79,13 @@ function familyModes() {
   assert.deepEqual(project(snapshot).messages.map(m => m.id), ['b', 'public', 'local-public'], 'unassigned requests and public notices remain visible');
   snapshot.family_facade.chat_preferences.muted_member_ids = [];
   assert.deepEqual(project(snapshot).messages.map(m => m.id), ['a', 'b', 'nested', 'public', 'local-muted', 'local-public'], 'unmute restores saved messages and local submissions');
+  snapshot.family_facade.chat_preferences = {muted_member_ids: ['b'], solo_member_id: 'a'};
+  messages[1].relay.request_channel = {kind: 'weixin'};
+  snapshot.messages.push({message_id: 'phone-reply', role: 'agent', family_reply: {
+    resident_id: 'b', request_message_id: 'b', request_channel: {kind: 'weixin'}}, content_parts: [text('手机回复')]});
+  assert.ok(project(snapshot).messages.some(m => m.id === 'b'));
+  assert.ok(project(snapshot).messages.some(m => m.id === 'phone-reply'), 'mobile replies remain visible under web Solo/Mute');
+  assert.deepEqual(plain(w.PortalChatWorkspaceResidentMessages.familyExecution(snapshot)).active.map(m => m.message_id), ['a', 'b']);
 }
 
 function protocolMessages() {

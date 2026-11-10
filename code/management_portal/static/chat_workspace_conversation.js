@@ -241,6 +241,7 @@
       const memberIds = new Set((familyMembers || []).map(m => m.resident_id));
       const visible = message => {
         const relay = message.family_reply || message.family_context || message.relay || message.family_history || {};
+        if (['weixin', 'telegram'].includes(relay.request_channel?.kind)) return true;
         const chain = [...(relay.via || []).map(m => m.resident_id), relay.resident_id, message.origin?.initiated_by?.id];
         const owner = chain.find(id => memberIds.has(id) || id === solo);
         return !owner || (solo ? owner === solo : !muted.has(owner));

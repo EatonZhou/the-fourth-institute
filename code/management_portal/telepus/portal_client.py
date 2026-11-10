@@ -116,6 +116,9 @@ class PortalClient:
             raise ValueError("invalid resident id")
         return self.call(actor, "GetResident", {"resident_id": resident_id}).get("resident") or {}
 
+    def family_chat_preferences(self, actor: str, resident_id: str) -> dict[str, Any]:
+        return self.call(actor, 'GetFamilyChatPreferences', {'resident_id': resident_id})
+
     # -- messages --------------------------------------------------------------
 
     def deliver(

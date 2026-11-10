@@ -826,6 +826,10 @@ def project_messages(
         if relay.get("withdrawn"):
             result[-1] = _withdrawn_request(message)
             continue
+        from .personal_phone_assistant import is_mobile
+        channel = (message.get('origin') or {}).get('channel') if is_mobile(facade, message) else None
+        if channel:
+            relay['request_channel'] = channel
         for reply in reply_messages:
             # Several original requests can share one Mailbox execution. The
             # reply remains one message, with all visible request associations.
@@ -835,11 +839,17 @@ def project_messages(
                 requests = (existing.get("family_context") or existing["family_reply"])["request_message_ids"]
                 if message_id not in requests:
                     requests.append(message_id)
+                if channel:
+                    (existing.get('family_context') or existing['family_reply'])['request_channel'] = channel
                 continue
-            shown = _facade_reply(facade_id, reply, relay, message_id)
+            shown = _facade_reply(facade_id, reply, relay, message_id, channel=channel)
             result.append(shown)
             if key[1]:
                 shared_replies[key] = shown
+    from .personal_phone_assistant import is_mobile
+    for message in result:
+        if message.get('relay') and is_mobile(facade, message):
+            message['relay']['request_channel'] = message['origin']['channel']
     return _with_member_positions(result, repository)
 
 
@@ -968,7 +978,10 @@ def projected_reply(facade: Mapping[str, Any], message_id: str) -> dict[str, Any
     worker_id = found["worker_id"]
     relay = {"resident_id": worker_id, "title": _member_view(worker_id).get("title", ""),
              "via": [{"resident_id": item, **_member_view(item)} for item in found["via"]]}
-    return _facade_reply(resident_lineage.resident_id(facade), found["reply"], relay, found["request_message_id"])
+    from .personal_phone_assistant import is_mobile
+    source = resident_conversation_stream.get_repository().message(facade['resident_id'], found['request_message_id']) or {}
+    channel = source.get('origin', {}).get('channel') if is_mobile(facade, source) else None
+    return _facade_reply(resident_lineage.resident_id(facade), found["reply"], relay, found["request_message_id"], channel=channel)
 
 
 def relayed_reply(facade: Mapping[str, Any], message_id: str) -> dict[str, Any] | None:
@@ -1172,6 +1185,7 @@ def _facade_reply(
     reply: Mapping[str, Any],
     relay: Mapping[str, Any],
     request_message_id: str,
+    *, channel: Mapping[str, str] | None = None,
 ) -> dict[str, Any]:
     projected = copy.deepcopy(dict(reply))
     # Interactive requests belong to the worker's execution, including their
@@ -1200,6 +1214,7 @@ def _facade_reply(
         reply_to_message_id=request_message_id,
         display_reply_to_message_id=request_message_id,
         family_reply={
+            **({'request_channel': dict(channel)} if channel else {}),
             "resident_id": str(relay.get("resident_id") or ""),
             "title": str(relay.get("title") or ""),
             "message_id": str(reply.get("message_id") or ""),
@@ -1377,8 +1392,12 @@ def routing_snapshot(facade, message):
 def direct_member(facade, message):
     """The member selected by Solo, an explicit quote or continuation; "" for the Router."""
     from management_common.async_questions import answered_set
-    policy = routing_snapshot(facade, message)
+    from . import personal_phone_assistant
     quoted = quoted_member(facade, message)
+    if personal_phone_assistant.is_mobile(facade, message):
+        phone = personal_phone_assistant.ensure(facade, message['author_id'])
+        return quoted or phone
+    policy = routing_snapshot(facade, message)
     # Answer cards keep their original execution's reply path.
     if quoted and answered_set(message):
         return quoted

@@ -217,6 +217,27 @@ def test_sender_dedup_uint64_reference_and_channel_isolation(bridge):
     assert not adapter.router.store.watched_chats()
 
 
+def test_help_has_no_portal_or_typing_roundtrips_and_keeps_grouped_layout(bridge, monkeypatch, capsys):
+    adapter, server, portal, _ = bridge
+    monkeypatch.setattr(portal, 'personal_assistant', lambda *a: pytest.fail('help queried Portal'))
+    incoming(adapter, server, '/help')
+    assert len(server.sent) == 1
+    body = server.sent[0]['item_list'][0]['text_item']['text']
+    assert '手机助手' in body and '发消息' in body and '命令' in body and '/route' in body
+    assert not any(req[0].path.endswith(('getconfig', 'sendtyping')) for req in server.requests)
+    assert 'dispatch_ms=' in capsys.readouterr().err
+
+
+def test_unbind_rebind_keeps_personal_target(bridge):
+    adapter, server, portal, binding = bridge
+    incoming(adapter, server, 'before rebind')
+    target = portal.delivered[-1][0]
+    binding.unbind(ACTOR)
+    adapter.store.save_account(ACTOR, ACCOUNT)
+    incoming(adapter, server, 'after rebind', 2)
+    assert portal.delivered[-1][0] == target
+
+
 @pytest.mark.parametrize('work_state', ['queued', 'running', 'unknown'])
 def test_withdraw_then_resend_waits_for_work_and_delivers_reply_once(bridge, work_state):
     adapter, server, portal, _ = bridge

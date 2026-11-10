@@ -135,7 +135,7 @@ class WeixinPresentation(TelegramPresentation):
         '**Telepus 微信使用说明**',
         '',
         '**发消息**',
-        '- 扫码绑定后，文字、图片和文件交给你的个人助手；显示“正在输入”表示消息已进入 Portal。',
+        '- 扫码绑定后，文字、图片和文件由个人助手里的手机助手直接处理；显示“正在输入”表示消息已进入 Portal。',
         '- 等待超过 5 分钟会收到一次“仍在处理”。',
         '- 引用一条回复继续讨论，助手会联系写那条回复的成员。',
         '',
@@ -159,6 +159,9 @@ class WeixinPresentation(TelegramPresentation):
         '- /stop 停止；/stop current 精准路由时只停当前',
         '- /now <内容> 插入当前工作；/refresh 立即拉取回复',
     ])
+
+    def help_messages(self, where):
+        return [self.help_text + '\n\n' + where]
 
     def _question_prompt(self, core, session):
         question = session['questions'][session['step']]

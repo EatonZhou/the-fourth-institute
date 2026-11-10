@@ -30,6 +30,7 @@
         const policy = snapshot?.family_facade?.chat_preferences;
         const solo = policy?.solo_member_id;
         const relay = message.relay;
+        if (['weixin', 'telegram'].includes(relay.request_channel?.kind)) return true;
         const members = new Set((snapshot.family_facade.members || []).map(member => member.resident_id));
         const owner = [...(relay.via || []).map(member => member.resident_id), relay.resident_id].find(id => members.has(id) || id === solo);
         return !owner || (solo ? owner === solo : !(policy?.muted_member_ids || []).includes(owner));

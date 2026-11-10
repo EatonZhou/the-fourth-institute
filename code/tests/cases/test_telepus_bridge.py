@@ -147,6 +147,24 @@ def test_help_explains_usage_and_the_menu_lists_every_command(chat):
     assert "/help" in texts(chat.send("/unknown"))[0]
 
 
+def test_solo_notice_once_per_transition_and_exact_route_is_unaffected(chat, monkeypatch):
+    policy = {'solo_member_id': EXACT, 'solo_notice_token': 'first'}
+    monkeypatch.setattr(chat.portal, 'family_chat_preferences', lambda *a: policy)
+    assert '网页上你对 Portal Maintainer 开了 Solo' in texts(chat.send('phone request'))[0]
+    assert texts(chat.send('another request')) == ['已收到。']
+    policy['solo_notice_token'] = 'reopened'
+    assert 'Solo' in texts(chat.send('next request'))[0]
+    chat.send('/route ' + EXACT)
+    monkeypatch.setattr(chat.portal, 'family_chat_preferences', lambda *a: pytest.fail('exact route read Solo'))
+    assert '已发送到' in texts(chat.send('exact request'))[0]
+
+
+@pytest.mark.parametrize('command', ['/help', '/start', '/where', '/home'])
+def test_local_commands_do_not_read_portal(chat, monkeypatch, command):
+    monkeypatch.setattr(chat.portal, 'personal_assistant', lambda *a: pytest.fail('local command read Portal'))
+    assert '个人助手 · 手机助手' in '\n'.join(texts(chat.send(command)))
+
+
 def test_messages_addressed_to_the_user_are_pushed_and_others_stay(chat):
     """Telepus 只推送发给本人的主动消息，网页上的往来不推送"""
     chat.send("开始")

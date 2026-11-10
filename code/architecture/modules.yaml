@@ -1323,6 +1323,7 @@ modules:
       - "decision_44cf587c1721"
       - "decision_b77fde81e7a0"
       - "decision_9ad68dd077d4"
+      - "decision_d09c55133f12"
     instruction_owners: []
     title: "Family 门面与监督"
     layer: "service"
@@ -1331,6 +1332,7 @@ modules:
       - "management_portal/society_service/isa/families.py"
       - "management_portal/society_service/outward_messages.py"
       - "management_portal/society_service/personal_assistant.py"
+      - "management_portal/society_service/personal_phone_assistant.py"
     responsibility: "保存 Family 结构、门面路由和协作监督，维护活动预算与恢复状态。"
     parent: "lineage"
     level: "component"

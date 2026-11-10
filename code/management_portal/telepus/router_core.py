@@ -131,7 +131,7 @@ class RouterCore:
         arg = rest.strip()
         chat_id = state["chat_id"]
         if command in {"/start", "/help"}:
-            return self._reply([self.presentation.help_text, self._where_text(state)])
+            return self._reply(self.presentation.help_messages(self._where_text(state)))
         if command == "/home":
             next_state = self.store.upsert_chat_state(chat_id, mode="assistant", exact_resident_id="")
             self._audit(next_state, "mode_changed", {"mode": "assistant"})
@@ -195,12 +195,9 @@ class RouterCore:
         return assistant["resident_id"], str(assistant.get("title") or "个人助手"), ""
 
     def _where_text(self, state: dict[str, Any]) -> str:
-        resident_id, title, error = self._target(state)
-        if error:
-            return error
-        if state["mode"] == "exact":
-            return f"当前目标：精准路由 → **{title}**（`{resident_id}`）"
-        return f"当前目标：个人助手 **{title}**（`{resident_id}`）"
+        if state['mode'] != 'exact':
+            return '当前目标：个人助手 · 手机助手'
+        return f"当前目标：精准路由 → `{state['exact_resident_id']}`"
 
     # -- sending ------------------------------------------------------------------------
 
@@ -237,13 +234,33 @@ class RouterCore:
         self.store.record_input(chat_id, resident_id, message_id, telegram_message_id, excerpt=text)
         self._audit(state, "message_delivered", {"resident_id": resident_id, "message_id": message_id,
                                                  "quoted": bool(quoted), "inject": inject})
+        personal = state['mode'] != 'exact' and (not quoted or
+            self.portal.personal_assistant(actor).get('resident_id') == resident_id)
+        notices = self._solo_notice(state, resident_id) if personal else []
         if not self.presentation.receipts:
-            return {"messages": [], "typing": True}
+            return {"messages": notices, "typing": True}
         if inject:
             return self._reply(["已插入当前工作。"])
         if state["mode"] == "exact" and not quoted:
             return self._reply([f"已发送到 {title}。"])
-        return self._reply(["已收到。"])
+        return {'messages': notices + [{'text': '已收到。'}]}
+
+    def _solo_notice(self, state, resident_id):
+        policy = self.portal.family_chat_preferences(state['portal_actor'], resident_id)
+        solo = policy.get('solo_member_id') or ''
+        token = str(policy.get('solo_notice_token') or solo)
+        key = 'phone-solo-notice:' + state['chat_id'] + ':' + resident_id
+        if not solo:
+            self.store.set_meta(key, '')
+            return []
+        if self.store.get_meta(key, '') == token:
+            return []
+        member = self.portal.resident(state['portal_actor'], solo)
+        title = member.get('title') or solo
+        self.store.set_meta(key, token)
+        return [{'text': f'网页上你对 {title} 开了 Solo；手机消息仍由手机助手处理。'
+                         f'想直接和 {title} 对话，发送 /route {solo}，/home 回到个人助手。',
+                 'solo_notice_key': key}]
 
     def _watch(self, state: dict[str, Any], resident_id: str) -> None:
         """The refresh reads this Resident's events from now on."""
@@ -340,6 +357,8 @@ class RouterCore:
         """Undo the bookkeeping of messages a failed send never delivered; the next refresh sends them."""
         chat_id = state["chat_id"]
         for item in items:
+            if item.get('solo_notice_key'):
+                self.store.set_meta(item['solo_notice_key'], '')
             if item.get("delivery"):
                 self.store.release_delivery(chat_id, str(item["delivery"]))
             if item.get("input"):
@@ -432,8 +451,14 @@ class RouterCore:
                                 session["telegram_message_id"], excerpt="（回答问题）")
         summary = "\n".join(f"{index + 1}. {question['title']}：{session['answers'][str(index)]}"
                             for index, question in enumerate(session["questions"]))
-        return self.presentation.update_prompt(session["telegram_message_id"],
-                                               {"text": "✅ 已提交回答\n" + summary, "reply_markup": None})
+        response = self.presentation.update_prompt(session["telegram_message_id"],
+                                                    {"text": "✅ 已提交回答\n" + summary, "reply_markup": None})
+        if (state['mode'] != 'exact' and self.portal.personal_assistant(state['portal_actor']).get('resident_id')
+                == session['resident_id']):
+            notices = self._solo_notice(state, session['resident_id'])
+            if notices:
+                response['messages'] = notices + response.get('messages', [])
+        return response
 
     # -- callbacks ------------------------------------------------------------------------------
 

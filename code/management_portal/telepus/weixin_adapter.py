@@ -71,14 +71,23 @@ class WeixinAdapter:
         self.store.update(actor, context_token=str(message.get('context_token') or account['context_token']), context_at=now_iso())
         self.store.budget(chat, reset=True)
         self.router.waiting.received(chat, f'message:{local_id}')
-        self.flush(actor)
         text, reference = self._content(account, message)
+        local = text.strip().split(' ', 1)[0] in {'/help', '/start', '/where', '/home'}
+        # respond() drains the durable queue in order, including the new local
+        # reply. Avoid a redundant pre-flush and typing roundtrip for local commands.
+        if not local:
+            self.flush(actor)
+        dispatch_started = time.time()
+        send_started = dispatch_started
         if text.strip() == '/more':
             self.flush(actor, manual=True, one=True)
         elif text:
             response = self.router.dispatch_message(chat_id=chat, telegram_user_id=account['ilink_user_id'], portal_actor=actor,
                 text=text, telegram_message_id=local_id, reply_to_telegram_message_id=reference)
+            send_started = time.time()
             self.respond(actor, response)
+        else:
+            send_started = time.time()
         with self.router.store.connect() as c:
             c.execute("INSERT INTO processed_updates(update_id,processed_at,channel) VALUES(?,?,'weixin') ON CONFLICT DO NOTHING",
                       (-local_id, now_iso()))
@@ -86,9 +95,11 @@ class WeixinAdapter:
         # returned it, and how long Telepus took to handle it and send the replies.
         created = message.get('create_time_ms')
         waited = f'{started * 1000 - float(created):.0f}' if isinstance(created, (int, float)) and created else '?'
-        print(f'Telepus weixin message actor={actor} weixin_wait_ms={waited} handle_ms={(time.time() - started) * 1000:.0f}',
+        print(f'Telepus weixin message actor={actor} weixin_wait_ms={waited} handle_ms={(time.time() - started) * 1000:.0f}'
+              f' dispatch_ms={(send_started - dispatch_started) * 1000:.0f} send_ms={(time.time() - send_started) * 1000:.0f}',
               file=sys.stderr, flush=True)
-        self.typing(actor)
+        if not local:
+            self.typing(actor)
 
     def _reopen_pending(self, chat):
         for row in self.store.pending(chat):

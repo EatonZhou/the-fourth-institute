@@ -9,7 +9,7 @@ HELP_TEXT = "\n".join([
     "**Telepus 使用说明**",
     "",
     "**发消息**",
-    "• 直接发文字或图片，就交给你在 Portal 的个人助手；助手安排合适的成员处理，回复第一行是承接成员的名字。",
+    "• 直接发文字或图片，由个人助手里的手机助手直接处理；回复第一行是承接成员的名字。",
     "• 想直接找某个 Resident：发送它的 ID（如 `resident_0123456789ab`）或 `/route <ID>`，之后的消息都发给它；`/home` 回到个人助手。",
     "• 收到“已收到。”表示消息已进入 Portal，回复完成后自动推送过来。",
     "",
@@ -53,6 +53,9 @@ BOT_COMMANDS = (
 
 
 class TelegramPresentation:
+    def help_messages(self, where):
+        return [self.help_text, where]
+
     capabilities = ChannelCapabilities(buttons=True, edit_messages=True, unlimited_sends=True, command_menu=True, text_limit=3000)
     title = "Telegram"
     receipts = True

@@ -73,6 +73,7 @@
 - [Telepus 外部消息、联系人映射与 Resident 投递](/r/decision_692a484e9bea)
 - [Telepus：Telegram 连接个人助手门面与按 ID 精准路由](/r/decision_66f5be947b67)
 - [Telepus 微信渠道：扫码绑定个人 ClawBot 接入个人助手门面](/r/decision_e1f177f05e4c)
+- [Telepus 手机助手：手机渠道消息直连个人 Family 的专用成员](/r/decision_d09c55133f12)
 - [Which Resident 的候选发现、推荐、输入预算与纠正](/r/decision_8fe87d812a4c)
 - [Ask Me Anything 的个人 Resident 入口关联](/r/decision_bd5217d08c09)
 - [Resident Fork 的上下文继承与 Provider 选择](/r/decision_5bf5bfbd52cb)

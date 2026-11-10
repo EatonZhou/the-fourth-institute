@@ -110,6 +110,15 @@ def hydrate_programs(connection: Any, definitions: dict[str, dict]) -> None:
     for family in families.values():
         family.update(members=[], facade="", steward="", router="")
     if families:
+        # The lifecycle creation receipt is the durable identity of the phone
+        # member. Expose it in the Family definition, without a second registry.
+        for row in connection.execute(
+            "SELECT creation_key,operation_json->>'resident_id' AS resident_id "
+            "FROM resident_creation_operations WHERE lineage_id=ANY(%s) "
+            "AND creation_key=ANY(%s)",
+            (list(definitions), ['personal-phone-assistant:' + fid for fid in families]),
+        ).fetchall():
+            families[row['creation_key'].removeprefix('personal-phone-assistant:')]['phone_assistant_id'] = row['resident_id']
         for row in connection.execute("SELECT * FROM family_residents WHERE family_id=ANY(%s) ORDER BY role,resident_id", (list(families),)).fetchall():
             family = families[row["family_id"]]
             if row["role"] == "member":
