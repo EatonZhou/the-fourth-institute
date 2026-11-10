@@ -31,6 +31,7 @@
           if (epoch !== bindingEpoch) return;
           showWatchboardModal("绑定微信", window.PortalI18n.html`
             <div class="watchboardWeixinBinding">
+            <p data-weixin-account>当前 Portal 用户：<strong>${esc(watchboardPayload()?.telegram_users?.current_user || "—")}</strong></p>
             <img data-weixin-qr width="240" height="240" alt="微信绑定二维码">
             <p data-weixin-status role="status" aria-live="polite"></p>
             <form data-weixin-pin-form hidden>
@@ -96,6 +97,8 @@
         if (!payload.enabled) return "";
         const users = Array.isArray(payload.users) ? payload.users : [];
         const canManage = !!payload.permissions?.can_manage;
+        const weixinStatus = dashboard.weixin_binding?.status;
+        const hasWeixinBinding = ["active", "expired"].includes(weixinStatus);
         return window.PortalI18n.html`<section class="watchboardSection">
           <div class="watchboardSectionHead">
             <span>Telegram</span>
@@ -125,9 +128,12 @@
           <div class="watchboardSectionHead"><span>WeChat · 微信</span></div>
           <div class="watchboardSectionBody">
             <div class="watchboardCompactItem">
-              <span>${esc(window.PortalI18n.t(dashboard.weixin_binding?.status === "active" ? "微信已绑定" : dashboard.weixin_binding?.status === "expired" ? "需要重新扫码" : "微信未绑定"))}</span>
-              <span><button class="portalButton is-compact" data-weixin-bind ${canManage ? "" : "disabled"}>绑定微信</button>
-                <button class="portalButton is-compact" data-weixin-unbind ${canManage && ["active", "expired"].includes(dashboard.weixin_binding?.status) ? "" : "disabled"}>解除微信绑定</button></span>
+              <span>
+                <strong data-weixin-account>当前 Portal 用户：${esc(payload.current_user || "—")}</strong>
+                <span>${esc(window.PortalI18n.t(weixinStatus === "active" ? "微信已绑定" : weixinStatus === "expired" ? "需要重新扫码" : "微信未绑定"))}</span>
+              </span>
+              <span>${weixinStatus !== "active" ? window.PortalI18n.html`<button class="portalButton is-compact" data-weixin-bind ${canManage ? "" : "disabled"}>${esc(window.PortalI18n.t(weixinStatus === "expired" ? "重新绑定微信" : "绑定微信"))}</button>` : ""}
+                ${hasWeixinBinding ? window.PortalI18n.html`<button class="portalButton is-compact" data-weixin-unbind ${canManage ? "" : "disabled"}>解除微信绑定</button>` : ""}</span>
             </div>
           </div>
         </section>`;

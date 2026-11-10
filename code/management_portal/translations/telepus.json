@@ -59,6 +59,14 @@
     "en": "Bind Weixin",
     "zh-CN": "绑定微信"
   },
+  "重新绑定微信": {
+    "en": "Reconnect Weixin",
+    "zh-CN": "重新绑定微信"
+  },
+  "当前 Portal 用户：": {
+    "en": "Current Portal user: ",
+    "zh-CN": "当前 Portal 用户："
+  },
   "解除微信绑定": {
     "en": "Unbind Weixin",
     "zh-CN": "解除微信绑定"
