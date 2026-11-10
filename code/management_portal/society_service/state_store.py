@@ -418,6 +418,8 @@ class LineageDataStore:
         ).fetchone() is not None
         if not has_any_table:
             create_lineage_data_schema(connection)
+        from . import user_pending_questions
+        user_pending_questions.create_schema(connection)
         # Existing data is used by its owners. A metadata tag or an unrelated
         # table/column difference must not disable every Resident. Operations
         # requiring absent structures report their actual database error.

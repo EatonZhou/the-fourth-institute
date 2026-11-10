@@ -20,7 +20,7 @@ from .resident_conversation_records import (
     required_message_id,
     required_resident_id,
 )
-from . import resident_message_contract
+from . import resident_message_contract, user_pending_questions
 from .state_store import LineageDataStore
 
 
@@ -248,6 +248,7 @@ class ConversationMessages:
                         stream_id, [member["message_id"] for member in members], persisted["segment_id"],
                     )
             public = message_from_storage(persisted)
+            asked = user_pending_questions.prepare(stream_id, public, self)
 
             def write(connection: Any) -> None:
                 self.events.record_event(
@@ -258,6 +259,7 @@ class ConversationMessages:
                     subject_id=message_id,
                     once=True,
                 )
+                asked.write(connection)
                 from management_portal.resources.upload_consumption import consume_message
                 consume_message(message, owner_id=stream_id, connection=connection)
                 self.state_store.mailbox_forget(
@@ -408,6 +410,19 @@ class ConversationMessages:
             "steps": trace_steps(page.get("segments") or [], offset=int(page.get("offset") or 0)),
         }
 
+    def announce_message_changed(self, resident_id: object, message_id: object) -> None:
+        """Tell readers a message's derived state changed (a question answered or closed); its body stays."""
+
+        stream_id = required_resident_id(resident_id)
+        public = self.message(stream_id, message_id)
+        if public is None:
+            return
+        with self.events.protocol_scope(stream_id):
+            self.state_store.database.write(lambda connection: self.events.record_event(
+                connection, stream_id, MESSAGE_UPDATED, {"message": message_header(public)},
+                subject_id=str(public["message_id"]),
+            ))
+
     def update_message(
         self,
         resident_id: object,
@@ -434,13 +449,17 @@ class ConversationMessages:
                 message_for_storage(replacement, private_fields=fields),
             )
             public = message_from_storage(persisted)
-            event = self.state_store.database.write(
-                lambda connection: self.events.record_event(
+            asked = user_pending_questions.prepare(stream_id, public, self)
+
+            def write(connection: Any) -> Any:
+                asked.write(connection)
+                return self.events.record_event(
                     connection,
                     stream_id,
                     MESSAGE_UPDATED,
                     {"message": message_header(public)},
                     subject_id=target,
                 )
-            )
+
+            event = self.state_store.database.write(write)
         return {**event, "payload": {"message": public}} if event else {}

@@ -87,6 +87,9 @@ class ConversationInputs:
             self.set_input_state(resident_id, questions["answer_message_id"], "cancelled", error={
                 "code": QUESTION_SET_CLOSED, "message": "这组问题已关闭，不再回答", "closed_by": str(actor or ""),
             })
+            # The answer slot is no relayed input: announce the asking message too,
+            # so its Conversation and the facades showing it see the change.
+            self.messages.announce_message_changed(resident_id, message_id)
         return "closed"
 
     def set_input_state(

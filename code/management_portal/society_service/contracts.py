@@ -88,6 +88,9 @@ DOMAIN_OPERATIONS = {
         (Operation('read', 'resident', implementation='management_portal.society_service.resident_protocol'), """
             get_resident_states
         """),
+        (Operation('read', 'resident', implementation='management_portal.society_service.user_pending_questions'), """
+            list_user_pending_requests
+        """),
         (Operation('read', 'resident', implementation='management_portal.society_service.resident_access'), """
             filter_visible_resident_ids
         """),

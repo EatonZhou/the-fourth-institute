@@ -122,6 +122,9 @@ class ResidentConversationRepository:
     def message(self, resident_id: object, message_id: object) -> dict[str, Any] | None:
         return self.messages.message(resident_id, message_id)
 
+    def announce_message_changed(self, resident_id: object, message_id: object) -> None:
+        return self.messages.announce_message_changed(resident_id, message_id)
+
     def stored_message(self, resident_id: object, message_id: object) -> dict[str, Any] | None:
         return self.messages.stored_message(resident_id, message_id)
 

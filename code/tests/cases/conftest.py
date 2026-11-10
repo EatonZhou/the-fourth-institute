@@ -191,12 +191,13 @@ def _truncate_test_schemas() -> None:
                     (f"{prefix}%",),
                 ))
                 tables = [row for row in all_tables if str(row[1]) not in contract_tables]
-                # lineage_meta keeps the schema version between cases; the
-                # Lineage timer lease stored beside it belongs to one case.
+                # lineage_meta keeps the schema version and the pending-question
+                # index readiness between cases; the Lineage timer lease stored
+                # beside them belongs to one case.
                 for schema, table in all_tables:
                     if str(table) == "lineage_meta":
                         connection.execute(
-                            sql.SQL("DELETE FROM {} WHERE key <> 'schema'").format(
+                            sql.SQL("DELETE FROM {} WHERE key NOT IN ('schema', 'user_pending_requests')").format(
                                 sql.Identifier(str(schema), str(table))
                             )
                         )

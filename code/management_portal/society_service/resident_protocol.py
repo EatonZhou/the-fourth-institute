@@ -192,6 +192,10 @@ def respond_resident_user_input(resident_id: str, actor: str, payload: dict[str,
     status = {"cancel": "cancelled", "decline": "declined"}.get(response["action"], "answered") if control_status == "delivered" else (
         "pending" if control_status in {"pending", "queued"} else "expired"
     )
+    if status != "pending":
+        # The request's status lives in its Execution; while the turn goes on
+        # only activity changes, so announce the request message itself.
+        repository.announce_message_changed(resident_id, message["message_id"])
     return {"status": status, **({"error": receipt["error"]} if receipt.get("error") else {})}
 
 
