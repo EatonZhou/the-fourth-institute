@@ -37,6 +37,23 @@
     let paperPdfZoom = null;
     let fullscreenReader = null;
     let readerGeneration = 0;
+    let readingSession = null;
+    function sessionFor(paperId) {
+      const account = String(state.principalId || "");
+      if (!readingSession || readingSession.closed || readingSession.paperId !== paperId || readingSession.account !== account) {
+        readingSession = {paperId, account, token: crypto.randomUUID(), acknowledged: false};
+      }
+      return readingSession;
+    }
+    function acknowledge(session, generation) {
+      if (session.closed || session.acknowledged || session !== readingSession ||
+          generation !== readerGeneration || state.mode !== "reader" ||
+          state.selectedId !== session.paperId || !session.account || String(state.principalId || "") !== session.account) return;
+      session.acknowledged = true;
+      window.dispatchEvent(new CustomEvent("portal:paper-reader-ready", {detail: {
+        paperId: session.paperId, generation, sessionToken: session.token, account: session.account,
+      }}));
+    }
     const paperReaderViewStates = new Map();
 
     function cancelPdfRendering() {
@@ -51,18 +68,25 @@
 
     async function openFullscreenReader(paper) {
       const viewState = capturePaperReaderViewState();
+      const session = sessionFor(paper.id);
       cancelPdfRendering();
       const generation = readerGeneration;
       try {
         const { openReader } = await import('/static/paper_fullscreen_reader.js');
         if (generation !== readerGeneration) return;
         fullscreenReader = openReader({paper, anchor: viewState?.pdfAnchor,
+          onReady: signal => {
+            if (signal.instanceId !== fullscreenReader?.instanceId || signal.source !== fullscreenReader?.sourceWindow ||
+                signal.paperId !== paper.id || signal.pdfUrl !== new URL(paper.pdf_url, location.href).href || !signal.fingerprint) return;
+            acknowledge(session, generation);
+          },
           onClose: anchor => {
-            fullscreenReader = null;
             if (generation !== readerGeneration) return;
+            fullscreenReader = null;
+            session.closed = true;
             const next = {...viewState, ...(anchor ? {pdfAnchor: anchor} : {})};
             paperReaderViewStates.set(paper.id, next);
-            renderPdfJsViewer(paper.pdf_url, paper.title, next).catch(alertError);
+            renderPdfJsViewer(paper.pdf_url, paper.title, next, session).catch(alertError);
           }});
       } catch (error) {
         if (generation !== readerGeneration) return;
@@ -116,7 +140,7 @@
       viewport.scrollTop = Number(viewState.pdfTop || 0);
     }
 
-    async function renderPdfJsViewer(pdfUrl, title, viewState = null) {
+    async function renderPdfJsViewer(pdfUrl, title, viewState = null, restoredSession = null) {
       const viewer = $("paperPdfViewer");
       const root = $("pdfReaderContent");
       if (!viewer || !root || !pdfUrl) return;
@@ -126,6 +150,10 @@
       };
       viewer.addEventListener("scroll", markUserScroll, { passive: true });
       cancelPdfRendering();
+      if (!restoredSession) readingSession = null;
+      const session = restoredSession || sessionFor(state.selectedId);
+      const opening = {paperId: state.selectedId, generation: readerGeneration};
+      let acknowledged = false;
       const controller = window.PortalPdfPreview.render({
         root: viewer,
         url: pdfUrl,
@@ -138,7 +166,13 @@
         minScale: 0.5,
         horizontalPadding: 32,
         onFallback: bindPdfSelectionEvents,
-        onReady: bindPdfSelectionEvents,
+        onReady: () => {
+          bindPdfSelectionEvents();
+          if (acknowledged || opening.generation !== readerGeneration ||
+              state.mode !== "reader" || state.selectedId !== opening.paperId) return;
+          acknowledged = true;
+          acknowledge(session, opening.generation);
+        },
       });
       const zoom = window.PortalPreview.mountZoom({
         root,

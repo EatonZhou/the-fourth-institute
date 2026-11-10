@@ -11,7 +11,7 @@
     "ccfCollectionPapers", "ccfPaperAuthors", "ccfVenueYearLabel", "currentCcfEntry", "currentCcfVenue",
     "currentPaperIdentityReady", "esc", "isSemanticSearchReady", "loadChatHistory", "loadDetail", "paperApi",
     "renderAssistantContext", "renderChat", "renderCollectorJobs", "renderTree", "renderWorkspace", "state",
-    "updateChatComposerState", "writeUiState",
+    "syncFavoriteButtons", "updateChatComposerState", "writeUiState",
   ]);
 
   function createLibrary(dependencies) {
@@ -21,7 +21,7 @@
       $, activeChatPaperId, activeChatWorkspaceId, alertError, ccfCollectionChatScope, ccfCollectionPapers,
       ccfPaperAuthors, ccfVenueYearLabel, currentCcfEntry, currentCcfVenue, currentPaperIdentityReady, esc,
       isSemanticSearchReady, loadChatHistory, loadDetail, paperApi, renderAssistantContext, renderChat,
-      renderCollectorJobs, renderTree, renderWorkspace, state, updateChatComposerState, writeUiState,
+      renderCollectorJobs, renderTree, renderWorkspace, state, syncFavoriteButtons, updateChatComposerState, writeUiState,
     } = dependencies;
 
     function libraryQuery() {
@@ -131,6 +131,15 @@
     async function loadLibrary({ keepDetail = true, hydrateDetail = true } = {}) {
       const requestSeq = ++state.libraryRequestSeq;
       const favoriteRevision = state.favoriteRevision;
+      const detailBefore = state.detail;
+      const modeBefore = state.mode;
+      const faceBefore = state.leftFace;
+      // Sidebar filters change the catalog, not the open document. Rebuilding
+      // it discards PDF canvases, text layers and selection and renders them all
+      // again. Only preserve a detail view that is still the same after the read.
+      const preservesDetailView = () => keepDetail && detailBefore?.paper
+        && faceBefore === "library" && state.leftFace === faceBefore && state.mode === modeBefore && !isCollectionMode()
+        && state.detail === detailBefore && state.selectedId === detailBefore.paper.id;
       state.libraryLoading = true;
       let firstPayload;
       try {
@@ -138,7 +147,7 @@
       } catch (error) {
         if (requestSeq === state.libraryRequestSeq) {
           state.libraryLoading = false;
-          renderWorkspace();
+          if (!preservesDetailView()) renderWorkspace();
         }
         throw error;
       }
@@ -155,7 +164,7 @@
         } catch (error) {
           if (requestSeq === state.libraryRequestSeq) {
             state.libraryLoading = false;
-            renderWorkspace();
+            if (!preservesDetailView()) renderWorkspace();
           }
           throw error;
         }
@@ -188,6 +197,10 @@
       }
       if (requestSeq !== state.libraryRequestSeq) return null;
       state.libraryLoading = false;
+      if (preservesDetailView()) {
+        syncFavoriteButtons();
+        return state.library;
+      }
       renderWorkspace();
       renderAssistantContext();
       await currentPaperIdentityReady();

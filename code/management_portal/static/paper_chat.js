@@ -76,6 +76,8 @@
       const currentUser = await window.PortalUI.loadCurrentUser({ fallbackUsername: "" });
       if (!currentUser.ok) return;
       state.username = currentUser.data?.username || "";
+      // This is the authenticated bootstrap's stable ID, not a display name.
+      state.principalId = currentUser.data?.principal?.id || "";
       paperChatWorkspace?.restoreDraft?.();
     }
 

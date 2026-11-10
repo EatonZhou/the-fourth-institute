@@ -741,7 +741,12 @@ class IndexStore:
         include_attributes: bool = False,
         records_projector: ResourceRecordsProjector | None = None,
         records_projector_types: frozenset[str] | None = None,
+        paper_rows: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
+        if paper_rows is not None:
+            if set(resource_types) != {"paper"} or q or facets or projects or statuses or attribute_filters:
+                raise ValueError("paper_rows requires an unranked paper-only query")
+            return self._query_paper_rows(actor=actor, options=paper_rows, limit=limit, offset=offset)
         enabled_types = self.resource_types.enabled_types()
         query = ResourceQuery.from_kwargs(
             {
@@ -778,6 +783,58 @@ class IndexStore:
                 facets=sorted(query.facets), resource_types=sorted(query.resource_types),
             )
         return result
+
+    def _query_paper_rows(self, *, actor: str, options: dict[str, Any], limit: int, offset: int) -> dict[str, Any]:
+        """Bounded persisted Paper reads; authorize before counting the visible offset.
+
+        The full-library aggregate/search contract remains in the regular query.
+        This entry only implements exact year/analysis and explicit ID selection.
+        """
+        if set(options) - {"year", "analysis", "ids"}:
+            raise ValueError("unsupported paper row filter")
+        if "paper" not in self.resource_types.enabled_types():
+            return {"resources": []}
+        limit, offset = max(1, min(int(limit), 500)), max(0, int(offset))
+        clauses = ["record_json->>'resource_type' = 'paper'"]
+        parameters: list[Any] = []
+        if options.get("year"):
+            clauses.append("COALESCE(record_json->'attributes'->>'year', '') = %s")
+            parameters.append(str(options["year"]))
+        if options.get("analysis") in {"ready", "missing"}:
+            clauses.append("COALESCE(record_json->'attributes'->>'has_analysis', 'false') = %s")
+            parameters.append("true" if options["analysis"] == "ready" else "false")
+        if "ids" in options:
+            identifiers = list(dict.fromkeys(str(value) for value in options["ids"]))
+            if not identifiers:
+                return {"resources": []}
+            clauses.append("resource_id = ANY(%s)")
+            parameters.append(identifiers)
+        sql = "SELECT record_json FROM resource_index_records WHERE " + " AND ".join(clauses)
+        sql += " ORDER BY COALESCE(record_json->'attributes'->>'year', '') COLLATE \"C\" DESC, "
+        sql += "COALESCE(record_json->'attributes'->>'venue', '') COLLATE \"C\" DESC, "
+        sql += "COALESCE(record_json->>'title', '') COLLATE \"C\" DESC, resource_id DESC LIMIT %s OFFSET %s"
+        result: list[dict[str, Any]] = []
+        consumed = visible = 0
+        batch_size = limit
+        with self._connect() as connection:
+            connection.execute("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY")
+            while len(result) < limit:
+                rows = connection.execute(sql, (*parameters, batch_size, consumed)).fetchall()
+                if not rows:
+                    break
+                records = [json_value(row["record_json"]) for row in rows]
+                for record, readable in zip(records, readable_flags(records, actor)):
+                    if not readable:
+                        continue
+                    if visible >= offset:
+                        result.append(record)
+                        if len(result) == limit:
+                            break
+                    visible += 1
+                consumed += len(rows)
+                if len(rows) < batch_size:
+                    break
+        return {"resources": result}
 
     def project_changes(
         self,

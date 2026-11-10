@@ -165,6 +165,22 @@ class PaperHttp:
             actor, payload.get("paper_id"), payload.get("favorite"),
         ))
 
+    def bibtex_export(self, request, payload, actor):
+        from management_portal.paper_bibtex import export_request
+        return self.respond(request, 200, export_request(payload, actor=actor))
+
+    def recent_reading(self, request, qs, actor):
+        from management_portal.paper_recent import list_recent
+        return self.respond(request, 200, list_recent(self._query_params(qs), actor=actor))
+
+    def record_reader_open(self, request, payload, actor):
+        from management_portal.paper_recent import PrincipalChanged, record_open
+        try:
+            result = record_open(payload, actor=actor)
+        except PrincipalChanged:
+            return self.respond(request, 409, {"error": "session_changed", "code": "session_changed"})
+        return self.respond(request, 200, result)
+
     def highlights(self, request, qs, actor):
         return self.respond(request, 200, paper_highlights.list_highlights(
             actor, self._param(qs, "id"), self._param(qs, "document"),
@@ -349,6 +365,9 @@ def routes(portal):
     api = (
         ("GET", "library", get(http.library)),
         ("POST", "favorites", http.personal_post_route(http.favorite)),
+        ("POST", "bibtex/export", http.personal_post_route(http.bibtex_export)),
+        ("GET", "recent-reading", get(http.recent_reading)),
+        ("POST", "recent-reading/open", http.personal_post_route(http.record_reader_open)),
         ("GET", "highlights", get(http.highlights)),
         ("POST", "highlights", http.personal_post_route(http.highlight)),
         ("GET", "ccf/venues", http.get_query_backend(paper_ccf, "ccf_venues")),

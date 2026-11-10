@@ -8,7 +8,7 @@ from management_portal.paper_collection_jobs import (
 )
 from management_portal.paper_records import _paper_project_filter_values
 from management_portal.paper_reviews import REVIEW_LENSES, _all_reviews
-from management_portal.paper_search import _filter_papers, resource_index_papers
+from management_portal.paper_search import _filter_papers, resource_index_papers, resource_index_paper_rows
 from management_portal.paper_store import DATA_ROOT, LOCK, PAPER_STORE_ROOT
 
 
@@ -161,6 +161,21 @@ def list_library(params: dict | None = None, *, actor: str = "") -> dict:
     rows_only = compact and str(params.get("rows_only") or "").strip() == "1"
     semantic_id = str(params.get("semantic") or "").strip()
     collector_id = str(params.get("collector") or "").strip()
+    # These filters have exact index equivalents. Text/Unicode/project filters
+    # retain the established search owner until their whole contract is indexed.
+    if rows_only and not any(str(params.get(key) or "").strip() for key in (
+        "q", "venue", "tag", "project", "registered", "semantic", "collector",
+    )):
+        options = {"year": str(params.get("year") or "").strip(),
+                   "analysis": str(params.get("analysis") or "").strip().lower()}
+        if str(params.get("favorite") or "").strip().lower() in {"1", "true", "yes", "on"}:
+            options["ids"] = paper_favorites.favorite_ids(actor)
+        rows = resource_index_paper_rows(
+            actor=actor, options=options,
+            offset=_paper_library_page_number(params.get("offset"), 0, 2**63 - 1),
+            limit=max(1, _paper_library_page_number(params.get("limit"), 100, 500)),
+        )
+        return {"papers": [_paper_library_list_item(paper) for paper in rows]}
     semantic_view = semantic_search_jobs.search_view(semantic_id, actor=actor, surfaces=("paper",)) if semantic_id else None
     papers = resource_index_papers(actor=actor)
     favorites = paper_favorites.favorite_ids(actor)
@@ -218,7 +233,7 @@ def list_library(params: dict | None = None, *, actor: str = "") -> dict:
             key=lambda paper: _paper_query_sort_key(paper, params.get("q")),
         )
     else:
-        sorted_visible = sorted(visible, key=lambda p: (str(p.get("year") or ""), str(p.get("venue") or ""), str(p.get("title") or "")), reverse=True)
+        sorted_visible = sorted(visible, key=lambda p: (str(p.get("year") or ""), str(p.get("venue") or ""), str(p.get("title") or ""), str(p.get("id") or "")), reverse=True)
     if rows_only:
         offset = _paper_library_page_number(params.get("offset"), 0, len(sorted_visible))
         limit = max(1, _paper_library_page_number(params.get("limit"), 100, 500))
@@ -258,6 +273,9 @@ def list_library(params: dict | None = None, *, actor: str = "") -> dict:
 def api_docs() -> dict:
     return {
         "endpoints": [
+            {"method": "GET", "path": "/paper/api/recent-reading?limit=&cursor=", "purpose": "The authenticated principal's readable recent papers, newest first; favorites remain independent."},
+            {"method": "POST", "path": "/paper/api/recent-reading/open", "purpose": "Acknowledge a successfully opened reader with {paper_id,expected_principal}; compares the frozen bootstrap principal to authenticated actor, returning 409 session_changed on mismatch. Previews must not call this."},
+            {"method": "POST", "path": "/paper/api/bibtex/export", "purpose": "Read-only BibTeX export with {paper_ids:[...]} or {favorites:true}; authenticated principal only, warnings separate from bibtex."},
             {"method": "GET", "path": "/paper/api/highlights?id=&document=", "purpose": "Read the authenticated actor's highlights for one visible Paper and PDF fingerprint."},
             {"method": "POST", "path": "/paper/api/highlights", "purpose": "Save personal highlights with {paper_id, document, operation:add, highlight:{id,text,rects:[{page,x,y,width,height}]}} or delete with operation:delete and id. Coordinates are page-relative 0–1; each request checks Paper read access."},
             {"method": "GET", "path": "/paper/api/library", "purpose": "List visible papers, filters, folder tree, workflow metadata, and the current actor's favorite_ids. favorite=1 intersects favorites with other filters."},

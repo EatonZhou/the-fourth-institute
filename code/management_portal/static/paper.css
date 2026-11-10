@@ -727,3 +727,8 @@ body {
   #workspaceResourceIdentity { --portal-resource-identity-title-size: 17px; }
 }
 .paneToggle svg { transition: transform .16s ease; }
+.paperPersonal { padding: 8px; }
+.paperPersonal [data-row] { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--border); }
+.paperPersonal [data-row] > button:first-child { flex: 1; text-align: left; }
+.paperPersonal time { font-size: 12px; opacity: .7; }
+.paperPersonal [data-status] { overflow-wrap: anywhere; }

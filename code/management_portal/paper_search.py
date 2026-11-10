@@ -76,6 +76,34 @@ def resource_index_papers(*, actor: str = "") -> list[dict]:
     )
 
 
+def resource_index_paper_rows(*, actor: str, options: dict, offset: int = 0, limit: int = 100) -> list[dict]:
+    """Read a bounded, authorized page without manifests or a full index query."""
+    payload = get_resource_service().query(
+        actor=actor, resource_types=["paper"], include_attributes=True,
+        paper_rows=options, offset=offset, limit=limit,
+    )
+    return [
+        {**record.get("attributes", {}), "id": record["resource_id"], "title": record["title"],
+         "abstract": record.get("summary") or record.get("attributes", {}).get("abstract") or ""}
+        for record in payload["resources"]
+    ]
+
+
+def resource_index_papers_by_ids(paper_ids, *, actor: str = "") -> list[dict]:
+    """Distinct readable papers in request order; missing IDs are omitted.
+
+    Each SQL request is bounded to 500 explicit IDs, including at the page
+    boundary. No full-library query is used to recover missing IDs.
+    """
+    identifiers = list(dict.fromkeys(str(value) for value in paper_ids))
+    found = {}
+    for start in range(0, len(identifiers), 500):
+        batch = identifiers[start:start + 500]
+        for row in resource_index_paper_rows(actor=actor, options={"ids": batch}, limit=len(batch)):
+            found[row["id"]] = row
+    return [found[identifier] for identifier in identifiers if identifier in found]
+
+
 def semantic_search_catalog(*, actor: str, project: str = "") -> list[dict]:
     papers = resource_index_papers(actor=actor)
     return _filter_papers(papers, {"project": project}) if project else papers

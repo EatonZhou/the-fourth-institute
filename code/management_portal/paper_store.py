@@ -191,7 +191,7 @@ class PaperStore:
             else {}
         )
 
-    def manifest_for_paper_id(self, paper_id: str) -> tuple[Path, dict] | None:
+    def manifest_for_paper_id(self, paper_id: str, *, allow_scan: bool = True, registered_only: bool = False) -> tuple[Path, dict] | None:
         from .resources.directory_registrations import is_deleted
         from management_common.directory_cleanup_store import get_directory_cleanup_store
         if is_deleted(paper_id):
@@ -209,6 +209,8 @@ class PaperStore:
                 return None
             manifest = self.read_manifest(path)
             return (path, manifest) if _manifest_matches_paper_address(manifest, target) else None
+        if registered_only:
+            return None
         relative_manifest = str(self.manifest_map().get(target) or "").strip()
         if relative_manifest:
             indexed_manifest_path = self.root / relative_manifest
@@ -222,6 +224,8 @@ class PaperStore:
                 manifest = self.read_manifest(indexed_manifest_path)
                 if _manifest_matches_paper_address(manifest, target):
                     return indexed_manifest_path, manifest
+        if not allow_scan:
+            return None
         for indexed_manifest_path in self.manifest_paths():
             manifest = self.read_manifest(indexed_manifest_path)
             if _manifest_matches_paper_address(manifest, target):
@@ -326,8 +330,8 @@ class PaperStore:
                 continue
         return papers
 
-    def paper_by_id(self, paper_id: str) -> dict | None:
-        found = self.manifest_for_paper_id(paper_id)
+    def paper_by_id(self, paper_id: str, *, allow_scan: bool = True) -> dict | None:
+        found = self.manifest_for_paper_id(paper_id, allow_scan=allow_scan)
         if not found:
             return None
         manifest_path, manifest = found
@@ -1042,7 +1046,7 @@ def _local_pdf_for_paper(paper: dict) -> Path:
 
 
 def _extract_pdf_text(pdf_path: Path, *, paper_id: str) -> str:
-    paper = next((item for item in _all_papers() if str(item.get("id") or "") == paper_id), {})
+    paper = PAPER_STORE.paper_by_id(paper_id, allow_scan=False)
     text_path = _paper_store_file(paper, "pdf_text_clean") if paper else None
     if not text_path:
         PDF_TEXT_ROOT.mkdir(parents=True, exist_ok=True)
@@ -1051,7 +1055,7 @@ def _extract_pdf_text(pdf_path: Path, *, paper_id: str) -> str:
 
 
 def _extract_pdf_text_raw(pdf_path: Path, *, paper_id: str) -> str:
-    paper = next((item for item in _all_papers() if str(item.get("id") or "") == paper_id), {})
+    paper = PAPER_STORE.paper_by_id(paper_id, allow_scan=False)
     text_path = _paper_store_file(paper, "pdf_text_raw") if paper else None
     if not text_path:
         PDF_TEXT_ROOT.mkdir(parents=True, exist_ok=True)

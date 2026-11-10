@@ -71,6 +71,7 @@
     }
 
     function showLibraryFace({ remember = true } = {}) {
+      if (state.leftFace === "library") return;
       if (remember) rememberPreviousPaperWorkspace(currentPaperWorkspaceSnapshot({ leftFace: "library" }));
       state.leftFace = "library";
       writeUiState();

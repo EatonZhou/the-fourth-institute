@@ -296,7 +296,8 @@
     renderChat: (...args) => renderChat(...args),
     renderCollectorJobs: (...args) => renderCollectorJobs(...args),
     renderTree: (...args) => renderTree(...args), renderWorkspace: (...args) => renderWorkspace(...args),
-    state, updateChatComposerState: (...args) => updateChatComposerState(...args), writeUiState,
+    state, syncFavoriteButtons: (...args) => syncFavoriteButtons(...args),
+    updateChatComposerState: (...args) => updateChatComposerState(...args), writeUiState,
   });
 
   const {
@@ -458,5 +459,6 @@
     uploadPaperRegistrationPdf, writeUiState,
   });
 
+  window.PortalPaperPersonal.mount({state, paperApi, loadDetail, setMode, syncFavoriteButtons});
   init().catch(alertError);
 })();

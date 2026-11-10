@@ -75,6 +75,48 @@ class PaperStoreIndexTest(unittest.TestCase):
         self.store.items_root.symlink_to(external_items, target_is_directory=True)
         return external_items
 
+    def test_pdf_text_helpers_never_scan_on_index_hit_or_miss(self) -> None:
+        """PDF 文本读取在索引命中、缺失及失效时均不扫描全库。"""
+        record = self.write_record(PAPER_ONE, "First")
+        item_root = Path(record["root"])
+        record["files"] = {
+            "pdf_text_clean": "text/pdf.clean.txt",
+            "pdf_text_raw": "text/pdf.raw.txt",
+        }
+        (item_root / "text").mkdir()
+        for relative_path in record["files"].values():
+            (item_root / relative_path).write_text("cached text", encoding="utf-8")
+        (item_root / "manifest.json").write_text(json.dumps(record), encoding="utf-8")
+        for indexed in (True, False, "stale"):
+            index = {PAPER_ONE: f"items/2026/{PAPER_ONE}/manifest.json"} if indexed is True else {}
+            if indexed == "stale":
+                index = {PAPER_ONE: "items/missing/manifest.json"}
+            for raw in (False, True):
+                with (
+                    self.subTest(indexed=indexed, raw=raw),
+                    mock.patch.object(paper_store, "PAPER_STORE", self.store),
+                    mock.patch.object(paper_store, "PDF_TEXT_ROOT", self.root / "cache"),
+                    mock.patch.object(paper_store, "ALLOWED_FILE_ROOTS", [self.root]),
+                    mock.patch("management_portal.resources.registry_store.get_registry_store") as registry,
+                    mock.patch("management_portal.resources.directory_registrations.is_deleted", return_value=False),
+                    mock.patch("management_common.directory_cleanup_store.get_directory_cleanup_store") as cleanup,
+                    mock.patch.object(self.store, "manifest_map", return_value=index),
+                    mock.patch.object(self.store, "manifest_paths", side_effect=AssertionError("full scan")),
+                    mock.patch.object(paper_store, "_all_papers", side_effect=AssertionError("all papers")),
+                    mock.patch.object(paper_store, "_extract_pdf_text_file", return_value="text") as extract,
+                ):
+                    registry.return_value.get.return_value = None
+                    cleanup.return_value.pending_at.return_value = False
+                    helper = paper_store._extract_pdf_text_raw if raw else paper_store._extract_pdf_text
+                    self.assertEqual(helper(item_root / "paper.pdf", paper_id=PAPER_ONE), "text")
+                    expected = item_root / record["files"]["pdf_text_raw" if raw else "pdf_text_clean"]
+                    if indexed is not True:
+                        expected = self.root / "cache" / ("paper-000000000001" + (".raw.txt" if raw else ".txt"))
+                    kwargs = {"cache_path": expected, "owner_id": PAPER_ONE}
+                    if raw:
+                        kwargs["raw"] = True
+                    extract.assert_called_once_with(item_root / "paper.pdf", **kwargs)
+
     def test_manifest_index_lookup_survives_symlinked_items(self) -> None:
         """条目目录改为符号链接后清单索引仍可定位论文"""
         self.write_record(PAPER_ONE, "First")
@@ -253,6 +295,75 @@ class PaperStoreIndexTest(unittest.TestCase):
         """参考文献上下文要求提供来源 paper_id"""
         with self.assertRaisesRegex(ValueError, "paper_id required"):
             paper_refs._ref_context("ref-1")
+
+class PaperStoreLookupCompatibilityTest(unittest.TestCase):
+    def setUp(self) -> None:
+        temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(temporary.cleanup)
+        self.root = Path(temporary.name)
+        self.store = paper_store.PaperStore(self.root)
+        self.manifest = {"paper_id": PAPER_ONE, "title": "Registered"}
+        self.path = self.root / "manifest.json"
+        self.path.write_text(json.dumps(self.manifest), encoding="utf-8")
+        self.registry = self.enterContext(mock.patch(
+            "management_portal.resources.registry_store.get_registry_store"))
+        self.registry.return_value.get.return_value = {"directories": [{"path": "registered-location"}]}
+        self.located = self.enterContext(mock.patch(
+            "management_common.instance_locations.located_path", return_value=str(self.root)))
+        self.deleted = self.enterContext(mock.patch(
+            "management_portal.resources.directory_registrations.is_deleted", return_value=False))
+        self.cleanup = self.enterContext(mock.patch(
+            "management_common.directory_cleanup_store.get_directory_cleanup_store"))
+        self.cleanup.return_value.pending_at.return_value = False
+        self.mapping = self.enterContext(mock.patch.object(
+            self.store, "manifest_map", side_effect=AssertionError("unexpected legacy map read")))
+        self.scan = self.enterContext(mock.patch.object(
+            self.store, "manifest_paths", side_effect=AssertionError("unexpected directory scan")))
+
+    def test_registered_hit_does_not_read_legacy_mapping(self) -> None:
+        """登记命中直接读目标清单，不读取旧映射或扫描目录。"""
+        for allow_scan in (True, False):
+            with self.subTest(allow_scan=allow_scan):
+                self.assertEqual(self.store.manifest_for_paper_id(
+                    PAPER_ONE, allow_scan=allow_scan), (self.path, self.manifest))
+        self.registry.return_value.get.assert_called_with("paper", PAPER_ONE)
+
+    def test_deleted_paper_never_reads_registration_or_mapping(self) -> None:
+        """已删除条目在任何查询模式均返回缺失。"""
+        self.deleted.return_value = True
+        for allow_scan in (True, False):
+            self.assertIsNone(self.store.paper_by_id(PAPER_ONE, allow_scan=allow_scan))
+        self.registry.assert_not_called()
+        self.located.assert_not_called()
+
+    def test_stale_registration_never_falls_back(self) -> None:
+        """失效登记不回退旧映射，保持删除和目录清理边界。"""
+        for failure in ("missing", "pending", "wrong_id"):
+            with self.subTest(failure=failure):
+                self.path.write_text(json.dumps(self.manifest), encoding="utf-8")
+                self.cleanup.return_value.pending_at.return_value = failure == "pending"
+                if failure == "missing":
+                    self.path.unlink()
+                elif failure == "wrong_id":
+                    self.path.write_text(json.dumps({"paper_id": PAPER_TWO}), encoding="utf-8")
+                for allow_scan in (True, False):
+                    self.assertIsNone(self.store.paper_by_id(PAPER_ONE, allow_scan=allow_scan))
+
+    def test_default_lookup_retains_scan_and_paper_conversion(self) -> None:
+        """默认模式保留旧映射未命中后的扫描及单篇转换语义。"""
+        self.registry.return_value.get.return_value = None
+        self.mapping.side_effect = None
+        self.mapping.return_value = {}
+        self.scan.side_effect = None
+        self.scan.return_value = [self.path]
+        with mock.patch.object(self.store, "manifest_to_paper", return_value={"id": PAPER_ONE}) as convert:
+            self.assertEqual(self.store.paper_by_id(PAPER_ONE), {"id": PAPER_ONE})
+            convert.assert_called_once_with(self.manifest, self.path)
+        self.scan.assert_called_once_with()
+        self.scan.reset_mock()
+        self.assertIsNone(self.store.paper_by_id(PAPER_ONE, allow_scan=False))
+        self.scan.assert_not_called()
+
 
 if __name__ == "__main__":
     unittest.main()
