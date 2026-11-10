@@ -2,10 +2,17 @@ import React, {useEffect, useRef, useState} from 'react';
 
 const SOURCES = {google: 'Google', deepseek: 'DeepSeek Flash'};
 
-export function TranslationPanel({selection, isCurrent, request}) {
-  const [mode, setMode] = useState('auto');
+export function TranslationMode({mode, onChange}) {
+  return <label className="paperTranslationMode">翻译模式 <select aria-label="翻译模式" value={mode} onChange={event => onChange(event.target.value)}>
+    <option value="auto">自动（Google 优先）</option>
+    <option value="google">Google</option>
+    <option value="deepseek">DeepSeek Flash</option>
+  </select></label>;
+}
+
+export function TranslationPanel({selection, mode, isCurrent, request}) {
   const [view, setView] = useState({state: 'idle'});
-  const generation = useRef(0), pending = useRef(null), modeRef = useRef('auto');
+  const generation = useRef(0), pending = useRef(null);
   const run = async (input, selectedMode) => {
     pending.current?.abort();
     const controller = new AbortController();
@@ -23,18 +30,11 @@ export function TranslationPanel({selection, isCurrent, request}) {
     }
   };
   useEffect(() => {
-    if (selection) void run(selection, modeRef.current);
+    if (selection) void run(selection, mode);
     return () => {generation.current++; pending.current?.abort();};
-  }, [selection]);
+  }, [selection, mode]);
+  if (!selection) return null;
   return <section className="paperTranslation" aria-label="选区翻译">
-    <label>翻译模式 <select aria-label="翻译模式" value={mode} onChange={event => {
-      const value = event.target.value; modeRef.current = value; setMode(value);
-      if (selection) void run(selection, value);
-    }}>
-      <option value="auto">自动（Google 优先）</option>
-      <option value="google">Google</option>
-      <option value="deepseek">DeepSeek Flash</option>
-    </select></label>
     {selection && <div className="paperTranslationBody" aria-live="polite">
       <details><summary>所选原文</summary><p>{selection.text}</p></details>
       {view.state === 'loading' && <p role="status">正在翻译…</p>}

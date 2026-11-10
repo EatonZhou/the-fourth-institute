@@ -38,6 +38,11 @@ def test_translation_ui(tmp_path, monkeypatch, browser):
 
 
 @pytest.mark.parametrize('browser', ['chromium', 'firefox'])
+def test_reader_ai_ui(tmp_path, monkeypatch, browser):
+    run_host(tmp_path, monkeypatch, browser, 'zotero_reader_ai.cjs')
+
+
+@pytest.mark.parametrize('browser', ['chromium', 'firefox'])
 def test_translation_owner_ui(tmp_path, monkeypatch, browser):
     run_host(tmp_path, monkeypatch, browser, 'zotero_reader_translation_owner.cjs', translation=True)
 

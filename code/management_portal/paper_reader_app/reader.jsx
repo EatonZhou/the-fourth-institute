@@ -1,18 +1,27 @@
 import React, {useEffect, useRef, useState} from 'react';
 import {createRoot} from 'react-dom/client';
 import {connectZotero, ZOTERO_URL} from './zotero_adapter.js';
-import {TranslationPanel} from './translation_panel.jsx';
+import {TranslationMode, TranslationPanel} from './translation_panel.jsx';
 import {translateSelection} from './translation_client.js';
+import {AIPanel} from './ai_panel.jsx';
 
 function Reader({paper, principal, anchor, close, control, readingReady, frameReady, isCurrent, isFullscreen}) {
   const frame = useRef(null), bridge = useRef(null);
   const [status, setStatus] = useState('正在打开论文…');
   const [failed, setFailed] = useState(false);
   const [selection, setSelection] = useState(null);
+  const [mode, setMode] = useState('auto');
+  const [discussion,setDiscussion] = useState(null);
+  const newDiscussion=async selection=>{
+    if(!isCurrent()||!isFullscreen())return;
+    const document=selection?.document||await bridge.current.aiDocument();
+    if(isCurrent())setDiscussion({...selection,document,key:`paper-reader:${paper.id}:${crypto.randomUUID()}`});
+  };
   useEffect(() => {
     frameReady(frame.current.contentWindow);
     const connection = connectZotero({frame: frame.current, paper, principal, ready: readingReady,
       translateSelection: value => {if (isCurrent() && isFullscreen()) setSelection(value);},
+      askSelection: value=>void newDiscussion(value),
       status: (message, error = false) => { setStatus(message); setFailed(error); }});
     bridge.current = connection;
     control(connection);
@@ -21,18 +30,22 @@ function Reader({paper, principal, anchor, close, control, readingReady, frameRe
   }, [paper.id]);
   return <div className="paperReadingApp">
     <header className="paperReadingToolbar">
-      <strong>{paper.title}</strong>
+      <strong title={paper.title}>{paper.title}</strong>
+      <TranslationMode mode={mode} onChange={setMode} />
+      <button onClick={()=>newDiscussion()}>新 AI 讨论</button>
       <a href={paper.pdf_url} target="_blank" rel="noopener noreferrer">原始 PDF</a>
       <button onClick={() => close()}><span className="paperLayoutEnter">全屏阅读</span><span className="paperLayoutExit">退出全屏</span></button>
     </header>
     <div className="paperReadingStatus" data-empty={!status} role="status">
       {status} {failed && <button onClick={() => bridge.current?.retry()}>重试保存</button>}
     </div>
-    <TranslationPanel selection={selection} isCurrent={isCurrent} request={(input, mode, operationId, signal) => {
+    <TranslationPanel mode={mode} selection={selection} isCurrent={isCurrent} request={(input, mode, operationId, signal) => {
       if (!isFullscreen()) throw new Error('请进入全屏后翻译');
       return translateSelection({selection: input, mode, operationId, principal, signal});
     }} />
-    <iframe ref={frame} className="paperReadingViewer" title="论文全屏 PDF 阅读器" />
+    <div className="paperReadingContent"><iframe ref={frame} className="paperReadingViewer" title="论文全屏 PDF 阅读器" />
+      {discussion&&<AIPanel key={discussion.key} discussion={discussion} principal={principal} bridge={()=>bridge.current} isCurrent={isCurrent} close={()=>setDiscussion(null)} />}
+    </div>
   </div>;
 }
 
