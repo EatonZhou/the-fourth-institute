@@ -775,6 +775,25 @@
         grid-template-columns: minmax(0, 1fr);
         gap: 10px;
       }
+      .watchboardModalCard.watchboardWeixinModal {
+        --portal-detail-width: 380px;
+      }
+      .watchboardWeixinBinding {
+        display: grid;
+        justify-items: center;
+        gap: 16px;
+        padding: 8px 0;
+        text-align: center;
+      }
+      .watchboardWeixinBinding img {
+        width: 240px;
+        max-width: 100%;
+        height: auto;
+        background: white;
+      }
+      .watchboardWeixinBinding p { margin: 0; }
+      .watchboardWeixinBinding form { width: 100%; }
+      .watchboardWeixinBinding input { max-width: 100%; }
       .watchboardModalBody [data-watchboard-output] {
         min-width: 0;
         font-size: 12px;

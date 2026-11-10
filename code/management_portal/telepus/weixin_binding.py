@@ -30,7 +30,7 @@ class WeixinBinding:
         return {'status': account['status'], 'last_error': account['last_error']} if account else {'status': 'unbound'}
 
     def _new_code(self, actor, session, attempt):
-        result = self.client_factory().request('get_bot_qrcode', {'local_token_list': []}, query={'bot_type': 3}, auth=False)
+        result = self.client_factory().request('get_bot_qrcode', {'local_token_list': []}, query={'bot_type': 3}, auth=False, timeout=5)
         data = {'qrcode': result['qrcode'], 'content': result['qrcode_img_content'],
                 'attempt': attempt, 'baseurl': API, 'status': 'wait'}
         self.store.save_binding(actor, session, data)
@@ -55,18 +55,22 @@ class WeixinBinding:
                 return self.public(self.store.account(actor))
             data = self.store.binding(actor, session)
             if not data:
-                return {'status': 'expired'}
+                account = self.store.account(actor)
+                return self.public(account) if account else {'status': 'expired'}
             query = {'qrcode': data['qrcode']}
             if pin:
                 if not re.fullmatch(r'[0-9]{1,12}', pin):
                     raise ValueError('请输入手机上显示的数字')
                 query['verify_code'] = pin
             try:
-                result = self.client_factory().request('get_qrcode_status', query=query, auth=False, base=data['baseurl'])
+                # QR status is a long poll upstream, but this call runs inside a
+                # Web request. Return before the proxy deadline and let the UI
+                # poll again; a quiet scan screen is not a failed binding.
+                result = self.client_factory().request('get_qrcode_status', query=query, auth=False, base=data['baseurl'], timeout=5)
             except WeixinError as exc:
                 if exc.code != 'network':
                     raise
-                return self._view(session, data)
+                return {**self._view(session, data), 'retryable': True}
             status = str(result.get('status') or 'wait')
             data['status'] = status
             if status in {'expired', 'verify_code_blocked'}:
@@ -110,7 +114,7 @@ class WeixinBinding:
 
     def _stop(self, account):
         try:
-            self.client_factory(account).request('msg/notifystop')
+            self.client_factory(account).request('msg/notifystop', timeout=5)
         except WeixinError:
             pass  # Remote expiry/outage must not prevent revoking local access.
 

@@ -105,6 +105,29 @@ def test_binding_stops_after_three_codes(bridge):
     assert binding.get(ACTOR, session) == {'status': 'expired'}
 
 
+def test_binding_quiet_long_poll_retries_before_web_deadline_and_recovers_confirmation(bridge):
+    adapter, server, _, binding = bridge
+    session = binding.start(ACTOR)['session_id']
+    attempts = []
+
+    def transport(url, method, headers, body, timeout):
+        attempts.append(timeout)
+        if len(attempts) == 1:
+            raise WeixinError('network', 'http')
+        return server(url, method, headers, body, timeout)
+
+    binding.client_factory = lambda account=None: WeixinClient(account, transport=transport)
+    waiting = binding.get(ACTOR, session)
+    assert waiting['status'] == 'wait' and waiting['retryable']
+    assert waiting['session_id'] == session and attempts == [5]
+    server.statuses = [dict(status='confirmed', **ACCOUNT)]
+    assert binding.get(ACTOR, session) == {'status': 'active'}
+    # The server committed, but the browser lost the confirmation response.
+    assert binding.get(ACTOR, session)['status'] == 'active'
+    incoming(adapter, server, '/help')
+    assert any('/help' in msg['item_list'][0]['text_item']['text'] for msg in server.sent)
+
+
 def test_sender_dedup_uint64_reference_and_channel_isolation(bridge):
     adapter, server, portal, _ = bridge
     incoming(adapter, server, sender='stranger')

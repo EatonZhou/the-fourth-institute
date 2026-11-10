@@ -99,12 +99,12 @@
     "en": "Scan with Weixin",
     "zh-CN": "请用微信扫码"
   },
-  "微信绑定失败": {
-    "en": "Weixin binding failed",
-    "zh-CN": "微信绑定失败"
+  "微信已绑定，可以在微信发送 /help": {
+    "en": "Weixin connected. Send /help in Weixin to get started.",
+    "zh-CN": "微信已绑定，可以在微信发送 /help"
   },
-  "微信解绑失败": {
-    "en": "Weixin unbinding failed",
-    "zh-CN": "微信解绑失败"
+  "连接暂时中断，正在重新确认绑定状态…": {
+    "en": "Connection interrupted. Checking binding status again…",
+    "zh-CN": "连接暂时中断，正在重新确认绑定状态…"
   }
 }
