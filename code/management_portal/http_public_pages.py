@@ -261,6 +261,7 @@ class PublicPagesHttp:
                     '/static/markdown.js',
                     '/static/portal_agent_inbox.js',
                     '/static/portal_mailbox_todos.js',
+                    '/static/portal_mailbox_alerts.js',
                     '/static/portal_api.js',
                     '/static/portal_board_shell.js',
                     '/static/portal_button_tooltips.js',
