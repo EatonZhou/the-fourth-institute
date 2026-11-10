@@ -76,7 +76,6 @@
       else chips.push(window.PortalI18n.t('<span class="repoSyncState clean">工作区干净</span>'));
       if (status.ahead) chips.push(window.PortalI18n.html`<span class="repoSyncState ahead">↑${Number(status.ahead)} 个提交领先</span>`);
       if (status.behind) chips.push(window.PortalI18n.html`<span class="repoSyncState behind">↓${Number(status.behind)} 个提交落后</span>`);
-      if (!state.overview.upstream) chips.push(window.PortalI18n.t('<span class="repoSyncState muted">无 upstream</span>'));
       if (state.overview.remotes?.length && state.overview.push_enabled === false) {
         chips.push(window.PortalI18n.t('<span class="repoSyncState pull-only">仅拉取</span>'));
       }
@@ -110,6 +109,7 @@
             : "";
       return window.PortalI18n.html`
       <div class="repoCodeToolbar">
+        <div class="repoBranchTools">
         <div class="repoBranchControl">
           ${uiIcon("branch")}
           <span class="repoBranchCurrent">${esc(overview.current_branch || window.PortalI18n.t("detached HEAD"))}</span>
@@ -123,17 +123,19 @@
         <span class="repoToolbarDivider"></span>
         <button class="portalButton is-compact is-quiet repoTextButton" type="button" data-repo-tab="branches"><span>${overview.tag_count} tags</span></button>
         <span class="repoToolbarUpstream" title="${esc(overview.upstream || window.PortalI18n.t("未配置 upstream"))}">${esc(overview.upstream || window.PortalI18n.t("No upstream"))}${status.ahead ? ` · ↑${Number(status.ahead)}` : ""}${status.behind ? ` · ↓${Number(status.behind)}` : ""}</span>
-        <div class="repoToolbarSpacer"></div>
+        </div>
+        <div class="repoFileTools">
         <div class="repoFileFinderWrap">
-          <button class="portalButton repoGoToFile" type="button" data-repo-action="file-finder">${uiIcon("search")}<span>转到文件</span><kbd>t</kbd></button>
+          <button class="portalButton is-compact repoGoToFile" type="button" data-repo-action="file-finder">${uiIcon("search")}<span>转到文件</span><kbd>t</kbd></button>
           ${state.fileFinderOpen ? renderFileFinder() : ""}
         </div>
-        <button class="portalButton" type="button" data-repo-action="new-file" ${overview.checkout_writable ? "" : "disabled"}>${uiIcon("plus")}<span>新建文件</span></button>
+        <button class="portalButton is-compact" type="button" data-repo-action="new-file" ${overview.checkout_writable ? "" : "disabled"}>${uiIcon("plus")}<span>新建文件</span></button>
         <button class="portalButton is-icon is-quiet repoIconButton" data-portal-icon="refresh" type="button" data-repo-action="refresh-workspace" aria-label="刷新 Repo 状态" title="刷新 Repo 状态"></button>
         <div class="repoSyncButtons" aria-label="Git 同步">
-          <button class="portalButton" type="button" data-repo-sync="pull" ${pullDisabledReason ? "disabled" : ""} title="${esc(pullDisabledReason || `Pull ${overview.upstream || "remote"}`)}">Pull</button>
-          <button class="portalButton is-primary" type="button" data-repo-sync="push" ${pushDisabledReason ? "disabled" : ""} title="${esc(pushDisabledReason || `Push ${overview.current_branch}`)}">Push</button>
-          <button class="portalButton is-danger" type="button" data-repo-discard ${status.dirty ? "" : "disabled"} title="放弃全部 staged、unstaged 和 untracked changes">放弃改动</button>
+          <button class="portalButton is-compact" type="button" data-repo-sync="pull" ${pullDisabledReason ? "disabled" : ""} title="${esc(pullDisabledReason || `Pull ${overview.upstream || "remote"}`)}">Pull</button>
+          <button class="portalButton is-compact" type="button" data-repo-sync="push" ${pushDisabledReason ? "disabled" : ""} title="${esc(pushDisabledReason || `Push ${overview.current_branch}`)}">Push</button>
+
+        </div>
         </div>
       </div>`;
     }

@@ -23,6 +23,7 @@
 
     let repoWorkbench = null;
     let repoFilePreviewPanel = null;
+    let actionsPopover = null;
 
     let fileFinderPopover = null;
     let suppressFileFinderClose = false;
@@ -87,15 +88,21 @@
       <div class="repoIdentity">
         <span class="repoIdentityIcon">${uiIcon("repository")}</span>
         <div class="repoIdentityText">${identity}</div>
+      </div>
+      <div class="repoIdentityMeta">
         <span class="repoOwnership">${esc(state.overview?.ownership || objectOf(record?.attributes).ownership || "local")}</span>
         <span class="repoProjectPills">${(state.overview?.project_ids || projectIds(record)).map(project => window.PortalI18n.html`<span>${esc(project)}</span>`).join("")}</span>
         ${statusSummary()}
       </div>
       <div class="repoIdentityActions">
         ${primaryRemote?.web_url ? window.PortalI18n.html`<a class="portalButton is-compact" href="${esc(primaryRemote.web_url)}" target="_blank" rel="noopener noreferrer" title="${esc(primaryRemote.web_url)}">${uiIcon("external-link")}<span>打开 Remote</span></a>` : ""}
+        <button class="portalButton is-compact is-quiet" type="button" data-repo-more aria-label="更多仓库操作" aria-controls="repoMoreActions">${uiIcon("more-horizontal")}<span>更多</span></button>
+        <div class="repoMoreActions" id="repoMoreActions" role="dialog" aria-label="仓库操作" hidden>
         ${workspaceCapability("git") ? window.PortalI18n.html`<button class="portalButton is-compact" type="button" data-repo-action="shortcuts" aria-label="查看 Repo 快捷键" title="快捷键 (?)">${uiIcon("keyboard")}<span>快捷键</span></button>` : ""}
         <button class="portalButton is-compact" type="button" data-repo-action="copy-id" title="${esc(state.selectedId)}">${uiIcon("copy")}<span>复制 ID</span></button>
         <button class="portalButton is-compact" type="button" data-repo-action="register">${uiIcon("plus")}<span>注册 Repo</span></button>
+        ${workspaceCapability("git") && state.activeTab === "code" ? window.PortalI18n.html`<button class="portalButton is-compact is-danger" type="button" data-repo-discard ${state.overview?.status?.dirty ? "" : "disabled"} title="放弃全部 staged、unstaged 和 untracked changes">放弃改动</button>` : ""}
+        </div>
       </div>`;
     }
 
@@ -145,6 +152,8 @@
     }
 
     function renderWorkspace() {
+      actionsPopover?.destroy();
+      actionsPopover = null;
       void repoFilePreviewPanel?.destroy?.();
       repoFilePreviewPanel = null;
       repoWorkbench?.destroy?.();
@@ -173,6 +182,19 @@
       mountRepoWorkbench();
       mountRepoFilePreview();
       bindFileFinderPopover();
+      const trigger = elements.workspace.querySelector("[data-repo-more]");
+      const panel = elements.workspace.querySelector("#repoMoreActions");
+      if (trigger && panel) {
+        actionsPopover = window.PortalOverlay.bindPopover({ trigger, panel, boundary: elements.workspace,
+          placement: "bottom-end", ariaHaspopup: "dialog", portal: false, closeOnOutside: true, closeOnEscape: true });
+        trigger.addEventListener("click", () => {
+          actionsPopover.toggle();
+          if (actionsPopover.isOpen()) panel.querySelector("button:not(:disabled)")?.focus();
+        });
+        panel.addEventListener("click", event => {
+          if (event.target.closest("button:not(:disabled)")) actionsPopover?.close();
+        });
+      }
       applyRenderedFilters();
       scheduleRepositoryStatistics();
     }

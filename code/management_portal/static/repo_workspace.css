@@ -9,6 +9,7 @@
 
 body[data-resource-category="repo"] {
   min-width: 320px;
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
 body[data-resource-category="repo"] .portalCollectionTypeChip[data-type="repo"] {
@@ -59,60 +60,68 @@ body[data-resource-category="repo"] .portalCollectionTypeChip[data-type="repo"] 
 
 .repoMastheadMain {
   box-sizing: border-box;
-  min-height: 58px;
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: "identity actions" "meta actions";
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 8px 14px;
-}
-
-.repoIdentity,
-.repoIdentityActions {
-  display: flex;
-  align-items: center;
-  min-width: 0;
-  gap: 9px;
+  gap: 12px 24px;
+  padding: 24px 16px 20px;
 }
 
 .repoIdentity {
-  flex-wrap: wrap;
+  grid-area: identity;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  gap: 12px;
 }
 
 .repoIdentityIcon {
-  width: 36px;
-  height: 36px;
   display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex: 0 0 auto;
-  border: 1px solid color-mix(in srgb, var(--accent) 22%, var(--border));
-  border-radius: 9px;
-  background: color-mix(in srgb, var(--accent) 8%, var(--panel));
-  color: var(--accent);
-}
-
-.repoIdentityIcon svg {
-  width: 20px;
-  height: 20px;
-}
-
-.repoIdentityText {
-  min-width: 0;
-  display: grid;
-  gap: 2px;
-}
-
-.repoIdentityText > label {
   color: var(--muted);
-  font-size: 9px;
-  font-weight: 700;
-  letter-spacing: .08em;
-  text-transform: uppercase;
+  flex: 0 0 auto;
 }
 
-.repoOwnership,
-.repoProjectPills span,
+.repoIdentityIcon svg { width: 24px; height: 24px; }
+.repoIdentityText { min-width: 0; }
+
+.repoIdentityMeta {
+  grid-area: meta;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  padding-left: 36px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.repoIdentityActions {
+  grid-area: actions;
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.repoMoreActions {
+  position: absolute;
+  z-index: 40;
+  right: 0;
+  top: calc(100% + 8px);
+  display: grid;
+  gap: 6px;
+  width: max-content;
+  min-width: 176px;
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--panel);
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--text) 12%, transparent);
+}
+.repoMoreActions[hidden] { display: none; }
+
 .repoSettingPill {
   display: inline-flex;
   align-items: center;
@@ -127,37 +136,14 @@ body[data-resource-category="repo"] .portalCollectionTypeChip[data-type="repo"] 
   white-space: nowrap;
 }
 
-.repoProjectPills {
-  min-width: 0;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  overflow: hidden;
-}
-
-.repoSyncStates {
-  min-width: 0;
-  display: inline-flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 5px;
-}
-
-.repoIdentityActions {
-  flex: 0 0 auto;
-}
-
-.repoIdentityActions kbd {
-  min-width: 18px;
+.repoOwnership {
+  padding: 1px 8px;
   border: 1px solid var(--border);
-  border-bottom-width: 2px;
-  border-radius: 4px;
-  background: var(--panel-2);
-  color: var(--muted);
-  padding: 1px 4px;
-  font: 9px/1.2 var(--repo-mono);
-  text-align: center;
+  border-radius: 20px;
+  font-size: 12px;
 }
+.repoSyncStates { display: inline-flex; flex-wrap: wrap; gap: 6px; }
+.repoProjectPills { display: inline-flex; flex-wrap: wrap; gap: 8px; }
 
 .repoWorkspaceNav {
   min-width: 0;
@@ -165,11 +151,11 @@ body[data-resource-category="repo"] .portalCollectionTypeChip[data-type="repo"] 
   display: flex;
   align-items: center;
   gap: 10px;
-  border-top: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+
 }
 
 .repoTabs {
-  min-width: max-content;
+  min-width: 0;
   display: flex;
   align-items: center;
   gap: 2px;
@@ -182,12 +168,12 @@ body[data-resource-category="repo"] .portalCollectionTypeChip[data-type="repo"] 
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  min-height: 36px;
+  min-height: 44px;
   border: 0;
   background: transparent;
   color: var(--muted);
   padding: 0 10px;
-  font: 600 12px/1 ui-sans-serif, system-ui, sans-serif;
+  font: 500 14px/1 ui-sans-serif, system-ui, sans-serif;
   cursor: pointer;
 }
 
@@ -211,7 +197,7 @@ body[data-resource-category="repo"] .portalCollectionTypeChip[data-type="repo"] 
 }
 
 .repoTab.active::after {
-  background: #fd8c73;
+  background: var(--accent);
 }
 
 .repoTab svg {
@@ -230,8 +216,8 @@ body[data-resource-category="repo"] .portalCollectionTypeChip[data-type="repo"] 
   border-radius: 999px;
   background: color-mix(in srgb, var(--muted) 14%, transparent);
   color: inherit;
-  font-size: 9px;
-  font-weight: 700;
+  font-size: 12px;
+  font-weight: 600;
   text-align: center;
 }
 
@@ -265,33 +251,34 @@ body[data-resource-category="repo"] .portalCollectionTypeChip[data-type="repo"] 
 .repoCodeToolbar {
   position: relative;
   box-sizing: border-box;
-  min-height: 46px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 24px;
+  padding: 20px 16px 12px;
+}
+.repoBranchTools,
+.repoFileTools {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 10px;
-  margin-top: 12px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--panel);
-  box-shadow: 0 1px 2px color-mix(in srgb, var(--text) 4%, transparent);
-}
-
-.repoCodeToolbar .portalButton {
-  min-height: 34px;
-  padding-block: 6px;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .repoBranchControl {
   position: relative;
-  min-width: 150px;
+  min-width: 140px;
+  max-width: min(280px, 100%);
   display: flex;
   align-items: center;
   gap: 7px;
   min-height: 34px;
   border: 1px solid var(--border);
   border-radius: 7px;
-  background: var(--panel-2);
+  background: var(--panel);
   padding: 0 9px;
   color: var(--text);
   transition: border-color .15s ease, background .15s ease, box-shadow .15s ease;
@@ -322,7 +309,7 @@ body[data-resource-category="repo"] .portalCollectionTypeChip[data-type="repo"] 
   flex: 1 1 auto;
   overflow: hidden;
   padding-right: 18px;
-  font: 650 11px/1.2 var(--repo-mono);
+  font: 600 13px/1.4 var(--repo-mono);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -352,7 +339,7 @@ body[data-resource-category="repo"] .portalCollectionTypeChip[data-type="repo"] 
   max-width: 210px;
   overflow: hidden;
   color: var(--muted);
-  font: 10px/1.3 var(--repo-mono);
+  font: 12px/1.4 var(--repo-mono);
   text-overflow: ellipsis;
   white-space: nowrap;
 }

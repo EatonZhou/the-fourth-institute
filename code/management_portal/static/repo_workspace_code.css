@@ -400,13 +400,13 @@
   background: color-mix(in srgb, var(--accent) 9%, var(--panel-2));
   color: var(--accent);
   padding: 3px 9px;
-  font-size: 9px;
-  font-weight: 700;
+  font-size: 12px;
+  font-weight: 500;
 }
 
 .repoSyncState.clean {
   background: color-mix(in srgb, var(--repo-green) 10%, var(--panel));
-  color: var(--repo-green);
+  color: color-mix(in srgb, var(--repo-green) 70%, var(--text));
 }
 
 .repoSyncState.dirty {
@@ -421,7 +421,7 @@
 
 .repoSyncState.ahead {
   background: color-mix(in srgb, var(--repo-green) 9%, var(--panel));
-  color: var(--repo-green);
+  color: color-mix(in srgb, var(--repo-green) 70%, var(--text));
 }
 
 .repoSyncState.behind {

@@ -32,17 +32,9 @@
 }
 
 @media (max-width: 920px) {
-  .repoMastheadMain,
-  .repoCodeToolbar {
-    flex-wrap: wrap;
-  }
-
-  .repoIdentity {
-    flex: 1 1 100%;
-  }
-
-  .repoIdentityActions {
-    margin-left: 45px;
+  .repoMastheadMain {
+    grid-template-areas: "identity identity" "meta actions";
+    gap: 12px;
   }
 
   .repoCodeLayout {
@@ -106,44 +98,20 @@
     border-radius: 0;
   }
 
-  .repoIdentityActions span,
-  .repoToolbarDivider,
-  .repoTextButton span,
-  .portalButton.is-compact span {
-    display: none;
+  .repoMastheadMain {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: "identity" "meta" "actions";
+    padding: 20px 12px 12px;
   }
-
-  .repoTabs {
-    overflow-x: auto;
-  }
-
-  .repoWorkspaceActions {
-    overflow-x: auto;
-  }
-
-  .repoTab {
-    flex: 0 0 auto;
-  }
-
-  .repoCodeToolbar {
-    padding: 7px 9px;
-  }
-
-  .repoToolbarUpstream {
-    display: none;
-  }
-
-  .repoBranchControl {
-    flex: 1 1 180px;
-  }
-
-  .repoSyncButtons {
-    width: 100%;
-  }
-
-  .repoSyncButtons .portalButton {
-    flex: 1 1 auto;
-  }
+  .repoIdentityMeta { padding-left: 0; }
+  .repoIdentityActions { justify-self: start; }
+  .repoMoreActions { right: auto; left: 0; }
+  .repoTabs { overflow-x: auto; }
+  .repoTab { flex: 0 0 auto; }
+  .repoWorkspaceActions { flex-wrap: wrap; }
+  .repoCodeToolbar { padding: 16px 12px 12px; }
+  .repoBranchTools, .repoFileTools { width: 100%; }
+  .repoToolbarUpstream { max-width: 100%; }
 
   .repoPushPolicy {
     align-items: stretch;
@@ -350,8 +318,4 @@
     gap: 3px;
   }
 
-  .repoSyncStates {
-    flex: 1 1 100%;
-    padding-left: 45px;
-  }
 }
