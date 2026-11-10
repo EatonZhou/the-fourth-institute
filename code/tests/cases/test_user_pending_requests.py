@@ -266,3 +266,29 @@ def test_named_recipient_users_are_asked(resident_record, allowed):
     asked["recipients"] = [{"kind": "user", "id": "CASE-B"}]
     rows = user_pending_questions.rows_for(resident_id, asked, repo)
     assert [(row[0], row[3], row[5]) for row in rows] == [("case-b", resident_id, "question_set")]
+
+
+def test_backfill_thread_runs_to_ready_once(resident_record, monkeypatch, allowed):
+    """回填后台线程连续续批直到就绪，同一进程只起一个"""
+    from management_portal.society_service.state_store import get_lineage_data_store
+
+    resident_id = resident_record["resident_id"]
+    repo = resident_conversation_stream.get_repository()
+    waiting = _ask(repo, resident_id, "CASE-A")
+    store = get_lineage_data_store()
+    store.database.write(lambda connection: (
+        connection.execute("DELETE FROM user_pending_requests"),
+        connection.execute("DELETE FROM lineage_meta WHERE key=%s", (user_pending_questions.READY_KEY,)),
+    ))
+    try:
+        monkeypatch.setattr(user_pending_questions, "BACKFILL_BATCH_SIZE", 1)
+        assert user_pending_questions.start_backfill(work_seconds=0, rest_seconds=0) is False
+        thread = user_pending_questions._BACKFILL_THREAD
+        assert user_pending_questions.start_backfill(work_seconds=0, rest_seconds=0) is False
+        assert user_pending_questions._BACKFILL_THREAD is thread
+        thread.join(timeout=60)
+        assert not thread.is_alive()
+        assert user_pending_questions.start_backfill() is True
+        assert [item["source_message_id"] for item in _pending("CASE-A")] == [waiting["message_id"]]
+    finally:
+        store.database.write(user_pending_questions.mark_ready)

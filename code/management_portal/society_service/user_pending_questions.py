@@ -401,6 +401,45 @@ def _progress(connection: Any) -> tuple[str, str, str] | None:
     return (parts[0], parts[1], parts[2]) if len(parts) == 3 else ("", "", "")
 
 
+_BACKFILL_THREAD: Any = None
+_BACKFILL_START = __import__("threading").Lock()
+
+
+def start_backfill(*, work_seconds: float = 5.0, rest_seconds: float = 2.0) -> bool:
+    """Keep the backfill going in one background thread of this process until ready; True once ready.
+
+    SocietyService housekeeping calls it at start and each round: it starts
+    the thread when none runs in this process, so a failed or stopped
+    run resumes from its committed place next round.  The thread alternates
+    ``work_seconds`` of batches with ``rest_seconds`` of rest and ends when
+    the index is ready; housekeeping's own period is unchanged.
+    """
+
+    import threading
+    import time
+
+    global _BACKFILL_THREAD
+    from .state_store import get_lineage_data_store
+
+    with get_lineage_data_store().database.read() as connection:
+        if _progress(connection) is None:
+            return True
+    with _BACKFILL_START:
+        if _BACKFILL_THREAD is not None and _BACKFILL_THREAD.is_alive():
+            return False
+
+        def run() -> None:
+            try:
+                while not backfill_step(time_budget_seconds=work_seconds):
+                    time.sleep(rest_seconds)
+            except Exception:  # noqa: BLE001 - the next housekeeping round resumes from the committed place
+                LOGGER.exception("pending-question backfill stopped; housekeeping resumes it")
+
+        _BACKFILL_THREAD = threading.Thread(target=run, name="pending-question-backfill", daemon=True)
+        _BACKFILL_THREAD.start()
+    return False
+
+
 def backfill_step(*, time_budget_seconds: float = 2.0) -> bool:
     """Index the stored messages of a store that had Conversations before the index; True once ready.
 
