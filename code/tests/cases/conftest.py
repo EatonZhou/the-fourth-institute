@@ -9,6 +9,12 @@ from pathlib import Path
 import pytest
 
 
+@pytest.fixture(autouse=True)
+def isolate_host_service_manager(monkeypatch):
+    from tests.cases.host_service_isolation import protect_host_services
+    protect_host_services(monkeypatch)
+
+
 # pytest never uses the Portal database server, even when the shell loaded the
 # Portal environment: it takes an explicit separate test server, or starts a
 # disposable one for this session. Child processes inherit the same choice.
