@@ -114,12 +114,21 @@ class WeixinAdapter:
         chat = chat_key(account['ilink_bot_id'])
         for item in message.get('item_list') or []:
             quote = item.get('ref_msg') or {}
-            if quote.get('svr_id'):
-                reference = self.store.local_id(chat, quote['svr_id'])
-            if quote and not self.router.store.linked_message(chat, reference):
+            if quote:
+                external_id = quote.get('svr_id') or (quote.get('message_item') or {}).get('msg_id')
+                reference = self.store.local_id(chat, external_id) if external_id else 0
+                linked = self.router.store.linked_message(chat, reference)
+                matched_by = 'id' if linked else 'none'
                 excerpt = quote.get('title') or (quote.get('message_item') or {}).get('text_item', {}).get('text') or ''
-                if excerpt:
+                if not linked:
+                    linked = self.router.store.linked_message_by_text(chat, excerpt)
+                    if linked:
+                        reference = linked['telegram_message_id']
+                        matched_by = 'text'
+                if not linked and excerpt:
                     text.append('> ' + str(excerpt).replace('\n', '\n> '))
+                self.router.store.append_audit('quote_received', chat_id=chat, portal_actor=account['portal_actor'],
+                    payload={'has_id': bool(external_id), 'matched_by': matched_by})
             kind = item.get('type')
             if kind == 1:
                 text.append(str((item.get('text_item') or {}).get('text') or ''))
@@ -250,7 +259,8 @@ class WeixinAdapter:
                     local = self.store.local_id(chat, server_id)
                     link = item.get('link') or {}
                     if link:
-                        self.router.store.link_message(chat, local, link['resident_id'], link['message_id'])
+                        self.router.store.link_message(chat, local, link['resident_id'], link['message_id'],
+                            excerpt='\n'.join(p.get('text_item', {}).get('text', '') for p in parts))
                     if item.get('question_session'):
                         self.router.store.update_question_session(item['question_session'], telegram_message_id=local)
                 if item.get('attachment_token') and attachment:

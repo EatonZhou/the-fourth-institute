@@ -191,6 +191,10 @@ class TelegramAdapter:
                 self.client.edit_message_text(chat_id=chat_id, message_id=message_id,
                                               text=markdown_to_telegram_html(str(edit.get("text") or "")),
                                               reply_markup=markup, parse_mode="HTML")
+                if edit.get('link'):
+                    link = edit['link']
+                    self.router.store.link_message(chat_id, message_id, link['resident_id'], link['message_id'],
+                                                   excerpt=str(edit.get('text') or ''))
                 return {"telegram_message_id": message_id, "edited": True}
             except RuntimeError:
                 pass
@@ -218,7 +222,7 @@ class TelegramAdapter:
                                               reply_markup=markup if isinstance(markup, dict) else None)
                     last_id = int(((result or {}).get("result") or {}).get("message_id") or 0)
                     if link:
-                        self.router.store.link_message(chat_id, last_id, link["resident_id"], link["message_id"])
+                        self.router.store.link_message(chat_id, last_id, link["resident_id"], link["message_id"], excerpt=piece)
                     sent_count += 1
                     if item.get("delivery") or item.get("input"):
                         self.router.waiting.replied(chat_id)

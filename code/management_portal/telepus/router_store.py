@@ -10,7 +10,7 @@ from . import postgres as telepus_postgres
 from .database_time import iso_time
 
 
-SCHEMA_VERSION = 8
+SCHEMA_VERSION = 9
 TELEGRAM_BOT_TOKEN_RE = re.compile(r"\b\d{8,12}:AA[A-Za-z0-9_-]{20,}\b")
 MODES = ("assistant", "exact")
 
@@ -167,13 +167,15 @@ class RouterStore:
             version = ""
             if conn.execute("SELECT to_regclass(current_schema() || '.meta')").fetchone()[0]:
                 marker = conn.execute("SELECT value FROM meta WHERE key='schema_version'").fetchone()
-                if marker is None or marker[0] not in {"7", str(SCHEMA_VERSION)}:
+                if marker is None or marker[0] not in {"7", "8", str(SCHEMA_VERSION)}:
                     raise RuntimeError("Telepus database requires the coordinated schema migration")
                 version = marker[0]
             if version != str(SCHEMA_VERSION):
-                conn.executescript(SCHEMA_DDL)
-                from .weixin_store import init_tables
-                init_tables(conn)
+                if version != "8":
+                    conn.executescript(SCHEMA_DDL)
+                    from .weixin_store import init_tables
+                    init_tables(conn)
+                conn.execute("ALTER TABLE message_links ADD COLUMN IF NOT EXISTS excerpt TEXT NOT NULL DEFAULT ''")
                 conn.execute(
                     "INSERT INTO meta(key, value) VALUES(?, ?) ON CONFLICT(key) DO UPDATE SET value=excluded.value",
                     ("schema_version", str(SCHEMA_VERSION)),
@@ -257,7 +259,7 @@ class RouterStore:
                 "INSERT INTO telegram_inputs(message_id, chat_id, resident_id, telegram_message_id, excerpt, open, "
                 "created_at, updated_at) VALUES(?, ?, ?, ?, ?, TRUE, ?, ?) ON CONFLICT(message_id) DO NOTHING",
                 (str(message_id), str(chat_id), str(resident_id), int(telegram_message_id or 0),
-                 str(excerpt or "")[:200], now, now),
+                 str(excerpt or ""), now, now),
             )
 
     def input(self, message_id: str) -> dict[str, Any] | None:
@@ -333,16 +335,17 @@ class RouterStore:
             conn.execute("DELETE FROM delivered_messages WHERE chat_id = ? AND message_id = ?",
                          (str(chat_id), str(message_id)))
 
-    def link_message(self, chat_id: str, telegram_message_id: int, resident_id: str, message_id: str) -> None:
+    def link_message(self, chat_id: str, telegram_message_id: int, resident_id: str, message_id: str,
+                     excerpt: str = "") -> None:
         if not telegram_message_id or not message_id:
             return
         self.init_schema()
         with self.connect() as conn:
             conn.execute(
-                "INSERT INTO message_links(chat_id, telegram_message_id, resident_id, message_id, created_at) "
-                "VALUES(?, ?, ?, ?, ?) ON CONFLICT(chat_id, telegram_message_id) DO UPDATE SET "
-                "resident_id = excluded.resident_id, message_id = excluded.message_id",
-                (str(chat_id), int(telegram_message_id), str(resident_id), str(message_id), now_iso()),
+                "INSERT INTO message_links(chat_id, telegram_message_id, resident_id, message_id, created_at, excerpt) "
+                "VALUES(?, ?, ?, ?, ?, ?) ON CONFLICT(chat_id, telegram_message_id) DO UPDATE SET "
+                "resident_id = excluded.resident_id, message_id = excluded.message_id, excerpt = excluded.excerpt",
+                (str(chat_id), int(telegram_message_id), str(resident_id), str(message_id), now_iso(), str(excerpt)),
             )
 
     def linked_message(self, chat_id: str, telegram_message_id: int) -> dict[str, Any] | None:
@@ -354,7 +357,35 @@ class RouterStore:
                 "SELECT resident_id, message_id FROM message_links WHERE chat_id = ? AND telegram_message_id = ?",
                 (str(chat_id), int(telegram_message_id)),
             ).fetchone()
+            if row is None:
+                # Inputs accepted before inbound links were introduced remain quotable.
+                row = conn.execute(
+                    "SELECT resident_id, message_id FROM telegram_inputs WHERE chat_id=? AND telegram_message_id=?",
+                    (str(chat_id), int(telegram_message_id)),
+                ).fetchone()
         return dict(row) if row else None
+
+    def linked_message_by_text(self, chat_id: str, excerpt: str) -> dict[str, Any] | None:
+        from .quote_text import quote_text
+        needle = quote_text(excerpt)
+        if not needle:
+            return None
+        self.init_schema()
+        with self.connect() as conn:
+            rows = conn.execute(
+                "SELECT resident_id,message_id,telegram_message_id,excerpt,created_at FROM ("
+                "SELECT resident_id,message_id,telegram_message_id,excerpt,created_at FROM message_links WHERE chat_id=? "
+                "UNION ALL SELECT resident_id,message_id,telegram_message_id,excerpt,created_at FROM telegram_inputs "
+                "WHERE chat_id=? AND telegram_message_id<>0) AS recent ORDER BY created_at DESC LIMIT 500",
+                (str(chat_id), str(chat_id)),
+            ).fetchall()
+        matches = {}
+        for row in rows:
+            if needle in quote_text(row['excerpt']):
+                matches[(row['resident_id'], row['message_id'])] = dict(row)
+                if len(matches) > 1:
+                    return None
+        return next(iter(matches.values()), None)
 
     # -- question sets -------------------------------------------------------------------
 

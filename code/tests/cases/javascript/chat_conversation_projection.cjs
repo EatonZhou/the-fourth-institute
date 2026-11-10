@@ -90,6 +90,20 @@ function familyModes() {
 
 function protocolMessages() {
   const one = message => plain(chat.residentProtocolMessageToWorkspace(message));
+  for (const source of ['own_input', 'member_reply', 'history']) {
+    const quote = { message_id: source, author_id: source === 'own_input' ? 'sample_admin' : 'resident_a', text: 'Quoted content' };
+    const message = { message_id: 'mobile_' + source, role: 'user', author_id: 'sample_admin',
+      origin: { channel: { kind: 'weixin' } }, quote, content_parts: [text('follow up')] };
+    assert.deepEqual(one(message).quote, quote, 'mobile quote survives Chat conversion');
+    assert.deepEqual(project({ messages: [message], family: { kind: 'facade' } }).messages[0].quote, quote);
+    const module = w.PortalChatWorkspaceMessages;
+    const dependencies = Object.fromEntries(module.dependencies.map(key => [key, () => { throw new Error('Unused ' + key); }]));
+    dependencies.escapeHtml = w.PortalUIPrimitives.escapeHtml;
+    const node = w.document.createElement('div');
+    node.innerHTML = module.createMessages(dependencies).messageQuoteHtml(one(message).quote);
+    assert.equal(node.querySelector('[data-message-quote]').dataset.messageQuote, source);
+    assert.equal(node.querySelector('.messageQuoteText').textContent, quote.text);
+  }
   const reply = one({ message_id: 'm1', role: 'agent', origin: { sender: { id: 'resident_a' } }, usage: { output_tokens: 3 }, content_parts: [text('Hello'), text('world')] });
   assert.equal(reply.id, 'm1');
   assert.equal(reply.role, 'assistant', 'an agent message is the assistant');

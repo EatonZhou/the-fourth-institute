@@ -122,3 +122,44 @@ def test_solo_generation_changes_only_on_solo_transition(personal):
     prefs.change(fid, 'newcomer', ama['resident_id'], 'solo', False)
     prefs.change(fid, 'newcomer', ama['resident_id'], 'solo', True)
     assert token() != first
+
+
+@pytest.mark.parametrize('source_kind', ['own_input', 'member_reply', 'history'])
+def test_mobile_quotes_are_enriched_projected_and_route_to_the_source(personal, monkeypatch, source_kind):
+    ama, entry = personal
+    facade = records.find_resident(entry['resident_id'])
+    monkeypatch.setattr(resident_protocol, 'deliver_resident_input', REAL_DELIVER)
+    monkeypatch.setattr(resident_intake_domain, 'deliver_resident_message_content', REAL_INTAKE)
+    monkeypatch.setattr(family_quota.execution_port, 'service', lambda: Mock(accounts=lambda: {'accounts': []}))
+    repo = resident_conversation_stream.get_repository()
+    first_id, reply_id = 'msg_' + 'e' * 32, 'msg_' + 'f' * 32
+
+    def send(mid, quote=None):
+        message = {'message_id': mid, 'content_parts': [{'type': 'text', 'text': 'phone request'}]}
+        if quote:
+            message['quote'] = {'message_id': quote}
+        return resident_protocol.deliver_resident_input({'resident_id': facade['resident_id'], 'message': message},
+            'newcomer', delivery_context=resident_protocol.ResidentDeliveryContext(channel='weixin'))
+
+    send(first_id)
+    link = family_facade.relay_links(facade)[first_id]
+    if source_kind in {'member_reply', 'history'}:
+        repo.append_message(link['resident_id'], {'message_id': reply_id, 'role': 'agent',
+            'author_id': link['resident_id'], 'reply_to_message_id': link['message_id'],
+            'content_parts': [{'type': 'text', 'text': 'member reply'}]})
+        repo.set_input_state(link['resident_id'], link['message_id'], 'completed')
+        target, expected = reply_id, link['resident_id']
+        if source_kind == 'history':
+            from management_portal.telepus.router_core import conversation_rounds
+            history = conversation_rounds(family_facade.project_messages(facade, [repo.message(facade['resident_id'], first_id)]))
+            target = history[0]['reply']['message_id']
+    else:
+        target, expected = first_id, link['resident_id']
+    next_id = 'msg_' + 'a1' * 16
+    send(next_id, target)
+    assert family_facade.relay_links(facade)[next_id]['resident_id'] == expected
+    saved = repo.message(facade['resident_id'], next_id)
+    shown = family_facade.project_messages(facade, [saved])[0]
+    assert shown['quote']['message_id'] == target
+    assert shown['quote']['text']
+    assert shown['quote']['author_id']

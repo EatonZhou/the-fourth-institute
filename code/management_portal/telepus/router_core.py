@@ -232,6 +232,7 @@ class RouterCore:
                 return self._reply(["被引用的消息所在的对话已不可用，请直接发送。"])
             return self._reply([f"消息未能送达：{_failure_text(exc)}"])
         self.store.record_input(chat_id, resident_id, message_id, telegram_message_id, excerpt=text)
+        self.store.link_message(chat_id, telegram_message_id, resident_id, message_id)
         self._audit(state, "message_delivered", {"resident_id": resident_id, "message_id": message_id,
                                                  "quoted": bool(quoted), "inject": inject})
         personal = state['mode'] != 'exact' and (not quoted or
@@ -413,7 +414,8 @@ class RouterCore:
         return [self._question_prompt(session)]
 
     def _question_prompt(self, session: dict[str, Any]) -> dict[str, Any]:
-        return self.presentation._question_prompt(self, session)
+        return {**self.presentation._question_prompt(self, session),
+                'link': {'resident_id': session['resident_id'], 'message_id': session['source_message_id']}}
 
     def _answer_question(self, state: dict[str, Any], session: dict[str, Any], step: int, answer: str, *,
                          custom: bool = False) -> dict[str, Any]:
