@@ -261,7 +261,7 @@ def test_script_events_filter_outcome_keep_run_and_identity(monkeypatch, caller,
     assert all(d[0][2].payload['script_run_id']=='script_run_one' and d[0][2].payload['exit_code'] is None for d in dispatch)
     assert notices[0]['recipients']==['lineage-admin']
     events.publish({**record,'script_run_id':'script_run_two'})
-    assert notices[0]['notification_id']==notices[1]['notification_id']
+    assert len(notices) == 1
 
 
 def test_multiple_effect_watch_compiles_and_outcome_validates():

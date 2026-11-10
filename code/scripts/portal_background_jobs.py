@@ -47,14 +47,32 @@ def launch_job(
     return child.pid
 
 
-def job_alive(name: str, pid: int | None, *, platform: str | None = None) -> bool:
+def job_state(name: str, pid: int | None, *, platform: str | None = None) -> str:
+    """Distinguish a stopped native owner from an unavailable process manager."""
     platform = platform or sys.platform
     if platform.startswith("linux"):
-        result = subprocess.run(
-            ["systemctl", "--user", "is-active", f"{name}.service"],
-            capture_output=True, text=True, check=False,
-        )
-        return result.returncode == 0 and result.stdout.strip() in {"active", "activating"}
+        try:
+            result = subprocess.run(
+                ["systemctl", "--user", "show", name.removesuffix('.service') + '.service',
+                 "--property=LoadState,ActiveState,SubState"],
+                capture_output=True, text=True, check=False, timeout=15,
+            )
+        except (OSError, subprocess.TimeoutExpired):
+            return 'unknown'
+        if result.returncode:
+            return 'unknown'
+        fields = dict(line.split('=', 1) for line in result.stdout.splitlines() if '=' in line)
+        if fields.get('ActiveState') in {'active', 'activating', 'deactivating', 'reloading'}:
+            return 'running'
+        if (fields.get('LoadState') in {'loaded', 'not-found'}
+                and fields.get('ActiveState') in {'inactive', 'failed'}
+                and fields.get('SubState') in {'dead', 'failed'}):
+            return 'stopped'
+        return 'unknown'
     if not pid or pid <= 0:
-        return False
-    return process_alive(pid)
+        return 'unknown'
+    return 'running' if process_alive(pid) else 'stopped'
+
+
+def job_alive(name: str, pid: int | None, *, platform: str | None = None) -> bool:
+    return job_state(name, pid, platform=platform) == 'running'

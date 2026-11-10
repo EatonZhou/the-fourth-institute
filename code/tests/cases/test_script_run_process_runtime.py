@@ -268,6 +268,7 @@ def test_linux_launch_cancel_race_stops_original_unit_after_admission(tmp_path, 
 def test_failed_systemd_stop_retains_pending_cancel(records, monkeypatch):
     row, root = records()
     monkeypatch.setattr(service, 'sys', SimpleNamespace(platform='linux'))
+    monkeypatch.setattr(service.portal_background_jobs, 'job_state', lambda *a: 'unknown')
     monkeypatch.setattr(process_runtime, 'run_process', lambda *args, **kwargs: SimpleNamespace(returncode=1, stderr='stop denied'))
     with pytest.raises(RuntimeError, match='stop denied'):
         service.cancel(row['script_run_id'], 'sample_admin', lineage_id=LINEAGE)

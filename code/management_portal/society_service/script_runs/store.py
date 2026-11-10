@@ -27,7 +27,37 @@ CREATE INDEX IF NOT EXISTS script_exclusive_idx ON runs(lineage_id,exclusive_key
 CREATE INDEX IF NOT EXISTS script_pending_idx ON runs(script_run_id) WHERE status='running' OR notified IS NOT TRUE;
 CREATE INDEX IF NOT EXISTS script_retention_idx ON runs(finished_at) WHERE notified IS TRUE AND status<>'running';
 CREATE TABLE IF NOT EXISTS worker_lease (singleton INTEGER PRIMARY KEY CHECK(singleton=1),holder TEXT NOT NULL,until_at TIMESTAMPTZ NOT NULL);
+CREATE TABLE IF NOT EXISTS failure_episodes (
+    lineage_id TEXT NOT NULL, effect_id TEXT NOT NULL, script_key TEXT NOT NULL,
+    fingerprint TEXT NOT NULL, first_run_id TEXT NOT NULL, observed_at TIMESTAMPTZ NOT NULL,
+    PRIMARY KEY (lineage_id, effect_id, script_key));
 """
+
+
+def failure_episode(record, script_key, fingerprint):
+    """Persist the first run of an unchanged failure; retries retain its identity.
+
+    A success closes the episode. Cancellation and administrative closure never
+    enter here, so they cannot manufacture recovery or a fresh failure.
+    """
+    key = (record['lineage_id'], record['effect_id'], script_key)
+    with domain().transaction() as c:
+        succeeded = record['status'] == 'succeeded'
+        # Retain the success watermark so delayed old results cannot reopen
+        # an already recovered episode. Same-episode retries keep the first
+        # timestamp, allowing its unsent notification to be retried safely.
+        row = c.execute('''INSERT INTO failure_episodes VALUES (%s,%s,%s,%s,%s,COALESCE(%s,CURRENT_TIMESTAMP))
+            ON CONFLICT (lineage_id,effect_id,script_key) DO UPDATE SET
+              first_run_id=CASE WHEN failure_episodes.fingerprint=EXCLUDED.fingerprint
+                THEN failure_episodes.first_run_id ELSE EXCLUDED.first_run_id END,
+              observed_at=CASE WHEN failure_episodes.fingerprint=EXCLUDED.fingerprint
+                THEN failure_episodes.observed_at ELSE EXCLUDED.observed_at END,
+              fingerprint=EXCLUDED.fingerprint
+            WHERE EXCLUDED.observed_at >= failure_episodes.observed_at
+            RETURNING first_run_id''',
+            (*key, '' if succeeded else fingerprint, '' if succeeded else record['script_run_id'],
+             record.get('finished_at') or None)).fetchone()
+        return bool(row and not succeeded and row['first_run_id'] == record['script_run_id'])
 
 
 @lru_cache(maxsize=8)

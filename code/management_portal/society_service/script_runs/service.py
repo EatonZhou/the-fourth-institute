@@ -325,7 +325,8 @@ def running_state(record):
 
     The background owner observes the native unit. Named Jobs (Windows) and
     persisted runner/payload groups (POSIX) separately prove tree liveness.
-    Missing/ambiguous receipts remain unknown, including legacy runs.
+    A stopped Linux control-group owner also proves receipt-less runs ended.
+    Unavailable managers and ambiguous POSIX receipts remain unknown.
     """
     _check_platform()
     identifier = record['script_run_id']
@@ -334,6 +335,10 @@ def running_state(record):
         if not record['unit'] and pid is None:
             return 'unknown'
         unit = record['unit'] or 'portal-script-' + identifier
+        if sys.platform == 'linux':
+            # systemd owns the entire cgroup, including a detached payload.
+            # Do not confuse a failed manager query with an absent unit.
+            return portal_background_jobs.job_state(unit, pid)
         native_alive = portal_background_jobs.job_alive(unit, pid)
         if sys.platform == 'win32':
             # The background owner's PID can be reused, and the root may exit
@@ -379,7 +384,8 @@ def _stop_run(record, result_file):
         stopped = process_runtime.run_process(
             ['systemctl', '--user', 'stop', unit], capture_output=True, text=True, timeout=45)
         if stopped.returncode and not result_file.is_file():
-            raise RuntimeError('脚本单元停止失败：' + stopped.stderr[-2000:])
+            if running_state(record) != 'stopped':
+                raise RuntimeError('脚本单元停止失败：' + stopped.stderr[-2000:])
     elif sys.platform == 'win32':
         # The background-job owner names the detached Job with record.unit.
         # A second named Job owns the payload. Parent exit alone proves neither
