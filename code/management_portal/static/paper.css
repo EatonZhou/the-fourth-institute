@@ -601,7 +601,12 @@ body {
 .paperHighlightJump { display: block; width: 100%; text-align: left; margin-bottom: 8px; }
 .paperReadingViewer { flex: 1; min-height: 0; width: 100%; border: 0; background: #59616b; }
 .paperTranslation { padding: 4px 12px; border-bottom: 1px solid #ccd1d6; font-size: 13px; }
+.leftBody.is-personal > :not(.paperPersonal) { display: none !important; }
+.paperPersonal [data-scopes] { position: sticky; top: 0; z-index: 3; background: var(--surface, #fff); }
+.paperPersonal:has([data-personal][hidden]) { position: sticky; top: 0; z-index: 3; background: var(--surface, #fff); }
 .paperReadingDialog.is-embedded .paperTranslation { display: none; }
+.paperReadingDialog.is-embedded .paperReadingToolbar { display: none; }
+.paperReadingDialog.is-embedded .paperReadingStatus[data-empty="true"] { display: none; }
 .paperTranslationBody { max-height: 28vh; overflow: auto; }
 .paperTranslationText { white-space: pre-wrap; overflow-wrap: anywhere; }
 .readerContent iframe { width: 100%; height: 100%; min-height: 620px; border: 0; background: #fff; }

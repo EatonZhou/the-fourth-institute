@@ -5,6 +5,7 @@ const [url,,cookie,one]=process.argv.slice(2);const context=await browser.newCon
 await context.addCookies([{name:cookie,value:one,url}]);const page=await context.newPage();
 await page.goto(url);await page.waitForFunction(()=>window.ready);await page.evaluate(()=>openDocument(true));
 await page.waitForFunction(()=>signals.length===1);const outer=page.frames()[1];
+await page.evaluate(()=>host.setFullscreen(true));
 await outer.locator('button.note').click();await outer.frameLocator('iframe').first().locator('.page').first().click({position:{x:160,y:160}});
 await outer.locator('[contenteditable=true]').last().fill('same instance draft');
 await page.evaluate(()=>{window.firstFrame=document.querySelector('iframe');window.firstWindow=firstFrame.contentWindow;});

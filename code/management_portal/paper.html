@@ -75,7 +75,7 @@
             <button class="portalButton is-icon is-quiet iconBtn" id="newPaperBtn" type="button" title="Register paper" aria-label="Register paper" data-portal-icon="plus" data-portal-i18n-attrs="{&quot;title&quot;: &quot;Register paper&quot;, &quot;aria-label&quot;: &quot;Register paper&quot;}"></button>
           </div>
         </div>
-        <div class="leftBody">
+        <div class="leftBody is-personal">
           <div class="portalSegmented leftFaceTabs" id="leftFaceTabs">
             <button type="button" data-left-face="library" class="active" title="切换到论文库目录" data-portal-i18n-attrs="{&quot;title&quot;: &quot;切换到论文库目录&quot;}"><!--portal-i18n:"Library"-->Library</button>
             <button type="button" data-left-face="ccf" title="切换到 CCF A/B 论文目录" data-portal-i18n-attrs="{&quot;title&quot;: &quot;切换到 CCF A/B 论文目录&quot;}"><!--portal-i18n:"CCF A/B"-->CCF A/B</button>
@@ -94,7 +94,7 @@
                 </button>
               </div>
             </div>
-            <div class="portalSemanticPanel" id="semanticSearchList"></div>
+            <details open><summary>语义检索历史</summary><div class="portalSemanticPanel" id="semanticSearchList"></div></details>
             <form class="collectorBox" id="collectorForm">
               <div data-portal-board-toolbar aria-label="Collect papers" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;Collect papers&quot;}">
                 <div data-portal-board-search>
@@ -107,7 +107,7 @@
                   <button class="portalButton is-compact is-primary" id="collectorBtn" type="submit" title="根据输入需求收集论文" data-portal-i18n-attrs="{&quot;title&quot;: &quot;根据输入需求收集论文&quot;}"><!--portal-i18n:"Collect"-->Collect</button>
                 </div>
               </div>
-              <div class="collectorJobList" id="collectorJobList"></div>
+              <details open><summary>采集任务历史</summary><div class="collectorJobList" id="collectorJobList"></div></details>
             </form>
             <div class="filterGrid">
               <select class="portalControl" id="yearFilter"><option value=""><!--portal-i18n:"All years"-->All years</option></select>

@@ -11,6 +11,7 @@ for(let i=0;i<3;i++){
 }
 await p.evaluate(()=>openPaper('paper_0123456789ab'));await p.waitForTimeout(100);
 assert(await p.evaluate(()=>originalFrame===document.querySelector('iframe')));assert.equal(await p.evaluate(()=>posts),1);
+await p.locator('#paperFullscreenBtn').click();
 const outer=p.frames()[1];await outer.locator('button.note').click();
 await outer.frameLocator('iframe').first().locator('.page').first().click({position:{x:160,y:160}});
 await outer.locator('[contenteditable=true]').last().fill('navigation barrier');

@@ -78,6 +78,7 @@
       state.username = currentUser.data?.username || "";
       // This is the authenticated bootstrap's stable ID, not a display name.
       state.principalId = currentUser.data?.principal?.id || "";
+      window.dispatchEvent(new CustomEvent('portal:paper-principal-changed'));
       paperChatWorkspace?.restoreDraft?.();
     }
 

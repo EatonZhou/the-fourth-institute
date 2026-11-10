@@ -114,7 +114,7 @@ index 9195ce8..1ca0f27 100644
  
  	_getAnnotationByID(id) {
 diff --git a/src/common/reader.js b/src/common/reader.js
-index 058c72b..42eb7fb 100644
+index 058c72b..ad88ce4 100644
 --- a/src/common/reader.js
 +++ b/src/common/reader.js
 @@ -355,6 +355,7 @@ class Reader {
@@ -125,7 +125,7 @@ index 058c72b..42eb7fb 100644
  			onDelete: this._handleDeleteAnnotations,
  			onRender: (annotations) => {
  				this._updateState({ annotations });
-@@ -2260,6 +2261,10 @@ class Reader {
+@@ -2260,6 +2261,18 @@ class Reader {
  
  	}
  
@@ -133,10 +133,18 @@ index 058c72b..42eb7fb 100644
 +		return this._annotationManager.flush();
 +	}
 +
++	getAnnotationSaveState() {
++		return {
++			pending: this._annotationManager._unsavedAnnotations.size > 0,
++			saving: !!this._annotationManager._savePromise,
++			failed: !!this._annotationManager._saveError
++		};
++	}
++
  	deleteAnnotations(ids) {
  		if (ids.length > 1) {
  			if (!this._onConfirm(
-@@ -2942,7 +2947,7 @@ class Reader {
+@@ -2942,7 +2955,7 @@ class Reader {
  			primaryViewAnnotationPopup,
  			secondaryViewAnnotationPopup
  		});

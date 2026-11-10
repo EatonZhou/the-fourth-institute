@@ -47,6 +47,16 @@ def test_embedded_no_translation(tmp_path, monkeypatch, browser):
     run_host(tmp_path, monkeypatch, browser, 'zotero_reader_embedded.cjs')
 
 
+@pytest.mark.parametrize('browser', ['chromium', 'firefox'])
+def test_personal_reader_views(tmp_path, monkeypatch, browser):
+    run_host(tmp_path, monkeypatch, browser, 'paper_personal_reader.cjs')
+
+
+@pytest.mark.parametrize('browser', ['chromium', 'firefox'])
+def test_reader_dirty_and_toolbar(tmp_path, monkeypatch, browser):
+    run_host(tmp_path, monkeypatch, browser, 'paper_reader_dirty.cjs')
+
+
 def run_host(tmp_path, monkeypatch, browser, script, *, translation=False):
     paper, bundle, store = setup_paper(tmp_path, monkeypatch)
     access = PortalAccessStore()

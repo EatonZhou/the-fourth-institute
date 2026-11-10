@@ -26,6 +26,7 @@ export async function mountReader(frame, {load, save, remove, savePosition, stat
   });
   return {
     reader,
+    getSaveState: () => reader.getAnnotationSaveState(),
     locate: id => reader.navigate({annotationID: id}),
     async close() {
       if (closed) return;

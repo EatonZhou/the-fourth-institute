@@ -1,0 +1,27 @@
+const engine=require('../../../management_portal/test_framework/tau_runtime/node_modules/playwright')[process.argv[3]],assert=require('node:assert/strict');
+(async()=>{const b=await engine.launch({headless:true});try{
+const [url,,name,value]=process.argv.slice(2),ctx=await b.newContext();await ctx.addCookies([{name,value,url}]);const p=await ctx.newPage();p.setDefaultTimeout(8000);
+const probe=()=>p.evaluate(()=>{const e=new Event('beforeunload',{cancelable:true});window.dispatchEvent(e);return e.defaultPrevented;});
+await p.goto(url+'/integration');await p.waitForFunction(()=>ready);await p.evaluate(()=>openPaper('paper_0123456789ab'));await p.waitForFunction(()=>posts===1);
+const outer=p.frames()[1],pdf=outer.frameLocator('iframe').first();
+assert.equal(await probe(),false);assert.equal(await p.locator('.paperReadingToolbar').isVisible(),false);
+assert.equal(await outer.locator('.toolbar').first().isVisible(),false);
+assert.equal(await outer.locator('#split-view').evaluate(e=>e.getBoundingClientRect().top),0);
+await p.evaluate(()=>{window.firstReader=document.querySelector('iframe');});
+await p.locator('#paperFullscreenBtn').click();assert(await outer.locator('.toolbar').first().isVisible());assert(await p.locator('.paperReadingToolbar').isVisible());
+let mode='hold',waiting=[];
+await p.route('**/paper/api/reader/annotations',async r=>{if(r.request().method()!=='POST')return r.continue();if(mode==='fail')return r.fulfill({status:503,json:{error:'synthetic failure'}});const response=await r.fetch();if(mode==='hold')await new Promise(resolve=>waiting.push(resolve));await r.fulfill({response});});
+await outer.locator('button.note').click();await pdf.locator('.page').first().click({position:{x:160,y:160}});
+await p.waitForTimeout(100);assert(await probe(),'inflight must protect');
+const editor=outer.locator('[contenteditable=true]').last();await editor.fill('new focused draft');assert(await probe(),'focus input before blur must protect');
+const dialog=p.waitForEvent('dialog');const leaving=p.goto(url+'/integration?leave',{timeout:3000}).catch(()=>{});await (await dialog).dismiss();await leaving;
+assert(await p.evaluate(()=>firstReader===document.querySelector('iframe')));await editor.fill('edited after cancellation');
+assert(waiting.length);waiting.shift()();await p.waitForTimeout(100);assert(await probe(),'old ack cannot clean newer edit');
+mode='pass';waiting.splice(0).forEach(r=>r());await outer.evaluate(()=>window._reader.flushAnnotations());assert.equal(await probe(),false,'acknowledged focused edit must be clean');
+mode='fail';await editor.fill('failed revision');await outer.evaluate(()=>window._reader.flushAnnotations().catch(()=>{}));assert(await probe(),'failed save must protect');
+mode='pass';await outer.evaluate(()=>window._reader.flushAnnotations());assert.equal(await probe(),false);
+await outer.locator('#pageNumber').fill('2');await outer.locator('#pageNumber').press('Enter');
+await p.locator('.paperLayoutExit').click();assert.equal(await outer.locator('.toolbar').first().isVisible(),false);assert.equal(await outer.locator('#split-view').evaluate(e=>e.getBoundingClientRect().top),0);
+await p.locator('#paperFullscreenBtn').click();assert.equal(await outer.locator('#pageNumber').inputValue(),'2');assert(await p.evaluate(()=>firstReader===document.querySelector('iframe')));
+assert.equal(await probe(),false);console.log('PASS clean/ack/inflight/focused/newer edit/failure/retry/cancel navigation; full toolbar hidden without gap and restored same iframe/page');
+}finally{await b.close();}})().catch(e=>{console.error(e);process.exitCode=1;});

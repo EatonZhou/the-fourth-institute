@@ -24,7 +24,7 @@
 
     function applyPaneCollapse() {
       const leftBtn = $("toggleLibraryPaneBtn");
-      window.PortalWorkbench.layout.syncCollapseButton(leftBtn, !paperWorkbench?.isPanelVisible("library"), {
+      window.PortalWorkbench.layout.syncCollapseButton(leftBtn, paperWorkbench?.isPanelCollapsed("library"), {
         expand: "Expand Paper Library",
         collapse: "Collapse Paper Library",
       });
@@ -37,7 +37,8 @@
 
     function togglePane(which) {
       const panelId = which === "left" ? "library" : which === "chat" ? "chat" : "";
-      if (panelId) paperWorkbench?.togglePanel(panelId);
+      if (panelId === "library") paperWorkbench?.toggleCollapsed(panelId);
+      else if (panelId) paperWorkbench?.togglePanel(panelId);
       applyPaneCollapse();
     }
 

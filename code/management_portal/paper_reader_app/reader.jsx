@@ -25,7 +25,7 @@ function Reader({paper, principal, anchor, close, control, readingReady, frameRe
       <a href={paper.pdf_url} target="_blank" rel="noopener noreferrer">原始 PDF</a>
       <button onClick={() => close()}><span className="paperLayoutEnter">全屏阅读</span><span className="paperLayoutExit">退出全屏</span></button>
     </header>
-    <div className="paperReadingStatus" role="status">
+    <div className="paperReadingStatus" data-empty={!status} role="status">
       {status} {failed && <button onClick={() => bridge.current?.retry()}>重试保存</button>}
     </div>
     <TranslationPanel selection={selection} isCurrent={isCurrent} request={(input, mode, operationId, signal) => {
@@ -66,7 +66,7 @@ export function openReader({paper, principal, anchor, onClose, onReady, containe
   // A browser unload cannot await the native save barrier. Keep the document
   // interactive when navigation is cancelled; in-app exits use close() first.
   const beforeUnload = event => {
-    if (container && !closed) {event.preventDefault(); event.returnValue = '';}
+    if (!closed && bridge?.needsLeaveConfirmation()) {event.preventDefault(); event.returnValue = '';}
   };
   window.addEventListener('beforeunload', beforeUnload);
   const close = async position => {

@@ -22,7 +22,7 @@ export function connectZotero({frame, paper, principal, status, ready, translate
     frame.contentWindow.addEventListener('customEvent', selectionPopup);
     host = await mountReader(frame, {...transport.options, status: message => {failed = true; status(message, true);}});
     const style = frame.contentDocument.createElement('style');
-    style.textContent = 'body.portal-embedded .portalTranslateSelection {display:none!important}';
+    style.textContent = 'body.portal-embedded .portalTranslateSelection, body.portal-embedded #reader-ui .toolbar {display:none!important} body.portal-embedded #split-view, body.portal-embedded .split-view {top:0!important}';
     frame.contentDocument.head.append(style);
     applyLayout();
     if (disposed) {await host.close(); return;}
@@ -51,7 +51,12 @@ export function connectZotero({frame, paper, principal, status, ready, translate
     button.onclick = () => {if (!disposed && fullscreen) translateSelection({text, document: {...transport.document}});};
     detail.append(button);
   }
-  return {setFullscreen(value) {
+  return {needsLeaveConfirmation() {
+    if (!host) return false;
+    const state = host.getSaveState();
+    const persistence = transport.persistence.snapshot();
+    return state.pending || state.saving || state.failed || !!persistence.pending || persistence.conflict;
+  }, setFullscreen(value) {
     if (fullscreen && !value && host) fullscreenSidebar = frame.contentDocument.body.classList.contains('sidebar-open');
     fullscreen = !!value; applyLayout();
   }, async flush() {
