@@ -1627,7 +1627,10 @@ def _build_resident_execution_request(record, job):
     if constraints is not None:
         if request.session.mode != 'stateless' or request.input_media:
             raise ValueError('text_only requires a stateless text execution')
-        request = replace(request, runtime_options={**request.runtime_options,
+        # This explicit contract sends exactly the admitted text. Ordinary
+        # conversation envelopes remain owned by the normal prompt path;
+        # identity/authorization/system rules still travel as system parts.
+        request = replace(request, prompt=job['raw_message'], runtime_options={**request.runtime_options,
                           'execution_constraints': constraints})
     return request
 
