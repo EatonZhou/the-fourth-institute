@@ -102,7 +102,7 @@ CreateResident/ForkResident 优先遵循显式 family_id；否则成员或 Stewa
 
 **Family 创建者只记录实际人类调用者。** human_familizer_id 由 families 保存；Resident 创建的 Family 留空，不能推测为 owner、最近发送者或管理员。它是联络事实，不授予权限。业务联系人及持续角色故障升级的区别见运行维护专题。
 
-模板施加由 ApplyTemplate 调用 Family 模块，分别配置 Router、Steward 的运行设置，门面无需模型配置。用户可指定名称；局部选区缺省以某个成员标题加“-family”，范围 Family 用 Lineage 标题。Family 名称同时作为门面和块标题。
+模板施加由 ApplyTemplate 调用 Family 模块，分别配置 Router、Steward 的运行设置，门面无需模型配置。直接 Familize、创建 Lineage 时的 Familize 与 ApplyTemplate 使用同一份已保存模板默认配置；本次显式施加的参数和角色设置覆盖模板值。个人助手的初始 Backend 继续遵循站点默认角色。用户可指定名称；局部选区缺省以某个成员标题加“-family”，范围 Family 用 Lineage 标题。Family 名称同时作为门面和块标题。
 
 ## 结构维护与普通工作流
 
@@ -119,7 +119,7 @@ Family 模块按稳定 element_key 维护生成结构，未变化组件保留 ID
 
 UpdateFamily.add_element_ids/remove_element_ids 处理当前 Lineage 的普通组件及连线，成员和子 Family 则通过名册处理。可收纳无直接归属或祖先 Family 的普通工作流，不接管其他块或生成结构；加入连线的两端必须在递归范围内。移出组件时关联内部线一并解除归属，有父容器则回到父容器，不删除对象。列表重复、交叉或越界整次拒绝。
 
-新增成员时可自动收纳专属连通组：其 Resident 边界非空且全部在 Family 递归范围内，没有其他块所有权冲突。共享分支和边界不明的脚本不猜归属，可以显式收纳。普通参数更新不自动收回用户移出的元素；不以标题、应用名或缓存判断所有权。
+新增成员时可自动收纳专属连通组：其 Resident 边界非空且全部在 Family 递归范围内，没有其他块所有权冲突。Watchboard 安装锚点由 Watchboard 领域的成员关联确定归属，即使没有执行连线也随其所属成员收纳；保持原组件身份与运行状态。其他孤立组件仍不猜测归属。共享分支和边界不明的脚本不猜归属，可以显式收纳。普通参数更新不自动收回用户移出的元素；不以标题、应用名或缓存判断所有权。
 
 收纳不改变 Event、Effect、连线 ID、业务配置、游标、暂停状态和执行目标。外部入口与内部工作流的界线按结构范围确定：范围外指向新增成员的入口改接门面，范围内显式执行目标保留；即使连线存放在别的块也依语义判断。不得为 Familize 重建缺失工作流或把业务 Effect 的执行者换成门面。
 

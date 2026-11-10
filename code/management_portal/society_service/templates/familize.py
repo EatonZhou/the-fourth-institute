@@ -592,8 +592,12 @@ def familize(lineage_id: str, resident_ids: Iterable[str], actor: str, *, title:
         raise TemplateError("个人助手只以当前 AMA 为初始成员")
     if not members and scope != "lineage":
         raise TemplateError("Familize 至少需要 1 个 Resident")
-    values = _values({**dict(parameters or {}), **({"goal": goal} if goal else {})})
-    settings = _resident_settings(resident_settings)
+    # Direct Familize, Lineage creation and ApplyTemplate share the saved
+    # template defaults; per-application choices remain the final layer.
+    from . import store as template_store
+    defaults = copy.deepcopy(template_store.get(template_id)["body"])
+    settings = _resident_settings(defaults.pop("resident_settings", None), resident_settings)
+    values = _values({**defaults, **dict(parameters or {}), **({"goal": goal} if goal else {})})
     # A selection is named after one of its members; a Lineage-wide Family after its Lineage.
     title = str(title or (lineage.get("title") if scope == "lineage" else "") or _member_title(members)).strip()
     element_keys = _member_elements(lineage, members, lineage_scope=scope == "lineage")

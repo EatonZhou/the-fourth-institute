@@ -40,8 +40,14 @@ def components(record, graph=None):
             if str(item.get("client_key") or "").startswith(prefix(record))]
 
 
+def view_component(record, graph=None):
+    """The installation anchor has no execution wires, but belongs to this Resident."""
+    return next((item for item in components(record, graph)
+                 if item.get("client_key") == prefix(record) + "view"), None)
+
+
 def installed(record):
-    return any(item.get("client_key") == prefix(record) + "view" for item in components(record))
+    return view_component(record) is not None
 
 
 def component_id(record, kind, key, revision):

@@ -89,6 +89,13 @@ def update(body, block, actor, *, add=(), remove=(), collect=False):
     components = {c["id"] for c in body.get("program", {}).get("components", [])}
     eligible = {eid for eid in components if eid not in release and _can_adopt(eid, owners, ancestors, block)}
     if collect:
+        # Watchboard installation anchors intentionally have no Resident edge.
+        # Their owner supplies the association; topology cannot infer it.
+        from . import watchboard_lineage
+        anchors = [watchboard_lineage.view_component({"resident_id": rid}, body)
+                   for rid in inside & residents]
+        _adopt(body, block, {item["id"] for item in anchors if item
+                            and _can_adopt(item["id"], owners, ancestors, block)}, actor)
         adjacent = {eid: set() for eid in components}
         for wire in wires:
             source, target = wire["source"], wire["target"]

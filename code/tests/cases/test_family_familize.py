@@ -327,6 +327,33 @@ def test_familize_needs_one_member_and_updates_the_live_roster(lineage, charters
     assert _find_resident(only) and _find_resident(second)
 
 
+@pytest.mark.parametrize("entry", ["selection", "lineage", "template", "override"])
+def test_all_family_entries_use_saved_role_defaults(lineage, charters, entry):
+    from management_portal.society_service import templates
+    from management_portal.society_service.templates.familize import TEMPLATE_ID
+    template = templates.get(TEMPLATE_ID)
+    body = {**template["body"], "resident_settings": {
+        "router": {"provider": "codex", "settings": {"model": "gpt-5.6-luna", "reasoning_effort": "max"}},
+        "steward": {"provider": "codex", "settings": {"model": "gpt-6-astra", "reasoning_effort": "high"}},
+    }}
+    templates.update(TEMPLATE_ID, {"body": body}, ACTOR)
+    member = resident(lineage, "Member")
+    if entry == "template":
+        result = ok("ApplyTemplate", {"lineage_id": lineage, "template_id": TEMPLATE_ID,
+                                     "target": {"kind": "resident", "resident_ids": [member]}})
+    elif entry == "override":
+        result = ok("Familize", {"lineage_id": lineage, "resident_ids": [member],
+                                 "resident_settings": {"router": {"settings": {"reasoning_effort": "low"}}}})
+    else:
+        result = ok("Familize", {"lineage_id": lineage, **({"scope": "lineage"} if entry == "lineage"
+                    else {"resident_ids": [member]})})
+    for role in ("router", "steward"):
+        settings = ok("GetResidentSettings", {"resident_id": result[role + "_resident_id"]})["settings"]
+        assert settings["model"] == body["resident_settings"][role]["settings"]["model"]
+        assert settings["reasoning_effort"] == ("low" if entry == "override" and role == "router" else
+                                                body["resident_settings"][role]["settings"]["reasoning_effort"])
+
+
 def test_the_router_and_steward_start_with_what_was_chosen_when_placing_the_family(lineage, charters):
     """放入 Family 时为 Router 与 steward 选的后端和设置用于新建它们
 

@@ -22,6 +22,24 @@ def _family(lineage_id, *members):
     return ok("Familize", {"lineage_id": lineage_id, "resident_ids": list(members)})
 
 
+def test_collects_watchboard_anchor_without_collecting_unrelated_isolated_event(lineage, charters):
+    from management_portal.society_service import watchboard_lineage
+    member, other = resident(lineage, "Board owner"), resident(lineage, "Other")
+    def anchor(rid):
+        return ok("CreateComponent", {"lineage_id": lineage, "kind": "event_source",
+            "client_key": watchboard_lineage.prefix({"resident_id": rid}) + "view",
+            "config": {"event_type": "manual.triggered"}})["component_id"]
+    owned, outside, unrelated = anchor(member), anchor(other), _event(lineage)
+    family = _family(lineage, member)
+    view = graph(lineage)
+    _assert_owner(view, [owned], family)
+    _assert_owner(view, [outside, unrelated])
+    assert not any(w["source"] == owned or w["target"] == owned for w in view["program"]["wires"])
+    assert watchboard_lineage.view_component({"resident_id": member}, view)["id"] == owned
+    ok("Unfamilize", {"lineage_id": lineage, "family_id": family["family_id"]})
+    _assert_owner(graph(lineage), [owned])
+
+
 def _update(lineage_id, family, **changes):
     return ok("UpdateFamily", {"lineage_id": lineage_id, "family_id": family["family_id"], **changes})
 
