@@ -21,6 +21,14 @@ def test_history_window_refresh():
     assert result.returncode == 0, result.stdout + result.stderr
 
 
+def test_history_refresh_conflict():
+    result = subprocess.run(
+        ['node', str(Path(__file__).with_name('javascript') / 'history_refresh_conflict.cjs')],
+        capture_output=True, text=True, timeout=30,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
 def test_history_window_initial_identity():
     result = subprocess.run(
         ['node', str(Path(__file__).with_name('javascript') / 'chat_history_window.browser.cjs')],

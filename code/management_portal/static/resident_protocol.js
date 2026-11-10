@@ -215,7 +215,8 @@
 
   function isTransientSyncError(error) {
     const status = Number(error?.status || 0);
-    return status === 408 || status === 429 || (status >= 500 && status <= 599)
+    return error?.code === "conversation_history_changed"
+      || status === 408 || status === 429 || (status >= 500 && status <= 599)
       || (!status && (error instanceof TypeError || ["NetworkError", "TimeoutError", "AbortError"].includes(error?.name)));
   }
 
@@ -835,14 +836,31 @@
       const requestActorRevision = actorRevision;
       const current = () => requestActorRevision === actorRevision
         && requestConversationRevision === this.conversationRevision && this.loading === request;
-      const request = window.PortalResidentService.snapshot(this.residentId, { historyLimit })
+      const request = Promise.resolve().then(async () => {
+        // Pages are separate reads, so their boundary can disappear mid-walk.
+        // Restart from a fresh head, retaining the user's opaque window. Never
+        // install a partial walk or retry an authorization/target error.
+        for (let attempt = 0; ; attempt++) {
+          const snapshot = await window.PortalResidentService.snapshot(this.residentId, { historyLimit });
+          if (!current()) throw new DOMException("Resident request superseded", "AbortError");
+          if (String(snapshot?.resident?.resident_id || "") !== this.residentId) {
+            throw new Error("Resident Snapshot target mismatch");
+          }
+          if (!this.refCount) return snapshot;
+          try {
+            return await this.restoreHistoryWindow(snapshot, current);
+          } catch (error) {
+            if (!current()) throw new DOMException("Resident request superseded", "AbortError");
+            if (error?.code !== "conversation_history_changed" || attempt >= 2) throw error;
+          }
+        }
+      })
         .then(async snapshot => {
           if (!current()) throw new DOMException("Resident request superseded", "AbortError");
           if (String(snapshot?.resident?.resident_id || "") !== this.residentId) {
             throw new Error("Resident Snapshot target mismatch");
           }
           if (!this.refCount) return clone(snapshot);
-          snapshot = await this.restoreHistoryWindow(snapshot, current);
           if (!current()) throw new DOMException("Resident request superseded", "AbortError");
           if (this.historyWindow && this.historyWindow.source !== String(snapshot.family_history?.resident_id || "")) this.historyWindow = null;
           this.snapshot = clone(snapshot);
@@ -1387,7 +1405,9 @@
       }
       // A concurrent deletion of the sentinel invalidates this read, not the
       // user's boundary. Never silently replace it with all remaining history.
-      if (sentinel) throw new Error("Conversation history changed during refresh");
+      if (sentinel) throw Object.assign(new Error("Conversation history changed during refresh"), {
+        code: "conversation_history_changed",
+      });
       return result;
     }
 
