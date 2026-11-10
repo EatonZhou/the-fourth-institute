@@ -157,6 +157,33 @@ def execution_status(server: Any, params: dict[str, Any]) -> Any:
     return result
 
 
+def execution_generation_source(server: Any, params: dict[str, Any]) -> Any:
+    """A readable Resident's original invocation facts, without its prompt/output."""
+    from management_portal import permission_system
+
+    actor = required(params, "actor")
+    execution_id = required(params, "execution_id")
+    record = server.agent_data.execution(execution_id)
+    if not record:
+        raise KeyError(execution_id)
+    resident_id = str(record.get("agent_id") or "")
+    if not resident_id or not permission_system.allows(actor, "GetResident", {"resident_id": resident_id}):
+        raise PermissionError("Execution source requires Resident read access")
+    # Read in the execution owner after authorization; never impersonate its actor.
+    snapshot = server.scheduler.snapshot(execution_id, include_events=False, include_result=True)
+    request = snapshot.get("request") or {}
+    if request and request.get("agent_id") != resident_id:
+        raise ValueError("Execution request agent identity mismatch")
+    result = snapshot.get("result") or {}
+    usage = result.get("usage") or {}
+    model = usage.get("model") or (request.get("runtime_options") or {}).get("model") or ""
+    return {"execution_id": execution_id, "resident_id": resident_id,
+        "provider": request.get("provider") or record.get("provider") or "",
+        "account_id": result.get("backend_route_id") or (request.get("session") or {}).get("backend_route_id") or "",
+        "model": model, "model_evidence": ("provider_reported" if usage.get("model") else "execution_request") if model else "",
+        "created_at": (snapshot.get("scheduler") or {}).get("created_at") or record.get("created_at")}
+
+
 def execution_record(server: Any, params: dict[str, Any]) -> Any:
     execution_id = required(params, "execution_id")
     actor = required(params, "actor")
@@ -503,6 +530,7 @@ RPC_HANDLERS: dict[str, RpcHandler] = {
     "execution.submit": submit_execution,
     "execution.states": execution_states,
     "execution.status": execution_status,
+    "execution.generation_source": execution_generation_source,
     "execution.record": execution_record,
     "execution.token_usage": execution_token_usage,
     "execution.wait": wait_for_execution,

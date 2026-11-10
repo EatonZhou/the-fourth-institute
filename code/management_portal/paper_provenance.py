@@ -125,6 +125,18 @@ def resolve_usage(usage, body, actor):
     if source.get("execution_id") and message.get("generation_source", {}).get("execution_id") not in (None, "", source["execution_id"]):
         raise ValueError("Original execution identity mismatch")
     facts = {**(message.get("usage") or {}), **(message.get("generation_source") or {})}
+    execution_id = facts.get("execution_id") or source.get("execution_id")
+    if not facts.get("model") and execution_id:
+        from management_portal.execution.service import get_execution_service
+        try:
+            historical = get_execution_service().generation_source(execution_id, actor=actor)
+        except KeyError:
+            historical = {}  # Scheduler retention can expire before AgentData.
+        if historical and (historical.get("resident_id") != resident or historical.get("execution_id") != execution_id):
+            raise ValueError("Historical execution source identity mismatch")
+        facts = {**{k: v for k, v in historical.items() if v not in (None, "")}, **facts}
+        if not facts.get("model") and historical.get("model"):
+            facts.update(model=historical["model"], model_evidence=historical["model_evidence"])
     for key in FIELDS:
         if (result.get(key) in (None, "", "未记录") or key == "model_evidence" and result.get(key) == "historical_record_missing") and facts.get(key) not in (None, "", "未记录"):
             result[key] = facts[key]

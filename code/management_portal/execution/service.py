@@ -353,6 +353,10 @@ class ExecutionService:
             raise ValueError("execution capability does not match the request")
         return snapshot
 
+    def generation_source(self, execution_id: str, *, actor: str) -> dict[str, Any]:
+        """Safe historical model/account projection for a readable Resident."""
+        return self.client.request("execution.generation_source", {"execution_id": execution_id, "actor": actor})
+
     def record(self, execution_id: str, *, actor: str) -> dict[str, Any]:
         """Read durable execution semantics and input references, including after queue retention."""
         return self.client.request("execution.record", {"execution_id": execution_id, "actor": actor})

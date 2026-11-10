@@ -28,6 +28,21 @@ def test_api_record_is_preserved_without_agent_or_model_call(monkeypatch):
     assert p.resolve_usage(usage, "existing summary", "caller") == (usage, "complete")
 
 
+def test_missing_reply_model_uses_original_scheduler_request(monkeypatch):
+    from management_portal.execution import service
+    from types import SimpleNamespace
+    calls = []
+    monkeypatch.setattr(p.isa_client, "call", lambda *a: {"message": {"message_id": "reply", "author_id": "resident_test",
+        "generation_source": {"execution_id": "old-execution", "provider": "kimi", "account_id": "old-account"}}})
+    def source(execution_id, *, actor):
+        calls.append((execution_id, actor))
+        return {"execution_id": execution_id, "resident_id": "resident_test", "model": "original-request-model", "model_evidence": "execution_request"}
+    monkeypatch.setattr(service, "get_execution_service", lambda: SimpleNamespace(generation_source=source))
+    result, status = p.resolve_usage({"generation_source": {"resident_id": "resident_test", "reply_message_id": "reply"}}, "existing body", "caller")
+    assert result["model"] == "original-request-model" and result["account_id"] == "old-account"
+    assert result["model_evidence"] == "execution_request" and calls == [("old-execution", "caller")]
+
+
 def test_agent_authored_header_and_explicit_unknown_override(tmp_path, monkeypatch):
     path = tmp_path / "summary.md"
     path.write_text('---\ngenerated_by: resident_other\nreply_message_id: original\nmodel: obsolete\ngenerated_at: 123\n---\nExisting content')
