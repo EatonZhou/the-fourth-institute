@@ -200,7 +200,8 @@
       const sourceHtml = analysisBody ? window.PortalI18n.html`<div class="paneNote">
         ${resident ? window.PortalI18n.html`<a href="/lineage?resident=${esc(resident)}">生成 Agent：${esc(resident)}</a> · ` : ""}
         模型：${esc(facts.model || "未记录")}${facts.model_evidence === "resident_current_settings" ? "（Resident 配置）" : ""} · <span title="${esc(exactTokens)}">${esc(tokenText)}</span>
-        ${facts.execution_id || facts.input_message_id ? window.PortalI18n.html`<details><summary>生成记录</summary>
+        ${facts.execution_id || facts.input_message_id || facts.provider || facts.account_id || facts.api_id ? window.PortalI18n.html`<details><summary>生成记录</summary>
+          Provider：${esc(facts.provider || "未记录")} · 账号：${esc(facts.account_id || "未记录")} · API：${esc(facts.api_id || "未记录")}<br>
           ${esc(facts.execution_id || "")}<br>${esc(facts.input_message_id || "")}<br>${esc(facts.model_evidence || "")}</details>` : ""}
         </div>` : "";
       const analysisHtml = analysisBody

@@ -41,29 +41,23 @@ def main():
         with urlopen(req, timeout=60) as response:
             return json.load(response)
 
-    inventory = request("/paper/api/deep-read/provenance-candidates")
-    candidates = {item["paper_id"]: item for item in inventory["candidates"]}
-    selected = list(candidates) if args.all else list(dict.fromkeys(args.paper_id))
+    inventory = request("/paper/api/papers/provenance-candidates")
+    selected = [item for item in inventory["candidates"] if args.all or item["paper_id"] in args.paper_id]
     results = []
-    for paper in selected:
-        row = {"paper_id": paper, "status": "no_completed_analysis"}
+    for candidate in selected:
+        paper = candidate["paper_id"]
+        row = {"paper_id": paper, "kind": candidate["kind"]}
         try:
-            if paper not in candidates:
-                results.append(row); continue
-            query = urllib.parse.urlencode({"id": paper, "sections": "analysis"})
-            analysis = request("/paper/api/papers/detail?" + query)["analysis"]
-            source = analysis.get("provenance", {})
-            if args.source_resident_id and source.get("resident_id") != args.source_resident_id:
+            if candidate.get("error"):
+                row.update(status="unavailable", error=candidate["error"])
+            elif args.source_resident_id and candidate.get("resident_id") != args.source_resident_id:
                 row["status"] = "source_mismatch"
-            elif analysis.get("sha256"):
-                if args.apply:
-                    refreshed = request("/paper/api/deep-read/provenance", {"paper_id": paper,
-                        "job_id": candidates[paper]["job_id"], "expected_analysis_sha256": analysis["sha256"],
-                        "resolve_resident_model": True})
-                    source = refreshed.get("usage", {}).get("generation_source", {})
-                    row.update(model=refreshed.get("usage", {}).get("model"),
-                               model_evidence=refreshed.get("usage", {}).get("model_evidence"))
-                row.update(status="updated" if args.apply else "dry_run", source=source)
+            else:
+                refreshed = request("/paper/api/papers/provenance", {**candidate, "apply": args.apply})
+                usage = refreshed.get("usage") or {}
+                row.update(status=refreshed["status"], applied=refreshed["applied"],
+                    source=usage.get("generation_source"),
+                    **{key: usage.get(key) for key in ("model", "model_evidence", "provider", "api_id", "account_id")})
         except urllib.error.HTTPError as error:
             row.update(status="forbidden" if error.code == 403 else "unavailable" if error.code == 400 else "conflict" if error.code == 409 else "error",
                        http_status=error.code, error=error.read(2000).decode(errors="replace"))
@@ -74,7 +68,7 @@ def main():
         print(json.dumps(row, ensure_ascii=False), flush=True)
         if args.report:
             args.report.write_text(json.dumps({"inventory": inventory, "results": results}, ensure_ascii=False, indent=2))
-    summary = {"visible_papers": inventory["visible_papers"], "without_completed_job": inventory["without_completed_job"],
+    summary = {"visible_papers": inventory["visible_papers"],
                "selected": len(selected), "counts": dict(Counter(row["status"] for row in results))}
     if args.report:
         args.report.write_text(json.dumps({"inventory": inventory, "summary": summary, "results": results}, ensure_ascii=False, indent=2))

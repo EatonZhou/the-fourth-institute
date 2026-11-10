@@ -42,6 +42,9 @@ def analysis_view(content: str, path: Path | None, summary_path: Path | None) ->
         "execution_id": source.get("execution_id") or metadata.get("llm_execution_id") or "",
         "model": usage.get("model") or metadata.get("llm_model") or "未记录",
         "model_evidence": usage.get("model_evidence") or metadata.get("llm_model_evidence") or "",
+        "provider": usage.get("provider") or metadata.get("llm_provider") or "",
+        "account_id": usage.get("account_id") or metadata.get("llm_account") or "",
+        "api_id": usage.get("api_id") or metadata.get("llm_api") or "",
     })
     return {"body": body, "kind": "summary" if is_summary and body.strip() else "analysis" if body.strip() else "empty",
             "provenance": facts, "sha256": hashlib.sha256(path.read_bytes()).hexdigest() if path and path.is_file() else ""}
