@@ -7,20 +7,90 @@
   bottom: max(24px, env(safe-area-inset-bottom));
   z-index: calc(var(--portal-layer-popover, 400) - 11);
   width: min(360px, calc(100vw - 80px));
-  padding: 16px;
-  border: 1px solid var(--border, #cbd5e1);
-  border-left: 4px solid var(--accent, #0b7972);
-  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px 5px;
+  box-sizing: border-box;
+  border: 1px solid color-mix(in srgb, var(--border, #cbd5e1) 55%, transparent);
+  border-radius: 26px;
   background: var(--panel, #fff);
   color: var(--text, #172030);
-  box-shadow: 0 8px 28px #0002;
-  font: inherit;
+  box-shadow: inset 0 1px 0 #ffffff80, inset 0 -1px 0 #ffffff1a,
+    0 6px 24px #14253014, 0 1px 4px #1425300a;
+  font: 500 13px/1.3 var(--font-sans, system-ui, sans-serif);
 }
 .portalMailboxAlert[hidden] { display: none; }
-.portalMailboxAlert p { margin: 8px 0 14px; overflow-wrap: anywhere; color: var(--muted, #64748b); }
-.portalMailboxAlert button { margin: 0 6px 0 0; }
+.portalMailboxAlert button {
+  appearance: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 40px;
+  min-width: 0;
+  margin: 0;
+  border: 0;
+  border-radius: 22px;
+  background: transparent;
+  box-shadow: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+.portalMailboxAlert .portalMailboxAlertOpen { flex: 1; gap: 10px; padding: 0 8px 0 5px; }
+.portalMailboxAlert .portalMailboxAlertDismiss { flex: 0 0 40px; padding: 0; color: var(--muted, #64748b); }
+.portalMailboxAlert button:hover { background: color-mix(in srgb, var(--accent, #0b7972) 8%, transparent); }
+.portalMailboxAlert button:focus-visible { outline: 2px solid var(--accent, #0b7972); outline-offset: -2px; }
+.portalMailboxAlert button:disabled { opacity: .6; cursor: progress; }
+.portalMailboxAlertIcon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--accent, #0b7972) 10%, transparent);
+  color: var(--accent, #0b7972);
+  font-size: 17px;
+  font-weight: 600;
+}
+.portalMailboxAlertText { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; }
+.portalMailboxAlertTitle { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.portalMailboxAlertCount {
+  flex: 0 0 auto;
+  min-width: 20px;
+  padding: 2px 5px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--accent, #0b7972) 12%, transparent);
+  color: var(--accent, #0b7972);
+  font-size: 11px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+.portalMailboxAlert svg { flex: 0 0 16px; width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+.portalMailboxAlertArrow { color: var(--muted, #64748b); }
+@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .portalMailboxAlert {
+    background: linear-gradient(120deg, #ffffff24, #ffffff00 55%), color-mix(in srgb, var(--panel, #fff) 72%, transparent);
+    -webkit-backdrop-filter: blur(20px) saturate(160%);
+    backdrop-filter: blur(20px) saturate(160%);
+  }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .portalMailboxAlert { background: var(--panel, #fff); -webkit-backdrop-filter: none; backdrop-filter: none; }
+}
+@media (forced-colors: active) {
+  .portalMailboxAlert { border-color: CanvasText; background: Canvas; -webkit-backdrop-filter: none; backdrop-filter: none; }
+}
 @media (max-width: 640px) {
-  .portalMailboxAlert { right: 12px; bottom: max(64px, env(safe-area-inset-bottom)); width: calc(100vw - 24px); }
+  .portalMailboxAlert {
+    left: max(12px, calc(var(--portal-agent-inbox-left-clearance, 0px) + 8px), env(safe-area-inset-left));
+    right: max(12px, calc(var(--portal-agent-inbox-right-clearance, 0px) + 8px), env(safe-area-inset-right));
+    bottom: max(64px, env(safe-area-inset-bottom));
+    width: auto;
+  }
+  .portalMailboxAlert button { height: 44px; }
+  .portalMailboxAlert .portalMailboxAlertDismiss { flex-basis: 44px; }
 }
 /* Global user conversation index. The closed footprint stays on the viewport edge. */
 body.portalAgentInboxMounted {

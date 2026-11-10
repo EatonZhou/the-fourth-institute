@@ -21,14 +21,17 @@
     root.className = "portalMailboxAlert";
     root.hidden = true;
     root.setAttribute("aria-label", t("聊天室提及提醒"));
-    root.innerHTML = '<div class="portalMailboxAlertText" role="status" aria-live="polite"><strong></strong><p></p></div>' +
-      '<button class="portalButton is-primary" type="button" data-mailbox-alert-open></button>' +
-      '<button class="portalButton" type="button" data-mailbox-alert-dismiss></button>';
-    root.querySelector("strong").textContent = t("有人在聊天室 @ 你");
+    root.innerHTML = '<button class="portalMailboxAlertOpen" type="button" data-mailbox-alert-open>' +
+      '<span class="portalMailboxAlertIcon" aria-hidden="true">@</span>' +
+      '<span class="portalMailboxAlertText" role="status" aria-live="polite" aria-atomic="true">' +
+      '<span class="portalMailboxAlertTitle"></span><span class="portalMailboxAlertCount"></span></span>' +
+      '<svg class="portalMailboxAlertArrow" aria-hidden="true" viewBox="0 0 16 16"><path d="m6 4 4 4-4 4"/></svg></button>' +
+      '<button class="portalMailboxAlertDismiss" type="button" data-mailbox-alert-dismiss>' +
+      '<svg aria-hidden="true" viewBox="0 0 16 16"><path d="m4 4 8 8m0-8-8 8"/></svg></button>';
     const open = root.querySelector("[data-mailbox-alert-open]");
-    open.textContent = t("查看 @ 我的消息");
+    open.title = t("查看 @ 我的消息");
     const close = root.querySelector("[data-mailbox-alert-dismiss]");
-    close.textContent = t("收起提醒");
+    close.setAttribute("aria-label", t("收起提醒"));
     close.title = t("仅收起提醒，消息仍保持未读");
     document.body.appendChild(root);
 
@@ -49,7 +52,17 @@
       root.hidden = !current.length;
       if (next === signature) return;
       signature = next;
-      if (current.length) root.querySelector("p").textContent = window.PortalI18n.text`${current[0].entry.title || t("聊天室")} · ${current.reduce((n, item) => n + item.ids.length, 0)} 条 @ 我`;
+      if (current.length) {
+        const first = current[0].entry.title || t("聊天室");
+        const title = current.length > 1 ? window.PortalI18n.text`${first} 等 ${current.length} 个聊天室` : first;
+        const count = current.reduce((n, item) => n + item.ids.length, 0);
+        root.querySelector(".portalMailboxAlertTitle").textContent = title;
+        const badge = root.querySelector(".portalMailboxAlertCount");
+        badge.textContent = String(count);
+        badge.setAttribute("aria-label", window.PortalI18n.text`${count} 条 @ 我`);
+        open.setAttribute("aria-label", window.PortalI18n.text`${title} · ${count} 条 @ 我`);
+        open.title = `${title} · ${t("查看 @ 我的消息")}`;
+      }
     }
     function dismiss(items) {
       for (const { entry, ids } of items) for (const id of ids) dismissed.add(`${entry.key}/${id}`);

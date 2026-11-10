@@ -41741,5 +41741,37 @@
   "本次目标账号：": {"zh-CN":"本次目标账号：","en":"Target account: "},
   "请选择目标 Provider 的模型。": {"zh-CN":"请选择目标 Provider 的模型。","en":"Choose a model for the target Provider."},
   "等待正在运行的工作完成后切换；切换失败时保留原会话。": {"zh-CN":"等待正在运行的工作完成后切换；切换失败时保留原会话。","en":"Switches after the running work finishes; if the switch fails, the current Session is kept."},
-  "参数从下一轮生效，不会重新开始会话。": {"zh-CN":"参数从下一轮生效，不会重新开始会话。","en":"Takes effect from the next turn; the Session is not restarted."}
+  "参数从下一轮生效，不会重新开始会话。": {"zh-CN":"参数从下一轮生效，不会重新开始会话。","en":"Takes effect from the next turn; the Session is not restarted."},
+  "聊天室提及提醒": {
+    "zh-CN": "聊天室提及提醒",
+    "en": "Chatroom mentions"
+  },
+  "查看 @ 我的消息": {
+    "zh-CN": "查看 @ 我的消息",
+    "en": "View mentions"
+  },
+  "收起提醒": {
+    "zh-CN": "收起提醒",
+    "en": "Dismiss alert"
+  },
+  "仅收起提醒，消息仍保持未读": {
+    "zh-CN": "仅收起提醒，消息仍保持未读",
+    "en": "Dismiss the alert without marking messages read"
+  },
+  "{p0} · {p1} 条 @ 我": {
+    "zh-CN": "{p0} · {p1} 条 @ 我",
+    "en": "{p0} · {p1} mentions"
+  },
+  "{p0} 条 @ 我": {
+    "zh-CN": "{p0} 条 @ 我",
+    "en": "{p0} mentions"
+  },
+  "{p0} 等 {p1} 个聊天室": {
+    "zh-CN": "{p0} 等 {p1} 个聊天室",
+    "en": "{p0} and others · {p1} chatrooms"
+  },
+  "暂时无法打开聊天室，请从 Mailbox 重试。": {
+    "zh-CN": "暂时无法打开聊天室，请从 Mailbox 重试。",
+    "en": "Cannot open this chatroom right now. Please retry from Mailbox."
+  }
 }
