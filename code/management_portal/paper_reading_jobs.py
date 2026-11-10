@@ -305,6 +305,16 @@ def refresh_deep_read_provenance(payload: dict, actor: str) -> dict:
         for key in ("provider", "account_id", "model", "model_evidence"):
             if (message.get("generation_source") or {}).get(key):
                 usage[key] = message["generation_source"][key]
+    if payload.get("resolve_resident_model") and usage.get("model") in (None, "", "未记录"):
+        configuration = isa_client.call(actor, "GetResidentSettings", {"resident_id": resident_id})
+        settings = configuration.get("settings") or {}
+        model = str(settings.get("model") or "").strip()
+        if configuration.get("runtime_settings_access") == "available" and model:
+            usage.update(model=model, model_evidence="resident_current_settings")
+            usage["model_resolution"] = {
+                "resident_id": resident_id, "settings_revision": configuration.get("settings_revision") or "",
+                "resolved_at": _now(), "evidence": "resident_current_settings",
+            }
     usage["generation_source"] = {
         "resident_id": resident_id, "input_message_id": input_id,
         "reply_message_id": reply_id, "execution_id": str((state.get("work") or {}).get("execution_id") or ""),

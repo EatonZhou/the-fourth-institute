@@ -31,6 +31,8 @@ def saved(recovery, monkeypatch):
     reply = {"message_id": "msg_reply", "author_id": original["resident_id"], "reply_to_message_id": state["message_id"], "usage": {"output_tokens": 7}}
     def call(actor, instruction, args):
         assert actor == "current-caller"
+        if instruction == "GetResidentSettings":
+            return {"runtime_settings_access": "available", "settings": {"model": "configured-model"}, "settings_revision": "revision-1"}
         if instruction == "GetInputState":
             return {"input_state": state}
         assert instruction == "GetMessage" and args["message_id"] == "msg_reply"
@@ -58,6 +60,30 @@ def test_refresh_preserves_body_timestamp_selection_and_failed_job(saved, has_mo
     assert after_header["llm_source_message_id"] == "msg_forwarded"
     assert records[original["job_id"]] == original
     assert result["usage"]["generation_source"]["input_message_id"] == state["message_id"]
+
+
+@pytest.mark.parametrize("historic", [False, True])
+def test_script_model_resolution_uses_config_only_when_history_missing(saved, historic):
+    original, records, result, state, reply, payload, root, before = saved
+    payload["resolve_resident_model"] = True
+    if historic:
+        reply["generation_source"] = {"model": "historic-model", "model_evidence": "execution_request"}
+    result = jobs.refresh_deep_read_provenance(payload, "current-caller")
+    usage = result["usage"]
+    assert usage["model"] == ("historic-model" if historic else "configured-model")
+    assert usage["model_evidence"] == ("execution_request" if historic else "resident_current_settings")
+    assert (root / "analysis.md").read_text().split("---", 2)[2] == before.split("---", 2)[2]
+    if not historic:
+        assert usage["model_resolution"]["settings_revision"] == "revision-1"
+
+
+def test_unreadable_resident_config_does_not_invent_model(saved, monkeypatch):
+    original, records, result, state, reply, payload, root, before = saved
+    payload["resolve_resident_model"] = True
+    call = isa_client.call
+    monkeypatch.setattr(isa_client, "call", lambda a, i, p: {"runtime_settings_access": "unavailable", "settings": {}} if i == "GetResidentSettings" else call(a, i, p))
+    result = jobs.refresh_deep_read_provenance(payload, "current-caller")
+    assert not result["usage"].get("model")
 
 
 @pytest.mark.parametrize("failure", ["permission", "revoked", "digest", "newer", "input", "reply", "access"])

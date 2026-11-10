@@ -58,8 +58,11 @@ def main():
             elif analysis.get("sha256"):
                 if args.apply:
                     refreshed = request("/paper/api/deep-read/provenance", {"paper_id": paper,
-                        "job_id": candidates[paper]["job_id"], "expected_analysis_sha256": analysis["sha256"]})
+                        "job_id": candidates[paper]["job_id"], "expected_analysis_sha256": analysis["sha256"],
+                        "resolve_resident_model": True})
                     source = refreshed.get("usage", {}).get("generation_source", {})
+                    row.update(model=refreshed.get("usage", {}).get("model"),
+                               model_evidence=refreshed.get("usage", {}).get("model_evidence"))
                 row.update(status="updated" if args.apply else "dry_run", source=source)
         except urllib.error.HTTPError as error:
             row.update(status="forbidden" if error.code == 403 else "unavailable" if error.code == 400 else "conflict" if error.code == 409 else "error",
