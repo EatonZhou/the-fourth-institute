@@ -198,7 +198,7 @@
         : "Token 用量未记录";
       const exactTokens = `输入 ${facts.input_tokens ?? "未记录"} · 输出 ${facts.output_tokens ?? "未记录"} · 共 ${facts.total_tokens ?? "未记录"} tokens`;
       const sourceHtml = analysisBody ? window.PortalI18n.html`<div class="paneNote">
-        ${resident ? window.PortalI18n.html`<a href="/lineage?resident=${esc(resident)}">生成 Agent</a> · ` : ""}
+        ${resident ? window.PortalI18n.html`<a href="/lineage?resident=${esc(resident)}">生成 Agent：${esc(resident)}</a> · ` : ""}
         ${esc(facts.model || "模型未记录")} · <span title="${esc(exactTokens)}">${esc(tokenText)}</span>
         ${facts.execution_id || facts.input_message_id ? window.PortalI18n.html`<details><summary>生成记录</summary>
           ${esc(facts.execution_id || "")}<br>${esc(facts.input_message_id || "")}<br>${esc(facts.model_evidence || "")}</details>` : ""}

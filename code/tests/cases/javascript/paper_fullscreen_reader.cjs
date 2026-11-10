@@ -49,7 +49,7 @@ const server = http.createServer(async (req, res) => {
     assert.match(await page.locator('#analysisReaderContent').textContent(), /中文短摘要正文/);
     assert.match(await page.locator('#analysisReaderContent').textContent(), /输入 109.5K · 输出 8.2K · 共 117.7K tokens/);
     assert.equal(await page.locator('#analysisReaderContent span[title]').getAttribute('title'),'输入 109542 · 输出 8205 · 共 117747 tokens');
-    assert.equal(await page.getByRole('link',{name:'生成 Agent'}).getAttribute('href'),'/lineage?resident=resident_0123456789ab');
+    assert.equal(await page.getByRole('link',{name:'生成 Agent：resident_0123456789ab',exact:true}).getAttribute('href'),'/lineage?resident=resident_0123456789ab');
     assert.equal(await page.locator('dialog').count(),0);
     await page.getByRole('button',{name:'全屏阅读',exact:true}).click();
     await page.waitForFunction(()=>document.querySelector('[data-pdf-text-layer-state="done"]') && document.querySelector('[role=status]').textContent.includes('选中文字'), null, {timeout:10000}).catch(async error => {
@@ -60,15 +60,36 @@ const server = http.createServer(async (req, res) => {
     assert.equal(bounds.width,1440); assert.equal(bounds.height,960);
     async function selectText(){
       await page.evaluate(()=>{
-        const text=[...document.querySelectorAll('.textLayer span')].find(n=>n.textContent.trim().length>5);
+        const text=[...document.querySelectorAll('.paperReadingPdf .textLayer span')].find(n=>n.textContent.trim().length>5);
         const range=document.createRange();range.selectNodeContents(text);
         const selection=window.getSelection();selection.removeAllRanges();selection.addRange(range);
         text.dispatchEvent(new MouseEvent('mouseup',{bubbles:true}));
       });
     }
-    await selectText(); await page.getByRole('button',{name:'高亮',exact:true}).click();
+    const text=page.locator('.paperReadingPdf .textLayer span').filter({hasText:/\S{6}/}).first();
+    const textBox=await text.boundingBox();
+    await page.mouse.move(textBox.x+2,textBox.y+textBox.height/2);
+    await page.mouse.down();
+    await page.mouse.move(textBox.x+textBox.width-2,textBox.y+textBox.height/2,{steps:8});
+    assert.equal(await page.getByRole('toolbar',{name:'高亮操作'}).count(),0);
+    await page.mouse.up();
+    const actions=page.getByRole('toolbar',{name:'高亮操作'});
+    await actions.waitFor();
+    const popup=await actions.boundingBox();
+    assert.ok(popup.y > textBox.y && popup.y < textBox.y+textBox.height+30,'actions are beside the selection');
+    await actions.getByRole('button',{name:'高亮',exact:true}).click();
     await page.waitForFunction(()=>document.querySelector('[role=status]').textContent==='已保存');
     assert.equal(items.length,1);
+    assert.equal(await actions.count(),0);
+    async function clickHighlight(){
+      const mark=page.locator('.paperHighlightLayer span').first();
+      const b=await mark.boundingBox();
+      await page.mouse.click(b.x+b.width/2,b.y+b.height/2);
+      await actions.getByRole('button',{name:'删除高亮',exact:true}).waitFor();
+    }
+    await clickHighlight();
+    await page.keyboard.press('Escape');
+    assert.equal(await actions.count(),0); assert.equal(await page.locator('dialog').count(),1);
     const position=await page.locator('.paperHighlightLayer span').first().getAttribute('style');
     await page.getByRole('button',{name:'放大',exact:true}).click();
     await page.waitForFunction(()=>document.querySelector('[data-pdf-redraw-count]')?.dataset.pdfRedrawCount>'0');
@@ -83,17 +104,35 @@ const server = http.createServer(async (req, res) => {
     await page.waitForFunction(()=>document.getElementById('paperPdfViewer')?.scrollTop > 100);
     await page.reload(); await page.getByRole('button',{name:'全屏阅读',exact:true}).click();
     await page.waitForFunction(()=>document.querySelector('.paperHighlightLayer span'));
-    await page.getByRole('button',{name:'我的高亮',exact:true}).click();
-    assert.equal(await page.getByRole('button',{name:'删除高亮',exact:true}).count(),1);
-    failSave=true; await page.getByRole('button',{name:'删除高亮',exact:true}).click();
+    await clickHighlight();
+    assert.equal(await page.locator('.paperReadingHighlights').isVisible(),false);
+    failSave=true; await actions.getByRole('button',{name:'删除高亮',exact:true}).click();
     await page.waitForFunction(()=>document.querySelector('[role=status]').textContent.includes('保存失败'));
     assert.equal(items.length,1); assert.equal(await page.locator('.paperHighlightLayer span').count()>0,true);
-    failSave=false; await page.getByRole('button',{name:'删除高亮',exact:true}).click();
+    failSave=false; await actions.getByRole('button',{name:'删除高亮',exact:true}).click();
     await page.waitForFunction(()=>document.querySelector('[role=status]').textContent==='已保存');
     assert.equal(items.length,0); assert.equal(await page.locator('.paperHighlightLayer span').count(),0);
+    // Keyboard selections use the same popover; clicking elsewhere dismisses it.
+    await selectText(); await actions.waitFor();
+    await page.keyboard.press('Escape');
+    assert.equal(await actions.count(),0); assert.equal(await page.locator('dialog').count(),1);
+    await selectText(); await actions.waitFor();
+    await page.locator('.paperReadingStatus').click();
+    assert.equal(await actions.count(),0);
+    // An add failure must not paint an unsaved mark; the same action can retry.
+    await selectText(); await actions.waitFor(); failSave=true;
+    await actions.getByRole('button',{name:'高亮',exact:true}).click();
+    await page.waitForFunction(()=>document.querySelector('[role=status]').textContent.includes('保存失败'));
+    assert.equal(items.length,0); assert.equal(await page.locator('.paperHighlightLayer span').count(),0);
+    failSave=false; await actions.getByRole('button',{name:'高亮',exact:true}).click();
+    await page.waitForFunction(()=>document.querySelector('[role=status]').textContent==='已保存');
+    await page.getByRole('button',{name:'我的高亮',exact:true}).click();
+    await page.locator('.paperReadingHighlights').getByRole('button',{name:'删除高亮',exact:true}).click();
+    await page.waitForFunction(()=>document.querySelector('[role=status]').textContent==='已保存' && !document.querySelector('.paperHighlightLayer span'));
+    assert.equal(items.length,0);
     await page.getByRole('button',{name:'退出全屏',exact:true}).click();
     assert.equal(await page.locator('dialog').count(),0);
     assert.deepEqual(errors,[]);
-    console.log('PASS: fullscreen, real PDF text highlight, zoom/resize, reload, delete, failed save, cleanup');
+    console.log('PASS: real drag selection, nearby highlight/delete, Escape/outside dismissal, zoom/resize, reload, failed add/delete retry, sidebar, fullscreen cleanup');
   } finally {await browser.close(); server.close();}
 })().catch(error=>{console.error(error);server.close();process.exitCode=1;});
