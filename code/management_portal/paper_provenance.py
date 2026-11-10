@@ -123,12 +123,12 @@ def resolve_usage(usage, body, actor):
     return result, "resolved" if result != usage else "unchanged"
 
 
-def inventory(actor):
+def inventory(actor, paper_ids=None):
     papers = _all_papers()
     visible = set(permission_system.permitted_ids(actor, "ReadResource", "address", [p["id"] for p in papers]))
     candidates = []
     for paper in papers:
-        if paper["id"] not in visible:
+        if paper["id"] not in visible or paper_ids and paper["id"] not in paper_ids:
             continue
         for kind in ("analysis", "summary"):
             try:

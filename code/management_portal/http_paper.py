@@ -364,7 +364,7 @@ def routes(portal):
         ("GET", "docs", get(http.docs)),
         ("GET", "deep-read/status", get(http.deep_read_status)),
         ("GET", "deep-read/provenance-candidates", get(lambda request, qs, actor: http.respond(request, 200, paper_reading_jobs.provenance_candidates(actor)))),
-        ("GET", "papers/provenance-candidates", get(lambda request, qs, actor: http.respond(request, 200, paper_provenance.inventory(actor)))),
+        ("GET", "papers/provenance-candidates", get(lambda request, qs, actor: http.respond(request, 200, paper_provenance.inventory(actor, qs.get("paper_id"))))),
         ("POST", "papers/provenance", backend(paper_provenance, "refresh")),
         ("GET", "exp/status", get(http.exp_status)),
         ("GET", "asset", get(http.asset)),

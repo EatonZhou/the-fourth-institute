@@ -41,7 +41,8 @@ def main():
         with urlopen(req, timeout=60) as response:
             return json.load(response)
 
-    inventory = request("/paper/api/papers/provenance-candidates")
+    inventory = request("/paper/api/papers/provenance-candidates" +
+        ("?" + urllib.parse.urlencode({"paper_id": args.paper_id}, doseq=True) if args.paper_id else ""))
     selected = [item for item in inventory["candidates"] if args.all or item["paper_id"] in args.paper_id]
     results = []
     for candidate in selected:
