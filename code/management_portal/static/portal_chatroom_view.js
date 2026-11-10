@@ -59,6 +59,10 @@
       this.readTimer = null;
       this.lastReadOrdinal = 0;
       this.readPendingRevision = null;
+      this.navigationRevision = 0;
+      this.pendingNavigation = false;
+      this.viewportReads = false;
+      this.navigationFailed = false;
       this.refresh = null;
       this.root.classList.add("portalChatroomView");
       this.controller = window.PortalChatWorkspace.createWorkspace({
@@ -115,6 +119,8 @@
       this.root.querySelector("[data-chatroom-next-mention]").addEventListener("click", () => this.revealNextMention().catch(error => this.reportError(error)));
       this.visibilityHandler = () => this.scheduleRead();
       document.addEventListener("visibilitychange", this.visibilityHandler);
+      this.scrollReadHandler = () => { if (this.viewportReads) this.scheduleRead(); };
+      this.controller.els.messages.addEventListener("scroll", this.scrollReadHandler, { passive: true });
       this.unsubscribeReadState = window.PortalConversationStore.subscribe(snapshot => {
         const entry = snapshot.entries.find(item => item.key === `chatroom:${this.chatroomId}`);
         if (entry && this.room) {
@@ -421,9 +427,40 @@
       } finally { this.navigatingMention = false; }
     }
 
-    async setChatroom(chatroomId) {
+    async revealMessage(messageId) {
+      const revision = this.revision;
+      const found = await this.controller.revealMessage(messageId, { alignStart: true });
+      if (revision !== this.revision) return false;
+      const target = [...this.messages.values()].find(item => item.message_id === messageId);
+      if (!found || !target) throw new Error(window.PortalI18n.t("无法定位这条消息，请重试"));
+      // Retracted messages retain only the server's tombstone. Never load an old version.
+      await this.markRead(target.ordinal);
+      return true;
+    }
+
+    async setChatroom(chatroomId, { messageId = "" } = {}) {
+      const navigation = ++this.navigationRevision;
+      this.pendingNavigation = true;
+      this.viewportReads = Boolean(messageId);
+      this.navigationFailed = false;
+      try {
+        const room = await this.loadChatroom(chatroomId, { refresh: Boolean(messageId) });
+        if (navigation !== this.navigationRevision) return null;
+        if (messageId) await this.revealMessage(messageId);
+        else await this.revealNextMention();
+        return navigation === this.navigationRevision ? room : null;
+      } catch (error) {
+        if (navigation !== this.navigationRevision) return null;
+        this.navigationFailed = true;
+        throw error;
+      } finally {
+        if (navigation === this.navigationRevision) this.pendingNavigation = false;
+      }
+    }
+
+    async loadChatroom(chatroomId, { refresh = false } = {}) {
       const id = String(chatroomId || "").trim();
-      if (id === this.chatroomId && this.room) {
+      if (id === this.chatroomId && this.room && !refresh) {
         this.refresh?.invalidate?.({ delay: 0 });
         await window.PortalConversationStore.readChatrooms(id);
         this.scheduleRead();
@@ -574,14 +611,30 @@
       }, READ_DELAY_MS);
     }
 
+    visibleReadOrdinal() {
+      const viewport = this.controller.els.messages;
+      const bounds = viewport.getBoundingClientRect();
+      if (!bounds.height || !bounds.width) return 0;
+      const ordinals = new Map([...this.messages.values()].map(item => [item.message_id, Number(item.ordinal)]));
+      let through = 0;
+      for (const row of viewport.querySelectorAll(".messageList > [data-message-key]")) {
+        const rect = row.getBoundingClientRect();
+        if (rect.height && rect.bottom > Math.max(bounds.top, 0) && rect.top < Math.min(bounds.bottom, window.innerHeight)) {
+          through = Math.max(through, ordinals.get(row.dataset.messageKey) || 0);
+        }
+      }
+      return through;
+    }
+
     async markRead(through = null) {
       const id = this.chatroomId;
       const revision = this.revision;
       if (!id || !this.room || document.visibilityState === "hidden" || this.root.hidden || !this.root.isConnected) return;
-      if (through === null && this.navigatingMention) return;
+      if (through === null && (this.navigatingMention || this.pendingNavigation || this.navigationFailed)) return;
       if (this.readPendingRevision === revision) return;
       const firstMention = this.room.unread_mentions?.[0]?.ordinal;
-      const newest = through ?? Math.min(this.newestOrdinal(), firstMention ? firstMention - 1 : Infinity);
+      const newest = through ?? Math.min(this.viewportReads ? this.visibleReadOrdinal() : this.newestOrdinal(), firstMention ? firstMention - 1 : Infinity);
+      if (!newest) return;
       if (through === null && firstMention && newest <= this.lastReadOrdinal) return;
       if (newest <= this.lastReadOrdinal && !window.PortalConversationStore.isUnread(`chatroom:${id}`)) return;
       this.readPendingRevision = revision;
@@ -598,9 +651,11 @@
 
     destroy() {
       this.revision += 1;
+      this.navigationRevision += 1;
       this.refresh?.destroy?.();
       if (this.readTimer) clearTimeout(this.readTimer);
       document.removeEventListener("visibilitychange", this.visibilityHandler);
+      this.controller.els.messages.removeEventListener("scroll", this.scrollReadHandler);
       this.unsubscribeReadState();
       this.controller?.destroy?.();
       this.root.classList.remove("portalChatroomView");

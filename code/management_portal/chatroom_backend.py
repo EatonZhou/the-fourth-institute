@@ -23,6 +23,7 @@ from contextlib import contextmanager
 from copy import deepcopy
 from datetime import datetime, timezone
 from typing import Any
+from urllib.parse import urlencode
 
 from management_common.actor_identity import canonical_actor_id, same_actor
 from management_common.message_identity import derived_message_identity
@@ -201,7 +202,8 @@ def _viewer_state(room: Mapping[str, Any], user: str) -> dict[str, Any]:
     unread = _unread_count(room, user)
     muted = bool((room.get("muted_by") or {}).get(key))
     read = int((room.get("read_through") or {}).get(key) or 0)
-    mentions = [dict(item) for item in (room.get("user_mentions") or {}).get(key, []) if item["ordinal"] > read]
+    mentions = [{**item, "url": "/lineage?" + urlencode({"chatroom": room["chatroom_id"], "message": item["message_id"]})}
+                for item in (room.get("user_mentions") or {}).get(key, []) if item["ordinal"] > read]
     return {"unread_count": unread, "muted": muted, "unread_mentions": mentions,
             "unread_mention_count": len(mentions), "attention_unread": bool(unread and (not muted or mentions)),
             # The member's Mailbox row revision (conversation_receipt_store).

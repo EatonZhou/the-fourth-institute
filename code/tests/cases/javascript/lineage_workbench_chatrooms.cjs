@@ -14,6 +14,37 @@ const room = (digit, extra = {}) => ({
 const said = (preview, at) => ({ last_message: { preview, author_id: 'alice', created_at: at } });
 const ROOMS = [room('1', said('hi', '2026-10-20T00:00:00Z')), room('2'), room('3', said('later', '2026-10-21T00:00:00Z'))];
 
+test('Chatroom cold links and in-page Mailbox navigation preserve the exact message target', async t => {
+  const calls = [];
+  const id = ROOMS[0].chatroom_id;
+  const page = startWorkbenchPage({
+    url: `https://portal.fixture.invalid/lineage?chatroom=${id}&message=msg_new`,
+    answers: {
+      '/api/me': { username: 'fixture' },
+      '/api/users': [],
+      '/api/agent-workbench/residents': { ready: true, residents: [], lineages: [], principal_hierarchy: { projects: [], user_residents: [] } },
+    },
+    instructions: { ListChatrooms: () => ({ chatrooms: ROOMS }) },
+  });
+  t.after(page.close);
+  page.window.performance.getEntriesByType = () => [];
+  page.window.PortalChatroomView = { mount: () => ({
+    setChatroom: async (id, options) => { calls.push({ id, ...options }); return ROOMS.find(r => r.chatroom_id === id); },
+    destroy() {},
+  }) };
+  await page.until(() => calls.length > 0);
+  assert.deepEqual(calls[0], { id, messageId: 'msg_new' });
+  const detail = { entry: { surface: 'lineage', url: `/lineage?chatroom=${id}&message=msg_next` } };
+  page.window.dispatchEvent(new page.window.CustomEvent('portal:agent-conversation-open', { detail }));
+  await page.until(() => calls.length === 2);
+  assert.equal(detail.handled, true);
+  assert.deepEqual(calls[1], { id, messageId: 'msg_next' });
+  assert.equal(new URL(page.window.location.href).searchParams.get('message'), 'msg_next');
+  await page.parts.PortalLineageWorkbenchChatrooms.exports.selectChatroom(id);
+  assert.deepEqual(calls[2], { id, messageId: '' });
+  assert.equal(new URL(page.window.location.href).searchParams.has('message'), false, 'room-only navigation clears a stale message target');
+});
+
 test('quoting authors adds named mentions to the real composer without duplicate or self pings', async t => {
   const page = startWorkbenchPage({ answers: { '/api/me': { username: 'fixture' } } });
   const root = page.document.createElement('div');

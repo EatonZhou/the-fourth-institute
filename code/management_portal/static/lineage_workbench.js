@@ -773,7 +773,7 @@
           if (mayInitializeWorkspace && targetChatroomId) state.sideView = "chatrooms";
           setSideView(state.sideView || "agents");
           if (mayInitializeWorkspace && targetChatroomId) {
-            selectChatroom(targetChatroomId).catch(error => {
+            selectChatroom(targetChatroomId, { messageId: loadSeq === 1 ? openingNavigation.messageId : "" }).catch(error => {
               closeChatroomView();
               window.PortalUI.toast(window.PortalI18n.text`打开聊天室失败：${error.message || error}`, "error");
             });

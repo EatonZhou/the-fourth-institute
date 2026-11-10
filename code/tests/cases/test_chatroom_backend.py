@@ -177,7 +177,7 @@ def test_only_members_read_and_post_and_each_member_has_an_unread_count(lineage)
     assert chatroom_backend.get_chatroom(BOB, chatroom_id)["last_message"]["mentioned_users"] == [BOB]
     state = chatroom_backend.get_chatroom(BOB, chatroom_id)
     assert state["attention_unread"] and state["unread_mention_count"] == 1
-    assert state["unread_mentions"] == [{"message_id": ping["message_id"], "ordinal": ping["ordinal"]}]
+    assert state["unread_mentions"] == [{"message_id": ping["message_id"], "ordinal": ping["ordinal"], "url": f"/lineage?chatroom={chatroom_id}&message={ping['message_id']}"}]
     # A receipt for an old viewport cannot clear a newly arrived mention.
     assert chatroom_backend.mark_read(BOB, chatroom_id, through=ordinary["ordinal"])["unread_mention_count"] == 1
     assert chatroom_backend.mark_read(BOB, chatroom_id, through=ping["ordinal"])["unread_count"] == 0
@@ -211,7 +211,7 @@ def test_all_user_mention_notifies_current_members_once_without_calling_resident
     assert state["muted"] and state["attention_unread"]
     assert state["last_message"]["mentioned_users"] == [BOB]
     assert state["unread_mention_count"] == 1
-    assert state["unread_mentions"] == [{"message_id": message["message_id"], "ordinal": message["ordinal"]}]
+    assert state["unread_mentions"] == [{"message_id": message["message_id"], "ordinal": message["ordinal"], "url": f"/lineage?chatroom={chatroom_id}&message={message['message_id']}"}]
     assert chatroom_backend.get_chatroom(ALICE, chatroom_id)["unread_mention_count"] == 0
     assert posted["deliveries"] == [] and len(lineage.deliveries()) == calls_before
     assert not chatroom_backend.mark_read(BOB, chatroom_id)["attention_unread"]
@@ -366,7 +366,7 @@ def test_quoting_a_user_mentions_them_even_when_muted_without_marking_it_read(li
     for _ in range(2):
         state = chatroom_backend.get_chatroom(BOB, room)
         assert state["muted"] and state["attention_unread"]
-        assert state["unread_mentions"] == [{"message_id": message["message_id"], "ordinal": message["ordinal"]}]
+        assert state["unread_mentions"] == [{"message_id": message["message_id"], "ordinal": message["ordinal"], "url": f"/lineage?chatroom={room}&message={message['message_id']}"}]
         assert state["last_message"]["mentioned_users"] == [BOB]
     assert chatroom_backend.get_chatroom(ALICE, room)["unread_mention_count"] == 0
     assert chatroom_backend.get_chatroom(DAVE, room)["unread_mention_count"] == 0
@@ -738,6 +738,36 @@ def test_a_members_read_state_lives_in_their_mailbox_row(lineage):
     assert row(DAVE)["read_revision"] == 0
     chatroom_backend.delete_chatroom(ALICE, chatroom_id)
     assert row(ALICE)["read_revision"] == row(BOB)["read_revision"] == 0
+
+
+def test_mailbox_mentions_link_to_each_original_message_without_advancing_reads(lineage):
+    """Mailbox 每条未读提及包含精确链接；投影不推进已读，成员隔离，撤回后移除提及。
+
+    :module: resident.conversation
+    :importance: P1
+    :design: decision_a6bebf4ac283
+    """
+    from urllib.parse import parse_qs, urlsplit
+    room = chatroom_backend.create_chatroom(ALICE, [BOB, DAVE])["chatroom_id"]
+    old = chatroom_backend.post_message(BOB, room, text("@alice 旧提醒"))["message"]
+    new = chatroom_backend.post_message(BOB, room, text("@alice 新提醒"))["message"]
+    revision = chatroom_backend.get_chatroom(ALICE, room)["read_revision"]
+    for _ in range(2):
+        entry, = chatroom_backend.inbox_entries(ALICE)
+        assert entry["url"] == f"/lineage?chatroom={room}"
+        assert entry["read_revision"] == revision
+        assert [m["message_id"] for m in entry["unread_mentions"]] == [old["message_id"], new["message_id"]]
+        for mention in entry["unread_mentions"]:
+            target = urlsplit(mention["url"])
+            assert not target.netloc and target.path == "/lineage"
+            assert parse_qs(target.query) == {"chatroom": [room], "message": [mention["message_id"]]}
+    assert chatroom_backend.inbox_entries(DAVE)[0]["unread_mentions"] == []
+    chatroom_backend.mark_read(ALICE, room, through=old["ordinal"])
+    assert [m["message_id"] for m in chatroom_backend.inbox_entries(ALICE)[0]["unread_mentions"]] == [new["message_id"]]
+    chatroom_backend.retract_message(BOB, room, new["message_id"], expected_version=new["version"])
+    assert chatroom_backend.inbox_entries(ALICE)[0]["unread_mentions"] == []
+    chatroom_backend.leave_chatroom(ALICE, room)
+    assert chatroom_backend.inbox_entries(ALICE) == []
 
 
 def test_the_mailbox_read_toggle_checks_membership_and_the_seen_revision_in_the_room(lineage):

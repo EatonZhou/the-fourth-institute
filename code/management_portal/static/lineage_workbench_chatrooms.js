@@ -409,14 +409,16 @@
       renderChatHeader();
     }
 
-    function syncChatroomLocation() {
+    function syncChatroomLocation(messageId = "") {
       const target = new URL(window.location.href);
       if (state.activeChatroomId) target.searchParams.set("chatroom", state.activeChatroomId);
       else target.searchParams.delete("chatroom");
+      if (messageId) target.searchParams.set("message", messageId);
+      else target.searchParams.delete("message");
       history.replaceState(history.state || {}, "", `${target.pathname}${target.search}${target.hash}`);
     }
 
-    async function selectChatroom(chatroomId) {
+    async function selectChatroom(chatroomId, { messageId = "" } = {}) {
       const id = String(chatroomId || "").trim();
       if (!/^chatroom_[0-9a-f]{12}$/.test(id)) return false;
       currentLineageWorkbench()?.focusPanel?.(currentAgentChatPanel()?.instanceId?.() || "chat");
@@ -427,16 +429,15 @@
       host.hidden = false;
       // The Resident Chat below is not being read while a Chatroom covers it.
       host.parentElement?.classList.add("chatroomActive");
-      syncChatroomLocation();
+      syncChatroomLocation(messageId);
       if (state.sideView === "chatrooms") renderChatroomList();
-      const room = await chatroomOverlay.view.setChatroom(id);
+      const room = await chatroomOverlay.view.setChatroom(id, { messageId });
       if (state.activeChatroomId !== id) return false;
       if (room && !chatroomRecord(id)) {
         state.chatroomRecords = [room, ...state.chatroomRecords];
         if (state.sideView === "chatrooms") renderChatroomList();
       }
       syncChatroomPanelTitle(room || chatroomRecord(id));
-      await chatroomOverlay.view.revealNextMention();
       return true;
     }
 

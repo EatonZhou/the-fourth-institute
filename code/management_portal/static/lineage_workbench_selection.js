@@ -110,7 +110,7 @@
       } else if (/^chatroom_[0-9a-f]{12}$/.test(chatroomId)) {
         navigate = () => {
           setSideView("chatrooms");
-          return selectChatroom(chatroomId);
+          return selectChatroom(chatroomId, { messageId: String(target.searchParams.get("message") || "").trim() });
         };
       }
       if (!navigate) return;
