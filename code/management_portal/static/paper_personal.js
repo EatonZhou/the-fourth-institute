@@ -5,17 +5,17 @@
     if (!tree) return;
     const host = document.createElement("section");
     host.className = "paperPersonal";
-    host.innerHTML = `<nav class="portalSegmented" data-scopes aria-label="查看范围">
+    host.innerHTML = `<nav class="portalSegmented leftFaceTabs" data-scopes aria-label="查看范围">
       <button type="button" data-scope="personal">个人</button>
       <button type="button" data-scope="repository" data-view="repository">全库</button></nav>
-      <nav class="portalToolbar" data-personal-tabs aria-label="个人文献">
+      <nav class="portalSegmented leftFaceTabs" data-personal-tabs aria-label="个人文献">
       <button type="button" data-view="recent">近期阅读</button>
       <button type="button" data-view="favorites">收藏</button>
-      </nav><p data-scope-label>个人文献</p>
+      </nav>
       <p data-status role="status" aria-live="polite"></p>
       <div data-personal hidden><h3 data-heading></h3><div data-rows></div>
       <button type="button" data-more hidden>加载更多</button></div>`;
-    host.querySelectorAll("button").forEach(button => button.classList.add("portalButton", "is-compact"));
+    host.querySelector("[data-more]").classList.add("portalButton", "is-compact");
     const body = tree.closest('.leftBody');
     if (body) body.prepend(host); else tree.before(host);
     const panel = host.querySelector("[data-personal]");
@@ -46,7 +46,6 @@
       if (personal) personalView = view;
       body?.classList.toggle('is-personal', personal); tree.hidden = personal; panel.hidden = !personal;
       host.querySelector('[data-personal-tabs]').hidden = !personal;
-      host.querySelector('[data-scope-label]').textContent = personal ? '个人文献（近期阅读 / 收藏）' : '全库范围：列表、搜索、分类、CCF、语义检索与采集';
       host.querySelectorAll('[data-scope]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.scope === (personal ? 'personal' : 'repository'))));
       host.querySelectorAll('[data-view]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.view === view)));
       host.querySelector('[data-heading]').textContent = view === 'recent' ? '近期阅读' : '我的收藏';

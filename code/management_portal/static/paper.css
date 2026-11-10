@@ -756,3 +756,7 @@ body {
 .paperPersonal [data-row] > button:first-child { flex: 1; text-align: left; }
 .paperPersonal time { font-size: 12px; opacity: .7; }
 .paperPersonal [data-status] { overflow-wrap: anywhere; }
+
+/* Personal navigation uses the same segments as Library / CCF. */
+.paperPersonal [data-personal-tabs][hidden],
+.paperPersonal [data-status]:empty { display: none !important; }
