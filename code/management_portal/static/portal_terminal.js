@@ -88,6 +88,7 @@
     };
     const state = {
       sessionId: String(initialSessionId || ""),
+      needsAttach: Boolean(initialSessionId),
       cursor: 0,
       startPromise: null,
       inputPromise: null,
@@ -189,6 +190,7 @@
     function endSession() {
       if (!state.sessionId) return;
       state.sessionId = "";
+      state.needsAttach = false;
       onSessionChange("");
       state.pendingInput = "";
       state.pasteRequest += 1;
@@ -211,7 +213,7 @@
 
     function schedulePoll(delay = 900) {
       clearPoll();
-      if (state.destroyed || state.paused || !isActive() || !state.sessionId) return;
+      if (state.destroyed || state.paused || !isActive() || !state.sessionId || state.needsAttach) return;
       state.pollTimer = window.setTimeout(read, delay);
     }
 
@@ -219,11 +221,14 @@
       if (state.destroyed || state.closePromise) return Promise.resolve();
       state.paused = false;
       if (state.startPromise) return state.startPromise;
-      if (state.sessionId) {
+      if (state.sessionId && !state.needsAttach) {
         schedulePoll(100);
         return Promise.resolve();
       }
       const generation = state.generation;
+      // A persisted ID is only a reconnect hint: the server may have restarted
+      // or expired the shell. The start owner reuses live shells or creates one.
+      const savedSessionId = state.needsAttach ? state.sessionId : "";
       state.cursor = 0;
       term.write(`\r\n${labels.starting}\r\n`);
       state.startPromise = Promise.resolve().then(async () => {
@@ -232,12 +237,15 @@
           const extra = typeof startPayload === "function" ? startPayload() : startPayload;
           const payload = await apiPost(
             typeof startUrl === "function" ? startUrl() : startUrl,
-            { ...size(), ...(extra || {}) },
+            { ...size(), ...(extra || {}), ...(savedSessionId ? { session_id: savedSessionId } : {}) },
           );
           if (state.destroyed || generation !== state.generation) {
-            if (payload.session_id) await apiPost(controlUrl, { session_id: payload.session_id, action: "close" });
+            // Detaching a restored panel must not kill the existing shell.
+            // Only a newly spawned, never-installed shell needs cleanup here.
+            if (payload.session_id && payload.session_id !== savedSessionId) await apiPost(controlUrl, { session_id: payload.session_id, action: "close" });
             return;
           }
+          state.needsAttach = false;
           render(payload);
           schedulePoll(100);
         } catch (error) {
@@ -281,7 +289,7 @@
         if (state.destroyed || generation !== state.generation) return;
         await start();
         if (state.destroyed || generation !== state.generation) return;
-        if (!state.sessionId) {
+        if (!state.sessionId || state.needsAttach) {
           state.pendingInput = "";
           return;
         }
@@ -312,7 +320,7 @@
 
     function resize(cols, rows) {
       clearResize();
-      if (!state.sessionId) return;
+      if (!state.sessionId || state.needsAttach) return;
       state.resizeTimer = window.setTimeout(() => {
         apiPost(controlUrl, {
           session_id: state.sessionId,
@@ -345,6 +353,12 @@
       const promise = Promise.resolve().then(async () => {
         await Promise.all(pending);
         if (state.destroyed || generation !== state.generation) return;
+        if (state.needsAttach) {
+          const previousId = state.sessionId;
+          await start();
+          if (state.destroyed || generation !== state.generation || state.needsAttach
+              || state.sessionId !== previousId) return;
+        }
         if (!state.sessionId) {
           await start();
           return;
@@ -382,6 +396,7 @@
       state.pendingInput = "";
       const sessionId = state.sessionId;
       state.sessionId = "";
+      state.needsAttach = false;
       onSessionChange("");
       state.cursor = 0;
       const pending = [state.startPromise, state.inputPromise, state.controlPromise];
