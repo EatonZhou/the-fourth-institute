@@ -300,9 +300,7 @@ class ChatReads:
             executions = list({item.get("message", {}).get("execution_id") for item in metadata.values()
                                if item.get("message", {}).get("execution_id")})
             endings = connection.execute(
-                "SELECT e.execution_id,e.usage_json,e.final_message_id AS message_id,e.provider,s.backend_route_id,"
-                "e.request_json::jsonb #>> '{runtime_options,model}' AS request_model,"
-                "e.request_json::jsonb #>> '{session,backend_route_id}' AS request_account "
+                "SELECT e.execution_id,e.usage_json,e.final_message_id AS message_id,e.provider,s.backend_route_id "
                 "FROM executions e LEFT JOIN provider_sessions s USING(provider_session_ref) "
                 "WHERE e.execution_id=ANY(%s) AND e.status IN ('completed','failed','cancelled')",
                 (executions,),
@@ -315,10 +313,8 @@ class ChatReads:
                 raw_usage = json_value(ending["usage_json"])
                 generation[(str(ending["execution_id"]), str(ending["message_id"]))] = {
                     "execution_id": str(ending["execution_id"]), "provider": str(ending["provider"]),
-                    "account_id": str(ending["backend_route_id"] or ending["request_account"] or ""),
-                    **({"model": raw_usage.get("model") or ending["request_model"],
-                        "model_evidence": "provider_reported" if raw_usage.get("model") else "execution_request"}
-                       if raw_usage.get("model") or ending["request_model"] else {}),
+                    "account_id": str(ending["backend_route_id"] or ""),
+                    **({"model": raw_usage["model"], "model_evidence": "provider_reported"} if raw_usage.get("model") else {}),
                 }
                 usage[(str(ending["execution_id"]), str(ending["message_id"]))] = {
                     **normalize_token_usage(raw_usage.get("accounted") or raw_usage),
