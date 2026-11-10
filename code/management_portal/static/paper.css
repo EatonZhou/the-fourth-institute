@@ -579,6 +579,22 @@ body {
 .readerPanelToggle svg { transition: transform .16s ease; }
 .readerPanel.collapsed .readerPanelToggle svg { transform: rotate(180deg); }
 .readerContent { overflow: auto; padding: 13px; }
+.paperReadingDialog { position: fixed; inset: 0; width: 100vw; height: 100dvh; max-width: none; max-height: none; margin: 0; padding: 0; border: 0; color: var(--text, #17202a); background: var(--surface, #fff); }
+.paperReadingApp { height: 100%; display: flex; flex-direction: column; }
+.paperReadingToolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 10px 16px; border-bottom: 1px solid #ccd1d6; }
+.paperReadingToolbar strong { flex: 1; min-width: 120px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.paperReadingToolbar button, .paperReadingHighlights button { font: inherit; cursor: pointer; padding: 6px 10px; }
+.paperReadingToolbar button:disabled { cursor: default; opacity: .5; }
+.paperReadingStatus { margin: 0; padding: 6px 16px; font-size: 13px; }
+.paperReadingBody { display: flex; flex: 1; min-height: 0; overflow: hidden; }
+.paperReadingPdf { flex: 1; min-width: 0; height: 100%; background: #59616b; overscroll-behavior: contain; }
+.paperReadingHighlights { flex: 0 0 min(280px, 40vw); padding: 12px; overflow: auto; overflow-wrap: anywhere; }
+.paperReadingHighlights[hidden] { display: none; }
+.paperReadingHighlights h2 { font-size: 16px; }
+.paperReadingHighlights article { padding-bottom: 14px; margin-bottom: 14px; border-bottom: 1px solid #ccd1d6; }
+.paperHighlightJump { display: block; width: 100%; text-align: left; margin-bottom: 8px; }
+.paperHighlightLayer { position: absolute; inset: 0; pointer-events: none; z-index: 2; mix-blend-mode: multiply; }
+.paperHighlightLayer span { position: absolute; background: #ffe45e; opacity: .45; }
 .readerContent iframe { width: 100%; height: 100%; min-height: 620px; border: 0; background: #fff; }
 .readerContent.pdfReaderContent { padding: 0; background: #5a626d; }
 .pdfJsViewer {
@@ -602,6 +618,7 @@ body {
   text-align: center;
   line-height: 1.45;
 }
+.paperReadingPdf.pdfJsViewer { min-height: 0; box-sizing: border-box; }
 .pdfJsViewer iframe {
   width: min(100%, 1000px);
   height: calc(100vh - 220px);

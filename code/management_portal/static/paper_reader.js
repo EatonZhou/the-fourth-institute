@@ -35,13 +35,40 @@
 
     let paperPdfController = null;
     let paperPdfZoom = null;
+    let fullscreenReader = null;
+    let readerGeneration = 0;
     const paperReaderViewStates = new Map();
 
     function cancelPdfRendering() {
+      readerGeneration += 1;
+      fullscreenReader?.close();
+      fullscreenReader = null;
       paperPdfZoom?.dispose?.();
       paperPdfZoom = null;
       paperPdfController?.cancel?.();
       paperPdfController = null;
+    }
+
+    async function openFullscreenReader(paper) {
+      const viewState = capturePaperReaderViewState();
+      cancelPdfRendering();
+      const generation = readerGeneration;
+      try {
+        const { openReader } = await import('/static/paper_fullscreen_reader.js');
+        if (generation !== readerGeneration) return;
+        fullscreenReader = openReader({paper, anchor: viewState?.pdfAnchor,
+          onClose: anchor => {
+            fullscreenReader = null;
+            if (generation !== readerGeneration) return;
+            const next = {...viewState, ...(anchor ? {pdfAnchor: anchor} : {})};
+            paperReaderViewStates.set(paper.id, next);
+            renderPdfJsViewer(paper.pdf_url, paper.title, next).catch(alertError);
+          }});
+      } catch (error) {
+        if (generation !== readerGeneration) return;
+        renderPdfJsViewer(paper.pdf_url, paper.title, viewState).catch(alertError);
+        alertError(error);
+      }
     }
 
     function capturePaperReaderViewState() {
@@ -209,6 +236,7 @@
                 </div>
                 <div class="readerHeadActions">
                   ${paper.pdf_url ? window.PortalI18n.html`<a class="portalButton is-icon is-quiet iconBtn readerExternalLink" href="${esc(paper.pdf_url)}" target="_blank" rel="noopener noreferrer" data-portal-tooltip="在新标签页打开 PDF" aria-label="在新标签页打开 PDF" data-portal-icon="external-link"></a>` : ""}
+                  ${paper.pdf_url ? window.PortalI18n.html`<button class="portalButton is-compact" id="paperFullscreenBtn" type="button">全屏阅读</button>` : ""}
                   <button
                     class="portalButton is-icon is-quiet iconBtn readerPanelToggle"
                     data-portal-icon="chevron-right"
@@ -226,6 +254,7 @@
           </div>
         `;
       restoreAnalysisReaderViewState(readerViewState);
+      $("paperFullscreenBtn")?.addEventListener("click", () => openFullscreenReader(paper));
       if (paper.pdf_url && !state.readerPdfCollapsed) {
         renderPdfJsViewer(paper.pdf_url, paper.title || "Paper", readerViewState).catch(alertError);
       } else {

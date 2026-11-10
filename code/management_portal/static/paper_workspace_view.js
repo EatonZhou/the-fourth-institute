@@ -70,7 +70,6 @@
         chip(paper.venue || "Venue"),
         paper.year ? chip(paper.year) : "",
         paper.has_analysis ? chip("Analyzed", "good") : chip("No analysis", "warn"),
-        paper.authors ? chip(paper.authors, "author") : "",
         ...paperTags(paper).map(tag => chip(tag, "accent")),
       ].filter(Boolean).join("");
     }
