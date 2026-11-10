@@ -88,6 +88,10 @@ def activation_report(app: dict, actor: str) -> dict:
     if app.get("published_revision") != app.get("revision"):
         issues.append({"code": "projection.binding_draft", "message": "当前绑定修改尚未发布"})
     roles = {}
+    workflow_counts = {}
+    for target in app["bindings"].values():
+        for role, resident_id in target.get("residents", {}).items():
+            workflow_counts[resident_id] = workflow_counts.get(resident_id, 0) + len(workflow_definitions(app.get("builtin", ""), role))
     for alias, target in app["bindings"].items():
         target_graph = graph if target["lineage_id"] == main["lineage_id"] else bound_lineage_graph(target, actor)
         program = target_graph.get("program", {})
@@ -111,8 +115,7 @@ def activation_report(app: dict, actor: str) -> dict:
                 issues.append({"code": "projection.business_role_outside_main", "role": role, "message": f"业务角色不属于主 Lineage：{alias}/{role}"})
             if role.startswith("system:") and target["lineage_id"] == main["lineage_id"]:
                 issues.append({"code": "projection.system_role_in_business", "role": role, "message": f"基础能力必须由 Portal 职责登记指定：{role}"})
-            required_flows = workflow_definitions(app.get("builtin", ""), role)
-            if len(resident_effects.get(resident_id, set())) < len(required_flows):
+            if len(resident_effects.get(resident_id, set())) < workflow_counts[resident_id]:
                 issues.append({"code": "projection.workflow_unbound", "role": role, "message": f"尚未完整绑定业务定义的 Event → 固定 prompt Effect → Resident 流程：{role}"})
     required = set()
     if app.get("builtin") == "paper":
@@ -125,9 +128,6 @@ def activation_report(app: dict, actor: str) -> dict:
         except (ApplicationUnconfigured, KeyError) as error:
             issues.append({"code": "projection.system_capability_unbound", "role": "search.paper",
                            "message": str(error)})
-        assignments = [roles[role] for role in ROLES if role in roles]
-        if len(assignments) != len(set(assignments)):
-            issues.append({"code": "projection.shared_function_resident", "message": "Paper 固定功能必须各自绑定独立 Resident，而不是共用同一执行身份"})
     elif app.get("builtin") == "studio":
         required = {"designer"}
     if not any(not role.startswith("system:") for role in roles):

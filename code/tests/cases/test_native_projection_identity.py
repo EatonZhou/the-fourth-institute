@@ -191,8 +191,9 @@ def test_activation_blocks_incomplete_migration(scenario, monkeypatch, broken, c
     assert code in {issue["code"] for issue in report["issues"]}
 
 
-def test_paper_activation_requires_fixed_roles_and_rejects_pooled_identity(scenario, monkeypatch):
-    """论文工作台激活要求每个固定角色都已绑定，多个角色共用一个 Resident 时被拒"""
+@pytest.mark.parametrize("complete", [False, True])
+def test_paper_activation_requires_a_flow_for_each_shared_resident_role(scenario, monkeypatch, complete):
+    """固定角色可共享 Resident，每个角色仍须有独立的 Event / Effect 流程。"""
     from management_portal import semantic_search_surfaces
     from management_portal.paper_projection import ROLES
 
@@ -204,8 +205,21 @@ def test_paper_activation_requires_fixed_roles_and_rejects_pooled_identity(scena
     missing = {issue["role"] for issue in report["issues"] if issue["code"] == "projection.resident_unbound"}
     assert missing == set(ROLES)
     app["bindings"]["main"]["residents"] = {role: RESIDENT for role in ROLES}
+    program = state["graphs"][MAIN]["program"]
+    for index in range(1, len(ROLES) if complete else len(ROLES) - 1):
+        event, effect = f"event_{index}", f"effect_{index}"
+        program["components"].extend([
+            {"id": event, "kind": "event_source", "config": {"event_type": "manual.triggered"}},
+            {"id": effect, "kind": "effect", "config": effect_config("DeliverMessage", {
+                "resident_id": {"from": "endpoint.target"}, "message": {"value": f"Function {index}"}}, ["target"])},
+        ])
+        program["wires"].extend([
+            {"kind": "route", "source": event, "target": effect},
+            {"kind": "target", "source": effect, "target": RESIDENT},
+        ])
     report = native.activation_report(app, "alice")
-    assert "projection.shared_function_resident" in {issue["code"] for issue in report["issues"]}
+    assert report["ready"] is complete
+    assert ("projection.workflow_unbound" in {issue["code"] for issue in report["issues"]}) is not complete
 
 
 def test_paper_activation_uses_the_system_service_authority_not_a_shadow_binding(scenario, monkeypatch):
