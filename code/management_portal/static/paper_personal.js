@@ -1,6 +1,6 @@
 (() => {
   "use strict";
-  window.PortalPaperPersonal = {mount({state, paperApi, loadDetail, setMode, syncFavoriteButtons = () => {}, renderTree}) {
+  window.PortalPaperPersonal = {mount({state, paperApi, loadDetail, setMode, syncFavoriteButtons = () => {}, renderTree, loadLibrary}) {
     const tree = document.getElementById("folderTree");
     if (!tree) return;
     const host = document.createElement("section");
@@ -43,6 +43,10 @@
       }
       view = next; ++sequence; loading = false;
       const personal = view !== 'repository';
+      if (!personal && state.filters?.favorite) {
+        delete state.filters.favorite;
+        loadLibrary?.({keepDetail: true, hydrateDetail: false}).catch(error => {status.textContent = error.message;});
+      }
       if (personal) personalView = view;
       body?.classList.toggle('is-personal', personal); tree.hidden = personal; panel.hidden = !personal;
       host.querySelector('[data-personal-tabs]').hidden = !personal;

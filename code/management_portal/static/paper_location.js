@@ -42,6 +42,7 @@
       state.query = saved.query || "";
       state.filters = { ...state.filters, ...(saved.filters || {}) };
       delete state.filters.analysis;
+      delete state.filters.favorite;
       state.activeSemanticSearchId = saved.activeSemanticSearchId || "";
       state.activeCollectorJobId = saved.activeCollectorJobId || "";
       state.readerAnalysisCollapsed = !!saved.readerAnalysisCollapsed;
@@ -205,6 +206,7 @@
       state.query = target.query;
       state.filters = { year: "", venue: "", tag: "", project: "", ...target.filters };
       delete state.filters.analysis;
+      delete state.filters.favorite;
       state.activeSemanticSearchId = target.activeSemanticSearchId;
       state.semanticSearch?.setActiveId?.(state.activeSemanticSearchId, { notify: false });
       state.activeCollectorJobId = target.activeCollectorJobId;

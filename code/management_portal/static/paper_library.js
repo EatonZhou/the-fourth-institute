@@ -25,12 +25,13 @@
     } = dependencies;
 
     function libraryQuery() {
+      delete state.filters.favorite;
       const params = new URLSearchParams({ compact: "1", preview_limit: "100" });
       if (state.query) params.set("q", state.query);
       if (activeSemanticSearchHasResults()) params.set("semantic", state.activeSemanticSearchId);
       if (!activeSemanticSearchHasResults() && activeCollectorJobHasResults()) params.set("collector", state.activeCollectorJobId);
       if (state.mode === "today") params.set("registered", "today");
-      ["year", "venue", "tag", "project", "favorite"].forEach(key => {
+      ["year", "venue", "tag", "project"].forEach(key => {
         const value = state.filters[key];
         if (value) params.set(key, value);
       });
@@ -246,7 +247,6 @@
     }
 
     function renderFilters() {
-      $("favoriteFilter").checked = state.filters.favorite === "1";
       $("searchInput").value = state.query;
       const filters = state.library?.filters || {};
       fillSelect("yearFilter", "All years", filters.years || [], state.filters.year);

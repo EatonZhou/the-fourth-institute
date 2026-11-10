@@ -94,7 +94,7 @@
                 </button>
               </div>
             </div>
-            <details open><summary>语义检索历史</summary><div class="portalSemanticPanel" id="semanticSearchList"></div></details>
+            <details><summary>语义检索历史</summary><div class="portalSemanticPanel" id="semanticSearchList"></div></details>
             <form class="collectorBox" id="collectorForm">
               <div data-portal-board-toolbar aria-label="Collect papers" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;Collect papers&quot;}">
                 <div data-portal-board-search>
@@ -107,14 +107,13 @@
                   <button class="portalButton is-compact is-primary" id="collectorBtn" type="submit" title="根据输入需求收集论文" data-portal-i18n-attrs="{&quot;title&quot;: &quot;根据输入需求收集论文&quot;}"><!--portal-i18n:"Collect"-->Collect</button>
                 </div>
               </div>
-              <details open><summary>采集任务历史</summary><div class="collectorJobList" id="collectorJobList"></div></details>
+              <details><summary>采集任务历史</summary><div class="collectorJobList" id="collectorJobList"></div></details>
             </form>
             <div class="filterGrid">
               <select class="portalControl" id="yearFilter"><option value=""><!--portal-i18n:"All years"-->All years</option></select>
               <select class="portalControl" id="venueFilter"><option value=""><!--portal-i18n:"All venues"-->All venues</option></select>
               <select class="portalControl" id="tagFilter"><option value=""><!--portal-i18n:"All tags"-->All tags</option></select>
               <select class="portalControl" id="projectFilter"><option value=""><!--portal-i18n:"All projects"-->All projects</option></select>
-              <label class="paperFavoriteFilter"><input id="favoriteFilter" type="checkbox" /><!--portal-i18n:"只看收藏"-->只看收藏</label>
             </div>
           </div>
           <div class="folderTree" id="folderTree"></div>

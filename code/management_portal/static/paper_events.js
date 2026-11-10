@@ -69,11 +69,6 @@
         event.stopPropagation();
         togglePaperFavorite(button.dataset.paperFavorite).catch(alertError);
       }, true);
-      $("favoriteFilter").addEventListener("change", event => {
-        state.filters.favorite = event.target.checked ? "1" : "";
-        writeUiState();
-        loadLibrary({ keepDetail: true, hydrateDetail: false }).catch(alertError);
-      });
       $("refreshBtn").addEventListener("click", () => refreshCurrentLeftFace().catch(alertError));
       $("collectorForm").addEventListener("submit", event => submitCollector(event).catch(alertError));
       $("collectorJobList").addEventListener("click", event => {
