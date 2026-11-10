@@ -108,6 +108,10 @@ class Notifications:
         if any(changes.values()) and (not account or account['status'] != 'active'):
             raise ValueError('请先绑定微信，再开启提醒')
         old = self.preferences(actor)
+        enabling = {category for category, enabled in changes.items() if enabled and not old[category]}
+        # Capture the baseline before acknowledging the switch. A read failure must
+        # leave every preference unchanged; unsupported categories remain deferred.
+        current = self.snapshot(actor) if enabling else {}
         with self.router.connect() as c:
             for category, enabled in changes.items():
                 if old[category] == enabled:
@@ -118,6 +122,7 @@ class Notifications:
                           (actor, category, enabled, now_iso()))
                 c.execute("DELETE FROM notification_deliveries WHERE portal_actor=? AND category=? AND invalid_reason!='card'",
                           (actor, category))
+            self._reconcile(c, actor, {category: current[category] for category in enabling if category in current})
             c.execute('DELETE FROM meta WHERE key=?', ('notification-watch:' + actor,))
         return self.preferences(actor)
 
@@ -139,28 +144,35 @@ class Notifications:
                       (f'{actor}:question:{resident}:{message}', actor, resident, message, self.clock(), now_iso()))
 
     def snapshot(self, actor):
+        if self.portal is None:
+            from .portal_client import PortalClient
+            self.portal = PortalClient(channel='weixin')
         return candidates(actor, self.portal.call(actor, 'GetMailbox', {'user_id': actor}))
 
     def reconcile(self, actor, current):
         """Only successful, supported category snapshots may change durable state."""
         with self.router.connect() as c:
-            prefs = c.execute('SELECT * FROM notification_preferences WHERE portal_actor=? AND enabled=TRUE', (actor,)).fetchall()
-            for pref in prefs:
-                category = pref['category']
-                if category not in current:
-                    continue
-                entries = current[category]
-                for key, item in entries.items():
-                    c.execute('INSERT INTO notification_deliveries(key,portal_actor,category,source_resident_id,source_message_id,'
-                              'chatroom_id,status,discovered_at) VALUES(?,?,?,?,?,?,?,?) ON CONFLICT DO NOTHING',
-                              (key, actor, category, item.get('source_resident_id', ''), item['source_message_id'],
-                               item.get('chatroom_id', ''), 'pending' if pref['baseline_ready'] else 'baseline', self.clock()))
-                rows = c.execute("SELECT key FROM notification_deliveries WHERE portal_actor=? AND category=? AND status='pending'",
-                                 (actor, category)).fetchall()
-                for row in rows:
-                    if row['key'] not in entries:
-                        c.execute("UPDATE notification_deliveries SET status='invalid',invalid_reason='absent' WHERE key=?", (row['key'],))
-                c.execute('UPDATE notification_preferences SET baseline_ready=TRUE WHERE portal_actor=? AND category=?', (actor, category))
+            self._reconcile(c, actor, current)
+
+    def _reconcile(self, c, actor, current):
+        """Also used by update so the switch and its baseline commit together."""
+        prefs = c.execute('SELECT * FROM notification_preferences WHERE portal_actor=? AND enabled=TRUE', (actor,)).fetchall()
+        for pref in prefs:
+            category = pref['category']
+            if category not in current:
+                continue
+            entries = current[category]
+            for key, item in entries.items():
+                c.execute('INSERT INTO notification_deliveries(key,portal_actor,category,source_resident_id,source_message_id,'
+                          'chatroom_id,status,discovered_at) VALUES(?,?,?,?,?,?,?,?) ON CONFLICT DO NOTHING',
+                          (key, actor, category, item.get('source_resident_id', ''), item['source_message_id'],
+                           item.get('chatroom_id', ''), 'pending' if pref['baseline_ready'] else 'baseline', self.clock()))
+            rows = c.execute("SELECT key FROM notification_deliveries WHERE portal_actor=? AND category=? AND status='pending'",
+                             (actor, category)).fetchall()
+            for row in rows:
+                if row['key'] not in entries:
+                    c.execute("UPDATE notification_deliveries SET status='invalid',invalid_reason='absent' WHERE key=?", (row['key'],))
+            c.execute('UPDATE notification_preferences SET baseline_ready=TRUE WHERE portal_actor=? AND category=?', (actor, category))
 
     def pending(self, actor):
         with self.router.connect() as c:

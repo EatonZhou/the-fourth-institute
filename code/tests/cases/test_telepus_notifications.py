@@ -74,10 +74,14 @@ def due(r, *, flush=True):
 def test_defaults_command_and_self_admin_permissions(reminder, monkeypatch):
     r = reminder
     assert r.notices.preferences(ACTOR) == {'mention': False, 'question': False}
-    from management_portal.telepus import weixin_binding
+    from management_portal.telepus import portal_client, weixin_binding
     from management_portal.watchboards import telepus
     from management_portal import permission_system
     monkeypatch.setattr(weixin_binding, 'WeixinBinding', lambda: r.binding)
+    def client(channel):
+        assert channel == 'weixin'
+        return r.portal
+    monkeypatch.setattr(portal_client, 'PortalClient', client)
     monkeypatch.setattr(telepus, '_contact_user', lambda name, **kw: name)
     monkeypatch.setattr(permission_system, 'user_category', lambda actor: 'portal_admin' if actor == 'admin' else 'user')
     assert settings(ACTOR, changes={'mention': True})['mention']
@@ -92,6 +96,53 @@ def test_defaults_command_and_self_admin_permissions(reminder, monkeypatch):
     incoming(r.adapter, r.server, '/notify question off', message_id=5)
     assert not any(r.notices.preferences(ACTOR).values())
     assert not r.portal.delivered
+
+
+@pytest.mark.parametrize('arrival', ['after_success', 'before_commit'])
+def test_enable_captures_baseline_before_first_scan(reminder, monkeypatch, arrival):
+    r = reminder
+    r.box['items'] = [mention('old')]
+    snapshot = r.notices.snapshot
+
+    def snapshot_with_arrival(actor):
+        current = snapshot(actor)
+        r.box['items'].append(mention('new'))
+        return current
+
+    if arrival == 'before_commit':
+        monkeypatch.setattr(r.notices, 'snapshot', snapshot_with_arrival)
+    with r.adapter.store.lock(ACTOR):
+        assert r.notices.update(ACTOR, mention=True)['mention']
+    monkeypatch.setattr(r.notices, 'snapshot', snapshot)
+    with r.notices.router.connect() as c:
+        assert c.execute("SELECT baseline_ready FROM notification_preferences WHERE category='mention'").fetchone()[0]
+        assert c.execute("SELECT status FROM notification_deliveries WHERE source_message_id='old'").fetchone()[0] == 'baseline'
+    assert not r.notices.pending(ACTOR)
+    if arrival == 'after_success':
+        r.box['items'].append(mention('new'))
+    r.notices.scan(ACTOR)
+    assert [p['source_message_id'] for p in r.notices.pending(ACTOR)] == ['new']
+
+
+@pytest.mark.parametrize('failure', ['permission', 'partial', 'baseline_write'])
+def test_enable_failure_preserves_switches_and_baseline(reminder, monkeypatch, failure):
+    r = reminder
+    r.box['items'] = [mention('old')]
+    enable(r, mention=True)
+    if failure == 'permission':
+        r.failed[0] = True
+    elif failure == 'partial':
+        r.box['incomplete'] = True
+    else:
+        def fail(*args):
+            raise RuntimeError('baseline write failed')
+        monkeypatch.setattr(r.notices, '_reconcile', fail)
+    with r.adapter.store.lock(ACTOR), pytest.raises((PermissionError, ValueError, RuntimeError)):
+        r.notices.update(ACTOR, mention=False, question=True)
+    assert r.notices.preferences(ACTOR) == {'mention': True, 'question': False}
+    with r.notices.router.connect() as c:
+        assert c.execute("SELECT baseline_ready FROM notification_preferences WHERE category='mention'").fetchone()[0]
+        assert c.execute("SELECT status FROM notification_deliveries WHERE source_message_id='old'").fetchone()[0] == 'baseline'
 
 
 def test_baseline_once_restart_and_snapshot_required_offline_new(reminder):
