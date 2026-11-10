@@ -39,20 +39,21 @@ def bind_contact(store: RouterStore, telegram_user_id: str, portal_actor: str) -
 class FakePortal:
     """The HATG ISA results the bridge reads, kept per Resident."""
 
-    def __init__(self) -> None:
-        self.assistant = {"resident_id": FACADE, "lineage_id": "lineage_000000000001", "title": "Ask Me Anything | My Lineage"}
-        self.residents = {FACADE: {"title": "个人助手"}, EXACT: {"title": "Portal Maintainer"}}
+    def __init__(self, actor=ACTOR, facade=FACADE) -> None:
+        self.actor = actor
+        self.assistant = {"resident_id": facade, "lineage_id": "lineage_000000000001", "title": "Ask Me Anything | My Lineage"}
+        self.residents = {facade: {"title": "个人助手"}, EXACT: {"title": "Portal Maintainer"}}
         self.delivered: list[tuple[str, str, dict, dict]] = []
         self.states: dict[tuple[str, str], dict] = {}
-        self.messages: dict[str, list[dict]] = {FACADE: [], EXACT: []}
-        self.event_log: dict[str, list[dict]] = {FACADE: [], EXACT: []}
+        self.messages: dict[str, list[dict]] = {facade: [], EXACT: []}
+        self.event_log: dict[str, list[dict]] = {facade: [], EXACT: []}
         self.cancelled: list[tuple[str, str]] = []
         self.closed: list[tuple[str, str]] = []
         self.mailboxes: dict[str, list[dict]] = {EXACT: []}
         self.active: dict[str, str] = {}
 
     def personal_assistant(self, actor):
-        assert actor == ACTOR
+        assert actor == self.actor
         return dict(self.assistant)
 
     def resident(self, actor, resident_id):
@@ -61,7 +62,7 @@ class FakePortal:
         return dict(self.residents[resident_id])
 
     def deliver(self, actor, resident_id, message, *, activation_policy="enqueue_and_trigger", temporary_credentials=None):
-        assert actor == ACTOR
+        assert actor == self.actor
         self.delivered.append((resident_id, activation_policy, message, {"credentials": temporary_credentials}))
         self.states[(resident_id, message["message_id"])] = {"state": "queued", "reply_message_ids": []}
         self.messages[resident_id].append({"message_id": message["message_id"], "role": "user", **message,

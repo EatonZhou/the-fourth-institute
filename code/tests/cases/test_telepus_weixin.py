@@ -105,6 +105,76 @@ def test_binding_stops_after_three_codes(bridge):
     assert binding.get(ACTOR, session) == {'status': 'expired'}
 
 
+def test_two_users_bind_on_same_watchboard_and_reach_their_own_amas(telepus_schema, monkeypatch):
+    """Two signed-in Users have separate QR sessions, bots, AMAs and revocation."""
+    from types import SimpleNamespace
+    from management_portal.telepus import weixin_binding
+    from management_portal.watchboards import telepus
+
+    store = RouterStore(telepus_schema)
+    store.init_schema()
+    actors = ('alice', 'bob')
+    facades = dict(zip(actors, (FACADE, 'resident_bbbbbbbbbbbb')))
+    accounts = {actor: {**ACCOUNT, 'portal_actor': actor, 'ilink_bot_id': f'bot-{actor}',
+                       'ilink_user_id': f'scanner-{actor}'} for actor in actors}
+    portals = {actor: FakePortal(actor, facades[actor]) for actor in actors}
+    servers = {actor: ILinkServer() for actor in actors}
+    login = ILinkServer()
+
+    class UsersPortal:
+        def __getattr__(self, method):
+            return lambda actor, *args, **kwargs: getattr(portals[actor], method)(actor, *args, **kwargs)
+
+    def factory(account=None):
+        return WeixinClient(account, transport=servers[account['portal_actor']] if account else login)
+
+    binding = WeixinBinding(store, factory)
+    adapter = WeixinAdapter(RouterCore(store=store, portal=UsersPortal()), client_factory=factory)
+    monkeypatch.setattr(weixin_binding, 'WeixinBinding', lambda: binding)
+    monkeypatch.setattr(telepus, '_read_telepus_telegram_user_contacts', lambda: {})
+    monkeypatch.setattr(telepus, 'get_portal_access_store', lambda: SimpleNamespace(
+        user=lambda name: {'username': name, 'configured': name in actors, 'status': 'active'}))
+    contexts = {actor: SimpleNamespace(actor=actor, resident_id='resident_4d7f422f024f') for actor in actors}
+    sessions = {actor: telepus.act(contexts[actor], 'weixin-start', {})['binding']['session_id'] for actor in actors}
+    assert sessions['alice'] != sessions['bob']
+    # A caller cannot confirm or replace someone else's QR session.
+    assert telepus.act(contexts['bob'], 'weixin-get', {'session_id': sessions['alice']})['binding']['status'] == 'expired'
+    with pytest.raises(ValueError, match='Unsupported'):
+        telepus.act(contexts['bob'], 'weixin-unbind', {'user_id': 'alice'})
+    for actor in actors:
+        login.statuses.append(dict(status='confirmed', **accounts[actor]))
+        assert telepus.act(contexts[actor], 'weixin-get', {'session_id': sessions[actor]})['binding']['status'] == 'active'
+        if actor == 'alice':
+            other = telepus.project(contexts['bob'])
+            assert other['weixin_binding']['status'] == 'unbound'
+            assert other['telegram_users']['current_user'] == 'bob'
+            assert other['telegram_users']['permissions']['can_manage']
+    assert {account['portal_actor'] for account in adapter.store.accounts()} == set(actors)
+
+    def receive(actor, message_id):
+        servers[actor].messages = [dict(message_id=message_id, from_user_id=accounts[actor]['ilink_user_id'],
+            message_type=1, context_token=f'context-{actor}',
+            item_list=[{'type': 1, 'text_item': {'text': f'hello from {actor}'}}])]
+        adapter.poll_once(actor)
+
+    for actor in actors:
+        receive(actor, 1)  # Same upstream ID in separate bots must not deduplicate.
+        resident, _, message, _ = portals[actor].delivered[0]
+        assert resident == facades[actor]
+        assert message['content_parts'][0]['text'] == f'hello from {actor}'
+        portals[actor].answer(resident, message['message_id'], f'reply-{actor}', f'answer for {actor}')
+        adapter.refresh(actor)
+        assert servers[actor].sent[-1]['to_user_id'] == accounts[actor]['ilink_user_id']
+        assert f'answer for {actor}' in servers[actor].sent[-1]['item_list'][0]['text_item']['text']
+        assert adapter.store.account(actor)['context_token'] == f'context-{actor}'
+    assert portals['alice'].delivered[0][2]['message_id'] != portals['bob'].delivered[0][2]['message_id']
+    assert telepus.act(contexts['alice'], 'weixin-unbind', {})['binding']['status'] == 'unbound'
+    assert telepus.project(contexts['bob'])['weixin_binding']['status'] == 'active'
+    receive('bob', 2)
+    assert len(portals['bob'].delivered) == 2
+    assert len(portals['alice'].delivered) == 1
+
+
 def test_binding_quiet_long_poll_retries_before_web_deadline_and_recovers_confirmation(bridge):
     adapter, server, _, binding = bridge
     session = binding.start(ACTOR)['session_id']

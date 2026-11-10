@@ -49,6 +49,7 @@ const {chromium} = require('../../../management_portal/test_framework/tau_runtim
       };
     });
     assert.equal(await page.locator('#board [data-weixin-account]').textContent(), '当前 Portal 用户：alice');
+    assert.match(await page.locator('[data-weixin-scope]').textContent(), /每个 Portal 用户可独立绑定自己的微信/);
     assert.equal(await page.locator('[data-weixin-unbind]').count(), 0);
     await page.locator('[data-weixin-bind]').click();
     assert.equal(await page.locator('#modal [data-weixin-account]').textContent(), '当前 Portal 用户：alice');
@@ -78,6 +79,10 @@ const {chromium} = require('../../../management_portal/test_framework/tau_runtim
     assert.equal(await page.locator('#board [data-weixin-account]').textContent(), '当前 Portal 用户：bob');
     await page.evaluate(() => renderBinding('active', 'bob'));
     assert.equal(await page.locator('[data-weixin-bind]').count(), 0);
+    await page.evaluate(() => renderBinding('unbound', 'carol'));
+    assert.equal(await page.locator('#board [data-weixin-account]').textContent(), '当前 Portal 用户：carol');
+    assert(await page.locator('[data-weixin-bind]').isEnabled());
+    assert.equal(await page.locator('[data-weixin-unbind]').count(), 0);
     console.log('Weixin Watchboard binding recovery, account ownership and state-dependent actions passed');
   } finally { await browser.close(); }
 })().catch(error => { console.error(error); process.exitCode = 1; });

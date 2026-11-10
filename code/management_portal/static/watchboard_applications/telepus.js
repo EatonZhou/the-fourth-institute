@@ -32,6 +32,7 @@
           showWatchboardModal("绑定微信", window.PortalI18n.html`
             <div class="watchboardWeixinBinding">
             <p data-weixin-account>当前 Portal 用户：<strong>${esc(watchboardPayload()?.telegram_users?.current_user || "—")}</strong></p>
+            <p class="paneNote">请用你自己的微信扫码，绑定到上方 Portal 用户。</p>
             <img data-weixin-qr width="240" height="240" alt="微信绑定二维码">
             <p data-weixin-status role="status" aria-live="polite"></p>
             <form data-weixin-pin-form hidden>
@@ -127,6 +128,7 @@
         <section class="watchboardSection">
           <div class="watchboardSectionHead"><span>WeChat · 微信</span></div>
           <div class="watchboardSectionBody">
+            <p class="paneNote" data-weixin-scope>每个 Portal 用户可独立绑定自己的微信，消息默认发往各自的 AMA。这里只显示当前账号的绑定。</p>
             <div class="watchboardCompactItem">
               <span>
                 <strong data-weixin-account>当前 Portal 用户：${esc(payload.current_user || "—")}</strong>

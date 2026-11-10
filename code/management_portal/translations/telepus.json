@@ -67,6 +67,14 @@
     "en": "Current Portal user: ",
     "zh-CN": "当前 Portal 用户："
   },
+  "每个 Portal 用户可独立绑定自己的微信，消息默认发往各自的 AMA。这里只显示当前账号的绑定。": {
+    "en": "Each Portal user can connect their own Weixin. Messages go to their personal AMA by default. Only your account's binding is shown here.",
+    "zh-CN": "每个 Portal 用户可独立绑定自己的微信，消息默认发往各自的 AMA。这里只显示当前账号的绑定。"
+  },
+  "请用你自己的微信扫码，绑定到上方 Portal 用户。": {
+    "en": "Scan with your own Weixin to connect it to the Portal user shown above.",
+    "zh-CN": "请用你自己的微信扫码，绑定到上方 Portal 用户。"
+  },
   "解除微信绑定": {
     "en": "Unbind Weixin",
     "zh-CN": "解除微信绑定"
