@@ -460,6 +460,6 @@
     uploadPaperRegistrationPdf, writeUiState,
   });
 
-  window.PortalPaperPersonal.mount({state, paperApi, loadDetail, setMode, syncFavoriteButtons});
+  window.PortalPaperPersonal.mount({state, paperApi, loadDetail, setMode, syncFavoriteButtons, renderTree});
   init().catch(alertError);
 })();

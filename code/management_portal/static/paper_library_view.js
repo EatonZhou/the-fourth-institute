@@ -22,16 +22,16 @@
       return JSON.stringify([String(venue || ""), String(year || ""), String(session || "")]);
     }
 
-    function paperTreeNodeExpanded(key, defaultExpanded) {
-      if (Object.prototype.hasOwnProperty.call(state.paperTreeExpansion || {}, key)) {
-        return !!state.paperTreeExpansion[key];
+    function paperTreeNodeExpanded(key, defaultExpanded, expansion = state.paperTreeExpansion) {
+      if (Object.prototype.hasOwnProperty.call(expansion || {}, key)) {
+        return !!expansion[key];
       }
       return !!defaultExpanded;
     }
 
-    function paperTreePapersByFolder() {
+    function paperTreePapersByFolder(papers = state.library?.papers || []) {
       const result = new Map();
-      for (const paper of state.library?.papers || []) {
+      for (const paper of papers) {
         const key = paperTreeFolderKey(
           paper.venue || "Unsorted",
           paper.year || "Unknown",
@@ -43,25 +43,26 @@
       return result;
     }
 
-    function renderTree() {
-      if (state.leftFace === "ccf") {
+    function renderTree(options = null) {
+      const target = options?.target || $("folderTree");
+      if (!options && state.leftFace === "ccf") {
         renderCcfTree();
         return;
       }
-      updateLeftFaceTabs();
-      const meta = state.library?.summary || {};
-      $("libraryMeta").textContent = `${meta.visible_count || 0}/${meta.paper_count || 0} papers · ${meta.analysis_count || 0} analyses`;
-      const folders = state.library?.folders || [];
+      if (!options) updateLeftFaceTabs();
+      const meta = options?.summary || state.library?.summary || {};
+      if (!options) $("libraryMeta").textContent = `${meta.visible_count || 0}/${meta.paper_count || 0} papers · ${meta.analysis_count || 0} analyses`;
+      const folders = options?.folders || state.library?.folders || [];
       if (!folders.length) {
         const hasAny = Number(meta.paper_count || 0) > 0;
-        $("folderTree").innerHTML = hasAny
+        target.innerHTML = hasAny
           ? paperStateHtml("No paper matches current filters.", { density: "inline" })
           : paperStateHtml("No papers registered yet. Use + to register PDF and analysis paths.", {
             density: "inline",
           });
         return;
       }
-      const papersByFolder = paperTreePapersByFolder();
+      const papersByFolder = paperTreePapersByFolder(options?.papers);
       const paperLeafHtml = paper => window.PortalI18n.html`
           <div class="paperLeaf">
             <button class="folderLine ${!isCollectionMode() && paper.id === state.selectedId ? "selected" : ""}" type="button" data-paper-id="${esc(paper.id)}">
@@ -72,7 +73,7 @@
           </div>
         `;
       const rendered = [];
-      const limit = state.paperTreeRenderLimit;
+      const limit = options ? Infinity : state.paperTreeRenderLimit;
       let visibleCount = 0;
       const append = markup => {
         visibleCount += 1;
@@ -80,7 +81,7 @@
       };
       folders.forEach(venue => {
         const venueKey = paperTreeFolderKey(venue.name);
-        const venueExpanded = paperTreeNodeExpanded(venueKey, true);
+        const venueExpanded = paperTreeNodeExpanded(venueKey, true, options?.expansion);
         append(() => window.PortalI18n.html`
             <div class="folderNode">
               <button class="folderLine" type="button" data-paper-tree-toggle="${esc(venueKey)}" aria-expanded="${venueExpanded ? "true" : "false"}">
@@ -91,7 +92,7 @@
         if (!venueExpanded) return;
         (venue.children || []).forEach(year => {
           const yearKey = paperTreeFolderKey(venue.name, year.name);
-          const yearExpanded = paperTreeNodeExpanded(yearKey, true);
+          const yearExpanded = paperTreeNodeExpanded(yearKey, true, options?.expansion);
           append(() => window.PortalI18n.html`
               <div class="folderNode" style="padding-left: 12px;">
                 <button class="folderLine" type="button" data-paper-tree-toggle="${esc(yearKey)}" aria-expanded="${yearExpanded ? "true" : "false"}">
@@ -102,7 +103,7 @@
           if (!yearExpanded) return;
           (year.children || []).forEach(session => {
             const sessionKey = paperTreeFolderKey(venue.name, year.name, session.name);
-            const sessionExpanded = paperTreeNodeExpanded(sessionKey, false);
+            const sessionExpanded = paperTreeNodeExpanded(sessionKey, !!options, options?.expansion);
             const papers = (session.papers || []).length
               ? session.papers
               : (papersByFolder.get(sessionKey) || []);
@@ -124,7 +125,7 @@
             ${window.PortalI18n.t("显示更多目录")} (${visibleCount - limit})
           </button>
         `);
-      $("folderTree").innerHTML = rendered.join("");
+      target.innerHTML = rendered.join("");
     }
 
     function libraryHeaderMeta() {
