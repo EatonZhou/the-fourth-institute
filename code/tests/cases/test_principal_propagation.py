@@ -150,8 +150,9 @@ def test_resident_delivery_signs_sender_independently_of_provider_role(repositor
     assert saved["author_id"] == SENDER
     assert saved["origin"]["sender"] == {"kind": "resident", "id": SENDER}
     assert saved["origin"]["initiated_by"]["id"] == "alice"
-    assert repository.message(RECEIVER, saved["message_id"]) == saved
-    assert repository.commit_user_message(RECEIVER, message) == saved
+    # Reads and replays also include the assigned conversation position.
+    for projected in (repository.message(RECEIVER, saved["message_id"]), repository.commit_user_message(RECEIVER, message)):
+        assert {key: projected[key] for key in saved} == saved
     forged = deepcopy(message)
     forged["origin"]["initiated_by"]["id"] = "bob"
     with pytest.raises(ValueError, match="immutable"):

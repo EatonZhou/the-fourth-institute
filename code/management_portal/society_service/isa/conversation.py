@@ -50,8 +50,13 @@ def deliver(
         lineage_id=lineage_of_resident(resident_id),
 
         business_ref=business_ref,
+        channel=inv.context.channel,
         lending=lending,
     )
+    constraints = inv.argument('execution_constraints')
+    if constraints is not None:
+        if constraints != {'version': 1, 'text_only': True, 'context': 'fresh'} or inv.argument('context_policy') != 'fresh':
+            raise invalid('execution_constraints requires the v1 text_only fresh contract')
     if inv.argument("context_policy") == "fresh":
         from .. import lineage_program_resident_inputs, resident_conversation_stream
 
@@ -63,7 +68,7 @@ def deliver(
         ).get("isolated"):
             raise invalid("不能将已接收的会话输入改成新上下文任务")
         lineage_program_resident_inputs.record_delivery_profile(
-            context.lineage_id, body["message_id"], {"isolated": True},
+            context.lineage_id, body["message_id"], {"isolated": True, **({'execution_constraints': constraints} if constraints is not None else {})},
         )
     # A Family member sending outside its Family speaks as the facade (decision_44cf587c1721).
     result = outward_messages.deliver_to_resident(payload, inv.caller, delivery_context=context, reply_to=reply_to)

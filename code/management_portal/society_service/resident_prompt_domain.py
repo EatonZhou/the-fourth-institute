@@ -69,6 +69,12 @@ def _sender_line(job: dict[str, Any]) -> str:
     from management_common.principal import actor_principal
     actor = canonical_actor_id(job.get("actor"))
     keep = "请按该 Resident 原有上下文继续协作。\n"
+    channel = ((job.get("input_message") or {}).get("origin", {}).get("channel") or {}).get("kind")
+    medium = {"weixin": "手机微信", "telegram": "Telegram"}.get(channel, "")
+    delivery_hint = (f"经{medium}（Telepus）发送；回复会转为{'微信' if channel == 'weixin' else 'Telegram'}消息，"
+                     "宜简短，不依赖本地路径、Portal 页面链接和大表格，长回复会被分段。") if medium else ""
+    if medium:
+        keep = f"原请求{delivery_hint}\n{keep}"
     if not actor:
         return f"当前消息由 Portal 投递；{keep}"
     kind = actor_principal(actor).kind
@@ -92,6 +98,8 @@ def _sender_line(job: dict[str, Any]) -> str:
         )
     if kind == "service":
         return f"当前消息由 Portal 服务 {actor} 投递；{keep}"
+    if delivery_hint:
+        return f"当前发送者是用户 {actor}，{delivery_hint}\n请按该 Resident 原有上下文继续协作。\n"
     return f"当前发送者是用户 {actor}；{keep}"
 
 

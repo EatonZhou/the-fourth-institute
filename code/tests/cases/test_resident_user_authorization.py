@@ -33,7 +33,7 @@ REQUEST = {"a": "@contributor", "resource_id": "decision_123456789abc"}
 
 
 @pytest.fixture
-def active(resident_record, permissions, monkeypatch):
+def active(resident_record, permissions, monkeypatch, request):
     resident = resident_record["resident_id"]
     permissions.users("lender", category="intern")
     permissions.place(Fact("resident", resident))
@@ -43,7 +43,7 @@ def active(resident_record, permissions, monkeypatch):
     assert not permissions.holds(resident, REQUEST["a"], REQUEST["resource_id"])
     repository = resident_conversation_stream.get_repository()
     message = {"message_id": MESSAGE, "role": "user", "author_id": "lender",
-               "origin": message_origin("lender"),
+               "origin": message_origin("lender", channel=getattr(request, 'param', '')),
                "content_parts": [{"type": "text", "text": TEXT}]}
     repository.accept_user_message(resident, message)
     job = {"execution_id": EXECUTION, "user_message_id": MESSAGE, "actor": "lender",
@@ -74,6 +74,14 @@ def save(active):
 
 def loans(active):
     return permission_system.manage("ListTemporaryCredentials", {"principal_id": active.resident}, actor="lender")["credentials"]
+
+
+@pytest.mark.parametrize('active', ['weixin', 'telegram'], indirect=True)
+def test_channel_input_keeps_the_users_authorization(active):
+    result = conversation.accept_user_authorization(active.inv)
+    assert result['credentials']
+    assert active.calls[0]['issuer'] == 'lender'
+    assert active.permissions.holds(active.resident, REQUEST['a'], REQUEST['resource_id'])
 
 
 @pytest.mark.parametrize("text", [

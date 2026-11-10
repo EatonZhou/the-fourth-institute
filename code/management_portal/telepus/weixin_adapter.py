@@ -19,6 +19,7 @@ class WeixinAdapter:
     def __init__(self, router=None, *, client_factory=WeixinClient):
         self.router = router or RouterCore(presentation=WeixinPresentation())
         self.router.presentation = WeixinPresentation()
+        self.router.portal.channel = 'weixin'
         self.store = WeixinStore(self.router.store)
         self.client_factory = client_factory
         self.budget = max(2, int(setting('weixin_send_budget', 8)))
@@ -66,6 +67,7 @@ class WeixinAdapter:
         self.router.store.upsert_chat_state(chat, telegram_user_id=account['ilink_user_id'], portal_actor=actor, chat_type='private')
         self.store.update(actor, context_token=str(message.get('context_token') or account['context_token']), context_at=now_iso())
         self.store.budget(chat, reset=True)
+        self.router.waiting.received(chat, f'message:{local_id}')
         self.flush(actor)
         text, reference = self._content(account, message)
         if text.strip() == '/more':
@@ -218,6 +220,8 @@ class WeixinAdapter:
                     parts = [{'type': 1, 'text_item': {'text': segments[0] + suffix}}]
                 result = client.send(parts, account['context_token'], client_id=f'telepus-{row["id"]}-{item.get("part", 0)}')
                 self.store.budget(chat, spent=True)
+                if item.get('delivery') or item.get('input'):
+                    self.router.waiting.replied(chat)
                 server_id = result.get('message_id')
                 if server_id:
                     local = self.store.local_id(chat, server_id)
@@ -263,9 +267,28 @@ class WeixinAdapter:
                     # Pending queue owns recovery; release the optimistic delivery
                     # claim and reopen inputs while the budget prevents sending.
                     self._reopen_pending(chat)
+                self.router.waiting.send_if_due(chat, lambda text, generation: self._waiting_notice(actor, text, generation))
                 self.typing(actor)
             except Exception as exc:
                 self._failure(actor, exc)
+
+    def _waiting_notice(self, actor, text, generation):
+        account = self.store.account(actor)
+        chat = chat_key(account['ilink_bot_id'])
+        count, blocked = self.store.budget(chat)
+        if blocked or count >= self.budget - 1 or not account['context_token'] or self.store.pending(chat):
+            return False
+        notice_id = hashlib.sha256(f'{chat}:{generation}'.encode()).hexdigest()[:32]
+        try:
+            self.client_factory(account).send([{'type': 1, 'text_item': {'text': text}}], account['context_token'],
+                                             client_id=f'telepus-wait-{notice_id}')
+        except WeixinError as exc:
+            if exc.code == -2:
+                self.store.budget(chat, blocked=True)
+            self._failure(actor, exc)
+            return False
+        self.store.budget(chat, spent=True)
+        return True
 
     def typing(self, actor):
         account = self.store.account(actor)

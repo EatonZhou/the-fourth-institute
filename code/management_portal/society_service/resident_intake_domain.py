@@ -101,6 +101,7 @@ class ResidentInput:
     reply_source_message_id: str = ""
     quote: Mapping[str, Any] | None = None
     lending: Any = None
+    channel: str = ""
 
     @property
     def runs_commands(self) -> bool:
@@ -131,9 +132,13 @@ class ResidentInput:
         return self.protocol_input.get("quote") if isinstance(self.protocol_input, Mapping) else None
 
     def user_message(self, resident_id: str) -> dict[str, Any]:
+        channel = self.channel
+        if self.relay.delegated and self.relay.source:
+            source = resident_conversation_stream.get_repository().message(*self.relay.source)
+            channel = ((source or {}).get("origin", {}).get("channel") or {}).get("kind", "")
         item = resident_input_queue_domain.resident_user_message(
             resident_id, self.message, self.actor_id,
-            message_id=self.message_id, protocol_input=self.protocol_input,
+            message_id=self.message_id, protocol_input=self.protocol_input, channel=channel,
         )
         # Legacy callers supply media beside the envelope. Pass it to the same
         # acceptance boundary; validation/preparation must never consume it.
@@ -567,12 +572,13 @@ def persist_resident_input(
     business_ref: str = "",
     reply_source_message_id: str = "",
     lending=None,
+    channel: str = "",
 ) -> dict:
     """Admit one input to the Resident and make it the work its activation policy asks for."""
     request = _input_request(
         resident_id, actor, content, context_refs, working_directory, runtime_context,
         additional_skills, activation_policy, lineage_id, input_media, message_id,
-        protocol_input, business_ref, reply_source_message_id, lending,
+        protocol_input, business_ref, reply_source_message_id, lending, channel,
     )
     return _admit_input(request)
 
@@ -608,7 +614,7 @@ def preflight_resident_input(resident_id: str, actor: str, envelope: Mapping[str
 def _input_request(
     resident_id, actor, content, context_refs, working_directory, runtime_context,
     additional_skills, activation_policy, lineage_id, input_media, message_id,
-    protocol_input, business_ref, reply_source_message_id, lending,
+    protocol_input, business_ref, reply_source_message_id, lending, channel="",
 ) -> ResidentInput:
     """The normalized request shared by read-only preflight and durable intake."""
     from .outward_messages import speaking_for
@@ -637,6 +643,7 @@ def _input_request(
         speaking_member=speaking_for(actor_id),
         reply_source_message_id=reply_source_message_id,
         lending=lending,
+        channel=channel,
     )
     # A request may quote one message of this Conversation; an info carries
     # only what it says.  The quote is checked and filled in once, here.

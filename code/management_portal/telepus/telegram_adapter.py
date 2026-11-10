@@ -63,6 +63,11 @@ class TelegramAdapter:
                 outgoing = self.router.refresh_chat(state)
                 result = self._send(chat_id, outgoing, dry_run=dry_run, status="refreshed") if outgoing else \
                     {"chat_id": chat_id, "status": "no_new_message"}
+                if not dry_run and self.client:
+                    def send_notice(text, generation):
+                        self._send(chat_id, [{"text": text}], dry_run=False, status="still_working")
+                        return True
+                    self.router.waiting.send_if_due(chat_id, send_notice)
             except Exception as exc:  # noqa: BLE001 - one chat never stops the others
                 unsent = getattr(exc, "unsent_items", None)
                 if unsent:
@@ -136,6 +141,7 @@ class TelegramAdapter:
         if not actor:
             return self._send(chat_id, [{"text": self._unauthorized_text(user_id)}], dry_run=dry_run,
                               status="unauthorized", update_id=update_id)
+        self.router.waiting.received(chat_id, f"callback:{update_id}")
         response = self.router.dispatch_callback(
             chat_id=chat_id, telegram_user_id=user_id, data=str(callback.get("data") or ""), portal_actor=actor,
             chat_type=str(chat.get("type") or "private"), telegram_message_id=int(message.get("message_id") or 0),
@@ -214,6 +220,8 @@ class TelegramAdapter:
                     if link:
                         self.router.store.link_message(chat_id, last_id, link["resident_id"], link["message_id"])
                     sent_count += 1
+                    if item.get("delivery") or item.get("input"):
+                        self.router.waiting.replied(chat_id)
             except Exception as exc:
                 # The caller puts these back so the next refresh sends them again.
                 exc.unsent_items = items[position:]  # type: ignore[attr-defined]

@@ -27,6 +27,7 @@ def call(
     version: Any = None,
     entry: str = "web",
     trigger_path_id: str = "",
+    channel: str = "",
 ) -> Any:
     """Execute one instruction and return its result, raising its error."""
 
@@ -35,7 +36,7 @@ def call(
         payload["idempotency_key"] = key
     if version is not None:
         payload["expected_version"] = version
-    context = InstructionContext(caller=actor, entry=entry, trigger_path_id=trigger_path_id)
+    context = InstructionContext(caller=actor, entry=entry, trigger_path_id=trigger_path_id, channel=channel)
     for delay in (*PROJECTION_RETRY_DELAYS, None):
         try:
             return routing.execute_or_raise(payload, context)

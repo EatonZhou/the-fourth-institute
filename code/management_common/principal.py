@@ -89,6 +89,7 @@ def message_origin(
     *,
     initiated_by: object = "",
     producer_service: str = "portal",
+    channel: str = "",
 ) -> dict[str, object]:
     principal = actor_principal(sender)
     origin: dict[str, object] = {
@@ -98,7 +99,15 @@ def message_origin(
     }
     if initiated_by:
         origin["initiated_by"] = actor_principal(initiated_by).to_dict()
+    if channel:
+        origin["channel"] = validate_message_channel({"kind": channel})
     return origin
+
+
+def validate_message_channel(value: object) -> dict[str, str]:
+    if not isinstance(value, Mapping) or set(value) != {"kind"} or value.get("kind") not in ("weixin", "telegram"):
+        raise ValueError("message channel must be weixin or telegram")
+    return {"kind": value["kind"]}
 
 
 MAILBOX_SENDER = {"kind": "mailbox", "id": "mailbox"}
@@ -143,7 +152,7 @@ def validate_message_origin(value: Mapping[str, object]) -> dict[str, object]:
         return _validate_mailbox_origin(value)
     if not schema_matches(value.get("schema"), "tfi.message-origin.v1"):
         raise ValueError("invalid message origin schema")
-    if set(value) - {"schema", "sender", "producer", "initiated_by"}:
+    if set(value) - {"schema", "sender", "producer", "initiated_by", "channel"}:
         raise ValueError("unsupported message origin fields")
     result: dict[str, object] = {"schema": value["schema"]}
     for key in ("sender", "producer", "initiated_by"):
@@ -156,6 +165,8 @@ def validate_message_origin(value: Mapping[str, object]) -> dict[str, object]:
         if key == "producer" and principal.kind != "service":
             raise ValueError("message producer must be a service identity")
         result[key] = principal.to_dict()
+    if "channel" in value:
+        result["channel"] = validate_message_channel(value["channel"])
     return result
 
 

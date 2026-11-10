@@ -252,6 +252,8 @@ class InstructionContext:
     resource_lifecycle_id: str = ""
     # Set only by the trusted Lineage runtime, never by instruction arguments.
     recovery_key: str = ""
+    # Trusted transport provenance; never populated from instruction arguments.
+    channel: str = ""
 
     def __post_init__(self) -> None:
         caller = str(self.caller or "").strip()
@@ -271,6 +273,10 @@ class InstructionContext:
         if recovery_key and (entry != "lineage" or len(recovery_key) > 240):
             raise invalid("恢复依赖仅由 Lineage 运行入口登记")
         object.__setattr__(self, "recovery_key", recovery_key)
+        if self.channel:
+            from management_common.principal import actor_principal
+            if self.channel not in ("weixin", "telegram") or entry != "web" or actor_principal(caller).kind != "user":
+                raise invalid("消息渠道仅由 Telepus 用户入口登记")
 
     def to_payload(self) -> dict[str, str]:
         payload = {"caller": self.caller, "entry": self.entry}
@@ -282,6 +288,8 @@ class InstructionContext:
             payload["resource_lifecycle_id"] = self.resource_lifecycle_id
         if self.recovery_key:
             payload["recovery_key"] = self.recovery_key
+        if self.channel:
+            payload["channel"] = self.channel
         return payload
 
     @classmethod
@@ -295,6 +303,7 @@ class InstructionContext:
             execution_id=str(payload.get("execution_id") or ""),
             resource_lifecycle_id=str(payload.get("resource_lifecycle_id") or ""),
             recovery_key=str(payload.get("recovery_key") or ""),
+            channel=str(payload.get("channel") or ""),
         )
 
     @property

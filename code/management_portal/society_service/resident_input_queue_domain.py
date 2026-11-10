@@ -168,6 +168,7 @@ def resident_user_message(
     *,
     message_id: str,
     protocol_input: Mapping[str, Any] | None = None,
+    channel: str = "",
 ) -> dict[str, Any]:
     """Build the one durable user Message used by every delivery path."""
 
@@ -184,9 +185,11 @@ def resident_user_message(
     if identity is not None:
         if identity.principal.id != actor:
             raise PermissionError("Resident input sender disagrees with authenticated operation")
-        item["origin"] = message_origin(actor, initiated_by=identity.initiated_by)
+        item["origin"] = message_origin(actor, initiated_by=identity.initiated_by, channel=channel)
+    elif channel:
+        item["origin"] = message_origin(actor, channel=channel)
     if not isinstance(protocol_input, Mapping):
-        return item
+        protocol_input = item
     supplied_id = str(protocol_input.get("message_id") or "").strip()
     if supplied_id and supplied_id != message_id:
         raise ValueError("Resident input message_id changed during delivery")
@@ -209,6 +212,9 @@ def resident_user_message(
         item["created_at"] = str(existing.get("created_at") or item["created_at"])
         if "origin" not in existing:
             item.pop("origin", None)
+        elif "channel" not in existing["origin"]:
+            # Replays of historical inputs keep their original immutable signature.
+            item["origin"].pop("channel", None)
     return item
 
 

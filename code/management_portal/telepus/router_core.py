@@ -14,6 +14,7 @@ from typing import Any
 
 from .portal_client import PortalClient, RESIDENT_ID_RE, is_terminal, message_text
 from .router_store import RouterStore
+from .waiting import WaitingNotices
 
 
 HISTORY_DEFAULT_ROUNDS = 3
@@ -67,6 +68,7 @@ class RouterCore:
         self.store = store or RouterStore(schema)
         self.portal = portal or PortalClient()
         self.presentation = presentation or TelegramPresentation()
+        self.waiting = WaitingNotices(self.store)
         self._last_input_check: dict[str, float] = {}
 
     def init(self) -> dict[str, Any]:
@@ -104,6 +106,7 @@ class RouterCore:
         message = str(text or "").strip()
         if not message:
             raise ValueError("text required")
+        self.waiting.received(chat_id, f"message:{telegram_message_id}" if telegram_message_id else secrets.token_hex(8))
         state = self.store.upsert_chat_state(chat_id, chat_type=chat_type, telegram_user_id=telegram_user_id,
                                              portal_actor=portal_actor)
         self.store.append_audit("message_received", chat_id=chat_id, telegram_user_id=telegram_user_id,

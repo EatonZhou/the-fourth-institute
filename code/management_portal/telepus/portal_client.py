@@ -74,13 +74,18 @@ def is_terminal(state: str) -> bool:
 class PortalClient:
     """HATG ISA calls as the contact's Portal User."""
 
+    def __init__(self, channel: str = "telegram"):
+        if channel not in ("weixin", "telegram"):
+            raise ValueError("unsupported Telepus channel")
+        self.channel = channel
+
     # -- transport ---------------------------------------------------------
 
     def call(self, actor: str, instruction: str, arguments: dict[str, Any], *, key: str = "") -> Any:
         _prepare_portal_runtime()
         from management_portal import isa_client
 
-        return isa_client.call(actor, instruction, arguments, entry="web", key=key)
+        return isa_client.call(actor, instruction, arguments, entry="web", key=key, channel=self.channel)
 
     def first_batch(self, actor: str, instruction: str, arguments: dict[str, Any]) -> list[dict[str, Any]]:
         """The first batch of a streaming instruction; the subscription is closed after it."""

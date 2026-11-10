@@ -268,6 +268,7 @@ def forward_info(facade: Mapping[str, Any], message: Mapping[str, Any], actor: s
                 "你不承担记忆同步或消息广播，不回复发送者。"
             ),
             business_ref=f"{facade_id}/info/{info_id}",
+            channel=(message.get("origin", {}).get("channel") or {}).get("kind", ""),
         )
     except ValueError:
         # Forwarded already, before notes came from the facade: the copy stays as it is.

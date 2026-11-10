@@ -249,6 +249,9 @@ def deliver(facade, target, trigger, facts, actor, *, business_ref, message_id="
         # dispatch already authorized the current caller. Only the historical
         # message origin is frozen; its ISA invocation keeps its own caller.
         with operation_identity_scope(OperationIdentity.for_actor(facade_id, initiated_by=intent["initiated_by"])):
+            source = repository.message(facade_id, facts.get("message_id", "")) if trigger in ("route", "route_review") else None
+            channel = ((source or {}).get("origin", {}).get("channel") or {}).get("kind", "")
             return resident_intake_domain.deliver_resident_message_content(
                 target_id, facade_id, intent["text"], business_ref=business_ref, message_id=mid,
+                channel=channel,
             )

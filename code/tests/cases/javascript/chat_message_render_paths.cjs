@@ -190,6 +190,18 @@ const conversation = ids => ids.map((id, index) => (index % 2 ? reply(id, index)
     row('m10').querySelector('[data-message-attachment-kind="image"]').click();
     await settle();
     assert.deepEqual(editorOpened, ['https://chat.fixture.invalid/preview/share/images/m10.png'], 'the image opens in the image editor');
+    // Channel provenance stays visible beside the authenticated author.
+    workspace.setMessages([
+      message('wx', 0, { author: 'alice', origin: { channel: { kind: 'weixin' } } }),
+      message('tg', 2, { author: 'bob', origin: { channel: { kind: 'telegram' } } }),
+      message('legacy', 4),
+      message('unknown', 6, { origin: { channel: { kind: '__proto__' } } }),
+    ]);
+    await settle();
+    assert.equal(row('wx').querySelector('.messageAuthor .messageChannelBadge').textContent, '微信');
+    assert.equal(row('tg').querySelector('.messageAuthor .messageChannelBadge').textContent, 'Telegram');
+    assert.equal(row('legacy').querySelector('.messageChannelBadge'), null);
+    assert.equal(row('unknown').querySelector('.messageChannelBadge'), null);
     console.log('PASS each way of drawing the message list binds what it drew, tells the host and keeps the place');
   } finally {
     workspace.destroy();

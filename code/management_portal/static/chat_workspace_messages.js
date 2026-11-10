@@ -244,7 +244,10 @@
 
     function messageAuthorHeaderHtml(item, label, system) {
       const residentId = !system && messageResidentAuthorId(item);
-      const content = window.PortalI18n.html`${messageAvatarHtml(item, label)}<span class="messageTitle">${messageAuthorHtml(item, label, { focusable: !residentId })}</span>`;
+      const kind = item?.origin?.channel?.kind;
+      const channel = kind === "weixin" ? "微信" : kind === "telegram" ? "Telegram" : "";
+      const badge = channel ? `<span class="messageSystemBadge messageChannelBadge">${escapeHtml(window.PortalI18n.t(channel))}</span>` : "";
+      const content = window.PortalI18n.html`${messageAvatarHtml(item, label)}<span class="messageTitle">${messageAuthorHtml(item, label, { focusable: !residentId })}</span>${badge}`;
       if (residentId) {
         const href = `/lineage?${new URLSearchParams({ resident: residentId, open_chat: "1" })}`;
         return window.PortalI18n.html`<a class="messageAuthor messageAuthorLink" href="${escapeHtml(href)}" title="打开 Resident 对话">${content}</a>`;
