@@ -83,6 +83,33 @@ class PairedRuntimeTest(unittest.TestCase):
         self.assertNotIn("postgres", all_components)
         self.assertNotIn("nats", all_components)
 
+    def test_activation_includes_installed_functional_services(self):
+        from management_common import loaded_modules
+        with tempfile.TemporaryDirectory() as directory:
+            root = write_pair(Path(directory))
+            path = root / 'instance.json'
+            document = json.loads(path.read_text())
+            installed = ['telepus-telegram-router', 'telepus-weixin-router', 'telepus-portal-refresh']
+            document['services']['components'] += installed
+            path.write_text(json.dumps(document))
+            imports = {c: set() for c in paired.SHARED}
+            imports.update({c: {'management_portal.telepus.router_store'} for c in installed})
+            with patch.object(loaded_modules, 'loaded', return_value=imports), \
+                    patch.object(paired, 'control', return_value='ActiveState=active\nUnitFileState=enabled') as control, \
+                    patch.object(paired, 'health', return_value={'ok': True}):
+                result = paired.activate(root, ['code/management_portal/telepus/router_store.py'], 'fixture')
+            self.assertEqual(set(result['components']), {*installed, 'web', 'dev-web'})
+            for component in installed:
+                self.assertIn(unittest.mock.call('restart', 'tfi-fixture-' + component + '.service'), control.call_args_list)
+            self.assertFalse(set(result['components']) & {'postgres', 'nats', 'provider-codex'})
+            with patch.object(loaded_modules, 'loaded', return_value=imports), \
+                    patch.object(paired, 'control', return_value='ActiveState=inactive\nUnitFileState=disabled') as control, \
+                    patch.object(paired, 'health', return_value={'ok': True}):
+                result = paired.activate(root, ['code/management_portal/telepus/router_store.py'], 'fixture')
+            self.assertEqual(result['components'], ['web', 'dev-web'])
+            for component in installed:
+                self.assertNotIn(unittest.mock.call('restart', 'tfi-fixture-' + component + '.service'), control.call_args_list)
+
     def test_service_processes_record_lazily_imported_portal_modules(self):
         from management_common import loaded_modules
         with tempfile.TemporaryDirectory() as directory:

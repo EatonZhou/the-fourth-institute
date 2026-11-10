@@ -22,9 +22,19 @@ def _d(name, description, parameters=(), result=(), *, mutates=False, target="",
 
 
 DECLARATIONS = (
-    _d("GetTelepusStatus", "读取 Telepus 的两个用户服务的启用和运行状态。", (),
+    _d("StartTelepusWeixinBinding", "为当前认证 User 开始微信扫码绑定。", (),
+       (R("binding", "object", "二维码图像、会话 ID 与状态；不含凭证"),), mutates=True),
+    _d("GetTelepusWeixinBinding", "读取本人微信绑定或轮询本人的扫码会话。", (
+        P("session_id", description="本人发起的扫码会话；留空读取当前绑定"),
+    ), (R("binding", "object", "本人绑定状态"),), mutates=True),
+    _d("SubmitTelepusWeixinPin", "提交手机显示的数字，继续本人的扫码绑定。", (
+        R("session_id", description="本人扫码会话"), R("pin", description="手机显示的数字"),
+    ), (R("binding", "object", "扫码状态"),), mutates=True),
+    _d("UnbindTelepusWeixin", "解除当前认证 User 的微信绑定。", (),
+       (R("binding", "object", "解除后的状态"),), mutates=True),
+    _d("GetTelepusStatus", "读取 Telepus 的三个用户服务的启用和运行状态。", (),
        (R("status", "object", "Telepus 服务状态、缺失的服务和错误"),), category="environment"),
-    _d("SetTelepusEnabled", "启用并启动或停止并禁用 Telepus 的两个用户服务；保留已有联系人和数据。", (
+    _d("SetTelepusEnabled", "启用并启动或停止并禁用 Telepus 的三个用户服务；保留已有联系人和数据。", (
         R("enabled", "boolean", "是否开启 Telepus"),
     ), (R("status", "object", "切换后的 Telepus 服务状态"),), mutates=True, category="environment"),
     _d("BindTelepusContactForUser", "为已登记的活动 User 绑定 Telegram；替换时原 ID 必须仍属于目标用户。", (

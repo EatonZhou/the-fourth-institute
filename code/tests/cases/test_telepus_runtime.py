@@ -50,7 +50,7 @@ def test_missing_unit_blocks_enable_but_does_not_block_disabling_installed_units
     assert all(command[2] == "show" for command in systemd.calls)
     status = runtime.set_enabled(False)
     assert not status["enabled"]
-    assert systemd.calls[-2] == ["systemctl", "--user", "disable", "--now", UNITS[0]]
+    assert systemd.calls[-2] == ["systemctl", "--user", "disable", "--now", UNITS[0], UNITS[2]]
 
 
 def test_isolated_installation_reads_and_switches_its_prefixed_units(monkeypatch, tmp_path):

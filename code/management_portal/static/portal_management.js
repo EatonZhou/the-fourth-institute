@@ -99,7 +99,7 @@
           <div data-management-telepus>
             <label class="settingsPreferenceRow">
               <span class="settingsPreferenceCopy"><strong>Telepus</strong>
-                <small>连接 Telegram 与 Portal。关闭后停止 Telepus 的两个服务并取消开机自启；已有联系人和数据保留。</small>
+                <small>连接 Telegram、微信与 Portal。关闭后停止 Telepus 的三个服务并取消开机自启；已有联系人和数据保留。</small>
               </span>
               <input type="checkbox" role="switch" data-telepus-enabled disabled />
             </label>

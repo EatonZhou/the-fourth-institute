@@ -1,4 +1,4 @@
-"""Telepus commands: the two service loops and the Telepus Watchboard commands.
+"""Telepus commands: Telegram intake, shared reply refresh and Watchboard commands.
 
 ``python -m management_portal.telepus.cli <command> [options]``. The Watchboard
 script (``<Telepus Lineage>/script/src/main.py``) calls ``main`` with its own
@@ -149,6 +149,11 @@ def run_telegram_refresh_daemon(argv: list[str]) -> int:
     refresh_limit = option_int(argv, "refresh_limit", 100)
     sleep_seconds = option_int(argv, "sleep_seconds", 3)
     adapter = telegram_adapter(TelegramClient())
+    from .weixin_adapter import WeixinAdapter
+    from concurrent.futures import ThreadPoolExecutor
+    weixin = WeixinAdapter()
+    weixin_pool = ThreadPoolExecutor(max_workers=8, thread_name_prefix='telepus-weixin-refresh')
+    pending = {}
     last_errors = 0
     index = 0
     while True:
@@ -156,6 +161,10 @@ def run_telegram_refresh_daemon(argv: list[str]) -> int:
         started_at = now_iso()
         try:
             result = adapter.refresh_routes(limit=refresh_limit, dry_run=False)
+            for account in weixin.store.accounts():
+                actor = account['portal_actor']
+                if actor not in pending or pending[actor].done():
+                    pending[actor] = weixin_pool.submit(weixin.refresh, actor)
             payload = {"schema": "telepus.telegram.portal_refresh_iteration.v2", "started_at": started_at,
                        "finished_at": now_iso(), "status": "success", "chats": result.get("chats", 0),
                        "sent": sum(1 for item in result.get("handled") or [] if item.get("status") == "refreshed"),

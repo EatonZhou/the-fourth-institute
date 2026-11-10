@@ -33,9 +33,9 @@
         ? window.PortalI18n.t("Telepus 服务状态不可用：{p0}", {p0: status.error || "systemd"})
         : status.missing?.length
           ? window.PortalI18n.t("缺少 Telepus 服务：{p0}。", {p0: status.missing.join("、")})
-          : status.complete ? window.PortalI18n.t("Telepus 已开启，两个服务正在运行。")
+          : status.complete ? window.PortalI18n.t("Telepus 已开启，三个服务正在运行。")
             : status.enabled ? window.PortalI18n.t("Telepus 部分开启；需检查：{p0}。", {p0: incomplete.join("、")})
-              : window.PortalI18n.t("Telepus 已关闭，两个服务已停止并取消开机自启。");
+              : window.PortalI18n.t("Telepus 已关闭，三个服务已停止并取消开机自启。");
     };
     const readTelepus = async () => {
       if (telepusSection.hidden || panelState.destroyed || telepusBusy) return;

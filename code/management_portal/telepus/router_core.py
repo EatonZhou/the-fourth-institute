@@ -1,4 +1,4 @@
-"""Telegram ↔ Portal routing (decision_66f5be947b67).
+"""Shared channel ↔ Portal routing (decision_66f5be947b67).
 
 A chat sends to the User's personal assistant facade, or to one Resident named
 by ID. Replies to the chat's own messages and messages the target addresses to
@@ -25,51 +25,7 @@ INPUT_RECHECK_SECONDS = 20.0
 CREDENTIAL_APPROVE = "同意交出这些权限"
 CREDENTIAL_DECLINE = "不交出"
 
-HELP_TEXT = "\n".join([
-    "**Telepus 使用说明**",
-    "",
-    "**发消息**",
-    "• 直接发文字或图片，就交给你在 Portal 的个人助手；助手安排合适的成员处理，回复第一行是承接成员的名字。",
-    "• 想直接找某个 Resident：发送它的 ID（如 `resident_0123456789ab`）或 `/route <ID>`，之后的消息都发给它；`/home` 回到个人助手。",
-    "• 收到“已收到。”表示消息已进入 Portal，回复完成后自动推送过来。",
-    "",
-    "**引用**",
-    "在 Telegram 里长按一条回复选“回复”，再写内容，就等于在网页上引用它：个人助手把这条消息直接交给写那条回复的成员。",
-    "",
-    "**问答卡片**",
-    "成员提问时会出现“❓ 问题 1/N”：点按钮选答案，或“回复”提问消息写自己的答案；可以“« 上一题”，也可以“不再回答”。答完自动提交。",
-    "需要你交出权限的问题，在个人助手里只能选“不交出”；要授权请用 `/route` 直接联系那个成员，或到网页上作答。",
-    "",
-    "**网页上的对话**",
-    "你在网页上和助手的往来不会推送到手机。需要时发 `/history` 查看最近几轮，点“展开”看全文、“更早”往前翻；回复其中一条即可在手机上接着聊。",
-    "",
-    "**命令**",
-    "/help 本说明",
-    "/home 回到个人助手",
-    "/route <resident_id> 直接联系一个 Resident",
-    "/where 查看当前目标",
-    "/history [n] 查看最近 n 轮对话（默认 3，最多 10），含网页端",
-    "/queue 查看未完成的消息",
-    "/stop 停止未完成的消息；精准路由时 `/stop current` 只停当前任务",
-    "/now <内容> 精准路由时插入目标正在进行的工作",
-    "/refresh 立即拉取回复",
-    "",
-    "回复中的文件会显示下载按钮，点按后发送到这里。",
-])
-
-
-# The command menu Telegram shows after typing "/" (setMyCommands); /help explains the rest.
-BOT_COMMANDS = (
-    ("help", "使用说明"),
-    ("home", "回到个人助手"),
-    ("route", "按 Resident ID 直接联系"),
-    ("where", "查看当前目标"),
-    ("history", "查看最近几轮对话（含网页端）"),
-    ("queue", "查看未完成的消息"),
-    ("stop", "停止未完成的消息"),
-    ("now", "精准路由时插入当前工作"),
-    ("refresh", "立即拉取回复"),
-)
+from .telegram_presentation import BOT_COMMANDS, HELP_TEXT, TelegramPresentation
 
 
 def _failure_text(exc: Exception) -> str:
@@ -107,9 +63,10 @@ def question_part(message: dict[str, Any]) -> dict[str, Any] | None:
 
 class RouterCore:
     def __init__(self, schema: str | None = None, *, store: RouterStore | None = None,
-                 portal: PortalClient | None = None):
+                 portal: PortalClient | None = None, presentation=None):
         self.store = store or RouterStore(schema)
         self.portal = portal or PortalClient()
+        self.presentation = presentation or TelegramPresentation()
         self._last_input_check: dict[str, float] = {}
 
     def init(self) -> dict[str, Any]:
@@ -151,6 +108,9 @@ class RouterCore:
                                              portal_actor=portal_actor)
         self.store.append_audit("message_received", chat_id=chat_id, telegram_user_id=telegram_user_id,
                                 portal_actor=portal_actor, payload={"text": message[:500], "chat_type": chat_type})
+        handled = self.presentation.incoming(self, state, message)
+        if handled is not None:
+            return handled
         if reply_to_telegram_message_id:
             session = self.store.question_session_for_message(chat_id, reply_to_telegram_message_id)
             if session:
@@ -168,7 +128,7 @@ class RouterCore:
         arg = rest.strip()
         chat_id = state["chat_id"]
         if command in {"/start", "/help"}:
-            return self._reply([HELP_TEXT, self._where_text(state)])
+            return self._reply([self.presentation.help_text, self._where_text(state)])
         if command == "/home":
             next_state = self.store.upsert_chat_state(chat_id, mode="assistant", exact_resident_id="")
             self._audit(next_state, "mode_changed", {"mode": "assistant"})
@@ -274,6 +234,8 @@ class RouterCore:
         self.store.record_input(chat_id, resident_id, message_id, telegram_message_id, excerpt=text)
         self._audit(state, "message_delivered", {"resident_id": resident_id, "message_id": message_id,
                                                  "quoted": bool(quoted), "inject": inject})
+        if not self.presentation.receipts:
+            return {"messages": [], "typing": True}
         if inject:
             return self._reply(["已插入当前工作。"])
         if state["mode"] == "exact" and not quoted:
@@ -397,20 +359,7 @@ class RouterCore:
         return outgoing
 
     def _attachment_keyboard(self, state: dict[str, Any], resident_id: str, message: dict[str, Any]) -> dict[str, Any] | None:
-        try:
-            files = self.portal.attachments(state["portal_actor"], resident_id, message)
-        except Exception:  # noqa: BLE001 - the text still goes out
-            return None
-        rows = []
-        for item in files:
-            token = self.store.create_attachment_delivery(
-                chat_id=state["chat_id"], telegram_user_id=state["telegram_user_id"],
-                portal_actor=state["portal_actor"], source_message_id=str(message.get("message_id") or ""),
-                attachment=item)
-            rows.append([{"text": f"⬇ {item.get('filename') or 'attachment'}"[:64], "callback_data": f"att:{token}"}])
-        return {"inline_keyboard": rows} if rows else None
-
-    # -- question sets ------------------------------------------------------------------------
+        return self.presentation._attachment_keyboard(self, state, resident_id, message)
 
     def _open_questions(self, state: dict[str, Any], resident_id: str, message: dict[str, Any],
                         part: dict[str, Any], *, member_owned: bool) -> list[dict[str, Any]]:
@@ -426,30 +375,7 @@ class RouterCore:
         return [self._question_prompt(session)]
 
     def _question_prompt(self, session: dict[str, Any]) -> dict[str, Any]:
-        step = int(session["step"])
-        question = session["questions"][step]
-        total = len(session["questions"])
-        lines = [f"❓ **问题 {step + 1}/{total}**：{question['title']}"]
-        options = [str(item) for item in question.get("options") or [] if str(item).strip()]
-        credentials = question.get("credentials") or []
-        if credentials:
-            lines.append("请求交出的权限：" + "、".join(f"`{item.get('a')} · {item.get('resource_id')}`" for item in credentials))
-            lines.append("凭证只在对方处理这条回答期间有效。")
-            if not session["lendable"]:
-                options = [CREDENTIAL_DECLINE]
-                lines.append("门面中成员的权限请求不能在这里同意，需要时请在 Portal 网页中处理。")
-        else:
-            lines.append("点选项作答，或“回复”这条消息写下其他回答。" if options else "请“回复”这条消息写下回答。")
-        rows = [[self._button(session["chat_id"], option[:60], {"kind": "answer", "session": session["session_id"],
-                                                                 "step": step, "answer": option})]
-                for option in options]
-        controls = []
-        if step:
-            controls.append(self._button(session["chat_id"], "« 上一题", {"kind": "question_back", "session": session["session_id"], "step": step}))
-        controls.append(self._button(session["chat_id"], "不再回答", {"kind": "question_close", "session": session["session_id"]}))
-        rows.append(controls)
-        return {"text": "\n".join(lines), "reply_markup": {"inline_keyboard": rows},
-                "question_session": session["session_id"]}
+        return self.presentation._question_prompt(self, session)
 
     def _answer_question(self, state: dict[str, Any], session: dict[str, Any], step: int, answer: str, *,
                          custom: bool = False) -> dict[str, Any]:
@@ -462,7 +388,7 @@ class RouterCore:
         if step + 1 < len(session["questions"]):
             self.store.update_question_session(session["session_id"], answers=answers, step=step + 1)
             prompt = self._question_prompt({**session, "answers": answers, "step": step + 1})
-            return {"messages": [], "edit": {"telegram_message_id": session["telegram_message_id"], **prompt}}
+            return self.presentation.update_prompt(session["telegram_message_id"], prompt)
         return self._submit_answers(state, {**session, "answers": answers})
 
     def _submit_answers(self, state: dict[str, Any], session: dict[str, Any]) -> dict[str, Any]:
@@ -487,13 +413,13 @@ class RouterCore:
                                 session["telegram_message_id"], excerpt="（回答问题）")
         summary = "\n".join(f"{index + 1}. {question['title']}：{session['answers'][str(index)]}"
                             for index, question in enumerate(session["questions"]))
-        return {"messages": [], "edit": {"telegram_message_id": session["telegram_message_id"],
-                                         "text": "✅ 已提交回答\n" + summary, "reply_markup": None}}
+        return self.presentation.update_prompt(session["telegram_message_id"],
+                                               {"text": "✅ 已提交回答\n" + summary, "reply_markup": None})
 
     # -- callbacks ------------------------------------------------------------------------------
 
     def _button(self, chat_id: str, text: str, payload: dict[str, Any]) -> dict[str, str]:
-        return {"text": text, "callback_data": "cb:" + self.store.create_callback_token(chat_id, payload)}
+        return self.presentation._button(self, chat_id, text, payload)
 
     def dispatch_callback(self, *, chat_id: str, telegram_user_id: str, data: str, portal_actor: str,
                           chat_type: str = "private", telegram_message_id: int = 0) -> dict[str, Any]:
@@ -520,15 +446,13 @@ class RouterCore:
             if action == "question_back":
                 step = max(0, int(payload.get("step") or 0) - 1)
                 self.store.update_question_session(session["session_id"], step=step)
-                return {"messages": [], "edit": {"telegram_message_id": session["telegram_message_id"],
-                                                 **self._question_prompt({**session, "step": step})}}
+                return self.presentation.update_prompt(session["telegram_message_id"], self._question_prompt({**session, "step": step}))
             try:
                 self.portal.close_questions(portal_actor, session["resident_id"], session["source_message_id"])
             except Exception as exc:  # noqa: BLE001
                 return self._reply([f"关闭失败：{_failure_text(exc)}"])
             self.store.update_question_session(session["session_id"], status="closed")
-            return {"messages": [], "edit": {"telegram_message_id": session["telegram_message_id"],
-                                             "text": "这组问题已关闭，不再回答。", "reply_markup": None}}
+            return self.presentation.update_prompt(session["telegram_message_id"], {"text": "这组问题已关闭，不再回答。", "reply_markup": None})
         if action == "expand":
             return self._expand(state, str(payload.get("resident_id") or ""), str(payload.get("input_id") or ""))
         if action == "history_more":
@@ -580,7 +504,7 @@ class RouterCore:
         for item in selected:
             request = item["input"]
             reply = item["reply"]
-            source = "Telegram" if request["message_id"] in telegram_ids else "网页"
+            source = self.presentation.title if request["message_id"] in telegram_ids else "网页"
             asked, asked_cut = _clip(message_text(request), HISTORY_INPUT_CHARS)
             answer, answer_cut = _clip(message_text(reply) if reply else "", HISTORY_REPLY_CHARS)
             family = (reply or {}).get("family_reply") if isinstance((reply or {}).get("family_reply"), dict) else {}

@@ -1,4 +1,4 @@
-"""Telepus settings and control of the two user services that make up the bridge."""
+"""Telepus settings and control of the three bridge services."""
 from __future__ import annotations
 
 import subprocess
@@ -19,6 +19,7 @@ def setting(name: str, default: Any = None) -> Any:
 UNITS = (
     "telepus-portal-refresh.service",
     "telepus-telegram-router.service",
+    "telepus-weixin-router.service",
 )
 
 

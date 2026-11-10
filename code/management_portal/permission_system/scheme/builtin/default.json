@@ -610,6 +610,10 @@
       "a": "@admin",
       "r": "@shared"
     },
+    "StartTelepusWeixinBinding": {"a": "@free", "r": "@portal"},
+    "GetTelepusWeixinBinding": {"a": "@free", "r": "@portal"},
+    "SubmitTelepusWeixinPin": {"a": "@free", "r": "@portal"},
+    "UnbindTelepusWeixin": {"a": "@free", "r": "@portal"},
     "GetSharedState": {
       "a": "@viewer"
     },

@@ -45,7 +45,23 @@ def unbind_telepus_contact_for_user(inv: Invocation) -> dict[str, Any]:
     return {"user_id": result["username"], "telegram_user_id": result["telegram_user_id"], "removed": result["removed"]}
 
 
+def weixin_binding(inv: Invocation) -> dict[str, Any]:
+    from .weixin_binding import WeixinBinding
+    binding = WeixinBinding()
+    actor = binding.user(inv.caller)
+    name = inv.name
+    if name == "StartTelepusWeixinBinding":
+        result = binding.start(actor)
+    elif name == "UnbindTelepusWeixin":
+        result = binding.unbind(actor)
+    else:
+        result = binding.get(actor, inv.argument("session_id", ""), inv.argument("pin", ""))
+    return {"binding": result}
+
+
 HANDLERS = {
+    **{name: weixin_binding for name in ("StartTelepusWeixinBinding", "GetTelepusWeixinBinding",
+                                       "SubmitTelepusWeixinPin", "UnbindTelepusWeixin")},
     "GetTelepusStatus": get_telepus_status,
     "SetTelepusEnabled": set_telepus_enabled,
     "BindTelepusContactForUser": bind_telepus_contact_for_user,

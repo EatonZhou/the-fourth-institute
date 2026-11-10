@@ -14,6 +14,72 @@
       const mergeWatchboardResponse = context.view.accept;
       const showWatchboardModal = context.modal.open;
       const closeWatchboardModal = context.modal.close;
+      let bindingEpoch = 0;
+
+      async function weixinOperation(operation, args = {}) {
+        const payload = await residentService.watchboardApplication({
+          application_id: "telepus", operation, resident_id: selectedResidentId(), args,
+        });
+        mergeWatchboardResponse(payload);
+        return payload.binding;
+      }
+
+      async function bindWeixin() {
+        const epoch = ++bindingEpoch;
+        try {
+          let current = await weixinOperation("weixin-start");
+          if (epoch !== bindingEpoch) return;
+          showWatchboardModal("绑定微信", window.PortalI18n.html`
+            <div class="watchboardControlRow"><img data-weixin-qr width="240" height="240" alt="微信绑定二维码"></div>
+            <p data-weixin-status></p>
+            <form data-weixin-pin-form hidden>
+              <label>输入手机显示的数字<input data-weixin-pin inputmode="numeric" pattern="[0-9]+" autocomplete="off" required></label>
+              <button class="portalButton" type="submit">提交数字</button>
+            </form>
+            <button class="portalButton" data-watchboard-modal-close>Close</button>`, {
+            onBind: overlay => {
+              let pin = "";
+              const form = overlay.querySelector("[data-weixin-pin-form]");
+              form.addEventListener("submit", event => {
+                event.preventDefault();
+                pin = overlay.querySelector("[data-weixin-pin]").value.trim();
+                form.hidden = true;
+              });
+              overlay.querySelector("[data-watchboard-modal-close]").addEventListener("click", () => {
+                bindingEpoch++; closeWatchboardModal();
+              });
+              async function poll() {
+                if (epoch !== bindingEpoch || !overlay.isConnected) return;
+                if (current.qr_image) overlay.querySelector("[data-weixin-qr]").src = current.qr_image;
+                const needsPin = String(current.status).includes("need_verifycode");
+                form.hidden = !needsPin;
+                const labels = { active: "微信已绑定", expired: "二维码已过期，请重新开始", scaned: "已扫码，请在手机上确认" };
+                overlay.querySelector("[data-weixin-status]").textContent = window.PortalI18n.t(
+                  needsPin ? "输入手机显示的数字" : labels[current.status] || "请用微信扫码");
+                if (["active", "expired", "unbound"].includes(current.status)) { renderWatchboard(); return; }
+                window.setTimeout(async () => {
+                  if (epoch !== bindingEpoch || !overlay.isConnected) return;
+                  try {
+                    if (!needsPin || pin) {
+                      const submitted = pin; pin = "";
+                      current = await weixinOperation("weixin-get", { session_id: current.session_id, ...(submitted ? { pin: submitted } : {}) });
+                    }
+                    poll();
+                  } catch (error) {
+                    overlay.querySelector("[data-weixin-status]").textContent = portalUi.errorMessage(window.PortalI18n.t("微信绑定失败"), error);
+                  }
+                }, 1500);
+              }
+              poll();
+            },
+          });
+        } catch (error) { portalUi.toast(portalUi.errorMessage(window.PortalI18n.t("微信绑定失败"), error), "error"); }
+      }
+
+      async function unbindWeixin() {
+        try { await weixinOperation("weixin-unbind"); renderWatchboard(); }
+        catch (error) { portalUi.toast(portalUi.errorMessage(window.PortalI18n.t("微信解绑失败"), error), "error"); }
+      }
 
       function watchboardTelepusUsersHtml(dashboard) {
         const payload = dashboard?.telegram_users || {};
@@ -26,6 +92,11 @@
             <button class="watchboardIconBtn" type="button" data-telepus-add-user aria-label="Add user" title="Add user" ${canManage ? "" : "disabled"}>${watchboardIconSvg("add")}</button>
           </div>
           <div class="watchboardSectionBody">
+            <div class="watchboardCompactItem">
+              <span>${esc(window.PortalI18n.t(dashboard.weixin_binding?.status === "active" ? "微信已绑定" : dashboard.weixin_binding?.status === "expired" ? "需要重新扫码" : "微信未绑定"))}</span>
+              <span><button class="portalButton is-compact" data-weixin-bind ${canManage ? "" : "disabled"}>绑定微信</button>
+                <button class="portalButton is-compact" data-weixin-unbind ${canManage && ["active", "expired"].includes(dashboard.weixin_binding?.status) ? "" : "disabled"}>解除微信绑定</button></span>
+            </div>
             <div class="watchboardCompactList">
               ${users.map(user => {
                 const userId = String(user.telegram_user_id || "");
@@ -158,6 +229,8 @@
       }
 
       function bind(box, dashboard) {
+        box.querySelector("[data-weixin-bind]")?.addEventListener("click", bindWeixin);
+        box.querySelector("[data-weixin-unbind]")?.addEventListener("click", unbindWeixin);
         box.querySelector("[data-telepus-add-user]")?.addEventListener("click", () => addTelepusTelegramUser());
         box.querySelectorAll("[data-telepus-edit-user]").forEach(btn => {
           btn.addEventListener("click", () => openTelepusTelegramUserModal(btn.dataset.telepusEditUser || ""));
@@ -166,7 +239,8 @@
           btn.addEventListener("click", () => deleteTelepusTelegramUser(btn.dataset.telepusDeleteUser || ""));
         });
       }
-      return { render: dashboard => context.components.generic(dashboard, watchboardTelepusUsersHtml(dashboard)), bind, key: dashboard => JSON.stringify(state) };
+      return { render: dashboard => context.components.generic(dashboard, watchboardTelepusUsersHtml(dashboard)), bind,
+        destroy() { bindingEpoch++; }, key: dashboard => JSON.stringify(state) };
     },
   });
 })();

@@ -40,7 +40,7 @@ def test_telepus_switch_requires_admin_and_uses_feature_runtime(enabled_runtime,
     from tests.cases.instance_test_support import select_instance
     instance = select_instance(monkeypatch, tmp_path / 'instance')
     document = instance.document
-    document['services']['components'] += ['telepus-portal-refresh', 'telepus-telegram-router']
+    document['services']['components'] += ['telepus-portal-refresh', 'telepus-telegram-router', 'telepus-weixin-router']
     (instance.root / 'instance.json').write_text(json.dumps(document))
 
     observed = []
@@ -55,6 +55,18 @@ def test_telepus_switch_requires_admin_and_uses_feature_runtime(enabled_runtime,
     assert call(enabled_runtime, "GetTelepusStatus").raise_for_error()["status"] == status
     result = call(enabled_runtime, "SetTelepusEnabled", key="telepus-on", enabled=True).raise_for_error()
     assert result["status"]["enabled"] is True and observed == [True]
+
+
+def test_weixin_instructions_are_self_service_and_reject_residents(enabled_runtime, permissions, monkeypatch):
+    from management_portal.telepus.weixin_binding import WeixinBinding
+    permissions.users('bob')
+    observed = []
+    monkeypatch.setattr(WeixinBinding, 'start', lambda self, actor: observed.append(actor) or {'status': 'wait'})
+    result = call(enabled_runtime, 'StartTelepusWeixinBinding', 'bob').raise_for_error()
+    assert result['binding']['status'] == 'wait' and observed == ['bob']
+    assert call(enabled_runtime, 'StartTelepusWeixinBinding', 'bob', user_id='alice').status == 'failed'
+    assert call(enabled_runtime, 'StartTelepusWeixinBinding', R).status == 'failed'
+    assert observed == ['bob']
 
 
 @pytest.mark.parametrize("name", ADMINISTRATION)

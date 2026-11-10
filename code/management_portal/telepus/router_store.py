@@ -10,7 +10,7 @@ from . import postgres as telepus_postgres
 from .database_time import iso_time
 
 
-SCHEMA_VERSION = 7
+SCHEMA_VERSION = 8
 TELEGRAM_BOT_TOKEN_RE = re.compile(r"\b\d{8,12}:AA[A-Za-z0-9_-]{20,}\b")
 MODES = ("assistant", "exact")
 
@@ -164,15 +164,20 @@ class RouterStore:
             return
         with self.connect() as conn:
             conn.execute("BEGIN IMMEDIATE")
+            version = ""
             if conn.execute("SELECT to_regclass(current_schema() || '.meta')").fetchone()[0]:
                 marker = conn.execute("SELECT value FROM meta WHERE key='schema_version'").fetchone()
-                if marker is None or marker[0] != str(SCHEMA_VERSION):
+                if marker is None or marker[0] not in {"7", str(SCHEMA_VERSION)}:
                     raise RuntimeError("Telepus database requires the coordinated schema migration")
-            conn.executescript(SCHEMA_DDL)
-            conn.execute(
-                "INSERT INTO meta(key, value) VALUES(?, ?) ON CONFLICT(key) DO NOTHING",
-                ("schema_version", str(SCHEMA_VERSION)),
-            )
+                version = marker[0]
+            if version != str(SCHEMA_VERSION):
+                conn.executescript(SCHEMA_DDL)
+                from .weixin_store import init_tables
+                init_tables(conn)
+                conn.execute(
+                    "INSERT INTO meta(key, value) VALUES(?, ?) ON CONFLICT(key) DO UPDATE SET value=excluded.value",
+                    ("schema_version", str(SCHEMA_VERSION)),
+                )
         self._schema_ready = True
 
     # -- chats -------------------------------------------------------------------
@@ -232,12 +237,12 @@ class RouterStore:
                 (int(cursor), now_iso(), str(chat_id), str(resident_id)),
             )
 
-    def watched_chats(self, limit: int = 100) -> list[dict[str, Any]]:
+    def watched_chats(self, limit: int = 100, channel: str = "telegram") -> list[dict[str, Any]]:
         self.init_schema()
         with self.connect() as conn:
             rows = conn.execute(
-                "SELECT * FROM chat_state WHERE watch_resident_id != '' ORDER BY updated_at DESC LIMIT ?",
-                (int(limit),),
+                "SELECT * FROM chat_state WHERE watch_resident_id != '' AND channel=? ORDER BY updated_at DESC LIMIT ?",
+                (channel, int(limit)),
             ).fetchall()
         return [self._chat(row, row["chat_id"]) for row in rows]
 
@@ -403,6 +408,13 @@ class RouterStore:
             ).fetchone()
         return self._question(row)
 
+    def active_question(self, chat_id: str) -> dict[str, Any] | None:
+        self.init_schema()
+        with self.connect() as conn:
+            row = conn.execute("SELECT * FROM question_sessions WHERE chat_id=? AND status='open' "
+                               "ORDER BY created_at LIMIT 1", (chat_id,)).fetchone()
+        return self._question(row)
+
     def update_question_session(self, session_id: str, **fields: Any) -> None:
         self.init_schema()
         columns = {"answers": "answers_json", "step": "step", "status": "status",
@@ -557,7 +569,9 @@ def redact_sensitive(value: Any) -> Any:
     if isinstance(value, str):
         return TELEGRAM_BOT_TOKEN_RE.sub("[telegram-bot-token-redacted]", value)
     if isinstance(value, dict):
-        return {str(key): redact_sensitive(item) for key, item in value.items()}
+        return {str(key): "[redacted]" if str(key).lower() in {
+            "bot_token", "context_token", "qrcode", "verify_code", "typing_ticket", "aes_key", "aeskey"
+        } else redact_sensitive(item) for key, item in value.items()}
     if isinstance(value, list):
         return [redact_sensitive(item) for item in value]
     return value

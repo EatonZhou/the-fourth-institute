@@ -1,23 +1,27 @@
 {
+  "连接 Telegram、微信与 Portal。关闭后停止 Telepus 的三个服务并取消开机自启；已有联系人和数据保留。": {
+    "en": "Connects Telegram and Weixin to Portal. Turning this off stops and disables all three Telepus services; existing contacts and data are retained.",
+    "zh-CN": "连接 Telegram、微信与 Portal。关闭后停止 Telepus 的三个服务并取消开机自启；已有联系人和数据保留。"
+  },
   "Telepus 服务状态不可用：{p0}": {
     "en": "Telepus service status unavailable: {p0}",
     "zh-CN": "Telepus 服务状态不可用：{p0}"
   },
-  "Telepus 已开启，两个服务正在运行。": {
-    "en": "Telepus is on; both services are running.",
-    "zh-CN": "Telepus 已开启，两个服务正在运行。"
+  "Telepus 已开启，三个服务正在运行。": {
+    "en": "Telepus is on; all three services are running.",
+    "zh-CN": "Telepus 已开启，三个服务正在运行。"
   },
-  "Telepus 已关闭，两个服务已停止并取消开机自启。": {
-    "en": "Telepus is off; both services are stopped and disabled at startup.",
-    "zh-CN": "Telepus 已关闭，两个服务已停止并取消开机自启。"
+  "Telepus 已关闭，三个服务已停止并取消开机自启。": {
+    "en": "Telepus is off; all three services are stopped and disabled at startup.",
+    "zh-CN": "Telepus 已关闭，三个服务已停止并取消开机自启。"
   },
   "Telepus 部分开启；需检查：{p0}。": {
     "en": "Telepus is partially on; check: {p0}.",
     "zh-CN": "Telepus 部分开启；需检查：{p0}。"
   },
-  "关闭后停止 Telepus 的两个服务并取消开机自启；已有联系人和数据保留。": {
+  "关闭后停止 Telepus 的三个服务并取消开机自启；已有联系人和数据保留。": {
     "en": "Turning it off stops both Telepus services and disables startup; existing contacts and data remain.",
-    "zh-CN": "关闭后停止 Telepus 的两个服务并取消开机自启；已有联系人和数据保留。"
+    "zh-CN": "关闭后停止 Telepus 的三个服务并取消开机自启；已有联系人和数据保留。"
   },
   "正在启动 Telepus 服务…": {
     "en": "Starting Telepus services…",
@@ -50,5 +54,57 @@
   "这个 Telegram id token 已存在": {
     "en": "This Telegram id token already exists",
     "zh-CN": "这个 Telegram id token 已存在"
+  },
+  "绑定微信": {
+    "en": "Bind Weixin",
+    "zh-CN": "绑定微信"
+  },
+  "解除微信绑定": {
+    "en": "Unbind Weixin",
+    "zh-CN": "解除微信绑定"
+  },
+  "微信绑定二维码": {
+    "en": "Weixin binding QR code",
+    "zh-CN": "微信绑定二维码"
+  },
+  "输入手机显示的数字": {
+    "en": "Enter the digits shown on your phone",
+    "zh-CN": "输入手机显示的数字"
+  },
+  "提交数字": {
+    "en": "Submit PIN",
+    "zh-CN": "提交数字"
+  },
+  "微信已绑定": {
+    "en": "Weixin connected",
+    "zh-CN": "微信已绑定"
+  },
+  "微信未绑定": {
+    "en": "Weixin not connected",
+    "zh-CN": "微信未绑定"
+  },
+  "需要重新扫码": {
+    "en": "Scan again to reconnect",
+    "zh-CN": "需要重新扫码"
+  },
+  "二维码已过期，请重新开始": {
+    "en": "QR code expired; start again",
+    "zh-CN": "二维码已过期，请重新开始"
+  },
+  "已扫码，请在手机上确认": {
+    "en": "Scanned; confirm on your phone",
+    "zh-CN": "已扫码，请在手机上确认"
+  },
+  "请用微信扫码": {
+    "en": "Scan with Weixin",
+    "zh-CN": "请用微信扫码"
+  },
+  "微信绑定失败": {
+    "en": "Weixin binding failed",
+    "zh-CN": "微信绑定失败"
+  },
+  "微信解绑失败": {
+    "en": "Weixin unbinding failed",
+    "zh-CN": "微信解绑失败"
   }
 }

@@ -53,7 +53,9 @@ def project(context) -> dict:
          "current_actor": same_actor(contact["portal_actor"], context.actor)}
         for user_id, contact in sorted(users.items(), key=lambda item: (item[1]["name"].casefold(), item[0]))
     ]
-    return {"telegram_users": {
+    from management_portal.telepus.weixin_binding import WeixinBinding
+    weixin = WeixinBinding().get(canonical_actor_id(context.actor)) if _signed_in_user(context.actor) else {"status": "unavailable"}
+    return {"weixin_binding": weixin, "telegram_users": {
         "enabled": True, "count": len(items), "users": items,
         "current_user": canonical_actor_id(context.actor),
         "permissions": {"can_manage": _signed_in_user(context.actor)},
@@ -61,6 +63,17 @@ def project(context) -> dict:
 
 
 def act(context, operation: str, arguments: dict) -> dict:
+    if operation.startswith("weixin-"):
+        from management_portal.telepus.weixin_binding import WeixinBinding
+        binding = WeixinBinding()
+        actor = binding.user(context.actor)
+        if operation == "weixin-start" and not arguments:
+            return {"binding": binding.start(actor)}
+        if operation == "weixin-unbind" and not arguments:
+            return {"binding": binding.unbind(actor)}
+        if operation == "weixin-get" and not set(arguments) - {"session_id", "pin"}:
+            return {"binding": binding.get(actor, arguments.get("session_id", ""), arguments.get("pin", ""))}
+        raise ValueError("Unsupported Weixin binding operation")
     allowed = {"id_token", "previous_id_token"} if operation == "save" else {"id_token"}
     if operation not in {"save", "delete"} or set(arguments) - allowed:
         raise ValueError("Unsupported Telepus contact operation")
@@ -137,4 +150,6 @@ def remove_user_contacts(username: str) -> list[str]:
                    if same_actor(contact["portal_actor"], username)]
         for token in removed:
             telepus_contacts_store.delete(connection, token)
+    from management_portal.telepus.weixin_binding import WeixinBinding
+    WeixinBinding().unbind(canonical_actor_id(username))
     return removed

@@ -79,7 +79,7 @@ def run(root, mode):
     launch(root, 'dev-web' if mode == 'web' else 'gateway')
 
 
-def affected(paths, loaded=None):
+def affected(paths, loaded=None, *, managed=SHARED):
     """Select the responsible processes, including both Web consumers.
 
     ``loaded`` maps each shared component to the modules its running
@@ -93,7 +93,7 @@ def affected(paths, loaded=None):
     for path in paths:
         path = path.removeprefix("code/")
         if path.startswith(("scripts/", "management_common/", "management_portal/hatg/")):
-            components.update((*SHARED, "web", "dev-web", "gateway"))
+            components.update((*managed, "web", "dev-web", "gateway"))
         elif path.startswith("management_portal/execution/"):
             components.update(("execution", "worker", "web", "dev-web"))
         elif path.startswith("management_portal/permission_system/"):
@@ -109,8 +109,8 @@ def affected(paths, loaded=None):
             components.update(("web", "dev-web"))
         module = module_name(path)
         if module is not None:
-            components.update(c for c in SHARED if c not in loaded or module in loaded[c])
-    return [c for c in (*SHARED, "web", "dev-web", "gateway") if c in components]
+            components.update(c for c in managed if c not in loaded or module in loaded[c])
+    return [c for c in (*managed, "web", "dev-web", "gateway") if c in components]
 
 
 def health(port, expected=None):
@@ -280,9 +280,11 @@ def restart(root, deployment, components=None, *, force_worker_restart=True):
 
 def activate(root, paths, commit, *, initial=False):
     from management_common import loaded_modules
+    from management_common.service_components import FUNCTIONAL_MODULES
     manifest = load(root)
-    components = (list((*SHARED, "web", "dev-web", "gateway")) if initial
-                  else affected(paths, loaded_modules.loaded(loaded_modules.directory(root))))
+    managed = (*SHARED, *(c for c in FUNCTIONAL_MODULES if c in manifest.document['services']['components']))
+    components = (list((*managed, "web", "dev-web", "gateway")) if initial
+                  else affected(paths, loaded_modules.loaded(loaded_modules.directory(root)), managed=managed))
     # Code activation never stops PostgreSQL, NATS or provider account services.
     if components:
         manifest.deployment_runtime('release').mkdir(parents=True, exist_ok=True)
@@ -291,6 +293,11 @@ def activate(root, paths, commit, *, initial=False):
     completed = []
     for component in components:
         unit = prefix + "-" + component + ".service"
+        if component in FUNCTIONAL_MODULES:
+            state = dict(line.split('=', 1) for line in control(
+                'show', unit, '-p', 'ActiveState', '-p', 'UnitFileState').splitlines() if '=' in line)
+            if state.get('ActiveState') not in {'active', 'activating'} and state.get('UnitFileState') not in {'enabled', 'enabled-runtime'}:
+                continue
         if component == "worker":
             # Preserve claimed executions through the manager's handoff protocol.
             control("kill", "--kill-whom=main", "--signal=HUP", unit)

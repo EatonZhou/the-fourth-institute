@@ -10,6 +10,8 @@ from __future__ import annotations
 import html
 import re
 
+from .channel import split_markdown_text as split_telegram_text
+
 
 FENCE_RE = re.compile(r"```([A-Za-z0-9_+-]*)[ \t]*\n?([\s\S]*?)```")
 INLINE_CODE_RE = re.compile(r"`([^`\n]+?)`")
@@ -36,34 +38,6 @@ def markdown_to_telegram_html(text: str) -> str:
     return "".join(out)
 
 
-def split_telegram_text(text: str, limit: int = TELEGRAM_TEXT_LIMIT) -> list[str]:
-    """Split Markdown at line ends; a fenced block cut in two is closed and reopened."""
-    raw = str(text or "")
-    if len(raw) <= limit:
-        return [raw]
-    room = limit - 40  # space for a reopened fence line and its closing
-    chunks: list[str] = []
-    current = ""
-    fence = ""
-
-    def close(chunk: str) -> str:
-        if not fence:
-            return chunk
-        return chunk + ("" if chunk.endswith("\n") else "\n") + "```"
-
-    for line in raw.splitlines(keepends=True):
-        for start in range(0, max(1, len(line)), room):
-            piece = line[start:start + room]
-            if len(current) + len(piece) > room and current.strip():
-                chunks.append(close(current))
-                current = fence
-            current += piece
-        stripped = line.strip()
-        if stripped.startswith("```"):
-            fence = "" if fence else stripped + "\n"
-    if current.strip():
-        chunks.append(current)
-    return chunks
 
 
 def _format_fenced_code(language: str, code: str) -> str:
