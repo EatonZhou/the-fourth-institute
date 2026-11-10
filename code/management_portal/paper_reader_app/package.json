@@ -1,0 +1,8 @@
+{
+  "name": "portal-paper-reader",
+  "private": true,
+  "type": "module",
+  "scripts": {"build": "esbuild reader.jsx --bundle --minify --format=esm --target=es2022 --legal-comments=eof --outfile=../static/paper_fullscreen_reader.js"},
+  "dependencies": {"react": "19.3.1", "react-dom": "19.3.1"},
+  "devDependencies": {"esbuild": "0.28.2"}
+}

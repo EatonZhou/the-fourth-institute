@@ -202,6 +202,7 @@ def _delete_portal_user_personal_data(username: str) -> dict:
     conversation_read_state.delete_actor(clean_username)
 
     favorites_removed = presentation_store.delete_actor_favorites(clean_username)
+    presentation_store.delete_actor_associations(clean_username)
 
     removed_upload_roots: list[str] = []
     for root in _PORTAL_USER_UPLOAD_ROOTS:

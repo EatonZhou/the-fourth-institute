@@ -77,3 +77,9 @@ def delete_actor_favorites(actor):
     """A deleted User's favorites on every surface."""
     with database().transaction('favorites:' + actor) as connection:
         return bool(connection.execute('DELETE FROM favorites WHERE actor=%s', (actor,)).rowcount)
+
+
+def delete_actor_associations(actor):
+    """Remove personal UI associations, including PDF highlights, on account deletion."""
+    with database().transaction('associations:' + actor) as connection:
+        return bool(connection.execute('DELETE FROM associations WHERE actor=%s', (actor,)).rowcount)

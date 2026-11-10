@@ -7,7 +7,7 @@ from urllib.parse import parse_qs
 from management_portal import (
     http_auth, http_documents, http_files, http_request_body, http_responses, page_api_auth, paper_assets, paper_ccf,
     paper_ccf_enrichment, paper_collection_jobs, paper_detail, paper_favorites, paper_figure_jobs,
-    paper_figures, paper_library, paper_notes, paper_reading_jobs, paper_refs, paper_registration,
+    paper_figures, paper_highlights, paper_library, paper_notes, paper_reading_jobs, paper_refs, paper_registration,
     paper_resources, paper_reviews, paper_summaries, semantic_search_jobs, web_accounts, web_resources,
 )
 from management_portal.http_routes import ROUTE_NOT_FOUND, RouteDefinition
@@ -164,6 +164,14 @@ class PaperHttp:
         return self.respond(request, 200, paper_favorites.set_favorite(
             actor, payload.get("paper_id"), payload.get("favorite"),
         ))
+
+    def highlights(self, request, qs, actor):
+        return self.respond(request, 200, paper_highlights.list_highlights(
+            actor, self._param(qs, "id"), self._param(qs, "document"),
+        ))
+
+    def highlight(self, request, payload, actor):
+        return self.respond(request, 200, paper_highlights.save_highlight(actor, payload))
 
     def library(self, request, qs, actor):
         return self.respond(request, 200, paper_library.list_library(self._query_params(qs), actor=actor))
@@ -339,6 +347,8 @@ def routes(portal):
     api = (
         ("GET", "library", get(http.library)),
         ("POST", "favorites", http.personal_post_route(http.favorite)),
+        ("GET", "highlights", get(http.highlights)),
+        ("POST", "highlights", http.personal_post_route(http.highlight)),
         ("GET", "ccf/venues", http.get_query_backend(paper_ccf, "ccf_venues")),
         ("GET", "ccf/years", http.get_query_backend(paper_ccf, "ccf_years")),
         ("GET", "ccf/papers", http.get_query_backend(paper_ccf, "ccf_papers")),

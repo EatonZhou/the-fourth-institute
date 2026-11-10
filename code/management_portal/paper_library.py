@@ -258,6 +258,8 @@ def list_library(params: dict | None = None, *, actor: str = "") -> dict:
 def api_docs() -> dict:
     return {
         "endpoints": [
+            {"method": "GET", "path": "/paper/api/highlights?id=&document=", "purpose": "Read the authenticated actor's highlights for one visible Paper and PDF fingerprint."},
+            {"method": "POST", "path": "/paper/api/highlights", "purpose": "Save personal highlights with {paper_id, document, operation:add, highlight:{id,text,rects:[{page,x,y,width,height}]}} or delete with operation:delete and id. Coordinates are page-relative 0–1; each request checks Paper read access."},
             {"method": "GET", "path": "/paper/api/library", "purpose": "List visible papers, filters, folder tree, workflow metadata, and the current actor's favorite_ids. favorite=1 intersects favorites with other filters."},
             {"method": "POST", "path": "/paper/api/favorites", "purpose": "Set the authenticated actor's personal Paper favorite with {paper_id, favorite: boolean}. Adding requires read access; removal remains possible after access loss."},
             {"method": "GET", "path": "/paper/api/papers/detail?id=...", "purpose": "Load one paper, analysis markdown, PDF URL, and reviews."},
