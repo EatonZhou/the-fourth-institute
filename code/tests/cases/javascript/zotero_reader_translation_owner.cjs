@@ -1,0 +1,20 @@
+const engine=require('../../../management_portal/test_framework/tau_runtime/node_modules/playwright')[process.argv[3]];
+const assert=require('node:assert/strict');
+(async()=>{const b=await engine.launch({headless:true});try{
+const [url,,name,value]=process.argv.slice(2),ctx=await b.newContext();await ctx.addCookies([{name,value,url}]);
+const p=await ctx.newPage(),requests=[],responses=[];
+p.on('request',r=>{if(r.method()==='POST'&&r.url().endsWith('/reader/translation'))requests.push(r.postDataJSON());});
+p.on('response',async r=>{if(r.request().method()==='POST'&&r.url().endsWith('/reader/translation'))responses.push(await r.json());});
+await p.goto(url+'/integration');await p.waitForFunction(()=>ready);await p.evaluate(()=>openPaper('paper_0123456789ab'));await p.waitForFunction(()=>posts===1);
+await p.getByLabel('翻译模式').selectOption('google');
+const outer=p.frames()[1];await outer.frameLocator('iframe').first().locator('.textLayer span').first().dblclick();
+await outer.locator('.portalTranslateSelection').click();
+await p.getByText('正式隔离译文',{exact:true}).waitFor();await p.getByText(/Google · translate_a\/single:gtx/).waitFor();
+await p.getByRole('button',{name:'重试翻译'}).click();await p.getByText(/缓存命中/).waitFor();
+assert.equal(requests.length,2);assert.notEqual(requests[0].operation_id,requests[1].operation_id);
+assert.equal(requests[0].text,requests[1].text);
+assert.equal(responses[0].status,'succeeded');assert.equal(responses[1].cache,'hit');
+assert.equal(responses[0].task_id,responses[1].task_id);
+assert(responses[0].google_request_ms>=0&&responses[0].total_ms>=0);
+console.log('PASS browser native selection → formal authenticated route/owner/PG cache/Google transport; different operations share one HTTP request');
+}finally{await b.close();}})().catch(e=>{console.error(e);process.exitCode=1;});

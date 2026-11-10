@@ -1,14 +1,18 @@
 import React, {useEffect, useRef, useState} from 'react';
 import {createRoot} from 'react-dom/client';
 import {connectZotero, ZOTERO_URL} from './zotero_adapter.js';
+import {TranslationPanel} from './translation_panel.jsx';
+import {translateSelection} from './translation_client.js';
 
-function Reader({paper, principal, anchor, close, control, readingReady, frameReady}) {
+function Reader({paper, principal, anchor, close, control, readingReady, frameReady, isCurrent}) {
   const frame = useRef(null), bridge = useRef(null);
   const [status, setStatus] = useState('正在打开论文…');
   const [failed, setFailed] = useState(false);
+  const [selection, setSelection] = useState(null);
   useEffect(() => {
     frameReady(frame.current.contentWindow);
     const connection = connectZotero({frame: frame.current, paper, principal, ready: readingReady,
+      translateSelection: value => {if (isCurrent()) setSelection(value);},
       status: (message, error = false) => { setStatus(message); setFailed(error); }});
     bridge.current = connection;
     control(connection);
@@ -24,11 +28,13 @@ function Reader({paper, principal, anchor, close, control, readingReady, frameRe
     <div className="paperReadingStatus" role="status">
       {status} {failed && <button onClick={() => bridge.current?.retry()}>重试保存</button>}
     </div>
+    <TranslationPanel selection={selection} isCurrent={isCurrent} request={(input, mode, operationId, signal) =>
+      translateSelection({selection: input, mode, operationId, principal, signal})} />
     <iframe ref={frame} className="paperReadingViewer" title="论文全屏 PDF 阅读器" />
   </div>;
 }
 
-export function openReader({paper, principal, anchor, onClose, onReady, container}) {
+export function openReader({paper, principal, anchor, onClose, onReady, container, isCurrent = () => true}) {
   const previousFocus = document.activeElement;
   const dialog = document.createElement('dialog');
   dialog.className = 'paperReadingDialog'; dialog.setAttribute('aria-label', '全屏论文阅读');
@@ -79,6 +85,7 @@ export function openReader({paper, principal, anchor, onClose, onReady, containe
   dialog.addEventListener('cancel', event => { event.preventDefault(); toggle(); });
   if (container) {dialog.show(); layout();} else dialog.showModal();
   root.render(<Reader paper={paper} principal={principal} anchor={anchor} close={toggle} control={value => { bridge = value; }}
+    isCurrent={() => !closed && isCurrent()}
     frameReady={value => { sourceWindow = value; }}
     readingReady={value => { if (!closed && !closing) onReady?.({...value, instanceId}); }} />);
   return {close, setFullscreen, paperId: paper.id, principal, pdfUrl: paper.pdf_url, instanceId, get sourceWindow() { return sourceWindow; }};

@@ -12,6 +12,11 @@ from management_portal import http_paper, web_accounts, http_auth
 from management_portal.portal_access_control import PortalAccessStore
 
 
+def test_translation_client_task_binding():
+    script = Path(__file__).parent / 'javascript/paper_translation_client.mjs'
+    subprocess.run(['node', str(script)], check=True, capture_output=True, timeout=5)
+
+
 @pytest.mark.parametrize('browser', ['chromium', 'firefox'])
 def test_formal_fullscreen(tmp_path, monkeypatch, browser):
     run_host(tmp_path, monkeypatch, browser, 'zotero_reader_fullscreen.cjs')
@@ -27,7 +32,17 @@ def test_page_recent(tmp_path, monkeypatch, browser):
     run_host(tmp_path, monkeypatch, browser, 'zotero_reader_recent.cjs')
 
 
-def run_host(tmp_path, monkeypatch, browser, script):
+@pytest.mark.parametrize('browser', ['chromium', 'firefox'])
+def test_translation_ui(tmp_path, monkeypatch, browser):
+    run_host(tmp_path, monkeypatch, browser, 'zotero_reader_translation.cjs')
+
+
+@pytest.mark.parametrize('browser', ['chromium', 'firefox'])
+def test_translation_owner_ui(tmp_path, monkeypatch, browser):
+    run_host(tmp_path, monkeypatch, browser, 'zotero_reader_translation_owner.cjs', translation=True)
+
+
+def run_host(tmp_path, monkeypatch, browser, script, *, translation=False):
     paper, bundle, store = setup_paper(tmp_path, monkeypatch)
     access = PortalAccessStore()
     from management_portal import personal_ama
@@ -35,6 +50,21 @@ def run_host(tmp_path, monkeypatch, browser, script):
     for user in ('reader_one', 'reader_two'): access.upsert_user(user, actor='CASE')
     _configure_portal_session(tmp_path, monkeypatch, access)
     tokens = [web_accounts._issue_session_token(u) for u in ('reader_one', 'reader_two')]
+    google_calls = []
+    if translation:
+        import io
+        from management_portal import paper_translation_service
+        from management_portal.paper_translation_google import GoogleTransport
+        monkeypatch.setattr(paper_translation_service, '_production', None)
+        owner = paper_translation_service.production_service()
+        class Response(io.BytesIO):
+            status = 200
+        def opener(request, **kwargs):
+            google_calls.append(request.full_url)
+            return Response(json.dumps([[['正式隔离译文', 'synthetic']]]).encode())
+        owner.google = GoogleTransport(opener=opener)
+        # Real route/owner/cache/transport; only the external Google HTTP I/O is synthetic.
+        monkeypatch.setattr(owner.execution, 'submit', lambda *a, **k: pytest.fail('unexpected model request'))
     definitions = http_paper.routes(object())
     from management_portal import paper_recent
     monkeypatch.setattr(paper_recent, 'get_resource_service', lambda: type('R', (), {'get': lambda *a, **k: {'resource_id': paper}})())
@@ -73,6 +103,7 @@ window.signals=[];window.openDocument=(embedded=false)=>{window.host=openReader(
         result = subprocess.run(['node',str(root/'tests/cases/javascript'/script),
             f'http://127.0.0.1:{server.server_port}',browser,http_auth._SESSION_COOKIE,*tokens],capture_output=True,text=True,timeout=90,env={**os.environ, 'TMPDIR': str(tmp_path)})
         assert result.returncode == 0, result.stdout + result.stderr
+        if translation: assert len(google_calls) == 1, 'second operation must use the private cache'
         from management_common.directory_cleanup_store import get_directory_cleanup_store
         from management_portal import paper_reader_annotations
         from management_portal.paper_reader_service import production_service

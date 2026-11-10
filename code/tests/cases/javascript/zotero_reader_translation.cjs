@@ -1,0 +1,44 @@
+const engine=require('../../../management_portal/test_framework/tau_runtime/node_modules/playwright')[process.argv[3]];
+const assert=require('node:assert/strict');
+(async()=>{const browser=await engine.launch({headless:true});try{
+const [url,,name,value,two]=process.argv.slice(2),ctx=await browser.newContext();await ctx.addCookies([{name,value,url}]);
+const p=await ctx.newPage();const calls=[];let scenario='normal',release;
+const result=(body,overrides={})=>({task_id:'task_fixture',status:'succeeded',text:'合成译文',error:null,cache:'miss',provider:'google',model:'translate_a/single:gtx',google_request_ms:120,task_total_ms:3400,total_ms:20,...overrides});
+await p.route('**/paper/api/reader/translation**',async route=>{
+ const req=route.request(),body=req.method()==='POST'?req.postDataJSON():null;calls.push({method:req.method(),body,principal:req.headers()['x-reader-principal']});
+ let response=result(body);
+ if(scenario==='error')return route.fulfill({status:503,json:{error:{code:'service_unavailable',message:'合成服务失败'}}});
+ if(scenario==='late')await new Promise(r=>release=r);
+ if(scenario==='queued'&&body)response=result(body,{status:'queued',text:null});
+ if(scenario==='cache')response=result(body,{cache:'hit'});
+ if(body?.mode==='deepseek')response=result(body,{provider:'deepseek',model:'deepseek-flash'});
+ await route.fulfill({json:response}).catch(()=>{});
+});
+await p.goto(url+'/integration');await p.waitForFunction(()=>ready);await p.evaluate(()=>openPaper('paper_0123456789ab'));
+await p.waitForFunction(()=>posts===1);
+const outer=p.frames()[1],pdf=outer.frameLocator('iframe').first();
+// Native text selection creates the upstream popup; no synthetic ready or selection callback.
+await pdf.locator('.textLayer span').first().dblclick();
+await outer.locator('.portalTranslateSelection').click();
+await p.getByText('合成译文',{exact:true}).waitFor();assert.equal(calls[0].body.mode,'auto');
+await p.getByText(/任务总耗时 3400 ms · 本次接口耗时 20 ms/).waitFor();
+assert.equal(calls[0].principal,'reader_one');assert(calls[0].body.text.trim());assert(calls[0].body.document.attachment_version);
+await p.getByLabel('翻译模式').selectOption('deepseek');await p.getByText(/DeepSeek Flash · deepseek-flash/).waitFor();
+assert.equal(calls.at(-1).body.mode,'deepseek');
+scenario='cache';await p.getByLabel('翻译模式').selectOption('google');await p.getByText(/缓存命中/).waitFor();
+scenario='error';await p.getByRole('button',{name:'重试翻译'}).click();await p.getByRole('alert').filter({hasText:'合成服务失败'}).waitFor();
+scenario='queued';const before=calls.length;await p.getByRole('button',{name:'重试翻译'}).click();await p.getByText('合成译文',{exact:true}).waitFor();
+assert.equal(calls.slice(before).filter(c=>c.method==='POST').length,1);assert(calls.slice(before).some(c=>c.method==='GET'));
+scenario='late';await p.getByRole('button',{name:'重试翻译'}).click();await p.waitForTimeout(3200);
+assert.equal(calls.filter(c=>c.method==='POST').length,6,'waiting never creates fallback/new operation');
+await p.locator('#paperFullscreenBtn').click();
+await p.evaluate(()=>{state.selectedId='paper_abcdef012345';});
+release();await p.waitForTimeout(100);assert.equal(await p.getByText('合成译文',{exact:true}).count(),0,'late old-scope result hidden');
+await p.evaluate(()=>{state.selectedId='paper_0123456789ab';});
+release=null;await p.getByLabel('翻译模式').selectOption('auto');
+await p.waitForTimeout(50);assert(release);
+await ctx.addCookies([{name,value:two,url}]);await p.evaluate(()=>{state.principalId='reader_two';});
+release();await p.waitForTimeout(100);assert.equal(await p.getByText('合成译文',{exact:true}).count(),0,'late old-account result hidden');
+const operations=calls.filter(c=>c.body).map(c=>c.body.operation_id);assert.equal(new Set(operations).size,operations.length,'only explicit UI actions start new operations');
+console.log('PASS native selection translation, modes, cache/source/timing, retry, task polling, no frontend deadline, stale scope guard');
+}finally{await browser.close();}})().catch(e=>{console.error(e);process.exitCode=1;});

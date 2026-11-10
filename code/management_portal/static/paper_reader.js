@@ -111,6 +111,7 @@
       const {openReader} = await import('/static/paper_fullscreen_reader.js');
       if (generation !== readerGeneration || state.selectedId !== paper.id || String(state.principalId || '') !== principal) return;
       fullscreenReader = openReader({paper, principal,
+        isCurrent: () => generation === readerGeneration && state.mode === 'reader' && state.selectedId === paper.id && String(state.principalId || '') === principal,
         container: () => document.getElementById('paperPdfViewer'),
         onReady: signal => {
           if (signal.instanceId !== fullscreenReader?.instanceId || signal.source !== fullscreenReader.sourceWindow || signal.paperId !== paper.id || !signal.fingerprint) return;

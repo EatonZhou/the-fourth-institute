@@ -3,6 +3,7 @@
 import re
 from pathlib import Path
 from management_portal.http_paper_reader import production_routes as reader_routes
+from management_portal.http_paper_translation import production_routes as translation_routes
 from urllib.parse import parse_qs
 
 from management_portal import (
@@ -422,6 +423,7 @@ def routes(portal):
     )
     return (
         *reader_routes(portal),
+        *translation_routes(),
         *(RouteDefinition(method, f"/paper/api/{path}", handler, "paper", phase="dual-auth")
           for method, path, handler in api),
         # Bearer callers of a missing Paper API get 401/403 before 404, like the routes above.
