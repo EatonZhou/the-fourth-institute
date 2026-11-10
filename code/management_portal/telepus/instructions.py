@@ -22,15 +22,21 @@ def _d(name, description, parameters=(), result=(), *, mutates=False, target="",
 
 
 DECLARATIONS = (
-    _d("StartTelepusWeixinBinding", "为当前认证 User 开始微信扫码绑定。", (),
+    _d("StartTelepusWeixinBinding", "为本人或由 Portal 管理员为指定 User 开始微信扫码绑定。", (
+        P("user_id", description="目标用户名；省略为本人，操作他人须为 Portal 管理员"),
+    ),
        (R("binding", "object", "二维码图像、会话 ID 与状态；不含凭证"),), mutates=True),
-    _d("GetTelepusWeixinBinding", "读取本人微信绑定或轮询本人的扫码会话。", (
-        P("session_id", description="本人发起的扫码会话；留空读取当前绑定"),
-    ), (R("binding", "object", "本人绑定状态"),), mutates=True),
-    _d("SubmitTelepusWeixinPin", "提交手机显示的数字，继续本人的扫码绑定。", (
-        R("session_id", description="本人扫码会话"), R("pin", description="手机显示的数字"),
+    _d("GetTelepusWeixinBinding", "读取本人或由 Portal 管理员读取指定用户的绑定、轮询扫码会话。", (
+        P("user_id", description="目标用户名；省略为本人，操作他人须为 Portal 管理员"),
+        P("session_id", description="目标用户的扫码会话；留空读取当前绑定"),
+    ), (R("binding", "object", "绑定状态"),), mutates=True),
+    _d("SubmitTelepusWeixinPin", "本人或 Portal 管理员提交手机显示的数字，继续目标用户的扫码绑定。", (
+        P("user_id", description="目标用户名；省略为本人，操作他人须为 Portal 管理员"),
+        R("session_id", description="目标用户的扫码会话"), R("pin", description="手机显示的数字"),
     ), (R("binding", "object", "扫码状态"),), mutates=True),
-    _d("UnbindTelepusWeixin", "解除当前认证 User 的微信绑定。", (),
+    _d("UnbindTelepusWeixin", "本人或 Portal 管理员解除目标用户的微信绑定。", (
+        P("user_id", description="目标用户名；省略为本人，操作他人须为 Portal 管理员"),
+    ),
        (R("binding", "object", "解除后的状态"),), mutates=True),
     _d("GetTelepusStatus", "读取 Telepus 的三个用户服务的启用和运行状态。", (),
        (R("status", "object", "Telepus 服务状态、缺失的服务和错误"),), category="environment"),

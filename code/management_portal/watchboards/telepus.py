@@ -8,7 +8,7 @@ from management_portal.portal_access_control import get_portal_access_store
 
 
 APPLICATION_ID = "telepus"
-# Its operations manage the caller's own contact, not the board's commands.
+# Contact operations have their own user/administrator rules, separate from board commands.
 ACTS_LIKE_COMMANDS = False
 
 
@@ -46,8 +46,7 @@ def project(context) -> dict:
         for user_id, contact in sorted(users.items(), key=lambda item: (item[1]["name"].casefold(), item[0]))
     ]
     from management_portal.telepus.weixin_binding import WeixinBinding
-    weixin = WeixinBinding().get(canonical_actor_id(context.actor)) if _signed_in_user(context.actor) else {"status": "unavailable"}
-    return {"weixin_binding": weixin, "telegram_users": {
+    return {"weixin_users": WeixinBinding().catalog(context.actor), "telegram_users": {
         "enabled": True, "count": len(items), "users": items,
         "current_user": canonical_actor_id(context.actor),
         "permissions": {"can_manage": _signed_in_user(context.actor)},
@@ -58,14 +57,15 @@ def act(context, operation: str, arguments: dict) -> dict:
     if operation.startswith("weixin-"):
         from management_portal.telepus.weixin_binding import WeixinBinding
         binding = WeixinBinding()
-        actor = binding.user(context.actor)
-        if operation == "weixin-start" and not arguments:
+        allowed = {"user_id", "session_id", "pin"} if operation == "weixin-get" else {"user_id"}
+        if operation not in {"weixin-start", "weixin-get", "weixin-unbind"} or set(arguments) - allowed:
+            raise ValueError("Unsupported Weixin binding operation")
+        actor = binding.target(context.actor, arguments.get("user_id", ""), require_active=operation != "weixin-unbind")
+        if operation == "weixin-start":
             return {"binding": binding.start(actor)}
-        if operation == "weixin-unbind" and not arguments:
+        if operation == "weixin-unbind":
             return {"binding": binding.unbind(actor)}
-        if operation == "weixin-get" and not set(arguments) - {"session_id", "pin"}:
-            return {"binding": binding.get(actor, arguments.get("session_id", ""), arguments.get("pin", ""))}
-        raise ValueError("Unsupported Weixin binding operation")
+        return {"binding": binding.get(actor, arguments.get("session_id", ""), arguments.get("pin", ""))}
     allowed = {"id_token", "previous_id_token"} if operation == "save" else {"id_token"}
     if operation not in {"save", "delete"} or set(arguments) - allowed:
         raise ValueError("Unsupported Telepus contact operation")

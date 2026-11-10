@@ -69,6 +69,65 @@ def test_weixin_instructions_are_self_service_and_reject_residents(enabled_runti
     assert observed == ['bob']
 
 
+@pytest.mark.parametrize('mode', ['open', 'par'])
+def test_weixin_public_list_and_owner_or_admin_operations(enabled_runtime, contacts, permissions, monkeypatch, mode):
+    from management_portal import permission_system
+    from management_portal.telepus.weixin_binding import WeixinBinding
+
+    permissions.users('bob', 'carol')
+    contacts.users.append(dict(username='carol', configured=True, status='active'))
+    monkeypatch.setattr(permission_system, 'configured_mode', lambda: mode)
+    binding = WeixinBinding()
+    binding.store.router.init_schema()
+    for actor in ('alice', 'bob'):
+        binding.store.save_account(actor, dict(ilink_bot_id=f'bot-{actor}', ilink_user_id=f'scanner-{actor}',
+            baseurl='https://ilinkai.weixin.qq.com', bot_token=f'private-{actor}'))
+    binding.store.update('bob', status='expired', context_token='private-context')
+    rows = {row['portal_actor']: row for row in binding.catalog('carol')['users']}
+    assert set(rows) == {'alice', 'bob', 'carol'}
+    assert rows['alice']['status'] == 'active' and rows['bob']['status'] == 'expired'
+    assert not rows['alice']['can_manage'] and not rows['bob']['can_manage']
+    assert rows['carol']['can_manage'] and rows['carol']['status'] == 'unbound'
+    assert all(set(row) == {'portal_actor', 'status', 'current_actor', 'can_manage'} for row in rows.values())
+    assert all(row['can_manage'] for row in binding.catalog('alice')['users'])
+    assert not any(row['can_manage'] for row in binding.catalog(R)['users'])
+
+    observed = []
+    monkeypatch.setattr(WeixinBinding, 'start', lambda self, actor: observed.append(('start', actor)) or {'status': 'wait'})
+    monkeypatch.setattr(WeixinBinding, 'get', lambda self, actor, session='', pin='':
+                        observed.append(('get', actor, session, pin)) or {'status': 'wait'})
+    monkeypatch.setattr(WeixinBinding, '_stop', lambda *_: None)
+    pairs = [
+        ('StartTelepusWeixinBinding', 'weixin-start', {}),
+        ('GetTelepusWeixinBinding', 'weixin-get', {'session_id': 'session'}),
+        ('SubmitTelepusWeixinPin', 'weixin-get', {'session_id': 'session', 'pin': '1234'}),
+        ('UnbindTelepusWeixin', 'weixin-unbind', {}),
+    ]
+    for name, operation, arguments in pairs:
+        denied = call(enabled_runtime, name, 'carol', user_id='bob', **arguments)
+        assert denied.status == 'failed'
+        with pytest.raises(PermissionError, match='管理员'):
+            telepus.act(SimpleNamespace(actor='carol'), operation, {'user_id': 'bob', **arguments})
+    assert observed == [] and binding.store.account('bob')
+
+    for name, operation, arguments in pairs[:-1]:
+        call(enabled_runtime, name, 'alice', user_id='bob', **arguments).raise_for_error()
+        telepus.act(SimpleNamespace(actor='alice'), operation, {'user_id': 'bob', **arguments})
+    assert observed == [('start', 'bob'), ('start', 'bob'), ('get', 'bob', 'session', ''),
+                        ('get', 'bob', 'session', ''), ('get', 'bob', 'session', '1234'),
+                        ('get', 'bob', 'session', '1234')]
+    permissions.administrator('alice', False)
+    assert call(enabled_runtime, 'UnbindTelepusWeixin', 'alice', user_id='bob').status == 'failed'
+    with pytest.raises(PermissionError):
+        telepus.act(SimpleNamespace(actor='alice'), 'weixin-unbind', {'user_id': 'bob'})
+    assert binding.store.account('bob')
+    permissions.administrator('alice')
+    telepus.act(SimpleNamespace(actor='alice'), 'weixin-unbind', {'user_id': 'bob'})
+    assert not binding.store.account('bob') and binding.store.account('alice')
+    call(enabled_runtime, 'UnbindTelepusWeixin', 'alice').raise_for_error()
+    assert not binding.store.account('alice')
+
+
 @pytest.mark.parametrize("name", ADMINISTRATION)
 def test_administration_instruction_requires_an_administrator_even_for_own_target(enabled_runtime, contacts, permissions, name):
     """Telepus 管理指令即使操作自己的联系人也要求管理员"""

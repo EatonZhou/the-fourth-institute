@@ -78,6 +78,13 @@ class WeixinStore:
         with self.router.connect() as c:
             return [dict(r) for r in c.execute("SELECT * FROM weixin_accounts WHERE status='active'").fetchall()]
 
+    def public_accounts(self):
+        """The shared binding list never loads credentials or scanner identifiers."""
+        self.router.init_schema()
+        with self.router.connect() as c:
+            return [dict(r) for r in c.execute(
+                'SELECT portal_actor,status FROM weixin_accounts ORDER BY lower(portal_actor)').fetchall()]
+
     def save_account(self, actor, result):
         with self.router.connect() as c:
             c.execute("INSERT INTO weixin_accounts(portal_actor,ilink_bot_id,ilink_user_id,baseurl,bot_token) "

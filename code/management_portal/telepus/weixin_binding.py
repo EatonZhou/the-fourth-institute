@@ -1,4 +1,4 @@
-"""Self-service QR binding, shared by Web ISA and the Telepus Watchboard."""
+"""User-owned QR binding and administrator management, shared by Web ISA and Watchboard."""
 from __future__ import annotations
 
 import base64
@@ -28,6 +28,38 @@ class WeixinBinding:
     @staticmethod
     def public(account):
         return {'status': account['status'], 'last_error': account['last_error']} if account else {'status': 'unbound'}
+
+    @staticmethod
+    def can_manage(actor, target):
+        from management_common.actor_identity import same_actor
+        from management_common.principal import actor_principal
+        from management_portal import permission_system
+
+        return actor_principal(actor).kind == 'user' and (
+            same_actor(actor, target) or permission_system.user_category(actor) == 'portal_admin')
+
+    def target(self, caller, user_id='', *, require_active=True):
+        from management_common.actor_identity import canonical_actor_id
+        from management_portal.watchboards.telepus import _contact_user
+
+        actor = self.user(caller)
+        target = canonical_actor_id(user_id or actor)
+        if not self.can_manage(actor, target):
+            raise PermissionError('只有本人或 Portal 管理员可以操作微信绑定')
+        return _contact_user(target, require_active=require_active)
+
+    def catalog(self, caller):
+        from management_common.actor_identity import canonical_actor_id, same_actor
+        from management_common.principal import actor_principal
+
+        actor = canonical_actor_id(caller)
+        users = self.store.public_accounts()
+        if actor_principal(actor).kind == 'user' and not any(same_actor(actor, u['portal_actor']) for u in users):
+            users.append({'portal_actor': actor, 'status': 'unbound'})
+        return {'current_user': actor, 'users': [
+            {**user, 'current_actor': same_actor(actor, user['portal_actor']),
+             'can_manage': self.can_manage(actor, user['portal_actor'])}
+            for user in sorted(users, key=lambda u: u['portal_actor'].casefold())]}
 
     def _new_code(self, actor, session, attempt):
         result = self.client_factory().request('get_bot_qrcode', {'local_token_list': []}, query={'bot_type': 3}, auth=False, timeout=5)

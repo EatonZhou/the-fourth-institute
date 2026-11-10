@@ -139,14 +139,16 @@ def test_two_users_bind_on_same_watchboard_and_reach_their_own_amas(telepus_sche
     assert sessions['alice'] != sessions['bob']
     # A caller cannot confirm or replace someone else's QR session.
     assert telepus.act(contexts['bob'], 'weixin-get', {'session_id': sessions['alice']})['binding']['status'] == 'expired'
-    with pytest.raises(ValueError, match='Unsupported'):
+    with pytest.raises(PermissionError, match='管理员'):
         telepus.act(contexts['bob'], 'weixin-unbind', {'user_id': 'alice'})
     for actor in actors:
         login.statuses.append(dict(status='confirmed', **accounts[actor]))
         assert telepus.act(contexts[actor], 'weixin-get', {'session_id': sessions[actor]})['binding']['status'] == 'active'
         if actor == 'alice':
             other = telepus.project(contexts['bob'])
-            assert other['weixin_binding']['status'] == 'unbound'
+            rows = {row['portal_actor']: row for row in other['weixin_users']['users']}
+            assert rows['bob']['status'] == 'unbound' and rows['bob']['can_manage']
+            assert rows['alice']['status'] == 'active' and not rows['alice']['can_manage']
             assert other['telegram_users']['current_user'] == 'bob'
             assert other['telegram_users']['permissions']['can_manage']
     assert {account['portal_actor'] for account in adapter.store.accounts()} == set(actors)
@@ -169,7 +171,8 @@ def test_two_users_bind_on_same_watchboard_and_reach_their_own_amas(telepus_sche
         assert adapter.store.account(actor)['context_token'] == f'context-{actor}'
     assert portals['alice'].delivered[0][2]['message_id'] != portals['bob'].delivered[0][2]['message_id']
     assert telepus.act(contexts['alice'], 'weixin-unbind', {})['binding']['status'] == 'unbound'
-    assert telepus.project(contexts['bob'])['weixin_binding']['status'] == 'active'
+    assert next(row for row in telepus.project(contexts['bob'])['weixin_users']['users']
+                if row['portal_actor'] == 'bob')['status'] == 'active'
     receive('bob', 2)
     assert len(portals['bob'].delivered) == 2
     assert len(portals['alice'].delivered) == 1

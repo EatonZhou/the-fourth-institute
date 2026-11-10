@@ -16,7 +16,9 @@ const {chromium} = require('../../../management_portal/test_framework/tau_runtim
     });
     await page.addScriptTag({path: path.resolve(__dirname, '../../../management_portal/static/watchboard_applications/telepus.js')});
     await page.evaluate(() => {
-      let dashboard = {telegram_users: {enabled: true, current_user: 'alice', users: [{name: 'bob'}], permissions: {can_manage: true}}, weixin_binding: {status: 'unbound'}};
+      let dashboard = {telegram_users: {enabled: true, current_user: 'alice', users: [{name: 'bob'}], permissions: {can_manage: true}},
+        weixin_users: {current_user: 'alice', users: [{portal_actor: 'alice', status: 'unbound', can_manage: true},
+          {portal_actor: 'bob', status: 'active', can_manage: false}]}};
       window.calls = [];
       window.bindingStep = 0;
       window.controller = application.create({
@@ -31,7 +33,9 @@ const {chromium} = require('../../../management_portal/test_framework/tau_runtim
             if (request.args.pin === '1234' && bindingStep === 3) return {binding: {status: 'need_verifycode', session_id: 'session', retryable: true}, watchboard: dashboard};
             binding = request.args.pin === '1234' ? {status: 'active'} : {status: 'need_verifycode', session_id: 'session'};
           }
-          return {binding, watchboard: {...dashboard, weixin_binding: {status: binding.status === 'active' ? 'active' : 'unbound'}}};
+          return {binding, watchboard: {...dashboard, weixin_users: {...dashboard.weixin_users,
+            users: dashboard.weixin_users.users.map(user => user.portal_actor === request.args.user_id
+              ? {...user, status: binding.status === 'active' ? 'active' : 'unbound'} : user)}}};
         }},
         view: {dashboard: () => dashboard, residentId: () => 'resident_4d7f422f024f',
           accept: payload => { dashboard = payload.watchboard; return true; },
@@ -42,17 +46,20 @@ const {chromium} = require('../../../management_portal/test_framework/tau_runtim
       });
       document.querySelector('#board').innerHTML = controller.render(dashboard);
       controller.bind(document.querySelector('#board'), dashboard);
-      window.renderBinding = (status, user = 'alice') => {
-        dashboard = {...dashboard, telegram_users: {...dashboard.telegram_users, current_user: user}, weixin_binding: {status}};
+      window.renderBinding = (status, user = 'alice', viewer = user) => {
+        dashboard = {...dashboard, telegram_users: {...dashboard.telegram_users, current_user: viewer},
+          weixin_users: {current_user: viewer, users: [{portal_actor: user, status, can_manage: viewer === user || viewer === 'admin'}]}};
         document.querySelector('#board').innerHTML = controller.render(dashboard);
         controller.bind(document.querySelector('#board'), dashboard);
       };
     });
-    assert.equal(await page.locator('#board [data-weixin-account]').textContent(), '当前 Portal 用户：alice');
-    assert.match(await page.locator('[data-weixin-scope]').textContent(), /每个 Portal 用户可独立绑定自己的微信/);
+    assert.equal(await page.locator('#board [data-weixin-account]').first().textContent(), 'alice');
+    assert.equal(await page.locator('[data-weixin-row]').count(), 2);
+    assert.equal(await page.locator('[data-weixin-row="bob"] button').count(), 0);
+    assert.match(await page.locator('[data-weixin-scope]').textContent(), /仅本人或 Portal 管理员可操作/);
     assert.equal(await page.locator('[data-weixin-unbind]').count(), 0);
     await page.locator('[data-weixin-bind]').click();
-    assert.equal(await page.locator('#modal [data-weixin-account]').textContent(), '当前 Portal 用户：alice');
+    assert.equal(await page.locator('#modal [data-weixin-account]').textContent(), '绑定到 Portal 用户：alice');
     assert.equal(await page.locator('.watchboardModalCard').evaluate(el => getComputedStyle(el).getPropertyValue('--portal-detail-width').trim()), '380px');
     await page.waitForFunction(() => document.querySelector('[data-weixin-status]').textContent.includes('重新确认'));
     await page.locator('[data-weixin-pin-form]').waitFor({state: 'visible'});
@@ -62,7 +69,7 @@ const {chromium} = require('../../../management_portal/test_framework/tau_runtim
     assert(await page.locator('[data-weixin-qr]').isHidden());
     assert.equal(await page.locator('[data-weixin-bind]').count(), 0);
     assert(await page.locator('[data-weixin-unbind]').isEnabled());
-    assert.equal(await page.locator('#board [data-weixin-account]').textContent(), '当前 Portal 用户：alice');
+    assert.equal(await page.locator('#board [data-weixin-account]').first().textContent(), 'alice');
     await page.locator('[data-weixin-close]').click();
     assert.equal(await page.locator('[data-weixin-close]').count(), 0);
     await page.locator('[data-weixin-unbind]').click();
@@ -73,16 +80,30 @@ const {chromium} = require('../../../management_portal/test_framework/tau_runtim
     assert(calls.every(call => call.resident_id === 'resident_4d7f422f024f'));
     assert.equal(calls.filter(call => call.args.pin === '1234').length, 2);
     assert.equal(calls.at(-1).operation, 'weixin-unbind');
+    assert(calls.every(call => call.args.user_id === 'alice'));
     await page.evaluate(() => renderBinding('expired', 'bob'));
     assert.equal(await page.locator('[data-weixin-bind]').textContent(), '重新绑定微信');
     assert(await page.locator('[data-weixin-unbind]').isEnabled());
-    assert.equal(await page.locator('#board [data-weixin-account]').textContent(), '当前 Portal 用户：bob');
+    assert.equal(await page.locator('#board [data-weixin-account]').textContent(), 'bob');
     await page.evaluate(() => renderBinding('active', 'bob'));
     assert.equal(await page.locator('[data-weixin-bind]').count(), 0);
     await page.evaluate(() => renderBinding('unbound', 'carol'));
-    assert.equal(await page.locator('#board [data-weixin-account]').textContent(), '当前 Portal 用户：carol');
+    assert.equal(await page.locator('#board [data-weixin-account]').textContent(), 'carol');
     assert(await page.locator('[data-weixin-bind]').isEnabled());
     assert.equal(await page.locator('[data-weixin-unbind]').count(), 0);
-    console.log('Weixin Watchboard binding recovery, account ownership and state-dependent actions passed');
+    await page.evaluate(() => renderBinding('expired', 'bob', 'carol'));
+    assert.equal(await page.locator('[data-weixin-row="bob"] button').count(), 0);
+    await page.evaluate(() => renderBinding('expired', 'bob', 'admin'));
+    await page.locator('[data-weixin-bind="bob"]').click();
+    assert.equal(await page.locator('#modal [data-weixin-account]').textContent(), '绑定到 Portal 用户：bob');
+    await page.locator('[data-weixin-pin-form]').waitFor({state: 'visible'});
+    await page.locator('[data-weixin-pin]').fill('1234');
+    await page.locator('[data-weixin-pin-form] button').click();
+    await page.waitForFunction(() => document.querySelector('[data-weixin-status]').textContent.includes('可以在微信发送 /help'));
+    await page.locator('[data-weixin-close]').click();
+    await page.locator('[data-weixin-unbind="bob"]').click();
+    await page.locator('[data-weixin-bind="bob"]').waitFor();
+    assert((await page.evaluate(() => calls.slice(calls.findIndex(call => call.args.user_id === 'bob')))).every(call => call.args.user_id === 'bob'));
+    console.log('Weixin shared list, owner/admin controls, explicit QR target and retry recovery passed');
   } finally { await browser.close(); }
 })().catch(error => { console.error(error); process.exitCode = 1; });
