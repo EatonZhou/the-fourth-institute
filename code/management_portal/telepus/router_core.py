@@ -7,6 +7,7 @@ the User come back; everything else stays in Portal until ``/history``.
 from __future__ import annotations
 
 import hashlib
+import json
 import re
 import secrets
 import time
@@ -411,10 +412,15 @@ class RouterCore:
             answer_message_id=answer_id, questions=questions, lendable=not member_owned)
         if not session:
             return []
+        family = message.get('family_reply') or {}
+        self.store.set_meta('question-source:' + session['session_id'], json.dumps({
+            'resident_id': family.get('resident_id') or resident_id,
+            'message_id': family.get('message_id') or message['message_id']}))
         return [self._question_prompt(session)]
 
     def _question_prompt(self, session: dict[str, Any]) -> dict[str, Any]:
         return {**self.presentation._question_prompt(self, session),
+                'question_source': json.loads(self.store.get_meta('question-source:' + session['session_id'], '{}')),
                 'link': {'resident_id': session['resident_id'], 'message_id': session['source_message_id']}}
 
     def _answer_question(self, state: dict[str, Any], session: dict[str, Any], step: int, answer: str, *,

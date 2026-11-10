@@ -23,6 +23,8 @@ class WeixinAdapter:
         self.router.presentation = WeixinPresentation()
         self.router.portal.channel = 'weixin'
         self.store = WeixinStore(self.router.store)
+        from .notifications import Notifications
+        self.notifications = Notifications(self.router.store, self.router.portal)
         self.client_factory = client_factory
         self.budget = max(2, int(setting('weixin_send_budget', 8)))
 
@@ -31,6 +33,7 @@ class WeixinAdapter:
         fields = {'last_error': f'iLink: {code}'}
         if code == -14:
             fields['status'] = 'expired'
+            self.notifications.clear(actor)
         self.store.update(actor, **fields)
 
     def poll_once(self, actor):
@@ -72,11 +75,11 @@ class WeixinAdapter:
         self.store.budget(chat, reset=True)
         self.router.waiting.received(chat, f'message:{local_id}')
         text, reference = self._content(account, message)
-        local = text.strip().split(' ', 1)[0] in {'/help', '/start', '/where', '/home'}
+        local = text.strip().split(' ', 1)[0] in {'/help', '/start', '/where', '/home', '/notify'}
         # respond() drains the durable queue in order, including the new local
         # reply. Avoid a redundant pre-flush and typing roundtrip for local commands.
         if not local:
-            self.flush(actor)
+            self.flush(actor, reminders=False)
         dispatch_started = time.time()
         send_started = dispatch_started
         if text.strip() == '/more':
@@ -204,7 +207,7 @@ class WeixinAdapter:
             for token in images:
                 self.store.enqueue(chat, {'attachment_token': token})
 
-    def flush(self, actor, *, manual=False, one=False):
+    def flush(self, actor, *, manual=False, one=False, reminders=True):
         account = self.store.account(actor)
         if not account or account['status'] != 'active':
             return
@@ -212,13 +215,17 @@ class WeixinAdapter:
         client = self.client_factory(account)
         rows = self.store.pending(chat, manual=manual)
         for row in rows:
+            if row['item'].get('notification_actor'):
+                if reminders:
+                    self._send_reminder(account, row, client)
+                continue
             count, blocked = self.store.budget(chat)
             if blocked or not account['context_token']:
                 return
             if count >= self.budget - 1:
                 if count < self.budget:
                     try:
-                        remaining = len(self.store.pending(chat, manual=manual))
+                        remaining = sum(not row['item'].get('notification_actor') for row in self.store.pending(chat, manual=manual))
                         client.send([{'type': 1, 'text_item': {'text': f'还有 {remaining} 条回复，回复任意消息继续接收'}}],
                                     account['context_token'], client_id=f'telepus-notice-{row["id"]}')
                         self.store.budget(chat, spent=True)
@@ -252,6 +259,8 @@ class WeixinAdapter:
                     parts = [{'type': 1, 'text_item': {'text': segment_text(segments, total)}}]
                 result = client.send(parts, account['context_token'], client_id=f'telepus-{row["id"]}-{item.get("part", 0)}')
                 self.store.budget(chat, spent=True)
+                if item.get('question_session'):
+                    self.notifications.card_sent(actor, item.get('question_source') or item.get('link') or {})
                 if item.get('delivery') or item.get('input'):
                     self.router.waiting.replied(chat)
                 server_id = result.get('message_id')
@@ -284,6 +293,50 @@ class WeixinAdapter:
             if one:
                 return
 
+    def _send_reminder(self, account, row, client):
+        actor = account['portal_actor']
+        chat = chat_key(account['ilink_bot_id'])
+        count, blocked = self.store.budget(chat)
+        if blocked or count >= self.budget - 1 or not account['context_token']:
+            return
+        item = row['item']
+        if time.time() < item.get('retry_at', 0):
+            return
+        try:
+            prepared = self.notifications.prepare(actor)
+        except Exception as exc:
+            if not item.get('failures'):
+                self.notifications.diagnostic(actor, exc)
+            self._retry_reminder(row, item)
+            return
+        if prepared is None:
+            return
+        keys, text = prepared
+        if not keys:
+            self.store.finish(row['id'])
+            return
+        try:
+            # Summary is bounded to one Weixin message and never consumes the reserved slot.
+            client.send([{'type': 1, 'text_item': {'text': text}}], account['context_token'],
+                        client_id=f'telepus-reminder-{row["id"]}')
+            self.store.budget(chat, spent=True)
+            self.notifications.sent(keys)
+            self.store.finish(row['id'])
+            if self.notifications.pending(actor):
+                self.store.enqueue(chat, {'notification_actor': actor})
+        except Exception as exc:
+            self._failure(actor, exc)
+            if isinstance(exc, WeixinError) and exc.code == -2:
+                self.store.budget(chat, blocked=True)
+            else:
+                self._retry_reminder(row, item)
+
+    def _retry_reminder(self, row, item):
+        item['failures'] = min(item.get('failures', 0) + 1, 9)
+        item['retry_at'] = time.time() + min(300, 2 ** item['failures'])
+        with self.router.store.connect() as c:
+            c.execute('UPDATE outbound_queue SET item=? WHERE id=?', (document(item), row['id']))
+
     def refresh(self, actor):
         with self.store.lock(actor):
             account = self.store.account(actor)
@@ -291,8 +344,8 @@ class WeixinAdapter:
                 return
             chat = chat_key(account['ilink_bot_id'])
             try:
-                self.flush(actor)
-                if not self.store.pending(chat):
+                self.flush(actor, reminders=False)
+                if not any(not row['item'].get('notification_actor') for row in self.store.pending(chat)):
                     state = self.router.store.get_chat_state(chat)
                     outgoing = self.router.refresh_chat(state)
                     self.enqueue(chat, outgoing)
@@ -300,6 +353,7 @@ class WeixinAdapter:
                     # Pending queue owns recovery; release the optimistic delivery
                     # claim and reopen inputs while the budget prevents sending.
                     self._reopen_pending(chat)
+                self.flush(actor)
                 self.router.waiting.send_if_due(chat, lambda text, generation: self._waiting_notice(actor, text, generation))
                 self.typing(actor)
             except Exception as exc:

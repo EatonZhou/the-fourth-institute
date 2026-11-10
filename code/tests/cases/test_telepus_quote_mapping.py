@@ -119,7 +119,7 @@ def test_schema_8_upgrade_is_locked_additive_and_preserves_input(telepus_schema)
     assert upgraded.linked_message('chat', 2)['message_id'] == 'old-reply'
     assert upgraded.linked_message_by_text('chat', 'kept')['message_id'] == 'old-input'
     with upgraded.connect() as c:
-        assert c.execute("SELECT value FROM meta WHERE key='schema_version'").fetchone()[0] == '9'
+        assert c.execute("SELECT value FROM meta WHERE key='schema_version'").fetchone()[0] == '10'
         c.execute("UPDATE meta SET value='6' WHERE key='schema_version'")
     with pytest.raises(RuntimeError, match='migration'):
         RouterStore(telepus_schema).init_schema()

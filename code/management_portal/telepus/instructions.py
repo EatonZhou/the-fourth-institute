@@ -22,6 +22,13 @@ def _d(name, description, parameters=(), result=(), *, mutates=False, target="",
 
 
 DECLARATIONS = (
+    _d('GetTelepusWeixinNotifications', '读取本人或由 Portal 管理员读取指定用户的微信提醒开关。', (
+        P('user_id', description='目标用户名；省略为本人，操作他人须为 Portal 管理员'),
+    ), (R('preferences', 'object', 'mention 与 question 布尔开关，默认关闭'),)),
+    _d('UpdateTelepusWeixinNotifications', '本人或 Portal 管理员修改微信提醒开关；开启后先建立旧项基线。', (
+        P('user_id', description='目标用户名；省略为本人，操作他人须为 Portal 管理员'),
+        P('mention', 'boolean', '是否提醒聊天室 @ 我'), P('question', 'boolean', '是否提醒待我回答'),
+    ), (R('preferences', 'object', '修改后的 mention 与 question 开关'),), mutates=True),
     _d("StartTelepusWeixinBinding", "为本人或由 Portal 管理员为指定 User 开始微信扫码绑定。", (
         P("user_id", description="目标用户名；省略为本人，操作他人须为 Portal 管理员"),
     ),

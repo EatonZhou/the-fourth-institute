@@ -54,6 +54,12 @@ def project(context) -> dict:
 
 
 def act(context, operation: str, arguments: dict) -> dict:
+    if operation == 'weixin-notifications':
+        from management_portal.telepus.notifications import settings
+        if set(arguments) - {'user_id', 'mention', 'question'}:
+            raise ValueError('Unsupported Weixin notification setting')
+        changes = {k: arguments[k] for k in ('mention', 'question') if k in arguments}
+        return {'preferences': settings(context.actor, arguments.get('user_id', ''), changes)}
     if operation.startswith("weixin-"):
         from management_portal.telepus.weixin_binding import WeixinBinding
         binding = WeixinBinding()

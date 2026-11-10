@@ -612,6 +612,8 @@
     },
     "StartTelepusWeixinBinding": {"a": "@free", "r": "@portal"},
     "GetTelepusWeixinBinding": {"a": "@free", "r": "@portal"},
+    "GetTelepusWeixinNotifications": {"a": "@free", "r": "@portal"},
+    "UpdateTelepusWeixinNotifications": {"a": "@free", "r": "@portal"},
     "SubmitTelepusWeixinPin": {"a": "@free", "r": "@portal"},
     "UnbindTelepusWeixin": {"a": "@free", "r": "@portal"},
     "GetSharedState": {

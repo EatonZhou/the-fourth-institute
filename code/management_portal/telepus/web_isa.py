@@ -59,7 +59,17 @@ def weixin_binding(inv: Invocation) -> dict[str, Any]:
     return {"binding": result}
 
 
+def weixin_notifications(inv: Invocation) -> dict[str, Any]:
+    from .notifications import settings
+    changes = None
+    if inv.name == 'UpdateTelepusWeixinNotifications':
+        changes = {k: inv.argument(k) for k in ('mention', 'question') if inv.argument(k) is not None}
+    return {'preferences': settings(inv.caller, inv.argument('user_id', ''), changes)}
+
+
 HANDLERS = {
+    'GetTelepusWeixinNotifications': weixin_notifications,
+    'UpdateTelepusWeixinNotifications': weixin_notifications,
     **{name: weixin_binding for name in ("StartTelepusWeixinBinding", "GetTelepusWeixinBinding",
                                        "SubmitTelepusWeixinPin", "UnbindTelepusWeixin")},
     "GetTelepusStatus": get_telepus_status,

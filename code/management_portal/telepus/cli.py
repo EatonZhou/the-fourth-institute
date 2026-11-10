@@ -152,6 +152,8 @@ def run_telegram_refresh_daemon(argv: list[str]) -> int:
     from .weixin_adapter import WeixinAdapter
     from concurrent.futures import ThreadPoolExecutor
     weixin = WeixinAdapter()
+    from .refresh_service import NotificationScheduler
+    notifications = NotificationScheduler(weixin)
     weixin_pool = ThreadPoolExecutor(max_workers=8, thread_name_prefix='telepus-weixin-refresh')
     pending = {}
     last_errors = 0
@@ -161,6 +163,7 @@ def run_telegram_refresh_daemon(argv: list[str]) -> int:
         started_at = now_iso()
         try:
             result = adapter.refresh_routes(limit=refresh_limit, dry_run=False)
+            notifications.tick()
             for account in weixin.store.accounts():
                 actor = account['portal_actor']
                 if actor not in pending or pending[actor].done():

@@ -1,0 +1,251 @@
+"""Opt-in Weixin reminders; Mailbox alone owns unread and pending-question truth."""
+from __future__ import annotations
+
+import json
+import time
+from urllib.parse import urlsplit
+
+from .router_store import now_iso
+from .weixin_store import WeixinStore, chat_key
+
+CATEGORIES = ('mention', 'question')
+DDL = """
+CREATE TABLE IF NOT EXISTS notification_preferences (
+ portal_actor TEXT NOT NULL, category TEXT NOT NULL,
+ enabled BOOLEAN NOT NULL DEFAULT FALSE, enabled_at TIMESTAMPTZ,
+ baseline_ready BOOLEAN NOT NULL DEFAULT FALSE,
+ PRIMARY KEY(portal_actor,category)
+);
+CREATE TABLE IF NOT EXISTS notification_deliveries (
+ key TEXT PRIMARY KEY, portal_actor TEXT NOT NULL, category TEXT NOT NULL,
+ source_resident_id TEXT NOT NULL DEFAULT '', source_message_id TEXT NOT NULL,
+ chatroom_id TEXT NOT NULL DEFAULT '', status TEXT NOT NULL,
+ discovered_at DOUBLE PRECISION NOT NULL, sent_at TIMESTAMPTZ,
+ invalid_reason TEXT NOT NULL DEFAULT ''
+);
+CREATE INDEX IF NOT EXISTS notification_pending ON notification_deliveries(portal_actor,status,discovered_at);
+"""
+
+
+def public_link(relative):
+    """Use the same configured public origin as upload-address validation."""
+    import os
+    from management_common.site_config import read_site_config
+    from management_portal.file_access_policy import _origin
+
+    origin = os.environ.get('PORTAL_PUBLIC_ORIGIN')
+    if origin is None:
+        origin = read_site_config().get('deployment', {}).get('auth', {}).get('public_origin', '')
+    try:
+        parsed = urlsplit(origin)
+        if (_origin(origin)[0] != 'https' or parsed.path not in ('', '/')
+                or parsed.query or parsed.fragment or '\\' in origin
+                or any(ord(c) < 32 for c in origin)):
+            return ''
+    except (ValueError, TypeError, AttributeError):
+        return ''
+    if not isinstance(relative, str) or not relative.startswith('/') or relative.startswith('//'):
+        return ''
+    if '\\' in relative or any(ord(c) < 32 for c in relative):
+        return ''
+    return origin.rstrip('/') + relative
+
+
+def candidates(actor, snapshot):
+    """Missing fields are unsupported, never an empty, authoritative category."""
+    if not isinstance(snapshot, dict) or any(snapshot.get(k) for k in ('next_cursor', 'next_page_token', 'has_more', 'truncated', 'incomplete')):
+        raise ValueError('Incomplete Mailbox snapshot')
+    result = {}
+    if 'items' in snapshot:
+        if not isinstance(snapshot['items'], list):
+            raise ValueError('Invalid Mailbox items')
+        mentions = {}
+        for item in snapshot['items']:
+            if item.get('kind') != 'chatroom':
+                continue
+            for mention in item.get('unread_mentions') or []:
+                room, message = item.get('chatroom_id'), mention.get('message_id')
+                if not room or not message:
+                    raise ValueError('Invalid Mailbox mention identity')
+                key = f'{actor}:mention:{room}:{message}'
+                mentions[key] = dict(category='mention', chatroom_id=room, source_message_id=message,
+                                     title=item.get('title') or '聊天室', url=mention.get('url') or item.get('url') or '')
+        result['mention'] = mentions
+    if 'pending_requests' in snapshot:
+        if not isinstance(snapshot['pending_requests'], list):
+            raise ValueError('Invalid Mailbox pending requests')
+        questions = {}
+        for item in snapshot['pending_requests']:
+            resident, message = item.get('source_resident_id'), item.get('source_message_id')
+            if not resident or not message:
+                raise ValueError('Invalid Mailbox question identity')
+            questions[f'{actor}:question:{resident}:{message}'] = dict(
+                category='question', source_resident_id=resident, source_message_id=message,
+                resident_id=item.get('resident_id') or resident,
+                title=item.get('title') or item.get('resident_title') or '', url=item.get('url') or '')
+        result['question'] = questions
+    return result
+
+
+class Notifications:
+    """All methods run under the existing per-user Weixin lock unless documented."""
+    def __init__(self, router_store, portal=None, *, clock=time.time):
+        self.router = router_store
+        self.store = WeixinStore(router_store)
+        self.portal = portal
+        self.clock = clock
+
+    def preferences(self, actor):
+        self.router.init_schema()
+        with self.router.connect() as c:
+            rows = c.execute('SELECT category,enabled FROM notification_preferences WHERE portal_actor=?', (actor,)).fetchall()
+        return {**dict.fromkeys(CATEGORIES, False), **{r['category']: r['enabled'] for r in rows}}
+
+    def update(self, actor, **changes):
+        if set(changes) - set(CATEGORIES) or any(type(v) is not bool for v in changes.values()):
+            raise ValueError('提醒设置必须是 mention/question 布尔值')
+        account = self.store.account(actor)
+        if any(changes.values()) and (not account or account['status'] != 'active'):
+            raise ValueError('请先绑定微信，再开启提醒')
+        old = self.preferences(actor)
+        with self.router.connect() as c:
+            for category, enabled in changes.items():
+                if old[category] == enabled:
+                    continue
+                c.execute('INSERT INTO notification_preferences(portal_actor,category,enabled,enabled_at,baseline_ready) '
+                          'VALUES(?,?,?,?,FALSE) ON CONFLICT(portal_actor,category) DO UPDATE SET '
+                          'enabled=excluded.enabled,enabled_at=excluded.enabled_at,baseline_ready=FALSE',
+                          (actor, category, enabled, now_iso()))
+                c.execute("DELETE FROM notification_deliveries WHERE portal_actor=? AND category=? AND invalid_reason!='card'",
+                          (actor, category))
+            c.execute('DELETE FROM meta WHERE key=?', ('notification-watch:' + actor,))
+        return self.preferences(actor)
+
+    def clear(self, actor):
+        with self.router.connect() as c:
+            c.execute('DELETE FROM notification_preferences WHERE portal_actor=?', (actor,))
+            c.execute('DELETE FROM notification_deliveries WHERE portal_actor=?', (actor,))
+            c.execute('DELETE FROM meta WHERE key=?', ('notification-watch:' + actor,))
+            c.execute("DELETE FROM outbound_queue WHERE item->>'notification_actor'=?", (actor,))
+
+    def card_sent(self, actor, source):
+        resident, message = source.get('resident_id'), source.get('message_id')
+        if not resident or not message:
+            return
+        with self.router.connect() as c:
+            c.execute("INSERT INTO notification_deliveries(key,portal_actor,category,source_resident_id,source_message_id,"
+                      "status,discovered_at,sent_at,invalid_reason) VALUES(?,?,'question',?,?,'sent',?,?,'card') "
+                      "ON CONFLICT(key) DO UPDATE SET status='sent',sent_at=excluded.sent_at,invalid_reason='card'",
+                      (f'{actor}:question:{resident}:{message}', actor, resident, message, self.clock(), now_iso()))
+
+    def snapshot(self, actor):
+        return candidates(actor, self.portal.call(actor, 'GetMailbox', {'user_id': actor}))
+
+    def reconcile(self, actor, current):
+        """Only successful, supported category snapshots may change durable state."""
+        with self.router.connect() as c:
+            prefs = c.execute('SELECT * FROM notification_preferences WHERE portal_actor=? AND enabled=TRUE', (actor,)).fetchall()
+            for pref in prefs:
+                category = pref['category']
+                if category not in current:
+                    continue
+                entries = current[category]
+                for key, item in entries.items():
+                    c.execute('INSERT INTO notification_deliveries(key,portal_actor,category,source_resident_id,source_message_id,'
+                              'chatroom_id,status,discovered_at) VALUES(?,?,?,?,?,?,?,?) ON CONFLICT DO NOTHING',
+                              (key, actor, category, item.get('source_resident_id', ''), item['source_message_id'],
+                               item.get('chatroom_id', ''), 'pending' if pref['baseline_ready'] else 'baseline', self.clock()))
+                rows = c.execute("SELECT key FROM notification_deliveries WHERE portal_actor=? AND category=? AND status='pending'",
+                                 (actor, category)).fetchall()
+                for row in rows:
+                    if row['key'] not in entries:
+                        c.execute("UPDATE notification_deliveries SET status='invalid',invalid_reason='absent' WHERE key=?", (row['key'],))
+                c.execute('UPDATE notification_preferences SET baseline_ready=TRUE WHERE portal_actor=? AND category=?', (actor, category))
+
+    def pending(self, actor):
+        with self.router.connect() as c:
+            return [dict(r) for r in c.execute("SELECT d.* FROM notification_deliveries d JOIN notification_preferences p "
+                "ON p.portal_actor=d.portal_actor AND p.category=d.category WHERE d.portal_actor=? AND p.enabled=TRUE "
+                "AND d.status='pending' ORDER BY d.discovered_at,d.key", (actor,)).fetchall()]
+
+    def scan(self, actor):
+        """Scheduled worker: one bounded watch, then a full read when indicated."""
+        # Network wait is outside the send lock. Settings/binding are re-read inside it.
+        if not any(self.preferences(actor).values()):
+            return
+        key = 'notification-watch:' + actor
+        state = json.loads(self.router.get_meta(key, '{}'))
+        if self.clock() < state.get('retry_at', 0):
+            return
+        try:
+            batch = self.portal.first_batch(actor, 'WatchMailbox', {
+                'user_id': actor, 'after_cursor': state.get('cursor', ''), 'timeout_seconds': 1})
+            watch = batch[-1] if batch else {}
+            with self.store.lock(actor):
+                account = self.store.account(actor)
+                if not account or account['status'] != 'active' or not any(self.preferences(actor).values()):
+                    return
+                # Periodic complete reads also discover a newly supported category field.
+                if not state.get('read_at') or watch.get('keys') or watch.get('snapshot_required') or self.clock() - state['read_at'] >= 30:
+                    self.reconcile(actor, self.snapshot(actor))
+                    state['read_at'] = self.clock()
+                state.update(cursor=watch.get('cursor', state.get('cursor', '')), failures=0, retry_at=0)
+                self.router.set_meta(key, json.dumps(state))
+                if any(self.clock() - row['discovered_at'] >= 60 for row in self.pending(actor)):
+                    self.store.enqueue(chat_key(account['ilink_bot_id']), {'notification_actor': actor})
+        except Exception as exc:
+            # No response, exception text, content, credentials or DSN in logs/audit.
+            with self.store.lock(actor):
+                if any(self.preferences(actor).values()):
+                    state['failures'] = min(state.get('failures', 0) + 1, 7)
+                    state['retry_at'] = self.clock() + min(300, 2 ** state['failures'])
+                    self.router.set_meta(key, json.dumps(state))
+                    if state['failures'] == 1:
+                        self.diagnostic(actor, exc)
+
+    @staticmethod
+    def diagnostic(actor, error):
+        import sys
+        print(f'Telepus notification actor={actor} error_type={type(error).__name__}', file=sys.stderr, flush=True)
+
+    def prepare(self, actor):
+        """Revalidate immediately before sending; return None to retain the queue."""
+        if not any(self.preferences(actor).values()):
+            return [], ''
+        current = self.snapshot(actor)
+        self.reconcile(actor, current)
+        rows = self.pending(actor)
+        ready = [r for r in rows if r['category'] in current and r['key'] in current[r['category']]]
+        if not ready:
+            return None if rows else ([], '')
+        if self.clock() - min(r['discovered_at'] for r in ready) < 60:
+            return None
+        from .weixin_format import notification_text
+        keys = [r['key'] for r in ready[:5]]
+        items = [current[r['category']][r['key']] for r in ready[:5]]
+        titles = {}
+        for item in items[:5]:
+            if item['category'] == 'question' and not item['title']:
+                resident = item['resident_id']
+                if resident not in titles:
+                    try:
+                        titles[resident] = self.portal.resident(actor, resident).get('title') or resident
+                    except Exception:
+                        titles[resident] = resident
+                item['title'] = titles[resident]
+        return keys, notification_text(items, public_link, total=len(ready))
+
+    def sent(self, keys):
+        with self.router.connect() as c:
+            for key in keys:
+                c.execute("UPDATE notification_deliveries SET status='sent',sent_at=? WHERE key=? AND status='pending'", (now_iso(), key))
+
+
+def settings(caller, user_id='', changes=None):
+    """Shared Web/Watchboard authorization boundary; unrelated readers cannot mutate."""
+    from .weixin_binding import WeixinBinding
+    binding = WeixinBinding()
+    actor = binding.target(caller, user_id)
+    notifications = Notifications(binding.store.router)
+    with binding.store.lock(actor):
+        return notifications.preferences(actor) if changes is None else notifications.update(actor, **changes)

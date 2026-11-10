@@ -135,6 +135,10 @@
               return window.PortalI18n.html`<div class="watchboardCompactItem" data-weixin-row="${esc(userId)}">
                 <span><strong data-weixin-account>${esc(userId)}</strong>
                   <span>${esc(window.PortalI18n.t(status === "active" ? "微信已绑定" : status === "expired" ? "需要重新扫码" : "微信未绑定"))}</span></span>
+                <span class="watchboardNotificationSettings">
+                  <label><input type="checkbox" data-weixin-notification="mention" data-weixin-user="${esc(userId)}" ${user.notifications?.mention ? "checked" : ""} ${user.can_manage && status === "active" ? "" : "disabled"}> 聊天室 @ 我</label>
+                  <label><input type="checkbox" data-weixin-notification="question" data-weixin-user="${esc(userId)}" ${user.notifications?.question ? "checked" : ""} ${user.can_manage && status === "active" ? "" : "disabled"}> 待我回答</label>
+                </span>
                 <span>${user.can_manage ? window.PortalI18n.html`
                   ${status !== "active" ? window.PortalI18n.html`<button class="portalButton is-compact" data-weixin-bind="${esc(userId)}">${esc(window.PortalI18n.t(status === "expired" ? "重新绑定微信" : "绑定微信"))}</button>` : ""}
                   ${["active", "expired"].includes(status) ? window.PortalI18n.html`<button class="portalButton is-compact" data-weixin-unbind="${esc(userId)}">解除微信绑定</button>` : ""}` : window.PortalI18n.html`<span>仅查看</span>`}</span>
@@ -255,6 +259,19 @@
       }
 
       function bind(box, dashboard) {
+        box.querySelectorAll("[data-weixin-notification]").forEach(input => {
+          input.addEventListener("change", async () => {
+            input.disabled = true;
+            try {
+              await weixinOperation("weixin-notifications", { user_id: input.dataset.weixinUser, [input.dataset.weixinNotification]: input.checked });
+              renderWatchboard();
+            } catch (err) {
+              input.checked = !input.checked;
+              input.disabled = false;
+              portalUi.toast(portalUi.errorMessage(window.PortalI18n.t("更新微信提醒"), err), "error");
+            }
+          });
+        });
         box.querySelectorAll("[data-weixin-bind]").forEach(button => {
           button.addEventListener("click", () => bindWeixin(button.dataset.weixinBind));
         });

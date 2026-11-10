@@ -53,11 +53,14 @@ class WeixinBinding:
         from management_common.principal import actor_principal
 
         actor = canonical_actor_id(caller)
+        from .notifications import Notifications
+        notifications = Notifications(self.store.router)
         users = self.store.public_accounts()
         if actor_principal(actor).kind == 'user' and not any(same_actor(actor, u['portal_actor']) for u in users):
             users.append({'portal_actor': actor, 'status': 'unbound'})
         return {'current_user': actor, 'users': [
-            {**user, 'current_actor': same_actor(actor, user['portal_actor']),
+            {**user, 'notifications': notifications.preferences(user['portal_actor']),
+             'current_actor': same_actor(actor, user['portal_actor']),
              'can_manage': self.can_manage(actor, user['portal_actor'])}
             for user in sorted(users, key=lambda u: u['portal_actor'].casefold())]}
 
@@ -152,6 +155,8 @@ class WeixinBinding:
 
     def unbind(self, actor):
         with self.store.lock(actor):
+            from .notifications import Notifications
+            Notifications(self.store.router).clear(actor)
             account = self.store.account(actor)
             if account:
                 self._stop(account)

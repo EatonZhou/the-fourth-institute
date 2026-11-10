@@ -94,7 +94,7 @@ class PortalClient:
         from management_portal.hatg.contracts import InstructionContext
 
         stream = routing.stream({"instruction": instruction, "arguments": arguments},
-                                InstructionContext(caller=actor, entry="web"))
+                                InstructionContext(caller=actor, entry="web", channel=self.channel))
         try:
             batch = next(iter(stream), [])
         finally:

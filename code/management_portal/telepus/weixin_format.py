@@ -127,6 +127,27 @@ def segment_text(segments, total):
     return segments[0].rstrip() + '\n\n' + hint
 
 
+def notification_text(items, link, *, total=None):
+    """Short summaries contain titles and navigation, never message excerpts."""
+    total = len(items) if total is None else total
+    lines = [f'🔔 Portal 有 {total} 件事需要你查看'] if total > 1 else []
+    for item in items[:5]:
+        title = ' '.join(str(item['title']).split())[:100].replace('*', '')
+        if item['category'] == 'mention':
+            lines.append(f'🔔 **{title}** 里有人 @了你')
+        else:
+            lines.append(f'❓ **{title}** 在等你回答')
+        url = link(item['url'])
+        fallback = ('在 Portal 打开 Resident ' + item['resident_id'] + ' 查看问题'
+                    if item['category'] == 'question' else '在 Portal 的 Mailbox 中查看')
+        lines.append(url if url and len(url) <= 350 else fallback)
+        if item['category'] == 'question':
+            lines.append('切换对话：/route ' + item['resident_id'] + '；此问题请回 Portal 作答。')
+    if total > len(items):
+        lines.append(f'另有 {total - len(items)} 项待发送，将继续分批提醒。')
+    return format_text('\n'.join(lines))
+
+
 class WeixinPresentation(TelegramPresentation):
     capabilities = ChannelCapabilities(buttons=False, edit_messages=False, unlimited_sends=False, command_menu=False, text_limit=3800)
     title = '微信'
@@ -148,6 +169,7 @@ class WeixinPresentation(TelegramPresentation):
         '',
         '**命令**',
         '- /help 本说明',
+        '- /notify 查看提醒；/notify mention on|off 开关聊天室 @ 我；/notify question on|off 开关待我回答',
         '- /home 回到个人助手',
         '- /route <resident_id> 直接联系一个 Resident',
         '- /where 当前目标',
@@ -186,11 +208,22 @@ class WeixinPresentation(TelegramPresentation):
         chat = state['chat_id']
         session = core.store.active_question(chat)
         command, _, argument = message.partition(' ')
+        if command == '/notify':
+            from .notifications import Notifications
+            notifications = Notifications(core.store)
+            args = argument.split()
+            if args and (len(args) != 2 or args[0] not in ('mention', 'question') or args[1] not in ('on', 'off')):
+                return core._reply(['用法：/notify；/notify mention on|off；/notify question on|off'])
+            # Inbound identity and per-user lock are already established by the adapter.
+            actor = state['portal_actor']
+            prefs = notifications.update(actor, **{args[0]: args[1] == 'on'}) if args else notifications.preferences(actor)
+            return core._reply([f"微信提醒：\n聊天室 @ 我：{'开启' if prefs['mention'] else '关闭'}\n"
+                                f"待我回答：{'开启' if prefs['question'] else '关闭'}\n开启后只提醒新出现的事项。"])
         if session and command in {'/back', '/skip'}:
             if command == '/back':
                 session['step'] = max(0, session['step'] - 1)
                 core.store.update_question_session(session['session_id'], step=session['step'])
-                return {'messages': [self._question_prompt(core, session)]}
+                return {'messages': [core._question_prompt(session)]}
             core.portal.close_questions(state['portal_actor'], session['resident_id'], session['source_message_id'])
             core.store.update_question_session(session['session_id'], status='closed')
             return core._reply(['这组问题已关闭，不再回答。'])

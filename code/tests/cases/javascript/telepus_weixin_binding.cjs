@@ -26,6 +26,11 @@ const {chromium} = require('../../../management_portal/test_framework/tau_runtim
         ui: {toast: text => { throw Error(text); }, errorMessage: (label, error) => label + error.message},
         api: {watchboardApplication: async request => {
           calls.push(request);
+          if (request.operation === 'weixin-notifications') {
+            return {preferences: request.args, watchboard: {...dashboard, weixin_users: {...dashboard.weixin_users,
+              users: dashboard.weixin_users.users.map(user => user.portal_actor === request.args.user_id
+                ? {...user, notifications: {...user.notifications, ...request.args}} : user)}}};
+          }
           let binding = {status: 'unbound'};
           if (request.operation === 'weixin-start') binding = {status: 'wait', session_id: 'session', qr_image: 'data:image/svg+xml;base64,PHN2Zy8+'};
           if (request.operation === 'weixin-get') {
@@ -87,6 +92,18 @@ const {chromium} = require('../../../management_portal/test_framework/tau_runtim
     assert.equal(await page.locator('#board [data-weixin-account]').textContent(), 'bob');
     await page.evaluate(() => renderBinding('active', 'bob'));
     assert.equal(await page.locator('[data-weixin-bind]').count(), 0);
+    await page.locator('[data-weixin-notification="mention"]').check();
+    assert(await page.locator('[data-weixin-notification="mention"]').isChecked());
+    await page.locator('[data-weixin-notification="question"]').check();
+    assert(await page.locator('[data-weixin-notification="question"]').isChecked());
+    await page.locator('[data-weixin-notification="mention"]').uncheck();
+    assert(!(await page.locator('[data-weixin-notification="mention"]').isChecked()));
+    assert((await page.evaluate(() => calls.at(-1))).args.mention === false);
+    await page.evaluate(() => renderBinding('active', 'bob', 'carol'));
+    assert(await page.locator('[data-weixin-notification="mention"]').isDisabled());
+    assert(await page.locator('[data-weixin-notification="question"]').isDisabled());
+    await page.evaluate(() => renderBinding('active', 'bob', 'admin'));
+    assert(await page.locator('[data-weixin-notification="question"]').isEnabled());
     await page.evaluate(() => renderBinding('unbound', 'carol'));
     assert.equal(await page.locator('#board [data-weixin-account]').textContent(), 'carol');
     assert(await page.locator('[data-weixin-bind]').isEnabled());

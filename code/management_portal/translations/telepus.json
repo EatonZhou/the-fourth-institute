@@ -1,4 +1,7 @@
 {
+  "聊天室 @ 我": {"en": "Chatroom mentions", "zh-CN": "聊天室 @ 我"},
+  "待我回答": {"en": "Waiting for my answer", "zh-CN": "待我回答"},
+  "更新微信提醒": {"en": "Update Weixin reminders", "zh-CN": "更新微信提醒"},
   "⏳ 仍在处理，回复后会发给你": {
     "en": "⏳ Still working. I’ll send you the reply when it’s ready.",
     "zh-CN": "⏳ 仍在处理，回复后会发给你"

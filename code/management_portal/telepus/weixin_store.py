@@ -86,6 +86,8 @@ class WeixinStore:
                 'SELECT portal_actor,status FROM weixin_accounts ORDER BY lower(portal_actor)').fetchall()]
 
     def save_account(self, actor, result):
+        from .notifications import Notifications
+        Notifications(self.router).clear(actor)
         with self.router.connect() as c:
             c.execute("INSERT INTO weixin_accounts(portal_actor,ilink_bot_id,ilink_user_id,baseurl,bot_token) "
                       "VALUES(?,?,?,?,?) ON CONFLICT(portal_actor) DO UPDATE SET "
@@ -130,6 +132,8 @@ class WeixinStore:
             # Refresh may re-read an input that was reopened by the budget gate.
             delivery = item.get('delivery')
             key = delivery + ':' + str(item.get('question_session') or 'text') if delivery else ''
+            if item.get('notification_actor'):
+                key = 'notifications:' + item['notification_actor']
             if key and c.execute("SELECT 1 FROM outbound_queue WHERE chat_id=? AND item->>'queue_key'=?", (chat, key)).fetchone():
                 return
             if key:
@@ -138,7 +142,8 @@ class WeixinStore:
 
     def pending(self, chat, *, manual=False):
         with self.router.connect() as c:
-            return [dict(r) for r in c.execute('SELECT * FROM outbound_queue WHERE chat_id=? AND manual=? ORDER BY id', (chat, manual)).fetchall()]
+            return [dict(r) for r in c.execute("SELECT * FROM outbound_queue WHERE chat_id=? AND manual=? "
+                "ORDER BY (item->>'notification_actor' IS NOT NULL),id", (chat, manual)).fetchall()]
 
     def finish(self, row_id):
         with self.router.connect() as c:
