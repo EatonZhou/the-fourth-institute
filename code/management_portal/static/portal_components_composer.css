@@ -316,34 +316,35 @@
 .portalRuntimeSettingsEditor[hidden] { display: none; }
 .portalRuntimeSectionTitle { margin: 6px 0 0; padding-top: 12px; border-top: 1px solid var(--border); font-size: 13px; }
 .portalRuntimeSettingsForm .portalDetailFooter { flex-wrap: wrap; }
+/* The runtime panel: account and parameters on one page, in a dialog or in place. */
 .portalSessionRestartOverlay .portalRuntimeSettingsSurface {
-  width: min(960px, 100%);
-  height: min(720px, calc(100dvh - 32px));
+  width: min(560px, 100%);
+  max-height: calc(100dvh - 32px);
   grid-template-rows: auto minmax(0, 1fr);
   align-self: center;
 }
-.portalSessionRestartOverlay .portalRuntimeSettingsHeader { display: grid; grid-template-columns: minmax(0, 1fr); justify-content: stretch; gap: 12px; }
-.portalRuntimeSettingsHeading { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-.portalRuntimePurposeNav { display: flex; flex-wrap: wrap; gap: 6px; }
-.portalRuntimePurposeNav .portalButton { font-size: 13px; }
-.portalRuntimePurposeNav [aria-pressed="true"] { color: var(--accent); border-color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, var(--panel)); }
 .portalSessionRestartOverlay .portalRuntimeSettingsForm {
   grid-template-rows: minmax(0, 1fr) auto;
   gap: 0;
   padding: 0;
   overflow: hidden;
 }
-.portalRuntimeSettingsBody { display: grid; align-content: start; gap: 12px; font-size: 13px; line-height: 1.55; }
-.portalRuntimeSettingsBody p { margin: 0 0 10px; }
+.portalRuntimeSettingsBody { display: grid; align-content: start; gap: 14px; min-width: 0; font-size: 13px; line-height: 1.55; }
+.portalSessionRestartOverlay .portalRuntimeSettingsBody { padding: 16px; overflow: auto; }
+.portalRuntimeSettingsBody p { margin: 0; overflow-wrap: anywhere; }
 .portalRuntimeSettingsBody p:empty { display: none; }
+.portalRuntimeSection { display: grid; gap: 8px; min-width: 0; }
+.portalRuntimeSection[hidden] { display: none; }
+.portalRuntimeSection + .portalRuntimeSection:not([hidden]) { padding-top: 14px; border-top: 1px solid color-mix(in srgb, var(--border) 70%, transparent); }
+.portalRuntimePanel .portalRuntimeSettingsGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.portalRuntimePanel .portalRuntimeSettingsHint:empty { display: none; }
+.portalRuntimeCredits > span:last-child { display: flex; gap: 8px; align-items: flex-start; font-weight: 500; color: var(--text); }
 .portalSessionRestartOverlay .portalDetailFooter { padding: 12px 16px; }
-.portalCapabilityEditor { display: grid; gap: 12px; min-width: 0; }
-.portalCapabilityGroup { min-width: 0; margin: 0; padding: 12px; border: 1px solid var(--border); border-radius: 8px; }
-.portalCapabilityRow { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 10px; }
-.portalCapabilityRow input[type="text"] { flex: 1; width: 100%; min-width: 0; }
-.portalCapabilityRow details { flex-basis: 100%; min-width: 0; }
-.portalCapabilityApplication { padding-inline-start: 20px; overflow-wrap: anywhere; color: var(--muted); font-size: 12px; }
-.portalCapabilityEditor summary { cursor: pointer; }
+.portalRuntimePanelFooter { display: flex; justify-content: flex-end; gap: 8px; }
+.portalRuntimePanel.is-inline { display: grid; gap: 12px; padding: 14px; border: 1px solid color-mix(in srgb, var(--border) 60%, transparent); border-radius: 12px; background: var(--panel-2); }
+.portalRuntimePanel.is-inline .portalRuntimePanelFooter { padding: 0; border: 0; background: none; }
+.portalRuntimePanel.is-inline .portalRuntimeSettingsField select { background: var(--panel); }
+@media (max-width: 480px) { .portalRuntimePanel .portalRuntimeSettingsGrid { grid-template-columns: minmax(0, 1fr); } }
 
 .portalChatWorkspaceRoot .chatExtensionTools {
   position: relative;

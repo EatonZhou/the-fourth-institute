@@ -41731,5 +41731,15 @@
   "没有匹配“{p0}”的聊天室。": {"zh-CN":"没有匹配“{p0}”的聊天室。","en":"No chatroom matches “{p0}”."},
   "@我": {"zh-CN":"@我","en":"@me"},
   "{p0} 条未读 @ 消息": {"zh-CN":"{p0} 条未读 @ 消息","en":"{p0} unread @ mentions"},
-  "帮你找合适的 Resident": {"zh-CN":"帮你找合适的 Resident","en":"Finds the right Resident for you"}
+  "帮你找合适的 Resident": {"zh-CN":"帮你找合适的 Resident","en":"Finds the right Resident for you"},
+  "运行设置": {"zh-CN":"运行设置","en":"Run settings"},
+  "还原": {"zh-CN":"还原","en":"Revert"},
+  "切换账号": {"zh-CN":"切换账号","en":"Switch account"},
+  "交接并切换": {"zh-CN":"交接并切换","en":"Hand off and switch"},
+  "取消操作": {"zh-CN":"取消操作","en":"Cancel operation"},
+  "保存运行参数": {"zh-CN":"保存运行参数","en":"Save run settings"},
+  "本次目标账号：": {"zh-CN":"本次目标账号：","en":"Target account: "},
+  "请选择目标 Provider 的模型。": {"zh-CN":"请选择目标 Provider 的模型。","en":"Choose a model for the target Provider."},
+  "等待正在运行的工作完成后切换；切换失败时保留原会话。": {"zh-CN":"等待正在运行的工作完成后切换；切换失败时保留原会话。","en":"Switches after the running work finishes; if the switch fails, the current Session is kept."},
+  "参数从下一轮生效，不会重新开始会话。": {"zh-CN":"参数从下一轮生效，不会重新开始会话。","en":"Takes effect from the next turn; the Session is not restarted."}
 }

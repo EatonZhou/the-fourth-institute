@@ -174,7 +174,7 @@
   const {
     residentRuntimeSettingRows, residentRuntimeStatusText, residentRuntimeMetaHtml, notifyRuntimeSettingsSaved,
     showResidentBackendNotices, createRuntimeSettingsDialog, sessionRestartActive,
-    createSessionRestartProgress, createSessionRestartDialog,
+    createSessionRestartProgress, createRuntimePanel, createSessionRestartDialog,
   } = chatWorkspaceModule("PortalChatWorkspaceRuntimeSettings").createRuntimeSettings({
     escapeHtml,
   });
@@ -3576,6 +3576,7 @@
     showResidentBackendNotices,
     createRuntimeSettingsDialog,
     notifyRuntimeSettingsSaved,
+    createRuntimePanel,
     createSessionRestartDialog,
     openFamilyStatus,
     mountFamilyStatus,

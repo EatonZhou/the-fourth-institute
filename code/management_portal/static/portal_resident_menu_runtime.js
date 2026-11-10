@@ -52,26 +52,38 @@
       if (!context) return;
       void loadNodeMenuReporting(context);
       if (context.family) { renderFamilySettings(context); return; }
+      // The menu shows the same runtime panel as the dialog, in place: the
+      // account and the parameters on one page, then the quota switch.
+      const root = $id("nodeMenuRuntime");
+      const mountPanel = async () => {
+        if (menuState.nodeMenuContext !== context || !context.runtimePanelHost) return;
+        try { await context.runtimeController.mount(context.runtimePanelHost); }
+        catch (error) {
+          if (menuState.nodeMenuContext === context) context.runtimePanelHost.textContent = window.PortalI18n.text`运行设置读取失败：${error.message}`;
+        }
+      };
       if (!context.runtimeController) {
+        context.runtimePanelHost = document.createElement("div");
+        context.runtimePanelHost.className = "residentMenuRuntimePanel";
+        context.runtimeExtras = document.createElement("div");
+        context.runtimeExtras.className = "residentMenuRuntimeExtras";
+        root.replaceChildren(context.runtimePanelHost, context.runtimeExtras);
         context.runtimeController = window.PortalResidentRuntimeController.bind(context.residentId, {
           onState: view => {
             if (menuState.nodeMenuContext !== context) return;
             context.runtimeBusy = view.loading;
             context.runtimeSaving = view.busy;
             context.saving = view.busy || context.reportingSaving;
-            const rows = [["Backend", view.detail?.resident?.backend || context.node.backend || "—"],
-              ...window.PortalChatWorkspace.residentRuntimeSettingRows(view.settings, view.catalog || {})];
             const disabled = view.loading || view.busy || ["accepted", "submitting", "confirming", "cancelling"].includes(view.restart?.status)
               || (!view.canEdit && !view.canRestart);
-            const root = $id("nodeMenuRuntime");
-            const focus = root.contains(document.activeElement) ? document.activeElement?.dataset.menuRuntime : null;
-            root.innerHTML = rows.map(([label, value]) => window.PortalI18n.html`<button class="residentMenuSetting" type="button" data-menu-runtime="${label}" aria-haspopup="dialog" ${disabled ? "disabled" : ""}><span>${label}</span><strong>${esc(value)}</strong><span aria-hidden="true">›</span></button>`).join("");
+            const extras = context.runtimeExtras;
+            extras.replaceChildren();
             const quotaSwitch = view.quotaSwitch;
             const facade = context.node?.family?.role === "facade" || view.detail?.resident?.family?.role === "facade"
               || !!view.detail?.family_facade?.family_id;
             if (facade) {
               const note = document.createElement("p");
-              note.textContent = window.PortalI18n.t("额度自动切换由 Family 设置管理"); root.append(note);
+              note.textContent = window.PortalI18n.t("额度自动切换由 Family 设置管理"); extras.append(note);
             }
             if (!facade && typeof quotaSwitch?.auto_switch_on_quota === "boolean") {
               const row = document.createElement("div"); row.className = "familyAutoMigrateSetting";
@@ -88,7 +100,7 @@
                 catch (error) { if (menuState.nodeMenuContext === context) nodeMenuNotice(error.message); }
                 finally { if (menuState.nodeMenuContext === context) context.runtimeController.load().catch(() => {}); }
               };
-              row.append(label, toggle); root.append(row);
+              row.append(label, toggle); extras.append(row);
               const explicit = view.settings?.auto_switch_on_quota;
               const familyRole = (view.detail?.resident?.family || context.node?.family)?.role;
               const source = typeof explicit === "boolean"
@@ -98,23 +110,17 @@
                   : "来源：沿用既有账号选择策略。";
               const note = document.createElement("p"); note.className = "paneNote";
               note.dataset.menuQuotaSource = "1";
-              note.textContent = window.PortalI18n.t(source); root.append(note);
+              note.textContent = window.PortalI18n.t(source); extras.append(note);
             }
-            if (focus) root.querySelector(`[data-menu-runtime="${CSS.escape(focus)}"]`)?.focus();
           },
           onChanged: () => { if (menuState.nodeMenuContext === context) void loadNodeMenuSession({force: true}); },
+          // A saved change or a finished switch closes the panel; show it again
+          // with the values now in effect.
+          onClose: () => { void mountPanel(); },
         });
-        $id("nodeMenuRuntime").onclick = async event => {
-          const button = event.target.closest("[data-menu-runtime]");
-          if (!button || button.disabled || context.reportingSaving || menuState.nodeMenuContext !== context) return;
-          const field = button.dataset.menuRuntime;
-          try {
-            await context.runtimeController.openSettings(() => $id("nodeMenuRuntime").querySelector(`[data-menu-runtime="${CSS.escape(field)}"]`));
-          } catch (error) { if (menuState.nodeMenuContext === context) nodeMenuNotice(error.message); }
-        };
       }
-      try { await context.runtimeController.load(); }
-      catch (error) { if (menuState.nodeMenuContext === context) $id("nodeMenuRuntime").textContent = window.PortalI18n.text`运行设置读取失败：${error.message}`; }
+      if (context.runtimePanelHost.parentElement !== root) root.replaceChildren(context.runtimePanelHost, context.runtimeExtras);
+      await mountPanel();
     }
 
     async function loadNodeMenuReporting(context) {

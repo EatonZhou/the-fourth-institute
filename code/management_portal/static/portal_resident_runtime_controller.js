@@ -24,6 +24,12 @@
     const dialogs = suppliedDialogs || {
       settings: options => window.PortalChatWorkspace.createRuntimeSettingsDialog(options),
       restart: options => window.PortalChatWorkspace.createSessionRestartDialog(options),
+      // The same runtime panel, mounted in place (the Resident menu).
+      inline: options => {
+        const panel = window.PortalChatWorkspace.createRuntimePanel({ inline: true, onDone: context => options.onClose?.(context) });
+        options.container.replaceChildren(panel.element);
+        return { open: (...args) => panel.open(...args), destroy: () => panel.destroy() };
+      },
     };
     const state = e => ({ residentId: e.id, detail: e.detail, settings: e.settings, catalog: e.catalog,
       settings_revision: e.settingsRevision, application: e.application, quotaSwitch: e.quotaSwitch,
@@ -142,7 +148,7 @@
         notify(e);
         try { return await e.saving; } finally { e.saving = null; e.savingChanges = null; notify(e); }
       }
-      function present(kind, token, focusTarget, config) {
+      function present(kind, token, focusTarget, config, container) {
         const identity = identityRevision, route = routeKey(e.detail);
         const version = {revision: e.settingsRevision};
         const onClose = () => {
@@ -152,13 +158,14 @@
           const target = typeof focusTarget === "function" ? focusTarget() : focusTarget;
           if (!b.disposed && target?.isConnected) target.focus();
         };
-        b.dialog = dialogs[kind]({ onClose }); e.presentation = b; adapters.onOpen?.();
+        b.dialog = dialogs[kind]({ onClose, container });
+        if (kind !== "inline") { e.presentation = b; adapters.onOpen?.(); }
         if (kind === "settings") {
           const initial = clone(e.settings);
           b.dialog.open(initial, selected => save(selected, initial, token, identity, route, version), {
             catalog: e.catalog, residentId: id, residentSettings: initial, application: e.application,
             accountId: e.detail.execution_account?.account_id,
-            title: window.PortalI18n.t("Runtime Settings"),
+            title: window.PortalI18n.t("运行设置"),
             hint: window.PortalI18n.t("保存不会重启 Session，设置从下一轮生效。"),
           });
         } else {
@@ -188,19 +195,31 @@
           });
         }
       }
-      async function open(kind, focusTarget) {
+      async function open(kind, focusTarget, container = null) {
         // Progress remains readable during migration; settings and conflicting
         // submissions stay locked, and cancellation retains its own validation.
         if (b.disposed || e.opening || e.saving) return;
-        const previous = e.presentation;
-        previous?.dialog?.close?.(); previous?.dialog?.destroy?.();
-        if (previous) previous.dialog = null;
+        if (!container) {
+          const previous = e.presentation;
+          previous?.dialog?.close?.(); previous?.dialog?.destroy?.();
+          if (previous) previous.dialog = null;
+        }
         b.dialog?.destroy?.(); b.dialog = null;
         const token = ++b.generation, identity = identityRevision;
         e.opening = (async () => {
           // Re-check permissions and current Provider even when another entry primed the cache.
           e.valid = false; await load(e);
           if (!live(token) || identity !== identityRevision) return;
+          if (container) {
+            // In place, the panel shows the account only when this viewer may switch it.
+            const canRestart = e.detail?.allows?.RestartSession === true;
+            if (!canRestart && !mayEdit(e.detail)) throw denied();
+            const config = canRestart ? await service().sessionRestartOptions(id)
+              : { source: { provider: e.detail?.resident?.backend, account_id: e.detail?.execution_account?.account_id } };
+            if (!live(token) || identity !== identityRevision) return;
+            present("inline", token, null, config, container);
+            return;
+          }
           if (kind === "restart" && e.detail?.allows?.RestartSession !== true) throw denied();
           const initialView = kind === "settings" ? "parameters" : "switch_account";
           kind = e.detail?.allows?.RestartSession === true ? "restart" : "settings";
@@ -225,6 +244,7 @@
         return load(e);
       }, state: () => state(e),
         openSettings: focusTarget => open("settings", focusTarget), openRestart: focusTarget => open("restart", focusTarget),
+        mount: container => open("inline", null, container),
         async saveSettings(changes) {
           if (b.disposed || e.opening) throw stale();
           await load(e);

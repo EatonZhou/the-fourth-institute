@@ -467,13 +467,9 @@
 .nodeSettingsSurface .nodeSettingsBody { grid-template-columns:var(--menu-rail-width) minmax(0,1fr); }
 .nodeSettingsSurface #principalProfile, .nodeSettingsSurface #backpackStatus { display:none; }
 .nodeSettingsPanels > section { min-width:0; }
-#nodeMenuRuntime { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; align-content:start; }
-.residentMenuSetting { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:3px 12px; align-content:center; min-height:64px; padding:10px 12px; border:1px solid color-mix(in srgb, var(--border) 55%, transparent); border-radius:10px; width:100%; background:var(--panel-2); color:var(--text); text-align:left; cursor:pointer; font:inherit; transition:background .15s, border-color .15s; }
-.residentMenuSetting:hover { background:color-mix(in srgb, var(--accent) 5%, var(--panel)); border-color:color-mix(in srgb, var(--accent) 30%, var(--border)); }
-.residentMenuSetting:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
-.residentMenuSetting > span:first-child { grid-column:1; color:var(--muted); font-size:11px; line-height:1.4; }
-.residentMenuSetting > strong { grid-column:1; grid-row:2; min-width:0; overflow-wrap:anywhere; font-size:14px; line-height:1.4; font-weight:550; }
-.residentMenuSetting > span:last-child { grid-column:2; grid-row:1 / 3; align-self:center; color:var(--muted); font-size:18px; }
+#nodeMenuRuntime { display:grid; gap:10px; align-content:start; min-width:0; }
+.residentMenuRuntimePanel, .residentMenuRuntimeExtras { min-width:0; }
+.residentMenuRuntimeExtras:empty { display:none; }
 .residentMenuSession { display:grid; grid-template-columns:72px minmax(0,1fr) auto; align-items:center; gap:12px; padding:12px 4px; color:var(--muted); font-size:12px; line-height:1.6; }
 .residentMenuSession code { font:inherit; font-family:var(--mono,monospace); overflow-wrap:anywhere; min-width:0; user-select:text; }
 .residentMenuSession .portalButton { width:28px; height:28px; padding:5px; }
@@ -585,16 +581,6 @@
 @media(max-width:640px) {
   .scopeMenuFields, .scopeMenuGrantForm, .scopeMenuBatch form { grid-template-columns:minmax(0,1fr); }
 }
-.portalRuntimePurposeNav { display: flex; flex-wrap: wrap; gap: 8px; padding: 12px 20px; border-bottom: 1px solid var(--border); }
-.portalSessionRestartOverlay .portalRuntimeSettingsSurface { grid-template-rows: auto auto minmax(0, 1fr); }
-.portalRuntimePurposeNav [aria-pressed="true"] { font-weight: 700; outline: 2px solid var(--accent, #3862c5); outline-offset: -2px; }
-.portalCapabilityGroup { margin: 12px 0; padding: 12px; border: 1px solid var(--border); border-radius: 8px; min-width: 0; }
-.portalCapabilityRow { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 8px 0; }
-.portalCapabilityRow input[type="text"] { min-width: 0; flex: 1 1 220px; }
-.portalCapabilityApplication { display: grid; gap: 8px; padding: 0; list-style: none; }
-.portalCapabilityApplication li { overflow-wrap: anywhere; padding: 8px; background: var(--surface-muted, #f5f7fa); border-radius: 6px; }
-.portalSessionRestartOverlay [data-runtime-panel] { min-width: 0; }
-.portalSessionRestartOverlay [data-runtime-panel] p { overflow-wrap: anywhere; }
 
 .familyMigrationPriority { margin:8px 0 14px; font-size:12px; color:var(--muted); }
 .familyMigrationPriority summary { cursor:pointer; }
