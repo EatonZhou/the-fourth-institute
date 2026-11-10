@@ -77,6 +77,8 @@ def test_list_inbox_exposes_the_read_revision_as_its_version(monkeypatch):
         {"key": "resident:resident_aaaaaaaaaaaa", "read_revision": 12, "unread": True},
     ])
     monkeypatch.setattr(web_isa, "_access", lambda: SimpleNamespace(user=lambda _user: {"configured": True}))
+    monkeypatch.setattr("management_portal.society_service.get_society_service", lambda: SimpleNamespace(
+        resident=SimpleNamespace(list_user_pending_requests=lambda actor: {"requests": []})))
     result = web_isa.get_user_mailbox(call({"user_id": "bob"}))
     assert result["items"][0]["version"] == "12"
     assert result["unread_count"] == 1

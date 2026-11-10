@@ -157,6 +157,8 @@ def test_list_inbox_pages_through_the_conversation_index_within_its_page_limit(m
 
     monkeypatch.setattr(web_isa, "web", lambda _module: SimpleNamespace(_agent_conversation_payload=payload))
     monkeypatch.setattr(web_isa, "_access", lambda: SimpleNamespace(user=lambda _user: {"configured": True}))
+    monkeypatch.setattr("management_portal.society_service.get_society_service", lambda: SimpleNamespace(
+        resident=SimpleNamespace(list_user_pending_requests=lambda actor: {"requests": []})))
     result = web_isa.get_user_mailbox(invocation({"user_id": "sample_admin"}, "GetMailbox"))
     assert [item["key"] for item in result["items"]] == ["pinned", "a", "b", "c", "old-notice"]
     assert result["unread_count"] == 4
@@ -180,6 +182,8 @@ def test_list_inbox_names_the_message_ids_inside_the_read_version(monkeypatch):
                {"key": "chatroom:c", "completion_signature": signature}]
     monkeypatch.setattr(web_isa, "_inbox_entries", lambda caller, resident_id="": entries)
     monkeypatch.setattr(web_isa, "_access", lambda: SimpleNamespace(user=lambda _user: {"configured": True}))
+    monkeypatch.setattr("management_portal.society_service.get_society_service", lambda: SimpleNamespace(
+        resident=SimpleNamespace(list_user_pending_requests=lambda actor: {"requests": []})))
     items = {item["key"]: item for item in web_isa.get_user_mailbox(invocation({"user_id": "sample_admin"}, "GetMailbox"))["items"]}
     reply, terminal_item, notice, chatroom = (items[key] for key in ("resident:a", "resident:b", "notice", "chatroom:c"))
     assert (reply["latest_message_id"], reply["input_message_id"], reply["version"]) == ("msg_reply", "msg_input", "11")

@@ -28,7 +28,7 @@ RESIDENT_AT_LINEAGE = (("resident_id", "lineage"),)
 DECLARATIONS = (
     _d("GetMailbox", (On("resident_id", "resident", optional=True), On("user_id", "user", optional=True)), "读取一个 Mailbox，resident_id 与 user_id 二选一。"
         "带 resident_id：读取这个 Resident 的 Mailbox，即等待中的请求、群体与 info，正在处理的一轮，以及最近结束的几轮与结果。"
-        "带 user_id：读取这位 User 的 Mailbox（对话与通知）；user_id 是调用者自己时读取自己的 Mailbox。", (
+        "带 user_id：读取这位 User 的 Mailbox（对话、通知和待本人回答的问题）；user_id 是调用者自己时读取自己的 Mailbox。", (
         P("resident_id", description="要读取 Mailbox 的 Resident"),
         P("user_id", description="要读取 Mailbox 的 User"),
         P("related_resident_id", description="带 user_id 时可选：只读取与这个 Resident 相关的条目"),
@@ -37,6 +37,9 @@ DECLARATIONS = (
           "Resident 对话条目的 latest_message_id 是这段对话最近一条可通知消息的 ID，用 GetMessage(resident_id, message_id) 读取原文，"
           "input_message_id 是它回应的那条输入；version 是条目阅读状态的修订号，作为 MarkMailboxItemRead 的 expected_version"),
         P("unread_count", "integer", "带 user_id 时：需要提醒的未读条目数，免打扰的普通未读不计入"),
+        P("pending_requests", "array", "带 user_id 时：当前仍待这位 User 回答且有回答权限的问题。与未读、清除和消息列表独立，阅读不等于回答；"
+          "每项含稳定 key、source_resident_id/source_message_id（源问题身份）、resident_id/message_id（可打开的对话与问题）、"
+          "kind、created_at、可选 title 与相对 url；不含问题正文或答案。Family 展示沿用源问题身份，不重复提醒"),
         P("pending", "array", "带 resident_id 时：等待中的项，先是队列中的请求与群体（按处理顺序），再是等待中的 info；"
           "每项有 kind（request、group、info）、message_id、author_id、created_at、preview，群体另有 members"),
         P("active", "object", "带 resident_id 时：正在处理的一轮，请求与随它送达的 info（infos）；没有时为空"),
@@ -49,7 +52,7 @@ DECLARATIONS = (
         R("user_id", description="Mailbox 所属 User 的用户名"),
         P("after_cursor", description="上次返回的 cursor；首次省略，先返回重读检查点"),
         P("timeout_seconds", "integer", "本次订阅时长，默认 30 秒", minimum=1, maximum=60),
-    ), (R("keys", "array", "这批有变化的 Mailbox 条目键"), R("cursor", description="下次作 after_cursor 续读的游标"),
+    ), (R("keys", "array", "这批有变化的 Mailbox 条目键；待回答问题随所属对话变化提示，用 GetMailbox 重读 pending_requests"), R("cursor", description="下次作 after_cursor 续读的游标"),
         R("snapshot_required", "boolean", "为 true 时须用 GetMailbox 重读整个 Mailbox")), streaming=True),
     _d("MuteMailboxItem", FIXED, "设置调用者自己的对话消息免打扰。消息与未读仍保留，普通未读不计入 Mailbox 提醒总数；聊天室 @ 提及仍提醒。", (
         R("key", description="Mailbox 对话条目键；不支持单向通知"),

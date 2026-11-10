@@ -93,15 +93,28 @@ def _inbox_message_ids(entry: dict[str, Any]) -> dict[str, str]:
 def get_user_mailbox(inv: Invocation) -> dict[str, Any]:
     """GetMailbox with user_id; the resident_id form runs at SocietyService (isa.execution.get_mailbox)."""
     from management_portal.agent_conversation_index_backend import newest_first, summarize_entries
+    from management_portal.society_service import get_society_service
+    from urllib.parse import urlencode
 
     user_id = _named_user(inv)
+    related = inv.argument("related_resident_id") or ""
     # Page one carries every notification and Chatroom; order the pages as one
     # list so the result does not depend on the page size.
     entries = newest_first([
         {**entry, **_inbox_message_ids(entry), "version": str(entry.get("read_revision") or 0)}
-        for entry in _inbox_entries(user_id, inv.argument("related_resident_id") or "")
+        for entry in _inbox_entries(user_id, related)
     ], pinned_first=True)
-    return {"items": entries, **summarize_entries(entries)}
+    # Questions belong to their Conversation owner. Reading/clearing a Mailbox
+    # is not an answer, so pending requests are independent of its message rows.
+    requests = get_society_service().resident.list_user_pending_requests(user_id)["requests"]
+    fields = ("key", "source_resident_id", "source_message_id", "resident_id", "message_id", "kind", "created_at", "title")
+    pending = [
+        {**{key: request[key] for key in fields if key in request},
+         "url": "/lineage?" + urlencode({"resident": request["resident_id"], "open_chat": "1", "message": request["message_id"]})}
+        for request in requests
+        if not related or related in (request["resident_id"], request["source_resident_id"])
+    ]
+    return {"items": entries, "pending_requests": pending, **summarize_entries(entries)}
 
 
 def mark_inbox_item_read(inv: Invocation) -> dict[str, Any]:
