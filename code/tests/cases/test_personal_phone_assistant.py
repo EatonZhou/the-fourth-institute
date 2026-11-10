@@ -14,6 +14,36 @@ REAL_DELIVER = resident_protocol.deliver_resident_input
 REAL_INTAKE = resident_intake_domain.deliver_resident_message_content
 
 
+@pytest.mark.parametrize("with_phone", [False, True])
+def test_family_projection_reads_text_creation_receipts(personal, with_phone):
+    """Upgraded instances retain TEXT receipts; fresh fixtures use JSONB."""
+    from management_portal.society_service import lineage_aggregate
+    from management_portal.society_service.state_store import get_lineage_data_store
+
+    _, entry = personal
+    facade = records.find_resident(entry['resident_id'])
+    phone_id = phone.ensure(facade, 'newcomer') if with_phone else None
+    database = get_lineage_data_store().database
+    # Only the isolated pytest database is changed, never the installed instance.
+    database.write(lambda connection: connection.execute(
+        "ALTER TABLE resident_creation_operations ALTER COLUMN operation_json "
+        "TYPE text USING operation_json::text"))
+    try:
+        graph = lineage_aggregate.read_lineage(facade['lineage_id'], actor='newcomer')
+        family = next(block['family'] for block in graph['function_blocks'] if block.get('family'))
+        assert family.get('phone_assistant_id') == phone_id
+        snapshot = resident_protocol.get_resident_conversation_snapshot(
+            facade['resident_id'], 'newcomer', history_limit=1)
+        assert snapshot['resident']['resident_id'] == facade['resident_id']
+        # Catalog hydration uses the same projection across all Lineage definitions.
+        catalog = get_lineage_data_store().all_lineages()
+        assert any(item['lineage_id'] == facade['lineage_id'] for item in catalog)
+    finally:
+        database.write(lambda connection: connection.execute(
+            "ALTER TABLE resident_creation_operations ALTER COLUMN operation_json "
+            "TYPE jsonb USING operation_json::jsonb"))
+
+
 def test_first_mobile_messages_share_one_member_and_execution_settings(personal):
     ama, entry = personal
     facade = records.find_resident(entry['resident_id'])

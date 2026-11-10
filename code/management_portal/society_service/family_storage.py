@@ -112,8 +112,10 @@ def hydrate_programs(connection: Any, definitions: dict[str, dict]) -> None:
     if families:
         # The lifecycle creation receipt is the durable identity of the phone
         # member. Expose it in the Family definition, without a second registry.
+        # Existing installations may retain TEXT receipts; normalize the read
+        # to JSONB before extracting identity, as for freshly created schemas.
         for row in connection.execute(
-            "SELECT creation_key,operation_json->>'resident_id' AS resident_id "
+            "SELECT creation_key,operation_json::jsonb->>'resident_id' AS resident_id "
             "FROM resident_creation_operations WHERE lineage_id=ANY(%s) "
             "AND creation_key=ANY(%s)",
             (list(definitions), ['personal-phone-assistant:' + fid for fid in families]),
