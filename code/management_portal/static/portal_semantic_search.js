@@ -139,7 +139,11 @@
         matches: semanticProjectionMatches,
         refreshOnAttach: false,
       }),
-      onError: reportError,
+      onError(error, { source }) {
+        // Connection recovery belongs to the coordinator. Only failures to
+        // read/apply search data belong to the search UI's error surface.
+        if (source !== "subscription") reportError(error);
+      },
     });
 
     function load({ fresh = false } = {}) {

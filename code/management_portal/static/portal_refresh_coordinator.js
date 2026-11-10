@@ -253,7 +253,7 @@
           try {
             await apply(pending.update, pending.context);
           } catch (error) {
-            options.onError?.(error);
+            options.onError?.(error, { source: "apply" });
           }
         }
       })().finally(() => {
@@ -314,7 +314,7 @@
         .catch(error => {
           if (!context.isCurrent()) return null;
           followupDelay = options.nextDelay?.(null, error);
-          options.onError?.(error);
+          options.onError?.(error, { source: "refresh" });
           throw error;
         })
         .finally(() => {
@@ -378,7 +378,7 @@
           onError: error => {
             if (!isCurrent()) return;
             closeStream();
-            options.onError?.(error);
+            options.onError?.(error, { source: "subscription" });
             schedule(0);
             scheduleReconnect(error);
           },
@@ -404,7 +404,7 @@
         }
       } catch (error) {
         if (!isCurrent()) return;
-        options.onError?.(error);
+        options.onError?.(error, { source: "subscription" });
         schedule(0);
         scheduleReconnect(error);
       }
