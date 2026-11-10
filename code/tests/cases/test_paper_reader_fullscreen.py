@@ -42,6 +42,11 @@ def test_translation_owner_ui(tmp_path, monkeypatch, browser):
     run_host(tmp_path, monkeypatch, browser, 'zotero_reader_translation_owner.cjs', translation=True)
 
 
+@pytest.mark.parametrize('browser', ['chromium', 'firefox'])
+def test_embedded_no_translation(tmp_path, monkeypatch, browser):
+    run_host(tmp_path, monkeypatch, browser, 'zotero_reader_embedded.cjs')
+
+
 def run_host(tmp_path, monkeypatch, browser, script, *, translation=False):
     paper, bundle, store = setup_paper(tmp_path, monkeypatch)
     access = PortalAccessStore()
@@ -85,6 +90,9 @@ def run_host(tmp_path, monkeypatch, browser, script, *, translation=False):
             if parsed.path == '/integration':
                 self.send_response(200); self.send_header('Content-Type','text/html'); self.end_headers()
                 self.wfile.write((root/'tests/cases/fixtures/paper-reader-recent.html').read_bytes()); return
+            if parsed.path == '/static/paper.css':
+                self.send_response(200); self.send_header('Content-Type','text/css'); self.end_headers()
+                self.wfile.write((root/'management_portal/static/paper.css').read_bytes()); return
             if parsed.path == '/':
                 self.send_response(200); self.send_header('Content-Type', 'text/html'); self.end_headers()
                 self.wfile.write(('''<script type="module">import {openReader} from '/static/paper_fullscreen_reader.js';

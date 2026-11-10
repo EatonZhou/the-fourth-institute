@@ -6,7 +6,7 @@ const p=await ctx.newPage(),requests=[],responses=[];
 p.on('request',r=>{if(r.method()==='POST'&&r.url().endsWith('/reader/translation'))requests.push(r.postDataJSON());});
 p.on('response',async r=>{if(r.request().method()==='POST'&&r.url().endsWith('/reader/translation'))responses.push(await r.json());});
 await p.goto(url+'/integration');await p.waitForFunction(()=>ready);await p.evaluate(()=>openPaper('paper_0123456789ab'));await p.waitForFunction(()=>posts===1);
-await p.getByLabel('翻译模式').selectOption('google');
+await p.locator('#paperFullscreenBtn').click();await p.getByLabel('翻译模式').selectOption('google');
 const outer=p.frames()[1];await outer.frameLocator('iframe').first().locator('.textLayer span').first().dblclick();
 await outer.locator('.portalTranslateSelection').click();
 await p.getByText('正式隔离译文',{exact:true}).waitFor();await p.getByText(/Google · translate_a\/single:gtx/).waitFor();

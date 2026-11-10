@@ -1,0 +1,30 @@
+const engine=require('../../../management_portal/test_framework/tau_runtime/node_modules/playwright')[process.argv[3]],assert=require('node:assert/strict');
+(async()=>{const b=await engine.launch({headless:true});try{
+const [url,,name,value]=process.argv.slice(2),ctx=await b.newContext();await ctx.addCookies([{name,value,url}]);const p=await ctx.newPage();let calls=0,release;
+await p.route('**/paper/api/reader/translation',async r=>{calls++;await new Promise(resolve=>release=resolve);await r.fulfill({json:{task_id:'synthetic',status:'succeeded',text:'延迟译文',provider:'google',model:'translate_a/single:gtx',cache:'miss'}});});
+await p.goto(url+'/integration');await p.waitForFunction(()=>ready);await p.evaluate(()=>openPaper('paper_0123456789ab'));await p.waitForFunction(()=>posts===1);
+const outer=p.frames()[1],pdf=outer.frameLocator('iframe').first();
+assert.equal(await outer.locator('body').evaluate(e=>e.classList.contains('sidebar-open')),false);
+assert.equal(await p.getByLabel('翻译模式').isVisible(),false);
+await pdf.locator('.textLayer span').first().dblclick();assert.equal(await outer.locator('.portalTranslateSelection').isVisible(),false);
+await outer.locator('.portalTranslateSelection').evaluate(e=>e.click());assert.equal(calls,0);
+await p.locator('#paperFullscreenBtn').click();await outer.locator('.portalTranslateSelection').waitFor({state:'visible'});
+assert(await outer.locator('body').evaluate(e=>e.classList.contains('sidebar-open')));
+await outer.locator('.portalTranslateSelection').click();await p.waitForTimeout(100);assert.equal(calls,1);
+await outer.locator('button.note').click();await pdf.locator('.page').first().click({position:{x:160,y:160}});await outer.locator('[contenteditable=true]').last().fill('retained layout draft');
+await outer.locator('#pageNumber').fill('2');await outer.locator('#pageNumber').press('Enter');
+await p.waitForTimeout(100);
+await p.evaluate(()=>{window.savedFrame=document.querySelector('iframe');window.savedWindow=savedFrame.contentWindow;});
+await p.locator('.paperLayoutExit').click();assert.equal(await p.getByLabel('翻译模式').isVisible(),false);
+assert.equal(await outer.locator('body').evaluate(e=>e.classList.contains('sidebar-open')),false);
+release();await p.waitForTimeout(150);assert.equal(await p.getByText('延迟译文',{exact:true}).isVisible(),false);
+await p.locator('#paperFullscreenBtn').click();await p.getByText('延迟译文',{exact:true}).waitFor();
+assert(await p.evaluate(()=>savedFrame===document.querySelector('iframe')&&savedWindow===savedFrame.contentWindow));
+assert.equal(await outer.getByText('retained layout draft',{exact:true}).first().innerText(),'retained layout draft');
+assert.equal(await outer.locator('#pageNumber').inputValue(),'2');
+assert(await outer.locator('body').evaluate(e=>e.classList.contains('sidebar-open')));assert.equal(await p.evaluate(()=>posts),1);
+// Preserve the fullscreen preference when the user closes its sidebar.
+await outer.evaluate(()=>window._reader.toggleSidebar(false));await p.locator('.paperLayoutExit').click();await p.locator('#paperFullscreenBtn').click();
+assert.equal(await outer.locator('body').evaluate(e=>e.classList.contains('sidebar-open')),false);
+console.log('PASS embedded no translation/sidebar, fullscreen restore, late result hidden, same iframe/draft/recent');
+}finally{await b.close();}})().catch(e=>{console.error(e);process.exitCode=1;});

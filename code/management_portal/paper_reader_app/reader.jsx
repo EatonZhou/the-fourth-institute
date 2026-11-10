@@ -4,7 +4,7 @@ import {connectZotero, ZOTERO_URL} from './zotero_adapter.js';
 import {TranslationPanel} from './translation_panel.jsx';
 import {translateSelection} from './translation_client.js';
 
-function Reader({paper, principal, anchor, close, control, readingReady, frameReady, isCurrent}) {
+function Reader({paper, principal, anchor, close, control, readingReady, frameReady, isCurrent, isFullscreen}) {
   const frame = useRef(null), bridge = useRef(null);
   const [status, setStatus] = useState('正在打开论文…');
   const [failed, setFailed] = useState(false);
@@ -12,7 +12,7 @@ function Reader({paper, principal, anchor, close, control, readingReady, frameRe
   useEffect(() => {
     frameReady(frame.current.contentWindow);
     const connection = connectZotero({frame: frame.current, paper, principal, ready: readingReady,
-      translateSelection: value => {if (isCurrent()) setSelection(value);},
+      translateSelection: value => {if (isCurrent() && isFullscreen()) setSelection(value);},
       status: (message, error = false) => { setStatus(message); setFailed(error); }});
     bridge.current = connection;
     control(connection);
@@ -28,8 +28,10 @@ function Reader({paper, principal, anchor, close, control, readingReady, frameRe
     <div className="paperReadingStatus" role="status">
       {status} {failed && <button onClick={() => bridge.current?.retry()}>重试保存</button>}
     </div>
-    <TranslationPanel selection={selection} isCurrent={isCurrent} request={(input, mode, operationId, signal) =>
-      translateSelection({selection: input, mode, operationId, principal, signal})} />
+    <TranslationPanel selection={selection} isCurrent={isCurrent} request={(input, mode, operationId, signal) => {
+      if (!isFullscreen()) throw new Error('请进入全屏后翻译');
+      return translateSelection({selection: input, mode, operationId, principal, signal});
+    }} />
     <iframe ref={frame} className="paperReadingViewer" title="论文全屏 PDF 阅读器" />
   </div>;
 }
@@ -56,7 +58,7 @@ export function openReader({paper, principal, anchor, onClose, onReady, containe
     } else Object.assign(dialog.style, {left: '0', top: '0', width: '100vw', height: '100dvh'});
     layoutTick = requestAnimationFrame(layout);
   };
-  const setFullscreen = value => { fullscreen = !!value; dialog.classList.toggle('is-embedded', !fullscreen); dialog.setAttribute('aria-modal', String(fullscreen)); };
+  const setFullscreen = value => { fullscreen = !!value; bridge?.setFullscreen(fullscreen); dialog.classList.toggle('is-embedded', !fullscreen); dialog.setAttribute('aria-modal', String(fullscreen)); };
   const escape = event => {
     if (container && fullscreen && event.key === 'Escape') {event.preventDefault(); event.stopPropagation(); setFullscreen(false);}
   };
@@ -84,7 +86,8 @@ export function openReader({paper, principal, anchor, onClose, onReady, containe
   const toggle = () => container ? setFullscreen(!fullscreen) : close();
   dialog.addEventListener('cancel', event => { event.preventDefault(); toggle(); });
   if (container) {dialog.show(); layout();} else dialog.showModal();
-  root.render(<Reader paper={paper} principal={principal} anchor={anchor} close={toggle} control={value => { bridge = value; }}
+  root.render(<Reader paper={paper} principal={principal} anchor={anchor} close={toggle} control={value => { bridge = value; bridge.setFullscreen(fullscreen); }}
+    isFullscreen={() => fullscreen}
     isCurrent={() => !closed && isCurrent()}
     frameReady={value => { sourceWindow = value; }}
     readingReady={value => { if (!closed && !closing) onReady?.({...value, instanceId}); }} />);

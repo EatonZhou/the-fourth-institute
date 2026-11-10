@@ -16,6 +16,7 @@ await p.route('**/paper/api/reader/translation**',async route=>{
 });
 await p.goto(url+'/integration');await p.waitForFunction(()=>ready);await p.evaluate(()=>openPaper('paper_0123456789ab'));
 await p.waitForFunction(()=>posts===1);
+await p.locator('#paperFullscreenBtn').click();
 const outer=p.frames()[1],pdf=outer.frameLocator('iframe').first();
 // Native text selection creates the upstream popup; no synthetic ready or selection callback.
 await pdf.locator('.textLayer span').first().dblclick();
@@ -31,7 +32,6 @@ scenario='queued';const before=calls.length;await p.getByRole('button',{name:'�
 assert.equal(calls.slice(before).filter(c=>c.method==='POST').length,1);assert(calls.slice(before).some(c=>c.method==='GET'));
 scenario='late';await p.getByRole('button',{name:'重试翻译'}).click();await p.waitForTimeout(3200);
 assert.equal(calls.filter(c=>c.method==='POST').length,6,'waiting never creates fallback/new operation');
-await p.locator('#paperFullscreenBtn').click();
 await p.evaluate(()=>{state.selectedId='paper_abcdef012345';});
 release();await p.waitForTimeout(100);assert.equal(await p.getByText('合成译文',{exact:true}).count(),0,'late old-scope result hidden');
 await p.evaluate(()=>{state.selectedId='paper_0123456789ab';});

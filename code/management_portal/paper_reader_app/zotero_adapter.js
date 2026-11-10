@@ -4,6 +4,12 @@ export const ZOTERO_URL = '/paper/reader-assets/reader.html';
 
 export function connectZotero({frame, paper, principal, status, ready, translateSelection}) {
   let disposed = false, host, transport, failed = false, tick;
+  let fullscreen = true, fullscreenSidebar = true;
+  const applyLayout = () => {
+    if (!host) return;
+    frame.contentDocument.body.classList.toggle('portal-embedded', !fullscreen);
+    host.reader.toggleSidebar(fullscreen ? fullscreenSidebar : false);
+  };
   let resolveLoaded;
   const loaded = new Promise(resolve => { resolveLoaded = resolve; });
   frame.addEventListener('load', resolveLoaded, {once: true});
@@ -15,6 +21,10 @@ export function connectZotero({frame, paper, principal, status, ready, translate
     // annotation text. No PDF text extraction or DOM tree walk is involved.
     frame.contentWindow.addEventListener('customEvent', selectionPopup);
     host = await mountReader(frame, {...transport.options, status: message => {failed = true; status(message, true);}});
+    const style = frame.contentDocument.createElement('style');
+    style.textContent = 'body.portal-embedded .portalTranslateSelection {display:none!important}';
+    frame.contentDocument.head.append(style);
+    applyLayout();
     if (disposed) {await host.close(); return;}
     const rendered = () => {
       if (disposed) return;
@@ -38,10 +48,13 @@ export function connectZotero({frame, paper, principal, status, ready, translate
     const button = detail.doc.createElement('button');
     button.className = 'toolbar-button wide-button portalTranslateSelection';
     button.textContent = '翻译选区';
-    button.onclick = () => {if (!disposed) translateSelection({text, document: {...transport.document}});};
+    button.onclick = () => {if (!disposed && fullscreen) translateSelection({text, document: {...transport.document}});};
     detail.append(button);
   }
-  return {async flush() {
+  return {setFullscreen(value) {
+    if (fullscreen && !value && host) fullscreenSidebar = frame.contentDocument.body.classList.contains('sidebar-open');
+    fullscreen = !!value; applyLayout();
+  }, async flush() {
     try {await start; if (!host) return false; await host.close(); failed = false; return true;}
     catch (error) {status(error.message, true); return !host;}
   }, async retry() {
