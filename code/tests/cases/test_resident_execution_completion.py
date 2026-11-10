@@ -566,6 +566,8 @@ def test_completed_resident_turn_reuses_its_stable_final_message(
     second = dict(second_outcome.assistant_message or {})
 
     assert first["message_id"] == second["message_id"]
+    assert first["generation_source"]["execution_id"] == execution_id
+    assert first["generation_source"]["provider"] == "codex"
     appended = [
         event
         for event in repository.events_after(resident_id, before_cursor)["events"]

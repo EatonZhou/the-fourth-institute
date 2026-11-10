@@ -1562,16 +1562,10 @@ def _lineage_delivery_profile(job: Mapping[str, Any]) -> dict[str, Any]:
     message_id = str(job.get("user_message_id") or "").strip()
     if not lineage_id or not message_id:
         return {}
-    try:
-        from . import lineage_program_resident_inputs
+    from . import lineage_program_resident_inputs
 
-        return lineage_program_resident_inputs.delivery_profile(lineage_id, message_id)
-    except Exception:  # noqa: BLE001 - an unreadable profile runs the input normally
-        logging.getLogger(__name__).warning(
-            "Delivery profile of %s in %s is unreadable; the input runs normally", message_id, lineage_id,
-            exc_info=True,
-        )
-        return {}
+    # A failed read cannot turn an isolated business input into a shared-session turn.
+    return lineage_program_resident_inputs.delivery_profile(lineage_id, message_id)
 
 
 def _build_resident_execution_request(
@@ -1743,7 +1737,7 @@ def _send_resident_execution(
         request = _build_resident_execution_request(record, job)
         if resident_input_scope.get(
             resident_domain_common.record_resident_id(record), str(job.get("user_message_id") or "")
-        ) or resident_execution_work.is_compact(job):
+        ) or _lineage_delivery_profile(job).get("isolated") or resident_execution_work.is_compact(job):
             return request
         # Held info messages travel once, at the front of the next request.
         original = str(request.prompt or "")
@@ -1897,6 +1891,11 @@ def _send_resident_execution(
         ),
         execution_id=execution_id,
     )
+    assistant_item["generation_source"] = {
+        "execution_id": execution_id, "provider": backend, "account_id": backend_route_id,
+        "model": str(raw_usage.get("model") or request.runtime_options.get("model") or ""),
+        "model_evidence": "provider_reported" if raw_usage.get("model") else "execution_request",
+    }
     conversation_repository = resident_conversation_stream.get_repository()
     if persist_messages:
         persisted = _persist_execution_final_message(

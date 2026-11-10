@@ -69,7 +69,7 @@
       return [
         chip(paper.venue || "Venue"),
         paper.year ? chip(paper.year) : "",
-        paper.has_analysis ? chip("Analyzed", "good") : chip("No analysis", "warn"),
+        paper.has_analysis ? chip("Analyzed", "good") : paper.has_summary ? chip("分析 v0 · 短摘要") : chip("No analysis", "warn"),
         ...paperTags(paper).map(tag => chip(tag, "accent")),
       ].filter(Boolean).join("");
     }
@@ -140,7 +140,7 @@
       renderPaperResourceIdentity(workspaceTitle, isLibraryMode ? semantic : paper);
       const summaryText = isLibraryMode
         ? String(semantic?.query_interpretation || semantic?.notes || collection?.summary || collection?.error || (state.mode === "today" ? window.PortalI18n.t("Papers registered today.") : "")).trim()
-        : String(state.detail?.summary?.content || "").trim();
+        : "";
       renderWorkspaceDetails(summaryText, isLibraryMode ? libraryHeaderMeta() : paperHeaderMeta(paper));
       renderWorkspaceModeActions(paper);
       if (isLibraryMode) return renderLibraryMode();

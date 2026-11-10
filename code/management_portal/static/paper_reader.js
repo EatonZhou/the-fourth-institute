@@ -183,15 +183,27 @@
         return;
       }
       const paper = detail.paper;
-      const analysisHtml = detail.analysis?.content
-        ? md(detail.analysis.content)
+      const analysisBody = detail.analysis?.body ?? detail.analysis?.content ?? detail.summary?.content ?? "";
+      const analysisKind = detail.analysis?.kind || (detail.analysis?.content ? "analysis" : "summary");
+      const facts = detail.analysis?.provenance || {};
+      const resident = /^resident_[0-9a-f]{12}$/.test(facts.resident_id || "") ? facts.resident_id : "";
+      const tokenText = Number.isFinite(facts.total_tokens)
+        ? `输入 ${facts.input_tokens ?? "未记录"} · 输出 ${facts.output_tokens ?? "未记录"} · 共 ${facts.total_tokens} tokens`
+        : "Token 用量未记录";
+      const sourceHtml = analysisBody ? window.PortalI18n.html`<div class="paneNote">
+        ${resident ? window.PortalI18n.html`<a href="/lineage?resident=${esc(resident)}">生成 Agent</a> · ` : ""}
+        ${esc(facts.model || "模型未记录")} · ${esc(tokenText)}
+        ${facts.execution_id || facts.input_message_id ? window.PortalI18n.html`<details><summary>生成记录</summary>
+          ${esc(facts.execution_id || "")}<br>${esc(facts.input_message_id || "")}<br>${esc(facts.model_evidence || "")}</details>` : ""}
+        </div>` : "";
+      const analysisHtml = analysisBody
+        ? sourceHtml + md(analysisBody)
         : paperStateHtml("No analysis markdown registered for this paper.", { density: "compact" });
       const pdfHtml = paper.pdf_url
         ? window.PortalI18n.html`<div class="pdfJsViewer" id="paperPdfViewer" data-pdf-url="${esc(paper.pdf_url)}">
               <div class="pdfJsStatus">Loading PDF...</div>
             </div>`
         : paperStateHtml("No PDF path or URL registered for this paper.", { density: "compact" });
-      const analysisPath = String(detail.analysis?.path || "");
       const readerGridClasses = [
         "readerGrid",
         state.readerAnalysisCollapsed ? "analysisCollapsed" : "",
@@ -206,8 +218,7 @@
                 <div class="readerHeadIdentity">
                   <span class="readerHeadIcon" aria-hidden="true">MD</span>
                   <span class="readerHeadText">
-                    <span class="readerHeadTitle">Analysis</span>
-                    ${analysisPath ? window.PortalI18n.html`<span class="readerPath" aria-label="Analysis 文件：${esc(analysisPath)}">${esc(shortPath(analysisPath, 72))}</span>` : ""}
+                    <span class="readerHeadTitle">${analysisKind === "summary" ? "分析 v0 · 短摘要" : "Analysis"}</span>
                   </span>
                 </div>
                 <div class="readerHeadActions">

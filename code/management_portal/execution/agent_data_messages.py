@@ -82,6 +82,7 @@ def canonical_chat_message(message: Mapping[str, Any]) -> dict[str, Any]:
         result["usage"] = dict(usage)
     for key in (
         "provider_response",
+        "generation_source",
         "execution_id",
         "provider_turn_id",
         "business_ref",

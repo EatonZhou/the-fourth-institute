@@ -58,6 +58,7 @@ def get_paper_detail(paper_id: str, sections: object = None) -> dict:
         "assets_job": assets_job_status(str(paper.get("id") or "")),
     }
     if "analysis" in requested:
+        from management_portal.paper_analysis_view import analysis_view
         analysis_path = _safe_file_path(analysis_source)
         analysis_text = _read_text_preview(analysis_path)
         result["analysis"] = {
@@ -67,6 +68,7 @@ def get_paper_detail(paper_id: str, sections: object = None) -> dict:
                 for match in re.finditer(r"^(#{1,4})\s+(.+)$", analysis_text, re.MULTILINE)
             ][:40],
             "path": str(analysis_path or analysis_source),
+            **analysis_view(analysis_text, analysis_path, _paper_store_file(paper, "summary")),
         }
     if "summary" in requested:
         summary_path = _paper_store_file(paper, "summary")

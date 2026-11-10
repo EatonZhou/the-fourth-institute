@@ -840,6 +840,10 @@ def _result_from_input_state(
         replies.append(message)
         if isinstance(message.get("usage"), Mapping):
             usage = dict(message["usage"])
+        if isinstance(message.get("generation_source"), Mapping):
+            usage.update({key: value for key, value in message["generation_source"].items()
+                          if key in {"provider", "account_id", "model", "model_evidence"}})
+            usage["generation_source"] = dict(message["generation_source"])
         for part in message.get("content_parts") or []:
             if not isinstance(part, Mapping):
                 continue
@@ -857,6 +861,12 @@ def _result_from_input_state(
         for part in reply.get("content_parts") or []
         if isinstance(part, Mapping) and part.get("type") == "text"
     ).strip()
+    usage["generation_source"] = {
+        **dict(usage.get("generation_source") or {}),
+        "resident_id": resident_id,
+        "input_message_id": str(handle.get("message_id") or ""),
+        "execution_id": str((state.get("work") or {}).get("execution_id") or (usage.get("generation_source") or {}).get("execution_id") or ""),
+    }
     return {
         "resident_id": resident_id,
         "lineage_id": str(handle.get("lineage_id") or ""),

@@ -284,9 +284,12 @@ def refresh_deep_read_provenance(payload: dict, actor: str) -> dict:
                 or message.get("reply_to_message_id") != input_id):
             raise ValueError("generation reply identity changed")
         # Preserve recovery selection and its provenance independently of usage.
-        for key in ("api_id", "provider", "account_id", "model"):
+        for key in ("api_id", "provider", "account_id", "model", "model_evidence", "input_tokens", "cached_input_tokens", "output_tokens", "total_tokens"):
             if (message.get("usage") or {}).get(key):
                 usage[key] = message["usage"][key]
+        for key in ("provider", "account_id", "model", "model_evidence"):
+            if (message.get("generation_source") or {}).get(key):
+                usage[key] = message["generation_source"][key]
     usage["generation_source"] = {
         "resident_id": resident_id, "input_message_id": input_id,
         "reply_message_id": reply_id, "execution_id": str((state.get("work") or {}).get("execution_id") or ""),
@@ -500,13 +503,14 @@ def _analysis_model_metadata(usage: dict) -> dict:
         "llm_provider": str(usage.get("provider") or "未记录"),
         "llm_account": str(usage.get("account_id") or "未记录"),
         "llm_model": str(usage.get("model") or "未记录"),
-        "llm_model_evidence": "原始执行用量记录" if usage.get("model") else "原始记录未包含型号；未按当前配置推断",
+        "llm_model_evidence": str(usage.get("model_evidence") or "原始执行用量记录") if usage.get("model") else "原始记录未包含型号；未按当前配置推断",
         "llm_resident_id": source.get("resident_id") or usage.get("resident_id") or "",
         "llm_input_message_id": source.get("input_message_id") or recovery.get("input_message_id") or usage.get("input_message_id") or "",
         "llm_reply_message_id": source.get("reply_message_id") or usage.get("usage_message_id") or "",
         "llm_execution_id": source.get("execution_id") or "",
         "llm_source_message_id": recovery.get("source_message_id") or "",
         "llm_source_selection": recovery.get("selection") or "canonical_reply",
+        **{key: usage[key] for key in ("input_tokens", "cached_input_tokens", "output_tokens", "total_tokens") if isinstance(usage.get(key), int)},
     }
 
 

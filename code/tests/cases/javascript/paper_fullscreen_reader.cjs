@@ -16,7 +16,8 @@ window.PortalI18n={t:s=>s,html:template,text:template,message:s=>s,requestLangua
 window.PortalPreview={mountZoom:()=>({dispose(){},setEnabled(){}})};
 const deps=Object.fromEntries(window.PortalPaperReader.dependencies.map(k=>[k,()=>{}]));
 Object.assign(deps,{$:id=>document.getElementById(id),esc:s=>String(s),md:s=>String(s),detailSectionsLoaded:()=>true,
-alertError:e=>{throw e;},state:{detail:{paper:{id:'paper_0123456789ab',title:'Fixture PDF',pdf_url:'/fixture.pdf'}}}});
+alertError:e=>{throw e;},state:{detail:{paper:{id:'paper_0123456789ab',title:'Fixture PDF',pdf_url:'/fixture.pdf'},
+analysis:{kind:'summary',body:'中文短摘要正文',provenance:{resident_id:'resident_0123456789ab',input_tokens:10,output_tokens:4,total_tokens:14,model:'historic-model'}}}}});
 window.reader=window.PortalPaperReader.createReader(deps);window.reader.renderReaderMode();
 </script>`;
 const server = http.createServer(async (req, res) => {
@@ -44,6 +45,10 @@ const server = http.createServer(async (req, res) => {
     const page=await browser.newPage({viewport:{width:1440,height:960}});
     const errors=[]; page.on('pageerror',e=>errors.push(e.message));
     await page.goto(`http://127.0.0.1:${server.address().port}`);
+    await page.getByText('分析 v0 · 短摘要', {exact:true}).waitFor();
+    assert.match(await page.locator('#analysisReaderContent').textContent(), /中文短摘要正文/);
+    assert.match(await page.locator('#analysisReaderContent').textContent(), /输入 10 · 输出 4 · 共 14 tokens/);
+    assert.equal(await page.getByRole('link',{name:'生成 Agent'}).getAttribute('href'),'/lineage?resident=resident_0123456789ab');
     assert.equal(await page.locator('dialog').count(),0);
     await page.getByRole('button',{name:'全屏阅读',exact:true}).click();
     await page.waitForFunction(()=>document.querySelector('[data-pdf-text-layer-state="done"]') && document.querySelector('[role=status]').textContent.includes('选中文字'), null, {timeout:10000}).catch(async error => {

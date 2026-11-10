@@ -205,6 +205,11 @@ def protocol_message(message: Mapping[str, Any]) -> dict[str, Any]:
     usage = message.get("usage")
     if isinstance(usage, Mapping) and usage:
         result["usage"] = copy.deepcopy(dict(usage))
+    source = message.get("generation_source")
+    if isinstance(source, Mapping) and source:
+        result["generation_source"] = {key: str(source[key]) for key in (
+            "execution_id", "provider", "account_id", "model", "model_evidence",
+        ) if source.get(key)}
     return result
 
 
@@ -348,6 +353,7 @@ def message_from_storage(message: Mapping[str, Any]) -> dict[str, Any]:
         "created_at": str(message.get("created_at") or ""),
         "activated_at": str(message.get("activated_at") or ""),
         "usage": message.get("usage") or {},
+        "generation_source": message.get("generation_source") or {},
     }) | {
         # How the Conversation shows it: an info inside the request it came
         # with, a Mailbox group member inside its group, an input the Harness
@@ -360,6 +366,7 @@ def message_from_storage(message: Mapping[str, Any]) -> dict[str, Any]:
 
 # Private fields kept with a stored message, never part of its public identity.
 PRIVATE_FIELDS = (
+    "generation_source",
     "provider_response",
     "execution_id",
     "provider_turn_id",
@@ -395,6 +402,8 @@ def immutable_message_fields(message: Mapping[str, Any]) -> dict[str, Any]:
 
     immutable = protocol_message(message)
     immutable.pop("activated_at", None)
+    # Generation evidence is a read projection of the original Execution.
+    immutable.pop("generation_source", None)
     return immutable
 
 

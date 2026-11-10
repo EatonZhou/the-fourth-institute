@@ -34,7 +34,7 @@ def definitions(role: str) -> list[dict[str, str]]:
     if role not in ROLES:
         return []
     title, purpose = ROLES[role]
-    return [{"name": role, "title": title, "prompt": purpose + " 每次输入是独立任务，论文和评审重点仅来自本次 prompt。内容生成与业务正式保存是不同状态，只有取得业务保存回执才能声明已正式保存。遵循本次明确提供的输出和提交协议；若约定由业务服务保存，只返回生成结果，不自行寻找或重复执行提交。未提供提交协议时直接交付请求的内容，未执行未被要求的业务保存不视为生成失败，也不得声称已保存。实际生成失败或明确要求的提交失败必须如实报告。"}]
+    return [{"name": role, "title": title, "context_policy": "fresh", "prompt": purpose + " 每次输入是独立任务，论文和评审重点仅来自本次 prompt。内容生成与业务正式保存是不同状态，只有取得业务保存回执才能声明已正式保存。遵循本次明确提供的输出和提交协议；若约定由业务服务保存，只返回生成结果，不自行寻找或重复执行提交。未提供提交协议时直接交付请求的内容，未执行未被要求的业务保存不视为生成失败，也不得声称已保存。实际生成失败或明确要求的提交失败必须如实报告。"}]
 
 
 def _workflow(role: str) -> dict:
@@ -120,6 +120,12 @@ def _completed_result(result: dict, previous: dict, requested_message_id: str = 
         usage["usage_reported_message_id"] = usage["message_id"]
     usage.pop("message_id", None)
     usage.update(deepcopy(receipt))
+    usage["generation_source"] = {
+        **dict(usage.get("generation_source") or {}),
+        "resident_id": receipt["resident_id"],
+        "input_message_id": receipt["input_message_id"],
+        "reply_message_id": usage_message_id,
+    }
     projected = {**result}
     projected.pop("message_id", None)
     projected.update({
