@@ -4,15 +4,15 @@ type: decision
 project: AI员工
 created_at: '2026-09-03'
 version:
-  number: 15
+  number: 19
   created_at: '2026-09-03'
   created_by:
     user: ''
     agent: ''
-  updated_at: '2026-10-30T20:43:53Z'
+  updated_at: '2026-11-10T07:36:06Z'
   updated_by:
     user: ''
-    agent: resident_73cb83291316
+    agent: resident_60ae6d0cdf74
 importance: 8
 metaness: 2
 ai_generated: false
@@ -24,7 +24,6 @@ links:
   - ${code_root}/management_portal/static/portal_workbench.css
   - ${code_root}/management_portal/static/home_workbench.css
   - ${code_root}/management_portal/static/home.js
-  - ${code_root}/management_portal/static/home_agent_access.js
   - ${code_root}/management_portal/static/home_pulse.js
   - ${code_root}/management_portal/static/home_system_resources.js
   - ${code_root}/management_portal/static/home_accounts.js
@@ -55,7 +54,7 @@ links:
 ---
 # Home 页的信息结构与加载方式
 
-Home 是用户登录 TFI Portal 后看到的概览页，地址为 `/`。它回答“现在发生了什么”：最近的公告与新闻、团队和自己的工作进展、正在运行的 Resident、执行账号的额度和定时与自动触发的工作。Home 只提供概览和快捷入口，完整的阅读、编辑和操作在各自的页面中完成。
+Home 是用户登录 TFI Portal 后看到的概览页，地址为 `/`。它回答“现在发生了什么”：最近的公告与新闻、团队和自己的工作进展、正在运行的 Resident、执行账号的额度和定时与自动触发的工作。Home 的默认布局提供概览和快捷入口。用户可以按需打开“对话与展示”组件，在个人门面对话旁阅读文件、生成汇报或操作原生地图；已有页面继续提供完整入口。
 
 本 Design 说明 Home 上有哪些区域、它们怎样排列、什么时候加载和刷新，以及页面状态怎样保存。每个区域显示什么数据、提供哪些操作，由各自的 Design 说明（见“页面上的区域”）。
 
@@ -69,8 +68,7 @@ Home 是用户登录 TFI Portal 后看到的概览页，地址为 `/`。它回�
 Home 内容区
 ├─ Get Me Aligned        快速了解最近发生了什么
 │  ├─ Notice Board       公告与讨论
-│  ├─ Daily News         今日行业新闻
-│  └─ Agent Access       常用 Resident 入口
+│  └─ Daily News         今日行业新闻
 ├─ My Pulse / Publish    团队和自己的工作进展
 │  ├─ Knowledge Pulse    团队知识和项目变化摘要
 │  └─ Personal Pulse     个人进展摘要与公开发布
@@ -85,7 +83,6 @@ Home 内容区
 | --- | --- |
 | Notice Board | decision_605810a1292b |
 | Daily News | decision_5d2bf4a72f09 |
-| Agent Access | decision_152d5c046a23 |
 | Knowledge Pulse、Personal Pulse | decision_865ac8ebef25 |
 | AI Activity & Accounts | decision_4dea0db1f45a（执行账号）、decision_e30897dd3dc3（活动 Resident） |
 | GPU / Disk Resources | decision_ed57c4ad1001 |
@@ -104,23 +101,29 @@ Home 的布局使用 Portal 共享的工作台组件 Workbench（decision_538e15
 
   | 预设 | 外层排列 | 同时设置的内部布局 |
   | --- | --- | --- |
-  | 每日概览 | 上方 Get Me Aligned 与 My Pulse / Publish（宽度 2:1），下方 Agent Status | Notice Board 与 Daily News 并排；Knowledge Pulse 在上、Personal Pulse 在下；AI Activity & Accounts 在上、Scheduled & Triggered 在下；Agent Access、GPU / Disk Resources 和 Usage Attribution 隐藏 |
+  | 每日概览 | 上方 Get Me Aligned 与 My Pulse / Publish（宽度 2:1），下方 Agent Status | Notice Board 与 Daily News 并排；Knowledge Pulse 在上、Personal Pulse 在下；AI Activity & Accounts 在上、Scheduled & Triggered 在下；GPU / Disk Resources 和 Usage Attribution 隐藏 |
   | 概览 | 与“每日概览”相同 | 无 |
   | 从上到下 | 三个一级区域从上到下排列 | 无 |
   | 账号与用量 | 只显示占满内容区的 Agent Status，另外两个一级区域隐藏 | Agent Status 中 AI Activity & Accounts 在上、Usage Attribution 在下，另外两个子面板隐藏 |
   | 标签组 | 三个一级区域组成一个标签组 | 无 |
 
-  每个一级区域的内部 Workbench 另有自己的布局按钮，与子面板标签在同一行，提供该区域自己的预设（例如 Get Me Aligned 的“概览”：Notice Board 与 Daily News 并排，Agent Access 在下方）。
+  每个一级区域的内部 Workbench 另有自己的布局按钮，与子面板标签在同一行，提供该区域自己的预设（例如 Get Me Aligned 的“概览”：Notice Board 与 Daily News 并排）。
 - **外层布局按钮位于顶栏右侧。** 外层 Workbench 的当前布局名称、布局菜单和恢复隐藏面板的入口放在全局导航右侧，与 Society 页面的位置一致。
-- **只剩一个标签的一级区域收起标题栏。** 鼠标移到这个区域的上边缘时标题栏出现，移开后收起；鼠标在内部子面板的标签或按钮上时，外层标题栏保持收起。
+- **Home 一级区域的标题栏自动收起，单标签和多标签组使用相同行为。** 鼠标移到区域上边缘或通过键盘聚焦标签时展开；鼠标离开后收起，鼠标切换标签不会把标题栏固定为展开。展开层位于区域内部、顶部导航下方，不占用内容高度，关闭、切换和拖动标签保持可用。内部子面板的标签或按钮不触发外层展开；子组件保留自己的标题栏规则。移动端保留底部组件切换和对话组件的触摸关闭入口。
 - **手机等窄屏上一次只显示一个面板。** 使用 Workbench 的单面板切换方式；首次“账号与用量”布局显示 Agent Status 中的 AI Activity & Accounts，可切到 Usage Attribution。
+
+## 按需打开对话与展示
+
+“对话与展示”按 Home 现有组件机制提供，遵循 decision_b12782e7f490。它不进入首次访问的默认布局，不重置已有保存布局；用户从组件入口或明确的深链接打开。组件可展开，再返回原有 Home 布局，个人门面与右侧当前文档、汇报和地图保持连续。
+
+右侧切换历史、固定及异步结果归该组件所有；Preview 与 Document Session 管理阅读和草稿，地图与线头沿用各自领域模型和原生操作。Home 不复制这些领域的状态、权限和保存规则。组件首次可见才初始化，隐藏时保留实例并按各自刷新合同暂停可见性工作。
 
 ## 加载与刷新
 
 - **每个区域独立显示加载中、空内容、成功和失败。** 一个区域读取失败，只在这个区域显示错误，其他区域照常阅读和操作。
 - **一个区域第一次显示时才开始读取数据。** 页面先读取当前用户；读取成功或失败之后，当前可见的子面板开始加载。被隐藏、被折叠、在未选中的标签页里，或所在一级区域被折叠的子面板暂不加载，等用户让它显示出来时再加载。
 - **加载过的区域保留组件和内容。** 之后折叠、隐藏再打开不重新初始化。运行器只管理首次连接与销毁；已连接面板是否暂停定时读取、恢复可见时是否重读，由该面板的刷新合同决定。例如 Scheduled & Triggered 隐藏时停止计时、重新可见时读取当前状态（decision_481dc4e6292c）。
-- **Home 没有统一的刷新周期。** 各面板的刷新时机、后台标签页行为和错误重试由对应 Design 唯一说明：Daily News（decision_5d2bf4a72f09）、Notice Board（decision_605810a1292b）、Pulse（decision_865ac8ebef25）、Agent Access（decision_152d5c046a23）、账号（decision_4dea0db1f45a）、活动 Resident（decision_e30897dd3dc3）、GPU / Disk（decision_ed57c4ad1001）、Scheduled & Triggered（decision_481dc4e6292c）和 Usage Attribution（decision_fc26f883773d）。Knowledge Pulse 与 Personal Pulse 共用一次读取，两个面板各自选择时间范围。
+- **Home 没有统一的刷新周期。** 各面板的刷新时机、后台标签页行为和错误重试由对应 Design 唯一说明：Daily News（decision_5d2bf4a72f09）、Notice Board（decision_605810a1292b）、Pulse（decision_865ac8ebef25）、账号（decision_4dea0db1f45a）、活动 Resident（decision_e30897dd3dc3）、GPU / Disk（decision_ed57c4ad1001）、Scheduled & Triggered（decision_481dc4e6292c）和 Usage Attribution（decision_fc26f883773d）。Knowledge Pulse 与 Personal Pulse 共用一次读取，两个面板各自选择时间范围。
 
 - **Agent Status 的刷新按钮只刷新可见的区域。** 按钮位于 AI Activity & Accounts 中。点击后，AI Activity & Accounts 可见时要求服务端重新采集账号数据；GPU / Disk Resources 可见时要求重新采集 GPU 和磁盘；Scheduled & Triggered 可见时重新读取列表。Usage Attribution 使用自己的刷新按钮。
 - **列表中的链接只负责跳转。** 点击 Resident、帖子或资源进入对应页面，由目标页面提供完整功能并检查权限。
@@ -143,11 +146,11 @@ Home 的前端由三部分组成：
 | --- | --- | --- |
 | 页面模板 | `index.html` | 定义三个一级区域和 Home 自有子面板的根节点、Workbench 挂载点、对话框和加载占位文字 |
 | Home 组件运行器 `PortalHomeComponents` | `static/portal_home_components.js` | 把每个子面板包装成 Workbench 可以放置的面板；记录每个面板是否可见；决定各子面板的加载函数何时执行；接收功能登记的子面板；页面离开时释放资源 |
-| Home 控制器 | `static/home.js` 与 `static/home_*.js` | `home.js` 声明组件树、布局和预设，并创建各子面板；Agent Access、Pulse、系统资源、账号、用量、定时与自动触发、活动 Agent 七个子面板的读取、渲染和操作分别在 `home_agent_access.js`、`home_pulse.js`、`home_system_resources.js`、`home_accounts.js`、`home_usage.js`、`home_scheduled_triggered.js`、`home_activity.js`。每个文件在 `window` 上登记一个带工厂函数和依赖清单的对象，`index.html` 在 `home.js` 之前加载它们 |
+| Home 控制器 | `static/home.js` 与 `static/home_*.js` | `home.js` 声明组件树、布局和预设，并创建各子面板；Pulse、系统资源、账号、用量、定时与自动触发、活动 Agent 六个子面板的读取、渲染和操作分别在 `home_pulse.js`、`home_system_resources.js`、`home_accounts.js`、`home_usage.js`、`home_scheduled_triggered.js`、`home_activity.js`。每个文件在 `window` 上登记一个带工厂函数和依赖清单的对象，`index.html` 在 `home.js` 之前加载它们 |
 
-Notice Board 属于可选功能，不在 Home 的模板和控制器中。它的标记、对话框、样式和脚本是一个页面片段（`notice_board_home.html`、`static/notice_board_home.{css,js}`），由功能通过 `web.home_panel` 接入点登记（decision_15aab18c0ab3）；Web 返回 Home 时把已安装功能的片段插在 `home.js` 之前。片段脚本调用 `PortalHomeComponents.registerPanel`，登记面板 ID、所属一级区域、区域内次序、标题、图标、根节点和加载函数；Home 把每个一级区域自有的子面板与登记的子面板按次序合并，组成组件树、区域内 Workbench 的面板和“标签组”预设。默认布局和保存的布局可以写到没有安装的面板，Workbench 规范化布局时跳过它们。深链接（例如 `?notice_post=`）由登记面板自己标记为请求打开，Home 挂载后展开它所在的一级区域并聚焦它。Portal 不带 Notice Board 时，Home 照常显示其余子面板。
+Notice Board 属于可选功能，不在 Home 的模板和控制器中。它的标记、对话框、样式和脚本是一个页面片段（`notice_board_home.html`、`static/notice_board_home.{css,js}`），由功能通过 `web.home_panel` 接入点登记（decision_15aab18c0ab3）；Web 返回 Home 时把已安装功能的片段插在 `home.js` 之前。片段脚本调用 `PortalHomeComponents.registerPanel`，登记面板 ID、所属一级区域、区域内次序、标题、图标、根节点和加载函数；Home 把每个一级区域自有的子面板与登记的子面板按次序合并，组成组件树、区域内 Workbench 的面板和“标签组”预设。默认布局和保存的布局可以写到没有安装的面板，Workbench 规范化布局时跳过它们。已经移除的面板同样由规范化过程剔除；只剩一个子分栏时自动收拢，不清空用户的其他布局设置。深链接（例如 `?notice_post=`）由登记面板自己标记为请求打开，Home 挂载后展开它所在的一级区域并聚焦它。Portal 不带 Notice Board 时，Home 照常显示其余子面板。
 
-组件树以 `home-shell` 为根，下面是三个一级区域，再下面是各区域的子面板，每个节点有稳定的 ID（例如 `agent-access`）和页面中的根节点。`home-shell` 在页面打开时立即执行，只读取当前用户；每个子面板有一个加载函数，由运行器在合适的时机调用。
+组件树以 `home-shell` 为根，下面是三个一级区域，再下面是各区域的子面板，每个节点有稳定的 ID（例如 `daily-news`）和页面中的根节点。`home-shell` 在页面打开时立即执行，只读取当前用户；每个子面板有一个加载函数，由运行器在合适的时机调用。
 
 运行器为每个节点记录一个状态，并写在根节点的 `data-home-component-state` 属性上，同时发出 `portal:home-component-state` 事件，供测试和调试使用：
 

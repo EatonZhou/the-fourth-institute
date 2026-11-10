@@ -4,15 +4,16 @@ type: decision
 project: AI员工
 created_at: '2026-09-03'
 version:
-  number: 10
+  number: 11
   created_at: '2026-09-03'
   created_by:
     user: ''
     agent: ''
-  updated_at: '2026-10-31T01:31:12Z'
+  updated_at: '2026-11-10T07:29:20Z'
   updated_by:
     user: ''
-    agent: resident_73cb83291316
+    agent: resident_8e46fd96df8c
+status: obsolete
 importance: 8
 metaness: 1
 ai_generated: true
@@ -41,6 +42,8 @@ links:
   derived_from: []
 ---
 # Home Agent Access 的常用 Resident 入口
+
+> Agent Access 组件已从 Home 的 Get Me Aligned 移除，本条保留历史设计。当前 Home 组成以 decision_00546e28e1e0 为准。个人问答、Resident 推荐、会话与摘要服务继续由各自入口提供。
 
 Agent Access 是 Home 页上的一个小面板，让登录用户从首页直接进入三类对话：自己的个人问答 Resident、帮助挑选 Resident 的推荐 Resident，以及最近用过的 Resident。它位于 Home 的“Get Me Aligned”工作台中，与 Notice Board、Daily News 并列（Home 的整体布局见 decision_00546e28e1e0）。
 

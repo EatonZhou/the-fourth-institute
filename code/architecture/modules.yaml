@@ -921,6 +921,7 @@ modules:
       - "decision_a6bebf4ac283"
       - "decision_692a484e9bea"
       - "decision_4648f7fa3295"
+      - "decision_e1f177f05e4c"
       - "decision_46c37026e8ea"
       - "decision_9d15ae2053c4"
       - "decision_865ac8ebef25"
@@ -1163,7 +1164,6 @@ modules:
     designs:
       - "decision_00546e28e1e0"
       - "decision_b12782e7f490"
-      - "decision_152d5c046a23"
       - "decision_e30897dd3dc3"
       - "decision_4dea0db1f45a"
       - "decision_fc26f883773d"
@@ -1562,7 +1562,6 @@ protocols:
       - "decision_f560803947c6"
       - "decision_18abbdef3da3"
       - "decision_481dc4e6292c"
-      - "decision_152d5c046a23"
     description: "浏览器通过统一用户入口访问 Web；认证后的读取与指令请求返回结构化结果，SSE/WebSocket 提供持续流。"
     example: "浏览器打开工作台 → 用户路由选择 Release → Web 校验会话并返回页面；后续资源调用沿相同入口到达 Web。"
   - id: "hatg-isa"
@@ -1975,7 +1974,6 @@ protocols:
     designs: []
     related_designs:
       - "decision_00546e28e1e0"
-      - "decision_152d5c046a23"
       - "decision_18abbdef3da3"
       - "decision_61e50306cc79"
       - "decision_8b2fa224616b"
@@ -1993,7 +1991,6 @@ protocols:
     designs: []
     related_designs:
       - "decision_00546e28e1e0"
-      - "decision_152d5c046a23"
       - "decision_769a35d6b5c7"
       - "decision_ce44377c3257"
       - "decision_e30897dd3dc3"
@@ -2174,7 +2171,7 @@ protocols:
     example: "打开 Project 目录：resource_views 使用当前 actor 分页查询正式资源，再投影目录字段；页面状态不能增加资源可见性。"
 
   - id: "telepus-personal-assistant"
-    title: "Telegram 个人助手入口与 Family 对话投影"
+    title: "Telepus 多渠道个人助手入口与 Family 对话投影"
     modules:
       - "delivery.services"
       - "web.community"
@@ -2184,7 +2181,7 @@ protocols:
       - "decision_66f5be947b67"
     related_designs:
       - "decision_692a484e9bea"
-    description: "部署控制面持有 service_components 内置启动模块目录，按实例登记的组件启动 Telepus（management_portal/telepus）的 telepus-telegram-router 与 telepus-portal-refresh。Telepus 按联系人对应的 User 读取 Portal 个人助手入口关联，经正式 ISA 向门面或精确 Resident 投递；私人 Family 拥有选人、转交和门面对话投影，桥接只管理 Telegram 模式、游标、问答卡片与消息对应，不复制目录或执行权限。"
+    description: "部署控制面持有 service_components 内置启动模块目录，按实例登记的组件启动 Telepus 的 telepus-telegram-router、telepus-weixin-router 与 telepus-portal-refresh。渠道适配层拥有连接、媒体、格式和发送额度，核心拥有目标模式、输入跟踪和 Portal 调用。Telepus 按联系人对应的 User 读取个人助手入口，经正式 ISA 向门面或精确 Resident 投递；私人 Family 拥有选人、转交和门面对话投影。"
     example: "Telegram update → 联系人 User → personal_ama.personal_assistant_target → DeliverMessage → Family 门面对话 → WatchConversationEvents → Telegram 分段回复。"
 
   - id: "web-http-handler-binding"
@@ -2519,7 +2516,6 @@ protocols:
     designs: []
     related_designs:
       - "decision_8fe87d812a4c"
-      - "decision_152d5c046a23"
     description: "浏览器/业务入口提交正式 Resident 搜索；Lineage 上下文目录保存摘要证据、嵌入和版本，SearchResidents 以当前主体过滤结果。嵌入器加载固定本地模型，是目录检索组件，和运行账号模型目录无关。"
     example: "portal_resident_discovery_service/SearchResidents → Lineage context.store → evidence 有界摘要 + embedder → 结果 ID/摘要/关联范围 → Home/工作台选择。"
 
