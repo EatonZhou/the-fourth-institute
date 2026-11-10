@@ -431,6 +431,14 @@ def _prompt_injection_view(settings: dict[str, Any]) -> dict[str, Any]:
     return prompt_injection.describe(settings.get("prompt_injection"), provider=str(settings.get("backend") or ""))
 
 
+def get_resident_text_input_snapshot(inv: Invocation) -> dict[str, Any]:
+    from ..resident_execution_domain import text_only_input_snapshot
+    text = inv.argument('text')
+    if not isinstance(text, str) or not text.strip() or len(text.encode()) > 16000:
+        raise invalid('Explicit text of at most 16000 UTF-8 bytes required')
+    return text_only_input_snapshot(inv.argument('resident_id'), inv.caller, text=text)
+
+
 def get_resident_settings(inv: Invocation) -> dict[str, Any]:
     resident_id = inv.argument("resident_id")
     result = protocol().get_resident_runtime_settings(resident_id, inv.caller)
@@ -627,6 +635,7 @@ def get_family_summary_inputs(inv: Invocation) -> dict[str, Any]:
 
 
 HANDLERS = {
+    'GetResidentTextInputSnapshot': get_resident_text_input_snapshot,
     "UpdateResidentWorkSummary": update_resident_work_summary,
     "CheckResidentWorkSummary": check_resident_work_summary,
     "GetFamilySummaryInputs": get_family_summary_inputs,

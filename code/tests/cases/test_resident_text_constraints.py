@@ -98,3 +98,14 @@ def test_formal_delivery_constraints_enter_actual_job(resident_record, monkeypat
     request = domain._build_resident_execution_request(record, job)
     assert request.runtime_options['execution_constraints'] == CONSTRAINT
     assert request.session.mode == 'stateless'
+
+
+def test_snapshot_formal_rpc_is_readonly_and_uses_caller(resident_record):
+    from tests.cases.isa_test_support import run
+    args = {'resident_id': resident_record['resident_id'], 'text': 'synthetic only'}
+    first = run('GetResidentTextInputSnapshot', args, actor='CASE-A').raise_for_error()
+    second = run('GetResidentTextInputSnapshot', args, actor='CASE-A').raise_for_error()
+    assert first == second and first['system_parts_revision']
+    assert not work.read(resident_record).get('execution_id')
+    assert run('GetResidentTextInputSnapshot', {**args, 'text': ''}, actor='CASE-A').status == 'failed'
+    assert run('GetResidentTextInputSnapshot', {**args, 'actor': 'CASE-A'}, actor='CASE-B').status == 'failed'

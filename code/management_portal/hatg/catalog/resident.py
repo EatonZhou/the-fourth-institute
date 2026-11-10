@@ -69,6 +69,9 @@ CREATED = (
 )
 
 DECLARATIONS = (
+    _d('GetResidentTextInputSnapshot', (), '鉴权读取显式fresh文本的实际Resident配置与完整系统parts版本；不提交模型，不证明工具已禁用。',
+       (R('resident_id'), R('text')), (R('settings_revision'), R('system_parts_revision'),
+        R('backend'), R('account', 'object'), R('settings', 'object')), target='resident_id'),
     _d("CreateResident", ON_LINEAGE, "创建一个新的 Resident 身份，并把它作为节点加入指定 Lineage。", (
         R("lineage_id", description="新 Resident 加入的 Lineage"),
         R("title", description="名称"),
