@@ -4,12 +4,12 @@ type: decision
 project: AI员工
 created_at: '2026-09-01'
 version:
-  number: 17
+  number: 18
   created_at: "2026-09-01"
   created_by:
     user: ""
     agent: ""
-  updated_at: "2026-11-09T16:10:57Z"
+  updated_at: "2026-11-10T06:06:22Z"
   updated_by:
     user: ""
     agent: "resident_62dbdb2288fb"
@@ -133,6 +133,8 @@ Article 工作区是 Portal 中编写论文源码的页面，入口为 `/resourc
    - 自动编译、编译模式（`normal` 或 `draft`，draft 只改变编译参数，不改源码）、语法检查；
    - 出错处理：`continue`（遇错继续）或 `stop`（遇错停止）。
 2. **构建前检查。** 编译前，服务检查：目录中有可编译的 `.tex` 文档；主文稿存在且包含 `\documentclass`；所选编译器、`latexmk`、宏包和字体都可用。有错误级问题时不启动编译，页面禁用编译与从头构建，并显示缺失项；问题写入构建报告。
+
+   PDF 输出区在缺少可安装的 `.cls`、`.sty`、`.bst` 文件时显示“安装缺失依赖”。用户点击后，服务重新检测该 Article 的源码依赖和上次编译明确报缺的宏包，从当前 TeX Live 仓库按文件查找唯一正式包，使用本机 `tlmgr` 安装；文稿与客户端不能指定命令、仓库或任意包名。安装使用共享工具链互斥锁，页面显示安装状态；失败保留原因并允许重试。安装完成重新预检，通过后自动重新编译并更新当前 Article 的 PDF。没有 `tlmgr`、缺少系统字体或无法唯一找到包时说明未解决项，交由管理员处理；不会在打开页面、保存文件或后台预检时自动下载安装。切换 Article 后在途安装不更新其他文稿的页面。
 3. **编译。** 服务在受控环境中运行 `latexmk`，辅助文件、日志、PDF 和报告都写入该 Article 的构建缓存。请求一直等到编译结束才返回，单次编译最长 120 秒。
 4. **并发。** 同一个 Article 已有编译在进行时，新的编译请求返回 422 和“LaTeX compilation is already running”。“停止”按钮结束正在进行的编译进程组。“从头构建”先清空这个 Article 的构建缓存，再重新编译。
 5. **结果。** 编译失败时返回 422，附带日志最后 12,000 个字符。构建报告记录编译器退出码、检查结果和解析出的诊断。本次失败不影响上一次成功的 PDF：页面继续显示旧 PDF，同时标明本次构建失败。
@@ -216,6 +218,7 @@ article_* ─→ Article 登记确定源码根 ─→ 文件树与编辑内容 �
 | `POST /api/articles/{id}/entries` | 新建空文件（`kind: file`）或目录（`kind: directory`） |
 | `POST /api/articles/{id}/upload` | 上传一个文件 |
 | `POST /api/articles/{id}/settings` | 保存构建设置 |
+| `POST /api/articles/{id}/install-dependencies` | 显式安装服务端检测到的缺失 TeX 包，正文为空对象；返回安装包清单和最新预检 |
 | `POST /api/articles/{id}/compile` | 编译，可带 `from_scratch: true` 从头构建 |
 | `POST /api/articles/{id}/stop` | 停止正在进行的编译 |
 | `POST /api/articles/{id}/synctex/source-to-pdf`、`/synctex/pdf-to-source` | 正向和反向定位 |

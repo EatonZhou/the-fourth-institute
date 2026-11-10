@@ -2253,3 +2253,9 @@ body.articleOutlineResizing { cursor: row-resize; user-select: none; }
     --article-output-w: 43vw;
   }
 }
+.articleDependencyStatus {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border, #d0d7de);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}

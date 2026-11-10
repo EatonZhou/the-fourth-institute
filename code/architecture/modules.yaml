@@ -534,6 +534,7 @@ modules:
       - "management_portal/article_files.py"
       - "management_portal/article_semantic_index.py"
       - "management_portal/article_build_profile.py"
+      - "management_portal/article_dependencies.py"
       - "management_portal/article_build.py"
       - "management_portal/article_synctex.py"
       - "management_portal/article_sections.py"

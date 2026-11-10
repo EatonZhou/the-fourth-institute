@@ -375,6 +375,7 @@ test('Article preflight displays its blocker in the PDF pane and recovers when d
   const pdf = owner(ARTICLE_SCRIPTS, ['renderPdf'], {state, window, $, esc, pdfUrl: () => '',
     cancelPdf: noop, updateArticlePdfZoomControls: noop});
   const build = owner(ARTICLE_SCRIPTS, ['renderBuildPreflight', 'renderBuildSummary', 'buildCounts'], {
+    renderDependencyInstallation: noop,
     state, window, $, esc, renderPdf: pdf.renderPdf, showPdfError: error => {throw error;},
     formatDate: () => '', updateArticlePdfZoomControls: noop, renderLog: noop, updateAllEditorMarkers: noop,
   });
@@ -399,7 +400,7 @@ test('Article compile results and controls belong to the initiating Article', as
   const context = owner(ARTICLE_SCRIPTS, ['compileArticle'], {
     state, window: {PortalI18n: i18n, clearTimeout: noop}, $: () => button,
     setCompileMenu: noop, hasDirtyDocuments: () => false, renderBuildSummary: noop,
-    renderCompileMenu: noop, compileSettingValue: () => 'normal', showToast: noop,
+    renderCompileMenu: noop, renderDependencyInstallation: noop, compileSettingValue: () => 'normal', showToast: noop,
     setOutputView: view => views.push(view), loadArticles: async () => {},
     loadBuild: async () => {}, scheduleAutoCompile: noop,
     request: (url, opts) => { const gate = deferred(); pending.set(url, gate); options.push(opts); return gate.promise; },
@@ -420,6 +421,48 @@ test('Article compile results and controls belong to the initiating Article', as
   assert.equal(state.build.pdf_url, '/B.pdf');
   assert.equal(state.compilingArticles.size, 0);
   assert.equal(button.disabled, false);
+});
+
+test('Article dependency button installs once, recompiles on success and ignores switched Articles', async () => {
+  const {document} = new JSDOM('<button id="articleInstallDependencies" hidden></button><div id="articleDependencyStatus" hidden></div>').window;
+  const $ = id => document.getElementById(id);
+  const state = {selectedId: 'A', compilingArticles: new Set(), buildPreflight: {
+    status: 'blocked', installation: {available: true, missing_files: ['IEEEtran.cls']}}};
+  const requests = [], notices = [], compiled = [];
+  const context = owner(ARTICLE_SCRIPTS, ['renderDependencyInstallation', 'installMissingDependencies'], {
+    state, $, window: {PortalI18n: i18n}, renderBuildPreflight: noop,
+    compileArticle: async () => compiled.push(state.selectedId), showToast: text => notices.push(text),
+    request: (url, options) => {const gate = deferred(); requests.push({url, options, ...gate}); return gate.promise;},
+  });
+  context.renderDependencyInstallation();
+  assert.equal($('articleInstallDependencies').hidden, false);
+  assert.equal($('articleDependencyStatus').textContent, 'IEEEtran.cls');
+  const first = context.installMissingDependencies();
+  await context.installMissingDependencies();
+  assert.equal(requests.length, 1);
+  assert.equal($('articleInstallDependencies').disabled, true);
+  assert.equal(requests[0].options.body, '{}');
+  requests[0].resolve({installed_packages: ['ieeetran'], preflight: {status: 'ready', installation: {missing_files: []}}});
+  await first;
+  assert.deepEqual(compiled, ['A']);
+  assert.equal($('articleInstallDependencies').hidden, true);
+  state.buildPreflight = {status: 'blocked', installation: {available: true, missing_files: ['new.sty']}};
+  const failed = context.installMissingDependencies();
+  requests[1].reject(Object.assign(new Error('network failed'), {data: {details: 'repository unavailable'}}));
+  await failed;
+  assert.equal($('articleInstallDependencies').disabled, false);
+  assert.equal($('articleDependencyStatus').textContent, 'network failed\nrepository unavailable');
+  assert.deepEqual(compiled, ['A']);
+  const stale = context.installMissingDependencies();
+  state.selectedId = 'B';
+  state.buildPreflight = {status: 'blocked', installation: {available: false, missing_files: ['other.cls']}};
+  context.renderDependencyInstallation();
+  requests[2].resolve({preflight: {status: 'ready'}});
+  await stale;
+  assert.equal($('articleDependencyStatus').textContent.includes('other.cls'), true);
+  assert.equal($('articleInstallDependencies').disabled, true);
+  assert.equal(state.buildPreflight.status, 'blocked');
+  assert.deepEqual(compiled, ['A']);
 });
 
 function articleSaveFixture() {
@@ -444,7 +487,7 @@ function articleSaveFixture() {
     state, window, $, activeDocument: () => documentState,
     updateDirtyState: () => session.snapshot().dirty,
     setCompileMenu: noop, hasDirtyDocuments: () => false,
-    renderBuildSummary: noop, renderCompileMenu: noop, renderSettings: noop,
+    renderBuildSummary: noop, renderCompileMenu: noop, renderSettings: noop, renderDependencyInstallation: noop,
     compileSettingValue: key => state.settings[key], showToast: noop,
     setOutputView: view => views.push(view), loadArticles: async () => {}, loadBuild: async () => {},
     scheduleTexlabSync: noop, loadSemanticIndex: async () => {}, scheduleArticleGitRefresh: noop,

@@ -372,6 +372,7 @@
         <section class="pane articleOutputPane" id="articleOutputPane" aria-label="Article PDF Output" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;Article PDF Output&quot;}">
           <div class="articleCompileBar">
             <button class="portalButton articleBackToPdfTop" id="articleBackToPdf" type="button" hidden><!--portal-i18n:"返回 PDF"-->返回 PDF</button>
+            <button class="portalButton" id="articleInstallDependencies" type="button" hidden><!--portal-i18n:"安装缺失依赖"-->安装缺失依赖</button>
             <div class="articleCompileMenuWrap" id="articleCompileMenuWrap">
               <div class="articleCompilePrimary">
                 <button class="portalButton is-primary articleCompileButton" id="articleCompile" type="button" disabled><!--portal-i18n:"重新编译"-->重新编译</button>
@@ -435,6 +436,7 @@
             <code class="articlePdfIdentity" id="articlePdfIdentity" title="当前 Article Resource ID">未选择 Article</code>
             <div class="articleBuildSummary" id="articleBuildSummary"><!--portal-i18n:"尚未编译"-->尚未编译</div>
           </div>
+          <div class="articleDependencyStatus" id="articleDependencyStatus" role="status" hidden></div>
           <div class="articleOutputView articlePdfView active" id="articlePdfView">
             <div class="articlePdfEmpty"><div class="articlePdfEmptyIcon"><!--portal-i18n:"PDF"-->PDF</div><h2><!--portal-i18n:"尚无 PDF"-->尚无 PDF</h2><p><!--portal-i18n:"编译 Article 后将在此显示文档。"-->编译 Article 后将在此显示文档。</p></div>
           </div>

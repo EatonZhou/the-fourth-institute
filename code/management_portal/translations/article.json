@@ -1,4 +1,9 @@
 {
+  "安装缺失依赖": {"zh-CN": "安装缺失依赖", "en": "Install missing dependencies"},
+  "正在安装依赖…": {"zh-CN": "正在安装依赖…", "en": "Installing dependencies…"},
+  "正在下载并安装，完成后将重新编译。": {"zh-CN": "正在下载并安装，完成后将重新编译。", "en": "Downloading and installing. The document will recompile when ready."},
+  "当前环境没有 tlmgr，需管理员安装 TeX 工具链。": {"zh-CN": "当前环境没有 tlmgr，需管理员安装 TeX 工具链。", "en": "tlmgr is unavailable. Ask an administrator to install the TeX toolchain."},
+  "依赖安装已完成，仍有构建问题需要处理。": {"zh-CN": "依赖安装已完成，仍有构建问题需要处理。", "en": "Installation completed; some build issues still need attention."},
   "Article Workspace": {
     "en": "Article Workspace",
     "zh-CN": "文章工作区"

@@ -7,7 +7,7 @@ from pathlib import Path
 from urllib.parse import parse_qs, quote
 
 from management_portal import (
-    article_build, article_build_profile, article_build_results, article_files, article_git, article_registry,
+    article_build, article_build_profile, article_build_results, article_dependencies, article_files, article_git, article_registry,
     article_semantic_index, article_settings, article_synctex, article_texlab_backend, http_auth,
     http_documents, http_files, http_request_body, http_responses, web_resources,
 )
@@ -102,7 +102,7 @@ class ArticlesHttp:
             elif action == "settings":
                 result = article_settings.load_article_settings(article_id)
             elif action == "preflight":
-                result = article_build_profile.article_build_preflight(article_id)
+                result = article_dependencies.dependency_preflight(article_id)
             elif action == "semantic":
                 result = article_semantic_index.article_semantic_index(article_id)
             else:
@@ -323,6 +323,10 @@ class ArticlesHttp:
             if action == "stop":
                 return self.respond(request, 200, article_build.stop_article_compile(article_id))
             payload = self.read_json(request)
+            if action == "install-dependencies":
+                if payload:
+                    raise ValueError("dependency installation accepts no package names or commands")
+                return self.respond(request, 200, article_dependencies.install_article_dependencies(article_id))
             from_scratch = payload.get("from_scratch", False)
             if not isinstance(from_scratch, bool):
                 raise ValueError("from_scratch must be a boolean")
@@ -397,6 +401,7 @@ def routes(portal):
         ("POST", "settings", http.with_action(write, "settings")),
         ("POST", "git/{action}", http.git),
         ("POST", "compile", http.with_action(http.action, "compile")),
+        ("POST", "install-dependencies", http.with_action(http.action, "install-dependencies")),
         ("POST", "stop", http.with_action(http.action, "stop")),
     )
     return (

@@ -78,6 +78,7 @@
     }
 
     function renderBuildPreflight() {
+      renderDependencyInstallation();
       const host = $("articleBuildPreflight");
       const preflight = state.buildPreflight;
       if (!preflight) {
@@ -100,6 +101,56 @@
       }
       renderBuildSummary();
       if (!state.build?.pdf_available && state.outputView === "pdf") renderPdf().catch(error => showPdfError(error));
+    }
+
+    function renderDependencyInstallation() {
+      const button = $("articleInstallDependencies");
+      const status = $("articleDependencyStatus");
+      const installation = state.buildPreflight?.installation;
+      const files = installation?.missing_files || [];
+      const busy = Boolean(state.installingArticles?.has(state.selectedId));
+      button.hidden = !files.length && !busy;
+      button.disabled = busy || !installation?.available || state.compilingArticles.has(state.selectedId);
+      button.textContent = window.PortalI18n.t(busy ? "正在安装依赖…" : "安装缺失依赖");
+      button.onclick = installMissingDependencies;
+      status.hidden = !files.length && !busy;
+      status.textContent = busy ? window.PortalI18n.t("正在下载并安装，完成后将重新编译。")
+        : files.join("、") + (installation?.available ? "" : " · " + window.PortalI18n.t("当前环境没有 tlmgr，需管理员安装 TeX 工具链。"));
+    }
+
+    async function installMissingDependencies() {
+      const articleId = state.selectedId;
+      if (!articleId || state.installingArticles?.has(articleId) || state.compilingArticles.has(articleId)) return;
+      state.installingArticles ||= new Set();
+      state.installingArticles.add(articleId);
+      renderDependencyInstallation();
+      let ready = false;
+      try {
+        const result = await request(`/api/articles/${encodeURIComponent(articleId)}/install-dependencies`, {
+          method: "POST", body: "{}", timeoutMs: 330000,
+        });
+        if (articleId !== state.selectedId) return;
+        state.buildPreflight = result.preflight;
+        ready = Boolean(result.preflight) && result.preflight.status !== "blocked" && !result.preflight.installation?.missing_files?.length;
+        renderBuildPreflight();
+        if (!ready) showToast(window.PortalI18n.t("依赖安装已完成，仍有构建问题需要处理。"), "warning");
+      } catch (error) {
+        if (articleId !== state.selectedId) return;
+        showToast(error.message || String(error), "error");
+        $("articleDependencyStatus").textContent = [error.message || String(error), error.data?.details].filter(Boolean).join("\n");
+      } finally {
+        state.installingArticles.delete(articleId);
+        if (articleId === state.selectedId) {
+          const button = $("articleInstallDependencies");
+          button.disabled = !state.buildPreflight?.installation?.available;
+          button.textContent = window.PortalI18n.t("安装缺失依赖");
+          button.hidden = !state.buildPreflight?.installation?.missing_files?.length;
+          if (ready) {
+            $("articleDependencyStatus").hidden = true;
+            await compileArticle();
+          }
+        }
+      }
     }
 
     function renderSettings() {
@@ -378,6 +429,7 @@
 
     async function compileArticle({ fromScratch = false, trigger = "manual" } = {}) {
       if (!state.selectedId) return;
+      if (state.installingArticles?.has(state.selectedId)) return;
       const automatic = trigger === "edit";
       if (state.buildPreflight?.status === "blocked") {
         if (!automatic) showToast(window.PortalI18n.t("构建条件不完整，请查看编译设置中的预检提示。"), "warning");
@@ -441,6 +493,13 @@
         if (articleId !== state.selectedId) return;
         try { await loadBuild(); } catch (_) {}
         if (articleId !== state.selectedId) return;
+        try {
+          if (!state.stopRequested) {
+            const preflight = await request(`/api/articles/${encodeURIComponent(articleId)}/preflight`);
+            if (articleId !== state.selectedId) return;
+            state.buildPreflight = preflight;
+          }
+        } catch (_) {}
         setOutputView("log");
         showToast(state.stopRequested ? window.PortalI18n.t("LaTeX 编译已停止。") : (error.message || window.PortalI18n.t("LaTeX compilation failed")), state.stopRequested ? "warning" : "error");
       } finally {
@@ -452,6 +511,7 @@
           button.textContent = button.dataset.previousLabel || window.PortalI18n.t("重新编译");
         });
         renderCompileMenu();
+        renderDependencyInstallation();
         const queued = state.queuedCompile;
         state.queuedCompile = null;
         if (queued?.articleId === articleId) {

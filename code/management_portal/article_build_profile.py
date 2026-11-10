@@ -139,6 +139,10 @@ def inspect_article_build_profile(
                 )
             ]
             declarations.extend(
+                ("bibliography-style", match.group(1).strip(), ".bst")
+                for match in re.finditer(r"\\bibliographystyle\s*\{\s*([^{}]+?)\s*\}", text)
+            )
+            declarations.extend(
                 ("latex-package", name.strip(), ".sty")
                 for match in re.finditer(
                     r"\\(?:usepackage|RequirePackage)(?:\s*\[[^\]]*\])?\s*\{\s*([^{}]+?)\s*\}",
