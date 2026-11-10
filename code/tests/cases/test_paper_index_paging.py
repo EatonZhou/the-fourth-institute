@@ -1,9 +1,15 @@
 """Bounded Paper SQL reads use the existing PostgreSQL projection and personal favorites."""
+import json
+import urllib.request
 from unittest import mock
 
-from management_portal import paper_library, paper_search, presentation_store
+import pytest
+
+from management_portal import http_auth, http_paper, paper_library, paper_recent, paper_search, presentation_store
 from management_portal.resource_index_store import IndexStore
 from management_portal.resource_index_records import ChangeSet, resource_record
+from tests.cases.test_resource_error_contract import resource_connection
+from tests.cases.test_resource_portal_routes import _server
 
 
 def seed(store, count=60):
@@ -109,3 +115,47 @@ def test_paging_observes_committed_incremental_changes_without_reloading_cache(m
     assert reader.query(resource_types=["paper"], paper_rows=options)["resources"][0]["title"] == "Changed"
     writer.apply(ChangeSet(adapter="paper", deletes=(target,)))
     assert reader.query(resource_types=["paper"], paper_rows=options)["resources"] == []
+
+
+@pytest.mark.parametrize("shared_pool", [False, True])
+def test_paper_rows_through_resource_rpc(resource_connection, monkeypatch, shared_pool):
+    """Use the production service boundary with dedicated and schema-sharing pools."""
+    from management_portal.resource_index_backend import ResourceIndexService
+
+    monkeypatch.setenv("PORTAL_LINEAGE_READ_WORKER", "1" if shared_pool else "0")
+    store = IndexStore()
+    records = seed(store, 4)
+    service, client = resource_connection
+    service._index_provider = ResourceIndexService(store=store, adapters=[], start_worker=False)
+    monkeypatch.setattr("management_portal.resource_index_store.readable_flags",
+                        lambda rows, actor: [True] * len(rows))
+    monkeypatch.setattr(paper_search, "get_resource_service", lambda: client)
+    monkeypatch.setattr(paper_recent, "get_resource_service", lambda: client)
+    identifiers = [r["resource_id"] for r in records]
+    result = paper_search.resource_index_papers_by_ids(identifiers, actor="alice")
+    assert [row["id"] for row in result] == identifiers
+
+    for identifier in identifiers:
+        paper_recent.record_open({"paper_id": identifier, "expected_principal": "alice"}, actor="alice")
+    presentation_store.set_favorite("alice", "paper", identifiers[1], True)
+    monkeypatch.setattr(http_auth, "_get_agent_api_auth", lambda request: {"username": "alice"})
+    monkeypatch.setattr(http_paper, "authorize_api", lambda request, auth, **kwargs: auth["username"])
+    server, thread, origin = _server()
+    try:
+        def get(path):
+            with urllib.request.urlopen(origin + "/paper/api/" + path) as response:
+                assert response.status == 200
+                return json.load(response)
+
+        first = get("recent-reading?limit=2&cursor=")
+        assert [row["id"] for row in first["papers"]] == identifiers[:1:-1]
+        second = get("recent-reading?limit=2&cursor=" + first["next_cursor"])
+        assert [row["id"] for row in second["papers"]] == identifiers[1::-1]
+        assert second["papers"][0]["favorite"] is True
+        assert second["next_cursor"] == ""
+        favorites = get("library?compact=1&rows_only=1&favorite=1&limit=50&offset=0")
+        assert [row["id"] for row in favorites["papers"]] == [identifiers[1]]
+    finally:
+        server.shutdown()
+        server.server_close()
+        thread.join(timeout=3)

@@ -795,13 +795,16 @@ class IndexStore:
         if "paper" not in self.resource_types.enabled_types():
             return {"resources": []}
         limit, offset = max(1, min(int(limit), 500)), max(0, int(offset))
-        clauses = ["record_json->>'resource_type' = 'paper'"]
+        # Existing deployments may retain the original TEXT JSON column.
+        # Cast at the read boundary; do not migrate the index to serve a page.
+        document = "record_json::jsonb"
+        clauses = [f"{document}->>'resource_type' = 'paper'"]
         parameters: list[Any] = []
         if options.get("year"):
-            clauses.append("COALESCE(record_json->'attributes'->>'year', '') = %s")
+            clauses.append(f"COALESCE({document}->'attributes'->>'year', '') = %s")
             parameters.append(str(options["year"]))
         if options.get("analysis") in {"ready", "missing"}:
-            clauses.append("COALESCE(record_json->'attributes'->>'has_analysis', 'false') = %s")
+            clauses.append(f"COALESCE({document}->'attributes'->>'has_analysis', 'false') = %s")
             parameters.append("true" if options["analysis"] == "ready" else "false")
         if "ids" in options:
             identifiers = list(dict.fromkeys(str(value) for value in options["ids"]))
@@ -810,14 +813,13 @@ class IndexStore:
             clauses.append("resource_id = ANY(%s)")
             parameters.append(identifiers)
         sql = "SELECT record_json FROM resource_index_records WHERE " + " AND ".join(clauses)
-        sql += " ORDER BY COALESCE(record_json->'attributes'->>'year', '') COLLATE \"C\" DESC, "
-        sql += "COALESCE(record_json->'attributes'->>'venue', '') COLLATE \"C\" DESC, "
-        sql += "COALESCE(record_json->>'title', '') COLLATE \"C\" DESC, resource_id DESC LIMIT %s OFFSET %s"
+        sql += f" ORDER BY COALESCE({document}->'attributes'->>'year', '') COLLATE \"C\" DESC, "
+        sql += f"COALESCE({document}->'attributes'->>'venue', '') COLLATE \"C\" DESC, "
+        sql += f"COALESCE({document}->>'title', '') COLLATE \"C\" DESC, resource_id DESC LIMIT %s OFFSET %s"
         result: list[dict[str, Any]] = []
         consumed = visible = 0
         batch_size = limit
-        with self._connect() as connection:
-            connection.execute("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY")
+        with self.database.snapshot() as connection:
             while len(result) < limit:
                 rows = connection.execute(sql, (*parameters, batch_size, consumed)).fetchall()
                 if not rows:
