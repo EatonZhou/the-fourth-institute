@@ -187,12 +187,19 @@
       const analysisKind = detail.analysis?.kind || (detail.analysis?.content ? "analysis" : "summary");
       const facts = detail.analysis?.provenance || {};
       const resident = /^resident_[0-9a-f]{12}$/.test(facts.resident_id || "") ? facts.resident_id : "";
+      const humanTokens = value => Number.isFinite(value)
+        ? value >= 1e9 ? `${(value / 1e9).toFixed(1).replace(/\.0$/, "")}B`
+          : value >= 1e6 ? `${(value / 1e6).toFixed(1).replace(/\.0$/, "")}M`
+          : value >= 1e3 ? `${(value / 1e3).toFixed(1).replace(/\.0$/, "")}K`
+          : String(value)
+        : "未记录";
       const tokenText = Number.isFinite(facts.total_tokens)
-        ? `输入 ${facts.input_tokens ?? "未记录"} · 输出 ${facts.output_tokens ?? "未记录"} · 共 ${facts.total_tokens} tokens`
+        ? `输入 ${humanTokens(facts.input_tokens)} · 输出 ${humanTokens(facts.output_tokens)} · 共 ${humanTokens(facts.total_tokens)} tokens`
         : "Token 用量未记录";
+      const exactTokens = `输入 ${facts.input_tokens ?? "未记录"} · 输出 ${facts.output_tokens ?? "未记录"} · 共 ${facts.total_tokens ?? "未记录"} tokens`;
       const sourceHtml = analysisBody ? window.PortalI18n.html`<div class="paneNote">
         ${resident ? window.PortalI18n.html`<a href="/lineage?resident=${esc(resident)}">生成 Agent</a> · ` : ""}
-        ${esc(facts.model || "模型未记录")} · ${esc(tokenText)}
+        ${esc(facts.model || "模型未记录")} · <span title="${esc(exactTokens)}">${esc(tokenText)}</span>
         ${facts.execution_id || facts.input_message_id ? window.PortalI18n.html`<details><summary>生成记录</summary>
           ${esc(facts.execution_id || "")}<br>${esc(facts.input_message_id || "")}<br>${esc(facts.model_evidence || "")}</details>` : ""}
         </div>` : "";

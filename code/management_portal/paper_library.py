@@ -275,6 +275,7 @@ def api_docs() -> dict:
             {"method": "GET", "path": "/paper/api/reviews/status?paper_id=...", "purpose": "Recover the current actor's latest review job after reload; render results from paper reviews."},
             {"method": "POST", "path": "/paper/api/deep-read/start", "purpose": "Start a background PDF deep-read job and write analysis markdown."},
             {"method": "GET", "path": "/paper/api/deep-read/status?paper_id=...", "purpose": "Poll deep-read job status for a paper."},
+            {"method": "GET", "path": "/paper/api/deep-read/provenance-candidates", "purpose": "Read a full visible-library inventory and latest completed Deep Read job IDs eligible for provenance refresh. Never resumes or starts generation."},
             {"method": "POST", "path": "/paper/api/figures/extract", "purpose": "Extract embedded PDF figures and save figure metadata."},
             {"method": "POST", "path": "/paper/api/figures/explain", "purpose": "Start a background caption/context based explanation job for one figure."},
             {"method": "POST", "path": "/paper/api/figures/generate", "purpose": "Start a background image generation job for one figure (paper:figure-generation)."},

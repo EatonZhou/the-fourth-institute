@@ -361,6 +361,7 @@ def routes(portal):
         ("GET", "collector/jobs", get(http.collector_jobs)),
         ("GET", "docs", get(http.docs)),
         ("GET", "deep-read/status", get(http.deep_read_status)),
+        ("GET", "deep-read/provenance-candidates", get(lambda request, qs, actor: http.respond(request, 200, paper_reading_jobs.provenance_candidates(actor)))),
         ("GET", "exp/status", get(http.exp_status)),
         ("GET", "asset", get(http.asset)),
         ("POST", "papers/register", post(http.register, registration=True)),

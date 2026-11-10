@@ -249,6 +249,21 @@ def _authorize_paper_job_status(job: dict | None, *, actor: str, job_id: str, pa
         raise ValueError("Paper job belongs to another paper")
 
 
+def provenance_candidates(actor: str) -> dict:
+    """Inventory visible Papers and their latest completed jobs, without resuming work."""
+    from management_portal import permission_system
+
+    ids = [str(paper["id"]) for paper in _all_papers()]
+    visible = set(permission_system.permitted_ids(actor, "ReadResource", "address", ids))
+    latest = {}
+    for job in sorted(paper_state_store.records("deep_read_jobs"),
+                      key=lambda item: int(item.get("created_at") or item.get("updated_at") or 0), reverse=True):
+        if job.get("paper_id") in visible:
+            latest.setdefault(job["paper_id"], job)
+    candidates = [{"paper_id": paper, "job_id": job["job_id"]} for paper, job in latest.items() if job.get("status") == "done"]
+    return {"visible_papers": len(visible), "without_completed_job": len(visible) - len(candidates), "candidates": candidates}
+
+
 def refresh_deep_read_provenance(payload: dict, actor: str) -> dict:
     """Refresh only the recorded generation metadata, with an explicit artifact CAS."""
     from management_portal import isa_client, permission_system
