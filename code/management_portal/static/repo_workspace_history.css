@@ -9,7 +9,7 @@
 }
 
 .repoIdentityText {
-  --portal-resource-identity-max-width: min(520px, 48vw);
+  --portal-resource-identity-max-width: 100%;
   --portal-resource-identity-title-size: 20px;
   --portal-resource-identity-title-weight: 700;
   --portal-resource-identity-title-line-height: 1.2;

@@ -61,11 +61,11 @@ body[data-resource-category="repo"] .portalCollectionTypeChip[data-type="repo"] 
 .repoMastheadMain {
   box-sizing: border-box;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  grid-template-areas: "identity actions" "meta actions";
+  grid-template-columns: minmax(0, max-content) minmax(0, 1fr) auto;
+  grid-template-areas: "identity meta actions";
   align-items: center;
-  gap: 12px 24px;
-  padding: 24px 16px 20px;
+  gap: 8px 16px;
+  padding: 6px 16px;
 }
 
 .repoIdentity {
@@ -73,7 +73,8 @@ body[data-resource-category="repo"] .portalCollectionTypeChip[data-type="repo"] 
   display: flex;
   align-items: center;
   min-width: 0;
-  gap: 12px;
+  max-width: min(42vw, 600px);
+  gap: 10px;
 }
 
 .repoIdentityIcon {
@@ -82,7 +83,7 @@ body[data-resource-category="repo"] .portalCollectionTypeChip[data-type="repo"] 
   flex: 0 0 auto;
 }
 
-.repoIdentityIcon svg { width: 24px; height: 24px; }
+.repoIdentityIcon svg { width: 20px; height: 20px; }
 .repoIdentityText { min-width: 0; }
 
 .repoIdentityMeta {
@@ -90,8 +91,8 @@ body[data-resource-category="repo"] .portalCollectionTypeChip[data-type="repo"] 
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 8px 16px;
-  padding-left: 36px;
+  min-width: 0;
+  gap: 4px 12px;
   color: var(--muted);
   font-size: 13px;
 }
@@ -147,7 +148,7 @@ body[data-resource-category="repo"] .portalCollectionTypeChip[data-type="repo"] 
 
 .repoWorkspaceNav {
   min-width: 0;
-  min-height: 40px;
+  min-height: 36px;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -168,7 +169,7 @@ body[data-resource-category="repo"] .portalCollectionTypeChip[data-type="repo"] 
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  min-height: 44px;
+  min-height: 36px;
   border: 0;
   background: transparent;
   color: var(--muted);
@@ -255,8 +256,8 @@ body[data-resource-category="repo"] .portalCollectionTypeChip[data-type="repo"] 
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 12px 24px;
-  padding: 20px 16px 12px;
+  gap: 8px 16px;
+  padding: 6px 16px;
 }
 .repoBranchTools,
 .repoFileTools {
@@ -487,7 +488,7 @@ body[data-resource-category="repo"] .portalCollectionTypeChip[data-type="repo"] 
   display: block;
   width: 100%;
   min-height: 0;
-  margin-top: 14px;
+  margin-top: 6px;
   padding: 0;
 }
 

@@ -37,14 +37,18 @@ const out=process.env.REPO_HEADER_EVIDENCE;
    await page.setViewportSize({width,height:900});await page.evaluate(theme=>document.documentElement.dataset.portalTheme=theme,theme);
    await page.evaluate(()=>document.getAnimations().forEach(a=>{if(Number.isFinite(a.effect.getComputedTiming().endTime))a.finish();}));
    const observation=await page.evaluate(()=>({overflow:document.documentElement.scrollWidth>innerWidth,
+    headerHeight:document.querySelector('.repoMasthead').getBoundingClientRect().height+document.querySelector('.repoCodeToolbar').getBoundingClientRect().height,
+    titleWidth:document.querySelector('#repoWorkspaceTitle').getBoundingClientRect().width,
     tabs:[...document.querySelectorAll('.repoTab')].map(e=>({name:e.textContent.trim(),size:parseFloat(getComputedStyle(e).fontSize)})),
     branch:getComputedStyle(document.querySelector('.repoBranchCurrent')).fontSize,
     branchStyle:{bg:getComputedStyle(document.querySelector('.repoBranchControl')).backgroundColor,panel:getComputedStyle(document.querySelector('.repoBranchControl')).getPropertyValue('--panel'),text:getComputedStyle(document.querySelector('.repoBranchControl')).color,root:getComputedStyle(document.documentElement).getPropertyValue('--panel')},
     toolbarBorder:getComputedStyle(document.querySelector('.repoCodeToolbar')).borderTopWidth,
     visibleActions:[...document.querySelectorAll('.repoIdentityActions button')].filter(e=>e.checkVisibility()).length}));
+   if(out){fs.mkdirSync(out,{recursive:true});await page.screenshot({path:path.join(out,`${width}-${theme}.png`),fullPage:true});}
    assert.equal(observation.overflow,false,JSON.stringify({width,...observation}));assert.equal(observation.toolbarBorder,'0px');assert.equal(observation.visibleActions,1);
    assert(observation.tabs.every(t=>t.size>=14));
-   if(out){fs.mkdirSync(out,{recursive:true});await page.screenshot({path:path.join(out,`${width}-${theme}.png`),fullPage:true});}
+   assert(observation.titleWidth>=140,`Repository name must remain readable: ${JSON.stringify({width,titleWidth:observation.titleWidth})}`);
+   if(width>=1024)assert(observation.headerHeight<=150,'Desktop header must not push the file view down');
    observations.push({width,theme,...observation});
   }
   if(!process.env.REPO_HEADER_VISUAL_ONLY){

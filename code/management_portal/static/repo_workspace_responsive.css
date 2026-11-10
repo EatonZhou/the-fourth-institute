@@ -33,9 +33,11 @@
 
 @media (max-width: 920px) {
   .repoMastheadMain {
-    grid-template-areas: "identity identity" "meta actions";
-    gap: 12px;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas: "identity actions" "meta meta";
+    gap: 4px 12px;
   }
+  .repoIdentity { max-width: none; }
 
   .repoCodeLayout {
     grid-template-columns: minmax(0, 1fr);
@@ -91,6 +93,15 @@
   }
 }
 
+@media (max-width: 600px) {
+  .repoMastheadMain {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: "identity" "meta" "actions";
+  }
+  .repoIdentityActions { justify-self: start; }
+  .repoMoreActions { right: auto; left: 0; }
+}
+
 @media (max-width: 720px) {
   .repoMasthead,
   .repoWorkspaceBody {
@@ -99,17 +110,12 @@
   }
 
   .repoMastheadMain {
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-areas: "identity" "meta" "actions";
-    padding: 20px 12px 12px;
+    padding: 8px 12px;
   }
-  .repoIdentityMeta { padding-left: 0; }
-  .repoIdentityActions { justify-self: start; }
-  .repoMoreActions { right: auto; left: 0; }
   .repoTabs { overflow-x: auto; }
-  .repoTab { flex: 0 0 auto; }
+  .repoTab { flex: 0 0 auto; min-height: 40px; }
   .repoWorkspaceActions { flex-wrap: wrap; }
-  .repoCodeToolbar { padding: 16px 12px 12px; }
+  .repoCodeToolbar { padding: 6px 12px; }
   .repoBranchTools, .repoFileTools { width: 100%; }
   .repoToolbarUpstream { max-width: 100%; }
 
