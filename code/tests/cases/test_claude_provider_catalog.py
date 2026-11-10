@@ -165,6 +165,39 @@ class ClaudeProviderCatalogTest(unittest.TestCase):
 
 
 class NativeClaudeDaemonTest(unittest.IsolatedAsyncioTestCase):
+    async def test_versioned_models_reach_sdk_without_changing_saved_selection(self):
+        """新登记模型与五档强度贯通目录和 SDK，保留旧默认模型与别名。"""
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            profile = native_profile(root / "account")
+            profile["models"] = [
+                {"id": "claude-fable-5-1", "aliases": ["fable"], "enabled": True},
+                *[{"id": model, "enabled": True, "support_efforts": list(catalog.EFFORTS)}
+                  for model in ("claude-fable-5-2", "claude-sonnet-5-5")],
+            ]
+            profile["default_model"] = "claude-fable-5-1"
+            saved = json.dumps(profile, sort_keys=True)
+            public = catalog.model_catalog(profile)
+            for model in ("claude-fable-5-2", "claude-sonnet-5-5"):
+                self.assertIn(model, public["models"])
+                for effort in ("", *public["efforts_by_model"][model]):
+                    with self.subTest(model=model, effort=effort):
+                        fake = mock.Mock(connect=mock.AsyncMock())
+                        params = {"session_key": "model-check", "cwd": str(root),
+                                  "config_dir": profile["config_dir"], "provider_profile": profile["id"],
+                                  "model": model, "effort": effort, "is_owner": False}
+                        with mock.patch.object(daemon_module, "_provider_profile", return_value=profile), \
+                                mock.patch.object(daemon_module, "ClaudeSDKClient", return_value=fake) as factory:
+                            await daemon_module.ClaudeCodeDaemon()._create_handle(params)
+                        options = factory.call_args.args[0]
+                        self.assertEqual(options.model, model)
+                        self.assertEqual(options.effort, effort or None)
+                        self.assertIsNone(options.resume)
+                        self.assertEqual(options.setting_sources, [])
+                        fake.connect.assert_awaited_once()
+            self.assertEqual(json.dumps(profile, sort_keys=True), saved)
+            self.assertEqual(catalog.validate_settings(profile, "fable"), ("claude-fable-5-1", ""))
+
     async def test_rate_limit_event_is_available_through_the_account_snapshot(self):
         """轮次中的限额事件进入账户用量快照，快照不含原始数据"""
         RateLimitInfo = sdk_of(daemon_module).RateLimitInfo
