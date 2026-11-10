@@ -1,5 +1,27 @@
 /* Shared components: the global conversation index (agent inbox), the personal assistant trigger
    and Mailbox todos. Pages load this file right after portal_components_resource_chips.css. */
+/* Mentions remain visible without expanding Mailbox; never steal focus. */
+.portalMailboxAlert {
+  position: fixed;
+  right: max(58px, env(safe-area-inset-right));
+  bottom: max(24px, env(safe-area-inset-bottom));
+  z-index: calc(var(--portal-layer-popover, 400) - 11);
+  width: min(360px, calc(100vw - 80px));
+  padding: 16px;
+  border: 1px solid var(--border, #cbd5e1);
+  border-left: 4px solid var(--accent, #0b7972);
+  border-radius: 12px;
+  background: var(--panel, #fff);
+  color: var(--text, #172030);
+  box-shadow: 0 8px 28px #0002;
+  font: inherit;
+}
+.portalMailboxAlert[hidden] { display: none; }
+.portalMailboxAlert p { margin: 8px 0 14px; overflow-wrap: anywhere; color: var(--muted, #64748b); }
+.portalMailboxAlert button { margin: 0 6px 0 0; }
+@media (max-width: 640px) {
+  .portalMailboxAlert { right: 12px; bottom: max(64px, env(safe-area-inset-bottom)); width: calc(100vw - 24px); }
+}
 /* Global user conversation index. The closed footprint stays on the viewport edge. */
 body.portalAgentInboxMounted {
   --portal-agent-inbox-left-clearance: 0px;

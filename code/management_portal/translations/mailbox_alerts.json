@@ -1,0 +1,9 @@
+{
+  "聊天室提及提醒": {"zh-CN": "聊天室提及提醒", "en": "Chatroom mentions"},
+  "有人在聊天室 @ 你": {"zh-CN": "有人在聊天室 @ 你", "en": "You were mentioned in a chatroom"},
+  "查看 @ 我的消息": {"zh-CN": "查看 @ 我的消息", "en": "View mentions"},
+  "收起提醒": {"zh-CN": "收起提醒", "en": "Dismiss alert"},
+  "仅收起提醒，消息仍保持未读": {"zh-CN": "仅收起提醒，消息仍保持未读", "en": "Dismiss the alert without marking messages read"},
+  "{p0} · {p1} 条 @ 我": {"zh-CN": "{p0} · {p1} 条 @ 我", "en": "{p0} · {p1} mentions"},
+  "暂时无法打开聊天室，请从 Mailbox 重试。": {"zh-CN": "暂时无法打开聊天室，请从 Mailbox 重试。", "en": "Cannot open this chatroom right now. Please retry from Mailbox."}
+}

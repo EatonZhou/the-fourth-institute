@@ -1532,6 +1532,8 @@
       await window.PortalUIPrimitives.loadAsset("/static/portal_mailbox_todos.js", { ready: () => !!window.PortalMailboxTodos });
       await window.PortalUIPrimitives.loadAsset("/static/portal_agent_inbox.js", { ready: () => !!window.PortalAgentInbox });
       window.PortalAgentInbox.mount();
+      await window.PortalUIPrimitives.loadAsset("/static/portal_mailbox_alerts.js", { ready: () => !!window.PortalMailboxAlerts });
+      window.PortalMailboxAlerts.mount();
     } catch (error) { console.error(error); }
   }
 
