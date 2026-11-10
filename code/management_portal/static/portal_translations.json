@@ -1336,6 +1336,22 @@
     "en": "Add backend role",
     "zh-CN": "新增 Backend 角色"
   },
+  "账号策略": {
+    "en": "Account policy",
+    "zh-CN": "账号策略"
+  },
+  "固定账号": {
+    "en": "Fixed account",
+    "zh-CN": "固定账号"
+  },
+  "按额度自动": {
+    "en": "Auto by quota",
+    "zh-CN": "按额度自动"
+  },
+  "自动：同后端、同模型，按可用额度选择账号": {
+    "en": "Auto: same backend and model, chosen by available quota",
+    "zh-CN": "自动：同后端、同模型，按可用额度选择账号"
+  },
   "选择账号": {
     "en": "Select account",
     "zh-CN": "选择账号"

@@ -33,7 +33,14 @@ const config = {resident_id: 'fixture', choose_runtime_settings: true, runtime_s
   onSave: async values => {saves.push(values); return {settings: values};}};
 const flush = async () => {for (let i = 0; i < 8; i++) await new Promise(resolve => setTimeout(resolve, 0));};
 const click = selector => w.document.querySelector(selector).click();
-const select = (selector, value) => {const el = w.document.querySelector(selector); el.value = value; el.dispatchEvent(new w.Event('change', {bubbles: true}));};
+const select = (selector, value) => {
+  // Accounts are listed per backend: choose the backend before the account.
+  if (selector === '[data-session-target]' && value) {
+    const backend = w.document.querySelector('[data-session-backend]'), provider = JSON.parse(value)[0];
+    if (backend.value !== provider) {backend.value = provider; backend.dispatchEvent(new w.Event('change', {bubbles: true}));}
+  }
+  const el = w.document.querySelector(selector); el.value = value; el.dispatchEvent(new w.Event('change', {bubbles: true}));
+};
 const plain = value => JSON.parse(JSON.stringify(value));
 (async () => {
   const dialog = api.createSessionRestartDialog();

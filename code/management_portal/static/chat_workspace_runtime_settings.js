@@ -123,7 +123,7 @@
       element.className = "portalRuntimeSettingsEditor";
       element.innerHTML = window.PortalI18n.html`        <div class="portalRuntimeSettingsGrid">
           <label class="portalRuntimeSettingsField" hidden><span>API 账号</span><select data-runtime-setting="backend_route_id"></select></label>
-          <label class="portalRuntimeSettingsField" hidden><span>账号选择</span><select data-runtime-setting="account_selection"><option value="fixed">手动固定当前账号</option><option value="auto">自动（同后端、同模型，按可用额度）</option></select></label>
+          <label class="portalRuntimeSettingsField" hidden><span>账号策略</span><select data-runtime-setting="account_selection" title="自动：同后端、同模型，按可用额度选择账号"><option value="fixed">固定账号</option><option value="auto">按额度自动</option></select></label>
           <label class="portalRuntimeSettingsField"><span>Model</span><select data-runtime-setting="model"></select></label>
           <label class="portalRuntimeSettingsField"><span>Mode</span><select data-runtime-setting="collaboration_mode"><option value="default">Default · 默认执行</option><option value="plan">Plan · 先制定计划</option></select></label>
           <label class="portalRuntimeSettingsField"><span>Effort</span><select data-runtime-setting="reasoning_effort"></select></label>
@@ -455,7 +455,9 @@
       element.innerHTML = '<div class="portalRuntimeSettingsBody">' +
         '<div data-resident-backend-notices role="status" hidden></div>' +
         '<section class="portalRuntimeSection" data-runtime-section="account">' +
-        '<label class="portalRuntimeSettingsField"><span>账号</span><select data-session-target></select></label>' +
+        '<div class="portalRuntimeSettingsGrid portalRuntimeAccountGrid">' +
+        '<label class="portalRuntimeSettingsField"><span>AI 后端</span><select data-session-backend></select></label>' +
+        '<label class="portalRuntimeSettingsField"><span>账号</span><select data-session-target></select></label></div>' +
         '<p class="portalRuntimeSettingsHint" data-switch-context-status role="status"></p>' +
         '<p class="portalRuntimeSettingsHint" data-switch-context-description role="status"></p></section>' +
         '<section class="portalRuntimeSection" data-runtime-section="initialization" hidden>' +
@@ -469,7 +471,7 @@
         '<button class="portalButton" data-runtime-panel-reset type="button">' + (inline ? "还原" : "取消") + '</button>' +
         '<button class="portalButton is-primary" data-session-restart-submit type="' + (inline ? "button" : "submit") + '">保存</button></div>';
       const find = selector => element.querySelector(selector);
-      const target = find("[data-session-target]");
+      const target = find("[data-session-target]"), backend = find("[data-session-backend]");
       const submit = find("[data-session-restart-submit]"), cancel = find("[data-session-restart-cancel]");
       const reset = find("[data-runtime-panel-reset]"), saveHint = find("[data-runtime-save-hint]");
       const creditsConsent = find("[data-session-credits-consent]");
@@ -529,7 +531,7 @@
         find("[data-session-credits-confirmation]").hidden = !showCredits;
         creditsConsent.disabled = locked || !showCredits;
         find("[data-session-credits-description]").textContent = window.PortalI18n.t("本次目标账号：") + canonicalAccount(...creditTarget);
-        target.disabled = locked;
+        target.disabled = locked; backend.disabled = locked;
         editor.element.disabled = locked; targetEditor.element.disabled = locked;
         const choice = contextChoice();
         find("[data-switch-context-description]").textContent = window.PortalI18n.t(switchingAccount && choice?.id === "compact" ? choice.description : "");
@@ -566,8 +568,20 @@
       };
       const detach = () => { catalogRevision++; unobserve?.(); unobserve = null; };
       const done = context => { detach(); options.onDone?.(context); };
+      // The account list follows the chosen backend; returning to the current
+      // backend preselects the current account.
+      const fillAccounts = provider => {
+        const choices = (current.accounts?.[provider] || []).map(row =>
+          new Option(row.label || row.account_id || row.id, JSON.stringify([provider, row.id])));
+        target.replaceChildren(new Option(window.PortalI18n.t("选择账号"), ""), ...choices);
+        const sourceAccount = provider === current.source?.provider
+          && current.accounts?.[provider]?.find(row => row.id === current.source.account_id || row.account_id === current.source.account_id);
+        target.value = sourceAccount ? JSON.stringify([provider, sourceAccount.id])
+          : choices.length === 1 ? choices[0].value : "";
+      };
       element.addEventListener("change", event => {
-        if (event.target === target) {
+        if (event.target === backend) fillAccounts(backend.value);
+        if (event.target === target || event.target === backend) {
           creditsConsent.checked = false; requestKey = requestId(); renderContext(); void loadTarget(); return;
         }
         if (event.target === creditsConsent) { requestKey = requestId(); return; }
@@ -653,19 +667,10 @@
           restart = onRestart; cancelRestart = onCancel; requestKey = requestId();
           submitting = false; tracking = sessionRestartActive(config.restart); restartView = {restart: config.restart};
           creditsConsent.checked = false;
-          const groups = (current.providers || []).map(provider => {
-            const group = document.createElement("optgroup"); group.label = provider.label || provider.id;
-            for (const row of current.accounts?.[provider.id] || []) {
-              const option = document.createElement("option");
-              option.value = JSON.stringify([provider.id, row.id]);
-              option.textContent = `${provider.label || provider.id} · ${row.label || row.account_id || row.id}`;
-              group.append(option);
-            }
-            return group;
-          });
-          target.replaceChildren(new Option(window.PortalI18n.t("选择账号"), ""), ...groups);
-          const sourceAccount = current.accounts?.[current.source?.provider]?.find(row => row.id === current.source.account_id || row.account_id === current.source.account_id);
-          target.value = sourceAccount ? JSON.stringify([current.source.provider, sourceAccount.id]) : "";
+          const providers = (current.providers || []).filter(provider => (current.accounts?.[provider.id] || []).length);
+          backend.replaceChildren(...providers.map(provider => new Option(provider.label || provider.id, provider.id)));
+          backend.value = providers.some(provider => provider.id === current.source?.provider) ? current.source.provider : providers[0]?.id || "";
+          fillAccounts(backend.value);
           renderContext();
           editor.open(current.runtime_settings || {}, {catalog: current.runtime_catalog, showApiAccount: false, hint: ""});
           baseline = readEditor();
@@ -684,7 +689,10 @@
               const row = endpoint && current.accounts?.[endpoint.provider]?.find(item => item.id === endpoint.account_id || item.account_id === endpoint.account_id);
               if (row) {
                 const selectedValue = JSON.stringify([endpoint.provider, row.id]);
-                if (target.value !== selectedValue) {target.value = selectedValue; renderContext();}
+                if (target.value !== selectedValue) {
+                  if (backend.value !== endpoint.provider) {backend.value = endpoint.provider; fillAccounts(endpoint.provider);}
+                  target.value = selectedValue; renderContext();
+                }
               }
               progress.update(value); update();
               if (wasTracking && ["completed", "cancelled"].includes(value.restart?.status)) done({accepted: true});

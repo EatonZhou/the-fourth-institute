@@ -329,22 +329,25 @@
   padding: 0;
   overflow: hidden;
 }
-.portalRuntimeSettingsBody { display: grid; align-content: start; gap: 14px; min-width: 0; font-size: 13px; line-height: 1.55; }
-.portalSessionRestartOverlay .portalRuntimeSettingsBody { padding: 16px; overflow: auto; }
+.portalRuntimeSettingsBody { display: grid; align-content: start; gap: 10px; min-width: 0; font-size: 12px; line-height: 1.5; }
+.portalSessionRestartOverlay .portalRuntimeSettingsBody { padding: 14px 16px; overflow: auto; }
 .portalRuntimeSettingsBody p { margin: 0; overflow-wrap: anywhere; }
 .portalRuntimeSettingsBody p:empty { display: none; }
-.portalRuntimeSection { display: grid; gap: 8px; min-width: 0; }
+.portalRuntimeSection { display: grid; gap: 6px; min-width: 0; }
 .portalRuntimeSection[hidden] { display: none; }
-.portalRuntimeSection + .portalRuntimeSection:not([hidden]) { padding-top: 14px; border-top: 1px solid color-mix(in srgb, var(--border) 70%, transparent); }
-.portalRuntimePanel .portalRuntimeSettingsGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+/* Compact fields: short labels over small selects, as many per row as fit. */
+.portalRuntimePanel .portalRuntimeSettingsGrid { grid-template-columns: repeat(auto-fill, minmax(min(100%, 150px), 1fr)); gap: 8px 10px; }
+.portalRuntimePanel .portalRuntimeSettingsEditor { gap: 6px; }
+.portalRuntimePanel .portalRuntimeSettingsField { gap: 3px; font-size: 11px; font-weight: 600; }
+.portalRuntimePanel .portalRuntimeSettingsField select { min-height: 28px; height: 28px; padding: 0 6px; border-radius: 6px; font-size: 12px; text-overflow: ellipsis; }
 .portalRuntimePanel .portalRuntimeSettingsHint:empty { display: none; }
 .portalRuntimeCredits > span:last-child { display: flex; gap: 8px; align-items: flex-start; font-weight: 500; color: var(--text); }
-.portalSessionRestartOverlay .portalDetailFooter { padding: 12px 16px; }
+.portalSessionRestartOverlay .portalDetailFooter { padding: 10px 16px; }
 .portalRuntimePanelFooter { display: flex; justify-content: flex-end; gap: 8px; }
-.portalRuntimePanel.is-inline { display: grid; gap: 12px; padding: 14px; border: 1px solid color-mix(in srgb, var(--border) 60%, transparent); border-radius: 12px; background: var(--panel-2); }
+.portalRuntimePanelFooter .portalButton { min-height: 28px; padding: 0 12px; font-size: 12px; }
+/* In place the panel blends into the host page: no card, no fill. */
+.portalRuntimePanel.is-inline { display: grid; gap: 8px; padding: 0; border: 0; background: none; }
 .portalRuntimePanel.is-inline .portalRuntimePanelFooter { padding: 0; border: 0; background: none; }
-.portalRuntimePanel.is-inline .portalRuntimeSettingsField select { background: var(--panel); }
-@media (max-width: 480px) { .portalRuntimePanel .portalRuntimeSettingsGrid { grid-template-columns: minmax(0, 1fr); } }
 
 .portalChatWorkspaceRoot .chatExtensionTools {
   position: relative;
