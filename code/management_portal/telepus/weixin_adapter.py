@@ -4,6 +4,8 @@ from __future__ import annotations
 import hashlib
 import mimetypes
 import secrets
+import sys
+import time
 from pathlib import Path
 
 from management_common.portal_paths import path as portal_path
@@ -64,6 +66,7 @@ class WeixinAdapter:
         with self.router.store.connect() as c:
             if c.execute('SELECT 1 FROM processed_updates WHERE update_id=?', (-local_id,)).fetchone():
                 return
+        started = time.time()
         self.router.store.upsert_chat_state(chat, telegram_user_id=account['ilink_user_id'], portal_actor=actor, chat_type='private')
         self.store.update(actor, context_token=str(message.get('context_token') or account['context_token']), context_at=now_iso())
         self.store.budget(chat, reset=True)
@@ -79,6 +82,12 @@ class WeixinAdapter:
         with self.router.store.connect() as c:
             c.execute("INSERT INTO processed_updates(update_id,processed_at,channel) VALUES(?,?,'weixin') ON CONFLICT DO NOTHING",
                       (-local_id, now_iso()))
+        # Timing only, no content: how long Weixin held the message before getupdates
+        # returned it, and how long Telepus took to handle it and send the replies.
+        created = message.get('create_time_ms')
+        waited = f'{started * 1000 - float(created):.0f}' if isinstance(created, (int, float)) and created else '?'
+        print(f'Telepus weixin message actor={actor} weixin_wait_ms={waited} handle_ms={(time.time() - started) * 1000:.0f}',
+              file=sys.stderr, flush=True)
         self.typing(actor)
 
     def _reopen_pending(self, chat):
