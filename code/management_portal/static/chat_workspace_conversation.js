@@ -267,6 +267,13 @@
         }
       }
       const ordered = orderRequestBlocks(projected);
+      const receiving = new Set((snapshot.queue?.receiving || []).map(item => item.message_id));
+      const inputStates = new Map((snapshot.input_states || []).map(item => [item.message_id, item]));
+      for (const message of ordered) {
+        const input = inputStates.get(message.id);
+        if (receiving.has(message.id)) message.input_delivery = "pending";
+        else if (input?.work?.delivery === "delivered") message.input_delivery = "delivered";
+      }
       const messages = facade ? withFamilyRequestStatus(ordered) : ordered;
       const activities = !facade && Array.isArray(snapshot.activities) ? snapshot.activities : [];
       const state = window.PortalResidentProtocol.stateView(snapshot.state);

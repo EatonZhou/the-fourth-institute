@@ -1,4 +1,6 @@
 {
+  "等待接收": {"zh-CN": "等待接收", "en": "Waiting for receipt"},
+  "已接收": {"zh-CN": "已接收", "en": "Received"},
   "直接丢弃": {"zh-CN":"直接丢弃","en":"Discard directly"},
   "按顺序排队（默认）": {"zh-CN":"按顺序排队（默认）","en":"Queue in order (default)"},
   "账号额度受限；发送的消息将排队，系统会按自动切换策略处理，请勿重复发送。": {"zh-CN":"账号额度受限；发送的消息将排队，系统会按自动切换策略处理，请勿重复发送。","en":"Account quota is limited. Sent messages will queue while the automatic switching policy is applied. Do not resend."},

@@ -270,7 +270,9 @@
           ${failed ? window.PortalI18n.html`<button type="button" class="portalButton is-compact" data-portal-message-action="submission-retry">${window.PortalI18n.t("重试")}</button><button type="button" class="portalButton is-compact" data-portal-message-action="submission-dismiss">${window.PortalI18n.t("移除")}</button>`
             : confirming ? window.PortalI18n.html`<button type="button" class="portalButton is-compact" data-portal-message-action="submission-check">${window.PortalI18n.t("检查发送状态")}</button>` : ""}
         </div>` : "";
-      return localStatus + attachedInfosFooter(item) + mailboxFooter(item) + heldInfoFooter(item) + familyReplyFooter(item, index, items)
+      const inputStatus = item.input_delivery
+        ? window.PortalI18n.html`<div class="messageDeliveryStatus" data-input-delivery="${escapeHtml(item.input_delivery)}" role="status">${escapeHtml(window.PortalI18n.t(item.input_delivery === "pending" ? "等待接收" : "已接收"))}</div>` : "";
+      return localStatus + inputStatus + attachedInfosFooter(item) + mailboxFooter(item) + heldInfoFooter(item) + familyReplyFooter(item, index, items)
         + recipientsFooter(item) + residentTokenFooter(item);
     }
 

@@ -228,6 +228,10 @@ def test_injection_ack_is_durable_and_dispatch_is_unlocked(input_delivery, monke
                           lambda *a, **kw: pytest.fail("Workspace hydration during injection admission"))
         receipt = resident_protocol.inject_queued_input_into_active_turn(rid, "CASE-A", mid)
     assert receipt["accepted"] and not receipt["injected"] and receipt["delivery_status"] == "pending"
+    assert not any(item['message_id'] == mid for item in receipt['queue']['items'])
+    assert [item['message_id'] for item in receipt['queue']['receiving']] == [mid]
+    snapshot = resident_conversation_stream.get_repository().current_projection(rid)
+    assert snapshot['queue']['receiving'] == receipt['queue']['receiving']
     service.append_input.assert_not_called()
     assert resident_protocol.inject_queued_input_into_active_turn(rid, "CASE-A", mid)["already_injected"]
     resident_delivery_work.drain(rid)

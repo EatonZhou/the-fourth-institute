@@ -241,11 +241,15 @@ def inject_resident_queue_input_into_active_turn(
         actor,
         require_visible=True,
     )
-    return resident_input_queue_domain.inject_queued_input_into_active_turn(
+    result = resident_input_queue_domain.inject_queued_input_into_active_turn(
         target.resident_id,
         actor,
         queue_item_id,
     )
+    return {**result, "queue": resident_execution_work.public_queue(
+        resident_conversation_stream.get_repository(), target.resident_id,
+        resident_execution_work.read(target.record),
+    )}
 
 
 def clear_resident_queued_inputs(resident_id: str, actor: str) -> dict[str, Any]:

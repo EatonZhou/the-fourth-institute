@@ -312,7 +312,12 @@ def protocol_queue(resident_id: str, queue: Mapping[str, Any]) -> dict[str, Any]
         if content_parts:
             queue_item["content_parts"] = content_parts
         items.append(queue_item)
-    return {"resident_id": resident_id, "items": items}
+    result = {"resident_id": resident_id, "items": items}
+    if "receiving" in queue:
+        result["receiving"] = protocol_queue(resident_id, {
+            "resident_id": resident_id, "items": queue["receiving"],
+        })["items"]
+    return result
 
 
 def message_from_storage(message: Mapping[str, Any]) -> dict[str, Any]:

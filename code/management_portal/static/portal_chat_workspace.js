@@ -1987,6 +1987,7 @@
 
     queueAction(command, messageId, { withdraw = false } = {}) {
       const target = this.target();
+      const revision = this.targetRevision;
       return this.runAction(async () => {
         const result = await window.PortalResidentProtocol[command]({
           resident_id: target.resident_id,
@@ -1994,6 +1995,9 @@
           message_id: messageId,
         });
         if (withdraw) noticeQueueWithdrawn(result);
+        if (command === "injectInput" && revision === this.targetRevision) {
+          await this.protocol?.load({ force: true });
+        }
         return result;
       });
     }

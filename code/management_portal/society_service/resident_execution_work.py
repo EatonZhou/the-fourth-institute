@@ -379,6 +379,10 @@ def public_queue(
             _conversation_queue_item(repository, resident_id, item)
             for item in public_waiting_queue(job)
         ],
+        **({"receiving": [
+            _conversation_queue_item(repository, resident_id, item)
+            for item in send_now_inputs(job)
+        ]} if send_now_inputs(job) else {}),
     }
 
 

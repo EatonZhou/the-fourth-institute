@@ -76,6 +76,19 @@ async function main() {
   const merges = () => calls.filter(c => c.instruction === 'MergeMailboxItems');
   const click = async () => { button().click(); await tick(); };
   try {
+    const waitingMessage = {message_id:'msg_inject',role:'user',author_id:'fixture-user',content_parts:[{type:'text',text:'sent correction'}]};
+    const receivingSnapshot = {messages:[waitingMessage], queue:{resident_id:FACADE,items:[],receiving:[{message_id:'msg_inject'}]}, input_states:[{message_id:'msg_inject',state:'queued'}]};
+    const pending = w.PortalChatWorkspace.projectResidentConversation({chat_workspace:{composer:{}}},receivingSnapshot);
+    panel.detail = pending;
+    panel.workspace.applyContract({schema:'portal.chat_workspace.v3',target:{kind:'resident',id:FACADE},header:{title:'Receive fixture'},messages:pending.messages,composer:pending.chat_workspace.composer});
+    assert.equal(panel.workspace.root.querySelectorAll('.workspaceQueueItem').length,0,'accepted injection is absent from queue');
+    assert.match(panel.workspace.root.textContent,/等待接收/,'waiting receipt is displayed inside sent message');
+    assert.equal(pending.messages[0].input_delivery,'pending');
+    receivingSnapshot.queue.receiving=[];
+    receivingSnapshot.input_states=[{message_id:'msg_inject',state:'completed',work:{delivery:'delivered'}}];
+    const received = w.PortalChatWorkspace.projectResidentConversation({},receivingSnapshot);
+    assert.equal(received.messages[0].input_delivery,'delivered','provider receipt replaces pending');
+    assert.equal(waitingMessage.input_delivery,undefined,'projection never mutates stored message');
     render();
     assert.ok(button(), 'Resident Chat queued header exposes Merge all');
     assert.equal(button().textContent, '合并所有');
