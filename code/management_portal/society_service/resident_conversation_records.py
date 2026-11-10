@@ -210,6 +210,8 @@ def protocol_message(message: Mapping[str, Any]) -> dict[str, Any]:
         result["generation_source"] = {key: str(source[key]) for key in (
             "execution_id", "provider", "account_id", "model", "model_evidence",
         ) if source.get(key)}
+    if message.get("execution_annotations_status") == "unavailable":
+        result["execution_annotations_status"] = "unavailable"
     return result
 
 
@@ -354,6 +356,7 @@ def message_from_storage(message: Mapping[str, Any]) -> dict[str, Any]:
         "activated_at": str(message.get("activated_at") or ""),
         "usage": message.get("usage") or {},
         "generation_source": message.get("generation_source") or {},
+        "execution_annotations_status": message.get("execution_annotations_status"),
     }) | {
         # How the Conversation shows it: an info inside the request it came
         # with, a Mailbox group member inside its group, an input the Harness
@@ -389,6 +392,7 @@ def message_for_storage(
     """Encode one public Message for AgentData's segment-backed storage."""
 
     public = protocol_message(message)
+    public.pop("execution_annotations_status", None)
     payload: dict[str, Any] = copy.deepcopy(public)
     for key in PRIVATE_FIELDS:
         value = (private_fields or {}).get(key)
@@ -404,6 +408,7 @@ def immutable_message_fields(message: Mapping[str, Any]) -> dict[str, Any]:
     immutable.pop("activated_at", None)
     # Generation evidence is a read projection of the original Execution.
     immutable.pop("generation_source", None)
+    immutable.pop("execution_annotations_status", None)
     return immutable
 
 

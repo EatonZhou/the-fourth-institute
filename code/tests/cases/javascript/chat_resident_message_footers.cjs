@@ -99,6 +99,14 @@ function familyReplies() {
 }
 
 function tokens() {
+  const unavailable = chat.residentProtocolMessageToWorkspace({
+    message_id: 'unavailable', role: 'agent', content_parts: [text('Readable answer')],
+    execution_annotations_status: 'unavailable',
+  });
+  assert.equal(unavailable.content, 'Readable answer');
+  const note = footer(unavailable).querySelector('.messageTokenNote');
+  assert.equal(words(note), '用量与来源信息暂不可用');
+  assert.equal(note.getAttribute('role'), 'status');
   assert.equal(words(footer({ id: 't', role: 'assistant', token_usage: { total_tokens: 1234567, input_tokens: 1500, output_tokens: 12, reasoning_output_tokens: 0 } })
     .querySelector('.messageTokenNote')), 'tokens 1.2M · in 1.5K · out 12');
   assert.equal(footer({ id: 't', role: 'assistant', token_usage: {} }).querySelector('.messageTokenNote'), null);

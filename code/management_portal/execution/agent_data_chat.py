@@ -286,7 +286,7 @@ class ChatReads:
     def messages_from_rows(self, rows: Sequence[Any]) -> list[dict[str, Any]]:
         if not rows:
             return []
-        from .scheduler_usage import normalize_token_usage
+        from .chat_execution_annotations import annotate_messages
         metadata = {str(row["segment_id"]): json_value(row["metadata_json"]) for row in rows}
         with self.database.read() as connection:
             contents = message_contents(connection, [row["segment_id"] for row in rows])
@@ -297,46 +297,17 @@ class ChatReads:
                               if value.get("message", {}).get("role") == "agent"
                               and value.get("message", {}).get("execution_id")]
             placement = reply_placements(connection, reply_segments) if reply_segments else {}
-            executions = list({item.get("message", {}).get("execution_id") for item in metadata.values()
-                               if item.get("message", {}).get("execution_id")})
-            endings = connection.execute(
-                "SELECT e.execution_id,e.usage_json,e.final_message_id AS message_id,e.provider,s.backend_route_id "
-                "FROM executions e LEFT JOIN provider_sessions s USING(provider_session_ref) "
-                "WHERE e.execution_id=ANY(%s) AND e.status IN ('completed','failed','cancelled')",
-                (executions,),
-            ).fetchall() if executions else []
-            usage = {}
-            generation = {}
-            for ending in endings:
-                if not ending["message_id"]:
-                    continue
-                raw_usage = json_value(ending["usage_json"])
-                generation[(str(ending["execution_id"]), str(ending["message_id"]))] = {
-                    "execution_id": str(ending["execution_id"]), "provider": str(ending["provider"]),
-                    "account_id": str(ending["backend_route_id"] or ""),
-                    **({"model": raw_usage["model"], "model_evidence": "provider_reported"} if raw_usage.get("model") else {}),
-                }
-                usage[(str(ending["execution_id"]), str(ending["message_id"]))] = {
-                    **normalize_token_usage(raw_usage.get("accounted") or raw_usage),
-                    **{key: raw_usage[key] for key in ("api_id", "model")
-                       if isinstance(raw_usage.get(key), str) and raw_usage[key]},
-                }
             extras = {str(row["operation_id"]).removeprefix("message_artifact:"): json_value(row["data_json"]) for row in connection.execute(
                 "SELECT operation_id,data_json FROM agent_operations WHERE operation_id=ANY(%s)",
                 (["message_artifact:" + str(row["segment_id"]) for row in rows],),
             ).fetchall()}
-        messages = [chat_payload(row["segment_id"], row["metadata_json"], contents[row["segment_id"]]) for row in rows]
-        for message in messages:
-            message.update(contexts.get(message["segment_id"], {}))
-            message.update(extras.get(message["segment_id"], {}))
-            if message["segment_id"] in placement and not message.get("recipients"):
-                message["display_reply_to_message_id"] = placement[message["segment_id"]]
-            counted = usage.get((message.get("execution_id"), message.get("message_id")))
-            if counted:
-                message["usage"] = counted
-            source = generation.get((message.get("execution_id"), message.get("message_id")))
-            if source:
-                message["generation_source"] = {**dict(message.get("generation_source") or {}), **source}
+            messages = [chat_payload(row["segment_id"], row["metadata_json"], contents[row["segment_id"]]) for row in rows]
+            for message in messages:
+                message.update(contexts.get(message["segment_id"], {}))
+                message.update(extras.get(message["segment_id"], {}))
+                if message["segment_id"] in placement and not message.get("recipients"):
+                    message["display_reply_to_message_id"] = placement[message["segment_id"]]
+            annotate_messages(connection, messages)
         return messages
 
     def displayed_chat_message_ids(self, agent_id: str) -> list[str]:
