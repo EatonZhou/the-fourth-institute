@@ -41,7 +41,8 @@ def read_artifact(paper, kind):
     usage = json.loads(usage_bytes) if usage_bytes else {}
     if not isinstance(usage, dict):
         raise ValueError("Artifact usage must be an object")
-    hints = {key: metadata.get("llm_" + key) for key in FIELDS if metadata.get("llm_" + key) not in (None, "", "未记录")}
+    hints = {key: metadata.get("llm_" + key) or metadata.get(key) for key in FIELDS
+             if (metadata.get("llm_" + key) or metadata.get(key)) not in (None, "", "未记录")}
     for key, alias in (("api_id", "llm_api"), ("account_id", "llm_account")):
         if metadata.get(alias) not in (None, "", "未记录"):
             hints[key] = metadata[alias]
@@ -49,10 +50,11 @@ def read_artifact(paper, kind):
     hints.update(usage)
     source = dict(hints.get("generation_source") or {})
     for key in ("resident_id", "input_message_id", "reply_message_id", "execution_id"):
-        source.setdefault(key, hints.get(key) or metadata.get("llm_" + key) or "")
+        source.setdefault(key, hints.get(key) or metadata.get("llm_" + key) or metadata.get(key) or "")
     source["reply_message_id"] = source.get("reply_message_id") or hints.get("usage_message_id") or ""
-    if not source.get("resident_id") and str(hints.get("generated_by", "")).startswith("resident_"):
-        source["resident_id"] = hints["generated_by"]
+    generated_by = hints.get("generated_by") or metadata.get("generated_by") or ""
+    if not source.get("resident_id") and str(generated_by).startswith("resident_"):
+        source["resident_id"] = generated_by
     hints["generation_source"] = source
     hints.setdefault("generated_at", metadata.get("generated_at"))
     return path, usage_path, raw, usage_bytes, hints, text[header.end():].strip() if header else text.strip()

@@ -28,6 +28,18 @@ def test_api_record_is_preserved_without_agent_or_model_call(monkeypatch):
     assert p.resolve_usage(usage, "existing summary", "caller") == (usage, "complete")
 
 
+def test_agent_authored_header_and_explicit_unknown_override(tmp_path, monkeypatch):
+    path = tmp_path / "summary.md"
+    path.write_text('---\ngenerated_by: resident_other\nreply_message_id: original\nmodel: obsolete\ngenerated_at: 123\n---\nExisting content')
+    path.with_suffix(".usage.json").write_text(json.dumps({"model": "未记录"}))
+    monkeypatch.setattr(p, "_paper_store_file", lambda *a: path)
+    artifact = p.read_artifact({}, "summary")
+    usage = artifact[4]
+    assert usage["model"] == "未记录"
+    assert usage["generation_source"]["resident_id"] == "resident_other"
+    assert usage["generation_source"]["reply_message_id"] == "original"
+
+
 def test_source_newer_than_artifact_is_rejected(monkeypatch):
     monkeypatch.setattr(p.isa_client, "call", lambda *a: {"message": {"message_id": "r", "author_id": "resident_test", "created_at": "2026-02-01T00:00:00Z"}})
     with pytest.raises(ValueError, match="newer"):
