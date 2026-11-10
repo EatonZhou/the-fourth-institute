@@ -14,10 +14,15 @@ def test_workbench_owner_creates_one_role_and_keeps_fixed_subscription(store, re
     monkeypatch.setattr(binding, 'get_service', lambda: runtime)
     monkeypatch.setattr(native, 'get_service', lambda: runtime)
     monkeypatch.setattr(native, 'projection_application', lambda name, actor: store.get(APP, actor))
-    from management_portal.society_service import resident_execution_domain as domain
-    monkeypatch.setattr(domain, 'text_only_input_snapshot', lambda *a, **kw: {
-        'backend': 'kimi', 'account': {'backend_route_id': 'kimi-code'},
-        'settings': binding.SETTINGS, 'settings_revision': 'fixture-revision'})
+    from management_portal import isa_client
+    original = isa_client.call
+    def read(actor, instruction, args, **kwargs):
+        if instruction == 'GetResident':
+            return {'resident': {'provider': 'kimi', 'account': 'kimi-code'}}
+        if instruction == 'GetResidentSettings':
+            return {'settings': binding.SETTINGS, 'settings_revision': 'fixture-revision'}
+        return original(actor, instruction, args, **kwargs)
+    monkeypatch.setattr(isa_client, 'call', read)
     assert binding.inspect_binding('alice')['resident_id'] is None
     first = binding.ensure_binding('alice')
     second = binding.ensure_binding('alice')

@@ -26,11 +26,10 @@ def ensure_binding(actor):
     identity = native.binding('paper', {'actor': actor, 'resident_scope': ROLE,
         'title': 'Paper选中文本翻译', 'backend_route_id': 'kimi-code',
         'runtime_settings': dict(SETTINGS)}, 'kimi', create_role=True)
-    from management_portal.society_service.resident_execution_domain import text_only_input_snapshot
-    current = text_only_input_snapshot(identity['resident_id'], actor, text='configuration check')
-    account = current['account']
-    route = account.get('backend_route_id') or account.get('route_id') or account.get('account_id')
-    if current['backend'] != 'kimi' or route != 'kimi-code' or any(current['settings'].get(k) != v for k, v in SETTINGS.items()):
+    from management_portal import isa_client
+    resident = isa_client.call(actor, 'GetResident', {'resident_id': identity['resident_id']})['resident']
+    current = isa_client.call(actor, 'GetResidentSettings', {'resident_id': identity['resident_id']})
+    if resident['provider'] != 'kimi' or resident['account'] != 'kimi-code' or any(current['settings'].get(k) != v for k, v in SETTINGS.items()):
         raise ProjectionError('projection.translation_configuration', 'Existing translation binding requires explicit Kimi subscription configuration; no fallback or replacement was performed', 409)
     return {**inspect_binding(actor), 'settings_revision': current['settings_revision'],
             'provider': 'kimi', 'account_id': 'kimi-code', 'model': SETTINGS['model']}
