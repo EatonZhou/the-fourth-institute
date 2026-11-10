@@ -5,7 +5,6 @@
   // queued Residents as creatures, and the menu that opens or clears them.
   const DEPENDENCIES = Object.freeze([
     "currentAgentStatusData", "ensureActiveAgentStatusRefresh", "esc", "executionAccounts", "listen",
-    "residentNavigationUrl",
   ]);
 
   function createActivity(dependencies) {
@@ -13,8 +12,24 @@
     if (missing.length) throw new Error(`PortalHomeActivity is missing: ${missing.join(", ")}`);
     const {
       currentAgentStatusData, ensureActiveAgentStatusRefresh, esc, executionAccounts, listen,
-      residentNavigationUrl,
     } = dependencies;
+
+    function residentNavigationUrl({ residentId = "", lineageId = "", url = "", openChat = false } = {}) {
+      const provided = String(url || "").trim();
+      if (provided.startsWith("/") && !provided.startsWith("//")) {
+        if (!openChat) return provided;
+        const target = new URL(provided, window.location.origin);
+        target.searchParams.set("open_chat", "1");
+        return `${target.pathname}${target.search}${target.hash}`;
+      }
+      const id = String(residentId || "").trim();
+      if (!id) return "";
+      const params = new URLSearchParams({ resident: id });
+      const targetLineageId = String(lineageId || "").trim();
+      if (targetLineageId) params.set("lineage", targetLineageId);
+      if (openChat) params.set("open_chat", "1");
+      return `/lineage?${params.toString()}`;
+    }
 
     function agentStatusRunHref(run) {
       if (!run || run.type !== "resident" || !run.resident_id) return "";

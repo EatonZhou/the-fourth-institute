@@ -182,7 +182,6 @@ class PublicPagesHttp:
                     '/static/hatg_workspace_projection.js',
                     '/static/home.css',
                     '/static/home.js',
-                    '/static/home_agent_access.js',
                     '/static/home_pulse.js',
                     '/static/home_system_resources.js',
                     '/static/home_accounts.js',

@@ -360,6 +360,9 @@
     }
 
     function residentTokenFooter(item) {
+      if (item.execution_annotations_status === "unavailable") {
+        return window.PortalI18n.html`<div class="messageTokenNote" role="status">用量与来源信息暂不可用</div>`;
+      }
       return [
         item.token_usage,
       ].map(usage => {

@@ -77,7 +77,7 @@ Portal 里的资源都有形如 `<类型>_<12 位十六进制码>` 的 ID，例�
 - **AI Activity & Accounts**：正在运行的 Resident 和 AI 执行账号的额度。
 - **定时与自动触发**：按时间或事件自动运行的 Resident。
 
-Home 的面板可以拖动、分栏、折叠或隐藏，顶栏的“调整布局”提供几种预设布局，并能恢复隐藏的面板。默认隐藏的 Agent Access 面板第一项就是你的 Ask Me Anything 入口。
+Home 的面板可以拖动、分栏、折叠或隐藏，顶栏的“调整布局”提供几种预设布局，并能恢复隐藏的面板。Get Me Aligned 包含 Notice Board 和 Daily News。
 
 ### 消息列表
 

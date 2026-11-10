@@ -70,7 +70,7 @@ Home (`/`) brings together current activity:
 - AI Activity & Accounts for active Residents and execution account quotas.
 - Scheduled and automatic triggers.
 
-Drag, split, collapse, or hide panels. Layout controls provide presets and restore hidden panels. The initially hidden Agent Access panel starts with your Ask Me Anything shortcut.
+Drag, split, collapse, or hide panels. Layout controls provide presets and restore hidden panels. Get Me Aligned contains Notice Board and Daily News.
 
 ### Message list
 

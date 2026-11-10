@@ -23,12 +23,6 @@ const homeRoute = window.PortalHomeComponents.resolveRoute(window.location.searc
 // Home's panels are parts that the home_*.js scripts index.html loads before
 // this one register; the root creates them here, after its shared state.
 const {
-  residentNavigationUrl, loadAgentAccess,
-} = window.PortalHomeAgentAccess.createAgentAccess({
-  currentActiveAgentStatus: () => activeAgentStatus, esc, homeApi, renderActiveAgentStatus,
-});
-
-const {
   loadDailyNews, loadPortalPulseOnce,
 } = window.PortalHomePulse.createPulse({
   esc, formatPortalTime, homeApi,
@@ -68,7 +62,7 @@ const {
   agentStatusRunboard, focusedResidentIcon, restoreResidentIconFocus, bindAgentStatusResidentMenu,
 } = window.PortalHomeActivity.createActivity({
   currentAgentStatusData: () => agentStatusData, ensureActiveAgentStatusRefresh, esc, executionAccounts,
-  listen, residentNavigationUrl,
+  listen,
 });
 
 function formatPortalTime(value) {
@@ -385,16 +379,6 @@ function connectDailyNews() {
   loadDailyNews();
 }
 
-function connectAgentAccess({ context, signal }) {
-  context.currentUserReady.then(() => {
-    if (!signal.aborted) return loadAgentAccess();
-  }).catch(() => {
-    if (signal.aborted) return;
-    const node = document.querySelector("[data-agent-access]");
-    if (node) node.innerHTML = window.PortalI18n.html`<div class="agent-access-error">当前用户读取失败，无法加载个人 Agent 入口。</div>`;
-  });
-}
-
 function connectPulse({ context, signal }) {
   context.currentUserReady.catch(() => {}).then(() => {
     if (!signal.aborted) loadPortalPulseOnce();
@@ -439,7 +423,6 @@ function groupPanels(group, panels) {
 const homeGroupPanels = {
   "get-me-aligned": groupPanels("get-me-aligned", [
     { id: "daily-news", order: 20, title: window.PortalI18n.t("Daily News"), icon: "file-text", source: '[data-home-component="daily-news"]', connect: connectDailyNews },
-    { id: "agent-access", order: 30, title: window.PortalI18n.t("Agent Access"), icon: "users", source: '[data-home-component="agent-access"]', connect: connectAgentAccess },
   ]),
   "my-pulse-publish": groupPanels("my-pulse-publish", [
     { id: "knowledge-pulse", order: 10, title: window.PortalI18n.t("Knowledge Pulse"), icon: "pulse", source: '[data-home-component="knowledge-pulse"]', connect: connectPulse },
@@ -488,10 +471,9 @@ const homeComponentTree = Object.freeze({
 });
 
 const { split: homeSplit, stack: homeStack } = window.PortalWorkbench.model;
-const getMeAlignedLayout = homeSplit("vertical", [
-  homeSplit("horizontal", [homeStack(["notice-board"]), homeStack(["daily-news"])], [1, 1]),
-  homeStack(["agent-access"]),
-], [3, 2]);
+const getMeAlignedLayout = homeSplit("horizontal", [
+  homeStack(["notice-board"]), homeStack(["daily-news"]),
+], [1, 1]);
 const myPulseLayout = homeSplit("vertical", [
   homeStack(["knowledge-pulse"]),
   homeStack(["personal-pulse"]),
@@ -590,7 +572,6 @@ const homeWorkbench = window.PortalHomeComponents.createWorkbenchComposition({
               id: "daily-overview",
               name: window.PortalI18n.t("每日概览"),
               layout: homeSplit("horizontal", [homeStack(["notice-board"]), homeStack(["daily-news"])], [1, 1]),
-              hidden: ["agent-access"],
             },
             "home-my-pulse": {
               id: "daily-overview",
