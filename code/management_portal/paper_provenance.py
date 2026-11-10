@@ -147,7 +147,7 @@ def resolve_usage(usage, body, actor):
 
 
 def inventory(actor, paper_ids=None):
-    papers = _all_papers()
+    papers = [paper for pid in dict.fromkeys(paper_ids) if (paper := _paper_by_id(pid))] if paper_ids else _all_papers()
     visible = set(permission_system.permitted_ids(actor, "ReadResource", "address", [p["id"] for p in papers]))
     candidates = []
     for paper in papers:
