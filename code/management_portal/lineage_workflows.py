@@ -191,7 +191,10 @@ class WorkflowBindings:
             isa_client.call(actor, 'DeleteResident', {'lineage_id': lineage_id, 'resident_id': resident_id},
                             key=f'release:{resident_id}:finalize:{attempt}')
 
-    def install(self, *, actor, lineage_id, resident_id, name, title, prompt, lend_temporary_credentials=False):
+    def install(self, *, actor, lineage_id, resident_id, name, title, prompt, lend_temporary_credentials=False,
+                context_policy=None):
+        if context_policy not in (None, "session", "fresh"):
+            raise ValueError("工作流 context_policy 必须为 session 或 fresh")
         identity = hashlib.sha256(json.dumps([lineage_id, resident_id, name]).encode()).hexdigest()
         state = self.store.get(lineage_id, resident_id, name)
         if (state and set(state["steps"]) == {"event", "effect", "target", "invoke"}
@@ -203,8 +206,9 @@ class WorkflowBindings:
             effect = next(item for item in current["program"]["components"] if item["id"] == binding["effect_id"])
             parts = deliver_script_parts(str((effect.get("config") or {}).get("script") or ""))
             invoke = next(wire for wire in current["program"]["wires"] if wire["id"] == state["steps"]["invoke"])
-            if not lend_temporary_credentials or (parts and parts[2].get("lend_temporary_credentials")
-                                                  and (invoke.get("config") or {}).get("include_envelope", True)):
+            policy_current = context_policy is None or (invoke.get("config") or {}).get("context_policy") == context_policy
+            if policy_current and (not lend_temporary_credentials or (parts and parts[2].get("lend_temporary_credentials")
+                                                  and (invoke.get("config") or {}).get("include_envelope", True))):
                 return binding
         with self.lineage_lock(lineage_id):
             graph = lineage_graph(actor, lineage_id)
@@ -243,25 +247,30 @@ class WorkflowBindings:
             }, "wire_id")
             step("invoke", "CreateWire", {
                 "kind": "route", "source": event, "target": effect,
-                "config": {"include_envelope": bool(lend_temporary_credentials), "unavailable_policy": "queue", "queue_limit": 100},
+                "config": {"include_envelope": bool(lend_temporary_credentials), "unavailable_policy": "queue", "queue_limit": 100,
+                           **({"context_policy": context_policy} if context_policy is not None else {})},
             }, "wire_id")
             current = lineage_graph(actor, lineage_id)
             binding = self._validated_binding(state, current)
             components = {item["id"]: item for item in current.get("program", {}).get("components", [])}
             self._keep_prompt_current(actor, lineage_id, identity, state, components[effect], prompt,
                                       lend_temporary_credentials=lend_temporary_credentials)
-            if lend_temporary_credentials:
-                # This Effect reads this activation's credential request. Ordinary
-                # workflows still hide the envelope; only an opted-in flow needs it.
+            if lend_temporary_credentials or context_policy is not None:
+                # Reconcile only the workflow's declared policy; preserve queue
+                # controls and keep the envelope hidden unless credentials need it.
                 current = lineage_graph(actor, lineage_id)
                 invoke = next(wire for wire in current["program"]["wires"] if wire["id"] == state["steps"]["invoke"])
                 config = dict(invoke.get("config") or {})
-                if not config.get("include_envelope", True):
+                original = dict(config)
+                if lend_temporary_credentials:
                     config["include_envelope"] = True
+                if context_policy is not None:
+                    config["context_policy"] = context_policy
+                if config != original:
                     digest = hashlib.sha256(json.dumps(config, sort_keys=True).encode()).hexdigest()
                     isa_client.call(actor, "UpdateWire", {
                         "lineage_id": lineage_id, "wire_id": invoke["id"], "changes": {"config": config},
-                    }, version=current["revision"], key=f"workflow:{identity}:envelope:{current['revision']}:{digest[:32]}")
+                    }, version=current["revision"], key=f"workflow:{identity}:config:{current['revision']}:{digest[:32]}")
         return binding
 
     @staticmethod

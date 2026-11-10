@@ -149,10 +149,11 @@ def _route_delivery_config(config: dict[str, Any], ends: _WireEnds) -> dict[str,
         result["max_messages"] = maximum
     # How the target Resident runs a delivery (decision_481dc4e6292c):
     # "session" keeps time and file work in the Resident's session.
+    # "fresh" also isolates manual tasks, including DeliverMessage Effects.
     context_policy = _text(config.get("context_policy"), 16).lower()
     if context_policy:
-        if context_policy != "session":
-            raise ValueError('Invoke wire 的 context_policy 只能是 "session"')
+        if context_policy not in {"session", "fresh"}:
+            raise ValueError('Invoke wire 的 context_policy 只能是 "session" 或 "fresh"')
         result["context_policy"] = context_policy
     # An Effect that needs no ordering (a Family Router) takes each
     # Event as it comes, several at once; Residents keep their order.

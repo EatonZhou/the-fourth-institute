@@ -437,6 +437,10 @@ class _EffectRun:
         script_text = str(definition["script"])
         script = _parsed_script(script_text)
         event = self.event
+        from .lineage_event_dispatch_rules import _program_event_delivery_profile
+
+        wire = next((item for item in self.lineage.get("program", {}).get("wires", [])
+                     if item["id"] == self.invocation.source_wire_id), {})
         try:
             journal = self._admit_activation(
                 effect_id=self.effect_id,
@@ -445,6 +449,7 @@ class _EffectRun:
                 source={"event_id": event.id,
                         "event_source_id": self.invocation.source_id if self.invocation.source_id in self.plan.get("event_sources", {}) else "",
                         "source_wire_id": self.invocation.source_wire_id,
+                        "delivery_profile": _program_event_delivery_profile(event, wire),
                         "trigger_step_id": str(event.payload.get("trigger_step_id") or "")},
             )
             self.call_context = replace(self.call_context, trigger_path_id=journal["trigger_path_id"])
@@ -531,6 +536,13 @@ class _EffectRun:
 
         try:
             arguments = prepare_call_arguments(request.instruction, request.arguments, self.invocation)
+            # The activation freezes its policy before any call can be accepted.
+            # Reclaiming it after a wire edit must not change an existing input.
+            if (request.instruction == "DeliverMessage" and arguments.get("resident_id")
+                    and (self.journal.get("delivery_profile") or {}).get("isolated")):
+                if arguments.get("context_policy") == "session":
+                    raise ValueError("Effect 的 session 策略与连线的独立任务策略冲突")
+                arguments["context_policy"] = "fresh"
             attempt.context = _family_note_context(self.lineage, self.effect_id, request.instruction, arguments,
                                                    self.call_context, lineage_id=self.lineage_id, event=self.event)
             from management_portal.hatg import routing

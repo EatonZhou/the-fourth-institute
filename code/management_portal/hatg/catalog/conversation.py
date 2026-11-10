@@ -49,6 +49,7 @@ DECLARATIONS = (
           "info 消息和发给用户的消息不带引用",
           properties=MESSAGE),
         P("activation_policy", description=ACTIVATION_DESCRIPTION, enum=ACTIVATION),
+        P("context_policy", description="发给 Resident 的新任务可设 fresh：使用独立模型上下文，保留系统规则与本次输入，不续用或改写共享会话。仅与 enqueue_and_trigger 同用；省略或 session 沿用会话。", enum=("fresh", "session")),
         P("business_ref", description="调用方业务记录的统一 ID 或地址"),
         P("reply_to_message_id", description="回复 Family 门面发来的哪条消息：填你对话中收到的那条消息的 ID，"
           "平台引用门面对它的发件记录，门面把回复交给写它的成员；不和 quote 同用，发给用户和 info 消息不带它"),

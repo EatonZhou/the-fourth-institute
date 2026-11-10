@@ -38,6 +38,7 @@ def test_every_delivery_is_a_model_turn_and_triggered_work_runs_fresh() -> None:
     # Even the old one-command text is an ordinary task: no command profile.
     assert _program_event_delivery_profile(timer, _route(TASK)) == {"isolated": True}
     assert _program_event_delivery_profile(manual, _route(TASK)) == {}
+    assert _program_event_delivery_profile(manual, _route(TASK, context_policy="fresh")) == {"isolated": True}
     # A wire can keep time and file work in the Resident's session.
     assert _program_event_delivery_profile(timer, _route(TASK, context_policy="session")) == {}
 

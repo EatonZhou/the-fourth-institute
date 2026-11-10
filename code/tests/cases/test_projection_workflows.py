@@ -53,6 +53,12 @@ def workflow_runtime(tmp_path, monkeypatch):
             graph["program"]["wires"].append(wire)
             graph["revision"] += 1
             result = {"wire_id": wire["id"], "wire": wire}
+        elif name == "UpdateWire":
+            assert version == graph["revision"]
+            wire = next(w for w in graph["program"]["wires"] if w["id"] == arguments["wire_id"])
+            wire.update(copy.deepcopy(arguments["changes"]))
+            graph["revision"] += 1
+            result = {"wire": copy.deepcopy(wire)}
         elif name == "DeleteComponent":
             component_id = arguments["component_id"]
             graph["program"]["components"] = [c for c in graph["program"]["components"] if c["id"] != component_id]
@@ -109,6 +115,28 @@ def test_installed_binding_validates_recorded_wire_identity(workflow_runtime):
     with pytest.raises(ValueError, match="连接"):
         installed(workflow_runtime)
     assert len(workflow_runtime.calls) == 4
+
+
+@pytest.mark.parametrize("existing", [False, True])
+def test_workflow_requires_fresh_inputs_without_recreating_bindings(workflow_runtime, existing):
+    """独立任务策略安装或升级原连线，不重建 Resident、Event 或 Effect"""
+    runtime = workflow_runtime
+    previous = installed(runtime) if existing else None
+    if existing:
+        route = runtime.graph["program"]["wires"][1]
+        route["config"]["queue_limit"] = 17
+    def fresh():
+        return runtime.bindings.install(actor="owner", lineage_id=LINEAGE, resident_id=RESIDENT,
+                                        name="feature", title="Feature", prompt="Fixed prompt", context_policy="fresh")
+    binding = fresh()
+    assert previous is None or binding == previous
+    route = runtime.graph["program"]["wires"][1]
+    assert route["config"]["context_policy"] == "fresh"
+    assert route["config"]["queue_limit"] == (17 if existing else 100)
+    assert route["config"]["include_envelope"] is False
+    count = len(runtime.calls)
+    assert fresh() == binding and len(runtime.calls) == count
+    assert [name for name, _ in runtime.calls].count("UpdateWire") == int(existing)
 
 
 def test_reusing_a_workflow_does_not_wait_for_another_installation(workflow_runtime):

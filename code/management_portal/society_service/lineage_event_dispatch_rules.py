@@ -92,10 +92,11 @@ def _program_event_delivery_profile(
     Every delivery is a model turn of the Resident.  Time and file work runs
     in a fresh context instead of the Resident's session unless
     ``config.context_policy = "session"`` keeps the session.
+    An explicit ``fresh`` also isolates manually started business tasks.
     """
 
     config = route.get("config") if isinstance(route.get("config"), dict) else {}
-    isolated = (
+    isolated = str(config.get("context_policy") or "") == "fresh" or (
         event.type in BACKGROUND_EVENT_TYPES
         and str(config.get("context_policy") or "") != "session"
     )

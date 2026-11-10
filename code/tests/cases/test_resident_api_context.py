@@ -59,7 +59,8 @@ def test_history_read_fence_does_not_include_current_or_future_messages():
 
 
 @pytest.mark.parametrize('forked', [False, True])
-def test_two_requests_pass_history_once_and_keep_system_instructions(monkeypatch, forked):
+@pytest.mark.parametrize('fresh', [False, True])
+def test_two_requests_pass_history_once_and_keep_system_instructions(monkeypatch, forked, fresh):
     """连续两次模型 API 请求各带一次历史，并都保留固定的 system 指令"""
     from copy import deepcopy
     from management_portal.society_service import resident_execution_domain as execution, resident_runtime_domain
@@ -71,7 +72,7 @@ def test_two_requests_pass_history_once_and_keep_system_instructions(monkeypatch
     monkeypatch.setattr(resident_runtime_domain, 'read_resident_runtime_settings', lambda record: deepcopy(settings))
     monkeypatch.setattr(resident_input_scope, 'get', lambda *args: {})
     monkeypatch.setattr(resident_input_scope, 'scoped_message_ids', lambda *args: set())
-    monkeypatch.setattr(execution, '_lineage_delivery_profile', lambda job: {})
+    monkeypatch.setattr(execution, '_lineage_delivery_profile', lambda job: {'isolated': True} if fresh else {})
     monkeypatch.setattr(execution, 'resident_system_instructions', lambda *args: SystemInstructions())
     repository = SimpleNamespace(
         messages_before_input=lambda rid, mid, limit: pair('first', 'Remember BLUE', 'BLUE') if mid == 'second' else [],
@@ -99,7 +100,11 @@ def test_two_requests_pass_history_once_and_keep_system_instructions(monkeypatch
                                        attach_system_context=True, is_new_backend_session=True)
         service.execute(invocation, SimpleNamespace(is_cancelled=lambda: False, emit=lambda *args: None,
                                                     record_capability_assembly=lambda plan: None))
-    if forked:
+    if fresh:
+        for mid, payload in zip(('first', 'second'), payloads):
+            assert payload['messages'] == [{'role': 'system', 'content': 'Fixed instructions'},
+                                           {'role': 'user', 'content': mid}]
+    elif forked:
         for mid, payload in zip(('first', 'second'), payloads):
             assert payload['messages'] == [{'role': 'system', 'content': 'Fixed instructions'},
                                            {'role': 'user', 'content': 'Inherited BLUE\nCurrent input: ' + mid}]

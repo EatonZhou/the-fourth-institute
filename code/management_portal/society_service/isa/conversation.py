@@ -52,6 +52,19 @@ def deliver(
         business_ref=business_ref,
         lending=lending,
     )
+    if inv.argument("context_policy") == "fresh":
+        from .. import lineage_program_resident_inputs, resident_conversation_stream
+
+        if payload["activation_policy"] != "enqueue_and_trigger":
+            raise invalid("fresh 上下文只用于独立排队的新任务")
+        existing = resident_conversation_stream.get_repository().message(resident_id, body["message_id"])
+        if existing and not lineage_program_resident_inputs.delivery_profile(
+            context.lineage_id, body["message_id"],
+        ).get("isolated"):
+            raise invalid("不能将已接收的会话输入改成新上下文任务")
+        lineage_program_resident_inputs.record_delivery_profile(
+            context.lineage_id, body["message_id"], {"isolated": True},
+        )
     # A Family member sending outside its Family speaks as the facade (decision_44cf587c1721).
     result = outward_messages.deliver_to_resident(payload, inv.caller, delivery_context=context, reply_to=reply_to)
     return {
@@ -110,6 +123,8 @@ def deliver_message(inv: Invocation) -> dict[str, Any]:
         raise invalid("message 只包含 message_id、role、content_parts 和 quote", unknown_fields=unknown)
     credentials = _credential_requests(inv)
     if inv.argument("user_id"):
+        if inv.argument("context_policy"):
+            raise invalid("发给用户的消息不能设置模型上下文")
         if "quote" in message or inv.argument("reply_to_message_id"):
             # Only a user message quotes; a message to a user is the sender's own (decision_c524c775e0be).
             raise invalid("发给用户的消息不带引用")

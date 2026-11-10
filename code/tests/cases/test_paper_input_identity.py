@@ -34,6 +34,7 @@ def test_all_paper_roles_share_input_reply_and_usage_identity(monkeypatch, reque
 
     def native(name, **options):
         assert name == 'paper' and options['workflow']['name'] == role
+        assert options['workflow']['context_policy'] == 'fresh'
         options['on_assigned']({'resident_id': HANDLE['resident_id'], 'lineage_id': HANDLE['lineage_id']})
         assert records[-1]['input_message_id'] == ''
         assert records[-1]['requested_message_id'] == requested
