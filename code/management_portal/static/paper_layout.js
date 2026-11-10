@@ -82,10 +82,10 @@
       if (state.mode === "reader") renderWorkspace();
     }
 
-    function setMode(mode) {
+    async function setMode(mode) {
       const previousMode = state.mode;
       state.requestedChatWorkspaceId = "";
-      if (mode !== "reader") cancelPdfRendering();
+      if (mode !== "reader" && !await cancelPdfRendering()) return;
       if (state.leftFace === "ccf") {
         if (mode === "library") {
           state.mode = "library";

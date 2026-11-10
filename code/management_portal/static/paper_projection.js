@@ -144,14 +144,14 @@
       });
     }
 
-    function suspendPaperUpdates({ includeDeferred = true, includePdf = true } = {}) {
+    async function suspendPaperUpdates({ includeDeferred = true, includePdf = true } = {}) {
+      if (includePdf && !await cancelPdfRendering()) return false;
       paperProjectionEpoch += 1;
       state.paperPollEpoch = (state.paperPollEpoch || 0) + 1;
       clearTimeout(state.registrationDraftPollTimer);
       state.registrationDraftPollTimer = 0;
       clearTimeout(state.reviewPollTimer);
       state.reviewPollTimer = 0;
-      if (includePdf) cancelPdfRendering();
       window.clearTimeout(paperProjectionSyncTimer);
       paperProjectionSyncTimer = 0;
       clearTimeout(state.pdfResizeTimer);
@@ -162,6 +162,7 @@
         clearTimeout(state.ccfFilterTimer);
         state.ccfFilterTimer = null;
       }
+      return true;
     }
 
     function resumePaperUpdates() {

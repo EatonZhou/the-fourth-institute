@@ -351,6 +351,7 @@
     assetsJobRunning, assetsJobStatusText, currentAssetsJob, detailSectionsLoaded, ensureDetailForMode,
     loadDetail, loadDetailSections, mergeDetailPayload, refreshAssetsProjection,
   } = paperModule("PortalPaperDetail").createDetail({
+    cancelPdfRendering: (...args) => cancelPdfRendering(...args),
     alertError, isCollectionMode, loadChatHistory: (...args) => loadChatHistory(...args),
     loadDeepReadStatus: (...args) => loadDeepReadStatus(...args),
     loadExpStatus: (...args) => loadExpStatus(...args),

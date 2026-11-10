@@ -1,4 +1,5 @@
 import json
+import os
 import subprocess
 import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -14,6 +15,11 @@ from management_portal.portal_access_control import PortalAccessStore
 @pytest.mark.parametrize('browser', ['chromium', 'firefox'])
 def test_formal_fullscreen(tmp_path, monkeypatch, browser):
     run_host(tmp_path, monkeypatch, browser, 'zotero_reader_fullscreen.cjs')
+
+
+@pytest.mark.parametrize('browser', ['chromium', 'firefox'])
+def test_same_reader_layout(tmp_path, monkeypatch, browser):
+    run_host(tmp_path, monkeypatch, browser, 'zotero_reader_same_layout.cjs')
 
 
 @pytest.mark.parametrize('browser', ['chromium', 'firefox'])
@@ -35,6 +41,11 @@ def run_host(tmp_path, monkeypatch, browser, script):
     monkeypatch.setattr(paper_recent, 'resource_index_papers_by_ids', lambda ids, **k: [{'id': i, 'title': i} for i in ids])
     root = Path(__file__).resolve().parents[2]
     (bundle / 'paper.pdf').write_bytes((root/'tests/cases/fixtures/paper-synthetic-means.pdf').read_bytes())
+    from management_portal.resources.directory_registrations import register_owned
+    second = tmp_path / 'second'; second.mkdir()
+    (second / 'paper.pdf').write_bytes((bundle / 'paper.pdf').read_bytes())
+    (second / 'manifest.json').write_text(json.dumps({'paper_id':'paper_abcdef012345','title':'Second','files':{'pdf':'paper.pdf'}}))
+    register_owned('paper', 'paper_abcdef012345', [second])
     class Handler(BaseHTTPRequestHandler):
         def log_message(self, *args): pass
         def do_POST(self): self.dispatch()
@@ -47,8 +58,8 @@ def run_host(tmp_path, monkeypatch, browser, script):
             if parsed.path == '/':
                 self.send_response(200); self.send_header('Content-Type', 'text/html'); self.end_headers()
                 self.wfile.write(('''<script type="module">import {openReader} from '/static/paper_fullscreen_reader.js';
-window.signals=[];window.openDocument=()=>{window.host=openReader({paper:''' + json.dumps({'id': paper, 'title': 'Synthetic', 'pdf_url': '/original.pdf'}) + ''',principal:'reader_one',onReady:s=>signals.push({paperId:s.paperId,fingerprint:s.fingerprint}),onClose:()=>window.readerClosed=true});};window.ready=true;</script>''').encode()); return
-            if parsed.path in ('/static/paper_fullscreen_reader.js', '/static/paper_reader.js', '/static/paper_personal.js'):
+window.signals=[];window.openDocument=(embedded=false)=>{window.host=openReader({container:embedded?()=>document.getElementById('readerSlot'):undefined,paper:''' + json.dumps({'id': paper, 'title': 'Synthetic', 'pdf_url': '/original.pdf'}) + ''',principal:'reader_one',onReady:s=>signals.push({paperId:s.paperId,fingerprint:s.fingerprint}),onClose:()=>window.readerClosed=true});};window.ready=true;</script><div id="readerSlot" style="width:700px;height:600px"></div>''').encode()); return
+            if parsed.path in ('/static/paper_fullscreen_reader.js', '/static/paper_reader.js', '/static/paper_personal.js', '/static/paper_detail.js'):
                 self.send_response(200); self.send_header('Content-Type','text/javascript'); self.end_headers()
                 self.wfile.write((root/'management_portal'/parsed.path.lstrip('/')).read_bytes()); return
             for d in definitions:
@@ -60,7 +71,7 @@ window.signals=[];window.openDocument=()=>{window.host=openReader({paper:''' + j
     thread = threading.Thread(target=server.serve_forever,daemon=True); thread.start()
     try:
         result = subprocess.run(['node',str(root/'tests/cases/javascript'/script),
-            f'http://127.0.0.1:{server.server_port}',browser,http_auth._SESSION_COOKIE,*tokens],capture_output=True,text=True,timeout=90)
+            f'http://127.0.0.1:{server.server_port}',browser,http_auth._SESSION_COOKIE,*tokens],capture_output=True,text=True,timeout=90,env={**os.environ, 'TMPDIR': str(tmp_path)})
         assert result.returncode == 0, result.stdout + result.stderr
         from management_common.directory_cleanup_store import get_directory_cleanup_store
         from management_portal import paper_reader_annotations

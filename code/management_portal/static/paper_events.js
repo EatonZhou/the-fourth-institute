@@ -525,18 +525,17 @@
 
     // Leaving, hiding and showing the page.
     function bindPageLifecycleEvents() {
-      document.querySelector(".portalModuleNav")?.addEventListener("click", event => {
+      document.querySelector(".portalModuleNav")?.addEventListener("click", async event => {
         const target = event.target instanceof Element ? event.target : null;
         const link = target?.closest("a[href]");
         if (!link || link.target === "_blank") return;
+        if (event.button || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
+        event.preventDefault();
+        if (!await suspendPaperUpdates()) return;
         state.leaving = true;
-        suspendPaperUpdates();
+        window.location.assign(link.href);
       });
       window.addEventListener("pagehide", () => {
-        state.leaving = true;
-        suspendPaperUpdates();
-      });
-      window.addEventListener("beforeunload", () => {
         state.leaving = true;
         suspendPaperUpdates();
       });

@@ -6,7 +6,7 @@
   // A Paper's detail: the sections each mode needs, loading and merging them,
   // and the assets job that extracts its figures and references.
   const DEPENDENCIES = Object.freeze([
-    "alertError", "isCollectionMode", "loadChatHistory", "loadDeepReadStatus", "loadExpStatus",
+    "alertError", "cancelPdfRendering", "isCollectionMode", "loadChatHistory", "loadDeepReadStatus", "loadExpStatus",
     "loadReviewStatus", "paperApi", "renderAssistantContext", "renderWorkspace", "state", "syncPaperLocation",
     "syncSelectedPaperInTree", "updateDeepReadControls", "writeUiState",
   ]);
@@ -15,7 +15,7 @@
     const missing = DEPENDENCIES.filter(name => dependencies?.[name] === undefined);
     if (missing.length) throw new Error(`PortalPaperDetail is missing: ${missing.join(", ")}`);
     const {
-      alertError, isCollectionMode, loadChatHistory, loadDeepReadStatus, loadExpStatus, loadReviewStatus,
+      alertError, cancelPdfRendering, isCollectionMode, loadChatHistory, loadDeepReadStatus, loadExpStatus, loadReviewStatus,
       paperApi, renderAssistantContext, renderWorkspace, state, syncPaperLocation, syncSelectedPaperInTree,
       updateDeepReadControls, writeUiState,
     } = dependencies;
@@ -77,6 +77,8 @@
     }
 
     async function loadDetail(id, { render = true } = {}) {
+      // Preserve the current selection and its interactive Reader if saving fails.
+      if (String(state.selectedId || "") !== String(id || "") && !await cancelPdfRendering()) return null;
       state.requestedChatWorkspaceId = "";
       const requestSeq = ++state.detailRequestSeq;
       const previousSelectedId = String(state.selectedId || "");

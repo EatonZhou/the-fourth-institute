@@ -580,6 +580,12 @@ body {
 .readerPanel.collapsed .readerPanelToggle svg { transform: rotate(180deg); }
 .readerContent { overflow: auto; padding: 13px; }
 .paperReadingDialog { position: fixed; inset: 0; width: 100vw; height: 100dvh; max-width: none; max-height: none; margin: 0; padding: 0; border: 0; color: var(--text, #17202a); background: var(--surface, #fff); }
+.paperReadingDialog { z-index: 10000; box-sizing: border-box; }
+.paperReadingDialog.is-embedded { inset: auto; z-index: 20; border: 0; }
+.paperReadingDialog .paperLayoutEnter { display: none; }
+.paperReadingDialog.is-embedded .paperLayoutEnter { display: inline; }
+.paperReadingDialog.is-embedded .paperLayoutExit, .paperReadingDialog.is-embedded .paperReadingToolbar a { display: none; }
+.paperReadingDialog.is-embedded .paperReadingToolbar { padding: 4px 8px; }
 .paperReadingApp { height: 100%; display: flex; flex-direction: column; }
 .paperReadingToolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 10px 16px; border-bottom: 1px solid #ccd1d6; }
 .paperReadingToolbar strong { flex: 1; min-width: 120px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
