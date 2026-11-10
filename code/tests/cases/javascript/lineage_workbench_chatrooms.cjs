@@ -14,6 +14,49 @@ const room = (digit, extra = {}) => ({
 const said = (preview, at) => ({ last_message: { preview, author_id: 'alice', created_at: at } });
 const ROOMS = [room('1', said('hi', '2026-10-20T00:00:00Z')), room('2'), room('3', said('later', '2026-10-21T00:00:00Z'))];
 
+test('quoting authors adds named mentions to the real composer without duplicate or self pings', async t => {
+  const page = startWorkbenchPage({ answers: { '/api/me': { username: 'fixture' } } });
+  const root = page.document.createElement('div');
+  page.document.body.append(root);
+  const resident = 'resident_0123456789ab';
+  const view = page.window.PortalChatroomView.mount({ root, me: 'fixture',
+    authorName: id => ({ alice: 'Alice Example', [resident]: 'Assistant' }[id] || id) });
+  t.after(async () => { view.destroy(); await page.close(); });
+  view.room = room('1', { permissions: { can_post: true } });
+  view.chatroomId = view.room.chatroom_id;
+  view.apply();
+  const composer = view.controller;
+  const quote = author => view.messageAction('quote', { message_id: 'msg_original', author_id: author,
+    role: author === resident ? 'agent' : 'user', content_parts: [{ type: 'text', text: '方案' }] });
+  for (const [draft, expected] of [
+    ['我的回复', '@alice 我的回复'],
+    ['@ALICE 我的回复', '@ALICE 我的回复'],
+    ['@alice2', '@alice @alice2'],
+    ['contact@alice.com', '@alice contact@alice.com'],
+    ['`@alice`', '@alice `@alice`'],
+    ['> @alice', '@alice > @alice'],
+    ['[@alice](https://example.test)', '@alice [@alice](https://example.test)'],
+  ]) {
+    composer.setDraftText(draft);
+    await quote('alice');
+    assert.equal(composer.draftText(), expected);
+  }
+  composer.setDraftText('我的回复');
+  await quote('alice');
+  assert.equal(root.querySelector('.composerRichInput [data-mention-value]')?.textContent, '@Alice Example');
+  await quote('alice');
+  assert.equal(composer.draftText(), '@alice 我的回复', 'quoting again does not duplicate a named chip');
+  for (const author of ['FIXTURE', 'former-member', 'portal']) {
+    composer.setDraftText('保留草稿');
+    await quote(author);
+    assert.equal(composer.draftText(), '保留草稿');
+  }
+  composer.setDraftText('继续');
+  await quote(resident);
+  await quote(resident);
+  assert.equal(composer.draftText(), `@${resident} 继续`, 'Resident quote behavior remains, with named-chip deduplication');
+});
+
 test('Chatrooms list pinned rooms first and pin from the card menu', async t => {
   const pins = new Map([[ROOMS[1].chatroom_id, '2026-10-01T00:00:00Z']]);
   const page = startWorkbenchPage({

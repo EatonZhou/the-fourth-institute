@@ -320,9 +320,18 @@
       }
       if (!actionable(item)) return false;
       if (action === "quote") {
-        const id = String(item.author_id || "");
-        if (/^resident_[0-9a-f]{12}$/.test(id) && !this.controller.inputText().includes(`@${id}`)) {
-          this.controller.setDraftText(`@${id} ${this.controller.draftText()}`);
+        const author = String(item.author_id || "");
+        const id = /^resident_[0-9a-f]{12}$/.test(author) ? author
+          : (this.room?.members || []).find(member => sameUser(member, author));
+        if (id && id !== "portal" && !sameUser(id, this.me())) {
+          const draft = this.controller.draftText();
+          // Reuse the displayed mention parser: code, quotes, links and partial
+          // usernames are not mentions. The draft retains stable IDs/attachments.
+          const mentions = document.createElement("template");
+          mentions.innerHTML = this.renderMentions(window.MD?.render?.(draft, { linkifyResources: false }) || esc(draft));
+          if (![...mentions.content.querySelectorAll("[data-mention-value]")].some(node => sameUser(node.dataset.mentionValue, `@${id}`))) {
+            this.controller.setDraftText(`@${id} ${draft}`);
+          }
         }
         return this.controller.setQuote({
           message_id: String(item.message_id),

@@ -4,7 +4,7 @@ import subprocess
 
 
 def test_lineage_workbench_chatrooms():
-    """聊天室列表先列置顶再按最近活动排序，从卡片菜单置顶会保存并重新排序"""
+    """聊天室引用成员自动提及且不重复或提及自己；列表置顶保存并按活动排序。"""
     source = Path(__file__).with_name("javascript") / "lineage_workbench_chatrooms.cjs"
     result = subprocess.run(
         ["node", "--test", str(source)], capture_output=True, text=True, timeout=60,

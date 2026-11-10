@@ -988,13 +988,18 @@ def post_message(
         member = _member_id(room, author) or author
         new_id = message_id or derived_message_identity("chatroom-message", clean_id, member, _now(), secrets.token_hex(8))
         accepted = _quote(clean_id, quote, new_id)
-        # Quoting a Resident is a reply to it, including through the ISA. Make
-        # the invocation explicit in the stored text and the delivered message.
-        quoted_resident = str(accepted.get("author_id") or "")
-        if RESIDENT_ID_RE.fullmatch(quoted_resident) and quoted_resident not in MENTION_RE.findall(_mention_text(parts)):
-            parts = [{"type": "text", "text": f"@{quoted_resident} "}, *parts]
+        # Quoting an author is a reply to them, including through the ISA.
+        # Users must still belong to the room; self/system replies do not ping.
+        quoted_author = str(accepted.get("author_id") or "")
+        quoted_resident = bool(RESIDENT_ID_RE.fullmatch(quoted_author))
+        quoted_target = quoted_author if quoted_resident else _member_id(room, quoted_author)
+        plain = _mention_text(parts)
+        already_mentioned = (quoted_target in MENTION_RE.findall(plain) if quoted_resident
+                             else _has_user_mention(plain, quoted_target))
+        if quoted_target and quoted_target != "portal" and not same_actor(quoted_target, member) and not already_mentioned:
+            parts = [{"type": "text", "text": f"@{quoted_target} "}, *parts]
             if len(_message_text({"content_parts": parts})) > MAX_MESSAGE_CHARS:
-                raise ValueError("引用 Resident 后的消息超过字数上限")
+                raise ValueError("引用后自动提及作者的消息超过字数上限")
         plain = _mention_text(parts)
         mention_all = _has_user_mention(plain, "全员")
         mentioned_users = [
