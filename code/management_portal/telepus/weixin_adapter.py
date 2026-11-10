@@ -11,7 +11,7 @@ from .router_core import RouterCore
 from .router_store import document, now_iso
 from .runtime import setting
 from .weixin_client import WeixinClient, WeixinError
-from .weixin_format import WeixinPresentation, split_text
+from .weixin_format import WeixinPresentation, segment_text, split_text
 from .weixin_store import WeixinStore, chat_key
 
 
@@ -126,7 +126,7 @@ class WeixinAdapter:
     def _render_controls(self, chat, item):
         item = dict(item)
         text = item.get('text') or ''
-        image_tokens = []
+        image_tokens, controls = [], []
         for row in (item.pop('reply_markup', None) or {}).get('inline_keyboard') or []:
             for button in row:
                 callback = button.get('callback_data') or ''
@@ -138,7 +138,7 @@ class WeixinAdapter:
                 self.router.store.set_meta(counter_key, str(number))
                 argument = '' if command == '/earlier' else str(number)
                 self.router.store.set_meta('weixin-control:' + chat + ':' + command + ':' + argument, callback)
-                text += f"\n{command} {argument} — {button['text']}"
+                controls.append(f"- {command}{' ' + argument if argument else ''}　{button['text']}")
                 if command == '/file':
                     state = self.router.store.get_chat_state(chat)
                     delivery = self.router.store.get_attachment_delivery(chat_id=chat, telegram_user_id=state['telegram_user_id'],
@@ -147,6 +147,9 @@ class WeixinAdapter:
                     filename = attachment.get('filename') or ''
                     if str(attachment.get('content_type') or mimetypes.guess_type(filename)[0] or '').startswith('image/'):
                         image_tokens.append(callback[4:])
+        if controls:
+            # The button replacements form one list after the text, apart from it.
+            text = text.rstrip() + '\n\n' + '\n'.join(controls)
         item['text'] = text
         return item, image_tokens
 
@@ -216,8 +219,8 @@ class WeixinAdapter:
                     segments = []
                 else:
                     segments = item.get('segments') or split_text(item.get('text') or '（无文字）')
-                    suffix = f'\n回复 /more 继续（共 {len(segments)} 段）' if len(segments) > 1 else ''
-                    parts = [{'type': 1, 'text_item': {'text': segments[0] + suffix}}]
+                    total = int(item.get('segment_total') or len(segments))
+                    parts = [{'type': 1, 'text_item': {'text': segment_text(segments, total)}}]
                 result = client.send(parts, account['context_token'], client_id=f'telepus-{row["id"]}-{item.get("part", 0)}')
                 self.store.budget(chat, spent=True)
                 if item.get('delivery') or item.get('input'):
@@ -233,7 +236,7 @@ class WeixinAdapter:
                 if item.get('attachment_token') and attachment:
                     self.router.store.mark_attachment_sent(item['attachment_token'], str(server_id or ''))
                 if len(segments) > 1:
-                    item.update(segments=segments[1:], part=item.get('part', 0) + 1)
+                    item.update(segments=segments[1:], part=item.get('part', 0) + 1, segment_total=total)
                     with self.router.store.connect() as c:
                         c.execute('UPDATE outbound_queue SET item=?,manual=TRUE WHERE id=?', (document(item), row['id']))
                 else:

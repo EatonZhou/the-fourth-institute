@@ -211,7 +211,7 @@ def test_sender_dedup_uint64_reference_and_channel_isolation(bridge):
     request = portal.delivered[0][2]['message_id']
     portal.answer(FACADE, request, 'reply', 'answer', member='Helper')
     adapter.refresh(ACTOR)
-    assert server.sent[0]['item_list'][0]['text_item']['text'] == '**Helper**\nanswer'
+    assert server.sent[0]['item_list'][0]['text_item']['text'] == '**Helper**\n\nanswer'
     incoming(adapter, server, 'follow up', 2, reference=2**64 - 1)
     assert portal.delivered[-1][2]['quote'] == {'message_id': 'reply'}
     assert not adapter.router.store.watched_chats()
@@ -269,9 +269,10 @@ def test_long_response_more_and_notification_reservation(bridge):
     incoming(adapter, server)
     portal.answer(FACADE, portal.delivered[0][2]['message_id'], 'long', 'x' * 8500)
     adapter.refresh(ACTOR)
-    assert len(server.sent) == 1 and '/more' in server.sent[0]['item_list'][0]['text_item']['text']
+    assert len(server.sent) == 1 and '（第 1/3 段，回复 /more 继续）' in server.sent[0]['item_list'][0]['text_item']['text']
     incoming(adapter, server, '/more', 2)
     assert len(server.sent) == 2
+    assert '（第 2/3 段，回复 /more 继续）' in server.sent[1]['item_list'][0]['text_item']['text']
     adapter.budget = 3
     adapter.respond(ACTOR, {'messages': [{'text': str(i)} for i in range(6)]})
     assert '回复任意消息' in server.sent[-1]['item_list'][0]['text_item']['text']
@@ -418,3 +419,23 @@ def test_reply_images_are_sent_as_media_and_inbound_media_is_decrypted(bridge, m
     adapter.poll_once(ACTOR)
     assert '[image:' in portal.delivered[-1][2]['content_parts'][0]['text']
     assert next(tmp_path.rglob('*.jpg')).read_bytes() == b'image bytes'
+
+
+def test_weixin_layout_separates_blocks_keeps_links_and_folds_wide_tables():
+    """Weixin layout: blocks apart, lists/quotes/code intact, wide tables as rows, phone-usable links."""
+    from management_portal.telepus.weixin_format import format_text, segment_text
+
+    text = format_text('**成员**\n第一句。\n- 甲\n- 乙\n  续行\n之后的话。\n> 引用一\n> 引用二\n回到正文。\n'
+                       '[设计](https://example.com/a?b=1) 与 [页面](/resource/knowledge?item=x)\n'
+                       '```\n第一行\n第二行\n```\n'
+                       '| 项 | 状态 | 负责人 |\n| --- | --- | --- |\n| 绑定 | 已上线 | 甲 |\n\n'
+                       '| 键 | 值 |\n|---|---|\n| a | 1 |')
+    assert text.startswith('**成员**\n\n第一句。\n\n- 甲\n- 乙\n  续行\n\n之后的话。\n\n> 引用一\n> 引用二\n\n回到正文。')
+    assert '[设计](https://example.com/a?b=1) 与 页面' in text
+    assert '```\n第一行\n第二行\n```' in text
+    assert '**绑定**\n\n- 状态：已上线\n- 负责人：甲' in text
+    assert '| 键 | 值 |\n|---|---|\n| a | 1 |' in text
+    assert '\n\n\n' not in text
+    assert segment_text(['only'], 1) == 'only'
+    assert segment_text(['b', 'c'], 3).endswith('（第 2/3 段，回复 /more 继续）')
+    assert segment_text(['c'], 3).endswith('（第 3/3 段，完）')
