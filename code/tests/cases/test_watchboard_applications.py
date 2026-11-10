@@ -149,6 +149,24 @@ def test_broken_application_projection_preserves_generic_dashboard(application, 
     assert projected["manifest"] == application.payload["watchboard"]["manifest"]
 
 
+def test_telepus_follows_installed_view_instead_of_bridge_resident(application):
+    """Telepus 应用由宿主的视图清单选择，迁到门面后原成员不会继续显示。"""
+    facade = "resident_bbbbbbbbbbbb"
+
+    def dashboard(resident_id, actor):
+        payload = copy.deepcopy(application.payload)
+        payload["watchboard"]["resident_id"] = resident_id
+        payload["watchboard"]["view_manifest"] = {"payload": {
+            "layout": "telepus-channels" if resident_id == facade else "generic-three-panel"}}
+        return payload
+
+    application.resident.get_resident_watchboard.side_effect = dashboard
+    assert service.read(facade, "alice")["watchboard"]["application_id"] == "telepus"
+    assert "telegram_users" not in service.read(RESIDENT_ID, "alice")["watchboard"]
+    with pytest.raises(ValueError, match="does not match"):
+        service.action(RESIDENT_ID, "alice", "telepus", "save", {"id_token": "123456"})
+
+
 def test_authenticated_users_manage_only_their_own_telepus_contact(application, monkeypatch):
     """已认证用户只能绑定、换绑和删除自己的 Telepus 联系人，匿名请求被拒绝
 
@@ -156,7 +174,7 @@ def test_authenticated_users_manage_only_their_own_telepus_contact(application, 
     """
     from management_common.operation_errors import OperationError
 
-    monkeypatch.setattr(telepus, "read_site_config", lambda: {"deployment": {"telepus": {"resident_id": RESIDENT_ID}}})
+    application.payload["watchboard"]["view_manifest"] = {"payload": {"layout": "telepus-channels"}}
     monkeypatch.setattr(telepus, "get_portal_access_store", lambda: SimpleNamespace(user=lambda name: {"username": name, "configured": True, "status": "active"}))
 
     def dashboard(resident_id, actor):

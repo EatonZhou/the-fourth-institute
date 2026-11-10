@@ -2,8 +2,6 @@ from __future__ import annotations
 
 import re
 
-from management_common.site_config import read_site_config
-
 from management_common.actor_identity import canonical_actor_id, same_actor
 from management_portal.telepus import contacts_store as telepus_contacts_store
 from management_portal.portal_access_control import get_portal_access_store
@@ -28,13 +26,7 @@ def _telegram_user_public_id(user_id: str) -> str:
 
 
 def matches(context) -> bool:
-    deployment = read_site_config().get("deployment", {})
-    if not isinstance(deployment, dict) or not isinstance(deployment.get("telepus", {}), dict):
-        raise ValueError("deployment.telepus must be an object")
-    resident_id = deployment.get("telepus", {}).get("resident_id", "")
-    if not isinstance(resident_id, str) or (resident_id and not re.fullmatch(r"resident_[0-9a-f]{12}", resident_id)):
-        raise ValueError("deployment.telepus.resident_id must be a Resident ID")
-    return bool(resident_id and context.resident_id == resident_id)
+    return context.dashboard.get("view_manifest", {}).get("payload", {}).get("layout") == "telepus-channels"
 
 
 def _signed_in_user(actor: str) -> bool:
