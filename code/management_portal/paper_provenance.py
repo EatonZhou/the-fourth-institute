@@ -7,7 +7,7 @@ from datetime import datetime
 import yaml
 
 from management_portal import isa_client, permission_system
-from management_portal.paper_store import LOCK, _all_papers, _paper_store_file
+from management_portal.paper_store import LOCK, _all_papers, _paper_by_id, _paper_store_file
 from management_portal.shared_state import atomic_replace_json
 
 FIELDS = ("api_id", "provider", "account_id", "model", "model_evidence",
@@ -60,6 +60,16 @@ def read_artifact(paper, kind):
     return path, usage_path, raw, usage_bytes, hints, text[header.end():].strip() if header else text.strip()
 
 
+def local_status(usage):
+    if usage.get("model_evidence") == "resident_current_settings":
+        return ""
+    if all(usage.get(key) not in (None, "", "未记录") for key in ("model", "provider", "account_id", "total_tokens")):
+        return "complete"
+    if not (usage.get("generation_source") or {}).get("resident_id"):
+        return "missing_original_source"
+    return ""
+
+
 def resolve_usage(usage, body, actor):
     """Exact invocation facts outrank IDs/configuration; a timestamp is a guard, not a model guess."""
     result = dict(usage)
@@ -69,10 +79,9 @@ def resolve_usage(usage, body, actor):
         result.pop("model_resolution", None)
     source = dict(result.get("generation_source") or {})
     resident = source.get("resident_id")
-    if all(result.get(key) not in (None, "", "未记录") for key in ("model", "provider", "account_id", "total_tokens")):
-        return result, "complete"
-    if not resident:
-        return result, "missing_original_source"
+    status = local_status(result)
+    if status:
+        return result, status
     reply = source.get("reply_message_id")
     input_id = source.get("input_message_id")
     if not reply and input_id:
@@ -142,6 +151,7 @@ def inventory(actor, paper_ids=None):
                 _, _, raw, usage_bytes, usage, _ = artifact
                 candidates.append({"paper_id": paper["id"], "kind": kind,
                     "expected_sha256": digest(raw), "expected_usage_sha256": digest(usage_bytes),
+                    "status": local_status(usage), "known": {key: usage.get(key) for key in FIELDS},
                     "resident_id": usage["generation_source"].get("resident_id")})
     return {"visible_papers": len(visible), "candidates": candidates}
 
@@ -155,7 +165,9 @@ def refresh(payload, actor):
             raise PermissionError("Paper contributor required")
     authorize()
     with LOCK:
-        paper = next(p for p in _all_papers() if p["id"] == paper_id)
+        paper = _paper_by_id(paper_id)
+        if not paper:
+            raise ValueError("Paper no longer exists")
         artifact = read_artifact(paper, kind)
     if not artifact:
         raise ValueError("No existing content")

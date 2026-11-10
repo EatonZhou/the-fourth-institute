@@ -53,6 +53,8 @@ def main():
                 row.update(status="unavailable", error=candidate["error"])
             elif args.source_resident_id and candidate.get("resident_id") != args.source_resident_id:
                 row["status"] = "source_mismatch"
+            elif candidate.get("status"):
+                row.update(status=candidate["status"], applied=False, **candidate.get("known", {}))
             else:
                 refreshed = request("/paper/api/papers/provenance", {**candidate, "apply": args.apply})
                 usage = refreshed.get("usage") or {}
@@ -67,7 +69,7 @@ def main():
             row.update(status="commit_unconfirmed" if args.apply else "read_error", error=str(error))
         results.append(row)
         print(json.dumps(row, ensure_ascii=False), flush=True)
-        if args.report:
+        if args.report and (len(results) % 100 == 0 or row.get("applied") or row.get("error")):
             args.report.write_text(json.dumps({"inventory": inventory, "results": results}, ensure_ascii=False, indent=2))
     summary = {"visible_papers": inventory["visible_papers"],
                "selected": len(selected), "counts": dict(Counter(row["status"] for row in results))}

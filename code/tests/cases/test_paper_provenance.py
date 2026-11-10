@@ -67,6 +67,7 @@ def test_refresh_preserves_content_and_skips_repeat(tmp_path, monkeypatch, kind)
     sidecar.write_text(json.dumps(usage))
     before = sidecar.read_bytes()
     monkeypatch.setattr(p, "_all_papers", lambda: [{"id": "paper_test"}])
+    monkeypatch.setattr(p, "_paper_by_id", lambda pid: {"id": pid})
     monkeypatch.setattr(p, "_paper_store_file", lambda *a: path)
     monkeypatch.setattr(p.permission_system, "permitted_ids", lambda *a: ["paper_test"])
     result = p.refresh({"paper_id": "paper_test", "kind": kind, "apply": True,
@@ -89,6 +90,7 @@ def test_script_cases_and_second_run_do_not_rewrite(tmp_path, monkeypatch, capsy
             usage.update(api_id="kimi-api", model="kimi-api-model", provider="moonshot", account_id="api-account", total_tokens=50)
         path.with_suffix(".usage.json").write_text(json.dumps(usage))
     monkeypatch.setattr(p, "_all_papers", lambda: [{"id": name} for name in paths])
+    monkeypatch.setattr(p, "_paper_by_id", lambda pid: {"id": pid})
     monkeypatch.setattr(p, "_paper_store_file", lambda paper, kind: paths[paper["id"]] if kind == "summary" else None)
     monkeypatch.setattr(p.permission_system, "permitted_ids", lambda a, i, k, ids: ids)
     monkeypatch.setattr(p.isa_client, "call", lambda a, i, args: {"message": {"message_id": "reply", "author_id": args["resident_id"], "created_at": "2026-01-01T00:00:00Z",
