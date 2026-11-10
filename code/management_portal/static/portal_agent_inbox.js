@@ -127,6 +127,7 @@
     if (target?.resident_id !== state.assistant?.resident_id) {
       assistantChat?.destroy();
       assistantChat = null;
+      assistantMount = null;
       root.querySelector("[data-personal-assistant-chat]").replaceChildren();
     }
     state.assistant = target;
@@ -157,13 +158,17 @@
   async function mountAssistantChat() {
     if (assistantChat || assistantMount || !state.assistant) return;
     const target = state.assistant;
+    const mountedRoot = root;
     const container = root.querySelector("[data-personal-assistant-chat]");
+    const current = () => root === mountedRoot && container.isConnected
+      && state.assistant?.resident_id === target.resident_id;
+    let candidate = null;
     container.textContent = window.PortalI18n.t("正在读取个人助手…");
-    assistantMount = (async () => {
+    const attempt = (async () => {
       await window.PortalNav.loadChatWorkspace();
-      if (!container.isConnected || state.assistant?.resident_id !== target.resident_id) return;
+      if (!current()) return;
       container.replaceChildren();
-      assistantChat = window.PortalChatWorkspace.panelPackage.create({
+      candidate = window.PortalChatWorkspace.panelPackage.create({
         root: container, id: "personalAssistantChat", target, title: target.title,
         onInteractionChange(open, source) {
           if (open) { assistantInteractions.add(source); updateChrome(); }
@@ -174,9 +179,13 @@
           }, 0);
         },
       });
-      assistantChat.setPresented(root.querySelector("[data-personal-assistant-trigger]").getAttribute("aria-expanded") === "true");
+      candidate.setPresented(mountedRoot.querySelector("[data-personal-assistant-trigger]").getAttribute("aria-expanded") === "true");
+      if (!current()) { candidate.destroy(); candidate = null; return; }
+      assistantChat = candidate;
     })().catch(error => {
-      if (!container.isConnected) return;
+      candidate?.destroy();
+      candidate = null;
+      if (!current()) return;
       container.replaceChildren();
       const retry = document.createElement("button");
       retry.className = "portalButton";
@@ -184,7 +193,8 @@
       retry.title = error.message || "";
       retry.addEventListener("click", () => mountAssistantChat(), { once: true });
       container.append(retry);
-    }).finally(() => { assistantMount = null; });
+    }).finally(() => { if (assistantMount === attempt) assistantMount = null; });
+    assistantMount = attempt;
   }
 
   function watchAvoidanceLayout(signal) {
@@ -949,6 +959,7 @@
   function destroy() {
     assistantChat?.destroy();
     assistantChat = null;
+    assistantMount = null;
     assistantInteractions.clear();
     state.assistant = null;
     state.activePanel = "mailbox";

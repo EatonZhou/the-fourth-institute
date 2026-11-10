@@ -201,6 +201,42 @@ function inbox(t) {
   };
 }
 
+test("assistant retries after panel presentation fails and disposes the failed panel", async t => {
+  const app = inbox(t), w = app.w;
+  w.PortalResponsive = { isMobile: () => true };
+  w.PortalNav.loadChatWorkspace = async () => {};
+  let creates = 0, destroys = 0;
+  w.PortalChatWorkspace = { panelPackage: { create({root}) {
+    const attempt = ++creates;
+    root.textContent = 'assistant chat';
+    return { destroy() { destroys++; }, setPresented() { if (attempt === 1) throw new Error('fixture presentation failure'); } };
+  } } };
+  const root = app.page();
+  await app.answer({resident_id:FACADE,lineage_id:LINEAGE,title:'assistant'});
+  root.querySelector('[data-personal-assistant-trigger]').click();
+  await drain();
+  const retry = root.querySelector('[data-personal-assistant-chat] button');
+  assert.ok(retry);
+  assert.equal(destroys,1,'failed panel releases its subscriptions');
+  retry.click(); await drain();
+  assert.equal(creates,2,'retry really creates a fresh panel');
+  assert.equal(root.querySelector('[data-personal-assistant-chat]').textContent,'assistant chat');
+});
+
+test("old assistant asset failure cannot replace a remounted Inbox", async t => {
+  const app = inbox(t), w = app.w;
+  w.PortalResponsive = { isMobile: () => true };
+  let reject;
+  w.PortalNav.loadChatWorkspace = () => new Promise((_, fail) => { reject = fail; });
+  let root = app.page();
+  await app.answer({resident_id:FACADE,lineage_id:LINEAGE,title:'old assistant'});
+  root.querySelector('[data-personal-assistant-trigger]').click(); await drain();
+  root = app.page();
+  await app.answer({resident_id:FACADE,lineage_id:LINEAGE,title:'new assistant'});
+  reject(new Error('old load failed')); await drain();
+  assert.equal(root.querySelector('[data-personal-assistant-chat] button'),null);
+});
+
 test("mobile Mailbox toggles from a WebKit-style click without pointerType", async t => {
   const app = inbox(t);
   app.w.PortalResponsive = { isMobile: () => true };
