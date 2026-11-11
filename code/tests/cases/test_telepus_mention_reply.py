@@ -39,7 +39,6 @@ def mentions(reminder, monkeypatch):
 
     r.portal.call = call
     r.portal.residents[MEMBER] = {'title': '提醒成员'}
-    monkeypatch.setattr('management_portal.telepus.notifications.public_link', lambda url: 'https://portal.example' + url)
     return r
 
 
@@ -58,6 +57,16 @@ def deliver(r, reference, text='REPLY PRIVATE TEXT', images=False, message_id=90
 
 def sent_text(r):
     return r.server.sent[-1]['item_list'][0]['text_item']['text']
+
+
+def test_quote_excerpt_matches_visible_text_after_link_removal(mentions):
+    r = mentions
+    enable(r, mention=True)
+    add(r, 'link', '请看 https://example.com/report')
+    due(r)
+    assert 'http' not in sent_text(r)
+    deliver(r, {'title': '请看 [链接]'})
+    assert len(r.posts) == 1 and r.posts[0][1]['quote']['message_id'] == 'link'
 
 
 def test_excerpt_author_truncation_and_attachment_placeholders(mentions):

@@ -127,7 +127,12 @@ def segment_text(segments, total):
     return segments[0].rstrip() + '\n\n' + hint
 
 
-def notification_text(items, link, *, total=None, summary=True):
+def without_links(text):
+    text = re.sub(r'\[([^\]]+)\]\([^)]*\)', r'\1', text)
+    return re.sub(r'(?i)https?://[^\s<>\u3000]+', '[链接]', text)
+
+
+def notification_text(items, *, total=None, summary=True):
     """Visible source excerpts exist only in this in-memory outgoing message."""
     total = len(items) if total is None else total
     lines = [f'🔔 Portal 有 {total} 件事需要你查看'] if total > 1 else []
@@ -141,17 +146,15 @@ def notification_text(items, link, *, total=None, summary=True):
                 lines.append('引用这条消息回复，会以你的名义发到聊天室')
         else:
             lines.append(f'❓ **{title}** 在等你回答')
-        url = link(item['url'])
-        fallback = ('在 Portal 打开 Resident ' + item['resident_id'] + ' 查看问题'
-                    if item['category'] == 'question' else '在 Portal 的 Mailbox 中查看')
-        lines.append(url if url and len(url) <= 350 else fallback)
         if item['category'] == 'question':
             lines.append('切换对话：/route ' + item['resident_id'] + '；此问题请回 Portal 作答。')
     if total > len(items):
         lines.append(f'另有 {total - len(items)} 项待发送，将继续分批提醒。')
     if summary:
         lines.append('这是汇总提醒，请回 Portal 回复，或引用对应的单条 @ 提醒。')
-    return format_text('\n'.join(lines))
+    # Source excerpts and display names may themselves contain links. Keep their
+    # labels, but reminders never include a clickable URL (ordinary replies do).
+    return format_text(without_links('\n'.join(lines)))
 
 
 class WeixinPresentation(TelegramPresentation):

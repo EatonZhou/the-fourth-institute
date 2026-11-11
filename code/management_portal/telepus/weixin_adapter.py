@@ -311,6 +311,7 @@ class WeixinAdapter:
         item = row['item']
         if time.time() < item.get('retry_at', 0):
             return
+        prepare_started = time.monotonic()
         try:
             prepared = self.notifications.prepare(actor, self.budget - 1 - count)
         except Exception as exc:
@@ -323,13 +324,17 @@ class WeixinAdapter:
         if not prepared:
             self.store.finish(row['id'])
             return
+        prepare_seconds = time.monotonic() - prepare_started
         try:
             for group in prepared:
                 identity = hashlib.sha256('\n'.join(group['keys']).encode()).hexdigest()[:24]
+                send_started = time.monotonic()
                 result = client.send([{'type': 1, 'text_item': {'text': group['text']}}], account['context_token'],
                                      client_id=f'telepus-reminder-{identity}')
+                send_seconds = time.monotonic() - send_started
                 self.store.budget(chat, spent=True)
                 self.notifications.sent(group, result.get('message_id') or result.get('msg_id'))
+                self.notifications.timing(actor, group, prepare_seconds=prepare_seconds, send_seconds=send_seconds)
             self.store.finish(row['id'])
             if self.notifications.pending(actor):
                 self.store.enqueue(chat, {'notification_actor': actor})

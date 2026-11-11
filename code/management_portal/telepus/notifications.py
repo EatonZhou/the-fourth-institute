@@ -2,8 +2,9 @@
 from __future__ import annotations
 
 import json
+import math
 import time
-from urllib.parse import urlsplit
+from datetime import datetime
 
 from .router_store import now_iso
 from .weixin_store import WeixinStore, chat_key
@@ -27,30 +28,6 @@ CREATE INDEX IF NOT EXISTS notification_pending ON notification_deliveries(porta
 """
 
 
-def public_link(relative):
-    """Use the same configured public origin as upload-address validation."""
-    import os
-    from management_common.site_config import read_site_config
-    from management_portal.file_access_policy import _origin
-
-    origin = os.environ.get('PORTAL_PUBLIC_ORIGIN')
-    if origin is None:
-        origin = read_site_config().get('deployment', {}).get('auth', {}).get('public_origin', '')
-    try:
-        parsed = urlsplit(origin)
-        if (_origin(origin)[0] != 'https' or parsed.path not in ('', '/')
-                or parsed.query or parsed.fragment or '\\' in origin
-                or any(ord(c) < 32 for c in origin)):
-            return ''
-    except (ValueError, TypeError, AttributeError):
-        return ''
-    if not isinstance(relative, str) or not relative.startswith('/') or relative.startswith('//'):
-        return ''
-    if '\\' in relative or any(ord(c) < 32 for c in relative):
-        return ''
-    return origin.rstrip('/') + relative
-
-
 def candidates(actor, snapshot):
     """Missing fields are unsupported, never an empty, authoritative category."""
     if not isinstance(snapshot, dict) or any(snapshot.get(k) for k in ('next_cursor', 'next_page_token', 'has_more', 'truncated', 'incomplete')):
@@ -69,7 +46,7 @@ def candidates(actor, snapshot):
                     raise ValueError('Invalid Mailbox mention identity')
                 key = f'{actor}:mention:{room}:{message}'
                 mentions[key] = dict(category='mention', chatroom_id=room, source_message_id=message,
-                                     title=item.get('title') or '聊天室', url=mention.get('url') or item.get('url') or '')
+                                     title=item.get('title') or '聊天室')
         result['mention'] = mentions
     if 'pending_requests' in snapshot:
         if not isinstance(snapshot['pending_requests'], list):
@@ -82,7 +59,7 @@ def candidates(actor, snapshot):
             questions[f'{actor}:question:{resident}:{message}'] = dict(
                 category='question', source_resident_id=resident, source_message_id=message,
                 resident_id=item.get('resident_id') or resident,
-                title=item.get('title') or item.get('resident_title') or '', url=item.get('url') or '')
+                title=item.get('title') or item.get('resident_title') or '', created_at=item.get('created_at'))
         result['question'] = questions
     return result
 
@@ -180,31 +157,41 @@ class Notifications:
                 "ON p.portal_actor=d.portal_actor AND p.category=d.category WHERE d.portal_actor=? AND p.enabled=TRUE "
                 "AND d.status='pending' ORDER BY d.discovered_at,d.key", (actor,)).fetchall()]
 
-    def scan(self, actor):
-        """Scheduled worker: one bounded watch, then a full read when indicated."""
+    def scan(self, actor, *, on_pending=None):
+        """One long watch/read pass; return the retry delay, or None when disabled."""
         # Network wait is outside the send lock. Settings/binding are re-read inside it.
         if not any(self.preferences(actor).values()):
             return
         key = 'notification-watch:' + actor
         state = json.loads(self.router.get_meta(key, '{}'))
         if self.clock() < state.get('retry_at', 0):
-            return
+            return state['retry_at'] - self.clock()
         try:
-            batch = self.portal.first_batch(actor, 'WatchMailbox', {
-                'user_id': actor, 'after_cursor': state.get('cursor', ''), 'timeout_seconds': 1})
-            watch = batch[-1] if batch else {}
+            due = not state.get('read_at') or self.clock() - state['read_at'] >= 30
+            watch = {}
+            if not due:
+                # Shorten only at the full-read deadline so quiet streams still
+                # get their complete fallback snapshot every thirty seconds.
+                timeout = min(25, max(1, math.ceil(30 - (self.clock() - state['read_at']))))
+                batch = self.portal.first_batch(actor, 'WatchMailbox', {
+                    'user_id': actor, 'after_cursor': state.get('cursor', ''), 'timeout_seconds': timeout})
+                watch = batch[-1] if batch else {}
             with self.store.lock(actor):
                 account = self.store.account(actor)
                 if not account or account['status'] != 'active' or not any(self.preferences(actor).values()):
                     return
                 # Periodic complete reads also discover a newly supported category field.
-                if not state.get('read_at') or watch.get('keys') or watch.get('snapshot_required') or self.clock() - state['read_at'] >= 30:
+                if due or watch.get('keys') or watch.get('snapshot_required') or self.clock() - state['read_at'] >= 30:
                     self.reconcile(actor, self.snapshot(actor))
                     state['read_at'] = self.clock()
                 state.update(cursor=watch.get('cursor', state.get('cursor', '')), failures=0, retry_at=0)
                 self.router.set_meta(key, json.dumps(state))
-                if any(self.clock() - row['discovered_at'] >= 60 for row in self.pending(actor)):
+                pending = bool(self.pending(actor))
+                if pending:
                     self.store.enqueue(chat_key(account['ilink_bot_id']), {'notification_actor': actor})
+            if pending and on_pending is not None:
+                on_pending(actor)
+            return 0
         except Exception as exc:
             # No response, exception text, content, credentials or DSN in logs/audit.
             with self.store.lock(actor):
@@ -214,6 +201,7 @@ class Notifications:
                     self.router.set_meta(key, json.dumps(state))
                     if state['failures'] == 1:
                         self.diagnostic(actor, exc)
+                    return state['retry_at'] - self.clock()
 
     @staticmethod
     def diagnostic(actor, error):
@@ -230,9 +218,7 @@ class Notifications:
         ready = [r for r in rows if r['category'] in current and r['key'] in current[r['category']]]
         if not ready:
             return None if rows else []
-        if self.clock() - min(r['discovered_at'] for r in ready) < 60:
-            return None
-        from .weixin_format import notification_text
+        from .weixin_format import notification_text, without_links
         from .mention_reply import enrich, fingerprint
         keys = [r['key'] for r in ready[:5]]
         items = [current[r['category']][r['key']] for r in ready[:5]]
@@ -251,13 +237,31 @@ class Notifications:
         groups = [([key], [item]) for key, item in zip(keys, items)] if individual else [(keys, items)]
         prepared = []
         for group_keys, group_items in groups:
-            text = notification_text(group_items, public_link, total=1 if individual else len(ready), summary=not individual)
+            text = notification_text(group_items, total=1 if individual else len(ready), summary=not individual)
             hashes = {fingerprint(text)}
             if individual and group_items[0]['category'] == 'mention':
-                hashes.add(fingerprint(group_items[0]['excerpt']))
+                hashes.add(fingerprint(without_links(group_items[0]['excerpt'])))
+            discoveries = {r['key']: r['discovered_at'] for r in ready if r['key'] in group_keys}
+            event_delays = []
+            for key, item in zip(group_keys, group_items):
+                try:
+                    event_time = datetime.fromisoformat(item['created_at'].replace('Z', '+00:00')).timestamp()
+                    event_delays.append(max(0, discoveries[key] - event_time))
+                except (KeyError, ValueError, TypeError, AttributeError):
+                    pass  # Older source projections may have no creation time.
             prepared.append({'keys': group_keys, 'text': text, 'summary': not individual,
+                             'discovered_at': min(discoveries.values()),
+                             'event_to_discovery_seconds': max(event_delays) if event_delays else None,
                              'fingerprints': sorted(hashes - {''})})
         return prepared
+
+    def timing(self, actor, group, *, prepare_seconds, send_seconds):
+        seconds = {'discovery_to_send_seconds': max(0, self.clock() - group['discovered_at']),
+                   'prepare_seconds': prepare_seconds, 'send_seconds': send_seconds}
+        if group['event_to_discovery_seconds'] is not None:
+            seconds['event_to_discovery_seconds'] = group['event_to_discovery_seconds']
+        self.router.append_audit('notification_latency', portal_actor=actor,
+                                 payload={key: round(value, 4) for key, value in seconds.items()})
 
     def sent(self, group, external_id):
         with self.router.connect() as c:

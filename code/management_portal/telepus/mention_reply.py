@@ -41,7 +41,8 @@ def enrich(portal, actor, item):
         elif part.get('type') == 'file':
             visible.append('[文件 ' + str(part.get('file_name') or part.get('name') or '附件') + ']')
     excerpt = ' '.join(visible)
-    return dict(item, author=author, excerpt=excerpt[:120] + ('…' if len(excerpt) > 120 else ''))
+    return dict(item, author=author, excerpt=excerpt[:120] + ('…' if len(excerpt) > 120 else ''),
+                created_at=message.get('created_at'))
 
 
 def reply(adapter, account, message, match):

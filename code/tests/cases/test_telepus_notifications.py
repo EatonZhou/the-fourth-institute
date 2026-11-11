@@ -4,7 +4,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from management_portal.telepus.notifications import Notifications, candidates, public_link, settings
+from management_portal.telepus.notifications import Notifications, settings
 from management_portal.telepus.router_store import RouterStore
 from management_portal.telepus.weixin_store import chat_key
 from tests.cases.test_telepus_weixin import bridge, incoming, ACCOUNT  # noqa: F401
@@ -68,8 +68,6 @@ def enable(r, **changes):
 
 
 def due(r, *, flush=True):
-    r.notices.scan(ACTOR)
-    r.now[0] += 61
     r.notices.scan(ACTOR)
     if flush:
         with r.adapter.store.lock(ACTOR):
@@ -211,23 +209,17 @@ def test_revalidate_before_send_and_do_not_mutate_on_failed_read(reminder, failu
     assert not any(name.startswith(('Mark', 'Answer')) for name in r.calls)
 
 
-def test_sixty_seconds_coalesced_five_items_one_message(reminder, monkeypatch):
+def test_immediate_pending_batch_five_items_one_message(reminder):
     r = reminder
-    monkeypatch.setenv('PORTAL_PUBLIC_ORIGIN', 'https://portal.example')
     enable(r, mention=True, question=True)
     r.box['items'] = [mention(str(i)) for i in range(7)]
     r.box['pending_requests'] = [question('q')]
     r.notices.scan(ACTOR)
-    r.now[0] += 59
-    r.notices.scan(ACTOR)
-    r.adapter.flush(ACTOR)
-    assert not r.server.sent
-    r.now[0] += 1
-    r.notices.scan(ACTOR)
     r.adapter.flush(ACTOR)
     text = r.server.sent[0]['item_list'][0]['text_item']['text']
     assert '8 件事' in text and '另有 3 项' in text
-    assert text.count('https://portal.example') == 5
+    assert 'http' not in text
+    assert text.count('alice') == 5 and text.count('开发群') == 5 and '请查看' in text
     assert 'PRIVATE' not in text and len(r.notices.pending(ACTOR)) == 3
     assert r.adapter.store.pending(chat_key('bot'))
     r.adapter.flush(ACTOR)
@@ -298,26 +290,8 @@ def test_reenable_builds_new_baseline_unbind_clears_and_expiry_stops(reminder):
     assert not any(r.notices.preferences(ACTOR).values())
 
 
-@pytest.mark.parametrize('origin', ['', 'http://portal.example', 'https://u:p@portal.example', 'https://portal.example/path'])
-def test_no_or_invalid_public_origin(origin, monkeypatch):
-    monkeypatch.setenv('PORTAL_PUBLIC_ORIGIN', origin)
-    assert public_link('/mailbox') == ''
-
-
-def test_public_origin_only_relative_local_links(monkeypatch):
-    monkeypatch.setenv('PORTAL_PUBLIC_ORIGIN', 'https://portal.example/')
-    assert public_link('/lineage?resident=x') == 'https://portal.example/lineage?resident=x'
-    assert not public_link('//evil.example')
-    assert not public_link('/\\evil.example')
-    assert not public_link('https://elsewhere.example')
-
-
-def test_mention_deep_link_and_resident_title(reminder):
+def test_question_resident_title(reminder):
     r = reminder
-    item = mention('deep')
-    item['unread_mentions'][0]['url'] = '/lineage?chatroom=room&message=deep'
-    found = candidates(ACTOR, {'items': [item]})['mention']
-    assert next(iter(found.values()))['url'] == '/lineage?chatroom=room&message=deep'
     enable(r, question=True)
     q = question('name')
     q.pop('title')
