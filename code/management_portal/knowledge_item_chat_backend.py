@@ -101,7 +101,7 @@ class KnowledgeItemChatBackend:
         resident_id = str(identity.get("resident_id") or "")
         composer = {
             "placeholder": "围绕这个条目继续讨论",
-            "meta": "Ctrl/⌘ + Enter 发送",
+            "meta": "Ctrl/⌘ + Enter 发送" if resident_id else "模型：尚未创建对话，可先点击设置选择",
             "can_send": True,
             "can_stop": False,
             "can_attach": True,
@@ -172,8 +172,10 @@ class KnowledgeItemChatBackend:
         clean_id, _path, _text, item = self._item_snapshot(actor, kb_id)
         return self._state(actor, clean_id, item)
 
-    def prepare(self, actor: str, kb_id: str, message: str) -> dict[str, Any]:
-        if not str(message or "").strip():
+    def prepare(self, actor: str, kb_id: str, message: str, *, purpose: str = "send") -> dict[str, Any]:
+        if purpose not in {"send", "settings"}:
+            raise ValueError("unsupported discussion preparation purpose")
+        if purpose == "send" and not str(message or "").strip():
             raise ValueError("message required before preparing a discussion")
         clean_id, _path, _text, item = self._item_snapshot(actor, kb_id)
         return self._state(actor, clean_id, item, create=True)

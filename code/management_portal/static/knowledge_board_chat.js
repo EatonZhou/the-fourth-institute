@@ -102,6 +102,9 @@ function initChatWorkspaces() {
     resolveBeforeSend: (target, payload) => knowledgeApi.request("/knowledge/api/item-chat/prepare", {
       method: "POST", body: JSON.stringify({ kb_id: target.kb_id, message: payload.text || payload.plainText }),
     }),
+    resolveBeforeSettings: target => knowledgeApi.request("/knowledge/api/item-chat/prepare", {
+      method: "POST", body: JSON.stringify({ kb_id: target.kb_id, purpose: "settings" }),
+    }),
     initialContext: (_target, detail) => detail.initial_context,
 
     onDetail: renderDetailChat,

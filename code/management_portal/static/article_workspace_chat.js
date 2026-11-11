@@ -102,6 +102,9 @@
         resolveBeforeSend: (target, payload) => window.PortalAPI.post("/knowledge/api/item-chat/prepare", {
           kb_id: target.kb_id, message: payload.text || payload.plainText,
         }),
+        resolveBeforeSettings: target => window.PortalAPI.post("/knowledge/api/item-chat/prepare", {
+          kb_id: target.kb_id, purpose: "settings",
+        }),
         initialContext: (target, detail) => ({
           context_text: `${detail.initial_context?.context_text || ""}\nArticle: ${target.kb_id}\n工程目录：${articleRoot(selectedArticle())?.path || selectedArticle()?.canonical_root || ""}`,
         }),

@@ -236,7 +236,9 @@ class KnowledgeHttp:
         return self.respond(request, 200, {**result, 'kb_id': kb_id})
 
     def post_chat_prepare(self, request, payload, actor):
-        return self.respond(request, 200, self.knowledge_item_chat_backend().knowledge_item_chat_backend.prepare(actor, str(payload.get('kb_id') or ''), str(payload.get('message') or '')))
+        return self.respond(request, 200, self.knowledge_item_chat_backend().knowledge_item_chat_backend.prepare(
+            actor, str(payload.get('kb_id') or ''), str(payload.get('message') or ''),
+            purpose=str(payload.get('purpose') or 'send')))
 
     def post_chat(self, request, payload, actor):
         return self.respond(request, 200, self.knowledge_item_chat_backend().knowledge_item_chat_backend.send_message(actor, str(payload.get('kb_id') or '').strip(), str(payload.get('content') or ''), payload.get('attachments') if isinstance(payload.get('attachments'), list) else [], payload.get('context_refs') if isinstance(payload.get('context_refs'), dict) else {}, message_id=str(payload.get('message_id') or '')))

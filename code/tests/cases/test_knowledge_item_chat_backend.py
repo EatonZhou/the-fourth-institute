@@ -87,6 +87,56 @@ def test_knowledge_item_state_projects_the_canonical_resident_chat(backend) -> N
     assert "资源路径" in state["initial_context"]["context_text"]
 
 
+def test_explicit_settings_prepares_without_sending_and_reuses_discussion(backend, monkeypatch):
+    """读取不创建；显式设置可在首条消息前创建并复用同一讨论，且不投递消息。"""
+    chat, service = backend
+    created = []
+    identity = {"resident_id": "resident_knowledge01", "lineage_id": "lineage_knowledge01"}
+    monkeypatch.setattr(discussion_residents.resident_handoff, "lookup_invocation_resident",
+                        lambda **_: identity if created else {})
+
+    def ensure(**kwargs):
+        created.append(kwargs)
+        return identity
+
+    monkeypatch.setattr(discussion_residents.resident_handoff, "ensure_invocation_resident", ensure)
+    state = chat.get_state("alice", "article_test")
+    assert state["binding_state"] == "unbound"
+    assert "模型" in state["chat_workspace"]["composer"]["meta"]
+    assert not created
+    with pytest.raises(ValueError, match="message required"):
+        chat.prepare("alice", "article_test", "")
+    with pytest.raises(ValueError, match="purpose"):
+        chat.prepare("alice", "article_test", "", purpose="unknown")
+    assert not created
+    configured = chat.prepare("alice", "article_test", "", purpose="settings")
+    assert configured["resident_id"] == identity["resident_id"]
+    assert chat.get_state("alice", "article_test")["resident_id"] == configured["resident_id"]
+    first_send = chat.prepare("alice", "article_test", "first real message")
+    assert first_send["resident_id"] == configured["resident_id"]
+    assert created[0]["resident_scope"] == created[1]["resident_scope"]
+    assert not service.invocations, "preparation must never send a model task"
+    monkeypatch.setattr(chat, "_item_snapshot", lambda *_: (_ for _ in ()).throw(PermissionError("revoked")))
+    with pytest.raises(PermissionError, match="revoked"):
+        chat.prepare("alice", "article_test", "", purpose="settings")
+    assert len(created) == 2
+
+
+def test_settings_preparation_route_forwards_intent_and_authenticated_actor(backend):
+    from management_portal.http_knowledge import KnowledgeHttp
+    chat, service = backend
+    host = SimpleNamespace(
+        knowledge_item_chat_backend=lambda: SimpleNamespace(knowledge_item_chat_backend=chat),
+        respond=lambda request, status, body: (status, body),
+    )
+    status, result = KnowledgeHttp.post_chat_prepare(host, None,
+        {"kb_id": "article_test", "purpose": "settings", "actor": "mallory"}, "alice")
+    assert status == 200
+    assert result["username"] == "alice"
+    assert result["resident_id"] == "resident_knowledge01"
+    assert not service.invocations
+
+
 def test_knowledge_message_uses_resource_body_as_runtime_context(backend) -> None:
     """知识条目对话消息经 DeliverMessage 投递，条目正文作为上下文引用随消息发送"""
     chat, service = backend

@@ -1,7 +1,8 @@
 """One lazy identity resolution path for embedded discussions.
 
 Callers authorize the target resource and supply its context. Reading never
-allocates or configures an identity; prepare is used only after a nonempty send.
+allocates or configures an identity; preparation follows a nonempty send or an
+explicit request to configure the discussion before sending.
 Existing scope strings remain stable so histories keep their original Resident.
 """
 from . import resident_handoff

@@ -1763,7 +1763,7 @@
       const hostOptions = Object.fromEntries([
         "root", "id", "panelId", "target", "autoLoad", "title", "emptyText", "placeholder",
         "draftOwner", "historyLimit", "residentFeatures", "pendingHistoryScope",
-        "resolveResident", "resolveBeforeSend", "initialContext", "submissionContext", "onDetail", "onAcknowledgement", "emit",
+        "resolveResident", "resolveBeforeSend", "resolveBeforeSettings", "initialContext", "submissionContext", "onDetail", "onAcknowledgement", "emit",
         "onSent", "onRollback", "onError", "onForkCreated", "conversationView", "onDisplayAction", "onWatchboardAction", "onInteractionChange",
       ].filter(key => Object.prototype.hasOwnProperty.call(options, key)).map(key => [key, options[key]]));
       this.options = hostOptions;
@@ -1791,14 +1791,7 @@
       this.workspace = new ResidentChatWorkspace({
         ...hostOptions,
         onFamilyStatus: button => this.openFamilyStatus(button),
-        onMenu: () => {
-          const residentId = this.target().resident_id;
-          if (!residentId) return;
-          return window.PortalNav.openResidentMenu({
-            residentId,
-            onChanged: () => this.target().resident_id === residentId ? this.reload() : undefined,
-          });
-        },
+        onMenu: () => this.openMenu().catch(error => this.reportError(error)),
         target: normalizeResidentTarget(options.target || options),
         onSend: (payload, _workspace, submitOptions) => this.send(payload, submitOptions).catch(error => this.reportError(error)),
         onStop: () => this.stop().catch(error => this.reportError(error)),
@@ -3184,7 +3177,7 @@
           placeholder: options.placeholder || window.PortalI18n.t("加载失败"),
           meta: options.meta || "等待服务恢复…",
           can_send: false,
-          can_edit: false,
+          can_edit: true,
           can_stop: false,
           can_attach: false,
           refs_enabled: false,
@@ -3246,6 +3239,69 @@
       this.workspace.setComposer({ ...composer, can_stop: canStop });
     }
 
+    async openMenu() {
+      if (this.pendingSurfaceBinding || this.preparingResident) return null;
+      if (!this.target().resident_id) {
+        if (!this.surfaceTarget || !this.options.resolveBeforeSettings) {
+          window.PortalUI?.toast?.("发送第一条消息后可配置此对话的模型与运行设置。", "info");
+          return null;
+        }
+        if (!await this.prepareSurfaceResident(this.options.resolveBeforeSettings)) return null;
+      }
+      const residentId = this.target().resident_id;
+      return window.PortalNav.openResidentMenu({
+        residentId,
+        onChanged: () => this.target().resident_id === residentId ? this.reload() : undefined,
+      });
+    }
+
+    // Both the first send and explicit settings bind the same discussion. Keep
+    // its draft, references and context together while the identity is loaded.
+    async prepareSurfaceResident(resolve, payload) {
+      if (this.preparingResident) return null;
+      const revision = this.targetRevision;
+      let preparationRevision = revision;
+      const initialDraft = this.workspace.draftText();
+      this.preparingResident = true;
+      this.workspace.setBusy(true);
+      this.workspace.setStatus("正在准备 Resident…");
+      try {
+        const surface = this.surfaceTarget;
+        const identity = await resolve(surface, payload);
+        if (revision !== this.targetRevision) return null;
+        if (!String(identity?.resident_id || "").trim()) throw new Error("未能取得对话的 Resident，请重试。");
+        const draft = this.workspace.draftText();
+        const attachments = this.workspace.attachments();
+        const refs = this.workspace.refs();
+        const pendingDraftScope = this.workspace.draftScope();
+        const binding = this.setResident(identity);
+        preparationRevision = this.targetRevision;
+        try {
+          await binding;
+        } finally {
+          if (preparationRevision === this.targetRevision) {
+            this.workspace.setDraftText(draft, attachments);
+            this.workspace.setRefs(refs);
+          }
+        }
+        if (preparationRevision !== this.targetRevision) return null;
+        this.workspace.saveDraft({ immediate: true });
+        if (pendingDraftScope !== this.workspace.draftScope()) {
+          this.workspace.clearDraft(pendingDraftScope, { text: draft, attachments, refs });
+        }
+        this.initialContext = this.options.initialContext?.(surface || identity, surface ? identity : this.detail) || null;
+        return { draftChanged: draft !== initialDraft };
+      } catch (error) {
+        if (preparationRevision === this.targetRevision) {
+          this.workspace.setStatus(`Resident 准备失败，结果未确认：${error?.message || "准备请求未完成"}`);
+        }
+        throw error;
+      } finally {
+        this.preparingResident = false;
+        if (preparationRevision === this.targetRevision) this.workspace.setBusy(false);
+      }
+    }
+
     async send(payload = this.workspace.payload(), submitOptions = {}) {
       if (this.pendingSurfaceBinding?.targetRevision === this.targetRevision) return null;
       // An attachment-only message still names what it sends, so it has a text part.
@@ -3258,51 +3314,9 @@
       const view = this.conversationView();
       if (view?.send && !String(payload.text || payload.plainText || "").startsWith("/")) return view.send(payload, submitOptions, this);
       if (!this.target().resident_id && this.options.resolveBeforeSend) {
-        if (this.preparingResident) return null;
-        const revision = this.targetRevision;
-        let preparationRevision = revision;
-        const initialDraft = this.workspace.draftText();
-        this.preparingResident = true;
-        this.workspace.setBusy(true);
-        this.workspace.setStatus("正在准备 Resident…");
-        try {
-          const surface = this.surfaceTarget;
-          const identity = await this.options.resolveBeforeSend(surface, payload);
-          if (revision !== this.targetRevision) return null;
-          const draft = this.workspace.draftText();
-          const attachments = this.workspace.attachments();
-          const refs = this.workspace.refs();
-          const pendingDraftScope = this.workspace.draftScope();
-          if (draft !== initialDraft) submitOptions = { ...submitOptions, clear: false };
-          const binding = this.setResident(identity);
-          preparationRevision = this.targetRevision;
-          try {
-            await binding;
-          } finally {
-            if (preparationRevision === this.targetRevision) {
-              this.workspace.setDraftText(draft, attachments);
-              this.workspace.setRefs(refs);
-            }
-          }
-          if (preparationRevision !== this.targetRevision) return null;
-          // Move the pre-Resident composition to its conversation. Leaving a
-          // copy under the host/card scope would revive it after a later send.
-          this.workspace.saveDraft({ immediate: true });
-          if (pendingDraftScope !== this.workspace.draftScope()) {
-            this.workspace.clearDraft(pendingDraftScope, { text: draft, attachments, refs });
-          }
-          this.initialContext = this.options.initialContext?.(surface || identity, surface ? identity : this.detail) || null;
-        } catch (error) {
-          if (preparationRevision === this.targetRevision) {
-            this.workspace.setStatus(`Resident 准备失败，结果未确认：${error?.message || "准备请求未完成"}`);
-          }
-          // Preserve the original receipt for the host's error/recovery path;
-          // preparation failure is not a confirmed message or a retry request.
-          throw error;
-        } finally {
-          this.preparingResident = false;
-          if (preparationRevision === this.targetRevision) this.workspace.setBusy(false);
-        }
+        const prepared = await this.prepareSurfaceResident(this.options.resolveBeforeSend, payload);
+        if (!prepared) return null;
+        if (prepared.draftChanged) submitOptions = { ...submitOptions, clear: false };
       }
       const target = this.workspace.target();
       const content = String(payload?.text || payload?.plainText || "").trim();
