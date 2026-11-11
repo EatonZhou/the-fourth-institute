@@ -15,6 +15,7 @@ from dataclasses import dataclass
 from typing import Any, Callable
 
 from management_portal import portal_features
+from management_portal.http_timing import timed_call
 
 
 @dataclass(frozen=True)
@@ -41,7 +42,8 @@ def entries(actor: str) -> list[dict[str, Any]]:
     An unavailable source raises instead of looking emptied: a failed read
     keeps the browser's last snapshot and every pin.
     """
-    return [entry for source in sources() for entry in source.entries(actor)]
+    return [entry for source in sources()
+            for entry in timed_call("portal_conv_sources", source.entries, actor)]
 
 
 def source_of(key: str) -> MailboxSource | None:

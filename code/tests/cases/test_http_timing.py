@@ -7,6 +7,19 @@ import pytest
 from management_portal import http_timing
 
 
+def test_slow_mailbox_diagnostics_preserve_http_context_and_exclude_content(caplog):
+    values = {}
+    with mock.patch.object(http_timing, 'perf_counter', side_effect=[0, 0, .8, 1.2]):
+        with http_timing.capture_timings(values), http_timing.log_slow_mailbox_read():
+            assert http_timing.timed_call('portal_mailbox_pending', lambda: 'private-body') == 'private-body'
+    assert values == {'portal_mailbox_pending': 800}
+    assert 'total_ms=1200.0' in caplog.text
+    assert 'portal_mailbox_pending' in caplog.text
+    assert 'private-body' not in caplog.text
+    with mock.patch.object(http_timing, 'perf_counter', side_effect=AssertionError('context leaked')):
+        assert http_timing.timed_call('portal_mailbox_pending', lambda: True)
+
+
 def test_stage_timings_accumulate_failures_without_retaining_context():
     values = {}
     with mock.patch.object(http_timing, 'perf_counter', side_effect=[1, 1.25, 2, 2.5]):

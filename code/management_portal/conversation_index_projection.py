@@ -8,6 +8,7 @@ from management_portal import conversation_read_state
 from management_portal.conversation_completion import completion_signature
 from management_portal.society_service import get_society_service
 from management_portal.resident_avatar import get_avatar, projection_fields
+from management_portal.http_timing import timed_call
 
 
 def _same_actor(left: object, right: object) -> bool:
@@ -115,7 +116,7 @@ def resident_state_snapshots(
     actor: str,
     resident_ids: list[str],
 ) -> dict[str, dict[str, Any]]:
-    payload = get_society_service().resident.get_resident_states(
+    payload = timed_call("portal_conv_states", get_society_service().resident.get_resident_states,
         resident_ids,
         actor,
     )
@@ -248,7 +249,7 @@ def lineage_human_notification_entries(
     lineage_ids: set[str] | None = None,
 ) -> list[dict[str, Any]]:
     actor_id = str(actor or "").strip()
-    payload = get_society_service().lineage.list_lineage_human_notifications(
+    payload = timed_call("portal_conv_notifications", get_society_service().lineage.list_lineage_human_notifications,
         actor_id,
         sorted(lineage_ids) if lineage_ids is not None else None,
     )

@@ -9,6 +9,7 @@ from management_portal import conversation_index_projection
 from management_portal import conversation_read_state
 from management_portal import mailbox_sources
 from management_portal.conversation_completion import marker_order
+from management_portal.http_timing import timed_call
 
 
 SCHEMA = "tfi.portal.agent-conversation-index.v1"
@@ -118,7 +119,8 @@ def build_entries(
 def build_entries_page(
     actor: str, *, page_size: int = 50, page_token: str = "",
 ) -> dict[str, Any]:
-    resident_payload = conversation_index_projection.get_society_service().resident.list_resident_conversation_activity(
+    resident_payload = timed_call("portal_conv_activity",
+        conversation_index_projection.get_society_service().resident.list_resident_conversation_activity,
         actor, page_size=page_size, page_token=page_token,
     )
     entries = conversation_index_projection.collect_entries(

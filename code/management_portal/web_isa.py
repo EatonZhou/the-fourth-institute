@@ -25,6 +25,7 @@ from management_portal import portal_features
 from management_portal.hatg.contracts import InstructionError, invalid, not_found
 from management_portal.hatg.kernel import InstructionKernel, Invocation, OwnerBinding
 from management_portal.hatg.maintenance import recover_projections
+from management_portal.http_timing import log_slow_mailbox_read, timed_call
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -90,6 +91,7 @@ def _inbox_message_ids(entry: dict[str, Any]) -> dict[str, str]:
     }
 
 
+@log_slow_mailbox_read()
 def get_user_mailbox(inv: Invocation) -> dict[str, Any]:
     """GetMailbox with user_id; the resident_id form runs at SocietyService (isa.execution.get_mailbox)."""
     from management_portal.agent_conversation_index_backend import newest_first, summarize_entries
@@ -102,11 +104,12 @@ def get_user_mailbox(inv: Invocation) -> dict[str, Any]:
     # list so the result does not depend on the page size.
     entries = newest_first([
         {**entry, **_inbox_message_ids(entry), "version": str(entry.get("read_revision") or 0)}
-        for entry in _inbox_entries(user_id, related)
+        for entry in timed_call("portal_mailbox_items", _inbox_entries, user_id, related)
     ], pinned_first=True)
     # Questions belong to their Conversation owner. Reading/clearing a Mailbox
     # is not an answer, so pending requests are independent of its message rows.
-    requests = get_society_service().resident.list_user_pending_requests(user_id)["requests"]
+    requests = timed_call("portal_mailbox_pending",
+                          get_society_service().resident.list_user_pending_requests, user_id)["requests"]
     fields = ("key", "source_resident_id", "source_message_id", "resident_id", "message_id", "kind", "created_at", "title")
     pending = [
         {**{key: request[key] for key in fields if key in request},
