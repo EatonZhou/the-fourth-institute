@@ -34,8 +34,6 @@ def _filter_papers(papers: list[dict], params: dict) -> list[dict]:
     result = []
     for paper in papers:
         public = paper if {"has_pdf", "has_analysis", "has_summary"}.issubset(paper.keys()) else _paper_public(paper)
-        if query and query not in _paper_search_text(paper):
-            continue
         if year and str(paper.get("year") or "") != year:
             continue
         if venue and str(paper.get("venue") or "").casefold() != venue:
@@ -63,6 +61,10 @@ def _filter_papers(papers: list[dict], params: dict) -> list[dict]:
                     project_values.append(f"project:{text}")
             if project not in project_values:
                 continue
+        # Text matching may read analysis/summary files. Apply the same AND
+        # predicates to indexed metadata first, before opening rejected papers.
+        if query and query not in _paper_search_text(paper):
+            continue
         result.append(public)
     return result
 
