@@ -512,6 +512,16 @@ def read_resident_state_snapshots(
 ) -> dict[str, dict[str, Any]]:
     """Read Resident state, cursor and Family display activity for projections."""
 
+    projected = _read_resident_display_snapshots(resident_ids, resident_records=resident_records)
+    return resident_execution_gate.project_states(projected, resident_records=resident_records)
+
+
+def _read_resident_display_snapshots(
+    resident_ids: Iterable[str],
+    *, resident_records: Mapping[str, dict[str, Any]] | None = None,
+) -> dict[str, dict[str, Any]]:
+    """Current work/intake facts and Family activity, before send controls."""
+
     selected = list(dict.fromkeys(
         str(resident_id or "").strip().lower()
         for resident_id in resident_ids
@@ -527,7 +537,7 @@ def read_resident_state_snapshots(
     snapshots = resident_conversation_stream.get_repository().state_snapshots(
         selected
     )
-    projected = family_activity.project_states({
+    return family_activity.project_states({
         resident_id: {
             "resident_id": resident_id,
             "state": dict(snapshot["state"]),
@@ -538,7 +548,6 @@ def read_resident_state_snapshots(
         }
         for resident_id, snapshot in snapshots.items()
     }, resident_records=resident_records)
-    return resident_execution_gate.project_states(projected, resident_records=resident_records)
 
 
 def read_resident_states(
@@ -562,6 +571,28 @@ def read_work_states(resident_ids: Iterable[str]) -> dict[str, str]:
     """
     states = resident_conversation_stream.get_repository().states(resident_ids)
     return {resident_id: str(state.get("work_state") or "idle") for resident_id, state in states.items()}
+
+
+def get_resident_list_states(resident_ids: list[str], actor: str) -> dict[str, Any]:
+    """Visible list status without account gates or conversation send controls.
+
+    List rows need current work/intake state, Family display activity, cursor
+    and the last input's outcome. Full conversation controls remain available
+    through get_resident_states; both reads use the same visibility check.
+    """
+    requested = list(dict.fromkeys(str(item or "").strip() for item in resident_ids
+                                   if str(item or "").strip()))
+    records = {record["resident_id"]: record for record in
+               resident_access.visible_resident_records(requested, actor, "portal")}
+    snapshots = _read_resident_display_snapshots(records, resident_records=records)
+    return {"items": [{
+        "resident_id": resident_id,
+        "cursor": snapshot["cursor"],
+        "state": {key: snapshot["state"][key]
+                  for key in ("work_state", "intake_state", "family_activity")
+                  if key in snapshot["state"]},
+        "latest_input_state": {"state": snapshot["latest_input_state"].get("state", "")},
+    } for resident_id, snapshot in snapshots.items() if resident_id in records]}
 
 
 def get_resident_states(

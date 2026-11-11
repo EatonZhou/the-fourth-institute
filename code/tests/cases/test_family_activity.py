@@ -76,8 +76,14 @@ def test_family_activity_survives_a_completed_request_without_stop_permission(fa
     expected = {'work_state': 'running', 'running_count': 1, 'queued_count': 0}
     single = resident_protocol.get_resident_state(rid, 'CASE-A')
     batch = resident_protocol.get_resident_states([rid], 'CASE-A')['items'][0]
+    compact = resident_protocol.get_resident_list_states([rid], 'CASE-A')['items'][0]
     conversation = resident_protocol.get_resident_conversation_snapshot(rid, 'CASE-A')
     assert single["resident_id"] == batch["resident_id"] == rid
+    assert compact['state']['family_activity'] == expected
+    assert compact['state']['work_state'] == 'idle'
+    assert compact['state']['intake_state'] == 'closed'
+    assert compact['cursor'] == batch['cursor']
+    assert 'controls' not in compact and 'active_message_id' not in compact['state']
     for result in (single, batch, conversation):
         assert result['state']['family_activity'] == expected
         assert result['state']['work_state'] == 'idle'

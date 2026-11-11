@@ -56,7 +56,8 @@ def test_state_batch_resolves_each_residents_backend_capabilities(monkeypatch, a
 
 
 @pytest.mark.parametrize('size', [1, 106])
-def test_state_batch_reuses_visible_records_for_family_and_controls(monkeypatch, size):
+@pytest.mark.parametrize('read_method', ['get_resident_states', 'get_resident_list_states'])
+def test_state_batch_reuses_visible_records_for_family_and_controls(monkeypatch, size, read_method):
     """Resident 批量状态复用已授权记录
 
     批量读取Family与控制状态只读一次记录和权限，保留真实队列及上下文禁用原因。
@@ -100,15 +101,25 @@ def test_state_batch_reuses_visible_records_for_family_and_controls(monkeypatch,
         capabilities=SimpleNamespace(supports_active_turn_input=True, supports_media=True, local_tools=True),
     ))
     wanted = ids + [hidden, staged, deleted, missing, ids[0]]
-    result = resident_protocol.get_resident_states(wanted, 'CASE-A')['items']
+    compact = read_method == 'get_resident_list_states'
+    if compact:
+        def unused(*args, **kwargs):
+            pytest.fail('List status must not resolve send controls or execution quotas')
+        monkeypatch.setattr(resident_protocol, '_with_conversation_controls', unused)
+        monkeypatch.setattr(resident_protocol.resident_execution_gate, 'project_states', unused)
+    result = getattr(resident_protocol, read_method)(wanted, 'CASE-A')['items']
     assert reads == [wanted[:-1]]
     assert state_reads == [ids]
-    assert permission_reads == ['CASE-A']
+    assert permission_reads == ([] if compact else ['CASE-A'])
     assert access_reads == [('CASE-A', ['lineage_111111111111', 'lineage_222222222222'])]
     assert [item['resident_id'] for item in result] == ids
     assert all(item['cursor'] == 7 and item['latest_input_state']['state'] == 'running' for item in result)
-    assert all(item['state']['queued_count'] == 2 and item['controls']['can_stop'] for item in result)
-    assert all(item['controls']['can_send'] for item in result)
+    if compact:
+        assert all(item['state'] == {'work_state': 'running', 'intake_state': 'closed'} for item in result)
+        assert all('controls' not in item and item['latest_input_state'] == {'state': 'running'} for item in result)
+    else:
+        assert all(item['state']['queued_count'] == 2 and item['controls']['can_stop'] for item in result)
+        assert all(item['controls']['can_send'] for item in result)
 
 
 def test_record_reuse_does_not_bypass_service_read_access_boundary(monkeypatch):

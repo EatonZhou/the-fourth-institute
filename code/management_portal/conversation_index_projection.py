@@ -116,7 +116,7 @@ def resident_state_snapshots(
     actor: str,
     resident_ids: list[str],
 ) -> dict[str, dict[str, Any]]:
-    payload = timed_call("portal_conv_states", get_society_service().resident.get_resident_states,
+    payload = timed_call("portal_conv_states", get_society_service().resident.get_resident_list_states,
         resident_ids,
         actor,
     )
