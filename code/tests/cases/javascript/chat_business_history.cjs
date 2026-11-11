@@ -46,7 +46,7 @@ async function main() {
     calls.push(options);
     if (options.inputMessageId) return {conversation:{messages:[{role:'user',content_parts:[{type:'text',text:'Long private input'}]},
       {role:'agent',content_parts:[{type:'text',text:'Saved reply'},{type:'image',source:'owned/figure.png'}]}]}};
-    return {attempts: options.pageToken ? [row('second')] : [row('first')], next_page_token:options.pageToken?'':'older',default_view:'attempts'};
+    return {attempts: options.pageToken ? [row('second')] : [row('first')], next_page_token:options.pageToken?'':'older'};
   };
   await panel.loadBusinessHistory();
   assert.equal(panel.businessHistory.mode, 'attempts'); assert.equal(messages.hidden,true);
