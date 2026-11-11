@@ -42,6 +42,17 @@ def with_binding_status(app: dict, actor: str) -> dict:
             available = members(bound_lineage_graph(target, actor))
             for role, resident_id in target.get("residents", {}).items():
                 if resident_id not in available:
+                    # Personal surface conversations are retained declarations,
+                    # not required application roles. A deleted conversation must
+                    # not make unrelated Library browsing look misconfigured.
+                    if role.startswith('surface-chat:'):
+                        from management_portal import isa_client
+                        try:
+                            isa_client.call(actor, 'GetResident', {'resident_id': resident_id})
+                        except InstructionError as error:
+                            if error.code == 'instruction.not_found':
+                                continue
+                            raise
                     issues.append({"binding": alias, "role": role, "code": "projection.resident_unbound", "message": f"Resident 未绑定：{alias}/{role} → {resident_id}"})
         except ProjectionError as error:
             issues.append({"binding": alias, "code": error.code, "message": str(error)})
