@@ -1672,6 +1672,9 @@ def _build_resident_execution_request_unrestricted(
         messages, history = assemble_api_messages(resident_domain_common.record_resident_id(record), job, context, fresh_context=fresh_context)
         options["messages"] = messages + [{"role": "user", "content": prompt}]
         options["context_history"] = history
+        from management_portal.execution.input_variant_trace import trace
+        trace('request_builder', business_ref=job.get('business_ref', ''), role=resident_domain_common.record_resident_id(record),
+              prompt=prompt, decision={'selected': 'full', 'reason': 'stateless_model_api'})
         return build_chat_completion_request(
             actor=resident_execution_work.request_actor(job), agent_id=resident_domain_common.record_resident_id(record),
             prompt=prompt,
@@ -1750,6 +1753,9 @@ def _build_resident_execution_request_unrestricted(
         from management_portal.paper_agent_materials import variants_for_message
         canonical_prompt = str(job.get('raw_message') or '') if scope else str(job.get('actual_sent_prompt') or job.get('message') or job.get('raw_message') or '')
         variants = {'input_variants': variants_for_message(snapshot,canonical_prompt)}
+    from management_portal.execution.input_variant_trace import trace
+    trace('request_builder', business_ref=job.get('business_ref', '') or snapshot.get('business_ref', ''), role=exact_resident_id,
+          prompt=str(job.get('raw_message') or job.get('message') or ''), spec=variants.get('input_variants'))
     return build_agent_turn_request(
         actor=actor,
         agent_id=exact_resident_id,
@@ -1782,7 +1788,7 @@ def _build_resident_execution_request_unrestricted(
             "execution_id": str(job.get("execution_id") or ""),
             "project_id": str(record.get("project_id") or ""),
 
-            "business_ref": str(job.get("business_ref") or ""),
+            "business_ref": str(job.get("business_ref") or snapshot.get("business_ref") or ""),
         },
     )
 
@@ -1970,6 +1976,8 @@ def _send_resident_execution(
         "model": str(raw_usage.get("model") or request.runtime_options.get("model") or ""),
         "model_evidence": "provider_reported" if raw_usage.get("model") else "execution_request",
     }
+    if isinstance(output.get('input_variant'), dict):
+        assistant_item.setdefault('usage', {})['input_variant'] = copy.deepcopy(output['input_variant'])
     conversation_repository = resident_conversation_stream.get_repository()
     if persist_messages:
         persisted = _persist_execution_final_message(

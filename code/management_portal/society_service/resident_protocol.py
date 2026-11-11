@@ -334,6 +334,10 @@ def deliver_resident_input(
         # Caller-supplied cwd/skills cannot ride along a constrained reference.
         if working_directory or additional_skills:
             raise ValueError('structured material references cannot override workspace or skills')
+    from management_portal.execution.input_variant_trace import trace
+    verified = context_refs.get('verified_material_snapshot') or {}
+    trace('society_verified', business_ref=(delivery_context or ResidentDeliveryContext()).business_ref or verified.get('business_ref', ''),
+          role=resident_id, prompt=content, spec=verified.get('input_variants'))
     supplied_message_id = str(message.get("message_id") or "").strip()
     if not supplied_message_id:
         raise ValueError("message.message_id required")

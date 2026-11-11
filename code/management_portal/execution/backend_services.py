@@ -89,6 +89,8 @@ class AgentSessionService:
                     LOGGER.warning("Resident capability delivery of %s could not be observed",
                                    prepared.request.execution_id, exc_info=True)
             try:
+                from .input_variant_trace import trace_invocation
+                trace_invocation('adapter_send', prepared, backend_context)
                 result = provider.execute(prepared, backend_context)
             except ExecutionRecoveryDeferred:
                 # The turn goes on in a later attempt, which observes its delivery.

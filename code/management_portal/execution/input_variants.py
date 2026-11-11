@@ -60,6 +60,8 @@ def _fingerprint(request, spec):
 def select_input_variant(invocation, context):
     spec = validate_input_variants(invocation.request)
     if spec is None:
+        from .input_variant_trace import trace_invocation
+        trace_invocation('decision', invocation, context)
         return invocation
     request = invocation.request
     fingerprint = _fingerprint(request, spec)
@@ -84,7 +86,10 @@ def select_input_variant(invocation, context):
             raise ValueError("Invalid input variant checkpoint policy")
         # Do not reassess and switch representations after an input was chosen.
         context.record_input_variant(frozen)
-        return replace(invocation, user_prompt=frozen["user_prompt"])
+        selected_call = replace(invocation, user_prompt=frozen["user_prompt"])
+        from .input_variant_trace import trace_invocation
+        trace_invocation('decision', selected_call, context)
+        return selected_call
     if invocation.recovery_checkpoint.get("turn_id") or invocation.recovery_checkpoint.get("resumable"):
         raise ValueError("Running execution has no frozen input variant")
     policy = assess_local_file_read(invocation).to_payload()
@@ -103,15 +108,23 @@ def select_input_variant(invocation, context):
     }
     # Synchronous durable checkpoint MUST finish before a model can receive it.
     context.record_input_variant(decision)
-    return replace(invocation, user_prompt=prompt)
+    selected_call = replace(invocation, user_prompt=prompt)
+    from .input_variant_trace import trace_invocation
+    trace_invocation('decision', selected_call, context)
+    return selected_call
 
 
 def input_variant_result(invocation, context, result):
     if invocation.request.metadata.get("input_variants") is None:
-        return result
+        return replace(result, output={**result.output, 'input_variant': {
+            'selected': 'full', 'reason': 'input_variants_missing',
+            'prompt_chars': len(invocation.user_prompt), 'contains_snapshot_path': False}})
     decision = context.current_input_variant()
     summary = {key: decision[key] for key in (
         "version", "execution_id", "input_fingerprint", "selected", "policy", "user_prompt_sha256",
     )}
+    from .input_variant_trace import trace_invocation
+    row = trace_invocation('result', invocation, context)
+    summary.update({key: row[key] for key in ('business_ref', 'role', 'reason', 'prompt_chars', 'contains_snapshot_path')})
     # A selection receipt is not a native Read receipt.
     return replace(result, output={**result.output, "input_variant": summary})

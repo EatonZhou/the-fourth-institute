@@ -157,7 +157,7 @@ def resolve_task_reference(*,actor,target_resident_id,reference):
                  '快照包含本次材料及完整输出协议；按该协议交付，最终结果由业务服务保存。'
                  f'无法读取只输出{READ_FAILURE}，不得凭标题或记忆生成。结论必须带具体章节或页码；'
                  '遵守快照中的输出协议；Markdown长文用正文加末尾PAPER_SOURCE_EVIDENCE证据块，小JSON任务保留其schema。')
-    return {'type':'paper.task-material','version':1,'full_prompt':full,
+    return {'type':'paper.task-material','version':1,'business_ref':meta['attempt'],'role_scope':meta['scope'],'full_prompt':full,
             'input_variants':{'version':1,'path_prompt':instruction,'materials':[{'identity':subject+'#'+key,'sha256':snapshot.sha256,'path':snapshot.text_path}]},
             'provenance':snapshot.to_payload()}
 

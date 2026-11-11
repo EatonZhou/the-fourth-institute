@@ -66,6 +66,8 @@ class ChatCompletionService:
             context.observe_invocation(invocation, [])
         transport: dict[str, Any] = {}
         try:
+            from .input_variant_trace import trace_invocation
+            trace_invocation('adapter_send', invocation, context)
             result = self._execute(invocation, context, transport)
             return input_variant_result(invocation, context, result)
         except Exception as exc:
