@@ -17,7 +17,9 @@ import sys
 import time
 import uuid
 from collections.abc import Iterator
+from concurrent.futures import ThreadPoolExecutor, wait
 from contextlib import contextmanager, nullcontext
+from contextvars import copy_context
 from pathlib import Path
 from typing import Any
 
@@ -42,6 +44,9 @@ def web(module: str):
 
 
 INBOX_PAGE_SIZE = 100  # the conversation index serves at most 100 entries per page
+# Conversation rows and unanswered questions have independent owners. Bound
+# the extra reads across requests, and keep their authorization context local.
+_MAILBOX_QUESTION_READS = ThreadPoolExecutor(max_workers=4, thread_name_prefix="mailbox-question-read")
 
 
 def _inbox_entries(caller: str, resident_id: str = "") -> list[dict[str, Any]]:
@@ -100,16 +105,26 @@ def get_user_mailbox(inv: Invocation) -> dict[str, Any]:
 
     user_id = _named_user(inv)
     related = inv.argument("related_resident_id") or ""
+    questions = _MAILBOX_QUESTION_READS.submit(
+        copy_context().run, timed_call, "portal_mailbox_pending",
+        get_society_service().resident.list_user_pending_requests, user_id,
+    )
     # Page one carries every notification and Chatroom; order the pages as one
     # list so the result does not depend on the page size.
-    entries = newest_first([
-        {**entry, **_inbox_message_ids(entry), "version": str(entry.get("read_revision") or 0)}
-        for entry in timed_call("portal_mailbox_items", _inbox_entries, user_id, related)
-    ], pinned_first=True)
+    try:
+        entries = newest_first([
+            {**entry, **_inbox_message_ids(entry), "version": str(entry.get("read_revision") or 0)}
+            for entry in timed_call("portal_mailbox_items", _inbox_entries, user_id, related)
+        ], pinned_first=True)
+    except BaseException:
+        # Do not leave work using this request's context after an item read
+        # fails. Cancel a queued read, or join an already running one.
+        if not questions.cancel():
+            wait([questions])
+        raise
     # Questions belong to their Conversation owner. Reading/clearing a Mailbox
     # is not an answer, so pending requests are independent of its message rows.
-    requests = timed_call("portal_mailbox_pending",
-                          get_society_service().resident.list_user_pending_requests, user_id)["requests"]
+    requests = questions.result()["requests"]
     fields = ("key", "source_resident_id", "source_message_id", "resident_id", "message_id", "kind", "created_at", "title")
     pending = [
         {**{key: request[key] for key in fields if key in request},
