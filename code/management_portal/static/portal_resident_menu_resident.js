@@ -208,13 +208,15 @@
       }
       if (!await window.PortalUI.confirm({title: window.PortalI18n.t("删除 Resident？"), message: window.PortalI18n.text`删除「${node.title}」将移除 Session 和图引用；所属目录及其嵌套对象按资源归属永久删除，共享目录中的其他文件保留；绑定同步解除。对话与运行轨迹保留。`, confirmLabel: window.PortalI18n.t("删除"), tone: "danger"}) || menuState.nodeMenuContext !== context) return;
       context.busy = true;
-      try {
-        const result = await window.PortalResidentService.remove({resident_id: context.residentId});
-        // Deletion is committed; a failed owner refresh cannot keep its controls active.
-        if (menuState.nodeMenuContext === context) dialog.close({force: true});
-        await changed({type: "delete", residentId: context.residentId, lineageId: context.lineageId, result});
-      } catch (error) { if (menuState.nodeMenuContext === context) nodeMenuNotice(error.message); }
-      finally { context.busy = false; }
+      // The owner continues the formal instruction independently of this menu.
+      // Keep observing the result after closing; do not await it to release UI.
+      const principal = window.PortalIdentity?.username?.();
+      const removal = window.PortalResidentService.remove({resident_id: context.residentId, lineage_id: context.lineageId});
+      if (menuState.nodeMenuContext === context) dialog.close({force: true});
+      const samePrincipal = () => !principal || principal === window.PortalIdentity?.username?.();
+      void removal.then(result => samePrincipal() ? changed({type: "delete", residentId: context.residentId, lineageId: context.lineageId, result}) : undefined)
+        .catch(error => { if(samePrincipal()) toast(`${window.PortalI18n.t("删除")}: ${error.message}`, "error"); })
+        .finally(() => { context.busy = false; });
     }
 
     return {

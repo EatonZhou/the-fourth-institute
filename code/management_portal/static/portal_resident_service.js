@@ -9,6 +9,15 @@
   const residentReads = new Map();
   let readSequence = 0;
   let lifecycleSequence = 0;
+  function deletionState(residentId) {
+    const state = residentReads.get(String(residentId || "").trim());
+    return state ? lifecycleOf(state) : { deleted: false, deletion_pending: false, revision: 0 };
+  }
+  function deletionChanged(residentId, phase) {
+    window.dispatchEvent(new CustomEvent("portal:resident-deletion", { detail: {
+      resident_id: String(residentId), phase,
+    } }));
+  }
   const projectionReadTriggers = new Set(["explicit_load", "explicit_invalidate", "identity", "session_restart",
     "unbound_runtime", "snapshot_required", "reconnected", "identity_changed", "subscription", "transient_retry"]);
   function recordResidentRead(detail) {
@@ -44,8 +53,10 @@
   function acceptDeletedResident(residentId, phase = "index_deleted") {
     const id = String(residentId || "").trim();
     const state = readState(id);
+    const wasDeleted = state.deleted;
     state.deleted = true; state.revision = ++lifecycleSequence;
     recordResidentRead({ phase, resident_id: id, lifecycle: lifecycleOf(state) });
+    if (!wasDeleted) deletionChanged(id, "committed");
   }
   function readState(residentId) {
     const id = String(residentId || "").trim();
@@ -79,7 +90,7 @@
       if (!state.reads.size && !state.deletion && !state.deleted) residentReads.delete(String(residentId).trim());
     }
   }
-  function withResidentDeletion(residentId, operation) {
+  function withResidentDeletion(residentId, operation, { waitForReads = true } = {}) {
     const state = readState(residentId);
     if (state.deletion) return state.deletion;
     if (state.deleted) return Promise.reject(deletedResidentError(residentId));
@@ -88,22 +99,31 @@
     state.revision = ++lifecycleSequence;
     recordResidentRead({ phase: "local_delete_started", resident_id: residentId,
       lifecycle: { ...lifecycleOf(state), deletion_pending: true } });
-    state.deletion = (async () => {
+    state.deletion = Promise.resolve().then(async () => {
       try {
         // Let already dispatched reads finish while the Resident still exists.
         // New reads wait for the write outcome instead of racing its commit.
-        await Promise.allSettled([...state.reads]);
+        if (waitForReads) await Promise.allSettled([...state.reads]);
         const result = await operation();
         state.deleted = true; state.revision = ++lifecycleSequence;
         recordResidentRead({ phase: "local_delete_committed", resident_id: residentId, lifecycle: lifecycleOf(state) });
+        deletionChanged(residentId, "committed");
         return result;
+      } catch (error) {
+        // A committed tombstone with a failed projection is not a rollback.
+        const committed = error?.code === "instruction.projection_pending"
+          || error?.commit_state === "committed" || error?.body?.error?.commit_state === "committed";
+        if (committed) state.deleted = true;
+        queueMicrotask(() => deletionChanged(residentId, state.deleted ? "committed" : "failed"));
+        throw error;
       } finally {
         state.deletion = null;
         recordResidentRead({ phase: "local_delete_settled", resident_id: residentId, lifecycle: lifecycleOf(state) });
         release();
         if (!state.deleted && !state.reads.size) residentReads.delete(String(residentId).trim());
       }
-    })();
+    });
+    deletionChanged(residentId, "pending");
     return state.deletion;
   }
 
@@ -643,8 +663,14 @@
       },
       async remove(payload = {}) {
         const residentId = required(payload.resident_id, "resident_id");
-        const lineageId = payload.lineage_id || (await residentRecord(residentId, "")).lineage_id;
-        return execute("DeleteResident", { lineage_id: required(lineageId, "lineage_id"), resident_id: residentId }, keyed(payload, "resident-delete"));
+        // Fence/deduplicate the entire removal, including the optional identity
+        // lookup. The raw owner calls avoid waiting on this deletion's own gate.
+        // Dispatch now: an unrelated slow browser read must not defer starting
+        // the server instruction until after the user has closed this page.
+        return withResidentDeletion(residentId, async () => {
+          const lineageId = payload.lineage_id || (await executeInstruction("GetResident", { resident_id: residentId }))?.resident?.lineage_id;
+          return executeInstruction("DeleteResident", { lineage_id: required(lineageId, "lineage_id"), resident_id: residentId }, keyed(payload, "resident-delete"));
+        }, { waitForReads: false });
       },
       async update(payload = {}) {
         const residentId = required(payload.resident_id, "resident_id");
@@ -1001,5 +1027,5 @@
   }
 
   const defaultClient = createClient();
-  window.PortalResidentService = Object.freeze({ ...defaultClient, createClient, withResidentDeletion, acceptDeletedResident });
+  window.PortalResidentService = Object.freeze({ ...defaultClient, createClient, withResidentDeletion, acceptDeletedResident, deletionState });
 })();
