@@ -246,6 +246,18 @@ body.portalAgentInboxMounted:has(> .portalAgentInbox[data-dock-side="left"]) {
 .portalPersonalAssistantTrigger {
   background: color-mix(in srgb, var(--accent, #2563eb) 16%, var(--panel, #fff));
 }
+.portalAgentInbox [data-agent-todo-trigger] {
+  background: var(--panel-2, #f1f5f9);
+}
+.portalAgentInbox [data-agent-todo-trigger]:hover,
+.portalAgentInbox [data-agent-todo-trigger]:focus-visible,
+.portalAgentInbox [data-agent-todo-trigger][aria-expanded="true"] {
+  background: color-mix(in srgb, var(--accent, #2563eb) 12%, var(--panel-2, #f1f5f9));
+}
+.portalAgentInbox [data-agent-todo-count] {
+  color: var(--accent, #2563eb);
+  background: color-mix(in srgb, var(--accent, #2563eb) 14%, var(--panel, #fff));
+}
 .portalPersonalAssistantTrigger:hover,
 .portalPersonalAssistantTrigger:focus-visible,
 .portalPersonalAssistantTrigger[aria-expanded="true"] {
@@ -416,6 +428,9 @@ body.portalAgentInboxMounted:has(> .portalAgentInbox[data-dock-side="left"]) {
 .portalMailboxTodoGroup { border-bottom: 1px solid var(--border, #cbd5e1); padding: 5px 0; }
 .portalMailboxTodoGroup summary { cursor: pointer; padding: 5px 0; font-weight: 600; font-size: 13px; }
 .portalMailboxTodoGroup summary small { margin-left: 9px; font-weight: normal; color: var(--muted, #64748b); }
+.portalMailboxTodoCompleted { margin-top: 4px; }
+.portalMailboxTodoCompleted > summary { color: var(--muted, #64748b); font-size: 12px; font-weight: 500; }
+.portalMailboxTodoCompleted[hidden] { display: none; }
 .portalMailboxTodoRow { position: relative; display: flex; align-items: flex-start; gap: 6px; padding: 5px 0; margin-inline-start: calc(var(--todo-indent, 0) * 14px); }
 .portalMailboxTodoRow > input { flex: 0 0 auto; margin: 5px 0; accent-color: var(--accent, #167d75); cursor: pointer; }
 .portalMailboxTodoBody { flex: 1; min-width: 0; }

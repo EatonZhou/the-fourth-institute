@@ -27,7 +27,11 @@ window.PortalNav={personalAssistantTarget:async()=>window.fixtureTarget,loadChat
 window.PortalChatWorkspace={panelPackage:{create({root}){root.textContent='个人助手 · 隔离测试会话';return {presented:false,setPresented(value){this.presented=value},destroy(){}}}}};
 window.PortalAPI={get:async(url)=>{if(url!='/api/agent-conversations')throw Error('Unexpected API '+url);return {entries:[],ready:true,content_signature:'empty',unread_count:0}}};
 window.fixtureCalls=[];
-window.fixtureTodos=[{todo_id:'todo_fixture',text:'整理本周工作计划',date:'2026-11-12',completed:false,position:0,indent:0}];
+window.fixtureTodos=[
+  {todo_id:'todo_fixture',text:'整理本周工作计划',date:'2026-11-12',completed:false,position:0,indent:0},
+  {todo_id:'todo_done',text:'已核对本周资料',date:'2026-11-12',completed:true,position:1,indent:0},
+  {todo_id:'todo_yesterday',text:'昨日任务已完成',date:'2026-11-11',completed:true,position:0,indent:0},
+];
 window.PortalInstructionClient={execute:async(name,args)=>{
   window.fixtureCalls.push({name,args});
   if(name==='ListMailboxTodos'){
@@ -39,11 +43,20 @@ window.PortalInstructionClient={execute:async(name,args)=>{
     window.fixtureTodos.push(item);return {item:{...item}};
   }
   if(name==='UpdateMailboxTodo'){
+    if(window.fixtureCompletionFailure && Object.hasOwn(args.changes,'completed'))throw Error('隔离测试：完成状态保存失败');
     const item=window.fixtureTodos.find(item=>item.todo_id===args.todo_id);
     Object.assign(item,args.changes);return {item:{...item}};
   }
   if(name==='DeleteMailboxTodo'){
     window.fixtureTodos=window.fixtureTodos.filter(item=>item.todo_id!==args.todo_id);return {};
+  }
+  if(name==='MoveMailboxTodo'){
+    const item=window.fixtureTodos.find(item=>item.todo_id===args.todo_id);
+    const reference=window.fixtureTodos.find(item=>item.todo_id===(args.before_todo_id||args.after_todo_id));
+    item.date=reference.date;
+    const siblings=window.fixtureTodos.filter(value=>value.date===item.date&&value!==item).sort((a,b)=>a.position-b.position);
+    siblings.splice(siblings.indexOf(reference)+(args.after_todo_id?1:0),0,item);
+    siblings.forEach((value,index)=>{value.position=index});return {item:{...item}};
   }
   throw Error('Unexpected ISA '+name);
 }};
@@ -130,6 +143,10 @@ async function touch(page, cdp, selector, destination) {
     await settled(page, "right");
     assert.equal((await box(page)).height, 132, "three desktop entries share the dock");
     assert.equal(await page.locator('[data-inbox-trigger]:visible').count(), 3);
+    const colors = await page.evaluate(() => Object.fromEntries(['mailbox','todo','assistant'].map(name =>
+      [name, getComputedStyle(document.querySelector('[data-inbox-trigger="'+name+'"]')).backgroundColor])));
+    assert.notEqual(colors.todo, colors.mailbox, 'middle entry has a distinct background');
+    assert.notEqual(colors.todo, colors.assistant, 'middle entry remains distinguishable from assistant');
     await drag(page, mailbox, 16, 300);
     await settled(page, "left");
     assert.equal((await preference(page)).retained, "legacy");
@@ -148,7 +165,31 @@ async function touch(page, cdp, selector, destination) {
     const mailboxCount = await page.locator(`${mailbox} [data-agent-conversation-count]`).textContent();
     const todoCount = `${todo} [data-agent-todo-count]`;
     assert.equal(await page.locator(todoCount).textContent(), "1");
+    const completedGroup = page.locator('[data-mailbox-todo-completed="2026-11-12"]');
+    const day = page.locator('[data-mailbox-todo-day="2026-11-12"]');
+    assert.equal(await completedGroup.getAttribute('open'), null, 'completed starts collapsed');
+    assert.equal(await page.locator('[data-mailbox-todo-id="todo_done"]').isVisible(), false);
+    assert.equal(await page.locator('[data-mailbox-todo-id="todo_yesterday"]').isVisible(), false, 'all-completed day is also folded');
+    assert.equal(await page.locator('[data-mailbox-todo-pending] [data-mailbox-todo-id="todo_fixture"]').isVisible(), true);
+    const badgeColors = await page.evaluate(() => ['[data-agent-todo-count]', '[data-agent-conversation-count]']
+      .map(selector => getComputedStyle(document.querySelector(selector)).backgroundColor));
+    assert.notEqual(badgeColors[0], badgeColors[1], 'pending badge does not use Mailbox red');
+    const beforeFold = await page.evaluate(() => fixtureCalls.length);
+    await completedGroup.locator('summary').click();
+    await page.waitForSelector('[data-mailbox-todo-id="todo_done"]');
+    await completedGroup.locator('summary').click();
+    await page.waitForSelector('[data-mailbox-todo-id="todo_done"]', { state: 'hidden' });
+    assert.equal(await page.evaluate(() => fixtureCalls.length), beforeFold, 'folding is local UI state, not a data mutation');
+    await page.locator('[data-agent-todo-refresh]').click();
+    assert.notEqual(await day.getAttribute('open'), null, 'nested toggle does not close the date group');
+    await page.evaluate(() => { fixtureCompletionFailure = true; });
+    await page.locator('[data-mailbox-todo-id="todo_fixture"] [data-mailbox-todo-check]').click();
+    await page.waitForSelector('[data-mailbox-todo-error]:visible');
+    assert.equal(await page.locator('[data-mailbox-todo-id="todo_fixture"] [data-mailbox-todo-check]').isChecked(), false);
+    assert.equal(await page.locator('[data-mailbox-todo-id="todo_fixture"]').isVisible(), true, 'failed completion stays outside the fold');
+    await page.evaluate(() => { fixtureCompletionFailure = false; });
     await page.locator('[data-mailbox-todo-text]').fill('验证独立 To Do 入口');
+    await page.locator('[data-mailbox-todo-date]').fill('2026-11-12');
     await page.locator('[data-mailbox-todo-save]').click();
     const created = page.locator('[data-mailbox-todo-id="todo_created"]');
     await created.waitFor();
@@ -161,9 +202,33 @@ async function touch(page, cdp, selector, destination) {
     await visiblePanel(page, '[data-inbox-panel="todo"]');
     await created.locator('[data-mailbox-todo-check]').check();
     await page.waitForFunction(() => fixtureTodos.find(item => item.todo_id === 'todo_created')?.completed);
+    await created.waitFor({ state: 'hidden' });
     assert.equal(await page.locator(todoCount).textContent(), "1");
     assert.equal(await page.locator(`${mailbox} [data-agent-conversation-count]`).textContent(), mailboxCount, "todo does not change Mailbox unread count");
     await screenshot(page, "left-todo-open");
+    await completedGroup.locator('summary').click();
+    await created.waitFor();
+    await page.locator('[data-agent-todo-refresh]').click();
+    assert.notEqual(await completedGroup.getAttribute('open'), null, 'refresh retains expanded completed section');
+    await screenshot(page, 'completed-expanded');
+    await created.locator('[data-mailbox-todo-check]').uncheck();
+    await page.waitForFunction(() => document.querySelector('[data-mailbox-todo-pending] [data-mailbox-todo-id="todo_created"]'));
+    assert.equal(await created.isVisible(), true, 'reopened task returns to pending list');
+    const moveRow = async target => {
+      const grip = await created.locator('[data-mailbox-todo-grip]').boundingBox();
+      await page.mouse.move(grip.x + grip.width / 2, grip.y + grip.height / 2);
+      await page.mouse.down();
+      await page.mouse.move(target.x, target.y, { steps: 10 });
+      await page.mouse.up();
+    };
+    const firstRow = await page.locator('[data-mailbox-todo-id="todo_fixture"]').boundingBox();
+    await moveRow({ x: firstRow.x + 40, y: firstRow.y + 2 });
+    await page.waitForFunction(() => document.querySelector('[data-mailbox-todo-pending]').firstElementChild?.dataset.mailboxTodoId === 'todo_created');
+    await completedGroup.locator('summary').click();
+    const folded = await completedGroup.locator('summary').boundingBox();
+    await moveRow({ x: folded.x + 40, y: folded.y + folded.height / 2 });
+    await page.waitForFunction(() => fixtureCalls.filter(call => call.name === 'MoveMailboxTodo').length === 2);
+    assert.equal(await page.evaluate(() => fixtureCalls.filter(call => call.name === 'MoveMailboxTodo').at(-1).args.after_todo_id), 'todo_fixture', 'drop near a folded section uses visible pending row');
     await created.locator('[data-mailbox-todo-action="delete"]').click();
     await created.waitFor({ state: 'detached' });
     await page.evaluate(() => { fixtureTodoFailure = true; });
@@ -223,6 +288,11 @@ async function touch(page, cdp, selector, destination) {
     await page.locator('[data-mailbox-todo-text]').fill('触屏待办');
     await page.locator('[data-mailbox-todo-save]').tap();
     await page.waitForSelector('[data-mailbox-todo-id="todo_created"]');
+    const phoneCompleted = page.locator('[data-mailbox-todo-completed="2026-11-12"]');
+    await phoneCompleted.locator('summary').tap();
+    await page.waitForSelector('[data-mailbox-todo-id="todo_done"]');
+    await phoneCompleted.locator('summary').tap();
+    await page.waitForSelector('[data-mailbox-todo-id="todo_done"]', { state: 'hidden' });
     await screenshot(page, "narrow-todo-open");
     await touch(page, cdp, '[data-agent-inbox-mobile-close]');
     assert.equal(await page.locator(rootSelector).getAttribute('data-expanded'), 'false');
@@ -242,7 +312,7 @@ async function touch(page, cdp, selector, destination) {
     assert.equal(await page.locator(rootSelector).count(), 1);
     assert.deepEqual(errors, [], "no browser errors");
     console.log(JSON.stringify({ status: "passed", browser: "Chromium", isolated: true, formal_tau: false,
-      checks: ["three triggers drag as a group to either edge", "legacy preferences and reload", "cancel rollback", "drag/click separation", "inward mutually exclusive panels", "independent To Do create/edit/complete/delete and unread isolation", "Todo failure and recovery", "responsive clamp and obstacle avoidance", "touch todo creation and mobile close", "optional assistant and remount", "Wall clearance", "2x pixel density"], screenshots: saved }));
+      checks: ["three triggers drag as a group to either edge", "legacy preferences and reload", "cancel rollback", "drag/click separation", "inward mutually exclusive panels", "independent To Do create/edit/complete/delete and unread isolation", "per-day completed folding and reopening", "row sorting ignores folded rows", "completion failure rollback", "distinct middle entry and subdued badge", "Todo failure and recovery", "responsive clamp and obstacle avoidance", "touch todo creation/folding and mobile close", "optional assistant and remount", "Wall clearance", "2x pixel density"], screenshots: saved }));
   } finally {
     await browser?.close();
     server.closeAllConnections();

@@ -9,7 +9,7 @@
     const { signal } = controller;
     let readBlocked = false;
     const t = source => window.PortalI18n.t(source);
-    const state = { items: [], loaded: false, visible: false, active: false, busy: false, editing: null, saving: null, drag: null, revision: 0, request: null, closed: new Set(), pendingCompletion: new Map() };
+    const state = { items: [], loaded: false, visible: false, active: false, busy: false, editing: null, saving: null, drag: null, revision: 0, request: null, closed: new Set(), completedOpen: new Set(), pendingCompletion: new Map() };
     const today = () => new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Hong_Kong", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
     container.innerHTML = window.PortalI18n.markup('<form class="portalMailboxTodoComposer" data-mailbox-todo-form>' +
       '<textarea rows="2" data-mailbox-todo-text aria-label="待办内容" placeholder="新增待办（最多 100 字）" required></textarea>' +
@@ -50,15 +50,27 @@
           group = document.createElement("details");
           group.className = "portalMailboxTodoGroup";
           group.dataset.mailboxTodoDay = day;
-          group.innerHTML = "<summary><time></time><small></small></summary>";
+          group.innerHTML = '<summary><time></time><small></small></summary><div data-mailbox-todo-pending></div>' +
+            '<details class="portalMailboxTodoCompleted" data-mailbox-todo-completed><summary><span></span><small></small></summary><div data-mailbox-todo-completed-items></div></details>';
           group.open = !state.closed.has(day);
+          const completed = group.querySelector("[data-mailbox-todo-completed]");
+          completed.dataset.mailboxTodoCompleted = day;
+          completed.open = state.completedOpen.has(day);
+          completed.querySelector("summary > span").textContent = t("已完成");
         }
         if (groups.children[dayIndex] !== group) groups.insertBefore(group, groups.children[dayIndex] || null);
         group.querySelector("time").textContent = day.slice(2);
         group.querySelector("time").dateTime = day;
         const items = sorted(day);
-        group.querySelector("small").textContent = items.filter(item => !item.completed).length + "/" + items.length;
-        items.forEach((item, index) => {
+        const completedCount = items.filter(item => item.completed).length;
+        group.querySelector("small").textContent = (items.length - completedCount) + "/" + items.length;
+        const pendingRows = group.querySelector("[data-mailbox-todo-pending]");
+        const completedGroup = group.querySelector("[data-mailbox-todo-completed]");
+        const completedRows = completedGroup.querySelector("[data-mailbox-todo-completed-items]");
+        completedGroup.hidden = completedCount === 0;
+        completedGroup.querySelector("small").textContent = String(completedCount);
+        let pendingIndex = 0, completedIndex = 0;
+        items.forEach(item => {
           let row = oldRows.get(item.todo_id);
           if (!row) {
             row = document.createElement("div");
@@ -85,7 +97,9 @@
           content.textContent = item.text;
           content.title = t("点击编辑；Tab 缩进，Shift+Tab 取消缩进；点击别处保存");
           content.disabled = state.busy;
-          if (group.children[index + 1] !== row) group.insertBefore(row, group.children[index + 1] || null);
+          const target = item.completed ? completedRows : pendingRows;
+          const index = item.completed ? completedIndex++ : pendingIndex++;
+          if (target.children[index] !== row) target.insertBefore(row, target.children[index] || null);
         });
       });
       oldRows.forEach((row, id) => { if (!state.items.some(item => item.todo_id === id)) row.remove(); });
@@ -199,10 +213,15 @@
       if (await mutate("CreateMailboxTodo", draft) && text.value.trim() === draft.text && date.value === draft.date) resetForm();
     }, { signal });
     groups.addEventListener("toggle", event => {
-      const group = event.target.closest("[data-mailbox-todo-day]");
-      if (!group || !group.isConnected) return;
-      if (group.open) state.closed.delete(group.dataset.mailboxTodoDay);
-      else state.closed.add(group.dataset.mailboxTodoDay);
+      const group = event.target;
+      if (!group.isConnected) return;
+      if (group.matches("[data-mailbox-todo-completed]")) {
+        if (group.open) state.completedOpen.add(group.dataset.mailboxTodoCompleted);
+        else state.completedOpen.delete(group.dataset.mailboxTodoCompleted);
+      } else if (group.matches("[data-mailbox-todo-day]")) {
+        if (group.open) state.closed.delete(group.dataset.mailboxTodoDay);
+        else state.closed.add(group.dataset.mailboxTodoDay);
+      }
     }, { signal, capture: true });
     groups.addEventListener("input", event => {
       if (!state.editing || state.saving) return;
@@ -290,7 +309,13 @@
       let target = hit.closest("[data-mailbox-todo-id]");
       let after;
       if (target) { const rect = target.getBoundingClientRect(); after = event.clientY > rect.top + rect.height / 2; }
-      else { target = hit.closest("[data-mailbox-todo-day]")?.querySelector("[data-mailbox-todo-id]:last-child"); after = true; }
+      else {
+        // A collapsed completed section must not become an invisible drop target.
+        const day = hit.closest("[data-mailbox-todo-day]");
+        target = [...(day?.querySelectorAll("[data-mailbox-todo-id]") || [])]
+          .filter(row => !row.closest("details:not([open])")).at(-1);
+        after = true;
+      }
       if (!target || target.dataset.mailboxTodoId === drag.id) return;
       drag.placement = { [after ? "after_todo_id" : "before_todo_id"]: target.dataset.mailboxTodoId };
       target.classList.add(after ? "is-drop-after" : "is-drop-before");
@@ -310,7 +335,7 @@
     groups.addEventListener("pointerup", endDrag, { signal });
     groups.addEventListener("pointercancel", endDrag, { signal });
     groups.addEventListener("lostpointercapture", endDrag, { signal });
-    // The tab count is visible whenever Mailbox is open, even on the messages tab.
+    // Both Mailbox and To Do expose the shared pending count while open.
     const refreshVisible = reason => { if (state.visible && !document.hidden) void refresh(false, reason); };
     window.addEventListener("focus", () => refreshVisible("focus"), { signal });
     document.addEventListener("visibilitychange", () => refreshVisible("visibilitychange"), { signal });
@@ -318,7 +343,7 @@
       readBlocked = false;
       state.revision += 1;
       Object.assign(state, { request: null, busy: false, items: [], loaded: false, editing: null, saving: null, drag: null, pendingCompletion: new Map() });
-      state.closed.clear(); resetForm(); error(); render(); refreshVisible("identity_changed");
+      state.closed.clear(); state.completedOpen.clear(); resetForm(); error(); render(); refreshVisible("identity_changed");
     }, { signal });
     const timer = window.setInterval(() => refreshVisible("refresh_timer"), 15000);
     validate(); render();
