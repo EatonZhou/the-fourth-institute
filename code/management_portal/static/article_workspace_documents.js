@@ -423,8 +423,11 @@
         if (options.activate !== false) activateDocument(target, options);
         return state.documents.get(target);
       }
-      $("articleEditorState").textContent = window.PortalI18n.t("Opening…");
       const articleId = state.selectedId;
+      // TexLab also reads definitions with activate:false. Those background
+      // reads must not replace the active document's saved/dirty status.
+      const foreground = options.activate !== false;
+      if (foreground) $("articleEditorState").textContent = `${window.PortalI18n.t("Opening…")} ${target}`;
       try {
         const url = `/api/articles/${encodeURIComponent(articleId)}/file?path=${encodeURIComponent(target)}`;
         const metadata = await request(`${url}&meta=1`);
@@ -440,8 +443,9 @@
         }
         return presentArticleDocument(target, payload, options);
       } catch (error) {
-        $("articleEditorState").textContent = window.PortalI18n.t("Unable to open file");
-        showToast(error.message || error, "error");
+        if (articleId !== state.selectedId) return;
+        if (foreground) $("articleEditorState").textContent = `${window.PortalI18n.t("Unable to open file")}: ${target}`;
+        showToast(`${target}: ${error.message || error}`, "error");
       }
     }
 
