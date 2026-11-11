@@ -108,9 +108,12 @@ def provider_error_continuation(
     the egress was unavailable.
     """
 
-    if str(getattr(error, 'error_code', '') or '') in {'provider_turn_deadline', 'provider_turn_cancel_pending'}:
+    if str(getattr(error, 'error_code', '') or '') in {
+        'provider_turn_deadline', 'provider_turn_cancel_pending', 'provider_observation_lost',
+    }:
         # An explicit native deadline is an execution control boundary. A
-        # recovery prompt would start work that the caller just bounded.
+        # recovery prompt would start work that the caller just bounded, or
+        # duplicate effects of an accepted prompt whose outcome is unknown.
         raise error
     policy = getattr(invocation, "provider_error_recovery", None)
     current = getattr(context, "current_provider_recovery_state", None)

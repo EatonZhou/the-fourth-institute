@@ -26,11 +26,24 @@ def test_windows_convert_used_ratios_and_do_not_invent_missing_limits():
     assert windows[0]["resets_at"] == 1893456000
     assert windows[1]["resets_at"] is None
     assert sample["quota"]["remaining_percent"] == 58
+    # Consumer projections identify the weekly window by duration, not a
+    # Provider-specific id. Preserve that fact through scheduler quota state.
+    state = quota_state(sample["quota"], now=1001)
+    assert [w["window_duration_mins"] for w in state["windows"]] == [300, 10080, None, None]
+    weekly = [w for w in state["windows"] if w["window_duration_mins"] == 10080]
+    assert len(weekly) == 1 and weekly[0]["remaining_percent"] == 58
     assert quota_state(sample["quota"], now=1001)["status"] == "available"
     assert quota_state(sample["quota"], now=1061)["status"] == "unknown"
     optional = quota_sample(payload(limit7d={"usedRatio": .1, "resetAt": "invalid"}), 1000)
     assert [w["id"] for w in optional["rate_limits"]] == ["limit7d"]
     assert optional["rate_limits"][0]["resets_at"] is None
+
+
+def test_monthly_only_quota_does_not_claim_a_weekly_window():
+    sample = quota_sample(payload(monthTotal={"usedRatio": .2}), 1000)
+    state = quota_state(sample["quota"], now=1001)
+    assert state["fresh"] and state["remaining_percent"] == 80
+    assert all(w["window_duration_mins"] is None for w in state["windows"])
 
 
 @pytest.mark.parametrize("value", [None, True, "0", float("nan"), float("inf"), -.1])

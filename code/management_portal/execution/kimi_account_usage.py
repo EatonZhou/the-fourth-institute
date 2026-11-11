@@ -54,6 +54,7 @@ def quota_sample(payload, observed_at):
                       "max_age_seconds": MAX_SAMPLE_AGE_SECONDS, "valid_until": fresh_until,
                       "remaining_percent": min(w["remaining_percent"] for w in windows),
                       "windows": [{"window": w["id"], "remaining_percent": w["remaining_percent"],
+                                   "window_duration_mins": w["window_duration_mins"],
                                    "resets_at": w["resets_at"]} for w in windows]}}
 
 

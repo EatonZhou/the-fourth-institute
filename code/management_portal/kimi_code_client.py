@@ -5,7 +5,7 @@ import json
 import re
 import threading
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import datetime, timezone
 from fnmatch import fnmatchcase
 from pathlib import Path
@@ -25,6 +25,7 @@ def default_base_url() -> str:
     return instance.service_origin(component) + '/api/v1'
 
 DEFAULT_POLL_SECONDS = 0.75
+SNAPSHOT_RECOVERY_SECONDS = 60.0
 from .kimi_code_server import DEFAULT_MODEL, DEFAULT_HOME, settings
 
 
@@ -49,6 +50,12 @@ class KimiCodeTurnFailed(KimiCodeError):
     pass
 
 
+class KimiCodeObservationLost(KimiCodeTurnFailed):
+    """An accepted prompt cannot be observed; its effects must not be replayed."""
+
+    error_code = "provider_observation_lost"
+
+
 @dataclass
 class KimiCodeTurnResult:
     session_id: str
@@ -56,6 +63,7 @@ class KimiCodeTurnResult:
     response: str
     usage: dict[str, Any]
     duration_ms: int
+    tool_policy_receipt: dict[str, Any] | None = None
 
 
 def _now_iso() -> str:
@@ -513,10 +521,12 @@ class KimiCodeClient:
         self, *, session_id: str, prompt: str, tools=None, native_tools=None,
         continue_prompt: str = "", turn_id: str = "", detach_requested=None,
         cancelled=None, event_callback=None, system_prompt_append="", prepend_system_prompt=False,
-        permission_mode="yolo", model="", disabled_tools=None, **options,
+        permission_mode="yolo", model="", disabled_tools=None, deny_all_tools=False, **options,
     ) -> KimiCodeTurnResult:
         allowed = list(native_tools if native_tools is not None else tools or [])
         if continue_prompt:
+            if deny_all_tools:
+                raise KimiCodeTurnFailed('Restricted turn recovery requires the original native policy receipt; no resubmission allowed')
             if cancelled is not None and cancelled():
                 raise InterruptedError("Kimi turn cancelled before resume")
             try:
@@ -536,6 +546,7 @@ class KimiCodeClient:
             return self._run_turn(session_id=session_id, live_stream=with_stream, prompt=prompt,
                                   tools=allowed, permission_mode=permission_mode or "yolo", model=model or DEFAULT_MODEL,
                                   event_callback=event_callback, disabled_tools=disabled_tools,
+                                  deny_all_tools=deny_all_tools,
                                   detach_requested=detach_requested)
         finally:
             with_stream.close()
@@ -551,6 +562,7 @@ class KimiCodeClient:
         model: str = DEFAULT_MODEL,
         event_callback: Callable[[dict[str, Any]], None] | None = None,
         disabled_tools: list[str] | None = None,
+        deny_all_tools: bool = False,
         detach_requested: Callable[[], bool] | None = None,
     ) -> KimiCodeTurnResult:
         """Run one turn.  ``disabled_tools`` replaces the tools switched off for the session.
@@ -580,6 +592,7 @@ class KimiCodeClient:
                 "content": [{"type": "text", "text": prompt}],
                 "model": str(model or DEFAULT_MODEL),
                 "permission_mode": permission_mode,
+                **({'deny_all_tools': True} if deny_all_tools else {}),
                 **({} if disabled_tools is None else {"disabled_tools": list(disabled_tools)}),
             },
         )
@@ -588,6 +601,10 @@ class KimiCodeClient:
         user_message_id = str(submission.get("user_message_id") or "")
         if not prompt_id:
             raise KimiCodeTurnFailed("Kimi Code prompt submission returned no prompt_id")
+        policy_receipt = (submission.get('metadata') or {}).get('portal_tool_policy')
+        if deny_all_tools and policy_receipt != {'version':1,'policy':'deny_all','session_id':session_id,
+                'prompt_id':prompt_id,'effective_tools':[],'source':'kimi.native.prompt'}:
+            raise KimiCodeTurnFailed('Native restricted prompt policy receipt missing or mismatched; do not resubmit')
 
         def emit(event: dict[str, Any]) -> None:
             if event_callback:
@@ -602,12 +619,13 @@ class KimiCodeClient:
                 "userMessageId": user_message_id,
             },
         })
-        return self._follow_prompt(
+        result = self._follow_prompt(
             session_id=session_id, prompt_id=prompt_id, user_message_id=user_message_id, tools=tools,
             before_usage=before_usage, before_seq=before_seq,
             model=model,
             started_at=started_at, emit=emit, detach_requested=detach_requested, live_stream=live_stream,
         )
+        return replace(result, tool_policy_receipt=policy_receipt if deny_all_tools else None)
 
     def _follow_prompt(
         self,
@@ -643,13 +661,23 @@ class KimiCodeClient:
 
         last_snapshot: dict[str, Any] = {}
         retry_delay = self.poll_seconds
+        unavailable_since = None
         while True:
             if detach_requested is not None and detach_requested():
                 raise KimiCodeDetached(f"Worker handover: prompt {prompt_id} keeps running")
             try:
                 snapshot = self.get_snapshot(session_id)
                 retry_delay = self.poll_seconds
+                unavailable_since = None
             except KimiCodeUnavailable:
+                now = time.monotonic()
+                if unavailable_since is None:
+                    unavailable_since = now
+                if now - unavailable_since >= SNAPSHOT_RECOVERY_SECONDS:
+                    raise KimiCodeObservationLost(
+                        "Kimi 本地服务持续不可读，已停止等待；原输入已受理，执行结果未知。"
+                        "请核对原会话后决定恢复，不会自动重发或续跑。"
+                    ) from None
                 live_stream.drain(live.observe)
                 time.sleep(retry_delay)
                 retry_delay = min(5.0, retry_delay * 1.5)
