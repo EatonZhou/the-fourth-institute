@@ -218,10 +218,10 @@
               <span data-portal-icon="branch" aria-hidden="true"></span><strong>—</strong><code>—</code>
             </div>
             <div class="articleGitRemoteToolbar">
-              <button class="portalButton is-quiet" type="button" data-git-action="fetch" title="获取远端提交，不修改工作文件"><span data-portal-icon="refresh"></span><span>获取</span></button>
+              <button class="portalButton is-quiet" type="button" data-git-action="fetch" title="获取远端提交，不修改当前分支和工作文件"><span data-portal-icon="cloud-download"></span><span>获取</span></button>
               <button class="portalButton" id="articleGitPull" type="button" data-portal-icon="download" disabled><span id="articleGitPullLabel">拉取</span></button>
               <button class="portalButton is-quiet" type="button" data-git-action="push" title="推送本地提交"><span data-portal-icon="upload"></span><span>推送</span></button>
-              <button class="portalButton is-quiet" type="button" data-git-action="sync" title="先拉取，再推送"><span data-portal-icon="refresh"></span><span>同步</span></button>
+              <button class="portalButton is-quiet" type="button" data-git-action="sync" title="先拉取远端更新到当前稿件，再推送本地提交"><span data-portal-icon="sync"></span><span>同步</span></button>
             </div>
             <small id="articleGitPullHint" role="status"></small>
             <form class="articleGitCommit" id="articleGitCommitForm">

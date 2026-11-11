@@ -26,7 +26,7 @@ const html = fs.readFileSync(path.join(root, 'management_portal/article_workspac
   let browser;
   try {
     browser = await chromium.launch({ headless: true });
-    const page = await browser.newPage();
+    const page = await browser.newPage({ timezoneId: 'Asia/Hong_Kong' });
     page.setDefaultTimeout(8000);
     const errors = [];
     page.on('pageerror', error => errors.push(error.message));
@@ -119,6 +119,7 @@ const html = fs.readFileSync(path.join(root, 'management_portal/article_workspac
     });
     assert.equal(await page.locator('#articleGitPull').isDisabled(), true);
     assert.match(await page.locator('#articleGitPullHint').textContent(), /远端/);
+    assert.match(await page.locator('[data-git-action="sync"]').getAttribute('title'), /先拉取.*再推送.*\n尚未配置远端仓库/);
 
     await page.evaluate(async () => {
       mode = 'scm'; dirty = false;
@@ -126,8 +127,8 @@ const html = fs.readFileSync(path.join(root, 'management_portal/article_workspac
         changes: [{ path: 'sections/main.tex', code: 'MM', staged: true, unstaged: true, untracked: false }],
       };
       fixtureHistory = [
-        { sha: 'a', short_sha: 'aaaaaaa', subject: 'Merge paper', author: 'Author', parents: ['b', 'c'], refs: ['HEAD -> main'] },
-        { sha: 'b', short_sha: 'bbbbbbb', subject: 'Local edit', author: 'Author', parents: ['d'], refs: [] },
+        { sha: 'a', short_sha: 'aaaaaaa', subject: 'Merge paper', author: 'Author', authored_at: '2026-11-10T15:23:12+00:00', parents: ['b', 'c'], refs: ['HEAD -> main'] },
+        { sha: 'b', short_sha: 'bbbbbbb', subject: 'Local edit', author: 'Author', authored_at: '2026-11-10T23:23:12+08:00', parents: ['d'], refs: [] },
         { sha: 'c', short_sha: 'ccccccc', subject: 'Remote edit', author: 'Resident', parents: ['d'], refs: ['origin/main'] },
         { sha: 'd', short_sha: 'ddddddd', subject: 'Initial', author: 'Author', parents: [], refs: [] },
       ];
@@ -140,6 +141,16 @@ const html = fs.readFileSync(path.join(root, 'management_portal/article_workspac
     assert.equal(await page.locator('#articleGitHistory circle').count(), 4);
     assert.match(await page.locator('#articleGitHistory').textContent(), /origin\/main/);
     assert.equal(await page.evaluate(() => PortalArticleWorkspaceGit.graphRows(fixtureHistory)[0].edges.length), 2);
+    const commitTitles = await page.locator('[data-git-commit]').evaluateAll(rows => rows.map(row => row.title));
+    const localTime = title => title.split(' · ').at(-1).split('\n')[0];
+    assert.equal(localTime(commitTitles[0]), localTime(commitTitles[1]), 'equivalent UTC/+08 commits display the same local time');
+    assert.match(commitTitles[0], /本地时间.*23:23:12.*GMT\+8/);
+    assert.doesNotMatch(commitTitles.join('\n'), /undefined|Invalid Date|T15:23:12\+00:00/);
+    assert.match(await page.locator('[data-git-action="fetch"]').getAttribute('title'), /获取远端提交，不修改当前分支和工作文件\norigin\/main/);
+    assert.match(await page.locator('[data-git-action="sync"]').getAttribute('title'), /先拉取.*再推送.*\norigin\/main/);
+    const remoteIcons = await page.locator('.articleGitRemoteToolbar svg').evaluateAll(icons => icons.map(icon => icon.innerHTML));
+    assert.equal(remoteIcons.length, 4);
+    assert.equal(new Set(remoteIcons).size, 4, 'fetch, pull, push and sync have distinct rendered icons');
     await page.click('[data-git-action="toggle-changes"]');
     assert.equal(await page.locator('[data-git-diff-staged="false"]').isVisible(), false);
     await page.click('[data-git-action="toggle-changes"]');

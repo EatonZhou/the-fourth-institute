@@ -41,6 +41,12 @@
     let historyLimit = 40;
     let historyHasMore = false;
     const actionLabels = { fetch: "获取", pull: "拉取", push: "推送", sync: "同步", branch: "切换分支", discard: "放弃更改", stage: "更新暂存区", commit: "提交", init: "启用 Git" };
+    const remoteActionDescriptions = {
+      fetch: "获取远端提交，不修改当前分支和工作文件",
+      pull: "拉取远端更新到当前分支和工作文件",
+      push: "推送本地提交到远端仓库",
+      sync: "先拉取远端更新到当前稿件，再推送本地提交",
+    };
 
     function actionButton(action, label, icon, extra = "") {
       return `<button class="portalButton is-icon is-quiet iconBtn" type="button" data-git-action="${action}" title="${esc(label)}" aria-label="${esc(label)}" data-portal-icon="${icon}" ${extra}></button>`;
@@ -61,7 +67,12 @@
       toggle.setAttribute("aria-expanded", String(!collapsedGroups.has("history")));
       $("articleGitHistory").innerHTML = commits.map((commit, i) => {
         const row = rows[i];
-        return `<button class="articleGitCommitRow" type="button" data-git-commit="${esc(commit.sha)}" data-git-commit-short="${esc(commit.short_sha)}" data-git-commit-subject="${esc(commit.subject)}" title="${esc(`${commit.short_sha} · ${commit.author} · ${commit.authored_at}\n${commit.subject}`)}">
+        const authoredAt = window.PortalUI.formatDateTime(commit.authored_at, {
+          invalidFallback: false,
+          format: { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit", hourCycle: "h23", timeZoneName: "shortOffset" },
+        });
+        const timestamp = authoredAt ? ` · ${window.PortalI18n.t("本地时间")} ${authoredAt}` : "";
+        return `<button class="articleGitCommitRow" type="button" data-git-commit="${esc(commit.sha)}" data-git-commit-short="${esc(commit.short_sha)}" data-git-commit-subject="${esc(commit.subject)}" title="${esc(`${commit.short_sha} · ${commit.author}${timestamp}\n${commit.subject}`)}">
           <svg aria-hidden="true" width="${width}" height="36" viewBox="0 0 ${width} 36">${row.edges.map(edge => path(...edge)).join("")}${row.incoming ? `<path d="M${x(row.lane)},0 V18" stroke="${colors[row.lane % colors.length]}" stroke-width="2"/>` : ""}<circle cx="${x(row.lane)}" cy="18" r="4" fill="${colors[row.lane % colors.length]}"/></svg>
           <span class="articleGitCommitText"><strong>${esc(commit.subject || "(无提交信息)")}</strong><small>${esc(commit.author || "")} · ${esc(commit.short_sha || "")}</small></span>
           <span class="articleGitRefs">${(commit.refs || []).map(ref => `<span>${esc(ref)}</span>`).join("")}</span></button>`;
@@ -102,10 +113,12 @@
       $("articleGitCommitForm").hidden = !available;
       $("articleGitHistorySection").hidden = !available;
       $("articleGitCommit").disabled = !!busy || !available || !Number(status?.staged_count || 0) || !!status?.conflict_count;
-      panel.querySelectorAll('[data-git-action="fetch"], [data-git-action="push"], [data-git-action="sync"]').forEach(button => {
-        const capability = button.dataset.gitAction === "sync" ? status?.pull : status?.remote;
+      panel.querySelectorAll('#articleGitPull, [data-git-action="fetch"], [data-git-action="push"], [data-git-action="sync"]').forEach(button => {
+        const action = button.dataset.gitAction || "pull";
+        const capability = action === "sync" || action === "pull" ? status?.pull : status?.remote;
+        const target = [capability?.remote, capability?.branch].filter(Boolean).join("/");
         button.disabled = !!busy || !capability?.available;
-        button.title = capability?.reason || `${actionLabels[button.dataset.gitAction]} ${capability?.remote || ""}/${capability?.branch || ""}`;
+        button.title = [window.PortalI18n.t(remoteActionDescriptions[action]), target, capability?.reason].filter(Boolean).join("\n");
       });
       if (!available) {
         $("articleGitSummary").textContent = window.PortalI18n.t("版本控制尚未启用");

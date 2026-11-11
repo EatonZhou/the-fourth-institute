@@ -50,6 +50,8 @@
     filter: strokeIcon('<path d="M3 5h18l-7 8v5l-4 2v-7Z"/>'),
     selector: strokeIcon('<circle cx="5" cy="12" r="2"/><path d="M7 12h3c3 0 3-5 6-5h4M10 12c3 0 3 5 6 5h4"/><path d="m18 4 3 3-3 3M18 14l3 3-3 3"/>'),
     refresh: strokeIcon('<path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/>'),
+    sync: strokeIcon('<path d="M7 20V4m-4 4 4-4 4 4M17 4v16m-4-4 4 4 4-4"/>'),
+    "cloud-download": strokeIcon('<path d="M6 16a4 4 0 0 1-.8-7.9A7 7 0 0 1 18.5 7a4.5 4.5 0 0 1 .5 9M12 12v9m-3-3 3 3 3-3"/>'),
     plus: strokeIcon('<path d="M12 5v14M5 12h14"/>'),
     minus: strokeIcon('<path d="M5 12h14"/>'),
     close: strokeIcon('<path d="M18 6 6 18M6 6l12 12"/>', { strokeWidth: "2.2" }),
