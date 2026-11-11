@@ -22,6 +22,48 @@ from tests.cases.test_family_question_projection import question_round  # noqa: 
 CARD = '检查继续。\n```portal-question\n{"title":"选择测试范围？","options":["定向","全部"]}\n```'
 
 
+def test_batch_question_states_preserve_answer_close_and_missing(resident_record, allowed):
+    repo = resident_conversation_stream.get_repository()
+    resident = resident_record['resident_id']
+    sources = [_ask(repo, resident, 'CASE-A') for _ in range(3)]
+    _answer(repo, resident, sources[1])
+    repo.close_question_set(resident, sources[2]['message_id'], actor='CASE-A')
+    keys = [(resident, source['message_id']) for source in sources]
+    missing = (resident, 'msg_missing')
+    assert repo.question_set_states([*keys, missing, keys[0]]) == dict(zip(keys, ['open', 'answered', 'closed']))
+    with pytest.raises(ValueError):
+        repo.question_set_state(*missing)
+
+
+def test_pending_batches_queries_and_rechecks_permissions_next_call(resident_record, allowed, monkeypatch):
+    from management_common.postgres_database import PostgresConnection
+    resident = resident_record['resident_id']
+    repo = resident_conversation_stream.get_repository()
+    for _ in range(50):
+        _ask(repo, resident, 'CASE-A')
+    queries = []
+    checks = []
+    execute = PostgresConnection.execute
+    may_answer = user_pending_questions._may_answer
+    def counted_sql(self, statement, *args, **kwargs):
+        queries.append(statement)
+        return execute(self, statement, *args, **kwargs)
+    def counted_permission(*args):
+        checks.append(args)
+        return may_answer(*args)
+    monkeypatch.setattr(PostgresConnection, 'execute', counted_sql)
+    monkeypatch.setattr(user_pending_questions, '_may_answer', counted_permission)
+    assert len(_pending('CASE-A')) == 50
+    assert len(checks) == 1
+    assert len(queries) < 100
+    monkeypatch.setattr(permission_system, 'allows', lambda *args, **kwargs: False)
+    assert _pending('CASE-A') == []
+    assert len(checks) == 2
+    monkeypatch.setattr(permission_system, 'allows', lambda *args, **kwargs: True)
+    assert len(_pending('CASE-A')) == 50
+    assert len(checks) == 3
+
+
 @pytest.fixture
 def allowed(monkeypatch):
     """Everyone may answer everywhere unless a test narrows it."""

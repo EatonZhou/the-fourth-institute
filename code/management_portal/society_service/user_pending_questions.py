@@ -271,7 +271,8 @@ def _native_waiting(holder: str, message: Mapping[str, Any], repository: Any) ->
     )
 
 
-def _waiting(row: Mapping[str, Any], place_record: Mapping[str, Any] | None, repository: Any) -> bool:
+def _waiting(row: Mapping[str, Any], place_record: Mapping[str, Any] | None, repository: Any,
+             question_states: Mapping[tuple[str, str], str] | None = None) -> bool:
     """Whether the asking message still waits, as its holder and the place it opens at see it now."""
 
     from . import family_facade
@@ -288,10 +289,9 @@ def _waiting(row: Mapping[str, Any], place_record: Mapping[str, Any] | None, rep
                 place_record, found["request_message_id"], {}).get("state") == "cancelled":
             return False
     if row["kind"] == "question_set":
-        try:
-            return repository.question_set_state(holder, message_id) == "open"
-        except ValueError:
-            return False
+        if question_states is None:
+            question_states = repository.question_set_states([(holder, message_id)])
+        return question_states.get((holder, message_id)) == 'open'
     message = repository.message(holder, message_id)
     return message is not None and _native_waiting(holder, message, repository)
 
@@ -333,6 +333,11 @@ def list_user_pending_requests(actor: str) -> dict[str, list[dict[str, Any]]]:
             (_user_key(user),),
         ).fetchall()
     records: dict[str, dict[str, Any] | None] = {}
+    question_states = repository.question_set_states([
+        (str(row['source_resident_id']), str(row['source_message_id']))
+        for row in rows if row['kind'] == 'question_set'
+    ])
+    answerable: dict[tuple[str, str], bool] = {}
     finished: list[tuple[str, str, str]] = []
     result: list[dict[str, Any]] = []
     for row in rows:
@@ -341,13 +346,16 @@ def list_user_pending_requests(actor: str) -> dict[str, list[dict[str, Any]]]:
             records[place] = resident_record_domain.find_resident(place)
         place_record = records[place]
         try:
-            waiting = _waiting(row, place_record, repository)
+            waiting = _waiting(row, place_record, repository, question_states)
         except KeyError:
             waiting = False
         if not waiting:
             finished.append((row["user_id"], row["source_resident_id"], row["source_message_id"]))
             continue
-        if not _may_answer(place_record, row["kind"], user):
+        permission_key = (place, str(row['kind']))
+        if permission_key not in answerable:
+            answerable[permission_key] = _may_answer(place_record, row['kind'], user)
+        if not answerable[permission_key]:
             continue
         created_at = row["created_at"]
         result.append({

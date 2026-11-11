@@ -643,12 +643,18 @@ class ChatReads:
 
     def group_source_message(self, agent_id: str, message_id: str) -> dict[str, Any] | None:
         """Read a consumed member for audit/requeue, never as a current Chat entry."""
+        return self.group_source_messages(agent_id, [message_id]).get(message_id)
+
+    def group_source_messages(self, agent_id: str, message_ids: Sequence[str]) -> dict[str, dict[str, Any]]:
+        found = {}
         with self.database.read() as connection:
-            rows = group_source_members(connection, trace_id(connection, agent_id), [message_id])
-            if rows:
-                row = rows[-1]
-                return chat_payload(row["segment_id"], row["metadata_json"], message_contents(connection, [row["segment_id"]])[row["segment_id"]])
-        return None
+            sequence_id = trace_id(connection, agent_id)
+            for chunk in in_batches(list(dict.fromkeys(message_ids))):
+                rows = group_source_members(connection, sequence_id, chunk)
+                contents = message_contents(connection, [row['segment_id'] for row in rows])
+                for row in rows:
+                    found[row['member_id']] = chat_payload(row['segment_id'], row['metadata_json'], contents[row['segment_id']])
+        return found
 
     def message_groups(self, agent_id: str, message_ids: Sequence[str]) -> dict[str, str]:
         """Recover the latest grouping in this trace, including consumed members."""

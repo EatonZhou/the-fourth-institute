@@ -348,6 +348,21 @@ class ConversationMessages:
 
         return self.state_store.mailbox_entry(required_resident_id(resident_id), str(message_id or "").strip()) is not None
 
+    def stored_messages(self, resident_id: str, message_ids: Sequence[str]) -> dict[str, dict[str, Any]]:
+        """Selected messages with the same trace, Mailbox, consumed-member precedence as stored_message."""
+        wanted = list(dict.fromkeys(message_ids))
+        found = self.agent_data.trace_chat_messages(resident_id, wanted)
+        missing = [identity for identity in wanted if identity not in found]
+        if missing:
+            for entry in self.state_store.mailbox_entries([resident_id], message_ids=missing):
+                message = entry.get('message') or {}
+                if isinstance(message.get('content_parts'), list):
+                    found[entry['message_id']] = message
+            missing = [identity for identity in missing if identity not in found]
+            if missing:
+                found.update(self.agent_data.chat.group_source_messages(resident_id, missing))
+        return found
+
     def message_business_ref(self, resident_id: object, message_id: object) -> str:
         """The business record a delivered Message belongs to; empty when none was given."""
 

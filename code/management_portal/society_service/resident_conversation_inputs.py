@@ -62,19 +62,51 @@ class ConversationInputs:
         same state.
         """
 
-        stream_id = required_resident_id(resident_id)
-        source_id = str(message_id or "").strip()
-        questions = question_set(self.messages.message(stream_id, source_id))
-        if questions is None or self.agent_data.chat_message_ordinal(stream_id, source_id) is None:
+        key = (required_resident_id(resident_id), str(message_id or '').strip())
+        states = self.question_set_states([key])
+        if key not in states:
             raise ValueError("该 Resident 中的问题不存在或已不可用")
-        answer_id = questions["answer_message_id"]
-        if self.messages.stored_message(stream_id, answer_id) is not None:
-            return "answered"
-        try:
-            slot = self.input_state(stream_id, answer_id)
-        except KeyError:
-            return "open"
-        return "closed" if (slot.get("error") or {}).get("code") == QUESTION_SET_CLOSED else "open"
+        return states[key]
+
+    def question_set_states(self, requests: Sequence[tuple[str, str]]) -> dict[tuple[str, str], str]:
+        """Current question states by identity; missing/invalid questions are omitted.
+
+        Read only selected sources and answer slots. Historical trace membership
+        survives context reset, just as question_set_state requires.
+        """
+        grouped: dict[str, list[str]] = {}
+        for resident, message in dict.fromkeys(requests):
+            grouped.setdefault(required_resident_id(resident), []).append(message)
+        result = {}
+        unanswered = {}
+        for resident, identities in grouped.items():
+            sources = self.agent_data.trace_chat_messages(resident, identities)
+            questions = {identity: question_set(message_from_storage(message))
+                         for identity, message in sources.items()}
+            answers = {identity: value['answer_message_id'] for identity, value in questions.items() if value is not None}
+            stored = self.messages.stored_messages(resident, list(answers.values())) if answers else {}
+            for identity, answer in answers.items():
+                key = (resident, identity)
+                if answer in stored:
+                    result[key] = 'answered'
+                else:
+                    unanswered[key] = (resident, answer)
+        if unanswered:
+            # Only the answer slot's cancellation code determines closure.
+            # Work/reply projections cannot change this state and are not read.
+            with self.state_store.database.read() as connection:
+                rows = connection.execute(
+                    'SELECT resident_id,message_id,error_json FROM conversation_input_states '
+                    'JOIN unnest(%s::text[],%s::text[]) requested(resident_id,message_id) '
+                    'USING(resident_id,message_id)',
+                    ([resident for resident, _ in unanswered.values()], [message for _, message in unanswered.values()]),
+                ).fetchall()
+            from management_common.json_columns import json_value
+            closed = {(row['resident_id'], row['message_id']) for row in rows
+                      if json_value(row['error_json']).get('code') == QUESTION_SET_CLOSED}
+            for key, slot in unanswered.items():
+                result[key] = 'closed' if slot in closed else 'open'
+        return result
 
     def close_question_set(self, resident_id: object, message_id: object, *, actor: str) -> str:
         """Close an open question set unanswered; nothing is sent to the Resident."""

@@ -172,6 +172,9 @@ class ResidentConversationRepository:
     def question_set_state(self, resident_id: object, message_id: object) -> str:
         return self.inputs.question_set_state(resident_id, message_id)
 
+    def question_set_states(self, requests: Sequence[tuple[str, str]]) -> dict[tuple[str, str], str]:
+        return self.inputs.question_set_states(requests)
+
     def close_question_set(self, resident_id: object, message_id: object, *, actor: str) -> str:
         return self.inputs.close_question_set(resident_id, message_id, actor=actor)
 
