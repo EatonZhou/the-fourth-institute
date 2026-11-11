@@ -210,6 +210,112 @@ def test_reconciliation_emits_each_new_message_once(primitive_store, conversatio
     assert all(item["event"]["payload"]["message_id"] not in {"msg_a", "msg_b"} for item in reconcile())
 
 
+@pytest.mark.parametrize("is_facade", [False, True])
+@pytest.mark.parametrize("missing_only", [False, True])
+def test_missing_message_does_not_block_later_arrivals_or_create_a_routing_snapshot(
+    primitive_store, conversation, monkeypatch, caplog, is_facade, missing_only,
+):
+    """正文缺失的旧到达不产生路由副作用，游标仍可前进并处理后续真实消息。"""
+    from management_portal.society_service import family_facade, family_recovery, lineage_program_runtime
+    from unittest.mock import Mock
+
+    facade = {"resident_id": WORK_A} if is_facade else None
+    monkeypatch.setattr(events, "_facade_record", lambda _: facade)
+    monkeypatch.setattr(family_facade, "family_members", lambda _: [WORK_B])
+    monkeypatch.setattr(family_recovery, "arrival", lambda _, mid: mid)
+    monkeypatch.setattr(events, "_facade_message_waiting", lambda *_: True)
+    # direct_member captures the policy and may provision a mobile assistant;
+    # neither is allowed for a missing message.
+    route = Mock(return_value="")
+    monkeypatch.setattr(family_facade, "direct_member", route)
+    monkeypatch.setattr(family_facade, "quoted_member", lambda *_: "")
+    monkeypatch.setattr(family_facade, "continued_member", lambda *_: "")
+    conversation.log.clear()
+    current = support.create_lineage_with_resident_members({
+        "title": "Missing arrival body", "nodes": [_worker(WORK_A), _worker(WORK_B)],
+        "program": {
+            "components": [{"id": "event_source_inbox", "kind": "event_source",
+                            "config": {"event_type": events.MESSAGE_RECEIVED_EVENT}}],
+            "wires": [{"id": "wire_watch", "kind": "watch", "source": "event_source_inbox",
+                       "source_port": "watch", "target": WORK_A}],
+        },
+    }, ACTOR)
+    lineage_id = current["lineage_id"]
+
+    def reconcile():
+        return lineage_domain.reconcile_lineage_system_events(lineage_id, ACTOR)["events"]
+
+    assert reconcile() == []
+    conversation.log.append(_input(1, "msg_missing", "queued"))
+    if not missing_only:
+        conversation.log.append(_input(2, "msg_a", "queued"))
+    emitted = reconcile()
+    assert [item["event"]["payload"]["message_id"] for item in emitted] == ([] if missing_only else ["msg_a"])
+    assert "message=msg_missing" in caplog.text
+    assert route.call_count == int(is_facade and not missing_only)
+    if route.called:
+        assert route.call_args.args[1] == conversation.messages["msg_a"]
+    assert reconcile() == []
+    runtime = lineage_program_runtime.read_runtime(lineage_id)["event_sources"]["event_source_inbox"]
+    assert events.parse_cursor_value(runtime["state_value"]) == len(conversation.log)
+
+
+def test_missing_recovery_payload_is_not_pushed(monkeypatch):
+    """恢复 occurrence 的原文缺失时不派发，也不伪造原消息身份。"""
+    from types import SimpleNamespace
+    from unittest.mock import Mock
+    from management_portal.society_service import family_facade, family_recovery
+
+    facade = {"resident_id": WORK_A}
+    repository = SimpleNamespace(input_state=Mock(return_value={"state": "queued"}), message=Mock(return_value=None))
+    monkeypatch.setattr(events.resident_conversation_stream, "get_repository", lambda: repository)
+    monkeypatch.setattr(events, "_facade_record", lambda _: facade)
+    monkeypatch.setattr(family_facade, "family_members", lambda _: [WORK_B])
+    monkeypatch.setattr(family_recovery, "arrival", lambda _, mid: "msg_missing_original")
+    monkeypatch.setattr(events, "_facade_message_waiting", lambda *_: True)
+    route = Mock(side_effect=AssertionError("missing message reached routing"))
+    monkeypatch.setattr(family_facade, "direct_member", route)
+    dispatch = Mock()
+    source = {"event_type": events.MESSAGE_RECEIVED_EVENT, "subject_resident_id": WORK_A,
+              "subscriber_routes": [{"config": {"parallel": True}}]}
+
+    assert events.dispatch_arrival({"event_sources": {"event_source_inbox": source}}, ACTOR,
+                                   WORK_A, "msg_recovery", dispatch) == []
+    repository.message.assert_called_once_with(WORK_A, "msg_missing_original")
+    route.assert_not_called()
+    dispatch.assert_not_called()
+
+
+@pytest.mark.parametrize("failure", [ConnectionError("message store unavailable"),
+                                     ValueError("Stored conversation message has no identity")])
+def test_unreadable_message_preserves_the_arrival_cursor_for_retry(primitive_store, conversation, monkeypatch, failure):
+    """读取失败或存储契约损坏均不得冒充正文不存在并消费到达。"""
+    from unittest.mock import Mock
+    from management_portal.society_service import lineage_program_runtime
+
+    current = support.create_lineage_with_resident_members({
+        "title": "Unreadable arrival", "nodes": [_worker(WORK_A)],
+        "program": {
+            "components": [{"id": "event_source_inbox", "kind": "event_source",
+                            "config": {"event_type": events.MESSAGE_RECEIVED_EVENT}}],
+            "wires": [{"id": "wire_watch", "kind": "watch", "source": "event_source_inbox",
+                       "source_port": "watch", "target": WORK_A}],
+        },
+    }, ACTOR)
+    lineage_id = current["lineage_id"]
+    lineage_domain.reconcile_lineage_system_events(lineage_id, ACTOR)
+    before = lineage_program_runtime.read_runtime(lineage_id)
+    conversation.log.append(_input(2, "msg_a", "queued"))
+    original = conversation.message
+    monkeypatch.setattr(conversation, "message", Mock(side_effect=failure))
+    with pytest.raises(type(failure), match=str(failure)):
+        lineage_domain.reconcile_lineage_system_events(lineage_id, ACTOR)
+    assert lineage_program_runtime.read_runtime(lineage_id) == before
+    monkeypatch.setattr(conversation, "message", original)
+    emitted = lineage_domain.reconcile_lineage_system_events(lineage_id, ACTOR)["events"]
+    assert [item["event"]["payload"]["message_id"] for item in emitted] == ["msg_a"]
+
+
 def test_a_message_to_a_watched_resident_wakes_its_lineage(monkeypatch):
     """被观察的 Resident 收到消息后立即派发或唤醒对账
 

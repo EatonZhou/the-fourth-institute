@@ -174,7 +174,12 @@ def pushed_source(source: Mapping[str, Any]) -> bool:
 def arrival_details(
     repository: Any, subject_id: str, message_id: str, actor_id: str, facade: Mapping[str, Any] | None,
 ) -> dict[str, Any] | None:
-    """Sender, relay depth and identity of one arrival; None when a facade no longer waits for it."""
+    """Arrival facts, or None when its message is absent or a facade no longer waits.
+
+    The event log can outlive a message in the Chat/Mailbox. Only the
+    repository's explicit absence is skipped; read failures still abort the
+    prefetch so reconciliation retains its cursor and retries.
+    """
 
     occurrence_id = message_id
     if facade:
@@ -187,7 +192,11 @@ def arrival_details(
         if ((not family_facade.family_members(facade) and not family_facade.family_steward_id(facade))
                 or not _facade_message_waiting(repository, facade, message_id)):
             return None
-    message = repository.message(subject_id, message_id) or {}
+    message = repository.message(subject_id, message_id)
+    if message is None:
+        LOGGER.warning("Skipping message arrival without a stored message: resident=%s message=%s occurrence=%s",
+                       subject_id, message_id, occurrence_id)
+        return None
     author_id = str(message.get("author_id") or "")
     details = {
         "message_id": message_id,
