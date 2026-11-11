@@ -78,7 +78,7 @@ def _owned_process(target, state):
         return None
     try:
         process = psutil.Process(state["pid"])
-        if not process.is_running():
+        if not process.is_running() or process.status() == psutil.STATUS_ZOMBIE:
             return None
         if state.get("created") is not None and process.create_time() != state["created"]:
             return None
@@ -124,8 +124,12 @@ def _stop_server(account, target, state):
         except psutil.NoSuchProcess:
             pass
     _, alive = psutil.wait_procs([process, *descendants], timeout=15)
-    if alive:
-        raise TimeoutError("Owned Kimi process did not stop")
+    for remaining in alive:
+        try:
+            if remaining.is_running() and remaining.status() != psutil.STATUS_ZOMBIE:
+                raise TimeoutError("Owned Kimi process did not stop")
+        except psutil.NoSuchProcess:
+            pass
     (control(account) / "server.json").unlink(missing_ok=True)
 
 
