@@ -53,6 +53,16 @@
 
     function initArticleWorkbench() {
       const { split, stack } = window.PortalWorkbench.model;
+      // Navigation shares the authored panel lifecycle, but not the source
+      // editor's minimum width. Keep the editor and PDF pane constraints intact.
+      if (!window.PortalWorkbench.registeredPanelPackages().some(item => item.type === "article-navigation")) {
+        const authored = window.PortalWorkspaceSurface.panelPackages.authored;
+        window.PortalWorkbench.registerPanelPackage({
+          ...authored,
+          type: "article-navigation",
+          sizing: { ...authored.sizing, minWidth: 180 },
+        });
+      }
       const writing = split("horizontal", [
         stack(["navigation"]),
         stack(["editor"]),
@@ -66,7 +76,7 @@
         label: window.PortalI18n.t("Article Workbench"),
         insets: { left: 58 },
         initialEditors: [
-          { id: "navigation", type: "authored", presentation: "navigation", options: { source: "#articleSidePane" }, title: window.PortalI18n.t("Navigation / Chat") },
+          { id: "navigation", type: "article-navigation", presentation: "navigation", options: { source: "#articleSidePane" }, title: window.PortalI18n.t("Navigation / Chat") },
           { id: "editor", type: "authored", presentation: "editor", options: { source: "#articleEditorPane" } },
           { id: "output", type: "authored", presentation: "document", options: { source: "#articleOutputPane" }, title: window.PortalI18n.t("PDF / Build") },
         ],
