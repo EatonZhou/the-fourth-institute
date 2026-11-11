@@ -421,6 +421,14 @@
     async function selectChatroom(chatroomId, { messageId = "" } = {}) {
       const id = String(chatroomId || "").trim();
       if (!/^chatroom_[0-9a-f]{12}$/.test(id)) return false;
+      const workbench = currentLineageWorkbench();
+      const panel = currentAgentChatPanel();
+      // Closing an extra Chat destroys its runtime; the host selection can still
+      // refer to it. Let the workbench reuse/create and bind a live Chat before
+      // moving the room's cached view onto it, as Resident navigation does.
+      if (workbench && (!panel || workbench.getPanel(panel.instanceId()) !== panel)) {
+        await workbench.openResource({ type: "chat", mode: "reuse", resource: { kind: "chat" } });
+      }
       currentLineageWorkbench()?.focusPanel?.(currentAgentChatPanel()?.instanceId?.() || "chat");
       const host = chatroomHost();
       if (!host) throw new Error("Chat 面板尚未就绪");

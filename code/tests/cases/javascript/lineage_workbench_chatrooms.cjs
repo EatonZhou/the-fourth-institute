@@ -14,6 +14,52 @@ const room = (digit, extra = {}) => ({
 const said = (preview, at) => ({ last_message: { preview, author_id: 'alice', created_at: at } });
 const ROOMS = [room('1', said('hi', '2026-10-20T00:00:00Z')), room('2'), room('3', said('later', '2026-10-21T00:00:00Z'))];
 
+test('Chatroom list and message links reopen a live Chat after closing the active extra tab', async t => {
+  const target = ROOMS[0];
+  const message = { message_id: 'msg_fixture', ordinal: 1, author_id: 'alice', role: 'user',
+    content_parts: [{ type: 'text', text: 'Chatroom message remains accessible' }] };
+  const page = startWorkbenchPage({
+    answers: {
+      '/api/me': { username: 'fixture' }, '/api/users': [],
+      '/api/agent-workbench/residents': { ready: true, residents: [], lineages: [], principal_hierarchy: { projects: [], user_residents: [] } },
+    },
+    instructions: {
+      ListChatrooms: () => ({ chatrooms: ROOMS }),
+      GetChatroom: () => ({ chatroom: target }),
+      ListChatroomMessages: () => ({ messages: [message] }),
+    },
+  });
+  t.after(page.close);
+  page.window.performance.getEntriesByType = () => [];
+  await page.until(() => page.parts.PortalLineageWorkbenchChatrooms?.dependencies.currentAgentChatPanel());
+  const { dependencies, exports: rooms } = page.parts.PortalLineageWorkbenchChatrooms;
+  const workbench = dependencies.currentLineageWorkbench();
+  const closeExtraChat = async () => {
+    await workbench.openResource({ type: 'chat', mode: 'new-tab', resource: { kind: 'chat', title: 'Extra Chat' } });
+    const extra = dependencies.currentAgentChatPanel();
+    assert.notEqual(extra.instanceId(), 'chat');
+    // Move the room onto the soon-to-be-closed tab, exercising its cached host too.
+    await rooms.selectChatroom(target.chatroom_id);
+    await workbench.closePanel(extra.instanceId());
+    assert.equal(workbench.getPanel(extra.instanceId()), null);
+  };
+  await closeExtraChat();
+  await rooms.loadChatrooms();
+  page.document.querySelector(`[data-chatroom-select="${target.chatroom_id}"]`).click();
+  await page.until(() => page.document.querySelector('.lineageChatroomHost .messageList [data-message-key="msg_fixture"]'));
+  assert.equal(workbench.getPanel(dependencies.currentAgentChatPanel().instanceId()), dependencies.currentAgentChatPanel());
+  assert.match(page.document.querySelector('.lineageChatroomHost').textContent, /Chatroom message remains accessible/);
+  assert.equal(workbench.getPanelsByType('chat').length, 1, 'reuse the surviving Chat');
+  await closeExtraChat();
+  const detail = { entry: { surface: 'lineage', url: `/lineage?chatroom=${target.chatroom_id}&message=msg_fixture` } };
+  page.window.dispatchEvent(new page.window.CustomEvent('portal:agent-conversation-open', { detail }));
+  await page.until(() => page.document.querySelector('.lineageChatroomHost .messageQuoteTarget'));
+  assert.equal(detail.handled, true);
+  assert.equal(page.document.querySelector('.messageQuoteTarget').dataset.messageKey, 'msg_fixture');
+  assert.equal(new URL(page.window.location.href).searchParams.get('message'), 'msg_fixture');
+  assert.deepEqual(page.errors, []);
+});
+
 test('Chatroom cold links and in-page Mailbox navigation preserve the exact message target', async t => {
   const calls = [];
   const id = ROOMS[0].chatroom_id;
