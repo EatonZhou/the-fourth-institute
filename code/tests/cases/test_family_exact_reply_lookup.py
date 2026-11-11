@@ -9,6 +9,53 @@ from tests.cases.test_family_facade import facade, _register_test_member, MEMBER
 from tests.cases.resident_execution_test_support import input_delivery, resident_record  # noqa: F401
 
 
+@pytest.mark.parametrize('history', [0, 10000])
+def test_selected_replies_read_only_selected_edges(facade, monkeypatch, history):
+    """Three independent requests do not load unrelated historical ledger links."""
+    import time
+    from management_common.postgres_database import PostgresConnection
+    _register_test_member(facade, 'worker')
+    repo = resident_conversation_stream.get_repository()
+    identities, requests = [], []
+    for _ in range(3):
+        outer = build_message('user', 'synthetic', 'CASE-A')
+        repo.append_message(facade['resident_id'], outer)
+        repo.set_input_state(facade['resident_id'], outer['message_id'], 'queued')
+        inner = build_message('user', 'synthetic', 'CASE-A')
+        inner['business_ref'] = family_facade.relay_mark(facade['resident_id'], outer['message_id'])
+        repo.append_message(MEMBER, inner)
+        family_facade.complete_relay((facade['resident_id'], outer['message_id']), MEMBER, inner['message_id'])
+        reply = build_message('agent', 'synthetic', MEMBER)
+        reply['reply_to_message_id'] = inner['message_id']
+        repo.append_message(MEMBER, reply)
+        identities.append(reply['message_id'])
+        requests.append(outer['message_id'])
+    store = get_lineage_data_store()
+    with store.family_relays.transaction(facade['lineage_id'], facade['resident_id']) as ledger:
+        for index in range(history):
+            ledger.setdefault('links', {})[f'msg_unrelated_{index}'] = {
+                'resident_id': MEMBER, 'message_id': f'msg_other_{index}'}
+    queries, edges = [], []
+    original = PostgresConnection.execute
+    def counted(self, statement, parameters=None, **kwargs):
+        queries.append(statement)
+        if 'family_relays' in statement:
+            assert "#> ARRAY['links',requested.message_id]" in statement
+            edges.append(parameters)
+        return original(self, statement, parameters, **kwargs)
+    monkeypatch.setattr(PostgresConnection, 'execute', counted)
+    monkeypatch.setattr(family_facade, 'relay_links', lambda *_: pytest.fail('full ledger read'))
+    started = time.perf_counter()
+    found = family_facade.relayed_replies(facade, identities)
+    elapsed_ms = (time.perf_counter() - started) * 1000
+    assert set(found) == set(identities)
+    assert {item['request_message_id'] for item in found.values()} == set(requests)
+    assert len(queries) < 100
+    assert len(edges) == 1
+    assert set(edges[0][2]) == set(requests)
+    print(f'SELECTED_EDGES history={history} selected=3 sql={len(queries)} edge_queries={len(edges)} ms={elapsed_ms:.2f}')
+
+
 def test_reply_batch_shares_facts_and_revalidates_reassignment(facade, monkeypatch):
     from management_common.postgres_database import PostgresConnection
     _register_test_member(facade, 'worker')
