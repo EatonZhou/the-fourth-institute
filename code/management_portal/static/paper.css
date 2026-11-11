@@ -768,8 +768,8 @@ body {
 }
 .paneToggle svg { transition: transform .16s ease; }
 .paperPersonal { padding: 0; }
-.paperPersonal [data-row] { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 8px 0; }
-.paperPersonal [data-row] > button:first-child { flex: 1; text-align: left; }
+.paperPersonal [data-row]:not(.paperLeaf) { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 8px 0; }
+.paperPersonal [data-row]:not(.paperLeaf) > button:first-child { flex: 1; text-align: left; }
 .paperPersonal time { font-size: 12px; opacity: .7; }
 .paperPersonal [data-status] { overflow-wrap: anywhere; margin: 6px 0; }
 .paperPersonal [data-status]:empty { display: none; }
@@ -875,3 +875,11 @@ body.resizingReaderAI { cursor:col-resize; user-select:none; }
 .paperReadingDialog.is-embedded .paperReaderSidePanel { display:none!important; }
 
 .paperReaderSidePanel .paperTranslationBody { max-height:none; overflow:visible; }
+
+/* Shared Personal/Repository grouping rows: same vertical metrics as papers. */
+.folderLine[data-paper-tree-toggle] { background:color-mix(in srgb,var(--muted,#64748b) 8%,var(--panel,#fff)); }
+.folderLine[data-paper-tree-toggle]:hover { background:color-mix(in srgb,var(--muted,#64748b) 16%,var(--panel,#fff)); color:var(--text); }
+.folderLine[data-paper-tree-toggle]:focus-visible { outline:2px solid var(--accent); outline-offset:-2px; }
+.paperFolderIcon { width:14px; height:14px; flex:0 0 14px; fill:none; stroke:currentColor; stroke-width:1.4; }
+.paperLeaf { padding-left:0; }
+.paperLeaf > .folderLine > span { flex:1 1 auto; min-width:0; }

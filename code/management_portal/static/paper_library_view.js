@@ -66,7 +66,6 @@
       const paperLeafHtml = paper => window.PortalI18n.html`
           <div class="paperLeaf">
             <button class="folderLine ${!isCollectionMode() && paper.id === state.selectedId ? "selected" : ""}" type="button" data-paper-id="${esc(paper.id)}">
-              <span class="statusDot ${paper.has_pdf ? "ready" : ""}" title="${paper.has_pdf ? window.PortalI18n.t("PDF available") : window.PortalI18n.t("PDF missing")}"></span>
               <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(paper.title)}</span>
             </button>
             ${paperFavoriteButton(paper.id)}
@@ -85,7 +84,7 @@
         append(() => window.PortalI18n.html`
             <div class="folderNode">
               <button class="folderLine" type="button" data-paper-tree-toggle="${esc(venueKey)}" aria-expanded="${venueExpanded ? "true" : "false"}">
-                ${disclosureIcon(venueExpanded)}<strong>${esc(venue.name)}</strong><span class="folderCount">${venue.count}</span>
+                ${disclosureIcon(venueExpanded)}<svg class="paperFolderIcon" viewBox="0 0 16 16" aria-hidden="true"><path d="M1.5 4V3h5l1.5 2h6.5v8h-13z"/></svg><strong>${esc(venue.name)}</strong><span class="folderCount">${venue.count}</span>
               </button>
             </div>
           `);
@@ -96,7 +95,7 @@
           append(() => window.PortalI18n.html`
               <div class="folderNode" style="padding-left: 12px;">
                 <button class="folderLine" type="button" data-paper-tree-toggle="${esc(yearKey)}" aria-expanded="${yearExpanded ? "true" : "false"}">
-                  ${disclosureIcon(yearExpanded)}${esc(year.name)}<span class="folderCount">${year.count}</span>
+                  ${disclosureIcon(yearExpanded)}<svg class="paperFolderIcon" viewBox="0 0 16 16" aria-hidden="true"><path d="M1.5 4V3h5l1.5 2h6.5v8h-13z"/></svg><span>${esc(year.name)}</span><span class="folderCount">${year.count}</span>
                 </button>
               </div>
             `);
@@ -110,12 +109,12 @@
             append(() => window.PortalI18n.html`
                 <div class="folderNode" style="padding-left: 24px;">
                   <button class="folderLine" type="button" data-paper-tree-toggle="${esc(sessionKey)}" aria-expanded="${sessionExpanded ? "true" : "false"}">
-                    ${disclosureIcon(sessionExpanded)}${esc(session.name)}<span class="folderCount">${session.count}</span>
+                    ${disclosureIcon(sessionExpanded)}<svg class="paperFolderIcon" viewBox="0 0 16 16" aria-hidden="true"><path d="M1.5 4V3h5l1.5 2h6.5v8h-13z"/></svg><span>${esc(session.name)}</span><span class="folderCount">${session.count}</span>
                   </button>
                 </div>
               `);
             if (sessionExpanded) papers.forEach(paper => append(() => window.PortalI18n.html`
-                <div style="padding-left: 24px;">${paperLeafHtml(paper)}</div>
+                ${paperLeafHtml(paper)}
               `));
           });
         });
