@@ -173,7 +173,7 @@
           ? window.PortalI18n.html`<button class="portalButton is-compact is-danger" type="button" id="deletePaperPdfBtn" ${state.pdfDeleteInFlight ? "disabled" : ""}>${state.pdfDeleteInFlight ? window.PortalI18n.t("Deleting PDF...") : window.PortalI18n.t("Delete PDF")}</button>`
           : "";
         target.innerHTML = window.PortalI18n.html`
-            <span class="paneNote" id="deepReadStatusText">${esc(deepState.text)}</span>
+            <span class="paneNote" id="deepReadStatusText" role="status" aria-live="polite">${esc(deepState.text)}</span>
             <span class="workspaceActionButtons">
               ${uploadButton}
               ${deletePdfButton}
@@ -211,7 +211,7 @@
       const done = deep && String(deep.status || "") === "done";
       const error = deep && String(deep.status || "") === "error";
       const text = running
-        ? `Deep Read: ${deep.step || deep.status} · ${deep.progress || 0}%`
+        ? `Deep Read: ${{queued: "Queued", "extracting pdf text": "Extracting PDF", "waiting for Resident": "Model generation", Submitting: "Submitting"}[deep.step] || deep.step || deep.status} · ${deep.progress || 0}%`
         : done
           ? `Deep Read done${deep.usage?.total_tokens ? ` · ${deep.usage.total_tokens} tokens` : ""}`
           : error
@@ -219,7 +219,7 @@
             : paper?.has_analysis
               ? "Analysis ready"
               : "No analysis yet";
-      const buttonText = running ? "Deep Reading" : paper?.has_analysis ? "Re-run Deep Read" : "Deep Read";
+      const buttonText = running ? "Deep Reading" : error ? "Retry Deep Read" : paper?.has_analysis ? "Re-run Deep Read" : "Deep Read";
       return { deep, running, done, error, text, buttonText };
     }
 

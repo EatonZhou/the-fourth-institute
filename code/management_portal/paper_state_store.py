@@ -187,3 +187,22 @@ def delete_paper(kind, paper_id):
 def curated_venues():
     with database().read() as connection:
         return [row[0] for row in connection.execute("SELECT venue FROM curated_venues ORDER BY position")]
+
+
+def admit_deep_read(record):
+    """One active shared analysis per paper, serialized across Web processes.
+
+    Deliberately use the existing job-owner lock, not the global Paper lock.
+    This is a registration transaction: no catalog, files, PDF or model IO.
+    """
+    values = encode("deep_read_jobs", record)
+    with database().transaction(lock_key("deep_read_jobs")) as connection:
+        row = connection.execute(
+            "SELECT * FROM deep_read_jobs WHERE paper_id=%s AND status IN ('queued','running') "
+            "ORDER BY created_at DESC,job_id DESC LIMIT 1", (record['paper_id'],)).fetchone()
+        if row:
+            return decode("deep_read_jobs", row), False
+        row = connection.execute(
+            f"INSERT INTO deep_read_jobs ({','.join(values)}) VALUES ({','.join(['%s'] * len(values))}) RETURNING *",
+            tuple(values.values()),).fetchone()
+        return decode("deep_read_jobs", row), True

@@ -227,16 +227,35 @@
       return status;
     }
 
+    let deepReadSubmitting = new Set();
     async function startDeepRead() {
       if (!state.selectedId) return;
       const paperId = String(state.selectedId);
-      const job = await paperApi.request("/paper/api/deep-read/start", {
-        method: "POST",
-        body: JSON.stringify({ paper_id: paperId }),
-      });
-      if (String(state.selectedId || "") !== paperId) return;
-      state.deepReadStatus = job;
+      if (deepReadSubmitting.has(paperId) || (state.deepReadStatus?.paper_id === paperId &&
+          ["queued", "running"].includes(state.deepReadStatus.status))) return;
+      deepReadSubmitting.add(paperId);
+      state.deepReadStatus = {paper_id: paperId, status: "queued", step: "Submitting", progress: 0};
       updateDeepReadControls();
+      try {
+        const job = await paperApi.request("/paper/api/deep-read/start", {
+          method: "POST", body: JSON.stringify({paper_id: paperId}),
+        });
+        if (String(state.selectedId || "") !== paperId) return;
+        state.deepReadStatus = job;
+      } catch (error) {
+        // A lost HTTP response is not evidence that admission failed.
+        // Reconcile through the read-only task API; never automatically POST.
+        let status;
+        try { status = await loadDeepReadStatus(paperId, {render: false}); } catch (_) {}
+        if (String(state.selectedId || "") !== paperId) return;
+        if (!status || status.status === "idle") {
+          state.deepReadStatus = {paper_id: paperId, status: "error",
+            error: "Submission status unknown. Check task status or retry; active tasks are reused.", progress: 0};
+        }
+      } finally {
+        deepReadSubmitting.delete(paperId);
+        if (String(state.selectedId || "") === paperId) updateDeepReadControls();
+      }
     }
 
     async function loadExpStatus(paperId = state.selectedId, { render = true } = {}) {

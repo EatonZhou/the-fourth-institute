@@ -101,35 +101,20 @@ def start_deep_read(payload: dict, actor: str) -> dict:
     paper_id = str(payload.get("paper_id") or "").strip()
     if not paper_id:
         raise ValueError("paper_id required")
-    with LOCK:
-        papers = _all_papers()
-        paper = next((item for item in papers if str(item.get("id") or "") == paper_id), None)
-        if not paper:
-            raise KeyError("paper not found")
-        public = _paper_public(paper)
-        if not public.get("has_pdf"):
-            raise ValueError("paper has no local or remote PDF")
-        with paper_state_store.locked("deep_read_jobs"):
-            latest = _latest_deep_read_job(paper_id=paper_id)
-            if latest and str(latest.get("status") or "") in {"queued", "running"}:
-                return latest
-            job_id = f"deep-read-{secrets.token_hex(6)}"
-            job = {
-                "job_id": job_id,
-                "paper_id": paper_id,
-                "paper_title": str(paper.get("title") or ""),
-                "status": "queued",
-                "step": "queued",
-                "progress": 0,
-                "created_by": actor,
-                "created_at": _now(),
-                "updated_at": _now(),
-                "analysis_path": "",
-                "error": "",
-                "usage": {},
-            }
-            paper_state_store.append("deep_read_jobs", job)
-    return _launch_deep_read_business_task(job)
+    # Same resource-read contract as the existing HTTP route/status API.
+    # Do not introduce a contributor requirement for this read-generation task.
+    if not str(actor or "").strip():
+        raise PermissionError("Paper requires an authenticated actor")
+    get_resource_service().get(paper_id, actor=actor)
+    job, created = paper_state_store.admit_deep_read({
+        "job_id": f"deep-read-{secrets.token_hex(6)}", "paper_id": paper_id,
+        "paper_title": paper_id, "status": "queued", "step": "queued", "progress": 0,
+        "created_by": actor, "created_at": _now(), "updated_at": _now(),
+        "analysis_path": "", "error": "", "usage": {},
+    })
+    if created:
+        _launch_deep_read_business_task(job)
+    return job
 
 
 def _launch_deep_read_business_task(job: dict) -> dict:
@@ -148,7 +133,7 @@ def _launch_deep_read_business_task(job: dict) -> dict:
     except Exception as exc:
         fail(exc)
         raise
-    return _latest_deep_read_job(job_id=job_id) or job
+    return job
 
 
 def recover_deep_read(payload: dict, actor: str) -> dict:
@@ -333,8 +318,7 @@ def refresh_deep_read_provenance(payload: dict, actor: str) -> dict:
 
 
 def get_deep_read_status(*, actor: str, job_id: str = "", paper_id: str = "") -> dict:
-    with LOCK:
-        job = _latest_deep_read_job(paper_id=paper_id, job_id=job_id)
+    job = _latest_deep_read_job(paper_id=paper_id, job_id=job_id)
     _authorize_paper_job_status(job, actor=actor, job_id=job_id, paper_id=paper_id)
     if job and str(job.get("status") or "") in {"queued", "running"}:
         job = _launch_deep_read_business_task(job)
@@ -379,11 +363,14 @@ def _run_deep_read_job(job_id: str) -> None:
             return
         paper_id = str(job.get("paper_id") or "")
         paper = get_paper_detail(paper_id)["paper"]
+        if not _paper_public(paper).get("has_pdf"):
+            raise ValueError("Paper has no PDF (没有 PDF); attach a PDF before retrying Deep Read")
         actor = str(job.get("created_by") or "portal")
         _set_deep_read_job(
             job_id,
             {
                 "status": "running",
+                "paper_title": str(paper.get("title") or paper_id),
                 "step": "extracting pdf text",
                 "progress": 18,
                 "error": "",
