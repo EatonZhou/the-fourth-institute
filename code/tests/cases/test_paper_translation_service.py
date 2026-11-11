@@ -128,7 +128,7 @@ def test_translation_final_protocol_payload_is_only_instruction_and_material(own
     key, endpoint, wire = calls[0]
     assert key == 'deepseek_primary' and endpoint == 'chat/completions'
     assert wire['messages'] == [
-        {'role': 'system', 'content': SYSTEM},
+        {'role': 'system', 'content': payload['prompt']['system']},
         {'role': 'user', 'content': planned.prompt},
     ]
     assert json.loads(planned.prompt) == {
@@ -142,6 +142,7 @@ def test_translation_final_protocol_payload_is_only_instruction_and_material(own
 def test_admitted_old_translation_recipe_retains_business_instruction(owner):
     payload = owner.prepare('a', request('deepseek'))
     payload['prompt']['version'] = 'reader-translation-google-flash-v1'
+    payload['prompt']['system'] = SYSTEM
     payload['model']['settings']['system_instructions'] = asdict(SystemInstructions())
     planned = owner._plan('a', 'old-recipe', payload)
     assert planned['runtime_options']['system_prompt'] == SYSTEM

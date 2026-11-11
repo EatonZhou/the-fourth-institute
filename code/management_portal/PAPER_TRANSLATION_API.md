@@ -105,8 +105,7 @@ receipts. Do not drop tables, resubmit failed tasks, migrate PDFs or activate Ki
 ## Explicit Moonshot Model API option (Dev implementation)
 
 `mode: "kimi"` selects the existing `kimi_primary` registration. It is a manual
-paid-API selection, never an automatic fallback. Auto remains Google, with only
-a proven Google transport timeout triggering DeepSeek. No subscription CLI,
+paid-API selection. New auto tasks use Google → DeepSeek → Kimi as specified below. No subscription CLI,
 Resident role, native runtime, tools or history is used. Qwen-MT is excluded
 because this Portal has no corresponding Model API registration.
 
@@ -129,3 +128,53 @@ operation is required to retry a failed task; no cross-provider retry occurs.
 
 Official model instructions: https://huggingface.co/moonshotai/Kimi-K2.6
 This is unbilled Dev validation, not proof of successful live API translation.
+
+
+## Auto chain v4
+
+New auto admissions freeze both DeepSeek and Kimi registration/recipe material
+in the private cache key. Google starts DeepSeek only on a proven real network
+timeout, as before. DeepSeek starts Kimi only after a terminal `failed` Execution
+with recorded `tfi.provider-transport.v1` evidence: timeout/read_timeout/connection_error
+with no HTTP response, or HTTP500/502/503/504. A running/queued task is not a
+proven timeout. Cancellation, resource/auth permission errors, HTTP401/402/403/429,
+quota/credentials, unknown error codes, TLS/JSON errors, empty/truncated/refused
+content never admit another paid source. Manual modes stay single-source.
+Old admitted v2 tasks keep their original two-source policy; they are never
+retroactively charged for Kimi. Each model has its own60s request budget and zero
+model retries; the Kimi fallback receives a different, durable immutable Execution
+ID. The DeepSeek request/ID and fallback reason remain in delivery storage; final
+provider/model and fallback provenance are cached with the actual result.
+
+POST admits one bounded local continuation per task/owner (maximum16 concurrent,
+180s observation window). Existing database leases and Execution idempotence
+remain authoritative across observers; models are never raced. This continuation
+only observes and advances a terminal predecessor, retaining original context and
+rechecking current principal/document authorization at each step. It holds no DB
+transaction during RPC/network waits. GET does not prepare or submit a new stage.
+Cancellation is rechecked before each stage and submission. A process restart,
+authorization loss or an exhausted observation window cannot invent a failure or
+advance an unproven predecessor; a new explicit POST can resume the same task and
+saved Execution IDs. No task is automatically reposted by the browser. Kimi is
+attempted at most once and has no further fallback. Missing frozen Kimi configuration
+ends the failed chain explicitly without choosing an alternative API.
+
+
+## Explicit translation direction (new admissions)
+
+The owner validates language-code syntax before constructing a short directional
+system instruction, e.g. `Translate the JSON field "text" from English (en) into
+Simplified Chinese (zh-CN).` The reverse request explicitly names English (en)
+as the target. The full instruction treats text/terminology as data and preserves
+paragraphs, terminology, numbers, mathematical symbols and formulas. The user
+message remains JSON with source_language, target_language, text and terminology;
+there is no Agent identity, conversation history or tool declaration. Both stages
+of auto receive the same frozen directional instruction.
+
+Manual DeepSeek uses reader-translation-flash-direction-v3, Kimi uses
+reader-translation-moonshot-direction-v2, and auto uses
+reader-translation-google-deepseek-kimi-v4. These new versions and the actual
+system instructions participate in private cache material; old admitted tasks
+keep their frozen instructions and policy. Manual Google keeps its original
+recipe and request behavior. Prompt changes have only isolated fake-transport
+verification, with no additional paid API probes.

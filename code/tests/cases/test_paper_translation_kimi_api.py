@@ -42,7 +42,7 @@ def test_explicit_kimi_private_cache_and_final_official_wire(owner):
     ChatCompletionService(registry).execute(invocation,SimpleNamespace(is_cancelled=lambda:False,emit=lambda *a:None))
     key,endpoint,wire=registry.wire[0]
     assert key=='kimi_primary' and endpoint=='chat/completions'
-    assert wire['messages']==[{'role':'system','content':SYSTEM},{'role':'user','content':planned.prompt}]
+    assert wire['messages']==[{'role':'system','content':planned.system_instructions.parts[0].content},{'role':'user','content':planned.prompt}]
     assert set(wire)=={'model','messages','thinking','max_tokens','stream'}
     assert wire['thinking']=={'type':'disabled'} and wire['stream'] is False
     assert ask(owner,'other-user',mode='kimi',actor='b')['cache']=='miss'

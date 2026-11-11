@@ -4,7 +4,7 @@ const SOURCES = {google: 'Google', deepseek: 'DeepSeek Flash', kimi: 'Moonshot K
 
 export function TranslationMode({mode, onChange}) {
   return <label className="paperTranslationMode">翻译模式 <select aria-label="翻译模式" value={mode} onChange={event => onChange(event.target.value)}>
-    <option value="auto">自动（Google 优先）</option>
+    <option value="auto">自动（Google → DeepSeek → Kimi）</option>
     <option value="google">Google</option>
     <option value="deepseek">DeepSeek Flash</option>
     <option value="kimi">Moonshot Kimi API</option>
