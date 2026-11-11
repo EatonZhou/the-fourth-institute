@@ -2,6 +2,7 @@
 from urllib.parse import parse_qs
 import time
 from management_portal.http_routes import RouteDefinition
+from management_portal.paper_translation_kimi_api import TranslationConfigurationUnavailable
 from management_portal.paper_reader_annotations import Conflict
 
 
@@ -46,6 +47,7 @@ def routes(*, service, get_auth, authenticate, read_json, respond):
                 return respond(request, 200, value)
             except PermissionError: return error(403, 'access_denied', 'Translation access denied')
             except Conflict: return error(409, 'operation_conflict', 'Operation or document changed')
+            except TranslationConfigurationUnavailable: return error(503, 'service_unavailable', 'Selected translation API configuration unavailable')
             except KeyError: return error(404, 'not_found', 'Document or translation task missing')
             except (ValueError, TypeError): return error(400, 'invalid_request', 'Invalid translation request')
             except Exception: return error(503, 'service_unavailable', 'Translation service temporarily unavailable')

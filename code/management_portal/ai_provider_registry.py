@@ -67,6 +67,11 @@ class AIProviderRegistry:
                 return item
         raise ValueError(f"AI provider is not available: {selected}")
 
+    def configuration_revision(self, provider_id: str) -> int:
+        """Registration revision for caller-owned cache material; no secret read."""
+        entry = self.get(provider_id)
+        return model_api_store.api_version(entry['id'])
+
     @staticmethod
     def is_enabled(item: dict[str, Any]) -> bool:
         return item.get("enabled") is not False

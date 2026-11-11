@@ -1,6 +1,6 @@
 # Reader translation HTTP contract
 
-This module owns the Google/DeepSeek Reader feature. It does not enable the
+This module owns the Google/DeepSeek Reader feature and the explicit Moonshot Model API option. It does not enable the
 earlier Resident/Kimi translation experiments or change any default model route.
 
 POST `/paper/api/reader/translation` accepts exactly:
@@ -9,7 +9,7 @@ POST `/paper/api/reader/translation` accepts exactly:
 {"operation_id":"client-generated-stable-id","text":"The experiment uses three samples.","source_language":"en","target_language":"zh-CN","mode":"auto","document":{"paper_id":"...","attachment_id":"...","attachment_version":"..."},"refresh":false}
 ```
 
-`mode` is `auto`, `google` or `deepseek`; default UI choice is `auto`. Text is
+`mode` is `auto`, `google`, `deepseek` or `kimi`; default UI choice is `auto`. Text is
 1–16000 UTF8 bytes; total JSON body at most 32768 bytes. `refresh` is optional.
 Document fields are selectors only: the authoritative Reader owner resolves them
 and checks current Paper access. Browser actor, provider/model, paths, arbitrary
@@ -100,3 +100,32 @@ network/timeout implementation is new. Its fixed endpoint is translate.google.co
 
 Rollback: revert the explicit UI/backend publication paths; retain PG rows and
 receipts. Do not drop tables, resubmit failed tasks, migrate PDFs or activate Kimi.
+
+
+## Explicit Moonshot Model API option (Dev implementation)
+
+`mode: "kimi"` selects the existing `kimi_primary` registration. It is a manual
+paid-API selection, never an automatic fallback. Auto remains Google, with only
+a proven Google transport timeout triggering DeepSeek. No subscription CLI,
+Resident role, native runtime, tools or history is used. Qwen-MT is excluded
+because this Portal has no corresponding Model API registration.
+
+The server validates an enabled Moonshot OpenAI-chat registration at the official
+HTTPS `/v1` origin and its enabled default model (`kimi-k2.6` or `kimi-k2.5`).
+Registration revision, model, origin, defaults and a separate recipe revision are
+private cache material. Unsupported/missing registration returns HTTP503
+`service_unavailable`; payload provider/model/endpoint overrides remain rejected.
+The existing Model API owner reads credentials only when executing; the Paper
+service never reads secret files. Credential availability/account billing access
+is not established by metadata validation or these isolated tests.
+
+Execution remains stateless `chat_completion`, operation `generate`, exact durable
+Execution ID; timeout60s and zero retries. The final body contains one concise
+system instruction, the user translation material, `thinking:{type:"disabled"}`,
+`max_tokens:4096`, `stream:false`. Only wire `response.model` is reported; missing
+model stays null. Failed/truncated responses do not become successful cache hits.
+GET observes only, cancellation uses the existing execution owner, a new manual
+operation is required to retry a failed task; no cross-provider retry occurs.
+
+Official model instructions: https://huggingface.co/moonshotai/Kimi-K2.6
+This is unbilled Dev validation, not proof of successful live API translation.
