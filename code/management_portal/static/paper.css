@@ -828,8 +828,11 @@ body.resizingReaderAI .paperReadingDialog iframe { pointer-events:none; }
 body.resizingReaderAI { cursor:col-resize; user-select:none; }
 
 /* Persistent research selector is outside the shared Chat Workspace. */
+.paperResearchChatHost { display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
+.paperResearchChatHost > .paperResearchSelector { flex: 0 0 auto; }
+.paperResearchChatHost > .portalChatWorkspaceRoot { flex: 1 1 0; height: 0; min-height: 0; }
 .paperResearchSelector { display: flex; flex-wrap: wrap; align-items: center; gap: var(--portal-space-2); padding: var(--portal-space-2); min-width: 0; box-sizing: border-box; }
-.paperResearchSelector .portalControl { flex: 1 1 12em; width: 0; min-width: 0; max-width: 100%; font-size: 13px; }
+.paperResearchSelector .portalControl { flex: 1 1 0; width: 0; min-width: 0; max-width: 100%; font-size: 13px; }
 .paperResearchSelector .portalButton { flex: 0 1 auto; min-width: 0; white-space: normal; line-height: 1.4; }
 
 .paperResearchSelectorError { flex: 1 1 100%; min-width: 0; color: var(--danger); font-size: 12px; overflow-wrap: anywhere; }

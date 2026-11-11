@@ -50,6 +50,10 @@
           draftOwner: () => state.username || "anonymous",
           title: window.PortalI18n.t("Research Chat"),
 
+          conversationView: () => ({ project: contract => ({ ...contract, rendering: {
+            ...contract.rendering, empty_text: window.PortalI18n.t('还没有对话，在下方输入问题开始。'),
+          } }) }),
+
           placeholder: window.PortalI18n.t("Ask about architecture, related work, review concerns..."),
           meta: "Ctrl/⌘ + Enter 发送",
           resolveResident: target => target.workspace_key?.startsWith('research:')
@@ -115,7 +119,7 @@
     }
 
     let researchNav = null, researchList = [], legacyList = [], researchSequence = 0;
-    let researchReady = false, researchFailure = '', researchSelectionRevision = 0, researchRenameBusy = false;
+    let researchReady = false, researchFailure = '', researchSelectionRevision = 0;
     const deletedResearchKeys = new Set();
     const pendingResearchDeletes = new Map();
     let researchSelecting = false;
@@ -224,7 +228,6 @@
       window.addEventListener('portal:language-changed', renderResearchOptions);
       const select = document.createElement('select');
       select.className = 'portalControl';
-      select.style.flexBasis='100%'; // Keep both actions visible in narrow Chat panels.
       select.setAttribute('aria-label', window.PortalI18n.t('选择研究助手'));
       select.title = window.PortalI18n.t('选择研究助手');
       select.addEventListener('change',()=>{void chooseResearch(select.value.startsWith('legacy:')?select.value.slice(7):select.value?'research:'+select.value:'');});
@@ -256,26 +259,8 @@
       const error=document.createElement('div'); error.className='paperResearchSelectorError'; error.setAttribute('role','status');
       const retry=document.createElement('button'); retry.type='button';retry.className='portalButton is-compact is-quiet';retry.dataset.researchRetry='';
       retry.addEventListener('click',async()=>{retry.disabled=true;try{await refreshResearchSelectors();if(state.researchSlot||state.researchLegacyKey)await loadChatHistory({retry:true});}catch(_){/* Local error remains visible. */}finally{retry.disabled=false;}});
-      const rename=document.createElement('button');rename.type='button';rename.className='portalButton is-compact is-quiet';rename.dataset.researchRename='';
-      rename.addEventListener('click',async()=>{
-        const principal=state.principalId,key=activeChatWorkspaceId(),slot=state.researchSlot;
-        const legacy=legacyList.find(item=>item.workspace_key===state.researchLegacyKey);
-        if(!slot&&!legacy)return;
-        const title=window.prompt(window.PortalI18n.t('研究助手名称'),slot?.title||legacy.title);
-        if(title===null)return;
-        if(!title.trim()||title.trim().length>140){alertError(Error(window.PortalI18n.t('名称须为1至140个字符')));return;}
-        researchRenameBusy=true;rename.disabled=true;
-        try{
-          const result=await paperApi.request('/paper/api/research/chats/rename',{method:'POST',body:JSON.stringify({expected_principal:principal,title:title.trim(),...(slot?{slot_id:slot.slot_id}:{workspace_key:legacy.workspace_key})})});
-          if(principal!==state.principalId||key!==activeChatWorkspaceId())return;
-          await refreshResearchSelectors();
-          if(principal!==state.principalId||key!==activeChatWorkspaceId())return;
-          if(paperChatPanel?.target()?.resident_id===result.resident_id)paperChatWorkspace?.setTitle(result.title);
-          window.dispatchEvent(new CustomEvent('portal:paper-research-renamed',{detail:{principal,...result}}));
-        }catch(error){if(principal===state.principalId&&key===activeChatWorkspaceId())alertError(error);}
-        finally{researchRenameBusy=false;renderResearchOptions();}
-      });
-      researchNav.append(select,create,rename,error,retry);
+      researchNav.append(select,create,error,retry);
+      root.parentElement.classList.add('paperResearchChatHost');
       root.parentElement.insertBefore(researchNav,root);
       renderResearchOptions();
     }
@@ -289,7 +274,6 @@
       const error=researchNav.querySelector('.paperResearchSelectorError');
       error.textContent=researchFailure ? t('研究助手暂不可用，请重试')+': '+researchFailure : ''; error.hidden=!researchFailure;
       const retry=researchNav.querySelector('[data-research-retry]'); retry.textContent=t('重试'); retry.hidden=!researchFailure;
-      const rename=researchNav.querySelector('[data-research-rename]');rename.textContent=t('重命名');rename.title=t('重命名当前研究助手');rename.disabled=researchRenameBusy||!researchReady||(!state.researchSlot&&!state.researchLegacyKey);
       create.textContent=t('新建研究助手'); create.title=t('创建独立的持续研究会话');
       const placeholder=new Option(t('请选择或新建研究助手'),''); placeholder.disabled=true;
       select.replaceChildren(placeholder);
