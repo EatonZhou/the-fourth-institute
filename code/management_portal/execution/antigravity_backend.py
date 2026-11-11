@@ -176,6 +176,21 @@ class AntigravityOptions(NativeOptions):
 
 class AntigravityBackend:
     provider_id = "antigravity"
+
+    @staticmethod
+    def native_tools_allowed(request):
+        return request.permission_profile == "owner" and bool(request.runtime_options.get("native_tools_enabled", True))
+
+    @classmethod
+    def local_file_read_policy(cls, invocation):
+        from .local_file_read import LocalFileReadAssessment as Assessment
+
+        request = invocation.request
+        if not cls.native_tools_allowed(request):
+            return Assessment("blocked", "native_tools_disabled")
+        # A fake ACP view_file event proves protocol handling, not a native
+        # runtime's file-read capability. Nominal support stays undeclared.
+        return Assessment("unknown", "native_file_capability_unverified")
     _active = {}
     _lock = threading.Lock()
 
@@ -209,7 +224,7 @@ class AntigravityBackend:
         route = row["route_id"]
         env, _ = resident_process_environment(options)
         env.update(accounts.environment(row["account_id"]))
-        native = request.permission_profile == "owner" and options.get("native_tools_enabled", True)
+        native = self.native_tools_allowed(request)
         catalog, dispatch = prepare_tools(invocation, context)
         offered_tools = {tool["name"] for tool in catalog}
         require_offered_tools(invocation, {tool["name"] for tool in catalog})

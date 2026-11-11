@@ -52,6 +52,28 @@ class KimiBackend(NativeSocketBackend):
     provider_id = "kimi"
     scopes_item_ids = False
 
+    @staticmethod
+    def local_file_read_policy(invocation):
+        from .local_file_read import LocalFileReadAssessment as Assessment
+        from .native_options import kimi_text_only
+
+        options = invocation.request.runtime_options
+        if kimi_text_only(options):
+            return Assessment("blocked", "text_only_disables_native_tools")
+        tools = options.get("tools") or []
+        if not isinstance(tools, list) or any(not isinstance(tool, str) for tool in tools):
+            return Assessment("unknown", "native_tool_policy_unverified")
+        if not {"Read", "ReadMediaFile"}.intersection(tools):
+            if any("*" in tool for tool in tools):
+                return Assessment("unknown", "native_tool_policy_unverified")
+            return Assessment("blocked", "native_read_tool_not_enabled")
+        mode = str(options.get("permission_mode") or invocation.request.permission_profile)
+        if mode != "yolo":
+            return Assessment("unknown", "native_permission_requires_observation")
+        # The server still has to settle this profile and its active tools.
+        # A file assessment cannot be promoted by this requested policy.
+        return Assessment("available", "native_read_policy_allows")
+
     def __init__(self, client=None):
         self._account_client = client
         if client is not None:

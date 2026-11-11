@@ -27,6 +27,22 @@ LOGGER = logging.getLogger(__name__)
 class ClaudeBackend(NativeSocketBackend):
     provider_id = "claude"
 
+    @staticmethod
+    def local_file_read_policy(invocation):
+        from .local_file_read import LocalFileReadAssessment as Assessment
+
+        options = invocation.request.runtime_options
+        if options.get("execution_constraints") is not None:
+            return Assessment("unknown", "execution_constraints_unverified")
+        # The daemon's _agent_options includes Read for both owner and reader.
+        # Its _permission_mode only permits dontAsk and bypassPermissions.
+        mode = str(options.get("permission_mode") or "dontAsk").strip()
+        if mode == "bypassPermissions":
+            return Assessment("available", "native_read_policy_allows")
+        if mode == "dontAsk":
+            return Assessment("unknown", "native_permission_requires_observation")
+        return Assessment("blocked", "unsupported_native_permission_mode")
+
     def prepare_native_session(
         self, *, session_key: str, backend_session_id: str, options: Mapping[str, Any] | None = None,
     ) -> None:

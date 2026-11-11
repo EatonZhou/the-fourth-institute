@@ -93,6 +93,31 @@ class CodexBackend:
 
     provider_id = "codex"
 
+    @classmethod
+    def local_file_read_policy(cls, invocation):
+        from .local_file_read import LocalFileReadAssessment as Assessment
+
+        options = invocation.request.runtime_options
+        if options.get("execution_constraints") is not None:
+            return Assessment("unknown", "execution_constraints_unverified")
+        # Native config can replace tools and permission rules. Do not infer
+        # an effective tool set from Portal's native-tool event capability.
+        if options.get("config_overrides"):
+            return Assessment("unknown", "native_config_requires_observation")
+        sandbox, policy = cls._sandbox_options(options)
+        permissions = str(options.get("permissions") or "").strip()
+        if permissions:
+            if permissions == ":danger-full-access":
+                return Assessment("available", "native_read_policy_allows")
+            return Assessment("unknown", "native_permission_profile_requires_observation")
+        if policy is not None:
+            return Assessment("unknown", "native_sandbox_policy_requires_observation")
+        if sandbox in {"read-only", "workspace-write", "danger-full-access"}:
+            # Read-only is not no-read. This says nothing about an external
+            # path's mount, read roots, OS ACL, or the native process identity.
+            return Assessment("available", "native_read_policy_allows")
+        return Assessment("unknown", "native_policy_requires_observation")
+
     def prepare_context_seed(
         self,
         invocation: BackendInvocation,

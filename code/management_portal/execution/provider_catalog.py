@@ -112,6 +112,9 @@ class AgentProvider:
     # the Provider's shared local runtime; none for a Provider Portal does
     # not install.
     runtime_updater: str = ""
+    # Nominal native reading support, never per-path access or authorization.
+    # Final policy belongs to the Backend (local_file_read.assess_local_file_read).
+    local_file_read: bool = False
 
     @property
     def api_upstream_protocols(self):
@@ -219,9 +222,12 @@ class AgentProvider:
     def runtime_capabilities(self) -> dict[str, Any]:
         return self.runtime_adapter().capabilities(self)
 
-    def build_backend(self):
+    def backend_class(self):
         module, _, name = self.adapter.rpartition(".")
-        return getattr(import_module(module), name)()
+        return getattr(import_module(module), name)
+
+    def build_backend(self):
+        return self.backend_class()()
 
     def capability_catalog(self, route: str = "") -> dict[str, Any]:
         """Passive capability facts; native discovery belongs to the catalog owner."""
@@ -265,7 +271,7 @@ AGENT_PROVIDERS = {
                       credential_globs=(".gemini*",),
                       runtime_updater="management_portal.antigravity_runtime.AntigravityRuntime"),
         AgentProvider("codex", "Codex", frozenset({"create", "turn", "fork", "compact", "release"}),
-                      ("model", "reasoning_effort", "service_tier", "permissions", "collaboration_mode"), media=True, active_turn_input=True, adapter="management_portal.execution.codex_backend.CodexBackend", account_adapter="CodexAccounts", options_adapter="CodexOptions", native_review=True, native_goals=True, local_catalog=False, seeded_compaction=True,
+                      ("model", "reasoning_effort", "service_tier", "permissions", "collaboration_mode"), media=True, local_file_read=True, active_turn_input=True, adapter="management_portal.execution.codex_backend.CodexBackend", account_adapter="CodexAccounts", options_adapter="CodexOptions", native_review=True, native_goals=True, local_catalog=False, seeded_compaction=True,
                       # App-server owns the running turn and its native processes.
                       # Interrupting a follower's handover can abandon those processes.
                       handover_keeps_turn=True, upstream="openai", api_protocol="openai_responses", api_protocol_conversion=True, session_tools_fixed=True,
@@ -279,7 +285,7 @@ AGENT_PROVIDERS = {
                                          SUBAGENTS, SUBAGENT_EVENTS, SUBAGENT_STOP})),
         AgentProvider("claude", "Claude Code", frozenset({"turn", "fork", "compact", "release"}),
                       ("model", "reasoning_effort", "permissions"), "management_portal.claude_provider_catalog", "deepseek_primary", adapter="management_portal.execution.claude_backend.ClaudeBackend", account_adapter="ClaudeAccounts", options_adapter="ClaudeOptions", resume_without_session=True,
-                      initial_instructions_transport="system_instructions", system_context_every_turn=True, media=True,
+                      initial_instructions_transport="system_instructions", system_context_every_turn=True, media=True, local_file_read=True,
                       # The CLI takes a user message that arrives during a turn after the
                       # turn's current step (the daemon's ``turn/steer``).
                       active_turn_input=True,
@@ -293,7 +299,7 @@ AGENT_PROVIDERS = {
                       # Claude Code starts turns by itself (task notifications, messages).
                       self_started_usage="management_portal.execution.unattributed_usage.record_self_started_claude_usage"),
         AgentProvider("kimi", "Kimi Code", frozenset({"create", "turn", "fork", "compact", "release"}),
-                      ("model", "permissions"), media=True, adapter="management_portal.execution.kimi_backend.KimiBackend", account_adapter="KimiAccounts", options_adapter="KimiOptions", api_protocol="openai_chat",
+                      ("model", "permissions"), media=True, local_file_read=True, adapter="management_portal.execution.kimi_backend.KimiBackend", account_adapter="KimiAccounts", options_adapter="KimiOptions", api_protocol="openai_chat",
                       # Kimi Code steers a prompt queued during a turn into the running one.
                       active_turn_input=True,
                       # The Kimi Code server runs the prompt; a Worker only follows it.
