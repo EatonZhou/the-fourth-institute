@@ -166,6 +166,11 @@
         throw error;
       }
       if (requestSeq !== state.libraryRequestSeq) return null;
+      if ((state.activeSemanticSearchId && !firstPayload.summary?.semantic_search)
+          || (state.activeCollectorJobId && !firstPayload.summary?.paper_collection)) {
+        const error = Error(window.PortalI18n.t('该次历史结果已不可用，请刷新历史列表。'));
+        state.libraryLoading = false; renderHeaderError(error); throw error;
+      }
       state.library = firstPayload;
       state.libraryRenderLimit = 100;
       state.paperTreeRenderLimit = 240;
@@ -304,6 +309,7 @@
         client,
         initialActiveId: state.activeSemanticSearchId,
         projectionScope: "paper",
+        toggleActive: false,
         startPayload: () => ({ project: String(state.filters.project || "") }),
         urls: {
           list: "/paper/api/semantic-searches",
@@ -324,6 +330,11 @@
           writeUiState();
           renderCollectorJobs();
           if (isSemanticSearchReady()) loadLibrary({ keepDetail: false }).catch(alertError);
+        },
+        onSelect: () => {
+          state.mode = 'library'; state.leftFace = 'library';
+          state.query = ''; state.filters = {}; $('searchInput').value = '';
+          window.dispatchEvent(new CustomEvent('portal:paper-history-open'));
         },
         onActiveChange: searchId => {
           state.activeSemanticSearchId = String(searchId || "");

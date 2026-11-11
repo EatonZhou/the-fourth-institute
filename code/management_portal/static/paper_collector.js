@@ -37,7 +37,7 @@
         const detail = job.summary || job.error || job.step || "";
         const jobId = String(job.job_id || "");
         const selectable = Number(job.result_count || job.registered_count || 0) > 0;
-        const disabled = selectable ? "" : " disabled";
+        const disabled = "";
         const active = jobId && jobId === state.activeCollectorJobId ? " active" : "";
         return window.PortalI18n.html`
             <div class="collectorJobItem${active}">
@@ -70,8 +70,15 @@
 
     async function selectCollectorJob(jobId) {
       const job = (state.collectorJobs || []).find(item => item.job_id === jobId);
-      if (!job || Number(job.result_count || job.registered_count || 0) <= 0) return;
-      state.activeCollectorJobId = state.activeCollectorJobId === job.job_id ? "" : job.job_id;
+      if (!job) { alertError(Error(window.PortalI18n.t('该次采集历史已不可用，请刷新历史列表。'))); return; }
+      if (Number(job.result_count || job.registered_count || 0) <= 0) {
+        window.PortalUI.toast(job.summary || job.error || window.PortalI18n.t('该次采集暂无已保存的论文结果。'), 'info'); return;
+      }
+      state.activeCollectorJobId = job.job_id;
+      state.query = ''; state.filters = {};
+      if ($('searchInput')) $('searchInput').value = '';
+      state.leftFace = 'library';
+      window.dispatchEvent(new CustomEvent('portal:paper-history-open'));
       if (state.activeCollectorJobId) {
         state.activeSemanticSearchId = "";
         state.semanticSearch?.clearActive?.({ notify: false });

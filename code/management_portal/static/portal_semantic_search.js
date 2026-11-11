@@ -240,7 +240,8 @@
       const select = event.target.closest("[data-semantic-select]");
       if (select) {
         const searchId = select.dataset.semanticSelect || "";
-        setActiveId(activeId === searchId ? "" : searchId, { notify: true });
+        options.onSelect?.(searchId);
+        setActiveId(options.toggleActive !== false && activeId === searchId ? "" : searchId, { notify: true });
         return;
       }
       const refreshButton = event.target.closest("[data-semantic-refresh]");

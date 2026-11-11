@@ -53,6 +53,7 @@
       state.favoriteIds.clear(); pending.clear(); acknowledged.clear(); personalView = 'recent';
       show('recent', false);
     }
+    window.addEventListener('portal:paper-history-open', () => { if(view !== 'repository') show('repository'); });
     function show(next, preserve = true) {
       if (preserve && (view === 'repository' || loadedViews.has(view))) {
         const content = document.createDocumentFragment();
