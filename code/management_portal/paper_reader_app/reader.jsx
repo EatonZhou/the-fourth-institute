@@ -1,7 +1,8 @@
 import React, {useEffect, useRef, useState} from 'react';
 import {createRoot} from 'react-dom/client';
+import {createPortal} from 'react-dom';
 import {connectZotero, ZOTERO_URL} from './zotero_adapter.js';
-import {TranslationMode, TranslationPanel} from './translation_panel.jsx';
+import {useTranslation, TranslationResult} from './translation_panel.jsx';
 import {translateSelection} from './translation_client.js';
 import {AIPanel} from './ai_panel.jsx';
 
@@ -31,6 +32,11 @@ function Reader({paper, principal, anchor, close, control, readingReady, frameRe
   const [failed, setFailed] = useState(false);
   const [selection, setSelection] = useState(null);
   const [mode, setMode] = useState('auto');
+  const [popup, setPopup] = useState(null), [sidebarOpen, setSidebarOpen] = useState(false), [tab, setTab] = useState('ai');
+  const translation = useTranslation({selection, mode, isCurrent, request: (input, selectedMode, operationId, signal) => {
+    if (!isFullscreen()) throw new Error('请进入全屏后翻译');
+    return translateSelection({selection: input, mode: selectedMode, operationId, principal, signal});
+  }});
   const [discussion,setDiscussion] = useState(null);
   const discussionSequence=useRef(0);
   useEffect(()=>{
@@ -44,6 +50,7 @@ function Reader({paper, principal, anchor, close, control, readingReady, frameRe
   },[discussion?.key,principal]);
   const openDiscussion=async selection=>{
     if(!isCurrent()||!isFullscreen())return;
+    setSidebarOpen(true); setTab('ai');
     const sequence=++discussionSequence.current;
     try {
       const response=await fetch('/paper/api/research/chats',{credentials:'same-origin'});
@@ -65,7 +72,8 @@ function Reader({paper, principal, anchor, close, control, readingReady, frameRe
   useEffect(() => {
     frameReady(frame.current.contentWindow);
     const connection = connectZotero({frame: frame.current, paper, principal, ready: readingReady,
-      translateSelection: value => {if (isCurrent() && isFullscreen()) setSelection(value);},
+      translateSelection: value => {if (isCurrent() && isFullscreen()) {setSelection(value);setPopup(value.popup);}},
+      dismissTranslation: node => setPopup(current => current === node ? null : current),
       askSelection: value=>void openDiscussion(value),
       status: (message, error = false) => { setStatus(message); setFailed(error); }});
     bridge.current = connection;
@@ -76,21 +84,30 @@ function Reader({paper, principal, anchor, close, control, readingReady, frameRe
   return <div className="paperReadingApp">
     <header className="paperReadingToolbar">
       <strong title={paper.title}>{paper.title}</strong>
-      <TranslationMode mode={mode} onChange={setMode} />
-      <button aria-expanded={!!discussion} onClick={()=>discussion?setDiscussion(null):openDiscussion()}>{discussion?'收起 AI':'打开 AI'}</button>
+      <button aria-expanded={sidebarOpen && tab === 'ai'} onClick={()=>sidebarOpen && tab === 'ai'?setSidebarOpen(false):openDiscussion()}>{sidebarOpen && tab === 'ai'?'收起 AI':'打开 AI'}</button>
       <a href={paper.pdf_url} target="_blank" rel="noopener noreferrer">原始 PDF</a>
       <button onClick={() => close()}><span className="paperLayoutEnter">全屏阅读</span><span className="paperLayoutExit">退出全屏</span></button>
     </header>
     <div className="paperReadingStatus" data-empty={!status} role="status">
       {status} {failed && <button onClick={() => bridge.current?.retry()}>重试保存</button>}
     </div>
-    <TranslationPanel mode={mode} selection={selection} isCurrent={isCurrent} request={(input, mode, operationId, signal) => {
-      if (!isFullscreen()) throw new Error('请进入全屏后翻译');
-      return translateSelection({selection: input, mode, operationId, principal, signal});
-    }} />
+    {popup?.isConnected && createPortal(<TranslationResult selection={selection} mode={mode} setMode={setMode} model={translation}
+      expand={()=>{setSidebarOpen(true);setTab('translation');setPopup(null);}} />, popup)}
     <div ref={content} className="paperReadingContent"><iframe ref={frame} className="paperReadingViewer" title="论文全屏 PDF 阅读器" />
-      {discussion&&<ReaderSplit content={content} width={aiWidth} />}
-      {discussion&&<AIPanel key={discussion.key} discussion={discussion} principal={principal} bridge={()=>bridge.current} isCurrent={isCurrent} close={()=>setDiscussion(null)} />}
+      {sidebarOpen&&<ReaderSplit content={content} width={aiWidth} />}
+      <aside className="paperReaderSidePanel" hidden={!sidebarOpen} aria-label={window.PortalI18n.t("阅读侧栏")}>
+        <nav role="tablist" aria-label={window.PortalI18n.t("阅读侧栏")}>
+          <button role="tab" aria-selected={tab==='ai'} onClick={()=>{setTab('ai');if(!discussion)void openDiscussion();}}>AI</button>
+          <button role="tab" aria-selected={tab==='translation'} onClick={()=>setTab('translation')}>{window.PortalI18n.t("翻译")}</button>
+          <button aria-label={window.PortalI18n.t("关闭侧栏")} onClick={()=>setSidebarOpen(false)}>×</button>
+        </nav>
+        <div className="paperReaderTab" role="tabpanel" hidden={tab!=='ai'}>
+          {discussion&&<AIPanel key={discussion.key} discussion={discussion} principal={principal} bridge={()=>bridge.current} isCurrent={isCurrent} close={()=>setSidebarOpen(false)} />}
+        </div>
+        <div className="paperReaderTab" role="tabpanel" hidden={tab!=='translation'}>
+          {selection?<TranslationResult selection={selection} mode={mode} setMode={setMode} model={translation} full />:<p>{window.PortalI18n.t("选择论文中的文字开始翻译。")}</p>}
+        </div>
+      </aside>
     </div>
   </div>;
 }

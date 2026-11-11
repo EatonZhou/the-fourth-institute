@@ -2,8 +2,9 @@ import {openHttpDocument} from './zotero_prototype/http_transport.js';
 import {mountReader} from './zotero_prototype/host.js';
 export const ZOTERO_URL = '/paper/reader-assets/reader.html';
 
-export function connectZotero({frame, paper, principal, status, ready, translateSelection, askSelection}) {
+export function connectZotero({frame, paper, principal, status, ready, translateSelection, askSelection, dismissTranslation}) {
   let disposed = false, host, transport, failed = false, tick;
+  const popupObservers = new Set();
   let fullscreen = true, fullscreenSidebar = true;
   const applyLayout = () => {
     if (!host) return;
@@ -22,7 +23,7 @@ export function connectZotero({frame, paper, principal, status, ready, translate
     frame.contentWindow.addEventListener('customEvent', selectionPopup);
     host = await mountReader(frame, {...transport.options, status: message => {failed = true; status(message, true);}});
     const style = frame.contentDocument.createElement('style');
-    style.textContent = 'body.portal-embedded .portalTranslateSelection, body.portal-embedded .portalAISelection, body.portal-embedded #reader-ui .toolbar {display:none!important} body.portal-embedded #split-view, body.portal-embedded .split-view {top:0!important}';
+    style.textContent = 'body.portal-embedded .portalTranslationPopup, body.portal-embedded .portalTranslateSelection, body.portal-embedded .portalAISelection, body.portal-embedded #reader-ui .toolbar {display:none!important} body.portal-embedded #split-view, body.portal-embedded .split-view {top:0!important}';
     frame.contentDocument.head.append(style);
     applyLayout();
     if (disposed) {await host.close(); return;}
@@ -48,8 +49,23 @@ export function connectZotero({frame, paper, principal, status, ready, translate
     const button = detail.doc.createElement('button');
     button.className = 'toolbar-button wide-button portalTranslateSelection';
     button.textContent = '翻译选区';
-    button.onclick = () => {if (!disposed && fullscreen) translateSelection({text, document: {...transport.document}});};
-    detail.append(button);
+    const wrapper = detail.doc.createElement('div');
+    const popup = detail.doc.createElement('div'); popup.className = 'portalTranslationPopup';
+    popup.style.cssText = 'width: min(340px, calc(100vw - 40px)); max-height: 42vh; overflow: auto; text-align: start; white-space: normal;';
+    const style = detail.doc.createElement('style');
+    style.textContent = '.portalTranslationPopup .paperTranslation {font:13px/1.5 system-ui;padding:6px;overflow-wrap:anywhere} .portalTranslationPopup button,.portalTranslationPopup select {font:inherit;margin:3px;max-width:100%} .portalTranslationPopup .paperTranslationText {white-space:pre-wrap} .portalTranslationPopup small {display:block;font-size:11px}';
+    wrapper.append(button, style, popup);
+    // Keep native selection popup open when interacting with its appended controls.
+    wrapper.addEventListener('mousedown', event => event.stopPropagation());
+    button.onclick = () => {
+      if (disposed || !fullscreen) return;
+      translateSelection({text, document: {...transport.document}, popup});
+      const observer = new MutationObserver(() => {
+        if (!popup.isConnected) {observer.disconnect();popupObservers.delete(observer);dismissTranslation?.(popup);}
+      });
+      observer.observe(detail.doc.body, {childList:true,subtree:true});popupObservers.add(observer);
+    };
+    detail.append(wrapper);
     if (askSelection) {
       const ai = detail.doc.createElement('button');
       ai.className = 'toolbar-button wide-button portalAISelection';
@@ -88,6 +104,6 @@ export function connectZotero({frame, paper, principal, status, ready, translate
     try {await host.reader.flushAnnotations(); failed = false; status(''); return true;}
     catch (error) {status(error.message, true); return false;}
   }, captureAnchor: () => undefined,
-  dispose() {disposed = true; cancelAnimationFrame(tick); frame.contentWindow?.removeEventListener('customEvent', selectionPopup);},
+  dispose() {disposed = true; for (const observer of popupObservers) observer.disconnect(); popupObservers.clear(); cancelAnimationFrame(tick); frame.contentWindow?.removeEventListener('customEvent', selectionPopup);},
   get failed() {return failed;}};
 }

@@ -1,4 +1,9 @@
 {
+  "复制译文": {"en": "Copy translation", "zh-CN": "复制译文"},
+  "复制失败，请手动选择译文复制": {"en": "Copy failed. Select and copy the translation manually.", "zh-CN": "复制失败，请手动选择译文复制"},
+  "阅读侧栏": {"en": "Reading sidebar", "zh-CN": "阅读侧栏"},
+  "关闭侧栏": {"en": "Close sidebar", "zh-CN": "关闭侧栏"},
+  "选择论文中的文字开始翻译。": {"en": "Select text in the paper to translate.", "zh-CN": "选择论文中的文字开始翻译。"},
   "用时": {"en": "Time", "zh-CN": "用时"},
   "秒": {"en": "s", "zh-CN": "秒"},
   "本次等待": {"en": "Current wait", "zh-CN": "本次等待"},

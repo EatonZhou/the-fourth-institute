@@ -28,7 +28,7 @@ export function TranslationMode({mode, onChange}) {
   </select></label>;
 }
 
-export function TranslationPanel({selection, mode, isCurrent, request}) {
+export function useTranslation({selection, mode, isCurrent, request}) {
   const [view, setView] = useState({state: 'idle'});
   const generation = useRef(0), pending = useRef(null);
   const run = async (input, selectedMode) => {
@@ -56,10 +56,23 @@ export function TranslationPanel({selection, mode, isCurrent, request}) {
   useLayoutEffect(() => {
     if (view.state === 'success') setView(current => ({...current, elapsedMs: performance.now() - current.started}));
   }, [view.state, view.result]);
+  return {view, retry: () => run(selection, mode)};
+}
+
+export function TranslationPanel(props) {
+  const model = useTranslation(props);
+  return <TranslationResult {...props} model={model} />;
+}
+
+export function TranslationResult({selection, mode, setMode, model, expand, full = false}) {
+  const {view, retry} = model;
+  const [copyError, setCopyError] = useState('');
   if (!selection) return null;
   return <section className="paperTranslation" aria-label="选区翻译">
+    {setMode && <TranslationMode mode={mode} onChange={setMode} />}
+    {expand && <button onClick={expand}>{t('展开')}</button>}
     {selection && <div className="paperTranslationBody" aria-live="polite">
-      <details><summary>所选原文</summary><p>{selection.text}</p></details>
+      <details open={full || undefined}><summary>所选原文</summary><p>{selection.text}</p></details>
       {view.state === 'loading' && <p role="status">正在翻译…</p>}
       {view.state === 'error' && <p role="alert">{view.error}</p>}
       {view.state === 'success' && <>
@@ -68,7 +81,12 @@ export function TranslationPanel({selection, mode, isCurrent, request}) {
           {t('来源')} {SOURCES[view.result.provider] || view.result.provider} · {t('用时')} {seconds(view.elapsedMs)}
         </small>
       </>}
-      {view.state !== 'loading' && <button onClick={() => run(selection, mode)}>重试翻译</button>}
+      {view.state === 'success' && <button onClick={async () => {
+        try {await navigator.clipboard.writeText(view.result.text); setCopyError('');}
+        catch (_) {setCopyError(t('复制失败，请手动选择译文复制'));}
+      }}>{t('复制译文')}</button>}
+      {copyError && <p role="alert">{copyError}</p>}
+      <button onClick={retry}>{t('重试翻译')}</button>
     </div>}
   </section>;
 }

@@ -792,12 +792,12 @@ body {
 .paperReadingDialog { font: 13px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
 .paperReadingDialog .paperReadingToolbar { gap:6px; padding:6px 10px; background:#f8f8f8; border-color:#dedede; }
 .paperReadingDialog .paperReadingToolbar strong { font-size:13px; font-weight:500; }
-.paperReadingDialog :is(.paperReadingToolbar,.paperAIPanel) :is(button,select,textarea):not(.paperAIChat *) { font:inherit; color:#303030; border:1px solid #d6d6d6; border-radius:5px; box-shadow:none; }
-.paperReadingDialog :is(.paperReadingToolbar,.paperAIPanel) button:not(.paperAIChat *) { appearance:none; background:transparent; padding:4px 8px; min-height:28px; cursor:pointer; }
-.paperReadingDialog :is(.paperReadingToolbar,.paperAIPanel) button:hover:not(:disabled):not(.paperAIChat *) { background:#eaeaea; border-color:#c6c6c6; }
-.paperReadingDialog :is(.paperReadingToolbar,.paperAIPanel) button:disabled:not(.paperAIChat *) { opacity:.45; cursor:default; }
-.paperReadingDialog :is(.paperReadingToolbar,.paperAIPanel) :is(button,select,textarea,[role="textbox"],a,summary):focus-visible:not(.paperAIChat *) { outline:2px solid #6b94bd; outline-offset:2px; }
-.paperReadingDialog :is(.paperReadingToolbar,.paperAIPanel) select:not(.paperAIChat *) { background:#fff; padding:3px 6px; min-height:28px; max-width:100%; }
+.paperReadingDialog :is(.paperReadingToolbar,.paperAIPanel,.paperReaderSidePanel) :is(button,select,textarea):not(.paperAIChat *) { font:inherit; color:#303030; border:1px solid #d6d6d6; border-radius:5px; box-shadow:none; }
+.paperReadingDialog :is(.paperReadingToolbar,.paperAIPanel,.paperReaderSidePanel) button:not(.paperAIChat *) { appearance:none; background:transparent; padding:4px 8px; min-height:28px; cursor:pointer; }
+.paperReadingDialog :is(.paperReadingToolbar,.paperAIPanel,.paperReaderSidePanel) button:hover:not(:disabled):not(.paperAIChat *) { background:#eaeaea; border-color:#c6c6c6; }
+.paperReadingDialog :is(.paperReadingToolbar,.paperAIPanel,.paperReaderSidePanel) button:disabled:not(.paperAIChat *) { opacity:.45; cursor:default; }
+.paperReadingDialog :is(.paperReadingToolbar,.paperAIPanel,.paperReaderSidePanel) :is(button,select,textarea,[role="textbox"],a,summary):focus-visible:not(.paperAIChat *) { outline:2px solid #6b94bd; outline-offset:2px; }
+.paperReadingDialog :is(.paperReadingToolbar,.paperAIPanel,.paperReaderSidePanel) select:not(.paperAIChat *) { background:#fff; padding:3px 6px; min-height:28px; max-width:100%; }
 .paperReadingDialog .paperTranslationMode { gap:5px; font-size:12px; color:#626262; }
 .paperReadingDialog .paperReadingToolbar a { font-size:12px; color:#3b668e; text-decoration:none; padding:4px; border-radius:4px; }
 .paperReadingDialog .paperReadingToolbar a:hover { text-decoration:underline; background:#eaeaea; }
@@ -860,3 +860,18 @@ body.resizingReaderAI { cursor:col-resize; user-select:none; }
 .paperLibraryQueryGroup > .paperSearchHistory { grid-column: 1 / -1; }
 .searchWrap .collectorBox .paperSectionHint, .searchWrap .collectorBox [data-portal-board-slot] > label { font-size: 12px; line-height: 1.5; }
 .searchWrap .collectorBox input, .searchWrap .collectorBox button, .paperLibraryQueryGroup input, .paperLibraryQueryGroup select, .paperLibraryQueryGroup button { font-size: 13px; }
+
+/* Reader-owned right sidebar: AI remains mounted when hidden or switching tabs. */
+.paperReaderSidePanel { display:flex; flex-direction:column; flex:0 0 var(--reader-ai-width,min(360px,42vw)); min-width:0; min-height:0; overflow:hidden; border-inline-start:1px solid var(--border); background:var(--panel); }
+.paperReaderSidePanel[hidden], .paperReaderTab[hidden] { display:none!important; }
+.paperReaderSidePanel > nav { display:flex; flex:0 0 auto; gap:4px; padding:6px; border-bottom:1px solid var(--border); }
+.paperReaderSidePanel > nav button { padding:4px 8px; }
+.paperReaderSidePanel > nav [aria-selected="true"] { background:var(--panel-2); color:var(--accent); }
+.paperReaderSidePanel > nav button:last-child { margin-inline-start:auto; }
+.paperReaderTab { display:flex; flex-direction:column; min-height:0; flex:1; overflow:auto; }
+.paperReadingDialog .paperReaderSidePanel .paperAIPanel { width:100%; flex:1; min-height:0; }
+.paperReaderSidePanel .paperTranslation { padding:10px; overflow-wrap:anywhere; }
+.paperReaderSidePanel .paperTranslationText { white-space:pre-wrap; }
+.paperReadingDialog.is-embedded .paperReaderSidePanel { display:none!important; }
+
+.paperReaderSidePanel .paperTranslationBody { max-height:none; overflow:visible; }
