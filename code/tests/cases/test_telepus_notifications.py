@@ -37,6 +37,12 @@ def reminder(bridge, monkeypatch):
     calls = []
 
     def call(actor, instruction, arguments):
+        if instruction == 'GetMessage':
+            assert actor == ACTOR
+            assert arguments['resident_id'] == FACADE
+            assert any(q['message_id'] == arguments['message_id'] for q in mailbox['pending_requests'])
+            return {'message': {'role': 'agent', 'content_parts': [{'type': 'async_questions',
+                'questions': [{'title': '请选择检查范围', 'options': ['定向', '全部']}]}]}}
         if instruction == 'ListChatroomMessages':
             assert actor == ACTOR
             return {'messages': [dict(message_id=m['message_id'], author_id='alice',

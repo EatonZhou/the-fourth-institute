@@ -59,6 +59,7 @@ def candidates(actor, snapshot):
             questions[f'{actor}:question:{resident}:{message}'] = dict(
                 category='question', source_resident_id=resident, source_message_id=message,
                 resident_id=item.get('resident_id') or resident,
+                message_id=item.get('message_id') or message, kind=item.get('kind'),
                 title=item.get('title') or item.get('resident_title') or '', created_at=item.get('created_at'))
         result['question'] = questions
     return result
@@ -220,9 +221,11 @@ class Notifications:
             return None if rows else []
         from .weixin_format import notification_text, without_links
         from .mention_reply import enrich, fingerprint
+        from .question_reminder import read_questions
         keys = [r['key'] for r in ready[:5]]
         items = [current[r['category']][r['key']] for r in ready[:5]]
-        items = [enrich(self.portal, actor, item) if item['category'] == 'mention' else item for item in items]
+        items = [enrich(self.portal, actor, item) if item['category'] == 'mention'
+                 else read_questions(self.portal, actor, item) for item in items]
         titles = {}
         for item in items[:5]:
             if item['category'] == 'question' and not item['title']:

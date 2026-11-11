@@ -134,6 +134,8 @@ def without_links(text):
 
 def notification_text(items, *, total=None, summary=True):
     """Visible source excerpts exist only in this in-memory outgoing message."""
+    from .quote_text import quote_text
+
     total = len(items) if total is None else total
     lines = [f'🔔 Portal 有 {total} 件事需要你查看'] if total > 1 else []
     for item in items[:5]:
@@ -146,6 +148,15 @@ def notification_text(items, *, total=None, summary=True):
                 lines.append('引用这条消息回复，会以你的名义发到聊天室')
         else:
             lines.append(f'❓ **{title}** 在等你回答')
+            questions = item['questions']
+            for question in questions[:3]:
+                visible = ' '.join(without_links(quote_text(question['title'])).split())
+                excerpt = visible[:120] + ('…' if len(visible) > 120 else '')
+                lines.append(('待批准：' if item['kind'] == 'approval' else '') + excerpt)
+                if question.get('options'):
+                    lines.append('选项：' + '；'.join(question['options']))
+            if len(questions) > 3:
+                lines.append(f'另有 {len(questions) - 3} 个问题')
         if item['category'] == 'question':
             lines.append('切换对话：/route ' + item['resident_id'] + '；此问题请回 Portal 作答。')
     if total > len(items):
