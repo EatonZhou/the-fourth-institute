@@ -7,6 +7,7 @@ const path = require('node:path');
 const http = require('node:http');
 const { chatWorkspaceScripts } = require('./chat_workspace_modules.cjs');
 const { portalWorkbenchScripts } = require('./portal_workbench_scripts.cjs');
+const { portalWorkspaceSurfaceScripts } = require('./portal_workspace_surface_scripts.cjs');
 const repo = path.resolve(__dirname, '../../..');
 const staticRoot = path.join(repo, 'management_portal/static');
 const playwright = require(path.join(repo, 'management_portal/test_framework/tau_runtime/node_modules/playwright'));
@@ -14,7 +15,7 @@ const routes = JSON.parse(fs.readFileSync(0, 'utf8')).routeScript;
 const modules = ['portal_state.js', 'portal_page_state.js', 'portal_text.js', 'portal_i18n.js',
   'portal_ui_primitives.js', 'portal_ui.js', 'portal_overlay.js', 'portal_resource_chips.js',
   'portal_image_editor.js', 'portal_editor_open_service.js', 'portal_command_registry.js',
-  'portal_workbench_context.js', ...portalWorkbenchScripts(), 'portal_resident_service.js',
+  'portal_workbench_context.js', ...portalWorkbenchScripts(), ...portalWorkspaceSurfaceScripts(), 'portal_resident_service.js',
   'portal_resident_runtime_controller.js', 'resident_protocol.js', ...chatWorkspaceScripts(),
   'article_workspace_monaco.js', 'article_workspace_layout.js', 'article_workspace_chat.js', 'article_workspace_events.js'];
 const html = fs.readFileSync(path.join(repo, 'management_portal/article_workspace.html'), 'utf8')
@@ -46,10 +47,10 @@ const html = fs.readFileSync(path.join(repo, 'management_portal/article_workspac
     const origin = `http://127.0.0.1:${server.address().port}`;
     await page.route('**/*', route => route.request().url().startsWith(origin + '/') ? route.continue() : route.abort());
     await page.goto(origin);
-    await page.evaluate(async () => {
+    const setup = async ({ prepareContext = false, boundChat = false, sideView } = {}) => {
       const $ = id => document.getElementById(id);
       window.notices = []; window.writes = [];
-      window.bound = false;
+      window.bound = boundChat;
       window.PortalIdentity = { username: () => 'article-context-fixture' };
       window.PortalInstructionClient = { execute: async () => ({ entries: [] }) };
       window.PortalAPI = {
@@ -73,11 +74,12 @@ const html = fs.readFileSync(path.join(repo, 'management_portal/article_workspac
       window.PortalResidentProtocol = { ...PortalResidentProtocol,
         acquire: () => ({ load: async () => snapshot, snapshot: () => snapshot, destroy() {} }),
       };
-      window.state = { selectedId: 'article_fixture', openFile: 'main.tex', editorPreferences: { tabSize: 2 } };
+      window.state = { selectedId: 'article_fixture', openFile: 'main.tex', editorPreferences: { tabSize: 2 }, monacoDisposables: [] };
       const deps = module => Object.fromEntries(module.dependencies.map(key => [key, () => {}]));
       const editor = PortalArticleWorkspaceMonaco.createMonaco({ ...deps(PortalArticleWorkspaceMonaco), $, state });
       let host;
-      const layout = PortalArticleWorkspaceLayout.createLayout({ ...deps(PortalArticleWorkspaceLayout), $, state,
+      const layout = window.layout = PortalArticleWorkspaceLayout.createLayout({ ...deps(PortalArticleWorkspaceLayout), $, state,
+        articleLayoutStore: PortalWorkbench.layout.createStore({ storageKey: 'portal.articleWorkspace.layout' }),
         loadArticleChat: (...args) => host.loadArticleChat(...args), showToast: text => notices.push(String(text)),
       });
       host = PortalArticleWorkspaceChat.createChat({ ...deps(PortalArticleWorkspaceChat), $, state,
@@ -88,8 +90,14 @@ const html = fs.readFileSync(path.join(repo, 'management_portal/article_workspac
       });
       window.host = host;
       PortalArticleWorkspaceEvents.createEvents({ ...deps(PortalArticleWorkspaceEvents), $, state,
+        articleGitRefresh: { stop() {} }, articleContentRefresh: { stop() {} },
         bringCurrentContextToChat: host.bringCurrentContextToChat, showToast: text => notices.push(String(text)),
+        setSideView: layout.setSideView, currentArticleWorkbench: layout.currentArticleWorkbench,
+        setNavigationPanelVisible: layout.setNavigationPanelVisible,
       });
+      layout.initArticleWorkbench();
+      await layout.restoreLayout({ sideView });
+      if (!prepareContext) return;
       await layout.setSideView('chat');
       state.chatController.setDraftText('Keep my question');
       $('articleSendContext').disabled = false;
@@ -98,7 +106,8 @@ const html = fs.readFileSync(path.join(repo, 'management_portal/article_workspac
       $('articleSourceEditor').value = 'first\nselected words\nlast';
       $('articleSourceEditor').setSelectionRange(6, 20);
       $('articleSourceEditor').focus();
-    });
+    };
+    await page.evaluate(setup, { prepareContext: true });
     await page.keyboard.press('Control+Alt+Enter');
     await page.waitForFunction(() => !PortalCommandRegistry.root.list().find(c => c.id === 'article.contextToChat').busy);
     const result = await page.evaluate(() => ({
@@ -135,7 +144,35 @@ const html = fs.readFileSync(path.join(repo, 'management_portal/article_workspac
     assert.equal(JSON.parse(boundResult.reference.reference_text).file.selection.text, 'Monaco selection');
     assert.equal(boundResult.tokens, 1);
     assert.deepEqual(await page.evaluate(() => writes), []);
-    console.log('PASS: shortcut inserts a visible reference into the real Article Chat composer');
+
+    // Recreate the page with the same browser storage, as a user reload does.
+    await page.reload();
+    await page.evaluate(setup, { boundChat: true });
+    assert.equal(await page.evaluate(() => state.sideView), 'chat');
+    assert.equal(await page.locator('[data-article-panel="chat"]').evaluate(panel => panel.classList.contains('active')), true);
+    assert.equal(await page.evaluate(() => !!state.chatController), true, 'restored Chat loads the existing Resident');
+    await page.evaluate(() => layout.setNavigationPanelVisible(false));
+    await page.reload();
+    await page.evaluate(setup, { boundChat: true });
+    assert.equal(await page.evaluate(() => layout.currentArticleWorkbench().isPanelVisible('navigation')), false, 'restore keeps a collapsed sidebar collapsed');
+    await page.evaluate(() => document.querySelector('[data-article-view="files"]').click());
+    await page.reload();
+    await page.evaluate(setup);
+    assert.equal(await page.evaluate(() => state.sideView), 'files', 'switching away from Chat is also remembered');
+    assert.equal(await page.evaluate(() => layout.currentArticleWorkbench().isPanelVisible('navigation')), true);
+    await page.evaluate(() => layout.setNavigationPanelVisible(false));
+    await page.reload();
+    await page.evaluate(setup, { boundChat: true, sideView: 'chat' });
+    assert.equal(await page.evaluate(() => state.sideView), 'chat', 'an explicit Chat link overrides the saved view');
+    assert.equal(await page.evaluate(() => layout.currentArticleWorkbench().isPanelVisible('navigation')), true, 'explicit Chat opens the sidebar');
+    await page.evaluate(() => PortalState.storage.writeJson('portal.articleWorkspace.layout', { sideView: 'obsolete', fileTreeHeight: 180 }));
+    await page.reload();
+    await page.evaluate(setup);
+    assert.equal(await page.evaluate(() => state.sideView), 'files', 'unknown saved views fall back to the file tree');
+    assert.equal(await page.evaluate(() => PortalState.storage.readJson('portal.articleWorkspace.layout').fileTreeHeight), 180, 'view persistence preserves other layout settings');
+    assert.deepEqual(errors, [], 'no page errors after reloads');
+    assert.deepEqual(await page.evaluate(() => writes), [], 'restoring Chat sends no message');
+    console.log('PASS: Article Chat context reference and sidebar view survive reload; collapsed state and explicit links are respected');
   } finally {
     await browser?.close();
     await new Promise(resolve => server.close(resolve));

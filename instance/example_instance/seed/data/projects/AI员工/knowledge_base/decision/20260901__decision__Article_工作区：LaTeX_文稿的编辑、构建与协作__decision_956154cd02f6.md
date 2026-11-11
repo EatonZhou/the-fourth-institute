@@ -4,12 +4,12 @@ type: decision
 project: AI员工
 created_at: '2026-09-01'
 version:
-  number: 26
+  number: 27
   created_at: "2026-09-01"
   created_by:
     user: ""
     agent: ""
-  updated_at: "2026-11-11T09:24:54Z"
+  updated_at: "2026-11-11T14:36:45Z"
   updated_by:
     user: ""
     agent: "resident_62dbdb2288fb"
@@ -93,6 +93,8 @@ Article 工作区是 Portal 中编写论文源码的页面，入口为 `/resourc
 - **Visual**：用 Portal 共享的预览组件显示当前文件的渲染结果，例如 Markdown 渲染后的效果或图片本身。打开图片、PDF 等非文本文件时只有 Visual 模式。
 
 侧栏可通过分隔线拖窄至 180px，文件树标题与工具按钮在空间不足时换行。宽度由工作台布局保存，刷新和折叠后展开继续使用已保存的布局；源码编辑区和 PDF 区保留各自的最小宽度。
+
+页面在当前浏览器保存最近使用的侧栏视图（文件、搜索、Git、Chat、设置或登记管理）。刷新后恢复该视图，打开 Chat 时重新加载当前 Article 已绑定的 Resident 对话；恢复过程不发送消息。侧栏折叠状态继续由工作台布局保存，普通刷新不强行展开；链接显式带 `chat=1`、`chat=true` 或 `chat=open` 时优先打开 Chat。首次访问或已保存的视图失效时显示文件树。
 
 文件树标题旁的三个图标分别用于新建文件、新建目录和上传文件。点击文档标签只切换编辑内容，不保存；保存图标或 Ctrl+S（macOS 为 Cmd+S）保存当前文件后重新编译 Article，并更新右侧 PDF；撤销、重做只作用于编辑历史；自动换行只改变显示。
 

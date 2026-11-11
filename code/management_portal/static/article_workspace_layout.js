@@ -25,6 +25,7 @@
     function setSideView(view, { forceOpen = true } = {}) {
       const target = ["files", "search", "git", "chat", "settings", "library"].includes(view) ? view : "files";
       state.sideView = target;
+      articleLayoutStore.write({ sideView: target });
       if (forceOpen && !articleWorkbench?.isPanelVisible("navigation")) articleWorkbench?.showPanel("navigation");
       document.querySelectorAll("[data-article-view]").forEach(button => {
         button.classList.toggle("active", button.dataset.articleView === target);
@@ -121,9 +122,11 @@
       });
     }
 
-    function restoreLayout() {
+    function restoreLayout({ sideView } = {}) {
+      let restoredSideView = sideView;
       try {
         const layout = articleLayoutStore.read();
+        if (restoredSideView === undefined) restoredSideView = layout.sideView;
         if (Number(layout.fileTreeHeight) >= 80) {
           $("articleFileTree").style.flex = `0 0 ${Number(layout.fileTreeHeight)}px`;
           $("articleOutlineSection").style.flex = "1 1 auto";
@@ -134,6 +137,7 @@
       } catch (_) {}
       applyEditorPreferences();
       applyWordWrap();
+      return setSideView(restoredSideView, { forceOpen: sideView !== undefined });
     }
 
     return Object.freeze({

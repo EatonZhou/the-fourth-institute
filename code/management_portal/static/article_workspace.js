@@ -474,10 +474,9 @@
   });
 
   initArticleWorkbench();
-  restoreLayout();
-  if (["1", "true", "open"].includes(String(queryState().get("chat") || "").toLowerCase())) {
-    setSideView("chat");
-  }
+  restoreLayout({
+    sideView: ["1", "true", "open"].includes(String(queryState().get("chat") || "").toLowerCase()) ? "chat" : undefined,
+  });
   bindSplitters();
   window.PortalPreview.registerHost("article-workspace", request => {
     if (!state.selectedId) return false;
