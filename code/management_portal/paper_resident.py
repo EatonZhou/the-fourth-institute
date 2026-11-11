@@ -26,6 +26,38 @@ def _parse_json_object_from_text(text: str) -> dict:
     raise ValueError("no JSON object found")
 
 
+def normalize_task_result(content: str, usage: dict, *, markdown: bool = False) -> tuple[str, dict]:
+    """Keep business output schemas and evidence separate from presentation.
+
+    A source-location claim is provenance, never proof of a native file Read.
+    Existing full-text replies remain valid products.
+    """
+    from .paper_agent_materials import READ_FAILURE, validate_path_result
+    content = str(content or "").strip()
+    usage = dict(usage)
+    if READ_FAILURE in content:
+        raise ValueError("无法读取论文材料；未自动改发全文，请显式重试")
+    parsed = None
+    try:
+        parsed = _parse_json_object_from_text(content)
+    except ValueError:
+        pass
+    evidence = parsed.get('source_evidence') if isinstance(parsed, dict) else None
+    if evidence is not None:
+        if not isinstance(evidence, str):
+            raise ValueError('source_evidence must be a string')
+        usage['source_evidence'] = evidence
+    if markdown and isinstance(parsed, dict):
+        if not isinstance(parsed.get('markdown'), str) or not parsed['markdown'].strip():
+            raise ValueError('Task JSON must contain nonempty markdown')
+        content = parsed['markdown'].strip()
+    if usage.get('material_snapshot'):
+        validate_path_result(content + '\n' + str(evidence or ''))
+        # A syntactically valid citation does not prove where the model read it.
+        usage['material_read_status'] = 'not_proven'
+    return content, usage
+
+
 def _resident_reply(
     prompt: str,
     *,
@@ -52,10 +84,7 @@ def _resident_reply(
     if not content:
         raise ValueError(f"{resident_scope} returned an empty reply")
     usage = dict(result.get("usage")) if isinstance(result.get("usage"), dict) else {}
-    if usage.get("material_snapshot"):
-        from .paper_agent_materials import validate_path_result
-        validate_path_result(content)
-    return content, usage
+    return normalize_task_result(content, usage, markdown=resident_scope == "paper:exp")
 
 
 def _clean_summary_paragraph(content: str) -> str:

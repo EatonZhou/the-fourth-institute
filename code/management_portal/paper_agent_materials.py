@@ -125,7 +125,10 @@ def prepare_task_input(*,actor,scope,attempt,subject,full_prompt):
     if directory.is_symlink():raise PermissionError('Linked task snapshot refused')
     directory.mkdir(exist_ok=True)
     if not (directory/'manifest.json').exists():
-        full_prompt += '\n\n必须提供具体章节或页码依据；JSON输出增加source_evidence字符串字段，不在JSON外加说明。'
+        if scope in {'paper:deep-read', 'paper:exp'}:
+            full_prompt += '\n\n输出JSON对象，字段markdown为完整Markdown正文，source_evidence为具体章节或页码依据字符串；不在JSON外加说明。'
+        else:
+            full_prompt += '\n\n保持任务要求的原JSON字段，另增加source_evidence字符串字段，提供具体章节或页码依据；不在JSON外加说明。'
         body=full_prompt.encode();digest=sha256(body).hexdigest()
         manifest={'schema':'tfi.paper-task-material.v1','paper_id':subject,'job_id':key,'sha256':digest,'size_bytes':len(body),
                   'metadata':{'actor':actor,'scope':scope,'attempt':attempt,'target_resident_id':target}}

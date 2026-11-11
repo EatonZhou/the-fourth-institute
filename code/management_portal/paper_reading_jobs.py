@@ -183,6 +183,8 @@ def recover_deep_read(payload: dict, actor: str) -> dict:
                           if part.get("type") == "text").strip()
     if hashlib.sha256(content.encode()).hexdigest() != values["content_sha256"]:
         raise ValueError("source content changed; read and confirm the message again")
+    from .paper_resident import normalize_task_result
+    content, recovered_usage = normalize_task_result(content, dict(original.get("usage") or {}), markdown=True)
     _require_artifact_sections(content, DEEP_READ_SECTIONS, "Deep Read")
     identity = "\0".join(values[name] for name in names)
     recovery_id = "deep-read-recovered-" + hashlib.sha256(identity.encode()).hexdigest()[:24]
@@ -203,7 +205,7 @@ def recover_deep_read(payload: dict, actor: str) -> dict:
             raise ValueError("Analysis changed; read and confirm the current artifact before recovery")
         # Provenance is an explicit contributor selection. No forwarded text is
         # relabelled as the canonical final reply, and no model usage is invented.
-        usage = {**dict(original.get("usage") or {}), "artifact_recovery": {
+        usage = {**recovered_usage, "artifact_recovery": {
             **values, "selected_by": actor, "selection": "explicit_generated_message",
         }}
         path = _save_deep_read_analysis(paper, content, usage)
@@ -440,10 +442,10 @@ def _run_deep_read_job(job_id: str) -> None:
         )
         # Keep reported generation facts even if artifact validation fails.
         _set_deep_read_job(job_id, {"usage": usage})
-        if (job.get('usage') or {}).get('material_snapshot') or usage.get('material_snapshot'):
-            from .paper_agent_materials import validate_path_result
-            validate_path_result(content)
-            usage.setdefault('material_snapshot', (job.get('usage') or {}).get('material_snapshot'))
+        if (job.get('usage') or {}).get('material_snapshot'):
+            usage.setdefault('material_snapshot', job['usage']['material_snapshot'])
+        from .paper_resident import normalize_task_result
+        content, usage = normalize_task_result(content, usage, markdown=True)
         _require_artifact_sections(content, DEEP_READ_SECTIONS, "Deep Read")
         print(f"[paper-deep-read] {job_id} writing analysis", flush=True)
         _set_deep_read_job(job_id, {"step": "writing analysis", "progress": 82})

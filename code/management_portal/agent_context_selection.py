@@ -170,6 +170,13 @@ def _selected_option(kind: str, item_id: str, private: list) -> dict[str, str] |
     return {"id": item_id, "name": title or item_id, "path": str(child), "description": description}
 
 
+class VerifiedMaterialContext(dict):
+    """Internal admission result, created only after the resource-owner RPC.
+
+    A JSON-supplied dictionary never carries this in-process trust marker.
+    """
+
+
 def resolve(
     selection: object,
     *,
@@ -187,6 +194,8 @@ def resolve(
         "updated_at": utc_now_iso(),
         "updated_by": str(actor or ""),
     }
+    if isinstance(selection, VerifiedMaterialContext):
+        resolved["verified_material_snapshot"] = copy.deepcopy(selection["verified_material_snapshot"])
     invalid: list[str] = []
     for key in ("skills", "agents"):
         selected = _selection_ids(selection.get(key))
