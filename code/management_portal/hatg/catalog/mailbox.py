@@ -125,9 +125,10 @@ DECLARATIONS = (
         R("text", description="待办文字，1–100 字", max_length=100), R("user_id", description="接收待办的 User；User 只能写自己的用户名"),
         P("date", description="YYYY-MM-DD，省略时为香港时区今天；用于折叠日期分组"),
     ), (R("item", "object", "新建的待办：todo_id、user_id、text、date、completed、indent 等"),), mutates=True),
-    _d("UpdateMailboxTodo", FIXED, "编辑自己的待办文字、日期、完成状态或缩进。", (
+    _d("UpdateMailboxTodo", ON_USER, "编辑指定 User 的待办文字、日期、完成状态或缩进；User 只能管理自己，Resident 须有目标 User 的权限。", (
+        R("user_id", description="待办所属 User；User 只能指定自己，Resident 须获目标 User 的授权"),
         R("todo_id", description="要编辑的待办"), R("changes", "object", "text（1–100 字）、date（YYYY-MM-DD）、completed（布尔值）、indent（0–4 整数）"),
-    ), (R("item", "object", "修改后的待办：todo_id、text、date、completed、indent 等"),), mutates=True, target="todo_id"),
+    ), (R("item", "object", "修改后的待办：todo_id、user_id、text、date、completed、indent 等"),), mutates=True, target="user_id"),
     _d("DeleteMailboxTodo", FIXED, "删除自己的一条个人待办。", (R("todo_id", description="要删除的待办"),),
        (R("todo_id", description="被删除的待办"),), mutates=True, target="todo_id"),
     _d("MoveMailboxTodo", FIXED, "移动自己的待办：指定同日方向，或另一条待办之前/之后；跨日期时一并更新日期。三种位置须且只能指定一种。", (

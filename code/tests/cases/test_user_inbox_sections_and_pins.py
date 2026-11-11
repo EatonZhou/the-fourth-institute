@@ -146,6 +146,56 @@ def test_resident_can_add_user_todo_via_isa_with_idempotency(monkeypatch, isolat
             todos.create("sample_admin", "不能替他人添加", user_id="CASE-A")
 
 
+def test_resident_updates_todo_only_with_target_user_permission(monkeypatch, isolated_portal_case):
+    """授权 Resident 可更新目标用户待办；权限、User 自管理和 Todo ID 隔离均由正式路径核验。"""
+    from management_portal import mailbox_todos as todos
+    from management_portal.hatg.contracts import InstructionCall, InstructionContext
+    from management_portal.hatg.kernel import InstructionKernel
+    from management_portal.hatg.store import ExecutionStore
+    from management_common.portal_database import portal_database
+    from tests.cases.permission_test_support import enable, Fact
+
+    resident = "resident_111111111111"
+    with isolated_portal_case():
+        permissions = enable(monkeypatch)
+        permissions.users("CASE-A", "CASE-B")
+        permissions.place(Fact("resident", resident))
+        monkeypatch.setattr(web_isa, "web", lambda _module: SimpleNamespace(
+            _PORTAL_ACCESS=SimpleNamespace(user=lambda name: {"configured": name in {"CASE-A", "CASE-B"}, "status": "active"}),
+            _load_users=lambda: {"CASE-A": {}, "CASE-B": {}},
+        ))
+        kernel = InstructionKernel(web_isa.binding(), store=ExecutionStore(portal_database(schema="todo_update_isa_test")))
+        own = todos.create("CASE-A", "验证授权完成状态")["item"]
+        foreign = todos.create("CASE-B", "其他用户的待办")["item"]
+
+        def update(caller, target, identifier, key=""):
+            args = {"todo_id": identifier, "changes": {"completed": True}}
+            if target is not None:
+                args["user_id"] = target
+            return kernel.execute(InstructionCall.from_payload({"instruction": "UpdateMailboxTodo", "arguments": args,
+                                  "idempotency_key": key}), InstructionContext(caller=caller, entry="web"))
+
+        denied = update(resident, "CASE-A", own["todo_id"])
+        assert denied.status == "failed" and denied.error["code"] == "instruction.forbidden"
+        assert not todos.list_items("CASE-A")["items"][0]["completed"]
+        permissions.grant(resident, "CASE-A", "@admin")
+        first = update(resident, "CASE-A", own["todo_id"], "complete-authorized-todo")
+        replay = update(resident, "CASE-A", own["todo_id"], "complete-authorized-todo")
+        assert first.status == replay.status == "committed", first.error
+        assert replay.replayed and replay.result["item"]["todo_id"] == own["todo_id"]
+        assert replay.result["item"]["completed"] is True
+        assert first.result["item"]["completed"] and first.result["item"]["created_by"] == "CASE-A"
+        assert first.result["item"]["position"] == own["position"]
+        for identifier in (foreign["todo_id"], "missing"):
+            result = update(resident, "CASE-A", identifier)
+            assert result.status == "failed" and result.error["code"] == "instruction.not_found"
+        assert update(resident, "CASE-B", foreign["todo_id"]).error["code"] == "instruction.forbidden"
+        assert update(resident, None, own["todo_id"]).status == "failed"
+        assert update("CASE-B", "CASE-B", foreign["todo_id"]).status == "committed"
+        permissions.grant("CASE-B", "CASE-A", "@admin")
+        assert update("CASE-B", "CASE-A", own["todo_id"]).error["code"] == "instruction.forbidden"
+
+
 @pytest.mark.parametrize("old_name,new_name,mutates,streaming", [
     ("ListInbox", "GetMailbox", False, False),
     ("ListMailbox", "GetMailbox", False, False),

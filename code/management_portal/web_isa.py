@@ -316,7 +316,9 @@ def mailbox_todo(inv: Invocation) -> dict[str, Any]:
             raise invalid("待办接收用户已停用")
         return mailbox_todos.create(inv.caller, inv.argument("text"), user_id=recipient, date=inv.argument("date"))
     if name == "UpdateMailboxTodo":
-        return mailbox_todos.update(inv.caller, inv.argument("todo_id"), inv.argument("changes"))
+        recipient = mailbox_todos.owner(inv.caller, inv.argument("user_id"))
+        _named_user(inv)
+        return mailbox_todos.update(inv.caller, inv.argument("todo_id"), inv.argument("changes"), user_id=recipient)
     if name == "MoveMailboxTodo":
         return mailbox_todos.move(inv.caller, inv.argument("todo_id"), inv.argument("direction"),
                                   before_todo_id=inv.argument("before_todo_id"), after_todo_id=inv.argument("after_todo_id"))

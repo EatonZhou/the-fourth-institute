@@ -41,7 +41,7 @@ def database():
 
 
 def owner(caller, user_id=None):
-    """Residents may address an existing User when creating; other operations are self-only."""
+    """Resolve the User scope; ISA authorizes explicitly addressed Resident operations."""
     principal = actor_principal(caller)
     if principal.kind == "resident" and user_id:
         try:
@@ -49,7 +49,7 @@ def owner(caller, user_id=None):
         except ValueError as exc:
             raise invalid("待办接收者必须是 User") from exc
     if principal.kind != "user" or user_id and user_id != principal.id:
-        raise InstructionError("instruction.forbidden", "只能管理自己的个人待办；Resident 添加待办须指定 user_id")
+        raise InstructionError("instruction.forbidden", "只能管理自己的个人待办；Resident 操作待办须指定 user_id")
     return principal.id
 
 
@@ -104,8 +104,8 @@ def create(caller, text, *, user_id=None, date=None):
         return {"item": _item(connection, recipient, todo_id)}
 
 
-def update(caller, todo_id, changes):
-    user_id = owner(caller)
+def update(caller, todo_id, changes, *, user_id=None):
+    user_id = owner(caller, user_id)
     if not changes or set(changes) - {"text", "date", "completed", "indent"}:
         raise invalid("只支持修改待办的 text、date、completed、indent")
     values = dict(changes)

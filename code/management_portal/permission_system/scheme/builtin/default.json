@@ -1340,8 +1340,7 @@
       "r": "@portal"
     },
     "UpdateMailboxTodo": {
-      "a": "@free",
-      "r": "@portal"
+      "a": "@admin"
     },
     "UpdateModelApi": {
       "a": "@admin",

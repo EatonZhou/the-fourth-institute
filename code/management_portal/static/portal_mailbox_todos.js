@@ -131,6 +131,7 @@
       const revision = ++state.revision;
       error(); validate(); render();
       try {
+        if (instruction === "UpdateMailboxTodo") args = { ...args, user_id: await window.PortalIdentity.userId() };
         const result = await window.PortalInstructionClient.execute(instruction, args, {
           idempotencyKey: "mailbox-todo:" + window.PortalUIPrimitives.randomUUID(),
         });
