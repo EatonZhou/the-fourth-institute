@@ -155,8 +155,10 @@
       };
       if (header && state.leftFace === "library") header.textContent = window.PortalI18n.t('Loading...');
       let firstPayload;
+      const initialQuery = libraryQuery();
+      const requestedHistory = new URLSearchParams(initialQuery.split('?')[1] || '');
       try {
-        firstPayload = await paperApi.request(libraryQuery());
+        firstPayload = await paperApi.request(initialQuery);
       } catch (error) {
         if (requestSeq === state.libraryRequestSeq) {
           state.libraryLoading = false;
@@ -166,10 +168,31 @@
         throw error;
       }
       if (requestSeq !== state.libraryRequestSeq) return null;
-      if ((state.activeSemanticSearchId && !firstPayload.summary?.semantic_search)
-          || (state.activeCollectorJobId && !firstPayload.summary?.paper_collection)) {
-        const error = Error(window.PortalI18n.t('该次历史结果已不可用，请刷新历史列表。'));
-        state.libraryLoading = false; renderHeaderError(error); throw error;
+      const missingSemantic = requestedHistory.get('semantic') && !firstPayload.summary?.semantic_search;
+      const missingCollector = requestedHistory.get('collector') && !firstPayload.summary?.paper_collection;
+      if (missingSemantic || missingCollector) {
+        // A restored ID is not evidence that this request asked for its results.
+        // Lose only the unavailable selection; never reject Reader startup.
+        if (missingSemantic && state.activeSemanticSearchId === requestedHistory.get('semantic')) {
+          state.activeSemanticSearchId = '';
+          state.semanticSearch?.clearActive?.({ notify: false });
+        }
+        if (missingCollector && state.activeCollectorJobId === requestedHistory.get('collector')) {
+          state.activeCollectorJobId = '';
+          renderCollectorJobs();
+        }
+        writeUiState();
+        window.PortalUI.toast(window.PortalI18n.t('该次历史结果已不可用，请刷新历史列表。'), 'warning');
+        try {
+          firstPayload = await paperApi.request(libraryQuery());
+        } catch (error) {
+          if (requestSeq === state.libraryRequestSeq) {
+            state.libraryLoading = false;
+            renderHeaderError(error);
+          }
+          throw error;
+        }
+        if (requestSeq !== state.libraryRequestSeq) return null;
       }
       state.library = firstPayload;
       state.libraryRenderLimit = 100;
