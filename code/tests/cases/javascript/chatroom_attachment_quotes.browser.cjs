@@ -62,7 +62,7 @@ const server = http.createServer((req, res) => {
       view.room = { chatroom_id: roomId, title: '附件引用', members: ['viewer', 'alice'], permissions: { can_post: true } };
       view.chatroomId = roomId;
       view.mergeMessages(['image', 'file'].map((type, i) => ({ message_id: `msg_media_${type}`, ordinal: i + 1,
-        author_id: 'alice', role: 'user', content_parts: [{ type, name: type === 'image' ? '图.png' : '方案.pdf',
+        author_id: type === 'image' ? 'alice' : 'resident_0123456789ab', role: type === 'image' ? 'user' : 'agent', content_parts: [{ type, name: type === 'image' ? '图.png' : '方案.pdf',
           upload_id: type === 'image' ? 'upload_aa' : 'upload_bb' }] })));
       view.apply();
     });
@@ -72,17 +72,27 @@ const server = http.createServer((req, res) => {
       await page.locator(`[data-message-key="${messageId}"] .messageContent`).click({ button: 'right' });
       await page.locator('[data-portal-message-action="quote"]:visible').click();
       assert.equal(await page.locator('.composerQuoteText').textContent(), label);
-      assert.equal(await page.evaluate(() => view.controller.draftText()), '@alice ');
+      const author = kind === 'image' ? 'alice' : 'resident_0123456789ab';
+      assert.equal(await page.evaluate(() => view.controller.draftText()), `@${author} `);
+      // Delete the suggested mention through the actual editable input. A view
+      // refresh and submission must retain the quote without restoring the @.
+      await page.locator('.composerInput').press('Control+A');
+      await page.locator('.composerInput').press('Backspace');
+      await page.keyboard.insertText('只作引用');
+      await page.evaluate(() => view.apply());
+      assert.equal(await page.evaluate(() => view.controller.draftText()), '只作引用');
+      assert.equal(await page.locator('.composerQuoteText').textContent(), label);
       await page.locator('.composerInput').press('Control+Enter');
       await page.waitForFunction(id => sent.some(args => args.quote?.message_id === id), messageId);
       const args = await page.evaluate(() => sent.at(-1));
       assert.deepEqual(args.quote, { message_id: messageId }, 'send only the source ID for server-side resolution');
+      assert.deepEqual(args.content_parts, [{ type: 'text', text: '只作引用' }], 'a deleted user/Resident @ stays deleted');
       assert.ok(args.content_parts.every(part => part.type === 'text'), 'do not copy attachments into the reply');
       await page.locator(`[data-message-quote="${messageId}"]`).click();
       await page.waitForFunction(id => document.querySelector('.messageQuoteTarget')?.dataset.messageKey === id, messageId);
     }
     assert.deepEqual(errors, []);
-    console.log('PASS right-click pure image/file → quote preview → send source ID → jump to original, using production UI');
+    console.log('PASS image/file quote → delete suggested user/Resident mention → refresh → send exact body and quote ID → jump to original');
   } finally {
     if (browser) await browser.close();
     await new Promise(resolve => server.close(resolve));

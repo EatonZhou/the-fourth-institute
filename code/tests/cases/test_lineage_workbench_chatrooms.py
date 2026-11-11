@@ -14,7 +14,7 @@ def test_lineage_workbench_chatrooms():
 
 
 def test_chatroom_attachment_quotes_in_browser():
-    """纯图片、文件的右键引用、预览、发送和原消息跳转使用真实浏览器交互。
+    """附件可引用；删除建议的用户或 Resident 提及后，刷新和发送不补回，原消息仍可跳转。
 
     :importance: P1
     :design: decision_a6bebf4ac283

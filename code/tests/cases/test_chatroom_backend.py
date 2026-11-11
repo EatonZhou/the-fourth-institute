@@ -351,7 +351,7 @@ def test_a_quote_names_a_message_of_this_chatroom_and_reaches_the_called_residen
 
 @pytest.mark.parametrize("kind, body", [("image", ""), ("file", ""), ("image", "看这张图"), ("file", "长正文" * 500)])
 def test_attachment_messages_can_be_quoted_without_copying_the_upload(lineage, kind, body):
-    """纯附件及图文消息可引用；服务端保留附件说明、源消息定位和作者提及。
+    """纯附件及图文消息可引用；服务端保留附件说明和源消息定位，不隐式提及作者。
 
     :importance: P1
     :design: decision_a6bebf4ac283, decision_c524c775e0be
@@ -368,14 +368,14 @@ def test_attachment_messages_can_be_quoted_without_copying_the_upload(lineage, k
     assert len(quote["text"]) <= 1000
     if body:
         assert quote["text"].startswith(body[:10])
-    assert chatroom_backend.get_chatroom(ALICE, room)["last_message"]["mentioned_users"] == [ALICE]
+    assert chatroom_backend.get_chatroom(ALICE, room)["last_message"]["mentioned_users"] == []
     assert all(part["type"] == "text" for part in reply["content_parts"])
     shown = chatroom_backend.list_messages(BOB, room)["messages"][-1]
     assert shown["quote"] == quote
 
 
-def test_quoting_a_user_mentions_them_even_when_muted_without_marking_it_read(lineage):
-    """引用其他成员自动提及，沿用个人免打扰例外和未读定位；读取提醒不推进已读。
+def test_quoting_a_user_only_mentions_them_when_the_body_keeps_the_mention(lineage):
+    """引用保留 @ 时提醒作者；删除 @ 后只保留引用，遵守免打扰且不生成提及。
 
     :module: resident.conversation
     :importance: P1
@@ -384,9 +384,15 @@ def test_quoting_a_user_mentions_them_even_when_muted_without_marking_it_read(li
     room = chatroom_backend.create_chatroom(ALICE, [BOB, DAVE])["chatroom_id"]
     original = chatroom_backend.post_message(BOB, room, text("请评审"))["message"]
     chatroom_backend.update_chatroom(BOB, room, muted=True)
-    reply = chatroom_backend.post_message(ALICE, room, text("同意"), quote={"message_id": original["message_id"]})
+    quiet = chatroom_backend.post_message(ALICE, room, text("同意"), quote={"message_id": original["message_id"]})
+    assert quiet["message"]["content_parts"] == text("同意")
+    assert quiet["message"]["quote"]["message_id"] == original["message_id"]
+    state = chatroom_backend.get_chatroom(BOB, room)
+    assert state["unread_count"] > 0 and not state["attention_unread"]
+    assert state["unread_mentions"] == [] and state["last_message"]["mentioned_users"] == []
+    reply = chatroom_backend.post_message(ALICE, room, text("@bob 同意"), quote={"message_id": original["message_id"]})
     message = reply["message"]
-    assert chatroom_backend._message_text(message) == "@bob \n同意"
+    assert chatroom_backend._message_text(message) == "@bob 同意"
     assert reply["deliveries"] == [] and lineage.deliveries() == []
     for _ in range(2):
         state = chatroom_backend.get_chatroom(BOB, room)
@@ -398,22 +404,22 @@ def test_quoting_a_user_mentions_them_even_when_muted_without_marking_it_read(li
     assert chatroom_backend.mark_read(BOB, room, through=message["ordinal"])["unread_mention_count"] == 0
 
 
-@pytest.mark.parametrize("body, expected", [
-    ("@BOB 同意", "@BOB 同意"),
-    ("**@bob** 同意", "**@bob** 同意"),
-    ("@bobby", "@bob \n@bobby"),
-    ("contact@bob.com", "@bob \ncontact@bob.com"),
-    ("`@bob`", "@bob \n`@bob`"),
-    ("> @bob", "@bob \n> @bob"),
-    ("[@bob](https://example.test)", "@bob \n[@bob](https://example.test)"),
+@pytest.mark.parametrize("body, mention_count", [
+    ("@BOB 同意", 1),
+    ("**@bob** 同意", 1),
+    ("@bobby", 0),
+    ("contact@bob.com", 0),
+    ("`@bob`", 0),
+    ("> @bob", 0),
+    ("[@bob](https://example.test)", 0),
 ])
-def test_quoting_a_user_deduplicates_only_authored_mentions(lineage, body, expected):
-    """引用自动提及使用同一正文解析规则，忽略代码、引用、链接、邮箱与部分用户名。"""
+def test_quoting_a_user_preserves_the_authored_body_and_mention_rules(lineage, body, mention_count):
+    """引用不改写正文；提醒仍忽略代码、引用、链接、邮箱与部分用户名。"""
     room = chatroom_backend.create_chatroom(ALICE, [BOB])["chatroom_id"]
     original = chatroom_backend.post_message(BOB, room, text("方案"))["message"]
     reply = chatroom_backend.post_message(ALICE, room, text(body), quote={"message_id": original["message_id"]})
-    assert chatroom_backend._message_text(reply["message"]) == expected
-    assert chatroom_backend.get_chatroom(BOB, room)["unread_mention_count"] == 1
+    assert chatroom_backend._message_text(reply["message"]) == body
+    assert chatroom_backend.get_chatroom(BOB, room)["unread_mention_count"] == mention_count
 
 
 def test_quoting_self_former_members_and_system_messages_does_not_add_mentions(lineage):
@@ -429,15 +435,37 @@ def test_quoting_self_former_members_and_system_messages_does_not_add_mentions(l
     assert lineage.deliveries() == []
 
 
-def test_quote_user_prefix_respects_message_length_limit(lineage):
-    """自动提及计入正文长度，超长拒绝时不写入消息或提醒。"""
+def test_quotes_use_the_authored_message_length_limit(lineage):
+    """引用不追加正文前缀；提交正文按既有字数限制校验。"""
     room = chatroom_backend.create_chatroom(ALICE, [BOB])["chatroom_id"]
     original = chatroom_backend.post_message(BOB, room, text("方案"))["message"]
-    with pytest.raises(ValueError, match="字数上限"):
-        chatroom_backend.post_message(ALICE, room, text("x" * chatroom_backend.MAX_MESSAGE_CHARS),
+    body = "x" * chatroom_backend.MAX_MESSAGE_CHARS
+    accepted = chatroom_backend.post_message(ALICE, room, text(body), quote={"message_id": original["message_id"]})
+    assert accepted["message"]["content_parts"] == text(body)
+    with pytest.raises(ValueError):
+        chatroom_backend.post_message(ALICE, room, text(body + "x"),
                                       quote={"message_id": original["message_id"]})
     assert chatroom_backend.get_chatroom(BOB, room)["unread_mention_count"] == 0
-    assert chatroom_backend.list_messages(ALICE, room)["messages"][-1]["message_id"] == original["message_id"]
+    assert chatroom_backend.list_messages(ALICE, room)["messages"][-1]["message_id"] == accepted["message"]["message_id"]
+
+
+def test_quoting_a_resident_does_not_call_them_without_an_authored_mention(lineage):
+    """引用 Resident 可不再召唤它；只有实际发送的正文含有效 @ 才投递。"""
+    room = chatroom_backend.create_chatroom(ALICE, [BOB])["chatroom_id"]
+    asked = chatroom_backend.post_message(ALICE, room, text(f"@{HELPER} 看方案"))
+    delivery = asked["deliveries"][0]
+    lineage.reply(HELPER, delivery["input_message_id"], f"方案里引用 @bob 和 @{REVIEWER}")
+    source = next(item for item in chatroom_backend.list_messages(ALICE, room)["messages"] if item["author_id"] == HELPER)
+    for body in ("仅引用", f"`@{HELPER}` 只讨论这个标记"):
+        reply = chatroom_backend.post_message(ALICE, room, text(body), quote={"message_id": source["message_id"]})
+        assert reply["message"]["content_parts"] == text(body)
+        assert reply["message"]["quote"]["message_id"] == source["message_id"]
+        assert reply["deliveries"] == []
+    assert len(lineage.deliveries()) == 1
+    assert chatroom_backend.get_chatroom(BOB, room)["unread_mentions"] == []
+    reply = chatroom_backend.post_message(ALICE, room, text(f"@{HELPER} 继续"), quote={"message_id": source["message_id"]})
+    assert [item["resident_id"] for item in reply["deliveries"]] == [HELPER]
+    assert len(lineage.deliveries()) == 2
 
 
 def test_forwarding_reads_a_chatroom_message_as_a_reader_of_that_chatroom(lineage):
