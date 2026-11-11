@@ -349,16 +349,19 @@ class WorkflowBindings:
             raise WorkflowFailed(handle, {})
         return {**handle, "status": "running"}
 
-    def trigger(self, binding, *, actor, prompt, request_id, content_parts=None, temporary_credentials=None, entry="web"):
+    def trigger(self, binding, *, actor, prompt, request_id, content_parts=None, temporary_credentials=None, message_metadata=None, entry="web"):
         handle = self.prepare(binding, request_id=request_id)
         arguments = {"lineage_id": handle["lineage_id"], "event_source_id": handle["event_source_id"],
                      "prompt": prompt}
         if content_parts:
             arguments["content_parts"] = list(content_parts)
+        if message_metadata:
+            from .business_context import message_metadata as validate_metadata
+            arguments['payload'] = {'message_metadata': validate_metadata(message_metadata)}
         if temporary_credentials is not None:
             # DeliverMessage checks the actual Event initiator's authority and
             # issues grants tied to its resulting input. This is not an actor override.
-            arguments["payload"] = {"temporary_credentials": list(temporary_credentials)}
+            arguments.setdefault("payload", {})["temporary_credentials"] = list(temporary_credentials)
         try:
             # A lost receipt is recovered by reads, never another TriggerEvent.
             receipt = isa_client.call(actor, "TriggerEvent", arguments,

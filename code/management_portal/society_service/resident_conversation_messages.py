@@ -95,10 +95,10 @@ class ConversationMessages:
                     stream_id, payload, group_id=group_id, position=position,
                 )
                 # Identity conflicts roll back both the acceptance and consumption.
-                self._validate_stored_message_identity(stored, public_input)
+                self._validate_stored_message_identity(stored, public_input, metadata=message.get('metadata', {}))
                 from management_portal.resources.upload_consumption import consume_message
                 consume_message(message, owner_id=stream_id, connection=connection)
-        return self._validate_stored_message_identity(stored, public_input)
+        return self._validate_stored_message_identity(stored, public_input, metadata=message.get('metadata', {}))
 
     def validate_message_identity(
         self,
@@ -111,13 +111,15 @@ class ConversationMessages:
         stored = self.stored_message(resident_id, public_input["message_id"])
         if stored is None:
             raise KeyError(str(public_input["message_id"]))
-        return self._validate_stored_message_identity(stored, public_input)
+        return self._validate_stored_message_identity(stored, public_input, metadata=message.get('metadata', {}))
 
     def _validate_stored_message_identity(
-        self, stored: Mapping[str, Any], public_input: Mapping[str, Any],
+        self, stored: Mapping[str, Any], public_input: Mapping[str, Any], *, metadata=None,
     ) -> dict[str, Any]:
         """Check the accepted input's immutable ancestry, returning its current view."""
         public = message_from_storage(stored)
+        if metadata is not None and (stored.get('metadata') or {}) != metadata:
+            raise resident_message_contract.MessageIdentityConflict('Message business metadata is immutable')
         expected = immutable_message_fields(public_input)
         if immutable_message_fields(public) == expected:
             return public

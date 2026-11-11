@@ -139,6 +139,8 @@ def _completed_result(result: dict, previous: dict, requested_message_id: str = 
 
 
 def _call(method, options: dict) -> dict:
+    from .society_service.resident_message_contract import message_identity
+    options = {**options, 'message_id': options.get('message_id') or message_identity()}
     options = {**options, "prompt": (
         "本次是 Paper 功能任务。业务服务读取本轮最终回复并校验、保存产物。"
         "请在最终回复中直接返回本次要求的完整正文或结构化结果；"
@@ -150,7 +152,12 @@ def _call(method, options: dict) -> dict:
     material = None
     material_observer = options.pop('on_material_prepared', None)
     context = dict(options.get('context_refs') or {})
-    metadata = options.get('metadata') or {}
+    metadata = dict(options.get('metadata') or {})
+    # Calls on public catalogue/text inputs may precede Paper registration.
+    # Associate them with the initiating caller's exact server-side input.
+    if not any(metadata.get(key) for key in ('paper_id', 'material_subject', 'collector_job_id', 'source_identity')):
+        from hashlib import sha256
+        metadata['source_identity'] = sha256(options['prompt'].encode()).hexdigest()
     subject = metadata.get('material_subject') or metadata.get('paper_id')
     attempt = options.get('business_ref') or metadata.get('material_attempt')
     if options['resident_scope'] in TASK_SCOPES and subject and attempt:
@@ -159,6 +166,11 @@ def _call(method, options: dict) -> dict:
         if material_observer:
             material_observer(material['provenance'])
         options = {**options,'prompt':full,'business_ref':attempt,'context_refs':{**context,'structured_reference':reference}}
+    if options['resident_scope'] in ROLES:
+        from .paper_business_history import build
+        options['metadata'] = {**metadata, 'business_context': build(
+            scope=options['resident_scope'], actor=options['actor'], metadata=metadata,
+            message_id=options['message_id'], business_ref=options.get('business_ref', ''), material=material)}
     requested = str(options.get("message_id") or "")
     assigned, submitted = options.get("on_assigned"), options.get("on_submitted")
     latest: dict = {}

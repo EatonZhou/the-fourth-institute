@@ -374,6 +374,7 @@ def message_from_storage(message: Mapping[str, Any]) -> dict[str, Any]:
 
 # Private fields kept with a stored message, never part of its public identity.
 PRIVATE_FIELDS = (
+    "metadata",
     "generation_source",
     "provider_response",
     "execution_id",

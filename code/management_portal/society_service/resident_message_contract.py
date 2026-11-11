@@ -102,7 +102,7 @@ def input_parts(
         working_directory,
     )
 # ``quote`` names only the quoted message; the platform fills in its author and text.
-DELIVER_MESSAGE_FIELDS = frozenset({"message_id", "role", "content_parts", "quote"})
+DELIVER_MESSAGE_FIELDS = frozenset({"message_id", "role", "content_parts", "quote", "metadata"})
 ACTIVATION_POLICIES = ("enqueue_and_trigger", "inject_active_turn", "attach_to_next")
 
 
@@ -129,6 +129,9 @@ def validate_delivery_message(message: object) -> None:
         raise ValueError("DeliverMessage accepts user messages only")
     if "content_parts" in message:
         validate_content_parts(message["content_parts"])
+    if "metadata" in message:
+        from management_portal.business_context import message_metadata
+        message_metadata(message['metadata'])
 
 
 class MessageIdentityConflict(OperationError, ValueError):

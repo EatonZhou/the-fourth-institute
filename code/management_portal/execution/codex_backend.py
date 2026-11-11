@@ -93,6 +93,70 @@ class CodexBackend:
 
     provider_id = "codex"
 
+    @staticmethod
+    def _read_neutral_config(config: Any) -> bool:
+        """Recognize only config leaves with known non-file-policy semantics.
+
+        CodexOptions adds Resident identity and the Harness adds compaction
+        limits. Neither removes native Read capability. Do not infer the same
+        for an arbitrary tools/features/environment subtree. Dotted and nested
+        keys are supported by Codex, but overlapping spellings are ambiguous.
+        This is passive policy assessment, not native config validation or I/O.
+        """
+        if config is None:
+            return True
+        if not isinstance(config, dict):
+            return False
+        boolean = lambda value: type(value) is bool
+        positive = lambda value: type(value) is int and value > 0
+        text = lambda value: isinstance(value, str) and "\x00" not in value
+        leaves = {
+            "show_raw_agent_reasoning": boolean,
+            "model_reasoning_summary": lambda value: isinstance(value, str) and value in ("auto", "concise", "detailed", "none"),
+            "model_context_window": positive,
+            "model_auto_compact_token_limit": positive,
+            "model_auto_compact_token_limit_scope": lambda value: value == "total",
+            "tools.update_plan.enabled": boolean,
+            "agents.enabled": boolean,
+            "agents.interrupt_message": boolean,
+            "features.goals": boolean,
+            "compact_prompt": lambda value: value == _CODEX_COMPACTION_PROMPT,
+            "project_doc_max_bytes": lambda value: type(value) is int and value == 0,
+            "shell_environment_policy.set.PORTAL_RESIDENT_ID": text,
+            "shell_environment_policy.set.PORTAL_LINEAGE_ID": text,
+        }
+        groups = {key.rsplit(".", count)[0]
+                  for key in leaves for count in range(1, key.count(".") + 1)}
+        values: dict[str, Any] = {}
+
+        def visit(items: dict[str, Any], prefix: str = "") -> bool:
+            for key, value in items.items():
+                if not isinstance(key, str):
+                    return False
+                path = prefix + key
+                if isinstance(value, dict):
+                    if path not in groups or not visit(value, path + "."):
+                        return False
+                elif path not in leaves or path in values or not leaves[path](value):
+                    return False
+                else:
+                    values[path] = value
+            return True
+
+        if not visit(config):
+            return False
+        # Reuse the identity owner contract; never allow PATH/HOME/loader or
+        # future Portal-prefixed environment keys just because the set is a dict.
+        from management_portal.resident_shell_environment import resident_identity_environment
+        environment_prefix = "shell_environment_policy.set."
+        identity = {key[len(environment_prefix):]: value for key, value in values.items()
+                    if key.startswith(environment_prefix)}
+        try:
+            resident_identity_environment(identity)
+        except (ValueError, TypeError):
+            return False
+        return True
+
     @classmethod
     def local_file_read_policy(cls, invocation):
         from .local_file_read import LocalFileReadAssessment as Assessment
@@ -100,9 +164,9 @@ class CodexBackend:
         options = invocation.request.runtime_options
         if options.get("execution_constraints") is not None:
             return Assessment("unknown", "execution_constraints_unverified")
-        # Native config can replace tools and permission rules. Do not infer
-        # an effective tool set from Portal's native-tool event capability.
-        if options.get("config_overrides"):
+        # Only individually known read-neutral config is safe to ignore here.
+        # Unknown tool/permission settings still require native observation.
+        if not cls._read_neutral_config(options.get("config_overrides")):
             return Assessment("unknown", "native_config_requires_observation")
         sandbox, policy = cls._sandbox_options(options)
         permissions = str(options.get("permissions") or "").strip()

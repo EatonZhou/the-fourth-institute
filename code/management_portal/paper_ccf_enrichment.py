@@ -218,7 +218,8 @@ DOI: {paper.get('doi') or ''}
 Online metadata:
 {chr(10).join(source_lines) if source_lines else 'No online metadata found.'}
 """
-    content, usage = _resident_reply(prompt, actor=actor, resident_scope="paper:ccf")
+    content, usage = _resident_reply(prompt, actor=actor, resident_scope="paper:ccf",
+        metadata={'source_identity': _ccf_paper_identity(paper)})
     return _clean_summary_paragraph(content), usage
 
 
@@ -280,7 +281,8 @@ DOI: {paper.get('doi') or ''}
 Online metadata:
 {chr(10).join(source_lines)}
 """
-    content, usage = _resident_reply(prompt, actor=actor, resident_scope="paper:ccf")
+    content, usage = _resident_reply(prompt, actor=actor, resident_scope="paper:ccf",
+        metadata={'source_identity': _ccf_paper_identity(paper)})
     parsed = _parse_json_object_from_text(content)
     findings = parsed.get("findings") if isinstance(parsed.get("findings"), list) else []
     return {

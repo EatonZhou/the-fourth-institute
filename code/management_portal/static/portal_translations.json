@@ -1,4 +1,10 @@
 {
+  "原始对话": {"en": "Original conversation", "zh-CN": "原始对话"},
+  "对话记录视图": {"en": "Conversation history view", "zh-CN": "对话记录视图"},
+  "按次记录": {"en": "Task attempts", "zh-CN": "按次记录"},
+  "更早记录": {"en": "Earlier attempts", "zh-CN": "更早记录"},
+  "本次输入": {"en": "Attempt input", "zh-CN": "本次输入"},
+  "没有可见的按次记录；旧消息请查看原始对话。": {"en": "No visible task attempts. Earlier messages remain in the original conversation.", "zh-CN": "没有可见的按次记录；旧消息请查看原始对话。"},
   "等待接收": {"zh-CN": "等待接收", "en": "Waiting for receipt"},
   "已接收": {"zh-CN": "已接收", "en": "Received"},
   "直接丢弃": {"zh-CN":"直接丢弃","en":"Discard directly"},

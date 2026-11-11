@@ -22,7 +22,7 @@ from management_portal.society_service.resident_conversation_records import (
 AT = "2026-11-10T00:00:00Z"
 
 
-def _conversation(store, suffix):
+def _conversation(store, suffix, *, input_variant=None):
     agent_id = f"resident_{suffix}"
     execution_id = f"execution_{suffix}"
     store.ensure_agent(agent_id)
@@ -36,7 +36,8 @@ def _conversation(store, suffix):
             metadata={"kind": "user_message" if role == "user" else "final_answer", "message": {
                 "message_id": message_id, "role": role, "created_at": AT,
                 "author_id": "sample_admin" if role == "user" else agent_id,
-                **({"execution_id": execution_id, "reply_to_message_id": f"input_{suffix}"} if role == "agent" else {}),
+                **({"execution_id": execution_id, "reply_to_message_id": f"input_{suffix}",
+                    **({"usage": {"input_tokens": 999, "input_variant": input_variant}} if input_variant else {})} if role == "agent" else {}),
             }},
         )
         store.append_agent_segments(agent_id, [segment_id], actor_ref="sample_admin")
@@ -164,3 +165,15 @@ def test_annotation_failure_preserves_complete_resident_snapshot(monkeypatch):
     assert snapshot["next_page_token"]
     assert isinstance(snapshot["state"], dict)
     assert isinstance(snapshot["queue"], dict)
+
+
+def test_input_variant_survives_durable_chat_annotation_and_protocol():
+    receipt = {"selected": "full", "reason": "native_config_requires_observation", "prompt_chars": 123}
+    store = AgentDataStore()
+    agent = _conversation(store, "variant_receipt", input_variant=receipt)
+    for answer in (store.read_chat_messages(agent)[-1],
+                   store.read_chat_messages_many([agent])[agent][-1],
+                   store.read_chat_message_page(agent, limit=1)["messages"][0]):
+        assert answer["usage"]["input_variant"] == receipt
+        assert answer["usage"]["input_tokens"] == 3
+        assert protocol_message(answer)["usage"]["input_variant"] == receipt

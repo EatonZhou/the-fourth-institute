@@ -325,6 +325,8 @@ def deliver_resident_input(
             'target_resident_id': resident_id,
             'reference': context_refs['structured_reference']}, timeout=10.0)
         snapshot = resolved['snapshot']
+        if snapshot.get('type') == 'business-history':
+            raise ValueError('Business history navigation is not a material reference')
         import json
         if runtime_context:
             content += '\n\nUser-supplied notes (not verified material):\n' + runtime_context

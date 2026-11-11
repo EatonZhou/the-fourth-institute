@@ -200,6 +200,9 @@ def resident_user_message(
     if not isinstance(parts, list) or not parts:
         raise ValueError("message.content_parts required")
     item["content_parts"] = copy.deepcopy(parts)
+    if 'metadata' in protocol_input:
+        from management_portal.business_context import message_metadata
+        item['metadata'] = message_metadata(protocol_input['metadata'])
     # Delivery has checked the quote and filled in its author and excerpt (message_quotes.accept).
     quote = message_quote(protocol_input)
     if quote:

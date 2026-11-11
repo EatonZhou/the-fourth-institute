@@ -126,9 +126,9 @@ def _credential_requests(inv: Invocation) -> list[dict[str, str]]:
 
 def deliver_message(inv: Invocation) -> dict[str, Any]:
     message = inv.argument("message") or {}
-    unknown = sorted(set(message) - {"message_id", "role", "content_parts", "quote"})
+    unknown = sorted(set(message) - {"message_id", "role", "content_parts", "quote", "metadata"})
     if unknown:
-        raise invalid("message 只包含 message_id、role、content_parts 和 quote", unknown_fields=unknown)
+        raise invalid("message 只包含 message_id、role、content_parts、quote 和 metadata", unknown_fields=unknown)
     credentials = _credential_requests(inv)
     if inv.argument("user_id"):
         if inv.argument("context_policy"):
@@ -328,6 +328,13 @@ def _paged(page: dict[str, Any]) -> dict[str, Any]:
 
 
 def list_messages(inv: Invocation) -> dict[str, Any]:
+    if inv.argument('view') == 'attempts':
+        from ..resident_business_history import page
+        return _paged(page(inv.argument('resident_id'), inv.caller,
+            cursor=inv.argument('cursor') or '', limit=int(inv.argument('limit') or 50),
+            input_message_id=inv.argument('input_message_id') or ''))
+    if not inv.argument('cursor'):
+        raise invalid('cursor required for raw messages')
     return _paged(protocol().get_conversation_messages(
         inv.argument("resident_id"), inv.caller, inv.argument("cursor"),
         limit=int(inv.argument("limit") or 200),

@@ -80,6 +80,9 @@ def canonical_chat_message(message: Mapping[str, Any]) -> dict[str, Any]:
     usage = message.get("usage")
     if isinstance(usage, Mapping) and usage:
         result["usage"] = dict(usage)
+    if message.get('metadata'):
+        from management_portal.business_context import message_metadata
+        result['metadata'] = message_metadata(message['metadata'])
     for key in (
         "provider_response",
         "generation_source",

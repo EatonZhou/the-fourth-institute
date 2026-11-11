@@ -22,6 +22,7 @@ ACTIVATION_DESCRIPTION = (
     "正文只写内容本身，不必再写“这是 info”“无需回复”。"
 )
 MESSAGE = {
+    "metadata": {"type": "object", "description": "可选business_context导航元数据，不授予权限"},
     "message_id": {"type": "string"},
     "role": {"type": "string", "enum": ["user"]},
     "content_parts": {"type": "array"},
@@ -44,7 +45,7 @@ DECLARATIONS = (
     ), (
         P("resident_id", description="收件 Resident；与 user_id 二选一"),
         P("user_id", description="把消息发给这位用户；只有 Resident 可以使用，消息只包含文字和资源引用"),
-        R("message", "object", "只包含 message_id（可省略）、role（可省略，只能是 user）、content_parts，"
+        R("message", "object", "包含 message_id（可省略）、role（可省略，只能是 user）、content_parts，可选 metadata.business_context 导航关联，"
           "以及可选的 quote：引用这段对话中的一条消息，只给出 {\"message_id\": ...}，作者和摘录由平台填写；"
           "info 消息和发给用户的消息不带引用",
           properties=MESSAGE),
@@ -102,9 +103,14 @@ DECLARATIONS = (
     ), target="resident_id"),
     _d("ListMessages", ON_RESIDENT, "从 GetConversation 快照往前分页读取更早的消息。", (
         R("resident_id", description="要读取消息的 Resident"),
-        CURSOR("GetConversation 或上一页 ListMessages 返回的 next_cursor，原样交回", required=True),
+        P("view", description="省略保留原始消息；attempts读取按业务对象权限过滤的新调用记录", enum=("messages", "attempts")),
+        P("input_message_id", description="attempts视图再次授权后读取这次输入及正式回复"),
+        CURSOR("消息视图需提供上一页next_cursor；attempts视图省略时从最新窗口读取"),
         P("limit", "integer", "默认 200", minimum=1, maximum=1000),
     ), (R("messages", "array", "本页更早的消息，从旧到新，格式同 GetConversation 的 messages"),
+        P("attempts", "array", "已授权的按次记录，不提供未授权对象计数"),
+        P("conversation", "object", "已授权的单次正式对话快照"),
+        P("default_view", description="按固定工作流fresh策略声明的默认视图"),
         NEXT_CURSOR("还有更早的消息时返回")), target="resident_id"),
     _d("ListInputHistory", (On("resident_id", "resident", optional=True), On("chatroom_id", "chatroom", optional=True)), "读取调用者本人发过的输入，供输入框的上下箭头历史使用；resident_id 与 chatroom_id 二选一。"
        "带 resident_id：调用者作为用户在这个 Resident 会话里的输入，包括 Fork 继承的和清除上下文之前的输入，"

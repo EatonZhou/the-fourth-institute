@@ -119,7 +119,11 @@ def _delivery_message(
         )
     if invocation.arguments.get("content_parts"):
         parts.extend(lineage_primitives.normalize_invocation_content_parts(invocation.arguments["content_parts"]))
-    return {**(dict(fixed) if isinstance(fixed, dict) else {}), "role": "user", "content_parts": parts}
+    message = {**(dict(fixed) if isinstance(fixed, dict) else {}), "role": "user", "content_parts": parts}
+    if invocation.arguments.get('message_metadata'):
+        from management_portal.business_context import message_metadata
+        message['metadata'] = message_metadata(invocation.arguments['message_metadata'])
+    return message
 
 
 def effect_idempotency_key(lineage_id: str, effect_id: str, invocation: lineage_primitives.EffectInvocation) -> str:

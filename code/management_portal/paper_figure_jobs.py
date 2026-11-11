@@ -160,11 +160,13 @@ def _run_figure_resident(prompt: str, paper: dict, figure: dict, kind: str, imag
             lineage_id=str(binding.get("lineage_id") or ""), message_id=input_message_id, receipt=binding, on_submitted=remember,
         )
     else:
+        from management_portal.paper_business_history import figure_version
         result = turn(
             actor=actor, prompt=prompt, cwd=str(WORKSPACE_ROOT), resident_scope=resident_role,
             input_media=input_media, business_ref=run_id, message_id=message_id,
             on_assigned=remember, on_submitted=remember,
-            metadata={"business_type": "paper_figure", "kind": kind},
+            metadata={"business_type": "paper_figure", "kind": kind, 'paper_id': paper['id'],
+                      'material_version': figure_version(figure, images)},
         )
     identity = input_receipt(result["invocation"])
     atomic_replace_json(events_path, identity, indent=None, sort_keys=False)

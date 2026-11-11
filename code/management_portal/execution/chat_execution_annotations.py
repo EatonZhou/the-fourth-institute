@@ -6,6 +6,7 @@ that read or leave its caller's PostgreSQL transaction aborted.
 """
 from __future__ import annotations
 
+import copy
 import logging
 from collections.abc import Sequence
 from typing import Any
@@ -74,4 +75,11 @@ def _annotate_executions(connection: Any, by_execution: dict[str, list[dict[str,
                 LOGGER.exception("Chat generation source invalid for %s", message["message_id"])
                 message["execution_annotations_status"] = "unavailable"
                 continue
-            message.update(usage=usage, generation_source=combined_source)
+            # Scheduler usage owns token accounting; the canonical message owns
+            # the immutable input-selection receipt. A read projection must not
+            # discard that receipt while refreshing token counters.
+            projected_usage = dict(usage)
+            variant = (message.get("usage") or {}).get("input_variant")
+            if isinstance(variant, dict):
+                projected_usage["input_variant"] = copy.deepcopy(variant)
+            message.update(usage=projected_usage, generation_source=combined_source)

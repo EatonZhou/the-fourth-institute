@@ -176,5 +176,7 @@ def _generate_paper_summary(paper: dict, *, actor: str) -> tuple[str, dict]:
 来源：{paper.get('venue') or ''} {paper.get('year') or ''}
 摘要材料：{source_text}
 """
-    content, usage = _resident_reply(prompt, actor=actor, resident_scope="paper:summary")
+    content, usage = _resident_reply(prompt, actor=actor, resident_scope="paper:summary",
+        metadata={'paper_id': paper.get('id'), 'source_identity': paper.get('title'),
+                  'material_version': hashlib.sha256(source_text.encode()).hexdigest()})
     return _clean_summary_paragraph(content), usage

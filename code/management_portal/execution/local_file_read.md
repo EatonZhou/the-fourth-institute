@@ -50,8 +50,21 @@ Existing Worker handover and recovery must keep the original execution.
 * **Codex:** the existing named-profile-over-sandbox precedence is reused.
   Explicit read-only, workspace-write and full-access sandboxes permit reading
   in their native scope. A named custom profile, structured sandbox policy,
-  custom native config or inherited/unresolved policy remains unknown. A
-  full-access profile does not override unknown tool configuration.
+  unrecognized native config or inherited/unresolved policy remains unknown.
+  Normal `CodexOptions.prepare` identity injection and Harness compaction
+  settings must not alone turn an otherwise available policy into unknown.
+  The adapter recognizes individual typed read-neutral leaves: reasoning
+  display/summary, positive context/compaction limits (`scope=total`),
+  update-plan enablement, agent enablement/interrupt notices, goal enablement,
+  its own fixed compaction prompt and disabled project-document loading.
+  In `shell_environment_policy.set`, only the two canonical Resident/Lineage
+  identity variables pass, using the identity owner's existing validation.
+  This is not a blanket exemption for environment, `tools` or `features`.
+  Dotted and nested forms are supported; duplicate leaves, invalid values,
+  unknown keys, read-tool/permission changes and custom process environment
+  (including PATH/HOME/loader overrides) remain unknown. A full-access
+  profile does not override these unknown settings. Assessment is passive,
+  does not mutate native configuration, and does not read a target file.
 * **Kimi:** final tools must include Read or ReadMediaFile. No read tool blocks
   the capability; wildcards are not guessed. Text-only constraints block it.
   Manual/unknown permission modes require native observation; yolo permits the

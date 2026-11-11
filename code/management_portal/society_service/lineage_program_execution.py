@@ -110,6 +110,8 @@ def _make_program_effect_invocation(
         dynamic_arguments["prompt"] = input_prompt
     if "content_parts" in event.payload:
         dynamic_arguments["content_parts"] = event.payload["content_parts"]
+    if 'message_metadata' in (event.payload.get('data') or {}):
+        dynamic_arguments['message_metadata'] = event.payload['data']['message_metadata']
     if isinstance(packet, dict) and (packet.get("message") or {}).get("content_parts"):
         dynamic_arguments["content_parts"] = packet["message"]["content_parts"]
     envelope = (

@@ -542,7 +542,8 @@ def submit_invocation(
     if workflow_binding is not None:
         try:
             handle = WorkflowBindings().trigger(dict(workflow_binding), actor=actor,
-                prompt=str(message or ""), content_parts=parts[1:], request_id=clean_message_id)
+                prompt=str(message or ""), content_parts=parts[1:], request_id=clean_message_id,
+                message_metadata={'business_context':metadata['business_context']} if metadata and 'business_context' in metadata else None)
         except (WorkflowPending, WorkflowFailed) as error:
             return dict(error.handle)
         return submission_handle({**prepared, **handle}, state="submitted", message_id=str(handle["message_id"]))
@@ -550,7 +551,8 @@ def submit_invocation(
         acknowledgement = deliver_resident_message(
             actor=actor, identity=identity, idempotency_key=prepared["idempotency_key"],
             business_ref=clean_business_ref,
-            message={"message_id": clean_message_id, "role": "user", "content_parts": parts},
+            message={"message_id": clean_message_id, "role": "user", "content_parts": parts,
+                     **({'metadata':{'business_context':metadata['business_context']}} if metadata and 'business_context' in metadata else {})},
         )
     except PermissionError:
         raise

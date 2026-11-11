@@ -526,6 +526,12 @@
           limit: Math.max(1, Number(limit || 200)),
         }).then(pageTokenOf);
       },
+      businessHistory(residentId, { pageToken = "", inputMessageId = "", limit = 50 } = {}) {
+        return execute("ListMessages", {
+          resident_id: required(residentId, "resident_id"), view: "attempts", cursor: pageToken,
+          ...(inputMessageId ? { input_message_id: inputMessageId } : {}), limit,
+        }).then(pageTokenOf);
+      },
       inputHistory(residentId, { pageToken = "", limit = 50 } = {}) {
         return execute("ListInputHistory", {
           resident_id: required(residentId, "resident_id"),
