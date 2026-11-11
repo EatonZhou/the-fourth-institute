@@ -362,9 +362,14 @@ def routes(portal):
     def figure_image_limit():
         return paper_figure_jobs.PAPER_FIGURE_IMAGE_MAX_BYTES
 
-    from management_portal import paper_provenance
+    from management_portal import paper_provenance, paper_chat_research
 
     api = (
+        ("GET", "research/chats", get(lambda request, qs, actor: http.respond(request, 200,
+            paper_chat_research.catalog(http._query_params(qs), actor=actor)))),
+        ("POST", "research/chats/create", backend(paper_chat_research, "create_chat")),
+        ("POST", "research/chats/select", backend(paper_chat_research, "select_chat")),
+        ("POST", "research/chats/retry", backend(paper_chat_research, "retry_chat")),
         ("GET", "library", get(http.library)),
         ("POST", "favorites", http.personal_post_route(http.favorite)),
         ("POST", "bibtex/export", http.personal_post_route(http.bibtex_export)),

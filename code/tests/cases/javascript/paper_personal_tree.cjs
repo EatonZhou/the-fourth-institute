@@ -52,7 +52,20 @@ const {chromium,firefox}=require('../../../management_portal/test_framework/tau_
  await page.locator('[data-scope=personal]').click();
  assert(await page.evaluate(()=>reader===document.querySelector('#reader')&&opens.length===0&&document.querySelector('#chat').textContent==='UNCHANGED CHAT'));
  await page.addStyleTag({path:path.resolve(__dirname,'../../../management_portal/static/paper.css')});
+ assert.equal(await page.locator('[data-heading]').isVisible(),false);
+ assert.equal(await page.locator('[data-personal-query]').evaluate(el=>el.closest('label').querySelector('span').textContent),'搜索');
+ assert.equal(await page.locator('.paperPersonalFilters').evaluate(el=>getComputedStyle(el).borderBottomWidth),'0px');
+ assert.equal(await page.locator('[data-row]').first().evaluate(el=>getComputedStyle(el).borderBottomWidth),'0px');
  await page.screenshot({path:'/tmp/paper-personal-tree-'+name+'.png'});
+ if(name==='chromium'){
+  await page.addScriptTag({path:path.resolve(__dirname,'../../../management_portal/static/portal_translations.js')});
+  await page.evaluate(()=>{const dict=window.__PORTAL_TRANSLATIONS__;window.PortalI18n.t=x=>dict[x]?.en||x;
+   document.querySelectorAll('[data-portal-i18n-text]').forEach(el=>el.textContent=PortalI18n.t(el.dataset.portalI18nText));
+   document.querySelectorAll('[data-portal-i18n-attrs]').forEach(el=>Object.entries(JSON.parse(el.dataset.portalI18nAttrs)).forEach(([k,v])=>el.setAttribute(k,PortalI18n.t(v))));
+   dispatchEvent(new CustomEvent('portal:language-changed'));});
+  assert.equal(await page.locator('[data-personal-query]').evaluate(el=>el.closest('label').querySelector('span').textContent),'Search');
+  await page.screenshot({path:'/tmp/paper-personal-tree-en.png'});
+ }
  await page.evaluate(()=>{state.principalId='B';dispatchEvent(new CustomEvent('portal:paper-principal-changed'));});
  await page.waitForFunction(()=>document.querySelector('[data-status]').textContent==='synthetic denied');assert.equal(await page.locator('[data-row]').count(),0);
  assert.equal(await page.locator('[data-personal-query]').inputValue(),'');

@@ -19,6 +19,15 @@
     // remain owned by the Workspace and its existing history loader.
     function createConversationSearch({ root, scope, messages, rendering, search, loadOlder, canLoadOlder, reveal, onResults, cancelReveal }) {
       const trigger = root.querySelector("[data-workspace-history-search]");
+      // Tooltips move title into data-portal-tooltip; refresh the source on
+      // language changes instead of leaving the previous locale cached there.
+      const syncTriggerLanguage = () => {
+        trigger.setAttribute("aria-label", window.PortalI18n.t("查找当前对话"));
+        trigger.title = window.PortalI18n.t("浏览当前对话片段，输入关键词查找并跳转");
+        window.PortalButtonTooltips?.enhance(trigger);
+      };
+      syncTriggerLanguage();
+      window.addEventListener("portal:language-changed", syncTriggerLanguage);
       const panel = document.createElement("section");
       panel.className = "portalConversationSearch";
       panel.setAttribute("role", "dialog");
@@ -164,7 +173,7 @@
           if (messagesChanged && binding.isOpen() && !query && !busy) refresh(false, true);
         },
         close() { binding.close(); },
-        destroy() { disposed = true; revision += 1; clearTimeout(timer); cancelReveal?.(); onResults?.([]); document.removeEventListener('pointerdown', closeOutside, true); binding.destroy(); panel.remove(); },
+        destroy() { window.removeEventListener("portal:language-changed", syncTriggerLanguage); disposed = true; revision += 1; clearTimeout(timer); cancelReveal?.(); onResults?.([]); document.removeEventListener('pointerdown', closeOutside, true); binding.destroy(); panel.remove(); },
       };
     }
 

@@ -1282,5 +1282,57 @@
   "阅读与讨论": {
     "en": "Reading and discussion",
     "zh-CN": "阅读与讨论"
+  },
+  "选择研究助手": {
+    "zh-CN": "选择研究助手",
+    "en": "Select research assistant"
+  },
+  "持续研究助手": {
+    "zh-CN": "持续研究助手",
+    "en": "Persistent research assistants"
+  },
+  "新建研究助手": {
+    "zh-CN": "新建研究助手",
+    "en": "New assistant"
+  },
+  "创建独立的持续研究会话": {
+    "zh-CN": "创建独立的持续研究会话",
+    "en": "Create an independent persistent research conversation"
+  },
+  "研究助手名称": {
+    "zh-CN": "研究助手名称",
+    "en": "Research assistant name"
+  },
+  "请选择或新建研究助手": {
+    "zh-CN": "请选择或新建研究助手",
+    "en": "Select or create an assistant"
+  },
+  "不可用研究助手": {
+    "zh-CN": "不可用研究助手",
+    "en": "Unavailable assistant"
+  },
+  "（重试创建）": {
+    "zh-CN": "（重试创建）",
+    "en": " (retry creation)"
+  },
+  "旧论文会话（历史保留）": {
+    "zh-CN": "旧论文会话（历史保留）",
+    "en": "Previous paper conversations (history preserved)"
+  },
+  "当前历史会话": {
+    "zh-CN": "当前历史会话",
+    "en": "Current previous conversation"
+  },
+  "研究助手暂不可用，请重试": {
+    "zh-CN": "研究助手暂不可用，请重试",
+    "en": "Research assistants unavailable. Retry."
+  },
+  "请选择或新建持续研究助手": {
+    "zh-CN": "请选择或新建持续研究助手",
+    "en": "Select or create a persistent research assistant"
+  },
+  "账号已变化，请重新载入研究助手": {
+    "zh-CN": "账号已变化，请重新载入研究助手",
+    "en": "Account changed. Reload research assistants."
   }
 }

@@ -1,0 +1,21 @@
+const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
+const {createHarness}=require('./workbench_visibility_state.cjs');
+(async()=>{const h=createHarness();try{
+ const w=h.window;h.root.innerHTML='<div id="libraryMeta">Loading...</div><input id="searchInput"><select id="yearFilter"></select><select id="venueFilter"></select><select id="tagFilter"></select><select id="projectFilter"></select>';
+ w.eval(fs.readFileSync(path.resolve(__dirname,'../../../management_portal/static/paper_library.js'),'utf8'));
+ w.PortalI18n={t:x=>x,html:(s,...v)=>s.reduce((a,x,i)=>a+x+(v[i]??''),'')};
+ const state={libraryRequestSeq:0,favoriteRevision:0,favoritePending:new Set(),filters:{},mode:'library',leftFace:'library'};
+ let request,resolveOld;
+ const deps=Object.fromEntries(w.PortalPaperLibrary.dependencies.map(k=>[k,()=>{}]));deps.loadChatHistory=async()=>{};
+ Object.assign(deps,{$:id=>w.document.getElementById(id),state,paperApi:{request:()=>request()},renderTree:()=>{w.document.getElementById('libraryMeta').textContent=String(state.library.summary.paper_count);}});
+ const lib=w.PortalPaperLibrary.createLibrary(deps),header=w.document.getElementById('libraryMeta');
+ request=async()=>{throw Error('fixture denied');};
+ await assert.rejects(lib.loadLibrary(),/fixture denied/);assert(header.textContent.includes('fixture denied'));assert(header.querySelector('button'));
+ request=async()=>({papers:[],summary:{paper_count:7},filters:{}});
+ header.querySelector('button').click();await new Promise(r=>setTimeout(r,0));assert.equal(header.textContent,'7');
+ request=()=>new Promise(r=>resolveOld=r);const old=lib.loadLibrary();
+ request=async()=>({papers:[],summary:{paper_count:9},filters:{}});await lib.loadLibrary();
+ resolveOld({papers:[],summary:{paper_count:1},filters:{}});await old;assert.equal(header.textContent,'9');
+ request=()=>new Promise((_,reject)=>resolveOld=reject);const late=lib.loadLibrary();state.leftFace='ccf';header.textContent='CCF';resolveOld(Error('late'));await assert.rejects(late);assert.equal(header.textContent,'CCF');
+ console.log('PASS header request failure, retry, stale response and CCF switch');
+ }finally{await h.cleanup();}})().catch(e=>{console.error(e);process.exitCode=1;});

@@ -2,14 +2,15 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const vm = require('node:vm');
 const path = require('node:path');
-const window = {PortalI18n: {t: x => x}};
-vm.runInNewContext(fs.readFileSync(path.resolve(__dirname, '../../../management_portal/static/paper_chat.js'), 'utf8'), {window});
+const window = {PortalI18n: {t: x => x},PortalUI:{loadCurrentUser:async()=>({ok:true,data:{username:'actor-a',principal:{id:'actor-a'}}})},dispatchEvent(){}};
+vm.runInNewContext(fs.readFileSync(path.resolve(__dirname, '../../../management_portal/static/paper_chat.js'), 'utf8'), {window,CustomEvent:class{}});
 const state = {selectedId:'paper_0123456789ab', principalId:'actor-a'};
 let collection = false, duringRequest = () => {}, requests = [];
 let resident = 'resident-a';
 let surface = {paper_id:state.selectedId, workspace_key:'paper:'+state.selectedId};
 const deps = Object.fromEntries(window.PortalPaperChat.dependencies.map(key => [key, () => {}]));
 Object.assign(deps, {state, isCollectionMode:()=>collection, paperApi:{request:async (_url, options)=>{
+  if(_url==='/paper/api/research/chats') return {principal:'actor-a',slots:[],selected:null,legacy:[]};
   if(!options)return {url:_url};
   requests.push(JSON.parse(options.body)); duringRequest();
   return {resident_id:resident, initial_context:{context_text:'trusted single-paper context'}};
@@ -19,6 +20,8 @@ const descriptor = chat.paperChatDescriptor();
 descriptor.onShow({panel:{runtime:{surface:()=>surface,target:()=>({resident_id:resident})}}});
 const submit = () => descriptor.options.submissionContext({resident_id:'resident-a'});
 (async()=>{
+  await chat.loadMe();await new Promise(resolve=>setImmediate(resolve));
+  state.researchLegacyKey=surface.workspace_key; // explicit legacy selection; no implicit new Resident
   const resolved=await descriptor.options.resolveResident(surface);
   assert(resolved.url.includes('paper_id='+surface.paper_id));
   // A saved single-paper workspace can be opened while collection/history UI

@@ -28,6 +28,7 @@ def call(
     entry: str = "web",
     trigger_path_id: str = "",
     channel: str = "",
+    timeout: float | None = None,
 ) -> Any:
     """Execute one instruction and return its result, raising its error."""
 
@@ -39,7 +40,7 @@ def call(
     context = InstructionContext(caller=actor, entry=entry, trigger_path_id=trigger_path_id, channel=channel)
     for delay in (*PROJECTION_RETRY_DELAYS, None):
         try:
-            return routing.execute_or_raise(payload, context)
+            return routing.execute_or_raise(payload, context, **({"timeout": timeout} if timeout is not None else {}))
         except InstructionError as error:
             if not key or error.code != "instruction.projection_pending" or delay is None:
                 raise

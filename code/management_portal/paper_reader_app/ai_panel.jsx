@@ -13,7 +13,7 @@ export function AIPanel({discussion, principal, bridge, isCurrent, close}) {
       if(!current())throw Error('论文或账号已变化');
       const response=await fetch('/chat-workspace/api/prepare',{method:'POST',credentials:'same-origin',
         headers:{'Content-Type':'application/json'},body:JSON.stringify({surface:'paper',workspace_key:discussion.key,
-          message,read_only:readOnly,context:{document:discussion.document,expected_principal:principal,selection:pendingSelection.current}})});
+          message,read_only:readOnly,context:{document:activeDiscussion.current.document,expected_principal:principal,selection:pendingSelection.current}})});
       const value=await response.json();if(!response.ok)throw Error(value.error||'无法准备讨论');
       if(!current())throw Error('论文或账号已变化');return value;
     };
@@ -21,8 +21,8 @@ export function AIPanel({discussion, principal, bridge, isCurrent, close}) {
       if(!window.PortalChatWorkspace?.panelPackage?.create)throw Error('Research Chat 组件未加载');
       const chat=window.PortalChatWorkspace.panelPackage.create({root:root.current,id:'reader-ai-'+discussion.key,
         autoLoad:false,draftOwner:()=>principal,title:'论文 AI 讨论',resolveResident:()=>prepare(true),resolveBeforeSend:(_target,payload)=>prepare(false,payload.text||payload.plainText),
-        initialContext:(_target,detail)=>({context_text:detail.initial_context?.context_text||''}),
-        submissionContext:async()=>({context_text:(await prepare(false)).initial_context?.context_text||''}),
+        initialContext:(_target,detail)=>detail.initial_context || {},
+        submissionContext:async()=> (await prepare(false)).initial_context || {},
         onDetail:detail=>{if(!current())return;setAnswers((detail.messages||[]).filter(m=>window.PortalChatWorkspace.messageRole(m)==='agent')
           .map(m=>Array.isArray(m.content_parts)?m.content_parts.filter(p=>p.type==='text').map(p=>p.text||'').join('\n'):String(m.content||'')).filter(Boolean));},
         onError:e=>{if(current())setError(e.message);}});

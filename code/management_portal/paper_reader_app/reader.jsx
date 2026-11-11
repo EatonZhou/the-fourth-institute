@@ -32,11 +32,27 @@ function Reader({paper, principal, anchor, close, control, readingReady, frameRe
   const [selection, setSelection] = useState(null);
   const [mode, setMode] = useState('auto');
   const [discussion,setDiscussion] = useState(null);
+  useEffect(()=>{
+    const changed=event=>{
+      if(event.detail?.principal!==principal || !event.detail?.slot ||
+          discussion?.key!=='research:'+event.detail.slot.slot_id) setDiscussion(null);
+    };
+    window.addEventListener('portal:paper-research-selected',changed);
+    return()=>window.removeEventListener('portal:paper-research-selected',changed);
+  },[discussion?.key,principal]);
   const openDiscussion=async selection=>{
     if(!isCurrent()||!isFullscreen())return;
-    if(discussion&&!selection)return;
-    const document=selection?.document||await bridge.current.aiDocument();
-    if(isCurrent())setDiscussion({...selection,document,key:`paper:${paper.id}`});
+    try {
+      const response=await fetch('/paper/api/research/chats',{credentials:'same-origin'});
+      const choices=await response.json();
+      if(!response.ok)throw Error(choices.error||'无法读取研究助手');
+      if(!isCurrent()||choices.principal!==principal)throw Error('账号已变化，请重新打开论文');
+      if(!choices.selected||choices.selected.state!=='bound')throw Error('请先在非全屏 Research Chat 新建或选择研究助手');
+      const key='research:'+choices.selected.slot_id;
+      if(discussion?.key===key&&!selection)return;
+      const document=selection?.document||await bridge.current.aiDocument();
+      if(isCurrent())setDiscussion({...selection,document,key});
+    } catch(error){if(isCurrent())setStatus(error.message); }
   };
   useEffect(() => {
     frameReady(frame.current.contentWindow);

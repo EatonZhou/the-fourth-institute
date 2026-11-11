@@ -35,6 +35,11 @@ def _context_for(
     actor: str = "",
 ) -> dict[str, Any]:
     context = context if isinstance(context, dict) else {}
+    if surface == 'paper' and workspace_key.startswith('research:'):
+        from . import paper_chat_research
+        return paper_chat_research.workspace_context(actor=actor,
+            slot_id=workspace_key.removeprefix('research:'), context=context,
+            include_materials=include_prompt_context)
     if surface == 'paper' and workspace_key.startswith('paper:paper_'):
         return _reader_context(actor, workspace_key, context, include_prompt_context)
     if surface == 'paper' and workspace_key.startswith('paper-reader:'):
@@ -120,6 +125,12 @@ def _cwd(context: dict[str, Any]) -> str:
 
 
 def _ensure(actor: str, surface: str, workspace_key: str, context: dict[str, Any], *, create: bool = True) -> dict:
+    if surface == 'paper' and workspace_key.startswith('research:'):
+        from .paper_chat_research import get_slot
+        slot = get_slot(actor=actor, slot_id=workspace_key.removeprefix('research:'))
+        if slot['state'] != 'bound':
+            raise ValueError('Explicitly create the research Resident before sending')
+        return {'resident_id': slot['resident_id'], 'lineage_id': slot['lineage_id']}
     identity = _workspace_identity(actor, surface, workspace_key)
     options = dict(actor=actor, **identity, title=str(context.get("title") or "Chat Workspace"),
                    backend="codex", cwd=_cwd(context),
@@ -184,15 +195,19 @@ def _project(
         user_name=actor,
         assistant_name="Agent",
     )
+    initial_context = {"context_text": _runtime_context(
+        actor=actor, surface=surface, workspace_key=workspace_key, context=context)}
+    if surface == 'paper' and workspace_key.startswith('research:'):
+        from .paper_chat_research import material_index
+        index = material_index(actor=actor, slot_id=workspace_key.removeprefix('research:'))
+        initial_context = {'structured_reference': {'type': 'paper.research', 'version': 1,
+            'slot_id': workspace_key.removeprefix('research:'), 'expected_principal': actor,
+            'documents': index['documents']}}
     return {
         "resident_id": resident_id,
         "binding_state": "bound" if resident_id else "unbound",
         "lineage_id": str(identity.get("lineage_id") or ""),
-        "initial_context": {
-            "context_text": _runtime_context(
-                actor=actor, surface=surface, workspace_key=workspace_key, context=context,
-            ),
-        },
+        "initial_context": initial_context,
         "session": {
             "workspace_key": workspace_key,
             "surface": surface,
@@ -276,6 +291,6 @@ def _reader_context(actor, key, context, include_prompt):
 def prepare_workspace(actor: str, payload: dict[str, Any]) -> dict[str, Any]:
     if not str(payload.get("message") or "").strip():
         raise ValueError("message required before preparing a discussion")
-    reader_preview = payload.get('read_only') is True and str(payload.get('workspace_key') or '').startswith(('paper-reader:', 'paper:paper_')) and payload.get('surface') == 'paper'
+    reader_preview = payload.get('read_only') is True and str(payload.get('workspace_key') or '').startswith(('paper-reader:', 'paper:paper_', 'research:')) and payload.get('surface') == 'paper'
     return get_workspace(actor, str(payload.get("surface") or ""), str(payload.get("workspace_key") or ""),
                          payload.get("context") or {}, create=not reader_preview)

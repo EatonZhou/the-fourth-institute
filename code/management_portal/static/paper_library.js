@@ -142,12 +142,25 @@
         && faceBefore === "library" && state.leftFace === faceBefore && state.mode === modeBefore && !isCollectionMode()
         && state.detail === detailBefore && state.selectedId === detailBefore.paper.id;
       state.libraryLoading = true;
+      const header = $("libraryMeta");
+      const renderHeaderError = error => {
+        if (state.leftFace !== "library" || !header) return;
+        header.replaceChildren();
+        const retry = document.createElement('button');
+        retry.type = 'button';
+        retry.className = 'portalButton is-compact';
+        retry.textContent = window.PortalI18n.t('刷新');
+        retry.addEventListener('click', () => loadLibrary({keepDetail, hydrateDetail}).catch(alertError));
+        header.append(`${window.PortalI18n.t('错误')}: ${error.message || error} `, retry);
+      };
+      if (header && state.leftFace === "library") header.textContent = window.PortalI18n.t('Loading...');
       let firstPayload;
       try {
         firstPayload = await paperApi.request(libraryQuery());
       } catch (error) {
         if (requestSeq === state.libraryRequestSeq) {
           state.libraryLoading = false;
+          renderHeaderError(error);
           if (!preservesDetailView()) renderWorkspace();
         }
         throw error;
@@ -165,6 +178,7 @@
         } catch (error) {
           if (requestSeq === state.libraryRequestSeq) {
             state.libraryLoading = false;
+            renderHeaderError(error);
             if (!preservesDetailView()) renderWorkspace();
           }
           throw error;

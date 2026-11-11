@@ -13,9 +13,9 @@
       <button type="button" data-view="favorites">收藏</button>
       </nav>
       <p data-status role="status" aria-live="polite"></p>
-      <div data-personal hidden><h3 data-heading></h3>
+      <div data-personal hidden role="region" aria-label="近期阅读"><span data-heading hidden></span>
       <div class="paperPersonalFilters">
-        <label><span data-portal-i18n-text="关键词">关键词</span><input class="portalControl" data-personal-query type="search" placeholder="标题、作者、关键词、ID…" data-portal-i18n-attrs='{"placeholder":"标题、作者、关键词、ID…"}'></label>
+        <label><span data-portal-i18n-text="搜索">搜索</span><input class="portalControl" data-personal-query type="search" placeholder="标题、作者、关键词、ID…" data-portal-i18n-attrs='{"placeholder":"标题、作者、关键词、ID…"}'></label>
         <label><span data-portal-i18n-text="年份">年份</span><select class="portalControl" data-personal-year><option value="">全部年份</option></select></label>
         <label><span data-portal-i18n-text="出版地点">出版地点</span><select class="portalControl" data-personal-venue><option value="">全部出版地点</option></select></label>
         <button class="portalButton is-compact" type="button" data-personal-clear data-portal-i18n-text="清除筛选">清除筛选</button>
@@ -74,6 +74,7 @@
       host.querySelectorAll('[data-scope]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.scope === (personal ? 'personal' : 'repository'))));
       host.querySelectorAll('[data-view]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.view === view)));
       host.querySelector('[data-heading]').textContent = window.PortalI18n.t(view === 'recent' ? '近期阅读' : '我的收藏');
+      panel.setAttribute('aria-label', host.querySelector('[data-heading]').textContent);
       if (personal) syncFilters();
       rows.replaceChildren();
       const saved = views.get(view);
@@ -250,6 +251,7 @@
     });
     window.addEventListener('portal:language-changed', () => {
       host.querySelector('[data-heading]').textContent = window.PortalI18n.t(view === 'recent' ? '近期阅读' : '我的收藏');
+      panel.setAttribute('aria-label', host.querySelector('[data-heading]').textContent);
       if (view !== 'repository') renderPersonalTree();
     });
     window.PortalI18n.renderStatic?.();

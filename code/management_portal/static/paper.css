@@ -754,11 +754,12 @@ body {
 }
 .paneToggle svg { transition: transform .16s ease; }
 .paperPersonal { padding: 0; }
-.paperPersonal [data-row] { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--border); }
+.paperPersonal [data-row] { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 8px 0; }
 .paperPersonal [data-row] > button:first-child { flex: 1; text-align: left; }
 .paperPersonal time { font-size: 12px; opacity: .7; }
 .paperPersonal [data-status] { overflow-wrap: anywhere; margin: 6px 0; }
-.paperPersonalFilters { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; padding-bottom: 12px; margin-bottom: 12px; border-bottom: 1px solid var(--border); }
+.paperPersonal [data-status]:empty { display: none; }
+.paperPersonalFilters { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; margin: 8px 0; }
 .paperPersonalFilters label { display: grid; gap: 4px; min-width: 0; font-size: 12px; }
 .paperPersonalFilters label:first-child { grid-column: 1 / -1; }
 .paperPersonalFilters .portalControl { width: 100%; min-width: 0; box-sizing: border-box; }
@@ -825,3 +826,10 @@ body {
 .paperReadingDialog.is-embedded .paperAISplitter { display:none; }
 body.resizingReaderAI .paperReadingDialog iframe { pointer-events:none; }
 body.resizingReaderAI { cursor:col-resize; user-select:none; }
+
+/* Persistent research selector is outside the shared Chat Workspace. */
+.paperResearchSelector { display: flex; flex-wrap: wrap; align-items: center; gap: var(--portal-space-2); padding: var(--portal-space-2); min-width: 0; box-sizing: border-box; }
+.paperResearchSelector .portalControl { flex: 1 1 12em; width: 0; min-width: 0; max-width: 100%; font-size: 13px; }
+.paperResearchSelector .portalButton { flex: 0 1 auto; min-width: 0; white-space: normal; line-height: 1.4; }
+
+.paperResearchSelectorError { flex: 1 1 100%; min-width: 0; color: var(--danger); font-size: 12px; overflow-wrap: anywhere; }

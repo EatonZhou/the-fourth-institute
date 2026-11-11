@@ -388,6 +388,7 @@
     }
   ],
   "instructions": {
+    "ResolveMessageContextReferences": {"a": "@viewer"},
     "AbsorbContext:source_resident_id": {
       "a": "@viewer"
     },

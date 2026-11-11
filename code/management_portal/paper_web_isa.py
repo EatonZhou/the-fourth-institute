@@ -36,3 +36,12 @@ def ensure_translation_binding(inv):
 HANDLERS = {"ExportPaperBibtex": export_paper_bibtex, 'TranslatePaperText': translate_paper_text,
             'GetPaperTranslationBinding': get_translation_binding,
             'EnsurePaperTranslationBinding': ensure_translation_binding}
+
+
+def resolve_message_context_references(inv):
+    from .paper_chat_research import resolve_reference
+    args = inv.call.arguments
+    return {'snapshot': resolve_reference(actor=inv.caller,
+        target_resident_id=args['target_resident_id'], reference=args['reference'])}
+
+HANDLERS['ResolveMessageContextReferences'] = resolve_message_context_references

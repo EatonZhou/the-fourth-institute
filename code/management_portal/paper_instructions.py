@@ -1,8 +1,13 @@
 """Paper feature read-only export declaration; per-resource access is filtered by its owner."""
-from management_portal.hatg.declarations import InstructionDeclaration as D, P, R
+from management_portal.hatg.declarations import InstructionDeclaration as D, P, R, On
 
 CATEGORIES = {"paper": "Paper"}
 DECLARATIONS = (
+    D(name='ResolveMessageContextReferences', category='conversation', owner='web',
+      description='受理前以实际调用主体解析结构化材料引用，不创建会话或授予资源权限。',
+      mutates=False, decides=(On('target_resident_id', 'resident'),),
+      parameters=(P('target_resident_id', required=True), P('reference', 'object', required=True)),
+      result=(R('snapshot', 'object'),)),
     D(name='GetPaperTranslationBinding', category='paper', owner='web', description='读取已发布Paper主Lineage与翻译绑定，不创建对象。',
       mutates=False, decides=(), parameters=(), result=(R('workbench_id'), R('lineage_id'), R('resident_id'))),
     D(name='EnsurePaperTranslationBinding', category='paper', owner='web', description='经正式Workbench owner幂等创建或复用固定Kimi订阅翻译角色；不调用模型。',

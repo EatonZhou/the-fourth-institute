@@ -99,7 +99,7 @@ def assign_instruction_id(call: InstructionCall | Mapping[str, Any], *, reuse: s
 
 
 def execute(
-    call: InstructionCall | Mapping[str, Any], context: InstructionContext, *, instruction_id: str = "",
+    call: InstructionCall | Mapping[str, Any], context: InstructionContext, *, instruction_id: str = "", timeout: float | None = None,
 ) -> InstructionResult:
     """Execute one call from any entry and return the v2 result.
 
@@ -128,7 +128,7 @@ def execute(
     from .socket_rpc import call_remote
 
     try:
-        return call_remote(owner, parsed, context, instruction_id=instruction_id)
+        return call_remote(owner, parsed, context, instruction_id=instruction_id, **({"timeout": timeout} if timeout is not None else {}))
     except Exception as exc:  # noqa: BLE001
         return failed_result(instruction_id or new_instruction_id("entry"), parsed.instruction, normalize_error(exc))
 
@@ -170,10 +170,10 @@ def stream_local(call: InstructionCall, context: InstructionContext, *, owner: s
     return kernel_for(owner, required=True).stream(call, context)
 
 
-def execute_or_raise(call: InstructionCall | Mapping[str, Any], context: InstructionContext) -> Any:
+def execute_or_raise(call: InstructionCall | Mapping[str, Any], context: InstructionContext, *, timeout: float | None = None) -> Any:
     """Convenience for in-process callers: return the result or raise its error."""
 
-    return execute(call, context).raise_for_error()
+    return execute(call, context, **({"timeout": timeout} if timeout is not None else {})).raise_for_error()
 
 
 def release_recovery(recovery_key: str, instruction_ids: list[str], context: InstructionContext) -> dict[str, int]:

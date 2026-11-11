@@ -13,6 +13,8 @@ import os
 import secrets
 import socket
 import threading
+import time
+import math
 from pathlib import Path
 from typing import Any, Callable, Iterator
 
@@ -113,15 +115,20 @@ def _signed(owner: str, params: dict[str, Any], context: InstructionContext) -> 
     return {"auth": request_auth(METHOD, params, socket_path=owner_socket(owner), actor=context.caller)}
 
 
-def _open(owner: str, payload: dict[str, Any], timeout: float, context: InstructionContext) -> tuple[socket.socket, Any]:
+def _open(owner: str, payload: dict[str, Any], timeout: float, context: InstructionContext, *, deadline: float | None = None) -> tuple[socket.socket, Any]:
     connection: socket.socket | None = None
     sending = False
     try:
         # An owner that is restarting gets waited for, as a request to it has
         # not been sent yet.
-        connection, _path = connect_service(owner_socket(owner), timeout=timeout)
+        connection, _path = connect_service(owner_socket(owner), timeout=timeout, **({"restart_wait": 0} if deadline is not None else {}))
         payload = {**payload, **_signed(owner, payload["params"], context)}
         encoded = json.dumps(payload, ensure_ascii=False, separators=(",", ":")).encode("utf-8") + b"\n"
+        if deadline is not None:
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                raise TimeoutError("Instruction deadline expired before send")
+            connection.settimeout(remaining)
         sending = True
         connection.sendall(encoded)
         return connection, connection.makefile("rb")
@@ -178,11 +185,17 @@ def _decode(owner: str, raw: bytes, request_id: str) -> dict[str, Any]:
 
 
 def call_remote(
-    owner: str, call: InstructionCall, context: InstructionContext, *, timeout: float = DEFAULT_TIMEOUT_SECONDS,
+    owner: str, call: InstructionCall, context: InstructionContext, *, timeout: float | None = None,
     instruction_id: str = "",
 ) -> InstructionResult:
     from .kernel import new_instruction_id
 
+    deadline = None
+    if timeout is not None:
+        if isinstance(timeout, bool) or not math.isfinite(timeout) or timeout <= 0:
+            raise ValueError('transport timeout must be finite and positive')
+        deadline = time.monotonic() + timeout
+    budget = DEFAULT_TIMEOUT_SECONDS if timeout is None else timeout
     # This ID is authenticated with the request and reserved by the owner.
     # A lost response still gives the caller an owner-routable lookup handle.
     instruction_id = instruction_id or new_instruction_id(owner)
@@ -191,10 +204,25 @@ def call_remote(
     params["instruction_id"] = instruction_id
     payload = {"id": request_id, "method": METHOD, "params": params}
     try:
-        connection, stream = _open(owner, payload, timeout, context)
+        connection, stream = _open(owner, payload, budget, context, **({"deadline": deadline} if deadline is not None else {}))
         try:
             try:
-                raw = stream.readline()
+                if deadline is None:
+                    raw = stream.readline()
+                else:
+                    chunks = bytearray()
+                    while b'\n' not in chunks:
+                        remaining = deadline - time.monotonic()
+                        if remaining <= 0:
+                            raise TimeoutError('Instruction response deadline expired')
+                        connection.settimeout(remaining)
+                        part = connection.recv(65536)
+                        if not part:
+                            break
+                        chunks.extend(part)
+                    if time.monotonic() >= deadline:
+                        raise TimeoutError('Instruction response deadline expired')
+                    raw = bytes(chunks).split(b'\n', 1)[0]
             except (OSError, TimeoutError) as exc:
                 raise _unavailable(owner, f"等待 {owner} 返回结果超时或连接中断") from exc
             response = _decode(owner, raw, request_id)
