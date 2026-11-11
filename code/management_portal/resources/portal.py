@@ -29,7 +29,7 @@ RESOURCE_PORTAL_ROUTES = {
 }
 RESOURCE_PORTAL_CONTEXT = {"resident": {"lineage": "lineage"},
                            "family": {"lineage": "lineage"}}
-NAVIGATION_RESOURCE_TYPES = frozenset({"resident", "lineage", "test", "workbench", "workspace", "family"})
+NAVIGATION_RESOURCE_TYPES = frozenset({"article", "resident", "lineage", "test", "workbench", "workspace", "family"})
 NAVIGATION_REFERENCE_ROUTES = {
     "testrun": {
         "pattern": r"testrun_[0-9a-f]{16}",

@@ -37,7 +37,7 @@ def test_published_script_contains_the_authoritative_contract_contracts(subtests
         prefix = 'window.PortalResourceRoutes = Object.freeze('
         assert script.startswith(prefix) and script.endswith(');\n')
         assert json.loads(script[len(prefix):-3]) == portal_route_contract()
-        assert portal_route_contract()["navigation_resource_types"] == ["family", "lineage", "resident", "test", "workbench", "workspace"]
+        assert portal_route_contract()["navigation_resource_types"] == ["article", "family", "lineage", "resident", "test", "workbench", "workspace"]
         assert portal_route_contract()["navigation_references"] == [{
             "reference_type": "testrun",
             "pattern": r"testrun_[0-9a-f]{16}",

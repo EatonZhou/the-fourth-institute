@@ -177,6 +177,8 @@
   }
 
   function resourceAddressFromPortalHref(value) {
+    const directAddress = normalizeResourceAddress(value);
+    if (directAddress) return directAddress;
     const url = portalUrlFromValue(value);
     if (!url) return "";
 
@@ -1054,6 +1056,8 @@
   }
 
   function bindResourceLink(node, options = {}) {
+    const directAddress = normalizeResourceAddress(node.getAttribute("href") || "");
+    if (directAddress) node.setAttribute("href", portalReferenceHref(directAddress));
     resourceLinkOptions.set(node, {
       ...(resourceLinkOptions.get(node) || {}),
       ...options,
