@@ -426,6 +426,7 @@ def _run_deep_read_job(job_id: str) -> None:
                     "paper_id": paper_id,
 
                 },
+                on_material_prepared=lambda material: _set_deep_read_job(job_id, {'usage': {**(job.get('usage') or {}), 'material_snapshot': material}}),
                 on_assigned=remember_input,
                 on_submitted=remember_input,
             )
@@ -439,6 +440,10 @@ def _run_deep_read_job(job_id: str) -> None:
         )
         # Keep reported generation facts even if artifact validation fails.
         _set_deep_read_job(job_id, {"usage": usage})
+        if (job.get('usage') or {}).get('material_snapshot') or usage.get('material_snapshot'):
+            from .paper_agent_materials import validate_path_result
+            validate_path_result(content)
+            usage.setdefault('material_snapshot', (job.get('usage') or {}).get('material_snapshot'))
         _require_artifact_sections(content, DEEP_READ_SECTIONS, "Deep Read")
         print(f"[paper-deep-read] {job_id} writing analysis", flush=True)
         _set_deep_read_job(job_id, {"step": "writing analysis", "progress": 82})
@@ -661,7 +666,7 @@ def _run_exp_job(job_id: str) -> None:
         paper = get_paper_detail(paper_id)["paper"]
         print(f"[paper-exp] {job_id} calling llm", flush=True)
         _set_exp_job(job_id, {"step": "calling llm", "progress": 35})
-        content, usage = _generate_exp_extraction(paper, actor=str(job.get("created_by") or ""))
+        content, usage = _generate_exp_extraction(paper, actor=str(job.get("created_by") or ""), job_id=job_id)
         _require_artifact_sections(content, EXP_SECTIONS, "Exp")
         print(f"[paper-exp] {job_id} writing exp", flush=True)
         _set_exp_job(job_id, {"step": "writing exp", "progress": 82})
@@ -707,7 +712,7 @@ def _write_exp_markdown(paper: dict, content: str, usage: dict, *, actor: str = 
     return exp_path
 
 
-def _generate_exp_extraction(paper: dict, *, actor: str) -> tuple[str, dict]:
+def _generate_exp_extraction(paper: dict, *, actor: str, job_id: str = "") -> tuple[str, dict]:
     analysis = _analysis_text(paper, limit=120_000)
     pdf_text = _pdf_text_for_paper(paper)
     if not (analysis.strip() or pdf_text.strip() or str(paper.get("abstract") or "").strip()):
@@ -757,5 +762,5 @@ Analysis markdown:
 Full extracted PDF text:
 {pdf_text}
 """
-    content, usage = _resident_reply(prompt, actor=actor, resident_scope="paper:exp")
+    content, usage = _resident_reply(prompt, actor=actor, resident_scope="paper:exp", metadata={"paper_id":paper["id"],"material_attempt":"paper-exp:"+job_id} if job_id else None)
     return str(content or "").strip(), usage

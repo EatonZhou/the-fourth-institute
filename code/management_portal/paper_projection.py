@@ -146,6 +146,19 @@ def _call(method, options: dict) -> dict:
         "本次交付约定优先于普通成员之间的消息回复方式。\n\n"
         + str(options.get("prompt") or "")
     )}
+    from .paper_agent_materials import TASK_SCOPES, prepare_task_input, validate_path_result
+    material = None
+    material_observer = options.pop('on_material_prepared', None)
+    context = dict(options.get('context_refs') or {})
+    metadata = options.get('metadata') or {}
+    subject = metadata.get('material_subject') or metadata.get('paper_id')
+    attempt = options.get('business_ref') or metadata.get('material_attempt')
+    if options['resident_scope'] in TASK_SCOPES and subject and attempt:
+        full, reference, material = prepare_task_input(actor=options['actor'],scope=options['resident_scope'],
+            subject=subject,attempt=attempt,full_prompt=options['prompt'])
+        if material_observer:
+            material_observer(material['provenance'])
+        options = {**options,'prompt':full,'business_ref':attempt,'context_refs':{**context,'structured_reference':reference}}
     requested = str(options.get("message_id") or "")
     assigned, submitted = options.get("on_assigned"), options.get("on_submitted")
     latest: dict = {}
@@ -162,6 +175,8 @@ def _call(method, options: dict) -> dict:
         **options, "on_assigned": lambda handle: remember(handle, assignment=True), "on_submitted": remember,
     })
     result = _completed_result(result, latest, requested)
+    if material:
+        result['usage'] = {**(result.get('usage') or {}),'material_snapshot':material['provenance']}
     # Idempotent metadata reconciliation, not a second delivery. This also carries
     # the final reply/usage identities that were unavailable at submission time.
     if submitted:

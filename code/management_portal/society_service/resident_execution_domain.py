@@ -1744,6 +1744,12 @@ def _build_resident_execution_request_unrestricted(
             else []
         )
     )
+    variants = {}
+    snapshot = (job.get('context_refs') or {}).get('verified_material_snapshot') or {}
+    if snapshot.get('type') == 'paper.task-material':
+        from management_portal.paper_agent_materials import variants_for_message
+        canonical_prompt = str(job.get('raw_message') or '') if scope else str(job.get('actual_sent_prompt') or job.get('message') or job.get('raw_message') or '')
+        variants = {'input_variants': variants_for_message(snapshot,canonical_prompt)}
     return build_agent_turn_request(
         actor=actor,
         agent_id=exact_resident_id,
@@ -1768,6 +1774,7 @@ def _build_resident_execution_request_unrestricted(
         system_instructions=resident_system_instructions(record, job),
         metadata={
             "business_type": "resident",
+            **variants,
             "resident_id": exact_resident_id,
             "lineage_id": lineage_id,
             "filesystem_scope": copy.deepcopy(job.get("filesystem_scope") or {}),

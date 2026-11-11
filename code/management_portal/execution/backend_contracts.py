@@ -12,6 +12,7 @@ Adapter implements; the Provider catalog names each Provider's Adapter
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from copy import deepcopy
 from typing import Any, Callable, Mapping, Protocol
 
 from .contracts import ExecutionRequest, ProviderInputBinding
@@ -142,10 +143,13 @@ class BackendContext:
         turn_start_reason_changed: Callable[[str], None] | None = None,
         execution_started_at: str = "",
         handover_requested: Callable[[], bool] | None = None,
+        input_variant_observer: Callable[[dict[str, Any]], None] | None = None,
     ) -> None:
         # When the Execution was accepted.  A recovered attempt keeps it, so
         # adapters can count the usage of every attempt of the turn.
         self.execution_started_at = str(execution_started_at or "")
+        self._input_variant_observer = input_variant_observer
+        self._input_variant: dict[str, Any] | None = None
         self._emit_event = emit_event
         self._cancellation_requested = cancellation_requested
         self._handover_requested = handover_requested
@@ -298,6 +302,19 @@ class BackendContext:
         """The state this attempt last checkpointed; None before it set one."""
 
         return None if self._provider_recovery_state is None else dict(self._provider_recovery_state)
+
+    def record_input_variant(self, decision: dict[str, Any]) -> None:
+        if self._input_variant is not None:
+            if self._input_variant != decision:
+                raise ValueError("Execution input variant is immutable")
+            return
+        if self._input_variant_observer is None:
+            raise RuntimeError("Input variants require a durable checkpoint callback")
+        self._input_variant_observer(deepcopy(decision))
+        self._input_variant = deepcopy(decision)
+
+    def current_input_variant(self) -> dict[str, Any] | None:
+        return deepcopy(self._input_variant)
 
     def bind_input(
         self,

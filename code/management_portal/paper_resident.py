@@ -46,11 +46,15 @@ def _resident_reply(
         resident_scope=resident_scope,
         cwd=cwd,
         metadata=dict(metadata or {"business_type": "paper"}),
+        business_ref=str((metadata or {}).get("material_attempt") or ""),
     )
     content = str(result.get("message") or "").strip()
     if not content:
         raise ValueError(f"{resident_scope} returned an empty reply")
     usage = dict(result.get("usage")) if isinstance(result.get("usage"), dict) else {}
+    if usage.get("material_snapshot"):
+        from .paper_agent_materials import validate_path_result
+        validate_path_result(content)
     return content, usage
 
 

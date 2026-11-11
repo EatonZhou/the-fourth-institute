@@ -77,6 +77,10 @@ class AgentSessionService:
             from .resident_capability_assembly import prepare, observe_delivery
             prepared = prepare(prepared, backend_context)
             prepared = prepare_backend_context_seed(provider, prepared)
+            from .input_variants import select_input_variant, input_variant_result
+            prepared = select_input_variant(prepared, backend_context)
+            if prepared.request.metadata.get("input_variants") is not None:
+                backend_context.observe_invocation(prepared, [])
             def observe(**values: Any) -> None:
                 # Delivery evidence never fails a turn: a completed reply would be lost.
                 try:
@@ -93,7 +97,7 @@ class AgentSessionService:
                 observe(completed=False)
                 raise
             observe(completed=True, available_names=result.available_harness_tool_names)
-            return result
+            return input_variant_result(prepared, backend_context, result)
         if not self.harness.should_run(invocation):
             return execute_with_context_seed(invocation, context)
         return self.harness.execute(

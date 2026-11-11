@@ -388,6 +388,9 @@ class ExecutionRequest:
             raise ValueError("execution runtime options must be an object")
         if not isinstance(self.metadata, dict):
             raise ValueError("execution metadata must be an object")
+        if "input_variants" in self.metadata:
+            from .input_variants import validate_input_variants
+            validate_input_variants(self)
         self.session.validate()
         self.system_instructions.validate()
         if self.service_type == "agent_session":

@@ -465,7 +465,7 @@ def _heuristic_paper_registration_classification(
     }
 
 
-def _ai_paper_registration_metadata(pdf_text: str, *, actor: str = "") -> tuple[dict, dict]:
+def _ai_paper_registration_metadata(pdf_text: str, *, actor: str = "", upload_id: str = "") -> tuple[dict, dict]:
     system_prompt = (
         "你是 TFI Portal 的论文元数据提取器。只根据给定 PDF 文本提取信息；"
         "书目信息缺失时使用空字符串，不得猜测；分类字段应根据论文语义归纳，"
@@ -511,7 +511,7 @@ PDF text:
         actor=actor,
         resident_scope="paper:registration-metadata",
         cwd=str(WORKSPACE_ROOT),
-        metadata={"business_type": "paper_registration_metadata"},
+        metadata={"business_type": "paper_registration_metadata", **({"material_subject":"draft:"+upload_id,"material_attempt":"paper-registration:"+upload_id} if upload_id else {})},
     )
     extracted = _coerce_paper_registration_metadata(_parse_json_object_from_text(content))
     if extracted.get("session") not in {item["id"] for item in project_catalog}:

@@ -286,6 +286,7 @@ def _run_paper_registration_draft(upload_id: str) -> dict:
             ai_metadata, usage = _ai_paper_registration_metadata(
                 ai_source_text,
                 actor=str(draft.get("actor") or ""),
+                upload_id=upload_id,
             )
             for key, value in ai_metadata.items():
                 if value in (None, "", []):

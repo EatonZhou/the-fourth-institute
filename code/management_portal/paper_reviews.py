@@ -416,7 +416,7 @@ Analysis markdown:
 Full extracted PDF text:
 {pdf_text}
 """
-    content, usage = _resident_reply(prompt, actor=actor, resident_scope="paper:review")
+    content, usage = _resident_reply(prompt, actor=actor, resident_scope="paper:review", metadata={"paper_id":paper["id"],"material_attempt":"paper-review:"+review_id})
     try:
         parsed = _extract_json_object(content)
         return _coerce_ai_review(

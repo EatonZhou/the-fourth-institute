@@ -60,9 +60,14 @@ class ChatCompletionService:
     ) -> BackendResult:
         from .resident_capability_assembly import prepare
         invocation = prepare(invocation, context)
+        from .input_variants import select_input_variant, input_variant_result
+        invocation = select_input_variant(invocation, context)
+        if invocation.request.metadata.get("input_variants") is not None:
+            context.observe_invocation(invocation, [])
         transport: dict[str, Any] = {}
         try:
-            return self._execute(invocation, context, transport)
+            result = self._execute(invocation, context, transport)
+            return input_variant_result(invocation, context, result)
         except Exception as exc:
             if transport.get("schema"):
                 existing = getattr(exc, "error_details", {})

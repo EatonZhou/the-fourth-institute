@@ -103,6 +103,7 @@ class _ActiveExecution:
     # prompt and tools again.
     harness_plan: dict[str, Any] | None = None
     capability_assembly: dict[str, Any] | None = None
+    input_variant: dict[str, Any] | None = None
 
 
 class ExecutionRuntime:
@@ -522,6 +523,10 @@ class _ExecutionAttempt:
                 if isinstance(recovery.get("capability_assembly"), dict)
                 else None
             ),
+            input_variant=(
+                dict(recovery["input_variant"])
+                if isinstance(recovery.get("input_variant"), dict) else None
+            ),
             checkpoint_target=(
                 str(recovery.get("backend_session_id") or ""),
                 str(recovery.get("backend_route_id") or ""),
@@ -702,6 +707,21 @@ class _ExecutionAttempt:
             ended_error="Execution ended before capability assembly",
         )
 
+    def set_input_variant(self, decision: dict[str, Any]) -> None:
+        if self.context.checkpoint_provider is None:
+            raise RuntimeError("Input variants require durable Execution checkpointing")
+        normalized = dict(decision)
+
+        def change(active: _ActiveExecution) -> bool:
+            if active.input_variant == normalized:
+                return False
+            if active.input_variant is not None:
+                raise ValueError("Execution input variant is immutable")
+            active.input_variant = normalized
+            return True
+
+        self._checkpoint_change(change, ended_error="Execution ended before input variant selection")
+
     def set_turn_start_reason(self, reason: str) -> None:
         def change(active: _ActiveExecution) -> bool:
             if active.turn_start_reason == reason:
@@ -790,6 +810,7 @@ class _ExecutionAttempt:
             reassign_backend_route=context.reassign_backend_route,
             update_context_usage=self.update_context_usage,
             set_provider_recovery_state=self.set_provider_recovery_state,
+            input_variant_observer=self.set_input_variant,
             harness_plan_observer=self.set_harness_plan,
             capability_assembly_observer=self.set_capability_assembly,
             turn_control_provider=context.turn_control_provider,
@@ -884,6 +905,7 @@ class _ExecutionAttempt:
             live_context_usage = dict(active.context_usage) if active else {}
             live_context_window = active.model_context_window if active else 0
             live_context_usage_at = active.context_usage_at if active else ""
+            input_variant = active.input_variant if active else self.recovery.get("input_variant")
         checkpoint: dict[str, Any] = {
             "provider": self.request.provider,
             "operation": self.request.operation,
@@ -915,6 +937,8 @@ class _ExecutionAttempt:
             checkpoint["context_usage_at"] = live_context_usage_at
         if live_context_window:
             checkpoint["model_context_window"] = live_context_window
+        if input_variant is not None:
+            checkpoint["input_variant"] = dict(input_variant)
         return checkpoint
 
     def _checkpoint_change(
@@ -989,4 +1013,6 @@ class _ExecutionAttempt:
             payload["harness_plan"] = dict(active.harness_plan)
         if active.capability_assembly is not None:
             payload["capability_assembly"] = dict(active.capability_assembly)
+        if active.input_variant is not None:
+            payload["input_variant"] = dict(active.input_variant)
         return payload
