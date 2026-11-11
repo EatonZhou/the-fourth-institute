@@ -172,7 +172,7 @@
     // open its status block names the member.
     function familyReplyFooter(item, index = -1, items = []) {
       const reply = item && typeof item.family_reply === "object" ? item.family_reply : null;
-      if (!reply || item.family_status) return "";
+      if (!reply || item.family_status || item.live_output) return "";
       const request = String(reply.request_message_id || "");
       const next = index >= 0 && Array.isArray(items) ? items[index + 1] : null;
       if (request && String(next?.family_reply?.request_message_id || "") === request) return "";

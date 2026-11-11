@@ -129,7 +129,7 @@
       }
     }
 
-    function withFamilyRequestStatus(messages) {
+    function withFamilyRequestStatus(messages, inputStates) {
       const status = new Map();
       const live = new Set();
       const outputs = new Map();
@@ -143,9 +143,13 @@
       });
       const groups = new Map();
       messages.forEach((item, index) => {
-        const relay = item?.relay && typeof item.relay === "object" ? item.relay : null;
+        const stored = item?.relay && typeof item.relay === "object" ? item.relay : null;
+        const work = inputStates.get(item.id)?.work || stored?.work;
+        // Delivery may complete as soon as an appended input reaches the turn.
+        // The execution fact owns whether that turn is still producing replies.
+        const relay = stored && work ? { ...stored, work, state: work.state } : stored;
         if (item?.role !== "user" || !relay || !FAMILY_VISIBLE_REQUEST_STATES.has(String(relay.state || ""))) return;
-        const input = relay.grouped_into_message_id || relay.message_id || item.id;
+        const input = work?.execution_id || relay.grouped_into_message_id || relay.message_id || item.id;
         const key = JSON.stringify([relay.resident_id || "", input]);
         if (!groups.has(key)) groups.set(key, []);
         groups.get(key).push({ item, index, relay });
@@ -153,7 +157,7 @@
       groups.forEach(requests => {
         // Prefer the actual group input for controls when it is visible; a
         // grouped sibling still carries its facade identity, never a worker ID.
-        const owner = requests.find(({ relay }) => !relay.grouped_into_message_id
+        const owner = requests.find(({ relay }) => relay.work?.kind === 'primary') || requests.find(({ relay }) => !relay.grouped_into_message_id
           || relay.grouped_into_message_id === relay.message_id) || requests[0];
         const replies = [...new Set(requests.flatMap(({ item, relay }) => (outputs.get(item.id) || [])
           .filter(index => !messages[index].family_reply.resident_id || !relay.resident_id
@@ -275,7 +279,7 @@
         if (receiving.has(message.id)) message.input_delivery = "pending";
         else if (input?.work?.delivery === "delivered") message.input_delivery = "delivered";
       }
-      const messages = facade ? withFamilyRequestStatus(ordered) : ordered;
+      const messages = facade ? withFamilyRequestStatus(ordered, inputStates) : ordered;
       const activities = !facade && Array.isArray(snapshot.activities) ? snapshot.activities : [];
       const state = window.PortalResidentProtocol.stateView(snapshot.state);
       const controls = snapshot.controls || {};

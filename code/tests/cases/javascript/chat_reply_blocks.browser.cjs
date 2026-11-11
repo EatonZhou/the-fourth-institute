@@ -39,6 +39,34 @@ module.exports = async ({ page, output, errors }) => {
   const ids = () => page.locator('.messageList > article').evaluateAll(nodes => nodes.map(n => n.dataset.messageKey));
   const expected = ['video', 'video-late', 'improve', 'improve-before', 'collaboration', 'fast', 'receipt', 'improve-after', 'rollback', 'rollback-after'];
   assert.deepEqual(await ids(), expected);
+  // Appended inputs are delivered while their shared execution is still live.
+  await page.evaluate(() => {
+    const work = kind => ({state: 'running', kind, execution_id: 'injected-execution'});
+    window.injectionSnapshot = {family_facade: {title: 'Injected Family'}, state: {work_state: 'idle'},
+      input_states: [{message_id: 'original', work: work('primary')}], messages: [
+        {message_id: 'original', role: 'user', content_parts: [{type: 'text', text: '开始工作'}], relay: {resident_id: 'member', message_id: 'worker-original', state: 'running'}},
+        ...['append-one', 'append-two'].flatMap(id => [
+          {message_id: id, role: 'user', content_parts: [{type: 'text', text: '连续注入补充'}], relay: {resident_id: 'member', message_id: 'worker-' + id, state: 'completed', work: work('appended')}},
+          {message_id: id + '-reply', role: 'agent', content_parts: [{type: 'text', text: '已经收到补充，继续检查中。'}], family_reply: {request_message_id: id, resident_id: 'member', title: '处理成员'}},
+        ]),
+      ]};
+    window.drawInjection = () => workspace.setMessages(PortalChatWorkspace.projectResidentConversation({}, injectionSnapshot).messages, {
+      renderMessageFooter: PortalChatWorkspace.residentMessageFooter,
+      renderAfterMessage: (item, _index, _items, context) => item.family_status ? PortalChatWorkspace.requestProgressHtml(item.family_status, context) : '',
+    });
+    drawInjection();
+  });
+  assert.equal(await page.locator('.familyReply').count(), 0, 'live appended replies do not look finished');
+  assert.equal(await page.locator('[data-portal-message-action="family-request-stop"]').count(), 1, 'shared work has one stop/progress block');
+  assert.ok((await page.locator('.familyRequestStatus').innerText()).includes('运行中'));
+  if (output) await page.screenshot({path: path.join(output, 'injected-work-running.png')});
+  await page.evaluate(() => {
+    injectionSnapshot.input_states = ['original', 'append-one', 'append-two'].map(message_id => ({message_id, work: {state: 'completed', execution_id: 'injected-execution'}}));
+    drawInjection();
+  });
+  assert.equal(await page.locator('[data-portal-message-action="family-request-stop"]').count(), 0);
+  assert.ok(await page.locator('.familyReply').count() > 0, 'completed execution restores attribution');
+  await page.evaluate(() => drawBlocks());
   await page.evaluate(() => drawBlocks());
   assert.deepEqual(await ids(), expected);
   assert.ok((await page.locator('[data-message-key="collaboration"]').innerText()).includes('处理成员 的工作期间'));

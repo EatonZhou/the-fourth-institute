@@ -167,6 +167,31 @@ function deliveredInfos() {
 }
 
 function familyRequests() {
+  const injected = {
+    family_facade: {title: 'Fam'}, state: {work_state: 'idle'},
+    messages: [
+      {message_id: 'primary', role: 'user', relay: {resident_id: 'member', message_id: 'worker-primary', state: 'running'}},
+      ...['first', 'second'].flatMap(id => [
+        {message_id: id, role: 'user', relay: {resident_id: 'member', message_id: 'worker-' + id, state: 'completed',
+          work: {state: 'running', kind: 'appended', execution_id: 'same-turn'}}},
+        {message_id: id + '-reply', role: 'agent', family_reply: {request_message_id: id, resident_id: 'member'}, content_parts: [text('still working')]},
+      ]),
+      {message_id: 'finished', role: 'user', relay: {resident_id: 'other', state: 'completed', work: {state: 'completed'}}},
+    ],
+    input_states: [{message_id: 'primary', work: {state: 'running', kind: 'primary', execution_id: 'same-turn'}}],
+  };
+  let shown = byId(project(injected).messages);
+  assert.equal(shown['first-reply'].live_output, true);
+  assert.equal(shown['first-reply'].family_status, undefined, 'one progress block per proven execution');
+  assert.equal(shown['second-reply'].family_status.state, 'running', 'delivery completion cannot close appended work');
+  assert.equal(shown['second-reply'].family_status.request_message_id, 'primary');
+  assert.equal(shown.finished.family_status, undefined, 'other members stay completed');
+  for (const state of ['completed', 'failed', 'cancelled']) {
+    injected.input_states = ['primary', 'first', 'second'].map(message_id => ({message_id, work: {state, execution_id: 'same-turn', kind: message_id === 'primary' ? 'primary' : 'appended'}}));
+    shown = byId(project(injected).messages);
+    assert.equal(shown['second-reply'].live_output, undefined);
+    assert.equal(shown['second-reply'].family_status?.state, state === 'failed' ? 'failed' : undefined);
+  }
   const projection = project({
     family_facade: { title: 'Fam', members: [{ resident_id: 'resident_m', title: 'Member' }] },
     state: { work_state: 'running' },

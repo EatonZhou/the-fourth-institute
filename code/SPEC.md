@@ -158,7 +158,7 @@
 - [Portal 开发投影：软件开发范式（架构与协议、阶段进展、未来演化）](/r/decision_13e1a748cf04)
 - [软件工程智能开发核心团队：Lineage 模板与创建原则](/r/decision_78134209e5c9)
 - [Society Workbench 多实例 Editor 与统一打开协议](/r/decision_79de71d9890d)
-- [Portal Chat Workspace](/r/decision_f560803947c6)
+- [Portal Chat Workspace（含连续注入的工作进度与收尾）](/r/decision_f560803947c6)
 - [Chat Workspace 轮次导航滚动条](/r/decision_11b944fd33e4)
 - [Resident 聊天中的提问、审批与本轮修改卡片](/r/decision_1e2eb869bc10)
 - [Resident 统一执行配置：模型、Prompt、后端参数与 Harness](/r/decision_8b2fa224616b)

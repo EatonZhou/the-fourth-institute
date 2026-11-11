@@ -96,6 +96,8 @@ function familyReplies() {
   assert.equal(words(footer({ id: 'u', role: 'user', family_reply: { title: 'Member' } }).querySelector('.familyReply')), '来自 Member');
   assert.equal(footer({ ...reply('o3'), family_status: { state: 'running' } }).querySelector('.familyReply'), null,
     'while the request is open its progress names the member');
+  assert.equal(footer({...reply('injected'), live_output: true}).querySelector('.familyReply'), null,
+    'running outputs before the final progress block do not show completed attribution');
 }
 
 function tokens() {
