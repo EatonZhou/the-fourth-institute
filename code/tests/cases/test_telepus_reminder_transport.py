@@ -43,19 +43,32 @@ def test_expired_snapshot_reread_can_cancel_or_fail_without_sending(reminder):
     assert not r.server.sent and not r.notices.pending(ACTOR)
 
 
-def test_slow_initial_snapshot_cannot_be_reused_for_another_two_seconds(reminder, monkeypatch):
+def test_complete_snapshot_age_is_measured_from_return_and_read_does_not_hold_send_lock(reminder, monkeypatch):
     r = reminder
     enable(r, mention=True)
     original = r.portal.call
+    from contextlib import contextmanager
+    held = [False]
+    lock = r.notices.store.lock
+    @contextmanager
+    def tracked_lock(actor):
+        with lock(actor):
+            held[0] = True
+            try:
+                yield
+            finally:
+                held[0] = False
+    monkeypatch.setattr(r.notices.store, 'lock', tracked_lock)
     def call(actor, instruction, arguments):
         if instruction == 'GetMailbox':
+            assert not held[0]
             r.now[0] += 2.1
         return original(actor, instruction, arguments)
     monkeypatch.setattr(r.portal, 'call', call)
     r.box['items'] = [mention('new')]
     r.calls.clear()
     r.notices.scan(ACTOR, on_pending=r.adapter.flush)
-    assert r.calls.count('GetMailbox') == 2
+    assert r.calls.count('GetMailbox') == 1
 
 
 def test_restart_owner_unavailable_is_quiet_but_persistent_and_permission_errors_are_visible(reminder, monkeypatch, capsys):

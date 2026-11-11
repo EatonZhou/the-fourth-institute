@@ -134,7 +134,8 @@ class Notifications:
             self.portal = PortalClient(channel='weixin')
         started = self.clock()
         current = candidates(actor, self.portal.call(actor, 'GetMailbox', {'user_id': actor}))
-        self._discovery[actor] = {'mailbox_seconds': max(0, self.clock() - started), 'snapshot_started': started}
+        completed = self.clock()
+        self._discovery[actor] = {'mailbox_seconds': max(0, completed - started), 'snapshot_completed': completed}
         return current
 
     def reconcile(self, actor, current):
@@ -190,21 +191,25 @@ class Notifications:
                 watch = batch[-1] if batch else {}
             watch_returned = self.clock()
             current = None
+            if due or watch.get('keys') or watch.get('snapshot_required') or self.clock() - state['read_at'] >= 30:
+                # A full Mailbox read is slow; never block replies on that I/O.
+                current = self.snapshot(actor)
+            measured = dict(self._discovery.get(actor, {}))
+            lock_started = self.clock()
             with self.store.lock(actor):
                 lock_acquired = self.clock()
                 account = self.store.account(actor)
                 if not account or account['status'] != 'active' or not any(self.preferences(actor).values()):
                     return
                 # Periodic complete reads also discover a newly supported category field.
-                if due or watch.get('keys') or watch.get('snapshot_required') or self.clock() - state['read_at'] >= 30:
-                    current = self.snapshot(actor)
+                if current is not None:
                     self.reconcile(actor, current)
-                    self._discovery[actor].update(watch_returned=watch_returned,
+                    measured.update(watch_returned=watch_returned,
                         watch_seconds=max(0, watch_returned - watch_started),
-                        lock_wait_seconds=max(0, lock_acquired - watch_returned),
+                        lock_wait_seconds=max(0, lock_acquired - lock_started),
                         watch_reset=bool(due or watch.get('snapshot_required')))
                     self.router.append_audit('notification_scan', portal_actor=actor,
-                        payload={k: v for k, v in self._discovery[actor].items() if k not in ('snapshot_started', 'watch_returned')})
+                        payload={k: v for k, v in measured.items() if k not in ('snapshot_completed', 'watch_returned')})
                     state['read_at'] = self.clock()
                 state.update(cursor=watch.get('cursor', state.get('cursor', '')), failures=0, retry_at=0)
                 self.router.set_meta(key, json.dumps(state))
@@ -212,7 +217,7 @@ class Notifications:
                 if pending:
                     self.store.enqueue(chat_key(account['ilink_bot_id']), {'notification_actor': actor})
                     if on_pending is not None and current is not None:
-                        self._snapshots[actor] = (self._discovery[actor]['snapshot_started'], current)
+                        self._snapshots[actor] = (measured['snapshot_completed'], current, measured)
             if pending and on_pending is not None:
                 try:
                     on_pending(actor)
@@ -246,7 +251,7 @@ class Notifications:
         age = self.clock() - cached[0] if cached else None
         reused = cached is not None and 0 <= age < 2
         current = cached[1] if reused else self.snapshot(actor)
-        discovery = dict(self._discovery.get(actor, {}))
+        discovery = dict(cached[2] if reused else self._discovery.get(actor, {}))
         self.reconcile(actor, current)
         rows = self.pending(actor)
         ready = [r for r in rows if r['category'] in current and r['key'] in current[r['category']]]
