@@ -20,6 +20,19 @@ def test_private_research_provisioning_real_owners(owners, monkeypatch):
     from management_portal.society_service import resident_execution_domain as domain
     from management_portal.society_service import resident_catalog
     record = resident_catalog.get_catalog().get(bound['resident_id'])
+    settings = research.isa_client.call(ACTOR, 'GetResidentSettings', {'resident_id': bound['resident_id']})
+    assert settings['settings']['auto_switch_on_quota'] is True
+    assert settings['settings']['quota_switch_strategy'] == 'same_provider_model'
+    original = dict(settings['settings'])
+    # Creation defaults must not rewrite an existing assistant on retry/open.
+    research.isa_client.call(ACTOR, 'UpdateResidentSettings', {
+        'resident_id': bound['resident_id'], 'expected_revision': settings['settings_revision'],
+        'changes': {'auto_switch_on_quota': False}})
+    assert research.provision_slot(actor=ACTOR, slot_id=slot['slot_id']) == bound
+    reread = research.isa_client.call(ACTOR, 'GetResidentSettings', {'resident_id': bound['resident_id']})['settings']
+    assert reread['auto_switch_on_quota'] is False
+    assert reread['quota_switch_strategy'] == 'same_provider_model'
+    assert {k: v for k, v in reread.items() if k != 'auto_switch_on_quota'} == {k: v for k, v in original.items() if k != 'auto_switch_on_quota'}
     job = {'actor': ACTOR, 'lineage_id': bound['lineage_id'], 'user_message_id': 'msg_'+'a'*32,
            'execution_id': 'execution-'+'7'*24, 'raw_message': 'Compare authorized materials',
            'actual_sent_prompt': 'Compare authorized materials', 'queue': []}
