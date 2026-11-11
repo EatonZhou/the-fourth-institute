@@ -30,6 +30,14 @@ const root = path.resolve(__dirname, '../../../management_portal');
       PortalPaperPersonal.mount({state,paperApi,renderTree:()=>{},syncFavoriteButtons:()=>{},loadDetail:async()=>{},setMode:()=>{}});
       pending.shift().resolve({papers:[],next_cursor:null});
     });
+    await page.addScriptTag({path:path.join(root,'static/paper_events.js')});
+    await page.evaluate(()=>{
+      window.__queryEvents=[];state.filters={};
+      const deps=Object.fromEntries(PortalPaperEvents.dependencies.map(k=>[k,()=>{}]));
+      Object.assign(deps,{$:id=>document.getElementById(id)||document.createElement('div'),state,
+        loadLibrary:async()=>__queryEvents.push('load'),writeUiState:()=>__queryEvents.push('save')});
+      PortalPaperEvents.createEvents(deps).bindEvents();
+    });
     const status=page.locator('.paperPersonal [data-status]');
     await page.waitForFunction(()=>document.querySelector('[data-status]').textContent==='暂无记录');
     await page.locator('[data-scope=repository]').click();
@@ -37,13 +45,22 @@ const root = path.resolve(__dirname, '../../../management_portal');
     for (const language of ['en','zh-CN']) {
       await page.evaluate(lang=>PortalI18n.apply(lang),language);
       assert.equal(await page.locator('.paperSearchHistory > summary').first().textContent(),language==='en'?'History':'历史');
+      assert.equal(await page.locator('.paperLibraryQueryGroup .paperSectionHint').textContent(),language==='en'?'Find related papers in the library.':'在已有库中查找相关论文。');
+      assert(await page.locator('.paperLibraryQueryGroup').evaluate(el=>el.contains(document.getElementById('searchInput')) && el.contains(document.getElementById('semanticSearchList')) && ['yearFilter','venueFilter','tagFilter','projectFilter'].every(id=>el.contains(document.getElementById(id))) && !el.contains(document.getElementById('collectorForm'))));
+      await page.locator('#searchInput').fill('fixture existing-library query');
+      await page.waitForFunction(()=>__queryEvents.includes('load'));
+      for (const id of ['yearFilter','venueFilter','tagFilter','projectFilter']) {
+        await page.locator('#'+id).evaluate(el=>{el.add(new Option('fixture','fixture'));el.value='fixture';el.dispatchEvent(new Event('change',{bubbles:true}));});
+      }
+      assert(await page.evaluate(()=>Object.values(state.filters).every(v=>v==='fixture') && state.query==='fixture existing-library query'));
+
       await page.locator('[data-view=recent]').evaluate(el=>el.click());
       assert.equal(await status.textContent(),language==='en'?'No records yet':'暂无记录');
       assert.equal(await page.locator('[data-personal-clear]').textContent(),language==='en'?'Clear filters':'清除筛选');
       await page.locator('[data-scope=repository]').click();
       await page.locator('#paperLibraryPane').evaluate(el=>el.style.width='280px');
       assert.deepEqual(await page.locator('.leftBody').evaluate(el=>[...el.querySelectorAll('*')].filter(child=>child.getBoundingClientRect().width && child.getBoundingClientRect().right>el.getBoundingClientRect().right+1).map(child=>child.id||child.className)),[]);
-      await page.screenshot({path:`/tmp/paper-sidebar-full-${language}.png`,fullPage:true});
+      await page.screenshot({path:`/tmp/paper-query-group-${language}.png`,fullPage:true});
     }
     await page.locator('[data-scope=personal]').click();
     assert.equal(await status.textContent(),'暂无记录');

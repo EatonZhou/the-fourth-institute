@@ -764,7 +764,7 @@ body {
 .paperPersonalFilters label:first-child { grid-column: 1 / -1; }
 .paperPersonalFilters .portalControl { width: 100%; min-width: 0; box-sizing: border-box; }
 .paperPersonalFilters button { justify-self: start; grid-column: 1 / -1; }
-.searchWrap > .collectorBox, .searchWrap > .filterGrid { border-top: 1px solid var(--border, #cbd5e1); padding-top: 8px; margin-top: 2px; }
+.searchWrap > .collectorBox { border-top: 1px solid var(--border, #cbd5e1); padding-top: 8px; margin-top: 2px; }
 .searchWrap .paperSearchHistory { margin-top: 0; }
 .searchWrap .paperSearchHistory > summary { font-size: 12px; font-weight: 400; line-height: 1.5; padding: 4px 0; cursor: pointer; }
 .searchWrap .paperSearchHistory > summary:hover { color: var(--accent, #2563eb); }
@@ -833,3 +833,6 @@ body.resizingReaderAI { cursor:col-resize; user-select:none; }
 .paperResearchSelector .portalButton { flex: 0 1 auto; min-width: 0; white-space: normal; line-height: 1.4; }
 
 .paperResearchSelectorError { flex: 1 1 100%; min-width: 0; color: var(--danger); font-size: 12px; overflow-wrap: anywhere; }
+
+/* Existing-library query: semantic search, history and filters share one group. */
+.paperLibraryQueryGroup { display: grid; gap: 6px; min-width: 0; }
