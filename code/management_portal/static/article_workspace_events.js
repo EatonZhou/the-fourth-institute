@@ -14,7 +14,7 @@
     "currentArticleCompilePopover", "currentArticleProjectPopover", "currentArticleWorkbench",
     "detailHistory", "flushArticleNavigationPreference", "goToLine", "handleEditorPairing",
     "hasDirtyDocuments", "initializeArticleGit", "initializeArticlePopovers", "inspectRegistration",
-    "loadArticleGit", "openArticleFile", "openArticleGitCommit", "openArticleGitDiff", "openBuildDiagnostic",
+    "loadArticleGit", "handleArticleGitAction", "openArticleFile", "openArticleGitCommit", "openArticleGitDiff", "openBuildDiagnostic",
     "openEntryModal", "openRegisterModal", "pullArticleGit", "queryState", "registerArticle", "renderArticleGitDiffFile",
     "renderArticleResourceSearch", "renderArticleSelectors", "renderEditorLayers", "renderLog",
     "renderSemanticNavigation", "resetEditorPreferences", "saveOpenFile", "saveSettings",
@@ -36,7 +36,7 @@
       commitArticleGit, compileArticle, createEntry, currentArticleCompilePopover,
       currentArticleProjectPopover, currentArticleWorkbench, detailHistory, flushArticleNavigationPreference,
       goToLine, handleEditorPairing, hasDirtyDocuments, initializeArticleGit, initializeArticlePopovers,
-      inspectRegistration, loadArticleGit, openArticleFile, openArticleGitCommit, openArticleGitDiff,
+      inspectRegistration, loadArticleGit, handleArticleGitAction, openArticleFile, openArticleGitCommit, openArticleGitDiff,
       openBuildDiagnostic, openEntryModal, openRegisterModal, pullArticleGit, queryState, registerArticle,
       renderArticleGitDiffFile, renderArticleResourceSearch, renderArticleSelectors, renderEditorLayers,
       renderLog, renderSemanticNavigation, resetEditorPreferences, saveOpenFile, saveSettings,
@@ -61,6 +61,11 @@
         setNavigationPanelVisible(false);
         return;
       }
+      const gitAction = event.target.closest("[data-git-action]");
+      if (gitAction) {
+        handleArticleGitAction(gitAction).catch(error => showToast(error.message || error, "error"));
+        return;
+      }
       const gitStage = event.target.closest("[data-git-stage]");
       if (gitStage) {
         updateArticleGitStage(gitStage.dataset.gitStage, gitStage.dataset.gitStaged === "true")
@@ -73,7 +78,7 @@
       }
       const gitDiff = event.target.closest("[data-git-diff]");
       if (gitDiff) {
-        openArticleGitDiff(gitDiff.dataset.gitDiff)
+        openArticleGitDiff(gitDiff.dataset.gitDiff, gitDiff.dataset.gitDiffStaged === "true")
           .catch(error => showToast(error.message || error, "error"));
         return;
       }
@@ -177,6 +182,12 @@
     $("articleGitRefresh").addEventListener("click", () => loadArticleGit({ includeHistory: true }).catch(error => showToast(error.message || error, "error")));
     $("articleGitPull").addEventListener("click", pullArticleGit);
     $("articleGitCommitForm").addEventListener("submit", event => commitArticleGit(event).catch(error => showToast(error.message || error, "error")));
+    $("articleGitMessage").addEventListener("keydown", event => {
+      if ((event.ctrlKey || event.metaKey) && event.key === "Enter" && !event.isComposing) {
+        event.preventDefault();
+        $("articleGitCommitForm").requestSubmit();
+      }
+    });
     $("articleGitDiffClose").addEventListener("click", closeArticleGitDiff);
     $("articleGitDiffLayout").addEventListener("click", toggleArticleGitDiffLayout);
     $("articleProjectMenuClose").addEventListener("click", () => setProjectMenu(false));

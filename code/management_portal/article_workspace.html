@@ -217,18 +217,28 @@
             <div class="articleGitIdentity" id="articleGitIdentity">
               <span data-portal-icon="branch" aria-hidden="true"></span><strong>—</strong><code>—</code>
             </div>
-            <div class="articleGitCommit">
+            <div class="articleGitRemoteToolbar">
+              <button class="portalButton is-quiet" type="button" data-git-action="fetch" title="获取远端提交，不修改工作文件"><span data-portal-icon="refresh"></span><span>获取</span></button>
               <button class="portalButton" id="articleGitPull" type="button" data-portal-icon="download" disabled><span id="articleGitPullLabel">拉取</span></button>
-              <small id="articleGitPullHint" role="status"></small>
+              <button class="portalButton is-quiet" type="button" data-git-action="push" title="推送本地提交"><span data-portal-icon="upload"></span><span>推送</span></button>
+              <button class="portalButton is-quiet" type="button" data-git-action="sync" title="先拉取，再推送"><span data-portal-icon="refresh"></span><span>同步</span></button>
             </div>
+            <small id="articleGitPullHint" role="status"></small>
             <form class="articleGitCommit" id="articleGitCommitForm">
               <label for="articleGitMessage"><!--portal-i18n:"提交信息"-->提交信息</label>
-              <textarea id="articleGitMessage" rows="3" maxlength="200" placeholder="说明本次稿件修改" required></textarea>
-              <button class="portalButton is-primary" id="articleGitCommit" type="submit"><!--portal-i18n:"提交已暂存更改"-->提交已暂存更改</button>
+              <textarea id="articleGitMessage" rows="2" maxlength="200" placeholder="消息（Ctrl / ⌘ Enter 提交）" required></textarea>
+              <div class="articleGitCommitActions">
+                <button class="portalButton is-primary" id="articleGitCommit" type="submit"><span data-portal-icon="check"></span><span>提交</span></button>
+                <details class="articleGitCommitMenu"><summary class="portalButton is-primary" aria-label="更多提交操作" title="更多提交操作">⌄</summary><div>
+                  <button type="button" data-git-action="commit-all">暂存全部并提交</button>
+                  <button type="button" data-git-action="commit-push">提交并推送</button>
+                  <button type="button" data-git-action="commit-sync">提交并同步</button>
+                </div></details>
+              </div>
             </form>
             <div class="paneBody articleGitChanges" id="articleGitChanges"><div class="portalAsyncState is-compact" data-state="empty" data-density="compact" role="status"><span class="portalAsyncStateIcon" aria-hidden="true"></span><span class="portalAsyncStateMessage"><!--portal-i18n:"打开此面板以查看稿件变更。"-->打开此面板以查看稿件变更。</span></div></div>
             <section class="articleGitHistorySection" id="articleGitHistorySection">
-              <div class="articleGitSectionHead"><strong><!--portal-i18n:"最近提交"-->最近提交</strong><small id="articleGitHistoryCount">0</small></div>
+              <div class="articleGitSectionHead"><button class="articleGitGroupToggle" type="button" data-git-action="toggle-history" aria-expanded="true">⌄ 图表</button><small id="articleGitHistoryCount">0</small><button class="portalButton is-icon is-quiet iconBtn" type="button" data-git-action="refresh" title="刷新图表" aria-label="刷新图表" data-portal-icon="refresh"></button></div>
               <div class="articleGitHistory" id="articleGitHistory"></div>
             </section>
           </div>

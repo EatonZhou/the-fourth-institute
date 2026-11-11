@@ -630,7 +630,7 @@ function articleUnregisterFixture({confirm = true} = {}) {
   const timers = new Map();
   let nextTimer = 0;
   const context = owner(ARTICLE_SCRIPTS, ['unregisterCurrentArticle'], {
-    state, AbortController, ARTICLE_GIT_REFRESH_MS: 5000,
+    state, AbortController, ARTICLE_GIT_REFRESH_MS: 5000, busyArticles: new Map(), historyLimit: 40, historyHasMore: false,
     PortalUIPrimitives: {randomUUID: () => 'fixture'},
     document: {hidden: false, addEventListener: noop, removeEventListener: noop},
     setTimeout: callback => {const id = ++nextTimer; timers.set(id, callback); return id;},

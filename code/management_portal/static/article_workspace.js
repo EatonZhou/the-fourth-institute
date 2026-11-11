@@ -287,13 +287,14 @@
   });
 
   const {
-    articleGitRefresh, closeArticleGitDiff, commitArticleGit, initializeArticleGit, loadArticleGit,
+    articleGitRefresh, closeArticleGitDiff, commitArticleGit, handleArticleGitAction, initializeArticleGit, loadArticleGit,
     openArticleGitCommit, openArticleGitDiff, pullArticleGit, renderArticleGitDiffFile, resetArticleGit,
     scheduleArticleGitRefresh, toggleArticleGitDiffLayout, unregisteringArticles, updateArticleGitStage,
   } = articleModule("PortalArticleWorkspaceGit").createGit({
     $, ARTICLE_GIT_REFRESH_MS, esc, languageForPath, monacoApi,
     renderDocumentTabs: (...args) => renderDocumentTabs(...args), request, showToast, state,
     captureActiveDocument: (...args) => captureActiveDocument(...args),
+    openArticleFile: (...args) => openArticleFile(...args),
     hasDirtyDocuments: (...args) => hasDirtyDocuments(...args),
     refreshAfterPull: async articleId => {
       if (state.selectedId !== articleId) return;
@@ -461,7 +462,7 @@
     currentArticleWorkbench, detailHistory, flushArticleNavigationPreference, goToLine, handleEditorPairing,
     hasDirtyDocuments, initializeArticleGit, initializeArticlePopovers, inspectRegistration, loadArticleGit,
     openArticleFile, openArticleGitCommit, openArticleGitDiff, openBuildDiagnostic, openEntryModal,
-    openRegisterModal, pullArticleGit, queryState, registerArticle, renderArticleGitDiffFile, renderArticleResourceSearch,
+    openRegisterModal, handleArticleGitAction, pullArticleGit, queryState, registerArticle, renderArticleGitDiffFile, renderArticleResourceSearch,
     renderArticleSelectors, renderEditorLayers, renderLog, renderSemanticNavigation, resetEditorPreferences,
     saveOpenFile, saveSettings, scheduleArticleGitRefresh, scheduleAutoCompile, searchProject, selectArticle,
     setArticlePdfZoom, setArticleResourceSearchOpen, setCompileMenu, setEditorMode, setNavigationPanelVisible,

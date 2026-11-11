@@ -1,4 +1,5 @@
 """Article pulls use a real remote and retain the workspace/identity boundary."""
+import inspect
 import subprocess
 from types import SimpleNamespace
 from unittest.mock import Mock
@@ -90,7 +91,6 @@ def test_network_uses_current_actor_credentials(repo, monkeypatch):
 
 def test_http_pull_authentication_and_access_denial(monkeypatch):
     require = Mock()
-    import inspect
     deps = {name: Mock() for name in inspect.signature(ArticlesHttp).parameters}
     deps.update(respond=lambda request, status, data: (status, data), session_actor=lambda _: "alice",
                 require_resource=require, read_json=lambda _: {"credential": {"secret": "fixture-only"}})
@@ -116,3 +116,102 @@ def test_viewer_cannot_start_network_pull(repo, monkeypatch):
     with pytest.raises(PermissionError):
         article_git.pull_article_git("article_0123456789ab", actor="viewer")
     network.assert_not_called()
+
+
+def test_fetch_push_sync_and_tracking_counts(repo):
+    author, checkout = repo
+    advance(author)
+    (checkout / "draft.tex").write_text("unsaved to git")
+    result = scoped.sync_scoped_git_workspace(checkout, "fetch", article_id="article_0123456789ab")
+    assert result["status"]["behind"] == 1
+    assert (checkout / "main.tex").read_text() == "initial"
+    (checkout / "draft.tex").unlink()
+    scoped.sync_scoped_git_workspace(checkout, "sync", article_id="article_0123456789ab")
+    assert (checkout / "main.tex").read_text() == "remote revision"
+    (checkout / "local.tex").write_text("local")
+    git(checkout, "add", "."); git(checkout, "commit", "-m", "local")
+    assert scoped.scoped_git_status(checkout)["ahead"] == 1
+    result = scoped.sync_scoped_git_workspace(checkout, "push", article_id="article_0123456789ab")
+    assert result["status"]["ahead"] == 0
+    assert git(checkout, "rev-parse", "HEAD") == git(author, "ls-remote", "origin", "refs/heads/main").split()[0]
+
+
+def test_index_and_worktree_diffs_discard_and_newborn_repo(repo, tmp_path):
+    _, checkout = repo
+    path = checkout / "main.tex"
+    path.write_text("staged\n")
+    scoped.stage_scoped_git_paths(checkout, ["main.tex"], staged=True)
+    path.write_text("working\n")
+    index = scoped.scoped_git_diff(checkout, "main.tex", staged=True)["diff"]
+    working = scoped.scoped_git_diff(checkout, "main.tex")["diff"]
+    assert "+staged" in index and "+working" not in index
+    assert "-staged" in working and "+working" in working
+    scoped.discard_scoped_git_paths(checkout, ["main.tex"])
+    assert path.read_text() == "staged\n"
+    assert scoped.scoped_git_status(checkout)["staged_count"] == 1
+    (checkout / "new.tex").write_text("new")
+    scoped.discard_scoped_git_paths(checkout, ["new.tex"])
+    assert not (checkout / "new.tex").exists()
+    with pytest.raises(ValueError):
+        scoped.discard_scoped_git_paths(checkout, ["../author/main.tex"])
+    unborn = tmp_path / "unborn"
+    unborn.mkdir(); git(unborn, "init", "-b", "main")
+    (unborn / "new.tex").write_text("index")
+    scoped.stage_scoped_git_paths(unborn, ["new.tex"], staged=True)
+    (unborn / "new.tex").write_text("later")
+    assert "+index" in scoped.scoped_git_diff(unborn, "new.tex", staged=True)["diff"]
+    assert "+later" in scoped.scoped_git_diff(unborn, "new.tex")["diff"]
+
+
+def test_branch_and_graph_keep_real_merge_parents(repo):
+    _, checkout = repo
+    scoped.switch_scoped_git_branch(checkout, "paper/revision", create=True)
+    (checkout / "side.tex").write_text("side")
+    with pytest.raises(ValueError, match="提交"):
+        scoped.switch_scoped_git_branch(checkout, "main")
+    git(checkout, "add", "."); git(checkout, "commit", "-m", "side")
+    scoped.switch_scoped_git_branch(checkout, "main")
+    (checkout / "main.tex").write_text("main")
+    git(checkout, "add", "."); git(checkout, "commit", "-m", "main")
+    git(checkout, "merge", "--no-ff", "paper/revision", "-m", "merge")
+    history = scoped.scoped_git_history(checkout, limit=2)
+    assert history["has_more"] and len(history["commits"]) == 2
+    assert len(history["commits"][0]["parents"]) == 2
+    assert any("main" in ref for ref in history["commits"][0]["refs"])
+    sub = checkout / "nested"; sub.mkdir()
+    for action in ("fetch", "push", "sync"):
+        with pytest.raises(ValueError, match="Repo"):
+            scoped.sync_scoped_git_workspace(sub, action, article_id="article_0123456789ab")
+    with pytest.raises(ValueError, match="Repo"):
+        scoped.switch_scoped_git_branch(sub, "main")
+
+
+@pytest.mark.parametrize("operation", ["fetch", "push", "sync", "branch", "discard"])
+def test_scm_mutations_require_contributor(repo, monkeypatch, operation):
+    monkeypatch.setattr(article_git.permission_system, "permitted_ids", lambda *args: set())
+    with pytest.raises(PermissionError):
+        article_git.run_article_git_operation("article_0123456789ab", operation, {}, actor="viewer")
+
+
+def test_diverged_sync_never_pushes_and_push_never_overwrites(repo):
+    author, checkout = repo
+    advance(author)
+    remote_head = git(author, "rev-parse", "HEAD")
+    (checkout / "local.tex").write_text("local")
+    git(checkout, "add", "."); git(checkout, "commit", "-m", "diverged")
+    local_head = git(checkout, "rev-parse", "HEAD")
+    for operation in ("sync", "push"):
+        with pytest.raises(GitOperationError):
+            scoped.sync_scoped_git_workspace(checkout, operation, article_id="article_0123456789ab")
+        assert git(checkout, "rev-parse", "HEAD") == local_head
+        assert git(checkout, "ls-remote", "origin", "refs/heads/main").split()[0] == remote_head
+
+
+@pytest.mark.parametrize("action", ["init", "stage", "commit", "discard", "branch", "fetch", "pull", "push", "sync"])
+def test_http_git_mutations_deny_viewer(monkeypatch, action):
+    deps = {name: Mock() for name in inspect.signature(ArticlesHttp).parameters}
+    deps.update(respond=lambda request, status, data: (status, data), session_actor=lambda _: "viewer",
+                read_json=lambda _: {}, require_resource=lambda *args: {})
+    monkeypatch.setattr(article_git.permission_system, "permitted_ids", lambda *args: set())
+    status, result = ArticlesHttp(**deps).git(SimpleNamespace(), None, "ignored", {"article_id": "article_0123456789ab", "action": action})
+    assert status == 403 and "协作权限" in result["error"]

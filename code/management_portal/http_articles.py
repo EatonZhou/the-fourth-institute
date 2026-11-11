@@ -130,7 +130,7 @@ class ArticlesHttp:
             self.require_resource(article_id, self.session_actor(request) or "")
             if action == "diff":
                 commit_sha = str((qs.get("commit") or [""])[0]).strip()
-                result = article_git.article_git_commit_diff(article_id, commit_sha) if commit_sha else article_git.article_git_diff(article_id, str((qs.get("path") or [""])[0]))
+                result = article_git.article_git_commit_diff(article_id, commit_sha) if commit_sha else article_git.article_git_diff(article_id, str((qs.get("path") or [""])[0]), staged=(qs.get("staged") or [""])[0] == "true")
             elif action == "history":
                 result = article_git.article_git_history(article_id, limit=int((qs.get("limit") or [20])[0]))
             else:
@@ -281,13 +281,14 @@ class ArticlesHttp:
     def git(self, request, parsed, actor, params):
         article_id = params["article_id"]
         action = params["action"]
-        if not re.fullmatch(r"article_[0-9a-f]{12}", article_id) or action not in {"init", "stage", "commit", "pull"}:
+        if not re.fullmatch(r"article_[0-9a-f]{12}", article_id) or action not in {"init", "stage", "commit", "pull", "fetch", "push", "sync", "branch", "discard"}:
             return ROUTE_NOT_FOUND
         payload = self.read_json(request)
         actor = self.session_actor(request) or ""
         try:
             self.require_resource(article_id, actor)
             if action == "init":
+                article_git.require_git_write(article_id, actor)
                 result = article_git.initialize_article_git(article_id)
             elif action == "pull":
                 result = article_git.pull_article_git(
@@ -296,6 +297,7 @@ class ArticlesHttp:
                 )
                 self.notify_index(resource_id=article_id, resource_type="article", kind="updated")
             elif action == "stage":
+                article_git.require_git_write(article_id, actor)
                 raw_paths = payload.get("paths") or []
                 if not isinstance(raw_paths, list):
                     raise ValueError("paths must be a list")
@@ -303,7 +305,11 @@ class ArticlesHttp:
                     article_id, [str(path) for path in raw_paths],
                     staged=bool(payload.get("staged", True)),
                 )
+            elif action in {"fetch", "push", "sync", "branch", "discard"}:
+                result = article_git.run_article_git_operation(article_id, action, payload, actor=actor)
+                self.notify_index(resource_id=article_id, resource_type="article", kind="updated")
             else:
+                article_git.require_git_write(article_id, actor)
                 result = article_git.commit_article_git_changes(
                     article_id, str(payload.get("message") or ""),
                     description=str(payload.get("description") or ""), actor=actor,

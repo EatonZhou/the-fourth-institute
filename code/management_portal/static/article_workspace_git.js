@@ -3,12 +3,30 @@
 
   if (window.PortalArticleWorkspaceGit) return;
 
+  // Lanes are pending parent SHAs. Each edge joins actual commit parents, including merges.
+  function graphRows(commits) {
+    let lanes = [];
+    return commits.map(commit => {
+      let lane = lanes.indexOf(commit.sha);
+      const incoming = lane >= 0;
+      if (!incoming) { lane = lanes.length; lanes.push(commit.sha); }
+      const before = [...lanes];
+      lanes.splice(lane, 1);
+      (commit.parents || []).forEach((parent, index) => {
+        if (!lanes.includes(parent)) lanes.splice(Math.min(lane + index, lanes.length), 0, parent);
+      });
+      const edges = before.flatMap((sha, index) => sha === commit.sha ? [] : [[index, lanes.indexOf(sha), false]]);
+      (commit.parents || []).forEach(parent => edges.push([lane, lanes.indexOf(parent), true]));
+      return { lane, incoming, edges, width: Math.max(before.length, lanes.length, 1) * 16 + 12 };
+    });
+  }
+
   // The Git side view: status and recent history with their refresh, staging,
   // committing and initializing a repository, and the diff viewer for a
   // changed file or a commit. Refresh stops while an Article is unregistered.
   const DEPENDENCIES = Object.freeze([
     "$", "ARTICLE_GIT_REFRESH_MS", "esc", "languageForPath", "monacoApi", "renderDocumentTabs", "request",
-    "showToast", "state", "captureActiveDocument", "hasDirtyDocuments", "refreshAfterPull",
+    "showToast", "state", "captureActiveDocument", "hasDirtyDocuments", "refreshAfterPull", "openArticleFile",
   ]);
 
   function createGit(dependencies) {
@@ -16,9 +34,40 @@
     if (missing.length) throw new Error(`PortalArticleWorkspaceGit is missing: ${missing.join(", ")}`);
     const {
       $, ARTICLE_GIT_REFRESH_MS, esc, languageForPath, monacoApi, renderDocumentTabs, request, showToast,
-      state, captureActiveDocument, hasDirtyDocuments, refreshAfterPull,
+      state, captureActiveDocument, hasDirtyDocuments, refreshAfterPull, openArticleFile,
     } = dependencies;
-    const pullingArticles = new Set();
+    const busyArticles = new Map();
+    const collapsedGroups = new Set();
+    let historyLimit = 40;
+    let historyHasMore = false;
+    const actionLabels = { fetch: "获取", pull: "拉取", push: "推送", sync: "同步", branch: "切换分支", discard: "放弃更改", stage: "更新暂存区", commit: "提交", init: "启用 Git" };
+
+    function actionButton(action, label, icon, extra = "") {
+      return `<button class="portalButton is-icon is-quiet iconBtn" type="button" data-git-action="${action}" title="${esc(label)}" aria-label="${esc(label)}" data-portal-icon="${icon}" ${extra}></button>`;
+    }
+
+    function renderHistory() {
+      const commits = state.gitHistory || [];
+      const rows = graphRows(commits);
+      const width = Math.max(28, ...rows.map(row => row.width));
+      const colors = ["var(--accent)", "#b578df", "#3e9b76", "#bd8427", "#db719b"];
+      const x = lane => 10 + lane * 16;
+      const path = (from, to, half) => `<path d="M${x(from)},${half ? 18 : 0} C${x(from)},28 ${x(to)},28 ${x(to)},36" stroke="${colors[from % colors.length]}" fill="none" stroke-width="2"/>`;
+      $("articleGitHistoryCount").textContent = String(commits.length);
+      $("articleGitHistory").hidden = collapsedGroups.has("history");
+      $("articleGitHistorySection").classList.toggle("is-collapsed", collapsedGroups.has("history"));
+      const toggle = $("articleGitHistorySection").querySelector('[data-git-action="toggle-history"]');
+      toggle.textContent = `${collapsedGroups.has("history") ? "›" : "⌄"} 图表`;
+      toggle.setAttribute("aria-expanded", String(!collapsedGroups.has("history")));
+      $("articleGitHistory").innerHTML = commits.map((commit, i) => {
+        const row = rows[i];
+        return `<button class="articleGitCommitRow" type="button" data-git-commit="${esc(commit.sha)}" data-git-commit-short="${esc(commit.short_sha)}" data-git-commit-subject="${esc(commit.subject)}" title="${esc(`${commit.short_sha} · ${commit.author} · ${commit.authored_at}\n${commit.subject}`)}">
+          <svg aria-hidden="true" width="${width}" height="36" viewBox="0 0 ${width} 36">${row.edges.map(edge => path(...edge)).join("")}${row.incoming ? `<path d="M${x(row.lane)},0 V18" stroke="${colors[row.lane % colors.length]}" stroke-width="2"/>` : ""}<circle cx="${x(row.lane)}" cy="18" r="4" fill="${colors[row.lane % colors.length]}"/></svg>
+          <span class="articleGitCommitText"><strong>${esc(commit.subject || "(无提交信息)")}</strong><small>${esc(commit.author || "")} · ${esc(commit.short_sha || "")}</small></span>
+          <span class="articleGitRefs">${(commit.refs || []).map(ref => `<span>${esc(ref)}</span>`).join("")}</span></button>`;
+      }).join("") + (historyHasMore && historyLimit < 500 ? '<button class="portalButton is-quiet" data-git-action="more-history" type="button">加载更多提交</button>' : "")
+        || '<div class="articleGitEmpty">尚无提交</div>';
+    }
 
     function renderArticleGitBadge() {
       const button = $("articleGitView");
@@ -41,18 +90,23 @@
       const changesHost = $("articleGitChanges");
       const historyHost = $("articleGitHistory");
       const available = Boolean(status?.available);
-      const pulling = pullingArticles.has(state.selectedId);
-      $("articleGitPull").disabled = pulling || !status?.pull?.available;
-      $("articleGitPull").setAttribute("aria-busy", String(pulling));
-      $("articleGitPullLabel").textContent = window.PortalI18n.t(pulling ? "正在拉取…" : "拉取");
-      $("articleGitPullHint").textContent = pulling ? window.PortalI18n.t("正在获取远端更新…")
+      const busy = busyArticles.get(state.selectedId);
+      $("articleGitPull").disabled = !!busy || !status?.pull?.available;
+      $("articleGitPull").setAttribute("aria-busy", String(!!busy));
+      $("articleGitPullLabel").textContent = window.PortalI18n.t(busy === "pull" ? "正在拉取…" : "拉取");
+      $("articleGitPullHint").textContent = busy ? `正在${actionLabels[busy] || busy}…`
         : status?.pull?.reason || (status?.pull?.remote ? `${status.pull.remote}/${status.pull.branch}` : window.PortalI18n.t("尚未配置远端仓库。"));
       renderArticleGitBadge();
       panel.classList.toggle("is-unavailable", !available);
       $("articleGitIdentity").hidden = !available;
       $("articleGitCommitForm").hidden = !available;
       $("articleGitHistorySection").hidden = !available;
-      $("articleGitCommit").disabled = !available || !Number(status?.staged_count || 0);
+      $("articleGitCommit").disabled = !!busy || !available || !Number(status?.staged_count || 0) || !!status?.conflict_count;
+      panel.querySelectorAll('[data-git-action="fetch"], [data-git-action="push"], [data-git-action="sync"]').forEach(button => {
+        const capability = button.dataset.gitAction === "sync" ? status?.pull : status?.remote;
+        button.disabled = !!busy || !capability?.available;
+        button.title = capability?.reason || `${actionLabels[button.dataset.gitAction]} ${capability?.remote || ""}/${capability?.branch || ""}`;
+      });
       if (!available) {
         $("articleGitSummary").textContent = window.PortalI18n.t("版本控制尚未启用");
         changesHost.innerHTML = window.PortalI18n.html`<div class="articleGitOnboarding">
@@ -72,22 +126,25 @@
       const head = status.head || {};
       const changes = Array.isArray(status.changes) ? status.changes : [];
       $("articleGitSummary").textContent = window.PortalI18n.text`${changes.length} 个变更 · ${Number(status.staged_count || 0)} 个已暂存`;
-      $("articleGitIdentity").innerHTML = window.PortalI18n.html`<span data-portal-icon="branch" aria-hidden="true"></span><strong>${esc(status.branch || window.PortalI18n.t("detached HEAD"))}</strong><code>${esc(head.short_sha || window.PortalI18n.t("尚无提交"))} · ${esc(status.scope || ".")}</code>`;
+      $("articleGitIdentity").innerHTML = `<button class="articleGitBranch" type="button" data-git-action="branch" ${busy || status.scope !== "." ? "disabled" : ""} title="切换或创建分支"><span data-portal-icon="branch"></span><strong>${esc(status.branch)}</strong><span>⌄</span></button><small title="${esc(status.upstream || "尚未设置上游分支")}">${status.ahead == null ? esc(head.short_sha || "尚无提交") : `↓${status.behind} ↑${status.ahead}`}</small>`;
       const sections = [
         ["已暂存的更改", changes.filter(item => item.staged), true],
         ["更改", changes.filter(item => item.unstaged || item.untracked), false],
       ];
       changesHost.innerHTML = sections.map(([title, items, staged]) => {
-        if (!items.length) return "";
-        return window.PortalI18n.html`<section class="articleGitChangeSection"><div class="articleGitSectionHead"><strong>${title}</strong><small>${items.length}</small></div>${items.map(item => window.PortalI18n.html`
+        const group = staged ? "staged" : "changes";
+        const collapsed = collapsedGroups.has(group);
+        return window.PortalI18n.html`<section class="articleGitChangeSection"><div class="articleGitSectionHead"><button class="articleGitGroupToggle" type="button" data-git-action="toggle-${group}" aria-expanded="${!collapsed}">${collapsed ? "›" : "⌄"} ${title}</button><small>${items.length}</small>${actionButton(staged ? "unstage-all" : "stage-all", staged ? "取消全部暂存" : "暂存全部更改", staged ? "minus" : "plus", busy || !items.length ? "disabled" : "")}</div><div ${collapsed ? "hidden" : ""}>${items.map(item => window.PortalI18n.html`
         <div class="articleGitChangeRow" title="${esc(item.path)}">
-          <button class="articleGitChangePath" type="button" data-git-diff="${esc(item.path)}">${esc(item.path.split("/").at(-1) || item.path)}<small>${esc(item.path.includes("/") ? item.path.slice(0, item.path.lastIndexOf("/")) : "")}</small></button>
-          <span class="articleGitStatusCode" title="${esc(item.label || "")}">${esc(item.untracked ? "U" : item.conflicted ? "!" : String(item.code || "").trim() || "M")}</span>
+          <button class="articleGitChangePath" type="button" data-git-diff="${esc(item.path)}" data-git-diff-staged="${staged}"><span class="articleGitFileIcon" aria-hidden="true">${/\.tex$/i.test(item.path) ? "TᴇX" : /\.pdf$/i.test(item.path) ? "PDF" : "◇"}</span>${esc(item.path.split("/").at(-1) || item.path)}<small>${esc(item.path.includes("/") ? item.path.slice(0, item.path.lastIndexOf("/")) : "")}</small></button>
+          <span class="articleGitStatusCode" data-code="${esc(item.untracked ? "U" : item.conflicted ? "!" : String(item.code || "MM")[staged ? 0 : 1])}" title="${esc(item.label || "")}">${esc(item.untracked ? "U" : item.conflicted ? "!" : String(item.code || "MM")[staged ? 0 : 1])}</span>
+          <span class="articleGitRowActions">${actionButton("open", `打开 ${item.path}`, "file", `data-git-path="${esc(item.path)}"`)}${!staged && !item.conflicted ? actionButton("discard", `放弃 ${item.path} 的更改`, "undo", `data-git-path="${esc(item.path)}" ${busy ? "disabled" : ""}`) : ""}
           <button class="portalButton is-icon is-quiet iconBtn articleGitStageButton" type="button" data-git-stage="${esc(item.path)}" data-git-staged="${staged ? "false" : "true"}" aria-label="${staged ? window.PortalI18n.t("取消暂存") : window.PortalI18n.t("暂存")} ${esc(item.path)}" title="${staged ? window.PortalI18n.t("取消暂存") : window.PortalI18n.t("暂存")}" data-portal-icon="${staged ? "minus" : "plus"}"></button>
-        </div>`).join("")}</section>`;
+          </span>
+        </div>`).join("")}</div></section>`;
       }).join("") || window.PortalI18n.html`<div class="portalAsyncState is-compact" data-state="empty" data-density="compact" role="status"><span class="portalAsyncStateIcon" aria-hidden="true"></span><span class="portalAsyncStateMessage">工作树干净，没有未提交的稿件改动。</span></div>`;
-      $("articleGitHistoryCount").textContent = String(state.gitHistory.length);
-      historyHost.innerHTML = state.gitHistory.map(commit => window.PortalI18n.html`<button class="articleGitCommitRow" type="button" data-git-commit="${esc(commit.sha || "")}" data-git-commit-short="${esc(commit.short_sha || "")}" data-git-commit-subject="${esc(commit.subject || "")}" title="查看 ${esc(commit.short_sha || "commit")} 的更改"><code>${esc(commit.short_sha || "")}</code><span>${esc(commit.subject || window.PortalI18n.t("(无提交信息)"))}</span><span data-portal-icon="chevron-right" aria-hidden="true"></span></button>`).join("");
+      renderHistory();
+      changesHost.querySelectorAll("[data-git-stage]").forEach(button => { button.disabled = !!busy; });
       window.PortalIcons?.enhance?.($("articleGitPanel"));
     }
 
@@ -97,7 +154,7 @@
       key: () => state.selectedId,
       interval: ARTICLE_GIT_REFRESH_MS,
       initialDelay: ARTICLE_GIT_REFRESH_MS,
-      shouldRefresh: () => !!state.selectedId && !unregisteringArticles.has(state.selectedId),
+      shouldRefresh: () => !!state.selectedId && !unregisteringArticles.has(state.selectedId) && !busyArticles.has(state.selectedId),
       fetch: async ({ key, signal }) => {
         const id = encodeURIComponent(key);
         const includeHistory = articleGitHistoryRequested || state.sideView === "git";
@@ -105,7 +162,7 @@
         let historyError = null;
         const [status, history] = await Promise.all([
           request(`/api/articles/${id}/git`, { signal }),
-          includeHistory ? request(`/api/articles/${id}/git/history?limit=12`, { signal }).catch(error => {
+          includeHistory ? request(`/api/articles/${id}/git/history?limit=${historyLimit}`, { signal }).catch(error => {
             historyError = error;
             return null;
           }) : Promise.resolve(null),
@@ -113,6 +170,8 @@
         return { status, history, historyError };
       },
       apply: ({ status, history, historyError }) => {
+        if (busyArticles.has(state.selectedId)) return;
+        if (history) historyHasMore = !!history.has_more;
         const commits = history ? (Array.isArray(history.commits) ? history.commits : []) : state.gitHistory;
         const changed = JSON.stringify([state.gitStatus, state.gitHistory]) !== JSON.stringify([status, commits]);
         state.gitStatus = status;
@@ -139,7 +198,7 @@
       articleGitRefresh.invalidate({ delay });
     }
 
-    function requestPullCredential(challenge) {
+    function requestGitCredential(challenge, operation) {
       return new Promise(resolve => {
         const modal = document.createElement("div");
         modal.className = "portalDetailOverlay";
@@ -152,7 +211,7 @@
             <label class="portalField">${esc(challenge.secret_label || "访问令牌或密码")}<input name="secret" type="password" autocomplete="current-password" required></label>
             <label><input name="remember" type="checkbox"> 为当前用户记住凭据</label>
           </div>
-          <div class="portalDetailFooter" data-portal-detail-footer><button type="button" class="portalButton" data-cancel>取消</button><button type="submit" class="portalButton is-primary">拉取</button></div>
+          <div class="portalDetailFooter" data-portal-detail-footer><button type="button" class="portalButton" data-cancel>取消</button><button type="submit" class="portalButton is-primary">${actionLabels[operation] || "继续"}</button></div>
         </form>`;
         document.body.append(modal);
         let value = null;
@@ -178,88 +237,145 @@
       });
     }
 
-    async function pullArticleGit() {
+    async function runGitOperation(operation, payload = {}, { afterCommit = "", stageAll = false } = {}) {
       const articleId = state.selectedId;
-      if (!articleId || pullingArticles.has(articleId)) return;
+      if (!articleId || busyArticles.has(articleId)) return;
       captureActiveDocument();
-      if (hasDirtyDocuments()) {
-        showToast(window.PortalI18n.t("请先保存并提交编辑中的更改，再拉取。"), "error");
+      if (["pull", "sync", "branch", "discard", "commit"].includes(operation) && hasDirtyDocuments()) {
+        showToast(window.PortalI18n.t("请先保存编辑中的更改，再进行此操作。"), "error");
         return;
       }
-      pullingArticles.add(articleId);
+      busyArticles.set(articleId, operation);
       renderArticleGit();
-      let pulled = false;
-      try {
+      let committed = false;
+      let completed = false;
+      const current = () => state.selectedId === articleId;
+      async function post(action, data) {
         let credentials = {};
-        let result;
-        while (state.selectedId === articleId) {
+        while (current()) {
           try {
-            result = await request(`/api/articles/${encodeURIComponent(articleId)}/git/pull`, {
+            return await request(`/api/articles/${encodeURIComponent(articleId)}/git/${action}`, {
               method: "POST", timeoutMs: 390000, headers: { "Content-Type": "application/json" },
-              body: JSON.stringify(credentials),
+              body: JSON.stringify({ ...data, ...credentials }),
             });
-            break;
           } catch (error) {
-            if (state.selectedId !== articleId) return;
+            if (!current()) return null;
             if (!error?.data?.auth_challenge) throw error;
-            credentials = await requestPullCredential(error.data.auth_challenge);
-            if (!credentials) return;
+            credentials = await requestGitCredential(error.data.auth_challenge, action);
+            if (!credentials) return null;
           }
         }
-        if (state.selectedId !== articleId) return;
-        pulled = true;
-        state.gitStatus = result.status;
-        await refreshAfterPull(articleId);
-        if (state.selectedId !== articleId) return;
-        await loadArticleGit({ includeHistory: true });
-        if (state.selectedId !== articleId) return;
-        showToast(window.PortalI18n.t(hasDirtyDocuments() ? "拉取完成；编辑中的草稿已保留。" : "拉取完成，稿件已更新。"), "success");
-      } catch (error) {
-        if (state.selectedId === articleId) showToast(pulled
-          ? window.PortalI18n.text`拉取已完成，但页面刷新失败：${error.message || error}`
-          : error.message || error, "error");
-      } finally {
-        pullingArticles.delete(articleId);
-        if (state.selectedId === articleId) renderArticleGit();
+        return null;
       }
+      try {
+        if (stageAll) {
+          const paths = changePaths(false);
+          if (paths.length && !(await post("stage", { paths, staged: true }))) return;
+        }
+        let result = await post(operation, payload);
+        if (!result || !current()) return;
+        if (operation === "commit") {
+          committed = true;
+          if ($("articleGitMessage").value.trim() === payload.message) $("articleGitMessage").value = "";
+          if (afterCommit) {
+            state.gitStatus = result.status;
+            busyArticles.set(articleId, afterCommit);
+            renderArticleGit();
+            result = await post(afterCommit, {});
+            if (!result || !current()) return;
+          }
+        }
+        completed = true;
+        state.gitStatus = result.status || result;
+        if (["pull", "sync", "branch", "discard"].includes(operation) || afterCommit === "sync") await refreshAfterPull(articleId);
+        if (!current()) return;
+        showToast(`${actionLabels[operation]}${afterCommit ? `并${actionLabels[afterCommit]}` : ""}完成${hasDirtyDocuments() ? "；编辑中的草稿已保留。" : "。"}`, "success");
+      } catch (error) {
+        if (current()) showToast(`${completed ? "操作已完成，但页面刷新失败：" : committed ? "本地提交已完成，远端操作未完成：" : ""}${error.message || error}`, "error");
+      } finally {
+        busyArticles.delete(articleId);
+        if (current()) {
+          await loadArticleGit({ includeHistory: true, silent: true });
+          renderArticleGit();
+        }
+      }
+    }
+
+    function pullArticleGit() { return runGitOperation("pull"); }
+
+    function changePaths(staged) {
+      return [...new Set((state.gitStatus?.changes || []).filter(item => staged ? item.staged : item.unstaged || item.untracked)
+        .flatMap(item => [item.path, staged ? item.original_path : ""].filter(Boolean)))];
     }
 
     async function updateArticleGitStage(path, staged) {
-      state.gitStatus = await request(`/api/articles/${encodeURIComponent(state.selectedId)}/git/stage`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ paths: [path], staged }),
-      });
-      renderArticleGit();
+      const item = state.gitStatus?.changes?.find(change => change.path === path);
+      return runGitOperation("stage", { paths: [path, !staged ? item?.original_path : ""].filter(Boolean), staged });
     }
 
     async function initializeArticleGit() {
-      state.gitStatus = await request(`/api/articles/${encodeURIComponent(state.selectedId)}/git/init`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: "{}",
-      });
-      await loadArticleGit({ includeHistory: true });
-      showToast(window.PortalI18n.t("已为当前 Article 初始化 Git 仓库"), "success");
+      return runGitOperation("init");
     }
 
-    async function commitArticleGit(event) {
-      event.preventDefault();
+    async function commitArticleGit(event, options = {}) {
+      event?.preventDefault();
       const message = $("articleGitMessage").value.trim();
-      if (!message) return;
-      $("articleGitCommit").disabled = true;
-      try {
-        const result = await request(`/api/articles/${encodeURIComponent(state.selectedId)}/git/commit`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ message }),
+      if (!message) { $("articleGitMessage").focus(); return; }
+      return runGitOperation("commit", { message }, options);
+    }
+
+    function chooseBranch() {
+      return new Promise(resolve => {
+        const modal = document.createElement("div");
+        modal.className = "portalDetailOverlay";
+        modal.setAttribute("data-portal-detail-overlay", "");
+        modal.innerHTML = `<form class="portalDetailSurface articleEntrySurface" data-portal-detail-surface role="dialog" aria-modal="true" aria-label="切换或创建分支">
+          <div class="portalDetailHeader" data-portal-detail-header><h2>切换或创建分支</h2></div>
+          <div class="portalDetailBody" data-portal-detail-body><label class="portalField">已有分支<select name="branch">${(state.gitStatus?.branches || []).map(branch => `<option ${branch.current ? "selected" : ""} value="${esc(branch.name)}">${esc(branch.name)}</option>`).join("")}</select></label>
+          <label class="portalField">或创建新分支<input name="newBranch" placeholder="从当前提交创建，例如 paper/revision"></label></div>
+          <div class="portalDetailFooter" data-portal-detail-footer><button class="portalButton" type="button" data-cancel>取消</button><button class="portalButton is-primary" type="submit">切换</button></div></form>`;
+        document.body.append(modal);
+        let value = null;
+        const dialog = window.PortalUI.createDialogController({ modal, openClass: "portalDialogOpen", bodyClass: null, backdropClose: true, escapeClose: true,
+          onClose: () => { dialog.destroy?.(); modal.remove(); resolve(value); },
         });
-        $("articleGitMessage").value = "";
-        state.gitStatus = result.status;
-        await loadArticleGit({ includeHistory: true });
-        showToast(window.PortalI18n.text`已提交 ${result.commit?.short_sha || window.PortalI18n.t("Article 更改")}`, "success");
-      } finally {
-        $("articleGitCommit").disabled = !Number(state.gitStatus?.staged_count || 0);
+        modal.querySelector("[data-cancel]").addEventListener("click", () => dialog.close());
+        modal.querySelector("form").addEventListener("submit", event => {
+          event.preventDefault();
+          const newName = modal.querySelector('[name="newBranch"]').value.trim();
+          value = { name: newName || modal.querySelector('[name="branch"]').value, create: !!newName };
+          dialog.close();
+        });
+        dialog.open({ focusTarget: modal.querySelector("select") });
+      });
+    }
+
+    async function handleArticleGitAction(button) {
+      const action = button.dataset.gitAction;
+      const articleId = state.selectedId;
+      $("articleGitPanel").querySelectorAll("details[open]").forEach(menu => { menu.open = false; });
+      if (action.startsWith("toggle-")) {
+        const group = action.slice(7);
+        collapsedGroups.has(group) ? collapsedGroups.delete(group) : collapsedGroups.add(group);
+        renderArticleGit(); return;
+      }
+      if (action === "open") return openArticleFile(button.dataset.gitPath);
+      if (action === "refresh" || action === "more-history") {
+        if (action === "more-history") historyLimit = Math.min(500, historyLimit + 40);
+        return loadArticleGit({ includeHistory: true });
+      }
+      if (busyArticles.has(articleId)) return;
+      if (["fetch", "push", "sync"].includes(action)) return runGitOperation(action);
+      if (action === "stage-all" || action === "unstage-all") return runGitOperation("stage", { paths: changePaths(action === "unstage-all"), staged: action === "stage-all" });
+      if (action.startsWith("commit-")) return commitArticleGit(null, { stageAll: action === "commit-all", afterCommit: action === "commit-all" ? "" : action.slice(7) });
+      if (action === "discard") {
+        const path = button.dataset.gitPath;
+        const approved = await window.PortalUI.confirm({ title: "放弃文件更改", message: `放弃 ${path} 的未暂存更改？`, description: "已跟踪文件恢复到暂存区版本；未跟踪文件会被删除。此操作不可撤销。", confirmLabel: "放弃更改", tone: "danger" });
+        if (approved && state.selectedId === articleId) return runGitOperation("discard", { paths: [path] });
+      }
+      if (action === "branch") {
+        const choice = await chooseBranch();
+        if (choice && state.selectedId === articleId) return runGitOperation("branch", choice);
       }
     }
 
@@ -267,6 +383,8 @@
     function resetArticleGit() {
       articleGitRefresh.stop();
       articleGitHistoryRequested = false;
+      historyLimit = 40;
+      historyHasMore = false;
       state.gitStatus = null;
       state.gitHistory = [];
       renderArticleGitBadge();
@@ -444,14 +562,18 @@
       $("articleGitDiffLayout").setAttribute("aria-pressed", String(state.gitDiffSideBySide));
     }
 
-    async function openArticleGitDiff(path) {
-      const payload = await request(`/api/articles/${encodeURIComponent(state.selectedId)}/git/diff?path=${encodeURIComponent(path)}`);
+    async function openArticleGitDiff(path, staged = false) {
+      const articleId = state.selectedId;
+      const payload = await request(`/api/articles/${encodeURIComponent(articleId)}/git/diff?path=${encodeURIComponent(path)}&staged=${staged}`);
+      if (state.selectedId !== articleId) return;
       state.gitDiffPath = path;
-      renderArticleGitDiff(`${path} · 工作树变更`, String(payload.diff || ""), "该文件当前没有可显示的工作树差异。", { fallbackPath: path, scope: payload.scope || "" });
+      renderArticleGitDiff(`${path} · ${staged ? "已暂存的更改" : "未暂存的更改"}`, String(payload.diff || ""), payload.truncated ? "差异过大，已截断。" : "该文件当前没有可显示的差异。", { fallbackPath: path, scope: payload.scope || "" });
     }
 
     async function openArticleGitCommit(commitSha, shortSha, subject) {
-      const payload = await request(`/api/articles/${encodeURIComponent(state.selectedId)}/git/diff?commit=${encodeURIComponent(commitSha)}`);
+      const articleId = state.selectedId;
+      const payload = await request(`/api/articles/${encodeURIComponent(articleId)}/git/diff?commit=${encodeURIComponent(commitSha)}`);
+      if (state.selectedId !== articleId) return;
       const commit = payload.commit || {};
       const label = commit.short_sha || shortSha || commitSha.slice(0, 7);
       const message = commit.subject || subject || window.PortalI18n.t("(无提交信息)");
@@ -460,11 +582,11 @@
     }
 
     return Object.freeze({
-      articleGitRefresh, closeArticleGitDiff, commitArticleGit, initializeArticleGit, loadArticleGit,
+      articleGitRefresh, closeArticleGitDiff, commitArticleGit, handleArticleGitAction, initializeArticleGit, loadArticleGit,
       openArticleGitCommit, openArticleGitDiff, pullArticleGit, renderArticleGitDiffFile, resetArticleGit,
       scheduleArticleGitRefresh, toggleArticleGitDiffLayout, unregisteringArticles, updateArticleGitStage,
     });
   }
 
-  window.PortalArticleWorkspaceGit = Object.freeze({ createGit, dependencies: DEPENDENCIES });
+  window.PortalArticleWorkspaceGit = Object.freeze({ createGit, graphRows, dependencies: DEPENDENCIES });
 })();
