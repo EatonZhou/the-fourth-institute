@@ -177,14 +177,17 @@
       });
     }
 
-    async function loadFiles() {
+    async function loadFiles({ isCurrent = () => true, signal } = {}) {
       if (!state.selectedId) return;
-      const payload = await request(`/api/articles/${encodeURIComponent(state.selectedId)}/files`);
-      if (payload.id !== state.selectedId) return;
-      state.files = Array.isArray(payload.entries) ? payload.entries : [];
+      const payload = await request(`/api/articles/${encodeURIComponent(state.selectedId)}/files`, { signal });
+      if (!isCurrent() || payload.id !== state.selectedId) return false;
+      const entries = Array.isArray(payload.entries) ? payload.entries : [];
+      if (JSON.stringify(entries) === JSON.stringify(state.files)) return false;
+      state.files = entries;
       state.filesByPath = new Map(state.files.map(entry => [String(entry.path || ""), entry]));
       renderFileTree();
       renderSettings();
+      return true;
     }
 
     function currentDirectory() {

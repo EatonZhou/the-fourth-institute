@@ -89,6 +89,41 @@ const tick = () => new Promise(resolve => setImmediate(resolve));
   assert.equal(refreshed.$('articleSourceEditor').value, 'typed during network');
   assert.equal(refreshed.owner.hasDirtyDocuments(), true);
   assert.equal(refreshed.state.documents.get('main.tex').source, 'typed during network');
+  assert.match(refreshed.toasts.at(-1), /未保存修改/);
+
+  const stable = setup();
+  stable.state.source = stable.state.savedSource = 'saved text';
+  stable.$('articleSourceEditor').value = 'saved text';
+  stable.state.filesByPath = new Map([['main.tex', {}]]);
+  const original = stable.state.documents.get('main.tex');
+  original.revision = 'same'; original.diskVersion = '123:10';
+  const unchanged = stable.owner.refreshArticleDocuments('article_current');
+  stable.requests[0].resolve({ version: '123', size: 10 }); await unchanged;
+  assert.equal(stable.requests.length, 1, 'unchanged metadata does not read content');
+  assert.equal(stable.state.documents.get('main.tex'), original, 'unchanged file keeps model and undo history');
+
+  const touched = stable.owner.refreshArticleDocuments('article_current');
+  stable.requests.at(-1).resolve({ version: '124', size: 10 }); await tick();
+  stable.requests.at(-1).resolve({ content: 'saved text', revision: 'same' }); await touched;
+  assert.equal(stable.state.documents.get('main.tex'), original, 'identical content after a touch does not replace model');
+
+  const saveRace = stable.owner.refreshArticleDocuments('article_current');
+  stable.requests.at(-1).resolve({ version: '125', size: 10 }); await tick();
+  original.revision = 'newly-saved';
+  stable.requests.at(-1).resolve({ content: 'outdated response', revision: 'old' }); await saveRace;
+  assert.equal(stable.state.documents.get('main.tex'), original, 'a completed save invalidates older reads');
+
+  const draft = setup();
+  draft.state.filesByPath = new Map();
+  await draft.owner.refreshArticleDocuments('article_current');
+  await draft.owner.refreshArticleDocuments('article_current');
+  assert.equal(draft.toasts.length, 1, 'remote deletion warns only once while preserving draft');
+  assert.equal(draft.$('articleSourceEditor').value, 'unsaved text');
+
+  const staleRefresh = stable.owner.refreshArticleDocuments('article_current');
+  stable.state.selectedId = 'article_elsewhere';
+  stable.requests.at(-1).resolve({ version: '126', size: 10 }); await staleRefresh;
+  assert.equal(stable.state.documents.get('main.tex'), original, 'stale Article read cannot change documents');
 
   const removed = setup();
   removed.state.source = removed.state.savedSource = 'saved text';

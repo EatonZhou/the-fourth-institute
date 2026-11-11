@@ -321,6 +321,7 @@
         source,
         savedSource: source,
         revision: String(payload.revision || ""),
+        diskVersion: `${payload.version || ""}:${payload.size ?? ""}`,
         modifiedAt: String(payload.modified_at || ""),
         version: 1,
         model: null,
@@ -412,23 +413,44 @@
       }
     }
 
-    async function refreshArticleDocuments(articleId) {
+    async function refreshArticleDocuments(articleId, { isCurrent = () => state.selectedId === articleId, signal } = {}) {
+      if (!isCurrent()) return false;
+      let changed = false;
       captureActiveDocument();
       for (const path of [...state.openTabs]) {
-        if (state.selectedId !== articleId) return;
+        if (!isCurrent()) return false;
         const previous = state.documents.get(path);
-        if (!previous || previous.linked || documentIsDirty(previous)) continue;
+        if (!previous || previous.linked || previous.session?.snapshot?.().saving) continue;
+        const revision = previous.revision;
         let payload = null;
+        let diskVersion = "deleted";
         if (state.filesByPath.has(path)) {
           const url = `/api/articles/${encodeURIComponent(articleId)}/file?path=${encodeURIComponent(path)}`;
-          payload = await request(`${url}&meta=1`);
-          if (state.selectedId !== articleId) return;
-          if (window.PortalPreviewContract.isTextDocument(payload)) payload = { ...payload, ...await request(url) };
+          payload = await request(`${url}&meta=1`, { signal });
+          if (!isCurrent()) return false;
+          diskVersion = `${payload.version || ""}:${payload.size ?? ""}`;
+          // Unchanged files keep their model, undo history and cursor intact.
+          if (payload.version && diskVersion === previous.diskVersion) continue;
+          if (documentIsDirty(previous) && diskVersion === previous.externalChangeVersion) continue;
+          if (window.PortalPreviewContract.isTextDocument(payload)) payload = { ...payload, ...await request(url, { signal }) };
         }
-        if (state.selectedId !== articleId) return;
+        if (!isCurrent()) return false;
         captureActiveDocument();
-        // A draft can appear while the pull or file read is in flight.
-        if (state.documents.get(path) !== previous || documentIsDirty(previous)) continue;
+        // A save or draft can appear while the file read is in flight.
+        if (state.documents.get(path) !== previous || previous.revision !== revision || previous.session?.snapshot?.().saving) continue;
+        if (payload?.revision && payload.revision === previous.revision) {
+          previous.diskVersion = diskVersion;
+          previous.externalChangeVersion = "";
+          continue;
+        }
+        if (documentIsDirty(previous)) {
+          if (previous.externalChangeVersion !== diskVersion) {
+            previous.externalChangeVersion = diskVersion;
+            showToast(window.PortalI18n.text`${path} 已在其他地方更新或删除；已保留你的未保存修改，请核对后再保存。`, "warning");
+          }
+          continue;
+        }
+        changed = true;
         const tabs = [...state.openTabs];
         const active = state.openFile === path;
         if (active) {
@@ -441,7 +463,7 @@
         state.openTabs = state.openTabs.filter(item => item !== path);
         if (payload) {
           const updated = presentArticleDocument(path, payload, { activate: false });
-          updated.version = previous.version + 1;
+          updated.version = (previous.version || 0) + 1;
           updated.viewState = previous.viewState;
           updated.viewMode = previous.viewMode;
           updated.scrollTop = previous.scrollTop;
@@ -456,8 +478,11 @@
           else showEmptyEditor();
         }
       }
-      renderDocumentTabs();
-      scheduleTexlabSync(60);
+      if (changed) {
+        renderDocumentTabs();
+        scheduleTexlabSync(60);
+      }
+      return changed;
     }
 
     async function openArticleFile(path, options = {}) {

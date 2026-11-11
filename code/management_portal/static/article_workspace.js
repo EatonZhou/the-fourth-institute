@@ -298,11 +298,9 @@
     refreshAfterPull: async articleId => {
       if (state.selectedId !== articleId) return;
       closeArticleGitDiff();
-      await loadFiles();
+      articleContentRefresh.start();
+      await articleContentRefresh.refresh({ force: true });
       if (state.selectedId !== articleId) return;
-      await refreshArticleDocuments(articleId);
-      if (state.selectedId !== articleId) return;
-      await loadSemanticIndex();
       detailResourceGuest.changed({ resourceId: articleId });
     },
   });
@@ -324,6 +322,7 @@
     renderFileTree: (...args) => renderFileTree(...args), renderPdf: (...args) => renderPdf(...args),
     renderSemanticNavigation: (...args) => renderSemanticNavigation(...args),
     renderSettings: (...args) => renderSettings(...args), request, resetArticleGit, scheduleArticleGitRefresh,
+    scheduleArticleContentRefresh: (...args) => scheduleArticleContentRefresh(...args),
     selectedArticle, setArticleResourceSearchOpen, setOutputView: (...args) => setOutputView(...args),
     setProjectMenu, setTexlabStatus, showPdfError: (...args) => showPdfError(...args), showToast, state,
     updateSemanticUrl, updateUrl,
@@ -385,6 +384,24 @@
     updateAllEditorMarkers: (...args) => updateAllEditorMarkers(...args),
   });
 
+  const articleContentRefresh = window.PortalRefreshCoordinator.create({
+    key: () => state.selectedId,
+    interval: 5000,
+    initialDelay: 5000,
+    shouldRefresh: () => !!state.selectedId && !unregisteringArticles.has(state.selectedId),
+    fetch: async context => {
+      const filesChanged = await loadFiles(context);
+      if (!context.isCurrent()) return;
+      const documentsChanged = await refreshArticleDocuments(context.key, context);
+      if (context.isCurrent() && (filesChanged || documentsChanged)) await loadSemanticIndex();
+    },
+  });
+  function scheduleArticleContentRefresh(delay = 120) {
+    if (!state.selectedId) return;
+    articleContentRefresh.start();
+    articleContentRefresh.invalidate({ delay });
+  }
+
   const {
     searchProject,
   } = articleModule("PortalArticleWorkspaceSearch").createSearch({
@@ -437,6 +454,7 @@
   });
 
   articleModule("PortalArticleWorkspaceEvents").createEvents({
+    articleContentRefresh, scheduleArticleContentRefresh,
     $, activeDocument, articleEntryDialog, articleGitRefresh, articleRegisterDialog, askBuildDiagnostic,
     bindArticlePdfGestures, bringCurrentContextToChat, captureActiveDocument, closeArticleGitDiff,
     commitArticleGit, compileArticle, createEntry, currentArticleCompilePopover, currentArticleProjectPopover,

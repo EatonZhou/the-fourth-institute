@@ -12,7 +12,7 @@
     "detailHistory", "detailResourceGuest", "documentIsDirty", "esc", "hasDirtyDocuments", "loadArticleChat",
     "loadArticleGit", "loadBuild", "loadFiles", "loadSemanticIndex", "loadSettings", "openArticleFile",
     "queryState", "renderBuildSummary", "renderCompileMenu", "renderFileTree", "renderPdf",
-    "renderSemanticNavigation", "renderSettings", "request", "resetArticleGit", "scheduleArticleGitRefresh",
+    "renderSemanticNavigation", "renderSettings", "request", "resetArticleGit", "scheduleArticleGitRefresh", "scheduleArticleContentRefresh",
     "selectedArticle", "setArticleResourceSearchOpen", "setOutputView", "setProjectMenu", "setTexlabStatus",
     "showPdfError", "showToast", "state", "updateSemanticUrl", "updateUrl",
   ]);
@@ -25,7 +25,7 @@
       detailHistory, detailResourceGuest, documentIsDirty, esc, hasDirtyDocuments, loadArticleChat,
       loadArticleGit, loadBuild, loadFiles, loadSemanticIndex, loadSettings, openArticleFile, queryState,
       renderBuildSummary, renderCompileMenu, renderFileTree, renderPdf, renderSemanticNavigation,
-      renderSettings, request, resetArticleGit, scheduleArticleGitRefresh, selectedArticle,
+      renderSettings, request, resetArticleGit, scheduleArticleGitRefresh, scheduleArticleContentRefresh, selectedArticle,
       setArticleResourceSearchOpen, setOutputView, setProjectMenu, setTexlabStatus, showPdfError, showToast,
       state, updateSemanticUrl, updateUrl,
     } = dependencies;
@@ -273,6 +273,7 @@
         else detailHistory.open(id);
       }
       state.selectedId = id;
+      scheduleArticleContentRefresh(5000);
       state.buildPreflight = null;
       state.stopRequested = false;
       state.queuedCompile = null;
@@ -302,6 +303,8 @@
         if (id !== state.selectedId) return false;
         const primary = state.settings?.primary_file || articleRoot()?.primary_file || selectedArticle()?.primary_file;
         if (primary) await openArticleFile(primary);
+        if (id !== state.selectedId) return false;
+        scheduleArticleContentRefresh(5000);
         if (state.sideView === "chat") loadArticleChat().catch(error => showToast(error.message || error, "warning"));
         detailResourceGuest.setResource({ resourceId: id });
         detailResourceGuest.ready();

@@ -8,7 +8,7 @@
   // compile and PDF controls, Portal change events, leaving the page and
   // browser history navigation.
   const DEPENDENCIES = Object.freeze([
-    "$", "activeDocument", "articleEntryDialog", "articleGitRefresh", "articleRegisterDialog",
+    "$", "activeDocument", "articleContentRefresh", "scheduleArticleContentRefresh", "articleEntryDialog", "articleGitRefresh", "articleRegisterDialog",
     "askBuildDiagnostic", "bindArticlePdfGestures", "bringCurrentContextToChat", "captureActiveDocument",
     "closeArticleGitDiff", "commitArticleGit", "compileArticle", "createEntry",
     "currentArticleCompilePopover", "currentArticleProjectPopover", "currentArticleWorkbench",
@@ -31,7 +31,7 @@
     const missing = DEPENDENCIES.filter(name => dependencies?.[name] === undefined);
     if (missing.length) throw new Error(`PortalArticleWorkspaceEvents is missing: ${missing.join(", ")}`);
     const {
-      $, activeDocument, articleEntryDialog, articleGitRefresh, articleRegisterDialog, askBuildDiagnostic,
+      $, activeDocument, articleContentRefresh, scheduleArticleContentRefresh, articleEntryDialog, articleGitRefresh, articleRegisterDialog, askBuildDiagnostic,
       bindArticlePdfGestures, bringCurrentContextToChat, captureActiveDocument, closeArticleGitDiff,
       commitArticleGit, compileArticle, createEntry, currentArticleCompilePopover,
       currentArticleProjectPopover, currentArticleWorkbench, detailHistory, flushArticleNavigationPreference,
@@ -359,13 +359,20 @@
     window.addEventListener("portal:change", event => {
       const detail = event?.detail || {};
       const changed = Object.values(detail.resource_projection_changes || {}).flat();
-      if (detail.snapshot_required || changed.includes(state.selectedId)) scheduleArticleGitRefresh(120);
+      if (detail.snapshot_required || changed.includes(state.selectedId)) {
+        scheduleArticleGitRefresh(120);
+        scheduleArticleContentRefresh();
+      }
     });
     window.addEventListener("portal:events-ready", event => {
       if (event?.detail?.snapshot_required) {
         scheduleArticleGitRefresh(0);
+        scheduleArticleContentRefresh(0);
       }
     });
+    window.addEventListener("focus", () => scheduleArticleContentRefresh(0));
+    window.addEventListener("pagehide", () => articleContentRefresh.stop());
+    window.addEventListener("pageshow", () => scheduleArticleContentRefresh(0));
     window.addEventListener("beforeunload", event => {
       articleGitRefresh.stop();
       captureActiveDocument();
