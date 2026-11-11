@@ -146,6 +146,10 @@
         const btn = event.target.closest("button[data-mode]");
         if (btn) setMode(btn.dataset.mode);
       });
+      $("returnToPaperList")?.addEventListener("click", () => setMode("list-return"));
+      $("registeredFilter")?.addEventListener("change", event => {
+        setMode(event.target.value === "today" ? "today" : "library");
+      });
       $("workspaceDetailsToggle")?.addEventListener("click", event => {
         const toggle = event.currentTarget;
         const expanded = toggle.getAttribute("aria-expanded") !== "true";
@@ -259,6 +263,7 @@
             mode: "reader",
             selectedId: row.dataset.paperId || "",
           }));
+          if (isCollectionMode()) state.listScrollTop = $("workspaceMain")?.scrollTop || 0;
           loadDetail(row.dataset.paperId).then(() => {
             if (isCollectionMode()) setMode("reader");
           }).catch(alertError);
@@ -500,6 +505,7 @@
     // The Library search box and filters.
     function bindSearchEvents() {
       $("searchInput").addEventListener("input", event => {
+        state.mode = "library";
         state.query = event.target.value;
         state.activeSemanticSearchId = "";
         state.semanticSearch?.clearActive?.({ notify: false });
@@ -512,7 +518,8 @@
       $("clearLibraryFiltersBtn").addEventListener("click", () => {
         $("searchInput").value = "";
         $("searchInput").dispatchEvent(new Event("input", { bubbles: true }));
-        for (const id of ["yearFilter", "venueFilter", "tagFilter", "projectFilter"]) $(id).value = "";
+        for (const id of ["yearFilter", "venueFilter", "tagFilter", "projectFilter", "registeredFilter"]) if ($(id)) $(id).value = "";
+        state.mode = "library";
         state.filters = {};
         clearTimeout(state.searchTimer);
         writeUiState();
@@ -520,6 +527,7 @@
       });
       [["yearFilter", "year"], ["venueFilter", "venue"], ["tagFilter", "tag"], ["projectFilter", "project"]].forEach(([id, key]) => {
         $(id).addEventListener("change", event => {
+          if (!isCollectionMode()) state.mode = "library";
           state.filters[key] = event.target.value;
           writeUiState();
           loadLibrary({ keepDetail: false }).catch(alertError);

@@ -61,7 +61,7 @@
     const idId = String(options.idId || "").trim();
     const titleClass = String(options.titleClass || "").trim();
     const copyLabel = resourceCopyLabel(resourceId, identity.copy_label || identity.copyLabel);
-    const typeHtml = type
+    const typeHtml = type && options.showType !== false
       ? window.PortalI18n.html`<span class="portalResourceIdentitySeparator" aria-hidden="true">|</span><span class="portalResourceIdentityType"${typeId ? ` id="${escapeHtml(typeId)}"` : ""}>${escapeHtml(type)}</span>`
       : "";
     const idHtml = resourceId

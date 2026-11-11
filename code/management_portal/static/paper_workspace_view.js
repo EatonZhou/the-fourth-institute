@@ -53,6 +53,7 @@
         copy_label: isSearch ? "search_id" : "paper_id",
       }, {
         headingTag: "div",
+        showType: false,
         titleClass: "workspaceTitle",
         titleId: "workspaceTitle",
         idId: "workspaceResourceId",
@@ -135,7 +136,7 @@
         return;
       }
       const workspaceTitle = isLibraryMode
-        ? (semantic ? window.PortalI18n.text`Search: ${semantic.query || window.PortalI18n.t("Semantic search")}` : (collection ? window.PortalI18n.text`Collect: ${collection.direction || window.PortalI18n.t("Paper collection")}` : (state.mode === "today" ? "Today" : window.PortalI18n.t("Paper Library"))))
+        ? (semantic ? window.PortalI18n.text`Search: ${semantic.query || window.PortalI18n.t("Semantic search")}` : (collection ? window.PortalI18n.text`Collect: ${collection.direction || window.PortalI18n.t("Paper collection")}` : (state.mode === "today" ? "今日新增" : "全库")))
         : (paper?.title || window.PortalI18n.t("Paper Research"));
       renderPaperResourceIdentity(workspaceTitle, isLibraryMode ? semantic : paper);
       const summaryText = isLibraryMode

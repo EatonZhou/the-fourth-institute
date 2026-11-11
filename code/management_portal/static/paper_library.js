@@ -28,8 +28,9 @@
       delete state.filters.favorite;
       const params = new URLSearchParams({ compact: "1", preview_limit: "100" });
       if (state.query) params.set("q", state.query);
-      if (state.mode === "library" && activeSemanticSearchHasResults()) params.set("semantic", state.activeSemanticSearchId);
-      if (state.mode === "library" && !activeSemanticSearchHasResults() && activeCollectorJobHasResults()) params.set("collector", state.activeCollectorJobId);
+      if (state.mode === "library" && state.activeSemanticSearchId
+          && (activeSemanticSearchHasResults() || !isSemanticSearchReady())) params.set("semantic", state.activeSemanticSearchId);
+      if (state.mode === "library" && !params.has("semantic") && activeCollectorJobHasResults()) params.set("collector", state.activeCollectorJobId);
       if (state.mode === "today") params.set("registered", "today");
       ["year", "venue", "tag", "project"].forEach(key => {
         const value = state.filters[key];

@@ -166,11 +166,11 @@
       const papers = state.library?.papers || [];
       const visiblePapers = papers.slice(0, state.libraryRenderLimit);
       $("workspaceMain").innerHTML = window.PortalI18n.html`
-          <div class="overviewGrid">
+          ${state.mode === "library" && !state.activeSemanticSearchId && !state.activeCollectorJobId && !state.query && !Object.values(state.filters || {}).some(Boolean) ? window.PortalI18n.html`<div class="overviewGrid">
             <div class="metric"><div class="metricValue">${summary.paper_count || 0}</div><div class="metricLabel">Registered papers</div></div>
             <div class="metric"><div class="metricValue">${summary.analysis_count || 0}</div><div class="metricLabel">Analysis ready</div></div>
             <div class="metric"><div class="metricValue">${summary.review_count || 0}</div><div class="metricLabel">AI reviews</div></div>
-          </div>
+          </div>` : ""}
           <div class="paperList">
             ${visiblePapers.length ? visiblePapers.map(renderPaperRow).join("") : paperStateHtml(window.PortalI18n.t("No paper matches current filters."))}
           </div>

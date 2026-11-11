@@ -84,7 +84,31 @@
     }
 
     async function setMode(mode) {
+      if (mode === "list-return") {
+        if (!await cancelPdfRendering()) return;
+        state.mode = state.listReturn?.mode || "library";
+        if (state.listReturn) Object.assign(state, state.listReturn.selection);
+        try {
+          const address = new URL(window.location.href);
+          address.searchParams.delete("paper");
+          if (state.activeSemanticSearchId) address.searchParams.set("semantic", state.activeSemanticSearchId);
+          else address.searchParams.delete("semantic");
+          history.replaceState(history.state || {}, "", address.href);
+        } catch (_) { /* The list is still usable when URL rewriting is unavailable. */ }
+        syncModeTabs();
+        writeUiState();
+        renderWorkspace();
+        requestAnimationFrame(() => { if ($("workspaceMain")) $("workspaceMain").scrollTop = state.listReturn?.scrollTop || 0; });
+        return;
+      }
       const previousMode = state.mode;
+      if (isCollectionMode(previousMode) && !isCollectionMode(mode)) {
+        state.listReturn = {mode: previousMode, scrollTop: state.listScrollTop ?? $("workspaceMain")?.scrollTop ?? 0,
+          selection: {library: state.library, query: state.query, filters: {...state.filters},
+            activeSemanticSearchId: state.activeSemanticSearchId, activeCollectorJobId: state.activeCollectorJobId,
+            libraryRenderLimit: state.libraryRenderLimit}};
+        delete state.listScrollTop;
+      }
       state.requestedChatWorkspaceId = "";
       if (mode !== "reader" && !await cancelPdfRendering()) return;
       // Explicit navigation leaves a saved-result view; history clicks set their
@@ -141,6 +165,11 @@
     }
 
     function syncModeTabs() {
+      const list = isCollectionMode(state.mode);
+      if ($("registeredFilter")) $("registeredFilter").value = state.mode === "today" || (!list && state.listReturn?.mode === "today") ? "today" : "";
+      if ($("modeTabs")) { $("modeTabs").hidden = list; $("modeTabs").style.display = list ? "none" : ""; }
+      const back = $("returnToPaperList");
+      if (back) back.hidden = list;
       const isCcf = state.leftFace === "ccf";
       const activeMode = isCcf && !["library", "reader"].includes(state.mode) ? "library" : state.mode;
       document.querySelectorAll("#modeTabs button[data-mode]").forEach(btn => {
