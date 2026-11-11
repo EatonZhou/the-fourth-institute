@@ -234,14 +234,22 @@ class ChatReads:
         clean = str(message_id or "").strip()
         if not clean:
             return []
+        return self.message_agent_ids_many([clean]).get(clean, [])
+
+    def message_agent_ids_many(self, message_ids: Sequence[str]) -> dict[str, list[str]]:
+        """Candidate owners of selected identities; each still needs visibility validation."""
+        found = {}
         with self.database.read() as connection:
-            rows = connection.execute(
-                "SELECT DISTINCT agent.agent_id FROM chat_message_positions position "
-                "JOIN agents agent ON agent.trace_sequence_id=position.sequence_id "
-                "WHERE position.message_id=%s AND position.source_kind<>'sync' "
-                "ORDER BY agent.agent_id", (clean,),
-            ).fetchall()
-        return [str(row["agent_id"]) for row in rows]
+            for chunk in in_batches(list(dict.fromkeys(message_ids))):
+                rows = connection.execute(
+                    "SELECT DISTINCT position.message_id,agent.agent_id FROM chat_message_positions position "
+                    "JOIN agents agent ON agent.trace_sequence_id=position.sequence_id "
+                    "WHERE position.message_id=ANY(%s) AND position.source_kind<>'sync' "
+                    "ORDER BY position.message_id,agent.agent_id", (chunk,),
+                ).fetchall()
+                for row in rows:
+                    found.setdefault(str(row['message_id']), []).append(str(row['agent_id']))
+        return found
 
     def chat_traces(self, agent_ids: Sequence[str]) -> dict[str, str]:
         """Each Agent's trace, its message projection current; an Agent that never had one is left out.

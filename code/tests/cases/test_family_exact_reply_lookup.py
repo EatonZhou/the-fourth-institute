@@ -9,6 +9,39 @@ from tests.cases.test_family_facade import facade, _register_test_member, MEMBER
 from tests.cases.resident_execution_test_support import input_delivery, resident_record  # noqa: F401
 
 
+def test_reply_batch_shares_facts_and_revalidates_reassignment(facade, monkeypatch):
+    from management_common.postgres_database import PostgresConnection
+    _register_test_member(facade, 'worker')
+    repo = resident_conversation_stream.get_repository()
+    outer = build_message('user', 'synthetic', 'CASE-A')
+    repo.append_message(facade['resident_id'], outer)
+    repo.set_input_state(facade['resident_id'], outer['message_id'], 'queued')
+    inner = build_message('user', 'synthetic', 'CASE-A')
+    inner['business_ref'] = family_facade.relay_mark(facade['resident_id'], outer['message_id'])
+    repo.append_message(MEMBER, inner)
+    family_facade.complete_relay((facade['resident_id'], outer['message_id']), MEMBER, inner['message_id'])
+    identities = []
+    for _ in range(50):
+        message = build_message('agent', 'synthetic', MEMBER)
+        message['reply_to_message_id'] = inner['message_id']
+        repo.append_message(MEMBER, message)
+        identities.append(message['message_id'])
+    queries = []
+    original = PostgresConnection.execute
+    def counted(self, statement, *args, **kwargs):
+        queries.append(statement)
+        return original(self, statement, *args, **kwargs)
+    monkeypatch.setattr(PostgresConnection, 'execute', counted)
+    found = family_facade.relayed_replies(facade, identities)
+    assert set(found) == set(identities)
+    assert {item['worker_id'] for item in found.values()} == {MEMBER}
+    assert len(queries) < 100
+    store = get_lineage_data_store()
+    with store.family_relays.transaction(facade['lineage_id'], facade['resident_id']) as ledger:
+        ledger['links'][outer['message_id']]['message_id'] = 'msg_reassigned'
+    assert family_facade.relayed_replies(facade, identities) == {}
+
+
 @pytest.mark.parametrize("nested", [False, True])
 @pytest.mark.parametrize("history", [0, 1000])
 def test_exact_reply_is_bounded_by_relay_depth(facade, monkeypatch, nested, history):

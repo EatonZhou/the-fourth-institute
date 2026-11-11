@@ -30,6 +30,7 @@ does not answer it.
 from __future__ import annotations
 
 import logging
+import time
 from collections.abc import Iterable, Mapping
 from typing import Any
 
@@ -272,7 +273,8 @@ def _native_waiting(holder: str, message: Mapping[str, Any], repository: Any) ->
 
 
 def _waiting(row: Mapping[str, Any], place_record: Mapping[str, Any] | None, repository: Any,
-             question_states: Mapping[tuple[str, str], str] | None = None) -> bool:
+             question_states: Mapping[tuple[str, str], str] | None = None,
+             relay_replies: Mapping[tuple[str, str], Any] | None = None) -> bool:
     """Whether the asking message still waits, as its holder and the place it opens at see it now."""
 
     from . import family_facade
@@ -282,7 +284,8 @@ def _waiting(row: Mapping[str, Any], place_record: Mapping[str, Any] | None, rep
         return False
     if place != holder:
         # The facade must still show this member message, through a relay it keeps.
-        found = family_facade.relayed_reply(place_record, message_id)
+        found = (family_facade.relayed_reply(place_record, message_id) if relay_replies is None
+                 else relay_replies.get((place, message_id)))
         if found is None or found["worker_id"] != holder:
             return False
         if row["kind"] != "question_set" and family_facade.project_input_state(
@@ -326,17 +329,38 @@ def list_user_pending_requests(actor: str) -> dict[str, list[dict[str, Any]]]:
         return {"requests": []}
     store = get_lineage_data_store()
     repository = resident_conversation_stream.get_repository()
+    started = time.perf_counter()
     _repair(store, repository)
+    repaired = time.perf_counter()
     with store.database.read() as connection:
         rows = connection.execute(
             f"SELECT {COLUMNS} FROM {TABLE} WHERE user_id=%s ORDER BY created_at, source_message_id",
             (_user_key(user),),
         ).fetchall()
+    indexed = time.perf_counter()
     records: dict[str, dict[str, Any] | None] = {}
     question_states = repository.question_set_states([
         (str(row['source_resident_id']), str(row['source_message_id']))
         for row in rows if row['kind'] == 'question_set'
     ])
+    questions_read = time.perf_counter()
+    from . import family_facade
+    for row in rows:
+        place = str(row['resident_id'])
+        if place not in records:
+            records[place] = resident_record_domain.find_resident(place)
+    records_read = time.perf_counter()
+    by_place: dict[str, list[str]] = {}
+    for row in rows:
+        if row['resident_id'] != row['source_resident_id']:
+            by_place.setdefault(str(row['resident_id']), []).append(str(row['source_message_id']))
+    relay_replies = {}
+    for place, identities in by_place.items():
+        if records[place] is not None:
+            relay_replies.update({(place, identity): reply for identity, reply in
+                                  family_facade.relayed_replies(records[place], identities).items()})
+    relays_read = time.perf_counter()
+    auth_seconds = 0.0
     answerable: dict[tuple[str, str], bool] = {}
     finished: list[tuple[str, str, str]] = []
     result: list[dict[str, Any]] = []
@@ -346,7 +370,7 @@ def list_user_pending_requests(actor: str) -> dict[str, list[dict[str, Any]]]:
             records[place] = resident_record_domain.find_resident(place)
         place_record = records[place]
         try:
-            waiting = _waiting(row, place_record, repository, question_states)
+            waiting = _waiting(row, place_record, repository, question_states, relay_replies)
         except KeyError:
             waiting = False
         if not waiting:
@@ -354,7 +378,9 @@ def list_user_pending_requests(actor: str) -> dict[str, list[dict[str, Any]]]:
             continue
         permission_key = (place, str(row['kind']))
         if permission_key not in answerable:
+            auth_started = time.perf_counter()
             answerable[permission_key] = _may_answer(place_record, row['kind'], user)
+            auth_seconds += time.perf_counter() - auth_started
         if not answerable[permission_key]:
             continue
         created_at = row["created_at"]
@@ -374,6 +400,17 @@ def list_user_pending_requests(actor: str) -> dict[str, list[dict[str, Any]]]:
             "(SELECT * FROM unnest(%s::text[], %s::text[], %s::text[]))",
             ([item[0] for item in finished], [item[1] for item in finished], [item[2] for item in finished]),
         ))
+    ended = time.perf_counter()
+    if ended - started >= 0.25:
+        LOGGER.warning(
+            'Pending requests read slow rows=%d places=%d family_rows=%d permission_keys=%d '
+            'total_ms=%.1f repair_ms=%.1f index_ms=%.1f questions_ms=%.1f records_ms=%.1f '
+            'relay_ms=%.1f filter_ms=%.1f auth_ms=%.1f',
+            len(rows), len(records), sum(map(len, by_place.values())), len(answerable),
+            (ended-started)*1000, (repaired-started)*1000, (indexed-repaired)*1000,
+            (questions_read-indexed)*1000, (records_read-questions_read)*1000,
+            (relays_read-records_read)*1000, (ended-relays_read-auth_seconds)*1000, auth_seconds*1000,
+        )
     return {"requests": result}
 
 

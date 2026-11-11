@@ -984,7 +984,106 @@ def projected_reply(facade: Mapping[str, Any], message_id: str) -> dict[str, Any
     return _facade_reply(resident_lineage.resident_id(facade), found["reply"], relay, found["request_message_id"], channel=channel)
 
 
+class _ReplyLookup:
+    """One read's selected reply messages and current relay facts, never a global cache."""
+
+    def __init__(self, repository, identities):
+        self.repository = repository
+        self.owners = repository.agent_data.chat.message_agent_ids_many(identities)
+        self.messages = {}
+        self.groups = {}
+        self.sources = {}
+        self.edges = {}
+        self.carried = {}
+        self.graph = _RelayBatch({})
+        by_owner = {}
+        for identity, owners in self.owners.items():
+            for owner in owners:
+                by_owner.setdefault(owner, []).append(identity)
+        for owner, messages in by_owner.items():
+            self.load(owner, messages)
+        # The replies often belong to the same input. Read those inputs once.
+        for owner, messages in by_owner.items():
+            parents = [self.reply_to(self.message(owner, identity)) for identity in messages]
+            self.load(owner, [identity for identity in parents if identity])
+        self.load_edges({source for message in self.messages.values() if message
+                         if (source := parse_relay_mark(message.get('business_ref', ''))) is not None})
+
+    def load_edges(self, sources):
+        from management_common.json_columns import json_value
+        missing = [source for source in sources if source not in self.edges]
+        wanted = [(resident_lineage.lineage_id(record), owner, identity)
+                  for owner, identity in missing
+                  if is_facade(record := self.graph.record(owner))]
+        self.edges.update({source: {} for source in missing})
+        if not wanted:
+            return
+        with get_lineage_data_store().database.read() as connection:
+            rows = connection.execute(
+                "SELECT requested.resident_id,requested.message_id,"
+                "relay.relay_json::jsonb #> ARRAY['links',requested.message_id] AS link "
+                "FROM unnest(%s::text[],%s::text[],%s::text[]) "
+                "requested(lineage_id,resident_id,message_id) "
+                "JOIN family_relays relay USING(lineage_id,resident_id)",
+                tuple(list(column) for column in zip(*wanted)),
+            ).fetchall()
+        for row in rows:
+            link = json_value(row['link']) if row['link'] is not None else {}
+            if isinstance(link, Mapping):
+                self.edges[(row['resident_id'], row['message_id'])] = link
+
+    def load(self, owner, identities):
+        missing = list(dict.fromkeys(identity for identity in identities if (owner, identity) not in self.messages))
+        if missing:
+            found = self.repository.messages.stored_messages(owner, missing)
+            self.messages.update({(owner, identity): found.get(identity) for identity in missing})
+
+    def message(self, owner, identity):
+        from .resident_conversation_records import message_from_storage
+        self.load(owner, [identity])
+        stored = self.messages[(owner, identity)]
+        return message_from_storage(stored) if stored is not None else None
+
+    @staticmethod
+    def reply_to(reply):
+        reply = reply or {}
+        return str(reply.get('conversation_context', {}).get('request_message_id')
+                   or reply.get('display_reply_to_message_id') or reply.get('reply_to_message_id') or '')
+
+    def members(self, owner, identity):
+        key = (owner, identity)
+        if key not in self.groups:
+            self.groups[key] = resident_mailbox.members_of({'resident_id': owner}, identity)
+        return self.groups[key]
+
+    def source(self, owner, identity):
+        key = (owner, identity)
+        if key not in self.sources:
+            self.load(owner, [identity])
+            source = parse_relay_mark((self.messages[key] or {}).get('business_ref', ''))
+            valid = None
+            if source is not None and is_facade(self.graph.record(source[0])):
+                self.load_edges([source])
+                link = self.edges[source]
+                if (link.get('resident_id'), link.get('message_id')) == key:
+                    valid = source
+            self.sources[key] = valid
+        return self.sources[key]
+
+
+def relayed_replies(facade: Mapping[str, Any], message_ids) -> dict[str, dict[str, Any]]:
+    """Selected replies, validating every relay edge with shared request-local facts."""
+    identities = list(dict.fromkeys(str(identity or '').strip() for identity in message_ids if str(identity or '').strip()))
+    lookup = _ReplyLookup(resident_conversation_stream.get_repository(), identities)
+    return {identity: found for identity in identities
+            if (found := _relayed_reply(facade, identity, lookup)) is not None}
+
+
 def relayed_reply(facade: Mapping[str, Any], message_id: str) -> dict[str, Any] | None:
+    return relayed_replies(facade, [message_id]).get(str(message_id or '').strip())
+
+
+def _relayed_reply(facade: Mapping[str, Any], message_id: str, lookup) -> dict[str, Any] | None:
     """A member message shown in the facade Conversation: the request it answers, who took it, and the message.
 
     Every Agent message a member writes answering a relayed request shows,
@@ -997,28 +1096,33 @@ def relayed_reply(facade: Mapping[str, Any], message_id: str) -> dict[str, Any] 
     if not clean:
         return None
     repository = resident_conversation_stream.get_repository()
-    found = _reply_by_source(facade, clean, repository)
+    found = _reply_by_source(facade, clean, repository, lookup)
     if found is not None:
         return found
     # Historical inputs can lack relay marks. Preserve their projection,
     # sharing graph facts across requests rather than hydrating every path.
-    carried: dict[str, dict[str, tuple[str, str, list[str]]]] = {}
-    links = relay_links(facade)
-    batch = _RelayBatch(links)
-    for request_id, link in links.items():
-        member_id = str(link.get("resident_id") or "")
-        via, (worker_id, worker_message_id) = batch.holders[request_id]
-        carried.setdefault(worker_id, {})[worker_message_id] = (request_id, member_id, via)
+    facade_id = resident_lineage.resident_id(facade)
+    if facade_id not in lookup.carried:
+        carried = {}
+        links = relay_links(facade)
+        for request_id, link in links.items():
+            member_id = str(link.get('resident_id') or '')
+            via, (worker_id, worker_message_id) = lookup.graph.holder(member_id, str(link.get('message_id') or ''))
+            carried.setdefault(worker_id, {})[worker_message_id] = (request_id, member_id, via)
+        lookup.carried[facade_id] = carried
+        for worker_id in carried:
+            lookup.load(worker_id, list(lookup.owners))
+    carried = lookup.carried[facade_id]
     # A message lives in one Conversation: each Resident doing the Family's work is read once.
     for worker_id, requests in carried.items():
-        reply = repository.message(worker_id, clean)
+        reply = lookup.message(worker_id, clean)
         if reply is None or (reply.get("role") != "agent" and not reply.get("conversation_context")):
             continue
         reply_to = str(reply.get("conversation_context", {}).get("request_message_id")
                        or reply.get("display_reply_to_message_id") or reply.get("reply_to_message_id") or "")
         found = requests.get(reply_to)
         if found is None:
-            members = resident_mailbox.members_of({"resident_id": worker_id}, reply_to)
+            members = lookup.members(worker_id, reply_to)
             candidates = [(worker_id, item) for item in requests if item in members]
             sources = resident_mailbox.InputProjection(candidates, repository).reply_sources()
             found = next((requests[key[1]] for key, source in sources.items() if source[1] == reply_to), None)
@@ -1030,7 +1134,7 @@ def relayed_reply(facade: Mapping[str, Any], message_id: str) -> dict[str, Any] 
     return None
 
 
-def _reply_by_source(facade, message_id, repository):
+def _reply_by_source(facade, message_id, repository, lookup):
     """Invert one reply's durable relay chain, without visiting other requests.
 
     An identity lookup only finds candidates. Every edge must be both the
@@ -1039,20 +1143,20 @@ def _reply_by_source(facade, message_id, repository):
     """
     facade_id = resident_lineage.resident_id(facade)
     matches = []
-    owners = repository.agent_data.chat.message_agent_ids(message_id)
+    owners = lookup.owners.get(message_id, [])
     if len(owners) != 1:
         # Repeated identities across Chats retain the ledger's original
         # ordering; a global candidate lookup must not choose their owner.
         return None
     for worker_id in owners:
-        reply = repository.message(worker_id, message_id)
+        reply = lookup.message(worker_id, message_id)
         if not reply or (reply.get("role") != "agent" and not reply.get("conversation_context")):
             continue
         reply_to = str(reply.get("conversation_context", {}).get("request_message_id")
                        or reply.get("display_reply_to_message_id") or reply.get("reply_to_message_id") or "")
         if not reply_to:
             continue
-        members = resident_mailbox.members_of({"resident_id": worker_id}, reply_to)
+        members = lookup.members(worker_id, reply_to)
         if members:
             # Mixed legacy/current marks in a shared group cannot establish
             # the ledger's chosen request from just one reverse chain.
@@ -1061,7 +1165,7 @@ def _reply_by_source(facade, message_id, repository):
         via = []
         seen = {current}
         for _ in range(MAX_RELAY_HOPS):
-            source = _reply_relay_source(*current, repository)
+            source = lookup.source(*current)
             if source is None or source in seen:
                 break
             seen.add(source)
@@ -1072,29 +1176,6 @@ def _reply_by_source(facade, message_id, repository):
             via.append(source[0])
             current = source
     return matches[0] if len(matches) == 1 else None
-
-
-def _reply_relay_source(member_id, input_id, repository):
-    from management_common.json_columns import json_value
-    from . import resident_record_domain
-
-    source = parse_relay_mark(repository.message_business_ref(member_id, input_id))
-    if source is None:
-        return None
-    record = resident_record_domain.find_resident_for_admission(source[0])
-    if not is_facade(record):
-        return None
-    # Read exactly one ledger edge, not the complete historical JSON document.
-    with get_lineage_data_store().database.read() as connection:
-        row = connection.execute(
-            "SELECT relay_json::jsonb #> %s::text[] AS link FROM family_relays "
-            "WHERE lineage_id=%s AND resident_id=%s",
-            (["links", source[1]], resident_lineage.lineage_id(record), source[0]),
-        ).fetchone()
-    link = json_value(row["link"]) if row and row["link"] is not None else {}
-    if not isinstance(link, Mapping):
-        return None
-    return source if (link.get("resident_id"), link.get("message_id")) == (member_id, input_id) else None
 
 
 def projection_targets(event: Mapping[str, Any]) -> list[str]:
