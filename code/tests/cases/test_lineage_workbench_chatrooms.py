@@ -1,5 +1,6 @@
 """The Chatrooms side view of the lineage page through production JavaScript."""
 from pathlib import Path
+import json
 import subprocess
 
 
@@ -8,5 +9,21 @@ def test_lineage_workbench_chatrooms():
     source = Path(__file__).with_name("javascript") / "lineage_workbench_chatrooms.cjs"
     result = subprocess.run(
         ["node", "--test", str(source)], capture_output=True, text=True, timeout=60,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_chatroom_attachment_quotes_in_browser():
+    """纯图片、文件的右键引用、预览、发送和原消息跳转使用真实浏览器交互。
+
+    :importance: P1
+    :design: decision_a6bebf4ac283
+    """
+    from management_portal.resources.portal import portal_route_script
+
+    result = subprocess.run(
+        ["node", str(Path(__file__).with_name("javascript") / "chatroom_attachment_quotes.browser.cjs")],
+        input=json.dumps({"routeScript": portal_route_script().decode()}),
+        capture_output=True, text=True, timeout=60,
     )
     assert result.returncode == 0, result.stdout + result.stderr

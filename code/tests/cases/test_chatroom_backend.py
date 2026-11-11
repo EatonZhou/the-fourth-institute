@@ -349,6 +349,31 @@ def test_a_quote_names_a_message_of_this_chatroom_and_reaches_the_called_residen
             chatroom_backend.post_message(BOB, chatroom_id, text("引用不成立"), quote=wrong)
 
 
+@pytest.mark.parametrize("kind, body", [("image", ""), ("file", ""), ("image", "看这张图"), ("file", "长正文" * 500)])
+def test_attachment_messages_can_be_quoted_without_copying_the_upload(lineage, kind, body):
+    """纯附件及图文消息可引用；服务端保留附件说明、源消息定位和作者提及。
+
+    :importance: P1
+    :design: decision_a6bebf4ac283, decision_c524c775e0be
+    """
+    room = chatroom_backend.create_chatroom(ALICE, [BOB])["chatroom_id"]
+    lineage.uploads["upload_aa"] = {"created_by": ALICE, "target": room, "ready": True,
+                                     "file_name": "方案.png" if kind == "image" else "方案.pdf",
+                                     "media_type": "image/png" if kind == "image" else "application/pdf", "size": 12}
+    source = chatroom_backend.post_message(ALICE, room, [*text(body), {"type": kind, "upload_id": "upload_aa"}])["message"]
+    reply = chatroom_backend.post_message(BOB, room, text("收到"), quote={"message_id": source["message_id"]})["message"]
+    quote = reply["quote"]
+    assert quote["message_id"] == source["message_id"] and quote["author_id"] == ALICE
+    assert quote["text"].endswith("[图片] 方案.png" if kind == "image" else "[文件] 方案.pdf")
+    assert len(quote["text"]) <= 1000
+    if body:
+        assert quote["text"].startswith(body[:10])
+    assert chatroom_backend.get_chatroom(ALICE, room)["last_message"]["mentioned_users"] == [ALICE]
+    assert all(part["type"] == "text" for part in reply["content_parts"])
+    shown = chatroom_backend.list_messages(BOB, room)["messages"][-1]
+    assert shown["quote"] == quote
+
+
 def test_quoting_a_user_mentions_them_even_when_muted_without_marking_it_read(lineage):
     """引用其他成员自动提及，沿用个人免打扰例外和未读定位；读取提醒不推进已读。
 

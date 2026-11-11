@@ -4,7 +4,7 @@ The sender names only the quoted message.  The platform checks that the
 message shows in the same Conversation - in a Family facade's Conversation a
 member reply shown there and the facade's record of a message it sent out
 count too - and that the sender can read it, then fills in the quoted
-message's author and the opening of its text.  The quote never changes after
+message's author, opening text and attachment descriptions. The quote never changes after
 that.  The Resident that receives the message reads the author and the
 excerpt before the message's own text.
 """
@@ -19,14 +19,23 @@ from . import family_facade, resident_access, resident_conversation_stream
 
 
 def quote_text(message: Mapping[str, Any]) -> str:
-    """The opening of a message's text, as much as a quote carries."""
+    """A bounded excerpt, reserving room for image/file names even beside long text.
 
+    Attachment descriptions are a snapshot, not copied media or access grants.
+    The quote's message ID remains the way to open the original content.
+    """
+
+    parts = [part for part in message.get("content_parts") or [] if isinstance(part, Mapping)]
     text = "\n".join(
         str(part.get("text") or "")
-        for part in message.get("content_parts") or []
-        if isinstance(part, Mapping) and part.get("type") == "text"
+        for part in parts if part.get("type") == "text"
     ).strip()
-    return text[:MAX_QUOTE_TEXT].rstrip()
+    attachments = "\n".join(
+        f"[{({'image': '图片', 'file': '文件'})[part['type']]}] {str(part.get('name') or '').strip()}".rstrip()
+        for part in parts if part.get("type") in ("image", "file")
+    )[:MAX_QUOTE_TEXT // 2].rstrip()
+    budget = MAX_QUOTE_TEXT - len(attachments) - (1 if attachments else 0)
+    return "\n".join(filter(None, (text[:budget].rstrip(), attachments)))
 
 
 def _shown(record: Mapping[str, Any], message_id: str) -> dict[str, Any] | None:
@@ -40,7 +49,7 @@ def _shown(record: Mapping[str, Any], message_id: str) -> dict[str, Any] | None:
 
 
 def quote_of(record: Mapping[str, Any], message_id: str) -> dict[str, str]:
-    """The quote of one message shown in a Resident's Conversation; empty when it shows no such message with text."""
+    """A shown message's quote; empty when there is no text, image or file to quote."""
 
     shown = _shown(record, message_id) if message_id else None
     text = quote_text(shown) if shown else ""
@@ -95,7 +104,7 @@ def accept(
         raise PermissionError("发送者不能读取被引用的消息")
     quote = quote_of(record, quoted_id)
     if not quote:
-        raise ValueError(f"被引用的消息不在这段对话中，或没有正文：{quoted_id}")
+        raise ValueError(f"被引用的消息不在这段对话中，或没有可引用的正文或附件：{quoted_id}")
     return quote
 
 

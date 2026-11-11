@@ -91,6 +91,44 @@ test('Chatroom cold links and in-page Mailbox navigation preserve the exact mess
   assert.equal(new URL(page.window.location.href).searchParams.has('message'), false, 'room-only navigation clears a stale message target');
 });
 
+test('image and file messages have quote actions, attachment excerpts and original-message links', async t => {
+  const page = startWorkbenchPage({ answers: { '/api/me': { username: 'fixture' } } });
+  const root = page.document.createElement('div');
+  page.document.body.append(root);
+  const view = page.window.PortalChatroomView.mount({ root, me: 'fixture' });
+  t.after(async () => { view.destroy(); await page.close(); });
+  view.room = room('1', { permissions: { can_post: true } });
+  view.chatroomId = view.room.chatroom_id;
+  const workspace = page.window.PortalChatWorkspace;
+  for (const [index, kind, text, name] of [[1, 'image', '', '图.png'], [2, 'file', '', '方案.pdf'],
+    [3, 'image', '看图', '<img onerror=alert(1)>.png'], [4, 'file', '😀'.repeat(1001), 'plan.pdf']]) {
+    const source = { message_id: `msg_media_${index}`, ordinal: index, author_id: 'alice', role: 'user',
+      content_parts: [{ type: 'text', text }, { type: kind, upload_id: 'upload_aa', name }] };
+    view.mergeMessages([source]); view.apply();
+    assert.ok(root.querySelector(`[data-portal-message-key="${source.message_id}"] [data-portal-message-action="quote"]`), 'the rendered media message offers quoting');
+    await view.messageAction('quote', source);
+    const excerpt = view.controller.quote().text;
+    const label = `[${kind === 'image' ? '图片' : '文件'}] ${name}`;
+    assert.ok(excerpt.endsWith(label));
+    assert.ok(Array.from(excerpt).length <= 1000);
+    if (text) assert.ok(excerpt.startsWith(Array.from(text).slice(0, 5).join('')));
+    assert.equal(root.querySelector('.composerQuoteText').textContent, excerpt);
+    assert.equal(root.querySelector('.composerQuoteText img'), null, 'attachment names are plain text');
+    assert.equal(view.controller.draftText(), '@alice ', 'quoting still mentions the author once');
+    const reply = { message_id: `msg_reply_${index}`, ordinal: 10 + index, author_id: 'fixture', role: 'user',
+      content_parts: [{ type: 'text', text: '收到' }], quote: view.controller.quote() };
+    view.mergeMessages([reply]); view.apply();
+    const jump = root.querySelector(`[data-message-quote="${source.message_id}"]`);
+    assert.ok(jump);
+    jump.click();
+    await page.until(() => root.querySelector('.messageQuoteTarget')?.dataset.messageKey === source.message_id);
+    assert.ok(!view.messageMenuHtml({ ...source, retracted_at: 'now' }).includes('action="quote"'));
+    assert.ok(!view.messageMenuHtml({ ...source, pending: true }).includes('action="quote"'));
+  }
+  assert.equal(workspace.messageQuotable({ message_id: 'msg_tool', content_parts: [{ type: 'tool_call' }] }), false);
+  assert.deepEqual(page.errors, []);
+});
+
 test('quoting authors adds named mentions to the real composer without duplicate or self pings', async t => {
   const page = startWorkbenchPage({ answers: { '/api/me': { username: 'fixture' } } });
   const root = page.document.createElement('div');

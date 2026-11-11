@@ -88,6 +88,26 @@ def test_a_user_message_quotes_a_message_of_its_conversation_and_the_platform_fi
     assert _stored(resident, sent["message_id"])["quote"] == quote
 
 
+@pytest.mark.parametrize("kind, expected", [("image", "[图片] diagram.png"), ("file", "[文件] diagram.png")])
+def test_a_quote_of_an_attachment_uses_the_shared_excerpt_contract(delivery_resident, kind, expected):
+    """引用附件沿用相同权限与消息 ID 合同，摘要不复制上传或暴露存储地址。
+
+    :importance: P1
+    :design: decision_c524c775e0be
+    """
+    resident = delivery_resident["resident_id"]
+    source = "msg_00000000000000a3"
+    _say(resident, source, "", content_parts=[{"type": kind, "name": "diagram.png", "path": "/private/diagram.png"}])
+    sent = run("DeliverMessage", {"resident_id": resident, "message": {
+        **_text("看这里"), "quote": {"message_id": source}}}, actor="sample_admin").raise_for_error()
+    assert _stored(resident, sent["message_id"])["quote"] == {
+        "message_id": source, "author_id": resident, "text": expected}
+    parts = [{"type": "text", "text": "😀" * 1001}, {"type": kind, "name": "diagram.png"}]
+    excerpt = message_quotes.quote_text({"content_parts": parts})
+    assert len(excerpt) == 1000 and excerpt.endswith("\n" + expected)
+    assert message_quotes.quote_text({"content_parts": [{"type": kind}]}) == expected.split(" ")[0]
+
+
 def test_a_quote_names_one_message_with_text_that_the_sender_can_read_in_the_same_conversation(delivery_resident,
                                                                                               monkeypatch):
     """引用只能指向同一对话中发送者能读、有正文的一条消息

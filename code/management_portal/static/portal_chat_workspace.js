@@ -3596,6 +3596,7 @@
     residentHandoffParts,
     messageRole,
     messageQuoteExcerpt,
+    messageQuotable,
     residentMessageFooter,
     noticeQueueCleared,
     formatTokenCount,

@@ -35,11 +35,6 @@
       .trim();
   }
 
-  // A shown message with text can be quoted or forwarded; the server fills the quote's author and excerpt.
-  function actionable(item) {
-    return !item?.retracted_at && !item?.pending && Boolean(String(item?.message_id || "").trim()) && Boolean(messageText(item));
-  }
-
   function sameUser(left, right) {
     return Boolean(left) && String(left).toLowerCase() === String(right || "").toLowerCase();
   }
@@ -279,7 +274,10 @@
     messageMenuHtml(item) {
       if (item.retracted_at || item.pending) return "";
       const buttons = [];
-      if (actionable(item)) buttons.push('<button type="button" data-portal-message-action="quote">引用回复</button><button type="button" data-portal-message-action="forward">转发…</button>');
+      if (window.PortalChatWorkspace.messageQuotable(item)) {
+        buttons.push('<button type="button" data-portal-message-action="quote">引用回复</button>');
+        if (messageText(item)) buttons.push('<button type="button" data-portal-message-action="forward">转发…</button>');
+      }
       if (["user", "assistant"].includes(item.role)) buttons.push(`<div class="chatroomReactionChoices" role="group" aria-label="表情回应">${REACTIONS.map(emoji => `<button type="button" data-portal-message-action="react:${emoji}" aria-label="回应 ${emoji}" title="${emoji}">${emoji}</button>`).join("")}</div>`);
       if (item.can_edit) buttons.push('<button type="button" data-portal-message-action="edit">编辑消息</button>');
       if (item.can_retract) buttons.push('<button type="button" data-portal-message-action="retract">撤回消息</button>');
@@ -324,7 +322,7 @@
         const emoji = action.slice(6);
         return this.mutateMessage("UpdateChatroomReaction", item, { emoji, active: !item.reactions?.find(reaction => reaction.emoji === emoji)?.active });
       }
-      if (!actionable(item)) return false;
+      if (!window.PortalChatWorkspace.messageQuotable(item)) return false;
       if (action === "quote") {
         const author = String(item.author_id || "");
         const id = /^resident_[0-9a-f]{12}$/.test(author) ? author
@@ -345,7 +343,7 @@
           text: window.PortalChatWorkspace.messageQuoteExcerpt(item),
         });
       }
-      if (action !== "forward") return false;
+      if (action !== "forward" || !messageText(item)) return false;
       const chatroomId = this.chatroomId;
       return window.PortalChatWorkspace.openResidentForwardDialog([{
         chatroom_id: chatroomId,

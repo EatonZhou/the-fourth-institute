@@ -148,7 +148,7 @@
 
   // Quote replies (decision_f560803947c6, decision_c524c775e0be): a message with a body
   // can be quoted. The sender names only the quoted message; the platform fills in its
-  // author and the opening of its text, shown above the new message's body.
+  // author, opening text and attachment descriptions, shown above the new body.
   const MESSAGE_QUOTE_TEXT_LIMIT = 1000;
 
   function messageQuoteExcerpt(item) {
@@ -156,11 +156,17 @@
     const text = parts
       ? parts.filter(part => part?.type === "text").map(part => String(part.text || "")).join("\n")
       : String(item?.content || "");
-    return text.trim().slice(0, MESSAGE_QUOTE_TEXT_LIMIT).trimEnd();
+    // Keep this excerpt contract aligned with society_service/message_quotes.py.
+    // Reserve space for attachments so long text cannot hide their presence.
+    const attachmentText = (parts || []).filter(part => ["image", "file"].includes(part?.type))
+      .map(part => `[${part.type === "image" ? "图片" : "文件"}] ${String(part.name || "").trim()}`.trimEnd()).join("\n");
+    const attachments = Array.from(attachmentText).slice(0, MESSAGE_QUOTE_TEXT_LIMIT / 2).join("").trimEnd();
+    const budget = MESSAGE_QUOTE_TEXT_LIMIT - Array.from(attachments).length - (attachments ? 1 : 0);
+    return [Array.from(text.trim()).slice(0, budget).join("").trimEnd(), attachments].filter(Boolean).join("\n");
   }
 
   function messageQuotable(item) {
-    return !item?.pending && !!String(item?.message_id || "").trim() && !!messageQuoteExcerpt(item);
+    return !item?.retracted_at && !item?.pending && !!String(item?.message_id || "").trim() && !!messageQuoteExcerpt(item);
   }
 
   function messageCopyText(article, raw) {
@@ -314,7 +320,7 @@
 
     function commonMessageActionsHtml(item, key, options = {}, firstAgentReply = false) {
       const content = String(item?.content || "");
-      if (!content) return "";
+      if (!content && !messageQuotable(item)) return "";
       const customItems = options.renderMessageMenuItems
         ? String(options.renderMessageMenuItems(item, key) || "")
         : "";

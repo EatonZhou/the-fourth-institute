@@ -41,6 +41,7 @@ def test_retraction_hides_body_attachments_quotes_and_reactions(lineage):
     edited = rooms.edit_message(ALICE, room, original['message_id'], '修改正文', expected_version=original['version'])['message']
     assert edited['content_parts'][1]['upload_id'] == 'upload_aa'
     quoted = rooms.post_message(BOB, room, text('收到'), quote={'message_id': original['message_id']})['message']
+    assert quoted['quote']['text'] == '修改正文\n[文件] 方案.pdf'
     rooms.react_message(BOB, room, original['message_id'], '👍', active=True)
     with pytest.raises(PermissionError):
         rooms.retract_message(BOB, room, original['message_id'], expected_version=edited['version'])

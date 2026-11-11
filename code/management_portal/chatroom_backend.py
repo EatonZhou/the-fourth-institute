@@ -958,7 +958,7 @@ def _quote(chatroom_id: str, requested: object, message_id: str) -> dict[str, st
 
     The same rules as a quote reply in a Resident Conversation
     (decision_c524c775e0be): only ``message_id`` is given, the author and the
-    opening text are filled in once and never change.
+    opening text and attachment descriptions are filled in once and never change.
     """
 
     if requested is None or requested == {}:
@@ -970,7 +970,7 @@ def _quote(chatroom_id: str, requested: object, message_id: str) -> dict[str, st
         raise ValueError("quote.message_id 需要指向这个聊天室中的另一条消息")
     quote = _message_quote(_agent_data().chat_message(chatroom_id, quoted_id))
     if not quote:
-        raise ValueError(f"被引用的消息不在这个聊天室中，或没有正文：{quoted_id}")
+        raise ValueError(f"被引用的消息不在这个聊天室中，或没有可引用的正文或附件：{quoted_id}")
     return quote
 
 
