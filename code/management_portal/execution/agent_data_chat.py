@@ -166,16 +166,22 @@ def message_contents(connection: Any, identities: Sequence[str]) -> dict[str, An
 
 
 def group_source_members(connection: Any, sequence_id: str, message_ids: Sequence[str]) -> list[Any]:
+    return group_source_members_for_traces(connection, [(sequence_id, message) for message in message_ids])
+
+
+def group_source_members_for_traces(connection: Any, requests: Sequence[tuple[str, str]]) -> list[Any]:
     """Accepted sources of groups in this trace, oldest grouping operation first.
 
     A consumed source has no current ordinal. Its content stays immutable;
     the latest recorded grouping owns the current grouping. Start from the
     indexed message identities, never a scan of the rendered trace.
     """
-    if not message_ids or not sequence_id:
+    if not requests:
         return []
+    sequence_ids = list(dict.fromkeys(sequence for sequence, _ in requests))
+    message_ids = list(dict.fromkeys(message for _, message in requests))
     return list(connection.execute(
-            "SELECT source.segment_id,source.metadata_json,member.ordinal AS group_ordinal, "
+            "SELECT source.segment_id,source.metadata_json,member.ordinal AS group_ordinal,member.sequence_id AS trace_sequence_id, "
             "source.metadata_json::jsonb#>>'{message,message_id}' AS member_id, "
             "target.metadata_json::jsonb#>>'{message,message_id}' AS group_id "
             "FROM (SELECT segment_id,metadata_json FROM segments "
@@ -187,11 +193,14 @@ def group_source_members(connection: Any, sequence_id: str, message_ids: Sequenc
             "SELECT relation.target_segment_id UNION SELECT revision.target_segment_id "
             "FROM versions JOIN segment_relations revision ON revision.source_segment_id=versions.segment_id "
             "WHERE revision.relation_type IN ('transformed_from','merged_from')) "
-            "SELECT member.ordinal FROM versions JOIN sequence_segments member USING(segment_id) "
-            "JOIN segments current USING(segment_id) WHERE member.sequence_id=%s "
+            "SELECT member.ordinal,member.sequence_id FROM versions JOIN sequence_segments member USING(segment_id) "
+            "JOIN segments current USING(segment_id) WHERE member.sequence_id=ANY(%s) "
+            "AND EXISTS (SELECT 1 FROM unnest(%s::text[],%s::text[]) requested(sequence_id,message_id) "
+            "WHERE requested.sequence_id=member.sequence_id "
+            "AND requested.message_id=source.metadata_json::jsonb#>>'{message,message_id}') "
             "AND current.metadata_json::jsonb#>>'{message,message_id}'=target.metadata_json::jsonb#>>'{message,message_id}') member ON TRUE "
             "ORDER BY relation.created_at,member.ordinal,source.segment_id",
-            (list(message_ids), sequence_id),
+            (message_ids, sequence_ids, [sequence for sequence, _ in requests], [message for _, message in requests]),
         ).fetchall())
 
 
@@ -628,25 +637,31 @@ class ChatReads:
     def trace_chat_messages(self, agent_id: str, message_ids: Sequence[str]) -> dict[str, dict[str, Any]]:
         """Messages of the Agent's trace by identity, wherever they stand in it (a clear does not hide them)."""
 
-        requested = list(dict.fromkeys(str(item or "").strip() for item in message_ids if str(item or "").strip()))
+        return {message: value for (_, message), value in
+                self.trace_chat_messages_many([(agent_id, identity) for identity in message_ids]).items()}
+
+    def trace_chat_messages_many(self, requests: Sequence[tuple[str, str]]) -> dict[tuple[str, str], dict[str, Any]]:
+        """Selected trace occurrences across holders, with payload projection shared by each batch."""
+        requested = list(dict.fromkeys((agent, str(message or '').strip()) for agent, message in requests if str(message or '').strip()))
         if not requested:
             return {}
-        found: dict[str, dict[str, Any]] = {}
+        found: dict[tuple[str, str], dict[str, Any]] = {}
         with self.database.read() as connection:
-            sequence_id = self._chat_trace(agent_id)
-            if not sequence_id:
-                return {}
-            for chunk in in_batches(requested):
+            traces = self.chat_traces(list(dict.fromkeys(agent for agent, _ in requested)))
+            pairs = [(agent, message, traces[agent]) for agent, message in requested if agent in traces]
+            for chunk in in_batches(pairs):
                 # Each message's newest shown position.
                 rows = connection.execute(
-                    f"SELECT DISTINCT ON (position.message_id) {_POSITION_ROW} FROM chat_message_positions position "
-                    "WHERE position.message_id = ANY(%s) AND position.sequence_id = %s "
+                    f"SELECT DISTINCT ON (requested.agent_id,position.message_id) requested.agent_id AS requested_owner,{_POSITION_ROW} "
+                    "FROM unnest(%s::text[],%s::text[],%s::text[]) requested(agent_id,message_id,sequence_id) "
+                    "JOIN chat_message_positions position ON position.sequence_id=requested.sequence_id "
+                    "AND position.message_id=requested.message_id WHERE TRUE "
                     f"AND position.source_kind <> 'sync' AND {SHOWN_POSITION} "
-                    "ORDER BY position.message_id, position.ordinal DESC",
-                    (list(chunk), sequence_id),
+                    "ORDER BY requested.agent_id,position.message_id,position.ordinal DESC",
+                    tuple(list(column) for column in zip(*chunk)),
                 ).fetchall()
-                for message in self.messages_from_rows(rows):
-                    found[str(message["message_id"])] = message
+                for row, message in zip(rows, self.messages_from_rows(rows)):
+                    found[(str(row['requested_owner']), str(message['message_id']))] = message
         return found
 
     def group_source_message(self, agent_id: str, message_id: str) -> dict[str, Any] | None:
@@ -654,14 +669,26 @@ class ChatReads:
         return self.group_source_messages(agent_id, [message_id]).get(message_id)
 
     def group_source_messages(self, agent_id: str, message_ids: Sequence[str]) -> dict[str, dict[str, Any]]:
+        return {message: value for (_, message), value in
+                self.group_source_messages_many([(agent_id, identity) for identity in message_ids]).items()}
+
+    def group_source_messages_many(self, requests: Sequence[tuple[str, str]]) -> dict[tuple[str, str], dict[str, Any]]:
         found = {}
+        wanted = list(dict.fromkeys(requests))
+        if not wanted:
+            return found
         with self.database.read() as connection:
-            sequence_id = trace_id(connection, agent_id)
-            for chunk in in_batches(list(dict.fromkeys(message_ids))):
-                rows = group_source_members(connection, sequence_id, chunk)
+            traces = self.chat_traces(list(dict.fromkeys(agent for agent, _ in wanted)))
+            for chunk in in_batches(wanted):
+                owners = {}
+                for agent, message in chunk:
+                    if agent in traces:
+                        owners.setdefault((traces[agent], message), []).append(agent)
+                rows = group_source_members_for_traces(connection, list(owners))
                 contents = message_contents(connection, [row['segment_id'] for row in rows])
                 for row in rows:
-                    found[row['member_id']] = chat_payload(row['segment_id'], row['metadata_json'], contents[row['segment_id']])
+                    for agent in owners.get((row['trace_sequence_id'], row['member_id']), []):
+                        found[(agent, row['member_id'])] = chat_payload(row['segment_id'], row['metadata_json'], contents[row['segment_id']])
         return found
 
     def message_groups(self, agent_id: str, message_ids: Sequence[str]) -> dict[str, str]:

@@ -59,6 +59,10 @@ def is_group_item(item: Mapping[str, Any]) -> bool:
 
 def _group_message_members(resident_id: str, group_id: str) -> list[str]:
     message = resident_conversation_stream.get_repository().message(resident_id, group_id) or {}
+    return _group_members_from_message(message)
+
+
+def _group_members_from_message(message: Mapping[str, Any]) -> list[str]:
     if str(message.get("author_id") or "") != "mailbox":
         return []
     return [
@@ -128,6 +132,32 @@ def members_of(record: Mapping[str, Any], group_id: str) -> list[str]:
     members = _group_message_members(resident_id, clean)
     groups = _groups_of(resident_id, members)
     return [member for member in members if groups.get(member) == clean]
+
+
+def members_of_many(requests) -> dict[tuple[str, str], list[str]]:
+    """Current group membership for selected inputs across holders, scoped to this read."""
+    wanted = list(dict.fromkeys(requests))
+    if not wanted:
+        return {}
+    result = {key: [] for key in wanted}
+    wanted_keys = set(wanted)
+    entries = get_lineage_data_store().mailbox_entries(
+        list({resident for resident, _ in wanted}), places=('group', 'pending'))
+    for entry in sorted(entries, key=lambda entry: entry['position']):
+        key = (entry['resident_id'], entry['group_id'])
+        if key in wanted_keys:
+            result[key].append(entry['message_id'])
+    missing = [key for key in wanted if not result[key]]
+    messages = resident_conversation_stream.get_repository().messages.stored_messages_many(missing)
+    groups = {key: _group_members_from_message(messages.get(key) or {}) for key in missing}
+    by_resident = {}
+    for (resident, _), members in groups.items():
+        by_resident.setdefault(resident, []).extend(members)
+    current = {resident: _groups_of(resident, list(dict.fromkeys(members)))
+               for resident, members in by_resident.items() if members}
+    for key, members in groups.items():
+        result[key] = [member for member in members if current.get(key[0], {}).get(member) == key[1]]
+    return result
 
 
 def _text(message: Mapping[str, Any]) -> str:

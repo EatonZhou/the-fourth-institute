@@ -74,23 +74,18 @@ class ConversationInputs:
         Read only selected sources and answer slots. Historical trace membership
         survives context reset, just as question_set_state requires.
         """
-        grouped: dict[str, list[str]] = {}
-        for resident, message in dict.fromkeys(requests):
-            grouped.setdefault(required_resident_id(resident), []).append(message)
+        wanted = list(dict.fromkeys((required_resident_id(resident), message) for resident, message in requests))
         result = {}
         unanswered = {}
-        for resident, identities in grouped.items():
-            sources = self.agent_data.trace_chat_messages(resident, identities)
-            questions = {identity: question_set(message_from_storage(message))
-                         for identity, message in sources.items()}
-            answers = {identity: value['answer_message_id'] for identity, value in questions.items() if value is not None}
-            stored = self.messages.stored_messages(resident, list(answers.values())) if answers else {}
-            for identity, answer in answers.items():
-                key = (resident, identity)
-                if answer in stored:
-                    result[key] = 'answered'
-                else:
-                    unanswered[key] = (resident, answer)
+        sources = self.agent_data.chat.trace_chat_messages_many(wanted)
+        questions = {key: question_set(message_from_storage(message)) for key, message in sources.items()}
+        answers = {key: (key[0], value['answer_message_id']) for key, value in questions.items() if value is not None}
+        stored = self.messages.stored_messages_many(list(answers.values()))
+        for key, answer in answers.items():
+            if answer in stored:
+                result[key] = 'answered'
+            else:
+                unanswered[key] = answer
         if unanswered:
             # Only the answer slot's cancellation code determines closure.
             # Work/reply projections cannot change this state and are not read.

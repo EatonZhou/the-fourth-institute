@@ -144,6 +144,29 @@ def test_withdraw_rolls_back_terminal_states_if_queue_write_fails(team, monkeypa
     assert _waiting(resident_id)[0]["user_message_id"] == group_id
 
 
+@pytest.mark.parametrize('delivered', [False, True])
+def test_batch_group_members_keep_waiting_and_consumed_sources_isolated(team, delivered):
+    from management_portal.society_service import resident_mailbox
+    resident_id, (head, a, b, _) = _queue(team)
+    merged = instruction(team, 'MergeMailboxItems', {'resident_id': resident_id, 'message_ids': [a, b]})
+    assert merged.status == 'committed'
+    group = merged.result['group_message_id']
+    repo = resident_conversation_stream.get_repository()
+    if delivered:
+        repo.append_message(resident_id, repo.state_store.mailbox_entry(resident_id, group)['message'])
+    missing = ('resident_eeeeeeeeeeee', group)
+    assert resident_mailbox.members_of_many([(resident_id, group), (resident_id, head), missing]) == {
+        (resident_id, group): [a, b], (resident_id, head): [], missing: []}
+    stored = repo.messages.stored_messages_many([(resident_id, a), (missing[0], a)])
+    assert (resident_id, a) in stored and (missing[0], a) not in stored
+    if delivered:
+        consumed = repo.agent_data.chat.group_source_messages_many([(resident_id, a), (missing[0], a)])
+        assert (resident_id, a) in consumed and (missing[0], a) not in consumed
+    else:
+        instruction(team, 'SplitMailboxItem', {'resident_id': resident_id, 'message_id': group}).raise_for_error()
+        assert resident_mailbox.members_of_many([(resident_id, group)]) == {(resident_id, group): []}
+
+
 def test_merge_puts_one_group_where_the_first_member_waited_and_split_restores_the_members(team):
     """合并后群体放在最早成员的位置，拆分后成员原样回到队列
 

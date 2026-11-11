@@ -354,11 +354,7 @@ def list_user_pending_requests(actor: str) -> dict[str, list[dict[str, Any]]]:
     for row in rows:
         if row['resident_id'] != row['source_resident_id']:
             by_place.setdefault(str(row['resident_id']), []).append(str(row['source_message_id']))
-    relay_replies = {}
-    for place, identities in by_place.items():
-        if records[place] is not None:
-            relay_replies.update({(place, identity): reply for identity, reply in
-                                  family_facade.relayed_replies(records[place], identities).items()})
+    relay_replies = family_facade.relayed_replies_many(records, by_place)
     relays_read = time.perf_counter()
     auth_seconds = 0.0
     answerable: dict[tuple[str, str], bool] = {}

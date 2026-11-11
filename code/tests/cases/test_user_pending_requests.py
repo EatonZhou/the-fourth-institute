@@ -22,6 +22,31 @@ from tests.cases.test_family_question_projection import question_round  # noqa: 
 CARD = '检查继续。\n```portal-question\n{"title":"选择测试范围？","options":["定向","全部"]}\n```'
 
 
+def test_question_batch_keeps_holder_identity_and_answer_slots(resident_record, allowed, monkeypatch):
+    from management_common.postgres_database import PostgresConnection
+    _register_test_member(resident_record, 'synthetic worker')
+    repo = resident_conversation_stream.get_repository()
+    holders = [resident_record['resident_id'], MEMBER]
+    sources = []
+    for holder in holders:
+        request = resident_input_queue_domain.build_message('user', 'synthetic', 'CASE-A')
+        repo.append_message(holder, request)
+        asked = resident_input_queue_domain.build_message('agent', CARD, holder, message_id='msg_' + 'e' * 32)
+        asked['reply_to_message_id'] = request['message_id']
+        sources.append(repo.append_message(holder, asked))
+    queries = []
+    execute = PostgresConnection.execute
+    def counted(self, statement, *args, **kwargs):
+        queries.append(statement)
+        return execute(self, statement, *args, **kwargs)
+    monkeypatch.setattr(PostgresConnection, 'execute', counted)
+    keys = [(holder, source['message_id']) for holder, source in zip(holders, sources)]
+    assert repo.question_set_states(keys) == dict.fromkeys(keys, 'open')
+    assert len(queries) < 20
+    _answer(repo, holders[0], sources[0])
+    assert repo.question_set_states(keys) == {keys[0]: 'answered', keys[1]: 'open'}
+
+
 def test_batch_question_states_preserve_answer_close_and_missing(resident_record, allowed):
     repo = resident_conversation_stream.get_repository()
     resident = resident_record['resident_id']

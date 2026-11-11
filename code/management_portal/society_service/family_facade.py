@@ -1000,12 +1000,12 @@ class _ReplyLookup:
         for identity, owners in self.owners.items():
             for owner in owners:
                 by_owner.setdefault(owner, []).append(identity)
-        for owner, messages in by_owner.items():
-            self.load(owner, messages)
+        self.load_many([(owner, identity) for owner, messages in by_owner.items() for identity in messages])
         # The replies often belong to the same input. Read those inputs once.
-        for owner, messages in by_owner.items():
-            parents = [self.reply_to(self.message(owner, identity)) for identity in messages]
-            self.load(owner, [identity for identity in parents if identity])
+        parents = [(owner, self.reply_to(self.message(owner, identity)))
+                   for owner, messages in by_owner.items() for identity in messages]
+        self.load_many([(owner, identity) for owner, identity in parents if identity])
+        self.groups.update(resident_mailbox.members_of_many([(owner, identity) for owner, identity in parents if identity]))
         self.load_edges({source for message in self.messages.values() if message
                          if (source := parse_relay_mark(message.get('business_ref', ''))) is not None})
 
@@ -1033,10 +1033,13 @@ class _ReplyLookup:
                 self.edges[(row['resident_id'], row['message_id'])] = link
 
     def load(self, owner, identities):
-        missing = list(dict.fromkeys(identity for identity in identities if (owner, identity) not in self.messages))
+        self.load_many([(owner, identity) for identity in identities])
+
+    def load_many(self, requests):
+        missing = list(dict.fromkeys(key for key in requests if key not in self.messages))
         if missing:
-            found = self.repository.messages.stored_messages(owner, missing)
-            self.messages.update({(owner, identity): found.get(identity) for identity in missing})
+            found = self.repository.messages.stored_messages_many(missing)
+            self.messages.update({key: found.get(key) for key in missing})
 
     def message(self, owner, identity):
         from .resident_conversation_records import message_from_storage
@@ -1073,10 +1076,20 @@ class _ReplyLookup:
 
 def relayed_replies(facade: Mapping[str, Any], message_ids) -> dict[str, dict[str, Any]]:
     """Selected replies, validating every relay edge with shared request-local facts."""
-    identities = list(dict.fromkeys(str(identity or '').strip() for identity in message_ids if str(identity or '').strip()))
-    lookup = _ReplyLookup(resident_conversation_stream.get_repository(), identities)
-    return {identity: found for identity in identities
-            if (found := _relayed_reply(facade, identity, lookup)) is not None}
+    facade_id = resident_lineage.resident_id(facade)
+    return {identity: reply for (_, identity), reply in
+            relayed_replies_many({facade_id: facade}, {facade_id: message_ids}).items()}
+
+
+def relayed_replies_many(facades, requests):
+    """Validate selected replies across facades using one request-local lookup."""
+    wanted = {place: list(dict.fromkeys(str(identity or '').strip() for identity in identities
+                                       if str(identity or '').strip())) for place, identities in requests.items()
+              if facades.get(place) is not None}
+    lookup = _ReplyLookup(resident_conversation_stream.get_repository(),
+                          list(dict.fromkeys(identity for identities in wanted.values() for identity in identities)))
+    return {(place, identity): found for place, identities in wanted.items() for identity in identities
+            if (found := _relayed_reply(facades[place], identity, lookup)) is not None}
 
 
 def relayed_reply(facade: Mapping[str, Any], message_id: str) -> dict[str, Any] | None:
