@@ -32,7 +32,7 @@
     function singlePaperId(target) {
       const match = /^paper:(paper_[0-9a-f]{12})$/.exec(target?.workspace_key || '');
       if (!match) return '';
-      if (target.paper_id && target.paper_id !== match[1]) throw Error('论文讨论已变化，请重新发送');
+      if (target.paper_id && target.paper_id !== match[1]) throw Error(window.PortalI18n.t('论文讨论已变化，请重新发送'));
       return match[1];
     }
 
@@ -54,12 +54,12 @@
           meta: "Ctrl/⌘ + Enter 发送",
           resolveResident: target => target.workspace_key?.startsWith('research:')
             ? paperApi.request('/chat-workspace/api/prepare',{method:'POST',body:JSON.stringify({surface:'paper',workspace_key:target.workspace_key,message:'展示研究助手',read_only:true,context:{expected_principal:state.principalId}})})
-            : paperApi.request(`/chat-workspace/api/session?surface=paper&workspace_key=${encodeURIComponent(target.workspace_key || "")}&paper_id=${encodeURIComponent(singlePaperId(target) || target.paper_id || "")}`),
+            : paperApi.request(`/chat-workspace/api/session?surface=paper&workspace_key=${encodeURIComponent(target.workspace_key || "")}&paper_id=${encodeURIComponent(singlePaperId(target))}`),
           resolveBeforeSend: (target, payload) => {
             if(!researchReady || (!state.researchSlot && !state.researchLegacyKey)) throw Error(window.PortalI18n.t('请选择或新建持续研究助手'));
             return paperApi.request("/chat-workspace/api/prepare", {
             method: "POST", body: JSON.stringify({ surface: "paper", workspace_key: target.workspace_key,
-              message: payload.text || payload.plainText, context: state.researchSlot ? researchPrepareContext() : singlePaperId(target) ? {paper_id:singlePaperId(target)} : { ...activeChatContext(), paper_id: target.paper_id } }),
+              message: payload.text || payload.plainText, context: target.workspace_key?.startsWith('research:') ? researchPrepareContext() : singlePaperId(target) ? {paper_id:singlePaperId(target)} : { ...activeChatContext(), paper_id: "" } }),
           }); },
           submissionContext: async target => {
             if(!researchReady) throw Error(window.PortalI18n.t('研究助手暂不可用，请重试'));
@@ -67,7 +67,7 @@
             if(state.researchSlot){
               const principal=state.principalId, key=activeChatWorkspaceId();
               const detail=await paperApi.request('/chat-workspace/api/prepare',{method:'POST',body:JSON.stringify({surface:'paper',workspace_key:key,message:'研究材料引用',context:researchPrepareContext()})});
-              if(principal!==state.principalId || key!==activeChatWorkspaceId() || detail.resident_id!==target.resident_id) throw Error('研究助手或账号已变化');
+              if(principal!==state.principalId || key!==activeChatWorkspaceId() || detail.resident_id!==target.resident_id) throw Error(window.PortalI18n.t('研究助手或账号已变化'));
               return detail.initial_context;
             }
             const surface = paperChatPanel?.surface?.();
@@ -77,15 +77,21 @@
             const current = () => principal === state.principalId && surface.workspace_key === activeChatWorkspaceId()
               && paperChatPanel?.surface?.()?.workspace_key === surface.workspace_key
               && paperChatPanel?.target?.()?.resident_id === target.resident_id;
-            if (!current()) throw Error('论文讨论已变化，请重新发送');
+            if (!current()) throw Error(window.PortalI18n.t('论文讨论已变化，请重新发送'));
             const detail = await paperApi.request('/chat-workspace/api/prepare', {method:'POST',body:JSON.stringify({surface:'paper',workspace_key:surface.workspace_key,message:'单篇讨论上下文',context:{paper_id:paperId}})});
-            if (!current() || detail.resident_id !== target.resident_id) throw Error('论文讨论已变化，请重新发送');
+            if (!current() || detail.resident_id !== target.resident_id) throw Error(window.PortalI18n.t('论文讨论已变化，请重新发送'));
             return {context_text:detail.initial_context?.context_text||''};
           },
           initialContext: (_target, detail) => state.researchSlot ? detail.initial_context : ({ context_text: singlePaperId(paperChatPanel?.surface?.()) ? (detail.initial_context?.context_text || "") : `${detail.initial_context?.context_text || ""}\n${JSON.stringify(activeChatContext())}` }),
 
           onDetail: detail => {
             state.chatMetadata = detail;
+            // Resident is the title owner, including changes made in shared Chat.
+            const resident=detail?.resident;
+            if(resident?.resident_id && resident.title){
+              for(const item of [...researchList,...legacyList])if(item.resident_id===resident.resident_id)item.title=resident.title;
+              if(state.researchSlot?.resident_id===resident.resident_id)state.researchSlot={...state.researchSlot,title:resident.title};
+            }
             state.chatSession = detail?.session || null;
             state.chatSessions = state.chatSession ? [state.chatSession] : [];
             state.chat = Array.isArray(detail?.messages) ? detail.messages : [];
@@ -94,7 +100,7 @@
             renderAssistantContext();
             updateChatComposerState();
           },
-          onError: alertError,
+          onError: error => { researchFailure=String(error.message||error);renderResearchOptions();alertError(error); },
         },
       };
     }
@@ -108,7 +114,7 @@
     }
 
     let researchNav = null, researchList = [], legacyList = [], researchSequence = 0;
-    let researchReady = false, researchFailure = '';
+    let researchReady = false, researchFailure = '', researchSelectionRevision = 0, researchRenameBusy = false;
     function mountResearchSelector() {
       const root = paperChatWorkspace?.root;
       if (!root || researchNav?.isConnected) return;
@@ -118,25 +124,29 @@
       window.addEventListener('portal:language-changed', renderResearchOptions);
       const select = document.createElement('select');
       select.className = 'portalControl';
+      select.style.flexBasis='100%'; // Keep both actions visible in narrow Chat panels.
       select.setAttribute('aria-label', window.PortalI18n.t('选择研究助手'));
       select.title = window.PortalI18n.t('选择研究助手');
       select.addEventListener('change', async () => {
+        const selectionRevision=++researchSelectionRevision, selectedValue=select.value;
         const principal = state.principalId;
         try {
-          if (select.value.startsWith('legacy:')) {
+          if (selectedValue.startsWith('legacy:')) {
+            await paperApi.request('/paper/api/research/chats/select', {method:'POST',body:JSON.stringify({workspace_key:selectedValue.slice(7),expected_principal:principal})});
+            if(principal!==state.principalId || selectionRevision!==researchSelectionRevision)return;
             state.researchSlot = null;
-            state.researchLegacyKey = select.value.slice(7);
+            state.researchLegacyKey = selectedValue.slice(7);
             state.requestedChatWorkspaceId = state.researchLegacyKey;
-          } else if (select.value) {
-            const endpoint=researchList.find(s=>s.slot_id===select.value)?.state==='unbound'?'retry':'select';
+          } else if (selectedValue) {
+            const endpoint=researchList.find(s=>s.slot_id===selectedValue)?.state==='unbound'?'retry':'select';
             const value = await paperApi.request('/paper/api/research/chats/'+endpoint, {method:'POST',
-              body:JSON.stringify({slot_id:select.value, expected_principal:principal})});
-            if (principal !== state.principalId) return;
+              body:JSON.stringify({slot_id:selectedValue, expected_principal:principal})});
+            if (principal !== state.principalId || selectionRevision!==researchSelectionRevision) return;
             state.researchSlot = value;
             state.researchLegacyKey = '';
             state.requestedChatWorkspaceId = '';
           } else return;
-          window.dispatchEvent(new CustomEvent('portal:paper-research-selected', {detail:{principal, slot:state.researchSlot}}));
+          window.dispatchEvent(new CustomEvent('portal:paper-research-selected', {detail:{principal, slot:state.researchSlot,workspace_key:state.researchLegacyKey}}));
           await loadChatHistory();
         } catch (error) { renderResearchOptions(); alertError(error); }
       });
@@ -166,8 +176,27 @@
       });
       const error=document.createElement('div'); error.className='paperResearchSelectorError'; error.setAttribute('role','status');
       const retry=document.createElement('button'); retry.type='button';retry.className='portalButton is-compact is-quiet';retry.dataset.researchRetry='';
-      retry.addEventListener('click',async()=>{retry.disabled=true;try{await refreshResearchSelectors();}catch(_){/* Local error remains visible. */}finally{retry.disabled=false;}});
-      researchNav.append(select,create,error,retry);
+      retry.addEventListener('click',async()=>{retry.disabled=true;try{await refreshResearchSelectors();await loadChatHistory({retry:true});}catch(_){/* Local error remains visible. */}finally{retry.disabled=false;}});
+      const rename=document.createElement('button');rename.type='button';rename.className='portalButton is-compact is-quiet';rename.dataset.researchRename='';
+      rename.addEventListener('click',async()=>{
+        const principal=state.principalId,key=activeChatWorkspaceId(),slot=state.researchSlot;
+        const legacy=legacyList.find(item=>item.workspace_key===state.researchLegacyKey);
+        if(!slot&&!legacy)return;
+        const title=window.prompt(window.PortalI18n.t('研究助手名称'),slot?.title||legacy.title);
+        if(title===null)return;
+        if(!title.trim()||title.trim().length>140){alertError(Error(window.PortalI18n.t('名称须为1至140个字符')));return;}
+        researchRenameBusy=true;rename.disabled=true;
+        try{
+          const result=await paperApi.request('/paper/api/research/chats/rename',{method:'POST',body:JSON.stringify({expected_principal:principal,title:title.trim(),...(slot?{slot_id:slot.slot_id}:{workspace_key:legacy.workspace_key})})});
+          if(principal!==state.principalId||key!==activeChatWorkspaceId())return;
+          await refreshResearchSelectors();
+          if(principal!==state.principalId||key!==activeChatWorkspaceId())return;
+          if(paperChatPanel?.target()?.resident_id===result.resident_id)paperChatWorkspace?.setTitle(result.title);
+          window.dispatchEvent(new CustomEvent('portal:paper-research-renamed',{detail:{principal,...result}}));
+        }catch(error){if(principal===state.principalId&&key===activeChatWorkspaceId())alertError(error);}
+        finally{researchRenameBusy=false;renderResearchOptions();}
+      });
+      researchNav.append(select,create,rename,error,retry);
       root.parentElement.insertBefore(researchNav,root);
       renderResearchOptions();
     }
@@ -181,6 +210,7 @@
       const error=researchNav.querySelector('.paperResearchSelectorError');
       error.textContent=researchFailure ? t('研究助手暂不可用，请重试')+': '+researchFailure : ''; error.hidden=!researchFailure;
       const retry=researchNav.querySelector('[data-research-retry]'); retry.textContent=t('重试'); retry.hidden=!researchFailure;
+      const rename=researchNav.querySelector('[data-research-rename]');rename.textContent=t('重命名');rename.title=t('重命名当前研究助手');rename.disabled=researchRenameBusy||!researchReady||(!state.researchSlot&&!state.researchLegacyKey);
       create.textContent=t('新建研究助手'); create.title=t('创建独立的持续研究会话');
       const placeholder=new Option(t('请选择或新建研究助手'),''); placeholder.disabled=true;
       select.replaceChildren(placeholder);
@@ -204,17 +234,18 @@
       select.value=value;
     }
     async function refreshResearchSelectors() {
-      const seq=++researchSequence, principal=state.principalId;
+      const seq=++researchSequence, principal=state.principalId, selectionRevision=researchSelectionRevision;
       researchReady=false;
       try {
         const value=await paperApi.request('/paper/api/research/chats', {timeoutMs:10000});
-        if(seq!==researchSequence || principal!==state.principalId)return;
+        if(seq!==researchSequence || principal!==state.principalId || selectionRevision!==researchSelectionRevision)return;
         if(value.principal!==principal)throw Error(window.PortalI18n.t('账号已变化，请重新载入研究助手'));
         researchList=value.slots||[]; legacyList=value.legacy||[];
-        if(!state.researchLegacyKey) state.researchSlot=value.selected||null;
+        state.researchSlot=value.selected||null;state.researchLegacyKey=value.selected_legacy?.workspace_key||'';
+        state.requestedChatWorkspaceId=state.researchLegacyKey;
         researchReady=true;researchFailure='';renderResearchOptions();
       } catch(error) {
-        if(seq===researchSequence && principal===state.principalId) {
+        if(seq===researchSequence && principal===state.principalId && selectionRevision===researchSelectionRevision) {
           researchFailure=String(error.message || error);renderResearchOptions();
         }
         throw error;
@@ -239,7 +270,7 @@
       // Failed research remains unsendable with its own visible retry control.
       const principal=state.principalId;
       void refreshResearchSelectors().then(() => {
-        if(principal===state.principalId && researchReady && state.researchSlot && paperChatPanel) return loadChatHistory();
+        if(principal===state.principalId && researchReady && (state.researchSlot||state.researchLegacyKey) && paperChatPanel) return loadChatHistory();
       }).catch(error => {
         if(principal!==state.principalId)return;
         researchReady=false;researchFailure=String(error.message||error);renderResearchOptions();
@@ -293,12 +324,12 @@
       return itemId ? `paper:${itemId}` : "library";
     }
 
-    async function loadChatHistory({ paperId = activeChatPaperId(), workspaceId = activeChatWorkspaceId(), render = true } = {}) {
+    async function loadChatHistory({ paperId = activeChatPaperId(), workspaceId = activeChatWorkspaceId(), render = true, retry = false } = {}) {
       if (paperId && paperId === state.deletingPaperId) return null;
       const key = workspaceId || chatSessionKey(paperId);
       state.chatHistoryLoading = true;
       try {
-        if(state.researchSlot && paperChatPanel?.surface?.()?.workspace_key===key) {
+        if(!retry && state.researchSlot && paperChatPanel?.surface?.()?.workspace_key===key) {
           // Selection changes material references, not Chat identity or draft.
           const indexedPaper=state.selectedId, principal=state.principalId;
           if(indexedPaper && state.researchIndexedPaper!==indexedPaper) {
@@ -311,7 +342,7 @@
         return await paperChatPanel?.openSurface?.({
           surface: "paper",
           workspace_key: key,
-          paper_id: String(paperId || ""),
+          paper_id: singlePaperId({workspace_key:key}),
         }, { force: true, render });
       } finally {
         if (key === activeChatWorkspaceId()) state.chatHistoryLoading = false;

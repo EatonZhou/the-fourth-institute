@@ -71,6 +71,7 @@ def get_slot(*, actor, slot_id):
         actual = isa_client.call(actor, 'GetResident', {'resident_id': value['resident_id']})['resident']
         if actual['lineage_id'] != value['lineage_id']:
             raise PermissionError('research Resident moved; repair binding explicitly')
+        value = {**value, 'title': actual.get('title') or value['title']}
     return value
 
 
@@ -90,7 +91,7 @@ def selected_slot(*, actor):
             value = _get(connection, actor, SELECTION, 'active')
         except KeyError:
             return None
-    return get_slot(actor=actor, slot_id=value['slot_id'])
+    return get_slot(actor=actor, slot_id=value['slot_id']) if value.get('slot_id') else None
 
 
 def _document(actor, document):
@@ -282,6 +283,14 @@ def create_chat(payload, actor):
 
 
 def select_chat(payload, actor):
+    if isinstance(payload, dict) and 'workspace_key' in payload:
+        _request(payload, actor, {'workspace_key'})
+        matches = [item for item in catalog({}, actor=actor)['legacy'] if item['workspace_key'] == payload['workspace_key']]
+        if len(matches) != 1:
+            raise PermissionError('legacy conversation unavailable')
+        with presentation_store.database().transaction('paper-research:' + actor) as connection:
+            _put(connection, actor, SELECTION, 'active', {'workspace_key': payload['workspace_key']})
+        return {**matches[0], 'state': 'legacy'}
     _request(payload, actor, {'slot_id'})
     if get_slot(actor=actor, slot_id=payload['slot_id']).get('state') != 'bound':
         raise ValueError('retry creation explicitly before selecting this slot')
@@ -310,7 +319,14 @@ def catalog(params, *, actor):
                 continue
             legacy.append({'workspace_key': scope[len(prefix):], 'title': actual.get('title') or 'Legacy research',
                            'resident_id': resident_id})
-    return {'principal': actor, 'slots': list_slots(actor=actor), 'selected': selected, 'legacy': legacy}
+    with presentation_store.database().read() as connection:
+        try:
+            selection = _get(connection, actor, SELECTION, 'active')
+        except KeyError:
+            selection = {}
+    selected_legacy = next((item for item in legacy if item['workspace_key'] == selection.get('workspace_key')), None)
+    return {'principal': actor, 'slots': list_slots(actor=actor), 'selected': selected,
+            'selected_legacy': selected_legacy, 'legacy': legacy}
 
 
 def project_material_index(*, actor, slot_id):
@@ -333,3 +349,27 @@ def retry_chat(payload, actor):
     _request(payload, actor, {'slot_id'})
     slot = provision_slot(actor=actor, slot_id=payload['slot_id'])
     return select_slot(actor=actor, slot_id=slot['slot_id'])
+
+
+def rename_chat(payload, actor):
+    """Resident owns names; slot associations retain only creation metadata."""
+    selector = 'slot_id' if isinstance(payload, dict) and 'slot_id' in payload else 'workspace_key'
+    _request(payload, actor, {selector, 'title'})
+    title = payload['title']
+    if not isinstance(title, str) or not title.strip() or len(title.strip()) > 140:
+        raise ValueError('title must contain 1 to 140 characters')
+    if selector == 'slot_id':
+        slot = get_slot(actor=actor, slot_id=payload[selector])
+        if slot.get('state') != 'bound':
+            raise ValueError('research assistant unavailable')
+        resident_id = slot['resident_id']
+    else:
+        visible = catalog({}, actor=actor)['legacy']
+        matches = [item for item in visible if item['workspace_key'] == payload[selector]]
+        if len(matches) != 1:
+            raise PermissionError('legacy conversation unavailable')
+        resident_id = matches[0]['resident_id']
+    current = isa_client.call(actor, 'GetResident', {'resident_id': resident_id})['resident']
+    result = isa_client.call(actor, 'UpdateResident', {'resident_id': resident_id,
+        'lineage_id': current['lineage_id'], 'title': title.strip()})['resident']
+    return {'resident_id': resident_id, 'title': result['title']}

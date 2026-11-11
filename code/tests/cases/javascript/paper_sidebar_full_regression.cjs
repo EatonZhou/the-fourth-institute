@@ -45,7 +45,8 @@ const root = path.resolve(__dirname, '../../../management_portal');
     for (const language of ['en','zh-CN']) {
       await page.evaluate(lang=>PortalI18n.apply(lang),language);
       assert.equal(await page.locator('.paperSearchHistory > summary').first().textContent(),language==='en'?'History':'历史');
-      assert.equal(await page.locator('.paperLibraryQueryGroup .paperSectionHint').textContent(),language==='en'?'Find related papers in the library.':'在已有库中查找相关论文。');
+      assert(await page.locator('#collectorForm').evaluate(el=>!!(el.compareDocumentPosition(document.querySelector('.paperLibraryQueryGroup')) & Node.DOCUMENT_POSITION_FOLLOWING)));
+      assert.equal(await page.locator('#clearLibraryFiltersBtn').textContent(),language==='en'?'Clear filters':'清除筛选');
       assert(await page.locator('.paperLibraryQueryGroup').evaluate(el=>el.contains(document.getElementById('searchInput')) && el.contains(document.getElementById('semanticSearchList')) && ['yearFilter','venueFilter','tagFilter','projectFilter'].every(id=>el.contains(document.getElementById(id))) && !el.contains(document.getElementById('collectorForm'))));
       await page.locator('#searchInput').fill('fixture existing-library query');
       await page.waitForFunction(()=>__queryEvents.includes('load'));
@@ -53,6 +54,11 @@ const root = path.resolve(__dirname, '../../../management_portal');
         await page.locator('#'+id).evaluate(el=>{el.add(new Option('fixture','fixture'));el.value='fixture';el.dispatchEvent(new Event('change',{bubbles:true}));});
       }
       assert(await page.evaluate(()=>Object.values(state.filters).every(v=>v==='fixture') && state.query==='fixture existing-library query'));
+      assert(await page.locator('#semanticSearchBtn').isVisible());
+      await page.locator('#clearLibraryFiltersBtn').click();
+      assert(await page.evaluate(()=>Object.keys(state.filters).length===0 && state.query==='' && ['yearFilter','venueFilter','tagFilter','projectFilter'].every(id=>document.getElementById(id).value==='')));
+      assert.equal(await page.locator('.collectorBox [data-portal-board-slot] > label').evaluate(el=>getComputedStyle(el).fontSize),'12px');
+      assert.equal(await page.locator('.paperLibraryQueryGroup label').first().evaluate(el=>getComputedStyle(el).fontSize),await page.locator('.paperPersonalFilters label').first().evaluate(el=>getComputedStyle(el).fontSize));
 
       await page.locator('[data-view=recent]').evaluate(el=>el.click());
       assert.equal(await status.textContent(),language==='en'?'No records yet':'暂无记录');
@@ -60,7 +66,7 @@ const root = path.resolve(__dirname, '../../../management_portal');
       await page.locator('[data-scope=repository]').click();
       await page.locator('#paperLibraryPane').evaluate(el=>el.style.width='280px');
       assert.deepEqual(await page.locator('.leftBody').evaluate(el=>[...el.querySelectorAll('*')].filter(child=>child.getBoundingClientRect().width && child.getBoundingClientRect().right>el.getBoundingClientRect().right+1).map(child=>child.id||child.className)),[]);
-      await page.screenshot({path:`/tmp/paper-query-group-${language}.png`,fullPage:true});
+      await page.screenshot({path:`/tmp/paper-collect-first-${language}.png`,fullPage:true});
     }
     await page.locator('[data-scope=personal]').click();
     assert.equal(await status.textContent(),'暂无记录');

@@ -85,25 +85,6 @@
             <input data-portal-search-input id="ccfYearFilterInput" type="search" placeholder="Search CCF, year / issue, e.g. PPoPP or 2025"  data-portal-i18n-attrs="{&quot;placeholder&quot;: &quot;Search CCF, year / issue, e.g. PPoPP or 2025&quot;}"/>
           </div>
           <div class="searchWrap">
-            <div class="paperLibraryQueryGroup">
-            <p class="paperSectionHint" data-portal-i18n-text="Find related papers in the library.">在已有库中查找相关论文。</p>
-            <div data-portal-board-toolbar aria-label="Paper Library search" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;Paper Library search&quot;}">
-              <div data-portal-board-search>
-                <label for="searchInput"><!--portal-i18n:"Search papers"-->Search papers</label>
-                <input data-portal-board-search-input id="searchInput" type="search" placeholder="Search title, tags, analysis, ID..."  data-portal-i18n-attrs="{&quot;placeholder&quot;: &quot;Search title, tags, analysis, ID...&quot;}"/>
-                <button data-portal-board-semantic id="semanticSearchBtn" type="button" title="根据输入内容发起论文语义检索" aria-label="根据输入内容发起论文语义检索" data-portal-i18n-attrs="{&quot;title&quot;: &quot;根据输入内容发起论文语义检索&quot;, &quot;aria-label&quot;: &quot;根据输入内容发起论文语义检索&quot;}">
-                  <span data-semantic-label><!--portal-i18n:"Semantic"-->Semantic</span>
-                </button>
-              </div>
-            </div>
-            <details class="paperSearchHistory"><summary aria-label="语义检索历史" data-portal-i18n-text="History" data-portal-i18n-attrs='{"aria-label":"Semantic search history"}'>历史</summary><div class="portalSemanticPanel" id="semanticSearchList"></div></details>
-            <div class="filterGrid">
-              <select class="portalControl" id="yearFilter"><option value=""><!--portal-i18n:"All years"-->All years</option></select>
-              <select class="portalControl" id="venueFilter"><option value=""><!--portal-i18n:"All venues"-->All venues</option></select>
-              <select class="portalControl" id="tagFilter"><option value=""><!--portal-i18n:"All tags"-->All tags</option></select>
-              <select class="portalControl" id="projectFilter"><option value=""><!--portal-i18n:"All projects"-->All projects</option></select>
-            </div>
-            </div>
             <form class="collectorBox" id="collectorForm">
               <p class="paperSectionHint" data-portal-i18n-text="Discover and collect papers by research needs.">按研究需求发现并采集论文。</p>
               <div data-portal-board-toolbar aria-label="Collect papers" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;Collect papers&quot;}">
@@ -119,6 +100,26 @@
               </div>
               <details class="paperSearchHistory"><summary aria-label="采集任务历史" data-portal-i18n-text="History" data-portal-i18n-attrs='{"aria-label":"Collection task history"}'>历史</summary><div class="collectorJobList" id="collectorJobList"></div></details>
             </form>
+            <div class="paperLibraryQueryGroup">
+              <div class="paperLibrarySearchField"><span data-portal-i18n-text="Search papers">Search papers</span>
+            <div data-portal-board-toolbar aria-label="Paper Library search" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;Paper Library search&quot;}">
+              <div data-portal-board-search>
+                <label for="searchInput"><!--portal-i18n:"Search papers"-->Search papers</label>
+                <input data-portal-board-search-input id="searchInput" type="search" placeholder="Search title, tags, analysis, ID..."  data-portal-i18n-attrs="{&quot;placeholder&quot;: &quot;Search title, tags, analysis, ID...&quot;}"/>
+                <button data-portal-board-semantic id="semanticSearchBtn" type="button" title="根据输入内容发起论文语义检索" aria-label="根据输入内容发起论文语义检索" data-portal-i18n-attrs="{&quot;title&quot;: &quot;根据输入内容发起论文语义检索&quot;, &quot;aria-label&quot;: &quot;根据输入内容发起论文语义检索&quot;}">
+                  <span data-semantic-label><!--portal-i18n:"Semantic"-->Semantic</span>
+                </button>
+              </div>
+            </div>
+              </div>
+            <details class="paperSearchHistory"><summary aria-label="语义检索历史" data-portal-i18n-text="History" data-portal-i18n-attrs='{"aria-label":"Semantic search history"}'>历史</summary><div class="portalSemanticPanel" id="semanticSearchList"></div></details>
+              <label><span data-portal-i18n-text="年份">年份</span><select class="portalControl" id="yearFilter"><option value=""><!--portal-i18n:"All years"-->All years</option></select></label>
+              <label><span data-portal-i18n-text="出版地点">出版地点</span><select class="portalControl" id="venueFilter"><option value=""><!--portal-i18n:"All venues"-->All venues</option></select></label>
+              <label><span data-portal-i18n-text="All tags">All tags</span><select class="portalControl" id="tagFilter"><option value=""><!--portal-i18n:"All tags"-->All tags</option></select></label>
+              <label><span data-portal-i18n-text="All projects">All projects</span><select class="portalControl" id="projectFilter"><option value=""><!--portal-i18n:"All projects"-->All projects</option></select></label>
+              <button class="portalButton is-compact" id="clearLibraryFiltersBtn" type="button" data-portal-i18n-text="清除筛选">清除筛选</button>
+            </div>
+
 
           </div>
           <div class="folderTree" id="folderTree"></div>

@@ -23,10 +23,10 @@ const root = path.resolve(__dirname, '../../../management_portal');
       assert(await summary.evaluate(el => el.parentElement.open));
       await page.keyboard.press('Enter');
     }
-    for (const selector of ['.collectorBox']) {
+    for (const selector of ['.paperLibraryQueryGroup']) {
       assert.equal(await page.locator(selector).evaluate(el => getComputedStyle(el).borderTopWidth), '1px');
     }
-    assert.equal(await page.locator('.filterGrid').evaluate(el=>getComputedStyle(el).borderTopWidth),'0px');
+    assert.equal(await page.locator('.paperLibraryQueryGroup label') .first().evaluate(el=>getComputedStyle(el).borderTopWidth),'0px');
     assert(await page.locator('.paperLibraryQueryGroup').evaluate(el=>el.contains(document.getElementById('semanticSearchBtn')) && el.contains(document.getElementById('yearFilter')) && !el.contains(document.getElementById('collectorForm'))));
     await page.screenshot({path:'/tmp/paper-sidebar-groups-280.png'});
     const overflow = await page.locator('.leftBody').evaluate(el => [...el.querySelectorAll('*')].filter(child => child.getBoundingClientRect().right > el.getBoundingClientRect().right + 1).map(child => child.id || child.className));

@@ -1334,5 +1334,41 @@
   "账号已变化，请重新载入研究助手": {
     "zh-CN": "账号已变化，请重新载入研究助手",
     "en": "Account changed. Reload research assistants."
+  },
+  "名称须为1至140个字符": {
+    "zh-CN": "名称须为1至140个字符",
+    "en": "Name must contain 1 to 140 characters"
+  },
+  "重命名当前研究助手": {
+    "zh-CN": "重命名当前研究助手",
+    "en": "Rename the current research assistant"
+  },
+  "请在非全屏选择或新建研究助手": {
+    "zh-CN": "请在非全屏选择或新建研究助手",
+    "en": "Select or create a research assistant outside fullscreen"
+  },
+  "当前历史会话属于其他论文或集合；请在非全屏选择持续研究助手": {
+    "zh-CN": "当前历史会话属于其他论文或集合；请在非全屏选择持续研究助手",
+    "en": "This previous conversation belongs to another paper or collection. Select a persistent research assistant outside fullscreen."
+  },
+  "重新连接讨论": {
+    "zh-CN": "重新连接讨论",
+    "en": "Reconnect conversation"
+  },
+  "论文讨论已变化，请重新发送": {
+    "zh-CN": "论文讨论已变化，请重新发送",
+    "en": "The paper conversation changed. Review the target and retry."
+  },
+  "研究助手或账号已变化": {
+    "zh-CN": "研究助手或账号已变化",
+    "en": "The research assistant or account changed."
+  },
+  "论文或账号已变化": {
+    "zh-CN": "论文或账号已变化",
+    "en": "The paper or account changed."
+  },
+  "无法准备讨论": {
+    "zh-CN": "无法准备讨论",
+    "en": "Unable to prepare this conversation."
   }
 }

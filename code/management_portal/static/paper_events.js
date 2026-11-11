@@ -509,6 +509,15 @@
         clearTimeout(state.searchTimer);
         state.searchTimer = setTimeout(() => loadLibrary({ keepDetail: false }).catch(alertError), 180);
       });
+      $("clearLibraryFiltersBtn").addEventListener("click", () => {
+        $("searchInput").value = "";
+        $("searchInput").dispatchEvent(new Event("input", { bubbles: true }));
+        for (const id of ["yearFilter", "venueFilter", "tagFilter", "projectFilter"]) $(id).value = "";
+        state.filters = {};
+        clearTimeout(state.searchTimer);
+        writeUiState();
+        loadLibrary({ keepDetail: false }).catch(alertError);
+      });
       [["yearFilter", "year"], ["venueFilter", "venue"], ["tagFilter", "tag"], ["projectFilter", "project"]].forEach(([id, key]) => {
         $(id).addEventListener("change", event => {
           state.filters[key] = event.target.value;

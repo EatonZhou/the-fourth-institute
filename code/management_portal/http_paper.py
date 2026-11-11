@@ -370,6 +370,7 @@ def routes(portal):
         ("POST", "research/chats/create", backend(paper_chat_research, "create_chat")),
         ("POST", "research/chats/select", backend(paper_chat_research, "select_chat")),
         ("POST", "research/chats/retry", backend(paper_chat_research, "retry_chat")),
+        ("POST", "research/chats/rename", backend(paper_chat_research, "rename_chat")),
         ("GET", "library", get(http.library)),
         ("POST", "favorites", http.personal_post_route(http.favorite)),
         ("POST", "bibtex/export", http.personal_post_route(http.bibtex_export)),

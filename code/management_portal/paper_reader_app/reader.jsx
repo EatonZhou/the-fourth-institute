@@ -32,27 +32,35 @@ function Reader({paper, principal, anchor, close, control, readingReady, frameRe
   const [selection, setSelection] = useState(null);
   const [mode, setMode] = useState('auto');
   const [discussion,setDiscussion] = useState(null);
+  const discussionSequence=useRef(0);
   useEffect(()=>{
     const changed=event=>{
-      if(event.detail?.principal!==principal || !event.detail?.slot ||
-          discussion?.key!=='research:'+event.detail.slot.slot_id) setDiscussion(null);
+      discussionSequence.current++;setStatus('');
+      const selectedKey=event.detail?.slot?'research:'+event.detail.slot.slot_id:event.detail?.workspace_key;
+      if(event.detail?.principal!==principal || discussion?.key!==selectedKey) setDiscussion(null);
     };
     window.addEventListener('portal:paper-research-selected',changed);
     return()=>window.removeEventListener('portal:paper-research-selected',changed);
   },[discussion?.key,principal]);
   const openDiscussion=async selection=>{
     if(!isCurrent()||!isFullscreen())return;
+    const sequence=++discussionSequence.current;
     try {
       const response=await fetch('/paper/api/research/chats',{credentials:'same-origin'});
       const choices=await response.json();
       if(!response.ok)throw Error(choices.error||'无法读取研究助手');
+      if(sequence!==discussionSequence.current)return;
       if(!isCurrent()||choices.principal!==principal)throw Error('账号已变化，请重新打开论文');
-      if(!choices.selected||choices.selected.state!=='bound')throw Error('请先在非全屏 Research Chat 新建或选择研究助手');
-      const key='research:'+choices.selected.slot_id;
+      const selected=choices.selected;
+      const legacy=choices.selected_legacy;
+      if(!selected && !legacy)throw Error(window.PortalI18n.t('请在非全屏选择或新建研究助手'));
+      if(selected && selected.state!=='bound')throw Error(window.PortalI18n.t('研究助手暂不可用，请重试'));
+      if(legacy && legacy.workspace_key!=='paper:'+paper.id)throw Error(window.PortalI18n.t('当前历史会话属于其他论文或集合；请在非全屏选择持续研究助手'));
+      const key=selected?'research:'+selected.slot_id:legacy.workspace_key;
       if(discussion?.key===key&&!selection)return;
       const document=selection?.document||await bridge.current.aiDocument();
-      if(isCurrent())setDiscussion({...selection,document,key});
-    } catch(error){if(isCurrent())setStatus(error.message); }
+      if(isCurrent()&&isFullscreen()&&sequence===discussionSequence.current){setStatus('');setDiscussion({...selection,document,key});}
+    } catch(error){if(isCurrent()&&sequence===discussionSequence.current)setStatus(error.message); }
   };
   useEffect(() => {
     frameReady(frame.current.contentWindow);

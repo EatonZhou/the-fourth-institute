@@ -113,6 +113,15 @@ def test_persistent_research_http_reader_and_execution(owners, monkeypatch, tmp_
             selected=page.evaluate('researchState.researchSlot')
             resident=selected['resident_id']
             assert selected['lineage_id']!=owners.lineage_id
+            if os.environ.get('PAPER_RESEARCH_IDENTITY_ONLY'):
+                from tests.cases.paper_research_ui_support import verify_identity_and_late_rename
+                verify_identity_and_late_rename(page,http,selected,ACTOR,tmp_path,support)
+                return
+            if os.environ.get('PAPER_RESEARCH_INTERACTIONS_ONLY'):
+                from tests.cases.paper_research_ui_support import verify_interactions
+                verify_interactions(page,http,selected,ACTOR,tmp_path,support)
+                assert len(support.transport.turns)==1
+                return
             if os.environ.get('PAPER_RESEARCH_VISUAL_ONLY'):
                 from pathlib import Path
                 evidence=tmp_path/'research-chat-visual';evidence.mkdir(parents=True,exist_ok=True)
