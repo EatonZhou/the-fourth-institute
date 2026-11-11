@@ -1,4 +1,14 @@
 {
+  "用时": {"en": "Time", "zh-CN": "用时"},
+  "秒": {"en": "s", "zh-CN": "秒"},
+  "本次等待": {"en": "Current wait", "zh-CN": "本次等待"},
+  "最后一次接口处理耗时": {"en": "Last HTTP request processing", "zh-CN": "最后一次接口处理耗时"},
+  "任务耗时从原任务开始计算；本次等待从本次操作开始计算。": {"en": "Task duration starts with the original task; current wait starts with this action.", "zh-CN": "任务耗时从原任务开始计算；本次等待从本次操作开始计算。"},
+  "受理": {"en": "Accepted", "zh-CN": "受理"},
+  "任务创建": {"en": "Task created", "zh-CN": "任务创建"},
+  "派发等待": {"en": "Dispatch wait", "zh-CN": "派发等待"},
+  "上游请求开始": {"en": "Upstream request started", "zh-CN": "上游请求开始"},
+  "上游请求结束": {"en": "Upstream request completed", "zh-CN": "上游请求结束"},
   "还没有对话，在下方输入问题开始。": {"en": "No conversation yet. Enter a question below to get started.", "zh-CN": "还没有对话，在下方输入问题开始。"},
   "全库": {
     "en": "Repository",
