@@ -120,7 +120,7 @@ class Notifications:
                           'VALUES(?,?,?,?,FALSE) ON CONFLICT(portal_actor,category) DO UPDATE SET '
                           'enabled=excluded.enabled,enabled_at=excluded.enabled_at,baseline_ready=FALSE',
                           (actor, category, enabled, now_iso()))
-                c.execute("DELETE FROM notification_deliveries WHERE portal_actor=? AND category=? AND invalid_reason!='card'",
+                c.execute("DELETE FROM notification_deliveries WHERE portal_actor=? AND category=? AND status!='sent'",
                           (actor, category))
             self._reconcile(c, actor, {category: current[category] for category in enabling if category in current})
             c.execute('DELETE FROM meta WHERE key=?', ('notification-watch:' + actor,))
@@ -220,21 +220,23 @@ class Notifications:
         import sys
         print(f'Telepus notification actor={actor} error_type={type(error).__name__}', file=sys.stderr, flush=True)
 
-    def prepare(self, actor):
+    def prepare(self, actor, available=1):
         """Revalidate immediately before sending; return None to retain the queue."""
         if not any(self.preferences(actor).values()):
-            return [], ''
+            return []
         current = self.snapshot(actor)
         self.reconcile(actor, current)
         rows = self.pending(actor)
         ready = [r for r in rows if r['category'] in current and r['key'] in current[r['category']]]
         if not ready:
-            return None if rows else ([], '')
+            return None if rows else []
         if self.clock() - min(r['discovered_at'] for r in ready) < 60:
             return None
         from .weixin_format import notification_text
+        from .mention_reply import enrich, fingerprint
         keys = [r['key'] for r in ready[:5]]
         items = [current[r['category']][r['key']] for r in ready[:5]]
+        items = [enrich(self.portal, actor, item) if item['category'] == 'mention' else item for item in items]
         titles = {}
         for item in items[:5]:
             if item['category'] == 'question' and not item['title']:
@@ -245,12 +247,38 @@ class Notifications:
                     except Exception:
                         titles[resident] = resident
                 item['title'] = titles[resident]
-        return keys, notification_text(items, public_link, total=len(ready))
+        individual = len(ready) <= 3 and available >= len(ready)
+        groups = [([key], [item]) for key, item in zip(keys, items)] if individual else [(keys, items)]
+        prepared = []
+        for group_keys, group_items in groups:
+            text = notification_text(group_items, public_link, total=1 if individual else len(ready), summary=not individual)
+            hashes = {fingerprint(text)}
+            if individual and group_items[0]['category'] == 'mention':
+                hashes.add(fingerprint(group_items[0]['excerpt']))
+            prepared.append({'keys': group_keys, 'text': text, 'summary': not individual,
+                             'fingerprints': sorted(hashes - {''})})
+        return prepared
 
-    def sent(self, keys):
+    def sent(self, group, external_id):
         with self.router.connect() as c:
-            for key in keys:
-                c.execute("UPDATE notification_deliveries SET status='sent',sent_at=? WHERE key=? AND status='pending'", (now_iso(), key))
+            for key in group['keys']:
+                c.execute("UPDATE notification_deliveries SET status='sent',sent_at=?,external_message_id=?,"
+                          "quote_fingerprints=?::jsonb,is_summary=? WHERE key=? AND status='pending'",
+                          (now_iso(), str(external_id or ''), json.dumps(group['fingerprints']), group['summary'], key))
+
+    def quoted(self, actor, quote):
+        from .mention_reply import fingerprint
+        external = quote.get('svr_id') or (quote.get('message_item') or {}).get('msg_id')
+        excerpt = quote.get('title') or (quote.get('message_item') or {}).get('text_item', {}).get('text') or ''
+        with self.router.connect() as c:
+            base = "SELECT * FROM notification_deliveries WHERE portal_actor=? AND status='sent' AND (category='mention' OR is_summary) "
+            rows = c.execute(base + 'AND external_message_id=?', (actor, str(external))).fetchall() if external else []
+            if not rows and fingerprint(excerpt):
+                rows = c.execute(base + 'AND quote_fingerprints @> ?::jsonb',
+                                 (actor, json.dumps([fingerprint(excerpt)]))).fetchall()
+            if rows and all(row['is_summary'] for row in rows):
+                return dict(rows[0])
+            return dict(rows[0]) if len(rows) == 1 else None
 
 
 def settings(caller, user_id='', changes=None):

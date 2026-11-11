@@ -420,7 +420,7 @@ def test_additive_upgrade_preserves_existing_chat_and_input(telepus_schema):
     assert upgraded.input('input')['telegram_message_id'] == 7
     with upgraded.connect() as c:
         assert c.execute("SELECT channel FROM chat_state WHERE chat_id='123'").fetchone()[0] == 'telegram'
-        assert c.execute("SELECT value FROM meta WHERE key='schema_version'").fetchone()[0] == '10'
+        assert c.execute("SELECT value FROM meta WHERE key='schema_version'").fetchone()[0] == '11'
         assert c.execute('SELECT count(*) FROM weixin_accounts').fetchone()[0] == 0
 
 

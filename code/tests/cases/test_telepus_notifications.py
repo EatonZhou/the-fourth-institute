@@ -37,6 +37,11 @@ def reminder(bridge, monkeypatch):
     calls = []
 
     def call(actor, instruction, arguments):
+        if instruction == 'ListChatroomMessages':
+            assert actor == ACTOR
+            return {'messages': [dict(message_id=m['message_id'], author_id='alice',
+                content_parts=[{'type': 'text', 'text': '请查看 ' + m['message_id']}])
+                for item in mailbox['items'] for m in item.get('unread_mentions', [])]}
         assert actor == ACTOR and arguments == {'user_id': ACTOR}
         assert instruction == 'GetMailbox'
         calls.append(instruction)
@@ -226,8 +231,8 @@ def test_sixty_seconds_coalesced_five_items_one_message(reminder, monkeypatch):
     assert 'PRIVATE' not in text and len(r.notices.pending(ACTOR)) == 3
     assert r.adapter.store.pending(chat_key('bot'))
     r.adapter.flush(ACTOR)
-    assert len(r.server.sent) == 2 and not r.notices.pending(ACTOR)
-    second = r.server.sent[1]['item_list'][0]['text_item']['text']
+    assert len(r.server.sent) == 4 and not r.notices.pending(ACTOR)
+    second = '\n'.join(m['item_list'][0]['text_item']['text'] for m in r.server.sent[1:])
     assert '此问题请回 Portal 作答' in second
 
 
@@ -249,7 +254,7 @@ def test_budget_wait_and_next_inbound_send_reply_before_summary(reminder, gate):
     r.server.reject = 0
     incoming(r.adapter, r.server, '/where', message_id=2)
     texts = [m['item_list'][0]['text_item']['text'] for m in r.server.sent]
-    assert len(texts) == 2 and '有人 @了你' in texts[1]
+    assert len(texts) == 2 and '**alice** 在 **开发群** 里 @了你' in texts[1]
     assert not r.notices.pending(ACTOR)
 
 
@@ -366,7 +371,7 @@ def test_schema_nine_upgrade_preserves_data(telepus_schema):
     upgraded = RouterStore(telepus_schema)
     upgraded.init_schema()
     assert upgraded.get_chat_state('123')['portal_actor'] == ACTOR
-    assert upgraded.get_meta('schema_version') == '10'
+    assert upgraded.get_meta('schema_version') == '11'
     assert Notifications(upgraded).preferences(ACTOR) == {'mention': False, 'question': False}
 
 

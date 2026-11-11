@@ -127,14 +127,18 @@ def segment_text(segments, total):
     return segments[0].rstrip() + '\n\n' + hint
 
 
-def notification_text(items, link, *, total=None):
-    """Short summaries contain titles and navigation, never message excerpts."""
+def notification_text(items, link, *, total=None, summary=True):
+    """Visible source excerpts exist only in this in-memory outgoing message."""
     total = len(items) if total is None else total
     lines = [f'🔔 Portal 有 {total} 件事需要你查看'] if total > 1 else []
     for item in items[:5]:
         title = ' '.join(str(item['title']).split())[:100].replace('*', '')
         if item['category'] == 'mention':
-            lines.append(f'🔔 **{title}** 里有人 @了你')
+            author = ' '.join(str(item.get('author') or '').split()).replace('*', '')[:100]
+            lines.append(f'🔔 **{author}** 在 **{title}** 里 @了你')
+            lines.append(item.get('excerpt') or '')
+            if not summary:
+                lines.append('引用这条消息回复，会以你的名义发到聊天室')
         else:
             lines.append(f'❓ **{title}** 在等你回答')
         url = link(item['url'])
@@ -145,6 +149,8 @@ def notification_text(items, link, *, total=None):
             lines.append('切换对话：/route ' + item['resident_id'] + '；此问题请回 Portal 作答。')
     if total > len(items):
         lines.append(f'另有 {total - len(items)} 项待发送，将继续分批提醒。')
+    if summary:
+        lines.append('这是汇总提醒，请回 Portal 回复，或引用对应的单条 @ 提醒。')
     return format_text('\n'.join(lines))
 
 
@@ -159,6 +165,7 @@ class WeixinPresentation(TelegramPresentation):
         '- 扫码绑定后，文字、图片和文件由个人助手里的手机助手直接处理；显示“正在输入”表示消息已进入 Portal。',
         '- 等待超过 5 分钟会收到一次“仍在处理”。',
         '- 引用一条回复继续讨论，助手会联系写那条回复的成员。',
+        '- 引用单条 @ 提醒回复，会以你的名义发到对应聊天室；汇总提醒请回 Portal 回复。',
         '',
         '**问答**',
         '- 问题逐题出现：回复编号选择，或直接写答案。',

@@ -74,6 +74,15 @@ class WeixinAdapter:
         self.store.update(actor, context_token=str(message.get('context_token') or account['context_token']), context_at=now_iso())
         self.store.budget(chat, reset=True)
         self.router.waiting.received(chat, f'message:{local_id}')
+        from .mention_reply import reply
+        match = next((found for item in message.get('item_list') or []
+                      if (quote := item.get('ref_msg')) and (found := self.notifications.quoted(actor, quote))), None)
+        if match:
+            self.respond(actor, {'messages': [{'text': reply(self, account, message, match)}]})
+            with self.router.store.connect() as c:
+                c.execute("INSERT INTO processed_updates(update_id,processed_at,channel) VALUES(?,?,'weixin') ON CONFLICT DO NOTHING",
+                          (-local_id, now_iso()))
+            return
         text, reference = self._content(account, message)
         local = text.strip().split(' ', 1)[0] in {'/help', '/start', '/where', '/home', '/notify'}
         # respond() drains the durable queue in order, including the new local
@@ -303,7 +312,7 @@ class WeixinAdapter:
         if time.time() < item.get('retry_at', 0):
             return
         try:
-            prepared = self.notifications.prepare(actor)
+            prepared = self.notifications.prepare(actor, self.budget - 1 - count)
         except Exception as exc:
             if not item.get('failures'):
                 self.notifications.diagnostic(actor, exc)
@@ -311,16 +320,16 @@ class WeixinAdapter:
             return
         if prepared is None:
             return
-        keys, text = prepared
-        if not keys:
+        if not prepared:
             self.store.finish(row['id'])
             return
         try:
-            # Summary is bounded to one Weixin message and never consumes the reserved slot.
-            client.send([{'type': 1, 'text_item': {'text': text}}], account['context_token'],
-                        client_id=f'telepus-reminder-{row["id"]}')
-            self.store.budget(chat, spent=True)
-            self.notifications.sent(keys)
+            for group in prepared:
+                identity = hashlib.sha256('\n'.join(group['keys']).encode()).hexdigest()[:24]
+                result = client.send([{'type': 1, 'text_item': {'text': group['text']}}], account['context_token'],
+                                     client_id=f'telepus-reminder-{identity}')
+                self.store.budget(chat, spent=True)
+                self.notifications.sent(group, result.get('message_id') or result.get('msg_id'))
             self.store.finish(row['id'])
             if self.notifications.pending(actor):
                 self.store.enqueue(chat, {'notification_actor': actor})

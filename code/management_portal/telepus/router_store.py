@@ -10,7 +10,7 @@ from . import postgres as telepus_postgres
 from .database_time import iso_time
 
 
-SCHEMA_VERSION = 10
+SCHEMA_VERSION = 11
 TELEGRAM_BOT_TOKEN_RE = re.compile(r"\b\d{8,12}:AA[A-Za-z0-9_-]{20,}\b")
 MODES = ("assistant", "exact")
 
@@ -167,17 +167,21 @@ class RouterStore:
             version = ""
             if conn.execute("SELECT to_regclass(current_schema() || '.meta')").fetchone()[0]:
                 marker = conn.execute("SELECT value FROM meta WHERE key='schema_version'").fetchone()
-                if marker is None or marker[0] not in {"7", "8", "9", str(SCHEMA_VERSION)}:
+                if marker is None or marker[0] not in {"7", "8", "9", "10", str(SCHEMA_VERSION)}:
                     raise RuntimeError("Telepus database requires the coordinated schema migration")
                 version = marker[0]
             if version != str(SCHEMA_VERSION):
-                if version not in {"8", "9"}:
+                if version not in {"8", "9", "10"}:
                     conn.executescript(SCHEMA_DDL)
                     from .weixin_store import init_tables
                     init_tables(conn)
-                conn.execute("ALTER TABLE message_links ADD COLUMN IF NOT EXISTS excerpt TEXT NOT NULL DEFAULT ''")
-                from .notifications import DDL as NOTIFICATION_DDL
-                conn.executescript(NOTIFICATION_DDL)
+                if version != "10":
+                    conn.execute("ALTER TABLE message_links ADD COLUMN IF NOT EXISTS excerpt TEXT NOT NULL DEFAULT ''")
+                    from .notifications import DDL as NOTIFICATION_DDL
+                    conn.executescript(NOTIFICATION_DDL)
+                conn.execute("ALTER TABLE notification_deliveries ADD COLUMN IF NOT EXISTS external_message_id TEXT NOT NULL DEFAULT ''")
+                conn.execute("ALTER TABLE notification_deliveries ADD COLUMN IF NOT EXISTS quote_fingerprints JSONB NOT NULL DEFAULT '[]'")
+                conn.execute("ALTER TABLE notification_deliveries ADD COLUMN IF NOT EXISTS is_summary BOOLEAN NOT NULL DEFAULT FALSE")
                 conn.execute(
                     "INSERT INTO meta(key, value) VALUES(?, ?) ON CONFLICT(key) DO UPDATE SET value=excluded.value",
                     ("schema_version", str(SCHEMA_VERSION)),
