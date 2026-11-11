@@ -83,7 +83,7 @@ body {
 .ccfYearsState .portalAsyncStateActions { grid-column: 2; justify-content: flex-start; min-width: 0; }
 .ccfFetchYearsButton { white-space: normal; max-width: 100%; height: auto; overflow-wrap: anywhere; }
 .filterGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
-.folderTree { display: grid; gap: 3px; min-width: 0; }
+.folderTree { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0; min-width: 0; }
 /* The library tree has thousands of folder lines; venues off screen
    skip layout until they scroll near the viewport. */
 .folderTree > .folderNode { content-visibility: auto; contain-intrinsic-size: auto 120px; }
@@ -97,10 +97,16 @@ body {
   background: transparent;
   color: var(--text);
   text-align: left;
-  padding: 5px 6px;
-  border-radius: 6px;
+  box-sizing: border-box;
+  height: 24px;
+  min-height: 24px;
+  padding: 3px 6px;
+  border-radius: 4px;
   font: inherit;
-  font-size: 12px;
+  font-size: 13px;
+  line-height: 18px;
+  white-space: nowrap;
+  overflow: hidden;
   cursor: pointer;
 }
 .folderLine > :first-child { flex: 0 0 auto; }
@@ -114,6 +120,9 @@ body {
 .folderLine > span:not(:first-child):not(.folderCount) {
   flex: 1 1 auto;
   min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .folderLine:hover { background: var(--panel-2); color: var(--accent); }
 .folderCount {
@@ -333,10 +342,10 @@ body {
 .paperFavoriteFilter { font-size: 12px; cursor: pointer; }
 .paperFavoriteFilter input { width: auto; }
 .paperFavorite { flex: 0 0 auto; font-size: 14px; }
-.paperLeaf .paperFavorite { width: 28px; height: 28px; min-width: 28px; min-height: 28px; padding: 3px; border: 0; background: transparent; box-shadow: none; border-radius: 5px; }
+.paperLeaf .paperFavorite { box-sizing: border-box; width: 24px; height: 24px; min-width: 24px; min-height: 24px; font-size: 12px; line-height: 18px; padding: 3px; border: 0; background: transparent; box-shadow: none; border-radius: 5px; }
 .paperLeaf .paperFavorite:hover { background: var(--panel-2); }
 .paperLeaf .paperFavorite:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
-.paperLeaf { min-height: 28px; }
+.paperLeaf { height: 24px; min-height: 24px; margin: 0; }
 .paperLeaf > .folderLine { padding-top: 3px; padding-bottom: 3px; }
 .paperFavorite[aria-pressed="true"] { color: var(--accent); }
 .paperLeaf { display: flex; align-items: center; gap: 4px; }
