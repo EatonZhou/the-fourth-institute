@@ -28,6 +28,7 @@ export function AIPanel({discussion, principal, bridge, isCurrent, close}) {
         submissionContext:async()=> (await prepare(false)).initial_context || {},
         onDetail:detail=>{if(!current())return;setAnswers((detail.messages||[]).filter(m=>window.PortalChatWorkspace.messageRole(m)==='agent')
           .map(m=>Array.isArray(m.content_parts)?m.content_parts.filter(p=>p.type==='text').map(p=>p.text||'').join('\n'):String(m.content||'')).filter(Boolean));},
+        emit:event=>{if(current()&&event==='binding-unavailable')window.dispatchEvent(new CustomEvent('portal:paper-research-refresh'));},
         onError:e=>{if(current())setError(e.message);}});
       const send=chat.send.bind(chat);chat.send=(...args)=>{
         if(!current())throw Error(window.PortalI18n.t('论文或账号已变化'));

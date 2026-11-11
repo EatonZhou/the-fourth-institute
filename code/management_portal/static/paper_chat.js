@@ -100,6 +100,7 @@
             renderAssistantContext();
             updateChatComposerState();
           },
+          emit: event => { if(event==='binding-unavailable') void refreshResearchSelectors().catch(alertError); },
           onError: error => { researchFailure=String(error.message||error);renderResearchOptions();alertError(error); },
         },
       };
@@ -115,6 +116,9 @@
 
     let researchNav = null, researchList = [], legacyList = [], researchSequence = 0;
     let researchReady = false, researchFailure = '', researchSelectionRevision = 0, researchRenameBusy = false;
+    const deletedResearchKeys = new Set();
+    window.addEventListener('portal:paper-research-refresh',()=>{void refreshResearchSelectors().catch(alertError);});
+    window.addEventListener('focus',()=>{if(researchNav)void refreshResearchSelectors().catch(alertError);});
     function mountResearchSelector() {
       const root = paperChatWorkspace?.root;
       if (!root || researchNav?.isConnected) return;
@@ -133,7 +137,7 @@
         try {
           if (selectedValue.startsWith('legacy:')) {
             await paperApi.request('/paper/api/research/chats/select', {method:'POST',body:JSON.stringify({workspace_key:selectedValue.slice(7),expected_principal:principal})});
-            if(principal!==state.principalId || selectionRevision!==researchSelectionRevision)return;
+            if(principal!==state.principalId || selectionRevision!==researchSelectionRevision || deletedResearchKeys.has(selectedValue.slice(7)))return;
             state.researchSlot = null;
             state.researchLegacyKey = selectedValue.slice(7);
             state.requestedChatWorkspaceId = state.researchLegacyKey;
@@ -141,7 +145,7 @@
             const endpoint=researchList.find(s=>s.slot_id===selectedValue)?.state==='unbound'?'retry':'select';
             const value = await paperApi.request('/paper/api/research/chats/'+endpoint, {method:'POST',
               body:JSON.stringify({slot_id:selectedValue, expected_principal:principal})});
-            if (principal !== state.principalId || selectionRevision!==researchSelectionRevision) return;
+            if (principal !== state.principalId || selectionRevision!==researchSelectionRevision || deletedResearchKeys.has('research:'+selectedValue)) return;
             state.researchSlot = value;
             state.researchLegacyKey = '';
             state.requestedChatWorkspaceId = '';
@@ -176,7 +180,7 @@
       });
       const error=document.createElement('div'); error.className='paperResearchSelectorError'; error.setAttribute('role','status');
       const retry=document.createElement('button'); retry.type='button';retry.className='portalButton is-compact is-quiet';retry.dataset.researchRetry='';
-      retry.addEventListener('click',async()=>{retry.disabled=true;try{await refreshResearchSelectors();await loadChatHistory({retry:true});}catch(_){/* Local error remains visible. */}finally{retry.disabled=false;}});
+      retry.addEventListener('click',async()=>{retry.disabled=true;try{await refreshResearchSelectors();if(state.researchSlot||state.researchLegacyKey)await loadChatHistory({retry:true});}catch(_){/* Local error remains visible. */}finally{retry.disabled=false;}});
       const rename=document.createElement('button');rename.type='button';rename.className='portalButton is-compact is-quiet';rename.dataset.researchRename='';
       rename.addEventListener('click',async()=>{
         const principal=state.principalId,key=activeChatWorkspaceId(),slot=state.researchSlot;
@@ -229,7 +233,7 @@
       const visibleLegacy=!selected && active && !active.startsWith('research:') ? 'legacy:'+active : '';
       const value=selected || visibleLegacy;
       if(value && !Array.from(select.options).some(option=>option.value===value)) {
-        select.append(new Option(state.researchSlot?.title || t('当前历史会话'),value));
+        if(!deletedResearchKeys.has(value.replace(/^legacy:/,'')))select.append(new Option(state.researchSlot?.title || t('当前历史会话'),value));
       }
       select.value=value;
     }
@@ -240,10 +244,32 @@
         const value=await paperApi.request('/paper/api/research/chats', {timeoutMs:10000});
         if(seq!==researchSequence || principal!==state.principalId || selectionRevision!==researchSelectionRevision)return;
         if(value.principal!==principal)throw Error(window.PortalI18n.t('账号已变化，请重新载入研究助手'));
-        researchList=value.slots||[]; legacyList=value.legacy||[];
-        state.researchSlot=value.selected||null;state.researchLegacyKey=value.selected_legacy?.workspace_key||'';
+        const deleted=value.deleted||[];
+        for(const item of deleted)deletedResearchKeys.add(item.workspace_key);
+        const active=paperChatPanel?.surface?.()?.workspace_key;
+        const current=state.researchSlot?'research:'+state.researchSlot.slot_id:state.researchLegacyKey;
+        const lost=deletedResearchKeys.has(active)||deletedResearchKeys.has(current)
+          || (deleted.length>0 && current && !value.selected && !value.selected_legacy);
+        if(lost){
+          researchSelectionRevision++; // Invalidate already in-flight select/rename responses.
+          state.researchSlot=null;state.researchLegacyKey='';state.researchIndexedPaper='';
+          state.requestedChatWorkspaceId='';state.chatMetadata=null;
+          const draft=paperChatWorkspace?.draftText?.(),attachments=paperChatWorkspace?.attachments?.();
+          const closing=paperChatPanel?.closeSurface?.(); // Fence stale protocol/load responses.
+          void Promise.resolve(closing).then(()=>{
+            if(principal===state.principalId && !state.researchSlot && !state.researchLegacyKey
+                && !paperChatPanel?.target?.()?.resident_id && draft && !paperChatWorkspace?.draftText?.())
+              paperChatWorkspace?.setDraftText?.(draft,attachments);
+          });
+          window.dispatchEvent(new CustomEvent('portal:paper-research-selected',{detail:{principal,slot:null,workspace_key:''}}));
+        }
+        researchList=(value.slots||[]).filter(item=>!deletedResearchKeys.has('research:'+item.slot_id));
+        legacyList=(value.legacy||[]).filter(item=>!deletedResearchKeys.has(item.workspace_key));
+        state.researchSlot=value.selected&&!deletedResearchKeys.has('research:'+value.selected.slot_id)?value.selected:null;
+        state.researchLegacyKey=value.selected_legacy&&!deletedResearchKeys.has(value.selected_legacy.workspace_key)?value.selected_legacy.workspace_key:'';
         state.requestedChatWorkspaceId=state.researchLegacyKey;
         researchReady=true;researchFailure='';renderResearchOptions();
+        if(lost)paperChatWorkspace?.setStatus?.(window.PortalI18n.t('请选择或新建研究助手'));
       } catch(error) {
         if(seq===researchSequence && principal===state.principalId && selectionRevision===researchSelectionRevision) {
           researchFailure=String(error.message || error);renderResearchOptions();
@@ -260,7 +286,7 @@
       const currentUser = await window.PortalUI.loadCurrentUser({ fallbackUsername: "" });
       if (!currentUser.ok) return;
       const changed = state.username !== (currentUser.data?.username || "");
-      if(changed){state.researchSlot=null;state.researchLegacyKey='';state.researchIndexedPaper='';state.requestedChatWorkspaceId='';researchList=[];legacyList=[];researchSequence++;renderResearchOptions();}
+      if(changed){deletedResearchKeys.clear();state.researchSlot=null;state.researchLegacyKey='';state.researchIndexedPaper='';state.requestedChatWorkspaceId='';researchList=[];legacyList=[];researchSequence++;renderResearchOptions();}
       state.username = currentUser.data?.username || "";
       // This is the authenticated bootstrap's stable ID, not a display name.
       state.principalId = currentUser.data?.principal?.id || "";

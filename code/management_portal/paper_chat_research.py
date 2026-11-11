@@ -198,10 +198,15 @@ def list_slots(*, actor):
     for row in rows:
         try:
             items.append(get_slot(actor=actor, slot_id=row[0]))
-        except (KeyError, PermissionError):
-            # Keep the reference, so transient loss or deletion can be repaired
-            # explicitly; no silent replacement or history loss.
+        except KeyError:
             items.append({'slot_id': row[0], 'state': 'unavailable'})
+        except isa_client.InstructionError as error:
+            if error.code != 'instruction.not_found':
+                raise
+            # Only the authoritative GetResident not-found result is deletion.
+            with presentation_store.database().read() as connection:
+                missing = _get(connection, actor, SLOTS, row[0])
+            items.append({**missing, 'state': 'deleted'})
     return items
 
 
@@ -300,11 +305,10 @@ def select_chat(payload, actor):
 def catalog(params, *, actor):
     if params:
         raise ValueError('research catalog takes no client identity or target')
-    selected = None
-    try:
-        selected = selected_slot(actor=actor)
-    except (KeyError, PermissionError):
-        pass  # Stored selection is retained, but never replaced silently.
+    _actor(actor)
+    slots = list_slots(actor=actor)
+    deleted = [{'workspace_key': 'research:' + item['slot_id'],
+                'resident_id': item['resident_id']} for item in slots if item['state'] == 'deleted']
     from .workbench_projections.service import get_service
     app = get_service().builtin_application('paper', actor)
     prefix = 'surface-chat:' + actor + ':paper:'
@@ -315,18 +319,29 @@ def catalog(params, *, actor):
                 continue
             try:
                 actual = isa_client.call(actor, 'GetResident', {'resident_id': resident_id})['resident']
-            except (PermissionError, KeyError):
+            except isa_client.InstructionError as error:
+                if error.code != 'instruction.not_found':
+                    raise
+                deleted.append({'workspace_key': scope[len(prefix):], 'resident_id': resident_id})
                 continue
             legacy.append({'workspace_key': scope[len(prefix):], 'title': actual.get('title') or 'Legacy research',
                            'resident_id': resident_id})
-    with presentation_store.database().read() as connection:
+    # Never hold the association lock over an RPC. Clear only this actor's exact
+    # stale selection; retained references and Resident history are not deleted.
+    with presentation_store.database().transaction('paper-research:' + actor) as connection:
         try:
             selection = _get(connection, actor, SELECTION, 'active')
         except KeyError:
             selection = {}
+        key = ('research:' + selection['slot_id']) if selection.get('slot_id') else selection.get('workspace_key')
+        if key in {item['workspace_key'] for item in deleted}:
+            _put(connection, actor, SELECTION, 'active', {})
+            selection = {}
+    selected = next((item for item in slots if item['slot_id'] == selection.get('slot_id')
+                     and item['state'] != 'deleted'), None)
     selected_legacy = next((item for item in legacy if item['workspace_key'] == selection.get('workspace_key')), None)
-    return {'principal': actor, 'slots': list_slots(actor=actor), 'selected': selected,
-            'selected_legacy': selected_legacy, 'legacy': legacy}
+    return {'principal': actor, 'slots': slots, 'selected': selected,
+            'selected_legacy': selected_legacy, 'legacy': legacy, 'deleted': deleted}
 
 
 def project_material_index(*, actor, slot_id):
