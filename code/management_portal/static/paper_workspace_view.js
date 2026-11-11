@@ -110,8 +110,8 @@
       syncModeTabs();
       const paper = state.detail?.paper || null;
       const librarySummary = state.library?.summary || {};
-      const semantic = librarySummary.semantic_search || null;
-      const collection = librarySummary.paper_collection || null;
+      const semantic = state.mode === "library" && state.activeSemanticSearchId ? librarySummary.semantic_search || null : null;
+      const collection = state.mode === "library" && state.activeCollectorJobId ? librarySummary.paper_collection || null : null;
       const isLibraryMode = state.mode === "library" || state.mode === "today";
       const isCcfMode = state.leftFace === "ccf" && (isLibraryMode || (state.mode === "reader" && !!state.ccfSelectedPaper));
       if (isCcfMode) {

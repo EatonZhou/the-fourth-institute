@@ -129,8 +129,8 @@
 
     function libraryHeaderMeta() {
       const summary = state.library?.summary || {};
-      const semantic = summary.semantic_search || null;
-      const collection = summary.paper_collection || null;
+      const semantic = state.mode === "library" && state.activeSemanticSearchId ? summary.semantic_search || null : null;
+      const collection = state.mode === "library" && state.activeCollectorJobId ? summary.paper_collection || null : null;
       const chips = [];
       if (semantic) {
         chips.push(chip("Semantic search", "accent"));

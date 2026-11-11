@@ -87,6 +87,24 @@
       const previousMode = state.mode;
       state.requestedChatWorkspaceId = "";
       if (mode !== "reader" && !await cancelPdfRendering()) return;
+      // Explicit navigation leaves a saved-result view; history clicks set their
+      // own Library mode and selection without calling this navigation owner.
+      if (mode === 'today' || mode === 'library') {
+        if (state.activeSemanticSearchId || state.activeCollectorJobId) {
+          state.query = ''; state.filters = {};
+          const search = $('searchInput'); if (search) search.value = '';
+        }
+        state.activeSemanticSearchId = ''; state.activeCollectorJobId = '';
+        state.semanticSearch?.setActiveId?.('', {notify:false});
+        // A search deep link must not reactivate its saved selection on reload.
+        try {
+          const address = new URL(window.location.href);
+          if (address.searchParams.has('semantic')) {
+            address.searchParams.delete('semantic');
+            history.replaceState(history.state || {}, '', address.href);
+          }
+        } catch (_) { /* State navigation still works if the host cannot rewrite its URL. */ }
+      }
       if (state.leftFace === "ccf") {
         if (mode === "library") {
           state.mode = "library";
