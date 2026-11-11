@@ -3,8 +3,9 @@
 /* Mentions remain visible without expanding Mailbox; never steal focus. */
 .portalMailboxAlert {
   position: fixed;
-  right: max(58px, env(safe-area-inset-right));
-  bottom: max(24px, env(safe-area-inset-bottom));
+  /* Leave room for the site navigation, including its two-row mobile layout. */
+  top: calc(80px + env(safe-area-inset-top, 0px));
+  left: max(18px, calc(var(--portal-agent-inbox-left-clearance, 0px) + 8px), env(safe-area-inset-left));
   z-index: calc(var(--portal-layer-popover, 400) - 11);
   width: min(360px, calc(100vw - 80px));
   display: flex;
@@ -86,7 +87,6 @@
   .portalMailboxAlert {
     left: max(12px, calc(var(--portal-agent-inbox-left-clearance, 0px) + 8px), env(safe-area-inset-left));
     right: max(12px, calc(var(--portal-agent-inbox-right-clearance, 0px) + 8px), env(safe-area-inset-right));
-    bottom: max(64px, env(safe-area-inset-bottom));
     width: auto;
   }
   .portalMailboxAlert button { height: 44px; }
