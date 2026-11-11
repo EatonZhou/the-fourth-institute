@@ -75,17 +75,9 @@
       if (!state.selectedId) return;
       const articleId = state.selectedId;
       const context = articleChatContext();
-      const selection = context.file?.selection;
       const controller = await setSideView("chat");
       if (!controller || articleId !== state.selectedId) return;
-
-      const prompt = selection?.text
-        ? "请结合已附带的稿件选区，帮我审阅并给出可以直接落到 LaTeX 源码的修改建议。"
-        : "请结合已附带的当前稿件位置和工程上下文，继续协助我完善这篇 Article。";
-      const existing = String(controller?.draftText?.() || "").trim();
-      if (!existing) controller?.setDraftText?.(prompt);
       addArticleChatReference(context);
-
     }
 
     function initChatWorkspace() {

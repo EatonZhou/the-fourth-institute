@@ -113,7 +113,7 @@ const html = fs.readFileSync(path.join(root, 'management_portal/article_workspac
         const root = document.getElementById('articleMonacoEditor');
         root.style.cssText = 'display:block;width:600px;height:200px';
         state.editor = monaco.editor.create(root, { value: 'alpha\nMonaco selection\nomega', language: 'plaintext', automaticLayout: true });
-        state.monacoReady = true; state.openFile = 'main.tex';
+        state.monacoReady = true; state.openFile = 'main.tex'; draft = '';
         state.editor.setSelection(new monaco.Selection(2, 1, 2, 17)); state.editor.focus();
         resolve();
       });
@@ -121,12 +121,13 @@ const html = fs.readFileSync(path.join(root, 'management_portal/article_workspac
     await page.keyboard.press('Control+Alt+Enter');
     await page.waitForFunction(() => references.length === 3);
     assert.equal(await page.evaluate(() => JSON.parse(references.at(-1).text).file.selection.text), 'Monaco selection');
+    assert.equal(await page.evaluate(() => draft), '', 'selected context adds a reference without a generated prompt');
     assert.equal(await page.evaluate(() => state.editor.getValue()), 'alpha\nMonaco selection\nomega', 'shortcut never edits source');
     await page.evaluate(() => { state.editor.setPosition({ lineNumber: 3, column: 1 }); state.editor.focus(); draft = ''; });
     await page.keyboard.press('Meta+Alt+Enter');
     await page.waitForFunction(() => references.length === 4);
     assert.equal(await page.evaluate(() => JSON.parse(references.at(-1).text).file.cursor.line), 3);
-    assert.match(await page.evaluate(() => draft), /当前稿件位置/);
+    assert.equal(await page.evaluate(() => draft), '', 'cursor context also leaves an empty draft empty');
 
     await page.evaluate(() => { holdChat = true; state.editor.focus(); });
     await page.keyboard.press('Control+Alt+Enter');
@@ -134,8 +135,11 @@ const html = fs.readFileSync(path.join(root, 'management_portal/article_workspac
     await page.evaluate(() => { state.selectedId = 'article_other'; holdChat = false; releaseChat(); });
     await page.waitForFunction(() => !PortalCommandRegistry.root.get('article.contextToChat') || !PortalCommandRegistry.root.list().find(c => c.id === 'article.contextToChat').busy);
     assert.equal(await page.evaluate(() => references.length), 4, 'old selection cannot enter another article');
+    await page.evaluate(() => state.editor.setSelection(new monaco.Selection(2, 1, 2, 17)));
     await page.locator('#articleSendContext').click();
     await page.waitForFunction(() => references.length === 5);
+    assert.equal(await page.evaluate(() => JSON.parse(references.at(-1).text).file.selection.text), 'Monaco selection');
+    assert.equal(await page.evaluate(() => draft), '', 'toolbar adds only the reference as well');
     assert.deepEqual(await page.evaluate(() => notices), []);
     assert.deepEqual(errors, []);
     console.log('PASS: Article context shortcut in Monaco/textarea, modifier variants, scope, frozen selection, draft preservation and button');
