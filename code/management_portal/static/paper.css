@@ -19,7 +19,9 @@ body {
 .workspaceBody { height: calc(100% - 46px); overflow: hidden; }
 .workspacePane > .workspaceBody { width: 100%; height: 100%; min-width: 0; }
 .leftBody { padding: 9px; }
-.searchWrap { display: grid; gap: 7px; padding-bottom: 8px; border-bottom: 1px solid var(--border); margin-bottom: 8px; }
+.searchWrap { display: grid; gap: 6px; padding-top: 8px; border-top: 1px solid var(--border, #cbd5e1); margin-top: 8px; margin-bottom: 6px; }
+.paperSectionHint { margin: 0; font-size: 12px; line-height: 1.5; font-weight: 400; color: var(--muted); }
+.filterGrid > .paperSectionHint { grid-column: 1 / -1; }
 .collectorBox { display: grid; gap: 4px; }
 #collectorMaxPapers { flex: 0 0 58px; width: 58px; }
 .collectorJobList { display: grid; gap: 4px; }
@@ -751,18 +753,18 @@ body {
   #workspaceResourceIdentity { --portal-resource-identity-title-size: 17px; }
 }
 .paneToggle svg { transition: transform .16s ease; }
-.paperPersonal { padding: 8px; }
+.paperPersonal { padding: 0; }
 .paperPersonal [data-row] { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--border); }
 .paperPersonal [data-row] > button:first-child { flex: 1; text-align: left; }
 .paperPersonal time { font-size: 12px; opacity: .7; }
-.paperPersonal [data-status] { overflow-wrap: anywhere; }
+.paperPersonal [data-status] { overflow-wrap: anywhere; margin: 6px 0; }
 .paperPersonalFilters { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; padding-bottom: 12px; margin-bottom: 12px; border-bottom: 1px solid var(--border); }
 .paperPersonalFilters label { display: grid; gap: 4px; min-width: 0; font-size: 12px; }
 .paperPersonalFilters label:first-child { grid-column: 1 / -1; }
 .paperPersonalFilters .portalControl { width: 100%; min-width: 0; box-sizing: border-box; }
 .paperPersonalFilters button { justify-self: start; grid-column: 1 / -1; }
-.searchWrap > .collectorBox, .searchWrap > .filterGrid { border-top: 1px solid var(--border, #cbd5e1); padding-top: 14px; margin-top: 14px; }
-.searchWrap .paperSearchHistory { margin-top: 8px; }
+.searchWrap > .collectorBox, .searchWrap > .filterGrid { border-top: 1px solid var(--border, #cbd5e1); padding-top: 8px; margin-top: 2px; }
+.searchWrap .paperSearchHistory { margin-top: 0; }
 .searchWrap .paperSearchHistory > summary { font-size: 12px; font-weight: 400; line-height: 1.5; padding: 4px 0; cursor: pointer; }
 .searchWrap .paperSearchHistory > summary:hover { color: var(--accent, #2563eb); }
 .searchWrap .paperSearchHistory > summary:focus-visible { outline: 2px solid var(--accent, #2563eb); outline-offset: 2px; }

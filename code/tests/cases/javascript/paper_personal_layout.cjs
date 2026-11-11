@@ -22,6 +22,7 @@ assert.equal(host.querySelector('[data-scope=repository]').textContent,'全库')
 body.scrollTop=71;host.querySelector('[data-scope=repository]').click();body.scrollTop=93;
 host.querySelector('[data-scope=personal]').click();assert.equal(body.scrollTop,71);assert.equal(calls.length,1,'same personal page reused');
 host.querySelector('[data-scope=repository]').click();assert.equal(body.scrollTop,93);
+assert.equal(host.querySelector('[data-status]').textContent,'','repository cache must not render personal empty state');
 host.querySelector('[data-view=repository]').click();assert(!body.classList.contains('is-personal'));
 host.querySelector('[data-view=favorites]').click();await new Promise(r=>setTimeout(r,0));assert(calls.at(-1).includes('favorite=1'));
 let wb;const create=w.PortalWorkbench.create;w.PortalWorkbench={...w.PortalWorkbench,create:options=>{wb=create(options);return wb;}};

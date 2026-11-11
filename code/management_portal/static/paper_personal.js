@@ -15,13 +15,19 @@
       <p data-status role="status" aria-live="polite"></p>
       <div data-personal hidden><h3 data-heading></h3>
       <div class="paperPersonalFilters">
-        <label>关键词<input class="portalControl" data-personal-query type="search" placeholder="标题、作者、关键词、ID…"></label>
-        <label>年份<select class="portalControl" data-personal-year><option value="">全部年份</option></select></label>
-        <label>出版地点<select class="portalControl" data-personal-venue><option value="">全部出版地点</option></select></label>
-        <button class="portalButton is-compact" type="button" data-personal-clear>清除筛选</button>
+        <label><span data-portal-i18n-text="关键词">关键词</span><input class="portalControl" data-personal-query type="search" placeholder="标题、作者、关键词、ID…" data-portal-i18n-attrs='{"placeholder":"标题、作者、关键词、ID…"}'></label>
+        <label><span data-portal-i18n-text="年份">年份</span><select class="portalControl" data-personal-year><option value="">全部年份</option></select></label>
+        <label><span data-portal-i18n-text="出版地点">出版地点</span><select class="portalControl" data-personal-venue><option value="">全部出版地点</option></select></label>
+        <button class="portalButton is-compact" type="button" data-personal-clear data-portal-i18n-text="清除筛选">清除筛选</button>
       </div><div data-rows></div>
       <button type="button" data-more hidden>加载更多</button></div>`;
     host.querySelector("[data-more]").classList.add("portalButton", "is-compact");
+    host.querySelectorAll('[data-scope], [data-view], [data-more]').forEach(el => {
+      el.dataset.portalI18nText = el.textContent;
+    });
+    host.querySelectorAll('nav[aria-label]').forEach(el => {
+      el.dataset.portalI18nAttrs = JSON.stringify({'aria-label':el.getAttribute('aria-label')});
+    });
     const body = tree.closest('.leftBody');
     if (body) body.prepend(host); else tree.before(host);
     const panel = host.querySelector("[data-personal]");
@@ -57,14 +63,17 @@
       const personal = view !== 'repository';
       if (!personal && state.filters?.favorite) {
         delete state.filters.favorite;
-        loadLibrary?.({keepDetail: true, hydrateDetail: false}).catch(error => {status.textContent = error.message;});
+        const requestedSequence = sequence, requestedAccount = account;
+        loadLibrary?.({keepDetail: true, hydrateDetail: false}).catch(error => {
+          if (sequence === requestedSequence && account === requestedAccount && view === 'repository') status.textContent = error.message;
+        });
       }
       if (personal) personalView = view;
       body?.classList.toggle('is-personal', personal); tree.hidden = personal; panel.hidden = !personal;
       host.querySelector('[data-personal-tabs]').hidden = !personal;
       host.querySelectorAll('[data-scope]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.scope === (personal ? 'personal' : 'repository'))));
       host.querySelectorAll('[data-view]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.view === view)));
-      host.querySelector('[data-heading]').textContent = view === 'recent' ? '近期阅读' : '我的收藏';
+      host.querySelector('[data-heading]').textContent = window.PortalI18n.t(view === 'recent' ? '近期阅读' : '我的收藏');
       if (personal) syncFilters();
       rows.replaceChildren();
       const saved = views.get(view);
@@ -74,7 +83,8 @@
           if (!state.favoriteIds.has(row.dataset.row)) {row.remove(); offset = Math.max(0, offset - 1);}
         });
         if (view === 'favorites') scopeData.set(view, (scopeData.get(view) || []).filter(p => state.favoriteIds.has(p.id)));
-        renderPersonalTree(); sync();
+        if (personal) { renderPersonalTree(); sync(); }
+        else status.textContent = '';
       }
       else if (personal && account) page(true);
       else status.textContent = '';
@@ -91,6 +101,7 @@
       });
     }
     function renderPersonalTree() {
+      if (view === 'repository') return;
       syncFilters();
       const all = scopeData.get(view) || [], filter = filterState();
       const normalize = value => String(value ?? '').normalize('NFKC').toLocaleLowerCase();
@@ -101,7 +112,7 @@
           && (!filter.venue || paper.venue === filter.venue);
       });
       const active = tokens.length || filter.year || filter.venue;
-      status.textContent = !all.length ? '暂无记录' : !papers.length ? '没有符合筛选条件的论文' : active ? `${papers.length} / ${all.length} 篇` : '';
+      status.textContent = !all.length ? window.PortalI18n.t('暂无记录') : !papers.length ? window.PortalI18n.t('没有符合筛选条件的论文') : active ? `${papers.length} / ${all.length}` : '';
       const folders = [];
       for (const paper of papers) {
         let children = folders;
@@ -122,7 +133,7 @@
       controls.query.value = filter.query;
       for (const key of ['year', 'venue']) {
         const select = controls[key];
-        select.replaceChildren(new Option(key === 'year' ? '全部年份' : '全部出版地点', ''));
+        select.replaceChildren(new Option(window.PortalI18n.t(key === 'year' ? '全部年份' : '全部出版地点'), ''));
         const values = [...new Set(papers.map(p => String(p[key] || '')).filter(Boolean))].sort((a, b) => key === 'year' ? b.localeCompare(a) : a.localeCompare(b));
         // Keep an active value even when the last matching favorite is removed.
         if (filter[key] && !values.includes(filter[key])) values.push(filter[key]);
@@ -232,9 +243,15 @@
         views.delete('recent'); loadedViews.delete('recent');
         if (view === 'recent') page(true);
       }).catch(error => {
+        if (account !== String(state.principalId || '') || view !== 'recent') return;
         status.textContent = error?.status === 409 || error?.message?.includes("session_changed")
           ? "账号已变化，请刷新身份并重新打开论文；本次阅读未记录。" : error?.message || String(error);
       });
     });
+    window.addEventListener('portal:language-changed', () => {
+      host.querySelector('[data-heading]').textContent = window.PortalI18n.t(view === 'recent' ? '近期阅读' : '我的收藏');
+      if (view !== 'repository') renderPersonalTree();
+    });
+    window.PortalI18n.renderStatic?.();
   }};
 })();
