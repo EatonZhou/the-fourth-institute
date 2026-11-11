@@ -29,6 +29,13 @@
     let paperChatWorkspace = null;
     let paperChatPanel = null;
 
+    function singlePaperId(target) {
+      const match = /^paper:(paper_[0-9a-f]{12})$/.exec(target?.workspace_key || '');
+      if (!match) return '';
+      if (target.paper_id && target.paper_id !== match[1]) throw Error('论文讨论已变化，请重新发送');
+      return match[1];
+    }
+
     function paperChatDescriptor() {
       return {
         id: "chat",
@@ -45,12 +52,26 @@
 
           placeholder: window.PortalI18n.t("Ask about architecture, related work, review concerns..."),
           meta: "Ctrl/⌘ + Enter 发送",
-          resolveResident: target => paperApi.request(`/chat-workspace/api/session?surface=paper&workspace_key=${encodeURIComponent(target.workspace_key || "")}&paper_id=${encodeURIComponent(target.paper_id || "")}`),
+          resolveResident: target => paperApi.request(`/chat-workspace/api/session?surface=paper&workspace_key=${encodeURIComponent(target.workspace_key || "")}&paper_id=${encodeURIComponent(singlePaperId(target) || target.paper_id || "")}`),
           resolveBeforeSend: (target, payload) => paperApi.request("/chat-workspace/api/prepare", {
             method: "POST", body: JSON.stringify({ surface: "paper", workspace_key: target.workspace_key,
-              message: payload.text || payload.plainText, context: { ...activeChatContext(), paper_id: target.paper_id } }),
+              message: payload.text || payload.plainText, context: singlePaperId(target) ? {paper_id:singlePaperId(target)} : { ...activeChatContext(), paper_id: target.paper_id } }),
           }),
-          initialContext: (_target, detail) => ({ context_text: `${detail.initial_context?.context_text || ""}\n${JSON.stringify(activeChatContext())}` }),
+          submissionContext: async target => {
+            // Chat submits a Resident target; Paper identity belongs to its surface.
+            const surface = paperChatPanel?.surface?.();
+            const paperId = singlePaperId(surface);
+            if (!paperId) return null;
+            const principal = state.principalId;
+            const current = () => principal === state.principalId && surface.workspace_key === activeChatWorkspaceId()
+              && paperChatPanel?.surface?.()?.workspace_key === surface.workspace_key
+              && paperChatPanel?.target?.()?.resident_id === target.resident_id;
+            if (!current()) throw Error('论文讨论已变化，请重新发送');
+            const detail = await paperApi.request('/chat-workspace/api/prepare', {method:'POST',body:JSON.stringify({surface:'paper',workspace_key:surface.workspace_key,message:'单篇讨论上下文',context:{paper_id:paperId}})});
+            if (!current() || detail.resident_id !== target.resident_id) throw Error('论文讨论已变化，请重新发送');
+            return {context_text:detail.initial_context?.context_text||''};
+          },
+          initialContext: (_target, detail) => ({ context_text: singlePaperId(paperChatPanel?.surface?.()) ? (detail.initial_context?.context_text || "") : `${detail.initial_context?.context_text || ""}\n${JSON.stringify(activeChatContext())}` }),
 
           onDetail: detail => {
             state.chatMetadata = detail;

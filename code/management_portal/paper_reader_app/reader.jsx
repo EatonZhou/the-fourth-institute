@@ -12,16 +12,17 @@ function Reader({paper, principal, anchor, close, control, readingReady, frameRe
   const [selection, setSelection] = useState(null);
   const [mode, setMode] = useState('auto');
   const [discussion,setDiscussion] = useState(null);
-  const newDiscussion=async selection=>{
+  const openDiscussion=async selection=>{
     if(!isCurrent()||!isFullscreen())return;
+    if(discussion&&!selection)return;
     const document=selection?.document||await bridge.current.aiDocument();
-    if(isCurrent())setDiscussion({...selection,document,key:`paper-reader:${paper.id}:${crypto.randomUUID()}`});
+    if(isCurrent())setDiscussion({...selection,document,key:`paper:${paper.id}`});
   };
   useEffect(() => {
     frameReady(frame.current.contentWindow);
     const connection = connectZotero({frame: frame.current, paper, principal, ready: readingReady,
       translateSelection: value => {if (isCurrent() && isFullscreen()) setSelection(value);},
-      askSelection: value=>void newDiscussion(value),
+      askSelection: value=>void openDiscussion(value),
       status: (message, error = false) => { setStatus(message); setFailed(error); }});
     bridge.current = connection;
     control(connection);
@@ -32,7 +33,7 @@ function Reader({paper, principal, anchor, close, control, readingReady, frameRe
     <header className="paperReadingToolbar">
       <strong title={paper.title}>{paper.title}</strong>
       <TranslationMode mode={mode} onChange={setMode} />
-      <button onClick={()=>newDiscussion()}>新 AI 讨论</button>
+      <button aria-expanded={!!discussion} onClick={()=>discussion?setDiscussion(null):openDiscussion()}>{discussion?'收起 AI':'打开 AI'}</button>
       <a href={paper.pdf_url} target="_blank" rel="noopener noreferrer">原始 PDF</a>
       <button onClick={() => close()}><span className="paperLayoutEnter">全屏阅读</span><span className="paperLayoutExit">退出全屏</span></button>
     </header>

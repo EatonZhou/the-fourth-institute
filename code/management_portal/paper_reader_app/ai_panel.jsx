@@ -2,7 +2,8 @@ import React, {useEffect, useRef, useState} from 'react';
 
 export function AIPanel({discussion, principal, bridge, isCurrent, close}) {
   const root = useRef(null), panel = useRef(null);
-  const saveIdentity = useRef(null);
+  const saveIdentity = useRef(null), activeDiscussion = useRef(discussion), pendingSelection = useRef(discussion.text||'');
+  useEffect(()=>{activeDiscussion.current=discussion;pendingSelection.current=discussion.text||'';if(discussion.text)panel.current?.workspace.setDraftText(`请解释以下选区，并区分原文与推断：\n${discussion.text}`);},[discussion]);
   const [error,setError] = useState(''), [answers,setAnswers] = useState([]), [draft,setDraft] = useState('');
   const [saving,setSaving] = useState(false), [saved,setSaved] = useState(false);
   useEffect(()=>{
@@ -12,7 +13,7 @@ export function AIPanel({discussion, principal, bridge, isCurrent, close}) {
       if(!current())throw Error('论文或账号已变化');
       const response=await fetch('/chat-workspace/api/prepare',{method:'POST',credentials:'same-origin',
         headers:{'Content-Type':'application/json'},body:JSON.stringify({surface:'paper',workspace_key:discussion.key,
-          message,read_only:readOnly,context:{document:discussion.document,expected_principal:principal,selection:discussion.text||''}})});
+          message,read_only:readOnly,context:{document:discussion.document,expected_principal:principal,selection:pendingSelection.current}})});
       const value=await response.json();if(!response.ok)throw Error(value.error||'无法准备讨论');
       if(!current())throw Error('论文或账号已变化');return value;
     };
@@ -21,10 +22,11 @@ export function AIPanel({discussion, principal, bridge, isCurrent, close}) {
       const chat=window.PortalChatWorkspace.panelPackage.create({root:root.current,id:'reader-ai-'+discussion.key,
         autoLoad:false,draftOwner:()=>principal,title:'论文 AI 讨论',resolveResident:()=>prepare(true),resolveBeforeSend:(_target,payload)=>prepare(false,payload.text||payload.plainText),
         initialContext:(_target,detail)=>({context_text:detail.initial_context?.context_text||''}),
+        submissionContext:async()=>({context_text:(await prepare(false)).initial_context?.context_text||''}),
         onDetail:detail=>{if(!current())return;setAnswers((detail.messages||[]).filter(m=>window.PortalChatWorkspace.messageRole(m)==='agent')
           .map(m=>Array.isArray(m.content_parts)?m.content_parts.filter(p=>p.type==='text').map(p=>p.text||'').join('\n'):String(m.content||'')).filter(Boolean));},
         onError:e=>{if(current())setError(e.message);}});
-      const send=chat.send.bind(chat);chat.send=(...args)=>{if(!current())throw Error('论文或账号已变化');return send(...args);};
+      const send=chat.send.bind(chat);chat.send=(...args)=>{if(!current())throw Error('论文或账号已变化');return send(...args).then(value=>{pendingSelection.current='';return value;});};
       panel.current=chat;
       chat.openSurface({workspace_key:discussion.key,paper_id:discussion.document.paper_id}).then(()=>{
         if(current())chat.workspace.setDraftText(discussion.text?`请解释以下选区，并区分原文与推断：\n${discussion.text}`:'请围绕本篇论文回答：');
@@ -36,11 +38,10 @@ export function AIPanel({discussion, principal, bridge, isCurrent, close}) {
   const save=async()=>{
     if(!isCurrent()||!draft.trim())return;setSaving(true);setError('');
     if(saveIdentity.current?.text!==draft)saveIdentity.current={text:draft,id:crypto.randomUUID().replaceAll('-','').slice(0,8).toUpperCase()};
-    try{await bridge().saveAnswer(discussion,draft,saveIdentity.current.id);if(isCurrent())setSaved(true);}catch(e){if(isCurrent())setError(e.message);}finally{setSaving(false);}
+    try{await bridge().saveAnswer(activeDiscussion.current,draft,saveIdentity.current.id);if(isCurrent())setSaved(true);}catch(e){if(isCurrent())setError(e.message);}finally{setSaving(false);}
   };
   return <aside className="paperAIPanel" aria-label="论文 AI 侧栏">
-    <header><strong>论文 AI · 独立讨论</strong><button onClick={close}>收起 AI</button></header>
-    <p>仅本篇材料；此处继续提问沿用当前讨论。另开讨论不带旧历史。</p>
+    <div className="paperAIClose"><button onClick={close} aria-label="收起 AI">收起 AI</button></div>
     {discussion.position&&<button onClick={()=>{if(isCurrent())bridge().locateSelection(discussion);}}>引用选区 · 第 {discussion.position.pageIndex+1} 页</button>}
     {error&&<p role="alert">{error}</p>}
     <div ref={root} className="paperAIChat" />

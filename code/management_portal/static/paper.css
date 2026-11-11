@@ -760,3 +760,50 @@ body {
 /* Personal navigation uses the same segments as Library / CCF. */
 .paperPersonal [data-personal-tabs][hidden],
 .paperPersonal [data-status]:empty { display: none !important; }
+
+/* Compact Zotero-like Reader chrome, scoped away from shared Chat surfaces. */
+.paperReadingDialog { font: 13px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+.paperReadingDialog .paperReadingToolbar { gap:6px; padding:6px 10px; background:#f8f8f8; border-color:#dedede; }
+.paperReadingDialog .paperReadingToolbar strong { font-size:13px; font-weight:500; }
+.paperReadingDialog :is(.paperReadingToolbar,.paperAIPanel) :is(button,select,textarea):not(.paperAIChat *) { font:inherit; color:#303030; border:1px solid #d6d6d6; border-radius:5px; box-shadow:none; }
+.paperReadingDialog :is(.paperReadingToolbar,.paperAIPanel) button:not(.paperAIChat *) { appearance:none; background:transparent; padding:4px 8px; min-height:28px; cursor:pointer; }
+.paperReadingDialog :is(.paperReadingToolbar,.paperAIPanel) button:hover:not(:disabled):not(.paperAIChat *) { background:#eaeaea; border-color:#c6c6c6; }
+.paperReadingDialog :is(.paperReadingToolbar,.paperAIPanel) button:disabled:not(.paperAIChat *) { opacity:.45; cursor:default; }
+.paperReadingDialog :is(.paperReadingToolbar,.paperAIPanel) :is(button,select,textarea,[role="textbox"],a,summary):focus-visible:not(.paperAIChat *) { outline:2px solid #6b94bd; outline-offset:2px; }
+.paperReadingDialog :is(.paperReadingToolbar,.paperAIPanel) select:not(.paperAIChat *) { background:#fff; padding:3px 6px; min-height:28px; max-width:100%; }
+.paperReadingDialog .paperTranslationMode { gap:5px; font-size:12px; color:#626262; }
+.paperReadingDialog .paperReadingToolbar a { font-size:12px; color:#3b668e; text-decoration:none; padding:4px; border-radius:4px; }
+.paperReadingDialog .paperReadingToolbar a:hover { text-decoration:underline; background:#eaeaea; }
+.paperReadingDialog .paperAIPanel { width:min(360px,42vw); padding:0; gap:0; background:#fff; border-color:#dedede; min-width:0; }
+.paperReadingDialog .paperAIPanel > header { align-items:center; padding:6px 10px; min-height:36px; box-sizing:border-box; border-bottom:1px solid #e5e5e5; background:#f8f8f8; }
+.paperReadingDialog .paperAIPanel > header strong { font-size:13px; font-weight:600; }
+.paperReadingDialog .paperAIPanel > header button { font-size:12px; border-color:transparent; }
+.paperReadingDialog .paperAIScope { margin:0; padding:7px 10px; font-size:11px; color:#737373; }
+.paperReadingDialog .paperAIPanel > :is(button,[role="alert"]) { margin:4px 10px; }
+.paperReadingDialog .paperAIChat { min-height:220px; min-width:0; overflow:hidden; }
+.paperReadingDialog .paperAIChat .chatHead { padding:6px 10px; gap:6px; background:#fff; border-bottom:1px solid #e5e5e5; }
+.paperReadingDialog .paperAIChat .chatTitleLine .paneTitle { position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); }
+.paperReadingDialog .paperAIChat :is(.chatHeadText,.chatSubline) { min-width:0; }
+.paperReadingDialog .paperAIChat .paneNote { font-size:11px; line-height:1.5; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.paperReadingDialog .paperAIChat .paneHeadActions { gap:2px; }
+.paperReadingDialog .paperAIChat .iconBtn { width:28px; height:28px; padding:5px; border-color:transparent; }
+.paperReadingDialog .paperAIChat .composer { padding:8px; gap:6px; background:#fafafa; border-color:#e5e5e5; }
+.paperReadingDialog .paperAIChat .composerRichInput { font-size:13px; line-height:1.5; min-height:64px; padding:8px; border-radius:6px; }
+.paperReadingDialog .paperAIChat .composerActions { gap:4px; }
+.paperReadingDialog .paperAIChat .composerMeta { font-size:10px; }
+.paperReadingDialog .paperAIPanel > details { padding:8px 10px; border-top:1px solid #e5e5e5; font-size:12px; }
+.paperReadingDialog .paperAIPanel summary { cursor:pointer; color:#505050; padding:3px 0; }
+.paperReadingDialog .paperAIPanel > details :is(select,textarea) { width:100%; margin-top:8px; box-sizing:border-box; }
+.paperReadingDialog .paperAIPanel textarea:not(.paperAIChat *) { padding:7px 8px; background:#fff; resize:vertical; }
+@media(max-width:760px) {
+ .paperReadingDialog .paperReadingToolbar > strong { flex-basis:100%; }
+ .paperReadingDialog .paperReadingToolbar { gap:4px; }
+ .paperReadingDialog .paperTranslationMode { flex:1 1 auto; }
+ .paperReadingDialog .paperAIPanel { width:min(330px,52vw); }
+ .paperReadingDialog .paperAIChat .composerActions { flex-wrap:wrap; }
+}
+.paperReadingDialog .paperAIPanel { position:relative; }
+.paperReadingDialog .paperAIClose { position:absolute; top:6px; right:6px; z-index:20; }
+.paperReadingDialog .paperAIClose button { border-color:transparent; font-size:12px; }
+.paperReadingDialog .paperAIChat .chatHead { padding-right:72px; min-height:42px; }
+.paperReadingDialog .paperAIChat .chatTitleLine .paneTitle { position:static; width:auto; height:auto; overflow:hidden; clip-path:none; font-size:13px; font-weight:600; }

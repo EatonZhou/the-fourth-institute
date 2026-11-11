@@ -7,7 +7,7 @@ import json
 from management_portal.paper_search import _filter_papers, resource_index_papers
 from management_portal.paper_store import (
     LOCK, PAPER_STORE, PAPER_STORE_ROOT, _analysis_text, _paper_public, _paper_root, _paper_store_file,
-    _safe_file_path, _summary_text,
+    _safe_file_path, _summary_text, _read_text_preview,
 )
 
 
@@ -33,6 +33,38 @@ def _chat_workspace_display(paper: dict | None, collection_label: str) -> dict:
 def chat_workspace_display_context(*, paper_id: str = "", collection_label: str = "") -> dict:
     paper_id = str(paper_id or "").strip()
     return _chat_workspace_display(PAPER_STORE.paper_by_id(paper_id) if paper_id else None, collection_label)
+
+
+def single_paper_prompt_context(selected: dict) -> dict:
+    """Render server-resolved single-paper material without library lookup.
+
+    Callers own directed resolution and authorization before entering here.
+    File references use the existing bundle containment / allowed-root helpers.
+    """
+    public = _paper_public(selected)
+    analysis_path = _paper_store_file(selected, "analysis") or _safe_file_path(str(selected.get("analysis_path") or ""))
+    pdf_path = _paper_store_file(selected, "pdf") or _safe_file_path(str(selected.get("pdf_path") or ""))
+    pdf_text_path = _paper_store_file(selected, "pdf_text_clean")
+    prompt_context = f"""Paper Research Chat context:
+- selected paper id: {public.get('id') or ''}
+- title: {public.get('title') or ''}
+- authors: {public.get('authors') or ''}
+- venue/year: {public.get('venue') or ''} {public.get('year') or ''}
+- paper root: {_paper_root(selected) or ''}
+- pdf path: {pdf_path or ''}
+- analysis path: {analysis_path or ''}
+- pdf text path: {pdf_text_path or ''}
+
+Abstract:
+{str(selected.get('abstract') or '')[:3000]}
+
+Summary excerpt:
+{_summary_text(selected, limit=2400)}
+
+Analysis excerpt:
+{(_read_text_preview(analysis_path, limit=12000) or _analysis_text(selected, limit=12000))[:12000]}
+"""
+    return {**_chat_workspace_display(public, ""), "prompt_context": prompt_context}
 
 
 def chat_workspace_prompt_context(
@@ -64,30 +96,7 @@ def chat_workspace_prompt_context(
         if not selected and not matches and not requested_items:
             matches = [_paper_public(p) for p in papers[:10]]
     if selected:
-        public = _paper_public(selected)
-        analysis_path = _paper_store_file(selected, "analysis") or _safe_file_path(str(selected.get("analysis_path") or ""))
-        pdf_path = _safe_file_path(str(selected.get("pdf_path") or ""))
-        pdf_text_path = _paper_store_file(selected, "pdf_text_clean")
-        prompt_context = f"""Paper Research Chat context:
-- selected paper id: {public.get('id') or ''}
-- title: {public.get('title') or ''}
-- authors: {public.get('authors') or ''}
-- venue/year: {public.get('venue') or ''} {public.get('year') or ''}
-- paper root: {_paper_root(selected) or ''}
-- pdf path: {pdf_path or selected.get('pdf_path') or ''}
-- analysis path: {analysis_path or selected.get('analysis_path') or ''}
-- pdf text path: {pdf_text_path or ''}
-
-Abstract:
-{str(selected.get('abstract') or '')[:3000]}
-
-Summary excerpt:
-{_summary_text(selected, limit=2400)}
-
-Analysis excerpt:
-{_analysis_text(selected, limit=12000)}
-"""
-        return {**_chat_workspace_display(public, collection_label), "prompt_context": prompt_context}
+        return single_paper_prompt_context(selected)
     lines = [
         "Paper Research Chat context:",
         "- selected paper: none",

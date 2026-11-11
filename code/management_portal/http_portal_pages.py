@@ -114,6 +114,8 @@ class PortalPagesHttp:
             "paper_id": str((qs.get("paper_id") or [""])[0]).strip(),
             "query": str((qs.get("query") or [""])[0]).strip(),
         }
+        # Absent cross-surface query fields are not part of a Paper contract.
+        context = {key: value for key, value in context.items() if value}
         try:
             return self.respond(request, 200, self.workspace_adapter.get_workspace(actor or "", surface, workspace_key, context))
         except PermissionError as exc:
