@@ -756,6 +756,16 @@ body {
 .paperPersonal [data-row] > button:first-child { flex: 1; text-align: left; }
 .paperPersonal time { font-size: 12px; opacity: .7; }
 .paperPersonal [data-status] { overflow-wrap: anywhere; }
+.paperPersonalFilters { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; padding-bottom: 12px; margin-bottom: 12px; border-bottom: 1px solid var(--border); }
+.paperPersonalFilters label { display: grid; gap: 4px; min-width: 0; font-size: 12px; }
+.paperPersonalFilters label:first-child { grid-column: 1 / -1; }
+.paperPersonalFilters .portalControl { width: 100%; min-width: 0; box-sizing: border-box; }
+.paperPersonalFilters button { justify-self: start; grid-column: 1 / -1; }
+.searchWrap > .collectorBox, .searchWrap > .filterGrid { border-top: 1px solid var(--border, #cbd5e1); padding-top: 14px; margin-top: 14px; }
+.searchWrap .paperSearchHistory { margin-top: 8px; }
+.searchWrap .paperSearchHistory > summary { font-size: 12px; font-weight: 400; line-height: 1.5; padding: 4px 0; cursor: pointer; }
+.searchWrap .paperSearchHistory > summary:hover { color: var(--accent, #2563eb); }
+.searchWrap .paperSearchHistory > summary:focus-visible { outline: 2px solid var(--accent, #2563eb); outline-offset: 2px; }
 
 /* Personal navigation uses the same segments as Library / CCF. */
 .paperPersonal [data-personal-tabs][hidden],

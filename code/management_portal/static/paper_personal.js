@@ -6,14 +6,20 @@
     const host = document.createElement("section");
     host.className = "paperPersonal";
     host.innerHTML = `<nav class="portalSegmented leftFaceTabs" data-scopes aria-label="查看范围">
-      <button type="button" data-scope="personal">个人</button>
-      <button type="button" data-scope="repository" data-view="repository">全库</button></nav>
+      <button type="button" data-scope="repository" data-view="repository">全库</button>
+      <button type="button" data-scope="personal">个人</button></nav>
       <nav class="portalSegmented leftFaceTabs" data-personal-tabs aria-label="个人文献">
       <button type="button" data-view="recent">近期阅读</button>
       <button type="button" data-view="favorites">收藏</button>
       </nav>
       <p data-status role="status" aria-live="polite"></p>
-      <div data-personal hidden><h3 data-heading></h3><div data-rows></div>
+      <div data-personal hidden><h3 data-heading></h3>
+      <div class="paperPersonalFilters">
+        <label>关键词<input class="portalControl" data-personal-query type="search" placeholder="标题、作者、关键词、ID…"></label>
+        <label>年份<select class="portalControl" data-personal-year><option value="">全部年份</option></select></label>
+        <label>出版地点<select class="portalControl" data-personal-venue><option value="">全部出版地点</option></select></label>
+        <button class="portalButton is-compact" type="button" data-personal-clear>清除筛选</button>
+      </div><div data-rows></div>
       <button type="button" data-more hidden>加载更多</button></div>`;
     host.querySelector("[data-more]").classList.add("portalButton", "is-compact");
     const body = tree.closest('.leftBody');
@@ -27,11 +33,17 @@
     const views = new Map();
     const scopeData = new Map(), expansions = new Map();
     const loadedViews = new Set();
+    const filters = new Map();
+    const controls = Object.fromEntries(['query', 'year', 'venue'].map(key => [key, host.querySelector(`[data-personal-${key}]`)]));
+    const filterState = () => {
+      if (!filters.has(view)) filters.set(view, {query: '', year: '', venue: ''});
+      return filters.get(view);
+    };
     function accountChanged() {
       const next = String(state.principalId || '');
       if (next === account) return;
       account = next; ++sequence; loading = false; views.clear(); loadedViews.clear(); scopeData.clear(); expansions.clear();
-      rows.replaceChildren(); cursor = ''; offset = 0; status.textContent = '';
+      filters.clear(); rows.replaceChildren(); cursor = ''; offset = 0; status.textContent = '';
       state.favoriteIds.clear(); pending.clear(); acknowledged.clear(); personalView = 'recent';
       show('recent', false);
     }
@@ -53,6 +65,7 @@
       host.querySelectorAll('[data-scope]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.scope === (personal ? 'personal' : 'repository'))));
       host.querySelectorAll('[data-view]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.view === view)));
       host.querySelector('[data-heading]').textContent = view === 'recent' ? '近期阅读' : '我的收藏';
+      if (personal) syncFilters();
       rows.replaceChildren();
       const saved = views.get(view);
       if (saved) {
@@ -78,7 +91,17 @@
       });
     }
     function renderPersonalTree() {
-      const papers = scopeData.get(view) || [];
+      syncFilters();
+      const all = scopeData.get(view) || [], filter = filterState();
+      const normalize = value => String(value ?? '').normalize('NFKC').toLocaleLowerCase();
+      const tokens = normalize(filter.query).trim().split(/\s+/).filter(Boolean);
+      const papers = all.filter(paper => {
+        const text = normalize([paper.id, paper.title, paper.authors, paper.tags, paper.keywords, paper.venue, paper.session].flat().filter(Boolean).join(' '));
+        return tokens.every(token => text.includes(token)) && (!filter.year || String(paper.year || '') === filter.year)
+          && (!filter.venue || paper.venue === filter.venue);
+      });
+      const active = tokens.length || filter.year || filter.venue;
+      status.textContent = !all.length ? '暂无记录' : !papers.length ? '没有符合筛选条件的论文' : active ? `${papers.length} / ${all.length} 篇` : '';
       const folders = [];
       for (const paper of papers) {
         let children = folders;
@@ -94,6 +117,24 @@
       rows.querySelectorAll('[data-paper-id]').forEach(el => el.closest('.paperLeaf').dataset.row = el.dataset.paperId);
       if (!papers.length) rows.replaceChildren();
     }
+    function syncFilters() {
+      const filter = filterState(), papers = scopeData.get(view) || [];
+      controls.query.value = filter.query;
+      for (const key of ['year', 'venue']) {
+        const select = controls[key];
+        select.replaceChildren(new Option(key === 'year' ? '全部年份' : '全部出版地点', ''));
+        const values = [...new Set(papers.map(p => String(p[key] || '')).filter(Boolean))].sort((a, b) => key === 'year' ? b.localeCompare(a) : a.localeCompare(b));
+        // Keep an active value even when the last matching favorite is removed.
+        if (filter[key] && !values.includes(filter[key])) values.push(filter[key]);
+        values.forEach(value => select.add(new Option(value, value)));
+        select.value = filter[key];
+      }
+    }
+    for (const [key, control] of Object.entries(controls)) control.addEventListener(key === 'query' ? 'input' : 'change', () => {
+      accountChanged();
+      filterState()[key] = control.value;
+      renderPersonalTree(); sync();
+    });
     async function page(reset = false) {
       if (loading && !reset) return;
       const current = ++sequence, requestedView = view;
@@ -128,7 +169,6 @@
         renderPersonalTree();
         loadedViews.add(view);
         more.hidden = true;
-        status.textContent = rows.childElementCount ? "" : "暂无记录";
         sync();
       } catch (error) { if (current === sequence) message(error); }
       finally { if (current === sequence) { loading = false; more.disabled = false; } }
@@ -136,6 +176,9 @@
     host.addEventListener("click", async event => {
       const button = event.target.closest("button"); if (!button) return;
       accountChanged();
+      if (button.hasAttribute('data-personal-clear')) {
+        filters.delete(view); renderPersonalTree(); sync(); return;
+      }
       if (button.dataset.paperTreeToggle) {
         expansions.get(view)[button.dataset.paperTreeToggle] = button.getAttribute('aria-expanded') !== 'true';
         renderPersonalTree(); return;
@@ -162,7 +205,7 @@
             renderPersonalTree();
             offset = Math.max(0, offset - 1);
           }
-          window.dispatchEvent(new CustomEvent("portal:paper-favorite-changed"));
+          window.dispatchEvent(new CustomEvent("portal:paper-favorite-changed", {detail: {personalHost: host}}));
         } catch (error) { message(error); } finally {
           if (principal === account) {pending.delete(id); state.favoriteRevision += 1; sync(); syncFavoriteButtons();}
         }
@@ -170,8 +213,10 @@
     });
     show('recent', false);
     window.addEventListener('portal:paper-principal-changed', accountChanged);
-    window.addEventListener("portal:paper-favorite-changed", () => {
-      if (view !== 'favorites') {views.delete('favorites'); loadedViews.delete('favorites');}
+    window.addEventListener("portal:paper-favorite-changed", event => {
+      if (event.detail?.personalHost === host && view === 'favorites') return;
+      views.delete('favorites'); loadedViews.delete('favorites');
+      if (view === 'favorites') page(true);
       sync();
     });
     window.addEventListener("portal:paper-reader-ready", event => {
