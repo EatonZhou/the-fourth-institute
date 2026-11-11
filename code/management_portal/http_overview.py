@@ -7,6 +7,7 @@ import time
 from datetime import datetime
 from http.server import SimpleHTTPRequestHandler
 from pathlib import Path
+from urllib.parse import parse_qs
 
 from management_common.site_registry import get_portal_summary, get_runtime_config
 from management_portal import agent_context_selection, http_auth, http_instance, http_responses, web_clients
@@ -16,22 +17,32 @@ from management_portal.society_service import SocietyServiceBusy, SocietyService
 from management_portal.http_routes import RouteDefinition
 
 
-def _daily_news_root() -> Path:
+_DAILY_NEWS_EDITIONS = {
+    "embodied": {"title": "具身智能", "lineage_id": "lineage_7e2464bbdb60"},
+    "x": {"title": "X 资讯", "lineage_id": "lineage_c625a4bee56b"},
+}
+_DAILY_NEWS_DEFAULT_EDITION = "embodied"
+
+
+def _daily_news_root(lineage_id: str) -> Path:
     from management_portal.society_service.lineage_storage import lineage_folder_for_project
 
-    lineage_id = "lineage_7e2464bbdb60"
     # Web consumes the owning service's committed registration. It must not
     # initialize or validate the Lineage database in its own long-lived process.
     lineage = web_clients.lineage_domain.get_lineage_resource_projection(lineage_id)
     return lineage_folder_for_project(lineage_id, lineage["project_id"]) / "memory" / "reports"
 
 
-def _daily_news_payload() -> dict:
+def _daily_news_payload(edition: str = _DAILY_NEWS_DEFAULT_EDITION) -> dict:
     requested_date = datetime.now().astimezone().date().isoformat()
+    base = {
+        "edition": edition,
+        "editions": [{"id": key, "title": value["title"]} for key, value in _DAILY_NEWS_EDITIONS.items()],
+    }
     try:
-        root = _daily_news_root()
+        root = _daily_news_root(_DAILY_NEWS_EDITIONS[edition]["lineage_id"])
     except (KeyError, ValueError, OSError, SocietyServiceUnavailable) as exc:
-        return {"status": "error", "date": requested_date, "path": "", "content": "", "error": str(exc)}
+        return {"status": "error", "date": requested_date, "path": "", "content": "", "error": str(exc), **base}
     requested_path = root / f"{requested_date}__daily_news.md"
     report_path = requested_path
     if not report_path.is_file():
@@ -47,6 +58,7 @@ def _daily_news_payload() -> dict:
                 "path": str(requested_path),
                 "content": "",
                 "error": str(exc),
+                **base,
             }
         report_path = next(
             (
@@ -64,6 +76,7 @@ def _daily_news_payload() -> dict:
             "date": requested_date,
             "path": str(requested_path),
             "content": "",
+            **base,
         }
     except (OSError, UnicodeError) as exc:
         return {
@@ -72,6 +85,7 @@ def _daily_news_payload() -> dict:
             "path": str(report_path),
             "content": "",
             "error": str(exc),
+            **base,
         }
     try:
         updated_at = datetime.fromtimestamp(report_path.stat().st_mtime).astimezone().isoformat()
@@ -85,6 +99,7 @@ def _daily_news_payload() -> dict:
         "path": str(report_path),
         "updated_at": updated_at,
         "content": content,
+        **base,
     }
 
 
@@ -217,8 +232,18 @@ def _route_summary(request, _parsed, _actor: str):
     return http_responses._serve_json(request, 200, get_portal_summary())
 
 
-def _route_daily_news(request, _parsed, _actor: str):
-    return http_responses._serve_json(request, 200, _daily_news_payload())
+def _route_daily_news(request, parsed, _actor: str):
+    edition = parse_qs(parsed.query).get("edition", [_DAILY_NEWS_DEFAULT_EDITION])[0]
+    if edition not in _DAILY_NEWS_EDITIONS:
+        return http_responses._serve_json(request, 400, {
+            "status": "error",
+            "date": datetime.now().astimezone().date().isoformat(),
+            "path": "",
+            "content": "",
+            "error": f"unknown Daily News edition: {edition}",
+            "editions": [{"id": key, "title": value["title"]} for key, value in _DAILY_NEWS_EDITIONS.items()],
+        })
+    return http_responses._serve_json(request, 200, _daily_news_payload(edition))
 
 
 def routes() -> tuple[RouteDefinition, ...]:

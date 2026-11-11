@@ -17,7 +17,7 @@ def test_daily_news_unreadable_today_does_not_fallback(tmp_path, monkeypatch):
     current.write_text("unreadable fixture")
     previous = tmp_path / f"{(today - timedelta(days=1)).isoformat()}__daily_news.md"
     previous.write_text("must not return this")
-    monkeypatch.setattr(http_overview, "_daily_news_root", lambda: tmp_path)
+    monkeypatch.setattr(http_overview, "_daily_news_root", lambda _lineage_id: tmp_path)
     original = Path.read_text
 
     def read_text(path, *args, **kwargs):

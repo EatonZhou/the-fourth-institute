@@ -17,6 +17,7 @@
     let portalPulseData = null;
     let portalPulsePublicRange = "daily";
     let portalPulsePersonalRange = "daily";
+    let dailyNewsEdition = "";
 
     function homeStatusHtml(label, tone = "neutral", className = "") {
       return window.PortalUIPrimitives.statusHtml(tone, {
@@ -164,15 +165,47 @@
       }
     }
 
+    function dailyNewsEditionsHtml(data) {
+      const editions = Array.isArray(data?.editions) ? data.editions : [];
+      if (editions.length < 2) return "";
+      const current = data?.edition || dailyNewsEdition || editions[0].id;
+      return window.PortalI18n.html`
+    <div class="pulse-tabs daily-news-editions" role="tablist" aria-label="Daily News edition">
+      ${editions.map(edition => window.PortalI18n.html`
+        <button
+          class="portalButton is-compact is-quiet pulse-tab ${edition.id === current ? "active" : ""}"
+          type="button"
+          role="tab"
+          aria-selected="${edition.id === current ? "true" : "false"}"
+          aria-pressed="${edition.id === current ? "true" : "false"}"
+          data-daily-news-edition="${esc(edition.id)}"
+        >${esc(edition.title)}</button>
+      `).join("")}
+    </div>
+  `;
+    }
+
+    function attachDailyNewsHandlers() {
+      for (const button of document.querySelectorAll("[data-daily-news-edition]")) {
+        button.addEventListener("click", () => {
+          dailyNewsEdition = button.getAttribute("data-daily-news-edition") || "";
+          loadDailyNews();
+        });
+      }
+    }
+
     function renderDailyNews(data) {
       const node = document.querySelector("[data-daily-news]");
       if (!node) return;
+      const editionsHtml = dailyNewsEditionsHtml(data);
       if (data?.status === "missing") {
-        node.innerHTML = window.PortalI18n.html`<div class="daily-news-empty">今天的新闻报告还没有生成。</div>`;
+        node.innerHTML = window.PortalI18n.html`${editionsHtml}<div class="daily-news-empty">今天的新闻报告还没有生成。</div>`;
+        attachDailyNewsHandlers();
         return;
       }
       if (data?.status !== "ok") {
-        node.innerHTML = window.PortalI18n.html`<div class="daily-news-error">${esc(data?.error || window.PortalI18n.t("今日新闻读取失败"))}</div>`;
+        node.innerHTML = window.PortalI18n.html`${editionsHtml}<div class="daily-news-error">${esc(data?.error || window.PortalI18n.t("今日新闻读取失败"))}</div>`;
+        attachDailyNewsHandlers();
         return;
       }
       const content = String(data.content || "").trim();
@@ -185,16 +218,19 @@
       <div class="daily-news-toolbar">
         ${homeStatusHtml(data.date || "Today", "info", "daily-news-date")}
         ${updatedLabel ? window.PortalI18n.html`<div class="daily-news-meta">${esc(updatedLabel)}</div>` : ""}
+        ${editionsHtml}
       </div>
       <div class="daily-news-body">${content && window.MD?.render ? window.MD.render(content) : window.PortalI18n.html`<div class="daily-news-empty">今天的新闻报告为空。</div>`}</div>
     </div>
   `;
+      attachDailyNewsHandlers();
     }
 
     async function loadDailyNews() {
       const node = document.querySelector("[data-daily-news]");
+      const query = dailyNewsEdition ? `?edition=${encodeURIComponent(dailyNewsEdition)}` : "";
       try {
-        renderDailyNews(await homeApi.get("/api/daily-news"));
+        renderDailyNews(await homeApi.get(`/api/daily-news${query}`));
       } catch (err) {
         if (node) node.innerHTML = window.PortalI18n.html`<div class="daily-news-error">${esc(window.PortalUI.errorMessage(window.PortalI18n.t("读取今日新闻"), err))}</div>`;
       }
