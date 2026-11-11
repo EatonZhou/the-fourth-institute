@@ -23,5 +23,5 @@ const engine=require('../../../management_portal/test_framework/tau_runtime/node
  await p.getByRole('button',{name:'确认保存便签',exact:true}).click();await p.getByText('便签已保存',{exact:true}).waitFor();await outer.locator('[data-sidebar-annotation-id]').first().waitFor();
  await p.locator('.paperReadingToolbar').getByRole('button',{name:'收起 AI',exact:true}).click();assert.equal(await p.locator('.paperAIPanel').count(),0);
  await p.locator('.paperReadingToolbar').getByRole('button',{name:'打开 AI',exact:true}).click();await p.waitForFunction(()=>aiPrepares.length===3);assert.equal(await p.evaluate(()=>aiPrepares.at(-1).workspace_key),'paper:paper_0123456789ab');
- await p.locator('.paperAIClose').getByRole('button',{name:'收起 AI'}).click();console.log('PASS actual selection/document, shared paper discussion identity, followup same panel, citation navigation, explicit note persisted; Research Chat panel contract synthetic; no Execution/model');
+ await p.locator('.paperReadingToolbar').getByRole('button',{name:'收起 AI'}).click();console.log('PASS actual selection/document, shared paper discussion identity, followup same panel, citation navigation, explicit note persisted; Research Chat panel contract synthetic; no Execution/model');
 }finally{await browser.close();}})().catch(e=>{console.error(e);process.exitCode=1;});

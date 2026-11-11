@@ -29,7 +29,7 @@ export function AIPanel({discussion, principal, bridge, isCurrent, close}) {
       const send=chat.send.bind(chat);chat.send=(...args)=>{if(!current())throw Error('论文或账号已变化');return send(...args).then(value=>{pendingSelection.current='';return value;});};
       panel.current=chat;
       chat.openSurface({workspace_key:discussion.key,paper_id:discussion.document.paper_id}).then(()=>{
-        if(current())chat.workspace.setDraftText(discussion.text?`请解释以下选区，并区分原文与推断：\n${discussion.text}`:'请围绕本篇论文回答：');
+        if(current()&&discussion.text)chat.workspace.setDraftText(`请解释以下选区，并区分原文与推断：\n${discussion.text}`);
       }).catch(e=>{if(current())setError(e.message);});
     } catch(e){setError(e.message);}
     const watch=setInterval(()=>{if(!disposed&&!isCurrent()){disposed=true;panel.current?.destroy();panel.current=null;setAnswers([]);setDraft('');setError('论文或账号已变化，请重新打开讨论');}},250);
@@ -41,7 +41,6 @@ export function AIPanel({discussion, principal, bridge, isCurrent, close}) {
     try{await bridge().saveAnswer(activeDiscussion.current,draft,saveIdentity.current.id);if(isCurrent())setSaved(true);}catch(e){if(isCurrent())setError(e.message);}finally{setSaving(false);}
   };
   return <aside className="paperAIPanel" aria-label="论文 AI 侧栏">
-    <div className="paperAIClose"><button onClick={close} aria-label="收起 AI">收起 AI</button></div>
     {discussion.position&&<button onClick={()=>{if(isCurrent())bridge().locateSelection(discussion);}}>引用选区 · 第 {discussion.position.pageIndex+1} 页</button>}
     {error&&<p role="alert">{error}</p>}
     <div ref={root} className="paperAIChat" />

@@ -645,13 +645,31 @@
           transientStatus = String(state.composer.send_hint || "").trim();
         }
       }
+      let gateFullText = "";
       if (state.composer.execution_gate) {
         const gate = window.PortalResidentProtocol.executionGateView(state.composer);
-        transientStatus = [gate.text, transientStatus].filter(Boolean).join(" · ");
+        // Queue hints can already begin with the gate reason. Keep their full
+        // explanation while adding only the state label in that case.
+        const gateSummary = gate.reasonText && transientStatus.startsWith(gate.reasonText)
+          ? gate.label : gate.text;
+        transientStatus = [gateSummary, transientStatus].filter(Boolean).join(" · ");
+        if (gate.state !== "open") {
+          gateFullText = transientStatus;
+          transientStatus = gate.reasonText || window.PortalI18n.t("暂停执行");
+        }
       }
+      const decorateGateStatus = node => {
+        if (!gateFullText) return;
+        node.dataset.portalTooltip = gateFullText;
+        node.title = gateFullText;
+        node.setAttribute("aria-label", gateFullText);
+        node.tabIndex = 0;
+      };
+      for (const name of ["data-portal-tooltip", "title", "aria-label", "tabindex"]) els.status.removeAttribute(name);
       if (!state.subtitleParts.length) {
         els.status.classList.remove("hasSessionIdentity");
         els.status.textContent = transientStatus || state.subtitle;
+        decorateGateStatus(els.status);
         return;
       }
       els.status.classList.toggle(
@@ -699,6 +717,7 @@
         const status = document.createElement("span");
         status.setAttribute("role", "status");
         status.textContent = transientStatus;
+        decorateGateStatus(status);
         fragment.append(status);
       }
       els.status.replaceChildren(fragment);

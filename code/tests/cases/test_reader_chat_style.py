@@ -44,3 +44,9 @@ def test_reader_chat_toggle(tmp_path,monkeypatch,browser):
 def test_reader_chat_timeline_style(tmp_path,monkeypatch,browser):
     monkeypatch.setenv('READER_TIMELINE_ONLY','1')
     _run_chat_case(tmp_path,monkeypatch,browser)
+
+
+@pytest.mark.parametrize('browser',['chromium','firefox'])
+def test_reader_chat_splitter(tmp_path,monkeypatch,browser):
+    monkeypatch.setenv('READER_SPLIT_ONLY','1')
+    _run_chat_case(tmp_path,monkeypatch,browser)

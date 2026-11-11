@@ -5,8 +5,28 @@ import {TranslationMode, TranslationPanel} from './translation_panel.jsx';
 import {translateSelection} from './translation_client.js';
 import {AIPanel} from './ai_panel.jsx';
 
+function ReaderSplit({content, width}) {
+  const handle=useRef(null);
+  useEffect(()=>{
+    const node=handle.current, area=content.current;
+    const limits=()=>{const total=area.clientWidth;return {min:Math.min(260,Math.max(120,total*.4)),max:Math.max(120,total-Math.min(320,total*.5)-7)};};
+    const apply=value=>{const {min,max}=limits();width.current=Math.round(Math.min(max,Math.max(min,value)));area.style.setProperty('--reader-ai-width',width.current+'px');node.setAttribute('aria-valuemin',Math.round(min));node.setAttribute('aria-valuemax',Math.round(max));node.setAttribute('aria-valuenow',width.current);};
+    apply(width.current||Math.min(360,area.clientWidth*.42));
+    const cancel=()=>{node.dispatchEvent(new PointerEvent('pointercancel',{pointerId:active}));document.body.classList.remove('resizingReaderAI');};
+    let active=0;
+    const down=e=>{active=e.pointerId;};node.addEventListener('pointerdown',down);
+    const unbind=window.PortalWorkbench.layout.bindSplitter({handle:node,axis:'x',direction:-1,bodyClass:'resizingReaderAI',min:()=>limits().min,max:()=>limits().max,readSize:()=>width.current,applySize:apply});
+    const resize=new ResizeObserver(()=>apply(width.current));resize.observe(area);
+    const lost=()=>{if(document.body.classList.contains('resizingReaderAI'))cancel();};
+    node.addEventListener('lostpointercapture',lost);window.addEventListener('blur',cancel);
+    const observer=new MutationObserver(()=>{if(area.closest('.is-embedded'))cancel();});observer.observe(area.closest('dialog'),{attributes:true,attributeFilter:['class']});
+    return()=>{cancel();unbind();resize.disconnect();observer.disconnect();window.removeEventListener('blur',cancel);node.removeEventListener('lostpointercapture',lost);node.removeEventListener('pointerdown',down);};
+  },[]);
+  return <div ref={handle} className="paperAISplitter" role="separator" aria-orientation="vertical" aria-label="调整 AI 侧栏宽度" tabIndex={0}/>;
+}
+
 function Reader({paper, principal, anchor, close, control, readingReady, frameReady, isCurrent, isFullscreen}) {
-  const frame = useRef(null), bridge = useRef(null);
+  const frame = useRef(null), bridge = useRef(null), content = useRef(null), aiWidth = useRef(0);
   const [status, setStatus] = useState('正在打开论文…');
   const [failed, setFailed] = useState(false);
   const [selection, setSelection] = useState(null);
@@ -44,7 +64,8 @@ function Reader({paper, principal, anchor, close, control, readingReady, frameRe
       if (!isFullscreen()) throw new Error('请进入全屏后翻译');
       return translateSelection({selection: input, mode, operationId, principal, signal});
     }} />
-    <div className="paperReadingContent"><iframe ref={frame} className="paperReadingViewer" title="论文全屏 PDF 阅读器" />
+    <div ref={content} className="paperReadingContent"><iframe ref={frame} className="paperReadingViewer" title="论文全屏 PDF 阅读器" />
+      {discussion&&<ReaderSplit content={content} width={aiWidth} />}
       {discussion&&<AIPanel key={discussion.key} discussion={discussion} principal={principal} bridge={()=>bridge.current} isCurrent={isCurrent} close={()=>setDiscussion(null)} />}
     </div>
   </div>;

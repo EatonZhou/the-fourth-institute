@@ -803,7 +803,13 @@ body {
  .paperReadingDialog .paperAIChat .composerActions { flex-wrap:wrap; }
 }
 .paperReadingDialog .paperAIPanel { position:relative; }
-.paperReadingDialog .paperAIClose { position:absolute; top:6px; right:6px; z-index:20; }
-.paperReadingDialog .paperAIClose button { border-color:transparent; font-size:12px; }
-.paperReadingDialog .paperAIChat .chatHead { padding-right:72px; min-height:42px; }
 .paperReadingDialog .paperAIChat .chatTitleLine .paneTitle { position:static; width:auto; height:auto; overflow:hidden; clip-path:none; font-size:13px; font-weight:600; }
+
+/* Reader-only PDF / Chat split, using the Workbench resize owner. */
+.paperReadingDialog .paperAIPanel { width:var(--reader-ai-width,min(360px,42vw)); flex-shrink:0; }
+.paperAISplitter { flex:0 0 7px; cursor:col-resize; touch-action:none; background:#f5f5f5; border-inline:1px solid #e0e0e0; box-sizing:border-box; }
+.paperAISplitter:hover,.paperAISplitter.active { background:#dce6ee; }
+.paperAISplitter:focus-visible { outline:2px solid #6b94bd; outline-offset:-2px; }
+.paperReadingDialog.is-embedded .paperAISplitter { display:none; }
+body.resizingReaderAI .paperReadingDialog iframe { pointer-events:none; }
+body.resizingReaderAI { cursor:col-resize; user-select:none; }
