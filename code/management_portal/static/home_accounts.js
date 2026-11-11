@@ -261,11 +261,60 @@
 
     const accountIntakePending = new Map();
     const accountConcurrencyEdits = new Map();
+    const accountIntervalEdits = new Map();
     const accountThresholdEdits = new Map();
     let accountDetails = null;
 
     function accountConcurrencyRows(account) {
       return account?.details_scope === "model_api" ? account.execution_accounts || [] : account ? [account] : [];
+    }
+
+    function accountIntervalHtml(account) {
+      return window.PortalI18n.html`<section class="account-concurrency"><h4>派发间隔（秒）</h4>${accountConcurrencyRows(account).map(row => {
+        const edit = accountIntervalEdits.get(row.account_id);
+        const known = [row.dispatch_interval_min_seconds, row.dispatch_interval_max_seconds].every(Number.isFinite);
+        const disabled = !currentCanSetScheduler() || !known || accountSettingsPending(row.account_id);
+        return window.PortalI18n.html`<form data-account-interval="${esc(row.account_id)}">
+          <span>${esc(row.account_id)}</span>
+          <label><span>最小秒数</span><input type="number" name="minimum" min="0" max="3600" step="any" required value="${esc(edit?.minimum ?? row.dispatch_interval_min_seconds ?? '')}" ${disabled ? 'disabled' : ''}></label>
+          <label><span>最大秒数</span><input type="number" name="maximum" min="0" max="3600" step="any" required value="${esc(edit?.maximum ?? row.dispatch_interval_max_seconds ?? '')}" ${disabled ? 'disabled' : ''}></label>
+          ${currentCanSetScheduler() ? window.PortalI18n.html`<button type="submit" class="portalButton is-compact" ${disabled ? 'disabled' : ''}>${window.PortalI18n.t(edit?.pending ? '保存中…' : '保存')}</button>` : ''}
+          ${edit?.feedback ? window.PortalI18n.html`<p role="${edit.error ? 'alert' : 'status'}">${esc(edit.feedback)}</p>` : ''}
+        </form>`;
+      }).join('')}</section>`;
+    }
+
+    function accountSettingsPending(id) {
+      return accountIntervalEdits.get(id)?.pending || accountConcurrencyEdits.get(id)?.pending || accountThresholdEdits.get(id)?.pending;
+    }
+
+    async function saveAccountInterval(form) {
+      const id = form.dataset.accountInterval;
+      if (!currentCanSetScheduler() || accountSettingsPending(id) || !form.reportValidity()) return;
+      const minimum = Number(form.elements.minimum.value), maximum = Number(form.elements.maximum.value);
+      if (![minimum, maximum].every(v => Number.isFinite(v) && v >= 0 && v <= 3600) || minimum > maximum) {
+        accountIntervalEdits.set(id, {minimum: form.elements.minimum.value, maximum: form.elements.maximum.value, error: true, feedback: window.PortalI18n.t('最小派发间隔不能大于最大派发间隔')});
+        renderAccountDetails(); return;
+      }
+      const edit = {minimum, maximum, pending: true};
+      accountIntervalEdits.set(id, edit); renderAccountDetails();
+      try {
+        const latest = await window.PortalInstructionClient.execute('ListProviderAccounts', {account_id: id});
+        const route = latest.accounts?.find(row => row.account_id === id);
+        if (!Number.isInteger(route?.max_concurrency)) throw new Error(window.PortalI18n.t('执行账号设置不可用，请刷新后重试'));
+        // Threshold arguments are omitted: the official owner retains them unchanged.
+        const result = await window.PortalInstructionClient.execute('UpdateProviderAccount', {
+          account_id: id, max_concurrency: route.max_concurrency,
+          dispatch_interval_min_seconds: minimum, dispatch_interval_max_seconds: maximum,
+        }, {idempotencyKey: `account-interval:${id}:${globalThis.PortalUIPrimitives.randomUUID()}`});
+        for (const account of executionAccounts(currentAgentStatusData())) {
+          for (const row of accountConcurrencyRows(account)) if (row.account_id === id) Object.assign(row, result.settings);
+        }
+        edit.minimum = edit.maximum = undefined;
+        edit.feedback = window.PortalI18n.t('已保存');
+      } catch (error) {
+        edit.error = true; edit.feedback = window.PortalUI.errorMessage(window.PortalI18n.t('保存派发间隔'), error);
+      } finally {edit.pending = false; renderAccountDetails();}
     }
 
     function accountConcurrencyHtml(account) {
@@ -274,7 +323,7 @@
       return window.PortalI18n.html`<section class="account-concurrency"><h4>并行数</h4>${rows.map(row => {
         const edit = accountConcurrencyEdits.get(row.account_id);
         const known = Number.isInteger(row.max_concurrency) && row.max_concurrency >= 1;
-        const pending = edit?.pending || accountThresholdEdits.get(row.account_id)?.pending;
+        const pending = accountSettingsPending(row.account_id);
         const label = account.details_scope === "model_api" ? row.account_id : window.PortalI18n.t("最大并行数");
         return window.PortalI18n.html`<form data-account-concurrency="${esc(row.account_id)}">
           <label><span>${esc(label)}</span><input type="number" name="max_concurrency" min="1" max="256" step="1" required aria-label="${esc(window.PortalI18n.text`${row.account_id} 最大并行数`)}" value="${esc(edit?.value ?? (known ? row.max_concurrency : ""))}" ${!currentCanSetScheduler() || !known || pending ? "disabled" : ""}></label>
@@ -286,7 +335,7 @@
 
     async function saveAccountConcurrency(form) {
       const id = form.dataset.accountConcurrency;
-      if (!currentCanSetScheduler() || accountConcurrencyEdits.get(id)?.pending || accountThresholdEdits.get(id)?.pending || !form.reportValidity()) return;
+      if (!currentCanSetScheduler() || accountSettingsPending(id) || !form.reportValidity()) return;
       const value = Number(form.elements.max_concurrency.value);
       if (!Number.isInteger(value) || value < 1 || value > 256) return;
       const edit = {value, pending: true, feedback: "", error: false};
@@ -328,7 +377,7 @@
         const known = threshold?.supported && Number.isFinite(threshold.value) && ["percent", "balance"].includes(threshold.metric) && threshold.unit;
         const label = threshold?.metric === "balance" ? window.PortalI18n.t("剩余余额") : window.PortalI18n.t("剩余额度");
         const changedUnit = edit?.value !== undefined && (edit.metric !== threshold?.metric || edit.unit !== threshold?.unit);
-        const disabled = !currentCanSetScheduler() || !known || state?.loading || edit?.pending || accountConcurrencyEdits.get(row.account_id)?.pending;
+        const disabled = !currentCanSetScheduler() || !known || state?.loading || accountSettingsPending(row.account_id);
         return window.PortalI18n.html`<form data-account-threshold="${esc(row.account_id)}" data-threshold-metric="${esc(threshold?.metric)}" data-threshold-unit="${esc(threshold?.unit)}">
           <label><span>${account.details_scope === "model_api" ? window.PortalI18n.html`${esc(row.account_id)} · ` : ""}${esc(label)}${threshold?.unit ? window.PortalI18n.html` (${esc(threshold.unit)})` : ""}</span><input type="number" name="close_threshold" min="0" ${threshold?.metric === "percent" ? 'max="100"' : ""} step="any" required aria-label="${esc(window.PortalI18n.text`${row.account_id} Close 阈值 (${threshold?.unit || "—"})`)}" value="${esc(edit?.value ?? (known ? threshold.value : ""))}" ${disabled ? "disabled" : ""}></label>
           ${currentCanSetScheduler() ? window.PortalI18n.html`<button type="submit" class="portalButton is-compact" ${disabled || changedUnit ? "disabled" : ""}>${edit?.pending ? window.PortalI18n.t("保存中…") : window.PortalI18n.t("保存")}</button>` : ""}
@@ -361,7 +410,7 @@
 
     async function saveAccountThreshold(form) {
       const id = form.dataset.accountThreshold;
-      if (!currentCanSetScheduler() || accountThresholdEdits.get(id)?.pending || form.elements.close_threshold.disabled || !form.reportValidity()) return;
+      if (!currentCanSetScheduler() || accountSettingsPending(id) || form.elements.close_threshold.disabled || !form.reportValidity()) return;
       const value = Number(form.elements.close_threshold.value);
       const {thresholdMetric: metric, thresholdUnit: unit} = form.dataset;
       if (!Number.isFinite(value) || value < 0 || (metric === "percent" && value > 100)) return;
@@ -572,10 +621,11 @@
       const focusedElement = details.panel.contains(document.activeElement) ? document.activeElement : null;
       const focused = focusedElement?.dataset.accountAction;
       const focusedRoute = focusedElement?.closest("[data-account-concurrency]")?.dataset.accountConcurrency;
+      const focusedInterval = focusedElement?.closest("[data-account-interval]")?.dataset.accountInterval;
       const focusedThreshold = focusedElement?.closest("[data-account-threshold]")?.dataset.accountThreshold;
       const focusedControl = focusedElement?.tagName;
       details.panel.innerHTML = window.PortalI18n.html`<header><strong>${esc(details.accountId)} · ${window.PortalI18n.t("详情")}</strong><button class="portalButton is-compact" type="button" data-account-action="close" aria-label="关闭账号详情">×</button></header>
-    <div class="account-details-body">${accountQuotaWarning(account, true)}${accountCreditsHtml(account)}${accountConcurrencyHtml(account)}${accountThresholdHtml(account)}${body}${details.result ? window.PortalI18n.html`<p role="status" data-account-result>${esc(details.result)}</p>` : ""}</div>
+    <div class="account-details-body">${accountQuotaWarning(account, true)}${accountCreditsHtml(account)}${accountConcurrencyHtml(account)}${accountThresholdHtml(account)}${accountIntervalHtml(account)}${body}${details.result ? window.PortalI18n.html`<p role="status" data-account-result>${esc(details.result)}</p>` : ""}</div>
     <footer><div class="account-details-actions"><button class="portalButton is-compact" type="button" data-account-action="refresh" ${details.loading || busy ? "disabled" : ""}>刷新</button>
       ${billingUrl ? window.PortalI18n.html`<a class="portalButton is-compact" data-account-action="billing" href="${esc(billingUrl)}" title="${esc(billingUrl)}" target="_blank" rel="noopener noreferrer">充值 / 账单</a>` : ""}
       </div>
@@ -589,6 +639,11 @@
         form.addEventListener("input", () => accountConcurrencyEdits.set(form.dataset.accountConcurrency, {value: form.elements.max_concurrency.value}));
         form.addEventListener("submit", event => { event.preventDefault(); void saveAccountConcurrency(form); });
         if (form.dataset.accountConcurrency === focusedRoute) form.querySelector(`${focusedControl}:not(:disabled)`)?.focus({preventScroll: true});
+      });
+      details.panel.querySelectorAll('[data-account-interval]').forEach(form => {
+        form.addEventListener('input', () => accountIntervalEdits.set(form.dataset.accountInterval, {minimum: form.elements.minimum.value, maximum: form.elements.maximum.value}));
+        form.addEventListener('submit', event => {event.preventDefault(); void saveAccountInterval(form);});
+        if (form.dataset.accountInterval === focusedInterval) form.querySelector(`${focusedControl}:not(:disabled)`)?.focus({preventScroll: true});
       });
       details.panel.querySelectorAll('[data-account-threshold]').forEach(form => {
         form.addEventListener("input", () => {

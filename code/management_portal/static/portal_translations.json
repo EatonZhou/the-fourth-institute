@@ -1,4 +1,9 @@
 {
+  "派发间隔（秒）": {"en": "Dispatch interval (seconds)", "zh-CN": "派发间隔（秒）"},
+  "最小秒数": {"en": "Minimum seconds", "zh-CN": "最小秒数"},
+  "最大秒数": {"en": "Maximum seconds", "zh-CN": "最大秒数"},
+  "最小派发间隔不能大于最大派发间隔": {"en": "Minimum dispatch interval cannot exceed maximum", "zh-CN": "最小派发间隔不能大于最大派发间隔"},
+  "保存派发间隔": {"en": "Save dispatch interval", "zh-CN": "保存派发间隔"},
   "原始对话": {"en": "Original conversation", "zh-CN": "原始对话"},
   "对话记录视图": {"en": "Conversation history view", "zh-CN": "对话记录视图"},
   "按次记录": {"en": "Task attempts", "zh-CN": "按次记录"},

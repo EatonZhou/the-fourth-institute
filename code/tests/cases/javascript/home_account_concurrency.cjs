@@ -23,10 +23,10 @@ const context=vm.createContext({document,URL,console,AbortController,
     }}},PortalUIPrimitives:{randomUUID:()=>String(calls.length)},
   esc:x=>String(x??'').replaceAll('&','&amp;').replaceAll('"','&quot;').replaceAll('<','&lt;'),formatDateTime:()=>'',
   currentAgentStatusData:()=>data,currentCanSetScheduler:()=>canWrite,
-  accountConcurrencyEdits:new Map(),accountThresholdEdits:new Map(),accountIntakePending:new Map(),syncAccountDetailsButtons:()=>{},
+  accountIntervalEdits:new Map(),accountConcurrencyEdits:new Map(),accountThresholdEdits:new Map(),accountIntakePending:new Map(),syncAccountDetailsButtons:()=>{},
   homeApi:{get:async()=>{throw new Error('stats unavailable');}},
   accountDetails:{accountId:'api',panel:document.querySelector('#panel'),snapshot:{total:1},popover:{isOpen:()=>true,reposition:()=>{},close:()=>{}}}});
-for(const name of ['executionAccounts','accountQuotaWindowIsStale','accountQuotaWindows','accountSummaryQuotaWindows','accountQuotaWarning','accountCreditsHtml','accountConcurrencyRows','accountConcurrencyHtml','saveAccountConcurrency','accountThresholdHtml','loadAccountThresholds','saveAccountThreshold','loadAccountDetails','renderAccountDetails','refreshAccountQuotaWindows']) {
+for(const name of ['executionAccounts','accountQuotaWindowIsStale','accountQuotaWindows','accountSummaryQuotaWindows','accountQuotaWarning','accountCreditsHtml','accountConcurrencyRows','accountConcurrencyHtml','accountIntervalHtml','accountSettingsPending','saveAccountInterval','saveAccountConcurrency','accountThresholdHtml','loadAccountThresholds','saveAccountThreshold','loadAccountDetails','renderAccountDetails','refreshAccountQuotaWindows']) {
   vm.runInContext(homeStatements().find(({node:n})=>n.type==='FunctionDeclaration'&&n.id.name===name).source,context);
 }
 const form = id=>[...document.querySelectorAll('form')].find(el=>el.dataset.accountConcurrency===id);
@@ -58,6 +58,21 @@ const flush=()=>new Promise(resolve=>setImmediate(resolve));
   assert.equal(account.execution_accounts[1].max_concurrency,11);
   assert.equal(account.execution_accounts[0].max_concurrency,4,'other API routes are untouched');
   assert.match(form('harness').textContent,/已保存/);
+  const interval=id=>[...document.querySelectorAll('[data-account-interval]')].find(el=>el.dataset.accountInterval===id);
+  const setInterval=(min,max)=>{interval('harness').elements.minimum.value=min;interval('harness').elements.maximum.value=max;};
+  let prior=calls.length;
+  setInterval('4','2');await context.saveAccountInterval(interval('harness'));
+  assert.equal(calls.length,prior);assert.match(interval('harness').textContent,/最小派发间隔不能大于/);
+  setInterval('0','0');const savingInterval=context.saveAccountInterval(interval('harness'));await flush();
+  assert(form('harness').elements.max_concurrency.disabled);
+  await context.saveAccountInterval(interval('harness'));assert.equal(calls.length,prior+2);
+  assert.deepEqual(JSON.parse(JSON.stringify(calls.at(-1).args)),{account_id:'harness',max_concurrency:4,dispatch_interval_min_seconds:0,dispatch_interval_max_seconds:0});
+  release();await savingInterval;
+  assert.equal(account.execution_accounts[1].close_threshold.value,2);
+  assert.equal(interval('harness').elements.minimum.value,'0');
+  reject=true;setInterval('0.25','1.5');await context.saveAccountInterval(interval('harness'));
+  assert.match(interval('harness').textContent,/permission denied/);
+  assert.equal(interval('harness').elements.minimum.value,'0.25');
   reject=true;input('direct','10');await context.saveAccountConcurrency(form('direct'));
   assert.equal(form('direct').elements.max_concurrency.value,'10');
   assert.match(form('direct').querySelector('[role=alert]').textContent,/permission denied/);
