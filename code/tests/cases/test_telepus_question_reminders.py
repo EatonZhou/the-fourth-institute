@@ -55,8 +55,8 @@ def test_question_kinds_render_titles_options_from_visible_conversation(requests
     assert len(r.server.sent) == 1
     text = r.server.sent[0]['item_list'][0]['text_item']['text']
     assert text.startswith('❓ **助手** 在等你回答')
-    assert PRIVATE in text and '选项：选项甲；选项乙' in text
-    assert text.endswith('切换对话：/route ' + FACADE + '；此问题请回 Portal 作答。')
+    assert PRIVATE in text and '选项：1. 选项甲；2. 选项乙' in text
+    assert '引用这条消息回答' in text
     assert ('待批准：' in text) == (kind == 'approval')
     assert r.reads == [(ACTOR, 'GetMessage' if kind == 'question_set' else 'GetResidentRequest',
                         {'resident_id': FACADE, 'message_id': 'projected-source'})]

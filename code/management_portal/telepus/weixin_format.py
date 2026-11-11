@@ -149,16 +149,24 @@ def notification_text(items, *, total=None, summary=True):
         else:
             lines.append(f'❓ **{title}** 在等你回答')
             questions = item['questions']
-            for question in questions[:3]:
+            for index, question in enumerate(questions[:3], 1):
                 visible = ' '.join(without_links(quote_text(question['title'])).split())
                 excerpt = visible[:120] + ('…' if len(visible) > 120 else '')
-                lines.append(('待批准：' if item['kind'] == 'approval' else '') + excerpt)
+                lines.append(f'{index}. ' + ('待批准：' if item['kind'] == 'approval' else '') + excerpt)
                 if question.get('options'):
-                    lines.append('选项：' + '；'.join(question['options']))
+                    lines.append('选项：' + '；'.join(f'{number}. {option}' for number, option in enumerate(question['options'], 1)))
             if len(questions) > 3:
                 lines.append(f'另有 {len(questions) - 3} 个问题')
-        if item['category'] == 'question':
-            lines.append('切换对话：/route ' + item['resident_id'] + '；此问题请回 Portal 作答。')
+            if item.get('requires_authorization'):
+                lines.append('这个问题要授权，请回 Portal 回答。')
+            elif summary or len(questions) > 3:
+                lines.append('问题较多，请回 Portal 回答。')
+            elif item['kind'] == 'approval':
+                lines.append('引用这条消息回答：回复“同意”或“拒绝”。')
+            elif len(questions) > 1:
+                lines.append('引用这条消息回答：每行一个“问题序号 答案”，例如“1 选项文字”。')
+            else:
+                lines.append('引用这条消息回答：回复选项序号或文字，例如“1”。')
     if total > len(items):
         lines.append(f'另有 {total - len(items)} 项待发送，将继续分批提醒。')
     if summary:
@@ -180,6 +188,7 @@ class WeixinPresentation(TelegramPresentation):
         '- 等待超过 5 分钟会收到一次“仍在处理”。',
         '- 引用一条回复继续讨论，助手会联系写那条回复的成员。',
         '- 引用单条 @ 提醒回复，会以你的名义发到对应聊天室；汇总提醒请回 Portal 回复。',
+        '- 引用问题提醒可直接回答：单题回复选项序号或文字，多题每行“题号 答案”，批准请求回复“同意”或“拒绝”。问题未列全或需要授权时请回 Portal 回答。',
         '',
         '**问答**',
         '- 问题逐题出现：回复编号选择，或直接写答案。',

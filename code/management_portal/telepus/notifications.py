@@ -295,7 +295,8 @@ class Notifications:
                         watch_delays.append(max(0, discovery['watch_returned'] - event_time))
                 except (KeyError, ValueError, TypeError, AttributeError):
                     pass  # Older source projections may have no creation time.
-            prepared.append({'keys': group_keys, 'text': text, 'summary': not individual,
+            blocked = not individual or any(item['category'] == 'question' and len(item['questions']) > 3 for item in group_items)
+            prepared.append({'keys': group_keys, 'text': text, 'summary': blocked,
                              'discovered_at': min(discoveries.values()),
                              'event_to_discovery_seconds': max(event_delays) if event_delays else None,
                              'read_timing': {'mailbox_seconds': discovery.get('mailbox_seconds', 0),
@@ -328,7 +329,7 @@ class Notifications:
         external = quote.get('svr_id') or (quote.get('message_item') or {}).get('msg_id')
         excerpt = quote.get('title') or (quote.get('message_item') or {}).get('text_item', {}).get('text') or ''
         with self.router.connect() as c:
-            base = "SELECT * FROM notification_deliveries WHERE portal_actor=? AND status='sent' AND (category='mention' OR is_summary) "
+            base = "SELECT * FROM notification_deliveries WHERE portal_actor=? AND status='sent' "
             rows = c.execute(base + 'AND external_message_id=?', (actor, str(external))).fetchall() if external else []
             if not rows and fingerprint(excerpt):
                 rows = c.execute(base + 'AND quote_fingerprints @> ?::jsonb',

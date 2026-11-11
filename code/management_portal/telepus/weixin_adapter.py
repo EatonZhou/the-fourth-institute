@@ -78,7 +78,11 @@ class WeixinAdapter:
         match = next((found for item in message.get('item_list') or []
                       if (quote := item.get('ref_msg')) and (found := self.notifications.quoted(actor, quote))), None)
         if match:
-            self.respond(actor, {'messages': [{'text': reply(self, account, message, match)}]})
+            if match['category'] == 'question':
+                from .question_answer import reply as answer
+                self._private_receipt(actor, message['message_id'], answer(self, account, message, match))
+            else:
+                self.respond(actor, {'messages': [{'text': reply(self, account, message, match)}]})
             with self.router.store.connect() as c:
                 c.execute("INSERT INTO processed_updates(update_id,processed_at,channel) VALUES(?,?,'weixin') ON CONFLICT DO NOTHING",
                           (-local_id, now_iso()))
@@ -112,6 +116,26 @@ class WeixinAdapter:
               file=sys.stderr, flush=True)
         if not local:
             self.typing(actor)
+
+    def _private_receipt(self, actor, incoming_id, text):
+        """Answer/option text must never enter the durable outbound queue."""
+        from .weixin_format import format_text
+        account = self.store.account(actor)
+        chat = chat_key(account['ilink_bot_id'])
+        # A received message has just reset the budget and supplied its context.
+        # Long format-error options can be read in Portal; keep one receipt.
+        visible = format_text(text)
+        if len(visible) > 3700:
+            visible = visible[:3700] + '\n内容较长，请回 Portal 查看完整选项。'
+        try:
+            self.client_factory(account).send([{'type': 1, 'text_item': {'text': visible}}], account['context_token'],
+                client_id=f'telepus-answer-receipt-{incoming_id}')
+        except WeixinError as exc:
+            raise WeixinError(exc.code, 'answer_receipt') from None
+        except Exception:
+            # HTTP exceptions may include the request body; never propagate it.
+            raise RuntimeError('Weixin answer receipt unavailable') from None
+        self.store.budget(chat, spent=True)
 
     def _reopen_pending(self, chat):
         for row in self.store.pending(chat):

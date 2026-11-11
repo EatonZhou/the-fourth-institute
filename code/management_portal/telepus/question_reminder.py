@@ -45,4 +45,5 @@ def read_questions(portal, actor, item):
         if any(not isinstance(label, str) for label in labels):
             raise ValueError('Invalid reminder question option')
         visible.append({'title': title, 'options': labels})
-    return dict(item, questions=visible)
+    return dict(item, questions=visible,
+                requires_authorization=kind == 'question_set' and any(q.get('credentials') for q in questions))

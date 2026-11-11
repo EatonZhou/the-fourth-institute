@@ -231,7 +231,7 @@ def test_immediate_pending_batch_five_items_one_message(reminder):
     r.adapter.flush(ACTOR)
     assert len(r.server.sent) == 4 and not r.notices.pending(ACTOR)
     second = '\n'.join(m['item_list'][0]['text_item']['text'] for m in r.server.sent[1:])
-    assert '此问题请回 Portal 作答' in second
+    assert '引用这条消息回答' in second
 
 
 @pytest.mark.parametrize('gate', ['reserved', 'no_context', 'minus_two'])
