@@ -867,6 +867,22 @@ def _body_text_lines_for_bounds(
 
     page_height = max(1.0, float(caption.get("page_height") or 0))
     first_page_cutoff = min(y_max - 60.0, page_height * 0.33)
+    # Title, authors and affiliations form a continuous block. A teaser's
+    # labels can also lie in the top third of page one; position alone must
+    # not turn those labels into a full-width crop boundary.
+    first_page_title_lines: set[int] = set()
+    if int(caption.get("page") or 0) == 1:
+        previous_bottom: float | None = None
+        for line in sorted(eligible_lines, key=lambda item: float(item.get("y_min") or 0)):
+            line_top = float(line.get("y_min") or 0)
+            line_bottom = float(line.get("y_max") or 0)
+            if line_bottom > first_page_cutoff:
+                continue
+            if previous_bottom is not None and line_top - previous_bottom > 24.0:
+                break
+            if float(line.get("x_max") or 0) - float(line.get("x_min") or 0) >= region_width * 0.15:
+                first_page_title_lines.add(id(line))
+                previous_bottom = max(previous_bottom or line_bottom, line_bottom)
     header_pattern = re.compile(
         r"\b(?:Proceedings|Conference|Symposium|USENIX|MICRO|ISCA|ASPLOS|SOSP|NeurIPS|ICML|ICLR|IEEE|ACM)\b",
         flags=re.I,
@@ -900,11 +916,7 @@ def _body_text_lines_for_bounds(
             0.0 <= float(line.get("y_min") or 0) - float(heading.get("y_max") or 0) <= 36.0
             for heading in appendix_headings
         )
-        first_page_title_line = (
-            int(caption.get("page") or 0) == 1
-            and line_y1 <= first_page_cutoff
-            and line_width >= region_width * 0.15
-        )
+        first_page_title_line = id(line) in first_page_title_lines
         running_header_line = line_y1 <= page_height * 0.10 and (
             bool(header_pattern.search(text))
             or bool(re.search(r"\bet\s+al\.\s*$", text, flags=re.I))

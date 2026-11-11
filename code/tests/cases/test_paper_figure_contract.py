@@ -15,6 +15,43 @@ from tests.cases.test_paper_figure_transactions import figure_store
 RESULT_SCHEMA = 'tfi.paper.figure-explanation.result.v1'
 
 
+@pytest.mark.parametrize('page_number', [1, 2])
+def test_teaser_label_after_title_block_is_not_a_body_boundary(page_number):
+    """顶部三分之一区域内的独立图内文字不延长论文标题块。"""
+    page = Image.new('RGB', (612, 792), 'white')
+    draw = ImageDraw.Draw(page)
+    lines = [
+        {'text': text, 'x_min': x0, 'x_max': x1, 'y_min': y0, 'y_max': y1}
+        for text, x0, x1, y0, y1 in [
+            ('A long paper title about humanoid control', 108, 504, 84, 99),
+            ('with a differentiable world model', 168, 444, 104, 119),
+            ('First Author Second Author Third Author', 175, 434, 128, 139),
+            ('Fourth Author Fifth Author Sixth Author', 192, 420, 140, 151),
+            ('https://example.org/research', 231, 378, 170, 179),
+            ('128 accelerator GPUs, 168 h [1]', 391, 483, 237, 246),
+        ]
+    ]
+    for line in lines[:5]:
+        draw.rectangle((line['x_min'], line['y_min'], line['x_max'], line['y_max']), fill='red')
+    draw.rectangle((115, 188, 360, 310), fill='teal')
+    draw.rectangle((390, 190, 490, 305), fill='blue')
+    caption = {'page': page_number, 'page_width': 612, 'page_height': 792,
+               'number': '1', 'caption': 'Figure 1: Whole body control.',
+               'x_min': 108, 'x_max': 504, 'y_min': 320, 'y_max': 362,
+               'page_lines': lines}
+    body = paper_figure_extraction._body_text_lines_for_bounds(caption, 36, 320, 36, 576)
+    assert lines[-1] not in body
+    if page_number == 1:
+        assert all(line in body for line in lines[:5])
+    result = paper_figure_extraction._crop_figure_above_caption(page, caption)
+    assert result is not None
+    assert result.height >= 122
+    assert (0, 128, 128) in result.getdata()
+    assert (0, 0, 255) in result.getdata()
+    if page_number == 1:
+        assert (255, 0, 0) not in result.getdata()
+
+
 @pytest.mark.parametrize('dpi', [120, 180])
 @pytest.mark.parametrize('fixture, digest', [
     ('paper-synthetic-counts.pdf', 'eac5fe85f2b77c8f8e78fe41ddc5397614fc19ab0883a9b9ee0b0130f8b7debf'),
