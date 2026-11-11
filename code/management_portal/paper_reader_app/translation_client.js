@@ -1,4 +1,7 @@
+import {TRANSLATION_PROVIDERS} from './translation_contract.js';
 const PATH = '/paper/api/reader/translation';
+// Fast initial observation, bounded steady-state load (at most one GET/2s).
+export const translationPollDelay = elapsed => elapsed < 2000 ? 250 : elapsed < 10000 ? 700 : 2000;
 
 // Aborting observation never cancels a shared server task or resubmits it.
 export async function translateSelection({selection, mode, operationId, principal, signal}) {
@@ -16,10 +19,11 @@ export async function translateSelection({selection, mode, operationId, principa
   const cache = result.cache;
   const taskId = result.task_id;
   if (typeof taskId !== 'string' || !taskId) throw new Error('翻译服务未返回任务编号');
+  const pollingStarted = performance.now();
   while (['queued', 'running'].includes(result.status)) {
     await new Promise((resolve, reject) => {
       const abort = () => {clearTimeout(timer); reject(new DOMException('Aborted', 'AbortError'));};
-      const timer = setTimeout(() => {signal.removeEventListener('abort', abort); resolve();}, 700);
+      const timer = setTimeout(() => {signal.removeEventListener('abort', abort); resolve();}, translationPollDelay(performance.now() - pollingStarted));
       signal.addEventListener('abort', abort, {once: true});
       if (signal.aborted) abort();
     });
@@ -27,6 +31,6 @@ export async function translateSelection({selection, mode, operationId, principa
     if (result.task_id !== taskId) throw new Error('翻译任务编号发生变化');
   }
   if (result.status !== 'succeeded') throw new Error(result.error?.message || '翻译已取消或失败');
-  if (typeof result.text !== 'string' || !['google', 'deepseek'].includes(result.provider)) throw new Error('翻译服务返回了无效结果');
+  if (typeof result.text !== 'string' || !TRANSLATION_PROVIDERS.includes(result.provider)) throw new Error('翻译服务返回了无效结果');
   return {...result, cache};
 }
