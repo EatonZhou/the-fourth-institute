@@ -1,13 +1,6 @@
 /* Shared components: the Chat workspace frame: image references, pinned messages, loading state,
    pane heads, Resource identity and the message list. Pages load this file right after
    portal_components_markdown.css. */
-.chatBusinessHistoryTools { display: flex; flex: 0 0 auto; flex-wrap: wrap; gap: 4px; padding: 4px 8px; border-bottom: 1px solid var(--border); }
-.chatBusinessHistoryTools [aria-pressed="true"] { color: var(--accent); background: var(--panel-2); }
-.chatBusinessHistory { flex: 1 1 auto; min-width: 0; min-height: 0; overflow: auto; padding: 8px; }
-.chatBusinessHistory[hidden] { display: none; }
-.chatBusinessHistoryOriginal[hidden] { display: none !important; }
-.chatBusinessHistory summary { cursor: pointer; overflow-wrap: anywhere; padding: 6px 0; }
-.chatBusinessHistoryText { white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; color: var(--text); }
 .composerImageRef.messageImageRef {
   appearance: none;
   border: 1px solid var(--border, rgba(148, 163, 184, 0.45));
