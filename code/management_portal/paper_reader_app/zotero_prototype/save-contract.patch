@@ -153,3 +153,91 @@ index 058c72b..ad88ce4 100644
  	};
  
  	_handleSetPrintPopup(state) {
+diff --git a/src/pdf/pdf-view.js b/src/pdf/pdf-view.js
+index 4f9c466..18e2556 100644
+--- a/src/pdf/pdf-view.js
++++ b/src/pdf/pdf-view.js
+@@ -415,6 +415,9 @@ class PDFView {
+ 
+ 	async _init() {
+ 		// this._iframeWindow.document.body.draggable = true;
++		for (let type of ['wheel', 'keydown', 'touchmove', 'pointerdown']) {
++			this._iframeWindow.addEventListener(type, this._handleInitialRestoreInput, { capture: true, passive: true });
++		}
+ 
+ 		this._iframeWindow.addEventListener('contextmenu', this._handleContextMenu.bind(this));
+ 		this._iframeWindow.addEventListener('keyup', this._onKeyUp);
+@@ -531,7 +534,22 @@ class PDFView {
+ 		this._resolveInitializedPromise = null;
+ 	}
+ 
++	_handleInitialRestoreInput = (event) => {
++		if (!event.isTrusted || this._destroyed) return;
++		let container = this._iframeWindow.document.getElementById('viewerContainer');
++		if (!container?.contains(event.target)) return;
++		if (event.target.closest?.('input, textarea, [contenteditable="true"]')) return;
++		if (event.type === 'keydown' && !['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'PageUp', 'PageDown', 'Home', 'End', ' '].includes(event.key)) return;
++		if (event.type === 'pointerdown') {
++			let rect = container.getBoundingClientRect();
++			if (event.target !== container || (event.clientX < rect.left + container.clientLeft + container.clientWidth
++				&& event.clientY < rect.top + container.clientTop + container.clientHeight)) return;
++		}
++		this._initialRestoreRevision = (this._initialRestoreRevision || 0) + 1;
++	};
++
+ 	async _setState(state, skipScroll) {
++		let restoreRevision = this._initialRestoreRevision || 0;
+ 		this._cancelPendingPageTurn();
+ 		if (this._destroyed) {
+ 			return;
+@@ -576,7 +594,7 @@ class PDFView {
+ 			}),
+ 		]);
+ 
+-		if (!this._destroyed && !skipScroll) {
++		if (!this._destroyed && !skipScroll && restoreRevision === (this._initialRestoreRevision || 0)) {
+ 			let dest = [null,
+ 				{ name: 'XYZ' },
+ 				// top/left must be null to be ignored
+@@ -1264,6 +1282,7 @@ class PDFView {
+ 		let pdfViewer = this._iframeWindow.PDFViewerApplication.pdfViewer;
+ 
+ 		let rect = this.getPositionBoundingViewRect(position);
++		this._initialRestoreRevision = (this._initialRestoreRevision || 0) + 1;
+ 
+ 		let { clientWidth, clientHeight, scrollWidth, scrollHeight } = element;
+ 		let scrollTop = element.scrollTop;
+@@ -2338,6 +2357,7 @@ class PDFView {
+ 			this.navigateToPosition(annotation.position, options);
+ 		}
+ 		else if (location.dest) {
++			this._initialRestoreRevision = (this._initialRestoreRevision || 0) + 1;
+ 			let navigation = this._iframeWindow.PDFViewerApplication.pdfLinkService.goToDestination(location.dest);
+ 			if (group) {
+ 				await navigation;
+@@ -2420,6 +2440,10 @@ class PDFView {
+ 	async _navigateToPage({ pageIndex, direction, save }) {
+ 		if (this._destroyed) return false;
+ 		let viewer = this._iframeWindow.PDFViewerApplication.pdfViewer;
++		let targetPage = direction ? viewer.currentPageNumber - 1 + direction : pageIndex;
++		if (Number.isInteger(targetPage) && targetPage >= 0 && targetPage < viewer.pagesCount) {
++			this._initialRestoreRevision = (this._initialRestoreRevision || 0) + 1;
++		}
+ 		let mode = viewer.scrollMode;
+ 		let navigate = () => (direction
+ 			? viewer[direction > 0 ? 'nextPage' : 'previousPage']()
+@@ -2536,12 +2560,14 @@ class PDFView {
+ 	}
+ 
+ 	navigateToFirstPage() {
++		this._initialRestoreRevision = (this._initialRestoreRevision || 0) + 1;
+ 		this._cancelPendingPageTurn();
+ 		this._onManualNavigation();
+ 		this._iframeWindow.PDFViewerApplication.eventBus.dispatch('firstpage');
+ 	}
+ 
+ 	navigateToLastPage() {
++		this._initialRestoreRevision = (this._initialRestoreRevision || 0) + 1;
+ 		this._cancelPendingPageTurn();
+ 		this._onManualNavigation();
+ 		this._iframeWindow.PDFViewerApplication.eventBus.dispatch('lastpage');
