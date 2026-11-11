@@ -108,8 +108,14 @@ export function openReader({paper, principal, anchor, onClose, onReady, containe
   const layout = () => {
     if (closed) return;
     dialog.classList.toggle('is-embedded', !fullscreen);
+    // The iframe lives outside the mode's DOM to preserve its document/session.
+    // Its old rectangle is not a visible host after navigation removes it.
+    const target = container?.();
+    const visible = isCurrent() && (fullscreen || Boolean(target?.isConnected && target.getClientRects().length));
+    dialog.hidden = !visible;
+    dialog.style.display = visible ? '' : 'none';
+    dialog.inert = closing || !visible;
     if (!fullscreen) {
-      const target = container?.();
       if (target) {
         const rect = target.getBoundingClientRect();
         Object.assign(dialog.style, {left: `${rect.left}px`, top: `${rect.top}px`, width: `${rect.width}px`, height: `${rect.height}px`});
