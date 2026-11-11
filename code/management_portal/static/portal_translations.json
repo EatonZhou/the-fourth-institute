@@ -1,4 +1,9 @@
 {
+  "展开 To Do": {"zh-CN": "展开 To Do", "en": "Open To Do"},
+  "收起 To Do": {"zh-CN": "收起 To Do", "en": "Collapse To Do"},
+  "刷新 To Do": {"zh-CN": "刷新 To Do", "en": "Refresh To Do"},
+  "关闭 To Do 并返回当前页面": {"zh-CN": "关闭 To Do 并返回当前页面", "en": "Close To Do and return to the page"},
+  "To Do · 按住拖动到左侧或右侧": {"zh-CN": "To Do · 按住拖动到左侧或右侧", "en": "To Do · Drag to the left or right edge"},
   "派发间隔（秒）": {"en": "Dispatch interval (seconds)", "zh-CN": "派发间隔（秒）"},
   "最小秒数": {"en": "Minimum seconds", "zh-CN": "最小秒数"},
   "最大秒数": {"en": "Maximum seconds", "zh-CN": "最大秒数"},

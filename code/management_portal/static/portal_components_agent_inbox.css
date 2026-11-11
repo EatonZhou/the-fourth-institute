@@ -107,8 +107,11 @@ body.portalAgentInboxMounted:has(> .portalAgentInbox[data-dock-side="left"]) {
   top: var(--portal-agent-inbox-top, calc(100vh - 44px - clamp(72px, 10vh, 96px)));
   bottom: auto;
   right: 0;
+  display: flex;
+  flex-direction: column;
   width: 42px;
-  height: 44px;
+  border-radius: 7px 0 0 7px;
+  box-shadow: -4px 6px 18px color-mix(in srgb, #0b1020 12%, transparent);
   color: var(--text, #111827);
   font-family: inherit;
   pointer-events: none;
@@ -121,10 +124,8 @@ body.portalAgentInboxMounted:has(> .portalAgentInbox[data-dock-side="left"]) {
 
 .portalAgentInboxTrigger {
   appearance: none;
-  position: absolute;
-  top: 0;
-  bottom: auto;
-  right: 0;
+  position: relative;
+  flex: 0 0 auto;
   display: inline-grid;
   width: 42px;
   height: 44px;
@@ -132,10 +133,9 @@ body.portalAgentInboxMounted:has(> .portalAgentInbox[data-dock-side="left"]) {
   padding: 0;
   border: 1px solid color-mix(in srgb, var(--border, #cbd5e1) 88%, transparent);
   border-right: 0;
-  border-radius: 7px 0 0 7px;
+  border-radius: 0;
   color: color-mix(in srgb, var(--accent, #2563eb) 82%, var(--text, #111827));
   background: color-mix(in srgb, var(--panel, #fff) 94%, transparent);
-  box-shadow: -4px 6px 18px color-mix(in srgb, #0b1020 12%, transparent);
   cursor: grab;
   pointer-events: auto;
   touch-action: none;
@@ -201,8 +201,8 @@ body.portalAgentInboxMounted:has(> .portalAgentInbox[data-dock-side="left"]) {
   width: min(332px, calc(100vw - 54px));
   height: min(640px, var(--portal-agent-inbox-panel-max-height, calc(100vh - 104px)));
   max-height: min(640px, var(--portal-agent-inbox-panel-max-height, calc(100vh - 104px)));
-  grid-template-areas: "header" "filters" "error" "content" "pagination";
-  grid-template-rows: 40px 34px auto minmax(0, 1fr) auto;
+  grid-template-areas: "header" "error" "content" "pagination";
+  grid-template-rows: 40px auto minmax(0, 1fr) auto;
   overflow: hidden;
   border: 1px solid color-mix(in srgb, var(--border, #cbd5e1) 90%, transparent);
   border-radius: 8px 0 0 8px;
@@ -226,7 +226,8 @@ body.portalAgentInboxMounted:has(> .portalAgentInbox[data-dock-side="left"]) {
   bottom: auto;
 }
 
-.portalAgentInbox[data-expanded="true"][data-active-panel="mailbox"] .portalAgentInboxPanel:not(.portalPersonalAssistantPanel),
+.portalAgentInbox[data-expanded="true"][data-active-panel="mailbox"] [data-inbox-panel="mailbox"],
+.portalAgentInbox[data-expanded="true"][data-active-panel="todo"] [data-inbox-panel="todo"],
 .portalAgentInbox[data-expanded="true"][data-active-panel="assistant"] .portalPersonalAssistantPanel {
   opacity: 1;
   visibility: visible;
@@ -234,18 +235,15 @@ body.portalAgentInboxMounted:has(> .portalAgentInbox[data-dock-side="left"]) {
   transition-delay: 0s;
 }
 
-/* With an assistant the two triggers form one tab: no seam, told apart by their backgrounds. */
-.portalAgentInbox[data-has-assistant="true"] {
-  height: 88px;
-  border-radius: 7px 0 0 7px;
-  box-shadow: -4px 6px 18px color-mix(in srgb, #0b1020 12%, transparent);
-}
-.portalAgentInbox[data-has-assistant="true"] .portalAgentInboxTrigger { box-shadow: none; }
-.portalAgentInbox[data-has-assistant="true"] [data-agent-conversation-trigger] { border-bottom: 0; border-radius: 7px 0 0 0; }
+/* The visible entries size their shared dock, including when no assistant exists. */
+.portalAgentInboxTrigger { border-bottom: 0; }
+[data-agent-conversation-trigger] { border-radius: 7px 0 0 0; }
+.portalAgentInbox[data-has-assistant="false"] [data-agent-todo-trigger],
 .portalPersonalAssistantTrigger {
-  top: 44px;
-  border-top: 0;
   border-radius: 0 0 0 7px;
+  border-bottom: 1px solid color-mix(in srgb, var(--border, #cbd5e1) 88%, transparent);
+}
+.portalPersonalAssistantTrigger {
   background: color-mix(in srgb, var(--accent, #2563eb) 16%, var(--panel, #fff));
 }
 .portalPersonalAssistantTrigger:hover,
@@ -257,15 +255,13 @@ body.portalAgentInboxMounted:has(> .portalAgentInbox[data-dock-side="left"]) {
 .portalAgentInbox[data-dock-side="left"] .portalAgentInboxTrigger {
   border-left: 0;
   border-right: 1px solid color-mix(in srgb, var(--border, #cbd5e1) 88%, transparent);
+}
+.portalAgentInbox[data-dock-side="left"] {
   border-radius: 0 7px 7px 0;
   box-shadow: 4px 6px 18px color-mix(in srgb, #0b1020 12%, transparent);
 }
-.portalAgentInbox[data-dock-side="left"][data-has-assistant="true"] {
-  border-radius: 0 7px 7px 0;
-  box-shadow: 4px 6px 18px color-mix(in srgb, #0b1020 12%, transparent);
-}
-.portalAgentInbox[data-dock-side="left"][data-has-assistant="true"] .portalAgentInboxTrigger { box-shadow: none; }
-.portalAgentInbox[data-dock-side="left"][data-has-assistant="true"] [data-agent-conversation-trigger] { border-radius: 0 7px 0 0; }
+.portalAgentInbox[data-dock-side="left"] [data-agent-conversation-trigger] { border-radius: 0 7px 0 0; }
+.portalAgentInbox[data-dock-side="left"][data-has-assistant="false"] [data-agent-todo-trigger],
 .portalAgentInbox[data-dock-side="left"] .portalPersonalAssistantTrigger { border-radius: 0 0 7px 0; }
 @media (min-width: 641px) {
   .portalAgentInbox[data-dock-side="left"] .portalAgentInboxPanel {
@@ -392,15 +388,6 @@ body.portalAgentInboxMounted:has(> .portalAgentInbox[data-dock-side="left"]) {
   font-size: 12px;
 }
 
-.portalAgentInboxFilters {
-  grid-area: filters;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 3px 12px;
-  border-bottom: 1px solid var(--border, #cbd5e1);
-}
-
 .portalAgentInboxPanel > header .portalAgentInboxHeaderAction[hidden],
 .portalAgentInboxList[hidden], .portalMailboxTodos[hidden], .portalAgentInboxEmpty[hidden], .portalAgentInboxError[hidden] { display: none; }
 .portalMailboxTodos { grid-area: content; display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
@@ -449,27 +436,6 @@ body.portalAgentInboxMounted:has(> .portalAgentInbox[data-dock-side="left"]) {
 .portalMailboxTodoActions button:hover:not(:disabled) { color: var(--text, #1e293b); background: color-mix(in srgb, var(--accent, #2563eb) 10%, transparent); }
 .portalMailboxTodoActions .portalIcon { width: 15px; height: 15px; }
 .portalMailboxTodoError { padding: 8px 12px; color: var(--danger, #b91c1c); font-size: 12px; }
-
-.portalAgentInboxFilters button {
-  padding: 3px 10px;
-  border: 0;
-  border-radius: 5px;
-  color: var(--muted, #64748b);
-  background: transparent;
-  cursor: pointer;
-  font: inherit;
-  font-size: 11px;
-}
-
-.portalAgentInboxFilters button[aria-pressed="true"] {
-  color: var(--accent, #2563eb);
-  background: color-mix(in srgb, var(--accent, #2563eb) 12%, transparent);
-}
-
-.portalAgentInboxFilters [data-agent-section-count] {
-  margin-left: 3px;
-  font-weight: 700;
-}
 
 .portalAgentInboxPinMenu {
   position: fixed;
@@ -811,20 +777,11 @@ body.portalAgentInboxMounted:has(> .portalAgentInbox[data-dock-side="left"]) {
 
   .portalAgentInbox {
     width: 38px;
-    height: 40px;
   }
 
   .portalAgentInboxTrigger {
     width: 38px;
     height: 40px;
-  }
-
-  .portalAgentInbox[data-has-assistant="true"] {
-    height: 80px;
-  }
-
-  .portalPersonalAssistantTrigger {
-    top: 40px;
   }
 
   .portalAgentInboxPanel {
@@ -837,14 +794,15 @@ body.portalAgentInboxMounted:has(> .portalAgentInbox[data-dock-side="left"]) {
     width: auto;
     height: auto;
     max-height: none;
-    grid-template-rows: 52px 44px auto minmax(0, 1fr) auto;
+    grid-template-rows: 52px auto minmax(0, 1fr) auto;
     border-radius: 12px;
     background: var(--panel, #fff);
     backdrop-filter: none;
     transform: translateY(12px) scale(.985);
   }
 
-  .portalAgentInbox[data-expanded="true"][data-active-panel="mailbox"] .portalAgentInboxPanel:not(.portalPersonalAssistantPanel),
+  .portalAgentInbox[data-expanded="true"][data-active-panel="mailbox"] [data-inbox-panel="mailbox"],
+  .portalAgentInbox[data-expanded="true"][data-active-panel="todo"] [data-inbox-panel="todo"],
   .portalAgentInbox[data-expanded="true"][data-active-panel="assistant"] .portalPersonalAssistantPanel {
     transform: translateY(0) scale(1);
   }
@@ -909,10 +867,6 @@ body.portalAgentInboxMounted:has(> .portalAgentInbox[data-dock-side="left"]) {
     min-height: 36px;
     padding: 4px 8px;
     font-size: 11px;
-  }
-
-  .portalAgentInboxFilters button {
-    min-height: 36px;
   }
 
   .portalAgentInboxList {

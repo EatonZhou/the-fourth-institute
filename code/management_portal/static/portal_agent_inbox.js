@@ -15,7 +15,6 @@
     focused: false,
     activePanel: "mailbox",
     assistant: null,
-    filter: "messages",
     longPress: null,
     suppressEntryClickUntil: 0,
     verticalRatio: null,
@@ -62,12 +61,12 @@
 
   function persistPosition() {
     if (Number.isFinite(state.verticalRatio)) {
-      window.PortalState?.write?.(POSITION_PAGE, "device", { verticalRatio: clamp(state.verticalRatio, 0, 1), dockSide: state.dockSide, section: state.filter });
+      window.PortalState?.write?.(POSITION_PAGE, "device", { verticalRatio: clamp(state.verticalRatio, 0, 1), dockSide: state.dockSide });
     }
   }
 
   function verticalBounds() {
-    const height = root?.getBoundingClientRect().height || (state.assistant ? TRIGGER_HEIGHT * 2 : TRIGGER_HEIGHT);
+    const height = root?.getBoundingClientRect().height || TRIGGER_HEIGHT * (state.assistant ? 3 : 2);
     const viewportHeight = Math.max(height + VIEWPORT_GAP * 2, window.innerHeight || 0);
     const header = document.querySelector(".portalSiteHeader, [data-portal-site-header]");
     const headerBottom = Math.max(0, Number(header?.getBoundingClientRect?.().bottom || 0));
@@ -131,7 +130,7 @@
       root.querySelector("[data-personal-assistant-chat]").replaceChildren();
     }
     state.assistant = target;
-    if (!target) state.activePanel = "mailbox";
+    if (!target && state.activePanel === "assistant") state.activePanel = "mailbox";
     const trigger = root.querySelector("[data-personal-assistant-trigger]");
     trigger.hidden = !target;
     if (target) {
@@ -221,11 +220,11 @@
     const expanded = !state.dragging && Boolean(state.touchExpanded || state.hovered || state.focused || conversationMenu?.controller.isOpen()
       || (state.activePanel === "assistant" && assistantInteractions.size));
     const assistantOpen = expanded && state.activePanel === "assistant" && !!state.assistant;
-    const mailboxOpen = expanded && !assistantOpen;
+    const mailboxOpen = expanded && state.activePanel === "mailbox";
+    const todoOpen = expanded && state.activePanel === "todo";
     const mobileOverlayOpen = expanded && usesTouchExpansion();
-    const todo = state.filter === "todo";
-    store()?.setInboxOpen?.(mailboxOpen && !todo);
-    todoPanel?.setView({ visible: mailboxOpen, active: mailboxOpen && todo });
+    store()?.setInboxOpen?.(mailboxOpen);
+    todoPanel?.setView({ visible: mailboxOpen || todoOpen, active: todoOpen });
     root.dataset.expanded = expanded ? "true" : "false";
     root.dataset.activePanel = state.activePanel;
     root.dataset.mobileOverlay = mobileOverlayOpen ? "true" : "false";
@@ -234,61 +233,53 @@
     root.querySelector("[data-agent-conversation-trigger]")?.setAttribute("aria-label", window.PortalI18n.t(mailboxOpen ? "收起我的 Mailbox" : "展开我的 Mailbox"));
     root.querySelector("[data-personal-assistant-trigger]")?.setAttribute("aria-expanded", String(assistantOpen));
     root.querySelector("[data-personal-assistant-trigger]")?.setAttribute("aria-label", window.PortalI18n.t(assistantOpen ? "收起个人助手" : "展开个人助手"));
-    root.querySelector(".portalPersonalAssistantPanel").inert = !assistantOpen;
+    root.querySelector("[data-agent-todo-trigger]").setAttribute("aria-expanded", String(todoOpen));
+    root.querySelector("[data-agent-todo-trigger]").setAttribute("aria-label", window.PortalI18n.t(todoOpen ? "收起 To Do" : "展开 To Do"));
+    root.querySelectorAll("[data-inbox-panel]").forEach(panel => {
+      panel.inert = !expanded || panel.dataset.inboxPanel !== state.activePanel;
+    });
     if (assistantChat && assistantChat.presented !== assistantOpen) assistantChat.setPresented(assistantOpen);
-    root.querySelector(".portalAgentInboxPanel:not(.portalPersonalAssistantPanel)").inert = !mailboxOpen;
     const mobileClose = root.querySelector("[data-agent-inbox-mobile-close]");
     if (mobileClose) {
       mobileClose.hidden = !mobileOverlayOpen;
-      mobileClose.setAttribute("aria-label", window.PortalI18n.t(assistantOpen ? "关闭个人助手并返回当前页面" : "关闭 Mailbox 并返回当前页面"));
+      mobileClose.setAttribute("aria-label", window.PortalI18n.t(assistantOpen ? "关闭个人助手并返回当前页面" : todoOpen ? "关闭 To Do 并返回当前页面" : "关闭 Mailbox 并返回当前页面"));
     }
     const assistantUnread = snapshot.entries.some(entry => entry.resident_id === state.assistant?.resident_id && (entry.attention_unread ?? entry.unread));
     root.querySelector("[data-personal-assistant-unread]").hidden = !assistantUnread;
     if (assistantOpen) void mountAssistantChat();
     root.querySelectorAll("[data-agent-conversation-count]").forEach(badge => {
-      const count = badge.closest("header") ? sectionCounts(state.filter).unreadCount : snapshot.unreadCount;
+      const count = snapshot.unreadCount;
       badge.textContent = count > 99 ? "99+" : String(count || "");
       badge.hidden = count < 1;
       badge.title = window.PortalI18n.t("Mailbox 未读数");
-      if (todo && badge.closest("header")) badge.title = window.PortalI18n.t("未完成待办");
     });
-    root.querySelectorAll("[data-agent-inbox-filter]").forEach(button => {
-      button.setAttribute("aria-pressed", String(button.dataset.agentInboxFilter === state.filter));
-      const badge = button.querySelector("[data-agent-section-count]");
-      const count = sectionCounts(button.dataset.agentInboxFilter).unreadCount;
+    const todos = todoPanel?.snapshot() || {};
+    root.querySelectorAll("[data-agent-todo-count]").forEach(badge => {
+      const count = todos.pendingCount || 0;
       badge.textContent = count > 99 ? "99+" : String(count || "");
       badge.hidden = count < 1;
+      badge.title = window.PortalI18n.t("未完成待办");
     });
+    root.querySelector("[data-agent-todo-summary]").textContent = window.PortalI18n.text`${todos.count || 0} 条`;
     const summary = root.querySelector("[data-agent-conversation-action-summary]");
-    if (summary) summary.textContent = window.PortalI18n.text`${snapshot.refreshing ? window.PortalI18n.t("正在更新 · ") : ""}${snapshot.paged ? window.PortalI18n.t("已加载 ") : ""}${sectionCounts(state.filter).count} 条`;
-    if (summary && todo) summary.textContent = window.PortalI18n.text`${sectionCounts("todo").count} 条`;
+    if (summary) summary.textContent = window.PortalI18n.text`${snapshot.refreshing ? window.PortalI18n.t("正在更新 · ") : ""}${snapshot.paged ? window.PortalI18n.t("已加载 ") : ""}${snapshot.entries.length} 条`;
     const error = root.querySelector("[data-agent-conversation-error]");
     if (error) {
-      error.hidden = todo || !snapshot.error;
+      error.hidden = !snapshot.error;
       error.textContent = !snapshot.error ? "" : snapshot.entries.length
         ? window.PortalI18n.t("Mailbox 刷新失败，当前显示上次加载的内容。请点击右上角刷新重试。")
         : window.PortalI18n.t("Mailbox 暂时无法加载，请点击右上角刷新重试。");
     }
     const loadMore = root.querySelector("[data-agent-conversation-load-more]");
     if (loadMore) {
-      loadMore.hidden = todo || !snapshot.nextPageToken;
+      loadMore.hidden = !snapshot.nextPageToken;
       loadMore.disabled = snapshot.loadingMore;
       loadMore.textContent = snapshot.loadingMore ? window.PortalI18n.t("正在加载…") : window.PortalI18n.t("加载更早的 Mailbox 条目");
     }
     const clearUnread = root.querySelector("[data-agent-conversation-clear-unread]");
     const clearAll = root.querySelector("[data-agent-conversation-clear-all]");
-    if (clearUnread) clearUnread.hidden = todo;
-    if (clearAll) clearAll.hidden = todo;
     if (clearUnread) clearUnread.disabled = snapshot.clearing || (!snapshot.entries.some(entry => entry.unread) && !snapshot.nextPageToken);
     if (clearAll) clearAll.disabled = snapshot.clearing || (!snapshot.entries.some(entry => !entry.pinned) && !snapshot.nextPageToken);
-  }
-
-  function sectionCounts(section) {
-    if (section === "todo") {
-      const snapshot = todoPanel?.snapshot() || {};
-      return { count: snapshot.count || 0, unreadCount: snapshot.pendingCount || 0 };
-    }
-    return { count: state.snapshot.entries.length, unreadCount: state.snapshot.unreadCount || 0 };
   }
 
   function keepsPanelFocused(element) {
@@ -466,9 +457,6 @@
   function renderList() {
     if (!root) return;
     updateChrome();
-    root.querySelector("[data-agent-conversation-list]").hidden = state.filter === "todo";
-    root.querySelector("[data-mailbox-todos]").hidden = state.filter !== "todo";
-    if (state.filter === "todo") return;
     // Keep the pressed card and its position stable until activation resolves.
     // Store notifications can arrive between pointer/key down and the click.
     if (state.pressedPointerId !== null || state.pressedKey !== null || state.clickTimers.size) return;
@@ -696,7 +684,6 @@
   }
 
   function clear(mode) {
-    if (state.filter === "todo") return;
     const request = store()?.clear?.(mode);
     if (!request) return;
     request.then(payload => {
@@ -769,15 +756,15 @@
     root.className = "portalAgentInbox";
     root.dataset.portalAgentInbox = "1";
     root.dataset.expanded = "false";
-    root.setAttribute("aria-label", window.PortalI18n.t("我的 Mailbox"));
-    root.innerHTML = window.PortalI18n.html`<button class="portalAgentInboxTrigger" type="button" data-agent-conversation-trigger aria-label="展开我的 Mailbox" aria-expanded="false" title="我的 Mailbox · 按住拖动到左侧或右侧" data-portal-tooltip="我的 Mailbox · 按住拖动到左侧或右侧" data-portal-icon="chat-room"><span class="portalAgentInboxTriggerCount" data-agent-conversation-count hidden></span></button>
-      <section class="portalAgentInboxPanel" aria-label="我的 Mailbox"><header><strong>Mailbox</strong><span class="portalAgentInboxHeaderCount" data-agent-conversation-count hidden></span><span class="portalAgentInboxHeaderSummary" data-agent-conversation-action-summary>0 条</span><button class="portalAgentInboxHeaderAction" type="button" data-agent-conversation-clear-unread title="保留消息，只清除未读状态">清除未读</button><button class="portalAgentInboxHeaderAction" type="button" data-agent-conversation-clear-all title="清除当前列表；有新活动时会重新出现">清除全部</button><button type="button" data-agent-conversation-refresh aria-label="刷新 Mailbox" title="刷新" data-portal-icon="refresh"></button></header>
-      <div class="portalAgentInboxFilters" role="group" aria-label="Mailbox 栏目"><button type="button" data-agent-inbox-filter="messages" aria-pressed="true">消息 <span data-agent-section-count hidden></span></button><button type="button" data-agent-inbox-filter="todo" aria-pressed="false">Todo <span data-agent-section-count hidden></span></button></div>
-      <div class="portalMailboxTodos" data-mailbox-todos hidden></div>
+    root.setAttribute("aria-label", window.PortalI18n.t("快捷入口"));
+    root.innerHTML = window.PortalI18n.html`<button class="portalAgentInboxTrigger" type="button" data-inbox-trigger="mailbox" data-agent-conversation-trigger aria-label="展开我的 Mailbox" aria-expanded="false" title="我的 Mailbox · 按住拖动到左侧或右侧" data-portal-tooltip="我的 Mailbox · 按住拖动到左侧或右侧" data-portal-icon="chat-room"><span class="portalAgentInboxTriggerCount" data-agent-conversation-count hidden></span></button>
+      <section class="portalAgentInboxPanel" data-inbox-panel="mailbox" aria-label="我的 Mailbox" inert><header><strong>Mailbox</strong><span class="portalAgentInboxHeaderCount" data-agent-conversation-count hidden></span><span class="portalAgentInboxHeaderSummary" data-agent-conversation-action-summary>0 条</span><button class="portalAgentInboxHeaderAction" type="button" data-agent-conversation-clear-unread title="保留消息，只清除未读状态">清除未读</button><button class="portalAgentInboxHeaderAction" type="button" data-agent-conversation-clear-all title="清除当前列表；有新活动时会重新出现">清除全部</button><button type="button" data-agent-conversation-refresh aria-label="刷新 Mailbox" title="刷新" data-portal-icon="refresh"></button></header>
       <div class="portalAgentInboxError" data-agent-conversation-error role="status" hidden></div>
       <div class="portalAgentInboxList" data-agent-conversation-list><div class="portalAgentInboxEmpty">正在读取 Mailbox…</div></div></section>
-      <button class="portalAgentInboxTrigger portalPersonalAssistantTrigger" type="button" data-personal-assistant-trigger aria-label="展开个人助手" aria-expanded="false" data-portal-icon="octopus" hidden><span class="portalAgentInboxUnreadDot" data-personal-assistant-unread aria-label="未读" hidden></span></button>
-      <section class="portalAgentInboxPanel portalPersonalAssistantPanel" aria-label="个人助手" inert><div data-personal-assistant-chat></div></section>
+      <button class="portalAgentInboxTrigger" type="button" data-inbox-trigger="todo" data-agent-todo-trigger aria-label="展开 To Do" aria-expanded="false" title="To Do · 按住拖动到左侧或右侧" data-portal-tooltip="To Do · 按住拖动到左侧或右侧" data-portal-icon="check"><span class="portalAgentInboxTriggerCount" data-agent-todo-count hidden></span></button>
+      <section class="portalAgentInboxPanel" data-inbox-panel="todo" aria-label="To Do" inert><header><strong>To Do</strong><span class="portalAgentInboxHeaderCount" data-agent-todo-count hidden></span><span class="portalAgentInboxHeaderSummary" data-agent-todo-summary>0 条</span><button type="button" data-agent-todo-refresh aria-label="刷新 To Do" title="刷新" data-portal-icon="refresh"></button></header><div class="portalMailboxTodos" data-mailbox-todos></div></section>
+      <button class="portalAgentInboxTrigger portalPersonalAssistantTrigger" type="button" data-inbox-trigger="assistant" data-personal-assistant-trigger aria-label="展开个人助手" aria-expanded="false" data-portal-icon="octopus" hidden><span class="portalAgentInboxUnreadDot" data-personal-assistant-unread aria-label="未读" hidden></span></button>
+      <section class="portalAgentInboxPanel portalPersonalAssistantPanel" data-inbox-panel="assistant" aria-label="个人助手" inert><div data-personal-assistant-chat></div></section>
       <button class="portalAgentInboxMobileClose" type="button" data-agent-inbox-mobile-close data-portal-icon="close" aria-label="关闭并返回当前页面" hidden><span>关闭</span></button>`;
     document.body.appendChild(root);
     todoPanel = window.PortalMailboxTodos.create(root.querySelector("[data-mailbox-todos]"), { onChange: () => updateChrome() });
@@ -787,13 +774,11 @@
     const savedPosition = window.PortalState?.read?.(POSITION_PAGE, "device", {}) || {};
     state.dockSide = savedPosition.dockSide === "left" ? "left" : "right";
     root.dataset.dockSide = state.dockSide;
-    const savedSection = savedPosition.section;
-    state.filter = savedSection === "todo" ? "todo" : "messages";
+    // Legacy section preferences no longer redirect Mailbox to To Do.
     showAssistant(cachedAssistant());
     applyVerticalPosition();
     watchAvoidanceLayout(signal);
-    bindTriggerDragging(root.querySelector("[data-agent-conversation-trigger]"), signal);
-    bindTriggerDragging(root.querySelector("[data-personal-assistant-trigger]"), signal);
+    root.querySelectorAll("[data-inbox-trigger]").forEach(trigger => bindTriggerDragging(trigger, signal));
     const assistantPanel = root.querySelector(".portalPersonalAssistantPanel");
     assistantPanel.addEventListener("transitionend", event => {
       if (event.target === assistantPanel && event.propertyName === "opacity") assistantChat?.setPresented(!assistantPanel.inert);
@@ -881,7 +866,7 @@
       if (event.pointerType === "touch" || state.dragging || performance.now() < state.suppressHoverUntil) return;
       const trigger = event.target.closest(".portalAgentInboxTrigger");
       if (!trigger) return;
-      state.activePanel = trigger.matches("[data-personal-assistant-trigger]") ? "assistant" : "mailbox";
+      state.activePanel = trigger.dataset.inboxTrigger;
       state.hovered = true;
       closeConversationMenu();
       updateChrome();
@@ -889,7 +874,10 @@
     root.addEventListener("pointerleave", () => { state.hovered = false; updateChrome(); }, { signal });
     root.addEventListener("focusin", event => {
       state.focused = keepsPanelFocused(event.target);
-      if (state.focused) state.activePanel = event.target.closest("[data-personal-assistant-trigger], .portalPersonalAssistantPanel") ? "assistant" : "mailbox";
+      if (state.focused) {
+        const owner = event.target.closest("[data-inbox-trigger], [data-inbox-panel]");
+        if (owner) state.activePanel = owner.dataset.inboxTrigger || owner.dataset.inboxPanel;
+      }
       updateChrome();
     }, { signal });
     root.addEventListener("focusout", () => {
@@ -918,7 +906,7 @@
           event.preventDefault();
           return;
         }
-        const panel = trigger.matches("[data-personal-assistant-trigger]") ? "assistant" : "mailbox";
+        const panel = trigger.dataset.inboxTrigger;
         // WebKit can dispatch the synthetic click after a touch as a MouseEvent
         // without pointerType. Mobile/coarse capability therefore owns this
         // toggle instead of relying on the click event's optional field.
@@ -927,17 +915,8 @@
         updateChrome();
         return;
       }
-      const filterButton = event.target.closest("[data-agent-inbox-filter]");
-      if (filterButton) {
-        state.filter = filterButton.dataset.agentInboxFilter;
-        closeConversationMenu();
-        persistPosition();
-        renderList();
-        return;
-      }
+      if (event.target.closest("[data-agent-todo-refresh]")) return void todoPanel?.refresh();
       if (event.target.closest("[data-agent-conversation-refresh]")) {
-        void todoPanel?.refresh();
-        if (state.filter === "todo") return;
         return void store().refresh({ force: true, foreground: true }).catch(() => {});
       }
       if (event.target.closest("[data-agent-conversation-load-more]")) {
@@ -1001,7 +980,6 @@
     state.touchExpanded = false;
     state.hovered = false;
     state.focused = false;
-    state.filter = "messages";
     root?.remove();
     root = null;
     document.body?.classList.remove("portalAgentInboxMounted");

@@ -1,4 +1,4 @@
-"""Shared Mailbox and personal assistant docking, using isolated browser inputs.
+"""Shared Mailbox, To Do and personal assistant docking with isolated browser inputs.
 
 :module: resident.conversation
 :aspects: ui, behavior
@@ -11,7 +11,7 @@ import pytest
 
 
 def test_shared_inbox_edge_docking():
-    """Both entries dock together without changing click or persistence contracts.
+    """Three entries dock together; independent To Do retains editing and mobile access.
 
     :risk: no-external-side-effects
     :profiles: local.fixture
