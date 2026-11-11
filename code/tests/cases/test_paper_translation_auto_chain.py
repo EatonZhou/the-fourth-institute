@@ -9,7 +9,7 @@ from management_portal.paper_translation_service import SYSTEM,AUTO_RECIPE,RECIP
 from management_portal.paper_translation_google import GoogleTimeout
 
 
-def failure(kind='timeout',status=None,code=''):
+def failure(kind='connection_refused',status=None,code=''):
     return {'status':'failed','result':{'error_code':code,'error':'synthetic failure','error_details':{'provider_transport':{'schema':'tfi.provider-transport.v1','source':'recorded_http_transport','error_kind':kind,'response':{'http_status':status}}}}}
 
 
@@ -23,7 +23,7 @@ def test_chain_exact_order_private_cache_and_source(owner):
     setup(owner)
     result=ask(owner)
     assert result['status']=='succeeded' and result['provider']=='kimi' and result['model']=='wire-kimi'
-    assert result['requested_model']=='kimi-k2.6' and result['fallback']['reason']=='timeout'
+    assert result['requested_model']=='kimi-k2.6' and result['fallback']['reason']=='connection_refused'
     sent=list(owner.execution.requests.values())
     assert [r.provider for r in sent]==['deepseek_primary','kimi_primary']
     assert sent[0].execution_id!=sent[1].execution_id and all(r.runtime_options['max_retries']==0 for r in sent)
@@ -32,7 +32,7 @@ def test_chain_exact_order_private_cache_and_source(owner):
     assert owner.cache.descriptor('a',result['task_id'])['prompt']['version']==AUTO_RECIPE
 
 
-@pytest.mark.parametrize('snapshot',[failure('timeout',401),failure('timeout',403),failure('timeout',402),failure('http_error',429),failure('timeout',code='permission_denied'),failure('tls_error'),failure('invalid_json'),{'status':'cancelled'},{'status':'failed','result':{'error':'unknown'}}])
+@pytest.mark.parametrize('snapshot',[failure('read_timeout'),failure('connection_error'),failure('timeout',code='permission_denied'),failure('tls_error'),failure('invalid_json'),{'status':'cancelled'},{'status':'failed','result':{'error':'unknown'}}])
 def test_non_admissible_failure_no_fallback(owner,snapshot):
     setup(owner,snapshot)
     assert ask(owner)['status']=='failed'

@@ -233,10 +233,10 @@ def test_terminal_empty_api_result_fails_instead_of_polling_forever(owner):
     assert ask(owner,mode='deepseek')['error']['code']=='deepseek_invalid_response'
 
 
-def test_google_http_error_is_explicit_without_fallback(owner):
+def test_manual_google_http_rejection_is_explicit_without_fallback(owner):
     from urllib.error import HTTPError
     owner.google.fail=HTTPError('https://translate.google.com',429,'rate limited',{},None)
-    result=ask(owner)
+    result=ask(owner,mode='google')
     assert '429' in result['error']['message'] and owner.execution.submits==0
 
 

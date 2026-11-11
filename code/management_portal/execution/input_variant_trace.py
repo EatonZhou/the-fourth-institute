@@ -11,7 +11,10 @@ def trace(stage, *, business_ref='', role='', prompt='', spec=None, decision=Non
            'selected': decision.get('selected', 'pending' if spec else 'full'),
            'reason': (decision.get('policy') or {}).get('reason') or decision.get('reason') or ('await_final_policy' if spec else 'input_variants_missing'),
            'prompt_chars': len(prompt), 'contains_snapshot_path': any(p in prompt for p in paths)}
-    print(json.dumps(row, ensure_ascii=False, separators=(',', ':')), flush=True)
+    try:
+        print(json.dumps(row, ensure_ascii=False, separators=(',', ':')), flush=True)
+    except OSError:
+        pass  # Diagnostic delivery must never fail a paid task.
     return row
 
 
@@ -19,4 +22,4 @@ def trace_invocation(stage, invocation, context):
     request = invocation.request
     return trace(stage, business_ref=request.metadata.get('business_ref', ''),
                  role=request.agent_id, prompt=invocation.user_prompt,
-                 spec=request.metadata.get('input_variants'), decision=context.current_input_variant())
+                 spec=request.metadata.get('input_variants'), decision=getattr(context, 'current_input_variant', lambda: None)())
