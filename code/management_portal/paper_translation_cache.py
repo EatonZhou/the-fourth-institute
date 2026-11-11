@@ -54,8 +54,7 @@ class TranslationCache:
         self.authorize_access(context, payload)
 
     def request_verified(self, context, *, operation_id, request, refresh=False):
-        return self.request(context, operation_id=operation_id, request=request,
-                            refresh=refresh, _verified=True)
+        raise ValueError('Verified subscription translation experiment is permanently cancelled')
 
     def request(self, context, *, operation_id, request, refresh=False, _verified=False):
         actor = self._actor(context)
@@ -154,7 +153,7 @@ class TranslationCache:
         with self.database.transaction() as db:
             key, mode = db.execute('SELECT cache_key,publication_mode FROM reader_translation_tasks WHERE task_id=%s', (task_id,)).fetchone()
             if mode == 'verified' and error is None:
-                raise ValueError('verified tasks require finish_verified')
+                raise ValueError('Verified subscription translation experiment is permanently cancelled')
             # Use the same lock order as request: key before task.
             db.execute('SELECT cache_key FROM reader_translation_keys WHERE cache_key=%s FOR UPDATE', (key,))
             row = db.execute("UPDATE reader_translation_tasks SET status=%s,result=%s,error=%s,outcome=%s,lease_token=NULL,lease_until=NULL WHERE task_id=%s AND status='running' AND lease_token=%s AND lease_until>clock_timestamp() RETURNING task_id", ('failed' if error is not None else 'succeeded', None if error is not None else result, 'translation execution failed' if error is not None else None, Jsonb(outcome) if outcome is not None else None, task_id, token)).fetchone()
@@ -162,51 +161,6 @@ class TranslationCache:
             db.execute('UPDATE reader_translation_keys SET active_task=NULL WHERE cache_key=%s AND active_task=%s', (key, task_id))
             if error is None:
                 db.execute('UPDATE reader_translation_keys SET successful_task=%s WHERE cache_key=%s', (task_id, key))
-        return self.get(context, task_id)
-
-    @staticmethod
-    def final_key(payload, actual):
-        """Scope and semantics bind the post-submission material fingerprint."""
-        value = {'schema': 'paper.translation-final.v1', 'descriptor': payload,
-                 'input_model_digest': actual['input_model_digest'],
-                 'provider': actual['provider'], 'requested_model': actual['requested_model'],
-                 'reported_model': actual['reported_model']}
-        return 'final:' + hashlib.sha256(_canonical(value).encode()).hexdigest()
-
-    def finish_verified(self, context, task_id, token, *, result, provenance, final_cache_key):
-        """Re-read actual owner evidence; atomically publish result and provenance.
-
-        Provenance supplies the ORIGINAL submitted handle, not an attestation
-        boolean. ActualTranslationEvidence reauthorizes and reads the immutable
-        request and completion. This method never submits/resumes a model.
-        """
-        self._execution_owner(context, task_id)
-        if not isinstance(result, str) or not result or len(result.encode()) > 256 * 1024:
-            raise ValueError('bounded successful translation required')
-        from management_portal.paper_translation_workflow import ActualTranslationEvidence
-        descriptor = self.descriptor(context, task_id)
-        actual = ActualTranslationEvidence().read_task(actor=self._actor(context), task_id=task_id,
-                                                       handle=provenance['handle'], descriptor=descriptor)
-        if actual.get('state') != 'completed' or actual.get('text') != result:
-            raise ValueError('matching actual completion required')
-        # A caller-supplied digest can never substitute for the actual read.
-        if 'actual' in provenance and _canonical(provenance['actual']) != _canonical(actual):
-            raise Conflict('actual provenance changed')
-        with self.database.transaction() as db:
-            key, payload, mode = db.execute('SELECT cache_key,payload,publication_mode FROM reader_translation_tasks WHERE task_id=%s', (task_id,)).fetchone()
-            if mode != 'verified' or final_cache_key != self.final_key(payload, actual):
-                raise ValueError('actual final key required for a verified task')
-            db.execute('INSERT INTO reader_translation_keys(cache_key) VALUES (%s) ON CONFLICT DO NOTHING', (final_cache_key,))
-            # Consistent order for concurrent publications of the same final key.
-            for lock_key in sorted((key, final_cache_key)):
-                db.execute('SELECT cache_key FROM reader_translation_keys WHERE cache_key=%s FOR UPDATE', (lock_key,))
-            changed = db.execute("UPDATE reader_translation_tasks SET status='succeeded',result=%s,error=NULL,lease_token=NULL,lease_until=NULL WHERE task_id=%s AND status='running' AND lease_token=%s AND lease_until>clock_timestamp() RETURNING task_id", (result, task_id, token)).fetchone()
-            if not changed:
-                raise Conflict('expired or superseded lease')
-            stored = {'handle': provenance['handle'], 'actual': actual}
-            db.execute('INSERT INTO reader_translation_verified_results(task_id,lookup_key,final_cache_key,provenance) VALUES (%s,%s,%s,%s)', (task_id, key, final_cache_key, Jsonb(stored)))
-            db.execute('UPDATE reader_translation_keys SET successful_task=%s WHERE cache_key=%s', (task_id, final_cache_key))
-            db.execute('UPDATE reader_translation_keys SET active_task=NULL WHERE cache_key=%s AND active_task=%s', (key, task_id))
         return self.get(context, task_id)
 
     def _execution_owner(self, context, task_id):
