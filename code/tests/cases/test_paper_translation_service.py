@@ -7,9 +7,10 @@ import time
 import pytest
 
 from management_portal.execution.contracts import SystemInstructions
+from management_portal.agent_prompt_context import material_task_instructions
 from management_portal.paper_reader_annotations import Conflict
 from management_portal.paper_translation_google import GoogleTimeout, GoogleTransport
-from management_portal.paper_translation_service import ReaderTranslationService, MODEL
+from management_portal.paper_translation_service import ReaderTranslationService, MODEL, SYSTEM
 
 
 def request(mode='auto'):
@@ -49,7 +50,7 @@ def owner():
         authenticate(context)
         if document['attachment_version'] not in ('v1', 'v2'): raise PermissionError()
     svc = ReaderTranslationService(authenticate=authenticate, authorize_document=authorize,
-        configuration=lambda _: dict(revision=1, system_instructions=asdict(SystemInstructions())),
+        configuration=lambda _: dict(revision=1, system_instructions=asdict(material_task_instructions(SYSTEM))),
         execution=FakeExecution(), google=FakeGoogle())
     svc.revoked = revoked
     return svc
@@ -101,6 +102,49 @@ def test_manual_deepseek_has_no_google_request(owner):
     value = ask(owner, mode='deepseek')
     assert value['provider'] == 'deepseek' and owner.google.calls == 0
     assert value['google_request_ms'] is None
+
+
+def test_translation_final_protocol_payload_is_only_instruction_and_material(owner):
+    """Capture the real Chat protocol's wire payload without network or billing."""
+    from types import SimpleNamespace
+    import json
+    from management_portal.execution.contracts import ExecutionRequest
+    from management_portal.execution.chat_completion_service import ChatCompletionService
+
+    payload = owner.prepare('a', request('deepseek'))
+    planned = ExecutionRequest.from_payload(owner._plan('a', 'wire-fixture', payload))
+    calls = []
+    class Registry:
+        def get(self, key):
+            return {'id': key, 'kind': 'openai_compatible_chat', 'default_model': MODEL}
+        def request(self, key, endpoint, body, **kwargs):
+            calls.append((key, endpoint, body))
+            return {'choices': [{'message': {'content': '译文'}}], 'model': MODEL}
+    invocation = SimpleNamespace(request=planned, user_prompt=planned.prompt,
+        system_context='\n'.join(p.content for p in planned.system_instructions.parts),
+        attach_system_context=True)
+    context = SimpleNamespace(is_cancelled=lambda: False, emit=lambda *args: None)
+    ChatCompletionService(Registry()).execute(invocation, context)
+    key, endpoint, wire = calls[0]
+    assert key == 'deepseek_primary' and endpoint == 'chat/completions'
+    assert wire['messages'] == [
+        {'role': 'system', 'content': SYSTEM},
+        {'role': 'user', 'content': planned.prompt},
+    ]
+    assert json.loads(planned.prompt) == {
+        'text': request()['text'], 'source_language': 'en',
+        'target_language': 'zh-CN', 'terminology': {},
+    }
+    assert set(wire) == {'model', 'messages', 'thinking', 'max_tokens'}
+    assert planned.session.mode == 'stateless' and not planned.metadata
+
+
+def test_admitted_old_translation_recipe_retains_business_instruction(owner):
+    payload = owner.prepare('a', request('deepseek'))
+    payload['prompt']['version'] = 'reader-translation-google-flash-v1'
+    payload['model']['settings']['system_instructions'] = asdict(SystemInstructions())
+    planned = owner._plan('a', 'old-recipe', payload)
+    assert planned['runtime_options']['system_prompt'] == SYSTEM
 
 
 def test_preprocessing_exceeding_three_seconds_does_not_spend_network_budget(owner):

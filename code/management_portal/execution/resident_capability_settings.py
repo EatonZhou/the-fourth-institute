@@ -142,6 +142,8 @@ def settings_application(settings: Mapping[str, Any], *, backend: str, revision:
                  "allow_subagents", "agent_harness", "prompt_context", "backend_options", "backend_role", "account_selection"):
         if name in settings:
             add(name, "next_turn", "configured_for_future_input_without_delivery_observation")
+    if "quota_switch_strategy" in settings:
+        add("quota_switch_strategy", "configured", "used_at_next_quota_check", delivery="not_applicable")
     if "auto_switch_on_quota" in settings:
         add("auto_switch_on_quota", "configured", "used_at_next_quota_check", delivery="not_applicable")
     return {"schema": "tfi.resident-application.v1", "settings_revision": revision, "items": items}

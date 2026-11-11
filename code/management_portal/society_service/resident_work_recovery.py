@@ -6,6 +6,7 @@ Family stewards choose member migrations; the coordinator can migrate a
 quota-exhausted steward so supervision does not depend on its own model.
 """
 from __future__ import annotations
+from management_portal.execution.account_selection_contract import pinned_quota
 
 import time
 from typing import Any, Mapping
@@ -275,6 +276,7 @@ def _reconcile_failed_work(residents: list[dict[str, Any]], context: dict[str, A
             target = fallback_account(accounts or [], provider, route, tried, reserve=not automatic,
                                       priority=resident_domain_port.auto_migration_priority(record),
                                       priority_only=(record.get("execution_settings") or {}).get("auto_switch_on_quota") is True,
+                                      pinned=pinned_quota(record),
                                       append_subscriptions=bool((record.get("family") or {}).get("role")),
                               model=(record.get("execution_settings") or {}).get("model", ""),
                               effort=(record.get("execution_settings") or {}).get("reasoning_effort", ""))

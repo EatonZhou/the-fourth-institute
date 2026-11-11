@@ -42,7 +42,8 @@ SETTINGS_FIELDS = {
     },
     "allow_subagents": {"type": "boolean"},
     "account_selection": {"type": "string", "enum": ["auto", "fixed"], "description": "账号选择策略：auto 自动选择，fixed 固定当前账号；保存策略不立即切换已有 Session"},
-    "auto_switch_on_quota": {"type": "boolean", "description": "额度不足时自动切换；true 仅按站点默认帐号选择排序，false 禁止额度自动切换；省略沿用既有策略"},
+    "quota_switch_strategy": {"type":"string", "enum":["legacy","same_provider_model"], "description":"额度恢复策略；缺省legacy保持旧语义，same_provider_model显式同Provider/model最高余量；不授予账号权限、不自动启用切换"},
+    "auto_switch_on_quota": {"type": "boolean", "description": "额度不足时自动切换；true默认保留既有站点/Family排序；仅显式quota_switch_strategy=same_provider_model选择同Provider/model最高新鲜余量；false禁止额度自动切换"},
     "capability_config": {"type": "object", "description": "tfi.resident-capabilities.v1：tools/mcp/skills声明引用及enabled/required；MCP另有精确tools列表。保存不调用模型或重建会话"},
     "agent_harness": {"type": "object"},
     "collaboration_mode": {"type": "string", "enum": ["default", "plan"]},
@@ -216,7 +217,7 @@ DECLARATIONS = (
         R("resident_id", description="要修改设置的 Resident"),
         P("expected_revision", description="读取时的 settings_revision；过期保存拒绝，省略兼容旧调用"),
         R("changes", "object", "只接受 model、reasoning_effort、service_tier、permission_preset、"
-          "account_selection、auto_switch_on_quota、reporting、prompt_injection、allow_subagents、agent_harness、capability_config、collaboration_mode、prompt_context、backend_options、backend_route_id（仅 Model API）",
+          "account_selection、auto_switch_on_quota、quota_switch_strategy、reporting、prompt_injection、allow_subagents、agent_harness、capability_config、collaboration_mode、prompt_context、backend_options、backend_route_id（仅 Model API）",
           properties=SETTINGS_FIELDS),
     ), (
         R("reporting_effective", "object", "汇报策略和来源"),

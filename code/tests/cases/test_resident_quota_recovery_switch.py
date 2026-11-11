@@ -25,7 +25,7 @@ def exhausted(team, monkeypatch):
     rid, mid = _failed(team, monkeypatch, "You've hit your weekly limit")
     record = _record(rid)
     record.update(backend_route_id="one", execution_settings={
-        **record["execution_settings"], "account_selection": "fixed", "auto_switch_on_quota": True})
+        **record["execution_settings"], "account_selection": "auto", "auto_switch_on_quota": True})
     records.save_resident_record(record, commit_configuration=True)
     accounts = [_account("codex", "one", 0, used_up=True, automatic_paused=True),
                 _account("codex", "two", 80)]

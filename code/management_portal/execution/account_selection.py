@@ -93,6 +93,19 @@ def observations() -> list[dict]:
     return list(get_execution_service().accounts().get("accounts") or [])
 
 
+def quota_candidates(accounts: list[dict], source: Mapping[str, Any], *, model: str,
+                     effort: str = "", current: str = "", excluded=()) -> list[dict]:
+    """Proven subscription headroom, within the pinned provider and model."""
+    if source.get("kind") != "subscription_login" or not model:
+        return []
+    eligible = [a for a in candidates(accounts, source, model=model, effort=effort,
+                                    excluded=excluded)
+                if a.get("enabled") is True and a.get("login_state") == "logged_in"
+                and (a.get("selection_catalog") or {}).get("fresh") is True
+                and headroom(a) is not None and headroom(a) > 0]
+    return sorted(eligible, key=lambda a: (-headroom(a), a["account_id"] != current, a["account_id"]))
+
+
 def select(provider: str, *, anchor: str = "", model: str = "", effort: str = "", accounts=None) -> dict:
     from .account_registrations import registrations
     from .accounts import DefaultAccountUnavailable

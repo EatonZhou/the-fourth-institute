@@ -68,13 +68,17 @@ def sufficient_reserve(account: Mapping[str, Any]) -> bool:
 def fallback_account(accounts: list[dict[str, Any]], provider: str, route: str,
                      tried: list[str], *, reserve: bool = False, priority: list[str] | None = None,
                      append_subscriptions: bool = False, model: str = "", effort: str = "",
-                     priority_only: bool = False) -> dict[str, Any]:
+                     priority_only: bool = False, pinned: bool = False) -> dict[str, Any]:
     from management_portal.execution.account_selection import candidates
     source = next((a for a in accounts if a.get("provider") == provider
                    and str(a.get("backend_route_id") or "") == route), {})
     if not source:
         return {}
     excluded = [*tried, source["account_id"]]
+    if pinned:
+        from management_portal.execution.account_selection import quota_candidates
+        own = quota_candidates(accounts, source, model=model, effort=effort, excluded=excluded)
+        return own[0] if own else {}
     if not priority_only:
         own = candidates(accounts, source, model=model, effort=effort, excluded=excluded,
                          reserve=MIGRATION_RESERVE_PERCENT if reserve else 0)

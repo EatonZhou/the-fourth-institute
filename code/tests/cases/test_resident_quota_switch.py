@@ -25,7 +25,7 @@ from tests.cases.test_family_quota import _account
 def switching(team, monkeypatch):
     record = dict(team.source)
     record.update(backend="codex", backend_route_id="one", family={},
-                  execution_settings={"account_selection": "fixed", "auto_switch_on_quota": True})
+                  execution_settings={"account_selection": "auto", "auto_switch_on_quota": True})
     intake.commit_resident_intake_state(record, "open")
     monkeypatch.setattr(records, "find_resident", lambda _: record)
     monkeypatch.setattr(resident_backend, "session_record", lambda _: {"backend_route_id": "one", "backend_session_id": "original"})
@@ -72,6 +72,7 @@ def test_explicit_toggle_overrides_fixed_and_named_role_but_missing_keeps_legacy
     assert not quota.auto_migration_enabled(f.record)
     assert not quota.ensure_role_reserve(f.record)
     del f.record["execution_settings"]["auto_switch_on_quota"]
+    f.record["execution_settings"]["account_selection"] = "fixed"
     assert not quota.auto_migration_enabled(f.record)  # old fixed policy
     f.record["execution_settings"]["account_selection"] = "auto"
     assert quota.auto_migration_enabled(f.record)
@@ -117,6 +118,19 @@ def test_default_order_is_strict_and_same_kind_does_not_jump_ahead(switching):
     assert policy.fallback_account(accounts, "codex", "one", [], priority=["claude:subscription_login"], priority_only=True) == other
     assert policy.fallback_account(accounts, "codex", "one", [], priority=[], priority_only=True) == {}
     assert policy.fallback_account(accounts, "codex", "one", [], priority=[]) == f.accounts[1]  # legacy
+
+
+def test_pinned_quota_restart_preserves_model_and_reuses_operation(switching):
+    f = switching
+    f.record["execution_settings"].update(account_selection="fixed", model="default", quota_switch_strategy="same_provider_model")
+    f.accounts[1]["enabled"] = True
+    assert quota.ensure_role_reserve(f.record, f.accounts)
+    assert f.calls[0]["target_provider"] == "codex"
+    assert f.calls[0]["target_account"] == "two"
+    assert f.calls[0]["context_strategy"] == "preserve"
+    assert f.calls[0]["resume_failed_input"] is False
+    assert quota.ensure_role_reserve(f.record, f.accounts)
+    assert len(f.calls) == 1
 
 
 def test_empty_default_order_has_exact_manual_hint_and_changed_state_event(switching):

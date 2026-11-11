@@ -7,6 +7,7 @@ member takes it. Platform supervision restores Router/Steward intake and
 migrates Family executors' accounts before admitting the next turn.
 """
 from __future__ import annotations
+from management_portal.execution.account_selection_contract import pinned_quota
 
 import hashlib
 import logging
@@ -424,6 +425,8 @@ def auto_migration_priority(record: dict) -> list[str]:
     """Explicit switch uses site order; otherwise preserve a direct Family's custom order."""
     from .resident_default_backend import selection_mode, selection_priority
     if (record.get("execution_settings") or {}).get("auto_switch_on_quota") is True:
+        if pinned_quota(record):
+            return []  # Explicit quota recovery preserves this provider/model scope.
         # The explicit switch uses the site default, never a named role's or
         # Family's order. selection_priority already handles a missing default.
         return selection_priority({"execution_settings": {"backend_role": "default"}})
@@ -629,6 +632,11 @@ def _ensure_quota_switch(record: dict[str, Any], accounts: list[dict[str, Any]] 
         return False
     if gate.get("state") != "closed" or gate.get("reason") not in QUOTA_REASONS:
         return True  # Unknown/stale/disabled is not permission to migrate.
+    if pinned_quota(record) and any(
+            a.get("provider") == account.get("provider")
+            and (a.get("quota_reserve") or {}).get("fresh") is not True for a in accounts):
+        # AccountMonitor owns collection; stale samples never enter ranking.
+        accounts = list(service.accounts(force_refresh=True).get("accounts") or [])
     submitted = resident_execution_work.submitted_execution_id(job)
     if submitted and resident_execution_work.execution_snapshot(job).get("status") != "queued":
         return False  # A running/claimed turn is never a quota-waiting input.
@@ -636,8 +644,11 @@ def _ensure_quota_switch(record: dict[str, Any], accounts: list[dict[str, Any]] 
     # A Family's inherited switch keeps its same-kind-first contract. Only
     # the Resident's explicit switch opts into the site's strict ordering.
     strict_priority = (record.get("execution_settings") or {}).get("auto_switch_on_quota") is True
+    pinned = pinned_quota(record)
     windows = [(w.get("window"), w.get("resets_at")) for w in (account.get("quota_reserve") or {}).get("windows") or []]
     epoch = f"{account['account_id']}:{windows}:{priority}:automatic-handoff"
+    if pinned:
+        epoch += ":pinned-provider-model"
     if not strict_priority:
         # Retire failures made under the old priority-only candidate policy;
         # re-evaluate queued work without replaying an admitted/running turn.
@@ -650,6 +661,7 @@ def _ensure_quota_switch(record: dict[str, Any], accounts: list[dict[str, Any]] 
                 or quota_switch_policy(current) is not True
                 or resident_account(current, accounts).get("account_id") != account["account_id"]
                 or ((current.get("execution_settings") or {}).get("auto_switch_on_quota") is True) != strict_priority
+                or pinned_quota(current) != pinned
                 or auto_migration_priority(current) != priority):
             return False
         current_job = resident_execution_work.read(current)
@@ -671,6 +683,7 @@ def _ensure_quota_switch(record: dict[str, Any], accounts: list[dict[str, Any]] 
             if not payload and state.get("switch_reason") != "migration_failed":
                 target = fallback_account(accounts, str(account["provider"]), str(account.get("backend_route_id") or ""),
                                           state["tried_accounts"], priority=priority, priority_only=strict_priority,
+                                          pinned=pinned_quota(current),
                                           append_subscriptions=bool((current.get("family") or {}).get("role")),
                                           model=(current.get("execution_settings") or {}).get("model", ""),
                                           effort=(current.get("execution_settings") or {}).get("reasoning_effort", ""))

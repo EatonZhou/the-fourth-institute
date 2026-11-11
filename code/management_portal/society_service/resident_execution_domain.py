@@ -224,7 +224,7 @@ def prepare_resident_runtime_settings_change(resident_id: str, actor: str = "", 
             result["active_turn_fields"] = []
             result["next_turn_fields"] = [
                 name for name in next_turn_fields
-                if name not in result["active_turn_fields"] and name != "auto_switch_on_quota"
+                if name not in result["active_turn_fields"] and name not in {"auto_switch_on_quota", "quota_switch_strategy"}
             ]
             return result
 

@@ -15,6 +15,18 @@ from management_portal.execution.contracts import InjectionPart, SystemInstructi
 _SKILL_RESOURCE_ID = re.compile(r"^skill_[0-9a-f]{12}$")
 
 
+def material_task_instructions(instruction: str) -> SystemInstructions:
+    """Instructions for a stateless material transform without Portal agency.
+
+    No identity, locations, history or tools are materialized here. The caller
+    still owns authorization, input versions, cancellation and output validation.
+    Provider safety instructions remain under the Provider's control.
+    """
+    return SystemInstructions(parts=(
+        InjectionPart("material_task", instruction, "every_turn", "system"),
+    )).validate()
+
+
 def system_parts_revision(instructions: SystemInstructions) -> str:
     """Digest actual ordered parts, including their lifecycle and placement.
 
