@@ -14,7 +14,7 @@ from tests.cases.permission_test_support import permissions  # noqa: F401
 
 def mention(message):
     return dict(kind='chatroom', chatroom_id='chatroom_aaaaaaaaaaaa', title='开发群',
-                url='/chatroom?id=chatroom_aaaaaaaaaaaa', unread_mentions=[{'message_id': message}],
+                url='/chatroom?id=chatroom_aaaaaaaaaaaa', unread_mentions=[{'message_id': message, 'ordinal': 17}],
                 text='PRIVATE MESSAGE CONTENT')
 
 

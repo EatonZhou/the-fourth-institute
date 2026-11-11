@@ -78,7 +78,9 @@ def test_new_mention_long_watch_wakes_sender_within_five_seconds(reminder, monke
         assert time.time() - created[0] < 5
         assert timeouts[0] == 25
         assert len(r.server.sent) == 1
-        assert set(metrics[0]) == {'event_to_discovery_seconds', 'discovery_to_send_seconds', 'prepare_seconds', 'send_seconds'}
+        assert metrics[0]['snapshot_reused']
+        assert metrics[0]['mailbox_seconds'] >= .02
+        assert metrics[0]['event_to_watch_seconds'] < 1
         assert metrics[0]['event_to_discovery_seconds'] + metrics[0]['discovery_to_send_seconds'] < 5
         print('reminder_latency_seconds=' + json.dumps(metrics[0], sort_keys=True))
     finally:

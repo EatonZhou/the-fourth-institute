@@ -11,7 +11,15 @@ def fingerprint(text):
     return hashlib.sha256(visible.encode()).hexdigest() if visible else ''
 
 
-def source_message(portal, actor, room, message_id):
+def source_message(portal, actor, room, message_id, *, ordinal=None):
+    if ordinal is not None:
+        # Mailbox supplies the immutable position: one row, including ordinal 1.
+        page = portal.call(actor, 'ListChatroomMessages', {
+            'chatroom_id': room, 'cursor': str(int(ordinal) + 1), 'limit': 1})
+        for message in page.get('messages') or []:
+            if message.get('message_id') == message_id and not message.get('retracted_at'):
+                return message
+        raise LookupError('mention source unavailable')
     cursor, seen = '', set()
     while True:
         args = {'chatroom_id': room, 'limit': 200}
@@ -28,7 +36,9 @@ def source_message(portal, actor, room, message_id):
 
 
 def enrich(portal, actor, item):
-    message = source_message(portal, actor, item['chatroom_id'], item['source_message_id'])
+    if not isinstance(item.get('ordinal'), int) or item['ordinal'] < 1:
+        raise LookupError('mention position unavailable')
+    message = source_message(portal, actor, item['chatroom_id'], item['source_message_id'], ordinal=item['ordinal'])
     author = message.get('author_id') or ''
     if author.startswith('resident_'):
         author = portal.resident(actor, author).get('title') or author

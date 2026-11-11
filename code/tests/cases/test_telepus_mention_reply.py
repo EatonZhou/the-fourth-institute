@@ -221,18 +221,17 @@ def test_reply_after_reminder_disabled_and_after_adapter_restart(mentions):
     assert r.posts and not r.portal.delivered
 
 
-def test_source_pagination_finds_old_original(mentions):
+@pytest.mark.parametrize('ordinal', [1, 900])
+def test_source_position_reads_only_original(mentions, ordinal):
     r = mentions
     pages = []
     def call(actor, instruction, args):
-        pages.append(args.get('cursor', ''))
-        if not args.get('cursor'):
-            return {'messages': [], 'next_cursor': 'older'}
+        pages.append(args)
         return {'messages': [{'message_id': 'old', 'author_id': 'alice',
             'content_parts': [{'type': 'text', 'text': 'original'}]}]}
     r.portal.call = call
-    item = enrich(r.portal, ACTOR, {'chatroom_id': ROOM, 'source_message_id': 'old'})
-    assert item['excerpt'] == 'original' and pages == ['', 'older']
+    item = enrich(r.portal, ACTOR, {'chatroom_id': ROOM, 'source_message_id': 'old', 'ordinal': ordinal})
+    assert item['excerpt'] == 'original' and pages == [{'chatroom_id': ROOM, 'cursor': str(ordinal + 1), 'limit': 1}]
 
 
 def test_schema_ten_upgrade_adds_only_columns_and_keeps_sent_record(mentions):

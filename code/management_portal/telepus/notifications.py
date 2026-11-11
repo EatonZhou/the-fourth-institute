@@ -46,7 +46,7 @@ def candidates(actor, snapshot):
                     raise ValueError('Invalid Mailbox mention identity')
                 key = f'{actor}:mention:{room}:{message}'
                 mentions[key] = dict(category='mention', chatroom_id=room, source_message_id=message,
-                                     title=item.get('title') or '聊天室')
+                                     ordinal=mention.get('ordinal'), title=item.get('title') or '聊天室')
         result['mention'] = mentions
     if 'pending_requests' in snapshot:
         if not isinstance(snapshot['pending_requests'], list):
@@ -72,6 +72,10 @@ class Notifications:
         self.store = WeixinStore(router_store)
         self.portal = portal
         self.clock = clock
+        # Only the discovery callback may reuse this short-lived, complete read.
+        # Nothing here survives a process restart or goes into the bridge DB.
+        self._snapshots = {}
+        self._discovery = {}
 
     def preferences(self, actor):
         self.router.init_schema()
@@ -80,6 +84,7 @@ class Notifications:
         return {**dict.fromkeys(CATEGORIES, False), **{r['category']: r['enabled'] for r in rows}}
 
     def update(self, actor, **changes):
+        self._snapshots.pop(actor, None)
         if set(changes) - set(CATEGORIES) or any(type(v) is not bool for v in changes.values()):
             raise ValueError('提醒设置必须是 mention/question 布尔值')
         account = self.store.account(actor)
@@ -105,6 +110,8 @@ class Notifications:
         return self.preferences(actor)
 
     def clear(self, actor):
+        self._snapshots.pop(actor, None)
+        self._discovery.pop(actor, None)
         with self.router.connect() as c:
             c.execute('DELETE FROM notification_preferences WHERE portal_actor=?', (actor,))
             c.execute('DELETE FROM notification_deliveries WHERE portal_actor=?', (actor,))
@@ -125,7 +132,10 @@ class Notifications:
         if self.portal is None:
             from .portal_client import PortalClient
             self.portal = PortalClient(channel='weixin')
-        return candidates(actor, self.portal.call(actor, 'GetMailbox', {'user_id': actor}))
+        started = self.clock()
+        current = candidates(actor, self.portal.call(actor, 'GetMailbox', {'user_id': actor}))
+        self._discovery[actor] = {'mailbox_seconds': max(0, self.clock() - started), 'snapshot_started': started}
+        return current
 
     def reconcile(self, actor, current):
         """Only successful, supported category snapshots may change durable state."""
@@ -168,6 +178,7 @@ class Notifications:
         if self.clock() < state.get('retry_at', 0):
             return state['retry_at'] - self.clock()
         try:
+            watch_started = self.clock()
             due = not state.get('read_at') or self.clock() - state['read_at'] >= 30
             watch = {}
             if not due:
@@ -177,21 +188,36 @@ class Notifications:
                 batch = self.portal.first_batch(actor, 'WatchMailbox', {
                     'user_id': actor, 'after_cursor': state.get('cursor', ''), 'timeout_seconds': timeout})
                 watch = batch[-1] if batch else {}
+            watch_returned = self.clock()
+            current = None
             with self.store.lock(actor):
+                lock_acquired = self.clock()
                 account = self.store.account(actor)
                 if not account or account['status'] != 'active' or not any(self.preferences(actor).values()):
                     return
                 # Periodic complete reads also discover a newly supported category field.
                 if due or watch.get('keys') or watch.get('snapshot_required') or self.clock() - state['read_at'] >= 30:
-                    self.reconcile(actor, self.snapshot(actor))
+                    current = self.snapshot(actor)
+                    self.reconcile(actor, current)
+                    self._discovery[actor].update(watch_returned=watch_returned,
+                        watch_seconds=max(0, watch_returned - watch_started),
+                        lock_wait_seconds=max(0, lock_acquired - watch_returned),
+                        watch_reset=bool(due or watch.get('snapshot_required')))
+                    self.router.append_audit('notification_scan', portal_actor=actor,
+                        payload={k: v for k, v in self._discovery[actor].items() if k not in ('snapshot_started', 'watch_returned')})
                     state['read_at'] = self.clock()
                 state.update(cursor=watch.get('cursor', state.get('cursor', '')), failures=0, retry_at=0)
                 self.router.set_meta(key, json.dumps(state))
                 pending = bool(self.pending(actor))
                 if pending:
                     self.store.enqueue(chat_key(account['ilink_bot_id']), {'notification_actor': actor})
+                    if on_pending is not None and current is not None:
+                        self._snapshots[actor] = (self._discovery[actor]['snapshot_started'], current)
             if pending and on_pending is not None:
-                on_pending(actor)
+                try:
+                    on_pending(actor)
+                finally:
+                    self._snapshots.pop(actor, None)
             return 0
         except Exception as exc:
             # No response, exception text, content, credentials or DSN in logs/audit.
@@ -200,20 +226,27 @@ class Notifications:
                     state['failures'] = min(state.get('failures', 0) + 1, 7)
                     state['retry_at'] = self.clock() + min(300, 2 ** state['failures'])
                     self.router.set_meta(key, json.dumps(state))
-                    if state['failures'] == 1:
+                    transient = getattr(exc, 'code', '') == 'instruction.owner_unavailable'
+                    if (not transient and state['failures'] == 1) or (transient and state['failures'] == 4):
                         self.diagnostic(actor, exc)
                     return state['retry_at'] - self.clock()
 
     @staticmethod
     def diagnostic(actor, error):
         import sys
-        print(f'Telepus notification actor={actor} error_type={type(error).__name__}', file=sys.stderr, flush=True)
+        code = getattr(error, 'code', '')
+        safe_code = code if isinstance(code, str) and code.startswith('instruction.') and code.replace('.', '').replace('_', '').isalnum() else ''
+        print(f'Telepus notification actor={actor} error_type={type(error).__name__} code={safe_code}', file=sys.stderr, flush=True)
 
     def prepare(self, actor, available=1):
         """Revalidate immediately before sending; return None to retain the queue."""
         if not any(self.preferences(actor).values()):
             return []
-        current = self.snapshot(actor)
+        cached = self._snapshots.pop(actor, None)
+        age = self.clock() - cached[0] if cached else None
+        reused = cached is not None and 0 <= age < 2
+        current = cached[1] if reused else self.snapshot(actor)
+        discovery = dict(self._discovery.get(actor, {}))
         self.reconcile(actor, current)
         rows = self.pending(actor)
         ready = [r for r in rows if r['category'] in current and r['key'] in current[r['category']]]
@@ -224,8 +257,10 @@ class Notifications:
         from .question_reminder import read_questions
         keys = [r['key'] for r in ready[:5]]
         items = [current[r['category']][r['key']] for r in ready[:5]]
+        source_started = self.clock()
         items = [enrich(self.portal, actor, item) if item['category'] == 'mention'
                  else read_questions(self.portal, actor, item) for item in items]
+        source_seconds = max(0, self.clock() - source_started)
         titles = {}
         for item in items[:5]:
             if item['category'] == 'question' and not item['title']:
@@ -246,25 +281,35 @@ class Notifications:
                 hashes.add(fingerprint(without_links(group_items[0]['excerpt'])))
             discoveries = {r['key']: r['discovered_at'] for r in ready if r['key'] in group_keys}
             event_delays = []
+            watch_delays = []
             for key, item in zip(group_keys, group_items):
                 try:
                     event_time = datetime.fromisoformat(item['created_at'].replace('Z', '+00:00')).timestamp()
                     event_delays.append(max(0, discoveries[key] - event_time))
+                    if reused:
+                        watch_delays.append(max(0, discovery['watch_returned'] - event_time))
                 except (KeyError, ValueError, TypeError, AttributeError):
                     pass  # Older source projections may have no creation time.
             prepared.append({'keys': group_keys, 'text': text, 'summary': not individual,
                              'discovered_at': min(discoveries.values()),
                              'event_to_discovery_seconds': max(event_delays) if event_delays else None,
+                             'read_timing': {'mailbox_seconds': discovery.get('mailbox_seconds', 0),
+                                 'snapshot_reused': reused, 'snapshot_age_seconds': age if reused else 0,
+                                 'source_read_seconds': source_seconds,
+                                 **({'event_to_watch_seconds': max(watch_delays),
+                                     'lock_wait_seconds': discovery['lock_wait_seconds'],
+                                     'watch_reset': discovery['watch_reset']} if watch_delays else {})},
                              'fingerprints': sorted(hashes - {''})})
         return prepared
 
     def timing(self, actor, group, *, prepare_seconds, send_seconds):
         seconds = {'discovery_to_send_seconds': max(0, self.clock() - group['discovered_at']),
                    'prepare_seconds': prepare_seconds, 'send_seconds': send_seconds}
+        seconds.update(group.get('read_timing', {}))
         if group['event_to_discovery_seconds'] is not None:
             seconds['event_to_discovery_seconds'] = group['event_to_discovery_seconds']
         self.router.append_audit('notification_latency', portal_actor=actor,
-                                 payload={key: round(value, 4) for key, value in seconds.items()})
+                                 payload={key: value if isinstance(value, bool) else round(value, 4) for key, value in seconds.items()})
 
     def sent(self, group, external_id):
         with self.router.connect() as c:

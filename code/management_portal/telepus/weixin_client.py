@@ -15,6 +15,8 @@ from urllib.request import Request, urlopen
 from cryptography.hazmat.primitives import padding
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
+from .weixin_http import HTTP
+
 API = "https://ilinkai.weixin.qq.com"
 CDN = "https://novac2c.cdn.weixin.qq.com/c2c"
 PLUGIN_VERSION = "3.0.0"
@@ -55,15 +57,20 @@ class WeixinClient:
         self.account = account or {}
         self.base = trusted_url(self.account.get("baseurl") or API)
         self.transport = transport or self._http
+        self._default_transport = transport is None
+        self.last_http_timing = {}
 
     @staticmethod
     def _http(url, method, headers, body, timeout):
-        try:
+        def fallback(url, method, headers, body, timeout):
             with urlopen(Request(url, data=body, headers=headers, method=method), timeout=timeout) as response:
-                data = response.read(MAX_MEDIA_BYTES + 1)
-                if len(data) > MAX_MEDIA_BYTES:
-                    raise WeixinError("too_large", "http")
-                return data, dict(response.headers)
+                return response.read(MAX_MEDIA_BYTES + 1), dict(response.headers)
+        try:
+            data, response_headers = HTTP.request(url, method, headers, body, timeout,
+                                                 limit=MAX_MEDIA_BYTES, fallback=fallback)
+            if len(data) > MAX_MEDIA_BYTES:
+                raise WeixinError('too_large', 'http')
+            return data, response_headers
         except WeixinError:
             raise
         except Exception:
@@ -88,6 +95,8 @@ class WeixinClient:
         if query:
             url += "?" + urlencode(query)
         raw, _ = self.transport(url, method, headers, body, timeout)
+        if self._default_transport:
+            self.last_http_timing = dict(getattr(HTTP.local, 'timing', {}))
         try:
             result = json.loads(raw)
             codes = [int(result.get(name) or 0) for name in ("ret", "errcode")]

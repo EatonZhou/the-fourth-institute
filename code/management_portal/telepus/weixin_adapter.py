@@ -332,6 +332,7 @@ class WeixinAdapter:
                 result = client.send([{'type': 1, 'text_item': {'text': group['text']}}], account['context_token'],
                                      client_id=f'telepus-reminder-{identity}')
                 send_seconds = time.monotonic() - send_started
+                group.setdefault('read_timing', {}).update(getattr(client, 'last_http_timing', {}))
                 self.store.budget(chat, spent=True)
                 self.notifications.sent(group, result.get('message_id') or result.get('msg_id'))
                 self.notifications.timing(actor, group, prepare_seconds=prepare_seconds, send_seconds=send_seconds)
