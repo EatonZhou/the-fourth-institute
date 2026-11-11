@@ -42,6 +42,7 @@ const routes = JSON.parse(fs.readFileSync(0, 'utf8')).routeScript;
       window.PortalIdentity = { username: () => 'alice' };
       window.calls = []; window.menus = []; window.sent = []; window.notices = [];
       window.bindings = {}; window.model = 'fixture-model'; window.failPrepare = false; window.holdPrepare = false;
+      window.prepareFault = ''; window.loadFailures = 0; window.holdConfirmation = false;
       window.snapshot = { messages: [], controls: { can_send: true }, queue: { items: [] } };
       window.detail = id => ({ resident: { resident_id: id, backend: 'codex' },
         backend_capabilities: { runtime_capabilities: { settings: ['model'] } },
@@ -61,6 +62,7 @@ const routes = JSON.parse(fs.readFileSync(0, 'utf8')).routeScript;
           const kb = new URL(url, location.origin).searchParams.get('kb_id');
           if (!kb) throw new Error('Unexpected read: ' + url);
           calls.push({ read: kb });
+          if (holdConfirmation) await new Promise(resolve => { window.releaseConfirmation = resolve; });
           return bindings[kb] || { binding_state: 'unbound', initial_context: { context_text: kb },
             chat_workspace: { schema: 'portal.chat_workspace.v3', target: { kind: 'knowledge_item', id: kb },
               header: { title: 'Article discussion' }, messages: [],
@@ -71,10 +73,18 @@ const routes = JSON.parse(fs.readFileSync(0, 'utf8')).routeScript;
           calls.push({ prepare: body });
           if (holdPrepare) await new Promise(resolve => { window.releasePrepare = resolve; });
           if (failPrepare) throw new Error('Settings preparation failed');
-          return bindings[body.kb_id] ||= { resident_id: 'resident_' + body.kb_id, initial_context: { context_text: body.kb_id } };
+          if (prepareFault === 'forbidden') throw Object.assign(new Error('Forbidden'), { status: 403 });
+          if (prepareFault === 'before-commit') throw new TypeError('Load failed');
+          const identity = bindings[body.kb_id] ||= { resident_id: 'resident_' + body.kb_id, initial_context: { context_text: body.kb_id } };
+          if (prepareFault === 'after-commit') throw new TypeError('Load failed');
+          return identity;
         },
       };
-      window.PortalResidentProjection = { load: async id => detail(id), subscribe: () => () => {} };
+      window.PortalResidentProjection = { load: async id => {
+        calls.push({ load: id });
+        if (loadFailures > 0) { loadFailures--; throw new TypeError('Load failed'); }
+        return detail(id);
+      }, subscribe: () => () => {} };
       window.PortalResidentRuntimeController = PortalResidentRuntimeController.create({ service: {
         projection: async ({ residentId }) => detail(residentId),
         runtimeSettings: async () => ({ settings: { model } }),
@@ -138,8 +148,83 @@ const routes = JSON.parse(fs.readFileSync(0, 'utf8')).routeScript;
     assert.equal(await page.evaluate(() => sent[0].resident_id), 'resident_article_d');
     assert.match(await page.evaluate(() => sent[0].message.content_parts.find(p => p.type === 'context_reference').context.context_text), /Article: article_d/);
     assert.equal(await page.evaluate(() => panel.workspace.draftText()), '', 'successful send clears migrated draft');
+
+    // The server commits preparation but the browser loses the response.
+    await page.evaluate(async () => {
+      state.selectedId = 'article_lost'; await host.loadArticleChat();
+      panel.workspace.setDraftText('lost response draft', [{ name: 'keep.txt', mime: 'text/plain', data_url: 'data:text/plain;base64,WA==' }]);
+      panel.workspace.setRefs({ skills: ['shared/recovery'] }); window.recoveryDraft = panel.workspace.draftText();
+      prepareFault = 'after-commit'; loadFailures = 1;
+    });
+    await menu().click();
+    await page.waitForFunction(() => menus.at(-1) === 'resident_article_lost');
+    assert.equal(await page.evaluate(() => calls.filter(c => c.prepare?.kb_id === 'article_lost').length), 1, 'lost response never repeats POST');
+    assert.equal(await page.evaluate(() => calls.filter(c => c.read === 'article_lost').length), 2, 'confirms committed binding by read');
+    assert.equal(await page.evaluate(() => calls.filter(c => c.load === 'resident_article_lost').length), 2, 'transient initial load retries once');
+    assert.equal(await page.evaluate(() => panel.workspace.draftText()), await page.evaluate(() => recoveryDraft));
+    assert.equal(await page.evaluate(() => panel.workspace.attachments()[0].name), 'keep.txt');
+    assert.deepEqual(await page.evaluate(() => [...panel.workspace.refs().skills]), ['shared/recovery']);
+    assert.equal(await page.evaluate(() => sent.length), 1, 'recovery does not send');
+
+    await page.evaluate(async () => {
+      prepareFault = ''; state.selectedId = 'article_load'; await host.loadArticleChat();
+      panel.workspace.setDraftText('retry loading'); loadFailures = 2;
+    });
+    await menu().click();
+    await page.waitForFunction(() => notices.some(n => n.message.includes('Resident 已准备，但对话加载失败')));
+    assert.equal(await page.evaluate(() => calls.filter(c => c.load === 'resident_article_load').length), 2, 'persistent disconnect has bounded retry');
+    assert.equal(await page.evaluate(() => panel.workspace.draftText()), 'retry loading');
+    assert.equal(await page.evaluate(() => panel.protocol), null);
+    await menu().click();
+    await page.waitForFunction(() => menus.at(-1) === 'resident_article_load');
+    assert.equal(await page.evaluate(() => calls.filter(c => c.prepare?.kb_id === 'article_load').length), 1, 'manual retry loads existing Resident');
+    assert.equal(await page.evaluate(() => Boolean(panel.protocol)), true);
+    assert.equal(await page.evaluate(() => panel.workspace.draftText()), 'retry loading');
+    await page.evaluate(() => panel.send());
+    assert.equal(await page.evaluate(() => sent.length), 2, 'retry then send delivers exactly once');
+    assert.match(await page.evaluate(() => sent.at(-1).message.content_parts.find(p => p.type === 'context_reference').context.context_text), /Article: article_load/);
+
+    // No confirmed binding: retain the unbound draft and require explicit retry.
+    await page.evaluate(async () => {
+      state.selectedId = 'article_unconfirmed'; await host.loadArticleChat();
+      panel.workspace.setDraftText('not confirmed'); prepareFault = 'before-commit';
+    });
+    await menu().click();
+    await page.waitForFunction(() => !panel.preparingResident && notices.some(n => n.message.includes('结果未确认')));
+    assert.equal(await page.evaluate(() => panel.target().resident_id || ''), '');
+    assert.equal(await page.evaluate(() => panel.workspace.draftText()), 'not confirmed');
+    assert.equal(await page.evaluate(() => calls.filter(c => c.prepare?.kb_id === 'article_unconfirmed').length), 1);
+    await page.evaluate(() => { prepareFault = ''; });
+    await menu().click();
+    await page.waitForFunction(() => menus.at(-1) === 'resident_article_unconfirmed');
+
+    // A server refusal is authoritative even when a concurrent binding exists.
+    await page.evaluate(async () => {
+      state.selectedId = 'article_denied'; await host.loadArticleChat();
+      bindings.article_denied = { resident_id: 'resident_article_denied' }; prepareFault = 'forbidden';
+    });
+    await menu().click();
+    await page.waitForFunction(() => notices.some(n => n.message.includes('Forbidden')));
+    assert.equal(await page.evaluate(() => calls.filter(c => c.read === 'article_denied').length), 1, '403 cannot be recovered through a binding read');
+    assert.equal(await page.evaluate(() => menus.includes('resident_article_denied')), false);
+
+    // Navigation while confirming a lost response cannot bind the old article.
+    await page.evaluate(async () => {
+      prepareFault = ''; state.selectedId = 'article_stale'; await host.loadArticleChat();
+      prepareFault = 'after-commit'; holdConfirmation = true;
+    });
+    await menu().click();
+    await page.waitForFunction(() => Boolean(window.releaseConfirmation));
+    await page.evaluate(async () => {
+      holdConfirmation = false; prepareFault = ''; state.selectedId = 'article_final';
+      await host.loadArticleChat(); panel.workspace.setDraftText('current article'); releaseConfirmation();
+    });
+    await page.waitForFunction(() => !panel.preparingResident);
+    assert.equal(await page.evaluate(() => menus.includes('resident_article_stale')), false);
+    assert.equal(await page.evaluate(() => panel.target().resident_id || ''), '');
+    assert.equal(await page.evaluate(() => panel.workspace.draftText()), 'current article');
     assert.deepEqual(errors, []);
-    console.log('PASS: Article settings before first send, model label, draft migration, failure, double click, stale navigation and first-send context');
+    console.log('PASS: Article settings, lost-response reconciliation, bounded load recovery, draft/context preservation, refusal and navigation');
   } finally {
     await browser?.close();
     await new Promise(resolve => server.close(resolve));

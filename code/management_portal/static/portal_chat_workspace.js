@@ -1,6 +1,12 @@
 (function () {
   const escapeHtml = value => window.PortalUIPrimitives.escapeHtml(value);
 
+  function isInterruptedResidentRequest(error) {
+    if (Number(error?.status)) return false;
+    return (error?.name === "TypeError" && /fetch|load|network/i.test(error?.message || ""))
+      || error?.name === "NetworkError" || error?.name === "TimeoutError";
+  }
+
   // Parts of the chat workspace live in module scripts that pages load before
   // this one: the "chat-workspace" group of management_portal/script_groups.json
   // lists them in load order. chatWorkspaceModule(name) returns what a script
@@ -3247,6 +3253,11 @@
           return null;
         }
         if (!await this.prepareSurfaceResident(this.options.resolveBeforeSettings)) return null;
+      } else if (!this.protocol) {
+        const loading = this.reload();
+        const revision = this.targetRevision;
+        await loading;
+        if (revision !== this.targetRevision) return null;
       }
       const residentId = this.target().resident_id;
       return window.PortalNav.openResidentMenu({
@@ -3261,41 +3272,65 @@
       if (this.preparingResident) return null;
       const revision = this.targetRevision;
       let preparationRevision = revision;
+      let identity = null;
       const initialDraft = this.workspace.draftText();
       this.preparingResident = true;
       this.workspace.setBusy(true);
       this.workspace.setStatus("正在准备 Resident…");
       try {
         const surface = this.surfaceTarget;
-        const identity = await resolve(surface, payload);
+        try {
+          identity = await resolve(surface, payload);
+        } catch (error) {
+          if (revision !== this.targetRevision) return null;
+          if (!isInterruptedResidentRequest(error) || !this.options.resolveResident) throw error;
+          // A lost POST response does not tell us whether preparation committed.
+          // Confirm the authenticated surface binding; never repeat the write.
+          this.workspace.setStatus("连接中断，正在确认 Resident…");
+          const confirmed = await this.options.resolveResident(surface);
+          if (revision !== this.targetRevision) return null;
+          if (!String(confirmed?.resident_id || "").trim()) throw error;
+          identity = confirmed;
+        }
         if (revision !== this.targetRevision) return null;
         if (!String(identity?.resident_id || "").trim()) throw new Error("未能取得对话的 Resident，请重试。");
         const draft = this.workspace.draftText();
         const attachments = this.workspace.attachments();
         const refs = this.workspace.refs();
         const pendingDraftScope = this.workspace.draftScope();
-        const binding = this.setResident(identity);
-        preparationRevision = this.targetRevision;
         try {
-          await binding;
+          for (let attempt = 0; attempt < 2; attempt += 1) {
+            const binding = this.setResident(identity, { force: attempt > 0 });
+            preparationRevision = this.targetRevision;
+            try {
+              await binding;
+              break;
+            } catch (error) {
+              if (preparationRevision !== this.targetRevision) return null;
+              if (attempt || !isInterruptedResidentRequest(error)) throw error;
+              this.workspace.setStatus("Resident 已准备，正在重新加载对话…");
+            }
+          }
         } finally {
           if (preparationRevision === this.targetRevision) {
             this.workspace.setDraftText(draft, attachments);
             this.workspace.setRefs(refs);
+            this.workspace.saveDraft({ immediate: true });
+            if (pendingDraftScope !== this.workspace.draftScope()) {
+              this.workspace.clearDraft(pendingDraftScope, { text: draft, attachments, refs });
+            }
+            this.initialContext = this.options.initialContext?.(surface || identity, surface ? identity : this.detail) || null;
           }
         }
         if (preparationRevision !== this.targetRevision) return null;
-        this.workspace.saveDraft({ immediate: true });
-        if (pendingDraftScope !== this.workspace.draftScope()) {
-          this.workspace.clearDraft(pendingDraftScope, { text: draft, attachments, refs });
-        }
-        this.initialContext = this.options.initialContext?.(surface || identity, surface ? identity : this.detail) || null;
         return { draftChanged: draft !== initialDraft };
       } catch (error) {
-        if (preparationRevision === this.targetRevision) {
-          this.workspace.setStatus(`Resident 准备失败，结果未确认：${error?.message || "准备请求未完成"}`);
-        }
-        throw error;
+        if (preparationRevision !== this.targetRevision) return null;
+        const message = identity?.resident_id
+          ? `Resident 已准备，但对话加载失败；请重试：${error?.message || "加载请求未完成"}`
+          : `Resident 准备失败，结果未确认；请重试：${error?.message || "准备请求未完成"}`;
+        this.workspace.setStatus(message);
+        throw Object.assign(new Error(message), { cause: error, status: error?.status, code: error?.code });
       } finally {
         this.preparingResident = false;
         if (preparationRevision === this.targetRevision) this.workspace.setBusy(false);
