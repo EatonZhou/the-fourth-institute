@@ -288,11 +288,23 @@
 
   const {
     articleGitRefresh, closeArticleGitDiff, commitArticleGit, initializeArticleGit, loadArticleGit,
-    openArticleGitCommit, openArticleGitDiff, renderArticleGitDiffFile, resetArticleGit,
+    openArticleGitCommit, openArticleGitDiff, pullArticleGit, renderArticleGitDiffFile, resetArticleGit,
     scheduleArticleGitRefresh, toggleArticleGitDiffLayout, unregisteringArticles, updateArticleGitStage,
   } = articleModule("PortalArticleWorkspaceGit").createGit({
     $, ARTICLE_GIT_REFRESH_MS, esc, languageForPath, monacoApi,
     renderDocumentTabs: (...args) => renderDocumentTabs(...args), request, showToast, state,
+    captureActiveDocument: (...args) => captureActiveDocument(...args),
+    hasDirtyDocuments: (...args) => hasDirtyDocuments(...args),
+    refreshAfterPull: async articleId => {
+      if (state.selectedId !== articleId) return;
+      closeArticleGitDiff();
+      await loadFiles();
+      if (state.selectedId !== articleId) return;
+      await refreshArticleDocuments(articleId);
+      if (state.selectedId !== articleId) return;
+      await loadSemanticIndex();
+      detailResourceGuest.changed({ resourceId: articleId });
+    },
   });
 
   const {
@@ -352,7 +364,7 @@
   const {
     activateDocument, activeDocument, captureActiveDocument, clearEditor, documentIsDirty, goToLine,
     hasDirtyDocuments, openArticleFile, openArticleLinkedFile, openArticleResourcePreview, renderDocumentTabs,
-    saveAllDirtyDocuments, saveOpenFile, setEditorMode,
+    refreshArticleDocuments, saveAllDirtyDocuments, saveOpenFile, setEditorMode,
   } = articleModule("PortalArticleWorkspaceDocuments").createDocuments({
     $, articleAbsolutePath, articleModelUri, closeArticleGitDiff, detailResourceGuest, editorValue,
     compileArticle: (...args) => compileArticle(...args),
@@ -431,7 +443,7 @@
     currentArticleWorkbench, detailHistory, flushArticleNavigationPreference, goToLine, handleEditorPairing,
     hasDirtyDocuments, initializeArticleGit, initializeArticlePopovers, inspectRegistration, loadArticleGit,
     openArticleFile, openArticleGitCommit, openArticleGitDiff, openBuildDiagnostic, openEntryModal,
-    openRegisterModal, queryState, registerArticle, renderArticleGitDiffFile, renderArticleResourceSearch,
+    openRegisterModal, pullArticleGit, queryState, registerArticle, renderArticleGitDiffFile, renderArticleResourceSearch,
     renderArticleSelectors, renderEditorLayers, renderLog, renderSemanticNavigation, resetEditorPreferences,
     saveOpenFile, saveSettings, scheduleArticleGitRefresh, scheduleAutoCompile, searchProject, selectArticle,
     setArticlePdfZoom, setArticleResourceSearchOpen, setCompileMenu, setEditorMode, setNavigationPanelVisible,

@@ -15,7 +15,7 @@
     "detailHistory", "flushArticleNavigationPreference", "goToLine", "handleEditorPairing",
     "hasDirtyDocuments", "initializeArticleGit", "initializeArticlePopovers", "inspectRegistration",
     "loadArticleGit", "openArticleFile", "openArticleGitCommit", "openArticleGitDiff", "openBuildDiagnostic",
-    "openEntryModal", "openRegisterModal", "queryState", "registerArticle", "renderArticleGitDiffFile",
+    "openEntryModal", "openRegisterModal", "pullArticleGit", "queryState", "registerArticle", "renderArticleGitDiffFile",
     "renderArticleResourceSearch", "renderArticleSelectors", "renderEditorLayers", "renderLog",
     "renderSemanticNavigation", "resetEditorPreferences", "saveOpenFile", "saveSettings",
     "scheduleArticleGitRefresh", "scheduleAutoCompile", "searchProject", "selectArticle", "setArticlePdfZoom",
@@ -37,7 +37,7 @@
       currentArticleProjectPopover, currentArticleWorkbench, detailHistory, flushArticleNavigationPreference,
       goToLine, handleEditorPairing, hasDirtyDocuments, initializeArticleGit, initializeArticlePopovers,
       inspectRegistration, loadArticleGit, openArticleFile, openArticleGitCommit, openArticleGitDiff,
-      openBuildDiagnostic, openEntryModal, openRegisterModal, queryState, registerArticle,
+      openBuildDiagnostic, openEntryModal, openRegisterModal, pullArticleGit, queryState, registerArticle,
       renderArticleGitDiffFile, renderArticleResourceSearch, renderArticleSelectors, renderEditorLayers,
       renderLog, renderSemanticNavigation, resetEditorPreferences, saveOpenFile, saveSettings,
       scheduleArticleGitRefresh, scheduleAutoCompile, searchProject, selectArticle, setArticlePdfZoom,
@@ -175,6 +175,7 @@
       setProjectMenu(!currentArticleProjectPopover()?.isOpen(), event);
     });
     $("articleGitRefresh").addEventListener("click", () => loadArticleGit({ includeHistory: true }).catch(error => showToast(error.message || error, "error")));
+    $("articleGitPull").addEventListener("click", pullArticleGit);
     $("articleGitCommitForm").addEventListener("submit", event => commitArticleGit(event).catch(error => showToast(error.message || error, "error")));
     $("articleGitDiffClose").addEventListener("click", closeArticleGitDiff);
     $("articleGitDiffLayout").addEventListener("click", toggleArticleGitDiffLayout);

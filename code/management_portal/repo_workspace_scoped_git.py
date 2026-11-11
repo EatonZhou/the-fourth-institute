@@ -12,8 +12,9 @@ from management_portal.repo_workspace_checkout import (
     RepoWorkspaceConflict, _repo_lock, _safe_relative_path, _target,
 )
 from management_portal.repo_workspace_git import _git, _git_bytes
+from management_portal.repo_workspace_network import _network_git
 from management_portal.repo_workspace_history import MAX_DIFF_BYTES
-from management_portal.repo_workspace_state import _branch_name, _commit_record, _head_commit, _status_payload
+from management_portal.repo_workspace_state import _branch_name, _commit_record, _head_commit, _remote_auth_context, _status_payload
 
 
 def _scoped_git_context(workspace_path: str | Path) -> tuple[Path, Path, str]:
@@ -34,6 +35,51 @@ def _scoped_git_context(workspace_path: str | Path) -> tuple[Path, Path, str]:
     except ValueError as exc:
         raise ValueError("Article 目录不在 Git 仓库工作树内。") from exc
     return workspace, repo_root, scope or "."
+
+
+def _pull_target(workspace: Path, scope: str, *, dirty: bool) -> dict[str, Any]:
+    target = {"available": False, "reason": "", "remote": "", "branch": ""}
+    if scope != ".":
+        target["reason"] = "稿件位于更大的 Git 仓库中，请在对应 Repo 页面拉取。"
+        return target
+    branch = _branch_name(workspace)
+    if not branch:
+        target["reason"] = "当前未检出分支，无法拉取。"
+        return target
+    remotes = _git(workspace, "remote").splitlines()
+    remote = _git(workspace, "config", "--get", f"branch.{branch}.remote", allowed_returncodes=(0, 1))
+    merge = _git(workspace, "config", "--get", f"branch.{branch}.merge", allowed_returncodes=(0, 1))
+    if not remote and len(remotes) == 1:
+        remote, merge = remotes[0], f"refs/heads/{branch}"
+    if remote not in remotes or not merge.startswith("refs/heads/") or "\n" in merge:
+        target["reason"] = "请先为当前分支配置远端跟踪分支。" if remotes else "尚未配置远端仓库。"
+        return target
+    target.update(remote=remote, branch=merge.removeprefix("refs/heads/"))
+    if dirty:
+        target["reason"] = "请先提交工作区中的更改，再拉取。"
+    else:
+        target["available"] = True
+    return target
+
+
+def pull_scoped_git_workspace(
+    workspace_path: str | Path, *, article_id: str, actor: str = "",
+    credential: dict[str, Any] | None = None, remember: bool = False,
+) -> dict[str, Any]:
+    workspace, repo_root, scope = _scoped_git_context(workspace_path)
+    with _repo_lock(f"path:{repo_root}"):
+        target = _pull_target(workspace, scope, dirty=_status_payload(repo_root)["dirty"])
+        if not target["available"]:
+            raise RepoWorkspaceConflict(target["reason"])
+        remote, branch = target["remote"], target["branch"]
+        output, credential_use = _network_git(
+            repo_root, "pull", "--ff-only", "--no-rebase", "--no-autostash", "--no-recurse-submodules",
+            "--", remote, f"refs/heads/{branch}",
+            repo_id=article_id, operation="pull", remote=remote, branch=branch,
+            context=_remote_auth_context(repo_root, remote, push=False), actor=actor,
+            credential=credential, remember=remember,
+        )
+        return {"status": scoped_git_status(workspace), "output": output, "credential": credential_use}
 
 
 def scoped_git_status(workspace_path: str | Path) -> dict[str, Any]:
@@ -62,6 +108,7 @@ def scoped_git_status(workspace_path: str | Path) -> dict[str, Any]:
         "branch": _branch_name(workspace) or "detached HEAD",
         "scope": scope,
         "head": _head_commit(workspace),
+        "pull": _pull_target(workspace, scope, dirty=status["dirty"]),
         **status,
     }
 

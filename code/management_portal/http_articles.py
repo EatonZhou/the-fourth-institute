@@ -12,6 +12,7 @@ from management_portal import (
     http_documents, http_files, http_request_body, http_responses, web_resources,
 )
 from management_portal.http_routes import ROUTE_NOT_FOUND, RouteDefinition
+from management_portal.repo_workspace_git import GitAuthenticationRequired, GitOperationError
 from management_portal.resources import get_resource_service
 
 ROOT = Path(__file__).resolve().parent
@@ -280,7 +281,7 @@ class ArticlesHttp:
     def git(self, request, parsed, actor, params):
         article_id = params["article_id"]
         action = params["action"]
-        if not re.fullmatch(r"article_[0-9a-f]{12}", article_id) or action not in {"init", "stage", "commit"}:
+        if not re.fullmatch(r"article_[0-9a-f]{12}", article_id) or action not in {"init", "stage", "commit", "pull"}:
             return ROUTE_NOT_FOUND
         payload = self.read_json(request)
         actor = self.session_actor(request) or ""
@@ -288,6 +289,12 @@ class ArticlesHttp:
             self.require_resource(article_id, actor)
             if action == "init":
                 result = article_git.initialize_article_git(article_id)
+            elif action == "pull":
+                result = article_git.pull_article_git(
+                    article_id, actor=actor, credential=payload.get("credential"),
+                    remember=bool(payload.get("remember", False)),
+                )
+                self.notify_index(resource_id=article_id, resource_type="article", kind="updated")
             elif action == "stage":
                 raw_paths = payload.get("paths") or []
                 if not isinstance(raw_paths, list):
@@ -302,6 +309,10 @@ class ArticlesHttp:
                     description=str(payload.get("description") or ""), actor=actor,
                 )
             return self.respond(request, 200, result)
+        except GitAuthenticationRequired as exc:
+            return self.respond(request, 409, {"error": str(exc), "code": "git_auth_required", "auth_challenge": exc.challenge})
+        except GitOperationError as exc:
+            return self.respond(request, 409, {"error": str(exc)})
         except KeyError:
             return self.respond(request, 404, {"error": "article not found"})
         except FileNotFoundError as exc:

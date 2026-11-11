@@ -217,6 +217,10 @@
             <div class="articleGitIdentity" id="articleGitIdentity">
               <span data-portal-icon="branch" aria-hidden="true"></span><strong>—</strong><code>—</code>
             </div>
+            <div class="articleGitCommit">
+              <button class="portalButton" id="articleGitPull" type="button" data-portal-icon="download" disabled><span id="articleGitPullLabel">拉取</span></button>
+              <small id="articleGitPullHint" role="status"></small>
+            </div>
             <form class="articleGitCommit" id="articleGitCommitForm">
               <label for="articleGitMessage"><!--portal-i18n:"提交信息"-->提交信息</label>
               <textarea id="articleGitMessage" rows="3" maxlength="200" placeholder="说明本次稿件修改" required></textarea>

@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from typing import Any, Iterable
 
-from management_portal import article_registry, repo_workspace_scoped_git as git_workspace_backend
+from management_portal import article_registry, permission_system, repo_workspace_scoped_git as git_workspace_backend
 
 
 def article_git_status(
@@ -13,6 +13,18 @@ def article_git_status(
         article_id
     )
     return git_workspace_backend.scoped_git_status(article_root)
+
+
+def pull_article_git(
+    article_id: str, *, actor: str = "", credential: dict[str, Any] | None = None,
+    remember: bool = False,
+) -> dict[str, Any]:
+    if article_id not in permission_system.permitted_ids(actor, "RunResourceAction", "resource_id", [article_id]):
+        raise PermissionError("需要当前 Article 的协作权限才能拉取。")
+    _record, _root_item, article_root = article_registry._article_source_context(article_id)
+    return git_workspace_backend.pull_scoped_git_workspace(
+        article_root, article_id=article_id, actor=actor, credential=credential, remember=remember,
+    )
 
 
 def article_git_diff(

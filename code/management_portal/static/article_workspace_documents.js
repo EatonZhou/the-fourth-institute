@@ -412,6 +412,54 @@
       }
     }
 
+    async function refreshArticleDocuments(articleId) {
+      captureActiveDocument();
+      for (const path of [...state.openTabs]) {
+        if (state.selectedId !== articleId) return;
+        const previous = state.documents.get(path);
+        if (!previous || previous.linked || documentIsDirty(previous)) continue;
+        let payload = null;
+        if (state.filesByPath.has(path)) {
+          const url = `/api/articles/${encodeURIComponent(articleId)}/file?path=${encodeURIComponent(path)}`;
+          payload = await request(`${url}&meta=1`);
+          if (state.selectedId !== articleId) return;
+          if (window.PortalPreviewContract.isTextDocument(payload)) payload = { ...payload, ...await request(url) };
+        }
+        if (state.selectedId !== articleId) return;
+        captureActiveDocument();
+        // A draft can appear while the pull or file read is in flight.
+        if (state.documents.get(path) !== previous || documentIsDirty(previous)) continue;
+        const tabs = [...state.openTabs];
+        const active = state.openFile === path;
+        if (active) {
+          state.editor?.setModel?.(null);
+          disposeArticleDocumentPreview();
+        }
+        previous.model?.dispose?.();
+        previous.session?.destroy?.();
+        state.documents.delete(path);
+        state.openTabs = state.openTabs.filter(item => item !== path);
+        if (payload) {
+          const updated = presentArticleDocument(path, payload, { activate: false });
+          updated.version = previous.version + 1;
+          updated.viewState = previous.viewState;
+          updated.viewMode = previous.viewMode;
+          updated.scrollTop = previous.scrollTop;
+          updated.scrollLeft = previous.scrollLeft;
+          updated.selectionStart = previous.selectionStart;
+          updated.selectionEnd = previous.selectionEnd;
+          state.openTabs = tabs;
+          if (active) activateDocument(path, { captureCurrent: false });
+        } else if (active) {
+          const next = state.openTabs[0];
+          if (next) activateDocument(next, { captureCurrent: false });
+          else showEmptyEditor();
+        }
+      }
+      renderDocumentTabs();
+      scheduleTexlabSync(60);
+    }
+
     async function openArticleFile(path, options = {}) {
       const target = String(path || "");
       if (!target) return;
@@ -597,7 +645,7 @@
     return Object.freeze({
       activateDocument, activeDocument, captureActiveDocument, clearEditor, documentIsDirty, goToLine,
       hasDirtyDocuments, openArticleFile, openArticleLinkedFile, openArticleResourcePreview,
-      renderDocumentTabs, saveAllDirtyDocuments, saveOpenFile, setEditorMode,
+      refreshArticleDocuments, renderDocumentTabs, saveAllDirtyDocuments, saveOpenFile, setEditorMode,
     });
   }
 

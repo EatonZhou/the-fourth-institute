@@ -8,7 +8,7 @@
   // changed file or a commit. Refresh stops while an Article is unregistered.
   const DEPENDENCIES = Object.freeze([
     "$", "ARTICLE_GIT_REFRESH_MS", "esc", "languageForPath", "monacoApi", "renderDocumentTabs", "request",
-    "showToast", "state",
+    "showToast", "state", "captureActiveDocument", "hasDirtyDocuments", "refreshAfterPull",
   ]);
 
   function createGit(dependencies) {
@@ -16,8 +16,9 @@
     if (missing.length) throw new Error(`PortalArticleWorkspaceGit is missing: ${missing.join(", ")}`);
     const {
       $, ARTICLE_GIT_REFRESH_MS, esc, languageForPath, monacoApi, renderDocumentTabs, request, showToast,
-      state,
+      state, captureActiveDocument, hasDirtyDocuments, refreshAfterPull,
     } = dependencies;
+    const pullingArticles = new Set();
 
     function renderArticleGitBadge() {
       const button = $("articleGitView");
@@ -40,6 +41,12 @@
       const changesHost = $("articleGitChanges");
       const historyHost = $("articleGitHistory");
       const available = Boolean(status?.available);
+      const pulling = pullingArticles.has(state.selectedId);
+      $("articleGitPull").disabled = pulling || !status?.pull?.available;
+      $("articleGitPull").setAttribute("aria-busy", String(pulling));
+      $("articleGitPullLabel").textContent = window.PortalI18n.t(pulling ? "正在拉取…" : "拉取");
+      $("articleGitPullHint").textContent = pulling ? window.PortalI18n.t("正在获取远端更新…")
+        : status?.pull?.reason || (status?.pull?.remote ? `${status.pull.remote}/${status.pull.branch}` : window.PortalI18n.t("尚未配置远端仓库。"));
       renderArticleGitBadge();
       panel.classList.toggle("is-unavailable", !available);
       $("articleGitIdentity").hidden = !available;
@@ -130,6 +137,91 @@
       if (!state.selectedId || unregisteringArticles.has(state.selectedId)) return;
       articleGitRefresh.start();
       articleGitRefresh.invalidate({ delay });
+    }
+
+    function requestPullCredential(challenge) {
+      return new Promise(resolve => {
+        const modal = document.createElement("div");
+        modal.className = "portalDetailOverlay";
+        modal.setAttribute("data-portal-detail-overlay", "");
+        modal.innerHTML = window.PortalI18n.html`<form class="portalDetailSurface articleEntrySurface" data-portal-detail-surface role="dialog" aria-modal="true" aria-label="Git 认证">
+          <div class="portalDetailHeader" data-portal-detail-header><h2>Git 认证</h2></div>
+          <div class="portalDetailBody" data-portal-detail-body>
+            <p>${esc(challenge.host || "")} · ${esc(challenge.help_text || "请输入远端仓库的访问凭据。")}</p>
+            <label class="portalField">用户名<input name="username" autocomplete="username" required value="${esc(challenge.username || "")}"></label>
+            <label class="portalField">${esc(challenge.secret_label || "访问令牌或密码")}<input name="secret" type="password" autocomplete="current-password" required></label>
+            <label><input name="remember" type="checkbox"> 为当前用户记住凭据</label>
+          </div>
+          <div class="portalDetailFooter" data-portal-detail-footer><button type="button" class="portalButton" data-cancel>取消</button><button type="submit" class="portalButton is-primary">拉取</button></div>
+        </form>`;
+        document.body.append(modal);
+        let value = null;
+        const dialog = window.PortalUI.createDialogController({
+          modal, openClass: "portalDialogOpen", bodyClass: null, backdropClose: true, escapeClose: true,
+          onClose: () => {
+            modal.querySelector('[name="secret"]').value = "";
+            dialog.destroy?.();
+            modal.remove();
+            resolve(value);
+          },
+        });
+        modal.querySelector("[data-cancel]").addEventListener("click", () => dialog.close());
+        modal.querySelector("form").addEventListener("submit", event => {
+          event.preventDefault();
+          value = { credential: {
+            username: modal.querySelector('[name="username"]').value.trim(),
+            secret: modal.querySelector('[name="secret"]').value,
+          }, remember: modal.querySelector('[name="remember"]').checked };
+          dialog.close();
+        });
+        dialog.open({ focusTarget: modal.querySelector(challenge.username ? '[name="secret"]' : '[name="username"]') });
+      });
+    }
+
+    async function pullArticleGit() {
+      const articleId = state.selectedId;
+      if (!articleId || pullingArticles.has(articleId)) return;
+      captureActiveDocument();
+      if (hasDirtyDocuments()) {
+        showToast(window.PortalI18n.t("请先保存并提交编辑中的更改，再拉取。"), "error");
+        return;
+      }
+      pullingArticles.add(articleId);
+      renderArticleGit();
+      let pulled = false;
+      try {
+        let credentials = {};
+        let result;
+        while (state.selectedId === articleId) {
+          try {
+            result = await request(`/api/articles/${encodeURIComponent(articleId)}/git/pull`, {
+              method: "POST", timeoutMs: 390000, headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(credentials),
+            });
+            break;
+          } catch (error) {
+            if (state.selectedId !== articleId) return;
+            if (!error?.data?.auth_challenge) throw error;
+            credentials = await requestPullCredential(error.data.auth_challenge);
+            if (!credentials) return;
+          }
+        }
+        if (state.selectedId !== articleId) return;
+        pulled = true;
+        state.gitStatus = result.status;
+        await refreshAfterPull(articleId);
+        if (state.selectedId !== articleId) return;
+        await loadArticleGit({ includeHistory: true });
+        if (state.selectedId !== articleId) return;
+        showToast(window.PortalI18n.t(hasDirtyDocuments() ? "拉取完成；编辑中的草稿已保留。" : "拉取完成，稿件已更新。"), "success");
+      } catch (error) {
+        if (state.selectedId === articleId) showToast(pulled
+          ? window.PortalI18n.text`拉取已完成，但页面刷新失败：${error.message || error}`
+          : error.message || error, "error");
+      } finally {
+        pullingArticles.delete(articleId);
+        if (state.selectedId === articleId) renderArticleGit();
+      }
     }
 
     async function updateArticleGitStage(path, staged) {
@@ -369,7 +461,7 @@
 
     return Object.freeze({
       articleGitRefresh, closeArticleGitDiff, commitArticleGit, initializeArticleGit, loadArticleGit,
-      openArticleGitCommit, openArticleGitDiff, renderArticleGitDiffFile, resetArticleGit,
+      openArticleGitCommit, openArticleGitDiff, pullArticleGit, renderArticleGitDiffFile, resetArticleGit,
       scheduleArticleGitRefresh, toggleArticleGitDiffLayout, unregisteringArticles, updateArticleGitStage,
     });
   }
