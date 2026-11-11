@@ -39,22 +39,52 @@ def normalize_task_result(content: str, usage: dict, *, markdown: bool = False) 
         raise ValueError("无法读取论文材料；未自动改发全文，请显式重试")
     parsed = None
     try:
-        parsed = _parse_json_object_from_text(content)
+        if not markdown or re.match(r'^(?:```json\s*)?\{', content):
+            parsed = _parse_json_object_from_text(content)
     except ValueError:
-        pass
+        if markdown:
+            # Older long JSON replies often contain LaTeX escapes (\\(, \\pi).
+            # Repair only escapes JSON does not define; never execute content.
+            repaired = re.sub(r'\\(?:["\\/bfnrt]|u[0-9a-fA-F]{4})|\\',
+                              lambda m: m.group(0) if len(m.group(0)) > 1 else '\\\\', content)
+            try:
+                parsed = _parse_json_object_from_text(repaired)
+            except ValueError:
+                match = re.search(r'"markdown"\s*:\s*"([\s\S]*)"\s*,\s*"source_evidence"\s*:', repaired)
+                if match:
+                    try: parsed = {'markdown': json.loads('"' + match[1] + '"')}
+                    except ValueError: pass
+    evidence_status = 'missing'
+    if markdown and not isinstance(parsed, dict):
+        marker = re.search(r'<!--\s*PAPER_SOURCE_EVIDENCE\s*-->[\s\S]*$', content)
+        if marker:
+            tail = marker.group(0)
+            content = content[:marker.start()].rstrip()
+            block = re.search(r'```(?:json|json source_evidence)\s*([\s\S]*?)```', tail)
+            try:
+                evidence = json.loads(block.group(1)) if block else None
+                if not isinstance(evidence, dict): raise ValueError('evidence object required')
+                usage['source_evidence'] = evidence
+                evidence_status = 'recorded'
+            except (ValueError, AttributeError): evidence_status = 'invalid'
     evidence = parsed.get('source_evidence') if isinstance(parsed, dict) else None
     if evidence is not None:
-        if not isinstance(evidence, str):
-            raise ValueError('source_evidence must be a string')
-        usage['source_evidence'] = evidence
+        if isinstance(evidence, (str, dict)):
+            usage['source_evidence'] = evidence
+            evidence_status = 'recorded'
+        else:
+            evidence_status = 'invalid'
     if markdown and isinstance(parsed, dict):
         if not isinstance(parsed.get('markdown'), str) or not parsed['markdown'].strip():
             raise ValueError('Task JSON must contain nonempty markdown')
         content = parsed['markdown'].strip()
     if usage.get('material_snapshot'):
-        validate_path_result(content + '\n' + str(evidence or ''))
+        if not markdown:
+            validate_path_result(content + '\n' + str(evidence or ''))
         # A syntactically valid citation does not prove where the model read it.
         usage['material_read_status'] = 'not_proven'
+    if markdown:
+        usage['source_evidence_status'] = evidence_status
     return content, usage
 
 

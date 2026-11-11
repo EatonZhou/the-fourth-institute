@@ -126,7 +126,7 @@ def prepare_task_input(*,actor,scope,attempt,subject,full_prompt):
     directory.mkdir(exist_ok=True)
     if not (directory/'manifest.json').exists():
         if scope in {'paper:deep-read', 'paper:exp'}:
-            full_prompt += '\n\n输出JSON对象，字段markdown为完整Markdown正文，source_evidence为具体章节或页码依据字符串；不在JSON外加说明。'
+            full_prompt += '\n\n正文直接输出Markdown，禁止将正文包入JSON。末尾附<!-- PAPER_SOURCE_EVIDENCE -->标记，再附```json代码块，仅含files与locations字段记录实际读取文件和章节/页码依据。证据块不是正文。'
         else:
             full_prompt += '\n\n保持任务要求的原JSON字段，另增加source_evidence字符串字段，提供具体章节或页码依据；不在JSON外加说明。'
         body=full_prompt.encode();digest=sha256(body).hexdigest()
@@ -156,7 +156,7 @@ def resolve_task_reference(*,actor,target_resident_id,reference):
                  f'元数据：{snapshot.metadata_path}\nSHA256：{snapshot.sha256}\n'
                  '快照包含本次材料及完整输出协议；按该协议交付，最终结果由业务服务保存。'
                  f'无法读取只输出{READ_FAILURE}，不得凭标题或记忆生成。结论必须带具体章节或页码；'
-                 'JSON任务增加source_evidence字符串字段列明出处，不要输出JSON外说明。')
+                 '遵守快照中的输出协议；Markdown长文用正文加末尾PAPER_SOURCE_EVIDENCE证据块，小JSON任务保留其schema。')
     return {'type':'paper.task-material','version':1,'full_prompt':full,
             'input_variants':{'version':1,'path_prompt':instruction,'materials':[{'identity':subject+'#'+key,'sha256':snapshot.sha256,'path':snapshot.text_path}]},
             'provenance':snapshot.to_payload()}
