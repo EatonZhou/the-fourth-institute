@@ -332,7 +332,12 @@ body {
 .paperRowActions, .paperFavoriteFilter { display: flex; align-items: center; gap: 8px; }
 .paperFavoriteFilter { font-size: 12px; cursor: pointer; }
 .paperFavoriteFilter input { width: auto; }
-.paperFavorite { flex: 0 0 auto; font-size: 19px; }
+.paperFavorite { flex: 0 0 auto; font-size: 14px; }
+.paperLeaf .paperFavorite { width: 28px; height: 28px; min-width: 28px; min-height: 28px; padding: 3px; border: 0; background: transparent; box-shadow: none; border-radius: 5px; }
+.paperLeaf .paperFavorite:hover { background: var(--panel-2); }
+.paperLeaf .paperFavorite:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.paperLeaf { min-height: 28px; }
+.paperLeaf > .folderLine { padding-top: 3px; padding-bottom: 3px; }
 .paperFavorite[aria-pressed="true"] { color: var(--accent); }
 .paperLeaf { display: flex; align-items: center; gap: 4px; }
 .paperLeaf > .folderLine { flex: 1; min-width: 0; }

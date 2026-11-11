@@ -115,7 +115,7 @@
       paperChatPanel = panel;
       paperChatWorkspace = panel.workspace;
       mountResearchSelector();
-      if(researchReady && state.researchSlot) void loadChatHistory().catch(alertError);
+      if(researchReady && (state.researchSlot || state.researchLegacyKey)) void loadChatHistory().catch(alertError);
     }
 
     let researchNav = null, researchList = [], legacyList = [], researchSequence = 0;
@@ -365,6 +365,7 @@
 
     function activeChatWorkspaceId() {
       if(state.researchSlot) return 'research:'+state.researchSlot.slot_id;
+      if(state.researchLegacyKey) return state.researchLegacyKey;
       if (state.requestedChatWorkspaceId) return state.requestedChatWorkspaceId;
       return isCollectionMode() ? collectionChatScope().key : chatSessionKey(state.selectedId || "");
     }
@@ -411,10 +412,10 @@
       if(unavailableResearch(key))return null;
       state.chatHistoryLoading = true;
       try {
-        if(!retry && state.researchSlot && paperChatPanel?.surface?.()?.workspace_key===key) {
+        if(!retry && (state.researchSlot || state.researchLegacyKey) && paperChatPanel?.surface?.()?.workspace_key===key) {
           // Selection changes material references, not Chat identity or draft.
           const indexedPaper=state.selectedId, principal=state.principalId;
-          if(indexedPaper && state.researchIndexedPaper!==indexedPaper) {
+          if(state.researchSlot && indexedPaper && state.researchIndexedPaper!==indexedPaper) {
             await paperApi.request('/chat-workspace/api/prepare',{method:'POST',body:JSON.stringify({
               surface:'paper',workspace_key:key,message:'更新研究材料索引',context:researchPrepareContext()})});
             if(principal===state.principalId && key===activeChatWorkspaceId() && state.selectedId===indexedPaper) state.researchIndexedPaper=indexedPaper;
