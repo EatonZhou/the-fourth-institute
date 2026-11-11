@@ -58,14 +58,13 @@
       };
     }
 
-    function addArticleChatReference() {
-      const context = articleChatContext();
+    function addArticleChatReference(context = articleChatContext()) {
       const selection = context.file?.selection || {};
       const startLine = selection.start_line || context.file?.cursor?.line || 1;
       const endLine = selection.end_line || startLine;
       return state.chatController?.addReference({
-        title: `${state.selectedId} L${startLine}–${endLine}`,
-        path: state.selectedId,
+        title: `${context.article_id} L${startLine}–${endLine}`,
+        path: context.article_id,
         text: JSON.stringify(context, null, 2),
         line_start: startLine,
         line_end: endLine,
@@ -75,7 +74,8 @@
     async function bringCurrentContextToChat() {
       if (!state.selectedId) return;
       const articleId = state.selectedId;
-      const selection = editorSelectionContext();
+      const context = articleChatContext();
+      const selection = context.file?.selection;
       const controller = await setSideView("chat");
       if (!controller || articleId !== state.selectedId) return;
 
@@ -84,7 +84,7 @@
         : "请结合已附带的当前稿件位置和工程上下文，继续协助我完善这篇 Article。";
       const existing = String(controller?.draftText?.() || "").trim();
       if (!existing) controller?.setDraftText?.(prompt);
-      addArticleChatReference();
+      addArticleChatReference(context);
 
     }
 

@@ -320,7 +320,18 @@
     });
     $("articleWordWrap").addEventListener("click", toggleWordWrap);
     $("articleSyncToPdf").addEventListener("click", syncSourceToPdf);
-    $("articleSendContext").addEventListener("click", bringCurrentContextToChat);
+    const bringContextToChat = () => bringCurrentContextToChat()
+      .catch(error => showToast(error.message || error, "error"));
+    $("articleSendContext").addEventListener("click", bringContextToChat);
+    window.PortalCommandRegistry.root.register({
+      id: "article.contextToChat",
+      title: "把当前选区或光标上下文带到 Chat Workspace",
+      keybindings: ["Ctrl+Alt+Enter", "Meta+Alt+Enter"],
+      allowInInput: true,
+      enabled: () => Boolean(state.selectedId && !$("articleSendContext").disabled
+        && (document.activeElement === $("articleSourceEditor") || state.editor?.hasTextFocus?.())),
+      execute: ({ event }) => event?.repeat ? false : bringContextToChat(),
+    });
 
     $("articleCompile").addEventListener("click", () => compileArticle());
     $("articleCompileSettings").addEventListener("click", event => {
