@@ -1,0 +1,30 @@
+const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict');
+const {chromium,firefox}=require('../../../management_portal/test_framework/tau_runtime/node_modules/playwright');
+const {chatWorkspaceScripts}=require('./chat_workspace_modules.cjs');
+const {portalWorkbenchScripts}=require('./portal_workbench_scripts.cjs');
+const {routeScript}=JSON.parse(fs.readFileSync(0,'utf8'));
+const staticRoot=path.resolve(__dirname,'../../../management_portal/static');
+(async()=>{for(const engine of [chromium,firefox]){const browser=await engine.launch({headless:true});try{
+const page=await browser.newPage({viewport:{width:800,height:600}});await page.setContent('<meta charset="utf-8"><section id="fixture" style="height:500px"></section>');
+await page.addScriptTag({content:routeScript});
+for(const file of ['portal_state.js','portal_page_state.js','portal_text.js','portal_ui_primitives.js','portal_ui.js','portal_overlay.js','portal_resource_chips.js','portal_image_editor.js','portal_editor_open_service.js','portal_command_registry.js','portal_workbench_context.js',...portalWorkbenchScripts(),'resident_protocol.js',...chatWorkspaceScripts(),'portal_resident_service.js']) await page.addScriptTag({path:path.join(staticRoot,file)});
+for(const file of ['portal_components_chat_frame.css','portal_components_composer.css'])await page.addStyleTag({path:path.join(staticRoot,file)});
+const result=await page.evaluate(async()=>{
+ const checks=[];const check=(value,label)=>{if(!value)throw new Error(label);checks.push(label);};
+ const p=PortalChatWorkspace.panelPackage.create({root:document.querySelector('#fixture'),autoLoad:false,target:{resident_id:'resident_111111111111'}});
+ const messages=p.workspace.element('messages');let count=0;
+ window.PortalResidentService={...PortalResidentService,businessHistory:async()=>{count++;throw new Error('ListMessages 不接受参数：view');}};
+ await p.loadBusinessHistory();await p.loadBusinessHistory();check(count===1,'legacy backend probed only once per target');check(!messages.hidden&&!p.businessHistory.toolbar,'legacy raw view without switch');
+ p.targetRevision++;window.PortalResidentService.businessHistory=async()=>({attempts:[{input_message_id:'one',business_context:{group_ref:'paper'},label:'paper'}],default_view:'messages'});
+ await p.loadBusinessHistory();check(!messages.hidden&&p.businessHistory.mode==='messages','continuous Paper Chat defaults raw despite attempt rows');
+ p.targetRevision++;window.PortalResidentService.businessHistory=async()=>({attempts:[],default_view:'attempts'});
+ await p.loadBusinessHistory();check(messages.hidden,'explicit server fresh workflow defaults attempts');
+ const toolbar=p.businessHistory.toolbar;check(toolbar.parentElement.classList.contains('chatBusinessHistoryLayout'),'toolbar inside column wrapper');
+ const rect=toolbar.getBoundingClientRect(),buttons=[...toolbar.querySelectorAll('button')].map(b=>b.getBoundingClientRect());
+ check(getComputedStyle(toolbar.parentElement).flexDirection==='column','vertical body layout');check(Math.abs(buttons[0].y-buttons[1].y)<2&&buttons[0].height<60,'small horizontal buttons');
+ toolbar.querySelectorAll('button')[1].click();check(!messages.hidden,'raw switch restores conversation');
+ p.targetRevision++;window.PortalResidentService.businessHistory=async()=>({attempts:[{input_message_id:'one',business_context:{group_ref:'paper'},label:'paper'}]});
+ await p.loadBusinessHistory();check(!messages.hidden,'missing declaration never infers fresh from history');
+ p.targetRevision++;window.PortalResidentService.businessHistory=async()=>{throw new Error('permission denied');};await p.loadBusinessHistory();check(!p.businessHistory.unsupported&&p.businessHistory.panel.textContent.includes('permission denied'),'ACL error is not treated as old backend');
+ p.destroy();return checks;
+});console.log(engine.name()+': '+result.join('; '));}finally{await browser.close();}}})().catch(e=>{console.error(e);process.exitCode=1;});

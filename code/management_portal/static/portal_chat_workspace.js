@@ -1879,11 +1879,123 @@
       this.workspace.root?.addEventListener("click", this.openDisplayAction);
       this.questions = new ResidentQuestionCards(this);
       this.readObserver = new ResidentReadObserver(this);
+      this.businessHistory = { scope: "", revision: 0, mode: null, rows: [], cursor: "" };
       if (options.autoLoad !== false && this.workspace.target().resident_id) {
         // Initial load failures already have a local, non-editable Panel state.
         // Restoring Editors must not turn that same failure into global toasts.
         this.setResident(this.workspace.target(), { load: true }).catch(() => {});
       }
+    }
+
+    async loadBusinessHistory({ older = false, inputMessageId = "", detail = null } = {}) {
+      const state = this.businessHistory;
+      const residentId = this.target().resident_id;
+      if (!residentId) return;
+      const scope = `${this.targetRevision}:${this.workspace.sessionScope()}`;
+      if (state.scope !== scope) {
+        state.scope = scope; state.revision += 1; state.mode = null; state.rows = []; state.cursor = "";
+        state.panel?.remove(); state.panel = null; state.toolbar?.remove(); state.toolbar = null;
+        state.error = ""; state.unsupported = false;
+        const messages = this.workspace.element("messages"); if (messages) messages.hidden = false;
+      }
+      if (state.unsupported) return;
+      const revision = ++state.revision;
+      try {
+        const page = await window.PortalResidentService.businessHistory(residentId, {
+          pageToken: older ? state.cursor : "", inputMessageId,
+        });
+        if (revision !== state.revision || scope !== `${this.targetRevision}:${this.workspace.sessionScope()}`) return;
+        if (inputMessageId) {
+          if (!detail?.isConnected) return;
+          detail.replaceChildren();
+          for (const message of page.conversation?.messages || []) {
+            const fold = document.createElement("details");
+            const heading = document.createElement("summary");
+            heading.textContent = message.role === "user" ? window.PortalI18n.t("本次输入") : window.PortalI18n.t("回复");
+            const body = document.createElement("pre"); body.className = "chatBusinessHistoryText";
+            body.textContent = (message.content_parts || []).map(part => part.type === "text" ? part.text || "" : JSON.stringify(part, null, 2)).join("\n");
+            fold.append(heading, body); detail.append(fold);
+          }
+          return;
+        }
+        const unique = new Map((older ? state.rows : []).map(row => [row.input_message_id, row]));
+        for (const row of page.attempts || []) unique.set(row.input_message_id, row);
+        state.rows = [...unique.values()]; state.cursor = page.next_page_token || "";
+        state.error = "";
+        if (state.mode === null) state.mode = page.default_view === "attempts" ? "attempts" : "messages";
+        this.renderBusinessHistory();
+      } catch (error) {
+        if (revision !== state.revision || scope !== `${this.targetRevision}:${this.workspace.sessionScope()}`) return;
+        const description = String(error.message || error);
+        const unsupported = ((String(error.code || '').endsWith('invalid_arguments') && /view/i.test(description))
+          || /ListMessages.*(?:不接受|unknown|unexpected).*view/i.test(description));
+        if (unsupported) {
+          state.unsupported = true; state.mode = 'messages'; state.rows = []; state.cursor = ''; state.error = '';
+          state.toolbar?.remove(); state.toolbar = null; state.panel?.remove(); state.panel = null;
+          const messages = this.workspace.element('messages'); if (messages) messages.hidden = false;
+          return;
+        }
+        // Never leave previously authorized rows visible after a failed refresh.
+        state.rows = []; state.cursor = ""; state.error = error.message || String(error);
+        if (state.mode === null) state.mode = "attempts";
+        this.renderBusinessHistory();
+      }
+    }
+
+    renderBusinessHistory() {
+      const state = this.businessHistory;
+      const messages = this.workspace.element("messages");
+      if (!messages?.parentElement || state.unsupported) return;
+      if (!messages.parentElement.classList.contains('chatBusinessHistoryLayout')) {
+        const layout = document.createElement('div'); layout.className = 'chatBusinessHistoryLayout';
+        messages.before(layout); layout.append(messages);
+      }
+      const button = (label, run) => {
+        const node = document.createElement("button"); node.type = "button";
+        node.className = "portalButton is-quiet"; node.textContent = window.PortalI18n.t(label);
+        node.onclick = run; return node;
+      };
+      if (!state.toolbar) {
+        state.toolbar = document.createElement("div"); state.toolbar.className = "chatBusinessHistoryTools";
+        state.toolbar.setAttribute("role", "group");
+        state.toolbar.setAttribute("aria-label", window.PortalI18n.t("对话记录视图"));
+        messages.before(state.toolbar);
+      }
+      state.toolbar.replaceChildren(...["attempts", "messages"].map(mode => {
+        const node = button(mode === "attempts" ? "按次记录" : "原始对话", () => {
+          state.mode = mode; this.renderBusinessHistory();
+          if (mode === "attempts") this.loadBusinessHistory();
+        });
+        node.setAttribute("aria-pressed", String(state.mode === mode)); return node;
+      }));
+      if (!state.panel) { state.panel = document.createElement("section"); state.panel.className = "chatBusinessHistory"; messages.before(state.panel); }
+      messages.classList.add("chatBusinessHistoryOriginal");
+      messages.hidden = state.mode === "attempts"; state.panel.hidden = !messages.hidden;
+      state.panel.replaceChildren();
+      if (state.error) {
+        const error = document.createElement("p"); error.setAttribute("role", "alert"); error.textContent = state.error;
+        state.panel.append(error, button("重试", () => { state.error = ""; this.loadBusinessHistory(); }));
+        return;
+      }
+      const groups = new Map();
+      for (const row of state.rows) {
+        const key = row.business_context.group_ref;
+        if (!groups.has(key)) {
+          const group = document.createElement("details"); const label = document.createElement("summary");
+          label.textContent = `${row.label} · ${row.business_context.application}`;
+          group.append(label); state.panel.append(group); groups.set(key, group);
+        }
+        const item = document.createElement("div");
+        const detail = document.createElement("div");
+        item.append(button(`${row.created_at} · ${row.state}`, () => this.loadBusinessHistory({ inputMessageId: row.input_message_id, detail })));
+        if (row.error) { const error = document.createElement("p"); error.textContent = typeof row.error === "string" ? row.error : row.error.message || JSON.stringify(row.error); item.append(error); }
+        item.append(detail); groups.get(key).append(item);
+      }
+      if (!state.rows.length) {
+        const empty = document.createElement("p"); empty.textContent = window.PortalI18n.t("没有可见的按次记录；旧消息请查看原始对话。");
+        state.panel.append(empty);
+      }
+      if (state.cursor) state.panel.append(button("更早记录", () => this.loadBusinessHistory({ older: true })));
     }
 
     reportError(error) {
@@ -2561,6 +2673,13 @@
       );
       const scope = target.resident_id && options.load !== false ? residentSessionScope(target) : "";
       const installed = Boolean(this.protocol) && residentSessionScope(this.workspace.target()) === scope;
+      if (!installed && this.businessHistory) {
+        this.businessHistory.revision += 1;
+        this.businessHistory.panel?.remove(); this.businessHistory.panel = null;
+        this.businessHistory.toolbar?.remove(); this.businessHistory.toolbar = null;
+        this.businessHistory.scope = "";
+        const messages = this.workspace.element("messages"); if (messages) messages.hidden = false;
+      }
       // A repeated request for a Resident whose first load is still running joins
       // that load. Restarting it on every page refresh never finishes when one load
       // takes longer than the refresh interval, and the Chat stays "loading".
@@ -2904,7 +3023,11 @@
         return null;
       }
       this.pendingSnapshot = null;
-      if (this.appendSnapshotMessage(snapshot, update)) return this.detail;
+      if (this.appendSnapshotMessage(snapshot, update)) {
+        clearTimeout(this.businessHistoryTimer);
+        this.businessHistoryTimer = setTimeout(() => this.loadBusinessHistory(), 300);
+        return this.detail;
+      }
       const detail = this.residentProjection;
       const contract = this.contractFromDetail(detail);
       if (!contract) throw new Error("Resident projection is missing Chat Workspace contract");
@@ -2927,6 +3050,8 @@
       this.readObserver.update(snapshot);
       this.options.onDetail?.(this.detail, this, update);
       this.syncActions();
+      clearTimeout(this.businessHistoryTimer);
+      this.businessHistoryTimer = setTimeout(() => this.loadBusinessHistory(), 300);
       return this.detail;
     }
 
@@ -3569,6 +3694,8 @@
     setStatus(value) { return this.workspace.setStatus(value); }
     updateControls() { return this.workspace.updateControls(); }
     destroy() {
+      clearTimeout(this.businessHistoryTimer);
+      if (this.businessHistory) this.businessHistory.revision += 1;
       this.displayActions.clear();
       this.workspace.root?.removeEventListener("click", this.openDisplayAction);
       this.readObserver.destroy();
@@ -3596,7 +3723,6 @@
     residentHandoffParts,
     messageRole,
     messageQuoteExcerpt,
-    messageQuotable,
     residentMessageFooter,
     noticeQueueCleared,
     formatTokenCount,
