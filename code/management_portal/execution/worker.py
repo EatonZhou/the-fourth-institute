@@ -19,6 +19,8 @@ from .contracts import (
 )
 from .runtime import ExecutionCancelled, ExecutionRuntime, RuntimeContext
 from .scheduler import SchedulerClient
+from .provider_catalog import AGENT_PROVIDERS
+from .recovery_checkpoint import checkpoint_resumable
 from .transport import (
     ExecutionClaimOwnershipLost,
     ExecutionResponseUnknown,
@@ -59,6 +61,8 @@ class ExecutionWorker:
             pid=os.getpid(),
         )
         self.shutdown_requested = shutdown_requested or (lambda: False)
+        self._claims_lock = threading.Lock()
+        self._claims: dict[str, _ClaimedExecution] = {}
 
     def register(self, state: str = "active") -> dict[str, Any]:
         return self.scheduler.register(state)
@@ -80,7 +84,21 @@ class ExecutionWorker:
         *,
         lease_seconds: int = 270,
     ) -> dict[str, Any]:
-        return _ClaimedExecution(self, claim, lease_seconds=lease_seconds).run()
+        execution = _ClaimedExecution(self, claim, lease_seconds=lease_seconds)
+        with self._claims_lock:
+            self._claims[execution.execution_id] = execution
+        try:
+            return execution.run()
+        finally:
+            with self._claims_lock:
+                if self._claims.get(execution.execution_id) is execution:
+                    self._claims.pop(execution.execution_id)
+
+    def owner_bound_executions(self) -> list[dict[str, Any]]:
+        """Live leased turns which cannot move to another Worker."""
+        with self._claims_lock:
+            claims = list(self._claims.values())
+        return [lease for claim in claims if (lease := claim.owner_bound_lease()) is not None]
 
 
 _CLAIM_LOST_REASON = "execution claim ownership changed"
@@ -117,6 +135,7 @@ class _ClaimedExecution:
             if isinstance(execution.get("checkpoint"), dict)
             else {}
         )
+        self._last_checkpoint = self.recovery_checkpoint
         if not self.execution_id or not self.claim_token:
             raise ValueError("claimed execution identity is incomplete")
         self.lease_seconds = lease_seconds
@@ -136,6 +155,20 @@ class _ClaimedExecution:
             name=f"execution-heartbeat-{self.execution_id}",
             daemon=True,
         )
+
+    def owner_bound_lease(self) -> dict[str, Any] | None:
+        request = self._execution.get("request") or {}
+        provider = AGENT_PROVIDERS.get(str(request.get("provider") or ""))
+        checkpoint = self._last_checkpoint
+        remaining = self.lease_deadline - time.monotonic()
+        sent = (checkpoint.get("turn_id")
+                or (checkpoint.get("provider_recovery_state") or {}).get("phase") == "prompt_sent")
+        if (not provider or provider.handover_keeps_turn or request.get("operation") != "turn"
+                or remaining <= 0 or self.ownership_lost.is_set() or self.heartbeat_stop.is_set()
+                or self.planned_handover.is_set() or checkpoint_resumable(checkpoint, request)
+                or not sent):
+            return None
+        return {"execution_id": self.execution_id, "lease_expires_at": time.time() + remaining}
 
     def run(self) -> dict[str, Any]:
         self._heartbeat.start()
@@ -492,6 +525,8 @@ class _ClaimedExecution:
                 lambda: self._worker.scheduler.checkpoint(self.execution_id, self.claim_token, payload),
                 retry_unknown=True,
             )
+            # Immutable replacement: health never waits for a checkpoint RPC.
+            self._last_checkpoint = payload
 
     def _emit_event(self, event_type: str, details: dict[str, Any]) -> None:
         if event_type == "provider_event" and self.planned_handover.is_set():
@@ -580,8 +615,11 @@ class ExecutionWorkerDaemon:
         self._draining_started_at = 0.0
         self._drain_timed_out = False
         self._stopped = False
+        self._terminating = threading.Event()
 
     def request_stop(self, _signum: int, _frame: object) -> None:
+        if _signum:
+            self._terminating.set()
         if not self._draining_started_at:
             self._draining_started_at = time.time()
         self._stopping.set()
@@ -629,6 +667,7 @@ class ExecutionWorkerDaemon:
                 "capabilities": self.worker.runtime.capabilities(),
                 "max_parallel": self.max_parallel,
                 "active_executions": active,
+                "owner_bound_executions": self.worker.owner_bound_executions(),
                 "state": (
                     "draining" if self._stopping.is_set() else "active"
                 ),
@@ -810,22 +849,32 @@ class ExecutionWorkerDaemon:
                 self.worker.scheduler.set_state("draining")
             except Exception:
                 LOGGER.warning("ExecutionWorker could not announce draining to the Scheduler", exc_info=True)
-            deadline = time.monotonic() + self.drain_timeout
-            with self._active_changed:
-                while self._active and (
-                    time.monotonic() < deadline
-                ):
-                    self._active_changed.wait(
-                        max(0.0, deadline - time.monotonic())
-                    )
-                if self._active:
-                    self._drain_timed_out = True
+            self._drain_active()
             try:
                 self.worker.scheduler.set_state("offline")
             except Exception:
                 LOGGER.warning("ExecutionWorker could not announce going offline to the Scheduler", exc_info=True)
             self._write_health()
         return 0
+
+    def _drain_active(self) -> None:
+        deadline = time.monotonic() + self.drain_timeout
+        while True:
+            with self._active_changed:
+                if not self._active:
+                    return
+                owner_bound = (self._stopped and not self._terminating.is_set()
+                               and self.worker.owner_bound_executions())
+                remaining = deadline - time.monotonic()
+                if remaining <= 0 and not owner_bound:
+                    self._drain_timed_out = True
+                    return
+            # Health takes its own lock before the active lock. Do not invert
+            # that order while completions publish their final health.
+            self._write_health()
+            with self._active_changed:
+                if self._active:
+                    self._active_changed.wait(.5 if owner_bound else max(0, min(.5, remaining)))
 
 
 def _elapsed_since_iso_ms(value: str) -> float:

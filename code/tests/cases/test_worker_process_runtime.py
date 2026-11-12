@@ -293,6 +293,7 @@ def test_platform_signal_contract_preserves_programmatic_controls(monkeypatch, p
     if owner == "worker":
         item = worker.ExecutionWorkerDaemon.__new__(worker.ExecutionWorkerDaemon)
         item._stopping = threading.Event()
+        item._terminating = threading.Event()
         item._draining_started_at = 0
         item._active_changed = threading.Condition()
     elif owner == "manager":
@@ -354,6 +355,7 @@ def test_native_worker_shutdown_handler_wakes_graceful_drain():
     """真实进程信号只设置 worker 停止意图并唤醒等待线程。"""
     daemon = worker.ExecutionWorkerDaemon.__new__(worker.ExecutionWorkerDaemon)
     daemon._stopping = threading.Event()
+    daemon._terminating = threading.Event()
     daemon._draining_started_at = 0
     daemon._active_changed = threading.Condition()
     previous = process_runtime.install_shutdown_handlers(daemon.request_stop)

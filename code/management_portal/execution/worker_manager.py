@@ -652,6 +652,30 @@ class ExecutionWorkerManager:
             except (OSError, ValueError, AttributeError):
                 continue
 
+    def _owner_bound(self, worker: WorkerProcess, now: float) -> bool:
+        """Only this exact process's unexpired lease may extend a rollout."""
+        import math
+
+        health = self._health(worker)
+        if (health.get("schema") != "tfi.execution-worker-health.v1"
+                or health.get("worker_id") != worker.worker_id
+                or health.get("build_id") != worker.build_id
+                or health.get("pid") != worker.process.pid):
+            return False
+        leases = health.get("owner_bound_executions")
+        if not isinstance(leases, list):
+            return False
+        for lease in leases:
+            if not isinstance(lease, dict) or not lease.get("execution_id"):
+                continue
+            try:
+                expires = float(lease.get("lease_expires_at") or 0)
+            except (TypeError, ValueError):
+                continue
+            if math.isfinite(expires) and expires > now:
+                return True
+        return False
+
     def _reap(self) -> None:
         remaining: list[WorkerProcess] = []
         for worker in self._draining:
@@ -660,6 +684,10 @@ class ExecutionWorkerManager:
                     worker.draining_started_at = time.time()
                 self._request_worker_stop(worker)
                 now = time.time()
+                if (not self._stopping.is_set() and not self._shutdown_deadline
+                        and self._owner_bound(worker, now)):
+                    remaining.append(worker)
+                    continue
                 drain_deadline = (
                     worker.draining_started_at + self.drain_timeout
                 )
