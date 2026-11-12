@@ -526,12 +526,17 @@
         documentState.savedSource = state.savedSource;
         documentState.session?.updateDraft?.(state.source);
       }
-      $("articleSaveFile").disabled = !state.openFile || !dirty;
+      $("articleSaveFile").disabled = !state.openFile || !documentState?.editable;
+      const saveStatus = documentState?.saving ? window.PortalI18n.t("Saving…")
+        : documentState?.saveError ? window.PortalI18n.t("保存失败，修改已保留")
+          : documentState?.externalChangeVersion ? window.PortalI18n.t("外部修改待核对，自动保存已暂停")
+            : dirty ? window.PortalI18n.t("Unsaved changes")
+              : documentState?.lastSaveAutomatic ? window.PortalI18n.t("已自动保存") : "Saved";
       $("articleEditorState").textContent = state.openFile
         ? (
           documentState?.resourceAddress
             ? window.PortalI18n.t("Read-only Resource")
-            : (documentState?.linked ? window.PortalI18n.t("Read-only linked file") : (!documentState?.editable ? window.PortalI18n.t("只读预览") : (dirty ? window.PortalI18n.t("Unsaved changes") : "Saved")))
+            : (documentState?.linked ? window.PortalI18n.t("Read-only linked file") : (!documentState?.editable ? window.PortalI18n.t("只读预览") : saveStatus))
         )
         : window.PortalI18n.t("Select a file from File tree");
       renderDocumentTabs();

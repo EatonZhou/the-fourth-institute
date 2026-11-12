@@ -18,7 +18,7 @@
     "openEntryModal", "openRegisterModal", "pullArticleGit", "queryState", "registerArticle", "renderArticleGitDiffFile",
     "renderArticleResourceSearch", "renderArticleSelectors", "renderEditorLayers", "renderLog",
     "renderSemanticNavigation", "resetEditorPreferences", "saveOpenFile", "saveSettings",
-    "scheduleArticleGitRefresh", "scheduleAutoCompile", "searchProject", "selectArticle", "setArticlePdfZoom",
+    "scheduleArticleGitRefresh", "scheduleAutoCompile", "scheduleAutoSave", "searchProject", "selectArticle", "setArticlePdfZoom",
     "setArticleResourceSearchOpen", "setCompileMenu", "setEditorMode", "setNavigationPanelVisible",
     "setOutputView", "setProjectMenu", "setSettingsSection", "setSideView", "showPdfError", "showToast",
     "state", "stopCompilation", "syncEditorScroll", "syncPdfToSource", "syncSourceToPdf",
@@ -40,7 +40,7 @@
       openBuildDiagnostic, openEntryModal, openRegisterModal, pullArticleGit, queryState, registerArticle,
       renderArticleGitDiffFile, renderArticleResourceSearch, renderArticleSelectors, renderEditorLayers,
       renderLog, renderSemanticNavigation, resetEditorPreferences, saveOpenFile, saveSettings,
-      scheduleArticleGitRefresh, scheduleAutoCompile, searchProject, selectArticle, setArticlePdfZoom,
+      scheduleArticleGitRefresh, scheduleAutoCompile, scheduleAutoSave, searchProject, selectArticle, setArticlePdfZoom,
       setArticleResourceSearchOpen, setCompileMenu, setEditorMode, setNavigationPanelVisible, setOutputView,
       setProjectMenu, setSettingsSection, setSideView, showPdfError, showToast, state, stopCompilation,
       syncEditorScroll, syncPdfToSource, syncSourceToPdf, toggleArticleGitDiffLayout, toggleWordWrap,
@@ -284,6 +284,7 @@
       renderEditorLayers();
       updateDirtyState();
       updateCursorStatus();
+      scheduleAutoSave();
       scheduleAutoCompile();
     });
     $("articleSourceEditor").addEventListener("scroll", () => {

@@ -263,6 +263,7 @@
     renderEditorLayers: (...args) => renderEditorLayers(...args),
     saveOpenFile: (...args) => saveOpenFile(...args),
     scheduleAutoCompile: (...args) => scheduleAutoCompile(...args),
+    scheduleAutoSave: (...args) => scheduleAutoSave(...args),
     scheduleSemanticReload: (...args) => scheduleSemanticReload(...args),
     scheduleTexlabSync: (...args) => scheduleTexlabSync(...args), state,
     updateCursorStatus: (...args) => updateCursorStatus(...args),
@@ -364,7 +365,7 @@
   const {
     activateDocument, activeDocument, captureActiveDocument, clearEditor, documentIsDirty, goToLine,
     hasDirtyDocuments, openArticleFile, openArticleLinkedFile, openArticleResourcePreview, renderDocumentTabs,
-    refreshArticleDocuments, saveAllDirtyDocuments, saveOpenFile, setEditorMode,
+    refreshArticleDocuments, saveAllDirtyDocuments, saveOpenFile, scheduleAutoSave, setEditorMode,
   } = articleModule("PortalArticleWorkspaceDocuments").createDocuments({
     $, articleAbsolutePath, articleModelUri, closeArticleGitDiff, detailResourceGuest, editorValue,
     compileArticle: (...args) => compileArticle(...args),
@@ -464,7 +465,7 @@
     openArticleFile, openArticleGitCommit, openArticleGitDiff, openBuildDiagnostic, openEntryModal,
     openRegisterModal, handleArticleGitAction, pullArticleGit, queryState, registerArticle, renderArticleGitDiffFile, renderArticleResourceSearch,
     renderArticleSelectors, renderEditorLayers, renderLog, renderSemanticNavigation, resetEditorPreferences,
-    saveOpenFile, saveSettings, scheduleArticleGitRefresh, scheduleAutoCompile, searchProject, selectArticle,
+    saveOpenFile, saveSettings, scheduleArticleGitRefresh, scheduleAutoCompile, scheduleAutoSave, searchProject, selectArticle,
     setArticlePdfZoom, setArticleResourceSearchOpen, setCompileMenu, setEditorMode, setNavigationPanelVisible,
     setOutputView, setProjectMenu, setSettingsSection, setSideView, showPdfError, showToast, state,
     stopCompilation, syncEditorScroll, syncPdfToSource, syncSourceToPdf, toggleArticleGitDiffLayout,

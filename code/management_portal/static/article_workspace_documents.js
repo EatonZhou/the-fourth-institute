@@ -26,6 +26,8 @@
     } = dependencies;
 
     let articleDocumentPreviewKey = "";
+    const autoSaveTimers = new Map();
+    const pendingSaves = new Map();
 
     function createArticleDocumentSession(payload) {
       const session = window.PortalDocumentSession.create({
@@ -42,8 +44,7 @@
 
     function documentIsDirty(documentState) {
       if (!documentState?.editable) return false;
-      return Boolean(documentState?.session?.snapshot?.().dirty
-        ?? (documentState && documentState.source !== documentState.savedSource));
+      return Boolean(documentState.saving || documentState.source !== documentState.savedSource);
     }
 
     function hasDirtyDocuments() {
@@ -284,6 +285,7 @@
         }),
       })) return;
       const index = state.openTabs.indexOf(path);
+      cancelDocumentAutoSave(documentState);
       state.openTabs = state.openTabs.filter(item => item !== path);
       documentState.model?.dispose?.();
       documentState.session?.destroy?.();
@@ -420,7 +422,7 @@
       for (const path of [...state.openTabs]) {
         if (!isCurrent()) return false;
         const previous = state.documents.get(path);
-        if (!previous || previous.linked || previous.session?.snapshot?.().saving) continue;
+        if (!previous || previous.linked || previous.saving || previous.session?.snapshot?.().saving) continue;
         const revision = previous.revision;
         let payload = null;
         let diskVersion = "deleted";
@@ -437,7 +439,7 @@
         if (!isCurrent()) return false;
         captureActiveDocument();
         // A save or draft can appear while the file read is in flight.
-        if (state.documents.get(path) !== previous || previous.revision !== revision || previous.session?.snapshot?.().saving) continue;
+        if (state.documents.get(path) !== previous || previous.revision !== revision || previous.saving || previous.session?.snapshot?.().saving) continue;
         if (payload?.revision && payload.revision === previous.revision) {
           previous.diskVersion = diskVersion;
           previous.externalChangeVersion = "";
@@ -524,6 +526,7 @@
 
     function clearEditor() {
       for (const documentState of state.documents.values()) {
+        cancelDocumentAutoSave(documentState);
         documentState.model?.dispose?.();
         documentState.session?.destroy?.();
       }
@@ -574,103 +577,138 @@
       updateCursorStatus();
     }
 
-    async function saveOpenFile({ silent = false } = {}) {
-      if (!state.selectedId || !state.openFile) return false;
-      const articleId = state.selectedId;
-      const path = state.openFile;
+    function cancelDocumentAutoSave(documentState) {
+      if (!autoSaveTimers.has(documentState)) return;
+      window.clearTimeout(autoSaveTimers.get(documentState));
+      autoSaveTimers.delete(documentState);
+    }
+
+    function scheduleDocumentAutoSave(articleId, path, documentState) {
+      cancelDocumentAutoSave(documentState);
+      if (!documentIsDirty(documentState) || documentState.externalChangeVersion) return;
+      autoSaveTimers.set(documentState, window.setTimeout(() => {
+        autoSaveTimers.delete(documentState);
+        void saveDocument(articleId, path, documentState, { automatic: true, silent: true });
+      }, 1200));
+    }
+
+    function scheduleAutoSave() {
+      captureActiveDocument();
       const documentState = activeDocument();
-      if (!documentState?.editable || !documentState.session) return false;
-      if (!updateDirtyState()) {
-        void compileArticle({ trigger: "save" });
-        return true;
+      if (documentState?.editable) scheduleDocumentAutoSave(state.selectedId, state.openFile, documentState);
+    }
+
+    async function saveDocument(articleId, path, documentState, { automatic = false, silent = true } = {}) {
+      // All save entry points share the same per-document queue. A manual save
+      // waits for an in-flight auto-save, then persists any newer draft.
+      while (pendingSaves.has(documentState)) {
+        if (!await pendingSaves.get(documentState)) return false;
       }
-      $("articleEditorState").textContent = window.PortalI18n.t("Saving…");
-      const outcome = await documentState.session.save({
-        save: async ({ draft, payload }) => {
-          const result = await request(`/api/articles/${encodeURIComponent(articleId)}/file`, {
-            method: "POST",
-            body: JSON.stringify({ path, content: draft }),
+      const isCurrent = () => articleId === state.selectedId && state.documents.get(path) === documentState;
+      if (!isCurrent() || !documentState?.editable || !documentState.session) return false;
+      captureActiveDocument();
+      if (!documentIsDirty(documentState)) return true;
+      if (automatic && documentState.externalChangeVersion) return false;
+      cancelDocumentAutoSave(documentState);
+      documentState.saving = true;
+      documentState.saveError = "";
+      updateDirtyState();
+      const saving = (async () => {
+        try {
+          const url = `/api/articles/${encodeURIComponent(articleId)}/file`;
+          if (automatic) {
+            // Background saves must stop when the disk has moved since opening
+            // or saving, even before the periodic external-change check runs.
+            const disk = await request(`${url}?path=${encodeURIComponent(path)}`);
+            if (!isCurrent()) return false;
+            if (String(disk.content ?? "") !== documentState.savedSource) {
+              documentState.externalChangeVersion = `${disk.version || ""}:${disk.size ?? ""}`;
+              throw new Error(window.PortalI18n.t("文件已在其他地方更新，自动保存已暂停；请核对后手动保存。"));
+            }
+            captureActiveDocument();
+            if (documentState.source === documentState.savedSource) return true;
+          }
+          documentState.session.updateDraft(documentState.source);
+          const outcome = await documentState.session.save({
+            save: async ({ draft, payload }) => ({
+              ...payload,
+              ...await request(url, { method: "POST", body: JSON.stringify({ path, content: draft }) }),
+              content: draft,
+            }),
           });
-          return { ...payload, ...result, content: draft };
-        },
-        onSaved: result => {
-          const saved = documentState.session.snapshot().payload;
-          documentState.source = saved.content;
-          documentState.savedSource = saved.content;
+          if (!outcome?.payload) {
+            if (outcome?.stale) return false;
+            throw outcome?.error || new Error(window.PortalI18n.text`${path} 保存失败`);
+          }
+          const result = outcome.payload;
+          detailResourceGuest.changed({ resourceId: articleId, path: result.path || path });
+          if (!isCurrent()) return true;
+          // Session.save acknowledges the submitted snapshot. The editor may
+          // have moved on while the request was in flight; keep that newer draft.
+          captureActiveDocument();
+          documentState.savedSource = String(result.content ?? "");
+          documentState.session.updateDraft(documentState.source);
           documentState.revision = String(result.revision || documentState.revision || "");
           documentState.modifiedAt = String(result.modified_at || documentState.modifiedAt || "");
-          detailResourceGuest.changed({ resourceId: articleId, path: result.path || path });
-          if (articleId !== state.selectedId) return;
-          if (activeDocument() === documentState) {
-            state.source = saved.content;
-            state.savedSource = saved.content;
-          }
-          updateDirtyState();
+          documentState.diskVersion = "";
+          documentState.externalChangeVersion = "";
+          documentState.lastSaveAutomatic = automatic;
+          if (activeDocument() === documentState) state.savedSource = documentState.savedSource;
           scheduleTexlabSync(60);
           loadSemanticIndex().catch(() => {});
           scheduleArticleGitRefresh(0);
-          if (!silent) showToast(window.PortalI18n.text`${result.path} 已保存`, "success");
-        },
-        onError: error => window.PortalUI.toast(error.message || error, "error", {
-          retry: () => saveOpenFile({ silent }),
-        }),
-      });
-      if (articleId === state.selectedId) {
-        updateDirtyState();
-        if (outcome?.payload) void compileArticle({ trigger: "save" });
+          if (!silent) showToast(window.PortalI18n.text`${path} 已保存`, "success");
+          return true;
+        } catch (error) {
+          if (isCurrent()) {
+            captureActiveDocument();
+            documentState.session.updateDraft(documentState.source);
+            documentState.saveError = String(error.message || error);
+            window.PortalUI.toast(`${path}: ${documentState.saveError}`, "error", {
+              retry: async () => {
+                const saved = await saveDocument(articleId, path, documentState, { automatic, silent });
+                if (saved && !automatic && isCurrent()) void compileArticle({ trigger: "save" });
+                return saved;
+              },
+            });
+          }
+          return false;
+        } finally {
+          documentState.saving = false;
+          if (isCurrent()) updateDirtyState();
+        }
+      })();
+      pendingSaves.set(documentState, saving);
+      const saved = await saving;
+      pendingSaves.delete(documentState);
+      if (saved && isCurrent() && documentIsDirty(documentState)) {
+        scheduleDocumentAutoSave(articleId, path, documentState);
       }
-      return !!outcome?.payload;
+      return saved;
+    }
+
+    async function saveOpenFile({ silent = false } = {}) {
+      if (!state.selectedId || !state.openFile) return false;
+      const articleId = state.selectedId;
+      const saved = await saveDocument(articleId, state.openFile, activeDocument(), { silent });
+      if (saved && articleId === state.selectedId) void compileArticle({ trigger: "save" });
+      return saved;
     }
 
     async function saveAllDirtyDocuments({ silent = true } = {}) {
       captureActiveDocument();
       const articleId = state.selectedId;
-      const dirtyPaths = state.openTabs.filter(path => documentIsDirty(state.documents.get(path)));
-      if (!dirtyPaths.length) return true;
-      $("articleSaveFile").disabled = true;
-      $("articleEditorState").textContent = window.PortalI18n.t("Saving…");
-      try {
-        for (const path of dirtyPaths) {
-          if (articleId !== state.selectedId) return false;
-          const documentState = state.documents.get(path);
-          const outcome = await documentState.session.save({
-            save: async ({ draft, payload }) => {
-              const result = await request(`/api/articles/${encodeURIComponent(articleId)}/file`, {
-                method: "POST",
-                body: JSON.stringify({ path, content: draft }),
-              });
-              return { ...payload, ...result, content: draft };
-            },
-          });
-          if (!outcome?.payload) throw outcome?.error || new Error(`${path} 保存失败`);
-          const result = outcome.payload;
-          documentState.source = String(result.content || "");
-          documentState.savedSource = documentState.source;
-          documentState.revision = String(result.revision || documentState.revision || "");
-          documentState.modifiedAt = String(result.modified_at || documentState.modifiedAt || "");
-          if (articleId !== state.selectedId) return false;
-          if (path === state.openFile) state.savedSource = documentState.source;
-        }
-        updateDirtyState();
-        scheduleTexlabSync(60);
-        loadSemanticIndex().catch(() => {});
-        scheduleArticleGitRefresh(0);
-        detailResourceGuest.changed({ resourceId: state.selectedId, paths: dirtyPaths });
-        if (!silent) showToast(window.PortalI18n.text`${dirtyPaths.length} 个文件已保存`, "success");
-        return true;
-      } catch (error) {
-        if (articleId === state.selectedId) {
-          updateDirtyState();
-          showToast(error.message || error, "error");
-        }
-        return false;
+      for (const path of [...state.openTabs]) {
+        const documentState = state.documents.get(path);
+        if (documentIsDirty(documentState) && !await saveDocument(articleId, path, documentState, { silent })) return false;
       }
+      return articleId === state.selectedId;
     }
 
     return Object.freeze({
       activateDocument, activeDocument, captureActiveDocument, clearEditor, documentIsDirty, goToLine,
       hasDirtyDocuments, openArticleFile, openArticleLinkedFile, openArticleResourcePreview,
-      refreshArticleDocuments, renderDocumentTabs, saveAllDirtyDocuments, saveOpenFile, setEditorMode,
+      refreshArticleDocuments, renderDocumentTabs, saveAllDirtyDocuments, saveOpenFile, scheduleAutoSave, setEditorMode,
     });
   }
 

@@ -496,24 +496,13 @@ test('Article dependency button installs once, recompiles on success and ignores
 });
 
 function articleSaveFixture() {
-  const {STATIC, portalWorkspaceSurfaceScripts} = require('./portal_workspace_surface_scripts.cjs');
-  const window = {PortalI18n: i18n, PortalUI: {toast: noop}, clearTimeout: noop};
-  const shared = owner('portal_workspace_surface.js', ['surfacePart', 'createDocumentSession'], {window});
-  portalWorkspaceSurfaceScripts().slice(0, -1).forEach(file =>
-    vm.runInContext(fs.readFileSync(path.join(STATIC, file), 'utf8'), shared));
-  const session = shared.createDocumentSession({continuousEdit: true, canEdit: () => true});
-  session.present({content: 'old', path: 'main.tex'});
-  session.updateDraft('new');
-  const documentState = {editable: true, session};
-  const state = {selectedId: 'A', openFile: 'main.tex', source: 'new', savedSource: 'old',
-    compilingArticles: new Set(), queuedCompile: null, settings: {auto_compile: false}};
-  const requests = [], notices = [], views = [], elements = new Map();
-  const $ = id => {
-    if (!elements.has(id)) elements.set(id, {dataset: {}, textContent: 'Compile'});
-    return elements.get(id);
-  };
+  const f = require('./article_autosave_fixture.cjs').articleAutosaveFixture();
+  const {window, state, session, requests, notices, $} = f;
+  const documentState = f.doc, views = [];
+  f.edit('new');
+  state.compilingArticles = new Set(); state.queuedCompile = null;
   const context = owner(ARTICLE_SCRIPTS,
-    ['saveOpenFile', 'compileArticle', 'scheduleAutoCompile', 'stopCompilation', 'updateCompilePreference'], {
+    ['compileArticle', 'scheduleAutoCompile', 'stopCompilation', 'updateCompilePreference'], {
     state, window, $, activeDocument: () => documentState,
     updateDirtyState: () => session.snapshot().dirty,
     setCompileMenu: noop, hasDirtyDocuments: () => false,
@@ -524,7 +513,13 @@ function articleSaveFixture() {
     detailResourceGuest: {changed: value => notices.push(value)},
     request: (url, options) => {const gate = deferred(); requests.push({url, options, ...gate}); return gate.promise;},
   });
-  return {context, state, session, documentState, requests, notices, views};
+  context.saveOpenFile = async options => {
+    const previousBuilds = f.builds.length;
+    const saved = await f.documents.saveOpenFile(options);
+    if (f.builds.length > previousBuilds) void context.compileArticle(f.builds.at(-1));
+    return saved;
+  };
+  return {context, state, session, documentState, requests, notices, views, edit: f.edit};
 }
 
 test('Article explicit save waits for persistence then builds even with compile-on-edit off', async () => {
@@ -575,7 +570,7 @@ test('Article repeated saves coalesce into one follow-up build and survive disab
   const f = articleSaveFixture();
   const building = f.context.compileArticle();
   for (const content of ['second', 'third']) {
-    f.session.updateDraft(content);
+    f.edit(content);
     const saved = f.context.saveOpenFile();
     f.requests.at(-1).resolve({path: 'main.tex'});
     await saved;

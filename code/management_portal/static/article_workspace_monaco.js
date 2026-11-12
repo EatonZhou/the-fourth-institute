@@ -8,7 +8,7 @@
   // selection whether Monaco or the plain textarea is in use.
   const DEPENDENCIES = Object.freeze([
     "$", "activateDocument", "activeDocument", "captureActiveDocument", "registerTexlabProviders",
-    "renderEditorLayers", "saveOpenFile", "scheduleAutoCompile", "scheduleSemanticReload",
+    "renderEditorLayers", "saveOpenFile", "scheduleAutoCompile", "scheduleAutoSave", "scheduleSemanticReload",
     "scheduleTexlabSync", "state", "updateCursorStatus", "updateDirtyState",
   ]);
 
@@ -17,7 +17,7 @@
     if (missing.length) throw new Error(`PortalArticleWorkspaceMonaco is missing: ${missing.join(", ")}`);
     const {
       $, activateDocument, activeDocument, captureActiveDocument, registerTexlabProviders, renderEditorLayers,
-      saveOpenFile, scheduleAutoCompile, scheduleSemanticReload, scheduleTexlabSync, state,
+      saveOpenFile, scheduleAutoCompile, scheduleAutoSave, scheduleSemanticReload, scheduleTexlabSync, state,
       updateCursorStatus, updateDirtyState,
     } = dependencies;
 
@@ -334,6 +334,7 @@
               updateDirtyState();
               updateCursorStatus();
               scheduleTexlabSync();
+              scheduleAutoSave();
               scheduleAutoCompile();
               scheduleSemanticReload();
 
