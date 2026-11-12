@@ -6,7 +6,7 @@ from pathlib import Path
 import secrets
 import threading
 from contextlib import contextmanager
-import fcntl
+from management_common.file_lock import lock_descriptor, try_lock_descriptor
 from management_common.instance_locations import stored_location, located_path
 
 from management_common.domain_database import DomainDatabase
@@ -159,7 +159,7 @@ class ReaderService:
         path = Path(located_path(location)) / 'reader-attachments/locks' / hashlib.sha256(('open:' + paper).encode()).hexdigest()[:32]
         try:
             with path.open('a+b') as gate:
-                fcntl.flock(gate, fcntl.LOCK_EX)
+                lock_descriptor(gate.fileno())
                 # Reassert after acquiring gate: a prior abandoned attempt may have recovered.
                 with self.database.transaction(key=paper) as db:
                     db.execute("INSERT INTO reader_deletion_intents VALUES (%s,'prepared',%s) ON CONFLICT(paper_id) DO UPDATE SET state='prepared'", (paper, location))
@@ -183,8 +183,7 @@ class ReaderService:
         path = Path(located_path(row[1])) / 'reader-attachments/locks' / hashlib.sha256(('open:' + paper).encode()).hexdigest()[:32]
         try:
             with path.open('r+b') as gate:
-                try: fcntl.flock(gate, fcntl.LOCK_EX | fcntl.LOCK_NB)
-                except BlockingIOError: return 'pending'
+                if not try_lock_descriptor(gate.fileno()): return 'pending'
                 # Recheck authority after obtaining the same gate as unregister.
                 if self.lifecycle_state(paper) != 'active': return 'pending'
                 with self.database.transaction(key=paper) as db:

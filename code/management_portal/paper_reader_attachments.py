@@ -1,6 +1,6 @@
 """Opt-in single-Paper immutable attachment owner; no production entrypoints."""
 from contextlib import contextmanager
-import fcntl
+from management_common.file_lock import lock_descriptor
 import hashlib
 import os
 from pathlib import Path
@@ -66,7 +66,7 @@ class AttachmentOwner:
         directory = self._path('locks')
         if create: directory.mkdir(parents=True, exist_ok=True, mode=0o700)
         with open(directory / operation, 'a+b' if create else 'r+b') as lock:
-            fcntl.flock(lock, fcntl.LOCK_EX)
+            lock_descriptor(lock.fileno())
             yield
 
     def _head(self, db, paper):
