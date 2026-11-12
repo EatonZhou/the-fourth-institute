@@ -53,6 +53,31 @@ class Client:
 
 
 class PreviewRetentionTests(unittest.TestCase):
+    def test_local_publication_resolves_the_same_repository_as_gh(self):
+        with patch.object(retention.subprocess, 'run') as run:
+            run.return_value.stdout = 'owner/local-repo\n'
+            client = retention.GitHub('')
+            self.assertEqual(client.base, 'repos/owner/local-repo/')
+            self.assertEqual(run.call_args.args[0],
+                             ['gh', 'repo', 'view', '--json', 'nameWithOwner',
+                              '--jq', '.nameWithOwner'])
+            self.assertTrue(run.call_args.kwargs['check'])
+
+    def test_explicit_repository_does_not_query_or_change_context(self):
+        with patch.object(retention.subprocess, 'run') as run:
+            self.assertEqual(retention.GitHub('other/repo').base, 'repos/other/repo/')
+            run.assert_not_called()
+            with self.assertRaisesRegex(ValueError, 'owner/repository'):
+                retention.GitHub('invalid')
+            run.assert_not_called()
+
+    def test_invalid_inferred_repository_is_rejected_before_cleanup(self):
+        with patch.object(retention.subprocess, 'run') as run:
+            run.return_value.stdout = ''
+            with self.assertRaisesRegex(ValueError, 'owner/repository'):
+                retention.GitHub('')
+            self.assertEqual(run.call_count, 1)
+
     def test_numeric_order_and_platform_boundary(self):
         rows = [release('windows', n) for n in (1, 9, 10)] + [release('macos', 8)]
         tags = [{'name': row['tag_name']} for row in rows]

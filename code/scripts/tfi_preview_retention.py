@@ -88,8 +88,14 @@ def plan(platform, releases, tags):
 
 class GitHub:
     def __init__(self, repo):
+        if not repo:
+            # Match gh release create: local publication uses the current
+            # repository context when CI has not supplied GH_REPO.
+            repo = subprocess.run(['gh', 'repo', 'view', '--json', 'nameWithOwner',
+                                   '--jq', '.nameWithOwner'], check=True,
+                                  stdout=subprocess.PIPE, text=True).stdout.strip()
         if not re.fullmatch(r'[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+', repo):
-            raise ValueError('GH_REPO must be owner/repository')
+            raise ValueError('Repository must be owner/repository')
         self.base = 'repos/' + repo + '/'
 
     def get(self, path, *, pages=False):
@@ -139,7 +145,8 @@ def cleanup(client, platform, *, dry_run=False):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--platform', required=True, choices=('windows', 'macos'))
-    parser.add_argument('--repo', default=os.environ.get('GH_REPO', ''))
+    parser.add_argument('--repo', default=os.environ.get('GH_REPO', ''),
+                        help='owner/repository; defaults to GH_REPO or the gh repository context')
     parser.add_argument('--dry-run', action='store_true')
     args = parser.parse_args()
     cleanup(GitHub(args.repo), args.platform, dry_run=args.dry_run)
