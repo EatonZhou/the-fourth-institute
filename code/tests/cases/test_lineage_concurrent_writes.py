@@ -69,9 +69,13 @@ def test_concurrent_resident_creations_in_one_lineage_all_land(future_creation_s
     monkeypatch.setattr(lineage_state, "_resident_targets", CANONICAL_RESIDENT_TARGETS)
     root = family("Team")
     lineage_id = root["lineage_id"]
-    hold_definition_writes(monkeypatch, lineage_id, 4)
+    # Registration now serializes its identity/graph commit. Synchronize
+    # admission, not persistence inside that transaction: a commit barrier
+    # would wait for peers which are correctly blocked by its own lock.
+    start = threading.Barrier(4)
 
     def create(number):
+        start.wait(timeout=20)
         return lineage_resident_nodes.create_lineage_resident(
             lineage_id, _new_session_payload(f"Member {number}"), ACTOR,
         )["resident"]["resident_id"]

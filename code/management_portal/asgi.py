@@ -636,46 +636,28 @@ async def resource_download(request: Request):
     resource's permission check again.
     """
 
-    from .resources.isa import iter_content, read_download
+    from .resources.isa import read_download
+    from .resources import get_resource_service
+    from .http_files import authorized_resource_response
 
     caller, _entry = await asyncio.to_thread(_instruction_principal, request)
     if not caller:
         return _json_error(401, "需要登录，或使用 Portal 发给 Resident 的凭证")
     try:
         record = await asyncio.to_thread(read_download, request.path_params["token"], caller)
+        service = get_resource_service()
+        resolved = await asyncio.to_thread(service.resolve, record["address"], actor=caller)
+        response, headers, chunks = await asyncio.to_thread(
+            authorized_resource_response,
+            SimpleNamespace(headers=request.headers, path=str(request.url)),
+            resource_service=service, address=record["address"], actor=caller, resolved=resolved,
+            content_type=str(record.get("content_type") or "application/octet-stream"), download=True,
+        )
     except Exception as exc:  # noqa: BLE001
         status, payload = exception_http_error(exc)
         return JSONResponse(payload, status_code=status)
-    size = int(record["size"])
-    start, end, status = 0, size - 1, 200
-    ranged = re.fullmatch(r"bytes=(\d*)-(\d*)", str(request.headers.get("range") or "").strip())
-    if ranged and (ranged.group(1) or ranged.group(2)):
-        if ranged.group(1):
-            start = int(ranged.group(1))
-            end = min(int(ranged.group(2)), size - 1) if ranged.group(2) else size - 1
-        else:
-            start = max(0, size - int(ranged.group(2)))
-        if start > end or start >= size:
-            return Response(status_code=416, headers={"Content-Range": f"bytes */{size}"})
-        status = 206
-    chunks = iter_content(record["address"], caller, size, start, end)
-
-    async def body() -> AsyncIterator[bytes]:
-        while True:
-            chunk = await asyncio.to_thread(next, chunks, None)
-            if chunk is None:
-                return
-            yield chunk
-
-    headers = {
-        "Accept-Ranges": "bytes", "Content-Length": str(end - start + 1),
-        "Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff",
-        "ETag": f'"{record["version"]}"',
-    }
-    if status == 206:
-        headers["Content-Range"] = f"bytes {start}-{end}/{size}"
-    return StreamingResponse(body(), status_code=status, media_type=str(record.get("content_type") or "application/octet-stream"),
-                             headers=headers)
+    headers["Cache-Control"] = "private, no-store"
+    return StreamingResponse(chunks, status_code=response.status, headers=headers)
 
 
 def end_realtime_streams(state) -> None:

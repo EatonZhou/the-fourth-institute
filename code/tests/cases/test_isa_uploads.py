@@ -324,21 +324,24 @@ def test_oversized_read_returns_a_download_address_bound_to_its_caller(monkeypat
 
     blob = bytes(range(256)) * 40
     reads = []
+    metadata = {"content_size": len(blob), "content_mtime_ns": 12345, "filename": "中文 download.bin", "media_type": "application/octet-stream"}
 
     def read_content(address, actor, max_bytes):
         raise ValueError("content exceeds the byte limit")
 
     def read_content_range(address, *, start, end, actor):
         reads.append((actor, start, end))
-        return blob[start:end + 1], "application/octet-stream", {}
+        return blob[start:end + 1], "application/octet-stream", dict(metadata)
 
     monkeypatch.setattr(resource_isa, "upload_root", lambda: tmp_path)
     monkeypatch.setattr(resource_isa, "DOWNLOAD_CHUNK_BYTES", 4096)
-    monkeypatch.setattr(resource_isa, "_service", lambda: SimpleNamespace(
+    service = SimpleNamespace(
         parse_address=lambda address: SimpleNamespace(suffix=('file', 'big.bin')),
         read_content=read_content, read_content_range=read_content_range,
-        resolve=lambda address, actor: {"content_size": len(blob), "media_type": "application/octet-stream"},
-    ))
+        resolve=lambda address, actor: dict(metadata),
+    )
+    monkeypatch.setattr(resource_isa, "_service", lambda: service)
+    monkeypatch.setattr("management_portal.resources.get_resource_service", lambda: service)
     result = resource_isa.read_resource(invoke("ReadResource", {"address": "workspace_x/big.bin", "max_bytes": 16}))
     assert result["size"] == len(blob) and result["version"] == hashlib.sha256(blob).hexdigest()
     assert result["download_url"].startswith("/api/resources/download/") and result["expires_at"]
@@ -347,7 +350,8 @@ def test_oversized_read_returns_a_download_address_bound_to_its_caller(monkeypat
     def get(caller, headers=()):
         monkeypatch.setattr(asgi, "_instruction_principal", lambda request: (caller, "web"))
         scope = {"type": "http", "method": "GET", "path": result["download_url"], "query_string": b"",
-                 "headers": list(headers), "path_params": {"token": token}}
+                 "headers": list(headers), "path_params": {"token": token},
+                 "scheme": "http", "server": ("testserver", 80)}
 
         async def run():
             response = await asgi.resource_download(Request(scope))
@@ -364,8 +368,17 @@ def test_oversized_read_returns_a_download_address_bound_to_its_caller(monkeypat
     response, body = get("alice", [(b"range", b"bytes=10-19")])
     assert response.status_code == 206 and body == blob[10:20]
     assert response.headers["content-range"] == f"bytes 10-19/{len(blob)}"
+    assert 'filename*=' in response.headers['content-disposition']
+    for value in ('bytes=0-1,3-4', 'invalid', 'bytes=9-2'):
+        assert get('alice', [(b'range', value.encode())])[0].status_code == 416
     assert {actor for actor, _start, _end in reads} == {"alice"}
     assert get("bob")[0].status_code == 404
+    original = service.read_content_range
+    def deleted(*args, **kwargs):
+        raise FileNotFoundError('source removed')
+    service.read_content_range = deleted
+    assert get('alice')[0].status_code == 404
+    service.read_content_range = original
     monkeypatch.setattr(resource_isa, "_now", lambda: resource_isa.datetime.now(resource_isa.timezone.utc) + resource_isa.timedelta(hours=1))
     assert get("alice")[0].status_code == 404
 
