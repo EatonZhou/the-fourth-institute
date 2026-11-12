@@ -317,7 +317,7 @@ body {
   min-width: 0;
   max-width: 100%;
 }
-.workspaceActionButtons #deletePaperBtn { margin-left: auto; }
+.workspaceActionButtons #deepReadBtn { margin-left: auto; }
 .workspaceModeActions > .paneNote {
   flex: 1 1 auto;
   min-width: 76px;

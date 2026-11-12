@@ -146,7 +146,11 @@
         const btn = event.target.closest("button[data-mode]");
         if (btn) setMode(btn.dataset.mode);
       });
-      $("returnToPaperList")?.addEventListener("click", () => setMode("list-return"));
+      window.addEventListener("popstate", () => {
+        const paperId = new URL(location.href).searchParams.get("paper");
+        if (paperId) loadDetail(paperId).then(() => setMode("reader")).catch(alertError);
+        else if (state.listReturn) setMode("list-return").catch(alertError);
+      });
       $("registeredFilter")?.addEventListener("change", event => {
         setMode(event.target.value === "today" ? "today" : "library");
       });

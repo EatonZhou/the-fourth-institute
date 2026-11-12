@@ -68,7 +68,7 @@
         const target = new URL(window.location.href);
         if (target.searchParams.get("paper") === paperId) return;
         target.searchParams.set("paper", paperId);
-        history.replaceState(history.state || {}, "", `${target.pathname}${target.search}${target.hash}`);
+        history.pushState(history.state || {}, "", `${target.pathname}${target.search}${target.hash}`);
       } catch {
         // An address that cannot be rewritten keeps the reader working.
       }

@@ -168,8 +168,6 @@
       const list = isCollectionMode(state.mode);
       if ($("registeredFilter")) $("registeredFilter").value = state.mode === "today" || (!list && state.listReturn?.mode === "today") ? "today" : "";
       if ($("modeTabs")) { $("modeTabs").hidden = list; $("modeTabs").style.display = list ? "none" : ""; }
-      const back = $("returnToPaperList");
-      if (back) back.hidden = list;
       const isCcf = state.leftFace === "ccf";
       const activeMode = isCcf && !["library", "reader"].includes(state.mode) ? "library" : state.mode;
       document.querySelectorAll("#modeTabs button[data-mode]").forEach(btn => {
