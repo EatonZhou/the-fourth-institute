@@ -318,7 +318,7 @@ def _relocate_opencode(prefix: _Prefix, apply: bool, result: dict) -> None:
                 result['changed'].append(str(database))
             launch = folder / 'launch.json'
             if launch.is_file() and not launch.is_symlink():
-                config = json.loads(launch.read_text())
+                config = json.loads(launch.read_text(encoding='utf-8'))
                 updated = {key: prefix.map(value) if isinstance(value, str) and prefix.under(value) else value
                            for key, value in config.items()}
                 if updated != config:

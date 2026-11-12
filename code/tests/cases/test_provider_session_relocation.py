@@ -24,12 +24,20 @@ def test_windows_session_prefix_keeps_native_and_json_path_spellings(slashes):
 
 def test_windows_opencode_native_and_forward_slash_directories_move(tmp_path, monkeypatch):
     import sqlite3
+    from pathlib import Path
     from management_common import portal_paths
     monkeypatch.setattr(portal_paths, 'path', lambda name: tmp_path)
     folder = tmp_path / 'opencode/opencode-probe'
     folder.mkdir(parents=True)
     old, new = r'C:\旧项目', r'D:\新项目'
     database = folder / 'opencode.db'
+    launch = folder / 'launch.json'
+    launch.write_text(json.dumps({'cwd': old + r'\work', 'session_id': 'original'},
+                                 ensure_ascii=False), encoding='utf-8')
+    original_read = Path.read_text
+    def legacy_read(path, encoding=None, errors=None):
+        return original_read(path, encoding=encoding or 'cp1252', errors=errors)
+    monkeypatch.setattr(Path, 'read_text', legacy_read)
     with sqlite3.connect(database) as c:
         c.execute('CREATE TABLE session(id TEXT PRIMARY KEY,directory TEXT,path TEXT)')
         c.execute('CREATE TABLE message(id TEXT PRIMARY KEY,data TEXT)')
@@ -38,6 +46,8 @@ def test_windows_opencode_native_and_forward_slash_directories_move(tmp_path, mo
     result = {'changed': [], 'errors': [], 'conflicts': []}
     relocation._relocate_opencode(relocation._Prefix(old,new), True, result)
     assert not result['errors'] and str(database) in result['changed']
+    assert json.loads(launch.read_text(encoding='utf-8')) == {
+        'cwd': new + r'\work', 'session_id': 'original'}
     with sqlite3.connect(database) as c:
         assert c.execute('SELECT * FROM session').fetchone() == ('ses_original', new + r'\work', new.replace('\\','/') + '/work')
         assert c.execute('SELECT * FROM message').fetchone() == ('msg_original', old)
