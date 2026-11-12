@@ -144,10 +144,14 @@
       const groups = new Map();
       messages.forEach((item, index) => {
         const stored = item?.relay && typeof item.relay === "object" ? item.relay : null;
-        const work = inputStates.get(item.id)?.work || stored?.work;
+        const inputWork = inputStates.get(item.id)?.work;
+        const work = inputWork?.state && inputWork.state !== "unknown" ? inputWork : stored?.work;
         // Delivery may complete as soon as an appended input reaches the turn.
         // The execution fact owns whether that turn is still producing replies.
-        const relay = stored && work ? { ...stored, work, state: work.state } : stored;
+        // Unknown execution evidence cannot erase an established routing or
+        // queue phase before an execution has been bound.
+        const relay = stored && work?.state && work.state !== "unknown"
+          ? { ...stored, work, state: work.state } : stored;
         if (item?.role !== "user" || !relay || !FAMILY_VISIBLE_REQUEST_STATES.has(String(relay.state || ""))) return;
         const input = work?.execution_id || relay.grouped_into_message_id || relay.message_id || item.id;
         const key = JSON.stringify([relay.resident_id || "", input]);

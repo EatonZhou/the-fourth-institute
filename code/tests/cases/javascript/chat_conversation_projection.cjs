@@ -167,6 +167,19 @@ function deliveredInfos() {
 }
 
 function familyRequests() {
+  for (const state of ['routing', 'delivering', 'waiting_members', 'queued', 'quota_review', 'failed']) {
+    const request = {message_id: 'waiting', role: 'user', relay: {state, work: {state: 'unknown'}}};
+    const snapshot = {family_facade: {title: 'Fam'}, messages: [request],
+      input_states: [{message_id: 'waiting', work: {state: 'unknown', kind: 'unknown'}}]};
+    assert.equal(project(snapshot).messages[0].family_status?.state, state,
+      'unknown execution must preserve the established request phase');
+    request.relay.work = {state: 'running', execution_id: 'execution-current'};
+    assert.equal(project(snapshot).messages[0].family_status?.state, 'running',
+      'unknown input projection must not hide known relay execution');
+    snapshot.input_states[0].work = {state: 'completed', execution_id: 'execution-current'};
+    assert.equal(project(snapshot).messages[0].family_status, undefined,
+      'authoritative completion must close an old routing or running phase');
+  }
   const injected = {
     family_facade: {title: 'Fam'}, state: {work_state: 'idle'},
     messages: [
