@@ -9,6 +9,9 @@ Setup and Uninstall share an OS-user-scoped process mutex for the entire EXE
 lifetime, including program replacement and shell registration. A conflicting
 EXE exits with code 1618 before changing files; close the first operation and
 retry. Process exit also releases ownership after cancellation or a crash.
+Payload write failures return a nonzero exit code. The package identity is
+written only after all payload files have been installed; close the process
+holding the affected file and run Setup again to finish the update.
 
 1. Run the new `TheFourthInstitute-Setup-x64.exe` and choose the folder of the
    installed version. Setup first runs the installed launcher with `--stop-all`,

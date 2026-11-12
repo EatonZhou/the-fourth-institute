@@ -203,6 +203,7 @@ Section "Platform"
     nsExec::ExecToLog '"$INSTDIR\dependencies\python\python.exe" "$INSTDIR\code\scripts\tfi_windows_launcher.py" --stop-all'
     Pop $0
     StrCmp $0 "0" update_stopped
+      SetErrorLevel 1
       MessageBox MB_ICONSTOP "无法停止正在运行的实例，未更新程序。请关闭 Portal 后重试。$\r$\nCould not stop the running instances; the program was not updated." /SD IDOK
       Abort
     update_stopped:
@@ -220,11 +221,23 @@ Section "Platform"
     SetDetailsPrint lastused
   ${EndIf}
   SetOutPath "$INSTDIR"
-  File /r /x example-engineering.zip /x base-engineering.zip "${PAYLOAD}/*"
+  ClearErrors
+  File /r /x example-engineering.zip /x base-engineering.zip /x windows-package.json "${PAYLOAD}/*"
   ${If} $IncludeExamples == ${BST_CHECKED}
     File "${PAYLOAD}/example-engineering.zip"
   ${Else}
     File "${PAYLOAD}/base-engineering.zip"
+  ${EndIf}
+  ${If} ${Errors}
+    SetErrorLevel 1
+    MessageBox MB_ICONSTOP "程序文件未能全部写入，安装未完成。请关闭占用文件的程序，然后重新运行安装器。$\r$\nProgram files could not all be written. Close programs using these files and run Setup again." /SD IDOK
+    Abort
+  ${EndIf}
+  ; Publish the package identity only after every payload file was installed.
+  File "${PAYLOAD}/windows-package.json"
+  ${If} ${Errors}
+    SetErrorLevel 1
+    Abort
   ${EndIf}
   FileOpen $0 "$INSTDIR\installation-options.ini" w
   ${If} $IncludeExamples == ${BST_CHECKED}
@@ -263,6 +276,7 @@ Section "Uninstall"
   ${EndIf}
   Pop $0
   StrCmp $0 "0" stopped
+    SetErrorLevel 1
     MessageBox MB_ICONSTOP "卸载未完成，平台文件已保留。若已选择删除实例，部分实例可能已清理。请查看日志后重试。$\r$\nUninstall incomplete; platform files retained. Some selected instances may already have been removed. See .build\windows\launcher-error.log." /SD IDOK
     Abort
   stopped:
