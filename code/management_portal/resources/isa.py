@@ -706,13 +706,15 @@ def _post_image_type(data: bytes) -> str:
 def complete_upload(upload_id: str, data: bytes, *, actor: str) -> dict[str, Any]:
     """Write the bytes of a pending upload (the data channel behind ``upload_url``)."""
 
-    # The data channel runs on independent request threads/processes. Pin the
-    # upload directory and serialize the readiness check with both writes.
+    # The data channel runs on independent request threads/processes. Open the
+    # stable lock without following links, then serialize readiness and writes.
+    # Release directory pins before path-based atomic metadata replacement:
+    # Windows pins intentionally disallow rename/delete operations below them.
     try:
         with secure_paths.open_directory(_upload_dir(upload_id)) as directory:
             fd = secure_paths.open_child(directory, '.write.lock', os.O_CREAT | os.O_RDWR)
-            with os.fdopen(fd, 'a+b') as stream, lock_stream(stream):
-                return _complete_upload_locked(upload_id, data)
+        with os.fdopen(fd, 'a+b') as stream, lock_stream(stream):
+            return _complete_upload_locked(upload_id, data)
     except FileNotFoundError as error:
         raise not_found(f'上传不存在：{upload_id}') from error
 
