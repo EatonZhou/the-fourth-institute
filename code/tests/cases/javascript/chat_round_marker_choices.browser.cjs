@@ -1,5 +1,6 @@
 'use strict';
 // Real Chat/Overlay/rendering with isolated conversation data and personal storage.
+// PORTAL_TEST_BROWSER=chromium|firefox|webkit; default keeps the regular gate unchanged.
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
@@ -7,7 +8,8 @@ const http = require('node:http');
 const { chatWorkspaceScripts } = require('./chat_workspace_modules.cjs');
 const { portalWorkbenchScripts } = require('./portal_workbench_scripts.cjs');
 const repo = path.resolve(__dirname, '../../..');
-const { chromium } = require(path.join(repo, 'management_portal/test_framework/tau_runtime/node_modules/playwright'));
+const playwright = require(path.join(repo, 'management_portal/test_framework/tau_runtime/node_modules/playwright'));
+const browserName = process.env.PORTAL_TEST_BROWSER || 'chromium';
 const { routeScript } = JSON.parse(fs.readFileSync(0, 'utf8'));
 const modules = ['portal_state.js', 'portal_page_state.js', 'portal_text.js', 'portal_i18n.js',
   'portal_ui_primitives.js', 'portal_ui.js', 'portal_overlay.js', 'portal_button_tooltips.js', 'portal_preview_contract.js',
@@ -36,7 +38,7 @@ if (output) fs.mkdirSync(output, { recursive: true });
   const check = (name, value) => { assert.ok(value, name); checks.push(name); };
   let browser;
   try {
-    browser = await chromium.launch({ headless: true });
+    browser = await playwright[browserName].launch({ headless: true });
     const context = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
     const setup = async (page, legacy = false) => {
       page.on('pageerror', error => errors.push(error.message));
@@ -165,7 +167,9 @@ if (output) fs.mkdirSync(output, { recursive: true });
       const s = getComputedStyle(n.querySelector('.chatRoundCore'), '::after'); return s.display !== 'none' && s.borderRadius === '0px' && s.transform !== 'none';
     }));
     await second.close();
-    const mobileContext = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
+    // Firefox supports touch input but not Playwright's mobile viewport emulation.
+    const mobileContext = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true,
+      ...(browserName !== 'firefox' ? { isMobile: true } : {}) });
     const mobile = await mobileContext.newPage(); await setup(mobile);
     await mobile.evaluate(() => document.documentElement.style.fontSize = '20px');
     await choose(mobile, 'one', 'flag', true); await choose(mobile, 'two', 'star', true); await choose(mobile, 'three', 'turtle', true); await choose(mobile, 'four', 'octopus', true);
