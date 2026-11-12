@@ -94,6 +94,32 @@ def test_generated_meta_json_is_readable_and_repeated_publication_is_stable(perm
     assert body == args['data'] and meta['filename'] == 'meta.json'
 
 
+def test_concurrent_upload_completion_accepts_one_writer(monkeypatch):
+    from concurrent.futures import ThreadPoolExecutor
+    from pathlib import Path
+    import threading
+    import time
+    first, second = b'a' * 4096, b'b' * 4096
+    identifier = create('conversation_attachment', first, media_type='application/octet-stream')
+    arrived = threading.Barrier(2)
+    original = Path.write_bytes
+    def slow_write(path, data):
+        time.sleep(.05)  # Keep the first writer in the previously unguarded window.
+        return original(path, data)
+    monkeypatch.setattr(Path, 'write_bytes', slow_write)
+    def finish(data):
+        arrived.wait()
+        try:
+            resource_isa.complete_upload(identifier, data, actor='alice')
+            return 'accepted'
+        except InstructionError as error:
+            return error.code
+    with ThreadPoolExecutor(2) as pool:
+        results = list(pool.map(finish, [first, second]))
+    assert sorted(results) == ['accepted', 'instruction.conflict']
+    assert Path(resource_isa.read_upload(identifier)['path']).read_bytes() in (first, second)
+
+
 def test_post_images_must_be_real_pictures_and_are_readable_by_signed_in_users(permissions):
     """帖子图片校验真实内容并允许已登录用户读取"""
     from management_portal.resources import upload_files

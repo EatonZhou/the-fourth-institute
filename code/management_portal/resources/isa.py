@@ -21,6 +21,7 @@ from typing import Any, Iterator
 
 from management_common import secure_paths
 from management_common.upload_layout import PAYLOAD_NAME, payload_name
+from management_common.file_lock import lock_stream
 
 from management_portal.hatg.contracts import InstructionError, invalid, not_found
 from management_portal.hatg.declarations import cursor_offset, offset_cursor
@@ -704,6 +705,19 @@ def _post_image_type(data: bytes) -> str:
 
 def complete_upload(upload_id: str, data: bytes, *, actor: str) -> dict[str, Any]:
     """Write the bytes of a pending upload (the data channel behind ``upload_url``)."""
+
+    # The data channel runs on independent request threads/processes. Pin the
+    # upload directory and serialize the readiness check with both writes.
+    try:
+        with secure_paths.open_directory(_upload_dir(upload_id)) as directory:
+            fd = secure_paths.open_child(directory, '.write.lock', os.O_CREAT | os.O_RDWR)
+            with os.fdopen(fd, 'a+b') as stream, lock_stream(stream):
+                return _complete_upload_locked(upload_id, data)
+    except FileNotFoundError as error:
+        raise not_found(f'上传不存在：{upload_id}') from error
+
+
+def _complete_upload_locked(upload_id: str, data: bytes) -> dict[str, Any]:
 
     meta = read_upload(upload_id)
     if meta.get("ready"):
