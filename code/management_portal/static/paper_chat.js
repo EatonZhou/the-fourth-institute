@@ -487,12 +487,21 @@
     }
 
     let releaseChatMount = null;
+    let ordinaryChatHost = null;
+    function paperChatWidth(defaultWidth) {
+      const host = releaseChatMount ? ordinaryChatHost : paperChatWorkspace?.root?.parentElement;
+      const workbench = currentPaperWorkbench();
+      const width = host?.getBoundingClientRect().width || 0;
+      return workbench?.isPanelVisible('chat') && !workbench?.isPanelCollapsed?.('chat') && width > 0 ? width : defaultWidth;
+    }
     function mountChat(container) {
       releaseChatMount?.();
-      if (!currentPaperWorkbench()?.isPanelVisible('chat')) currentPaperWorkbench()?.showPanel('chat');
+      const workbench=currentPaperWorkbench(), wasVisible=workbench?.isPanelVisible('chat');
+      if (!wasVisible) workbench?.showPanel('chat');
       const root = paperChatWorkspace?.els.title?.closest('.portalChatWorkspaceRoot');
       if (!root || !container?.isConnected) throw Error(window.PortalI18n.t('研究助手暂不可用，请重试'));
       const host = root.parentElement;
+      ordinaryChatHost = host;
       container.classList.add('paperResearchChatHost');
       // Preserve inherited Paper typography when borrowing the same nodes into
       // the Reader dialog, whose PDF chrome has a different base font.
@@ -508,6 +517,7 @@
         for(const {node,marker} of homes){if(marker.parentNode){marker.replaceWith(node);}else node.remove();}
         if(menu){menu.hidden=true;paperChatWorkspace.els.title.setAttribute('aria-expanded','false');}
         if(releaseChatMount===release)releaseChatMount=null;
+        if(wasVisible===false)workbench?.hidePanel?.('chat');
       };
       releaseChatMount=release;
       return release;
@@ -569,7 +579,7 @@
       activeChatPaperId, activeChatWorkspaceId, addSelectionToChatDraft, loadChatHistory, loadMe,
       paperChatDescriptor, renderAssistantContext, renderChat, submitChatMessage, updateChatComposerState,
       currentPaperChatPanel: () => paperChatPanel, currentPaperChatWorkspace: () => paperChatWorkspace,
-      mountChat, selectionAnswers: () => (state.chat || []).filter(message => window.PortalChatWorkspace.messageRole(message)==='agent').map(message => Array.isArray(message.content_parts) ? message.content_parts.filter(part=>part.type==='text').map(part=>part.text||'').join('\n') : String(message.content||'')).filter(Boolean),
+      mountChat, paperChatWidth, selectionAnswers: () => (state.chat || []).filter(message => window.PortalChatWorkspace.messageRole(message)==='agent').map(message => Array.isArray(message.content_parts) ? message.content_parts.filter(part=>part.type==='text').map(part=>part.text||'').join('\n') : String(message.content||'')).filter(Boolean),
     });
   }
 

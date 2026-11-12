@@ -834,7 +834,7 @@ body.resizingReaderAI { cursor:col-resize; user-select:none; }
 .searchWrap .collectorBox input, .searchWrap .collectorBox button, .paperLibraryQueryGroup input, .paperLibraryQueryGroup select, .paperLibraryQueryGroup button { font-size: 13px; }
 
 /* Reader-owned right sidebar: AI remains mounted when hidden or switching tabs. */
-.paperReaderSidePanel { display:flex; flex-direction:column; flex:0 0 var(--reader-ai-width,min(360px,42vw)); min-width:0; min-height:0; overflow:hidden; border-inline-start:1px solid var(--border); background:var(--panel); }
+.paperReaderSidePanel { display:flex; flex-direction:column; flex:0 0 var(--reader-ai-width); min-width:0; min-height:0; overflow:hidden; border-inline-start:1px solid var(--border); background:var(--panel); }
 .paperReaderSidePanel[hidden], .paperReaderTab[hidden] { display:none!important; }
 .paperReadingToolbar button[aria-pressed="true"] { background:var(--panel-2); color:var(--accent); border-color:var(--accent); }
 .paperReaderTab { display:flex; flex-direction:column; min-height:0; flex:1; overflow:auto; }

@@ -265,7 +265,7 @@
   });
 
   const {
-    applyPaneCollapse, initPaperWorkbench, setMode, syncModeTabs, togglePane, toggleReaderPanel,
+    applyPaneCollapse, initPaperWorkbench, setMode, syncModeTabs, togglePane, toggleReaderPanel, defaultPaperChatWidth,
     currentPaperWorkbench,
   } = paperModule("PortalPaperLayout").createLayout({
     $, activeChatPaperId: (...args) => activeChatPaperId(...args),
@@ -384,7 +384,7 @@
     $, addSelectionToChatDraft: (...args) => addSelectionToChatDraft(...args), alertError, applyPaneCollapse,
     currentPaperWorkbench, detailSectionLoadingHtml, detailSectionsLoaded, esc, md, needPaperHtml,
     paperSelectionPopover, paperStateHtml, renderAnalysisControls, state, submitChatMessage: (...args) => submitChatMessage(...args),
-    readerChat: {mount:(...args)=>mountChat(...args),addSelection:(...args)=>addSelectionToChatDraft(...args),answers:()=>selectionAnswers()},
+    readerChat: {mount:(...args)=>mountChat(...args),addSelection:(...args)=>addSelectionToChatDraft(...args),answers:()=>selectionAnswers(),width:()=>paperChatWidth(defaultPaperChatWidth())},
   });
 
   const {
@@ -414,7 +414,7 @@
   });
 
   const {
-    activeChatPaperId, activeChatWorkspaceId, addSelectionToChatDraft, loadChatHistory, loadMe, mountChat, selectionAnswers,
+    activeChatPaperId, activeChatWorkspaceId, addSelectionToChatDraft, loadChatHistory, loadMe, mountChat, selectionAnswers, paperChatWidth,
     paperChatDescriptor, renderAssistantContext, renderChat, submitChatMessage, updateChatComposerState,
     currentPaperChatPanel, currentPaperChatWorkspace,
   } = paperModule("PortalPaperChat").createChat({

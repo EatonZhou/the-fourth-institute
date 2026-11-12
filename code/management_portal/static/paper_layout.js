@@ -21,6 +21,7 @@
     } = dependencies;
 
     let paperWorkbench = null;
+    const researchSizes = [310, 760, 370];
     function rememberMainList() {
       const summary = state.library?.summary || {};
       if (!isCollectionMode(state.mode) || summary.semantic_search || summary.paper_collection
@@ -57,7 +58,7 @@
 
     function initPaperWorkbench() {
       const { split, stack } = window.PortalWorkbench.model;
-      const research = split("horizontal", [stack(["library"]), stack(["workspace"]), stack(["chat"])], [310, 760, 370]);
+      const research = split("horizontal", [stack(["library"]), stack(["workspace"]), stack(["chat"])], researchSizes);
       const reading = split("horizontal", [stack(["workspace"]), stack(["chat"])], [900, 420]);
       const library = split("horizontal", [stack(["library"]), stack(["workspace"])], [340, 980]);
       paperWorkbench = window.PortalWorkbench.create({
@@ -230,6 +231,7 @@
     return Object.freeze({
       applyPaneCollapse, initPaperWorkbench, setMode, syncModeTabs, togglePane, toggleReaderPanel,
       currentPaperWorkbench: () => paperWorkbench,
+      defaultPaperChatWidth: () => researchSizes[2],
     });
   }
 

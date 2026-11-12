@@ -10,10 +10,13 @@ const t=value=>window.PortalI18n.t(value);
 function ReaderSplit({content, width}) {
   const handle=useRef(null);
   useEffect(()=>{
-    const node=handle.current, area=content.current;
-    const limits=()=>{const total=area.clientWidth;return {min:Math.min(260,Math.max(120,total*.4)),max:Math.max(120,total-Math.min(320,total*.5)-7)};};
-    const apply=value=>{const {min,max}=limits();width.current=Math.round(Math.min(max,Math.max(min,value)));area.style.setProperty('--reader-ai-width',width.current+'px');node.setAttribute('aria-valuemin',Math.round(min));node.setAttribute('aria-valuemax',Math.round(max));node.setAttribute('aria-valuenow',width.current);};
-    apply(width.current||Math.min(360,area.clientWidth*.42));
+    const node=handle.current, area=content.current, dialog=area.closest('dialog');
+    const inherited=()=>Number(dialog.dataset.paperChatWidth);
+    const limits=()=>{const total=area.clientWidth;return {min:Math.min(inherited(),260,Math.max(120,total*.4)),max:Math.max(inherited(),total-Math.min(320,total*.5)-7)};};
+    const apply=value=>{if(dialog.classList.contains('is-embedded'))return;const {min,max}=limits();width.current=Math.min(max,Math.max(min,value));dialog.style.setProperty('--reader-ai-width',width.current+'px');node.setAttribute('aria-valuemin',Math.round(min));node.setAttribute('aria-valuemax',Math.round(max));node.setAttribute('aria-valuenow',Math.round(width.current));};
+    const reset=()=>apply(inherited());
+    apply(Number.parseFloat(dialog.style.getPropertyValue('--reader-ai-width'))||inherited());
+    dialog.addEventListener('paper-reader-chat-width',reset);
     const cancel=()=>{node.dispatchEvent(new PointerEvent('pointercancel',{pointerId:active}));document.body.classList.remove('resizingReaderAI');};
     let active=0;
     const down=e=>{active=e.pointerId;};node.addEventListener('pointerdown',down);
@@ -22,7 +25,7 @@ function ReaderSplit({content, width}) {
     const lost=()=>{if(document.body.classList.contains('resizingReaderAI'))cancel();};
     node.addEventListener('lostpointercapture',lost);window.addEventListener('blur',cancel);
     const observer=new MutationObserver(()=>{if(area.closest('.is-embedded'))cancel();});observer.observe(area.closest('dialog'),{attributes:true,attributeFilter:['class']});
-    return()=>{cancel();unbind();resize.disconnect();observer.disconnect();window.removeEventListener('blur',cancel);node.removeEventListener('lostpointercapture',lost);node.removeEventListener('pointerdown',down);};
+    return()=>{cancel();unbind();resize.disconnect();observer.disconnect();dialog.removeEventListener('paper-reader-chat-width',reset);window.removeEventListener('blur',cancel);node.removeEventListener('lostpointercapture',lost);node.removeEventListener('pointerdown',down);};
   },[]);
   return <div ref={handle} className="paperAISplitter" role="separator" aria-orientation="vertical" aria-label={t('调整 AI 侧栏宽度')} tabIndex={0}/>;
 }
@@ -100,6 +103,8 @@ export function openReader({paper, principal, anchor, onClose, onReady, containe
   const previousFocus = document.activeElement;
   const dialog = document.createElement('dialog');
   dialog.className = 'paperReadingDialog'; dialog.setAttribute('aria-label', t('全屏论文阅读'));
+  const inheritChatWidth=()=>{const width=chat.width();dialog.dataset.paperChatWidth=String(width);dialog.style.setProperty('--reader-ai-width',width+'px');dialog.dispatchEvent(new Event('paper-reader-chat-width'));};
+  inheritChatWidth();
   document.body.append(dialog);
   const root = createRoot(dialog);
   let closed = false, closing = false, bridge;
@@ -124,7 +129,7 @@ export function openReader({paper, principal, anchor, onClose, onReady, containe
     } else Object.assign(dialog.style, {left: '0', top: '0', width: '100vw', height: '100dvh'});
     layoutTick = requestAnimationFrame(layout);
   };
-  const setFullscreen = value => { fullscreen = !!value; bridge?.setFullscreen(fullscreen); dialog.classList.toggle('is-embedded', !fullscreen); dialog.setAttribute('aria-modal', String(fullscreen)); };
+  const setFullscreen = value => { const entering=!!value&&!fullscreen;if(entering)inheritChatWidth();fullscreen = !!value; bridge?.setFullscreen(fullscreen); dialog.classList.toggle('is-embedded', !fullscreen); dialog.setAttribute('aria-modal', String(fullscreen));if(entering)dialog.dispatchEvent(new Event('paper-reader-chat-width')); };
   const escape = event => {
     if(event.key==='Escape'&&event.target.closest?.('.paperResearchTitleMenu'))return;
     if (container && fullscreen && event.key === 'Escape') {event.preventDefault(); event.stopPropagation(); setFullscreen(false);}
