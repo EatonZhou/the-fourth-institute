@@ -29,5 +29,7 @@ def cleanup_status(inv, service):
         try:
             service.get(inv.argument('resource_id'), actor=inv.caller)
         except (KeyError, PermissionError):
-            raise InstructionError('instruction.forbidden', 'Directory cleanup is not visible to this caller') from None
+            rows = [row for row in rows if row['actor'] == inv.caller]
+            if not rows:
+                raise InstructionError('instruction.forbidden', 'Directory cleanup is not visible to this caller') from None
     return {'items': rows}
