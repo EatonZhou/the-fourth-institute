@@ -55,8 +55,13 @@ class ResourceTypeRegistry:
             and time.monotonic() - self._checked_at < self.RECHECK_SECONDS
         ):
             return
-        signature = self._signature()
         with self._lock:
+            # Recheck after joining the reload flight. A concurrent parser
+            # may already have refreshed the declaration signature.
+            if (self._loaded_signature is not None
+                    and time.monotonic() - self._checked_at < self.RECHECK_SECONDS):
+                return
+            signature = self._signature()
             if self._loaded_signature == signature:
                 self._checked_at = time.monotonic()
                 return

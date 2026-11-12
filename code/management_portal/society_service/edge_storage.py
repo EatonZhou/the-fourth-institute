@@ -8,7 +8,7 @@ from __future__ import annotations
 from typing import Any
 from management_common.location_records import located_record, stored_record
 
-from .definition_collections import column, declarations, decode, typed_values, upsert, validate_fields
+from .definition_collections import column, declarations, decode, typed_values, upsert_many, validate_fields
 
 ITEM_FIELDS = {
     'label': 'text', 'source_workspace_id': 'text', 'source_path': 'text', 'source_scope': 'text',
@@ -36,20 +36,41 @@ def create_schema(connection: Any) -> None:
 
 
 def put(connection: Any, edge: dict) -> None:
-    eid = edge['id']
-    items = edge.get('items') or []
-    ids = [item['item_id'] for item in items]
-    if len(ids) != len(set(ids)):
-        raise ValueError('Duplicate handoff item ID')
-    connection.execute('DELETE FROM lineage_handoff_items WHERE edge_id=%s AND NOT (item_id=ANY(%s))', (eid,ids))
-    for position, item in enumerate(items):
-        validate_fields(item, {'item_id','label','source','transfer','target'}, 'handoff item')
-        flat = {'label': item.get('label')}
-        for prefix, keys in (('source',('workspace_id','path','scope')), ('target',('workspace_id','path','scope','label')), ('transfer',('mode','method','parameters'))):
-            obj = item.get(prefix) or {}
-            validate_fields(obj, set(keys), 'handoff ' + prefix)
-            flat.update({prefix+'_'+k: obj[k] for k in keys if k in obj})
-        upsert(connection, 'lineage_handoff_items', {'edge_id':eid,'item_id':item['item_id']}, {'position':position, **typed_values(stored_record(flat),ITEM_FIELDS)})
+    put_many(connection, [edge])
+
+
+def put_many(connection: Any, edges: list[dict]) -> None:
+    """Reconcile handoff items in one batch, including removed/type-changed edges."""
+    if not edges:
+        return
+    rows = []
+    for edge in edges:
+        items = edge.get('items') or []
+        ids = [item['item_id'] for item in items]
+        if len(ids) != len(set(ids)):
+            raise ValueError('Duplicate handoff item ID')
+        for position, item in enumerate(items):
+            validate_fields(item, {'item_id','label','source','transfer','target'}, 'handoff item')
+            flat = {'label': item.get('label')}
+            for prefix, keys in (('source',('workspace_id','path','scope')), ('target',('workspace_id','path','scope','label')), ('transfer',('mode','method','parameters'))):
+                obj = item.get(prefix) or {}
+                validate_fields(obj, set(keys), 'handoff ' + prefix)
+                flat.update({prefix+'_'+k: obj[k] for k in keys if k in obj})
+            rows.append({'edge_id': edge['id'], 'item_id': item['item_id'], 'position': position,
+                         **typed_values(stored_record(flat), ITEM_FIELDS)})
+    current = connection.execute('SELECT * FROM lineage_handoff_items WHERE edge_id=ANY(%s)',
+                                 ([edge['id'] for edge in edges],)).fetchall()
+    desired = {(row['edge_id'], row['item_id']) for row in rows}
+    removed = [(row['edge_id'], row['item_id']) for row in current
+               if (row['edge_id'], row['item_id']) not in desired]
+    if removed:
+        connection.executemany('DELETE FROM lineage_handoff_items WHERE edge_id=%s AND item_id=%s', removed)
+    # Compare decoded values: PostgreSQL returns JSON objects/timestamps, whereas
+    # typed_values prepares their SQL encodings. Paths stay in stored form.
+    old = {(row['edge_id'], row['item_id']): (row['position'], decode(row, ITEM_FIELDS)) for row in current}
+    changed = [row for row in rows if old.get((row['edge_id'], row['item_id'])) !=
+               (row['position'], decode(row, ITEM_FIELDS))]
+    upsert_many(connection, 'lineage_handoff_items', ('edge_id', 'item_id'), changed)
 
 
 def read_many(connection: Any, edges: list) -> dict:

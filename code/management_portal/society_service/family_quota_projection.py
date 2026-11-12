@@ -5,7 +5,7 @@ Reading never chooses a member, captures routing preferences or starts work.
 """
 from . import (family_facade, family_quota, family_task_dispatches, resident_access,
                resident_conversation_stream, resident_execution_gate, resident_mailbox,
-               resident_record_domain)
+               resident_record_domain, resident_catalog)
 from .state_store import get_lineage_data_store
 
 
@@ -21,6 +21,7 @@ def _unfinished(state):
 def quota_switch(record, actor):
     repository = resident_conversation_stream.get_repository()
     records = {record["resident_id"]: record}
+    identities = dict(records)
     candidates = {}
     seen = set()
 
@@ -60,11 +61,16 @@ def quota_switch(record, actor):
         # richer grouping/work/reply projection. Nested facades are still
         # followed below even when their routing receipt is completed.
         outcomes = repository.input_statuses_by_id(list(linked)) if linked else {}
+        missing = {rid for rid, _ in linked if rid not in identities}
+        if missing:
+            found = {item['resident_id']: item for item in
+                     resident_catalog.get_catalog().get_identity_records(missing)}
+            identities.update({rid: found.get(rid, {}) for rid in missing})
         pending = [key for key, state in outcomes.items() if _unfinished(state)]
         work = resident_mailbox.InputProjection(pending, repository).states() if pending else {}
         nested = {}
         for (rid, mid), roots in linked.items():
-            target = get_record(rid)
+            target = identities.get(rid, {})
             if family_facade.is_facade(target):
                 nested.setdefault(rid, {}).setdefault(mid, set()).update(roots)
             elif _unfinished(work.get((rid, mid), {})):
@@ -82,7 +88,7 @@ def quota_switch(record, actor):
                 if mid in unlinked and review.get("status") in {"waiting", "delivering"}:
                     candidate(review.get("member_id", ""), unlinked[mid])
         for rid, messages in nested.items():
-            walk(get_record(rid), messages, depth + 1)
+            walk(identities[rid], messages, depth + 1)
 
     fid = record['resident_id']
     inputs = repository.input_statuses(fid, states=("queued", "failed"))

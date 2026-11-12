@@ -11,7 +11,7 @@ from functools import lru_cache
 from hashlib import sha256
 from uuid import uuid4
 
-from .directory_paths import cleanup_location, cleanup_path, contains, lexical_path, overlaps, remove_path
+from .directory_paths import DirectoryComparison, cleanup_location, cleanup_path, lexical_path, remove_path
 from .portal_database import _database_schema, portal_database, portal_database_url
 from .database_time import decode_times
 
@@ -81,9 +81,10 @@ class DirectoryCleanupStore:
         with nullcontext(connection) if connection is not None else self.database.read() as conn:
             rows = conn.execute(f'SELECT cleanup_id,location FROM {self.table} '
                                 'WHERE completed_at IS NULL ORDER BY created_at,cleanup_id').fetchall()
+        comparison = DirectoryComparison()
         return [row['cleanup_id'] for row in rows
-                if (overlaps(target, cleanup_path(row['location'])) if include_descendants
-                    else contains(cleanup_path(row['location']), target))]
+                if (comparison.overlaps(target, cleanup_path(row['location'])) if include_descendants
+                    else comparison.contains(cleanup_path(row['location']), target))]
 
     def assert_available(self, path, *, connection, operation_id=None):
         self._assert_available(path, connection=connection, operation_id=operation_id)
@@ -104,11 +105,12 @@ class DirectoryCleanupStore:
             raise DirectoryPendingCleanup(pending[0])
         target = lexical_path(path)
         rows = connection.execute(f'SELECT operation_id,location,purpose FROM {self.reservations}').fetchall()
+        comparison = DirectoryComparison()
         for row in rows:
             reserved = cleanup_path(row['location'])
-            conflict = (contains(reserved, target)
+            conflict = (comparison.contains(reserved, target)
                         if for_execution
-                        else overlaps(target, reserved))
+                        else comparison.overlaps(target, reserved))
             if row['operation_id'] != operation_id and conflict:
                 raise FileExistsError('Directory is reserved by operation: ' + row['operation_id'])
 
@@ -165,6 +167,7 @@ class DirectoryCleanupStore:
                     'AND (%s::text IS NULL OR cleanup_id=%s) '
                     'ORDER BY available_at,cleanup_id FOR UPDATE SKIP LOCKED', (cleanup_id, cleanup_id)).fetchall()
                 reserved = connection.execute(f'SELECT * FROM {self.reservations}').fetchall()
+                comparison = DirectoryComparison()
                 # A move may temporarily vacate its source before committing
                 # new locations. Never complete an expiry snapshot against
                 # that temporary absence, or delete a copy still in flight.
@@ -172,7 +175,7 @@ class DirectoryCleanupStore:
                 for row in candidates:
                     operation = 'cleanup-worker:' + row['cleanup_id']
                     if any(item['operation_id'] != operation and
-                           overlaps(cleanup_path(row['location']), cleanup_path(item['location']))
+                           comparison.overlaps(cleanup_path(row['location']), cleanup_path(item['location']))
                            for item in reserved):
                         continue
                     with ExitStack() as attempt:
@@ -238,6 +241,7 @@ class DirectoryCleanupStore:
                 if row is None or row['operation_id'] != operation_id:
                     raise ValueError('Reserved cleanup requires its allocation operation')
                 reservations = connection.execute(f'SELECT * FROM {self.reservations}').fetchall()
+                comparison = DirectoryComparison()
                 if not any(item['operation_id'] == operation_id and item['location'] == row['location']
                            for item in reservations):
                     raise ValueError('Allocation cleanup reservation is missing')
@@ -245,7 +249,7 @@ class DirectoryCleanupStore:
                     self.release(operation_id, connection=connection)
                 if row['completed_at'] or not acquired or not row['ready'] or any(
                         item['operation_id'] != operation_id and
-                        overlaps(cleanup_path(item['location']), cleanup_path(row['location']))
+                        comparison.overlaps(cleanup_path(item['location']), cleanup_path(row['location']))
                         for item in reservations):
                     return self.status(cleanup_id=cleanup_id, connection=connection)[0]
             error = None

@@ -156,3 +156,51 @@ def test_exact_identity_is_candidate_not_a_relay_entitlement(facade):
     assert family_facade.relayed_reply(facade, answer["message_id"]) is None
     repo.agent_data.clear_chat(MEMBER, actor_ref="CASE-A")
     assert family_facade.relayed_reply(facade, answer["message_id"]) is None
+
+
+@pytest.mark.parametrize('nested', [False, True])
+def test_legacy_lookup_limits_holders_to_selected_reply_inputs(facade, monkeypatch, nested):
+    """Legacy provenance retains ledger order without expanding old workers."""
+    _register_test_member(facade, 'worker')
+    repo = resident_conversation_stream.get_repository()
+    worker = MEMBER
+    via = []
+    if nested:
+        set_role(MEMBER, family_id='fbi_legacy_reply', actor='CASE-A')
+        from tests.cases.society_service_test_support import publish_registered_lineage_members
+        worker = 'resident_cccccccccccc'
+        store = get_lineage_data_store()
+        lineage = store.lineage_definition(facade['lineage_id'])
+        publish_registered_lineage_members({**lineage, 'nodes': [{'id': worker, 'title': 'legacy worker'}]}, actor='CASE-A')
+        inner = build_message('user', 'inner', 'CASE-A')
+        repo.append_message(MEMBER, inner)
+        via = [MEMBER]
+    request = build_message('user', 'legacy input without mark', 'CASE-A')
+    repo.append_message(worker, request)
+    reply = build_message('agent', 'legacy answer', worker)
+    reply['reply_to_message_id'] = request['message_id']
+    repo.append_message(worker, reply)
+    store = get_lineage_data_store()
+    with store.family_relays.transaction(facade['lineage_id'], facade['resident_id']) as ledger:
+        ledger['links'] = {
+            **{f'unrelated-{i}': {'resident_id': f'resident_{i:012x}', 'message_id': f'input-{i}'} for i in range(100)},
+            **{f'old-{i}': {'resident_id': worker, 'message_id': f'old-input-{i}'} for i in range(1000)},
+            'original': {'resident_id': MEMBER, 'message_id': inner['message_id'] if nested else request['message_id']},
+        }
+    if nested:
+        with store.family_relays.transaction(facade['lineage_id'], MEMBER) as ledger:
+            ledger['links'] = {inner['message_id']: {'resident_id': worker, 'message_id': request['message_id']}}
+    holders = []
+    original = family_facade._RelayBatch.holder
+    def holder(self, rid, mid):
+        holders.append((rid, mid))
+        return original(self, rid, mid)
+    monkeypatch.setattr(family_facade._RelayBatch, 'holder', holder)
+    found = family_facade.relayed_reply(facade, reply['message_id'])
+    assert found['request_message_id'] == 'original'
+    assert found['worker_id'] == worker
+    assert found['via'] == via
+    assert holders == [(MEMBER, inner['message_id'] if nested else request['message_id'])]
+    with store.family_relays.transaction(facade['lineage_id'], facade['resident_id']) as ledger:
+        ledger['links']['original']['message_id'] = 'reassigned'
+    assert family_facade.relayed_reply(facade, reply['message_id']) is None

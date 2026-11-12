@@ -1073,6 +1073,43 @@ class _ReplyLookup:
             self.sources[key] = valid
         return self.sources[key]
 
+    def legacy_carried(self, facade):
+        """Legacy edges only for the selected replies' actual inputs.
+
+        Missing relay marks still require the accepted ledger, but unrelated
+        workers and inputs cannot own these selected messages. Keep ledger
+        order for ambiguous historical identities and shared groups.
+        """
+        facade_id = resident_lineage.resident_id(facade)
+        if facade_id in self.carried:
+            return self.carried[facade_id]
+        inputs = {}
+        for identity, owners in self.owners.items():
+            for owner in owners:
+                parent = self.reply_to(self.message(owner, identity))
+                if parent:
+                    inputs.setdefault(owner, set()).update([parent, *self.members(owner, parent)])
+        carried = {}
+        if inputs:
+            links = relay_links(facade)
+            from . import resident_catalog
+            missing = {str(link.get('resident_id') or '') for link in links.values()} - self.graph.records.keys()
+            missing.discard('')
+            if missing:
+                records = {item['resident_id']: item for item in
+                           resident_catalog.get_catalog().get_identity_records(missing)}
+                self.graph.records.update({rid: records.get(rid, {}) for rid in missing})
+            for request_id, link in links.items():
+                member_id = str(link.get('resident_id') or '')
+                message_id = str(link.get('message_id') or '')
+                if not is_facade(self.graph.record(member_id)) and message_id not in inputs.get(member_id, ()):
+                    continue
+                via, (worker_id, worker_message_id) = self.graph.holder(member_id, message_id)
+                if worker_message_id in inputs.get(worker_id, ()):
+                    carried.setdefault(worker_id, {})[worker_message_id] = (request_id, member_id, via)
+        self.carried[facade_id] = carried
+        return carried
+
 
 def relayed_replies(facade: Mapping[str, Any], message_ids) -> dict[str, dict[str, Any]]:
     """Selected replies, validating every relay edge with shared request-local facts."""
@@ -1114,18 +1151,7 @@ def _relayed_reply(facade: Mapping[str, Any], message_id: str, lookup) -> dict[s
         return found
     # Historical inputs can lack relay marks. Preserve their projection,
     # sharing graph facts across requests rather than hydrating every path.
-    facade_id = resident_lineage.resident_id(facade)
-    if facade_id not in lookup.carried:
-        carried = {}
-        links = relay_links(facade)
-        for request_id, link in links.items():
-            member_id = str(link.get('resident_id') or '')
-            via, (worker_id, worker_message_id) = lookup.graph.holder(member_id, str(link.get('message_id') or ''))
-            carried.setdefault(worker_id, {})[worker_message_id] = (request_id, member_id, via)
-        lookup.carried[facade_id] = carried
-        for worker_id in carried:
-            lookup.load(worker_id, list(lookup.owners))
-    carried = lookup.carried[facade_id]
+    carried = lookup.legacy_carried(facade)
     # A message lives in one Conversation: each Resident doing the Family's work is read once.
     for worker_id, requests in carried.items():
         reply = lookup.message(worker_id, clean)

@@ -230,7 +230,7 @@
       return result;
     }
 
-    function projectResidentConversation(metadata = {}, snapshot = {}) {
+    function projectResidentConversation(metadata = {}, snapshot = {}, cachedProjection = null) {
       const base = metadata && typeof metadata === "object" ? metadata : {};
       const facade = !!(snapshot.family_facade && typeof snapshot.family_facade === "object");
       const familyMembers = Array.isArray(snapshot.family_facade?.members) ? snapshot.family_facade.members : null;
@@ -250,6 +250,7 @@
         const owner = chain.find(id => memberIds.has(id) || id === solo);
         return !owner || (solo ? owner === solo : !muted.has(owner));
       };
+      const messages = cachedProjection?.messages || (() => {
       const unique = [];
       const positions = new Map();
       for (const message of Array.isArray(snapshot.messages) ? snapshot.messages : []) {
@@ -279,7 +280,8 @@
         if (receiving.has(message.id)) message.input_delivery = "pending";
         else if (input?.work?.delivery === "delivered") message.input_delivery = "delivered";
       }
-      const messages = facade ? withFamilyRequestStatus(ordered, inputStates) : ordered;
+      return facade ? withFamilyRequestStatus(ordered, inputStates) : ordered;
+      })();
       const activities = !facade && Array.isArray(snapshot.activities) ? snapshot.activities : [];
       const state = window.PortalResidentProtocol.stateView(snapshot.state);
       const controls = snapshot.controls || {};
@@ -319,7 +321,7 @@
           request_progress: {
             cursor: snapshot.cursor,
             input_states: Array.isArray(snapshot.input_states) ? snapshot.input_states : [],
-            relays: (snapshot.messages || []).filter(item => item.role === 'user' && item.relay)
+            relays: cachedProjection?.relays || (snapshot.messages || []).filter(item => item.role === 'user' && item.relay)
               .map(item => ({ ...item.relay, message_id: item.message_id })),
           },
           composer: {

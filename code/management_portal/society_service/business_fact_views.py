@@ -63,7 +63,7 @@ def _lifecycle_facts(records):
                     facts.update({row['resource_id']: dict(row) for row in rows})
     if grouped['workspace']:
         from management_portal.resources.workspace_store import get_workspace_store
-        facts.update(get_workspace_store().rows(grouped['workspace'], include_deleted=True))
+        facts.update(get_workspace_store().lifecycle_facts(grouped['workspace']))
     return facts
 
 

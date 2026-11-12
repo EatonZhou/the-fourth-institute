@@ -157,7 +157,16 @@ class CollaborationDescriptorStore:
         raw: Mapping[str, Any],
         *,
         expected_id: str = "",
+        _identities: dict | None = None,
     ) -> dict[str, Any]:
+        # One projection reuses validated identities, never permissions or
+        # mutable descriptors. Standalone normalization owns its own cache.
+        identities = {} if _identities is None else _identities
+        def parse(value):
+            clean = stripped_text(value)
+            if clean not in identities:
+                identities[clean] = self._identity.parse(clean)
+            return identities[clean]
         unknown = set(raw) - {
             "schema",
             "resource_id",
@@ -178,12 +187,14 @@ class CollaborationDescriptorStore:
             )
         # This descriptor has one field-based reader. The producer's format
         # label does not select a parser; identity and field checks below do.
-        resource_id = self._identity.parse(stripped_text(raw.get("resource_id"))).resource_id
+        identity = parse(raw.get("resource_id"))
+        resource_id = identity.resource_id
         if expected_id and resource_id != expected_id:
             raise ValueError(
                 f"descriptor resource_id {resource_id!r} does not match {expected_id!r}"
             )
-        self._resource_type(resource_id)
+        if identity.resource_type not in RESOURCE_TYPES:
+            raise ValueError(f"unsupported collaboration resource type: {identity.resource_type}")
         status = stripped_text(raw.get("status") or "active").casefold()
         if status not in STATUSES:
             raise ValueError(f"invalid collaboration descriptor status: {status!r}")
@@ -209,7 +220,7 @@ class CollaborationDescriptorStore:
             if not isinstance(item, Mapping) or set(item) != {"kind", "target_id"}:
                 raise ValueError("collaboration descriptor relation is invalid")
             kind = stripped_text(item.get("kind"))
-            target_id = self._identity.parse(stripped_text(item.get("target_id"))).resource_id
+            target_id = parse(item.get("target_id")).resource_id
             key = (kind, target_id)
             if not kind or key in seen_relations:
                 continue
@@ -254,6 +265,7 @@ class CollaborationDescriptorStore:
                 continue
             grouped.setdefault(resource_type, []).append(clean_id)
         projected: dict[str, dict[str, Any]] = {}
+        identities: dict = {}
         for resource_type, identifiers in grouped.items():
             mark = time.perf_counter()
             if resource_type == "workspace":
@@ -261,7 +273,7 @@ class CollaborationDescriptorStore:
                 documents = get_workspace_store().descriptors(identifiers)
                 mark = timing.lap("descriptor_workspace_fetch", mark)
                 for resource_id, stored in documents.items():
-                    projected[resource_id] = descriptor_attributes(self.normalize(stored, expected_id=resource_id))
+                    projected[resource_id] = descriptor_attributes(self.normalize(stored, expected_id=resource_id, _identities=identities))
                 timing.lap("descriptor_workspace_normalize", mark)
                 continue
 
@@ -285,7 +297,7 @@ class CollaborationDescriptorStore:
                 documents = self._registry.get_many(resource_type, missing)
                 mark = timing.lap("descriptor_fetch", mark)
                 fetched = {
-                    resource_id: descriptor_attributes(self.normalize(stored, expected_id=resource_id))
+                    resource_id: descriptor_attributes(self.normalize(stored, expected_id=resource_id, _identities=identities))
                     for resource_id, stored in documents.items()
                 }
                 mark = timing.lap("descriptor_normalize", mark)

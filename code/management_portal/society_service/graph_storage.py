@@ -10,10 +10,11 @@ from collections import defaultdict
 from collections.abc import Mapping
 from typing import Any
 from management_common.database_time import decode_times
+from management_common.json_columns import json_value
 
 from . import edge_storage
 from .lineage_definition_contract import EDGE_FAMILIES, PROGRAM_SCHEMA
-from .definition_collections import column, declarations, decode, typed_values, upsert, upsert_many, validate_fields
+from .definition_collections import column, declarations, decode, typed_values, upsert_many, validate_fields
 
 
 NODE_TYPES = ("resident", "event_source", "effect", "seed", "loop", "filter", "selector", "reducer", "function_block")
@@ -108,14 +109,18 @@ def create_function_block_schema(connection: Any) -> None:
 
 def _reconcile(connection: Any, table: str, owner_column: str, owner: str, key_columns: tuple[str, ...], rows: list[dict[str, Any]]) -> None:
     """Delete only removed relations; preserve stable rows for unchanged members."""
-    current = {tuple(row[k] for k in key_columns) for row in connection.execute(f"SELECT {', '.join(key_columns)} FROM {table} WHERE {owner_column}=%s", (owner,)).fetchall()}
+    columns = tuple(rows[0]) if rows else key_columns
+    current = {tuple(row[k] for k in key_columns): dict(row) for row in connection.execute(f"SELECT {', '.join(columns)} FROM {table} WHERE {owner_column}=%s", (owner,)).fetchall()}
     desired = {tuple(row[k] for k in key_columns) for row in rows}
     if len(desired) != len(rows):
         raise ValueError(f"Duplicate {table} relation")
-    for key in current - desired:
-        connection.execute(f"DELETE FROM {table} WHERE {owner_column}=%s AND " + " AND ".join(f"{k}=%s" for k in key_columns), (owner, *key))
-    for row in rows:
-        upsert(connection, table, {owner_column: owner, **{k: row[k] for k in key_columns}}, {k: v for k, v in row.items() if k not in key_columns})
+    removed = [(owner, *key) for key in current.keys() - desired]
+    if removed:
+        connection.executemany(f"DELETE FROM {table} WHERE {owner_column}=%s AND " + " AND ".join(f"{k}=%s" for k in key_columns), removed)
+    upsert_many(connection, table, (owner_column, *key_columns), [
+        {owner_column: owner, **row} for row in rows
+        if current.get(tuple(row[k] for k in key_columns)) != row
+    ])
 
 
 def put(connection: Any, lineage_id: str, value: Mapping[str, Any]) -> None:
@@ -153,31 +158,54 @@ def put(connection: Any, lineage_id: str, value: Mapping[str, Any]) -> None:
     upsert_many(connection, "lineage_nodes", ("node_id",), component_nodes)
     upsert_many(connection, "lineage_components", ("node_id",), component_rows)
     desired_owners = {e["id"]: b["id"] for b in blocks for e in b.get("elements") or []}
-    for row in connection.execute("SELECT e.function_block_id,e.element_id FROM function_block_elements e JOIN function_blocks b USING(function_block_id) WHERE b.lineage_id=%s", (lineage_id,)).fetchall():
-        if desired_owners.get(row["element_id"]) != row["function_block_id"]:
-            connection.execute("DELETE FROM function_block_elements WHERE function_block_id=%s AND element_id=%s", (row["function_block_id"],row["element_id"]))
+    removed_members = [(row['function_block_id'], row['element_id']) for row in connection.execute(
+        "SELECT e.function_block_id,e.element_id FROM function_block_elements e JOIN function_blocks b USING(function_block_id) WHERE b.lineage_id=%s", (lineage_id,)).fetchall()
+        if desired_owners.get(row['element_id']) != row['function_block_id']]
+    if removed_members:
+        connection.executemany("DELETE FROM function_block_elements WHERE function_block_id=%s AND element_id=%s", removed_members)
     block_ids = [b["id"] for b in blocks]
     connection.execute("DELETE FROM function_blocks WHERE lineage_id=%s AND NOT(function_block_id=ANY(%s))", (lineage_id, block_ids))
+    block_nodes, block_rows = [], []
     for item in blocks:
         validate_fields(item, {"id", "x", "y", "elements", "family", *BLOCK_FIELDS}, "Function Block")
-        upsert(connection, "lineage_nodes", {"node_id": item["id"]}, {"lineage_id": lineage_id, "node_type": "function_block"})
-        upsert(connection, "function_blocks", {"function_block_id": item["id"]}, {"lineage_id": lineage_id, **typed_values(item, BLOCK_FIELDS), "x": item.get("x"), "y": item.get("y")})
+        block_nodes.append({"node_id": item["id"], "lineage_id": lineage_id, "node_type": "function_block"})
+        block_rows.append({"function_block_id": item["id"], "lineage_id": lineage_id, **typed_values(item, BLOCK_FIELDS), "x": item.get("x"), "y": item.get("y")})
+    upsert_many(connection, 'lineage_nodes', ('node_id',), block_nodes)
+    upsert_many(connection, 'function_blocks', ('function_block_id',), block_rows)
+    for item in blocks:
         elements = [{"element_id": e["id"], "element_kind": e["kind"], "element_key": e.get("key")} for e in item.get("elements") or []]
         _reconcile(connection, "function_block_elements", "function_block_id", item["id"], ("element_id",), elements)
     all_edges = [*(value.get("edges") or []), *(program.get("wires") or [])]
     edge_ids = {e["id"] for e in all_edges}
     if len(edge_ids) != len(all_edges):
         raise ValueError("Graph edge IDs must be unique")
+    edge_rows, observations = [], []
     for item in all_edges:
         validate_fields(item, {"id", "type", "kind", "family", "source", "target", "source_port", "target_port", *EDGE_FIELDS, "items", "execution"}, "edge")
         kind = item.get("kind") or item["type"]
         observed_edge = kind == "watch" and item["target"] in edge_ids
-        upsert(connection, "lineage_edges", {"edge_id": item["id"]}, {"lineage_id": lineage_id, "edge_type": kind, "source_node_id": item["source"], "source_port": item.get("source_port"), "target_node_id": None if observed_edge else item["target"], "target_port": item.get("target_port"), **typed_values(item, EDGE_FIELDS)})
-        edge_storage.put(connection, item)
+        edge_rows.append({"edge_id": item["id"], "lineage_id": lineage_id, "edge_type": kind, "source_node_id": item["source"], "source_port": item.get("source_port"), "target_node_id": None if observed_edge else item["target"], "target_port": item.get("target_port"), **typed_values(item, EDGE_FIELDS)})
         if observed_edge:
-            upsert(connection, "lineage_observation_targets", {"edge_id": item["id"]}, {"target_edge_id": item["target"]})
-        else:
-            connection.execute("DELETE FROM lineage_observation_targets WHERE edge_id=%s", (item["id"],))
+            observations.append({"edge_id": item["id"], "target_edge_id": item["target"]})
+    # The definition lock is held by the writer. Compare canonical JSON values,
+    # not wire JSON strings against the driver's decoded dictionaries.
+    if edge_rows:
+        columns = tuple(edge_rows[0])
+        old_edges = {row['edge_id']: row for row in connection.execute(
+            f"SELECT {', '.join(columns)} FROM lineage_edges WHERE edge_id=ANY(%s)", (list(edge_ids),)).fetchall()}
+        def values(row):
+            return tuple(json_value(row[key]) if key.endswith('_json') else row[key] for key in columns)
+        edge_rows = [row for row in edge_rows if row['edge_id'] not in old_edges
+                     or values(row) != values(old_edges[row['edge_id']])]
+    upsert_many(connection, "lineage_edges", ("edge_id",), edge_rows)
+    edge_storage.put_many(connection, all_edges)
+    current_observations = {row['edge_id']: row['target_edge_id'] for row in connection.execute(
+        'SELECT edge_id,target_edge_id FROM lineage_observation_targets WHERE edge_id=ANY(%s)', (list(edge_ids),)).fetchall()}
+    removed = set(current_observations) - {row['edge_id'] for row in observations}
+    if removed:
+        connection.execute('DELETE FROM lineage_observation_targets WHERE edge_id=ANY(%s)', (list(removed),))
+    upsert_many(connection, 'lineage_observation_targets', ('edge_id',), [
+        row for row in observations if current_observations.get(row['edge_id']) != row['target_edge_id']])
 
 
 def read_many(connection: Any, lineage_ids: list[str]) -> dict[str, dict[str, Any]]:

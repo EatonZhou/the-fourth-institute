@@ -153,11 +153,15 @@ def location_key(path: Path) -> tuple[str, ...]:
     directory hierarchy. Missing suffixes inherit the nearest existing
     directory's rule, so reservations work before any files are created.
     """
+    return _location_key(path, _directory_case_sensitive)
+
+
+def _location_key(path, case_sensitive):
     path = lexical_path(path)
     parent = Path(path.anchor)
     result = [path.anchor.casefold() if os.name == 'nt' else path.anchor]
     for part in path.parts[1:]:
-        result.append(part if _directory_case_sensitive(parent) else part.casefold())
+        result.append(part if case_sensitive(parent) else part.casefold())
         parent /= part
     return tuple(result)
 
@@ -282,6 +286,33 @@ def assert_missing_location(path: Path) -> None:
 
 
 def contains(root: Path, path: Path) -> bool:
+    return DirectoryComparison().contains(root, path)
+
+
+class DirectoryComparison:
+    """Case evidence for one path-decision batch, never across mutations.
+
+    Owners create this after taking their decision lock and discard it before
+    filesystem work. A subsequent decision (even in the same transaction)
+    must create another instance to observe mount/flag/alias changes.
+    """
+
+    def __init__(self):
+        self._policies = {}
+
+    def _case_sensitive(self, parent):
+        if parent not in self._policies:
+            self._policies[parent] = _directory_case_sensitive(parent)
+        return self._policies[parent]
+
+    def contains(self, root: Path, path: Path) -> bool:
+        return _contains(root, path, self._case_sensitive)
+
+    def overlaps(self, left: Path, right: Path) -> bool:
+        return self.contains(left, right) or self.contains(right, left)
+
+
+def _contains(root, path, case_sensitive):
     root, path = lexical_path(root), lexical_path(path)
     # Unrelated names cannot become ancestors under either native case rule.
     # Reject them before probing every parent directory. Potential matches
@@ -290,12 +321,12 @@ def contains(root: Path, path: Path) -> bool:
             parent.casefold() != child.casefold()
             for parent, child in zip(root.parts, path.parts)):
         return False
-    parent, child = location_key(root), location_key(path)
+    parent, child = _location_key(root, case_sensitive), _location_key(path, case_sensitive)
     return child[:len(parent)] == parent
 
 
 def overlaps(left: Path, right: Path) -> bool:
-    return contains(left, right) or contains(right, left)
+    return DirectoryComparison().overlaps(left, right)
 
 
 def rename_directory_no_replace(source: Path, destination: Path) -> None:

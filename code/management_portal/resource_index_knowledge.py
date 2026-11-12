@@ -101,6 +101,12 @@ class ProjectKnowledgeAdapter(_PathsAdapter):
         ]
         return {"trees": trees, "files": []}
 
+    # Only source-resolution consumes this narrow projection. scan_changes
+    # continues receiving the complete previous-record sequence, including
+    # all associated resources used for directory changes and deletion.
+    source_resolution_fields = (('source', 'path'), ('attributes', 'content_root'),
+                                ('attributes', 'canonical_root'))
+
     @staticmethod
     def source_resolution_paths(records: Iterable[dict[str, Any]]) -> list[str]:
         paths: set[str] = set()

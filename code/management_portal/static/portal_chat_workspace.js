@@ -2923,7 +2923,12 @@
       const detail = this.residentProjection;
       const contract = this.contractFromDetail(detail);
       if (!contract) throw new Error("Resident projection is missing Chat Workspace contract");
-      const projected = projectResidentConversation({ ...detail, chat_workspace: contract }, snapshot);
+      const cache = this.messageProjectionCache;
+      const key = update?.messageProjectionKey;
+      const reused = key && cache?.key === key && cache.metadata === detail ? cache : null;
+      const projected = projectResidentConversation({ ...detail, chat_workspace: contract }, snapshot, reused);
+      this.messageProjectionCache = key ? { key, metadata: detail, messages: projected.messages,
+        relays: projected.chat_workspace?.request_progress?.relays } : null;
       // Only a completed protocol snapshot (not a cached event projection)
       // establishes status certainty after a transport interruption.
       projected.chat_workspace.request_progress.verified = !update || update.type === "snapshot";
@@ -2935,7 +2940,7 @@
         state: projected.resident_state,
       };
       this.updateFamilyStatus(this.detail);
-      this.workspace.applyContract(chatContract);
+      this.workspace.applyContract(chatContract, { messageProjectionKey: key });
       this.questions.render(snapshot);
       this.confirmSubmittedDraft(snapshot);
       this.refreshPendingTurnStopCapability();

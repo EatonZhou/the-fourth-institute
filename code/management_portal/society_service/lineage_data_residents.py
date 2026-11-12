@@ -6,7 +6,8 @@ from copy import deepcopy
 from typing import Any
 
 from .read_snapshot import request_cached
-from . import family_storage, graph_storage, resident_storage
+from . import family_storage, resident_storage
+from .definition_collections import upsert
 from .lineage_data_columns import json_column
 from .resident_storage import RESIDENT_RECORD_SCHEMA
 
@@ -256,7 +257,7 @@ class ResidentRecords:
                 from .lineage_definition_versions import check_definition_version
                 check_definition_version(connection, str(record['lineage_id']))
             resource_client.ensure_workspaces(record, connection=connection)
-            graph_storage.upsert(connection, 'lineage_nodes', {'node_id': resident_id}, {'lineage_id': record['lineage_id'], 'node_type': 'resident'})
+            upsert(connection, 'lineage_nodes', {'node_id': resident_id}, {'lineage_id': record['lineage_id'], 'node_type': 'resident'})
             for table, fields in resident_storage.DOMAIN_TABLES.items():
                 if table == 'resident_execution_configuration' and prior is not None and not commit_configuration:
                     continue

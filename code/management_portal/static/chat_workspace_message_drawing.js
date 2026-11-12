@@ -281,7 +281,13 @@
       if (nextScope && previousDraftScope !== nextScope) restoreDraftScope(nextScope, { force: true });
       // Each message keeps its signature, which the next draw compares.
       state.messages = Array.isArray(messages) ? messages : [];
-      const signatures = state.messages.map(item => JSON.stringify(item));
+      // The projection owner reuses this array only when message dependencies
+      // are unchanged. Runtime and controls still update below.
+      const signatures = renderOptions.messageProjectionKey
+        && renderOptions.messageProjectionKey === state.messageProjectionKey
+        && state.messages === previousMessages ? previousSignatures
+        : state.messages.map(item => JSON.stringify(item));
+      state.messageProjectionKey = renderOptions.messageProjectionKey;
       state.messageItemSignatures = signatures;
       state.runtimeDetails = Array.isArray(renderOptions.runtimeDetails) ? renderOptions.runtimeDetails : [];
       state.runtimeLive = !!renderOptions.runtimeLive;

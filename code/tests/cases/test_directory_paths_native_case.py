@@ -34,6 +34,26 @@ def test_existing_case_distinct_directory_keys(sensitive_root):
     assert not paths.overlaps(upper, lower)
 
 
+def test_comparison_batch_reuses_parents_and_next_decision_rechecks(tmp_path, monkeypatch):
+    calls = []
+    sensitive = True
+    def probe(parent):
+        calls.append(parent)
+        return sensitive
+    monkeypatch.setattr(paths, '_directory_case_sensitive', probe)
+    root = tmp_path / 'Owner'
+    batch = paths.DirectoryComparison()
+    for i in range(100):
+        assert batch.contains(root, root / str(i))
+    assert len(calls) == len(set(calls))
+    # A new decision sees a changed native policy; no process/transaction cache.
+    sensitive = False
+    assert not batch.contains(root, tmp_path / 'owner' / 'child')
+    before = len(calls)
+    assert paths.DirectoryComparison().contains(root, tmp_path / 'owner' / 'child')
+    assert len(calls) > before
+
+
 def test_absent_case_distinct_directory_keys(sensitive_root):
     upper, lower = sensitive_root / 'Absent', sensitive_root / 'absent'
     assert paths.location_key(upper) != paths.location_key(lower)

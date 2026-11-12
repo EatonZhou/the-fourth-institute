@@ -30,6 +30,8 @@ def view(monkeypatch):
     monkeypatch.setattr(projection.resident_conversation_stream, 'get_repository', lambda: repository)
     monkeypatch.setattr(projection.resident_mailbox, '_groups_of', lambda *args: {})
     monkeypatch.setattr(projection.resident_record_domain, 'find_resident', records.get)
+    monkeypatch.setattr(projection.resident_catalog, 'get_catalog', lambda: SimpleNamespace(
+        get_identity_records=lambda ids: [records[rid] for rid in ids if rid in records]))
     monkeypatch.setattr(projection.resident_record_domain, 'resident_intake_state', lambda record: 'open')
     monkeypatch.setattr(projection.family_facade, 'relay_links', lambda record: links.get(record['resident_id'], {}))
     monkeypatch.setattr(projection.family_task_dispatches, 'request_tasks', lambda record, mids: [task for task in tasks
@@ -89,6 +91,27 @@ def test_finished_history_does_not_load_group_or_reply_details(view, monkeypatch
     result = view.read()
     assert result[0]['request_message_ids'] == ['current']
     assert grouped == [('worker', 'unfinished')]
+
+
+def test_finished_targets_use_batch_identity_without_workspace_hydration(view, monkeypatch):
+    for i in range(100):
+        rid = f'old-worker-{i}'
+        view.records[rid] = {'resident_id': rid, 'lineage_id': 'lineage', 'family': {'role': 'member'}}
+        view.link('facade', f'old-{i}', rid, f'finished-{i}', 'completed')
+    view.link('facade', 'current', 'worker', 'unfinished')
+    full_reads, batches = [], []
+    def full(rid):
+        full_reads.append(rid)
+        return view.records.get(rid)
+    def identities(ids):
+        batches.append(set(ids))
+        return [view.records[rid] for rid in ids if rid in view.records]
+    monkeypatch.setattr(projection.resident_record_domain, 'find_resident', full)
+    monkeypatch.setattr(projection.resident_catalog, 'get_catalog', lambda: SimpleNamespace(
+        get_identity_records=identities))
+    assert view.read()[0]['request_message_ids'] == ['current']
+    assert full_reads == ['worker']
+    assert len(batches) == 1 and len(batches[0]) == 101
 
 
 def test_status_reads_do_not_hydrate_replies_or_work(input_delivery, monkeypatch):

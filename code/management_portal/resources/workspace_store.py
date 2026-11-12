@@ -97,6 +97,18 @@ class WorkspaceStore:
         connection.execute(f"CREATE UNIQUE INDEX workspaces_live_path_idx "
                            f"ON {self.table}(path) WHERE deleted_at IS NULL")
 
+    def lifecycle_facts(self, ids: Iterable[str]):
+        """Current deletion facts without decoding or locating workspace paths."""
+        ids = list(dict.fromkeys(ids))
+        if not ids:
+            return {}
+        with self.database.read() as connection:
+            rows = connection.execute(
+                f"SELECT workspace_id AS resource_id,deleted_at FROM {self.table} WHERE workspace_id=ANY(%s)",
+                (ids,),
+            ).fetchall()
+        return {row['resource_id']: dict(row) for row in rows}
+
     def rows(self, ids: Iterable[str], *, connection=None, include_deleted=False):
         ids = list(dict.fromkeys(ids))
         if not ids:

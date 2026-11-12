@@ -277,6 +277,43 @@ async function loading() {
   await assert.rejects(chat.loadResidentConversation({}), /resident_id required/);
 }
 
+async function eventProjectionBudget() {
+  const rid='resident_budget';
+  const messages=Array.from({length:30},(_,i)=>({message_id:'budget'+i,role:'user',content_parts:[text('history '+i)]}));
+  w.PortalResidentService={snapshot:async()=>({resident:{resident_id:rid},cursor:10,messages,
+    input_states:[],queue:{items:[]},activities:[],state:{work_state:'idle'},controls:{can_send:true}})};
+  const panel=chat.panelPackage.create({root:w.document.getElementById('fixture'),id:'budget',autoLoad:false,target:{resident_id:rid}});
+  panel.residentProjection={resident:{resident_id:rid},chat_workspace:{schema:'portal.chat_workspace.v3',target:{kind:'resident',id:rid},composer:{can_send:true}}};
+  const protocol=w.PortalResidentProtocol;
+  let last, copies=0;
+  const stringify=w.JSON.stringify;
+  w.JSON.stringify=function(value,...args){if(value?.resident?.resident_id===rid && value.messages)copies++;return stringify.call(this,value,...args);};
+  const sub=protocol.acquire(rid,update=>{last=update;if(update.snapshot)panel.applySnapshot(update.snapshot,update);},{load:false});
+  await sub.load();
+  const projected=panel.detail.messages,key=last.messageProjectionKey;
+  const send=(cursor,event_type,payload,live=false)=>w.dispatchEvent(new w.CustomEvent('portal:change',{detail:{resident_events:[{resident_id:rid,cursor,event_type,payload,live}]}}));
+  copies=0;
+  send(null,'resident.activity.changed',{activities:[{type:'notice',text:'active'}]},true);
+  assert.equal(copies,1,'one emission snapshot copy, no discarded first copy');
+  assert.equal(panel.detail.messages,projected,'activity reuses message projection');
+  assert.equal(last.messageProjectionKey,key);
+  send(11,'resident.state.changed',{state:{work_state:'running'},controls:{can_send:false,can_stop:true,disabled_reason:'',send_hint:''}});
+  assert.equal(panel.detail.messages,projected,'runtime state reuses history');
+  assert.equal(panel.detail.chat_workspace.runtime.live,true);
+  assert.equal(panel.detail.chat_workspace.composer.can_send,false,'controls still refresh');
+  send(12,'resident.input.state.changed',{input_state:{message_id:'budget0',state:'completed',work:{state:'completed',delivery:'delivered'}}});
+  assert.notEqual(panel.detail.messages,projected,'input work invalidates message projection');
+  assert.equal(panel.detail.messages.find(m=>m.id==='budget0').input_delivery,'delivered');
+  const changed=panel.detail.messages;
+  send(13,'resident.queue.changed',{queue:{items:[],receiving:[{message_id:'budget0'}]}});
+  assert.notEqual(panel.detail.messages,changed);
+  assert.equal(panel.detail.messages.find(m=>m.id==='budget0').input_delivery,'pending');
+  last.snapshot.messages[0].content_parts[0].text='subscriber changed';
+  assert.equal(sub.snapshot().messages[0].content_parts[0].text,'history 0','emissions remain isolated from store');
+  sub.destroy();panel.destroy();w.JSON.stringify=stringify;
+  console.log(JSON.stringify({history_messages:30,activity_snapshot_copies:1,message_projection_reused:true,input_queue_invalidate:true}));
+}
+
 (async () => {
   try {
     // The page's enhancers start once the document has loaded, as on a real page.
@@ -289,6 +326,7 @@ async function loading() {
     familyModes();
     chatContract();
     queueNotices();
+    await eventProjectionBudget();
     await loading();
   } catch (error) {
     console.error(error);

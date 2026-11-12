@@ -92,7 +92,7 @@
   function trimStores(retainedStore = null) {
     while (stores.size > MAX_CACHED_RESIDENTS) {
       const candidate = [...stores.values()].find(item => (
-        item !== retainedStore && item.refCount === 0 && item.stateRefCount === 0
+        item !== retainedStore && item.refCount === 0 && item.stateRefCount === 0 && item.inputListeners.size === 0
           && !item.stateReadCount && !item.stateLoading && !item.loading && !item.submissions.size
       ));
       if (!candidate) break;
@@ -273,6 +273,9 @@
       : event?.type === "visibilitychange" ? "visibilitychange" : "reconciliation_timer";
     const chatOnly = [];
     for (const store of stores.values()) {
+      if (reason !== "reconciliation_timer") {
+        for (const listener of store.inputListeners) listener({ snapshot_required: true });
+      }
       // Preserve state projections' existing grouped refresh and retry contract.
       if (store.stateRefCount) store.invalidateState(reason);
       else if (store.refCount) chatOnly.push(store);
@@ -286,10 +289,10 @@
   }
 
   function retainEventStream(store) {
-    if ((store.refCount || store.stateRefCount) && !store.releaseConversationInterest) {
+    if ((store.refCount || store.stateRefCount || store.inputListeners.size) && !store.releaseConversationInterest) {
       store.releaseConversationInterest = window.PortalEvents?.watchResident?.(store.residentId) || null;
     }
-    if (!store.refCount && !store.stateRefCount && store.releaseConversationInterest) {
+    if (!store.refCount && !store.stateRefCount && !store.inputListeners.size && store.releaseConversationInterest) {
       store.releaseConversationInterest();
       store.releaseConversationInterest = null;
     }
@@ -434,6 +437,8 @@
       this.viewerState = null;
       this.stateCursor = null;
       this.stateListeners = new Set();
+      this.inputListeners = new Set();
+      this.messageProjectionKey = {};
       this.stateRefCount = 0;
       this.pendingStateEvents = [];
       this.stateSnapshotLoaded = false;
@@ -604,7 +609,7 @@
           this.pendingEvents = [];
           this.pendingLiveEvents = [];
           this.pendingAcknowledgements = [];
-          if (!this.stateRefCount) this.stopStream();
+          if (!this.stateRefCount && !this.inputListeners.size) this.stopStream();
           else this.startStream();
         }
       };
@@ -661,15 +666,19 @@
       return () => {
         if (!this.stateListeners.delete(listener)) return;
         this.stateRefCount = Math.max(0, this.stateRefCount - 1);
-        if (!this.refCount && !this.stateRefCount) this.stopStream();
+        if (!this.refCount && !this.stateRefCount && !this.inputListeners.size) this.stopStream();
         if (!this.refCount && !this.stateRefCount) this.stateSnapshotLoaded = false;
       };
     }
 
     emit(value) {
       if (value.snapshot) {
+        // A full replacement, acknowledgement or local submission can change
+        // message associations even without a message event. Never reuse those.
+        if (!["event", "state_snapshot"].includes(value.type)
+          || this.pendingAcknowledgements.length || this.submissions.size) this.messageProjectionKey = {};
         this.reconcileSubmissions();
-        value = { ...value, snapshot: this.submissionSnapshot() };
+        value = { ...value, messageProjectionKey: this.messageProjectionKey, snapshot: this.submissionSnapshot() };
       }
       for (const listener of this.listeners) {
         try {
@@ -720,7 +729,7 @@
         this.snapshot.controls = older
           ? { ...this.snapshot.controls, send_hint: controls.send_hint || "", quota_switch: clone(controls.quota_switch || {}) }
           : clone(controls);
-        this.emit({ type: "state_snapshot", snapshot: clone(this.snapshot) });
+        this.emit({ type: "state_snapshot", snapshot: this.snapshot });
       }
       if (viewerState && typeof viewerState.unread === "boolean") {
         this.viewerState = clone(viewerState);
@@ -888,7 +897,7 @@
           this.pendingLiveEvents = [];
           for (const event of live) this.applyLivePayload(event);
           this.recovering = false;
-          this.emit({ type: "snapshot", snapshot: clone(this.snapshot) });
+          this.emit({ type: "snapshot", snapshot: this.snapshot });
           return clone(this.snapshot);
         })
         .catch(error => {
@@ -917,12 +926,13 @@
     }
 
     startStream() {
-      if (!this.refCount && !this.stateRefCount) return;
+      if (!this.refCount && !this.stateRefCount && !this.inputListeners.size) return;
       retainEventStream(this);
     }
 
     onPortalReady(event) {
       if (event?.detail?.snapshot_required !== true) return;
+      for (const listener of this.inputListeners) listener({ snapshot_required: true });
       this.invalidateState("stream_reset");
       if (!this.refCount) return;
       this.refreshSnapshotInBackground();
@@ -931,6 +941,7 @@
     // The stream carries this Resident's events only from now on; what happened
     // since its Snapshot comes from the event log.
     onStreamExtended() {
+      for (const listener of this.inputListeners) listener({ snapshot_required: true });
       if (this.stateRefCount) this.invalidateState("subscription");
       if (this.refCount) this.scheduleRecovery(0);
     }
@@ -965,6 +976,7 @@
 
     onPortalChange(notification) {
       const detail = notification?.detail || {};
+      for (const listener of this.inputListeners) listener(detail);
       if (detail.projection_changes?.["resident-view-state"]?.[this.residentId]
         || detail.projection_changes?.["resident-view-state"]?.current) {
         this.invalidateState("viewer-state");
@@ -992,7 +1004,7 @@
           this.applyLiveEvent(notificationEvent);
           continue;
         }
-        this.applyStateEvent(notificationEvent);
+        if (this.refCount || this.stateRefCount) this.applyStateEvent(notificationEvent);
         if (notificationEvent.event_type === "resident.input.state.changed") {
           const inputState = String(notificationEvent.payload?.input_state?.state || "");
           if (["completed", "failed", "cancelled"].includes(inputState)) {
@@ -1060,7 +1072,7 @@
         return;
       }
       this.applyLivePayload(event);
-      this.emit({ type: "event", event: clone(event), snapshot: clone(this.snapshot) });
+      this.emit({ type: "event", event: clone(event), snapshot: this.snapshot });
     }
 
     applyLivePayload(event) {
@@ -1149,7 +1161,7 @@
           }
           touchStore(this);
           this.emitState({ type: "recovery" });
-          this.emit({ type: "recovery", snapshot: clone(this.snapshot) });
+          this.emit({ type: "recovery", snapshot: this.snapshot });
           return clone(this.snapshot);
         })
         .then(value => {
@@ -1205,7 +1217,7 @@
       this.emit({
         type: "acknowledgement",
         acknowledgement: clone(acknowledgement),
-        snapshot: clone(this.snapshot),
+        snapshot: this.snapshot,
       });
     }
 
@@ -1264,6 +1276,11 @@
       const payload = event?.payload && typeof event.payload === "object"
         ? event.payload
         : {};
+      // Only these two mutations leave every message-projection dependency
+      // (messages, input work, receiving queue, Family policy) untouched.
+      if (!["resident.state.changed", "resident.runtime_settings.changed"].includes(event?.event_type)) {
+        this.messageProjectionKey = {};
+      }
       switch (String(event?.event_type || "")) {
         case "conversation.message.appended":
           if (!payload.message?.message_id) throw new Error("Message append is incomplete");
@@ -1328,7 +1345,7 @@
       this.snapshot.cursor = cursor;
       this.reapplyAcknowledgements();
       if (emit) {
-        this.emit({ type: "event", event: clone(event), snapshot: clone(this.snapshot) });
+        this.emit({ type: "event", event: clone(event), snapshot: this.snapshot });
       }
     }
 
@@ -1432,7 +1449,7 @@
         this.mergeHistoryPage(this.snapshot, page, this.historyRemoved);
         this.historyWindow = { floor: this.snapshot.next_page_token, limit,
           source: String(this.snapshot.family_history?.resident_id || "") };
-        this.emit({ type: "history", snapshot: clone(this.snapshot) });
+        this.emit({ type: "history", snapshot: this.snapshot });
         return clone(this.snapshot);
       }).finally(() => {
         if (this.historyLoading === request) { this.historyLoading = null; this.historyRemoved.clear(); }
@@ -1747,6 +1764,7 @@
       resident_id: id,
       conversation_consumers: store?.refCount || 0,
       state_consumers: store?.stateRefCount || 0,
+      input_consumers: store?.inputListeners.size || 0,
       stream_active: Boolean(store?.streamStarted),
       consumers: Object.freeze([...(store?.consumerObservations.values() || [])].map(item => {
         const element = item.element;
@@ -1770,6 +1788,7 @@
     resumeSnapshots.clear();
     const activeStores = [...stores.values()];
     for (const store of activeStores) {
+      for (const listener of store.inputListeners) listener({ identity_changed: true });
       window.clearTimeout(store.submissionTimer);
       store.submissionTimer = null;
       for (const entry of store.submissions.values()) {
@@ -1820,37 +1839,64 @@
         input_state: clone(inputState),
       });
     };
-    const subscription = acquire(
-      targetResidentId,
-      update => {
-        if (update?.type === "error") {
-          listener({ type: "error", error: update.error });
-          return;
+    const store = residentStore(targetResidentId);
+    let pending = null, dirty = false, version = 0, cursor = null;
+    const current = () => active && requestActorRevision === actorRevision;
+    const load = () => {
+      if (!current()) return Promise.resolve();
+      if (pending) { dirty = true; return pending; }
+      const started = version;
+      pending = Promise.resolve().then(() => window.PortalResidentService.inputState(targetResidentId, targetMessageId))
+        .then(value => { if (current() && started === version) emitInputState(value); return value; })
+        .catch(error => {
+          if (current()) { lastSignature = ""; listener({ type: "error", error }); }
+        })
+        .finally(() => { pending = null; if (dirty && current()) { dirty = false; load(); } });
+      return pending;
+    };
+    const changed = detail => {
+      if (detail.identity_changed && active) {
+        active = false;
+        store.inputListeners.delete(changed);
+        releaseObservation();
+        if (!store.refCount && !store.stateRefCount && !store.inputListeners.size) store.stopStream();
+        listener({ type: "error", error: new DOMException("Resident identity changed", "AbortError") });
+        return;
+      }
+      if (!current()) return;
+      const facets = detail.resident_changes?.[targetResidentId] || [];
+      if (detail.snapshot_required || facets.includes("identity") || facets.includes("projection")) {
+        version++; load();
+      }
+      for (const event of detail.resident_events || []) {
+        if (event.resident_id !== targetResidentId || event.live) continue;
+        const next = Number(event.cursor);
+        if (!Number.isSafeInteger(next) || (cursor !== null && next > cursor + 1) || event.payload_omitted) {
+          version++; load();
         }
-        const inputState = (update?.snapshot?.input_states || []).find(
-          item => String(item?.message_id || "") === targetMessageId,
-        );
-        emitInputState(inputState);
-      },
-      {
-        ...options,
-        historyLimit: Math.max(1, Number(options.historyLimit || 1)),
-      },
-    );
-    Promise.resolve(
-      window.PortalResidentService.inputState(targetResidentId, targetMessageId),
-    ).then(inputState => {
-      if (requestActorRevision === actorRevision) emitInputState(inputState);
-    }).catch(error => {
-      if (active && requestActorRevision === actorRevision) listener({ type: "error", error });
-    });
+        if (cursor !== null && next <= cursor) continue;
+        cursor = next;
+        if (["resident.input.state.changed", "resident.queue.changed"].includes(event.event_type)) {
+          version++;
+          // A group receipt or split can affect this member without naming it.
+          // Read the authoritative grouped/work projection, not raw delivery.
+          load();
+        } else if (event.event_type === "conversation.context.cleared") { version++; load(); }
+      }
+    };
+    store.inputListeners.add(changed);
+    const releaseObservation = observeConsumer(store, "input", options);
+    store.startStream();
+    load();
     return {
-      residentId: subscription.residentId,
+      residentId: targetResidentId,
       messageId: targetMessageId,
-      load: subscription.load,
+      load,
       destroy() {
         active = false;
-        subscription.destroy();
+        store.inputListeners.delete(changed);
+        releaseObservation();
+        if (!store.refCount && !store.stateRefCount && !store.inputListeners.size) store.stopStream();
       },
     };
   }

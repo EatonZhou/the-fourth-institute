@@ -13,7 +13,7 @@ import threading
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Callable, Iterable
+from typing import Any, Callable, Iterable, Sequence
 
 from management_common.scan_cancellation import ScanCancelled, cancellable_scan, check_scan_cancelled
 from management_portal.resources import timing
@@ -591,7 +591,7 @@ class AdapterLayer:
         scan_started_generation: int,
     ) -> dict[str, Any] | None:
         """Apply the changes of ``paths`` alone, or None when the adapter cannot."""
-        previous_records = self.store.records_for_adapter(adapter_name)
+        previous_records = self.store.adapter_records_snapshot(adapter_name)
         previous_state = self.store.adapter_source_state(adapter_name)
         token = _known_paths.set(self._source_resolutions.get(adapter_name))
         try:
@@ -692,7 +692,7 @@ class AdapterLayer:
         adapter_name: str,
         incremental_scan: Callable[..., ChangeSet | None],
         paths: tuple[str, ...],
-        previous_records: list[dict[str, Any]],
+        previous_records: Sequence[dict[str, Any]],
         previous_state: dict[str, Any],
     ) -> ChangeSet | None:
         try:
@@ -717,7 +717,7 @@ class AdapterLayer:
         adapter_name: str,
         changes: ChangeSet,
         paths: tuple[str, ...],
-        previous_records: list[dict[str, Any]],
+        previous_records: Sequence[dict[str, Any]],
         previous_state: dict[str, Any],
         state: dict[str, Any],
         *,
@@ -728,9 +728,10 @@ class AdapterLayer:
     ) -> dict[str, Any]:
         if not isinstance(changes, ChangeSet) or changes.adapter != adapter_name:
             raise ValueError(f"adapter {adapter_name} returned an invalid incremental ChangeSet")
-        previous_by_id = {
-            record["resource_id"]: record for record in previous_records
-        }
+        wanted = {stripped_text(record.get('resource_id')) for record in changes.upserts} | set(changes.deletes)
+        previous_by_id = (previous_records.records_by_id(wanted)
+                          if hasattr(previous_records, 'records_by_id') else
+                          {record['resource_id']: record for record in previous_records})
         changed_upserts = tuple(
             record
             for record in changes.upserts
@@ -820,16 +821,17 @@ class AdapterLayer:
             or stripped_text(previous_state.get("registry_fingerprint")) != tracking["registry_fingerprint"]
         ):
             return None
-        previous_records = self.store.records_for_adapter(adapter_name)
-        sources = {
-            source_path
-            for record in previous_records
-            if (source_path := stripped_text((record.get("source") or {}).get("path")))
-        }
+        previous_records = self.store.adapter_records_snapshot(adapter_name)
+        sources = previous_records.source_paths()
         resolution_paths = set(sources)
         extra_paths = getattr(adapter, "source_resolution_paths", None)
         if callable(extra_paths):
-            resolution_paths.update(extra_paths(previous_records))
+            # The adapter owns which fields locate its sources. Older/full
+            # history hooks retain their complete detached sequence contract.
+            fields = getattr(adapter, 'source_resolution_fields', None)
+            resolution_records = (previous_records.projected_records(fields)
+                                  if fields is not None else previous_records)
+            resolution_paths.update(extra_paths(resolution_records))
         found = _find_source_changes({
             **scope,
             "since": float(since) - SOURCE_CHANGE_MARGIN_SECONDS,
@@ -926,7 +928,7 @@ class AdapterLayer:
         adapter_name: str,
         incremental_scan: Callable[..., ChangeSet | None],
         paths: tuple[str, ...],
-        previous_records: list[dict[str, Any]],
+        previous_records: Sequence[dict[str, Any]],
         previous_state: dict[str, Any],
     ) -> ChangeSet | None:
         previous_by_path = {

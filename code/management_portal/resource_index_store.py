@@ -4,7 +4,7 @@ from __future__ import annotations
 import json
 import threading
 import time
-from collections.abc import Iterator
+from collections.abc import Iterator, Sequence
 from contextlib import contextmanager
 from pathlib import Path
 from typing import Any, Iterable
@@ -37,6 +37,64 @@ RESOURCE_INDEX_STORE_SCHEMA = "tfi.resource-index-store.v1"
 
 # A query slower than this reports its step timings (see resources/timing.py).
 SLOW_QUERY_SECONDS = 0.3
+
+
+class AdapterRecordsSnapshot(Sequence):
+    """Pinned replaced-only index records; adapters receive detached dicts lazily.
+
+    Full-history adapters can still iterate the complete ordered sequence.
+    Adapters ignoring history pay no JSON copy cost. Publication comparison
+    uses pristine pinned records, independent of adapter edits to its copies.
+    """
+    def __init__(self, records):
+        self._records = {r['resource_id']: r for r in records}
+        self._ids = None
+        self._copies = {}
+
+    def __len__(self):
+        return len(self._records)
+
+    def __getitem__(self, index):
+        if self._ids is None:
+            self._ids = sorted(self._records)
+        if isinstance(index, slice):
+            return [self[i] for i in range(*index.indices(len(self)))]
+        identity = self._ids[index]
+        if identity not in self._copies:
+            self._copies[identity] = _json_value(self._records[identity])
+        return self._copies[identity]
+
+    def records_by_id(self, identities):
+        return {rid: _json_value(self._records[rid]) for rid in identities if rid in self._records}
+
+    def source_paths(self):
+        return {path for record in self._records.values()
+                if (path := stripped_text((record.get('source') or {}).get('path')))}
+
+    def projected_records(self, fields):
+        """Detached owner-declared fields for source resolution, not scanning.
+
+        Field paths are explicit tuples. Missing fields stay absent, and
+        nested JSON values are copied so the adapter cannot mutate the index.
+        Ordering is irrelevant to this path-set projection.
+        """
+        fields = tuple(fields)
+        if any(not path or not all(isinstance(key, str) and key for key in path) for path in fields):
+            raise ValueError('Invalid adapter source resolution field')
+        for record in self._records.values():
+            projected = {}
+            for path in fields:
+                value = record
+                for key in path:
+                    if not isinstance(value, dict) or key not in value:
+                        break
+                    value = value[key]
+                else:
+                    target = projected
+                    for key in path[:-1]:
+                        target = target.setdefault(key, {})
+                    target[path[-1]] = _json_value(value)
+            yield projected
 
 
 def _resolved_source_path(raw_path: str) -> str:
@@ -289,6 +347,13 @@ class IndexStore:
         with self._lock:
             status = self._adapter_status.get(adapter) or {}
             return bool(stripped_text(status.get("last_success_at")))
+
+    def adapter_records_snapshot(self, adapter: str) -> AdapterRecordsSnapshot:
+        """Capture references under the lock; never expose stored dictionaries."""
+        with self._lock:
+            records = tuple(self._records[rid] for rid in self._adapter_ids.get(adapter) or ()
+                            if rid in self._records)
+        return AdapterRecordsSnapshot(records)
 
     def records_for_adapter(self, adapter: str) -> list[dict[str, Any]]:
         # Stored records are replaced, never changed in place, so the copies

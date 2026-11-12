@@ -17,6 +17,35 @@ class RollbackTrial(Exception):
     pass
 
 
+def test_graph_batches_preserve_watch_and_handoff_transitions(lineage):
+    """Batched rows keep JSON settings, observation changes and item deletion."""
+    state = get_lineage_data_store()
+    with pytest.raises(RollbackTrial), state.database.transaction() as c:
+        value = state.lineage_definition(lineage)
+        node = 'event_source_123456789abc'
+        route, watch, handoff = 'wire_123456789abc', 'wire_223456789abc', 'handoff_123456789abc'
+        value['program'] = {'schema': graph_storage.PROGRAM_SCHEMA,
+            'components': [{'id': node, 'kind': 'event_source', 'config': {}}],
+            'wires': [{'id': route, 'kind': 'route', 'source': node, 'target': node,
+                       'config': {'nested': [1, {'keep': True}]}},
+                      {'id': watch, 'kind': 'watch', 'source': node, 'source_port': 'watch', 'target': route}]}
+        value['edges'] = [{'id': handoff, 'type': 'handoff', 'source': node, 'target': node,
+                           'items': [{'item_id': 'item', 'transfer': {'mode': 'direct', 'method': 'direct',
+                                     'parameters': {'keep': ['a']}}}]}]
+        graph_storage.put(c, lineage, value)
+        before = graph_storage.read_many(c, [lineage])[lineage]
+        token = c.execute('SELECT ctid::text token FROM lineage_edges WHERE edge_id=%s', (route,)).fetchone()['token']
+        graph_storage.put(c, lineage, value)
+        assert c.execute('SELECT ctid::text token FROM lineage_edges WHERE edge_id=%s', (route,)).fetchone()['token'] == token
+        assert graph_storage.read_many(c, [lineage])[lineage] == before
+        value['program']['wires'][1].update(kind='route', target=node)
+        value['edges'][0]['items'] = []
+        graph_storage.put(c, lineage, value)
+        assert not c.execute('SELECT * FROM lineage_observation_targets WHERE edge_id=%s', (watch,)).fetchall()
+        assert not c.execute('SELECT * FROM lineage_handoff_items WHERE edge_id=%s', (handoff,)).fetchall()
+        raise RollbackTrial()
+
+
 def test_relational_graph_preserves_family_and_changes_only_edited_rows(lineage, charters):
     """关系型图存储保留 Family 门面节点，只重写改动过的行"""
     member = resident(lineage, "Member")
