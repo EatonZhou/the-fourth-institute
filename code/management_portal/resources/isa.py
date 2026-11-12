@@ -1009,10 +1009,20 @@ def rename_project(inv: Invocation) -> dict[str, Any]:
 
     record = _project_record(inv.argument("project_id"), inv.caller)
     try:
-        return get_society_service().project.rename_project(
+        result = get_society_service().project.rename_project(
             str(record.get("resource_id") or inv.argument("project_id")), inv.argument("new_project_id"),
             inv.caller, dry_run=bool(inv.argument("dry_run")), entry=inv.context.entry,
         )
+        if not inv.argument("dry_run"):
+            projection = _service().notify_source_changed(
+                path=str(result.get("path") or ""), resource_type="project",
+                kind="project.rename", wait=True,
+            )
+            if not projection.get("finished"):
+                raise InstructionError("instruction.projection_pending",
+                    "Project renamed; resource discovery refresh is pending",
+                    commit_state="committed", details={"project_id": result.get("project_id")})
+        return result
     except KeyError as exc:
         raise not_found(str(exc.args[0] if exc.args else exc)) from exc
 

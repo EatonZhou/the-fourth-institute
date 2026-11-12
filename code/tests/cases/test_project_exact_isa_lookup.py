@@ -31,3 +31,18 @@ def test_deleted_project_is_not_restored_from_stale_discovery(monkeypatch):
 def test_live_project_still_requires_read_permission(monkeypatch):
     live=service(monkeypatch,{'id':'New'},allow=False)
     with pytest.raises(PermissionError):service_index.get(live,'New',actor='reader')
+
+
+@pytest.mark.parametrize('dry_run', [False, True])
+def test_project_rename_waits_for_affected_resource_projection(monkeypatch, dry_run):
+    from management_portal.society_service import get_society_service
+    import management_portal.society_service as society
+    calls=[]
+    monkeypatch.setattr(isa, '_project_record',lambda *a:{'resource_id':'Old'})
+    monkeypatch.setattr(society,'get_society_service',lambda:SimpleNamespace(project=SimpleNamespace(
+        rename_project=lambda *a,**k:{'project_id':'New','path':'C:/projects/New'})))
+    monkeypatch.setattr(isa,'_service',lambda:SimpleNamespace(notify_source_changed=lambda **k:calls.append(k) or {'finished':True}))
+    values={'project_id':'Old','new_project_id':'New','dry_run':dry_run}
+    result=isa.rename_project(SimpleNamespace(argument=values.get,caller='reader',context=SimpleNamespace(entry='test')))
+    assert result['project_id']=='New'
+    assert calls == ([] if dry_run else [{'path':'C:/projects/New','resource_type':'project','kind':'project.rename','wait':True}])
