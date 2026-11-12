@@ -11,6 +11,7 @@ from .scheduler_capacity import ActiveRequests, SchedulerCapacity
 from .scheduler_changes import SchedulerChanges
 from .scheduler_quota import SchedulerQuota
 from .scheduler_recovery import LeaseRecovery
+from .recovery_checkpoint import checkpoint_resumable
 from .scheduler_rows import (
     ACTIVE_STATUSES,
     assert_owner,
@@ -83,7 +84,7 @@ class Leases:
                 self.changes.notify("execution", "control")
                 return self.views.snapshot(execution_id)
             checkpoint = json_object(row["checkpoint_json"])
-            if not bool(checkpoint.get("resumable")):
+            if not checkpoint_resumable(checkpoint, json_object(row["request_json"])):
                 connection.rollback()
                 raise RuntimeError(
                     "execution has no resumable checkpoint"
@@ -283,7 +284,7 @@ class Leases:
                         payload.get("backend_session_id") or ""
                     ),
                     "turn_id": str(payload.get("turn_id") or ""),
-                    "resumable": bool(payload.get("resumable")),
+                    "resumable": checkpoint_resumable(payload, json_object(row["request_json"])),
                 },
             )
             connection.commit()

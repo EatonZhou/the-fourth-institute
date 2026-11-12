@@ -73,9 +73,9 @@ class AgentProvider:
     # A Worker handover leaves the running turn to the Provider's own process:
     # the leaving Worker detaches without interrupting it, and the next
     # Worker attaches to the same turn (same session and turn id).  A turn
-    # that is no longer running (its Provider process restarted) is continued
-    # in the same session with "continue"; every Backend recovers that way,
-    # and none sends a turn's input again once the Provider has taken it.
+    # that is no longer running follows that Adapter's recovery protocol.
+    # A durable session/id alone does not prove this capability: ACP cannot
+    # reattach an unfinished prompt. Such turns must drain in their owner.
     handover_keeps_turn: bool = False
     # What the Agent Harness may rely on in this Backend's Adapter, beyond the
     # fields above (names and meanings in ``harness_capabilities``).  The

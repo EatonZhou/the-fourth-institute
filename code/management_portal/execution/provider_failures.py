@@ -4,6 +4,18 @@ from collections.abc import Mapping
 import re
 
 
+class ProviderOutcomeUnknown(RuntimeError):
+    """A sent prompt lost its outcome; retrying could repeat external actions."""
+
+    error_code = "provider_outcome_unknown"
+    error_details = {"retryable": False, "input_replayed": False, "outcome": "unknown"}
+
+
+def is_outcome_unknown(message: str) -> bool:
+    # Old persisted ACP failures had no structured code (often 'network').
+    return "antigravity input delivery is uncertain after disconnection; refusing to replay it" in str(message).casefold()
+
+
 _USAGE_LIMIT_CODES = frozenset({
     "insufficient_quota",
     "provider_usage_limit",

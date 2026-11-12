@@ -10,6 +10,7 @@ from .contracts import execution_timestamp
 from .scheduler_changes import SchedulerChanges
 from .scheduler_recovery import LeaseRecovery
 from .scheduler_capacity import recover_dispatch_clock
+from .recovery_checkpoint import checkpoint_resumable
 from .scheduler_rows import (
     ACTIVE_STATUSES,
     assert_owner,
@@ -230,7 +231,7 @@ class WorkerRegistry:
             if row["cancel_requested"]:
                 return {"ready": False, "cancel_requested": True}
             checkpoint = json_object(row["checkpoint_json"])
-            if not checkpoint.get("resumable"):
+            if not checkpoint_resumable(checkpoint, json_object(row["request_json"])):
                 return {"ready": False, "cancel_requested": False}
             payload = handover_checkpoint(checkpoint, worker_id)
             connection.execute(
@@ -282,7 +283,7 @@ class WorkerRegistry:
                 checkpoint = json_object(row["checkpoint_json"])
                 if (
                     str(row["status"]) != "claimed"
-                    and not bool(checkpoint.get("resumable"))
+                    and not checkpoint_resumable(checkpoint, json_object(row["request_json"]))
                 ):
                     blocked.append(execution_id)
                     continue
@@ -302,7 +303,7 @@ class WorkerRegistry:
                         },
                     )
                     continue
-                if checkpoint.get("resumable"):
+                if checkpoint_resumable(checkpoint, json_object(row["request_json"])):
                     checkpoint = handover_checkpoint(checkpoint, clean_worker_id)
                 connection.execute(
                     "\n                    UPDATE executions\n                    SET status = 'queued', owner_worker_id = '',\n                        claim_token = '', lease_expires_at = NULL, updated_at = %s,\n                        checkpoint_json = %s\n                    WHERE execution_id = %s AND owner_worker_id = %s\n                    ",

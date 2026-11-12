@@ -9,6 +9,7 @@ from management_common.database_time import instant
 from .contracts import ExecutionResult, execution_timestamp
 from .scheduler_changes import SchedulerChanges
 from .scheduler_rows import compact_json, json_object, turn_kept_running
+from .recovery_checkpoint import checkpoint_resumable
 
 
 def _with_accounted_usage(row: Any, result: dict[str, Any]) -> dict[str, Any]:
@@ -93,7 +94,7 @@ class LeaseRecovery:
         else:
             if status != "running" and not turn_kept_running(checkpoint):
                 return False
-            if not cancel_requested and checkpoint.get("resumable"):
+            if not cancel_requested and checkpoint_resumable(checkpoint, json_object(row["request_json"])):
                 return False
             # Only a Provider turn or compaction can still be running for this
             # execution; the Worker may have died before it learned any id.
@@ -154,7 +155,7 @@ class LeaseRecovery:
                 )
                 continue
             checkpoint = json_object(row["checkpoint_json"])
-            resumable = bool(checkpoint.get("resumable"))
+            resumable = checkpoint_resumable(checkpoint, json_object(row["request_json"]))
             if str(row["status"]) == "running" and not resumable:
                 error = (
                     "execution worker lease expired after backend execution "

@@ -22,6 +22,7 @@ from management_portal import antigravity_accounts as accounts, antigravity_runt
 from management_portal.antigravity_client import AcpClient, AcpError, AuthenticationRequired
 from management_portal.execution.antigravity_backend import AntigravityBackend
 from management_portal.execution.backend_contracts import BackendContext
+from management_portal.execution.provider_failures import ProviderOutcomeUnknown
 from management_portal.execution.harness import HarnessTool
 from tests.cases import capability_contracts
 
@@ -353,8 +354,9 @@ def test_cancel_delivers_native_cancel_and_suppresses_late_answer(agent):
 def test_disconnect_checkpoint_refuses_to_replay_input(agent):
     inv = invocation(agent, "disconnect")
     ctx, _, state = context()
-    with pytest.raises(AcpError):
+    with pytest.raises(ProviderOutcomeUnknown) as failure:
         AntigravityBackend().execute(inv, ctx)
+    assert failure.value.error_code == "provider_outcome_unknown"
     assert state["phase"] == "prompt_sent"
     assert not any(kind == "provider_input_bound" for kind, _ in state["execution_events"])
     inv.recovery_checkpoint = {"provider_recovery_state": state}

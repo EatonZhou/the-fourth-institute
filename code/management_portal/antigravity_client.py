@@ -24,6 +24,10 @@ class AcpError(RuntimeError):
         self.code = code
 
 
+class AcpTransportError(AcpError):
+    """The stdio stream failed, independently of an ACP error response."""
+
+
 class AuthenticationRequired(AcpError):
     def __init__(self):
         super().__init__(-32000, "Antigravity requires Google login; open the account login in Portal")
@@ -132,14 +136,17 @@ class AcpClient:
                     if pending is not None:
                         pending.put(message)
         except Exception as exc:
-            self._fail(AcpError(-32603, f"Antigravity ACP stream failed ({type(exc).__name__})"))
+            self._fail(AcpTransportError(-32603, f"Antigravity ACP stream failed ({type(exc).__name__})"))
         finally:
-            self._fail(AcpError(-32001, "Antigravity ACP connection closed; input was not replayed"))
+            self._fail(AcpTransportError(-32001, "Antigravity ACP connection closed; input was not replayed"))
 
     def _send(self, message):
         with self._lock:
-            self.process.stdin.write(json.dumps(message, ensure_ascii=False) + "\n")
-            self.process.stdin.flush()
+            try:
+                self.process.stdin.write(json.dumps(message, ensure_ascii=False) + "\n")
+                self.process.stdin.flush()
+            except OSError as exc:
+                raise AcpTransportError(-32001, "Antigravity ACP write failed; delivery unknown") from exc
 
     def notify(self, method, params):
         self._send({"jsonrpc": "2.0", "method": method, "params": params})

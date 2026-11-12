@@ -1015,4 +1015,7 @@ class _ExecutionAttempt:
             payload["capability_assembly"] = dict(active.capability_assembly)
         if active.input_variant is not None:
             payload["input_variant"] = dict(active.input_variant)
+        from .recovery_checkpoint import checkpoint_resumable
+
+        payload["resumable"] = checkpoint_resumable(payload)
         return payload

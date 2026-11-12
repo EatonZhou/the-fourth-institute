@@ -31,7 +31,6 @@ def json_object(value: object) -> dict[str, Any]:
 
 def turn_kept_running(checkpoint: dict[str, Any]) -> bool:
     """Whether an unfinished Provider turn may outlive its Worker."""
-    from .provider_catalog import AGENT_PROVIDERS
     provider = AGENT_PROVIDERS.get(str(checkpoint.get("provider") or ""))
     return bool(provider and provider.handover_keeps_turn and checkpoint.get("turn_id")
                 and not checkpoint.get("provider_completed")

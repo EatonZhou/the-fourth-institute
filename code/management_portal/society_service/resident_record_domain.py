@@ -341,9 +341,11 @@ def resident_goal_payload(
 
 
 def _runtime_error_code(message: str) -> str:
-    from management_portal.execution.provider_failures import is_usage_limit_failure
+    from management_portal.execution.provider_failures import is_outcome_unknown, is_usage_limit_failure
 
     text = str(message or "").casefold()
+    if is_outcome_unknown(message):
+        return "provider_outcome_unknown"
     # Persisted failures may predate structured transport codes. Only the
     # local service's own diagnostic prefix identifies these old records;
     # a bare connection reset still does not prove a planned handover.
@@ -381,9 +383,11 @@ def runtime_error_payload(
     raw = str(raw_error or "").strip()
     if not raw:
         return {}
-    from management_portal.execution.provider_failures import is_usage_limit_failure
+    from management_portal.execution.provider_failures import is_outcome_unknown, is_usage_limit_failure
 
     supplied_code = str(code or "").strip().lower()
+    if is_outcome_unknown(raw):
+        supplied_code = "provider_outcome_unknown"
     if is_usage_limit_failure(raw, code=supplied_code):
         supplied_code = "provider_usage_limit"
     payload = {
@@ -405,6 +409,10 @@ def runtime_failure_summary(
     message = str(details.get("message") or raw_error or "").strip()
     folded = message.casefold()
     code = str(details.get("code") or _runtime_error_code(message)).strip().lower()
+    from management_portal.execution.provider_failures import is_outcome_unknown
+
+    if is_outcome_unknown(message):
+        code = "provider_outcome_unknown"
     if code in {"network", "timeout", "unknown"} and folded.startswith("executionservice "):
         code = "execution_rpc"
     if "app-server" in folded and any(
@@ -428,6 +436,7 @@ def runtime_failure_summary(
         "execution_rpc_unavailable": "本地执行服务暂不可用",
         "execution_rpc_response_unknown": "本地执行服务响应丢失，执行状态待确认",
         "provider_turn_interrupted": "模型后端中断了本轮执行",
+        "provider_outcome_unknown": "模型执行结果不确定，未自动重试",
         "provider_usage_limit": "当前模型账号额度不足",
     }
     if code in summaries:

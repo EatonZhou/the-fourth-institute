@@ -8,7 +8,7 @@ import threading
 
 from management_common.provider_turn_artifacts import ToolEditArtifacts
 from management_portal import antigravity_accounts as accounts
-from management_portal.antigravity_client import AcpClient, ToolServer
+from management_portal.antigravity_client import AcpClient, AcpTransportError, ToolServer
 from management_portal.antigravity_runtime import command
 from management_portal.antigravity_input_media import prompt_content
 from management_portal.resident_shell_environment import resident_process_environment
@@ -20,6 +20,7 @@ from .provider_turn_usage import TOKEN_USAGE_KEYS, _CAMEL_KEYS, usage_payload
 from .resident_capability_assembly import require_offered_tools
 from .native_socket_backend import _report_tool_events, _observe_tool_edit_artifacts
 from .native_tool_events import tool_started, tool_completed
+from .provider_failures import ProviderOutcomeUnknown
 
 
 def _pb_fields(buf):
@@ -218,7 +219,7 @@ class AntigravityBackend:
                 return BackendResult(prior["output"], prior["session_id"], route, prior.get("usage", {}),
                                      frozenset(prior.get("available_harness_tool_names", [])))
             if prior.get("phase") == "prompt_sent":
-                raise RuntimeError("Antigravity input delivery is uncertain after disconnection; refusing to replay it")
+                raise ProviderOutcomeUnknown("Antigravity input delivery is uncertain after disconnection; refusing to replay it")
         prompt = prompt_content(invocation.user_prompt, request.input_media) if request.operation == "turn" else []
         row = accounts.account_for_route(route)
         route = row["route_id"]
@@ -381,8 +382,13 @@ class AntigravityBackend:
             start_idx, _ = _read_steps(env, sid)
             active_turn = True
             try:
-                result = client.call("session/prompt", {"sessionId": sid, "prompt": prompt},
-                                     timeout=None, cancelled=context.is_cancelled, session_id=sid)
+                try:
+                    result = client.call("session/prompt", {"sessionId": sid, "prompt": prompt},
+                                         timeout=None, cancelled=context.is_cancelled, session_id=sid)
+                except AcpTransportError as exc:
+                    if context.is_cancelled():
+                        raise InterruptedError("Antigravity turn cancelled") from exc
+                    raise ProviderOutcomeUnknown("Antigravity input delivery is uncertain after disconnection; refusing to replay it") from exc
                 if result.get("stopReason") == "cancelled" or context.is_cancelled():
                     raise InterruptedError("Antigravity turn cancelled")
                 accept()
