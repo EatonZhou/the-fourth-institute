@@ -4,12 +4,12 @@ type: decision
 project: AI员工
 created_at: '2026-09-03'
 version:
-  number: 55
+  number: 56
   created_at: "2026-09-03"
   created_by:
     user: ""
     agent: ""
-  updated_at: "2026-11-12T11:18:00Z"
+  updated_at: "2026-11-12T12:00:51Z"
   updated_by:
     user: ""
     agent: "resident_6199a7a36480"
@@ -58,6 +58,8 @@ Paper 是 Portal 中一篇有稳定身份的逻辑论文。Paper 页面提供一
 
 Review job 以 `review_id` 关联 `reviews`，读取时组装 `result`，任务记录不重复保存评审正文。列表按创建时间和稳定 ID 排序，不保存列表 position。Paper 和搜索记录均不按 1000 条或其他数量裁剪；读取分页只限制当次返回量，不删除历史。SQL 的绝对时间采用 TIMESTAMPTZ，接口继续返回各字段规定的秒值或 UTC 字符串；未发生的时刻使用 NULL。
 
+Deep Read 和 Experiment 的最新任务由持久存储按完整创建时间与稳定 ID 降序选取一条，不把时间截成整数秒，也不为状态读取加载整段历史。批量来源查询先限制到当前调用者可读的 Paper，再为每篇选取最新任务，最后判断该任务是否成功；较新的失败不能被旧成功遮住。Library 的评审总数在可读 Paper 范围内聚合，不加载评审正文，也不计入不可见论文的记录。
+
 ## 参与者、组件和记录
 
 ### Paper 输入回执
@@ -67,6 +69,10 @@ Paper 领域调用共享 Resident 时，适配器接收共享 handle 中的 `mes
 经 Lineage 工作流投递时，共享提交回执和 Paper 输入回执保留本次 `trigger_path_id`，用于查找 Event 到 Resident 的实际触发路径；提交、完成和中断恢复均保留同一引用。回执不再记录旧的 Resident `invocation_id`。Resident 本轮的实际执行仍由独立的 Execution 记录，路径通过自己的关联表引用 Execution。
 
 持久记录只保存当前回执结构。Figure、Collector 和 Deep Read 的执行恢复在取得实际输入后先校验精确 schema，再以 `input_message_id` 继续等待同一输入。Deep Read 的已生成正文恢复是另一个显式操作：由 contributor 选择来源，产生独立回执并保留原失败。Deep Read job 只保存 `resident_input_message_id`；运行时不读取 `message_id`、`message_id_kind` 或 `resident_message_id` 历史别名。共享 Resident API 的 `message_id` 仍是其当前接口字段，差异只在 Paper adapter 边界转换。
+
+### 任务材料读取
+
+`paper.task-material` 引用由业务 owner 创建并绑定 actor、目标 Resident、任务和业务对象。读取时先核对引用、当前调用者与目标身份，再重新检查业务对象访问权；单次解析读取一份 manifest 和一份正文，以同一份正文完成长度、SHA-256 校验并返回。软链接、路径越界、身份或完整性变化均拒绝。重试继续使用该任务的不可变材料，不因当前论文文本变化重建另一份输入。旧的无生产调用材料准备接口不作为另一套入口保留；错误标记和正文证据校验仍用于正式产物验证。
 
 ### 九个共享功能 Resident
 
@@ -261,6 +267,8 @@ Dev material_task_instructions 与翻译配方 v2 已交付，替身最终 wire 
 Paper 页面以当前论文的正式产物查询为显示依据，不以“本浏览器点击过按钮”“当前用户拥有某个 job”或“启动请求仍在内存”为显示前提。Lineage 中执行“一键研究论文”后，成功登记的 Analysis、Experiment 和 Review 应分别出现在该论文对应区域；任务失败、被取消或尚未形成有效产物时显示相应状态，不伪造内容。
 
 产物提交通过既有资源索引、Paper manifest/bundle 和领域变更通知使查询结果更新。已打开的页面收到相关变更后重新查询；页面重新打开、切换回该论文或手动刷新时也从同一事实源重建，不能把启动按钮的回调作为唯一刷新机制。更新通知用于触发查询，长期产物才是内容依据。
+
+分段详情请求属于一次打开论文的代次；切走再回到同一 Paper 时，旧请求也不能覆盖新详情或清除新请求的去重记录。正文失效依据领域变更和恢复快照，不依赖本地任务恰好从 running 变成 done。暂态查询失败保留未处理的变更并有限重试；永久拒绝与离开页面停止自动重试，恢复可见或显式刷新时重新读取。单篇任务入口按 ID 读取论文；只需要元数据的执行、正文恢复和来源更新不加载其他详情小节。
 
 直接在 Resident 中讨论一篇论文、在任意 Workspace 留下文件或仅声称“研究完成”，不会自动形成正式 Paper 产物。只要通过受授权的 Paper 产物协议登记并关联到该论文，即使没有由 Paper 页面创建的 job，也应能被页面发现。任意路径扫描、提取成员最后回复或仅按文件名猜测论文归属都不能替代该协议。
 

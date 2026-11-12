@@ -895,7 +895,8 @@ def _read_text_preview(path: Path | None, limit: int = 120_000) -> str:
     if not path or not path.is_file():
         return ""
     try:
-        return path.read_text(encoding="utf-8", errors="replace")[:limit]
+        with path.open(encoding="utf-8", errors="replace") as stream:
+            return stream.read(max(0, limit))
     except OSError:
         return ""
 

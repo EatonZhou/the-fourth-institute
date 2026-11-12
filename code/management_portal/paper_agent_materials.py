@@ -39,11 +39,9 @@ def _write_once(path: Path, data: bytes):
         stream.write(data);stream.flush();os.fsync(stream.fileno())
 
 
-def _read(directory, paper_id, job_id):
-    manifest=directory/'manifest.json'
-    if manifest.is_symlink():raise PermissionError('Linked material manifest refused')
-    data=json.loads(manifest.read_text())
-    if data['paper_id']!=paper_id or data['job_id']!=job_id:
+def _read(directory: Path, data: dict, job_id: str):
+    """Return the same bytes that passed integrity validation, without reopening."""
+    if data['job_id']!=job_id:
         raise ValueError('Material snapshot identity changed')
     digest=data['sha256']
     if not re.fullmatch('[0-9a-f]{64}',digest):raise ValueError('Invalid material digest')
@@ -52,35 +50,8 @@ def _read(directory, paper_id, job_id):
     body=path.read_bytes()
     if sha256(body).hexdigest()!=digest or len(body)!=data['size_bytes']:
         raise ValueError('Material snapshot integrity failed')
-    return MaterialSnapshot(paper_id,job_id,str(path),str(manifest),digest,len(body))
-
-
-def prepare_snapshot(*, actor: str, paper_id: str, job_id: str, text: str, metadata: dict):
-    """Materialize once after authorization; recovery reuses and verifies it.
-
-    Files belong to the business job and have no cache lease/automatic cleanup.
-    Caller records to_payload() in the existing job JSON provenance. This does
-    not prove adapter readability. Draft registration needs its own authority.
-    """
-    from management_portal.resources import get_resource_service
-    from management_portal.paper_store import DATA_ROOT
-    if not actor:raise PermissionError('Authenticated material actor required')
-    _identity(paper_id);_identity(job_id)
-    get_resource_service().get(paper_id,actor=actor)
-    root=(DATA_ROOT/'job_materials').resolve()
-    root.mkdir(parents=True,exist_ok=True)
-    directory=root/job_id
-    if directory.is_symlink():raise PermissionError('Linked job directory refused')
-    directory.mkdir(exist_ok=True)
-    if (directory/'manifest.json').exists():return _read(directory,paper_id,job_id)
-    if not isinstance(text,str) or not text.strip():raise ValueError('Extracted material text required')
-    body=text.encode('utf-8');digest=sha256(body).hexdigest()
-    manifest={'schema':'tfi.paper-job-material.v1','paper_id':paper_id,'job_id':job_id,
-              'sha256':digest,'size_bytes':len(body),'metadata':metadata}
-    encoded=(json.dumps(manifest,ensure_ascii=False,sort_keys=True,separators=(',',':'))+'\n').encode()
-    _write_once(directory/(digest+'.txt'),body)
-    _write_once(directory/'manifest.json',encoded)
-    return _read(directory,paper_id,job_id)
+    snapshot = MaterialSnapshot(data['paper_id'],job_id,str(path),str(directory/'manifest.json'),digest,len(body))
+    return snapshot, body.decode('utf-8')
 
 
 def validate_path_result(content: str):
@@ -91,14 +62,6 @@ def validate_path_result(content: str):
     if not re.search(r'(?:第\s*[一二三四五六七八九十\d]+\s*[章节页]|\b(?:section|page|p\.)\s*\d|§\s*\d)',content,re.I):
         raise ValueError('Path-mode result lacks chapter/page evidence')
 
-
-def path_instruction(snapshot: MaterialSnapshot, *, title: str, task: str, output_protocol: str):
-    return (f'{task}\n论文ID：{snapshot.paper_id}\n标题：{title}\n'
-            f'请先用文件读取工具读取完整提取文本：{snapshot.text_path}\n'
-            f'元数据：{snapshot.metadata_path}\n文本SHA256：{snapshot.sha256}\n'
-            f'无法读取时仅输出 {READ_FAILURE}，不得依据标题或记忆生成。'
-            '结论必须注明材料中的具体章节或页码。结果由业务服务校验保存，不自行写业务产物。\n'
-            f'输出协议：\n{output_protocol}')
 
 TASK_SCOPES = frozenset({'paper:deep-read','paper:review','paper:exp','paper:registration-metadata'})
 
@@ -146,12 +109,13 @@ def resolve_task_reference(*,actor,target_resident_id,reference):
         raise ValueError('Invalid task material reference')
     key=_identity(reference['key']);directory=(DATA_ROOT/'job_materials').resolve()/key
     if directory.is_symlink():raise PermissionError('Linked task directory refused')
-    manifest=json.loads((directory/'manifest.json').read_text());meta=manifest['metadata']
+    manifest_path = directory/'manifest.json'
+    if manifest_path.is_symlink():raise PermissionError('Linked material manifest refused')
+    manifest=json.loads(manifest_path.read_text());meta=manifest['metadata']
     if meta['actor']!=actor or meta['target_resident_id']!=target_resident_id or meta['scope'] not in TASK_SCOPES:
         raise PermissionError('Task material actor or target changed')
     subject=manifest['paper_id'];_authorize_subject(actor,subject)
-    snapshot=_read(directory,subject,key)
-    full=Path(snapshot.text_path).read_text()
+    snapshot,full=_read(directory,manifest,key)
     instruction=(f'完成{meta["scope"]}独立任务。业务对象：{subject}。先读取任务及论文材料快照：{snapshot.text_path}\n'
                  f'元数据：{snapshot.metadata_path}\nSHA256：{snapshot.sha256}\n'
                  '快照包含本次材料及完整输出协议；按该协议交付，最终结果由业务服务保存。'

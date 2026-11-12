@@ -207,26 +207,36 @@
         return null;
       }
       const targetPaperId = String(paperId || "");
+      const requestSeq = state.detailRequestSeq;
+      const pollEpoch = state.paperPollEpoch;
       const status = await paperApi.request(`/paper/api/deep-read/status?paper_id=${encodeURIComponent(targetPaperId)}`);
-      if (String(state.selectedId || "") !== targetPaperId) return status;
+      if (String(state.selectedId || "") !== targetPaperId
+        || requestSeq !== state.detailRequestSeq || pollEpoch !== state.paperPollEpoch) return status;
       state.deepReadStatus = status;
       if (render && state.mode === "reader") renderWorkspace();
       return status;
     }
 
-    async function refreshDeepReadProjection() {
+    async function refreshDeepReadProjection({ snapshot = false, artifactsChanged = false } = {}) {
       const paperId = String(state.selectedId || "");
-      const previousStatus = String(state.deepReadStatus?.status || "");
+      const requestSeq = state.detailRequestSeq;
+      const pollEpoch = state.paperPollEpoch;
+      const current = () => !!paperId && !state.leaving && !document.hidden
+        && String(state.selectedId || "") === paperId
+        && requestSeq === state.detailRequestSeq && pollEpoch === state.paperPollEpoch;
+      if (!current()) return null;
       const status = await loadDeepReadStatus(paperId, { render: false });
-      if (String(state.selectedId || "") !== paperId) return status;
-      const currentStatus = String(status?.status || "");
-      if (currentStatus === "done" && ["queued", "running"].includes(previousStatus)) {
-        await loadDetailSections(paperId, ["analysis", "summary"], { render: false, force: true });
-        await loadLibrary({ keepDetail: true });
-        renderWorkspace();
+      if (!current()) return status;
+      if (!snapshot && !artifactsChanged && ["queued", "running"].includes(String(status?.status || ""))) {
+        updateDeepReadControls();
         return status;
       }
-      updateDeepReadControls();
+      // Projection invalidations describe paper artifacts, independently of a local job's status.
+      await loadDetailSections(paperId, ["analysis", "summary"], { render: false, force: true });
+      if (!current()) return status;
+      await loadLibrary({ keepDetail: true });
+      if (!current()) return status;
+      renderWorkspace();
       return status;
     }
 

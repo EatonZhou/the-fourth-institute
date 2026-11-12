@@ -147,6 +147,50 @@ def get(kind, record_id):
         return decode(kind, row) if row else None
 
 
+def latest(kind, *, paper_id):
+    """Select one record without materializing the Paper's complete history."""
+    identity, fields = _kind(kind)
+    if "paper_id" not in fields:
+        raise ValueError(f"Paper record kind has no paper: {kind}")
+    with database().read() as connection:
+        row = connection.execute(
+            f"SELECT * FROM {kind} WHERE paper_id=%s "
+            f"ORDER BY created_at DESC NULLS LAST,{identity} DESC LIMIT 1", (str(paper_id),),
+        ).fetchone()
+        return decode(kind, row) if row else None
+
+
+def latest_per_paper(kind, *, paper_ids):
+    """Return one latest record per authorized Paper, before any status filter."""
+    identity, fields = _kind(kind)
+    if "paper_id" not in fields:
+        raise ValueError(f"Paper record kind has no paper: {kind}")
+    ids = sorted({str(paper_id) for paper_id in paper_ids})
+    if not ids:
+        return []
+    with database().read() as connection:
+        rows = connection.execute(
+            f"SELECT DISTINCT ON (paper_id) * FROM {kind} WHERE paper_id=ANY(%s) "
+            f"ORDER BY paper_id,created_at DESC NULLS LAST,{identity} DESC", (ids,),
+        ).fetchall()
+        return [decode(kind, row) for row in rows]
+
+
+def count_for_papers(kind, *, paper_ids):
+    """Aggregate within the caller's selected Paper set without loading bodies."""
+    _identity, fields = _kind(kind)
+    if "paper_id" not in fields:
+        raise ValueError(f"Paper record kind has no paper: {kind}")
+    ids = sorted({str(paper_id) for paper_id in paper_ids})
+    if not ids:
+        return 0
+    with database().read() as connection:
+        row = connection.execute(
+            f"SELECT count(*) AS count FROM {kind} WHERE paper_id=ANY(%s)", (ids,),
+        ).fetchone()
+        return int(row["count"])
+
+
 def append(kind, record):
     values = encode(kind, record)
     with database().transaction(lock_key(kind)) as connection:

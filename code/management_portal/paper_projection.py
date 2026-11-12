@@ -177,7 +177,7 @@ def _call(method, options: dict) -> dict:
         "本次交付约定优先于普通成员之间的消息回复方式。\n\n"
         + str(options.get("prompt") or "")
     )}
-    from .paper_agent_materials import TASK_SCOPES, prepare_task_input, validate_path_result
+    from .paper_agent_materials import TASK_SCOPES, prepare_task_input
     material = None
     material_observer = options.pop('on_material_prepared', None)
     context = dict(options.get('context_refs') or {})

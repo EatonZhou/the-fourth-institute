@@ -27,34 +27,44 @@
     let paperProjectionSnapshotPending = false;
     let paperProjectionEventsBound = false;
     let pendingPaperProjectionChanges = new Map();
+    let paperProjectionRetryCount = 0;
+    let paperProjectionRetryStopped = false;
 
     function mergePaperProjectionChanges(changes) {
       if (!changes || typeof changes !== "object") return;
-      Object.entries(changes).forEach(([targetId, fields]) => {
+      const entries = changes instanceof Map ? changes : Object.entries(changes);
+      for (const [targetId, fields] of entries) {
         const target = String(targetId || "").trim();
-        if (!target) return;
+        if (!target) continue;
         const pending = pendingPaperProjectionChanges.get(target) || new Set();
-        (Array.isArray(fields) ? fields : []).forEach(field => {
+        (Array.isArray(fields) || fields instanceof Set ? fields : []).forEach(field => {
           const clean = String(field || "").trim();
           if (clean) pending.add(clean);
         });
         pendingPaperProjectionChanges.set(target, pending);
-      });
+      }
+    }
+
+    function queuePaperProjectionSync(delay) {
+      if (state.leaving || document.hidden || paperProjectionRetryStopped) return;
+      const epoch = paperProjectionEpoch;
+      window.clearTimeout(paperProjectionSyncTimer);
+      const timer = window.setTimeout(() => {
+        if (epoch !== paperProjectionEpoch || paperProjectionSyncTimer !== timer) return;
+        paperProjectionSyncTimer = 0;
+        flushPaperProjectionSync().catch(alertError);
+      }, delay);
+      paperProjectionSyncTimer = timer;
     }
 
     function schedulePaperProjectionSync({ snapshot = false, changes = null } = {}) {
       if (snapshot) paperProjectionSnapshotPending = true;
       mergePaperProjectionChanges(changes);
-      window.clearTimeout(paperProjectionSyncTimer);
-      paperProjectionSyncTimer = 0;
-      if (state.leaving || document.hidden) return;
-      paperProjectionSyncTimer = window.setTimeout(() => {
-        paperProjectionSyncTimer = 0;
-        flushPaperProjectionSync().catch(alertError);
-      }, 100);
+      if (paperProjectionSyncRunning || (paperProjectionSyncTimer && paperProjectionRetryCount)) return;
+      queuePaperProjectionSync(100);
     }
 
-    async function syncPaperProjection(snapshot, changes) {
+    async function syncPaperProjection(snapshot, changes, { retry = false } = {}) {
       const epoch = paperProjectionEpoch;
       const current = () => !state.leaving && !document.hidden && epoch === paperProjectionEpoch;
       if (!current()) return;
@@ -73,8 +83,9 @@
         const refreshBase = snapshot || [...selectedFields].some(field => !["deep_read", "exp", "figures"].includes(field));
         if (refreshBase) await refreshAssetsProjection(selectedId);
         if (!current()) return;
-        if (snapshot || selectedFields.has("deep_read")) {
-          await refreshDeepReadProjection();
+        const deepReadArtifactsChanged = selectedFields.has("analysis") || selectedFields.has("summary");
+        if (snapshot || selectedFields.has("deep_read") || deepReadArtifactsChanged) {
+          await refreshDeepReadProjection({ snapshot, artifactsChanged: deepReadArtifactsChanged });
           if (!current()) return;
         }
         if (snapshot || selectedFields.has("exp")) {
@@ -99,7 +110,8 @@
         }
       }
 
-      if (snapshot || fields.has("ccf_enrichment")) {
+      // The existing CCF observer uses a business POST. Recovery must not replay it.
+      if (!snapshot && !retry && fields.has("ccf_enrichment")) {
         const selectedPaper = state.ccfSelectedPaper;
         if (selectedPaper) {
           const enrichment = ccfPaperEnrichment(selectedPaper);
@@ -112,18 +124,35 @@
     }
 
     async function flushPaperProjectionSync() {
-      if (paperProjectionSyncRunning || state.leaving || document.hidden) return;
+      if (paperProjectionSyncRunning || paperProjectionRetryStopped || state.leaving || document.hidden) return;
       paperProjectionSyncRunning = true;
+      const epoch = paperProjectionEpoch;
       const snapshot = paperProjectionSnapshotPending;
       const changes = pendingPaperProjectionChanges;
       paperProjectionSnapshotPending = false;
       pendingPaperProjectionChanges = new Map();
+      const retain = () => {
+        paperProjectionSnapshotPending ||= snapshot;
+        mergePaperProjectionChanges(changes);
+      };
       try {
-        await syncPaperProjection(snapshot, changes);
+        await syncPaperProjection(snapshot, changes, { retry: paperProjectionRetryCount > 0 });
+        if (epoch !== paperProjectionEpoch || state.leaving || document.hidden) retain();
+        else paperProjectionRetryCount = 0;
+      } catch (error) {
+        retain();
+        if (epoch === paperProjectionEpoch && !state.leaving && !document.hidden) {
+          // Read-only retries: 1s, 2s, 4s, then retain the batch without further automatic attempts.
+          paperProjectionRetryCount += 1;
+          paperProjectionRetryStopped = [401, 403, 404].includes(Number(error?.status))
+            || paperProjectionRetryCount > 3;
+        }
+        throw error;
       } finally {
         paperProjectionSyncRunning = false;
         if (paperProjectionSnapshotPending || pendingPaperProjectionChanges.size) {
-          schedulePaperProjectionSync();
+          queuePaperProjectionSync(paperProjectionRetryCount
+            ? Math.min(1000 * 2 ** (paperProjectionRetryCount - 1), 4000) : 100);
         }
       }
     }
@@ -166,6 +195,10 @@
     }
 
     function resumePaperUpdates() {
+      if (state.leaving || document.hidden) return;
+      paperProjectionEpoch += 1;
+      paperProjectionRetryCount = 0;
+      paperProjectionRetryStopped = false;
       schedulePaperProjectionSync({ snapshot: true });
       resumePaperRegistrationPolling();
       resumeReviewPolling();

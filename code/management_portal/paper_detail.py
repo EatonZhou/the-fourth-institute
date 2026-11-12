@@ -42,7 +42,6 @@ def get_paper_detail(paper_id: str, sections: object = None) -> dict:
         reviews = paper_state_store.records("reviews", paper_id=paper["id"]) if "reviews" in requested else []
         notes = paper_state_store.records("notes", paper_id=paper["id"]) if "notes" in requested else []
         refs = _refs_for_paper(paper) if "refs" in requested else []
-        figures = _load_figures(paper) if "figures" in requested else []
     if "figures" in requested:
         _recover_figure_tasks(paper)
         figures = _load_figures(paper)

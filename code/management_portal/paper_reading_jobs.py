@@ -16,7 +16,7 @@ from management_portal.paper_records import _now, _slugify
 from management_portal.paper_resident import _resident_reply
 from management_portal.paper_store import (
     DATA_ROOT, LOCK, PAPER_STORE, _all_papers, _analysis_text, _extract_pdf_text, _local_pdf_for_paper,
-    _notify_paper_projection, _paper_public, _paper_store_file, _pdf_text_for_paper, _update_paper_fields,
+    _notify_paper_projection, _paper_by_id, _paper_public, _paper_store_file, _pdf_text_for_paper, _update_paper_fields,
 )
 from management_portal.resources import get_resource_service
 from management_portal.shared_state import atomic_replace_json
@@ -63,13 +63,8 @@ def _set_exp_job(job_id: str, patch: dict) -> dict:
 
 def _latest_job(kind: str, *, paper_id: str = "", job_id: str = "") -> dict | None:
     if job_id:
-        found = paper_state_store.get(kind, job_id)
-        matches = [found] if found else []
-    else:
-        matches = paper_state_store.records(kind, paper_id=paper_id)
-    if not matches:
-        return None
-    return sorted(matches, key=lambda item: int(item.get("created_at") or item.get("updated_at") or 0), reverse=True)[0]
+        return paper_state_store.get(kind, job_id)
+    return paper_state_store.latest(kind, paper_id=paper_id)
 
 
 def _latest_deep_read_job(*, paper_id: str = "", job_id: str = "") -> dict | None:
@@ -192,7 +187,7 @@ def recover_deep_read(payload: dict, actor: str) -> dict:
         latest = _latest_deep_read_job(paper_id=paper_id)
         if not latest or latest.get("job_id") != job_id or latest.get("status") != "error":
             raise ValueError("Deep Read job changed; reload before recovery")
-        paper = get_paper_detail(paper_id)["paper"]
+        paper = get_paper_detail(paper_id, sections=[])["paper"]
         path = _paper_store_file(paper, "analysis")
         if not path:
             path = ANALYSIS_ROOT / f"{_slugify(str(paper.get('id') or paper.get('title') or 'paper'))}.md"
@@ -238,12 +233,9 @@ def provenance_candidates(actor: str) -> dict:
 
     ids = [str(paper["id"]) for paper in _all_papers()]
     visible = set(permission_system.permitted_ids(actor, "ReadResource", "address", ids))
-    latest = {}
-    for job in sorted(paper_state_store.records("deep_read_jobs"),
-                      key=lambda item: int(item.get("created_at") or item.get("updated_at") or 0), reverse=True):
-        if job.get("paper_id") in visible:
-            latest.setdefault(job["paper_id"], job)
-    candidates = [{"paper_id": paper, "job_id": job["job_id"]} for paper, job in latest.items() if job.get("status") == "done"]
+    latest = paper_state_store.latest_per_paper("deep_read_jobs", paper_ids=visible)
+    candidates = [{"paper_id": job["paper_id"], "job_id": job["job_id"]}
+                  for job in latest if job.get("status") == "done"]
     return {"visible_papers": len(visible), "without_completed_job": len(visible) - len(candidates), "candidates": candidates}
 
 
@@ -299,7 +291,7 @@ def refresh_deep_read_provenance(payload: dict, actor: str) -> dict:
         latest = _latest_deep_read_job(paper_id=paper_id)
         if not latest or latest.get("job_id") != job_id or latest != original:
             raise ValueError("Deep Read job changed; reload before updating provenance")
-        paper = get_paper_detail(paper_id)["paper"]
+        paper = get_paper_detail(paper_id, sections=[])["paper"]
         path = _paper_store_file(paper, "analysis")
         if not path or not path.is_file() or hashlib.sha256(path.read_bytes()).hexdigest() != expected:
             raise ValueError("Analysis changed; read and confirm the current artifact")
@@ -595,8 +587,7 @@ def start_exp(payload: dict, actor: str) -> dict:
     if not paper_id:
         raise ValueError("paper_id required")
     with LOCK:
-        papers = _all_papers()
-        paper = next((p for p in papers if p["id"] == paper_id), None)
+        paper = _paper_by_id(paper_id)
         if not paper:
             raise KeyError("paper not found")
         paper = dict(paper)
@@ -685,7 +676,7 @@ def _run_exp_job(job_id: str) -> None:
         print(f"[paper-exp] {job_id} start", flush=True)
         job = _set_exp_job(job_id, {"status": "running", "step": "loading paper", "progress": 8})
         paper_id = str(job.get("paper_id") or "")
-        paper = get_paper_detail(paper_id)["paper"]
+        paper = get_paper_detail(paper_id, sections=[])["paper"]
         print(f"[paper-exp] {job_id} calling llm", flush=True)
         _set_exp_job(job_id, {"step": "calling llm", "progress": 35})
         content, usage = _generate_exp_extraction(paper, actor=str(job.get("created_by") or ""), job_id=job_id)

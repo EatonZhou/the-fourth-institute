@@ -38,7 +38,6 @@ def test_library_text_search_prioritizes_title_before_metadata_matches_contracts
         ]
         with (
             mock.patch.object(paper_library, "resource_index_papers", return_value=papers),
-            mock.patch.object(paper_library, "_all_reviews", return_value=[]),
         ):
             result = paper_library.list_library({"q": "GaP", "compact": "1"}, actor="sample_admin")
 
@@ -62,7 +61,6 @@ def test_library_text_search_prioritizes_title_before_metadata_matches_contracts
         ]
         with (
             mock.patch.object(paper_library, "resource_index_papers", return_value=papers),
-            mock.patch.object(paper_library, "_all_reviews", return_value=[]),
         ):
             result = paper_library.list_library(
                 {"q": "Variational Automation", "compact": "1"},
@@ -84,7 +82,6 @@ def test_library_preview_keeps_tree_and_export_rows_then_hydrates_next_page(isol
         ]
         with (
             mock.patch.object(paper_library, "resource_index_papers", return_value=papers),
-            mock.patch.object(paper_library, "_all_reviews", return_value=[]),
             mock.patch.object(paper_library, "resource_index_paper_rows", return_value=[papers[1], papers[0]]),
         ):
             full = paper_library.list_library({"compact": "1"}, actor="sample_admin")

@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
-from management_portal import paper_favorites, semantic_search_jobs
+from management_portal import paper_favorites, paper_state_store, semantic_search_jobs
 from management_portal.paper_collection_jobs import (
     _paper_collection_filter_summary, _paper_collection_result_map,
 )
 from management_portal.paper_records import _paper_project_filter_values
-from management_portal.paper_reviews import REVIEW_LENSES, _all_reviews
+from management_portal.paper_reviews import REVIEW_LENSES
 from management_portal.paper_search import _filter_papers, resource_index_papers, resource_index_paper_rows
 from management_portal.paper_store import DATA_ROOT, LOCK, PAPER_STORE_ROOT
 
@@ -181,7 +181,6 @@ def list_library(params: dict | None = None, *, actor: str = "") -> dict:
     favorites = paper_favorites.favorite_ids(actor)
     with LOCK:
         visible = _filter_papers(papers, params or {})
-        reviews = [] if rows_only else _all_reviews()
     if str(params.get("favorite") or "").strip().lower() in {"1", "true", "yes", "on"}:
         selected = set(favorites)
         visible = [paper for paper in visible if paper.get("id") in selected]
@@ -216,7 +215,7 @@ def list_library(params: dict | None = None, *, actor: str = "") -> dict:
                 if str(paper.get("id") or "") in collection_results
             ]
     analysis_count = sum(1 for paper in papers if paper.get("has_analysis"))
-    review_count = len(reviews)
+    review_count = 0 if rows_only else paper_state_store.count_for_papers("reviews", paper_ids=[paper["id"] for paper in papers])
     if semantic_rank:
         sorted_visible = sorted(
             visible,

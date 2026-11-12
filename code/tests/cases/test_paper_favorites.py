@@ -73,7 +73,6 @@ def test_library_favorite_filter_intersects_current_visibility_and_search_withou
     ]
     visible = Mock(return_value=papers)
     monkeypatch.setattr(paper_library, "resource_index_papers", visible)
-    monkeypatch.setattr(paper_library, "_all_reviews", lambda: [])
     result = paper_library.list_library({"favorite": "1", "q": "Attention", "year": "2026", "compact": "1"}, actor="alice")
     visible.assert_called_with(actor="alice")
     assert [item["id"] for item in result["papers"]] == [PAPER]
@@ -90,7 +89,6 @@ def test_favorite_filter_keeps_absolute_semantic_order(resources, monkeypatch):
     for item in [PAPER, OTHER]:
         paper_favorites.set_favorite("alice", item, True)
     monkeypatch.setattr(paper_library, "resource_index_papers", lambda **_: [{"id": PAPER, "title": "A"}, {"id": OTHER, "title": "B"}])
-    monkeypatch.setattr(paper_library, "_all_reviews", lambda: [])
     monkeypatch.setattr(paper_library.semantic_search_jobs, "search_view", lambda *a, **k: {
         "summary": {"status": "done"}, "result_map": {
             PAPER: {"rank": 8, "score": 65, "reason": "A"},

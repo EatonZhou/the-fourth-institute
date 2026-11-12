@@ -29,14 +29,21 @@
       refs: ["refs"],
     };
 
+    let detailSectionGeneration = 0;
+
+    function invalidateDetailSections() {
+      detailSectionGeneration += 1;
+      state.detailSections = new Set();
+      state.detailSectionPromises = {};
+    }
+
     function mergeDetailPayload(payload, { replace = false } = {}) {
       if (!payload?.paper) return state.detail;
       const previousId = String(state.detail?.paper?.id || "");
       const nextId = String(payload.paper.id || "");
       state.detail = replace || previousId !== nextId ? payload : { ...state.detail, ...payload, paper: payload.paper };
       if (replace || previousId !== nextId) {
-        state.detailSections = new Set();
-        state.detailSectionPromises = {};
+        invalidateDetailSections();
       }
       (payload.loaded_sections || []).forEach(section => state.detailSections.add(String(section)));
       return state.detail;
@@ -53,14 +60,17 @@
       if (!paperId || !missing.length) return state.detail;
       const key = `${paperId}:${missing.slice().sort().join(",")}`;
       if (state.detailSectionPromises[key]) return state.detailSectionPromises[key];
+      const generation = detailSectionGeneration;
       const promise = paperApi.request(`/paper/api/papers/detail?id=${encodeURIComponent(paperId)}&sections=${encodeURIComponent(missing.join(","))}`)
         .then(payload => {
-          if (String(state.selectedId || "") !== paperId) return null;
+          if (generation !== detailSectionGeneration || String(state.selectedId || "") !== paperId) return null;
           mergeDetailPayload(payload);
           if (render) renderWorkspace();
           return state.detail;
         })
-        .finally(() => { delete state.detailSectionPromises[key]; });
+        .finally(() => {
+          if (state.detailSectionPromises[key] === promise) delete state.detailSectionPromises[key];
+        });
       state.detailSectionPromises[key] = promise;
       return promise;
     }
@@ -82,6 +92,7 @@
       if(!fromNavigation)window.PortalPaperNavigation?.current?.beginPaperOpen();
       state.requestedChatWorkspaceId = "";
       const requestSeq = ++state.detailRequestSeq;
+      invalidateDetailSections();
       const previousSelectedId = String(state.selectedId || "");
       if (previousSelectedId !== String(id || "")) state.selectedFigureId = "";
       state.selectedId = id;

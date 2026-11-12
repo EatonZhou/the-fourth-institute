@@ -44,7 +44,10 @@ def recovery(monkeypatch, tmp_path, request):
         monkeypatch.setattr(jobs.paper_state_store, "locked", lambda *args: nullcontext())
         monkeypatch.setattr(jobs.paper_state_store, "append", lambda kind, record: records.update({record["job_id"]: deepcopy(record)}))
         monkeypatch.setattr(jobs, "_set_deep_read_job", lambda job_id, patch: records[job_id])
-    monkeypatch.setattr(jobs, "get_paper_detail", lambda pid: {"paper": {"id": pid, "title": "Fixture"}})
+    def metadata(pid, *, sections=None):
+        assert sections == [], 'Artifact recovery must not load other sections or recover figures'
+        return {"paper": {"id": pid, "title": "Fixture"}}
+    monkeypatch.setattr(jobs, "get_paper_detail", metadata)
     monkeypatch.setattr(jobs, "_paper_store_file", lambda *args: tmp_path / "analysis.md")
     monkeypatch.setattr(jobs, "_update_paper_fields", lambda *args: writes.append(args))
     monkeypatch.setattr(paper_projection, "turn", lambda **kwargs: pytest.fail("must not call model"))
@@ -65,6 +68,20 @@ def test_recovery_saves_selected_generated_text_and_preserves_failed_job(recover
     assert jobs.recover_deep_read(payload, "current-caller") == result
     assert len(writes) == 1
     assert {name for name, args in calls} == {"GetInputState", "GetMessage"}
+
+
+def test_provenance_refresh_only_loads_metadata(recovery):
+    original, records, payload, message, state, calls, writes, root = recovery
+    recovered = jobs.recover_deep_read(payload, 'current-caller')
+    path = root / 'analysis.md'
+    body = path.read_text().split('\n---\n', 1)[1]
+    refreshed = jobs.refresh_deep_read_provenance({
+        'paper_id': payload['paper_id'], 'job_id': recovered['job_id'],
+        'expected_analysis_sha256': hashlib.sha256(path.read_bytes()).hexdigest(),
+    }, 'current-caller')
+    assert refreshed['job_id'] == recovered['job_id']
+    assert path.read_text().split('\n---\n', 1)[1] == body
+    assert records[original['job_id']] == original
 
 
 @pytest.mark.parametrize("condition", ["permission", "source_access", "wrong_input", "running", "wrong_author", "hash", "brief", "newer_job", "existing_analysis"])

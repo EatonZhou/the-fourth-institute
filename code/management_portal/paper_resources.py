@@ -9,7 +9,7 @@ from urllib.parse import unquote
 from management_common.secure_paths import relative_parts
 from management_portal import paper_state_store
 from management_portal.paper_records import _now
-from management_portal.paper_reviews import _all_reviews, _announce_review_changes
+from management_portal.paper_reviews import _announce_review_changes
 from management_portal.paper_store import LOCK, PAPER_STORE, PaperStore, _paper_by_id, _validated_paper_id
 from management_portal.resources import get_resource_service
 from management_portal.resources.portal import portal_url_for_address
@@ -172,7 +172,7 @@ def delete_paper(payload: dict, actor: str) -> dict:
         if not paper:
             raise KeyError("paper not found")
         from .workbench_projections.resource_lifecycle import finish_resource_releases
-        review_ids = [review['review_id'] for review in _all_reviews() if str(review.get('paper_id') or '') == paper_id]
+        review_ids = [review['review_id'] for review in paper_state_store.records("reviews", paper_id=paper_id)]
         store_deleted = PAPER_STORE.delete_paper(paper_id, actor=actor, projection_ids=review_ids)
         projection_cleanup_errors = finish_resource_releases([paper_id, *review_ids])
         kinds = ("review_jobs", "reviews", "notes", "deep_read_jobs", "exp_jobs")
