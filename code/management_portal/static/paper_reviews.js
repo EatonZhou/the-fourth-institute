@@ -76,6 +76,8 @@
         `;
     }
 
+    const pendingExpSubmissions = new Set();
+
     function renderExpMode() {
       const detail = state.detail;
       if (!detail?.paper) {
@@ -88,7 +90,8 @@
       }
       const exp = detail.exp || {};
       const status = state.expStatus || {};
-      const expRunning = ["queued", "running"].includes(String(status.status || ""));
+      const expRunning = pendingExpSubmissions.has(String(state.selectedId || ""))
+        || ["queued", "running"].includes(String(status.status || ""));
       const expError = String(status.status || "") === "error" ? String(status.error || "Exp generation failed.") : "";
       const statusText = expRunning
         ? `${status.step || "queued"}${Number.isFinite(Number(status.progress)) ? ` · ${Number(status.progress)}%` : ""}`
@@ -290,13 +293,19 @@
     async function startExp() {
       if (!state.selectedId) return;
       const paperId = String(state.selectedId);
-      const job = await paperApi.request("/paper/api/exp/start", {
-        method: "POST",
-        body: JSON.stringify({ paper_id: paperId }),
-      });
-      if (String(state.selectedId || "") !== paperId) return;
-      state.expStatus = job;
-      renderWorkspace();
+      if (pendingExpSubmissions.has(paperId)) return;
+      pendingExpSubmissions.add(paperId);
+      if (state.mode === "exp") renderWorkspace();
+      try {
+        const job = await paperApi.request("/paper/api/exp/start", {
+          method: "POST",
+          body: JSON.stringify({ paper_id: paperId }),
+        });
+        if (String(state.selectedId || "") === paperId) state.expStatus = job;
+      } finally {
+        pendingExpSubmissions.delete(paperId);
+        if (String(state.selectedId || "") === paperId && state.mode === "exp") renderWorkspace();
+      }
     }
 
     return Object.freeze({
