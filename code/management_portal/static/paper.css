@@ -890,6 +890,11 @@ body.resizingReaderAI { cursor:col-resize; user-select:none; }
 .paperReadingStatus { font-size:12px; }
 .paperReadingStatus > button { font:inherit; }
 .paperReadingStatus[data-empty="true"] { display:none; }
+.paperTranslationActions { display:flex; gap:4px; margin-top:6px; }
+.paperReaderAssistantPicker { padding:10px; font-size:13px; }
+.paperReaderAssistantPicker select,.paperReaderAssistantPicker input { max-width:100%; box-sizing:border-box; }
+.paperReaderAssistantPicker form { display:flex; flex-wrap:wrap; align-items:end; gap:6px; margin-top:10px; }
+.paperReaderAssistantPicker label { display:grid; gap:4px; }
 
 /* Shared Personal/Repository grouping rows: same vertical metrics as papers. */
 .folderLine[data-paper-tree-toggle] { background:color-mix(in srgb,var(--muted,#64748b) 8%,var(--panel,#fff)); }

@@ -70,7 +70,6 @@ export function TranslationResult({selection, mode, setMode, model, expand, full
   if (!selection) return null;
   return <section className="paperTranslation" aria-label="选区翻译">
     {full && setMode && <TranslationMode mode={mode} onChange={setMode} />}
-    {expand && <button onClick={expand}>{t('展开')}</button>}
     {selection && <div className="paperTranslationBody" aria-live="polite">
       {full && <details open><summary>{t('所选原文')}</summary><p>{selection.text}</p></details>}
       {view.state === 'loading' && <p role="status">{t('正在翻译…')}</p>}
@@ -81,10 +80,13 @@ export function TranslationResult({selection, mode, setMode, model, expand, full
           {t('来源')} {SOURCES[view.result.provider] || view.result.provider} · {t('用时')} {seconds(view.elapsedMs)}
         </small>
       </>}
-      {view.state === 'success' && <button onClick={async () => {
+      <div className="paperTranslationActions">
+      {view.state === 'success' && <button type="button" className="toolbar-button wide-button portalButton is-compact" onClick={async () => {
         try {await navigator.clipboard.writeText(view.result.text); setCopyError('');}
         catch (_) {setCopyError(t('复制失败，请手动选择译文复制'));}
-      }}>{t('复制译文')}</button>}
+      }}>{t('复制')}</button>}
+      {expand && <button type="button" className="toolbar-button wide-button portalButton is-compact" onClick={expand}>{t('展开')}</button>}
+      </div>
       {copyError && <p role="alert">{copyError}</p>}
       {full && <button onClick={retry}>{t('重试翻译')}</button>}
     </div>}

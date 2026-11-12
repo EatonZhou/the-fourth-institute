@@ -7,6 +7,7 @@ export function connectZotero({frame, paper, principal, status, ready, translate
   const popupObservers = new Set();
   const t=value=>window.PortalI18n?.t(value)||value;
   let localeObserver;
+  let refreshLocale=()=>{};
   let fullscreen = true, fullscreenSidebar = true;
   const applyLayout = () => {
     if (!host) return;
@@ -27,6 +28,9 @@ export function connectZotero({frame, paper, principal, status, ready, translate
     // Localize only the upstream empty annotation placeholder, never annotation
     // bodies or PDF text. Leave vendored assets and the save barrier untouched.
     const localizeEmptyAnnotations=()=>{
+      for(const [selector,label] of [['.portalTranslateSelection','翻译选区'],['.portalAISelection','AI 解释 / 提问']]){
+        for(const node of frame.contentDocument.querySelectorAll(selector))if(node.textContent!==t(label))node.textContent=t(label);
+      }
       for(const node of frame.contentDocument.querySelectorAll('#annotations > div:not(.annotation)')){
         if(node.textContent==='Create an annotation to see it in the sidebar'||node.dataset.portalEmptyAnnotations){
           node.dataset.portalEmptyAnnotations='true';
@@ -36,6 +40,8 @@ export function connectZotero({frame, paper, principal, status, ready, translate
       }
     };
     localeObserver=new MutationObserver(localizeEmptyAnnotations);
+    refreshLocale=localizeEmptyAnnotations;
+    window.addEventListener('portal:language-changed',refreshLocale);
     localeObserver.observe(frame.contentDocument.querySelector('#reader-ui'),{childList:true,subtree:true});
     localizeEmptyAnnotations();
     const style = frame.contentDocument.createElement('style');
@@ -69,7 +75,7 @@ export function connectZotero({frame, paper, principal, status, ready, translate
     const popup = detail.doc.createElement('div'); popup.className = 'portalTranslationPopup';
     popup.style.cssText = 'box-sizing:border-box; width:100%; max-width:100%; min-width:0; max-height:42vh; overflow:auto; text-align:start; white-space:normal;';
     const style = detail.doc.createElement('style');
-    style.textContent = '.portalTranslationPopup,.portalTranslationPopup * {box-sizing:border-box;min-width:0;max-width:100%;overflow-wrap:anywhere;word-break:normal} .portalTranslationPopup .paperTranslation {font:13px/1.5 system-ui;padding:6px;white-space:normal} .portalTranslationPopup button {font:inherit;margin:3px;white-space:normal} .portalTranslationPopup .paperTranslationText {white-space:pre-wrap;max-height:24vh;overflow:auto} .portalTranslationPopup small {display:block;font-size:11px}';
+    style.textContent = '.portalTranslationPopup,.portalTranslationPopup * {box-sizing:border-box;min-width:0;max-width:100%;overflow-wrap:anywhere;word-break:normal} .portalTranslationPopup .paperTranslation {font:13px/1.5 system-ui;padding:6px;white-space:normal} .portalTranslationPopup button {font:inherit;white-space:normal} .portalTranslationPopup .paperTranslationActions {display:flex;gap:4px;margin-top:6px} .portalTranslationPopup .paperTranslationActions button {flex:1;border:1px solid #c7c7c7;border-radius:5px;background:#fff;color:#222;box-shadow:0 1px 2px #0002;min-height:26px;padding:3px 6px;cursor:pointer} .portalTranslationPopup .paperTranslationActions button:hover {background:#eee} .portalTranslationPopup .paperTranslationActions button:focus-visible {outline:2px solid #4688c7} .portalTranslationPopup .paperTranslationText {white-space:pre-wrap;max-height:24vh;overflow:auto} .portalTranslationPopup small {display:block;font-size:11px}';
     wrapper.append(button, style, popup);
     // Keep native selection popup open when interacting with its appended controls.
     wrapper.addEventListener('mousedown', event => event.stopPropagation());
@@ -130,6 +136,6 @@ export function connectZotero({frame, paper, principal, status, ready, translate
     try {await host.reader.flushAnnotations(); failed = false; status(''); return true;}
     catch (error) {status(error.message, true); return false;}
   }, captureAnchor: () => undefined,
-  dispose() {disposed = true; localeObserver?.disconnect(); for (const observer of popupObservers) observer.disconnect(); popupObservers.clear(); cancelAnimationFrame(tick); frame.contentWindow?.removeEventListener('customEvent', selectionPopup);},
+  dispose() {disposed = true; localeObserver?.disconnect(); window.removeEventListener('portal:language-changed',refreshLocale); for (const observer of popupObservers) observer.disconnect(); popupObservers.clear(); cancelAnimationFrame(tick); frame.contentWindow?.removeEventListener('customEvent', selectionPopup);},
   get failed() {return failed;}};
 }

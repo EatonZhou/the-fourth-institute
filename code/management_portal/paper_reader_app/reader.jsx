@@ -5,6 +5,8 @@ import {connectZotero, ZOTERO_URL} from './zotero_adapter.js';
 import {useTranslation, TranslationResult} from './translation_panel.jsx';
 import {translateSelection} from './translation_client.js';
 import {AIPanel} from './ai_panel.jsx';
+import {ResearchAssistantPicker} from './research_assistant_picker.jsx';
+const t=value=>window.PortalI18n.t(value);
 
 function ReaderSplit({content, width}) {
   const handle=useRef(null);
@@ -27,6 +29,12 @@ function ReaderSplit({content, width}) {
 }
 
 function Reader({paper, principal, anchor, close, control, readingReady, frameReady, isCurrent, isFullscreen}) {
+  const [,setLanguageVersion]=useState(0);
+  useEffect(()=>{
+    const changed=()=>setLanguageVersion(value=>value+1);
+    window.addEventListener('portal:language-changed',changed);
+    return()=>window.removeEventListener('portal:language-changed',changed);
+  },[]);
   const frame = useRef(null), bridge = useRef(null), content = useRef(null), aiWidth = useRef(0);
   const [status, setStatus] = useState('正在打开论文…');
   const [failed, setFailed] = useState(false);
@@ -40,6 +48,7 @@ function Reader({paper, principal, anchor, close, control, readingReady, frameRe
     return translateSelection({selection: input, mode: selectedMode, operationId, principal, signal});
   }});
   const [discussion,setDiscussion] = useState(null);
+  const [assistantCatalog,setAssistantCatalog]=useState(null);
   const discussionSequence=useRef(0);
   useEffect(()=>{
     const changed=event=>{
@@ -61,11 +70,9 @@ function Reader({paper, principal, anchor, close, control, readingReady, frameRe
       if(sequence!==discussionSequence.current)return;
       if(!isCurrent()||choices.principal!==principal)throw Error('账号已变化，请重新打开论文');
       const selected=choices.selected;
-      const legacy=choices.selected_legacy;
-      if(!selected && !legacy)throw Error(window.PortalI18n.t('请在非全屏选择或新建研究助手'));
-      if(selected && selected.state!=='bound')throw Error(window.PortalI18n.t('研究助手暂不可用，请重试'));
-      if(!selected && legacy && legacy.workspace_key!=='paper:'+paper.id)throw Error(window.PortalI18n.t('当前历史会话属于其他论文或集合；请在非全屏选择持续研究助手'));
-      const key=selected?'research:'+selected.slot_id:legacy.workspace_key;
+      setAssistantCatalog(choices);
+      if(!selected||selected.state!=='bound'){setDiscussion(null);setStatus('');return;}
+      const key='research:'+selected.slot_id;
       if(discussion?.key===key&&!selection)return;
       const document=selection?.document||await bridge.current.aiDocument();
       if(isCurrent()&&isFullscreen()&&sequence===discussionSequence.current){setStatus('');setDiscussion({...selection,document,key});}
@@ -90,12 +97,13 @@ function Reader({paper, principal, anchor, close, control, readingReady, frameRe
   return <div className="paperReadingApp">
     <header className="paperReadingToolbar">
       <strong title={paper.title}>{paper.title}</strong>
-      <button aria-expanded={sidebarOpen && tab === 'ai'} onClick={()=>sidebarOpen && tab === 'ai'?setSidebarOpen(false):openDiscussion()}>{sidebarOpen && tab === 'ai'?'收起 AI':'打开 AI'}</button>
+      <button aria-expanded={sidebarOpen && tab === 'ai'} onClick={()=>sidebarOpen && tab === 'ai'?setSidebarOpen(false):openDiscussion()}>{t(sidebarOpen && tab === 'ai'?'收起 AI':'打开 AI')}</button>
+      <button aria-expanded={sidebarOpen && tab === 'translation'} onClick={()=>{setSidebarOpen(true);setTab('translation');setPopup(null);selection?.dismissPopup?.();}}>{t('翻译')}</button>
       <a href={paper.pdf_url} target="_blank" rel="noopener noreferrer">原始 PDF</a>
       <button onClick={() => close()}><span className="paperLayoutEnter">全屏阅读</span><span className="paperLayoutExit">退出全屏</span></button>
     </header>
     <div className="paperReadingStatus" data-empty={!status} role="status">
-      {status} {failed ? <button onClick={() => bridge.current?.retry()}>重试保存</button> : status && <button aria-label={window.PortalI18n.t('关闭提示')} onClick={()=>setStatus('')}>×</button>}
+      {t(status)} {failed ? <button onClick={() => bridge.current?.retry()}>重试保存</button> : status && <button aria-label={t('关闭提示')} onClick={()=>setStatus('')}>×</button>}
     </div>
     {popup?.isConnected && !sidebarOpen && createPortal(<TranslationResult selection={selection} mode={mode} model={translation}
       expand={()=>{setSidebarOpen(true);setTab('translation');setPopup(null);selection?.dismissPopup?.();}} />, popup)}
@@ -109,6 +117,7 @@ function Reader({paper, principal, anchor, close, control, readingReady, frameRe
         </nav>
         <div className="paperReaderTab" role="tabpanel" hidden={tab!=='ai'}>
           {discussion&&<AIPanel key={discussion.key} discussion={discussion} principal={principal} bridge={()=>bridge.current} isCurrent={isCurrent} close={()=>setSidebarOpen(false)} />}
+          {!discussion&&<ResearchAssistantPicker catalog={assistantCatalog} principal={principal} isCurrent={isCurrent} onSelected={()=>openDiscussion()} />}
         </div>
         <div className="paperReaderTab" role="tabpanel" hidden={tab!=='translation'}>
           {selection?<TranslationResult selection={selection} mode={mode} setMode={setMode} model={translation} full />:<p>{window.PortalI18n.t("选择论文中的文字开始翻译。")}</p>}
