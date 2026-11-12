@@ -12,7 +12,7 @@ from management_common.directory_paths import cleanup_location, cleanup_path
 
 
 def _git(repo, *args, input=None, missing_ok=False, timeout=1800):
-    result = run_process(['git', '-C', str(repo), *args], input=input, text=True,
+    result = run_process(['git', '-C', str(repo), *args], input=input, text=True, encoding='utf-8',
                             stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=timeout)
     if result.returncode and not (missing_ok and result.returncode == 1):
         raise RuntimeError(result.stderr.strip())
@@ -56,7 +56,7 @@ class GitWorktreeCreation:
                 continue
             if pointer.is_symlink() or not pointer.is_file():
                 raise ValueError('Creation Git pointer was replaced')
-            text = pointer.read_text().strip()
+            text = pointer.read_text(encoding='utf-8').strip()
             if not text.startswith('gitdir: '):
                 raise ValueError('Creation Git pointer is invalid')
             admin = Path(text.removeprefix('gitdir: '))
@@ -64,7 +64,7 @@ class GitWorktreeCreation:
                 admin = (root / admin).resolve()
             repo = cleanup_path(dependency['repo'])
             common = Path(self._git(repo, 'rev-parse', '--path-format=absolute', '--git-common-dir'))
-            if admin.parent != common / 'worktrees' or (admin / 'gitdir').read_text().strip() != str(pointer):
+            if admin.parent != common / 'worktrees' or Path((admin / 'gitdir').read_text(encoding='utf-8').strip()) != pointer:
                 raise ValueError('Creation Git worktree association changed')
             dependency.update(admin=cleanup_location(admin), admin_identity=_identity(admin))
             self.save()

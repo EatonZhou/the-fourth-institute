@@ -105,7 +105,7 @@ def repair_git_worktrees(source, target):
                 if (admin.resolve() != admin or backlink.is_symlink() or not common_file.is_file()
                         or common_file.is_symlink()):
                     raise ValueError('Unproven Git worktree admin relationship')
-                common = (admin / common_file.read_text().strip()).resolve()
+                common = (admin / common_file.read_text(encoding='utf-8').strip()).resolve()
                 if admin.parent != common / 'worktrees' or not (common / 'HEAD').is_file():
                     raise ValueError('Unproven Git common directory')
                 if before.exists() or before.is_symlink():

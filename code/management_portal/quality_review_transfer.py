@@ -82,7 +82,7 @@ class TransferStore:
                     raise ValueError('交接包超过256MiB')
                 entries.append({**asset, 'size': count, 'content_type': mime})
             manifest = {'entries': entries, 'digest': digest(entries)}
-            (stage / 'manifest.json').write_text(json.dumps(manifest, ensure_ascii=False))
+            (stage / 'manifest.json').write_text(json.dumps(manifest, ensure_ascii=False), encoding='utf-8')
             if folder.exists():
                 with secure_paths.open_target(folder, ('manifest.json',)) as (fd, _):
                     existing = json.loads(os.read(fd, 131073))
