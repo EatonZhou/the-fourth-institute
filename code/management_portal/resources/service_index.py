@@ -62,6 +62,14 @@ def get(service: "ResourceService", resource_id: str, *, actor: str = "") -> dic
         resource_types = (service._identity.parse(resource_id).resource_type,)
     except ValueError:
         resource_types = service._identity.id_exception_types
+    if "project" in resource_types:
+        from management_portal import project_registry
+        from management_portal.resource_index_registries import ProjectRegistryAdapter
+        project = project_registry.project(resource_id)
+        if project is not None:
+            record = ProjectRegistryAdapter().project_record("project", project)
+            service._access.authorize_read(record, actor=str(actor or ""))
+            return record
     if len(resource_types) == 1 and resource_types[0] in COLLABORATION_RESOURCE_TYPES:
         try:
             descriptor = service._collaboration.get(resource_id)
@@ -91,6 +99,8 @@ def get(service: "ResourceService", resource_id: str, *, actor: str = "") -> dic
         resource_types=resource_types,
         actor=actor,
     )
+    if "project" in resource_types and record.get("resource_type") == "project":
+        raise KeyError(resource_id)
     service._identity.validate(resource_id, str(record.get("resource_type") or ""))
     service._access.authorize_read(record, actor=str(actor or ""))
     return service._with_collaboration_descriptor(record)

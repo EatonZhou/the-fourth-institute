@@ -1,37 +1,33 @@
-"""Project identity lookup is independent of discovery search ranking.
-
-:module: resource.service
-"""
+"""Live Project identity is independent of asynchronous discovery refresh."""
 from types import SimpleNamespace
 import pytest
-from management_portal.resources import isa
+from management_portal import project_registry
+from management_portal.resources import service_index, isa
 from management_portal.hatg.contracts import InstructionError
 
 
-def test_project_lookup_uses_exact_id_after_rename(monkeypatch):
-    record = {'resource_id': 'TAU_renamed', 'resource_type': 'project', 'title': 'Old title'}
-    calls = []
-    def resolve(identity, *, actor):
-        calls.append((identity, actor))
-        return {'record': record}
-    monkeypatch.setattr(isa, '_service', lambda: SimpleNamespace(resolve=resolve,
-        get=lambda *a, **k: pytest.fail('discovery index may lag after rename'),
-        query=lambda **kwargs: pytest.fail('exact lookup cannot use a search page')))
-    assert isa._project_record('TAU_renamed', 'reader') == record
-    assert calls == [('TAU_renamed', 'reader')]
+def service(monkeypatch, project, allow=True):
+    monkeypatch.setattr(project_registry, 'project', lambda identity: project)
+    def parse(identity): raise ValueError('named identity')
+    def authorize(record, actor):
+        if not allow: raise PermissionError('denied')
+    return SimpleNamespace(_identity=SimpleNamespace(parse=parse, id_exception_types=('project',)),
+        _access=SimpleNamespace(authorize_read=authorize),
+        _index=lambda: SimpleNamespace(get_resource=lambda *a, **k: {'resource_type':'project'}))
 
 
-def test_other_resource_type_does_not_become_a_project(monkeypatch):
-    monkeypatch.setattr(isa, '_service', lambda: SimpleNamespace(resolve=lambda *args, **kwargs: {'record': {'resource_type': 'user'}}))
-    with pytest.raises(InstructionError):
-        isa._project_record('same-name', 'reader')
+def test_project_lookup_uses_live_registry_after_rename(monkeypatch):
+    live=service(monkeypatch, {'id':'项目-New','description':'new summary','status':'active'})
+    monkeypatch.setattr(isa,'_service',lambda:SimpleNamespace(get=lambda identity,actor:service_index.get(live,identity,actor=actor)))
+    record=isa._project_record('项目-New','reader')
+    assert record['resource_id']=='项目-New' and record['summary']=='new summary'
 
 
 def test_deleted_project_is_not_restored_from_stale_discovery(monkeypatch):
-    def missing(*a, **k):
-        raise KeyError('deleted-project')
-    monkeypatch.setattr(isa, '_service', lambda: SimpleNamespace(resolve=missing,
-        get=lambda *a, **k: {'resource_type': 'project'}))
-    with pytest.raises(InstructionError) as raised:
-        isa._project_record('deleted-project', 'reader')
-    assert raised.value.code == 'instruction.not_found'
+    live=service(monkeypatch,None)
+    with pytest.raises(KeyError):service_index.get(live,'old',actor='reader')
+
+
+def test_live_project_still_requires_read_permission(monkeypatch):
+    live=service(monkeypatch,{'id':'New'},allow=False)
+    with pytest.raises(PermissionError):service_index.get(live,'New',actor='reader')

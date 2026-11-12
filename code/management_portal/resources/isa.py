@@ -847,7 +847,7 @@ def _project_record(project_id: str, actor: str) -> dict[str, Any]:
     # Project identity belongs to the live registry, not the asynchronously
     # refreshed discovery index. This also authorizes the current root.
     try:
-        record = _service().resolve(project_id, actor=actor)['record']
+        record = _service().get(project_id, actor=actor)
     except KeyError:
         raise not_found(f"Project 不存在：{project_id}") from None
     if record.get('resource_type') != 'project':
