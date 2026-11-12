@@ -17,6 +17,8 @@ def command(config: dict, run_dir: Path, *, socket_path: Path | None = None) -> 
     # Linux inherits the user manager environment; macOS receives the runner's
     # explicit allowlist. Portal service secrets are not forwarded.
     env = os.environ.copy()
+    # Output capture and Portal's Python clients exchange UTF-8 on every OS.
+    env.update(PYTHONUTF8='1', PYTHONIOENCODING='utf-8')
     env.update(PORTAL_SCRIPT_INPUT=str(run_dir / 'io/input.json'),
                PORTAL_SCRIPT_OUTPUT=str(run_dir / 'io/output.json'),
                PORTAL_SCRIPT_ARTIFACTS=str(run_dir / 'io/artifacts'),

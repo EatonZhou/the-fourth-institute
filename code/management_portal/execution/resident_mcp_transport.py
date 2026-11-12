@@ -8,13 +8,12 @@ from __future__ import annotations
 import asyncio
 from contextlib import asynccontextmanager, suppress
 import json
-import os
-import signal
 import subprocess
 import time
 from typing import Any, Callable
 
 import aiohttp
+from management_common.process_runtime import spawn_process, terminate_process_tree
 
 PROTOCOL = "2025-06-18"
 MAX_BYTES = 2 * 1024 * 1024
@@ -79,10 +78,10 @@ class Connection:
     async def start(self):
         self.remaining()
         if self.transport["type"] == "stdio":
-            self.process = await asyncio.create_subprocess_exec(
-                self.transport["command"], *self.transport.get("args", []),
+            self.process = spawn_process(
+                [self.transport["command"], *self.transport.get("args", [])],
                 env=self.env, stdin=asyncio.subprocess.PIPE, stdout=asyncio.subprocess.PIPE,
-                stderr=subprocess.DEVNULL, start_new_session=True, limit=MAX_BYTES + 1,
+                stderr=subprocess.DEVNULL,
             )
         else:
             self.http = aiohttp.ClientSession(trust_env=False,
@@ -113,8 +112,10 @@ class Connection:
         raw = encode(message).encode() + b"\n"
         if len(raw) > MAX_BYTES:
             raise MCPError("message_too_large")
-        self.process.stdin.write(raw)
-        await self.process.stdin.drain()
+        def write():
+            self.process.stdin.write(raw)
+            self.process.stdin.flush()
+        await asyncio.to_thread(write)
 
     async def http_post(self, message, *, notification=False):
         raw = encode(message).encode()
@@ -212,7 +213,7 @@ class Connection:
 
     async def stdio_response(self, request_id):
         for _ in range(MAX_MESSAGES):
-            raw = await self.process.stdout.readline()
+            raw = await asyncio.to_thread(self.process.stdout.readline, MAX_BYTES + 1)
             if not raw:
                 raise MCPError("connection_closed", status="unknown")
             if len(raw) > MAX_BYTES:
@@ -244,23 +245,14 @@ class Connection:
                 operation = self.send_stdio(message) if self.process else self.http_post(message, notification=True)
                 await asyncio.wait_for(operation, timeout=0.2)
         if self.process:
-            if self.process.stdin:
-                self.process.stdin.close()
-            try:
-                await asyncio.wait_for(self.process.wait(), timeout=0.2)
-            except asyncio.TimeoutError:
-                with suppress(ProcessLookupError):
-                    os.killpg(self.process.pid, signal.SIGTERM)
-                try:
-                    await asyncio.wait_for(self.process.wait(), timeout=0.2)
-                except asyncio.TimeoutError:
-                    with suppress(ProcessLookupError):
-                        os.killpg(self.process.pid, signal.SIGKILL)
-                    await self.process.wait()
-            # A server may exit cleanly while children (with closed stdio) live
-            # on. The dedicated process group belongs to this operation too.
-            with suppress(ProcessLookupError):
-                os.killpg(self.process.pid, signal.SIGKILL)
+            # The common process owner handles POSIX groups and Windows Jobs,
+            # including descendants whose leader already exited. Reaping first
+            # also releases blocked pipe readers/writers after cancellation.
+            await asyncio.to_thread(terminate_process_tree, self.process, timeout=0.4)
+            for stream in (self.process.stdin, self.process.stdout):
+                if stream:
+                    with suppress(OSError):
+                        stream.close()
         if self.http:
             if self.session_id:
                 with suppress(Exception):

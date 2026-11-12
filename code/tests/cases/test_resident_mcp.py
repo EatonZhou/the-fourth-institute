@@ -23,6 +23,25 @@ def test_execution_owner_is_available_for_assembly():
     assert importlib.util.find_spec("management_portal.execution.resident_mcp") is not None
 
 
+def test_stdio_connection_owns_and_reaps_its_process_tree(connection, monkeypatch):
+    import asyncio
+    from management_common.process_runtime import process_tree_alive
+    from management_portal.execution import resident_mcp_transport as transport
+    spawned = []
+    original = transport.spawn_process
+    def spawn(*args, **kwargs):
+        process = original(*args, **kwargs)
+        spawned.append(process)
+        return process
+    monkeypatch.setattr(transport, 'spawn_process', spawn)
+    async def run():
+        async with transport.connect(connection[0], env=dict(os.environ), headers={}, is_cancelled=None) as client:
+            assert (await client.request('tools/list', {}))['tools']
+    asyncio.run(run())
+    assert len(spawned) == 1
+    assert not process_tree_alive(spawned[0])
+
+
 SERVER = r'''
 import json, os, sys, time, subprocess
 log, mode = sys.argv[1:]
