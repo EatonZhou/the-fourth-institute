@@ -1,12 +1,14 @@
 import React, {useEffect, useRef, useState} from 'react';
+import {ResearchAssistantPicker} from './research_assistant_picker.jsx';
 import '../static/paper_research_controls.js';
 const t=(value,args)=>window.PortalI18n.t(value,args);
 const friendlyError=cause=>window.PortalPaperResearchControls.errorSource(cause);
 
-export function AIPanel({discussion, principal, bridge, isCurrent, close}) {
+export function AIPanel({discussion, catalog, onSelected, principal, bridge, isCurrent, close}) {
   const root = useRef(null), panel = useRef(null);
   const saveIdentity = useRef(null), activeDiscussion = useRef(discussion), pendingSelection = useRef(discussion.text||'');
   useEffect(()=>{activeDiscussion.current=discussion;pendingSelection.current=discussion.text||'';if(discussion.text)panel.current?.workspace.setDraftText(discussion.text);},[discussion]);
+  const [titleElement,setTitleElement]=useState(null);
   const [error,setError] = useState(''), [answers,setAnswers] = useState([]), [draft,setDraft] = useState('');
   const [restoring,setRestoring] = useState(false);
   const [saving,setSaving] = useState(false), [saved,setSaved] = useState(false);
@@ -26,7 +28,7 @@ export function AIPanel({discussion, principal, bridge, isCurrent, close}) {
     try {
       if(!window.PortalChatWorkspace?.panelPackage?.create)throw Error('Research Chat 组件未加载');
       const chat=window.PortalChatWorkspace.panelPackage.create({root:root.current,id:'reader-ai-'+discussion.key,
-        autoLoad:false,draftOwner:()=>principal,title:t('论文 AI 讨论'),resolveResident:()=>prepare(true),resolveBeforeSend:(_target,payload)=>prepare(false,payload.text||payload.plainText),
+        autoLoad:false,draftOwner:()=>principal,title:t('Chat Workspace')+' - '+(catalog?.selected?.title||catalog?.selected_legacy?.title||t('Research Chat')),resolveResident:()=>prepare(true),resolveBeforeSend:(_target,payload)=>prepare(false,payload.text||payload.plainText),
         initialContext:(_target,detail)=>detail.initial_context || {},
         submissionContext:async()=> (await prepare(false)).initial_context || {},
         onDetail:detail=>{if(!current())return;setAnswers((detail.messages||[]).filter(m=>window.PortalChatWorkspace.messageRole(m)==='agent')
@@ -44,7 +46,7 @@ export function AIPanel({discussion, principal, bridge, isCurrent, close}) {
           throw error;
         });
       };
-      panel.current=chat;
+      panel.current=chat;setTitleElement(chat.workspace.els.title);
       chat.openSurface({workspace_key:discussion.key,paper_id:discussion.document.paper_id}).then(()=>{
         if(current()&&discussion.text)chat.workspace.setDraftText(discussion.text);
       }).catch(e=>{if(current())setError(friendlyError(e));});
@@ -72,6 +74,7 @@ export function AIPanel({discussion, principal, bridge, isCurrent, close}) {
       catch(e){if(isCurrent())setError(friendlyError(e));}finally{if(isCurrent()&&capturedDraft&&!panel.current?.workspace.draftText())panel.current?.workspace.setDraftText(capturedDraft,capturedAttachments);setRestoring(false);}
     }}>{window.PortalI18n.t('重新连接讨论')}</button></div>}
     <div ref={root} className="paperAIChat" />
+    <ResearchAssistantPicker catalog={catalog} principal={principal} isCurrent={isCurrent} onSelected={onSelected} titleElement={titleElement} attached />
     <details><summary>{t('确认保存回答为便签')}</summary>
       <select aria-label={t('选择 AI 回答')} defaultValue="" onChange={e=>{setDraft(e.target.value);setSaved(false);}}><option value="">{t('选择回答')}</option>{answers.map((text,i)=><option key={i} value={text}>{t('回答 {p0}',{p0:i+1})}</option>)}</select>
       <textarea aria-label={t('便签预览')} value={draft} onChange={e=>{setDraft(e.target.value);setSaved(false);}} />

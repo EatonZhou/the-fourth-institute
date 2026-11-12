@@ -50,12 +50,14 @@ function Reader({paper, principal, anchor, close, control, readingReady, frameRe
   }});
   const [discussion,setDiscussion] = useState(null);
   const [assistantCatalog,setAssistantCatalog]=useState(null);
-  const discussionSequence=useRef(0);
+  const discussionSequence=useRef(0),openDiscussionRef=useRef(null);
   useEffect(()=>{
     const changed=event=>{
       discussionSequence.current++;setStatus('');
       const selectedKey=event.detail?.slot?'research:'+event.detail.slot.slot_id:event.detail?.workspace_key;
-      if(event.detail?.principal!==principal || discussion?.key!==selectedKey) setDiscussion(null);
+      if(event.detail?.principal!==principal)return;
+      if(discussion?.key!==selectedKey)setDiscussion(null);
+      if(sidebarOpenRef.current)void openDiscussionRef.current?.();
     };
     window.addEventListener('portal:paper-research-selected',changed);
     return()=>window.removeEventListener('portal:paper-research-selected',changed);
@@ -70,15 +72,16 @@ function Reader({paper, principal, anchor, close, control, readingReady, frameRe
       if(!response.ok)throw Object.assign(new Error(),{status:response.status,code:choices.error?.code});
       if(sequence!==discussionSequence.current)return;
       if(!isCurrent()||choices.principal!==principal)throw Error('账号已变化，请重新打开论文');
-      const selected=choices.selected;
+      const selected=choices.selected,legacy=choices.selected_legacy;
       setAssistantCatalog(choices);
-      if(!selected||selected.state!=='bound'){setDiscussion(null);setStatus('');return;}
-      const key='research:'+selected.slot_id;
+      if((!selected||selected.state!=='bound')&&!legacy){setDiscussion(null);setStatus('');return;}
+      const key=selected?.state==='bound'?'research:'+selected.slot_id:legacy.workspace_key;
       if(discussion?.key===key&&!selection)return;
       const document=selection?.document||await bridge.current.aiDocument();
       if(isCurrent()&&isFullscreen()&&sequence===discussionSequence.current){setStatus('');setDiscussion({...selection,document,key});}
     } catch(error){if(isCurrent()&&sequence===discussionSequence.current)setStatus(window.PortalPaperResearchControls.errorSource(error)); }
   };
+  openDiscussionRef.current=openDiscussion;
   useEffect(() => {
     frameReady(frame.current.contentWindow);
     const connection = connectZotero({frame: frame.current, paper, principal, ready: readingReady,
@@ -112,7 +115,7 @@ function Reader({paper, principal, anchor, close, control, readingReady, frameRe
       {sidebarOpen&&<ReaderSplit content={content} width={aiWidth} />}
       <aside className="paperReaderSidePanel" hidden={!sidebarOpen} aria-label={window.PortalI18n.t("阅读侧栏")}>
         <div className="paperReaderTab" role="region" aria-label={t('论文 AI 侧栏')} hidden={tab!=='ai'}>
-          {discussion&&<AIPanel key={discussion.key} discussion={discussion} principal={principal} bridge={()=>bridge.current} isCurrent={isCurrent} close={()=>setSidebarOpen(false)} />}
+          {discussion&&<AIPanel key={discussion.key} discussion={discussion} catalog={assistantCatalog} onSelected={()=>openDiscussion()} principal={principal} bridge={()=>bridge.current} isCurrent={isCurrent} close={()=>setSidebarOpen(false)} />}
           {!discussion&&<ResearchAssistantPicker catalog={assistantCatalog} principal={principal} isCurrent={isCurrent} onSelected={()=>openDiscussion()} />}
         </div>
         <div className="paperReaderTab" role="region" aria-label={t('选区翻译')} hidden={tab!=='translation'}>
@@ -153,6 +156,7 @@ export function openReader({paper, principal, anchor, onClose, onReady, containe
   };
   const setFullscreen = value => { fullscreen = !!value; bridge?.setFullscreen(fullscreen); dialog.classList.toggle('is-embedded', !fullscreen); dialog.setAttribute('aria-modal', String(fullscreen)); };
   const escape = event => {
+    if(event.key==='Escape'&&event.target.closest?.('.paperResearchTitleMenu'))return;
     if (container && fullscreen && event.key === 'Escape') {event.preventDefault(); event.stopPropagation(); setFullscreen(false);}
   };
   document.addEventListener('keydown', escape, true);
