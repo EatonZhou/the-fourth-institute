@@ -898,3 +898,32 @@ body.portalAgentInboxMounted:has(> .portalAgentInbox[data-dock-side="left"]) {
 
 /* Muted conversations retain a quiet, visible unread marker. */
 .portalAgentInboxUnreadDot.is-muted { background: var(--muted, #64748b); box-shadow: none; }
+
+/* Chatroom navigation is local to the Mailbox; the list remains mounted. */
+.portalMailboxChatroom { display: none; }
+.portalAgentInbox[data-chatroom-open="true"] [data-inbox-panel="mailbox"] {
+  width: min(520px, calc(100vw - 54px));
+}
+.portalAgentInbox[data-chatroom-open="true"] [data-inbox-panel="mailbox"] > :not(.portalMailboxChatroom) { display: none; }
+.portalAgentInbox[data-chatroom-open="true"] .portalMailboxChatroom {
+  display: grid;
+  grid-area: 1 / 1 / -1 / -1;
+  grid-template-rows: 44px minmax(0, 1fr);
+  min-width: 0;
+  min-height: 0;
+}
+.portalMailboxChatroom > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 8px;
+  border-bottom: 1px solid var(--border, #cbd5e1);
+}
+.portalMailboxChatroom [data-mailbox-chatroom-back] { display: inline-flex; align-items: center; gap: 8px; }
+[data-mailbox-chatroom-view] { min-width: 0; min-height: 0; height: 100%; }
+@media (max-width: 640px) {
+  .portalAgentInbox[data-chatroom-open="true"] [data-inbox-panel="mailbox"] { width: auto; }
+  .portalAgentInbox[data-chatroom-open="true"] [data-agent-inbox-mobile-close] { display: none; }
+  .portalMailboxChatroom > header .portalButton { min-height: 40px; }
+  .portalAgentInbox[data-chatroom-open="true"] .portalMailboxChatroom { grid-template-rows: 52px minmax(0, 1fr); }
+}

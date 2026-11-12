@@ -40,6 +40,7 @@
   let unregisterAvoidedElements = null;
   let layoutObserver = null;
   let positionFrame = 0;
+  let mailboxChat = null;
   let assistantChat = null;
   let assistantMount = null;
   let assistantRefresh = null;
@@ -196,6 +197,68 @@
     assistantMount = attempt;
   }
 
+  function returnToMailbox({ focus = true } = {}) {
+    const chat = mailboxChat;
+    if (!chat) return;
+    mailboxChat = null; // Invalidate in-flight asset and room reads first.
+    chat.container.hidden = true;
+    chat.view?.destroy();
+    chat.container.replaceChildren();
+    root?.removeAttribute("data-chatroom-open");
+    if (root) {
+      const list = root.querySelector("[data-agent-conversation-list]");
+      list.scrollTop = chat.scrollTop;
+      if (focus) {
+        const item = [...list.querySelectorAll("[data-agent-conversation-key]")]
+          .find(item => item.dataset.agentConversationKey === chat.key);
+        (item || root.querySelector("[data-agent-conversation-trigger]")).focus({ preventScroll: true });
+      }
+    }
+  }
+
+  async function openMailboxChatroom(entry) {
+    returnToMailbox({ focus: false });
+    const container = root.querySelector("[data-mailbox-chatroom-view]");
+    const chat = { container, key: entry.key, view: null,
+      actor: window.PortalIdentity.username(),
+      scrollTop: root.querySelector("[data-agent-conversation-list]").scrollTop };
+    const current = () => mailboxChat === chat && container.isConnected
+      && window.PortalIdentity.username() === chat.actor;
+    mailboxChat = chat;
+    root.dataset.chatroomOpen = "true";
+    state.activePanel = "mailbox";
+    state.touchExpanded = true;
+    container.hidden = false;
+    container.textContent = window.PortalI18n.t("正在读取聊天室。");
+    updateChrome();
+    root.querySelector("[data-mailbox-chatroom-back]").focus({ preventScroll: true });
+    try {
+      await window.PortalNav.loadChatWorkspace();
+      await window.PortalUIPrimitives.loadAsset("/static/portal_components_conversation.css");
+      await window.PortalUIPrimitives.loadAsset("/static/portal_chatroom_view.js", { ready: () => !!window.PortalChatroomView });
+      if (!current()) return;
+      container.replaceChildren();
+      chat.view = window.PortalChatroomView.mount({
+        root: container, id: "mailbox-chatroom", me: () => chat.actor,
+        onMenu: button => openConversationMenu(button, undefined, chat.key),
+      });
+      const messageId = new URL(entry.url, window.location.href).searchParams.get("message") || "";
+      await chat.view.setChatroom(entry.chatroom_id, { messageId });
+    } catch (error) {
+      if (!current()) return;
+      chat.view?.destroy();
+      chat.view = null;
+      container.replaceChildren();
+      const message = document.createElement("p");
+      message.textContent = error?.message || window.PortalI18n.t("聊天室不可用");
+      const retry = document.createElement("button");
+      retry.className = "portalButton";
+      retry.textContent = window.PortalI18n.t("重试");
+      retry.addEventListener("click", () => openMailboxChatroom(entry), { once: true });
+      container.append(message, retry);
+    }
+  }
+
   function watchAvoidanceLayout(signal) {
     const schedule = () => {
       if (positionFrame) return;
@@ -223,6 +286,7 @@
     const mailboxOpen = expanded && state.activePanel === "mailbox";
     const todoOpen = expanded && state.activePanel === "todo";
     const mobileOverlayOpen = expanded && usesTouchExpansion();
+    if (mailboxChat && !mailboxOpen) returnToMailbox({ focus: false });
     store()?.setInboxOpen?.(mailboxOpen);
     todoPanel?.setView({ visible: mailboxOpen || todoOpen, active: todoOpen });
     root.dataset.expanded = expanded ? "true" : "false";
@@ -566,6 +630,7 @@
   async function navigateToEntry(entry) {
     const target = routedEntry(entry);
     if (!target?.url) return;
+    if (target.kind === "chatroom" && target.chatroom_id) return openMailboxChatroom(target);
     const navigationKey = String(target?.key || target.url).trim();
     if (state.navigationKeys.has(navigationKey)) return;
     state.navigationKeys.add(navigationKey);
@@ -698,8 +763,8 @@
     conversationMenu = null;
   }
 
-  function openConversationMenu(button, point) {
-    const entry = state.snapshot.entries.find(item => item.key === button.dataset.agentConversationKey);
+  function openConversationMenu(button, point, key = button.dataset.agentConversationKey) {
+    const entry = state.snapshot.entries.find(item => item.key === key);
     if (!entry || isNotification(entry)) return;
     closeConversationMenu();
     const panel = document.createElement("div");
@@ -760,7 +825,7 @@
     root.innerHTML = window.PortalI18n.html`<button class="portalAgentInboxTrigger" type="button" data-inbox-trigger="mailbox" data-agent-conversation-trigger aria-label="展开我的 Mailbox" aria-expanded="false" title="我的 Mailbox · 按住拖动到左侧或右侧" data-portal-tooltip="我的 Mailbox · 按住拖动到左侧或右侧" data-portal-icon="chat-room"><span class="portalAgentInboxTriggerCount" data-agent-conversation-count hidden></span></button>
       <section class="portalAgentInboxPanel" data-inbox-panel="mailbox" aria-label="我的 Mailbox" inert><header><strong>Mailbox</strong><span class="portalAgentInboxHeaderCount" data-agent-conversation-count hidden></span><span class="portalAgentInboxHeaderSummary" data-agent-conversation-action-summary>0 条</span><button class="portalAgentInboxHeaderAction" type="button" data-agent-conversation-clear-unread title="保留消息，只清除未读状态">清除未读</button><button class="portalAgentInboxHeaderAction" type="button" data-agent-conversation-clear-all title="清除当前列表；有新活动时会重新出现">清除全部</button><button type="button" data-agent-conversation-refresh aria-label="刷新 Mailbox" title="刷新" data-portal-icon="refresh"></button></header>
       <div class="portalAgentInboxError" data-agent-conversation-error role="status" hidden></div>
-      <div class="portalAgentInboxList" data-agent-conversation-list><div class="portalAgentInboxEmpty">正在读取 Mailbox…</div></div></section>
+      <div class="portalAgentInboxList" data-agent-conversation-list><div class="portalAgentInboxEmpty">正在读取 Mailbox…</div></div><section class="portalMailboxChatroom" aria-label="Mailbox 聊天室"><header><button type="button" class="portalButton is-quiet" data-mailbox-chatroom-back aria-label="返回 Mailbox"><span data-portal-icon="arrow-left" aria-hidden="true"></span>Mailbox</button><button type="button" class="portalButton is-icon is-quiet" data-mailbox-chatroom-close data-portal-icon="close" aria-label="关闭 Mailbox"></button></header><div data-mailbox-chatroom-view hidden></div></section></section>
       <button class="portalAgentInboxTrigger" type="button" data-inbox-trigger="todo" data-agent-todo-trigger aria-label="展开 To Do" aria-expanded="false" title="To Do · 按住拖动到左侧或右侧" data-portal-tooltip="To Do · 按住拖动到左侧或右侧" data-portal-icon="check"><span class="portalAgentInboxTriggerCount" data-agent-todo-count hidden></span></button>
       <section class="portalAgentInboxPanel" data-inbox-panel="todo" aria-label="To Do" inert><header><strong>To Do</strong><span class="portalAgentInboxHeaderCount" data-agent-todo-count hidden></span><span class="portalAgentInboxHeaderSummary" data-agent-todo-summary>0 条</span><button type="button" data-agent-todo-refresh aria-label="刷新 To Do" title="刷新" data-portal-icon="refresh"></button></header><div class="portalMailboxTodos" data-mailbox-todos></div></section>
       <button class="portalAgentInboxTrigger portalPersonalAssistantTrigger" type="button" data-inbox-trigger="assistant" data-personal-assistant-trigger aria-label="展开个人助手" aria-expanded="false" data-portal-icon="octopus" hidden><span class="portalAgentInboxUnreadDot" data-personal-assistant-unread aria-label="未读" hidden></span></button>
@@ -854,7 +919,7 @@
     document.addEventListener("pointerdown", event => {
       // Pointer focus must not keep a hover panel open after the pointer leaves.
       state.focused = Boolean(event.target.closest(".portalPersonalAssistantPanel"));
-      if (!root.contains(event.target)) state.touchExpanded = false;
+      if (!root.contains(event.target) && !mailboxChat) state.touchExpanded = false;
       updateChrome();
     }, { capture: true, signal });
     root.addEventListener("pointerenter", event => {
@@ -889,7 +954,11 @@
       }, 0);
     }, { signal });
     root.addEventListener("click", event => {
-      const mobileClose = event.target.closest("[data-agent-inbox-mobile-close]");
+      if (event.target.closest("[data-mailbox-chatroom-back]")) {
+        returnToMailbox();
+        return;
+      }
+      const mobileClose = event.target.closest("[data-agent-inbox-mobile-close], [data-mailbox-chatroom-close]");
       if (mobileClose) {
         state.touchExpanded = false;
         state.hovered = false;
@@ -931,11 +1000,17 @@
       const item = event.target.closest("[data-agent-conversation-key]");
       if (item) handleEntryDoubleClick(event, item);
     }, { signal });
+    window.addEventListener("portal:identity-changed", () => {
+      returnToMailbox({ focus: false });
+      state.touchExpanded = state.hovered = state.focused = false;
+      updateChrome();
+    }, { signal });
     window.addEventListener("resize", applyVerticalPosition, { passive: true, signal });
     state.relativeTimer = window.setInterval(updateRelativeTimes, 60_000);
   }
 
   function destroy() {
+    returnToMailbox({ focus: false });
     assistantChat?.destroy();
     assistantChat = null;
     assistantMount = null;
