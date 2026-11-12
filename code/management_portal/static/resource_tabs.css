@@ -7,16 +7,97 @@
  */
 
 header.resourceSectionPageHeader {
+  --resource-band-bg: color-mix(in srgb, var(--accent) 7%, var(--panel));
+  --resource-band-line: color-mix(in srgb, var(--border) 85%, transparent);
   position: sticky;
   top: 0;
   z-index: var(--portal-layer-sticky, 20);
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid var(--resource-band-line);
   background: var(--header-bg);
   backdrop-filter: blur(10px);
 }
 
+/* The section frame is the site navigation's second row: a faintly tinted
+   band joined to the row above, holding the category tabs and the page's
+   command controls. */
+header.resourceSectionPageHeader > .portalSiteHeader {
+  border-bottom: 0;
+}
+
 .resourceSectionFrame {
   box-sizing: border-box;
+}
+
+header.resourceSectionPageHeader > .resourceSectionFrame {
+  padding: 0 18px;
+  background: var(--resource-band-bg);
+}
+
+header.resourceSectionPageHeader .portalBoardHeader {
+  align-items: center;
+  column-gap: 20px;
+  row-gap: 0;
+  padding-bottom: 0;
+}
+
+header.resourceSectionPageHeader .portalBoardCommand {
+  grid-template-columns: minmax(290px, 1fr) auto;
+  padding-block: 5px;
+}
+
+/* Result counts and load progress stay available to assistive technology;
+   a page marks a message that needs attention with data-tone="alert". */
+header.resourceSectionPageHeader .portalBoardMeta:not([data-tone="alert"]) {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+header.resourceSectionPageHeader .portalBoardMeta[data-tone="alert"] {
+  grid-column: 1 / -1;
+  max-width: none;
+  padding-bottom: 4px;
+  color: var(--danger, #b42318);
+}
+
+header.resourceSectionPageHeader .portalBoardActions.portalToolbar {
+  height: 34px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+header.resourceSectionPageHeader .portalBoardSearchGroup,
+header.resourceSectionPageHeader .portalBoardCommand > .portalBoardSearch {
+  height: 34px;
+}
+
+/* Below the two-column width the tabs keep the band's first row and the
+   commands take a second; a hairline keeps the tabs' rule on an edge. */
+@media (max-width: 1240px) {
+  header.resourceSectionPageHeader .resourceCategoryShell {
+    margin-inline: -18px;
+    padding-inline: 18px;
+    border-bottom: 1px solid var(--resource-band-line);
+  }
+
+  header.resourceSectionPageHeader .portalBoardCommand {
+    padding-block: 7px;
+  }
+}
+
+@media (max-width: 720px) {
+  header.resourceSectionPageHeader > .resourceSectionFrame {
+    padding-inline: 12px;
+  }
+
+  header.resourceSectionPageHeader .resourceCategoryShell {
+    margin-inline: -12px;
+    padding: 0 12px;
+  }
 }
 
 [data-resource-section-header] {
@@ -294,10 +375,6 @@ header.resourceSectionPageHeader {
 
   .resourceCategoryExtra {
     margin-left: 0;
-  }
-
-  .resourceCategoryLink {
-    padding-inline: 11px;
   }
 
   .resourceKnowledgeMatrixPopover {

@@ -107,6 +107,7 @@ function beginIndexLoad() {
   state.indexPaging.hasMore = false;
   state.indexPaging.prefetching = false;
   state.indexPaging.error = "";
+  delete el.meta.dataset.tone;
   el.meta.textContent = window.PortalI18n.t("加载中…");
   return seq;
 }
@@ -147,7 +148,10 @@ async function loadIndex({ refresh = false, preserveScroll = false, waitForRefre
     if (seq !== state.indexPaging.requestSeq) return;
     state.indexPaging.error = error.message || String(error);
     if (state.raw) renderAll();
-    else el.meta.textContent = window.PortalI18n.text`索引加载失败：${state.indexPaging.error}。请点击刷新后重试。`;
+    else {
+      el.meta.dataset.tone = "alert";
+      el.meta.textContent = window.PortalI18n.text`索引加载失败：${state.indexPaging.error}。请点击刷新后重试。`;
+    }
     throw error;
   }
 }

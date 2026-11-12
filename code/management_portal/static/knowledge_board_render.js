@@ -428,6 +428,8 @@ function renderAll() {
       title: state.indexPaging.error || "",
     }),
   );
+  if (state.indexPaging.error) el.meta.dataset.tone = "alert";
+  else delete el.meta.dataset.tone;
   if (!items.length) {
     if (state.exactQuery.status === "loading" && state.exactQuery.id === state.query) {
       el.empty.textContent = window.PortalI18n.text`正在按 Resource ID 查询 ${state.query}…`;

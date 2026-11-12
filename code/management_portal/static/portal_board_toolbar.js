@@ -23,8 +23,18 @@
     button.prepend(node);
   }
 
+  function searchGroup(root) {
+    return direct(root, ".portalBoardSearchGroup");
+  }
+
+  function findSearch(root) {
+    const group = searchGroup(root);
+    return direct(root, "[data-portal-board-search]")
+      || (group ? direct(group, "[data-portal-board-search]") : null);
+  }
+
   function normalizeSearch(root) {
-    const search = direct(root, "[data-portal-board-search]");
+    const search = findSearch(root);
     if (!search) return null;
     search.classList.add("portalBoardSearch");
     search.dataset.portalSearchField = "1";
@@ -66,6 +76,52 @@
     }
   }
 
+  function normalizeFilter(item) {
+    item.classList.add("portalBoardFilter");
+    normalizeAction(item);
+    if (item.matches("[data-portal-board-filter-auto]") && !item.dataset.portalBoardFilterBound) {
+      const button = item.querySelector("[data-portal-board-action='filter']");
+      const panel = item.querySelector("[data-portal-board-filter-panel]");
+      if (button && panel && global.PortalFormControls?.bindFilterDropdown) {
+        global.PortalFormControls.bindFilterDropdown({
+          button,
+          panel,
+          onToggle: open => button.classList.toggle("active", open),
+        });
+        item.dataset.portalBoardFilterBound = "true";
+      }
+    }
+  }
+
+  // The filter is a funnel joined to the leading edge of the search field.
+  // It sits beside the field, not inside it: the field clips its overflow,
+  // and the filter's panel drops below the funnel.
+  function attachFilterToSearch(root, search) {
+    const actions = direct(root, "[data-portal-board-actions]");
+    const grouped = searchGroup(root);
+    const filter = (actions ? direct(actions, "[data-portal-board-filter]") : null)
+      || (grouped ? direct(grouped, "[data-portal-board-filter]") : null);
+    if (!search || !filter) return;
+    normalizeFilter(filter);
+    let group = grouped;
+    if (!group) {
+      group = document.createElement("div");
+      group.className = "portalBoardSearchGroup";
+      search.before(group);
+      group.append(search);
+    }
+    filter.removeAttribute("data-portal-toolbar-item");
+    filter.classList.remove("portalToolbarItem");
+    group.prepend(filter);
+    const button = filter.querySelector("[data-portal-board-action='filter']");
+    if (button) {
+      button.classList.add("is-icon");
+      const label = String(button.textContent || "").trim();
+      if (!button.getAttribute("aria-label") && label) button.setAttribute("aria-label", label);
+      if (!button.title && label) button.title = label;
+    }
+  }
+
   function normalizeActions(root) {
     const actions = direct(root, "[data-portal-board-actions]");
     if (!actions) return null;
@@ -74,21 +130,9 @@
     Array.from(actions.children).forEach(item => {
       if (item.matches("[data-portal-toolbar-more], .portalToolbarOverflowButton")) return;
       if (!item.hasAttribute("data-portal-toolbar-item")) item.dataset.portalToolbarItem = "1";
-      if (item.matches("[data-portal-board-filter]")) item.classList.add("portalBoardFilter");
+      if (item.matches("[data-portal-board-filter]")) { normalizeFilter(item); return; }
       if (item.matches("[data-portal-board-divider]")) item.classList.add("portalBoardDivider");
       normalizeAction(item);
-      if (item.matches("[data-portal-board-filter-auto]") && !item.dataset.portalBoardFilterBound) {
-        const button = item.querySelector("[data-portal-board-action='filter']");
-        const panel = item.querySelector("[data-portal-board-filter-panel]");
-        if (button && panel && global.PortalFormControls?.bindFilterDropdown) {
-          global.PortalFormControls.bindFilterDropdown({
-            button,
-            panel,
-            onToggle: open => button.classList.toggle("active", open),
-          });
-          item.dataset.portalBoardFilterBound = "true";
-        }
-      }
     });
     const toolbar = global.PortalToolbar?.mount(actions);
     toolbar?.refresh();
@@ -102,6 +146,7 @@
     root.dataset.portalBoardToolbarMounted = "true";
 
     const search = normalizeSearch(root);
+    attachFilterToSearch(root, search);
     const actionState = normalizeActions(root);
     const meta = direct(root, "[data-portal-board-meta]");
     if (meta) meta.classList.add("portalBoardMeta");
@@ -114,7 +159,7 @@
       search,
       actions: actionState?.actions || null,
       refresh() {
-        normalizeSearch(root);
+        attachFilterToSearch(root, normalizeSearch(root));
         normalizeActions(root)?.toolbar?.refresh();
       },
     });

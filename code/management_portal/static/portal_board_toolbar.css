@@ -71,6 +71,66 @@
   grid-column: 1 / -1;
 }
 
+/* A filter funnel joined to the leading edge of the search field. The group
+   owns the frame and focus ring; the field inside drops its own. */
+.portalBoardSearchGroup {
+  min-width: 0;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--border);
+  border-radius: var(--portal-control-radius);
+  background: var(--panel);
+  transition: border-color 120ms ease, box-shadow 120ms ease;
+}
+
+.portalBoardSearchGroup:focus-within {
+  border-color: color-mix(in srgb, var(--accent) 58%, var(--border));
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 11%, transparent);
+}
+
+.portalBoardSearchGroup > .portalBoardSearch.portalSearchField {
+  flex: 1 1 auto;
+  height: 100%;
+  padding-left: 8px;
+  border: 0;
+  border-radius: inherit;
+  background: transparent;
+  box-shadow: none;
+}
+
+.portalBoardSearchGroup > .portalBoardFilter {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding-left: 2px;
+}
+
+.portalBoardSearchGroup > .portalBoardFilter::after {
+  content: "";
+  width: 1px;
+  height: 16px;
+  background: var(--border);
+}
+
+.portalBoardSearchGroup .portalBoardAction[data-portal-board-action="filter"] {
+  width: 28px;
+  min-width: 28px;
+  height: 28px;
+  min-height: 28px;
+  padding: 0;
+}
+
+.portalBoardSearchGroup .portalBoardAction[data-portal-board-action="filter"] > :not(svg) {
+  display: none;
+}
+
+.portalBoardSearchGroup .portalBoardAction[data-portal-board-action="filter"]:is(.active, .is-active, [aria-expanded="true"]) {
+  --portal-button-bg: color-mix(in srgb, var(--accent) 12%, var(--panel));
+  --portal-button-color: var(--accent);
+}
+
 .portalBoardSearchAction,
 [data-portal-board-search-action],
 .portalBoardSemantic,

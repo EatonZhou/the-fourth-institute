@@ -16,7 +16,7 @@ function harness(receipt = {deleted:true, kb_id:'information_1234'}) {
   const context = vm.createContext({state, URLSearchParams, setTimeout,
     window:{scrollY:0,requestAnimationFrame:()=>{},PortalUI:{confirmAction:async()=>true},
       PortalI18n:{t:s=>s,text:(s,...a)=>s.reduce((v,t,i)=>v+t+(a[i]??''),'')}},
-    el:{meta:{textContent:''}}, filter:{type:null},
+    el:{meta:{textContent:'',dataset:{}}}, filter:{type:null},
     byId:id=>state.raw.items.find(x=>x.kb_id===id), syncDetailButtons:()=>{},
     detailResourceGuest:null,closeModal:()=>{state.detailFileId='';}, alertError:e=>errors.push(e),
     renderAll:()=>renders.push(state.raw.items.map(x=>x.kb_id)),
@@ -69,4 +69,6 @@ test('first index failure also leaves loading state with visible error',async()=
   const h=harness();h.state.raw=null;
   await assert.rejects(h.context.loadIndex(),/503/);
   assert.match(h.context.el.meta.textContent,/503/);
+  // The header hides result meta unless it is marked as needing attention.
+  assert.equal(h.context.el.meta.dataset.tone,'alert');
 });
