@@ -936,7 +936,7 @@ body:has(#paperPageFrame) .paperResearchChatHost .chatSubline .chatHeaderSeparat
 body:has(#paperPageFrame) :is(#workspaceResourceId,.paperResearchChatHost [data-workspace-resident-id],.paperResearchChatHost [data-workspace-session-id]) {
   font-family:var(--mono,ui-monospace,SFMono-Regular,Menlo,monospace);
 }
-body:has(#paperPageFrame) #portalButtonTooltip { display:none!important; }
+body:has(#paperPageFrame):not(:has(:is(.portalWorkbenchTab,.portalDocumentTabSelect)[aria-describedby~="portalButtonTooltip"])) #portalButtonTooltip { display:none!important; }
 #paperLibraryPane .paneHeadText { flex:1 1 auto; min-width:0; }
 /* Match the existing Chat text stack, without changing shared Chat headers. */
 #paperLibraryPane > .paneHead { align-items:flex-start; }
