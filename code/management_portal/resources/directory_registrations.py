@@ -92,6 +92,17 @@ def register_owned(collection, resource_id, paths, *, scanning=False, connection
     if not paths:
         raise ValueError('Resource directory registration requires a path')
     queue = get_directory_cleanup_store()
+    if scanning and connection is None:
+        # Observing an existing owner does not allocate/move a path. Keep this
+        # branch read-only: a deletion after the reads cannot be undone by a
+        # late scan. Unknown identities still take the locked writer below.
+        previous = get_registry_store().get(collection, resource_id)
+        if previous is not None:
+            known = {str(Path(located_path(item['path']))) for item in locations(collection, previous)}
+            incoming = {str(Path(path)) for path in paths}
+            if known != incoming or any(queue.pending_at(path) for path in paths) or is_deleted(resource_id):
+                return None
+            return previous
     context = directory_writer(collection) if connection is None else get_registry_store().writer(collection, connection=connection)
     with context as writer:
         queue.lock(writer.connection)

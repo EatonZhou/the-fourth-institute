@@ -121,6 +121,16 @@ class WorkspaceStore:
         absolute = canonical_path(path)
         path = stored_location(absolute)
         def write(conn):
+            # An existing, unchanged registration is an observation, not a
+            # path allocation. A concurrent deletion may follow this read;
+            # this branch never writes and cannot revive it.
+            observed = conn.execute(f"SELECT path,deleted_at FROM {self.table} WHERE workspace_id=%s",
+                                    (workspace_id,)).fetchone()
+            if observed:
+                if observed['deleted_at'] is not None:
+                    raise ValueError("Deleted Workspace cannot be restored")
+                if observed['path'] == path:
+                    return workspace_id
             self.cleanup.lock(conn)
             # The partial path index arbitrates concurrent registration, while
             # the row lock prevents a stale save from reviving a deletion.
