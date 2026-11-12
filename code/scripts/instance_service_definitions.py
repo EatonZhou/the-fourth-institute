@@ -60,12 +60,12 @@ if __name__ == '__main__':
     parser.add_argument('--platform', choices=('linux', 'macos', 'windows'), required=True)
     parser.add_argument('--output', type=Path, required=True)
     args = parser.parse_args()
-    instance = validate(args.root, json.loads(args.proposal.read_text())) if args.proposal else load(args.root)
+    instance = validate(args.root, json.loads(args.proposal.read_text(encoding='utf-8'))) if args.proposal else load(args.root)
     if args.output.exists() or args.output.is_symlink():
         parser.error('Output must be a new review directory, not an installed service directory')
     definitions = render(instance, args.platform)
     args.output.mkdir(parents=True)
     for filename, content in definitions.items():
-        (args.output / filename).write_text(content)
+        (args.output / filename).write_text(content, encoding='utf-8')
     print(json.dumps({'rendered': len(definitions), 'missing_launchers': missing_launchers(instance),
                       'activated': False, 'output': str(args.output)}))

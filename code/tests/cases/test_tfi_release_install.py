@@ -585,3 +585,15 @@ def test_cli_lifecycle_preserves_accepted_management_job(tmp_path, monkeypatch, 
     for name in ('lifecycle', 'retire', 'update_code'):
         monkeypatch.setattr(installer, name, unexpected)
     assert installer.main([command, '--instance', 'fixture']) == 1
+
+
+def test_creation_records_keep_unicode_root_under_legacy_locale(creation, tmp_path, monkeypatch):
+    original=Path.read_text
+    def legacy_read(path, encoding=None, errors=None):
+        return original(path,encoding=encoding or 'cp1252',errors=errors)
+    monkeypatch.setattr(Path,'read_text',legacy_read)
+    monkeypatch.setattr(installer,'validate_runtime_paths',lambda instance: None)
+    root=tmp_path/'实例中文 🧪'
+    result=installer.create(creation.engineering,name='accept_unicode',root=root,postgres=creation.postgres,start=False,skip_file_verification=True)
+    assert result['root']==str(root)
+    assert not (root/'runtime/creation.json').exists()

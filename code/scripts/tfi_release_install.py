@@ -598,14 +598,14 @@ def create(engineering, *, name, root=None, bind="127.0.0.1", ports=None, postgr
     phase = "configuration"
     try:
         phase = "areas"
-        atomic_json(record, {**json.loads(record.read_text()), "phase": phase})
+        atomic_json(record, {**json.loads(record.read_text(encoding='utf-8')), "phase": phase})
         for area in AREAS:
             instance.area(area).mkdir(parents=True, exist_ok=True, mode=0o700)
         copy_area_content(manifest, bundle, instance, directory_replacements(manifest, SOURCE_ROOT))
         write_secret(instance.directory("secrets") / "postgres.env",
                      "PORTAL_DATABASE_URL=" + database_url(instance) + "\n")
         phase = "database"
-        atomic_json(record, {**json.loads(record.read_text()), "phase": phase})
+        atomic_json(record, {**json.loads(record.read_text(encoding='utf-8')), "phase": phase})
         report("正在初始化数据库")
         initialize_database(instance)
         instance_services.install_definitions(instance)
@@ -618,14 +618,14 @@ def create(engineering, *, name, root=None, bind="127.0.0.1", ports=None, postgr
         import_database(instance, sql)
         sql.unlink()
         phase = "features"
-        atomic_json(record, {**json.loads(record.read_text()), "phase": phase})
+        atomic_json(record, {**json.loads(record.read_text(encoding='utf-8')), "phase": phase})
         features = initialize_features(instance, planned["manifest_path"], manifest, freeze_evidence)
         result = {"status": "created", "name": instance.name, "instance_id": instance.instance_id,
                   "root": str(root), "feature_initialization": features,
                   "external_requirements": manifest.get("external_requirements", [])}
         if start:
             phase = "start"
-            atomic_json(record, {**json.loads(record.read_text()), "phase": phase})
+            atomic_json(record, {**json.loads(record.read_text(encoding='utf-8')), "phase": phase})
             report("正在启动 Portal")
             instance_services.lifecycle("start", root, creating=True)
             observed = wait_for_ready(instance)
@@ -636,17 +636,17 @@ def create(engineering, *, name, root=None, bind="127.0.0.1", ports=None, postgr
             # Import and feature initialization need PostgreSQL even when the
             # caller requested a stopped instance. Release those services too.
             phase = "stop"
-            atomic_json(record, {**json.loads(record.read_text()), "phase": phase})
+            atomic_json(record, {**json.loads(record.read_text(encoding='utf-8')), "phase": phase})
             instance_services.lifecycle("stop", root)
         record.unlink()
         return result
     except Exception as exc:
-        atomic_json(record, {**json.loads(record.read_text()), "phase": phase, "status": "failed",
+        atomic_json(record, {**json.loads(record.read_text(encoding='utf-8')), "phase": phase, "status": "failed",
                              "error": f"{type(exc).__name__}: {exc}"})
         try:
             instance_services.lifecycle("stop", root)
         except Exception as stop_error:  # Recorded; retire still owns the cleanup.
-            atomic_json(record, {**json.loads(record.read_text()),
+            atomic_json(record, {**json.loads(record.read_text(encoding='utf-8')),
                                  "stop_error": f"{type(stop_error).__name__}: {stop_error}"})
         raise
 

@@ -75,7 +75,7 @@ def relocate(instance, target):
     _stopped(instance)
     existing = instance.root / RECORD
     resume = target == instance.root and existing.is_file()
-    record = json.loads(existing.read_text()) if resume else None
+    record = json.loads(existing.read_text(encoding='utf-8')) if resume else None
     if resume:
         if record.get('target') != str(target) or record.get('instance_id') != instance.instance_id:
             raise ValueError('Relocation record does not match this instance')
@@ -143,4 +143,4 @@ def relocate(instance, target):
 
 if __name__ == '__main__':
     import sys
-    print(json.dumps(migrate_references(sys.argv[1], sys.argv[2]), ensure_ascii=False))
+    print(json.dumps(migrate_references(sys.argv[1], sys.argv[2]), ensure_ascii=True))

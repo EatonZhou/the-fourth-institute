@@ -38,7 +38,7 @@ def _runtime_modules(names):
         "const names=JSON.parse(fs.readFileSync(0,'utf8'));"
         "process.stdout.write(JSON.stringify(Object.fromEntries(names.map(n=>[n,r.resolve(n)]))));",
         str(RUNTIME.resolve() / "package.json"),
-    ], input=json.dumps(sorted(set(names))), capture_output=True, text=True, timeout=30, check=True)
+    ], input=json.dumps(sorted(set(names))), capture_output=True, text=True, encoding="utf-8", timeout=30, check=True)
     return json.loads(result.stdout)
 
 

@@ -65,7 +65,7 @@ def latex_environment() -> dict[str, Any]:
                     [command, "--version"],
                     stdout=subprocess.PIPE,
                     stderr=subprocess.STDOUT,
-                    text=True,
+                    text=True, encoding="utf-8",
                     errors="replace",
                     timeout=12,
                     check=False,
@@ -91,7 +91,7 @@ def latex_environment() -> dict[str, Any]:
                 [kpsewhich, "--var-value=TEXMFROOT"],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.DEVNULL,
-                text=True,
+                text=True, encoding="utf-8",
                 timeout=12,
                 check=False,
             ).stdout.strip()
@@ -140,7 +140,7 @@ def _kpsewhich_file(name: str) -> str:
             [command, name],
             stdout=subprocess.PIPE,
             stderr=subprocess.DEVNULL,
-            text=True,
+            text=True, encoding="utf-8",
             timeout=12,
             check=False,
         ).stdout.strip()
@@ -158,7 +158,7 @@ def _fontconfig_family(name: str) -> str:
             [command, "--format=%{family}", name],
             stdout=subprocess.PIPE,
             stderr=subprocess.DEVNULL,
-            text=True,
+            text=True, encoding="utf-8",
             timeout=12,
             check=False,
         ).stdout.strip()

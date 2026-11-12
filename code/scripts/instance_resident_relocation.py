@@ -103,7 +103,7 @@ def plan_remainders(instance, resident_report, projects):
         metadata = root / 'lineage.json'
         if metadata.is_file():
             try:
-                identity = json.loads(metadata.read_text()).get('lineage_id')
+                identity = json.loads(metadata.read_text(encoding='utf-8')).get('lineage_id')
             except (ValueError, OSError):
                 identity = None
             basis = 'legacy identity verified against database'

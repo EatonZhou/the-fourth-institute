@@ -16,7 +16,7 @@ def _move_area_command(name: str, area: str, target: str) -> dict:
     script = Path(__file__).resolve().parents[1] / 'scripts' / 'tfi_move_area.py'
     result = subprocess.run([sys.executable, str(script), 'submit', '--name', name, '--area', area,
                              '--target', target], env=supervisor_environment(),
-                            capture_output=True, text=True, timeout=135)
+                            capture_output=True, text=True, encoding="utf-8", timeout=135)
     try:
         value = json.loads(result.stdout)
     except ValueError:

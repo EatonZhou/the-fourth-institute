@@ -93,7 +93,7 @@ def runtime_python(code: Path) -> Path:
 def native_directory(code: Path, package: str, host=None) -> Path:
     from .distribution_targets import identify_host
     host = host or identify_host()
-    catalog = json.loads((code / "config/release-native-dependencies.json").read_text())
+    catalog = json.loads((code / "config/release-native-dependencies.json").read_text(encoding='utf-8'))
     entry = catalog["packages"][host["platform"] + "/" + host["architecture"]][package]
     return code.parent / "dependencies/native" / (package + "-" + entry["version"] + "-" + entry["sha256"][:12])
 
