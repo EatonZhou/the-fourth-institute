@@ -8,7 +8,7 @@
   const DEPENDENCIES = Object.freeze([
     "$", "addSelectionToChatDraft", "alertError", "applyPaneCollapse", "currentPaperWorkbench",
     "detailSectionLoadingHtml", "detailSectionsLoaded", "esc", "md", "needPaperHtml", "paperSelectionPopover",
-    "paperStateHtml", "renderAnalysisControls", "state", "submitChatMessage",
+    "paperStateHtml", "renderAnalysisControls", "state", "submitChatMessage", "readerChat",
   ]);
 
   function createReader(dependencies) {
@@ -17,7 +17,7 @@
     const {
       $, addSelectionToChatDraft, alertError, applyPaneCollapse, currentPaperWorkbench,
       detailSectionLoadingHtml, detailSectionsLoaded, esc, md, needPaperHtml, paperSelectionPopover,
-      paperStateHtml, renderAnalysisControls, state, submitChatMessage,
+      paperStateHtml, renderAnalysisControls, state, submitChatMessage, readerChat,
     } = dependencies;
 
     function shortPath(value, maxLength = 44) {
@@ -141,7 +141,7 @@
       const session = sessionFor(paper.id);
       const {openReader} = await import('/static/paper_fullscreen_reader.js');
       if (generation !== readerGeneration || state.selectedId !== paper.id || String(state.principalId || '') !== principal) return;
-      fullscreenReader = openReader({paper, principal,
+      fullscreenReader = openReader({paper, principal, chat:readerChat,
         isCurrent: () => generation === readerGeneration && state.mode === 'reader' && state.selectedId === paper.id && String(state.principalId || '') === principal,
         container: () => document.getElementById('paperPdfViewer'),
         onReady: signal => {

@@ -4,8 +4,7 @@ import {createPortal} from 'react-dom';
 import {connectZotero, ZOTERO_URL} from './zotero_adapter.js';
 import {useTranslation, TranslationResult} from './translation_panel.jsx';
 import {translateSelection} from './translation_client.js';
-import {AIPanel} from './ai_panel.jsx';
-import {ResearchAssistantPicker} from './research_assistant_picker.jsx';
+import {PaperChatMount} from './ai_panel.jsx';
 const t=value=>window.PortalI18n.t(value);
 
 function ReaderSplit({content, width}) {
@@ -28,7 +27,7 @@ function ReaderSplit({content, width}) {
   return <div ref={handle} className="paperAISplitter" role="separator" aria-orientation="vertical" aria-label={t('调整 AI 侧栏宽度')} tabIndex={0}/>;
 }
 
-function Reader({paper, principal, anchor, close, control, readingReady, frameReady, isCurrent, isFullscreen}) {
+function Reader({paper, principal, anchor, close, control, readingReady, frameReady, isCurrent, isFullscreen, chat}) {
   const [languageVersion,setLanguageVersion]=useState(0);
   useEffect(()=>{
     const changed=()=>setLanguageVersion(value=>value+1);
@@ -49,39 +48,11 @@ function Reader({paper, principal, anchor, close, control, readingReady, frameRe
     return translateSelection({selection: input, mode: selectedMode, operationId, principal, signal});
   }});
   const [discussion,setDiscussion] = useState(null);
-  const [assistantCatalog,setAssistantCatalog]=useState(null);
-  const discussionSequence=useRef(0),openDiscussionRef=useRef(null);
-  useEffect(()=>{
-    const changed=event=>{
-      discussionSequence.current++;setStatus('');
-      const selectedKey=event.detail?.slot?'research:'+event.detail.slot.slot_id:event.detail?.workspace_key;
-      if(event.detail?.principal!==principal)return;
-      if(discussion?.key!==selectedKey)setDiscussion(null);
-      if(sidebarOpenRef.current)void openDiscussionRef.current?.();
-    };
-    window.addEventListener('portal:paper-research-selected',changed);
-    return()=>window.removeEventListener('portal:paper-research-selected',changed);
-  },[discussion?.key,principal]);
-  const openDiscussion=async selection=>{
+  const openDiscussion=selection=>{
     if(!isCurrent()||!isFullscreen())return;
-    setSidebarOpen(true); setTab('ai');
-    const sequence=++discussionSequence.current;
-    try {
-      const response=await fetch('/paper/api/research/chats',{credentials:'same-origin'});
-      const choices=await response.json();
-      if(!response.ok)throw Object.assign(new Error(),{status:response.status,code:choices.error?.code});
-      if(sequence!==discussionSequence.current)return;
-      if(!isCurrent()||choices.principal!==principal)throw Error('账号已变化，请重新打开论文');
-      const selected=choices.selected,legacy=choices.selected_legacy;
-      setAssistantCatalog(choices);
-      if((!selected||selected.state!=='bound')&&!legacy){setDiscussion(null);setStatus('');return;}
-      const key=selected?.state==='bound'?'research:'+selected.slot_id:legacy.workspace_key;
-      if(discussion?.key===key&&!selection)return;
-      const document=selection?.document||await bridge.current.aiDocument();
-      if(isCurrent()&&isFullscreen()&&sequence===discussionSequence.current){setStatus('');setDiscussion({...selection,document,key});}
-    } catch(error){if(isCurrent()&&sequence===discussionSequence.current)setStatus(window.PortalPaperResearchControls.errorSource(error)); }
+    setSidebarOpen(true);setTab('ai');
+    if(selection){setDiscussion(selection);chat.addSelection(selection.text);}
   };
-  openDiscussionRef.current=openDiscussion;
   useEffect(() => {
     frameReady(frame.current.contentWindow);
     const connection = connectZotero({frame: frame.current, paper, principal, ready: readingReady,
@@ -115,8 +86,7 @@ function Reader({paper, principal, anchor, close, control, readingReady, frameRe
       {sidebarOpen&&<ReaderSplit content={content} width={aiWidth} />}
       <aside className="paperReaderSidePanel" hidden={!sidebarOpen} aria-label={window.PortalI18n.t("阅读侧栏")}>
         <div className="paperReaderTab" role="region" aria-label={t('论文 AI 侧栏')} hidden={tab!=='ai'}>
-          {discussion&&<AIPanel key={discussion.key} discussion={discussion} catalog={assistantCatalog} onSelected={()=>openDiscussion()} principal={principal} bridge={()=>bridge.current} isCurrent={isCurrent} close={()=>setSidebarOpen(false)} />}
-          {!discussion&&<ResearchAssistantPicker catalog={assistantCatalog} principal={principal} isCurrent={isCurrent} onSelected={()=>openDiscussion()} />}
+          <PaperChatMount active={sidebarOpen && tab==='ai'} chat={chat} discussion={discussion} bridge={()=>bridge.current} isCurrent={isCurrent} />
         </div>
         <div className="paperReaderTab" role="region" aria-label={t('选区翻译')} hidden={tab!=='translation'}>
           {selection?<TranslationResult selection={selection} mode={mode} setMode={setMode} model={translation} full />:<p>{window.PortalI18n.t("选择论文中的文字开始翻译。")}</p>}
@@ -126,7 +96,7 @@ function Reader({paper, principal, anchor, close, control, readingReady, frameRe
   </div>;
 }
 
-export function openReader({paper, principal, anchor, onClose, onReady, container, isCurrent = () => true}) {
+export function openReader({paper, principal, anchor, onClose, onReady, container, chat, isCurrent = () => true}) {
   const previousFocus = document.activeElement;
   const dialog = document.createElement('dialog');
   dialog.className = 'paperReadingDialog'; dialog.setAttribute('aria-label', t('全屏论文阅读'));
@@ -183,7 +153,7 @@ export function openReader({paper, principal, anchor, onClose, onReady, containe
   const toggle = () => container ? setFullscreen(!fullscreen) : close();
   dialog.addEventListener('cancel', event => { event.preventDefault(); toggle(); });
   if (container) {dialog.show(); layout();} else dialog.showModal();
-  root.render(<Reader paper={paper} principal={principal} anchor={anchor} close={toggle} control={value => { bridge = value; bridge.setFullscreen(fullscreen); }}
+  root.render(<Reader paper={paper} principal={principal} chat={chat} anchor={anchor} close={toggle} control={value => { bridge = value; bridge.setFullscreen(fullscreen); }}
     isFullscreen={() => fullscreen}
     isCurrent={() => !closed && isCurrent()}
     frameReady={value => { sourceWindow = value; }}

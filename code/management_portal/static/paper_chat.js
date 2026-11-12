@@ -486,6 +486,33 @@
       paperChatPanel?.updateControls?.();
     }
 
+    let releaseChatMount = null;
+    function mountChat(container) {
+      releaseChatMount?.();
+      if (!currentPaperWorkbench()?.isPanelVisible('chat')) currentPaperWorkbench()?.showPanel('chat');
+      const root = paperChatWorkspace?.els.title?.closest('.portalChatWorkspaceRoot');
+      if (!root || !container?.isConnected) throw Error(window.PortalI18n.t('研究助手暂不可用，请重试'));
+      const host = root.parentElement;
+      container.classList.add('paperResearchChatHost');
+      // Preserve inherited Paper typography when borrowing the same nodes into
+      // the Reader dialog, whose PDF chrome has a different base font.
+      container.style.font = getComputedStyle(host).font;
+      const menu = document.getElementById(paperChatWorkspace.els.title.getAttribute('aria-controls'));
+      if(menu){menu.hidden=true;paperChatWorkspace.els.title.setAttribute('aria-expanded','false');}
+      const nodes = [researchNav, root, menu].filter(Boolean);
+      const homes = nodes.map(node => { const marker=document.createComment('paper-chat-home');node.before(marker);return {node,marker}; });
+      for (const node of nodes) (node===menu ? container.closest('dialog')||container : container).append(node);
+      let released=false;
+      const release=()=>{
+        if(released)return;released=true;
+        for(const {node,marker} of homes){if(marker.parentNode){marker.replaceWith(node);}else node.remove();}
+        if(menu){menu.hidden=true;paperChatWorkspace.els.title.setAttribute('aria-expanded','false');}
+        if(releaseChatMount===release)releaseChatMount=null;
+      };
+      releaseChatMount=release;
+      return release;
+    }
+
     function addSelectionToChatDraft(text) {
       const selected = String(text || "").trim();
       if (!selected) return false;
@@ -542,6 +569,7 @@
       activeChatPaperId, activeChatWorkspaceId, addSelectionToChatDraft, loadChatHistory, loadMe,
       paperChatDescriptor, renderAssistantContext, renderChat, submitChatMessage, updateChatComposerState,
       currentPaperChatPanel: () => paperChatPanel, currentPaperChatWorkspace: () => paperChatWorkspace,
+      mountChat, selectionAnswers: () => (state.chat || []).filter(message => window.PortalChatWorkspace.messageRole(message)==='agent').map(message => Array.isArray(message.content_parts) ? message.content_parts.filter(part=>part.type==='text').map(part=>part.text||'').join('\n') : String(message.content||'')).filter(Boolean),
     });
   }
 

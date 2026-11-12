@@ -384,6 +384,7 @@
     $, addSelectionToChatDraft: (...args) => addSelectionToChatDraft(...args), alertError, applyPaneCollapse,
     currentPaperWorkbench, detailSectionLoadingHtml, detailSectionsLoaded, esc, md, needPaperHtml,
     paperSelectionPopover, paperStateHtml, renderAnalysisControls, state, submitChatMessage: (...args) => submitChatMessage(...args),
+    readerChat: {mount:(...args)=>mountChat(...args),addSelection:(...args)=>addSelectionToChatDraft(...args),answers:()=>selectionAnswers()},
   });
 
   const {
@@ -413,7 +414,7 @@
   });
 
   const {
-    activeChatPaperId, activeChatWorkspaceId, addSelectionToChatDraft, loadChatHistory, loadMe,
+    activeChatPaperId, activeChatWorkspaceId, addSelectionToChatDraft, loadChatHistory, loadMe, mountChat, selectionAnswers,
     paperChatDescriptor, renderAssistantContext, renderChat, submitChatMessage, updateChatComposerState,
     currentPaperChatPanel, currentPaperChatWorkspace,
   } = paperModule("PortalPaperChat").createChat({
