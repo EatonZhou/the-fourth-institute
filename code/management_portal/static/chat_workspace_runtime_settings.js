@@ -97,8 +97,8 @@
     const hours = Math.floor(total / 3600);
     const minutes = Math.floor((total % 3600) / 60);
     const remainder = total % 60;
-    return [hours ? `${hours} 小时` : "", minutes ? `${minutes} 分` : "",
-      remainder || !total ? `${remainder} 秒` : ""].filter(Boolean).join(" ");
+    return [hours ? window.PortalI18n.text`${hours} 小时` : "", minutes ? window.PortalI18n.text`${minutes} 分` : "",
+      remainder || !total ? window.PortalI18n.text`${remainder} 秒` : ""].filter(Boolean).join(" ");
   }
 
   function createRuntimeSettings(dependencies) {
@@ -382,10 +382,10 @@
         dismissButton.hidden = !failed || !key || !restart.restart_id;
         const label = endpoint => endpoint?.account_id || endpoint?.provider || window.PortalI18n.t("当前 Session");
         const phase = restart.status === "accepted" ? restart.phase || "accepted" : restart.status;
-        const operation = restart.operation === "switch_account" ? "账号切换" : restart.operation === "restart" ? "重新开始会话" : "会话操作";
+        const operation = window.PortalI18n.t(restart.operation === "switch_account" ? "账号切换" : restart.operation === "restart" ? "重新开始会话" : "会话操作");
         const endpoints = restart.operation !== "restart" && label(restart.source) !== label(restart.target)
           ? `${label(restart.source)} → ${label(restart.target)}` : label(restart.source);
-        heading.textContent = `${operation}：${endpoints} · ${labels[phase] || phase || "进行中"}`;
+        heading.textContent = window.PortalI18n.text`${operation}：${endpoints} · ${labels[phase] || phase || window.PortalI18n.t("进行中")}`;
         if (failed && restart.submitted_at) heading.textContent += ` · ${new Date(restart.submitted_at).toLocaleString()}`;
         const started = Date.parse(restart.submitted_at || "");
         const ended = Date.parse(restart.restarted_at || restart.configured_at || "");
@@ -398,7 +398,7 @@
         }
         message.textContent = failed
           ? (restart.previous_session_retained === true
-            ? `操作未完成，仍使用 ${label(restart.source)}，原会话已保留。`
+            ? window.PortalI18n.text`操作未完成，仍使用 ${label(restart.source)}，原会话已保留。`
             : window.PortalI18n.t("操作未完成，请在诊断中核对当前绑定和原错误。"))
           : current.error ? window.PortalI18n.t("暂时无法同步迁移状态，请稍后查看；请勿重复提交。") : sessionRestartActive(restart)
           ? (restart.status === "cancelling" ? window.PortalI18n.t("取消请求已受理，原会话将继续保留。") : window.PortalI18n.t("关闭窗口不会取消操作；需要终止时请使用“取消操作”。"))

@@ -997,11 +997,11 @@
       }
       if (els.status) {
         const transientStatus = state.busy
-          ? (options.busyText || "Sending...")
+          ? window.PortalI18n.t(options.busyText || "发送中…")
           : uploading
-            ? "附件上传中..."
+            ? window.PortalI18n.t("附件上传中...")
             : failed
-              ? "有附件上传失败"
+              ? window.PortalI18n.t("有附件上传失败")
               : "";
         renderSubtitle(transientStatus);
       }
@@ -3279,7 +3279,7 @@
       const initialDraft = this.workspace.draftText();
       this.preparingResident = true;
       this.workspace.setBusy(true);
-      this.workspace.setStatus("正在准备 Resident…");
+      this.workspace.setStatus(window.PortalI18n.t("正在准备 Resident…"));
       try {
         const surface = this.surfaceTarget;
         try {
@@ -3289,14 +3289,14 @@
           if (!isInterruptedResidentRequest(error) || !this.options.resolveResident) throw error;
           // A lost POST response does not tell us whether preparation committed.
           // Confirm the authenticated surface binding; never repeat the write.
-          this.workspace.setStatus("连接中断，正在确认 Resident…");
+          this.workspace.setStatus(window.PortalI18n.t("连接中断，正在确认 Resident…"));
           const confirmed = await this.options.resolveResident(surface);
           if (revision !== this.targetRevision) return null;
           if (!String(confirmed?.resident_id || "").trim()) throw error;
           identity = confirmed;
         }
         if (revision !== this.targetRevision) return null;
-        if (!String(identity?.resident_id || "").trim()) throw new Error("未能取得对话的 Resident，请重试。");
+        if (!String(identity?.resident_id || "").trim()) throw new Error(window.PortalI18n.t("未能取得对话的 Resident，请重试。"));
         const draft = this.workspace.draftText();
         const attachments = this.workspace.attachments();
         const refs = this.workspace.refs();
@@ -3311,7 +3311,7 @@
             } catch (error) {
               if (preparationRevision !== this.targetRevision) return null;
               if (attempt || !isInterruptedResidentRequest(error)) throw error;
-              this.workspace.setStatus("Resident 已准备，正在重新加载对话…");
+              this.workspace.setStatus(window.PortalI18n.t("Resident 已准备，正在重新加载对话…"));
             }
           }
         } finally {
@@ -3330,8 +3330,8 @@
       } catch (error) {
         if (preparationRevision !== this.targetRevision) return null;
         const message = identity?.resident_id
-          ? `Resident 已准备，但对话加载失败；请重试：${error?.message || "加载请求未完成"}`
-          : `Resident 准备失败，结果未确认；请重试：${error?.message || "准备请求未完成"}`;
+          ? window.PortalI18n.text`Resident 已准备，但对话加载失败；请重试：${error?.message || window.PortalI18n.t("加载请求未完成")}`
+          : window.PortalI18n.text`Resident 准备失败，结果未确认；请重试：${error?.message || window.PortalI18n.t("准备请求未完成")}`;
         this.workspace.setStatus(message);
         throw Object.assign(new Error(message), { cause: error, status: error?.status, code: error?.code });
       } finally {
