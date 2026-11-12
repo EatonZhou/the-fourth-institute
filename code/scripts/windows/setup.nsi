@@ -10,6 +10,28 @@ Var UninstallDialog
 Var ResidualItems
 Var IncludeExamples
 Var ExamplesCheckbox
+Var InstallerMutex
+
+; Keep ownership through extraction, program replacement, shell registration
+; and final cleanup. Python's launcher lock ends before those steps.
+!macro AcquireInstallerOwnership
+  UserInfo::GetName
+  Pop $0
+  System::Call 'kernel32::SetLastError(i 0)'
+  System::Call 'kernel32::CreateMutexW(p 0, i 0, w "Global\TFI.Portal.Setup.$0") p .r1 ?e'
+  Pop $2
+  ${If} $1 == 0
+  ${OrIf} $2 == 183
+    ${If} $1 != 0
+      System::Call 'kernel32::CloseHandle(p r1)'
+    ${EndIf}
+    MessageBox MB_ICONSTOP "另一个 Portal 安装或卸载程序正在运行，或无法取得安装控制权。请关闭它后重试。$\r$\nAnother Portal setup/uninstall is running, or installation ownership could not be acquired. Close it and retry." /SD IDOK
+    SetErrorLevel 1618
+    Abort
+  ${EndIf}
+  ; Process exit releases the handle on success, cancellation and failure.
+  StrCpy $InstallerMutex $1
+!macroend
 !define MUI_ICON "${PAYLOAD}/branding/tfi.ico"
 !define MUI_UNICON "${PAYLOAD}/branding/tfi.ico"
 
@@ -49,6 +71,7 @@ LangString WelcomeText ${LANG_ENGLISH} "Explore, collaborate, and create knowled
 LangString WelcomeText ${LANG_SIMPCHINESE} "与 AI 一起探索、协作、创造知识。$\r$\n$\r$\nWindows 11 x64 试用版，基础安装无需联网。"
 
 Function un.onInit
+  !insertmacro AcquireInstallerOwnership
   StrCpy $RemoveInstances ${BST_UNCHECKED}
 FunctionEnd
 
@@ -114,6 +137,7 @@ Function un.ListResiduals
 FunctionEnd
 
 Function .onInit
+  !insertmacro AcquireInstallerOwnership
   StrCpy $IncludeExamples ${BST_CHECKED}
   ${GetParameters} $0
   ClearErrors

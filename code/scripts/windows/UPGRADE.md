@@ -5,6 +5,11 @@ A newer Windows package updates only the program, following the instance
 protocol's "code update". There is no separate upgrade transaction, snapshot or
 receipt.
 
+Setup and Uninstall share an OS-user-scoped process mutex for the entire EXE
+lifetime, including program replacement and shell registration. A conflicting
+EXE exits with code 1618 before changing files; close the first operation and
+retry. Process exit also releases ownership after cancellation or a crash.
+
 1. Run the new `TheFourthInstitute-Setup-x64.exe` and choose the folder of the
    installed version. Setup first runs the installed launcher with `--stop-all`,
    which stops every registered instance whose deployments run this program.
