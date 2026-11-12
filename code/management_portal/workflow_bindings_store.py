@@ -65,6 +65,17 @@ class WorkflowBindingStore:
             ).fetchall()
         return [state for row in rows if (state := self.get(lineage_id, resident_id, row['name']))]
 
+    def delivery_bindings(self, resident_ids: list[str]) -> list[dict]:
+        """Batch read the existing application-owned role registrations, including detached wires."""
+        if not resident_ids:
+            return []
+        with self.database.read_current() as connection:
+            rows = connection.execute(
+                'SELECT resident_id,lineage_id,name,event_source_id,effect_id FROM workflow_bindings WHERE resident_id=ANY(%s)',
+                (resident_ids,),
+            ).fetchall()
+        return [dict(row) for row in rows]
+
     def save(self, state: dict) -> None:
         identity = tuple(state[key] for key in ("lineage_id", "resident_id", "name"))
         steps = state.get("steps", {})

@@ -71,6 +71,7 @@ class ResidentDeliveryContext:
     reply_source_message_id: str = ""
     lending: Any = None
     channel: str = ""
+    workflow_context: Any = None
 
 
 def _target(resident_id: str, actor: str) -> resident_domain_common.ResidentRuntimeTarget:
@@ -88,7 +89,8 @@ def _send_problem(record: Mapping[str, Any], actor: str, *, allowed: bool | None
         allowed = resident_access.can_manage_resident(dict(record), actor)
     if record.get("deleted_at"):
         return False, "这个 Resident 已删除，不能发送消息。"
-    return allowed, ""
+    from management_portal import workflow_delivery_policy
+    return allowed, workflow_delivery_policy.disabled_reason(str(record.get('resident_id') or ''))
 
 
 def _conversation_controls(
@@ -123,6 +125,7 @@ def _conversation_controls(
         send_hint = quota_switch.get('message') or "账号额度受限；发送的消息将排队，系统会按自动切换策略处理，请勿重复发送。"
     return {
         "can_send": allowed and not problem,
+        "input_read_only": bool(problem) and not bool(target.record.get("deleted_at")),
         # A facade routing a request has nothing running yet; its Stop withdraws that request.
         "can_stop": stop_allowed and (bool(active_message_id) or state.get("work_phase") == family_facade.ROUTING_PHASE),
         "active_turn_input": capabilities.supports_active_turn_input,
@@ -132,7 +135,7 @@ def _conversation_controls(
         "accepts_files": capabilities.local_tools,
         "disabled_reason": problem or ("" if allowed else "当前对话无发送权限。"),
         "quota_switch": quota_switch,
-        "send_hint": send_hint,
+        "send_hint": problem or send_hint,
     }
 
 
@@ -301,6 +304,8 @@ def deliver_resident_input(
             + ", ".join(unexpected)
         )
     resident_id = str(payload.get("resident_id") or "").strip()
+    from management_portal import workflow_delivery_policy
+    workflow_delivery_policy.require_delivery(resident_id, actor, (delivery_context or ResidentDeliveryContext()).workflow_context)
     message = payload.get("message")
     if not resident_id:
         raise ValueError("resident_id required")
@@ -612,7 +617,8 @@ def get_resident_states(
     # Read access is already checked above. Controls use canonical Resident
     # facts; resolving every full runtime target here repeats the same Lineage
     # reads once per member and makes large Chat/graph state refreshes slow.
-    with shared_account_configuration():
+    from management_portal import workflow_delivery_policy
+    with shared_account_configuration(), workflow_delivery_policy.projection_scope(visible):
         result = {
             "items": [
                 _with_conversation_controls(

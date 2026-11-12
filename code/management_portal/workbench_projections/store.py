@@ -109,6 +109,20 @@ def validate_manifest(value: dict) -> dict:
 
 
 class Store:
+    def registered_role_targets(self, resident_ids: list[str]) -> list[dict]:
+        """Published native role history survives ordinary rebinding of a page."""
+        if not resident_ids:
+            return []
+        with self.database.read_current() as db:
+            rows = db.execute(
+                "SELECT DISTINCT t.target_id AS resident_id,n.name AS application,t.name, b.lineage_id "
+                "FROM native_entrypoints n JOIN apps a ON a.id=n.app_id "
+                "JOIN binding_targets t ON t.app_id=a.id AND t.revision<=a.published "
+                "JOIN bindings b ON b.app_id=t.app_id AND b.revision=t.revision AND b.alias=t.alias "
+                "WHERE t.kind='residents' AND t.target_id=ANY(%s)", (resident_ids,),
+            ).fetchall()
+        return [dict(row) for row in rows]
+
     def __init__(self):
         self.database = portal_database(schema="workbenches")
         with self.connect() as connection:

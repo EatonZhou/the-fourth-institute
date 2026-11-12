@@ -12,6 +12,7 @@ class PaperInputIdentityError(ValueError):
 
 
 PAPER_INPUT_RECEIPT_SCHEMA = "tfi.paper-resident-input.v1"
+DIRECT_CHAT_DISABLED_REASON = "此角色只处理论文页发起的任务，每次任务都从新的上下文开始。本页仅供查看记录，不能直接对话。"
 BUILTIN = {"name": "paper", "title": "Paper", "path": "/paper", "description": "论文阅读、研究与评审工作台"}
 
 
@@ -34,14 +35,15 @@ def definitions(role: str) -> list[dict[str, str]]:
     if role not in ROLES:
         return []
     title, purpose = ROLES[role]
-    return [{"name": role, "title": title, "context_policy": "fresh", "prompt": purpose + " 每次输入是独立任务，论文和评审重点仅来自本次 prompt。内容生成与业务正式保存是不同状态，只有取得业务保存回执才能声明已正式保存。遵循本次明确提供的输出和提交协议；若约定由业务服务保存，只返回生成结果，不自行寻找或重复执行提交。未提供提交协议时直接交付请求的内容，未执行未被要求的业务保存不视为生成失败，也不得声称已保存。实际生成失败或明确要求的提交失败必须如实报告。"}]
+    return [{"name": role, "title": title, "context_policy": "fresh", "direct_chat_disabled_reason": DIRECT_CHAT_DISABLED_REASON, "prompt": purpose + " 每次输入是独立任务，论文和评审重点仅来自本次 prompt。内容生成与业务正式保存是不同状态，只有取得业务保存回执才能声明已正式保存。遵循本次明确提供的输出和提交协议；若约定由业务服务保存，只返回生成结果，不自行寻找或重复执行提交。未提供提交协议时直接交付请求的内容，未执行未被要求的业务保存不视为生成失败，也不得声称已保存。实际生成失败或明确要求的提交失败必须如实报告。"}]
 
 
 def _workflow(role: str) -> dict:
     matches = definitions(role)
     if not matches:
         raise ValueError(f"未定义的 Paper 功能角色：{role}")
-    return matches[0]
+    # Direct-chat policy is a role declaration, not an Effect installation argument.
+    return {key: value for key, value in matches[0].items() if key != "direct_chat_disabled_reason"}
 
 
 def receipt_from_resident_handle(handle: dict, *, requested_message_id: str = "") -> dict:

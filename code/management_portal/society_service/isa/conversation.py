@@ -35,6 +35,9 @@ def deliver(
 ) -> dict[str, Any]:
     from management_portal.society_service import outward_messages, resident_protocol
 
+    from management_portal import workflow_delivery_policy
+    workflow_delivery_policy.require_delivery(resident_id, inv.caller, inv.context)
+
     body = dict(message)
     role = str(body.get("role") or "user")
     if role != "user":
@@ -52,6 +55,7 @@ def deliver(
         business_ref=business_ref,
         channel=inv.context.channel,
         lending=lending,
+        workflow_context=inv.context,
     )
     constraints = inv.argument('execution_constraints')
     if constraints is not None:
