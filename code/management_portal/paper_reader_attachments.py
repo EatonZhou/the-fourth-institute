@@ -105,6 +105,7 @@ class AttachmentOwner:
                 source = Path(source)
                 with source.open('rb') as incoming, create_private_file(stage) as outgoing:
                     before = os.fstat(incoming.fileno())
+                    path_before = source.stat()
                     if not stat.S_ISREG(before.st_mode): raise ValueError('regular source required')
                     header = incoming.read(4)
                     if not _has_pdf_header(header): raise ValueError('PDF signature required')
@@ -116,7 +117,12 @@ class AttachmentOwner:
                         self.checkpoint('chunk')
                     after = os.fstat(incoming.fileno()); current = source.stat()
                     signature = lambda s: (s.st_dev, s.st_ino, s.st_size, s.st_mtime_ns, s.st_ctime_ns)
-                    if signature(before) != signature(after) or signature(after) != signature(current):
+                    # Windows stat/fstat may expose different creation times.
+                    # Compare each observation API with itself, and bind the
+                    # path back to the opened inode to detect substitution.
+                    if (signature(before) != signature(after)
+                            or signature(path_before) != signature(current)
+                            or (after.st_dev, after.st_ino) != (current.st_dev, current.st_ino)):
                         raise Conflict('source changed during import')
                     outgoing.flush(); os.fsync(outgoing.fileno())
                 sync_directory(stage.parent)

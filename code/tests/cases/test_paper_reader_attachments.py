@@ -59,6 +59,22 @@ def test_published_readonly_version_keeps_bytes_after_stage_cleanup(setup):
         assert info.st_file_attributes & stat.FILE_ATTRIBUTE_READONLY
 
 
+def test_stat_and_fstat_creation_time_differences_do_not_reject_stable_pdf(setup, monkeypatch):
+    import os
+    from types import SimpleNamespace
+    c, owner, source = setup
+    original = os.fstat
+    def windows_like_fstat(fd):
+        info = original(fd)
+        values = {k: getattr(info, k) for k in dir(info) if k.startswith('st_')}
+        values['st_ctime_ns'] += 1000
+        return SimpleNamespace(**values)
+    monkeypatch.setattr(os, 'fstat', windows_like_fstat)
+    document = ingest(c, owner, source)
+    with owner.open_version(c, asdict(document)) as stream:
+        assert stream.read() == source.read_bytes()
+
+
 @pytest.mark.parametrize('failure', ['prepared', 'published', 'before_commit'])
 def test_recover_after_midflight_failure(setup, failure):
     c, owner, source = setup
