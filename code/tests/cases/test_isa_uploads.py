@@ -66,6 +66,34 @@ def test_bytes_complete_an_upload_once_and_only_by_its_creator():
     assert resource_isa.read_upload(upload_id)["ready"] is True
 
 
+@pytest.mark.parametrize('name', ['meta.json', 'CON.txt', 'report:stream.txt', 'report.txt.', '中文 空格 🧪.bin'])
+def test_display_filename_cannot_collide_with_upload_storage(name, permissions):
+    from pathlib import Path
+    from management_portal.resources import upload_files
+    permissions.users('alice')
+    data = b'original payload bytes'
+    value = resource_isa.create_upload(invoke('CreateUpload', {
+        'purpose': 'conversation_attachment', 'file_name': name,
+        'media_type': 'application/octet-stream', 'size': len(data)}))
+    identifier = value['upload_id']
+    resource_isa.complete_upload(identifier, data, actor='alice')
+    meta = resource_isa.read_upload(identifier)
+    assert meta['file_name'] == name and Path(meta['path']).name == 'payload'
+    body, _, resolved = upload_files.read_content({'upload_id': identifier}, actor='alice')
+    assert body == data and resolved['filename'] == name
+
+
+def test_generated_meta_json_is_readable_and_repeated_publication_is_stable(permissions):
+    from management_portal.resources import upload_files
+    permissions.users('alice')
+    args = dict(owner_id='generated-fixture', actor='alice', file_name='meta.json',
+                media_type='application/json', data=b'{"payload": true}')
+    first = resource_isa.publish_generated_file(**args)
+    assert resource_isa.publish_generated_file(**args) == first
+    body, _, meta = upload_files.read_content(first['file_reference'], actor='alice')
+    assert body == args['data'] and meta['filename'] == 'meta.json'
+
+
 def test_post_images_must_be_real_pictures_and_are_readable_by_signed_in_users(permissions):
     """帖子图片校验真实内容并允许已登录用户读取"""
     from management_portal.resources import upload_files

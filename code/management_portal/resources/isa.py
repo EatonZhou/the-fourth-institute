@@ -20,6 +20,7 @@ from pathlib import Path, PurePosixPath
 from typing import Any, Iterator
 
 from management_common import secure_paths
+from management_common.upload_layout import PAYLOAD_NAME, payload_name
 
 from management_portal.hatg.contracts import InstructionError, invalid, not_found
 from management_portal.hatg.declarations import cursor_offset, offset_cursor
@@ -442,7 +443,10 @@ def read_upload(upload_id: str) -> dict[str, Any]:
     if (not isinstance(name, str) or name in {"", ".", ".."}
             or any(character in name for character in ("/", "\\", "\x00"))):
         raise invalid("上传文件名无效")
-    path = directory / name
+    try:
+        path = directory / payload_name(meta)
+    except ValueError as error:
+        raise invalid(str(error)) from error
     if path.resolve().parent != directory.resolve():
         raise invalid("上传文件不能位于上传目录之外")
     return {**meta, "path": str(path)}
@@ -615,10 +619,10 @@ def create_upload(inv: Invocation) -> dict[str, Any]:
         directory = _upload_dir(upload_id)
         created(directory, upload_id=upload_id, created_at=meta['created_at'])
         directory.mkdir(parents=True, exist_ok=True)
-        (directory / name).write_bytes(data)
+        (directory / PAYLOAD_NAME).write_bytes(data)
         meta.update({
-            "file_name": name, "media_type": media_type,
-            "size": len(data), "path": str(directory / name), "ready": True, "source_address": source,
+            "file_name": name, "storage_name": PAYLOAD_NAME, "media_type": media_type,
+            "size": len(data), "path": str(directory / PAYLOAD_NAME), "ready": True, "source_address": source,
         })
         _write_meta(meta)
         return {"upload_id": upload_id, "ready": True}
@@ -628,8 +632,8 @@ def create_upload(inv: Invocation) -> dict[str, Any]:
     name = _safe_name(inv.argument("file_name"))
     expires = _now() + timedelta(seconds=UPLOAD_TTL_SECONDS)
     meta.update({
-        "file_name": name, "media_type": inv.argument("media_type"), "size": size,
-        "path": str(_upload_dir(upload_id) / name), "ready": False, "expires_at": _iso(expires),
+        "file_name": name, "storage_name": PAYLOAD_NAME, "media_type": inv.argument("media_type"), "size": size,
+        "path": str(_upload_dir(upload_id) / PAYLOAD_NAME), "ready": False, "expires_at": _iso(expires),
     })
     created(_upload_dir(upload_id), upload_id=upload_id, created_at=meta['created_at'])
     _write_meta(meta)
@@ -654,7 +658,7 @@ def publish_generated_file(*, owner_id: str, actor: str, file_name: str, media_t
     if not (directory / "meta.json").exists():
         stamp = _iso(_now())
         created(directory, upload_id=upload_id, created_at=stamp)
-        destination = directory / name
+        destination = directory / PAYLOAD_NAME
         temporary = directory / (".generated-" + secrets.token_hex(8))
         try:
             with temporary.open("wb") as stream:
@@ -666,7 +670,7 @@ def publish_generated_file(*, owner_id: str, actor: str, file_name: str, media_t
             temporary.unlink(missing_ok=True)
         atomic_json(directory / "meta.json", {
             "upload_id": upload_id, "purpose": "conversation_attachment", "target": "",
-            "created_by": actor, "created_at": stamp, "file_name": name,
+            "created_by": actor, "created_at": stamp, "file_name": name, "storage_name": PAYLOAD_NAME,
             "media_type": media_type, "size": len(data), "ready": True,
         })
     consumed(directory, owner_id=owner_id)

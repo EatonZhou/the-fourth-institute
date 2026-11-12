@@ -12,6 +12,7 @@ import stat
 from contextlib import contextmanager
 
 from management_common import secure_paths
+from management_common.upload_layout import payload_name
 from management_portal.file_access_policy import authorize, file_reference
 
 
@@ -40,10 +41,11 @@ def _target(address, *, actor, content=False):
         meta = json.loads(raw)
         if not isinstance(meta, dict) or meta.get("ready") is not True:
             raise FileNotFoundError(handle)
-        name = meta.get("file_name")
-        if (not isinstance(name, str) or name in {"", ".", "..", "meta.json"}
-                or any(char in name for char in ("/", "\\", "\0"))):
+        display_name = meta.get("file_name")
+        if (not isinstance(display_name, str) or display_name in {"", ".", ".."}
+                or any(char in display_name for char in ("/", "\\", "\0"))):
             raise ValueError("Invalid upload file name")
+        name = payload_name(meta)
         info = secure_paths.stat_child(directory, name)
         _regular(info)
         if not content:

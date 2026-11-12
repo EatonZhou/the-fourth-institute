@@ -9,6 +9,7 @@ from .directory_retention import RetentionStore
 from .directory_paths import lexical_path
 from .resource_lifecycle import record_allocation
 from .secure_paths import directory_unchanged, open_child, open_directory, stat_child
+from .upload_layout import payload_name
 
 
 def created(directory, *, upload_id, created_at, connection=None):
@@ -68,10 +69,7 @@ def _missing_reason(root, name):
                 return None
         if not isinstance(meta, dict) or meta.get('ready') is not True:
             return None
-        filename = meta.get('file_name')
-        if (not isinstance(filename, str) or filename in {'', '.', '..'}
-                or any(character in filename for character in '/\\\x00')):
-            raise ValueError('Upload payload must be one local filename')
+        filename = payload_name(meta)
         if not _absent(descriptor, filename):
             return None  # Content, size and mtime changes are ordinary edits.
         try:
