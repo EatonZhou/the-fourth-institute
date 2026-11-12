@@ -447,6 +447,24 @@ def test_update_workspace_file_compares_the_version_read_resource_returned(works
     assert resource_isa.read_resource(SimpleNamespace(argument={"address": ADDRESS}.get, caller="alice"))["text"] == "# Revised\n"
 
 
+@pytest.mark.parametrize("name", ["中文 空格.txt", "literal%2e%2e.txt"])
+def test_update_encoded_workspace_file_uses_the_read_address(workspace, monkeypatch, name):
+    from urllib.parse import quote
+    from management_portal.resources import isa
+    monkeypatch.setattr(isa, "_service", lambda: workspace.service)
+    monkeypatch.setattr(workspace.service, "notify_source_changed", lambda **_: None, raising=False)
+    target = workspace.root / name
+    target.write_text("before", encoding="utf-8")
+    address = WORKSPACE + "/file/" + quote(name, safe="")
+    read = isa.read_resource(SimpleNamespace(argument={"address": address}.get, caller="alice"))
+    result = isa.update_workspace_file(SimpleNamespace(
+        argument={"address": address, "content": "after 中文 ✓"}.get,
+        caller="alice", expected_version=read["version"], name="UpdateWorkspaceFile"))
+    assert target.read_text(encoding="utf-8") == "after 中文 ✓"
+    assert result["version"] == hashlib.sha256("after 中文 ✓".encode()).hexdigest()
+    assert not (workspace.root / quote(name, safe="")).exists()
+
+
 def test_update_workspace_file_refuses_absolute_paths(workspace, monkeypatch):
     """UpdateWorkspaceFile 只接受 Workspace 文件地址，绝对路径即使落在登记 Workspace 内也被拒绝，文件不变
 

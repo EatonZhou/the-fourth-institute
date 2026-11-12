@@ -744,15 +744,17 @@ def update_workspace_file(inv: Invocation) -> dict[str, Any]:
     address = inv.argument("address")
     if address.startswith("/"):
         raise invalid("UpdateWorkspaceFile 只接受 <workspace-id>/file/<相对路径>，不接受绝对路径")
-    root_id, _, suffix = address.partition("/")
-    namespace, _, relative = suffix.partition("/")
+    from .providers.folder_files import file_parts, hidden
+
     try:
-        parts = secure_paths.relative_parts(relative)
+        parsed = _service().parse_address(address)
+        parts = file_parts("/".join(parsed.suffix))
+        if not parts:
+            raise ValueError("A file path is required")
     except ValueError as exc:
         raise invalid("地址应为 <workspace-id>/file/<相对路径>") from exc
-    if namespace != "file":
-        raise invalid("地址应为 <workspace-id>/file/<相对路径>")
-    from .providers.folder_files import hidden
+    root_id = parsed.root_id
+    relative = "/".join(parts)
 
     if hidden(parts):
         raise InstructionError("instruction.forbidden", "不能写入隐藏或敏感路径（以 . 开头，或 secrets、credentials 等目录）")
