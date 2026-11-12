@@ -34,7 +34,24 @@ def environment(account_id):
     return login_environment("antigravity", account_id)
 
 
-def save_catalog(account_id, session, agent_capabilities):
+def subscription_metadata(session, authenticated=None):
+    """Extract only the tier already returned by ACP; never make a request."""
+    for method, response in (('session', session), ('authenticate', authenticated)):
+        if not isinstance(response, dict):
+            continue
+        meta = response.get('_meta')
+        vendor = meta.get('antigravity') if isinstance(meta, dict) else None
+        tier = vendor.get('tier') if isinstance(vendor, dict) else None
+        if not isinstance(tier, dict):
+            continue
+        fields = {key: tier[key] for key in ('id', 'name') if isinstance(tier.get(key), str) and tier[key].strip()}
+        if fields:
+            return {'status': 'observed', 'source': 'acp.'+method, 'tier': fields,
+                    'observed_at': time.time()}
+    return {'status': 'unknown', 'source': 'acp', 'tier': {}, 'observed_at': None}
+
+
+def save_catalog(account_id, session, agent_capabilities, *, authenticated=None):
     selection = session.get("models") or {}
     models = [str(item["modelId"]) for item in selection.get("availableModels", [])]
     default = selection.get("currentModelId", "")
@@ -49,7 +66,8 @@ def save_catalog(account_id, session, agent_capabilities):
     value = {"models": models, "default_model": default, "efforts_by_model": {},
              "default_efforts_by_model": {}, "service_tiers_by_model": {},
              "capabilities": {"media": prompt_capabilities.get("image") is True},
-             "prompt_capabilities": prompt_capabilities, "observed_at": time.time()}
+             "prompt_capabilities": prompt_capabilities, "observed_at": time.time(),
+             "subscription": subscription_metadata(session, authenticated)}
     atomic_write_private_bytes(account_runtime("antigravity", account_id) / "catalog.json", json.dumps(value).encode())
     return value
 
@@ -78,11 +96,11 @@ def catalog(route=""):
         return value
     with AcpClient(command(), env=environment(row["account_id"]), cwd=str(home)) as client:
         handshake = client.initialize()
-        client.call("authenticate", {"methodId": "oauth-personal"})
+        authenticated = client.call("authenticate", {"methodId": "oauth-personal"})
         # An empty native session lists models, without invoking one.
         result = client.call("session/new", {"cwd": str(home), "mcpServers": [],
                              "_meta": {"antigravity": {"enabledTools": []}}})
-        return save_catalog(row["account_id"], result, handshake.get("agentCapabilities") or {})
+        return save_catalog(row["account_id"], result, handshake.get("agentCapabilities") or {}, authenticated=authenticated)
 
 
 def routes():

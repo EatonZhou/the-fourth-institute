@@ -120,3 +120,19 @@ class TestProviderUsageEvents(unittest.TestCase):
         self.assertEqual(len(matches), 1)
         self.assertEqual(matches[0]['registration']['route_id'], 'one')
         self.assertEqual(matches[0]['kind'], 'subscription_login')
+def test_export_retains_scope_speed_and_identity_without_private_fields():
+    from datetime import datetime, timezone
+    from management_portal.execution.provider_usage_events import public_record
+    start = datetime(2026, 11, 1, tzinfo=timezone.utc)
+    end = datetime(2026, 11, 3, tzinfo=timezone.utc)
+    row = {'timestamp': '2026-11-02T00:00:00Z', 'type': 'event_msg', 'ordinal': 3,
+           'payload': {'type': 'token_count', 'info': {'total_token_usage': {'total_tokens': 42},
+           'private': 'SECRET'}, 'rate_limits': {'limit_id': 'codex_bengalfox',
+           'limit_name': 'gpt-5.3-codex-spark', 'credits': {'has_credits': True, 'access_token': 'SECRET'}}}}
+    result = public_record(row, start, end)
+    assert result['ordinal'] == 3
+    assert result['payload']['rate_limits']['limit_id'] == 'codex_bengalfox'
+    assert result['payload']['rate_limits']['credits'] == {'has_credits': True}
+    assert 'SECRET' not in str(result)
+    row['payload'] = {'type': 'thread_settings_applied', 'thread_settings': {'service_tier': 'priority', 'private': 'SECRET'}}
+    assert public_record(row, start, end)['payload']['thread_settings'] == {'service_tier': 'priority'}

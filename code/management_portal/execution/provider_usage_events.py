@@ -13,7 +13,7 @@ TOKEN_FIELDS = ('input_tokens', 'cached_input_tokens', 'output_tokens', 'reasoni
 SCAN_BYTES = 256 * 1024 * 1024
 # Only these record kinds are exported; other lines (tool output, messages) are
 # skipped without decoding, which keeps a page of rollout bytes cheap to scan.
-WANTED = (b'"session_meta"', b'"turn_context"', b'"token_count"', b'"user_message"')
+WANTED = (b'"session_meta"', b'"turn_context"', b'"token_count"', b'"user_message"', b'"thread_settings_applied"')
 
 
 def _time(raw: str) -> datetime:
@@ -48,15 +48,27 @@ def public_record(obj: object, start: datetime, end: datetime) -> dict[str, Any]
         clean = {key: _text(payload.get(key)) for key in ('id', 'model_provider', 'forked_from_id')}
     elif kind == 'turn_context':
         clean = {'model': _text(payload.get('model'))}
+        if isinstance(payload.get('service_tier'), str):
+            clean['service_tier'] = _text(payload['service_tier'])
     elif kind == 'event_msg' and moment >= start:
         subtype = payload.get('type')
         if subtype == 'user_message':
             clean = {'type': subtype}
+        elif subtype == 'thread_settings_applied':
+            settings = payload.get('thread_settings') if isinstance(payload.get('thread_settings'), dict) else {}
+            clean = {'type': subtype, 'thread_settings': {'service_tier': _text(settings.get('service_tier'))}}
         elif subtype == 'token_count':
             info = payload.get('info') if isinstance(payload.get('info'), dict) else {}
             limits = payload.get('rate_limits') if isinstance(payload.get('rate_limits'), dict) else {}
-            clean = {'type': subtype, 'info': {'last_token_usage': _numbers(info.get('last_token_usage'), TOKEN_FIELDS)},
-                     'rate_limits': {'plan_type': _text(limits.get('plan_type'))}}
+            clean = {'type': subtype, 'info': {
+                         'last_token_usage': _numbers(info.get('last_token_usage'), TOKEN_FIELDS),
+                         'total_token_usage': _numbers(info.get('total_token_usage'), TOKEN_FIELDS),
+                         **_numbers(info, ('model_context_window',))},
+                     'rate_limits': {key: _text(limits.get(key)) for key in ('plan_type', 'limit_id', 'limit_name')}}
+            credits = limits.get('credits')
+            if isinstance(credits, dict):
+                clean['rate_limits']['credits'] = {key: credits[key] for key in ('has_credits', 'unlimited')
+                                                    if type(credits.get(key)) is bool}
             for key in ('primary', 'secondary'):
                 if isinstance(limits.get(key), dict):
                     clean['rate_limits'][key] = _numbers(limits[key], ('window_minutes', 'used_percent', 'resets_at'))
@@ -64,7 +76,8 @@ def public_record(obj: object, start: datetime, end: datetime) -> dict[str, Any]
             return None
     else:
         return None
-    return {'timestamp': timestamp, 'type': kind, 'payload': clean}
+    return {'timestamp': timestamp, 'type': kind, 'payload': clean,
+            **({'ordinal': obj['ordinal']} if type(obj.get('ordinal')) is int else {})}
 
 
 def read_page(root: Path, *, account_id: str, since: str, until: str, cursor: str = '', limit: int = 1000) -> dict[str, Any]:

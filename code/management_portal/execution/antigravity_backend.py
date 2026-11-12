@@ -349,7 +349,7 @@ class AntigravityBackend:
                 raise ValueError("Antigravity ACP runtime does not support image input")
             if not capabilities.get("loadSession") or (server and not capabilities.get("mcpCapabilities", {}).get("http")):
                 raise RuntimeError("Antigravity ACP runtime lacks required session/MCP capabilities")
-            client.call("authenticate", {"methodId": "oauth-personal"})
+            authenticated = client.call("authenticate", {"methodId": "oauth-personal"})
             meta = {"systemPrompt": {"append": full_system_context(invocation)},
                     "disabledTools": ["start_subagent", "ask_question"]}
             if not native:
@@ -363,7 +363,7 @@ class AntigravityBackend:
             if not sid:
                 raise RuntimeError("Antigravity returned no session ID")
             context.set_interrupt_target(sid, turn_id, route)
-            discovered = accounts.save_catalog(row["account_id"], created, capabilities)
+            discovered = accounts.save_catalog(row["account_id"], created, capabilities, authenticated=authenticated)
             model = str(options.get("model") or discovered["default_model"])
             if model not in discovered["models"]:
                 raise ValueError("The selected model is no longer offered by this Antigravity account")
