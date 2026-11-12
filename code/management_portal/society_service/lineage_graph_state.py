@@ -12,7 +12,7 @@ from .lineage_primitives import now_iso as _now_iso
 STATE_SCHEMA = "tfi.hatg-graph-state.v1"
 MAX_STATE_CELLS = 128
 MAX_VALUE_BYTES = 64 * 1024
-MAX_STATE_BYTES = 512 * 1024
+MAX_STATE_BYTES = 2 * 1024 * 1024
 _EXPECTED_VALUE_UNSET = object()
 
 
@@ -81,7 +81,7 @@ def _normalize(raw: object) -> dict[str, Any]:
     if len(
         json.dumps(result, ensure_ascii=False).encode("utf-8")
     ) > MAX_STATE_BYTES:
-        raise ValueError("Graph State 总大小不能超过 512 KiB")
+        raise ValueError("Graph State 总大小不能超过 2 MiB")
     return result
 
 

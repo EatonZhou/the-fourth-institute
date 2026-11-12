@@ -5344,9 +5344,9 @@
     "en": "Graph State value must be a JSON value",
     "zh-CN": "Graph State value 必须是 JSON 值"
   },
-  "Graph State 总大小不能超过 512 KiB": {
-    "en": "Graph State total size cannot exceed 512 KiB",
-    "zh-CN": "Graph State 总大小不能超过 512 KiB"
+  "Graph State 总大小不能超过 2 MiB": {
+    "en": "Graph State total size cannot exceed 2 MiB",
+    "zh-CN": "Graph State 总大小不能超过 2 MiB"
   },
   "Graph State 最多包含 128 个 cell": {
     "en": "Graph State can contain at most 128 cells",
