@@ -215,7 +215,6 @@
                   <span class="readerHeadIcon" aria-hidden="true"><!--portal-i18n:"PDF"-->PDF</span>
                   <span class="readerHeadText">
                     <span class="readerHeadTitle"><!--portal-i18n:"PDF"-->PDF</span>
-                    ${paper.pdf_url ? window.PortalI18n.html`<span class="readerPath" aria-label="PDF 文件：${esc(paper.pdf_url)}">${esc(shortPath(paper.pdf_url, 72))}</span>` : window.PortalI18n.html`<span class="readerPath"><!--portal-i18n:"尚未注册 PDF"-->尚未注册 PDF</span>`}
                   </span>
                 </div>
                 <div class="readerHeadActions">

@@ -938,6 +938,12 @@ body:has(#paperPageFrame) :is(#workspaceResourceId,.paperResearchChatHost [data-
 }
 body:has(#paperPageFrame) #portalButtonTooltip { display:none!important; }
 #paperLibraryPane .paneHeadText { flex:1 1 auto; min-width:0; }
+/* Match the existing Chat text stack, without changing shared Chat headers. */
+#paperLibraryPane > .paneHead { align-items:flex-start; }
+#paperWorkspacePane .workspaceTop { padding-top:10px; row-gap:8px; }
+#paperWorkspacePane .titleBlock { row-gap:4px; }
+#paperWorkspacePane .workspaceIdentityMetaRow { align-items:start; }
+#paperWorkspacePane .workspaceResourceIdSlot { line-height:16px; }
 .paperResearchChatHost .chatTitleLine { min-width:0; max-width:100%; }
 .readerPanel:not(.collapsed) { grid-template-rows:auto minmax(0,1fr); }
 .readerPanel { container:paper-reader-panel / inline-size; }
@@ -950,6 +956,11 @@ body:has(#paperPageFrame) #portalButtonTooltip { display:none!important; }
   .pdfReaderPanel .readerExternalLink { order:2; }
   .pdfReaderPanel .readerPanelToggle { order:3; }
 }
+/* Keep PDF and Analysis header heights equal even in a narrow split pane.
+   Overflowing PDF actions remain available by horizontal scrolling. */
+#paperWorkspacePane .pdfReaderPanel:not(.collapsed) .readerHead { grid-template-columns:minmax(64px,1fr) minmax(0,auto); }
+#paperWorkspacePane .pdfReaderPanel .readerHeadActions { flex-wrap:nowrap; overflow-x:auto; scrollbar-width:none; }
+#paperWorkspacePane .pdfReaderPanel .readerHeadActions > * { flex-shrink:0; }
 
 /* Shared Personal/Repository grouping rows: same vertical metrics as papers. */
 .folderLine[data-paper-tree-toggle] { background:color-mix(in srgb,var(--muted,#64748b) 8%,var(--panel,#fff)); }
