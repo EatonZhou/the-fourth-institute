@@ -414,8 +414,7 @@ body {
   text-align: center;
 }
 
-.deviceTelemetryPanel,
-.deviceInventoryPanel {
+.deviceTelemetryPanel {
   grid-column: 1 / -1;
 }
 
@@ -454,6 +453,20 @@ body {
 
 .deviceTelemetryCard > header > div {
   min-width: 0;
+}
+
+.deviceTelemetryCard > header {
+  flex-wrap: wrap;
+}
+
+.deviceTelemetryContext,
+.deviceTelemetryEmpty {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 9px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .deviceTelemetryCard > header > div > span {
@@ -519,71 +532,6 @@ body {
 
 .deviceTelemetryCard > footer .stale {
   color: #b15f00;
-}
-
-.deviceRosterGrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
-  gap: 7px;
-  padding: 8px;
-}
-
-.deviceRosterCard {
-  min-width: 0;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 4px 8px;
-  padding: 10px;
-  border: 1px solid var(--border);
-  border-radius: 9px;
-  background: color-mix(in srgb, var(--panel) 88%, var(--panel-2));
-  color: var(--text);
-  cursor: pointer;
-  text-align: left;
-}
-
-.deviceRosterCard:hover,
-.deviceRosterCard:focus-visible {
-  border-color: color-mix(in srgb, var(--accent) 54%, var(--border));
-  box-shadow: var(--shadow-hover);
-}
-
-.deviceRosterCard > span:first-child {
-  overflow: hidden;
-  color: var(--accent);
-  font-size: 8px;
-  font-weight: 780;
-  letter-spacing: .07em;
-  text-overflow: ellipsis;
-  text-transform: uppercase;
-  white-space: nowrap;
-}
-
-.deviceRosterCard > .deviceStatusPill {
-  grid-column: 2;
-  grid-row: 1 / span 2;
-}
-
-.deviceRosterCard > strong {
-  grid-column: 1;
-  overflow: hidden;
-  font-size: 10px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.deviceRosterCard > small {
-  grid-column: 1 / -1;
-  overflow: hidden;
-  color: var(--muted);
-  font-size: 8px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.deviceRosterCard > small:last-child {
-  justify-self: end;
 }
 
 body[data-resource-category="device"] #resourceDetailPanel {
@@ -1153,8 +1101,7 @@ body[data-resource-category="device"] #resourceDetailBody {
 
 @media (max-width: 900px) {
   .deviceOperationsLayout { grid-template-columns: minmax(0, 1fr); }
-  .deviceTelemetryPanel,
-  .deviceInventoryPanel { grid-column: 1; }
+  .deviceTelemetryPanel { grid-column: 1; }
 }
 
 @container device-detail (max-width: 900px) {
@@ -1182,7 +1129,6 @@ body[data-resource-category="device"] #resourceDetailBody {
 
 @media (max-width: 620px) {
   .deviceTelemetryGrid { grid-template-columns: 1fr; }
-  .deviceRosterGrid { grid-template-columns: 1fr; }
   .deviceDetailMetrics,
   .deviceDetailComponents { grid-template-columns: minmax(0, 1fr); }
   .deviceDetailFacts > div { grid-template-columns: minmax(82px, .4fr) minmax(0, 1fr); }

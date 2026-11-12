@@ -670,12 +670,17 @@
     </div>`;
   }
 
-  function renderTelemetryDevice(record) {
+  function renderTelemetryDevice(record, recordById) {
     const attrs = objectOf(record?.attributes);
     const id = String(record.resource_id || "");
     const gpu = deviceGpuUtilization(record);
     const memory = deviceMemoryUtilization(record);
     const temperature = numberValue(attrs.temperature_c);
+    const hasTelemetry = gpu != null || memory != null || temperature != null;
+    const parent = recordById.get(String(attrs.parent_device_id || ""));
+    const context = parent
+      ? window.PortalI18n.text`属于 ${parent.title || parent.resource_id}`
+      : attrs.hostname || attrs.location || projectIds(record)[0] || "";
     return window.PortalI18n.html`<article
       class="deviceTelemetryCard"
       role="button"
@@ -688,15 +693,16 @@
           <span>${esc(deviceKindLabel(record))}</span>
           <h3>${esc(record.title || id)}</h3>
         </div>
-        ${renderDeviceStatus(record)}
+        ${renderDeviceStatus(record, { freshness: true })}
       </header>
-      <div class="deviceTelemetryMetrics">
+      ${hasTelemetry ? window.PortalI18n.html`<div class="deviceTelemetryMetrics">
         ${renderMetricGauge("GPU", gpu)}
         ${renderMetricGauge(window.PortalI18n.t("显存"), memory)}
         ${renderMetricGauge(window.PortalI18n.t("温度"), temperature, "°C")}
-      </div>
+      </div>` : window.PortalI18n.html`<div class="deviceTelemetryEmpty">暂无遥测数据</div>`}
+      ${context ? window.PortalI18n.html`<div class="deviceTelemetryContext" title="${esc(context)}">${esc(context)}</div>` : ""}
       <footer>
-        <span>${esc(objectOf(record?.attributes).hostname || objectOf(record?.attributes).model || "")}</span>
+        <span>${esc(attrs.model || "")}</span>
         <span class="${deviceObservationStale(record) ? "stale" : ""}">${esc(deviceObservationLabel(record))}</span>
       </footer>
     </article>`;
@@ -712,37 +718,11 @@
     return "";
   }
 
-  function renderDeviceRosterCard(record, recordById) {
-    const attrs = objectOf(record?.attributes);
-    const id = String(record.resource_id || "");
-    const parent = recordById.get(String(attrs.parent_device_id || ""));
-    const context = parent
-      ? window.PortalI18n.text`属于 ${parent.title || parent.resource_id}`
-      : attrs.hostname || attrs.location || projectIds(record)[0] || "已注册设备";
-    return window.PortalI18n.html`<button
-      class="deviceRosterCard"
-      type="button"
-      data-resource-open="${esc(id)}"
-      aria-label="查看 ${esc(record.title || id)}"
-    >
-      <span>${esc(deviceKindLabel(record))}</span>
-      ${renderDeviceStatus(record, { freshness: true })}
-      <strong>${esc(record.title || id)}</strong>
-      <small>${esc(context)}</small>
-      <small>${esc(deviceObservationLabel(record))}</small>
-    </button>`;
-  }
-
   function renderDeviceOperationsView(records) {
     const summary = deviceSummary(records);
     const recordById = new Map(records.map(record => [String(record.resource_id || ""), record]));
     const roots = records.filter(record => !String(objectOf(record?.attributes).parent_device_id || "").trim());
     const serverRecords = roots.filter(record => deviceKind(record) === "gpu_server");
-    const telemetryRecords = records.filter(record => (
-      deviceGpuUtilization(record) != null
-      || deviceMemoryUtilization(record) != null
-      || numberValue(objectOf(record?.attributes).temperature_c) != null
-    ));
     const attentionRecords = records
       .map(record => ({ record, reason: deviceAttentionReason(record) }))
       .filter(item => item.reason)
@@ -799,22 +779,11 @@
           </section>
           <section class="deviceOperationsPanel deviceTelemetryPanel">
             <header>
-              <div><span>当前观测</span><h2>设备遥测</h2></div>
-              <small>${telemetryRecords.length} 个设备正在上报</small>
-            </header>
-            <div class="deviceTelemetryGrid">
-              ${telemetryRecords.length
-                ? telemetryRecords.map(renderTelemetryDevice).join("")
-                : window.PortalI18n.t('<div class="devicePanelEmpty">暂无可用的当前遥测数据。</div>')}
-            </div>
-          </section>
-          <section class="deviceOperationsPanel deviceInventoryPanel">
-            <header>
               <div><span>设备清单</span><h2>已注册设备</h2></div>
               <small>${records.length} 个设备</small>
             </header>
-            <div class="deviceRosterGrid">
-              ${records.map(record => renderDeviceRosterCard(record, recordById)).join("")}
+            <div class="deviceTelemetryGrid">
+              ${records.map(record => renderTelemetryDevice(record, recordById)).join("")}
             </div>
           </section>
         </div>
@@ -1439,8 +1408,7 @@
       if (state.lastPayload) state.lastPayload.resources = state.records;
       const byId = new Map(state.records.map(item => [item.resource_id, item]));
       elements.results.querySelectorAll(`[data-resource-open="${CSS.escape(id)}"]`).forEach(node => {
-        const markup = node.classList.contains("deviceRosterCard") ? renderDeviceRosterCard(record, byId)
-          : node.classList.contains("deviceTelemetryCard") ? renderTelemetryDevice(record)
+        const markup = node.classList.contains("deviceTelemetryCard") ? renderTelemetryDevice(record, byId)
           : node.classList.contains("deviceCapacityRow") ? renderServerCapacity(record, state.records)
           : renderCard(record);
         const template = document.createElement("template");
