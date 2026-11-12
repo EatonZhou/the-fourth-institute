@@ -8,6 +8,7 @@ from management_common.product_environment import read_product_env
 
 import base64
 from copy import deepcopy
+from contextlib import ExitStack
 from contextvars import ContextVar
 from datetime import datetime, timezone
 import hashlib
@@ -176,14 +177,24 @@ def owning_lineage(arguments, caller):
 
 def start(arguments, caller, *, idempotency_key='', trigger_path_id=''):
     from .. import lineage_aggregate, directory_execution_admission
+    from psycopg.errors import LockNotAvailable
+    from management_portal.hatg.contracts import InstructionError
     lineage_id = owning_lineage(arguments, caller)
     # Deletion holds this authority from termination through identity commit.
     # Admission and native launch must finish before deletion enumerates runs.
-    with lineage_aggregate.execution_authority(lineage_id):
-        lineage_aggregate.lineage_catalog_store().get(lineage_id)
-        arguments = _validate(arguments)
-        with directory_execution_admission.admit([arguments['cwd'], arguments['path']]):
-            return _start(arguments, caller, idempotency_key=idempotency_key, trigger_path_id=trigger_path_id)
+    with ExitStack() as admission:
+        # Only lock acquisition before _start is known to have no script
+        # admission or external launch. Do not generalize this to exceptions
+        # after _start, which may follow a committed admission/native launch.
+        try:
+            admission.enter_context(lineage_aggregate.execution_authority(lineage_id))
+            lineage_aggregate.lineage_catalog_store().get(lineage_id)
+            arguments = _validate(arguments)
+            admission.enter_context(directory_execution_admission.admit([arguments['cwd'], arguments['path']]))
+        except LockNotAvailable as exc:
+            raise InstructionError('instruction.failed', str(exc), retryable=True,
+                                   commit_state='not_committed') from exc
+        return _start(arguments, caller, idempotency_key=idempotency_key, trigger_path_id=trigger_path_id)
 
 
 def _start(arguments, caller, *, idempotency_key='', trigger_path_id=''):
