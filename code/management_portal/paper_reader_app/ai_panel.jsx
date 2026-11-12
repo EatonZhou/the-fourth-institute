@@ -18,9 +18,15 @@ export function AIPanel({discussion, catalog, onSelected, principal, bridge, isC
     const prepare=async(readOnly, message='Reader 单篇讨论')=>{
       try {
       if(!current())throw Error(window.PortalI18n.t('论文或账号已变化'));
-      const response=await fetch('/chat-workspace/api/prepare',{method:'POST',credentials:'same-origin',
-        headers:{'Content-Type':'application/json'},body:JSON.stringify({surface:'paper',workspace_key:discussion.key,
-          message,read_only:readOnly,context:{document:activeDiscussion.current.document,expected_principal:principal,selection:pendingSelection.current}})});
+      const legacy=!discussion.key.startsWith('research:');
+      const ownerPaper=discussion.key.startsWith('paper:paper_')?discussion.key.slice(6):'';
+      // Match ordinary Paper Chat: a legacy conversation retains its original
+      // material owner; opening it must not bind the current PDF as new material.
+      const response=legacy&&readOnly
+        ?await fetch('/chat-workspace/api/session?'+new URLSearchParams({surface:'paper',workspace_key:discussion.key,paper_id:ownerPaper}),{credentials:'same-origin'})
+        :await fetch('/chat-workspace/api/prepare',{method:'POST',credentials:'same-origin',
+          headers:{'Content-Type':'application/json'},body:JSON.stringify({surface:'paper',workspace_key:discussion.key,
+            message,read_only:readOnly,context:legacy?{paper_id:ownerPaper}:{document:activeDiscussion.current.document,expected_principal:principal,selection:pendingSelection.current}})});
       const value=await response.json();if(!response.ok)throw Object.assign(new Error(),{status:response.status,code:value.error?.code});
       if(!current())throw Error(window.PortalI18n.t('论文或账号已变化'));return value;
       }catch(error){if(current())setError(friendlyError(error));throw error;}
