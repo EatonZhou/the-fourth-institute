@@ -37,5 +37,5 @@ def command(config: dict, run_dir: Path, *, socket_path: Path | None = None) -> 
     args = [interpreter]
     if config['runtime'] == 'javascript':
         env['NODE_PATH'] = os.pathsep.join(filter(None, [str(CLIENTS), env.get('NODE_PATH', '')]))
-        args += ['--no-warnings', '--experimental-loader', str(CLIENTS / 'loader.mjs')]
+        args += ['--no-warnings', '--experimental-loader', (CLIENTS / 'loader.mjs').as_uri()]
     return [*args, config['path'], *config.get('argv', [])], env

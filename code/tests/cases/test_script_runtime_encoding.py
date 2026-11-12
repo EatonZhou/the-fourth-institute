@@ -1,6 +1,7 @@
 import subprocess
 import json
 from pathlib import Path
+from urllib.parse import urlsplit, unquote
 import pytest
 from management_common.directory_links import create_directory_link, remove_directory_link
 from management_portal.society_service.script_runs import runtime
@@ -17,6 +18,18 @@ def test_script_output_is_utf8_under_legacy_host_encoding(tmp_path, monkeypatch)
     result = subprocess.run(command, env=env, capture_output=True)
     assert result.returncode == 0, result.stderr
     assert result.stdout.decode('utf-8').strip() == '中文 🧪'
+
+
+def test_node_loader_is_a_file_url_even_with_unicode_and_spaces(tmp_path, monkeypatch):
+    clients = tmp_path / '中文 clients'
+    monkeypatch.setattr(runtime, 'CLIENTS', clients)
+    monkeypatch.setattr(runtime.shutil, 'which', lambda name: name)
+    command, _ = runtime.command({'runtime': 'javascript', 'path': 'script.mjs'}, tmp_path)
+    loader = command[command.index('--experimental-loader') + 1]
+    parsed = urlsplit(loader)
+    assert parsed.scheme == 'file'
+    assert unquote(parsed.path).endswith('/中文 clients/loader.mjs')
+    assert ' ' not in loader and '中文' not in loader
 
 
 def test_structured_results_preserve_unicode_under_legacy_host_encoding(tmp_path, monkeypatch):
