@@ -126,8 +126,10 @@ class ExecutionServiceClient:
                 ).encode("utf-8")
                 + b"\n"
             )
-            stream = connection.makefile("rb")
-            raw = stream.readline()
+            # Closing the socket alone leaves its descriptor alive while a
+            # makefile reader is retained, including by an exception traceback.
+            with connection.makefile("rb") as stream:
+                raw = stream.readline()
         except (OSError, TimeoutError) as exc:
             error = ExecutionResponseUnknown if connected else ExecutionServiceUnavailable
             raise error(f"ExecutionService request failed at {socket_path}: {type(exc).__name__}") from exc
@@ -140,7 +142,7 @@ class ExecutionServiceClient:
             )
         try:
             response = json.loads(raw)
-        except json.JSONDecodeError as exc:
+        except (json.JSONDecodeError, UnicodeDecodeError) as exc:
             raise ExecutionResponseUnknown(
                 "ExecutionService returned invalid JSON"
             ) from exc

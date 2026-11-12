@@ -382,14 +382,9 @@ def _item_links_from_text(text: str) -> dict[str, list[str]]:
 
 
 def _item_graph_records(actor: str) -> dict[str, dict]:
-    """Project the caller-visible graph records with one Resource query."""
+    """Project all caller-visible graph records, including later index pages."""
 
-    payload = get_resource_service().query(
-        facets=["knowledge"],
-        actor=str(actor or ""),
-        limit=5000,
-        include_attributes=True,
-    )
+    payload = resource_views.knowledge_query(actor=actor, service=get_resource_service())
     records: dict[str, dict] = {}
     for raw in payload.get("resources") or []:
         if not isinstance(raw, dict):

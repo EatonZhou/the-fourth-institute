@@ -65,6 +65,35 @@ function fixture() {
   };
 }
 
+test('destroy barrier prevents deletion after pending confirmation', async t => {
+  const f = fixture();let confirm;
+  const search = f.create({confirmRemove: () => new Promise(resolve => { confirm = resolve; })});
+  t.after(() => { search.destroy(); f.close(); });
+  f.searches([{search_id: 'search_test', query: 'fixture', status: 'done'}]);
+  await search.load();
+  f.window.document.querySelector('[data-semantic-delete]').click();
+  assert.equal(typeof confirm, 'function');
+  search.destroy();confirm(true);await flush();await flush();
+  assert.equal(f.requests.filter(item => item[0] === 'POST').length, 0, 'destroyed component cannot dispatch a confirmed delete');
+});
+
+test('destroy barrier retains live approval, rejection and already-dispatched semantics', async t => {
+  const f = fixture();let approved = false, confirm;
+  const search = f.create({confirmRemove: () => approved ? true : new Promise(resolve => { confirm = resolve; })});
+  t.after(() => { search.destroy(); f.close(); });
+  f.searches([{search_id: 'search_test', query: 'fixture', status: 'done'}]);
+  await search.load();
+  f.window.document.querySelector('[data-semantic-delete]').click();
+  confirm(false);await flush();
+  assert.equal(f.requests.filter(item => item[0] === 'POST').length, 0);
+  approved = true;
+  f.window.document.querySelector('[data-semantic-delete]').click();await flush();
+  assert.equal(f.requests.filter(item => item[0] === 'POST' && item[1] === '/delete').length, 1);
+  assert.deepEqual(JSON.parse(JSON.stringify(f.requests.find(item => item[0] === 'POST')[2])), {search_id: 'search_test'});
+  search.destroy();
+  assert.equal(f.requests.filter(item => item[0] === 'POST').length, 1, 'destroy does not issue rollback or replay');
+});
+
 test('opening a catalog without searching survives event disconnects and keeps polling', async t => {
   const f = fixture();
   const search = f.create(); t.after(() => { search.destroy(); f.close(); });

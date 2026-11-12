@@ -93,6 +93,16 @@ def _knowledge_sort_key(record: dict[str, Any]) -> tuple:
     )
 
 
+def knowledge_query(*, actor: str, service: Any = None) -> dict[str, Any]:
+    """Complete caller-visible Knowledge query, retaining index metadata.
+
+    Index pages, global graphs and rooted item graphs share this pagination
+    boundary. A query page limit must not become a graph's link lookup limit.
+    """
+    service = service or get_resource_service()
+    return _query_all(service, facets=["knowledge"], actor=str(actor or ""), include_attributes=True)
+
+
 def knowledge_graph_records(*, actor: str, limit: int, service: Any = None) -> list[dict]:
     """Graph nodes and their source paths from one complete caller-visible query.
 
@@ -100,8 +110,7 @@ def knowledge_graph_records(*, actor: str, limit: int, service: Any = None) -> l
     index pages before selecting nodes: later pages can contain higher-priority
     items. Source paths are internal inputs to graph construction, not UI fields.
     """
-    service = service or get_resource_service()
-    payload = _query_all(service, facets=["knowledge"], actor=actor, include_attributes=True)
+    payload = knowledge_query(actor=actor, service=service)
     records = sorted(payload.get("resources") or [], key=_knowledge_sort_key, reverse=True)
     return [
         {**_knowledge_item(record), "_source_path": str((record.get("source") or {}).get("path") or "")}
@@ -144,12 +153,7 @@ def knowledge_index(
             wait=bool(wait_seconds),
             timeout=wait_seconds or 180,
         )
-    payload = _query_all(
-        service,
-        facets=["knowledge"],
-        actor=str(actor or ""),
-        include_attributes=True,
-    )
+    payload = knowledge_query(actor=actor, service=service)
     records = list(payload.get("resources") or [])
     if excluded_types:
         records = [

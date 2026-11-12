@@ -95,7 +95,15 @@
       const entry = { resolve, reject, remainingMs: 270000, awaitingConfirmation: false };
       pending.set(requestId, entry);
       armTimeout(requestId, entry);
-      host.postMessage({ type: "portal-projection-request", channel, requestId, method, payload }, "*");
+      try {
+        host.postMessage({ type: "portal-projection-request", channel, requestId, method, payload }, "*");
+      } catch (error) {
+        // A local send failure (for example DataCloneError) has no host reply.
+        // Release only this request's budget and preserve the original error.
+        clearTimeout(entry.timeout);
+        pending.delete(requestId);
+        reject(error);
+      }
     });
   }
   addEventListener("message", event => {

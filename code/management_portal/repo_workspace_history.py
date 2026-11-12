@@ -204,6 +204,9 @@ def _commit_patch_bytes(
             commit,
             "--no-ext-diff",
             "--no-color",
+            "--src-prefix=a/",
+            "--dst-prefix=b/",
+            "--line-prefix=",
             "--find-renames",
             "--find-copies",
             "--patch",
@@ -211,47 +214,40 @@ def _commit_patch_bytes(
     )
 
 
-def _patch_path(block: str) -> str:
-    added = re.search(r"(?m)^\+\+\+ (?:b/)?([^\t]+)(?:\t.*)?$", block)
-    if added and added.group(1) != "/dev/null":
-        return added.group(1)
-    renamed = re.search(r"(?m)^rename to (.+)$", block)
-    if renamed:
-        return renamed.group(1)
-    deleted = re.search(r"(?m)^--- (?:a/)?([^\t]+)(?:\t.*)?$", block)
-    if deleted and deleted.group(1) != "/dev/null":
-        return deleted.group(1)
-    return ""
+def _quoted_patch_path(path: str) -> str:
+    """Git's C-style path quoting with core.quotePath=false.
+
+    Match headers against the NUL-delimited file identities, including binary
+    changes and pure renames, rather than guessing from patch body or order.
+    """
+    escapes = {'\a': r'\a', '\b': r'\b', '\t': r'\t', '\n': r'\n',
+               '\v': r'\v', '\f': r'\f', '\r': r'\r', '"': r'\"', '\\': r'\\'}
+    quoted = ''.join(escapes.get(char, f'\\{ord(char):03o}')
+                     if ord(char) < 32 or ord(char) == 127 or char in escapes else char
+                     for char in path)
+    return f'"{quoted}"' if quoted != path else path
 
 
 def _attach_commit_patches(
     files: list[dict[str, Any]],
     patch: str,
 ) -> None:
-    by_path = {str(record["path"]): record for record in files}
-    unmatched = [record for record in files]
+    by_header = {
+        f'diff --git {_quoted_patch_path("a/" + str(record.get("original_path") or record["path"]))} '
+        f'{_quoted_patch_path("b/" + str(record["path"]))}': record
+        for record in files
+    }
     blocks = [
         value
         for value in re.split(r"(?m)(?=^diff --git )", patch)
         if value.startswith("diff --git ")
     ]
     for block in blocks:
-        path = _patch_path(block)
-        record = by_path.get(path)
-        if record is None:
-            record = next(
-                (
-                    candidate
-                    for candidate in unmatched
-                    if not candidate["patch"]
-                ),
-                None,
-            )
+        header, newline, _body = block.partition("\n")
+        record = by_header.get(header) if newline else None
         if record is None:
             continue
         record["patch"] = block
-        if record in unmatched:
-            unmatched.remove(record)
 
 
 def read_commit(

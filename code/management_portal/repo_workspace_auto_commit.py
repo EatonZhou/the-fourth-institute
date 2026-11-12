@@ -59,9 +59,10 @@ def _commit_change_context(
     changes = list(status.get("changes") or [])
     sensitive_paths = sorted(
         {
-            stripped_text(item.get("path"))
+            stripped_text(item.get(key))
             for item in changes
-            if _looks_sensitive_path(item.get("path"))
+            for key in ("path", "original_path")
+            if _looks_sensitive_path(item.get(key))
         }
     )
     if sensitive_paths:

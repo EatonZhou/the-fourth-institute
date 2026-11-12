@@ -1288,9 +1288,7 @@ def start_runtime() -> None:
     with _RUNTIME_LOCK:
         if _RUNTIME_STARTED:
             return
-        _RUNTIME_STARTED = True
         stop = threading.Event()
-        _RUNTIME_STOP = stop
         def loop():
             while not stop.is_set():
                 try:
@@ -1298,8 +1296,11 @@ def start_runtime() -> None:
                 except Exception:
                     LOG.exception("WALL maintenance failed")
                 stop.wait(5)
-        _RUNTIME_THREAD = threading.Thread(target=loop, daemon=True, name="wall-maintenance")
-        _RUNTIME_THREAD.start()
+        thread = threading.Thread(target=loop, daemon=True, name="wall-maintenance")
+        thread.start()
+        # Publish ownership only after successful startup. Failed admission
+        # must leave both the next start and an intervening stop retryable.
+        _RUNTIME_STARTED, _RUNTIME_STOP, _RUNTIME_THREAD = True, stop, thread
 
 
 def stop_runtime() -> None:

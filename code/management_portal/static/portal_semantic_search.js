@@ -188,8 +188,10 @@
     }
 
     async function remove(searchId) {
+      if (destroyed) return;
       const job = jobs.find(item => String(item.search_id || "") === String(searchId || "")) || null;
       if (options.confirmRemove && !await options.confirmRemove(searchId, job)) return;
+      if (destroyed) return;
       await client.post(urls.delete, {
         search_id: searchId,
         ...(options.actionPayload?.() || {}),
