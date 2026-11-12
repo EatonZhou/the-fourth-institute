@@ -2702,10 +2702,10 @@ protocols:
       - "lineage"
       - "execution.agent-data"
       - "execution.providers"
-    designs:
+    designs: []
+    related_designs:
       - "decision_c47a13e8b962"
       - "decision_91eb3626d323"
       - "decision_b1ab45c4b3ec"
-    related_designs: []
     description: "Society 拥有授权、排空和重启状态，经现有进程内 Execution port 准备不可变引用；Execution 拥有原生来源发现、严格窗口校验、收据和源版本比较。短 Resident 锁内只预检和最终重核、提交引用，不扫描物化历史；无额外模型调用或服务。"
     example: "RestartSession preserve → 短锁预检 → prepare_context_preservation 锁外冻结 → 短锁重核 → commit_context_preservation 原子接入引用和收据 → 既有生命周期准备目标并条件切换；变化或未知导入结果不盲目重放。"
