@@ -10,8 +10,6 @@ from urllib.parse import quote
 
 from management_common.resource_identity import get_resource_type_registry
 from management_common.text_values import stripped_text, unique_texts
-# Deployment bridge: remove after Release callers load the shared text owner.
-from management_common.text_values import unique_texts as _dedupe
 from management_portal.resources.portal import portal_url_for_resource
 from management_portal.resources.schema import normalize_resource_attributes
 
