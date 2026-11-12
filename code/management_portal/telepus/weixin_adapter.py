@@ -330,10 +330,13 @@ class WeixinAdapter:
         actor = account['portal_actor']
         chat = chat_key(account['ilink_bot_id'])
         count, blocked = self.store.budget(chat)
-        if blocked or count >= self.budget - 1 or not account['context_token']:
+        if blocked or count >= self.budget or not account['context_token']:
             return
         item = row['item']
         if time.time() < item.get('retry_at', 0):
+            return
+        if count == self.budget - 1:
+            self._pause_notice(account, row, client)
             return
         prepare_started = time.monotonic()
         try:
@@ -369,6 +372,41 @@ class WeixinAdapter:
                 self.store.budget(chat, blocked=True)
             else:
                 self._retry_reminder(row, item)
+
+    PAUSE_NOTICE = '⏸ 微信提醒已暂停：机器人连续发送已达上限。回复任意消息即可继续接收，期间的提醒会合并补发。'
+
+    def _pause_notice(self, account, row, client):
+        """Spend the last slot of this inbound on one pause notice.
+
+        Replies and reminders share that slot: whichever notice is sent first
+        exhausts the budget, so a second notice cannot follow before the next
+        inbound resets it. The reminder row stays queued for that reset.
+        """
+        actor = account['portal_actor']
+        chat = chat_key(account['ilink_bot_id'])
+        item = row['item']
+        try:
+            ready = self.notifications.has_ready(actor)
+        except Exception as exc:
+            if not item.get('failures'):
+                self.notifications.diagnostic(actor, exc)
+            self._retry_reminder(row, item)
+            return
+        if not ready:
+            if not self.notifications.pending(actor):
+                self.store.finish(row['id'])
+            return
+        try:
+            client.send([{'type': 1, 'text_item': {'text': self.PAUSE_NOTICE}}], account['context_token'],
+                        client_id=f'telepus-pause-{row["id"]}')
+        except Exception as exc:
+            self._failure(actor, exc)
+            if isinstance(exc, WeixinError) and exc.code == -2:
+                self.store.budget(chat, blocked=True)
+            else:
+                self._retry_reminder(row, item)
+            return
+        self.store.budget(chat, spent=True)
 
     def _retry_reminder(self, row, item):
         item['failures'] = min(item.get('failures', 0) + 1, 9)

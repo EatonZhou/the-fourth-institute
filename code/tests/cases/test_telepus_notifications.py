@@ -234,15 +234,96 @@ def test_immediate_pending_batch_five_items_one_message(reminder):
     assert '引用这条消息回答' in second
 
 
-@pytest.mark.parametrize('gate', ['reserved', 'no_context', 'minus_two'])
+def texts(r):
+    return [m['item_list'][0]['text_item']['text'] for m in r.server.sent]
+
+
+def spend(r, n):
+    for _ in range(n):
+        r.adapter.store.budget(chat_key('bot'), spent=True)
+
+
+def test_last_slot_sends_one_pause_notice_then_resumes_after_inbound(reminder):
+    r = reminder
+    enable(r, mention=True)
+    r.box['items'] = [mention('kept'), mention('read-later')]
+    due(r, flush=False)
+    spend(r, r.adapter.budget - 1)
+    for _ in range(3):
+        r.adapter.flush(ACTOR)
+        r.notices.scan(ACTOR)
+    assert texts(r) == [r.adapter.PAUSE_NOTICE]
+    assert r.adapter.store.budget(chat_key('bot')) == (r.adapter.budget, False)
+    assert len(r.notices.pending(ACTOR)) == 2 and r.adapter.store.pending(chat_key('bot'))
+    # One reminder became invalid while paused; only the valid one is sent.
+    r.box['items'] = [mention('kept')]
+    r.server.sent.clear()
+    incoming(r.adapter, r.server, '/where', message_id=2)
+    sent = texts(r)
+    assert len(sent) == 2 and 'kept' in sent[1] and 'read-later' not in sent[1]
+    assert r.adapter.PAUSE_NOTICE not in sent and not r.notices.pending(ACTOR)
+
+
+def test_pause_resumes_with_summary_when_too_many(reminder):
+    r = reminder
+    enable(r, mention=True)
+    r.box['items'] = [mention(str(i)) for i in range(5)]
+    due(r, flush=False)
+    spend(r, r.adapter.budget - 1)
+    r.adapter.flush(ACTOR)
+    assert texts(r) == [r.adapter.PAUSE_NOTICE]
+    r.server.sent.clear()
+    incoming(r.adapter, r.server, '/where', message_id=2)
+    assert '5 件事' in texts(r)[1] and not r.notices.pending(ACTOR)
+
+
+def test_reply_notice_already_used_last_slot_suppresses_pause(reminder):
+    r = reminder
+    enable(r, mention=True)
+    r.box['items'] = [mention('new')]
+    due(r, flush=False)
+    spend(r, r.adapter.budget - 1)
+    r.adapter.enqueue(chat_key('bot'), [{'text': '回复一'}, {'text': '回复二'}])
+    r.adapter.flush(ACTOR)
+    r.adapter.flush(ACTOR)
+    assert texts(r) == ['还有 2 条回复，回复任意消息继续接收']
+    assert len(r.notices.pending(ACTOR)) == 1
+
+
+def test_pause_notice_minus_two_blocks_without_retry(reminder):
+    r = reminder
+    enable(r, mention=True)
+    r.box['items'] = [mention('new')]
+    due(r, flush=False)
+    spend(r, r.adapter.budget - 1)
+    r.server.reject = -2
+    r.adapter.flush(ACTOR)
+    assert r.adapter.store.budget(chat_key('bot'))[1] is True
+    r.server.reject = 0
+    r.adapter.flush(ACTOR)
+    assert not r.server.sent and len(r.notices.pending(ACTOR)) == 1
+
+
+def test_pause_notice_skipped_when_no_reminder_is_still_valid(reminder):
+    r = reminder
+    enable(r, mention=True)
+    r.box['items'] = [mention('new')]
+    due(r, flush=False)
+    spend(r, r.adapter.budget - 1)
+    r.box['items'] = []
+    r.adapter.flush(ACTOR)
+    assert not r.server.sent and not r.adapter.store.pending(chat_key('bot'))
+    assert r.adapter.store.budget(chat_key('bot')) == (r.adapter.budget - 1, False)
+
+
+@pytest.mark.parametrize('gate', ['exhausted', 'no_context', 'minus_two'])
 def test_budget_wait_and_next_inbound_send_reply_before_summary(reminder, gate):
     r = reminder
     enable(r, mention=True)
     r.box['items'] = [mention('new')]
     due(r, flush=False)
-    if gate == 'reserved':
-        for _ in range(r.adapter.budget - 1):
-            r.adapter.store.budget(chat_key('bot'), spent=True)
+    if gate == 'exhausted':
+        spend(r, r.adapter.budget)
     elif gate == 'no_context':
         r.adapter.store.update(ACTOR, context_token='')
     else:

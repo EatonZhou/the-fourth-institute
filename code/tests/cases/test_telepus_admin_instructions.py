@@ -88,7 +88,7 @@ def test_weixin_public_list_and_owner_or_admin_operations(enabled_runtime, conta
     assert rows['alice']['status'] == 'active' and rows['bob']['status'] == 'expired'
     assert not rows['alice']['can_manage'] and not rows['bob']['can_manage']
     assert rows['carol']['can_manage'] and rows['carol']['status'] == 'unbound'
-    assert all(set(row) == {'portal_actor', 'status', 'current_actor', 'can_manage'} for row in rows.values())
+    assert all(set(row) == {'portal_actor', 'status', 'notifications', 'current_actor', 'can_manage'} for row in rows.values())
     assert all(row['can_manage'] for row in binding.catalog('alice')['users'])
     assert not any(row['can_manage'] for row in binding.catalog(R)['users'])
 

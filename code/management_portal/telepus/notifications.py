@@ -243,6 +243,16 @@ class Notifications:
         safe_code = code if isinstance(code, str) and code.startswith('instruction.') and code.replace('.', '').replace('_', '').isalnum() else ''
         print(f'Telepus notification actor={actor} error_type={type(error).__name__} code={safe_code}', file=sys.stderr, flush=True)
 
+    def has_ready(self, actor):
+        """Revalidate pending reminders without reading their sources (pause notice)."""
+        if not any(self.preferences(actor).values()):
+            return False
+        cached = self._snapshots.pop(actor, None)
+        reused = cached is not None and 0 <= self.clock() - cached[0] < 2
+        current = cached[1] if reused else self.snapshot(actor)
+        self.reconcile(actor, current)
+        return any(r['category'] in current and r['key'] in current[r['category']] for r in self.pending(actor))
+
     def prepare(self, actor, available=1):
         """Revalidate immediately before sending; return None to retain the queue."""
         if not any(self.preferences(actor).values()):
