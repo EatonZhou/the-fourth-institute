@@ -41,8 +41,13 @@ def test_project_rename_waits_for_affected_resource_projection(monkeypatch, dry_
     monkeypatch.setattr(isa, '_project_record',lambda *a:{'resource_id':'Old'})
     monkeypatch.setattr(society,'get_society_service',lambda:SimpleNamespace(project=SimpleNamespace(
         rename_project=lambda *a,**k:{'project_id':'New','path':'C:/projects/New'})))
-    monkeypatch.setattr(isa,'_service',lambda:SimpleNamespace(notify_source_changed=lambda **k:calls.append(k) or {'finished':True}))
+    def notify(**k):
+        from management_portal.resources.changes import ResourceChange
+        ResourceChange(kind=k['kind'],path=k['path'],resource_type=k['resource_type'])
+        calls.append(k)
+        return {'finished':True}
+    monkeypatch.setattr(isa,'_service',lambda:SimpleNamespace(notify_source_changed=notify))
     values={'project_id':'Old','new_project_id':'New','dry_run':dry_run}
     result=isa.rename_project(SimpleNamespace(argument=values.get,caller='reader',context=SimpleNamespace(entry='test')))
     assert result['project_id']=='New'
-    assert calls == ([] if dry_run else [{'path':'C:/projects/New','resource_type':'project','kind':'project.rename','wait':True}])
+    assert calls == ([] if dry_run else [{'path':'C:/projects/New','resource_type':'project','kind':'moved','wait':True}])

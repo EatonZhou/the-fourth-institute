@@ -1016,7 +1016,7 @@ def rename_project(inv: Invocation) -> dict[str, Any]:
         if not inv.argument("dry_run"):
             projection = _service().notify_source_changed(
                 path=str(result.get("path") or ""), resource_type="project",
-                kind="project.rename", wait=True,
+                kind="moved", wait=True,
             )
             if not projection.get("finished"):
                 raise InstructionError("instruction.projection_pending",
