@@ -40,8 +40,8 @@ async function readHatgViewSnapshot(panel, {lineageId}) {
       .map(n=>({resident_id:n.closest('[data-node-id]').getAttribute('data-node-id'),
         state:n.getAttribute('data-execution-gate'), visible:visible(n), text:n.textContent.trim(), title:n.getAttribute('title')}));
     return {native:root.matches('.portalHatgPanelComponent[role="region"],#lineage-hatg-panel[role="region"],section#hatgPane[data-lineage-pane="hatg"][aria-label]'),
-      visible:visible(root), lineage_ids:[...root.querySelectorAll('#activeLineageIdentity [data-portal-resource-id]')]
-        .filter(visible).map(n=>n.getAttribute('data-portal-resource-id')),
+      visible:visible(root), lineage_ids:[...new Set([...root.querySelectorAll('#activeLineageIdentity [data-portal-resource-id]')]
+        .filter(visible).map(n=>n.getAttribute('data-portal-resource-id')))],
       busy:mount.inert || mount.getAttribute('aria-busy') === 'true', bounds,
       zoom:canvas?.getAttribute('data-zoom') || null, nodes, edges, edge_geometry:edgeGeometry, errors, execution_gates:gates};
   }));

@@ -22,9 +22,7 @@ from management_portal.test_framework.tau import DEFAULT_STORAGE_STATE
 from management_portal.test_framework.dev_target import resolve_unique_dev
 
 
-from management_portal.test_framework.compatibility import test_actor
-
-ACCOUNT = test_actor()
+from management_portal.test_framework.compatibility import test_identity
 
 
 def storage_state_payload(deployment: PortalDeployment, token: str) -> dict:
@@ -53,13 +51,15 @@ def provision(
     registry_path: Path | None = None,
 ) -> dict[str, str]:
     deployment = resolve_unique_dev(registry_path)
+    account, expected_category = test_identity()
     access = get_portal_access_store()
-    user = access.user(ACCOUNT)
-    # Every signed-in user may operate the Test Lab; the account only has to be active.
-    if user.get("status") != "active":
-        raise PermissionError("test-actor 必须处于启用状态")
-    token = _issue_session_token(ACCOUNT)
-    if _verify_session_token(token) != ACCOUNT:
+    user = access.user(account)
+    if not user.get("configured") or user.get("status") != "active":
+        raise PermissionError("test-actor 必须是已登记且处于启用状态的用户")
+    if expected_category is not None and user.get("category") != expected_category:
+        raise PermissionError("test-actor 用户类别与实例配置不符")
+    token = _issue_session_token(account)
+    if _verify_session_token(token) != account:
         raise RuntimeError("Portal rejected the newly issued test session")
     payload = storage_state_payload(deployment, token)
     output = output.expanduser().resolve()
@@ -74,10 +74,12 @@ def provision(
     access.audit(
         "test-actor-profile-provisioner",
         "test_browser_session_provisioned",
-        target=ACCOUNT,
-        details={"deployment": deployment.deployment_id, "storage_state": str(output)},
+        target=account,
+        details={"deployment": deployment.deployment_id, "storage_state": str(output),
+                 "user_category": user.get("category", "")},
     )
-    return {"account": ACCOUNT, "deployment": deployment.deployment_id, "storage_state": str(output)}
+    return {"account": account, "deployment": deployment.deployment_id, "storage_state": str(output),
+            "user_category": user.get("category", "")}
 
 
 def main() -> int:

@@ -12,8 +12,10 @@ async function readSessionLineageIdentity(panel, {lineageId}) {
       throw new Error('Expected the full native HATG region');
     const visible = n => !!n?.isConnected && !n.closest('[hidden],[inert],[aria-hidden="true"]')
       && n.checkVisibility({checkOpacity:true,checkVisibilityCSS:true});
-    const ids = [...root.querySelectorAll('#activeLineageIdentity [data-portal-resource-id]')].filter(visible)
-      .map(n => n.getAttribute('data-portal-resource-id'));
+    // The resource header can expose the same identity through several native
+    // controls. Distinct values, rather than DOM copies, define ambiguity.
+    const ids = [...new Set([...root.querySelectorAll('#activeLineageIdentity [data-portal-resource-id]')].filter(visible)
+      .map(n => n.getAttribute('data-portal-resource-id')))];
     const buttons = [...root.querySelectorAll('button[id="addNodeBtn"]')].filter(visible);
     const createEnabled = buttons.length === 1 && !buttons[0].disabled && buttons[0].getAttribute('aria-disabled') !== 'true';
     const mount = root.closest('.portalHatgPanelComponent') || root;

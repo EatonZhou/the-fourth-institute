@@ -9,6 +9,13 @@ module.exports=async({page,residentId,childId,lineageId,errors})=>{
   await page.waitForFunction(()=>!document.querySelector('.portalHatgPanelComponent[aria-busy="true"]'));
   const first=await readHatgViewSnapshot(panel,{lineageId});
   assert.equal(first.identity_ready,true);
+  const header=panel.locator('#activeLineageIdentity');
+  await header.evaluate((n,id)=>n.insertAdjacentHTML('beforeend',`<span data-portal-resource-id="${id}">Same Lineage</span>`),lineageId);
+  assert.equal((await readHatgViewSnapshot(panel,{lineageId})).identity_ready,true,
+    'multiple visible controls naming the same Lineage are unambiguous');
+  await header.evaluate(n=>n.lastElementChild.setAttribute('data-portal-resource-id','lineage_other'));
+  assert.equal((await readHatgViewSnapshot(panel,{lineageId})).identity_ready,false);
+  await header.evaluate(n=>n.lastElementChild.remove());
   const nodeIds=[residentId,childId],edgeIds=['edge_sample_inheritance'];
   assert.deepEqual(first.candidates[0].nodes.map(n=>n.id),nodeIds);
   assert.deepEqual(first.candidates[0].edges,edgeIds);

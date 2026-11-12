@@ -57,6 +57,17 @@ const {readSessionLineageIdentity,readSessionMessageCards,readSessionGraphSnapsh
     const fixed={lineageId:'lineage_fixed'};
     assert.equal((await readSessionLineageIdentity(graph,fixed)).identity_ready,true);
     assert.equal((await readSessionLineageIdentity(graph,{lineageId:'lineage_other'})).identity_ready,false);
+    const {readHatgViewSnapshot}=require(path.join(codeRoot,'management_portal/test_framework/tau_hatg_view_evidence'));
+    const header=graph.locator('#activeLineageIdentity');
+    await header.evaluate(n=>n.insertAdjacentHTML('beforeend','<span data-portal-resource-id="lineage_fixed">Same identity in another control</span>'));
+    assert.equal((await readSessionLineageIdentity(graph,fixed)).identity_ready,true,
+      'two visible representations of the same Lineage are one identity');
+    assert.deepEqual((await readHatgViewSnapshot(graph,fixed)).candidates[0].lineage_ids,['lineage_fixed']);
+    await header.evaluate(n=>n.lastElementChild.setAttribute('data-portal-resource-id','lineage_other'));
+    assert.equal((await readSessionLineageIdentity(graph,fixed)).identity_ready,false,
+      'conflicting visible identities remain ambiguous');
+    assert.deepEqual((await readHatgViewSnapshot(graph,fixed)).candidates[0].lineage_ids,['lineage_fixed','lineage_other']);
+    await header.evaluate(n=>n.lastElementChild.remove());
     await graph.locator('#addNodeBtn').evaluate(n=>n.disabled=true);
     assert.equal((await readSessionLineageIdentity(graph,fixed)).identity_ready,false);
     await graph.locator('#addNodeBtn').evaluate(n=>n.disabled=false);

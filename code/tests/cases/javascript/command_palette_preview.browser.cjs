@@ -102,6 +102,21 @@ const server = http.createServer((req, res) => {
     };
     const menu = page.locator('[data-preview-file-action="new-tab"]');
     const tabs = page.locator('.homeDialoguePreview [data-portal-document-tab]');
+    if (process.env.SEARCH_RECOVERY_ONLY) {
+      await prepare();
+      await page.route('**/api/resource-index/suggest?*', route => route.fulfill({
+        status: 503, contentType: 'application/json', body: JSON.stringify({error:'Unavailable fixture owner'}),
+      }));
+      await page.evaluate(() => PortalCommandPalette.open());
+      await page.locator('#portalCommandInput').fill('temporarily unavailable');
+      await page.locator('#portalCommandList').getByText('Search unavailable. Please try again.', {exact:true}).waitFor();
+      assert.equal(await page.locator('#portalCommandList').getByText('Loading…', {exact:true}).count(), 0);
+      await page.unroute('**/api/resource-index/suggest?*');
+      await page.locator('#portalCommandInput').fill('recovered');
+      await page.locator('[data-command-index="2"]').waitFor();
+      assert.deepEqual(errors, []);
+      return;
+    }
     if (!process.env.FAVORITES_LAYOUT_ONLY) {
     await prepare();
     await page.evaluate(address => PortalPreview.request({ resourceAddress: address }), records[0].address);

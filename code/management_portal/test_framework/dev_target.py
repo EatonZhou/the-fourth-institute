@@ -20,7 +20,7 @@ from management_portal.test_framework.catalog import ROOT
 
 EXPECTED_DEPLOYMENT = "dev"
 EXPECTED_PAGE_FINGERPRINT = "component-v2"
-from management_portal.test_framework.compatibility import test_actor
+from management_portal.test_framework.compatibility import test_actor, test_identity
 
 EXPECTED_ACTOR = test_actor()
 
@@ -72,6 +72,7 @@ class VerifiedDevTarget:
     page_fingerprint: str
     actor: str
     browser_origin: str = ""
+    user_category: str = ""
 
     def result_details(self) -> dict[str, str]:
         return {
@@ -81,6 +82,7 @@ class VerifiedDevTarget:
             "actual_build_id": self.actual_build_id,
             "page_fingerprint": self.page_fingerprint,
             "actor": self.actor,
+            **({"user_category": self.user_category} if self.user_category else {}),
         }
 
 
@@ -184,6 +186,7 @@ class DevTargetVerifier:
         self.build_id = build_id
 
     def verify(self, storage_state: Path) -> VerifiedDevTarget:
+        expected_identity = test_identity()
         deployment = resolve_unique_dev(self.registry_path)
         expected_build = self.build_id(self.source_root) if self.build_id else deployment.build_id
         storage_state = Path(storage_state)
@@ -193,7 +196,7 @@ class DevTargetVerifier:
         except OSError:
             identity = None  # The normal verifier supplies the diagnostic.
         key = (deployment.origin, deployment.deployment_id, expected_build,
-               str(storage_state.resolve()), identity, self.http_get)
+               str(storage_state.resolve()), identity, expected_identity, self.http_get)
         with _PREFLIGHT_LOCK:
             pending = _PREFLIGHTS.get(key)
             owner = pending is None
@@ -202,7 +205,7 @@ class DevTargetVerifier:
         if not owner:
             return pending.result()
         try:
-            result = self._verify(storage_state, deployment, expected_build)
+            result = self._verify(storage_state, deployment, expected_build, expected_identity)
         except BaseException as exc:
             pending.set_exception(exc)
             raise
@@ -214,7 +217,7 @@ class DevTargetVerifier:
                 del _PREFLIGHTS[key]
 
     def _verify(self, storage_state: Path, deployment: PortalDeployment,
-                expected_build: str) -> VerifiedDevTarget:
+                expected_build: str, expected_identity: tuple[str, str | None]) -> VerifiedDevTarget:
         observed: dict[str, str] = {
             "deployment": deployment.deployment_id,
             "expected_build_id": expected_build,
@@ -282,10 +285,21 @@ class DevTargetVerifier:
             ) from exc
         actor = str(identity.get("username") or "")
         observed["actor"] = actor
-        if actor != test_actor():
+        if actor != expected_identity[0]:
             raise DevTargetError(
                 "所选测试实例 的会话用户不是 test-actor。", details=observed
             )
+        access = identity.get("access")
+        access = access if isinstance(access, dict) else {}
+        category = access.get("user_category")
+        category = category if isinstance(category, str) else ""
+        observed["user_category"] = category
+        if expected_identity[1] is not None:
+            observed["expected_user_category"] = expected_identity[1]
+            if category != expected_identity[1]:
+                raise DevTargetError("所选测试实例 的会话用户类别与测试配置不符。", details=observed)
+            if access.get("status") != "active":
+                raise DevTargetError("所选测试实例 的测试用户未处于启用状态。", details=observed)
         identity_deployment = str(identity.get("portal_deployment") or deployment.deployment_id)
         identity_build = str(identity.get("build_id") or actual_build)
         if identity_deployment != deployment.deployment_id or identity_build != actual_build:
@@ -305,4 +319,5 @@ class DevTargetVerifier:
             actual_build_id=actual_build,
             page_fingerprint=fingerprint,
             actor=actor,
+            user_category=category,
         )

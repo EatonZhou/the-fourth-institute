@@ -19,8 +19,24 @@ python3.12 scripts/bootstrap_portal install tau
 python3.12 scripts/bootstrap_portal doctor tau
 ```
 
-The instance’s configured test account (`test_framework.actor`) must be active. Provision its private browser storage
+The instance's configured test account (`site.json`: `deployment.test_framework.actor`) must exist and be active. Provision its private browser storage
 state with `python3.12 -m management_portal.test_framework.tools.provision_portal_test_profile`.
+For a case requiring an ordinary user, configure a dedicated, authorized `member`
+account and set `deployment.test_framework.actor_category` to `member`. Both the
+provisioner and each TAU preflight check the current category; preflight reads it
+from the target's authenticated `/api/me`. A missing or different category fails
+before dispatch. Results record the observed category. Existing configurations
+without `actor_category` retain their account-only contract and do not establish
+an ordinary-user prerequisite. Supported explicit categories are `member`,
+`intern`, and `portal_admin`; unknown or empty values are rejected.
+
+Account creation uses the authorized `CreateUser` instruction, independently of
+local browser profile provisioning. The provisioner neither creates accounts nor
+changes permissions. Do not demote an existing administrator or use a private
+user to satisfy a test. After all affected runs finish, an installation operator
+may switch the configured actor and provision a new private (0600) profile.
+Recheck the selected target and category before a targeted case. The browser
+account does not grant permissions to the Resident executing ISA instructions.
 TAU also needs a reachable test target, a configured TAU Resident and
 provider account, and available account quota. Restart the Portal service after
 installing the browser runtime so the Test Workbench refreshes runner availability.
