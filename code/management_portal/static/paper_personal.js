@@ -30,6 +30,7 @@
     });
     const body = tree.closest('.leftBody');
     const scopes = host.querySelector('[data-scopes]');
+    scopes.classList.add('paperFrameHeadFooter');
     const header = document.querySelector('#paperLibraryPane > .paneHead');
     if (header) header.append(scopes);
     if (body) body.prepend(host); else tree.before(host);

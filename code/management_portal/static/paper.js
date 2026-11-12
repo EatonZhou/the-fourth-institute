@@ -480,4 +480,33 @@
     }
   });
   init().catch(alertError);
+  // Only geometry is coordinated here. Font, surface, padding and buttons
+  // remain owned by the shared Chat header classes, with no copied sizes.
+  let headerFrame = null;
+  const measuredHeaders = new WeakSet();
+  const scheduleHeaderLayout = () => {
+    if (headerFrame !== null) return;
+    headerFrame = requestAnimationFrame(() => {
+      headerFrame = null;
+      const headers = [...document.querySelectorAll('#paperWorkbench .paperFrameHead')];
+      if (!headers.length) return;
+      const texts = headers.map(head => head.querySelector(':scope > .paneHeadText')).filter(Boolean);
+      for (const head of headers) head.style.minHeight = '';
+      for (const text of texts) text.style.minHeight = '';
+      const copyHeight = Math.max(...texts.map(text => text.getBoundingClientRect().height));
+      for (const text of texts) text.style.minHeight = `${copyHeight}px`;
+      const height = Math.max(...headers.map(head => head.getBoundingClientRect().height));
+      for (const head of headers) {
+        head.style.minHeight = `${height}px`;
+        if (measuredHeaders.has(head)) continue;
+        measuredHeaders.add(head);
+        new ResizeObserver(scheduleHeaderLayout).observe(head);
+        new MutationObserver(scheduleHeaderLayout).observe(head, {childList: true, subtree: true, characterData: true});
+      }
+      if (headers.length === 3) headerMountObserver.disconnect();
+    });
+  };
+  const headerMountObserver = new MutationObserver(scheduleHeaderLayout);
+  headerMountObserver.observe(document.getElementById('paperWorkbench'), {childList: true, subtree: true});
+  scheduleHeaderLayout();
 })();

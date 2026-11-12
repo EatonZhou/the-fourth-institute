@@ -1824,6 +1824,7 @@
     "en": "{p0}/{p1} papers",
     "zh-CN": "{p0}/{p1} 篇论文"
   },
+  "{p0} papers · {p1} analyses": {"en":"{p0} papers · {p1} analyses","zh-CN":"{p0} 篇论文 · {p1} 篇分析"},
   "{p0}/{p1} papers · {p2} analyses": {
     "en": "{p0}/{p1} papers · {p2} analyses",
     "zh-CN": "{p0}/{p1} 篇论文 · {p2} 篇分析"
