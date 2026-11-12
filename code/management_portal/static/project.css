@@ -3,6 +3,8 @@
 /* The page hides its menus, folded groups and the conversation with the hidden attribute. */
 .projectList [hidden], .projectHome [hidden], .projectsChat[hidden], .projectSettingsSurface [hidden] { display: none !important; }
 
+.projectsShell { font-size: 14px; }
+
 .projectsWorkspace {
   display: grid;
   grid-template-columns: minmax(0, 1fr);

@@ -9,7 +9,7 @@
 
 body[data-resource-category="repo"] {
   min-width: 320px;
-  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family: var(--portal-font);
 }
 
 body[data-resource-category="repo"] .portalCollectionTypeChip[data-type="repo"] {

@@ -5,7 +5,7 @@ body {
   /* The virtual board and detail history own the viewport position. A browser
      anchor in the outgoing empty state would move it when pages arrive. */
   overflow-anchor: none;
-  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+  font-family: var(--portal-font);
   background: var(--bg);
   color: var(--text);
   -webkit-font-smoothing: antialiased;

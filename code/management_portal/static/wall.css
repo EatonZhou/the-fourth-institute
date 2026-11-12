@@ -1,4 +1,4 @@
-.wallPage { margin: 0; height: 100dvh; min-height: 640px; overflow: auto; display: flex; flex-direction: column; background: var(--bg); color: var(--text); font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+.wallPage { margin: 0; height: 100dvh; min-height: 640px; overflow: auto; display: flex; flex-direction: column; background: var(--bg); color: var(--text); font-family: var(--portal-font); }
 .wallPage, .wallPage * { box-sizing: border-box; }
 .wallPage [hidden] { display: none !important; }
 .wallHeader { flex: none; border-bottom: 1px solid var(--border); background: var(--panel); }

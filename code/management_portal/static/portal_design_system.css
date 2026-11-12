@@ -7,7 +7,12 @@
  * data-portal-* and aria contracts.
  */
 
+/* Every page's text uses --portal-font. Page stylesheets refer to the token
+   and do not restate a font stack; a page without its own rule gets it here. */
+body { font-family: var(--portal-font); }
+
 :root {
+  --portal-font: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
   --portal-shell-font: "Comic Sans MS", "Comic Sans", cursive, ui-sans-serif, system-ui, sans-serif;
   --portal-space-1: 4px;
   --portal-space-2: 8px;

@@ -4,7 +4,7 @@
         min-height: 100vh;
         background: var(--bg);
         color: var(--text);
-        font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        font-family: var(--portal-font);
         -webkit-font-smoothing: antialiased;
       }
       :where(button, input, textarea, select) { font: inherit; }
