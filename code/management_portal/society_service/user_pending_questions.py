@@ -14,9 +14,9 @@ marks or from who may manage the Resident.  A relayed input keeps its
 sender; the User then answers in the outermost Family facade that holds the
 relay, so the row opens there while its key stays the member's message.
 
-The index is complete or the read fails.  A message whose rows could not be
-worked out leaves a repair row in the same transaction; the next read redoes
-it first and fails rather than answer without it.  A store that had
+The index is complete or the read fails. A message whose rows could not be
+worked out leaves a repair row in the same transaction; housekeeping repairs
+it, and reads fail rather than answer without it. A store that had
 Conversations before the index existed is not ready until ``backfill_step``
 (SocietyService housekeeping) has indexed them once (``READY_KEY`` in
 ``lineage_meta``).
@@ -24,11 +24,12 @@ Conversations before the index existed is not ready until ``backfill_step``
 The row only says where to look.  A read checks each row against its holder's
 current state (``question_set_state``, the native request's current status),
 the facade's current relay, and the User's current right to read and answer
-there; a row whose question no longer waits is removed.  Reading a question
-does not answer it.
+there; a row whose question no longer waits is hidden, then removed by
+housekeeping. Reading never repairs, cleans, answers or resumes work.
 """
 from __future__ import annotations
 
+import json
 import logging
 import time
 from collections.abc import Iterable, Mapping
@@ -45,6 +46,7 @@ LOGGER = logging.getLogger(__name__)
 TABLE = "user_pending_requests"
 REPAIR_TABLE = "user_pending_request_repairs"
 READY_KEY = "user_pending_requests"
+CLEANUP_KEY = "user_pending_requests_cleanup_after"
 # Created when absent; an existing table is not locked on process start.
 SCHEMA_SQL = """
 DO $user_pending_requests$
@@ -212,7 +214,7 @@ def prepare(resident_id: str, message: Mapping[str, Any], repository: Any) -> Pe
     """The index change of an Agent message, worked out before its write transaction.
 
     The message is delivered whatever happens here; a failure leaves a repair
-    row instead of rows, which the next read redoes.
+    row instead of rows, which housekeeping redoes.
     """
 
     message_id = str(message.get("message_id") or "")
@@ -240,10 +242,20 @@ def reindex(resident_id: str, message_id: str, repository: Any) -> list[tuple[An
     return rows_for(resident_id, message, repository) if message is not None else []
 
 
-def _repair(store: Any, repository: Any) -> None:
+def _require_ready(store: Any) -> None:
+    """Only inspect readiness; interactive reads never maintain the index."""
+    with store.database.read() as connection:
+        ready = connection.execute('SELECT value FROM lineage_meta WHERE key=%s', (READY_KEY,)).fetchone()
+        pending = connection.execute(f'SELECT 1 FROM {REPAIR_TABLE} LIMIT 1').fetchone()
+    if not ready or ready['value'] != 'ready' or pending:
+        raise IndexNotReady('待答问题索引暂不可用')
+
+
+def _repair(store: Any, repository: Any, *, limit: int) -> None:
     with store.database.read() as connection:
         ready = connection.execute("SELECT value FROM lineage_meta WHERE key=%s", (READY_KEY,)).fetchone()
-        repairs = connection.execute(f"SELECT resident_id, message_id FROM {REPAIR_TABLE}").fetchall()
+        repairs = connection.execute(f"SELECT resident_id, message_id FROM {REPAIR_TABLE} "
+                                     "ORDER BY resident_id,message_id LIMIT %s", (limit,)).fetchall()
     if not ready or ready["value"] != "ready":
         LOGGER.warning("pending-question index is still being backfilled by SocietyService housekeeping")
         raise IndexNotReady("待答问题索引暂不可用")
@@ -330,7 +342,7 @@ def list_user_pending_requests(actor: str) -> dict[str, list[dict[str, Any]]]:
     store = get_lineage_data_store()
     repository = resident_conversation_stream.get_repository()
     started = time.perf_counter()
-    _repair(store, repository)
+    _require_ready(store)
     repaired = time.perf_counter()
     with store.database.read() as connection:
         rows = connection.execute(
@@ -358,7 +370,6 @@ def list_user_pending_requests(actor: str) -> dict[str, list[dict[str, Any]]]:
     relays_read = time.perf_counter()
     auth_seconds = 0.0
     answerable: dict[tuple[str, str], bool] = {}
-    finished: list[tuple[str, str, str]] = []
     result: list[dict[str, Any]] = []
     for row in rows:
         place = str(row["resident_id"])
@@ -370,7 +381,6 @@ def list_user_pending_requests(actor: str) -> dict[str, list[dict[str, Any]]]:
         except KeyError:
             waiting = False
         if not waiting:
-            finished.append((row["user_id"], row["source_resident_id"], row["source_message_id"]))
             continue
         permission_key = (place, str(row['kind']))
         if permission_key not in answerable:
@@ -390,17 +400,11 @@ def list_user_pending_requests(actor: str) -> dict[str, list[dict[str, Any]]]:
             "created_at": created_at.isoformat() if hasattr(created_at, "isoformat") else str(created_at),
             "title": str(place_record.get("title") or ""),
         })
-    if finished:
-        store.database.write(lambda connection: connection.execute(
-            f"DELETE FROM {TABLE} WHERE (user_id, source_resident_id, source_message_id) IN "
-            "(SELECT * FROM unnest(%s::text[], %s::text[], %s::text[]))",
-            ([item[0] for item in finished], [item[1] for item in finished], [item[2] for item in finished]),
-        ))
     ended = time.perf_counter()
     if ended - started >= 0.25:
         LOGGER.warning(
             'Pending requests read slow rows=%d places=%d family_rows=%d permission_keys=%d '
-            'total_ms=%.1f repair_ms=%.1f index_ms=%.1f questions_ms=%.1f records_ms=%.1f '
+            'total_ms=%.1f readiness_ms=%.1f index_ms=%.1f questions_ms=%.1f records_ms=%.1f '
             'relay_ms=%.1f filter_ms=%.1f auth_ms=%.1f',
             len(rows), len(records), sum(map(len, by_place.values())), len(answerable),
             (ended-started)*1000, (repaired-started)*1000, (indexed-repaired)*1000,
@@ -408,6 +412,46 @@ def list_user_pending_requests(actor: str) -> dict[str, list[dict[str, Any]]]:
             (relays_read-records_read)*1000, (ended-relays_read-auth_seconds)*1000, auth_seconds*1000,
         )
     return {"requests": result}
+
+
+def maintain(*, batch_size: int = 32) -> None:
+    """Bounded repair/cleanup in the existing SocietyService housekeeping.
+
+    A durable keyset cursor visits open rows too, so a prefix of unanswered
+    questions cannot indefinitely hide stale rows later in the index.
+    """
+    from . import resident_conversation_stream, resident_record_domain
+    from .state_store import get_lineage_data_store
+    store = get_lineage_data_store()
+    repository = resident_conversation_stream.get_repository()
+    _repair(store, repository, limit=batch_size)
+    with store.database.read() as connection:
+        cursor = connection.execute('SELECT value FROM lineage_meta WHERE key=%s', (CLEANUP_KEY,)).fetchone()
+        after = json.loads(cursor['value']) if cursor else ['', '', '']
+        rows = connection.execute(
+            f'SELECT {COLUMNS} FROM {TABLE} WHERE (user_id,source_resident_id,source_message_id)>(%s,%s,%s) '
+            'ORDER BY user_id,source_resident_id,source_message_id LIMIT %s', (*after, batch_size),
+        ).fetchall()
+    records = {}
+    finished = []
+    for row in rows:
+        place = row['resident_id']
+        if place not in records:
+            records[place] = resident_record_domain.find_resident(place)
+        try:
+            waiting = _waiting(row, records[place], repository)
+        except KeyError:
+            waiting = False
+        if not waiting:
+            finished.append((row['user_id'], row['source_resident_id'], row['source_message_id']))
+    following = ([rows[-1][key] for key in ('user_id', 'source_resident_id', 'source_message_id')]
+                 if len(rows) == batch_size else ['', '', ''])
+    def commit(connection):
+        for key in finished:
+            connection.execute(f'DELETE FROM {TABLE} WHERE user_id=%s AND source_resident_id=%s AND source_message_id=%s', key)
+        connection.execute('INSERT INTO lineage_meta(key,value) VALUES (%s,%s) '
+                           'ON CONFLICT (key) DO UPDATE SET value=EXCLUDED.value', (CLEANUP_KEY, json.dumps(following)))
+    store.database.write(commit)
 
 
 # A message's body is its Segment's payload: the stored fences or tool parts mark the candidates.
@@ -522,7 +566,7 @@ def backfill_step(*, time_budget_seconds: float = 2.0) -> bool:
             try:
                 rows.extend(row for row in reindex(position["agent_id"], position["message_id"], repository)
                             if still_waiting(row))
-            except Exception:  # noqa: BLE001 - left for the read's repair, which reports it
+            except Exception:  # noqa: BLE001 - left for housekeeping repair; reads report unready
                 LOGGER.exception("pending-question backfill left %s/%s for repair", position["agent_id"], position["message_id"])
                 repairs.append(Pending(position["agent_id"], position["message_id"], None))
         done = len(batch) < BACKFILL_BATCH_SIZE

@@ -588,7 +588,8 @@ class SocietyServiceServer(LocalServiceSocketMixin, DrainingStreamServer):
             trigger_paths.prune_finished(time_budget_seconds=2.0)
             from . import user_pending_questions
             # Once per store: a background thread of this service runs it to the end.
-            user_pending_questions.start_backfill()
+            if user_pending_questions.start_backfill():
+                user_pending_questions.maintain()
             orphaned = principal_hierarchy_domain.delete_orphaned_personal_amas()
             if orphaned["failed"]:
                 raise RuntimeError(

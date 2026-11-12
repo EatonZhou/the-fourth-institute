@@ -275,8 +275,8 @@ def test_reading_at_the_facade_needs_conversation_and_answer_rights(marked_round
     assert [item["source_message_id"] for item in _pending("CASE-A")] == [native["message_id"]]
 
 
-def test_an_unindexed_message_is_repaired_before_the_read(resident_record, monkeypatch, allowed):
-    """登记失败的消息留下修复项，下次读取先补齐；补不上则报错而不返回残缺列表"""
+def test_an_unindexed_message_waits_for_housekeeping_without_read_repair(resident_record, monkeypatch, allowed):
+    """刷新只报未就绪；维护补齐后才能读取完整列表。"""
     resident_id = resident_record["resident_id"]
     repo = resident_conversation_stream.get_repository()
     original = user_pending_questions.rows_for
@@ -286,8 +286,49 @@ def test_an_unindexed_message_is_repaired_before_the_read(resident_record, monke
         _pending("CASE-A")
     assert resident_id not in str(refused.value) and source["message_id"] not in str(refused.value)
     monkeypatch.setattr(user_pending_questions, "rows_for", original)
+    with pytest.raises(user_pending_questions.IndexNotReady):
+        _pending('CASE-A')
+    user_pending_questions.maintain()
     assert [item["source_message_id"] for item in _pending("CASE-A")] == [source["message_id"]]
     assert [item["source_message_id"] for item in _pending("CASE-A")] == [source["message_id"]]
+
+
+def test_refresh_filters_finished_rows_without_writes(resident_record, monkeypatch, allowed):
+    from management_portal.society_service.state_store import get_lineage_data_store
+    rid = resident_record['resident_id']
+    repo = resident_conversation_stream.get_repository()
+    source = _ask(repo, rid, 'CASE-A')
+    _answer(repo, rid, source)
+    store = get_lineage_data_store()
+    def count():
+        with store.database.read() as connection:
+            return connection.execute('SELECT COUNT(*) AS n FROM user_pending_requests').fetchone()['n']
+    before = count()
+    assert before > 0
+    def forbidden(*args, **kwargs):
+        raise AssertionError('refresh must not repair or write')
+    with monkeypatch.context() as read:
+        read.setattr(store.database, 'write', forbidden)
+        read.setattr(user_pending_questions, 'reindex', forbidden)
+        assert _pending('CASE-A') == []
+        assert _pending('CASE-A') == []
+    assert count() == before
+    user_pending_questions.maintain()
+    assert count() == 0
+
+
+def test_cleanup_cursor_moves_past_waiting_questions(resident_record, allowed):
+    rid = resident_record['resident_id']
+    repo = resident_conversation_stream.get_repository()
+    sources = [_ask(repo, rid, 'CASE-A') for _ in range(3)]
+    sources.sort(key=lambda m: m['message_id'])
+    _answer(repo, rid, sources[-1])
+    for _ in range(4):
+        user_pending_questions.maintain(batch_size=1)
+    from management_portal.society_service.state_store import get_lineage_data_store
+    with get_lineage_data_store().database.read() as connection:
+        rows = connection.execute('SELECT source_message_id FROM user_pending_requests').fetchall()
+    assert {row['source_message_id'] for row in rows} == {m['message_id'] for m in sources[:-1]}
 
 
 def test_a_store_with_history_is_not_ready_until_backfilled(resident_record, monkeypatch, allowed):
