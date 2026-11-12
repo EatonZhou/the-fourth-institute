@@ -113,6 +113,12 @@ def run(*, now=None, test_roots=None):
         report['errors'].extend(report['uploads']['errors'])
     except Exception as error:
         report['errors'].append(f'uploads: {error}')
+    from management_portal.resources.download_grants import reconcile as reconcile_downloads
+    try:
+        report['downloads'] = reconcile_downloads(portal_path('uploads'))
+        report['errors'].extend(report['downloads']['errors'])
+    except Exception as error:
+        report['errors'].append(f'downloads: {error}')
     report.update(retention.sweep(now=now, cache_capacities=CACHE_CAPACITIES))
     # Failed attempts and deleted parents can retain Creation reservations.
     # Retry their inode-owned effects before the queue removes parent paths.

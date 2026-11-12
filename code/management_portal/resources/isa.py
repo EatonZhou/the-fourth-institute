@@ -457,14 +457,6 @@ def read_upload(upload_id: str) -> dict[str, Any]:
 
 DOWNLOAD_TTL_SECONDS = 15 * 60
 DOWNLOAD_CHUNK_BYTES = 4 * 1024 * 1024
-_DOWNLOAD_TOKEN_CHARS = frozenset("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_")
-
-
-def _download_path(token: str) -> Path:
-    if len(token) != 32 or not set(token) <= _DOWNLOAD_TOKEN_CHARS:
-        raise not_found("下载地址不存在或已经失效")
-    return upload_root() / "downloads" / f"{token}.json"
-
 
 def _content_size(address: str, caller: str, resolved: dict[str, Any]) -> int:
     size = resolved.get("content_size")
@@ -503,11 +495,8 @@ def _oversized_read(address: str, caller: str) -> dict[str, Any]:
     content_type = str(resolved.get("media_type") or resolved.get("content_type") or "application/octet-stream")
     record = {"address": address, "caller": caller, "size": size, "version": digest.hexdigest(),
               "content_type": content_type, "expires_at": _iso(expires)}
-    path = _download_path(token)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    temporary = path.with_name(f".{token}.{secrets.token_hex(4)}")
-    temporary.write_text(json.dumps(record, ensure_ascii=False), encoding="utf-8")
-    os.replace(temporary, path)
+    from .download_grants import write
+    write(upload_root(), token, record)
     return {"content_type": content_type, "version": record["version"], "size": size,
             "download_url": f"/api/resources/download/{token}", "expires_at": record["expires_at"]}
 
@@ -515,17 +504,8 @@ def _oversized_read(address: str, caller: str) -> dict[str, Any]:
 def read_download(token: str, caller: str) -> dict[str, Any]:
     """The download a token grants; only its caller may use it, and only until it expires."""
 
-    path = _download_path(token)
-    try:
-        record = json.loads(path.read_text(encoding="utf-8"))
-    except FileNotFoundError:
-        raise not_found("下载地址不存在或已经失效") from None
-    if record.get("expires_at", "") < _iso(_now()):
-        path.unlink(missing_ok=True)
-        raise not_found("下载地址不存在或已经失效")
-    if record.get("caller") != caller:
-        raise not_found("下载地址不存在或已经失效")
-    return record
+    from .download_grants import read
+    return read(upload_root(), token, caller, _now())
 
 
 def _write_meta(meta: dict[str, Any]) -> None:
