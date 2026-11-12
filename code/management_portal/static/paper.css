@@ -913,6 +913,29 @@ body.resizingReaderAI { cursor:col-resize; user-select:none; }
 .paperResearchTitleTrigger::after { position:absolute; right:0; top:0; }
 .paperResearchTitleMenu button { font:inherit; font-size:13px; overflow-wrap:anywhere; }
 .paperResearchSelector[hidden] { display:none!important; }
+
+/* Paper subtitles follow the existing Chat Resident ID size: 11px.
+   ID-only spans retain monospace at that same size; other text stays proportional. */
+body:has(#paperPageFrame) :is(#libraryMeta,#workspaceResourceId,#workspaceDetailsToggle,#deepReadStatusText,.paperResearchChatHost .chatSubline .paneNote) {
+  font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  font-size:11px;
+  font-weight:400;
+  line-height:16px;
+  block-size:16px;
+  color:var(--muted);
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+body:has(#paperPageFrame) :is(#workspaceDetailsToggle,.paperResearchChatHost .chatSubline .paneNote) * {
+  font:inherit;
+  color:inherit;
+}
+body:has(#paperPageFrame) .paperResearchChatHost .chatSubline .paneNote.hasSessionIdentity { display:block; }
+body:has(#paperPageFrame) .paperResearchChatHost .chatSubline .chatHeaderSeparator { margin-inline:4px; }
+body:has(#paperPageFrame) :is(#workspaceResourceId,.paperResearchChatHost [data-workspace-resident-id],.paperResearchChatHost [data-workspace-session-id]) {
+  font-family:var(--mono,ui-monospace,SFMono-Regular,Menlo,monospace);
+}
 body:has(#paperPageFrame) #portalButtonTooltip { display:none!important; }
 #paperLibraryPane .paneHeadText { flex:1 1 auto; min-width:0; }
 .paperResearchChatHost .chatTitleLine { min-width:0; max-width:100%; }

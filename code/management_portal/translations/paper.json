@@ -1,4 +1,6 @@
 {
+  "当前帐号额度不可用，请手动选择 AI 后端": {"en":"Account quota unavailable. Select an AI backend manually.","zh-CN":"当前帐号额度不可用，请手动选择 AI 后端"},
+  "手动选择 AI 后端": {"en":"Select AI backend","zh-CN":"手动选择 AI 后端"},
   "Chat Workspace": {"en":"Chat Workspace","zh-CN":"聊天工作区"},
   "Back to list": {"en":"Back to list","zh-CN":"返回列表"},
   "← 返回列表": {"en":"← Back to list","zh-CN":"← 返回列表"},

@@ -10,6 +10,20 @@
     element.removeAttribute('title');
   }
   function refresh(){
+    // The composer already owns the actionable quota warning. Remove only its
+    // duplicate gate label from Paper's subtitle, keeping account/Resident IDs
+    // and every other runtime status. Shared Chat rendering stays untouched.
+    const quotaSource='账号额度已用尽';
+    const quotaLabels=new Set([quotaSource,...Object.values(window.__PORTAL_TRANSLATIONS__?.[quotaSource]||{})]);
+    for(const note of document.querySelectorAll('.paperResearchChatHost .chatSubline .paneNote')){
+      for(const part of [...note.children]){
+        if(!quotaLabels.has(part.textContent.trim()))continue;
+        const separator=part.previousElementSibling;
+        if(separator?.classList.contains('chatHeaderSeparator'))separator.remove();
+        part.remove();
+      }
+      if(!note.children.length&&quotaLabels.has(note.textContent.trim()))note.textContent='';
+    }
     for(const element of document.querySelectorAll('button,a.portalButton,[data-portal-tooltip]')){
       if(inPaper(element)&&!element.closest('.message,.markdownBody,.composerRichInput'))trimTooltip(element);
     }
