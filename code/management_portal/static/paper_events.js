@@ -147,6 +147,11 @@
         if (btn) setMode(btn.dataset.mode);
       });
       $("returnToPaperList")?.addEventListener("click", () => setMode("list-return"));
+      window.addEventListener("popstate", () => {
+        const paperId = new URL(location.href).searchParams.get("paper");
+        if (paperId) loadDetail(paperId).then(() => setMode("reader")).catch(alertError);
+        else if (state.listReturn) setMode("list-return").catch(alertError);
+      });
       $("registeredFilter")?.addEventListener("change", event => {
         setMode(event.target.value === "today" ? "today" : "library");
       });
@@ -164,7 +169,6 @@
         }
         if (event.target.closest("#deepReadBtn")) startDeepRead().catch(alertError);
         if (event.target.closest("#uploadPaperPdfBtn")) openPdfUploadPicker();
-        if (event.target.closest("#deletePaperPdfBtn")) deleteCurrentPaperPdf().catch(alertError);
         if (event.target.closest("#deletePaperBtn")) deleteCurrentPaper().catch(alertError);
       });
       $("paperPdfUploadInput").addEventListener("change", event => {
@@ -175,6 +179,9 @@
 
     // The workspace: CCF search, clicks on every mode's controls, figure requests.
     function bindWorkspaceEvents() {
+      $("workspaceMain").addEventListener("click", event => {
+        if (event.target.closest("#deletePaperPdfBtn")) deleteCurrentPaperPdf().catch(alertError);
+      });
       $("workspaceMain").addEventListener("input", event => {
         const input = event.target.closest("[data-ccf-paper-search]");
         if (!input) return;

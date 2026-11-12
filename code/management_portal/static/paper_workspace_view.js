@@ -59,6 +59,7 @@
         idId: "workspaceResourceId",
       });
       const idElement = $("workspaceResourceIdentity")?.querySelector("#workspaceResourceId");
+      $("workspaceTitle")?.removeAttribute("title");
       if (idElement && idSlot) idSlot.append(idElement);
       const metaRow = idSlot?.closest(".workspaceIdentityMetaRow");
       const idWidth = idElement ? Math.ceil(idElement.scrollWidth) : 0;
@@ -159,6 +160,11 @@
     function renderWorkspaceModeActions(paper) {
       const target = $("workspaceModeActions");
       if (!target) return;
+      const statusText = $("deepReadStatusText");
+      if (statusText) {
+        statusText.hidden = !paper || ["library", "today"].includes(state.mode);
+        statusText.textContent = statusText.hidden ? "" : deepReadStateFor(paper).text;
+      }
       if (state.mode === "library" || state.mode === "today") {
         target.innerHTML = window.PortalI18n.html`
             <button class="portalButton is-compact is-quiet" type="button" id="exportLibraryMarkdownBtn" ${state.library?.papers?.length ? "" : "disabled"}>
@@ -167,31 +173,17 @@
           `;
         return;
       }
-      if (state.mode === "reader" && paper) {
+      if (paper) {
         const deepState = deepReadStateFor(paper);
         const uploadButton = !paper.has_pdf
           ? window.PortalI18n.html`<button class="portalButton is-compact is-primary" type="button" id="uploadPaperPdfBtn" ${state.pdfUploadInFlight ? "disabled" : ""}>${state.pdfUploadInFlight ? window.PortalI18n.t("Uploading...") : "+ PDF"}</button>`
           : "";
-        const deletePdfButton = paper.has_pdf
-          ? window.PortalI18n.html`<button class="portalButton is-compact is-danger" type="button" id="deletePaperPdfBtn" ${state.pdfDeleteInFlight ? "disabled" : ""}>${window.PortalI18n.t(state.pdfDeleteInFlight ? "Deleting PDF..." : "Delete PDF")}</button>`
-          : "";
         target.innerHTML = window.PortalI18n.html`
-            <span class="paneNote" id="deepReadStatusText" role="status" aria-live="polite">${esc(deepState.text)}</span>
             <span class="workspaceActionButtons">
               ${uploadButton}
-              ${deletePdfButton}
               <button class="portalButton is-compact is-primary" type="button" id="deepReadBtn" ${paper.has_pdf && !deepState.running ? "" : "disabled"}>
                 ${esc(deepState.buttonText)}
               </button>
-              <button class="portalButton is-compact is-danger" type="button" id="deletePaperBtn">${window.PortalI18n.t("删除")}</button>
-            </span>
-          `;
-        return;
-      }
-      if (paper) {
-        target.innerHTML = window.PortalI18n.html`
-            <span class="workspaceActionButtons">
-              ${!paper.has_pdf ? window.PortalI18n.html`<button class="portalButton is-compact is-primary" type="button" id="uploadPaperPdfBtn" ${state.pdfUploadInFlight ? "disabled" : ""}>${state.pdfUploadInFlight ? window.PortalI18n.t("Uploading...") : "+ PDF"}</button>` : ""}
               <button class="portalButton is-compact is-danger" type="button" id="deletePaperBtn">${window.PortalI18n.t("删除")}</button>
             </span>
           `;

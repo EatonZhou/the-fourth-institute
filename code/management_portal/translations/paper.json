@@ -1,4 +1,6 @@
 {
+  "Chat Workspace": {"en":"Chat Workspace","zh-CN":"聊天工作区"},
+  "Back to list": {"en":"Back to list","zh-CN":"返回列表"},
   "← 返回列表": {"en":"← Back to list","zh-CN":"← 返回列表"},
   "此角色只处理论文页发起的任务，每次任务都从新的上下文开始。本页仅供查看记录，不能直接对话。": {"zh-CN":"此角色只处理论文页发起的任务，每次任务都从新的上下文开始。本页仅供查看记录，不能直接对话。","en":"This resident only handles tasks started from the Paper page. Each task starts with a fresh context. This page is for viewing records only; direct chat is unavailable."},
   "Relevance {p0}": {"en":"Relevance {p0}","zh-CN":"相关度 {p0}"},

@@ -134,6 +134,7 @@
       const canonical = new Map(sources.flatMap(source => [source,
         ...Object.values(window.__PORTAL_TRANSLATIONS__?.[source] || {})].map(value => [value, source])));
       const refresh = () => {
+        refreshResearchTitle();
         for (const element of root.querySelectorAll(".chatSubline .paneNote, .portalWorkspaceEmpty .portalAsyncStateMessage, .composerMeta, .chatTitleLine > .paneTitle")) {
           if (element.matches(".paneTitle") && state.researchSlot) continue;
           const source = canonical.get(element.textContent.trim());
@@ -153,7 +154,7 @@
       window.addEventListener("portal:language-changed", refresh);
     }
 
-    let researchNav = null, researchControls = null, researchList = [], legacyList = [], researchSequence = 0;
+    let researchNav = null, researchTitleMenu = null, researchList = [], legacyList = [], researchSequence = 0;
     let researchReady = false, researchFailure = '', researchSelectionRevision = 0;
     const deletedResearchKeys = new Set();
     const pendingResearchDeletes = new Map();
@@ -161,6 +162,12 @@
     const researchRecents = new Map();
     const researchKey = item => item?.slot_id ? 'research:'+item.slot_id : item?.workspace_key || '';
     const currentResearchKey = () => state.researchSlot ? researchKey(state.researchSlot) : state.researchLegacyKey || '';
+    function refreshResearchTitle() {
+      if (!paperChatWorkspace) return;
+      const selected = state.researchSlot || legacyList.find(item => researchKey(item) === currentResearchKey());
+      const title = window.PortalI18n.t('Chat Workspace') + ' - ' + (selected?.title || window.PortalI18n.t('Research Chat'));
+      if (paperChatWorkspace.els.title.textContent !== title) paperChatWorkspace.setTitle(title);
+    }
     function unavailableResearch(key) {
       if (deletedResearchKeys.has(key)) return true;
       const item = researchList.find(item=>researchKey(item)===key) || legacyList.find(item=>researchKey(item)===key);
@@ -201,6 +208,7 @@
         state.requestedChatWorkspaceId=state.researchLegacyKey;
         renderResearchOptions();
       }
+      renderResearchOptions();
       try {
         const legacy=!key.startsWith('research:'), slotId=key.slice(9);
         const endpoint=!legacy&&researchList.find(item=>item.slot_id===slotId)?.state==='unbound'?'retry':'select';
@@ -217,7 +225,7 @@
           if(optimistic)clearResearchTarget();
           renderResearchOptions();alertError(error);
         }
-      } finally {if(principal===state.principalId && revision===researchSelectionRevision)researchSelecting=false;}
+      } finally {if(principal===state.principalId && revision===researchSelectionRevision){researchSelecting=false;renderResearchOptions();}}
     }
     window.addEventListener('portal:resident-deletion',event=>{
       const {resident_id:rid,phase}=event.detail||{};
@@ -257,19 +265,17 @@
     function mountResearchSelector() {
       const root = paperChatWorkspace?.root;
       if (!root || researchNav?.isConnected) return;
-      researchControls?.destroy();
-      const controls=window.PortalPaperResearchControls.create();
-      researchControls=controls;
-      researchNav = controls.root;
+      researchTitleMenu?.destroy();
+      researchNav = document.createElement('div');
+      researchNav.className = 'paperResearchSelector';
+      window.removeEventListener('portal:language-changed', renderResearchOptions);
       window.addEventListener('portal:language-changed', renderResearchOptions);
-      const select = controls.select;
-      select.addEventListener('change',()=>{void chooseResearch(select.value.startsWith('legacy:')?select.value.slice(7):select.value?'research:'+select.value:'');});
-      const create = controls.create;
-      create.addEventListener('click', async () => {
+      const createResearch = async () => {
+        if (researchSelecting) return;
         const title = window.prompt(window.PortalI18n.t('研究助手名称'));
         if (!title?.trim()) return;
         const principal=state.principalId;
-        create.disabled=true;
+        researchSelecting=true;renderResearchOptions();
         try {
           const slot = await paperApi.request('/paper/api/research/chats/create', {method:'POST',
             body:JSON.stringify({title:title.trim(), operation_id:crypto.randomUUID(), expected_principal:principal})});
@@ -284,47 +290,32 @@
             try { await refreshResearchSelectors(); } catch (_) { /* Keep the original failure visible. */ }
             alertError(error);
           }
-        } finally { create.disabled=false; }
-      });
+        } finally { if(principal===state.principalId){researchSelecting=false;renderResearchOptions();} }
+      };
       const error=document.createElement('div'); error.className='paperResearchSelectorError'; error.setAttribute('role','status');
       const retry=document.createElement('button'); retry.type='button';retry.className='portalButton is-compact is-quiet';retry.dataset.researchRetry='';
       retry.addEventListener('click',async()=>{retry.disabled=true;try{await refreshResearchSelectors();if(state.researchSlot||state.researchLegacyKey)await loadChatHistory({retry:true});}catch(_){/* Local error remains visible. */}finally{retry.disabled=false;}});
       researchNav.append(error,retry);
+      // Paper-only adapter: keep the public title node/ID and shared setTitle()
+      // owner intact. No Chat Workspace source or other host opts into this.
+      const titleElement=paperChatWorkspace.els.title;
+      researchTitleMenu=window.PortalPaperResearchControls.createTitleMenu({titleElement,
+        onSelect:key=>void chooseResearch(key),onCreate:()=>void createResearch()});
       root.parentElement.classList.add('paperResearchChatHost');
       root.parentElement.insertBefore(researchNav,root);
       renderResearchOptions();
     }
     function renderResearchOptions() {
       if (!researchNav) return;
-      const select=researchNav.querySelector('select');
       const t=window.PortalI18n.t;
-      const create=researchNav.querySelector('button');
       const error=researchNav.querySelector('.paperResearchSelectorError');
       error.textContent=researchFailure ? window.PortalPaperResearchControls.errorText() : ''; error.hidden=!researchFailure;
       const retry=researchNav.querySelector('[data-research-retry]'); retry.textContent=t('重试'); retry.hidden=!researchFailure;
-      const placeholder=new Option(t('请选择或新建研究助手'),''); placeholder.disabled=true;
-      select.replaceChildren(placeholder);
-      for (const slot of researchList) {
-        if(!window.PortalPaperResearchControls.usable(slot))continue;
-        if(unavailableResearch(researchKey(slot)))continue;
-        const option=new Option((slot.title || t('不可用研究助手'))+(slot.state==='unbound'?t('（重试创建）'):''),slot.slot_id);
-        option.disabled=!['bound','unbound'].includes(slot.state); select.append(option);
-      }
-      if (legacyList.length) {
-        const group=document.createElement('optgroup'); group.label=t('旧论文会话（历史保留）');
-        for(const item of legacyList) if(!unavailableResearch(researchKey(item)))group.append(new Option(item.title,'legacy:'+item.workspace_key));
-        select.append(group);
-      }
-      const active=paperChatPanel?.surface?.()?.workspace_key;
-      const selected=state.researchSlot?.slot_id || (state.researchLegacyKey?'legacy:'+state.researchLegacyKey:'');
-      // A visible historical Chat must never look like no session is selected.
-      const visibleLegacy=!selected && active && !active.startsWith('research:') ? 'legacy:'+active : '';
-      const value=selected || visibleLegacy;
-      if(value && !Array.from(select.options).some(option=>option.value===value)) {
-        const key=value.startsWith('legacy:')?value.slice(7):'research:'+value;
-        if(!unavailableResearch(key))select.append(new Option(state.researchSlot?.title || t('当前历史会话'),value));
-      }
-      select.value=value;
+      researchNav.hidden=!researchFailure;
+      const items=[...researchList.filter(slot=>window.PortalPaperResearchControls.usable(slot)).map(slot=>({id:researchKey(slot),title:(slot.title||t('不可用研究助手'))+(slot.state==='unbound'?t('（重试创建）'):'')})),
+        ...legacyList.map(item=>({id:researchKey(item),title:item.title}))].filter(item=>!unavailableResearch(item.id));
+      researchTitleMenu?.update({items,selected:currentResearchKey(),pending:researchSelecting});
+      refreshResearchTitle();
     }
     async function refreshResearchSelectors() {
       const seq=++researchSequence, principal=state.principalId, selectionRevision=researchSelectionRevision;
