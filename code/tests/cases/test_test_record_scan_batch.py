@@ -11,6 +11,56 @@ from management_portal.test_framework import records as module
 from management_portal.test_framework.records import RunRecords, RunCoordinator
 
 
+def test_identical_cleanup_failure_retries_without_rewriting_history(tmp_path,monkeypatch):
+    """相同清理失败继续重试和报告，但不重复扩写错误或改写相同详情及索引。"""
+    store=RunRecords(tmp_path/'runs.json');key=make(store,'passed')
+    receipt={'status':'error','errors':['domain unavailable']};attempts=[]
+    monkeypatch.setattr(store,'_cleanup_receipt',lambda k:attempts.append(k) or receipt)
+    first=store.finish_pending_cleanup();record=store.get(key)
+    assert first['updated']==[key] and first['errors']==receipt['errors']
+    writes=[]
+    monkeypatch.setattr(store,'_write_record',lambda _:writes.append('record'))
+    monkeypatch.setattr(store,'_write_index',lambda _:writes.append('index'))
+    second=store.finish_pending_cleanup()
+    assert second=={'updated':[],'errors':['domain unavailable']}
+    assert attempts==[key,key] and writes==[]
+    assert store.get(key)==record
+
+
+def test_unchanged_cleanup_receipt_heals_index_after_record_commit_crash(tmp_path,monkeypatch):
+    """详情先落盘后索引失败，相同失败回执仍修复旧索引而不重复追加错误。"""
+    store=RunRecords(tmp_path/'runs.json');key=make(store,'passed')
+    receipt={'status':'error','errors':['still unavailable']}
+    monkeypatch.setattr(store,'_cleanup_receipt',lambda _:receipt)
+    write=store._write_index
+    monkeypatch.setattr(store,'_write_index',lambda _:(_ for _ in ()).throw(OSError('index crash')))
+    with pytest.raises(OSError,match='index crash'):store.finish_pending_cleanup()
+    record=store.get(key)
+    assert store._read_index()[0]['status']=='passed' and record['status']=='error'
+    monkeypatch.setattr(store,'_write_index',write)
+    monkeypatch.setattr(store,'_write_record',lambda _:pytest.fail('unchanged detail rewritten'))
+    result=store.finish_pending_cleanup()
+    assert result['updated']==[key] and result['errors']==receipt['errors']
+    assert store._read_index()[0]['status']=='error' and store.get(key)==record
+
+
+def test_cleanup_keeps_new_receipt_without_duplicate_current_error(tmp_path,monkeypatch):
+    """回收文件回执变化仍保存，而连续相同域错误不重复追加，原失败保留。"""
+    store=RunRecords(tmp_path/'runs.json');key=make(store,'failed')
+    store._mutate(key,lambda r:r.update(error='original case failure'))
+    receipts=iter([{'status':'error','errors':['owner down'],'files':[]},
+                   {'status':'error','errors':['owner down'],'files':[{'status':'completed'}]},
+                   {'status':'error','errors':['different error'],'files':[]},
+                   {'status':'complete','errors':[]}])
+    monkeypatch.setattr(store,'_cleanup_receipt',lambda _:next(receipts))
+    store.finish_cleanup(key);store.finish_cleanup(key)
+    assert store.get(key)['error']=='original case failure；owner down'
+    assert store.get(key)['resource_cleanup']['files']==[{'status':'completed'}]
+    store.finish_cleanup(key);store.finish_cleanup(key)
+    assert store.get(key)['status']=='error'
+    assert store.get(key)['error']=='original case failure；owner down；different error'
+
+
 def make(store,status='queued',tau=False,cleanup=None):
     plan={'executable':True,'selected':[{}],**({'campaign':'tau'} if tau else {})}
     key=store.create(plan,'alice')['run_id']

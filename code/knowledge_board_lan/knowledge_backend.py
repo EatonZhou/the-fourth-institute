@@ -77,15 +77,33 @@ def _prune_graph_cache(cache: dict[str, dict], now: float) -> None:
         del cache[next(iter(cache))]
 
 
-def _graph_cache_get(cache: dict[str, dict], key: str) -> dict | None:
+_GRAPH_CACHE_GENERATION = 0
+
+
+def _invalidate_graph_caches() -> None:
+    global _GRAPH_CACHE_GENERATION
+    with _LOCK:
+        _GRAPH_CACHE_GENERATION += 1
+        _ITEM_GRAPH_CACHE.clear()
+        _KNOWLEDGE_GRAPH_CACHE.clear()
+
+
+def _graph_cache_get(
+    cache: dict[str, dict], key: str, *, refresh: bool = False,
+) -> tuple[dict | None, int]:
     with _LOCK:
         _prune_graph_cache(cache, time.time())
-        cached = cache.get(key)
-        return dict(cached.get("payload") or {}) if cached is not None else None
+        cached = None if refresh else cache.get(key)
+        payload = dict(cached.get("payload") or {}) if cached is not None else None
+        return payload, _GRAPH_CACHE_GENERATION
 
 
-def _graph_cache_store(cache: dict[str, dict], key: str, payload: dict) -> None:
+def _graph_cache_store(cache: dict[str, dict], key: str, payload: dict, *, generation: int) -> None:
     with _LOCK:
+        # A mutation may have cleared the caches while this graph was built.
+        # Do not republish it or overwrite a post-mutation graph.
+        if generation != _GRAPH_CACHE_GENERATION:
+            return
         now = time.time()
         # Refreshing an existing key gives it a new publication position.
         cache.pop(key, None)
@@ -314,8 +332,7 @@ def scan_knowledge_ids(*, apply: bool = False) -> dict:
                         rewritten_reference_files += 1
 
             _MD_CACHE.clear()
-            _ITEM_GRAPH_CACHE.clear()
-            _KNOWLEDGE_GRAPH_CACHE.clear()
+            _invalidate_graph_caches()
             _FILE_ID_TO_PATH.clear()
             skill_backend._MD_CACHE.clear()
 
@@ -451,9 +468,9 @@ def build_item_graph(item_id: str, *, max_depth: int = 2, actor: str = "") -> di
     depth_limit = max(1, min(int(max_depth or 2), 2))
     # ResourceService reads must retain the authenticated caller. Cache entries
     # may only be reused within that caller's view, and root access is rechecked.
-    root = resolve_item_record(clean_id, active_only=False, actor=actor)
     cache_key = f"{actor}:{clean_id}:{depth_limit}"
-    cached = _graph_cache_get(_ITEM_GRAPH_CACHE, cache_key)
+    cached, generation = _graph_cache_get(_ITEM_GRAPH_CACHE, cache_key)
+    root = resolve_item_record(clean_id, active_only=False, actor=actor)
     if cached is not None:
         return cached
 
@@ -536,7 +553,7 @@ def build_item_graph(item_id: str, *, max_depth: int = 2, actor: str = "") -> di
         "unresolved_links": unresolved_links,
         "_unresolved_links_by_source": unresolved_links_by_source,
     }
-    _graph_cache_store(_ITEM_GRAPH_CACHE, cache_key, payload)
+    _graph_cache_store(_ITEM_GRAPH_CACHE, cache_key, payload, generation=generation)
     return dict(payload)
 
 
@@ -553,10 +570,9 @@ def build_knowledge_graph(*, actor: str, refresh: bool = False, max_nodes: int =
         raise ValueError("actor required")
     node_limit = max(1, min(int(max_nodes or 5000), 5000))
     cache_key = f"{actor}:all:{node_limit}"
-    if not refresh:
-        cached = _graph_cache_get(_KNOWLEDGE_GRAPH_CACHE, cache_key)
-        if cached is not None:
-            return cached
+    cached, generation = _graph_cache_get(_KNOWLEDGE_GRAPH_CACHE, cache_key, refresh=refresh)
+    if cached is not None:
+        return cached
 
     graph_records = resource_views.knowledge_graph_records(
         actor=actor, limit=node_limit, service=get_resource_service(),
@@ -642,7 +658,7 @@ def build_knowledge_graph(*, actor: str, refresh: bool = False, max_nodes: int =
         "unresolved_links": unresolved_links,
         "_unresolved_links_by_source": unresolved_links_by_source,
     }
-    _graph_cache_store(_KNOWLEDGE_GRAPH_CACHE, cache_key, payload)
+    _graph_cache_store(_KNOWLEDGE_GRAPH_CACHE, cache_key, payload, generation=generation)
     return dict(payload)
 
 
@@ -1148,8 +1164,7 @@ def register_item(
         with _LOCK:
             _MD_CACHE.pop(str(path), None)
             _MD_CACHE.pop(os.path.abspath(str(path)), None)
-            _ITEM_GRAPH_CACHE.clear()
-            _KNOWLEDGE_GRAPH_CACHE.clear()
+            _invalidate_graph_caches()
     return {
         "kb_id": clean_id,
         "type": clean_type,
@@ -1219,8 +1234,7 @@ def update_item_text(
         with _LOCK:
             _MD_CACHE.pop(str(path), None)
             _MD_CACHE.pop(os.path.abspath(str(path)), None)
-            _ITEM_GRAPH_CACHE.clear()
-            _KNOWLEDGE_GRAPH_CACHE.clear()
+            _invalidate_graph_caches()
         return {
             "address": str(record.get("address") or clean_address),
             "kb_id": str(record.get("kb_id") or ""),
@@ -1351,8 +1365,7 @@ def update_item_text(
             if version_path is not None:
                 _MD_CACHE.pop(str(version_path), None)
                 _MD_CACHE.pop(os.path.abspath(str(version_path)), None)
-            _ITEM_GRAPH_CACHE.clear()
-            _KNOWLEDGE_GRAPH_CACHE.clear()
+            _invalidate_graph_caches()
             _FILE_ID_TO_PATH[selected_file_id] = str(path)
     return {
         "address": str(record.get("address") or clean_address),
@@ -1388,8 +1401,7 @@ def delete_item(kb_id: str, *, actor: str = "") -> dict:
         with _LOCK:
             _MD_CACHE.clear()
             _FILE_ID_TO_PATH.clear()
-            _ITEM_GRAPH_CACHE.clear()
-            _KNOWLEDGE_GRAPH_CACHE.clear()
+            _invalidate_graph_caches()
         return {"project_ids": _knowledge_project_ids(record), **result}
     if resource_type == "article":
         raise PermissionError("This resource cannot be deleted from Knowledge detail")
@@ -1413,8 +1425,7 @@ def delete_item(kb_id: str, *, actor: str = "") -> dict:
             _MD_CACHE.pop(str(path), None)
             _MD_CACHE.pop(os.path.abspath(str(path)), None)
             _FILE_ID_TO_PATH.pop(str(record.get("file_id") or ""), None)
-            _ITEM_GRAPH_CACHE.clear()
-            _KNOWLEDGE_GRAPH_CACHE.clear()
+            _invalidate_graph_caches()
     return {
         "kb_id": clean_id,
         **result,

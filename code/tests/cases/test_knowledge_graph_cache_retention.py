@@ -2,6 +2,8 @@
 
 :design: decision_3ece26686464
 """
+from concurrent.futures import ThreadPoolExecutor
+from threading import Event
 from types import SimpleNamespace
 
 import pytest
@@ -62,3 +64,51 @@ def test_live_graph_cache_evicts_oldest_and_rebuilds_same_result(graph_cache, mo
     assert build('reader0') == original
     assert len(calls) == 6 and calls[-1] == 'reader0'
     assert len(cache) == 3
+
+
+@pytest.mark.parametrize('publish_newer', [False, True])
+def test_inflight_graph_cannot_refill_cache_after_mutation(graph_cache, monkeypatch, publish_newer):
+    build, cache, clock, calls = graph_cache
+    root = 'idea_0123456789ab'
+    skill = 'skill_0123456789ab'
+    original_resolve = knowledge.resolve_item_record
+    record = original_resolve(root)
+    original_store = knowledge._graph_cache_store
+    ready, release = Event(), Event()
+
+    def delayed_store(*args, **kwargs):
+        # Stop the first builder after it has copied the old graph payload.
+        if not ready.is_set():
+            ready.set()
+            assert release.wait(5), 'graph publication was not released'
+        return original_store(*args, **kwargs)
+
+    def resolve(kb_id, **kwargs):
+        if kb_id == skill:
+            return {'kb_id': skill, 'type': 'skill'}
+        return original_resolve(kb_id, **kwargs)
+
+    monkeypatch.setattr(knowledge, '_graph_cache_store', delayed_store)
+    monkeypatch.setattr(knowledge, 'resolve_item_record', resolve)
+    monkeypatch.setattr(knowledge, '_MD_CACHE', {})
+    monkeypatch.setattr(knowledge, '_FILE_ID_TO_PATH', {})
+    monkeypatch.setattr(knowledge.skill_backend, 'delete_skill', lambda *args, **kwargs: (200, {'deleted': True}))
+    with ThreadPoolExecutor(max_workers=1) as pool:
+        old = pool.submit(build, 'reader')
+        try:
+            assert ready.wait(5), 'old graph did not reach publication'
+            record['title'] = 'Updated'
+            # Exercise an actual successful mutation's cache invalidation.
+            assert knowledge.delete_item(skill, actor='editor')['deleted']
+            if publish_newer:
+                assert build('reader')['nodes'][0]['title'] == 'Updated'
+        finally:
+            release.set()
+        assert old.result(timeout=5)['nodes'][0]['title'] == 'Root'
+
+    if publish_newer:
+        assert next(iter(cache.values()))['payload']['nodes'][0]['title'] == 'Updated'
+    else:
+        assert cache == {}, 'an invalidated graph was republished by an old builder'
+    assert build('reader')['nodes'][0]['title'] == 'Updated'
+    assert len(calls) == 2, 'invalidation must not retry or replay the old build'

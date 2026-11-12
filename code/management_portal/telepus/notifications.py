@@ -76,6 +76,11 @@ class Notifications:
         self._snapshots = {}
         self._read_at = {}
 
+    def _discard_transient(self, actor):
+        """Retire local watch state even when another process changed settings."""
+        self._snapshots.pop(actor, None)
+        self._read_at.pop(actor, None)
+
     def preferences(self, actor):
         self.router.init_schema()
         with self.router.connect() as c:
@@ -83,8 +88,7 @@ class Notifications:
         return {**dict.fromkeys(CATEGORIES, False), **{r['category']: r['enabled'] for r in rows}}
 
     def update(self, actor, **changes):
-        self._snapshots.pop(actor, None)
-        self._read_at.pop(actor, None)
+        self._discard_transient(actor)
         if set(changes) - set(CATEGORIES) or any(type(v) is not bool for v in changes.values()):
             raise ValueError('提醒设置必须是 mention/question 布尔值')
         account = self.store.account(actor)
@@ -110,8 +114,7 @@ class Notifications:
         return self.preferences(actor)
 
     def clear(self, actor):
-        self._snapshots.pop(actor, None)
-        self._read_at.pop(actor, None)
+        self._discard_transient(actor)
         with self.router.connect() as c:
             c.execute('DELETE FROM notification_preferences WHERE portal_actor=?', (actor,))
             c.execute('DELETE FROM notification_deliveries WHERE portal_actor=?', (actor,))
@@ -169,6 +172,7 @@ class Notifications:
         """One long watch/read pass; return the retry delay, or None when disabled."""
         # Network wait is outside the send lock. Settings/binding are re-read inside it.
         if not any(self.preferences(actor).values()):
+            self._discard_transient(actor)
             return
         key = 'notification-watch:' + actor
         state = json.loads(self.router.get_meta(key, '{}'))
@@ -196,6 +200,7 @@ class Notifications:
             with self.store.lock(actor):
                 account = self.store.account(actor)
                 if not account or account['status'] != 'active' or not any(self.preferences(actor).values()):
+                    self._discard_transient(actor)
                     return
                 # Periodic complete reads also discover a newly supported category field.
                 if current is not None:
@@ -225,6 +230,7 @@ class Notifications:
                     if (not transient and state['failures'] == 1) or (transient and state['failures'] == 4):
                         self.diagnostic(actor, exc)
                     return state['retry_at'] - self.clock()
+                self._discard_transient(actor)
 
     @staticmethod
     def diagnostic(actor, error):

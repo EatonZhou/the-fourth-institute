@@ -329,10 +329,19 @@ class RunRecords:
 
     @staticmethod
     def _apply_cleanup_receipt(item, receipt):
+        previous = item.get('resource_cleanup', {})
+        changed = previous != receipt
+        # This field is a diagnostic summary, not a log of every maintenance
+        # attempt. Retrying the same unresolved error must not grow it forever.
+        new_errors = [error for error in receipt.get('errors', [])
+                      if error not in previous.get('errors', [])]
         item['resource_cleanup'] = receipt
         if receipt['status'] == 'error':
+            changed = changed or item.get('status') != 'error'
             item['status'] = 'error'
-            item['error'] = '；'.join(filter(None, [item.get('error', ''), *receipt.get('errors', [])]))
+            if new_errors:
+                item['error'] = '；'.join(filter(None, [item.get('error', ''), *new_errors]))
+        return changed
 
     def finish_cleanup(self, run_id):
         receipt = self._cleanup_receipt(run_id)
@@ -358,19 +367,29 @@ class RunRecords:
         with self._locked():
             index = self._read_index()
             positions = {entry['run_id']: position for position, entry in enumerate(index)}
+            index_changed = False
             for run_id, receipt in receipts:
                 if run_id not in positions:
                     continue  # A concurrent report deletion owns its cleanup.
                 item = self._read_record(run_id)
                 if item.get('status') not in TERMINAL or item.get('resource_cleanup', {}).get('status') == 'complete':
                     continue
-                self._apply_cleanup_receipt(item, receipt)
-                item['updated_at'] = now_iso()
-                self._write_record(item)
-                index[positions[run_id]] = self._index_entry(item)
-                updated.append(run_id)
+                # Still report an unchanged failure: suppressing redundant
+                # persistence must not turn maintenance health green.
                 errors.extend(receipt.get('errors', []))
-            if updated:
+                changed = self._apply_cleanup_receipt(item, receipt)
+                if changed:
+                    item['updated_at'] = now_iso()
+                    self._write_record(item)
+                summary = self._index_entry(item)
+                stale_index = index[positions[run_id]] != summary
+                if stale_index:
+                    index[positions[run_id]] = summary
+                    index_changed = True
+                if changed or stale_index:
+                    index_changed = True
+                    updated.append(run_id)
+            if index_changed:
                 # Same record-first crash contract as ordinary mutation. A
                 # partial write is recovered from records, never index status.
                 self._write_index(index)
