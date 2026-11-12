@@ -103,6 +103,10 @@ class NativeConsole:
             _check(self.api.UpdateProcThreadAttribute(attrs, 0, 0x20016, self.hpc, ctypes.sizeof(self.hpc), None, None))
             startup = StartupInfoEx()
             startup.StartupInfo.cb = ctypes.sizeof(startup)
+            # Explicit NULL standard handles are filled from the attached
+            # ConPTY. Otherwise a shell can inherit the host's JSON pipes and
+            # bypass the console when it reopens stdout (e.g. OutputEncoding).
+            startup.StartupInfo.dwFlags = 0x100  # STARTF_USESTDHANDLES
             startup.lpAttributeList = ctypes.addressof(storage)
             command = ctypes.create_unicode_buffer(subprocess.list2cmdline(argv))
             # No BREAKAWAY flag: the shell inherits process_runtime's Job.

@@ -3,6 +3,7 @@ import builtins
 import importlib
 import os
 from pathlib import Path
+import re
 import sys
 import time
 
@@ -133,8 +134,30 @@ def test_windows_native_console_is_real_and_unicode_round_trips(tmp_path):
             if term.poll() is not None:
                 break
             time.sleep(.01)
-        assert b'TTY True True' in data
+        # ConPTY can insert a window-title OSC between separate print writes.
+        visible = re.sub(rb'\x1b\][^\x07]*(?:\x07|\x1b\\)|\x1b\[[0-?]*[ -/]*[@-~]', b'', data)
+        assert b'TTY True True' in visible
         assert '汉🙂' in data.decode()
+    finally:
+        term.close()
+
+
+@pytest.mark.skipif(sys.platform != 'win32', reason='requires native Windows ConPTY')
+def test_windows_powershell_reopening_stdout_stays_in_console(tmp_path):
+    command = "[Console]::OutputEncoding=[System.Text.UTF8Encoding]::new();Write-Output '中文 🧪'"
+    term = runtime().spawn_terminal(['powershell.exe', '-NoProfile', '-Command', command],
+                                    cwd=tmp_path, cols=80, rows=24)
+    try:
+        term.resize(100, 30)
+        data = b''
+        deadline = time.monotonic() + 8
+        while time.monotonic() < deadline:
+            data += term.read()
+            if term.poll() is not None:
+                break
+            time.sleep(.01)
+        assert '中文 🧪'.encode() in data
+        assert term.poll() == 0
     finally:
         term.close()
 
@@ -215,6 +238,9 @@ def test_conpty_native_api_contract_and_handle_cleanup(monkeypatch, fail_create)
             self.command = (executable,command.value)
             assert not inherit and flags & 0x80000 and not flags & 0x1000000
             assert env is None and cwd is None and startup._obj.lpAttributeList
+            handles = startup._obj.StartupInfo
+            assert handles.dwFlags & 0x100
+            assert not any((handles.hStdInput, handles.hStdOutput, handles.hStdError))
             if fail_create:
                 raise OSError('synthetic create failure')
             info._obj.hProcess=30; info._obj.hThread=31; info._obj.dwProcessId=41
