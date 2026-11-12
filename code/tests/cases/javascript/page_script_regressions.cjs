@@ -40,6 +40,36 @@ function owner(file, names, dependencies) {
   return context;
 }
 
+test('Favorites startup waits for cold resource dependencies on standalone pages', async () => {
+  const requested = [], pending = [];
+  const window = {PortalUIPrimitives: {loadAsset: (path, {ready}) => {
+    if (ready()) return Promise.resolve();
+    requested.push(path);
+    return new Promise(resolve => pending.push(resolve));
+  }}};
+  const nav = owner('portal_nav.js', ['loadResourceFavorites'], {window});
+  const loading = nav.loadResourceFavorites();
+  assert.deepEqual(requested, ['/static/portal_resource_routes.js']);
+  window.PortalResourceRoutes = {}; pending.shift()(); await new Promise(setImmediate);
+  assert.deepEqual(requested, ['/static/portal_resource_routes.js', '/static/portal_resource_chips.js']);
+  window.PortalResourceChips = {}; pending.shift()(); await new Promise(setImmediate);
+  assert.equal(requested.at(-1), '/static/portal_resource_favorites.js');
+  window.PortalResourceFavorites = {}; pending.shift()(); await loading;
+  requested.length = 0;
+  await nav.loadResourceFavorites();
+  assert.deepEqual(requested, [], 'already initialized owners are reused');
+});
+
+test('Favorites startup stops before loading consumers when a dependency fails', async () => {
+  const requested = [], failure = new Error('resource routes unavailable');
+  const window = {PortalUIPrimitives: {loadAsset: async path => {
+    requested.push(path); throw failure;
+  }}};
+  const nav = owner('portal_nav.js', ['loadResourceFavorites'], {window});
+  await assert.rejects(nav.loadResourceFavorites(), error => error === failure);
+  assert.deepEqual(requested, ['/static/portal_resource_routes.js']);
+});
+
 test('Workbench navigation follows the readable catalog, including built-in feature links', async () => {
   const ITEMS = [{id: 'resource', href: '/resource/knowledge'},
     {id: 'development', href: '/development', builtin: true}, {id: 'wall', href: '/wall'}];

@@ -1394,6 +1394,18 @@
     scope.querySelectorAll?.("[data-portal-site-header]").forEach(renderSiteHeader);
   }
 
+  async function loadResourceFavorites() {
+    // Some hosts (including Management) do not preload resource UI scripts.
+    // Wait for each required owner before evaluating its consumer.
+    for (const [path, name] of [
+      ["/static/portal_resource_routes.js", "PortalResourceRoutes"],
+      ["/static/portal_resource_chips.js", "PortalResourceChips"],
+      ["/static/portal_resource_favorites.js", "PortalResourceFavorites"],
+    ]) {
+      await window.PortalUIPrimitives.loadAsset(path, {ready: () => Boolean(window[name])});
+    }
+  }
+
   let mounted = false;
   function mount() {
     if (mounted) return;
@@ -1406,7 +1418,7 @@
     hydrateWorkbenches();
     hydrateResourceTypes();
     window.PortalUIPrimitives.loadAsset("/static/portal_projections.js").catch(console.error);
-    window.PortalUIPrimitives.loadAsset("/static/portal_resource_favorites.js").catch(console.error);
+    loadResourceFavorites().catch(console.error);
     mountAgentInbox();
     document.querySelectorAll("[data-portal-site-header]").forEach(root => window.PortalPageBoot?.ready(root));
   }
