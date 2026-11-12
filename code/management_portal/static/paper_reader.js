@@ -202,7 +202,7 @@
                 </div>
                 <div class="readerHeadActions">
                   ${paper.pdf_url ? window.PortalI18n.html`<a class="portalButton is-icon is-quiet iconBtn readerExternalLink" href="${esc(paper.pdf_url)}" target="_blank" rel="noopener noreferrer" data-portal-tooltip="在新标签页打开 PDF" aria-label="在新标签页打开 PDF" data-portal-icon="external-link"></a>` : ""}
-                  ${paper.pdf_url ? window.PortalI18n.html`<button class="portalButton is-compact" id="paperFullscreenBtn" type="button">全屏阅读</button>` : ""}
+                  ${paper.pdf_url ? window.PortalI18n.html`<button class="portalButton is-compact" id="paperFullscreenBtn" type="button">${window.PortalI18n.t("Fullscreen")}</button>` : ""}
                   ${paper.has_pdf ? window.PortalI18n.html`<button class="portalButton is-compact is-danger" type="button" id="deletePaperPdfBtn" ${state.pdfDeleteInFlight ? "disabled" : ""}>${state.pdfDeleteInFlight ? window.PortalI18n.t("Deleting PDF...") : window.PortalI18n.t("Delete")}</button>` : ""}
                   <button
                     class="portalButton is-icon is-quiet iconBtn readerPanelToggle"

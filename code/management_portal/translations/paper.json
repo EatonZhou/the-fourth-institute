@@ -1,4 +1,8 @@
 {
+  "Back to library": {"en":"Back to library","zh-CN":"回主界面"},
+  "Fullscreen": {"en":"Fullscreen","zh-CN":"全屏阅读"},
+  "Export": {"en":"Export","zh-CN":"导出"},
+  "Delete": {"en":"Delete","zh-CN":"删除"},
   "AI 解释 / 提问": {"en":"Ask AI about selection","zh-CN":"AI 解释 / 提问"},
   "翻译选区": {"en":"Translate selection","zh-CN":"翻译选区"},
   "重试翻译": {"en":"Retry translation","zh-CN":"重试翻译"},

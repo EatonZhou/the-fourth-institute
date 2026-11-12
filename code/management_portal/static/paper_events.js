@@ -162,10 +162,6 @@
         if (body) body.hidden = !expanded;
       });
       $("workspaceModeActions").addEventListener("click", event => {
-        if (event.target.closest("#exportLibraryMarkdownBtn")) {
-          exportLibraryMarkdown().catch(alertError);
-          return;
-        }
         if (event.target.closest("#deepReadBtn")) startDeepRead().catch(alertError);
         if (event.target.closest("#uploadPaperPdfBtn")) openPdfUploadPicker();
         if (event.target.closest("#deletePaperBtn")) deleteCurrentPaper().catch(alertError);
@@ -173,6 +169,10 @@
       $("paperPdfUploadInput").addEventListener("change", event => {
         const file = event.target.files?.[0] || null;
         uploadCurrentPaperPdf(file).catch(alertError);
+      });
+      $("workspaceHeadingActions").addEventListener("click", event => {
+        if (event.target.closest("#exportLibraryMarkdownBtn")) exportLibraryMarkdown().catch(alertError);
+        if (event.target.closest("#paperHomeBtn")) setMode("home").catch(alertError);
       });
     }
 

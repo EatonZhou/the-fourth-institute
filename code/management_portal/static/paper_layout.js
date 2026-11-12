@@ -84,6 +84,25 @@
     }
 
     async function setMode(mode) {
+      if (mode === "home") {
+        if (!await cancelPdfRendering()) return;
+        state.leftFace = "library";
+        state.query = "";
+        state.filters = {};
+        state.activeSemanticSearchId = "";
+        state.activeCollectorJobId = "";
+        state.listReturn = null;
+        state.listScrollTop = 0;
+        state.selectedId = "";
+        state.detail = null;
+        state.semanticSearch?.setActiveId?.("", {notify:false});
+        const search = $("searchInput"); if (search) search.value = "";
+        ["yearFilter", "venueFilter", "tagFilter", "projectFilter", "registeredFilter"].forEach(id => { if ($(id)) $(id).value = ""; });
+        const address = new URL(location.href);
+        ["paper", "semantic", "collector", "chat_workspace", "chat", "q", "year", "venue", "tag", "project", "registered", "analysis", "favorite"].forEach(key => address.searchParams.delete(key));
+        history.replaceState(history.state || {}, "", address.href);
+        mode = "library";
+      }
       if (mode === "list-return") {
         if (!await cancelPdfRendering()) return;
         state.mode = state.listReturn?.mode || "library";

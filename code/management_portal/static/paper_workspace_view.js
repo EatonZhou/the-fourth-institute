@@ -132,6 +132,8 @@
           ccfWorkspaceMeta(),
         );
         $("workspaceModeActions").innerHTML = "";
+        $("workspaceHeadingActions").innerHTML = "";
+        $("workspaceModeActions").parentElement.style.display = "";
         renderCcfWorkspace();
         return;
       }
@@ -158,13 +160,16 @@
       const target = $("workspaceModeActions");
       if (!target) return;
       const status = $("deepReadStatusText");
+      const list = ["library", "today"].includes(state.mode);
+      const home = !list || state.mode === "today" || state.activeSemanticSearchId || state.activeCollectorJobId
+        || state.query || Object.values(state.filters || {}).some(Boolean);
+      $("workspaceHeadingActions").innerHTML = window.PortalI18n.html`
+        ${home ? window.PortalI18n.html`<button class="portalButton is-compact is-quiet" id="paperHomeBtn" type="button">${window.PortalI18n.t("Back to library")}</button>` : ""}
+        ${list ? window.PortalI18n.html`<button class="portalButton is-compact is-quiet" id="exportLibraryMarkdownBtn" type="button" ${state.library?.papers?.length ? "" : "disabled"}>${window.PortalI18n.t("Export")}</button>` : ""}`;
+      target.parentElement.style.display = list ? "none" : "";
       if (status) status.textContent = paper && !["library", "today"].includes(state.mode) ? deepReadStateFor(paper).text : "";
       if (state.mode === "library" || state.mode === "today") {
-        target.innerHTML = window.PortalI18n.html`
-            <button class="portalButton is-compact is-quiet" type="button" id="exportLibraryMarkdownBtn" ${state.library?.papers?.length ? "" : "disabled"}>
-              Export
-            </button>
-          `;
+        target.innerHTML = "";
         return;
       }
       if (paper) {
@@ -178,7 +183,7 @@
               <button class="portalButton is-compact is-primary" type="button" id="deepReadBtn" ${paper.has_pdf && !deepState.running ? "" : "disabled"}>
                 ${esc(deepState.buttonText)}
               </button>
-              <button class="portalButton is-compact is-danger" type="button" id="deletePaperBtn">删除</button>
+              <button class="portalButton is-compact is-danger" type="button" id="deletePaperBtn">${window.PortalI18n.t("Delete")}</button>
             </span>
           `;
         return;
