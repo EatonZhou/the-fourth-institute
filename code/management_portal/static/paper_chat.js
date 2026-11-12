@@ -114,8 +114,43 @@
       if (!panel || paperChatPanel === panel) return;
       paperChatPanel = panel;
       paperChatWorkspace = panel.workspace;
+      observeChatLanguage();
       mountResearchSelector();
       if(researchReady && (state.researchSlot || state.researchLegacyKey)) void loadChatHistory().catch(alertError);
+    }
+
+    let chatLanguageObserver = null;
+    let chatLanguageRefresh = null;
+    function observeChatLanguage() {
+      chatLanguageObserver?.disconnect();
+      if (chatLanguageRefresh) window.removeEventListener("portal:language-changed", chatLanguageRefresh);
+      const root = $("paperResearchChatTitle")?.closest(".portalChatWorkspaceRoot");
+      if (!root) return;
+      // These are server-authored Paper surface labels, not conversation text
+      // or Resident titles. The shared Chat workspace and its state stay intact.
+      const sources = ["Research Chat", "Library Chat", "Ask across the paper library...",
+        "Compare or summarize the papers in this collection.", "Ask about this paper...",
+        "Ask about this paper.", "围绕本篇论文提问", "围绕本篇论文提问。", "Ctrl/⌘ + Enter 发送"];
+      const canonical = new Map(sources.flatMap(source => [source,
+        ...Object.values(window.__PORTAL_TRANSLATIONS__?.[source] || {})].map(value => [value, source])));
+      const refresh = () => {
+        for (const element of root.querySelectorAll(".chatSubline .paneNote, .portalWorkspaceEmpty .portalAsyncStateMessage, .composerMeta, .chatTitleLine > .paneTitle")) {
+          if (element.matches(".paneTitle") && state.researchSlot) continue;
+          const source = canonical.get(element.textContent.trim());
+          if (source && element.textContent !== window.PortalI18n.t(source)) element.textContent = window.PortalI18n.t(source);
+        }
+        for (const input of root.querySelectorAll("[data-placeholder], textarea[placeholder]")) {
+          const attribute = input.hasAttribute("data-placeholder") ? "data-placeholder" : "placeholder";
+          const source = canonical.get(input.getAttribute(attribute));
+          if (source && input.getAttribute(attribute) !== window.PortalI18n.t(source)) input.setAttribute(attribute, window.PortalI18n.t(source));
+        }
+      };
+      chatLanguageObserver = new MutationObserver(refresh);
+      chatLanguageObserver.observe(root, { subtree: true, childList: true, characterData: true,
+        attributes: true, attributeFilter: ["placeholder", "data-placeholder"] });
+      refresh();
+      chatLanguageRefresh = refresh;
+      window.addEventListener("portal:language-changed", refresh);
     }
 
     let researchNav = null, researchControls = null, researchList = [], legacyList = [], researchSequence = 0;
@@ -431,7 +466,7 @@
       const count = Number(session.count || state.chat.length || 0);
       const sessionLine = count
         ? `${count} saved turn${count === 1 ? "" : "s"} in this session.`
-        : "No saved turns in this session yet.";
+        : window.PortalI18n.t("No saved turns in this session yet.");
       if (isCollectionMode()) {
         const scope = collectionChatScope();
         const visible = collectionVisibleCount();

@@ -77,7 +77,7 @@
       const rank = typeof venueOrRank === "string"
         ? venueOrRank
         : String(venueOrRank?.rank || "");
-      return rank === "Curated" ? "Curated" : window.PortalI18n.text`CCF-${rank || ""}`;
+      return rank === "Curated" ? window.PortalI18n.t("Curated") : window.PortalI18n.text`CCF-${rank || ""}`;
     }
 
     function ccfVenueYearLabel(venue, year) {

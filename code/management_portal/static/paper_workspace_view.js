@@ -66,11 +66,11 @@
     }
 
     function paperHeaderMeta(paper) {
-      if (!paper) return "Browse, read, chat, and review papers from one workspace.";
+      if (!paper) return window.PortalI18n.t("Browse, read, chat, and review papers from one workspace.");
       return [
-        chip(paper.venue || "Venue"),
+        chip(paper.venue || window.PortalI18n.t("Venue")),
         paper.year ? chip(paper.year) : "",
-        paper.has_analysis ? chip("Analyzed", "good") : paper.has_summary ? chip("分析 v0 · 短摘要") : chip("No analysis", "warn"),
+        paper.has_analysis ? chip(window.PortalI18n.t("Analyzed"), "good") : paper.has_summary ? chip(window.PortalI18n.t("分析 v0 · 短摘要")) : chip(window.PortalI18n.t("No analysis"), "warn"),
         ...paperTags(paper).map(tag => chip(tag, "accent")),
       ].filter(Boolean).join("");
     }
@@ -91,10 +91,10 @@
       body.hidden = !hasDetails || toggle.getAttribute("aria-expanded") !== "true";
     }
 
-    function renderWorkspace() {
+    function renderWorkspace({ chromeOnly = false } = {}) {
       syncFavoriteButtons();
       capturePaperReaderViewState();
-      $("workspaceMain")?.classList.remove("is-reader-mode");
+      if (!chromeOnly) $("workspaceMain")?.classList.remove("is-reader-mode");
       if (state.leftFace === "ccf" && !["library", "reader"].includes(state.mode)) {
         state.mode = "library";
         state.ccfSelectedPaper = null;
@@ -134,11 +134,11 @@
         $("workspaceModeActions").innerHTML = "";
         $("workspaceHeadingActions").innerHTML = "";
         $("workspaceModeActions").parentElement.style.display = "";
-        renderCcfWorkspace();
+        if (!chromeOnly) renderCcfWorkspace();
         return;
       }
       const workspaceTitle = isLibraryMode
-        ? (semantic ? window.PortalI18n.text`Search: ${semantic.query || window.PortalI18n.t("Semantic search")}` : (collection ? window.PortalI18n.text`Collect: ${collection.direction || window.PortalI18n.t("Paper collection")}` : (state.mode === "today" ? "今日新增" : "全库")))
+        ? (semantic ? window.PortalI18n.text`Search: ${semantic.query || window.PortalI18n.t("Semantic search")}` : (collection ? window.PortalI18n.text`Collect: ${collection.direction || window.PortalI18n.t("Paper collection")}` : window.PortalI18n.t(state.mode === "today" ? "今日新增" : "全库")))
         : (paper?.title || window.PortalI18n.t("Paper Research"));
       renderPaperResourceIdentity(workspaceTitle, isLibraryMode ? semantic : paper);
       const summaryText = isLibraryMode
@@ -146,6 +146,7 @@
         : "";
       renderWorkspaceDetails(summaryText, isLibraryMode ? libraryHeaderMeta() : paperHeaderMeta(paper));
       renderWorkspaceModeActions(paper);
+      if (chromeOnly) return updateDeepReadControls();
       if (isLibraryMode) return renderLibraryMode();
       if (state.mode === "reader") return renderReaderMode();
       if (state.mode === "review") return renderReviewMode();
@@ -175,7 +176,7 @@
       if (paper) {
         const deepState = deepReadStateFor(paper);
         const uploadButton = !paper.has_pdf
-          ? window.PortalI18n.html`<button class="portalButton is-compact is-primary" type="button" id="uploadPaperPdfBtn" ${state.pdfUploadInFlight ? "disabled" : ""}>${state.pdfUploadInFlight ? "Uploading..." : "+ PDF"}</button>`
+          ? window.PortalI18n.html`<button class="portalButton is-compact is-primary" type="button" id="uploadPaperPdfBtn" ${state.pdfUploadInFlight ? "disabled" : ""}>${state.pdfUploadInFlight ? window.PortalI18n.t("Uploading...") : "+ PDF"}</button>`
           : "";
         target.innerHTML = window.PortalI18n.html`
             <span class="workspaceActionButtons">
@@ -196,7 +197,7 @@
     }
 
     function detailSectionLoadingHtml(label) {
-      return paperStateHtml(`Loading ${label}…`, { state: "loading" });
+      return paperStateHtml(window.PortalI18n.text`Loading ${window.PortalI18n.t(label)}…`, { state: "loading" });
     }
 
     function deepReadStateFor(paper = state.detail?.paper) {
@@ -205,15 +206,15 @@
       const done = deep && String(deep.status || "") === "done";
       const error = deep && String(deep.status || "") === "error";
       const text = running
-        ? `Deep Read: ${{queued: "Queued", "extracting pdf text": "Extracting PDF", "waiting for Resident": "Model generation", Submitting: "Submitting"}[deep.step] || deep.step || deep.status} · ${deep.progress || 0}%`
+        ? window.PortalI18n.text`Deep Read: ${window.PortalI18n.t({queued: "Queued", "extracting pdf text": "Extracting PDF", "waiting for Resident": "Model generation", Submitting: "Submitting"}[deep.step] || deep.step || deep.status)} · ${deep.progress || 0}%`
         : done
-          ? `Deep Read done${deep.usage?.total_tokens ? ` · ${deep.usage.total_tokens} tokens` : ""}`
+          ? window.PortalI18n.t("Deep Read done") + (deep.usage?.total_tokens ? window.PortalI18n.text` · ${deep.usage.total_tokens} tokens` : "")
           : error
-            ? `Deep Read failed: ${deep.error || "unknown error"}`
+            ? window.PortalI18n.text`Deep Read failed: ${deep.error || window.PortalI18n.t("unknown error")}`
             : paper?.has_analysis
-              ? "Analysis ready"
-              : "No analysis yet";
-      const buttonText = running ? "Deep Reading" : error ? "Retry Deep Read" : paper?.has_analysis ? "Re-run Deep Read" : "Deep Read";
+              ? window.PortalI18n.t("Analysis ready")
+              : window.PortalI18n.t("No analysis yet");
+      const buttonText = window.PortalI18n.t(running ? "Deep Reading" : error ? "Retry Deep Read" : paper?.has_analysis ? "Re-run Deep Read" : "Deep Read");
       return { deep, running, done, error, text, buttonText };
     }
 
@@ -234,12 +235,12 @@
       const docs = await paperApi.request("/paper/api/docs");
       $("workspaceMain").innerHTML = window.PortalI18n.html`
           <div class="apiCard" style="margin-bottom:10px;">
-            <h3>Agent-ready paper library API</h3>
-            <p>同一套接口服务 Paper 页面、Research Chat，以及之后的 deep-read / review agent。</p>
+            <h3><!--portal-i18n:"Agent-ready paper library API"-->Agent-ready paper library API</h3>
+            <p><!--portal-i18n:"同一套接口服务 Paper 页面、Research Chat，以及之后的 deep-read / review agent。"-->同一套接口服务 Paper 页面、Research Chat，以及之后的 deep-read / review agent。</p>
             <p><code>${esc(docs.data_root || "")}</code></p>
           </div>
           <table class="apiTable">
-            <thead><tr><th>Method</th><th>Path</th><th>Purpose</th></tr></thead>
+            <thead><tr><th><!--portal-i18n:"Paper Method"-->Method</th><th><!--portal-i18n:"Paper Path"-->Path</th><th><!--portal-i18n:"Paper Purpose"-->Purpose</th></tr></thead>
             <tbody>
               ${(docs.endpoints || []).map(row => window.PortalI18n.html`
                 <tr><td><code>${esc(row.method)}</code></td><td><code>${esc(row.path)}</code></td><td>${esc(row.purpose)}</td></tr>

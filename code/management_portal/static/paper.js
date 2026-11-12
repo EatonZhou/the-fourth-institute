@@ -54,14 +54,14 @@
   const esc = value => window.PortalUIPrimitives.escapeHtml(value);
   const paperStateHtml = (message, options = {}) => window.PortalUIPrimitives.asyncStateHtml({
     state: options.state || "empty",
-    title: options.title || "",
-    message,
+    title: window.PortalI18n.t(options.title || ""),
+    message: window.PortalI18n.t(message),
     density: options.density || "panel",
     icon: options.icon,
     actionsHtml: options.actionsHtml || "",
     className: options.className || "",
     id: options.id || "",
-  });
+  }).replace('class="portalAsyncStateMessage"', `class="portalAsyncStateMessage" data-portal-i18n-text="${esc(message)}"`);
   const disclosureIcon = expanded => window.PortalI18n.html`<span class="folderDisclosureIcon" data-portal-icon="${expanded ? "chevron-up" : "chevron-down"}"></span>`;
   function normalizeMarkdownInput(value) {
     const text = String(value || "").replace(/\r\n/g, "\n").trim();
@@ -279,7 +279,7 @@
   const {
     activeCollectorJobHasResults, collectionChatScope, collectionItems, collectionPaperIds,
     collectionVisibleCount, exportLibraryMarkdown, hashString, initSemanticSearch, isCollectionMode,
-    loadLibrary, loadMoreLibrary,
+    loadLibrary, loadMoreLibrary, refreshSemanticLanguage,
   } = paperModule("PortalPaperLibrary").createLibrary({
     $, activeChatPaperId: (...args) => activeChatPaperId(...args),
     activeChatWorkspaceId: (...args) => activeChatWorkspaceId(...args), alertError,
@@ -377,7 +377,7 @@
 
   const {
     bindPdfSelectionEvents, cancelPdfRendering, capturePaperReaderViewState, maybeShowSelectionMenu,
-    renderReaderMode, runSelectionAction,
+    refreshReaderLanguage, renderReaderMode, runSelectionAction,
   } = paperModule("PortalPaperReader").createReader({
     $, addSelectionToChatDraft: (...args) => addSelectionToChatDraft(...args), alertError, applyPaneCollapse,
     currentPaperWorkbench, detailSectionLoadingHtml, detailSectionsLoaded, esc, md, needPaperHtml,
@@ -461,5 +461,23 @@
   });
 
   window.PortalPaperPersonal.mount({state, paperApi, loadDetail, setMode, syncFavoriteButtons, renderTree, loadLibrary});
+  // Identity preferences can arrive after the first projection. Refresh chrome
+  // in place: never reopen the PDF or replace a task/note/figure input draft.
+  window.addEventListener("portal:language-changed", () => {
+    if (!state.library) return;
+    const scrollers = [...document.querySelectorAll(".leftBody, #workspaceMain")]
+      .map(element => [element, element.scrollTop, element.scrollLeft]);
+    renderTree();
+    renderCollectorJobs();
+    refreshSemanticLanguage();
+    renderWorkspace({ chromeOnly: true });
+    if (["library", "today"].includes(state.mode) && state.leftFace !== "ccf") renderLibraryMode();
+    refreshReaderLanguage();
+    window.PortalI18n.renderStatic();
+    for (const [element, top, left] of scrollers) {
+      element.scrollTop = top;
+      element.scrollLeft = left;
+    }
+  });
   init().catch(alertError);
 })();

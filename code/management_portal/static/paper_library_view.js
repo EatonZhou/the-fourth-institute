@@ -22,6 +22,10 @@
       return JSON.stringify([String(venue || ""), String(year || ""), String(session || "")]);
     }
 
+    function folderLabel(value) {
+      return ["Unsorted", "Unknown", "General"].includes(value) ? window.PortalI18n.t(value) : value;
+    }
+
     function paperTreeNodeExpanded(key, defaultExpanded, expansion = state.paperTreeExpansion) {
       if (Object.prototype.hasOwnProperty.call(expansion || {}, key)) {
         return !!expansion[key];
@@ -51,7 +55,7 @@
       }
       if (!options) updateLeftFaceTabs();
       const meta = options?.summary || state.library?.summary || {};
-      if (!options) $("libraryMeta").textContent = `${meta.visible_count || 0}/${meta.paper_count || 0} papers · ${meta.analysis_count || 0} analyses`;
+      if (!options) $("libraryMeta").textContent = window.PortalI18n.text`${meta.visible_count || 0}/${meta.paper_count || 0} papers · ${meta.analysis_count || 0} analyses`;
       const folders = options?.folders || state.library?.folders || [];
       if (!folders.length) {
         const hasAny = Number(meta.paper_count || 0) > 0;
@@ -84,7 +88,7 @@
         append(() => window.PortalI18n.html`
             <div class="folderNode">
               <button class="folderLine" type="button" data-paper-tree-toggle="${esc(venueKey)}" aria-expanded="${venueExpanded ? "true" : "false"}">
-                ${disclosureIcon(venueExpanded)}<svg class="paperFolderIcon" viewBox="0 0 16 16" aria-hidden="true"><path d="M1.5 4V3h5l1.5 2h6.5v8h-13z"/></svg><strong>${esc(venue.name)}</strong><span class="folderCount">${venue.count}</span>
+                ${disclosureIcon(venueExpanded)}<svg class="paperFolderIcon" viewBox="0 0 16 16" aria-hidden="true"><path d="M1.5 4V3h5l1.5 2h6.5v8h-13z"/></svg><strong>${esc(folderLabel(venue.name))}</strong><span class="folderCount">${venue.count}</span>
               </button>
             </div>
           `);
@@ -95,7 +99,7 @@
           append(() => window.PortalI18n.html`
               <div class="folderNode" style="padding-left: 12px;">
                 <button class="folderLine" type="button" data-paper-tree-toggle="${esc(yearKey)}" aria-expanded="${yearExpanded ? "true" : "false"}">
-                  ${disclosureIcon(yearExpanded)}<svg class="paperFolderIcon" viewBox="0 0 16 16" aria-hidden="true"><path d="M1.5 4V3h5l1.5 2h6.5v8h-13z"/></svg><span>${esc(year.name)}</span><span class="folderCount">${year.count}</span>
+                  ${disclosureIcon(yearExpanded)}<svg class="paperFolderIcon" viewBox="0 0 16 16" aria-hidden="true"><path d="M1.5 4V3h5l1.5 2h6.5v8h-13z"/></svg><span>${esc(folderLabel(year.name))}</span><span class="folderCount">${year.count}</span>
                 </button>
               </div>
             `);
@@ -109,7 +113,7 @@
             append(() => window.PortalI18n.html`
                 <div class="folderNode" style="padding-left: 24px;">
                   <button class="folderLine" type="button" data-paper-tree-toggle="${esc(sessionKey)}" aria-expanded="${sessionExpanded ? "true" : "false"}">
-                    ${disclosureIcon(sessionExpanded)}<svg class="paperFolderIcon" viewBox="0 0 16 16" aria-hidden="true"><path d="M1.5 4V3h5l1.5 2h6.5v8h-13z"/></svg><span>${esc(session.name)}</span><span class="folderCount">${session.count}</span>
+                    ${disclosureIcon(sessionExpanded)}<svg class="paperFolderIcon" viewBox="0 0 16 16" aria-hidden="true"><path d="M1.5 4V3h5l1.5 2h6.5v8h-13z"/></svg><span>${esc(folderLabel(session.name))}</span><span class="folderCount">${session.count}</span>
                   </button>
                 </div>
               `);
@@ -133,22 +137,24 @@
       const collection = state.mode === "library" && state.activeCollectorJobId ? summary.paper_collection || null : null;
       const chips = [];
       if (semantic) {
-        chips.push(chip("Semantic search", "accent"));
-        chips.push(chip(`${summary.visible_count || 0} matches`, "good"));
-        chips.push(chip(`${summary.paper_count || 0} papers in library`));
-        if (semantic.updated_at) chips.push(chip(`updated ${new Date(semantic.updated_at * 1000).toLocaleString()}`));
+        chips.push(chip(window.PortalI18n.t("Semantic search"), "accent"));
+        chips.push(chip(window.PortalI18n.text`${summary.visible_count || 0} matches`, "good"));
+        chips.push(chip(window.PortalI18n.text`${summary.paper_count || 0} papers in library`));
+        if (semantic.updated_at) chips.push(chip(window.PortalI18n.text`updated ${new Date(semantic.updated_at * 1000).toLocaleString()}`));
       } else if (collection) {
-        chips.push(chip("Collect", "accent"));
-        chips.push(chip(`${summary.visible_count || 0} papers`, "good"));
-        chips.push(chip(`${summary.paper_count || 0} papers in library`));
-        if (collection.updated_at) chips.push(chip(`updated ${new Date(collection.updated_at * 1000).toLocaleString()}`));
+        chips.push(chip(window.PortalI18n.t("Collect"), "accent"));
+        chips.push(chip(window.PortalI18n.text`${summary.visible_count || 0} papers`, "good"));
+        chips.push(chip(window.PortalI18n.text`${summary.paper_count || 0} papers in library`));
+        if (collection.updated_at) chips.push(chip(window.PortalI18n.text`updated ${new Date(collection.updated_at * 1000).toLocaleString()}`));
       } else {
-        chips.push(chip(`${summary.visible_count || 0}/${summary.paper_count || 0} papers`));
-        chips.push(chip(`${summary.analysis_count || 0} analyses`, "good"));
-        chips.push(chip(`${summary.review_count || 0} reviews`));
-        const activeFilters = Object.entries(state.filters || {}).filter(([, value]) => String(value || "").trim()).map(([key, value]) => `${key}: ${value}`);
-        if (state.query) activeFilters.unshift(`q: ${state.query}`);
-        if (state.mode === "today") activeFilters.unshift("registered: today");
+        chips.push(chip(window.PortalI18n.text`${summary.visible_count || 0}/${summary.paper_count || 0} papers`));
+        chips.push(chip(window.PortalI18n.text`${summary.analysis_count || 0} analyses`, "good"));
+        chips.push(chip(window.PortalI18n.text`${summary.review_count || 0} reviews`));
+        const filterLabels = { year: "Year", venue: "Venue", tag: "Tag", project: "Project" };
+        const activeFilters = Object.entries(state.filters || {}).filter(([, value]) => String(value || "").trim())
+          .map(([key, value]) => `${window.PortalI18n.t(filterLabels[key] || key)}: ${value}`);
+        if (state.query) activeFilters.unshift(`${window.PortalI18n.t("Search")}: ${state.query}`);
+        if (state.mode === "today") activeFilters.unshift(window.PortalI18n.t("今日新增"));
         if (activeFilters.length) chips.push(chip(activeFilters.join(" · "), "accent"));
       }
       return chips.join("");
@@ -157,7 +163,7 @@
     function renderLibraryMode() {
       if (state.libraryLoading) {
         $("workspaceMain").innerHTML = paperStateHtml(
-          `Loading ${state.mode === "today" ? "Today" : "Paper Library"}…`,
+          `Loading ${state.mode === "today" ? window.PortalI18n.t("Today") : window.PortalI18n.t("Paper Library")}…`,
           { state: "loading" },
         );
         return;
@@ -167,12 +173,12 @@
       const visiblePapers = papers.slice(0, state.libraryRenderLimit);
       $("workspaceMain").innerHTML = window.PortalI18n.html`
           ${state.mode === "library" && !state.activeSemanticSearchId && !state.activeCollectorJobId && !state.query && !Object.values(state.filters || {}).some(Boolean) ? window.PortalI18n.html`<div class="overviewGrid">
-            <div class="metric"><div class="metricValue">${summary.paper_count || 0}</div><div class="metricLabel">Registered papers</div></div>
-            <div class="metric"><div class="metricValue">${summary.analysis_count || 0}</div><div class="metricLabel">Analysis ready</div></div>
-            <div class="metric"><div class="metricValue">${summary.review_count || 0}</div><div class="metricLabel">AI reviews</div></div>
+            <div class="metric"><div class="metricValue">${summary.paper_count || 0}</div><div class="metricLabel"><!--portal-i18n:"Registered papers"-->Registered papers</div></div>
+            <div class="metric"><div class="metricValue">${summary.analysis_count || 0}</div><div class="metricLabel"><!--portal-i18n:"Analysis ready"-->Analysis ready</div></div>
+            <div class="metric"><div class="metricValue">${summary.review_count || 0}</div><div class="metricLabel"><!--portal-i18n:"AI reviews"-->AI reviews</div></div>
           </div>` : ""}
           <div class="paperList">
-            ${visiblePapers.length ? visiblePapers.map(renderPaperRow).join("") : paperStateHtml(window.PortalI18n.t("No paper matches current filters."))}
+            ${visiblePapers.length ? visiblePapers.map(renderPaperRow).join("") : paperStateHtml("No paper matches current filters.")}
           </div>
           ${visiblePapers.length < papers.length ? window.PortalI18n.html`<div class="portalToolbar paperToolbar" style="justify-content:center;margin-top:10px;"><button class="portalButton is-compact is-quiet" type="button" id="loadMoreLibraryBtn">Show more · ${visiblePapers.length}/${papers.length}</button></div>` : ""}
         `;
@@ -226,7 +232,7 @@
     function renderPaperRow(paper) {
       const tags = paperTags(paper).slice(0, 7).map(t => chip(t, "accent")).join("");
       const relevance = Number.isFinite(Number(paper.semantic_score))
-        ? window.PortalI18n.html`<span class="relevanceBadge" title="${esc(paper.semantic_reason || "")}">Relevance ${esc(paper.semantic_score)}</span>`
+        ? window.PortalI18n.html`<span class="relevanceBadge" title="${esc(paper.semantic_reason || "")}">${esc(window.PortalI18n.text`Relevance ${paper.semantic_score}`)}</span>`
         : Number.isFinite(Number(paper.collection_rank))
           ? window.PortalI18n.html`<span class="relevanceBadge">Collected #${esc(paper.collection_rank)}</span>`
         : "";
@@ -237,9 +243,9 @@
               <div class="paperRowActions">${relevance}${paperFavoriteButton(paper.id)}</div>
             </div>
             <div class="workspaceMeta">
-              ${chip(paper.venue || "Venue")} ${paper.year ? chip(paper.year) : ""} ${paper.session ? chip(paper.session) : ""}
+              ${chip(paper.venue || window.PortalI18n.t("Venue"))} ${paper.year ? chip(paper.year) : ""} ${paper.session ? chip(paper.session) : ""}
               ${paper.has_pdf ? chip("PDF", "good") : chip(window.PortalI18n.t("PDF missing"), "warn")}
-              ${paper.has_analysis ? chip("Analyzed", "good") : chip(window.PortalI18n.t("Analysis missing"), "warn")}
+              ${paper.has_analysis ? chip(window.PortalI18n.t("Analyzed"), "good") : chip(window.PortalI18n.t("Analysis missing"), "warn")}
             </div>
             ${tags ? window.PortalI18n.html`<div class="chips">${tags}</div>` : ""}
             ${paper.abstract ? window.PortalI18n.html`<div class="paneNote">${esc(paper.abstract).slice(0, 260)}</div>` : ""}

@@ -89,7 +89,7 @@
         : collection
           ? window.PortalI18n.text`Paper collection: ${collection.direction || window.PortalI18n.t("current collection")}`
           : state.mode === "today"
-            ? "Today"
+            ? window.PortalI18n.t("Today")
             : window.PortalI18n.t("Paper Library");
       const summaryText = String(
         semantic?.query_interpretation
@@ -341,7 +341,7 @@
           refresh: "/paper/api/semantic-search/refresh",
           delete: "/paper/api/semantic-search/delete",
         },
-        labels: { idle: "Semantic", starting: "Starting", results: "results", searching: "searching", error: "error" },
+        labels: { idle: "Paper Semantic", starting: "Starting", results: "results", searching: "searching", error: "error" },
         isDisabled: () => state.leftFace === "ccf",
         confirmRemove: () => window.PortalUI.confirmAction("delete", "这个语义搜索条目"),
         onStart: () => {
@@ -368,8 +368,22 @@
           if (isSemanticSearchReady()) loadLibrary({ keepDetail: false }).catch(alertError);
         },
         onError: alertError,
+        onJobsChange: jobs => refreshSemanticLanguage(jobs),
       });
       return state.semanticSearch;
+    }
+
+    function refreshSemanticLanguage(jobs = state.semanticSearch?.jobs?.() || []) {
+      const label = $("semanticSearchBtn")?.querySelector("[data-semantic-label]");
+      if (label) label.textContent = window.PortalI18n.t(label.textContent === "Starting" ? "Starting" : "Paper Semantic");
+      for (const job of jobs) {
+        const row = Array.from($("semanticSearchList")?.querySelectorAll("[data-semantic-select]") || [])
+          .find(element => element.dataset.semanticSelect === job.search_id);
+        const status = row?.querySelector(".portalSemanticStatus");
+        if (status) status.textContent = job.status === "done"
+          ? window.PortalI18n.text`${Number(job.result_count || 0)} results`
+          : window.PortalI18n.t(job.status === "running" ? "Searching" : job.status === "error" ? "Failed" : "Queued");
+      }
     }
 
     function currentLibraryMarkdown() {
@@ -395,7 +409,7 @@
 
     function fillSelect(id, label, values, selected) {
       const seen = new Set();
-      const options = [window.PortalI18n.html`<option value="">${esc(label)}</option>`];
+      const options = [window.PortalI18n.html`<option value="" data-portal-i18n-text="${esc(label)}">${esc(window.PortalI18n.t(label))}</option>`];
       values.forEach(value => {
         const text = String(value || "").trim();
         if (!text || seen.has(text)) return;
@@ -408,7 +422,7 @@
     return Object.freeze({
       activeCollectorJobHasResults, collectionChatScope, collectionItems, collectionPaperIds,
       collectionVisibleCount, exportLibraryMarkdown, hashString, initSemanticSearch, isCollectionMode,
-      loadLibrary, loadMoreLibrary,
+      loadLibrary, loadMoreLibrary, refreshSemanticLanguage,
     });
   }
 

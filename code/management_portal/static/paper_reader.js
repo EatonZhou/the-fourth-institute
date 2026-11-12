@@ -126,37 +126,55 @@
         return;
       }
       if (!detailSectionsLoaded(["analysis", "summary"])) {
-        $("workspaceMain").innerHTML = detailSectionLoadingHtml("Reader");
+        $("workspaceMain").innerHTML = detailSectionLoadingHtml("Paper Reader");
         return;
       }
       const paper = detail.paper;
       const analysisBody = detail.analysis?.body ?? detail.analysis?.content ?? detail.summary?.content ?? "";
       const analysisKind = detail.analysis?.kind || (detail.analysis?.content ? "analysis" : "summary");
-      const facts = detail.analysis?.provenance || {};
+      const sourceHtml = analysisBody ? analysisSourceHtml(detail.analysis?.provenance || {}) : "";
+      const analysisHtml = analysisBody
+        ? sourceHtml + md(analysisBody)
+        : paperStateHtml("No analysis markdown registered for this paper.", { density: "compact" });
+      return renderReaderPanels(detail, paper, analysisKind, analysisHtml);
+    }
+
+    function analysisSourceHtml(facts) {
+      const recorded = value => !value || value === "未记录" ? window.PortalI18n.t("未记录") : value;
       const resident = /^resident_[0-9a-f]{12}$/.test(facts.resident_id || "") ? facts.resident_id : "";
       const humanTokens = value => Number.isFinite(value)
         ? value >= 1e9 ? `${(value / 1e9).toFixed(1).replace(/\.0$/, "")}B`
           : value >= 1e6 ? `${(value / 1e6).toFixed(1).replace(/\.0$/, "")}M`
           : value >= 1e3 ? `${(value / 1e3).toFixed(1).replace(/\.0$/, "")}K`
           : String(value)
-        : "未记录";
+        : window.PortalI18n.t("未记录");
       const tokenText = Number.isFinite(facts.total_tokens)
-        ? `输入 ${humanTokens(facts.input_tokens)} · 输出 ${humanTokens(facts.output_tokens)} · 共 ${humanTokens(facts.total_tokens)} tokens`
-        : "Token 用量未记录";
-      const exactTokens = `输入 ${facts.input_tokens ?? "未记录"} · 输出 ${facts.output_tokens ?? "未记录"} · 共 ${facts.total_tokens ?? "未记录"} tokens`;
-      const sourceHtml = analysisBody ? window.PortalI18n.html`<div class="paneNote">
-        ${resident ? window.PortalI18n.html`<a href="/lineage?resident=${esc(resident)}">生成 Agent：${esc(resident)}</a> · ` : ""}
-        模型：${esc(facts.model || "未记录")}${facts.model_evidence === "resident_current_settings" ? "（Resident 配置）" : ""} · <span title="${esc(exactTokens)}">${esc(tokenText)}</span>
-        ${facts.execution_id || facts.input_message_id || facts.provider || facts.account_id || facts.api_id ? window.PortalI18n.html`<details><summary>生成记录</summary>
-          Provider：${esc(facts.provider || "未记录")} · 账号：${esc(facts.account_id || "未记录")} · API：${esc(facts.api_id || "未记录")}<br>
+        ? window.PortalI18n.text`输入 ${humanTokens(facts.input_tokens)} · 输出 ${humanTokens(facts.output_tokens)} · 共 ${humanTokens(facts.total_tokens)} tokens`
+        : window.PortalI18n.t("Token 用量未记录");
+      const exactTokens = window.PortalI18n.text`输入 ${facts.input_tokens ?? window.PortalI18n.t("未记录")} · 输出 ${facts.output_tokens ?? window.PortalI18n.t("未记录")} · 共 ${facts.total_tokens ?? window.PortalI18n.t("未记录")} tokens`;
+      return window.PortalI18n.html`<div class="paneNote analysisProvenance">
+        ${resident ? window.PortalI18n.html`<a href="/lineage?resident=${esc(resident)}">生成 Agent：${esc(resident)}</a><!--portal-i18n:"·"--> · ` : ""}
+        ${window.PortalI18n.t("Paper Model")}: ${esc(recorded(facts.model))}${facts.model_evidence === "resident_current_settings" ? window.PortalI18n.t("（Resident 配置）") : ""} · <span title="${esc(exactTokens)}">${esc(tokenText)}</span>
+        ${facts.execution_id || facts.input_message_id || facts.provider || facts.account_id || facts.api_id ? window.PortalI18n.html`<details><summary><!--portal-i18n:"生成记录"-->生成记录</summary>
+          ${window.PortalI18n.t("Paper Provider")}: ${esc(recorded(facts.provider))} · ${window.PortalI18n.t("Paper Account")}: ${esc(recorded(facts.account_id))} · API: ${esc(recorded(facts.api_id))}<br>
           ${esc(facts.execution_id || "")}<br>${esc(facts.input_message_id || "")}<br>${esc(facts.model_evidence || "")}</details>` : ""}
-        </div>` : "";
-      const analysisHtml = analysisBody
-        ? sourceHtml + md(analysisBody)
-        : paperStateHtml("No analysis markdown registered for this paper.", { density: "compact" });
+        </div>`;
+    }
+
+    function refreshReaderLanguage() {
+      const detail = state.detail;
+      const source = $("analysisReaderContent")?.querySelector(".analysisProvenance");
+      if (source && detail?.paper) {
+        const open = !!source.querySelector("details[open]");
+        source.outerHTML = analysisSourceHtml(detail.analysis?.provenance || {});
+        if (open) $("analysisReaderContent")?.querySelector(".analysisProvenance details")?.setAttribute("open", "");
+      }
+    }
+
+    function renderReaderPanels(detail, paper, analysisKind, analysisHtml) {
       const pdfHtml = paper.pdf_url
         ? window.PortalI18n.html`<div class="pdfJsViewer" id="paperPdfViewer" data-pdf-url="${esc(paper.pdf_url)}">
-              <div class="pdfJsStatus">Loading PDF...</div>
+              <div class="pdfJsStatus"><!--portal-i18n:"Loading PDF..."-->Loading PDF...</div>
             </div>`
         : paperStateHtml("No PDF path or URL registered for this paper.", { density: "compact" });
       const readerGridClasses = [
@@ -168,12 +186,12 @@
       $("workspaceMain").classList.add("is-reader-mode");
       $("workspaceMain").innerHTML = window.PortalI18n.html`
           <div class="${readerGridClasses}" data-reader-paper-id="${esc(paper.id || "")}">
-            <section class="readerPanel ${state.readerAnalysisCollapsed ? "collapsed" : ""}" aria-label="Analysis 阅读面板">
+            <section class="readerPanel ${state.readerAnalysisCollapsed ? "collapsed" : ""}" aria-label="Analysis 阅读面板" data-portal-i18n-attrs='{"aria-label":"Analysis 阅读面板"}'>
               <header class="readerHead">
                 <div class="readerHeadIdentity">
-                  <span class="readerHeadIcon" aria-hidden="true">MD</span>
+                  <span class="readerHeadIcon" aria-hidden="true"><!--portal-i18n:"MD"-->MD</span>
                   <span class="readerHeadText">
-                    <span class="readerHeadTitle">${analysisKind === "summary" ? "分析 v0 · 短摘要" : "Analysis"}</span>
+                    <span class="readerHeadTitle" data-portal-i18n-text="${analysisKind === "summary" ? window.PortalI18n.t("分析 v0 · 短摘要") : window.PortalI18n.t("Analysis")}">${window.PortalI18n.t(analysisKind === "summary" ? "分析 v0 · 短摘要" : "Analysis")}</span>
                   </span>
                 </div>
                 <div class="readerHeadActions">
@@ -191,18 +209,18 @@
               </header>
               <div class="readerContent markdownBody" id="analysisReaderContent">${analysisHtml}</div>
             </section>
-            <section class="readerPanel pdfReaderPanel ${state.readerPdfCollapsed ? "collapsed" : ""}" aria-label="PDF 阅读面板">
+            <section class="readerPanel pdfReaderPanel ${state.readerPdfCollapsed ? "collapsed" : ""}" aria-label="PDF 阅读面板" data-portal-i18n-attrs='{"aria-label":"PDF 阅读面板"}'>
               <header class="readerHead">
                 <div class="readerHeadIdentity">
-                  <span class="readerHeadIcon" aria-hidden="true">PDF</span>
+                  <span class="readerHeadIcon" aria-hidden="true"><!--portal-i18n:"PDF"-->PDF</span>
                   <span class="readerHeadText">
-                    <span class="readerHeadTitle">PDF</span>
-                    ${paper.pdf_url ? window.PortalI18n.html`<span class="readerPath" aria-label="PDF 文件：${esc(paper.pdf_url)}">${esc(shortPath(paper.pdf_url, 72))}</span>` : window.PortalI18n.html`<span class="readerPath">尚未注册 PDF</span>`}
+                    <span class="readerHeadTitle"><!--portal-i18n:"PDF"-->PDF</span>
+                    ${paper.pdf_url ? window.PortalI18n.html`<span class="readerPath" aria-label="PDF 文件：${esc(paper.pdf_url)}">${esc(shortPath(paper.pdf_url, 72))}</span>` : window.PortalI18n.html`<span class="readerPath"><!--portal-i18n:"尚未注册 PDF"-->尚未注册 PDF</span>`}
                   </span>
                 </div>
                 <div class="readerHeadActions">
-                  ${paper.pdf_url ? window.PortalI18n.html`<a class="portalButton is-icon is-quiet iconBtn readerExternalLink" href="${esc(paper.pdf_url)}" target="_blank" rel="noopener noreferrer" data-portal-tooltip="在新标签页打开 PDF" aria-label="在新标签页打开 PDF" data-portal-icon="external-link"></a>` : ""}
-                  ${paper.pdf_url ? window.PortalI18n.html`<button class="portalButton is-compact" id="paperFullscreenBtn" type="button">${window.PortalI18n.t("Fullscreen")}</button>` : ""}
+                  ${paper.pdf_url ? window.PortalI18n.html`<a class="portalButton is-icon is-quiet iconBtn readerExternalLink" href="${esc(paper.pdf_url)}" target="_blank" rel="noopener noreferrer" data-portal-tooltip="在新标签页打开 PDF" aria-label="在新标签页打开 PDF" data-portal-icon="external-link" data-portal-i18n-attrs='{"data-portal-tooltip":"在新标签页打开 PDF","aria-label":"在新标签页打开 PDF"}'></a>` : ""}
+                  ${paper.pdf_url ? window.PortalI18n.html`<button class="portalButton is-compact" id="paperFullscreenBtn" type="button" data-portal-i18n-text="Fullscreen">${window.PortalI18n.t("Fullscreen")}</button>` : ""}
                   ${paper.has_pdf ? window.PortalI18n.html`<button class="portalButton is-compact is-danger" type="button" id="deletePaperPdfBtn" ${state.pdfDeleteInFlight ? "disabled" : ""}>${state.pdfDeleteInFlight ? window.PortalI18n.t("Deleting PDF...") : window.PortalI18n.t("Delete")}</button>` : ""}
                   <button
                     class="portalButton is-icon is-quiet iconBtn readerPanelToggle"
@@ -315,7 +333,7 @@
 
     return Object.freeze({
       bindPdfSelectionEvents, cancelPdfRendering, capturePaperReaderViewState, maybeShowSelectionMenu,
-      renderReaderMode, runSelectionAction,
+      refreshReaderLanguage, renderReaderMode, runSelectionAction,
     });
   }
 

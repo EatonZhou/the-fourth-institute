@@ -216,7 +216,7 @@
         if (ccfWebEnrichBtn) {
           if (!state.ccfSelectedPaper) return;
           ccfWebEnrichBtn.disabled = true;
-          ccfWebEnrichBtn.textContent = "Investigating...";
+          ccfWebEnrichBtn.textContent = window.PortalI18n.t("Investigating...");
           ensureCcfPaperEnrichment(state.ccfSelectedPaper, { web: true, retry: true }).catch(alertError);
           return;
         }
@@ -224,7 +224,7 @@
         if (registerCcfPaperBtn) {
           if (!state.ccfSelectedPaper) return;
           registerCcfPaperBtn.disabled = true;
-          registerCcfPaperBtn.textContent = "Registering...";
+          registerCcfPaperBtn.textContent = window.PortalI18n.t("Registering...");
           registerCcfPaper(state.ccfSelectedPaper).catch(alertError);
           return;
         }

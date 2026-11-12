@@ -100,7 +100,7 @@
     function sync() {
       rows.querySelectorAll("[data-favorite], [data-paper-favorite]").forEach(button => {
         const saved = state.favoriteIds.has((button.dataset.favorite || button.dataset.paperFavorite));
-        button.textContent = button.dataset.paperFavorite ? (saved ? "★" : "☆") : (saved ? "取消收藏" : "收藏");
+        button.textContent = button.dataset.paperFavorite ? (saved ? "★" : "☆") : window.PortalI18n.t(saved ? "取消收藏" : "收藏");
         button.setAttribute("aria-pressed", String(saved));
         button.disabled = pending.has((button.dataset.favorite || button.dataset.paperFavorite));
       });
@@ -252,7 +252,7 @@
       }).catch(error => {
         if (account !== String(state.principalId || '') || view !== 'recent') return;
         status.textContent = error?.status === 409 || error?.message?.includes("session_changed")
-          ? "账号已变化，请刷新身份并重新打开论文；本次阅读未记录。" : error?.message || String(error);
+          ? window.PortalI18n.t("账号已变化，请刷新身份并重新打开论文；本次阅读未记录。") : error?.message || String(error);
       });
     });
     window.addEventListener('portal:language-changed', () => {

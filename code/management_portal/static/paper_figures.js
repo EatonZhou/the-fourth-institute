@@ -51,12 +51,12 @@
           <div class="portalToolbar paperToolbar" style="justify-content:space-between;margin-bottom:10px;">
             <div class="paneNote">${esc(statusText)}</div>
             <button class="portalButton is-compact is-primary" type="button" id="extractFiguresBtn" ${detail.paper.has_pdf && !extracting ? "" : "disabled"}>
-              ${assetsRunning ? window.PortalI18n.t("Auto extracting...") : (extracting ? "Extracting..." : (figures.length ? window.PortalI18n.t("Re-extract Figures") : window.PortalI18n.t("Extract Figures")))}
+              ${assetsRunning ? window.PortalI18n.t("Auto extracting...") : (extracting ? window.PortalI18n.t("Extracting...") : (figures.length ? window.PortalI18n.t("Re-extract Figures") : window.PortalI18n.t("Extract Figures")))}
             </button>
           </div>
           ${figures.length
           ? window.PortalI18n.html`<div class="figureWorkspace">
-                <div class="figureList" aria-label="Figures" data-figure-list-paper-id="${esc(paperId)}">${figures.map(item => renderFigureListItem(item, state.selectedFigureId)).join("")}</div>
+                <div class="figureList" aria-label="Figures" data-figure-list-paper-id="${esc(paperId)}" data-portal-i18n-attrs='{"aria-label":"Figures"}'>${figures.map(item => renderFigureListItem(item, state.selectedFigureId)).join("")}</div>
                 <div class="figureDetailPane">${renderFigureDetail(selected)}</div>
               </div>`
           : paperStateHtml(
@@ -111,14 +111,14 @@
       if (!items.length) return "";
       return items.map(item => window.PortalI18n.html`
           <div class="figureInputChip" data-figure-input-id="${esc(item.id)}">
-            <button class="figureInputThumb" type="button" data-figure-input-open="${esc(key)}" data-input-id="${esc(item.id)}" title="Open image">
+            <button class="figureInputThumb" type="button" data-figure-input-open="${esc(key)}" data-input-id="${esc(item.id)}" title="Open image" data-portal-i18n-attrs='{"title":"Open image"}'>
               ${item.previewUrl ? window.PortalI18n.html`<img src="${esc(item.previewUrl)}" alt="" />` : ""}
             </button>
             <div class="figureInputMeta">
               <div class="figureInputName">${esc(item.name || "image")}</div>
               <div class="figureInputStatus ${item.status === "error" ? "error" : ""}">${esc(item.status === "done" ? "attached" : (item.error || item.status || ""))}</div>
             </div>
-            <button class="figureInputRemove" type="button" data-figure-input-remove="${esc(key)}" data-input-id="${esc(item.id)}" aria-label="Remove image" data-portal-icon="close"></button>
+            <button class="figureInputRemove" type="button" data-figure-input-remove="${esc(key)}" data-input-id="${esc(item.id)}" aria-label="Remove image" data-portal-icon="close" data-portal-i18n-attrs='{"aria-label":"Remove image"}'></button>
           </div>
         `).join("");
     }
@@ -146,38 +146,38 @@
             <div class="portalToolbar paperToolbar" style="justify-content:space-between;">
               <h3>${esc(figure.label || figureId || "Figure")}</h3>
               <div class="chips">
-                ${figure.page ? chip(`page ${figure.page}`) : ""}
-                ${figure.width && figure.height ? chip(`${figure.width} x ${figure.height}`) : ""}
+                ${figure.page ? chip(window.PortalI18n.text`page ${figure.page}`) : ""}
+                ${figure.width && figure.height ? chip(window.PortalI18n.text`${figure.width} x ${figure.height}`) : ""}
               </div>
             </div>
             ${figure.image_url ? window.PortalI18n.html`<img class="figureImage" src="${esc(figure.image_url)}" alt="${esc(figure.label || figureId || "Figure")}" loading="lazy" data-open-figure-image data-lightbox-figure-id="${esc(figureId)}" data-lightbox-title="${esc(figure.label || figureId || "Figure")}" />` : ""}
             ${figure.caption ? window.PortalI18n.html`<div class="refRaw">${esc(figure.caption)}</div>` : ""}
             <div class="portalToolbar paperToolbar" style="justify-content:flex-start;">
-              <button class="portalButton is-compact is-quiet" type="button" data-explain-figure="${esc(figureId)}" ${explaining ? "disabled" : ""}>${explaining ? "Explaining..." : "Explain"}</button>
+              <button class="portalButton is-compact is-quiet" type="button" data-explain-figure="${esc(figureId)}" ${explaining ? "disabled" : ""}>${explaining ? window.PortalI18n.t("Explaining...") : window.PortalI18n.t("Explain")}</button>
               ${explanationStatus && explanationStatus !== "done" ? window.PortalI18n.html`<span class="paneNote">${esc(explanationStatus)}</span>` : ""}
             </div>
-            ${figure.explanation ? window.PortalI18n.html`<div class="markdownBody">${md(figure.explanation)}</div>` : window.PortalI18n.html`<div class="paneNote">No explanation yet.</div>`}
+            ${figure.explanation ? window.PortalI18n.html`<div class="markdownBody">${md(figure.explanation)}</div>` : window.PortalI18n.html`<div class="paneNote"><!--portal-i18n:"No explanation yet."-->No explanation yet.</div>`}
             ${figure.explanation_error ? window.PortalI18n.html`<div class="paneNote" role="alert">${esc(figure.explanation_error)}</div>` : ""}
             <textarea class="portalControl figurePromptBox" data-figure-request="${esc(figureId)}" data-figure-id="${esc(figureId)}" placeholder="Describe how to redraw or modify this figure... Ctrl/⌘ + Enter to generate"></textarea>
             ${renderFigureInputTray(originalInputKey)}
             <div class="portalToolbar paperToolbar" style="justify-content:flex-end;">
-              <button class="portalButton is-compact is-primary" type="button" data-generate-figure="${esc(figureId)}" ${generating ? "disabled" : ""}>${generating ? "Generating..." : window.PortalI18n.t("Generate Image")}</button>
+              <button class="portalButton is-compact is-primary" type="button" data-generate-figure="${esc(figureId)}" ${generating ? "disabled" : ""}>${generating ? window.PortalI18n.t("Generating...") : window.PortalI18n.t("Generate Image")}</button>
             </div>
             ${generated.length ? window.PortalI18n.html`<div class="figureGenerated">
               ${generated.map(item => window.PortalI18n.html`
                 <div class="apiCard" style="padding:8px;">
                   <div class="portalToolbar paperToolbar" style="justify-content:space-between;margin-bottom:6px;">
                     <span class="paneNote">${esc(new Date((item.created_at || 0) * 1000).toLocaleString())} · ${esc(item.kind || "image")}${item.status && item.status !== "done" ? ` · ${esc(item.status)}` : ""}</span>
-                    <button class="portalButton is-compact is-quiet" type="button" data-delete-generated-figure="${esc(figureId)}" data-generated-id="${esc(item.generated_id || "")}">删除</button>
+                    <button class="portalButton is-compact is-quiet" type="button" data-delete-generated-figure="${esc(figureId)}" data-generated-id="${esc(item.generated_id || "")}"><!--portal-i18n:"删除"-->删除</button>
                   </div>
                   ${item.image_url ? window.PortalI18n.html`<img class="figureImage" src="${esc(item.image_url)}" alt="Generated Figure" loading="lazy" data-open-figure-image data-lightbox-figure-id="${esc(figureId)}" data-source-generated-id="${esc(item.generated_id || "")}" data-lightbox-title="${esc(item.generated_id || window.PortalI18n.t("Generated Figure"))}" />` : ""}
                   ${item.error ? paperStateHtml(item.error, { state: "error", density: "compact" }) : ""}
-                  ${item.prompt ? window.PortalI18n.html`<details class="paperDisclosure"><summary><span>Codex note</span><span data-portal-icon="chevron-down" data-portal-icon-class="paperDisclosureIcon" class="paperDisclosureIcon" aria-hidden="true"></span></summary><div class="markdownBody">${md(item.prompt || "")}</div></details>` : (!item.image_url && !item.error ? window.PortalI18n.html`<div class="paneNote">Generating image in the background.</div>` : "")}
+                  ${item.prompt ? window.PortalI18n.html`<details class="paperDisclosure"><summary><span><!--portal-i18n:"Codex note"-->Codex note</span><span data-portal-icon="chevron-down" data-portal-icon-class="paperDisclosureIcon" class="paperDisclosureIcon" aria-hidden="true"></span></summary><div class="markdownBody">${md(item.prompt || "")}</div></details>` : (!item.image_url && !item.error ? window.PortalI18n.html`<div class="paneNote"><!--portal-i18n:"Generating image in the background."-->Generating image in the background.</div>` : "")}
                   ${item.image_url && String(item.status || "done") === "done" ? window.PortalI18n.html`
                     <textarea class="portalControl figurePromptBox" data-generated-variant-request="${esc(item.generated_id || "")}" data-figure-id="${esc(figureId)}" placeholder="Describe how to modify this generated image..."></textarea>
                     ${renderFigureInputTray(figureInputKey(figureId, item.generated_id || ""))}
                     <div class="portalToolbar paperToolbar" style="justify-content:flex-end;">
-                      <button class="portalButton is-compact is-quiet" type="button" data-generate-figure-variant="${esc(figureId)}" data-source-generated-id="${esc(item.generated_id || "")}">Generate Variant</button>
+                      <button class="portalButton is-compact is-quiet" type="button" data-generate-figure-variant="${esc(figureId)}" data-source-generated-id="${esc(item.generated_id || "")}"><!--portal-i18n:"Generate Variant"-->Generate Variant</button>
                     </div>
                   ` : ""}
                 </div>

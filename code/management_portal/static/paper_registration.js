@@ -48,7 +48,7 @@
     function setPaperRegistrationUploadStatus(message, { error = false } = {}) {
       const status = $("paperRegisterUploadStatus");
       if (!status) return;
-      status.textContent = String(message || "");
+      status.textContent = window.PortalI18n.message(String(message || ""));
       status.classList.toggle("is-error", !!error);
     }
 

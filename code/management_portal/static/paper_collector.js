@@ -22,9 +22,8 @@
 
     function collectorStatusText(job) {
       const status = String(job.status || "queued");
-      if (status === "done") return `${job.result_count ?? job.registered_count ?? 0} found · ${job.registered_count || 0} added`;
-      if (status === "error") return "error";
-      return status;
+      if (status === "done") return window.PortalI18n.text`${job.result_count ?? job.registered_count ?? 0} found · ${job.registered_count || 0} added`;
+      return window.PortalI18n.t(status);
     }
 
     function renderCollectorJobs() {
@@ -49,14 +48,14 @@
                 ${detail ? window.PortalI18n.html`<span class="collectorJobMeta">${esc(detail)}</span>` : ""}
               </button>
               <span class="collectorJobActions">
-                <button class="collectorJobAction" type="button" data-collector-delete="${esc(jobId)}" title="删除收集任务" aria-label="删除收集任务" data-portal-icon="close"></button>
+                <button class="collectorJobAction" type="button" data-collector-delete="${esc(jobId)}" title="删除收集任务" aria-label="删除收集任务" data-portal-icon="close" data-portal-i18n-attrs='{"title":"删除收集任务","aria-label":"删除收集任务"}'></button>
               </span>
               ${status === "error" ? window.PortalI18n.html`<details class="collectorJobFailure" data-collector-error="${esc(jobId)}"${expandedFailures.has(jobId) ? " open" : ""}>
-                <summary>失败详情</summary>
+                <summary><!--portal-i18n:"失败详情"-->失败详情</summary>
                 <div class="collectorJobFailureBody">${esc(job.error || window.PortalI18n.t("收集任务未完成"))}</div>
-                <div>Job: <code>${esc(jobId)}</code></div>
-                ${job.invocation?.resident_id ? window.PortalI18n.html`<div>Resident: <code>${esc(job.invocation.resident_id)}</code></div>` : ""}
-                ${job.invocation?.input_message_id ? window.PortalI18n.html`<div>Input: <code>${esc(job.invocation.input_message_id)}</code></div>` : ""}
+                <div><!--portal-i18n:"Job:"-->Job: <code>${esc(jobId)}</code></div>
+                ${job.invocation?.resident_id ? window.PortalI18n.html`<div><!--portal-i18n:"Resident:"-->Resident: <code>${esc(job.invocation.resident_id)}</code></div>` : ""}
+                ${job.invocation?.input_message_id ? window.PortalI18n.html`<div><!--portal-i18n:"Input:"-->Input: <code>${esc(job.invocation.input_message_id)}</code></div>` : ""}
               </details>` : ""}
             </div>
           `;
@@ -64,7 +63,7 @@
       const btn = $("collectorBtn");
       if (btn) {
         btn.disabled = !!state.collectorStarting;
-        btn.textContent = state.collectorStarting ? "Starting" : "Collect";
+        btn.textContent = window.PortalI18n.t(state.collectorStarting ? "Starting" : "Collect");
       }
     }
 

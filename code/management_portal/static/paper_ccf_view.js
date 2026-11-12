@@ -157,7 +157,7 @@
                     <div style="padding-left: 14px;">
                       ${displayYears.length ? displayYears.map(year => window.PortalI18n.html`
                         <button class="folderLine ${key === state.ccfSelectedVenue && ccfVenueEntryId(year) === String(state.ccfSelectedYear || "") ? "selected" : ""}" type="button" data-ccf-year="${esc(ccfVenueEntryId(year))}" data-ccf-year-venue="${esc(key)}">
-                          <span>•</span>
+                          <span><!--portal-i18n:"•"-->•</span>
                           <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(ccfVenueYearLabel(venue, year))}</span>
                           <span class="folderCount">${esc(year.count || "")}</span>
                         </button>
@@ -168,7 +168,7 @@
                         density: "inline",
                         className: "ccfYearsState",
                         actionsHtml: yearsLoaded
-                          ? window.PortalI18n.html`<button class="portalButton is-compact is-primary ccfFetchYearsButton" type="button" data-ccf-fetch-years="${esc(key)}" ${fetchingYears ? "disabled" : ""}>${fetchingYears ? "Fetching..." : window.PortalI18n.t("Fetch year / issue list")}</button>`
+                          ? window.PortalI18n.html`<button class="portalButton is-compact is-primary ccfFetchYearsButton" type="button" data-ccf-fetch-years="${esc(key)}" ${fetchingYears ? "disabled" : ""}>${fetchingYears ? window.PortalI18n.t("Fetching...") : window.PortalI18n.t("Fetch year / issue list")}</button>`
                           : "",
                       },
                     )}
@@ -218,21 +218,21 @@
         if (venue.category) chips.push(chip(venue.category));
       }
       if (entry?.year) chips.push(chip(entry.year));
-      if (entry?.issue) chips.push(chip(`Vol. ${entry.issue}`));
+      if (entry?.issue) chips.push(chip(window.PortalI18n.text`Vol. ${entry.issue}`));
       if (!entry && state.ccfSelectedYear) chips.push(chip(state.ccfSelectedYear));
-      if (payload?.papers) chips.push(chip(`${payload.papers.length} DBLP papers`));
+      if (payload?.papers) chips.push(chip(window.PortalI18n.text`${payload.papers.length} DBLP papers`));
       return chips.join("");
     }
 
     function renderCcfPaperRow(paper, index) {
       const authors = ccfPaperAuthors(paper);
       const registered = paper.registered_paper_id ? chip("Registered", "good") : chip("Not registered", "warn");
-      const doi = paper.doi ? chip(`DOI ${paper.doi}`) : "";
+      const doi = paper.doi ? chip(window.PortalI18n.text`DOI ${paper.doi}`) : "";
       return window.PortalI18n.html`
           <article class="paperRow ${state.ccfSelectedPaper === paper ? "selected" : ""}" data-ccf-paper-index="${index}">
             <div class="paperRowHead">
               <div class="paperRowTitle">${esc(paper.title || window.PortalI18n.t("Untitled DBLP paper"))}</div>
-              ${paper.registered_paper_id ? window.PortalI18n.html`<span class="relevanceBadge">Open</span>` : window.PortalI18n.html`<span class="relevanceBadge">Regist</span>`}
+              ${paper.registered_paper_id ? window.PortalI18n.html`<span class="relevanceBadge"><!--portal-i18n:"Open"-->Open</span>` : window.PortalI18n.html`<span class="relevanceBadge"><!--portal-i18n:"Regist"-->Regist</span>`}
             </div>
             <div class="workspaceMeta">
               ${registered}
@@ -263,14 +263,14 @@
         .map(source => [String(source.url || source.title || source.source || ""), source])).values()];
       const webRunning = webStatus === "pending" || enrichmentStatus === "web_pending";
       const webButtonHtml = !registeredId && webStatus !== "done"
-        ? window.PortalI18n.html`<button class="portalButton is-compact is-quiet" type="button" data-ccf-web-enrich ${webRunning ? "disabled" : ""}>${webRunning ? "Investigating..." : (webStatus === "error" ? window.PortalI18n.t("Retry web investigation") : window.PortalI18n.t("Web investigation"))}</button>`
+        ? window.PortalI18n.html`<button class="portalButton is-compact is-quiet" type="button" data-ccf-web-enrich ${webRunning ? "disabled" : ""}>${webRunning ? window.PortalI18n.t("Investigating...") : (webStatus === "error" ? window.PortalI18n.t("Retry web investigation") : window.PortalI18n.t("Web investigation"))}</button>`
         : "";
       const webRunningNote = webRunning
-        ? window.PortalI18n.html`<div class="paneNote">Web investigation is running in the background. Fast metadata may appear first.</div>`
+        ? window.PortalI18n.html`<div class="paneNote"><!--portal-i18n:"Web investigation is running in the background. Fast metadata may appear first."-->Web investigation is running in the background. Fast metadata may appear first.</div>`
         : "";
       const sourcesHtml = sources.length ? window.PortalI18n.html`
           <section class="markdownBody">
-            <h4>Sources</h4>
+            <h4><!--portal-i18n:"Sources"-->Sources</h4>
             <ul>
               ${sources.map(source => {
               const title = String(source?.title || source?.url || "source").trim();
@@ -285,18 +285,18 @@
       const enrichmentHtml = registeredId ? "" : (
         ["done", "web_pending"].includes(enrichmentStatus)
           ? `
-              ${webSummaryZh ? window.PortalI18n.html`<section class="markdownBody"><h4>网页综合调查</h4><p>${esc(webSummaryZh)}</p>${webFindings.length ? window.PortalI18n.html`<ul>${webFindings.map(item => window.PortalI18n.html`<li>${esc(item)}</li>`).join("")}</ul>` : ""}</section>` : ""}
+              ${webSummaryZh ? window.PortalI18n.html`<section class="markdownBody"><h4><!--portal-i18n:"网页综合调查"-->网页综合调查</h4><p>${esc(webSummaryZh)}</p>${webFindings.length ? window.PortalI18n.html`<ul>${webFindings.map(item => window.PortalI18n.html`<li>${esc(item)}</li>`).join("")}</ul>` : ""}</section>` : ""}
               ${webRunningNote}
               ${webStatus === "error" ? window.PortalI18n.html`<div class="paneNote">Web investigation failed: ${esc(enrichment.web_error || window.PortalI18n.t("unknown error"))}</div>` : ""}
-              ${summaryZh ? window.PortalI18n.html`<section class="markdownBody"><h4>元数据概览</h4><p>${esc(summaryZh)}</p></section>` : ""}
-              ${abstract ? window.PortalI18n.html`<section class="markdownBody"><h4>Abstract</h4><p>${esc(abstract)}</p></section>` : (webRunning ? window.PortalI18n.html`<div class="paneNote">Metadata overview is still being prepared.</div>` : window.PortalI18n.html`<div class="paneNote">未从公开元数据中找到摘要。</div>`)}
+              ${summaryZh ? window.PortalI18n.html`<section class="markdownBody"><h4><!--portal-i18n:"元数据概览"-->元数据概览</h4><p>${esc(summaryZh)}</p></section>` : ""}
+              ${abstract ? window.PortalI18n.html`<section class="markdownBody"><h4><!--portal-i18n:"Abstract"-->Abstract</h4><p>${esc(abstract)}</p></section>` : (webRunning ? window.PortalI18n.html`<div class="paneNote"><!--portal-i18n:"Metadata overview is still being prepared."-->Metadata overview is still being prepared.</div>` : window.PortalI18n.html`<div class="paneNote"><!--portal-i18n:"未从公开元数据中找到摘要。"-->未从公开元数据中找到摘要。</div>`)}
               ${sourcesHtml}
             `
           : enrichmentStatus === "error"
             ? window.PortalI18n.html`<div class="paneNote">Enrichment failed: ${esc(enrichment.error || window.PortalI18n.t("unknown error"))}</div><button class="portalButton is-compact" type="button" data-ccf-retry-enrich>${window.PortalI18n.t("Retry enrichment")}</button>`
             : webRunning
               ? webRunningNote
-              : window.PortalI18n.html`<div class="paneNote">Enriching abstract and metadata overview in the background...</div>`
+              : window.PortalI18n.html`<div class="paneNote"><!--portal-i18n:"Enriching abstract and metadata overview in the background..."-->Enriching abstract and metadata overview in the background...</div>`
       );
       return window.PortalI18n.html`
           <div class="ccfPaperDetail">
@@ -307,7 +307,7 @@
                 ${chip(ccfVenueShortName(venue) || state.ccfSelectedVenue || "Venue")}
                 ${state.ccfSelectedYear ? chip(state.ccfSelectedYear) : ""}
                 ${paper.type ? chip(paper.type) : ""}
-                ${paper.doi ? chip(`DOI ${paper.doi}`) : ""}
+                ${paper.doi ? chip(window.PortalI18n.text`DOI ${paper.doi}`) : ""}
               </div>
             </div>
             ${authors ? window.PortalI18n.html`<div class="paneNote">${esc(authors)}</div>` : ""}
@@ -315,8 +315,8 @@
             <div class="workspaceModeActions" style="justify-content:flex-start;margin-left:0;">
               ${webButtonHtml}
               ${registeredId
-              ? window.PortalI18n.html`<button class="portalButton is-compact is-primary" type="button" data-paper-id="${esc(registeredId)}">Open registered paper</button>`
-              : window.PortalI18n.html`<button class="portalButton is-compact is-primary" type="button" data-register-ccf-paper ${state.ccfRegisterInFlight === (paper.url || paper.title) ? "disabled" : ""}>${state.ccfRegisterInFlight === (paper.url || paper.title) ? "Registering..." : "Regist"}</button>`}
+              ? window.PortalI18n.html`<button class="portalButton is-compact is-primary" type="button" data-paper-id="${esc(registeredId)}"><!--portal-i18n:"Open registered paper"-->Open registered paper</button>`
+              : window.PortalI18n.html`<button class="portalButton is-compact is-primary" type="button" data-register-ccf-paper ${state.ccfRegisterInFlight === (paper.url || paper.title) ? "disabled" : ""}>${state.ccfRegisterInFlight === (paper.url || paper.title) ? window.PortalI18n.t("Registering...") : window.PortalI18n.t("Regist")}</button>`}
             </div>
           </div>
         `;
@@ -350,7 +350,7 @@
         $("workspaceMain").innerHTML = paperStateHtml(
           "No local paper list cache for this entry yet.",
           {
-            actionsHtml: window.PortalI18n.html`<button class="portalButton is-compact is-primary" type="button" data-fetch-ccf-papers ${fetching ? "disabled" : ""}>${fetching ? "Fetching..." : window.PortalI18n.t("Fetch DBLP paper list")}</button>`,
+            actionsHtml: window.PortalI18n.html`<button class="portalButton is-compact is-primary" type="button" data-fetch-ccf-papers ${fetching ? "disabled" : ""}>${fetching ? window.PortalI18n.t("Fetching...") : window.PortalI18n.t("Fetch DBLP paper list")}</button>`,
           },
         );
         return;
@@ -370,18 +370,18 @@
       $("workspaceMain").innerHTML = window.PortalI18n.html`
           <div class="ccfPaperSearchBar">
             <div data-portal-search-field data-portal-search-density="compact">
-              <input data-portal-search-input type="search" data-ccf-paper-search placeholder="Search title, author, DOI, ID..." value="${esc(state.ccfPaperQuery || "")}" />
+              <input data-portal-search-input type="search" data-ccf-paper-search placeholder="Search title, author, DOI, ID..." value="${esc(state.ccfPaperQuery || "")}" data-portal-i18n-attrs='{"placeholder":"Search title, author, DOI, ID..."}' />
             </div>
             <span class="ccfPaperSearchMeta" id="ccfPaperSearchMeta">${papers.length}/${papers.length} papers</span>
           </div>
           <div class="paperList ccfPaperList" id="ccfPaperListResults">
           </div>
-          ${papers.length ? paperStateHtml(window.PortalI18n.t("No paper matches this list search."), {
+          ${papers.length ? paperStateHtml("No paper matches this list search.", {
           density: "compact",
           className: "hidden",
           id: "ccfPaperSearchEmpty",
         }) : ""}
-          ${papers.length ? window.PortalI18n.html`<div class="portalToolbar paperToolbar" style="justify-content:center;margin-top:10px;"><button class="portalButton is-compact is-quiet" type="button" id="ccfPaperLoadMore"></button></div>` : paperStateHtml(window.PortalI18n.t("No DBLP papers found for this venue entry."))}
+          ${papers.length ? window.PortalI18n.html`<div class="portalToolbar paperToolbar" style="justify-content:center;margin-top:10px;"><button class="portalButton is-compact is-quiet" type="button" id="ccfPaperLoadMore"></button></div>` : paperStateHtml("No DBLP papers found for this venue entry.")}
         `;
       queueMicrotask(applyCcfPaperListFilter);
     }

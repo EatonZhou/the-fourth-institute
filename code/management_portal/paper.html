@@ -107,13 +107,13 @@
                 <label for="searchInput"><!--portal-i18n:"Search papers"-->Search papers</label>
                 <input data-portal-board-search-input id="searchInput" type="search" placeholder="Search title, tags, analysis, ID..."  data-portal-i18n-attrs="{&quot;placeholder&quot;: &quot;Search title, tags, analysis, ID...&quot;}"/>
                 <button data-portal-board-semantic id="semanticSearchBtn" type="button" title="根据输入内容发起论文语义检索" aria-label="根据输入内容发起论文语义检索" data-portal-i18n-attrs="{&quot;title&quot;: &quot;根据输入内容发起论文语义检索&quot;, &quot;aria-label&quot;: &quot;根据输入内容发起论文语义检索&quot;}">
-                  <span data-semantic-label><!--portal-i18n:"Semantic"-->Semantic</span>
+                  <span data-semantic-label><!--portal-i18n:"Paper Semantic"-->Semantic</span>
                 </button>
               </div>
             </div>
               </div>
             <details class="paperSearchHistory"><summary aria-label="语义检索历史" data-portal-i18n-text="History" data-portal-i18n-attrs='{"aria-label":"Semantic search history"}'>历史</summary><div class="portalSemanticPanel" id="semanticSearchList"></div></details>
-              <label><span>新增时间</span><select class="portalControl" id="registeredFilter"><option value="">全部时间</option><option value="today">今日新增</option></select></label>
+              <label><span data-portal-i18n-text="新增时间">新增时间</span><select class="portalControl" id="registeredFilter"><option value="" data-portal-i18n-text="全部时间">全部时间</option><option value="today" data-portal-i18n-text="今日新增">今日新增</option></select></label>
               <label><span data-portal-i18n-text="年份">年份</span><select class="portalControl" id="yearFilter"><option value=""><!--portal-i18n:"All years"-->All years</option></select></label>
               <label><span data-portal-i18n-text="出版地点">出版地点</span><select class="portalControl" id="venueFilter"><option value=""><!--portal-i18n:"All venues"-->All venues</option></select></label>
               <label><span data-portal-i18n-text="All tags">All tags</span><select class="portalControl" id="tagFilter"><option value=""><!--portal-i18n:"All tags"-->All tags</option></select></label>
@@ -156,11 +156,11 @@
             </div>
             <div class="workspaceControls">
               <div class="portalSegmented" id="modeTabs">
-                <button type="button" data-mode="reader" title="切换到论文阅读视图" data-portal-i18n-attrs="{&quot;title&quot;: &quot;切换到论文阅读视图&quot;}"><!--portal-i18n:"Reader"-->Reader</button>
+                <button type="button" data-mode="reader" title="切换到论文阅读视图" data-portal-i18n-attrs="{&quot;title&quot;: &quot;切换到论文阅读视图&quot;}"><!--portal-i18n:"Paper Reader"-->Reader</button>
                 <button type="button" data-mode="review" title="切换到论文 Review 视图" data-portal-i18n-attrs="{&quot;title&quot;: &quot;切换到论文 Review 视图&quot;}"><!--portal-i18n:"Review"-->Review</button>
-                <button type="button" data-mode="exp" title="切换到论文实验分析视图" data-portal-i18n-attrs="{&quot;title&quot;: &quot;切换到论文实验分析视图&quot;}"><!--portal-i18n:"Exp"-->Exp</button>
+                <button type="button" data-mode="exp" title="切换到论文实验分析视图" data-portal-i18n-attrs="{&quot;title&quot;: &quot;切换到论文实验分析视图&quot;}"><!--portal-i18n:"Paper Exp"-->Exp</button>
                 <button type="button" data-mode="figures" title="切换到论文图表视图" data-portal-i18n-attrs="{&quot;title&quot;: &quot;切换到论文图表视图&quot;}"><!--portal-i18n:"Figure"-->Figure</button>
-                <button type="button" data-mode="notes" title="切换到论文笔记视图" data-portal-i18n-attrs="{&quot;title&quot;: &quot;切换到论文笔记视图&quot;}"><!--portal-i18n:"Notes"-->Notes</button>
+                <button type="button" data-mode="notes" title="切换到论文笔记视图" data-portal-i18n-attrs="{&quot;title&quot;: &quot;切换到论文笔记视图&quot;}"><!--portal-i18n:"Paper Notes"-->Notes</button>
                 <button type="button" data-mode="refs" title="切换到论文参考文献视图" data-portal-i18n-attrs="{&quot;title&quot;: &quot;切换到论文参考文献视图&quot;}"><!--portal-i18n:"Refs"-->Refs</button>
               </div>
               <div class="workspaceModeActions" id="workspaceModeActions"></div>
@@ -198,9 +198,9 @@
             <label class="portalField paperRegisterField full"><!--portal-i18n:"Analysis markdown path or URL"-->Analysis markdown path or URL<input name="analysis_path" placeholder="/absolute/path/to/analysis.md"  data-portal-i18n-attrs="{&quot;placeholder&quot;: &quot;/absolute/path/to/analysis.md&quot;}"/></label>
             <label class="portalField paperRegisterField"><!--portal-i18n:"Tags"-->Tags<input name="tags" placeholder="LLM, Quantization, DSA"  data-portal-i18n-attrs="{&quot;placeholder&quot;: &quot;LLM, Quantization, DSA&quot;}"/></label>
             <label class="portalField paperRegisterField"><!--portal-i18n:"Workload"-->Workload<input name="workload" placeholder="LLM inference"  data-portal-i18n-attrs="{&quot;placeholder&quot;: &quot;LLM inference&quot;}"/></label>
-            <label class="portalField paperRegisterField"><!--portal-i18n:"Platform"-->Platform<input name="platform" placeholder="accelerator, GPU, PIM"  data-portal-i18n-attrs="{&quot;placeholder&quot;: &quot;accelerator, GPU, PIM&quot;}"/></label>
+            <label class="portalField paperRegisterField"><!--portal-i18n:"Paper Platform"-->Platform<input name="platform" placeholder="accelerator, GPU, PIM"  data-portal-i18n-attrs="{&quot;placeholder&quot;: &quot;accelerator, GPU, PIM&quot;}"/></label>
             <label class="portalField paperRegisterField"><!--portal-i18n:"Architecture"-->Architecture<input name="architecture" placeholder="CIM, systolic array"  data-portal-i18n-attrs="{&quot;placeholder&quot;: &quot;CIM, systolic array&quot;}"/></label>
-            <label class="portalField paperRegisterField"><!--portal-i18n:"Optimization"-->Optimization<input name="optimization" placeholder="quantization, scheduling"  data-portal-i18n-attrs="{&quot;placeholder&quot;: &quot;quantization, scheduling&quot;}"/></label>
+            <label class="portalField paperRegisterField"><!--portal-i18n:"Paper Optimization"-->Optimization<input name="optimization" placeholder="quantization, scheduling"  data-portal-i18n-attrs="{&quot;placeholder&quot;: &quot;quantization, scheduling&quot;}"/></label>
             <label class="portalField paperRegisterField full"><!--portal-i18n:"Abstract / note"-->Abstract / note<textarea name="abstract"></textarea></label>
           </div>
         </div>

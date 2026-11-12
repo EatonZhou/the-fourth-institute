@@ -1,78 +1,301 @@
 {
   "此角色只处理论文页发起的任务，每次任务都从新的上下文开始。本页仅供查看记录，不能直接对话。": {"zh-CN":"此角色只处理论文页发起的任务，每次任务都从新的上下文开始。本页仅供查看记录，不能直接对话。","en":"This role only handles tasks started from the Paper page. Each task starts with a fresh context. This page is for viewing records only; direct chat is unavailable."},
-  "Back to library": {"en":"Back to library","zh-CN":"回主界面"},
-  "Fullscreen": {"en":"Fullscreen","zh-CN":"全屏阅读"},
-  "Export": {"en":"Export","zh-CN":"导出"},
-  "Delete": {"en":"Delete","zh-CN":"删除"},
-  "AI 解释 / 提问": {"en":"Ask AI about selection","zh-CN":"AI 解释 / 提问"},
-  "翻译选区": {"en":"Translate selection","zh-CN":"翻译选区"},
-  "重试翻译": {"en":"Retry translation","zh-CN":"重试翻译"},
-  "Google 请求": {"en":"Google request","zh-CN":"Google 请求"},
-  "任务总耗时": {"en":"Total task duration","zh-CN":"任务总耗时"},
-  "原任务": {"en":"Original task","zh-CN":"原任务"},
-  "复用进行中任务": {"en":"Reusing an in-progress task","zh-CN":"复用进行中任务"},
-  "本次请求": {"en":"Current request","zh-CN":"本次请求"},
-  "缓存命中": {"en":"Cache hit","zh-CN":"缓存命中"},
-  "Reader 已关闭": {"en":"The reader is closed","zh-CN":"Reader 已关闭"},
-  "全屏论文阅读": {"en":"Fullscreen paper reader","zh-CN":"全屏论文阅读"},
-  "正在打开论文…": {"en":"Opening paper…","zh-CN":"正在打开论文…"},
-  "确认保存便签": {"en":"Save note","zh-CN":"确认保存便签"},
-  "翻译任务编号发生变化": {"en":"The translation task identifier changed","zh-CN":"翻译任务编号发生变化"},
-  "翻译已取消或失败": {"en":"Translation was cancelled or failed","zh-CN":"翻译已取消或失败"},
-  "翻译服务未返回任务编号": {"en":"The translation service did not return a task identifier","zh-CN":"翻译服务未返回任务编号"},
-  "翻译服务返回了无效结果": {"en":"The translation service returned an invalid result","zh-CN":"翻译服务返回了无效结果"},
-  "论文全屏 PDF 阅读器": {"en":"Fullscreen paper PDF viewer","zh-CN":"论文全屏 PDF 阅读器"},
-  "论文或账号已变化，请重新打开讨论": {"en":"The paper or account changed. Reopen the discussion.","zh-CN":"论文或账号已变化，请重新打开讨论"},
-  "请先选择可定位的原文": {"en":"First select a passage that can be located in the document","zh-CN":"请先选择可定位的原文"},
-  "请进入全屏后翻译": {"en":"Enter fullscreen to translate","zh-CN":"请进入全屏后翻译"},
-  "调整 AI 侧栏宽度": {"en":"Resize the AI sidebar","zh-CN":"调整 AI 侧栏宽度"},
-  "账号已变化，请重新打开论文": {"en":"The account changed. Reopen the paper.","zh-CN":"账号已变化，请重新打开论文"},
-  "载入失败，请关闭后重新打开": {"en":"Loading failed. Close and reopen the reader.","zh-CN":"载入失败，请关闭后重新打开"},
-  "翻译请求失败（{p0}）": {"en":"Translation request failed ({p0})","zh-CN":"翻译请求失败（{p0}）"},
-  "打开 AI": {"en":"Open AI","zh-CN":"打开 AI"},
-  "收起 AI": {"en":"Hide AI","zh-CN":"收起 AI"},
-  "翻译": {"en":"Translation","zh-CN":"翻译"},
-  "论文 AI 侧栏": {"en":"Paper AI sidebar","zh-CN":"论文 AI 侧栏"},
-  "选区翻译": {"en":"Selection translation","zh-CN":"选区翻译"},
-  "确认保存回答为便签": {"en":"Save an answer as a note","zh-CN":"确认保存回答为便签"},
-  "便签预览": {"en":"Note preview","zh-CN":"便签预览"},
-  "引用选区 · 第 {p0} 页": {"en":"Selected passage · Page {p0}","zh-CN":"引用选区 · 第 {p0} 页"},
-  "回答 {p0}": {"en":"Answer {p0}","zh-CN":"回答 {p0}"},
-  "Research Chat 组件未加载": {"en":"Research Chat is not loaded","zh-CN":"研究对话组件未加载"},
-  "便签已保存": {"en":"Note saved","zh-CN":"便签已保存"},
-  "选择 AI 回答": {"en":"Select an AI answer","zh-CN":"选择 AI 回答"},
-  "选择回答": {"en":"Select an answer","zh-CN":"选择回答"},
-  "请从原文选区开启讨论以确定便签位置。": {"en":"Start a discussion from selected text to position the note.","zh-CN":"请从原文选区开启讨论以确定便签位置。"},
-  "论文 AI 讨论": {"en":"Paper AI discussion","zh-CN":"论文 AI 讨论"},
-  "原始 PDF": {"en":"Original PDF","zh-CN":"原始 PDF"},
-  "全屏阅读": {"en":"Read fullscreen","zh-CN":"全屏阅读"},
-  "收起翻译": {"en":"Hide translation","zh-CN":"收起翻译"},
-  "新建 AI": {"en":"New AI","zh-CN":"新建 AI"},
-  "研究助手已不可用，请选择其他助手或新建。": {"en":"This research assistant is unavailable. Select another assistant or create one.","zh-CN":"研究助手已不可用，请选择其他助手或新建。"},
-  "没有权限使用该研究助手，请选择其他助手。": {"en":"You do not have access to this assistant. Select another assistant.","zh-CN":"没有权限使用该研究助手，请选择其他助手。"},
-  "无法连接研究助手，请重试或选择其他助手。": {"en":"Cannot connect to the assistant. Retry or select another assistant.","zh-CN":"无法连接研究助手，请重试或选择其他助手。"},
-  "选择或新建持续研究助手，切换论文时保持对话。": {"en":"Select or create a persistent research assistant. The conversation stays when switching papers.","zh-CN":"选择或新建持续研究助手，切换论文时保持对话。"},
-  "创建批注后，可在侧栏查看": {"en": "Create an annotation to see it in the sidebar", "zh-CN": "创建批注后，可在侧栏查看"},
-  "翻译模式": {"en": "Translation mode", "zh-CN": "翻译模式"},
-  "自动（Google → DeepSeek → Kimi）": {"en": "Auto (Google → DeepSeek → Kimi)", "zh-CN": "自动（Google → DeepSeek → Kimi）"},
-  "所选原文": {"en": "Selected text", "zh-CN": "所选原文"},
-  "正在翻译…": {"en": "Translating…", "zh-CN": "正在翻译…"},
-  "复制译文": {"en": "Copy translation", "zh-CN": "复制译文"},
-  "复制失败，请手动选择译文复制": {"en": "Copy failed. Select and copy the translation manually.", "zh-CN": "复制失败，请手动选择译文复制"},
-  "阅读侧栏": {"en": "Reading sidebar", "zh-CN": "阅读侧栏"},
-  "关闭侧栏": {"en": "Close sidebar", "zh-CN": "关闭侧栏"},
-  "选择论文中的文字开始翻译。": {"en": "Select text in the paper to translate.", "zh-CN": "选择论文中的文字开始翻译。"},
-  "用时": {"en": "Time", "zh-CN": "用时"},
-  "秒": {"en": "s", "zh-CN": "秒"},
-  "本次等待": {"en": "Current wait", "zh-CN": "本次等待"},
-  "最后一次接口处理耗时": {"en": "Last HTTP request processing", "zh-CN": "最后一次接口处理耗时"},
-  "任务耗时从原任务开始计算；本次等待从本次操作开始计算。": {"en": "Task duration starts with the original task; current wait starts with this action.", "zh-CN": "任务耗时从原任务开始计算；本次等待从本次操作开始计算。"},
-  "受理": {"en": "Accepted", "zh-CN": "受理"},
-  "任务创建": {"en": "Task created", "zh-CN": "任务创建"},
-  "派发等待": {"en": "Dispatch wait", "zh-CN": "派发等待"},
-  "上游请求开始": {"en": "Upstream request started", "zh-CN": "上游请求开始"},
-  "上游请求结束": {"en": "Upstream request completed", "zh-CN": "上游请求结束"},
-  "还没有对话，在下方输入问题开始。": {"en": "No conversation yet. Enter a question below to get started.", "zh-CN": "还没有对话，在下方输入问题开始。"},
+  "Relevance {p0}": {"en":"Relevance {p0}","zh-CN":"相关度 {p0}"},
+  "Paper AI generated": {"en":"AI generated","zh-CN":"AI 已生成"},
+  "ai_incomplete": {"en":"Incomplete AI review","zh-CN":"AI 评审未完成"},
+  "ai_generated_unstructured": {"en":"Unstructured AI review","zh-CN":"AI 评审未完成结构化"},
+  "Back to library": {
+    "en": "Back to library",
+    "zh-CN": "回主界面"
+  },
+  "Fullscreen": {
+    "en": "Fullscreen",
+    "zh-CN": "全屏阅读"
+  },
+  "Export": {
+    "en": "Export",
+    "zh-CN": "导出"
+  },
+  "Delete": {
+    "en": "Delete",
+    "zh-CN": "删除"
+  },
+  "AI 解释 / 提问": {
+    "en": "Ask AI about selection",
+    "zh-CN": "AI 解释 / 提问"
+  },
+  "翻译选区": {
+    "en": "Translate selection",
+    "zh-CN": "翻译选区"
+  },
+  "重试翻译": {
+    "en": "Retry translation",
+    "zh-CN": "重试翻译"
+  },
+  "Google 请求": {
+    "en": "Google request",
+    "zh-CN": "Google 请求"
+  },
+  "任务总耗时": {
+    "en": "Total task duration",
+    "zh-CN": "任务总耗时"
+  },
+  "原任务": {
+    "en": "Original task",
+    "zh-CN": "原任务"
+  },
+  "复用进行中任务": {
+    "en": "Reusing an in-progress task",
+    "zh-CN": "复用进行中任务"
+  },
+  "本次请求": {
+    "en": "Current request",
+    "zh-CN": "本次请求"
+  },
+  "缓存命中": {
+    "en": "Cache hit",
+    "zh-CN": "缓存命中"
+  },
+  "Reader 已关闭": {
+    "en": "The reader is closed",
+    "zh-CN": "Reader 已关闭"
+  },
+  "全屏论文阅读": {
+    "en": "Fullscreen paper reader",
+    "zh-CN": "全屏论文阅读"
+  },
+  "正在打开论文…": {
+    "en": "Opening paper…",
+    "zh-CN": "正在打开论文…"
+  },
+  "确认保存便签": {
+    "en": "Save note",
+    "zh-CN": "确认保存便签"
+  },
+  "翻译任务编号发生变化": {
+    "en": "The translation task identifier changed",
+    "zh-CN": "翻译任务编号发生变化"
+  },
+  "翻译已取消或失败": {
+    "en": "Translation was cancelled or failed",
+    "zh-CN": "翻译已取消或失败"
+  },
+  "翻译服务未返回任务编号": {
+    "en": "The translation service did not return a task identifier",
+    "zh-CN": "翻译服务未返回任务编号"
+  },
+  "翻译服务返回了无效结果": {
+    "en": "The translation service returned an invalid result",
+    "zh-CN": "翻译服务返回了无效结果"
+  },
+  "论文全屏 PDF 阅读器": {
+    "en": "Fullscreen paper PDF viewer",
+    "zh-CN": "论文全屏 PDF 阅读器"
+  },
+  "论文或账号已变化，请重新打开讨论": {
+    "en": "The paper or account changed. Reopen the discussion.",
+    "zh-CN": "论文或账号已变化，请重新打开讨论"
+  },
+  "请先选择可定位的原文": {
+    "en": "First select a passage that can be located in the document",
+    "zh-CN": "请先选择可定位的原文"
+  },
+  "请进入全屏后翻译": {
+    "en": "Enter fullscreen to translate",
+    "zh-CN": "请进入全屏后翻译"
+  },
+  "调整 AI 侧栏宽度": {
+    "en": "Resize the AI sidebar",
+    "zh-CN": "调整 AI 侧栏宽度"
+  },
+  "账号已变化，请重新打开论文": {
+    "en": "The account changed. Reopen the paper.",
+    "zh-CN": "账号已变化，请重新打开论文"
+  },
+  "载入失败，请关闭后重新打开": {
+    "en": "Loading failed. Close and reopen the reader.",
+    "zh-CN": "载入失败，请关闭后重新打开"
+  },
+  "翻译请求失败（{p0}）": {
+    "en": "Translation request failed ({p0})",
+    "zh-CN": "翻译请求失败（{p0}）"
+  },
+  "打开 AI": {
+    "en": "Open AI",
+    "zh-CN": "打开 AI"
+  },
+  "收起 AI": {
+    "en": "Hide AI",
+    "zh-CN": "收起 AI"
+  },
+  "翻译": {
+    "en": "Translation",
+    "zh-CN": "翻译"
+  },
+  "论文 AI 侧栏": {
+    "en": "Paper AI sidebar",
+    "zh-CN": "论文 AI 侧栏"
+  },
+  "选区翻译": {
+    "en": "Selection translation",
+    "zh-CN": "选区翻译"
+  },
+  "确认保存回答为便签": {
+    "en": "Save an answer as a note",
+    "zh-CN": "确认保存回答为便签"
+  },
+  "便签预览": {
+    "en": "Note preview",
+    "zh-CN": "便签预览"
+  },
+  "引用选区 · 第 {p0} 页": {
+    "en": "Selected passage · Page {p0}",
+    "zh-CN": "引用选区 · 第 {p0} 页"
+  },
+  "回答 {p0}": {
+    "en": "Answer {p0}",
+    "zh-CN": "回答 {p0}"
+  },
+  "Research Chat 组件未加载": {
+    "en": "Research Chat is not loaded",
+    "zh-CN": "研究对话组件未加载"
+  },
+  "便签已保存": {
+    "en": "Note saved",
+    "zh-CN": "便签已保存"
+  },
+  "选择 AI 回答": {
+    "en": "Select an AI answer",
+    "zh-CN": "选择 AI 回答"
+  },
+  "选择回答": {
+    "en": "Select an answer",
+    "zh-CN": "选择回答"
+  },
+  "请从原文选区开启讨论以确定便签位置。": {
+    "en": "Start a discussion from selected text to position the note.",
+    "zh-CN": "请从原文选区开启讨论以确定便签位置。"
+  },
+  "论文 AI 讨论": {
+    "en": "Paper AI discussion",
+    "zh-CN": "论文 AI 讨论"
+  },
+  "原始 PDF": {
+    "en": "Original PDF",
+    "zh-CN": "原始 PDF"
+  },
+  "全屏阅读": {
+    "en": "Read fullscreen",
+    "zh-CN": "全屏阅读"
+  },
+  "收起翻译": {
+    "en": "Hide translation",
+    "zh-CN": "收起翻译"
+  },
+  "新建 AI": {
+    "en": "New AI",
+    "zh-CN": "新建 AI"
+  },
+  "研究助手已不可用，请选择其他助手或新建。": {
+    "en": "This research assistant is unavailable. Select another assistant or create one.",
+    "zh-CN": "研究助手已不可用，请选择其他助手或新建。"
+  },
+  "没有权限使用该研究助手，请选择其他助手。": {
+    "en": "You do not have access to this assistant. Select another assistant.",
+    "zh-CN": "没有权限使用该研究助手，请选择其他助手。"
+  },
+  "无法连接研究助手，请重试或选择其他助手。": {
+    "en": "Cannot connect to the assistant. Retry or select another assistant.",
+    "zh-CN": "无法连接研究助手，请重试或选择其他助手。"
+  },
+  "选择或新建持续研究助手，切换论文时保持对话。": {
+    "en": "Select or create a persistent research assistant. The conversation stays when switching papers.",
+    "zh-CN": "选择或新建持续研究助手，切换论文时保持对话。"
+  },
+  "创建批注后，可在侧栏查看": {
+    "en": "Create an annotation to see it in the sidebar",
+    "zh-CN": "创建批注后，可在侧栏查看"
+  },
+  "翻译模式": {
+    "en": "Translation mode",
+    "zh-CN": "翻译模式"
+  },
+  "自动（Google → DeepSeek → Kimi）": {
+    "en": "Auto (Google → DeepSeek → Kimi)",
+    "zh-CN": "自动（Google → DeepSeek → Kimi）"
+  },
+  "所选原文": {
+    "en": "Selected text",
+    "zh-CN": "所选原文"
+  },
+  "正在翻译…": {
+    "en": "Translating…",
+    "zh-CN": "正在翻译…"
+  },
+  "复制译文": {
+    "en": "Copy translation",
+    "zh-CN": "复制译文"
+  },
+  "复制失败，请手动选择译文复制": {
+    "en": "Copy failed. Select and copy the translation manually.",
+    "zh-CN": "复制失败，请手动选择译文复制"
+  },
+  "阅读侧栏": {
+    "en": "Reading sidebar",
+    "zh-CN": "阅读侧栏"
+  },
+  "关闭侧栏": {
+    "en": "Close sidebar",
+    "zh-CN": "关闭侧栏"
+  },
+  "选择论文中的文字开始翻译。": {
+    "en": "Select text in the paper to translate.",
+    "zh-CN": "选择论文中的文字开始翻译。"
+  },
+  "用时": {
+    "en": "Time",
+    "zh-CN": "用时"
+  },
+  "秒": {
+    "en": "s",
+    "zh-CN": "秒"
+  },
+  "本次等待": {
+    "en": "Current wait",
+    "zh-CN": "本次等待"
+  },
+  "最后一次接口处理耗时": {
+    "en": "Last HTTP request processing",
+    "zh-CN": "最后一次接口处理耗时"
+  },
+  "任务耗时从原任务开始计算；本次等待从本次操作开始计算。": {
+    "en": "Task duration starts with the original task; current wait starts with this action.",
+    "zh-CN": "任务耗时从原任务开始计算；本次等待从本次操作开始计算。"
+  },
+  "受理": {
+    "en": "Accepted",
+    "zh-CN": "受理"
+  },
+  "任务创建": {
+    "en": "Task created",
+    "zh-CN": "任务创建"
+  },
+  "派发等待": {
+    "en": "Dispatch wait",
+    "zh-CN": "派发等待"
+  },
+  "上游请求开始": {
+    "en": "Upstream request started",
+    "zh-CN": "上游请求开始"
+  },
+  "上游请求结束": {
+    "en": "Upstream request completed",
+    "zh-CN": "上游请求结束"
+  },
+  "还没有对话，在下方输入问题开始。": {
+    "en": "No conversation yet. Enter a question below to get started.",
+    "zh-CN": "还没有对话，在下方输入问题开始。"
+  },
   "全库": {
     "en": "Repository",
     "zh-CN": "全库"
@@ -243,7 +466,7 @@
   },
   "Analysis 阅读面板": {
     "en": "Analysis reading panel",
-    "zh-CN": "Analysis 阅读面板"
+    "zh-CN": "分析阅读面板"
   },
   "Analyzed": {
     "en": "Analyzed",
@@ -623,7 +846,7 @@
   },
   "Generating...": {
     "en": "Generating...",
-    "zh-CN": "Generating..."
+    "zh-CN": "正在生成…"
   },
   "ISCA": {
     "en": "ISCA",
@@ -635,7 +858,7 @@
   },
   "Job:": {
     "en": "Job:",
-    "zh-CN": "Job:"
+    "zh-CN": "任务："
   },
   "LLM inference": {
     "en": "LLM inference",
@@ -898,8 +1121,8 @@
     "zh-CN": "移除图片"
   },
   "Research Chat 输入框尚未就绪，请稍后重试。": {
-    "en": "Research Chat input box is not ready yet, please try again later.",
-    "zh-CN": "Research Chat 输入框尚未就绪，请稍后重试。"
+    "en": "The Research Chat input is not ready. Try again shortly.",
+    "zh-CN": "研究对话输入框尚未就绪，请稍后重试。"
   },
   "Research Workspace": {
     "en": "Research Workspace",
@@ -955,7 +1178,7 @@
   },
   "Venue": {
     "en": "Venue",
-    "zh-CN": "Venue"
+    "zh-CN": "出版地点"
   },
   "Web investigation": {
     "en": "Web investigation",
@@ -1258,8 +1481,8 @@
     "zh-CN": "只看收藏"
   },
   "同一套接口服务 Paper 页面、Research Chat，以及之后的 deep-read / review agent。": {
-    "en": "The same set of interfaces serves the Paper page, Research Chat, and later the deep-read / review agent.",
-    "zh-CN": "同一套接口服务 Paper 页面、Research Chat，以及之后的 deep-read / review agent。"
+    "en": "One API serves the Paper page, Research Chat, and deep-read / review agents.",
+    "zh-CN": "同一套接口服务论文页面、研究对话和深度阅读／评审 Agent。"
   },
   "后台评审任务处理中，可离开或刷新页面。": {
     "en": "Background review task is processing; you can leave or refresh the page.",
@@ -1274,24 +1497,24 @@
     "zh-CN": "后台评审正在进行，完成后从论文产物恢复显示。"
   },
   "在新标签页打开 PDF": {
-    "en": "Open PDF in new tab",
+    "en": "Open PDF in a new tab",
     "zh-CN": "在新标签页打开 PDF"
   },
   "尚未注册 PDF": {
-    "en": "PDF not registered yet",
+    "en": "No PDF registered",
     "zh-CN": "尚未注册 PDF"
   },
   "展开 Analysis 面板": {
     "en": "Expand Analysis panel",
-    "zh-CN": "展开 Analysis 面板"
+    "zh-CN": "展开分析面板"
   },
   "展开 PDF 面板": {
     "en": "Expand PDF panel",
     "zh-CN": "展开 PDF 面板"
   },
   "已添加到 Research Chat 输入框。": {
-    "en": "Added to the Research Chat input box.",
-    "zh-CN": "已添加到 Research Chat 输入框。"
+    "en": "Added to the Research Chat input.",
+    "zh-CN": "已添加到研究对话输入框。"
   },
   "收藏论文": {
     "en": "Favorite paper",
@@ -1299,7 +1522,7 @@
   },
   "收起 Analysis 面板": {
     "en": "Collapse Analysis panel",
-    "zh-CN": "收起 Analysis 面板"
+    "zh-CN": "收起分析面板"
   },
   "收起 PDF 面板": {
     "en": "Collapse PDF panel",
@@ -1334,8 +1557,8 @@
     "zh-CN": "根据输入需求收集论文"
   },
   "没有读到选中文本。原生浏览器 PDF viewer 有时不允许页面读取选区；可以先复制 PDF 文字，再粘贴到 Research Chat。": {
-    "en": "No selected text was read. Native browser PDF viewers sometimes do not allow pages to read the selection; you can copy the PDF text first, then paste it into Research Chat.",
-    "zh-CN": "没有读到选中文本。原生浏览器 PDF viewer 有时不允许页面读取选区；可以先复制 PDF 文字，再粘贴到 Research Chat。"
+    "en": "The selection could not be read. Browser PDF viewers may restrict access; copy the PDF text and paste it into Research Chat.",
+    "zh-CN": "没有读到选中文本。浏览器 PDF 阅读器有时不允许页面读取选区；可以先复制 PDF 文字，再粘贴到研究对话。"
   },
   "网页综合调查": {
     "en": "Web comprehensive investigation",
@@ -1350,7 +1573,7 @@
     "zh-CN": "请输入论文收集需求。"
   },
   "请选择 PDF 文件。": {
-    "en": "Please select a PDF file.",
+    "en": "Select a PDF file.",
     "zh-CN": "请选择 PDF 文件。"
   },
   "阅读与讨论": {
@@ -1444,5 +1667,305 @@
   "无法准备讨论": {
     "zh-CN": "无法准备讨论",
     "en": "Unable to prepare this conversation."
+  },
+  "Paper Reader": {
+    "en": "Reader",
+    "zh-CN": "阅读"
+  },
+  "Paper Notes": {
+    "en": "Notes",
+    "zh-CN": "笔记"
+  },
+  "Paper Exp": {
+    "en": "Exp",
+    "zh-CN": "实验"
+  },
+  "Paper Semantic": {
+    "en": "Semantic",
+    "zh-CN": "语义检索"
+  },
+  "Paper Method": {
+    "en": "Method",
+    "zh-CN": "方法"
+  },
+  "Paper Path": {
+    "en": "Path",
+    "zh-CN": "路径"
+  },
+  "Paper Purpose": {
+    "en": "Purpose",
+    "zh-CN": "用途"
+  },
+  "Paper Platform": {
+    "en": "Platform",
+    "zh-CN": "平台"
+  },
+  "Paper Optimization": {
+    "en": "Optimization",
+    "zh-CN": "优化"
+  },
+  "Deep Read done": {
+    "en": "Deep Read done",
+    "zh-CN": "深度阅读已完成"
+  },
+  "Deep Read failed: {p0}": {
+    "en": "Deep Read failed: {p0}",
+    "zh-CN": "深度阅读失败：{p0}"
+  },
+  "Deep Read: {p0} · {p1}%": {
+    "en": "Deep Read: {p0} · {p1}%",
+    "zh-CN": "深度阅读：{p0} · {p1}%"
+  },
+  "No analysis": {
+    "en": "No analysis",
+    "zh-CN": "暂无分析"
+  },
+  "No analysis yet": {
+    "en": "No analysis yet",
+    "zh-CN": "尚无分析"
+  },
+  "No saved turns in this session yet.": {
+    "en": "No saved turns in this session yet.",
+    "zh-CN": "此会话暂无已保存的对话。"
+  },
+  "Describe how to modify this generated image...": {
+    "en": "Describe how to modify this generated image...",
+    "zh-CN": "描述如何修改这张生成的图片…"
+  },
+  "Describe how to redraw or modify this figure... Ctrl/⌘ + Enter to generate": {
+    "en": "Describe how to redraw or modify this figure... Ctrl/⌘ + Enter to generate",
+    "zh-CN": "描述如何重绘或修改此图…按 Ctrl/⌘ + Enter 生成"
+  },
+  "Loading {p0}…": {
+    "en": "Loading {p0}…",
+    "zh-CN": "正在加载{p0}…"
+  },
+  "Retry enrichment": {
+    "en": "Retry enrichment",
+    "zh-CN": "重试补全"
+  },
+  "Token 用量未记录": {
+    "en": "Token usage not recorded",
+    "zh-CN": "Token 用量未记录"
+  },
+  "Provider：{p0} · 账号：{p1} · API：{p2}": {
+    "en": "Provider: {p0} · Account: {p1} · API: {p2}",
+    "zh-CN": "服务商：{p0} · 账号：{p1} · API：{p2}"
+  },
+  "模型：{p0}{p1} ·": {
+    "en": "Model: {p0}{p1} ·",
+    "zh-CN": "模型：{p0}{p1} ·"
+  },
+  "生成 Agent：{p0}": {
+    "en": "Generated by Agent: {p0}",
+    "zh-CN": "生成 Agent：{p0}"
+  },
+  "生成记录": {
+    "en": "Generation record",
+    "zh-CN": "生成记录"
+  },
+  "输入 {p0} · 输出 {p1} · 共 {p2} tokens": {
+    "en": "Input {p0} · Output {p1} · Total {p2} tokens",
+    "zh-CN": "输入 {p0} · 输出 {p1} · 共 {p2} 个词元"
+  },
+  "（Resident 配置）": {
+    "en": " (Resident settings)",
+    "zh-CN": "（Resident 配置）"
+  },
+  "confidence: {p0}": {
+    "en": "confidence: {p0}",
+    "zh-CN": "置信度：{p0}"
+  },
+  "page {p0}": {
+    "en": "page {p0}",
+    "zh-CN": "第 {p0} 页"
+  },
+  "updated {p0}": {
+    "en": "updated {p0}",
+    "zh-CN": "更新于 {p0}"
+  },
+  "Vol. {p0}": {
+    "en": "Vol. {p0}",
+    "zh-CN": "第 {p0} 卷"
+  },
+  "{p0} DBLP papers": {
+    "en": "{p0} DBLP papers",
+    "zh-CN": "{p0} 篇 DBLP 论文"
+  },
+  "{p0} analyses": {
+    "en": "{p0} analyses",
+    "zh-CN": "{p0} 篇分析"
+  },
+  "{p0} matches": {
+    "en": "{p0} matches",
+    "zh-CN": "{p0} 个匹配结果"
+  },
+  "{p0} papers": {
+    "en": "{p0} papers",
+    "zh-CN": "{p0} 篇论文"
+  },
+  "{p0} papers in library": {
+    "en": "{p0} papers in library",
+    "zh-CN": "库中有 {p0} 篇论文"
+  },
+  "{p0} reviews": {
+    "en": "{p0} reviews",
+    "zh-CN": "{p0} 份评审"
+  },
+  "{p0} tokens": {
+    "en": "{p0} tokens",
+    "zh-CN": "{p0} 个词元"
+  },
+  "· {p0} tokens": {
+    "en": "· {p0} tokens",
+    "zh-CN": "· {p0} 个词元"
+  },
+  "{p0}/{p1} papers": {
+    "en": "{p0}/{p1} papers",
+    "zh-CN": "{p0}/{p1} 篇论文"
+  },
+  "{p0}/{p1} papers · {p2} analyses": {
+    "en": "{p0}/{p1} papers · {p2} analyses",
+    "zh-CN": "{p0}/{p1} 篇论文 · {p2} 篇分析"
+  },
+  "{p0} found · {p1} added": {
+    "en": "{p0} found · {p1} added",
+    "zh-CN": "找到 {p0} 篇 · 新增 {p1} 篇"
+  },
+  "今日新增": {
+    "en": "Added today",
+    "zh-CN": "今日新增"
+  },
+  "全部时间": {
+    "en": "Any time",
+    "zh-CN": "全部时间"
+  },
+  "新增时间": {
+    "en": "Added",
+    "zh-CN": "新增时间"
+  },
+  "分析 v0 · 短摘要": {
+    "en": "Analysis v0 · Short summary",
+    "zh-CN": "分析 v0 · 短摘要"
+  },
+  "历史": {
+    "en": "History",
+    "zh-CN": "历史"
+  },
+  "按研究需求发现并采集论文。": {
+    "en": "Discover and collect papers by research needs.",
+    "zh-CN": "按研究需求发现并采集论文。"
+  },
+  "显示更多目录": {
+    "en": "Show more folders",
+    "zh-CN": "显示更多目录"
+  },
+  "暂时无法获取评审状态；任务可能仍在运行，正在重试。": {
+    "en": "Review status is temporarily unavailable; the task may still be running. Retrying.",
+    "zh-CN": "暂时无法获取评审状态；任务可能仍在运行，正在重试。"
+  },
+  "记录问题、判断、摘录或后续 TODO": {
+    "en": "Record questions, judgments, excerpts, or follow-up tasks",
+    "zh-CN": "记录问题、判断、摘录或后续待办"
+  },
+  "语义检索历史": {
+    "en": "Semantic search history",
+    "zh-CN": "语义检索历史"
+  },
+  "采集任务历史": {
+    "en": "Collection task history",
+    "zh-CN": "采集任务历史"
+  },
+  "该次历史结果已不可用，请刷新历史列表。": {
+    "en": "This history result is no longer available. Refresh the history list.",
+    "zh-CN": "该次历史结果已不可用，请刷新历史列表。"
+  },
+  "该次采集历史已不可用，请刷新历史列表。": {
+    "en": "This collection history is no longer available. Refresh the history list.",
+    "zh-CN": "该次采集历史已不可用，请刷新历史列表。"
+  },
+  "该次采集暂无已保存的论文结果。": {
+    "en": "This collection has no saved paper results yet.",
+    "zh-CN": "该次采集暂无已保存的论文结果。"
+  },
+  "账号已变化，请刷新身份并重新打开论文；本次阅读未记录。": {
+    "en": "The account changed. Refresh your identity and reopen the paper; this reading was not recorded.",
+    "zh-CN": "账号已变化，请刷新身份并重新打开论文；本次阅读未记录。"
+  },
+  "Re-run Deep Read": {
+    "en": "Re-run Deep Read",
+    "zh-CN": "重新深度阅读"
+  },
+  "Retry Deep Read": {
+    "en": "Retry Deep Read",
+    "zh-CN": "重试深度阅读"
+  },
+  "Deep Reading": {
+    "en": "Deep Reading",
+    "zh-CN": "正在深度阅读"
+  },
+  "Model generation": {
+    "en": "Model generation",
+    "zh-CN": "模型生成中"
+  },
+  "Extracting PDF": {
+    "en": "Extracting PDF",
+    "zh-CN": "正在提取 PDF"
+  },
+  "Submitting": {
+    "en": "Submitting",
+    "zh-CN": "正在提交"
+  },
+  "{p0} results": {
+    "en": "{p0} results",
+    "zh-CN": "{p0} 条结果"
+  },
+  "Unsorted": {
+    "en": "Unsorted",
+    "zh-CN": "未分类"
+  },
+  "General": {
+    "en": "General",
+    "zh-CN": "常规"
+  },
+  "Paper Model": {
+    "en": "Model",
+    "zh-CN": "模型"
+  },
+  "Paper Provider": {
+    "en": "Provider",
+    "zh-CN": "服务商"
+  },
+  "Paper Account": {
+    "en": "Account",
+    "zh-CN": "账号"
+  },
+  "Library Chat": {
+    "en": "Library Chat",
+    "zh-CN": "论文库对话"
+  },
+  "Ask across the paper library...": {
+    "en": "Ask across the paper library...",
+    "zh-CN": "向论文库提问…"
+  },
+  "Compare or summarize the papers in this collection.": {
+    "en": "Compare or summarize the papers in this collection.",
+    "zh-CN": "比较或总结此列表中的论文。"
+  },
+  "Ask about this paper...": {
+    "en": "Ask about this paper...",
+    "zh-CN": "围绕本篇论文提问…"
+  },
+  "Ask about this paper.": {
+    "en": "Ask about this paper.",
+    "zh-CN": "围绕本篇论文提问。"
+  },
+  "围绕本篇论文提问": {
+    "en": "Ask about this paper",
+    "zh-CN": "围绕本篇论文提问"
+  },
+  "围绕本篇论文提问。": {
+    "en": "Ask about this paper.",
+    "zh-CN": "围绕本篇论文提问。"
   }
 }

@@ -27,20 +27,20 @@
         return;
       }
       if (!detailSectionsLoaded(["notes"])) {
-        $("workspaceMain").innerHTML = detailSectionLoadingHtml("Notes");
+        $("workspaceMain").innerHTML = detailSectionLoadingHtml("Paper Notes");
         return;
       }
       const notes = detail.notes || [];
       $("workspaceMain").innerHTML = window.PortalI18n.html`
           <form class="apiCard" id="noteForm" style="margin-bottom:10px;">
-            <h3>Add note</h3>
+            <h3><!--portal-i18n:"Add note"-->Add note</h3>
             <textarea class="portalControl" id="noteInput" placeholder="记录问题、判断、摘录或后续 TODO"></textarea>
             <div class="portalToolbar paperToolbar" style="justify-content:flex-end;margin-top:8px;">
-              <button class="portalButton is-compact is-primary" type="submit">保存笔记</button>
+              <button class="portalButton is-compact is-primary" type="submit"><!--portal-i18n:"保存笔记"-->保存笔记</button>
             </div>
           </form>
           <div class="reviewOutput">
-            ${notes.length ? notes.map(renderNote).join("") : paperStateHtml(window.PortalI18n.t("No notes yet."))}
+            ${notes.length ? notes.map(renderNote).join("") : paperStateHtml("No notes yet.")}
           </div>
         `;
       $("noteForm")?.addEventListener("submit", event => saveNote(event).catch(alertError));
@@ -53,7 +53,7 @@
               <h3>${esc(note.created_by || "note")}</h3>
               <div class="chips">
                 ${chip(new Date((note.created_at || 0) * 1000).toLocaleString())}
-                <button class="portalButton is-compact is-danger" type="button" data-delete-note="${esc(note.note_id || "")}">删除</button>
+                <button class="portalButton is-compact is-danger" type="button" data-delete-note="${esc(note.note_id || "")}"><!--portal-i18n:"删除"-->删除</button>
               </div>
             </div>
             <div class="markdownBody">${md(note.body || "")}</div>
@@ -100,7 +100,7 @@
       const registering = state.refRegisterInFlight && state.refRegisterInFlight === refId;
       const actions = registeredId
         ? chip("registered", "good")
-        : window.PortalI18n.html`<button class="portalButton is-compact is-primary" type="button" data-register-ref="${esc(refId)}" ${registering ? "disabled" : ""}>${registering ? "Registering..." : "Register"}</button>`;
+        : window.PortalI18n.html`<button class="portalButton is-compact is-primary" type="button" data-register-ref="${esc(refId)}" ${registering ? "disabled" : ""}>${registering ? window.PortalI18n.t("Registering...") : window.PortalI18n.t("Register")}</button>`;
       return window.PortalI18n.html`
           <article class="apiCard refCard ${registeredId ? "clickable" : ""}" ${registeredId ? `data-open-ref-paper="${esc(registeredId)}"` : ""}>
             <div class="refHead">
