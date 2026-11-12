@@ -114,6 +114,47 @@
     root.setAttribute("aria-busy", "true");
     container.replaceChildren(root);
     let timer = 0;
+    let dirty = false;
+    let detailController = null;
+    const messageCache = new Map();
+    const detailInflight = new Map();
+    const detailQueue = [];
+    let activeDetails = 0;
+
+    function cancelDetails() {
+      detailController?.abort();
+      detailController = null;
+      detailInflight.clear();
+      for (const [id, value] of state.details) {
+        if (value.status === "loading") state.details.delete(id);
+      }
+      drainDetails();
+    }
+
+    function drainDetails() {
+      while (detailQueue.length && activeDetails < 2) {
+        const job = detailQueue.shift();
+        if (job.signal.aborted) { job.reject(new DOMException("Closed", "AbortError")); continue; }
+        activeDetails += 1;
+        protocol.loadMessage(residentId, job.id, { signal: job.signal }).then(message => {
+          if (!job.signal.aborted && !state.destroyed) messageCache.set(job.id, message);
+          job.resolve(message);
+        }, job.reject).finally(() => { activeDetails -= 1; drainDetails(); });
+      }
+    }
+
+    function readDetail(id, signal) {
+      if (messageCache.has(id)) return Promise.resolve(messageCache.get(id));
+      if (detailInflight.has(id)) return detailInflight.get(id);
+      const request = new Promise((resolve, reject) => {
+        detailQueue.push({ id, signal, resolve, reject });
+        drainDetails();
+      }).finally(() => {
+        if (detailInflight.get(id) === request) detailInflight.delete(id);
+      });
+      detailInflight.set(id, request);
+      return request;
+    }
 
     function pendingItems() {
       return Array.isArray(state.view?.pending) ? state.view.pending : [];
@@ -294,24 +335,29 @@
 
     async function load() {
       if (state.destroyed) return;
+      if (document.hidden) { dirty = true; return; }
       if (state.loading) {
         state.reloadAgain = true;
         return;
       }
       state.loading = true;
+      dirty = false;
+      let changed = false;
       try {
         const view = await protocol.loadMailbox(residentId);
         if (state.destroyed) return;
+        changed = state.error !== "" || JSON.stringify(state.view) !== JSON.stringify(view || {});
         state.view = view || {};
         state.error = "";
         forgetMissing();
       } catch (error) {
         if (state.destroyed) return;
         state.error = error?.message || String(error);
+        changed = true;
       } finally {
         state.loading = false;
       }
-      render();
+      if (changed) render();
       if (state.reloadAgain) {
         state.reloadAgain = false;
         schedule();
@@ -320,7 +366,9 @@
 
     function schedule() {
       if (state.destroyed) return;
+      dirty = true;
       clearTimeout(timer);
+      if (document.hidden) return;
       timer = setTimeout(load, REFRESH_DELAY_MS);
     }
 
@@ -335,6 +383,7 @@
         toast(window.PortalI18n.text`${label}失败：${error?.message || error}`, "error", 5200);
       } finally {
         state.busy = false;
+        render();
       }
       await load();
     }
@@ -343,11 +392,18 @@
       const id = item.message_id;
       if (["ready", "loading"].includes(state.details.get(id)?.status)) return;
       state.details.set(id, { status: "loading" });
+      const controller = detailController ||= new AbortController();
       try {
         const ids = item.kind === "group" ? (item.members || []).map(member => member.message_id) : [id];
-        const messages = await Promise.all(ids.map(messageId => protocol.loadMessage(residentId, messageId)));
+        // Deduplicate repeated members and reuse already loaded members across groups.
+        const unique = [...new Set(ids)];
+        const values = await Promise.all(unique.map(messageId => readDetail(messageId, controller.signal)));
+        if (controller.signal.aborted || state.destroyed) return;
+        const byId = new Map(unique.map((messageId, index) => [messageId, values[index]]));
+        const messages = ids.map(messageId => byId.get(messageId));
         state.details.set(id, { status: "ready", messages });
       } catch (error) {
+        if (controller.signal.aborted || state.destroyed) return;
         state.details.set(id, { status: "error", error: error?.message || String(error) });
       }
       renderCard();
@@ -480,6 +536,7 @@
         manageHidden: true, restoreFocus: false,
         initialFocus: () => cardOverlay.querySelector("[data-mailbox-prompt-toggle]"),
         onClose: () => {
+          cancelDetails();
           const id = state.card?.id || "";
           state.card = null;
           // The list may have re-rendered while the card was open; return to the item's current button.
@@ -536,6 +593,7 @@
       const found = locate(id);
       if (!found) return undefined;
       ensureCard();
+      if (state.card?.id !== id) cancelDetails();
       state.card = { id, ...found };
       // Harness settings may change between cards; each card reads its own preview.
       if (state.preview?.status !== "loading") state.preview = null;
@@ -657,25 +715,52 @@
     });
     root.addEventListener("dragend", endDrag);
 
-    // The shared Resident store streams this Conversation's events; each change re-reads the Mailbox.
-    const subscription = protocol.acquire?.(residentId, () => schedule()) || null;
+    // Listen to invalidation envelopes, without acquiring/loading the Chat.
+    const relevant = new Set(["resident.queue.changed", "resident.input.state.changed",
+      "resident.state.changed", "conversation.context.cleared"]);
+    const releaseInterest = window.PortalEvents?.watchResident?.(residentId);
+    function onChange(event) {
+      const detail = event?.detail || {};
+      if (detail.snapshot_required
+        || detail.resident_changes?.[residentId]?.some(scope => ["identity", "projection"].includes(scope))
+        || detail.resident_events?.some(item => item.resident_id === residentId && relevant.has(item.event_type))) schedule();
+    }
+    function onReady() { schedule(); }
+    function onVisibility() { if (!document.hidden && dirty) schedule(); }
+    function onResubscribed(event) {
+      if (event?.detail?.added_resident_ids?.includes(residentId)) schedule();
+    }
+    function onIdentity() {
+      // Do not let a newly signed-in actor reuse the previous actor's data.
+      destroy();
+    }
+    window.addEventListener("portal:change", onChange);
+    window.addEventListener("portal:events-ready", onReady);
+    window.addEventListener("portal:events-resubscribed", onResubscribed);
+    document.addEventListener("visibilitychange", onVisibility);
+    window.addEventListener(window.PortalIdentity?.eventName || "portal:identity-changed", onIdentity);
     render();
     void load();
 
-    return {
-      element: root,
-      reload: load,
-      destroy() {
+    function destroy() {
+        if (state.destroyed) return;
         state.destroyed = true;
         clearTimeout(timer);
-        subscription?.destroy?.();
+        cancelDetails();
+        messageCache.clear();
+        releaseInterest?.();
+        window.removeEventListener("portal:change", onChange);
+        window.removeEventListener("portal:events-ready", onReady);
+        window.removeEventListener("portal:events-resubscribed", onResubscribed);
+        document.removeEventListener("visibilitychange", onVisibility);
+        window.removeEventListener(window.PortalIdentity?.eventName || "portal:identity-changed", onIdentity);
         cardDialog?.close?.({ force: true });
         cardDialog?.destroy?.();
         cardSurface?.destroy?.();
         cardOverlay?.remove();
         root.remove();
-      },
-    };
+    }
+    return { element: root, reload: load, destroy };
   }
 
   window.PortalMailboxPanel = Object.freeze({ mount });

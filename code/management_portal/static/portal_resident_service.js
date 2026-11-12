@@ -610,11 +610,11 @@
           message_id: required(payload.message_id, "message_id"),
         }, keyed(payload, "queue-requeue"));
       },
-      message(residentId, messageId) {
+      message(residentId, messageId, options = {}) {
         return execute("GetMessage", {
           resident_id: required(residentId, "resident_id"),
           message_id: required(messageId, "message_id"),
-        }).then(result => result?.message || {});
+        }, { signal: options.signal }).then(result => result?.message || {});
       },
       // What the Provider actually received for a delivered message, and what Portal adds under current settings.
       sentPrompt(residentId, messageId) {

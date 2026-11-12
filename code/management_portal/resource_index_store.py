@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 import threading
+import time
 from collections.abc import Iterator
 from contextlib import contextmanager
 from pathlib import Path
@@ -70,6 +71,9 @@ class IndexStore:
         self._dirty_deletes: set[str] = set()
         self._dirty_adapters: set[str] = set()
         self._deleted_adapters: set[str] = set()
+        # Health observations may advance in memory between durable checks.
+        # Restarting from the older cursor repeats a scan, never skips one.
+        self._checkpoints: dict[str, tuple[float, dict[str, Any]]] = {}
         self._initialize_database()
         self._load_database()
 
@@ -206,6 +210,9 @@ class IndexStore:
                 index_updated_at = self._index_updated_at
             try:
                 with self._connect() as connection:
+                    changes_records = bool(records or deleted_ids or deleted_adapters)
+                    # Checkpoints participate in the same publication order as
+                    # adapter retirement and direct record writes.
                     connection.execute("SELECT pg_advisory_xact_lock(hashtextextended(current_schema(), 0))")
                     connection.executemany(
                         'DELETE FROM resource_index_records WHERE resource_id = %s',
@@ -223,10 +230,11 @@ class IndexStore:
                         '\n                        INSERT INTO resource_index_adapters (adapter, status_json)\n                        VALUES (%s, %s)\n                        ON CONFLICT(adapter) DO UPDATE SET\n                            status_json = excluded.status_json\n                        ',
                         statuses,
                     )
-                    connection.execute(
-                        "\n                        INSERT INTO resource_index_meta (key, value)\n                        VALUES ('index_updated_at', %s)\n                        ON CONFLICT(key) DO UPDATE SET value = excluded.value\n                        WHERE resource_index_meta.value IS DISTINCT FROM excluded.value\n                        ",
-                        (index_updated_at,),
-                    )
+                    if changes_records:
+                        connection.execute(
+                            "\n                        INSERT INTO resource_index_meta (key, value)\n                        VALUES ('index_updated_at', %s)\n                        ON CONFLICT(key) DO UPDATE SET value = excluded.value\n                        WHERE resource_index_meta.value IS DISTINCT FROM excluded.value\n                        ",
+                            (index_updated_at,),
+                        )
                     connection.commit()
             except BaseException:
                 with self._lock:
@@ -345,6 +353,7 @@ class IndexStore:
 
         now = _now_iso()
         with self._lock:
+            self._checkpoints.pop(adapter, None)
             if scan_started_generation is not None:
                 self._drop_newer_direct_changes(adapter, scan_started_generation, validated, delete_ids)
             current_ids = set(self._adapter_ids.get(adapter) or set())
@@ -686,6 +695,7 @@ class IndexStore:
         persist: bool = True,
     ) -> None:
         now = _now_iso()
+        observed = time.monotonic()
         with self._lock:
             previous = self._adapter_status.get(adapter) or {}
             self._adapter_status[adapter] = {
@@ -695,6 +705,16 @@ class IndexStore:
                 "resource_count": len(self._adapter_ids.get(adapter) or set()),
                 "source_state": _json_value(source_state),
             }
+            # Only scan cursors/timestamps may be coalesced. Fingerprints,
+            # errors and other adapter facts still commit immediately.
+            semantic = {key: value for key, value in source_state.items()
+                        if key not in {"checked_at", "sources_since"}}
+            checkpoint = self._checkpoints.get(adapter)
+            if (checkpoint is not None and observed - checkpoint[0] < 60.0
+                    and checkpoint[1] == semantic and not previous.get("last_error")
+                    and adapter not in self._dirty_adapters):
+                return
+            self._checkpoints[adapter] = (observed, _json_value(semantic))
             self._mark_adapters_dirty(upserts=(adapter,))
             self._change_generation += 1
         if persist:
@@ -899,6 +919,19 @@ class IndexStore:
         mark = timer.add("snapshot", mark)
         records = [record for record in records if record['resource_type'] in enabled_types]
         records = prefilter_query_candidates(records, query)
+        from management_portal.society_service import business_fact_views
+        if query.projects:
+            # Dynamic collaboration ownership must be projected first. All
+            # other types retain their indexed project membership, so avoid
+            # decorating unrelated resources before the late full filter.
+            dynamic = set(business_fact_views.PROJECTED_RESOURCE_TYPES)
+            if records_projector_types is None and records_projector is not None:
+                dynamic.update(record["resource_type"] for record in records)
+            else:
+                dynamic.update(records_projector_types or ())
+            records = [record for record in records
+                       if record["resource_type"] in dynamic or query.projects.intersection(
+                           str(project) for project in (record.get("attributes") or {}).get("project_ids") or ())]
         mark = timer.add("prefilter", mark)
         if records_projector is not None and (
             records_projector_types is None or
@@ -907,7 +940,7 @@ class IndexStore:
             records = records_projector(records)
         mark = timer.add("descriptors", mark)
         current_facts_needed = any(
-            record["resource_type"] in {"resident", "lineage", "workspace", "workbench", "family"}
+            record["resource_type"] in business_fact_views.PROJECTED_RESOURCE_TYPES
             for record in records
         )
         if current_facts_needed:
@@ -999,11 +1032,16 @@ class IndexStore:
         return item
 
     def authorization_snapshot(self) -> dict[str, Any]:
+        # Record values are replaced, never mutated in place. Capture their
+        # references and the matching revision atomically; detach attributes
+        # after releasing the shared index lock.
         with self._lock:
-            return {"revision": self._index_updated_at, "records": [
+            revision = self._index_updated_at
+            records = tuple(self._records.values())
+        return {"revision": revision, "records": [
                 {"resource_id": record["resource_id"], "resource_type": record["resource_type"],
                  "title": record.get("title", ""), "attributes": _json_value(record.get("attributes") or {})}
-                for record in self._records.values()
+                for record in records
             ]}
 
     @staticmethod
@@ -1075,9 +1113,9 @@ class IndexStore:
         actor: str,
     ) -> dict[str, Any] | None:
         item = self._record_for_read(record)
-        if item.get("resource_type") in {"resident", "lineage", "workspace", "family"}:
-            from management_portal.society_service.business_fact_views import project_resources
-            return project_resources([item])[0]
+        from management_portal.society_service import business_fact_views
+        if item.get("resource_type") in business_fact_views.PROJECTED_RESOURCE_TYPES:
+            return business_fact_views.project_resources([item])[0]
         return item
 
     def internal_get(self, resource_id: str) -> dict[str, Any]:

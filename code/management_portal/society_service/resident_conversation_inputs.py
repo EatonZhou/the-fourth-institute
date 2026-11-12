@@ -424,6 +424,18 @@ class ConversationInputs:
         self, requests: Sequence[tuple[str, str]],
     ) -> dict[tuple[str, str], dict[str, Any]]:
         """Resolve the requested input states and terminal receipts in batches."""
+        result = self.input_statuses_by_id(requests)
+        values: dict[str, list[dict[str, Any]]] = {}
+        for (resident, _), value in result.items():
+            values.setdefault(resident, []).append(value)
+        self._fill_replies_many(values)
+        self._fill_work_many(values)
+        return result
+
+    def input_statuses_by_id(
+        self, requests: Sequence[tuple[str, str]],
+    ) -> dict[tuple[str, str], dict[str, Any]]:
+        """Delivery outcomes without loading display replies or work details."""
         requested = list(dict.fromkeys(requests))
         if not requested:
             return {}
@@ -437,7 +449,7 @@ class ConversationInputs:
         values: dict[str, list[dict[str, Any]]] = {}
         for row in rows:
             values.setdefault(str(row["resident_id"]), []).append(input_state_value(row))
-        self._with_replies_many(values)
+        self.with_outcomes_many(values)
         return {(resident, value["message_id"]): value for resident, items in values.items() for value in items}
 
     def reply_rounds(
@@ -495,6 +507,14 @@ class ConversationInputs:
         states: Sequence[str] = (),
         limit: int = 0,
     ) -> list[dict[str, Any]]:
+        values = self.input_statuses(resident_id, states=states, limit=limit)
+        self._fill_replies_many({required_resident_id(resident_id): values})
+        return values
+
+    def input_statuses(
+        self, resident_id: object, *, states: Sequence[str] = (), limit: int = 0,
+    ) -> list[dict[str, Any]]:
+        """Select delivery outcomes, keeping pending receipt reconciliation."""
         stream_id = required_resident_id(resident_id)
         requested_states = tuple(dict.fromkeys(
             str(item or "").strip().lower()
@@ -528,7 +548,6 @@ class ConversationInputs:
         values.sort(key=lambda value: (value["updated_at"], value["message_id"]), reverse=True)
         if safe_limit:
             values = values[:safe_limit]
-        self._fill_replies_many({stream_id: values})
         return values
 
     def latest_notifiable_input_states_for_messages(

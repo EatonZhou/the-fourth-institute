@@ -209,6 +209,12 @@ class ResidentConversationRepository:
     ) -> dict[tuple[str, str], dict[str, Any]]:
         return self.inputs.input_states_by_id(requests)
 
+    def input_statuses_by_id(self, requests: Sequence[tuple[str, str]]) -> dict:
+        return self.inputs.input_statuses_by_id(requests)
+
+    def input_statuses(self, resident_id: object, *, states: Sequence[str] = (), limit: int = 0) -> list[dict]:
+        return self.inputs.input_statuses(resident_id, states=states, limit=limit)
+
     def reply_rounds(
         self, requests: Sequence[tuple[str, str]], *, limit: int = 20,
     ) -> dict[tuple[str, str], dict[str, Any]]:

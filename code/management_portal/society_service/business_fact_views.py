@@ -4,6 +4,10 @@ import copy
 from .errors import ResourceProjectionConflict
 from . import identity_contract
 
+# Query owners must preserve these candidates until current domain facts
+# have been applied. Extend this contract with every new projection type.
+PROJECTED_RESOURCE_TYPES = frozenset({'resident', 'lineage', 'workspace', 'family'})
+
 
 def canonical_view(record, *, resource_id, actor=''):
     identity_contract.validate_id(resource_id, 'resident' if resource_id.startswith('resident_') else 'lineage')

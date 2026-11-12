@@ -130,6 +130,98 @@ function mailbox({ connected = false, targetRead, cachedSnapshot, clearResult, e
 }
 
 const checks = {
+  async 'state-demand-recovery'() {
+    const id = 'resident_111111111111';
+    const app = mailbox({connected:true});
+    const protocol = app.window.PortalResidentProtocol;
+    let workState = 'running', stateReads = 0, releaseRead;
+    app.window.PortalResidentService = {loadStates: async ids => {
+      stateReads++;
+      const result = {states:ids.map(resident_id=>({resident_id,
+        state:{work_state:workState}, viewer_state:{unread:true}, cursor:stateReads}))};
+      if (releaseRead) await new Promise(resolve => {releaseRead = resolve;});
+      return result;
+    }};
+    const value = {...payload, entries:[{...payload.entries[0],key:`resident:${id}`,resident_id:id,unread:true}],
+      mailbox_summary:{entries:[{...payload.entries[0],key:`resident:${id}`,resident_id:id,unread:true}]},next_page_token:null};
+    // Retain an actual Chat consumer, so releasing Inbox cannot clear the
+    // shared cached snapshot. No fake protocol/store implementation is used.
+    const chat = protocol.acquire(id,()=>{}, {load:false,consumer:'chat'});
+    try {
+      app.queue(value);await app.advance(300);
+      app.queue(value);app.root.dispatchEvent(new app.window.Event('pointerenter'));await app.advance(400);
+      assert.equal(stateReads,1);
+      assert.equal(app.store.snapshot().entries[0].status,'running');
+      app.root.dispatchEvent(new app.window.Event('pointerleave'));await drain();
+      assert.equal(protocol.subscriptionSnapshot(id).state_consumers,0);
+      workState='completed';
+      app.queue(value);app.root.dispatchEvent(new app.window.Event('pointerenter'));await app.advance(400);
+      assert.equal(stateReads,2,'reopening forces exactly one calibration despite retained Chat cache');
+      assert.equal(app.store.snapshot().entries[0].status,'idle','completed work is normalized to idle controls');
+      assert.equal(app.store.snapshot().entries[0].resident_state_cursor,stateReads);
+      for (const retainChat of [true,false]) {
+        if (!retainChat) chat.destroy();
+        workState='running';app.queue(value);await app.store.refresh({force:true,foreground:true});
+        await app.advance(40);
+        Object.defineProperty(app.window.document,'hidden',{value:true,configurable:true});
+        app.window.document.dispatchEvent(new app.window.Event('visibilitychange'));await drain();
+        assert.equal(protocol.subscriptionSnapshot(id).state_consumers,0);
+        workState='completed';
+        const before=stateReads;
+        // Chat reconciliation is already in flight when Inbox rejoins. Its
+        // request must be shared, regardless of visibility listener order.
+        if (retainChat) releaseRead = true;
+        app.queue(value);
+        Object.defineProperty(app.window.document,'hidden',{value:false,configurable:true});
+        app.window.document.dispatchEvent(new app.window.Event('visibilitychange'));await drain();await drain();
+        if (retainChat) {assert.equal(typeof releaseRead,'function');releaseRead();releaseRead=null;}
+        await app.advance(400);
+        assert.equal(stateReads,before+1,'visibility recovery calibrates once, with or without shared Chat');
+        assert.equal(app.store.snapshot().entries[0].status,'idle');
+        assert.equal(app.store.snapshot().entries[0].resident_state_cursor,stateReads);
+        assert.equal(protocol.subscriptionSnapshot(id).state_consumers,1);
+        assert.equal(app.store.snapshot().unreadCount,1);
+      }
+      app.root.dispatchEvent(new app.window.Event('pointerleave'));await drain();
+      workState='running';releaseRead=true;
+      app.queue(value);app.root.dispatchEvent(new app.window.Event('pointerenter'));await app.advance(10);
+      assert.equal(typeof releaseRead,'function');
+      app.window.PortalIdentity.username=()=> 'other-viewer';
+      app.queue({...payload,entries:[],mailbox_summary:{entries:[]},next_page_token:null});
+      app.window.dispatchEvent(new app.window.Event('portal:identity-changed'));
+      releaseRead();releaseRead=null;await app.advance(400);
+      assert.equal(app.store.snapshot().entries.length,0,'old-actor calibration cannot restore rows');
+      assert.equal(protocol.stateSnapshot(id).ready,false,'old-actor calibration cannot restore state');
+      assert.equal(protocol.subscriptionSnapshot(id).state_consumers,0);
+    } finally {chat.destroy();await app.close();}
+  },
+  async 'closed-state-demand'() {
+    const id = 'resident_111111111111';
+    const app = mailbox({connected:true});
+    let stateReads = 0;
+    app.window.PortalResidentService = {loadStates: async ids => {
+      stateReads++;
+      return {states:ids.map(resident_id=>({resident_id,state:{work_state:'idle'},cursor:1}))};
+    }};
+    try {
+      const value = {...payload, entries:[{...payload.entries[0], key:`resident:${id}`,resident_id:id,unread:true}],
+        mailbox_summary:{entries:[{...payload.entries[0],key:`resident:${id}`,resident_id:id,unread:true}]},next_page_token:null};
+      app.queue(value);await app.advance(300);
+      assert.equal(stateReads,0,'closed index does not request full controls');
+      assert.equal(app.window.PortalResidentProtocol.subscriptionSnapshot(id).state_consumers,0);
+      const before=app.store.snapshot().unreadCount;
+      app.queue(value);app.root.dispatchEvent(new app.window.Event('pointerenter'));await app.advance(400);
+      assert.equal(app.window.PortalResidentProtocol.subscriptionSnapshot(id).state_consumers,1);
+      assert.ok(stateReads>0);
+      app.root.dispatchEvent(new app.window.Event('pointerleave'));await drain();
+      assert.equal(app.window.PortalResidentProtocol.subscriptionSnapshot(id).state_consumers,0);
+      assert.equal(app.store.snapshot().unreadCount,before,'badge remains index-owned');
+      const readAtClose=stateReads;
+      app.window.dispatchEvent(new app.window.Event('focus'));
+      app.queue(value);await app.advance(400);
+      assert.equal(stateReads,readAtClose,'closed focus refresh does not reattach states');
+    } finally {await app.close();}
+  },
   async 'conversation-mute'() {
     const original = { ...payload.entries[0], unread: true, muted: false, attention_unread: true, read_revision: 10 };
     const calls = [], warnings = [];
@@ -311,6 +403,12 @@ const checks = {
       assert.equal(app.reads.length, 1);
       assert.equal(app.banner.hidden, true);
       assert.equal(app.rows().length, 2);
+      app.queue({...payload, entries: ids.map((resident_id, i) => ({
+        ...payload.entries[i], key: `resident:${resident_id}`, resident_id,
+      })), next_page_token: null});
+      // Running state only needs repaint while the list is displayed.
+      app.root.dispatchEvent(new app.window.Event('pointerenter'));
+      await app.advance(300);
       sub = app.window.PortalResidentProtocol.acquireStates(ids, () => {}, {load: false});
       missing = true;
       await sub.load({force: true}); await app.advance(40);

@@ -89,6 +89,70 @@ def test_pending_batches_queries_and_rechecks_permissions_next_call(resident_rec
     assert len(checks) == 3
 
 
+def test_pending_batches_identity_without_workspace_reads(resident_record, allowed, monkeypatch, record_property):
+    from management_portal.society_service import resident_catalog, resident_record_domain
+
+    _register_test_member(resident_record, 'synthetic worker')
+    repo = resident_conversation_stream.get_repository()
+    holders = [resident_record['resident_id'], MEMBER]
+    sources = [_ask(repo, holder, 'CASE-A') for holder in holders]
+    catalog = resident_catalog.get_catalog()
+    original = catalog.get_identity_records
+    batches = []
+
+    def identities(requested):
+        batches.append(list(requested))
+        return original(batches[-1])
+
+    def forbidden(*args, **kwargs):
+        raise AssertionError('pending reads must not assemble full Workspace projections')
+
+    monkeypatch.setattr(catalog, 'get_identity_records', identities)
+    monkeypatch.setattr(resident_record_domain, 'find_resident', forbidden)
+    listed = _pending('CASE-A')
+    assert {item['source_message_id'] for item in listed} == {source['message_id'] for source in sources}
+    assert batches == [holders]
+    record_property('before_full_resident_reads', len(holders))
+    record_property('after_full_resident_reads', 0)
+    record_property('after_identity_batches', len(batches))
+
+    # A removed identity is omitted by the canonical batch, never resurrected
+    # through a full-record fallback. The other holder remains answerable.
+    monkeypatch.setattr(catalog, 'get_identity_records', lambda requested: original([holders[1]]))
+    assert [item['source_resident_id'] for item in _pending('CASE-A')] == [holders[1]]
+
+
+def test_pending_skips_finished_family_questions_before_relay_reads(marked_round, allowed, monkeypatch,
+                                                                  record_property):
+    facade, repo, outer, inner, native, service, save = marked_round
+    save('userInputResponse', status='expired')
+    sources = []
+    for _ in range(3):
+        asked = resident_input_queue_domain.build_message('agent', CARD, MEMBER)
+        asked['reply_to_message_id'] = inner['message_id']
+        sources.append(repo.append_message(MEMBER, asked))
+    _answer(repo, MEMBER, sources[1])
+    repo.close_question_set(MEMBER, sources[2]['message_id'], actor='CASE-A')
+    original = family_facade.relayed_replies_many
+    batches = []
+
+    def relays(records, requested):
+        batches.append(requested)
+        # Identity-only reads must retain the facade's canonical Family role.
+        assert family_facade.is_facade(records[facade['resident_id']])
+        return original(records, requested)
+
+    monkeypatch.setattr(family_facade, 'relayed_replies_many', relays)
+    listed = _pending('CASE-A')
+    assert [item['source_message_id'] for item in listed] == [sources[0]['message_id']]
+    relayed_ids = batches[0][facade['resident_id']]
+    assert sources[0]['message_id'] in relayed_ids
+    assert sources[1]['message_id'] not in relayed_ids
+    assert sources[2]['message_id'] not in relayed_ids
+    record_property('before_question_set_relay_candidates', len(sources))
+    record_property('after_question_set_relay_candidates', 1)
+
+
 @pytest.fixture
 def allowed(monkeypatch):
     """Everyone may answer everywhere unless a test narrows it."""

@@ -44,7 +44,7 @@ def quota_switch(record, actor):
         if not requests:
             return
         links = family_facade.relay_links(facade)
-        source_states = repository.input_states_by_id([(fid, mid) for mid in requests])
+        source_states = repository.input_statuses_by_id([(fid, mid) for mid in requests])
         linked, unlinked = {}, {}
         for mid, roots in requests.items():
             source = source_states.get((fid, mid), {})
@@ -55,7 +55,13 @@ def quota_switch(record, actor):
                 linked.setdefault((link["resident_id"], link["message_id"]), set()).update(roots)
             elif source.get("state") in {"queued", "failed"}:
                 unlinked[mid] = roots
-        work = resident_mailbox.InputProjection(list(linked), repository).states() if linked else {}
+        # Completed independent inputs cannot follow a Mailbox group. Their
+        # delivery outcomes suffice; only unfinished candidates need the
+        # richer grouping/work/reply projection. Nested facades are still
+        # followed below even when their routing receipt is completed.
+        outcomes = repository.input_statuses_by_id(list(linked)) if linked else {}
+        pending = [key for key, state in outcomes.items() if _unfinished(state)]
+        work = resident_mailbox.InputProjection(pending, repository).states() if pending else {}
         nested = {}
         for (rid, mid), roots in linked.items():
             target = get_record(rid)
@@ -79,7 +85,7 @@ def quota_switch(record, actor):
             walk(get_record(rid), messages, depth + 1)
 
     fid = record['resident_id']
-    inputs = repository.input_states(fid, states=("queued", "failed"))
+    inputs = repository.input_statuses(fid, states=("queued", "failed"))
     ids = set(family_facade.relay_links(record)) | {item['message_id'] for item in inputs}
     walk(record, {mid: {mid} for mid in ids}, 0)
     visible = {rid: records[rid] for rid in candidates

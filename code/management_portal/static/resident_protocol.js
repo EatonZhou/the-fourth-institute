@@ -197,8 +197,8 @@
     return currentActorResponse(window.PortalResidentService.requeueMessage(payload));
   }
 
-  function loadMessage(residentId, messageId) {
-    return currentActorResponse(window.PortalResidentService.message(residentId, messageId));
+  function loadMessage(residentId, messageId, options = {}) {
+    return currentActorResponse(window.PortalResidentService.message(residentId, messageId, options));
   }
 
   function loadSentPrompt(residentId, messageId) {

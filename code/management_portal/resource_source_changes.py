@@ -31,6 +31,7 @@ from __future__ import annotations
 import fnmatch
 import json
 import os
+import stat
 import sys
 from typing import Any
 
@@ -89,10 +90,23 @@ def find_changes(request: dict[str, Any]) -> dict[str, Any]:
             changed.append(str(path))
     resolved: dict[str, str] = {}
     missing: list[str] = []
-    for path in request.get("paths") or ():
+    parents: dict[str, str] = {}
+    for path in dict.fromkeys(request.get("paths") or ()):
         path = str(path)
         expanded = os.path.expanduser(path)
-        resolved[path] = os.path.realpath(expanded)
+        # Resolve each shared parent once per check. Never retain this cache
+        # across checks: symlink edits and moves must be observed next time.
+        parent, leaf = os.path.split(expanded)
+        try:
+            linked = stat.S_ISLNK(os.lstat(expanded).st_mode)
+        except OSError:
+            linked = False
+        if linked or leaf in {"", ".", ".."}:
+            resolved[path] = os.path.realpath(expanded)
+        else:
+            if parent not in parents:
+                parents[parent] = os.path.realpath(parent or ".")
+            resolved[path] = os.path.join(parents[parent], leaf)
         if not os.path.exists(expanded):
             missing.append(path)
     return {

@@ -333,7 +333,7 @@ def list_user_pending_requests(actor: str) -> dict[str, list[dict[str, Any]]]:
     Raises ``IndexNotReady`` rather than return a list that could miss one.
     """
 
-    from . import resident_conversation_stream, resident_record_domain
+    from . import resident_catalog, resident_conversation_stream
     from .state_store import get_lineage_data_store
 
     user = canonical_actor_id(actor)
@@ -350,32 +350,37 @@ def list_user_pending_requests(actor: str) -> dict[str, list[dict[str, Any]]]:
             (_user_key(user),),
         ).fetchall()
     indexed = time.perf_counter()
-    records: dict[str, dict[str, Any] | None] = {}
     question_states = repository.question_set_states([
         (str(row['source_resident_id']), str(row['source_message_id']))
         for row in rows if row['kind'] == 'question_set'
     ])
     questions_read = time.perf_counter()
+    # Finished question rows remain until housekeeping. Their authoritative
+    # state already rules them out, so do not resolve their Residents or walk
+    # Family relays just to discard them again below.
+    candidates = [row for row in rows if row['kind'] != 'question_set' or question_states.get(
+        (str(row['source_resident_id']), str(row['source_message_id']))
+    ) == 'open']
+    # Authorization and relay validation need identity/configuration/Family
+    # roles, not Workspace filesystem projections. Keep this snapshot local to
+    # one refresh; permissions are still checked afresh on every read.
+    records = {record['resident_id']: record for record in
+               resident_catalog.get_catalog().get_identity_records(
+                   dict.fromkeys(str(row['resident_id']) for row in candidates))}
     from . import family_facade
-    for row in rows:
-        place = str(row['resident_id'])
-        if place not in records:
-            records[place] = resident_record_domain.find_resident(place)
     records_read = time.perf_counter()
     by_place: dict[str, list[str]] = {}
-    for row in rows:
+    for row in candidates:
         if row['resident_id'] != row['source_resident_id']:
             by_place.setdefault(str(row['resident_id']), []).append(str(row['source_message_id']))
-    relay_replies = family_facade.relayed_replies_many(records, by_place)
+    relay_replies = family_facade.relayed_replies_many(records, by_place) if by_place else {}
     relays_read = time.perf_counter()
     auth_seconds = 0.0
     answerable: dict[tuple[str, str], bool] = {}
     result: list[dict[str, Any]] = []
-    for row in rows:
+    for row in candidates:
         place = str(row["resident_id"])
-        if place not in records:
-            records[place] = resident_record_domain.find_resident(place)
-        place_record = records[place]
+        place_record = records.get(place)
         try:
             waiting = _waiting(row, place_record, repository, question_states, relay_replies)
         except KeyError:

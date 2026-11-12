@@ -25,6 +25,8 @@ def view(monkeypatch):
         input_states_by_id=lambda pairs: {key: states[key] for key in pairs if key in states},
     )
     entries = states
+    repository.input_statuses = repository.input_states
+    repository.input_statuses_by_id = repository.input_states_by_id
     monkeypatch.setattr(projection.resident_conversation_stream, 'get_repository', lambda: repository)
     monkeypatch.setattr(projection.resident_mailbox, '_groups_of', lambda *args: {})
     monkeypatch.setattr(projection.resident_record_domain, 'find_resident', records.get)
@@ -72,6 +74,33 @@ def test_exact_linked_owners_multiple_requests_and_permissions(view):
 def test_finished_worker_is_not_a_blocker(view, terminal):
     view.link('facade', 'a', 'worker', 'm', terminal)
     assert view.read() == []
+
+
+def test_finished_history_does_not_load_group_or_reply_details(view, monkeypatch):
+    for i in range(500):
+        view.link('facade', f'old-{i}', 'worker', f'finished-{i}', 'completed')
+    view.link('facade', 'current', 'worker', 'unfinished')
+    grouped = []
+    original = projection.resident_mailbox.InputProjection
+    def selected(pairs, repository):
+        grouped.extend(pairs)
+        return original(pairs, repository)
+    monkeypatch.setattr(projection.resident_mailbox, 'InputProjection', selected)
+    result = view.read()
+    assert result[0]['request_message_ids'] == ['current']
+    assert grouped == [('worker', 'unfinished')]
+
+
+def test_status_reads_do_not_hydrate_replies_or_work(input_delivery, monkeypatch):
+    repository = projection.resident_conversation_stream.get_repository()
+    rid = input_delivery['resident_id']
+    repository.set_input_state(rid, 'status-read', 'completed')
+    def forbidden(*args):
+        raise AssertionError('status-only reads must not hydrate replies/work')
+    monkeypatch.setattr(repository.inputs, '_fill_replies_many', forbidden)
+    monkeypatch.setattr(repository.inputs, '_fill_work_many', forbidden)
+    assert repository.input_statuses_by_id([(rid, 'status-read')])[(rid, 'status-read')]['state'] == 'completed'
+    assert any(row['message_id'] == 'status-read' for row in repository.input_statuses(rid, states=('completed',)))
 
 
 def test_cancelled_source_hidden_member_and_nonquota_do_not_offer_switch(view):

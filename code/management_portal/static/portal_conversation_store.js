@@ -205,7 +205,10 @@
   }
 
   function syncResidentStates() {
-    const residentIds = [...new Set(state.entries.map(item => String(item?.resident_id || "")).filter(Boolean))].sort();
+    // The index/summary owns global unread; full controls are only needed
+    // while the list is displayed. Chat consumers keep their own demand.
+    const residentIds = state.inboxOpen && !document.hidden
+      ? [...new Set(state.entries.map(item => String(item?.resident_id || "")).filter(Boolean))].sort() : [];
     const signature = JSON.stringify([username(), residentIds]);
     if (signature === residentStateSignature) return;
     residentStateSignature = signature;
@@ -224,7 +227,7 @@
         residentStateFrame = 0;
         emit("resident-state");
       });
-    }, { consumer: "inbox" });
+    }, { consumer: "inbox", force: true });
     previousCollection?.destroy();
   }
 
@@ -715,6 +718,7 @@
     if (state.inboxOpen === next) return;
     state.inboxOpen = next;
     if (next) refresh({ force: true, foreground: true }).catch(() => {});
+    else syncResidentStates();
   }
 
   function refresh(options = {}) {
@@ -729,13 +733,15 @@
     if (options.foreground !== true) return indexRead;
     if (foregroundStateRefresh) return Promise.all([indexRead, foregroundStateRefresh]).then(([payload]) => payload);
     const actorRevision = state.actorRevision;
-    const hadStates = Boolean(residentStateCollection);
+    const previousStates = residentStateCollection;
     // Reopening or refreshing Mailbox must calibrate both authorities. Merely
     // rereading the index leaves an unchanged membership's cached states intact.
     const request = indexRead.then(async payload => {
       if (actorRevision !== state.actorRevision) return null;
       const collection = residentStateCollection;
-      if (collection) await collection.load({ force: hadStates });
+      // Newly acquired demand already starts one forced calibration. Join it
+      // rather than issuing another when its response beats the index read.
+      if (collection) await collection.load({ force: collection === previousStates });
       return payload;
     }).finally(() => {
       if (foregroundStateRefresh !== request) return;
@@ -1310,7 +1316,11 @@
     }
   });
   document.addEventListener("visibilitychange", () => {
-    if (document.hidden) return;
+    if (document.hidden) { syncResidentStates(); return; }
+    // Let all visibility invalidations finish before reacquiring list demand.
+    // Acquisition itself forces calibration, independent of listener ordering;
+    // an active Chat's shared state request can be joined by that calibration.
+    Promise.resolve().then(syncResidentStates);
     indexRefresh.invalidate({ delay: EVENT_REFRESH_DELAY });
     for (const [residentId, cursor] of state.targetWantedCursors) {
       scheduleResidentRefresh(residentId, cursor);
