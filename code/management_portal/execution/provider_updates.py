@@ -395,7 +395,10 @@ class KimiRuntime(ProviderRuntime):
         return (npm_version("@moonshot-ai/kimi-code", self.VERSION_RANGE),)
 
     def installed(self) -> tuple[str, ...]:
-        return (linked_version(self.link(), "kimi-code-"),)
+        link = self.link()
+        if not link.exists():
+            return ("0",)
+        return (run_command(str(npm_binary(link, "kimi")), "--version", timeout=60),)
 
     @diagnosed("dependency_install")
     def stage(self, versions: tuple[str, ...]) -> Path:

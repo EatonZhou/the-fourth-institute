@@ -468,6 +468,33 @@ def test_npm_range_chooses_latest_stable_compatible_release(monkeypatch):
     assert calls == [('npm', 'view', '@moonshot-ai/kimi-code@~2.4.0', 'version', '--json')]
 
 
+def test_kimi_installed_version_comes_from_binary_in_custom_directory(monkeypatch, tmp_path):
+    root = tmp_path / "kimi-code-2.4.1-portal-deny-all-v1"
+    root.mkdir()
+    link = tmp_path / "current"
+    link.symlink_to(root, target_is_directory=True)
+    runtime = updates.KimiRuntime()
+    monkeypatch.setattr(runtime, "link", lambda: link)
+    calls = []
+
+    def command(*args, **kwargs):
+        calls.append((args, kwargs))
+        return "2.4.1"
+
+    monkeypatch.setattr(updates, "run_command", command)
+    installed = runtime.installed()
+    assert installed == ("2.4.1",)
+    assert runtime.supports_versions(installed)
+    assert not updates._newer(("2.4.1",), installed)
+    assert calls == [((str(updates.npm_binary(link, "kimi")), "--version"), {"timeout": 60})]
+
+
+def test_kimi_missing_runtime_reports_zero(monkeypatch, tmp_path):
+    runtime = updates.KimiRuntime()
+    monkeypatch.setattr(runtime, "link", lambda: tmp_path / "missing")
+    assert runtime.installed() == ("0",)
+
+
 def test_kimi_incompatible_protocol_is_not_ready_or_staged(monkeypatch, tmp_path):
     runtime = updates.KimiRuntime()
     monkeypatch.setattr(runtime, 'installed', lambda: ('2.5.0',))
