@@ -204,6 +204,11 @@ class AIProviderRegistry:
             raise ValueError("empty AI provider secret")
         return value
 
+    def configured_secret(self, item: dict[str, Any]) -> str:
+        """An absent key is anonymous; a configured unreadable/empty key is an error."""
+        path = self.secret_path(item)
+        return self.read_secret(path) if path else ""
+
     @staticmethod
     def headers(
         provider: str,
@@ -211,10 +216,11 @@ class AIProviderRegistry:
         item: dict[str, Any],
     ) -> dict[str, str]:
         headers = {
-            "Authorization": f"Bearer {key}",
             "Accept": "application/json",
             "User-Agent": "TFIPortal/1.0",
         }
+        if key:
+            headers["Authorization"] = f"Bearer {key}"
         extra = item.get("default_headers")
         if isinstance(extra, dict):
             for header_key, header_value in extra.items():
@@ -241,17 +247,16 @@ class AIProviderRegistry:
         if item["id"] != provider_id or not self.is_enabled(item):
             raise ValueError(f"AI provider is not available: {provider_id}")
         base_url, auth = self.harness_endpoint(item, protocol) if protocol else (self.base_url(item), "bearer")
-        secret_path = self.secret_path(item)
-        if not base_url or not secret_path:
+        if not base_url:
             raise ValueError(
                 f"AI provider metadata is incomplete: {provider_id}"
             )
         provider = str(item.get("provider") or "").strip().lower()
-        secret = self.read_secret(secret_path)
+        secret = self.configured_secret(item)
         headers = self.headers(provider, secret, item)
         if protocol == "anthropic_messages":
             headers["anthropic-version"] = "2023-06-01"
-            if auth == "x-api-key":
+            if auth == "x-api-key" and secret:
                 headers.pop("Authorization", None)
                 headers["x-api-key"] = secret
         headers["Content-Type"] = "application/json"

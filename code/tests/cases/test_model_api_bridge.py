@@ -232,6 +232,24 @@ def _post(bridge, payload, token=None, extra_headers=None):
         return (list(stream.sse(response)) if payload.get("stream") else json.load(response))
 
 
+@pytest.mark.parametrize("protocol", [wire.CHAT, wire.MESSAGES])
+def test_anonymous_upstream_keeps_configured_protocol_without_empty_auth(endpoint, protocol):
+    from management_portal.model_api_bridge import connection, open_upstream
+
+    server, entry = endpoint
+    entry.pop("api_key_file")
+    entry["kind"] = "openai_compatible_chat" if protocol == wire.CHAT else protocol
+    if protocol == wire.MESSAGES:
+        entry["protocols"] = {protocol: {"auth": "x-api-key"}}
+    server.protocol, server.json = protocol, True
+    assert connection(entry, protocol)[2] == ""
+    with open_upstream(entry, protocol, {"model": "test-model", "messages": [], "stream": False}) as response:
+        json.load(response)
+    headers = server.requests[0][2]
+    assert "Authorization" not in headers and "X-Api-Key" not in headers
+    assert headers["X-Team"] == "lab"
+
+
 @pytest.mark.parametrize("target,upstream", [(wire.MESSAGES, wire.RESPONSES), (wire.MESSAGES, wire.CHAT), (wire.RESPONSES, wire.MESSAGES)])
 @pytest.mark.parametrize("as_json", [False, True])
 def test_harness_tool_round_trip_uses_only_selected_protocol_and_credentials(endpoint, target, upstream, as_json):

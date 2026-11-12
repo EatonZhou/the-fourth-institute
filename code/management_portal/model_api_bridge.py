@@ -41,12 +41,12 @@ class _NoRedirect(urllib.request.HTTPRedirectHandler):
 
 def open_upstream(entry, protocol, payload):
     base, auth = AIProviderRegistry.harness_endpoint(entry, protocol)
-    key = AIProviderRegistry.read_secret(AIProviderRegistry.secret_path(entry))
+    key = shared_ai_provider_registry.configured_secret(entry)
     headers = AIProviderRegistry.headers(str(entry.get("provider") or ""), key, entry)
     if protocol == wire.MESSAGES:
         path = "/v1/messages"
         headers["anthropic-version"] = "2023-06-01"
-        if auth == "x-api-key":
+        if auth == "x-api-key" and key:
             headers.pop("Authorization", None)
             headers["x-api-key"] = key
     else:
@@ -347,7 +347,7 @@ def connection(entry, target, *, account_id=""):
     omitted = AIProviderRegistry.harness_parameter_contracts(entry).get(target, {}).get('omitted_advisory_fields', [])
     if wire.upstream(entry, target) == target and not omitted:
         base, auth = AIProviderRegistry.harness_endpoint(entry, target)
-        key = AIProviderRegistry.read_secret(AIProviderRegistry.secret_path(entry))
+        key = shared_ai_provider_registry.configured_secret(entry)
         return base, auth, key
     api_id = entry.get("api_id") or entry["id"]
     identity = (api_id, account_id, target)

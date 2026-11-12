@@ -48,6 +48,39 @@ def test_windows_transport_adds_ca_roots_without_disabling_verification(monkeypa
     assert len(calls) == 1
 
 
+@pytest.mark.parametrize("protocol", ["openai_chat", "anthropic_messages"])
+def test_anonymous_model_api_omits_auth_headers(monkeypatch, protocol):
+    import io
+    from management_portal import ai_provider_registry as module
+
+    registry = AIProviderRegistry()
+    entry = {"id": "local", "kind": "openai_compatible_chat" if protocol == "openai_chat" else protocol,
+             "base_url": "http://127.0.0.1:12345/v1"}
+    requests = []
+    def urlopen(request, **kwargs):
+        requests.append(request)
+        assert request.get_header("Authorization") is None
+        assert request.get_header("X-api-key") is None
+        return io.BytesIO(b'{"ok":true}')
+    monkeypatch.setattr(module.urllib.request, "urlopen", urlopen)
+    assert registry.request("local", "chat/completions", {}, timeout_seconds=5,
+                            configuration=entry, protocol=protocol) == {"ok": True}
+    assert len(requests) == 1
+
+
+@pytest.mark.parametrize("missing", [False, True])
+def test_configured_key_failure_never_falls_back_to_anonymous(tmp_path, monkeypatch, missing):
+    from management_portal import ai_provider_registry as module
+
+    path = tmp_path / "key"
+    if not missing:
+        path.write_text("", encoding="utf-8")
+    monkeypatch.setattr(module.urllib.request, "urlopen", lambda *a, **kw: pytest.fail("Invalid key sent a request"))
+    with pytest.raises(FileNotFoundError if missing else ValueError):
+        AIProviderRegistry().request("local", "chat/completions", {}, timeout_seconds=5,
+            configuration={"id": "local", "base_url": "http://127.0.0.1:12345", "api_key_file": str(path)})
+
+
 def test_provider_registry_reads_registrations_from_postgres_in_order():
     """Provider 登记表按登记顺序从 PostgreSQL 读取
 
