@@ -15,6 +15,14 @@ def test_terminal_restored_session_lifecycle():
     assert result.returncode == 0, result.stdout + result.stderr
 
 
+def test_terminal_read_failure_budget():
+    """鉴权拒绝停止读取；明确重试复用会话，临时故障与退出保持原语义。"""
+    script = Path(__file__).with_name('javascript') / 'terminal_restore.cjs'
+    result = subprocess.run(['node', '--test', '--test-name-pattern=read failure', str(script)],
+                            capture_output=True, text=True, timeout=30)
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
 def test_terminal_restored_panel_browser():
     script = Path(__file__).with_name('javascript') / 'terminal_restore.browser.cjs'
     result = subprocess.run(['node', str(script)], capture_output=True, text=True, timeout=35)

@@ -769,24 +769,33 @@ def project_relations(project_id: str, new_project_id: str = "", *, write: bool 
     return PAPER_STORE.replace_project(project_id, new_project_id, write=write)
 
 
-def _paper_run_records(paper_id: str, *, kind: str = "", limit: int = 20) -> list[dict]:
+def _iter_paper_run_records(paper_id: str, *, kind: str = "", newest_first: bool = False):
+    """Read durable runs without retaining the history when order is unneeded."""
     paper_id = str(paper_id or "").strip()
     if not paper_id:
-        return []
+        return
     found = PAPER_STORE.manifest_for_paper_id(paper_id)
     if not found:
-        return []
+        return
     manifest_path, manifest = found
     runs_dir = PAPER_STORE.paper_dir_from_manifest(manifest, manifest_path) / "runs"
     if not runs_dir.is_dir():
-        return []
-    records = []
-    for path in sorted(runs_dir.glob("*.json"), key=lambda item: item.stat().st_mtime, reverse=True):
+        return
+    paths = runs_dir.glob("*.json")
+    if newest_first:
+        paths = sorted(paths, key=lambda item: item.stat().st_mtime, reverse=True)
+    for path in paths:
         item = _load_json(path, {})
         if not isinstance(item, dict):
             continue
         if kind and str(item.get("kind") or "") != kind:
             continue
+        yield item
+
+
+def _paper_run_records(paper_id: str, *, kind: str = "", limit: int = 20) -> list[dict]:
+    records = []
+    for item in _iter_paper_run_records(paper_id, kind=kind, newest_first=True):
         records.append(item)
         if limit and len(records) >= limit:
             break

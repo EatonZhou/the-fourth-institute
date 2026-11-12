@@ -348,10 +348,13 @@ class KnowledgeEntryRootsTest(unittest.TestCase):
                 ]
             }
             resource_service = mock.Mock()
+            metadata = {item["kb_id"]: item for item in public_index["items"]}
             resource_service.query.return_value = {
                 "resources": [
                     {
                         "resource_id": kb_id,
+                        "title": metadata[kb_id]["title"],
+                        "attributes": {**metadata[kb_id], "project_ids": [metadata[kb_id]["project"]]},
                         "source": {"path": str(path)},
                     }
                     for kb_id, path in paths.items()
@@ -360,11 +363,6 @@ class KnowledgeEntryRootsTest(unittest.TestCase):
             with knowledge_source._LOCK:
                 knowledge_backend._KNOWLEDGE_GRAPH_CACHE.clear()
             with (
-                mock.patch.object(
-                    knowledge_backend,
-                    "resource_index_snapshot",
-                    return_value=public_index,
-                ) as snapshot,
                 mock.patch.object(
                     knowledge_backend,
                     "get_resource_service",
@@ -383,7 +381,7 @@ class KnowledgeEntryRootsTest(unittest.TestCase):
             ):
                 graph = knowledge_backend.build_knowledge_graph(actor="reader")
 
-            self.assertEqual(snapshot.call_args.kwargs["actor"], "reader")
+            self.assertEqual(resource_service.query.call_count, 1)
             self.assertEqual(resource_service.query.call_args.kwargs["actor"], "reader")
 
             self.assertEqual(graph["schema"], "tfi.knowledge_graph.v1")

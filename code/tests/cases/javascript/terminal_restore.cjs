@@ -6,7 +6,7 @@ const path = require('node:path');
 const { JSDOM } = require('jsdom');
 const source = fs.readFileSync(path.resolve(__dirname, '../../../management_portal/static/portal_terminal.js'), 'utf8');
 const flush = async () => { for (let i = 0; i < 8; i++) await new Promise(resolve => setImmediate(resolve)); };
-function fixture(t, response) {
+function fixture(t, response, readResponse = () => { throw Object.assign(new Error('expired'), { status: 404 }); }) {
   const dom = new JSDOM('<main></main>', { runScripts: 'outside-only' });
   t.after(() => dom.window.close());
   const w = dom.window, calls = [], sessions = [], timers = new Map();
@@ -22,11 +22,52 @@ function fixture(t, response) {
   const controller = w.PortalTerminal.create({ mount: w.document.querySelector('main'),
     initialSessionId: 'saved', startUrl: '/start', startPayload: () => ({ cwd: '/workspace' }),
     apiPost: async (url, body) => { calls.push({ url, ...body }); return response(url, body); },
-    apiGet: async () => { throw Object.assign(new Error('expired'), { status: 404 }); },
+    apiGet: readResponse,
     onSessionChange: id => sessions.push(id),
   });
   return { controller, calls, sessions, timers };
 }
+for (const status of [401, 403]) test(`read failure ${status} stops automatic requests and preserves session for explicit retry`, async t => {
+  let reads = 0, denied = true;
+  const f = fixture(t, async () => ({session_id: 'saved', alive: true, cursor: 0}), async url => {
+    assert.match(url, /session_id=saved/);
+    reads++;
+    if (denied) throw Object.assign(new Error('access denied'), {status});
+    return {session_id: 'saved', alive: true, chunk: 'ready', cursor: 5};
+  });
+  const pulse = async () => { for (const [id, fn] of [...f.timers]) { f.timers.delete(id); await fn(); } };
+  await f.controller.start();
+  await pulse();
+  assert.equal(reads, 1);
+  assert.equal(f.timers.size, 0, 'authorization failure cannot schedule another read');
+  assert.deepEqual(f.sessions, [], 'unchanged saved session emits no replacement or exit');
+  const output = f.controller.terminal.output;
+  f.controller.schedulePoll(100); await pulse();
+  assert.equal(reads, 1, 'host resize/resume scheduling cannot override denied reads');
+  assert.equal(f.controller.terminal.output, output, 'error text is not appended repeatedly');
+  denied = false;
+  await f.controller.start(); await pulse();
+  assert.equal(reads, 2);
+  assert.equal(f.calls.length, 1, 'explicit retry reuses shell, never creates or replays input');
+  assert.match(f.controller.terminal.output, /ready/);
+  await f.controller.destroy({closeSession: false});
+  assert.equal(f.timers.size, 0);
+});
+test('read failure transient retry and terminal exit retain their distinct semantics', async t => {
+  let status = 503, reads = 0;
+  const f = fixture(t, async () => ({session_id: 'saved', alive: true, cursor: 0}), async () => {
+    reads++; throw Object.assign(new Error('read failure'), {status});
+  });
+  const pulse = async () => { for (const [id, fn] of [...f.timers]) { f.timers.delete(id); await fn(); } };
+  await f.controller.start(); await pulse();
+  assert.equal(f.timers.size, 1, 'transient failures remain retryable');
+  status = 404; await pulse();
+  assert.equal(reads, 2);
+  assert.equal(f.timers.size, 0);
+  assert.equal(f.sessions.at(-1), '');
+  assert.match(f.controller.terminal.output, /会话已结束/);
+  await f.controller.destroy({closeSession: false});
+});
 test('opening a persisted expired terminal negotiates a usable new shell once', async t => {
   const f = fixture(t, async () => ({ session_id: 'new', alive: true, chunk: '$ ', cursor: 2 }));
   await Promise.all([f.controller.start(), f.controller.start()]);

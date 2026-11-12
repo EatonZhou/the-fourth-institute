@@ -523,8 +523,8 @@ def build_knowledge_graph(*, actor: str, refresh: bool = False, max_nodes: int =
 
     The Resource Index remains the owner of the public node list. Edges are
     read from the standard ``links`` frontmatter block of each registered item;
-    inferred text similarity is intentionally not used here. Both index reads
-    retain the caller, and cached graphs belong only to that caller's view.
+    inferred text similarity is intentionally not used here. Nodes and paths
+    share one caller-visible index result; caches belong to that caller's view.
     """
     actor = str(actor or "").strip()
     if not actor:
@@ -540,15 +540,11 @@ def build_knowledge_graph(*, actor: str, refresh: bool = False, max_nodes: int =
         ):
             return dict(cached.get("payload") or {})
 
-    full_index = resource_index_snapshot(
-        active_only=False,
-        offset=0,
-        limit=node_limit,
-        refresh=False,
-        actor=actor,
+    graph_records = resource_views.knowledge_graph_records(
+        actor=actor, limit=node_limit, service=get_resource_service(),
     )
     records_by_kb_id: dict[str, dict] = {}
-    for raw in full_index.get("items") or []:
+    for raw in graph_records:
         record = dict(raw) if isinstance(raw, dict) else {}
         kb_id = str(record.get("kb_id") or "").strip()
         if kb_id and is_canonical_kb_id(kb_id):
@@ -560,23 +556,8 @@ def build_knowledge_graph(*, actor: str, refresh: bool = False, max_nodes: int =
     relation_counts = {field: 0 for field in _ITEM_LINK_FIELDS}
     unresolved_links = 0
     unresolved_links_by_source: dict[str, int] = {}
-    resource_service = get_resource_service()
-    resource_payload = resource_service.query(
-        facets=["knowledge"],
-        actor=actor,
-        limit=node_limit,
-        include_attributes=False,
-    )
-    source_paths = {
-        str(resource.get("resource_id") or "").strip(): str(
-            (resource.get("source") or {}).get("path") or ""
-        )
-        for resource in resource_payload.get("resources") or []
-        if isinstance(resource, dict)
-    }
-
-    for source_kb_id in records_by_kb_id:
-        source_path = _valid_item_path(source_paths.get(source_kb_id, ""))
+    for source_kb_id, record in records_by_kb_id.items():
+        source_path = _valid_item_path(record.get("_source_path", ""))
         if not source_path:
             continue
         item_links = _item_links_from_text(_read_file_text(str(source_path)))

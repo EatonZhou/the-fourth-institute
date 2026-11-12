@@ -14,7 +14,7 @@
   const settingsUrl = id => `/workbenches?panel=settings&id=${encodeURIComponent(id)}`;
   const escape = value => window.PortalUIPrimitives.escapeHtml(value);
   const lineageLinks = bindings => Object.entries(bindings || {}).map(([alias, binding]) => window.PortalI18n.html`<a href="/lineage?lineage=${encodeURIComponent(binding.lineage_id)}">${escape(alias)} · ${escape(binding.lineage_id)}</a>`).join(" · ") || window.PortalI18n.markup('<span>尚无已授权的业务团队；不会创建空团队占位。</span>');
-  let app, frame, directory, polling, disposed = false, generating = false, writing = false;
+  let app, frame, directory, polling, previewAbort, disposed = false, generating = false, writing = false;
   const viewAbort = new AbortController();
   let observationRevision = 0;
   function showError(error) { errorBox.hidden = !error; errorBox.textContent = error?.message || ""; }
@@ -145,6 +145,8 @@
   }
   async function preview() {
     if (disposed) return;
+    previewAbort?.abort();
+    const controller = previewAbort = new AbortController();
     frame?.destroy(); frame = null;
     const root = element("previewRoot");
     if (builtinPaths[app?.builtin] && !app.manifest && !app.html) {
@@ -153,9 +155,14 @@
     } else if (!app?.html && !app?.manifest) {
       root.innerHTML = window.PortalI18n.markup('<div class="projectionEmpty"><h2>工作台预览</h2><p>选择团队 → 描述需求 → AI 生成 → 预览与发布</p></div>');
     } else {
-      const mounted = await window.PortalProjectionHost.mount(root, app, { preview: true });
-      if (disposed) mounted.destroy();
-      else frame = mounted;
+      try {
+        const mounted = await window.PortalProjectionHost.mount(root, app, { preview: true, signal: controller.signal });
+        if (disposed || controller.signal.aborted) mounted.destroy();
+        else frame = mounted;
+      } catch (error) {
+        // A replaced preview no longer owns the editor's status or error display.
+        if (!disposed && !controller.signal.aborted) throw error;
+      }
     }
   }
   // Fields the user has typed into since they were last filled or submitted.
@@ -558,6 +565,7 @@
     if (event.persisted) return;
     disposed = true;
     viewAbort.abort();
+    previewAbort?.abort();
     clearTimeout(polling);
     frame?.destroy();
     directory?.destroy();

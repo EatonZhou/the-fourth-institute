@@ -98,6 +98,7 @@
       generation: 0,
       pasteRequest: 0,
       pollInFlight: false,
+      readBlocked: false,
       paused: false,
       pollTimer: 0,
       resizeTimer: 0,
@@ -213,13 +214,16 @@
 
     function schedulePoll(delay = 900) {
       clearPoll();
-      if (state.destroyed || state.paused || !isActive() || !state.sessionId || state.needsAttach) return;
+      if (state.destroyed || state.paused || state.readBlocked || !isActive() || !state.sessionId || state.needsAttach) return;
       state.pollTimer = window.setTimeout(read, delay);
     }
 
     function start() {
       if (state.destroyed || state.closePromise) return Promise.resolve();
       state.paused = false;
+      // An explicit start/resume may retry the existing shell after access is
+      // restored. Background scheduling must never clear a denied read.
+      state.readBlocked = false;
       if (state.startPromise) return state.startPromise;
       if (state.sessionId && !state.needsAttach) {
         schedulePoll(100);
@@ -259,7 +263,7 @@
 
     async function read() {
       clearPoll();
-      if (state.destroyed || state.paused || !isActive() || !state.sessionId || state.pollInFlight) return;
+      if (state.destroyed || state.paused || state.readBlocked || !isActive() || !state.sessionId || state.pollInFlight) return;
       state.pollInFlight = true;
       const generation = state.generation;
       const sessionId = state.sessionId;
@@ -271,7 +275,10 @@
       } catch (error) {
         if (!state.destroyed && generation === state.generation) {
           if (error.status === 404) endSession();
-          else term.write(`\r\n[${labels.readFailed}: ${error.message || error}]\r\n`);
+          else {
+            state.readBlocked = [401, 403].includes(Number(error.status));
+            term.write(`\r\n[${labels.readFailed}: ${error.message || error}]\r\n`);
+          }
         }
       } finally {
         state.pollInFlight = false;

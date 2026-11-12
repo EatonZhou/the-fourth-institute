@@ -613,7 +613,9 @@
     }
   }
   async function mount(root, app, options = {}) {
+    if (options.signal?.aborted) throw fail("cancelled", "工作台已关闭");
     const facade = app.manifest?.chat && !options.region ? await readFacade(app.workbench_id, !!options.preview) : null;
+    if (options.signal?.aborted) throw fail("cancelled", "工作台已关闭");
     return mountWorkbench(root, app, options, facade);
   }
   async function mountWorkbench(root, app, options, facade) {
@@ -663,10 +665,14 @@
         return { id: panelId, type: "chat", title: `${item.title} · ${window.PortalI18n.t("团队对话")}`, closable: false,
           options: { target, submissionContext: submittedTarget => page.context(submittedTarget, item.id), onDetail: options.region ? options.onFacadeDetail : undefined } };
       } catch (error) {
+        if (options.signal?.aborted) return null;
         const alert = document.createElement("p"); alert.setAttribute("role", "alert"); alert.textContent = `${item.title}：${error.message}`; root.prepend(alert);
         return null;
       }
     }));
+    // Region facade reads also yield: an old preview must not register stable
+    // workbench IDs after its replacement has taken ownership of the root.
+    if (options.signal?.aborted) { shell.remove(); throw fail("cancelled", "工作台已关闭"); }
     editors.push(...regionChats.filter(Boolean));
     const chatIds = editors.filter(item => item.type === "chat").map(item => item.id);
     const selectedChat = chatIds.includes(`chat-${selected}`) ? `chat-${selected}` : chatIds[0];

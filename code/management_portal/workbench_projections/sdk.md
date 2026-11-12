@@ -95,6 +95,8 @@ SDK 在 `pagehide.persisted=true` 的浏览器缓存挂起期间保留请求、�
 
 普通 HATG 写操作的确认框归属当前功能区的本次可见期间。隐藏、销毁或在隐藏后才到达的确认要求均取消待确认提交；重新显示后由用户重新发起。正常确认只提交一次，继续使用当前用户、正式权限检查与幂等键。
 
+Studio 每次替换预览都中止上一预览的挂载 signal，包括切换为空预览或内置页入口。`PortalProjectionHost.mount` 在读取主门面前与读取完成后检查 signal；已取消的挂载不替换容器。分栏门面读取完成后再次检查，取消时只移除本次空壳、不创建工作台；旧分栏错误不插入新容器。旧预览的迟到成功与失败不更新当前画面或错误提示，当前预览的失败仍正常显示。最终退出中止在途预览；浏览器缓存挂起保留预览。取消不撤回已经发出的读取或保存请求，也不自动重试写入。
+
 登记库为 D3 7.9.0、dagre 1.1.5、Cytoscape 3.33.1、marked 18.1.1、DOMPurify 3.4.17 和 portal-graph 1.0.0。清单保留每个文件的 SHA-256、体积、类型、来源与许可证；读取时重新核对字节。`portal-graph` 加载为 `PortalGraphGeometry`，Lineage 同时使用它进行视图坐标变换、贝塞尔采样与命中计算。各库的 API 和更新步骤见 `static/projection_libraries/README.md`。
 
 Portal 开发投影模板在 `management_portal/workbench_projections/development_app`，区域 mount、共享权限读取、Markdown 渲染和生命周期合同见该目录 README。构建器由 application_build.py 负责，修订存储由 Store/tables 负责，资产鉴权由 application_http.py 负责，浏览器隔离与消息通道由 host/SDK 负责；这些机制由 `decision_7a5ae487e2e9` 约束。

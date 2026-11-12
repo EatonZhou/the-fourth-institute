@@ -70,7 +70,7 @@ def _read_state() -> dict[str, Any]:
 
 def scheduling_status() -> dict[str, bool]:
     """Global admission for new WALL scheduled jobs; manual jobs remain available."""
-    return {"enabled": _read_state()["scheduling_enabled"]}
+    return {"enabled": _state_store().read_scheduling_enabled()}
 
 
 def set_scheduling_enabled(enabled: bool) -> dict[str, bool]:
@@ -1257,14 +1257,12 @@ def release_test_fixtures(root: Path, manifest: dict[str, Any], actor: str, *, t
 
 
 def _tick() -> None:
-    data = _read_state()
-    for key, actor in {(v['project'], v['actor']) for v in data['resident_cleanup'].values()
-                       if float(v.get('retry_at', 0)) <= time.time()}:
+    data = _state_store().read_maintenance(ACTIVE, now=time.time())
+    for key, actor in data['cleanup']:
         with exclusive_file_lock(WALL_LOCK_ROOT / f'project-{digest(key)}.lock'):
             _try_resident_cleanup(key, actor)
-    for job in data["jobs"].values():
-        if job["status"] in ACTIVE:
-            _start_job(job["id"])
+    for job_id in data['job_ids']:
+        _start_job(job_id)
     if not data["scheduling_enabled"]:
         return
     for key, record in data["projects"].items():
@@ -1276,16 +1274,7 @@ def _tick() -> None:
                 continue
             if time.time() - auto.get("last_run", 0) < auto.get("interval_minutes", 60) * 60:
                 continue
-            def claim(current):
-                if not current["scheduling_enabled"]:
-                    return False
-                record = current["projects"][key]
-                config = record["automation"] if name == "analyse" else record["schedules"][name]
-                if not config.get("enabled") or time.time() - config.get("last_run", 0) < config.get("interval_minutes", 60) * 60:
-                    return False
-                config["last_run"] = time.time()
-                return True
-            if _change(claim):
+            if _state_store().claim_schedule(key, name, now=time.time()):
                 try:
                     action({"project": key, "action": name, "backend_route_id": auto.get("backend_route_id", "")}, auto["actor"])
                 except Exception as exc:

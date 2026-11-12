@@ -72,7 +72,8 @@ def remember(path: Path, version: str, data: bytes) -> None:
             # or scanning the entire cache on every normal page request.
             if now - entry.stat().st_mtime > 60:
                 entry.touch()
-                _prune(entry.parent, now)
+                # Renewal adds no bytes or files. Admissions prune capacity;
+                # recall rejects expired entries without a directory scan.
             return
         entry.parent.mkdir(parents=True, exist_ok=True)
         with tempfile.NamedTemporaryFile(dir=entry.parent, suffix=".tmp", delete=False) as stream:
@@ -94,7 +95,10 @@ def recall(path: Path, version: str) -> bytes | None:
         entry = _entry(path, version)
         if entry is None or time.time() - entry.stat().st_mtime > RETENTION_SECONDS:
             return None
-        data = entry.read_bytes()
+        with entry.open("rb") as stream:
+            data = stream.read(MAX_BYTES + 1)
+        if len(data) > MAX_BYTES:
+            return None
         if "sha256-" + hashlib.sha256(data).hexdigest() == version:
             return data
     except OSError:

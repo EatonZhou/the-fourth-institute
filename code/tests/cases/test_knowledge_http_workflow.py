@@ -337,9 +337,6 @@ def test_global_knowledge_graph_queries_and_caches_the_callers_view(tmp_path):
     paths = {root: root_path, related: related_path}
     visible = {"alice": [root, related], "bob": [root]}
 
-    def index(*, actor="", **kwargs):
-        return {"items": [{"kb_id": item_id} for item_id in visible.get(actor, [])]}
-
     def query(*, actor="", **kwargs):
         return {"resources": [
             {"resource_id": item_id, "source": {"path": str(paths[item_id])}}
@@ -350,7 +347,6 @@ def test_global_knowledge_graph_queries_and_caches_the_callers_view(tmp_path):
     service.query.side_effect = query
     with (
         mock.patch.dict(knowledge_backend._KNOWLEDGE_GRAPH_CACHE, clear=True),
-        mock.patch.object(knowledge_backend, "resource_index_snapshot", side_effect=index) as snapshot,
         mock.patch.object(knowledge_backend, "get_resource_service", return_value=service),
         mock.patch.object(knowledge_source, "get_resource_service", return_value=service),
         mock.patch.object(knowledge_details, "get_resource_service", return_value=service),
@@ -361,10 +357,9 @@ def test_global_knowledge_graph_queries_and_caches_the_callers_view(tmp_path):
         assert alice["edges"] == [{"source": root, "target": related, "relation": "related"}]
         assert {node["kb_id"] for node in bob["nodes"]} == {root}
         assert bob["edges"] == []
-        assert [call.kwargs["actor"] for call in snapshot.call_args_list] == ["alice", "bob"]
         assert [call.kwargs["actor"] for call in service.query.call_args_list] == ["alice", "bob"]
         assert knowledge_backend.build_knowledge_graph(actor="alice") == alice
-        assert snapshot.call_count == 2
+        assert service.query.call_count == 2
 
         visible["alice"] = [root]
         refreshed = knowledge_backend.build_knowledge_graph(actor="alice", refresh=True)

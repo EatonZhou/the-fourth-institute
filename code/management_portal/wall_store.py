@@ -1,6 +1,7 @@
 """WALL projects, work items and reading state have separate domain tables."""
 import os
 from functools import lru_cache
+from psycopg.types.json import Jsonb
 from management_common.domain_database import DomainDatabase
 from management_common.relational_rows import identifier, read_rows, sync_rows
 from management_common.database_time import encode_times, decode_times
@@ -77,6 +78,46 @@ class WallState:
             connection.execute('''INSERT INTO wall_settings(name,enabled) VALUES ('scheduled_jobs',%s)
                 ON CONFLICT (name) DO UPDATE SET enabled=EXCLUDED.enabled''', (enabled,))
 
+    @staticmethod
+    def _scheduling_enabled(connection):
+        setting = connection.execute("SELECT enabled FROM wall_settings WHERE name='scheduled_jobs'").fetchone()
+        return bool(setting['enabled']) if setting else True
+
+    def read_scheduling_enabled(self):
+        with database().read() as c:
+            return self._scheduling_enabled(c)
+
+    def read_maintenance(self, active_statuses, *, now):
+        """Only actionable maintenance work, never completed jobs or reader history."""
+        with database().read() as c:
+            enabled = self._scheduling_enabled(c)
+            projects = {row['id']: located_record({k: v for k, v in row.items() if v is not None})
+                        for row in read_rows(c, 'wall_projects')} if enabled else {}
+            jobs = [row['id'] for row in c.execute(
+                'SELECT id FROM wall_jobs WHERE status=ANY(%s)', (sorted(active_statuses),))]
+            cleanup = {(row['project'], row['actor']) for row in c.execute(
+                '''SELECT DISTINCT project,actor FROM wall_resident_cleanup
+                   WHERE retry_at IS NULL OR retry_at<=to_timestamp(%s)''', (now,))}
+            return {'scheduling_enabled': enabled, 'projects': projects,
+                    'job_ids': jobs, 'cleanup': cleanup}
+
+    def claim_schedule(self, project, name, *, now):
+        """Claim a due plan under the same domain lock as other WALL mutations."""
+        with self.transaction() as c:
+            if not self._scheduling_enabled(c):
+                return False
+            row = c.execute('SELECT automation,schedules,deleting FROM wall_projects WHERE id=%s', (project,)).fetchone()
+            if row is None or row['deleting']:
+                return False
+            column = 'automation' if name == 'analyse' else 'schedules'
+            plans = dict(row[column] or {})
+            config = plans if name == 'analyse' else plans.get(name, {})
+            if not config.get('enabled') or now - config.get('last_run', 0) < config.get('interval_minutes', 60) * 60:
+                return False
+            config['last_run'] = now
+            c.execute('UPDATE wall_projects SET ' + identifier(column) + '=%s WHERE id=%s', (Jsonb(plans), project))
+            return True
+
     def read_projects(self):
         with database().read() as c:
             return {row['id']: located_record({key: value for key, value in row.items() if value is not None})
@@ -84,8 +125,7 @@ class WallState:
 
     def read(self,default=None):
         with database().read() as c:
-            setting = c.execute("SELECT enabled FROM wall_settings WHERE name='scheduled_jobs'").fetchone()
-            value={'scheduling_enabled': bool(setting['enabled']) if setting else True}
+            value={'scheduling_enabled': self._scheduling_enabled(c)}
             for name in ('projects','jobs','discussions','resident_cleanup'):
                 table='wall_'+name
                 key=next(iter(TABLES[table]))

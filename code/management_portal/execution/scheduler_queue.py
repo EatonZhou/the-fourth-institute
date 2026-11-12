@@ -405,13 +405,14 @@ class ExecutionQueue:
             ).fetchall()
             ids = [str(row["execution_id"]) for row in rows]
             if ids:
-                connection.executemany(
-                    'DELETE FROM executions WHERE execution_id = %s',
-                    [(execution_id,) for execution_id in ids],
+                connection.execute(
+                    'DELETE FROM executions WHERE execution_id = ANY(%s)',
+                    (ids,),
                 )
-                connection.executemany(
-                    'DELETE FROM execution_store_meta WHERE key IN (%s, %s)',
-                    [(f"started:{execution_id}", f"request_digest:{execution_id}") for execution_id in ids],
+                connection.execute(
+                    'DELETE FROM execution_store_meta WHERE key = ANY(%s)',
+                    ([key for execution_id in ids
+                      for key in (f"started:{execution_id}", f"request_digest:{execution_id}")],),
                 )
             connection.commit()
         self.changes.forget_transient_events(ids)

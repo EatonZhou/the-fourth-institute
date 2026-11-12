@@ -4,6 +4,9 @@ diagnostics and the stored build report.
 from __future__ import annotations
 
 import re
+from collections import deque
+from collections.abc import Iterator
+from itertools import islice
 from pathlib import Path
 from typing import Any
 
@@ -97,8 +100,18 @@ def _diagnostic_category(message: str) -> str:
     return "source"
 
 
+def _latex_log_lines(log: str) -> Iterator[str]:
+    """Yield splitlines-compatible text without materializing the whole log."""
+    start = 0
+    for boundary in re.finditer(r"\r\n|[\n\r\v\f\x1c-\x1e\x85\u2028\u2029]", log):
+        yield log[start:boundary.start()]
+        start = boundary.end()
+    if start < len(log):
+        yield log[start:]
+
+
 def parse_latex_diagnostics(log: str, *, limit: int = 240) -> list[dict[str, Any]]:
-    lines = str(log or "").splitlines()
+    lines = _latex_log_lines(str(log or ""))
     diagnostics: list[dict[str, Any]] = []
     seen: set[tuple[str, str, int, str]] = set()
 
@@ -129,7 +142,13 @@ def parse_latex_diagnostics(log: str, *, limit: int = 240) -> list[dict[str, Any
         r"^(?:LaTeX|Package\s+\S+|Class\s+\S+|pdfTeX)\s+Warning:\s*(.+)$",
         re.IGNORECASE,
     )
-    for index, raw_line in enumerate(lines):
+    window = deque(islice(lines, 7))
+    while window and len(diagnostics) < limit:
+        raw_line = window.popleft()
+        nearby_lines = tuple(window)
+        following = next(lines, None)
+        if following is not None:
+            window.append(following)
         line = raw_line.strip()
         if not line:
             continue
@@ -151,7 +170,7 @@ def parse_latex_diagnostics(log: str, *, limit: int = 240) -> list[dict[str, Any
         if line.startswith("!"):
             file_name = ""
             line_number = 0
-            for nearby in lines[index + 1 : index + 7]:
+            for nearby in nearby_lines:
                 located = location_pattern.match(nearby.strip())
                 if located:
                     file_name = located.group("file")
@@ -171,8 +190,6 @@ def parse_latex_diagnostics(log: str, *, limit: int = 240) -> list[dict[str, Any
                 r"(?:LaTeX Error:\s*)?File\s+[`'][^`']+['`]\s+not found", line, re.IGNORECASE
             ):
                 add(line, "error")
-        if len(diagnostics) >= limit:
-            break
     return diagnostics
 
 

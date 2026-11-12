@@ -15,7 +15,7 @@ from management_portal.paper_records import _now
 from management_portal.paper_refs import extract_refs
 from management_portal.paper_store import (
     PAPER_STORE_ROOT, _local_pdf_for_paper, _paper_by_id, _paper_run_record_by_job_id,
-    _update_paper_run_record, _write_paper_run_record, _paper_run_records,
+    _update_paper_run_record, _write_paper_run_record, _iter_paper_run_records,
 )
 
 
@@ -29,7 +29,7 @@ def _admission_path(paper_id: str) -> Path:
 
 def _latest_assets_job(paper_id: str) -> dict:
     # Finishing an older PDF's job must not make it the current PDF's job.
-    return max(_paper_run_records(paper_id, kind="assets", limit=0), default={},
+    return max(_iter_paper_run_records(paper_id, kind="assets"), default={},
                key=lambda job: (int(job.get("created_at_ns") or int(job.get("queued_at") or 0) * 10**9),
                                 str(job.get("job_id") or "")))
 

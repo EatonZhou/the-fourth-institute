@@ -84,6 +84,31 @@ def _knowledge_item(record: dict[str, Any]) -> dict[str, Any]:
     return item
 
 
+def _knowledge_sort_key(record: dict[str, Any]) -> tuple:
+    attrs = record.get("attributes") or {}
+    return (
+        int(attrs.get("importance") or 0),
+        stripped_text(attrs.get("created_at")),
+        int(attrs.get("mtime") or 0),
+    )
+
+
+def knowledge_graph_records(*, actor: str, limit: int, service: Any = None) -> list[dict]:
+    """Graph nodes and their source paths from one complete caller-visible query.
+
+    The graph uses the same importance order as the Knowledge index. Read all
+    index pages before selecting nodes: later pages can contain higher-priority
+    items. Source paths are internal inputs to graph construction, not UI fields.
+    """
+    service = service or get_resource_service()
+    payload = _query_all(service, facets=["knowledge"], actor=actor, include_attributes=True)
+    records = sorted(payload.get("resources") or [], key=_knowledge_sort_key, reverse=True)
+    return [
+        {**_knowledge_item(record), "_source_path": str((record.get("source") or {}).get("path") or "")}
+        for record in records[:limit]
+    ]
+
+
 def knowledge_index(
     *,
     active_only: bool = True,
@@ -139,14 +164,7 @@ def knowledge_index(
             if stripped_text((record.get("attributes") or {}).get("project_status"))
             in {"active", "system"}
         ]
-    records.sort(
-        key=lambda record: (
-            int((record.get("attributes") or {}).get("importance") or 0),
-            stripped_text((record.get("attributes") or {}).get("created_at")),
-            int((record.get("attributes") or {}).get("mtime") or 0),
-        ),
-        reverse=True,
-    )
+    records.sort(key=_knowledge_sort_key, reverse=True)
     items = [_knowledge_item(record) for record in records]
     semantic_summary = None
     if semantic_view:
