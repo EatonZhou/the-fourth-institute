@@ -22,6 +22,9 @@
         this.cards = new Map();
         this.turnEditors = new Map();
         this.nativeOutcomes = new Map();
+        // Verified send receipts bridge the gap before the conversation snapshot
+        // catches up. They are scoped to this conversation, never draft storage.
+        this.answerReceipts = new Map();
         this.sending = new Set();
         // Each open question group's chosen answers and current question, by
         // group key; kept per actor and conversation until the group closes.
@@ -43,6 +46,7 @@
         for (const card of this.cards.values()) card.form.remove();
         this.cards.clear();
         this.nativeOutcomes.clear();
+        this.answerReceipts.clear();
         this.progress.clear();
         this.chosen = "";
         this.closed.clear();
@@ -94,7 +98,8 @@
           if (message.role !== "agent") continue;
           for (const part of message.content_parts || []) {
             if (part.type === "async_questions") {
-              const answered = answers.has(message.message_id)
+              const receipt = this.answerReceipts.get(part.answer_message_id);
+              const answered = Boolean(receipt) || answers.has(message.message_id)
                 || (!closed.has(part.answer_message_id) && (states.has(part.answer_message_id) || queued.has(part.answer_message_id)));
               groups.push({
                 kind: "async", key: part.answer_message_id, source_message_id: message.message_id,
@@ -106,7 +111,8 @@
                 questions: (part.questions || []).map(question => ({ id: question.question_index, title: question.title, options: question.options || [],
                   credentials: Array.isArray(question.credentials) ? question.credentials : [] })),
                 state: answered ? "answered" : closed.has(part.answer_message_id) ? "closed" : part.state || "open",
-                answers: answers.get(message.message_id) || {}, delivery: states.get(part.answer_message_id) || "",
+                answers: answers.get(message.message_id) || receipt?.answers || {},
+                delivery: states.get(part.answer_message_id) || receipt?.delivery || "",
               });
             } else if (part.type === "tool_call" && part.tool_name === "request_user_input" && !part.interaction) {
               const result = nativeResults.get(part.request_id)
@@ -166,6 +172,7 @@
           closed: window.PortalI18n.t("已关闭，不再回答"),
           cancelled: window.PortalI18n.t("请求已取消"),
           answered: ({
+            accepted: window.PortalI18n.t("回答已接收"),
             queued: window.PortalI18n.t("回答已排队，将在可接收时送达"),
             failed: window.PortalI18n.t("回答已接收，但执行失败；请查看对话错误"),
             cancelled: window.PortalI18n.t("回答对应的执行已取消"),
@@ -382,11 +389,20 @@
             },
           });
           if (this.scope === scope) {
+            this.answerReceipts.set(group.key, {
+              answers: Object.fromEntries(answers.map(entry => [entry.question_index, entry.answer])),
+              delivery: result.input_state?.state || "accepted",
+            });
             this.progress.delete(group.key);
             this.saveProgress();
+            this.render(this.panel.snapshot() || {});
             this.panel.options.onAcknowledgement?.(result, { messageIdentity: group.key }, this.panel);
           }
         } catch (error) {
+          // sendInput rejects only a definite failure; uncertain admission stays
+          // pending in the shared protocol. Release its failed local submission
+          // so an explicit retry can send the same answer identity again.
+          window.PortalResidentProtocol.dismissSubmission(target.resident_id, group.key);
           if (this.scope === scope && this.active.key === group.key) this.active.error = error?.message || window.PortalI18n.t("回答发送失败，请重试");
         } finally {
           this.sending.delete(key);
