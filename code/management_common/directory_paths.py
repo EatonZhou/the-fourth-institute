@@ -200,7 +200,11 @@ def _existing_directory_case_sensitive(path: Path) -> bool:
             alternate = ''.join(c.swapcase() if c.isascii() else c for c in entry.name)
             if alternate == entry.name:
                 continue
-            original = entry.stat(follow_symlinks=False)
+            # Windows DirEntry.stat() may omit st_dev/st_ino (both zero).
+            # Compare two path-based queries, which include file identity,
+            # rather than mistaking incomplete enumeration metadata for a
+            # distinct entry and declaring an insensitive directory sensitive.
+            original = filesystem_path(path / entry.name).lstat()
             try:
                 other = filesystem_path(path / alternate).lstat()
             except FileNotFoundError:

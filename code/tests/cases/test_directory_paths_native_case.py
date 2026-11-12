@@ -285,6 +285,26 @@ def test_readonly_lookup_recognizes_one_case_aliased_entry(empty_root, monkeypat
     assert paths._directory_case_sensitive(empty_root) is False
 
 
+def test_case_alias_lookup_ignores_incomplete_windows_enumeration_identity(empty_root, monkeypatch):
+    from pathlib import Path
+    (empty_root / 'Foo').mkdir()
+    original = Path.lstat
+
+    def lookup(path, *args, **kwargs):
+        if str(path) == str(empty_root / 'fOO'):
+            path = empty_root / 'Foo'
+        return original(path, *args, **kwargs)
+
+    # FindFirstFile enumeration metadata has no device/inode identity on
+    # Windows, even though a direct path query returns both fields.
+    entry = SimpleNamespace(name='Foo', stat=lambda **_: SimpleNamespace(st_dev=0, st_ino=0))
+    native_os = SimpleNamespace(**vars(os))
+    native_os.scandir = lambda _: nullcontext([entry])
+    monkeypatch.setattr(paths, 'os', native_os)
+    monkeypatch.setattr(Path, 'lstat', lookup)
+    assert paths._directory_case_sensitive(empty_root / 'not-created' / 'nested') is False
+
+
 def test_empty_directory_policy_matches_native_lookup_without_leaving_files(empty_root):
     sensitive = paths._directory_case_sensitive(empty_root)
     assert list(empty_root.iterdir()) == []
