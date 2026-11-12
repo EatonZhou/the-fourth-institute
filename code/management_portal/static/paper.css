@@ -190,6 +190,66 @@ body {
 .statusDot { width: 7px; height: 7px; border-radius: 99px; background: var(--muted); flex: 0 0 auto; }
 .statusDot.ready { background: var(--success); }
 .workspaceBody { display: grid; grid-template-rows: auto minmax(0, 1fr); }
+/* Paper's navigation and document headers share the same three-row rhythm. */
+#paperLibraryPane > .paneHead,
+#paperWorkspacePane .workspaceTop {
+  --paper-heading-row: 32px;
+  --paper-meta-row: 18px;
+  --paper-tabs-row: 34px;
+  box-sizing: border-box;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-rows: var(--paper-heading-row) var(--paper-meta-row) var(--paper-tabs-row);
+  gap: 4px 8px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+  min-height: 109px;
+}
+#paperLibraryPane > .paneHead .paneHeadText,
+#paperWorkspacePane .workspaceTop > .titleBlock { display: contents; }
+#paperLibraryPane > .paneHead .paneTitle,
+#paperWorkspacePane .workspaceTitle {
+  height: var(--paper-heading-row);
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 760;
+  min-width: 0;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+#paperLibraryPane > .paneHead .paneTitle { grid-area: 1 / 1; }
+#paperLibraryPane > .paneHead .paneHeadActions { grid-area: 1 / 2; align-self: start; }
+#paperLibraryPane > .paneHead #libraryMeta,
+#paperWorkspacePane .workspaceIdentityMetaRow {
+  grid-area: 2 / 1 / 3 / -1;
+  min-height: 18px;
+  font-size: 10px;
+  line-height: 18px;
+  margin: 0;
+}
+#paperLibraryPane > .paneHead #libraryMeta { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+#paperWorkspacePane .workspaceHeadingRow { grid-area: 1 / 1 / 2 / -1; align-items: start; }
+#paperWorkspacePane #workspaceResourceIdentity { --portal-resource-identity-title-size: 12px; }
+#paperWorkspacePane .workspaceIdentityMetaRow .workspaceDetailsToggle { min-height: 18px; line-height: 18px; }
+#paperWorkspacePane .workspaceDeepReadStatus { font-size: 10px; line-height: 18px; }
+#paperWorkspacePane .workspaceIdentityMetaRow .workspaceResourceIdSlot { line-height: 18px; }
+#paperWorkspacePane .workspaceIdentityMetaRow { grid-template-rows: 18px auto; row-gap: 0; }
+#paperLibraryPane > .paneHead > [data-scopes],
+#paperWorkspacePane .workspaceControls { grid-area: 3 / 1 / 4 / -1; margin: 0; align-self: start; }
+#paperLibraryPane > .paneHead > [data-scopes],
+#paperWorkspacePane #modeTabs {
+  box-sizing: border-box;
+  height: var(--paper-tabs-row);
+  min-height: var(--paper-tabs-row);
+  padding: 3px;
+}
+#paperLibraryPane > .paneHead > [data-scopes] > button,
+#paperWorkspacePane #modeTabs > button { box-sizing: border-box; height: 26px; padding: 4px 8px; font-size: 12px; line-height: 18px; }
+#paperWorkspacePane .workspaceControls { height: var(--paper-tabs-row); }
+#paperWorkspacePane .workspaceModeActions { height: var(--paper-tabs-row); align-items: center; }
+#paperWorkspacePane .workspaceTop:has(.workspaceDetailsBody:not([hidden])) { grid-template-rows: var(--paper-heading-row) auto var(--paper-tabs-row); }
 .workspaceTop {
   min-width: 0;
   max-width: 100%;

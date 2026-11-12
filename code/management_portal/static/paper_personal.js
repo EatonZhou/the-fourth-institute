@@ -29,6 +29,9 @@
       el.dataset.portalI18nAttrs = JSON.stringify({'aria-label':el.getAttribute('aria-label')});
     });
     const body = tree.closest('.leftBody');
+    const scopes = host.querySelector('[data-scopes]');
+    const header = document.querySelector('#paperLibraryPane > .paneHead');
+    if (header) header.append(scopes);
     if (body) body.prepend(host); else tree.before(host);
     const panel = host.querySelector("[data-personal]");
     const rows = host.querySelector("[data-rows]");
@@ -72,8 +75,8 @@
       if (personal) personalView = view;
       body?.classList.toggle('is-personal', personal); tree.hidden = personal; panel.hidden = !personal;
       host.querySelector('[data-personal-tabs]').hidden = !personal;
-      host.querySelectorAll('[data-scope]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.scope === (personal ? 'personal' : 'repository'))));
-      host.querySelectorAll('[data-view]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.view === view)));
+      scopes.querySelectorAll('[data-scope]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.scope === (personal ? 'personal' : 'repository'))));
+      [...host.querySelectorAll('[data-view]'), ...scopes.querySelectorAll('[data-view]')].forEach(b => b.setAttribute('aria-pressed', String(b.dataset.view === view)));
       host.querySelector('[data-heading]').textContent = window.PortalI18n.t(view === 'recent' ? '近期阅读' : '我的收藏');
       panel.setAttribute('aria-label', host.querySelector('[data-heading]').textContent);
       if (personal) syncFilters();
@@ -186,7 +189,7 @@
       } catch (error) { if (current === sequence) message(error); }
       finally { if (current === sequence) { loading = false; more.disabled = false; } }
     }
-    host.addEventListener("click", async event => {
+    const onPersonalClick = async event => {
       const button = event.target.closest("button"); if (!button) return;
       accountChanged();
       if (button.hasAttribute('data-personal-clear')) {
@@ -223,7 +226,9 @@
           if (principal === account) {pending.delete(id); state.favoriteRevision += 1; sync(); syncFavoriteButtons();}
         }
       }
-    });
+    };
+    host.addEventListener('click', onPersonalClick);
+    if (!host.contains(scopes)) scopes.addEventListener('click', onPersonalClick);
     show('recent', false);
     window.addEventListener('portal:paper-principal-changed', accountChanged);
     window.addEventListener("portal:paper-favorite-changed", event => {
