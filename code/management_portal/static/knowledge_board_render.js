@@ -112,7 +112,7 @@ function getProjectColumnCount() {
   if (window.innerWidth <= 620) return 1;
   if (window.innerWidth <= 900) return 2;
   if (window.innerWidth <= 1200) return 3;
-  return Math.max(1, Math.floor((width + 10) / 370));
+  return Math.max(1, Math.floor((width - 36 + 12) / 312));
 }
 
 function getVirtualProjectGap() {

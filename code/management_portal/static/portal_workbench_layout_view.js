@@ -55,6 +55,9 @@
       }))
       : null;
     const inlineTabsPending = new WeakSet();
+    const inlineTabsBlocked = new WeakMap();
+    // A host row taller than this has wrapped onto a second line.
+    const INLINE_TABS_HOST_MAX_HEIGHT = 56;
 
     function scheduleInlineTabs(element) {
       if (inlineTabsPending.has(element)) return;
@@ -76,9 +79,28 @@
       const candidate = frame?.querySelector("[data-portal-workbench-tab-host]:not([hidden])") || null;
       const bodyBounds = candidate ? body.getBoundingClientRect() : null;
       const hostBounds = candidate ? candidate.getBoundingClientRect() : null;
-      const host = candidate && hostBounds.height > 0
+      let host = candidate && hostBounds.height > 0
         && Math.abs(hostBounds.top - bodyBounds.top) <= 1 && Math.abs(hostBounds.left - bodyBounds.left) <= 1
         ? candidate : null;
+      // A host that wraps onto a second line with the tabs inside keeps them
+      // out. The trial is repeated only when the stack widens or the host's
+      // own height changes, so a narrow stack is not laid out twice per sync.
+      const blocked = inlineTabsBlocked.get(element);
+      const inlineNow = element.dataset.inlineTabs === "true";
+      if (host && !inlineNow && blocked && bodyBounds.width <= blocked.width && hostBounds.height === blocked.height) host = null;
+      if (host) {
+        element.dataset.inlineTabs = "true";
+        host.setAttribute("data-portal-workbench-tab-inset", "");
+        element.style.setProperty("--portal-workbench-inline-tabs-width", `${Math.ceil(tabs.getBoundingClientRect().width)}px`);
+        if (host.getBoundingClientRect().height > INLINE_TABS_HOST_MAX_HEIGHT) {
+          delete element.dataset.inlineTabs;
+          host.removeAttribute("data-portal-workbench-tab-inset");
+          inlineTabsBlocked.set(element, { width: bodyBounds.width, height: host.getBoundingClientRect().height });
+          host = null;
+        } else {
+          inlineTabsBlocked.delete(element);
+        }
+      }
       element.querySelectorAll("[data-portal-workbench-tab-inset]").forEach(node => {
         if (node !== host) node.removeAttribute("data-portal-workbench-tab-inset");
       });
@@ -93,9 +115,7 @@
       icons.forEach(tab => {
         tab.toggleAttribute("data-shared-icon", icons.some(other => other !== tab && other.dataset.portalIcon === tab.dataset.portalIcon));
       });
-      element.dataset.inlineTabs = "true";
-      host.setAttribute("data-portal-workbench-tab-inset", "");
-      element.style.setProperty("--portal-workbench-inline-tabs-height", `${Math.round(hostBounds.height)}px`);
+      element.style.setProperty("--portal-workbench-inline-tabs-height", `${Math.round(host.getBoundingClientRect().height)}px`);
       element.style.setProperty("--portal-workbench-inline-tabs-width", `${Math.ceil(tabs.getBoundingClientRect().width)}px`);
     }
 

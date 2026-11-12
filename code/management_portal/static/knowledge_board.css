@@ -121,6 +121,8 @@ body[data-resource-detail-embedded] > #archiveModal {
    to the display toggle. It has no box of its own. */
 .project {
   min-width: 0;
+  /* The page margin; getProjectColumnCount() subtracts the same 36px. */
+  padding: 0 18px;
 }
 
 .projectHeader {
@@ -184,10 +186,10 @@ body[data-resource-detail-embedded] > #archiveModal {
 
 .items {
   display: grid;
-  /* 360px matches the column count in getProjectColumnCount(). */
-  grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
-  gap: 10px;
-  padding: 2px 0 10px;
+  /* 300px matches the column count in getProjectColumnCount(). */
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 12px;
+  padding: 4px 0 14px;
 }
 
 @media (max-width: 1200px) { .items { grid-template-columns: repeat(3, minmax(0, 1fr)); } }

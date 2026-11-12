@@ -606,19 +606,21 @@
   height: var(--portal-workbench-inline-tabs-height, 38px);
   align-items: center;
   gap: 2px;
-  padding: 0 6px;
-  border-bottom: 0;
-  border-right: 1px solid var(--border);
+  padding: 0 2px 0 8px;
+  /* The group is part of the host row: no box, rule or fill of its own. */
+  border: 0;
   background: transparent;
 }
 
 .portalWorkbenchStack[data-inline-tabs="true"] > .portalWorkbenchTabs .portalWorkbenchTabSlot {
   height: 26px;
+  align-items: center;
   border-right: 0;
-  border-radius: 6px;
 }
 
 .portalWorkbenchStack[data-inline-tabs="true"] > .portalWorkbenchTabs .portalWorkbenchTab {
+  height: 26px;
+  padding: 0 6px;
   border-radius: 6px;
   font-size: 11.5px;
 }
@@ -628,14 +630,22 @@
   height: 15px;
 }
 
-.portalWorkbenchStack[data-inline-tabs="true"] > .portalWorkbenchTabs .portalWorkbenchTabSlot:has(> .portalWorkbenchTab.is-active) {
-  background: var(--panel);
-  box-shadow: 0 0 0 1px var(--border), 0 1px 2px color-mix(in srgb, #0b1020 7%, transparent);
-}
-
 .portalWorkbenchStack[data-inline-tabs="true"] > .portalWorkbenchTabs .portalWorkbenchTab.is-active {
   background: transparent;
   box-shadow: none;
+}
+
+.portalWorkbenchStack[data-inline-tabs="true"] > .portalWorkbenchTabs .portalWorkbenchTab:not(.is-active):is(:hover, :focus-visible) {
+  background: color-mix(in srgb, var(--text) 7%, transparent);
+}
+
+/* The close control shows when the pointer or focus is on its tab. */
+.portalWorkbenchStack[data-inline-tabs="true"] > .portalWorkbenchTabs .portalWorkbenchTabClose {
+  opacity: 0;
+}
+
+.portalWorkbenchStack[data-inline-tabs="true"] > .portalWorkbenchTabs .portalWorkbenchTabSlot:is(:hover, :focus-within) > .portalWorkbenchTabClose {
+  opacity: .7;
 }
 
 .portalWorkbenchStack[data-inline-tabs="true"] > .portalWorkbenchTabs .portalWorkbenchTab:not(.is-active, [data-shared-icon]) > span:not(.portalIcon),
@@ -648,8 +658,7 @@
 }
 
 .portalWorkbenchStack[data-inline-tabs="true"] > .portalWorkbenchTabs .portalWorkbenchTabClose {
-  align-self: center;
-  margin: 0 3px 0 -2px;
+  margin: 0 0 0 -4px;
 }
 
 .portalWorkbenchStage:not(.is-layout-locked) .portalWorkbenchStack[data-inline-tabs="true"] [data-portal-workbench-tab-inset] {
