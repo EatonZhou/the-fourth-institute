@@ -240,6 +240,16 @@
     return String(value || "").replace(/\s+/g, " ").trim();
   }
 
+  function visibleTooltip(button) {
+    const message = clean(button.dataset.portalTooltip);
+    if (button.matches(".portalWorkbenchTab, .portalDocumentTabSelect")) {
+      const label = button.querySelector(".portalDocumentTabLabel, :scope > span:not(.portalIcon)");
+      if (label && message === clean(label.textContent)
+          && label.scrollWidth <= label.clientWidth) return "";
+    }
+    return message;
+  }
+
   function clearGeneratedTooltip(button) {
     if (button.dataset.portalTooltipSource !== "generated") return;
     delete button.dataset.portalTooltip;
@@ -382,6 +392,7 @@
 
   function queuePosition() {
     if (!activeButton || !surface || surface.hidden || positionFrame) return;
+    if (!visibleTooltip(activeButton)) return hide();
     positionFrame = global.requestAnimationFrame(position);
   }
 
@@ -400,7 +411,7 @@
   function open(button) {
     if (activeButton !== button || !button?.isConnected) return;
     enhanceButton(button);
-    const message = clean(button.dataset.portalTooltip);
+    const message = visibleTooltip(button);
     if (!message) return hide();
     const tooltip = ensureSurface();
     if (tooltip.textContent !== message) tooltip.textContent = message;
@@ -413,7 +424,7 @@
   function show(button, options = {}) {
     if (!(button instanceof Element)) return hide();
     enhanceButton(button);
-    if (!clean(button.dataset.portalTooltip)) return hide();
+    if (!visibleTooltip(button)) return hide();
     if (activeButton !== button) setDescribedBy(activeButton, false);
     activeButton = button;
     if (showTimer) global.clearTimeout(showTimer);
@@ -428,7 +439,7 @@
     const button = target.closest(TRIGGER_SELECTOR);
     if (!button) return null;
     enhanceButton(button);
-    return clean(button.dataset.portalTooltip) ? button : null;
+    return visibleTooltip(button) ? button : null;
   }
 
   function bindInteractions() {
