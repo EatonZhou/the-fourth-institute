@@ -617,7 +617,7 @@ async def upload_content(request: Request):
         resolved = await asyncio.to_thread(service.resolve, address, actor=caller)
         response, headers, chunks = await asyncio.to_thread(
             authorized_resource_response,
-            SimpleNamespace(headers=request.headers, path=str(request.url)),
+            SimpleNamespace(headers=request.headers, path=str(request.url), command=request.method),
             resource_service=service, address=address, actor=caller, resolved=resolved,
             content_type=resolved_media_type(resolved, fallback="application/octet-stream"), download=download,
         )
@@ -649,7 +649,7 @@ async def resource_download(request: Request):
         resolved = await asyncio.to_thread(service.resolve, record["address"], actor=caller)
         response, headers, chunks = await asyncio.to_thread(
             authorized_resource_response,
-            SimpleNamespace(headers=request.headers, path=str(request.url)),
+            SimpleNamespace(headers=request.headers, path=str(request.url), command=request.method),
             resource_service=service, address=record["address"], actor=caller, resolved=resolved,
             content_type=str(record.get("content_type") or "application/octet-stream"), download=True,
         )

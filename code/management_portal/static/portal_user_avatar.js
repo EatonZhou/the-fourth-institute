@@ -103,18 +103,24 @@
   function bind(root) {
     root?.querySelectorAll?.("[data-message-avatar-principal]").forEach(node => {
       const principal = node.dataset.messageAvatarPrincipal;
-      if (!principal || pending.get(node) === principal) return;
+      if (!principal) return;
       const entry = portraits.get(principal);
       const fresh = entry && Date.now() - entry.at < FRESH_MS && entry.avatar !== undefined;
       if (fresh && node.dataset.messageAvatarApplied === principal) return;
-      pending.set(node, principal);
+      const request = portrait(principal);
+      if (pending.get(node) === request) return;
+      pending.set(node, request);
       const shown = node.dataset.messageAvatarApplied === principal ? entry?.avatar : undefined;
-      portrait(principal).then(avatar => {
+      request.then(avatar => {
+        if (pending.get(node) !== request) return;
         pending.delete(node);
+        if (portraits.has(principal) && portraits.get(principal).promise !== request) return;
         if (shown !== undefined && sameAvatar(shown, avatar)) return;
         apply(node, principal, avatar);
       }, () => {
+        if (pending.get(node) !== request) return;
         pending.delete(node);
+        if (portraits.has(principal) && portraits.get(principal).promise !== request) return;
         scheduleRetry();
       });
     });

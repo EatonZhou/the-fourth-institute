@@ -58,10 +58,39 @@ from knowledge_board_lan.knowledge_versions import _knowledge_version_recovery_s
 from skill_board_lan import skill_backend
 
 _ITEM_GRAPH_CACHE: dict[str, dict] = {}
-_KNOWLEDGE_GRAPH_CACHE: dict[str, object] = {}
+_KNOWLEDGE_GRAPH_CACHE: dict[str, dict] = {}
 _ITEM_GRAPH_CACHE_TTL_SECONDS = 30
+_GRAPH_CACHE_MAX_ENTRIES = 128
 _MAX_REGISTERED_ITEM_CHARS = 2_000_000
 _UNIFIED_SKILL_TYPE = "skill"
+
+
+def _prune_graph_cache(cache: dict[str, dict], now: float) -> None:
+    """Reclaim expired and oldest-published entries while holding ``_LOCK``."""
+    expired = [
+        key for key, entry in cache.items()
+        if now - float(entry.get("created_at") or 0) > _ITEM_GRAPH_CACHE_TTL_SECONDS
+    ]
+    for key in expired:
+        del cache[key]
+    while len(cache) > _GRAPH_CACHE_MAX_ENTRIES:
+        del cache[next(iter(cache))]
+
+
+def _graph_cache_get(cache: dict[str, dict], key: str) -> dict | None:
+    with _LOCK:
+        _prune_graph_cache(cache, time.time())
+        cached = cache.get(key)
+        return dict(cached.get("payload") or {}) if cached is not None else None
+
+
+def _graph_cache_store(cache: dict[str, dict], key: str, payload: dict) -> None:
+    with _LOCK:
+        now = time.time()
+        # Refreshing an existing key gives it a new publication position.
+        cache.pop(key, None)
+        cache[key] = {"created_at": now, "payload": payload}
+        _prune_graph_cache(cache, now)
 
 
 def _id_from_name(name: str, item_type: str) -> str:
@@ -424,10 +453,9 @@ def build_item_graph(item_id: str, *, max_depth: int = 2, actor: str = "") -> di
     # may only be reused within that caller's view, and root access is rechecked.
     root = resolve_item_record(clean_id, active_only=False, actor=actor)
     cache_key = f"{actor}:{clean_id}:{depth_limit}"
-    with _LOCK:
-        cached = _ITEM_GRAPH_CACHE.get(cache_key)
-        if cached and time.time() - float(cached.get("created_at") or 0) <= _ITEM_GRAPH_CACHE_TTL_SECONDS:
-            return dict(cached.get("payload") or {})
+    cached = _graph_cache_get(_ITEM_GRAPH_CACHE, cache_key)
+    if cached is not None:
+        return cached
 
     records_by_kb_id = _item_graph_records(actor)
 
@@ -508,8 +536,7 @@ def build_item_graph(item_id: str, *, max_depth: int = 2, actor: str = "") -> di
         "unresolved_links": unresolved_links,
         "_unresolved_links_by_source": unresolved_links_by_source,
     }
-    with _LOCK:
-        _ITEM_GRAPH_CACHE[cache_key] = {"created_at": time.time(), "payload": payload}
+    _graph_cache_store(_ITEM_GRAPH_CACHE, cache_key, payload)
     return dict(payload)
 
 
@@ -526,14 +553,10 @@ def build_knowledge_graph(*, actor: str, refresh: bool = False, max_nodes: int =
         raise ValueError("actor required")
     node_limit = max(1, min(int(max_nodes or 5000), 5000))
     cache_key = f"{actor}:all:{node_limit}"
-    with _LOCK:
-        cached = _KNOWLEDGE_GRAPH_CACHE.get(cache_key)
-        if (
-            not refresh
-            and isinstance(cached, dict)
-            and time.time() - float(cached.get("created_at") or 0) <= _ITEM_GRAPH_CACHE_TTL_SECONDS
-        ):
-            return dict(cached.get("payload") or {})
+    if not refresh:
+        cached = _graph_cache_get(_KNOWLEDGE_GRAPH_CACHE, cache_key)
+        if cached is not None:
+            return cached
 
     graph_records = resource_views.knowledge_graph_records(
         actor=actor, limit=node_limit, service=get_resource_service(),
@@ -619,11 +642,7 @@ def build_knowledge_graph(*, actor: str, refresh: bool = False, max_nodes: int =
         "unresolved_links": unresolved_links,
         "_unresolved_links_by_source": unresolved_links_by_source,
     }
-    with _LOCK:
-        _KNOWLEDGE_GRAPH_CACHE[cache_key] = {
-            "created_at": time.time(),
-            "payload": payload,
-        }
+    _graph_cache_store(_KNOWLEDGE_GRAPH_CACHE, cache_key, payload)
     return dict(payload)
 
 

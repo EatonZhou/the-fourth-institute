@@ -44,6 +44,19 @@ def _binding_row(
     ).fetchone()
 
 
+def _lock_bindings(connection: Any, *binding_ids: str) -> None:
+    """Order existing binding mutations before reading their expected state.
+
+    Absent identities remain protected by the binding primary key. Lock both
+    sides of a replacement in the same order, without locking session history.
+    """
+    connection.execute(
+        'SELECT binding_id FROM provider_bindings WHERE binding_id = ANY(%s) '
+        'ORDER BY binding_id FOR UPDATE',
+        (sorted(set(binding_ids)),),
+    ).fetchall()
+
+
 class ProviderSessions:
     """Records of Provider sessions and of their bindings."""
 
@@ -184,6 +197,7 @@ class ProviderSessions:
             raise ValueError("Provider binding and Session identities are required")
 
         def write(connection: Any) -> dict[str, Any]:
+            _lock_bindings(connection, clean_binding)
             if connection.execute(
                 'SELECT 1 FROM provider_sessions WHERE provider_session_ref = %s',
                 (clean_session_ref,),
@@ -266,6 +280,7 @@ class ProviderSessions:
             raise ValueError("An expected absent binding cannot also have an expected identity")
 
         def write(connection: Any) -> dict[str, Any]:
+            _lock_bindings(connection, canonical, prepared)
             previous_row = _binding_row(connection, canonical)
             prepared_row = _binding_row(connection, prepared)
             if expected_absent and previous_row is not None:
@@ -319,6 +334,7 @@ class ProviderSessions:
             raise ValueError("Provider binding restoration requires explicit current and prior state")
 
         def write(connection: Any) -> dict[str, Any]:
+            _lock_bindings(connection, canonical)
             current = _binding_row(connection, canonical)
             if expected_absent:
                 if current is not None:
@@ -365,6 +381,7 @@ class ProviderSessions:
             return
 
         def write(connection: Any) -> None:
+            _lock_bindings(connection, clean_id)
             current = _binding_row(connection, clean_id)
             if current is None:
                 return

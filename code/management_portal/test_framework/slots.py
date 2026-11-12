@@ -6,7 +6,7 @@ exits, so a crashed executor never leaks a slot.
 """
 from __future__ import annotations
 
-from contextlib import contextmanager
+from contextlib import ExitStack, contextmanager
 import hashlib
 import os
 import time
@@ -76,8 +76,9 @@ class SlotLease:
 
     def release(self) -> None:
         descriptors, self._descriptors = self._descriptors, []
-        for descriptor in descriptors:
-            os.close(descriptor)
+        with ExitStack() as closing:
+            for descriptor in descriptors:
+                closing.callback(os.close, descriptor)
 
 
 def acquire(kind: str, want: int, *, stop: Callable[[], bool], poll_seconds: float = 1.0) -> SlotLease | None:
@@ -89,35 +90,31 @@ def acquire(kind: str, want: int, *, stop: Callable[[], bool], poll_seconds: flo
     root.mkdir(parents=True, exist_ok=True, mode=0o700)
     while True:
         descriptors: list[int] = []
-        for global_index in range(global_capacity):
-            if len(descriptors) // 2 >= want:
-                break
-            global_descriptor = _open_lock(root / f"global-{global_index}.lock")
-            try:
-                locked = try_lock_descriptor(global_descriptor)
-            except BaseException:
-                os.close(global_descriptor)
-                raise
-            if not locked:
-                os.close(global_descriptor)
-                continue
-            for kind_index in range(capacity):
-                kind_descriptor = _open_lock(root / f"{kind}-{kind_index}.lock")
-                try:
-                    locked = try_lock_descriptor(kind_descriptor)
-                except BaseException:
-                    os.close(kind_descriptor)
-                    os.close(global_descriptor)
-                    raise
-                if not locked:
-                    os.close(kind_descriptor)
-                    continue
-                descriptors.extend((global_descriptor, kind_descriptor))
-                break
-            else:
-                os.close(global_descriptor)
-        if descriptors:
-            return SlotLease(kind, descriptors)
+        with ExitStack() as pending:
+            for global_index in range(global_capacity):
+                if len(descriptors) // 2 >= want:
+                    break
+                with ExitStack() as pair:
+                    global_descriptor = _open_lock(root / f"global-{global_index}.lock")
+                    pair.callback(os.close, global_descriptor)
+                    if not try_lock_descriptor(global_descriptor):
+                        continue
+                    for kind_index in range(capacity):
+                        with ExitStack() as candidate:
+                            kind_descriptor = _open_lock(root / f"{kind}-{kind_index}.lock")
+                            candidate.callback(os.close, kind_descriptor)
+                            if not try_lock_descriptor(kind_descriptor):
+                                continue
+                            descriptors.extend((global_descriptor, kind_descriptor))
+                            pair.enter_context(candidate.pop_all())
+                            pending.enter_context(pair.pop_all())
+                            break
+            if descriptors:
+                lease = SlotLease(kind, descriptors)
+                # Until this transfer, any failure releases every acquired
+                # pair as well as the candidate currently being examined.
+                pending.pop_all()
+                return lease
         if stop():
             return None
         time.sleep(poll_seconds)

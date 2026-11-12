@@ -169,6 +169,8 @@ await sdk.resource('read_many', { addresses, format: 'text' }); // 或 yaml
 
 ## 页面代码与基础模板
 
+工作台目录由 `portal_workbench_catalog.js` 管理显示与收藏交互，Studio 负责数据读取和收藏写入。每个挂载实例按点击顺序串行提交收藏操作，以最后确认的列表叠加尚未完成的选择即时显示；失败只撤回对应操作，保留后续选择和当前控件焦点。销毁目录时丢弃尚未提交的操作，并忽略在途回执；已提交的写入不因此撤销。失败后的重试由用户再次点击发起。
+
 宿主页、Studio 预览和内置组合页复用 Lineage 同一公共布局：`portal_workbench.css` 的 `portalWorkbenchPageLayout`，直接包含 `portalActivityRail` 与 `portalWorkbenchViewportRoot` 内容槽位。该组件统一侧栏尺寸、border-box 占位、间距和窄屏横排；调用方不复制 grid 列宽、侧栏定位或内容补偿边距。外层已有活动轨时将内层 rail 设为 hidden，公共模板同时取消其占位。页面仅决定业务视图与容器高度，iframe 内部内容仍由应用负责。协议依据 `decision_7a5ae487e2e9` 的“页面模板必须在代码层复用”。
 
 Workbench 的 `html` 字段保存业务内容片段及其内联业务脚本，禁止使用完整 HTML 文档。设计 Resident 直接通过 Workbench ResourceService 动作保存页面代码，并在 Chat 中以自然语言说明结果；聊天正文不是页面定义或反投影计划的机器传输通道。宿主统一挂载 PortalWorkbench、Panel Package、Activity Rail，并向隔离业务区域注入 Portal 公共控件样式及当前主题。主题变化会同步到业务区域。

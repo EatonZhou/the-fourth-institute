@@ -16,6 +16,7 @@ from urllib.parse import parse_qs, parse_qsl, urlencode, unquote, urlparse, urlu
 
 from management_portal import http_auth, http_instance, http_responses, http_static_versions
 from management_portal.http_routes import RouteDefinition
+from management_portal.http_validators import if_none_match_matches
 
 
 ROOT = Path(__file__).resolve().parent
@@ -160,10 +161,7 @@ def _serve_static_file(
     variant = "-gzip" if gzip_variant else ""
     etag = f'"{version}{variant}"'
     cache_control = _static_cache_control(handler, version)
-    if etag in {
-        token.strip()
-        for token in str(handler.headers.get("If-None-Match") or "").split(",")
-    }:
+    if if_none_match_matches(handler.headers.get("If-None-Match", ""), etag):
         handler.send_response(304)
         handler.send_header("Cache-Control", cache_control)
         handler.send_header("ETag", etag)

@@ -16,6 +16,7 @@ from markdown_it import MarkdownIt
 from management_common.site_config import site_name
 from management_portal import http_documents, http_responses
 from management_portal.http_routes import RouteDefinition
+from management_portal.http_validators import if_none_match_matches
 
 GUIDE_ROOT = Path(__file__).resolve().parent.parent / "docs" / "guide"
 GUIDES = ("human", "agent", "admin")
@@ -144,7 +145,7 @@ def guide_markdown(request, parsed, _actor):
     body = guide_source(name, _language(request, parsed)).encode("utf-8")
     # The ETag tells an agent whether the guide changed since it last read it; a matching If-None-Match gets 304.
     etag = f'"{hashlib.sha256(body).hexdigest()[:16]}"'
-    unchanged = etag in [tag.strip() for tag in request.headers.get("If-None-Match", "").split(",")]
+    unchanged = if_none_match_matches(request.headers.get("If-None-Match", ""), etag)
     return http_documents._serve_bytes(request, 304 if unchanged else 200, b"" if unchanged else body, "text/markdown; charset=utf-8",
                                        cache_control=_MARKDOWN_CACHE_CONTROL, extra_headers={
                                            "ETag": etag,

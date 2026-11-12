@@ -5,6 +5,8 @@ from dataclasses import dataclass
 from http.server import BaseHTTPRequestHandler
 from urllib.parse import parse_qs, urlparse
 
+from management_portal.http_validators import if_none_match_matches
+
 
 def parse_byte_range(value: str, size: int) -> tuple[int, int] | None:
     raw_value = str(value or "").strip()
@@ -99,15 +101,15 @@ def plan_media_response(
         "private, max-age=31536000, immutable"
         if requested_version == str(mtime_ns) else "private, no-cache"
     )
-    range_header = str(handler.headers.get("Range", "") or "").strip()
+    # Retrieval preconditions precede Range, including an unsatisfiable range.
+    # Explicit downloads retain their no-store/full-transfer cache policy.
+    if not download and if_none_match_matches(handler.headers.get("If-None-Match", ""), etag):
+        return MediaResponse(304, size, 0, size - 1, etag, cache_control)
+    method = str(getattr(handler, "command", "GET") or "GET").upper()
+    range_header = str(handler.headers.get("Range", "") or "").strip() if method == "GET" else ""
     if_range = str(handler.headers.get("If-Range", "") or "").strip()
     if range_header and if_range and if_range != etag:
         range_header = ""
-    if not download and not range_header and etag in {
-        token.strip()
-        for token in str(handler.headers.get("If-None-Match") or "").split(",")
-    }:
-        return MediaResponse(304, size, 0, size - 1, etag, cache_control)
     try:
         byte_range = parse_byte_range(range_header, size)
     except ValueError:

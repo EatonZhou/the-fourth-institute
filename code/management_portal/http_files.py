@@ -106,7 +106,7 @@ def authorized_resource_response(
         content_disposition=_download_content_disposition(resolved.get("filename")) if download or not inline else "",
         extra_headers=safe_headers,
     )
-    if response.status in {304, 416}:
+    if response.status in {304, 416} or not http_responses._response_body_allowed(handler):
         return response, headers, iter(())
     chunk_size = 1024 * 1024
 

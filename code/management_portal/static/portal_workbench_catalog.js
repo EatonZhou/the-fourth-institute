@@ -82,6 +82,9 @@
     let teamsRead = false;
     // Starred workbench IDs in the order they were starred; they lead the directory.
     let favorites = (Array.isArray(options.favorites) ? options.favorites : []).map(String);
+    let confirmedFavorites = favorites.slice();
+    const favoriteQueue = [];
+    let savingFavorite = false;
     let destroyed = false;
     const container = document.createElement('div');
     container.className = 'workbenchCatalog';
@@ -328,24 +331,51 @@
       history.replaceState(history.state, '', url);
     }
 
-    async function toggleFavorite(id) {
-      const favorite = !favorites.includes(id);
-      const previous = favorites;
-      // The card moves between groups; its star keeps the focus without scrolling the page.
-      const show = next => {
-        favorites = next;
-        renderResults();
-        container.querySelector(`[data-workbench-favorite="${CSS.escape(id)}"]`)?.focus({ preventScroll: true });
-      };
-      show(favorite ? [...favorites, id] : favorites.filter(item => item !== id));
+    function applyFavorite(values, { id, favorite }) {
+      return favorite
+        ? (values.includes(id) ? values : [...values, id])
+        : values.filter(item => item !== id);
+    }
+
+    function renderFavorites() {
+      favorites = favoriteQueue.reduce(applyFavorite, confirmedFavorites);
+      renderResults();
+    }
+
+    async function drainFavoriteQueue() {
+      if (savingFavorite || destroyed) return;
+      savingFavorite = true;
       try {
-        const saved = await options.onFavorite(id, favorite);
-        if (!destroyed && Array.isArray(saved)) show(saved.map(String));
-      } catch (error) {
-        if (destroyed) return;
-        show(previous);
-        window.PortalUI?.toast?.(window.PortalI18n.text`${t(favorite ? '添加收藏' : '取消收藏')}失败：${error.message || error}`, 'error');
+        while (!destroyed && favoriteQueue.length) {
+          const operation = favoriteQueue[0];
+          let failure;
+          try {
+            const saved = await options.onFavorite(operation.id, operation.favorite);
+            if (destroyed) return;
+            confirmedFavorites = Array.isArray(saved) ? saved.map(String) : applyFavorite(confirmedFavorites, operation);
+          } catch (error) {
+            if (destroyed) return;
+            failure = error;
+          }
+          favoriteQueue.shift();
+          // Reapply later clicks; a completed request must not move focus back to its card.
+          renderFavorites();
+          if (failure) {
+            window.PortalUI?.toast?.(window.PortalI18n.text`${t(operation.favorite ? '添加收藏' : '取消收藏')}失败：${failure.message || failure}`, 'error');
+          }
+        }
+      } finally {
+        savingFavorite = false;
       }
+    }
+
+    function toggleFavorite(id) {
+      if (destroyed) return;
+      favoriteQueue.push({ id, favorite: !favorites.includes(id) });
+      renderFavorites();
+      // The clicked card moves between groups; retain its star focus without scrolling.
+      container.querySelector(`[data-workbench-favorite="${CSS.escape(id)}"]`)?.focus({ preventScroll: true });
+      void drainFavoriteQueue();
     }
 
     container.addEventListener('click', event => {
@@ -411,6 +441,7 @@
       destroy() {
         if (destroyed) return;
         destroyed = true;
+        favoriteQueue.length = 0;
         window.removeEventListener('portal:language-changed', render);
         pageState?.destroy?.();
         container.remove();
