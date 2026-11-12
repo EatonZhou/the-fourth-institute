@@ -240,14 +240,12 @@
     return String(value || "").replace(/\s+/g, " ").trim();
   }
 
+  // Shared workbench/document tabs show their name as text; they carry no hover hint.
+  const SILENT_TAB_SELECTOR = ".portalWorkbenchTab, .portalDocumentTabSelect";
+
   function visibleTooltip(button) {
-    const message = clean(button.dataset.portalTooltip);
-    if (button.matches(".portalWorkbenchTab, .portalDocumentTabSelect")) {
-      const label = button.querySelector(".portalDocumentTabLabel, :scope > span:not(.portalIcon)");
-      if (label && message === clean(label.textContent)
-          && label.scrollWidth <= label.clientWidth) return "";
-    }
-    return message;
+    if (button.matches(SILENT_TAB_SELECTOR)) return "";
+    return clean(button.dataset.portalTooltip);
   }
 
   function clearGeneratedTooltip(button) {
@@ -260,7 +258,7 @@
   function enhanceButton(button) {
     if (!(button instanceof Element) || !button.matches(TRIGGER_SELECTOR)) return;
 
-    if (button.dataset.portalTooltipOptOut === "1") {
+    if (button.dataset.portalTooltipOptOut === "1" || button.matches(SILENT_TAB_SELECTOR)) {
       button.removeAttribute("title");
       delete button.dataset.portalTooltip;
       delete button.dataset.portalTooltipSource;

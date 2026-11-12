@@ -25,8 +25,6 @@
       if(!note.children.length&&quotaLabels.has(note.textContent.trim()))note.textContent='';
     }
     for(const element of document.querySelectorAll('button,a.portalButton,[data-portal-tooltip]')){
-      // Shared workbench/document tabs own clipping-aware, single-surface hints.
-      if(element.matches('.portalWorkbenchTab,.portalDocumentTabSelect'))continue;
       if(inPaper(element)&&!element.closest('.message,.markdownBody,.composerRichInput'))trimTooltip(element);
     }
     document.getElementById('workspaceTitle')?.removeAttribute('title');

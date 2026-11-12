@@ -175,7 +175,6 @@
         tab.dataset.portalIcon = descriptor.icon;
         tab.setAttribute("role", "tab");
         tab.setAttribute("aria-selected", String(active));
-        tab.title = descriptor.title;
         const tabLabel = document.createElement("span");
         tabLabel.textContent = descriptor.title;
         tab.append(tabLabel);
@@ -234,7 +233,6 @@
         tab.classList.toggle("is-active", active);
         tab.dataset.portalIcon = descriptor.icon;
         tab.setAttribute("aria-selected", String(active));
-        tab.title = descriptor.title;
         const label = tab.querySelector(":scope > span");
         if (label) label.textContent = descriptor.title;
         const close = tab.parentElement?.querySelector(":scope > .portalWorkbenchTabClose");

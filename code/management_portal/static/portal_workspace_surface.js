@@ -599,14 +599,12 @@
     root.innerHTML = items.map((item, index) => {
       const key = String(item?.key ?? index);
       const label = String(item?.label || key.split("/").at(-1) || key);
-      const title = String(item?.title || key);
-      const tooltip = title.trim() === label.trim() ? label : `${label} — ${title}`;
       const active = item?.active === true;
       const dirty = item?.dirty === true;
       const pinned = item?.pinned === true;
       byKey.set(key, item);
       return window.PortalI18n.html`<div class="portalDocumentTab${active ? " is-active" : ""}${dirty ? " is-dirty" : ""}${pinned ? " is-pinned" : ""}" role="tab" aria-selected="${active ? "true" : "false"}">
-        <button class="portalDocumentTabSelect" data-portal-icon="file" type="button" data-portal-document-tab="${escapeHtml(key)}" title="${escapeHtml(tooltip)}">
+        <button class="portalDocumentTabSelect" data-portal-icon="file" type="button" data-portal-document-tab="${escapeHtml(key)}">
           <span class="portalDocumentTabLabel">${escapeHtml(label)}</span>
           ${pinned ? window.PortalI18n.t('<span class="portalDocumentTabPin" data-portal-icon="pin" aria-label="已锁定"></span>') : ""}
           <i class="portalDocumentTabDirty" aria-hidden="true"></i>
