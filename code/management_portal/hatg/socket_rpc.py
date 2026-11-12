@@ -168,7 +168,9 @@ def _decode(owner: str, raw: bytes, request_id: str) -> dict[str, Any]:
         raise _unavailable(owner, f"{owner} 关闭了连接，没有返回结果")
     try:
         response = json.loads(raw)
-    except json.JSONDecodeError as exc:
+    except (json.JSONDecodeError, UnicodeDecodeError) as exc:
+        # EOF may split a UTF-8 character after the owner has committed.
+        # Unreadable reply bytes say nothing about the instruction's arguments.
         raise _unavailable(owner, f"{owner} 返回了无法解析的结果") from exc
     if not isinstance(response, dict) or response.get("id") != request_id:
         raise _unavailable(owner, f"{owner} 返回了不匹配的响应")

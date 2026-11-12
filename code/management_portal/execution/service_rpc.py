@@ -9,6 +9,8 @@ from __future__ import annotations
 import logging
 from typing import Any, Callable
 
+from management_common.format_tags import schema_matches
+
 from . import provider_default_efforts
 from .activity_redaction import redact_sensitive_mapping
 from .contracts import (
@@ -397,9 +399,14 @@ def complete_input_control(server: Any, params: dict[str, Any]) -> Any:
         error=str(params.get("error") or ""),
     )
     if receipt.get("status") == "delivered":
-        from .appended_input_projection import materialize_delivered_input
+        if schema_matches(receipt.get("schema"), "tfi.execution-turn-settings-control.v1"):
+            # Both controls share receipt storage and this Worker endpoint;
+            # a settings acknowledgement carries no input to put in the trace.
+            ExecutionTurnSettingsControl.from_payload(receipt)
+        else:
+            from .appended_input_projection import materialize_delivered_input
 
-        materialize_delivered_input(server.agent_data, receipt)
+            materialize_delivered_input(server.agent_data, receipt)
     return receipt
 
 

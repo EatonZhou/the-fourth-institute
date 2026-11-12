@@ -297,15 +297,18 @@ class PytestGroup:
         try:
             if path.is_symlink() or not path.resolve().is_relative_to(group_dir.resolve()):
                 raise RuntimeError("pytest 结果路径越过本组产物目录")
-            with path.open("r", encoding="utf-8") as stream:
+            # The cursor is a physical byte offset. Text newline translation
+            # loses CR bytes, and a text decoder can reject an unfinished UTF-8
+            # tail before the writer has completed the next event.
+            with path.open("rb") as stream:
                 stream.seek(position)
                 while True:
                     line = stream.readline()
-                    if not line or not line.endswith("\n"):
+                    if not line or not line.endswith(b"\n"):
                         return position
-                    position += len(line.encode("utf-8"))
+                    position += len(line)
                     try:
-                        event = json.loads(line)
+                        event = json.loads(line.decode("utf-8"))
                     except json.JSONDecodeError:
                         continue
                     if isinstance(event, dict):

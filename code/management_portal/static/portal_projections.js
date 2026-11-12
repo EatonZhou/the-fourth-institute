@@ -4,6 +4,10 @@
   const apps = new Map();
   const packages = new Set();
   const connections = new Map();
+  // This key only invalidates browser metadata; requests retain server-owned authentication.
+  const identityKey = identity => JSON.stringify(identity?.principal?.id
+    ? [identity.principal.kind, identity.principal.id] : ["username", identity?.username || ""]);
+  let actorKey = identityKey(window.PortalIdentity?.peek?.());
   const isEditorType = type => /^projection:workbench_[0-9a-f]{12}$/.test(String(type));
   async function request(path, payload) {
     const response = await fetch(`/api/workbenches${path ? (path.startsWith("?") ? path : `/${path}`) : ""}`, { credentials: "same-origin", ...(payload === undefined ? {} : { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) }) });
@@ -42,7 +46,7 @@
     if (!packages.has(type)) {
       window.PortalWorkbench.registerPanelPackage({
         type, version: 1, component: "PortalProjectionContent",
-        presentation: { title: target.title, icon: "window" }, sizing: { minWidth: 220, minHeight: 180 },
+        presentation: { title: window.PortalI18n.t("投影工作台"), icon: "window" }, sizing: { minWidth: 220, minHeight: 180 },
         instances: "single", capabilities: [], behavior: { canHide: true, canCollapse: true, canMove: true, closable: true },
         context: { channels: [] }, persistence: { schemaVersion: 1 },
         create: options => window.PortalProjectionHost.createPanel(options),
@@ -76,12 +80,21 @@
       window.PortalUI?.toast?.(`投影组件读取失败：${error.message}`, "error");
     }
   }
-  window.addEventListener("portal:workbenches-changed", () => {
+  function refreshConnections() {
     for (const [workbench, connection] of [...connections]) {
       connections.delete(workbench);
       if (workbench.root && !workbench.root.dataset.portalWorkbenchId) continue;
       void lineage(workbench, connection.editorTypes, connection.lineageId);
     }
+  }
+  window.addEventListener("portal:workbenches-changed", refreshConnections);
+  window.addEventListener("portal:identity-changed", event => {
+    const nextKey = identityKey(event.detail?.identity || window.PortalIdentity?.peek?.());
+    if (nextKey === actorKey) return;
+    actorKey = nextKey;
+    apps.clear();
+    // Replacing each connection also invalidates all responses from the old actor.
+    refreshConnections();
   });
   window.PortalProjections = Object.freeze({ lineage, resource, descriptor, request, initializeNative });
   const initialized = new Set();

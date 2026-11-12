@@ -5,15 +5,19 @@ from __future__ import annotations
 import hashlib
 import json
 import logging
+import os
 from pathlib import Path
 import re
+import secrets
 import shutil
+import stat
 import threading
 import time
 from urllib.parse import urlparse
 import urllib.request
 
 from management_common.instance_manifest import AREAS
+from management_common import secure_paths
 from management_common.instance_locations import current_instance
 from management_common.portal_paths import path as portal_path
 from management_common.scan_cancellation import check_scan_cancelled, walk_paths
@@ -756,9 +760,41 @@ class PaperStore:
         if not found:
             return
         paper_dir = self.paper_dir_from_manifest(found[1], found[0])
-        runs_dir = paper_dir / "runs"
-        runs_dir.mkdir(parents=True, exist_ok=True)
-        _write_json(runs_dir / f"{_slugify(job_id)}.json", job)
+        # A late task may outlive its bundle. Only create the child directory;
+        # pin the existing root so deletion/move cannot redirect or recreate it.
+        with secure_paths.open_directory(paper_dir, ("runs",), create=True) as directory:
+            name = f"{_slugify(job_id)}.json"
+            mode = 0o664
+            try:
+                previous = secure_paths.stat_child(directory, name)
+                if not stat.S_ISREG(previous.st_mode):
+                    raise ValueError("Paper run record is not a regular file")
+                mode = previous.st_mode & 0o7777
+            except FileNotFoundError:
+                pass
+            temporary = f".paper-run-{secrets.token_hex(16)}.tmp"
+            descriptor = secure_paths.open_child(directory, temporary, os.O_WRONLY | os.O_CREAT | os.O_EXCL, mode)
+            try:
+                with os.fdopen(descriptor, "w", encoding="utf-8") as stream:
+                    secure_paths.prepare_child_permissions(directory, temporary, name, mode)
+                    if os.name != "nt":
+                        os.fchmod(stream.fileno(), mode)
+                        if mode & 0o077 == 0:
+                            from management_common.file_permissions import assert_private_posix_acl
+                            assert_private_posix_acl(stream.fileno())
+                    json.dump(job, stream, ensure_ascii=False, indent=2, sort_keys=False)
+                    stream.write("\n")
+                    stream.flush()
+                    os.fsync(stream.fileno())
+                if not secure_paths.directory_unchanged(directory, paper_dir / "runs"):
+                    raise FileNotFoundError("Paper run directory changed during write")
+                secure_paths.replace_child(directory, temporary, name)
+                secure_paths.sync_directory(directory)
+            finally:
+                try:
+                    secure_paths.unlink_child(directory, temporary)
+                except FileNotFoundError:
+                    pass
 
 
 PAPER_STORE = PaperStore()
@@ -783,7 +819,14 @@ def _iter_paper_run_records(paper_id: str, *, kind: str = "", newest_first: bool
         return
     paths = runs_dir.glob("*.json")
     if newest_first:
-        paths = sorted(paths, key=lambda item: item.stat().st_mtime, reverse=True)
+        stamped = []
+        for path in paths:
+            try:
+                modified = path.stat().st_mtime
+            except FileNotFoundError:
+                continue  # Bundle cleanup can remove a run after enumeration.
+            stamped.append((modified, path))
+        paths = (path for _, path in sorted(stamped, key=lambda item: item[0], reverse=True))
     for path in paths:
         item = _load_json(path, {})
         if not isinstance(item, dict):

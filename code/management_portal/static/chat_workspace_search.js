@@ -18,6 +18,8 @@
     // The search owns only its query/results. Conversation messages and navigation
     // remain owned by the Workspace and its existing history loader.
     function createConversationSearch({ root, scope, messages, rendering, search, loadOlder, canLoadOlder, reveal, onResults, cancelReveal }) {
+      const lifetime = new AbortController();
+      const listen = (target, type, listener, options = {}) => target.addEventListener(type, listener, { ...options, signal: lifetime.signal });
       const trigger = root.querySelector("[data-workspace-history-search]");
       // Tooltips move title into data-portal-tooltip; refresh the source on
       // language changes instead of leaving the previous locale cached there.
@@ -27,7 +29,7 @@
         window.PortalButtonTooltips?.enhance(trigger);
       };
       syncTriggerLanguage();
-      window.addEventListener("portal:language-changed", syncTriggerLanguage);
+      listen(window, "portal:language-changed", syncTriggerLanguage);
       const panel = document.createElement("section");
       panel.className = "portalConversationSearch";
       panel.setAttribute("role", "dialog");
@@ -57,7 +59,7 @@
         if (opened && !panel.contains(event.target) && !trigger.contains(event.target)
           && !root.querySelector('.chatRoundRail')?.contains(event.target)) binding.close();
       };
-      document.addEventListener('pointerdown', closeOutside, true);
+      listen(document, 'pointerdown', closeOutside, { capture: true });
       function snippet(text) {
         const value = String(text || "").replace(/\s+/g, " ").trim();
         const needle = query.toLocaleLowerCase();
@@ -96,9 +98,10 @@
         try { await reveal(selectedKey); }
         catch (err) { if (!disposed && request === revision && scope() === targetScope) { error = `定位失败：${err.message || err}`; render(); } }
       }
-      previous.addEventListener('click', () => moveResult(-1));
-      next.addEventListener('click', () => moveResult(1));
+      listen(previous, 'click', () => moveResult(-1));
+      listen(next, 'click', () => moveResult(1));
       async function refresh(append = false, preserveScroll = false) {
+        if (disposed) return;
         const request = ++revision;
         clearTimeout(timer);
         error = "";
@@ -125,8 +128,8 @@
           if (!disposed && request === revision) { busy = false; render(); binding.reposition(); }
         }
       }
-      trigger.addEventListener("click", () => binding.toggle());
-      input.addEventListener("input", () => {
+      listen(trigger, "click", () => binding.toggle());
+      listen(input, "input", () => {
         cancelReveal?.();
         revision += 1;
         clearTimeout(timer);
@@ -134,7 +137,7 @@
         busy = !!query && !!search; render();
         timer = window.setTimeout(() => refresh(), 220);
       });
-      panel.addEventListener("keydown", event => {
+      listen(panel, "keydown", event => {
         const buttons = [...list.querySelectorAll("button")];
         const index = buttons.indexOf(document.activeElement);
         if (event.key === "ArrowDown" || event.key === "ArrowUp") {
@@ -144,7 +147,7 @@
           event.preventDefault(); buttons[0]?.click();
         }
       });
-      list.addEventListener("click", async event => {
+      listen(list, "click", async event => {
         const button = event.target.closest("[data-search-message]");
         if (!button) return;
         selectedKey = button.dataset.searchMessage;
@@ -152,7 +155,7 @@
         try { await reveal(button.dataset.searchMessage); }
         catch (err) { if (!disposed && request === revision && scope() === targetScope) window.PortalUI.toast(window.PortalI18n.text`定位失败：${err.message || err}`, "error"); }
       });
-      more.addEventListener("click", async () => {
+      listen(more, "click", async () => {
         if (busy) return;
         if (query && search) { void refresh(!error); return; }
         const request = ++revision;
@@ -165,6 +168,7 @@
       });
       return {
         update(messagesChanged) {
+          if (disposed) return;
           if (currentScope !== scope()) {
             binding.close(); revision += 1; clearTimeout(timer);
             currentScope = scope(); input.value = query = ""; rows = []; nextPage = "";
@@ -173,7 +177,7 @@
           if (messagesChanged && binding.isOpen() && !query && !busy) refresh(false, true);
         },
         close() { binding.close(); },
-        destroy() { window.removeEventListener("portal:language-changed", syncTriggerLanguage); disposed = true; revision += 1; clearTimeout(timer); cancelReveal?.(); onResults?.([]); document.removeEventListener('pointerdown', closeOutside, true); binding.destroy(); panel.remove(); },
+        destroy() { if (disposed) return; disposed = true; revision += 1; lifetime.abort(); clearTimeout(timer); cancelReveal?.(); onResults?.([]); binding.destroy(); panel.remove(); },
       };
     }
 

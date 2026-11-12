@@ -701,25 +701,27 @@ class ResourceBackupBackend:
 
     @staticmethod
     def _load_json(path: Path) -> tuple[dict[str, Any], str]:
-        if not path.is_file():
-            return {}, "missing"
-        try:
-            if path.stat().st_size > _MAX_DOCUMENT_BYTES:
-                return {}, "invalid"
-            payload = json.loads(path.read_text(encoding="utf-8"))
-        except (OSError, UnicodeDecodeError, json.JSONDecodeError):
-            return {}, "invalid"
-        return (_mapping(payload), "ok") if isinstance(payload, Mapping) else ({}, "invalid")
+        return ResourceBackupBackend._load_document(path, json.loads)
 
     @staticmethod
     def _load_yaml(path: Path) -> tuple[dict[str, Any], str]:
+        return ResourceBackupBackend._load_document(path, yaml.safe_load)
+
+    @staticmethod
+    def _load_document(path: Path, parse: Callable[[str], Any]) -> tuple[dict[str, Any], str]:
         if not path.is_file():
             return {}, "missing"
         try:
             if path.stat().st_size > _MAX_DOCUMENT_BYTES:
                 return {}, "invalid"
-            payload = yaml.safe_load(path.read_text(encoding="utf-8"))
-        except (OSError, UnicodeDecodeError, yaml.YAMLError):
+            # The producer can grow or replace a document after stat. Bound the
+            # actual bytes before decoding and parsing either supported format.
+            with path.open('rb') as stream:
+                data = stream.read(_MAX_DOCUMENT_BYTES + 1)
+            if len(data) > _MAX_DOCUMENT_BYTES:
+                return {}, "invalid"
+            payload = parse(data.decode('utf-8'))
+        except (OSError, UnicodeDecodeError, ValueError, yaml.YAMLError):
             return {}, "invalid"
         return (_mapping(payload), "ok") if isinstance(payload, Mapping) else ({}, "invalid")
 

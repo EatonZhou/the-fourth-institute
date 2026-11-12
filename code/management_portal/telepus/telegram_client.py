@@ -19,6 +19,13 @@ class TelegramConfigError(RuntimeError):
     pass
 
 
+def _http_error_preview(error: urllib.error.HTTPError) -> str:
+    # Preserve the 1000-character diagnostic without buffering an arbitrary
+    # upstream error page. UTF-8 needs at most four bytes per character.
+    with error:
+        return error.read(4000).decode("utf-8", errors="replace")[:1000]
+
+
 def load_bot_token() -> str:
     from management_common.instance_manifest import load
     path = load().directory('secrets') / 'telepus_telegram_bot.key'
@@ -73,7 +80,7 @@ class TelegramClient:
             with urllib.request.urlopen(request, timeout=self.timeout_seconds) as response:
                 data = response.read(max(1, int(max_bytes)) + 1)
         except urllib.error.HTTPError as exc:
-            body = exc.read().decode("utf-8", errors="replace")[:1000]
+            body = _http_error_preview(exc)
             raise RuntimeError(f"telegram file download failed: HTTP {exc.code}: {body}") from exc
         except urllib.error.URLError as exc:
             raise RuntimeError(f"telegram file download failed: {exc.reason}") from exc
@@ -334,7 +341,7 @@ class TelegramClient:
             with urllib.request.urlopen(request, timeout=timeout_seconds) as response:
                 raw = response.read().decode("utf-8", errors="replace")
         except urllib.error.HTTPError as exc:
-            body = exc.read().decode("utf-8", errors="replace")[:1000]
+            body = _http_error_preview(exc)
             raise RuntimeError(f"telegram {method} failed: HTTP {exc.code}: {body}") from exc
         except urllib.error.URLError as exc:
             raise RuntimeError(f"telegram {method} failed: {exc.reason}") from exc

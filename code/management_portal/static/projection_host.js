@@ -419,12 +419,13 @@
     const body = document.createElement("div"); body.className = "projectionContentBody";
     root.replaceChildren(heading, body);
     let content, disposed = false, visible = false;
+    const mountAbort = new AbortController();
     const ready = (async () => {
       const current = app || await request(`detail?id=${encodeURIComponent(projectionId)}&published=true`);
       if (disposed) return;
       title.textContent = regionTitle || current.title;
       const packageEntry = source?.startsWith("package:") ? source.slice(8).trim() : null;
-      content = !source && current.manifest ? await mount(body, current, { preview, embedded: true }) : await mountContent(body, source ? { ...current, title: regionTitle, html: packageEntry ? "" : current.panels[source] } : current, { preview, panelId, page, visible, packageEntry, isCurrent: () => !disposed });
+      content = !source && current.manifest ? await mount(body, current, { preview, embedded: true, signal: mountAbort.signal }) : await mountContent(body, source ? { ...current, title: regionTitle, html: packageEntry ? "" : current.panels[source] } : current, { preview, panelId, page, visible, packageEntry, isCurrent: () => !disposed });
       if (disposed) content.destroy();
       else {
         // Application entries own their content heading and controls. The
@@ -437,7 +438,7 @@
       throw error;
     });
     ready.catch(() => {});
-    return { root, ready, isVisible: () => visible, show() { visible = true; content?.setVisible?.(true); }, hide() { visible = false; content?.setVisible?.(false); }, destroy() { disposed = true; content?.destroy(); } };
+    return { root, ready, isVisible: () => visible, show() { visible = true; content?.setVisible?.(true); }, hide() { visible = false; content?.setVisible?.(false); }, destroy() { if (disposed) return; disposed = true; mountAbort.abort(); content?.destroy(); } };
   }
   window.PortalWorkbench.registerPanelPackage({
     type: "projection-content", version: 1, component: "PortalProjectionContent",
