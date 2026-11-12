@@ -107,7 +107,7 @@
         </div>
         <div class="portalPreviewPanelSectionActions">${headActions.filter(action => action.placement !== "before").map(previewToolbarActionHtml).join("")}</div>
       </div>
-      <div class="portalDocumentTabsShell" id="${escapeHtml(ids.tabsShell)}" data-portal-workbench-tab-host hidden>
+      <div class="portalDocumentTabsShell" id="${escapeHtml(ids.tabsShell)}" hidden>
         <div class="portalDocumentTabs" id="${escapeHtml(ids.tabs)}" role="tablist" aria-label="Preview 中打开的文件"></div>
         ${tabActions.map(previewTabActionHtml).join("")}
         <button class="portalDocumentTabsAction" data-portal-icon="pin" id="${escapeHtml(ids.pin)}" type="button" aria-label="锁定当前文件" title="锁定当前文件" aria-pressed="false" disabled></button>

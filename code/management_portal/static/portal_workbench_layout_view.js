@@ -9,7 +9,7 @@
   // tab.
 
   const DEPENDENCIES = Object.freeze([
-    "announceChange", "bindKeyboardResize", "bindPointerResize", "bindSingleTabReveal", "bindStackDrop",
+    "announceChange", "bindKeyboardResize", "bindPointerResize", "bindTabStripReveal", "bindStackDrop",
     "bindTabDrag", "bindTabGroupDrop", "clamp", "compactExtentForNode", "descriptors", "executeCommand",
     "expandPanel", "isLayoutLocked", "lastOpenTargetByType", "minimumForNode", "persist", "refreshPanelFrame",
     "render", "renderPanelFrame", "shellState", "splitChildMinimumCss",
@@ -19,7 +19,7 @@
     const missing = DEPENDENCIES.filter(name => dependencies?.[name] === undefined);
     if (missing.length) throw new Error(`PortalWorkbenchLayoutView is missing: ${missing.join(", ")}`);
     const {
-      announceChange, bindKeyboardResize, bindPointerResize, bindSingleTabReveal, bindStackDrop, bindTabDrag,
+      announceChange, bindKeyboardResize, bindPointerResize, bindTabStripReveal, bindStackDrop, bindTabDrag,
       bindTabGroupDrop, clamp, compactExtentForNode, descriptors, executeCommand, expandPanel, isLayoutLocked,
       lastOpenTargetByType, minimumForNode, persist, refreshPanelFrame, render, renderPanelFrame, shellState,
       splitChildMinimumCss,
@@ -43,90 +43,22 @@
       render("activate-panel");
     }
 
-    // Inline tabs: a Panel whose first row is marked data-portal-workbench-tab-host
-    // lends that row to the stack's tabs, so a stack of several Panels does
-    // not put a tab row above the Panel's own header row. The host must sit at
-    // the stack body's top-left corner; otherwise the tabs keep their own row.
-    const inlineTabsResize = typeof ResizeObserver === "function"
-      ? new ResizeObserver(entries => entries.forEach(entry => {
-        const stackElement = entry.target.closest(".portalWorkbenchStack");
-        if (!entry.target.isConnected || !stackElement) { inlineTabsResize.unobserve(entry.target); return; }
-        scheduleInlineTabs(stackElement);
-      }))
-      : null;
-    const inlineTabsPending = new WeakSet();
-    const inlineTabsBlocked = new WeakMap();
-    // A host row taller than this has wrapped onto a second line.
-    const INLINE_TABS_HOST_MAX_HEIGHT = 56;
-
-    function scheduleInlineTabs(element) {
-      if (inlineTabsPending.has(element)) return;
-      inlineTabsPending.add(element);
-      requestAnimationFrame(() => {
-        inlineTabsPending.delete(element);
-        if (element.isConnected) syncInlineTabs(element);
-      });
-    }
-
-    function syncInlineTabs(element) {
-      const tabs = element.querySelector(":scope > .portalWorkbenchTabs");
-      const body = element.querySelector(":scope > .portalWorkbenchStackBody");
-      if (!tabs || !body) return;
-      const eligible = Number(element.dataset.tabCount) > 1 && element.dataset.autoHideTabs !== "true"
-        && !element.classList.contains("is-collapsed") && global.PortalResponsive?.isMobile?.() !== true
-        && !isLayoutLocked();
-      const frame = eligible ? body.querySelector(":scope > .portalWorkbenchPanelFrame:not([hidden])") : null;
-      const candidate = frame?.querySelector("[data-portal-workbench-tab-host]:not([hidden])") || null;
-      const bodyBounds = candidate ? body.getBoundingClientRect() : null;
-      const hostBounds = candidate ? candidate.getBoundingClientRect() : null;
-      let host = candidate && hostBounds.height > 0
-        && Math.abs(hostBounds.top - bodyBounds.top) <= 1 && Math.abs(hostBounds.left - bodyBounds.left) <= 1
-        ? candidate : null;
-      // A host that wraps onto a second line with the tabs inside keeps them
-      // out. The trial is repeated only when the stack widens or the host's
-      // own height changes, so a narrow stack is not laid out twice per sync.
-      const blocked = inlineTabsBlocked.get(element);
-      const inlineNow = element.dataset.inlineTabs === "true";
-      if (host && !inlineNow && blocked && bodyBounds.width <= blocked.width && hostBounds.height === blocked.height) host = null;
-      if (host) {
-        element.dataset.inlineTabs = "true";
-        host.setAttribute("data-portal-workbench-tab-inset", "");
-        element.style.setProperty("--portal-workbench-inline-tabs-width", `${Math.ceil(tabs.getBoundingClientRect().width)}px`);
-        if (host.getBoundingClientRect().height > INLINE_TABS_HOST_MAX_HEIGHT) {
-          delete element.dataset.inlineTabs;
-          host.removeAttribute("data-portal-workbench-tab-inset");
-          inlineTabsBlocked.set(element, { width: bodyBounds.width, height: host.getBoundingClientRect().height });
-          host = null;
-        } else {
-          inlineTabsBlocked.delete(element);
-        }
+    // Position marks: one short bar per tab along the top edge, the active
+    // one in the accent color. They tell how many Panels a collapsed tab
+    // strip holds and which one is showing, without taking a row.
+    function renderTabMarks(element, stack, displayedPanelId) {
+      let marks = element.querySelector(":scope > .portalWorkbenchTabMarks");
+      if (!marks) {
+        marks = document.createElement("div");
+        marks.className = "portalWorkbenchTabMarks";
+        marks.setAttribute("aria-hidden", "true");
+        element.append(marks);
       }
-      element.querySelectorAll("[data-portal-workbench-tab-inset]").forEach(node => {
-        if (node !== host) node.removeAttribute("data-portal-workbench-tab-inset");
-      });
-      if (!host) {
-        delete element.dataset.inlineTabs;
-        element.style.removeProperty("--portal-workbench-inline-tabs-width");
-        element.style.removeProperty("--portal-workbench-inline-tabs-height");
-        return;
-      }
-      // Tabs of the same kind share an icon; those keep their names when folded.
-      const icons = [...tabs.querySelectorAll(".portalWorkbenchTab")];
-      icons.forEach(tab => {
-        tab.toggleAttribute("data-shared-icon", icons.some(other => other !== tab && other.dataset.portalIcon === tab.dataset.portalIcon));
-      });
-      element.style.setProperty("--portal-workbench-inline-tabs-height", `${Math.round(host.getBoundingClientRect().height)}px`);
-      element.style.setProperty("--portal-workbench-inline-tabs-width", `${Math.ceil(tabs.getBoundingClientRect().width)}px`);
-    }
-
-    function bindInlineTabs(element, tabs, body) {
-      inlineTabsResize?.observe(element);
-      inlineTabsResize?.observe(tabs);
-      // A host row appears, hides or moves when its Panel changes what it shows.
-      new MutationObserver(() => scheduleInlineTabs(element))
-        .observe(body, { subtree: true, childList: true, attributes: true, attributeFilter: ["hidden", "data-portal-workbench-tab-host"] });
-      element.addEventListener("click", () => scheduleInlineTabs(element), true);
-      scheduleInlineTabs(element);
+      marks.replaceChildren(...stack.children.map(child => {
+        const mark = document.createElement("i");
+        if (child.panelId === displayedPanelId) mark.className = "is-active";
+        return mark;
+      }));
     }
 
     function renderStack(stack, parentOrientation = "") {
@@ -158,7 +90,7 @@
       });
       const tabs = document.createElement("div");
       tabs.className = "portalWorkbenchTabs";
-      if (stack.children.length === 1) tabs.dataset.portalOverlayLayer = "sticky";
+      tabs.dataset.portalOverlayLayer = "sticky";
       tabs.setAttribute("role", "tablist");
       const body = document.createElement("div");
       body.className = "portalWorkbenchStackBody";
@@ -198,10 +130,10 @@
         body.append(renderPanelFrame(descriptor, active, active && activeCollapsed));
       });
       element.append(tabs, body);
-      bindSingleTabReveal(element, tabs, stack);
+      renderTabMarks(element, stack, displayedPanelId);
+      bindTabStripReveal(element, tabs);
       bindTabGroupDrop(tabs, element, stack);
       bindStackDrop(element, stack);
-      bindInlineTabs(element, tabs, body);
       return element;
     }
 
@@ -241,7 +173,7 @@
           close.title = window.PortalI18n.text`关闭 ${descriptor.title}`;
         }
       }
-      scheduleInlineTabs(element);
+      renderTabMarks(element, stack, displayedPanelId);
       return true;
     }
 

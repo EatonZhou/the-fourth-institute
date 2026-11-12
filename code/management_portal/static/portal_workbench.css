@@ -199,11 +199,13 @@
   top: 30px;
 }
 
-.portalWorkbenchStage.show-single-tab-header .portalWorkbenchStack[data-tab-count="1"] {
+/* showSingleTabHeader keeps every tab strip as a visible row. The :not()
+   raises these rules above the collapsed-handle and reveal rules. */
+.portalWorkbenchStage.show-single-tab-header .portalWorkbenchStack:not(.is-collapsed) {
   grid-template-rows: 28px minmax(0, 1fr);
 }
 
-.portalWorkbenchStage.show-single-tab-header .portalWorkbenchStack[data-tab-count="1"] > .portalWorkbenchTabs {
+.portalWorkbenchStage.show-single-tab-header .portalWorkbenchStack:not(.is-collapsed) > .portalWorkbenchTabs {
   position: static;
   width: auto;
   max-width: none;
@@ -217,14 +219,17 @@
   box-shadow: none;
 }
 
-.portalWorkbenchStage.show-single-tab-header .portalWorkbenchStack[data-tab-count="1"] > .portalWorkbenchTabs .portalWorkbenchTab {
+.portalWorkbenchStage.show-single-tab-header .portalWorkbenchStack:not(.is-collapsed) > .portalWorkbenchTabs .portalWorkbenchTab {
   padding: 0 7px;
+}
+
+.portalWorkbenchStage.show-single-tab-header .portalWorkbenchStack:not(.is-collapsed) > .portalWorkbenchTabs .portalWorkbenchTab.is-active {
   color: var(--accent);
   background: var(--panel);
   box-shadow: inset 0 -2px 0 var(--accent);
 }
 
-.portalWorkbenchStage.show-single-tab-header .portalWorkbenchStack[data-tab-count="1"]::before {
+.portalWorkbenchStage.show-single-tab-header .portalWorkbenchStack::before {
   display: none;
 }
 
@@ -436,15 +441,18 @@
   box-shadow: var(--portal-workbench-stack-shadow);
 }
 
-.portalWorkbenchStack:is([data-tab-count="1"], [data-auto-hide-tabs="true"]) {
+/* Every stack collapses its tab strip, whatever Panels it holds, so
+   switching tabs changes only the content. */
+.portalWorkbenchStack {
   grid-template-rows: minmax(0, 1fr);
 }
 
-.portalWorkbenchStack:is([data-tab-count="1"], [data-auto-hide-tabs="true"]) > .portalWorkbenchTabs {
+.portalWorkbenchStack > .portalWorkbenchTabs {
   /* A handle hanging from the top edge: as wide as its tabs, so the Panel's
-     own title row and controls stay visible beside it. */
+     own title row and controls stay visible beside it. Above Panel header
+     rows that raise themselves over their own content. */
   position: absolute;
-  z-index: 3;
+  z-index: 21;
   top: 0;
   left: 50%;
   width: max-content;
@@ -460,22 +468,31 @@
   transition: transform 150ms ease, opacity 120ms ease, box-shadow 150ms ease;
 }
 
-.portalWorkbenchStack:is([data-tab-count="1"], [data-auto-hide-tabs="true"]) > .portalWorkbenchTabs .portalWorkbenchTabSlot:last-child {
+.portalWorkbenchStack > .portalWorkbenchTabs .portalWorkbenchTabSlot:last-child {
   border-right: 0;
 }
 
-.portalWorkbenchStack:is([data-tab-count="1"], [data-auto-hide-tabs="true"]) > .portalWorkbenchTabs .portalWorkbenchTab {
+.portalWorkbenchStack > .portalWorkbenchTabs .portalWorkbenchTab {
   padding: 0 8px 0 10px;
-  color: var(--text);
+  color: var(--muted);
   background: transparent;
   box-shadow: none;
 }
 
-/* The top edge lights up with the handle, marking which Panel it moves. */
-.portalWorkbenchStack:is([data-tab-count="1"], [data-auto-hide-tabs="true"])::before {
+.portalWorkbenchStack > .portalWorkbenchTabs .portalWorkbenchTab:is(:hover, :focus-visible) { color: var(--text); }
+.portalWorkbenchStack > .portalWorkbenchTabs .portalWorkbenchTab.is-active { color: var(--accent); }
+.portalWorkbenchStack[data-tab-count="1"] > .portalWorkbenchTabs .portalWorkbenchTab { color: var(--text); }
+
+/* A stack of several Panels shows its position marks instead of the peek. */
+.portalWorkbenchStack:not([data-tab-count="1"]) > .portalWorkbenchTabs {
+  transform: translate(-50%, -100%);
+}
+
+/* The top edge lights up with the handle, marking which stack it moves. */
+.portalWorkbenchStack::before {
   content: "";
   position: absolute;
-  z-index: 3;
+  z-index: 21;
   top: 0;
   right: 0;
   left: 0;
@@ -486,14 +503,14 @@
   transition: opacity 120ms ease;
 }
 
-.portalWorkbenchStack:is([data-tab-count="1"], [data-auto-hide-tabs="true"]):is(.is-tab-strip-revealed, :has(> .portalWorkbenchTabs:is(:hover, :has(:focus-visible))))::before {
+.portalWorkbenchStack:is(.is-tab-strip-revealed, :has(> .portalWorkbenchTabs:is(:hover, :has(:focus-visible))))::before {
   opacity: .55;
 }
 
-.portalWorkbenchStack:is([data-tab-count="1"], [data-auto-hide-tabs="true"]) > .portalWorkbenchTabs:is(:hover, :has(:focus-visible)),
-.portalWorkbenchStack:is([data-tab-count="1"], [data-auto-hide-tabs="true"]).is-tab-strip-revealed > .portalWorkbenchTabs,
-.draggingWorkbenchTab .portalWorkbenchStack:is([data-tab-count="1"], [data-auto-hide-tabs="true"]) > .portalWorkbenchTabs,
-.portalWorkbenchStack:is([data-tab-count="1"], [data-auto-hide-tabs="true"])[data-portal-workbench-drop-zone="center"] > .portalWorkbenchTabs {
+.portalWorkbenchStack > .portalWorkbenchTabs:is(:hover, :has(:focus-visible)),
+.portalWorkbenchStack.is-tab-strip-revealed > .portalWorkbenchTabs,
+.draggingWorkbenchTab .portalWorkbenchStack > .portalWorkbenchTabs,
+.portalWorkbenchStack[data-portal-workbench-drop-zone="center"] > .portalWorkbenchTabs {
   transform: translate(-50%, 0);
   opacity: var(--portal-workbench-single-tab-revealed-opacity);
 }
@@ -589,80 +606,40 @@
 .portalWorkbenchTabClose:hover { opacity: 1; background: var(--panel-2); }
 .portalWorkbenchTabClose .portalIcon { width: 12px; height: 12px; }
 
-/* Inline tabs: the active Panel's first row hosts the stack's tabs, folded
-   into a button group at its left end. The active tab keeps its name; the
-   others show their icon, and their name when another tab has the same icon. */
-.portalWorkbenchStack[data-inline-tabs="true"] {
-  grid-template-rows: minmax(0, 1fr);
-}
-
-.portalWorkbenchStack[data-inline-tabs="true"] > .portalWorkbenchTabs {
+/* Position marks: one short bar per tab hanging from the top edge, the
+   active one in the accent color. Shown only for stacks of several Panels
+   while their tab strip is collapsed. */
+.portalWorkbenchTabMarks {
   position: absolute;
-  /* Above a host row that raises itself over its own Panel content. */
   z-index: 21;
   top: 0;
-  left: 0;
-  max-width: 60%;
-  height: var(--portal-workbench-inline-tabs-height, 38px);
-  align-items: center;
-  gap: 2px;
-  padding: 0 2px 0 8px;
-  /* The group is part of the host row: no box, rule or fill of its own. */
-  border: 0;
-  background: transparent;
+  left: 50%;
+  display: flex;
+  gap: 3px;
+  transform: translateX(-50%);
+  pointer-events: none;
+  transition: opacity 120ms ease;
 }
 
-.portalWorkbenchStack[data-inline-tabs="true"] > .portalWorkbenchTabs .portalWorkbenchTabSlot {
-  height: 26px;
-  align-items: center;
-  border-right: 0;
+.portalWorkbenchTabMarks > i {
+  width: 14px;
+  height: 3px;
+  border-radius: 0 0 2px 2px;
+  background: color-mix(in srgb, var(--muted) 38%, transparent);
 }
 
-.portalWorkbenchStack[data-inline-tabs="true"] > .portalWorkbenchTabs .portalWorkbenchTab {
-  height: 26px;
-  padding: 0 6px;
-  border-radius: 6px;
-  font-size: 11.5px;
-}
+.portalWorkbenchTabMarks > i.is-active { background: var(--accent); }
 
-.portalWorkbenchStack[data-inline-tabs="true"] > .portalWorkbenchTabs .portalWorkbenchTab > .portalIcon {
-  width: 15px;
-  height: 15px;
-}
-
-.portalWorkbenchStack[data-inline-tabs="true"] > .portalWorkbenchTabs .portalWorkbenchTab.is-active {
-  background: transparent;
-  box-shadow: none;
-}
-
-.portalWorkbenchStack[data-inline-tabs="true"] > .portalWorkbenchTabs .portalWorkbenchTab:not(.is-active):is(:hover, :focus-visible) {
-  background: color-mix(in srgb, var(--text) 7%, transparent);
-}
-
-/* The close control shows when the pointer or focus is on its tab. */
-.portalWorkbenchStack[data-inline-tabs="true"] > .portalWorkbenchTabs .portalWorkbenchTabClose {
-  opacity: 0;
-}
-
-.portalWorkbenchStack[data-inline-tabs="true"] > .portalWorkbenchTabs .portalWorkbenchTabSlot:is(:hover, :focus-within) > .portalWorkbenchTabClose {
-  opacity: .7;
-}
-
-.portalWorkbenchStack[data-inline-tabs="true"] > .portalWorkbenchTabs .portalWorkbenchTab:not(.is-active, [data-shared-icon]) > span:not(.portalIcon),
-.portalWorkbenchStack[data-inline-tabs="true"] > .portalWorkbenchTabs .portalWorkbenchTab:not(.is-active) + .portalWorkbenchTabClose {
+.portalWorkbenchStack[data-tab-count="1"] > .portalWorkbenchTabMarks,
+.portalWorkbenchStack.is-collapsed > .portalWorkbenchTabMarks,
+.portalWorkbenchStage.show-single-tab-header .portalWorkbenchStack > .portalWorkbenchTabMarks,
+html[data-portal-viewport="mobile"] .portalWorkbenchTabMarks {
   display: none;
 }
 
-.portalWorkbenchStack[data-inline-tabs="true"] > .portalWorkbenchTabs .portalWorkbenchTab[data-shared-icon]:not(.is-active) > span:not(.portalIcon) {
-  max-width: 7em;
-}
-
-.portalWorkbenchStack[data-inline-tabs="true"] > .portalWorkbenchTabs .portalWorkbenchTabClose {
-  margin: 0 0 0 -4px;
-}
-
-.portalWorkbenchStage:not(.is-layout-locked) .portalWorkbenchStack[data-inline-tabs="true"] [data-portal-workbench-tab-inset] {
-  padding-left: var(--portal-workbench-inline-tabs-width, 0px);
+.portalWorkbenchStack:is(.is-tab-strip-revealed, [data-portal-workbench-drop-zone="center"], :has(> .portalWorkbenchTabs:is(:hover, :has(:focus-visible)))) > .portalWorkbenchTabMarks,
+.draggingWorkbenchTab .portalWorkbenchTabMarks {
+  opacity: 0;
 }
 
 .portalWorkbenchPanelFrame.is-open-target {
@@ -681,10 +658,17 @@
   grid-row: 1 !important;
   width: 100%;
   height: 32px !important;
+  max-width: none;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  border-radius: 0;
+  background: color-mix(in srgb, var(--panel-2) 72%, var(--panel));
   transform: none !important;
   opacity: 1 !important;
   box-shadow: none !important;
 }
+
+.portalWorkbenchStack.is-collapsed::before { display: none; }
 
 .portalWorkbenchStack.is-collapsed > .portalWorkbenchStackBody { display: none; }
 /* Panels restored from the page's activity rail leave no collapsed strip. */
@@ -1639,7 +1623,8 @@ html[data-portal-viewport="mobile"] .portalWorkbenchMobilePanel.is-active {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .portalWorkbenchStack:is([data-tab-count="1"], [data-auto-hide-tabs="true"]) > .portalWorkbenchTabs { transition: none; }
+  .portalWorkbenchStack > .portalWorkbenchTabs,
+  .portalWorkbenchTabMarks { transition: none; }
 }
 
 .splitter {

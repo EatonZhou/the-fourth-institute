@@ -981,7 +981,7 @@
     } = workbenchPart("PortalWorkbenchPanelMounts").createPanelMounts({ descriptors, parking, root, shellState });
 
     const {
-      bindSingleTabReveal, bindStackDrop, bindTabDrag, bindTabGroupDrop,
+      bindTabStripReveal, bindStackDrop, bindTabDrag, bindTabGroupDrop,
     } = workbenchPart("PortalWorkbenchTabDrag").createTabDrag({
       autoHideTabHeader: options.autoHideTabHeader === true,
       canvas, clone, descriptors, findNode, isLayoutLocked, normalizeCurrent, panelNode, removePanelFromNode,
@@ -990,7 +990,7 @@
 
     const { refreshNode, renderNode, topologyOf } = workbenchPart("PortalWorkbenchLayoutView").createLayoutView({
       announceChange: (...args) => announceChange(...args), bindKeyboardResize, bindPointerResize,
-      bindSingleTabReveal, bindStackDrop, bindTabDrag, bindTabGroupDrop, clamp, compactExtentForNode, descriptors,
+      bindTabStripReveal, bindStackDrop, bindTabDrag, bindTabGroupDrop, clamp, compactExtentForNode, descriptors,
       executeCommand, expandPanel: (...args) => expandPanel(...args), isLayoutLocked, lastOpenTargetByType,
       minimumForNode, persist, refreshPanelFrame, render: (...args) => render(...args), renderPanelFrame, shellState,
       splitChildMinimumCss,

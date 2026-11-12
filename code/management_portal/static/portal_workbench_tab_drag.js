@@ -132,12 +132,11 @@
       });
     }
 
-    function bindSingleTabReveal(stackElement, tabs, stack) {
-      if (autoHideTabHeader) {
-        stackElement.dataset.autoHideTabs = "true";
-        tabs.dataset.portalOverlayLayer = "sticky";
-      }
-      if (stack.children.length !== 1 && !autoHideTabHeader) return;
+    // Every stack keeps its tab strip collapsed into a handle on its top edge
+    // and reveals it on approach, whatever Panels it holds. autoHideTabHeader
+    // additionally keeps the strip on mobile, where other pages hide it.
+    function bindTabStripReveal(stackElement, tabs) {
+      if (autoHideTabHeader) stackElement.dataset.autoHideTabs = "true";
       const reveal = () => { if (!isLayoutLocked()) stackElement.classList.add("is-tab-strip-revealed"); };
       const conceal = () => stackElement.classList.remove("is-tab-strip-revealed");
       stackElement.addEventListener("pointermove", event => {
@@ -164,7 +163,7 @@
     }
 
     return {
-      bindSingleTabReveal, bindStackDrop, bindTabDrag, bindTabGroupDrop,
+      bindTabStripReveal, bindStackDrop, bindTabDrag, bindTabGroupDrop,
     };
   }
 
