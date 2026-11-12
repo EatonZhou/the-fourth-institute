@@ -164,7 +164,6 @@
         }
         if (event.target.closest("#deepReadBtn")) startDeepRead().catch(alertError);
         if (event.target.closest("#uploadPaperPdfBtn")) openPdfUploadPicker();
-        if (event.target.closest("#deletePaperPdfBtn")) deleteCurrentPaperPdf().catch(alertError);
         if (event.target.closest("#deletePaperBtn")) deleteCurrentPaper().catch(alertError);
       });
       $("paperPdfUploadInput").addEventListener("change", event => {
@@ -183,6 +182,10 @@
         applyCcfPaperListFilter();
       });
       $("workspaceMain").addEventListener("click", event => {
+        if (event.target.closest("#deletePaperPdfBtn")) {
+          deleteCurrentPaperPdf().catch(alertError);
+          return;
+        }
         if (event.target.closest("#loadMoreLibraryBtn")) {
           loadMoreLibrary().catch(alertError);
           return;

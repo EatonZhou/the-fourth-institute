@@ -145,6 +145,7 @@
                   <span><!--portal-i18n:"Details"-->Details</span>
                   <span class="workspaceDetailsIcon" data-portal-icon="chevron-down" aria-hidden="true"></span>
                 </button>
+                <span class="paneNote workspaceDeepReadStatus" id="deepReadStatusText" role="status" aria-live="polite"></span>
                 <div class="workspaceDetailsBody" id="workspaceDetailsBody" hidden>
                   <div class="workspaceSummary" id="workspaceSummary"></div>
                   <div class="workspaceMeta" id="workspaceMeta"><!--portal-i18n:"Browse, read, chat, and review papers from one workspace."-->Browse, read, chat, and review papers from one workspace.</div>
@@ -152,7 +153,6 @@
               </div>
             </div>
             <div class="workspaceControls">
-              <button class="portalButton is-icon is-quiet paperFavorite" id="paperFavoriteBtn" type="button" hidden aria-label="收藏论文" aria-pressed="false" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;收藏论文&quot;}">☆</button>
               <div class="portalSegmented" id="modeTabs">
                 <button type="button" data-mode="reader" title="切换到论文阅读视图" data-portal-i18n-attrs="{&quot;title&quot;: &quot;切换到论文阅读视图&quot;}"><!--portal-i18n:"Reader"-->Reader</button>
                 <button type="button" data-mode="review" title="切换到论文 Review 视图" data-portal-i18n-attrs="{&quot;title&quot;: &quot;切换到论文 Review 视图&quot;}"><!--portal-i18n:"Review"-->Review</button>

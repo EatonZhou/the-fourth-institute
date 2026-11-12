@@ -186,10 +186,6 @@
     }
 
     function syncFavoriteButtons() {
-      const header = $("paperFavoriteBtn");
-      const paperId = state.leftFace === "library" && !isCollectionMode() ? state.detail?.paper?.id : "";
-      header.hidden = !paperId;
-      header.dataset.paperFavorite = paperId || "";
       document.querySelectorAll("[data-paper-favorite]").forEach(button => {
         const id = button.dataset.paperFavorite;
         const favorite = state.favoriteIds.has(id);
