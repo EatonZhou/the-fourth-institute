@@ -22,7 +22,9 @@ def main():
     parser.add_argument("--excluded", action="append", default=[], help="排除的账号目录；可重复指定")
     args = parser.parse_args()
     result = discover(args.provider, excluded=args.excluded)
-    print(json.dumps(result, ensure_ascii=False))
+    # JSON escapes preserve every path and warning even when an English Windows
+    # shell redirects stdout through its legacy ANSI code page.
+    print(json.dumps(result, ensure_ascii=True))
     return 0
 
 
