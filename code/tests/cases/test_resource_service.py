@@ -44,6 +44,15 @@ def test_resource_address_rejects_decoded_control_characters(subtests, isolated_
                 ResourceService().parse_address(f"decision_4a9ba5dfada6{suffix}")
 
 
+@pytest.mark.parametrize("suffix", ["trailing%20", "trailing%E3%80%80", "%20leading", "literal%2520"])
+def test_file_address_preserves_encoded_filename_whitespace(suffix, isolated_portal_case):
+    from urllib.parse import unquote
+    with isolated_portal_case():
+        address = "workspace_0123456789ab/file/" + suffix
+        parsed = ResourceService().parse_address(address)
+        assert parsed.suffix == ("file", unquote(suffix))
+
+
 def test_resource_read_scope_has_one_normalized_contract_contracts(subtests, isolated_portal_case):
     """read_scope 只接受规范取值，资源 ID 的校验、生成和类型推断统一由身份注册表决定"""
     with subtests.test(contract='test_resource_read_scope_has_one_normalized_contract'), isolated_portal_case() as case_path:

@@ -476,7 +476,7 @@ def atomic_write_private_bytes(path, payload):
             assert_private_file(path)
         except FileNotFoundError:
             pass
-        temporary = path.with_name(f".{path.name}.{secrets.token_hex(16)}.tmp")
+        temporary = path.with_name(f".portal-private-{secrets.token_hex(16)}.tmp")
         created = False
         try:
             with create_private_file(temporary) as stream:

@@ -57,7 +57,7 @@ def atomic_replace_text(path: Path, content: str, *, mode: int | None = None) ->
     target = Path(path)
     filesystem_path(target.parent).mkdir(parents=True, exist_ok=True)
     target_mode = mode if mode is not None else (filesystem_path(target).stat().st_mode & 0o7777 if filesystem_path(target).exists() else 0o664)
-    descriptor, temporary_name = tempfile.mkstemp(prefix=f".{target.name}.", dir=filesystem_path(target.parent))
+    descriptor, temporary_name = tempfile.mkstemp(prefix=".portal-state-", dir=filesystem_path(target.parent))
     temporary = logical_path(temporary_name)
     try:
         with os.fdopen(descriptor, "w", encoding="utf-8") as stream:
@@ -92,7 +92,7 @@ def atomic_replace_json(
         else (filesystem_path(target).stat().st_mode & 0o7777 if filesystem_path(target).exists() else 0o664)
     )
     descriptor, temporary_name = tempfile.mkstemp(
-        prefix=f".{target.name}.",
+        prefix=".portal-state-",
         dir=filesystem_path(target.parent),
     )
     temporary = logical_path(temporary_name)

@@ -41,7 +41,7 @@ class AddressParser:
             return ResourceAddress(value, self.identity.parse(identifier), ("file", *portable_parts(relative)))
         if not isinstance(address, str):
             raise ValueError("Resource address must be a string or file reference")
-        clean_address = unquote(str(address or "").strip())
+        clean_address = unquote(address)
         if (
             not clean_address
             or "\x00" in clean_address
@@ -49,7 +49,12 @@ class AddressParser:
             or "\r" in clean_address
         ):
             raise ValueError("invalid resource address")
-        clean_address = clean_address.strip().strip("/")
+        # Whitespace decorating a root ID is harmless, but decoded whitespace
+        # in a file suffix is part of its name. Keep it for native validation
+        # (Windows rejects trailing spaces) rather than aliasing another file.
+        file_address = clean_address.lstrip().lstrip("/")
+        suffix_namespace = file_address.partition("/")[2].partition("/")[0]
+        clean_address = file_address.rstrip("/") if suffix_namespace == "file" else clean_address.strip().strip("/")
         root_id, separator, raw_suffix = clean_address.partition("/")
         identity = self.identity.parse(root_id)
         suffix = tuple(raw_suffix.split("/")) if separator else ()

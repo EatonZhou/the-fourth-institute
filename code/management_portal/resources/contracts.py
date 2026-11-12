@@ -100,7 +100,8 @@ def normalize_resolution(
     source = dict(payload)
     root_id = stripped_text(source.get("root_id") or source.get("resource_id"))
     resource_type = stripped_text(source.get("resource_type"))
-    address = stripped_text(source.get("address"))
+    # A canonical file address may end in significant filename whitespace.
+    address = str(source.get("address") or "")
     if root_id and root_id != parsed.root_id:
         raise ValueError(
             f"resource resolver returned root {root_id!r}, expected {parsed.root_id!r}"

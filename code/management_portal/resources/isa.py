@@ -790,7 +790,8 @@ def update_workspace_file(inv: Invocation) -> dict[str, Any]:
                 "instruction.version_conflict", "文件内容已经变化，未写入",
                 details={"address": address, "current_version": current},
             )
-        temporary = f".{name}.{secrets.token_hex(4)}.tmp"
+        # The target may already fill the filesystem's component-length limit.
+        temporary = f".portal-write-{secrets.token_hex(16)}.tmp"
         fd = secure_paths.open_child(directory, temporary, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o664)
         try:
             with os.fdopen(fd, "wb") as stream:

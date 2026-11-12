@@ -447,7 +447,10 @@ def test_update_workspace_file_compares_the_version_read_resource_returned(works
     assert resource_isa.read_resource(SimpleNamespace(argument={"address": ADDRESS}.get, caller="alice"))["text"] == "# Revised\n"
 
 
-@pytest.mark.parametrize("name", ["中文 空格.txt", "literal%2e%2e.txt"])
+@pytest.mark.parametrize("name", [
+    "中文 空格.txt", "literal%2e%2e.txt", "x" * 245 + ".txt", "trailing\u3000",
+    pytest.param("trailing ", marks=pytest.mark.skipif(os.name == "nt", reason="Windows rejects trailing ASCII space")),
+])
 def test_update_encoded_workspace_file_uses_the_read_address(workspace, monkeypatch, name):
     from urllib.parse import quote
     from management_portal.resources import isa
@@ -462,7 +465,8 @@ def test_update_encoded_workspace_file_uses_the_read_address(workspace, monkeypa
         caller="alice", expected_version=read["version"], name="UpdateWorkspaceFile"))
     assert target.read_text(encoding="utf-8") == "after 中文 ✓"
     assert result["version"] == hashlib.sha256("after 中文 ✓".encode()).hexdigest()
-    assert not (workspace.root / quote(name, safe="")).exists()
+    if quote(name, safe="") != name:
+        assert not (workspace.root / quote(name, safe="")).exists()
 
 
 def test_update_workspace_file_refuses_absolute_paths(workspace, monkeypatch):

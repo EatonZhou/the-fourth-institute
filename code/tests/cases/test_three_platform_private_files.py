@@ -97,13 +97,21 @@ class PrivateFilesTests(unittest.TestCase):
     def test_temporary_collision_never_deletes_another_file(self):
         private = self.capability()
         target = self.root / "secret"
-        collision = self.root / ".secret.collision.tmp"
+        collision = self.root / ".portal-private-collision.tmp"
         with private.create_private_file(collision) as stream:
             stream.write(b"another-writer")
         with patch.object(private.secrets, "token_hex", return_value="collision"):
             with self.assertRaises(FileExistsError):
                 private.atomic_write_private_bytes(target, b"new")
         self.assertEqual(private.read_private_bytes(collision), b"another-writer")
+
+    def test_atomic_private_write_accepts_long_filename(self):
+        private = self.capability()
+        target = self.root / ("x" * 245 + ".txt")
+        private.atomic_write_private_bytes(target, b"original")
+        private.atomic_write_private_bytes(target, b"replacement")
+        self.assertEqual(private.read_private_bytes(target), b"replacement")
+        self.assertEqual(list(self.root.iterdir()), [target])
 
     def test_windows_acl_policy_rejects_null_foreign_and_unknown_grants(self):
         private = self.capability()

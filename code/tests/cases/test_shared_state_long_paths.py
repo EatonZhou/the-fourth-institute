@@ -41,3 +41,14 @@ def exercise_long_state(root: Path, module=shared_state):
 
 def test_long_shared_state(tmp_path):
     exercise_long_state(tmp_path / 'long-state')
+
+
+def test_atomic_state_accepts_long_filename(tmp_path):
+    folder = tmp_path / 'case'
+    folder.mkdir()
+    target = folder / ('x' * 245 + '.json')
+    shared_state.atomic_replace_text(target, 'before')
+    assert target.read_text() == 'before'
+    shared_state.atomic_replace_json(target, {'text': '中文'})
+    assert json.loads(target.read_text()) == {'text': '中文'}
+    assert list(folder.iterdir()) == [target]
