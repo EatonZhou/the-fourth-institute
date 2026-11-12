@@ -542,3 +542,32 @@ def test_remove_tree_deep_readonly_provider_session(tmp_path):
     assert len(str(session)) > 260
     remove_tree(root)
     assert not root.exists()
+
+
+@pytest.mark.parametrize('command', ['start', 'stop', 'retire', 'update-code'])
+def test_cli_lifecycle_rejects_other_control_owner_before_side_effects(tmp_path, monkeypatch, command):
+    from scripts.tfi_instance_manager import control_lock
+    instance = load(write_instance(tmp_path / 'control-owner'))
+    monkeypatch.setattr(installer, 'select', lambda _: instance)
+    effects = []
+    def effect(*args, **kwargs):
+        effects.append(command)
+        return {'status': 'stopped'}
+    monkeypatch.setattr(installer, 'lifecycle', effect)
+    monkeypatch.setattr(installer, 'retire', effect)
+    monkeypatch.setattr(installer, 'update_code', effect)
+    with control_lock(instance.root):
+        assert installer.main([command, '--instance', 'fixture']) == 1
+    assert effects == []
+    assert installer.main([command, '--instance', 'fixture']) == 0
+    assert effects == [command]
+
+
+def test_cli_lifecycle_other_instance_remains_independent(tmp_path, monkeypatch):
+    from scripts.tfi_instance_manager import control_lock
+    first = load(write_instance(tmp_path / 'first'))
+    second = load(write_instance(tmp_path / 'second'))
+    monkeypatch.setattr(installer, 'select', lambda _: second)
+    monkeypatch.setattr(installer, 'update_code', lambda *a, **kw: {'status': 'running'})
+    with control_lock(first.root):
+        assert installer.main(['update-code', '--instance', 'fixture']) == 0

@@ -16,6 +16,7 @@ are removed through the directory owner before its database is deleted.
 from __future__ import annotations
 
 import argparse
+from contextlib import nullcontext
 from copy import deepcopy
 from datetime import datetime, timezone
 import hashlib
@@ -889,29 +890,37 @@ def main(argv=None):
             result = {"status": "listed", "instances": host_instances.read_registry()}
         else:
             instance = select(args.instance)
-            if args.command == "retire":
-                result = retire(instance, delete_external_areas=args.delete_external_areas)
-            elif args.command == "first-admin":
-                result = first_admin(instance, args.username, if_needed=args.if_needed)
-            elif args.command == "configure-ports":
-                result = configure_ports(instance, {key: value for key in ("entry", "postgres", "nats", "release", "dev")
-                                                    if (value := getattr(args, key + "_port")) is not None})
-            elif args.command == "update-code":
-                result = update_code(instance, base_python=args.python, offline=args.offline)
-            elif args.command == "repair-lineage-events":
-                result = repair_lineage_events(instance, args.seed_manifest)
-            elif args.command == "relocate":
-                from scripts.tfi_relocate_instance import relocate
-                result = relocate(instance, args.target)
-            elif args.command == "register-service":
-                listener = json.loads(args.listener.read_text(encoding='utf-8')) if args.listener else None
-                if args.listener and not isinstance(listener, dict):
-                    raise ValueError('Service listener must be an object with bind and port')
-                result = register_service(
-                    instance, args.component, json.loads(args.program.read_text(encoding='utf-8')),
-                    listener=listener, listener_bind=args.listener_bind)
-            else:
-                result = lifecycle(args.command, instance)
+            # The same owner lock used by management requests spans the whole
+            # command, including update's prepare/stop/refresh/start phases.
+            # Per-component/configuration locks alone leave gaps for retirement.
+            from scripts.tfi_instance_manager import control_lock
+            guard = (control_lock(instance.root)
+                     if args.command in {"start", "stop", "retire", "update-code"}
+                     else nullcontext())
+            with guard:
+                if args.command == "retire":
+                    result = retire(instance, delete_external_areas=args.delete_external_areas)
+                elif args.command == "first-admin":
+                    result = first_admin(instance, args.username, if_needed=args.if_needed)
+                elif args.command == "configure-ports":
+                    result = configure_ports(instance, {key: value for key in ("entry", "postgres", "nats", "release", "dev")
+                                                        if (value := getattr(args, key + "_port")) is not None})
+                elif args.command == "update-code":
+                    result = update_code(instance, base_python=args.python, offline=args.offline)
+                elif args.command == "repair-lineage-events":
+                    result = repair_lineage_events(instance, args.seed_manifest)
+                elif args.command == "relocate":
+                    from scripts.tfi_relocate_instance import relocate
+                    result = relocate(instance, args.target)
+                elif args.command == "register-service":
+                    listener = json.loads(args.listener.read_text(encoding='utf-8')) if args.listener else None
+                    if args.listener and not isinstance(listener, dict):
+                        raise ValueError('Service listener must be an object with bind and port')
+                    result = register_service(
+                        instance, args.component, json.loads(args.program.read_text(encoding='utf-8')),
+                        listener=listener, listener_bind=args.listener_bind)
+                else:
+                    result = lifecycle(args.command, instance)
         print(json.dumps(result, ensure_ascii=True, indent=2))
         return 0 if result.get("status") not in {"failed", "unhealthy"} else 1
     except Exception as exc:
