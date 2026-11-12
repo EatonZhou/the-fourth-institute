@@ -20,8 +20,8 @@ export function translationDiagnostics(result, elapsedMs) {
 }
 
 export function TranslationMode({mode, onChange}) {
-  return <label className="paperTranslationMode">翻译模式 <select aria-label="翻译模式" value={mode} onChange={event => onChange(event.target.value)}>
-    <option value="auto">自动（Google → DeepSeek → Kimi）</option>
+  return <label className="paperTranslationMode">{t('翻译模式')} <select aria-label={t('翻译模式')} value={mode} onChange={event => onChange(event.target.value)}>
+    <option value="auto">{t('自动（Google → DeepSeek → Kimi）')}</option>
     <option value="google">Google</option>
     <option value="deepseek">DeepSeek Flash</option>
     <option value="kimi">Moonshot Kimi API</option>
@@ -69,11 +69,11 @@ export function TranslationResult({selection, mode, setMode, model, expand, full
   const [copyError, setCopyError] = useState('');
   if (!selection) return null;
   return <section className="paperTranslation" aria-label="选区翻译">
-    {setMode && <TranslationMode mode={mode} onChange={setMode} />}
+    {full && setMode && <TranslationMode mode={mode} onChange={setMode} />}
     {expand && <button onClick={expand}>{t('展开')}</button>}
     {selection && <div className="paperTranslationBody" aria-live="polite">
-      <details open={full || undefined}><summary>所选原文</summary><p>{selection.text}</p></details>
-      {view.state === 'loading' && <p role="status">正在翻译…</p>}
+      {full && <details open><summary>{t('所选原文')}</summary><p>{selection.text}</p></details>}
+      {view.state === 'loading' && <p role="status">{t('正在翻译…')}</p>}
       {view.state === 'error' && <p role="alert">{view.error}</p>}
       {view.state === 'success' && <>
         <p className="paperTranslationText">{view.result.text}</p>
@@ -86,7 +86,7 @@ export function TranslationResult({selection, mode, setMode, model, expand, full
         catch (_) {setCopyError(t('复制失败，请手动选择译文复制'));}
       }}>{t('复制译文')}</button>}
       {copyError && <p role="alert">{copyError}</p>}
-      <button onClick={retry}>{t('重试翻译')}</button>
+      {full && <button onClick={retry}>{t('重试翻译')}</button>}
     </div>}
   </section>;
 }

@@ -1,4 +1,9 @@
 {
+  "创建批注后，可在侧栏查看": {"en": "Create an annotation to see it in the sidebar", "zh-CN": "创建批注后，可在侧栏查看"},
+  "翻译模式": {"en": "Translation mode", "zh-CN": "翻译模式"},
+  "自动（Google → DeepSeek → Kimi）": {"en": "Auto (Google → DeepSeek → Kimi)", "zh-CN": "自动（Google → DeepSeek → Kimi）"},
+  "所选原文": {"en": "Selected text", "zh-CN": "所选原文"},
+  "正在翻译…": {"en": "Translating…", "zh-CN": "正在翻译…"},
   "复制译文": {"en": "Copy translation", "zh-CN": "复制译文"},
   "复制失败，请手动选择译文复制": {"en": "Copy failed. Select and copy the translation manually.", "zh-CN": "复制失败，请手动选择译文复制"},
   "阅读侧栏": {"en": "Reading sidebar", "zh-CN": "阅读侧栏"},

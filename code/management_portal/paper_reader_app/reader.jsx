@@ -33,6 +33,8 @@ function Reader({paper, principal, anchor, close, control, readingReady, frameRe
   const [selection, setSelection] = useState(null);
   const [mode, setMode] = useState('auto');
   const [popup, setPopup] = useState(null), [sidebarOpen, setSidebarOpen] = useState(false), [tab, setTab] = useState('ai');
+  const sidebarOpenRef=useRef(false);
+  sidebarOpenRef.current=sidebarOpen;
   const translation = useTranslation({selection, mode, isCurrent, request: (input, selectedMode, operationId, signal) => {
     if (!isFullscreen()) throw new Error('请进入全屏后翻译');
     return translateSelection({selection: input, mode: selectedMode, operationId, principal, signal});
@@ -62,7 +64,7 @@ function Reader({paper, principal, anchor, close, control, readingReady, frameRe
       const legacy=choices.selected_legacy;
       if(!selected && !legacy)throw Error(window.PortalI18n.t('请在非全屏选择或新建研究助手'));
       if(selected && selected.state!=='bound')throw Error(window.PortalI18n.t('研究助手暂不可用，请重试'));
-      if(legacy && legacy.workspace_key!=='paper:'+paper.id)throw Error(window.PortalI18n.t('当前历史会话属于其他论文或集合；请在非全屏选择持续研究助手'));
+      if(!selected && legacy && legacy.workspace_key!=='paper:'+paper.id)throw Error(window.PortalI18n.t('当前历史会话属于其他论文或集合；请在非全屏选择持续研究助手'));
       const key=selected?'research:'+selected.slot_id:legacy.workspace_key;
       if(discussion?.key===key&&!selection)return;
       const document=selection?.document||await bridge.current.aiDocument();
@@ -72,7 +74,11 @@ function Reader({paper, principal, anchor, close, control, readingReady, frameRe
   useEffect(() => {
     frameReady(frame.current.contentWindow);
     const connection = connectZotero({frame: frame.current, paper, principal, ready: readingReady,
-      translateSelection: value => {if (isCurrent() && isFullscreen()) {setSelection(value);setPopup(value.popup);}},
+      translateSelection: value => {if (isCurrent() && isFullscreen()) {
+        setSelection(value);
+        if(sidebarOpenRef.current){setPopup(null);setTab('translation');value.dismissPopup?.();}
+        else setPopup(value.popup);
+      }},
       dismissTranslation: node => setPopup(current => current === node ? null : current),
       askSelection: value=>void openDiscussion(value),
       status: (message, error = false) => { setStatus(message); setFailed(error); }});
@@ -89,10 +95,10 @@ function Reader({paper, principal, anchor, close, control, readingReady, frameRe
       <button onClick={() => close()}><span className="paperLayoutEnter">全屏阅读</span><span className="paperLayoutExit">退出全屏</span></button>
     </header>
     <div className="paperReadingStatus" data-empty={!status} role="status">
-      {status} {failed && <button onClick={() => bridge.current?.retry()}>重试保存</button>}
+      {status} {failed ? <button onClick={() => bridge.current?.retry()}>重试保存</button> : status && <button aria-label={window.PortalI18n.t('关闭提示')} onClick={()=>setStatus('')}>×</button>}
     </div>
-    {popup?.isConnected && createPortal(<TranslationResult selection={selection} mode={mode} setMode={setMode} model={translation}
-      expand={()=>{setSidebarOpen(true);setTab('translation');setPopup(null);}} />, popup)}
+    {popup?.isConnected && !sidebarOpen && createPortal(<TranslationResult selection={selection} mode={mode} model={translation}
+      expand={()=>{setSidebarOpen(true);setTab('translation');setPopup(null);selection?.dismissPopup?.();}} />, popup)}
     <div ref={content} className="paperReadingContent"><iframe ref={frame} className="paperReadingViewer" title="论文全屏 PDF 阅读器" />
       {sidebarOpen&&<ReaderSplit content={content} width={aiWidth} />}
       <aside className="paperReaderSidePanel" hidden={!sidebarOpen} aria-label={window.PortalI18n.t("阅读侧栏")}>
