@@ -19,6 +19,14 @@
       needPaperHtml, paperApi, paperStateHtml, renderWorkspace, setMode, state, updateDeepReadControls,
     } = dependencies;
 
+    // Only an explicit public label opts into the new status contract.
+    function taskLabel(job) { return job?.status_label_key ? window.PortalI18n.t(job.status_label_key) : ''; }
+    function taskBlocked(job) { return ['queued','running'].includes(job?.status) || (job?.status === 'error' && job.can_retry === false); }
+    function taskDetails(job) {
+      if (!job?.status_label_key || !job.diagnostics?.error) return '';
+      return `<details class="paperDisclosure"><summary>${esc(window.PortalI18n.t('Details'))}</summary><pre style="white-space:pre-wrap;overflow-wrap:anywhere">${esc(job.diagnostics.error)}</pre></details>`;
+    }
+
     function renderReviewMode() {
       const detail = state.detail;
       if (!detail?.paper) {
@@ -32,13 +40,14 @@
       const reviews = detail.reviews || [];
       $("workspaceMain").innerHTML = window.PortalI18n.html`
           <div class="portalToolbar paperToolbar" style="justify-content:space-between;margin-bottom:10px;">
-            <div class="paneNote">${state.reviewInFlight ? window.PortalI18n.t("后台评审任务处理中，可离开或刷新页面。") : window.PortalI18n.t("Generate review from PDF text, analysis, and related papers.")}</div>
-            <button class="portalButton is-compact is-primary" type="button" id="createReviewBtn" ${state.reviewInFlight ? "disabled" : ""}>${state.reviewInFlight ? window.PortalI18n.t("Generating...") : window.PortalI18n.t("Generate AI Review")}</button>
+            <div class="paneNote">${esc(taskLabel(state.reviewJob) || (state.reviewInFlight ? window.PortalI18n.t("后台评审任务处理中，可离开或刷新页面。") : window.PortalI18n.t("Generate review from PDF text, analysis, and related papers.")))}</div>
+            <button class="portalButton is-compact is-primary" type="button" id="createReviewBtn" ${state.reviewInFlight || taskBlocked(state.reviewJob) ? "disabled" : ""}>${state.reviewInFlight ? window.PortalI18n.t("Generating...") : window.PortalI18n.t("Generate AI Review")}</button>
           </div>
           <div class="reviewOutput">
             ${state.reviewInFlight ? paperStateHtml("后台评审正在进行，完成后从论文产物恢复显示。", { state: "loading" }) : ""}
             ${state.reviewPollError ? paperStateHtml(state.reviewPollError, { state: "error" }) : ""}
-            ${state.reviewJob?.status === "error" ? paperStateHtml(state.reviewJob.error || window.PortalI18n.t("后台评审失败，可重试。"), { state: "error" }) : ""}
+            ${state.reviewJob?.status === "error" && !taskLabel(state.reviewJob) ? paperStateHtml(state.reviewJob.error || window.PortalI18n.t("后台评审失败，可重试。"), { state: "error" }) : ""}
+            ${taskDetails(state.reviewJob)}
             ${reviews.length ? reviews.map(renderReview).join("") : (!state.reviewInFlight ? paperStateHtml("No AI review yet.") : "")}
           </div>
         `;
@@ -93,17 +102,18 @@
       const expRunning = pendingExpSubmissions.has(String(state.selectedId || ""))
         || ["queued", "running"].includes(String(status.status || ""));
       const expError = String(status.status || "") === "error" ? String(status.error || "Exp generation failed.") : "";
-      const statusText = expRunning
+      const statusText = taskLabel(status) || (expRunning
         ? `${status.step || "queued"}${Number.isFinite(Number(status.progress)) ? ` · ${Number(status.progress)}%` : ""}`
-        : (expError || window.PortalI18n.t("Extract datasets, baselines, metrics, implementation settings, results, and reproduction risks."));
+        : (expError || window.PortalI18n.t("Extract datasets, baselines, metrics, implementation settings, results, and reproduction risks.")));
       $("workspaceMain").innerHTML = window.PortalI18n.html`
           <div class="portalToolbar paperToolbar" style="justify-content:space-between;margin-bottom:10px;">
             <div class="paneNote">${esc(statusText)}</div>
-            <button class="portalButton is-compact is-primary" type="button" id="createExpBtn" ${expRunning ? "disabled" : ""}>${expRunning ? window.PortalI18n.t("Generating...") : (exp.content ? window.PortalI18n.t("Regenerate Exp") : window.PortalI18n.t("Generate Exp"))}</button>
+            <button class="portalButton is-compact is-primary" type="button" id="createExpBtn" ${expRunning || taskBlocked(status) ? "disabled" : ""}>${expRunning ? window.PortalI18n.t("Generating...") : (exp.content ? window.PortalI18n.t("Regenerate Exp") : window.PortalI18n.t("Generate Exp"))}</button>
           </div>
           <div class="reviewOutput">
             ${expRunning ? paperStateHtml("Generating Exp in the background. You can leave this page and come back later.", { state: "loading" }) : ""}
-            ${expError ? paperStateHtml(expError, { state: "error" }) : ""}
+            ${expError && !taskLabel(status) ? paperStateHtml(expError, { state: "error" }) : ""}
+            ${taskDetails(status)}
             ${exp.content ? window.PortalI18n.html`<article class="apiCard"><div class="markdownBody">${md(exp.content)}</div></article>` : (!expRunning && !expError ? paperStateHtml("No Exp extraction yet.") : "")}
           </div>
         `;
@@ -158,7 +168,7 @@
     }
 
     async function createReview() {
-      if (!state.selectedId || state.reviewInFlight) return;
+      if (!state.selectedId || state.reviewInFlight || taskBlocked(state.reviewJob)) return;
       const paperId = String(state.selectedId);
       state.reviewInFlight = true;
       state.reviewPollError = "";
@@ -303,7 +313,7 @@
     async function startExp() {
       if (!state.selectedId) return;
       const paperId = String(state.selectedId);
-      if (pendingExpSubmissions.has(paperId)) return;
+      if (pendingExpSubmissions.has(paperId) || taskBlocked(state.expStatus)) return;
       pendingExpSubmissions.add(paperId);
       if (state.mode === "exp") renderWorkspace();
       try {

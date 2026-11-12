@@ -133,11 +133,17 @@
       });
     }
 
+    function taskBlocked(job) { return ['queued','running'].includes(job?.status) || (job?.status === 'error' && job.can_retry === false); }
+    function taskLabel(job) { return job?.status_label_key ? window.PortalI18n.t(job.status_label_key) : ''; }
+    function taskDetails(job) {
+      if (!job?.status_label_key || !job.diagnostics?.error) return '';
+      return `<details class="paperDisclosure"><summary>${esc(window.PortalI18n.t('Details'))}</summary><pre style="white-space:pre-wrap;overflow-wrap:anywhere">${esc(job.diagnostics.error)}</pre></details>`;
+    }
     function renderFigureDetail(figure) {
       if (!figure) return paperStateHtml("Select a Figure.", { density: "compact" });
       const figureId = String(figure.figure_id || "");
-      const explaining = state.figureExplainInFlight === figureId;
-      const generating = state.figureGenerateInFlight === figureId;
+      const explaining = state.figureExplainInFlight === figureId || taskBlocked(figure.explanation_state || {status:figure.explanation_status});
+      const generating = state.figureGenerateInFlight === figureId || (figure.generated || []).some(taskBlocked);
       const generated = Array.isArray(figure.generated) ? figure.generated : [];
       const explanationStatus = String(figure.explanation_status || "");
       const originalInputKey = figureInputKey(figureId);
@@ -154,10 +160,11 @@
             ${figure.caption ? window.PortalI18n.html`<div class="refRaw">${esc(figure.caption)}</div>` : ""}
             <div class="portalToolbar paperToolbar" style="justify-content:flex-start;">
               <button class="portalButton is-compact is-quiet" type="button" data-explain-figure="${esc(figureId)}" ${explaining ? "disabled" : ""}>${explaining ? window.PortalI18n.t("Explaining...") : window.PortalI18n.t("Explain")}</button>
-              ${explanationStatus && explanationStatus !== "done" ? window.PortalI18n.html`<span class="paneNote">${esc(explanationStatus)}</span>` : ""}
+              ${taskLabel(figure.explanation_state) || explanationStatus && explanationStatus !== "done" ? window.PortalI18n.html`<span class="paneNote">${esc(taskLabel(figure.explanation_state) || explanationStatus)}</span>` : ""}
             </div>
             ${figure.explanation ? window.PortalI18n.html`<div class="markdownBody">${md(figure.explanation)}</div>` : window.PortalI18n.html`<div class="paneNote"><!--portal-i18n:"No explanation yet."-->No explanation yet.</div>`}
-            ${figure.explanation_error ? window.PortalI18n.html`<div class="paneNote" role="alert">${esc(figure.explanation_error)}</div>` : ""}
+            ${figure.explanation_error && !taskLabel(figure.explanation_state) ? window.PortalI18n.html`<div class="paneNote" role="alert">${esc(figure.explanation_error)}</div>` : ""}
+            ${taskDetails(figure.explanation_state)}
             <textarea class="portalControl figurePromptBox" data-figure-request="${esc(figureId)}" data-figure-id="${esc(figureId)}" placeholder="Describe how to redraw or modify this figure... Ctrl/⌘ + Enter to generate"></textarea>
             ${renderFigureInputTray(originalInputKey)}
             <div class="portalToolbar paperToolbar" style="justify-content:flex-end;">
@@ -171,13 +178,13 @@
                     <button class="portalButton is-compact is-quiet" type="button" data-delete-generated-figure="${esc(figureId)}" data-generated-id="${esc(item.generated_id || "")}"><!--portal-i18n:"删除"-->删除</button>
                   </div>
                   ${item.image_url ? window.PortalI18n.html`<img class="figureImage" src="${esc(item.image_url)}" alt="Generated Figure" loading="lazy" data-open-figure-image data-lightbox-figure-id="${esc(figureId)}" data-source-generated-id="${esc(item.generated_id || "")}" data-lightbox-title="${esc(item.generated_id || window.PortalI18n.t("Generated Figure"))}" />` : ""}
-                  ${item.error ? paperStateHtml(item.error, { state: "error", density: "compact" }) : ""}
+                  ${taskLabel(item) ? `<div class="paneNote">${esc(taskLabel(item))}</div>${taskDetails(item)}` : (item.error ? paperStateHtml(item.error, { state: "error", density: "compact" }) : "")}
                   ${item.prompt ? window.PortalI18n.html`<details class="paperDisclosure"><summary><span><!--portal-i18n:"Codex note"-->Codex note</span><span data-portal-icon="chevron-down" data-portal-icon-class="paperDisclosureIcon" class="paperDisclosureIcon" aria-hidden="true"></span></summary><div class="markdownBody">${md(item.prompt || "")}</div></details>` : (!item.image_url && !item.error ? window.PortalI18n.html`<div class="paneNote"><!--portal-i18n:"Generating image in the background."-->Generating image in the background.</div>` : "")}
                   ${item.image_url && String(item.status || "done") === "done" ? window.PortalI18n.html`
                     <textarea class="portalControl figurePromptBox" data-generated-variant-request="${esc(item.generated_id || "")}" data-figure-id="${esc(figureId)}" placeholder="Describe how to modify this generated image..."></textarea>
                     ${renderFigureInputTray(figureInputKey(figureId, item.generated_id || ""))}
                     <div class="portalToolbar paperToolbar" style="justify-content:flex-end;">
-                      <button class="portalButton is-compact is-quiet" type="button" data-generate-figure-variant="${esc(figureId)}" data-source-generated-id="${esc(item.generated_id || "")}"><!--portal-i18n:"Generate Variant"-->Generate Variant</button>
+                      <button class="portalButton is-compact is-quiet" type="button" data-generate-figure-variant="${esc(figureId)}" data-source-generated-id="${esc(item.generated_id || "")}" ${taskBlocked(item) ? 'disabled' : ''}><!--portal-i18n:"Generate Variant"-->Generate Variant</button>
                     </div>
                   ` : ""}
                 </div>
@@ -209,6 +216,8 @@
     async function explainFigure(figureId) {
       const id = String(figureId || "").trim();
       if (!state.selectedId || !id || state.figureExplainInFlight) return;
+      const figure = (state.detail?.figures || []).find(item => String(item.figure_id || '') === id);
+      if (taskBlocked(figure?.explanation_state || {status:figure?.explanation_status})) return;
       state.figureExplainInFlight = id;
       renderWorkspace();
       try {
@@ -236,6 +245,7 @@
     async function generateFigureDraft(figureId, sourceGeneratedId = "", requestOverride = "") {
       const id = String(figureId || "").trim();
       if (!state.selectedId || !id || state.figureGenerateInFlight) return;
+      if (((state.detail?.figures || []).find(item => String(item.figure_id || '') === id)?.generated || []).some(taskBlocked)) return;
       const sourceId = String(sourceGeneratedId || "").trim();
       const inputKey = figureInputKey(id, sourceId);
       const inputImages = figureInputItems(inputKey);

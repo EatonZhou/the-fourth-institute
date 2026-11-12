@@ -1,4 +1,6 @@
 {
+  "Task failed. See Details.": {"en":"Task failed. See Details.","zh-CN":"任务未完成，请展开详情查看原因。"},
+  "结果已生成，正在保存/核对": {"en":"Result generated; saving and reconciling","zh-CN":"结果已生成，正在保存/核对"},
   "正在确认任务状态": {"en":"Confirming task status","zh-CN":"正在确认任务状态"},
   "Deep Read failed. See Details.": {"en":"Deep Read failed. See Details.","zh-CN":"精读失败，请查看详情。"},
   "当前帐号额度不可用，请手动选择 AI 后端": {"en":"Account quota unavailable. Select an AI backend manually.","zh-CN":"当前帐号额度不可用，请手动选择 AI 后端"},
