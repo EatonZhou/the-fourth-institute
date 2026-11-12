@@ -893,11 +893,15 @@ def main(argv=None):
             # The same owner lock used by management requests spans the whole
             # command, including update's prepare/stop/refresh/start phases.
             # Per-component/configuration locks alone leave gaps for retirement.
-            from scripts.tfi_instance_manager import control_lock
+            from scripts.tfi_instance_manager import control_lock, operation
             guard = (control_lock(instance.root)
                      if args.command in {"start", "stop", "retire", "update-code"}
                      else nullcontext())
             with guard:
+                if args.command in {"start", "stop", "retire", "update-code"}:
+                    pending = operation(instance.root)
+                    if pending and pending["status"] in {"queued", "running"}:
+                        raise ValueError("An operation is already running for this instance")
                 if args.command == "retire":
                     result = retire(instance, delete_external_areas=args.delete_external_areas)
                 elif args.command == "first-admin":

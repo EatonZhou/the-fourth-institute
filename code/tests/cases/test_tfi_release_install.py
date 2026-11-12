@@ -571,3 +571,17 @@ def test_cli_lifecycle_other_instance_remains_independent(tmp_path, monkeypatch)
     monkeypatch.setattr(installer, 'update_code', lambda *a, **kw: {'status': 'running'})
     with control_lock(first.root):
         assert installer.main(['update-code', '--instance', 'fixture']) == 0
+
+
+@pytest.mark.parametrize('command', ['start', 'stop', 'retire', 'update-code'])
+@pytest.mark.parametrize('status', ['queued', 'running'])
+def test_cli_lifecycle_preserves_accepted_management_job(tmp_path, monkeypatch, command, status):
+    from scripts import tfi_instance_manager as manager
+    instance = load(write_instance(tmp_path / 'accepted-job'))
+    monkeypatch.setattr(installer, 'select', lambda _: instance)
+    monkeypatch.setattr(manager, 'operation', lambda _: {'status': status})
+    def unexpected(*args, **kwargs):
+        pytest.fail('CLI must not interleave with the accepted management job')
+    for name in ('lifecycle', 'retire', 'update_code'):
+        monkeypatch.setattr(installer, name, unexpected)
+    assert installer.main([command, '--instance', 'fixture']) == 1
