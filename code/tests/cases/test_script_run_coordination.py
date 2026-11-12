@@ -109,14 +109,16 @@ def test_cancel_preserves_completed_result_and_run_row_is_unlocked_during_stop(m
 
 
 def test_retention_is_bounded_and_keeps_undelivered_results(monkeypatch, tmp_path):
-    """产物结束7天后到期；未送达的结构化回执保留，不阻塞其他到期产物。"""
+    """六十天历史删除仅限已通知结果；七天产物清理独立保留未送达回执。"""
     monkeypatch.setattr(runtime, 'RUN_ROOT', tmp_path)
     old = (datetime.now(timezone.utc)-timedelta(days=61)).isoformat()
     add('retained', status='failed', finished_at=old)
     add('expired', status='succeeded', finished_at=old, notified=True)
-    assert store.expired() == ['expired', 'retained']
-    store.delete_expired('retained')
-    assert store.get('retained') is not None
     assert store.expired() == ['expired']
-    store.delete_expired('expired')
+    assert store.expired_artifacts() == ['expired', 'retained']
+    store.expire_artifacts('retained')
+    assert store.get('retained') is not None
+    assert store.expired_artifacts() == ['expired']
+    assert store.acquire_lease('retention')
+    store.delete_expired('expired', holder='retention')
     assert store.get('expired') is None

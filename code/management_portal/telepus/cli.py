@@ -158,10 +158,17 @@ def run_telegram_refresh_daemon(argv: list[str]) -> int:
     weixin_pool = ThreadPoolExecutor(max_workers=8, thread_name_prefix='telepus-weixin-refresh')
     pending = {}
     last_errors = 0
+    cleanup_at = 0.0
     index = 0
     while True:
         index += 1
         started_at = now_iso()
+        if time.monotonic() >= cleanup_at:
+            cleanup_at = time.monotonic() + 60
+            try:
+                adapter.router.store.prune_expired_callback_tokens()
+            except Exception as exc:
+                weixin.notifications.diagnostic('', exc)
         try:
             result = adapter.refresh_routes(limit=refresh_limit, dry_run=False)
             for account in weixin.store.accounts():

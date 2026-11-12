@@ -251,7 +251,8 @@ def test_script_outputs_expire_after_seven_days():
     now = datetime.now(timezone.utc)
     store.admit({'script_run_id': 'script_run_retention', 'status': 'succeeded', 'notified': True,
                  'started_at': (now-timedelta(days=9)).isoformat(), 'finished_at': (now-timedelta(days=8)).isoformat()})
-    assert store.expired() == ['script_run_retention']
+    assert store.expired_artifacts() == ['script_run_retention']
+    assert not store.expired()
 
 
 def test_unnotified_script_keeps_delivery_record_but_not_expired_files(tmp_path, monkeypatch):
@@ -263,8 +264,8 @@ def test_unnotified_script_keeps_delivery_record_but_not_expired_files(tmp_path,
     now = datetime.now(timezone.utc)
     store.admit({'script_run_id': directory.name, 'status': 'succeeded', 'notified': False,
                  'started_at': (now-timedelta(days=9)).isoformat(), 'finished_at': (now-timedelta(days=8)).isoformat()})
-    assert store.expired() == [directory.name]
-    store.delete_expired(directory.name)
+    assert store.expired_artifacts() == [directory.name]
+    store.expire_artifacts(directory.name)
     get_directory_cleanup_store().run_pending()
     assert store.get(directory.name) is not None and not directory.exists()
 

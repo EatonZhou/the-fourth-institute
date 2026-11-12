@@ -100,9 +100,11 @@ def run(*, now=None, test_roots=None):
             RunCoordinator(records, Path(index).parent / 'run-artifacts').remove_orphan_artifacts()
         except Exception as error:
             report['errors'].append(f'tests: {error}')
-    for identifier in scripts.expired():
+    # Seven-day files have their own lifetime. The leased script coordinator
+    # removes delivered business records after sixty days, one batch/minute.
+    for identifier in scripts.expired_artifacts():
         try:
-            scripts.delete_expired(identifier)
+            scripts.expire_artifacts(identifier)
             report['scripts'].append(identifier)
         except Exception as error:
             report['errors'].append(f'{identifier}: {error}')

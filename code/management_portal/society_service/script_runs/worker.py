@@ -12,6 +12,8 @@ from . import runtime, service, store, events
 
 LOGGER = logging.getLogger(__name__)
 _WORKER = None
+HEARTBEAT_SECONDS = 10
+RETENTION_SECONDS = 60
 
 
 class Worker:
@@ -22,6 +24,7 @@ class Worker:
         self.after = ''
         self.lease_lost = threading.Event()
         self.lease_until = 0.0
+        self.next_retention_at = 0.0
 
     def owns_lease(self):
         return not self.lease_lost.is_set() and time.monotonic() < self.lease_until
@@ -35,7 +38,7 @@ class Worker:
         finished = threading.Event()
 
         def heartbeat():
-            while not finished.wait(10):
+            while not finished.wait(HEARTBEAT_SECONDS):
                 try:
                     renewed = time.monotonic()
                     if store.renew_lease(self.holder):
@@ -61,9 +64,27 @@ class Worker:
                     LOGGER.warning('脚本运行协调失败 %s', identifier, exc_info=True)
             if len(records) < 100:
                 self.after = ''
+            self.expire_records()
         finally:
             finished.set()
             renewal.join(timeout=3)
+
+    def expire_records(self):
+        if self.stop_event.is_set() or not self.owns_lease():
+            return
+        now = time.monotonic()
+        if now < self.next_retention_at:
+            return
+        # A failing batch waits for the next minute too, rather than retrying
+        # on every two-second work poll. Other records still get their turn.
+        self.next_retention_at = now + RETENTION_SECONDS
+        for identifier in store.expired(limit=store.RETENTION_BATCH):
+            if self.stop_event.is_set() or not self.owns_lease():
+                return
+            try:
+                store.delete_expired(identifier, holder=self.holder)
+            except Exception:
+                LOGGER.warning('脚本历史到期回收失败 %s', identifier, exc_info=True)
 
     def reconcile(self, identifier, record):
         root = runtime.RUN_ROOT / identifier

@@ -13,7 +13,7 @@ from management_common.database_time import iso_time
 
 from . import application_targets, system_application_flows
 from .notice_board_backend import NOTICE_BOARD_CATEGORIES, NoticeBoardBackend, notice_board
-from .resident_handoff import ResidentInputTerminated, resume_and_wait
+from .resident_handoff import ResidentInputTerminated, observe_invocation
 from .lineage_workflows import WorkflowBindings, WorkflowPending, WorkflowFailed
 from .resources.registry_store import get_registry_store
 
@@ -58,6 +58,9 @@ class NoticeBoardClassifier:
         self._wake = threading.Event()
         self._stop = threading.Event()
         self._thread: threading.Thread | None = None
+        # Observation cadence is process-local, not durable business progress.
+        # A restart can read the original handle immediately without replaying it.
+        self._next_poll: dict[str, float] = {}
 
     def start(self) -> None:
         with self._thread_lock:
@@ -92,6 +95,7 @@ class NoticeBoardClassifier:
         }
         with self._thread_lock, get_registry_store().writer(STATE_COLLECTION) as writer:
             writer.put(STATE_COLLECTION, source["post_id"], item)
+            self._next_poll.pop(source["post_id"], None)
         self.start()
         self._wake.set()
         return dict(item)
@@ -100,29 +104,40 @@ class NoticeBoardClassifier:
         item = self._claim_or_observe_item()
         if not item:
             return False
-        if item["status"] == "claiming":
-            self._submit(item)
-        elif item["status"] == "submitted":
-            self._reconcile(item)
-        elif item["status"] == "workflow_pending":
-            self._observe_workflow(item)
+        try:
+            if item["status"] == "claiming":
+                self._submit(item)
+            elif item["status"] == "submitted":
+                self._reconcile(item)
+            elif item["status"] == "workflow_pending":
+                self._observe_workflow(item)
+        finally:
+            with self._thread_lock:
+                self._next_poll[item["post_id"]] = time.monotonic() + self.poll_seconds
         return True
 
     def _run(self) -> None:
         while not self._stop.is_set():
+            self._wake.clear()
             worked = False
             try:
                 worked = self.run_once()
             except Exception as exc:
                 print(f"Notice Board classifier pass failed: {type(exc).__name__}: {exc}", file=sys.stderr)
                 worked = False
-            self._wake.wait(0.2 if worked else self.poll_seconds)
-            self._wake.clear()
+            # Drain other ready items, then wait; one unchanged job cannot
+            # occupy the worker or turn immediate observation errors into a spin.
+            if not worked:
+                self._wake.wait(self.poll_seconds)
 
     def _claim_or_observe_item(self) -> dict[str, Any] | None:
         now = time.time()
         with self._thread_lock, get_registry_store().writer(STATE_COLLECTION) as writer:
+            monotonic_now = time.monotonic()
+            self._next_poll = {key: due for key, due in self._next_poll.items() if due > monotonic_now}
             for item in self._ordered_items(writer.documents(STATE_COLLECTION)):
+                if item["post_id"] in self._next_poll:
+                    continue
                 status = str(item.get("status") or "pending")
                 if status == "submitted" or (status == "workflow_pending" and float(item.get("retry_after") or 0) <= now):
                     return dict(item)
@@ -175,7 +190,7 @@ class NoticeBoardClassifier:
                               retry_after=time.time() + self.poll_seconds, last_error=str(exc)[:1000])
         except WorkflowPending as exc:
             self._update_item(item["post_id"], status="workflow_pending", workflow_handle=exc.handle,
-                              lease_until=0, retry_after=time.time() + self.poll_seconds, last_error=str(exc))
+                              lease_until=0, last_error="")
         except WorkflowFailed as exc:
             self._update_item(item["post_id"], status="failed", workflow_handle=exc.handle, lease_until=0, last_error=str(exc))
         except Exception as exc:
@@ -184,25 +199,28 @@ class NoticeBoardClassifier:
     def _observe_workflow(self, item: dict[str, Any]) -> None:
         try:
             receipt = WorkflowBindings().observe(item["workflow_handle"], actor=CLASSIFIER_ACTOR, entry="system")
+        except WorkflowPending as exc:
+            self._update_item(item["post_id"], workflow_handle=exc.handle, last_error="")
+            return
         except WorkflowFailed as exc:
-            self._update_item(item["post_id"], status="failed", lease_until=0, last_error=str(exc))
+            self._update_item(item["post_id"], status="failed", workflow_handle=exc.handle,
+                              lease_until=0, last_error=str(exc))
             return
         except Exception as exc:
             # This Event already exists. Transport errors and paused Effects
             # must never be interpreted as permission to create another one.
-            self._update_item(item["post_id"], retry_after=time.time() + self.poll_seconds, last_error=str(exc)[:1000])
+            self._update_item(item["post_id"], last_error=str(exc)[:1000])
             return
         self._update_item(item["post_id"], status="submitted", lease_until=0, last_error="",
                           **{key: receipt[key] for key in ("resident_id", "lineage_id", "message_id", "event_id", "trigger_path_id")})
 
     def _reconcile(self, item: dict[str, Any]) -> None:
         try:
-            result = resume_and_wait(
+            observation = observe_invocation(
                 resident_id=item["resident_id"],
                 actor=CLASSIFIER_ACTOR,
                 lineage_id=str(item.get("lineage_id") or ""),
                 message_id=item["message_id"],
-                timeout_seconds=self.poll_seconds,
             )
         except ResidentInputTerminated as exc:
             self._update_item(item["post_id"], status=exc.status, last_error=str(exc), lease_until=0)
@@ -211,6 +229,11 @@ class NoticeBoardClassifier:
             # Keep observing the same durable execution after transient Portal
             # execution-service failures instead of creating a duplicate call.
             self._update_item(item["post_id"], last_error=str(exc)[:1000])
+            return
+        result = observation["result"]
+        if result is None:
+            # Running input or a reply whose projection is not complete yet.
+            self._update_item(item["post_id"], last_error="")
             return
         try:
             category = self._parse_category(result.get("message"))
@@ -279,11 +302,11 @@ class NoticeBoardClassifier:
             post_id,
             status=status,
             category=category,
+            last_error="",
             resident_id="",
             lineage_id="",
             message_id="",
             lease_until=0,
-            updated_at=_now_iso(),
         )
 
     def _update_item(self, post_id: str, **updates: Any) -> None:
@@ -291,7 +314,10 @@ class NoticeBoardClassifier:
             item = writer.get(STATE_COLLECTION, post_id)
             if item is None:
                 return
-            item.update(updates)
+            updated = {**item, **updates}
+            if updated == item:
+                return
+            item = updated
             item["updated_at"] = _now_iso()
             writer.put(STATE_COLLECTION, post_id, item)
 

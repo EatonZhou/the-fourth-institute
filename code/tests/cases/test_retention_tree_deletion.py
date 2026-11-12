@@ -269,7 +269,7 @@ def test_script_run_cleanup_invalidates_nested_artifact(tmp_path, monkeypatch, o
     store = RetentionStore()
     declare_children(store, tmp_path / identifier)
     if operation == 'expire':
-        scripts.delete_expired(identifier)
+        scripts.expire_artifacts(identifier)
         assert scripts.get(identifier) is not None  # Delivery record stays live.
     else:
         monkeypatch.setattr(service, 'cancel', lambda *a, **kw: None)

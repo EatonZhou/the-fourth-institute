@@ -1,9 +1,7 @@
 """Timed isolated Mailbox/iLink fixtures; no live messages or user credentials."""
-import json
 import time
 from contextlib import nullcontext
 from copy import deepcopy
-from datetime import datetime, timezone
 from threading import Event, Lock
 from types import SimpleNamespace
 
@@ -30,7 +28,7 @@ def test_new_mention_long_watch_wakes_sender_within_five_seconds(reminder, monke
     r.notices.clock = time.time
     enable(r, mention=True)
     listening, changed, sent = Event(), Event(), Event()
-    timeouts, metrics = [], []
+    timeouts, mailbox_reads = [], []
     original_call = r.portal.call
     created = [0.0]
 
@@ -45,9 +43,8 @@ def test_new_mention_long_watch_wakes_sender_within_five_seconds(reminder, monke
     def read(actor, instruction, arguments):
         time.sleep(.02)  # Explicit, repeatable simulated API latency.
         result = original_call(actor, instruction, arguments)
-        if instruction == 'ListChatroomMessages':
-            for message in result['messages']:
-                message['created_at'] = datetime.fromtimestamp(created[0], timezone.utc).isoformat()
+        if instruction == 'GetMailbox':
+            mailbox_reads.append(time.time())
         return result
 
     from management_portal.telepus.weixin_client import WeixinClient
@@ -59,14 +56,12 @@ def test_new_mention_long_watch_wakes_sender_within_five_seconds(reminder, monke
 
     monkeypatch.setattr(r.portal, 'first_batch', watch)
     monkeypatch.setattr(r.portal, 'call', read)
-    # Capture the audit payload without logging message text or identifiers.
-    original_audit = r.notices.router.append_audit
-    def audit(kind, **kwargs):
-        if kind == 'notification_latency':
-            metrics.append(kwargs['payload'])
-            sent.set()
-        return original_audit(kind, **kwargs)
-    monkeypatch.setattr(r.notices.router, 'append_audit', audit)
+    # Observe the real delivery boundary in the fixture, not a production metric write.
+    original_sent = r.notices.sent
+    def delivered(group, external_id):
+        original_sent(group, external_id)
+        sent.set()
+    monkeypatch.setattr(r.notices, 'sent', delivered)
     scheduler = NotificationScheduler(r.adapter)
     scheduler.start()
     try:
@@ -78,11 +73,9 @@ def test_new_mention_long_watch_wakes_sender_within_five_seconds(reminder, monke
         assert time.time() - created[0] < 5
         assert timeouts[0] == 25
         assert len(r.server.sent) == 1
-        assert metrics[0]['snapshot_reused']
-        assert metrics[0]['mailbox_seconds'] >= .02
-        assert metrics[0]['event_to_watch_seconds'] < 1
-        assert metrics[0]['event_to_discovery_seconds'] + metrics[0]['discovery_to_send_seconds'] < 5
-        print('reminder_latency_seconds=' + json.dumps(metrics[0], sort_keys=True))
+        assert len(mailbox_reads) == 1, 'discovery snapshot must be reused by the immediate sender'
+        with r.notices.router.connect() as c:
+            assert c.execute("SELECT count(*) FROM audit_events WHERE event_type IN ('notification_scan','notification_latency')").fetchone()[0] == 0
     finally:
         scheduler.close()
         changed.set()

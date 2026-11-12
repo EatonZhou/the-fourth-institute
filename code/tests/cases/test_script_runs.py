@@ -382,9 +382,9 @@ def test_coordinator_lease_lost_and_retention(work,monkeypatch,timeout,status):
         saved['finished_at']=datetime.fromtimestamp(time.time()-61*86400,timezone.utc).isoformat()
     (work/row['script_run_id']).mkdir()
     one.tick()
-    # Retention is invoked by Portal System's time event, not this coordinator.
+    # The coordinator's initial sweep already ran; its next minute is not due.
     assert store.get(row['script_run_id']) is not None
-    store.delete_expired(row['script_run_id'])
+    store.delete_expired(row['script_run_id'], holder=one.holder)
     from management_common.directory_cleanup_store import get_directory_cleanup_store
     get_directory_cleanup_store().run_pending()
     assert store.get(row['script_run_id']) is None and not (work/row['script_run_id']).exists()

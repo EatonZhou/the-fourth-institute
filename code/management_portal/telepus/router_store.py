@@ -494,7 +494,8 @@ class RouterStore:
         self.init_schema()
         with self.connect() as conn:
             conn.execute(
-                "INSERT INTO meta(key, value) VALUES(?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+                "INSERT INTO meta(key, value) VALUES(?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value "
+                "WHERE meta.value IS DISTINCT FROM excluded.value",
                 (str(key), str(value)),
             )
 
@@ -534,6 +535,18 @@ class RouterStore:
             return None
         payload = row["payload_json"]
         return payload if isinstance(payload, dict) else None
+
+    def prune_expired_callback_tokens(self, *, limit: int = 500) -> int:
+        """Retire unusable button payloads in bounded, independently committed batches."""
+        if type(limit) is not int or not 1 <= limit <= 1000:
+            raise ValueError("callback cleanup limit must be from 1 to 1000")
+        self.init_schema()
+        with self.connect() as conn:
+            return conn.execute(
+                "WITH expired AS (SELECT token FROM callback_tokens WHERE expires_at < CURRENT_TIMESTAMP "
+                "ORDER BY expires_at, token LIMIT ? FOR UPDATE SKIP LOCKED) "
+                "DELETE FROM callback_tokens c USING expired e WHERE c.token=e.token", (limit,),
+            ).rowcount
 
     def create_attachment_delivery(self, *, chat_id: str, telegram_user_id: str, portal_actor: str,
                                    source_message_id: str, attachment: dict[str, Any], ttl_seconds: int = 86400) -> str:

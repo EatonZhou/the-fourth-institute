@@ -129,6 +129,33 @@ COLUMNS = "(" + ",".join(POSITION_COLUMNS) + ")"
 UPDATE_COLUMNS = ",".join(f"{column}=EXCLUDED.{column}" for column in POSITION_COLUMNS[3:])
 
 
+def _changed(table: str, columns: Sequence[str]) -> str:
+    return (" WHERE ROW(" + ",".join(f"{table}.{column}" for column in columns)
+            + ") IS DISTINCT FROM ROW(" + ",".join(f"EXCLUDED.{column}" for column in columns) + ")")
+
+
+def _replace_projection(connection: Any, table: str, columns: Sequence[str], key_size: int,
+                        desired: str, parameters: tuple, sequence_id: str, *, scope: str = "") -> None:
+    """Reconcile a locked trace against one materialized canonical projection.
+
+    Deletion and upsert keys are disjoint. Both consume the same statement
+    snapshot, and remain inside the caller's trace-write transaction.
+    """
+    keys = columns[:key_size]
+    values = columns[key_size:]
+    connection.execute(
+        "WITH desired(" + ",".join(columns) + ") AS MATERIALIZED (" + desired + "), "
+        "removed AS (DELETE FROM " + table + " AS stored WHERE stored.sequence_id=%s " + scope
+        + " AND NOT EXISTS (SELECT 1 FROM desired wanted WHERE "
+        + " AND ".join(f"wanted.{key}=stored.{key}" for key in keys) + ") RETURNING 1) "
+        "INSERT INTO " + table + " AS stored (" + ",".join(columns) + ") "
+        "SELECT * FROM desired WHERE TRUE ON CONFLICT (" + ",".join(keys) + ") DO UPDATE SET "
+        + ",".join(f"{column}=EXCLUDED.{column}" for column in values)
+        + _changed("stored", values),
+        (*parameters, sequence_id),
+    )
+
+
 def create(connection: Any) -> None:
     """Create the projection in a new store."""
     connection.executescript(TABLE_SQL)
@@ -185,7 +212,8 @@ def mark(connection: Any, sequence_id: str) -> None:
         "INSERT INTO chat_message_positions "
         "(sequence_id,source_kind,source_id,ordinal,segment_type,message_id,message_kind) "
         "SELECT sequence_id,'sync',%s,0,'',xmin::text,'' FROM sequences WHERE sequence_id=%s "
-        "ON CONFLICT (sequence_id,source_kind,source_id) DO UPDATE SET message_id=EXCLUDED.message_id",
+        "ON CONFLICT (sequence_id,source_kind,source_id) DO UPDATE SET message_id=EXCLUDED.message_id "
+        "WHERE chat_message_positions.message_id IS DISTINCT FROM EXCLUDED.message_id",
         (MARK, sequence_id),
     )
 
@@ -238,17 +266,17 @@ def _add_activity(connection: Any, sequence_id: str, source_kind: str, source_id
         "INSERT INTO chat_actor_activity(sequence_id, actor, latest_at) " + _ACTIVITY_ROWS
         + " AND position.source_kind=%s AND position.source_id=ANY(%s)" + _ACTIVITY_GROUP
         + " ON CONFLICT (sequence_id, actor) DO UPDATE SET"
-        " latest_at=GREATEST(chat_actor_activity.latest_at, EXCLUDED.latest_at)",
+        " latest_at=GREATEST(chat_actor_activity.latest_at, EXCLUDED.latest_at)"
+        " WHERE chat_actor_activity.latest_at < EXCLUDED.latest_at",
         (RELAYED_COPY_PATTERN, sequence_id, sequence_id, source_kind, list(source_ids)),
     )
 
 
 def refresh_activity(connection: Any, sequence_id: str) -> None:
-    """Compute a locked trace's activity again from its rows, as after a context reset."""
-    connection.execute("DELETE FROM chat_actor_activity WHERE sequence_id=%s", (sequence_id,))
-    connection.execute(
-        "INSERT INTO chat_actor_activity(sequence_id, actor, latest_at) " + _ACTIVITY_ROWS + _ACTIVITY_GROUP,
-        (RELAYED_COPY_PATTERN, sequence_id, sequence_id),
+    """Reconcile activity, including timestamps moving backwards or actors disappearing."""
+    _replace_projection(
+        connection, "chat_actor_activity", ACTIVITY_COLUMNS, 2, _ACTIVITY_ROWS + _ACTIVITY_GROUP,
+        (RELAYED_COPY_PATTERN, sequence_id, sequence_id), sequence_id,
     )
 
 
@@ -257,7 +285,8 @@ def upsert_segments(connection: Any, sequence_id: str, segment_ids: Sequence[str
         return
     connection.execute(
         f"INSERT INTO chat_message_positions {COLUMNS} {SEGMENT_ROWS} AND member.segment_id=ANY(%s) "
-        f"ON CONFLICT (sequence_id,source_kind,source_id) DO UPDATE SET {UPDATE_COLUMNS}",
+        f"ON CONFLICT (sequence_id,source_kind,source_id) DO UPDATE SET {UPDATE_COLUMNS}"
+        + _changed("chat_message_positions", POSITION_COLUMNS[3:]),
         (sequence_id, list(segment_ids)),
     )
     _add_activity(connection, sequence_id, "segment", segment_ids)
@@ -268,19 +297,19 @@ def upsert_notices(connection: Any, sequence_id: str, operation_ids: Sequence[st
         return
     connection.execute(
         f"INSERT INTO chat_message_positions {COLUMNS} {NOTICE_ROWS} AND position.operation_id=ANY(%s) "
-        f"ON CONFLICT (sequence_id,source_kind,source_id) DO UPDATE SET {UPDATE_COLUMNS}",
+        f"ON CONFLICT (sequence_id,source_kind,source_id) DO UPDATE SET {UPDATE_COLUMNS}"
+        + _changed("chat_message_positions", POSITION_COLUMNS[3:]),
         (sequence_id, list(operation_ids)),
     )
     _add_activity(connection, sequence_id, "notice", operation_ids)
 
 
 def refresh_sequence(connection: Any, sequence_id: str) -> None:
-    """Rebuild a locked trace: after reposition, replacement, deletion, or a mark left behind."""
-    connection.execute(
-        "DELETE FROM chat_message_positions WHERE sequence_id=%s AND source_kind<>'sync'",
-        (sequence_id,),
+    """Reconcile a locked trace after edits or lag; physically write only changed rows."""
+    _replace_projection(
+        connection, "chat_message_positions", POSITION_COLUMNS, 3,
+        SEGMENT_ROWS + " UNION ALL " + NOTICE_ROWS, (sequence_id, sequence_id), sequence_id,
+        scope="AND stored.source_kind<>'sync'",
     )
-    connection.execute(f"INSERT INTO chat_message_positions {COLUMNS} {SEGMENT_ROWS}", (sequence_id,))
-    connection.execute(f"INSERT INTO chat_message_positions {COLUMNS} {NOTICE_ROWS}", (sequence_id,))
     refresh_activity(connection, sequence_id)
     mark(connection, sequence_id)

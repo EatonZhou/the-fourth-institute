@@ -9,7 +9,10 @@ from psycopg.types.json import Jsonb
 from management_common.database_time import encode_times, decode_times
 from management_common.location_records import located_record, stored_record
 
-LEASE_SECONDS = 90
+LEASE_SECONDS = 30
+RECORD_RETENTION_DAYS = 60
+ARTIFACT_RETENTION_DAYS = 7
+RETENTION_BATCH = 100
 
 TEXT_FIELDS = ('lineage_id','trigger_path_id','effect_id','caller_id','status','admission','cwd','path','runtime',
                'sha256','unit','exclusive_key','started_at','finished_at','stderr_tail','error_code','trigger_type')
@@ -26,6 +29,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS script_admission_idx ON runs(admission) WHERE 
 CREATE INDEX IF NOT EXISTS script_exclusive_idx ON runs(lineage_id,exclusive_key) WHERE status='running';
 CREATE INDEX IF NOT EXISTS script_pending_idx ON runs(script_run_id) WHERE status='running' OR notified IS NOT TRUE;
 CREATE INDEX IF NOT EXISTS script_retention_idx ON runs(finished_at) WHERE notified IS TRUE AND status<>'running';
+CREATE INDEX IF NOT EXISTS script_artifact_retention_idx ON runs(finished_at,script_run_id) WHERE status<>'running';
 CREATE TABLE IF NOT EXISTS worker_lease (singleton INTEGER PRIMARY KEY CHECK(singleton=1),holder TEXT NOT NULL,until_at TIMESTAMPTZ NOT NULL);
 CREATE TABLE IF NOT EXISTS failure_episodes (
     lineage_id TEXT NOT NULL, effect_id TEXT NOT NULL, script_key TEXT NOT NULL,
@@ -150,28 +154,69 @@ def pending(after='', limit=100):
 
 
 def expired(limit=100):
+    """Delivered history strictly older than its business retention period."""
+    with domain().read() as c:
+        return [row['script_run_id'] for row in c.execute(
+            "SELECT script_run_id FROM runs WHERE status<>'running' AND notified IS TRUE "
+            "AND finished_at < CURRENT_TIMESTAMP-%s*INTERVAL '1 day' "
+            "ORDER BY finished_at,script_run_id LIMIT %s",
+            (RECORD_RETENTION_DAYS, min(RETENTION_BATCH, max(0, int(limit)))))]
+
+
+def expired_artifacts(limit=100):
+    """Background files expire independently of delivery and retained history."""
     from management_common.directory_cleanup_store import get_directory_cleanup_store
     queue = get_directory_cleanup_store()
     with domain().read() as c:
         return [row['script_run_id'] for row in c.execute(
-            f"SELECT script_run_id FROM runs WHERE status<>'running' AND finished_at <= CURRENT_TIMESTAMP-INTERVAL '7 days' "
-            f"AND (notified IS TRUE OR NOT EXISTS (SELECT 1 FROM {queue.table} q WHERE q.operation_id='expire:' || runs.script_run_id)) "
-            "ORDER BY finished_at,script_run_id LIMIT %s", (limit,))]
+            "SELECT script_run_id FROM runs WHERE status<>'running' "
+            "AND finished_at <= CURRENT_TIMESTAMP-%s*INTERVAL '1 day' "
+            f"AND NOT EXISTS (SELECT 1 FROM {queue.table} q WHERE q.operation_id='expire:' || runs.script_run_id) "
+            "ORDER BY finished_at,script_run_id LIMIT %s",
+            (ARTIFACT_RETENTION_DAYS, min(RETENTION_BATCH, max(0, int(limit)))))]
 
 
-def delete_expired(identifier):
+def expire_artifacts(identifier):
+    """Durably reserve file cleanup; the structured delivery record stays live."""
     from management_common.directory_cleanup_store import get_directory_cleanup_store
     from management_common.directory_retention import enqueue_directory_cleanup
     from . import runtime
     queue = get_directory_cleanup_store()
     with domain().transaction() as c:
         queue.lock(c)
-        row = c.execute("SELECT notified FROM runs WHERE script_run_id=%s AND status<>'running' AND finished_at <= CURRENT_TIMESTAMP-INTERVAL '7 days' FOR UPDATE", (identifier,)).fetchone()
+        row = c.execute("SELECT script_run_id FROM runs WHERE script_run_id=%s AND status<>'running' "
+                        "AND finished_at <= CURRENT_TIMESTAMP-%s*INTERVAL '1 day' FOR UPDATE",
+                        (identifier, ARTIFACT_RETENTION_DAYS)).fetchone()
         if row:
             enqueue_directory_cleanup(runtime.RUN_ROOT / identifier, owner_id=identifier,
                           operation_id='expire:' + identifier, actor='directory-retention', connection=c)
-            if row['notified']:
-                c.execute('DELETE FROM runs WHERE script_run_id=%s', (identifier,))
+        return row is not None
+
+
+def delete_expired(identifier, *, holder):
+    """Fence history deletion by the coordinator lease, delivery and age.
+
+    Lock the lease until commit: takeover cannot pass a still-committing delete.
+    The fallback cleanup intent is in the same transaction as removing history.
+    """
+    from management_common.directory_cleanup_store import get_directory_cleanup_store
+    from management_common.directory_retention import enqueue_directory_cleanup
+    from . import runtime
+    queue = get_directory_cleanup_store()
+    with domain().transaction() as c:
+        if c.execute("SELECT singleton FROM worker_lease WHERE singleton=1 AND holder=%s "
+                     "AND until_at>clock_timestamp() FOR UPDATE", (holder,)).fetchone() is None:
+            return False
+        queue.lock(c)
+        row = c.execute("SELECT script_run_id FROM runs WHERE script_run_id=%s AND status<>'running' "
+                        "AND notified IS TRUE AND finished_at < CURRENT_TIMESTAMP-%s*INTERVAL '1 day' FOR UPDATE",
+                        (identifier, RECORD_RETENTION_DAYS)).fetchone()
+        if row is None:
+            return False
+        enqueue_directory_cleanup(runtime.RUN_ROOT / identifier, owner_id=identifier,
+                      operation_id='expire:' + identifier, actor='directory-retention', connection=c)
+        c.execute('DELETE FROM runs WHERE script_run_id=%s', (identifier,))
+        return True
 
 
 def acquire_lease(holder):

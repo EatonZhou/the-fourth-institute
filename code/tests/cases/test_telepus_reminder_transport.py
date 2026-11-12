@@ -27,8 +27,7 @@ def test_only_discovery_callback_reuses_complete_snapshot_for_two_seconds(remind
     assert len(r.server.sent) == 1
     assert not r.notices._snapshots
     with r.notices.router.connect() as c:
-        row = c.execute("SELECT payload_json FROM audit_events WHERE event_type='notification_latency' ORDER BY created_at DESC LIMIT 1").fetchone()
-    assert row['payload_json']['snapshot_reused'] is reused
+        assert c.execute("SELECT count(*) FROM audit_events WHERE event_type IN ('notification_scan','notification_latency')").fetchone()[0] == 0
 
 
 def test_expired_snapshot_reread_can_cancel_or_fail_without_sending(reminder):

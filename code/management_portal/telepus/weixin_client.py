@@ -57,8 +57,6 @@ class WeixinClient:
         self.account = account or {}
         self.base = trusted_url(self.account.get("baseurl") or API)
         self.transport = transport or self._http
-        self._default_transport = transport is None
-        self.last_http_timing = {}
 
     @staticmethod
     def _http(url, method, headers, body, timeout):
@@ -95,8 +93,6 @@ class WeixinClient:
         if query:
             url += "?" + urlencode(query)
         raw, _ = self.transport(url, method, headers, body, timeout)
-        if self._default_transport:
-            self.last_http_timing = dict(getattr(HTTP.local, 'timing', {}))
         try:
             result = json.loads(raw)
             codes = [int(result.get(name) or 0) for name in ("ret", "errcode")]
