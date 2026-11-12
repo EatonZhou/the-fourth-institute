@@ -258,7 +258,8 @@
     const text = clean(path);
     const reference = uploadReference(path);
     if (reference) return uploadPath(reference);
-    if (classifyLocator(text).kind !== "local") return "";
+    const locator = classifyLocator(text);
+    if (locator.kind !== "local") return "";
     if (text.includes("/portal_knowledge_item_chats/")) {
       return `/knowledge/api/item-chat/attachment-image?path=${encodeURIComponent(text)}`;
     }
@@ -266,10 +267,16 @@
     if (upload) return `/api/uploads/${encodeURIComponent(upload[1])}`;
     const marker = "/resident_chat_images/";
     const index = text.indexOf(marker);
-    if (index < 0) return "";
-    const fileId = text.slice(index + marker.length).replace(/^\/+/, "");
-    return fileId
-      ? `/api/agent-workbench/chat-attachments/image?file_id=${encodeURIComponent(fileId)}`
+    if (index >= 0) {
+      const fileId = text.slice(index + marker.length).replace(/^\/+/, "");
+      return fileId
+        ? `/api/agent-workbench/chat-attachments/image?file_id=${encodeURIComponent(fileId)}`
+        : "";
+    }
+    // Workspace images use the same authorized byte endpoint as file previews.
+    // Do not turn text files or unresolved relative/remote addresses into images.
+    return kindForPath(locator.path) === "image"
+      ? `/api/agent-workbench/link-file-raw?path=${encodeURIComponent(locator.path)}`
       : "";
   }
 

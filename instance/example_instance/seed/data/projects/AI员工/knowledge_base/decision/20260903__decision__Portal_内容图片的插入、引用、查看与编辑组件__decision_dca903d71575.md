@@ -4,27 +4,27 @@ type: decision
 project: AI员工
 created_at: '2026-09-03'
 version:
-  number: 12
-  created_at: '2026-09-03'
+  number: 13
+  created_at: "2026-09-03"
   created_by:
-    user: ''
-    agent: ''
-  updated_at: '2026-10-27T12:57:46Z'
+    user: ""
+    agent: ""
+  updated_at: "2026-11-12T12:18:43Z"
   updated_by:
-    user: ''
-    agent: resident_73cb83291316
+    user: ""
+    agent: "resident_62dbdb2288fb"
 importance: 9
 metaness: 1
 ai_generated: false
 links:
   source:
-  - ${code_root}/management_portal/static/portal_chat_workspace.js
-  - ${code_root}/management_portal/static/portal_image_editor.js
-  - ${code_root}/management_portal/static/portal_image_editor.css
-  - ${code_root}/management_portal/society_service/workspace_contracts.py
-  - ${code_root}/management_portal/society_service/workspace_domain.py
-  - ${code_root}/management_portal/static/markdown.js
-  - ${code_root}/management_portal/static/portal_components.css
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/portal_chat_workspace.js
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/portal_image_editor.js
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/portal_image_editor.css
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/workspace_contracts.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/workspace_domain.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/markdown.js
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/portal_components.css
   related:
   - decision_605810a1292b
   - decision_f560803947c6
@@ -91,6 +91,8 @@ Portal 的聊天、公告、知识正文和其他富文本区域都可能包含�
 - Markdown、消息图片、正文引用和托盘缩略图使用同一打开入口。可预览节点带 `data-portal-preview-image`；Markdown 渲染器生成带 `portalMarkdownImage` 外观的图片。`PortalImageEditor.bind(root, options)` 统一绑定 root 本身及其后代的图片交互，点击后把可读地址和标题交给 `PortalImageEditor.open`。独立 Preview renderer 直接调用图片责任方，不依赖 Chat 的绑定实现。
 
 - 图片节点只拥有一份点击监听，重新绑定更新当前回调和配置。共享图片模块接管动态加入的图片；默认绑定不会覆盖业务显式提供的回调，不会一次点击同时打开默认与定制查看器。修饰键和移除附件动作保持各自语义。
+
+- Resident 工作区等本地目录的图片引用，由共享 `PortalFileLinks.imagePreviewUrl` 转为受保护的 `link-file-raw` 地址，再交给相同的缩略图与全屏查看器。上传图片及历史附件沿用各自的读取接口；读取权限仍由服务端检查，失败时在查看器中显示错误。普通文档及未解析的相对路径、外站地址不转换成本地图片地址。
 
 - 成功读取图片不会自动带来写权限。只有当前业务对象允许修改并提供保存回调时，调用方才传入 `editable: true`；附件 token、DOM 位置与来自某个页面均不能推导写权限。共享组件不判断 Resource、Workspace 或领域 ACL。
 
