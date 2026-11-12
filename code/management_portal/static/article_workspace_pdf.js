@@ -71,6 +71,7 @@
       const scroller = $("articlePdfView");
       if (!scroller) return null;
       const scrollerRect = scroller.getBoundingClientRect();
+      if (!scrollerRect.width || !scrollerRect.height) return null;
       const clientX = Number.isFinite(point.clientX) ? point.clientX : scrollerRect.left + (scrollerRect.width / 2);
       const clientY = Number.isFinite(point.clientY) ? point.clientY : scrollerRect.top + (scrollerRect.height / 2);
       let page = document.elementFromPoint(clientX, clientY)?.closest?.("[data-pdf-page]");
@@ -117,13 +118,15 @@
     function restoreArticlePdfPosition(position) {
       if (!position) return;
       const scroller = $("articlePdfView");
-      const page = scroller?.querySelector?.(`[data-pdf-page="${Number(position.page || 1)}"]`);
+      const page = scroller?.querySelector?.(`[data-pdf-page="${Number(position.page || 1)}"]`)
+        || Array.from(scroller?.querySelectorAll?.("[data-pdf-page]") || []).at(-1);
       if (!scroller || !page) return;
       const bounds = page.getBoundingClientRect();
       const targetX = bounds.left + (Math.max(0, Math.min(1, Number(position.xRatio ?? 0.5))) * bounds.width);
       const targetY = bounds.top + (Math.max(0, Math.min(1, Number(position.yRatio ?? 0.5))) * bounds.height);
-      scroller.scrollLeft += targetX - Number(position.clientX || 0);
-      scroller.scrollTop += targetY - Number(position.clientY || 0);
+      const viewport = scroller.getBoundingClientRect();
+      scroller.scrollLeft += targetX - Number(position.clientX ?? (viewport.left + viewport.width / 2));
+      scroller.scrollTop += targetY - Number(position.clientY ?? (viewport.top + viewport.height / 2));
     }
 
     function scheduleArticlePdfRedraw(delay = 180) {
@@ -302,7 +305,8 @@
         await articlePdfController.promise;
         return;
       }
-      const readingPosition = preservePosition ? captureArticlePdfPosition() : null;
+      const resumePosition = state.pdfRestorePosition;
+      const readingPosition = resumePosition || (preservePosition ? captureArticlePdfPosition() : null);
       cancelPdf();
       host.innerHTML = window.PortalI18n.html`<div class="articlePdfDocument" id="articlePdfDocument"><div class="articlePdfStatus" id="articlePdfStatus">正在加载 PDF…</div></div>`;
       const documentHost = $("articlePdfDocument");
@@ -328,9 +332,14 @@
       articlePdfRenderKey = renderKey;
       await controller.promise;
       if (articlePdfController === controller && readingPosition?.page) {
+        const pageCount = Number(documentHost.dataset.pdfPageCount) || readingPosition.page;
+        readingPosition.page = Math.max(1, Math.min(pageCount, readingPosition.page));
         await controller.ensurePage?.(readingPosition.page, { render: true });
       }
-      if (articlePdfController === controller) restoreArticlePdfPosition(readingPosition);
+      if (articlePdfController === controller) {
+        restoreArticlePdfPosition(readingPosition);
+        if (resumePosition === state.pdfRestorePosition) state.pdfRestorePosition = null;
+      }
     }
 
     function revealPdfSyncMatch(match) {
@@ -426,7 +435,7 @@
     }
 
     return Object.freeze({
-      bindArticlePdfGestures, cancelPdf, pdfUrl, renderPdf, scheduleArticlePdfLayout, setArticlePdfZoom,
+      bindArticlePdfGestures, cancelPdf, captureArticlePdfPosition, pdfUrl, renderPdf, scheduleArticlePdfLayout, setArticlePdfZoom,
       showPdfError, syncPdfToSource, syncSourceToPdf, updateArticlePdfZoomControls,
     });
   }

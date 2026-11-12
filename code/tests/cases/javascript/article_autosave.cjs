@@ -11,7 +11,7 @@ async function startAuto(f, text = 'new') {
 test('idle saves debounce, persist without compiling, and manual save still compiles clean source', async () => {
   const f = articleAutosaveFixture();
   f.edit('a'); f.documents.scheduleAutoSave(); f.edit('new'); f.documents.scheduleAutoSave();
-  assert.equal(f.timers.size, 1); assert.equal([...f.timers.values()][0].delay, 1200);
+  assert.equal(f.timers.size, 1); assert.equal([...f.timers.values()][0].delay, 500);
   await f.flush(); f.requests[0].resolve({ content: 'old' }); await tick();
   assert.deepEqual(JSON.parse(f.requests[1].options.body), { path: 'main.tex', content: 'new' });
   assert.equal(f.$('articleEditorState').textContent, 'Saving…');

@@ -307,6 +307,13 @@
     },
   });
 
+  const readingPosition = articleModule("PortalArticleWorkspacePosition").createPosition({
+    state, captureActiveDocument: (...args) => captureActiveDocument(...args),
+    captureArticlePdfPosition: (...args) => captureArticlePdfPosition(...args),
+    openArticleFile: (...args) => openArticleFile(...args),
+    activateDocument: (...args) => activateDocument(...args),
+  });
+
   const {
     flushArticleNavigationPreference, initializeArticleSemanticSearch, loadArticleNavigationPreference,
     loadArticles, persistArticleSelection, renderArticleResourceSearch, renderArticleSelectors, selectArticle,
@@ -327,7 +334,7 @@
     scheduleArticleContentRefresh: (...args) => scheduleArticleContentRefresh(...args),
     selectedArticle, setArticleResourceSearchOpen, setOutputView: (...args) => setOutputView(...args),
     setProjectMenu, setTexlabStatus, showPdfError: (...args) => showPdfError(...args), showToast, state,
-    updateSemanticUrl, updateUrl,
+    updateSemanticUrl, updateUrl, readingPosition,
   });
 
   const {
@@ -373,7 +380,7 @@
     openArticleLinkedReference, pdfUrl: (...args) => pdfUrl(...args), registerArticleLinkedFiles,
     renderEditorLayers: (...args) => renderEditorLayers(...args), renderFileTree,
     renderSemanticNavigation: (...args) => renderSemanticNavigation(...args), request,
-    scheduleArticleGitRefresh, scheduleTexlabSync, showToast, state,
+    scheduleArticleGitRefresh, scheduleTexlabSync, scheduleReadingPosition: readingPosition.schedule, showToast, state,
     syncEditorScroll: (...args) => syncEditorScroll(...args),
     updateCursorStatus: (...args) => updateCursorStatus(...args),
     updateDirtyState: (...args) => updateDirtyState(...args),
@@ -442,7 +449,7 @@
   });
 
   const {
-    bindArticlePdfGestures, cancelPdf, pdfUrl, renderPdf, scheduleArticlePdfLayout, setArticlePdfZoom,
+    bindArticlePdfGestures, cancelPdf, captureArticlePdfPosition, pdfUrl, renderPdf, scheduleArticlePdfLayout, setArticlePdfZoom,
     showPdfError, syncPdfToSource, syncSourceToPdf, updateArticlePdfZoomControls,
   } = articleModule("PortalArticleWorkspacePdf").createPdf({
     $, editorPosition, esc, openArticleFile, request, selectedArticle, setOutputView, showToast, state,
@@ -466,6 +473,7 @@
     openRegisterModal, handleArticleGitAction, pullArticleGit, queryState, registerArticle, renderArticleGitDiffFile, renderArticleResourceSearch,
     renderArticleSelectors, renderEditorLayers, renderLog, renderSemanticNavigation, resetEditorPreferences,
     saveOpenFile, saveSettings, scheduleArticleGitRefresh, scheduleAutoCompile, scheduleAutoSave, searchProject, selectArticle,
+    persistReadingPosition: readingPosition.persist, scheduleReadingPosition: readingPosition.schedule,
     setArticlePdfZoom, setArticleResourceSearchOpen, setCompileMenu, setEditorMode, setNavigationPanelVisible,
     setOutputView, setProjectMenu, setSettingsSection, setSideView, showPdfError, showToast, state,
     stopCompilation, syncEditorScroll, syncPdfToSource, syncSourceToPdf, toggleArticleGitDiffLayout,

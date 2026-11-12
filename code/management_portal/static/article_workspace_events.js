@@ -24,7 +24,7 @@
     "state", "stopCompilation", "syncEditorScroll", "syncPdfToSource", "syncSourceToPdf",
     "toggleArticleGitDiffLayout", "toggleWordWrap", "unregisterCurrentArticle", "updateArticleGitStage",
     "updateCompilePreference", "updateCursorStatus", "updateDirtyState", "updateEditorCodeCheck",
-    "updateEditorPreference", "updateSemanticUrl", "uploadFile",
+    "updateEditorPreference", "updateSemanticUrl", "uploadFile", "persistReadingPosition", "scheduleReadingPosition",
   ]);
 
   function createEvents(dependencies) {
@@ -45,7 +45,7 @@
       setProjectMenu, setSettingsSection, setSideView, showPdfError, showToast, state, stopCompilation,
       syncEditorScroll, syncPdfToSource, syncSourceToPdf, toggleArticleGitDiffLayout, toggleWordWrap,
       unregisterCurrentArticle, updateArticleGitStage, updateCompilePreference, updateCursorStatus,
-      updateDirtyState, updateEditorCodeCheck, updateEditorPreference, updateSemanticUrl, uploadFile,
+      updateDirtyState, updateEditorCodeCheck, updateEditorPreference, updateSemanticUrl, uploadFile, persistReadingPosition, scheduleReadingPosition,
     } = dependencies;
 
     initializeArticlePopovers();
@@ -383,12 +383,18 @@
       }
     });
     window.addEventListener("focus", () => scheduleArticleContentRefresh(0));
-    window.addEventListener("pagehide", () => articleContentRefresh.stop());
+    $("articlePdfView").addEventListener("scroll", scheduleReadingPosition, { passive: true });
+    document.addEventListener("visibilitychange", () => { if (document.hidden) persistReadingPosition(); });
+    window.addEventListener("pagehide", () => {
+      persistReadingPosition();
+      articleContentRefresh.stop();
+    });
     window.addEventListener("pageshow", () => scheduleArticleContentRefresh(0));
     window.addEventListener("beforeunload", event => {
       articleGitRefresh.stop();
       captureActiveDocument();
       if (state.preferenceSaveTimer) flushArticleNavigationPreference({ keepalive: true });
+      persistReadingPosition();
       if (!hasDirtyDocuments()) return;
       event.preventDefault();
       event.returnValue = "";

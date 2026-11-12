@@ -11,7 +11,7 @@
     "editorValue", "isMarkdownPath", "languageForPath", "loadSemanticIndex", "monacoApi",
     "openArticleLinkedReference", "pdfUrl", "registerArticleLinkedFiles", "renderEditorLayers",
     "renderFileTree", "renderSemanticNavigation", "request", "scheduleArticleGitRefresh",
-    "scheduleTexlabSync", "showToast", "state", "syncEditorScroll", "updateCursorStatus", "updateDirtyState",
+    "scheduleTexlabSync", "scheduleReadingPosition", "showToast", "state", "syncEditorScroll", "updateCursorStatus", "updateDirtyState",
   ]);
 
   function createDocuments(dependencies) {
@@ -21,7 +21,7 @@
       $, articleAbsolutePath, articleModelUri, closeArticleGitDiff, compileArticle, detailResourceGuest, editorValue,
       isMarkdownPath, languageForPath, loadSemanticIndex, monacoApi, openArticleLinkedReference, pdfUrl,
       registerArticleLinkedFiles, renderEditorLayers, renderFileTree, renderSemanticNavigation, request,
-      scheduleArticleGitRefresh, scheduleTexlabSync, showToast, state, syncEditorScroll, updateCursorStatus,
+      scheduleArticleGitRefresh, scheduleTexlabSync, scheduleReadingPosition, showToast, state, syncEditorScroll, updateCursorStatus,
       updateDirtyState,
     } = dependencies;
 
@@ -70,12 +70,14 @@
             endColumn: selection.endColumn,
           };
         }
+        scheduleReadingPosition();
         return;
       }
       documentState.scrollTop = editor.scrollTop;
       documentState.scrollLeft = editor.scrollLeft;
       documentState.selectionStart = editor.selectionStart;
       documentState.selectionEnd = editor.selectionEnd;
+      scheduleReadingPosition();
     }
 
     function renderDocumentTabs() {
@@ -241,6 +243,14 @@
           insertSpaces: true,
         });
         if (textDocument && documentState.viewState) state.editor.restoreViewState(documentState.viewState);
+        else if (textDocument && documentState.selection) state.editor.setSelection(documentState.selection);
+        else if (textDocument && documentState.selectionStart != null) {
+          const start = documentState.model.getPositionAt(documentState.selectionStart);
+          const end = documentState.model.getPositionAt(documentState.selectionEnd ?? documentState.selectionStart);
+          state.editor.setSelection({ startLineNumber: start.lineNumber, startColumn: start.column,
+            endLineNumber: end.lineNumber, endColumn: end.column });
+          state.editor.setScrollPosition({ scrollTop: documentState.scrollTop || 0, scrollLeft: documentState.scrollLeft || 0 });
+        }
         state.editorSuppressChange = false;
         state.source = documentState.model?.getValue() || "";
         editor.value = state.source;
@@ -269,6 +279,7 @@
       else if (state.monacoReady) window.requestAnimationFrame(() => state.editor?.layout?.());
       else window.requestAnimationFrame(syncEditorScroll);
       scheduleTexlabSync(80);
+      scheduleReadingPosition();
 
     }
 
@@ -297,6 +308,7 @@
       } else {
         renderDocumentTabs();
       }
+      scheduleReadingPosition();
     }
 
     function presentArticleDocument(target, payload = {}, options = {}) {
@@ -589,7 +601,7 @@
       autoSaveTimers.set(documentState, window.setTimeout(() => {
         autoSaveTimers.delete(documentState);
         void saveDocument(articleId, path, documentState, { automatic: true, silent: true });
-      }, 1200));
+      }, 500));
     }
 
     function scheduleAutoSave() {
