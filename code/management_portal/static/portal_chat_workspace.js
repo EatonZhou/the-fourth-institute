@@ -984,6 +984,12 @@
     };
     let stopPending = false;
     const updateControls = () => {
+      if (els.input) {
+        const disabled = state.composer.can_send === false && state.composer.input_read_only === true;
+        els.input.setAttribute("contenteditable", String(options.editable !== false && !disabled));
+        els.input.setAttribute("aria-disabled", String(disabled));
+        els.input.style.opacity = disabled ? "0.55" : "";
+      }
       const uploading = state.attachments.some(item => item.uploading);
       const failed = state.attachments.some(item => item.error);
       const canStopByContract = !!state.composer.can_stop;

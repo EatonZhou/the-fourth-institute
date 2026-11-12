@@ -325,6 +325,7 @@
           composer: {
             ...(base.chat_workspace.composer || {}),
             can_send: controls.can_send === true,
+            input_read_only: controls.input_read_only === true,
             disabled_reason: controls.disabled_reason || "",
             send_hint: controls.send_hint ? window.PortalI18n.t(controls.send_hint) : "",
             execution_gate: state.execution_gate,
