@@ -27,7 +27,11 @@ def result():
 @pytest.mark.parametrize('requested', ['msg_request_only', ''])
 @pytest.mark.parametrize('role', list(paper_projection.ROLES))
 def test_all_paper_roles_share_input_reply_and_usage_identity(monkeypatch, requested, role):
-    """论文各工作角色统一保存输入回复与用量身份"""
+    """显式或自动分配的请求 ID 与实际输入、回复和用量身份分别保存。"""
+    from management_portal.society_service import resident_message_contract
+    allocate = Mock(return_value='msg_allocated_request')
+    monkeypatch.setattr(resident_message_contract, 'message_identity', allocate)
+    expected_request = requested or 'msg_allocated_request'
     records = []
     raw = result()
     original = deepcopy(raw)
@@ -37,7 +41,8 @@ def test_all_paper_roles_share_input_reply_and_usage_identity(monkeypatch, reque
         assert options['workflow']['context_policy'] == 'fresh'
         options['on_assigned']({'resident_id': HANDLE['resident_id'], 'lineage_id': HANDLE['lineage_id']})
         assert records[-1]['input_message_id'] == ''
-        assert records[-1]['requested_message_id'] == requested
+        assert options['message_id'] == expected_request
+        assert records[-1]['requested_message_id'] == expected_request
         options['on_submitted'](HANDLE)
         assert records[-1]['input_message_id'] == HANDLE['message_id']
         return raw
@@ -53,7 +58,8 @@ def test_all_paper_roles_share_input_reply_and_usage_identity(monkeypatch, reque
     assert receipt['trigger_path_id'] == HANDLE['trigger_path_id']
     assert 'invocation_id' not in receipt
     assert 'message_id' not in receipt
-    assert receipt['requested_message_id'] == requested
+    assert receipt['requested_message_id'] == expected_request
+    assert allocate.call_count == (0 if requested else 1)
     assert receipt['reply_message_ids'] == ['msg_reply_one', 'msg_reply_final']
     assert receipt['usage_message_id'] == 'msg_reply_final'
     assert answer['usage']['input_message_id'] == HANDLE['message_id']
@@ -233,10 +239,21 @@ def test_paper_input_receipt_requires_the_exact_current_schema():
 
 
 @pytest.mark.parametrize('outcome', ['completed', 'queued', 'identity_conflict'])
-def test_deep_read_uses_same_canonical_receipt_and_never_retries_unconfirmed_delivery(monkeypatch, tmp_path, outcome):
-    """深读使用统一输入回执且未确认投递失败后不重试"""
+def test_deep_read_preserves_canonical_receipt_and_waits_for_unconfirmed_delivery(monkeypatch, tmp_path, outcome):
+    """材料入口与回执分层：待确认保持运行，不猜测实际输入或重投。"""
+    from management_portal import paper_agent_materials
     state = {'job_id': 'deep-read-fixture', 'paper_id': 'paper_0123456789ab', 'status': 'queued', 'created_by': 'alice'}
     _install_job(monkeypatch, tmp_path, state)
+    # Material ACL/storage has its own integration tests. This fixture tests
+    # identity projection after admission, without requiring a real Paper.
+    def prepared(**options):
+        assert options['actor'] == 'alice'
+        assert options['subject'] == state['paper_id']
+        assert options['attempt'] == 'paper-deep-read:' + state['job_id']
+        return options['full_prompt'], {'type': 'paper.task-material', 'version': 1, 'key': 'fixture'}, {
+            'provenance': {'sha256': 'a' * 64},
+        }
+    monkeypatch.setattr(paper_agent_materials, 'prepare_task_input', prepared)
 
     def native(_name, **options):
         options['on_assigned']({'resident_id': HANDLE['resident_id'], 'lineage_id': HANDLE['lineage_id']})
@@ -252,14 +269,20 @@ def test_deep_read_uses_same_canonical_receipt_and_never_retries_unconfirmed_del
         return {**result(), 'message': '# Paper\n' + paper_reading_jobs.DEEP_READ_HEADINGS}
 
     submit = Mock(side_effect=native)
+    resume = Mock(side_effect=AssertionError('unconfirmed input cannot be resumed'))
     monkeypatch.setattr(paper_projection.native, 'turn', submit)
+    monkeypatch.setattr(paper_projection, 'resume', resume)
     paper_reading_jobs._run_deep_read_job(state['job_id'])
     submit.assert_called_once()
     if outcome == 'queued':
-        assert state['status'] == 'error'
+        assert state['status'] == 'running'
+        assert state['step'] == 'confirming submission'
+        assert state['error'] == ''
         assert state.get('resident_input_message_id', '') == ''
         assert 'resident_message_id' not in state
         assert state['resident_handoff']['planned_message_id'] == 'msg_planned'
+        assert state['resident_handoff']['trigger_path_id'] == HANDLE['trigger_path_id']
+        assert state['resident_handoff']['input_identity_status'] == 'unconfirmed'
     elif outcome == 'identity_conflict':
         assert state['status'] == 'error'
         assert state['resident_input_message_id'] == HANDLE['message_id']
@@ -267,3 +290,4 @@ def test_deep_read_uses_same_canonical_receipt_and_never_retries_unconfirmed_del
         assert state['status'] == 'done'
         assert state['resident_reply_message_ids'] == ['msg_reply_one', 'msg_reply_final']
         assert state['resident_usage_message_id'] == 'msg_reply_final'
+    resume.assert_not_called()

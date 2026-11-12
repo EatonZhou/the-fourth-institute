@@ -4,15 +4,15 @@ type: decision
 project: AI员工
 created_at: '2026-09-03'
 version:
-  number: 43
+  number: 55
   created_at: "2026-09-03"
   created_by:
     user: ""
     agent: ""
-  updated_at: "2026-11-08T15:55:27Z"
+  updated_at: "2026-11-12T11:18:00Z"
   updated_by:
     user: ""
-    agent: "resident_83d75ad3a6c7"
+    agent: "resident_6199a7a36480"
 importance: 9
 metaness: 2
 ai_generated: true
@@ -62,30 +62,53 @@ Review job 以 `review_id` 关联 `reviews`，读取时组装 `result`，任务�
 
 ### Paper 输入回执
 
-Paper 领域调用共享 Resident 时，适配器接收共享 handle 中的 `message_id`，并立即转换成 schema 为 `tfi.paper-resident-input.v1` 的 Paper 输入回执；读取只接受该精确格式，不因读取改写原回执或输入身份。回执用 `input_message_id` 表示实际已经投递的输入；`requested_message_id` 记录调用方请求，`planned_message_id` 只记录尚未投递的计划身份，`reply_message_ids` 与 `usage_message_id` 分别关联回复和计费消息。未取得实际输入身份时，状态为 `unconfirmed`，任务不得据此恢复、重投或切换 provider。
+Paper 领域调用共享 Resident 时，适配器接收共享 handle 中的 `message_id`，并立即转换成 schema 为 `tfi.paper-resident-input.v1` 的 Paper 输入回执；读取只接受该精确格式，不因读取改写原回执或输入身份。回执用 `input_message_id` 表示实际已经投递的输入；`requested_message_id` 记录调用方指定或由适配器分配的本次请求 ID，`planned_message_id` 只记录尚未投递的计划身份，`reply_message_ids` 与 `usage_message_id` 分别关联回复和计费消息。未取得实际输入身份时，回执状态为 `unconfirmed`。Deep Read 保持 `running / confirming submission`，通过原提交定位信息确认实际输入；未确认前不得调用输入恢复、重投或切换 provider，也不得把计划消息 ID 当作已投递输入。
 
 经 Lineage 工作流投递时，共享提交回执和 Paper 输入回执保留本次 `trigger_path_id`，用于查找 Event 到 Resident 的实际触发路径；提交、完成和中断恢复均保留同一引用。回执不再记录旧的 Resident `invocation_id`。Resident 本轮的实际执行仍由独立的 Execution 记录，路径通过自己的关联表引用 Execution。
 
-持久记录只保存当前回执结构。Figure、Collector 和 Deep Read 的恢复都先校验精确 schema，再以 `input_message_id` 继续等待同一输入。Deep Read job 只保存 `resident_input_message_id`；运行时不读取 `message_id`、`message_id_kind` 或 `resident_message_id` 历史别名。共享 Resident API 的 `message_id` 仍是其当前接口字段，差异只在 Paper adapter 边界转换。
+持久记录只保存当前回执结构。Figure、Collector 和 Deep Read 的执行恢复在取得实际输入后先校验精确 schema，再以 `input_message_id` 继续等待同一输入。Deep Read 的已生成正文恢复是另一个显式操作：由 contributor 选择来源，产生独立回执并保留原失败。Deep Read job 只保存 `resident_input_message_id`；运行时不读取 `message_id`、`message_id_kind` 或 `resident_message_id` 历史别名。共享 Resident API 的 `message_id` 仍是其当前接口字段，差异只在 Paper adapter 边界转换。
 
 ### 九个共享功能 Resident
 
-Paper 的功能型 AI 统一由 Paper Lineage 中九个固定 Resident 执行，每个角色只绑定一个持续身份。所有用户共享同一组成员，也可以直接在普通 Society 页面与任意成员对话。Paper Lineage、页面权限和 Research Chat 的身份规则以 `decision_528bf9985705` 为准。
+Paper 的研究任务通过 Paper Lineage 中九个固定功能角色执行。角色键与产物职责见“固定功能对应表”；角色身份解析键为 `(Paper Lineage ID, 角色名)`，不包含 actor、paper_id、job_id 或模型名。每个角色绑定一个持续 Resident，多个角色可以显式共享身份；九角色不保证已有九个不同 Resident。所有用户共享这些功能角色，共享执行身份不扩大请求 actor 对材料和写入目标的权限。
 
-角色键、流程入口与产物只在下文“固定功能对应表”维护；本节定义这些角色共有的身份和调用边界。
+现行 Workbench `workbench_0b41641662b0` revision/published 为 93/93：`paper:summary` 已独立绑定 `resident_d510733a002b`，`paper:deep-read` 保留 `resident_26f331af7dde` 及历史，其他绑定不变。摘要已配置 kimi-code 订阅、`kimi-code/kimi-for-coding`、fixed、auto_switch=false、pure、短摘要 prompt 和 reporting off，尚未模型实投。摘要交付 summary.md，深读交付 analysis.md，业务 owner 分别校验保存。摘要拆分已完成；其余角色仍需分别核验权限、设置和真实能力，不批量套用九行配置。
 
-固定角色的身份解析键是 `(Paper Lineage ID, 角色名)`，不包含 actor、paper_id、figure_id、review_id、job_id 或模型名。不同论文、用户和任务是同一成员接收的不同输入，而不是创建新成员的理由。图表解释与图片生成是两个不同角色；CCF 的不同处理阶段仍是一个角色。
+九角色每个新业务任务使用 `context_policy="fresh"`：复用稳定 Resident、订阅账号与队列，不继承旧任务历史、历史压缩摘要或共享暂存消息。本次明确提供论文、问题、图像、编辑原产物和版本引用。上下文策略随实际 input 持久化，在模型开始前生效；等待、断线恢复和回执重放沿用原 input／Execution，不另建任务或重投首条输入，已受理输入不改上下文策略。fresh 只定义新任务上下文，不等于禁用工具。Research Chat 和普通持续对话继续沿用其会话。
 
-功能任务由页面或直接操作 Lineage 的调用者触发同一个已绑定流程入口。Paper 领域把目标 Paper 或登记草稿、输入资源和产物要求组织为通用 prompt，消息 Effect 将固定功能提示词与本次 invocation prompt 组合后投递给共享角色。真实发起者来自受信请求上下文。执行通过既有 HATG ISA 与普通 Resident 队列，共享成员按规范输入顺序处理任务，实际队列和运行状态由 Resident/Execution 提供。
+现行规范关于通用系统规则、身份、权限及 Skill 注入的要求，在最小注入配置正式应用前仍属原规则；已授权的新方案按能力通过统一 prompt_injection owner 使用 pure 和下节短角色指令，去除无关 Portal 通用规则、resident.md、身份、协作、导航、开发规范及自动历史。关闭可选 reporting 附加规则；工具任务仅保留必要资源读取、检索、图像与产物说明。pure 不关闭 Provider 自身提示、原生工具或平台强制约束，也不自动删除显式附带历史。最终装配证据应核实短指令仍送达及无无关材料，不能只凭 settings 或 Preview 宣称生产送达完成。
 
-每次任务将业务运行与目标 Resident、规范输入消息 ID、预期产物关联。进度和阶段续接按本次输入及其对应回复核对，直接聊天或其他用户的后续输入不能被误收为这次任务的结果。长期产物按 Paper 及产物类型发现，包含所有获授权入口产生的正式结果，不以是否存在当前页面发起的 job 为显示前提。共享执行身份保留实际发起者，也不扩大源资源或写入目标的授权。
+pure、空 tools、短 prompt 和现有 text_only 均不构成跨 backend 的硬禁工具保证。旧交付中 Kimi text_only 已实现禁工具的判断已撤回；相关实验代码属于暂停范围。“无工具任务不暴露工具”作为后续独立能力，须由正式请求、Execution capability 和原生 backend owner 贯通显式契约，不支持时在模型调用前拒绝。本批不以该能力已完成作为交付事实。
 
-功能成员可以调用模型、检索工具、解析器、图片生成器或 Collector 程序作为执行工具，但这些工具不能另行拥有与 Paper Lineage 脱节的业务 Resident。模型或 provider 选择不改变角色、团队与会话归属。解析 PDF、提取已有图表、普通笔记写入等非 AI 操作仍可由领域服务直接处理。
+页面与授权 Lineage 调用者触发同一绑定入口；业务领域组织本次授权材料、业务键和输出要求，Effect 将固定指令与本次 invocation 组合投递，执行仍由既有 HATG ISA、Resident 队列和 Execution 承担。真实发起者取受信请求。每次任务关联目标 Resident、规范输入、对应回复与预期产物，其他用户的后续输入和普通聊天不作为该任务结果。
 
-语义搜索不使用这九个角色，由 Portal 应用配置 `application_targets`（每个应用一行、指定其接收 Resident 或 Lineage 的配置表）中 `semantic_search:paper` 一行指定的公共搜索 Resident 提供；Research Chat 则按用户与论文动态绑定，两者不能落入通用的 `paper:background-ai` 替代团队。
+Resident 最终回复交付完整正文或结构化结果，由业务 owner 校验并保存；仅向其他成员 DeliverMessage 或回复完成简报不构成业务交付。图像生成还须验证真实文件。长期产物按 Paper 和产物类型发现，不以本页面是否存在 job 为前提。模型、检索、解析与图像工具不另建脱离 Paper Lineage 的业务身份。解析 PDF、提取已有图表、普通笔记等非 AI 操作继续由领域服务完成。
 
+语义搜索使用公共搜索入口及 `application_targets` 中 `semantic_search:paper` 的目标；Research Chat 为独立持续交互能力，现行按用户与论文解析，后续目标见下文。翻译为独立服务，可作为第十项业务能力计数，不新增第十个共享研究角色或通用 `paper:background-ai` 团队。
 
-功能任务由业务适配器在每次输入明确指定交付位置：Resident 在本轮最终回复中返回完整正文或结构化结果，由业务服务校验并保存。向门面或其他成员 DeliverMessage 发送正文不构成该功能任务的产物交付；最终回复不能只包含完成简报。普通成员协作的消息回复约定不能替代本次业务交付协议。
+### 已授权待上线的模型、短指令与额度策略
+
+本节描述已授权的目标配置；摘要已按上节完成配置，其余角色尚未全部正式应用，不能用目标表推断历史或当前执行型号。Codex 五项使用 `gpt-6.1-sol`、`reasoning_effort=medium`（展示 Sol 6.1 Mid）；Kimi 四项使用订阅 `kimi-code/kimi-for-coding`。模型配置不证明图像桥或生成工具可用。
+
+| 角色 | 目标配置 | 专用短 system prompt |
+| --- | --- | --- |
+| paper:collector | Codex gpt-6.1-sol / medium | 根据研究目标检索和筛选论文，核实来源并返回可追溯候选；不编造元信息，仅通过指定业务接口登记。 |
+| paper:registration-metadata | Kimi kimi-for-coding | 从给定PDF文本提取登记元数据，按指定JSON结构输出并标明依据；缺失字段留空，不猜测。 |
+| paper:ccf | Kimi kimi-for-coding | 依据给定权威目录和检索证据核对会议、期刊及CCF等级，保留来源和年份；证据不足明确未确认。 |
+| paper:summary | Kimi kimi-for-coding | 根据给定材料写简短中文摘要，概括问题、方法、主要发现和限制；不添加原文没有的结论。 |
+| paper:deep-read | Codex gpt-6.1-sol / medium | 基于授权论文材料生成中文深读分析，标注关键结论的章节、页码或图表依据，区分原文事实与推断。 |
+| paper:review | Codex gpt-6.1-sol / medium | 基于论文和授权相关材料评估贡献、证据与局限，按指定JSON输出；给出可追溯依据，证据不足明确说明。 |
+| paper:exp | Kimi kimi-for-coding | 提取实验设置、数据、指标、基线、消融和复现条件，输出带出处的Markdown；未说明项如实标注，不执行实验代码。 |
+| paper:figure | Codex gpt-6.1-sol / medium | 结合实际图像、图注及论文解释图表，注明观察依据并区分推断；未收到图像时明确说明，不假装看过图。 |
+| paper:figure-generation | Codex gpt-6.1-sol / medium | 按需求和参考图调用可用图像工具，验证实际产物并返回文件；保留引用关系，无工具或失败时如实报告。 |
+
+材料抽取的输出 schema、长度和来源由业务 owner 随本次输入提供。登记和摘要采用最小材料；CCF 亲自检索时补必要检索说明；实验提取需要读文件时补授权读取说明；深读、评审和图解仅补实际所需能力与产物契约。扫描 PDF 先经 OCR／图像链得到可用文本，图解必须实际收到图像。多 reviewer 视角不证明独立模型共识。
+
+Codex 额度不足时，目标是在同 Provider、同模型和 effort 内选择当前执行身份有权使用、enabled、登录有效、支持模型、额度样本新鲜且未冷却的订阅账号。按有效窗口最小剩余比例评分，最高优先，同分保持当前账号再按稳定顺序；样本过期先刷新，无可用账号则排队并说明原因。额度足够不频繁切换，不跨 Provider、不转付费 API。Kimi 不自动转 Codex/API。
+
+Dev 已实现显式 `quota_switch_strategy=legacy|same_provider_model`；缺省 legacy 保留旧行为，只有显式 opt-in 才使用新策略，未知值拒绝。该实现未发布、加载或改正式配置。现行执行合同使用站点管理员治理的共享登记账号池，候选受 enabled、登录状态、后端选择策略及调度准入限制；逐账号 use ACL 不是本任务前置条件。有效开关已开启时，内部可信 quota_switch 复用既有恢复授权，公开 RestartSession 不接受该可信原因，人工重启仍检查目标 Resident 管理权限。Admission 的 disabled、quota_reserve、dispatch_interval 等检查负责运行准入；实际权限拒绝、确定性迁移失败或无候选时保留原工作，不以无限换号掩盖拒绝。逐账号隔离属于另行提出时由账号及权限 owner 定义的公共能力，不列为本批强制门槛。
+
+切换由正式执行 owner 记录前后账号及原因；请求结果未知时先核对原执行，不盲目重复提交。摘要拆分已完成；其余角色正式配置授权仍待完成，本方案尚未整体应用；现行共享池和可信 quota 恢复链路可复用，不以新增逐账号 use ACL 为应用前提。历史来源继续从原输入用量读取，不以此目标表改写。
 
 ### 谁发起、谁执行、谁保存结果
 
@@ -93,8 +116,8 @@ Paper 的功能型 AI 统一由 Paper Lineage 中九个固定 Resident 执行，
 |---|---|---|
 | Actor | 当前通过人类 Session 或 Agent token 认证的调用者；Session 是人的登录会话，Agent token 是 Agent 的受控访问凭证 | 发起请求，记为运行的创建者，并作为权限系统的判定对象 |
 | Paper viewer | 有权读取指定 Paper 的用户 | 读取 Paper 和受控 asset |
-| Paper contributor | 有权修改指定 Paper 的用户 | 启动会写入长期产物的 Paper 研究动作 |
-| Paper 路由保护 | HTTP 入口的统一认证和权限检查 | 要求有效认证；写请求顶层带 `paper_id` 或 `id` 时统一要求 contributor |
+| Paper contributor | 有权修改指定 Paper 的用户 | 按领域动作授权修改产物，包括显式正文恢复与资产重试 |
+| Paper 路由保护 | HTTP 入口的统一认证和资源读取检查 | 要求有效认证；顶层 `paper_id` 先验读取权，具体修改权由领域动作校验 |
 | Job | 一次后台工作的持久或半持久运行记录 | 保存业务键、状态、步骤、进度、错误、用量和结果位置。Review、Deep Read、Experiment 与 Collector 的 job 记录，以及 Review 列表、Notes 列表和精选会议，保存在 PostgreSQL `paper` schema 中，每条记录以 ID 为主键一行 |
 | Business task | Paper 领域协调业务记录、输入与产物的任务 | 解析功能流程绑定、关联规范输入及对应结果，校验并保存业务产物；AI 执行由 Lineage/Resident 负责，非 AI 处理可以调用普通工具 |
 | Provider | 实际提供模型或执行能力的后端 | 由功能 Resident 自己的设置决定；Paper 领域只投递任务，不选择 Provider 或模型 |
@@ -132,14 +155,14 @@ AI 功能：请求 Event → Effect invocation → 共享 Resident canonical exe
 按规范消息观察执行 → 校验并提交 bundle 产物 → 更新索引/manifest → 页面重新查询
 ```
 
-业务运行保存步骤和进度，并引用 Resident/Execution 的实际执行身份。各入口的重试与恢复继续等待原输入，不另起一套 AI 调度。Library 与详情按 Paper 读取成功产物，业务运行记录是否仍存在不影响长期产物发现。
+业务运行保存步骤和进度，并引用 Resident/Execution 的实际执行身份。活动任务的执行恢复继续确认或等待原输入，不另起一套 AI 调度；终态任务的显式重新启动与已生成正文恢复遵循各动作自己的契约。Library 与详情按 Paper 读取成功产物，业务运行记录是否仍存在不影响长期产物发现。
 
 共同规则如下：
 
 - Paper HTTP 入口先要求有效的人类 Session 或 Agent token。
-- 顶层含 `paper_id` 或 `id` 的写请求在路由层统一要求 Paper contributor。搜索和收集任务不保存所有者列表，记录的 `created_by` 只表示发起者；记录发起者不等于其执行 Resident 对其他用户私有，也不能因此按 actor 创建固定角色副本。
+- Paper HTTP 公共路由对顶层 `paper_id` 先检查当前 actor 的资源读取权；修改权限由具体领域动作校验。Deep Read 启动沿读取授权接收任务，正文恢复和资产重试另行要求 Paper contributor。搜索和收集任务不保存所有者列表，记录的 `created_by` 只表示发起者；记录发起者不等于其执行 Resident 对其他用户私有，也不能因此按 actor 创建固定角色副本。
 - 参数错误返回 400；Paper 或运行不存在返回 404；权限拒绝返回 403；未处理执行失败返回 500。
-- 同一业务键的活动请求返回原记录。状态查询读取或恢复既有运行，不创建第二份业务工作。
+- 同一业务键的活动请求返回原记录。状态查询不创建第二份业务工作；Deep Read GET 只读取，执行恢复由服务生命周期中的后台消费者负责。
 - 各动作分别声明跨重启保证。调用方不能根据“后台任务”四个字推断它会自动续跑。
 
 ## Paper 功能与 Lineage 流程
@@ -197,6 +220,16 @@ Paper 的功能按钮绑定流程入口，流程再绑定职责稳定的 Residen
 Paper 绑定 owner 对同一业务键的并发首发做幂等控制，持久关联创建回执、目标 Resident 与初始化消息。创建成功而初始化失败时重试初始化；不能再次创建 Resident。重复请求不重复发送首条问题，不同的新问题保持独立消息身份。已绑定成员被删除或移出团队属于明确的失效绑定，按 `decision_528bf9985705` 报错，不当作首次访问静默重建。
 
 Paper 页面与 Society 页面展示的是同一份会话事实。在任一页面发送的消息均能在另一个入口读取；用户之间没有额外的对话隐藏权限。换用户默认解析另一个 Resident，不改变原成员的可见范围。
+
+### Paper Chat 后续目标与独立翻译边界
+
+上述按用户×Paper 首发开通协议描述现行行为。后续 Paper Chat 目标为每用户维护一个或多个持续 Resident，在非全屏管理界面显式新建或指定，全屏沿用所选身份；切论文只更新授权材料索引，不自动切 Resident、清空历史或重发初始化。答疑和多论文关联分析使用 Chat，单篇正式深读继续使用 Deep Read。
+
+材料索引记录稳定资源与附件版本，服务端每次读取重新鉴权；页面传来的 context_text、路径和旧索引不授予权限。旧用户×Paper 会话保留，迁移须显式选择，不自动合并历史。创建、绑定、消息与执行继续使用正式 owner 和幂等回执；此目标尚未迁移或上线，具体材料和 cwd 规则见 decision_528bf9985705。
+
+翻译独立服务使用现行 Google／DeepSeek 路径，不占九角色，也不恢复暂停的 Kimi 翻译实验。已授权待上线方案通过正式 Model API／Chat 协议和统一 prompt owner，只发送专用翻译指令、原文、源／目标语言、显式术语及必要格式要求，默认仅返回译文；不附 Portal 通用 system、Resident 身份、历史、工作区或工具目录。专用 MT 按供应商正式输入契约，单 user 协议不强加 system；Paper 不直读密钥另起调用链。
+
+Dev material_task_instructions 与翻译配方 v2 已交付，替身最终 wire 验证只含翻译 system 与材料 user；未发布或加载。已受理 v1 请求按原配方恢复，不重投或迁移在途输入。配置和配方版本进入账号私有缓存材料，Google 协议保持原样，新旧缓存不混用。鉴权、附件版本、取消、执行绑定和真实 provider/model 记录继续保留；请求构造证据不等于生产送达证据。
 
 ### 多阶段功能对应表
 
@@ -257,23 +290,27 @@ Review 解析器优先读取模型输出中的 JSON 代码块，再用 JSON 解�
 
 解析后按同一份 Review 数据结构检查字段和 reviewer（评审者信息）。缺少内容时保留原始输出，并把评审标为 `incomplete`，让用户看到仍待补齐的部分。长期 Review 只采用模型实际返回且通过校验的内容。
 
+### 短摘要：显式重试失败任务
+
+登记后按 `paper:summary` 功能绑定生成 summary.md。`POST /paper/api/papers/summary/retry` 接收 paper_id 与失败的 job_id，校验当前调用者的 Paper contributor 权限，仅允许重试最新的失败摘要。原失败记录保持不变，新任务记录 retry_of 与当前调用者；同一原任务的重复或并发请求复用同一个重试任务。已有重试进入失败终态后，如需再次重试，应明确提交该重试任务的 job_id。成功后通过 Paper detail 的 summary 字段读取正文。本接口不恢复原先未确认的输入，也不承诺后台摘要任务在进程重启后续跑。
+
 ### Deep Read：可恢复的深度分析
 
 - Deep Read 对本地 PDF 运行深度分析，并把成功结果写成长期 Analysis Markdown。
 
-- Start 要求 `paper_id`、contributor 权限和本地 PDF，并复用该 Paper 的 `queued` 或 `running` job。
+- Start 要求 `paper_id`、认证 actor 和 Paper 读取权，原子接收或复用该 Paper 的 `queued` 或 `running` job；执行者检查本地 PDF，缺失时记录明确错误。
 - Job 保存共享 `paper:deep-read` 角色的 Resident binding 和规范 Resident 消息。恢复时继续等待原消息；不按论文、发起者或 Provider 创建另一个深读成员。
-- 一次 Deep Read 只向角色 Resident 投递一次任务。执行失败时 job 进入 `error`，不把同一任务再投递一次；用户可以重新启动。
+- 一次 Deep Read 只向角色 Resident 投递一次任务。已确认执行失败或产物校验失败时 job 进入 `error`，不把同一任务再投递一次；用户可以显式启动新任务，或按下述恢复入口采用已生成正文。提交待确认或等待超时仍保持活动态，继续核对原提交。
 - Status 可以用 `job_id` 或 `paper_id` 定位，返回 `idle|queued|running|done|error`、step、progress、`analysis_path`、usage 和 error。
-- Status GET 命中非终态 job 时重新启动等待逻辑，不重复提交 Resident Input。
-- 成功时写 Analysis Markdown，并把 Paper 更新为 analysis-ready；提取、执行或写入失败时 job 进入 `error`。
+- Status GET 只做定位、读取授权与状态返回，不启动任务、不修复记录。服务生命周期中的恢复消费者扫描活动 job，以数据库租约取得唯一执行权；已确认输入继续等待原消息，未确认提交沿原路径查询。租约过期或被接管的旧执行者不得写入状态或产物。
+- 成功时写 Analysis Markdown，并把 Paper 更新为 analysis-ready；确定的提取、执行、产物校验或写入失败记录为 `error`。不以暂时查不到原输入推断失败。
 
 
 - 已完成模型输入但最终回复未形成 Analysis 时，contributor 可调用 `POST /paper/api/deep-read/recover`，明确提交失败 `job_id`、对应 `paper_id`、已确认 `input_message_id`、来源对话 `source_resident_id`、生成正文 `source_message_id` 和去除首尾空白后的正文 UTF-8 `content_sha256`。多段文本按两个换行连接。入口以当前 caller 核对 Paper 修改权、原输入已完成、来源消息可读及其作者等于原角色 Resident，并沿正常小节校验与保存逻辑提交；不启动模型或触发工作流。
 - 来源允许是明确选定的转送正文。保存记录将其记为 contributor 选择，保留来源消息和原输入，不能把转送消息标记成原输入的规范最终回复。原失败 job 与错误保持不变；恢复产生独立的 done job，usage 中 `artifact_recovery` 保存来源、原 job、原 input、摘要与真实操作者。重复同一恢复请求复用回执。
 - 恢复只允许当前最新的失败 job；出现后继任务时拒绝。已有 Analysis 时必须提交其当前原始字节 `expected_analysis_sha256`，缺省只允许文件不存在，防止无意覆盖后继产物。若文件写入已完成但任务回执未提交，调用者须回读产物再明确确认恢复，不通过重跑模型解决。
 
-- Deep Read status 按任务关联的真实 Paper 检查当前 actor 的 viewer 权限，随后才能返回状态或恢复等待。按 job_id 查询也执行同一检查；同时给出 paper_id 时必须与任务所属论文一致。未找到指定任务返回 404，缺少定位参数或论文不匹配返回 400，无阅读权限返回 403。
+- Deep Read status 按任务关联的真实 Paper 检查当前 actor 的 viewer 权限，随后才能返回状态。按 job_id 查询也执行同一检查；同时给出 paper_id 时必须与任务所属论文一致。未找到指定任务返回 404，缺少定位参数或论文不匹配返回 400，无阅读权限返回 403。
 
 ### Deep Read 的模型来源
 
@@ -374,14 +411,17 @@ Contributor 可用 `POST /paper/api/deep-read/provenance` 提交 `{paper_id, job
 ### 登记后的自动提取
 
 - Paper 登记或补齐 PDF 后可以自动提取引用（Refs）与图表（Figures）。
-- 提取状态为 `queued`、`running`、`done`、`skipped` 或 `error`。本地 PDF 缺失（包括解析路径抛出 `FileNotFoundError`）时为 `skipped`；权限与其他运行错误仍为 `error`；`done` 分别记录引用和图表数量；`error` 保存一个或多个原因。任何终态都不改变 Paper ID。
+- 持久提取状态为 `queued`、`running`、`done`、`skipped` 或 `error`。本地 PDF 缺失（包括解析路径抛出 `FileNotFoundError`）时为 `skipped`；权限与其他运行错误仍为 `error`；`done` 分别记录引用和图表数量；`error` 保存一个或多个原因。任何终态都不改变 Paper ID。
+- 详情读取发现活动任务的执行进程已退出，或旧任务缺少执行者身份时，投影为 `interrupted`，保留原 job ID 和持久记录，不自动重放。`interrupted|error|skipped` 显示 `retryable=true`。contributor 可通过 `POST /paper/api/papers/assets/retry` 提交当前 `paper_id` 和 `job_id`，以真实当前 caller 重试；过时 job 拒绝，仍活动或已完成的 job 复用。该流程提取 raw 文本、引用与图表，不生成 clean 文本或 AI 分析。
 
 ## 状态所有权和恢复总表
 
 | 动作 | 活动状态由谁保存 | 成功产物 | Portal 重启后的当前保证 |
 |---|---|---|---|
 | Paper Review | Review job | `review_*` Markdown 与索引 | 不续跑旧活动生成 |
-| Deep Read | 含规范执行身份的 Deep Read job | Analysis Markdown 与 analysis-ready 状态 | Status 恢复等待同一消息；失败后由用户重新启动 |
+| Deep Read 执行 | 含规范输入与执行租约的 Deep Read job | Analysis Markdown 与 analysis-ready 状态 | 后台消费者取得租约后确认原提交或等待原输入；Status GET 只读，不重复投递 |
+| Deep Read 正文恢复 | 独立 recovery job 与来源记录 | 通过同一校验的 Analysis Markdown | contributor 显式选择已生成正文；保留旧失败、拒绝后继覆盖，不重新调用模型 |
+| PDF 自动资产提取 | 含执行者与尝试身份的 assets job | raw 文本、Refs 与 Figures | 已退出或缺失执行者的活动记录显示 interrupted；当前 contributor 显式重试，不自动重放 |
 | Experiment | Experiment job | Experiment Markdown | 无 canonical 恢复；stale 后显式 start |
 | CCF enrichment | identity 缓存记录 | 补全元数据、摘要和 web 结果 | 通过重复 POST 读取已有缓存状态 |
 | Reference extract/register | 同步调用 | Refs 或复用/新建 Paper | 请求结束即终态 |
@@ -404,8 +444,9 @@ Contributor 可用 `POST /paper/api/deep-read/provenance` 提交 `{paper_id, job
 
 ### Deep Read 与 Experiment
 
-- **启动 Deep Read：** `POST /paper/api/deep-read/start` 校验 Paper、contributor 和 PDF，返回活动运行。
-- **查询或恢复 Deep Read：** `GET /paper/api/deep-read/status?job_id=|paper_id=` 返回完整状态，并为非终态 job 继续等待原规范消息。
+- **启动 Deep Read：** `POST /paper/api/deep-read/start` 校验认证 actor 与 Paper 读取权，接收或复用活动运行；PDF 可用性在任务执行中检查。
+- **查询 Deep Read：** `GET /paper/api/deep-read/status?job_id=|paper_id=` 校验 Paper 读取权后返回状态，无启动或恢复副作用。
+- **恢复已生成正文：** `POST /paper/api/deep-read/recover` 按上文 Deep Read 恢复契约检查 contributor、失败 job、原输入与选定来源；保存正文并返回独立 done job。
 - **创建 Experiment：** `POST /paper/api/exp/create` 校验 Paper contributor，创建或复用 Experiment job。
 - **启动 Experiment：** `POST /paper/api/exp/start` 与 create 使用同一业务键；发现陈旧记录后按需创建新 job。
 - **查询 Experiment：** `GET /paper/api/exp/status?job_id=|paper_id=` 返回状态、进度、`exp_path`、usage 和 error。
@@ -438,3 +479,15 @@ Contributor 可用 `POST /paper/api/deep-read/provenance` 提交 `{paper_id, job
 - **删除：** `POST /paper/api/collector/delete` 把 job 标记为 `deleted`，普通列表随后隐藏。
 
 图题在图上方时，提图区域保留图形及相邻说明文字；距离判断以图内标签字号为基准，后续章节大标题不能扩大自身的收录距离。裁剪留白若落在未收录正文的一行中间，应收缩到该行之前，避免留下半行文字。已保存的生成图及原始成功/失败回执保持其历史事实；验证刷新恢复时分别记录源文件缺损和页面额外裁切，新生成/提取产物仍须验证文字完整性。
+
+## 生成来源与用量展示
+
+生成 Agent 的 Resident ID 是持续身份，不能唯一确定某次生成的模型与账号。API、订阅和其他 Agent 写入的 analysis/summary 共享历史来源补全协议，不要求存在 Deep Read job。已有内容不重新生成，已有可靠字段不覆盖，完整用量不重复写入。
+
+GET /paper/api/papers/provenance-candidates 盘点非空 analysis/summary，返回内容与 usage 双 SHA。POST /paper/api/papers/provenance 接收 paper_id、kind、expected_sha256、expected_usage_sha256、apply，先验证写权限与原字节，再补充 usage sidecar；正文和生成时间保持不变。apply=false 只读取并返回计划；脚本默认 dry-run，--apply 写入，--report 保存逐条结果。
+
+API 既有调用用量优先保留。Resident 来源优先以原 reply/input/Execution 身份读取原消息与执行投影，执行投影只公开原请求型号、当次 Provider Session 账号和实际 Provider 用量，不公开 prompt。provider_reported 优先于 execution_request。只有 Resident 和生成时间时，可搜索该 Resident 的原文，要求完整正文唯一匹配且消息不晚于产物时间；不采用距离最近的消息或当前配置推测。型号和账号切换后仍从同一历史执行关联读取。记录不存在或匹配歧义时输出明确缺失，不调用模型补造事实。
+
+model_evidence=resident_current_settings 的旧补入项不视为历史事实，补全时移除其推测值再查原执行；找不到时保留历史缺失。其他已记录字段保持原值，API/账号信息和执行定位字段折叠在生成记录中。token 默认十进制 K/M/B，悬停精确值。分析正文仍支持 summary 作为 v0。
+
+原回复没有型号而仍可定位 Execution 时，Paper 补全调用 ExecutionService.generation_source，只返回原执行的 provider、实际结果账号（缺失时为请求账号）、原请求型号或 Provider 回报型号及执行时间。Execution owner 先检查当前 actor 对所属 Resident 的读取权限，再投影原 Scheduler 请求，既不借用原执行 actor，也不返回 prompt/output。原请求已清理时保留缺失。该只读投影不提交执行、不触发模型。
