@@ -48,7 +48,6 @@
     function beginPaperOpen(){sequence++;restoring=false;state.libraryRequestSeq++;state.libraryLoading=false;}
     function selectResult(kind,id){if(restoring)return;const route={kind,scope:'library',id};state.paperHome=false;state.paperHomeReady=false;state.paperListScope='library';commit(route);}
     const goList=scope=>restore({kind:'list',scope:scopeOf(scope)},{push:true});
-    const goHome=()=>restore({kind:'home',scope:scopeOf(state.paperListScope||current?.scope)},{push:true});
     function seed(){const route=parse();prepare(route);current=route;state.paperNavigationRoute=route;
       state.mode=route.kind==='paper'?'reader':'library';state.selectedId=route.kind==='paper'?route.id:'';state.detail=null;
       state.activeSemanticSearchId=route.kind==='search'?route.id:'';state.activeCollectorJobId=route.kind==='collector'?route.id:'';
@@ -58,9 +57,8 @@
       return route;
     }
     window.addEventListener('popstate',()=>{const entry=history.state?.paperNav;const route=entry?.principal===state.principalId?entry.route:parse();restore(route,{scroll:entry?.scroll??scrolls.get(key(route))??0}).catch(alertError);});
-    document.getElementById('paperHomeBtn')?.addEventListener('click',()=>goHome().catch(alertError));
     document.addEventListener('click',event=>{if(current?.kind==='paper'||event.target.closest('[data-paper-favorite],[data-favorite]'))return;if(event.target.closest('.paperRow,[data-paper-id]')){save();paperSnapshot=key(current);}},true);
-    return {seed,restore,goList,goHome,openPaperLocation,beginPaperOpen,selectResult,get restoring(){return restoring;},get current(){return current;}};
+    return {seed,restore,goList,openPaperLocation,beginPaperOpen,selectResult,get restoring(){return restoring;},get current(){return current;}};
   }
   function decorateHome(state){
     const host=document.getElementById('workspaceMain');if(!host)return;

@@ -988,9 +988,6 @@ body:has(#paperPageFrame):not(:has(:is(.portalWorkbenchTab,.portalDocumentTabSel
 .paperFolderIcon { width:14px; height:14px; flex:0 0 14px; fill:none; stroke:currentColor; stroke-width:1.4; }
 .paperLeaf { padding-left:0; }
 .paperLeaf > .folderLine > span { flex:1 1 auto; min-width:0; }
-.paperHomeButton { appearance:none; padding:0; border:0; background:transparent; color:inherit; text-align:start; cursor:pointer; width:fit-content; }
-.paperHomeButton:hover { color:var(--accent); text-decoration:underline; }
-.paperHomeButton:focus-visible { outline:2px solid var(--accent); outline-offset:3px; }
 #paperWorkspacePane .readerHeadText #deepReadStatusText { grid-column:auto; grid-row:auto; text-align:start; min-width:0; font:400 11px/16px ui-sans-serif,system-ui,sans-serif; }
 .paperAnalysisEmpty { padding:12px; min-height:180px; height:100%; display:grid; place-items:center; }
 .paperHomeOverview { margin-bottom:12px; }
