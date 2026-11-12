@@ -47,8 +47,17 @@ def update_family(inv):
 
 def dispatch_family_task(inv):
     from ..family_task_dispatches import dispatch
+    return _dispatch_family_task(inv, dispatch)
+
+
+def recover_family_task(inv):
+    from ..family_task_dispatches import recover_dispatch
+    return _dispatch_family_task(inv, recover_dispatch)
+
+
+def _dispatch_family_task(inv, operation):
     try:
-        return dispatch(inv.argument("resident_id"), inv.argument("trigger"), inv.caller,
+        return operation(inv.argument("resident_id"), inv.argument("trigger"), inv.caller,
                         facts=inv.argument("facts"), message_id=inv.argument("message_id") or "",
                         source_message_id=inv.argument("source_message_id") or "",
                         event=inv.argument("event"))

@@ -111,6 +111,34 @@ def _legacy_text(target, trigger, facts, original, text):
     return old_text if re.fullmatch(pattern, old_text) else text
 
 
+def recover_dispatch(facade_id: str, trigger: str, actor: str, *, message_id: str = "", **arguments):
+    """Reconcile a stopped ISA call only from its durable, fixed task intent.
+
+    No intent/no stable identity remains unknown. Current authorization and
+    role checks still apply, and normal admission verifies the entire frozen
+    request and its intake receipt before attempting any delivery.
+    """
+    if not message_id:
+        return None
+    from management_common.json_columns import json_value
+    from . import resident_message_contract, resident_record_domain
+    from .state_store import get_lineage_data_store
+
+    facade = resident_record_domain.find_resident(facade_id)
+    with get_lineage_data_store().database.read() as connection:
+        row = connection.execute("SELECT intent_json FROM family_task_dispatches WHERE lineage_id=%s AND message_id=%s",
+                                 (facade["lineage_id"], message_id)).fetchone()
+    if row is None:
+        return None
+    intent = json_value(row["intent_json"])
+    try:
+        return dispatch(facade_id, trigger, actor, message_id=message_id,
+                        expected_target_id=intent["request"]["target"], **arguments)
+    except (FamilyTaskTargetChanged, resident_message_contract.MessageIdentityConflict):
+        # Never redirect an old task or replace its frozen envelope.
+        return None
+
+
 def dispatch(facade_id: str, trigger: str, actor: str, *, facts: dict | None = None,
              message_id: str = "", source_message_id: str = "", event: dict | None = None,
              expected_target_id: str = "") -> dict:

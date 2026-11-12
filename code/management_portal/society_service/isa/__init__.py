@@ -25,13 +25,17 @@ def _access_scope(handler):
     return scoped
 
 
+def _scoped_handler(name, handler):
+    return _access_scope(guard_source_scope(name, guard_definition_handler(name, handler)))
+
+
 def _handlers() -> dict[str, Any]:
     merged: dict[str, Any] = {}
     for module in (resource_creation, residents, conversation, execution, definition, shared_state, runs, families, function_blocks, organization, script_runs, templates, system_workflows):
         for name, handler in module.HANDLERS.items():
             if name in merged:
                 raise RuntimeError(f"SocietyService 重复登记指令实现：{name}")
-            merged[name] = _access_scope(guard_source_scope(name, guard_definition_handler(name, handler)))
+            merged[name] = _scoped_handler(name, handler)
     return merged
 
 
@@ -84,7 +88,8 @@ def binding() -> OwnerBinding:
         streams=_streams(),
         record_scope=record_scope,
         recover_projections=recover_projections,
-        recover_interrupted={"RelayFamilyMessage": recover_relay},
+        recover_interrupted={"RelayFamilyMessage": recover_relay,
+                             "DispatchFamilyTask": _scoped_handler("DispatchFamilyTask", families.recover_family_task)},
         authorization_arguments=authorization_arguments,
     )
 
