@@ -56,8 +56,8 @@
       if (!options) updateLeftFaceTabs();
       const meta = options?.summary || state.library?.summary || {};
       if (!options) {
-        const filtered = !!(String(state.query || "").trim() || state.activeSemanticSearchId
-          || state.activeCollectorJobId || state.mode === "today"
+        const filtered = !!(String(state.query || "").trim()
+          || (state.mode === "library" && (state.activeSemanticSearchId || state.activeCollectorJobId)) || state.mode === "today"
           || Object.values(state.filters || {}).some(value => String(value ?? "").trim()));
         $("libraryMeta").textContent = filtered
           ? window.PortalI18n.text`${meta.visible_count || 0}/${meta.paper_count || 0} papers · ${meta.analysis_count || 0} analyses`
