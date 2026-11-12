@@ -37,21 +37,11 @@
   left: var(--hatg-navigation-inset);
   right: var(--hatg-navigation-inset);
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 6px;
   min-width: 0;
-  border: 0;
-  background: transparent;
-  padding: 0;
-  /* Only the floating groups take input; the gaps between them stay canvas. */
-  pointer-events: none;
-}
-
-.graphViewportCluster,
-.graphNavigator {
-  min-height: 31px;
   border: 1px solid color-mix(in srgb, var(--border) 85%, transparent);
   border-radius: 9px;
   background: color-mix(in srgb, var(--panel) 92%, transparent);
@@ -59,6 +49,11 @@
   backdrop-filter: blur(9px);
   padding: 3px;
   pointer-events: auto;
+}
+
+.graphViewportCluster,
+.graphNavigator {
+  min-height: 31px;
 }
 
 .graphViewportCluster {
@@ -115,12 +110,12 @@
 .graphNavigator {
   display: flex;
   align-items: center;
-  flex: 0 1 auto;
+  flex: 1 1 320px;
+  justify-content: flex-end;
   flex-wrap: wrap;
   gap: 4px;
   min-width: 0;
   max-width: 100%;
-  margin-left: auto;
 }
 
 /* Search starts as an icon; the toggle opens the field, which closes again
