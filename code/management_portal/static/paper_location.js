@@ -62,6 +62,7 @@
     // The address names the paper being read: a reload opens the URL's
     // paper first, so it follows each paper the reader switches to.
     function syncPaperLocation(id) {
+      if(window.PortalPaperNavigation?.current)return window.PortalPaperNavigation.current.openPaperLocation(String(id||''));
       const paperId = String(id || "").trim();
       if (!paperId) return;
       try {

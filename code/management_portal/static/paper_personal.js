@@ -61,6 +61,7 @@
         views.set(view, {content, cursor, offset, moreHidden: more.hidden, status: status.textContent, scroll: body?.scrollTop || 0});
       }
       view = next; ++sequence; loading = false;
+      state.paperListScope=view==='repository'?'library':view;
       const personal = view !== 'repository';
       if (!personal && state.filters?.favorite) {
         delete state.filters.favorite;
@@ -201,6 +202,7 @@
       }
       if (button.dataset.scope || button.dataset.view) {
         const next = button.dataset.scope === 'personal' ? personalView : button.dataset.view;
+        if(window.PortalPaperNavigation?.current){window.PortalPaperNavigation.current.goList(next==='repository'?'library':next).catch(message);return;}
         if (next !== view) show(next);
         else if (view !== 'repository' && !loading && !loadedViews.has(view)) page(true);
       } else if (button.hasAttribute("data-more")) page();
@@ -225,6 +227,7 @@
       }
     });
     show('recent', false);
+    document.addEventListener('portal:paper-scope-restore',event=>show(['recent','favorites'].includes(event.detail.scope)?event.detail.scope:'repository'));
     window.addEventListener('portal:paper-principal-changed', accountChanged);
     window.addEventListener("portal:paper-favorite-changed", event => {
       if (event.detail?.personalHost === host && view === 'favorites') return;

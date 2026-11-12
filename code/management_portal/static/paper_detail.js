@@ -76,9 +76,10 @@
       return detail;
     }
 
-    async function loadDetail(id, { render = true } = {}) {
+    async function loadDetail(id, { render = true, fromNavigation = false } = {}) {
       // Preserve the current selection and its interactive Reader if saving fails.
       if (String(state.selectedId || "") !== String(id || "") && !await cancelPdfRendering()) return null;
+      if(!fromNavigation)window.PortalPaperNavigation?.current?.beginPaperOpen();
       state.requestedChatWorkspaceId = "";
       const requestSeq = ++state.detailRequestSeq;
       const previousSelectedId = String(state.selectedId || "");

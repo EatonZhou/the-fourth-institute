@@ -20,50 +20,6 @@
       state,
     } = dependencies;
 
-    async function deleteCurrentPaper() {
-      const paper = state.detail?.paper || null;
-      const paperId = String(paper?.id || state.selectedId || "").trim();
-      if (!paperId || state.deletingPaperId) return;
-      const title = String(paper?.title || paperId);
-      state.deletingPaperId = paperId;
-      let closedChat = false;
-      let deleted = false;
-      try {
-        if (!await window.PortalUI.confirmAction("delete", title, {
-          consequence: "这篇论文及其 /share/Papers 文件记录会一并删除。",
-        })) return;
-        // The cascade removes the Chat before the HTTP response returns.
-        // Release its readers before deletion events can refresh that Resident.
-        if (activeChatPaperId() === paperId || currentPaperChatPanel()?.surface?.()?.paper_id === paperId) {
-          await currentPaperChatPanel()?.closeSurface?.();
-          state.chatHistoryLoadedFor = "";
-          closedChat = true;
-          currentPaperChatPanel()?.setBusy?.(true);
-        }
-        await paperApi.request("/paper/api/papers/delete", {
-          method: "POST",
-          body: JSON.stringify({ paper_id: paperId }),
-        });
-        deleted = true;
-        if (state.selectedId === paperId) {
-          state.selectedId = "";
-          state.detail = null;
-          state.deepReadStatus = null;
-          setMode("library");
-        }
-        await loadLibrary({ keepDetail: Boolean(state.selectedId) });
-        renderWorkspace();
-      } finally {
-        state.deletingPaperId = "";
-        if (closedChat) {
-          currentPaperChatPanel()?.setBusy?.(false);
-          if (!deleted && activeChatPaperId() === paperId) {
-            await loadChatHistory().catch(alertError);
-          }
-        }
-      }
-    }
-
     function openPdfUploadPicker() {
       const input = $("paperPdfUploadInput");
       if (!state.selectedId || !input || state.pdfUploadInFlight) return;
@@ -98,34 +54,8 @@
       }
     }
 
-    async function deleteCurrentPaperPdf() {
-      const paper = state.detail?.paper || null;
-      const paperId = String(paper?.id || state.selectedId || "").trim();
-      if (!paperId || state.pdfDeleteInFlight) return;
-      const title = String(paper?.title || paperId);
-      if (!await window.PortalUI.confirmAction("delete", `${title} 的 PDF 文件`)) return;
-      state.pdfDeleteInFlight = true;
-      renderWorkspace();
-      try {
-        const payload = await paperApi.request("/paper/api/papers/delete-pdf", {
-          method: "POST",
-          body: JSON.stringify({ paper_id: paperId }),
-        });
-        if (String(state.selectedId || "") !== paperId) return;
-        mergeDetailPayload(payload, { replace: true });
-        state.deepReadStatus = null;
-        await loadLibrary({ keepDetail: true });
-        renderTree();
-        renderAssistantContext();
-        renderWorkspace();
-      } finally {
-        state.pdfDeleteInFlight = false;
-        renderWorkspace();
-      }
-    }
-
     return Object.freeze({
-      deleteCurrentPaper, deleteCurrentPaperPdf, openPdfUploadPicker, uploadCurrentPaperPdf,
+      openPdfUploadPicker, uploadCurrentPaperPdf,
     });
   }
 

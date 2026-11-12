@@ -1,9 +1,9 @@
 {
+  "正在确认任务状态": {"en":"Confirming task status","zh-CN":"正在确认任务状态"},
+  "Deep Read failed. See Details.": {"en":"Deep Read failed. See Details.","zh-CN":"精读失败，请查看详情。"},
   "当前帐号额度不可用，请手动选择 AI 后端": {"en":"Account quota unavailable. Select an AI backend manually.","zh-CN":"当前帐号额度不可用，请手动选择 AI 后端"},
   "手动选择 AI 后端": {"en":"Select AI backend","zh-CN":"手动选择 AI 后端"},
   "Chat Workspace": {"en":"Chat Workspace","zh-CN":"聊天工作区"},
-  "Back to list": {"en":"Back to list","zh-CN":"返回列表"},
-  "← 返回列表": {"en":"← Back to list","zh-CN":"← 返回列表"},
   "此角色只处理论文页发起的任务，每次任务都从新的上下文开始。本页仅供查看记录，不能直接对话。": {"zh-CN":"此角色只处理论文页发起的任务，每次任务都从新的上下文开始。本页仅供查看记录，不能直接对话。","en":"This resident only handles tasks started from the Paper page. Each task starts with a fresh context. This page is for viewing records only; direct chat is unavailable."},
   "Relevance {p0}": {"en":"Relevance {p0}","zh-CN":"相关度 {p0}"},
   "Paper AI generated": {"en":"AI generated","zh-CN":"AI 已生成"},
@@ -716,14 +716,6 @@
   "Deep Read job not found": {
     "en": "Deep Read job not found",
     "zh-CN": "未找到 Deep Read 作业"
-  },
-  "Delete PDF": {
-    "en": "Delete PDF",
-    "zh-CN": "删除 PDF"
-  },
-  "Deleting PDF...": {
-    "en": "Deleting PDF...",
-    "zh-CN": "正在删除 PDF..."
   },
   "Enriching abstract and metadata overview in the background...": {
     "en": "Enriching abstract and metadata overview in the background...",

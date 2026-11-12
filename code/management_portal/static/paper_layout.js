@@ -66,10 +66,10 @@
         label: window.PortalI18n.t("Paper Workbench"),
         initialEditors: [
           { id: "library", type: "authored", presentation: "navigation", options: { source: "#paperLibraryPane" }, title: window.PortalI18n.t("Paper Library"), icon: "book" },
-          // en is wider than zh: tabs 311.6 + actions 292.2 + gap 16 +
-          // horizontal padding/borders 26 = 645.8px, rounded up to 648.
+          // Header-derived en/zh maximum after moving Deep Read into Analysis:
+          // Analysis 306 + PDF 248 + splitter 7 + workspace padding/borders 26.
           // Workbench still owns its proportional visibility-floor fallback.
-          { id: "workspace", type: "authored", presentation: "document", options: { source: "#paperWorkspacePane" }, title: window.PortalI18n.t("Research Workspace"), minWidth: 648 },
+          { id: "workspace", type: "authored", presentation: "document", options: { source: "#paperWorkspacePane" }, title: window.PortalI18n.t("Research Workspace"), minWidth: 588 },
           paperChatDescriptor(),
         ],
         defaultLayout: research,
@@ -100,6 +100,9 @@
     }
 
     async function setMode(mode, { fromHistory = false, searchId = "" } = {}) {
+      // A late tree/detail promise must not reopen Reader after explicit list
+      // navigation has already cleared its selection.
+      if(mode==='reader'&&window.PortalPaperNavigation?.current&&!state.selectedId&&!state.ccfSelectedPaper)return;
       if (mode === "main-list" || mode === "history-search") {
         if (!await cancelPdfRendering()) return;
         const saved = state.mainListReturns?.[state.leftFace];
@@ -215,8 +218,6 @@
       const list = isCollectionMode(state.mode);
       if ($("registeredFilter")) $("registeredFilter").value = state.mode === "today" || (!list && state.listReturn?.mode === "today") ? "today" : "";
       if ($("modeTabs")) { $("modeTabs").hidden = list; $("modeTabs").style.display = list ? "none" : ""; }
-      const back = $("returnToPaperList");
-      if (back) back.hidden = list && !state.activeSemanticSearchId && !state.activeCollectorJobId;
       const isCcf = state.leftFace === "ccf";
       const activeMode = isCcf && !["library", "reader"].includes(state.mode) ? "library" : state.mode;
       document.querySelectorAll("#modeTabs button[data-mode]").forEach(btn => {

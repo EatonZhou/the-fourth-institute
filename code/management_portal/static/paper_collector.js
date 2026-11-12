@@ -75,6 +75,7 @@
       }
       window.dispatchEvent(new CustomEvent('portal:paper-main-list-save'));
       state.activeCollectorJobId = job.job_id;
+      window.PortalPaperNavigation?.current?.selectResult('collector',job.job_id);
       state.query = ''; state.filters = {};
       if ($('searchInput')) $('searchInput').value = '';
       state.leftFace = 'library';

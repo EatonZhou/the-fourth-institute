@@ -66,7 +66,7 @@
       <section class="pane leftPane" id="paperLibraryPane" aria-label="Paper Library" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;Paper Library&quot;}">
         <div class="paneHead">
           <div class="paneHeadText">
-            <div class="paneTitle"><!--portal-i18n:"Paper Library"-->Paper Library</div>
+            <button class="paneTitle paperHomeButton" id="paperHomeBtn" type="button" data-portal-tooltip-opt-out="1"><!--portal-i18n:"Paper Library"-->Paper Library</button>
             <div class="paneNote" id="libraryMeta"><!--portal-i18n:"Loading..."-->Loading...</div>
           </div>
           <div class="paneHeadActions portalToolbar paperToolbar">
@@ -144,7 +144,6 @@
                   <span><!--portal-i18n:"Details"-->Details</span>
                   <span class="workspaceDetailsIcon" data-portal-icon="chevron-down" aria-hidden="true"></span>
                 </button>
-                <span class="paneNote" id="deepReadStatusText" role="status" aria-live="polite" hidden></span>
                 <div class="workspaceDetailsBody" id="workspaceDetailsBody" hidden>
                   <div class="workspaceSummary" id="workspaceSummary"></div>
                   <div class="workspaceMeta" id="workspaceMeta"><!--portal-i18n:"Browse, read, chat, and review papers from one workspace."-->Browse, read, chat, and review papers from one workspace.</div>
@@ -161,7 +160,6 @@
                 <button type="button" data-mode="refs" title="切换到论文参考文献视图" data-portal-i18n-attrs="{&quot;title&quot;: &quot;切换到论文参考文献视图&quot;}"><!--portal-i18n:"Refs"-->Refs</button>
               </div>
               <div class="workspaceModeActions">
-                <button class="portalButton is-compact is-quiet" type="button" id="returnToPaperList" hidden data-portal-i18n-text="Back to list">Back to list</button>
                 <div class="workspaceActionButtons" id="workspaceModeActions"></div>
               </div>
             </div>
@@ -221,6 +219,7 @@
     <input id="paperPdfUploadInput" type="file" accept="application/pdf,.pdf" hidden />
 
     <script src="/static/paper_location.js"></script>
+    <script src="/static/paper_navigation.js"></script>
     <script src="/static/paper_layout.js"></script>
     <script src="/static/paper_library.js"></script>
     <script src="/static/paper_library_view.js"></script>

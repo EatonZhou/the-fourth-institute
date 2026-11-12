@@ -8,7 +8,7 @@
   const DEPENDENCIES = Object.freeze([
     "$", "addSelectionToChatDraft", "alertError", "applyPaneCollapse", "currentPaperWorkbench",
     "detailSectionLoadingHtml", "detailSectionsLoaded", "esc", "md", "needPaperHtml", "paperSelectionPopover",
-    "paperStateHtml", "state", "submitChatMessage",
+    "paperStateHtml", "renderAnalysisControls", "state", "submitChatMessage",
   ]);
 
   function createReader(dependencies) {
@@ -17,7 +17,7 @@
     const {
       $, addSelectionToChatDraft, alertError, applyPaneCollapse, currentPaperWorkbench,
       detailSectionLoadingHtml, detailSectionsLoaded, esc, md, needPaperHtml, paperSelectionPopover,
-      paperStateHtml, state, submitChatMessage,
+      paperStateHtml, renderAnalysisControls, state, submitChatMessage,
     } = dependencies;
 
     function shortPath(value, maxLength = 44) {
@@ -35,13 +35,13 @@
 
     let fullscreenReader = null;
     let readerSplitCleanup = null;
-    let analysisFraction = .42;
+    let analysisFraction = .55;
     function bindReaderSplit() {
       const grid = $("workspaceMain")?.querySelector('.readerGrid');
       const handle = grid?.querySelector('.paperFrameSplitter');
       if (!grid || !handle) return;
       // Intrinsic en/zh header maxima, including padding, gap and borders.
-      const analysisMin = 146, pdfMin = 338, handleWidth = 7;
+      const analysisMin = 306, pdfMin = 248, handleWidth = 7;
       const available = () => Math.max(0, grid.clientWidth - handleWidth);
       const apply = value => {
         const total = available();
@@ -162,11 +162,11 @@
       }
       const paper = detail.paper;
       const analysisBody = detail.analysis?.body ?? detail.analysis?.content ?? detail.summary?.content ?? "";
-      const analysisKind = detail.analysis?.kind || (detail.analysis?.content ? "analysis" : "summary");
+      const analysisKind = detail.analysis?.kind || (detail.summary?.content && !detail.analysis?.content ? "summary" : "analysis");
       const sourceHtml = analysisBody ? analysisSourceHtml(detail.analysis?.provenance || {}) : "";
       const analysisHtml = analysisBody
         ? sourceHtml + md(analysisBody)
-        : paperStateHtml("No analysis markdown registered for this paper.", { density: "compact" });
+        : `<div class="paperAnalysisEmpty">${paperStateHtml("No analysis yet", { density: "compact" })}${renderAnalysisControls(paper).emptyButton}</div>`;
       return renderReaderPanels(detail, paper, analysisKind, analysisHtml);
     }
 
@@ -205,13 +205,14 @@
     }
 
     function renderReaderPanels(detail, paper, analysisKind, analysisHtml) {
+      const controls=renderAnalysisControls(paper);
       readerSplitCleanup?.();
       readerSplitCleanup=null;
       const pdfHtml = paper.pdf_url
         ? window.PortalI18n.html`<div class="pdfJsViewer" id="paperPdfViewer" data-pdf-url="${esc(paper.pdf_url)}">
               <div class="pdfJsStatus"><!--portal-i18n:"Loading PDF..."-->Loading PDF...</div>
             </div>`
-        : paperStateHtml("No PDF path or URL registered for this paper.", { density: "compact" });
+        : paperStateHtml("No PDF path or URL registered for this paper.", { density: "compact" }) + `<button class="portalButton is-compact" id="uploadPaperPdfBtn" type="button">+ PDF</button>`;
       const readerGridClasses = [
         "readerGrid",
         state.readerAnalysisCollapsed ? "analysisCollapsed" : "",
@@ -227,9 +228,11 @@
                   <span class="readerHeadIcon" aria-hidden="true"><!--portal-i18n:"MD"-->MD</span>
                   <span class="readerHeadText">
                     <span class="readerHeadTitle" data-portal-i18n-text="${analysisKind === "summary" ? window.PortalI18n.t("分析 v0 · 短摘要") : window.PortalI18n.t("Analysis")}">${window.PortalI18n.t(analysisKind === "summary" ? "分析 v0 · 短摘要" : "Analysis")}</span>
+                    ${controls.subtitle}
                   </span>
                 </div>
                 <div class="readerHeadActions">
+                  ${controls.button}
                   <button
                     class="portalButton is-icon is-quiet iconBtn readerPanelToggle"
                     data-portal-icon="chevron-left"
@@ -256,7 +259,6 @@
                 <div class="readerHeadActions">
                   ${paper.pdf_url ? window.PortalI18n.html`<a class="portalButton is-icon is-quiet iconBtn readerExternalLink" href="${esc(paper.pdf_url)}" target="_blank" rel="noopener noreferrer" data-portal-tooltip="在新标签页打开 PDF" aria-label="在新标签页打开 PDF" data-portal-icon="external-link" data-portal-i18n-attrs='{"data-portal-tooltip":"在新标签页打开 PDF","aria-label":"在新标签页打开 PDF"}'></a>` : ""}
                   ${paper.pdf_url ? window.PortalI18n.html`<button class="portalButton is-compact" id="paperFullscreenBtn" type="button" data-portal-i18n-text="Fullscreen">${window.PortalI18n.t("Fullscreen")}</button>` : ""}
-                  ${paper.has_pdf ? window.PortalI18n.html`<button class="portalButton is-compact is-danger" id="deletePaperPdfBtn" type="button" ${state.pdfDeleteInFlight ? "disabled" : ""} data-portal-i18n-text="${state.pdfDeleteInFlight ? "Deleting PDF..." : "Delete PDF"}">${window.PortalI18n.t(state.pdfDeleteInFlight ? "Deleting PDF..." : "Delete PDF")}</button>` : ""}
                   <button
                     class="portalButton is-icon is-quiet iconBtn readerPanelToggle"
                     data-portal-icon="chevron-right"

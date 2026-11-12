@@ -7,8 +7,8 @@
   const DEPENDENCIES = Object.freeze([
     "$", "activeChatPaperId", "activeChatWorkspaceId", "alertError", "applyCcfPaperListFilter",
     "canRestorePaperWorkspace", "ccfYearKey", "closePaperModal", "createExp", "createReview",
-    "currentCcfPayload", "currentPaperWorkspaceSnapshot", "deleteCollectorJob", "deleteCurrentPaper",
-    "deleteCurrentPaperPdf", "deleteGeneratedFigure", "deleteNote", "deleteReview",
+    "currentCcfPayload", "currentPaperWorkspaceSnapshot", "deleteCollectorJob",
+    "deleteGeneratedFigure", "deleteNote", "deleteReview",
     "ensureCcfPaperEnrichment", "explainFigure", "exportLibraryMarkdown", "extractFigures",
     "fetchCcfYearsForVenue", "fetchSelectedCcfPapers", "figureContextFromInput", "figureContextFromKey",
     "figureInputItems", "generateFigureDraft", "goPreviousPaperWorkspace", "isCollectionMode",
@@ -29,7 +29,7 @@
     const {
       $, activeChatPaperId, activeChatWorkspaceId, alertError, applyCcfPaperListFilter,
       canRestorePaperWorkspace, ccfYearKey, closePaperModal, createExp, createReview, currentCcfPayload,
-      currentPaperWorkspaceSnapshot, deleteCollectorJob, deleteCurrentPaper, deleteCurrentPaperPdf,
+      currentPaperWorkspaceSnapshot, deleteCollectorJob,
       deleteGeneratedFigure, deleteNote, deleteReview, ensureCcfPaperEnrichment, explainFigure,
       exportLibraryMarkdown, extractFigures, fetchCcfYearsForVenue, fetchSelectedCcfPapers,
       figureContextFromInput, figureContextFromKey, figureInputItems, generateFigureDraft,
@@ -136,6 +136,7 @@
       $("leftFaceTabs").addEventListener("click", event => {
         const btn = event.target.closest("button[data-left-face]");
         if (!btn) return;
+        if(window.PortalPaperNavigation?.current){window.PortalPaperNavigation.current.goList(btn.dataset.leftFace).catch(alertError);return;}
         if (btn.dataset.leftFace === "ccf") {
           showCcfFace().catch(alertError);
         } else {
@@ -146,8 +147,8 @@
         const btn = event.target.closest("button[data-mode]");
         if (btn) setMode(btn.dataset.mode);
       });
-      $("returnToPaperList")?.addEventListener("click", () => setMode("main-list").catch(alertError));
       window.addEventListener("popstate", () => {
+        if(window.PortalPaperNavigation?.current)return;
         const params = new URL(location.href).searchParams;
         const paperId = params.get("paper");
         if (paperId) loadDetail(paperId).then(() => setMode("reader")).catch(alertError);
@@ -171,7 +172,6 @@
         }
         if (event.target.closest("#deepReadBtn")) startDeepRead().catch(alertError);
         if (event.target.closest("#uploadPaperPdfBtn")) openPdfUploadPicker();
-        if (event.target.closest("#deletePaperBtn")) deleteCurrentPaper().catch(alertError);
       });
       $("paperPdfUploadInput").addEventListener("change", event => {
         const file = event.target.files?.[0] || null;
@@ -182,7 +182,8 @@
     // The workspace: CCF search, clicks on every mode's controls, figure requests.
     function bindWorkspaceEvents() {
       $("workspaceMain").addEventListener("click", event => {
-        if (event.target.closest("#deletePaperPdfBtn")) deleteCurrentPaperPdf().catch(alertError);
+        if (event.target.closest("#deepReadBtn,[data-deep-read-start]")) startDeepRead().catch(alertError);
+        if (event.target.closest("#uploadPaperPdfBtn")) openPdfUploadPicker();
       });
       $("workspaceMain").addEventListener("input", event => {
         const input = event.target.closest("[data-ccf-paper-search]");

@@ -186,6 +186,7 @@
     // Reading them as "anonymous" loses the selection on every reload.
     await paperIdentityReady;
     readUiState();
+    const initialRoute=window.PortalPaperNavigation.current.seed();
     const requestedPaperId = requestedPaperIdFromUrl();
     const requestedSemanticSearchId = requestedSemanticSearchIdFromUrl();
     const requestedChatWorkspaceId = requestedChatWorkspaceIdFromUrl();
@@ -242,6 +243,7 @@
     }
     renderAssistantContext();
     bindPaperProjectionEvents();
+    if(initialRoute.kind!=='paper'&&!state.selectedId&&JSON.stringify(window.PortalPaperNavigation.current.current)===JSON.stringify(initialRoute))await window.PortalPaperNavigation.current.restore(initialRoute,{scroll:history.state?.paperNav?.scroll||0});
   }
 
   const {
@@ -362,7 +364,7 @@
   });
 
   const {
-    chip, detailSectionLoadingHtml, needPaperHtml, paperTags, renderWorkspace, updateDeepReadControls,
+    chip, detailSectionLoadingHtml, needPaperHtml, paperTags, renderWorkspace, updateDeepReadControls, renderAnalysisControls,
   } = paperModule("PortalPaperWorkspaceView").createWorkspaceView({
     $, capturePaperReaderViewState: (...args) => capturePaperReaderViewState(...args), ccfVenueYearLabel,
     ccfWorkspaceMeta, currentCcfEntry, currentCcfVenue, esc, libraryHeaderMeta, paperApi, paperStateHtml,
@@ -381,7 +383,7 @@
   } = paperModule("PortalPaperReader").createReader({
     $, addSelectionToChatDraft: (...args) => addSelectionToChatDraft(...args), alertError, applyPaneCollapse,
     currentPaperWorkbench, detailSectionLoadingHtml, detailSectionsLoaded, esc, md, needPaperHtml,
-    paperSelectionPopover, paperStateHtml, state, submitChatMessage: (...args) => submitChatMessage(...args),
+    paperSelectionPopover, paperStateHtml, renderAnalysisControls, state, submitChatMessage: (...args) => submitChatMessage(...args),
   });
 
   const {
@@ -426,7 +428,7 @@
   });
 
   const {
-    deleteCurrentPaper, deleteCurrentPaperPdf, openPdfUploadPicker, uploadCurrentPaperPdf,
+    openPdfUploadPicker, uploadCurrentPaperPdf,
   } = paperModule("PortalPaperRecord").createRecord({
     $, activeChatPaperId, alertError, currentPaperChatPanel, loadChatHistory, loadDeepReadStatus, loadLibrary,
     mergeDetailPayload, paperApi, renderAssistantContext, renderTree, renderWorkspace, setMode, state,
@@ -445,7 +447,7 @@
   } = paperModule("PortalPaperEvents").createEvents({
     $, activeChatPaperId, activeChatWorkspaceId, alertError, applyCcfPaperListFilter,
     canRestorePaperWorkspace, ccfYearKey, closePaperModal, createExp, createReview, currentCcfPayload,
-    currentPaperWorkspaceSnapshot, deleteCollectorJob, deleteCurrentPaper, deleteCurrentPaperPdf,
+    currentPaperWorkspaceSnapshot, deleteCollectorJob,
     deleteGeneratedFigure, deleteNote, deleteReview, ensureCcfPaperEnrichment, explainFigure,
     exportLibraryMarkdown, extractFigures, fetchCcfYearsForVenue, fetchSelectedCcfPapers,
     figureContextFromInput, figureContextFromKey, figureInputItems, generateFigureDraft,
@@ -472,6 +474,7 @@
     refreshSemanticLanguage();
     renderWorkspace({ chromeOnly: true });
     if (["library", "today"].includes(state.mode) && state.leftFace !== "ccf") renderLibraryMode();
+    window.PortalPaperNavigation.decorateHome(state);
     refreshReaderLanguage();
     window.PortalI18n.renderStatic();
     for (const [element, top, left] of scrollers) {
@@ -479,5 +482,6 @@
       element.scrollLeft = left;
     }
   });
+  window.PortalPaperNavigation.current=window.PortalPaperNavigation.create({state,paperApi,loadLibrary,loadDetail,cancelPdfRendering,renderWorkspace,showCcfFace,syncModeTabs,writeUiState,alertError});
   init().catch(alertError);
 })();

@@ -169,15 +169,14 @@
         return;
       }
       const summary = state.library?.summary || {};
-      const papers = state.library?.papers || [];
+      const personalScope=state.paperListScope;
+      const papers = ['recent','favorites'].includes(personalScope)&&['home','list'].includes(state.paperNavigationRoute?.kind)
+        ?state.paperPersonalLists?.[personalScope]||[]:state.library?.papers||[];
       const visiblePapers = papers.slice(0, state.libraryRenderLimit);
       // History loads independently of the library. A restored history ID may
       // not have been applied to this response (or may no longer be available).
       // Use the returned scope, not that pending selection, for the overview.
-      const showOverview = state.mode === "library"
-        && !summary.semantic_search && !summary.paper_collection
-        && !String(state.query || "").trim()
-        && !["year", "venue", "tag", "project"].some(key => String(state.filters?.[key] || "").trim());
+      const showOverview = false; // Only the explicit Home navigation owner adds cards.
       $("workspaceMain").innerHTML = window.PortalI18n.html`
           ${showOverview ? window.PortalI18n.html`<div class="overviewGrid">
             <div class="metric"><div class="metricValue">${summary.paper_count || 0}</div><div class="metricLabel"><!--portal-i18n:"Registered papers"-->Registered papers</div></div>

@@ -27,10 +27,11 @@
     function libraryQuery() {
       delete state.filters.favorite;
       const params = new URLSearchParams({ compact: "1", preview_limit: "100" });
+      const route=window.PortalPaperNavigation?.current?.current;
       if (state.query) params.set("q", state.query);
       if (state.mode === "library" && state.activeSemanticSearchId
-          && (activeSemanticSearchHasResults() || !isSemanticSearchReady())) params.set("semantic", state.activeSemanticSearchId);
-      if (state.mode === "library" && !params.has("semantic") && activeCollectorJobHasResults()) params.set("collector", state.activeCollectorJobId);
+          && (activeSemanticSearchHasResults() || !isSemanticSearchReady() || route?.kind==='search'&&route.id===state.activeSemanticSearchId)) params.set("semantic", state.activeSemanticSearchId);
+      if (state.mode === "library" && !params.has("semantic") && (activeCollectorJobHasResults() || route?.kind==='collector'&&route.id===state.activeCollectorJobId)) params.set("collector", state.activeCollectorJobId);
       if (state.mode === "today") params.set("registered", "today");
       ["year", "venue", "tag", "project"].forEach(key => {
         const value = state.filters[key];
@@ -364,6 +365,7 @@
           // Only a user selecting a saved search creates a history entry.
           // Background catalog notifications must never navigate off a paper.
           if (searchId) {
+            if(window.PortalPaperNavigation?.current){window.PortalPaperNavigation.current.selectResult('search',searchId);return;}
             const address = new URL(window.location.href);
             if (address.searchParams.get('semantic') !== searchId || address.searchParams.has('paper')) {
               address.searchParams.delete('paper');
@@ -373,6 +375,8 @@
           }
         },
         onActiveChange: searchId => {
+          const route=window.PortalPaperNavigation?.current?.current;
+          if(route&&String(searchId||'')!==(route.kind==='search'?route.id:''))return;
           state.activeSemanticSearchId = String(searchId || "");
           if (state.activeSemanticSearchId) state.activeCollectorJobId = "";
           writeUiState();

@@ -92,7 +92,13 @@
       body.hidden = !hasDetails || toggle.getAttribute("aria-expanded") !== "true";
     }
 
-    function renderWorkspace({ chromeOnly = false } = {}) {
+    function renderWorkspace(options = {}) {
+      const result=renderWorkspaceContent(options);
+      if(!options.chromeOnly)window.PortalPaperNavigation?.decorateHome(state);
+      updateDeepReadControls();
+      return result;
+    }
+    function renderWorkspaceContent({ chromeOnly = false } = {}) {
       syncFavoriteButtons();
       capturePaperReaderViewState();
       if (!chromeOnly) $("workspaceMain")?.classList.remove("is-reader-mode");
@@ -138,7 +144,7 @@
         return;
       }
       const workspaceTitle = isLibraryMode
-        ? (semantic ? window.PortalI18n.text`Search: ${semantic.query || window.PortalI18n.t("Semantic search")}` : (collection ? window.PortalI18n.text`Collect: ${collection.direction || window.PortalI18n.t("Paper collection")}` : window.PortalI18n.t(state.mode === "today" ? "今日新增" : "全库")))
+        ? (semantic ? window.PortalI18n.text`Search: ${semantic.query || window.PortalI18n.t("Semantic search")}` : (collection ? window.PortalI18n.text`Collect: ${collection.direction || window.PortalI18n.t("Paper collection")}` : window.PortalI18n.t(state.paperHome?'Paper Library':state.paperListScope==='recent'?'近期阅读':state.paperListScope==='favorites'?'我的收藏':state.mode === "today" ? "今日新增" : "全库")))
         : (paper?.title || window.PortalI18n.t("Paper Research"));
       renderPaperResourceIdentity(workspaceTitle, isLibraryMode ? semantic : paper);
       const summaryText = isLibraryMode
@@ -160,11 +166,6 @@
     function renderWorkspaceModeActions(paper) {
       const target = $("workspaceModeActions");
       if (!target) return;
-      const statusText = $("deepReadStatusText");
-      if (statusText) {
-        statusText.hidden = !paper || ["library", "today"].includes(state.mode);
-        statusText.textContent = statusText.hidden ? "" : deepReadStateFor(paper).text;
-      }
       if (state.mode === "library" || state.mode === "today") {
         target.innerHTML = window.PortalI18n.html`
             <button class="portalButton is-compact is-quiet" type="button" id="exportLibraryMarkdownBtn" ${state.library?.papers?.length ? "" : "disabled"}>
@@ -174,19 +175,7 @@
         return;
       }
       if (paper) {
-        const deepState = deepReadStateFor(paper);
-        const uploadButton = !paper.has_pdf
-          ? window.PortalI18n.html`<button class="portalButton is-compact is-primary" type="button" id="uploadPaperPdfBtn" ${state.pdfUploadInFlight ? "disabled" : ""}>${state.pdfUploadInFlight ? window.PortalI18n.t("Uploading...") : "+ PDF"}</button>`
-          : "";
-        target.innerHTML = window.PortalI18n.html`
-            <span class="workspaceActionButtons">
-              ${uploadButton}
-              <button class="portalButton is-compact is-primary" type="button" id="deepReadBtn" ${paper.has_pdf && !deepState.running ? "" : "disabled"}>
-                ${esc(deepState.buttonText)}
-              </button>
-              <button class="portalButton is-compact is-danger" type="button" id="deletePaperBtn">${window.PortalI18n.t("删除")}</button>
-            </span>
-          `;
+        target.innerHTML = '';
         return;
       }
       target.innerHTML = "";
@@ -205,17 +194,18 @@
       const running = deep && ["queued", "running"].includes(String(deep.status || ""));
       const done = deep && String(deep.status || "") === "done";
       const error = deep && String(deep.status || "") === "error";
-      const text = running
+      const confirming=running&&deep.step==='confirming submission';
+      const text = confirming?window.PortalI18n.t('正在确认任务状态'):running
         ? window.PortalI18n.text`Deep Read: ${window.PortalI18n.t({queued: "Queued", "extracting pdf text": "Extracting PDF", "waiting for Resident": "Model generation", Submitting: "Submitting"}[deep.step] || deep.step || deep.status)} · ${deep.progress || 0}%`
         : done
           ? window.PortalI18n.t("Deep Read done") + (deep.usage?.total_tokens ? window.PortalI18n.text` · ${deep.usage.total_tokens} tokens` : "")
           : error
-            ? window.PortalI18n.text`Deep Read failed: ${deep.error || window.PortalI18n.t("unknown error")}`
+            ? window.PortalI18n.t('Deep Read failed. See Details.')
             : paper?.has_analysis
               ? window.PortalI18n.t("Analysis ready")
               : window.PortalI18n.t("No analysis yet");
       const buttonText = window.PortalI18n.t(running ? "Deep Reading" : error ? "Retry Deep Read" : paper?.has_analysis ? "Re-run Deep Read" : "Deep Read");
-      return { deep, running, done, error, text, buttonText };
+      return { deep, running, done, error, confirming, text, buttonText };
     }
 
     function updateDeepReadControls() {
@@ -223,12 +213,18 @@
       if (!paper) return;
       const status = deepReadStateFor(paper);
       const textEl = $("deepReadStatusText");
-      const btn = $("deepReadBtn");
       if (textEl) textEl.textContent = status.text;
-      if (btn) {
+      const details=$('deepReadStatusDetails');
+      if(details){details.hidden=!status.error;details.querySelector('summary').textContent=window.PortalI18n.t('Details');const body=details.querySelector('pre');if(body)body.textContent=status.deep?.error||window.PortalI18n.t('unknown error');}
+      for(const btn of document.querySelectorAll('#deepReadBtn,[data-deep-read-start]')) {
         btn.textContent = status.buttonText;
         btn.disabled = !paper.has_pdf || !!status.running;
       }
+    }
+    function renderAnalysisControls(paper) {
+      const status=deepReadStateFor(paper);
+      const button=header=>`<button class="portalButton is-compact is-primary" type="button" ${header?'id="deepReadBtn"':'data-deep-read-start'} ${paper.has_pdf&&!status.running?'':'disabled'}>${esc(status.buttonText)}</button>`;
+      return {button:button(true),emptyButton:button(false),subtitle:`<span class="readerDeepReadStatus"><span class="readerDeepReadSubtitle" id="deepReadStatusText" role="status" aria-live="polite">${esc(status.text)}</span><details id="deepReadStatusDetails" ${status.error?'':'hidden'}><summary>${esc(window.PortalI18n.t('Details'))}</summary><pre>${esc(status.deep?.error||'')}</pre></details></span>`};
     }
 
     async function renderApiMode() {
@@ -251,7 +247,7 @@
     }
 
     return Object.freeze({
-      chip, detailSectionLoadingHtml, needPaperHtml, paperTags, renderWorkspace, updateDeepReadControls,
+      chip, detailSectionLoadingHtml, needPaperHtml, paperTags, renderWorkspace, updateDeepReadControls, renderAnalysisControls,
     });
   }
 
