@@ -51,6 +51,13 @@ class UploadRelocationTests(unittest.TestCase):
         self.assertEqual(Path(meta["path"]), current / "picture.png")
         self.assertEqual(Path(meta["path"]).read_bytes(), b"data")
 
+    @unittest.skipIf(os.name == 'nt', 'Windows names alias metadata ignoring case')
+    def test_legacy_case_distinct_payload_survives_relocation(self):
+        current = self.relocate(filename='META.JSON')
+        meta = read_upload(self.upload_id)
+        self.assertEqual(Path(meta['path']), current / 'META.JSON')
+        self.assertEqual(Path(meta['path']).read_bytes(), b'data')
+
     def test_existing_old_path_cannot_redirect_read_to_another_instance(self):
         current = self.relocate()
         self.directory.mkdir(parents=True)
