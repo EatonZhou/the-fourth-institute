@@ -26,6 +26,14 @@ class PortalWebServer(uvicorn.Server):
         await super().startup(sockets=sockets)
         from .society_service.memory_profile import start
         start()
+        from .paper_job_ownership import web_lifespan
+        self.stop_paper_recovery = web_lifespan()
+
+    async def shutdown(self, sockets=None) -> None:
+        stop = getattr(self, "stop_paper_recovery", None)
+        if stop is not None:
+            await asyncio.to_thread(stop)
+        await super().shutdown(sockets=sockets)
 
     def handle_exit(self, sig, frame) -> None:
         super().handle_exit(sig, frame)

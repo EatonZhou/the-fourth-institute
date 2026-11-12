@@ -72,7 +72,7 @@ def test_missing_paper_fails_before_registration(monkeypatch):
 def test_no_pdf_is_visible_background_failure_before_extraction(monkeypatch):
     patches=[]
     monkeypatch.setattr(jobs,'_latest_deep_read_job',lambda **kw:{'paper_id':'p','status':'queued'})
-    monkeypatch.setattr(jobs,'get_paper_detail',lambda id:{'paper':{'id':id}})
+    monkeypatch.setattr(jobs,'get_paper_detail',lambda id, **kw:{'paper':{'id':id}})
     monkeypatch.setattr(jobs,'_paper_public',lambda p:{'has_pdf':False})
     monkeypatch.setattr(jobs,'_extract_pdf_text',lambda *a,**kw:(_ for _ in ()).throw(AssertionError('no PDF')))
     monkeypatch.setattr(jobs,'_set_deep_read_job',lambda id,patch:patches.append(patch))

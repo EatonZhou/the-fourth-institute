@@ -4,6 +4,8 @@
 """
 from __future__ import annotations
 
+from contextlib import nullcontext
+
 from management_portal import paper_projection, paper_reading_jobs
 
 
@@ -31,10 +33,14 @@ def _install_job(monkeypatch, tmp_path, state: dict) -> None:
     monkeypatch.setattr(
         paper_reading_jobs,
         "get_paper_detail",
-        lambda _paper_id: {
+        lambda _paper_id, **_kwargs: {
             "paper": {"id": state["paper_id"], "title": "Paper"}
         },
     )
+    # PDF admission and ownership are separate integration boundaries. Keep
+    # this unit fixture focused on role delivery / artifact validation.
+    monkeypatch.setattr(paper_reading_jobs, "_paper_public", lambda _paper: {"has_pdf": True})
+    monkeypatch.setattr(paper_reading_jobs.paper_job_ownership, "fenced_write", lambda _job_id: nullcontext())
     monkeypatch.setattr(
         paper_reading_jobs,
         "_local_pdf_for_paper",

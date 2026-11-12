@@ -10,7 +10,7 @@ import re
 import secrets
 import yaml
 
-from management_portal import business_tasks, paper_state_store
+from management_portal import business_tasks, paper_state_store, paper_job_ownership
 from management_portal.paper_detail import get_paper_detail
 from management_portal.paper_records import _now, _slugify
 from management_portal.paper_resident import _resident_reply
@@ -32,7 +32,10 @@ def _set_job_with_run_record(kind: str, job_id: str, patch: dict) -> dict:
     # The run record is written before the job's lock is released, so run
     # records of one job are written in the same order as the job itself.
     with LOCK, paper_state_store.locked(kind):
-        found = paper_state_store.merge(kind, job_id, {**patch, "updated_at": _now()})
+        values = {**patch, "updated_at": _now()}
+        found = (paper_job_ownership.worker_write(job_id, values)
+                 if kind == "deep_read_jobs" and paper_job_ownership.is_worker()
+                 else paper_state_store.merge(kind, job_id, values))
         try:
             PAPER_STORE.write_run_record(found)
         except Exception as exc:
@@ -121,18 +124,11 @@ def _launch_deep_read_business_task(job: dict) -> dict:
     job_id = str(job.get("job_id") or "")
     if not job_id:
         raise ValueError("Deep Read job id required")
-    def fail(exc: BaseException) -> None:
-        _set_deep_read_job(job_id, {
-            "status": "error", "step": "error", "progress": 100, "error": str(exc),
-        })
-
-    try:
-        business_tasks.start(
-            f"paper-deep-read:{job_id}", copy_context().run, _run_deep_read_job, job_id, on_error=fail,
-        )
-    except Exception as exc:
-        fail(exc)
-        raise
+    business_tasks.start(
+        f"paper-deep-read:{job_id}", copy_context().run,
+        paper_job_ownership.run, job_id, _run_deep_read_job,
+        on_error=lambda exc: print(f"[paper-job-owner] {job_id}: {exc}", flush=True),
+    )
     return job
 
 
@@ -322,8 +318,6 @@ def refresh_deep_read_provenance(payload: dict, actor: str) -> dict:
 def get_deep_read_status(*, actor: str, job_id: str = "", paper_id: str = "") -> dict:
     job = _latest_deep_read_job(paper_id=paper_id, job_id=job_id)
     _authorize_paper_job_status(job, actor=actor, job_id=job_id, paper_id=paper_id)
-    if job and str(job.get("status") or "") in {"queued", "running"}:
-        job = _launch_deep_read_business_task(job)
     return job or {"status": "idle", "paper_id": paper_id, "job_id": job_id}
 
 
@@ -363,30 +357,27 @@ def _run_deep_read_job(job_id: str) -> None:
             raise KeyError("Deep Read job not found")
         if str(job.get("status") or "") in {"done", "error"}:
             return
+        handoff_fields = set(job.get("resident_handoff") or {}) - {paper_job_ownership.CLAIM_KEY}
+        generation = ((job.get("resident_handoff") or {}).get(paper_job_ownership.CLAIM_KEY) or {}).get("generation", 1)
+        if job.get("status") == "running" and generation == 1 and not handoff_fields and not job.get("resident_input_message_id"):
+            # Legacy in-flight rows have no durable submission boundary. Do
+            # not infer "never submitted" from an absent receipt after restart.
+            _set_deep_read_job(job_id, {"resident_handoff": {"_submission_started": True}})
         paper_id = str(job.get("paper_id") or "")
-        paper = get_paper_detail(paper_id)["paper"]
-        if not _paper_public(paper).get("has_pdf"):
-            raise ValueError("Paper has no PDF (没有 PDF); attach a PDF before retrying Deep Read")
+        paper = get_paper_detail(paper_id, sections=[])["paper"]
         actor = str(job.get("created_by") or "portal")
         _set_deep_read_job(
             job_id,
             {
                 "status": "running",
                 "paper_title": str(paper.get("title") or paper_id),
-                "step": "extracting pdf text",
+                "step": "waiting for Resident" if job.get("resident_input_message_id") else
+                        "confirming submission" if handoff_fields else "extracting pdf text",
                 "progress": 18,
                 "error": "",
             },
         )
-        print(
-            f"[paper-deep-read] {job_id} extracting pdf text",
-            flush=True,
-        )
-        pdf_path = _local_pdf_for_paper(paper)
-        text = _extract_pdf_text(pdf_path, paper_id=paper_id)
-        if len(text.strip()) < 1200:
-            raise RuntimeError("PDF text extraction returned too little text")
-        from management_portal.paper_projection import input_receipt, resume, turn
+        from management_portal.paper_projection import input_receipt, resume, turn, confirm_input
 
         job = _latest_deep_read_job(job_id=job_id) or job
         resident_id = str(job.get("resident_id") or "")
@@ -405,8 +396,12 @@ def _run_deep_read_job(job_id: str) -> None:
                 "lineage_id": attempt_handle["lineage_id"],
             })
 
-        if resident_id and attempt_handle.get("input_identity_status") == "unconfirmed":
-            raise RuntimeError("Deep Read input delivery is unconfirmed; inspect the original workflow; no input was resubmitted")
+        if not resident_input_message_id and (attempt_handle.get("_submission_started") or resident_id):
+            _set_deep_read_job(job_id, {"step": "confirming submission", "error": ""})
+            confirmed = confirm_input(actor=actor, receipt=attempt_handle)
+            remember_input(confirmed)
+            resident_id = confirmed["resident_id"]
+            resident_input_message_id = confirmed["input_message_id"]
         if resident_id and resident_input_message_id:
             result = resume(
                 actor=actor,
@@ -417,6 +412,16 @@ def _run_deep_read_job(job_id: str) -> None:
                 on_submitted=remember_input,
             )
         else:
+            if not _paper_public(paper).get("has_pdf"):
+                raise ValueError("Paper has no PDF (没有 PDF); attach a PDF before retrying Deep Read")
+            pdf_path = _local_pdf_for_paper(paper)
+            text = _extract_pdf_text(pdf_path, paper_id=paper_id)
+            if len(text.strip()) < 1200:
+                raise RuntimeError("PDF text extraction returned too little text")
+            # Persist uncertainty BEFORE entering any submission path. A crash
+            # without a full locator requires observation/manual diagnosis,
+            # never a guessed second model invocation.
+            _set_deep_read_job(job_id, {"resident_handoff": {"_submission_started": True}})
             _set_deep_read_job(job_id, {"status": "running", "step": "waiting for Resident", "progress": 42})
             result = turn(
                 actor=actor,
@@ -449,20 +454,35 @@ def _run_deep_read_job(job_id: str) -> None:
         _require_artifact_sections(content, DEEP_READ_SECTIONS, "Deep Read")
         print(f"[paper-deep-read] {job_id} writing analysis", flush=True)
         _set_deep_read_job(job_id, {"step": "writing analysis", "progress": 82})
-        analysis_path = _save_deep_read_analysis(paper, content, usage)
-        _set_deep_read_job(
-            job_id,
-            {
-                "status": "done",
-                "step": "done",
-                "progress": 100,
-                "analysis_path": str(analysis_path),
-                "usage": usage,
-                "error": "",
-            },
-        )
+        with LOCK, paper_job_ownership.fenced_write(job_id):
+            analysis_path = _save_deep_read_analysis(paper, content, usage)
+            _set_deep_read_job(
+                job_id,
+                {
+                    "status": "done", "step": "done", "progress": 100,
+                    "analysis_path": str(analysis_path), "usage": usage, "error": "",
+                },
+            )
         print(f"[paper-deep-read] {job_id} done", flush=True)
+    except paper_job_ownership.OwnershipLost:
+        raise
     except Exception as exc:
+        from .lineage_workflows import WorkflowPending, WorkflowFailed
+        from .paper_projection import InputConfirmationPending, PaperInputIdentityError
+        current = _latest_deep_read_job(job_id=job_id) or {}
+        receipt = current.get("resident_handoff") or {}
+        uncertain = bool(receipt.get("resident_id") and not receipt.get("input_message_id"))
+        transient_wait = isinstance(exc, TimeoutError) and bool(receipt.get("_submission_started") or receipt.get("input_message_id"))
+        if (isinstance(exc, (WorkflowPending, InputConfirmationPending)) or transient_wait or
+                (uncertain and not isinstance(exc, (WorkflowFailed, PaperInputIdentityError)))):
+            patch = {"status": "running", "step": "confirming submission", "error": ""}
+            if receipt.get("input_message_id"):
+                patch["step"] = "waiting for Resident"
+            if isinstance(exc, WorkflowPending):
+                from .paper_projection import receipt_from_resident_handle
+                patch["resident_handoff"] = receipt_from_resident_handle(exc.handle)
+            _set_deep_read_job(job_id, patch)
+            return
         print(f"[paper-deep-read] {job_id} error: {exc}", flush=True)
         _set_deep_read_job(
             job_id,

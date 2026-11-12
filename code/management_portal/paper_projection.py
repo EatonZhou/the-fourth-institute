@@ -11,6 +11,10 @@ class PaperInputIdentityError(ValueError):
     """A completion cannot be associated with its confirmed Paper input."""
 
 
+class InputConfirmationPending(RuntimeError):
+    """The original submission is still uncertain; never submit another input."""
+
+
 PAPER_INPUT_RECEIPT_SCHEMA = "tfi.paper-resident-input.v1"
 DIRECT_CHAT_DISABLED_REASON = "此角色只处理论文页发起的任务，每次任务都从新的上下文开始。本页仅供查看记录，不能直接对话。"
 BUILTIN = {"name": "paper", "title": "Paper", "path": "/paper", "description": "论文阅读、研究与评审工作台"}
@@ -53,6 +57,7 @@ def receipt_from_resident_handle(handle: dict, *, requested_message_id: str = ""
     canonical = str(handle.get("message_id") or "") if not pending else ""
     receipt = {key: str(handle.get(key) or "") for key in (
         "resident_id", "lineage_id", "event_id", "event_source_id", "effect_id", "trigger_path_id",
+        "request_id", "instruction_id", "instruction", "idempotency_key",
     )}
     receipt.update({
         "schema": PAPER_INPUT_RECEIPT_SCHEMA,
@@ -75,6 +80,7 @@ def input_receipt(receipt: dict) -> dict:
     normalized = {key: str(receipt.get(key) or "") for key in (
         "resident_id", "lineage_id", "event_id", "event_source_id", "effect_id", "trigger_path_id",
         "requested_message_id", "planned_message_id", "input_message_id", "usage_message_id",
+        "request_id", "instruction_id", "instruction", "idempotency_key",
     )}
     normalized.update({
         "schema": PAPER_INPUT_RECEIPT_SCHEMA,
@@ -82,6 +88,27 @@ def input_receipt(receipt: dict) -> dict:
         "reply_message_ids": [str(value) for value in receipt.get("reply_message_ids") or [] if str(value)],
     })
     return normalized
+
+
+def confirm_input(*, actor: str, receipt: dict) -> dict:
+    """Recover the canonical input through original Event/Path/ISA reads only."""
+    from .resident_handoff import resolve_invocation_submission
+    if not receipt.get("schema"):
+        raise InputConfirmationPending("Original submission locator is incomplete; no input was resubmitted")
+    previous = input_receipt(receipt)
+    if previous["input_message_id"]:
+        return previous
+    if not previous.get("resident_id") or not any(previous.get(key) for key in
+            ("event_id", "trigger_path_id", "instruction_id", "idempotency_key")):
+        raise InputConfirmationPending("Original submission locator is incomplete; no input was resubmitted")
+    observed = resolve_invocation_submission(actor=actor, handle=previous)
+    if observed.get("submission_state") == "not_submitted":
+        raise PaperInputIdentityError(observed.get("submission_reason") or "Original input was not accepted")
+    if observed.get("submission_state") != "submitted" or not observed.get("message_id"):
+        raise InputConfirmationPending(observed.get("submission_reason") or "Original input is not yet confirmed")
+    return _merge_receipt(previous, receipt_from_resident_handle({
+        **observed, "status": "running", "input_identity_status": "delivered",
+    }))
 
 
 def _merge_receipt(previous: dict, current: dict) -> dict:
