@@ -66,7 +66,10 @@
         label: window.PortalI18n.t("Paper Workbench"),
         initialEditors: [
           { id: "library", type: "authored", presentation: "navigation", options: { source: "#paperLibraryPane" }, title: window.PortalI18n.t("Paper Library"), icon: "book" },
-          { id: "workspace", type: "authored", presentation: "document", options: { source: "#paperWorkspacePane" }, title: window.PortalI18n.t("Research Workspace"), minWidth: 420 },
+          // en is wider than zh: tabs 311.6 + actions 292.2 + gap 16 +
+          // horizontal padding/borders 26 = 645.8px, rounded up to 648.
+          // Workbench still owns its proportional visibility-floor fallback.
+          { id: "workspace", type: "authored", presentation: "document", options: { source: "#paperWorkspacePane" }, title: window.PortalI18n.t("Research Workspace"), minWidth: 648 },
           paperChatDescriptor(),
         ],
         defaultLayout: research,

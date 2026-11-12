@@ -956,11 +956,32 @@ body:has(#paperPageFrame) #portalButtonTooltip { display:none!important; }
   .pdfReaderPanel .readerExternalLink { order:2; }
   .pdfReaderPanel .readerPanelToggle { order:3; }
 }
-/* Keep PDF and Analysis header heights equal even in a narrow split pane.
-   Overflowing PDF actions remain available by horizontal scrolling. */
-#paperWorkspacePane .pdfReaderPanel:not(.collapsed) .readerHead { grid-template-columns:minmax(64px,1fr) minmax(0,auto); }
-#paperWorkspacePane .pdfReaderPanel .readerHeadActions { flex-wrap:nowrap; overflow-x:auto; scrollbar-width:none; }
+/* Keep the full PDF header actions visible without horizontal scrolling. */
+#paperWorkspacePane .pdfReaderPanel:not(.collapsed) .readerHead { grid-template-columns:minmax(64px,1fr) auto; }
+#paperWorkspacePane .pdfReaderPanel .readerHeadActions { flex-wrap:nowrap; overflow:visible; }
 #paperWorkspacePane .pdfReaderPanel .readerHeadActions > * { flex-shrink:0; }
+
+/* Header-derived semantic minima are enforced by the Paper split owner.
+   When the outer Workbench reaches its responsive floor, stack whole frames
+   and wrap whole buttons instead of clipping or scrolling half a control. */
+#paperWorkspacePane .readerGrid { grid-template-columns:var(--paper-analysis-width,42%) 7px minmax(0,1fr); gap:0; }
+.paperFrameSplitter { cursor:col-resize; touch-action:none; background:transparent; }
+.paperFrameSplitter:hover,.paperFrameSplitter:focus-visible { background:var(--border); }
+#paperWorkspacePane .readerGrid.analysisCollapsed { grid-template-columns:44px minmax(0,1fr); gap:9px; }
+#paperWorkspacePane .readerGrid.pdfCollapsed { grid-template-columns:minmax(0,1fr) 44px; gap:9px; }
+.readerGrid:is(.analysisCollapsed,.pdfCollapsed) .paperFrameSplitter { display:none; }
+#paperWorkspacePane .readerGrid.readerStacked:not(.analysisCollapsed):not(.pdfCollapsed) { grid-template-columns:minmax(0,1fr); grid-template-rows:minmax(0,1fr) minmax(0,1fr); gap:9px; }
+.readerStacked .paperFrameSplitter { display:none; }
+.resizingPaperFrames { cursor:col-resize; user-select:none; }
+.resizingPaperFrames .paperReadingDialog iframe { pointer-events:none; }
+@container paper-reader-panel (max-width:335px) {
+  #paperWorkspacePane .pdfReaderPanel:not(.collapsed) .readerHead { display:flex; flex-wrap:wrap; }
+  #paperWorkspacePane .pdfReaderPanel .readerHeadActions { flex-wrap:wrap; margin-left:0; }
+}
+#paperWorkspacePane .workspaceControls { flex-wrap:wrap; }
+#paperWorkspacePane .workspaceControls > #modeTabs { overflow:visible; flex-wrap:wrap; }
+#paperWorkspacePane .workspaceControls > .workspaceModeActions { flex-wrap:wrap; }
+#paperWorkspacePane .workspaceActionButtons { flex-wrap:wrap; }
 
 /* Shared Personal/Repository grouping rows: same vertical metrics as papers. */
 .folderLine[data-paper-tree-toggle] { background:color-mix(in srgb,var(--muted,#64748b) 8%,var(--panel,#fff)); }

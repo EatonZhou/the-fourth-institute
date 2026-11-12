@@ -34,6 +34,35 @@
     }
 
     let fullscreenReader = null;
+    let readerSplitCleanup = null;
+    let analysisFraction = .42;
+    function bindReaderSplit() {
+      const grid = $("workspaceMain")?.querySelector('.readerGrid');
+      const handle = grid?.querySelector('.paperFrameSplitter');
+      if (!grid || !handle) return;
+      // Intrinsic en/zh header maxima, including padding, gap and borders.
+      const analysisMin = 146, pdfMin = 338, handleWidth = 7;
+      const available = () => Math.max(0, grid.clientWidth - handleWidth);
+      const apply = value => {
+        const total = available();
+        const stacked = total < analysisMin + pdfMin;
+        grid.classList.toggle('readerStacked', stacked);
+        if (stacked) return;
+        const width = Math.max(analysisMin, Math.min(total - pdfMin, value));
+        grid.style.setProperty('--paper-analysis-width', `${width}px`);
+        handle.setAttribute('aria-valuenow', Math.round(width));
+      };
+      const unbind = window.PortalWorkbench.layout.bindSplitter({
+        handle, axis:'x', min:analysisMin, max:()=>Math.max(analysisMin, available()-pdfMin),
+        readSize:()=>grid.querySelector('.readerPanel').getBoundingClientRect().width,
+        applySize:value=>{analysisFraction=value/Math.max(1,available());apply(value);},
+        bodyClass:'resizingPaperFrames',
+      });
+      const resize = new ResizeObserver(()=>apply(available()*analysisFraction));
+      resize.observe(grid);
+      apply(available()*analysisFraction);
+      readerSplitCleanup=()=>{unbind();resize.disconnect();document.body.classList.remove('resizingPaperFrames');};
+    }
     let readerGeneration = 0;
     let readingSession = null;
     // Code only: importing this module does not create a Reader, fetch a PDF,
@@ -60,6 +89,8 @@
     async function cancelPdfRendering() {
       const old = fullscreenReader;
       if (old && !await old.close()) return false;
+      readerSplitCleanup?.();
+      readerSplitCleanup=null;
       if (fullscreenReader === old) fullscreenReader = null;
       readerGeneration += 1;
       if (readingSession) readingSession.closed = true;
@@ -162,6 +193,8 @@
     }
 
     function refreshReaderLanguage() {
+      $("workspaceMain")?.querySelector('.paperFrameSplitter')?.setAttribute('aria-label',
+        window.PortalI18n.t('Reader') + ' · ' + window.PortalI18n.t('Analysis') + ' / PDF');
       const detail = state.detail;
       const source = $("analysisReaderContent")?.querySelector(".analysisProvenance");
       if (source && detail?.paper) {
@@ -172,6 +205,8 @@
     }
 
     function renderReaderPanels(detail, paper, analysisKind, analysisHtml) {
+      readerSplitCleanup?.();
+      readerSplitCleanup=null;
       const pdfHtml = paper.pdf_url
         ? window.PortalI18n.html`<div class="pdfJsViewer" id="paperPdfViewer" data-pdf-url="${esc(paper.pdf_url)}">
               <div class="pdfJsStatus"><!--portal-i18n:"Loading PDF..."-->Loading PDF...</div>
@@ -209,6 +244,7 @@
               </header>
               <div class="readerContent markdownBody" id="analysisReaderContent">${analysisHtml}</div>
             </section>
+            <div class="paperFrameSplitter" role="separator" aria-orientation="vertical" tabindex="0" aria-label="${esc(window.PortalI18n.t('Reader') + ' · ' + window.PortalI18n.t('Analysis') + ' / PDF')}"></div>
             <section class="readerPanel pdfReaderPanel ${state.readerPdfCollapsed ? "collapsed" : ""}" aria-label="PDF 阅读面板" data-portal-i18n-attrs='{"aria-label":"PDF 阅读面板"}'>
               <header class="readerHead">
                 <div class="readerHeadIdentity">
@@ -238,6 +274,7 @@
           </div>
         `;
       restoreAnalysisReaderViewState(readerViewState);
+      bindReaderSplit();
       $("paperFullscreenBtn")?.addEventListener("click", () => openFullscreenReader(paper));
       if (paper.pdf_url && !state.readerPdfCollapsed) {
         ensureReader(paper.pdf_url).catch(alertError);
