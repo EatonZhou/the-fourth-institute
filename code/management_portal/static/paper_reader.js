@@ -166,7 +166,7 @@
       const sourceHtml = analysisBody ? analysisSourceHtml(detail.analysis?.provenance || {}) : "";
       const analysisHtml = analysisBody
         ? sourceHtml + md(analysisBody)
-        : `<div class="paperAnalysisEmpty">${paperStateHtml("No analysis yet", { density: "compact" })}${renderAnalysisControls(paper).emptyButton}</div>`;
+        : `<div class="paperAnalysisEmpty">${paperStateHtml("No analysis yet")}</div>`;
       return renderReaderPanels(detail, paper, analysisKind, analysisHtml);
     }
 

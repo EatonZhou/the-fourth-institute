@@ -992,7 +992,7 @@ body:has(#paperPageFrame) #portalButtonTooltip { display:none!important; }
 .paperHomeButton:hover { color:var(--accent); text-decoration:underline; }
 .paperHomeButton:focus-visible { outline:2px solid var(--accent); outline-offset:3px; }
 #paperWorkspacePane .readerHeadText #deepReadStatusText { grid-column:auto; grid-row:auto; text-align:start; min-width:0; font:400 11px/16px ui-sans-serif,system-ui,sans-serif; }
-.paperAnalysisEmpty { padding:12px; }
+.paperAnalysisEmpty { padding:12px; min-height:180px; height:100%; display:grid; place-items:center; }
 .paperHomeOverview { margin-bottom:12px; }
 #workspaceMain { overflow-anchor:none; }
 .readerDeepReadStatus { display:flex; align-items:center; gap:4px; min-width:0; font:400 11px/16px ui-sans-serif,system-ui,sans-serif; }
