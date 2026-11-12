@@ -257,6 +257,7 @@ def test_device_registry_validates_topology_and_resolves_gpu_location_contracts(
 
         secret_path = secret_root / f"{SERVER_ID}.ssh-password"
         assert result["credential_saved"] is True
+        assert device_identity_backend.has_device_ssh_password(SERVER_ID, secret_root=secret_root)
         assert secret_path.stat().st_mode & 0o777 == 0o600
         assert device_identity_backend.read_device_ssh_password(
             SERVER_ID,
@@ -270,6 +271,7 @@ def test_device_registry_validates_topology_and_resolves_gpu_location_contracts(
         )
         assert deleted["credential_saved"] is False
         assert not secret_path.exists()
+        assert not device_identity_backend.has_device_ssh_password(SERVER_ID, secret_root=secret_root)
     with subtests.test(contract='test_gpu_status_is_keyed_by_device_ids_and_exposed_as_observations'), isolated_portal_case() as case_path:
         tmp_path = case_path
         records = _registry()

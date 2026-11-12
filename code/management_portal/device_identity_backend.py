@@ -1,6 +1,7 @@
 from __future__ import annotations
 from management_common.product_environment import mirror_product_env
 from management_common.ssh_runtime import ssh_executable
+from management_common.file_permissions import atomic_write_private_bytes, read_private_bytes
 
 from management_common.portal_paths import path as portal_path
 from management_common.clock import utc_now_iso
@@ -100,21 +101,7 @@ def save_device_ssh_password(
     if len(clean_password) > 1024 or any(char in clean_password for char in "\r\n\0"):
         raise ValueError("SSH password contains unsupported characters")
     path = _device_password_path(device_id, secret_root)
-    path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
-    path.parent.chmod(0o700)
-    temporary = path.with_name(
-        f"{path.name}.{os.getpid()}.{threading.get_ident()}.tmp"
-    )
-    descriptor = os.open(temporary, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
-    try:
-        with os.fdopen(descriptor, "w", encoding="utf-8") as handle:
-            handle.write(clean_password)
-            handle.flush()
-            os.fsync(handle.fileno())
-        temporary.replace(path)
-        path.chmod(0o600)
-    finally:
-        temporary.unlink(missing_ok=True)
+    atomic_write_private_bytes(path, clean_password.encode("utf-8"))
     return {"resource_id": stripped_text(device_id), "credential_saved": True}
 
 
@@ -139,7 +126,11 @@ def has_device_ssh_password(
     secret_root: str | Path | None = None,
 ) -> bool:
     path = _device_password_path(device_id, secret_root)
-    return path.is_file() and (path.stat().st_mode & 0o777) == 0o600
+    try:
+        read_private_bytes(path, required_mode=0o600)
+    except (FileNotFoundError, PermissionError):
+        return False
+    return True
 
 
 def read_device_ssh_password(
@@ -149,12 +140,9 @@ def read_device_ssh_password(
 ) -> str:
     path = _device_password_path(device_id, secret_root)
     try:
-        password = path.read_text(encoding="utf-8")
+        return read_private_bytes(path, required_mode=0o600).decode("utf-8")
     except FileNotFoundError:
         return ""
-    if (path.stat().st_mode & 0o077) != 0:
-        raise PermissionError("device SSH password file permissions are too broad")
-    return password
 
 
 def _normalize_record(raw: dict[str, Any], document_id: str) -> dict[str, Any]:
