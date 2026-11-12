@@ -154,42 +154,46 @@ def run_telegram_refresh_daemon(argv: list[str]) -> int:
     weixin = WeixinAdapter()
     from .refresh_service import NotificationScheduler
     notifications = NotificationScheduler(weixin)
-    notifications.start()
     weixin_pool = ThreadPoolExecutor(max_workers=8, thread_name_prefix='telepus-weixin-refresh')
     pending = {}
     last_errors = 0
     cleanup_at = 0.0
     index = 0
-    while True:
-        index += 1
-        started_at = now_iso()
-        if time.monotonic() >= cleanup_at:
-            cleanup_at = time.monotonic() + 60
+    try:
+        notifications.start()
+        while True:
+            pending = {actor: task for actor, task in pending.items() if not task.done()}
+            index += 1
+            started_at = now_iso()
+            if time.monotonic() >= cleanup_at:
+                cleanup_at = time.monotonic() + 60
+                try:
+                    adapter.router.store.prune_expired_callback_tokens()
+                except Exception as exc:
+                    weixin.notifications.diagnostic('', exc)
             try:
-                adapter.router.store.prune_expired_callback_tokens()
+                result = adapter.refresh_routes(limit=refresh_limit, dry_run=False)
+                for actor in weixin.store.active_actors():
+                    if actor not in pending or pending[actor].done():
+                        pending[actor] = weixin_pool.submit(weixin.refresh, actor)
+                payload = {"schema": "telepus.telegram.portal_refresh_iteration.v2", "started_at": started_at,
+                           "finished_at": now_iso(), "status": "success", "chats": result.get("chats", 0),
+                           "sent": sum(1 for item in result.get("handled") or [] if item.get("status") == "refreshed"),
+                           "errors": result.get("errors", 0)}
             except Exception as exc:
-                weixin.notifications.diagnostic('', exc)
-        try:
-            result = adapter.refresh_routes(limit=refresh_limit, dry_run=False)
-            for account in weixin.store.accounts():
-                actor = account['portal_actor']
-                if actor not in pending or pending[actor].done():
-                    pending[actor] = weixin_pool.submit(weixin.refresh, actor)
-            payload = {"schema": "telepus.telegram.portal_refresh_iteration.v2", "started_at": started_at,
-                       "finished_at": now_iso(), "status": "success", "chats": result.get("chats", 0),
-                       "sent": sum(1 for item in result.get("handled") or [] if item.get("status") == "refreshed"),
-                       "errors": result.get("errors", 0)}
-        except Exception as exc:
-            payload = {"schema": "telepus.telegram.portal_refresh_iteration.v2", "started_at": started_at,
-                       "finished_at": now_iso(), "status": "failed", "error": f"{type(exc).__name__}: {str(exc)[:500]}"}
-        errors = int(payload.get("errors") or 0)
-        if payload["status"] != "success" or payload.get("sent") or errors != last_errors:
-            print(json.dumps(payload, ensure_ascii=False), flush=True)
-        last_errors = errors
-        if max_iterations and index >= max_iterations:
-            notifications.close()
-            return 0
-        time.sleep(max(1, sleep_seconds))
+                payload = {"schema": "telepus.telegram.portal_refresh_iteration.v2", "started_at": started_at,
+                           "finished_at": now_iso(), "status": "failed", "error": f"{type(exc).__name__}: {str(exc)[:500]}"}
+            errors = int(payload.get("errors") or 0)
+            if payload["status"] != "success" or payload.get("sent") or errors != last_errors:
+                print(json.dumps(payload, ensure_ascii=False), flush=True)
+            last_errors = errors
+            if max_iterations and index >= max_iterations:
+                return 0
+            time.sleep(max(1, sleep_seconds))
+    finally:
+        notifications.close()
+        weixin_pool.shutdown(wait=False, cancel_futures=True)
+        pending.clear()
 
 
 def success(command: str, payload: dict) -> int:

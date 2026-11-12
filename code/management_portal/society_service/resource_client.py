@@ -6,7 +6,7 @@ from typing import Any, Iterable, Mapping
 
 from management_portal.resources import get_resource_service
 from management_common.instance_locations import current_instance
-from management_common.text_values import stripped_text
+from management_common.text_values import stripped_text, unique_texts
 
 from . import identity_contract
 
@@ -174,19 +174,6 @@ def project_ids_for_path(path: str | Path, *, actor: str = "") -> list[str]:
     return [project_id for _length, project_id in sorted(matches, reverse=True)]
 
 
-def _dedupe(values: Iterable[object]) -> list[str]:
-    output: list[str] = []
-    seen: set[str] = set()
-    for value in values:
-        item = stripped_text(value)
-        key = item.casefold()
-        if not item or key in seen:
-            continue
-        seen.add(key)
-        output.append(item)
-    return output
-
-
 def _relation(kind: str, target_id: object) -> dict[str, str] | None:
     target = stripped_text(target_id)
     if not target:
@@ -214,7 +201,7 @@ def _descriptor(
         "title": stripped_text(title) or resource_id,
         "summary": stripped_text(summary),
         "status": stripped_text(status) or "active",
-        "project_ids": _dedupe(project_ids),
+        "project_ids": unique_texts(project_ids),
         "relations": [item for item in relations if item is not None],
         "attributes": copy.deepcopy(dict(attributes or {})),
         "created_at": stripped_text(created_at),
@@ -233,12 +220,12 @@ def workspace_paths_many(workspace_ids: Iterable[object], *, connection: Any = N
                          include_deleted: bool = False) -> dict[str, str]:
     from management_portal.resources.workspace_store import get_workspace_store
     if include_deleted:
-        ids = _dedupe(workspace_ids)
+        ids = unique_texts(workspace_ids)
         rows = get_workspace_store().rows(ids, connection=connection, include_deleted=True)
         if set(ids) - rows.keys():
             raise KeyError('Workspace registration does not exist')
         return {wid: '' if row['deleted_at'] else row['path'] for wid, row in rows.items()}
-    return get_workspace_store().paths(_dedupe(workspace_ids), connection=connection)
+    return get_workspace_store().paths(unique_texts(workspace_ids), connection=connection)
 
 
 def ensure_workspaces(record: Mapping[str, Any], *, connection: Any) -> None:
@@ -310,7 +297,7 @@ def _resident_resource_projection(
     if lineage_id or not stripped_text(record.get("deleted_at")):
         identity_contract.validate_id(lineage_id, "lineage")
     source_resident_id = stripped_text(record.get("source_resident_id"))
-    workspace_ids = _dedupe(
+    workspace_ids = unique_texts(
         [
             record.get("owned_workspace_id"),
             *[

@@ -151,7 +151,7 @@ def test_two_users_bind_on_same_watchboard_and_reach_their_own_amas(telepus_sche
             assert rows['alice']['status'] == 'active' and not rows['alice']['can_manage']
             assert other['telegram_users']['current_user'] == 'bob'
             assert other['telegram_users']['permissions']['can_manage']
-    assert {account['portal_actor'] for account in adapter.store.accounts()} == set(actors)
+    assert set(adapter.store.active_actors()) == set(actors)
 
     def receive(actor, message_id):
         servers[actor].messages = [dict(message_id=message_id, from_user_id=accounts[actor]['ilink_user_id'],

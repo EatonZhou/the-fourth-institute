@@ -5,26 +5,10 @@ from __future__ import annotations
 
 import re
 from pathlib import Path, PurePosixPath
-from typing import Iterable
 from urllib.parse import unquote
 
 from management_common.secure_paths import relative_parts
 from management_common.text_values import stripped_text
-
-
-def _dedupe(values: Iterable[object]) -> list[str]:
-    output: list[str] = []
-    seen: set[str] = set()
-    for value in values:
-        item = stripped_text(value)
-        if not item:
-            continue
-        key = item.casefold()
-        if key in seen:
-            continue
-        seen.add(key)
-        output.append(item)
-    return output
 
 
 def _read_text(path: Path, limit: int = 2 * 1024 * 1024) -> str:

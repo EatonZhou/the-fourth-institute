@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Any, Iterable, Iterator
 
 from management_common.clock import utc_now_iso
-from management_common.text_values import stripped_text
+from management_common.text_values import stripped_text, unique_texts
 from management_portal import article_discovery, article_tex, registry_sync
 from management_portal.resources import get_resource_service
 from management_portal.resources.registry_store import get_registry_store
@@ -21,7 +21,7 @@ def _record_match_keys(record: dict[str, Any]) -> Iterator[tuple[str, ...]]:
     for root in record.get("roots") or []:
         if isinstance(root, dict) and root.get("path"):
             yield ("path", registry_sync.resolved_path(root.get("path")))
-    fingerprints = article_tex._dedupe(
+    fingerprints = unique_texts(
         [*record.get("title_fingerprints", []), article_tex.title_fingerprint(record.get("title"))]
     )
     for project_id in record.get("project_ids") or [""]:
@@ -139,14 +139,14 @@ def _merge_record(
     owned_locations(roots, article_id)
     canonical = _select_root(roots)
     title = stripped_text(canonical.get("title")) or stripped_text(previous.get("title")) or article_id
-    project_ids = article_tex._dedupe(
+    project_ids = unique_texts(
         [
             *previous.get("project_ids", []),
             *explicit_project_ids,
             *[project for item in group for project in item.get("project_ids") or []],
         ]
     )
-    fingerprints = article_tex._dedupe(
+    fingerprints = unique_texts(
         [
             *previous.get("title_fingerprints", []),
             article_tex.title_fingerprint(previous.get("title")),

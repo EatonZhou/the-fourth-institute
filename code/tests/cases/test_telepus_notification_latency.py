@@ -100,7 +100,7 @@ def test_more_than_eight_users_watch_concurrently_and_relisten():
         on_pending(actor)
         return .01
     adapter = SimpleNamespace(store=SimpleNamespace(
-        accounts=lambda: [dict(portal_actor=user, status='active') for user in users],
+        active_actors=lambda: users,
         lock=lambda actor: nullcontext()), flush=lambda actor: flushed.append(actor),
         notifications=SimpleNamespace(preferences=lambda actor: {'mention': True}, scan=scan))
     scheduler = NotificationScheduler(adapter)

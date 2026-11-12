@@ -29,7 +29,7 @@ def workflow_operations(script_path):
 
 
 def run(*, now=None, test_roots=None):
-    from management_portal.test_framework.records import RunRecords, RunCoordinator, TERMINAL
+    from management_portal.test_framework.records import RunRecords, RunCoordinator
     from management_portal.society_service.script_runs import store as scripts
     from management_common.resource_lifecycle import LifecycleStore
     from management_portal.test_framework.run_cleanup import finish_closing_scopes
@@ -92,10 +92,7 @@ def run(*, now=None, test_roots=None):
     for index in roots:
         try:
             records = RunRecords(Path(index))
-            for record in records.recent():
-                if record['status'] in TERMINAL and record.get('resource_cleanup', {}).get('status') != 'complete':
-                    updated = records.finish_cleanup(record['run_id'])
-                    report['errors'].extend(updated['resource_cleanup'].get('errors', []))
+            report['errors'].extend(records.finish_pending_cleanup()['errors'])
             report['tests'].extend(records.expire(Path(index).parent / 'run-artifacts', now=now))
             RunCoordinator(records, Path(index).parent / 'run-artifacts').remove_orphan_artifacts()
         except Exception as error:

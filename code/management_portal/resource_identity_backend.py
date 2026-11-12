@@ -4,7 +4,7 @@ from management_common.portal_paths import path as portal_path
 PORTAL_ROOT = Path(__file__).resolve().parents[1]
 from management_common.clock import utc_now_iso
 from management_common.instance_locations import is_area_reference, located_path
-from management_common.text_values import stripped_text
+from management_common.text_values import stripped_text, unique_texts
 
 import functools
 import mimetypes
@@ -54,21 +54,6 @@ PRUNED_DIR_NAMES = {
     "site-packages",
     "venv",
 }
-
-
-def _dedupe_strings(values: Iterable[object]) -> list[str]:
-    output: list[str] = []
-    seen: set[str] = set()
-    for value in values:
-        item = stripped_text(value)
-        if not item:
-            continue
-        key = item.casefold()
-        if key in seen:
-            continue
-        seen.add(key)
-        output.append(item)
-    return output
 
 
 def _is_repo_id(value: object) -> bool:
@@ -425,7 +410,7 @@ def _projects_for_path(path: str | Path, project_roots: list[tuple[str, Path]]) 
         except ValueError:
             continue
         matches.append(project_id)
-    return _dedupe_strings(matches)
+    return unique_texts(matches)
 
 
 def project_roots() -> list[tuple[str, Path]]:
@@ -559,7 +544,7 @@ def _merge_record(
     detected_projects: list[str] = []
     for checkout in merged_checkouts:
         detected_projects.extend(_projects_for_path(checkout["path"], project_roots))
-    project_ids = _dedupe_strings(
+    project_ids = unique_texts(
         [*previous.get("project_ids", []), *explicit_project_ids, *detected_projects]
     )
     previous_name = stripped_text(previous.get("name"))
@@ -709,7 +694,7 @@ def register_exported_tree(
             "name": stripped_text(previous.get("name")) or root.name,
             "status": stripped_text(previous.get("status")) or "active",
             "ownership": stripped_text(previous.get("ownership")) or "unknown",
-            "project_ids": _dedupe_strings([
+            "project_ids": unique_texts([
                 *previous.get("project_ids", []), *projects,
                 *_projects_for_path(root, project_roots),
             ]),

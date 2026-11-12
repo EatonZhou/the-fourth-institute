@@ -73,10 +73,11 @@ class WeixinStore:
             row = c.execute("SELECT * FROM weixin_accounts WHERE portal_actor=?", (actor,)).fetchone()
         return dict(row) if row else None
 
-    def accounts(self):
+    def active_actors(self):
+        """Scheduling identities only; workers read current credentials under their own lock."""
         self.router.init_schema()
         with self.router.connect() as c:
-            return [dict(r) for r in c.execute("SELECT * FROM weixin_accounts WHERE status='active'").fetchall()]
+            return [r["portal_actor"] for r in c.execute("SELECT portal_actor FROM weixin_accounts WHERE status='active'").fetchall()]
 
     def public_accounts(self):
         """The shared binding list never loads credentials or scanner identifiers."""

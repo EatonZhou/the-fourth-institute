@@ -319,18 +319,62 @@ class RunRecords:
             return self.finish_cleanup(run_id)
         return record
 
-    def finish_cleanup(self, run_id):
+    @staticmethod
+    def _cleanup_receipt(run_id):
         from .run_cleanup import finish_run
         try:
-            receipt = finish_run(run_id)
+            return finish_run(run_id)
         except Exception as error:
-            receipt = {'status': 'error', 'errors': [str(error)]}
-        def save(item):
-            item['resource_cleanup'] = receipt
-            if receipt['status'] == 'error':
-                item['status'] = 'error'
-                item['error'] = '；'.join(filter(None, [item.get('error', ''), *receipt.get('errors', [])]))
-        return self._mutate(run_id, save)
+            return {'status': 'error', 'errors': [str(error)]}
+
+    @staticmethod
+    def _apply_cleanup_receipt(item, receipt):
+        item['resource_cleanup'] = receipt
+        if receipt['status'] == 'error':
+            item['status'] = 'error'
+            item['error'] = '；'.join(filter(None, [item.get('error', ''), *receipt.get('errors', [])]))
+
+    def finish_cleanup(self, run_id):
+        receipt = self._cleanup_receipt(run_id)
+        return self._mutate(run_id, lambda item: self._apply_cleanup_receipt(item, receipt))
+
+    def finish_pending_cleanup(self):
+        """Retry terminal cleanup, then merge receipts with one index commit.
+
+        Records are the truth even when an earlier record-first write crashed
+        before updating the index. Domain cleanup must run outside the file
+        lock: stopping owned work can need that same lock for final progress.
+        """
+        with self._locked():
+            pending = []
+            for entry in self._read_index():
+                item = self._read_record(entry['run_id'])
+                if item.get('status') in TERMINAL and item.get('resource_cleanup', {}).get('status') != 'complete':
+                    pending.append(item['run_id'])
+        receipts = [(run_id, self._cleanup_receipt(run_id)) for run_id in pending]
+        updated, errors = [], []
+        if not receipts:
+            return {'updated': updated, 'errors': errors}
+        with self._locked():
+            index = self._read_index()
+            positions = {entry['run_id']: position for position, entry in enumerate(index)}
+            for run_id, receipt in receipts:
+                if run_id not in positions:
+                    continue  # A concurrent report deletion owns its cleanup.
+                item = self._read_record(run_id)
+                if item.get('status') not in TERMINAL or item.get('resource_cleanup', {}).get('status') == 'complete':
+                    continue
+                self._apply_cleanup_receipt(item, receipt)
+                item['updated_at'] = now_iso()
+                self._write_record(item)
+                index[positions[run_id]] = self._index_entry(item)
+                updated.append(run_id)
+                errors.extend(receipt.get('errors', []))
+            if updated:
+                # Same record-first crash contract as ordinary mutation. A
+                # partial write is recovered from records, never index status.
+                self._write_index(index)
+        return {'updated': updated, 'errors': errors}
 
     def expire(self, run_root: Path, *, now=None):
         """Delete terminal evidence and records seven days after completion.
@@ -516,40 +560,40 @@ class RunRecords:
 
     def recover_interrupted(self, run_ids: set[str] | None = None) -> int:
         """Close started local runs (all, or the given ones) whose executor process is gone."""
+        return self._scan_recovery(run_ids, close_interrupted=True)[0]
+
+    def recover_unowned(self, run_ids: set[str] | None = None) -> list[str]:
+        """Close interrupted local runs and select resumable work in one scan."""
+        return self._scan_recovery(run_ids, close_interrupted=True)[1]
+
+    def _scan_recovery(self, run_ids, *, close_interrupted):
         with self._locked():
             index = self._read_index()
             stamp = now_iso()
-            recovered = 0
-            for entry in index:
+            recovered, unowned, changed = 0, [], False
+            for position, entry in enumerate(index):
                 if run_ids is not None and entry.get("run_id") not in run_ids:
                     continue
                 item = self._read_record(entry.get("run_id"))
-                if (
-                    item.get("status") in TERMINAL
-                    or item.get("status") == "queued"
-                    or is_tau_run(item)
-                    or _executor_alive(item)
-                ):
-                    continue
-                self._close_interrupted(item, stamp)
-                recovered += 1
-                self._write_record(item)
-                self._replace_index_entry(index, item)
-            if recovered:
+                if item.get('status') not in TERMINAL and not _executor_alive(item):
+                    if close_interrupted and item.get('status') != 'queued' and not is_tau_run(item):
+                        self._close_interrupted(item, stamp)
+                        recovered += 1
+                        self._write_record(item)
+                    else:
+                        unowned.append(item['run_id'])
+                if close_interrupted:
+                    summary = self._index_entry(item)
+                    if summary != entry:
+                        index[position] = summary
+                        changed = True
+            if changed:
                 self._write_index(index)
-            return recovered
+            return recovered, unowned
 
     def unowned(self, run_ids: set[str] | None = None) -> list[str]:
         """Unfinished runs (all, or the given ones) that no live executor owns."""
-        with self._locked():
-            return [
-                str(item.get("run_id") or "")
-                for item in (
-                    self._read_record(entry.get("run_id")) for entry in self._read_index()
-                    if run_ids is None or entry.get("run_id") in run_ids
-                )
-                if item.get("status") not in TERMINAL and not _executor_alive(item)
-            ]
+        return self._scan_recovery(run_ids, close_interrupted=False)[1]
 
     def request_cancel(self, run_id: str) -> dict[str, Any]:
         def cancel(item):
@@ -637,9 +681,8 @@ class RunCoordinator:
         executor takes a TAU Campaign over; the unit name admits one executor
         per run, so a launch for a run whose unit is still active fails harmlessly.
         """
-        self.records.recover_interrupted(run_ids)
         launched = []
-        for run_id in self.records.unowned(run_ids):
+        for run_id in self.records.recover_unowned(run_ids):
             now = time.monotonic()
             with self._lock:
                 last = self._launched_at.get(run_id)

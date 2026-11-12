@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import unquote
 
-from management_common.text_values import stripped_text
+from management_common.text_values import stripped_text, unique_texts
 from management_portal import article_registry, article_tex
 from management_portal.resources import get_resource_service
 
@@ -51,7 +51,7 @@ def _article_sections(path: Path) -> list[dict[str, Any]]:
         headings.append(
             {
                 "title": title,
-                "keys": article_tex._dedupe(keys),
+                "keys": unique_texts(keys),
                 "start": match.start(),
                 "end": end,
                 "text": block,

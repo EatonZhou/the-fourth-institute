@@ -102,7 +102,7 @@ def test_refresh_maintains_expiry_once_per_minute_without_blocking_replies(monke
     monkeypatch.setattr(cli, 'time', SimpleNamespace(monotonic=lambda: now[0], sleep=lambda _: now.__setitem__(0, next(ticks))))
     monkeypatch.setattr(cli, 'TelegramClient', lambda: object())
     monkeypatch.setattr(cli, 'telegram_adapter', lambda _: SimpleNamespace(router=SimpleNamespace(store=SimpleNamespace(prune_expired_callback_tokens=cleanup)), refresh_routes=refresh))
-    monkeypatch.setattr(weixin_adapter, 'WeixinAdapter', lambda: SimpleNamespace(store=SimpleNamespace(accounts=lambda: []), notifications=SimpleNamespace(diagnostic=lambda *args: diagnostics.append(args))))
+    monkeypatch.setattr(weixin_adapter, 'WeixinAdapter', lambda: SimpleNamespace(store=SimpleNamespace(active_actors=lambda: []), notifications=SimpleNamespace(diagnostic=lambda *args: diagnostics.append(args))))
     monkeypatch.setattr(refresh_service, 'NotificationScheduler', lambda _: SimpleNamespace(start=lambda: None, close=lambda: None))
     assert cli.run_telegram_refresh_daemon(['--max-iterations', '4']) == 0
     assert cleanups == [0, 60]

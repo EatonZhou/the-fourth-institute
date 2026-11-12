@@ -63,7 +63,7 @@ class ReaderTranslationService:
         self.before_google = before_google
         self.database = DomainDatabase('paper', 'reader_translation_delivery', DDL)
         self.cache = TranslationCache(authenticate=authenticate, prepare=self.prepare,
-            authorize_access=self.authorize, execute=None)
+                                      authorize_access=self.authorize)
 
     def prepare(self, context, request):
         allowed = {'text', 'source_language', 'target_language', 'mode', 'document'}
@@ -330,7 +330,6 @@ class ReaderTranslationService:
         code = result.get('error_code') or ''
         if code in ('permission_denied','cancelled'): return None
         if status in (400,401,402,403,404,405,413,415,422,429,500,502,503,504): return 'http_' + str(status)
-        if status == 403 and code in ('insufficient_quota','quota_exceeded','rate_limit_exceeded'): return 'http_403'
         if status is None and evidence.get('error_kind') == 'connection_refused': return 'connection_refused'
         # A read timeout or a generic connection loss may occur after acceptance.
         if status is None and evidence.get('request_sent') is False and evidence.get('error_kind') in ('connect_timeout','connection_error'):

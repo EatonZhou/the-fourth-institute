@@ -9,7 +9,9 @@ from typing import Any, Iterable
 from urllib.parse import quote
 
 from management_common.resource_identity import get_resource_type_registry
-from management_common.text_values import stripped_text
+from management_common.text_values import stripped_text, unique_texts
+# Deployment bridge: remove after Release callers load the shared text owner.
+from management_common.text_values import unique_texts as _dedupe
 from management_portal.resources.portal import portal_url_for_resource
 from management_portal.resources.schema import normalize_resource_attributes
 
@@ -23,19 +25,6 @@ def _utc_iso(moment: datetime) -> str:
 
 def _now_iso() -> str:
     return _utc_iso(datetime.now(timezone.utc))
-
-
-def _dedupe(values: Iterable[object]) -> list[str]:
-    result: list[str] = []
-    seen: set[str] = set()
-    for value in values:
-        clean = stripped_text(value)
-        key = clean.casefold()
-        if not clean or key in seen:
-            continue
-        seen.add(key)
-        result.append(clean)
-    return result
 
 
 def _timestamp_iso(value: object) -> str:
@@ -85,8 +74,8 @@ def resource_record(
     clean_title = stripped_text(title) or clean_id
     clean_summary = stripped_text(summary)
     clean_path = stripped_text(path)
-    clean_facets = _dedupe([clean_type, *facets])
-    clean_terms = _dedupe([
+    clean_facets = unique_texts([clean_type, *facets])
+    clean_terms = unique_texts([
         clean_id,
         clean_title,
         *(term for term in search_terms if stripped_text(term) != clean_summary),
@@ -125,8 +114,8 @@ def _validate_record(record: dict[str, Any], adapter: str) -> dict[str, Any]:
     if not stripped_text(record.get("title")):
         raise ValueError(f"resource {resource_id} has no title")
     normalized = _json_value(record)
-    normalized["facets"] = _dedupe(normalized.get("facets") or [])
-    normalized["search_terms"] = _dedupe(normalized.get("search_terms") or [])
+    normalized["facets"] = unique_texts(normalized.get("facets") or [])
+    normalized["search_terms"] = unique_texts(normalized.get("search_terms") or [])
     raw_attributes = normalized.get("attributes")
     if not isinstance(raw_attributes, dict):
         raise ValueError(f"resource {resource_id} attributes must be an object")

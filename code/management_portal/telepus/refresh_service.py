@@ -47,9 +47,8 @@ class NotificationScheduler:
 
     def tick(self):
         self.workers = {actor: worker for actor, worker in self.workers.items() if worker.is_alive()}
-        for account in self.store.accounts():
-            actor = account['portal_actor']
-            if account['status'] == 'active' and actor not in self.workers and any(self.notifications.preferences(actor).values()):
+        for actor in self.store.active_actors():
+            if actor not in self.workers and any(self.notifications.preferences(actor).values()):
                 worker = Thread(target=self._watch, args=(actor,), name='telepus-notification-watch', daemon=True)
                 self.workers[actor] = worker
                 worker.start()

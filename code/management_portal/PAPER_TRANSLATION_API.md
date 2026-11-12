@@ -84,13 +84,20 @@ after its material configuration changes returns conflict, never a new charge.
 Concurrent identical keys merge. Refresh failure preserves the previous success.
 Requests without confirmed completion retain their binding, not a new Execution.
 
-The cache file also retains opt-in verified-Resident APIs from earlier isolated
-experiments. Production uses only request/get/claim/finish and never imports or
-calls their workflow evidence dependency. Do not include paper_translation_execution,
-paper_translation_workflow, Kimi runtime patches or experimental provider controls
-in this feature's publication. Production DeepSeek uses ExecutionService's existing
-chat_completion service and registry/credential owner for deepseek_primary, never
-direct provider HTTP or a Resident business-role substitute.
+The verified subscription experiment is permanently cancelled. Its public legacy
+entrypoints and `request_verified` retain explicit rejection; existing binding
+inspection remains read-only. The cache no longer creates or queries the dedicated
+verified-results table, accepts `_verified`, or takes a reuse-proof callback.
+Existing tables are not dropped. `publication_mode` remains so a late success for
+a historical verified task is rejected; an authorized, lease-fenced failure can
+still be recorded.
+
+Execution belongs to ReaderTranslationService, which uses the cache's
+request/get/descriptor/claim/finish protocol. The former internal `run` wrapper and
+`execute` constructor callback are removed; there is no second execution path in
+the cache. Production DeepSeek uses ExecutionService's existing chat_completion
+service and registry/credential owner for deepseek_primary. The ordinary Kimi API
+option below is separate from the cancelled subscription experiment.
 
 Google endpoint and response-segment semantics follow Translate for Zotero
 google.ts at commit 4e9ca763b9d8f07604aceb7671b5e0c29c3b5a3a (AGPL-3.0).

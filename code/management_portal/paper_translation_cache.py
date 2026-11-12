@@ -1,4 +1,4 @@
-"""Opt-in translation cache and task state; no worker, route or provider calls."""
+"""Translation cache and fenced task state; execution belongs to the service."""
 import hashlib
 import json
 import secrets
@@ -18,27 +18,14 @@ CREATE TABLE IF NOT EXISTS reader_translation_operations (
  task_id TEXT NOT NULL, PRIMARY KEY(actor,operation_id));
 ALTER TABLE reader_translation_tasks ADD COLUMN IF NOT EXISTS publication_mode TEXT NOT NULL DEFAULT 'legacy';
 ALTER TABLE reader_translation_tasks ADD COLUMN IF NOT EXISTS outcome JSONB;
-CREATE TABLE IF NOT EXISTS reader_translation_verified_results (
- task_id TEXT PRIMARY KEY, lookup_key TEXT NOT NULL, final_cache_key TEXT NOT NULL,
- provenance JSONB NOT NULL, published_at TIMESTAMPTZ NOT NULL DEFAULT clock_timestamp());
-CREATE INDEX IF NOT EXISTS reader_translation_verified_lookup
- ON reader_translation_verified_results(lookup_key,published_at DESC,task_id);
 '''
 FIELDS = {'text', 'source_language', 'target_language', 'model', 'prompt', 'terminology', 'context', 'access'}
 
 
-class ReuseProofUnavailable(RuntimeError):
-    """Existing success cannot be compared to current material; no model retry."""
-
-
 class TranslationCache:
-    def __init__(self, *, authenticate, prepare, authorize_access, execute, validate_reuse=None):
+    def __init__(self, *, authenticate, prepare, authorize_access):
         self.authenticate, self.prepare = authenticate, prepare
-        self.authorize_access, self.execute = authorize_access, execute
-        # Trusted owner capability: read-only proof that CURRENT materialized
-        # input/model equals this historical evidence. Never browser input.
-        # No validator means no cross-operation verified hit, not blind reuse.
-        self.validate_reuse = validate_reuse
+        self.authorize_access = authorize_access
         self.database = DomainDatabase('paper', 'reader_translation', DDL)
 
     def _actor(self, context):
@@ -56,7 +43,7 @@ class TranslationCache:
     def request_verified(self, context, *, operation_id, request, refresh=False):
         raise ValueError('Verified subscription translation experiment is permanently cancelled')
 
-    def request(self, context, *, operation_id, request, refresh=False, _verified=False):
+    def request(self, context, *, operation_id, request, refresh=False):
         actor = self._actor(context)
         if not isinstance(operation_id, str) or not 1 <= len(operation_id) <= 128 or type(refresh) is not bool:
             raise ValueError('invalid operation or refresh')
@@ -78,11 +65,7 @@ class TranslationCache:
         self._authorize(context, actor, payload)
         raw = _canonical(payload)
         key = hashlib.sha256(raw.encode()).hexdigest()
-        if _verified:
-            key = 'lookup:' + key
         digest = hashlib.sha256((raw + json.dumps(refresh)).encode()).hexdigest()
-        if _verified:
-            digest = hashlib.sha256(('verified:' + digest).encode()).hexdigest()
         with self.database.transaction(key='operation:' + actor + ':' + operation_id) as db:
             old = db.execute('SELECT digest,task_id FROM reader_translation_operations WHERE actor=%s AND operation_id=%s', (actor, operation_id)).fetchone()
             if old:
@@ -91,34 +74,13 @@ class TranslationCache:
             else:
                 db.execute('INSERT INTO reader_translation_keys(cache_key) VALUES (%s) ON CONFLICT DO NOTHING', (key,))
                 success, active = db.execute('SELECT successful_task,active_task FROM reader_translation_keys WHERE cache_key=%s FOR UPDATE', (key,)).fetchone()
-                if _verified:
-                    success = None
-                    if not refresh:
-                        # A discovery index is not an alias. Every use must
-                        # prove current inputs/configuration before any model
-                        # admission, with fresh authorization on both payloads.
-                        candidates = db.execute('SELECT v.task_id,v.provenance,t.payload FROM reader_translation_verified_results v JOIN reader_translation_tasks t ON t.task_id=v.task_id WHERE v.lookup_key=%s AND t.status=\'succeeded\' ORDER BY v.published_at DESC,v.task_id LIMIT 16', (key,)).fetchall()
-                        if candidates and self.validate_reuse is None:
-                            raise ReuseProofUnavailable('Current materialization proof is unavailable; use explicit refresh to regenerate')
-                        for candidate_id, provenance, candidate_payload in candidates:
-                            self._authorize(context, actor, candidate_payload)
-                            proof = self.validate_reuse(context, payload, provenance)
-                            if (not isinstance(proof, dict) or not proof.get('current_input_model_digest')
-                                    or not proof.get('configuration_revision') or not proof.get('materialization_revision')):
-                                raise ReuseProofUnavailable('Current materialization proof is incomplete')
-                            if (_canonical(candidate_payload) == raw and isinstance(proof, dict)
-                                    and proof.get('current_input_model_digest') == provenance['actual']['input_model_digest']
-                                    and proof.get('configuration_revision')
-                                    and proof.get('materialization_revision')):
-                                success = candidate_id
-                                break
                 if success and not refresh:
                     task_id, cache = success, 'hit'
                 elif active:
                     task_id, cache = active, 'inflight'
                 else:
                     task_id, cache = secrets.token_hex(16), 'miss'
-                    db.execute("INSERT INTO reader_translation_tasks(task_id,cache_key,payload,requested_actor,status,publication_mode) VALUES (%s,%s,%s,%s,'queued',%s)", (task_id, key, Jsonb(payload), actor, 'verified' if _verified else 'legacy'))
+                    db.execute("INSERT INTO reader_translation_tasks(task_id,cache_key,payload,requested_actor,status,publication_mode) VALUES (%s,%s,%s,%s,'queued','legacy')", (task_id, key, Jsonb(payload), actor))
                     db.execute('UPDATE reader_translation_keys SET active_task=%s WHERE cache_key=%s', (task_id, key))
                 db.execute('INSERT INTO reader_translation_operations VALUES (%s,%s,%s,%s)', (actor, operation_id, digest, task_id))
         return {**self.get(context, task_id), 'cache': cache}
@@ -169,22 +131,3 @@ class TranslationCache:
             actor = db.execute('SELECT requested_actor FROM reader_translation_tasks WHERE task_id=%s', (task_id,)).fetchone()[0]
         if actor != self._actor(context):
             raise PermissionError('task execution must use its original authenticated requester')
-
-    def run(self, context, task_id):
-        self._execution_owner(context, task_id)
-        with self.database.read() as db:
-            mode = db.execute('SELECT publication_mode FROM reader_translation_tasks WHERE task_id=%s', (task_id,)).fetchone()[0]
-        if mode == 'verified':
-            raise ValueError('verified tasks must use their original formal Resident workflow')
-        claimed = self.claim(context, task_id)
-        if not claimed: return self.get(context, task_id)
-        token, payload = claimed
-        try:
-            # Contract: canonical submit-or-resume keyed by task_id, fresh context per TASK.
-            # A reclaimed lease must resume its binding, never submit another execution.
-            result = self.execute(context, {'task_id': task_id, 'fresh_context_id': task_id, 'history': [], 'descriptor': payload})
-            if not isinstance(result, str) or not result or len(result.encode()) > 256 * 1024:
-                raise ValueError('invalid translation result')
-        except Exception:
-            return self.finish(context, task_id, token, error=True)
-        return self.finish(context, task_id, token, result=result)

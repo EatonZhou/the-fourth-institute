@@ -10,14 +10,14 @@ from typing import Any, Callable, Iterable
 import knowledge_board_lan.knowledge_source as knowledge_source
 import skill_board_lan.skill_backend as skill_backend
 
-from management_common.text_values import stripped_text
+from management_common.text_values import stripped_text, unique_texts
 from management_portal import project_registry
 from management_portal.resources.schema import resource_relation
 
 from management_portal.resource_index_adapters import (
     _resolved_root, _resolved_path, _known_path, _tree_paths, _watch_tree, _PathsAdapter,
 )
-from management_portal.resource_index_records import _dedupe, _timestamp_iso, resource_record, ChangeSet
+from management_portal.resource_index_records import _timestamp_iso, resource_record, ChangeSet
 
 
 def _project_statuses(projects: Iterable[dict[str, Any]]) -> dict[str, str]:
@@ -475,7 +475,7 @@ class ProjectKnowledgeAdapter(_PathsAdapter):
         return ChangeSet(
             adapter=self.name,
             upserts=tuple(upserts),
-            deletes=tuple(_dedupe(deletes)),
+            deletes=tuple(unique_texts(deletes)),
             source_state={
                 **source_state,
                 "last_incremental_path_count": len(changed_paths),
@@ -821,6 +821,6 @@ class SkillPackageAdapter(_PathsAdapter):
         return ChangeSet(
             adapter=self.name,
             upserts=tuple(upserts),
-            deletes=tuple(_dedupe(deletes)),
+            deletes=tuple(unique_texts(deletes)),
             source_state={"last_incremental_path_count": len(changed_paths)},
         )

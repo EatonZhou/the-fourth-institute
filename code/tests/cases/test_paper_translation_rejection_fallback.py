@@ -11,9 +11,10 @@ def test_google_known_rejection_uses_deepseek(owner,status):
     assert result['status']=='succeeded' and result['provider']=='deepseek'
     assert owner.google.calls==1 and owner.execution.submits==1
 
-@pytest.mark.parametrize('status',[402,429])
-def test_recorded_deepseek_rejection_admits_kimi(status):
-    assert ReaderTranslationService._fallback_reason(failure('http_error',status))=='http_'+str(status)
+@pytest.mark.parametrize('status',[402,403,429])
+@pytest.mark.parametrize('code',['','insufficient_quota','quota_exceeded','rate_limit_exceeded'])
+def test_recorded_deepseek_rejection_admits_kimi(status,code):
+    assert ReaderTranslationService._fallback_reason(failure('http_error',status,code=code))=='http_'+str(status)
 
 def test_unknown_response_timeout_does_not_charge_next_source():
     assert ReaderTranslationService._fallback_reason(failure('read_timeout')) is None
@@ -35,5 +36,6 @@ def test_all_stages_rejected_explains_each_in_chinese(owner):
     assert '限流' in message and 'no automatic fallback' not in message
 
 @pytest.mark.parametrize('status',[401,403])
-def test_portal_denial_never_bypassed_even_with_forged_http_status(status):
-    assert ReaderTranslationService._fallback_reason(failure('http_error',status,code='permission_denied')) is None
+@pytest.mark.parametrize('code',['permission_denied','cancelled'])
+def test_portal_denial_never_bypassed_even_with_forged_http_status(status,code):
+    assert ReaderTranslationService._fallback_reason(failure('http_error',status,code=code)) is None

@@ -16,14 +16,16 @@ def main():
     workers = {}
     adapter = WeixinAdapter()
 
-    def run(actor, token):
+    def run(actor):
         local = WeixinAdapter()
         delay = 1
         account = None
+        token = None
         try:
             account = local.store.account(actor)
-            if not account or account['bot_token'] != token:
+            if not account or account['status'] != 'active':
                 return
+            token = account['bot_token']
             try:
                 local.client_factory(account).request('msg/notifystart')
             except Exception as exc:
@@ -46,10 +48,10 @@ def main():
                     pass
 
     while not stopped.is_set():
-        for account in adapter.store.accounts():
-            actor = account['portal_actor']
+        workers = {actor: worker for actor, worker in workers.items() if worker.is_alive()}
+        for actor in adapter.store.active_actors():
             if actor not in workers or not workers[actor].is_alive():
-                worker = threading.Thread(target=run, args=(actor, account['bot_token']), daemon=True)
+                worker = threading.Thread(target=run, args=(actor,), daemon=True)
                 workers[actor] = worker
                 worker.start()
         stopped.wait(3)

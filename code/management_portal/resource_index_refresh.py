@@ -17,14 +17,14 @@ from typing import Any, Callable, Iterable, Sequence
 
 from management_common.scan_cancellation import ScanCancelled, cancellable_scan, check_scan_cancelled
 from management_portal.resources import timing
-from management_common.text_values import stripped_text
+from management_common.text_values import stripped_text, unique_texts
 from management_portal.resources.registry_store import parse_registry_change_key
 from management_portal.notifications.file_watch import RecursiveFileChangeWatcher
 
 from management_portal.resource_index_adapters import (
     _routing_paths, _known_paths, ResourceAdapter, _adapter_projection_code_fingerprint, _watch_directories,
 )
-from management_portal.resource_index_records import _now_iso, _dedupe, ChangeSet
+from management_portal.resource_index_records import _now_iso, ChangeSet
 from management_portal.resource_index_store import IndexStore
 
 
@@ -278,7 +278,7 @@ class AdapterLayer:
                 )
             finally:
                 _routing_paths.reset(token)
-        return _dedupe(names)
+        return unique_texts(names)
 
     def notify_change(self, *, path: str = "", adapters: Iterable[str] = ()) -> list[str]:
         matched = self.matching_adapters(path=path, adapters=adapters)
