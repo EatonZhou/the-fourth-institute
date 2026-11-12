@@ -171,8 +171,15 @@
       const summary = state.library?.summary || {};
       const papers = state.library?.papers || [];
       const visiblePapers = papers.slice(0, state.libraryRenderLimit);
+      // History loads independently of the library. A restored history ID may
+      // not have been applied to this response (or may no longer be available).
+      // Use the returned scope, not that pending selection, for the overview.
+      const showOverview = state.mode === "library"
+        && !summary.semantic_search && !summary.paper_collection
+        && !String(state.query || "").trim()
+        && !["year", "venue", "tag", "project"].some(key => String(state.filters?.[key] || "").trim());
       $("workspaceMain").innerHTML = window.PortalI18n.html`
-          ${state.mode === "library" && !state.activeSemanticSearchId && !state.activeCollectorJobId && !state.query && !Object.values(state.filters || {}).some(Boolean) ? window.PortalI18n.html`<div class="overviewGrid">
+          ${showOverview ? window.PortalI18n.html`<div class="overviewGrid">
             <div class="metric"><div class="metricValue">${summary.paper_count || 0}</div><div class="metricLabel"><!--portal-i18n:"Registered papers"-->Registered papers</div></div>
             <div class="metric"><div class="metricValue">${summary.analysis_count || 0}</div><div class="metricLabel"><!--portal-i18n:"Analysis ready"-->Analysis ready</div></div>
             <div class="metric"><div class="metricValue">${summary.review_count || 0}</div><div class="metricLabel"><!--portal-i18n:"AI reviews"-->AI reviews</div></div>
