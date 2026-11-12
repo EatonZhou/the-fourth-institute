@@ -1,6 +1,7 @@
 """Authenticated report/media presentation routes for the optional Home widget."""
 from __future__ import annotations
 
+from pathlib import Path
 from urllib.parse import parse_qs
 
 from management_portal import http_auth, http_request_body, http_responses
@@ -245,9 +246,17 @@ def _page(request, parsed, actor):
     return _serve_bytes(request, 200, page.encode(), "text/html; charset=utf-8")
 
 
+def _catalog_page(request, parsed, actor):
+    from management_portal.http_documents import _serve_bytes
+    return _serve_bytes(request, 200, Path(__file__).with_name("resource_catalog.html").read_bytes(),
+                        "text/html; charset=utf-8")
+
+
 def routes(_shell=None):
     route = http_auth._principal_route
-    return (route("GET", "/api/home-report", _get, "home-report"),
+    return (route("GET", "/resource/report", _catalog_page, "home-report", page=True),
+            route("GET", "/resource/report/", _catalog_page, "home-report", page=True),
+            route("GET", "/api/home-report", _get, "home-report"),
             route('GET','/api/home-report/explanations',_explanations,'home-report'),
             route('POST','/api/home-report/explanations',_explanations,'home-report'),
             route('GET','/api/home-report/origin',_origin,'home-report'),

@@ -571,6 +571,24 @@ def test_resource_content_prefers_provider_media_type_for_extensionless_files(tm
         server.server_close()
 
 
+def test_report_catalog_routes_open_the_authenticated_collection_shell() -> None:
+    server, thread, base = _server()
+    try:
+        with mock.patch.object(http_auth, "_check_session", return_value=True), mock.patch.object(http_auth, "_get_page_api_actor", return_value="CASE-A"):
+            for path in ("/resource/report", "/resource/report/", "/resource/report?item=report_0123456789ab"):
+                with urllib.request.urlopen(base + path) as response:
+                    html = response.read().decode("utf-8")
+                    assert response.status == 200
+                    assert response.geturl() == base + path
+                    assert 'id="resourceResults"' in html
+                    assert "resource_catalog.js" in html
+                    assert "portal_resource_routes.js" in html
+    finally:
+        server.shutdown()
+        thread.join(timeout=5)
+        server.server_close()
+
+
 def test_resource_routes_expose_category_shells_and_canonical_deep_links() -> None:
     """资源分类页输出各自的页面骨架，/r/ 短链和 address 参数跳到规范详情地址"""
     server, thread, base = _server()

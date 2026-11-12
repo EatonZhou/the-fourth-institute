@@ -17,6 +17,11 @@
       plural: "Devices",
       search: "设备标题 / 预览 / ID",
     },
+    report: {
+      label: window.PortalI18n.t("Report"),
+      plural: "Reports",
+      search: "汇报标题 / 预览 / ID",
+    },
   });
   const SHARED_DETAIL_CATEGORIES = new Set(["skill", "experiment"]);
   const SEMANTIC_CATEGORIES = new Set(["skill", "experiment"]);
@@ -1522,6 +1527,13 @@
     if (!record) return;
     state.detailSequence += 1;
     const id = String(record.resource_id || "");
+    if (state.category === "report") {
+      const route = window.PortalResourceRoutes.routes.find(item => item.resource_type === "report");
+      const url = new URL(route.path, window.location.origin);
+      url.searchParams.set(route.parameter, id);
+      window.location.assign(url.href);
+      return;
+    }
     if (SHARED_DETAIL_CATEGORIES.has(state.category)) {
       openFrameDetail(id, options);
       return;
