@@ -69,6 +69,26 @@ def agent_context_snapshot(agent_id: str, **kwargs: Any) -> dict[str, Any]:
     return get_agent_data_store().agent_context_snapshot(agent_id, **kwargs)
 
 
+def prepare_context_preservation(agent_id: str, **kwargs: Any) -> dict[str, Any]:
+    """In-process Execution owner port, like the other AgentData operations.
+
+    The Resident domain has authorized and drained the source. Execution owns
+    native discovery, validation, immutable materialization and retry receipts.
+    """
+    from management_portal.execution.context_preservation import prepare_context_preservation
+    return prepare_context_preservation(agent_id, **kwargs)
+
+
+def commit_context_preservation(prepared: dict[str, Any]) -> dict[str, Any]:
+    from management_portal.execution.context_preservation import commit_context_preservation
+    return commit_context_preservation(prepared)
+
+
+def context_preservation_capabilities() -> dict[str, Any]:
+    from management_portal.execution.context_preservation import context_preservation_capabilities
+    return context_preservation_capabilities()
+
+
 def context_evidence_snapshot(agent_id: str) -> dict[str, Any]:
     from management_portal.execution.agent_data_store import get_agent_data_store
     return get_agent_data_store().context_evidence_snapshot(agent_id)

@@ -8,7 +8,8 @@ from types import SimpleNamespace
 
 import pytest
 
-from management_portal.execution.codex_preservation import read_native_window, native_seed
+from management_portal.execution.codex_preservation import read_native_window
+from management_portal.execution.context_preservation import prepare_context_preservation, commit_context_preservation
 
 
 def archive(tmp_path, records):
@@ -50,9 +51,12 @@ def test_immutable_native_seed_is_idempotent_and_does_not_rewrite_chat(tmp_path,
     item={'type':'reasoning','encrypted_content':'opaque','summary':[]}
     path=archive(tmp_path,[record('session_meta',{'id':'thread'}),record('response_item',item)])
     routes=SimpleNamespace(find_thread_rollout=lambda *a,**k:path)
-    binding={'provider':'codex','backend_session_id':'thread','backend_route_id':'one','provider_session_ref':'source'}
-    first=native_seed('agent',binding,store=store,routes=routes)
-    assert native_seed('agent',binding,store=store,routes=routes)==first
+    session=store.ensure_provider_session(provider='codex',backend_route_id='one',backend_session_id='thread',agent_id='agent',actor_ref='test')
+    binding=store.bind_provider_session('resident:agent',session['provider_session_ref'])
+    prepared=prepare_context_preservation('agent',actor='test',operation_id='one',source_binding=binding,store=store,routes=routes)
+    first=commit_context_preservation(prepared,store=store)
+    assert prepare_context_preservation('agent',actor='test',operation_id='one',source_binding=binding,store=store,routes=routes)==prepared
+    assert commit_context_preservation(prepared,store=store)==first
     assert store.fork_context_segments(first['segments'])[0]['content']=={'replacement_history':[item]}
     from management_portal.execution.codex_history_delivery import CodexHistoryDelivery
     delivered=[]

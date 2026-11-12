@@ -283,13 +283,14 @@ def test_codex_empty_create_imports_and_records_effective_context(tmp_path, isol
     from unittest import mock
     from management_portal.execution.backend_contracts import BackendContext
     from management_portal.execution.codex_backend import CodexBackend
-    from management_portal.society_service.resident_session_preservation import canonical_seed
     from tests.cases.test_agent_data_projection import _turn_request, _runtime_session, _invocation
 
     with isolated_portal_case():
         agent_id = 'resident_preserving'
         store, expected = _effective_history(agent_id)
-        seed = canonical_seed({'resident_id': agent_id}, {})
+        prepared = execution_port.prepare_context_preservation(agent_id, actor='alice',
+            operation_id='preserving', source_binding={})
+        seed = execution_port.commit_context_preservation(prepared)
         request = replace(_turn_request('session-restart:preserving'), operation='create', metadata={
             'resident_id': agent_id, 'preserve_session_context': True, 'fork_context_input': seed,
         })

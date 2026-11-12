@@ -11,7 +11,7 @@ from .session_history_import import validate_codex_preservation
 from .codex_rollout_history import _is_rollback_event
 
 
-def read_native_window(path, thread_id):
+def read_native_window(path, thread_id, *, evidence=None):
     path = Path(path)
     before = path.stat()
     items, identity = [], ''
@@ -42,10 +42,12 @@ def read_native_window(path, thread_id):
         raise ValueError('Codex native history contains an invalid item')
     segments = [{'segment_type':'model', 'content':item, 'metadata':{}} for item in items]
     validate_codex_preservation(segments)
+    if evidence is not None:
+        evidence.update(path=str(path), fingerprint=[after.st_dev, after.st_ino, after.st_size, after.st_mtime_ns])
     return items
 
 
-def native_seed(agent_id, binding, *, store=None, routes=None):
+def native_seed(agent_id, binding, *, store=None, routes=None, actor_ref=None, evidence=None):
     """Return a frozen seed, or None when this binding has no native archive.
 
     Never edit old Segments or infer correspondence from readable message text.
@@ -61,20 +63,20 @@ def native_seed(agent_id, binding, *, store=None, routes=None):
     path = routes.find_thread_rollout(binding['backend_route_id'], thread_id, include_archived=True)
     if path is None:
         return None
-    items = read_native_window(path, thread_id)
+    items = read_native_window(path, thread_id, evidence=evidence)
     if not items:
         return {'schema':'tfi.provider-context-seed.v1', 'segments':[],
                 'empty_context':True, 'source_agent_id':agent_id}
     # Materialize the Provider's existing effective window as one immutable
     # context boundary. No model compaction runs and no old Segment changes.
-    # Trace membership is required by the durable context-received receipt.
+    # Admission attaches this reference through the Execution preservation port;
+    # preparing it must not change the live Agent's effective window.
     digest = hashlib.sha256(json.dumps(items, ensure_ascii=False, sort_keys=True, separators=(',', ':')).encode()).hexdigest()
     sid = stable_segment_id('native-preservation', agent_id, binding['provider_session_ref'], digest)
     store.put_segment(segment_id=sid, segment_type='compaction',
         content={'replacement_history':items}, content_type='application/json',
-        created_by_agent_id=agent_id, created_by_actor_ref=agent_id,
+        created_by_agent_id=agent_id, created_by_actor_ref=actor_ref or agent_id,
         metadata={'kind':'native_preservation', 'provider_session_ref':binding['provider_session_ref'],
                   'source':'native_effective_window'})
-    store.append_agent_segments(agent_id, [sid], actor_ref=agent_id)
-    return {'schema':'tfi.provider-context-seed.v1', 'segments':[{'segment_id':sid}] if items else [],
+    return {'schema':'tfi.provider-context-seed.v1', 'segments':[{'segment_id':sid}],
             'empty_context':not items, 'source_agent_id':agent_id}

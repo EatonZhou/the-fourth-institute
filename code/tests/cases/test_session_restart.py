@@ -217,6 +217,12 @@ def _restart_domain(
         history.put_segment(segment_type='input', content='old request'),
         history.put_segment(segment_type='model', content='old result'),
     ], actor_ref='test')
+    source_session = history.ensure_provider_session(
+        provider=source_provider, backend_route_id=source_route,
+        backend_session_id="session_old", agent_id=record["resident_id"], actor_ref="alice",
+    )
+    history.bind_provider_session("resident:" + record["resident_id"], source_session["provider_session_ref"],
+                                  harness_tool_names=("hatg_instruction",))
     runtime_settings = {
         "backend": "codex",
         "model": "gpt-6-astra",
@@ -271,13 +277,7 @@ def _restart_domain(
     monkeypatch.setattr(
         resident_backend,
         "session_record",
-        lambda *_args, **_kwargs: {
-            "binding_id": "resident:resident_aaaaaaaaaaaa",
-            "provider": source_provider,
-            "backend_session_id": "session_old",
-            "backend_route_id": source_route,
-            "harness_tool_names": ("hatg_instruction",),
-        },
+        lambda *_args, **_kwargs: history.provider_binding("resident:" + record["resident_id"]),
     )
     monkeypatch.setattr(resident_execution_work, "read", lambda *_args: {})
     monkeypatch.setattr(resident_execution_work, "is_active", lambda *_args: False)

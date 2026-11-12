@@ -1044,21 +1044,41 @@ def _admit_session_replacement(restart: _SessionRestart) -> dict[str, Any]:
     if authorization:
         quota_override = resident_session_credits.prepared_policy(quota_override, authorization, request.execution_id)
         state["credits_authorization"] = authorization
+    prepared = None
+    if restart.strategy == "preserve":
+        with resident_record_domain.state_lock(resident_id):
+            current = copy.deepcopy(resident_record_domain.find_resident(resident_id) or {})
+            if not current:
+                raise KeyError("resident not found")
+            from . import resident_access
+            if not restart.portal_reason and not resident_access.can_manage(current, restart.actor_id):
+                raise manage_refusal(current)
+            pending = _admitted_session_restart(current, restart.intent)
+            if pending:
+                return pending
+            _check_unchanged_since_admission(current, restart)
+            restart_version = preservation.digest(current.get("session_restart") or {})
+        prepared = execution_port.prepare_context_preservation(
+            resident_id, actor=restart.actor_id,
+            operation_id=restart.request_id or restart.restart_id,
+            source_binding=restart.source_binding,
+        )
     with resident_record_domain.state_lock(resident_id):
         current = copy.deepcopy(resident_record_domain.find_resident(resident_id) or {})
         if not current:
             raise KeyError("resident not found")
+        from . import resident_access
+        if not restart.portal_reason and not resident_access.can_manage(current, restart.actor_id):
+            raise manage_refusal(current)
         pending = _admitted_session_restart(current, restart.intent)
         if pending:
             return pending
         _check_unchanged_since_admission(current, restart)
-        if restart.strategy == "preserve":
-            # Imported Residents may not have run yet. Establish their main
-            # Agent through the same owner as registration and execution before
-            # reading its effective context; existing traces stay intact.
-            resident_catalog.ensure_resident_agent(current, actor=restart.actor_id)
-            request = replace(request, metadata={**request.metadata,
-                "fork_context_input": preservation.canonical_seed(current, restart.source_binding)})
+        if prepared is not None:
+            if preservation.digest(current.get("session_restart") or {}) != restart_version:
+                raise ValueError("Session restart changed during context preparation")
+            seed = execution_port.commit_context_preservation(prepared)
+            request = replace(request, metadata={**request.metadata, "fork_context_input": seed})
 
         def commit():
             transition_id = restart.intake_transition_id
