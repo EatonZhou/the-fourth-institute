@@ -808,7 +808,7 @@ body {
 .paperReadingDialog .paperAIScope { margin:0; padding:7px 10px; font-size:11px; color:#737373; }
 .paperReadingDialog .paperAIPanel > :is(button,[role="alert"]) { margin:4px 10px; }
 .paperReadingDialog .paperAIChat { min-height:220px; min-width:0; overflow:hidden; }
-.paperReadingDialog .paperAIChat .chatHead { padding:6px 10px; gap:6px; background:#fff; border-bottom:1px solid #e5e5e5; }
+.paperReadingDialog .paperAIChat .chatHead { padding:6px 10px; gap:4px 6px; background:#fff; border-bottom:1px solid #e5e5e5; }
 .paperReadingDialog .paperAIChat .chatTitleLine .paneTitle { position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); }
 .paperReadingDialog .paperAIChat :is(.chatHeadText,.chatSubline) { min-width:0; }
 .paperReadingDialog .paperAIChat .paneNote { font-size:11px; line-height:1.5; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
