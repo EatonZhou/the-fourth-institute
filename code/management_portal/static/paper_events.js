@@ -146,11 +146,13 @@
         const btn = event.target.closest("button[data-mode]");
         if (btn) setMode(btn.dataset.mode);
       });
-      $("returnToPaperList")?.addEventListener("click", () => setMode("list-return"));
+      $("returnToPaperList")?.addEventListener("click", () => setMode("main-list").catch(alertError));
       window.addEventListener("popstate", () => {
-        const paperId = new URL(location.href).searchParams.get("paper");
+        const params = new URL(location.href).searchParams;
+        const paperId = params.get("paper");
         if (paperId) loadDetail(paperId).then(() => setMode("reader")).catch(alertError);
-        else if (state.listReturn) setMode("list-return").catch(alertError);
+        else if (params.get("semantic")) setMode("history-search", {fromHistory:true,searchId:params.get("semantic")}).catch(alertError);
+        else setMode("main-list", {fromHistory:true}).catch(alertError);
       });
       $("registeredFilter")?.addEventListener("change", event => {
         setMode(event.target.value === "today" ? "today" : "library");

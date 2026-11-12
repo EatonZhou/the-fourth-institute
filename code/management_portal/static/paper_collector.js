@@ -73,6 +73,7 @@
       if (Number(job.result_count || job.registered_count || 0) <= 0) {
         window.PortalUI.toast(job.summary || job.error || window.PortalI18n.t('该次采集暂无已保存的论文结果。'), 'info'); return;
       }
+      window.dispatchEvent(new CustomEvent('portal:paper-main-list-save'));
       state.activeCollectorJobId = job.job_id;
       state.query = ''; state.filters = {};
       if ($('searchInput')) $('searchInput').value = '';

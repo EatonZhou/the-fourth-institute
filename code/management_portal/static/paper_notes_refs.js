@@ -52,7 +52,7 @@
             <div class="portalToolbar paperToolbar" style="justify-content:space-between;">
               <h3>${esc(note.created_by || "note")}</h3>
               <div class="chips">
-                ${chip(new Date((note.created_at || 0) * 1000).toLocaleString())}
+                ${chip(new Date((note.created_at || 0) * 1000).toLocaleString(window.PortalI18n.locale?.() || window.__PORTAL_LANGUAGE__ || "zh-CN"))}
                 <button class="portalButton is-compact is-danger" type="button" data-delete-note="${esc(note.note_id || "")}"><!--portal-i18n:"删除"-->删除</button>
               </div>
             </div>

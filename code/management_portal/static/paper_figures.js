@@ -167,7 +167,7 @@
               ${generated.map(item => window.PortalI18n.html`
                 <div class="apiCard" style="padding:8px;">
                   <div class="portalToolbar paperToolbar" style="justify-content:space-between;margin-bottom:6px;">
-                    <span class="paneNote">${esc(new Date((item.created_at || 0) * 1000).toLocaleString())} · ${esc(item.kind || "image")}${item.status && item.status !== "done" ? ` · ${esc(item.status)}` : ""}</span>
+                    <span class="paneNote">${esc(new Date((item.created_at || 0) * 1000).toLocaleString(window.PortalI18n.locale?.() || window.__PORTAL_LANGUAGE__ || "zh-CN"))} · ${esc(item.kind || "image")}${item.status && item.status !== "done" ? ` · ${esc(item.status)}` : ""}</span>
                     <button class="portalButton is-compact is-quiet" type="button" data-delete-generated-figure="${esc(figureId)}" data-generated-id="${esc(item.generated_id || "")}"><!--portal-i18n:"删除"-->删除</button>
                   </div>
                   ${item.image_url ? window.PortalI18n.html`<img class="figureImage" src="${esc(item.image_url)}" alt="Generated Figure" loading="lazy" data-open-figure-image data-lightbox-figure-id="${esc(figureId)}" data-source-generated-id="${esc(item.generated_id || "")}" data-lightbox-title="${esc(item.generated_id || window.PortalI18n.t("Generated Figure"))}" />` : ""}

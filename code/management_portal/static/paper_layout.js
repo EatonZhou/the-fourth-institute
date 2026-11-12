@@ -21,6 +21,19 @@
     } = dependencies;
 
     let paperWorkbench = null;
+    function rememberMainList() {
+      const summary = state.library?.summary || {};
+      if (!isCollectionMode(state.mode) || summary.semantic_search || summary.paper_collection
+          || state.activeSemanticSearchId || state.activeCollectorJobId) return;
+      state.mainListReturns ||= {};
+      state.mainListReturns[state.leftFace] = {
+        principal: state.principalId, mode: state.mode,
+        scrollTop: state.listScrollTop ?? $("workspaceMain")?.scrollTop ?? 0,
+        selection: {library: state.library, query: state.query, filters: {...state.filters},
+          libraryRenderLimit: state.libraryRenderLimit},
+      };
+    }
+    window.addEventListener("portal:paper-main-list-save", rememberMainList);
 
     function applyPaneCollapse() {
       const leftBtn = $("toggleLibraryPaneBtn");
@@ -83,7 +96,37 @@
       if (state.mode === "reader") renderWorkspace();
     }
 
-    async function setMode(mode) {
+    async function setMode(mode, { fromHistory = false, searchId = "" } = {}) {
+      if (mode === "main-list" || mode === "history-search") {
+        if (!await cancelPdfRendering()) return;
+        const saved = state.mainListReturns?.[state.leftFace];
+        const main = saved?.principal === state.principalId ? saved : null;
+        state.libraryRequestSeq += 1;
+        state.detailRequestSeq += 1;
+        state.selectedId = ""; state.detail = null; state.ccfSelectedPaper = null;
+        state.activeSemanticSearchId = mode === "history-search" ? searchId : "";
+        state.activeCollectorJobId = "";
+        state.semanticSearch?.setActiveId?.(state.activeSemanticSearchId, {notify:false});
+        state.mode = mode === "main-list" ? main?.mode || "library" : "library";
+        if (mode === "main-list" && main) Object.assign(state, main.selection, {filters:{...main.selection.filters}});
+        else {state.query = ""; state.filters = {};}
+        if (mode === "history-search") {
+          state.leftFace = "library";
+          window.dispatchEvent(new CustomEvent('portal:paper-history-open'));
+        }
+        if ($("searchInput")) $("searchInput").value = state.query || "";
+        if (!fromHistory) {
+          const address = new URL(window.location.href);
+          for (const key of ["paper", "semantic", "collector"]) address.searchParams.delete(key);
+          history.pushState(history.state || {}, "", address.href);
+        }
+        syncModeTabs(); writeUiState();
+        if (state.leftFace !== "ccf" && (mode === "history-search" || !main?.selection.library)) {
+          await loadLibrary({keepDetail:false,hydrateDetail:false});
+        } else {state.libraryLoading = false; renderWorkspace();}
+        requestAnimationFrame(() => {if ($("workspaceMain")) $("workspaceMain").scrollTop = mode === "main-list" ? main?.scrollTop || 0 : 0;});
+        return;
+      }
       if (mode === "list-return") {
         if (!await cancelPdfRendering()) return;
         state.mode = state.listReturn?.mode || "library";
@@ -102,6 +145,7 @@
         return;
       }
       const previousMode = state.mode;
+      if (isCollectionMode(previousMode) && !isCollectionMode(mode)) rememberMainList();
       if (isCollectionMode(previousMode) && !isCollectionMode(mode)) {
         state.listReturn = {mode: previousMode, scrollTop: state.listScrollTop ?? $("workspaceMain")?.scrollTop ?? 0,
           selection: {library: state.library, query: state.query, filters: {...state.filters},
@@ -169,7 +213,7 @@
       if ($("registeredFilter")) $("registeredFilter").value = state.mode === "today" || (!list && state.listReturn?.mode === "today") ? "today" : "";
       if ($("modeTabs")) { $("modeTabs").hidden = list; $("modeTabs").style.display = list ? "none" : ""; }
       const back = $("returnToPaperList");
-      if (back) back.hidden = list;
+      if (back) back.hidden = list && !state.activeSemanticSearchId && !state.activeCollectorJobId;
       const isCcf = state.leftFace === "ccf";
       const activeMode = isCcf && !["library", "reader"].includes(state.mode) ? "library" : state.mode;
       document.querySelectorAll("#modeTabs button[data-mode]").forEach(btn => {

@@ -345,6 +345,7 @@
         isDisabled: () => state.leftFace === "ccf",
         confirmRemove: () => window.PortalUI.confirmAction("delete", "这个语义搜索条目"),
         onStart: () => {
+          window.dispatchEvent(new CustomEvent('portal:paper-main-list-save'));
           clearTimeout(state.searchTimer);
           state.searchTimer = null;
           state.query = "";
@@ -355,10 +356,21 @@
           renderCollectorJobs();
           if (isSemanticSearchReady()) loadLibrary({ keepDetail: false }).catch(alertError);
         },
-        onSelect: () => {
+        onSelect: searchId => {
+          window.dispatchEvent(new CustomEvent('portal:paper-main-list-save'));
           state.mode = 'library'; state.leftFace = 'library';
           state.query = ''; state.filters = {}; $('searchInput').value = '';
           window.dispatchEvent(new CustomEvent('portal:paper-history-open'));
+          // Only a user selecting a saved search creates a history entry.
+          // Background catalog notifications must never navigate off a paper.
+          if (searchId) {
+            const address = new URL(window.location.href);
+            if (address.searchParams.get('semantic') !== searchId || address.searchParams.has('paper')) {
+              address.searchParams.delete('paper');
+              address.searchParams.set('semantic', searchId);
+              history.pushState(history.state || {}, '', address.href);
+            }
+          }
         },
         onActiveChange: searchId => {
           state.activeSemanticSearchId = String(searchId || "");

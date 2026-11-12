@@ -140,12 +140,12 @@
         chips.push(chip(window.PortalI18n.t("Semantic search"), "accent"));
         chips.push(chip(window.PortalI18n.text`${summary.visible_count || 0} matches`, "good"));
         chips.push(chip(window.PortalI18n.text`${summary.paper_count || 0} papers in library`));
-        if (semantic.updated_at) chips.push(chip(window.PortalI18n.text`updated ${new Date(semantic.updated_at * 1000).toLocaleString()}`));
+        if (semantic.updated_at) chips.push(chip(window.PortalI18n.text`updated ${new Date(semantic.updated_at * 1000).toLocaleString(window.PortalI18n.locale?.() || window.__PORTAL_LANGUAGE__ || "zh-CN")}`));
       } else if (collection) {
         chips.push(chip(window.PortalI18n.t("Collect"), "accent"));
         chips.push(chip(window.PortalI18n.text`${summary.visible_count || 0} papers`, "good"));
         chips.push(chip(window.PortalI18n.text`${summary.paper_count || 0} papers in library`));
-        if (collection.updated_at) chips.push(chip(window.PortalI18n.text`updated ${new Date(collection.updated_at * 1000).toLocaleString()}`));
+        if (collection.updated_at) chips.push(chip(window.PortalI18n.text`updated ${new Date(collection.updated_at * 1000).toLocaleString(window.PortalI18n.locale?.() || window.__PORTAL_LANGUAGE__ || "zh-CN")}`));
       } else {
         chips.push(chip(window.PortalI18n.text`${summary.visible_count || 0}/${summary.paper_count || 0} papers`));
         chips.push(chip(window.PortalI18n.text`${summary.analysis_count || 0} analyses`, "good"));
