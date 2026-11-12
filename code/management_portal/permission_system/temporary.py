@@ -69,14 +69,16 @@ def delegated_ids(engine: Engine, *, principal: str, owners: Mapping[str, str], 
     if not candidates:
         return set()
     issuers = owners_of(entry.issued_by for entry in candidates)
-    loans = [entry for entry in candidates
-             if (issuers.get(entry.issued_by) or entry.issued_by).casefold() == owners[entry.r].casefold()]
+    loans: dict[str, list[Entry]] = {}
+    for entry in candidates:
+        if (issuers.get(entry.issued_by) or entry.issued_by).casefold() == owners[entry.r].casefold():
+            loans.setdefault(entry.r, []).append(entry)
     denies = [entry for entry in grants.entries if entry.effect == DENY and not entry.disabled]
     a_path = engine.a_path(action)
     # Even in a batch containing both parent and child, a loan for the parent
     # must not open the child. Resource ancestry is still used for deny rows.
-    return {resource for resource in owners
-            if Grants([*(entry for entry in loans if entry.r == resource), *denies], engine.a_path)
+    return {resource for resource, entries in loans.items()
+            if Grants([*entries, *denies], engine.a_path)
             .decide(a_path, paths[resource], now).allowed}
 
 

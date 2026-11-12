@@ -1294,8 +1294,8 @@ def _tick() -> None:
 
 def start_runtime() -> None:
     global _RUNTIME_STARTED, _RUNTIME_STOP, _RUNTIME_THREAD
-    # Each installation owns its database and jobs. A release label no longer
-    # denotes the read-only half of the deleted shared-database Dev/Release pair.
+    # Keep one maintenance thread per Web process. WALL owns durable job state;
+    # the deployment label does not disable this process-local lifecycle hook.
     with _RUNTIME_LOCK:
         if _RUNTIME_STARTED:
             return

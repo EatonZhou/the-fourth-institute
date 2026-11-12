@@ -193,9 +193,14 @@ def live_cases_path(root: Path) -> Path:
     return root / "tests" / "cases" / "live_cases.json"
 
 
+def _catalog_inputs(root: Path) -> tuple[list[Path], list[Path], list[Path]]:
+    sources, explicit = source_paths(root), explicit_paths(root)
+    return sources, explicit, [*sources, *explicit, case_ids_path(root), live_cases_path(root)]
+
+
 def catalog_paths(root: Path) -> list[Path]:
     """Every file the catalog is built from, for change tracking."""
-    return [*source_paths(root), *explicit_paths(root), case_ids_path(root), live_cases_path(root)]
+    return _catalog_inputs(root)[2]
 
 
 def humanized(name: str) -> str:
@@ -305,8 +310,12 @@ def _read_json(path: Path, schema: str | None = None) -> dict[str, Any]:
 
 
 def explicit_cases(root: Path) -> list[dict[str, Any]]:
+    return _explicit_cases(explicit_paths(root))
+
+
+def _explicit_cases(paths: list[Path]) -> list[dict[str, Any]]:
     cases: list[dict[str, Any]] = []
-    for path in explicit_paths(root):
+    for path in paths:
         raw = json.loads(path.read_text(encoding="utf-8"))
         if not isinstance(raw, dict) or not isinstance(raw.get("cases"), list):
             raise CatalogError(f"{path}：显式目录必须包含 cases 数组")
@@ -368,28 +377,29 @@ def effective_case_ids(pins: dict[str, str], entrypoints: set[str]) -> tuple[dic
     unpinned: dict[tuple[str, str], list[str]] = {}
     for entry in entrypoints - current.keys():
         unpinned.setdefault(place(entry), []).append(entry)
-    followed = {}
-    for entry, case_id in orphans.items():
-        candidates = unpinned.get(place(entry), [])
-        if len(candidates) == 1 and sum(place(other) == place(entry) for other in orphans) == 1:
-            followed[entry] = candidates[0]
-            current[candidates[0]] = case_id
-    return current, {entry: case_id for entry, case_id in orphans.items() if entry not in followed}
+    old_places: dict[tuple[str, str], list[str]] = {}
+    for entry in orphans:
+        old_places.setdefault(place(entry), []).append(entry)
+    for location, old_entries in old_places.items():
+        candidates = unpinned.get(location, [])
+        if len(candidates) == 1 and len(old_entries) == 1:
+            current[candidates[0]] = orphans.pop(old_entries[0])
+    return current, orphans
 
 
 def build_catalog(root: Path) -> Catalog:
     """The catalog of the sources under ``root``; reused until a source changes."""
     root = root.resolve()
-    paths = catalog_paths(root)
+    sources, explicit_paths_snapshot, paths = _catalog_inputs(root)
     revision = tuple((str(path), _stat(path)) for path in paths)
     with _LOCK:
         cached = _BUILDS.get(root)
         if cached and cached[0] == revision:
             return cached[1]
-        files = [_parsed(path, root) for path in source_paths(root)]
+        files = [_parsed(path, root) for path in sources]
     catalog = Catalog(revision=revision)
     try:
-        explicit = explicit_cases(root)
+        explicit = _explicit_cases(explicit_paths_snapshot)
     except (CatalogError, ValueError, OSError) as exc:
         explicit = []
         catalog.errors.append({"resource_id": "explicit", "error": str(exc)[:1000]})

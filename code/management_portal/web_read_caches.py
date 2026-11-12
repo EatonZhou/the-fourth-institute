@@ -186,24 +186,27 @@ class _CoalescingReadCache:
                 return cold_value
             return refresh.result(timeout=timeout)
 
-        if stale is not missing:
-            threading.Thread(
-                target=self._refresh,
-                args=(key, builder, refresh, generation),
-                kwargs={"stale": stale, "has_stale": True, "stale_error_transform": stale_error_transform},
-                name="portal-read-cache-refresh",
-                daemon=True,
-            ).start()
-            return stale_transform(stale) if stale_transform else stale
-        if cold_value is not _NO_COLD_READ_VALUE:
-            threading.Thread(
-                target=self._refresh,
-                args=(key, builder, refresh, generation),
-                kwargs={"stale": cold_value, "has_stale": True},
-                name="portal-read-cache-cold-refresh",
-                daemon=True,
-            ).start()
-            return cold_value
+        if stale is not missing or cold_value is not _NO_COLD_READ_VALUE:
+            has_snapshot = stale is not missing
+            previous = stale if has_snapshot else cold_value
+            try:
+                threading.Thread(
+                    target=self._refresh,
+                    args=(key, builder, refresh, generation),
+                    kwargs={"stale": previous, "has_stale": True,
+                            "stale_error_transform": stale_error_transform if has_snapshot else None},
+                    name="portal-read-cache-refresh" if has_snapshot else "portal-read-cache-cold-refresh",
+                    daemon=True,
+                ).start()
+            except RuntimeError:
+                # No worker owns this future. Release joiners and let the next
+                # read retry admission without running slow IO in this caller.
+                with self._lock:
+                    if self._inflight.get(key) is refresh:
+                        self._inflight.pop(key, None)
+                refresh.set_result(previous)
+                LOGGER.warning("Portal read cache refresh thread unavailable; refresh admission released")
+            return stale_transform(previous) if has_snapshot and stale_transform else previous
         return self._refresh(
             key,
             builder,

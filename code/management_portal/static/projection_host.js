@@ -17,7 +17,20 @@
       event.preventDefault(); event.returnValue = "";
     }
   });
-  let sdkPromise, statePromise;
+  // Public shell assets are shared across panels. Keep successful/in-flight
+  // reads, but a transient failure must not poison every later mount.
+  const sharedSources = new Map();
+  let stylesPromise;
+  function sharedSource(name, message) {
+    if (!sharedSources.has(name)) {
+      const loading = fetch(`/static/${name}`).then(response => {
+        if (!response.ok) throw new Error(message);
+        return response.text();
+      }).catch(error => { sharedSources.delete(name); throw error; });
+      sharedSources.set(name, loading);
+    }
+    return sharedSources.get(name);
+  }
   const request = (...args) => window.PortalProjections.request(...args);
   function failure(error) {
     const value = { error: error.message, code: error.code || "projection.request_failed" };
@@ -70,7 +83,6 @@
       dialog.showModal();
     });
   }
-  let stylesPromise;
   function confirmExternal(link, signal) {
     if (signal.aborted) return Promise.resolve(false);
     return new Promise(resolve => {
@@ -207,8 +219,9 @@
     }
   }
   function setObservationVisibility(record, visible) {
+    if (record.visible !== visible) record.visibilityRevision += 1;
     record.visible = visible;
-    if (!visible) { record.pendingExternal?.abort(); cancelFeedback(record, "反馈功能区已隐藏，请返回并重新检查后发送"); invalidateObservation(record); }
+    if (!visible) { record.pendingOperation?.abort(); record.pendingExternal?.abort(); cancelFeedback(record, "反馈功能区已隐藏，请返回并重新检查后发送"); invalidateObservation(record); }
     post(record, "visibility", { visible });
     if (visible) void observe(record);
   }
@@ -337,17 +350,14 @@
     // Request the entry document before the shared SDK, state and style sheets: the style sheets
     // take several requests, and over HTTP/1.1 a browser runs only a few at once per origin.
     const documentPromise = assets ? applicationDocument(assets) : new DOMParser().parseFromString(app.html, "text/html");
-    if (!sdkPromise) sdkPromise = fetch("/static/projection_sdk.js").then(response => { if (!response.ok) throw new Error("工作台 SDK 加载失败"); return response.text(); });
-    if (!statePromise) statePromise = fetch("/static/portal_state.js").then(response => { if (!response.ok) throw new Error("Portal 状态组件加载失败"); return response.text(); });
+    const sdkPromise = sharedSource("projection_sdk.js", "工作台 SDK 加载失败");
+    const statePromise = sharedSource("portal_state.js", "Portal 状态组件加载失败");
     if (!stylesPromise) stylesPromise = Promise.all(["portal_components.css", "portal_components_markdown.css",
       "portal_components_chat_frame.css", "portal_components_messages.css", "portal_components_composer.css",
       "portal_components_queue.css", "portal_components_resource_chips.css", "portal_components_agent_inbox.css",
       "portal_components_turn_cards.css", "portal_components_conversation.css", "portal_design_system.css",
-      "portal_workbench.css"].map(async name => {
-      const response = await fetch(`/static/${name}`);
-      if (!response.ok) throw new Error("Portal 基础模板加载失败");
-      return response.text();
-    })).then(styles => styles.join("\n"));
+      "portal_workbench.css"].map(name => sharedSource(name, "Portal 基础模板加载失败"))).then(styles => styles.join("\n"))
+      .catch(error => { stylesPromise = null; throw error; });
     const [sdk, state, sharedCss, documentSource] = await Promise.all([sdkPromise, statePromise, stylesPromise, documentPromise]);
     // A destroyed panel must never inject its late document or register a channel.
     if (options.isCurrent && !options.isCurrent()) throw fail("cancelled", "功能区已关闭");
@@ -372,7 +382,7 @@
     bootstrap.dataset.icons = JSON.stringify({ icons: window.PortalUIPrimitives.ICONS, aliases: window.PortalUIPrimitives.ICON_ALIASES });
     bootstrap.textContent = sdk;
     documentSource.head.prepend(policy, shared, theme, ...stateBootstrap(documentSource, state), bootstrap);
-    const record = { app, frame, channel, assets, panelId: options.panelId, page: options.page, preview: !!options.preview, panelVisible: options.visible !== false, visible: options.visible !== false && options.page?.visible !== false, busy: false, destroyed: false, refs: [] };
+    const record = { app, frame, channel, assets, panelId: options.panelId, page: options.page, preview: !!options.preview, panelVisible: options.visible !== false, visible: options.visible !== false && options.page?.visible !== false, visibilityRevision: 0, busy: false, destroyed: false, refs: [] };
     active.set(channel, record);
     let surface = frame;
     if (assets) {
@@ -399,7 +409,7 @@
     frame.addEventListener("load", () => post(record, "visibility", { visible: record.visible }));
     return {
       setVisible(visible) { record.panelVisible = visible; setObservationVisibility(record, visible && record.page?.visible !== false); },
-      destroy() { record.pendingExternal?.abort(); cancelFeedback(record, "反馈功能区已关闭，请重新打开后发送"); record.destroyed = true; invalidateObservation(record); active.delete(channel); surface.remove(); },
+      destroy() { record.pendingOperation?.abort(); record.pendingExternal?.abort(); cancelFeedback(record, "反馈功能区已关闭，请重新打开后发送"); record.destroyed = true; invalidateObservation(record); active.delete(channel); surface.remove(); },
     };
   }
   function createContentPanel({ root, app, projectionId, preview, panelId, page, source, regionTitle }) {
@@ -899,26 +909,29 @@
         reply.result = message.method === "libraries" ? await record.assets.libraries() : await record.assets.library(payload.name);
       }
       else if (message.method === "hatg") {
+        const visibilityRevision = record.visibilityRevision;
         const operation = { ...payload, id: app.workbench_id, preview: record.preview, confirmed: false };
         operation.object = record.page?.current();
         if (operation.object?.status === "simulated") throw fail("simulated", "模拟演示不能触发真实指令");
         try { reply.result = await request("isa", operation); }
         catch (error) {
           if (error.code !== "projection.confirmation_required") throw error;
+          if (record.destroyed || !record.visible || record.visibilityRevision !== visibilityRevision) throw fail("cancelled", "操作已取消");
           if (record.busy) throw new Error("已有操作等待确认，请完成后重试");
+          const controller = record.pendingOperation = new AbortController();
           record.busy = true;
           try {
             // The SDK's response budget covers host work, not the user's
             // time reviewing an explicit approval. Keep the same request.
             frame.contentWindow.postMessage({ type: "portal-projection-confirmation", channel: message.channel, requestId: message.requestId, phase: "pending" }, "*");
             let accepted;
-            try { accepted = await confirmOperation(operation); }
+            try { accepted = await confirmOperation(operation, controller.signal); }
             finally {
               if (!record.destroyed) frame.contentWindow.postMessage({ type: "portal-projection-confirmation", channel: message.channel, requestId: message.requestId, phase: "resolved" }, "*");
             }
-            if (!accepted || record.destroyed) throw Object.assign(new Error("操作已取消"), { code: "projection.cancelled" });
+            if (!accepted || controller.signal.aborted || record.destroyed || !record.visible) throw fail("cancelled", "操作已取消");
             reply.result = await request("isa", { ...operation, confirmed: true, idempotency_key: operation.idempotency_key || globalThis.PortalUIPrimitives.randomUUID() });
-          } finally { record.busy = false; }
+          } finally { record.pendingOperation = null; record.busy = false; }
         }
       } else if (message.method === "open-lineage") {
         const binding = app.bindings[payload.binding || "main"];

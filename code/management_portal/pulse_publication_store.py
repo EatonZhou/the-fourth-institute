@@ -47,6 +47,27 @@ def items(connection) -> list[dict]:
     return [decode_times(row, ('published_at',)) for row in rows]
 
 
+def latest_items(connection, limit: int = 30) -> list[dict]:
+    rows = connection.execute(
+        f'SELECT {",".join(FIELDS)} FROM publications ORDER BY published_at DESC, publication_id LIMIT %s',
+        (limit,),
+    )
+    return [decode_times(row, ('published_at',)) for row in rows]
+
+
+def source_items(connection, owner: str, sources: list[tuple[str, str]]) -> list[dict]:
+    """Current summary badges must include publications older than the public page."""
+    if not sources:
+        return []
+    periods, keys = zip(*sources)
+    rows = connection.execute(
+        f'SELECT {",".join(FIELDS)} FROM publications WHERE owner=%s '
+        'AND (source_period,source_key) IN (SELECT * FROM unnest(%s::text[],%s::text[])) '
+        'ORDER BY published_at, publication_id', (owner, list(periods), list(keys)),
+    )
+    return [decode_times(row, ('published_at',)) for row in rows]
+
+
 def add(connection, item: dict) -> None:
     """Insert one publication; an existing publication_id is kept as it is."""
     item = encode_times(item, ('published_at',))

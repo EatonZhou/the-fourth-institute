@@ -45,6 +45,7 @@ let noticeBoardShowFolded = false;
 let noticeBoardCategoryFilter = "all";
 let noticeBoardDetailRequest = 0;
 let noticeBoardRefresh = null;
+let noticeBoardActive = false;
 let noticeBoardHtml = "";
 const noticeBoardDetailDialog = window.PortalUI.createDialogController({
   modal: "noticeBoardDetailOverlay",
@@ -228,16 +229,18 @@ function renderNoticeBoard(data) {
 }
 
 async function loadNoticeBoard() {
-  if (!noticeBoardRoot) return;
+  if (!noticeBoardRoot || !noticeBoardActive) return;
+  const coordinator = ensureNoticeBoardRefresh();
   try {
-    const coordinator = ensureNoticeBoardRefresh();
     coordinator.start();
     await coordinator.refresh({ force: true });
+    if (!noticeBoardActive || coordinator !== noticeBoardRefresh) return;
     if (requestedNoticePost && !requestedNoticePostOpened) {
       requestedNoticePostOpened = true;
       openNoticeBoardPost(requestedNoticePost);
     }
   } catch (err) {
+    if (!noticeBoardActive || coordinator !== noticeBoardRefresh) return;
     noticeBoardHtml = "";
     noticeBoardRoot.innerHTML = window.PortalI18n.html`
       <div class="notice-board-panel">
@@ -255,7 +258,7 @@ function ensureNoticeBoardRefresh() {
     interval: 60000,
     initialDelay: 60000,
     repairInterval: 60000,
-    fetch: () => noticeBoardInstruction("ListPosts"),
+    fetch: ({ signal }) => noticeBoardInstruction("ListPosts", {}, { signal }),
     apply: renderNoticeBoard,
     subscribe: window.PortalRefreshCoordinator.portalSubscription({
       domains: ["projection"],
@@ -311,11 +314,12 @@ function renderNoticeBoardPost(payload) {
 }
 
 // Notice board reads and changes are HATG ISA instructions.
-function noticeBoardInstruction(name, args = {}) {
+function noticeBoardInstruction(name, args = {}, options = {}) {
   const mutates = !["ListPosts", "GetPost"].includes(name);
-  return window.PortalInstructionClient.execute(name, args, mutates
-    ? { idempotencyKey: `notice:${name}:${globalThis.PortalUIPrimitives.randomUUID()}` }
-    : {});
+  return window.PortalInstructionClient.execute(name, args, {
+    ...options,
+    ...(mutates ? { idempotencyKey: `notice:${name}:${globalThis.PortalUIPrimitives.randomUUID()}` } : {}),
+  });
 }
 
 function applyNoticeBoardReadState(postId, readResult) {
@@ -333,6 +337,7 @@ function applyNoticeBoardReadState(postId, readResult) {
 }
 
 async function openNoticeBoardPost(postId) {
+  if (!noticeBoardActive) return;
   const cleanPostId = String(postId || "").trim();
   if (!cleanPostId) return;
   const requestId = ++noticeBoardDetailRequest;
@@ -861,7 +866,20 @@ function listen(target, type, listener, signal) {
   target?.addEventListener?.(type, listener, { signal });
 }
 
-function connectNoticeBoard({ signal, context }) {
+function connectNoticeBoard({ root, signal, context }) {
+  let ready = false;
+  noticeBoardActive = true;
+  listen(root, "portal:home-panel-lifecycle", event => {
+    if (event.detail?.phase === "show") {
+      if (noticeBoardActive) return;
+      noticeBoardActive = true;
+      if (ready) void loadNoticeBoard();
+    } else if (["hide", "disconnect", "destroy"].includes(event.detail?.phase)) {
+      noticeBoardActive = false;
+      noticeBoardRefresh?.destroy();
+      noticeBoardRefresh = null;
+    }
+  }, signal);
   listen(noticeBoardRoot, "click", handleNoticeBoardRootClick, signal);
   listen(noticeBoardDetailBody, "click", handleNoticeBoardDetailClick, signal);
   listen(document.getElementById("noticeBoardDetailClose"), "click", () => noticeBoardDetailDialog.close(), signal);
@@ -875,9 +893,16 @@ function connectNoticeBoard({ signal, context }) {
   listen(noticeBoardDeletePostBtn, "click", deleteNoticeBoardPost, signal);
   context.currentUserReady.then(({ username }) => {
     portalUsername = username || "anonymous";
+    ready = true;
     if (!signal.aborted) loadNoticeBoard();
   });
   return () => {
+    noticeBoardActive = false;
+    noticeBoardDetailRequest += 1;
+    noticeBoardDetailDialog.close();
+    noticeBoardComposeDialog.close();
+    noticeBoardComposeAttachments.clear();
+    noticeBoardReplyAttachments.clear();
     noticeBoardRefresh?.destroy();
     noticeBoardRefresh = null;
   };

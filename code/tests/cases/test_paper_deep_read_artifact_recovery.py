@@ -1,6 +1,7 @@
-"""
+"""Deep-read artifact recovery preserves the original caller's authorization.
+
 :importance: P1
-:aspects: functional, permissions, recovery
+:aspects: functional
 """
 from contextlib import nullcontext
 from copy import deepcopy

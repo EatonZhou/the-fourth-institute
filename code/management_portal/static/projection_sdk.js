@@ -63,7 +63,19 @@
     }
     return loadedLibraries.get(name);
   }
-  addEventListener("pagehide", () => { disposed = true; for (const worker of workers) worker.terminate(); });
+  addEventListener("pagehide", event => {
+    // A bfcache page retains its document and workers. Only final teardown
+    // closes the SDK; otherwise restoring the page would leave a dead bridge.
+    if (event.persisted || disposed) return;
+    disposed = true;
+    for (const worker of workers) worker.terminate();
+    for (const entry of pending.values()) {
+      clearTimeout(entry.timeout);
+      entry.reject(Object.assign(new Error("功能区已卸载；在途操作结果待核实，请勿重复提交"), { code: "projection.disposed" }));
+    }
+    pending.clear(); loadedLibraries.clear();
+    focusListeners.clear(); changeListeners.clear(); visibilityListeners.clear();
+  });
   let requestSequence = 0;
   const focusListeners = new Set(), changeListeners = new Set(), visibilityListeners = new Set();
   let focusRevision = -1, watchRevision = 0, activeWatchRevision = 0;
@@ -79,6 +91,7 @@
     // unique within that channel, including on sandboxed HTTP documents.
     const requestId = String(++requestSequence);
     return new Promise((resolve, reject) => {
+      requireActive();
       const entry = { resolve, reject, remainingMs: 270000, awaitingConfirmation: false };
       pending.set(requestId, entry);
       armTimeout(requestId, entry);
@@ -86,6 +99,7 @@
     });
   }
   addEventListener("message", event => {
+    if (disposed) return;
     const message = event.data;
     if (event.source === host && message?.type === "portal-projection-theme" && message.channel === channel) {
       const theme = document.getElementById("portalProjectionTheme");
@@ -174,8 +188,10 @@
     openExternal: name => call("open-external", { name }),
     focus: object => call("focus", { object }),
     onFocus(fn) {
+      requireActive();
       focusListeners.add(fn);
-      call("focus-read").then(value => { if (value && focusListeners.has(fn) && value.revision >= focusRevision) { focusRevision = value.revision; fn(value.object, { revision: value.revision }); } });
+      call("focus-read").then(value => { if (value && focusListeners.has(fn) && value.revision >= focusRevision) { focusRevision = value.revision; fn(value.object, { revision: value.revision }); } })
+        .catch(error => { if (!disposed) console.error("Projection focus subscription failed", error); });
       return () => focusListeners.delete(fn);
     },
     feedback: value => call("feedback", value),
@@ -183,6 +199,7 @@
     async watch(refs, fn) {
       const revision = ++watchRevision;
       await call("watch", { refs });
+      requireActive();
       if (revision > activeWatchRevision) {
         activeWatchRevision = revision;
         changeListeners.clear();
@@ -202,8 +219,10 @@
       };
     },
     onVisibility(fn) {
+      requireActive();
       visibilityListeners.add(fn);
-      call("context").then(value => { if (visibilityListeners.has(fn)) fn(value.visible); });
+      call("context").then(value => { if (visibilityListeners.has(fn)) fn(value.visible); })
+        .catch(error => { if (!disposed) console.error("Projection visibility subscription failed", error); });
       return () => visibilityListeners.delete(fn);
     },
     hatg,

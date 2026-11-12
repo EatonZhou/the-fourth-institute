@@ -1,7 +1,7 @@
 """Production task references retain authorization and immutable-byte checks.
 
 :importance: P1
-:aspects: functional, permissions, performance
+:aspects: functional, performance
 """
 from pathlib import Path
 from types import SimpleNamespace

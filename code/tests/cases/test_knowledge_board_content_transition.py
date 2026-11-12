@@ -1,6 +1,6 @@
 """Knowledge paging replaces content without collapsing the document.
 
-:module: resources.knowledge
+:module: workflow.knowledge
 :importance: P1
 """
 from pathlib import Path

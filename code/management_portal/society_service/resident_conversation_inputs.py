@@ -480,15 +480,16 @@ class ConversationInputs:
                 missing[resident].append(message)
         # A context reset hides old replies from Chat, but a finished Family
         # round still names its retained ending in the member's trace.
-        retained = {resident: self.agent_data.trace_chat_messages(resident, ids)
-                    for resident, ids in missing.items() if ids}
+        wanted = list(dict.fromkeys((resident, identity)
+                                    for resident, ids in missing.items() for identity in ids))
+        retained = self.agent_data.chat.trace_chat_messages_many(wanted) if wanted else {}
         result = {}
         for key in requested:
             resident, message = key
             outputs = list(replies.get(resident, {}).get(message, []))
             shown = {item["message_id"] for item in outputs}
-            outputs.extend(retained[resident][identity] for identity in final_ids[key][:limit]
-                           if identity not in shown and identity in retained.get(resident, {}))
+            outputs.extend(retained[(resident, identity)] for identity in final_ids[key][:limit]
+                           if identity not in shown and (resident, identity) in retained)
             if _display_blocks:
                 outputs = [item for item in outputs
                            if (item.get("conversation_context", {}).get("request_message_id")
@@ -496,7 +497,7 @@ class ConversationInputs:
             result[key] = {"input_state": states.get(key, {}),
                            "replies": [message_from_storage(item) for item in outputs]}
             if (states.get(key, {}).get("state") == "cancelled"
-                    and message not in retained.get(resident, {}) and not outputs):
+                    and (resident, message) not in retained and not outputs):
                 result[key]["withdrawn"] = True
         return result
 

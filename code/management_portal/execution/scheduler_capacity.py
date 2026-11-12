@@ -4,6 +4,7 @@ from __future__ import annotations
 import random
 import threading
 import time
+from dataclasses import dataclass
 from typing import Any
 
 from management_common.database_time import epoch_seconds, instant, iso_time
@@ -48,6 +49,31 @@ def capacity_settings(connection) -> dict[str, dict[str, Any]]:
     return {str(row["capacity_key"]): dict(row) for row in connection.execute(
         "SELECT * FROM capacity_settings"
     ).fetchall()}
+
+
+def _interval_range(setting, capacity_key, default):
+    if capacity_key.startswith(SESSION_CONTROL_CAPACITY_PREFIX):
+        return (0.0, 0.0)
+    if setting and setting["dispatch_interval_min_seconds"] is not None and setting["dispatch_interval_max_seconds"] is not None:
+        return (float(setting["dispatch_interval_min_seconds"]), float(setting["dispatch_interval_max_seconds"]))
+    return default
+
+
+@dataclass(frozen=True)
+class CapacityConfiguration:
+    """One read's settings and defaults, without a cross-request cache."""
+
+    settings: dict[str, dict[str, Any]]
+    defaults: dict[str, int]
+    default_limit: int
+    default_interval: tuple[float, float]
+
+    def limit(self, capacity_key: str) -> int:
+        setting = self.settings.get(capacity_key)
+        return int(setting["limit_value"]) if setting else self.defaults.get(capacity_key, self.default_limit)
+
+    def interval_range(self, capacity_key: str) -> tuple[float, float]:
+        return _interval_range(self.settings.get(capacity_key), capacity_key, self.default_interval)
 
 
 def capacity_dispatch_state(
@@ -246,13 +272,20 @@ class SchedulerCapacity:
         settings = capacity_settings(connection).get(capacity_key)
         return int(settings["limit_value"]) if settings else self.default_capacity_limits.get(capacity_key, self.max_concurrency)
 
+    def configuration(self, connection) -> CapacityConfiguration:
+        return CapacityConfiguration(
+            settings=capacity_settings(connection), defaults=self.default_capacity_limits,
+            default_limit=self.max_concurrency,
+            default_interval=(self.dispatch_interval_min_seconds, self.dispatch_interval_max_seconds),
+        )
+
     def dispatch_interval_range(self, connection, capacity_key: str) -> tuple[float, float]:
         if capacity_key.startswith(SESSION_CONTROL_CAPACITY_PREFIX):
             return (0.0, 0.0)
-        settings = capacity_settings(connection).get(capacity_key)
-        if settings and settings["dispatch_interval_min_seconds"] is not None and settings["dispatch_interval_max_seconds"] is not None:
-            return (float(settings["dispatch_interval_min_seconds"]), float(settings["dispatch_interval_max_seconds"]))
-        return (self.dispatch_interval_min_seconds, self.dispatch_interval_max_seconds)
+        return _interval_range(
+            capacity_settings(connection).get(capacity_key), capacity_key,
+            (self.dispatch_interval_min_seconds, self.dispatch_interval_max_seconds),
+        )
 
     def next_dispatch_interval_seconds(self, connection, capacity_key: str) -> float:
         lower, upper = self.dispatch_interval_range(connection, capacity_key)

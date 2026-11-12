@@ -4,30 +4,30 @@ type: decision
 project: AI员工
 created_at: '2026-09-03'
 version:
-  number: 18
-  created_at: '2026-09-03'
+  number: 19
+  created_at: "2026-09-03"
   created_by:
-    user: ''
-    agent: ''
-  updated_at: '2026-10-27T12:47:23Z'
+    user: ""
+    agent: ""
+  updated_at: "2026-11-12T12:27:40Z"
   updated_by:
-    user: ''
-    agent: resident_73cb83291316
+    user: ""
+    agent: "resident_6199a7a36480"
 importance: 10
 metaness: 3
 ai_generated: true
 links:
   source:
-  - ${code_root}/management_portal/hatg/catalog/user.py
-  - ${code_root}/management_portal/http_paper.py
-  - ${code_root}/management_portal/http_resources.py
-  - ${code_root}/management_common/operation_errors.py
-  - ${code_root}/management_portal/http_errors.py
-  - ${code_root}/management_portal/http_routes.py
-  - ${code_root}/management_portal/asgi.py
-  - ${code_root}/management_portal/serve_management_portal.py
-  - ${code_root}/management_portal/resources/service.py
-  - ${code_root}/tests/cases/test_management_portal_resilience.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/hatg/catalog/user.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/http_paper.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/http_resources.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_common/operation_errors.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/http_errors.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/http_routes.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/asgi.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/serve_management_portal.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/resources/service.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_management_portal_resilience.py
   related:
   - decision_34158fdd4078
   - decision_3bce8b455a3c
@@ -208,3 +208,7 @@ Portal Web 把资源地址和已认证的当前用户交给 ResourceService 的 
 ExecutionService 连接不可用通过领域错误返回 HTTP 503，错误码为 `execution.unavailable`。提交状态保持 `unknown`，不据连接失败宣称整个上层操作未提交，也不自动重试写操作。请求已发出但响应丢失时，继续保留结果未知语义。
 
 Chat 的 Skill 与 Agent 上下文选项由 `GET /api/agent-context-options` 提供；`GET /api/users` 从用户身份模块读取登录账号与目录用户。它们是 Portal 公共入口。
+
+## 读取投影的故障边界
+
+Web 的读取缓存合并同一调用者、同一查询的并发刷新，不承担业务状态或权限真值。刷新准入和结果完成必须成对结束：后台线程无法启动时，释放本次刷新登记并结束等待者，保留既有旧值或加载态策略，让下一次读取能够重新准入；不得留下没有执行者的永久刷新记录，也不在请求线程中临时执行慢速查询作为旁路。失效、当前调用者隔离及并发替换仍由同一缓存 owner 维护。

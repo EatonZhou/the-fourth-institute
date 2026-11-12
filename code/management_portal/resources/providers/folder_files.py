@@ -9,6 +9,7 @@ the directory's direct children.
 """
 from __future__ import annotations
 
+import heapq
 import json
 import os
 import stat
@@ -109,31 +110,42 @@ def metadata(info: os.stat_result, name: str) -> dict[str, Any]:
 def _listing(fd: int, root_id: str, parts: tuple[str, ...]) -> dict[str, Any]:
     from ..file_references import file_reference_for, portable_parts
 
-    infos = {}
-    with secure_paths.scandir(fd) as entries:
-        for entry in entries:
-            try:
-                infos[entry.name] = entry.stat(follow_symlinks=False)
-            except FileNotFoundError:
-                continue
-    ordered = sorted(infos, key=lambda name: (not stat.S_ISDIR(infos[name].st_mode), name.casefold()))
-    visible = []
-    for name in ordered:
-        try:
-            portable_parts("/".join((*parts, name)))
-        except ValueError:
-            continue
-        if not hidden((*parts, name)):
-            visible.append(name)
+    visible_count = hidden_count = 0
+
+    def candidates():
+        nonlocal visible_count, hidden_count
+        with secure_paths.scandir(fd) as items:
+            for entry in items:
+                try:
+                    info = entry.stat(follow_symlinks=False)
+                except FileNotFoundError:
+                    continue
+                try:
+                    portable_parts("/".join((*parts, entry.name)))
+                except ValueError:
+                    hidden_count += 1
+                    continue
+                if hidden((*parts, entry.name)):
+                    hidden_count += 1
+                    continue
+                visible_count += 1
+                yield entry.name, info
+
+    # Exact counts still require walking the directory, but only the returned
+    # page's metadata needs to be retained and sorted.
+    selected = heapq.nsmallest(
+        MAX_DIRECTORY_ENTRIES, candidates(),
+        key=lambda item: (not stat.S_ISDIR(item[1].st_mode), item[0].casefold()),
+    )
     entries = []
-    for name in visible[:MAX_DIRECTORY_ENTRIES]:
+    for name, info in selected:
         relative = "/".join((*parts, name))
         reference = file_reference_for(root_id, relative)
         address = f"{root_id}/file/{relative.replace('%', '%25')}"
-        entries.append({**metadata(infos[name], name), "path": relative, "address": address,
+        entries.append({**metadata(info, name), "path": relative, "address": address,
                         **({"file_reference": reference} if reference else {})})
-    return {"entries": entries, "truncated": len(visible) > MAX_DIRECTORY_ENTRIES,
-            "hidden_count": len(ordered) - len(visible)}
+    return {"entries": entries, "truncated": visible_count > MAX_DIRECTORY_ENTRIES,
+            "hidden_count": hidden_count}
 
 
 def read_content(resolved: dict[str, Any], root: PurePath, *, max_bytes: int = 4 * 1024 * 1024):

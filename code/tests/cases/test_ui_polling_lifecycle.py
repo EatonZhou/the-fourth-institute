@@ -1,6 +1,6 @@
 """Management instances and Mailbox Todo background read lifetimes.
 
-:module: interface.shell
+:module: workbench.shell
 :importance: P1
 """
 from pathlib import Path

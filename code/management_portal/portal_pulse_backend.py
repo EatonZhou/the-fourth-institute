@@ -207,8 +207,7 @@ def _published_items(publications: dict, limit: int = 30) -> list[dict]:
     return items[:limit]
 
 
-def _load_latest_summaries() -> dict[str, dict]:
-    index = _read_index()
+def _load_latest_summaries(index: dict) -> dict[str, dict]:
     latest = index.get("latest") if isinstance(index.get("latest"), dict) else {}
     out: dict[str, dict] = {}
     for period in PERIODS:
@@ -230,16 +229,21 @@ def get_home_payload(actor: str) -> dict:
             "publications": [],
             "status": {},
         }
-    publications = _read_publications()
-    summaries = _load_latest_summaries()
+    index = _read_index()
+    summaries = _load_latest_summaries(index)
+    with pulse_publication_store.database().read() as connection:
+        publications = {"items": pulse_publication_store.latest_items(connection)}
+        own_publications = {"items": pulse_publication_store.source_items(connection, actor_id, [
+            (str(summary.get("period") or ""), str(summary.get("key") or ""))
+            for summary in summaries.values() if summary
+        ])}
     periods = {}
     for period, summary in summaries.items():
         periods[period] = {
             "public": _public_summary(summary) if summary else {},
-            "mine": _private_summary(summary, actor_id, publications) if summary else {"summary": "", "items": []},
+            "mine": _private_summary(summary, actor_id, own_publications) if summary else {"summary": "", "items": []},
         }
     # The Pulse Resident publishes through index.json; it is the status.
-    index = _read_index()
     status = {
         "latest": index.get("latest") if isinstance(index.get("latest"), dict) else {},
         "updated_at": str(index.get("updated_at") or ""),

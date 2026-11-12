@@ -26,12 +26,16 @@ export async function start(mount, region) {
   };
   const dispose = () => {
     if (abort.signal.aborted) return;
+    removeEventListener('pagehide', onPageHide);
     abort.abort();
     finishWaiting?.();
     for (const fn of disposers.splice(0).reverse()) fn();
     runtime?.destroy?.();
   };
-  addEventListener('pagehide', dispose, { once: true });
+  // BFcache keeps this instance, its draft and pending mount alive. A
+  // persisted pagehide must also retain the listener for the final exit.
+  const onPageHide = event => { if (!event.persisted) dispose(); };
+  addEventListener('pagehide', onPageHide);
   try {
     const context = Object.freeze({
       region, sdk, signal: abort.signal, resources: createResources(sdk, { signal: abort.signal }), onDispose,

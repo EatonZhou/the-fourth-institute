@@ -49,8 +49,9 @@ def test_every_caller_reads_the_public_pulse_and_only_their_own_items(monkeypatc
     """每个调用者都能读到公共 Pulse，私人摘要只含自己的条目，负载不带可见性设置"""
     # Who may call GetPulse at all is the permission system's decision; the payload
     # itself keeps no user list or public switch.
-    monkeypatch.setattr(pulse, '_read_publications', lambda: [{'publication_id': 'public-1'}])
-    monkeypatch.setattr(pulse, '_load_latest_summaries', lambda: {'daily': {'id': 'daily-1'}})
+    monkeypatch.setattr(pulse.pulse_publication_store, 'latest_items', lambda connection: [{'publication_id': 'public-1'}])
+    monkeypatch.setattr(pulse.pulse_publication_store, 'source_items', lambda connection, actor, sources: [])
+    monkeypatch.setattr(pulse, '_load_latest_summaries', lambda index: {'daily': {'id': 'daily-1'}})
     monkeypatch.setattr(pulse, '_public_summary', lambda summary: {'global_summary': 'public'})
     monkeypatch.setattr(pulse, '_private_summary', lambda summary, actor, publications: {'summary': f'private for {actor}', 'items': []})
     monkeypatch.setattr(pulse, '_published_items', lambda publications: [{'publication_id': 'public-1'}])

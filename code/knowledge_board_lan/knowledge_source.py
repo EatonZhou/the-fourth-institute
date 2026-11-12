@@ -893,19 +893,15 @@ def scan_index_source(active_only: bool = False) -> dict:
 
 
 def _read_file_text(abs_path: str, max_bytes: int = 2_000_000) -> str:
+    """Read a byte-bounded prefix, even if the source grows while it is opened."""
     try:
-        size = os.path.getsize(filesystem_path(abs_path))
-    except (OSError, ValueError):
-        size = 0
-    if size and size > max_bytes:
-        try:
-            with open(filesystem_path(abs_path), "rb") as f:
-                raw = f.read(max_bytes)
-            return raw.decode("utf-8", errors="replace")
-        except (OSError, ValueError):
-            return ""
-    try:
-        with open(filesystem_path(abs_path), encoding="utf-8") as f:
-            return f.read()
+        limit = max(0, max_bytes)
+        with open(filesystem_path(abs_path), "rb") as f:
+            raw = f.read(limit + 1)
+        if len(raw) > limit:
+            return raw[:limit].decode("utf-8", errors="replace")
+        # Complete files retain text-mode decoding and universal newlines;
+        # a truncated prefix may end inside a UTF-8 character.
+        return raw.decode("utf-8").replace("\r\n", "\n").replace("\r", "\n")
     except (OSError, ValueError):
         return ""

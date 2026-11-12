@@ -1,6 +1,6 @@
 """Explicit TeX installation uses detected files and the configured package repository.
 
-:module: article
+:module: workflow.article
 :design: decision_956154cd02f6
 :profiles: local.fixture
 :risk: no-external-side-effects

@@ -1,7 +1,9 @@
 """Paper provenance uses historical generation facts, with no model rerun.
 
+Authorization and recovery are functional contracts of the provenance path.
+
 :importance: P1
-:aspects: functional, permissions, recovery
+:aspects: functional
 """
 from copy import deepcopy
 import hashlib

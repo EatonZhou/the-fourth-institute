@@ -89,13 +89,19 @@ HTML 可以引用本修订的独立 script 和 stylesheet。CSS 必须自包含�
 - `await Projection.libraries()`：读取宿主登记库清单；`await Projection.loadLibrary(name)` 将登记的 UMD 入口加载到当前 sandbox，返回库元数据。应用也可以把固定 npm 依赖打包进入口。
 - `Projection.icon(name)`：从宿主公共图标目录创建 SVG 节点，未知名称返回 null。图标和基础控件共用 Portal 的主题变量。
 
+宿主在当前页面内合并公共 SDK、状态脚本与基础样式的并发读取，并保留成功结果。加载失败只淘汰失败文件，下次挂载重新读取该文件；已成功的公共文件继续复用。这不缓存修订资产或资源正文，它们仍通过各自鉴权和完整性检查。
+
+SDK 在 `pagehide.persisted=true` 的浏览器缓存挂起期间保留请求、监听器与 Worker；应用自己的生命周期也应区分挂起与最终退出。最终退出清理请求计时器、监听器和 Worker，在途请求以 `projection.disposed` 拒绝，后续请求不再发给宿主。已经提交的写操作可能完成，调用方须核实真实结果，不能因页面退出自动重发。
+
+普通 HATG 写操作的确认框归属当前功能区的本次可见期间。隐藏、销毁或在隐藏后才到达的确认要求均取消待确认提交；重新显示后由用户重新发起。正常确认只提交一次，继续使用当前用户、正式权限检查与幂等键。
+
 登记库为 D3 7.9.0、dagre 1.1.5、Cytoscape 3.33.1、marked 18.1.1、DOMPurify 3.4.17 和 portal-graph 1.0.0。清单保留每个文件的 SHA-256、体积、类型、来源与许可证；读取时重新核对字节。`portal-graph` 加载为 `PortalGraphGeometry`，Lineage 同时使用它进行视图坐标变换、贝塞尔采样与命中计算。各库的 API 和更新步骤见 `static/projection_libraries/README.md`。
 
 Portal 开发投影模板在 `management_portal/workbench_projections/development_app`，区域 mount、共享权限读取、Markdown 渲染和生命周期合同见该目录 README。构建器由 application_build.py 负责，修订存储由 Store/tables 负责，资产鉴权由 application_http.py 负责，浏览器隔离与消息通道由 host/SDK 负责；这些机制由 `decision_7a5ae487e2e9` 约束。
 
 ## 区域工程接入
 
-架构区独占 `development_app/src/architecture` 与本区测试；入口 `index.js` 导出 `mount(root, context)`，可异步返回 `{show, hide, destroy}`。共享入口负责启动，区域不自行调用 start，也不导出单独 unmount；卸载落在 destroy。隐藏保留实例，show/hide 首次按实际可见性调用；pagehide 时 signal 中止，清理订阅和 Worker，异步 mount 晚到的运行对象也会销毁。`context` 包含 `region`、`sdk`、`signal`、`resources`、`onDispose`、`onFocus` 与 `watch`；具体参数与共享实现见工程 README。
+架构区独占 `development_app/src/architecture` 与本区测试；入口 `index.js` 导出 `mount(root, context)`，可异步返回 `{show, hide, destroy}`。共享入口负责启动，区域不自行调用 start，也不导出单独 unmount；卸载落在 destroy。隐藏保留实例，show/hide 首次按实际可见性调用；`pagehide.persisted=true` 保留实例、草稿、订阅与在途 mount，`pageshow` 复用它们，不再次 mount。最终退出（`pagehide.persisted=false`）或显式 dispose 时移除退出监听并中止 signal，清理订阅和 Worker，异步 mount 晚到的运行对象也会销毁。`context` 包含 `region`、`sdk`、`signal`、`resources`、`onDispose`、`onFocus` 与 `watch`；具体参数与共享实现见工程 README。
 
 资源访问通过 `context.resources` 或 `sdk.resource`，不传 actor。`resources.readable(items, getRef)` 只返回当前用户可读条目，统计和连线在过滤后建立；不可见前置仍按未知处理，不能因移除它而判定依赖已满足。`onFocus(fn)` 先异步补当前快照，再接收通知；用回调的 revision 排除晚到的详情读取。`sdk.context()` 也可读取当前 focus，subscribers 只限制推送。`watch` 当前每个区域保留一组 refs，新调用替换旧订阅，应汇总需要观察的地址；共享生命周期自动取消订阅。`onDispose` 保留异步清理的 Promise，在途重复调用共用同一结果；成功只清理一次，失败报告 `Region cleanup failed` 并允许重试。hide/destroy 可以不等待；需要确认结果的调用方仍可 await 并得到原始失败，不会被共享层吞掉。
 

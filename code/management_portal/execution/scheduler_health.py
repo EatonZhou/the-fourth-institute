@@ -7,7 +7,7 @@ from typing import Any
 from management_common.database_time import epoch_seconds, iso_time
 from management_common.json_columns import json_value
 
-from .scheduler_capacity import SHARED_CAPACITY_KEY, SchedulerCapacity, capacity_settings
+from .scheduler_capacity import SHARED_CAPACITY_KEY, SchedulerCapacity
 from .scheduler_changes import SchedulerChanges
 from .scheduler_quota import SchedulerQuota
 from .scheduler_rows import ACTIVE_STATUSES, json_object
@@ -67,13 +67,13 @@ class SchedulerHealth:
                     """
                 ).fetchall()
             ]
-            settings = capacity_settings(connection)
+            configuration = self.capacity.configuration(connection)
             capacity_counts = {
                 key: {"active_count": 0, "queued_count": 0}
                 for key in {
                     SHARED_CAPACITY_KEY,
-                    *self.capacity.default_capacity_limits,
-                    *settings,
+                    *configuration.defaults,
+                    *configuration.settings,
                 }
             }
             for row in connection.execute(
@@ -113,14 +113,14 @@ class SchedulerHealth:
                     """
                 ).fetchall()
             }
-            account_quotas = {
-                key: self.quota.account_quota(connection, key)
-                for key in capacity_counts if key in self.quota.quota_capacity_keys
-            } if self.quota.quota_reserve_enabled else {}
-            thresholds = {key: account_quotas[key]["close_threshold"] if key in account_quotas else self.quota.close_threshold(connection, key)
-                          for key in capacity_counts if key in self.quota.quota_capacity_keys}
-            limits = {key: self.capacity.capacity_limit(connection, key) for key in capacity_counts}
-            intervals = {key: self.capacity.dispatch_interval_range(connection, key) for key in capacity_counts}
+            quota_keys = set(capacity_counts) & self.quota.quota_capacity_keys
+            quota_states, _ = self.quota.quota_states(
+                connection, quota_keys, set(), now=time.time(),
+            )
+            account_quotas = quota_states if self.quota.quota_reserve_enabled else {}
+            thresholds = {key: state["close_threshold"] for key, state in quota_states.items()}
+            limits = {key: configuration.limit(key) for key in capacity_counts}
+            intervals = {key: configuration.interval_range(key) for key in capacity_counts}
         capacity_partitions = {
             key: {
                 "quota_reserve": account_quotas.get(key, {}),

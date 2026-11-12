@@ -4,30 +4,30 @@ type: decision
 project: AI员工
 created_at: '2026-09-03'
 version:
-  number: 21
+  number: 22
   created_at: "2026-09-03"
   created_by:
     user: ""
     agent: ""
-  updated_at: "2026-11-06T01:17:20Z"
+  updated_at: "2026-11-12T12:27:40Z"
   updated_by:
     user: ""
-    agent: "resident_60ae6d0cdf74"
+    agent: "resident_6199a7a36480"
 importance: 8
 metaness: 2
 ai_generated: true
 links:
   source:
-  - ${code_root}/management_portal/portal_feature_switches.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/portal_feature_switches.py
   - resident_e267c94e7252/file/workspace/duties/pulse.md
   - resident_e267c94e7252/file/workspace/tools/pulsetool.py
-  - ${code_root}/management_portal/portal_pulse_backend.py
-  - ${code_root}/management_portal/pulse_publication_store.py
-  - ${code_root}/management_portal/web_isa.py
-  - ${code_root}/management_portal/static/home.js
-  - ${code_root}/management_portal/static/home_pulse.js
-  - ${code_root}/management_portal/static/portal_home_components.js
-  - ${code_root}/management_portal/static/portal_workbench.js
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/portal_pulse_backend.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/pulse_publication_store.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/web_isa.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/home.js
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/home_pulse.js
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/portal_home_components.js
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/portal_workbench.js
   related:
   - decision_3e063aac15b3
   - decision_00546e28e1e0
@@ -134,3 +134,7 @@ Home 把当前条目的 `source_period`、`source_key`、`item_id` 和目标 `pu
 ### 写入与并发
 
 公开和撤回各在一个数据库事务中完成，事务持有同一把 `publications` 锁，先读出现有记录再写入，并发操作按提交顺序生效。摘要文件读到损坏或缺失时，后端返回空结果或错误，页面保留上一次成功的内容并提示错误。
+
+## 首页读取规模
+
+一次首页读取使用同一份摘要索引快照组织内容与状态。公开条目只读取展示所需的最近记录；个人条目的已发布标记另按当前调用者和当前日、周、月摘要来源查询。较早公开、但仍属于当前摘要的个人条目仍显示已发布，不能因为它离开最近公开列表而变成未发布。历史发布记录继续保留，发布与撤回沿原事务和稳定身份处理，页面读取不加载全部历史正文来计算当前展示。

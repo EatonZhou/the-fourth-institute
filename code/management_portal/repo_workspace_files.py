@@ -72,7 +72,10 @@ def _read_text_file(path: Path, *, max_bytes: int = MAX_TEXT_BYTES) -> tuple[str
     size = path.stat().st_size
     if size > max_bytes:
         return "", True
-    data = path.read_bytes()
+    with path.open("rb") as stream:
+        data = stream.read(max_bytes + 1)
+    if len(data) > max_bytes:
+        return "", True
     if b"\x00" in data[:8192]:
         return "", True
     try:

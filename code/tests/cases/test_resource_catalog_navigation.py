@@ -1,6 +1,6 @@
 """Resource catalog navigation keeps late reads from reopening stale details.
 
-:module: resources.access
+:module: workbench.preview
 :design: decision_2f67ed28db67
 """
 from pathlib import Path
