@@ -33,7 +33,7 @@ def test_workspace_get_index_view_and_resolver_read_the_workspace_store(projecti
     assert got['capabilities']['read']
     assert _resolve(projection.service, W, actor='CASE-A')['exists']
     index = object.__new__(IndexStore)
-    index._portal_access = None
+
     row = descriptor_resource_record(workspace())
     assert 'owner_ids' not in index._record_with_current_facts(row, 'CASE-A')['attributes']
     assert projection.registry.get('workspace', W) is None

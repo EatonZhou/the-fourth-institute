@@ -514,7 +514,7 @@ def test_nested_reference_presents_the_resolved_child_not_its_indexed_root_contr
         access.upsert_user('reader', actor='CASE-A')
         index = mock.Mock()
         index.get_resource.return_value = {'resource_id': skill_id, 'resource_type': 'skill', 'title': 'Shared Skill', 'facets': ['knowledge', 'skill'], 'attributes': {'project_ids': ['Shared Skills'], 'read_scope': 'global'}}
-        service = ResourceService(index_provider=index, portal_access=access)
+        service = ResourceService(index_provider=index)
         service.register_action_provider('skill', {'content.read': lambda resource_id, _payload, **_context: {'resource_id': resource_id, 'read': True}, 'content.write': lambda resource_id, _payload, **_context: {'resource_id': resource_id, 'written': True}})
         assert service.action(skill_id, 'content.read', {}, actor='reader') == {'resource_id': skill_id, 'read': True}
         assert service.action(skill_id, 'content.write', {}, actor='reader') == {'resource_id': skill_id, 'written': True}

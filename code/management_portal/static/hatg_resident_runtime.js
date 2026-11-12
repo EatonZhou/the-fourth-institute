@@ -33,16 +33,33 @@
       updateLineageSummary,
     } = dependencies;
 
+    let indexedLineage, indexedNodes, nodesByResident = new Map();
     function applyResidentStateProjections(states, options = {}) {
-      const previousWorkPhases = new Map((state.lineage?.nodes || []).map(node => [node.id, nodeWorkPresentation(node).phase]));
-      const previousGates = new Map((state.lineage?.nodes || []).map(node => [node.id, nodeExecutionGate(node).text]));
+      if (indexedLineage !== state.lineage || indexedNodes !== state.lineage?.nodes) {
+        indexedLineage = state.lineage;
+        indexedNodes = state.lineage?.nodes;
+        nodesByResident = new Map();
+        for (const node of indexedNodes || []) {
+          const id = nodeResidentId(node);
+          if (!nodesByResident.has(id)) nodesByResident.set(id, []);
+          nodesByResident.get(id).push(node);
+        }
+      }
+      const nodes = options.replace === true ? (indexedNodes || [])
+        : [...new Set((options.changedResidentIds || Object.keys(states || {}))
+          .flatMap(id => nodesByResident.get(id) || []))];
+      const previousWorkPhases = new Map(nodes.map(node => [node.id, nodeWorkPresentation(node).phase]));
+      const previousGates = new Map(nodes.map(node => [node.id, nodeExecutionGate(node).text]));
       const previousIntakeStates = new Map(
-        (state.lineage?.nodes || []).map(node => [node.id, nodeIntakeState(node)])
+        nodes.map(node => [node.id, nodeIntakeState(node)])
       );
       const previousStatuses = new Map(
-        (state.lineage?.nodes || []).map(node => [node.id, effectiveNodeStatus(node)])
+        nodes.map(node => [node.id, effectiveNodeStatus(node)])
       );
       if (options.replace === true) state.residentRuntimeById = new Map();
+      else for (const id of options.changedResidentIds || []) {
+        if (!Object.hasOwn(states || {}, id)) state.residentRuntimeById.delete(id);
+      }
       for (const [residentId, residentState] of Object.entries(states || {})) {
         const cleanResidentId = String(residentId || "").trim();
         if (!cleanResidentId) continue;
@@ -55,11 +72,11 @@
       }
       if (!state.lineage?.nodes?.length) return false;
       let displayChanged = false;
-      for (const node of state.lineage.nodes) {
+      for (const node of nodes) {
         const projection = state.residentRuntimeById.get(nodeResidentId(node));
         if (projection) {
           setNodeRuntimeStatus(node.id, runtimeStatusFromResidentProjection(projection, node));
-        } else if (options.replace === true) {
+        } else {
           state.runtimeStatus.delete(node.id);
         }
         const previousStatus = previousStatuses.get(node.id) || "idle";
@@ -132,11 +149,13 @@
       if (!state.lineage || update?.type === "error") return;
       const runtimeChanged = applyResidentStateProjections(update?.states || {}, {
         render: false,
-        replace: true,
+        replace: update?.replace !== false,
+        changedResidentIds: update?.changedResidentIds,
       });
       if (runtimeChanged) {
         updateLineageSummary();
-        renderGraphRuntimePresentation();
+        renderGraphRuntimePresentation(update?.replace === false
+          ? (update.changedResidentIds || []).flatMap(id => (nodesByResident.get(id) || []).map(node => node.id)) : null);
         renderControls();
         currentHatgComponentOptions().onRuntimeProjectionChange?.({
           lineageId: state.lineage.lineage_id,
@@ -161,6 +180,7 @@
     }
 
     function bindResidentStateCollection() {
+      indexedLineage = null;
       state.residentStateCollection?.destroy?.();
       state.residentStateCollection = null;
       const lineageId = String(state.lineage?.lineage_id || "");
@@ -172,6 +192,7 @@
       state.residentStateCollection = window.PortalResidentProtocol.acquireStates(
         residentIds,
         applyResidentStateCollection,
+        { delivery: "delta" },
       );
     }
 

@@ -179,8 +179,6 @@ class ArticleIdentityBackendTests(unittest.TestCase):
             "article-test", actor="fixture"
         )
         service = ResourceService(
-            portal_access=access,
-
             collaboration_store=CollaborationDescriptorStore(),
             registration_store=ResourceRegistrationStore(),
             resolver_loader=article.install_resolver,

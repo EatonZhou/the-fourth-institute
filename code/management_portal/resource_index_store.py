@@ -11,7 +11,6 @@ from typing import Any, Iterable
 
 from management_common.json_columns import json_text, json_value
 from management_common.portal_database import portal_database
-from management_portal.portal_access_control import PortalAccessStore
 from management_portal.resources import timing
 from management_common.text_values import stripped_text
 from management_portal.resources.contracts import ResourceQuery
@@ -104,17 +103,12 @@ def _resolved_source_path(raw_path: str) -> str:
 class IndexStore:
     """Thread-safe projection store with atomic per-adapter publication."""
 
-    def __init__(
-        self,
-        *,
-        portal_access: PortalAccessStore | None = None,
-    ) -> None:
+    def __init__(self) -> None:
         self.database = portal_database(schema=resource_database_schema())
         from management_portal.resources.resource_types import ResourceTypes
         self.resource_types = ResourceTypes()
         self._lock = ReportingLock("resource index")
         self._persist_lock = threading.Lock()
-        self._portal_access = portal_access
         self._records: dict[str, dict[str, Any]] = {}
         self._type_ids: dict[str, dict[str, None]] = {}
         self._adapter_ids: dict[str, set[str]] = {}
@@ -848,15 +842,17 @@ class IndexStore:
             }
         )
         with timing.timed_request() as timer:
+            scores: dict[int, float] = {}
             records, updated_at, mark = self._matching_records(
                 query, timer, enabled_types=enabled_types,
                 records_projector=records_projector, records_projector_types=records_projector_types,
+                scores=scores,
             )
             result = query_records(
                 records,
                 query,
                 index_updated_at=updated_at,
-                portal_access=self._portal_access,
+                _filtered_scores=scores,
             )
             mark = timer.add("rank_and_copy", mark)
             self._with_current_capabilities(result["resources"], actor)
@@ -967,7 +963,8 @@ class IndexStore:
         enabled_types: Iterable[str],
         records_projector: ResourceRecordsProjector | None,
         records_projector_types: frozenset[str] | None,
-    ) -> tuple[list[dict[str, Any]], str, bool, float]:
+        scores: dict[int, float] | None = None,
+    ) -> tuple[list[dict[str, Any]], str, float]:
         """Records passing every filter except read access, with current descriptors and facts.
 
         Returns them with the index revision and the timer's last mark.
@@ -1011,7 +1008,7 @@ class IndexStore:
         if current_facts_needed:
             records = self._project_business_facts(records)
         mark = timer.add("business_facts", mark)
-        records = filter_query_candidates(records, query)
+        records = filter_query_candidates(records, query, scores=scores)
         mark = timer.add("filter", mark)
         records = self._filter_private_records(records, actor=query.actor)
         mark = timer.add("private_visibility", mark)
@@ -1062,14 +1059,15 @@ class IndexStore:
             if records_projector is not None:
                 records = records_projector(records)
             records = self._project_business_facts(records)
-            records = filter_query_candidates(records, access_query)
+            scores: dict[int, float] = {}
+            records = filter_query_candidates(records, access_query, scores=scores)
             if not records:
                 continue
             records = self._filter_private_records(records, actor)
             projected = query_records(
                 records,
                 access_query,
-                portal_access=self._portal_access,
+                _filtered_scores=scores,
             )
             self._set_current_urls(projected["resources"], records)
             by_id = {item["resource_id"]: item

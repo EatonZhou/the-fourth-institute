@@ -177,7 +177,51 @@
       }));
     }
 
+    function patchNodeChrome(node) {
+      const id = String(node.id || ""), target = nodeElement(id);
+      const heat = nodeContextHeat(node);
+      const mini = minimapNodeElement(id);
+      if (mini) {
+        if (heat) mini.setAttribute("data-context-heat", heat);
+        else mini.removeAttribute("data-context-heat");
+      }
+      if (!target) return false;
+      if (isWorkspaceNode(node)) {
+        target.__data__ = node;
+        target.title = [node.title, node.workspace_path, node.workspace_id || node.resident_id || node.id].filter(Boolean).join("\n");
+        target.setAttribute("aria-label", [node.title, node.workspace_id || node.resident_id || node.id].filter(Boolean).join(" · "));
+      }
+      const status = nodeStatus(node), content = nodeContent(node);
+      if (target.__hatgNodeContent === content && String(target.dataset.status || "") === status
+        && String(target.dataset.contextHeat || "") === heat) return false;
+      target.dataset.status = status;
+      if (heat) target.dataset.contextHeat = heat;
+      else delete target.dataset.contextHeat;
+      if (isActiveStatus(status)) target.dataset.runtimeEffect = "activity-rail";
+      else delete target.dataset.runtimeEffect;
+      if (target.__hatgNodeContent !== content) {
+        target.innerHTML = content;
+        target.__hatgNodeContent = content;
+      }
+      return true;
+    }
+
+    let indexedOverviewNodes, overviewById;
     function patchRuntimePresentation(nextModel = {}) {
+      if (Array.isArray(nextModel.runtimeNodeIds)) {
+        if (indexedOverviewNodes !== state.model.overviewNodes) {
+          indexedOverviewNodes = state.model.overviewNodes;
+          overviewById = new Map((indexedOverviewNodes || []).map(node => [String(node.id), node]));
+        }
+        // The existing structural model remains authoritative for geometry,
+        // folded families and Workspace views. Hidden nodes need no DOM work.
+        for (const id of new Set(nextModel.runtimeNodeIds.map(String))) {
+          const node = state.nodeMap.get(id) || overviewById.get(id);
+          if (node) patchNodeChrome(node);
+        }
+        renderEdges(validEdges(), { geometryChanged: false });
+        return true;
+      }
       const nextNodes = Array.isArray(nextModel.nodes) ? nextModel.nodes : [];
       const nextOverviewNodes = Array.isArray(nextModel.overviewNodes)
         ? nextModel.overviewNodes
@@ -220,36 +264,7 @@
 
       const changedNodeIds = new Set();
       for (const node of state.model.nodes) {
-        const nodeId = String(node.id || "");
-        const target = nodeElement(nodeId);
-        if (isWorkspaceNode(node)) {
-          target.__data__ = node;
-          target.title = [node.title, node.workspace_path, node.workspace_id || node.resident_id || node.id].filter(Boolean).join("\n");
-          target.setAttribute("aria-label", [node.title, node.workspace_id || node.resident_id || node.id].filter(Boolean).join(" · "));
-        }
-        const status = nodeStatus(node);
-        const contextHeat = nodeContextHeat(node);
-        const content = nodeContent(node);
-        if (
-          target.__hatgNodeContent === content
-          && String(target.dataset.status || "") === status
-          && String(target.dataset.contextHeat || "") === contextHeat
-        ) continue;
-        target.dataset.status = status;
-        if (contextHeat) target.dataset.contextHeat = contextHeat;
-        else delete target.dataset.contextHeat;
-        if (isActiveStatus(status)) target.dataset.runtimeEffect = "activity-rail";
-        else delete target.dataset.runtimeEffect;
-        if (target.__hatgNodeContent !== content) {
-          target.innerHTML = content;
-          target.__hatgNodeContent = content;
-        }
-        const minimapNode = minimapNodeElement(nodeId);
-        if (minimapNode) {
-          if (contextHeat) minimapNode.setAttribute("data-context-heat", contextHeat);
-          else minimapNode.removeAttribute("data-context-heat");
-        }
-        changedNodeIds.add(nodeId);
+        if (patchNodeChrome(node)) changedNodeIds.add(String(node.id || ""));
       }
       for (const node of state.model.overviewNodes) {
         const nodeId = String(node.id || "");

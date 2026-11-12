@@ -65,6 +65,36 @@ def test_duplicate_ids_rejected_and_empty_extra_list_valid():
     with pytest.raises(ValueError): storage.normalize_bindings([item,item])
 
 
+def test_projection_path_observations_are_batch_local(monkeypatch):
+    """共同路径每批观察一次，下一次投影重新观察；返回记录相互隔离。"""
+    calls = []
+    def canonicalize(path):
+        calls.append(path)
+        return path
+    monkeypatch.setattr(storage, 'canonical_path', canonicalize)
+    records = [dict(resident_id=f'resident_{n:012x}', lineage_id=LID,
+                    owned_workspace_id=f'workspace_{n:012x}') for n in range(100)]
+    bindings = {r['resident_id']: [dict(workspace_id=EXTRA, purpose='code')] for r in records}
+    paths = {r['owned_workspace_id']: f'/owned/{n}' for n, r in enumerate(records)}
+    paths[EXTRA] = '/shared'
+    result = storage.project_records(records, bindings, paths, {LID: '/lineage'})
+    assert len(calls) == 102
+    assert calls.count('/lineage') == calls.count('/shared') == 1
+    result[0]['workspace_bindings'][0]['purpose'] = 'edited'
+    assert result[1]['workspace_bindings'][0]['purpose'] == 'code'
+    storage.project_records(records, bindings, paths, {LID: '/lineage'})
+    assert len(calls) == 204
+
+
+def test_projection_rejects_noncanonical_supplied_binding(monkeypatch):
+    """投影登记路径前仍校验调用者附带的路径，不用新路径掩盖非法输入。"""
+    monkeypatch.setattr(storage, 'canonical_path', lambda p: p.rstrip('/'))
+    with pytest.raises(ValueError, match='canonical'):
+        storage.project_records([dict(resident_id=RID, lineage_id=LID, owned_workspace_id=OWNED)],
+            {RID: [dict(workspace_id=EXTRA, purpose='', path='/bad/')]},
+            {OWNED: '/own', EXTRA: '/extra'}, {})
+
+
 def test_read_projection_follows_location_without_copying_paths(tmp_path):
     """Workspace cwd 跟随登记位置，已删除的登记不提供 cwd"""
     folder=tmp_path/LID

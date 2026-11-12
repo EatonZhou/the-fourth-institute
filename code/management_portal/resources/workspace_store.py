@@ -161,16 +161,30 @@ class WorkspaceStore:
                                  "WHERE workspace_id=%s",
                                  (path, now(), workspace_id))
                 return workspace_id
-            timestamp = now()
-            self.cleanup.assert_available(absolute, connection=conn, operation_id=operation_id)
             self._require_distinct_location(conn, absolute, workspace_id)
-            conn.execute(f"INSERT INTO {self.table} "
-                         "(workspace_id,path,title,owner_id,operation_id,created_at,updated_at) "
-                         "VALUES (%s,%s,%s,%s,%s,%s,%s)",
-                         (workspace_id, path, title or Path(absolute).name,
-                          owner_id or workspace_id, operation_id, timestamp, timestamp))
+            self._insert(conn, workspace_id, absolute, path, title=title,
+                         owner_id=owner_id, operation_id=operation_id)
             return workspace_id
         return write(connection) if connection is not None else self.database.write(write)
+
+    def _insert(self, connection, workspace_id, absolute, stored, *, title="", owner_id=None,
+                operation_id=None):
+        """Insert after the caller's locked identity and location decision."""
+        self.cleanup.assert_available(absolute, connection=connection, operation_id=operation_id)
+        timestamp = now()
+        connection.execute(f"INSERT INTO {self.table} "
+                           "(workspace_id,path,title,owner_id,operation_id,created_at,updated_at) "
+                           "VALUES (%s,%s,%s,%s,%s,%s,%s)",
+                           (workspace_id, stored, title or Path(absolute).name,
+                            owner_id or workspace_id, operation_id, timestamp, timestamp))
+
+    def _location(self, connection, absolute):
+        # One target key for this locked decision. Never retain native-case
+        # evidence across calls or trust it as a reservation.
+        key = location_key(Path(absolute))
+        return next((row for row in connection.execute(
+            f'SELECT workspace_id,path FROM {self.table} WHERE deleted_at IS NULL').fetchall()
+            if location_key(Path(located_path(row['path']))) == key), None)
 
     def _require_distinct_location(self, connection, path, workspace_id):
         key = location_key(Path(path))
@@ -249,18 +263,41 @@ class WorkspaceStore:
     def for_path(self, path: str, *, new_id, preferred_id="") -> str:
         absolute = canonical_path(path)
         stored = stored_location(absolute)
+        def identity(row):
+            if preferred_id and row['workspace_id'] != preferred_id:
+                raise ValueError("Workspace path already has a different identity")
+            return row['workspace_id']
+
+        # Observation only: the partial unique index supplies the live exact
+        # spelling. Like ensure's unchanged read, this may become stale after
+        # the statement and cannot reserve a path for a later mutation.
+        with self.database.read() as conn:
+            row = conn.execute(f"SELECT workspace_id FROM {self.table} "
+                               "WHERE path=%s AND deleted_at IS NULL", (stored,)).fetchone()
+        if row:
+            return identity(row)
+
         def write(conn):
             self.cleanup.lock(conn)
             conn.execute("SELECT pg_advisory_xact_lock(hashtextextended(%s,0))", (self.table + stored,))
-            rows = conn.execute(f"SELECT workspace_id,path FROM {self.table} WHERE deleted_at IS NULL").fetchall()
-            row = next((item for item in rows if location_key(Path(located_path(item['path']))) == location_key(Path(absolute))), None)
+            row = self._location(conn, absolute)
             if row:
-                if preferred_id and row["workspace_id"] != preferred_id:
-                    raise ValueError("Workspace path already has a different identity")
-                return row["workspace_id"]
+                return identity(row)
             if not Path(absolute).is_dir():
                 raise ValueError('Workspace registration requires an existing directory')
-            return self.ensure(preferred_id or new_id(), absolute, connection=conn)
+            workspace_id = preferred_id or new_id()
+            get_resource_type_registry().validate(workspace_id, "workspace")
+            # The location decision above already covered all live identities.
+            # Check a supplied ID as well, including tombstones, without making
+            # ensure scan the same registry for a second time.
+            existing = conn.execute(f"SELECT path,deleted_at FROM {self.table} "
+                                    "WHERE workspace_id=%s FOR UPDATE", (workspace_id,)).fetchone()
+            if existing:
+                if existing['deleted_at'] is not None:
+                    raise ValueError("Deleted Workspace cannot be restored")
+                raise ValueError("Workspace path differs from its registered location")
+            self._insert(conn, workspace_id, absolute, stored)
+            return workspace_id
         return self.database.write(write)
 
     def deleted_under(self, paths, *, connection=None) -> list[str]:

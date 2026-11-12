@@ -343,7 +343,10 @@
       refreshGraphNodeSearchResults();
     }
 
-    function renderGraphRuntimePresentation() {
+    function renderGraphRuntimePresentation(runtimeNodeIds = null) {
+      // A Resident state delta changes chrome only. Structural/program changes
+      // still enter the full model projection and its geometry checks below.
+      if (runtimeNodeIds && state.graphController?.patchRuntimePresentation?.({ runtimeNodeIds })) return;
       const model = graphVisibleModel();
       if (!state.graphController?.patchRuntimePresentation?.(model)) renderGraph();
     }

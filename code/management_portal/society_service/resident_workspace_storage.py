@@ -61,6 +61,10 @@ def create_workspace_deletion_binding(connection):
 
 
 def normalize_binding(binding: Mapping[str, Any]) -> dict[str, Any]:
+    return _normalize_binding(binding, canonical_path)
+
+
+def _normalize_binding(binding, canonicalize):
     unknown = set(binding) - set(BINDING_FIELDS) - {"path"}
     if unknown:
         raise ValueError("Unknown Workspace binding fields: " + ", ".join(sorted(unknown)))
@@ -68,7 +72,7 @@ def normalize_binding(binding: Mapping[str, Any]) -> dict[str, Any]:
     identity_contract.validate_id(value["workspace_id"], "workspace")
     if not isinstance(value["purpose"], str):
         raise ValueError("Workspace purpose must be text")
-    if "path" in binding and binding["path"] != canonical_path(binding["path"]):
+    if "path" in binding and binding["path"] != canonicalize(binding["path"]):
         raise ValueError("Workspace binding path must be canonical")
     return value
 
@@ -108,6 +112,15 @@ def bindings_for_residents(connection, resident_ids):
 
 
 def project_records(records, bindings_by_resident, workspace_paths, lineage_folders):
+    # A projection observes paths once per batch. No filesystem observation is
+    # retained across calls or reused by a later write/registration decision.
+    canonical_paths = {}
+
+    def canonicalize(path):
+        if path not in canonical_paths:
+            canonical_paths[path] = canonical_path(path)
+        return canonical_paths[path]
+
     result = []
     for record in records:
         value = copy.deepcopy(dict(record))
@@ -122,18 +135,24 @@ def project_records(records, bindings_by_resident, workspace_paths, lineage_fold
             value["owned_workspace"] = {"workspace_id": own_id, "path": workspace_paths[own_id]}
             if not workspace_paths[own_id]:
                 value["owned_workspace"]["status"] = "deleted"
-            value["workspace_bindings"] = [{**binding, "path": workspace_paths[binding["workspace_id"]]}
-                for binding in normalize_bindings(bindings_by_resident.get(rid, []))]
+            value["workspace_bindings"] = [
+                {**_normalize_binding(binding, canonicalize),
+                 "path": workspace_paths[binding["workspace_id"]]}
+                for binding in bindings_by_resident.get(rid, [])]
             if folder is not None:
-                value["workspace_path"] = canonical_path(folder)
+                value["workspace_path"] = canonicalize(folder)
                 from pathlib import Path
                 value["workspace_root"] = str(Path(folder).parent)
-            apply_binding_projection(value)
+            _apply_binding_projection(value, canonicalize)
         result.append(value)
     return result
 
 
 def apply_binding_projection(record):
+    _apply_binding_projection(record, canonical_path)
+
+
+def _apply_binding_projection(record, canonicalize):
     own_id = record["owned_workspace_id"]
     identity_contract.validate_id(own_id, "workspace")
     own = record["owned_workspace"]
@@ -142,9 +161,11 @@ def apply_binding_projection(record):
     # Bindings carry no order of their own: a saved record lists them as
     # storage reads them back, so every projection of it is the same.
     bindings = sorted(record["workspace_bindings"], key=lambda binding: binding["workspace_id"])
-    values = normalize_bindings(bindings)
+    values = [_normalize_binding(binding, canonicalize) for binding in bindings]
+    if len({value["workspace_id"] for value in values}) != len(values):
+        raise ValueError("Duplicate Workspace binding")
     if own_id in {value["workspace_id"] for value in values}:
         raise ValueError("Owned Workspace cannot also be an additional binding")
     record["workspace_bindings"] = bindings
-    record["default_cwd"] = '' if own.get('status') == 'deleted' else canonical_path(own["path"])
+    record["default_cwd"] = '' if own.get('status') == 'deleted' else canonicalize(own["path"])
     record["workspace_paths"] = [binding["path"] for binding in bindings]

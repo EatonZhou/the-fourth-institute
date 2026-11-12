@@ -1234,6 +1234,7 @@
     }
 
     applyAcknowledgedProjection(acknowledgement) {
+      this.historyMergeIndexes?.delete(this.snapshot);
       if (acknowledgement.state && typeof acknowledgement.state === "object") {
         this.snapshot.controls = mergeEventControls(this.snapshot.controls, acknowledgement.controls, acknowledgement.state, this.snapshot.state);
         this.snapshot.state = mergeEventState(this.snapshot.state, acknowledgement.state);
@@ -1264,6 +1265,7 @@
     }
 
     applyEvent(event, { emit = true } = {}) {
+      this.historyMergeIndexes?.delete(this.snapshot);
       if (!this.snapshot || this.cursor == null) {
         throw new Error("Resident Event arrived before Snapshot");
       }
@@ -1349,10 +1351,18 @@
       }
     }
 
-    mergeHistoryPage(snapshot, page, removed = new Set()) {
+    mergeHistoryPage(snapshot, page, removed = new Set(), { defer = false } = {}) {
       if (String(page?.resident_id || "") !== this.residentId) throw new Error("Resident message page target mismatch");
       const current = snapshot.messages || [];
-      const existing = new Map(current.map(message => [String(message?.message_id || ""), message]));
+      this.historyMergeIndexes ||= new WeakMap();
+      let index = this.historyMergeIndexes.get(snapshot);
+      if (!index || index.messages !== snapshot.messages || index.inputs !== snapshot.input_states) {
+        index = { messages: snapshot.messages, inputs: snapshot.input_states,
+          prepend: [],
+          existing: new Map(current.map(message => [String(message?.message_id || ""), message])),
+          inputById: new Map((snapshot.input_states || []).map(input => [input.message_id, input])) };
+      }
+      const existing = index.existing;
       const older = [];
       for (const message of Array.isArray(page.messages) ? page.messages : []) {
         const id = String(message?.message_id || "");
@@ -1360,17 +1370,35 @@
         if (existing.has(id)) {
           existing.set(id, mergeMessageAssociations(message, existing.get(id)));
         } else {
-          existing.set(id, message);
-          older.push(message);
+          const detached = clone(message);
+          existing.set(id, detached);
+          older.push(detached);
         }
       }
-      snapshot.messages = [...older, ...current].map(message => clone(existing.get(String(message.message_id || ""))));
-      const inputs = new Map((snapshot.input_states || []).map(input => [input.message_id, input]));
+      // Existing private rows are owned by this store, not public snapshots.
+      // Only new page rows and association changes need detached copies.
+      index.prepend.push(older);
+      const inputs = index.inputById;
       for (const input of page.input_states || []) {
         if (!removed.has(input.message_id)) inputs.set(input.message_id, mergeInputState(inputs.get(input.message_id), input));
       }
-      snapshot.input_states = [...inputs.values()];
+      this.historyMergeIndexes.set(snapshot, index);
       snapshot.next_page_token = String(page.next_page_token || "");
+      if (!defer) this.finalizeHistoryMerge(snapshot);
+      return snapshot;
+    }
+
+    finalizeHistoryMerge(snapshot) {
+      const index = this.historyMergeIndexes?.get(snapshot);
+      if (!index) return snapshot;
+      // A multi-page restore builds its window once. Public page reads still
+      // materialize before emitting, without copying existing message bodies.
+      snapshot.messages = [...index.prepend.reverse().flat(), ...(snapshot.messages || [])]
+        .map(message => index.existing.get(String(message.message_id || "")));
+      snapshot.input_states = [...index.inputById.values()];
+      index.prepend = [];
+      index.messages = snapshot.messages;
+      index.inputs = snapshot.input_states;
       return snapshot;
     }
 
@@ -1415,17 +1443,17 @@
           const ids = new Set(messages.map(message => message.message_id));
           this.mergeHistoryPage(result, { ...page, messages,
             input_states: (page.input_states || []).filter(input => ids.has(input.message_id)),
-            next_page_token: expanded.floor });
-          return result;
+            next_page_token: expanded.floor }, new Set(), { defer: true });
+          return this.finalizeHistoryMerge(result);
         }
-        this.mergeHistoryPage(result, page);
+        this.mergeHistoryPage(result, page, new Set(), { defer: true });
       }
       // A concurrent deletion of the sentinel invalidates this read, not the
       // user's boundary. Never silently replace it with all remaining history.
       if (sentinel) throw Object.assign(new Error("Conversation history changed during refresh"), {
         code: "conversation_history_changed",
       });
-      return result;
+      return this.finalizeHistoryMerge(result);
     }
 
     async loadOlder({ limit = 200 } = {}) {
@@ -1542,13 +1570,15 @@
 
   let stateReaderSequence = 0;
   class ResidentStateProjection {
-    constructor(residentIds, { includeViewerState = true, consumer = "state_subscription" } = {}) {
+    constructor(residentIds, { includeViewerState = true, consumer = "state_subscription", delivery = "snapshot" } = {}) {
       this.residentIds = [...new Set(
         (Array.isArray(residentIds) ? residentIds : [])
           .map(value => String(value || "").trim())
           .filter(Boolean)
       )];
       this.states = {};
+      this.residentIdSet = new Set(this.residentIds);
+      this.delivery = delivery;
       this.includeViewerState = includeViewerState;
       this.readConsumer = consumer;
       this.readerId = `state-${++stateReaderSequence}`;
@@ -1569,7 +1599,13 @@
 
     emit(value) {
       try {
-        this.listener?.({ ...value, states: clone(this.states) });
+        // Delta consumers receive isolated changed rows; notification consumers
+        // deliberately read no rows. The default remains a complete snapshot.
+        const delta = this.delivery === "delta" && Array.isArray(value.changedResidentIds);
+        const rows = delta ? Object.fromEntries(value.changedResidentIds
+          .filter(id => Object.hasOwn(this.states, id)).map(id => [id, this.states[id]])) : this.states;
+        this.listener?.({ ...value, replace: !delta,
+          ...(this.delivery === "notification" ? {} : { states: clone(rows) }) });
       } catch (error) {
         console.error(window.PortalI18n.t("Resident state subscriber failed"), error);
       }
@@ -1673,7 +1709,7 @@
 
     onStateUpdate(update) {
       const residentId = String(update?.resident_id || "");
-      if (!residentId || !this.residentIds.includes(residentId)) return;
+      if (!residentId || !this.residentIdSet.has(residentId)) return;
       if (update?.type === "invalid") {
         this.reloadRequested = true;
         this.reloadReasons.add(update.reason || "unknown");
@@ -1690,7 +1726,7 @@
       }
       if (update.type === "unavailable") delete this.states[residentId];
       else this.states[residentId] = clone(update?.state || {});
-      if (!this.batching) this.emit({ type: update.type, event: clone(update?.event) });
+      if (!this.batching) this.emit({ type: update.type, event: clone(update?.event), changedResidentIds: [residentId] });
     }
   }
 

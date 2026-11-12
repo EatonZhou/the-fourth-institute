@@ -235,7 +235,7 @@ function bindActiveResidentStates(active) {
       activeResidentStateFrame = 0;
       if (activeAgentStatus) renderActiveAgentStatus(activeAgentStatus);
     });
-  });
+  }, { delivery: "notification" });
   previousCollection?.destroy();
 }
 

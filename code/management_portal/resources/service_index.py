@@ -23,7 +23,7 @@ def query(service: "ResourceService", **kwargs: Any) -> dict[str, Any]:
     query = ResourceQuery.from_kwargs(kwargs)
     enabled_types = service.resource_types.enabled_types()
     if query.resource_types and not enabled_types.intersection(query.resource_types):
-        return query_records((), query, portal_access=service._portal_access)
+        return query_records((), query)
     if query.q:
         try:
             parsed = service.parse_address(query.q)
@@ -31,7 +31,7 @@ def query(service: "ResourceService", **kwargs: Any) -> dict[str, Any]:
             parsed = None
         if parsed is not None and parsed.value == query.q.strip("/"):
             if parsed.resource_type not in enabled_types:
-                return query_records((), query, exact_address=True, portal_access=service._portal_access)
+                return query_records((), query, exact_address=True)
             try:
                 reference = service.reference(
                     parsed.value,
@@ -42,13 +42,13 @@ def query(service: "ResourceService", **kwargs: Any) -> dict[str, Any]:
                     (),
                     query,
                     exact_address=True,
-                    portal_access=service._portal_access,
+
                 )
             return query_records(
                 (reference,),
                 query,
                 exact_address=True,
-                portal_access=service._portal_access,
+
             )
     return service._index().query(
         records_projector=service._collaboration_descriptors,

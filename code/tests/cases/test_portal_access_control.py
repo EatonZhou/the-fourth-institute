@@ -100,7 +100,7 @@ def test_project_catalog_names_each_project_only_by_its_id_contracts(tmp_path, s
         assert user['status'] == 'active'
         assert 'memberships' not in user and 'system_capabilities' not in user
         assert store.is_active('existing-user')
-        assert resource_query.resource_is_readable({'resource_id': 'repo_0123456789ab', 'attributes': {'project_ids': ['private-project']}}, 'existing-user', portal_access=store)
+        assert resource_query.resource_is_readable({'resource_id': 'repo_0123456789ab', 'attributes': {'project_ids': ['private-project']}}, 'existing-user')
     with subtests.test(contract='test_user_updates_revoke_only_that_users_sessions_and_write_audit'), isolated_portal_case() as case_path:
         tmp_path = case_path
         _projects()
@@ -244,7 +244,7 @@ def test_user_disable_and_deletion_are_distinct_lifecycle_states_contracts(tmp_p
         store = PortalAccessStore()
         store.upsert_user('reader', actor='CASE-A')
         record = {'resource_id': 'skill_0123456789ab', 'resource_type': 'skill', 'attributes': {'project_ids': ['Shared Skills'], 'read_scope': 'global'}}
-        assert resource_query.resource_is_readable(record, 'reader', portal_access=store)
+        assert resource_query.resource_is_readable(record, 'reader')
         resource_access.ResourceAccessPolicy().authorize_read(record, actor='reader')
 
 

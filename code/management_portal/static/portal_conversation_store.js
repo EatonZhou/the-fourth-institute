@@ -83,14 +83,16 @@
 
   function publicSnapshot() {
     const frontier = pageFrontier();
+    const snapshots = new Map();
+    const project = item => projectEntry(item, snapshots);
     const entries = state.entries.filter(item => !hidden(item)
-      && (!frontier || compareEntries(item, frontier) <= 0)).map(projectEntry);
-    const allEntries = [...new Map([
-      ...[...state.summaryEntries.values()].filter(item => !hidden(item)).map(item => [item.key, projectEntry(item)]),
-      ...entries.map(item => [item.key, item]),
-    ]).values()];
+      && (!frontier || compareEntries(item, frontier) <= 0));
+    const raw = new Map([...state.summaryEntries.values()].filter(item => !hidden(item)).map(item => [item.key, item]));
+    entries.forEach(item => raw.set(item.key, item));
+    const projected = new Map([...raw].map(([key, item]) => [key, project(item)]));
+    const allEntries = [...projected.values()];
     return Object.freeze({
-      entries,
+      entries: entries.map(item => projected.get(item.key)),
       recent: state.recent.map(cloneEntry),
       unreadCount: allEntries.filter(item => item?.attention_unread ?? item?.unread).length,
       sections: Object.fromEntries(["conversation", "notification"].map(section => {
@@ -174,12 +176,15 @@
     if (state.pendingReads.get(key) === pending) state.pendingReads.delete(key);
   }
 
-  function projectEntry(item) {
+  function projectEntry(item, snapshots = new Map()) {
     if (!item) return item;
     const key = String(item.key || "");
+    let snapshot;
     if (item.resident_id) {
-      const viewerState = window.PortalResidentProtocol?.stateSnapshot?.(item.resident_id);
-      if (viewerState?.ready) acceptReadState(key, viewerState.viewer_state);
+      if (!snapshots.has(item.resident_id)) snapshots.set(item.resident_id,
+        window.PortalResidentProtocol?.stateSnapshot?.(item.resident_id));
+      snapshot = snapshots.get(item.resident_id);
+      if (snapshot?.ready) acceptReadState(key, snapshot.viewer_state);
     }
     const read = readState(item);
     if (item.kind === "chatroom") {
@@ -189,7 +194,6 @@
         unread_mentions: read.unread ? (item.unread_mentions || []) : [] };
     }
     if (!item.resident_id) return { ...item, ...read, attention_unread: read.unread && !read.muted };
-    const snapshot = window.PortalResidentProtocol?.stateSnapshot?.(item.resident_id);
     const residentState = snapshot?.state || null;
     const terminalStatus = ["failed", "interrupted", "archived"].includes(item.status) ? item.status : "idle";
     return {
@@ -227,7 +231,7 @@
         residentStateFrame = 0;
         emit("resident-state");
       });
-    }, { consumer: "inbox", force: true });
+    }, { consumer: "inbox", force: true, delivery: "notification" });
     previousCollection?.destroy();
   }
 
@@ -1350,7 +1354,10 @@
     setInboxOpen,
     loadMore,
     entry: key => projectEntry(entry(key)),
-    entries: () => state.entries.map(projectEntry),
+    entries: () => {
+      const snapshots = new Map();
+      return state.entries.map(item => projectEntry(item, snapshots));
+    },
     discard,
     discardResident,
     isUnread: key => Boolean(projectEntry(entry(key))?.unread),

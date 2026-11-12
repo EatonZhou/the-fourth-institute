@@ -38,7 +38,7 @@ def test_a_resource_registration_notifies_the_index_without_account_lookups(reso
     """资源登记不查询账户记录且通知索引登记结果"""
     access = mock.Mock()
     index = mock.Mock()
-    registry = ResourceService(portal_access=access, index_provider=index)
+    registry = ResourceService(index_provider=index)
     registry.register_mutation_provider(resource_type, register=lambda payload, **context: {
         "resource_id": identifier, **payload,
     })

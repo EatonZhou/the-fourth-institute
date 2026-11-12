@@ -9,9 +9,6 @@ from management_common.resource_identity import (
     ResourceTypeRegistry,
     get_resource_type_registry,
 )
-from management_portal.portal_access_control import (
-    PortalAccessStore,
-)
 
 from .access import ResourceAccessPolicy
 from .action import ActionProviderRegistry
@@ -45,7 +42,6 @@ class ResourceService:
         mutation_provider_loader: Callable[["ResourceService"], None] | None = None,
         action_provider_loader: Callable[["ResourceService"], None] | None = None,
         access_policy: ResourceAccessPolicy | None = None,
-        portal_access: PortalAccessStore | None = None,
         collaboration_store: Any = None,
         registration_store: ResourceRegistrationStore | None = None,
         type_registry: Any = None,
@@ -61,7 +57,6 @@ class ResourceService:
         self._resolver_loader = resolver_loader
         self._mutation_provider_loader = mutation_provider_loader
         self._action_provider_loader = action_provider_loader
-        self._portal_access = portal_access
         self._access = access_policy or ResourceAccessPolicy()
         if collaboration_store is None:
             from .collaboration_registry import CollaborationDescriptorStore

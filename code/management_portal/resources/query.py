@@ -9,9 +9,6 @@ from typing import Any
 from .access import ResourceAccessPolicy
 from . import timing
 from .contracts import ResourceQuery, empty_query_result
-from management_portal.portal_access_control import (
-    PortalAccessStore,
-)
 from management_common.text_values import stripped_text
 
 
@@ -19,14 +16,10 @@ def _copy(value: object) -> Any:
     return json.loads(json.dumps(value, ensure_ascii=False))
 
 
-# ``portal_access`` is accepted and unused: IndexStore and ResourceService
-# query paths whose bytecode the business-fact consumer contracts pin still
-# pass it.
 def resource_is_readable(
     record: Mapping[str, Any],
     actor: str,
     *,
-    portal_access: PortalAccessStore | None = None,
     access_policy: ResourceAccessPolicy | None = None,
 ) -> bool:
     return readable_flags([record], actor, access_policy=access_policy)[0]
@@ -124,21 +117,10 @@ def _matches_query(
     query: ResourceQuery,
     *,
     exact_resource_id: str,
-    include_access: bool,
-    include_search: bool = True,
-    portal_access: PortalAccessStore | None = None,
-    access_policy: ResourceAccessPolicy | None = None,
 ) -> bool:
     if (
         exact_resource_id
         and stripped_text(record.get("resource_id")) != exact_resource_id
-    ):
-        return False
-    if include_access and not resource_is_readable(
-        record,
-        query.actor,
-        portal_access=portal_access,
-        access_policy=access_policy,
     ):
         return False
     resource_type = stripped_text(record.get("resource_type"))
@@ -162,7 +144,7 @@ def _matches_query(
         return False
     if not _matches_filters(attributes, query):
         return False
-    return not include_search or not query.q or _score(record, query.q) > 0
+    return True
 
 
 def prefilter_query_candidates(
@@ -190,20 +172,23 @@ def prefilter_query_candidates(
 def filter_query_candidates(
     records: Iterable[Mapping[str, Any]],
     query: ResourceQuery,
+    *,
+    scores: dict[int, float] | None = None,
 ) -> list[Mapping[str, Any]]:
     """Apply all actor-independent filters after dynamic record projection."""
     candidates = list(records)
     exact_resource_id = _exact_resource_id(candidates, query)
-    return [
-        record
-        for record in candidates
-        if _matches_query(
-            record,
-            query,
-            exact_resource_id=exact_resource_id,
-            include_access=False,
-        )
-    ]
+    selected = []
+    for record in candidates:
+        if not _matches_query(record, query, exact_resource_id=exact_resource_id):
+            continue
+        score = _score(record, query.q)
+        if score <= 0:
+            continue
+        selected.append(record)
+        if scores is not None:
+            scores[id(record)] = score
+    return selected
 
 
 def query_records(
@@ -212,9 +197,13 @@ def query_records(
     *,
     index_updated_at: str = "",
     exact_address: bool = False,
-    portal_access: PortalAccessStore | None = None,
     access_policy: ResourceAccessPolicy | None = None,
+    _filtered_scores: Mapping[int, float] | None = None,
 ) -> dict[str, Any]:
+    """Rank with fresh permissions. Optional scores belong only to the same
+    query's post-projection filter pass and unchanged record objects; callers
+    must not mutate records between that pass and ranking. Never cache access.
+    """
     mark = time.perf_counter()
     candidates = list(records)
     exact_resource_id = _exact_resource_id(candidates, query)
@@ -226,17 +215,20 @@ def query_records(
     for record in candidates:
         if record.get("resource_id") not in readable:
             continue
-        if not _matches_query(
+        if _filtered_scores is not None:
+            score = _filtered_scores.get(id(record), 0.0)
+            if score <= 0:
+                continue
+        elif not _matches_query(
             record,
             query,
             exact_resource_id=exact_resource_id,
-            include_access=False,
-            include_search=not exact_address,
-            portal_access=portal_access,
-            access_policy=access_policy,
         ):
             continue
-        score = 1000.0 if exact_address else _score(record, query.q)
+        else:
+            score = 1000.0 if exact_address else _score(record, query.q)
+            if score <= 0:
+                continue
         ranked.append((score, record))
     rank_key = lambda row: (
         -row[0],

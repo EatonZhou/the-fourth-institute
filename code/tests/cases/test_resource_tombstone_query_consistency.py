@@ -38,13 +38,13 @@ def query_owner(tmp_path, monkeypatch):
     write_projects(f"schema_version: 1\nprojects:\n  - id: {PROJECT}\n  - id: {OTHER_PROJECT}\n")
     access.upsert_user(ACTOR, actor=ACTOR)
     access.upsert_user(OTHER, actor=ACTOR)
-    store = backend.IndexStore( portal_access=access)
+    store = backend.IndexStore()
     adapter = resource_index_registries.CollaborationRegistryAdapter()
     store.publish_snapshot(adapter.name, [], {})
     index = backend.ResourceIndexService(store=store, adapters=[adapter], start_worker=False)
     index.adapter_layer._on_projection_changed = None
     resource = ResourceService(
-        index_provider=index,  portal_access=access,
+        index_provider=index,
         collaboration_store=descriptors,
         registration_store=ResourceRegistrationStore(),
         resolver_loader=collaboration.install_resolver,
@@ -157,7 +157,7 @@ def test_explicit_deleted_query_keeps_authorization_and_project_filters(query_ow
     set_status(target, deleted, "deleted")
     set_status(target, hidden, "deleted")
     if not scoped:
-        target.store._portal_access = None
+
         target.resource = ResourceService(index_provider=target.index,  collaboration_store=target.descriptors, registration_store=ResourceRegistrationStore(), resolver_loader=collaboration.install_resolver)
     # In open mode every valid User reads; the status, Project and attribute
     # filters still select exactly the requested deleted records.

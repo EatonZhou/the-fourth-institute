@@ -35,10 +35,6 @@ def create_schema(connection: Any) -> None:
         edge_id TEXT PRIMARY KEY REFERENCES lineage_edges(edge_id), {declarations(INVOCATION_FIELDS)})''')
 
 
-def put(connection: Any, edge: dict) -> None:
-    put_many(connection, [edge])
-
-
 def put_many(connection: Any, edges: list[dict]) -> None:
     """Reconcile handoff items in one batch, including removed/type-changed edges."""
     if not edges:

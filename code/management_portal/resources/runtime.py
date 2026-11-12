@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import threading
 
-from management_portal.portal_access_control import get_portal_access_store
 
 from .config import resource_service_mode
 from .providers import (
@@ -26,7 +25,6 @@ def create_local_resource_service() -> ResourceService:
         resolver_loader=install_resolvers,
         mutation_provider_loader=install_mutation_providers,
         action_provider_loader=install_action_providers,
-        portal_access=get_portal_access_store(),
         registration_store=ResourceRegistrationStore(),
     )
 

@@ -153,16 +153,16 @@ def owners(tmp_path, monkeypatch):
     monkeypatch.setattr(project, "get_portal_access_store", lambda: access)
     descriptors = CollaborationDescriptorStore()
     registrations = ResourceRegistrationStore()
-    index_store = resource_index_backend.IndexStore( portal_access=access)
+    index_store = resource_index_backend.IndexStore()
     project_adapter = resource_index_registries.ProjectRegistryAdapter()
     index = resource_index_backend.ResourceIndexService(
         store=index_store,
         adapters=[project_adapter, resource_index_knowledge.ProjectKnowledgeAdapter(),
                   resource_index_registries.CollaborationRegistryAdapter()],
-        start_worker=False,  portal_access=access,
+        start_worker=False,
     )
     resource = ResourceService(
-        index_provider=index, portal_access=access,
+        index_provider=index,
         collaboration_store=descriptors, registration_store=registrations,
         resolver_loader=install_resolvers,
     )
@@ -319,10 +319,10 @@ def test_project_binding_resource_and_execution_follow_real_domain_ports(owners,
     fresh_access = PortalAccessStore()
     assert "memberships" not in fresh_access.user(ACTOR)
     fresh_descriptors = CollaborationDescriptorStore()
-    fresh_index_store = resource_index_backend.IndexStore( portal_access=owners.access)
-    fresh_index = resource_index_backend.ResourceIndexService(store=fresh_index_store, adapters=[], start_worker=False,  portal_access=owners.access)
+    fresh_index_store = resource_index_backend.IndexStore()
+    fresh_index = resource_index_backend.ResourceIndexService(store=fresh_index_store, adapters=[], start_worker=False)
     fresh_resource = ResourceService(
-        index_provider=fresh_index, portal_access=owners.access,
+        index_provider=fresh_index,
         collaboration_store=fresh_descriptors, registration_store=ResourceRegistrationStore(), resolver_loader=install_resolvers,
     )
     owners.monkeypatch.setattr(knowledge_backend, "get_resource_service", lambda: fresh_resource)

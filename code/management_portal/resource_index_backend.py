@@ -5,10 +5,6 @@ import os
 import threading
 from typing import Any, Iterable
 
-from management_portal.portal_access_control import (
-    PortalAccessStore,
-    get_portal_access_store,
-)
 from management_common.text_values import stripped_text
 from management_portal.resources.index_runtime import ResourceIndexRuntime
 from management_portal import portal_features
@@ -73,11 +69,8 @@ class ResourceIndexService(ResourceIndexRuntime):
         store: IndexStore | None = None,
         adapters: Iterable[ResourceAdapter] | None = None,
         start_worker: bool = True,
-        portal_access: PortalAccessStore | None = None,
     ) -> None:
-        store_instance = store or IndexStore(
-            portal_access=portal_access,
-        )
+        store_instance = store or IndexStore()
         selected_adapters = (
             list(adapters)
             if adapters is not None
@@ -110,7 +103,5 @@ def get_service() -> ResourceIndexService:
     if _SERVICE is None:
         with _SERVICE_LOCK:
             if _SERVICE is None:
-                _SERVICE = ResourceIndexService(
-                    portal_access=get_portal_access_store(),
-                )
+                _SERVICE = ResourceIndexService()
     return _SERVICE

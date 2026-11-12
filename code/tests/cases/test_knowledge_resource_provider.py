@@ -155,7 +155,7 @@ def test_scoped_project_viewer_can_resolve_and_find_exact_knowledge_id(
             "status": "active",
         },
     }
-    service = ResourceService(index_provider=index, portal_access=access)
+    service = ResourceService(index_provider=index)
     with mock.patch.object(
         knowledge_backend,
         "resolve_item_address",
