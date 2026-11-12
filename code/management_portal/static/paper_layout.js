@@ -84,25 +84,6 @@
     }
 
     async function setMode(mode) {
-      if (mode === "home") {
-        if (!await cancelPdfRendering()) return;
-        state.leftFace = "library";
-        state.query = "";
-        state.filters = {};
-        state.activeSemanticSearchId = "";
-        state.activeCollectorJobId = "";
-        state.listReturn = null;
-        state.listScrollTop = 0;
-        state.selectedId = "";
-        state.detail = null;
-        state.semanticSearch?.setActiveId?.("", {notify:false});
-        const search = $("searchInput"); if (search) search.value = "";
-        ["yearFilter", "venueFilter", "tagFilter", "projectFilter", "registeredFilter"].forEach(id => { if ($(id)) $(id).value = ""; });
-        const address = new URL(location.href);
-        ["paper", "semantic", "collector", "chat_workspace", "chat", "q", "year", "venue", "tag", "project", "registered", "analysis", "favorite"].forEach(key => address.searchParams.delete(key));
-        history.replaceState(history.state || {}, "", address.href);
-        mode = "library";
-      }
       if (mode === "list-return") {
         if (!await cancelPdfRendering()) return;
         state.mode = state.listReturn?.mode || "library";
@@ -187,6 +168,8 @@
       const list = isCollectionMode(state.mode);
       if ($("registeredFilter")) $("registeredFilter").value = state.mode === "today" || (!list && state.listReturn?.mode === "today") ? "today" : "";
       if ($("modeTabs")) { $("modeTabs").hidden = list; $("modeTabs").style.display = list ? "none" : ""; }
+      const back = $("returnToPaperList");
+      if (back) back.hidden = list;
       const isCcf = state.leftFace === "ccf";
       const activeMode = isCcf && !["library", "reader"].includes(state.mode) ? "library" : state.mode;
       document.querySelectorAll("#modeTabs button[data-mode]").forEach(btn => {

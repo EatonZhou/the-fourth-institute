@@ -146,11 +146,7 @@
         const btn = event.target.closest("button[data-mode]");
         if (btn) setMode(btn.dataset.mode);
       });
-      window.addEventListener("popstate", () => {
-        const paperId = new URL(location.href).searchParams.get("paper");
-        if (paperId) loadDetail(paperId).then(() => setMode("reader")).catch(alertError);
-        else if (state.listReturn) setMode("list-return").catch(alertError);
-      });
+      $("returnToPaperList")?.addEventListener("click", () => setMode("list-return"));
       $("registeredFilter")?.addEventListener("change", event => {
         setMode(event.target.value === "today" ? "today" : "library");
       });
@@ -162,17 +158,18 @@
         if (body) body.hidden = !expanded;
       });
       $("workspaceModeActions").addEventListener("click", event => {
+        if (event.target.closest("#exportLibraryMarkdownBtn")) {
+          exportLibraryMarkdown().catch(alertError);
+          return;
+        }
         if (event.target.closest("#deepReadBtn")) startDeepRead().catch(alertError);
         if (event.target.closest("#uploadPaperPdfBtn")) openPdfUploadPicker();
+        if (event.target.closest("#deletePaperPdfBtn")) deleteCurrentPaperPdf().catch(alertError);
         if (event.target.closest("#deletePaperBtn")) deleteCurrentPaper().catch(alertError);
       });
       $("paperPdfUploadInput").addEventListener("change", event => {
         const file = event.target.files?.[0] || null;
         uploadCurrentPaperPdf(file).catch(alertError);
-      });
-      $("workspaceHeadingActions").addEventListener("click", event => {
-        if (event.target.closest("#exportLibraryMarkdownBtn")) exportLibraryMarkdown().catch(alertError);
-        if (event.target.closest("#paperHomeBtn")) setMode("home").catch(alertError);
       });
     }
 
@@ -186,10 +183,6 @@
         applyCcfPaperListFilter();
       });
       $("workspaceMain").addEventListener("click", event => {
-        if (event.target.closest("#deletePaperPdfBtn")) {
-          deleteCurrentPaperPdf().catch(alertError);
-          return;
-        }
         if (event.target.closest("#loadMoreLibraryBtn")) {
           loadMoreLibrary().catch(alertError);
           return;

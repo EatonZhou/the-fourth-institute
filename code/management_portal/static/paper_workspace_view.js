@@ -132,7 +132,6 @@
           ccfWorkspaceMeta(),
         );
         $("workspaceModeActions").innerHTML = "";
-        $("workspaceHeadingActions").innerHTML = "";
         $("workspaceModeActions").parentElement.style.display = "";
         if (!chromeOnly) renderCcfWorkspace();
         return;
@@ -160,31 +159,40 @@
     function renderWorkspaceModeActions(paper) {
       const target = $("workspaceModeActions");
       if (!target) return;
-      const status = $("deepReadStatusText");
-      const list = ["library", "today"].includes(state.mode);
-      const home = !list || state.mode === "today" || state.activeSemanticSearchId || state.activeCollectorJobId
-        || state.query || Object.values(state.filters || {}).some(Boolean);
-      $("workspaceHeadingActions").innerHTML = window.PortalI18n.html`
-        ${home ? window.PortalI18n.html`<button class="portalButton is-compact is-quiet" id="paperHomeBtn" type="button">${window.PortalI18n.t("Back to library")}</button>` : ""}
-        ${list ? window.PortalI18n.html`<button class="portalButton is-compact is-quiet" id="exportLibraryMarkdownBtn" type="button" ${state.library?.papers?.length ? "" : "disabled"}>${window.PortalI18n.t("Export")}</button>` : ""}`;
-      target.parentElement.style.display = list ? "none" : "";
-      if (status) status.textContent = paper && !["library", "today"].includes(state.mode) ? deepReadStateFor(paper).text : "";
       if (state.mode === "library" || state.mode === "today") {
-        target.innerHTML = "";
+        target.innerHTML = window.PortalI18n.html`
+            <button class="portalButton is-compact is-quiet" type="button" id="exportLibraryMarkdownBtn" ${state.library?.papers?.length ? "" : "disabled"}>
+              ${window.PortalI18n.t("Export")}
+            </button>
+          `;
         return;
       }
-      if (paper) {
+      if (state.mode === "reader" && paper) {
         const deepState = deepReadStateFor(paper);
         const uploadButton = !paper.has_pdf
           ? window.PortalI18n.html`<button class="portalButton is-compact is-primary" type="button" id="uploadPaperPdfBtn" ${state.pdfUploadInFlight ? "disabled" : ""}>${state.pdfUploadInFlight ? window.PortalI18n.t("Uploading...") : "+ PDF"}</button>`
           : "";
+        const deletePdfButton = paper.has_pdf
+          ? window.PortalI18n.html`<button class="portalButton is-compact is-danger" type="button" id="deletePaperPdfBtn" ${state.pdfDeleteInFlight ? "disabled" : ""}>${window.PortalI18n.t(state.pdfDeleteInFlight ? "Deleting PDF..." : "Delete PDF")}</button>`
+          : "";
         target.innerHTML = window.PortalI18n.html`
+            <span class="paneNote" id="deepReadStatusText" role="status" aria-live="polite">${esc(deepState.text)}</span>
             <span class="workspaceActionButtons">
               ${uploadButton}
+              ${deletePdfButton}
               <button class="portalButton is-compact is-primary" type="button" id="deepReadBtn" ${paper.has_pdf && !deepState.running ? "" : "disabled"}>
                 ${esc(deepState.buttonText)}
               </button>
-              <button class="portalButton is-compact is-danger" type="button" id="deletePaperBtn">${window.PortalI18n.t("Delete")}</button>
+              <button class="portalButton is-compact is-danger" type="button" id="deletePaperBtn">${window.PortalI18n.t("删除")}</button>
+            </span>
+          `;
+        return;
+      }
+      if (paper) {
+        target.innerHTML = window.PortalI18n.html`
+            <span class="workspaceActionButtons">
+              ${!paper.has_pdf ? window.PortalI18n.html`<button class="portalButton is-compact is-primary" type="button" id="uploadPaperPdfBtn" ${state.pdfUploadInFlight ? "disabled" : ""}>${state.pdfUploadInFlight ? window.PortalI18n.t("Uploading...") : "+ PDF"}</button>` : ""}
+              <button class="portalButton is-compact is-danger" type="button" id="deletePaperBtn">${window.PortalI18n.t("删除")}</button>
             </span>
           `;
         return;
@@ -224,7 +232,7 @@
       const status = deepReadStateFor(paper);
       const textEl = $("deepReadStatusText");
       const btn = $("deepReadBtn");
-      if (textEl) textEl.textContent = ["library", "today"].includes(state.mode) ? "" : status.text;
+      if (textEl) textEl.textContent = status.text;
       if (btn) {
         btn.textContent = status.buttonText;
         btn.disabled = !paper.has_pdf || !!status.running;
