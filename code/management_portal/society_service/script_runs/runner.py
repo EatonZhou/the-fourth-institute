@@ -19,6 +19,7 @@ from management_common.local_ipc import LocalListener
 from management_common import process_runtime
 
 from . import runtime
+from management_common.directory_links import is_directory_link
 
 MAX_LOG = 10 * 1024 * 1024
 MAX_JSON = 65536
@@ -127,19 +128,27 @@ def result_fields(io: Path):
     if output_path.exists() or output_path.is_symlink():
         if output_path.is_symlink() or not output_path.is_file() or output_path.stat().st_size > MAX_JSON:
             raise ValueError('script.invalid_output')
-        outputs = json.loads(output_path.read_text(), parse_constant=lambda value: (_ for _ in ()).throw(ValueError(value)))
+        outputs = json.loads(output_path.read_text(encoding='utf-8'), parse_constant=lambda value: (_ for _ in ()).throw(ValueError(value)))
         if not isinstance(outputs, dict):
             raise ValueError('script.invalid_output')
     artifacts = []
     size = 0
     root = io / 'artifacts'
-    if root.is_symlink():
+    if is_directory_link(root):
         raise ValueError('script.invalid_artifacts')
-    for path in sorted(root.rglob('*')):
-        if path.is_symlink():
+    def files():
+        def failed(error):
+            raise error
+        for directory, dirs, names in os.walk(root, onerror=failed, followlinks=False):
+            # Windows junctions are directory links but not symbolic links.
+            # Reject before traversal, including links to another local folder.
+            if any(is_directory_link(Path(directory) / name) for name in dirs):
+                raise ValueError('script.invalid_artifacts')
+            for name in names:
+                yield Path(directory) / name
+    for path in files():
+        if is_directory_link(path):
             raise ValueError('script.invalid_artifacts')
-        if path.is_dir():
-            continue
         if not path.is_file():
             raise ValueError('script.invalid_artifacts')
         size += path.stat().st_size
@@ -148,7 +157,7 @@ def result_fields(io: Path):
         name = path.relative_to(root).as_posix()
         artifacts.append({'name': name, 'path': name, 'size': path.stat().st_size,
                           'mime_type': mimetypes.guess_type(name)[0] or 'application/octet-stream'})
-    return outputs, artifacts
+    return outputs, sorted(artifacts, key=lambda artifact: artifact['name'])
 
 
 def run(config: dict, run_dir: Path, *, forward=None):
@@ -233,7 +242,7 @@ def _run(config: dict, run_dir: Path, *, socket_path: Path, forward=None):
     if failure is not None:
         result['status'] = 'failed'
         result['error_code'] = 'script.runner_failed'
-        with (run_dir / 'stderr.log').open('a') as stream:
+        with (run_dir / 'stderr.log').open('a', encoding='utf-8') as stream:
             stream.write(type(failure).__name__ + ': ' + str(failure))
     else:
         try:
@@ -255,7 +264,7 @@ def _run(config: dict, run_dir: Path, *, socket_path: Path, forward=None):
 
 def main():
     private = Path(sys.argv[1])
-    config = json.loads(private.read_text())
+    config = json.loads(private.read_text(encoding='utf-8'))
     try:
         # This receipt repairs the launch/PID-persistence window after a Society
         # restart; it does not authorize signalling an unverified/reused PID.

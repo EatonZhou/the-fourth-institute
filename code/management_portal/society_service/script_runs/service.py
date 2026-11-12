@@ -4,6 +4,7 @@ from __future__ import annotations
 from management_common.principal import is_user_or_resident
 from management_common.instance_manifest import load
 from management_common import process_runtime
+from management_common.secure_paths import open_target, relative_parts
 from management_common.product_environment import read_product_env
 
 import base64
@@ -16,6 +17,7 @@ import json
 import os
 from pathlib import Path
 import secrets
+import stat
 import sys
 import time
 
@@ -292,15 +294,19 @@ def read_output(arguments, caller):
         path = root / (stream + '.log')
     else:
         raise ValueError('stream 无效')
-    if path.is_symlink() or not path.resolve().is_relative_to(root.resolve()):
-        raise PermissionError('产物路径越界')
     offset, limit = max(0, int(arguments.get('offset', 0))), min(65536, max(1, int(arguments.get('limit', 65536))))
     data, size = b'', 0
-    if path.exists():
-        with path.open('rb') as source:
-            size = os.fstat(source.fileno()).st_size
-            source.seek(offset)
-            data = source.read(limit)
+    try:
+        with open_target(root, relative_parts(path.relative_to(root).as_posix())) as (fd, info):
+            if not stat.S_ISREG(info.st_mode):
+                raise PermissionError('产物不是普通文件')
+            size = info.st_size
+            os.lseek(fd, offset, os.SEEK_SET)
+            data = os.read(fd, limit)
+    except FileNotFoundError:
+        pass
+    except ValueError as error:
+        raise PermissionError('产物路径越界') from error
     return {'text': data.decode('utf-8', 'replace'), 'base64': base64.b64encode(data).decode(), 'offset': offset,
             'next_offset': offset + len(data), 'size': size, 'eof': offset + len(data) >= size, 'mime_type': mime,
             'truncated': bool(row.get(stream + '_truncated'))}
@@ -322,7 +328,7 @@ def _runner_pid(record):
     receipt = runtime.RUN_ROOT / record['script_run_id'] / 'runner.json'
     if not receipt.is_file():
         return None
-    saved = json.loads(receipt.read_text())
+    saved = json.loads(receipt.read_text(encoding='utf-8'))
     if not isinstance(saved, dict):
         raise RuntimeError('ScriptRun runner receipt is not an object')
     pid = saved.get('pid')
@@ -368,7 +374,7 @@ def running_state(record):
         path = runtime.RUN_ROOT / identifier / 'payload.json'
         if not path.is_file():
             return 'unknown'
-        payload = json.loads(path.read_text())
+        payload = json.loads(path.read_text(encoding='utf-8'))
         if not isinstance(payload, dict) or payload.get('script_run_id') != identifier:
             return 'unknown'
         if payload.get('state') == 'stopped':
@@ -429,7 +435,7 @@ def cancel(identifier, caller, *, lineage_id):
         result_file = runtime.RUN_ROOT / identifier / 'result.json'
         completed = result_file.is_file()
         if completed:
-            row.update(json.loads(result_file.read_text()))
+            row.update(json.loads(result_file.read_text(encoding='utf-8')))
         else:
             row['cancel_requested'] = True
         record = deepcopy(row)
@@ -443,7 +449,7 @@ def cancel(identifier, caller, *, lineage_id):
             return public(row)
         result_file = runtime.RUN_ROOT / identifier / 'result.json'
         if result_file.is_file():
-            row.update(json.loads(result_file.read_text()))
+            row.update(json.loads(result_file.read_text(encoding='utf-8')))
         else:
             row.update(status='cancelled', finished_at=row.get('finished_at') or now(),
                        duration_seconds=row.get('duration_seconds') or time.time()-datetime.fromisoformat(row['started_at']).timestamp())

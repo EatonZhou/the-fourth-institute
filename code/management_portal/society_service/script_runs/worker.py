@@ -71,7 +71,7 @@ class Worker:
             result_file = root / 'result.json'
             update = None
             if result_file.is_file():
-                update = json.loads(result_file.read_text())
+                update = json.loads(result_file.read_text(encoding='utf-8'))
             elif record.get('cancel_requested'):
                 # A Society restart may occur after launch but before start()
                 # observes an admitted cancellation. Reuse the original run.
@@ -82,7 +82,7 @@ class Worker:
                 if age > 20:
                     state = service.running_state(record)
                     if result_file.is_file():
-                        update = json.loads(result_file.read_text())
+                        update = json.loads(result_file.read_text(encoding='utf-8'))
                     elif state == 'stopped':
                         timeout = record.get('timeout_seconds')
                         update = {'status': 'timed_out' if timeout is not None and age >= timeout else 'lost',
@@ -93,7 +93,7 @@ class Worker:
                 with store.edit(identifier) as row:
                     if row['status'] == 'running':
                         if result_file.is_file():
-                            update = json.loads(result_file.read_text())
+                            update = json.loads(result_file.read_text(encoding='utf-8'))
                         row.update(update)
                     record = deepcopy(row)
         if record['status'] in service.TERMINAL and self.owns_lease():
