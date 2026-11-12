@@ -1,5 +1,6 @@
 from __future__ import annotations
 from management_common.product_environment import mirror_product_env
+from management_common.ssh_runtime import ssh_executable
 
 from management_common.portal_paths import path as portal_path
 from management_common.clock import utc_now_iso
@@ -585,7 +586,7 @@ def test_ssh_connection(
     via_resource_id = str(ssh["via_resource_id"])
     password_path = _device_password_path(via_resource_id)
     use_password = bool(ssh["credential_saved"])
-    command = ["ssh"]
+    command = [ssh_executable(needs_askpass=use_password)]
     config_path = stripped_text(ssh.get("config_path"))
     if config_path:
         command.extend(["-F", str(Path(config_path).expanduser())])
@@ -628,7 +629,7 @@ def test_ssh_connection(
         run_options = {"env": environment, "stdin": subprocess.DEVNULL}
     try:
         completed = subprocess.run(
-            [*command, "--", target, "true"],
+            [*command, "--", target, "exit 0"],
             check=False,
             capture_output=True,
             text=True,

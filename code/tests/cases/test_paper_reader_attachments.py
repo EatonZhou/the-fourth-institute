@@ -45,6 +45,20 @@ def test_import_replace_rollback_and_annotations(setup):
     with pytest.raises(PermissionError): owner.resolve_attachment(object(), asdict(first))
 
 
+def test_published_readonly_version_keeps_bytes_after_stage_cleanup(setup):
+    import os
+    import stat
+    c, owner, source = setup
+    document = ingest(c, owner, source)
+    assert list((owner.root / 'staging').iterdir()) == []
+    with owner.open_version(c, asdict(document)) as stream:
+        assert stream.read() == source.read_bytes()
+        info = os.fstat(stream.fileno())
+    assert not info.st_mode & stat.S_IWUSR
+    if os.name == 'nt':
+        assert info.st_file_attributes & stat.FILE_ATTRIBUTE_READONLY
+
+
 @pytest.mark.parametrize('failure', ['prepared', 'published', 'before_commit'])
 def test_recover_after_midflight_failure(setup, failure):
     c, owner, source = setup

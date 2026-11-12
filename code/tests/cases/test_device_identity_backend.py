@@ -347,7 +347,7 @@ def test_register_device_persists_ssh_connection_and_tests_it(tmp_path: Path) ->
     assert result["reachable"] is True
     assert result["via_resource_id"] == device_id
     command = run.call_args.args[0]
-    assert command[-3:] == ["--", "operator@lab-ws", "true"]
+    assert command[-3:] == ["--", "operator@lab-ws", "exit 0"]
     assert ["-p", "2222"] == command[command.index("-p"):command.index("-p") + 2]
 
     removed = device_identity_backend.unregister_device(

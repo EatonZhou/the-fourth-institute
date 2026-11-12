@@ -10,6 +10,7 @@ import stat
 from management_common.domain_database import DomainDatabase
 from management_common.file_durability import sync_directory
 from management_common.file_permissions import create_private_file
+from management_common.secure_paths import open_directory, unlink_child
 from management_portal.paper_pdf import _has_pdf_header
 from management_portal.paper_reader_annotations import Attachment, Conflict
 
@@ -58,6 +59,15 @@ class AttachmentOwner:
         if not path.resolve().is_relative_to(self.root) or path.is_symlink():
             raise PermissionError('attachment path escapes configured root')
         return path
+
+    def _remove_stage(self, stage):
+        # Published versions share this inode. Windows' read-only attribute
+        # must remain intact on the version while deleting the staging name.
+        try:
+            with open_directory(stage.parent) as directory:
+                unlink_child(directory, stage.name)
+        except FileNotFoundError:
+            pass
 
     @contextmanager
     def _operation(self, operation, *, create=True):
@@ -118,7 +128,7 @@ class AttachmentOwner:
                 with self.database.read() as db:
                     state = db.execute('SELECT state FROM reader_attachment_imports WHERE operation_id=%s', (operation_id,)).fetchone()[0]
                 if state == 'copying':
-                    stage.unlink(missing_ok=True)
+                    self._remove_stage(stage)
                     with self.database.transaction() as db:
                         db.execute("UPDATE reader_attachment_imports SET state='failed' WHERE operation_id=%s", (operation_id,))
                 raise
@@ -152,7 +162,7 @@ class AttachmentOwner:
         if state == 'done': return Attachment(paper, self._attachment_id(paper), version)
         stage = self._path('staging/' + operation)
         if state == 'copying':
-            stage.unlink(missing_ok=True)
+            self._remove_stage(stage)
             with self.database.transaction() as db:
                 db.execute("UPDATE reader_attachment_imports SET state='failed' WHERE operation_id=%s", (operation,))
             raise Conflict('incomplete copy; start a new explicit import')
@@ -165,7 +175,7 @@ class AttachmentOwner:
             sync_directory(final.parent)
         if final.stat().st_size != size:
             raise Conflict('published version size mismatch; manual inspection required')
-        stage.unlink(missing_ok=True); sync_directory(stage.parent)
+        self._remove_stage(stage); sync_directory(stage.parent)
         self.checkpoint('published')
         with self.database.transaction(key=paper) as db:
             head = self._head(db, paper)

@@ -5,7 +5,6 @@ from __future__ import annotations
 import json
 import os
 import shlex
-import shutil
 import sys
 import tempfile
 import time
@@ -13,6 +12,7 @@ from contextlib import ExitStack, contextmanager
 from pathlib import Path
 from typing import Any
 
+from management_common.ssh_runtime import ssh_executable
 from management_common import file_permissions
 from management_common.product_environment import mirror_product_env
 from management_common.text_values import stripped_text
@@ -145,20 +145,6 @@ def _repo_ssh_identity(record: dict[str, Any]) -> Path | None:
     return _SSH_KEY_ROOT / key_name
 
 
-def _ssh_executable(*, needs_askpass: bool) -> str:
-    if sys.platform != "win32" or not needs_askpass:
-        return "ssh"
-    # Native Win32 OpenSSH uses CreateProcess for askpass, which cannot run a
-    # Python/shebang script. Use the paired POSIX tools shipped with Git for
-    # Windows so the private shell launcher has defined execution semantics.
-    git = shutil.which("git")
-    if git:
-        for root in Path(git).resolve().parents:
-            ssh = root / "usr" / "bin" / "ssh.exe"
-            shell = root / "usr" / "bin" / "sh.exe"
-            if ssh.is_file() and shell.is_file():
-                return ssh.as_posix()
-    raise GitOperationError("Windows SSH password authentication requires Git for Windows with bundled ssh and sh.")
 
 
 @contextmanager
@@ -184,7 +170,7 @@ def _ssh_command(
     batch_mode: bool,
 ) -> str:
     command = [
-        _ssh_executable(needs_askpass=not batch_mode),
+        ssh_executable(needs_askpass=not batch_mode),
         "-o",
         f"BatchMode={'yes' if batch_mode else 'no'}",
         "-o",
