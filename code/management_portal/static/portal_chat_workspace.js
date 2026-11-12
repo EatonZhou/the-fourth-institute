@@ -646,7 +646,7 @@
       if (!els.status) return;
       if (!transientStatus && !state.loading) {
         if (state.composer.can_send === false) {
-          transientStatus = state.composer.disabled_reason || window.PortalI18n.t("当前对话暂不可发送");
+          transientStatus = window.PortalI18n.t(state.composer.disabled_reason || "当前对话暂不可发送");
         } else {
           transientStatus = String(state.composer.send_hint || "").trim();
         }
@@ -661,7 +661,9 @@
         transientStatus = [gateSummary, transientStatus].filter(Boolean).join(" · ");
         if (gate.state !== "open") {
           gateFullText = transientStatus;
-          transientStatus = gate.reasonText || window.PortalI18n.t("暂停执行");
+          transientStatus = state.composer.input_read_only === true
+            ? [window.PortalI18n.t(state.composer.disabled_reason || "当前对话暂不可发送"), gate.reasonText].filter(Boolean).join(" · ")
+            : gate.reasonText || window.PortalI18n.t("暂停执行");
         }
       }
       const decorateGateStatus = node => {
@@ -988,7 +990,14 @@
         const disabled = state.composer.can_send === false && state.composer.input_read_only === true;
         els.input.setAttribute("contenteditable", String(options.editable !== false && !disabled));
         els.input.setAttribute("aria-disabled", String(disabled));
-        els.input.style.opacity = disabled ? "0.55" : "";
+        const placeholder = window.PortalI18n.t(disabled
+          ? state.composer.disabled_reason || "当前对话暂不可发送"
+          : state.composer.placeholder || "Ctrl/⌘ + Enter 发送");
+        els.input.setAttribute("data-placeholder", placeholder);
+        els.input.setAttribute("aria-label", disabled ? placeholder : COMPOSER_INPUT_LABEL);
+        els.input.style.opacity = "";
+        els.input.style.backgroundColor = disabled ? "color-mix(in srgb, var(--panel, #fff) 75%, var(--muted, #64748b) 25%)" : "";
+        els.input.style.cursor = disabled ? "not-allowed" : "";
       }
       const uploading = state.attachments.some(item => item.uploading);
       const failed = state.attachments.some(item => item.error);
