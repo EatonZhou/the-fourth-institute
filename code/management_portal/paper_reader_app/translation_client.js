@@ -11,7 +11,7 @@ export async function translateSelection({selection, mode, operationId, principa
       ...(body ? {body: JSON.stringify(body)} : {}),
     });
     const result = await response.json();
-    if (!response.ok) throw new Error(result.error?.message || `翻译请求失败 (${response.status})`);
+    if (!response.ok) throw new Error(`翻译请求失败（${response.status}）`);
     return result;
   };
   let result = await call(PATH, {operation_id: operationId, text: selection.text,

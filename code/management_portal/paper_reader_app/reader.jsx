@@ -25,17 +25,18 @@ function ReaderSplit({content, width}) {
     const observer=new MutationObserver(()=>{if(area.closest('.is-embedded'))cancel();});observer.observe(area.closest('dialog'),{attributes:true,attributeFilter:['class']});
     return()=>{cancel();unbind();resize.disconnect();observer.disconnect();window.removeEventListener('blur',cancel);node.removeEventListener('lostpointercapture',lost);node.removeEventListener('pointerdown',down);};
   },[]);
-  return <div ref={handle} className="paperAISplitter" role="separator" aria-orientation="vertical" aria-label="调整 AI 侧栏宽度" tabIndex={0}/>;
+  return <div ref={handle} className="paperAISplitter" role="separator" aria-orientation="vertical" aria-label={t('调整 AI 侧栏宽度')} tabIndex={0}/>;
 }
 
 function Reader({paper, principal, anchor, close, control, readingReady, frameReady, isCurrent, isFullscreen}) {
-  const [,setLanguageVersion]=useState(0);
+  const [languageVersion,setLanguageVersion]=useState(0);
   useEffect(()=>{
     const changed=()=>setLanguageVersion(value=>value+1);
     window.addEventListener('portal:language-changed',changed);
     return()=>window.removeEventListener('portal:language-changed',changed);
   },[]);
   const frame = useRef(null), bridge = useRef(null), content = useRef(null), aiWidth = useRef(0);
+  useEffect(()=>{frame.current?.closest('dialog')?.setAttribute('aria-label',t('全屏论文阅读'));},[languageVersion]);
   const [status, setStatus] = useState('正在打开论文…');
   const [failed, setFailed] = useState(false);
   const [selection, setSelection] = useState(null);
@@ -66,7 +67,7 @@ function Reader({paper, principal, anchor, close, control, readingReady, frameRe
     try {
       const response=await fetch('/paper/api/research/chats',{credentials:'same-origin'});
       const choices=await response.json();
-      if(!response.ok)throw Error(choices.error||'无法读取研究助手');
+      if(!response.ok)throw Object.assign(new Error(),{status:response.status,code:choices.error?.code});
       if(sequence!==discussionSequence.current)return;
       if(!isCurrent()||choices.principal!==principal)throw Error('账号已变化，请重新打开论文');
       const selected=choices.selected;
@@ -76,7 +77,7 @@ function Reader({paper, principal, anchor, close, control, readingReady, frameRe
       if(discussion?.key===key&&!selection)return;
       const document=selection?.document||await bridge.current.aiDocument();
       if(isCurrent()&&isFullscreen()&&sequence===discussionSequence.current){setStatus('');setDiscussion({...selection,document,key});}
-    } catch(error){if(isCurrent()&&sequence===discussionSequence.current)setStatus(error.message); }
+    } catch(error){if(isCurrent()&&sequence===discussionSequence.current)setStatus(window.PortalPaperResearchControls.errorSource(error)); }
   };
   useEffect(() => {
     frameReady(frame.current.contentWindow);
@@ -97,29 +98,24 @@ function Reader({paper, principal, anchor, close, control, readingReady, frameRe
   return <div className="paperReadingApp">
     <header className="paperReadingToolbar">
       <strong title={paper.title}>{paper.title}</strong>
-      <button aria-expanded={sidebarOpen && tab === 'ai'} onClick={()=>sidebarOpen && tab === 'ai'?setSidebarOpen(false):openDiscussion()}>{t(sidebarOpen && tab === 'ai'?'收起 AI':'打开 AI')}</button>
-      <button aria-expanded={sidebarOpen && tab === 'translation'} onClick={()=>{setSidebarOpen(true);setTab('translation');setPopup(null);selection?.dismissPopup?.();}}>{t('翻译')}</button>
-      <a href={paper.pdf_url} target="_blank" rel="noopener noreferrer">原始 PDF</a>
-      <button onClick={() => close()}><span className="paperLayoutEnter">全屏阅读</span><span className="paperLayoutExit">退出全屏</span></button>
+      <button aria-pressed={sidebarOpen && tab === 'ai'} aria-expanded={sidebarOpen && tab === 'ai'} onClick={()=>sidebarOpen && tab === 'ai'?setSidebarOpen(false):openDiscussion()}>{t(sidebarOpen && tab === 'ai'?'收起 AI':'打开 AI')}</button>
+      <button aria-pressed={sidebarOpen && tab === 'translation'} aria-expanded={sidebarOpen && tab === 'translation'} onClick={()=>{setSidebarOpen(!(sidebarOpen&&tab==='translation'));setTab('translation');setPopup(null);selection?.dismissPopup?.();}}>{t(sidebarOpen&&tab==='translation'?'收起翻译':'翻译')}</button>
+      <a href={paper.pdf_url} target="_blank" rel="noopener noreferrer">{t('原始 PDF')}</a>
+      <button onClick={() => close()}><span className="paperLayoutEnter">{t('全屏阅读')}</span><span className="paperLayoutExit">{t('退出全屏')}</span></button>
     </header>
     <div className="paperReadingStatus" data-empty={!status} role="status">
-      {t(status)} {failed ? <button onClick={() => bridge.current?.retry()}>重试保存</button> : status && <button aria-label={t('关闭提示')} onClick={()=>setStatus('')}>×</button>}
+      {t(status)} {failed ? <button onClick={() => bridge.current?.retry()}>{t('重试保存')}</button> : status && <button aria-label={t('关闭提示')} onClick={()=>setStatus('')}>×</button>}
     </div>
     {popup?.isConnected && !sidebarOpen && createPortal(<TranslationResult selection={selection} mode={mode} model={translation}
       expand={()=>{setSidebarOpen(true);setTab('translation');setPopup(null);selection?.dismissPopup?.();}} />, popup)}
-    <div ref={content} className="paperReadingContent"><iframe ref={frame} className="paperReadingViewer" title="论文全屏 PDF 阅读器" />
+    <div ref={content} className="paperReadingContent"><iframe ref={frame} className="paperReadingViewer" title={t('论文全屏 PDF 阅读器')} />
       {sidebarOpen&&<ReaderSplit content={content} width={aiWidth} />}
       <aside className="paperReaderSidePanel" hidden={!sidebarOpen} aria-label={window.PortalI18n.t("阅读侧栏")}>
-        <nav role="tablist" aria-label={window.PortalI18n.t("阅读侧栏")}>
-          <button role="tab" aria-selected={tab==='ai'} onClick={()=>{setTab('ai');if(!discussion)void openDiscussion();}}>AI</button>
-          <button role="tab" aria-selected={tab==='translation'} onClick={()=>setTab('translation')}>{window.PortalI18n.t("翻译")}</button>
-          <button aria-label={window.PortalI18n.t("关闭侧栏")} onClick={()=>setSidebarOpen(false)}>×</button>
-        </nav>
-        <div className="paperReaderTab" role="tabpanel" hidden={tab!=='ai'}>
+        <div className="paperReaderTab" role="region" aria-label={t('论文 AI 侧栏')} hidden={tab!=='ai'}>
           {discussion&&<AIPanel key={discussion.key} discussion={discussion} principal={principal} bridge={()=>bridge.current} isCurrent={isCurrent} close={()=>setSidebarOpen(false)} />}
           {!discussion&&<ResearchAssistantPicker catalog={assistantCatalog} principal={principal} isCurrent={isCurrent} onSelected={()=>openDiscussion()} />}
         </div>
-        <div className="paperReaderTab" role="tabpanel" hidden={tab!=='translation'}>
+        <div className="paperReaderTab" role="region" aria-label={t('选区翻译')} hidden={tab!=='translation'}>
           {selection?<TranslationResult selection={selection} mode={mode} setMode={setMode} model={translation} full />:<p>{window.PortalI18n.t("选择论文中的文字开始翻译。")}</p>}
         </div>
       </aside>
@@ -130,7 +126,7 @@ function Reader({paper, principal, anchor, close, control, readingReady, frameRe
 export function openReader({paper, principal, anchor, onClose, onReady, container, isCurrent = () => true}) {
   const previousFocus = document.activeElement;
   const dialog = document.createElement('dialog');
-  dialog.className = 'paperReadingDialog'; dialog.setAttribute('aria-label', '全屏论文阅读');
+  dialog.className = 'paperReadingDialog'; dialog.setAttribute('aria-label', t('全屏论文阅读'));
   document.body.append(dialog);
   const root = createRoot(dialog);
   let closed = false, closing = false, bridge;

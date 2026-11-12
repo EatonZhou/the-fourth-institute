@@ -118,7 +118,7 @@
       if(researchReady && (state.researchSlot || state.researchLegacyKey)) void loadChatHistory().catch(alertError);
     }
 
-    let researchNav = null, researchList = [], legacyList = [], researchSequence = 0;
+    let researchNav = null, researchControls = null, researchList = [], legacyList = [], researchSequence = 0;
     let researchReady = false, researchFailure = '', researchSelectionRevision = 0;
     const deletedResearchKeys = new Set();
     const pendingResearchDeletes = new Map();
@@ -222,19 +222,14 @@
     function mountResearchSelector() {
       const root = paperChatWorkspace?.root;
       if (!root || researchNav?.isConnected) return;
-      researchNav = document.createElement('div');
-      researchNav.className = 'paperResearchSelector';
-      researchNav.setAttribute('aria-label', window.PortalI18n.t('持续研究助手'));
+      researchControls?.destroy();
+      const controls=window.PortalPaperResearchControls.create();
+      researchControls=controls;
+      researchNav = controls.root;
       window.addEventListener('portal:language-changed', renderResearchOptions);
-      const select = document.createElement('select');
-      select.className = 'portalControl';
-      select.setAttribute('aria-label', window.PortalI18n.t('选择研究助手'));
-      select.title = window.PortalI18n.t('选择研究助手');
+      const select = controls.select;
       select.addEventListener('change',()=>{void chooseResearch(select.value.startsWith('legacy:')?select.value.slice(7):select.value?'research:'+select.value:'');});
-      const create = document.createElement('button');
-      create.type='button'; create.className='portalButton is-compact is-quiet';
-      create.textContent=window.PortalI18n.t('新建研究助手');
-      create.title=window.PortalI18n.t('创建独立的持续研究会话');
+      const create = controls.create;
       create.addEventListener('click', async () => {
         const title = window.prompt(window.PortalI18n.t('研究助手名称'));
         if (!title?.trim()) return;
@@ -259,7 +254,7 @@
       const error=document.createElement('div'); error.className='paperResearchSelectorError'; error.setAttribute('role','status');
       const retry=document.createElement('button'); retry.type='button';retry.className='portalButton is-compact is-quiet';retry.dataset.researchRetry='';
       retry.addEventListener('click',async()=>{retry.disabled=true;try{await refreshResearchSelectors();if(state.researchSlot||state.researchLegacyKey)await loadChatHistory({retry:true});}catch(_){/* Local error remains visible. */}finally{retry.disabled=false;}});
-      researchNav.append(select,create,error,retry);
+      researchNav.append(error,retry);
       root.parentElement.classList.add('paperResearchChatHost');
       root.parentElement.insertBefore(researchNav,root);
       renderResearchOptions();
@@ -268,16 +263,14 @@
       if (!researchNav) return;
       const select=researchNav.querySelector('select');
       const t=window.PortalI18n.t;
-      researchNav.setAttribute('aria-label', t('持续研究助手'));
-      select.setAttribute('aria-label', t('选择研究助手')); select.title=t('选择研究助手');
       const create=researchNav.querySelector('button');
       const error=researchNav.querySelector('.paperResearchSelectorError');
-      error.textContent=researchFailure ? t('研究助手暂不可用，请重试')+': '+researchFailure : ''; error.hidden=!researchFailure;
+      error.textContent=researchFailure ? window.PortalPaperResearchControls.errorText() : ''; error.hidden=!researchFailure;
       const retry=researchNav.querySelector('[data-research-retry]'); retry.textContent=t('重试'); retry.hidden=!researchFailure;
-      create.textContent=t('新建研究助手'); create.title=t('创建独立的持续研究会话');
       const placeholder=new Option(t('请选择或新建研究助手'),''); placeholder.disabled=true;
       select.replaceChildren(placeholder);
       for (const slot of researchList) {
+        if(!window.PortalPaperResearchControls.usable(slot))continue;
         if(unavailableResearch(researchKey(slot)))continue;
         const option=new Option((slot.title || t('不可用研究助手'))+(slot.state==='unbound'?t('（重试创建）'):''),slot.slot_id);
         option.disabled=!['bound','unbound'].includes(slot.state); select.append(option);

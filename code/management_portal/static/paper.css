@@ -874,10 +874,7 @@ body.resizingReaderAI { cursor:col-resize; user-select:none; }
 /* Reader-owned right sidebar: AI remains mounted when hidden or switching tabs. */
 .paperReaderSidePanel { display:flex; flex-direction:column; flex:0 0 var(--reader-ai-width,min(360px,42vw)); min-width:0; min-height:0; overflow:hidden; border-inline-start:1px solid var(--border); background:var(--panel); }
 .paperReaderSidePanel[hidden], .paperReaderTab[hidden] { display:none!important; }
-.paperReaderSidePanel > nav { display:flex; flex:0 0 auto; gap:4px; padding:6px; border-bottom:1px solid var(--border); }
-.paperReaderSidePanel > nav button { padding:4px 8px; }
-.paperReaderSidePanel > nav [aria-selected="true"] { background:var(--panel-2); color:var(--accent); }
-.paperReaderSidePanel > nav button:last-child { margin-inline-start:auto; }
+.paperReadingToolbar button[aria-pressed="true"] { background:var(--panel-2); color:var(--accent); border-color:var(--accent); }
 .paperReaderTab { display:flex; flex-direction:column; min-height:0; flex:1; overflow:auto; }
 .paperReadingDialog .paperReaderSidePanel .paperAIPanel { width:100%; flex:1; min-height:0; }
 .paperReaderSidePanel .paperTranslation { padding:10px; overflow-wrap:anywhere; }
@@ -892,9 +889,7 @@ body.resizingReaderAI { cursor:col-resize; user-select:none; }
 .paperReadingStatus[data-empty="true"] { display:none; }
 .paperTranslationActions { display:flex; gap:4px; margin-top:6px; }
 .paperReaderAssistantPicker { padding:10px; font-size:13px; }
-.paperReaderAssistantPicker select,.paperReaderAssistantPicker input { max-width:100%; box-sizing:border-box; }
-.paperReaderAssistantPicker form { display:flex; flex-wrap:wrap; align-items:end; gap:6px; margin-top:10px; }
-.paperReaderAssistantPicker label { display:grid; gap:4px; }
+.paperReaderAssistantPicker .paperResearchSelector { padding:0; border:0; }
 
 /* Shared Personal/Repository grouping rows: same vertical metrics as papers. */
 .folderLine[data-paper-tree-toggle] { background:color-mix(in srgb,var(--muted,#64748b) 8%,var(--panel,#fff)); }

@@ -68,12 +68,12 @@ export function TranslationResult({selection, mode, setMode, model, expand, full
   const {view, retry} = model;
   const [copyError, setCopyError] = useState('');
   if (!selection) return null;
-  return <section className="paperTranslation" aria-label="选区翻译">
+  return <section className="paperTranslation" aria-label={t('选区翻译')}>
     {full && setMode && <TranslationMode mode={mode} onChange={setMode} />}
     {selection && <div className="paperTranslationBody" aria-live="polite">
       {full && <details open><summary>{t('所选原文')}</summary><p>{selection.text}</p></details>}
       {view.state === 'loading' && <p role="status">{t('正在翻译…')}</p>}
-      {view.state === 'error' && <p role="alert">{view.error}</p>}
+      {view.state === 'error' && <p role="alert">{window.PortalI18n?.message(view.error)||view.error}</p>}
       {view.state === 'success' && <>
         <p className="paperTranslationText">{view.result.text}</p>
         <small title={translationDiagnostics(view.result, view.elapsedMs)} tabIndex={0}>
@@ -83,11 +83,11 @@ export function TranslationResult({selection, mode, setMode, model, expand, full
       <div className="paperTranslationActions">
       {view.state === 'success' && <button type="button" className="toolbar-button wide-button portalButton is-compact" onClick={async () => {
         try {await navigator.clipboard.writeText(view.result.text); setCopyError('');}
-        catch (_) {setCopyError(t('复制失败，请手动选择译文复制'));}
+        catch (_) {setCopyError('复制失败，请手动选择译文复制');}
       }}>{t('复制')}</button>}
       {expand && <button type="button" className="toolbar-button wide-button portalButton is-compact" onClick={expand}>{t('展开')}</button>}
       </div>
-      {copyError && <p role="alert">{copyError}</p>}
+      {copyError && <p role="alert">{t(copyError)}</p>}
       {full && <button onClick={retry}>{t('重试翻译')}</button>}
     </div>}
   </section>;
