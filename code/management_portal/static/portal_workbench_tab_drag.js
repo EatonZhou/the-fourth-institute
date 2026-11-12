@@ -3,6 +3,10 @@
 
   if (global.PortalWorkbenchTabDrag) return;
 
+  const PANEL_TYPE = "application/x-portal-workbench-panel";
+  // A native drag has one source, even when Workbenches are nested.
+  let activeDrag = null;
+
   // Dragging tabs: drop zones on stacks and tab strips, moving a Panel to
   // where it is dropped, and revealing auto-hidden tab strips.
 
@@ -20,22 +24,63 @@
       replaceNode, shellState, splitNode, stackNode,
     } = dependencies;
 
+    let activeTab = null;
+    let destroyed = false;
+    const previews = new Set();
+    function clearPreviews() {
+      previews.forEach(node => node.removeAttribute("data-portal-workbench-drop-zone"));
+      previews.clear();
+    }
+    function finishDrag() {
+      clearPreviews();
+      activeTab?.classList.remove("is-dragging");
+      activeTab = null;
+      if (activeDrag?.canvas === canvas) {
+        activeDrag = null;
+        document.body.classList.remove("draggingWorkbenchTab");
+      }
+      global.removeEventListener("dragend", finishDrag, true);
+      global.removeEventListener("drop", finishDrag);
+      global.removeEventListener("blur", finishDrag);
+      global.removeEventListener("pagehide", finishDrag);
+      global.removeEventListener("keydown", cancelDrag, true);
+      global.removeEventListener("pointerdown", finishDrag, true);
+    }
+    function cancelDrag(event) { if (event.key === "Escape") finishDrag(); }
+    function ownsDrag(event) {
+      if (!event.dataTransfer?.types.includes(PANEL_TYPE)) return false;
+      // A nested stack consumes its own hit test, including rejected drops.
+      event.stopPropagation();
+      return !destroyed && activeDrag?.canvas === canvas && !isLayoutLocked();
+    }
+    function showPreview(stackElement, zone) {
+      clearPreviews();
+      previews.add(stackElement);
+      stackElement.dataset.portalWorkbenchDropZone = zone;
+    }
+
     function bindTabDrag(tab, panelId) {
       if (!descriptors.get(String(panelId))?.canMove) return;
       tab.draggable = true;
       tab.addEventListener("dragstart", event => {
-        if (isLayoutLocked()) { event.preventDefault(); return; }
+        if (destroyed || isLayoutLocked()) { event.preventDefault(); return; }
+        event.stopPropagation();
+        activeDrag?.finish();
         event.dataTransfer.effectAllowed = "move";
-        event.dataTransfer.setData("application/x-portal-workbench-panel", panelId);
+        event.dataTransfer.setData(PANEL_TYPE, panelId);
+        activeTab = tab;
+        activeDrag = { canvas, panelId, finish: finishDrag };
         tab.classList.add("is-dragging");
         document.body.classList.add("draggingWorkbenchTab");
+        global.addEventListener("dragend", finishDrag, true);
+        global.addEventListener("drop", finishDrag);
+        global.addEventListener("blur", finishDrag);
+        global.addEventListener("pagehide", finishDrag);
+        global.addEventListener("keydown", cancelDrag, true);
+        global.addEventListener("pointerdown", finishDrag, true);
       });
       tab.addEventListener("dragend", () => {
-        tab.classList.remove("is-dragging");
-        document.body.classList.remove("draggingWorkbenchTab");
-        canvas.querySelectorAll("[data-portal-workbench-drop-zone]").forEach(node => {
-          node.removeAttribute("data-portal-workbench-drop-zone");
-        });
+        if (activeTab === tab) finishDrag();
       });
     }
 
@@ -90,44 +135,44 @@
 
     function bindStackDrop(stackElement, stack) {
       stackElement.addEventListener("dragover", event => {
-        if (isLayoutLocked()) return;
-        if (!event.dataTransfer.types.includes("application/x-portal-workbench-panel")) return;
+        if (!ownsDrag(event)) return;
         event.preventDefault();
         event.dataTransfer.dropEffect = "move";
-        stackElement.dataset.portalWorkbenchDropZone = dropZone(stackElement, event);
+        showPreview(stackElement, dropZone(stackElement, event));
       });
       stackElement.addEventListener("dragleave", event => {
+        event.stopPropagation();
         if (!stackElement.contains(event.relatedTarget)) stackElement.removeAttribute("data-portal-workbench-drop-zone");
       });
       stackElement.addEventListener("drop", event => {
-        const panelId = event.dataTransfer.getData("application/x-portal-workbench-panel");
-        if (!panelId) return;
+        if (!ownsDrag(event)) return;
+        const panelId = activeDrag.panelId;
         event.preventDefault();
         const zone = stackElement.dataset.portalWorkbenchDropZone || "center";
-        stackElement.removeAttribute("data-portal-workbench-drop-zone");
+        // Layout rendering can detach the source tab before dragend is emitted.
+        finishDrag();
         movePanel(panelId, stack.id, zone);
       });
     }
 
     function bindTabGroupDrop(tabs, stackElement, stack) {
       tabs.addEventListener("dragover", event => {
-        if (isLayoutLocked()) return;
-        if (!event.dataTransfer.types.includes("application/x-portal-workbench-panel")) return;
+        if (!ownsDrag(event)) return;
         event.preventDefault();
         event.stopPropagation();
         event.dataTransfer.dropEffect = "move";
-        stackElement.dataset.portalWorkbenchDropZone = "center";
+        showPreview(stackElement, "center");
       });
       tabs.addEventListener("dragleave", event => {
         event.stopPropagation();
         if (!tabs.contains(event.relatedTarget)) stackElement.removeAttribute("data-portal-workbench-drop-zone");
       });
       tabs.addEventListener("drop", event => {
-        const panelId = event.dataTransfer.getData("application/x-portal-workbench-panel");
-        if (!panelId) return;
+        if (!ownsDrag(event)) return;
+        const panelId = activeDrag.panelId;
         event.preventDefault();
         event.stopPropagation();
-        stackElement.removeAttribute("data-portal-workbench-drop-zone");
+        finishDrag();
         movePanel(panelId, stack.id, "center");
       });
     }
@@ -164,6 +209,7 @@
 
     return {
       bindTabStripReveal, bindStackDrop, bindTabDrag, bindTabGroupDrop,
+      destroy() { destroyed = true; finishDrag(); },
     };
   }
 

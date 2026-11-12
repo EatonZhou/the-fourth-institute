@@ -981,7 +981,7 @@
     } = workbenchPart("PortalWorkbenchPanelMounts").createPanelMounts({ descriptors, parking, root, shellState });
 
     const {
-      bindTabStripReveal, bindStackDrop, bindTabDrag, bindTabGroupDrop,
+      bindTabStripReveal, bindStackDrop, bindTabDrag, bindTabGroupDrop, destroy: destroyTabDrag,
     } = workbenchPart("PortalWorkbenchTabDrag").createTabDrag({
       autoHideTabHeader: options.autoHideTabHeader === true,
       canvas, clone, descriptors, findNode, isLayoutLocked, normalizeCurrent, panelNode, removePanelFromNode,
@@ -1113,6 +1113,7 @@
         if (shellState.destroyed) return;
         persist();
         shellState.destroyed = true;
+        destroyTabDrag();
         destroyLayoutLock();
         window.removeEventListener("pagehide", persist);
         window.removeEventListener("portal:identity-changed", restoreIdentityLayout);
@@ -1121,7 +1122,6 @@
         commandScope.dispose();
         if (ownsContextStore) contextStore.dispose();
         chrome?.remove();
-        document.body.classList.remove("draggingWorkbenchTab");
         stage.remove();
         unsubscribeResponsive?.();
         root.classList.remove("portalWorkbench");
