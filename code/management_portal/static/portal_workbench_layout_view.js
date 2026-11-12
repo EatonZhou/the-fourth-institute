@@ -43,6 +43,72 @@
       render("activate-panel");
     }
 
+    // Inline tabs: a Panel whose first row is marked data-portal-workbench-tab-host
+    // lends that row to the stack's tabs, so a stack of several Panels does
+    // not put a tab row above the Panel's own header row. The host must sit at
+    // the stack body's top-left corner; otherwise the tabs keep their own row.
+    const inlineTabsResize = typeof ResizeObserver === "function"
+      ? new ResizeObserver(entries => entries.forEach(entry => {
+        const stackElement = entry.target.closest(".portalWorkbenchStack");
+        if (!entry.target.isConnected || !stackElement) { inlineTabsResize.unobserve(entry.target); return; }
+        scheduleInlineTabs(stackElement);
+      }))
+      : null;
+    const inlineTabsPending = new WeakSet();
+
+    function scheduleInlineTabs(element) {
+      if (inlineTabsPending.has(element)) return;
+      inlineTabsPending.add(element);
+      requestAnimationFrame(() => {
+        inlineTabsPending.delete(element);
+        if (element.isConnected) syncInlineTabs(element);
+      });
+    }
+
+    function syncInlineTabs(element) {
+      const tabs = element.querySelector(":scope > .portalWorkbenchTabs");
+      const body = element.querySelector(":scope > .portalWorkbenchStackBody");
+      if (!tabs || !body) return;
+      const eligible = Number(element.dataset.tabCount) > 1 && element.dataset.autoHideTabs !== "true"
+        && !element.classList.contains("is-collapsed") && global.PortalResponsive?.isMobile?.() !== true
+        && !isLayoutLocked();
+      const frame = eligible ? body.querySelector(":scope > .portalWorkbenchPanelFrame:not([hidden])") : null;
+      const candidate = frame?.querySelector("[data-portal-workbench-tab-host]:not([hidden])") || null;
+      const bodyBounds = candidate ? body.getBoundingClientRect() : null;
+      const hostBounds = candidate ? candidate.getBoundingClientRect() : null;
+      const host = candidate && hostBounds.height > 0
+        && Math.abs(hostBounds.top - bodyBounds.top) <= 1 && Math.abs(hostBounds.left - bodyBounds.left) <= 1
+        ? candidate : null;
+      element.querySelectorAll("[data-portal-workbench-tab-inset]").forEach(node => {
+        if (node !== host) node.removeAttribute("data-portal-workbench-tab-inset");
+      });
+      if (!host) {
+        delete element.dataset.inlineTabs;
+        element.style.removeProperty("--portal-workbench-inline-tabs-width");
+        element.style.removeProperty("--portal-workbench-inline-tabs-height");
+        return;
+      }
+      // Tabs of the same kind share an icon; those keep their names when folded.
+      const icons = [...tabs.querySelectorAll(".portalWorkbenchTab")];
+      icons.forEach(tab => {
+        tab.toggleAttribute("data-shared-icon", icons.some(other => other !== tab && other.dataset.portalIcon === tab.dataset.portalIcon));
+      });
+      element.dataset.inlineTabs = "true";
+      host.setAttribute("data-portal-workbench-tab-inset", "");
+      element.style.setProperty("--portal-workbench-inline-tabs-height", `${Math.round(hostBounds.height)}px`);
+      element.style.setProperty("--portal-workbench-inline-tabs-width", `${Math.ceil(tabs.getBoundingClientRect().width)}px`);
+    }
+
+    function bindInlineTabs(element, tabs, body) {
+      inlineTabsResize?.observe(element);
+      inlineTabsResize?.observe(tabs);
+      // A host row appears, hides or moves when its Panel changes what it shows.
+      new MutationObserver(() => scheduleInlineTabs(element))
+        .observe(body, { subtree: true, childList: true, attributes: true, attributeFilter: ["hidden", "data-portal-workbench-tab-host"] });
+      element.addEventListener("click", () => scheduleInlineTabs(element), true);
+      scheduleInlineTabs(element);
+    }
+
     function renderStack(stack, parentOrientation = "") {
       const mobileMode = global.PortalResponsive?.isMobile?.() === true;
       const mobileOwnsStack = mobileMode
@@ -116,6 +182,7 @@
       bindSingleTabReveal(element, tabs, stack);
       bindTabGroupDrop(tabs, element, stack);
       bindStackDrop(element, stack);
+      bindInlineTabs(element, tabs, body);
       return element;
     }
 
@@ -156,6 +223,7 @@
           close.title = window.PortalI18n.text`关闭 ${descriptor.title}`;
         }
       }
+      scheduleInlineTabs(element);
       return true;
     }
 

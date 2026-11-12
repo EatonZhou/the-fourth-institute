@@ -205,10 +205,27 @@
 
 .portalWorkbenchStage.show-single-tab-header .portalWorkbenchStack[data-tab-count="1"] > .portalWorkbenchTabs {
   position: static;
+  width: auto;
+  max-width: none;
   height: auto;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  border-radius: 0;
+  background: color-mix(in srgb, var(--panel-2) 72%, var(--panel));
   transform: none;
   opacity: 1;
   box-shadow: none;
+}
+
+.portalWorkbenchStage.show-single-tab-header .portalWorkbenchStack[data-tab-count="1"] > .portalWorkbenchTabs .portalWorkbenchTab {
+  padding: 0 7px;
+  color: var(--accent);
+  background: var(--panel);
+  box-shadow: inset 0 -2px 0 var(--accent);
+}
+
+.portalWorkbenchStage.show-single-tab-header .portalWorkbenchStack[data-tab-count="1"]::before {
+  display: none;
 }
 
 .portalWorkbenchChrome {
@@ -424,22 +441,60 @@
 }
 
 .portalWorkbenchStack:is([data-tab-count="1"], [data-auto-hide-tabs="true"]) > .portalWorkbenchTabs {
+  /* A handle hanging from the top edge: as wide as its tabs, so the Panel's
+     own title row and controls stay visible beside it. */
   position: absolute;
+  z-index: 3;
   top: 0;
-  right: 0;
-  left: 0;
-  height: 28px;
-  transform: translateY(calc(-100% + 4px));
+  left: 50%;
+  width: max-content;
+  max-width: calc(100% - 24px);
+  height: 26px;
+  border: 1px solid var(--border);
+  border-top: 0;
+  border-radius: 0 0 9px 9px;
+  background: var(--panel);
+  transform: translate(-50%, calc(-100% + 3px));
   opacity: var(--portal-workbench-single-tab-opacity);
   box-shadow: var(--portal-workbench-single-tab-shadow);
   transition: transform 150ms ease, opacity 120ms ease, box-shadow 150ms ease;
+}
+
+.portalWorkbenchStack:is([data-tab-count="1"], [data-auto-hide-tabs="true"]) > .portalWorkbenchTabs .portalWorkbenchTabSlot:last-child {
+  border-right: 0;
+}
+
+.portalWorkbenchStack:is([data-tab-count="1"], [data-auto-hide-tabs="true"]) > .portalWorkbenchTabs .portalWorkbenchTab {
+  padding: 0 8px 0 10px;
+  color: var(--text);
+  background: transparent;
+  box-shadow: none;
+}
+
+/* The top edge lights up with the handle, marking which Panel it moves. */
+.portalWorkbenchStack:is([data-tab-count="1"], [data-auto-hide-tabs="true"])::before {
+  content: "";
+  position: absolute;
+  z-index: 3;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 2px;
+  background: var(--accent);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 120ms ease;
+}
+
+.portalWorkbenchStack:is([data-tab-count="1"], [data-auto-hide-tabs="true"]):is(.is-tab-strip-revealed, :has(> .portalWorkbenchTabs:is(:hover, :has(:focus-visible))))::before {
+  opacity: .55;
 }
 
 .portalWorkbenchStack:is([data-tab-count="1"], [data-auto-hide-tabs="true"]) > .portalWorkbenchTabs:is(:hover, :has(:focus-visible)),
 .portalWorkbenchStack:is([data-tab-count="1"], [data-auto-hide-tabs="true"]).is-tab-strip-revealed > .portalWorkbenchTabs,
 .draggingWorkbenchTab .portalWorkbenchStack:is([data-tab-count="1"], [data-auto-hide-tabs="true"]) > .portalWorkbenchTabs,
 .portalWorkbenchStack:is([data-tab-count="1"], [data-auto-hide-tabs="true"])[data-portal-workbench-drop-zone="center"] > .portalWorkbenchTabs {
-  transform: translateY(0);
+  transform: translate(-50%, 0);
   opacity: var(--portal-workbench-single-tab-revealed-opacity);
 }
 
@@ -483,7 +538,9 @@
   outline: 0;
   background: transparent;
   color: var(--muted);
-  font: 650 10.5px/1 inherit;
+  font-weight: 650;
+  font-size: 12px;
+  line-height: 1;
   cursor: grab;
   user-select: none;
 }
@@ -531,6 +588,73 @@
 
 .portalWorkbenchTabClose:hover { opacity: 1; background: var(--panel-2); }
 .portalWorkbenchTabClose .portalIcon { width: 12px; height: 12px; }
+
+/* Inline tabs: the active Panel's first row hosts the stack's tabs, folded
+   into a button group at its left end. The active tab keeps its name; the
+   others show their icon, and their name when another tab has the same icon. */
+.portalWorkbenchStack[data-inline-tabs="true"] {
+  grid-template-rows: minmax(0, 1fr);
+}
+
+.portalWorkbenchStack[data-inline-tabs="true"] > .portalWorkbenchTabs {
+  position: absolute;
+  /* Above a host row that raises itself over its own Panel content. */
+  z-index: 21;
+  top: 0;
+  left: 0;
+  max-width: 60%;
+  height: var(--portal-workbench-inline-tabs-height, 38px);
+  align-items: center;
+  gap: 2px;
+  padding: 0 6px;
+  border-bottom: 0;
+  border-right: 1px solid var(--border);
+  background: transparent;
+}
+
+.portalWorkbenchStack[data-inline-tabs="true"] > .portalWorkbenchTabs .portalWorkbenchTabSlot {
+  height: 26px;
+  border-right: 0;
+  border-radius: 6px;
+}
+
+.portalWorkbenchStack[data-inline-tabs="true"] > .portalWorkbenchTabs .portalWorkbenchTab {
+  border-radius: 6px;
+  font-size: 11.5px;
+}
+
+.portalWorkbenchStack[data-inline-tabs="true"] > .portalWorkbenchTabs .portalWorkbenchTab > .portalIcon {
+  width: 15px;
+  height: 15px;
+}
+
+.portalWorkbenchStack[data-inline-tabs="true"] > .portalWorkbenchTabs .portalWorkbenchTabSlot:has(> .portalWorkbenchTab.is-active) {
+  background: var(--panel);
+  box-shadow: 0 0 0 1px var(--border), 0 1px 2px color-mix(in srgb, #0b1020 7%, transparent);
+}
+
+.portalWorkbenchStack[data-inline-tabs="true"] > .portalWorkbenchTabs .portalWorkbenchTab.is-active {
+  background: transparent;
+  box-shadow: none;
+}
+
+.portalWorkbenchStack[data-inline-tabs="true"] > .portalWorkbenchTabs .portalWorkbenchTab:not(.is-active, [data-shared-icon]) > span:not(.portalIcon),
+.portalWorkbenchStack[data-inline-tabs="true"] > .portalWorkbenchTabs .portalWorkbenchTab:not(.is-active) + .portalWorkbenchTabClose {
+  display: none;
+}
+
+.portalWorkbenchStack[data-inline-tabs="true"] > .portalWorkbenchTabs .portalWorkbenchTab[data-shared-icon]:not(.is-active) > span:not(.portalIcon) {
+  max-width: 7em;
+}
+
+.portalWorkbenchStack[data-inline-tabs="true"] > .portalWorkbenchTabs .portalWorkbenchTabClose {
+  align-self: center;
+  margin: 0 3px 0 -2px;
+}
+
+.portalWorkbenchStage:not(.is-layout-locked) .portalWorkbenchStack[data-inline-tabs="true"] [data-portal-workbench-tab-inset] {
+  padding-left: var(--portal-workbench-inline-tabs-width, 0px);
+}
 
 .portalWorkbenchPanelFrame.is-open-target {
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 28%, transparent);
@@ -1443,10 +1567,20 @@ html[data-portal-viewport="mobile"] .portalWorkbenchTabs {
 
 html[data-portal-viewport="mobile"] .portalWorkbenchStack[data-auto-hide-tabs="true"] > .portalWorkbenchTabs {
   position: static;
+  width: auto;
+  max-width: none;
   height: auto;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  border-radius: 0;
+  background: color-mix(in srgb, var(--panel-2) 72%, var(--panel));
   transform: none;
   opacity: 1;
   box-shadow: none;
+}
+
+html[data-portal-viewport="mobile"] .portalWorkbenchStack::before {
+  display: none;
 }
 
 html[data-portal-viewport="mobile"] .portalWorkbenchMobileSwitcher {

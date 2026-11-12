@@ -49,52 +49,60 @@ function createKnowledgeCard(it) {
     heading.appendChild(favorite);
   }
 
-  const meta = document.createElement("div");
-  meta.className = "cardMeta";
-  const left = document.createElement("div");
-  left.textContent = knowledgeBoardShell.formatDateTime(it.mtime, {
-    unixSeconds: true,
-    shortYear: true,
-    separator: "-",
-    fallback: "",
-  });
-  left.title = window.PortalI18n.t("最近修改时间");
-  const right = document.createElement("div");
-  if (Number.isFinite(Number(it.semantic_score))) {
-    const sem = document.createElement("span");
-    sem.className = "badge";
-    sem.textContent = window.PortalI18n.text`relevance ${it.semantic_score}`;
-    sem.title = it.semantic_reason || "";
-    right.appendChild(sem);
-  }
-  const badge = document.createElement("span");
-  badge.className = "badge";
-  badge.textContent = window.PortalI18n.text`importance ${it.importance ?? 0}`;
-  right.appendChild(badge);
-  meta.appendChild(left);
-  meta.appendChild(right);
+  title.title = title.textContent;
+  if (it.type) card.dataset.type = it.type;
 
   const preview = document.createElement("p");
   preview.className = "preview";
   preview.textContent = it.preview || "";
 
+  // One line of small print: type, importance, relevance when searching,
+  // last change, and the ID at the far end.
+  const meta = document.createElement("div");
+  meta.className = "cardMeta";
+  if (it.type) {
+    const type = document.createElement("span");
+    type.className = "cardType";
+    type.textContent = it.type;
+    meta.appendChild(type);
+  }
+  const importance = Math.max(0, Math.min(10, Number(it.importance) || 0));
+  const dots = document.createElement("span");
+  dots.className = "cardImportance";
+  dots.title = window.PortalI18n.text`importance ${it.importance ?? 0}`;
+  dots.setAttribute("aria-label", dots.title);
+  for (let index = 0; index < 5; index += 1) {
+    const dot = document.createElement("i");
+    if (index < Math.round(importance / 2)) dot.className = "is-filled";
+    dots.appendChild(dot);
+  }
+  meta.appendChild(dots);
+  if (Number.isFinite(Number(it.semantic_score))) {
+    const sem = document.createElement("span");
+    sem.className = "badge";
+    sem.textContent = window.PortalI18n.text`relevance ${it.semantic_score}`;
+    sem.title = it.semantic_reason || "";
+    meta.appendChild(sem);
+  }
+  const changed = document.createElement("span");
+  changed.className = "cardChanged";
+  changed.textContent = knowledgeBoardShell.formatDateTime(it.mtime, {
+    unixSeconds: true,
+    shortYear: true,
+    separator: "-",
+    fallback: "",
+  });
+  changed.title = window.PortalI18n.t("最近修改时间");
+  meta.appendChild(changed);
   const resourceId = document.createElement("code");
   resourceId.className = "cardResourceId";
-  resourceId.textContent = it.kb_id || "";
+  resourceId.textContent = String(it.kb_id || "").replace(/^[a-z]+_/, "");
   resourceId.title = it.kb_id || "";
+  meta.appendChild(resourceId);
 
   card.appendChild(heading);
-  card.appendChild(meta);
-  card.appendChild(resourceId);
   card.appendChild(preview);
-
-  if (it.type) {
-    const chip = document.createElement("span");
-    chip.className = "typeChip";
-    chip.dataset.type = it.type;
-    chip.textContent = it.type;
-    card.appendChild(chip);
-  }
+  card.appendChild(meta);
 
   return card;
 }
@@ -104,7 +112,7 @@ function getProjectColumnCount() {
   if (window.innerWidth <= 620) return 1;
   if (window.innerWidth <= 900) return 2;
   if (window.innerWidth <= 1200) return 3;
-  return Math.max(1, Math.floor((width - 24 + 10) / 270));
+  return Math.max(1, Math.floor((width - 24 + 10) / 370));
 }
 
 function getVirtualProjectGap() {

@@ -179,7 +179,8 @@ body[data-resource-detail-embedded] > #archiveModal {
 
 .items {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  /* 360px matches the column count in getProjectColumnCount(). */
+  grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
   gap: 10px;
   padding: 12px;
 }
@@ -195,8 +196,8 @@ body[data-resource-detail-embedded] > #archiveModal {
   min-width: 0;
   border: 1px solid var(--border);
   background: var(--panel);
-  border-radius: 12px;
-  padding: 12px 12px 28px;
+  border-radius: 10px;
+  padding: 10px 12px 10px 16px;
   cursor: pointer;
   user-select: none;
   overflow: hidden;
@@ -204,34 +205,34 @@ body[data-resource-detail-embedded] > #archiveModal {
   transition: transform 120ms ease, box-shadow 120ms ease, border-color 120ms ease;
 }
 
-.typeChip {
+/* A card's type is its color: the bar on its left edge and the type name in
+   its small print. */
+.card { --card-type-color: rgb(110, 118, 130); }
+.card[data-type="decision"]    { --card-type-color: rgb(100, 130, 195); }
+.card[data-type="question"]    { --card-type-color: rgb(190, 130,  85); }
+.card[data-type="thinking"]    { --card-type-color: rgb(150, 120, 200); }
+.card[data-type="insight"]     { --card-type-color: rgb( 70, 160, 130); }
+.card[data-type="information"] { --card-type-color: rgb(120, 125, 135); }
+.card[data-type="idea"]        { --card-type-color: rgb(175, 148,  60); }
+.card[data-type="concept"]     { --card-type-color: rgb( 55, 148, 170); }
+.card[data-type="plan"]        { --card-type-color: rgb( 92, 150, 115); }
+.card[data-type="task"]        { --card-type-color: rgb(190,  85, 100); }
+.card[data-type="experiment"]  { --card-type-color: rgb(120, 120, 200); }
+.card[data-type="hypothesis"]  { --card-type-color: rgb(195,  95, 150); }
+.card[data-type="risk"]        { --card-type-color: rgb(195,  95,  95); }
+.card[data-type="patent"]      { --card-type-color: rgb(165, 120,  75); }
+.card[data-type="skill"]       { --card-type-color: rgb( 60, 145, 135); }
+
+.card::before {
+  content: "";
   position: absolute;
-  bottom: 9px;
-  right: 9px;
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  padding: 2px 7px;
-  border-radius: 999px;
-  color: #fff;
-  pointer-events: none;
-  white-space: nowrap;
+  top: 10px;
+  bottom: 10px;
+  left: 0;
+  width: 3px;
+  border-radius: 0 2px 2px 0;
+  background: var(--card-type-color);
 }
-.typeChip[data-type="decision"]    { background: rgba(100, 130, 195, 0.42); }
-.typeChip[data-type="question"]    { background: rgba(190, 130,  85, 0.42); }
-.typeChip[data-type="thinking"]    { background: rgba(150, 120, 200, 0.42); }
-.typeChip[data-type="insight"]     { background: rgba( 70, 160, 130, 0.42); }
-.typeChip[data-type="information"] { background: rgba(120, 125, 135, 0.42); }
-.typeChip[data-type="idea"]        { background: rgba(175, 148,  60, 0.42); }
-.typeChip[data-type="concept"]     { background: rgba( 55, 148, 170, 0.42); }
-.typeChip[data-type="plan"]        { background: rgba( 92, 150, 115, 0.42); }
-.typeChip[data-type="task"]        { background: rgba(190,  85, 100, 0.42); }
-.typeChip[data-type="experiment"]  { background: rgba(120, 120, 200, 0.42); }
-.typeChip[data-type="hypothesis"]  { background: rgba(195,  95, 150, 0.42); }
-.typeChip[data-type="risk"]        { background: rgba(195,  95,  95, 0.42); }
-.typeChip[data-type="patent"]      { background: rgba(165, 120,  75, 0.42); }
-.typeChip[data-type="skill"]       { background: rgba( 60, 145, 135, 0.42); }
-.typeChip:not([data-type])         { background: rgba(110, 118, 130, 0.42); }
 
 .card:hover {
   border-color: var(--accent);
@@ -241,9 +242,9 @@ body[data-resource-detail-embedded] > #archiveModal {
 
 .knowledgeCardHeading {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 6px;
-  margin-bottom: 6px;
+  margin-bottom: 3px;
 }
 
 .knowledgeFavoriteSlot {
@@ -257,52 +258,59 @@ body[data-resource-detail-embedded] > #archiveModal {
   min-width: 0;
   display: -webkit-box;
   -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
+  -webkit-line-clamp: 1;
   overflow: hidden;
   overflow-wrap: anywhere;
   word-break: break-word;
   font-size: 14px;
   margin: 0;
-  line-height: 1.25;
+  line-height: 1.4;
   font-weight: 600;
 }
 
 .cardMeta {
   display: flex;
-  justify-content: space-between;
-  gap: 10px;
-  font-size: 12px;
+  gap: 8px;
+  font-size: 11.5px;
   color: var(--muted);
-  margin-bottom: 8px;
+  margin-top: 7px;
   min-width: 0;
   align-items: center;
-}
-
-.cardMeta > div {
-  min-width: 0;
-}
-
-.cardMeta > div:first-child {
-  overflow: hidden;
-  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.cardMeta > div:last-child {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: 4px;
+.cardType {
+  color: var(--card-type-color);
+  font-weight: 600;
+}
+
+.cardImportance {
+  display: inline-flex;
+  flex: 0 0 auto;
+  gap: 2px;
+}
+
+.cardImportance > i {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--muted) 28%, transparent);
+}
+
+.cardImportance > i.is-filled { background: var(--card-type-color); }
+
+.cardMeta > .badge {
+  padding: 0 6px;
+  font-size: 10.5px;
 }
 
 .cardResourceId {
-  display: block;
   min-width: 0;
-  margin: -2px 0 7px;
-  color: var(--accent);
-  font-size: 10px;
-  overflow-wrap: anywhere;
-  white-space: normal;
+  margin-left: auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: color-mix(in srgb, var(--muted) 62%, transparent);
+  font-size: 10.5px;
 }
 
 .badge {
@@ -316,12 +324,12 @@ body[data-resource-detail-embedded] > #archiveModal {
 
 .preview {
   margin: 0;
-  font-size: 12px;
-  color: var(--muted);
-  line-height: 1.35;
+  font-size: 12.5px;
+  color: color-mix(in srgb, var(--text) 72%, var(--muted));
+  line-height: 1.55;
   overflow: hidden;
   display: -webkit-box;
-  -webkit-line-clamp: 4;
+  -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
 }
 
