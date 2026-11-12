@@ -46,13 +46,18 @@ def _asset_version_query(item: dict[str, Any]) -> str:
 
 
 def _figure_public(figure: dict, paper_id: str) -> dict:
+    from .paper_job_ownership import public_state
+    projected = public_state({"status": figure.get("explanation_status"), "step": figure.get("explanation_step"),
+                              "error": figure.get("explanation_error")})
+    figure = {k: v for k, v in figure.items() if k != "_job_execution"}
     figure_id = str(figure.get("figure_id") or "")
     return {
         **figure,
+        "explanation_state": projected,
         "image_url": f"/paper/api/asset?id={paper_id}&kind=figure&figure_id={figure_id}{_asset_version_query(figure)}" if figure_id else "",
         "generated": [
             {
-                **item,
+                **public_state(item),
                 "image_url": f"/paper/api/asset?id={paper_id}&kind=generated_figure&figure_id={figure_id}&generated_id={item.get('generated_id')}{_asset_version_query(item)}"
                 if item.get("image_rel_path")
                 else "",
@@ -83,6 +88,13 @@ def _write_figures(paper: dict, figures: list[dict]) -> None:
 
 @contextmanager
 def _figure_update(paper: dict):
+    from .paper_figure_ownership import current_adapter
+    from . import paper_job_ownership
+    adapter = current_adapter()
+    if adapter is not None and adapter.paper_id == paper.get("id"):
+        with paper_job_ownership.fenced_write(adapter.identity):
+            yield adapter.document
+        return
     path = _figures_json_path(paper)
     if path is None:
         raise ValueError("Paper figure artifact location is missing")

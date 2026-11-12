@@ -12,6 +12,8 @@ import secrets
 from PIL import Image
 
 from management_common.format_tags import schema_matches
+from . import paper_job_ownership
+from .paper_figure_ownership import FigureAdapter
 from management_portal.paper_figures import _figure_public, _figure_update, _figures_dir, _load_figures
 from management_portal.paper_records import _now, _slugify
 from management_portal.paper_store import (
@@ -120,6 +122,8 @@ def _run_figure_resident(prompt: str, paper: dict, figure: dict, kind: str, imag
     operation = next((item for item in figure.get("generated", []) if item.get("generated_id") == generated_id), {}) if generated_id else figure
     binding_key = "invocation" if generated_id else "explanation_invocation"
     binding = operation.get(binding_key) or {}
+    actor = str(binding.get("actor") or (operation.get("created_by") if generated_id else operation.get("explained_by"))
+                or actor)
     receipt = input_receipt(binding) if binding else {}
     input_message_id = str(receipt.get("input_message_id") or "")
     message_id = str(binding.get("requested_message_id") or input_message_id or f"msg_{secrets.token_hex(16)}")
@@ -131,10 +135,9 @@ def _run_figure_resident(prompt: str, paper: dict, figure: dict, kind: str, imag
         else:
             _set_figure_fields(paper_id, figure["figure_id"], updates)
 
-    if binding.get("resident_id") and (not input_message_id or binding.get("input_identity_status") == "unconfirmed"):
-        raise RuntimeError("Figure input delivery is unconfirmed; inspect the original workflow; no input was resubmitted")
     input_media = []
-    if images and not binding.get("resident_id"):
+    stage_exists = paper_job_ownership.is_worker() and bool(paper_job_ownership.metadata().get("stages", {}).get("figure"))
+    if images and not binding.get("resident_id") and not stage_exists:
         import base64
         from management_portal.society_service import get_society_service
         from management_portal.workbench_projections.native import ensure
@@ -154,7 +157,17 @@ def _run_figure_resident(prompt: str, paper: dict, figure: dict, kind: str, imag
                 "source": uploaded["path"], "name": source.name,
                 "mime_type": uploaded["content_type"],
             })
-    if binding.get("resident_id") and input_message_id:
+    if paper_job_ownership.is_worker():
+        from management_portal.paper_business_history import figure_version
+        stage = "figure"
+        if binding and not paper_job_ownership.metadata().get("stages", {}).get(stage):
+            paper_job_ownership.checkpoint("stages", {stage: {"intent": True, "receipt": binding}})
+        result = paper_job_ownership.stage_turn(stage, actor=actor, prompt=prompt, cwd=str(WORKSPACE_ROOT),
+            resident_scope=resident_role, input_media=input_media, business_ref=run_id,
+            on_receipt=remember,
+            metadata={"business_type": "paper_figure", "kind": kind, "paper_id": paper["id"],
+                      "material_version": figure_version(figure, images)})
+    elif binding.get("resident_id") and input_message_id:
         result = resume(
             actor=str(binding.get("actor") or actor), resident_id=binding["resident_id"],
             lineage_id=str(binding.get("lineage_id") or ""), message_id=input_message_id, receipt=binding, on_submitted=remember,
@@ -169,12 +182,13 @@ def _run_figure_resident(prompt: str, paper: dict, figure: dict, kind: str, imag
                       'material_version': figure_version(figure, images)},
         )
     identity = input_receipt(result["invocation"])
-    atomic_replace_json(events_path, identity, indent=None, sort_keys=False)
-    stderr_path.write_text("", encoding="utf-8")
-    content = str(result.get("message") or "").strip()
-    if not content:
-        raise RuntimeError(f"{resident_role} returned empty output for figure {kind}")
-    output_path.write_text(content, encoding="utf-8")
+    with paper_job_ownership.fenced_write(paper_job_ownership.current_identity()):
+        atomic_replace_json(events_path, identity, indent=None, sort_keys=False)
+        stderr_path.write_text("", encoding="utf-8")
+        content = str(result.get("message") or "").strip()
+        if not content:
+            raise RuntimeError(f"{resident_role} returned empty output for figure {kind}")
+        output_path.write_text(content, encoding="utf-8")
     usage = {
         **dict(result.get("usage") or {}),
         **identity,
@@ -191,6 +205,8 @@ class FigureExplanationPersistenceError(RuntimeError):
 
 
 def explain_figure(payload: dict, actor: str) -> dict:
+    if not paper_job_ownership.is_worker():
+        raise paper_job_ownership.OwnershipLost("Figure generation requires a claimed task")
     paper_id = str(payload.get("paper_id") or "").strip()
     figure_id = str(payload.get("figure_id") or "").strip()
     if not paper_id or not figure_id:
@@ -202,9 +218,14 @@ def explain_figure(payload: dict, actor: str) -> dict:
     figure = next((item for item in figures if str(item.get("figure_id") or "") == figure_id), None)
     if not figure:
         raise KeyError("figure not found")
-    explanation, usage = _generate_figure_explanation(paper, figure)
+    validated = paper_job_ownership.metadata().get("validated_explanation")
+    if validated:
+        explanation, usage = validated["content"], validated["usage"]
+    else:
+        explanation, usage = _generate_figure_explanation(paper, figure)
     if not isinstance(explanation, str) or not explanation.strip():
         raise ValueError("Figure explanation returned no generated content")
+    paper_job_ownership.checkpoint("validated_explanation", {"content": explanation, "usage": usage})
     committed_at = _now()
     receipt = {
         "schema": "tfi.paper.figure-explanation.commit.v1", "commit_id": secrets.token_hex(12),
@@ -256,12 +277,18 @@ def _queue_figure_explanation(payload: dict, actor: str) -> dict:
             raise KeyError("figure not found")
         if str(figure.get("explanation_status") or "") in {"queued", "running"}:
             return {"figure": _figure_public(figure, paper_id), "status": figure.get("explanation_status") or "queued"}
+        if (figure.get("explanation_status") == "error" and figure.get("explanation_invocation")
+                and not figure.get("_job_execution")):
+            figure.update(explanation_status="queued", explanation_step="confirming submission", explanation_error="")
+            figure["_job_execution"] = {"stages": {"figure": {"intent": True, "receipt": figure["explanation_invocation"]}}}
+            return {"figure": _figure_public(figure, paper_id), "status": "queued"}
         figure["explanation_status"] = "queued"
         figure["explanation_generation_status"] = "queued"
         figure["explanation_persistence_status"] = "pending"
         figure["explanation_commit"] = {}
         figure["explanation_error"] = ""
         figure["explanation_invocation"] = {}
+        figure["_job_execution"] = {}
         figure["explained_by"] = actor
         figure["explain_requested_at"] = _now()
         figure["updated_at"] = _now()
@@ -277,6 +304,8 @@ def _queue_figure_explanation(payload: dict, actor: str) -> dict:
 
 
 def generate_figure_draft(payload: dict, actor: str) -> dict:
+    if not paper_job_ownership.is_worker():
+        raise paper_job_ownership.OwnershipLost("Figure generation requires a claimed task")
     paper_id = str(payload.get("paper_id") or "").strip()
     figure_id = str(payload.get("figure_id") or "").strip()
     request = str(payload.get("request") or payload.get("message") or "").strip()
@@ -346,7 +375,7 @@ def generate_figure_draft(payload: dict, actor: str) -> dict:
                 break
         if not replaced:
             generated.insert(0, item)
-        figure["generated"] = generated[:8]
+        figure["generated"] = [item for index, item in enumerate(generated) if index < 8 or item.get("status") in {"queued", "running"}]
         figure["updated_at"] = _now()
     return {"figure": _figure_public(figure, paper_id), "generated": item}
 
@@ -376,6 +405,13 @@ def _queue_figure_draft(payload: dict, actor: str) -> dict:
         generated = figure.get("generated") if isinstance(figure.get("generated"), list) else []
         now = _now()
         for existing in generated:
+            same_request = (isinstance(existing, dict) and str(existing.get("request") or "").strip() == request
+                and str(existing.get("source_generated_id") or "").strip() == source_generated_id
+                and [str(path) for path in extra_image_paths] == list(existing.get("extra_image_paths") or []))
+            if same_request and existing.get("status") == "error" and existing.get("invocation") and not existing.get("_job_execution"):
+                existing.update(status="queued", step="confirming submission", error="")
+                existing["_job_execution"] = {"stages": {"figure": {"intent": True, "receipt": existing["invocation"]}}}
+                return {"figure": _figure_public(figure, paper_id), "generated": existing, "status": "queued"}
             if (
                 isinstance(existing, dict)
                 and str(existing.get("request") or "").strip() == request
@@ -383,17 +419,7 @@ def _queue_figure_draft(payload: dict, actor: str) -> dict:
                 and [str(path) for path in extra_image_paths] == list(existing.get("extra_image_paths") or [])
                 and str(existing.get("status") or "") in {"queued", "running"}
             ):
-                touched = int(existing.get("updated_at") or existing.get("created_at") or 0)
-                if touched > 0 and now - touched <= FIGURE_DRAFT_STALE_SECONDS:
-                    return {"figure": _figure_public(figure, paper_id), "generated": existing, "status": existing.get("status") or "queued"}
-                existing["status"] = "error"
-                existing["error"] = "Previous figure generation business task became stale before finishing."
-                existing["usage"] = {
-                    **(existing.get("usage") if isinstance(existing.get("usage"), dict) else {}),
-                    "error": existing["error"],
-                    "stale_after_seconds": FIGURE_DRAFT_STALE_SECONDS,
-                }
-                existing["updated_at"] = now
+                return {"figure": _figure_public(figure, paper_id), "generated": existing, "status": existing.get("status") or "queued"}
         generated_id = f"gen-{secrets.token_hex(5)}"
         queued = {
             "generated_id": generated_id,
@@ -410,7 +436,7 @@ def _queue_figure_draft(payload: dict, actor: str) -> dict:
             "updated_at": _now(),
         }
         generated.insert(0, queued)
-        figure["generated"] = generated[:8]
+        figure["generated"] = [item for index, item in enumerate(generated) if index < 8 or item.get("status") in {"queued", "running"}]
         figure["updated_at"] = _now()
     launch_error = _start_figure_draft_task(
         paper,
@@ -485,68 +511,28 @@ def delete_generated_figure(payload: dict, actor: str) -> dict:
 
 def _start_figure_explain_task(paper: dict, figure_id: str, actor: str) -> str:
     from management_portal import business_tasks
-
-    paper_id = str(paper.get("id") or "").strip()
-    def fail(exc: BaseException) -> None:
-        _set_figure_fields(paper_id, figure_id, {
-            "explanation_status": "error",
-            "explanation_error": str(exc)[:2000],
-            "updated_at": _now(),
-        })
-
-    try:
-        business_tasks.start(
-            f"paper-figure-explain:{paper_id}:{figure_id}",
-            run_figure_explain_job,
-            paper_id,
-            figure_id,
-            actor,
-            on_error=fail,
-        )
-    except Exception as exc:
-        return f"Failed to run figure explanation business task: {exc}"
+    adapter = FigureAdapter(str(paper["id"]), figure_id)
+    business_tasks.start(f"paper-figure-explain:{paper['id']}:{figure_id}", paper_job_ownership.run,
+                         adapter.identity, lambda identity: run_figure_explain_job(paper["id"], figure_id, actor),
+                         adapter=adapter, on_error=lambda exc: print(f"[figure-owner] {exc}", flush=True))
     return ""
 
 
 def _recover_figure_tasks(paper: dict) -> None:
-    with LOCK:
-        _resume_figure_tasks(paper)
+    # Compatibility read hook. Background recovery belongs to the lifecycle scanner.
+    return None
 
 
 def _resume_figure_tasks(paper: dict) -> None:
-    from management_portal import business_tasks
-
-    paper_id = paper["id"]
     for figure in _load_figures(paper):
         figure_id = str(figure.get("figure_id") or "")
-        if figure.get("explanation_status") in {"queued", "running"} and not business_tasks.is_active(f"paper-figure-explain:{paper_id}:{figure_id}"):
-            binding = figure.get("explanation_invocation") or {}
-            if (binding.get("resident_id") and binding.get("input_message_id")
-                    and binding.get("input_identity_status") != "unconfirmed"):
-                _start_figure_explain_task(paper, figure_id, str(figure.get("explained_by") or paper.get("created_by") or ""))
-            else:
-                _set_figure_fields(paper_id, figure_id, {
-                    "explanation_status": "error",
-                    "explanation_error": "Figure task interrupted before its Resident input binding was saved. Check the Resident before retrying; no input was resubmitted.",
-                })
+        if figure.get("explanation_status") in {"queued", "running"}:
+            _start_figure_explain_task(paper, figure_id, str(figure.get("explained_by") or paper.get("created_by") or ""))
         for item in figure.get("generated") or []:
-            generated_id = str(item.get("generated_id") or "")
-            if item.get("status") not in {"queued", "running"} or business_tasks.is_active(f"paper-figure-draft:{generated_id}"):
-                continue
-            binding = item.get("invocation") or {}
-            if (binding.get("resident_id") and binding.get("input_message_id")
-                    and binding.get("input_identity_status") != "unconfirmed"):
-                _start_figure_draft_task(
-                    paper, figure_id, generated_id, str(item.get("request") or ""),
-                    str(item.get("created_by") or paper.get("created_by") or ""),
-                    source_generated_id=str(item.get("source_generated_id") or ""),
-                    extra_image_paths=_safe_figure_input_image_paths(paper, item.get("extra_image_paths")),
-                )
-            else:
-                _set_figure_generated_item(paper_id, figure_id, generated_id, {
-                    "status": "error",
-                    "error": "Figure task interrupted before its Resident input binding was saved. Check the Resident before retrying; no input was resubmitted.",
-                })
+            if item.get("status") in {"queued", "running"}:
+                _start_figure_draft_task(paper, figure_id, item["generated_id"], str(item.get("request") or ""),
+                    str(item.get("created_by") or ""), source_generated_id=str(item.get("source_generated_id") or ""),
+                    extra_image_paths=_safe_figure_input_image_paths(paper, item.get("extra_image_paths")))
 
 
 def _start_figure_draft_task(
@@ -559,36 +545,11 @@ def _start_figure_draft_task(
     extra_image_paths: list[Path] | None = None,
 ) -> str:
     from management_portal import business_tasks
-
-    paper_id = str(paper.get("id") or "").strip()
-    image_values = [str(path) for path in (extra_image_paths or [])]
-    def fail(exc: BaseException) -> None:
-        _set_figure_generated_item(
-            paper_id,
-            figure_id,
-            generated_id,
-            {
-                "status": "error",
-                "error": str(exc)[:2000],
-                "updated_at": _now(),
-            },
-        )
-
-    try:
-        business_tasks.start(
-            f"paper-figure-draft:{generated_id}",
-            run_figure_draft_job,
-            paper_id,
-            figure_id,
-            generated_id,
-            request,
-            actor,
-            source_generated_id=source_generated_id,
-            extra_image_paths=image_values,
-            on_error=fail,
-        )
-    except Exception as exc:
-        return f"Failed to run figure draft business task: {exc}"
+    adapter = FigureAdapter(str(paper["id"]), figure_id, generated_id)
+    business_tasks.start(f"paper-figure-draft:{generated_id}", paper_job_ownership.run, adapter.identity,
+        lambda identity: run_figure_draft_job(paper["id"], figure_id, generated_id, request, actor,
+            source_generated_id=source_generated_id, extra_image_paths=[str(p) for p in extra_image_paths or []]),
+        adapter=adapter, on_error=lambda exc: print(f"[figure-owner] {exc}", flush=True))
     return ""
 
 
@@ -643,6 +604,10 @@ def run_figure_explain_job(paper_id: str, figure_id: str, actor: str) -> dict:
         })
         return explain_figure({"paper_id": paper_id, "figure_id": figure_id}, actor)
     except Exception as exc:
+        state = paper_job_ownership.settle_exception(exc)
+        if state["status"] == "running":
+            return _set_figure_fields(paper_id, figure_id, {"explanation_status": "running",
+                "explanation_step": state["step"], "explanation_error": state.get("error", "")})
         persistence_failure = isinstance(exc, FigureExplanationPersistenceError)
         return _set_figure_fields(paper_id, figure_id, {
             "explanation_status": "error", "explanation_error": str(exc),
@@ -675,17 +640,8 @@ def run_figure_draft_job(
             actor,
         )
     except Exception as exc:
-        return _set_figure_generated_item(
-            paper_id,
-            figure_id,
-            generated_id,
-            {
-                "status": "error",
-                "error": str(exc),
-                "usage": {"error": str(exc)},
-                "updated_at": _now(),
-            },
-        )
+        return _set_figure_generated_item(paper_id, figure_id, generated_id,
+                                         paper_job_ownership.settle_exception(exc))
 
 
 def _generate_figure_explanation(paper: dict, figure: dict) -> tuple[str, dict]:
@@ -817,7 +773,19 @@ def _generate_figure_image(
         raise ValueError("source image missing")
     generated_dir = figures_dir / "generated"
     generated_dir.mkdir(parents=True, exist_ok=True)
-    output_path = generated_dir / f"{_slugify(generated_id)}.png"
+    token = paper_job_ownership._owner.get()[1]["token"]
+    legacy_path = generated_dir / f"{_slugify(generated_id)}.png"
+    # Old model processes may still write their original path after Web exits.
+    # The published image has a new fence-specific name they never received.
+    final_path = generated_dir / f"{_slugify(generated_id)}-{token}.png"
+    staging = paper_job_ownership.metadata().get("image_staging")
+    if not staging:
+        operation = next((item for item in figure.get("generated", []) if item.get("generated_id") == generated_id), {})
+        staging = str(legacy_path if operation.get("invocation") else generated_dir / f".{_slugify(generated_id)}-{token}.png")
+        paper_job_ownership.checkpoint("image_staging", staging)
+    output_path = Path(staging)
+    if output_path.parent.resolve() != generated_dir.resolve():
+        raise ValueError("Figure staging path is outside generated artifacts")
     analysis_path = _paper_store_file(paper, "analysis")
     analysis = _read_text_preview(analysis_path, limit=8_000)
     extra_image_paths = [path for path in (extra_image_paths or []) if path and path.is_file()]
@@ -862,10 +830,20 @@ User modification request:
             image.verify()
     except Exception as exc:
         raise RuntimeError(f"generated image is not a readable image: {output_path}") from exc
-    rel_path = output_path.relative_to(paper_root).as_posix()
+    paper_job_ownership.checkpoint("validated_image", True)
+    import shutil
+    with paper_job_ownership.fenced_write(paper_job_ownership.current_identity()):
+        temporary = final_path.with_suffix(".pending-" + paper_job_ownership._owner.get()[1]["token"])
+        try:
+            shutil.copyfile(output_path, temporary)
+            os.replace(temporary, final_path)
+        finally:
+            temporary.unlink(missing_ok=True)
+    rel_path = final_path.relative_to(paper_root).as_posix()
     usage = {
         **usage,
-        "output_image_path": str(output_path),
+        "output_image_path": str(final_path),
+        "generation_output_path": str(output_path),
         "source_image_path": str(image_path),
         "source_generated_id": source_generated_id,
         "extra_image_paths": [str(path) for path in extra_image_paths],

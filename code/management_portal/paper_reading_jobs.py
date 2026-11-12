@@ -34,7 +34,7 @@ def _set_job_with_run_record(kind: str, job_id: str, patch: dict) -> dict:
     with LOCK, paper_state_store.locked(kind):
         values = {**patch, "updated_at": _now()}
         found = (paper_job_ownership.worker_write(job_id, values)
-                 if kind == "deep_read_jobs" and paper_job_ownership.is_worker()
+                 if kind in {"deep_read_jobs", "exp_jobs"} and paper_job_ownership.is_worker()
                  else paper_state_store.merge(kind, job_id, values))
         try:
             PAPER_STORE.write_run_record(found)
@@ -76,23 +76,11 @@ def _latest_exp_job(*, paper_id: str = "", job_id: str = "") -> dict | None:
 
 
 def _is_stale_exp_job(job: dict) -> bool:
-    status = str(job.get("status") or "")
-    if status not in {"queued", "running"}:
-        return False
-    touched = int(job.get("updated_at") or job.get("created_at") or 0)
-    return touched > 0 and _now() - touched > EXP_STALE_SECONDS
+    return False  # A long model wait is not evidence of execution failure.
 
 
 def _mark_stale_exp_job(job: dict) -> dict:
-    return _set_exp_job(
-        str(job.get("job_id") or ""),
-        {
-            "status": "error",
-            "step": "stale",
-            "progress": 100,
-            "error": "Exp task was interrupted or stopped updating. Please generate Exp again.",
-        },
-    )
+    return job  # Compatibility helper: lease takeover belongs to the owner loop.
 
 
 def start_deep_read(payload: dict, actor: str) -> dict:
@@ -594,20 +582,7 @@ def start_exp(payload: dict, actor: str) -> dict:
         with paper_state_store.locked("exp_jobs"):
             latest = _latest_exp_job(paper_id=paper_id)
             if latest and str(latest.get("status") or "") in {"queued", "running"}:
-                if _is_stale_exp_job(latest):
-                    paper_state_store.merge("exp_jobs", latest["job_id"], {
-                        "status": "error",
-                        "step": "stale",
-                        "progress": 100,
-                        "updated_at": _now(),
-                        "error": (
-                            "Exp task was interrupted or stopped updating. "
-                            "Please generate Exp again."
-                        ),
-                    })
-                    latest = None
-                else:
-                    return latest
+                return latest
             job_id = f"exp-{secrets.token_hex(6)}"
             job = {
                 "job_id": job_id,
@@ -631,44 +606,17 @@ def get_exp_status(*, actor: str, job_id: str = "", paper_id: str = "") -> dict:
     with LOCK:
         job = _latest_exp_job(paper_id=paper_id, job_id=job_id)
         _authorize_paper_job_status(job, actor=actor, job_id=job_id, paper_id=paper_id)
-        if job and _is_stale_exp_job(job):
-            job = _mark_stale_exp_job(job)
-    return job or {"status": "idle", "paper_id": paper_id, "job_id": job_id}
+    return paper_job_ownership.public_state(job) or {"status": "idle", "paper_id": paper_id, "job_id": job_id}
 
 
 def _start_exp_task(job: dict) -> dict:
-    from management_portal import business_tasks
-
+    if (job.get("usage") or {}).get("adoption"):
+        return job  # Only the controlled adopt entry may resume this save-only job.
     job_id = str(job.get("job_id") or "")
-    def fail(exc: BaseException) -> None:
-        _set_exp_job(
-            job_id,
-            {
-                "status": "error",
-                "step": "error",
-                "progress": 100,
-                "error": str(exc)[:2000],
-            },
-        )
-
-    try:
-        business_tasks.start(
-            f"paper-exp:{job_id}",
-            _run_exp_job,
-            job_id,
-            on_error=fail,
-        )
-    except Exception as exc:
-        return _set_exp_job(
-            job_id,
-            {
-                "status": "error",
-                "step": "launch error",
-                "progress": 100,
-                "error": f"Failed to run Exp business task: {exc}",
-            },
-        )
-    return _latest_exp_job(job_id=job_id) or job
+    business_tasks.start(f"paper-exp:{job_id}", paper_job_ownership.run, job_id, _run_exp_job,
+                         adapter=paper_job_ownership.TableAdapter("exp_jobs"),
+                         on_error=lambda exc: print(f"[paper-exp-owner] {job_id}: {exc}", flush=True))
+    return job
 
 
 def _run_exp_job(job_id: str) -> None:
@@ -679,30 +627,36 @@ def _run_exp_job(job_id: str) -> None:
         paper = get_paper_detail(paper_id, sections=[])["paper"]
         print(f"[paper-exp] {job_id} calling llm", flush=True)
         _set_exp_job(job_id, {"step": "calling llm", "progress": 35})
-        content, usage = _generate_exp_extraction(paper, actor=str(job.get("created_by") or ""), job_id=job_id)
-        _require_artifact_sections(content, EXP_SECTIONS, "Exp")
+        validated = paper_job_ownership.metadata().get("validated_exp")
+        if validated:
+            content, usage = validated["content"], validated["usage"]
+        else:
+            content, usage = _generate_exp_extraction(paper, actor=str(job.get("created_by") or ""), job_id=job_id)
+            _require_artifact_sections(content, EXP_SECTIONS, "Exp")
+            paper_job_ownership.checkpoint("validated_exp", {"content": content, "usage": usage})
         print(f"[paper-exp] {job_id} writing exp", flush=True)
         _set_exp_job(job_id, {"step": "writing exp", "progress": 82})
-        path = _write_exp_markdown(paper, content, usage, actor=str(job.get("created_by") or ""))
-        PAPER_STORE.update_paper(paper_id, {})
-        _set_exp_job(
-            job_id,
-            {
-                "status": "done",
-                "step": "done",
-                "progress": 100,
-                "exp_path": str(path),
-                "usage": usage,
-                "error": "",
-            },
-        )
+        with LOCK, paper_job_ownership.fenced_write(job_id):
+            path = _write_exp_markdown(paper, content, usage, actor=str(job.get("created_by") or ""))
+            PAPER_STORE.update_paper(paper_id, {})
+            _set_exp_job(
+                job_id,
+                {
+                    "status": "done",
+                    "step": "done",
+                    "progress": 100,
+                    "exp_path": str(path),
+                    "usage": usage,
+                    "error": "",
+                },
+            )
         print(f"[paper-exp] {job_id} done", flush=True)
     except Exception as exc:
         print(f"[paper-exp] {job_id} error: {exc}", flush=True)
-        _set_exp_job(job_id, {"status": "error", "step": "error", "error": str(exc), "progress": 100})
+        _set_exp_job(job_id, paper_job_ownership.settle_exception(exc))
 
 
-def _write_exp_markdown(paper: dict, content: str, usage: dict, *, actor: str = "") -> Path:
+def _write_exp_markdown(paper: dict, content: str, usage: dict, *, actor: str = "", generated_at=None) -> Path:
     exp_path = _paper_store_file(paper, "exp")
     if not exp_path:
         root_text = str(paper.get("_store_root") or "").strip()
@@ -711,21 +665,30 @@ def _write_exp_markdown(paper: dict, content: str, usage: dict, *, actor: str = 
         root = Path(root_text)
         exp_path = root / "exp.md"
     exp_path.parent.mkdir(parents=True, exist_ok=True)
+    document = _exp_markdown_document(paper, content, usage, actor=actor, generated_at=generated_at)
+    from .shared_state import atomic_replace_text
+    atomic_replace_text(exp_path, document)
+    return exp_path
+
+
+def _exp_markdown_document(paper, content, usage, *, actor="", generated_at=None):
     header = (
         "---\n"
         "schema: tfi.paper_exp.v1\n"
         f"paper_id: {paper.get('id') or ''}\n"
         f"generated_by: {actor or ''}\n"
-        f"generated_at: {_now()}\n"
+        f"generated_at: {_now() if generated_at is None else generated_at}\n"
         f"llm_api: {usage.get('api_id') or ''}\n"
         f"llm_model: {usage.get('model') or ''}\n"
         "---\n\n"
     )
-    exp_path.write_text(header + str(content or "").strip() + "\n", encoding="utf-8")
-    return exp_path
+    return header + str(content or "").strip() + "\n"
 
 
 def _generate_exp_extraction(paper: dict, *, actor: str, job_id: str = "") -> tuple[str, dict]:
+    if paper_job_ownership.is_worker() and paper_job_ownership.metadata().get("stages", {}).get("paper:exp"):
+        return _resident_reply("", actor=actor, resident_scope="paper:exp",
+                               metadata={"paper_id": paper["id"], "material_attempt": "paper-exp:" + job_id})
     analysis = _analysis_text(paper, limit=120_000)
     pdf_text = _pdf_text_for_paper(paper)
     if not (analysis.strip() or pdf_text.strip() or str(paper.get("abstract") or "").strip()):

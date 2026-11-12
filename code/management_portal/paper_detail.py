@@ -43,7 +43,6 @@ def get_paper_detail(paper_id: str, sections: object = None) -> dict:
         notes = paper_state_store.records("notes", paper_id=paper["id"]) if "notes" in requested else []
         refs = _refs_for_paper(paper) if "refs" in requested else []
     if "figures" in requested:
-        _recover_figure_tasks(paper)
         figures = _load_figures(paper)
     public = _paper_public(paper)
     analysis_source = str(paper.get("analysis_path") or "").strip()

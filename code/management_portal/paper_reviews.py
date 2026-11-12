@@ -9,7 +9,7 @@ import secrets
 import time
 
 from management_common.principal import is_user_or_resident
-from management_portal import paper_state_store
+from management_portal import paper_state_store, paper_job_ownership
 from management_portal.paper_records import _now
 from management_portal.paper_resident import _extract_json_object, _resident_reply
 from management_portal.paper_store import (
@@ -63,7 +63,9 @@ def _announce_review_changes() -> None:
 
 def _set_review_job(job_id: str, patch: dict) -> dict:
     with LOCK:
-        found = paper_state_store.merge("review_jobs", job_id, {**patch, "updated_at": _now()})
+        found = (paper_job_ownership.worker_write(job_id, {**patch, "updated_at": _now()})
+                 if paper_job_ownership.is_worker() else
+                 paper_state_store.merge("review_jobs", job_id, {**patch, "updated_at": _now()}))
     _notify_paper_projection(
         found.get("paper_id") or job_id,
         actors=[found.get("created_by")],
@@ -79,6 +81,7 @@ def _review_job_by_id(job_id: str) -> dict | None:
 def _review_job_response(job: dict | None) -> dict | None:
     """Keep stored diagnostics intact; present a useful quota failure summary."""
     from management_portal.execution.provider_failures import is_usage_limit_failure
+    job = paper_job_ownership.public_state(job)
     if job and job.get('status') == 'error' and is_usage_limit_failure(job.get('error')):
         return {**job, 'error': '模型服务余额或额度不足，本次评审未完成。任务记录已保留。'}
     return job
@@ -91,9 +94,6 @@ def start_review(payload: dict, actor: str) -> dict:
     if not paper_id:
         raise ValueError("paper_id required")
     clean_actor = str(actor or "").strip()
-    for previous in paper_state_store.records("review_jobs", paper_id=paper_id):
-        if previous.get("created_by") == clean_actor:
-            _settle_interrupted_review(previous)
     with LOCK:
         paper = _paper_by_id(paper_id)
         if not paper:
@@ -143,29 +143,11 @@ def start_review(payload: dict, actor: str) -> dict:
 
 def _start_review_task(job: dict) -> dict:
     from management_portal import business_tasks
-
     job_id = str(job.get("job_id") or "")
-    def fail(exc: BaseException) -> None:
-        _set_review_job(job_id, {
-            "status": "error",
-            "step": "error",
-            "error": str(exc)[:2000],
-        })
-
-    try:
-        business_tasks.start(
-            f"paper-review:{job_id}",
-            _run_review_job,
-            job_id,
-            on_error=fail,
-        )
-    except Exception as exc:
-        return _set_review_job(job_id, {
-            "status": "error",
-            "step": "launch error",
-            "error": f"Failed to run Paper review business task: {exc}",
-        })
-    return _review_job_by_id(job_id) or job
+    business_tasks.start(f"paper-review:{job_id}", paper_job_ownership.run, job_id, _run_review_job,
+                         adapter=paper_job_ownership.TableAdapter("review_jobs"),
+                         on_error=lambda exc: print(f"[paper-review-owner] {job_id}: {exc}", flush=True))
+    return job
 
 
 def _run_review_job(job_id: str) -> dict:
@@ -186,59 +168,34 @@ def _run_review_job(job_id: str) -> dict:
         )
         if not paper:
             raise KeyError("paper not found")
-        review = _generate_ai_review(
-            dict(paper),
-            papers,
-            actor=str(job.get("created_by") or ""),
-            title=str(job.get("title") or ""),
-            review_id=str(job.get("review_id") or ""),
-        )
+        review = paper_job_ownership.metadata().get("validated_review")
+        if not review:
+            review = _generate_ai_review(
+                dict(paper), papers, actor=str(job.get("created_by") or ""),
+                title=str(job.get("title") or ""), review_id=str(job.get("review_id") or ""),
+            )
+            paper_job_ownership.checkpoint("validated_review", review)
         _review_markdown_path(review)
-        with LOCK:
+        with LOCK, paper_job_ownership.fenced_write(job_id):
             with paper_state_store.locked("reviews"):
                 if paper_state_store.get("reviews", str(review.get("review_id") or "")) is None:
                     paper_state_store.append("reviews", review)
             _write_review_markdown(review)
-        _announce_review_changes()
-        incomplete = review.get("status") == "ai_incomplete"
-        _set_review_job(job_id, {
-            "status": "error" if incomplete else "done",
-            "step": "incomplete review" if incomplete else "done",
-            "error": str(review.get("error") or "") if incomplete else "",
-        })
+            paper_state_store.database().database.after_commit(_announce_review_changes)
+            incomplete = review.get("status") == "ai_incomplete"
+            _set_review_job(job_id, {
+                "status": "error" if incomplete else "done",
+                "step": "incomplete review" if incomplete else "done",
+                "error": str(review.get("error") or "") if incomplete else "",
+            })
         return review
     except Exception as exc:
-        _set_review_job(job_id, {
-            "status": "error",
-            "step": "error",
-            "error": str(exc)[:2000],
-        })
-        raise
+        _set_review_job(job_id, paper_job_ownership.settle_exception(exc))
+        return {}
 
 
 def _settle_interrupted_review(job: dict) -> dict:
-    from management_portal import business_tasks
-
-    if job.get("status") not in {"queued", "running"} or business_tasks.process_is_alive(job.get("process_owner") or {}):
-        return job
-    # The owner may have saved the review just before it died. Recheck under
-    # the same locks as completion and recover that result without another AI call.
-    with LOCK, paper_state_store.locked("review_jobs", "reviews"):
-        current = paper_state_store.get("review_jobs", job.get("job_id"))
-        if current is None:
-            return job
-        if current.get("status") not in {"queued", "running"} or current.get("process_owner") != job.get("process_owner"):
-            return current
-        review = paper_state_store.get("reviews", current.get("review_id"))
-        complete = review is not None and review.get("status") != "ai_incomplete"
-        current = paper_state_store.merge("review_jobs", current["job_id"], {
-            "status": "done" if complete else "error",
-            "step": "done" if complete else "interrupted",
-            "error": "" if complete else str((review or {}).get("error") or "Paper review task was interrupted by a process restart. Please generate the review again."),
-            "updated_at": _now(),
-        })
-    _notify_paper_projection(current.get("paper_id"), actors=[current.get("created_by")], fields=["review"])
-    return current
+    return job  # Observation never settles or restarts an execution.
 
 
 def review_job_paper_id(job_id: str) -> str:
@@ -264,7 +221,6 @@ def get_review_status(*, actor: str, job_id: str = "", paper_id: str = "") -> di
             raise PermissionError("Paper review job needs a User or Resident")
         if paper_id and str(job.get("paper_id") or "") != paper_id:
             raise ValueError("Paper review job belongs to another paper")
-        job = _settle_interrupted_review(job)
     return {"job": _review_job_response(job)}
 
 
@@ -281,7 +237,6 @@ def wait_review(
             raise KeyError("Paper review job not found")
         if not is_user_or_resident(actor):
             raise PermissionError("Paper review job needs a User or Resident")
-        job = _settle_interrupted_review(job)
         status = str(job.get("status") or "")
         if status == "done":
             result = job.get("result")
@@ -343,7 +298,8 @@ def _write_review_markdown(review: dict) -> None:
         body_parts.extend(["## Author Action Memo", "", str(review.get("author_action_memo") or ""), ""])
     if review.get("raw_response"):
         body_parts.extend(["## 未完成评审的原始输出", "", str(review["raw_response"]), ""])
-    path.write_text("\n".join(body_parts), encoding="utf-8")
+    from .shared_state import atomic_replace_text
+    atomic_replace_text(path, "\n".join(body_parts))
 
 
 def _related_papers(paper: dict, papers: list[dict]) -> list[dict]:
@@ -374,7 +330,8 @@ def _generate_ai_review(
 ) -> dict:
     analysis = _analysis_text(paper)
     pdf_text = _pdf_text_for_paper(paper)
-    if not (analysis.strip() or pdf_text.strip() or str(paper.get("abstract") or "").strip()):
+    observing = paper_job_ownership.is_worker() and bool(paper_job_ownership.metadata().get("stages", {}).get("paper:review"))
+    if not observing and not (analysis.strip() or pdf_text.strip() or str(paper.get("abstract") or "").strip()):
         raise ValueError("paper has no analysis, PDF text, or abstract for AI review")
     related = _related_papers(paper, papers)
     prompt = f"""请对下面论文生成 AI review。输出 JSON，字段固定为：

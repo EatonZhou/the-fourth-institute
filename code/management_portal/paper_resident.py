@@ -102,6 +102,11 @@ def _resident_reply(
     """
     from management_portal.paper_projection import turn
 
+    from . import paper_job_ownership
+    if paper_job_ownership.is_worker() and resident_scope in {"paper:exp", "paper:review"}:
+        def turn(**options):
+            return paper_job_ownership.stage_turn(resident_scope, **options)
+
     result = turn(
         actor=str(actor or "portal"),
         prompt=prompt,
