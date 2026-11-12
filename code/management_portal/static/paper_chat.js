@@ -291,12 +291,7 @@
       retry.addEventListener('click',async()=>{retry.disabled=true;try{await refreshResearchSelectors();if(state.researchSlot||state.researchLegacyKey)await loadChatHistory({retry:true});}catch(_){/* Local error remains visible. */}finally{retry.disabled=false;}});
       researchNav.append(error,retry);
       root.parentElement.classList.add('paperResearchChatHost');
-      const header = root.querySelector('.portalWorkspaceHead');
-      if (header) {
-        header.classList.add('paperFrameHead');
-        researchNav.classList.add('paperFrameHeadFooter');
-        header.append(researchNav);
-      } else root.parentElement.insertBefore(researchNav,root);
+      root.parentElement.insertBefore(researchNav,root);
       renderResearchOptions();
     }
     function renderResearchOptions() {

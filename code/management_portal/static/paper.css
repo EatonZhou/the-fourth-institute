@@ -189,26 +189,35 @@ body {
 .ccfPaperDetail { display: grid; gap: 12px; max-width: 960px; }
 .statusDot { width: 7px; height: 7px; border-radius: 99px; background: var(--muted); flex: 0 0 auto; }
 .statusDot.ready { background: var(--success); }
-.workspaceBody { display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); }
-/* Paper uses the shared Chat header typography, padding and surface. */
-.paperFrameHead { align-content: flex-start; min-width: 0; max-width: 100%; }
-.paperFrameHead > .paneHeadText { align-self: flex-start; align-content: start; flex-basis: 0; }
-.paperFrameHead > .paperFrameHeadFooter { flex: 1 0 100%; min-width: 0; margin: 0; }
-.paperFrameHead #workspaceResourceIdentity { overflow: hidden; }
-.paperFrameHead .portalResourceIdentityTitle { font: inherit; white-space: nowrap; display: block; }
-.paperFrameHead .portalResourceIdentityTitleRow { display: block; }
-.paperFrameHead .workspaceIdentityMetaRow { display: flex; flex-wrap: wrap; gap: var(--portal-space-1); }
-.paperFrameHead .workspaceResourceIdSlot { min-width: 0; overflow: hidden; }
-.paperFrameHead .workspaceDetailsToggle,
-.paperFrameHead .workspaceDeepReadStatus { font: inherit; line-height: inherit; }
-.paperFrameHead .workspaceDetailsBody { flex-basis: 100%; }
-.paperFrameHead .workspaceControls { width: 100%; overflow: visible; }
-.paperFrameHead .workspaceControls > #modeTabs { flex: 1 1 auto; overflow-x: auto; }
-.paperFrameHead .workspaceModeActions { flex: 0 0 auto; }
-.paperFrameHead .chatSubline > .paneNote:not(.hasSessionIdentity) { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.paperFrameHead .paperResearchSelector { padding: 0; }
-.paperFrameHead .paperResearchSelectorError:empty { display: none; }
-
+.workspaceBody { display: grid; grid-template-rows: auto minmax(0, 1fr); }
+.workspaceTop {
+  min-width: 0;
+  max-width: 100%;
+  padding: 8px 12px 6px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+  gap: 6px;
+}
+.titleBlock {
+  min-width: 0;
+  max-width: 100%;
+  display: grid;
+  row-gap: 2px;
+}
+.workspaceTitle {
+  display: -webkit-box;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  font-size: 12px;
+  font-weight: 760;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+  white-space: normal;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
 .workspaceHeadingRow { display: flex; align-items: center; gap: 8px; min-width: 0; }
 .workspaceHeadingRow > #workspaceResourceIdentity { flex: 1 1 auto; }
 .workspaceHeadingActions { flex: 0 0 auto; display: flex; align-items: center; gap: 8px; }
@@ -218,6 +227,8 @@ body {
   max-width: 100%;
   --portal-resource-identity-title-row-max-width: 100%;
   --portal-resource-identity-title-row-align: flex-start;
+  --portal-resource-identity-title-size: 12px;
+  --portal-resource-identity-title-weight: 760;
 }
 .workspaceIdentityMetaRow {
   min-width: 0;
@@ -766,6 +777,8 @@ body {
   .overviewGrid, .readerGrid, .reviewFlow, .formGrid, .figureWorkspace { grid-template-columns: 1fr; }
   .figureWorkspace { height: auto; min-height: 0; overflow: visible; }
   .figureList, .figureDetailPane { overflow: visible; }
+  .workspaceTitle { font-size: 12px; }
+  #workspaceResourceIdentity { --portal-resource-identity-title-size: 12px; }
 }
 .paneToggle svg { transition: transform .16s ease; }
 .paperPersonal { padding: 0; }

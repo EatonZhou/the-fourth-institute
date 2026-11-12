@@ -64,12 +64,12 @@
     <main class="portalPageFrame portalWorkbenchViewportShell" id="paperPageFrame">
     <div class="shell portalWorkbenchViewportRoot" id="paperWorkbench" data-portal-boot-required="Paper 工作台初始化">
       <section class="pane leftPane" id="paperLibraryPane" aria-label="Paper Library" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;Paper Library&quot;}">
-        <div class="paneHead chatHead portalWorkspaceHead paperFrameHead">
-          <div class="paneHeadText chatHeadText">
-            <div class="chatTitleLine"><div class="paneTitle"><!--portal-i18n:"Paper Library"-->Paper Library</div></div>
-            <div class="chatSubline"><div class="paneNote chatHeaderCopyId" id="libraryMeta"><!--portal-i18n:"Loading..."-->Loading...</div></div>
+        <div class="paneHead">
+          <div class="paneHeadText">
+            <div class="paneTitle"><!--portal-i18n:"Paper Library"-->Paper Library</div>
+            <div class="paneNote" id="libraryMeta"><!--portal-i18n:"Loading..."-->Loading...</div>
           </div>
-          <div class="paneHeadActions actionGroup">
+          <div class="paneHeadActions portalToolbar paperToolbar">
             <button class="portalButton is-icon is-quiet iconBtn paneToggle" data-portal-icon="chevron-left" id="toggleLibraryPaneBtn" type="button" title="Collapse Paper Library" aria-label="Collapse Paper Library" data-portal-i18n-attrs="{&quot;title&quot;: &quot;Collapse Paper Library&quot;, &quot;aria-label&quot;: &quot;Collapse Paper Library&quot;}"></button>
             <button class="portalButton is-icon is-quiet iconBtn" data-portal-icon="refresh" id="refreshBtn" type="button" title="刷新" aria-label="刷新" data-portal-i18n-attrs="{&quot;title&quot;: &quot;刷新&quot;, &quot;aria-label&quot;: &quot;刷新&quot;}"></button>
             <button class="portalButton is-icon is-quiet iconBtn" id="newPaperBtn" type="button" title="Register paper" aria-label="Register paper" data-portal-icon="plus" data-portal-i18n-attrs="{&quot;title&quot;: &quot;Register paper&quot;, &quot;aria-label&quot;: &quot;Register paper&quot;}"></button>
@@ -129,18 +129,19 @@
 
       <section class="pane workspacePane" id="paperWorkspacePane" aria-label="Paper Research Workspace" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;Paper Research Workspace&quot;}">
         <div class="workspaceBody">
-          <div class="workspaceTop paneHead chatHead portalWorkspaceHead paperFrameHead">
-            <div class="paneHeadText chatHeadText">
-              <div class="chatTitleLine">
-              <div id="workspaceResourceIdentity" class="paneTitle">
+          <div class="workspaceTop portalPanelHeadSurface">
+            <div class="titleBlock">
+              <div class="workspaceHeadingRow">
+              <div id="workspaceResourceIdentity">
                 <div class="portalResourceIdentity">
                   <div class="portalResourceIdentityTitleRow">
-                    <div class="portalResourceIdentityTitle paneTitle" id="workspaceTitle"><!--portal-i18n:"Paper Research"-->Paper Research</div>
+                    <div class="portalResourceIdentityTitle workspaceTitle" id="workspaceTitle"><!--portal-i18n:"Paper Research"-->Paper Research</div>
                   </div>
                 </div>
               </div>
+                <div class="workspaceHeadingActions" id="workspaceHeadingActions"></div>
               </div>
-              <div class="chatSubline"><div class="workspaceIdentityMetaRow paneNote chatHeaderCopyId">
+              <div class="workspaceIdentityMetaRow">
                 <div class="workspaceResourceIdSlot" id="workspaceResourceIdSlot"></div>
                 <button class="workspaceDetailsToggle" id="workspaceDetailsToggle" type="button" aria-expanded="false" aria-controls="workspaceDetailsBody">
                   <span><!--portal-i18n:"Details"-->Details</span>
@@ -151,10 +152,9 @@
                   <div class="workspaceSummary" id="workspaceSummary"></div>
                   <div class="workspaceMeta" id="workspaceMeta"><!--portal-i18n:"Browse, read, chat, and review papers from one workspace."-->Browse, read, chat, and review papers from one workspace.</div>
                 </div>
-              </div></div>
+              </div>
             </div>
-            <div class="paneHeadActions actionGroup" id="workspaceHeadingActions"></div>
-            <div class="workspaceControls paperFrameHeadFooter">
+            <div class="workspaceControls">
               <div class="portalSegmented" id="modeTabs">
                 <button type="button" data-mode="reader" title="切换到论文阅读视图" data-portal-i18n-attrs="{&quot;title&quot;: &quot;切换到论文阅读视图&quot;}"><!--portal-i18n:"Paper Reader"-->Reader</button>
                 <button type="button" data-mode="review" title="切换到论文 Review 视图" data-portal-i18n-attrs="{&quot;title&quot;: &quot;切换到论文 Review 视图&quot;}"><!--portal-i18n:"Review"-->Review</button>

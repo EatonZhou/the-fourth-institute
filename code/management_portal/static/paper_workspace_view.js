@@ -54,7 +54,7 @@
       }, {
         headingTag: "div",
         showType: false,
-        titleClass: "paneTitle",
+        titleClass: "workspaceTitle",
         titleId: "workspaceTitle",
         idId: "workspaceResourceId",
       });
@@ -165,8 +165,8 @@
       const home = !list || state.mode === "today" || state.activeSemanticSearchId || state.activeCollectorJobId
         || state.query || Object.values(state.filters || {}).some(Boolean);
       $("workspaceHeadingActions").innerHTML = window.PortalI18n.html`
-        ${home ? window.PortalI18n.html`<button class="portalButton is-icon is-quiet iconBtn" data-portal-icon="arrow-left" id="paperHomeBtn" type="button" title="${window.PortalI18n.t("Back to library")}" aria-label="${window.PortalI18n.t("Back to library")}"></button>` : ""}
-        ${list ? window.PortalI18n.html`<button class="portalButton is-icon is-quiet iconBtn" data-portal-icon="download" id="exportLibraryMarkdownBtn" type="button" title="${window.PortalI18n.t("Export")}" aria-label="${window.PortalI18n.t("Export")}" ${state.library?.papers?.length ? "" : "disabled"}></button>` : ""}`;
+        ${home ? window.PortalI18n.html`<button class="portalButton is-compact is-quiet" id="paperHomeBtn" type="button">${window.PortalI18n.t("Back to library")}</button>` : ""}
+        ${list ? window.PortalI18n.html`<button class="portalButton is-compact is-quiet" id="exportLibraryMarkdownBtn" type="button" ${state.library?.papers?.length ? "" : "disabled"}>${window.PortalI18n.t("Export")}</button>` : ""}`;
       target.parentElement.style.display = list ? "none" : "";
       if (status) status.textContent = paper && !["library", "today"].includes(state.mode) ? deepReadStateFor(paper).text : "";
       if (state.mode === "library" || state.mode === "today") {
