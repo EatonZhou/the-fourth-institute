@@ -33,6 +33,8 @@ const btn = (text, fn, disabled = false) => {
 };
 export async function mount(root, context) {
   const { sdk, resources, signal } = context;
+  const reportPageSize = 20;
+  let reportLimit = reportPageSize;
   let snapshot = { items: [], reports: [], modules: [], failures: [] },
     filters = { start_date: "", end_date: "", module_filter: "" };
   let visible = true,
@@ -104,7 +106,7 @@ export async function mount(root, context) {
     if (!alive() || !visible) return;
     const token = ++generation;
     loading = true;
-    const next = await loadProgress(resources);
+    const next = await loadProgress(resources, REFERENCES, { reportLimit });
     if (!alive() || !visible || token !== generation) return;
     const previous = snapshot;
     snapshot = next;
@@ -424,7 +426,7 @@ export async function mount(root, context) {
     const toolbar = el("header", undefined, "pToolbar");
     const heading = el("div", undefined, "pToolbarHeading");
     heading.append(el("h1", "阶段进展", "pToolbarTitle"));
-    const total = `${snapshot.failures.length ? "已读取" : "共"} ${snapshot.items.length} 项`;
+    const total = `${snapshot.failures.length || snapshot.has_more ? "已读取" : "共"} ${snapshot.items.length} 项`;
     const count = el("span", filtered ? `显示 ${rows.length} 项 / ${total}` : total, "pResultCount");
     count.setAttribute("role", "status");
     count.setAttribute("aria-label", "阶段进展数量");
@@ -470,6 +472,18 @@ export async function mount(root, context) {
     search.oninput = () => { query = search.value; render(); };
     toolbar.append(dates, moduleControl, search);
     root.append(toolbar);
+    if (snapshot.has_more) {
+      const history = el("div", undefined, "pMessage");
+      history.setAttribute("role", "status");
+      history.append(el("span", `已读取最近 ${snapshot.reports.length} 份汇报，共 ${snapshot.total_reports} 份。日期、模块与搜索筛选作用于已读取成果。 `));
+      history.append(btn(loading ? "正在读取更早成果…" : "加载更早成果", guard(async () => {
+        reportLimit += reportPageSize;
+        loading = true;
+        render();
+        try { await refresh(); } finally { loading = false; if (alive()) render(); }
+      }), loading));
+      root.append(history);
+    }
     const rangeError = dateRangeError(filters);
     if (rangeError) {
       const message = el("p", rangeError, "pMessage");

@@ -232,3 +232,34 @@ test("historical rollup generation time cannot override period ordering", async 
   const s = await data.loadProgress(f.resources);
   assert.equal(s.reports[0].ref, report);
 });
+
+test("first paint reads a bounded report window and older history remains loadable", async () => {
+  const f = await fixture();
+  const { stage } = await import("./progress-fixtures.mjs");
+  const index = JSON.parse(f.db[stage]);
+  index.report_refs = Array.from({ length: 65 }, (_, i) => {
+    const ref = report.replace("test", `period-${i}`);
+    f.db[ref] = JSON.stringify({ ...f.body, ref, end_at: new Date(Date.UTC(2026, 8, i + 1)).toISOString() });
+    return ref;
+  });
+  index.latest_report_ref = index.report_refs.at(-1);
+  f.db[stage] = JSON.stringify(index);
+  const reads = [];
+  const resources = { ...f.resources, read: async (ref, format) => {
+    reads.push(ref);
+    return f.resources.read(ref, format);
+  } };
+  const first = await data.loadProgress(resources, data.REFERENCES, { reportLimit: 20 });
+  assert.equal(first.total_reports, 65);
+  assert.equal(first.has_more, true);
+  assert.equal(first.reports.length, 20);
+  assert.deepEqual(reads.filter(ref => index.report_refs.includes(ref)), index.report_refs.slice(-20));
+  assert.ok(!first.watched.includes(index.report_refs[0]));
+  assert.equal(first.reports[0].ref, index.latest_report_ref);
+  const more = await data.loadProgress(resources, data.REFERENCES, { reportLimit: 40 });
+  assert.equal(more.reports.length, 40);
+  assert.equal(more.has_more, true);
+  const all = await data.loadProgress(resources, data.REFERENCES, { reportLimit: 80 });
+  assert.equal(all.reports.length, 65);
+  assert.equal(all.has_more, false);
+});

@@ -146,7 +146,7 @@ export function experienceEntry(entry) {
     return null;
   return { label: entry.label, url: entry.url };
 }
-export async function loadProgress(resources, refs = REFERENCES) {
+export async function loadProgress(resources, refs = REFERENCES, { reportLimit = Infinity } = {}) {
   const failures = [],
     watched = [refs.index, refs.modules],
     documents = new Map();
@@ -173,7 +173,11 @@ export async function loadProgress(resources, refs = REFERENCES) {
       failures.push(fault(refs.index, "format", "阶段成果索引格式不匹配。"));
     return { items: [], reports: [], modules: [], failures, watched };
   }
-  const reportRefs = [...new Set(array(index.data.report_refs))];
+  const allReportRefs = [...new Set(array(index.data.report_refs))];
+  const limit = Number.isFinite(reportLimit) ? Math.max(1, Math.floor(reportLimit)) : allReportRefs.length;
+  // The cumulative index is append-only. Read the newest window first; older
+  // reports remain available through the reader's explicit load-more action.
+  const reportRefs = allReportRefs.slice(-limit);
   const [schema, supplement, ...reads] = await Promise.all([
     json(index.data.schema_ref),
     index.data.content_ref ? json(index.data.content_ref) : null,
@@ -386,6 +390,8 @@ export async function loadProgress(resources, refs = REFERENCES) {
     failures,
     watched: [...new Set(watched)],
     index_ref: refs.index,
+    total_reports: allReportRefs.length,
+    has_more: reportRefs.length < allReportRefs.length,
   };
 }
 export async function readMedia(sdk, resources, media) {
