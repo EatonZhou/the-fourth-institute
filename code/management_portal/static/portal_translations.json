@@ -41831,5 +41831,25 @@
   "暂时无法打开聊天室，请从 Mailbox 重试。": {
     "zh-CN": "暂时无法打开聊天室，请从 Mailbox 重试。",
     "en": "Cannot open this chatroom right now. Please retry from Mailbox."
+  },
+  "5 小时": {
+    "zh-CN": "5 小时",
+    "en": "5 hours"
+  },
+  "Opus 每周": {
+    "zh-CN": "Opus 每周",
+    "en": "Opus weekly"
+  },
+  "Sonnet 每周": {
+    "zh-CN": "Sonnet 每周",
+    "en": "Sonnet weekly"
+  },
+  "Fable 每周": {
+    "zh-CN": "Fable 每周",
+    "en": "Fable weekly"
+  },
+  "额外用量": {
+    "zh-CN": "额外用量",
+    "en": "Extra usage"
   }
 }
