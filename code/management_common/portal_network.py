@@ -10,12 +10,9 @@ import os
 from pathlib import Path
 import shlex
 import socket
-import tempfile
 
 from management_common.file_lock import lock_stream
-from management_common import file_permissions
 from management_common.instance_manifest import load
-from management_common.site_config import read_site_config
 
 LOOPBACK_NETWORKS = ("127.0.0.0/8", "::1/128")
 DEFAULT_PORT = 18084
@@ -150,32 +147,6 @@ def read_settings() -> dict:
         "proxy": _proxy_values(source),
         "proxy_source": "saved" if saved else "environment",
     }
-
-
-def _serialize(entries: dict[str, str]) -> bytes:
-    def quote(value):
-        return '"' + value.replace("\\", "\\\\").replace('"', '\\"') + '"'
-    data = ("# Private Portal proxy settings.\n" +
-            "".join(f"{key}={quote(value)}\n" for key, value in sorted(entries.items()))).encode("utf-8")
-    if len(data) > 65536:
-        raise ValueError("网络配置内容过长，请缩短地址列表")
-    return data
-
-
-def _write(path: Path, data: bytes) -> None:
-    descriptor, name = tempfile.mkstemp(prefix=".portal-network-", dir=path.parent)
-    temporary = Path(name)
-    try:
-        with os.fdopen(descriptor, "wb") as stream:
-            # This is a private environment file (proxy URLs may contain secrets).
-            # Apply owner-only permissions before bytes, not a chmod-only Windows check.
-            file_permissions.set_created_file_permissions(temporary, 0o600)
-            stream.write(data)
-            stream.flush()
-            os.fsync(stream.fileno())
-        os.replace(temporary, path)
-    finally:
-        temporary.unlink(missing_ok=True)
 
 
 def _lock(path: Path):

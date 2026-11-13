@@ -279,7 +279,7 @@ def _feature_enabled(feature_id: str, feature_config: dict[str, Any]) -> bool:
 def boolean_setting(value: object, *, default: bool = True) -> bool:
     if isinstance(value, bool):
         return value
-    text = str(value or "").strip().lower()
+    text = str(value if value is not None else "").strip().lower()
     if text in {"1", "true", "yes", "on", "enabled"}:
         return True
     if text in {"0", "false", "no", "off", "disabled"}:

@@ -229,11 +229,6 @@ def _covered(relative: str, rules: list[Rule]) -> bool:
     return any(relative == rule.source or relative.startswith(rule.source + "/") for rule in rules)
 
 
-def _parents(relative: str) -> list[str]:
-    parts = relative.split("/")
-    return ["/".join(parts[:index]) for index in range(1, len(parts))]
-
-
 def staging_rules(staging: Path, *, include_suggested: bool) -> list[Rule]:
     rules = list(RULES)
     locks = staging / LOCKS_DIRECTORY

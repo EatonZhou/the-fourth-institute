@@ -4,16 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-
-def boolean_flag_from_payload(value: object, *, default: bool = True) -> bool:
-    if isinstance(value, bool):
-        return value
-    text = str(value or "").strip().lower()
-    if text in {"1", "true", "yes", "on", "enabled"}:
-        return True
-    if text in {"0", "false", "no", "off", "disabled"}:
-        return False
-    return default
+from management_portal.execution.harness_settings import boolean_setting
 
 
 def runtime_settings_updates_from_payload(
@@ -79,7 +70,7 @@ def runtime_settings_updates_from_payload(
         })
 
     if "allow_subagents" in data:
-        updates["allow_subagents"] = boolean_flag_from_payload(data["allow_subagents"], default=False)
+        updates["allow_subagents"] = boolean_setting(data["allow_subagents"], default=False)
     if "prompt_injection" in data:
         from management_portal import prompt_injection
         updates["prompt_injection"] = prompt_injection.normalize(data["prompt_injection"])
