@@ -14,6 +14,7 @@ from management_portal import (
 from management_portal.http_routes import ROUTE_NOT_FOUND, RouteDefinition
 from management_portal.repo_workspace_git import GitAuthenticationRequired, GitOperationError
 from management_portal.resources import get_resource_service
+from management_portal import article_comments, permission_system
 
 ROOT = Path(__file__).resolve().parent
 
@@ -117,6 +118,32 @@ class ArticlesHttp:
             return self.respond(request, 404, {"error": str(exc)})
         except ValueError as exc:
             return self.respond(request, 400, {"error": str(exc)})
+        except Exception as exc:
+            return self.exception_response(request, exc)
+
+    def comments(self, request, parsed, actor, params):
+        article_id = params['article_id']
+        if not re.fullmatch(r'article_[0-9a-f]{12}', article_id):
+            return ROUTE_NOT_FOUND
+        try:
+            user = self.session_actor(request) or ''
+            self.require_resource(article_id, user)
+            can_write = permission_system.allows(user, 'UpdateResource', {'resource_id': article_id})
+            if request.command == 'POST':
+                if not can_write:
+                    raise PermissionError('没有评论此 Article 的权限')
+                thread = article_comments.mutate(article_id, user, self.read_json(request))
+                return self.respond(request, 200, {'thread': thread})
+            return self.respond(request, 200, {'threads': article_comments.list_threads(article_id),
+                                             'can_write': can_write, 'actor': user})
+        except article_comments.CommentConflict as exc:
+            return self.respond(request, 409, {'error': str(exc)})
+        except (KeyError, FileNotFoundError) as exc:
+            return self.respond(request, 404, {'error': str(exc)})
+        except PermissionError as exc:
+            return self.respond(request, 403, {'error': str(exc)})
+        except ValueError as exc:
+            return self.respond(request, 400, {'error': str(exc)})
         except Exception as exc:
             return self.exception_response(request, exc)
 
@@ -398,6 +425,8 @@ def routes(portal):
 
     read, write, git = http.workspace_read, http.workspace, http.git_read
     templates = (
+        ("GET", "comments", http.comments),
+        ("POST", "comments", http.comments),
         ("GET", "files", http.with_action(read, "files")),
         ("GET", "file", http.with_action(read, "file")),
         ("GET", "raw", http.with_action(read, "raw")),

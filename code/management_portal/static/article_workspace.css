@@ -1337,6 +1337,24 @@ body.articleOutlineResizing { cursor: row-resize; user-select: none; }
   color: var(--accent);
 }
 
+.articleReviewLayout { display: flex; flex: 1; min-height: 0; min-width: 0; overflow: hidden; }
+.articleReviewLayout > .articleCodeEditor { min-width: 0; flex: 1; }
+.articleComments { flex: 0 0 min(320px, 48%); min-width: 220px; min-height: 0; overflow: auto; border-left: 1px solid var(--border, #d5dce5); background: var(--panel, #fff); padding: 12px; box-sizing: border-box; font-size: 13px; }
+.articleComments[hidden] { display: none; }
+.articleComments header, .articleCommentMeta, .articleCommentActions { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.articleComments header, .articleCommentMeta { justify-content: space-between; }
+.articleCommentThread { border-bottom: 1px solid var(--border, #d5dce5); padding: 14px 0; }
+.articleCommentMeta, .articleCommentMessage small { color: var(--muted, #697586); font-size: 11px; overflow-wrap: anywhere; }
+.articleCommentMessage p { white-space: pre-wrap; overflow-wrap: anywhere; margin: 8px 0; }
+.articleComments .articleCommentQuote, #articleCommentQuote { display: block; width: 100%; text-align: left; white-space: pre-wrap; overflow-wrap: anywhere; max-height: 84px; overflow: auto; border-left: 3px solid #dca926; background: #f1c23218; padding: 6px 8px; margin: 8px 0; box-sizing: border-box; font: 12px monospace; }
+#articleCommentText { width: 100%; box-sizing: border-box; resize: vertical; min-height: 72px; }
+#articleCommentStatus { font-size: 12px; overflow-wrap: anywhere; }
+.articleCommentAnchor { background: #f1c23240; border-bottom: 2px solid #dca926; cursor: pointer; }
+.articleEditorPane { container-type: inline-size; }
+@container (max-width: 520px) {
+  .articleReviewLayout { flex-direction: column; }
+  .articleComments { flex: 0 1 45%; max-height: 45%; min-width: 0; border-left: 0; border-top: 1px solid var(--border, #d5dce5); }
+}
 .articleCodeEditor {
   flex: 1 1 auto;
   min-height: 0;

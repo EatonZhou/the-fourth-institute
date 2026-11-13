@@ -8,7 +8,7 @@
   // the remembered selection, and selecting an Article with everything it
   // loads.
   const DEPENDENCIES = Object.freeze([
-    "$", "activeDocument", "articleProjects", "articleRoot", "articleStateHtml", "cancelPdf", "clearEditor",
+    "$", "activeDocument", "articleProjects", "articleRoot", "articleStateHtml", "cancelPdf", "clearEditor", "selectComments",
     "detailHistory", "detailResourceGuest", "documentIsDirty", "esc", "hasDirtyDocuments", "loadArticleChat",
     "loadArticleGit", "loadBuild", "loadFiles", "loadSemanticIndex", "loadSettings", "openArticleFile",
     "queryState", "renderBuildSummary", "renderCompileMenu", "renderFileTree", "renderPdf",
@@ -274,6 +274,7 @@
       }
       readingPosition.persist();
       state.selectedId = id;
+      dependencies.selectComments();
       scheduleArticleContentRefresh(5000);
       state.buildPreflight = null;
       state.stopRequested = false;

@@ -307,6 +307,11 @@
     },
   });
 
+  const comments = articleModule("PortalArticleWorkspaceComments").createComments({
+    state, request, activeDocument: (...args) => activeDocument(...args), editorValue,
+    openArticleFile: (...args) => openArticleFile(...args),
+    saveAllDirtyDocuments: (...args) => saveAllDirtyDocuments(...args), showToast,
+  });
   const readingPosition = articleModule("PortalArticleWorkspacePosition").createPosition({
     state, captureActiveDocument: (...args) => captureActiveDocument(...args),
     captureArticlePdfPosition: (...args) => captureArticlePdfPosition(...args),
@@ -334,7 +339,7 @@
     scheduleArticleContentRefresh: (...args) => scheduleArticleContentRefresh(...args),
     selectedArticle, setArticleResourceSearchOpen, setOutputView: (...args) => setOutputView(...args),
     setProjectMenu, setTexlabStatus, showPdfError: (...args) => showPdfError(...args), showToast, state,
-    updateSemanticUrl, updateUrl, readingPosition,
+    updateSemanticUrl, updateUrl, readingPosition, selectComments: comments.selectArticle,
   });
 
   const {
@@ -550,6 +555,7 @@
   ]).then(() => {
     applyEditorPreferences();
     applyWordWrap();
+    comments.bindEditor();
   });
   window.ArticleWorkspaceReady = Promise.all([articleListReady, articleEditorReady]).catch(error => {
     showToast(error.message || error, "error");

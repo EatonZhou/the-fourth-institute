@@ -69,6 +69,7 @@
     <script src="/static/article_workspace_popovers.js" defer></script>
     <script src="/static/article_workspace_git.js" defer></script>
     <script src="/static/article_workspace_position.js" defer></script>
+    <script src="/static/article_workspace_comments.js" defer></script>
     <script src="/static/article_workspace_catalog.js" defer></script>
     <script src="/static/article_workspace_registration.js" defer></script>
     <script src="/static/article_workspace_layout.js" defer></script>
@@ -339,6 +340,7 @@
             <div class="portalDocumentTabs" id="articleDocumentTabs" role="tablist" aria-label="Open files" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;Open files&quot;}"><div class="portalDocumentTabsEmpty"><!--portal-i18n:"Open a file from File tree"-->Open a file from File tree</div></div>
           </div>
           <div class="articleEditorToolbar portalDocumentToolbar" id="articleEditorToolbar">
+            <button class="portalButton is-quiet" id="articleCommentsToggle" type="button" aria-expanded="false" aria-controls="articleComments">评论</button>
             <div class="articleEditorTools portalDocumentToolbarTools" data-portal-toolbar>
               <button class="portalButton is-icon is-quiet iconBtn" data-portal-toolbar-item data-portal-toolbar-priority="critical" id="articleSaveFile" type="button" aria-label="保存文件" title="保存文件" disabled data-portal-icon="save" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;保存文件&quot;, &quot;title&quot;: &quot;保存文件&quot;}">
               </button>
@@ -355,6 +357,7 @@
             </div>
             <div class="articleEditorState portalDocumentToolbarState" id="articleEditorState"><!--portal-i18n:"Select a file from File tree"-->Select a file from File tree</div>
           </div>
+          <div class="articleReviewLayout">
           <div class="articleCodeEditor" id="articleCodeEditor">
             <div class="articleMonacoEditor" id="articleMonacoEditor" aria-label="LaTeX source editor" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;LaTeX source editor&quot;}"></div>
             <div class="articleTextEditor" id="articleTextEditor">
@@ -377,6 +380,22 @@
               <div class="articleGitDiffEmpty" id="articleGitDiffEmpty" hidden></div>
               <pre class="articleGitDiffFallback" id="articleGitDiff" hidden></pre>
             </div>
+          </div>
+          <aside id="articleComments" class="articleComments" aria-label="源码评论" hidden>
+            <header><strong>评论</strong><button class="portalButton is-quiet" id="articleCommentClose" type="button" aria-label="关闭评论">×</button></header>
+            <div class="articleCommentActions">
+              <button class="portalButton" id="articleCommentNew" type="button" disabled>添加评论</button>
+              <button class="portalButton is-quiet" id="articleCommentRefresh" type="button">刷新</button>
+              <select id="articleCommentFilter" aria-label="评论状态"><option value="open">未解决</option><option value="resolved">已解决</option><option value="all">全部</option></select>
+            </div>
+            <p id="articleCommentStatus" role="status" aria-live="polite"></p>
+            <form id="articleCommentForm" hidden>
+              <blockquote id="articleCommentQuote"></blockquote>
+              <textarea id="articleCommentText" aria-label="评论内容" placeholder="写下你的评论…" maxlength="6000" required rows="3"></textarea>
+              <div class="articleCommentActions"><button class="portalButton" id="articleCommentSubmit" type="submit">发送</button><button class="portalButton is-quiet" id="articleCommentCancel" type="button">取消</button></div>
+            </form>
+            <div id="articleCommentList"></div>
+          </aside>
           </div>
           <div class="articleEditorStatusbar">
             <span id="articleCursorStatus"><!--portal-i18n:"Ln 1, Col 1"-->Ln 1, Col 1</span>
