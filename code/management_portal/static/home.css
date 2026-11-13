@@ -850,10 +850,6 @@ a.agent-status-creature.queued:hover {
   background: repeating-linear-gradient(120deg, var(--chip), var(--chip) 5px, var(--border) 5px, var(--border) 6px);
 }
 .agent-status-limit-track.is-stale { opacity: 0.45; }
-.agent-status-limit-track.is-blocked {
-  background: repeating-linear-gradient(120deg, var(--chip), var(--chip) 5px, var(--border) 5px, var(--border) 7px);
-}
-.agent-status-limit-track.is-blocked + .agent-status-limit-meta { color: var(--danger, #b42318); }
 .agent-status-limit-fill {
   display: block;
   height: 100%;

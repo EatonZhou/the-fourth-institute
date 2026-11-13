@@ -9,7 +9,7 @@ const context = vm.createContext({
   esc: x => String(x ?? '').replaceAll('&', '&amp;').replaceAll('"', '&quot;').replaceAll('<', '&lt;'),
   formatDateTime: value => value ? new Date(value).toISOString() : '',
 });
-for (const name of ['accountQuotaWindow', 'accountQuotaWindowIsStale', 'accountQuotaWindows', 'accountQuotaBlockers',
+for (const name of ['accountQuotaWindow', 'accountQuotaWindowIsStale', 'accountQuotaWindows',
   'rateLimitWindowLabel', 'accountSummaryQuotaWindows', 'accountQuotaWarning', 'accountLimitStatus']) {
   const fn = homeStatements().find(({node: n}) => n.type === 'FunctionDeclaration' && n.id.name === name);
   vm.runInContext(fn.source, context);
@@ -36,13 +36,13 @@ try {
       {...account, rate_limits: [first, second]}, first);
     return dom.window.document.querySelector('.agent-status-limit-meta').textContent;
   };
-  assert.equal(render(short, weekly), '受限');
+  assert.equal(render(short, weekly), '73%', 'another exhausted window does not hide this reading');
   for (const unknown of [null, undefined, '0', false, NaN]) {
     assert.equal(render(short, {...weekly, remaining_percent: unknown}), '73%', 'unknown is never exhaustion');
   }
   assert.equal(render({...short, quota_group: undefined}, {...weekly, quota_group: undefined}), '73%', 'legacy windows have no inferred dependency');
   assert.equal(render(short, {...weekly, quota_group: 'other'}), '73%', 'independent pools do not constrain each other');
-  assert.equal(render({...weekly, remaining_percent: 85}, {...short, remaining_percent: 0}), '受限', 'short-window exhaustion also constrains the weekly window');
+  assert.equal(render({...weekly, remaining_percent: 85}, {...short, remaining_percent: 0}), '85%', 'weekly reading survives short-window exhaustion');
   for (const [value, label] of [[2.17, '2%'], [72.6, '73%'], [0, '0%'], [0.001, '<1%'], [0.9, '<1%'],
     [99.9, '>99%'], [100, '100%']]) {
     assert.equal(render({...short, remaining_percent: value}, {...weekly, remaining_percent: 50}), label);

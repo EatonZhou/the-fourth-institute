@@ -4,8 +4,8 @@ const {homeStatements} = require('./home_modules.cjs');
 const root = path.resolve(__dirname, '../../..');
 const {chromium} = require(path.join(root, 'management_portal/test_framework/tau_runtime/node_modules/playwright'));
 const functions = ['executionAccounts','accountQuotaWindowIsStale','accountQuotaWindows',
-  'accountSummaryQuotaWindows','accountQuotaWarning','accountQuotaBlockers','accountLimitStatus','refreshAccountQuotaWindows','accountQuotaWindow','accountLimitRow',
-  'accountRows','accountApiRow','accountBalanceHtml','accountCreditsHtml','accountConcurrencyRows','accountConcurrencyHtml','accountThresholdHtml','saveAccountThreshold','renderAccountDetails'];
+  'accountSummaryQuotaWindows','accountQuotaWarning','accountLimitStatus','refreshAccountQuotaWindows','accountQuotaWindow','accountLimitRow',
+  'accountRows','accountApiRow','accountBalanceHtml','accountCreditsHtml','accountConcurrencyRows','accountConcurrencyHtml','accountSettingsPending','accountIntervalHtml','accountThresholdHtml','loadAccountThresholds','saveAccountThreshold','renderAccountDetails'];
 const renderer = homeStatements().filter(({node:n})=>n.type==='FunctionDeclaration' && functions.includes(n.id.name)).map(s=>s.source).join('\n');
 (async()=>{
   const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
@@ -25,6 +25,7 @@ const renderer = homeStatements().filter(({node:n})=>n.type==='FunctionDeclarati
       const accountIntakePending=new Map();
       const accountConcurrencyEdits=new Map();
       const accountThresholdEdits=new Map();
+      const accountIntervalEdits=new Map();
       const syncAccountDetailsButtons=()=>{};
       let accountDetails=null;
       ${renderer}
@@ -72,21 +73,23 @@ const renderer = homeStatements().filter(({node:n})=>n.type==='FunctionDeclarati
       assert.equal(await antigravity.locator('[data-account-quota-window="Gemini Models/Five Hour Limit Remaining"] .agent-status-limit-meta').innerText(),'90%','Argon cannot block the shared Gemini pool');
     }
     const codex=page.locator('[data-account-limit-account="codex_one"]');
-    assert.deepEqual(await codex.locator('.agent-status-limit-meta').allTextContents(),['受限','0%']);
+    assert.deepEqual(await codex.locator('.agent-status-limit-meta').allTextContents(),['100%','0%']);
     for(const [index,id,shortId,weekIndex] of [[1,'claude_one','five_hour',1],[2,'antigravity_one','Gemini Models/Five Hour Limit Remaining',0],[3,'kimi-code','limit5h',1]]) {
       const short=page.locator('[data-account-limit-account="'+id+'"] [data-account-quota-window="'+shortId+'"]');
       await page.evaluate(({index,weekIndex})=>{Object.assign(data.accounts[index].rate_limits[weekIndex],{remaining_percent:0,stale:false});refreshAccountQuotaWindows();},{index,weekIndex});
-      assert.equal(await short.locator('.agent-status-limit-meta').innerText(),'受限');
-      assert.equal(await short.locator('.agent-status-limit-fill, [role=meter]').count(),0,'blocked windows never look full or expose a full meter');
-      assert.match(await short.getAttribute('title'),/本窗口剩余.*受同组额度限制.*预计重置/);
+      const reading=await page.evaluate(index=>data.accounts[index].rate_limits.find(w=>w.id===({1:'five_hour',2:'Gemini Models/Five Hour Limit Remaining',3:'limit5h'}[index])).remaining_percent,index);
+      const expected=String(reading)+'%'+(index===3?'*':'');
+      assert.equal(await short.locator('.agent-status-limit-meta').innerText(),expected);
+      assert.equal(await short.locator('.agent-status-limit-fill').count(),1,'each window retains its own bar');
+      assert.match(await short.getAttribute('title'),/本窗口剩余/);
       await page.evaluate(({index,weekIndex})=>{Object.assign(data.accounts[index].rate_limits[weekIndex],{stale:true,resets_at:1});refreshAccountQuotaWindows();},{index,weekIndex});
-      assert.equal(await short.locator('.agent-status-limit-meta').innerText(),'待确认','a reset time alone does not confirm recovery');
+      assert.equal(await short.locator('.agent-status-limit-meta').innerText(),expected,'another stale zero reading does not change this window');
       await page.evaluate(({index,weekIndex})=>{Object.assign(data.accounts[index].rate_limits[weekIndex],{remaining_percent:25,stale:false});refreshAccountQuotaWindows();},{index,weekIndex});
       assert.match(await short.locator('.agent-status-limit-meta').innerText(),/%/);
       assert.equal(await short.locator('.is-blocked').count(),0);
     }
     await page.evaluate(()=>{data.accounts[3].rate_limits[2].remaining_percent=0;refreshAccountQuotaWindows();});
-    assert.equal(await page.locator('[data-account-limit-account="kimi-code"] [data-account-quota-window="limit5h"] .agent-status-limit-meta').innerText(),'受限','omitted monthly limits also constrain the same pool');
+    assert.equal(await page.locator('[data-account-limit-account="kimi-code"] [data-account-quota-window="limit5h"] .agent-status-limit-meta').innerText(),'75%*','omitted monthly limits do not replace this reading');
     await page.evaluate(()=>{data.accounts[3].rate_limits[2].remaining_percent=85;refreshAccountQuotaWindows();});
     for(const width of [1920,1440,1024,768,390,320]) {
       await page.setViewportSize({width,height:1000});
