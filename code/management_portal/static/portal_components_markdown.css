@@ -88,6 +88,49 @@
   padding: clamp(12px, 2.5vw, 32px);
 }
 
+.portalCodeBlock {
+  min-width: 0;
+  max-width: 100%;
+  margin: 0 0 0.7em;
+  border: 1px solid var(--border, rgba(148, 163, 184, 0.35));
+  border-radius: 8px;
+  background: var(--panel-2, rgba(148, 163, 184, 0.12));
+  overflow: hidden;
+}
+
+.portalCodeToolbar {
+  display: flex;
+  justify-content: flex-end;
+  padding: 3px 8px;
+  user-select: none;
+}
+
+.portalCodeToolbar button {
+  padding: 2px 7px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.78em;
+  cursor: pointer;
+}
+
+.portalCodeToolbar button:hover,
+.portalCodeToolbar button:focus-visible {
+  color: var(--text);
+  background: var(--panel);
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.markdownBody .portalCodeBlock > pre {
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
 .markdownTableScroll {
   max-width: 100%;
   margin: 0 0 0.85em;

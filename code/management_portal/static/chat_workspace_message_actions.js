@@ -193,7 +193,35 @@
       if (menu) closeMessageMenu();
     };
 
+    const codeCopyTimers = new Map();
+    let actionsDestroyed = false;
+    const copyCode = async button => {
+      const code = button.closest(".portalCodeBlock")?.querySelector("pre > code");
+      if (!code || button.disabled) return;
+      clearTimeout(codeCopyTimers.get(button));
+      codeCopyTimers.delete(button);
+      button.disabled = true;
+      try {
+        const copied = await window.PortalUI.copyText(code.textContent, window.PortalI18n.t("Code"));
+        if (actionsDestroyed || !button.isConnected) return;
+        button.textContent = window.PortalI18n.t(copied ? "Copied" : "Copy");
+        if (copied) codeCopyTimers.set(button, setTimeout(() => {
+          button.textContent = window.PortalI18n.t("Copy");
+          codeCopyTimers.delete(button);
+        }, 2000));
+      } finally {
+        button.disabled = false;
+      }
+    };
+
     const handleMessagesClick = event => {
+      const codeCopyButton = event.target.closest("[data-portal-code-copy]");
+      if (codeCopyButton && els.messages.contains(codeCopyButton)) {
+        event.preventDefault();
+        event.stopPropagation();
+        void copyCode(codeCopyButton);
+        return;
+      }
       const toggles = [
         ["[data-portal-work-group-toggle]", toggleWorkGroup],
         ["[data-message-fold-toggle]", toggleMessageFold],
@@ -295,6 +323,9 @@
     els.messages?.addEventListener("click", handleMessagesClick);
     els.messages?.addEventListener("contextmenu", handleMessagesContextMenu);
     const destroyMessageActions = () => {
+      actionsDestroyed = true;
+      codeCopyTimers.forEach(timer => clearTimeout(timer));
+      codeCopyTimers.clear();
       window.removeEventListener('portal:chat-round-flags-changed', syncOpenRoundAction);
       window.removeEventListener('storage', syncOpenRoundAction);
       els.messages?.removeEventListener("click", handleMessagesClick);

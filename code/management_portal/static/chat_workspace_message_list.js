@@ -353,13 +353,13 @@
         const compactHeader = (continued || compactHeaders.has(idx)) && !(group?.collapsed && isGroupEnd);
         const content = String(item?.content || "");
         const created = item?.created_at || "";
-        const renderMarkdown = options.renderMarkdown || ((value) => (
-          window.MD?.render?.(value) || escapeHtml(value).replace(/\n/g, "<br>")
+        const renderMarkdown = options.renderMarkdown || ((value, renderOptions) => (
+          window.MD?.render?.(value, renderOptions) || escapeHtml(value).replace(/\n/g, "<br>")
         ));
         // Per-conversation semantic Markdown extensions; the default renderer
         // and attachment/reference processing remain the owners of the body.
         const renderContent = (value, renderOptions) => renderResidentHandoffs(value, text => renderMarkdownWithAttachmentRefs(
-          text, { ...options, preserveWhitespace: typeof renderOptions?.renderCodeFence === "function", renderMarkdown: markdown => renderMarkdown(markdown, renderOptions) }
+          text, { ...options, preserveWhitespace: typeof renderOptions?.renderCodeFence === "function", renderMarkdown: markdown => renderMarkdown(markdown, { ...renderOptions, copyCode: true }) }
         ), item, { ...options, handoffMessages: callbackMessages });
         const selection = item?.content_parts?.find(part => part.type === "resident_handoff_selection");
         const selectionHtml = selection ? `<div class="residentHandoffSelection"><small>${escapeHtml(window.PortalI18n.t("已选择"))}：${escapeHtml(selection.title)} · ${escapeHtml(selection.resident_id)}</small></div>` : "";

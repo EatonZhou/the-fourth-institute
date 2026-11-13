@@ -172,9 +172,10 @@
   function messageCopyText(article, raw) {
     const body = article?.querySelector(".messageContent");
     if (!body) return raw;
-    if (body.getClientRects().length) return body.innerText;
+    if (!body.querySelector("[data-code-copy-toolbar]") && body.getClientRects().length) return body.innerText;
     // Hidden group members need layout for innerText to preserve paragraph breaks.
     const copy = body.cloneNode(true);
+    copy.querySelectorAll("[data-code-copy-toolbar]").forEach(node => node.remove());
     copy.setAttribute("aria-hidden", "true");
     copy.style.cssText = "position:fixed;left:0;top:0;opacity:0;pointer-events:none";
     document.body.append(copy);

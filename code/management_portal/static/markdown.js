@@ -338,7 +338,10 @@
         </details>
       </figure>`;
     }
-    return `<pre><code${languageClass}>${esc(source)}</code></pre>`;
+    const code = `<pre><code${languageClass}>${esc(source)}</code></pre>`;
+    if (!activeRenderOptions.copyCode) return code;
+    const label = esc(global.PortalI18n.t("Copy"));
+    return `<div class="portalCodeBlock"><div class="portalCodeToolbar" data-code-copy-toolbar><button type="button" data-portal-code-copy aria-live="polite"${source ? "" : " disabled"}>${label}</button></div>${code}</div>`;
   }
 
   function renderMathMarkup(raw, display) {
