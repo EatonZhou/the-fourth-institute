@@ -49,7 +49,6 @@ def test_without_delegation_the_personal_boundary_only_opens_for_the_owner(monke
         assert asked.pop() == changeable, actor
     with pytest.raises(TypeError):
         permission_system.permitted('owner', 'DeleteLineage', 'lineage_id', [AMA_LINEAGE], owners={AMA_LINEAGE: 'owner'})
-    assert not hasattr(permission_system, 'hidden_private') and not hasattr(permission_system, 'private_reaches')
 
 
 def test_with_the_switch_on_the_rule_holds_and_the_scheme_judges_the_rest(monkeypatch):

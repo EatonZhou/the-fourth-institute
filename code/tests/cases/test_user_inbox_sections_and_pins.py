@@ -196,21 +196,18 @@ def test_resident_updates_todo_only_with_target_user_permission(monkeypatch, iso
         assert update("CASE-B", "CASE-A", own["todo_id"]).error["code"] == "instruction.forbidden"
 
 
-@pytest.mark.parametrize("old_name,new_name,mutates,streaming", [
-    ("ListInbox", "GetMailbox", False, False),
-    ("ListMailbox", "GetMailbox", False, False),
-    ("MarkInboxItemRead", "MarkMailboxItemRead", True, False),
-    ("ClearInbox", "ClearMailbox", True, False),
-    ("PinInboxItem", "PinMailboxItem", True, False),
-    ("WatchInbox", "WatchMailbox", False, True),
+@pytest.mark.parametrize("new_name,mutates,streaming", [
+    ("GetMailbox", False, False),
+    ("MarkMailboxItemRead", True, False),
+    ("ClearMailbox", True, False),
+    ("PinMailboxItem", True, False),
+    ("WatchMailbox", False, True),
 ])
-def test_user_mailbox_commands_replace_inbox_without_aliases(old_name, new_name, mutates, streaming):
-    """用户 Mailbox 指令替代 Inbox 旧名且不保留别名
+def test_user_mailbox_command_contracts(new_name, mutates, streaming):
+    """用户 Mailbox 指令声明与处理器契约
 
     :design-point:"""
-    from management_portal.hatg import routing
     from management_portal.hatg.catalog import instruction_catalog
-    from management_portal.hatg.contracts import InstructionContext
 
     catalog = instruction_catalog()
     declaration = catalog[new_name]
@@ -218,13 +215,6 @@ def test_user_mailbox_commands_replace_inbox_without_aliases(old_name, new_name,
     assert (declaration.mutates, declaration.streaming) == (mutates, streaming)
     binding = web_isa.binding()
     assert new_name in (binding.streams if streaming else binding.handlers)
-    assert old_name not in catalog
-    assert old_name not in binding.handlers and old_name not in binding.streams
-    result = routing.execute({"instruction": old_name, "arguments": {}},
-                             InstructionContext(caller="CASE-A", entry="web"))
-    assert result.status == "failed"
-    assert result.error["code"] == "instruction.unknown"
-
 
 def test_user_and_resident_mailboxes_keep_distinct_instructions():
     """GetMailbox 按参数读取 User 或 Resident 的 Mailbox

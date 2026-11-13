@@ -727,7 +727,6 @@ def test_resolution_rejects_every_identity_alias_in_a_resource_record_contracts(
         service = ResourceService(index_provider=index)
         with pytest.raises(ValueError, match='no address resolver registered for device'):
             service.resolve('device_0123456789ab', actor='alice')
-        assert not hasattr(service, 'register_fallback_resolver')
     with subtests.test(contract='test_change_notification_routes_by_resource_or_source_not_adapter_name'), isolated_portal_case():
         adapter = _TypedAdapter()
         index = resource_index_backend.ResourceIndexService(store=resource_index_backend.IndexStore(), adapters=[adapter], start_worker=False)

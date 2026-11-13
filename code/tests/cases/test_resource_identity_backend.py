@@ -313,3 +313,25 @@ class ResourceIdentityBackendTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+def test_repo_registration_in_temporary_registry_is_idempotent_without_commit(tmp_path, monkeypatch):
+    """重复登记同一个本地 Git 检出得到同一 repo 记录，只运行本地 git 命令"""
+    original_run = subprocess.run
+
+    def local_git_only(arguments, *args, **kwargs):
+        assert arguments[0] == "git"
+        assert not set(arguments).intersection({"clone", "fetch", "push", "pull", "commit", "ls-remote"})
+        return original_run(arguments, *args, **kwargs)
+
+    monkeypatch.setattr(subprocess, "run", local_git_only)
+    checkout = tmp_path / "checkout"
+    checkout.mkdir()
+    backend.initialize_git_checkout(checkout)
+    first = backend.register_repo_checkout(checkout)
+    second = backend.register_repo_checkout(checkout)
+    stored = backend.get_repo_record(first["id"])
+    assert first["id"].startswith("repo_")
+    assert second["id"] == first["id"] == stored["id"]
+    assert len(backend.load_repo_records()) == 1
+    assert stored["checkouts"][0]["path"] == str(checkout)

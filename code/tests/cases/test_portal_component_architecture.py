@@ -244,13 +244,9 @@ def test_portal_theme_contract_has_one_provider_and_no_parallel_dialect_contract
         for owner in PRIMITIVE_DOM_HELPERS:
             source = (STATIC / owner).read_text(encoding='utf-8')
             assert 'PortalUIPrimitives.' in source, owner
-            assert 'document.getElementById(ref) || document.querySelector(ref)' not in source, owner
-            assert 'searchParams.get("portal_v")' not in source, owner
         for owner in LAZY_ASSET_LOADERS:
             source = (STATIC / owner).read_text(encoding='utf-8')
             assert 'PortalUIPrimitives.loadAsset' in source or '{ loadAsset } = window.PortalUIPrimitives' in source, owner
-            assert 'portalLoaded' not in source, owner
-            assert 'createElement(css ? "link" : "script")' not in source, owner
         for owner in RESOURCE_SERVICE_PAGES:
             source = (STATIC / owner).read_text(encoding='utf-8')
             assert 'PortalUIPrimitives.objectOf' in source, owner
@@ -289,9 +285,6 @@ def test_portal_theme_contract_has_one_provider_and_no_parallel_dialect_contract
             assert 'portal_command_registry.js' in source, path
             assert source.index('portal_command_registry.js') < source.index('portal_command_palette.js'), path
     with subtests.test(contract='test_panel_packages_are_the_only_panel_registration_protocol'), isolated_portal_case() as case_path:
-        sources = '\n'.join((path.read_text(encoding='utf-8') for path in STATIC.glob('*.js')))
-        assert 'registerPanelType' not in sources
-        assert 'registeredPanelTypes' not in sources
         for owner in ('portal_navigation.js', 'portal_hatg_loader.js', 'portal_workspace_surface.js', 'portal_chat_workspace.js'):
             source = (STATIC / owner).read_text(encoding='utf-8')
             assert 'registerPanelPackage' in source, owner

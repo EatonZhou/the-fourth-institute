@@ -517,3 +517,21 @@ def test_backup_buttons_ask_the_instructions_they_call(tmp_path: Path, monkeypat
     assert backend.get_overview("resident_aaaaaaaaaaaa")["permissions"]["can_run"] is False
     assert {(instruction, arguments["lineage_id"]) for _, instruction, arguments in asked} == {
         ("TriggerEvent", lineage_id), ("CancelScriptRun", lineage_id)}
+
+
+def test_backup_acceptance_has_no_completion_or_run_record_side_effect(tmp_path, monkeypatch):
+    """请求备份只返回已排队回执并触发备份 Lineage 事件，不写任何完成状态或运行记录"""
+    from management_portal import backup_lineage
+    lineage_id = "lineage_111111111111"
+    monkeypatch.setattr(backup_lineage, "read_site_config", lambda: {"deployment": {"backup": {"lineage_id": lineage_id}}})
+    workflow = FakeWorkflow()
+    backend = ResourceBackupBackend(tmp_path, workflow=workflow)
+    before = list(tmp_path.rglob("*"))
+    reply = backend.request_backup("critical", "fixture-operator")
+    assert reply == {
+        "accepted": True, "kind": "backup", "profile": "critical", "status": "queued",
+        "lineage_id": lineage_id,
+        "event_source_id": "critical", "event_id": "event1", "trigger_path_id": "path1",
+    }
+    assert workflow.started == ["critical"]
+    assert list(tmp_path.rglob("*")) == before

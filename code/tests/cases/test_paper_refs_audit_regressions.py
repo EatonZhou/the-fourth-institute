@@ -1,4 +1,4 @@
-"""Reference extraction regressions from the September 2026 library audit."""
+"""Reference extraction and title parsing behavior."""
 import pytest
 from management_portal import paper_references, paper_refs
 
@@ -35,6 +35,8 @@ def test_bibliography_entries_are_not_fragments_due_to_topic_or_missing_venue_ke
     ('[20] J. Lagos et al., “A fast pipelined-SAR ADC with background calibration,” 2021 doi: 10.23919/VLSICircuits52068.2021.9492354.', 'A fast pipelined-SAR ADC with background calibration'),
     ('[1] John O\'Brien and Anne O\'Neil. “Learning from observations.” Journal of Robotics, 2024.', 'Learning from observations'),
     ('[1] Smith, J., and Jones, B. 2024. Learning from observations. In Conference on Robotics.', 'Learning from observations'),
+    ('[78] Zhong, Y., Orlovich, M., Shen, X., and Ding, C. Array Regrouping and Structure Splitting Using Whole-Program Reference Affinity. In International Conference on Programming Language Design and Implementation (2004).', 'Array Regrouping and Structure Splitting Using Whole-Program Reference Affinity'),
+    ('[31] GARNETT, P., AND ROBERTS, S. Overview of Internet service provider technology considerations for rural broadband deployments. Tech. rep., Microsoft Airband Initiative Team, Redmond, WA, USA, 2018.', 'Overview of Internet service provider technology considerations for rural broadband deployments'),
 ])
 def test_title_boundaries_keep_initials_authors_and_doi_out_of_title(raw, title):
     """参考标题边界排除作者缩写与 DOI"""
@@ -113,13 +115,6 @@ def test_spaced_hyphenated_initials_are_numbered_reference_start():
     assert paper_references._looks_like_numbered_reference_line('[7] M. -D. Tsai et al., “A 12nm CMOS RF Transceiver,” ISSCC, 2024.')
 
 
-@pytest.mark.parametrize('raw,title', [
-    ('[78] Zhong, Y., Orlovich, M., Shen, X., and Ding, C. Array Regrouping and Structure Splitting Using Whole-Program Reference Affinity. In International Conference on Programming Language Design and Implementation (2004).', 'Array Regrouping and Structure Splitting Using Whole-Program Reference Affinity'),
-    ('[31] GARNETT, P., AND ROBERTS, S. Overview of Internet service provider technology considerations for rural broadband deployments. Tech. rep., Microsoft Airband Initiative Team, Redmond, WA, USA, 2018.', 'Overview of Internet service provider technology considerations for rural broadband deployments'),
-])
-def test_terminal_author_initial_is_also_a_title_boundary(raw, title):
-    """作者末尾缩写句点可分隔参考标题"""
-    assert paper_references._guess_ref_title(raw) == title
 
 
 def test_comma_separated_initial_authors_are_not_the_title():

@@ -1,6 +1,12 @@
 """:importance: P1"""
 from __future__ import annotations
 
+import io
+from email.message import Message
+from types import SimpleNamespace
+from management_portal import portal_deployment_router as router
+
+
 import base64
 import hashlib
 import hmac
@@ -612,3 +618,36 @@ def test_a_router_checking_sessions_loads_neither_resources_nor_execution(isolat
         name for name in loaded["sources"]
         if name.startswith(("management_portal/resources/", "management_portal/execution/"))
     ] == []
+
+
+def test_router_connection_failure_attempts_only_the_selected_backend(monkeypatch):
+    """Router 连接所选后端失败时返回 502 backend_unavailable，不尝试其他后端"""
+    attempts = []
+    replies = []
+
+    class Connection:
+        def __init__(self, host, port, **kwargs):
+            attempts.append((host, port))
+
+        def connect(self):
+            raise ConnectionRefusedError("isolated transport failure")
+
+        def close(self):
+            pass
+
+    monkeypatch.setattr(router.http.client, "HTTPConnection", Connection)
+    handler = object.__new__(router.PortalRouterHandler)
+    handler.path = "/isolated-write"
+    handler.command = "POST"
+    handler.headers = Message()
+    handler.headers["Content-Length"] = "0"
+    handler.wfile = io.BytesIO()
+    handler.server = SimpleNamespace(
+        current_backends=lambda: {"dev": router.Backend("dev", "local-dev", 1), "release": router.Backend("release", "local-release", 2)},
+        policy=SimpleNamespace(select=lambda *args: "dev"), backend_timeout=1, restart_wait=0,
+    )
+    handler._json = lambda status, payload: replies.append((status, payload))
+    handler.log_error = lambda *args: None
+    handler._proxy()
+    assert attempts == [("local-dev", 1)]
+    assert replies[0][0] == 502 and replies[0][1]["code"] == "backend_unavailable"
