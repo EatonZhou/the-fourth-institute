@@ -2,6 +2,8 @@
 
 from copy import deepcopy
 from datetime import datetime
+import os
+import time
 
 import pytest
 
@@ -20,27 +22,46 @@ def _template():
     return next(t for t in templates.list_templates() if t["builtin_key"] == "scheduled_work")
 
 
+@pytest.fixture
+def system_clock(monkeypatch):
+    if not hasattr(time, "tzset"):
+        pytest.skip("This system-local clock fixture requires time.tzset")
+    previous = os.environ.get("TZ")
+
+    def change(zone):
+        monkeypatch.setenv("TZ", zone)
+        time.tzset()
+
+    yield change
+    if previous is None:
+        os.environ.pop("TZ", None)
+    else:
+        os.environ["TZ"] = previous
+    time.tzset()
+
+
 @pytest.mark.parametrize(
-    "parameters,after,expected",
+    "system_zone,parameters,after,expected",
     [
-        ({}, "2026-11-13T00:00:00+00:00", "2026-11-13T01:00:00+00:00"),
-        ({"calendar_time": "21:30", "timezone": "Asia/Shanghai"},
+        ("Asia/Hong_Kong", {}, "2026-11-13T00:00:00+00:00", "2026-11-13T01:00:00+00:00"),
+        ("Asia/Hong_Kong", {"calendar_time": "21:30"},
          "2026-11-13T13:30:00+00:00", "2026-11-14T13:30:00+00:00"),
-        ({"calendar_time": "09:15", "timezone": "America/New_York"},
+        ("America/New_York", {"calendar_time": "09:15"},
          "2026-11-13T13:00:00+00:00", "2026-11-13T14:15:00+00:00"),
     ],
 )
-def test_apply_clock_time(lineage, parameters, after, expected):
+def test_apply_clock_time(lineage, system_clock, system_zone, parameters, after, expected):
     from management_portal.society_service import lineage_recurring_schedule, templates
 
+    system_clock(system_zone)
     target = resident(lineage, "Target")
     template = _template()
     fields = {p["name"]: p for p in template["application_parameters"]}
-    assert set(fields) == {"task", "calendar_time", "timezone"}
+    assert set(fields) == {"task", "calendar_time"}
     assert fields["calendar_time"]["multiline"] is False
     assert "每天" in template["behavior"]["steps"][0]
     assert "{{param.calendar_time}}" in template["behavior"]["steps"][0]
-    assert "{{param.timezone}}" in template["behavior"]["steps"][0]
+    assert "系统本地时间" in template["behavior"]["steps"][0]
     result = templates.apply(
         lineage, template["template_id"], {"kind": "resident", "resident_ids": [target]},
         ACTOR, parameters={"task": "Check the daily result", **parameters},
@@ -51,6 +72,7 @@ def test_apply_clock_time(lineage, parameters, after, expected):
     config = timer["config"]
     assert config["recurrence_kind"] == "calendar"
     assert config["calendar_frequency"] == "daily"
+    assert config["timezone"] == "local"
     assert config["jitter_seconds"] == 0
     assert "interval_seconds" not in config
     assert lineage_recurring_schedule.first_after(config, datetime.fromisoformat(after)) == datetime.fromisoformat(expected)
@@ -60,6 +82,29 @@ def test_apply_clock_time(lineage, parameters, after, expected):
     assert any(c["config"]["event_type"] == "manual.triggered" for c in components)
     routes = [w for w in view["program"]["wires"] if w["id"] in result["created"]["wire_ids"]]
     assert all(w["target"] == target for w in routes)
+
+
+def test_system_clock_dst_and_explicit_timezone(system_clock):
+    from management_portal.society_service import lineage_recurring_schedule as schedule
+
+    system_clock("America/New_York")
+    config = schedule.normalize_config({
+        "recurrence_kind": "calendar", "calendar_time": "09:00", "timezone": "local",
+    })
+
+    def next_at(after, expected, **changes):
+        assert schedule.first_after({**config, **changes}, datetime.fromisoformat(after)) == datetime.fromisoformat(expected)
+
+    # The OS clock's future DST offset is used, rather than today's fixed offset.
+    next_at("2026-03-07T15:00:00+00:00", "2026-03-08T13:00:00+00:00")
+    # Missing wall times are skipped; a repeated wall time fires only once.
+    next_at("2026-03-08T05:00:00+00:00", "2026-03-09T06:30:00+00:00", calendar_time="02:30")
+    next_at("2026-11-01T04:00:00+00:00", "2026-11-01T05:30:00+00:00", calendar_time="01:30")
+    next_at("2026-11-01T05:30:00+00:00", "2026-11-02T06:30:00+00:00", calendar_time="01:30")
+    # Existing explicit-zone schedules remain independent of the host clock.
+    next_at("2026-11-13T00:00:00+00:00", "2026-11-13T01:00:00+00:00", timezone="Asia/Shanghai")
+    with pytest.raises(ValueError, match="IANA"):
+        schedule.normalize_config({**config, "timezone": "invalid/zone"})
 
 
 @pytest.mark.parametrize("parameters", [{"calendar_time": "25:00"}, {"timezone": "invalid/zone"}])

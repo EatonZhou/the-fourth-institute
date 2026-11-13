@@ -83,10 +83,11 @@ def normalize_config(config: Mapping[str, Any]) -> dict[str, Any]:
         return result
 
     timezone_name = str(config.get("timezone") or "UTC").strip() or "UTC"
-    try:
-        ZoneInfo(timezone_name)
-    except ZoneInfoNotFoundError as exc:
-        raise ValueError("timezone 必须是有效的 IANA 时区") from exc
+    if timezone_name != "local":
+        try:
+            ZoneInfo(timezone_name)
+        except ZoneInfoNotFoundError as exc:
+            raise ValueError("timezone 必须是 local（系统本地时间）或有效的 IANA 时区") from exc
     frequency = str(
         config.get("calendar_frequency") or "daily"
     ).strip().lower()
@@ -201,7 +202,9 @@ def _next_calendar_after(
     config: Mapping[str, Any],
     after_utc: datetime,
 ) -> datetime:
-    zone = ZoneInfo(str(config["timezone"]))
+    # None uses the OS local timezone for each date, including DST transitions;
+    # datetime.now().astimezone().tzinfo would freeze the current UTC offset.
+    zone = None if config["timezone"] == "local" else ZoneInfo(str(config["timezone"]))
     local_after = after_utc.astimezone(zone)
     wall_time = time.fromisoformat(str(config["calendar_time"]))
     frequency = str(config["calendar_frequency"])
@@ -236,7 +239,7 @@ def _calendar_date_matches(
 def _valid_local_occurrence(
     day: date,
     wall_time: time,
-    zone: ZoneInfo,
+    zone: ZoneInfo | None,
 ) -> datetime | None:
     # Round-trip through UTC. Nonexistent local times (DST spring-forward) do
     # not round-trip and are skipped. Ambiguous times choose the earliest
@@ -249,7 +252,7 @@ def _valid_local_occurrence(
         round_trip = utc.astimezone(zone)
         if (
             round_trip.replace(tzinfo=None) == naive
-            and round_trip.fold == fold
+            and (zone is None or round_trip.fold == fold)
             and utc not in valid
         ):
             valid.append(utc)

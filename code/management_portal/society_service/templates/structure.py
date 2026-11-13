@@ -438,9 +438,11 @@ class StructureKind:
                         "weekly": f"每周 {config.get('calendar_weekdays', 'mon')}",
                         "monthly": f"每月 {config.get('calendar_day', 1)} 日",
                     }.get(frequency, "按日历")
+                    timezone_name = config.get("timezone", "UTC")
+                    clock = "系统本地时间" if timezone_name == "local" else f"时区 {timezone_name}"
                     steps.append(
                         f"{when} {config.get('calendar_time', '09:00')}"
-                        f"（时区 {config.get('timezone', 'UTC')}）触发“{title}”。"
+                        f"（{clock}）触发“{title}”。"
                     )
                 else:
                     steps.append(

@@ -231,7 +231,7 @@ def definitions():
             "kind": "structure",
             "category": "structure",
             "title": "定时工作",
-            "description": "每天在指定时区的指定时间推进目标 Resident，也可以从“运行一次”手动触发。",
+            "description": "每天按系统本地时间推进目标 Resident，也可以从“运行一次”手动触发。",
             "targets": ["resident"],
             "parameters": [
                 {
@@ -248,14 +248,6 @@ def definitions():
                     "description": "每天触发时间（24 小时制，如 09:00 或 21:30）",
                     "multiline": False,
                 },
-                {
-                    "name": "timezone",
-                    "type": "text",
-                    "default": "Asia/Shanghai",
-                    "required": True,
-                    "description": "时区（如 Asia/Shanghai，UTC+8）",
-                    "multiline": False,
-                },
             ],
             "body": _structure(
                 [target],
@@ -270,7 +262,7 @@ def definitions():
                             "recurrence_kind": "calendar",
                             "calendar_frequency": "daily",
                             "calendar_time": "{{param.calendar_time}}",
-                            "timezone": "{{param.timezone}}",
+                            "timezone": "local",
                             "jitter_seconds": 0,
                             "misfire_policy": "coalesce_latest",
                             "overlap_policy": "drop",
