@@ -477,9 +477,7 @@ def _run_deep_read_job(job_id: str) -> None:
 
 def _deep_read_prompt(paper: dict, pdf_text: str) -> str:
     full_text = str(pdf_text or "")
-    return f"""请深读下面这篇论文，输出 Markdown。必须包含这些小节：
-
-# {paper.get('title') or 'Paper analysis'}
+    return f"""请深读下面这篇论文，输出 Markdown。正文直接从第一个二级小节开始，不输出一级标题。必须包含这些小节：
 
 {DEEP_READ_HEADINGS}
 
@@ -693,8 +691,7 @@ def _generate_exp_extraction(paper: dict, *, actor: str, job_id: str = "") -> tu
     pdf_text = _pdf_text_for_paper(paper)
     if not (analysis.strip() or pdf_text.strip() or str(paper.get("abstract") or "").strip()):
         raise ValueError("paper has no analysis, PDF text, or abstract for Exp extraction")
-    prompt = f"""请为下面论文生成 Experiment Extraction，标题用：
-# Exp: {paper.get('title') or 'Paper'}
+    prompt = f"""请为下面论文生成 Experiment Extraction。正文直接从第一个二级小节开始，不输出一级标题。
 
 必须包含这些小节：
 

@@ -119,3 +119,17 @@ def test_adopt_reconciles_file_saved_before_database_failure(evidence, monkeypat
     assert e.target.exists()
     result = adoption.adopt_exp(payload, "contributor")
     assert result["reconcile_existing_save"] and result["job"]["status"] == "done"
+
+
+def test_adopt_section_first_reply_without_title(evidence):
+    e = evidence
+    content = e.reply['content_parts'][0]['text'].split('\n', 1)[1]
+    assert content.startswith('## ')
+    e.reply['content_parts'][0]['text'] = content
+    payload = {**e.payload, 'content_sha256': digest(content.encode())}
+    audit = adoption.adopt_exp(payload, 'contributor')
+    assert audit['unique_input'] and audit['verified']['sections'] == 9
+    result = adoption.adopt_exp({**payload, 'dry_run': False,
+        'expected_job_updated_at': audit['expected_job_updated_at']}, 'contributor')
+    assert result['job']['status'] == 'done'
+    assert e.target.read_text().split('---', 2)[-1].lstrip().startswith('## ')

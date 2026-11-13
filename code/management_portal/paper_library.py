@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import unicodedata
+
 from management_portal import paper_favorites, paper_state_store, semantic_search_jobs
 from management_portal.paper_collection_jobs import (
     _paper_collection_filter_summary, _paper_collection_result_map,
@@ -51,7 +53,20 @@ def _paper_library_list_item(paper: dict) -> dict:
     item = {key: paper.get(key) for key in keys if paper.get(key) not in (None, "", [])}
     abstract = str(paper.get("abstract") or "").strip()
     if abstract:
-        item["abstract"] = abstract[:300]
+        if len(abstract) > 300:
+            # Reserve one character for the ellipsis. Only use a whitespace
+            # boundary in the final 40 characters, otherwise retain characters
+            # so an earlier English term does not over-shorten a CJK abstract.
+            preview = abstract[:299]
+            if not abstract[299].isspace() and not preview[-1].isspace():
+                start = max(0, len(preview) - 40)
+                boundary = max((i for i in range(start, len(preview)) if preview[i].isspace()), default=-1)
+                if boundary >= 0:
+                    preview = preview[:boundary]
+            while preview and (preview[-1].isspace() or unicodedata.category(preview[-1]).startswith("P")):
+                preview = preview[:-1]
+            abstract = preview + "…"
+        item["abstract"] = abstract
     return item
 
 
