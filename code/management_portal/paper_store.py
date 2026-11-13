@@ -846,11 +846,6 @@ def _paper_run_records(paper_id: str, *, kind: str = "", limit: int = 20) -> lis
     return records
 
 
-def _latest_paper_run(paper_id: str, *, kind: str) -> dict:
-    records = _paper_run_records(paper_id, kind=kind, limit=1)
-    return records[0] if records else {}
-
-
 def _write_paper_run_record(paper_id: str, job: dict) -> None:
     paper_id = str(paper_id or "").strip()
     if not paper_id or not isinstance(job, dict):

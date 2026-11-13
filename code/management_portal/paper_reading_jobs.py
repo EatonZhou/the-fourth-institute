@@ -25,9 +25,6 @@ from management_portal.shared_state import atomic_replace_json
 ANALYSIS_ROOT = DATA_ROOT / "analysis"
 
 
-EXP_STALE_SECONDS = 45 * 60
-
-
 def _set_job_with_run_record(kind: str, job_id: str, patch: dict) -> dict:
     # The run record is written before the job's lock is released, so run
     # records of one job are written in the same order as the job itself.
@@ -73,10 +70,6 @@ def _latest_deep_read_job(*, paper_id: str = "", job_id: str = "") -> dict | Non
 
 def _latest_exp_job(*, paper_id: str = "", job_id: str = "") -> dict | None:
     return _latest_job("exp_jobs", paper_id=paper_id, job_id=job_id)
-
-
-def _is_stale_exp_job(job: dict) -> bool:
-    return False  # A long model wait is not evidence of execution failure.
 
 
 def _mark_stale_exp_job(job: dict) -> dict:
