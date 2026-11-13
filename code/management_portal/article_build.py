@@ -172,6 +172,7 @@ class _ArticleBuild:
         self.article_id = article_id
         self.build_root = build_root
         self.from_scratch = from_scratch
+        self.rerun_failed_build = False
         _record, _root_item, self.article_root = article_registry._article_source_context(
             article_id
         )
@@ -314,6 +315,13 @@ class _ArticleBuild:
         if self.from_scratch:
             shutil.rmtree(self.cache_root, ignore_errors=True)
             output.unlink(missing_ok=True)
+        else:
+            # latexmk tracks manuscript files only: after a failed run it answers
+            # "Nothing to do" until one of them changes, even when the TeX
+            # installation has since gained the missing package or font.
+            previous = article_build_results.load_article_build_report(self.article_id, build_root=self.build_root)
+            self.rerun_failed_build = (previous.get("status") in {"error", "stopped"}
+                                       or previous.get("return_code") not in (None, 0))
         self.compile_root.mkdir(parents=True, exist_ok=True)
         self._report(
             "running",
@@ -390,6 +398,8 @@ class _ArticleBuild:
             "-interaction=nonstopmode",
             "-file-line-error",
         ]
+        if self.rerun_failed_build:
+            command.append("-g")
         project_latexmkrc = self.article_root / ".latexmkrc"
         if settings["use_project_latexmkrc"] and project_latexmkrc.is_file():
             command.extend(["-r", str(project_latexmkrc)])

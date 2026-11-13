@@ -1132,6 +1132,35 @@ class ArticleIdentityBackendTests(unittest.TestCase):
         self.assertEqual(report["diagnostics"], [])
         self.assertEqual(report["environment_profile"], settings["environment_profile"])
 
+    def test_compile_after_failed_build_forces_latexmk_rerun(self) -> None:
+        """失败构建之后的编译强制 latexmk 重跑，TeX 环境补齐依赖后无需改源码"""
+        article_root = self.project / "article"
+        _make_article_repo(article_root, "Failed Rerun", "https://example.invalid/rerun.git")
+        record = article_registration.register_article(article_root)
+        build_root = self.root / "build"
+        commands: list[list[str]] = []
+        results = iter([12, 0, 0])
+
+        def fake_build(_article_id, command, *, cwd, timeout_seconds, env=None):
+            del cwd, timeout_seconds, env
+            commands.append(list(command))
+            return_code = next(results)
+            outdir = Path(next(value.split("=", 1)[1] for value in command if value.startswith("-outdir=")))
+            outdir.mkdir(parents=True, exist_ok=True)
+            if return_code == 0:
+                (outdir / "main.pdf").write_bytes(b"%PDF-1.4\n")
+            (outdir / "main.log").write_text("! LaTeX Error: File `flushend.sty' not found.\n"
+                                             if return_code else "Output written on main.pdf.\n", encoding="utf-8")
+            return subprocess.CompletedProcess(command, return_code, "", None)
+
+        with mock.patch.object(article_build, "_run_article_build_command", side_effect=fake_build):
+            with self.assertRaises(RuntimeError):
+                article_build.compile_article_pdf(record["id"], build_root=build_root)
+            article_build.compile_article_pdf(record["id"], build_root=build_root)
+            article_build.compile_article_pdf(record["id"], build_root=build_root)
+
+        self.assertEqual(["-g" in command for command in commands], [False, True, False])
+
 
 if __name__ == "__main__":
     unittest.main()
