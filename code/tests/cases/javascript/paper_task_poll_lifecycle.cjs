@@ -22,7 +22,7 @@ function fixture() {
   }]));
   const document = { hidden: false };
   const handlers = new Map();
-  const window = { PortalI18n: { t: String },
+  const window = { PortalI18n: { t: String, message: String },
     setTimeout(callback, delay) { timers.set(++sequence, callback); delays.set(sequence, delay); return sequence; },
     clearTimeout(id) { timers.delete(id); },
     addEventListener(name, callback) { handlers.set(name, callback); } };
@@ -36,6 +36,7 @@ function fixture() {
   const deps = Object.fromEntries([...window.PortalPaperRegistration.dependencies,
     ...window.PortalPaperReviews.dependencies, ...window.PortalPaperProjection.dependencies].map(key => [key, () => {}]));
   Object.assign(deps, { state, paperApi: api, $: id => elements.get(id),
+    cancelPdfRendering: async () => true,
     paperDialog: { open() { elements.get('paperModal').hidden = false; }, close() { elements.get('paperModal').hidden = true; } },
     alertError(error) { throw error; } });
   for (const name of ['loadCollectorJobs', 'loadDetailSections', 'refreshAssetsProjection',
@@ -106,7 +107,7 @@ test('registration callbacks already queued when the page leaves issue no status
   f.api.get = async () => { reads++; return { status: 'running' }; };
   f.registration.openPaperModal(); await f.registration.uploadPaperRegistrationPdf({ name: 'fixture.pdf' });
   const callback = f.timers.values().next().value;
-  f.state.leaving = true; f.projection().suspendPaperUpdates();
+  f.state.leaving = true; await f.projection().suspendPaperUpdates();
   assert.equal(f.timers.size, 0);
   callback(); await tick(); assert.equal(reads, 0); assert.equal(f.timers.size, 0);
 });

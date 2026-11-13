@@ -405,8 +405,13 @@ def test_paper_writer_collection_contract_prompt_and_result(monkeypatch):
 
 @pytest.mark.parametrize("namespace", ["archive", "tfi"])
 def test_paper_writer_figure_prompt_commit_and_content_digest(tmp_path, monkeypatch, namespace):
+    from management_portal import paper_figures, paper_store
+    from management_portal.paper_figure_ownership import FigureAdapter
+
     paper = {"id": "paper_0123456789ab", "title": "Synthetic figure paper"}
-    figure = {"figure_id": "fig-001"}
+    figure = {"figure_id": "fig-001", "explanation_status": "queued"}
+    metadata = tmp_path / "figures.json"
+    metadata.write_text(json.dumps([figure]))
     image_path = tmp_path / "synthetic.png"
     image_path.write_bytes(b"fixture bytes; resident boundary is isolated")
     content = "解释正文 with original bytes"
@@ -424,15 +429,23 @@ def test_paper_writer_figure_prompt_commit_and_content_digest(tmp_path, monkeypa
     monkeypatch.setattr(paper_figure_jobs, "_figure_image_path", lambda *args: image_path)
     monkeypatch.setattr(paper_figure_jobs, "_run_figure_resident", generate)
     monkeypatch.setattr(paper_figure_jobs, "_paper_by_id", lambda paper_id: paper)
-    monkeypatch.setattr(paper_figure_jobs, "_load_figures", lambda value: [copy.deepcopy(figure)])
-    monkeypatch.setattr(paper_figure_jobs, "_set_figure_fields", lambda paper_id, figure_id, updates: figure.update(updates))
+    monkeypatch.setattr(paper_store, "_paper_by_id", lambda paper_id: paper)
+    monkeypatch.setattr(paper_figures, "_paper_by_id", lambda paper_id: paper)
+    monkeypatch.setattr(paper_figures, "_figures_json_path", lambda value: metadata)
+    monkeypatch.setattr(paper_figures, "_notify_paper_projection", lambda *args, **kwargs: None)
+    adapter = FigureAdapter(paper["id"], figure["figure_id"])
+    def run():
+        return paper_figure_jobs.paper_job_ownership.run(adapter.identity, lambda _identity:
+            paper_figure_jobs.explain_figure({"paper_id": paper["id"], "figure_id": figure["figure_id"]}, "writer-fixture"), adapter=adapter)
     original_figure, original_image = copy.deepcopy(figure), _prw_file_state(image_path)
     if namespace == "archive":
         with pytest.raises(ValueError, match="schema or Paper/Figure identity mismatch"):
-            paper_figure_jobs.explain_figure({"paper_id": paper["id"], "figure_id": figure["figure_id"]}, "writer-fixture")
-        assert figure == original_figure
+            run()
+        persisted = json.loads(metadata.read_text())[0]
+        assert {key: value for key, value in persisted.items() if key != "_job_execution"} == original_figure
     else:
-        paper_figure_jobs.explain_figure({"paper_id": paper["id"], "figure_id": figure["figure_id"]}, "writer-fixture")
+        run()
+    figure = json.loads(metadata.read_text())[0]
     assert '"schema": "tfi.paper.figure-explanation.result.v1"' in prompts[0]
     assert _prw_file_state(image_path) == original_image
     if namespace == "tfi":

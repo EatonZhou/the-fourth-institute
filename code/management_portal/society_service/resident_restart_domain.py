@@ -1060,7 +1060,14 @@ def _admit_session_replacement(restart: _SessionRestart) -> dict[str, Any]:
             restart_version = preservation.digest(current.get("session_restart") or {})
         prepared = execution_port.prepare_context_preservation(
             resident_id, actor=restart.actor_id,
-            operation_id=restart.request_id or restart.restart_id,
+            # Client keys name requests within an authorized source generation.
+            # A later account round trip or a different authorized actor must
+            # not reuse that client's older immutable preparation receipt.
+            operation_id="resident-preservation:" + preservation.digest({
+                "request_id": restart.request_id or restart.restart_id,
+                "actor": restart.actor_id,
+                "source_generation": restart.source["generation"],
+            }),
             source_binding=restart.source_binding,
         )
     with resident_record_domain.state_lock(resident_id):

@@ -180,7 +180,12 @@ const renderer = homeStatements().filter(({node:n})=>n.type==='FunctionDeclarati
     assert.equal(await closeThreshold.evaluate(el=>el===document.activeElement),true);
     for(const width of [1440,390,320]) {
       await page.setViewportSize({width,height:900});
-      assert.equal(await page.locator('.account-details-body').evaluate(el=>el.scrollWidth>el.clientWidth),false);
+      const geometry = await page.locator('.account-details-body').evaluate(el => ({
+        width: el.clientWidth, scrollWidth: el.scrollWidth,
+        overflowing: [...el.querySelectorAll('*')].filter(n => n.scrollWidth > n.clientWidth + 1)
+          .map(n => ({tag: n.tagName, account: n.dataset.accountInterval, width: n.clientWidth, scrollWidth: n.scrollWidth})),
+      }));
+      assert.equal(geometry.scrollWidth>geometry.width,false,JSON.stringify({width,geometry}));
       assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
     }
     await page.evaluate(()=>{

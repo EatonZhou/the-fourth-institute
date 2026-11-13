@@ -24,6 +24,8 @@ removes its temporary cluster at session end.
 The formal runner uses Linux namespaces to isolate local regression from live
 network services and credentials. Missing isolation dependencies must produce
 an unavailable result, never fallback execution against the host instance.
+On Linux, isolated Python and browser subprocesses use the sandbox's private
+`/tmp` through `TMPDIR`, `TMP`, and `TEMP`; host runtime paths are not inherited.
 
 Local test processes share a default budget of 32 across executors; an explicit
 `PORTAL_TEST_MAX_CONCURRENCY` may lower it. TAU does not consume that budget.

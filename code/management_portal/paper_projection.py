@@ -50,6 +50,13 @@ def _workflow(role: str) -> dict:
     return {key: value for key, value in matches[0].items() if key != "direct_chat_disabled_reason"}
 
 
+def workflow_targets(resident_ids: list[str]) -> list[dict]:
+    """Targets governed by Paper's workflow role declarations."""
+    from .workbench_projections.service import get_service
+    return [item for item in get_service().store.registered_role_targets(resident_ids)
+            if item.get('application') == 'paper']
+
+
 def receipt_from_resident_handle(handle: dict, *, requested_message_id: str = "") -> dict:
     """Translate the current shared Resident handle into Paper's input receipt."""
     pending = (handle.get("status") in {"assigned", "prepared", "queued", "pending"}

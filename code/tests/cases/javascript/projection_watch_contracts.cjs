@@ -114,8 +114,12 @@ async function createHarness({ sourceTransform = (_name, source) => source, cont
     observers.clear();
     assert.equal(window.document.querySelectorAll('iframe').length, 0, 'host destroys all frame elements');
     if (host) assert.equal(window.PortalWorkbench.get(host.workbench.id), null, 'workbench unregisters');
+    let afterClose = false;
+    window.addEventListener('fixture-close-probe', () => { afterClose = true; });
+    const closeProbe = new window.Event('fixture-close-probe');
     window.close();
-    assert.equal(window.document, undefined, 'fixture window closes');
+    window.dispatchEvent(closeProbe);
+    assert.equal(afterClose, false, 'closing the fixture removes window listeners');
     assert.deepEqual(errors, [], 'no uncaught production or DOM errors');
   };
   try {

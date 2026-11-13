@@ -130,6 +130,28 @@ function mailbox({ connected = false, targetRead, cachedSnapshot, clearResult, e
 }
 
 const checks = {
+  async 'page-lifecycle'() {
+    const app = mailbox({ connected: true });
+    try {
+      app.queue(payload);
+      await app.refresh();
+      app.assertRecovered(1);
+      app.window.dispatchEvent(new app.window.PageTransitionEvent('pageshow', { persisted: false }));
+      await app.advance(500);
+      app.assertRecovered(1);
+      for (const persisted of [true, false]) {
+        app.window.dispatchEvent(new app.window.PageTransitionEvent('pagehide', { persisted }));
+        app.window.dispatchEvent(new app.window.CustomEvent('portal:change', { detail: { snapshot_required: true } }));
+        const before = app.reads.length;
+        await app.advance(500);
+        assert.equal(app.reads.length, before, 'pagehide stops background reads');
+        app.queue(payload);
+        app.window.dispatchEvent(new app.window.PageTransitionEvent('pageshow', { persisted }));
+        await app.advance(500);
+        app.assertRecovered(before + 1);
+      }
+    } finally { await app.close(); }
+  },
   async 'state-demand-recovery'() {
     const id = 'resident_111111111111';
     const app = mailbox({connected:true});

@@ -41,6 +41,7 @@ const runtimeState = () => ({work_state:'idle', execution_gate:graphReadinessSam
       requests.push({ path: u.pathname, method: req.method(), instruction: body?.instruction });
       if (u.pathname === '/lineage') return route.fulfill({ contentType: 'text/html', body: html });
       if (u.pathname === '/static/portal_resource_routes.js') return route.fulfill({ contentType: 'text/javascript', body: routes });
+      if (u.pathname === '/static/portal_translations.js') return route.fulfill({contentType:'text/javascript',body:'window.__PORTAL_TRANSLATIONS__='+fs.readFileSync(path.join(portal,'static/portal_translations.json'),'utf8')+';'});
       const file = path.join(portal, u.pathname);
       if (fs.existsSync(file) && fs.statSync(file).isFile()) return route.fulfill({ path: file });
       if (u.pathname === '/api/events') return route.fulfill({ contentType: 'text/event-stream', body: '' });

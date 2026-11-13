@@ -4,15 +4,15 @@ type: decision
 project: AI员工
 created_at: '2026-10-18'
 version:
-  number: 14
+  number: 16
   created_at: "2026-10-18"
   created_by:
     user: ""
     agent: "resident_7765faecc45a"
-  updated_at: "2026-11-05T13:23:38Z"
+  updated_at: "2026-11-11T16:38:38Z"
   updated_by:
     user: ""
-    agent: "resident_6199a7a36480"
+    agent: "resident_14295614c5be"
 importance: 5
 ai_generated: false
 links:
@@ -53,7 +53,7 @@ Mailbox 指令读取和整理两种收件：User 的 Mailbox 列出这位用户�
 | `InjectMailboxItem` | 是 | 把一条等待消息立即交给当前正在进行的工作 | 对 `resident_id` 有 @contributor |
 | `ListMailboxTodos` | 否 | 读取一位 User 的待办及未完成数 | 对 `user_id` 有 @admin |
 | `CreateMailboxTodo` | 是 | 创建 1–100 字个人待办；Resident 可指定接收 User | 免检 |
-| `UpdateMailboxTodo` | 是 | 修改自己的待办文字、日期、完成状态或缩进 | 免检 |
+| `UpdateMailboxTodo` | 是 | 修改指定 User 的待办；User 只能指定自己，Resident 须获授权 | 对 `user_id` 有 @admin |
 | `DeleteMailboxTodo` | 是 | 删除自己的一条待办 | 免检 |
 | `MoveMailboxTodo` | 是 | 按相对位置移动待办（可跨日期），或同日调序 | 免检 |
 | `CreateNotification` | 是 | 向人类参与者发送通知，写入其 Mailbox 的“通知”栏 | 对“共享”有 @message |
@@ -73,17 +73,19 @@ Mailbox 指令读取和整理两种收件：User 的 Mailbox 列出这位用户�
 - `revision`：当前等待顺序的标识，有请求到达、离开或调序时改变，与整理指令返回的 `revision` 相同。
 - 正在执行的消息在 `active` 中，不在 `pending` 中；Resident 状态中的当前消息 ID 指向它。完整正文用 `GetMessage` 按需读取。默认方案要求对这个 Resident 有 viewer。
 
-带 `user_id`：读取这位 User 的 Mailbox（对话与通知），`related_resident_id`（可选）只读取与这个 Resident 相关的条目。带 `resident_id` 时不接受 `related_resident_id`。
+带 `user_id`：读取这位 User 的 Mailbox（对话、通知和待本人回答的问题），`related_resident_id`（可选）只读取与这个 Resident 相关的条目。带 `resident_id` 时不接受 `related_resident_id`。
 
 - 结果：条目列表 `items` 和未读总数 `unread_count`。每项包含条目键、条目种类（对话或通知）、标题、摘要、来源、更新时间、运行或失败状态、是否未读和条目版本 `version`。置顶在前，其余按最近活动从新到旧，同一时间按 `key` 升序。
+- `pending_requests`：当前仍待这位 User 回答且能在原对话回答的问题，与 `items`、未读和清除状态独立。返回全部符合条件的问题，不按最近消息条数截断；读取、展示或收起提醒不算回答。每项包含不透明的稳定 `key`、`source_resident_id/source_message_id`（源问题身份）、`resident_id/message_id`（可打开并回答的对话与消息）、`kind`（`question`、`approval` 或 `question_set`）、`created_at`、可选 `title` 和相对 `url`。Family 门面展示保留源问题身份，链接打开有权限的门面对话并定位问题；不返回问题正文或答案。`related_resident_id` 同时匹配源 Resident 和展示 Resident。回答、关闭、原生请求过期后不再返回；权限不足的用户也不返回。读取失败报错，不能用空列表代替失败。通知渠道按此快照判断待答状态，不能用对话已读推断问题已处理。
+- `items` 与 `pending_requests` 都在服务端读取完整后返回，调用方无需额外分页。
 - Resident 对话条目还给出 `latest_message_id`：这段对话最近一条可通知消息（Resident 的回复或发给这位用户的消息）的 ID，只在它是 `msg_` 消息 ID 时出现；`input_message_id` 是它回应的那条输入。两者取自 `version` 中的同名字段，调用者不必解析 `version`。聊天室条目不带这两个字段，消息用 `ListChatroomMessages` 读取。读原文用 `GetMessage(resident_id, message_id=latest_message_id)`。没有 `input_message_id` 时，这是对方主动发来的消息，按 `recipients` 判断是否发给自己；有 `input_message_id` 时，这是对请求的回复，普通回复不一定带 `recipients`，改用 `GetConversation(resident_id, input_message_id)` 确认那条输入由自己发出、回复在它的 `reply_message_ids` 中。`origin.sender` 说明由谁发出。读取不改变已读状态；标记已读用 `MarkMailboxItemRead` 并以 `version` 作为期望版本。
 
 ### `WatchMailbox`
 
 **等待与页面相同的 User Mailbox 变化；使用返回的 `cursor` 续读。**
 
-- 参数：`user_id`（必填，Mailbox 所属 User 的用户名；等待自己的 Mailbox 时写自己的用户名）、`cursor`（可选，上次返回的续读游标；首次省略，先返回重读检查点）、`timeout_seconds`（可选，本次订阅时长，1–60 秒，默认 30 秒）。
-- 结果：变化的条目键 `keys`、续读游标 `cursor`，以及是否需要用 `GetMailbox` 重读的 `snapshot_required`。
+- 参数：`user_id`（必填，Mailbox 所属 User 的用户名；等待自己的 Mailbox 时写自己的用户名）、`after_cursor`（可选，上次返回的续读游标；首次省略，先返回重读检查点）、`timeout_seconds`（可选，本次订阅时长，1–60 秒，默认 30 秒）。
+- 结果：变化的条目键 `keys`（待回答问题沿所属对话变化提示，消费者据此重读完整 `pending_requests`）、续读游标 `cursor`，以及是否需要用 `GetMailbox` 重读的 `snapshot_required`。
 - 订阅复用页面经权限过滤的变化数据，不轮询列表；无法定位到条目键的整表变化、Web 进程重启或游标已退出缓存窗口时返回 `snapshot_required`。
 
 ## User Mailbox 的已读、置顶与清理
@@ -186,11 +188,11 @@ Todo 是可编辑的清单记录，不是 Conversation 消息，不会启动 Res
 
 - `ListMailboxTodos(user_id)`：读取 `user_id` 指定 User 的待办，默认方案要求调用者对这个 User 有 `@admin`；返回 `items` 和 `pending_count`。每项包含 `todo_id`、`user_id`、`text`、`date`、`completed`、`position`、`indent`、`created_by`、`created_at`、`updated_at`。按日期从新到旧、同日个人顺序排序；完成状态变化不重新排序。`indent` 为 0–4 的视觉缩进层级，默认 0，不定义父子关系或联动其他条目。
 - `CreateMailboxTodo(text, user_id, date?)`：`user_id` 必填（weihao 2026-10-18）。User 只能写自己的用户名，给自己添加；Resident 指定已登记且启用的接收 User。文字去掉首尾空白后为 1–100 个 Unicode 字符；日期为 `YYYY-MM-DD`，省略时使用香港时区当天。初始为未完成，同组末尾追加，返回 `item`。创建者取自认证调用者，不能自报。
-- `UpdateMailboxTodo(todo_id, changes)`：只可修改自己的待办，`changes` 为非空对象，只允许 `text`、`date`、`completed`、`indent`；`completed` 必须为布尔值，`indent` 必须为 0–4 的整数（不接受布尔值）；返回 `item`。
+- `UpdateMailboxTodo(user_id, todo_id, changes)`：`user_id` 必填，指定待办所属的已登记 User；默认方案要求调用者对该 User 有 `@admin`。User 只能指定自己，即使有其他 User 的权限也不能代为修改；Resident 可在获授权后修改指定 User 的待办。`changes` 为非空对象，只允许 `text`、`date`、`completed`、`indent`；`completed` 必须为布尔值，`indent` 必须为 0–4 的整数（不接受布尔值）；返回 `item`。
 - `DeleteMailboxTodo(todo_id)`：删除自己的待办，返回 `todo_id`。
 - `MoveMailboxTodo(todo_id, direction?, before_todo_id?, after_todo_id?)`：三个定位参数必须且只能提供一个。`before_todo_id` / `after_todo_id` 指定调用者自己的另一条待办，一次事务将源项放到其前面或后面；若目标日期不同，同步修改源项日期。不得以自己为锚点，目标不存在或不属于调用者时不修改任何顺序。`direction` 为 `up` 或 `down`，与同日的相邻待办交换位置，到边界时保持不变。移动不改变完成状态或缩进；返回 `item`。
 
-Resident 的添加能力不授予读取、修改、删除或调序用户已有待办的权限。其他用户的待办 ID 与不存在的 ID 都按不存在返回，不能借此推断他人清单。修改按用户加事务锁；新增和其他写入沿用 ISA 幂等规则，重放返回已写入条目的引用，不再次创建。Todo 面板操作成功后重读，打开期间保持分组折叠状态；读/写失败明确报错并保留未保存草稿。
+Resident 的添加能力本身不授予读取或修改已有待办的权限；读取使用 `ListMailboxTodos(user_id)`，修改使用 `UpdateMailboxTodo(user_id, todo_id, changes)`，分别按目标 User 的权限判定。Resident 不可删除或调序用户待办。其他用户的待办 ID 与不存在的 ID 都按不存在返回，不能借此推断他人清单。修改按用户加事务锁；新增和其他写入沿用 ISA 幂等规则，重放返回已写入条目的引用，不再次创建。Todo 面板操作成功后重读，打开期间保持分组折叠状态；读/写失败明确报错并保留未保存草稿。
 
 ## 通知人类
 
@@ -220,7 +222,7 @@ Resident 的添加能力不授予读取、修改、删除或调序用户已有�
 | `InjectMailboxItem` | `resident_id`、`message_id` |
 | `ListMailboxTodos` | `user_id` |
 | `CreateMailboxTodo` | `text`、`user_id`、`date` |
-| `UpdateMailboxTodo` | `todo_id`、`changes` |
+| `UpdateMailboxTodo` | `user_id`、`todo_id`、`changes` |
 | `DeleteMailboxTodo` | `todo_id` |
 | `MoveMailboxTodo` | `todo_id`、`direction`、`before_todo_id`、`after_todo_id` |
 | `CreateNotification` | `title`、`message`、`recipients`、`lineage_id`、`severity`、`notification_id` |

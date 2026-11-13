@@ -829,6 +829,7 @@ a.agent-status-creature.queued:hover {
 .account-details footer { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border); flex-wrap: wrap; }
 .account-details-actions { display: flex; flex-wrap: wrap; gap: 6px; }
 .account-concurrency form { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 6px; margin: 6px 0; }
+.account-concurrency form > span { min-width: 0; overflow-wrap: anywhere; }
 .account-concurrency label { display: grid; grid-template-columns: minmax(0, 1fr) 72px; align-items: center; gap: 6px; min-width: 0; }
 .account-concurrency label span { overflow-wrap: anywhere; font-size: 12px; }
 .account-concurrency input { width: 100%; min-width: 0; box-sizing: border-box; }

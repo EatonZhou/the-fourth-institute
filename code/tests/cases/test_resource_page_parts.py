@@ -6,7 +6,9 @@
 from __future__ import annotations
 
 from pathlib import Path
+import json
 import re
+import subprocess
 from types import SimpleNamespace
 
 import pytest
@@ -22,7 +24,7 @@ PAGES = (
     ("article_workspace.html", "article_workspace", "articleModule"),
     ("repo_workspace.html", "repo_workspace", "repoModule"),
 )
-REGISTERED = re.compile(r'window\.(\w+) = Object\.freeze\(\{ (\w+), dependencies: DEPENDENCIES \}\);')
+REGISTERED = re.compile(r'window\.(\w+)\s*=\s*Object\.freeze\(\{\s*(\w+)\s*,(?:\s*\w+\s*,)*\s*dependencies:\s*DEPENDENCIES\s*\}\);')
 
 
 def own_scripts(page: str, prefix: str) -> list[str]:
@@ -33,23 +35,67 @@ def own_scripts(page: str, prefix: str) -> list[str]:
 
 def creations(root: str, lookup: str) -> dict[str, tuple[str, set[str]]]:
     """Each part the root script creates: global -> (factory, the dependency names it passes)."""
-    found = {}
-    for match in re.finditer(rf'{lookup}\("(\w+)"\)\.(\w+)\(\{{\n(.*?)\n  \}}\);', root, re.S):
-        names = {item.split(":")[0].strip() for item in re.split(r",\s*", match.group(3)) if item.strip()}
-        found[match.group(1)] = (match.group(2), names)
-    return found
+    # Nested objects and arrow-function arguments contain commas too. Parse the
+    # call's top-level ObjectExpression instead of splitting JavaScript text.
+    script = r'''
+      const fs = require('fs');
+      const {babelParse,traverse} = require('./tests/cases/javascript/babel_parse.cjs');
+      const {source,lookup} = JSON.parse(fs.readFileSync(0,'utf8'));
+      const found = {};
+      traverse(babelParse(source,'root.js'), {CallExpression(path) {
+        const call=path.node, member=call.callee, target=member.object;
+        if(member.type!=='MemberExpression' || target?.type!=='CallExpression'
+           || target.callee.type!=='Identifier' || target.callee.name!==lookup) return;
+        const object=call.arguments[0];
+        if(object?.type!=='ObjectExpression') throw Error('module dependencies must be explicit');
+        const keys=object.properties.map(property=>{
+          if(property.type==='SpreadElement'||property.computed) throw Error('module dependency key is not explicit');
+          return property.key.name||property.key.value;
+        });
+        found[target.arguments[0].value]=[member.property.name,keys];
+      }});
+      process.stdout.write(JSON.stringify(found));
+    '''
+    result = subprocess.run(['node', '-e', script], cwd=ROOT.parent,
+                            input=json.dumps({'source': root, 'lookup': lookup}),
+                            text=True, capture_output=True, check=True)
+    return {name: (factory, set(keys)) for name, (factory, keys) in json.loads(result.stdout).items()}
 
 
 @pytest.mark.parametrize("page,prefix,lookup", PAGES)
 def test_root_creates_every_part_its_page_loads_with_exactly_its_dependencies(page, prefix, lookup):
     """页面先加载各模块脚本再加载根脚本，根脚本创建每个模块且只传入该模块声明的依赖"""
     scripts = own_scripts(page, prefix)
+    if page == 'paper.html':
+        # The header is an independent DOM enhancement, loaded after the app.
+        assert scripts[-2:] == ['paper.js', 'paper_header.js']
+        header = (STATIC / scripts.pop()).read_text(encoding='utf-8')
+        assert 'MutationObserver' in header and 'portal:language-changed' in header
+        assert not REGISTERED.findall(header)
     assert scripts[-1] == f"{prefix}.js", scripts
     root = (STATIC / scripts[-1]).read_text(encoding="utf-8")
     created = creations(root, lookup)
     modules = {}
     for name in scripts[:-1]:
         source = (STATIC / name).read_text(encoding="utf-8")
+        standalone = {'paper_navigation.js': 'PortalPaperNavigation',
+                      'paper_artifact_presentation.js': 'PortalPaperArtifactPresentation',
+                      'paper_research_controls.js': 'PortalPaperResearchControls',
+                      'paper_personal.js': 'PortalPaperPersonal'}
+        if name in standalone:
+            # Explicit standalone modules; a future unregistered module still fails below.
+            exported = standalone[name]
+            assert re.search(rf'window\.{exported}\s*=', source)
+            assert any(exported in (STATIC / consumer).read_text(encoding='utf-8')
+                       for consumer in scripts if consumer != name)
+            continue
+        if name == 'article_workspace_position.js':
+            assert 'window.PortalArticleWorkspacePosition = Object.freeze({ createPosition })' in source
+            factory, dependencies = created.pop('PortalArticleWorkspacePosition')
+            assert factory == 'createPosition'
+            assert dependencies == {'state', 'captureActiveDocument', 'captureArticlePdfPosition',
+                                    'openArticleFile', 'activateDocument'}
+            continue
         registered = REGISTERED.findall(source)
         assert len(registered) == 1, name
         dependencies = re.search(r"const DEPENDENCIES = Object\.freeze\(\[(.*?)\]\);", source, re.S)

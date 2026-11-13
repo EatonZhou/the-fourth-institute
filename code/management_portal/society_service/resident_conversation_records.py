@@ -332,6 +332,11 @@ def message_from_storage(message: Mapping[str, Any]) -> dict[str, Any]:
     if message.get("role") == "agent":
         from management_common.async_questions import decode_question_content
         content_parts = decode_question_content(content_parts, str(message.get("author_id") or ""), message_id)
+        from management_common.resident_handoff_cards import CARDS, projection
+        handoffs = projection(message)
+        if handoffs:
+            content_parts = [part for part in content_parts if part.get("type") != CARDS]
+            content_parts.append({"type": CARDS, "cards": handoffs})
     provider_response = message.get("provider_response")
     provider_artifact_id = f"{message_id}:provider_response"
     if isinstance(provider_response, Mapping) and provider_response:

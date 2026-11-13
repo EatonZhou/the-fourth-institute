@@ -62,8 +62,9 @@ def test_instruction_transport_distinguishes_unsent_from_unknown_without_retry(m
     connect = MagicMock(return_value=(connection, "test.sock"))
     (connect if stage == "connect" else getattr(connection, stage)).side_effect = OSError("interrupted")
     monkeypatch.setattr(socket_rpc, "connect_service", connect)
+    monkeypatch.setattr(socket_rpc, "_signed", lambda *a: {})
     with pytest.raises(InstructionError) as error:
-        socket_rpc._open("execution", {"id": "transport-test"}, 1)
+        socket_rpc._open("execution", {"id": "transport-test", "params": {}}, 1, InstructionContext("alice", "web"))
     assert error.value.commit_state == ("not_committed" if stage == "connect" else "unknown")
     assert connect.call_count == 1
     assert connection.sendall.call_count == (0 if stage == "connect" else 1)

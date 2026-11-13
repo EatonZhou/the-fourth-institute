@@ -138,6 +138,12 @@ class AgentDataProjector:
             projection.turn_id = str(details.get("turn_id") or "")
             if not projection.turn_id.strip():
                 raise ValueError("Provider input acceptance requires a turn identity")
+            self.sessions.record_subscription_native_link(
+                projection, backend_session_id=str(details.get("backend_session_id")
+                                                   or projection.session.backend_session_id or ""),
+                backend_route_id=str(details.get("backend_route_id") or projection.session.backend_route_id),
+                turn_id=projection.turn_id,
+            )
             resolved_backend_session_id = str(
                 details.get("backend_session_id")
                 or projection.session.backend_session_id
@@ -290,6 +296,12 @@ class AgentDataProjector:
         turn_id = event_turn_id(event) or projection.turn_id
         if turn_id:
             projection.turn_id = turn_id
+        if operation in {"turn", "generate"}:
+            self.sessions.record_subscription_native_link(
+                projection, backend_session_id=backend_session_id or projection.session.backend_session_id,
+                backend_route_id=backend_route_id or projection.session.backend_route_id,
+                turn_id=turn_id,
+            )
         created_at = event_created_at(event)
         method = str(event.get("method") or "")
         event_type = str(event.get("type") or "")
@@ -414,6 +426,11 @@ class AgentDataProjector:
             return ""
         projection.turn_id = str(turn_id or projection.turn_id)
         operation = projection.request.operation
+        self.sessions.record_subscription_native_link(
+            projection, backend_session_id=backend_session_id or projection.session.backend_session_id,
+            backend_route_id=backend_route_id or projection.session.backend_route_id,
+            turn_id=projection.turn_id, final=True,
+        )
         if operation in {"turn", "generate", "create", "compact"}:
             resolved_backend_session_id = (
                 backend_session_id or projection.backend_session_id
@@ -471,4 +488,9 @@ class AgentDataProjector:
 
     def discard(self, execution_id: str) -> None:
         with self._lock:
+            projection = self._active.get(str(execution_id or ""))
+            if projection is not None:
+                self.sessions.record_subscription_native_link(projection,
+                    backend_session_id=projection.session.backend_session_id,
+                    backend_route_id=projection.session.backend_route_id, final=True)
             self._active.pop(str(execution_id or ""), None)

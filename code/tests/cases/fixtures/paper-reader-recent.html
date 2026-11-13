@@ -1,18 +1,21 @@
 <!doctype html><meta charset="utf-8"><link rel="stylesheet" href="/static/paper.css"><div id="folderTree"></div><div id="workspaceMain"></div>
-<script src="/static/paper_reader.js"></script><script src="/static/paper_personal.js"></script><script src="/static/paper_detail.js"></script><script>
+<script src="/static/paper_reader.js"></script><script src="/static/paper_personal.js"></script><script src="/static/paper_detail.js"></script><script src="/static/paper_library_view.js"></script><script>
 window.state={principalId:'reader_one',favoriteIds:new Set(),favoritePending:new Set(),favoriteRevision:0,selectedId:'paper_0123456789ab',mode:'reader'};
 window.renders=[];window.posts=0;
-window.PortalI18n={t:x=>x,html:(s,...v)=>s.reduce((a,x,i)=>a+x+(v[i]??''),'')};
 window.PortalPreview={mountZoom:()=>({dispose(){},setEnabled(){}})};
 window.PortalPdfPreview={render:c=>{renders.push(c);return {root:c.root,promise:new Promise(()=>{}),cancel(){}}}};
 const api={request:async(url,o={})=>{if(url.endsWith('/open'))posts++;const r=await fetch(url,{method:o.method||'GET',headers:{'Content-Type':'application/json'},...(o.body?{body:JSON.stringify(o.body)}:{})});if(!r.ok)throw Error(await r.text());return r.json();}};
-const deps=Object.fromEntries(PortalPaperReader.dependencies.map(k=>[k,()=> '']));Object.assign(deps,{$:id=>document.getElementById(id),state,esc:String,md:String,detailSectionsLoaded:()=>true,alertError:console.error});
+const deps=Object.fromEntries(PortalPaperReader.dependencies.map(k=>[k,()=> '']));Object.assign(deps,{$:id=>document.getElementById(id),state,readerChat,esc:String,md:String,detailSectionsLoaded:()=>true,alertError:console.error});
 window.reader=PortalPaperReader.createReader(deps);
 window.openPaper=id=>{state.selectedId=id;state.mode='reader';state.detail={paper:{id,title:'Synthetic',pdf_url:'/original.pdf'}};reader.renderReaderMode();};
 const detailDeps=Object.fromEntries(PortalPaperDetail.dependencies.map(k=>[k,()=>{}]));
 Object.assign(detailDeps,{state,cancelPdfRendering:()=>reader.cancelPdfRendering(),renderWorkspace:()=>reader.renderReaderMode(),paperApi:{request:async url=>({paper:{id:new URL(url,location).searchParams.get('id'),title:'Second',pdf_url:'/original.pdf'}})}});
 state.detailRequestSeq=0;state.detailSections=new Set();state.detailSectionPromises={};
 window.detailOwner=PortalPaperDetail.createDetail(detailDeps);
-PortalPaperPersonal.mount({state,paperApi:api,loadDetail:async()=>{},setMode:m=>state.mode=m});
+state.paperTreeExpansion={};state.paperTreeRenderLimit=200;
+const libraryDeps=Object.fromEntries(PortalPaperLibraryView.dependencies.map(k=>[k,()=>{}]));
+Object.assign(libraryDeps,{$:id=>document.getElementById(id),state,paperApi:api,esc:String,disclosureIcon:e=>e?'▾':'▸',paperStateHtml:String,isCollectionMode:()=>false});
+const library=PortalPaperLibraryView.createLibraryView(libraryDeps);
+PortalPaperPersonal.mount({state,paperApi:api,renderTree:library.renderTree,syncFavoriteButtons:library.syncFavoriteButtons,loadDetail:async()=>{},setMode:m=>state.mode=m});
 window.ready=true;
 </script>

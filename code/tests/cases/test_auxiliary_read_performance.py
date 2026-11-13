@@ -64,9 +64,10 @@ def test_paper_lookup_checks_only_selected_binding_and_live_membership(monkeypat
     with pytest.raises(ProjectionError) as error:
         native.lookup('paper', actor='CASE-A', resident_scope=scope)
     assert error.value.code == 'projection.resident_unbound'
-    # Settings still diagnose all bindings, including unrelated broken ones.
+    # Retained personal conversations do not invalidate application roles;
+    # the unrelated broken binding remains visible in Settings.
     detail = projection.initialize('paper', 'CASE-A')
-    assert {issue['binding'] for issue in detail['binding_issues']} == {'main', 'unrelated'}
+    assert {issue['binding'] for issue in detail['binding_issues']} == {'unrelated'}
 
 
 @pytest.mark.parametrize('failure', ['forbidden', 'deleted', 'outage'])

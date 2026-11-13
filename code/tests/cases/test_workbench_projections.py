@@ -1167,7 +1167,7 @@ def test_isa_delivery_keeps_call_controls_out_of_the_business_message(monkeypatc
     arguments = {"resident_id": RESIDENT, "business_ref": "generation-1",
                  "message": {"role": "user", "content_parts": [{"type": "text", "text": "hi"}]}}
     conversation.deliver_message(SimpleNamespace(
-        argument=arguments.get, caller="alice", idempotency_key="stable-delivery", context=SimpleNamespace(trigger_path_id=""),
+        argument=arguments.get, caller="alice", idempotency_key="stable-delivery", context=SimpleNamespace(trigger_path_id="", channel="isa"),
     ))
     assert set(observed["payload"]) == {"resident_id", "message", "activation_policy"}
     assert set(observed["payload"]["message"]) == {"message_id", "role", "content_parts"}
@@ -1363,7 +1363,7 @@ def test_workbench_detail_reports_bindings_as_they_are_now(monkeypatch, failure)
 
 
 def test_release_business_role_retries_delete_and_cleans_owned_workflow(store, resources, monkeypatch):
-    """释放工作台角色时删除失败可用同一幂等键重试，最终移除绑定及其工作流组件
+    """释放工作台角色时明确失败后重新核实并发起新尝试，最终移除绑定及其工作流组件
 
     :design-point:"""
     from management_portal.workflow_bindings_store import get_workflow_binding_store
@@ -1401,7 +1401,12 @@ def test_release_business_role_retries_delete_and_cleans_owned_workflow(store, r
     assert not store.get(APP, 'alice', published=True)['bindings']['main']['residents']
     assert not components
     deletes = [key for name, _, key in calls if name == 'ApplyLineageChanges']
-    assert len(deletes) == 2 and len(set(deletes)) == 1
+    assert len(deletes) == 2 and len(set(deletes)) == 2
+    # Explicit recovery gets a fresh attempt key so a definitive failure is
+    # not replayed forever. Both attempts still target the same graph edit.
+    edits = [args for name, args, _ in calls if name == 'ApplyLineageChanges']
+    assert edits[0] == edits[1]
+    assert deletes[0].rsplit(':', 1)[0] == deletes[1].rsplit(':', 1)[0]
 
 
 @pytest.mark.parametrize('state', [{'work_state': 'running'}, {'work_state': 'idle', 'queued_count': 1}])

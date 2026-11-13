@@ -241,7 +241,8 @@ def test_projection_resolves_evidence_as_current_actor(monkeypatch, subtests):
         "portal_url": metadata["portal_url"],
     }
     assert http.post("/api/workbenches/resource", payload, "alice") == expected
-    assert calls == [(APP, "alice"), ("evidence", "alice")]
+    # The bounded resource operation rechecks workbench access before returning.
+    assert calls == [(APP, "alice"), ("evidence", "alice"), (APP, "alice")]
     assert http.post("/api/workbenches/resource", {**payload, "arguments": {"address": "root"}}, "alice") == {**expected, "title": "Workspace"}
     for address in ["private", "missing", "missing-file", "domain-private", "domain-missing", "deleted"]:
         with subtests.test(address=address):
@@ -253,7 +254,7 @@ def test_projection_resolves_evidence_as_current_actor(monkeypatch, subtests):
             assert result["error"]["code"]
             assert result["error"]["details"] == {}
             assert result["error"]["error"] == ("资源不可访问" if result["status"] == 403 else "资源不存在")
-            assert calls[-1] == (address, "alice")
+            assert calls[-2:] == [(address, "alice"), (APP, "alice")]
     for address in ["unavailable", "invalid"]:
         with subtests.test(address=address), pytest.raises(type(failures[address])):
             http.post("/api/workbenches/resource", {**payload, "arguments": {"address": address}}, "alice")

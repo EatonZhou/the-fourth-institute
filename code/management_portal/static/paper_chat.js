@@ -301,6 +301,7 @@
       const titleElement=paperChatWorkspace.els.title;
       researchTitleMenu=window.PortalPaperResearchControls.createTitleMenu({titleElement,
         onSelect:key=>void chooseResearch(key),onCreate:()=>void createResearch()});
+      root.classList.add('paperResearchWorkspace');
       root.parentElement.classList.add('paperResearchChatHost');
       root.parentElement.insertBefore(researchNav,root);
       renderResearchOptions();

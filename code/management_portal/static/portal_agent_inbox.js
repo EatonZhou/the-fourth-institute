@@ -145,14 +145,15 @@
   async function refreshAssistant() {
     if (assistantRefresh) return assistantRefresh;
     const mountedRoot = root;
-    assistantRefresh = window.PortalNav.personalAssistantTarget().catch(() => null).then(target => {
+    const request = window.PortalNav.personalAssistantTarget().catch(() => null).then(target => {
       if (!root || root !== mountedRoot) return;
       rememberAssistant(target);
       showAssistant(target);
       applyVerticalPosition();
       updateChrome();
-    }).finally(() => { assistantRefresh = null; });
-    return assistantRefresh;
+    }).finally(() => { if (assistantRefresh === request) assistantRefresh = null; });
+    assistantRefresh = request;
+    return request;
   }
 
   async function mountAssistantChat() {
@@ -1010,6 +1011,9 @@
   }
 
   function destroy() {
+    // A remounted Inbox owns a new target read. The old read may still settle,
+    // but cannot block the new one or clear its in-flight deduplication.
+    assistantRefresh = null;
     returnToMailbox({ focus: false });
     assistantChat?.destroy();
     assistantChat = null;

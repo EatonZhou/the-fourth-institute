@@ -60,6 +60,9 @@ def _fresh_bound_domain(monkeypatch):
     record['session_state'] = 'active'
     store = AgentDataStore()
     sessions = SessionManager(agent_data=store)
+    binding_id = resident_backend.execution_binding_id(record)
+    source = store.provider_binding(binding_id)
+    store.delete_provider_binding(binding_id, expected_provider_session_ref=source['provider_session_ref'])
     old = store.ensure_provider_session(provider='codex', backend_route_id='zero',
                                         backend_session_id='old-native-thread',
                                         agent_id=record['resident_id'], actor_ref='test')

@@ -260,7 +260,14 @@ def test_each_object_has_one_parameter_name():
 # Neither operation has a single resource version to use as scalar CAS.
 WITHOUT_TARGET = {"ClaimResidentSummaryJobs", "OpenTerminal", "PublishPulseItem", "RestartPortal",
                   "SetTelepusEnabled", "UpdateExecutionSettings", "UpdateKnowledgeTags",
-                  "AcceptUserAuthorization", "CorrectResourceLifecycleAssociation"}
+                  "AcceptUserAuthorization", "CorrectResourceLifecycleAssociation",
+                  # Current-user operations resolve omitted user_id from the
+                  # authenticated caller; the channel session is not a versioned resource.
+                  "StartTelepusWeixinBinding", "GetTelepusWeixinBinding", "SubmitTelepusWeixinPin",
+                  "UnbindTelepusWeixin", "UpdateTelepusWeixinNotifications",
+                  # Retired commands keep conservative mutating declarations
+                  # for compatibility; their handlers always reject without an object.
+                  "EnsurePaperTranslationBinding", "TranslatePaperText"}
 
 
 def test_changes_to_an_existing_object_declare_it_as_target():

@@ -4,15 +4,15 @@ type: decision
 project: AI员工
 created_at: '2026-08-23'
 version:
-  number: 93
+  number: 96
   created_at: "2026-08-23"
   created_by:
     user: ""
     agent: ""
-  updated_at: "2026-11-04T19:19:31Z"
+  updated_at: "2026-11-13T21:12:23Z"
   updated_by:
     user: ""
-    agent: "resident_6199a7a36480"
+    agent: "resident_561324ac1c0c"
 importance: 10
 metaness: 3
 ai_generated: false
@@ -103,7 +103,9 @@ Chat 展示策略由 Portal 的 conversation/message projection service 拥有�
 
 所有 Chat 读取都读消息定位投影 `chat_message_positions`，不逐条解析 Segment JSON。投影为 trace 中每条通信消息和运行通知保存一行：位置、Segment 类型、消息 ID 和类别，发送时间、作者、`business_ref` 和收件用户（小写的 user ID），以及这条消息回复哪个输入、能否作为回复（不是 Harness 输入，也不带工作卡片）。`chat_actor_activity` 为每条 trace 和每个人保存他们在最近一次清空之后最后一次发言或被点名的时间，Mailbox 按它排列会话，Family 门面转发的副本不算发送者的活动（decision_44cf587c1721）。Chat 显示投影中的每一行，只有一个例外：final_answer Segment 带的消息已由同一 trace 中更早的 Segment 带过时不显示。读取需要 metadata 或正文时，按行的来源逐条从 Segment 或通知取回。用户消息数、最新用户消息与作者、actor 的请求、发给 actor 的消息、最近活动、按消息 ID 查找、翻页、回复窗口、消息头和 Fork 计数都只读这两张表；按消息 ID、发送者和收件用户的部分索引支持跨 trace 的查询。输入的最终回复先从 Segment 关系找出包含它的 Mailbox 组合消息，再在投影中按 trace 和回复目标找最后一条回复。
 
-追加 Segment、放置通知、替换、清空和重排在写入它们的同一事务中维护这些行和最近活动，并把这条 trace 的同步标记设为 Sequence 行当前的 MVCC 版本。读取先核对所读 trace 的标记：标记落后时（某个写入者没有维护投影，或 Sequence 行被改写），在轨迹行锁内从 Segment 和通知重建这条 trace 后再读；先按消息 ID 查找再写入的操作在同一把锁内完成这一步。Mailbox 列表在开始时一次核对所有 trace，各页共用。这两张表属于 AgentData schema，新建空库存储直接创建；现存库在使用相关投影时访问实际表列，不以全库结构检查阻断初始化。
+追加 Segment、放置通知、替换、清空和重排在写入它们的同一事务中维护位置、活动和同步标记。完整刷新在既有 trace 行锁内从同一语句快照计算规范目标集合，按来源键删除已不存在的位置、插入新增位置，仅更新字段确有差异的现存位置；位置、来源类型、作者、收件人、回复和时间事实全部参与比较。增量 upsert 对相同值不执行物理更新；活动重算允许最近时间退回或 actor 消失，追加活动只在时间增加时更新。同步行只在 Sequence 行的 MVCC 版本变化时推进，三者与轨迹编辑同事务提交或回滚。
+
+读取先核对所读 trace 的标记：标记落后时（某个写入者没有维护投影，或 Sequence 行被改写），在轨迹行锁内从完整 Segment 和通知修复这条 trace 后再读；先按消息 ID 查找再写入的操作在同一把锁内完成这一步。Mailbox 列表在开始时一次核对所有 trace，各页共用。差异写入仍读取完整规范轨迹，不截断历史或以永久缓存替代；相同值的冲突键比较仍可能取得行锁。这两张表属于 AgentData schema，新建空库存储直接创建；现存库在使用相关投影时访问实际表列，不以全库结构检查阻断初始化。
 
 Execution 的最终回复在写入时选定，记入 `executions.final_message_id`：结束 Execution 的写入和给它追加消息的写入从 trace 本身选出这条回复，因为它们持有 Execution 而不是 trace 的锁；空串表示终态 Execution 没有可显示的回复。消息只按这个指针显示用量，读取时不再补算。
 
@@ -112,6 +114,8 @@ Execution 的最终回复在写入时选定，记入 `executions.final_message_i
 ## 运行记录
 
 纯 UI 卡片、资源修改卡片、执行统计、输入接收回执、历史注入回执及清空动作存入运行记录，不形成 Segment。agent_operations 保存操作身份、类别、Agent、会话、时间与事实；operation_positions 保存操作相对 Sequence 的位置。它们记录发生过的动作，不保存逐条消息的显示开关。
+
+订阅原生身份独立保存为 agent_operations 中的 subscription_native_link 运行事实，仅覆盖登记类型为 subscription_login 的 Codex、Claude、Kimi 与 Antigravity 执行。记录关联 execution、Provider、实际账号、路线和已观察到的原生 session/turn；raw_locator 只包含账号与原生 session 标识，不包含凭据、正文或文件路径。stateless 的 Provider Session 仍以 execution ID 隔离上下文，该隔离标识不作为原生 session 身份。原生身份从既有运行事件和完成结果取得，不发起 usage 查询或读取原生归档补造身份。身份首次完整观察时写入；终止时仍缺原生 session 则明确记为 unavailable，不能将 execution ID 冒充原生 ID。每个 execution 使用稳定操作身份，重放幂等，后续只能补齐缺失字段，已有非空身份冲突时拒绝覆盖；流式片段不重复写入。保存失败必须向上传递，内存去重仅在落库成功后确认。
 
 清空动作结束前一个聊天窗口，旧内容仍然可供审计。调用方必须在发起清空时捕获并提供明确的 trace_position，运行记录保存这个位置，晚到的投影不能掩盖清空后提交的消息。上下文已经被 Provider 接收的回执由 Binding 保存；Execution 永久保留运行状态与用量。
 
@@ -206,8 +210,6 @@ Segment 类型为 input、model、tool、compaction、harness。工具和模型�
 
 AgentData 的健康查询读取数据库连接及可用的描述性标签；meta 表或标签缺失返回未知，不以标签对齐判定不可用。需要内容、用量或条目数量的业务读取对应事实，实际 SQL 错误仍如实返回。调度器决定运行和重试，Provider 适配器解释原生协议，Chat service 决定投影规则，业务权限服务决定访问权限。
 
-Chat 的正文、身份、可见性及回复归属是必需读取；执行用量与生成来源是附加投影，由独立 owner 在正文装配后批量读取。附加查询在 PostgreSQL 保存点内运行，查询失败回滚保存点并记录异常，不使调用者的快照或业务事务进入失败状态；单条执行的附加数据无法解析时，只影响该执行对应的消息。受影响消息返回读取状态 `execution_annotations_status=unavailable`，Chat 在消息注记中提示用量与来源暂不可用，正文、历史与其他对话继续可读。这个状态不写入消息事实、不参与消息身份，也不把读取失败解释为零用量或模型未知。正文读取、身份和权限错误仍按原错误语义返回，不能被附加投影的异常边界吞掉。
-
 排队输入在 Mailbox 中也使用同一无损正文包装，读取时按规则解包；进入 trace 后删除 Mailbox 中的等待记录。群组递交在一个 AgentData 事务中将成员替换为群组，成员原文仅通过转换关系用于审计与重新排队，不重新成为当前 trace 条目。
 
 ## 完成事件与界面投影的顺序
@@ -259,3 +261,8 @@ Segment 的时间字段为 `started_at`、`finished_at`，不再保存独立的 
 ## 初始化与格式标签
 
 AgentData、HarnessEffectiveness 和 Scheduler 只在完全空库创建基本表、索引与通知触发器。现存库不因版本号或表列索引集合不同拒绝构造，也不在启动隐式修复这些结构。缺少或禁用通知触发器可能影响对应即时唤醒，保留明确的维护入口，不能把服务启动成功当作该能力已经正常。实际身份、并发修订、租约、取消与内容摘要检查保持各自语义。
+
+
+## 保全准备与当前轨迹
+
+保全准备可先创建独立不可变 Segment 和操作收据，不立即使它成为原 Agent 轨迹成员。原生历史的权威冻结边界在准入时作为一个 compaction 引用接入原 Agent，引用附加与提交凭据原子完成。导入成功后沿原 Agent 的 context_received 记录实际送达窗口，后续 Fork 和上下文读取继续沿原身份解释；不创建临时 Agent 或把准备轨迹作为第二份当前历史。失败的准备可能保留不可变片段或收据，其退役沿 AgentData 保留合同处理，不能连带删除旧消息。

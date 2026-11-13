@@ -22,8 +22,9 @@ from types import SimpleNamespace
 import pytest
 
 from management_portal.codex_app_server_client import CodexAppServerClient
-from management_portal.execution import account_hosting, account_login, isa
+from management_portal.execution import codex_api_accounts, isa
 from management_portal.execution.account_hosting import account_home
+from management_portal.execution.account_registrations import registration
 from management_portal.execution.codex_backend import CodexBackend
 
 NATIVE_BINARIES = sorted(set(filter(None, os.environ.get("PORTAL_CODEX_NATIVE_TEST_BINARIES", "").split(os.pathsep))))
@@ -114,18 +115,15 @@ def test_a_codex_api_account_sends_its_key_only_to_its_model_api(binary_path, tm
     for name in ("HTTPS_PROXY", "HTTP_PROXY", "ALL_PROXY", "https_proxy", "http_proxy", "all_proxy"):
         monkeypatch.setenv(name, trap.url)
     monkeypatch.setenv("NO_PROXY", "127.0.0.1,localhost")
-    monkeypatch.setattr(account_login, "provider_binary", lambda provider: binary_path)
-    for name in ("start_codex_instance", "stop_codex_instance"):
-        monkeypatch.setattr(account_hosting, name, lambda account_id: {})
-    monkeypatch.setattr("management_portal.execution.provider_updates.runtime_available", lambda provider: True)
     key_file = tmp_path / "gateway.key"
     key_file.write_text(KEY + "\n")
     key_file.chmod(0o600)
     _call(isa.create_model_api, api_id="gateway", base_url=f"http://127.0.0.1:{server.server_port}/v1",
           default_model="gpt-test", secret_file=str(key_file), headers={"X-Team": "lab"},
           models=[{"id": "gpt-test", "reasoning_efforts": ["low", "high"]}], protocols={"openai_responses": {}})
-    _call(isa.register_provider_account, account_id="gateway-codex", provider="codex", kind="api_profile",
-          config={"api_id": "gateway"})
+    # Saving the API creates its compatible routes; prepare that account's
+    # isolated home without registering it again or starting a host service.
+    codex_api_accounts.prepare(registration("gateway-codex"))
     home = account_home("codex", "gateway-codex")
     sockets = Path(tempfile.mkdtemp(prefix="cx", dir="/tmp"))
     socket_path = sockets / "codex.sock"

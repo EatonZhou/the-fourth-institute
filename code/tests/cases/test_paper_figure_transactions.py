@@ -15,13 +15,26 @@ from management_portal import paper_figure_extraction, paper_figure_jobs, paper_
 def figure_store(tmp_path, monkeypatch):
     paper = {"id": "paper_0123456789ab", "_store_root": str(tmp_path), "created_by": "alice"}
     path = tmp_path / "figures.json"
-    path.write_text(json.dumps([{"figure_id": "fig-001", "generated": [{"generated_id": "gen-one", "status": "queued"}]}]))
+    path.write_text(json.dumps([{"figure_id": "fig-001", "explanation_status": "queued", "generated": [{"generated_id": "gen-one", "status": "queued"}]}]))
     monkeypatch.setattr(paper_store, "_ensure_data_root", lambda: None)
+    monkeypatch.setattr(paper_store, "_paper_by_id", lambda identifier: paper)
     monkeypatch.setattr(paper_figures, "_paper_by_id", lambda identifier: paper)
     monkeypatch.setattr(paper_figure_jobs, "_paper_by_id", paper_figures._paper_by_id)
     monkeypatch.setattr(paper_figures, "_figures_json_path", lambda value: path)
     monkeypatch.setattr(paper_figures, "_notify_paper_projection", lambda *args, **kwargs: None)
     return paper, path
+
+
+def run_figure(figure_store, target, *args, generated_id="", **kwargs):
+    """Use the real lease/file transaction boundary with a deterministic worker."""
+    from management_portal import paper_job_ownership
+    from management_portal.paper_figure_ownership import FigureAdapter
+
+    paper, _ = figure_store
+    adapter = FigureAdapter(paper["id"], "fig-001", generated_id)
+    results = []
+    assert paper_job_ownership.run(adapter.identity, lambda _: results.append(target(*args, **kwargs)), adapter=adapter)
+    return results[0]
 
 
 def test_concurrent_figure_updates_preserve_each_completion(figure_store, monkeypatch):
@@ -54,7 +67,7 @@ def test_figure_failure_is_not_published_as_ai_success(figure_store):
     """插图解释失败时记录错误且不发布成功内容"""
     paper, path = figure_store
     with mock.patch.object(paper_figure_jobs, "_generate_figure_explanation", side_effect=RuntimeError("provider unavailable")):
-        result = paper_figure_jobs.run_figure_explain_job(paper["id"], "fig-001", "alice")
+        result = run_figure(figure_store, paper_figure_jobs.run_figure_explain_job, paper["id"], "fig-001", "alice")
     assert result["figure"]["explanation_status"] == "error"
     assert result["figure"]["explanation_error"] == "provider unavailable"
     assert not json.loads(path.read_text())[0].get("explanation")
@@ -97,7 +110,7 @@ def test_paper_figure_media_uses_authorized_resident_upload(figure_store):
             }),
         },
     ) as turn:
-        paper_figure_jobs._run_figure_resident("Explain", paper, {"figure_id": "fig-001"}, "explain", images=[image])
+        run_figure(figure_store, paper_figure_jobs._run_figure_resident, "Explain", paper, {"figure_id": "fig-001"}, "explain", images=[image])
     payload = uploader.call_args.args[0]
     assert payload["resident_id"] == "resident_figure01"
     assert uploader.call_args.kwargs["actor"] == "alice"
@@ -130,15 +143,12 @@ def test_figure_persists_input_binding_before_waiting(figure_store):
     """插图调用在等待前持久化已分配输入绑定"""
 
     paper, path = figure_store
-    def invoke(**options):
-        options["on_assigned"](paper_projection.receipt_from_resident_handle(
-            {
+    def invoke(_name, **options):
+        options["on_assigned"]({
                 "resident_id": "resident_figure01",
                 "lineage_id": "lineage_paper01",
                 "status": "assigned",
-            },
-            requested_message_id=options["message_id"],
-        ))
+            })
         binding = json.loads(path.read_text())[0]["explanation_invocation"]
         assert binding["input_message_id"] == ""
         assert "message_id" not in binding
@@ -146,8 +156,8 @@ def test_figure_persists_input_binding_before_waiting(figure_store):
         assert binding["actor"] == "alice"
         raise RuntimeError("process interrupted")
 
-    with mock.patch.object(paper_projection, "turn", side_effect=invoke), pytest.raises(RuntimeError):
-        paper_figure_jobs._run_figure_resident("Explain", paper, {"figure_id": "fig-001"}, "explain")
+    with mock.patch.object(paper_projection.native, "turn", side_effect=invoke), pytest.raises(RuntimeError, match="process interrupted"):
+        run_figure(figure_store, paper_figure_jobs._run_figure_resident, "Explain", paper, {"figure_id": "fig-001"}, "explain")
     assert json.loads(path.read_text())[0]["explanation_invocation"]["resident_id"] == "resident_figure01"
 
 
@@ -169,7 +179,7 @@ def test_figure_resumes_same_input_without_upload_or_submit(figure_store, genera
         "actor": "alice",
     }
     with mock.patch.object(resident_handoff, "resume_and_wait", return_value={"message": "Recovered image result", "resident_id": "resident_figure01", "lineage_id": "lineage_paper01", "message_id": "msg_original"}) as resume, mock.patch.object(paper_projection, "turn") as submit, mock.patch.object(native, "ensure") as ensure:
-        content, usage = paper_figure_jobs._run_figure_resident("Unused", paper, figure, "explain", images=[path.parent / "not-staged.png"], generated_id=generated_id)
+        content, usage = run_figure(figure_store, lambda: paper_figure_jobs._run_figure_resident("Unused", paper, figure, "explain", images=[path.parent / "not-staged.png"], generated_id=generated_id), generated_id=generated_id)
     assert content == "Recovered image result"
     assert resume.call_args.kwargs["message_id"] == "msg_original"
     submit.assert_not_called()
@@ -178,16 +188,14 @@ def test_figure_resumes_same_input_without_upload_or_submit(figure_store, genera
 
 @pytest.mark.parametrize("status", ["queued", "running"])
 def test_interrupted_legacy_figure_has_explicit_error_without_resubmission(figure_store, status):
-    """旧插图任务中断且无输入绑定时记录错误并停止重提交"""
+    """兼容读取不改写旧任务状态，也不启动恢复或重投"""
     paper, path = figure_store
     figure = {"figure_id": "fig-001", "explanation_status": status, "generated": [{"generated_id": "gen-one", "status": status}]}
     path.write_text(json.dumps([figure]))
     with mock.patch.object(paper_figure_jobs, "_start_figure_explain_task") as explain, mock.patch.object(paper_figure_jobs, "_start_figure_draft_task") as draft:
         paper_figure_jobs._recover_figure_tasks(paper)
     result = json.loads(path.read_text())[0]
-    assert result["explanation_status"] == "error"
-    assert "no input was resubmitted" in result["explanation_error"]
-    assert result["generated"][0]["status"] == "error"
+    assert result == figure
     explain.assert_not_called()
     draft.assert_not_called()
 
@@ -214,7 +222,7 @@ def test_active_figure_worker_is_not_recovered_twice(figure_store):
 
 def test_figure_recovery_writes_cancelled_input_as_artifact_error(figure_store):
     """插图恢复遇到取消输入时写入产物错误且不重提交"""
-    from management_portal import business_tasks, resident_handoff
+    from management_portal import resident_handoff
 
     paper, path = figure_store
     path.write_text(json.dumps([{
@@ -229,15 +237,11 @@ def test_figure_recovery_writes_cancelled_input_as_artifact_error(figure_store):
             "actor": "alice",
         },
     }]))
-    def launch(task_id, target, *args, **kwargs):
-        target(*args)
-        return True
-
     def explain(current_paper, figure):
         return paper_figure_jobs._run_figure_resident("unused", current_paper, figure, "explain")
 
-    with mock.patch.object(business_tasks, "start", side_effect=launch), mock.patch.object(paper_figure_jobs, "_generate_figure_explanation", side_effect=explain), mock.patch.object(resident_handoff, "resume_and_wait", side_effect=RuntimeError("Resident input ended with cancelled")), mock.patch.object(paper_projection, "turn") as submit:
-        paper_figure_jobs._recover_figure_tasks(paper)
+    with mock.patch.object(paper_figure_jobs, "_generate_figure_explanation", side_effect=explain), mock.patch.object(resident_handoff, "resume_and_wait", side_effect=resident_handoff.ResidentInputTerminated({"state": "cancelled"})), mock.patch.object(paper_projection, "turn") as submit:
+        run_figure(figure_store, paper_figure_jobs.run_figure_explain_job, paper["id"], "fig-001", "alice")
     result = json.loads(path.read_text())[0]
     assert result["explanation_status"] == "error"
     assert result["explanation_error"] == "Resident input ended with cancelled"
@@ -245,7 +249,7 @@ def test_figure_recovery_writes_cancelled_input_as_artifact_error(figure_store):
 
 
 def test_synchronous_figure_generation_also_registers_before_invocation(figure_store):
-    """同步插图生成在调用前登记生成项并保存输入回执"""
+    """插图生成只在正式队列认领后执行，并保存输入回执"""
     paper, path = figure_store
     def generate(current_paper, figure, request, generated_id, **options):
         stored = json.loads(path.read_text())[0]["generated"]
@@ -263,7 +267,10 @@ def test_synchronous_figure_generation_also_registers_before_invocation(figure_s
         return "figures/generated/test.png", "Generated", {}
 
     with mock.patch.object(paper_figure_jobs, "_generate_figure_image", side_effect=generate):
-        paper_figure_jobs.generate_figure_draft({"paper_id": paper["id"], "figure_id": "fig-001", "request": "Change colors"}, "alice")
+        payload = {"paper_id": paper["id"], "figure_id": "fig-001", "request": "Change colors", "generated_id": "gen-one"}
+        with pytest.raises(paper_figure_jobs.paper_job_ownership.OwnershipLost):
+            paper_figure_jobs.generate_figure_draft(payload, "alice")
+        run_figure(figure_store, paper_figure_jobs.generate_figure_draft, payload, "alice", generated_id="gen-one")
     completed = next(item for item in json.loads(path.read_text())[0]["generated"] if item.get("status") == "done")
     assert completed["invocation"]["input_message_id"] == "msg_current"
 

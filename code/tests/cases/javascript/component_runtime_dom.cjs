@@ -54,8 +54,12 @@ async function documentFixture(kind, server, sourceTransform = (_name, source) =
     await pause(25);
     for (const observer of observers) observer.disconnect();
     observers.clear();
+    let afterClose = false;
+    window.addEventListener('fixture-close-probe', () => { afterClose = true; });
+    const closeProbe = new window.Event('fixture-close-probe');
     window.close();
-    assert.equal(window.document, undefined, 'old document and controls disposed');
+    window.dispatchEvent(closeProbe);
+    assert.equal(afterClose, false, 'closing the fixture removes window listeners');
     assert.deepEqual(errors, [], 'DOM and production modules have no uncaught errors');
   };
   try {

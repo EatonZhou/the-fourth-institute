@@ -215,7 +215,7 @@ def test_chat_workspace_session_preserves_committed_projection_error():
             "message": str(failure), "http_status": 503,
             "retryable": False, "commit_state": "committed",
         }
-        project.assert_called_once_with("test-actor", "paper", "paper:test", {"project_id": "", "paper_id": "test", "query": ""})
+        project.assert_called_once_with("test-actor", "paper", "paper:test", {"paper_id": "test"})
     finally:
         server.shutdown()
         thread.join(timeout=5)

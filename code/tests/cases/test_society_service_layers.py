@@ -57,7 +57,7 @@ LAYERS = (
     lineage_locations lineage_storage program_work_storage relation_work_storage resident_context.store
     resident_delivery_storage resident_execution_storage resident_storage resident_store
     resident_workspace_storage runtime_read_models script_runs.store service_invocation_storage
-    service_invocation_store state_store trigger_path_storage wire_delivery_storage
+    service_invocation_store state_store trigger_path_storage wire_delivery_storage user_pending_question_storage
     """,
     # Lineage definitions, Programs, Effect scripts and Graph State.
     """
@@ -100,7 +100,7 @@ LAYERS = (
     # Resident records, the Family facade and messages out, which Programs deliver through.
     """
     family_activity family_continuation family_facade family_familize family_owners family_tasks message_quotes outward_messages
-    personal_history resident_access resident_execution_gate resident_execution_work
+    personal_history resident_access resident_execution_gate resident_execution_work resident_handoff_selection resident_input_history
     resident_fork_inheritance resident_held_infos resident_input_checkpoints resident_lineage
     resident_creation_recovery resident_mailbox resident_record_domain resident_unread resident_user_authorization resident_work_origin
     """,
@@ -136,13 +136,13 @@ LAYERS = (
     """
     family_direct_delivery family_progress family_quality_reviewers family_quota family_quota_projection family_reassign family_resource_projection family_review family_route_facts family_supervision
     family_task_dispatches function_block_domain lineage_resident_operations principal_hierarchy_domain
-    project_domain resident_domain templates templates.builtins templates.explore templates.familize
+    personal_phone_assistant project_domain resident_domain templates templates.builtins templates.explore templates.familize
     templates.kinds templates.prompt templates.registry templates.rewrite templates.script templates.store
     templates.structure templates.values
     """,
     # Instruction handlers, hosts, projections and the service.
     """
-    active_agent_projection application conversation_projection coordinator isa isa.common isa.conversation
+    active_agent_projection application conversation_projection coordinator resident_business_history user_pending_questions isa isa.common isa.conversation
     isa.definition isa.resource_creation isa.execution isa.families isa.function_blocks isa.organization isa.residents isa.runs
     isa.script_runs isa.shared_state isa.system_workflows isa.templates resident_context.domain
     resident_context.worker resident_domain_host resident_lineage_host runtime.backend_adapter

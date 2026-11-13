@@ -45,7 +45,7 @@ def test_deleted_current_http_ui_and_late_catalog(owners,monkeypatch,tmp_path,la
     adapter=PaperManifestAdapter();owners.index.adapter_layer.adapters[adapter.name]=adapter
     owners.index_store.publish_snapshot('paper',[adapter._record_for_manifest(bundle/'manifest.json')],{})
     owners.permissions.instance.sync(collect_portal_facts(owners.resource))
-    async def root(request):return HTMLResponse('<div id="research"></div><script type="module">import {openReader} from "/static/paper_fullscreen_reader.js";window.openDocument=()=>window.readerHost=openReader({paper:{id:"paper_0123456789ab",title:"Disposable paper",pdf_url:"/unused.pdf"},principal:'+json.dumps(ACTOR)+',isCurrent:()=>true});window.readerModuleReady=true;</script>')
+    async def root(request):return HTMLResponse('<div id="research"></div><script type="module">import {openReader} from "/static/paper_fullscreen_reader.js";window.openDocument=()=>window.readerHost=openReader({chat:{width:()=>research.paperChatWidth(),mount:host=>research.mountChat(host),addSelection:text=>research.addSelectionToChatDraft(text),answers:()=>research.selectionAnswers()},paper:{id:"paper_0123456789ab",title:"Disposable paper",pdf_url:"/unused.pdf"},principal:'+json.dumps(ACTOR)+',isCurrent:()=>true});window.readerModuleReady=true;</script>')
     app=Starlette(routes=[Route('/',root),Route('/api/instructions/execute',asgi.instruction_execute,methods=['POST']),Route('/{path:path}',asgi.portal_http,methods=['GET','POST'])])
     monkeypatch.setattr(subprocess,'Popen',_REAL_POPEN)
     repo=Path(__file__).resolve().parents[2]
@@ -70,6 +70,7 @@ def test_deleted_current_http_ui_and_late_catalog(owners,monkeypatch,tmp_path,la
                 from management_portal.resources.portal import portal_route_script
                 page.add_script_tag(content=portal_route_script().decode())
                 for name in dict.fromkeys(names):page.add_script_tag(content=(repo/'management_portal/static'/name).read_text())
+                page.add_script_tag(content=(repo/'management_portal/static/paper_research_controls.js').read_text())
                 page.add_script_tag(content=_CHAT_SOURCE or (repo/'management_portal/static/paper_chat.js').read_text())
                 page.evaluate('''actor=>{
                   window.researchState={username:actor,principalId:actor,selectedId:''};
@@ -89,7 +90,7 @@ def test_deleted_current_http_ui_and_late_catalog(owners,monkeypatch,tmp_path,la
             page.wait_for_function('window.readerModuleReady');page.evaluate('openDocument()')
             page.locator('iframe').wait_for();page.wait_for_function('document.querySelector(".paperReadingStatus")?.textContent?.includes("完成") || document.querySelector("iframe")')
             page.locator('.paperReadingToolbar button').filter(has_text='打开 AI').click()
-            page.locator('.paperAIPanel .paperAIChat [role="textbox"]').wait_for()
+            page.locator('.paperReaderChatHost [role="textbox"]').wait_for()
             iframe=page.locator('iframe').element_handle()
             if late=='catalog':
                 # Capture a real old HTTP result, then delay its browser delivery.
@@ -109,23 +110,38 @@ def test_deleted_current_http_ui_and_late_catalog(owners,monkeypatch,tmp_path,la
                     ?(holdNext=false,actual(url,...rest).then(response=>new Promise(resolve=>window.releaseOld=()=>resolve(response))))
                     :actual(url,...rest);
                 }''')
-                page.locator('.paperResearchSelector select').select_option(second['slot_id'],force=True)
+                page.locator('.paperResearchTitleTrigger').click()
+                page.get_by_role('menuitemradio',name='Second research',exact=True).click()
                 dead,surviving=second,first
             page.wait_for_function('!!window.releaseOld')
             research.isa_client.call(ACTOR,'DeleteResident',{'lineage_id':dead['lineage_id'],'resident_id':dead['resident_id']},key='delete-ui-current')
             page.evaluate('refresh()')
-            page.wait_for_function('!researchState.researchSlot && !chat.target()?.resident_id')
-            assert page.locator('.paperResearchSelector select').input_value()==''
-            assert page.locator('.paperResearchSelector select option').count()==2
+            if late=='catalog':
+                page.wait_for_function('!researchState.researchSlot && !chat.target()?.resident_id')
+                assert page.locator('.paperResearchTitleMenu [aria-checked=true]').count()==0
+            else:
+                # A title-menu selection commits locally only after its response.
+                # Deleting the pending target must preserve the still-live chat.
+                page.wait_for_function('id=>researchState.researchSlot?.slot_id===id',arg=first['slot_id'])
+                assert page.evaluate('chat.target()?.resident_id')==first['resident_id']
+                assert page.locator('.paperResearchTitleMenu [aria-checked=true]').inner_text()=='First research'
+            page.wait_for_function('document.querySelectorAll(".paperResearchTitleMenu [role=menuitemradio]").length===1')
+            assert page.locator('.paperResearchTitleMenu [role=menuitemradio]').count()==1
             assert page.evaluate('chat.workspace.draftText()')=='Keep this draft after deletion'
             page.evaluate('releaseOld()');page.wait_for_timeout(50)
-            assert page.evaluate('researchState.researchSlot') is None
-            assert not page.evaluate('chat.target()?.resident_id')
-            assert page.evaluate('selectionSignals.at(-1).slot') is None
-            assert page.locator('.paperAIPanel').count()==0
+            if late=='catalog':
+                assert page.evaluate('researchState.researchSlot') is None
+                assert not page.evaluate('chat.target()?.resident_id')
+                assert page.evaluate('selectionSignals.at(-1).slot') is None
+            else:
+                assert page.evaluate('researchState.researchSlot.slot_id')==first['slot_id']
+                assert page.evaluate('chat.target()?.resident_id')==first['resident_id']
+                assert not page.evaluate('id=>selectionSignals.some(e=>e.slot?.resident_id===id)',dead['resident_id'])
+            assert page.locator('.paperReaderChatHost .portalChatWorkspaceRoot').count()==1, 'the borrowed workspace remains mounted after its target is removed'
             assert iframe.evaluate('(node)=>node===document.querySelector("iframe") && node.isConnected')
             page.locator('.paperReadingToolbar button').filter(has_text='退出全屏').click()
-            page.locator('.paperResearchSelector select').select_option(surviving['slot_id'],force=True)
+            page.locator('.paperResearchTitleTrigger').click()
+            page.get_by_role('menuitemradio',name=surviving['title'],exact=True).click()
             page.wait_for_function('id=>chat.target()?.resident_id===id',arg=surviving['resident_id'])
             assert page.evaluate('researchState.researchSlot.slot_id')==surviving['slot_id']
             page.evaluate('refresh()');page.wait_for_function('id=>researchState.researchSlot?.slot_id===id',arg=surviving['slot_id'])
@@ -133,8 +149,8 @@ def test_deleted_current_http_ui_and_late_catalog(owners,monkeypatch,tmp_path,la
             assert not any('DeliverMessage' in url for _,url,_ in trace)
             page.reload();mount()
             page.wait_for_function('id=>chat.target()?.resident_id===id',arg=surviving['resident_id'])
-            assert page.locator('.paperResearchSelector select').input_value()==surviving['slot_id']
-            assert page.locator('.paperResearchSelector select option').count()==2
+            assert page.locator('.paperResearchTitleMenu [aria-checked=true]').inner_text()==surviving['title']
+            assert page.locator('.paperResearchTitleMenu [role=menuitemradio]').count()==1
             page.screenshot(path=str(tmp_path/'deleted-chat-recovered.png'))
             print('DELETE_UI_SCREENSHOT',tmp_path/'deleted-chat-recovered.png')
         finally:browser.close()

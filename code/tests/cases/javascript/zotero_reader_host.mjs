@@ -1,0 +1,17 @@
+import assert from 'node:assert/strict';
+import {mountReader} from '../../../management_portal/paper_reader_app/zotero_prototype/host.js';
+let options, removed=false;
+const locations=[], saved=[], deleted=[];
+let failFlush=false;
+const frame={contentWindow:{document:{activeElement:null},createReader(o){options=o;return {navigate:l=>locations.push(l),flushAnnotations:async()=>{if(failFlush)throw Error('disk full');}};}},remove(){removed=true;}};
+const host=await mountReader(frame,{load:async()=>({pdf:new Uint8Array([1]),annotations:[],author:'test'}),save:async a=>saved.push(a),remove:async ids=>deleted.push(ids),savePosition:async()=>{}});
+await options.onSaveAnnotations([{id:'A',comment:'note',position:{pageIndex:0,rects:[[1,2,3,4]]}}]);
+host.locate('A');options.onDeleteAnnotations(['A']);await host.close();
+assert.equal(saved[0][0].comment,'note');assert.deepEqual(locations,[{annotationID:'A'}]);assert.deepEqual(deleted,[['A']]);assert.equal(removed,true);
+const broken=await mountReader(frame,{load:async()=>({}),save:async()=>{throw Error('disk full');},remove:async()=>{},savePosition:async()=>{}});
+await assert.rejects(options.onSaveAnnotations([{id:'B'}]),/disk full/);
+failFlush=true;
+await assert.rejects(broken.close(),/disk full/);
+assert.equal(frame.inert,false);
+failFlush=false;await broken.close();
+console.log('Zotero host contract: save, delete, locate, close, save failure passed');

@@ -566,7 +566,7 @@ def test_portal_pages_routes_preserve_redirects_actor_and_admin_access(monkeypat
         assert status == 200
         assert json.loads(body) == {
             "actor": "alice", "surface": "paper", "key": "paper:one",
-            "context": {"project_id": "", "paper_id": "one", "query": ""},
+            "context": {"paper_id": "one"},
         }
 
         monkeypatch.setattr(web_resources, "_resource_portal_location", lambda address, actor: f"/resource?address={address}&actor={actor}")

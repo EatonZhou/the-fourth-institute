@@ -568,8 +568,8 @@
       const parts = window.PortalChatWorkspace.composerPayloadContentParts(payload);
       if (!parts.length) return null;
       // A quote names only the quoted message (decision_c524c775e0be); retries reuse the same key.
-      const quote = submitOptions.quote === false ? null : this.controller.quote();
-      const idempotencyKey = `chatroom-post:${globalThis.PortalUIPrimitives.randomUUID()}`;
+      const quote = submitOptions.quote === false ? null : submitOptions.quote || this.controller.quote();
+      const idempotencyKey = submitOptions.idempotencyKey || `chatroom-post:${globalThis.PortalUIPrimitives.randomUUID()}`;
       return this.controller.submit(async () => {
         const result = await execute("CreateChatroomMessage", {
           chatroom_id: id,

@@ -70,7 +70,7 @@ def test_deleted_conversation_controls_explain_deletion_without_granting_actions
     assert not controls['can_send'] and not controls['can_stop']
     assert '已删除' in controls['disabled_reason']
     assert controls['quota_switch']['reason'] == 'forbidden'
-    assert not controls['send_hint']
+    assert '已删除' in controls['send_hint']
     target.record.pop('deleted_at')
     controls = resident_protocol._conversation_controls(target, 'CASE-A', state, allowed=False)
     assert '无发送权限' in controls['disabled_reason']

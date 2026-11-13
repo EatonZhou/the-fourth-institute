@@ -1,2 +1,5 @@
 # Python tests; TAU browser dependencies are installed separately.
 pytest
+httpx2
+playwright
+bibtexparser<2

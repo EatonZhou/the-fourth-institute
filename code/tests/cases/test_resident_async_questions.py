@@ -80,7 +80,8 @@ def test_normal_provider_output_is_stored_as_typed_message(resident_record, phas
         message = resident_input_queue_domain.build_message("agent", CARD_OUTPUT)
         source = resident_execution_domain._persist_execution_final_message(resident_id,  "execution-question", message)
         replay = resident_execution_domain._persist_execution_final_message(resident_id,  "execution-question", message)
-    assert replay == source
+    assert {key: value for key, value in replay.items() if key != "conversation_position"} == source
+    assert replay["conversation_position"] == {"resident_id": resident_id, "ordinal": 2}
     assert [part["type"] for part in source["content_parts"]] == ["text", "async_questions", "text"]
     assert source["content_parts"][1]["answer_message_id"] == question_answer_id(resident_id, source["message_id"])
     repository = resident_conversation_stream.get_repository()

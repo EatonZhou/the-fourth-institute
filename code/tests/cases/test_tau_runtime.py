@@ -302,10 +302,44 @@ def test_tau_configuration_migrates_with_generation_and_stable_request(configure
     assert call.args == (TAU_ACTOR, {
         "resident_id": resident_id, "provider": "codex", "account_id": "five",
         "context_strategy": "preserve", "active_execution_policy": "wait",
-    }, f"tau-config:{configured.assignment['configuration_id']}:{resident_id}", {resident_id: "source-generation"})
+    }, f"tau-config:{configured.assignment['configuration_id']}:{resident_id}:source:source-generation", {resident_id: "source-generation"})
     assert configured.state.runtime["service_tier"] == "priority"
     tau_runtime.apply_configuration(configured.assignment)
     configured.restart.assert_called_once()
+
+
+def test_tau_account_change_request_tracks_source_generation(configured):
+    """同配置同源重试复用键；源代次变化发出新操作，保留 MVCC 和冲突防护。"""
+    configured.restart.side_effect = None
+    configured.restart.return_value = {}
+    tau_runtime.apply_configuration(configured.assignment)
+    first = configured.restart.call_args
+    tau_runtime.apply_configuration(configured.assignment)
+    assert configured.restart.call_args == first
+    configured.state.options['source']['generation'] = 'next-source-generation'
+    tau_runtime.apply_configuration(configured.assignment)
+    second = configured.restart.call_args
+    assert second.args[0] == first.args[0] == TAU_ACTOR
+    assert second.args[1] == first.args[1]
+    assert second.args[2] != first.args[2]
+    assert second.args[3] == {configured.assignment['resident_id']: 'next-source-generation'}
+    tau_runtime.apply_configuration(configured.assignment)
+    assert configured.restart.call_args == second
+    configured.state.options['restart'] = {'status': 'accepted', 'target': {'account_id': 'other-route'}}
+    with pytest.raises(ValueError, match='迁移到其他账号'):
+        tau_runtime.apply_configuration(configured.assignment)
+    assert configured.restart.call_count == 4
+
+
+def test_tau_account_change_lost_reply_retries_same_generation_key(configured):
+    """响应丢失沿同一源代次操作恢复，不制造新的重启请求。"""
+    configured.restart.side_effect = ConnectionError('response unknown')
+    for _ in range(2):
+        with pytest.raises(ConnectionError, match='response unknown'):
+            tau_runtime.apply_configuration(configured.assignment)
+    first, second = configured.restart.call_args_list
+    assert first == second
+    assert first.args[3] == {configured.assignment['resident_id']: 'source-generation'}
 
 
 def test_tau_configuration_updates_fast_without_restarting_matching_account(configured):

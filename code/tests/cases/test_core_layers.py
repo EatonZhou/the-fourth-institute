@@ -54,7 +54,7 @@ TIERS = (
     ("common", "management_common.*"),
     ("contracts", """
     hatg hatg.catalog hatg.catalog.* hatg.contracts hatg.declarations hatg.lineage_versions hatg.resource_actions
-    portal_features service_invocation_contract execution.config execution.account_migration_types execution.account_selection_contract
+    portal_features business_context service_invocation_contract execution.config execution.account_migration_types execution.account_selection_contract
     resources.config society_service.config
     """),
     ("stores", """
@@ -77,7 +77,7 @@ TIERS = (
     native_agent_transport opencode_* prompt_injection provider_daemon_host
     provider_transport_diagnostics provider_websocket resident_shell_environment resource_refs usage_read_model
     """),
-    ("society", "society_service society_service.* agent_context_selection resources.providers.collaboration"),
+    ("society", "society_service society_service.* agent_context_selection resources.providers.collaboration workflow_delivery_policy"),
     ("features", """
     * resources.providers.article resources.providers.chatroom resources.providers.direction resources.providers.notice
     resources.providers.paper resources.providers.repo resources.providers.review resources.providers.search
@@ -188,6 +188,24 @@ def _runtime_nodes(tree: ast.AST):
                 pending.append((child, node))
 
 
+def _child_process_entrypoints(module: str, tree: ast.Module) -> set[int]:
+    """The launch registry contains argv for children, not imports in its reader.
+
+    service_runtime passes these values to ``python -m``. Restrict this to the
+    two launch tables; actual imports anywhere in the module still count.
+    """
+    if module != "management_common.service_components":
+        return set()
+    return {
+        id(value)
+        for statement in tree.body if isinstance(statement, ast.Assign)
+        if any(isinstance(target, ast.Name) and target.id in {"MODULES", "FUNCTIONAL_MODULES"}
+               for target in statement.targets)
+        if isinstance(statement.value, ast.Dict)
+        for value in statement.value.values if isinstance(value, ast.Constant)
+    }
+
+
 @cache
 def _imports() -> dict[str, dict[str, int]]:
     """Module -> {imported module: first line}, function bodies and module paths named in code included."""
@@ -208,6 +226,7 @@ def _imports() -> dict[str, dict[str, int]]:
     for name, (package, tree) in modules.items():
         parts = name.split(".") if package else name.split(".")[:-1]
         operations = set()
+        child_entrypoints = _child_process_entrypoints(name, tree)
         for node, parent in _runtime_nodes(tree):
             if isinstance(node, ast.Import):
                 for alias in node.names:
@@ -223,12 +242,26 @@ def _imports() -> dict[str, dict[str, int]]:
                     if keyword.arg == "implementation" and isinstance(keyword.value, ast.Constant):
                         operations.add(id(keyword.value))
                         add(f"{PORTAL}.society_service.server", named(str(keyword.value.value)), node.lineno)
-            elif (isinstance(node, ast.Constant) and isinstance(node.value, str) and id(node) not in operations
+            elif (isinstance(node, ast.Constant) and isinstance(node.value, str)
+                  and id(node) not in operations | child_entrypoints
                   and _MODULE_PATH.fullmatch(node.value) and name != f"{PORTAL}.portal_features"
                   and not isinstance(parent, (ast.List, ast.Tuple, ast.Set, ast.Compare))
                   and not (isinstance(parent, ast.keyword) and parent.arg == "prog")):
                 add(name, named(node.value), node.lineno)
     return edges
+
+
+def test_child_process_entrypoints_do_not_create_in_process_imports():
+    """服务启动表不加载被启动模块；同文件的实际 import 和其他动态路径仍受守卫约束。"""
+    tree = ast.parse('MODULES = {"web": "management_portal.asgi"}\n'
+                     'FUNCTIONAL_MODULES = {"telepus": "management_portal.telepus.router_service"}\n'
+                     'OTHER = "management_portal.permission_system"\n'
+                     'import management_portal.execution.service\n')
+    ignored = _child_process_entrypoints("management_common.service_components", tree)
+    assert {node.value for node in ast.walk(tree) if id(node) in ignored} == {
+        "management_portal.asgi", "management_portal.telepus.router_service"}
+    assert not _child_process_entrypoints("management_portal.unrelated", tree)
+    assert not any(isinstance(node, ast.Import) and id(node) in ignored for node in ast.walk(tree))
 
 
 def _package(module: str) -> str | None:

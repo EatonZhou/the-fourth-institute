@@ -23,6 +23,197 @@ from management_portal.resources.schema import normalize_resource_attributes
 from management_portal.resources.providers import install_action_providers
 
 
+def test_feature_authoritative_record_is_read_before_index_and_authorized(monkeypatch):
+    from management_portal import portal_features
+    record = {'resource_id': 'paper_0123456789ab', 'resource_type': 'paper', 'title': 'Current'}
+    reader = mock.Mock(return_value=record)
+    monkeypatch.setattr(portal_features, 'contributions',
+                        lambda hook: (('paper', {'paper': reader}),) if hook == 'resource.authoritative_records' else ())
+    index = mock.Mock()
+    policy = mock.Mock(spec=ResourceAccessPolicy)
+    service = ResourceService(index_provider=index, access_policy=policy)
+    assert service.get(record['resource_id'], actor='alice') == record
+    reader.assert_called_once_with(record['resource_id'])
+    policy.authorize_read.assert_called_once_with(record, actor='alice')
+    index.get_resource.assert_not_called()
+    policy.authorize_read.side_effect = PermissionError('revoked')
+    with pytest.raises(PermissionError, match='revoked'):
+        service.get(record['resource_id'], actor='alice')
+    index.get_resource.assert_not_called()
+
+
+def test_authoritative_absence_rejects_stale_index_but_uninstalled_feature_does_not_import(monkeypatch):
+    from management_portal import portal_features, project_registry
+    index = mock.Mock()
+    record = {'resource_id': 'missing-project', 'resource_type': 'project', 'attributes': {}}
+    index.get_resource.return_value = record
+    monkeypatch.setattr(portal_features, 'contributions',
+                        lambda hook: (('projects', {'project': lambda _: None}),) if hook == 'resource.authoritative_records' else ())
+    service = ResourceService(index_provider=index)
+    with pytest.raises(KeyError):
+        service.get('missing-project', actor='alice')
+    monkeypatch.setattr(portal_features, 'contributions', lambda _: ())
+    monkeypatch.setattr(project_registry, 'project', lambda _: pytest.fail('uninstalled feature was read'))
+    index.get_resource.return_value = {'resource_id': 'alice', 'resource_type': 'user', 'attributes': {}}
+    assert service.get('alice', actor='alice')['resource_type'] == 'user'
+
+
+def test_resource_index_imports_without_optional_project_formatter():
+    import subprocess
+    import sys
+
+    # A trimmed installation can load the shared index without Projects.
+    # The formatter is required only when projecting a Project record.
+    result = subprocess.run(
+        [sys.executable, '-c', """
+import sys
+sys.modules['management_portal.project_resource_index'] = None
+from management_portal import resource_index_backend, resource_index_registries
+assert resource_index_backend.ResourceIndexService
+assert resource_index_registries.ProjectRegistryAdapter().watch_directories() == []
+assert resource_index_registries.CollaborationRegistryAdapter().source_paths() == []
+"""], capture_output=True, text=True, check=False,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_project_index_formatter_requires_one_registered_owner(monkeypatch):
+    from management_portal import portal_features
+    from management_portal.resource_index_registries import ProjectRegistryAdapter
+
+    formatters = (
+        ('projects', {'project': mock.Mock()}),
+        ('conflict', {'project': mock.Mock()}),
+    )
+    monkeypatch.setattr(portal_features, 'contributions', lambda hook: formatters)
+    with pytest.raises(ValueError, match='multiple resource index formatters: project'):
+        ProjectRegistryAdapter()
+    for _owner, providers in formatters:
+        providers['project'].assert_not_called()
+
+
+def test_project_direct_record_matches_index_projection(monkeypatch):
+    from management_portal import project_registry
+    from management_portal.resource_index_registries import ProjectRegistryAdapter
+    from management_portal import project_resource_index as project
+    value = {'id': 'Example', 'path': 'projects:Example', 'description': 'Current project',
+             'status': 'active', 'tags': ['tag'], 'project_type': 'academic'}
+    monkeypatch.setattr(project_registry, 'project', lambda identity: value if identity == 'Example' else None)
+    direct = project.authoritative_record('Example')
+    assert direct == ProjectRegistryAdapter().project_record('project', value)
+    assert direct['resource_id'] == direct['title'] == 'Example'
+    assert direct['attributes']['path'] == value['path']
+    assert project.authoritative_record('missing') is None
+
+
+@pytest.mark.parametrize('mode', ['unregistered', 'uninstalled'])
+def test_project_projection_without_feature_neither_imports_nor_reads_domain(mode):
+    import subprocess
+    import sys
+
+    # Exercise actual projection/scan entry points, not just the core import.
+    result = subprocess.run([sys.executable, '-c', r'''
+import importlib.abc
+import sys
+from management_portal import portal_features, resource_index_registries
+from management_portal import project_registry
+
+mode = sys.argv[1]
+assert 'management_portal.project_resource_index' not in sys.modules
+if mode == 'unregistered':
+    portal_features.FEATURES = tuple(f for f in portal_features.FEATURES if f.key != 'project_resources')
+portal_features.contributions.cache_clear()
+
+class NoProjects(importlib.abc.MetaPathFinder):
+    def find_spec(self, name, path=None, target=None):
+        if name == 'management_portal.project_resource_index':
+            if mode == 'uninstalled':
+                raise ModuleNotFoundError('Project formatter is not installed', name=name)
+            raise AssertionError('Unregistered Projects module was imported')
+sys.meta_path.insert(0, NoProjects())
+def unexpected_read(*args, **kwargs):
+    raise AssertionError('Projects domain was read without its contribution')
+resource_index_registries.project_provider.load_projects_payload = unexpected_read
+resource_index_registries.project_provider._project_record = unexpected_read
+project_registry.project = unexpected_read
+
+adapter = resource_index_registries.ProjectRegistryAdapter()
+records, state = adapter.scan()
+assert records == []
+assert state['project_count'] == 0 and state['resource_errors'] == []
+changes = adapter.scan_changes(
+    [adapter.change_key('project', 'Example')],
+    [{'resource_id': 'Example', 'resource_type': 'project'}], {},
+)
+assert changes.upserts == () and changes.deletes == ('Example',)
+try:
+    adapter.project_record('project', {'id': 'Example'})
+except ValueError as exc:
+    assert 'Project index projection is not installed' in str(exc)
+else:
+    raise AssertionError('Project projection accepted without an owner')
+assert all('project' not in providers for _key, providers in portal_features.contributions('resource.authoritative_records'))
+from unittest import mock
+from management_portal.resources import ResourceService
+from management_portal.resources.access import ResourceAccessPolicy
+index = mock.Mock()
+index.get_resource.return_value = {'resource_id': 'Example', 'resource_type': 'project', 'attributes': {}}
+access = mock.Mock(spec=ResourceAccessPolicy)
+service = ResourceService(index_provider=index, access_policy=access)
+try:
+    service.get('Example', actor='alice')
+except KeyError:
+    pass
+else:
+    raise AssertionError('Stale index row was returned without Project authority')
+access.authorize_read.assert_not_called()
+assert 'management_portal.project_resource_index' not in sys.modules
+''', mode], capture_output=True, text=True, check=False)
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
+@pytest.mark.parametrize('sliced', [False, True])
+def test_project_resources_survive_presentation_exclusion(monkeypatch, tmp_path, sliced):
+    from management_common import distribution_features
+    from management_portal import portal_features, project_registry, resource_index_registries
+
+    monkeypatch.setattr(distribution_features, 'included_features', lambda: [])
+    assert not distribution_features.included('projects')
+    if sliced:
+        import shutil
+        import sys
+        import types
+        from management_portal.distribution.engineering import feature_slice
+        target = tmp_path / 'management_portal' / 'portal_features.py'
+        target.parent.mkdir()
+        shutil.copyfile(portal_features.__file__, target)
+        feature_slice(tmp_path, {f.key for f in portal_features.FEATURES if f.key != 'projects'})
+        module = types.ModuleType('project_presentation_slice')
+        monkeypatch.setitem(sys.modules, module.__name__, module)
+        exec(compile(target.read_text(), str(target), 'exec'), module.__dict__)
+        assert all(f.key != 'projects' for f in module.FEATURES)
+        monkeypatch.setattr(portal_features, 'FEATURES', module.FEATURES)
+    portal_features.contributions.cache_clear()
+    try:
+        value = {'id': 'Example', 'description': 'Current', 'path': 'projects:Example'}
+        monkeypatch.setattr(project_registry, 'project', lambda identity: value if identity == 'Example' else None)
+        monkeypatch.setattr(resource_index_registries.project_provider, 'load_projects_payload',
+                            lambda: {'projects': [value]})
+        index = mock.Mock()
+        index.get_resource.side_effect = AssertionError('Project authority fell back to the index')
+        access = mock.Mock(spec=ResourceAccessPolicy)
+        service = ResourceService(index_provider=index, access_policy=access)
+        record = service.get('Example', actor='alice')
+        adapter = resource_index_registries.ProjectRegistryAdapter()
+        records, state = adapter.scan()
+        assert records == [record] and state['project_ids'] == ['Example']
+        assert adapter.project_record('project', value) == record
+        access.authorize_read.assert_called_once_with(record, actor='alice')
+        index.get_resource.assert_not_called()
+    finally:
+        portal_features.contributions.cache_clear()
+
+
 def test_resource_address_trims_boundary_whitespace_after_decoding(subtests, isolated_portal_case):
     """资源地址在解码后去掉首尾空白和斜杠"""
     for address in [
@@ -82,10 +273,14 @@ def test_resource_read_scope_has_one_normalized_contract_contracts(subtests, iso
         index.get_resource.assert_called_once_with(resource_id, resource_types=('paper',), actor='test-actor')
     with subtests.test(contract='test_get_uses_registered_id_exception_types_without_guessing'), isolated_portal_case():
         index = mock.Mock()
-        index.get_resource.return_value = {'resource_id': 'AI员工', 'resource_type': 'project', 'title': 'AI员工', 'attributes': {}}
+        index.get_resource.return_value = {'resource_id': 'alice', 'resource_type': 'user', 'title': 'Alice', 'attributes': {}}
         service = ResourceService(index_provider=index)
-        assert service.get('AI员工', actor='test-actor')['resource_type'] == 'project'
-        index.get_resource.assert_called_once_with('AI员工', resource_types=frozenset({'project', 'user'}), actor='test-actor')
+        assert service.get('alice', actor='test-actor')['resource_type'] == 'user'
+        index.get_resource.assert_called_once_with('alice', resource_types=frozenset({'project', 'user'}), actor='test-actor')
+        # Project existence belongs to its registry, not a stale index row.
+        index.get_resource.return_value = {'resource_id': 'missing-project', 'resource_type': 'project', 'attributes': {}}
+        with pytest.raises(KeyError):
+            service.get('missing-project', actor='test-actor')
     with subtests.test(contract='test_formal_derived_resident_reference_uses_lineage_url'), isolated_portal_case():
         index = mock.Mock()
         index.get_resource.return_value = {'resource_id': 'resident_fedcba987654', 'resource_type': 'resident', 'title': 'Derived resident', 'summary': '', 'facets': ['resident', 'collaboration'], 'attributes': {'relations': [{'kind': 'root', 'target_id': 'resident_0123456789ab'}]}}

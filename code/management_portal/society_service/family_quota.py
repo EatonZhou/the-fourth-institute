@@ -7,6 +7,8 @@ member takes it. Platform supervision restores Router/Steward intake and
 migrates Family executors' accounts before admitting the next turn.
 """
 from __future__ import annotations
+
+from .domain_ports import resident_domain_port
 from management_portal.execution.account_selection_contract import pinned_quota
 
 import hashlib
@@ -224,20 +226,21 @@ def _relay_message(facade_id: str, message_id: str, member_id: str, actor: str,
         raise ValueError("失败恢复已核定其他成员，不能由旧路由覆盖")
     if family_facade.kept_notice(facade, message_id):
         raise ValueError("门面已把这条消息作为告知收下，不再转交成员")
-    delivered_id = message_id if answered_set(message) else resident_message_contract.derived_message_identity(
+    from management_common.resident_handoff_cards import selected_card
+    delivered_id = message_id if answered_set(message) or selected_card(message) else resident_message_contract.derived_message_identity(
         "family-relay", facade_id, message_id, member_id,
     )
     # Accepted intake is authoritative even if the process died before the
     # facade link/receipt commit. Revalidate the exact original identity before
     # closing the link; current quota or preferences cannot unaccept a copy.
-    from . import resident_intake_domain
+
     from management_common.operation_identity import operation_identity_scope
     from management_common.principal import OperationIdentity
     envelope = {"role": "user", "message_id": delivered_id, "content_parts": message["content_parts"]}
     with operation_identity_scope(OperationIdentity.for_actor(str(message["author_id"]), initiated_by=actor)):
-        candidate = resident_intake_domain.preflight_resident_input(
+        candidate = resident_domain_port.preflight_resident_input(
             member_id, str(message["author_id"]), envelope, business_ref=mark)
-        if resident_intake_domain.existing_resident_delivery(member_id, candidate):
+        if resident_domain_port.existing_resident_delivery(member_id, candidate):
             if lending is not None:
                 lending.replay(lending.recipient_id, delivered_id)
             return _finish_relay(facade, message_id, member_id, delivered_id, repository)
@@ -486,7 +489,7 @@ def _restore_role_intake(record: dict[str, Any]) -> dict[str, Any] | None:
     requeues a cancelled input or restarts a Session. The roles follow the
     facade's manual quota release, also while the Family is paused.
     """
-    from . import resident_management_domain
+
     from . import resident_record_domain
     if not family_facade.is_operating_role(record) or record.get("deleted_at"):
         return None
@@ -499,7 +502,7 @@ def _restore_role_intake(record: dict[str, Any]) -> dict[str, Any] | None:
     if resident_record_domain.resident_intake_state(record) != "open":
         if resident_record_domain.lifecycle_operations().pending(record["resident_id"]):
             return record  # The migration owns its temporary intake hold.
-        resident_management_domain.transition_resident_state(record["resident_id"], record["resident_id"],
+        resident_domain_port.transition_resident_state(record["resident_id"], record["resident_id"],
             transition="open", allow_quota_override=False)
         record = resident_record_domain.find_resident(record["resident_id"])
     return record
@@ -607,7 +610,7 @@ def _ensure_quota_switch(record: dict[str, Any], accounts: list[dict[str, Any]] 
     A submitted but unclaimed input is handed off by the existing deferred
     restart advance/withdraw_unstarted protocol. No input is re-delivered here.
     """
-    from . import resident_record_domain, resident_restart_domain
+    from . import resident_record_domain
     from .resident_work_recovery import _intake_allows_recovery
     rid = record["resident_id"]
     if resident_record_domain.lifecycle_operations().pending(rid):
@@ -706,7 +709,7 @@ def _ensure_quota_switch(record: dict[str, Any], accounts: list[dict[str, Any]] 
     if not payload:
         return True
     try:
-        resident_restart_domain.restart_resident_session(rid, rid, payload, portal_reason="quota_switch")
+        resident_domain_port.restart_resident_session(rid, rid, payload, portal_reason="quota_switch")
     except Exception as error:
         # Transport/service interruptions retry the same durable operation.
         # A definitive validation/permission rejection requires manual choice,
@@ -726,7 +729,7 @@ def _ensure_quota_switch(record: dict[str, Any], accounts: list[dict[str, Any]] 
 
 def ensure_role_reserve(record: dict[str, Any], accounts: list[dict[str, Any]] | None = None) -> bool:
     """Return whether the next turn must wait for a safe account migration."""
-    from . import resident_record_domain, resident_restart_domain
+    from . import resident_record_domain
     from .resident_work_recovery import _intake_allows_recovery
 
     if not auto_migration_enabled(record):
@@ -844,7 +847,7 @@ def ensure_role_reserve(record: dict[str, Any], accounts: list[dict[str, Any]] |
     if payload:
         if resident_record_domain.lifecycle_operations().pending(resident_id):
             return True
-        resident_restart_domain.restart_resident_session(resident_id, resident_id, payload, portal_reason="steward_weekly_reserve")
+        resident_domain_port.restart_resident_session(resident_id, resident_id, payload, portal_reason="steward_weekly_reserve")
         with resident_record_domain.state_lock(resident_id), get_lineage_data_store().family_quota_migrations.transaction(record['lineage_id'], resident_id) as committed:
             if committed.get("pending_restart") == payload:
                 committed["pending_restart"] = None
@@ -887,7 +890,7 @@ def answer_role_quota_question(facade_id: str, message_id: str, actor: str) -> N
     person answering with their own right to manage the facade; its Router
     and Steward follow it (_follow_facade_quota_release).
     """
-    from . import resident_access, resident_conversation_stream, resident_management_domain, resident_record_domain
+    from . import resident_access, resident_conversation_stream, resident_record_domain
     questions = family_role_quota_questions
     answer = resident_conversation_stream.get_repository().message(facade_id, message_id)
     if questions.question_of(facade_id, answer) is None:
@@ -900,7 +903,7 @@ def answer_role_quota_question(facade_id: str, message_id: str, actor: str) -> N
         else:
             try:
                 if not override_enabled(facade):
-                    resident_management_domain.transition_resident_state(facade_id, actor, transition="open")
+                    resident_domain_port.transition_resident_state(facade_id, actor, transition="open")
             except (KeyError, PermissionError, ValueError) as exc:
                 text = f"放行失败：{exc}"
             else:

@@ -725,7 +725,7 @@ def test_large_recommendation_passes_real_invocation_budget_and_recovers(
     original = deepcopy(candidates)
     captured = {}
 
-    def trigger(_self, binding, *, actor, prompt, request_id, content_parts):
+    def trigger(_self, binding, *, actor, prompt, request_id, content_parts, message_metadata):
         # Exercise the actual handoff's context assembly and the same validator
         # that rejected the reported request, without dispatching a live Event.
         normalize_event_payload({"prompt": prompt, "content_parts": content_parts})

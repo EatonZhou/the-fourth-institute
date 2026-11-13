@@ -29,6 +29,11 @@ class ExecutionProjection:
     backend_session_id: str = ""
     backend_route_id: str = ""
     turn_id: str = ""
+    native_account_checked: bool = False
+    native_account_id: str = ""
+    native_session_id: str = ""
+    native_turn_id: str = ""
+    native_link_signature: tuple[str, str, str] | None = None
     final_segment_id: str = ""
     compaction_segment_id: str = ""
     persisted_segments: set[str] = field(default_factory=set)

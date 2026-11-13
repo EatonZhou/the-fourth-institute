@@ -32,6 +32,10 @@ const root = path.resolve(__dirname, '../../../management_portal/static');
       graph.render({nodes,edges});
     });
     const results = [];
+    await page.evaluate(async () => {
+      await document.fonts.ready;
+      await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    });
     for (const density of ['comfortable','compact']) {
       const result = await page.evaluate(density => {
         const sizes = graph.getNodeSizes();
@@ -42,6 +46,8 @@ const root = path.resolve(__dirname, '../../../management_portal/static');
         return {density,maximumHeight:Math.max(...Object.values(sizes).map(s=>s.height*9)),sizes};
       }, density);
       assert.ok(result.maximumHeight>94, 'fixture must exceed the old fixed card height: '+JSON.stringify(result));
+      // Fitting can change semantic detail and therefore card height. The
+      // persisted positions must still fit the currently rendered cards.
       for (const reload of [false,true]) {
         if (reload) await page.evaluate(() => {nodes=JSON.parse(JSON.stringify(nodes));graph.render({nodes,edges});graph.fit({duration:0,maxScale:1,minScale:.05});});
         await page.evaluate(() => new Promise(resolve => requestAnimationFrame(()=>requestAnimationFrame(resolve))));
@@ -53,11 +59,14 @@ const root = path.resolve(__dirname, '../../../management_portal/static');
             if(r.left<canvas.left-.5||r.top<canvas.top-.5||r.right>canvas.right+.5||r.bottom>canvas.bottom+.5)clipped.push(id);
             cards.slice(i+1).forEach(other=>{if(Math.min(r.right,other.r.right)-Math.max(r.left,other.r.left)>.5&&Math.min(r.bottom,other.r.bottom)-Math.max(r.top,other.r.top)>.5)overlaps.push([id,other.id]);});
           });
-          return {overlaps,clipped,sizes:graph.getNodeSizes()};
+          const root=document.getElementById('hatgCanvas');
+          const measured=Object.fromEntries([...document.querySelectorAll('#nodes .hatgNode')].map(el=>[
+            el.dataset.nodeId,{width:el.offsetWidth/Number(root.dataset.worldWidth)*100,height:el.offsetHeight/Number(root.dataset.worldHeight)*100}]));
+          return {overlaps,clipped,sizes:graph.getNodeSizes(),measured};
         });
         assert.deepEqual(geometry.overlaps,[],`${density}, reload=${reload}`);
         assert.deepEqual(geometry.clipped,[],`${density}, reload=${reload}`);
-        assert.deepEqual(geometry.sizes,result.sizes,'world geometry is independent of fit zoom');
+        assert.deepEqual(geometry.sizes,geometry.measured,'layout measurements follow actual cards after semantic zoom and remount');
       }
       results.push({density,maximumHeight:result.maximumHeight});
     }

@@ -95,19 +95,16 @@ def test_concurrent_creation_merges_and_failed_delete_keeps_identity(future_crea
     """并发创建的成员都合并进图，删除时图提交失败则 Resident 身份保留"""
     parent = resident_domain.register_resident(_new_session_payload("Concurrent owner"), "sample_admin")
     lineage_id = parent["lineage_id"]
-    append = lineage_resident_nodes._append_registered_resident_node_locked
     ready = threading.Barrier(2)
 
-    def append_after_both_read(lineage, record, actor, **kwargs):
+    def create_concurrently(title):
         ready.wait(timeout=10)
-        return append(lineage, record, actor, **kwargs)
+        return lineage_resident_nodes.create_lineage_resident(
+            lineage_id, _new_session_payload(title), "sample_admin")
 
-    with monkeypatch.context() as patch:
-        patch.setattr(lineage_resident_nodes, "_append_registered_resident_node_locked", append_after_both_read)
-        with ThreadPoolExecutor(max_workers=2) as pool:
-            futures = [pool.submit(lineage_resident_nodes.create_lineage_resident, lineage_id,
-                                   _new_session_payload(title), "sample_admin") for title in ("A", "B")]
-            children = [f.result(timeout=20)["resident"]["resident_id"] for f in futures]
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        futures = [pool.submit(create_concurrently, title) for title in ("A", "B")]
+        children = [f.result(timeout=20)["resident"]["resident_id"] for f in futures]
     store = get_lineage_data_store()
     assert {n["id"] for n in store.lineage_definition(lineage_id)["nodes"]} == {parent["resident_id"], *children}
     persist = lineage_state._persist_lineage_state

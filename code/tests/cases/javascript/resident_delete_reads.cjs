@@ -4,6 +4,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
 const {randomUUID} = require('node:crypto');
+const {JSDOM} = require('jsdom');
 const root = path.resolve(__dirname, '../../../management_portal/static');
 const flush = () => new Promise(resolve => setImmediate(resolve));
 const deferred = () => {
@@ -14,8 +15,11 @@ const deferred = () => {
 function fixture() {
   const calls = [], listeners = new Map();
   const f = {calls, get: null, execute: null};
+  const dom = new JSDOM('');
   const context = {
     URLSearchParams, queueMicrotask, setTimeout, clearTimeout, console,
+    CustomEvent: dom.window.CustomEvent,
+    dispatchEvent: event => { listeners.get(event.type)?.(event); return true; },
     PortalUIPrimitives: {randomUUID}, PortalI18n: {t: String},
     addEventListener: (name, listener) => listeners.set(name, listener),
     PortalAPI: {get: url => {
@@ -29,6 +33,7 @@ function fixture() {
     }},
   };
   context.window = context;
+  dom.window.close();
   vm.createContext(context);
   for (const file of ['portal_resident_service.js', 'portal_society_service.js', 'resident_projection.js']) {
     vm.runInContext(fs.readFileSync(path.join(root, file), 'utf8'), context);
@@ -39,7 +44,7 @@ function fixture() {
   return f;
 }
 
-test('delete drains existing reads and gates exact-target reads across page clients', async () => {
+test('delete gates new reads without waiting for an unbounded existing projection read', async () => {
   const f = fixture(), read = deferred(), write = deferred();
   f.get = url => url.includes('resident_one') ? read.promise : Promise.resolve({resident_id: 'resident_two'});
   f.execute = () => write.promise;
@@ -49,7 +54,8 @@ test('delete drains existing reads and gates exact-target reads across page clie
   const queued = otherClient.projection({residentId: 'resident_one'}).catch(error => error);
   const history = f.service.inputHistory('resident_one').catch(error => error);
   await otherClient.projection({residentId: 'resident_two'});
-  assert.equal(f.calls.filter(c => c.name === 'DeleteResident').length, 0);
+  assert.equal(f.calls.filter(c => c.name === 'DeleteResident').length, 1,
+    'deletion can commit while an earlier network request is still outstanding');
   read.resolve({resident_id: 'resident_one'});
   await first; await flush();
   assert.equal(f.calls.filter(c => c.name === 'DeleteResident').length, 1);

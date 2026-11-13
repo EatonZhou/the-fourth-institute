@@ -20,6 +20,7 @@ from management_portal.society_service import (
     resident_execution_engine_domain,
     resident_execution_work,
     resident_input_queue_domain,
+    resident_intake_domain,
     resident_protocol,
     resident_record_domain,
 )
@@ -328,11 +329,15 @@ def test_send_now_handles_append_capability_change_after_check(
     service.input_control.return_value = None
     service.append_input.side_effect = ValueError("active execution does not support appended input")
     with mock.patch.object(execution_port, "service", return_value=service):
-        result = _published_delivery(resident_protocol.inject_queued_input_into_active_turn(
+        receipt = resident_protocol.inject_queued_input_into_active_turn(
             resident_id, "CASE-A", message_id,
-        ))
+        )
+        assert receipt['delivery_status'] == 'pending'
+        assert resident_input_queue_domain.reconcile_queued_turn_inputs(resident_id, _job['execution_id'])
+        service.append_input.assert_called_once()
+        result = resident_intake_domain._resident_message_delivery_result(resident_id, message_id)
 
-    assert result["accepted"] is True
+    assert receipt["accepted"] is True
     assert [item["message_id"] for item in result["queue"]["items"]] == [message_id]
     assert "active_turn_input" not in resident_execution_work.read(resident_record)["queue"][0]
 
@@ -589,8 +594,12 @@ def test_send_now_after_execution_finished_falls_back_and_respects_intake(
     monkeypatch.setattr(resident_input_queue_domain, "acknowledge_execution", lambda *_: True)
     if close_intake:
         resident_protocol.change_resident_state(resident_id, "CASE-A", state_domain="intake", transition="close")
-    result = _published_delivery(resident_protocol.inject_queued_input_into_active_turn(resident_id, "CASE-A", message_id))
-    assert result["accepted"] is True
+    receipt = resident_protocol.inject_queued_input_into_active_turn(resident_id, "CASE-A", message_id)
+    assert receipt['delivery_status'] == 'pending'
+    assert resident_input_queue_domain.reconcile_queued_turn_inputs(resident_id, original['execution_id'])
+    service.append_input.assert_called_once()
+    result = resident_intake_domain._resident_message_delivery_result(resident_id, message_id)
+    assert receipt["accepted"] is True
     assert [item["message_id"] for item in result["queue"]["items"]] == [message_id]
     job = resident_execution_work.read(resident_record)
     assert "active_turn_input" not in job["queue"][0]

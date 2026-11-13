@@ -207,6 +207,11 @@ def test_restart_after_a_failed_unbound_first_turn_hands_its_work_over(monkeypat
     from management_portal.society_service import resident_backend, resident_domain
 
     record, operations, _saved = _restart_domain(monkeypatch)
+    from management_portal.execution.agent_data_store import AgentDataStore
+    store = AgentDataStore()
+    binding_id = resident_backend.execution_binding_id(record)
+    binding = store.provider_binding(binding_id)
+    store.delete_provider_binding(binding_id, expected_provider_session_ref=binding['provider_session_ref'])
     monkeypatch.setattr(resident_backend, "session_record", lambda *_a, **_kw: {})
     monkeypatch.setattr(resident_restart_domain.execution_port, "latest_provider_session_ref",
                         lambda _resident_id, since="": "provider_session_failed_first_turn", raising=False)

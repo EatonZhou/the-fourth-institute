@@ -150,7 +150,7 @@ def test_legacy_catalog_reads_visible_references_without_creating_or_migrating(m
     def call(actor,name,args,**kwargs):
         calls.append((actor,name,args))
         assert actor=='alice' and name=='GetResident'
-        if args['resident_id']=='resident_denied':raise PermissionError('revoked')
+        if args['resident_id']=='resident_denied':raise research.isa_client.InstructionError('instruction.forbidden', 'revoked')
         assert args['resident_id']=='resident_visible'
         return {'resident':{'title':'Existing history'}}
     monkeypatch.setattr(research.isa_client,'call',call)
@@ -158,3 +158,9 @@ def test_legacy_catalog_reads_visible_references_without_creating_or_migrating(m
     assert value['selected'] is None and value['slots']==[]
     assert value['legacy']==[{'workspace_key':'paper:paper_000000000001','title':'Existing history','resident_id':'resident_visible'}]
     assert len(calls)==2
+    assert value.get('deleted', []) == []  # Revocation is not deletion.
+    def unavailable(*args, **kwargs):
+        raise research.isa_client.InstructionError('instruction.owner_unavailable', 'offline')
+    monkeypatch.setattr(research.isa_client, 'call', unavailable)
+    with pytest.raises(research.isa_client.InstructionError, match='offline'):
+        research.catalog({}, actor='alice')

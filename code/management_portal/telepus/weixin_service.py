@@ -1,10 +1,15 @@
 """One independently backed-off iLink long poll per active binding."""
 from __future__ import annotations
 
+import logging
+
 import signal
 import threading
 
 from .weixin_adapter import WeixinAdapter
+
+
+LOGGER = logging.getLogger(__name__)
 
 
 def main():
@@ -37,15 +42,16 @@ def main():
                 try:
                     local.poll_once(actor)
                     delay = 1
-                except Exception:
+                except Exception as exc:
+                    LOGGER.warning('Weixin polling retry after failure: %s', type(exc).__name__)
                     delay = min(delay * 2, 60)
                 stopped.wait(delay)
         finally:
             if account and account['bot_token'] == token:
                 try:
                     local.client_factory(account).request('msg/notifystop')
-                except Exception:
-                    pass
+                except Exception as exc:
+                    LOGGER.warning("Weixin notification stop unavailable (%s)", type(exc).__name__)
 
     while not stopped.is_set():
         workers = {actor: worker for actor, worker in workers.items() if worker.is_alive()}

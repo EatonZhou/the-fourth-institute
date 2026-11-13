@@ -598,7 +598,7 @@ body {
 .readerPanelToggle svg { transition: transform .16s ease; }
 .readerPanel.collapsed .readerPanelToggle svg { transform: rotate(180deg); }
 .readerContent { overflow: auto; padding: 13px; }
-.paperReadingDialog { position: fixed; inset: 0; width: 100vw; height: 100dvh; max-width: none; max-height: none; margin: 0; padding: 0; border: 0; color: var(--text, #17202a); background: var(--surface, #fff); }
+.paperReadingDialog { position: fixed; inset: 0; width: 100vw; height: 100dvh; max-width: none; max-height: none; margin: 0; padding: 0; border: 0; color: var(--text, #17202a); background: var(--panel, #fff); }
 .paperReadingDialog { z-index: 10000; box-sizing: border-box; }
 .paperReadingDialog.is-embedded { inset: auto; z-index: 20; border: 0; }
 .paperReadingDialog .paperLayoutEnter { display: none; }
@@ -623,8 +623,8 @@ body {
 .paperReadingViewer { flex: 1; min-height: 0; width: 100%; border: 0; background: #59616b; }
 .paperTranslation { padding: 4px 12px; border-bottom: 1px solid #ccd1d6; font-size: 13px; }
 .leftBody.is-personal > :not(.paperPersonal) { display: none !important; }
-.paperPersonal [data-scopes] { position: sticky; top: 0; z-index: 3; background: var(--surface, #fff); }
-.paperPersonal:has([data-personal][hidden]) { position: sticky; top: 0; z-index: 3; background: var(--surface, #fff); }
+.paperPersonal [data-scopes] { position: sticky; top: 0; z-index: 3; background: var(--panel, #fff); }
+.paperPersonal:has([data-personal][hidden]) { position: sticky; top: 0; z-index: 3; background: var(--panel, #fff); }
 .paperReadingDialog.is-embedded .paperTranslation { display: none; }
 .paperReadingDialog.is-embedded .paperReadingToolbar { display: none; }
 .paperReadingDialog.is-embedded .paperReadingStatus[data-empty="true"] { display: none; }
@@ -819,7 +819,7 @@ body.resizingReaderAI { cursor:col-resize; user-select:none; }
 /* Persistent research selector is outside the shared Chat Workspace. */
 .paperResearchChatHost { display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
 .paperResearchChatHost > .paperResearchSelector { flex: 0 0 auto; }
-.paperResearchChatHost > .portalChatWorkspaceRoot { flex: 1 1 0; height: 0; min-height: 0; }
+.paperResearchChatHost > .paperResearchWorkspace { flex: 1 1 0; min-height: 0; }
 .paperResearchSelector { display: flex; flex-wrap: wrap; align-items: center; gap: var(--portal-space-2); padding: var(--portal-space-2); min-width: 0; box-sizing: border-box; }
 .paperResearchSelector .portalControl { flex: 1 1 0; width: 0; min-width: 0; max-width: 100%; font-size: 13px; }
 .paperResearchSelector .portalButton { flex: 0 1 auto; min-width: 0; white-space: normal; line-height: 1.4; }
@@ -866,8 +866,7 @@ body.resizingReaderAI { cursor:col-resize; user-select:none; }
 .paperResearchTitleMenu .paperResearchTitleNew:not(:first-child) { border-top:1px solid var(--border,#ddd); border-radius:0 0 4px 4px; margin-top:4px; }
 
 /* Paper titles use the shared Chat Workspace title metrics; body text stays unchanged. */
-:is(#paperLibraryPane,#paperWorkspacePane) :is(.paneTitle,.readerHeadTitle,.workspaceTitle,.reviewCard h3,.apiCard h3),
-.paperResearchChatHost .paneTitle {
+:is(#paperLibraryPane,#paperWorkspacePane) :is(.paneTitle,.readerHeadTitle,.workspaceTitle,.reviewCard h3,.apiCard h3):not(:where(.portalChatWorkspaceRoot *)) {
   font-size:13px; font-weight:800; line-height:18px;
 }
 #workspaceResourceIdentity { --portal-resource-identity-title-size:13px; --portal-resource-identity-title-weight:800; --portal-resource-identity-title-line-height:18px; }
@@ -880,9 +879,7 @@ body.resizingReaderAI { cursor:col-resize; user-select:none; }
 #modeTabs > button { flex:0 0 auto; }
 .workspaceControls > .workspaceModeActions { flex:0 0 auto; margin-left:auto; flex-wrap:nowrap; gap:6px; }
 .workspaceActionButtons { gap:6px; }
-:is(#paperLibraryPane,.paperResearchChatHost) .paneNote { min-width:0; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.paperResearchChatHost .chatSubline { min-width:0; overflow:hidden; white-space:nowrap; }
-.paperResearchChatHost .chatSubline .paneNote { flex-wrap:nowrap; }
+#paperLibraryPane .paneNote { min-width:0; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .paperResearchTitleTrigger { max-width:100%; display:block; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; padding-right:14px; position:relative; }
 .paperResearchTitleTrigger::after { position:absolute; right:0; top:0; }
 .paperResearchTitleMenu button { font:inherit; font-size:13px; overflow-wrap:anywhere; }
@@ -890,7 +887,7 @@ body.resizingReaderAI { cursor:col-resize; user-select:none; }
 
 /* Paper subtitles follow the existing Chat Resident ID size: 11px.
    ID-only spans retain monospace at that same size; other text stays proportional. */
-body:has(#paperPageFrame) :is(#libraryMeta,#workspaceResourceId,#workspaceDetailsToggle,#deepReadStatusText,.paperResearchChatHost .chatSubline .paneNote) {
+body:has(#paperPageFrame) :is(#libraryMeta,#workspaceResourceId,#workspaceDetailsToggle,#deepReadStatusText) {
   font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
   font-size:11px;
   font-weight:400;
@@ -901,24 +898,18 @@ body:has(#paperPageFrame) :is(#libraryMeta,#workspaceResourceId,#workspaceDetail
   overflow:hidden;
   text-overflow:ellipsis;
 }
-body:has(#paperPageFrame) :is(#workspaceDetailsToggle,.paperResearchChatHost .chatSubline .paneNote) * {
+body:has(#paperPageFrame) #workspaceDetailsToggle * {
   font:inherit;
   color:inherit;
 }
-body:has(#paperPageFrame) .paperResearchChatHost .chatSubline .paneNote.hasSessionIdentity { display:block; }
-body:has(#paperPageFrame) .paperResearchChatHost .chatSubline .chatHeaderSeparator { margin-inline:4px; }
-body:has(#paperPageFrame) :is(#workspaceResourceId,.paperResearchChatHost [data-workspace-resident-id],.paperResearchChatHost [data-workspace-session-id]) {
+body:has(#paperPageFrame) #workspaceResourceId {
   font-family:var(--mono,ui-monospace,SFMono-Regular,Menlo,monospace);
 }
 body:has(#paperPageFrame) #portalButtonTooltip { display:none!important; }
-#paperLibraryPane .paneHeadText { flex:1 1 auto; min-width:0; }
-/* Match the existing Chat text stack, without changing shared Chat headers. */
-#paperLibraryPane > .paneHead { align-items:flex-start; }
 #paperWorkspacePane .workspaceTop { padding-top:10px; row-gap:8px; }
 #paperWorkspacePane .titleBlock { row-gap:4px; }
 #paperWorkspacePane .workspaceIdentityMetaRow { align-items:start; }
 #paperWorkspacePane .workspaceResourceIdSlot { line-height:16px; }
-.paperResearchChatHost .chatTitleLine { min-width:0; max-width:100%; }
 .readerPanel:not(.collapsed) { grid-template-rows:auto minmax(0,1fr); }
 .readerPanel { container:paper-reader-panel / inline-size; }
 .readerHead { min-height:46px; }

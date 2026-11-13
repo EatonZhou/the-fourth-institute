@@ -595,6 +595,21 @@
     "GetResidentSettings": {
       "a": "@viewer"
     },
+    "GetResidentTextInputSnapshot": {
+      "a": "@viewer"
+    },
+    "GetPaperTranslationBinding": {
+      "a": "@free"
+    },
+    "EnsurePaperTranslationBinding": {
+      "a": "@free"
+    },
+    "TranslatePaperText": {
+      "a": "@free"
+    },
+    "ExportPaperBibtex": {
+      "a": "@free"
+    },
     "GetResidentSummaries": {
       "a": "@viewer"
     },

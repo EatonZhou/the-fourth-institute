@@ -929,6 +929,16 @@ def _validated_parts(content_parts: object, chatroom_id: str, author: str) -> li
                 text_size += len(text)
                 parts.append({"type": "text", "text": text})
             continue
+        if kind == "resident_handoff_selection":
+            from management_common.resident_handoff_cards import cards, selection_part
+            source_id, index = raw.get("source_message_id"), raw.get("card_index")
+            source = _agent_data().chat_message(chatroom_id, source_id) if isinstance(source_id, str) else None
+            choices = cards(source)
+            if (type(index) is not int or not 0 <= index < len(choices) or not choices[index]["ask_message"]
+                    or raw != selection_part(source_id, index, choices[index])):
+                raise ValueError("推荐选择与聊天室原卡片不一致")
+            parts.append(dict(raw))
+            continue
         if kind not in MEDIA_TYPES:
             raise ValueError(f"聊天室消息不支持 {kind or '未知'} 内容")
         upload_id = str(raw.get("upload_id") or "").strip()
@@ -990,6 +1000,13 @@ def post_message(
         member = _member_id(room, author) or author
         new_id = message_id or derived_message_identity("chatroom-message", clean_id, member, _now(), secrets.token_hex(8))
         accepted = _quote(clean_id, quote, new_id)
+        from management_common.resident_handoff_cards import SELECTION, selected_card
+        selection = selected_card({"content_parts": parts})
+        if selection and (accepted.get("message_id") != selection["source_message_id"]
+                or [p.get("text") for p in parts if p["type"] == "text"] != ["替我问一下"]
+                or sum(p["type"] == SELECTION for p in parts) != 1
+                or any(p["type"] not in {"text", SELECTION} for p in parts)):
+            raise ValueError("推荐选择必须回复原卡片，只提交所选动作")
         # The composer suggests an @ when quoting. The submitted body alone
         # decides whom to notify or call, so deleting that suggestion is final.
         plain = _mention_text(parts)

@@ -39,7 +39,13 @@ def test_generated_claude_unit_is_accepted_by_systemd(control, directory):
     selected.mkdir()
     package.symlink_to(selected, target_is_directory=True)
     target = units.install_claude_unit(control.sdk, package)
+    # Offline user-unit validation still needs a private runtime directory;
+    # an isolated test must not depend on the host user's session manager.
+    import os
+    runtime = control.root / 'analyzer-runtime'
+    runtime.mkdir(mode=0o700)
     result = REAL_RUN([analyzer, "--user", "verify", "--man=no", str(target)],
+                      env={**os.environ, 'XDG_RUNTIME_DIR': str(runtime)},
                       text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                       timeout=15)
     assert result.returncode == 0, result.stdout

@@ -281,6 +281,7 @@ assert 'scripts.tfi_release_install' not in sys.modules
 
 
 def test_linux_definition_passes_native_parser_with_spaces_and_unicode(tmp_path, monkeypatch):
+    import os
     import shutil
     import sys
     analyzer = shutil.which('systemd-analyze')
@@ -294,8 +295,14 @@ def test_linux_definition_passes_native_parser_with_spaces_and_unicode(tmp_path,
     unit = tmp_path / (selected.service_name('postgres') + '.service')
     text = linux.manifest_unit_text(selected, 'postgres')
     unit.write_text(text)
+    # The parser initializes a private user manager even for offline verify.
+    # Supply its runtime directory inside this case, never the host's session.
+    runtime = tmp_path / 'parser-runtime'
+    runtime.mkdir(mode=0o700)
+    environment = dict(os.environ, XDG_RUNTIME_DIR=str(runtime))
+    environment.pop('DBUS_SESSION_BUS_ADDRESS', None)
     result = subprocess.run([analyzer, '--user', 'verify', '--man=no', str(unit)],
-                            capture_output=True, text=True, timeout=20)
+                            env=environment, capture_output=True, text=True, timeout=20)
     assert result.returncode == 0, result.stderr
     assert 'WorkingDirectory=' + str(code).replace('%', '%%') in text
     assert '实例 space %%' in text and '\\u' not in text

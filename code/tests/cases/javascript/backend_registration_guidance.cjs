@@ -1,7 +1,7 @@
 const assert = require('node:assert/strict');
 const fs = require('node:fs'), vm = require('node:vm');
 const {JSDOM} = require('jsdom');
-const dom = new JSDOM('<main></main>', {url: 'http://portal.invalid/'});
+const dom = new JSDOM('<main></main>', {url: 'http://portal.invalid/', pretendToBeVisual: true});
 const {window} = dom, calls = [];
 let failRoutes = true, apis = [], accounts = [], createFailure = null, checkFails = true;
 let roles = [{role: 'default', account_id: null, version: 1}];
@@ -53,7 +53,9 @@ vm.runInContext(fs.readFileSync('management_portal/static/portal_management_back
 const flush = async () => {for (let n = 0; n < 6; n++) await new Promise(resolve => setImmediate(resolve));};
 const click = text => {const b = [...window.document.querySelectorAll('button')].find(el => el.textContent === text); assert(b && !b.disabled, text); b.click();};
 (async () => {
-  const panel = await context.mount(window.document.querySelector('main'), {me: {access: {permission_system: 'open'}}});
+  let panel, readonly;
+  try {
+  panel = await context.mount(window.document.querySelector('main'), {me: {access: {permission_system: 'open'}}});
   const introduction = window.document.querySelector('.backendIntroduction');
   assert.equal(introduction.querySelector('h2').textContent, '添加 AI 后端');
   assert.deepEqual([...introduction.querySelectorAll('button')].map(b => b.textContent), ['接入订阅帐号', '新增 API Key']);
@@ -199,9 +201,14 @@ const click = text => {const b = [...window.document.querySelectorAll('button')]
   for (const removed of ['接入与测试', '停用', '启用', '编辑初始并发']) assert(!rowActions.includes(removed));
   assert(rowActions.includes('登录') && rowActions.includes('删除'));
   panel.destroy();
-  const readonly = await context.mount(window.document.querySelector('main'), {me: {access: {allows: {}}}});
+  readonly = await context.mount(window.document.querySelector('main'), {me: {access: {allows: {}}}});
   for (const title of ['接入订阅帐号', '新增 API Key', '新增模型 API']) {
     assert([...window.document.querySelectorAll('button')].filter(b => b.textContent === title).every(b => b.disabled));
   }
-  readonly.destroy(); dom.window.close(); console.log('Backend registration guidance and partial-failure retry passed');
-})().catch(error => {console.error(error); dom.window.close(); process.exitCode = 1;});
+  console.log('Backend registration guidance and partial-failure retry passed');
+  } finally {
+    readonly?.destroy();
+    panel?.destroy();
+    dom.window.close();
+  }
+})().catch(error => {console.error(error); process.exitCode = 1;});

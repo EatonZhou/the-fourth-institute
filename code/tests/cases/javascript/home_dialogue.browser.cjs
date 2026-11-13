@@ -145,7 +145,10 @@ const server = http.createServer((req,res) => {
     assert.equal(await failure.locator('code').textContent(),'article_0123456789ab');
     assert.equal(await page.getByRole('button',{name:'重试访问',exact:true}).count(),1);
     assert.equal(await page.getByRole('button',{name:'重试读取',exact:true}).count(),0);
-    assert.ok((await page.locator('.homeDialoguePreview .portalDocumentTab.is-active').getAttribute('title')).includes('读取失败'));
+    // Native tabs omit hover titles; the selected document keeps its failure
+    // in the Preview body, with the concrete address and retry checked above.
+    assert.equal(await page.locator('.homeDialoguePreview .portalDocumentTab.is-active').getAttribute('aria-selected'),'true');
+    const failedTabKey=await page.locator('.homeDialoguePreview .portalDocumentTab.is-active [data-portal-document-tab]').getAttribute('data-portal-document-tab');
     await failure.getByText('查看错误详情',{exact:true}).click();
     assert.equal(await page.getByText('当前来源不可读',{exact:true}).count(),1);
     await failure.getByText('查看错误详情',{exact:true}).click();
@@ -164,7 +167,7 @@ const server = http.createServer((req,res) => {
     await failure.getByRole('button',{name:'重试访问',exact:true}).click();
     await failure.waitFor({state:'hidden'});
     await page.waitForFunction(()=>document.querySelector('.portalFileDocument').textContent.includes('original'));
-    assert.ok(!(await page.locator('.homeDialoguePreview .portalDocumentTab.is-active').getAttribute('title')).includes('读取失败'),'successful internal retry updates the host status');
+    assert.equal(await page.locator('.homeDialoguePreview .portalDocumentTab.is-active [data-portal-document-tab]').getAttribute('data-portal-document-tab'),failedTabKey,'successful internal retry retains the selected document');
     await page.evaluate(()=>{window.denyPreview=true;window.dispatchEvent(new Event('portal:permissions-changed'));});
     await failure.waitFor({state:'visible'});
     assert.equal(await page.locator('.portalFileDocument').textContent(),'','permission loss clears the previously rendered content');

@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import shutil
 import subprocess
 import threading
@@ -23,18 +24,35 @@ from management_common.local_ipc import rendezvous_path
 
 ROOT = Path(__file__).resolve().parents[2]
 BRIDGE = ROOT / "management_portal" / "dsh_runtime" / "bridge.mjs"
+RUNTIME = Path(os.environ.get("PORTAL_DSH_TEST_RUNTIME", str(BRIDGE.parent)))
 FAKE_RUNTIME = Path(__file__).resolve().parent / "fixtures" / "dsh_bridge_fake_runtime.mjs"
 SESSION_ID = "dsh-0123456789abcdef"
 
 pytestmark = pytest.mark.skipif(
     shutil.which("node") is None
-    or not (BRIDGE.parent / "node_modules" / "@deepseek-ai" / "dsh-llm").is_dir(),
+    or not (RUNTIME / "node_modules" / "@deepseek-ai" / "dsh-llm").is_dir(),
     reason="the DSH runtime packages are not installed",
 )
 
 
+@pytest.fixture(scope="module")
+def bridge_source(tmp_path_factory):
+    if RUNTIME == BRIDGE.parent:
+        return BRIDGE
+    # Test this checkout's bridge against an explicitly prepared dependency
+    # bundle; never rewrite the active Provider runtime or its current link.
+    root = tmp_path_factory.mktemp("dsh-bridge-source")
+    source = root / "management_portal" / "dsh_runtime"
+    source.mkdir(parents=True)
+    (root / "management_common").symlink_to(ROOT / "management_common", target_is_directory=True)
+    for name in ("bridge.mjs", "local_ipc.cjs", "request_timing.mjs"):
+        shutil.copyfile(BRIDGE.parent / name, source / name)
+    (source / "node_modules").symlink_to(RUNTIME / "node_modules", target_is_directory=True)
+    return source / "bridge.mjs"
+
+
 @pytest.fixture
-def bridge(tmp_path):
+def bridge(tmp_path, bridge_source):
     processes = []
 
     def start(earlier: dict | None = None) -> NativeAgentClient:
@@ -45,7 +63,7 @@ def bridge(tmp_path):
             "identityFingerprint": hashlib.sha256(b"{}").hexdigest(), **({"earlier": earlier} if earlier else {}),
         }))
         process = subprocess.Popen(
-            ["node", str(FAKE_RUNTIME), str(BRIDGE), str(config)],
+            ["node", str(FAKE_RUNTIME), str(bridge_source), str(config)],
             stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
         )
         processes.append(process)
@@ -278,7 +296,7 @@ def test_a_bash_result_settled_before_its_output_is_read_again_from_the_shell(br
     assert [{"type": "text", "text": "12:34:56\n[Command finished with exit code 0]"}] in outputs
 
 
-def test_the_whole_output_is_the_last_commands_and_only_once_it_ended() -> None:
+def test_the_whole_output_is_the_last_commands_and_only_once_it_ended(bridge_source) -> None:
     """重新读取的 bash 输出只取最后一条已结束的命令
 
     finishedBashOutput 只取回滚中最后一个起始标记对应、已出现结束标记的命令；命令未结束、开头与 DSH 已返回的部分不符或没有标记时保持原结果；空输出只给退出码行，超长输出按 DSH 的上限截断。
@@ -299,7 +317,7 @@ console.log(JSON.stringify([
   finishedBashOutput('no marks here', ''),
 ]));
 """
-    out = subprocess.run(["node", "--input-type=module", "-e", script, str(BRIDGE)],
+    out = subprocess.run(["node", "--input-type=module", "-e", script, str(bridge_source)],
                          capture_output=True, text=True, timeout=30, check=True).stdout
     last, running, other, empty, clipped, none = json.loads(out)
     assert last == "out 22222222-2222-2222-2222-222222222222\n[Command finished with exit code 3]"

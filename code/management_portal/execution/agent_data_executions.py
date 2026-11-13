@@ -178,6 +178,58 @@ class ExecutionRecords:
     def __init__(self, database: Any) -> None:
         self.database = database
 
+    def record_subscription_native_link(
+        self, *, execution_id: str, provider: str, account_id: str,
+        backend_route_id: str, native_session_id: str, native_turn_id: str,
+    ) -> str:
+        """Keep native identity independently of a stateless context binding.
+
+        Serialize on the execution, preserve observed fields on replay, and
+        permit missing fields to be filled without inventing a native session.
+        """
+        if not all((execution_id, provider, account_id, backend_route_id)):
+            raise ValueError("Subscription native link requires execution and account identity")
+        native_session_id = str(native_session_id or "").strip()
+        native_turn_id = str(native_turn_id or "").strip()
+        if native_session_id == execution_id:
+            native_session_id = ""
+        operation_id = "subscription_native_link:" + execution_id
+
+        def write(connection: Any) -> str:
+            execution = connection.execute(
+                "SELECT agent_id,provider FROM executions WHERE execution_id=%s FOR UPDATE",
+                (execution_id,),
+            ).fetchone()
+            if execution is None:
+                raise KeyError(execution_id)
+            if execution["provider"] != provider:
+                raise ValueError("Subscription native link provider does not match execution")
+            data = {"schema": "tfi.subscription-native-link.v1", "execution_id": execution_id,
+                    "provider": provider, "account_id": account_id,
+                    "backend_route_id": backend_route_id, "native_session_id": native_session_id,
+                    "native_turn_id": native_turn_id}
+            previous = connection.execute(
+                "SELECT data_json FROM agent_operations WHERE operation_id=%s", (operation_id,),
+            ).fetchone()
+            old = json_value(previous["data_json"]) if previous else {}
+            for field in ("provider", "account_id", "backend_route_id", "native_session_id", "native_turn_id"):
+                if old.get(field) and data[field] and old[field] != data[field]:
+                    raise ValueError("Subscription native identity changed during one execution")
+                data[field] = old.get(field) or data[field]
+            data["identity_status"] = "observed" if data["native_session_id"] else "unavailable"
+            data["raw_locator"] = {"account_id": account_id,
+                                   "native_session_id": data["native_session_id"]}
+            if previous:
+                if data != old:
+                    connection.execute("UPDATE agent_operations SET data_json=%s WHERE operation_id=%s",
+                                       (json_document(data), operation_id))
+            else:
+                put_operation(connection, operation_id=operation_id, kind="subscription_native_link",
+                              agent_id=execution["agent_id"], created_at=utc_now(), data=data)
+            return operation_id
+
+        return self.database.write(write)
+
     def reserve_execution(
         self, *, execution_id: str, agent_id: str, actor_ref: str, provider: str,
         created_at: str = "",

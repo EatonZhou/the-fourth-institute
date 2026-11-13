@@ -4,15 +4,15 @@ type: decision
 project: AI员工
 created_at: '2026-10-01'
 version:
-  number: 165
+  number: 167
   created_at: "2026-10-01"
   created_by:
     user: ""
     agent: "resident_4b1da6140cf2"
-  updated_at: "2026-11-04T06:08:40Z"
+  updated_at: "2026-11-13T21:11:15Z"
   updated_by:
     user: ""
-    agent: "resident_2e9ea0072551"
+    agent: "resident_737599f56947"
 importance: 8
 ai_generated: false
 links:
@@ -102,7 +102,7 @@ CreateResident/ForkResident 优先遵循显式 family_id；否则成员或 Stewa
 
 **Family 创建者只记录实际人类调用者。** human_familizer_id 由 families 保存；Resident 创建的 Family 留空，不能推测为 owner、最近发送者或管理员。它是联络事实，不授予权限。业务联系人及持续角色故障升级的区别见运行维护专题。
 
-模板施加由 ApplyTemplate 调用 Family 模块，分别配置 Router、Steward 的运行设置，门面无需模型配置。直接 Familize、创建 Lineage 时的 Familize 与 ApplyTemplate 使用同一份已保存模板默认配置；本次显式施加的参数和角色设置覆盖模板值。个人助手的初始 Backend 继续遵循站点默认角色。用户可指定名称；局部选区缺省以某个成员标题加“-family”，范围 Family 用 Lineage 标题。Family 名称同时作为门面和块标题。
+模板入口负责读取 Family 配方。直接 `Familize`、创建 Lineage 时的 Familize、个人助手和质量成员的自动组装经过 `templates.create_family`，由入口提供加载已保存配方的回调；Family 组装在入口授权、范围与成员准入检查以及已有整 Lineage Family 的幂等返回之后加载配方。`ApplyTemplate` 直接传入已规范化、校验的同一份 `ApplyContext.template`，组装期间不重新读取另一版本。Family 组装只消费配方及本次覆盖，不依赖模板持久存储。本次显式参数和角色设置覆盖配方值，分别配置 Router、Steward 的运行设置，门面无需模型配置。个人助手的初始 Backend 继续遵循站点默认角色。用户可指定名称；局部选区缺省以某个成员标题加“-family”，范围 Family 用 Lineage 标题。Family 名称同时作为门面和块标题。
 
 ## 结构维护与普通工作流
 

@@ -20,7 +20,8 @@ from .resident_conversation_records import (
     required_message_id,
     required_resident_id,
 )
-from . import resident_message_contract, user_pending_questions
+from . import resident_message_contract
+from .domain_ports import resident_domain_port
 from .state_store import LineageDataStore
 
 
@@ -250,7 +251,7 @@ class ConversationMessages:
                         stream_id, [member["message_id"] for member in members], persisted["segment_id"],
                     )
             public = message_from_storage(persisted)
-            asked = user_pending_questions.prepare(stream_id, public, self)
+            asked = resident_domain_port.prepare_pending_questions(stream_id, public, self)
 
             def write(connection: Any) -> None:
                 self.events.record_event(
@@ -473,7 +474,7 @@ class ConversationMessages:
                 message_for_storage(replacement, private_fields=fields),
             )
             public = message_from_storage(persisted)
-            asked = user_pending_questions.prepare(stream_id, public, self)
+            asked = resident_domain_port.prepare_pending_questions(stream_id, public, self)
 
             def write(connection: Any) -> Any:
                 asked.write(connection)

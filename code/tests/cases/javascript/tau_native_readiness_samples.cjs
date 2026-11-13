@@ -95,13 +95,13 @@ module.exports = async ({page, root, residentId, childId, sessionId, errors, req
   const hiddenGraph=page.getByRole('region',{name:'HATG',exact:true});
   assert.equal((await readOpeningIdentity(hiddenGraph,{lineageId:'lineage_222222222222'})).identity_ready,false);
   await page.evaluate(() => PortalI18n.set('zh-CN',{reload:false}));
-  await page.reload();
+  await page.reload({waitUntil:'domcontentloaded'});
   await page.getByRole('button',{name:'显示 HATG',exact:true}).waitFor({state:'visible'});
   const localizedShow=await nativeHatgShowControl(page);
   assert.equal(await localizedShow.getAttribute('aria-label'),'显示 HATG');
   assert.equal(await hiddenGraph.isVisible(),false,'discovery must not change layout');
   await page.evaluate(() => PortalI18n.set('en',{reload:false}));
-  await page.reload();
+  await page.reload({waitUntil:'domcontentloaded'});
   await page.getByRole('button',{name:'Show HATG',exact:true}).waitFor({state:'visible'});
   const showGraph=await nativeHatgShowControl(page);
   assert.equal(await showGraph.getAttribute('aria-label'),'Show HATG');
@@ -201,6 +201,12 @@ module.exports = async ({page, root, residentId, childId, sessionId, errors, req
   await assert.rejects(runtimeDialog.screenshot({timeout:150}),/Timeout/,'a closed dialog cannot supply the original screenshot');
   await page.evaluate(()=>sampleRuntime.destroy());
   const catalog = page.getByRole('region', {name:'Lineage navigation', exact:true});
+  await page.locator('[data-activity-view="agents"]').hover();
+  const navigationPin=page.locator('[data-activity-pin]');
+  if(await navigationPin.getAttribute('aria-pressed')==='false')await navigationPin.click();
+  const projectToggle=catalog.locator('[data-resident-project-toggle]');
+  if(await projectToggle.getAttribute('aria-expanded')!=='true')await projectToggle.click();
+  await catalog.locator('#agentList [data-lineage-card]:not([data-lineage-card=""])').hover();
   await catalog.getByRole('button', {name:'Lineage menu',exact:true}).click();
   assert.equal(await page.getByRole('dialog', {name:'New node',exact:true}).count(), 0,
     'opening the native card menu alone does not open the creation form');

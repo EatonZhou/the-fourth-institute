@@ -1,5 +1,5 @@
 const { [process.argv[3]]:engine}=require('../../../management_portal/test_framework/tau_runtime/node_modules/playwright');const assert=require('node:assert/strict');
-(async()=>{const b=await engine.launch({headless:true});try{const [url,,name,value]=process.argv.slice(2),ctx=await b.newContext();await ctx.addCookies([{name,value,url}]);const p=await ctx.newPage();await p.goto(url+'/integration');await p.waitForFunction(()=>ready);
+(async()=>{const b=await engine.launch({headless:true});try{const [url,,name,value]=process.argv.slice(2),ctx=await b.newContext();await ctx.addCookies([{name,value,url}]);const p=await ctx.newPage();p.on('pageerror',e=>console.error(e.stack));await p.goto(url+'/integration');await p.waitForFunction(()=>ready);
 await p.evaluate(()=>openPaper('paper_0123456789ab'));await p.waitForFunction(()=>posts===1);
 assert.equal(await p.evaluate(()=>renders.length),0,'Paper must never start the public PDF preview');
 await p.evaluate(()=>{window.originalFrame=document.querySelector('iframe');window.originalWindow=originalFrame.contentWindow;});

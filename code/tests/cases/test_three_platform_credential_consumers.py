@@ -194,14 +194,15 @@ def test_ssh_launcher_uses_python_and_cleans_up_after_failure(tmp_path, monkeypa
 
 
 def test_windows_askpass_selects_git_posix_launcher_or_rejects(tmp_path, monkeypatch):
-    from management_portal import repo_workspace_git, repo_workspace_network as repo
+    from management_portal import repo_workspace_network as repo
+    from management_common import ssh_runtime
     root=tmp_path/'Git with spaces'; (root/'cmd').mkdir(parents=True); (root/'usr/bin').mkdir(parents=True)
     git=root/'cmd/git.exe'; git.touch()
     ssh=root/'usr/bin/ssh.exe'; ssh.touch(); (root/'usr/bin/sh.exe').touch()
-    monkeypatch.setattr(repo,'sys',SimpleNamespace(platform='win32',executable='C:/Python/python.exe'),raising=False)
-    monkeypatch.setattr(repo.shutil,'which',lambda name:str(git) if name=='git' else None)
+    monkeypatch.setattr(ssh_runtime,'sys',SimpleNamespace(platform='win32'))
+    monkeypatch.setattr(ssh_runtime.shutil,'which',lambda name:str(git) if name=='git' else None)
     command=repo._ssh_command(identity_file=None,batch_mode=False)
     import shlex
     assert shlex.split(command)[0] == ssh.as_posix()
     ssh.unlink()
-    with pytest.raises(repo_workspace_git.GitOperationError): repo._ssh_command(identity_file=None,batch_mode=False)
+    with pytest.raises(OSError, match='Git for Windows'): repo._ssh_command(identity_file=None,batch_mode=False)

@@ -1,4 +1,4 @@
-// New combination case reuses scoped personal-tree assertions; Reader bytes are pinned by Python fixture.
+// Reader and scoped personal-tree assertions use the current source together.
 const assert=require('node:assert/strict'), fs=require('node:fs'),path=require('node:path');
 const {chromium,firefox}=require('../../../management_portal/test_framework/tau_runtime/node_modules/playwright');
 (async()=>{for(const [name,type] of [[process.argv[3],{chromium,firefox}[process.argv[3]]]]){
@@ -14,11 +14,11 @@ const {chromium,firefox}=require('../../../management_portal/test_framework/tau_
  for(const full of [false,true,false,true,false]){
   await readerPage.evaluate(full=>host.setFullscreen(full),full);
   await readerPage.waitForFunction(full=>document.querySelector('dialog').classList.contains('is-embedded')===!full,full);
-  const geometry=await readerPage.evaluate(()=>{const header=document.querySelector('.paperReadingToolbar'),title=header.querySelector('strong'),rect=header.getBoundingClientRect();return {titleWidth:title.getBoundingClientRect().width,truncated:title.scrollWidth>title.clientWidth,controls:[...header.querySelectorAll('button,a')].filter(e=>e.getBoundingClientRect().width>0).every(e=>{const r=e.getBoundingClientRect();return r.left>=rect.left-1&&r.right<=rect.right+1;}),viewer:document.querySelector('iframe').getBoundingClientRect().height,same:savedFrame===document.querySelector('iframe')&&savedWindow===savedFrame.contentWindow,ready:signals.length,AI:document.querySelectorAll('.paperAIPanel').length};});
-  assert((full?(geometry.titleWidth>30&&geometry.truncated):geometry.titleWidth===0)&&geometry.controls&&geometry.viewer>200&&geometry.same&&geometry.ready===1&&geometry.AI===0,JSON.stringify({full,...geometry}));
+  const geometry=await readerPage.evaluate(()=>{const header=document.querySelector('.paperReadingToolbar'),title=header.querySelector('strong'),rect=header.getBoundingClientRect();return {titleWidth:title.getBoundingClientRect().width,truncated:title.scrollWidth>title.clientWidth,controls:[...header.querySelectorAll('button,a')].filter(e=>e.getBoundingClientRect().width>0).every(e=>{const r=e.getBoundingClientRect();return r.left>=rect.left-1&&r.right<=rect.right+1;}),viewer:document.querySelector('iframe').getBoundingClientRect().height,same:savedFrame===document.querySelector('iframe')&&savedWindow===savedFrame.contentWindow,ready:signals.length,sidebarHidden:document.querySelector('.paperReaderSidePanel').hidden};});
+  assert((full?(geometry.titleWidth>30&&geometry.truncated):geometry.titleWidth===0)&&geometry.controls&&geometry.viewer>200&&geometry.same&&geometry.ready===1&&geometry.sidebarHidden,JSON.stringify({full,...geometry}));
  }
  assert.equal(await readerPage.evaluate(()=>host.close()),true);
- console.log(name+': PASS HEAD Reader/upstream + candidate CSS, 5 layout transitions, title ellipsis/controls/frame/ready; no AI');
+ console.log(name+': PASS current Reader/CSS, 5 layout transitions, title ellipsis/controls/frame/ready; no Chat allocation');
  await context.close();
  const page=await browser.newPage({viewport:{width:900,height:720}});
  await page.setContent('<meta charset="utf-8"><section class="leftBody" style="width:380px;height:650px;overflow:auto"><div id="folderTree">UNCHANGED GLOBAL TREE</div></section><button id="paperFavoriteBtn"></button><iframe id="reader"></iframe><div id="chat">UNCHANGED CHAT</div>');

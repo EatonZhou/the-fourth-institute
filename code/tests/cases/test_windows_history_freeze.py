@@ -76,8 +76,8 @@ class HistoryFreezeIntegration(unittest.TestCase):
                     self.assertEqual(unmapped, 0)
                     self.assertTrue(verify_frozen(connection)["passed"])
 
-    def test_workspace_schema_migrates_and_checks_absolute_paths(self):
-        """旧约束迁移保留工作区；支持盘符与 UNC，拒绝相对路径和各类根目录。"""
+    def test_workspace_schema_requires_offline_migration_and_checks_absolute_paths(self):
+        """旧表拒绝在线迁移且保留数据；现行表支持盘符及 UNC，拒绝相对路径与根目录。"""
         import psycopg
         from management_portal.resources.workspace_store import WorkspaceStore
 
@@ -93,8 +93,19 @@ class HistoryFreezeIntegration(unittest.TestCase):
         store = WorkspaceStore.__new__(WorkspaceStore)
         store.database = SimpleNamespace(schema="workspace_path_test")
         store.table = '"workspace_path_test".workspaces'
+        with self.assertRaisesRegex(RuntimeError, 'offline maintenance window'), connection.transaction():
+            store._initialize(connection)
+        self.assertEqual(connection.execute(
+            'SELECT workspace_id,path FROM workspace_path_test.workspaces').fetchall(),
+            [("workspace_000000000000", "/existing/workspace")])
+        connection.execute('CREATE SCHEMA workspace_path_current')
+        store.database = SimpleNamespace(schema="workspace_path_current")
+        store.table = '"workspace_path_current".workspaces'
         with connection.transaction():
             store._initialize(connection)
+        insert = ("INSERT INTO workspace_path_current.workspaces "
+                  "(workspace_id,path,title,owner_id,created_at,updated_at) "
+                  "VALUES (%s,%s,'test','test-owner',now(),now())")
         valid = ["/srv/工作区", "C:/Users/安装 用户/workspace", r"C:\Users\用户\workspace",
                  "//server/share/workspace", r"\\server\share\workspace"]
         for index, path in enumerate(valid, 1):
@@ -111,8 +122,8 @@ class HistoryFreezeIntegration(unittest.TestCase):
         with connection.transaction():
             store._initialize(SimpleNamespace(execute=execute))
         self.assertFalse(any(sql.startswith("ALTER TABLE") for sql in statements))
-        self.assertEqual(connection.execute("SELECT count(*) FROM workspace_path_test.workspaces").fetchone()[0],
-                         len(valid) + 1)
+        self.assertEqual(connection.execute("SELECT count(*) FROM workspace_path_current.workspaces").fetchone()[0],
+                         len(valid))
 
     def test_windows_unicode_code_directory_mapping_roundtrips_through_postgres(self):
         """Windows 中文及空格的代码目录在 SQL、JSON 数据导入中保持原值。"""

@@ -56,7 +56,7 @@ def test_persistent_research_http_reader_and_execution(owners, monkeypatch, tmp_
     document=production_service().open(ACTOR,paper_id)['document']
     document={k:document[k] for k in ('paper_id','attachment_id','attachment_version')}
     async def root(request):
-        return HTMLResponse('<div id=research></div><link rel="stylesheet" href="/static/paper.css"><div id="chat"></div><script type="module">import {openReader} from "/static/paper_fullscreen_reader.js";window.signals=[];window.openDocument=()=>window.readerHost=openReader({paper:'+json.dumps({'id':paper_id,'title':'Isolated single paper','pdf_url':'/unused.pdf'})+',principal:'+json.dumps(ACTOR)+',isCurrent:()=>PortalIdentity.username()==='+json.dumps(ACTOR)+',onReady:s=>signals.push(s.paperId)});window.readerModuleReady=true;</script>')
+        return HTMLResponse('<div id=research></div><link rel="stylesheet" href="/static/paper.css"><div id="chat"></div><script type="module">import {openReader} from "/static/paper_fullscreen_reader.js";window.signals=[];window.openDocument=()=>window.readerHost=openReader({chat:{width:()=>research.paperChatWidth(),mount:host=>research.mountChat(host),addSelection:text=>research.addSelectionToChatDraft(text),answers:()=>research.selectionAnswers()},paper:'+json.dumps({'id':paper_id,'title':'Isolated single paper','pdf_url':'/unused.pdf'})+',principal:'+json.dumps(ACTOR)+',isCurrent:()=>PortalIdentity.username()==='+json.dumps(ACTOR)+',onReady:s=>signals.push(s.paperId)});window.readerModuleReady=true;</script>')
     app=Starlette(routes=[Route('/',root),Route('/api/instructions/execute',asgi.instruction_execute,methods=['POST']),Route('/{path:path}',asgi.portal_http,methods=['GET','POST'])])
     # Browser transport is forwarded verbatim to the real ASGI endpoints in this
     # process. No prepare/instruction response is intercepted or synthesized.
@@ -92,6 +92,7 @@ def test_persistent_research_http_reader_and_execution(owners, monkeypatch, tmp_
                 page.evaluate('window.__PORTAL_LANGUAGE__="zh-CN"')
                 for name in ['portal_translations.js','portal_i18n.js','portal_button_tooltips.js']:
                     page.add_script_tag(content=(repo/'management_portal/static'/name).read_text())
+            page.add_script_tag(content=(repo/'management_portal/static/paper_research_controls.js').read_text())
             page.add_script_tag(content=(repo/'management_portal/static/paper_chat.js').read_text())
             page.evaluate("""actor=>{
               window.researchState={username:actor,principalId:actor,selectedId:'paper_0123456789ab'};
@@ -107,7 +108,8 @@ def test_persistent_research_http_reader_and_execution(owners, monkeypatch, tmp_
             }""",ACTOR)
             # Explicit nonfullscreen creation through the real production route.
             page.once('dialog',lambda dialog:dialog.accept('Cross-paper research'))
-            page.get_by_role('button',name='新建研究助手',exact=True).click()
+            page.locator('.paperResearchTitleTrigger').click()
+            page.get_by_role('menuitem',name='+ 新建 AI',exact=True).click()
             page.wait_for_function('researchState.researchSlot?.state==="bound" || window.researchError')
             assert page.evaluate('window.researchError||null') is None
             selected=page.evaluate('researchState.researchSlot')
@@ -158,14 +160,14 @@ def test_persistent_research_http_reader_and_execution(owners, monkeypatch, tmp_
             outer=page.frames[1]
             outer.frame_locator('iframe').first.locator('.textLayer span').first.dblclick()
             outer.locator('.portalAISelection').click()
-            page.get_by_role('complementary',name='论文 AI 侧栏').wait_for()
-            page.locator('.paperAIChat [role="textbox"]').fill('Compare this synthetic paper')
+            page.get_by_role('region',name='论文 AI 侧栏').wait_for()
+            page.locator('.paperReaderChatHost [role="textbox"]').fill('Compare this synthetic paper')
             try:
                 with page.expect_response(lambda r:r.url.endswith('/api/instructions/execute') and r.request.post_data_json.get('instruction')=='DeliverMessage', timeout=10000) as delivered:
-                    page.locator('.paperAIChat [role="textbox"]').press('Control+Enter')
+                    page.locator('.paperReaderChatHost [role="textbox"]').press('Control+Enter')
             except Exception:
                 print('JOINT_TRACE', json.dumps(trace[-12:], ensure_ascii=False))
-                print('JOINT_PANEL',page.locator('.paperAIPanel').inner_text())
+                print('JOINT_PANEL',page.locator('.paperReaderChatMount').inner_text())
                 raise
             result=delivered.value.json()
             assert result['status']=='committed',result
@@ -178,7 +180,7 @@ def test_persistent_research_http_reader_and_execution(owners, monkeypatch, tmp_
             assert len(support.transport.turns)==1
             assert 'Compare this synthetic paper' in str(support.transport.turns)
             page.evaluate('id=>PortalResidentProtocol.loadSnapshot(id,{force:true})',resident)
-            page.wait_for_function("document.querySelector('.paperAIChat').textContent.includes('Synthetic Reader answer.')")
+            page.wait_for_function("document.querySelector('.paperReaderChatHost').textContent.includes('Synthetic Reader answer.')")
             page.screenshot(path=str(tmp_path/'persistent-research.png'))
             print('RESEARCH_SCREENSHOT',str(tmp_path/'persistent-research.png'))
             page.evaluate('readerHost.close()')
@@ -195,13 +197,15 @@ def test_persistent_research_http_reader_and_execution(owners, monkeypatch, tmp_
             assert page.evaluate('researchChat.target().resident_id')==resident
             assert len(support.transport.turns)==1
             page.once('dialog',lambda dialog:dialog.accept('Second persistent assistant'))
-            page.get_by_role('button',name='新建研究助手',exact=True).click()
+            page.locator('.paperResearchTitleTrigger').click()
+            page.get_by_role('menuitem',name='+ 新建 AI',exact=True).click()
             page.wait_for_function('old=>researchState.researchSlot?.slot_id!==old',arg=selected['slot_id'])
             second_slot=page.evaluate('researchState.researchSlot')
             assert second_slot['resident_id']!=resident
             assert second_slot['materials_workspace_id']==selected['materials_workspace_id']
             assert second_slot['workspace_id']!=selected['workspace_id']
-            page.get_by_label('选择研究助手',exact=True).select_option(selected['slot_id'])
+            page.locator('.paperResearchTitleTrigger').click()
+            page.get_by_role('menuitemradio',name='Cross-paper research',exact=True).click()
             page.wait_for_function('id=>researchState.researchSlot?.slot_id===id',arg=selected['slot_id'])
             assert len(support.transport.turns)==1
             # Final admission rejects forged target/expired versions/revocation.

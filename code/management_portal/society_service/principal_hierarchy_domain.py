@@ -242,7 +242,7 @@ def ensure_personal_assistant(username: str, ama_id: str, actor: str) -> dict[st
     from management_common.principal import actor_principal
     from management_portal.shared_state import exclusive_file_lock
     from . import lineage_state, lineage_graph_edits, resident_catalog, lineage_graph_state
-    from .templates.familize import familize
+    from .templates import create_family
 
     owner = actor_principal(username)
     if owner.kind != "user" or actor_principal(actor) != owner:
@@ -266,7 +266,7 @@ def ensure_personal_assistant(username: str, ama_id: str, actor: str) -> dict[st
                 return {}
             graph, _ = lineage_graph_edits.commit_lineage_edit(lineage_id, actor, rename, reason="个人助手默认名称")
         if not blocks:
-            result = familize(lineage_id, [ama_id], actor, title=graph["title"], personal_ama_id=ama_id)
+            result = create_family(lineage_id, [ama_id], actor, title=graph["title"], personal_ama_id=ama_id)
             graph = lineage_aggregate.read_lineage(lineage_id, actor=actor)
             block = next(b for b in graph["function_blocks"] if b["id"] == result["family_id"])
         else:

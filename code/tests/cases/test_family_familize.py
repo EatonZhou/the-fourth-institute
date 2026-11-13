@@ -354,6 +354,22 @@ def test_all_family_entries_use_saved_role_defaults(lineage, charters, entry):
                                                 body["resident_settings"][role]["settings"]["reasoning_effort"])
 
 
+def test_existing_lineage_family_does_not_reload_a_deleted_recipe(lineage, charters):
+    from management_portal.society_service import templates
+    from management_portal.society_service.templates.familize import TEMPLATE_ID
+
+    resident(lineage, "Member")
+    created = ok("Familize", {"lineage_id": lineage, "scope": "lineage"})
+    templates.delete(TEMPLATE_ID)
+    try:
+        replay = ok("Familize", {"lineage_id": lineage, "scope": "lineage"}, key="already-family")
+        assert replay["family_id"] == created["family_id"]
+        with pytest.raises(KeyError):
+            templates.get(TEMPLATE_ID)
+    finally:
+        templates.restore(TEMPLATE_ID, ACTOR)
+
+
 def test_the_router_and_steward_start_with_what_was_chosen_when_placing_the_family(lineage, charters):
     """放入 Family 时为 Router 与 steward 选的后端和设置用于新建它们
 

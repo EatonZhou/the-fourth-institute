@@ -398,6 +398,10 @@ class PytestGroup:
             "NO_COLOR": "1",
             **extra,
         })
+        if self.lane == "isolated" and sys.platform not in {"win32", "darwin"}:
+            # The namespace owns /tmp. Host runtime directories are masked;
+            # native/browser children must not inherit their temporary paths.
+            environment.update(TMPDIR="/tmp", TMP="/tmp", TEMP="/tmp")
         return environment
 
     def missing_declaration(self, item_index: int, item: dict[str, Any]) -> bool:

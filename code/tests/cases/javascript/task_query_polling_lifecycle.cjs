@@ -10,6 +10,7 @@ async function check(name) {
   const dom = new JSDOM('<main id="root"></main><div id="paperModal"><form id="paperForm"><input name="title"><input name="registration_upload_id"></form><p id="paperRegisterUploadStatus"></p><button id="paperRegisterUploadBtn"></button><button id="submitPaperBtn"></button></div>',
     {url:'http://fixture/',runScripts:'outside-only',pretendToBeVisual:true});
   const w=dom.window, timers=new Map(); let serial=0;
+  w.PortalI18n={t:text=>text,message:text=>text};
   w.setTimeout=(fn,delay)=>{timers.set(++serial,{fn,delay});return serial;};
   w.clearTimeout=id=>timers.delete(id);
   const run=async delay=>{

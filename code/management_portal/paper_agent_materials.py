@@ -133,3 +133,10 @@ def variants_for_message(snapshot, prompt):
     value=dict(snapshot['input_variants'])
     value['path_prompt']=prompt.replace(full,value['path_prompt'],1)
     return value
+
+
+def resident_input_variants(snapshot, prompt):
+    """Contribute variants only for a verified Paper material snapshot."""
+    if snapshot.get('type') != 'paper.task-material':
+        return None
+    return variants_for_message(snapshot, prompt)

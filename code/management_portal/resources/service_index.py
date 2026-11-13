@@ -62,12 +62,20 @@ def get(service: "ResourceService", resource_id: str, *, actor: str = "") -> dic
         resource_types = (service._identity.parse(resource_id).resource_type,)
     except ValueError:
         resource_types = service._identity.id_exception_types
-    if "project" in resource_types:
-        from management_portal import project_registry
-        from management_portal.resource_index_registries import ProjectRegistryAdapter
-        project = project_registry.project(resource_id)
-        if project is not None:
-            record = ProjectRegistryAdapter().project_record("project", project)
+    from management_portal import portal_features
+    authorities = {}
+    for _feature, providers in portal_features.contributions('resource.authoritative_records'):
+        for kind, provider in providers.items():
+            if kind in authorities:
+                raise ValueError(f'multiple authoritative resource providers: {kind}')
+            authorities[kind] = provider
+    for kind in resource_types:
+        if kind not in authorities:
+            continue
+        record = authorities[kind](resource_id)
+        if record is not None:
+            if record.get('resource_id') != resource_id or record.get('resource_type') != kind:
+                raise ValueError('authoritative resource identity mismatch')
             service._access.authorize_read(record, actor=str(actor or ""))
             return record
     if len(resource_types) == 1 and resource_types[0] in COLLABORATION_RESOURCE_TYPES:
@@ -99,7 +107,10 @@ def get(service: "ResourceService", resource_id: str, *, actor: str = "") -> dic
         resource_types=resource_types,
         actor=actor,
     )
-    if "project" in resource_types and record.get("resource_type") == "project":
+    # Project names share the ID-exception namespace with Users. The index
+    # can disambiguate that type, but cannot replace an unavailable Project
+    # authority after its optional contribution has been removed.
+    if record.get("resource_type") == "project" or record.get("resource_type") in authorities:
         raise KeyError(resource_id)
     service._identity.validate(resource_id, str(record.get("resource_type") or ""))
     service._access.authorize_read(record, actor=str(actor or ""))

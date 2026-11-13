@@ -14,7 +14,7 @@ module.exports = async ({page,out,lineage,teamTitle,checks,calls}) => {
   }
   await page.evaluate(title=>{
     window.PortalNav={personalAssistantTarget:async()=>({resident_id:'resident_0123456789ab',title:'Fixture chat'})};
-    window.PortalResourceChips={loadReference:async()=>({title})};
+    window.PortalResourceChips={...window.PortalResourceChips,loadReference:async()=>({title})};
     window.PortalChatWorkspace={panelPackage:{create:({root})=>{
       root.textContent='Isolated chat transport';
       return {workspace:{addReference(){}},setPresented(){},destroy(){}};

@@ -24,6 +24,8 @@ RULE_DIGESTS = {
     4: "b0655f0fa0faa073538a847dd4887e05df53ac028e7f2721179f763a322e5d24",
     # Pending events retain their durable owner-recovery decision.
     5: "7555731d1abde62368ee6ae2fca9540c12446ca81727d92b6e753cfbaa7674f2",
+    # Isolated deliveries preserve validated fresh text-only constraints.
+    6: "b2b1c23bfab8275c25eec686dbf5da7753827455f2dc59e5a6d701d701abeda8",
 }
 
 

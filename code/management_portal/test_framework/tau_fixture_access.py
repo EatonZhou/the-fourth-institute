@@ -40,9 +40,15 @@ def prepare_workspace_access(root: Path, workspace_id: str, *, check, issue=None
     checks = []
     for action in ('UpdateWorkspaceFile', 'UnregisterResource'):
         arguments = {'principal_id': principal, 'a': action, 'resource_id': workspace_id}
+        # A named A node is not the instruction contract: the active scheme
+        # can map an instruction's arguments to other nodes/resources. Check
+        # the actual call, without writing a file or unregistering anything.
+        call_arguments = ({'address': workspace_id + '/file/tau-access-probe.txt', 'content': ''}
+                          if action == 'UpdateWorkspaceFile' else {'resource_id': workspace_id})
+        permission = {'principal_id': principal, 'instruction': action, 'arguments': call_arguments}
         grant = next((g for g in state['grants'] if g['arguments'] == arguments
                       and not g.get('rejected') and not g.get('released')), None)
-        result = check('CheckPermission', arguments)
+        result = check('CheckPermission', permission)
         if result.get('principal_id') != principal or not isinstance(result.get('allowed'), bool):
             raise ValueError('Workspace permission check returned another principal or no decision')
         if issue is not None and (not result['allowed'] or (grant is not None and not grant.get('receipt'))):
@@ -64,10 +70,11 @@ def prepare_workspace_access(root: Path, workspace_id: str, *, check, issue=None
                     raise ValueError('Temporary permission receipt does not match this fixture')
                 grant['receipt'] = receipt
                 atomic_replace_json(path, state)
-            result = check('CheckPermission', arguments)
-            if result.get('principal_id') != principal:
-                raise ValueError('Workspace permission check returned another principal')
+            result = check('CheckPermission', permission)
+            if result.get('principal_id') != principal or not isinstance(result.get('allowed'), bool):
+                raise ValueError('Workspace permission check returned another principal or no decision')
         checks.append({'instruction': action, 'allowed': result.get('allowed') is True,
+                       'requests': result.get('requests', []),
                        'receipt_pending': bool(grant and not grant.get('receipt') and not grant.get('rejected'))})
     ready = all(row['allowed'] and not row['receipt_pending'] for row in checks)
     return {'workspace_id': workspace_id, 'principal_id': principal,

@@ -102,9 +102,20 @@
     function excludedHtml() {
       const items = plan?.excluded || [];
       if (!items.length) return "";
+      const reasons = {
+        "no-compatible-implementation": t("当前选择的实现、执行方式或运行环境没有可用的匹配组合。"),
+        "tau-campaign-only": t("此实现需要作为 TAU Campaign 运行，不能加入普通测试运行。"),
+      };
+      const rows = items.map(item => {
+        const title = item.case_title || item.title || item.description || item.case_id || t("已排除的用例");
+        const code = item.reason || item.error || "";
+        const reason = Object.hasOwn(reasons, code) ? reasons[code]
+          : t(code ? "该用例不符合当前运行计划的要求。" : "当前选择不包含它的实现。");
+        return `<li data-plan-excluded><a href="${esc(T.caseHref(item.case_id))}">${esc(title)}</a><span class="testMuted">${esc(reason)}</span>${code ? `<details><summary>${esc(t("诊断信息"))}</summary><code>${esc(code)}</code></details>` : ""}</li>`;
+      }).join("");
       return window.PortalI18n.html`<section class="testSection" data-test-section="excluded">
         <div class="testSectionHead"><h2>不会运行</h2><span class="testSectionNote">${esc(window.PortalI18n.text`${items.length} 条`)}</span></div>
-        <ul class="testPlanList">${items.map(item => `<li data-plan-excluded><a href="${esc(T.caseHref(item.case_id))}">${esc(item.case_title || item.description || item.case_id || t("已排除的用例"))}</a><span class="testMuted">${esc(item.reason || item.error || t("当前选择不包含它的实现。"))}</span></li>`).join("")}</ul>
+        <ul class="testPlanList">${rows}</ul>
       </section>`;
     }
 

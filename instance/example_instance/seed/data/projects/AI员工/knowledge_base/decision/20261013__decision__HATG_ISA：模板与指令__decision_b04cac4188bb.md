@@ -4,15 +4,15 @@ type: decision
 project: AI员工
 created_at: '2026-10-13'
 version:
-  number: 21
+  number: 24
   created_at: "2026-10-13"
   created_by:
     user: ""
     agent: "resident_e8fc8c899f00"
-  updated_at: "2026-11-05T13:54:32Z"
+  updated_at: "2026-11-13T21:11:15Z"
   updated_by:
     user: ""
-    agent: "resident_2e9ea0072551"
+    agent: "resident_737599f56947"
 importance: 8
 ai_generated: false
 links:
@@ -67,6 +67,8 @@ links:
 ## 模块架构
 
 `management_portal/society_service/templates/` 集中模板职责。`store` 保存模板与内置安装记录；`values` 校验参数并替换引用；`builtins` 提供内置内容；`registry` 定义各模块共用的接口、施加上下文与结果形状；`kinds` 管理模块登记并做通用规范化；`rewrite` 为结构模板查找并改写已有元素。每种执行行为由独立模块实现，ISA 适配器只处理指令参数、结果与错误映射。
+
+模板入口负责从 `store` 取得 Family 配方。直接 `Familize`、创建 Lineage 时的 Familize、个人助手和质量成员的自动组装统一经过 `templates.create_family`，向 Family 组装传入配方加载回调。组装在入口授权、范围与成员准入检查以及已有整 Lineage Family 的幂等返回之后调用该回调。`ApplyTemplate` 则把已规范化、校验的同一份 `ApplyContext.template` 配方传入组装，组装期间不重新读取另一版本。Family 组装消费配方和本次参数、角色设置覆盖，不依赖模板持久存储；依赖方向保持入口到存储及执行类型、执行类型到组装。内置安装、用户编辑、删除和显式恢复沿各自既有存储规则执行。
 
 模块实现 `TemplateKind` 接口并导出 `KIND`，通过 `kinds.register(KIND)` 登记。接口包含以下成员：
 
@@ -181,7 +183,7 @@ Effect DSL 内的替换使用脚本专用转义器。在带引号的脚本文本
 | Family | family | familize；resident、selection | 将成员组织为 Family，创建门面、steward、Router 及内部结构。默认路由阈值 60、回顾间隔一天。 |
 | Agent Loop | agent_loop | structure；resident | 新建评审角色。目标完成一轮后进入评审，未完成时将意见回给目标，DONE 或轮数上限结束循环。role 可选 critic、questioner、ideator、supervisor，默认 critic；max_rounds 默认 5，task 可编辑。 |
 | 固定提醒 | fixed_reminder | structure；resident | 目标每完成一轮就投递同一条 message，由 max_rounds 限制轮数，默认 5。 |
-| 定时工作 | scheduled_work | structure；resident | 定时与手动入口向目标发送 task；task 必填，interval_seconds 默认 3600，jitter_seconds 默认 0。 |
+| 定时工作 | scheduled_work | structure；resident | 每天按系统本地时间的指定钟点向目标发送 task，并保留“运行一次”手动入口；仅填写 task 和 calendar_time（默认 09:00，24 小时制）。事件源使用 timezone=local，随机偏移为 0。已有施加结果保持原计划。 |
 | Leader Pulse | leader_pulse | structure；canvas | 自动绑定当前 Lineage Leader，按 interval_seconds 投递 prompt，默认每 900 秒。 |
 | 修订回流 | revision_return | prompt；resident、selection | 一次投递可编辑的修订 prompt，不建立持续循环。 |
 | 扩展想法 | expand_ideas | explore；resident | Fork 探索者，生成 idea 候选 Seed；count 默认 3，task 可编辑。 |

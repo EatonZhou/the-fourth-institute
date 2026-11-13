@@ -78,7 +78,9 @@ def test_settings_reads_conversation_and_preview_do_not_create_members(resident_
     assert isinstance(snapshot, dict)
     for turn in ("first", "later", "after_compaction"):
         preview = resident_execution_domain.preview_prompt_injection(resident_record, "CASE-A", turn)
-        assert '"quality": "high"' in preview["prompt"]
+        # Initiative is disabled in this policy; reading it does not inject
+        # reporting instructions or provision a reviewer.
+        assert '<reporting-policy>' not in preview["prompt"]
 
 
 def test_reviewer_role_is_read_for_each_prompt_and_later_input(resident_record, no_provision, monkeypatch):

@@ -69,8 +69,9 @@ def test_detail_loads_figures_only_after_recovery_and_only_when_requested(monkey
     result = paper_detail.get_paper_detail(paper["id"], sections="none")
     assert result["loaded_sections"] == [] and observed == [] and not state["recovered"]
     result = paper_detail.get_paper_detail(paper["id"], sections="figures")
-    assert result["figures"][0]["explanation_status"] == "error"
-    assert observed == [True], "pre-recovery figure data must not be loaded and discarded"
+    assert result["figures"][0]["explanation_status"] == "running"
+    assert observed == [False], "a detail read must not recover, settle or discard current figure data"
+    assert not state['recovered']
 
 
 def test_delete_queries_only_target_reviews_and_preserves_other_paper(monkeypatch, isolated_portal_case):

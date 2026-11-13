@@ -95,6 +95,8 @@ async function pageFor(browser, options = {}, name) {
   const errors = [];
   page.on('pageerror', error => errors.push(error.message));
   await page.route('**/*', route => route.request().url().startsWith(origin + '/') ? route.continue() : route.abort());
+  // This fixture's accessible-name assertions exercise the Chinese interface.
+  await page.addInitScript(() => { window.__PORTAL_LANGUAGE__ = 'zh-CN'; });
   await page.goto(origin);
   await page.evaluate(() => {
     window.PortalIdentity = { username: () => 'host-loading-fixture' };
@@ -248,6 +250,8 @@ async function embeddedLayout(browser) {
     assert.ok(geometry.width >= 300, JSON.stringify(geometry));
     assert.ok(geometry.height >= 300 && geometry.bottom <= geometry.hostBottom + 1, JSON.stringify(geometry));
     assert.equal(geometry.tabs.length, 4, 'all regions and Chat remain accessible');
+    // Workbench's tab strip is revealed by hover/focus, rather than always open.
+    await h.page.getByRole('tab', { name: 'progress', exact: true }).focus();
     await h.page.getByRole('tab', { name: 'progress', exact: true }).click();
     await h.page.getByRole('tab', { name: '开发团队对话', exact: true }).click();
     await h.page.getByLabel('Chat draft').fill('retain chat draft');

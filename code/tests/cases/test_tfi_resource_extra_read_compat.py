@@ -268,7 +268,8 @@ def test_input_receipt_alias_keeps_input_identity_and_original_dictionary():
                 "lineage_id": "lineage_0123456789ab", "requested_message_id": "msg_original",
                 "input_message_id": "msg_confirmed", "reply_message_ids": ["msg_reply"],
                 "event_id": "", "event_source_id": "", "effect_id": "", "trigger_path_id": "",
-                "planned_message_id": "", "usage_message_id": "", "input_identity_status": "delivered"}
+                "planned_message_id": "", "usage_message_id": "", "input_identity_status": "delivered",
+                "instruction_id": "", "instruction": "", "idempotency_key": "", "request_id": ""}
     assert paper_projection.input_receipt(raw) == expected
     assert raw == original
     unconfirmed = {**raw, "input_message_id": ""}

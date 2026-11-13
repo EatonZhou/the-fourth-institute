@@ -1749,10 +1749,11 @@ def _build_resident_execution_request_unrestricted(
     )
     variants = {}
     snapshot = (job.get('context_refs') or {}).get('verified_material_snapshot') or {}
-    if snapshot.get('type') == 'paper.task-material':
-        from management_portal.paper_agent_materials import variants_for_message
-        canonical_prompt = str(job.get('raw_message') or '') if scope else str(job.get('actual_sent_prompt') or job.get('message') or job.get('raw_message') or '')
-        variants = {'input_variants': variants_for_message(snapshot,canonical_prompt)}
+    from management_portal.portal_features import resident_input_variants
+    canonical_prompt = str(job.get('raw_message') or '') if scope else str(job.get('actual_sent_prompt') or job.get('message') or job.get('raw_message') or '')
+    input_variants = resident_input_variants(snapshot, canonical_prompt)
+    if input_variants is not None:
+        variants = {'input_variants': input_variants}
     from management_portal.execution.input_variant_trace import trace
     trace('request_builder', business_ref=job.get('business_ref', '') or snapshot.get('business_ref', ''), role=exact_resident_id,
           prompt=str(job.get('raw_message') or job.get('message') or ''), spec=variants.get('input_variants'))

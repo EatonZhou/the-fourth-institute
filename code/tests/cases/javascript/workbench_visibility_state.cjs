@@ -105,10 +105,14 @@ function createHarness({ sourceTransform = (_name, source) => source } = {}) {
         await new Promise(resolve => setImmediate(resolve));
         for (const observer of observers) observer.disconnect();
         observers.clear();
-        // jsdom.close removes listeners, descendants and all window timers.
+        // A retained Document wrapper is not a lifecycle contract in jsdom.
+        let afterClose = false;
+        window.addEventListener('fixture-close-probe', () => { afterClose = true; });
+        const closeProbe = new window.Event('fixture-close-probe');
         window.close();
+        window.dispatchEvent(closeProbe);
+        assert.equal(afterClose, false, 'closing the fixture removes window listeners');
       }
-      assert.equal(window.document, undefined, 'DOM window closed');
       assert.equal(pendingFrames.size, 0, 'fixture animation frames cleaned');
       assert.deepEqual(errors, [], 'cleanup must not log production errors');
     },

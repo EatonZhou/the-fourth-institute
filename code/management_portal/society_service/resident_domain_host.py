@@ -39,6 +39,25 @@ class ResidentDomainHost:
         return family_direct_delivery.resume(record, message_id, actor)
 
     @staticmethod
+    def prepare_pending_questions(resident_id, message, repository):
+        from . import user_pending_questions
+        return user_pending_questions.prepare(resident_id, message, repository)
+
+    @staticmethod
+    def is_personal_mobile_message(facade, message):
+        from . import personal_phone_assistant
+        return personal_phone_assistant.is_mobile(facade, message)
+
+    @staticmethod
+    def ensure_personal_mobile_member(facade, actor):
+        from . import personal_phone_assistant
+        return personal_phone_assistant.ensure(facade, actor)
+
+    @staticmethod
+    def relay_family_message(*args, **kwargs):
+        return family_quota.relay_message(*args, **kwargs)
+
+    @staticmethod
     def publish_quota_switch(record, gate, before):
         return family_quota._publish_quota_switch(record, gate, before)
 
@@ -62,9 +81,9 @@ class ResidentDomainHost:
             )),
             (resident_management_domain, (
                 "rename_resident_identity", "rename_resident_title", "update_resident",
-                "move_resident_identities",
+                "move_resident_identities", "transition_resident_state",
             )),
-            (resident_intake_domain, ("deliver_resident_message_content",)),
+            (resident_intake_domain, ("deliver_resident_message_content", "preflight_resident_input", "existing_resident_delivery")),
             (resident_lifecycle_domain, (
                 "observe_committed_resident_transfer",
                 "terminate_resident_work",

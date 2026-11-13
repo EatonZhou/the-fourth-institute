@@ -5,6 +5,7 @@
 """
 from copy import deepcopy
 from dataclasses import replace
+import os
 
 import pytest
 
@@ -24,35 +25,34 @@ STORE_INITIALIZERS = {'AgentDataStore': initialize_agent_data, 'LineageDataStore
 
 
 @pytest.mark.parametrize('store,table,tag,schema', [
-    ('AgentDataStore', 'agent_store_meta', 'tfi.agent-data.v18', 'writer_agent'),
+    ('AgentDataStore', 'agent_store_meta', 'tfi.agent-data.v18', 'agent'),
     # Lineage data versions advance with each migration; the canonical marker is the current one.
-    ('LineageDataStore', 'lineage_meta', LINEAGE_DATA_SCHEMA, 'writer_lineage'),
+    ('LineageDataStore', 'lineage_meta', LINEAGE_DATA_SCHEMA, 'lineage'),
 ])
 def test_new_marker_and_existing_alias_startup_are_distinct(store, table, tag, schema, monkeypatch):
     """新库写规范标记，已有库接受不同标记且不改写值和行版本。"""
-    initialize = STORE_INITIALIZERS[store]
-    database = portal_database(schema=schema)
-    if store == 'LineageDataStore':
-        # The workspace deletion trigger targets the owning Lineage schema;
-        # this test gives that owner a dedicated schema instead of the default.
-        from management_common.portal_database import _database_schema
-        from management_portal.resources.workspace_store import get_workspace_store
-        get_workspace_store()
-        monkeypatch.setattr('management_common.portal_database._database_schema',
-                            lambda name: database.schema if name == 'lineage' else _database_schema(name))
-    database.write(initialize)
-    def row():
-        with database.read() as connection:
-            return dict(connection.execute(
-                f"SELECT value,xmin::text AS row_version FROM {table} WHERE key='schema'").fetchone())
-    assert row()['value'] == tag
-    for marker in (tag, 'archive.' + tag[4:], tag.rsplit('.v', 1)[0] + '.v999'):
-        database.write(lambda connection: connection.execute(
-            f"UPDATE {table} SET value=%s WHERE key='schema'", (marker,)))
-        before = row()
+    # Initializers create cross-domain foreign keys and deletion triggers.
+    # Isolate the complete storage namespace so none target the ordinary
+    # fixture's Workspace table. The context restores routing even on failure;
+    # the suite's existing namespace cleanup owns these disposable schemas.
+    namespace = os.environ['PORTAL_DATABASE_NAMESPACE']
+    with monkeypatch.context() as patch:
+        patch.setenv('PORTAL_DATABASE_NAMESPACE', namespace + '_writer')
+        initialize = STORE_INITIALIZERS[store]
+        database = portal_database(schema=schema)
         database.write(initialize)
-        database.write(initialize)
-        assert row() == before
+        def row():
+            with database.read() as connection:
+                return dict(connection.execute(
+                    f"SELECT value,xmin::text AS row_version FROM {table} WHERE key='schema'").fetchone())
+        assert row()['value'] == tag
+        for marker in (tag, 'archive.' + tag[4:], tag.rsplit('.v', 1)[0] + '.v999'):
+            database.write(lambda connection: connection.execute(
+                f"UPDATE {table} SET value=%s WHERE key='schema'", (marker,)))
+            before = row()
+            database.write(initialize)
+            database.write(initialize)
+            assert row() == before
 
 
 @pytest.mark.parametrize('prefix', ['archive.', 'tfi.'])

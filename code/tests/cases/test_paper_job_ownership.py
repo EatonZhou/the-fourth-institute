@@ -211,6 +211,32 @@ def test_heartbeat_keeps_claim_unavailable_to_other_workers(monkeypatch, isolate
         assert store.get("deep_read_jobs", "renew")["status"] == "done"
 
 
+def test_heartbeat_failure_is_observable_without_reviving_claim(monkeypatch, isolated_portal_case, caplog):
+    import threading
+    with isolated_portal_case():
+        _job('heartbeat-failure')
+        adapter = ownership.TableAdapter()
+        original = adapter.merge
+        failed = threading.Event()
+        def merge(identity, patch):
+            if threading.current_thread().name == 'paper-job-lease':
+                failed.set()
+                raise RuntimeError('private transport detail')
+            return original(identity, patch)
+        monkeypatch.setattr(adapter, 'merge', merge)
+        monkeypatch.setattr(ownership, 'LEASE_SECONDS', .18)
+        def execute(identity):
+            assert failed.wait(5)
+            time.sleep(.25)
+            with pytest.raises(ownership.OwnershipLost):
+                ownership.worker_write(identity, {'status': 'done'})
+        ownership.run('heartbeat-failure', execute, adapter=adapter)
+        assert store.get('deep_read_jobs', 'heartbeat-failure')['status'] == 'queued'
+        assert 'heartbeat-failure' in caplog.text and 'RuntimeError' in caplog.text
+        assert 'private transport detail' not in caplog.text
+        assert ownership.claim('heartbeat-failure', adapter) is not None
+
+
 def test_recovery_loop_launches_only_active_jobs_outside_get(monkeypatch, isolated_portal_case):
     from management_portal import paper_reading_jobs as jobs
     with isolated_portal_case():

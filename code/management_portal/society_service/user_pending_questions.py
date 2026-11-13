@@ -43,61 +43,15 @@ from management_common.provider_interactions import INTERACTIVE_TOOL_NAMES
 
 LOGGER = logging.getLogger(__name__)
 
-TABLE = "user_pending_requests"
-REPAIR_TABLE = "user_pending_request_repairs"
-READY_KEY = "user_pending_requests"
-CLEANUP_KEY = "user_pending_requests_cleanup_after"
-# Created when absent; an existing table is not locked on process start.
-SCHEMA_SQL = """
-DO $user_pending_requests$
-BEGIN
-    IF to_regclass('user_pending_requests') IS NULL THEN
-        CREATE TABLE user_pending_requests (
-            user_id TEXT NOT NULL,
-            source_resident_id TEXT NOT NULL,
-            source_message_id TEXT NOT NULL,
-            resident_id TEXT NOT NULL,
-            message_id TEXT NOT NULL,
-            kind TEXT NOT NULL,
-            created_at TIMESTAMPTZ NOT NULL,
-            PRIMARY KEY (user_id, source_resident_id, source_message_id)
-        );
-        CREATE INDEX user_pending_requests_source_idx
-            ON user_pending_requests(source_resident_id, source_message_id);
-        -- A store without Conversation history has nothing to backfill.
-        IF NOT EXISTS (SELECT 1 FROM conversation_events LIMIT 1) THEN
-            INSERT INTO lineage_meta(key, value) VALUES ('user_pending_requests', 'ready')
-                ON CONFLICT (key) DO UPDATE SET value='ready';
-        END IF;
-    END IF;
-    IF to_regclass('user_pending_request_repairs') IS NULL THEN
-        CREATE TABLE user_pending_request_repairs (
-            resident_id TEXT NOT NULL,
-            message_id TEXT NOT NULL,
-            PRIMARY KEY (resident_id, message_id)
-        );
-    END IF;
-END
-$user_pending_requests$
-"""
-COLUMNS = "user_id, source_resident_id, source_message_id, resident_id, message_id, kind, created_at"
-
+from .user_pending_question_storage import (
+    TABLE, REPAIR_TABLE, READY_KEY, CLEANUP_KEY, COLUMNS, SCHEMA_SQL,
+    Pending, create_schema, mark_ready, record,
+)
 
 class IndexNotReady(RuntimeError):
     """The index cannot say every waiting question now; the caller must not show an empty list."""
 
 
-def create_schema(connection: Any) -> None:
-    """Create the index when absent; created in a store without history, it is ready at once."""
-
-    connection.execute(SCHEMA_SQL)
-
-
-def mark_ready(connection: Any) -> None:
-    connection.execute(
-        "INSERT INTO lineage_meta(key, value) VALUES (%s, 'ready') ON CONFLICT (key) DO UPDATE SET value='ready'",
-        (READY_KEY,),
-    )
 
 
 def _user_key(user_id: object) -> str:
@@ -194,20 +148,6 @@ def rows_for(resident_id: str, message: Mapping[str, Any], repository: Any) -> l
     ]
 
 
-class Pending:
-    """What one message write adds to the index: its rows, or a repair when they could not be worked out."""
-
-    def __init__(self, resident_id: str, message_id: str, rows: list[tuple[Any, ...]] | None) -> None:
-        self.resident_id, self.message_id, self.rows = resident_id, message_id, rows
-
-    def write(self, connection: Any) -> None:
-        if self.rows is None:
-            connection.execute(
-                f"INSERT INTO {REPAIR_TABLE}(resident_id, message_id) VALUES (%s,%s) ON CONFLICT DO NOTHING",
-                (self.resident_id, self.message_id),
-            )
-            return
-        record(connection, self.rows)
 
 
 def prepare(resident_id: str, message: Mapping[str, Any], repository: Any) -> Pending:
@@ -225,14 +165,6 @@ def prepare(resident_id: str, message: Mapping[str, Any], repository: Any) -> Pe
         return Pending(resident_id, message_id, None)
 
 
-def record(connection: Any, rows: Iterable[tuple[Any, ...]]) -> None:
-    for row in rows:
-        connection.execute(
-            f"INSERT INTO {TABLE} ({COLUMNS}) VALUES (%s,%s,%s,%s,%s,%s,COALESCE(%s::timestamptz, now())) "
-            "ON CONFLICT (user_id, source_resident_id, source_message_id) "
-            "DO UPDATE SET kind=EXCLUDED.kind, resident_id=EXCLUDED.resident_id",
-            row,
-        )
 
 
 def reindex(resident_id: str, message_id: str, repository: Any) -> list[tuple[Any, ...]]:

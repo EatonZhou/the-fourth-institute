@@ -82,8 +82,9 @@ def test_exp_admission_uses_single_paper_lookup(isolated_portal_case, monkeypatc
 
 
 def test_exp_worker_only_loads_metadata(monkeypatch, tmp_path):
-    state = {'job_id': 'exp-fixture', 'paper_id': 'visible', 'created_by': 'reader'}
-    monkeypatch.setattr(jobs, '_set_exp_job', lambda identity, patch: state.update(patch) or dict(state))
+    state = {'job_id': 'exp-fixture', 'paper_id': 'visible', 'created_by': 'reader', 'status': 'queued'}
+    store.append('exp_jobs', state)
+    monkeypatch.setattr(jobs, '_notify_paper_projection', lambda *a, **kw: None)
     def metadata(pid, *, sections=None):
         assert sections == [], 'Worker must not load unrelated artifacts or recover figures'
         return {'paper': {'id': pid, 'title': 'Fixture'}}
@@ -91,7 +92,9 @@ def test_exp_worker_only_loads_metadata(monkeypatch, tmp_path):
     monkeypatch.setattr(jobs, '_generate_exp_extraction', lambda *a, **kw: ('\n'.join('## ' + s for s in jobs.EXP_SECTIONS), {}))
     monkeypatch.setattr(jobs, '_write_exp_markdown', lambda *a, **kw: tmp_path / 'exp.md')
     monkeypatch.setattr(jobs.PAPER_STORE, 'update_paper', lambda *a: {})
-    jobs._run_exp_job(state['job_id'])
+    owner = jobs.paper_job_ownership
+    assert owner.run(state['job_id'], jobs._run_exp_job, adapter=owner.TableAdapter('exp_jobs'))
+    state = store.get('exp_jobs', state['job_id'])
     assert state['status'] == 'done', state.get('error')
 
 

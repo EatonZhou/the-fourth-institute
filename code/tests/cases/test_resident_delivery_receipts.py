@@ -78,6 +78,14 @@ def test_deliver_message_effect_uses_the_formal_receipt_under_the_outer_lock_and
     primitives = lineage_domain.lineage_primitives
     lineage = lineage_reads.get_lineage(lineage_id, "sample_admin")
     effect_id = "effect_delivery_receipt"
+    # Admission checks the persisted component, not only the compiled plan.
+    from management_portal.society_service.state_store import get_lineage_data_store
+    store = get_lineage_data_store()
+    definition = store.lineage_definition(lineage_id)
+    definition.setdefault('program', {}).setdefault('components', []).append({
+        'id': effect_id, 'kind': 'effect',
+    })
+    store.put_lineage_definition(lineage_id, definition, {})
     # The compiled plan's shape: the declared endpoint and the Resident its Target wire connects.
     plan = {"effects": {effect_id: {
         **effect_config("DeliverMessage", {"resident_id": {"from": "endpoint.target"}}),

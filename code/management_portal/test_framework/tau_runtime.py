@@ -282,7 +282,12 @@ def apply_configuration(assignment: dict[str, Any]) -> dict[str, Any]:
     tools_stale = not account_changed and _session_lacks_required_tools(resident_id, source)
     if account_changed or intake_closed or tools_stale:
         idempotency_key = f"tau-config:{assignment['configuration_id']}:{resident_id}"
-        if intake_closed and not account_changed:
+        if account_changed:
+            # A saved configuration can be applied again after a later source
+            # session change. Only retries of this same source reuse the key;
+            # ISA already scopes it by the authenticated caller/instruction.
+            idempotency_key += f":source:{source['generation']}"
+        elif intake_closed:
             idempotency_key += f":closed:{source['generation']}"
         elif tools_stale:
             idempotency_key += f":tools:{source['generation']}"

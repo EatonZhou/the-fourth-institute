@@ -24,11 +24,7 @@ const root = path.resolve(__dirname, '../../..');
         window.history[method]({}, '', url);
       };
       window.PortalI18n = {html: tag, text: tag, t: String, markup: String};
-      window.PortalUIPrimitives = {
-        escapeHtml: value => String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch])),
-        objectOf: value => value && typeof value === 'object' ? value : {},
-        iconHtml: () => '', asyncStateHtml: ({message}) => `<p>${message}</p>`,
-      };
+      window.PortalCompatibility = {identifier: name => `repo-fixture:${name}`};
       window.PortalResourceDetail = {
         createDetailHistory: () => ({push: history('pushState'), replace: history('replaceState')}),
         createGuest: () => ({setResource: noop, ready: noop, failed: noop, changed: noop}),
@@ -43,7 +39,7 @@ const root = path.resolve(__dirname, '../../..');
         if (!response.ok) throw Error(data.error || `HTTP ${response.status}`);
         return data;
       };
-      window.PortalAPI = {get: requestJson, post: (url, data) => requestJson(url, {
+      window.PortalAPI = {get: requestJson, abortRequest: (controller, reason) => controller?.abort(reason), post: (url, data) => requestJson(url, {
         method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data),
       })};
       window.PortalUI = {
@@ -61,7 +57,10 @@ const root = path.resolve(__dirname, '../../..');
     // The Repo page's own scripts (its parts, then the root) in page order.
     const repoScripts = [...repoPage.matchAll(/<script src="\/static\/(repo_workspace[a-z_]*\.js)"/g)]
       .map(match => `<script src="/static/${match[1]}"></script>`).join('');
-    const html = repoPage.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '').replace('</body>', `${repoScripts}</body>`);
+    // Repo popovers use the shared overlay owner from their initial mount.
+    const shellScripts = ['portal_ui_primitives.js', 'portal_overlay.js']
+      .map(file => `<script src="/static/${file}"></script>`).join('');
+    const html = repoPage.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '').replace('</body>', `${shellScripts}${repoScripts}</body>`);
     await page.route('**/resource/repo?*', route => route.fulfill({contentType: 'text/html', body: html}));
     const workspace = page.locator('#repoWorkspace');
     // A stale Git-only deep link must switch to source before any detail fetch.
@@ -101,7 +100,6 @@ const root = path.resolve(__dirname, '../../..');
     // real HTTP mutation; a page-wide submit interceptor must not swallow it.
     await page.evaluate(() => {
       delete window.PortalUI;
-      delete window.PortalUIPrimitives;
       window.PortalI18n.message = String;
       document.addEventListener('submit', event => {
         event.preventDefault(); event.stopImmediatePropagation();
@@ -110,10 +108,12 @@ const root = path.resolve(__dirname, '../../..');
     for (const file of ['portal_state.js', 'portal_ui_primitives.js', 'portal_overlay.js', 'portal_ui.js']) {
       await page.addScriptTag({url: `${base}/static/${file}`});
     }
+    await workspace.locator('[data-repo-more]').click();
     await workspace.locator('[data-repo-discard]').click();
     const confirmation = page.locator('[data-portal-confirmation]:visible');
     await confirmation.locator('.portalDetailFooter [data-portal-confirm-cancel]').click();
     assert.equal(requests.filter(url => url.endsWith('/workspace/discard')).length, 0);
+    await workspace.locator('[data-repo-more]').click();
     await workspace.locator('[data-repo-discard]').click();
     const discarded = page.waitForResponse(response => response.url().endsWith('/workspace/discard') && response.request().method() === 'POST');
     await confirmation.locator('[data-portal-confirm-accept]').click();

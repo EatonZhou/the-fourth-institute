@@ -982,8 +982,10 @@
     let stopPending = false;
     const updateControls = () => {
       if (els.input) {
-        const disabled = state.composer.can_send === false && state.composer.input_read_only === true;
-        els.input.setAttribute("contenteditable", String(options.editable !== false && !disabled));
+        const disabled = state.composer.can_edit === false
+          || (state.composer.can_send === false && state.composer.input_read_only === true);
+        const editable = String(options.editable !== false && !disabled);
+        if (els.input.getAttribute("contenteditable") !== editable) els.input.setAttribute("contenteditable", editable);
         els.input.setAttribute("aria-disabled", String(disabled));
         const placeholder = window.PortalI18n.t(disabled
           ? state.composer.disabled_reason || "当前对话暂不可发送"
@@ -2499,6 +2501,7 @@
             }] : [],
           },
           placeholder: window.PortalI18n.t("Resident 不可用"),
+          canEdit: false,
           meta: window.PortalI18n.t(deleted ? "请打开其他 Resident。" : "请打开其他 Resident，或刷新后重试。"),
           historyScope: residentSessionScope(target),
         },
@@ -3199,7 +3202,7 @@
           placeholder: options.placeholder || window.PortalI18n.t("加载失败"),
           meta: options.meta || "等待服务恢复…",
           can_send: false,
-          can_edit: true,
+          can_edit: options.canEdit !== false,
           can_stop: false,
           can_attach: false,
           refs_enabled: false,

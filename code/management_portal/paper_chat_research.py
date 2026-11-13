@@ -322,6 +322,9 @@ def catalog(params, *, actor):
             try:
                 actual = isa_client.call(actor, 'GetResident', {'resident_id': resident_id})['resident']
             except isa_client.InstructionError as error:
+                if error.code == 'instruction.forbidden':
+                    # A revoked association is retained but is not a visible catalog item.
+                    continue
                 if error.code != 'instruction.not_found':
                     raise
                 deleted.append({'workspace_key': scope[len(prefix):], 'resident_id': resident_id})

@@ -29,6 +29,7 @@ def test_deep_read_real_thread_holds_test_lease_and_tracks_files(tmp_path, monke
     seen = []
     path = tmp_path / 'reading-work'
     job = {'job_id': 'deep-read-feature', 'status': 'queued'}
+    paper_state_store.append('deep_read_jobs', job)
     monkeypatch.setattr(reading, '_latest_deep_read_job', lambda **kw: job)
 
     def work(job_id):

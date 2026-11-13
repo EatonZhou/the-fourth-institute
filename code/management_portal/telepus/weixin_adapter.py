@@ -1,6 +1,8 @@
 """Weixin transport, per-user sequencing and durable budget-aware delivery."""
 from __future__ import annotations
 
+import logging
+
 import hashlib
 import mimetypes
 import secrets
@@ -15,6 +17,9 @@ from .runtime import setting
 from .weixin_client import WeixinClient, WeixinError
 from .weixin_format import WeixinPresentation, segment_text, split_text
 from .weixin_store import WeixinStore, chat_key
+
+
+LOGGER = logging.getLogger(__name__)
 
 
 class WeixinAdapter:
@@ -184,7 +189,8 @@ class WeixinAdapter:
                     path = root / (secrets.token_hex(16) + suffix)
                     path.write_bytes(raw)
                     text.append(f"[{'image' if kind == 2 else 'file'}: {path}]")
-                except Exception:
+                except Exception as exc:
+                    LOGGER.warning("Weixin attachment download unavailable (%s)", type(exc).__name__)
                     text.append('[附件下载失败]')
         return '\n\n'.join(text), reference
 

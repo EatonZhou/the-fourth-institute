@@ -439,11 +439,13 @@ def test_windows_native_open_failure_does_not_close_invalid_handle(monkeypatch):
 @pytest.fixture
 def workspace_writer(tmp_path, monkeypatch):
     from management_portal.resources import isa
+    from management_portal.resources import ResourceService
     from management_portal.society_service import lineage_access_policy
     target = tmp_path / "document.md"
     target.write_text("original")
     notifications = []
     service = SimpleNamespace(
+        parse_address=ResourceService().parse_address,
         get=lambda *a, **kw: {"attributes": {"path": str(tmp_path)}},
         notify_source_changed=lambda **kw: notifications.append(kw),
     )

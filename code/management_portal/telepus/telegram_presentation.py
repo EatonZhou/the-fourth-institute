@@ -1,5 +1,7 @@
 """Telegram presentation of shared routing actions and question sessions."""
 from __future__ import annotations
+
+import logging
 from typing import Any
 from .channel import ChannelCapabilities
 
@@ -52,6 +54,9 @@ BOT_COMMANDS = (
 )
 
 
+LOGGER = logging.getLogger(__name__)
+
+
 class TelegramPresentation:
     def help_messages(self, where):
         return [self.help_text, where]
@@ -72,7 +77,8 @@ class TelegramPresentation:
     def _attachment_keyboard(self, core, state: dict[str, Any], resident_id: str, message: dict[str, Any]) -> dict[str, Any] | None:
         try:
             files = core.portal.attachments(state["portal_actor"], resident_id, message)
-        except Exception:  # noqa: BLE001 - the text still goes out
+        except Exception as exc:  # noqa: BLE001 - the text still goes out
+            LOGGER.warning("Telegram attachment presentation unavailable (%s)", type(exc).__name__)
             return None
         rows = []
         for item in files:

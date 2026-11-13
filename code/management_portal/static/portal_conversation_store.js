@@ -1334,13 +1334,19 @@
   window.addEventListener("focus", () => {
     indexRefresh.invalidate({ delay: EVENT_REFRESH_DELAY });
   });
+  let pageSuspended = false;
   window.addEventListener("pagehide", () => {
+    pageSuspended = true;
     indexRefresh.stop();
     residentStateCollection?.destroy();
     residentStateCollection = null;
     residentStateSignature = "";
   });
-  window.addEventListener("pageshow", () => {
+  window.addEventListener("pageshow", event => {
+    // Initial startup already schedules its read. Only a restored document
+    // needs to restart the coordinator stopped by pagehide and revalidate.
+    if (!pageSuspended && !event.persisted) return;
+    pageSuspended = false;
     indexRefresh.start();
     indexRefresh.invalidate({ delay: EVENT_REFRESH_DELAY });
   });

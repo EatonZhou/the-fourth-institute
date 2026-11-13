@@ -1,27 +1,22 @@
-const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict');
-const root=path.resolve(__dirname,'../../..'),staticDir=path.join(root,'management_portal/static');
-const {chatWorkspaceScripts}=require('./chat_workspace_modules.cjs'),{portalWorkbenchScripts}=require('./portal_workbench_scripts.cjs');
-const scripts=['portal_state.js','portal_page_state.js','portal_text.js','portal_ui_primitives.js','portal_ui.js','portal_overlay.js','portal_resource_chips.js','portal_image_editor.js','portal_editor_open_service.js','portal_command_registry.js','portal_workbench_context.js','portal_api.js','portal_instruction_client.js','portal_resident_service.js','resident_protocol.js','resident_projection.js','portal_resident_runtime_controller.js',...portalWorkbenchScripts(),...chatWorkspaceScripts()];
+const path=require('node:path'),assert=require('node:assert/strict');
+const {installReaderChat}=require('./reader_shared_chat.cjs');
+const focusedStyle=e=>{const s=getComputedStyle(e);return {focused:e===document.activeElement,...Object.fromEntries(['outlineStyle','outlineWidth','outlineColor','boxShadow','borderColor'].map(k=>[k,s[k]]))};};
 (async()=>{const [url,name,cookie,token]=process.argv.slice(2),browser=await require('../../../management_portal/test_framework/tau_runtime/node_modules/playwright')[name].launch({headless:true});try{
 const toggleOnly=process.env.READER_TOGGLE_ONLY==='1',timelineOnly=process.env.READER_TIMELINE_ONLY==='1',splitOnly=process.env.READER_SPLIT_ONLY==='1';
-for(const phase of (toggleOnly||timelineOnly||splitOnly)?['after']:['before','after']){
- const ctx=await browser.newContext({viewport:{width:1280,height:900}});await ctx.addCookies([{name:cookie,value:token,url}]);const page=await ctx.newPage(),prepares=[],errors=[];page.on('pageerror',e=>errors.push(e.message));
- if(phase==='before')await page.route('**/static/paper_fullscreen_reader.js',r=>r.fulfill({contentType:'text/javascript',body:fs.readFileSync(process.env.READER_BEFORE_BUNDLE)}));
+for(const phase of ['current']){
+ const ctx=await browser.newContext({viewport:{width:1280,height:900}});await ctx.addCookies([{name:cookie,value:token,url}]);const page=await ctx.newPage(),prepares=[],errors=[];page.on('pageerror',e=>errors.push(e.message));page.setDefaultTimeout(10000);
  page.on('request',r=>{if(r.url().endsWith('/chat-workspace/api/prepare'))prepares.push(r.postDataJSON());});
- await page.goto(url);await page.waitForFunction(()=>ready);
- for(const [,file] of fs.readFileSync(path.join(root,'management_portal/paper.html'),'utf8').matchAll(/href="\/static\/([^\"]+\.css)"/g))if(file!=='paper.css')await page.addStyleTag({path:path.join(staticDir,file)});
- await page.addStyleTag({content:fs.readFileSync(phase==='before'?process.env.READER_BEFORE_CSS:path.join(staticDir,'paper.css'),'utf8')});
- await page.evaluate(()=>{window.PortalIdentity={username:()=> 'reader_one'};window.PortalEvents={isConnected:()=>false,connect(){}};window.PortalI18n={t:s=>s,message:s=>s,requestLanguage:()=> 'zh-CN'};});
- await page.addScriptTag({content:fs.readFileSync(process.env.READER_ROUTES,'utf8')});for(const file of [...new Set(scripts)])await page.addScriptTag({path:path.join(staticDir,file)});
+ await page.goto(url);await page.waitForFunction(()=>ready);await installReaderChat(page);
+ let homeFocus;
+ if(!toggleOnly&&!timelineOnly&&!splitOnly){const homeInput=page.locator('#ordinaryChat [role=textbox]');await homeInput.focus();homeFocus=await homeInput.evaluate(focusedStyle);assert(homeFocus.focused);}
  await page.evaluate(()=>openDocument());await page.waitForFunction(()=>signals.length===1);
- await page.getByRole('button',{name:phase==='before'?'新 AI 讨论':'打开 AI',exact:true}).click();
- await page.locator('.paperAIChat [role=textbox]').waitFor();
-
-
+ await page.getByRole('button',{name:'打开 AI',exact:true}).click();
+ await page.locator('.paperReaderChatHost [role=textbox]').waitFor();
+ assert(await page.evaluate(()=>document.querySelector('.paperReaderChatHost').contains(sharedChatRoot)));
  if(splitOnly){
-  const split=page.getByRole('separator',{name:'调整 AI 侧栏宽度'}),panel=page.locator('.paperAIPanel');
+  const split=page.getByRole('separator',{name:'调整 AI 侧栏宽度'}),panel=page.locator('.paperReaderSidePanel');
   await split.waitFor();assert.equal(await page.locator('.paperAIClose').count(),0);
-  const input=page.locator('.paperAIChat [role=textbox]');await input.fill('Retain my draft');
+  const input=page.locator('.paperReaderChatHost [role=textbox]');await input.fill('Retain my draft');
   await page.evaluate(()=>window.savedFrame=document.querySelector('.paperReadingViewer').contentWindow);
   const width=()=>panel.evaluate(e=>e.getBoundingClientRect().width),start=await width(),count=prepares.length;
   const box=await split.boundingBox();await page.mouse.move(box.x+3,box.y+80);await page.mouse.down();await page.mouse.move(box.x-120,box.y+80,{steps:6});await page.mouse.up();
@@ -44,7 +39,7 @@ for(const phase of (toggleOnly||timelineOnly||splitOnly)?['after']:['before','af
    window.probeRails=[];
    for(const place of ['inside','outside']){
     const root=document.createElement('div');root.id='rail-'+place;root.style.cssText='height:240px;width:300px;background:white;z-index:100;'+(place==='inside'?'position:absolute;top:80px;left:0':'position:fixed;top:80px;left:50px');
-    (place==='inside'?document.querySelector('.paperAIChat'):document.body).append(root);
+    (place==='inside'?document.querySelector('.paperReaderChatHost'):document.body).append(root);
     const viewport=document.createElement('div');viewport.style.cssText='height:240px;overflow:auto';
     viewport.innerHTML='<div class="messageList"><div data-message-key="probe-question" style="height:180px">Synthetic question row</div></div>';root.append(viewport);
     const message={message_id:'probe-question',role:'human',content:'Synthetic question'};
@@ -74,12 +69,12 @@ for(const phase of (toggleOnly||timelineOnly||splitOnly)?['after']:['before','af
   const toolbar=page.locator('.paperReadingToolbar');
   const expanded=toolbar.getByRole('button',{name:'收起 AI',exact:true});
   assert.equal(await expanded.getAttribute('aria-expanded'),'true');
-  await expanded.click();assert.equal(await page.locator('.paperAIPanel').count(),0);
+  await expanded.click();assert.equal(await page.locator('.paperReaderSidePanel').isVisible(),false);assert(await page.evaluate(()=>document.getElementById('ordinaryChat').contains(sharedChatRoot)));
   const collapsed=toolbar.getByRole('button',{name:'打开 AI',exact:true});
   assert.equal(await collapsed.getAttribute('aria-expanded'),'false');
-  await collapsed.click();await page.locator('.paperAIChat [role=textbox]').waitFor();
+  await collapsed.click();await page.locator('.paperReaderChatHost [role=textbox]').waitFor();
   assert.equal(await toolbar.getByRole('button',{name:'收起 AI',exact:true}).getAttribute('aria-expanded'),'true');
-  assert(prepares.every(p=>p.workspace_key==='paper:paper_0123456789ab'));
+  assert.deepEqual(prepares,[]);assert.equal(await page.evaluate(()=>sharedPanel.surface().workspace_key),'paper:paper_0123456789ab');
   await page.locator('.paperReadingToolbar').getByRole('button',{name:'收起 AI',exact:true}).click();
   assert.equal(await collapsed.getAttribute('aria-expanded'),'false');
   assert.deepEqual(errors,[]);await page.evaluate(()=>host.close());await ctx.close();
@@ -87,25 +82,23 @@ for(const phase of (toggleOnly||timelineOnly||splitOnly)?['after']:['before','af
  }
 
  for(const width of [1280,720]){
-  await page.setViewportSize({width,height:900});await page.screenshot({path:path.join(process.env.TMPDIR,`reader-style-${name}-${phase}-${width}.png`)});
-  if(phase==='after'){
-   const layout=await page.evaluate(()=>{const panel=document.querySelector('.paperAIPanel'),header=document.querySelector('.paperReadingToolbar');return {overflow:document.documentElement.scrollWidth>innerWidth,headerHeight:header.getBoundingClientRect().height,panelWidth:panel.getBoundingClientRect().width,buttons:[...header.querySelectorAll('button,select,a')].map(e=>({text:e.textContent,height:e.getBoundingClientRect().height,font:getComputedStyle(e).fontSize,border:getComputedStyle(e).borderTopStyle,right:e.getBoundingClientRect().right})),heads:panel.querySelectorAll('header').length};});
-   assert.equal(layout.overflow,false,JSON.stringify(layout));assert(layout.panelWidth>=280&&layout.panelWidth<=365);assert(layout.buttons.every(b=>b.height<=32&&b.right<=width+1),JSON.stringify(layout));assert(layout.buttons.every(b=>parseFloat(b.font)<=13));assert.equal(layout.heads,0,'no duplicate outer title');
-  }
+  await page.setViewportSize({width,height:900});
+  await page.screenshot({path:path.join(process.env.TMPDIR,`reader-style-${name}-${width}.png`)});
+  const layout=await page.evaluate(()=>{const panel=document.querySelector('.paperReaderSidePanel'),header=document.querySelector('.paperReadingToolbar');return {overflow:document.documentElement.scrollWidth>innerWidth,panelWidth:panel.getBoundingClientRect().width,buttons:[...header.querySelectorAll('button,a')].map(e=>({height:e.getBoundingClientRect().height,font:getComputedStyle(e).fontSize,right:e.getBoundingClientRect().right})),same:document.querySelector('.paperReaderChatHost').contains(sharedChatRoot)};});
+  assert.equal(layout.overflow,false);assert(layout.panelWidth>=280&&layout.panelWidth<=365,JSON.stringify(layout));assert(layout.buttons.every(b=>b.height<=32&&b.right<=width+1&&parseFloat(b.font)<=13),JSON.stringify(layout));assert(layout.same);
  }
- if(phase==='after'){
-  assert(prepares.every(p=>p.workspace_key==='paper:paper_0123456789ab'));assert(prepares.every(p=>p.read_only===true));
-  await page.getByLabel('翻译模式').selectOption('google');assert.equal(await page.getByLabel('翻译模式').inputValue(),'google');
-  const input=page.locator('.paperAIChat [role=textbox]');await input.fill('Current paper follow-up draft');await input.focus();assert.equal(await input.evaluate(e=>getComputedStyle(e).outlineStyle),'solid');
-  await page.getByText('确认保存回答为便签',{exact:true}).click();assert.equal(await page.getByRole('button',{name:'确认保存便签',exact:true}).isDisabled(),true);
-  await page.locator('.paperReadingToolbar').getByRole('button',{name:'收起 AI',exact:true}).click();assert.equal(await page.locator('.paperAIPanel').count(),0);
-  const outer=page.frames()[1];await outer.frameLocator('iframe').first().locator('.textLayer span').first().dblclick();await outer.locator('.portalAISelection').click();
-  await page.locator('.paperAIChat [role=textbox]').waitFor();assert(await page.locator('.paperAIChat [role=textbox]').innerText().then(t=>t.includes('请解释以下选区')));
-  assert(prepares.at(-1).context.selection);assert.equal(prepares.at(-1).workspace_key,'paper:paper_0123456789ab');
-  await page.getByRole('button',{name:/引用选区/}).click();assert.equal(await outer.locator('#pageNumber').inputValue(),'1');
-  await page.locator('.paperReadingToolbar').getByRole('button',{name:'收起 AI',exact:true}).click();assert.equal(await page.locator('.paperAIPanel').count(),0);
- }
- assert.deepEqual(errors,[]);await page.evaluate(()=>host.close());await ctx.close();
+ const input=page.locator('.paperReaderChatHost [role=textbox]');await input.fill('Current paper follow-up draft');await input.focus();
+ const borrowedFocus=await input.evaluate(focusedStyle);assert(borrowedFocus.focused);
+ assert.deepEqual(borrowedFocus,homeFocus,'borrowing Chat preserves its own focus styling');
+ await page.locator('.paperReadingToolbar').getByRole('button',{name:'收起 AI',exact:true}).click();
+ assert(await page.evaluate(()=>document.getElementById('ordinaryChat').contains(sharedChatRoot)));
+ const outer=page.frames()[1];await outer.frameLocator('iframe').first().locator('.textLayer span').first().dblclick();await outer.locator('.portalAISelection').click();
+ await input.waitFor();assert((await input.innerText()).startsWith('Current paper follow-up draft'));
+ assert((await input.innerText()).length>'Current paper follow-up draft'.length);
+ await page.getByText('确认保存回答为便签',{exact:true}).click();assert.equal(await page.getByRole('button',{name:'确认保存便签',exact:true}).isDisabled(),true);
+ await page.getByRole('button',{name:/引用选区/}).click();assert.equal(await outer.locator('#pageNumber').inputValue(),'1');
+ assert.deepEqual(prepares,[]);assert.deepEqual(errors,[]);
+ await page.evaluate(()=>host.close());assert(await page.evaluate(()=>document.getElementById('ordinaryChat').contains(sharedChatRoot)));await ctx.close();
 }
-console.log(name+': PASS real Chat factory + Reader, before/after 1280/720 screenshots, compact/focus/select/collapse/selection/same paper key; prepare identity fixture only, no model');
+console.log(name+': PASS shared Chat root/draft/selection/borrow-return and Reader chrome; no conversation allocation or model');
 }finally{await browser.close();}})().catch(e=>{console.error(e);process.exitCode=1;});

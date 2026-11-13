@@ -25,6 +25,7 @@ DECISIONS = Path(os.environ.get(
     str(Path(__file__).resolve().parents[3] / "instance/example_instance/seed/data/projects/AI员工/knowledge_base/decision"),
 ))
 CATEGORY_DECISIONS = {
+    "paper": "e37f240e186d",
     "resource": "ad3e21094f14",
     "user": "6eac174d85bf",
     "resident": "d19b9909a674",

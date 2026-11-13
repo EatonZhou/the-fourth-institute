@@ -23,6 +23,8 @@ const template = fs.readFileSync(path.join(portal, 'wall.html'), 'utf8');
         </style>${template}<div id="host" class="developmentView wallPage"></div>
         <aside class="portalAgentInbox" data-has-assistant="true"><button class="portalAgentInboxTrigger">Inbox</button><button class="portalAgentInboxTrigger portalPersonalAssistantTrigger">Chat</button></aside>`);
       await page.evaluate(() => {
+        // The real inbox mount declares its reserved edge clearance on body.
+        document.body.classList.add('portalAgentInboxMounted');
         document.getElementById('host').append(document.getElementById('wallNativeView').content.cloneNode(true));
         const project = document.getElementById('wallProject'); project.innerHTML = '<option>Example Project</option>'; project.disabled = false;
         for (const id of ['wallErrors', 'wallWarnings', 'wallJobs']) {

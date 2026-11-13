@@ -8,7 +8,7 @@ from unittest.mock import Mock
 import pytest
 
 from management_portal import paper_figure_jobs, paper_projection, paper_reading_jobs, resident_handoff
-from tests.cases.test_paper_figure_transactions import figure_store
+from tests.cases.test_paper_figure_transactions import figure_store, run_figure
 from tests.cases.test_paper_deep_read_execution_boundary import _install_job
 
 
@@ -168,11 +168,11 @@ def test_figure_persists_delivered_id_before_wait_and_reconciles_on_resume(figur
     submit = Mock(side_effect=native)
     monkeypatch.setattr(paper_projection.native, 'turn', submit)
     with pytest.raises(SystemExit):
-        paper_figure_jobs._run_figure_resident('Explain', paper, figure, 'explain', generated_id=generated_id)
+        run_figure(figure_store, lambda: paper_figure_jobs._run_figure_resident('Explain', paper, figure, 'explain', generated_id=generated_id), generated_id=generated_id)
     figure = json.loads(path.read_text())[0]
     observed = Mock(return_value=result())
     monkeypatch.setattr(resident_handoff, 'resume_and_wait', observed)
-    content, usage = paper_figure_jobs._run_figure_resident('Unused', paper, figure, 'explain', generated_id=generated_id)
+    content, usage = run_figure(figure_store, lambda: paper_figure_jobs._run_figure_resident('Unused', paper, figure, 'explain', generated_id=generated_id), generated_id=generated_id)
     assert content == 'Verified generated content'
     assert observed.call_args.kwargs['message_id'] == HANDLE['message_id']
     submit.assert_called_once()
@@ -207,8 +207,8 @@ def test_unconfirmed_figure_never_looks_up_planned_id_or_resubmits(figure_store,
     submit, observe = Mock(), Mock()
     monkeypatch.setattr(paper_projection.native, 'turn', submit)
     monkeypatch.setattr(resident_handoff, 'resume_and_wait', observe)
-    with pytest.raises(RuntimeError, match='unconfirmed'):
-        paper_figure_jobs._run_figure_resident('Unused', paper, figure, 'explain')
+    with pytest.raises(paper_projection.InputConfirmationPending):
+        run_figure(figure_store, paper_figure_jobs._run_figure_resident, 'Unused', paper, figure, 'explain')
     submit.assert_not_called()
     observe.assert_not_called()
 
@@ -291,3 +291,19 @@ def test_deep_read_preserves_canonical_receipt_and_waits_for_unconfirmed_deliver
         assert state['resident_reply_message_ids'] == ['msg_reply_one', 'msg_reply_final']
         assert state['resident_usage_message_id'] == 'msg_reply_final'
     resume.assert_not_called()
+
+
+def test_paper_workflow_target_contribution_does_not_claim_other_applications(monkeypatch):
+    from types import SimpleNamespace
+    from management_portal import portal_features
+    from management_portal.workbench_projections import service
+    calls = []
+    paper = {'resident_id': 'target', 'lineage_id': 'lineage', 'name': 'paper:review', 'application': 'paper'}
+    other = {**paper, 'application': 'test'}
+    def registered(ids):
+        calls.append(ids)
+        return [paper, other]
+    monkeypatch.setattr(service, 'get_service', lambda: SimpleNamespace(store=SimpleNamespace(registered_role_targets=registered)))
+    provider = dict(portal_features.contributions('workflow.targets'))['paper']
+    assert provider(['target']) == [paper]
+    assert calls == [['target']]

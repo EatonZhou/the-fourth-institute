@@ -113,7 +113,7 @@ class ReaderExecutionSupport:
         control = {}
         state = {}
         while time.monotonic() < deadline:
-            self.drain_society(resident_id)
+            resumed = self.drain_society(resident_id)
             control = resident_execution_engine_domain.read_resident_execution_control(resident_id)
             input_id = str(control.get("user_message_id") or input_id)
             execution_id = str(control.get("execution_id") or execution_id)
@@ -133,7 +133,24 @@ class ReaderExecutionSupport:
             if state.get("state") == "completed" and not resident_execution_work.is_active(control) and not control.get("queue"):
                 return {"execution_id": execution_id, "input_state": state, "control": control}
             time.sleep(.01)
-        raise TimeoutError(f"Resident {resident_id} did not finish; control={control!r}; input={state!r}")
+        try:
+            snapshot = self.owners.scheduler.snapshot(execution_id) if execution_id else {}
+        except KeyError:
+            snapshot = {"status": "not_submitted"}
+        record = resident_execution_engine_domain.resident_record_for_execution(resident_id)
+        thread = resident_execution_work.thread(record)
+        import sys, traceback
+        from management_portal.society_service import resident_record_domain, resident_restart_handoff
+        frame = sys._current_frames().get(thread.ident) if thread else None
+        stack = ''.join(traceback.format_stack(frame)) if frame else ''
+        raise TimeoutError(f"Resident {resident_id} did not finish; control={control!r}; input={state!r}; "
+                           f"claim={claim!r}; execution={snapshot!r}; resumed={resumed!r}; "
+                           f"registration={record.get('registration_state')!r}; "
+                           f"settings={record.get('execution_settings')!r}; route={record.get('backend_route_id')!r}; "
+                           f"lifecycle_pending={resident_record_domain.lifecycle_operations().pending(resident_id)!r}; "
+                           f"restart_pending={resident_restart_handoff.pending(record, resident_execution_work.read(record))!r}; "
+                           f"continuation_needed={resident_execution_work.continuation_needed(record, resident_execution_work.read(record))!r}; "
+                           f"job={resident_execution_work.read(record)!r}; thread={stack}")
 
     # Short integration-facing names; same driver and real Society continuation.
     resume = drain_society
@@ -160,6 +177,15 @@ def install_execution_support(owners, monkeypatch, tmp_path=None, *,
     # Both Society and Worker now decode the same wire error envelopes. In
     # particular a fenced heartbeat becomes ExecutionClaimOwnershipLost.
     monkeypatch.setattr(owners.execution, "client", execution_transport.ExecutionServiceClient(endpoint))
+    # Research Residents use quota-aware admission. The generic cross-owner
+    # fixture deliberately has an empty account monitor; expose only its
+    # registered isolated Codex routes so real admission can find the account.
+    from management_portal.execution.accounts import ExecutionAccounts
+    from management_portal.execution.account_adapters import CodexAccounts
+    accounts = ExecutionAccounts((CodexAccounts(),))
+    monkeypatch.setattr(owners.server, "accounts", accounts)
+    monkeypatch.setattr(owners.server.preparation, "accounts", accounts)
+    monkeypatch.setattr(owners.server.quota_monitor, "accounts", accounts)
     from management_portal import codex_app_server_threads
     monkeypatch.setattr(codex_app_server_threads, "THREAD_LOCK_ROOT", root / "thread-locks")
     transport = RecordedCodexTransport(response_text)

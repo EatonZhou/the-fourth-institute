@@ -127,7 +127,10 @@ def test_wall_release_preserves_source_after_last_real_resident_deletion(
     assert store.get(APP, actor)['bindings']['main']['residents'] == {'wall-work:other:keep': survivor['resident_id']}
     if lost_reply == 'before_unbind':
         attempts = [key for name, _, key in calls if name == 'UnbindWorkspace']
-        assert attempts[0] == attempts[1]
+        # Each explicit recovery has a fresh key so a definitive failure is
+        # not replayed forever; both attempts still target the same binding.
+        assert attempts[0] != attempts[1]
+        assert attempts[0].rsplit(':', 1)[0] == attempts[1].rsplit(':', 1)[0]
 
 
 def test_source_inside_owned_system_folder_rejects_release_before_any_mutation(monkeypatch, tmp_path):

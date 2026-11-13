@@ -35,7 +35,7 @@ TERMINAL_INVOCATION_STATUSES = frozenset({"completed", "failed", "cancelled"})
 # SocietyService then renormalizes every stored object once at its start
 # (migrate_stored_runtime), and reads normalize again until that finishes.
 # test_lineage_program_runtime_normalization pins the rule's source to this number.
-RUNTIME_NORMALIZATION = 5
+RUNTIME_NORMALIZATION = 6
 _NORMALIZATION_KEY = "program_runtime_normalization"
 _TRUST_SECONDS = 60.0
 _trust: tuple[float, bool] = (float("-inf"), False)

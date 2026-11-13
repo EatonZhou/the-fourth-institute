@@ -60,7 +60,8 @@ def test_projection_reads_large_workspace_snapshot_and_rechecks_authorization(wo
     assert result["content"].encode() == raw
     assert result["metadata"]["content_size"] == len(raw)
     assert result["metadata"]["content_sha256"] == hashlib.sha256(raw).hexdigest()
-    assert projection_reader.calls == [(APP, "alice")]
+    # The workbench gate is checked both before and after the resource read.
+    assert projection_reader.calls == [(APP, "alice"), (APP, "alice")]
 
     workspace.grants.pop(("alice", WORKSPACE))
     with pytest.raises(HTTPError) as denied:

@@ -17,7 +17,7 @@ for(let i=0;i<3;i++){
  assert.equal(await outer.locator('[contenteditable=true]').last().innerText(),'same instance draft');
 }
 await page.evaluate(()=>host.setFullscreen(true));
-await page.locator('.paperReadingToolbar button').focus();await page.keyboard.press('Escape');
+await page.getByRole('button',{name:'退出全屏',exact:true}).focus();await page.keyboard.press('Escape');
 assert(await page.locator('dialog').evaluate(e=>e.classList.contains('is-embedded')));
 assert.equal(await page.evaluate(()=>signals.length),1);
 const navigation=page.waitForEvent('dialog');

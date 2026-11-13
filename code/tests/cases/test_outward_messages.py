@@ -570,7 +570,8 @@ def test_a_familys_message_out_carries_the_members_own_uploads_and_no_one_elses(
     assert open(job["input_media"][0]["source"], "rb").read() == PNG
     from management_portal.society_service.resident_execution_domain import _prepare_resident_prompt
     job = _prepare_resident_prompt(_find_resident(outsider), job)
-    assert f"/{notes}/notes.txt]" in job["actual_sent_prompt"]
+    assert f"/{notes}/payload]" in job["actual_sent_prompt"]
+    assert (tmp_path / "uploads" / notes / "payload").read_bytes() == b"steps to reproduce"
 
     for owner in (facade, "sample_admin"):
         foreign = _upload("other.png", "image/png", PNG, owner=owner)

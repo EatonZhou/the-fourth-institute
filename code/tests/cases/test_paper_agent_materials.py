@@ -102,3 +102,25 @@ def test_short_prompt_failure_marker_and_evidence(env):
     with pytest.raises(ValueError, match='chapter/page'):
         materials.validate_path_result('## Evidence\nNo source location')
     materials.validate_path_result('Evidence from Section 2 and 第3页')
+
+
+def test_feature_input_variants_preserve_verified_body_and_refuse_changed_boundary(env):
+    from management_portal import portal_features
+    full, _, snapshot = prepare()
+    prompt = 'Workflow instructions\n' + full + '\nReply here'
+    result = portal_features.resident_input_variants(snapshot, prompt)
+    assert result == materials.variants_for_message(snapshot, prompt)
+    assert full not in result['path_prompt']
+    assert portal_features.resident_input_variants({'type': 'unrelated'}, prompt) is None
+    with pytest.raises(ValueError, match='boundary'):
+        portal_features.resident_input_variants(snapshot, 'missing canonical material')
+
+
+def test_input_variants_without_feature_and_conflicting_owners(monkeypatch):
+    from management_portal import portal_features
+    monkeypatch.setattr(portal_features, 'contributions', lambda hook: ())
+    assert portal_features.resident_input_variants({}, 'unchanged') is None
+    monkeypatch.setattr(portal_features, 'contributions',
+                        lambda hook: (('first', lambda *_: {}), ('second', lambda *_: {})))
+    with pytest.raises(ValueError, match='multiple'):
+        portal_features.resident_input_variants({}, 'unchanged')

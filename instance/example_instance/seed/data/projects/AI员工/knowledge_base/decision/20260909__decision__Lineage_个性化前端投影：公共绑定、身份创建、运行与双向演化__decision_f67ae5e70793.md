@@ -4,31 +4,31 @@ type: decision
 project: AI员工
 created_at: '2026-09-09'
 version:
-  number: 52
-  created_at: '2026-09-09'
+  number: 53
+  created_at: "2026-09-09"
   created_by:
-    user: ''
-    agent: resident_72f9ac2db8f0
-  updated_at: '2026-10-29T11:55:13Z'
+    user: ""
+    agent: "resident_72f9ac2db8f0"
+  updated_at: "2026-11-13T20:48:57Z"
   updated_by:
-    user: ''
-    agent: resident_ad0fce4b8c8b
+    user: ""
+    agent: "resident_737599f56947"
 importance: 8
 ai_generated: false
 links:
   source:
-  - ${code_root}/management_portal/workbench_projections/service.py
-  - ${code_root}/management_portal/workbench_projections/store.py
-  - ${code_root}/management_portal/workbench_projections/http.py
-  - ${code_root}/management_portal/workbench_projections/native.py
-  - ${code_root}/management_portal/workbench_projections/studio.py
-  - ${code_root}/management_portal/workbench_projections/sdk.md
-  - ${code_root}/management_portal/resources/providers/workbench.py
-  - ${code_root}/management_portal/static/projection_host.js
-  - ${code_root}/management_portal/static/projection_sdk.js
-  - ${code_root}/management_portal/static/portal_projections.js
-  - ${code_root}/management_portal/static/workbench_studio.js
-  - ${code_root}/management_portal/static/portal_nav.js
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/workbench_projections/service.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/workbench_projections/store.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/workbench_projections/http.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/workbench_projections/native.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/workbench_projections/studio.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/workbench_projections/sdk.md
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/resources/providers/workbench.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/projection_host.js
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/projection_sdk.js
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/portal_projections.js
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/workbench_studio.js
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/portal_nav.js
   related:
   - decision_b820faf42218
   - decision_34158fdd4078
@@ -167,9 +167,11 @@ links:
 
 ## 内置应用包工作台
 
-Portal 开发投影是 Portal 的共享内置工作台，入口为 `/development`，逻辑入口名为 `development`。入口登记指向一个已发布的 `workbench_*` 身份；页面、SDK、Chat 和功能区继续复用通用投影宿主，不另建运行器。它出现在全站固定导航和工作台目录的内置组，不占个人顶部扩展名额，也不依赖 TFI portal 或其他账号的个人目录配置。不同用户访问同一已启用身份，数据和操作仍按当前用户授权，本地页面状态及草稿仍按用户隔离。
+Portal 开发投影是 Portal 的共享内置工作台，入口为 `/development`，逻辑入口名为 `development`。入口登记指向一个已发布的 `workbench_*` 身份；页面、SDK、Chat 和功能区继续复用通用投影宿主，不另建运行器。它出现在全站固定导航和工作台目录的内置组，不占个人顶部扩展名额，也不依赖 weihao 或其他账号的个人目录配置。不同用户访问同一已启用身份，数据和操作仍按当前用户授权，本地页面状态及草稿仍按用户隔离。
 
 Portal 开发投影和投影工坊是核心内置工作台。Paper、WALL、Test 等业务内置工作台由所属功能登记（`workbench.builtin`，decision_15aab18c0ab3），Portal 不带该功能时没有这个内置入口；页面从 Web 写入的前端清单读取当前安装的内置工作台及其地址，打开功能工作台的地址时初始化它的权威登记。
+
+业务内置工作台只暴露所属功能当前支持的能力。Paper 的订阅式正文翻译创建入口已取消，兼容 Ensure/Translate 调用固定返回 410；检查既有绑定的只读入口仍执行当前工作台访问检查，不创建或配置订阅。具体请求与错误合同由 Paper Design（decision_e37f240e186d）维护，投影宿主不另建替代执行入口。
 
 工作台是不是 Portal 内置入口由独立的启用操作决定。将已有应用包登记为内置工作台时，保留资源 ID、修订、发布指针、构建产物和团队绑定，不复制页面或创建替代团队。通过独立的启用操作指定已登记的 builtin 名、expected_revision 和 previous_app_id；当前修订须已发布，绑定与领域前置条件须通过，入口比较交换与 builtin 归属变更在同一事务提交。冲突或校验失败不留下半迁移身份；已启用入口不能直接删除，也不能改作另一逻辑入口。
 
@@ -184,6 +186,8 @@ Portal 开发投影和投影工坊是核心内置工作台。Paper、WALL、Test
 - **Projection SDK 提供**：`context()`（页面与绑定的上下文）、`hatg(...)`（调用 HATG 指令，见上文）、`eventInputIds(receipt)`（从事件回执中提取已执行 Effect 投递的输入消息 ID，并去重）、`inputResult(...)`（读取一条输入的回复）、`resource("query" | "read" | "resolve" | "read_many" | "resolve_many", …)`（查询资源、读取资源内容，或解析一个或一组资源地址；只支持这五种只读操作。`resolve` 只返回当前用户能否读取该地址、地址指向的资源类型、标题和页面链接，不返回正文，供页面核对对象引用和证据地址）、`state(value)`（读写当前用户在这个页面上的状态）和 `openLineage(binding)`（打开绑定的 Lineage）。
 
 投影宿主的资源正文入口为一次完整快照设置固定的 16 MiB 预算，并显式传给 ResourceService；该预算独立于应用包资产大小，也不改变 ResourceService 的通用 4 MiB 默认值。页面不能提高预算或指定调用者。每次读取仍先校验工作台访问，再以当前用户解析和鉴权目标资源；返回完整原始字节的 SHA-256，供应用与其固定来源描述符核对。超过预算明确失败，不返回截断正文，不改读其他版本。结构化 YAML 读取采用同一预算与原始字节哈希。
+
+资源宿主的 `query`、`read`、`resolve`、`read_many`、`resolve_many` 都在开始时和返回前校验当前用户的工作台访问。末次校验失败时丢弃本次结果；单项操作和批量操作适用相同边界。资源自身仍逐项按当前调用者授权，这些校验不构成跨资源事务或统一权限快照。
 
 批量资源操作用于在保留逐来源授权的前提下减少宿主 HTTP 往返。每批接受 1–128 个完整地址，按输入顺序逐项执行；重复地址仍分别授权，不用根资源授权、先前解析结果或其他条目的成功替代当前地址权限。调用者始终由宿主当前身份决定，工作台访问在批次开始及返回前复核；末次复核失败丢弃本批结果。批次不构成跨资源事务或统一授权快照，逐项读取时的权限与状态可能不同。
 

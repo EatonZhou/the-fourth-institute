@@ -276,7 +276,8 @@ class Notifications:
                 if resident not in titles:
                     try:
                         titles[resident] = self.portal.resident(actor, resident).get('title') or resident
-                    except Exception:
+                    except Exception as exc:
+                        self.diagnostic(actor, exc)
                         titles[resident] = resident
                 item['title'] = titles[resident]
         individual = len(ready) <= 3 and available >= len(ready)

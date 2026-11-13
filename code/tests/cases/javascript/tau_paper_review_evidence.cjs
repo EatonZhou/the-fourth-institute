@@ -46,9 +46,10 @@ const turn = () => new Promise(resolve => setImmediate(resolve));
       const state = {selectedId: '${paperId}', mode: 'review', reviewInFlight: false};
       const renderWorkspace = () => {};
       const loadReviewStatus = async () => {}; // Fixture: this check does not accept progress/body readiness.
+      const taskBlocked = job => ['queued', 'running'].includes(job?.status) || (job?.status === 'error' && job.can_retry === false);
       const paperApi = {request: (url, options) => PortalAPI.request(url, {...options, signal: window.fixtureAbort.signal})};
       ${create}
-      window.startNative = () => { state.reviewInFlight = false; window.fixtureAbort = new AbortController();
+      window.startNative = () => { state.reviewInFlight = false; state.reviewJob = null; window.fixtureAbort = new AbortController();
         window.nativeResult = createReview().then(() => 'returned', e => e.name); };
       window.selectFixturePaper = id => { state.selectedId = id; };
     })();`});

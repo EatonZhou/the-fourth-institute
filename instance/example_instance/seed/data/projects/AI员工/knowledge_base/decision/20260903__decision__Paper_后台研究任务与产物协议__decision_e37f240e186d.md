@@ -4,15 +4,15 @@ type: decision
 project: AI员工
 created_at: '2026-09-03'
 version:
-  number: 56
+  number: 59
   created_at: "2026-09-03"
   created_by:
     user: ""
     agent: ""
-  updated_at: "2026-11-12T12:00:51Z"
+  updated_at: "2026-11-13T20:48:58Z"
   updated_by:
     user: ""
-    agent: "resident_6199a7a36480"
+    agent: "resident_737599f56947"
 importance: 9
 metaness: 2
 ai_generated: true
@@ -74,6 +74,8 @@ Paper 领域调用共享 Resident 时，适配器接收共享 handle 中的 `mes
 
 `paper.task-material` 引用由业务 owner 创建并绑定 actor、目标 Resident、任务和业务对象。读取时先核对引用、当前调用者与目标身份，再重新检查业务对象访问权；单次解析读取一份 manifest 和一份正文，以同一份正文完成长度、SHA-256 校验并返回。软链接、路径越界、身份或完整性变化均拒绝。重试继续使用该任务的不可变材料，不因当前论文文本变化重建另一份输入。旧的无生产调用材料准备接口不作为另一套入口保留；错误标记和正文证据校验仍用于正式产物验证。
 
+Society 通过 `resident.input_variants(snapshot, prompt)` 查询业务输入变体。Paper 只接管含 `paper.task-material` 的输入，并继续校验材料完整性及原始 prompt 边界；没有提供器接管时返回 `None`，多个提供器同时接管时拒绝。功能注册隔离 Paper 实现，通用会话层不直接导入材料 owner。
+
 ### 九个共享功能 Resident
 
 Paper 的研究任务通过 Paper Lineage 中九个固定功能角色执行。角色键与产物职责见“固定功能对应表”；角色身份解析键为 `(Paper Lineage ID, 角色名)`，不包含 actor、paper_id、job_id 或模型名。每个角色绑定一个持续 Resident，多个角色可以显式共享身份；九角色不保证已有九个不同 Resident。所有用户共享这些功能角色，共享执行身份不扩大请求 actor 对材料和写入目标的权限。
@@ -85,6 +87,8 @@ Paper 的研究任务通过 Paper Lineage 中九个固定功能角色执行。�
 现行规范关于通用系统规则、身份、权限及 Skill 注入的要求，在最小注入配置正式应用前仍属原规则；已授权的新方案按能力通过统一 prompt_injection owner 使用 pure 和下节短角色指令，去除无关 Portal 通用规则、resident.md、身份、协作、导航、开发规范及自动历史。关闭可选 reporting 附加规则；工具任务仅保留必要资源读取、检索、图像与产物说明。pure 不关闭 Provider 自身提示、原生工具或平台强制约束，也不自动删除显式附带历史。最终装配证据应核实短指令仍送达及无无关材料，不能只凭 settings 或 Preview 宣称生产送达完成。
 
 pure、空 tools、短 prompt 和现有 text_only 均不构成跨 backend 的硬禁工具保证。旧交付中 Kimi text_only 已实现禁工具的判断已撤回；相关实验代码属于暂停范围。“无工具任务不暴露工具”作为后续独立能力，须由正式请求、Execution capability 和原生 backend owner 贯通显式契约，不支持时在模型调用前拒绝。本批不以该能力已完成作为交付事实。
+
+Paper 通过 `workflow.targets(resident_ids)` 贡献应用角色目标。提供器仅选择 `application == "paper"` 的登记，保留 Resident、Lineage、角色名和应用等整行信息；通用投递策略经该 hook 读取，继续执行既有角色与 Effect 投递约束。
 
 页面与授权 Lineage 调用者触发同一绑定入口；业务领域组织本次授权材料、业务键和输出要求，Effect 将固定指令与本次 invocation 组合投递，执行仍由既有 HATG ISA、Resident 队列和 Execution 承担。真实发起者取受信请求。每次任务关联目标 Resident、规范输入、对应回复与预期产物，其他用户的后续输入和普通聊天不作为该任务结果。
 
@@ -225,6 +229,8 @@ Paper 的功能按钮绑定流程入口，流程再绑定职责稳定的 Residen
 
 Paper 绑定 owner 对同一业务键的并发首发做幂等控制，持久关联创建回执、目标 Resident 与初始化消息。创建成功而初始化失败时重试初始化；不能再次创建 Resident。重复请求不重复发送首条问题，不同的新问题保持独立消息身份。已绑定成员被删除或移出团队属于明确的失效绑定，按 `decision_528bf9985705` 报错，不当作首次访问静默重建。
 
+研究对话目录逐项读取绑定成员。当前读取被 `instruction.forbidden` 拒绝时，仅隐藏该项并保留关联；明确的不存在结果才按失效绑定规则处理。owner 或控制服务不可用时向调用者报告故障，不能据此删除关联。
+
 Paper 页面与 Society 页面展示的是同一份会话事实。在任一页面发送的消息均能在另一个入口读取；用户之间没有额外的对话隐藏权限。换用户默认解析另一个 Resident，不改变原成员的可见范围。
 
 ### Paper Chat 后续目标与独立翻译边界
@@ -233,7 +239,7 @@ Paper 页面与 Society 页面展示的是同一份会话事实。在任一页�
 
 材料索引记录稳定资源与附件版本，服务端每次读取重新鉴权；页面传来的 context_text、路径和旧索引不授予权限。旧用户×Paper 会话保留，迁移须显式选择，不自动合并历史。创建、绑定、消息与执行继续使用正式 owner 和幂等回执；此目标尚未迁移或上线，具体材料和 cwd 规则见 decision_528bf9985705。
 
-翻译独立服务使用现行 Google／DeepSeek 路径，不占九角色，也不恢复暂停的 Kimi 翻译实验。已授权待上线方案通过正式 Model API／Chat 协议和统一 prompt owner，只发送专用翻译指令、原文、源／目标语言、显式术语及必要格式要求，默认仅返回译文；不附 Portal 通用 system、Resident 身份、历史、工作区或工具目录。专用 MT 按供应商正式输入契约，单 user 协议不强加 system；Paper 不直读密钥另起调用链。
+翻译独立服务使用现行 Google／DeepSeek 路径，不占九角色；Kimi 订阅 verified 翻译实验已永久取消，旧入口只保留明确拒绝及只读绑定检查。ReaderTranslationService 是翻译执行、回执恢复与回退的唯一 owner；TranslationCache 提供 request/get/descriptor/claim/finish 及租约 fencing，不承接独立 run/execute 执行包装。后台 continuation 失败时记录任务 ID 与异常类型，释放本地续跑名额，保留持久请求供显式 POST 重试；失去授权或无法观察原执行不触发自动供应商回退。已授权待上线方案通过正式 Model API／Chat 协议和统一 prompt owner，只发送专用翻译指令、原文、源／目标语言、显式术语及必要格式要求，默认仅返回译文；不附 Portal 通用 system、Resident 身份、历史、工作区或工具目录。专用 MT 按供应商正式输入契约，单 user 协议不强加 system；Paper 不直读密钥另起调用链。
 
 Dev material_task_instructions 与翻译配方 v2 已交付，替身最终 wire 验证只含翻译 system 与材料 user；未发布或加载。已受理 v1 请求按原配方恢复，不重投或迁移在途输入。配置和配方版本进入账号私有缓存材料，Google 协议保持原样，新旧缓存不混用。鉴权、附件版本、取消、执行绑定和真实 provider/model 记录继续保留；请求构造证据不等于生产送达证据。
 
@@ -310,7 +316,7 @@ Review 解析器优先读取模型输出中的 JSON 代码块，再用 JSON 解�
 - Job 保存共享 `paper:deep-read` 角色的 Resident binding 和规范 Resident 消息。恢复时继续等待原消息；不按论文、发起者或 Provider 创建另一个深读成员。
 - 一次 Deep Read 只向角色 Resident 投递一次任务。已确认执行失败或产物校验失败时 job 进入 `error`，不把同一任务再投递一次；用户可以显式启动新任务，或按下述恢复入口采用已生成正文。提交待确认或等待超时仍保持活动态，继续核对原提交。
 - Status 可以用 `job_id` 或 `paper_id` 定位，返回 `idle|queued|running|done|error`、step、progress、`analysis_path`、usage 和 error。
-- Status GET 只做定位、读取授权与状态返回，不启动任务、不修复记录。服务生命周期中的恢复消费者扫描活动 job，以数据库租约取得唯一执行权；已确认输入继续等待原消息，未确认提交沿原路径查询。租约过期或被接管的旧执行者不得写入状态或产物。
+- Status GET 只做定位、读取授权与状态返回，不启动任务、不修复记录。服务生命周期中的恢复消费者扫描活动 job，以数据库租约取得唯一执行权；已确认输入继续等待原消息，未确认提交沿原路径查询。租约过期或被接管的旧执行者不得写入状态或产物。续租线程异常记录 job ID 与异常类型后停止续租，保留到期接管与 fencing 约束，不输出原始异常内容。
 - 成功时写 Analysis Markdown，并把 Paper 更新为 analysis-ready；确定的提取、执行、产物校验或写入失败记录为 `error`。不以暂时查不到原输入推断失败。
 
 
@@ -383,6 +389,7 @@ Contributor 可用 `POST /paper/api/deep-read/provenance` 提交 `{paper_id, job
 - 请求要求 `paper_id`、`figure_id` 和自然语言 `request`。它可以用既有 `generated_id` 指定来源，也可以附加受控输入图。
 - 相同请求会复用尚未过期的活动任务。陈旧任务先进入 `error`，确需新任务时才分配新的 `generated_id`。
 - Generation metadata 保存 request 和输入图路径，供页面和后续编辑识别依据。
+- 恢复时已有确认的 input 与绑定回执，就沿原输入继续观察，不重读或重新上传可能已清理的临时输入图，也不再次提交。新输入仍由业务 owner 冻结本次材料。
 - 成功同时写生成图片和 metadata，并进入 `done`；失败进入 `error`。
 - Delete 同时校验 Paper、Figure 和 generated ID，只移除指定 metadata 与图片。
 
@@ -499,3 +506,25 @@ API 既有调用用量优先保留。Resident 来源优先以原 reply/input/Exe
 model_evidence=resident_current_settings 的旧补入项不视为历史事实，补全时移除其推测值再查原执行；找不到时保留历史缺失。其他已记录字段保持原值，API/账号信息和执行定位字段折叠在生成记录中。token 默认十进制 K/M/B，悬停精确值。分析正文仍支持 summary 作为 v0。
 
 原回复没有型号而仍可定位 Execution 时，Paper 补全调用 ExecutionService.generation_source，只返回原执行的 provider、实际结果账号（缺失时为请求账号）、原请求型号或 Provider 回报型号及执行时间。Execution owner 先检查当前 actor 对所属 Resident 的读取权限，再投影原 Scheduler 请求，既不借用原执行 actor，也不返回 prompt/output。原请求已清理时保留缺失。该只读投影不提交执行、不触发模型。
+
+## Paper ISA 指令
+
+Paper 功能包提供只读导出和历史翻译兼容入口。固定判定槽在默认方案中归免检，资源 owner 仍按实际调用者过滤论文和读取工作台；免检不授予 Paper、工作台或 Resident 的权限。两个退休写入口保持原 mutates 标记并固定拒绝执行，防止旧调用误认为已创建或翻译。
+
+| 指令 | 改变状态 | 用途 | 默认方案要求 |
+| --- | --- | --- | --- |
+| `ExportPaperBibtex` | 否 | 导出指定论文或当前主体收藏的 BibTeX；不可读和缺失项返回 warnings | 免检；每篇论文仍由资源 owner 鉴权 |
+| `GetPaperTranslationBinding` | 否 | 读取已发布 Paper 工作台与历史翻译绑定 | 免检；工作台 owner 按调用者鉴权 |
+| `EnsurePaperTranslationBinding` | 是（兼容标记，固定拒绝） | 已取消实验的旧入口，不创建或配置角色 | 免检；固定返回取消错误 |
+| `TranslatePaperText` | 是（兼容标记，固定拒绝） | 已取消实验的旧入口，不执行翻译 | 免检；固定返回取消错误 |
+
+`ExportPaperBibtex` 的 `paper_ids` 与 `favorites=true` 二选一。收藏只取当前主体；每个论文分别过滤权限，返回实际导出 ID、正文及省略原因。公开接口不接受替代调用者的身份参数。普通 Reader 翻译继续使用独立 HTTP 翻译 owner。
+
+## 参数名契约
+
+| 指令 | 参数 |
+| --- | --- |
+| `ExportPaperBibtex` | `paper_ids`、`favorites` |
+| `GetPaperTranslationBinding` | 无 |
+| `EnsurePaperTranslationBinding` | 无 |
+| `TranslatePaperText` | `operation_id`、`text`、`source_language`、`target_language`、`terminology`、`refresh`、`task_id` |

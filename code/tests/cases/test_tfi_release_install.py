@@ -326,6 +326,9 @@ def test_retire_retained_database_restores_only_its_service_definition(creation,
 def test_retire_partial_file_failure_preserves_registration_and_manifest(creation,monkeypatch):
     installer.create(creation.engineering,name='accept_tmp',postgres=creation.postgres,skip_file_verification=True)
     instance=host_instances.find('accept_tmp')
+    # Definition removal is a preceding boundary, not the file-deletion fault
+    # under test. Never consult or modify the host's service manager here.
+    monkeypatch.setattr(instance_services, 'remove_definitions', lambda _: [])
     def failed(root):
         (root/'instance.json').unlink()
         raise PermissionError('occupied runtime log')

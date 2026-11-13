@@ -19,8 +19,9 @@ const restoreSource = findChatWorkspaceFunction('applyLineageUiState', {
     await page.goto('http://watchboard.fixture.invalid');
     for (const file of [...PORTAL_COMPONENTS_STYLES.map(name => `${name}.css`), 'lineage_workbench.css', 'portal_design_system.css', 'portal_themes.css', 'watchboard_applications/wireguard.css']) await page.addStyleTag({content: fs.readFileSync(path.join(root, file), 'utf8')});
     for (const file of ['portal_text.js', 'portal_state.js', 'portal_translations.js', 'portal_i18n.js', 'portal_ui_primitives.js', 'portal_overlay.js', 'portal_ui.js', 'portal_refresh_coordinator.js', 'watchboard_applications/registry.js', 'watchboard_applications/wireguard.js', 'watchboard_applications/telepus.js', 'lineage_workbench_state.js', 'lineage_workbench_watchboard.js']) await page.addScriptTag({content: fs.readFileSync(path.join(root, file), 'utf8')});
-    await page.evaluate(({shell, restoreSource}) => {
+    await page.evaluate(({shell, titleSource, restoreSource}) => {
       const escapeHtml = PortalUIPrimitives.escapeHtml, iconSvg = PortalUIPrimitives.iconHtml;
+      const workspaceTitleText = eval('(' + titleSource + ')');
       const workspaceShellHtml = eval('(' + shell + ')');
       window.mountBoard = () => {
       window.boardController?.destroy();
@@ -50,7 +51,8 @@ const restoreSource = findChatWorkspaceFunction('applyLineageUiState', {
       refreshBoard();
       };
       mountBoard();
-    }, {shell: findChatWorkspaceFunction('workspaceShellHtml').source, restoreSource});
+    }, {shell: findChatWorkspaceFunction('workspaceShellHtml').source,
+        titleSource: findChatWorkspaceFunction('workspaceTitleText').source, restoreSource});
     }
     await loadFixture();
     await page.locator('[data-wireguard-device-add]').waitFor({state:'attached'});

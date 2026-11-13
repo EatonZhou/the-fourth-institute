@@ -19,6 +19,8 @@ const { PORTAL_COMPONENTS_STYLES } = require(path.join(codeRoot, 'tests/cases/ja
     await context.route('**/*', route => {
       const url = new URL(route.request().url()); requests.push(url.pathname);
       if (url.origin !== 'http://navigation.fixture.invalid') return route.abort();
+      if (url.pathname === '/static/portal_resource_routes.js') return route.fulfill({contentType:'text/javascript', body:require('node:child_process').execFileSync(process.env.TFI_TEST_PYTHON || 'python3', ['-c','from management_portal.resources.portal import portal_route_script; print(portal_route_script().decode())'], {cwd:codeRoot,encoding:'utf8'})});
+      if (url.pathname === '/static/portal_translations.js') return route.fulfill({contentType:'text/javascript',body:'window.__PORTAL_TRANSLATIONS__='+fs.readFileSync(path.join(codeRoot,'management_portal/static/portal_translations.json'),'utf8')+';'});
       if (url.pathname.startsWith('/static/')) {
         const file = path.join(codeRoot, 'management_portal', url.pathname);
         return route.fulfill({ body: fs.readFileSync(file), contentType: file.endsWith('.css') ? 'text/css' : 'text/javascript' });
@@ -35,7 +37,6 @@ const { PORTAL_COMPONENTS_STYLES } = require(path.join(codeRoot, 'tests/cases/ja
       window.PortalAPI = { get: () => new Promise(() => {}) };
       window.PortalInstructionClient = { execute: () => new Promise(() => {}) };
       window.PortalIdentity = { peek: () => ({}), load: async () => ({}) };
-      window.PortalCompatibility = { identifier: () => 'application/x-nav-evidence-fixture' };
       window.PortalConversationStore = {};
       window.PortalAgentInbox = { mount() {} };
       window.PortalUIPrimitives.loadAsset = async () => {};

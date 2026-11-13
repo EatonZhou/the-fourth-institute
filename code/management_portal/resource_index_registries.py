@@ -44,6 +44,15 @@ class ProjectRegistryAdapter(_PathsAdapter):
 
     def __init__(self) -> None:
         self.roots = ()
+        formatters = [providers['project'] for _feature, providers in
+                      portal_features.contributions('resource.index_formatters')
+                      if 'project' in providers]
+        if len(formatters) > 1:
+            raise ValueError('multiple resource index formatters: project')
+        self._projector = formatters[0] if formatters else None
+        if self._projector is None:
+            self.resource_types = frozenset()
+            self.registry_collections = frozenset()
 
     def watch_directories(self) -> list[Path]:
         return []
@@ -57,27 +66,14 @@ class ProjectRegistryAdapter(_PathsAdapter):
         return registry_change_key(project_registry.COLLECTION, resource_id)
 
     def project_record(self, resource_type: str, item: dict[str, Any]) -> dict[str, Any]:
-        # Registration wraps the committed fields in ``project``; a registry
-        # scan supplies them directly. Both must publish the same path before
-        # SocietyService initializes the Project's principal.
-        if isinstance(item.get("project"), dict):
-            item = {**item["project"], "resource_id": item.get("resource_id")}
-        # The Project ID is its title: a Project has no other name.
-        project_id = stripped_text(item.get("resource_id") or item.get("id"))
-        return resource_record(
-            resource_id=project_id, resource_type="project",
-            title=project_id, summary=item.get("description"),
-            adapter=self.name, facets=["project"],
-            attributes={
-                "status": stripped_text(item.get("status")),
-                "project_type": stripped_text(item.get("project_type")), "path": stripped_text(item.get("path")),
-                "ddl": stripped_text(item.get("ddl")), "tags": list(item.get("tags") or []),
-            },
-            search_terms=[item.get("status"), item.get("path"), *(item.get("tags") or [])],
-        )
+        if self._projector is None:
+            raise ValueError('Project index projection is not installed')
+        return self._projector(item)
 
     def scan_changes(self, paths, previous_records, previous_state) -> ChangeSet:
         del previous_state
+        if self._projector is None:
+            return ChangeSet(self.name, (), tuple(sorted({record['resource_id'] for record in previous_records})))
         upserts = []
         deletes = []
         changes = {change for change in map(parse_registry_change_key, paths)
@@ -109,6 +105,9 @@ class ProjectRegistryAdapter(_PathsAdapter):
         return ChangeSet(self.name, tuple(upserts), tuple(deletes))
 
     def scan(self) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+        if self._projector is None:
+            return [], {'project_count': 0, 'project_ids': [], 'status_vocab': [],
+                        'tag_vocab': [], 'resource_errors': []}
         payload = project_provider.load_projects_payload()
         records = []
         project_ids = []

@@ -4,15 +4,15 @@ type: decision
 project: AI员工
 created_at: '2026-09-28'
 version:
-  number: 56
+  number: 59
   created_at: "2026-09-28T10:45:00Z"
   created_by:
     user: "weihao"
     agent: "resident_2a1fc6cd272d"
-  updated_at: "2026-11-04T16:23:50Z"
+  updated_at: "2026-11-13T20:31:08Z"
   updated_by:
     user: ""
-    agent: "resident_6199a7a36480"
+    agent: "resident_737599f56947"
 importance: 8
 metaness: 2
 ai_generated: false
@@ -62,6 +62,7 @@ links:
 | `ForwardMessages` | 是 | 把选中的消息整理成一条新消息发给 Resident 或聊天室 | 对 `target_resident_id` 有 @message；对 `target_chatroom_id` 有 @contributor |
 | `GetConversation` | 否 | 读取对话快照 | 对 `resident_id` 有 @viewer |
 | `ListMessages` | 否 | 分页读取更早的消息 | 对 `resident_id` 有 @viewer |
+| `ResolveMessageContextReferences` | 否 | 受理前读取已鉴权材料快照，保留来源身份与范围 | 对 `target_resident_id` 有 @viewer |
 | `ListInputHistory` | 否 | 从新到旧分页读取调用者本人在一个 Resident 会话或聊天室里发过的输入，供输入框的输入历史使用 | 对 `resident_id` 有 @viewer；对 `chatroom_id` 有 @viewer |
 | `GetMessage` | 否 | 读取一条消息 | 对 `resident_id` 有 @viewer |
 | `ListRecentRounds` | 否 | 读取最近几轮往来：请求、由谁答复、结果和回复开头；也列出主动发给这位发送者的消息 | 对 `resident_id` 有 @viewer |
@@ -281,10 +282,11 @@ Resident 使用 Provider 原生的提问或批准工具时，这一轮工作会�
 
 | 指令名 | arguments 参数名 |
 | --- | --- |
-| `DeliverMessage` | `resident_id`、`user_id`、`message`、`activation_policy`、`business_ref`、`reply_to_message_id`、`temporary_credentials` |
+| `DeliverMessage` | `resident_id`、`user_id`、`message`、`activation_policy`、`context_policy`、`execution_constraints`、`business_ref`、`reply_to_message_id`、`temporary_credentials` |
 | `ForwardMessages` | `target_resident_id`、`target_chatroom_id`、`messages`、`note`、`activation_policy` |
 | `GetConversation` | `resident_id`、`history_limit`、`input_message_id`、`include_context_evidence`、`include_inherited_context` |
-| `ListMessages` | `resident_id`、`cursor`、`limit` |
+| `ListMessages` | `resident_id`、`view`、`input_message_id`、`cursor`、`limit` |
+| `ResolveMessageContextReferences` | `target_resident_id`、`reference` |
 | `ListInputHistory` | `resident_id`、`chatroom_id`、`cursor`、`limit` |
 | `GetMessage` | `resident_id`、`message_id` |
 | `ListRecentRounds` | `resident_id`、`sender_id`、`before_message_id`、`limit` |

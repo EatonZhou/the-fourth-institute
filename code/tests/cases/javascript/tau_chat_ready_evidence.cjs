@@ -22,6 +22,8 @@ const residentId = 'resident_111111111111', otherId = 'resident_222222222222';
     await page.goto('https://chat-ready.fixture.invalid/');
     await page.evaluate(() => {
       window.PortalIdentity = { username: () => 'fixture' };
+      window.PortalCompatibility = { identifier: key => 'tau-fixture-' + key };
+      window.__PORTAL_LANGUAGE__ = 'en';
       window.PortalEvents = { isConnected: () => true, connect() {} };
       window.PortalAPI = { get: async () => ({ config: {}, restart: null }) };
       window.PortalInstructionClient = { execute: async name => {
@@ -30,7 +32,8 @@ const residentId = 'resident_111111111111', otherId = 'resident_222222222222';
       } };
     });
     await page.addScriptTag({ content: routeScript });
-    for (const name of ['portal_state.js', 'portal_page_state.js', 'portal_text.js', 'portal_ui_primitives.js', 'portal_ui.js', 'portal_overlay.js', 'portal_preview_contract.js', 'portal_resource_chips.js', 'portal_image_editor.js', 'portal_editor_open_service.js', 'portal_command_registry.js', 'portal_workbench_context.js', ...portalWorkbenchScripts(), 'portal_resident_service.js', 'resident_protocol.js', ...chatWorkspaceScripts()]) {
+    await page.evaluate(catalog => { window.__PORTAL_TRANSLATIONS__ = catalog; }, JSON.parse(fs.readFileSync(path.join(source,'management_portal/static/portal_translations.json'),'utf8')));
+    for (const name of ['portal_state.js', 'portal_page_state.js', 'portal_text.js', 'portal_i18n.js', 'portal_ui_primitives.js', 'portal_ui.js', 'portal_overlay.js', 'portal_preview_contract.js', 'portal_resource_chips.js', 'portal_image_editor.js', 'portal_editor_open_service.js', 'portal_command_registry.js', 'portal_workbench_context.js', ...portalWorkbenchScripts(), 'portal_resident_service.js', 'resident_protocol.js', ...chatWorkspaceScripts()]) {
       await page.addScriptTag({ content: fs.readFileSync(path.join(source, 'management_portal/static', name), 'utf8') });
     }
     await page.addStyleTag({ content: PORTAL_COMPONENTS_STYLES.map(name => fs.readFileSync(path.join(source, 'management_portal/static', name + '.css'), 'utf8')).join('\n') });
@@ -56,7 +59,7 @@ const residentId = 'resident_111111111111', otherId = 'resident_222222222222';
       }
     }, { residentId, otherId });
     const a = page.locator('#a'), b = page.locator('#b');
-    const oldRoot = page.getByRole('region', { name: /^Chat Workspace/ }).filter({ has: page.getByText(residentId, { exact: true }) });
+    const oldRoot = page.locator('main[role="region"]').filter({ has: page.getByText(residentId, { exact: true }) });
     assert.equal(await oldRoot.count(), 2, 'message text causes the archived root locator to include another Resident');
     const oldIdentityCount = await a.getByText(residentId, { exact: true }).count();
     assert.ok(oldIdentityCount > 1, 'native header and message content/author both match');
@@ -103,10 +106,14 @@ const residentId = 'resident_111111111111', otherId = 'resident_222222222222';
     assert.equal(state.candidates[0].checks.composer, false);
     await page.evaluate(() => panels.a.workspace.clearLoading());
     assert.equal((await sample()).ready, true);
+    await page.evaluate(() => panels.a.workspace.setComposer({ can_edit: true, can_send: false }));
+    assert.equal((await sample()).ready, true, 'drafts remain editable while sending is unavailable');
     await page.evaluate(() => panels.a.workspace.setComposer({ can_edit: false, can_send: false }));
     state = await sample();
     assert.equal(state.ready, false);
     assert.equal(state.candidates[0].inputs[0].editable, false);
+    await page.evaluate(() => panels.a.workspace.setComposer({ can_edit: true, can_send: false, input_read_only: true }));
+    assert.equal((await sample()).ready, false, 'an explicit read-only input is not draft-ready');
     await page.evaluate(() => panels.a.workspace.setComposer({ can_edit: true, can_send: true }));
     assert.equal((await sample()).ready, true);
     await a.evaluate(e => { e.hidden = true; });

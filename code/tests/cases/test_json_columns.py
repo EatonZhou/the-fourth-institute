@@ -81,9 +81,10 @@ def schema(prefix):
 
 
 def lineage_schema():
-    database = schema("json_lineage")
-    database.write(create_lineage_data_schema)
-    return database
+    # Workspace deletion binds to the registered Lineage schema in the same
+    # transaction. The test fixture already gives every case a private schema
+    # namespace; use the domain owner so these cross-schema bindings stay real.
+    return LineageDataStore().database
 
 
 def test_json_text_stores_a_nul_character_as_the_replacement_character():

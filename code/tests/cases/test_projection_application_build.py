@@ -9,6 +9,7 @@ import hashlib
 import io
 import json
 import os
+import re
 from pathlib import Path
 import shutil
 import socket
@@ -537,8 +538,12 @@ def test_real_development_template_store_publish_and_read_asset(project, monkeyp
     dependencies = {item["path"]: item for item in build["dependencies"]}
     assert dependencies["node_modules/dompurify"]["license"] == "(MPL-2.0 OR Apache-2.0)"
     assert any(path.startswith("node_modules/@esbuild/") for path in dependencies)
-    assert dependencies["node_modules/d3"]["version"] == "7.9.0"
-    assert dependencies["node_modules/marked"]["version"] == "18.1.1"
+    # The maintained template resolves its declared ranges at build time.
+    # Check the recorded versions and integrity rather than an old release.
+    for name in ("d3", "marked"):
+        dependency = dependencies[f"node_modules/{name}"]
+        assert re.fullmatch(r"\d+\.\d+\.\d+(?:[-+][A-Za-z0-9.+-]+)?", dependency["version"])
+        assert len(base64.b64decode(dependency["integrity"][7:], validate=True)) == 64
     published = store.publish(app_id, ACTOR, created["revision"])
     assert published["published_revision"] == created["revision"]
     prefix = f'{application_http.PREFIX}{app_id}/{created["revision"]}/{build["artifact_hash"]}/'

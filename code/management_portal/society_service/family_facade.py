@@ -814,6 +814,8 @@ def project_messages(
                 elif review.get("status") == "waiting":
                     message["relay"] = {"state": "quota_review", "resident_id": review["member_id"],
                                         "quota_remaining_percent": review.get("quota_remaining_percent")}
+                elif _unavailable_handoff(facade, message):
+                    message["relay"] = {"state": "failed", "error": {"message": "原卡片的发出成员已不可用，未重新路由"}}
                 elif direct := direct_member(facade, message):
                     # Match dispatch's frozen author policy, including Solo and
                     # question ownership, rather than announcing Router work.
@@ -826,8 +828,7 @@ def project_messages(
         if relay.get("withdrawn"):
             result[-1] = _withdrawn_request(message)
             continue
-        from .personal_phone_assistant import is_mobile
-        channel = (message.get('origin') or {}).get('channel') if is_mobile(facade, message) else None
+        channel = (message.get('origin') or {}).get('channel') if resident_domain_port.is_personal_mobile_message(facade, message) else None
         if channel:
             relay['request_channel'] = channel
         for reply in reply_messages:
@@ -846,9 +847,8 @@ def project_messages(
             result.append(shown)
             if key[1]:
                 shared_replies[key] = shown
-    from .personal_phone_assistant import is_mobile
     for message in result:
-        if message.get('relay') and is_mobile(facade, message):
+        if message.get('relay') and resident_domain_port.is_personal_mobile_message(facade, message):
             message['relay']['request_channel'] = message['origin']['channel']
     return _with_member_positions(result, repository)
 
@@ -978,9 +978,8 @@ def projected_reply(facade: Mapping[str, Any], message_id: str) -> dict[str, Any
     worker_id = found["worker_id"]
     relay = {"resident_id": worker_id, "title": _member_view(worker_id).get("title", ""),
              "via": [{"resident_id": item, **_member_view(item)} for item in found["via"]]}
-    from .personal_phone_assistant import is_mobile
     source = resident_conversation_stream.get_repository().message(facade['resident_id'], found['request_message_id']) or {}
-    channel = source.get('origin', {}).get('channel') if is_mobile(facade, source) else None
+    channel = source.get('origin', {}).get('channel') if resident_domain_port.is_personal_mobile_message(facade, source) else None
     return _facade_reply(resident_lineage.resident_id(facade), found["reply"], relay, found["request_message_id"], channel=channel)
 
 
@@ -1314,6 +1313,10 @@ def _facade_reply(
         [projected], resident_id=str(relay.get("resident_id") or ""),
     )
     for part in projected.get("content_parts") or []:
+        if isinstance(part, dict) and part.get("type") == "resident_handoff_cards":
+            repository = resident_conversation_stream.get_repository()
+            for card in part["cards"]:
+                card["submitted"] = repository.message(str(relay.get("resident_id") or ""), card["selection_message_id"]) is not None
         if isinstance(part, dict) and part.get("type") == "async_questions":
             # The facade shows the member's set as the member has it: open
             # until the member's Conversation holds its answer.
@@ -1509,17 +1512,24 @@ def routing_snapshot(facade, message):
     return {'muted_member_ids': list(muted), 'solo_member_id': solo}
 
 
+def _unavailable_handoff(facade, message):
+    from management_common.resident_handoff_cards import selected_card
+    return bool(selected_card(message)) and not quoted_member(facade, message)
+
+
 def direct_member(facade, message):
     """The member selected by Solo, an explicit quote or continuation; "" for the Router."""
     from management_common.async_questions import answered_set
-    from . import personal_phone_assistant
+    from management_common.resident_handoff_cards import selected_card
     quoted = quoted_member(facade, message)
-    if personal_phone_assistant.is_mobile(facade, message):
-        phone = personal_phone_assistant.ensure(facade, message['author_id'])
+    if selected_card(message) and not quoted:
+        raise ValueError("原卡片的发出成员已不可用，未重新路由")
+    if resident_domain_port.is_personal_mobile_message(facade, message):
+        phone = resident_domain_port.ensure_personal_mobile_member(facade, message['author_id'])
         return quoted or phone
     policy = routing_snapshot(facade, message)
     # Answer cards keep their original execution's reply path.
-    if quoted and answered_set(message):
+    if quoted and (answered_set(message) or selected_card(message)):
         return quoted
     if policy['solo_member_id']:
         return policy['solo_member_id']  # Invalid/departed Solo fails; never silently route elsewhere.

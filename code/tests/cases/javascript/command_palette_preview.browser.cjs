@@ -254,11 +254,13 @@ const server = http.createServer((req, res) => {
     assert.equal(await marker(projects), await marker(knowledge), 'collapsed groups share the filled triangle');
     assert.equal(await saved.isVisible(), false, 'toggling Projects retains Knowledge collapse state');
     for (const summary of [projects, knowledge]) {
-      const style = await summary.evaluate(node => {
-        const s = getComputedStyle(node); return {line: s.borderBottomWidth, lineStyle: s.borderBottomStyle, color: s.borderBottomColor, background: s.backgroundColor};
-      });
-      assert.equal(style.line, '2px'); assert.equal(style.lineStyle, 'solid');
-      assert.notEqual(style.color, style.background, 'visible separator under each group bar');
+      const head = await summary.evaluate(node => ({
+        shared: node.classList.contains('portalNavSectionHead'),
+        label: node.querySelector('.portalNavSectionLabel')?.textContent,
+        height: node.getBoundingClientRect().height,
+      }));
+      assert.ok(head.shared && head.label && head.height >= 22,
+        'both groups retain the shared, readable section heading');
     }
     await knowledge.focus(); await page.keyboard.press('Space');
     await saved.waitFor();

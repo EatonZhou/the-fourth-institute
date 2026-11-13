@@ -63,7 +63,10 @@ def test_status_rejects_mismatched_paper_and_returns_authorized_completed_job(su
                 with pytest.raises(ValueError, match="another paper"):
                     getattr(paper_reading_jobs, operation)(actor="reader", job_id=job["job_id"], paper_id="paper_abcdefabcdef")
                 result = getattr(paper_reading_jobs, operation)(actor="reader", job_id=job["job_id"])
-            assert result == job
+            assert {key: result[key] for key in job} == job
+            if operation == 'get_exp_status':
+                assert result['can_retry'] is False
+                assert result['diagnostics'] == {'error': '', 'step': ''}
 
 
 def test_status_requires_authenticated_actor(subtests, isolated_portal_case):

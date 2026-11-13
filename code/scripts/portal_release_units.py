@@ -199,6 +199,16 @@ PAGES = (
     ('knowledge_board_lan/knowledge_board.html', 'knowledge_board'),
 )
 
+# Reader assets are loaded after the Paper page opens (dynamic import or a
+# separately served reader surface), so HTML tags alone cannot close the unit.
+PAGE_RUNTIME_FILES = {
+    'management_portal/paper.html': (
+        'management_portal/static/paper_fullscreen_reader.js',
+        'management_portal/static/paper_pdfjs_viewer.css',
+        'management_portal/static/paper_reader_http_transport.js',
+    ),
+}
+
 
 def page_unit(root: Path, page: str, prefix: str) -> tuple[str, ...]:
     """The page and the static scripts and style sheets it loads whose names start with ``prefix``."""
@@ -206,7 +216,8 @@ def page_unit(root: Path, page: str, prefix: str) -> tuple[str, ...]:
     if not document.is_file():
         return ()
     names = re.findall(rf'(?:src|href)="/static/({re.escape(prefix)}[a-z_]*\.(?:js|css))"', document.read_text(encoding='utf-8'))
-    return (page, *(f'management_portal/static/{name}' for name in dict.fromkeys(names)))
+    dynamic = (path for path in PAGE_RUNTIME_FILES.get(page, ()) if (root / path).is_file())
+    return tuple(dict.fromkeys((page, *(f'management_portal/static/{name}' for name in names), *dynamic)))
 
 
 # The Portal Management panel (portal_management.js) and the permission scheme

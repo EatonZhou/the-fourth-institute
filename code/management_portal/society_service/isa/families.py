@@ -1,13 +1,13 @@
 """Family lifecycle handlers delegate to the familize template owner."""
 from management_portal.hatg.contracts import InstructionError, invalid
 from .common import placement
-from ..templates import familize as family
+from ..templates import create_family, familize as family
 
 
 def familize(inv):
     lineage_id = inv.argument("lineage_id")
     try:
-        return family.familize(lineage_id, inv.argument("resident_ids") or [], inv.caller,
+        return create_family(lineage_id, inv.argument("resident_ids") or [], inv.caller,
             scope=inv.argument("scope") or "selection",
             title=inv.argument("title") or "", goal=inv.argument("goal") or "",
             parameters=inv.argument("parameters"), resident_settings=inv.argument("resident_settings"),

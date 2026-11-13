@@ -5,7 +5,7 @@ import asyncio
 from datetime import date
 import json
 from types import SimpleNamespace
-from unittest.mock import AsyncMock, Mock
+from unittest.mock import AsyncMock, Mock, call
 
 import pytest
 
@@ -224,8 +224,8 @@ def test_usage_current_calendar_windows_ledger_boundaries(monkeypatch):
         assert value["total_tokens"] == value["assigned_tokens"] + value["other_tokens"]
 
 
-def test_kimi_release_calls_abort_without_archive_or_replacement(tmp_path, monkeypatch):
-    """kimi 释放会话只调用 abort 接口，不归档也不替换原会话"""
+def test_kimi_release_aborts_and_archives_without_replacement(tmp_path, monkeypatch):
+    """Kimi 释放会话先停止轮次，再归档释放句柄并保留原会话身份。"""
     from management_portal.execution import backend_contracts, kimi_backend
     from management_portal.execution.contracts import ExecutionRequest, SessionOptions
     from management_portal.execution.session_manager import RuntimeSession
@@ -243,7 +243,10 @@ def test_kimi_release_calls_abort_without_archive_or_replacement(tmp_path, monke
     context = backend_contracts.BackendContext(emit_event=lambda *_args: None, cancellation_requested=lambda: False, set_interrupt_target=lambda *_args: None)
     result = kimi_backend.KimiBackend().execute(invocation, context)
     assert result.output["operation"] == "release"
-    transport.assert_called_once_with("POST", "sessions/native%2Ffixture:abort", {})
+    assert transport.call_args_list == [
+        call("POST", "sessions/native%2Ffixture:abort", {}),
+        call("POST", "sessions/native%2Ffixture:archive", {}),
+    ]
     assert invocation.session.backend_session_id == "native/fixture"
 
 

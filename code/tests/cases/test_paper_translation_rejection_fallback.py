@@ -39,3 +39,23 @@ def test_all_stages_rejected_explains_each_in_chinese(owner):
 @pytest.mark.parametrize('code',['permission_denied','cancelled'])
 def test_portal_denial_never_bypassed_even_with_forged_http_status(status,code):
     assert ReaderTranslationService._fallback_reason(failure('http_error',status,code=code)) is None
+
+
+def test_continuation_failure_is_observable_and_allows_explicit_retry(owner, monkeypatch, caplog):
+    from management_portal import paper_translation_service as service
+    calls = []
+    class ImmediateThread:
+        def __init__(self, *, target, **kwargs): self.target = target
+        def start(self): self.target()
+    def unavailable(context, task, **kwargs):
+        calls.append((context, task))
+        raise PermissionError('private credential detail')
+    monkeypatch.setattr(service.threading, 'Thread', ImmediateThread)
+    monkeypatch.setattr(owner, '_drive', unavailable)
+    owner._continue('a', 'retained-task')
+    assert 'retained-task' not in owner._continuations
+    owner._continue('a', 'retained-task')
+    assert calls == [('a', 'retained-task'), ('a', 'retained-task')]
+    assert owner.execution.submits == owner.google.calls == 0
+    assert 'retained-task' in caplog.text and 'PermissionError' in caplog.text
+    assert 'private credential detail' not in caplog.text

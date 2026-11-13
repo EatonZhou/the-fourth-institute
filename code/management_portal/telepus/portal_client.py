@@ -6,6 +6,8 @@ other identity and imports no Portal domain service.
 """
 from __future__ import annotations
 
+import logging
+
 import base64
 import json
 import mimetypes
@@ -51,6 +53,9 @@ PORTAL_CHAT_ATTACHMENT_ROOTS = tuple(
     portal_path('uploads') / name for name in ('resident_chat_attachments', 'resident_chat_images')
 )
 TERMINAL_INPUT_STATES = {"completed", "failed", "cancelled", "rejected", "lost_input", "expired"}
+
+
+LOGGER = logging.getLogger(__name__)
 
 
 def _prepare_portal_runtime() -> None:
@@ -197,7 +202,8 @@ class PortalClient:
         """Downloadable files a reply carries or links; at most 12."""
         try:
             resident = self.resident(actor, resident_id)
-        except Exception:  # noqa: BLE001 - a reply stays readable without its files
+        except Exception as exc:  # noqa: BLE001 - a reply stays readable without its files
+            LOGGER.warning("Attachment resident lookup unavailable (%s)", type(exc).__name__)
             resident = {}
         candidates: list[dict[str, Any] | None] = []
         for entry in message.get("content_parts") or []:

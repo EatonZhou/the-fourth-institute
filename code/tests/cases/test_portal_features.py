@@ -88,6 +88,8 @@ print(json.dumps({
 """
 # The instructions the installed features add (``isa.instructions``).
 FEATURE_INSTRUCTIONS = {
+    "ResolveMessageContextReferences", "ExportPaperBibtex", "GetPaperTranslationBinding",
+    "EnsurePaperTranslationBinding", "TranslatePaperText",
     "ListPosts", "GetPost", "CreatePost", "UpdatePost", "DeletePost", "CreateReply", "DeleteReply", "PinPost",
     "FeaturePost", "MarkPostRead", "ListChatrooms", "GetChatroom", "CreateChatroom", "UpdateChatroom",
     "LeaveChatroom", "DeleteChatroom", "ListChatroomMessages",
@@ -293,7 +295,7 @@ def test_installed_features_add_their_instructions_to_the_catalog_and_web_kernel
     from management_portal.hatg.catalog import categories, instruction_catalog
 
     for hook in ("isa.instructions", "web.instructions"):
-        assert {key for key, _ in portal_features.contributions(hook)} == {"projects", "notice_board", "chatroom", "pulse", "telepus"}
+        assert {key for key, _ in portal_features.contributions(hook)} == {"projects", "notice_board", "chatroom", "pulse", "telepus", "paper"}
     catalog = instruction_catalog()
     assert FEATURE_INSTRUCTIONS <= set(catalog)
     assert FEATURE_INSTRUCTIONS <= set(web_isa.binding().handlers)

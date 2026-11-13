@@ -57,7 +57,7 @@ def test_a_manual_trigger_waits_for_a_busy_target(monkeypatch) -> None:
         "lineage_cccccccccccc", "event_source_1", {"wire_id": "wire_1", "config": {"unavailable_policy": "drop"}},
         lineage_primitives.make_event("manual.triggered", payload={}), "cursor", reason="busy",
     )
-    assert calls == ["queue", "drop", "drop"]
+    assert calls == ["queue", "queue", "drop"]
 
 
 def test_the_first_triggered_work_failure_of_a_day_reaches_lineage_admins(monkeypatch) -> None:

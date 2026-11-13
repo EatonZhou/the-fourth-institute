@@ -29,6 +29,7 @@ const markers = JSON.parse(python('import json; from management_portal.conversat
       requests.push({ path: url.pathname, method: req.method(), instruction: body?.instruction });
       if (url.pathname === '/') return route.fulfill({ contentType: 'text/html', body: html });
       if (url.pathname === '/static/portal_resource_routes.js') return route.fulfill({ contentType: 'text/javascript', body: routes });
+      if (url.pathname === '/static/portal_translations.js') return route.fulfill({contentType:'text/javascript',body:'window.__PORTAL_TRANSLATIONS__='+fs.readFileSync(path.join(portal,'static/portal_translations.json'),'utf8')+';'});
       const file = path.join(portal, url.pathname);
       if (fs.existsSync(file) && fs.statSync(file).isFile()) return route.fulfill({ path: file });
       if (url.pathname === '/api/events') return route.fulfill({ contentType: 'text/event-stream', body: '' });
@@ -53,6 +54,9 @@ const markers = JSON.parse(python('import json; from management_portal.conversat
     const root = page.locator('[data-home-component="agent-status"]');
     const icon = root.locator(`a.agent-status-creature[data-agent-status-resident="${residentId}"]`);
     await icon.waitFor({ timeout: 10000 });
+    // The fixture explicitly observes this Resident. Collapsed Inbox and
+    // inactive Home no longer retain a full state subscription themselves.
+    await page.evaluate(id => { window.fixtureStates = PortalResidentProtocol.acquireStates([id], () => {}, {includeViewerState:true}); }, residentId);
     await page.waitForFunction(id => PortalResidentProtocol.stateSnapshot(id)?.ready
       && PortalConversationStore.snapshot().ready && PortalConversationStore.entry('resident:' + id)?.unread, residentId);
     const original = await page.evaluate(id => ({ protocol: PortalResidentProtocol.stateSnapshot(id),

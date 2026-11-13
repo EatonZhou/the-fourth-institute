@@ -7,7 +7,7 @@ import json
 import secrets
 import math
 import time
-from typing import Any, Iterable, Mapping
+from typing import Any, Callable, Iterable, Mapping
 
 from management_common.actor_identity import canonical_actor_id
 from management_common.principal import actor_principal
@@ -568,6 +568,7 @@ def _prepare_selection(body: dict, members: list[str]) -> str:
 
 
 def familize(lineage_id: str, resident_ids: Iterable[str], actor: str, *, title: str = "", goal: str = "",
+             load_body: Callable[[], Mapping],
              parameters: Mapping | None = None, placement_request: dict | None = None,
              resident_settings: Mapping | None = None, template_id: str = TEMPLATE_ID, scope: str = "selection",
              personal_ama_id: str = "") -> dict:
@@ -592,10 +593,9 @@ def familize(lineage_id: str, resident_ids: Iterable[str], actor: str, *, title:
         raise TemplateError("个人助手只以当前 AMA 为初始成员")
     if not members and scope != "lineage":
         raise TemplateError("Familize 至少需要 1 个 Resident")
-    # Direct Familize, Lineage creation and ApplyTemplate share the saved
-    # template defaults; per-application choices remain the final layer.
-    from . import store as template_store
-    defaults = copy.deepcopy(template_store.get(template_id)["body"])
+    # The entry point supplies the recipe. Resolve it only after admission and
+    # the existing-Lineage-Family return; per-application choices remain last.
+    defaults = copy.deepcopy(dict(load_body()))
     settings = _resident_settings(defaults.pop("resident_settings", None), resident_settings)
     values = _values({**defaults, **dict(parameters or {}), **({"goal": goal} if goal else {})})
     # A selection is named after one of its members; a Lineage-wide Family after its Lineage.
@@ -863,6 +863,7 @@ class FamilizeKind:
         body = dict(ctx.template.get("body", {}))
         settings = _resident_settings(body.pop("resident_settings", None), ctx.resident_settings)
         return familize(ctx.lineage_id, ids, ctx.actor, title=ctx.title,
+                        load_body=lambda: ctx.template["body"],
                         parameters={**body, **ctx.parameters},
                         resident_settings=settings, template_id=ctx.template["template_id"],
                         placement_request={key: ctx.target[key] for key in ("x", "y") if ctx.target.get(key) is not None})

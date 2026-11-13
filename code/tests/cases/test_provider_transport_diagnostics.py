@@ -46,6 +46,7 @@ def make_request(configured, *, prompt):
 def execute(configured, request):
     context = Mock()
     context.is_cancelled.return_value = False
+    context.current_input_variant.return_value = None
     return ChatCompletionService(provider_registry=configured.registry).execute(
         BackendInvocation(request=request, session=SimpleNamespace(), user_prompt=request.prompt,
                           system_context="approved common rules", attach_system_context=True,
@@ -106,6 +107,7 @@ def test_dispatch_times_reach_the_projector_event(configured, monkeypatch):
     request = request_for(configured)
     context = Mock()
     context.is_cancelled.return_value = False
+    context.current_input_variant.return_value = None
     result = ChatCompletionService(provider_registry=configured.registry).execute(
         BackendInvocation(request=request, session=SimpleNamespace(), user_prompt=request.prompt,
                           system_context='', attach_system_context=False, is_new_backend_session=True), context)

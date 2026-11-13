@@ -970,7 +970,9 @@ class ArticleIdentityBackendTests(unittest.TestCase):
             time.sleep(0.01)
 
         stopped = article_build.stop_article_compile(article_id)
-        thread.join(timeout=6)
+        # Native tree cleanup allows nine seconds for descendants to exit;
+        # wait for that owner boundary before asserting the build is finished.
+        thread.join(timeout=15)
 
         self.assertTrue(stopped["stop_requested"])
         self.assertFalse(thread.is_alive())

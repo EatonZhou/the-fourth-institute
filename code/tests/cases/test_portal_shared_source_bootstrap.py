@@ -24,7 +24,7 @@ def installation(tmp_path):
         for package in ('scripts', 'management_common', 'management_portal/execution'):
             (root / package).mkdir(parents=True, exist_ok=True)
             (root / package / '__init__.py').write_text('')
-        for name in ('instance_manifest.py', 'portal_paths.py', 'site_config.py'):
+        for name in ('instance_manifest.py', 'service_components.py', 'portal_paths.py', 'site_config.py'):
             (root / 'management_common' / name).write_bytes((SOURCE / 'management_common' / name).read_bytes())
         (root / 'management_common/service_endpoint.py').write_text(
             'class LocalServiceSocketMixin: pass\n' if root == shared else '# Earlier Release has no mixin.\n')

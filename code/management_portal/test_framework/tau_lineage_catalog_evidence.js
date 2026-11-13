@@ -29,11 +29,14 @@ async function readLineageCatalogSurface(panel, {panelId = 'navigation'} = {}) {
           ...state(n), state: n.getAttribute('data-state'), role: n.getAttribute('role'), text: n.textContent,
         })),
       }));
-      const controls = ['refreshBtn', 'searchToggleBtn', 'filterToggleBtn'].map(id => ({id,
+      const controls = ['refreshBtn', 'filterToggleBtn'].map(id => ({id,
         candidates: Array.from(root.querySelectorAll(':scope > [data-side-panel="agents"] button[id="' + id + '"]'))
           .map(n => ({...state(n), label: n.getAttribute('aria-label'), disabled: n.matches(':disabled'),
             aria_disabled: n.getAttribute('aria-disabled')})),
       }));
+      const search = Array.from(root.querySelectorAll(':scope > [data-side-panel="agents"] input#searchInput[type="search"]'))
+        .map(n => ({...state(n), disabled: n.matches(':disabled'), read_only: n.readOnly,
+          aria_disabled: n.getAttribute('aria-disabled')}));
       const native = root.matches('.portalNavigation[role="region"][data-portal-panel-package="navigation"]') &&
         root.getAttribute('data-portal-workbench-panel') === expectedId;
       const listReady = lists.length === 1 && lists[0].visible && lists[0].busy !== 'true' &&
@@ -41,12 +44,14 @@ async function readLineageCatalogSurface(panel, {panelId = 'navigation'} = {}) {
         !lists[0].states.some(n => n.visible);
       const controlsReady = controls.every(c => c.candidates.length === 1 && c.candidates[0].visible &&
         !c.candidates[0].disabled && c.candidates[0].aria_disabled !== 'true');
+      const searchReady = search.length === 1 && search[0].visible && !search[0].disabled &&
+        !search[0].read_only && search[0].aria_disabled !== 'true';
       return {root: state(root), panel_id: root.getAttribute('data-portal-workbench-panel'),
         package: root.getAttribute('data-portal-panel-package'), role: root.getAttribute('role'), native,
-        document_path: location.pathname, views, lists, controls,
+        document_path: location.pathname, views, lists, controls, search,
         surface_ready: location.pathname === '/lineage' && native && visible(root) && root.getAttribute('aria-busy') !== 'true' &&
           active.length === 1 && active[0].view === 'agents' && active[0].visible && active[0].busy !== 'true' &&
-          listReady && controlsReady};
+          listReady && controlsReady && searchReady};
     });
   }, panelId);
   return {surface_ready: candidates.length === 1 && candidates[0].surface_ready, expected_panel_id: panelId,

@@ -22,7 +22,7 @@ def test_backend_registration_guidance():
     """
     root = Path(__file__).resolve().parents[2]
     subprocess.run(["node", str(Path(__file__).with_name("javascript") /
-                               "backend_registration_guidance.cjs")], cwd=root, check=True)
+                               "backend_registration_guidance.cjs")], cwd=root, check=True, timeout=60)
 
 
 def test_provider_onboarding_checks_before_completion_and_recovers_on_failure():

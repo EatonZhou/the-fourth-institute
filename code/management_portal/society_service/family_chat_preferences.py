@@ -8,6 +8,7 @@ a request's snapshot.
 from management_common.actor_identity import canonical_actor_id
 
 from . import family_chat_storage
+from .domain_ports import resident_domain_port
 
 
 def _solo_notice_key(facade_id, actor):
@@ -88,13 +89,13 @@ def allowed(facade, policy):
 
 def validate_target(facade, message, member_id):
     from management_common.async_questions import answered_set
+    from management_common.resident_handoff_cards import selected_card
     from . import family_facade
-    from .personal_phone_assistant import is_mobile
-    if is_mobile(facade, message):
+    if resident_domain_port.is_personal_mobile_message(facade, message):
         return  # Web preferences do not constrain mobile delivery; roster/quota still apply.
     policy = family_facade.routing_snapshot(facade, message)
     quoted = family_facade.quoted_member(facade, message)
-    if answered_set(message) and quoted == member_id:
+    if (answered_set(message) or selected_card(message)) and quoted == member_id:
         return
     solo = policy['solo_member_id']
     if (solo and member_id != solo) or (not solo and member_id in policy['muted_member_ids'] and quoted != member_id):
@@ -110,8 +111,7 @@ def filter_messages(facade, actor, messages):
     from . import family_facade
     members = set(family_facade.family_member_ids(facade))
     def visible(message):
-        from .personal_phone_assistant import is_mobile
-        if is_mobile(facade, message):
+        if resident_domain_port.is_personal_mobile_message(facade, message):
             return True
         relay = message.get('family_reply') or message.get('relay') or message.get('family_history') or {}
         if (relay.get('request_channel') or {}).get('kind') in {'weixin', 'telegram'}:

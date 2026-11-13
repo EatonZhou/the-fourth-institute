@@ -3,6 +3,7 @@ from __future__ import annotations
 from management_portal.paper_resource_index import PaperManifestAdapter, PaperReviewAdapter
 
 from pathlib import Path
+import json
 from unittest import mock
 
 from management_portal import paper_figure_jobs, paper_projection, paper_reviews, paper_store, resource_index_backend
@@ -27,8 +28,18 @@ def test_figure_usage_exposes_resident_message_identity_contracts(tmp_path, subt
             'invocation': receipt,
             'usage': {'input_tokens': 12, **receipt},
         }
-        with mock.patch('management_portal.paper_projection.turn', return_value=execution_result):
-            content, usage = paper_figure_jobs._run_figure_resident('Analyze this figure', {'_store_root': str(tmp_path), 'created_by': 'alice'}, {'figure_id': 'figure-1'}, 'analysis')
+        from management_portal import paper_figures
+        from tests.cases.test_paper_figure_transactions import run_figure
+        paper = {'id': 'paper_0123456789ab', '_store_root': str(tmp_path), 'created_by': 'alice'}
+        path = tmp_path / 'figures.json'
+        figure = {'figure_id': 'fig-001', 'explanation_status': 'queued'}
+        path.write_text(json.dumps([figure]))
+        with (mock.patch('management_portal.paper_projection.turn', return_value=execution_result),
+              mock.patch.object(paper_store, '_paper_by_id', return_value=paper),
+              mock.patch.object(paper_figures, '_figures_json_path', return_value=path),
+              mock.patch.object(paper_figures, '_notify_paper_projection')):
+            content, usage = run_figure((paper, path), paper_figure_jobs._run_figure_resident,
+                                       'Analyze this figure', paper, figure, 'analysis')
         assert content == 'Figure analysis'
         assert usage['resident_id'] == 'resident_figure01'
         assert usage['input_message_id'] == 'message_figure01'

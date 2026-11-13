@@ -19,6 +19,49 @@ OTHER = 'workspace_abcdefabcdef'
 R = 'resident_0123456789ab'
 
 
+def test_workspace_readiness_checks_instruction_mapping_not_action_alias(tmp_path):
+    calls = []
+    def check(name, arguments):
+        calls.append(arguments)
+        # A leaf-node grant alone can be unrelated to an instruction's
+        # current mapping. The actual unregister operation remains denied.
+        allowed = 'a' in arguments or arguments.get('instruction') == 'UpdateWorkspaceFile'
+        return {'principal_id': 'test-actor', 'allowed': allowed,
+                'requests': [{'action': 'UnregisterResource', 'resource': W,
+                              'allowed': allowed, 'reason': 'permitted' if allowed else 'no_permit'}]}
+    result = access.prepare_workspace_access(tmp_path, W, check=check)
+    assert not result['ready']
+    assert all('instruction' in call and 'a' not in call for call in calls)
+    assert calls[0]['arguments'] == {'address': W + '/file/tau-access-probe.txt', 'content': ''}
+    assert calls[1]['arguments'] == {'resource_id': W}
+    assert result['checks'][1]['requests'][0]['reason'] == 'no_permit'
+
+
+def test_workspace_leaf_loan_does_not_override_instruction_denial(tmp_path):
+    issued = []
+    def check(name, args):
+        return {'principal_id': 'test-actor', 'allowed': args.get('instruction') == 'UpdateWorkspaceFile'}
+    def issue(name, args, **kw):
+        issued.append(args)
+        return {**args, 'credential_id': 'exact-leaf-loan'}
+    result = access.prepare_workspace_access(tmp_path, W, check=check, issue=issue)
+    assert not result['ready']
+    assert issued == [{'principal_id': 'test-actor', 'a': 'UnregisterResource',
+                       'resource_id': W, 'expires_in_seconds': 3600}]
+
+
+def test_workspace_loan_recheck_requires_explicit_boolean_decision(tmp_path):
+    count = 0
+    def check(name, args):
+        nonlocal count
+        count += 1
+        return {'principal_id': 'test-actor', **({'allowed': False} if count == 1 else {})}
+    def issue(name, args, **kw):
+        return {**args, 'credential_id': 'exact-loan'}
+    with pytest.raises(ValueError, match='no decision'):
+        access.prepare_workspace_access(tmp_path, W, check=check, issue=issue)
+
+
 def test_negative_access_fixture_uses_existing_protected_route(permissions, monkeypatch):
     from management_portal.http_admin import AdminHttp
     from management_common import portal_network

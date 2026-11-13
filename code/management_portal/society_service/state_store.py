@@ -109,8 +109,11 @@ LINEAGE_DATA_COLUMNS = {
     ),
     "conversation_event_delivery": ("sequence", "resident_id", "cursor"),
 }
+from . import user_pending_question_storage
+
 POSTGRES_LINEAGE_DATA_COLUMNS = {
     **LINEAGE_DATA_COLUMNS,
+    **user_pending_question_storage.TABLE_COLUMNS,
     "input_scopes": (
         "resident_id", "message_id", "actor", "descriptor",
     ),
@@ -170,7 +173,7 @@ def _postgres_lineage_data_schema_matches(connection: Any) -> bool:
             "SELECT indexname FROM pg_indexes WHERE schemaname=current_schema()"
         ).fetchall()
     }
-    if not LINEAGE_DATA_INDEXES.issubset(indexes):
+    if not (LINEAGE_DATA_INDEXES | user_pending_question_storage.INDEXES).issubset(indexes):
         return False
     triggers = {
         str(row["trigger_name"])
@@ -418,8 +421,7 @@ class LineageDataStore:
         ).fetchone() is not None
         if not has_any_table:
             create_lineage_data_schema(connection)
-        from . import user_pending_questions
-        user_pending_questions.create_schema(connection)
+        user_pending_question_storage.create_schema(connection)
         # Existing data is used by its owners. A metadata tag or an unrelated
         # table/column difference must not disable every Resident. Operations
         # requiring absent structures report their actual database error.

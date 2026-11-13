@@ -24,7 +24,7 @@ from . import (
     resident_runtime_domain,
     resident_session_backend_domain,
 )
-from .domain_ports import execution_port
+from .domain_ports import execution_port, resident_domain_port
 from .resident_access import (
     resident_deliverable_to_actor as _resident_deliverable_to_actor,
     resident_visible_to_actor as _resident_visible_to_actor,
@@ -653,7 +653,8 @@ def _input_request(
     # Quote permissions and facade question answers require current identity;
     # an unquoted input needs only its address here. Admission independently
     # checks the fresh identity and permissions under the commit boundary.
-    needs_quote_identity = request.requested_quote not in (None, {}) or answered_set(protocol_input)
+    from management_common.resident_handoff_cards import selected_card
+    needs_quote_identity = request.requested_quote not in (None, {}) or answered_set(protocol_input) or selected_card(protocol_input)
     quote_record = ((resident_record_domain.find_resident_for_admission(resident_id) or {})
                     if needs_quote_identity else {})
     quote_record = {"resident_id": resident_id, **quote_record}
@@ -698,12 +699,13 @@ def _input_relay(
 def _with_accepted_quote(request: ResidentInput, quote_record: Mapping[str, Any]) -> ResidentInput:
     requested_quote = request.requested_quote
     protocol_input = request.protocol_input
-    if requested_quote in (None, {}) and request.relay.source is None and family_facade.is_facade(quote_record):
+    if requested_quote in (None, {}) and request.relay.source is None:
         from management_common.async_questions import answered_set
+        from management_common.resident_handoff_cards import selected_card
 
         # An answer to a member's questions shown on a facade quotes them, so
         # it goes straight back to that member (family_facade.quoted_member).
-        asked_in = answered_set(protocol_input)
+        asked_in = (selected_card(protocol_input) or {}).get("source_message_id") or (answered_set(protocol_input) if family_facade.is_facade(quote_record) else "")
         if asked_in and message_quotes.quote_of(quote_record, asked_in):
             requested_quote = {"message_id": asked_in}
     quote = message_quotes.accept(
@@ -728,6 +730,10 @@ def _admit_input(request: ResidentInput) -> dict[str, Any]:
         if record.get("deleted_at"):
             raise ValueError("该 Resident 已删除，不能接收消息")
         request = _with_question_answer(request, record)
+        from . import resident_handoff_selection
+        resident_handoff_selection.prepare(record, request.protocol_input,
+            resident_conversation_stream.get_repository(),
+            relay_source=request.relay.source if request.relay.sender else None)
         if request.lending is not None and request.message.lstrip().startswith("/"):
             raise ValueError("即时命令没有可借出权限的处理轮次")
         if family_facade.is_facade(record):
@@ -957,7 +963,7 @@ def _deliver_projected_permission_answer(request: ResidentInput, record: dict, m
     normal relay admission still enforces membership, preferences and quota.
     """
     from management_common.async_questions import answered_set
-    from . import family_quota, family_recovery
+    from . import family_recovery
     from .state_store import get_lineage_data_store
 
     resident_id, message_id = request.resident_id, request.message_id
@@ -973,7 +979,7 @@ def _deliver_projected_permission_answer(request: ResidentInput, record: dict, m
             resident_lifecycle_domain.accept_resident_user_message(resident_id, message)
             family_recovery.register(record, message)
             repository.set_input_state(resident_id, message_id, "queued")
-        result = family_quota.relay_message(resident_id, message_id, projected["member_id"],
+        result = resident_domain_port.relay_family_message(resident_id, message_id, projected["member_id"],
                                            request.actor_id, lending=request.lending)
         if result.get("status") != "relayed":
             raise ValueError("提问成员暂时不能接收授权回答，请稍后重试；尚未交出权限")

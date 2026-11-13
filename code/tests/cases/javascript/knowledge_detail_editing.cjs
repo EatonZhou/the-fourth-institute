@@ -3,6 +3,7 @@ const test = require('node:test');
 const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
+const {JSDOM} = require('jsdom');
 
 const root = path.resolve(__dirname, '../../../management_portal/static');
 const resource = 'thinking_0123456789ab';
@@ -23,9 +24,11 @@ function harness() {
     .map(key => [key, {hidden: false, disabled: false, textContent: '', className: ''}]));
   el.mText.querySelector = selector => selector === '[data-detail-body]' ? editor : null;
   el.mText.querySelectorAll = () => [];
+  const document = new JSDOM('').window.document;
+  el.mFavorite = document.createElement('span');
   const context = vm.createContext({
     state, el, AbortController, URLSearchParams, setTimeout,
-    document: {getElementById: () => editor},
+    document,
     detailDocumentSession: null, detailPreviewRoot: null,
     detailResourceGuest: {embedded: () => true, changed: value => changes.push(value)},
     usesPackageStyleEditor: () => false,

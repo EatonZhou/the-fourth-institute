@@ -159,6 +159,7 @@ test("read receipts require a presented chat and resume after a hidden completio
 // geometry; the assistant resolution is the I/O, answered one request at a time.
 function inbox(t) {
   const errors = [], pending = [];
+  let hasPage = false;
   const log = new VirtualConsole();
   log.on("jsdomError", error => errors.push(error.message));
   log.on("error", (...args) => errors.push(args.map(String).join(" ")));
@@ -192,11 +193,15 @@ function inbox(t) {
     w,
     // Each call is a new page: the previous Inbox is torn down and a fresh one mounts.
     page() {
-      w.PortalAgentInbox.destroy();
+      // Adopt the first automatic mount; subsequent calls explicitly remount.
+      if (hasPage) w.PortalAgentInbox.destroy();
+      hasPage = true;
       w.PortalAgentInbox.mount();
       return w.document.querySelector("[data-portal-agent-inbox]");
     },
     async answer(target) { pending.shift()(target); await drain(); },
+    takeAnswer() { return pending.shift(); },
+    pendingCount() { return pending.length; },
     switchUser(name) { username = name; },
   };
 }
@@ -222,6 +227,33 @@ test("assistant retries after panel presentation fails and disposes the failed p
   assert.equal(creates,2,'retry really creates a fresh panel');
   assert.equal(root.querySelector('[data-personal-assistant-chat]').textContent,'assistant chat');
 });
+
+for (const oldFirst of [true, false]) {
+  test(`remounted assistant owns its target request when old reply arrives ${oldFirst ? 'first' : 'last'}`, async t => {
+    const app = inbox(t);
+    app.page();
+    const oldReply = app.takeAnswer();
+    const root = app.page();
+    assert.equal(app.pendingCount(), 1, 'remount starts its own target query before the old one settles');
+    const trigger = () => root.querySelector('[data-personal-assistant-trigger]');
+    const old = { resident_id: AMA, lineage_id: LINEAGE, title: 'old target' };
+    const current = { resident_id: FACADE, lineage_id: LINEAGE, title: 'current target' };
+    if (oldFirst) {
+      oldReply(old); await drain();
+      assert.equal(trigger().hidden, true, 'stale reply must not render or seed the new mount');
+      app.w.dispatchEvent(new app.w.Event('focus')); await drain();
+      assert.equal(app.pendingCount(), 1, 'old finally must not clear the new in-flight target query');
+    }
+    await app.answer(current);
+    if (!oldFirst) { oldReply(old); await drain(); }
+    assert.equal(trigger().hidden, false);
+    assert.match(trigger().dataset.portalTooltip, /^current target/);
+    const next = app.page();
+    assert.match(next.querySelector('[data-personal-assistant-trigger]').dataset.portalTooltip, /^current target/,
+      'stale reply must not overwrite the next page cache');
+    await app.answer(current);
+  });
+}
 
 test("old assistant asset failure cannot replace a remounted Inbox", async t => {
   const app = inbox(t), w = app.w;

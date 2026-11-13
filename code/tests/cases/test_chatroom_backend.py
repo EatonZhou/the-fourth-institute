@@ -514,8 +514,8 @@ def test_the_reply_shows_once_and_failures_are_reported_in_the_chatroom(lineage)
     assert len(newest) == 1 and newest[0]["quote"] == expected_quote
     assert "quote" not in chatroom_backend._agent_data().chat_message(chatroom_id, newest[0]["message_id"])
     followup = chatroom_backend.post_message(ALICE, chatroom_id, text("继续"), quote={"message_id": replies[0]["message_id"]})
-    assert followup["deliveries"][0]["resident_id"] == HELPER
-    assert chatroom_backend._message_text(followup["message"]).startswith(f"@{HELPER} ")
+    assert followup["deliveries"] == []
+    assert chatroom_backend._message_text(followup["message"]) == "继续"
     explicit = chatroom_backend.post_message(ALICE, chatroom_id, text(f"@{HELPER} 再确认"), quote={"message_id": replies[0]["message_id"]})
     assert len(explicit["deliveries"]) == 1
     assert chatroom_backend._message_text(explicit["message"]).count(f"@{HELPER}") == 1

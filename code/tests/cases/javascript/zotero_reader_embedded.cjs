@@ -11,9 +11,11 @@ await outer.locator('.portalTranslateSelection').evaluate(e=>e.click());assert.e
 await p.locator('#paperFullscreenBtn').click();await outer.locator('.portalTranslateSelection').waitFor({state:'visible'});
 assert(await outer.locator('body').evaluate(e=>e.classList.contains('sidebar-open')));
 await outer.locator('.portalTranslateSelection').click();await p.waitForTimeout(100);assert.equal(calls,1);
+await outer.getByRole('button',{name:'展开',exact:true}).click();await p.getByLabel('翻译模式').waitFor();
 await outer.locator('button.note').click();await pdf.locator('.page').first().click({position:{x:160,y:160}});await outer.locator('[contenteditable=true]').last().fill('retained layout draft');
 await outer.locator('#pageNumber').fill('2');await outer.locator('#pageNumber').press('Enter');
-await p.waitForTimeout(100);
+await outer.locator('#pageNumber').blur();await p.waitForTimeout(250);
+assert.equal(await outer.locator('#pageNumber').inputValue(),'2','navigation completed before layout change');
 await p.evaluate(()=>{window.savedFrame=document.querySelector('iframe');window.savedWindow=savedFrame.contentWindow;});
 await p.locator('.paperLayoutExit').click();assert.equal(await p.getByLabel('翻译模式').isVisible(),false);
 assert.equal(await outer.locator('body').evaluate(e=>e.classList.contains('sidebar-open')),false);

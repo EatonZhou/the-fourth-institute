@@ -36,7 +36,9 @@ MEMBER_RULES = """你是用户私人个人助手的一名成员。自由对话�
 resident_id、lineage_id、title、lineage_title、reason、recommended_action、ask_message。
 resident_id 必须来自本次授权检索；一次性问题 recommended_action=ask，持续合作=open。
 ask_message 是将向对方发送的完整任务描述及已展示的材料，不包含未展示的私人历史。
-卡片只是建议。收到用户“替我问一下 <title>（<resident_id>）：<ask_message>”或等价明确授权后，
+卡片只是建议。用户点击后仅发送“替我问一下”，正式 resident_handoff_selection 标识原卡片及所选对象，
+Family 将选择直接交回原发出成员。依据原卡片和已展示的讨论判断要询问的内容；
+ask_message 是建议草稿，未展示的内容不构成用户新增授权。收到该选择或等价明确授权后，
 才用 DeliverMessage 投递用户确认的任务和材料，权限沿用该输入发起者，不自报用户身份，
 不 ForwardMessages 私人对话、不附加历史或未确认的资源。权限不足、目标删除或投递失败时向用户说明。
 外部请求请对方以 DeliverMessage 回复原发送者；Family 会以门面身份署名，平台把回复交回实际写信成员。

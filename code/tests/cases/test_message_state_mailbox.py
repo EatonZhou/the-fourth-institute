@@ -29,6 +29,11 @@ def test_realtime_disconnect_verifies_snapshot_without_false_error():
     _run("realtime-disconnect")
 
 
+def test_initial_pageshow_reuses_bootstrap_and_restored_page_revalidates():
+    """Initial pageshow makes no duplicate read; pagehide/pageshow retains recovery."""
+    _run("page-lifecycle")
+
+
 def test_transient_snapshot_failure_retries_and_clears_banner():
     """Mailbox 快照读取暂时失败时自动重试，恢复后清除错误横幅
 

@@ -395,7 +395,9 @@ def test_execution_display_message_replay_is_idempotent(
         [output],
     )
 
-    assert replay == first
+    assert [{key: value for key, value in item.items() if key != "conversation_position"}
+            for item in replay] == first
+    assert replay[0]["conversation_position"] == {"resident_id": resident_id, "ordinal": 1}
     assert len(
         resident_conversation_stream.get_repository().read_messages(
             resident_id
@@ -830,7 +832,8 @@ def test_conversation_replay_does_not_acquire_writer_locks(
     monkeypatch.setattr(repository.events, "protocol_scope", forbidden_write)
     monkeypatch.setattr(repository.state_store.database, "write", forbidden_write)
     monkeypatch.setattr(repository.agent_data.database, "write", forbidden_write)
-    assert repository.append_message(resident_id, message) == persisted
+    assert repository.append_message(resident_id, message) == {
+        **persisted, "conversation_position": {"resident_id": resident_id, "ordinal": 1}}
     with pytest.raises(ValueError, match="immutable"):
         repository.append_message(resident_id, {**message, "content_parts": [
             {"type": "text", "text": "different content"},

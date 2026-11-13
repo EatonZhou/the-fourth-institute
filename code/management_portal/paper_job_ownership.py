@@ -8,12 +8,14 @@ from contextlib import contextmanager
 from contextvars import ContextVar
 import secrets
 import threading
+import logging
 
 from . import paper_state_store as store
 
 LEASE_SECONDS = 90
 CLAIM_KEY = "_execution_lease"
 _owner = ContextVar("paper_deep_read_owner", default=None)
+LOGGER = logging.getLogger(__name__)
 
 
 class OwnershipLost(RuntimeError):
@@ -212,9 +214,11 @@ def run(job_id, target, *, adapter=None):
                         with adapter.locked() as connection:
                             handoff[CLAIM_KEY] = {**lease, "expires_at": _now(connection) + LEASE_SECONDS}
                             adapter.merge(job_id, {"resident_handoff": handoff})
-                except Exception:
+                except Exception as exc:
                     # An expired/unreachable claim is never revived. The worker
                     # will fail its next write; a new owner observes the input.
+                    LOGGER.warning('Paper job heartbeat stopped: job=%s error_type=%s',
+                                   job_id, type(exc).__name__)
                     return
         finally:
             _owner.reset(context)

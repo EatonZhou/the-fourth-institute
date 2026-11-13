@@ -343,6 +343,8 @@ def test_pytest_group_projects_streamed_results_and_process_outcomes(tmp_path: P
     :importance: P1
     """
     monkeypatch.setenv("XDG_RUNTIME_DIR", "/run/user/test-fixture")
+    for name in ("TMPDIR", "TMP", "TEMP"):
+        monkeypatch.setenv(name, "/masked-instance-runtime/tmp")
     selected = [
         _local_item("tests/cases/test_x.py::test_pass"),
         _local_item("tests/cases/test_x.py::test_param"),
@@ -356,6 +358,9 @@ def test_pytest_group_projects_streamed_results_and_process_outcomes(tmp_path: P
     group_dir.mkdir()
     group = PytestGroup({"group_id": "pytest-1", "lane": "isolated", "item_indexes": list(range(6))}, selected, root=tmp_path)
     command, environment = group.command(items, group_dir)
+    assert {name: environment.get(name) for name in ("TMPDIR", "TMP", "TEMP")} == {
+        name: "/tmp" for name in ("TMPDIR", "TMP", "TEMP")
+    }
     assert "management_portal.test_framework.pytest_results" in command and "--continue-on-collection-errors" in command
     basetemp = Path(next(value.split("=", 1)[1] for value in command if value.startswith("--basetemp=")))
     assert basetemp.parent == Path("/tmp")

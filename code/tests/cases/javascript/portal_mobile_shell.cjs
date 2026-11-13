@@ -41,12 +41,15 @@ const css = ["portal_design_system", ...PORTAL_COMPONENTS_STYLES, "portal_workbe
         <button class="portalActivityRailView"></button><button class="portalActivityRailView"></button>
       </aside><section class="portalWorkbenchViewportRoot">Readable mobile work area</section></main>
       <aside class="portalAgentInbox" data-has-assistant="true" data-expanded="true" data-mobile-overlay="true" data-active-panel="mailbox">
-        <button class="portalAgentInboxTrigger"></button><section class="portalAgentInboxPanel"><header><strong>Mailbox</strong></header><div class="portalAgentInboxFilters"><button aria-pressed="true">消息</button><button>Todo</button></div><div class="portalAgentInboxList">${Array.from({length: 30}, (_, index) => `<button class="portalAgentInboxItem">Message ${index + 1}</button>`).join("")}</div></section>
+        <button class="portalAgentInboxTrigger"></button><section class="portalAgentInboxPanel" data-inbox-panel="mailbox"><header><strong>Mailbox</strong></header><div class="portalAgentInboxFilters"><button aria-pressed="true">消息</button><button>Todo</button></div><div class="portalAgentInboxList">${Array.from({length: 30}, (_, index) => `<button class="portalAgentInboxItem">Message ${index + 1}</button>`).join("")}</div></section>
         <button class="portalAgentInboxTrigger portalPersonalAssistantTrigger"></button>
         <button class="portalAgentInboxMobileClose" aria-label="关闭 Mailbox"><span>关闭</span></button>
       </aside>
     </body></html>`);
 
+    await page.evaluate(async () => {
+      await Promise.all(document.querySelector('.portalAgentInboxPanel').getAnimations().map(animation => animation.finished));
+    });
     const geometry = await page.evaluate(() => {
       const rect = selector => {
         const value = document.querySelector(selector).getBoundingClientRect();

@@ -273,6 +273,43 @@ def test_resident_scans_outside_lock_and_rechecks_inside(monkeypatch, isolated_p
         assert operations[0]["step"]["request"]["metadata"]["fork_context_input"]["source_agent_id"] == record["resident_id"]
 
 
+@pytest.mark.parametrize("change", ["source", "actor", "same"])
+def test_resident_preservation_scopes_external_keys_to_authorized_source(monkeypatch, isolated_portal_case, change):
+    with isolated_portal_case():
+        record, operations, _ = _restart_domain(monkeypatch)
+        store = AgentDataStore()
+        prepared = []
+        owner = execution_port.prepare_context_preservation
+        def prepare(*args, **kwargs):
+            result = owner(*args, **kwargs)
+            prepared.append(result)
+            return result
+        monkeypatch.setattr(execution_port, "prepare_context_preservation", prepare)
+        body = {"target_account": "one", "idempotency_key": "configuration-reused"}
+        first = resident_restart_domain.restart_resident_session(record["resident_id"], "alice", body)
+        assert resident_restart_domain.restart_resident_session(record["resident_id"], "alice", body) == first
+        assert len(prepared) == 1
+        # A later completed operation has replaced the public restart slot.
+        record["session_restart"] = {"status": "completed", "request_id": "intervening"}
+        actor = "bob" if change == "actor" else "alice"
+        if change == "source":
+            binding_id = "resident:" + record["resident_id"]
+            old = store.provider_binding(binding_id)
+            session = store.ensure_provider_session(provider="codex", backend_route_id="zero",
+                backend_session_id="later-source", agent_id=record["resident_id"], actor_ref=actor)
+            store.bind_provider_session("later-binding", session["provider_session_ref"])
+            store.replace_provider_binding(binding_id, "later-binding",
+                expected_provider_session_ref=old["provider_session_ref"])
+        before = store.agent_context_snapshot(record["resident_id"])
+        second = resident_restart_domain.restart_resident_session(record["resident_id"], actor, body)
+        assert second["status"] == "accepted" and second["restart_id"] != first["restart_id"]
+        assert (prepared[1]["receipt_id"] == prepared[0]["receipt_id"]) is (change == "same")
+        assert prepared[1]["actor"] == actor
+        assert store.agent_context_snapshot(record["resident_id"]) == before
+        assert resident_restart_domain.restart_resident_session(record["resident_id"], actor, body) == second
+        assert len(prepared) == 2
+
+
 @pytest.mark.parametrize("change", ["configuration", "cancel", "permission", "history", "failure"])
 def test_recheck_refuses_stale_or_failed_preparation(monkeypatch, isolated_portal_case, change):
     with isolated_portal_case():

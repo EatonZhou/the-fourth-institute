@@ -3,7 +3,12 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs'),path=require('node:path');
 module.exports=async({page,requests,errors})=>{
   const nav=page.getByRole('region',{name:'Lineage navigation',exact:true});
-  await nav.getByRole('button',{name:/^Add Lineage in /}).click();
+  await page.locator('[data-activity-view="agents"]').hover();
+  const pin=page.locator('[data-activity-pin]');
+  if(await pin.getAttribute('aria-pressed')==='false')await pin.click();
+  await nav.locator('.principalProjectCard').hover();
+  await nav.locator('[data-agent-menu^="project:"]').click();
+  await page.locator('[data-agent-floating-action="create-lineage"]').click();
   const form=page.getByRole('dialog',{name:'New Lineage',exact:true});
   await form.locator('#lineageNameInput').fill('New Sample Lineage');
   await form.getByRole('checkbox').uncheck();

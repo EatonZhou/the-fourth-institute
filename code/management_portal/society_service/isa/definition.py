@@ -47,9 +47,9 @@ def create_lineage(inv: Invocation) -> dict[str, Any]:
     lineage_id = str(lineage.get("lineage_id") or "")
     result = {"lineage_id": lineage_id}
     if inv.argument("familize", False):
-        from ..templates.familize import familize
+        from ..templates import create_family
         try:
-            result["family_id"] = familize(lineage_id, [], inv.caller, scope="lineage",
+            result["family_id"] = create_family(lineage_id, [], inv.caller, scope="lineage",
                                            goal=payload.get("description") or "")["family_id"]
         except Exception as exc:
             raise InstructionError("instruction.failed", f"Lineage 已创建，但 Familize 未完成：{exc}",

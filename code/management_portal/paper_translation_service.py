@@ -9,6 +9,7 @@ import json
 import os
 import time
 import threading
+import logging
 from copy import deepcopy
 
 from psycopg.types.json import Jsonb
@@ -17,6 +18,8 @@ from management_portal.paper_translation_cache import TranslationCache
 from management_portal.paper_translation_google import GoogleTransport, GoogleTimeout
 from management_portal.paper_reader_annotations import Conflict, _canonical
 from management_portal.paper_translation_kimi_api import RECIPE as KIMI_RECIPE, TranslationConfigurationUnavailable, configuration as kimi_api_configuration
+
+LOGGER = logging.getLogger(__name__)
 
 DDL = '''CREATE TABLE IF NOT EXISTS reader_translation_delivery (
  task_id TEXT PRIMARY KEY, phase TEXT NOT NULL DEFAULT 'new',
@@ -350,9 +353,11 @@ class ReaderTranslationService:
                 while time.monotonic() < deadline:
                     if self._drive(context, task, allow_start=True)['status'] not in ('queued','running'): return
                     time.sleep(.25)
-            except Exception:
+            except Exception as exc:
                 # Lost auth/control-plane observation cannot authorize a fallback.
                 # A new explicit POST can resume the same durable task/request.
+                LOGGER.warning('Reader translation continuation stopped: task=%s error_type=%s',
+                               task, type(exc).__name__)
                 return
             finally:
                 with self._continuation_lock: self._continuations.discard(task)

@@ -35,11 +35,13 @@ def test_inventory_is_visible_only_and_does_not_recover_active_jobs(monkeypatch)
     from management_portal import paper_reading_jobs as jobs, permission_system
     monkeypatch.setattr(jobs, "_all_papers", lambda: [{"id": p} for p in ("a", "b", "private")])
     monkeypatch.setattr(permission_system, "permitted_ids", lambda *args: ["a", "b"])
-    monkeypatch.setattr(jobs.paper_state_store, "records", lambda kind: [
+    rows = [
         {"paper_id": "a", "job_id": "old", "status": "done", "created_at": 1},
         {"paper_id": "a", "job_id": "active", "status": "running", "created_at": 2},
         {"paper_id": "b", "job_id": "complete", "status": "done", "created_at": 1},
-        {"paper_id": "private", "job_id": "hidden", "status": "done", "created_at": 1}])
+        {"paper_id": "private", "job_id": "hidden", "status": "done", "created_at": 1}]
+    for row in rows:
+        jobs.paper_state_store.append('deep_read_jobs', row)
     monkeypatch.setattr(jobs, "_launch_deep_read_business_task", lambda *_: (_ for _ in ()).throw(AssertionError("must not resume")))
     assert jobs.provenance_candidates("reader") == {"visible_papers": 2, "without_completed_job": 1,
         "candidates": [{"paper_id": "b", "job_id": "complete"}]}

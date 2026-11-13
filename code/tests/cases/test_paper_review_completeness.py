@@ -53,26 +53,28 @@ def test_review_completion_preserves_incomplete_output_without_fabricating_revie
     monkeypatch.setattr(paper_reviews, "_pdf_text_for_paper", lambda _: "PDF")
     monkeypatch.setattr(paper_reviews, "_related_papers", lambda *_: [])
     monkeypatch.setattr(paper_store, "DATA_ROOT", tmp_path)
+    monkeypatch.setattr(paper_reviews, '_announce_review_changes', lambda: None)
     for name, content, complete in cases:
         with subtests.test(case=name):
-            state = {"job_id": name, "review_id": "review_abcdef012345", "paper_id": paper["id"], "created_by": "alice"}
-            stored = []
+            state = {"job_id": name, "review_id": "review_abcdef012345", "paper_id": paper["id"], "created_by": "alice", "status": "queued"}
+            paper_state_store.delete('reviews', state['review_id'])
+            paper_state_store.append('review_jobs', state)
             output = tmp_path / f"{name}.md"
-            monkeypatch.setattr(paper_reviews, "_review_job_by_id", lambda _: dict(state))
-            monkeypatch.setattr(paper_reviews, "_set_review_job", lambda _, patch: state.update(patch) or dict(state))
-            monkeypatch.setattr(paper_state_store, "get", lambda *_: None)
-            monkeypatch.setattr(paper_state_store, "append", lambda _, record: stored.append(record) or record)
             monkeypatch.setattr(paper_reviews, "_review_markdown_path", lambda _: output)
             with mock.patch.object(paper_reviews, "_resident_reply", return_value=(content, {"total_tokens": 123})) as call:
-                result = paper_reviews._run_review_job(name)
+                results = []
+                owner = paper_reviews.paper_job_ownership
+                assert owner.run(name, lambda identity: results.append(paper_reviews._run_review_job(identity)), adapter=owner.TableAdapter('review_jobs'))
+                result = results[0]
+            state = paper_state_store.get('review_jobs', name)
             call.assert_called_once()
             assert call.call_args.kwargs["resident_scope"] == "paper:review"
             assert analysis[:80_000] in call.call_args.args[0]
             assert "BEYOND REVIEW INPUT" not in call.call_args.args[0]
             assert result["library_check"]["analysis_excerpt"] == analysis[:900]
-            assert "result" not in state
+            assert state['result'] == result  # Read projection joins the canonical review.
             assert state["review_id"] == result["review_id"]
-            assert result == stored[0]
+            assert result == paper_state_store.get('reviews', result['review_id'])
             assert result["review_id"] == "review_abcdef012345"
             assert result["usage"] == {"total_tokens": 123}
             assert state["status"] == ("done" if complete else "error")

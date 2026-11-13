@@ -14,6 +14,7 @@ const routes=python('from management_portal.resources.portal import portal_route
   const req=route.request(),u=new URL(req.url());assert.equal(u.origin,'http://tau-fixture.local');requests.push({path:u.pathname,method:req.method(),body:req.postDataJSON()});
   if(u.pathname==='/lineage')return route.fulfill({contentType:'text/html',body:html});
   if(u.pathname==='/static/portal_resource_routes.js')return route.fulfill({contentType:'text/javascript',body:routes});
+  if(u.pathname==='/static/portal_translations.js')return route.fulfill({contentType:'text/javascript',body:'window.__PORTAL_TRANSLATIONS__='+fs.readFileSync(path.join(portal,'static/portal_translations.json'),'utf8')+';'});
   const f=path.join(portal,u.pathname);if(fs.existsSync(f)&&fs.statSync(f).isFile())return route.fulfill({path:f});
   if(u.pathname==='/api/events')return route.fulfill({contentType:'text/event-stream',body:''});
   let payload={};
@@ -23,6 +24,9 @@ const routes=python('from management_portal.resources.portal import portal_route
   return route.fulfill({contentType:'application/json',body:JSON.stringify(payload)});
  });
  await p.goto('http://tau-fixture.local/lineage');
+ await p.locator('[data-activity-view="agents"]').hover();
+ const pin=p.locator('[data-activity-pin]');
+ if(await pin.getAttribute('aria-pressed')==='false')await pin.click();
  await p.locator('#agentList > .agentList').waitFor({timeout:12000});
  await p.locator('#agentList [data-resident-project-group]').waitFor({timeout:10000});
  const root=p.locator('#lineage-navigation-panel');
@@ -60,6 +64,20 @@ const routes=python('from management_portal.resources.portal import portal_route
  await root.locator('#agentList').evaluate((n,html)=>n.innerHTML=html,savedList);
  const htmlBefore=await root.innerHTML(),beforeRequests=requests.length;
  assert.equal((await read(root)).surface_ready,true);assert.equal(await root.innerHTML(),htmlBefore);
+ const search=root.locator('#searchInput');
+ for(const property of ['disabled','readOnly','hidden']){
+  await search.evaluate((n,key)=>n[key]=true,property);
+  assert.equal((await read(root)).surface_ready,false,property);
+  await search.evaluate((n,key)=>n[key]=false,property);
+  assert.equal((await read(root)).surface_ready,true);
+ }
+ await search.evaluate(n=>n.after(n.cloneNode(true)));
+ assert.equal((await read(root)).surface_ready,false,'duplicate search controls are ambiguous');
+ await search.last().evaluate(n=>n.remove());
+ await root.locator('#filterToggleBtn').evaluate(n=>n.disabled=true);
+ assert.equal((await read(root)).surface_ready,false);
+ await root.locator('#filterToggleBtn').evaluate(n=>n.disabled=false);
+ assert.equal((await read(root)).surface_ready,true);
  assert.equal(requests.length,beforeRequests);assert.deepEqual(errors,[]);
  assert.ok(requests.filter(r=>r.path==='/api/instructions/execute').every(r=>/^(List|Get|Search)/.test(r.body.instruction)));
  console.log(JSON.stringify({status:'passed',original_new_node_predicate:originalPredicate,hatg_mounted:false,

@@ -11,6 +11,7 @@ from tests.cases.test_resident_mcp import mcp, connection, resources  # noqa: F4
 
 @dataclass(frozen=True)
 class Request:
+    agent_id: str = "resident_test"
     operation: str = "turn"
     provider: str = "claude"
     execution_id: str = "execution_test"
@@ -20,6 +21,7 @@ class Request:
 
 @dataclass(frozen=True)
 class Invocation:
+    user_prompt: str = "test input"
     request: Request = field(default_factory=Request)
     harness_tools: tuple = ()
     recovery_checkpoint: dict = field(default_factory=dict)
@@ -234,7 +236,8 @@ def test_required_mcp_uses_native_capabilities_without_an_attached_override(monk
 @pytest.mark.parametrize("fails", [False, True])
 def test_delivery_observation_failure_keeps_the_provider_outcome(monkeypatch, fails):
     from management_portal.execution import backend_services, native_options
-    reply = SimpleNamespace(available_harness_tool_names=frozenset({"hatg_instruction"}))
+    from management_portal.execution.backend_contracts import BackendResult
+    reply = BackendResult(output={"message": "done"}, available_harness_tool_names=frozenset({"hatg_instruction"}))
     class Provider:
         def execute(self, invocation, context):
             if fails:
@@ -256,7 +259,9 @@ def test_delivery_observation_failure_keeps_the_provider_outcome(monkeypatch, fa
         with pytest.raises(RuntimeError, match="provider failed"):
             service.execute(Invocation(), Context())
     else:
-        assert service.execute(Invocation(), Context()) is reply
+        result = service.execute(Invocation(), Context())
+        assert result.output['message'] == 'done'
+        assert result.available_harness_tool_names == reply.available_harness_tool_names
 
 
 @pytest.mark.parametrize("operation", ["create", "fork"])

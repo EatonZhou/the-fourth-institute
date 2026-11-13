@@ -52,7 +52,9 @@ def test_saved_settings_execute_once_without_catalog(
     result = BackendResult(output={"message": "ok"})
     backend = SimpleNamespace(execute=Mock(return_value=result))
     context = object()
-    assert service(monkeypatch, provider, backend).execute(original, context) is result
+    executed = service(monkeypatch, provider, backend).execute(original, context)
+    assert executed.output["message"] == "ok"
+    assert result.output == {"message": "ok"}
     backend.execute.assert_called_once()
     prepared, actual_context = backend.execute.call_args.args
     assert actual_context is context

@@ -2067,11 +2067,13 @@ def test_connecting_completion_wire_baselines_before_reconciler_can_replay(
     assert len(source["consumed_cursors"]) == 1
 
 
-def test_default_drop_discards_event_for_busy_ordinary_resident(
+@pytest.mark.parametrize('policy,status,pending', [(None, 'queued', 1), ('drop', 'dropped', 0)])
+def test_busy_ordinary_resident_uses_default_queue_or_explicit_drop(
     runtime_store: Path,
     monkeypatch: pytest.MonkeyPatch,
+    policy, status, pending,
 ) -> None:
-    """普通 Resident 忙碌时默认丢弃事件且不积压"""
+    """普通 Resident 忙碌时默认排队，明确配置 drop 才丢弃。"""
     monkeypatch.setattr(
         lineage_test_support,
         "NODE_ACTIVE_JOB_RESOLVER",
@@ -2086,7 +2088,7 @@ def test_default_drop_discards_event_for_busy_ordinary_resident(
     )
     created = lineage_test_support.create_lineage_with_resident_members(
         {
-            "title": "Default drop for busy Resident",
+            "title": "Busy Resident delivery policy",
             "nodes": [_worker(WORK_A)],
             "program": {
                 "components": [
@@ -2102,6 +2104,7 @@ def test_default_drop_discards_event_for_busy_ordinary_resident(
                         'route',
                         "event_source_manual",
                         WORK_A,
+                        config={} if policy is None else {'unavailable_policy': policy},
                     ),
                 ],
             },
@@ -2117,11 +2120,11 @@ def test_default_drop_discards_event_for_busy_ordinary_resident(
 
     assert emitted["matched_count"] == 0
     assert emitted["consumed_count"] == 1
-    assert emitted["results"][0]["status"] == "dropped"
+    assert emitted["results"][0]["status"] == status
     assert emitted["results"][0]["reason"] == "resident_running"
     assert emitted["lineage"]["program_invoke_wire_runtime"][
         "wire_manual_worker"
-    ]["pending_count"] == 0
+    ]["pending_count"] == pending
 
 
 @pytest.mark.parametrize("target_kind", ["agent", "effect"])

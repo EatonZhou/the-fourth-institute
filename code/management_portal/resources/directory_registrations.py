@@ -66,6 +66,7 @@ def excluded_from_scan(resource_id, path):
 def unregister_identity(resource_id, *, connection, actor=''):
     """Identity tombstones contain no paths and prevent disk rediscovery."""
     registry = get_registry_store()
+    registry._ensure()
     connection.execute(f'INSERT INTO "{registry.database.schema}".deleted_identities(resource_id) VALUES (%s) ON CONFLICT DO NOTHING',
                        (resource_id,))
     from .config import resource_database_schema

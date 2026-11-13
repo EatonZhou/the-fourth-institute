@@ -55,15 +55,15 @@ links:
   derived_from:
   - thinking_ca8f397a47de
 version:
-  number: 99
+  number: 100
   created_at: "2026-07-31"
   created_by:
     user: ""
     agent: ""
-  updated_at: "2026-11-05T13:23:40Z"
+  updated_at: "2026-11-13T20:28:27Z"
   updated_by:
     user: ""
-    agent: "resident_6199a7a36480"
+    agent: "resident_737599f56947"
 metaness: 2
 ---
 # HATG ISA：指令格式、调用入口与执行规则
@@ -295,6 +295,10 @@ Python 入口将失败的指令结果转为业务异常时，保留外层回执�
 | `Run` | 执行一次脚本或动作 | `RunScript` |
 | `Set` | 设置运行服务的目标状态，由必填参数给出状态 | `SetTelepusEnabled(enabled)` |
 | `Split` | 把一项拆成多项 | `SplitMailboxItem` |
+| `Start` | 开始有生命周期的交互过程 | `StartTelepusWeixinBinding` |
+| `Export` | 按调用者权限导出资源内容 | `ExportPaperBibtex` |
+| `Ensure` | 确认并准备所需绑定；已退休兼容入口保留名称并拒绝 | `EnsurePaperTranslationBinding` |
+| `Translate` | 请求文本翻译；已退休兼容入口保留名称并拒绝 | `TranslatePaperText` |
 | `Submit` | 提交已完成的工作结果 | `SubmitResidentSummary` |
 | `Trigger` | 触发事件 | `TriggerEvent` |
 | `Unbind` | 解除 `Bind` 建立的关联 | `UnbindWorkspace` |

@@ -77,6 +77,10 @@ def run_host(tmp_path, monkeypatch, browser, script, *, translation=False):
         from management_portal.paper_translation_google import GoogleTransport
         monkeypatch.setattr(paper_translation_service, '_production', None)
         owner = paper_translation_service.production_service()
+        # The initial selection uses automatic mode. Supply deterministic cache
+        # material without requiring this isolated fixture to have model accounts.
+        monkeypatch.setattr(owner, 'configuration', lambda context: {'revision': 'synthetic-reader'})
+        monkeypatch.setattr(owner, 'kimi_configuration', None)
         class Response(io.BytesIO):
             status = 200
         def opener(request, **kwargs):
@@ -90,6 +94,14 @@ def run_host(tmp_path, monkeypatch, browser, script, *, translation=False):
     monkeypatch.setattr(paper_recent, 'get_resource_service', lambda: type('R', (), {'get': lambda *a, **k: {'resource_id': paper}})())
     monkeypatch.setattr(paper_recent, 'resource_index_papers_by_ids', lambda ids, **k: [{'id': i, 'title': i} for i in ids])
     root = Path(__file__).resolve().parents[2]
+    from management_portal.resources.portal import portal_route_script
+    routes_file = tmp_path / 'reader-routes.js'
+    routes_file.write_bytes(portal_route_script())
+    bootstrap = r'''<meta charset="utf-8"><link rel="stylesheet" href="/static/paper.css"><script>
+window.PortalI18n={t:(s,p={})=>s.replace(/\{(\w+)\}/g,(_,k)=>p[k]??'{'+k+'}'),message:s=>s,requestLanguage:()=> 'zh-CN',html:(s,...v)=>s.reduce((a,x,i)=>a+x+(v[i]??''),'')};
+window.PortalI18n.text=window.PortalI18n.html;
+window.readerChat={width:()=>320,mount:()=>()=>{},addSelection:()=>{},answers:()=>[]};
+</script><script src="/static/portal_ui_primitives.js"></script><script src="/static/portal_workbench.js"></script><script src="/static/paper_artifact_presentation.js"></script>'''
     (bundle / 'paper.pdf').write_bytes((root/'tests/cases/fixtures/paper-synthetic-means.pdf').read_bytes())
     from management_portal.resources.directory_registrations import register_owned
     second = tmp_path / 'second'; second.mkdir()
@@ -104,15 +116,15 @@ def run_host(tmp_path, monkeypatch, browser, script, *, translation=False):
             parsed = urlsplit(self.path)
             if parsed.path == '/integration':
                 self.send_response(200); self.send_header('Content-Type','text/html'); self.end_headers()
-                self.wfile.write((root/'tests/cases/fixtures/paper-reader-recent.html').read_bytes()); return
+                self.wfile.write(bootstrap.encode() + (root/'tests/cases/fixtures/paper-reader-recent.html').read_bytes()); return
             if parsed.path == '/static/paper.css':
                 self.send_response(200); self.send_header('Content-Type','text/css'); self.end_headers()
                 self.wfile.write((root/'management_portal/static/paper.css').read_bytes()); return
             if parsed.path == '/':
                 self.send_response(200); self.send_header('Content-Type', 'text/html'); self.end_headers()
-                self.wfile.write(('''<script type="module">import {openReader} from '/static/paper_fullscreen_reader.js';
-window.signals=[];window.openDocument=(embedded=false)=>{window.host=openReader({container:embedded?()=>document.getElementById('readerSlot'):undefined,paper:''' + json.dumps({'id': paper, 'title': 'Synthetic', 'pdf_url': '/original.pdf'}) + ''',principal:'reader_one',onReady:s=>signals.push({paperId:s.paperId,fingerprint:s.fingerprint}),onClose:()=>window.readerClosed=true});};window.ready=true;</script><div id="readerSlot" style="width:700px;height:600px"></div>''').encode()); return
-            if parsed.path in ('/static/paper_fullscreen_reader.js', '/static/paper_reader.js', '/static/paper_personal.js', '/static/paper_detail.js'):
+                self.wfile.write((bootstrap + '''<script type="module">import {openReader} from '/static/paper_fullscreen_reader.js';
+window.signals=[];window.openDocument=(embedded=false)=>{window.host=openReader({chat:window.readerChat,container:embedded?()=>document.getElementById('readerSlot'):undefined,paper:''' + json.dumps({'id': paper, 'title': 'Synthetic', 'pdf_url': '/original.pdf'}) + ''',principal:'reader_one',onReady:s=>signals.push({paperId:s.paperId,fingerprint:s.fingerprint}),onClose:()=>window.readerClosed=true});};window.ready=true;</script><div id="readerSlot" style="width:700px;height:600px"></div>''').encode()); return
+            if parsed.path in ('/static/paper_fullscreen_reader.js', '/static/paper_reader.js', '/static/paper_personal.js', '/static/paper_detail.js', '/static/portal_ui_primitives.js', '/static/portal_workbench.js', '/static/paper_library_view.js', '/static/paper_artifact_presentation.js'):
                 self.send_response(200); self.send_header('Content-Type','text/javascript'); self.end_headers()
                 self.wfile.write((root/'management_portal'/parsed.path.lstrip('/')).read_bytes()); return
             for d in definitions:
@@ -124,7 +136,7 @@ window.signals=[];window.openDocument=(embedded=false)=>{window.host=openReader(
     thread = threading.Thread(target=server.serve_forever,daemon=True); thread.start()
     try:
         result = subprocess.run(['node',str(root/'tests/cases/javascript'/script),
-            f'http://127.0.0.1:{server.server_port}',browser,http_auth._SESSION_COOKIE,*tokens],capture_output=True,text=True,timeout=90,env={**os.environ, 'TMPDIR': str(tmp_path)})
+            f'http://127.0.0.1:{server.server_port}',browser,http_auth._SESSION_COOKIE,*tokens],capture_output=True,text=True,timeout=90,env={**os.environ, 'TMPDIR': str(tmp_path), 'READER_ROUTES': str(routes_file)})
         assert result.returncode == 0, result.stdout + result.stderr
         if translation: assert len(google_calls) == 1, 'second operation must use the private cache'
         from management_common.directory_cleanup_store import get_directory_cleanup_store

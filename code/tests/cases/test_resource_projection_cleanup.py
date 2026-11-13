@@ -231,9 +231,9 @@ def test_rotating_slot_deletes_old_projection_before_overwriting_mapping(tmp_pat
 
 def test_paper_delete_is_not_blocked_by_projection_references(tmp_path, monkeypatch):
     """引用清理失败仍注销论文，Review 投影由重建的 owner 持久重试。"""
-    from management_portal import paper_resources, paper_store
+    from management_portal import paper_resources, paper_store, paper_state_store
     monkeypatch.setattr(paper_resources, '_paper_by_id', lambda _: {'paper_id': 'paper_111111111111'})
-    monkeypatch.setattr(paper_resources, '_all_reviews', lambda: [{'review_id': 'review_111111111111', 'paper_id': 'paper_111111111111'}])
+    paper_state_store.append('reviews', {'review_id': 'review_111111111111', 'paper_id': 'paper_111111111111'})
     clean = Mock(side_effect=[None, RuntimeError('review busy')])
     monkeypatch.setattr(resource_lifecycle, 'release_resource', clean)
     store = paper_store.PaperStore(tmp_path / 'papers')

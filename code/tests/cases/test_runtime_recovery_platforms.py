@@ -69,10 +69,13 @@ def test_unavailable_native_status_never_becomes_terminal(recovery, monkeypatch,
     assert store.get('run')['status'] == 'running'
 
 
-def test_restart_recovers_pending_unit_from_original_runner_receipt(recovery, monkeypatch):
+@pytest.mark.parametrize('platform', ['linux', 'darwin'])
+def test_restart_recovers_pending_unit_from_original_runner_receipt(recovery, monkeypatch, platform):
+    monkeypatch.setattr(service, 'sys', SimpleNamespace(platform=platform))
     owner, row, _ = recovery(unit='', payload={'state': 'running', 'pid': 702})
     seen = []
     monkeypatch.setattr(service.portal_background_jobs, 'job_alive', lambda *args: seen.append(args) or True)
+    monkeypatch.setattr(service.portal_background_jobs, 'job_state', lambda *args: seen.append(args) or 'running')
     monkeypatch.setattr(service, 'launch_job', lambda *args, **kwargs: pytest.fail('restarted original run'))
     owner.reconcile('run', row)
     assert seen == [('portal-script-run', 701)]
@@ -80,8 +83,11 @@ def test_restart_recovers_pending_unit_from_original_runner_receipt(recovery, mo
 
 
 @pytest.mark.parametrize('timeout,status', [(None, 'lost'), (1, 'timed_out')])
-def test_confirmed_empty_payload_and_runner_allow_missing_result(recovery, monkeypatch, timeout, status):
+@pytest.mark.parametrize('platform', ['linux', 'darwin'])
+def test_confirmed_empty_payload_and_runner_allow_missing_result(recovery, monkeypatch, timeout, status, platform):
+    monkeypatch.setattr(service, 'sys', SimpleNamespace(platform=platform))
     owner, row, _ = recovery(payload={'state': 'running', 'pid': 702}, timeout_seconds=timeout)
+    monkeypatch.setattr(service.portal_background_jobs, 'job_state', lambda *args: 'stopped')
     monkeypatch.setattr(process_runtime, 'process_tree_alive', lambda *args, **kwargs: False)
     owner.reconcile('run', row)
     assert store.get('run')['status'] == status

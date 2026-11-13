@@ -236,15 +236,23 @@ const pressEscape = () => w.document.dispatchEvent(new w.KeyboardEvent('keydown'
       });
       workspace.applyContract({ schema: 'portal.chat_workspace.v3', target: { kind: 'resident', id: 'resident_333333333333' },
         header: { title: 'Handoff' }, composer: { can_send: true } });
-      workspace.setMessages([agent('a0', `Ask them:\n\`\`\`portal-resident-handoff\n${JSON.stringify(card)}\n\`\`\``)]);
+      workspace.setMessages([agent('a0', `Ask them:\n\`\`\`portal-resident-handoff\n${JSON.stringify(card)}\n\`\`\``, {
+        content_parts: [{type: 'resident_handoff_cards', cards: [{card_index: 0, selection_message_id: 'msg_' + 'a'.repeat(32)}]}],
+      })]);
       const ask = () => row('a0').querySelector('[data-portal-message-action="resident-handoff-ask"]');
       click(ask());
-      assert.deepEqual(sent, [[{ text: '替我问一下 Helper（resident_222222222222）：what is x?', refs: [], attachments: [] }, true,
-        { clear: false, focus: false, quote: false, includeContext: false, clearRefsOnSuccess: false }]]);
-      assert.equal(ask().disabled, true, 'the button waits for the send');
-      finish();
       await settle();
-      assert.equal(ask().disabled, false);
+      assert.equal(sent.length, 1);
+      assert.equal(sent[0][0].text, '替我问一下');
+      assert.equal(sent[0][0].content_parts[1].source_message_id, 'a0');
+      assert.equal(sent[0][0].content_parts[1].resident_id, card.resident_id);
+      assert.equal(JSON.stringify(sent).includes('what is x?'), false);
+      assert.deepEqual(sent[0][2].quote, {message_id: 'a0'});
+      assert.equal(ask().disabled, true, 'the button waits for the send');
+      finish({accepted: true});
+      await settle();
+      assert.equal(ask().disabled, true);
+      assert.match(ask().textContent, /已选择/);
       workspace.setComposer({ can_send: false });
       click(ask());
       assert.equal(sent.length, 1, 'nothing is asked while the Chat cannot send');

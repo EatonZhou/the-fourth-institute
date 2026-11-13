@@ -113,7 +113,7 @@ id_migrations:
     replacements:
       - "release-events"
     kind: "protocol"
-# 发行包可以摘掉的功能，与 management_portal/portal_features.py 的 FEATURES 一一对应（decision_15aab18c0ab3）。
+# 功能及常驻支持贡献，与 management_portal/portal_features.py 的 FEATURES 一一对应（decision_15aab18c0ab3）。
 # modules 列出承载该功能代码的模块；核对脚本要求功能的每个模块文件都在所列模块的 code_paths 中。
 features:
   - id: "workbench"
@@ -127,6 +127,9 @@ features:
     modules: ["web", "web.workflows", "resources.types"]
   - id: "projects"
     title: "Projects"
+    modules: ["web.community"]
+  - id: "project_resources"
+    title: "Project resources"
     modules: ["web.community"]
   - id: "article"
     title: "Article"
@@ -572,6 +575,7 @@ modules:
       - "management_portal/society_service/lineage_storage.py"
       - "management_portal/society_service/lineage_locations.py"
       - "management_portal/society_service/state_store.py"
+      - "management_portal/society_service/user_pending_question_storage.py"
       - "management_portal/society_service/lineage_data_*.py"
       - "management_portal/society_service/graph_storage.py"
       - "management_portal/society_service/lineage_placement.py"
@@ -659,6 +663,7 @@ modules:
       - "management_portal/society_service/resident_domain.py"
       - "management_portal/society_service/resident_domain_common.py"
       - "management_portal/society_service/resident_domain_host.py"
+      - "management_portal/society_service/user_pending_questions.py"
       - "management_portal/society_service/resident_execution_domain.py"
       - "management_portal/society_service/resident_execution_gate.py"
       - "management_portal/society_service/resident_execution_links.py"
@@ -746,6 +751,7 @@ modules:
       - "management_portal/society_service/service_invocation*.py"
       - "management_portal/society_service/program_work_storage.py"
       - "management_portal/service_invocation_contract.py"
+      - "management_portal/workflow_delivery_policy.py"
       - "management_portal/society_service/runtime/backend_adapter.py"
       - "management_portal/society_service/lineage_failure_notifications.py"
     designs:
@@ -897,10 +903,11 @@ modules:
   - id: "web.community"
     title: "组织与公共交流"
     parent: "web"
-    responsibility: "管理 Project、公共讨论、聊天室、动态和外部消息接入。"
+    responsibility: "管理 Project、公共讨论、聊天室、动态和外部消息接入；Project 功能拥有权威记录读取与索引摘要的共同格式化。"
     instruction_owners: []
     code_paths:
       - "management_portal/project_*.py"
+      - "management_portal/project_resource_index.py"
       - "management_portal/chatroom_*.py"
       - "management_portal/notice_*.py"
       - "management_portal/mailbox_todos.py"
@@ -2433,6 +2440,30 @@ protocols:
       - "decision_3dd52c0692c1"
     description: "Provider Adapter 产生原生调用用量及额度/余额观察；Execution 按账号、稳定调用标识、观察时间聚合，Lineage 投影 Resident 用量，Home 显示账号资源。原生 turn 用量、上下文用量、订阅窗口额度与货币余额保持不同字段和来源。适配器以非空 quota_group 声明共享额度池，Home 只在同组窗口之间显示明确零读数形成的约束，保留原始百分比；限制来源全部过期时显示待确认，不按名称、窗口时长或同账号猜测依赖。分组不修改 Scheduler 保护或恢复规则。 BillingObservations 按 account 锁与缓存采样；失败保留最后成功样本并标 stale/error，不填零。日用量与逐轮小时账本分开，模型目录不在该观察输出内。resident_execution_gate 根据当前 Session binding 批量读取 Scheduler quota_states，投影 open/closed/unknown 及保护原因和已确认豁免；人工 intake 和工作状态独立，查询失败不视为放行。原生状态视图消费同一保护事实和 send_hint，缺字段的工作事件不清空保护；正式批量读取刷新，不以 Conversation cursor 充当额度版本。"
     example: "Codex/Claude/native request 观察 → provider_turn_usage/account_monitor → account_resources 按汇率快照换算展示 → resident_usage_projection/Home 重读。人类明确确认目标账号后，Society 经既有 Execution 控制端口提交本次候选 Execution 的 credits_scope；会话成功提升后改为实际 Provider Session 引用，Scheduler 在派发和运行保护中核验账号、范围及新鲜 credits 观察。Fork 初始化也由 Society 持有本次确认：RetryResidentInitialization 核对人类身份、当前初始化 ID、目标账号与幂等键，只授权当前创建或首轮前压缩步骤的唯一 Execution；完成后先同步实际 Session 授权，再恢复原队列。已提交结果只补授权同步，换用新候选须重新确认，确认不进入普通输入偏好。取消或失败只收尾候选授权，其他 Session 和 Family 角色不继承本次确认。"
+
+  - id: "feature-authoritative-resource-records"
+    title: "功能权威资源与索引表示贡献"
+    modules: ["web", "web.community", "resources", "resources.access"]
+    designs: []
+    related_designs: ["decision_b6e74d78f7b6", "decision_15aab18c0ab3"]
+    description: "功能通过 portal_features 的 resource.authoritative_records 贡献类型到权威读取器的映射，通过 resource.index_formatters 贡献类型到领域索引表示的映射；每类贡献保留唯一 owner，ResourceService 校验返回身份、类型及当前授权。读取器确认不存在时不回退旧索引。Project 的两类贡献由 project_resources 登记并共用 project_resource_index.index_record；核心适配器先解析贡献再读取领域，缺失时不声明 Project collection、不读取领域，扫描清除旧索引投影且显式投影拒绝。基础 Project 资源贡献与 projects 展示入口独立，关闭展示不删除基础资源；核心提供器不导入上层功能。"
+    example: "ResourceService.get → resource.authoritative_records → Project.authoritative_record；ProjectRegistryAdapter → resource.index_formatters → 同一 index_record。"
+
+  - id: "feature-resident-input-variants"
+    title: "功能任务材料输入贡献"
+    modules: ["web", "web.workflows", "lineage.conversation"]
+    designs: []
+    related_designs: ["decision_e37f240e186d", "decision_2fe6fd5367fb", "decision_15aab18c0ab3"]
+    description: "Society 经 resident.input_variants(snapshot,prompt) 获取业务输入变体；没有提供器接管返回 None，多提供器同时接管拒绝。Paper 仅处理 paper.task-material，继续核对 actor、目标、材料完整性和 prompt 边界；通用会话层不直接依赖 Paper 材料实现。"
+    example: "resident_prompt_domain → portal_features → paper_agent_materials；普通输入无贡献时沿原路径构造。"
+
+  - id: "feature-workflow-targets"
+    title: "功能工作流目标贡献"
+    modules: ["web", "web.workflows", "lineage.automation"]
+    designs: []
+    related_designs: ["decision_e37f240e186d", "decision_15aab18c0ab3"]
+    description: "workflow_delivery_policy 经 workflow.targets(resident_ids) 读取功能登记的目标。Paper 提供器只返回 application=paper 的登记并保留完整角色行；策略继续执行既有绑定、角色及 Effect 投递约束，不将通用策略绑定到 Paper 存储。"
+    example: "workflow_delivery_policy._read → workflow.targets → paper_projection.workflow_targets → registered_role_targets。"
 
   - id: "project-lifecycle"
     title: "项目登记、生命周期与目录投影"

@@ -39,7 +39,9 @@ def delivery(resident_record, permissions, monkeypatch):
             {"type": "text", "text": CREDENTIAL_APPROVE},
             {"type": "async_question_answer", "source_message_id": "msg_permission_question",
              "answers": [{"question_index": 0, "answer": CREDENTIAL_APPROVE}]}]}}
-    inv = SimpleNamespace(argument=arguments.get, caller="lender", idempotency_key="permission-delivery")
+    from management_portal.hatg.contracts import InstructionContext
+    inv = SimpleNamespace(argument=arguments.get, caller="lender", idempotency_key="permission-delivery",
+                          context=InstructionContext("lender", "web"))
     return SimpleNamespace(record=resident_record, resident=resident, repository=repository, requests=requests,
                            message_id=message_id, inv=inv, arguments=arguments, permissions=permissions)
 

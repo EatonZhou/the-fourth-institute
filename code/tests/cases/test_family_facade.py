@@ -4,6 +4,7 @@
 """
 
 from __future__ import annotations
+from pathlib import Path
 from tests.cases.family_test_support import set_role
 
 import pytest
@@ -263,11 +264,12 @@ def test_a_facade_request_carries_its_images_and_files_to_the_member(facade, mon
     staged = job["input_media"]
     assert [item["name"] for item in staged] == ["shot.png"]
     assert open(staged[0]["source"], "rb").read() == PNG
-    assert staged[0]["original_source"].endswith("/shot.png")
+    assert staged[0]["original_source"].endswith("/payload")
+    assert Path(staged[0]["original_source"]).read_bytes() == PNG
     from management_portal.society_service.resident_execution_domain import _prepare_resident_prompt
     job = _prepare_resident_prompt(_find_resident(resident_id), job)
     from management_portal.execution.message_projection import unwrap_message
-    assert unwrap_message(job["actual_sent_prompt"]).endswith(f"/{notes}/notes.txt]")
+    assert unwrap_message(job["actual_sent_prompt"]).endswith(f"/{notes}/payload]")
 
 
 def test_a_residents_state_says_whether_messages_to_it_may_carry_images_and_files(input_delivery, monkeypatch):
@@ -1150,10 +1152,6 @@ def test_the_facade_conversation_reads_like_a_resident_answering_its_requests(mo
         "resident_id": resident_id, "title": {first: "权限内核", second: "admin 页面"}.get(resident_id, "门面"),
     })
     monkeypatch.setattr(resident_record_domain, "find_resident_for_admission", resident_record_domain.find_resident)
-    # This fixture represents legacy messages without a persisted identity
-    # lookup; it deliberately exercises the historical projection path.
-    from types import SimpleNamespace
-    Repository.agent_data = SimpleNamespace(chat=SimpleNamespace(message_agent_ids=lambda _: []))
     monkeypatch.setattr(family_facade, "is_facade", lambda record: (record or {}).get("resident_id") == facade_id)
     monkeypatch.setattr(family_facade, "relay_links", lambda record: links if record.get("resident_id") == facade_id else {})
     monkeypatch.setattr(family_facade, "facade_configuration", lambda record: {"family_id": "fbi_family0001"})
@@ -1218,10 +1216,9 @@ def test_the_facade_conversation_reads_like_a_resident_answering_its_requests(mo
     assert snapshot["state"]["family_member"] == {"resident_id": second, "title": "admin 页面"}
     assert snapshot["state"]["queued_count"] == 1
     assert snapshot["activities"] == []
-    # A member message shown in the facade is found by its ID, intermediate outputs included.
-    shown = family_facade.projected_reply({"resident_id": facade_id}, "msg_0000000000000a02")
-    assert (shown["author_id"], shown["family_reply"]["request_message_id"]) == (facade_id, "msg_0000000000000f02")
-    assert family_facade.projected_reply({"resident_id": facade_id}, "msg_0000000000000e04") is None
+    # ID lookup needs persisted identity/relay records. It is exercised by
+    # test_a_member_turn_shows_its_outputs_so_far_under_the_facade_request,
+    # using the real repository rather than this projection-only double.
     # Once the member is idle and only waiting relays remain, the facade waits for the latest.
     input_states[(second, "msg_0000000000000e02")] = ("queued", [])
     waiting = family_facade.project_snapshot({"resident_id": facade_id}, {

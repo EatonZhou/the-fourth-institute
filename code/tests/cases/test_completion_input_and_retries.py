@@ -10,7 +10,7 @@ from management_portal.execution.chat_completion_service import ChatCompletionSe
 def invocation():
     return SimpleNamespace(
         # No Resident in the metadata: capability assembly leaves the call as it is.
-        request=SimpleNamespace(provider="api", operation="turn", metadata={}, runtime_options={
+        request=SimpleNamespace(provider="api", operation="turn", agent_id="", metadata={}, runtime_options={
             "max_retries": 2,
             "messages": [{"role": "user", "content": "previous"}, {"role": "assistant", "content": "answer"},
                          {"role": "user", "content": "current"}],

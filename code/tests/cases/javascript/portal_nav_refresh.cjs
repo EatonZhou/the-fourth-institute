@@ -15,6 +15,8 @@ const root = path.resolve(__dirname, '../../../management_portal/static');
     await page.exposeFunction('recordClick', hit => clicks.push(hit));
     await page.route('**/*', route => {
       const name = new URL(route.request().url()).pathname;
+      if (name === '/static/portal_resource_routes.js') return route.fulfill({
+        body: fs.readFileSync(process.env.PORTAL_TEST_RESOURCE_ROUTES), contentType: 'text/javascript'});
       if (name.startsWith('/static/')) return route.fulfill({body: fs.readFileSync(path.join(root, name.slice(8))),
         contentType: name.endsWith('.css') ? 'text/css' : 'text/javascript'});
       return route.fulfill({contentType: 'text/html', body: '<!doctype html><html><body><nav data-portal-nav></nav><main>Destination</main></body></html>'});
@@ -29,7 +31,8 @@ const root = path.resolve(__dirname, '../../../management_portal/static');
         window.PortalAPI = {get: () => new Promise(resolve => catalogReplies.push(resolve))};
         window.PortalInstructionClient = {execute: () => new Promise(resolve => typeReplies.push(resolve))};
         window.PortalIdentity = {peek: () => ({username}), load: async () => ({username})};
-        window.PortalCompatibility = {identifier: () => 'application/x-portal-nav-fixture'};
+        window.PortalCompatibility = {...window.PortalCompatibility,
+          identifier: () => 'application/x-portal-nav-fixture'};
         window.PortalConversationStore = {};
         window.PortalAgentInbox = {mount() {}};
         window.PortalUIPrimitives.loadAsset = async () => {};

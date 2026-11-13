@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import logging
+
 import hashlib
 import json
 import os
@@ -19,6 +21,9 @@ from .telegram_format import markdown_to_telegram_html, split_telegram_text
 DEFAULT_TELEPUS_TELEGRAM_IMAGE_ROOT = portal_path('uploads') / 'resident_chat_images'
 TELEPUS_TELEGRAM_IMAGE_MAX_BYTES = int(os.getenv("TELEPUS_TELEGRAM_IMAGE_MAX_BYTES", "20971520"))
 TELEGRAM_IMAGE_SUFFIXES = {".jpg", ".jpeg", ".png", ".webp", ".gif"}
+
+
+LOGGER = logging.getLogger(__name__)
 
 
 class TelegramAdapter:
@@ -151,8 +156,8 @@ class TelegramAdapter:
             try:
                 self.client.answer_callback_query(callback_query_id=callback_id,
                                                   text="正在发送文件" if attachment else "")
-            except Exception:  # noqa: BLE001 - an expired callback still gets its result
-                pass
+            except Exception as exc:  # noqa: BLE001 - an expired callback still gets its result
+                LOGGER.warning("Telegram callback acknowledgement unavailable (%s)", type(exc).__name__)
         if attachment:
             return self._deliver_attachment(chat_id, attachment, dry_run=dry_run, update_id=update_id)
         return self._respond(chat_id, response, dry_run=dry_run, update_id=update_id)
@@ -274,8 +279,8 @@ class TelegramAdapter:
             if self.client:
                 try:
                     self.client.send_message(chat_id=chat_id, text="文件发送失败，请稍后重试。")
-                except Exception:  # noqa: BLE001
-                    pass
+                except Exception as exc:  # noqa: BLE001
+                    LOGGER.warning("Telegram attachment failure notice unavailable (%s)", type(exc).__name__)
 
     def _send_attachment(self, *, chat_id: str, attachment: dict[str, Any], dry_run: bool, update_id: int) -> dict[str, Any]:
         token = str(attachment.get("token") or "")
@@ -293,7 +298,8 @@ class TelegramAdapter:
         try:
             progress = self.client.send_message(chat_id=chat_id, text=self._attachment_progress_text(filename, 0, len(data)))
             progress_message_id = int(((progress or {}).get("result") or {}).get("message_id") or 0)
-        except Exception:  # noqa: BLE001
+        except Exception as exc:  # noqa: BLE001
+            LOGGER.warning("Telegram attachment progress start unavailable (%s)", type(exc).__name__)
             progress_message_id = 0
         progress_state = {"percent": -10, "updated_at": 0.0}
 
@@ -307,7 +313,8 @@ class TelegramAdapter:
             try:
                 self.client.edit_message_text(chat_id=chat_id, message_id=progress_message_id,
                                               text=self._attachment_progress_text(filename, sent_bytes, total_bytes))
-            except Exception:  # noqa: BLE001
+            except Exception as exc:  # noqa: BLE001
+                LOGGER.warning("Telegram attachment progress update unavailable (%s)", type(exc).__name__)
                 return
             progress_state.update(percent=percent, updated_at=now)
 
@@ -315,8 +322,8 @@ class TelegramAdapter:
             if progress_message_id:
                 try:
                     self.client.edit_message_text(chat_id=chat_id, message_id=progress_message_id, text=text)
-                except Exception:  # noqa: BLE001
-                    pass
+                except Exception as exc:  # noqa: BLE001
+                    LOGGER.warning("Telegram attachment progress finish unavailable (%s)", type(exc).__name__)
 
         try:
             send = self.client.send_photo if content_type in {"image/jpeg", "image/png", "image/webp"} else self.client.send_document

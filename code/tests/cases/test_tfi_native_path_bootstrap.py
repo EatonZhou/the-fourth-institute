@@ -154,9 +154,10 @@ for(const root of Object.values(p)){
  container.innerHTML=w.MD.render('![fixture](<file://'+file+'>)');
  assert.equal(container.querySelector('img')?.getAttribute('src'),'/api/agent-workbench/link-file-raw?path='+encodeURIComponent(file));
 }
-// The projection selects a transport, not a new authorization or URL route.
+// POSIX absolute paths use the authorized file transport even outside the
+// projected roots.
 const container=w.document.createElement('div');container.innerHTML=w.MD.render('![public](/share/public.png)');
-assert.equal(container.querySelector('img').getAttribute('src'),'/share/public.png');
+assert.equal(container.querySelector('img').getAttribute('src'),'/api/agent-workbench/link-file-raw?path='+encodeURIComponent('/share/public.png'));
 dom.window.close();
 console.log('Production bootstrap reached the actual FileLinks/Markdown path readers.');
 '''

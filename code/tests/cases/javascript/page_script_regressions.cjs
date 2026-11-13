@@ -106,6 +106,8 @@ async function familySettingsFixture({runtime = true, restart = true} = {}) {
   let root;
   const fixtureDocument = {
     body: document.body,
+    addEventListener: document.addEventListener.bind(document),
+    removeEventListener: document.removeEventListener.bind(document),
     get activeElement() { return document.activeElement; },
     createElement: tag => {
       const element = document.createElement(tag);
@@ -519,7 +521,7 @@ function articleSaveFixture() {
     if (f.builds.length > previousBuilds) void context.compileArticle(f.builds.at(-1));
     return saved;
   };
-  return {context, state, session, documentState, requests, notices, views, edit: f.edit};
+  return {context, state, session, documentState, requests, notices, views, edit: f.edit, documents: f.documents};
 }
 
 test('Article explicit save waits for persistence then builds even with compile-on-edit off', async () => {
@@ -638,10 +640,7 @@ test('Article save-all stops at an Article switch without saving its other files
   const f = articleSaveFixture();
   const documents = new Map([['main.tex', f.documentState], ['refs.bib', f.documentState]]);
   f.state.openTabs = ['main.tex', 'refs.bib']; f.state.documents = documents;
-  const context = owner(ARTICLE_SCRIPTS, ['saveAllDirtyDocuments'], {
-    ...f.context, captureActiveDocument: noop, documentIsDirty: () => true,
-  });
-  const saving = context.saveAllDirtyDocuments();
+  const saving = f.documents.saveAllDirtyDocuments();
   f.state.selectedId = 'B'; f.state.savedSource = 'B saved';
   f.requests[0].resolve({path: 'main.tex', content: 'new'});
   assert.equal(await saving, false);

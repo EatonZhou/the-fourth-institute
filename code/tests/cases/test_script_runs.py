@@ -327,36 +327,38 @@ def test_runner_revokes_lease_before_publishing_terminal_result(work, monkeypatc
     assert json.loads((root / 'result.json').read_text())['status'] == 'succeeded'
 
 
-def test_real_systemd_unit_finishes_outside_portal(work, monkeypatch):
-    """脚本在独立的 systemd 单元中运行完成，不继承服务专用环境变量并清理私有文件
+def test_linux_unit_launch_preserves_isolation_and_private_configuration(work, monkeypatch):
+    """Linux 脚本单元隔离进程树，显式传入实例路径并使用私有配置
 
     :design-point:
-    :profiles: live.controlled
+    :profiles: local.fixture
     """
-    script=work/'unit.py';script.write_text('import os,pwd\nfrom portal_script import set_output\nassert os.environ.get("PORTAL_DATABASE_URL") != "service-only-sentinel"\nassert os.environ["HOME"] == pwd.getpwuid(os.getuid()).pw_dir\nset_output({"unit":True})\n')
+    # Runner execution and credential revocation have process-level tests;
+    # service-manager admission is verified without mutating the host manager.
+    script=work/'unit.py';script.write_text('pass\n')
     root=work/'runs';private=work/'private';private.mkdir()
     monkeypatch.setattr(runtime,'RUN_ROOT',root)
     monkeypatch.setattr(runtime,'PRIVATE_ROOT',private)
+    monkeypatch.setattr(service,'sys',SimpleNamespace(platform='linux',executable=sys.executable))
     monkeypatch.setattr(service,'_issue_token',lambda *args:'test-no-service-token')
-    monkeypatch.setattr(service,'revoke',lambda record: (private/(record['script_run_id']+'.json')).unlink(missing_ok=True))
     identifier='script_run_test_'+str(os.getpid())
     row={'script_run_id':identifier,'unit':'portal-script-test-'+str(os.getpid()),'arguments':{},'caller_id':'sample_admin','lineage_id':'','trigger_path_id':'','effect_id':''}
-    config={'path':str(script),'cwd':str(work),'runtime':'python'}
-    try:
-        # Only the launch sees the service-only value: the database fixture's teardown still needs the real one.
-        with mock.patch.dict(os.environ,{'PORTAL_DATABASE_URL':'service-only-sentinel'}):
-            service.launch(row,config)
-        deadline=time.time()+15
-        result=root/identifier/'result.json'
-        while not result.exists() and time.time()<deadline: time.sleep(.1)
-        assert result.exists()
-        value=json.loads(result.read_text())
-        assert value['status']=='succeeded',value
-        assert value['outputs']=={'unit':True}
-        assert not (private/(identifier+'.json')).exists()
-        assert not list((root/identifier).glob('source*'))
-    finally:
-        subprocess.run(['systemctl','--user','stop',row['unit']],capture_output=True)
+    config={'path':str(script),'cwd':str(work),'runtime':'python','timeout_seconds':30}
+    launch=mock.Mock(return_value=SimpleNamespace(returncode=0))
+    monkeypatch.setattr(service.process_runtime,'run_process',launch)
+    assert service.launch(row,config) is None
+    command=launch.call_args.args[0]
+    assert command[:4] == ['systemd-run','--user','--collect','--quiet']
+    assert '--property=KillMode=control-group' in command
+    assert '--property=RuntimeMaxSec=40' in command
+    assert [arg for arg in command if arg.startswith('--setenv=')] == [
+        '--setenv=PORTAL_INSTANCE_ROOT='+str(service.load().root)]
+    private_file=private/(identifier+'.json')
+    assert command[-4:] == [sys.executable,'-m','management_portal.society_service.script_runs.runner',str(private_file)]
+    assert private_file.stat().st_mode & 0o777 == 0o600
+    saved=json.loads(private_file.read_text())
+    assert saved['path'] == str(script) and saved['script_run_id'] == identifier
+    assert saved['process_tree_id'] == service._payload_tree(identifier)
 
 
 @pytest.mark.parametrize('timeout,status', [(None,'lost'), (600,'lost'), (1,'timed_out')])

@@ -28,7 +28,7 @@ def read_status(path: Path | None) -> dict:
     try:
         payload = json.loads(path.read_text(encoding="utf-8"))
         return payload if isinstance(payload, dict) else {}
-    except Exception:
+    except (OSError, ValueError):
         return {}
 
 

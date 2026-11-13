@@ -75,9 +75,9 @@ class TimeoutDefaultsTests(unittest.TestCase):
         with patch.object(store, "domain") as domain:
             domain.return_value.transaction.return_value.__enter__.return_value = connection
             self.assertTrue(store.acquire_lease("test"))
-            self.assertEqual(connection.execute.call_args.args[1], ("test", 90))
+            self.assertEqual(connection.execute.call_args.args[1], ("test", 30))
             self.assertTrue(store.renew_lease("test"))
-            self.assertEqual(connection.execute.call_args.args[1], (90, "test"))
+            self.assertEqual(connection.execute.call_args.args[1], (30, "test"))
 
 
 def test_browser_timeout_defaults_and_explicit_cancellation():

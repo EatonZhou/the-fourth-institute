@@ -45,9 +45,14 @@ def test_populated_recent_and_favorites_cookie_routes(tmp_path, monkeypatch, sto
             if self.path == '/personal-fixture':
                 self.send_response(200);self.send_header('Content-Type','text/html; charset=utf-8');self.end_headers()
                 self.wfile.write(b'''<!doctype html><meta charset="utf-8"><div class="leftBody"><div id="folderTree"></div></div>
-<script src="/static/paper_personal.js"></script><script>
+<script>window.PortalI18n={t:s=>s,html:(s,...v)=>s.reduce((a,x,i)=>a+x+(v[i]??''),'')};PortalI18n.text=PortalI18n.html;</script><script src="/static/paper_personal.js"></script><script src="/static/paper_library_view.js"></script><script>
 window.state={principalId:'alice',favoriteIds:new Set(),favoritePending:new Set()};
-PortalPaperPersonal.mount({state,paperApi:{request:async url=>{const r=await fetch(url);const d=await r.json();if(!r.ok)throw Error(d.error?.message||d.error||'Portal request failed');return d;}},loadDetail:async()=>{},setMode:()=>{}});
+const paperApi={request:async url=>{const r=await fetch(url);const d=await r.json();if(!r.ok)throw Error(d.error?.message||d.error||'Portal request failed');return d;}};
+state.paperTreeExpansion={};state.paperTreeRenderLimit=200;
+const deps=Object.fromEntries(PortalPaperLibraryView.dependencies.map(k=>[k,()=>{}]));
+Object.assign(deps,{$:id=>document.getElementById(id),state,paperApi,esc:String,disclosureIcon:e=>e?'-':'+',paperStateHtml:String,isCollectionMode:()=>false});
+const library=PortalPaperLibraryView.createLibraryView(deps);
+PortalPaperPersonal.mount({state,paperApi,renderTree:library.renderTree,syncFavoriteButtons:library.syncFavoriteButtons,loadDetail:async()=>{},setMode:()=>{}});
 </script>''');return
             return super().do_GET()
     server=ThreadingHTTPServer(('127.0.0.1',0),Handler)

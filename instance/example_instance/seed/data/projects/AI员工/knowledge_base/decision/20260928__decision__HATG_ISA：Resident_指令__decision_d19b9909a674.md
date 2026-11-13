@@ -26,15 +26,15 @@ links:
   - decision_898b8911a2ff
   - thinking_ca8f397a47de
 version:
-  number: 71
+  number: 73
   created_at: "2026-09-28T10:45:00Z"
   created_by:
     user: "weihao"
     agent: "resident_2a1fc6cd272d"
-  updated_at: "2026-11-05T13:23:38Z"
+  updated_at: "2026-11-13T20:28:05Z"
   updated_by:
     user: ""
-    agent: "resident_6199a7a36480"
+    agent: "resident_737599f56947"
 metaness: 2
 ---
 # HATG ISA：Resident 指令
@@ -71,6 +71,7 @@ Resident 是可以跨多次模型会话持续存在的 Agent 身份。系统中�
 | `SubmitResidentSummary` | 是 | 提交一份已认领的摘要 | 免检 |
 | `ReleaseResidentSummaryJob` | 是 | 放弃一份已认领的摘要并说明原因 | 免检 |
 | `GetResidentSettings` | 否 | 读取运行设置与 Prompt 注入设置 | 对 `resident_id` 有 @viewer |
+| `GetResidentTextInputSnapshot` | 否 | 读取显式 fresh 文本的当前配置和完整系统 parts 版本，不提交模型 | 对 `resident_id` 有 @viewer |
 | `UpdateResidentSettings` | 是 | 修改运行设置，包括 Prompt 注入 | 对 `resident_id` 有 @contributor |
 | `PreviewPromptInjection` | 否 | 预览一轮实际带上的注入内容 | 对 `resident_id` 有 @viewer |
 | `GetResidentInitialization` | 否 | 读取既有初始化状态与执行身份 | 对 `resident_id` 有 @viewer |
@@ -247,6 +248,10 @@ Family 内部检查成员摘要的 CheckResidentWorkSummary 和读取门面汇�
   - `application`：逐项配置的生效时机与实际交付观察；未观察到不等于缺失。
   - `prompt_injection`：Prompt 注入的读法。`preset`、`preset_label` 为当前预设；`presets` 为可选的预设；`parts` 为六个类别，每项给出 `id`、`label`、`description`、当前时机 `choice`、可选时机 `choices`，以及它在当前 Provider 中的位置 `placement`。位置由 Provider 决定，不能修改。各类别、时机和预设的含义见 decision_ef1d6c925955。
 
+### `GetResidentTextInputSnapshot`
+
+按调用者读取目标 Resident 的实际配置并装配本次显式文本的系统 parts，返回配置版本、系统 parts 版本、backend、account 和 settings。文本必须非空且 UTF-8 大小不超过 16000 字节。读取沿用运行设置 owner 的权限校验；装配前后校验配置版本，不提交消息或模型请求。结果证明本次配置与输入材料，不证明工具已在 Provider 侧禁用。
+
 ### `UpdateResidentSettings`
 
 **修改 Resident 的运行设置。**
@@ -310,7 +315,7 @@ Family 内部检查成员摘要的 CheckResidentWorkSummary 和读取门面汇�
 - Model API 目标额外接受 `prompt_context` 与 `backend_options`，与账号、模型统一校验并保存；推理参数只在目标模型支持时放入 `backend_options.parameters`。跨入 Model API 须显式选择 API 登记账号。原生目标不接受这两个 API 专用参数。
 - 原生与 Model API 之间不能完整保留上下文：有上下文时 `preserve` 被拒绝，原绑定不变。目标为 Model API 时不接受 `native`、`compact` 与 `visible`；原生 → Model API 不发初始化请求，解除当前原生绑定但保留旧会话，配置提交失败恢复旧绑定。Model API → 原生先初始化新会话，成功后切换，失败保留原配置。迁移过程、恢复和接单规则见 decision_c47a13e8b962。
 - `resume_failed_input` 为 `true` 时，`restart` 换到其他账号或 Provider 后恢复最近一条失败输入；`switch_account` 不接受 `true`，失败输入由具体任务的恢复入口处理。省略或 `false` 时切换不重试失败输入。
-- `active_execution_policy` 取值：`wait`（默认，当前工作已进入执行时持久保存迁移安排，返回 accepted／waiting_current_turn；本轮继续，后续接单暂停，平台扫描在本轮结束后按原调用者重新鉴权并提交迁移）或 `cancel`（先请求停止当前工作，停止确认后重试）。关闭页面或平台重启不丢失等待安排；可通过 CancelSessionRestart 取消，只有原来开放且此后没有人工接单操作时才恢复接单。尚未执行的保留消息随新会话继续。等待安排存在时相同请求幂等返回，修改目标须先取消原安排；已经提交的迁移继续沿用原有替换规则。尚无会话的同 Provider 排队执行可以直接调整账号，规则见 decision_c47a13e8b962。
+- `active_execution_policy` 取值：`wait`（默认，当前工作已进入执行时持久保存迁移安排，返回 accepted／waiting_current_turn；本轮继续，后续接单暂停，平台扫描在本轮结束后按原调用者重新鉴权并提交迁移）或 `cancel`（先请求停止当前工作，停止确认后重试）。关闭页面或平台重启不丢失等待安排；可通过 CancelSessionRestart 取消，只有原来开放且此后没有人工接单操作时才恢复接单。尚未执行的保留消息随新会话继续。准备新会话期间，在本次迁移仍持有的关闭接单版本下新收到的消息，只要尚未提交执行且未获接单准入，也随新会话继续，不视为新工作冲突；已提交、已准入或接单版本变化时仍拒绝替换。等待安排存在时相同请求幂等返回，修改目标须先取消原安排；已经提交的迁移继续沿用原有替换规则。尚无会话的同 Provider 排队执行可以直接调整账号，规则见 decision_c47a13e8b962。
 - 结果：`restart_id`、`status`，以及 `operation_id`（稳定操作 ID；账号未变的 `switch_account` 为空）、`operation`、`phase`（等待、准备、导入、提交或终态阶段）、`context_result`（`pending`、`preserved`、`fresh`、`summarized` 或 `unchanged`）和 `actual_binding`（当前实际使用的绑定，失败时为原绑定）。切换完成前继续保留原会话；完成后新会话成为当前会话，所选 Provider、账号及随请求给出的运行设置写入 Resident 的运行设置。
 - 这个 Resident 已有一次尚未完成的重启时，相同参数返回已有重启记录；不同参数先取消已有重启，等生命周期清理完成后按新参数开始。清理超过本次调用的等待期限时返回冲突，调用者稍后重试。其他生命周期操作尚未完成时也返回冲突。
 - Resident 还没有模型会话时，这条指令直接保存 Provider 与账号选择。Portal 运行设置卡片的“账号切换”与“重新开始会话”使用这条指令。
@@ -375,6 +380,7 @@ Family 内部检查成员摘要的 CheckResidentWorkSummary 和读取门面汇�
 | `SubmitResidentSummary` | `claim_id`、`summary` |
 | `ReleaseResidentSummaryJob` | `claim_id`、`reason` |
 | `GetResidentSettings` | `resident_id` |
+| `GetResidentTextInputSnapshot` | `resident_id`、`text` |
 | `UpdateResidentSettings` | `resident_id`、`expected_revision`、`changes` |
 | `PreviewPromptInjection` | `resident_id`、`turn` |
 | `GetResidentInitialization` | `resident_id` |

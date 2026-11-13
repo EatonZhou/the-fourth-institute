@@ -127,8 +127,7 @@ def test_claude_code_sends_only_the_selected_model_to_a_declared_gateway(auth, t
           default_model="gpt-test", secret_file=str(key_file), headers={"X-Team": "lab"},
           models=[{"id": "gpt-test"}, {"id": "gpt-mini"}],
           protocols={"anthropic_messages": {"base_url": f"http://127.0.0.1:{server.server_port}", "auth": auth}})
-    _call(isa.register_provider_account, account_id="gateway-claude", provider="claude", kind="api_profile",
-          config={"api_id": "gateway"})
+    # CreateModelApi already provisions the compatible Claude route.
     provider_env, _profile = daemon_module._provider_environment("gateway-claude")
     (tmp_path / "home").mkdir()
     environment = {"HOME": str(tmp_path / "home"), "PATH": os.defpath, "CLAUDE_CONFIG_DIR": str(tmp_path / "config"),

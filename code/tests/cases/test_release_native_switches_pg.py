@@ -139,6 +139,7 @@ class NativeTargetTests(unittest.TestCase):
 
     def test_fresh_off_on_native_admission_and_pause_preserves_work(self):
         from management_portal.society_service import lineage_program_effect_execution as effect
+        from management_portal.society_service import lineage_program_occurrences as occurrences
         result = self.initialize(False)
         self.assertTrue(all(x['native_states'] and not x['actual_enabled'] for x in result['features']))
         self.assertEqual(json.loads(self.site.read_text())['deployment']['pulse']['other'], 'retained')
@@ -146,11 +147,11 @@ class NativeTargetTests(unittest.TestCase):
         self.c.execute("UPDATE lineage.operator_work SET checkpoint_json=checkpoint_json || %s::jsonb",
                        (json.dumps({'pending_deliveries': {'keep': {'value': 1}}, 'custom': 7}),))
         with self.native_runtime() as (switches, cr, rt):
-            self.assertFalse(rt.claim_event_occurrence('local_lineage', 'event_a', 'closed')['accepted'])
+            self.assertFalse(occurrences.claim_event_occurrence('local_lineage', 'event_a', 'closed')['accepted'])
             with self.assertRaises(effect._EffectPaused): effect._require_effect_open('local_lineage','effect_a')
             switches.set_enabled('pulse', True, 'test-admin')
             switches.set_enabled('architecture_audit', True, 'test-admin')
-            self.assertTrue(rt.claim_event_occurrence('local_lineage','event_a','new-after-resume')['accepted'])
+            self.assertTrue(occurrences.claim_event_occurrence('local_lineage','event_a','new-after-resume')['accepted'])
             effect._require_effect_open('local_lineage','effect_a')
             switches.set_enabled('architecture_audit', False, 'test-admin')
         states = self.checkpoints()

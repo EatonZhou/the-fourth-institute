@@ -121,6 +121,44 @@ class SessionCapture:
     def __init__(self, store: AgentDataStore) -> None:
         self.store = store
 
+    def record_subscription_native_link(
+        self, projection: ExecutionProjection, *, backend_session_id: str = "",
+        backend_route_id: str = "", turn_id: str = "", final: bool = False,
+    ) -> None:
+        """Observe native identity before stateless isolation replaces binding IDs."""
+        request = projection.request
+        if request.operation not in {"turn", "generate"} or request.provider not in {
+            "codex", "claude", "kimi", "antigravity",
+        }:
+            return
+        route = backend_route_id or projection.session.backend_route_id
+        if not projection.native_account_checked:
+            from .account_registrations import registrations
+            account = next((row for row in registrations(request.provider)
+                            if (row.get("route_id") or row.get("account_id")) == route), None)
+            if account and account.get("kind") == "subscription_login":
+                projection.native_account_id = str(account["account_id"])
+            projection.native_account_checked = True
+        if not projection.native_account_id:
+            return
+        session_id = str(backend_session_id or "").strip()
+        if session_id and session_id != request.execution_id:
+            projection.native_session_id = session_id
+        if turn_id:
+            projection.native_turn_id = str(turn_id)
+        if not final and not (projection.native_session_id and projection.native_turn_id):
+            return
+        signature = (projection.native_session_id, projection.native_turn_id, route)
+        if signature == projection.native_link_signature:
+            return
+        self.store.record_subscription_native_link(
+            execution_id=request.execution_id, provider=request.provider,
+            account_id=projection.native_account_id, backend_route_id=route,
+            native_session_id=projection.native_session_id, native_turn_id=projection.native_turn_id,
+        )
+        # Cache only a committed fact: a failed write must be retryable.
+        projection.native_link_signature = signature
+
     def bind_provider_session(
         self,
         projection: ExecutionProjection,

@@ -44,11 +44,16 @@ def test_backup_uses_configured_lineage_and_keeps_actor(configure):
                      ('TriggerEvent', {'lineage_id': LID, 'event_source_id': 'event_source_444444444444'}, 'operator')]
 
 
-def test_telepus_configuration_is_read_for_each_match(configure):
+def test_telepus_matches_the_current_watchboard_manifest(configure):
+    # Telepus is a watchboard layout, independent of retired Resident bindings.
     configure(telepus={'resident_id': RID})
-    assert telepus.matches(SimpleNamespace(resident_id=RID))
+    context = SimpleNamespace(resident_id=RID, dashboard={
+        'view_manifest': {'payload': {'layout': 'telepus-channels'}}})
+    assert telepus.matches(context)
     configure(telepus={'resident_id': 'resident_555555555555'})
-    assert not telepus.matches(SimpleNamespace(resident_id=RID))
+    assert telepus.matches(context)
+    context.dashboard['view_manifest']['payload']['layout'] = 'generic-three-panel'
+    assert not telepus.matches(context)
 
 
 def test_switch_keys_use_configured_owners(configure):
@@ -91,7 +96,7 @@ def test_empty_configuration_does_not_contact_a_default_object(configure, tmp_pa
     overview = ResourceBackupBackend(tmp_path, workflow=workflow).get_overview('viewer')
     assert overview['permissions'] == {'can_view': True, 'can_run': False, 'can_verify': False, 'can_cancel': False}
     assert overview['restore_guide']['resource_id'] == overview['restore_guide']['url'] == ''
-    assert not telepus.matches(SimpleNamespace(resident_id=RID))
+    assert not telepus.matches(SimpleNamespace(resident_id=RID, dashboard={}))
     assert switches.workflow_switches() == {}
     with pytest.raises(ValueError, match='must be configured'):
         development.application_definition('1' * 40)
@@ -101,10 +106,9 @@ def test_empty_configuration_does_not_contact_a_default_object(configure, tmp_pa
 
 @pytest.mark.parametrize('value', [None, False, [], 'wrong_id'])
 def test_malformed_targets_are_not_silently_disabled(configure, value):
-    configure(backup={'lineage_id': value}, telepus={'resident_id': value},
+    configure(backup={'lineage_id': value},
               pulse={'lineage_id': value}, system_workflow={'request_timing_lineage_id': value})
-    for operation in (backup_lineage.lineage_id, pulse._pulse_root, switches.workflow_switches,
-                      lambda: telepus.matches(SimpleNamespace(resident_id=RID))):
+    for operation in (backup_lineage.lineage_id, pulse._pulse_root, switches.workflow_switches):
         with pytest.raises(ValueError):
             operation()
 

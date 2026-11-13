@@ -107,8 +107,12 @@ async function documentFixture(boundary, transform = (_name, source) => source) 
     await pause(25);
     for (const observer of observers) observer.disconnect();
     observers.clear();
+    let afterClose = false;
+    window.addEventListener('fixture-close-probe', () => { afterClose = true; });
+    const closeProbe = new window.Event('fixture-close-probe');
     window.close();
-    assert.equal(window.document, undefined, 'document disposed');
+    window.dispatchEvent(closeProbe);
+    assert.equal(afterClose, false, 'closing the fixture removes window listeners');
     assert.deepEqual(errors, [], 'no uncaught DOM/module errors');
   };
   try {

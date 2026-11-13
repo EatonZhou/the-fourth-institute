@@ -247,13 +247,13 @@ def test_execution_rpc_timeout_budgets(
     from management_common.rpc_auth import RpcAuthenticator
     RpcAuthenticator(tmp_path / "budgets.sock")
     client = ExecutionServiceClient(tmp_path / "budgets.sock", **options)
-    connection = mock.Mock()
+    connection = mock.MagicMock()
 
     def response():
         request = json.loads(connection.sendall.call_args.args[0])
         return json.dumps({"id": request["id"], "ok": True, "result": {"ok": True}}).encode()
 
-    connection.makefile.return_value.readline.side_effect = response
+    connection.makefile.return_value.__enter__.return_value.readline.side_effect = response
     with mock.patch(
         "management_portal.execution.transport.connect_service",
         return_value=(connection, tmp_path / "budgets.sock"),

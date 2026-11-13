@@ -204,7 +204,7 @@ def test_figure_delete_cannot_unlink_prefix_sibling(figure_store, tmp_path):
 
 
 def test_figure_dedupe_stale_metadata_and_scoped_delete(figure_store, monkeypatch, tmp_path):
-    """相同的图表重绘请求复用生成项，过期项标为错误后重建，删除只影响指定生成项"""
+    """相同重绘请求复用在途项，即使元数据很旧也不重投；终态后新建，删除只影响指定项"""
     paper, metadata = figure_store
     launch = Mock(return_value="")
     monkeypatch.setattr(paper_figure_jobs, "_start_figure_draft_task", launch)
@@ -216,11 +216,18 @@ def test_figure_dedupe_stale_metadata_and_scoped_delete(figure_store, monkeypatc
     figures = json.loads(metadata.read_text())
     figures[0]["generated"][0]["updated_at"] = 1
     metadata.write_text(json.dumps(figures))
+    aged = paper_figure_jobs.start_figure_draft(payload, "alice")
+    assert aged["generated"]["generated_id"] == first["generated"]["generated_id"]
+    assert launch.call_count == 1
+    # Age alone cannot prove a submitted model task has ended. Only a
+    # definitive terminal result permits another generation.
+    paper_figure_jobs._set_figure_generated_item(paper["id"], "fig-001", first["generated"]["generated_id"],
+                                               {"status": "error", "error": "confirmed failure"})
     third = paper_figure_jobs.start_figure_draft(payload, "alice")
     assert third["generated"]["generated_id"] != first["generated"]["generated_id"]
     figures = json.loads(metadata.read_text())
     old = next(entry for entry in figures[0]["generated"] if entry["generated_id"] == first["generated"]["generated_id"])
-    assert old["status"] == "error" and "stale" in old["error"]
+    assert old["status"] == "error" and old["error"] == "confirmed failure"
     assert third["generated"]["source_generated_id"] == "base"
     before_neighbor = dict(old)
     image = tmp_path / "generated.png"
@@ -316,24 +323,23 @@ def test_deep_read_real_analysis_persistence_and_error_terminal(monkeypatch, tmp
         completion.assert_not_called()
 
 
-@pytest.mark.parametrize("stale", [False, True])
-def test_exp_start_deduplicates_or_deletes_stale_job(monkeypatch, tmp_path, stale):
-    """启动 Exp 时复用运行中的任务，旧任务已失效则标为错误并新建任务"""
+@pytest.mark.parametrize("terminal", [False, True])
+def test_exp_start_deduplicates_or_deletes_stale_job(monkeypatch, tmp_path, terminal):
+    """启动 Exp 复用在途任务，旧时间戳不触发重投，确认终态后才新建任务"""
     paper = {"id": "paper_0123456789ab", "title": "fixture"}
-    old = {"job_id": "old", "paper_id": paper["id"], "status": "running", "created_at": 1}
+    old = {"job_id": "old", "paper_id": paper["id"], "status": "error" if terminal else "running", "created_at": 1}
     paper_state_store.append("exp_jobs", old)
-    monkeypatch.setattr(paper_reading_jobs, "_all_papers", lambda: [paper])
-    monkeypatch.setattr(paper_reading_jobs, "_is_stale_exp_job", lambda *_args: stale)
+    monkeypatch.setattr(paper_reading_jobs, "_paper_by_id", lambda _paper_id: paper)
     start = Mock(side_effect=lambda job: job)
     monkeypatch.setattr(paper_reading_jobs, "_start_exp_task", start)
     result = paper_reading_jobs.start_exp({"paper_id": paper["id"]}, "fixture")
     jobs = paper_state_store.records("exp_jobs")
-    if not stale:
+    if not terminal:
         assert result["job_id"] == "old" and jobs == [old]
         start.assert_not_called()
     else:
         assert result["job_id"] != "old"
-        assert jobs[0]["status"] == "error" and jobs[0]["step"] == "stale"
+        assert jobs[0] == old
         assert [job["job_id"] for job in jobs] == ["old", result["job_id"]]
         assert jobs[1]["status"] == "queued"
         start.assert_called_once()
@@ -341,25 +347,36 @@ def test_exp_start_deduplicates_or_deletes_stale_job(monkeypatch, tmp_path, stal
 
 @pytest.mark.parametrize("failure", [False, True])
 def test_exp_real_markdown_commit_and_write_failure(monkeypatch, tmp_path, failure):
-    """Exp 任务成功时写入 exp.md 并记录路径，写入失败时以错误结束"""
+    """Exp 保存失败保留生成结果，重试保存不重新生成"""
     paper = {"id": "paper_0123456789ab", "title": "fixture", "_store_root": str(tmp_path)}
-    state = {"job_id": "fixture-exp", "paper_id": paper["id"], "created_by": "fixture"}
+    state = {"job_id": "fixture-exp", "paper_id": paper["id"], "created_by": "fixture", "status": "queued"}
+    paper_state_store.append("exp_jobs", state)
     path = tmp_path / "exp.md"
-    monkeypatch.setattr(paper_reading_jobs, "_set_exp_job", lambda _identity, patch: state.update(patch) or dict(state))
-    monkeypatch.setattr(paper_reading_jobs, "get_paper_detail", lambda *_args: {"paper": paper})
+    monkeypatch.setattr(paper_reading_jobs, "_notify_paper_projection", lambda *args, **kwargs: None)
+    monkeypatch.setattr(paper_reading_jobs, "get_paper_detail", lambda *_args, **_kwargs: {"paper": paper})
     extraction = "# Synthetic Experiment\n" + "\n".join(f"## {name}" for name in paper_reading_jobs.EXP_SECTIONS)
-    monkeypatch.setattr(paper_reading_jobs, "_generate_exp_extraction", lambda *_args, **_kwargs: (extraction, {"model": "fixture"}))
+    generate = Mock(return_value=(extraction, {"model": "fixture"}))
+    monkeypatch.setattr(paper_reading_jobs, "_generate_exp_extraction", generate)
     monkeypatch.setattr(paper_reading_jobs, "_paper_store_file", lambda *_args: path)
     monkeypatch.setattr(paper_reading_jobs, "PAPER_STORE", SimpleNamespace(update_paper=Mock(return_value={})))
     if failure:
         path.mkdir()
-    paper_reading_jobs._run_exp_job("fixture-exp")
-    assert state["status"] == ("error" if failure else "done")
+    owner = paper_reading_jobs.paper_job_ownership
+    owner.run("fixture-exp", paper_reading_jobs._run_exp_job, adapter=owner.TableAdapter("exp_jobs"))
+    state = paper_state_store.get("exp_jobs", "fixture-exp")
+    assert state["status"] == ("running" if failure else "done")
     if not failure:
         assert state["exp_path"] == str(path)
         assert "Synthetic Experiment" in path.read_text()
     else:
         assert state["error"]
+        assert state["step"] == "saving result"
+        assert not path.is_file()
+        path.rmdir()
+        assert owner.run("fixture-exp", paper_reading_jobs._run_exp_job, adapter=owner.TableAdapter("exp_jobs"))
+        assert paper_state_store.get("exp_jobs", "fixture-exp")["status"] == "done"
+        assert path.read_text().rstrip().endswith(extraction)
+    generate.assert_called_once()
 
 
 def test_exp_that_is_not_an_extraction_is_an_error_and_is_not_saved(monkeypatch, tmp_path):
@@ -372,14 +389,17 @@ def test_exp_that_is_not_an_extraction_is_an_error_and_is_not_saved(monkeypatch,
     :aspects: functional, behavior
     """
     paper = {"id": "paper_0123456789ab", "title": "fixture", "_store_root": str(tmp_path)}
-    state = {"job_id": "fixture-exp", "paper_id": paper["id"], "created_by": "fixture"}
+    state = {"job_id": "fixture-exp", "paper_id": paper["id"], "created_by": "fixture", "status": "queued"}
+    paper_state_store.append("exp_jobs", state)
     path = tmp_path / "exp.md"
-    monkeypatch.setattr(paper_reading_jobs, "_set_exp_job", lambda _identity, patch: state.update(patch) or dict(state))
-    monkeypatch.setattr(paper_reading_jobs, "get_paper_detail", lambda *_args: {"paper": paper})
+    monkeypatch.setattr(paper_reading_jobs, "_notify_paper_projection", lambda *args, **kwargs: None)
+    monkeypatch.setattr(paper_reading_jobs, "get_paper_detail", lambda *_args, **_kwargs: {"paper": paper})
     narration = "我先读取环境配置与注册信息，确认产物位置。```bash\ncat agent_profile.yaml\n```"
     monkeypatch.setattr(paper_reading_jobs, "_generate_exp_extraction", lambda *_args, **_kwargs: (narration, {"model": "fixture"}))
     monkeypatch.setattr(paper_reading_jobs, "_paper_store_file", lambda *_args: path)
-    paper_reading_jobs._run_exp_job("fixture-exp")
+    owner = paper_reading_jobs.paper_job_ownership
+    owner.run("fixture-exp", paper_reading_jobs._run_exp_job, adapter=owner.TableAdapter("exp_jobs"))
+    state = paper_state_store.get("exp_jobs", "fixture-exp")
     assert state["status"] == "error"
     assert "Exp 返回的不是规定产物" in state["error"]
     assert not path.exists()

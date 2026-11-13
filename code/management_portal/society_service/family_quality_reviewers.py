@@ -86,8 +86,8 @@ def ensure(resident_id, actor, *, kind, reviewer_id=""):
             _permit(actor, "Familize", lineage_id=lineage_id)
             _permit(actor, "CreateResident", lineage_id=lineage_id)
             _permit(actor, "UpdateFamily", lineage_id=lineage_id, family_id="")
-            from .templates import familize
-            result = familize.familize(lineage_id, [resident_id], actor)
+            from .templates import create_family
+            result = create_family(lineage_id, [resident_id], actor)
             lineage = lineage_aggregate.read_lineage(lineage_id, actor=actor)
             block = facts.family_block(lineage, result["family_id"])
         family_id = block["id"]

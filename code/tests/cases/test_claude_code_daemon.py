@@ -17,8 +17,6 @@ from tests.cases import capability_contracts
 from tests.cases.claude_sdk_support import load_claude_module
 
 daemon_module = load_claude_module("claude_code_daemon")
-# The daemon's own runtime, which has the Claude Agent SDK (and no pytest).
-CLAUDE_SDK_PYTHON = Path.home() / ".local/share/archive-portal/claude-agent-sdk-current/bin/python"
 
 
 async def _prompt_uuid(prompt) -> str:
@@ -40,6 +38,14 @@ def _untimed(steps: list[dict]) -> list[dict]:
 
 
 class ClaudeCodeDaemonTest(unittest.IsolatedAsyncioTestCase):
+
+    @pytest.fixture(autouse=True)
+    def native_sdk_runtime(self, installed_provider_paths):
+        # Use the code deployment's installed SDK, independent of isolated HOME.
+        executable = "Scripts/python.exe" if os.name == "nt" else "bin/python"
+        self.claude_sdk_python = (
+            installed_provider_paths["runtime_root"] / "claude-agent-sdk-current" / executable
+        )
 
     async def test_health_is_ready_before_accounts_are_registered(self):
         """新实例的 daemon 就绪不依赖账号登记、默认路由或密钥。"""
@@ -1382,9 +1388,10 @@ class ClaudeCodeDaemonTest(unittest.IsolatedAsyncioTestCase):
                        and e["params"]["messageType"] == "ResultMessage"]
         self.assertEqual([e["params"]["message"]["num_turns"] for e in raw_results], [1])
 
-    @unittest.skipUnless(CLAUDE_SDK_PYTHON.is_file(), "runs the SDK's own fork_session; needs the Claude Agent SDK runtime")
     async def test_fork_session_finds_source_and_rehomes_target_transcript(self) -> None:
         """fork 会话找到源 transcript，并把新 transcript 放到目标 Workspace 的项目目录"""
+        if not self.claude_sdk_python.is_file():
+            self.skipTest("runs the SDK's own fork_session; needs the Claude Agent SDK runtime")
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             source_cwd = root / "source-workspace"
@@ -1432,7 +1439,7 @@ class ClaudeCodeDaemonTest(unittest.IsolatedAsyncioTestCase):
             )
 
             # The fork runs in a child Python that has the real SDK.
-            with mock.patch.object(daemon_module.sys, "executable", str(CLAUDE_SDK_PYTHON)):
+            with mock.patch.object(daemon_module.sys, "executable", str(self.claude_sdk_python)):
                 forked_session_id = await daemon_module.ClaudeCodeDaemon._fork_session_file(
                     source_session_id,
                     target_cwd,

@@ -15071,8 +15071,8 @@
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260726__decision__ResourceService_调用协议：查询、读取、变更与动作__decision_b6e74d78f7b6.md",
-      "sha256": "1403a603585dd393670522d2b1f6342cc1b42e40d51b65170a68499ac772b8a3",
-      "size": 36556
+      "sha256": "f46d2b2f3c1ae60dd6807469a172f59696dd98a24116cdda2ab39a5a5ed92497",
+      "size": 38528
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260726__decision__工作交接由单一Handoff对象统一记录__decision_7ef392b5f60d.md",
@@ -15091,8 +15091,8 @@
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260731__decision__HATG_Instruction_Set作为Lineage统一指令层__decision_898b8911a2ff.md",
-      "sha256": "04c6d47424f80e3552b1c9430242a0447bf23e08b51211ed855b6823287099dd",
-      "size": 63962
+      "sha256": "12dbcca483c9f344b1cea8ab1cf7f37314fa6ad899a062f8358dd9c741953527",
+      "size": 64345
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260803__decision__Portal_Core_NATS变化通知与浏览器实时刷新__decision_abaedeefca6f.md",
@@ -15131,18 +15131,18 @@
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260822__decision__Portal_Resident_Session以Generation与HATG_Instruction支持跨Provider重启__decision_c47a13e8b962.md",
-      "sha256": "7776d5ffa7a704d6bdd493081cd0662ce9d3d8dc6036712596ea44d57157fcfa",
-      "size": 32942
+      "sha256": "92a7fbb3800036c8e7d0f2817b19b8d79ebe34e34c7a5097ccf58d8251f8b6a6",
+      "size": 35022
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260823__decision__Portal_Agent数据采用不可变Segment_当前Sequence与Canonical_Execution__decision_b1ab45c4b3ec.md",
-      "sha256": "501132fd020b97a583392b81396687593675fbc158b399ef324d127398e64b78",
-      "size": 54660
+      "sha256": "a71eeef7bab3c8312ea6ce55bb9ef082129dc5a13ee7d4b875d25dfadfb97785",
+      "size": 56068
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260825__decision__Portal_LineageData采用结构化图事实_运行投影与投递协调__decision_71aa039e3211.md",
-      "sha256": "c018b0998f9fbf69ca37fb3eac727bcd207954fdf237ea245dbad89a966f38f5",
-      "size": 43631
+      "sha256": "2579d44f213d190aaf207b8f349a179572ddc598539b1970f98381323ea3e5b1",
+      "size": 44700
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260825__decision__Portal_网络入口、TLS_与可信代理边界__decision_85222f2d316b.md",
@@ -15166,8 +15166,8 @@
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260901__decision__AskMeAnything个人Resident与上下文生命周期__decision_bd5217d08c09.md",
-      "sha256": "4a071413cbada8f9e1fb03797a8b71ad0c5c9b4c1d647b6fa4d8d8ebd4c753a2",
-      "size": 21086
+      "sha256": "df24a44fe1fda8b8880951c4d6a96e7670279f0b0c8419744e39194ee4c30926",
+      "size": 23244
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260901__decision__ExecutionService_请求、生命周期与控制协议__decision_6ad0384e020d.md",
@@ -15341,8 +15341,8 @@
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260903__decision__Paper_后台研究任务与产物协议__decision_e37f240e186d.md",
-      "sha256": "7959619b7e95ec07cef72c03aef1f3cd1705b5b2d6e2bc0f14ce6a802b9d6b6c",
-      "size": 63129
+      "sha256": "25288d7956cd762d8dd72329669d9e687c2799cb75ddcd9e1939cb737515f70a",
+      "size": 66549
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260903__decision__Portal_ASGI、同步_HTTP_Handler_与长连接边界__decision_ecf0f2b2de28.md",
@@ -15361,8 +15361,8 @@
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260903__decision__Portal_Conversation_Store：浏览器共享的对话列表、Resident_状态与操作回执__decision_18abbdef3da3.md",
-      "sha256": "d96e99ec1b29a3458d0eb0ea7088cc37b731a7728b5264e91b13572f9580203b",
-      "size": 31868
+      "sha256": "07de1986dd7be0aae8d8b76ff0555f768276e0a550a0ff93b844a891c45e0c14",
+      "size": 33840
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260903__decision__Portal_LAN_AI_Socket_Relay_的请求与安全协议__decision_c604274e21dd.md",
@@ -15626,8 +15626,8 @@
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260909__decision__Lineage_个性化前端投影：公共绑定、身份创建、运行与双向演化__decision_f67ae5e70793.md",
-      "sha256": "7f93d46d16281ec125d5b846d67d3cc4535914d5ff036f7715eaf8dde12cc5b9",
-      "size": 42133
+      "sha256": "f9360e237a6229703b52112989750e35e44e521e8e1ac709c60c3377e7002044",
+      "size": 43178
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260910__decision__投影工坊：页面实现与_Lineage_反向整理流程__decision_4bc03b20c30f.md",
@@ -15686,8 +15686,8 @@
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260928__decision__HATG_ISA：Resident_指令__decision_d19b9909a674.md",
-      "sha256": "fe7eb834fc3e93cb88d27a8ccda0aad1c51c638761680093b09f9929f749e093",
-      "size": 44465
+      "sha256": "154a51424ee468ed7ad51126e0c544fc98f1b2bb9f20cca6296499e3007b4643",
+      "size": 45409
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260928__decision__HATG_ISA：公共讨论指令__decision_3e063aac15b3.md",
@@ -15696,8 +15696,8 @@
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260928__decision__HATG_ISA：对话与上下文指令__decision_2fe6fd5367fb.md",
-      "sha256": "509071d96bd1f079afdd2a2d3010601d1b6dc5f8a1d1353cb26c6d1523b0e24f",
-      "size": 35541
+      "sha256": "9bca88027861a6a0a8493c5cbf8f6121f0ab4e7ccaad33d12f5deed83f4dd80f",
+      "size": 35843
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260928__decision__HATG_ISA：指令集自描述指令__decision_aa4fdbac8364.md",
@@ -15756,8 +15756,8 @@
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20261001__decision__Family：把多个_Resident_组合为对外一个_Resident__decision_44cf587c1721.md",
-      "sha256": "237a824311ef4cf97d71f8567ca145f39fca5f90bd80055af2932a177be17d76",
-      "size": 20121
+      "sha256": "f7d401ef37786a307597fae560c837bcbd9dc9ddad1bd3f8a7b99cb250e553a6",
+      "size": 20497
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20261002__decision__Chatroom：用户聊天室与_@_Resident_投递__decision_a6bebf4ac283.md",
@@ -15781,8 +15781,8 @@
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20261013__decision__HATG_ISA：模板与指令__decision_b04cac4188bb.md",
-      "sha256": "2c1a659588ca76ce91845da4cc5eba81682cc87785f2867735f7fad594936b4c",
-      "size": 40855
+      "sha256": "3ffe85da8b71795c44d88e04e989faa4f9e7ba8e19b1c5d11fab156023e9b232",
+      "size": 41759
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20261013__decision__Mailbox：Resident_和_User_的收件__decision_15f7df737ed5.md",
@@ -15836,8 +15836,8 @@
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20261018__decision__HATG_ISA：Mailbox_指令__decision_c54e68a82d7a.md",
-      "sha256": "f9ef8dd3247a7be6a1a86b4dd218b43b3f69a3eeb5f06ca8d75318040cd4dc67",
-      "size": 24581
+      "sha256": "8a6e4024b71f4e1990da252306cf20653bbab7ccfebc7af65c39a982e301af27",
+      "size": 26214
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20261018__decision__HATG_ISA：Pulse_指令__decision_cc96fce57ab6.md",

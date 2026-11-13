@@ -149,7 +149,8 @@ def _build_resident_prompt(record: dict[str, Any], job: dict[str, Any]) -> str:
     envelope = choices["message_envelope"] != "off"
     context_refs = job.get("context_refs") if isinstance(job.get("context_refs"), dict) else {}
     attached_refs = attached_references_text(context_refs)
-    message = str(job.get("message") or "")
+    from management_common.resident_handoff_cards import prompt_context
+    message = prompt_context(job.get("input_message")) + str(job.get("message") or "")
     if not attached_refs or not envelope:
         return _build_plain_user_prompt(job, envelope=envelope, reply_block=_reply_hint_block(record, job) if envelope else "")
     workspace = resident_record_domain.resident_workspace_path(record)
@@ -182,7 +183,8 @@ def _build_resident_prompt(record: dict[str, Any], job: dict[str, Any]) -> str:
 def _build_plain_user_prompt(job: dict[str, Any], *, envelope: bool = True, reply_block: str = "") -> str:
     context_refs = job.get("context_refs") if isinstance(job.get("context_refs"), dict) else {}
     attached_refs = attached_references_text(context_refs)
-    message = str(job.get("message") or "")
+    from management_common.resident_handoff_cards import prompt_context
+    message = prompt_context(job.get("input_message")) + str(job.get("message") or "")
     blocks: list[str] = []
     if attached_refs:
         blocks.append(

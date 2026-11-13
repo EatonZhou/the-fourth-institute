@@ -34,6 +34,10 @@ class Index:
         self.records = records
         self.state = state
 
+    def get(self, resource_id, *, actor):
+        assert actor == "alice"
+        return next((record for record in self.records if record["resource_id"] == resource_id), None)
+
     def query(self, *, actor, limit, offset=0, include_attributes=False, resource_types=(), projects=(), q=""):
         assert actor == "alice" and include_attributes
         found = [record for record in self.records

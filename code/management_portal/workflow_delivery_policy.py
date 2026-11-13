@@ -12,10 +12,11 @@ _bindings = ContextVar('workflow_delivery_bindings', default=None)
 
 
 def _read(resident_ids):
-    from management_portal.workbench_projections.service import get_service
     ids = list(resident_ids)
-    return (get_workflow_binding_store().delivery_bindings(ids)
-            + get_service().store.registered_role_targets(ids))
+    rows = get_workflow_binding_store().delivery_bindings(ids)
+    for _, targets in portal_features.contributions('workflow.targets'):
+        rows.extend(targets(ids))
+    return rows
 
 
 @contextmanager

@@ -23,7 +23,7 @@ module.exports=async function(page,out,viewport) {
       closeHit:close===hit||close.contains(hit),headerBottom:document.querySelector('.portalSiteHeader').getBoundingClientRect().bottom};
   });
   const leave=async()=>{const r=await stack.boundingBox();await page.mouse.move(r.x+r.width/2,r.y+110);};
-  const reveal=async()=>{const r=await stack.boundingBox();await page.mouse.move(r.x+r.width-70,r.y+2);};
+  const reveal=async()=>{const r=await stack.boundingBox();await page.mouse.move(r.x+r.width/2,r.y+2);};
   const result={viewport,mobile:await page.evaluate(()=>document.documentElement.dataset.portalViewport==='mobile')};
   if(result.mobile) {
     // Mobile uses the native bottom switcher and layout menu, not desktop tabs.
@@ -65,7 +65,8 @@ module.exports=async function(page,out,viewport) {
   assert.ok(result.revealed.tabs.top>=result.revealed.headerBottom,'tabs stay below navigation');
   assert.equal(result.revealed.body.top,result.hidden.body.top,'reveal does not move content');
   await page.screenshot({path:path.join(out,`tabs-revealed-${viewport.width}.png`)});
-  await tabs.evaluate(el=>{window.homeTabDragCount=0;el.addEventListener('dragstart',()=>window.homeTabDragCount++);});
+  // The nested Workbench owner stops bubbling to avoid dragging its parent.
+  await tabs.evaluate(el=>{window.homeTabDragCount=0;el.addEventListener('dragstart',()=>window.homeTabDragCount++,true);});
   await tab('agent-status').dragTo(tab('dialogue-display'));
   assert.equal(await page.evaluate(()=>window.homeTabDragCount),1,'native tab dragging still starts');
   assert.equal(await tabs.locator('[data-portal-workbench-tab]').count(),2,'drop retains both grouped panels');
@@ -75,7 +76,8 @@ module.exports=async function(page,out,viewport) {
   await page.setViewportSize({width:1000,height:800});await leave();
   result.resized=await snap();
   assert.ok(result.resized.tabs.bottom<=result.resized.stack.top+5,'resize retains folding');
-  await reveal();assert.ok((await snap()).closeHit,'close remains reachable after resize');
+  await reveal();result.resizeReveal=await snap();
+  assert.ok(result.resizeReveal.closeHit,'close remains reachable after resize: '+JSON.stringify(result.resizeReveal));
   await page.screenshot({path:path.join(out,'tabs-resized-1000.png')});
   const homeAction=require('./home_dialogue_controls.cjs');
   await leave();

@@ -11,10 +11,19 @@ import pytest
 
 def test_real_account_host_install_is_refused_before_writing(tmp_path, monkeypatch):
     from scripts import portal_service_units as units
+    from scripts import instance_services, tfi_release_platform_linux as linux
+    from types import SimpleNamespace
+    import sys
     from tests.cases.instance_test_support import write_instance
     root = write_instance(tmp_path / 'instance')
     monkeypatch.setenv('PORTAL_INSTANCE_ROOT', str(root))
     path = Path.home() / '.config/systemd/user/tfi-fixture-codex-app-server@sample-codex.service'
+    # Read-only manager discovery precedes the guarded registration. Model
+    # those facts without requiring an actual host user-manager connection.
+    monkeypatch.setattr(linux, 'unit_directory', lambda: path.parent)
+    monkeypatch.setattr(linux, 'runtime_python', lambda _: Path(sys.executable))
+    monkeypatch.setattr(instance_services, 'controller', lambda _: SimpleNamespace(
+        status=lambda _: {'load': 'not-found'}))
     assert not path.exists()
     with pytest.raises(RuntimeError, match='cannot install host'):
         units._define('codex-app-server@sample-codex')

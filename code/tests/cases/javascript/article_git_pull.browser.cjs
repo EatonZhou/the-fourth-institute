@@ -144,7 +144,9 @@ const html = fs.readFileSync(path.join(root, 'management_portal/article_workspac
     const commitTitles = await page.locator('[data-git-commit]').evaluateAll(rows => rows.map(row => row.title));
     const localTime = title => title.split(' · ').at(-1).split('\n')[0];
     assert.equal(localTime(commitTitles[0]), localTime(commitTitles[1]), 'equivalent UTC/+08 commits display the same local time');
-    assert.match(commitTitles[0], /本地时间.*23:23:12.*GMT\+8/);
+    assert.match(commitTitles[0], /本地时间/);
+    assert.match(commitTitles[0], /23:23:12/);
+    assert.match(commitTitles[0], /GMT\+8/);
     assert.doesNotMatch(commitTitles.join('\n'), /undefined|Invalid Date|T15:23:12\+00:00/);
     assert.match(await page.locator('[data-git-action="fetch"]').getAttribute('title'), /获取远端提交，不修改当前分支和工作文件\norigin\/main/);
     assert.match(await page.locator('[data-git-action="sync"]').getAttribute('title'), /先拉取.*再推送.*\norigin\/main/);

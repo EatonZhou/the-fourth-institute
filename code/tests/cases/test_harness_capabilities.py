@@ -218,7 +218,9 @@ def test_a_planned_feature_the_adapter_cannot_run_is_reported_with_its_reason(tm
         _context(events),
     )
 
-    assert result.output == {"message": "done"}
+    assert result.output['message'] == 'done'
+    assert result.output['input_variant']['selected'] == 'full'
+    assert result.output['input_variant']['reason'] == 'input_variants_missing'
     prepared = next(details for event_type, details in events if event_type == "agent_harness_prepared")
     assert prepared["capabilities"] == []
     reports = {report["feature_id"]: report for report in prepared["features"]}

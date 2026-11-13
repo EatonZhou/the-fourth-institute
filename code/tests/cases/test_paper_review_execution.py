@@ -24,7 +24,7 @@ def test_review_status_summarizes_quota_failure_without_rewriting_diagnostics():
 
 @pytest.mark.parametrize("saved_result", [False, True])
 def test_review_settles_dead_owner_without_regenerating(tmp_path, saved_result):
-    """评审持有进程已退出时复用已存结果或标记错误且不重生成
+    """评审状态读取保留旧进程任务及已有结果，不触发恢复或重生成
 
     :importance: P2"""
     from management_portal import business_tasks
@@ -40,14 +40,10 @@ def test_review_settles_dead_owner_without_regenerating(tmp_path, saved_result):
     with (mock.patch.object(paper_reviews, "_notify_paper_projection"),
           mock.patch.object(paper_reviews, "_generate_ai_review") as generate):
         settled = paper_reviews.get_review_status(job_id="interrupted", actor="alice")["job"]
-        assert settled["status"] == ("done" if saved_result else "error")
+        assert settled["status"] == "running"
         assert settled["result"] == (review if saved_result else {})
         assert paper_reviews.get_review_status(job_id="interrupted", actor="alice")["job"] == settled
-        if saved_result:
-            assert paper_reviews.wait_review("interrupted", actor="alice") == review
-        else:
-            with pytest.raises(RuntimeError, match="interrupted"):
-                paper_reviews.wait_review("interrupted", actor="alice")
+        assert paper_state_store.get("review_jobs", "interrupted")["status"] == "running"
         generate.assert_not_called()
 
 
@@ -74,7 +70,7 @@ def test_review_recovery_preserves_concurrent_completion():
     """评审恢复保留并发完成结果且不覆盖存储
 
     :importance: P2"""
-    job = {"job_id": "race", "status": "running", "process_owner": {"pid": 1}}
+    job = {"job_id": "race", "paper_id": "paper_one", "status": "running", "process_owner": {"pid": 1}}
     review = {"review_id": "review_one"}
     paper_state_store.append("reviews", review)
     completed = {**job, "status": "done", "review_id": "review_one"}
@@ -82,7 +78,8 @@ def test_review_recovery_preserves_concurrent_completion():
     completed["result"] = review
     with (mock.patch("management_portal.business_tasks.process_is_alive", return_value=False),
           mock.patch.object(paper_state_store, "merge") as write):
-        assert paper_reviews._settle_interrupted_review(job) == completed
+        observed = paper_reviews.get_review_status(job_id="race", actor="alice")["job"]
+        assert {key: observed[key] for key in completed} == completed
         write.assert_not_called()
 
 
@@ -94,7 +91,9 @@ def test_review_status_recovers_latest_current_actor_job_contracts(subtests, iso
         other = {'job_id': 'other', 'paper_id': 'paper_one', 'created_by': 'bob', 'status': 'running', 'created_at': 3}
         for job in (older, current, other):
             paper_state_store.append('review_jobs', job)
-        assert paper_reviews.get_review_status(paper_id='paper_one', actor='alice') == {'job': current}
+        public = paper_reviews.get_review_status(paper_id='paper_one', actor='alice')['job']
+        assert {key: public[key] for key in current} == current
+        assert public['can_retry'] is False and public['diagnostics'] == {'error': '', 'step': ''}
         assert paper_reviews.get_review_status(paper_id='paper_two', actor='alice') == {'job': None}
     with subtests.test(contract='test_review_status_rejects_unknown_job_without_starting_work'), isolated_portal_case() as case_path:
         with mock.patch.object(paper_reviews, '_review_job_by_id', return_value=None), pytest.raises(KeyError):
@@ -117,7 +116,9 @@ def test_review_status_checks_actor_and_paper(subtests, isolated_portal_case):
             job = {"job_id": "current", "paper_id": "paper_one", "created_by": "alice", "status": "running"}
             with mock.patch.object(paper_reviews, "_review_job_by_id", return_value=job):
                 if error is None:
-                    assert paper_reviews.get_review_status(job_id="current", paper_id=paper_id, actor=actor) == {"job": job}
+                    public = paper_reviews.get_review_status(job_id="current", paper_id=paper_id, actor=actor)['job']
+                    assert {key: public[key] for key in job} == job
+                    assert public['can_retry'] is False
                 else:
                     with pytest.raises(error):
                         paper_reviews.get_review_status(job_id="current", paper_id=paper_id, actor=actor)
@@ -140,7 +141,12 @@ def test_paper_summary_and_ccf_send_one_task_to_their_role_residents(subtests, i
                 else:
                     paper_ccf_enrichment._generate_ccf_enrichment_summary(paper, [], actor="alice")
             complete.assert_called_once()
-            assert complete.call_args.kwargs == {"actor": "alice", "resident_scope": scope}
+            options = complete.call_args.kwargs
+            assert options['actor'] == 'alice' and options['resident_scope'] == scope
+            assert options['metadata']['source_identity']
+            if feature == 'summary':
+                assert options['metadata']['paper_id'] == paper['id']
+                assert len(options['metadata']['material_version']) == 64
 
 
 def test_a_failed_paper_summary_is_an_error_and_is_not_delivered_again():
@@ -234,7 +240,10 @@ def test_paper_review_runs_as_portal_business_task(
                 "_write_review_markdown",
             ),
         ):
-            result = paper_reviews._run_review_job(job["job_id"])
+            owner = paper_reviews.paper_job_ownership
+            results = []
+            assert owner.run(job['job_id'], lambda identity: results.append(paper_reviews._run_review_job(identity)), adapter=owner.TableAdapter('review_jobs'))
+            result = results[0]
 
         assert result == review
         stored_job = paper_reviews._review_job_by_id(job["job_id"])

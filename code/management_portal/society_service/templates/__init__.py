@@ -10,6 +10,17 @@ from .registry import ApplyContext, TemplateError
 from .. import lineage_aggregate
 
 
+def create_family(lineage_id, resident_ids, actor, *, template_id=None, **options):
+    """Supply the saved recipe to Family assembly after its admission checks."""
+    from . import familize, store
+
+    template_id = template_id or familize.TEMPLATE_ID
+    return familize.familize(
+        lineage_id, resident_ids, actor, template_id=template_id,
+        load_body=lambda: store.get(template_id)["body"], **options,
+    )
+
+
 def describe(template):
     kind = kinds.get(template["kind"])
     return {**template, "behavior": kind.describe(template), "editor": kind.editor(),

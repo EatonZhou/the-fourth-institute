@@ -4,15 +4,15 @@ type: decision
 project: AI员工
 created_at: '2026-08-25'
 version:
-  number: 68
+  number: 71
   created_at: "2026-08-25"
   created_by:
     user: ""
     agent: ""
-  updated_at: "2026-11-05T13:46:51Z"
+  updated_at: "2026-11-13T21:10:39Z"
   updated_by:
     user: ""
-    agent: "resident_2e9ea0072551"
+    agent: "resident_737599f56947"
 importance: 10
 metaness: 3
 ai_generated: true
@@ -158,7 +158,7 @@ Program 工作状态按对象加锁和读取。每个事件源、连线、算子
 
 Program 工作对象在写入时规范化，读取时直接使用已存内容。规范化做的是：校验 ID，去重并截断游标列表，把计数限制为非负整数，按限额整理待投递内容。写入事务在加载和提交时对它触碰的每个对象都做一遍，提交的始终是规范化后的对象。规范化规则有一个版本号 `RUNTIME_NORMALIZATION`，`lineage_meta` 的 `program_runtime_normalization` 记录已存数据是哪个版本的规则写成的。只有两者相等时，`read_runtime` 和单对象读取才不再规范化；不相等时照旧边读边规范化。进程每分钟重新核对一次这个记录。
 
-修改规范化规则（`_normalize` 及它调用的函数和限额）时，必须把版本号加一并更新测试里记录的规则摘要，`test_lineage_program_runtime_normalization` 会拦住漏改。发布后，Release SocietyService 启动时逐个 Lineage 用新规则重写已存对象，只写回有变化的对象，全部完成后再更新 `lineage_meta` 的记录。迁移完成之前，读取按新规则规范化。Dev 不执行这项迁移，因为它可能运行未发布的规则；Dev 规则版本与记录不一致时，它的读取也保持规范化。当前规范化规则编号为 `5`；本次规则保留 `owner_recovery_checked` 已有恢复核验标记。该编号用于选择是否需要执行真实规范化，不作为现存库或服务启动的版本对齐门禁；实际对象字段、并发写入与摘要校验仍按其 owner 合同处理。2026-10-19 上线时，现网 33 个有运行数据的非个人 Lineage 的已存对象都已经是规范化结果。
+修改规范化规则（`_normalize` 及它调用的函数和限额）时，必须把版本号加一并更新测试里记录的规则摘要，`test_lineage_program_runtime_normalization` 会拦住漏改。发布后，Release SocietyService 启动时逐个 Lineage 用新规则重写已存对象，只写回有变化的对象，全部完成后再更新 `lineage_meta` 的记录。迁移完成之前，读取按新规则规范化。Dev 不执行这项迁移，因为它可能运行未发布的规则；Dev 规则版本与记录不一致时，它的读取也保持规范化。当前规范化规则编号为 `6`，规则摘要为 `b2b1c23bfab8275c25eec686dbf5da7753827455f2dc59e5a6d701d701abeda8`。规则 `5` 保留的 `owner_recovery_checked` 恢复核验标记继续有效；规则 `6` 为已有的 `execution_constraints` 规范化规则登记新版本，不改变执行约束的语义。`RULE_DIGESTS` 保留历版摘要，便于核对历史规则。该编号用于选择是否需要执行真实规范化，不作为现存库或服务启动的版本对齐门禁；实际对象字段、并发写入与摘要校验仍按其 owner 合同处理。2026-10-19 上线时，现网 33 个有运行数据的非个人 Lineage 的已存对象都已经是规范化结果。
 
 ### Resident
 
@@ -224,6 +224,9 @@ Resident 的当前归属以 `lineage_nodes.lineage_id` 为唯一事实，通过 
 Artifact 使用正式 Lineage owner namespace；临时 recovery 产物与保留 output 的归属、引用与清理规则由 Effect 规范 decision_4adcc1ff2f2c 定义。本篇只规定队列和事务边界，不复制 artifact 文件协议。长期 Trigger Path 事实与 Agent trace 不受 ISA 恢复窗口清理影响，不要求引入历史图版本。Trigger Path 有自己的保留期：已结束的流程保留 30 天，SocietyService 例行维护分批删除更早结束的流程及其步骤、因果边和 Execution 引用，每个 Effect 最近一次结束的激活所在流程保留；进行中的流程不受影响（decision_68215b3a825b）。
 
 ## Lineage 定义、布局和删除
+
+图写入 owner 在定义事务内比较现有关系的完整值，只为新增或变化的关系发出批量写入；无变化的成员关系不逐条提交 UPSERT。连线、观察目标和交接项共用稳定身份与同一次定义提交，普通连线只清除实际存在的旧交接或观察关系。批处理保留唯一性、对象归属、墓碑及 revision 检查，不改变定义事务的原子性。
+
 
 ```mermaid
 sequenceDiagram
@@ -344,3 +347,6 @@ Lineage 列表在每次请求内统一核验当前 actor 的有效身份，并�
 Resident 批量读取以配置行的 JSON 投影取得可选 reporting_json。列不存在时返回空值，汇报策略解释为 off/medium、configured=false；无 reporting 的普通设置写入不引用该列。显式保存 reporting 仍需要真实列，缺列时操作明确失败，不伪称成功。非法非空策略不会被默认值隐藏。通过正式升级补列后再保存即可，居民列表、会话和无关设置不等待这项升级。
 
 health 以实际数据库可访问性为基础，描述性 meta 表或标签缺失时报告未知标签；已有 metadata 的实际读取损坏、连接错误仍明确返回。完整结构诊断函数仅供显式诊断/迁移使用，不再进入初始化门禁。
+
+
+完整 Resident 批量投影在单次读取内复用相同路径的规范化结果，包括共同 Lineage 目录、额外 Workspace 和自有 cwd。返回记录仍各自隔离，绑定字段校验、重复身份检查和删除投影保持有效。路径观察不跨批次保留；后续登记、移动、删除和绑定写入继续在各自的事务保护内重新核对路径。

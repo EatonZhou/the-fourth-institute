@@ -70,9 +70,14 @@ CREATED = (
 )
 
 DECLARATIONS = (
-    _d('GetResidentTextInputSnapshot', (), '鉴权读取显式fresh文本的实际Resident配置与完整系统parts版本；不提交模型，不证明工具已禁用。',
-       (R('resident_id'), R('text')), (R('settings_revision'), R('system_parts_revision'),
-        R('backend'), R('account', 'object'), R('settings', 'object')), target='resident_id'),
+    _d('GetResidentTextInputSnapshot', ON_RESIDENT, '鉴权读取显式fresh文本的实际Resident配置与完整系统parts版本；不提交模型，不证明工具已禁用。',
+       (R('resident_id', description='目标 Resident 的统一 ID'),
+        R('text', description='待核验的非空 fresh 文本；只计算快照，不提交输入')),
+       (R('settings_revision', description='当前设置的内容版本'),
+        R('system_parts_revision', description='实际系统注入部分的内容版本'),
+        R('backend', description='实际配置的执行后端'),
+        R('account', 'object', '实际账号的非密钥配置快照'),
+        R('settings', 'object', '受控文本输入所用的 Resident 设置')), target='resident_id'),
     _d("CreateResident", ON_LINEAGE, "创建一个新的 Resident 身份，并把它作为节点加入指定 Lineage。", (
         R("lineage_id", description="新 Resident 加入的 Lineage"),
         R("title", description="名称"),

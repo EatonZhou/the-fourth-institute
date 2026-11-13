@@ -155,7 +155,9 @@ def answered_set(message: Mapping[str, Any] | None) -> str:
 
 
 def visible_message_input_ids(messages: list[dict[str, Any]]) -> list[str]:
+    from management_common.resident_handoff_cards import projection
     identities = {message["message_id"] for message in messages}
+    identities.update(card["selection_message_id"] for message in messages for card in projection(message))
     identities.update(
         str(questions["answer_message_id"])
         for questions in map(question_set, messages) if questions

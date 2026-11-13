@@ -4,15 +4,15 @@ type: decision
 project: AI员工
 created_at: '2026-08-22'
 version:
-  number: 47
+  number: 50
   created_at: "2026-08-22"
   created_by:
     user: ""
     agent: ""
-  updated_at: "2026-11-06T10:50:39Z"
+  updated_at: "2026-11-13T21:11:14Z"
   updated_by:
     user: ""
-    agent: "resident_2e9ea0072551"
+    agent: "resident_737599f56947"
 importance: 9
 metaness: 2
 ai_generated: false
@@ -59,7 +59,7 @@ Resident 是 Portal 中有稳定身份的 AI 节点。它长期保留 ID、所�
 能力配置、会话装配与账号切换的统一规范入口为 decision_ccbb1cac24aa。本篇规定会话生命周期，按用户目的区分三项操作：
 
 - **切换账号**：优先保留当前有效上下文，无法完整保留时按下文展示摘要交接并由用户提交；等待当前工作完成后切换，准备失败保留原账号与会话。
-- **重新开始会话**：显式选择保留有效上下文、模型交接或空白开始，不承担普通换账号的入口含义。
+- **重新开始会话**：显式选择保留有效上下文、模型交接或空白开始，不承担普通换账号的入口含义。它由 `RestartSession` 的 operation=restart 发起，用户界面不提供同账号重开的入口。
 - **清空上下文（Reset Context）**：归档当前对话和运行资料，释放当前会话；下次真实输入才建立空白会话。
 
 这些操作都保留 Resident 的身份、所属 Lineage、Resident Folder、工作区绑定和文件。公开接口复用 `RestartSession`、`GetSessionRestart`、`CancelSessionRestart`（decision_d19b9909a674）和 `ClearContext`（decision_2fe6fd5367fb），各操作意图及上下文策略必须明确。
@@ -79,9 +79,9 @@ Resident 是 Portal 中有稳定身份的 AI 节点。它长期保留 ID、所�
 
 ### 用户在哪里操作
 
-Resident Menu、Chat 运行摘要和 Family 成员入口共用运行控制器。“保存参数”和“保存配置”不换账号、不创建模型轮次。账号切换表单根据后端 context_options 自动选用可用的完整保留方案；无法完整保留且支持 compact 时，展示摘要交接的范围、可能遗漏细节与工具过程的影响，主按钮显示“交接并切换”。用户无需选择底层策略，点击按钮才提交；选账号本身不执行操作。不支持完整保留或摘要交接时禁止切换，不自动使用 visible 或 fresh。完整保留提交 operation=switch_account、context_strategy=preserve；已说明影响的摘要交接提交 operation=restart、context_strategy=compact。两者默认 wait，准备失败均保留原会话；失败后不得静默降级。更换目标重新计算方案并更新说明，刷新不覆盖编辑。跨 Provider 仍须明确选择目标模型。空白开始只在独立“重新开始会话”入口明确选择。运行参数、能力配置、账号切换和重新开始会话在同一张尺寸稳定的卡片内切换标签，标题、标签栏及底部操作保持可见，长内容仅在中间区域滚动。切换标签保留未保存编辑。关闭按钮、取消、Escape 与点击卡片外区域均可退出并恢复页面交互；关闭页面不取消已受理的操作。模型与运行参数区不显示绑定诊断；保留非主要的刷新操作，能力生效明细默认折叠。
+Resident Menu、Chat 运行摘要和 Family 成员入口共用运行控制器和同一张单页运行设置面板（形式见 decision_ccbb1cac24aa）：Resident Menu 内嵌，其他入口在弹窗中打开。只改参数时“保存”不换账号、不创建模型轮次。账号切换表单根据后端 context_options 自动选用可用的完整保留方案；无法完整保留且支持 compact 时，展示摘要交接的范围、可能遗漏细节与工具过程的影响，主按钮显示“交接并切换”。用户无需选择底层策略，点击按钮才提交；选账号本身不执行操作。不支持完整保留或摘要交接时禁止切换，不自动使用 visible 或 fresh。完整保留提交 operation=switch_account、context_strategy=preserve；已说明影响的摘要交接提交 operation=restart、context_strategy=compact。两者默认 wait，准备失败均保留原会话；失败后不得静默降级。更换目标重新计算方案并更新说明。跨 Provider 时参数区换成目标 Provider 的参数，须明确目标模型；同 Provider 切换时一并修改的参数先保存再提交切换。空白开始只能通过 `RestartSession` 的 operation=restart 明确选择。关闭按钮、取消、Escape 与点击卡片外区域均可退出并恢复页面交互；关闭页面不取消已受理的操作。面板不显示绑定诊断。
 
-相同 Provider、相同稳定账号 ID 的普通切换是 noop，不创建候选，也不显示 zero → zero。用户明确要求同账号重建时从“重新开始会话”入口发起。刷新保留未提交编辑；关闭界面不取消已经受理的操作。进度与错误注明动作、时间及当前实际绑定，后续成功后旧失败归入历史。
+相同 Provider、相同稳定账号 ID 的普通切换是 noop，不创建候选，也不显示 zero → zero。同账号重建通过 `RestartSession` 的 operation=restart 发起。关闭界面不取消已经受理的操作。进度与错误注明动作、时间及当前实际绑定，后续成功后旧失败归入历史。
 
 ### 弹窗刷新与提交校验
 
@@ -235,3 +235,12 @@ _apply_resident_session_target 仅准备候选。提升和配置提交须同时�
 原生窗口在执行数据 owner 中冻结为不可变、带原会话来源的 Segment 引用，沿既有严格导入及请求/确认回执进入候选会话。快照不改写旧 Segment、不补造 Chat 消息，不按文本相似度匹配历史身份。新会话确认后才条件提交绑定，原会话保留；权限、在途等待、幂等和取消机制保持。找不到原生归档时使用已有可完整验证的 canonical history；仅保存摘要的历史不冒充完整原生数据。
 
 展示思考与迁移记录分工：展示只使用可读正文、摘要或加密占位，不能输出密文；Provider 明确提供的完整原生 reasoning（含 encrypted_content）保存原样用于迁移，不能仅记录 encrypted=true 后丢弃原件。实时完成事件未提供密文时如实记录展示摘要，迁移从已验证的原生有效窗口恢复，不伪造或重复补录思考事件。
+
+
+### 保全准备与准入的职责边界
+
+完整保全的内容准备由 Execution 拥有。Society 在当前操作者已获授权、源工作已排空或确认为未送达可保留工作后，先在 Resident 状态锁内核对源绑定、配置和现有重启；锁外通过 Execution 的保全端口准备不可变引用。Execution 只按已登记绑定定位原生历史，读取并严格验证有效窗口、密文和工具配对。原生来源不可恢复时保留原错误，canonical 路径不得退为可见 Chat 文本或模型摘要；空窗口须有明确空边界，未送达的 Agent 历史仍保留。
+
+准备结果包含原操作者、业务操作标识、源绑定、源轨迹版本和不透明准备收据，不改变当前 Agent 的有效轨迹。Society 重新取得短状态锁后重核权限、配置、源绑定、重启状态和活动工作，由 Execution 校验轨迹版本、原生文件版本及收据完整性。来源变化时拒绝旧结果。准入只连接已冻结的原生边界引用，并与提交凭据在一个 AgentData 事务内完成；短锁内不定位、遍历、读取、校验或物化原生历史正文。已有 canonical 引用不重复附加。
+
+Society 将请求键（`request_id`，未提供时使用 `restart_id`）、真实操作者 `actor_id` 和源会话代次共同派生为 Execution 保全操作键。源代次由 Provider、执行账号、`provider_session_ref` 与 `backend_session_id` 的组合确定。同一请求键、操作者和源代次的重试复用不可变准备收据；不同操作者或后续源代次即使使用相同请求键，也各自取得独立收据。Execution 继续核验操作者与源绑定，原有源 MVCC、原生文件版本及提交前 ACL、绑定、配置和重启状态检查保持有效。提交凭据区分本操作附加的边界与无关历史变化。失败或取消不替换旧绑定、不自动重投旧输入；旧消息与片段保留。目标会话准备、绑定切换与恢复、接单状态和 credits 授权仍由既有生命周期负责。Provider 导入结果未知时沿原幂等栅栏拒绝盲目重导。

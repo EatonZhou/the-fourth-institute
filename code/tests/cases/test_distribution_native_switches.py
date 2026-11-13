@@ -136,8 +136,12 @@ def test_resolved_manifest_actions_initialize_target_checkpoints():
             # Exercise the serialized manifest boundary used by engineering.generate.
             manifest = json.loads(json.dumps({'selection_snapshot': selected, 'feature_resolution': resolution}))
             result = initialize(manifest, target.c, target.instance, site_config_path=target.site)
-            assert {item['id'] for item in result['features']} == {'pulse', 'architecture_audit'}
-            assert all(item['actual_enabled'] is enabled for item in result['features'])
+            initialized = {item['id']: item for item in result['features']}
+            assert set(initialized) == {'pulse', 'architecture_audit', 'permission_system'}
+            assert all(initialized[name]['actual_enabled'] is enabled
+                       for name in ('pulse', 'architecture_audit'))
+            assert initialized['permission_system']['adapter'] == 'permission_setting'
+            assert initialized['permission_system']['effective_enabled'] is True
             assert result['lineage_timer_required'] is enabled
             checkpoints = target.checkpoints()
             assert len(checkpoints['event_source_progress']) == 2

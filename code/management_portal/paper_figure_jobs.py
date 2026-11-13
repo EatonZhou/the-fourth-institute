@@ -165,8 +165,9 @@ def _run_figure_resident(prompt: str, paper: dict, figure: dict, kind: str, imag
         result = paper_job_ownership.stage_turn(stage, actor=actor, prompt=prompt, cwd=str(WORKSPACE_ROOT),
             resident_scope=resident_role, input_media=input_media, business_ref=run_id,
             on_receipt=remember,
-            metadata={"business_type": "paper_figure", "kind": kind, "paper_id": paper["id"],
-                      "material_version": figure_version(figure, images)})
+            metadata=({} if binding or stage_exists else {
+                "business_type": "paper_figure", "kind": kind, "paper_id": paper["id"],
+                "material_version": figure_version(figure, images)}))
     elif binding.get("resident_id") and input_message_id:
         result = resume(
             actor=str(binding.get("actor") or actor), resident_id=binding["resident_id"],

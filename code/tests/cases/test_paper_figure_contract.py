@@ -9,7 +9,7 @@ import pytest
 from PIL import Image, ImageDraw
 
 from management_portal import paper_figure_extraction, paper_figure_jobs, paper_figures, paper_projection, paper_store
-from tests.cases.test_paper_figure_transactions import figure_store
+from tests.cases.test_paper_figure_transactions import figure_store, run_figure
 
 
 RESULT_SCHEMA = 'tfi.paper.figure-explanation.result.v1'
@@ -311,7 +311,7 @@ def explanation(figure_store, monkeypatch):
 def test_explanation_generation_and_formal_save_have_distinct_verified_states(explanation):
     """图解释的生成与正式保存分别记录状态，保存后附带内容哈希回执"""
     paper, path, payload, generate = explanation
-    response = paper_figure_jobs.run_figure_explain_job(paper['id'], 'fig-001', 'test-actor')
+    response = run_figure((paper, path), paper_figure_jobs.run_figure_explain_job, paper['id'], 'fig-001', 'test-actor')
     stored = json.loads(path.read_text())[0]
     assert stored['explanation'] == payload['explanation']
     assert stored['explanation_status'] == 'done'
@@ -336,7 +336,7 @@ def test_invalid_or_failed_generation_is_never_saved_as_done(explanation, change
     """图解释结果格式不符、ID 不匹配、报错或内容为空时不会保存为完成"""
     paper, path, payload, _ = explanation
     payload.update(change)
-    result = paper_figure_jobs.run_figure_explain_job(paper['id'], 'fig-001', 'test-actor')['figure']
+    result = run_figure((paper, path), paper_figure_jobs.run_figure_explain_job, paper['id'], 'fig-001', 'test-actor')['figure']
     assert result['explanation_status'] == 'error'
     assert result['explanation_generation_status'] == 'error'
     assert result['explanation_persistence_status'] == 'not_saved'
@@ -349,7 +349,7 @@ def test_free_text_is_not_mistaken_for_a_structured_generation_receipt(explanati
     paper, path, _, generate = explanation
     generate.side_effect = None
     generate.return_value = ('正式产物提交未执行。以下为解读正文，请补充提交协议。', {})
-    result = paper_figure_jobs.run_figure_explain_job(paper['id'], 'fig-001', 'test-actor')['figure']
+    result = run_figure((paper, path), paper_figure_jobs.run_figure_explain_job, paper['id'], 'fig-001', 'test-actor')['figure']
     assert result['explanation_status'] == 'error'
     assert not json.loads(path.read_text())[0].get('explanation')
 
@@ -358,13 +358,13 @@ def test_contract_validation_does_not_filter_phrases_from_valid_content(explanat
     """合法的图解释即使含有“正式产物提交未执行”等字样也原样保存"""
     paper, path, payload, _ = explanation
     payload['explanation'] = '## 图在表达什么\n图中文字引用了“正式产物提交未执行”，这是待解释的原文。'
-    paper_figure_jobs.run_figure_explain_job(paper['id'], 'fig-001', 'test-actor')
+    run_figure((paper, path), paper_figure_jobs.run_figure_explain_job, paper['id'], 'fig-001', 'test-actor')
     assert json.loads(path.read_text())[0]['explanation'] == payload['explanation']
 
 
 def test_successful_generation_does_not_hide_a_failed_artifact_write(explanation, monkeypatch):
     """图解释生成成功但写入失败时报告保存错误，不留下解释内容"""
-    paper, path, _, _ = explanation
+    paper, path, _, generate = explanation
     write = paper_store._write_json
 
     def fail_commit(target, figures):
@@ -374,35 +374,54 @@ def test_successful_generation_does_not_hide_a_failed_artifact_write(explanation
 
     monkeypatch.setattr(paper_store, '_write_json', fail_commit)
     monkeypatch.setattr(paper_figures, '_write_json', paper_store._write_json)
-    result = paper_figure_jobs.run_figure_explain_job(paper['id'], 'fig-001', 'test-actor')['figure']
-    assert result['explanation_status'] == 'error'
-    assert result['explanation_generation_status'] == 'generated'
-    assert result['explanation_persistence_status'] == 'error'
+    result = run_figure((paper, path), paper_figure_jobs.run_figure_explain_job, paper['id'], 'fig-001', 'test-actor')['figure']
+    assert result['explanation_status'] == 'running'
+    assert result['explanation_step'] == 'saving result'
     assert 'disk full' in result['explanation_error']
     stored = json.loads(path.read_text())[0]
     assert not stored.get('explanation') and not stored.get('explanation_commit')
+    monkeypatch.setattr(paper_store, '_write_json', write)
+    monkeypatch.setattr(paper_figures, '_write_json', write)
+    saved = run_figure((paper, path), paper_figure_jobs.run_figure_explain_job, paper['id'], 'fig-001', 'test-actor')['figure']
+    assert saved['explanation_status'] == 'done'
+    assert saved['explanation_persistence_status'] == 'saved'
+    generate.assert_called_once()
 
 
 def test_notification_failure_after_durable_commit_does_not_falsely_report_unsaved(explanation, monkeypatch):
     """图解释已持久保存后通知失败，仍报告为已保存"""
     paper, path, payload, _ = explanation
-    monkeypatch.setattr(paper_figures, '_notify_paper_projection', Mock(side_effect=RuntimeError('notification unavailable')))
-    result = paper_figure_jobs.explain_figure({'paper_id': paper['id'], 'figure_id': 'fig-001'}, 'test-actor')['figure']
+    def notify(*args, **kwargs):
+        if json.loads(path.read_text())[0].get('explanation_persistence_status') == 'saved':
+            raise RuntimeError('notification unavailable')
+    notification = Mock(side_effect=notify)
+    monkeypatch.setattr(paper_figures, '_notify_paper_projection', notification)
+    result = run_figure((paper, path), paper_figure_jobs.explain_figure, {'paper_id': paper['id'], 'figure_id': 'fig-001'}, 'test-actor')['figure']
     assert result['explanation_status'] == 'done'
     assert result['explanation_persistence_status'] == 'saved'
     assert json.loads(path.read_text())[0]['explanation'] == payload['explanation']
+    assert notification.call_count > 0
 
 
 def test_an_old_identical_artifact_is_not_a_receipt_for_a_new_unwritten_commit(explanation, monkeypatch):
     """新一次图解释未能写入时报错，内容相同的旧产物不能充当保存回执"""
     paper, path, _, _ = explanation
     payload = {'paper_id': paper['id'], 'figure_id': 'fig-001'}
-    paper_figure_jobs.explain_figure(payload, 'test-actor')
-    original = path.read_bytes()
-    monkeypatch.setattr(paper_figures, '_write_figures', lambda *args: None)
-    with pytest.raises(RuntimeError, match='persist'):
-        paper_figure_jobs.explain_figure(payload, 'test-actor')
-    assert path.read_bytes() == original
+    run_figure((paper, path), paper_figure_jobs.explain_figure, payload, 'test-actor')
+    old = json.loads(path.read_text())[0]
+    queued = {**old, 'explanation_status': 'queued', '_job_execution': {}}
+    path.write_text(json.dumps([queued]))
+    def unwritten_attempt():
+        # Admission and claim succeed; only the new artifact commit is lost.
+        with monkeypatch.context() as patch:
+            patch.setattr(paper_figures, '_write_figures', lambda *args: None)
+            with pytest.raises(RuntimeError, match='persist'):
+                paper_figure_jobs.explain_figure(payload, 'test-actor')
+    run_figure((paper, path), unwritten_attempt)
+    stored = json.loads(path.read_text())[0]
+    assert stored['explanation_commit'] == old['explanation_commit']
+    assert stored['explanation'] == old['explanation']
+    assert stored['explanation_status'] == 'queued'
 
 
 def test_fixed_effect_supports_direct_lineage_use_without_page_submission_protocol(monkeypatch):

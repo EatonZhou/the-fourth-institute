@@ -142,7 +142,8 @@ def personal_assistant_target(username: str) -> dict[str, str]:
         return {}
     try:
         resident = isa_client.call(username, "GetResident", {"resident_id": resident_id}).get("resident") or {}
-    except Exception:  # noqa: BLE001 - an unreadable facade is an unavailable entry
+    except Exception as exc:  # noqa: BLE001 - an unreadable facade is an unavailable entry
+        logger.warning("Personal assistant target unavailable (%s)", type(exc).__name__)
         return {}
     if str(resident.get("lineage_id") or "") != lineage_id:
         return {}

@@ -42,7 +42,11 @@ def test_every_backend_uses_one_service_pipeline(provider):
     harness = SimpleNamespace(prepare_invocation=lambda inv, provider=None: inv, should_run=lambda inv: False,
         execute_passthrough=lambda *, invocation, context, execute: execute(invocation, context))
     turn = invocation(provider, {})
-    assert AgentSessionService({provider: selected}, harness).execute(turn, "context") is result
+    actual = AgentSessionService({provider: selected}, harness).execute(turn, "context")
+    assert actual.output["message"] == result.output["message"]
+    assert actual.output["input_variant"]["selected"] == "full"
+    assert actual.output["input_variant"]["reason"] == "input_variants_missing"
+    assert result.output == {"message": "result"}
     assert events == [(turn, "context")]
 
 

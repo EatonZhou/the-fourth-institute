@@ -4,15 +4,15 @@ type: decision
 project: AI员工
 created_at: '2026-07-26'
 version:
-  number: 39
+  number: 41
   created_at: "2026-07-26"
   created_by:
     user: ""
     agent: ""
-  updated_at: "2026-11-05T11:42:47Z"
+  updated_at: "2026-11-13T21:18:24Z"
   updated_by:
     user: ""
-    agent: "resident_6199a7a36480"
+    agent: "resident_737599f56947"
 importance: 10
 metaness: 2
 ai_generated: false
@@ -153,10 +153,11 @@ Portal 页面、Resident 和 Portal 的其他服务都通过 ResourceService 查
 
 ### `get(resource_id, actor)` / `resource.get`
 
-**按根 ID 读取资源摘要，协作类型优先使用当前描述记录。**
+**按根 ID 读取资源摘要，优先使用类型所属领域的当前权威记录。**
 
 - Resident、Lineage、Workspace 有协作描述时直接生成摘要，不等待索引；非 Workspace 协作类型再补齐当前领域事实。每次调用应用当前身份与私有性约束，返回记录不改写索引或推进适配器进度。
-- Workspace 描述缺失时返回不存在，不能从旧索引恢复目录路径。Resident/Lineage 的历史记录在尚无描述时保留原索引读取契约；非协作类型也使用所属适配器索引。索引路径只等待相关适配器就绪，不要求全量刷新。
+- Workspace 描述缺失时返回不存在，不能从旧索引恢复目录路径。Resident/Lineage 的历史记录在尚无描述时保留原索引读取契约；其他类型没有声明权威读取器时，使用所属适配器索引。索引路径只等待相关适配器就绪，不要求全量刷新。
+- 业务功能通过 `resource.authoritative_records` 贡献“类型 → 权威读取器”映射。ResourceService 校验返回记录的 ID、类型并执行当前访问控制；所属读取器确认对象不存在时直接拒绝，不从陈旧索引恢复对象。Project 的权威查找和资源摘要格式化由基础 `project_resources` 贡献的 `project_resource_index` 持有，权威读取与索引适配共用该实现；核心提供器不导入上层功能模块。
 - ID 与类型不一致为输入错误；不存在或私有对象不可见时可返回 `KeyError`，身份读取拒绝为 `PermissionError`，具体错误映射见下文。
 - `get` 可返回已删除摘要供诊断；这不使对象重新活动。`resolve`、`reference` 和精确地址搜索仍按领域存在性规则拒绝已删除对象。
 
@@ -232,7 +233,7 @@ Workspace 名称更新只接受非空 `title` 与必填 `expected_version`，令
 
 - 权限：UnregisterResource 的正式声明要求目标资源的 admin；领域删除适配器仍履行自己的业务约束。
 - 领域决定对象是软删除、物理删除还是只取消登记。
-- 目录注销与后台清理的提交、失败重试按《目录与路径协议》（decision_4aa13bc21e8e）处理；登记释放后发送 `deleted` 变化通知。
+- 目录注销与后台清理的提交、失败重试按《目录与路径协议》（decision_4aa13bc21e8e）处理；登记释放后发送 `deleted` 变化通知。目录登记存储首次调用注销时也先初始化自身结构，再写入删除墓碑，不依赖先前读取或登记预热。
 
 ### 变更的索引确认
 
@@ -280,6 +281,14 @@ Resident 在一次执行中修改资源正文时，ResourceService 为每次实�
 - **`refresh(adapters, path, wait, timeout)`** 排队刷新资源索引：给出 `adapters` 时只刷新这些适配器，给出 `path` 时刷新负责该路径的适配器，两者都没有时刷新全部；找不到负责该路径的适配器时抛出 `ValueError`。`wait=true` 时等待刷新完成，超时不会取消已经排队的刷新。
 - **`projection_state(adapter)`** 返回一个适配器的刷新进度，包括版本代次、最近检查和最近成功时间；适配器不存在时报错。
 - **`notify_source_changed(path, resource_id, resource_type, kind, wait, timeout)`** 发送领域变化通知，`kind` 为 `created`、`updated`、`deleted`、`moved` 或 `unknown`。通知或等待失败不会撤回之前的领域修改。
+
+### 领域索引表示贡献
+
+`resource.index_formatters` 以 `{resource_type: (domain_record) -> index_record}` 登记领域的索引表示。每种资源类型只有一个格式化 owner；重复 owner 明确拒绝。核心适配器在读取领域记录前解析该贡献，格式化逻辑由领域持有。Project 的权威读取与索引投影共同使用 `project_resource_index.index_record`，核心适配器不直接导入该领域模块。
+
+Project 格式化贡献缺失时，适配器不声明 Project 类型或 registry collection，不读取 Project 领域；全扫描返回空记录，增量扫描删除既有 Project 索引投影，显式投影调用报告贡献未安装。缺失或不可用的权威读取贡献不能由旧索引恢复 Project 对象。正常登记时保留原单对象索引确认及权威读取合同。
+
+基础 Project 资源通过 `project_resources` 贡献登记，与 `projects` 的展示及研究地图入口分开。关闭 Projects 展示或从发行功能集合中排除展示入口，不删除基础 Project 资源贡献，也不改变资源权限。贡献来自当前进程加载的功能声明，正式发行裁剪通过 `FEATURES` 完成；此协议不增加根据 Dev `config/distribution.json` 动态禁用资源的规则。安装集合变更由正式服务加载后生效。
 
 ## 一次变更怎样完成
 

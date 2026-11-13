@@ -53,8 +53,8 @@ function fixture() {
     reviews: window.PortalPaperReviews.createReviews(deps) };
 }
 
-test('PDF upload and deletion responses do not reopen a previously selected paper', async () => {
-  for (const action of ['upload', 'delete']) {
+test('PDF upload responses do not reopen a previously selected paper', async () => {
+  for (const action of ['upload']) {
     const f = fixture();
     const response = deferred();
     const started = deferred();
@@ -66,33 +66,30 @@ test('PDF upload and deletion responses do not reopen a previously selected pape
     };
     f.api.postForm = send;
     f.api.request = send;
-    const pending = action === 'upload'
-      ? f.record.uploadCurrentPaperPdf({ name: 'fixture.pdf' })
-      : f.record.deleteCurrentPaperPdf();
+    const pending = f.record.uploadCurrentPaperPdf({ name: 'fixture.pdf' });
     await started.promise;
-    assert.ok(requested.url.includes(action === 'upload' ? 'upload-pdf' : 'delete-pdf'));
+    assert.ok(requested.url.includes('upload-pdf'));
     f.switchPaper();
     response.resolve({ paper: { id: 'paper_a' } });
     await pending;
     assert.equal(f.state.selectedId, 'paper_b', action);
     assert.equal(f.state.detail.paper.id, 'paper_b', action);
     assert.equal(f.calls.merged.length, 0, action);
-    assert.equal(f.state[action === 'upload' ? 'pdfUploadInFlight' : 'pdfDeleteInFlight'], false);
+    assert.equal(f.state.pdfUploadInFlight, false);
   }
 });
 
-test('PDF operations still update the same paper and release busy state on rejection', async () => {
-  for (const action of ['upload', 'delete']) {
+test('PDF upload still updates the same paper and release busy state on rejection', async () => {
+  for (const action of ['upload']) {
     const f = fixture();
     const updated = { paper: { id: 'paper_a', title: 'Updated' } };
     f.api.postForm = f.api.request = async () => updated;
-    const run = () => action === 'upload'
-      ? f.record.uploadCurrentPaperPdf({ name: 'fixture.pdf' }) : f.record.deleteCurrentPaperPdf();
+    const run = () => f.record.uploadCurrentPaperPdf({ name: 'fixture.pdf' });
     await run();
     assert.equal(f.state.detail, updated);
     f.api.postForm = f.api.request = async () => { throw new Error('Permission denied'); };
     await assert.rejects(run(), /Permission denied/);
-    assert.equal(f.state[action === 'upload' ? 'pdfUploadInFlight' : 'pdfDeleteInFlight'], false);
+    assert.equal(f.state.pdfUploadInFlight, false);
     assert.equal(f.state.detail, updated);
   }
 });

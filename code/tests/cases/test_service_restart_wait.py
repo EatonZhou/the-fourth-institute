@@ -151,9 +151,12 @@ def test_an_instruction_waits_for_its_restarting_owner(tmp_path, socket_rpc_auth
     """
     path = tmp_path / "resource.sock"
     monkeypatch.setattr(socket_rpc, "owner_socket", lambda owner: path)
+    socket_rpc_authenticator(path)
+    from management_portal.hatg.contracts import InstructionContext
+    context = InstructionContext(caller='fixture-user', entry='web')
     received: list[str] = []
     service = _service_back_after(path, RESTART_SECONDS, received)
-    connection, stream = socket_rpc._open("resource", {"id": "isa-1", "method": socket_rpc.METHOD, "params": {}}, 5.0)
+    connection, stream = socket_rpc._open("resource", {"id": "isa-1", "method": socket_rpc.METHOD, "params": {}}, 5.0, context)
     try:
         assert json.loads(stream.readline())["id"] == "isa-1"
     finally:

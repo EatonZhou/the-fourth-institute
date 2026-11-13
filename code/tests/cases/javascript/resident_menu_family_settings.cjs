@@ -52,7 +52,7 @@ test('Resident effective switch shows its raw policy source and keeps boolean sa
   assert(start>=0&&end>start);
   const callback=text.slice(start+'onState: '.length,end).trim().replace(/,$/,'');
   const dom=new JSDOM('<div id="runtime"></div>',{runScripts:'outside-only'}),w=dom.window,changes=[];
-  const context={node:{},runtimeController:{saveSettings:async value=>changes.push(JSON.parse(JSON.stringify(value))),load:async()=>{}}};
+  const context={node:{},runtimeExtras:w.document.getElementById('runtime'),runtimeController:{saveSettings:async value=>changes.push(JSON.parse(JSON.stringify(value))),load:async()=>{}}};
   Object.assign(w,{context,menuState:{nodeMenuContext:context},$id:()=>w.document.getElementById('runtime'),esc:String,nodeMenuNotice:()=>{}});
   w.PortalI18n={t:String,html:(parts,...values)=>parts.reduce((s,p,i)=>s+p+(values[i]??''),'')};
   w.PortalChatWorkspace={residentRuntimeSettingRows:()=>[]};

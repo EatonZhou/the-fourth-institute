@@ -255,7 +255,8 @@ def _execute(monkeypatch, definition, *, initialize=True):
         state_store.get_lineage_data_store().put_lineage_definition(
             lineage_id,
             {"schema": "tfi.lineage.v1", "schema_version": 1, "lineage_id": lineage_id,
-             "title": "Effect target test", "nodes": [], "edges": [], "program": {}},
+             "title": "Effect target test", "nodes": [], "edges": [],
+             "program": {"components": [{"id": EFFECT, "kind": "effect"}]}},
             {"schema": "tfi.lineage-runtime.v1", "lineage_id": lineage_id},
         )
     monkeypatch.setattr(lineage_instruction_context, "get_portal_access_store", lambda: SimpleNamespace(

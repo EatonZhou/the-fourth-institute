@@ -8,6 +8,17 @@ from pathlib import Path
 import subprocess
 
 
+def test_plan_exclusions_show_case_titles_and_readable_reasons():
+    """不会运行条目保留用例名称、可读原因与原诊断码，预览不改变执行选择。
+
+    :risk: no-external-side-effects
+    :profiles: local.fixture
+    """
+    script = Path(__file__).with_name("javascript") / "test_plan_exclusions.cjs"
+    result = subprocess.run(["node", str(script)], capture_output=True, text=True, timeout=30)
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
 def test_test_page_overview_catalog_case_run_and_tau_pages():
     """Test 页面按地址显示总览、用例目录、用例、新运行、运行与 TAU 页，旁边是测试团队的对话
 
