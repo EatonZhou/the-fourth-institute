@@ -11,6 +11,8 @@ import threading
 import time
 
 from .account_quota import POLL_SECONDS
+
+FAILED_READ_RETRY_SECONDS = 300
 from .activity_redaction import redact_sensitive_text
 from .account_usage_store import AccountUsageStore
 from .account_observation_store import AccountObservationStore
@@ -238,6 +240,41 @@ class AccountMonitor:
                 self._last_refresh_request = now
                 self.wakeup.set()
 
+    def _fresh_reading_required(self):
+        """Capacity keys whose Close threshold needs a reading no older than its max age.
+
+        None means the thresholds could not be read; every account then keeps polling.
+        """
+        try:
+            partitions = self.scheduler.health().get("capacity_partitions") or {}
+        except Exception:
+            return None
+        if not isinstance(partitions, dict):
+            return None
+        return {key for key, partition in partitions.items()
+                if isinstance(partition, dict) and isinstance(partition.get("close_threshold"), dict)
+                and (partition["close_threshold"].get("value") or 0) != 0}
+
+    def _observation_due(self, account, now, fresh_required):
+        # Provider quota reads are not periodic: an account is read once after
+        # start, on an explicit refresh, after one of its windows resets, and
+        # after a failed read. Only an enabled Close threshold, which pauses
+        # work on readings older than their max age, keeps the regular poll.
+        if fresh_required is None or getattr(account, "capacity_key", "") in fresh_required:
+            return True
+        with self._lock:
+            sample = self._samples.get(account.account_id)
+        if not sample:
+            return True
+        checked = sample.get("checked_at") or 0
+        if sample.get("status") == "unavailable":
+            return now - checked >= FAILED_READ_RETRY_SECONDS
+        for window in sample.get("rate_limits") or []:
+            reset = window.get("resets_at") if isinstance(window, dict) else None
+            if isinstance(reset, (int, float)) and not isinstance(reset, bool) and checked < reset <= now:
+                return True
+        return False
+
     def _run(self):
         # A slow account must not hold the next refresh of every other account.
         # Bound resource use and keep at most one pending observation per identity.
@@ -259,9 +296,13 @@ class AccountMonitor:
                                     if not self.stopped.is_set():
                                         logger.warning("Account observation failed for %s (%s); retrying next poll",
                                                        account_id, type(error).__name__)
+                        fresh_required = None if force else self._fresh_reading_required()
+                        now = time.time()
                         for account in self.accounts.accounts():
                             if self.stopped.is_set():
                                 break
+                            if not force and not self._observation_due(account, now, fresh_required):
+                                continue
                             with self._lock:
                                 if account.account_id not in self._inflight:
                                     self._inflight[account.account_id] = pool.submit(self.refresh_account, account, force=force)

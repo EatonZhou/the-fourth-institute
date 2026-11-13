@@ -130,6 +130,32 @@ def test_monitor_retains_failure_attempt_as_history():
     assert last['rate_limits'][0]['stale'] is True
 
 
+def test_quota_reads_happen_only_at_start_reset_failure_or_for_a_close_threshold():
+    """Without a Close threshold an account is read once, then only after a reset or a failed read."""
+    monitor, account, accounts, history = make_monitor()
+    account.capacity_key = 'account:one'
+    assert monitor._observation_due(account, 1000, set())
+    monitor._samples['one'] = {'status': 'ok', 'checked_at': 1000,
+                               'rate_limits': [{'id': 'weekly', 'resets_at': 5000}]}
+    assert not monitor._observation_due(account, 4999, set())
+    assert monitor._observation_due(account, 5000, set())
+    assert monitor._observation_due(account, 1001, {'account:one'})
+    assert monitor._observation_due(account, 1001, None)
+    monitor._samples['one'] = {'status': 'unavailable', 'checked_at': 1000, 'rate_limits': []}
+    assert not monitor._observation_due(account, 1299, set())
+    assert monitor._observation_due(account, 1300, set())
+
+
+def test_fresh_reading_required_only_for_enabled_thresholds():
+    monitor, *_ = make_monitor()
+    monitor.scheduler.health.return_value = {'capacity_partitions': {
+        'codex:four': {'close_threshold': {'value': 2.0}}, 'codex:one': {'close_threshold': {'value': 0.0}},
+        'shared-ai': {}}}
+    assert monitor._fresh_reading_required() == {'codex:four'}
+    monitor.scheduler.health.side_effect = RuntimeError('db')
+    assert monitor._fresh_reading_required() is None
+
+
 def test_shutdown_cancellation_is_not_recorded_as_a_new_observation():
     monitor, account, accounts, history = make_monitor()
     def cancelled(*args, **kwargs):
