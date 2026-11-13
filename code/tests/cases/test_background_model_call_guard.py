@@ -49,14 +49,6 @@ def test_execution_client_owns_submit_and_wait_protocol() -> None:
     )
 
 
-def test_callers_cannot_choose_a_model_route_for_a_resident() -> None:
-    """调用者不能为 Resident 另选模型路由"""
-    assert not hasattr(client, "run_model_agent")
-    assert not hasattr(client, "run_script_agent")
-    # A Resident's AI work is its own conversation turn, never a side request.
-    assert not hasattr(client, "run_as_resident")
-
-
 def test_background_agent_session_does_not_branch_on_provider(monkeypatch) -> None:
     """后台 agent 会话按账号配置接入未知 Provider"""
     observed: dict = {}

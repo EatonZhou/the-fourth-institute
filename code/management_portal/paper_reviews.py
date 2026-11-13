@@ -194,10 +194,6 @@ def _run_review_job(job_id: str) -> dict:
         return {}
 
 
-def _settle_interrupted_review(job: dict) -> dict:
-    return job  # Observation never settles or restarts an execution.
-
-
 def review_job_paper_id(job_id: str) -> str:
     """The paper a review job belongs to, so a read by job_id is checked against that paper."""
     job = _review_job_by_id(job_id)

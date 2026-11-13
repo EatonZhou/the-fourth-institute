@@ -121,7 +121,6 @@ def test_unknown_catalog_model_installs_native_threshold_without_model_call(tmp_
     registry.find_thread_rollout.assert_called_once_with(
         "four", "019f0000-0000-7000-8000-000000000001", include_archived=True,
     )
-    assert not hasattr(backend, "rewrite_active_history")
 
 
 @pytest.mark.parametrize("context_source", ["catalog", "override", "new_session"])

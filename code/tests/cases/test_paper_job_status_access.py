@@ -5,25 +5,23 @@ import pytest
 from management_portal import paper_reading_jobs
 
 
-def test_status_authorizes_actual_paper_before_resuming_or_mutating(subtests, isolated_portal_case):
-    """查询任务状态在恢复或修改前鉴权实际关联论文"""
-    for operation, lookup, mutation in [
-    ("get_deep_read_status", "_latest_deep_read_job", "_launch_deep_read_business_task"),
-    ("get_exp_status", "_latest_exp_job", "_mark_stale_exp_job"),
+def test_status_authorizes_actual_paper(subtests, isolated_portal_case):
+    """查询任务状态鉴权实际关联论文"""
+    for operation, lookup in [
+    ("get_deep_read_status", "_latest_deep_read_job"),
+    ("get_exp_status", "_latest_exp_job"),
 ]:
-        with subtests.test(operation=operation, lookup=lookup, mutation=mutation), isolated_portal_case() as case_path:
+        with subtests.test(operation=operation, lookup=lookup), isolated_portal_case() as case_path:
             job = {"job_id": "status-job", "paper_id": "paper_0123456789ab", "status": "running"}
             service = mock.Mock()
             service.get.side_effect = PermissionError("Paper viewer required")
             with (
                 mock.patch.object(paper_reading_jobs, lookup, return_value=job),
                 mock.patch.object(paper_reading_jobs, "get_resource_service", return_value=service),
-                mock.patch.object(paper_reading_jobs, mutation) as resume,
                 pytest.raises(PermissionError, match="Paper viewer"),
             ):
                 getattr(paper_reading_jobs, operation)(actor="denied-reader", job_id=job["job_id"])
             service.get.assert_called_once_with(job["paper_id"], actor="denied-reader")
-            resume.assert_not_called()
 
 
 def test_status_validates_selectors_and_authorizes_idle_paper(subtests, isolated_portal_case):

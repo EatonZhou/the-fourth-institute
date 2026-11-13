@@ -6,7 +6,6 @@ from pathlib import Path
 import re
 
 from management_portal import paper_state_store
-from management_portal.paper_figure_jobs import _recover_figure_tasks
 from management_portal.paper_figures import _figure_public, _load_figures
 from management_portal.paper_records import _is_url
 from management_portal.paper_store import (

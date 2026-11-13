@@ -47,31 +47,25 @@ def test_text_preview_preserves_missing_and_invalid_utf8_behavior(tmp_path):
     assert paper_store._read_text_preview(path, limit=2) == "a\ufffd"
 
 
-def test_detail_loads_figures_only_after_recovery_and_only_when_requested(monkeypatch):
+def test_detail_loads_figures_only_when_requested(monkeypatch):
     paper = {"id": "paper_0123456789ab", "has_pdf": False,
              "has_analysis": False, "has_summary": False}
     monkeypatch.setattr(paper_detail, "_paper_by_id", lambda _: paper)
     monkeypatch.setattr(paper_assets, "assets_job_status", lambda _: {})
-    state = {"recovered": False}
     observed = []
 
-    def recover(_paper):
-        state["recovered"] = True
-
     def figures(_paper):
-        observed.append(state["recovered"])
+        observed.append(_paper["id"])
         return [{"figure_id": "figure_0123456789ab", "index": 1,
-                 "explanation_status": "error" if state["recovered"] else "running"}]
+                 "explanation_status": "running"}]
 
-    monkeypatch.setattr(paper_detail, "_recover_figure_tasks", recover)
     monkeypatch.setattr(paper_detail, "_load_figures", figures)
     monkeypatch.setattr(paper_detail, "_figure_public", lambda item, _paper_id: item)
     result = paper_detail.get_paper_detail(paper["id"], sections="none")
-    assert result["loaded_sections"] == [] and observed == [] and not state["recovered"]
+    assert result["loaded_sections"] == [] and observed == []
     result = paper_detail.get_paper_detail(paper["id"], sections="figures")
     assert result["figures"][0]["explanation_status"] == "running"
-    assert observed == [False], "a detail read must not recover, settle or discard current figure data"
-    assert not state['recovered']
+    assert observed == [paper["id"]]
 
 
 def test_delete_queries_only_target_reviews_and_preserves_other_paper(monkeypatch, isolated_portal_case):

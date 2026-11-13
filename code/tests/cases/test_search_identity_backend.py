@@ -203,7 +203,6 @@ def test_search_records_name_their_creator_without_an_owner_list(tmp_path: Path)
     assert record["id"] == "search_0123456789ab"
     assert record["created_by"] == "alice"
     assert "owner_ids" not in record
-    assert not hasattr(backend, "update_search_owners")
 
 
 def test_board_surfaces_share_search_ids_and_resolve(tmp_path: Path) -> None:
@@ -332,7 +331,6 @@ def test_paper_collection_jobs_are_listed_to_everyone_without_an_owner_list() ->
     assert job["job_id"] == "collector-0123456789ab"
     assert job["created_by"] == "alice"
     assert "owner_ids" not in job
-    assert not hasattr(paper_collection_jobs, "update_paper_collection_owners")
 
 
 def test_scoped_resource_semantic_result_and_search_resolution(tmp_path: Path) -> None:

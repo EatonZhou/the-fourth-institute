@@ -72,10 +72,6 @@ def _latest_exp_job(*, paper_id: str = "", job_id: str = "") -> dict | None:
     return _latest_job("exp_jobs", paper_id=paper_id, job_id=job_id)
 
 
-def _mark_stale_exp_job(job: dict) -> dict:
-    return job  # Compatibility helper: lease takeover belongs to the owner loop.
-
-
 def start_deep_read(payload: dict, actor: str) -> dict:
     paper_id = str(payload.get("paper_id") or "").strip()
     if not paper_id:

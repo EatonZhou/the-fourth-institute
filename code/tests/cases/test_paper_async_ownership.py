@@ -153,11 +153,9 @@ def test_exp_and_review_get_do_not_settle_or_launch(monkeypatch):
     before = dict(job)
     monkeypatch.setattr(paper_reading_jobs, "_latest_exp_job", lambda **kw: job)
     monkeypatch.setattr(paper_reading_jobs, "_authorize_paper_job_status", lambda *a, **kw: None)
-    monkeypatch.setattr(paper_reading_jobs, "_mark_stale_exp_job", lambda *a: pytest.fail("GET mutated Exp"))
     assert paper_reading_jobs.get_exp_status(actor="test", job_id="job")["status"] == "running"
     monkeypatch.setattr(paper_reviews, "_review_job_by_id", lambda identity: job)
     monkeypatch.setattr(paper_reviews, "is_user_or_resident", lambda actor: True)
-    monkeypatch.setattr(paper_reviews, "_settle_interrupted_review", lambda *a: pytest.fail("GET settled Review"))
     assert paper_reviews.get_review_status(actor="test", job_id="job")["job"]["status"] == "running"
     assert job == before
 
@@ -168,7 +166,6 @@ def test_figure_detail_get_does_not_recover(monkeypatch):
     monkeypatch.setattr(paper_detail, "_paper_by_id", lambda identity: paper)
     monkeypatch.setattr(paper_detail, "_load_figures", lambda paper: [{"figure_id": "fig", "explanation_status": "running"}])
     monkeypatch.setattr(paper_assets, "assets_job_status", lambda identity: {})
-    monkeypatch.setattr(paper_detail, "_recover_figure_tasks", lambda *a: pytest.fail("GET recovered Figure"))
     monkeypatch.setattr(paper_figure_jobs, "_resume_figure_tasks", lambda *a: pytest.fail("GET launched Figure"))
     result = paper_detail.get_paper_detail("paper", sections=["figures"])
     assert result["figures"][0]["explanation_status"] == "running"

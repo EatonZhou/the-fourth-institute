@@ -59,11 +59,6 @@ def test_review_does_not_settle_live_or_unproven_owner():
     assert business_tasks.process_is_alive({**owner, "host": "another-host"})
     assert business_tasks.process_is_alive({**owner, "pid_namespace": "another-namespace"})
     assert not business_tasks.process_is_alive({**owner, "boot_id": "prior-boot", "pid_namespace": "prior-namespace"})
-    for identity in (owner, {}):
-        job = {"job_id": "active", "status": "running", "process_owner": identity}
-        with mock.patch.object(paper_state_store, "merge") as write:
-            assert paper_reviews._settle_interrupted_review(job) == job
-            write.assert_not_called()
 
 
 def test_review_recovery_preserves_concurrent_completion():

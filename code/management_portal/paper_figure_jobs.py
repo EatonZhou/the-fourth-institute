@@ -519,11 +519,6 @@ def _start_figure_explain_task(paper: dict, figure_id: str, actor: str) -> str:
     return ""
 
 
-def _recover_figure_tasks(paper: dict) -> None:
-    # Compatibility read hook. Background recovery belongs to the lifecycle scanner.
-    return None
-
-
 def _resume_figure_tasks(paper: dict) -> None:
     for figure in _load_figures(paper):
         figure_id = str(figure.get("figure_id") or "")

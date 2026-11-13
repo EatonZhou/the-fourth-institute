@@ -186,40 +186,6 @@ def test_figure_resumes_same_input_without_upload_or_submit(figure_store, genera
     ensure.assert_not_called()
 
 
-@pytest.mark.parametrize("status", ["queued", "running"])
-def test_interrupted_legacy_figure_has_explicit_error_without_resubmission(figure_store, status):
-    """兼容读取不改写旧任务状态，也不启动恢复或重投"""
-    paper, path = figure_store
-    figure = {"figure_id": "fig-001", "explanation_status": status, "generated": [{"generated_id": "gen-one", "status": status}]}
-    path.write_text(json.dumps([figure]))
-    with mock.patch.object(paper_figure_jobs, "_start_figure_explain_task") as explain, mock.patch.object(paper_figure_jobs, "_start_figure_draft_task") as draft:
-        paper_figure_jobs._recover_figure_tasks(paper)
-    result = json.loads(path.read_text())[0]
-    assert result == figure
-    explain.assert_not_called()
-    draft.assert_not_called()
-
-
-def test_active_figure_worker_is_not_recovered_twice(figure_store):
-    """活动插图工作者保持运行且不重复恢复"""
-    from management_portal import business_tasks
-
-    paper, path = figure_store
-    path.write_text(json.dumps([{
-        "figure_id": "fig-001",
-        "explanation_status": "running",
-        "explanation_invocation": paper_projection.receipt_from_resident_handle({
-            "resident_id": "resident_figure01",
-            "lineage_id": "lineage_paper01",
-            "message_id": "msg_original",
-        }),
-    }]))
-    with mock.patch.object(business_tasks, "is_active", return_value=True), mock.patch.object(paper_figure_jobs, "_start_figure_explain_task") as start:
-        paper_figure_jobs._recover_figure_tasks(paper)
-    start.assert_not_called()
-    assert json.loads(path.read_text())[0]["explanation_status"] == "running"
-
-
 def test_figure_recovery_writes_cancelled_input_as_artifact_error(figure_store):
     """插图恢复遇到取消输入时写入产物错误且不重提交"""
     from management_portal import resident_handoff
