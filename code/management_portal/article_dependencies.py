@@ -12,19 +12,30 @@ from management_common.file_lock import try_lock_descriptor, unlock_descriptor
 from management_common.process_runtime import run_process
 from management_portal import article_build_profile, article_build_results, article_toolchain
 
-_FILE = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.+-]*\.(?:cls|sty|bst)")
+_FILE = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.+-]*\.(?:cls|sty|bst|tfm)")
+# A package's virtual font can need a TeX font metric the manuscript never names.
+# pdfTeX reports it and still writes a PDF, so the build ends as a warning.
+_MISSING_METRIC = re.compile(
+    r"=([A-Za-z0-9][A-Za-z0-9_.+-]*)(?: at [0-9.]+pt| scaled [0-9]+)? not loadable: Metric \(TFM\) file not found")
+# Repository paths that hold installable inputs; documentation examples are excluded.
+_INSTALLABLE_PATH = re.compile(r'texmf-dist/(?:tex|bibtex|fonts/tfm)/')
+
+
+def _files_missing_in_build_log(log: str) -> set[str]:
+    names = set(re.findall(r"File [`']([^`'\n]+)['`] not found", log))
+    names.update(name + '.tfm' for name in _MISSING_METRIC.findall(log))
+    return {name for name in names
+            if _FILE.fullmatch(name) and not article_toolchain._kpsewhich_file(name)}
 
 
 def dependency_preflight(article_id: str) -> dict:
     profile = article_build_profile.article_build_preflight(article_id)
     missing = {item['file'] for item in profile.get('dependencies', [])
                if not item.get('resolved') and _FILE.fullmatch(item.get('file', ''))}
-    # A class can require packages absent from the manuscript's own declarations.
+    # A class can require packages and fonts absent from the manuscript's own declarations.
     build = article_build_results.load_article_build_report(article_id)
-    if build.get('status') == 'error':
-        for name in re.findall(r"File [`']([^`'\n]+)['`] not found", build.get('log', '')):
-            if _FILE.fullmatch(name) and not article_toolchain._kpsewhich_file(name):
-                missing.add(name)
+    if build.get('status') in {'error', 'warning'}:
+        missing |= _files_missing_in_build_log(build.get('log', ''))
     profile['installation'] = {
         'available': bool(article_toolchain._tex_which('tlmgr')),
         'missing_files': sorted(missing),
@@ -42,7 +53,7 @@ def _packages_for_files(output: str, files: list[str]) -> list[str]:
         elif package and line[:1].isspace():
             path = line.strip()
             # Exclude documentation examples that bundle another package's files.
-            if not re.match(r'texmf-dist/(?:tex|bibtex)/', path):
+            if not _INSTALLABLE_PATH.match(path):
                 continue
             name = path.rsplit('/', 1)[-1]
             if name in matches:

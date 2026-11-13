@@ -42,6 +42,29 @@ def test_missing_transitive_package_is_detected_but_paths_are_not_commands(monke
     assert deps.dependency_preflight('a')['installation']['missing_files'] == ['totpages.sty']
 
 
+def test_missing_font_metric_in_warning_build_installs_its_font_package(monkeypatch):
+    # pslatex maps OMS to a Zapf Chancery virtual font; pdfTeX still writes the PDF.
+    monkeypatch.setattr(deps.article_build_profile, 'article_build_preflight', lambda _: profile())
+    monkeypatch.setattr(deps.article_build_results, 'load_article_build_report', lambda _: {
+        'status': 'warning', 'log': '! Font \\csname\\endcsname=pzcmi8r at 11.23997pt not loadable: '
+                                    'Metric (TFM) file not found.\n! Font \\x=installed not loadable: '
+                                    'Metric (TFM) file not found.'})
+    monkeypatch.setattr(deps.article_toolchain, '_kpsewhich_file',
+                        lambda name: '/fonts/installed.tfm' if name == 'installed.tfm' else '')
+    assert deps.dependency_preflight('a')['installation']['missing_files'] == ['pzcmi8r.tfm']
+    output = ('zapfchan:\n\ttexmf-dist/fonts/tfm/adobe/zapfchan/pzcmi8r.tfm\n'
+              'other:\n\ttexmf-dist/doc/fonts/other/pzcmi8r.tfm\n')
+    assert deps._packages_for_files(output, ['pzcmi8r.tfm']) == ['zapfchan']
+
+
+def test_successful_build_log_is_not_scanned(monkeypatch):
+    monkeypatch.setattr(deps.article_build_profile, 'article_build_preflight', lambda _: profile())
+    monkeypatch.setattr(deps.article_build_results, 'load_article_build_report', lambda _: {
+        'status': 'success', 'log': "File `stale.sty' not found."})
+    monkeypatch.setattr(deps.article_toolchain, '_kpsewhich_file', lambda _: '')
+    assert deps.dependency_preflight('a')['installation']['missing_files'] == []
+
+
 def test_unknown_or_ambiguous_package_is_not_installed():
     with pytest.raises(RuntimeError, match='无法确定'):
         deps._packages_for_files('fake:\n texmf-dist/doc/unknown.sty', ['unknown.sty'])
