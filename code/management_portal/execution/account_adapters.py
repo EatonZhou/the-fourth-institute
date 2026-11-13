@@ -14,6 +14,8 @@ from pathlib import Path
 from .accounts import DefaultAccountUnavailable, ExecutionAccount
 from .provider_catalog import AGENT_PROVIDERS
 
+ACCOUNT_WIDE_CLAUDE_WINDOWS = frozenset({"five_hour", "seven_day"})
+
 LOGGER = logging.getLogger(__name__)
 
 
@@ -232,7 +234,7 @@ class CodexAccounts:
             credit_sample.update(observed_at=sample["observed_at"], stale=False)
         return {"status": "ok", "quota": sample, "credits": credit_sample,
                 "rate_limits": [{"id": window["window"], "quota_group": "codex",
-                                 "label": "Weekly" if window.get("window_duration_mins") == 10080 else "5 小时" if window.get("window_duration_mins") == 300 else window["window"],
+                                 "label": "每周" if window.get("window_duration_mins") == 10080 else "5 小时" if window.get("window_duration_mins") == 300 else window["window"],
                                  "remaining_percent": window["remaining_percent"],
                                  "window_duration_mins": window.get("window_duration_mins"),
                                  "resets_at": window.get("resets_at"),
@@ -303,10 +305,17 @@ class ClaudeAccounts:
         if not error and snapshot.get("quota_status") == "available":
             login_observation = "logged_in"
             login_observed_at = min((w["observed_at"] for w in windows if w.get("observed_at")), default=None)
+        from management_portal.claude_account_usage import WINDOWS as CLAUDE_WINDOWS
         found = {window["id"] for window in windows}
-        windows = [*windows, *({"id": key, "label": label, "remaining_percent": None, "stale": False} for key, label in (("five_hour", "5 小时"), ("seven_day", "每周")) if key not in found)]
-        windows = [{**window, "quota_group": "claude" if window["id"] in {"five_hour", "seven_day"} else window["id"]} for window in windows]
-        known = [window for window in windows if isinstance(window.get("remaining_percent"), (int, float)) and not window.get("stale")]
+        windows = [*windows, *({"id": key, "remaining_percent": None, "stale": False} for key in ("five_hour", "seven_day") if key not in found)]
+        # Labels follow the window id here, so renaming one never waits for a
+        # native Claude service restart.
+        windows = [{**window, "label": CLAUDE_WINDOWS.get(window["id"], window.get("label") or window["id"]),
+                    "quota_group": "claude" if window["id"] in ACCOUNT_WIDE_CLAUDE_WINDOWS else window["id"]} for window in windows]
+        # Model pools (Fable, Opus, Sonnet) limit one model, not the account:
+        # only the 5 hour and weekly windows decide whether the account can run.
+        account_wide = [window for window in windows if window["id"] in ACCOUNT_WIDE_CLAUDE_WINDOWS]
+        known = [window for window in account_wide if isinstance(window.get("remaining_percent"), (int, float)) and not window.get("stale")]
         remaining = min((window["remaining_percent"] for window in known), default=None)
         return {"status": snapshot.get("quota_status", "unknown"),
                 "login_observation": login_observation, "login_observed_at": login_observed_at,
@@ -315,8 +324,8 @@ class ClaudeAccounts:
                 "rate_limits": windows,
                 "quota": {"observed_at": min((w.get("observed_at_unix", 0) for w in known), default=0), "max_age_seconds": 300,
                           "valid_until": min((w.get("fresh_until", 0) for w in known), default=0),
-                          "status": "available" if remaining is not None and len(known) == len(windows) else "unknown",
-                          "complete": remaining is not None and len(known) == len(windows),
+                          "status": "available" if remaining is not None and len(known) == len(account_wide) else "unknown",
+                          "complete": remaining is not None and len(known) == len(account_wide),
                           "remaining_percent": remaining,
                           "windows": [{"window": w["id"], "remaining_percent": w["remaining_percent"], "resets_at": w.get("resets_at")} for w in known]}}
 

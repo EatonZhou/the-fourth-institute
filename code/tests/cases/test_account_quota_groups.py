@@ -40,6 +40,25 @@ def test_claude_model_specific_limits_do_not_block_the_common_pool(monkeypatch):
     assert all("quota_group" not in w for w in windows)
 
 
+def test_claude_fable_pool_neither_closes_the_account_nor_keeps_a_native_label(monkeypatch):
+    """An exhausted or unreadable Fable weekly pool leaves the account schedulable; labels follow window ids."""
+    from management_portal import claude_code_client
+    client = Mock()
+    client.account_usage.return_value = {"quota_status": "available", "rate_limits": [
+        {"id": "five_hour", "label": "5 小时", "remaining_percent": 80, "observed_at_unix": 1, "fresh_until": 2},
+        {"id": "seven_day", "label": "每周", "remaining_percent": 90, "observed_at_unix": 1, "fresh_until": 2},
+        {"id": "seven_day_overage_included", "label": "额外每周额度", "remaining_percent": 0}]}
+    monkeypatch.setattr(claude_code_client, "shared_client", lambda: client)
+    adapter = ClaudeAccounts.__new__(ClaudeAccounts)
+    result = adapter.observe(SimpleNamespace(route_id="test", quota_policy="reserve"))
+    assert [w["label"] for w in result["rate_limits"]] == ["5 小时", "每周", "Fable 每周"]
+    assert result["quota"]["remaining_percent"] == 80
+    assert result["quota"]["complete"] is True
+    assert [w["window"] for w in result["quota"]["windows"]] == ["five_hour", "seven_day"]
+    client.account_usage.return_value["rate_limits"][2]["remaining_percent"] = None
+    assert adapter.observe(SimpleNamespace(route_id="test", quota_policy="reserve"))["quota"]["status"] == "available"
+
+
 def test_antigravity_uses_native_sections_to_keep_model_pools_independent():
     report = ("### Quota Limits\n- **Gemini Models**\n"
               "  - **Five Hour Limit Remaining:** 100% remaining\n"
