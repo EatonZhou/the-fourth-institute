@@ -1253,7 +1253,17 @@ def resume_resident_session_restart(step: dict[str, Any]) -> None:
                     str(preserved_held_input.get("execution_id") or ""),
                     str(preserved_held_input.get("message_id") or ""),
                 )
-                if resident_execution_work.is_active(active_now) and not same_held_job:
+                # Inputs received while this restart owns the closed intake
+                # have not reached Execution. They can use the promoted
+                # session, just like an unstarted input held at admission.
+                held_during_preparation = bool(
+                    step.get("intake_transition_id")
+                    and current.get("intake_transition_id") == step["intake_transition_id"]
+                    and current.get("intake_open") is False
+                    and resident_execution_work.is_intake_held(active_now)
+                    and can_preserve_restart_input(current, active_now)
+                )
+                if resident_execution_work.is_active(active_now) and not (same_held_job or held_during_preparation):
                     raise ValueError("Resident 已开始新的工作，不能替换其 Session")
                 if prepared.get("backend_session_id"):
                     replacement = resident_backend.replace_with_prepared_session(current, prepared_id, expected_binding=step["source_binding"])
