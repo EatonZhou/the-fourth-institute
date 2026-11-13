@@ -165,32 +165,12 @@
       const analysisKind = detail.analysis?.kind || (detail.summary?.content && !detail.analysis?.content ? "summary" : "analysis");
       const sourceHtml = analysisBody ? analysisSourceHtml(detail.analysis?.provenance || {}) : "";
       const analysisHtml = analysisBody
-        ? sourceHtml + md(analysisBody)
+        ? sourceHtml + window.PortalPaperArtifactPresentation.renderBody(analysisBody, paper.title, md)
         : `<div class="paperAnalysisEmpty">${paperStateHtml("No analysis yet")}</div>`;
       return renderReaderPanels(detail, paper, analysisKind, analysisHtml);
     }
 
-    function analysisSourceHtml(facts) {
-      const recorded = value => !value || value === "未记录" ? window.PortalI18n.t("未记录") : value;
-      const resident = /^resident_[0-9a-f]{12}$/.test(facts.resident_id || "") ? facts.resident_id : "";
-      const humanTokens = value => Number.isFinite(value)
-        ? value >= 1e9 ? `${(value / 1e9).toFixed(1).replace(/\.0$/, "")}B`
-          : value >= 1e6 ? `${(value / 1e6).toFixed(1).replace(/\.0$/, "")}M`
-          : value >= 1e3 ? `${(value / 1e3).toFixed(1).replace(/\.0$/, "")}K`
-          : String(value)
-        : window.PortalI18n.t("未记录");
-      const tokenText = Number.isFinite(facts.total_tokens)
-        ? window.PortalI18n.text`输入 ${humanTokens(facts.input_tokens)} · 输出 ${humanTokens(facts.output_tokens)} · 共 ${humanTokens(facts.total_tokens)} tokens`
-        : window.PortalI18n.t("Token 用量未记录");
-      const exactTokens = window.PortalI18n.text`输入 ${facts.input_tokens ?? window.PortalI18n.t("未记录")} · 输出 ${facts.output_tokens ?? window.PortalI18n.t("未记录")} · 共 ${facts.total_tokens ?? window.PortalI18n.t("未记录")} tokens`;
-      return window.PortalI18n.html`<div class="paneNote analysisProvenance">
-        ${resident ? window.PortalI18n.html`<a href="/lineage?resident=${esc(resident)}">生成 Agent：${esc(resident)}</a><!--portal-i18n:"·"--> · ` : ""}
-        ${window.PortalI18n.t("Paper Model")}: ${esc(recorded(facts.model))}${facts.model_evidence === "resident_current_settings" ? window.PortalI18n.t("（Resident 配置）") : ""} · <span title="${esc(exactTokens)}">${esc(tokenText)}</span>
-        ${facts.execution_id || facts.input_message_id || facts.provider || facts.account_id || facts.api_id ? window.PortalI18n.html`<details><summary><!--portal-i18n:"生成记录"-->生成记录</summary>
-          ${window.PortalI18n.t("Paper Provider")}: ${esc(recorded(facts.provider))} · ${window.PortalI18n.t("Paper Account")}: ${esc(recorded(facts.account_id))} · API: ${esc(recorded(facts.api_id))}<br>
-          ${esc(facts.execution_id || "")}<br>${esc(facts.input_message_id || "")}<br>${esc(facts.model_evidence || "")}</details>` : ""}
-        </div>`;
-    }
+    const analysisSourceHtml = window.PortalPaperArtifactPresentation.sourceHtml;
 
     function refreshReaderLanguage() {
       $("workspaceMain")?.querySelector('.paperFrameSplitter')?.setAttribute('aria-label',

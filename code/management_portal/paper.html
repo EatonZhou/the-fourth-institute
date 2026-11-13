@@ -64,7 +64,7 @@
     <main class="portalPageFrame portalWorkbenchViewportShell" id="paperPageFrame">
     <div class="shell portalWorkbenchViewportRoot" id="paperWorkbench" data-portal-boot-required="Paper 工作台初始化">
       <section class="pane leftPane" id="paperLibraryPane" aria-label="Paper Library" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;Paper Library&quot;}">
-        <div class="paneHead">
+        <div class="paneHead portalResponsiveHead">
           <div class="paneHeadText">
             <div class="paneTitle"><!--portal-i18n:"Paper Library"-->Paper Library</div>
             <div class="paneNote" id="libraryMeta"><!--portal-i18n:"Loading..."-->Loading...</div>
@@ -130,25 +130,28 @@
       <section class="pane workspacePane" id="paperWorkspacePane" aria-label="Paper Research Workspace" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;Paper Research Workspace&quot;}">
         <div class="workspaceBody">
           <div class="workspaceTop portalPanelHeadSurface">
-            <div class="titleBlock">
-              <div id="workspaceResourceIdentity">
-                <div class="portalResourceIdentity">
-                  <div class="portalResourceIdentityTitleRow">
-                    <div class="portalResourceIdentityTitle workspaceTitle" id="workspaceTitle"><!--portal-i18n:"Paper Research"-->Paper Research</div>
+            <div class="workspaceTitleRow portalResponsiveHead">
+              <div class="titleBlock">
+                <div id="workspaceResourceIdentity">
+                  <div class="portalResourceIdentity">
+                    <div class="portalResourceIdentityTitleRow">
+                      <div class="portalResourceIdentityTitle workspaceTitle" id="workspaceTitle"><!--portal-i18n:"Paper Research"-->Paper Research</div>
+                    </div>
+                  </div>
+                </div>
+                <div class="workspaceIdentityMetaRow">
+                  <div class="workspaceResourceIdSlot" id="workspaceResourceIdSlot"></div>
+                  <button class="workspaceDetailsToggle" id="workspaceDetailsToggle" type="button" aria-expanded="false" aria-controls="workspaceDetailsBody">
+                    <span><!--portal-i18n:"Details"-->Details</span>
+                    <span class="workspaceDetailsIcon" data-portal-icon="chevron-down" aria-hidden="true"></span>
+                  </button>
+                  <div class="workspaceDetailsBody" id="workspaceDetailsBody" hidden>
+                    <div class="workspaceSummary" id="workspaceSummary"></div>
+                    <div class="workspaceMeta" id="workspaceMeta"><!--portal-i18n:"Browse, read, chat, and review papers from one workspace."-->Browse, read, chat, and review papers from one workspace.</div>
                   </div>
                 </div>
               </div>
-              <div class="workspaceIdentityMetaRow">
-                <div class="workspaceResourceIdSlot" id="workspaceResourceIdSlot"></div>
-                <button class="workspaceDetailsToggle" id="workspaceDetailsToggle" type="button" aria-expanded="false" aria-controls="workspaceDetailsBody">
-                  <span><!--portal-i18n:"Details"-->Details</span>
-                  <span class="workspaceDetailsIcon" data-portal-icon="chevron-down" aria-hidden="true"></span>
-                </button>
-                <div class="workspaceDetailsBody" id="workspaceDetailsBody" hidden>
-                  <div class="workspaceSummary" id="workspaceSummary"></div>
-                  <div class="workspaceMeta" id="workspaceMeta"><!--portal-i18n:"Browse, read, chat, and review papers from one workspace."-->Browse, read, chat, and review papers from one workspace.</div>
-                </div>
-              </div>
+              <div class="workspaceModeActions paneHeadActions"><div class="workspaceActionButtons" id="workspaceModeActions"></div></div>
             </div>
             <div class="workspaceControls">
               <div class="portalSegmented" id="modeTabs">
@@ -159,9 +162,7 @@
                 <button type="button" data-mode="notes" title="切换到论文笔记视图" data-portal-i18n-attrs="{&quot;title&quot;: &quot;切换到论文笔记视图&quot;}"><!--portal-i18n:"Paper Notes"-->Notes</button>
                 <button type="button" data-mode="refs" title="切换到论文参考文献视图" data-portal-i18n-attrs="{&quot;title&quot;: &quot;切换到论文参考文献视图&quot;}"><!--portal-i18n:"Refs"-->Refs</button>
               </div>
-              <div class="workspaceModeActions">
-                <div class="workspaceActionButtons" id="workspaceModeActions"></div>
-              </div>
+
             </div>
           </div>
           <div class="workspaceMain" id="workspaceMain"></div>
@@ -228,6 +229,7 @@
     <script src="/static/paper_ccf_view.js"></script>
     <script src="/static/paper_detail.js"></script>
     <script src="/static/paper_workspace_view.js"></script>
+    <script src="/static/paper_artifact_presentation.js"></script>
     <script src="/static/paper_reader.js"></script>
     <script src="/static/paper_reviews.js"></script>
     <script src="/static/paper_notes_refs.js"></script>

@@ -135,8 +135,8 @@
         ...Object.values(window.__PORTAL_TRANSLATIONS__?.[source] || {})].map(value => [value, source])));
       const refresh = () => {
         refreshResearchTitle();
-        for (const element of root.querySelectorAll(".chatSubline .paneNote, .portalWorkspaceEmpty .portalAsyncStateMessage, .composerMeta, .chatTitleLine > .paneTitle")) {
-          if (element.matches(".paneTitle") && state.researchSlot) continue;
+        // refreshResearchTitle owns both persistent and legacy assistant names.
+        for (const element of root.querySelectorAll(".chatSubline .paneNote, .portalWorkspaceEmpty .portalAsyncStateMessage, .composerMeta")) {
           const source = canonical.get(element.textContent.trim());
           if (source && element.textContent !== window.PortalI18n.t(source)) element.textContent = window.PortalI18n.t(source);
         }
@@ -165,7 +165,7 @@
     function refreshResearchTitle() {
       if (!paperChatWorkspace) return;
       const selected = state.researchSlot || legacyList.find(item => researchKey(item) === currentResearchKey());
-      const title = window.PortalI18n.t('Chat Workspace') + ' - ' + (selected?.title || window.PortalI18n.t('Research Chat'));
+      const title = window.PortalChatWorkspace.workspaceTitleText(selected?.title || window.PortalI18n.t('Research Chat'));
       if (paperChatWorkspace.els.title.textContent !== title) paperChatWorkspace.setTitle(title);
     }
     function unavailableResearch(key) {

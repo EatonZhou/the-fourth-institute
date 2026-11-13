@@ -198,7 +198,7 @@
       const text = confirming?window.PortalI18n.t('正在确认任务状态'):running
         ? window.PortalI18n.text`Deep Read: ${window.PortalI18n.t({queued: "Queued", "extracting pdf text": "Extracting PDF", "waiting for Resident": "Model generation", Submitting: "Submitting"}[deep.step] || deep.step || deep.status)} · ${deep.progress || 0}%`
         : done
-          ? window.PortalI18n.t("Deep Read done") + (deep.usage?.total_tokens ? window.PortalI18n.text` · ${deep.usage.total_tokens} tokens` : "")
+          ? window.PortalI18n.t("Deep Read done")
           : error
             ? window.PortalI18n.t('Deep Read failed. See Details.')
             : paper?.has_analysis
@@ -223,7 +223,7 @@
     }
     function renderAnalysisControls(paper) {
       const status=deepReadStateFor(paper);
-      const button=header=>`<button class="portalButton is-compact is-primary" type="button" ${header?'id="deepReadBtn"':'data-deep-read-start'} ${paper.has_pdf&&!status.running?'':'disabled'}>${esc(status.buttonText)}</button>`;
+      const button=header=>`<button class="portalButton is-compact ${paper.has_analysis?'':'is-primary'}" type="button" ${header?'id="deepReadBtn"':'data-deep-read-start'} ${paper.has_pdf&&!status.running?'':'disabled'}>${esc(status.buttonText)}</button>`;
       return {button:button(true),emptyButton:button(false),subtitle:`<span class="readerDeepReadStatus"><span class="readerDeepReadSubtitle" id="deepReadStatusText" role="status" aria-live="polite">${esc(status.text)}</span><details id="deepReadStatusDetails" ${status.error?'':'hidden'}><summary>${esc(window.PortalI18n.t('Details'))}</summary><pre>${esc(status.deep?.error||'')}</pre></details></span>`};
     }
 

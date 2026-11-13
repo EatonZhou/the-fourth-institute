@@ -41,7 +41,7 @@
       $("workspaceMain").innerHTML = window.PortalI18n.html`
           <div class="portalToolbar paperToolbar" style="justify-content:space-between;margin-bottom:10px;">
             <div class="paneNote">${esc(taskLabel(state.reviewJob) || (state.reviewInFlight ? window.PortalI18n.t("后台评审任务处理中，可离开或刷新页面。") : window.PortalI18n.t("Generate review from PDF text, analysis, and related papers.")))}</div>
-            <button class="portalButton is-compact is-primary" type="button" id="createReviewBtn" ${state.reviewInFlight || taskBlocked(state.reviewJob) ? "disabled" : ""}>${state.reviewInFlight ? window.PortalI18n.t("Generating...") : window.PortalI18n.t("Generate AI Review")}</button>
+            <button class="portalButton is-compact ${reviews.length ? '' : 'is-primary'}" type="button" id="createReviewBtn" ${state.reviewInFlight || taskBlocked(state.reviewJob) ? "disabled" : ""}>${state.reviewInFlight ? window.PortalI18n.t("Generating...") : window.PortalI18n.t(reviews.length ? "Regenerate AI Review" : "Generate AI Review")}</button>
           </div>
           <div class="reviewOutput">
             ${state.reviewInFlight ? paperStateHtml("后台评审正在进行，完成后从论文产物恢复显示。", { state: "loading" }) : ""}
@@ -64,8 +64,7 @@
                 ${chip(window.PortalI18n.t(!review.status || review.status === "ai_generated" ? "Paper AI generated" : review.status), "accent")}
                 ${review.overall_recommendation ? chip(review.overall_recommendation) : ""}
                 ${review.confidence ? chip(window.PortalI18n.text`confidence: ${review.confidence}`) : ""}
-                ${review.usage?.total_tokens ? chip(window.PortalI18n.text`${review.usage.total_tokens} tokens`) : ""}
-                <button class="portalButton is-compact is-danger" type="button" data-delete-review="${esc(review.review_id || "")}"><!--portal-i18n:"删除"-->删除</button>
+                ${review.usage?.total_tokens ? chip(window.PortalI18n.text`${window.PortalPaperArtifactPresentation.humanTokens(review.usage.total_tokens)} tokens`) : ""}
               </div>
             </div>
             ${incomplete ? paperStateHtml("评审未完成：原始输出不是完整的结构化评审。", { state: "error" }) : ""}
@@ -98,6 +97,7 @@
         return;
       }
       const exp = detail.exp || {};
+      const view = window.PortalPaperArtifactPresentation.expView(exp.content);
       const status = state.expStatus || {};
       const expRunning = pendingExpSubmissions.has(String(state.selectedId || ""))
         || ["queued", "running"].includes(String(status.status || ""));
@@ -108,13 +108,13 @@
       $("workspaceMain").innerHTML = window.PortalI18n.html`
           <div class="portalToolbar paperToolbar" style="justify-content:space-between;margin-bottom:10px;">
             <div class="paneNote">${esc(statusText)}</div>
-            <button class="portalButton is-compact is-primary" type="button" id="createExpBtn" ${expRunning || taskBlocked(status) ? "disabled" : ""}>${expRunning ? window.PortalI18n.t("Generating...") : (exp.content ? window.PortalI18n.t("Regenerate Exp") : window.PortalI18n.t("Generate Exp"))}</button>
+            <button class="portalButton is-compact ${exp.content ? '' : 'is-primary'}" type="button" id="createExpBtn" ${expRunning || taskBlocked(status) ? "disabled" : ""}>${expRunning ? window.PortalI18n.t("Generating...") : (exp.content ? window.PortalI18n.t("Regenerate Exp") : window.PortalI18n.t("Generate Exp"))}</button>
           </div>
           <div class="reviewOutput">
             ${expRunning ? paperStateHtml("Generating Exp in the background. You can leave this page and come back later.", { state: "loading" }) : ""}
             ${expError && !taskLabel(status) ? paperStateHtml(expError, { state: "error" }) : ""}
             ${taskDetails(status)}
-            ${exp.content ? window.PortalI18n.html`<article class="apiCard"><div class="markdownBody">${md(exp.content)}</div></article>` : (!expRunning && !expError ? paperStateHtml("No Exp extraction yet.") : "")}
+            ${exp.content ? window.PortalI18n.html`<article class="apiCard">${window.PortalPaperArtifactPresentation.sourceHtml(view.provenance,{omitEmpty:true})}<div class="markdownBody">${window.PortalPaperArtifactPresentation.renderBody(view.body, detail.paper.title, md)}</div></article>` : (!expRunning && !expError ? paperStateHtml("No Exp extraction yet.") : "")}
           </div>
         `;
     }
@@ -194,21 +194,6 @@
       const paperId = String(state.selectedId || "");
       await startExp();
       if (paperId && String(state.selectedId || "") === paperId) setMode("exp");
-    }
-
-    async function deleteReview(reviewId) {
-      const id = String(reviewId || "").trim();
-      if (!id) return;
-      if (!await window.PortalUI.confirmAction("delete", "这条 review")) return;
-      await paperApi.request("/paper/api/reviews/delete", {
-        method: "POST",
-        body: JSON.stringify({ review_id: id }),
-      });
-      if (state.detail?.reviews) {
-        state.detail.reviews = state.detail.reviews.filter(item => String(item.review_id || "") !== id);
-      }
-      await loadLibrary({ keepDetail: true });
-      if (state.mode === "review") renderWorkspace();
     }
 
     async function loadDeepReadStatus(paperId = state.selectedId, { render = true } = {}) {
@@ -329,7 +314,7 @@
     }
 
     return Object.freeze({
-      createExp, createReview, deleteReview, loadDeepReadStatus, loadExpStatus, loadReviewStatus, resumeReviewPolling,
+      createExp, createReview, loadDeepReadStatus, loadExpStatus, loadReviewStatus, resumeReviewPolling,
       refreshDeepReadProjection, refreshExpProjection, renderExpMode, renderReviewMode, startDeepRead,
     });
   }

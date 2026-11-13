@@ -187,10 +187,11 @@
   position: relative;
   z-index: 8;
   overflow: visible;
-  row-gap: 4px;
 }
 
-.portalChatWorkspaceRoot .chatHead > .paneHeadActions {
+.portalChatWorkspaceRoot .chatHead, .portalResponsiveHead { row-gap:4px; }
+
+.portalChatWorkspaceRoot .chatHead > .paneHeadActions, .portalResponsiveHead > .paneHeadActions {
   margin-inline-start: auto;
 }
 

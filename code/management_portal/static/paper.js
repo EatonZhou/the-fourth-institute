@@ -388,7 +388,7 @@
   });
 
   const {
-    createExp, createReview, deleteReview, loadDeepReadStatus, loadExpStatus, loadReviewStatus, resumeReviewPolling,
+    createExp, createReview, loadDeepReadStatus, loadExpStatus, loadReviewStatus, resumeReviewPolling,
     refreshDeepReadProjection, refreshExpProjection, renderExpMode, renderReviewMode, startDeepRead,
   } = paperModule("PortalPaperReviews").createReviews({
     $, chip, detailSectionLoadingHtml, detailSectionsLoaded, esc, loadDetailSections, loadLibrary, md,
@@ -449,7 +449,7 @@
     $, activeChatPaperId, activeChatWorkspaceId, alertError, applyCcfPaperListFilter,
     canRestorePaperWorkspace, ccfYearKey, closePaperModal, createExp, createReview, currentCcfPayload,
     currentPaperWorkspaceSnapshot, deleteCollectorJob,
-    deleteGeneratedFigure, deleteNote, deleteReview, ensureCcfPaperEnrichment, explainFigure,
+    deleteGeneratedFigure, deleteNote, ensureCcfPaperEnrichment, explainFigure,
     exportLibraryMarkdown, extractFigures, fetchCcfYearsForVenue, fetchSelectedCcfPapers,
     figureContextFromInput, figureContextFromKey, figureInputItems, generateFigureDraft,
     goPreviousPaperWorkspace, isCollectionMode, isPreviousPaperWorkspaceShortcut, loadCcfPapers, loadCcfYears,

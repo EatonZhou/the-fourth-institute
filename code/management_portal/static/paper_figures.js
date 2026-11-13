@@ -50,7 +50,7 @@
       $("workspaceMain").innerHTML = window.PortalI18n.html`
           <div class="portalToolbar paperToolbar" style="justify-content:space-between;margin-bottom:10px;">
             <div class="paneNote">${esc(statusText)}</div>
-            <button class="portalButton is-compact is-primary" type="button" id="extractFiguresBtn" ${detail.paper.has_pdf && !extracting ? "" : "disabled"}>
+            <button class="portalButton is-compact ${figures.length ? '' : 'is-primary'}" type="button" id="extractFiguresBtn" ${detail.paper.has_pdf && !extracting ? "" : "disabled"}>
               ${assetsRunning ? window.PortalI18n.t("Auto extracting...") : (extracting ? window.PortalI18n.t("Extracting...") : (figures.length ? window.PortalI18n.t("Re-extract Figures") : window.PortalI18n.t("Extract Figures")))}
             </button>
           </div>

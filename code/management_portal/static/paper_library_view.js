@@ -254,7 +254,7 @@
               ${paper.has_analysis ? chip(window.PortalI18n.t("Analyzed"), "good") : chip(window.PortalI18n.t("Analysis missing"), "warn")}
             </div>
             ${tags ? window.PortalI18n.html`<div class="chips">${tags}</div>` : ""}
-            ${paper.abstract ? window.PortalI18n.html`<div class="paneNote">${esc(paper.abstract).slice(0, 260)}</div>` : ""}
+            ${paper.abstract ? window.PortalI18n.html`<div class="paneNote paperCardAbstract">${esc(paper.abstract)}</div>` : ""}
           </article>
         `;
     }

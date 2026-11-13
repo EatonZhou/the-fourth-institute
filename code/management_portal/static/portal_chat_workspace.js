@@ -298,8 +298,20 @@
     return window.PortalI18n.html`<span class="portalUserAvatar messageAuthorAvatar" data-message-avatar-principal="${escapeHtml(id)}" data-message-avatar-label="${escapeHtml(label)}" aria-hidden="true">${escapeHtml(Array.from(label || id)[0]?.toUpperCase() || "?")}</span>`;
   }
 
+  function workspaceTitleText(value) {
+    const raw = String(value || window.PortalI18n.t('Chat Workspace')).trim();
+    const prefixes = new Set(['Chat Workspace', window.PortalI18n.t('Chat Workspace'),
+      ...Object.values(window.__PORTAL_TRANSLATIONS__?.['Chat Workspace'] || {})]);
+    for (const prefix of prefixes) {
+      if (!raw.toLowerCase().startsWith(String(prefix).toLowerCase())) continue;
+      const remainder = raw.slice(String(prefix).length).match(/^\s*[-–—]\s*(.+)$/s);
+      if (remainder) return remainder[1].trim();
+    }
+    return raw;
+  }
+
   function workspaceShellHtml(options = {}) {
-    const title = options.title || window.PortalI18n.t("Chat Workspace");
+    const title = workspaceTitleText(options.title);
     const subtitle = options.subtitle || "";
     const refreshId = options.refreshId || "";
     const messageListId = options.messageListId || "";
@@ -1235,7 +1247,7 @@
       setAttachments,
       setTitle(title) {
         const node = root.querySelector(".portalWorkspaceHead .paneTitle");
-        if (node) node.textContent = String(title || window.PortalI18n.t("Chat Workspace"));
+        if (node) node.textContent = workspaceTitleText(title);
       },
       setSubtitle(subtitle, parts = []) {
         state.subtitle = String(subtitle || "");
@@ -3598,6 +3610,7 @@
   }
 
   window.PortalChatWorkspace = {
+    workspaceTitleText,
     residentHandoffParts,
     messageRole,
     messageQuoteExcerpt,

@@ -8,7 +8,7 @@
     "$", "activeChatPaperId", "activeChatWorkspaceId", "alertError", "applyCcfPaperListFilter",
     "canRestorePaperWorkspace", "ccfYearKey", "closePaperModal", "createExp", "createReview",
     "currentCcfPayload", "currentPaperWorkspaceSnapshot", "deleteCollectorJob",
-    "deleteGeneratedFigure", "deleteNote", "deleteReview",
+    "deleteGeneratedFigure", "deleteNote",
     "ensureCcfPaperEnrichment", "explainFigure", "exportLibraryMarkdown", "extractFigures",
     "fetchCcfYearsForVenue", "fetchSelectedCcfPapers", "figureContextFromInput", "figureContextFromKey",
     "figureInputItems", "generateFigureDraft", "goPreviousPaperWorkspace", "isCollectionMode",
@@ -30,7 +30,7 @@
       $, activeChatPaperId, activeChatWorkspaceId, alertError, applyCcfPaperListFilter,
       canRestorePaperWorkspace, ccfYearKey, closePaperModal, createExp, createReview, currentCcfPayload,
       currentPaperWorkspaceSnapshot, deleteCollectorJob,
-      deleteGeneratedFigure, deleteNote, deleteReview, ensureCcfPaperEnrichment, explainFigure,
+      deleteGeneratedFigure, deleteNote, ensureCcfPaperEnrichment, explainFigure,
       exportLibraryMarkdown, extractFigures, fetchCcfYearsForVenue, fetchSelectedCcfPapers,
       figureContextFromInput, figureContextFromKey, figureInputItems, generateFigureDraft,
       goPreviousPaperWorkspace, isCollectionMode, isPreviousPaperWorkspaceShortcut, loadCcfPapers,
@@ -352,11 +352,6 @@
         }
         if (event.target.closest("#togglePdfPanelBtn")) {
           toggleReaderPanel("pdf");
-          return;
-        }
-        const deleteReviewBtn = event.target.closest("[data-delete-review]");
-        if (deleteReviewBtn) {
-          deleteReview(deleteReviewBtn.dataset.deleteReview || "").catch(alertError);
           return;
         }
         const deleteNoteBtn = event.target.closest("[data-delete-note]");
