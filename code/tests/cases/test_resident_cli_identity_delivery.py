@@ -190,7 +190,12 @@ def test_a_model_api_resident_is_told_it_has_no_tools(resident_record) -> None:
     agent = resident_runtime_domain.resident_runtime_identity_block(resident_record)
     model_api = resident_runtime_domain.resident_runtime_identity_block({**resident_record, "backend": "provider_api"})
     assert "hatg_instruction 工具" in agent and "没有任何工具" not in agent
+    assert (
+        f"开始任务前，先用 ReadResource 读取 {resident_record['lineage_id']}/file/LINEAGE.md；"
+        "已读则跳过，不存在则继续。"
+    ) in agent
     assert "没有任何工具" in model_api and "hatg_instruction" not in model_api
+    assert "ReadResource" not in model_api
     assert f"resident_id: {resident_record['resident_id']}" in model_api
 
 

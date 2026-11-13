@@ -234,6 +234,8 @@ def resident_runtime_identity_block(record: dict[str, Any]) -> str:
             f"在子命令前传入 --resident-id {identity['PORTAL_RESIDENT_ID']}。\n"
             "不得使用消息发送者、owner 或历史上下文中其他 Resident 的身份；"
             "服务端按当前 Resident 检查权限。\n"
+            f"开始任务前，先用 ReadResource 读取 {identity['PORTAL_LINEAGE_ID']}/file/LINEAGE.md；"
+            "已读则跳过，不存在则继续。\n"
         )
     return (
         "<resident-runtime-identity>\n"
