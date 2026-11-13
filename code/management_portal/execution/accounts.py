@@ -239,7 +239,8 @@ class ExecutionAccounts:
                 "runtime_options": options}
 
     def observes_passively(self, account: ExecutionAccount) -> bool:
-        return getattr(self.adapters.get(account.provider), "OBSERVES_PASSIVELY", False) is True
+        check = getattr(self.adapters.get(account.provider), "observes_passively", None)
+        return callable(check) and check(account) is True
 
     def observe(self, account: ExecutionAccount, *, force: bool = False, passive: bool = False) -> dict[str, Any]:
         if passive:

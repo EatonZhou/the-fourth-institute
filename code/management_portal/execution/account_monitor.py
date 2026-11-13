@@ -296,10 +296,7 @@ class AccountMonitor:
 
     def _passive_read(self, account):
         observes = getattr(self.accounts, "observes_passively", None)
-        try:
-            return callable(observes) and observes(account) is True
-        except Exception:
-            return False
+        return callable(observes) and observes(account) is True
 
     def _run(self):
         # A slow account must not hold the next refresh of every other account.

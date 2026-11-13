@@ -1911,7 +1911,9 @@ class ClaudeCodeDaemon:
             raise ValueError("Account usage requires a subscription route")
         if params.get("native_refresh") is not False:
             self.account_usage.request_refresh(profile, force=params.get("force_refresh") is True)
-        return self.account_usage.snapshot(profile["id"], str(profile["config_dir"]))
+        # Tells callers this daemon honours native_refresh=False, so they may
+        # read the cache between real reads without starting /usage.
+        return {**self.account_usage.snapshot(profile["id"], str(profile["config_dir"])), "native_refresh_optional": True}
 
     async def health(self) -> dict[str, Any]:
         async with self._sessions_lock:

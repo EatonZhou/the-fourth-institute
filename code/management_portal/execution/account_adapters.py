@@ -304,7 +304,12 @@ class ClaudeAccounts:
 
     # Turn events reach the native daemon's cache without a quota query, so the
     # monitor may read that cache between real reads (passive=True).
-    OBSERVES_PASSIVELY = True
+    # Only a daemon that answered native_refresh_optional on a real read is
+    # read passively: an older daemon would start /usage on every cache read.
+    _passive_routes: set = set()
+
+    def observes_passively(self, account):
+        return account.route_id in self._passive_routes
 
     def observe(self, account, *, force=False, passive=False):
         from management_portal.claude_code_client import shared_client
@@ -312,6 +317,9 @@ class ClaudeAccounts:
             return {"status": "ok", "rate_limits": []}
         snapshot = (shared_client().account_usage(account.route_id, native_refresh=False) if passive
                     else shared_client().account_usage(account.route_id, force_refresh=force))
+        if not passive:
+            (ClaudeAccounts._passive_routes.add if snapshot.get("native_refresh_optional") is True
+             else ClaudeAccounts._passive_routes.discard)(account.route_id)
         from .account_observation import check_cancelled
         check_cancelled()
         error_code = snapshot.get("quota_error_code", "")

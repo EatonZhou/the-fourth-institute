@@ -15,6 +15,23 @@ import pytest
 def separate_kept_model_windows(monkeypatch):
     from management_portal.execution import account_adapters
     monkeypatch.setattr(account_adapters, "_CLAUDE_MODEL_WINDOWS", {})
+    monkeypatch.setattr(ClaudeAccounts, "_passive_routes", set())
+
+
+def test_claude_cache_is_read_passively_only_after_the_daemon_says_it_can(monkeypatch):
+    """An older daemon starts /usage on every read, so passive reads wait for native_refresh_optional."""
+    from management_portal import claude_code_client
+    client = Mock()
+    client.account_usage.return_value = {"quota_status": "available", "rate_limits": []}
+    monkeypatch.setattr(claude_code_client, "shared_client", lambda: client)
+    adapter = ClaudeAccounts.__new__(ClaudeAccounts)
+    account = SimpleNamespace(route_id="r", quota_policy="reserve")
+    assert not adapter.observes_passively(account)
+    adapter.observe(account)
+    assert not adapter.observes_passively(account)
+    client.account_usage.return_value = {**client.account_usage.return_value, "native_refresh_optional": True}
+    adapter.observe(account)
+    assert adapter.observes_passively(account)
 
 
 def test_codex_subscription_windows_share_pool_without_changing_readings(monkeypatch):
