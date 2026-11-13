@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import copy
+import hashlib
 from typing import Any, Iterable, Mapping
 from management_portal.resources.workspace_store import canonical_path
 from . import identity_contract
@@ -28,9 +29,11 @@ def create_workspace_deletion_binding(connection):
     making ResourceService import Society. Generated files use the existing
     Resident lifecycle outbox and are retried after the registration commits.
     """
-    from management_common.portal_database import _database_schema
-    lineage = '"' + _database_schema('lineage') + '"'
-    workspace = '"' + _database_schema('workspace') + '".workspaces'
+    from management_portal.resources.workspace_store import get_workspace_store
+    schema = connection.execute("SELECT current_schema()").fetchone()[0]
+    lineage = '"' + schema.replace('"', '""') + '"'
+    workspace = get_workspace_store().table
+    trigger = 'workspace_deleted_bindings_' + hashlib.sha256(schema.encode()).hexdigest()[:16]
     connection.execute(f'''CREATE OR REPLACE FUNCTION {lineage}.workspace_deleted_bindings()
         RETURNS trigger LANGUAGE plpgsql AS $body$
         DECLARE affected TEXT; step JSONB;
@@ -54,8 +57,18 @@ def create_workspace_deletion_binding(connection):
             END LOOP;
             RETURN NEW;
         END $body$''')
-    connection.execute(f'DROP TRIGGER IF EXISTS workspace_deleted_bindings ON {workspace}')
-    connection.execute(f'''CREATE TRIGGER workspace_deleted_bindings AFTER UPDATE OF deleted_at ON {workspace}
+    # Replace only this schema's binding; other stores may share WorkspaceStore.
+    bindings = connection.execute(
+        "SELECT t.tgname FROM pg_trigger t JOIN pg_proc p ON p.oid=t.tgfoid "
+        "JOIN pg_namespace n ON n.oid=p.pronamespace "
+        "WHERE t.tgrelid=%s::regclass AND n.nspname=%s "
+        "AND p.proname='workspace_deleted_bindings' AND NOT t.tgisinternal",
+        (workspace, schema),
+    ).fetchall()
+    for binding in bindings:
+        name = '"' + binding["tgname"].replace('"', '""') + '"'
+        connection.execute(f'DROP TRIGGER {name} ON {workspace}')
+    connection.execute(f'''CREATE TRIGGER {trigger} AFTER UPDATE OF deleted_at ON {workspace}
         FOR EACH ROW WHEN (OLD.deleted_at IS NULL AND NEW.deleted_at IS NOT NULL)
         EXECUTE FUNCTION {lineage}.workspace_deleted_bindings()''')
 
