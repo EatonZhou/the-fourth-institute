@@ -22,7 +22,7 @@
     const panel = $('articleComments'), list = $('articleCommentList'), form = $('articleCommentForm');
     const input = $('articleCommentText'), quoteBox = $('articleCommentQuote'), status = $('articleCommentStatus');
     let articleId = '', threads = [], actor = '', writable = false, generation = 0, pending = null;
-    let busy = false, loading = false, timer = null, model = null, decorationIds = [], changedTimer = null;
+    let busy = false, loading = null, timer = null, model = null, decorationIds = [], changedTimer = null;
     const node = (tag, text, cls) => { const e = document.createElement(tag); if (text != null) e.textContent = text; if (cls) e.className = cls; return e; };
     const button = (text, action) => { const e = node('button', text, 'portalButton is-quiet'); e.type = 'button'; e.onclick = action; return e; };
     const sourceFor = t => state.documents.get(t.anchor.path)?.source;
@@ -105,20 +105,24 @@
       }
       mark();
     }
-    async function refresh() {
-      if (!articleId || loading || busy) return;
-      const id = articleId, gen = generation; loading = true;
-      try {
-        const result = await request(`/api/articles/${id}/comments`);
-        if (gen !== generation) return;
-        threads = result.threads; writable = result.can_write; actor = result.actor;
-        status.textContent = writable ? '' : '只读：需要文稿编辑权限才能评论'; render();
-      } catch (e) { if (gen === generation) status.textContent = `加载评论失败：${e.message || e}`; }
-      finally { if (gen === generation) loading = false; }
+    function refresh() {
+      if (!articleId || busy) return Promise.resolve();
+      if (loading) return loading;
+      const id = articleId, gen = generation;
+      loading = (async () => {
+        try {
+          const result = await request(`/api/articles/${id}/comments`);
+          if (gen !== generation) return;
+          threads = result.threads; writable = result.can_write; actor = result.actor;
+          status.textContent = writable ? '' : '只读：需要文稿编辑权限才能评论'; render();
+        } catch (e) { if (gen === generation) status.textContent = `加载评论失败：${e.message || e}`; }
+        finally { if (gen === generation) loading = null; }
+      })();
+      return loading;
     }
     async function send(payload) {
       if (busy || !writable || articleId !== state.selectedId) return;
-      const id = articleId, gen = ++generation; loading = false; busy = true; render(); $('articleCommentSubmit').disabled = true;
+      const id = articleId, gen = ++generation; loading = null; busy = true; render(); $('articleCommentSubmit').disabled = true;
       try {
         const result = await request(`/api/articles/${id}/comments`, { method: 'POST', body: JSON.stringify(payload) });
         if (gen !== generation) return;
@@ -129,12 +133,12 @@
       finally { if (gen === generation) { busy = false; $('articleCommentSubmit').disabled = false; render(); } }
     }
     function selectArticle() {
-      generation++; articleId = state.selectedId; threads = []; writable = false; actor = ''; busy = loading = false;
+      generation++; articleId = state.selectedId; threads = []; writable = false; actor = ''; busy = false; loading = null;
       cancelCompose(); clearMarks(); status.textContent = ''; $('articleCommentSubmit').disabled = false; render();
       if (!panel.hidden) void refresh();
     }
-    async function add() {
-      if (!writable || busy || !activeDocument()?.editable || activeDocument()?.resourceAddress) return;
+    async function add({ openPanel = false } = {}) {
+      if (busy || (!openPanel && !writable) || !activeDocument()?.editable || activeDocument()?.resourceAddress) return;
       const id = articleId, path = state.openFile, source = editorValue();
       let start, end;
       if (state.editor?.getModel()) {
@@ -143,6 +147,12 @@
       } else { start = $('articleSourceEditor').selectionStart; end = $('articleSourceEditor').selectionEnd; }
       if (end <= start || end - start > 8000) { showToast('请选中 1–8000 个字符再添加评论', 'info'); return; }
       const quote = source.slice(start, end);
+      if (openPanel) {
+        panel.hidden = false; $('articleCommentsToggle').setAttribute('aria-expanded', 'true');
+        state.editor?.layout?.();
+        await refresh();
+      }
+      if (!writable || id !== state.selectedId || path !== state.openFile || source !== editorValue()) return;
       if (!await saveAllDirtyDocuments({ silent: true })) return;
       if (id !== state.selectedId || path !== state.openFile || source !== editorValue()) { showToast('源码已变化，请重新选择文本', 'info'); return; }
       compose({ action: 'create', path, start, end, quote });
@@ -166,6 +176,12 @@
     window.addEventListener('pageshow', e => { if (e.persisted) timer = setInterval(() => { if (!document.hidden && !panel.hidden) void refresh(); }, 5000); });
     function bindEditor() {
       if (!state.editor) return;
+      state.monacoDisposables.push(state.editor.addAction({
+        id: 'article.addComment', label: '添加评论',
+        precondition: 'editorHasSelection && !editorReadonly',
+        contextMenuGroupId: '1_modification', contextMenuOrder: 1.5,
+        run: () => add({ openPanel: true }),
+      }));
       state.monacoDisposables.push(state.editor.onDidChangeModel(mark), state.editor.onDidChangeModelContent(changed));
       state.monacoDisposables.push(state.editor.onMouseDown(e => {
         if (panel.hidden || !e.target.position) return;

@@ -31,7 +31,7 @@ const html = fs.readFileSync(path.join(STATIC, '../article_workspace.html'), 'ut
       const text = 'before selected text after';
       const doc = { source: text, editable: true };
       window.state = { selectedId: 'A', openFile: 'main.tex', documents: new Map([['main.tex', doc]]), monacoDisposables: [] };
-      window.saved = 0; window.requests = []; window.threads = []; window.fail = false;
+      window.saved = 0; window.requests = []; window.threads = []; window.fail = false; window.canWrite = true;
       const editor = $('articleSourceEditor'); editor.disabled = false; editor.value = text;
       window.comments = PortalArticleWorkspaceComments.createComments({ state,
         activeDocument: () => doc, editorValue: () => state.editor?.getValue() || editor.value,
@@ -39,7 +39,7 @@ const html = fs.readFileSync(path.join(STATIC, '../article_workspace.html'), 'ut
         showToast: text => { window.toast = text; },
         request: async (url, options) => {
           requests.push(url);
-          if (!options) return { threads: structuredClone(threads), actor: 'alice', can_write: true };
+          if (!options) return { threads: structuredClone(threads), actor: 'alice', can_write: canWrite };
           if (fail) throw new Error('offline');
           const p = JSON.parse(options.body);
           let t = threads.find(t => t.id === p.thread_id);
@@ -88,6 +88,40 @@ const html = fs.readFileSync(path.join(STATIC, '../article_workspace.html'), 'ut
     await page.click('.articleCommentQuote');
     assert.equal(await page.evaluate(() => state.editor.getModel().getValueInRange(state.editor.getSelection())), 'selected text');
     assert.ok(await page.evaluate(() => state.editor.getModel().getAllDecorations().some(d => d.options.inlineClassName === 'articleCommentAnchor')));
+    // First use from the native context menu works without opening the toolbar panel.
+    const rightClickComment = async () => {
+      const point = await page.evaluate(async () => {
+        state.editor.focus();
+        await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+        const s = state.editor.getSelection();
+        const p = state.editor.getScrolledVisiblePosition({ lineNumber: s.startLineNumber, column: s.startColumn + 2 });
+        const box = state.editor.getDomNode().getBoundingClientRect();
+        return { x: box.left + p.left + 2, y: box.top + p.top + p.height / 2 };
+      });
+      await page.mouse.click(point.x, point.y, { button: 'right' });
+      const item = page.getByRole('menuitem', { name: '添加评论', exact: true });
+      // Let the native menu finish opening before a pointer click on its item.
+      await page.waitForTimeout(250);
+      await item.locator('.action-label').click();
+    };
+    await page.click('#articleCommentClose');
+    await page.evaluate(() => comments.selectArticle());
+    await rightClickComment();
+    await page.waitForFunction(() => !document.getElementById('articleCommentForm').hidden, null, { timeout: 5000 });
+    assert.equal(await page.locator('#articleCommentQuote').innerText(), 'selected text');
+    assert.equal(await page.locator('#articleCommentsToggle').getAttribute('aria-expanded'), 'true');
+    assert.equal(await page.evaluate(() => saved), 2);
+    await page.click('#articleCommentCancel');
+    // No selection disables the action, and server read-only permission still applies.
+    await page.evaluate(() => state.editor.setPosition({ lineNumber: 1, column: 1 }));
+    assert.equal(await page.evaluate(() => state.editor.getAction('article.addComment').isSupported()), false);
+    await page.click('.articleCommentQuote');
+    await page.click('#articleCommentClose');
+    await page.evaluate(() => { canWrite = false; comments.selectArticle(); });
+    await rightClickComment();
+    await page.waitForFunction(() => document.getElementById('articleCommentStatus').textContent.includes('只读'));
+    assert.equal(await page.locator('#articleCommentForm').isVisible(), false);
+    assert.equal(await page.evaluate(() => saved), 2);
     await page.evaluate(() => { state.editor.setValue('source removed'); state.documents.get('main.tex').source = 'source removed'; });
     await page.click('.articleCommentQuote');
     await page.waitForFunction(() => window.toast?.includes('无法可靠定位'));
