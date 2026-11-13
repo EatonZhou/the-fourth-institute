@@ -131,9 +131,10 @@ def _applicable(window, model, provider=None):
             return False
     if group.startswith('codex_') and not models:
         return False
-    # This weekly model-specific included pool has no verified model mapping here.
+    # The weekly included pool for credit-billed models applies only to Fable
+    # (rejections read "You've reached your Fable limit").
     if group == 'seven_day_overage_included' and not models:
-        return False
+        return str(model).lower().startswith('claude-fable')
     return True
 
 

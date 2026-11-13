@@ -13,6 +13,7 @@ import time
 from .account_quota import POLL_SECONDS
 from .activity_redaction import redact_sensitive_text
 from .account_usage_store import AccountUsageStore
+from .account_observation_store import AccountObservationStore
 from .account_login import login_store, now as login_now
 from .provider_failures import is_authentication_failure
 
@@ -27,13 +28,15 @@ def _subscription(account):
 
 
 class AccountMonitor:
-    def __init__(self, accounts, scheduler, *, usage_store=None, login_state_store=None):
+    def __init__(self, accounts, scheduler, *, usage_store=None, login_state_store=None,
+                 observation_store=None):
         self.accounts, self.scheduler = accounts, scheduler
         from .provider_balance_adapters import BillingObservations
         self.billing = BillingObservations()
         self._samples = {}
         self._usage = {}
         self._usage_store = usage_store if usage_store is not None else AccountUsageStore()
+        self._observation_store = observation_store if observation_store is not None else AccountObservationStore()
         self._login_store = login_state_store if login_state_store is not None else login_store()
         for account in accounts.accounts():
             if self._reads_usage(account):
@@ -56,12 +59,32 @@ class AccountMonitor:
             return {}
 
     def refresh_account(self, account, *, force=False):
+        # Every refresh the monitor already performs is appended to the history log;
+        # recording never triggers an extra Provider read.
+        started_at, error_code = time.time(), ''
         try:
             with self.observations.scope():
                 self._refresh_account(account, force=force)
         except InterruptedError:
             if not self.stopped.is_set():
+                error_code = 'InterruptedError'
                 raise
+        except Exception as error:
+            error_code = type(error).__name__
+            raise
+        finally:
+            if not self.stopped.is_set():
+                with self._lock:
+                    sample = deepcopy(self._samples.get(account.account_id) or {})
+                if error_code:
+                    sample.update(status='unavailable', error_code=error_code)
+                try:
+                    self._observation_store.append(account.provider, account.account_id, sample,
+                        started_at=started_at, finished_at=time.time(), forced=force)
+                except Exception as error:
+                    # Persistence failure must not turn a good quota read into a bad one.
+                    logger.warning('Account refresh history write failed for %s (%s)',
+                                   account.account_id, type(error).__name__)
 
     def _refresh_account(self, account, *, force=False):
         observed_at = login_now()

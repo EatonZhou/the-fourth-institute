@@ -24,7 +24,9 @@ WINDOWS = {
     "seven_day": "每周",
     "seven_day_opus": "Opus 每周",
     "seven_day_sonnet": "Sonnet 每周",
-    "seven_day_overage_included": "额外每周额度",
+    # The subscription's weekly allowance for models otherwise billed to usage
+    # credits (Fable); when rejected the CLI says "You've reached your Fable limit".
+    "seven_day_overage_included": "Fable 每周",
     "overage": "额外用量",
 }
 MAX_AGE_SECONDS = 300

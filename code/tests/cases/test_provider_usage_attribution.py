@@ -74,6 +74,13 @@ def test_claude_model_weekly_pool_is_not_automatically_a_free_gift():
     assert r['constraints'] == []
 
 
+def test_claude_model_weekly_pool_constrains_only_fable_requests():
+    e = claude_evidence({'unifiedWindows': {'seven_day_overage_included': {'utilization': .2}}}, AT)
+    fable = Attributor(CLAUDE).attribute(event(e, model='claude-fable-5-2'))
+    assert [c['quota_group'] for c in fable['constraints']] == ['seven_day_overage_included']
+    assert Attributor(CLAUDE).attribute(event(e, model='claude-opus-5-5'))['constraints'] == []
+
+
 def test_claude_fallback_credit_and_kimi_usage_scope_are_not_receipts():
     for provider, raw in [('claude', {'fallback_credit': 1}), ('kimi', {'usageScope': 'turn'})]:
         e = request_metadata(provider, raw, AT)
