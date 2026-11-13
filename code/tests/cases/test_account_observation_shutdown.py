@@ -51,6 +51,9 @@ def test_monitor_isolates_slow_and_failed_accounts_and_discovers_new_accounts(mo
     from psycopg_pool import PoolTimeout
     from management_portal.execution import account_monitor
     monkeypatch.setattr(account_monitor, "POLL_SECONDS", .01)
+    # Every poll is a due scheduled check, so accounts are read repeatedly.
+    for name in ("SCHEDULED_CHECK_SECONDS", "READING_EXPIRES_SECONDS", "MIN_READ_INTERVAL_SECONDS"):
+        monkeypatch.setattr(account_monitor, name, 0)
     def account(name):
         return SimpleNamespace(account_id=name, provider="test", kind="service", billing_account_id="",
                                quota_policy="reserve", quota_enabled=True)

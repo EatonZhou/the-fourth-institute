@@ -66,6 +66,17 @@ def test_claude_fable_pool_neither_closes_the_account_nor_keeps_a_native_label(m
     assert adapter.observe(SimpleNamespace(route_id="test", quota_policy="reserve"))["quota"]["status"] == "available"
 
 
+def test_claude_passive_observation_never_starts_a_usage_read(monkeypatch):
+    """A passive read asks the daemon for its cache with native_refresh=False and skips the login probe."""
+    from management_portal import claude_code_client
+    client = Mock()
+    client.account_usage.return_value = {"quota_status": "stale", "quota_error": "x", "rate_limits": []}
+    monkeypatch.setattr(claude_code_client, "shared_client", lambda: client)
+    adapter = ClaudeAccounts.__new__(ClaudeAccounts)
+    adapter.observe(SimpleNamespace(route_id="r", quota_policy="reserve"), passive=True)
+    client.account_usage.assert_called_once_with("r", native_refresh=False)
+
+
 def test_claude_model_pool_survives_a_usage_read_until_its_reset(monkeypatch):
     """/usage replaces the native cache without Fable; the last Fable reading stays until its reset."""
     from management_portal import claude_code_client

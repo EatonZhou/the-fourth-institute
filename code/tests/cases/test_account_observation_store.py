@@ -130,30 +130,43 @@ def test_monitor_retains_failure_attempt_as_history():
     assert last['rate_limits'][0]['stale'] is True
 
 
-def test_quota_reads_happen_only_at_start_reset_failure_or_for_a_close_threshold():
-    """Without a Close threshold an account is read once, then only after a reset or a failed read."""
+def test_scheduled_checks_read_only_expired_accounts_and_every_read_waits_ten_minutes():
+    """Hourly checks read an account only after 8 h or a window reset; any read waits 10 min after the last."""
+    from management_portal.execution import account_monitor as m
     monitor, account, accounts, history = make_monitor()
-    account.capacity_key = 'account:one'
-    assert monitor._observation_due(account, 1000, set())
-    monitor._samples['one'] = {'status': 'ok', 'checked_at': 1000,
-                               'rate_limits': [{'id': 'weekly', 'resets_at': 5000}]}
-    assert not monitor._observation_due(account, 4999, set())
-    assert monitor._observation_due(account, 5000, set())
-    assert monitor._observation_due(account, 1001, {'account:one'})
-    assert monitor._observation_due(account, 1001, None)
-    monitor._samples['one'] = {'status': 'unavailable', 'checked_at': 1000, 'rate_limits': []}
-    assert not monitor._observation_due(account, 1299, set())
-    assert monitor._observation_due(account, 1300, set())
+    due = lambda now, requested=False, scheduled=False: monitor._real_read_due(
+        account, now, requested=requested, scheduled=scheduled)
+    assert due(0, scheduled=True)                       # never read: the start-up check reads it
+    assert not due(0)                                   # no check, no request
+    monitor._last_read_attempt['one'] = monitor._last_good_read['one'] = 1000
+    monitor._samples['one'] = {'rate_limits': [{'id': 'weekly', 'resets_at': 20000}]}
+    assert not due(1000 + m.MIN_READ_INTERVAL_SECONDS - 1, requested=True)
+    assert due(1000 + m.MIN_READ_INTERVAL_SECONDS, requested=True)
+    assert not due(19999, scheduled=True)               # 5 h old, before its reset: still valid
+    assert due(20000, scheduled=True)                   # its weekly window reset
+    monitor._samples['one'] = {'rate_limits': []}
+    assert not due(1000 + m.READING_EXPIRES_SECONDS - 1, scheduled=True)
+    assert due(1000 + m.READING_EXPIRES_SECONDS, scheduled=True)
 
 
-def test_fresh_reading_required_only_for_enabled_thresholds():
-    monitor, *_ = make_monitor()
-    monitor.scheduler.health.return_value = {'capacity_partitions': {
-        'codex:four': {'close_threshold': {'value': 2.0}}, 'codex:one': {'close_threshold': {'value': 0.0}},
-        'shared-ai': {}}}
-    assert monitor._fresh_reading_required() == {'codex:four'}
-    monitor.scheduler.health.side_effect = RuntimeError('db')
-    assert monitor._fresh_reading_required() is None
+def test_rationed_quota_stays_valid_until_expiry_or_first_reset():
+    from management_portal.execution.account_monitor import _rationed_quota, READING_EXPIRES_SECONDS
+    sample = {'quota': {'status': 'available', 'observed_at': 1000, 'max_age_seconds': 60, 'valid_until': 1060},
+              'rate_limits': [{'resets_at': 5000}, {'resets_at': 9000}, {'resets_at': 900}]}
+    quota = _rationed_quota(sample)
+    assert (quota['max_age_seconds'], quota['valid_until']) == (READING_EXPIRES_SECONDS, 5000)
+    assert _rationed_quota({'quota': {'status': 'unknown'}}) == {'status': 'unknown'}
+
+
+def test_claude_cache_is_read_between_real_reads_without_a_usage_query():
+    monitor, account, accounts, history = make_monitor()
+    accounts.observes_passively = lambda a: True
+    monitor.refresh_account(account, passive=True)
+    assert accounts.observe.call_args.kwargs == {'force': False, 'passive': True}
+    assert 'one' not in monitor._last_read_attempt and 'one' not in monitor._last_good_read
+    monitor.refresh_account(account)
+    assert accounts.observe.call_args.kwargs == {'force': False}
+    assert 'one' in monitor._last_good_read
 
 
 def test_shutdown_cancellation_is_not_recorded_as_a_new_observation():

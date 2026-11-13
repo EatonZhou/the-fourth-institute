@@ -238,7 +238,12 @@ class ExecutionAccounts:
         return {**request, "session": {**(request.get("session") or {}), "backend_route_id": account.route_id},
                 "runtime_options": options}
 
-    def observe(self, account: ExecutionAccount, *, force: bool = False) -> dict[str, Any]:
+    def observes_passively(self, account: ExecutionAccount) -> bool:
+        return getattr(self.adapters.get(account.provider), "OBSERVES_PASSIVELY", False) is True
+
+    def observe(self, account: ExecutionAccount, *, force: bool = False, passive: bool = False) -> dict[str, Any]:
+        if passive:
+            return self.adapters[account.provider].observe(account, passive=True)
         return self.adapters[account.provider].observe(account, force=force)
 
     def runtime_catalog(self, account_id: str = "", *, backend: str = "", include_backends: bool = False) -> dict[str, Any]:

@@ -489,7 +489,7 @@ def test_account_refresh_tracks_inflight_reads_and_throttles_requests(monkeypatc
     accounts = ExecutionAccounts((Adapter(),))
     monitor = AccountMonitor(accounts, Scheduler(accounts=accounts, quota_reserve_enabled=True))
     started, release = threading.Event(), threading.Event()
-    def refresh(account, *, force):
+    def refresh(account, *, force, **_):
         started.set()
         assert release.wait(3)
         monitor._samples[account.account_id] = {"status": "ok"}

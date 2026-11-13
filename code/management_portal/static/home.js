@@ -388,7 +388,8 @@ function connectPulse({ context, signal }) {
 function connectAgentStatus({ context, signal }) {
   const destroyResidentMenu = bindAgentStatusResidentMenu(signal);
   context.currentUserReady.catch(() => {}).then(() => {
-    if (!signal.aborted) loadAgentStatus(false);
+    // Opening Home counts as a refresh click; the server rations real quota reads.
+    if (!signal.aborted) loadAgentStatus(true);
   });
   return () => {
     destroyResidentMenu();

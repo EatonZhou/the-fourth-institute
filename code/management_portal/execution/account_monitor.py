@@ -12,7 +12,14 @@ import time
 
 from .account_quota import POLL_SECONDS
 
-FAILED_READ_RETRY_SECONDS = 300
+# Quota reads are rationed (lukai, 2026-11-13). A scheduled check runs hourly
+# and reads an account only when its last good reading has expired: it is
+# older than 8 hours, or one of its windows reset after it was taken. Apart
+# from that, a Home load or refresh click asks for a read. Every real read of
+# one account, whatever asked for it, is at least 10 minutes after the last.
+SCHEDULED_CHECK_SECONDS = 3600
+READING_EXPIRES_SECONDS = 8 * 3600
+MIN_READ_INTERVAL_SECONDS = 600
 from .activity_redaction import redact_sensitive_text
 from .account_usage_store import AccountUsageStore
 from .account_observation_store import AccountObservationStore
@@ -27,6 +34,23 @@ def _subscription(account):
     kind = getattr(account, "kind", "")
     return kind == "subscription_login" if kind else (
         account.provider == "codex" or account.provider == "claude" and account.quota_policy == "reserve")
+
+
+def _rationed_quota(sample):
+    """The scheduler's quota reading, valid as long as reads are rationed.
+
+    A reading stays usable for READING_EXPIRES_SECONDS and until the first of
+    its windows resets; Close thresholds then work on it between real reads.
+    """
+    quota = dict(sample.get("quota") or {"status": "unknown"})
+    if quota.get("status") == "unknown":
+        return quota
+    observed = quota.get("observed_at") or 0
+    resets = [w.get("resets_at") for w in sample.get("rate_limits") or [] if isinstance(w, dict)]
+    resets = [r for r in resets if isinstance(r, (int, float)) and not isinstance(r, bool) and r > observed]
+    quota["max_age_seconds"] = READING_EXPIRES_SECONDS
+    quota["valid_until"] = min(resets) if resets else None
+    return quota
 
 
 class AccountMonitor:
@@ -47,6 +71,9 @@ class AccountMonitor:
         self._refresh_refused = False
         self._refreshing = False
         self._inflight = {}
+        self._last_read_attempt = {}
+        self._last_good_read = {}
+        self._next_scheduled_check = 0.0
         self._lock = threading.RLock()
         self.stopped, self.wakeup = threading.Event(), threading.Event()
         from .account_observation import ObservationLifetime
@@ -60,13 +87,13 @@ class AccountMonitor:
             logger.warning("Could not load saved account usage for %s", account.account_id)
             return {}
 
-    def refresh_account(self, account, *, force=False):
+    def refresh_account(self, account, *, force=False, passive=False):
         # Every refresh the monitor already performs is appended to the history log;
         # recording never triggers an extra Provider read.
         started_at, error_code = time.time(), ''
         try:
             with self.observations.scope():
-                self._refresh_account(account, force=force)
+                self._refresh_account(account, force=force, passive=passive)
         except InterruptedError:
             if not self.stopped.is_set():
                 error_code = 'InterruptedError'
@@ -88,13 +115,20 @@ class AccountMonitor:
                     logger.warning('Account refresh history write failed for %s (%s)',
                                    account.account_id, type(error).__name__)
 
-    def _refresh_account(self, account, *, force=False):
+    def _refresh_account(self, account, *, force=False, passive=False):
         observed_at = login_now()
+        if not passive:
+            with self._lock:
+                self._last_read_attempt[account.account_id] = time.time()
         try:
-            sample = self.accounts.observe(account, force=force)
+            sample = (self.accounts.observe(account, force=force, passive=True) if passive
+                      else self.accounts.observe(account, force=force))
             if self.stopped.is_set():
                 return  # Cancellation is not a fresh quota or login observation.
             sample["checked_at"] = time.time()
+            if not passive and sample.get("status") in {"ok", "available"}:
+                with self._lock:
+                    self._last_good_read[account.account_id] = sample["checked_at"]
             if _subscription(account):
                 if "login_observation" in sample:
                     state = sample["login_observation"]
@@ -128,7 +162,7 @@ class AccountMonitor:
             if account.quota_enabled and self.scheduler.quota_reserve_enabled:
                 credit = sample.get("credits") or {}
                 self.scheduler.update_account_quota(account.account_id, {
-                    **(sample.get("quota") or {"status": "unknown"}),
+                    **_rationed_quota(sample),
                     "credits": {**credit, "observed_at": sample["checked_at"],
                                 "authenticated": sample.get("status") == "ok"
                                 and self._login_store.login_state(account.account_id) == "logged_in"},
@@ -166,7 +200,7 @@ class AccountMonitor:
                     "status": "unavailable", "error_code": error_code, "error": message, "refreshing": False})
             if account.quota_enabled and self.scheduler.quota_reserve_enabled:
                 self.scheduler.update_account_quota(account.account_id, {"status": "unknown", "credits": {}})
-        if not self.stopped.is_set():
+        if not self.stopped.is_set() and not passive:
             self.refresh_usage(account)
 
     def _failed_sample(self, account, sample):
@@ -240,40 +274,32 @@ class AccountMonitor:
                 self._last_refresh_request = now
                 self.wakeup.set()
 
-    def _fresh_reading_required(self):
-        """Capacity keys whose Close threshold needs a reading no older than its max age.
-
-        None means the thresholds could not be read; every account then keeps polling.
-        """
-        try:
-            partitions = self.scheduler.health().get("capacity_partitions") or {}
-        except Exception:
-            return None
-        if not isinstance(partitions, dict):
-            return None
-        return {key for key, partition in partitions.items()
-                if isinstance(partition, dict) and isinstance(partition.get("close_threshold"), dict)
-                and (partition["close_threshold"].get("value") or 0) != 0}
-
-    def _observation_due(self, account, now, fresh_required):
-        # Provider quota reads are not periodic: an account is read once after
-        # start, on an explicit refresh, after one of its windows resets, and
-        # after a failed read. Only an enabled Close threshold, which pauses
-        # work on readings older than their max age, keeps the regular poll.
-        if fresh_required is None or getattr(account, "capacity_key", "") in fresh_required:
-            return True
+    def _reading_expired(self, account, now):
         with self._lock:
-            sample = self._samples.get(account.account_id)
-        if not sample:
+            good = self._last_good_read.get(account.account_id)
+            sample = self._samples.get(account.account_id) or {}
+        if good is None or now - good >= READING_EXPIRES_SECONDS:
             return True
-        checked = sample.get("checked_at") or 0
-        if sample.get("status") == "unavailable":
-            return now - checked >= FAILED_READ_RETRY_SECONDS
         for window in sample.get("rate_limits") or []:
             reset = window.get("resets_at") if isinstance(window, dict) else None
-            if isinstance(reset, (int, float)) and not isinstance(reset, bool) and checked < reset <= now:
+            if isinstance(reset, (int, float)) and not isinstance(reset, bool) and good < reset <= now:
                 return True
         return False
+
+    def _real_read_due(self, account, now, *, requested, scheduled):
+        """Whether to query the Provider now; see the rationing rules above."""
+        with self._lock:
+            attempted = self._last_read_attempt.get(account.account_id)
+        if attempted is not None and now - attempted < MIN_READ_INTERVAL_SECONDS:
+            return False
+        return requested or (scheduled and self._reading_expired(account, now))
+
+    def _passive_read(self, account):
+        observes = getattr(self.accounts, "observes_passively", None)
+        try:
+            return callable(observes) and observes(account) is True
+        except Exception:
+            return False
 
     def _run(self):
         # A slow account must not hold the next refresh of every other account.
@@ -296,16 +322,23 @@ class AccountMonitor:
                                     if not self.stopped.is_set():
                                         logger.warning("Account observation failed for %s (%s); retrying next poll",
                                                        account_id, type(error).__name__)
-                        fresh_required = None if force else self._fresh_reading_required()
                         now = time.time()
+                        scheduled = now >= self._next_scheduled_check
                         for account in self.accounts.accounts():
                             if self.stopped.is_set():
                                 break
-                            if not force and not self._observation_due(account, now, fresh_required):
+                            real = self._real_read_due(account, now, requested=force, scheduled=scheduled)
+                            # Between real reads, a Provider whose turns already
+                            # report quota is read from that cache only.
+                            if not real and not self._passive_read(account):
                                 continue
                             with self._lock:
                                 if account.account_id not in self._inflight:
-                                    self._inflight[account.account_id] = pool.submit(self.refresh_account, account, force=force)
+                                    self._inflight[account.account_id] = pool.submit(
+                                        self.refresh_account, account, force=force and real, passive=not real)
+                        # A check that could not list the accounts runs again on the next poll.
+                        if scheduled:
+                            self._next_scheduled_check = now + SCHEDULED_CHECK_SECONDS
                     except Exception as error:
                         if not self.stopped.is_set():
                             # Directory/database outages are not empty account catalogs.

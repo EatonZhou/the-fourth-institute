@@ -22,6 +22,7 @@ from typing import Any, Awaitable, Callable, Mapping
 
 from management_portal import claude_provider_catalog
 from management_portal import claude_input_media
+from management_portal.claude_message_identity import turn_prompt_uuid as _turn_prompt_uuid
 from claude_agent_sdk import (
     AssistantMessage,
     ClaudeAgentOptions,
@@ -125,13 +126,6 @@ CLI_ARGS = {"replay-user-messages": None}
 # A turn's prompt has a UUID derived from the turn, which the CLI keeps in
 # the session transcript: a daemon that no longer has the turn (it
 # restarted) finds there whether the CLI had taken the turn's input.
-TURN_PROMPT_NAMESPACE = uuid.UUID("5d0d8c43-6f1e-4b8e-9a51-0b7f3a1c2d64")
-
-
-def _turn_prompt_uuid(session_key: str, turn_id: str) -> str:
-    return str(uuid.uuid5(TURN_PROMPT_NAMESPACE, f"{session_key}\n{turn_id}"))
-
-
 def _transcript_has_message(config_dir: Path, session_id: str, message_uuid: str) -> bool:
     """Whether the session's transcript holds the user message with this UUID."""
 
@@ -1915,7 +1909,8 @@ class ClaudeCodeDaemon:
         profile = _provider_profile(str(params.get("provider_profile") or ""))
         if not claude_provider_catalog.is_native(profile):
             raise ValueError("Account usage requires a subscription route")
-        self.account_usage.request_refresh(profile, force=params.get("force_refresh") is True)
+        if params.get("native_refresh") is not False:
+            self.account_usage.request_refresh(profile, force=params.get("force_refresh") is True)
         return self.account_usage.snapshot(profile["id"], str(profile["config_dir"]))
 
     async def health(self) -> dict[str, Any]:

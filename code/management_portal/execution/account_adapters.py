@@ -302,11 +302,16 @@ class ClaudeAccounts:
         from management_portal.claude_provider_catalog import catalog
         return {**catalog(account.route_id), "account_id": account.account_id}
 
-    def observe(self, account, *, force=False):
+    # Turn events reach the native daemon's cache without a quota query, so the
+    # monitor may read that cache between real reads (passive=True).
+    OBSERVES_PASSIVELY = True
+
+    def observe(self, account, *, force=False, passive=False):
         from management_portal.claude_code_client import shared_client
         if account.quota_policy == "none":
             return {"status": "ok", "rate_limits": []}
-        snapshot = shared_client().account_usage(account.route_id, force_refresh=force)
+        snapshot = (shared_client().account_usage(account.route_id, native_refresh=False) if passive
+                    else shared_client().account_usage(account.route_id, force_refresh=force))
         from .account_observation import check_cancelled
         check_cancelled()
         error_code = snapshot.get("quota_error_code", "")
@@ -315,7 +320,7 @@ class ClaudeAccounts:
         if error_code == "provider_authentication_failed":
             login_observation = "login_expired"
             login_observed_at = snapshot.get("quota_error_observed_at")
-        elif error:
+        elif error and not passive:
             # /usage can return local token totals even when logged out. Missing
             # quota rows alone say nothing about auth; ask the native login owner.
             from .account_login import now, provider_logged_in

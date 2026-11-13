@@ -227,7 +227,8 @@ def test_monitor_keeps_successful_balance_current_without_time_expiry(scheduler,
     monitor.billing.observe = lambda account_id: {'id': account_id, 'status': 'ok', 'metric_kind': 'balance',
         'amount': 5, 'currency': 'CNY', 'display': '5 CNY', 'updated_at': datetime.fromtimestamp(now, timezone.utc).isoformat()}
     monitor.refresh_account(scheduler.accounts.get('cny'))
-    monkeypatch.setattr(time, 'time', lambda: now + 121)
+    from management_portal.execution.account_monitor import READING_EXPIRES_SECONDS
+    monkeypatch.setattr(time, 'time', lambda: now + READING_EXPIRES_SECONDS + 1)
     row = next(a for a in monitor.snapshot()['accounts'] if a['account_id'] == 'cny')
     assert not row['balance'].get('stale', False)
     assert row['balance']['amount'] == 5
