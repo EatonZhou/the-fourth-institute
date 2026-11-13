@@ -22,6 +22,7 @@ for name in (
     'management_common.format_tags',
     'management_common.product_environment',
     'management_common.instance_manifest',
+    'management_common.service_components',
     'management_common.secure_paths',
     'management_common.secret_environment',
     'management_common.site_config',
@@ -33,6 +34,7 @@ for name in (
     'management_portal.model_api_stream',
     'management_portal.model_api_bridge',
     'management_portal.jev_provider',
+    'management_portal.claude_message_identity',
 ):
     module = importlib.import_module(name)
     assert Path(module.__file__).resolve().is_relative_to(package), name

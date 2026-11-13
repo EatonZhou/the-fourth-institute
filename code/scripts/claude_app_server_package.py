@@ -7,7 +7,7 @@ import sys
 MODULES = {
     "management_portal": (
         "claude_code_daemon", "claude_provider_catalog", "claude_input_media", "claude_tool_bridge",
-        "claude_account_usage", "claude_runtime", "ai_provider_registry", "model_api_store",
+        "claude_account_usage", "claude_message_identity", "claude_runtime", "ai_provider_registry", "model_api_store",
         "model_api_wire", "model_api_stream", "model_api_bridge",
         "provider_transport_diagnostics", "resident_shell_environment", "jev_provider",
     ),
@@ -15,7 +15,7 @@ MODULES = {
     "management_portal/hatg": ("contracts",),
     "management_common": (
         "provider_subagent_runs", "domain_database", "portal_database", "postgres_database",
-        "instance_manifest", "secret_environment", "configuration_files", "distribution_targets", "code_environment", "release_dependencies", "loaded_modules", "host_instances", "portal_paths", "provider_account_paths", "operation_errors",
+        "instance_manifest", "service_components", "secret_environment", "configuration_files", "distribution_targets", "code_environment", "release_dependencies", "loaded_modules", "host_instances", "portal_paths", "provider_account_paths", "operation_errors",
         "file_permissions", "filesystem_paths", "secure_paths", "format_tags", "product_environment",
         "site_config", "portal_network", "file_lock", "local_ipc",
     ),
