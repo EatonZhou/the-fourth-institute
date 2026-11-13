@@ -1417,7 +1417,7 @@
           refs: refsSnapshot,
           snapshot,
           workspace: controller,
-          messageIdentity: newMessageIdentity(),
+          messageIdentity: submitOptions.messageIdentity || newMessageIdentity(),
           submittedAt: new Date().toISOString(),
         };
         const optimistic = submitOptions.optimistic === true;
@@ -1838,6 +1838,7 @@
         formatTime: value => window.PortalUI?.formatDateTime?.(value, { style: "compact" }) || String(value || ""),
         enableLinkPreview: true,
         enableWithdrawnEdit: true,
+        handoffInputStates: () => this.snapshot()?.input_states || [],
         showMessageActions: item => !item.local_delivery && this.conversationView()?.messageActions !== false,
         renderMessageMenuItems: item => (messageQuotable(item) && this.target().resident_id
           ? window.PortalI18n.markup('<button type="button" data-portal-message-action="quote">引用回复</button>')
@@ -3370,7 +3371,7 @@
         stopPromise: null,
       };
       // A quote names only the quoted message; the platform fills in its author and excerpt (decision_c524c775e0be).
-      const quote = content.startsWith("/") || submitOptions.quote === false ? null : this.workspace.quote();
+      const quote = content.startsWith("/") || submitOptions.quote === false ? null : submitOptions.quote || this.workspace.quote();
       // A correction written from a running subagent's card goes into the current turn once sent.
       const steer = this.subagentSteer?.scope === residentSessionScope(target) && content.includes(this.subagentSteer.prefix)
         ? this.subagentSteer
@@ -3410,6 +3411,7 @@
         payload,
         historyText: String(payload?.plainText || content).trim(),
         rememberHistory: submitOptions.rememberHistory,
+        messageIdentity: submitOptions.messageIdentity,
         clear: submitOptions.clear,
         optimistic: true,
         focus: submitOptions.focus,

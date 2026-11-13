@@ -360,8 +360,10 @@
         // and attachment/reference processing remain the owners of the body.
         const renderContent = (value, renderOptions) => renderResidentHandoffs(value, text => renderMarkdownWithAttachmentRefs(
           text, { ...options, preserveWhitespace: typeof renderOptions?.renderCodeFence === "function", renderMarkdown: markdown => renderMarkdown(markdown, renderOptions) }
-        ));
-        const defaultBodyHtml = renderContent(content);
+        ), item, { ...options, handoffMessages: callbackMessages });
+        const selection = item?.content_parts?.find(part => part.type === "resident_handoff_selection");
+        const selectionHtml = selection ? `<div class="residentHandoffSelection"><small>${escapeHtml(window.PortalI18n.t("已选择"))}：${escapeHtml(selection.title)} · ${escapeHtml(selection.resident_id)}</small></div>` : "";
+        const defaultBodyHtml = renderContent(content) + selectionHtml;
         const customBodyHtml = options.renderMessageBody
           ? options.renderMessageBody(item, {
             content,
@@ -410,7 +412,7 @@
           : continued
           ? window.PortalI18n.html`<div class="messageDividerRow"><div class="messageDivider" role="separator" aria-label="${escapeHtml(options.assistantName || "Agent")} 继续回复"></div>${groupToggleHtml}${actionsHtml}</div>`
           : actionsHtml;
-        const messageBodyHtml = `${continued ? "" : messageQuoteHtml(item?.quote, options)}${bodyBlockHtml}
+        const messageBodyHtml = `${continued || selection ? "" : messageQuoteHtml(item?.quote, options)}${bodyBlockHtml}
         ${item.shared_reply_message_id ? `<button type="button" class="messageQuote" data-message-quote="${escapeHtml(item.shared_reply_message_id)}">${window.PortalI18n.t("查看共同回复")}</button>` : ""}
         ${responseSourcesHtml(item?.response_sources)}
         ${messageContextRefsHtml(item?.context_refs || {}, options)}

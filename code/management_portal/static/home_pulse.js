@@ -18,6 +18,7 @@
     let portalPulsePublicRange = "daily";
     let portalPulsePersonalRange = "daily";
     let dailyNewsEdition = "";
+    let dailyNewsRequest = 0;
 
     function homeStatusHtml(label, tone = "neutral", className = "") {
       return window.PortalUIPrimitives.statusHtml(tone, {
@@ -192,6 +193,57 @@
           loadDailyNews();
         });
       }
+      for (const link of document.querySelectorAll('[data-daily-news-jump]')) {
+        link.addEventListener('click', event => {
+          event.preventDefault();
+          document.getElementById(link.getAttribute('data-daily-news-jump'))?.scrollIntoView({ block: 'start', behavior: 'smooth' });
+        });
+      }
+    }
+
+    function dailyNewsBodyHtml(content) {
+      if (!content || !window.MD?.render) return window.PortalI18n.html`<div class="daily-news-empty">今天的新闻报告为空。</div>`;
+      const report = document.createElement('div');
+      report.innerHTML = window.MD.render(content);
+      const headings = [...report.querySelectorAll('h2, h3')];
+      const summaryHeading = headings.find(heading => /^(?:摘要|今日摘要|本期摘要|今日速览|要点速览|summary)$/i.test(heading.textContent.trim()));
+      const summary = document.createElement('div');
+      if (summaryHeading) {
+        // Move the author's summary, preserving Markdown formatting and links.
+        let sibling = summaryHeading.nextElementSibling;
+        while (sibling && !/^H[1-3]$/.test(sibling.tagName)) {
+          const next = sibling.nextElementSibling;
+          summary.append(sibling);
+          sibling = next;
+        }
+        summaryHeading.remove();
+      }
+      if (!summary.textContent.trim()) {
+        // Older reports have no summary: give a short, source-faithful overview.
+        const stories = headings.filter(heading => report.contains(heading))
+          .filter(heading => /^\d+[.、．)）]\s*/.test(heading.textContent.trim())).slice(0, 5);
+        const list = document.createElement('ul');
+        for (const [index, heading] of stories.entries()) {
+          heading.id = `daily-news-story-${index}`;
+          const item = document.createElement('li');
+          const link = document.createElement('a');
+          link.href = `#${heading.id}`;
+          link.dataset.dailyNewsJump = heading.id;
+          link.textContent = heading.textContent.trim().replace(/^\d+[.、．)）]\s*/, '');
+          item.append(link);
+          list.append(item);
+        }
+        summary.append(list);
+      }
+      return window.PortalI18n.html`
+        <section class="daily-news-summary" aria-label="今日摘要">
+          <h2>今日摘要</h2>
+          ${summary.textContent.trim() ? summary.innerHTML : '<p>本期未提供摘要，请阅读下方完整报告。</p>'}
+        </section>
+        <section class="daily-news-details" aria-label="详细信息与讨论">
+          <h2>详细信息与讨论</h2>
+          ${report.innerHTML}
+        </section>`;
     }
 
     function renderDailyNews(data) {
@@ -216,11 +268,11 @@
       node.innerHTML = window.PortalI18n.html`
     <div class="daily-news-panel">
       <div class="daily-news-toolbar">
+        ${editionsHtml}
         ${homeStatusHtml(data.date || "Today", "info", "daily-news-date")}
         ${updatedLabel ? window.PortalI18n.html`<div class="daily-news-meta">${esc(updatedLabel)}</div>` : ""}
-        ${editionsHtml}
       </div>
-      <div class="daily-news-body">${content && window.MD?.render ? window.MD.render(content) : window.PortalI18n.html`<div class="daily-news-empty">今天的新闻报告为空。</div>`}</div>
+      <div class="daily-news-body">${dailyNewsBodyHtml(content)}</div>
     </div>
   `;
       attachDailyNewsHandlers();
@@ -228,11 +280,13 @@
 
     async function loadDailyNews() {
       const node = document.querySelector("[data-daily-news]");
+      const request = ++dailyNewsRequest;
       const query = dailyNewsEdition ? `?edition=${encodeURIComponent(dailyNewsEdition)}` : "";
       try {
-        renderDailyNews(await homeApi.get(`/api/daily-news${query}`));
+        const data = await homeApi.get(`/api/daily-news${query}`);
+        if (request === dailyNewsRequest) renderDailyNews(data);
       } catch (err) {
-        if (node) node.innerHTML = window.PortalI18n.html`<div class="daily-news-error">${esc(window.PortalUI.errorMessage(window.PortalI18n.t("读取今日新闻"), err))}</div>`;
+        if (node && request === dailyNewsRequest) renderDailyNews({ status: 'error', edition: dailyNewsEdition, editions: [...node.querySelectorAll('[data-daily-news-edition]')].map(button => ({ id: button.dataset.dailyNewsEdition, title: button.textContent })), error: window.PortalUI.errorMessage(window.PortalI18n.t("读取今日新闻"), err) });
       }
     }
 

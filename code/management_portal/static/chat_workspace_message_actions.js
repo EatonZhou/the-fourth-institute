@@ -109,14 +109,37 @@
       window.open(button.dataset.portalMessageOpenLink, "_blank", "noopener,noreferrer");
     };
     // This explicit action owns its payload; an unfinished draft remains in the composer.
-    const askHandoffResident = button => {
+    const askHandoffResident = (button, item) => {
       const card = residentHandoffCards(button.dataset.handoffCard)[0];
       if (!card?.ask_message || button.disabled || !options.onSend || state.composer.can_send === false) return;
+      const source = String(item?.message_id || item?.id || "");
+      const index = Number(button.dataset.handoffIndex);
+      if (!source || !Number.isInteger(index)) return;
+      const key = `${source}:${index}`;
+      const deliveries = window.PortalChatWorkspaceMessageContent.handoffDeliveries;
+      if (["sending", "accepted"].includes(deliveries.get(key))) return;
+      const selection = { type: "resident_handoff_selection", source_message_id: source, card_index: index,
+        resident_id: card.resident_id, title: card.title, reason: card.reason.trim() };
+      const messageIdentity = button.dataset.handoffMessageId || undefined;
+      const target = state.contract?.target || {};
       button.disabled = true;
-      Promise.resolve(options.onSend({ text: `替我问一下 ${card.title}（${card.resident_id}）：${card.ask_message}`, refs: [], attachments: [] }, currentController(),
-        { clear: false, focus: false, quote: false, includeContext: false, clearRefsOnSuccess: false }))
-        .catch(error => options.onError ? options.onError(error) : window.PortalUI.toast(error.message || String(error), "error"))
-        .finally(() => { button.disabled = false; });
+      deliveries.set(key, "sending");
+      redrawMessages();
+      Promise.resolve().then(() => options.onSend({ text: "替我问一下", refs: [], attachments: [],
+        content_parts: [{ type: "text", text: "替我问一下" }, selection] }, currentController(),
+        { clear: false, focus: false, quote: { message_id: source }, messageIdentity,
+          idempotencyKey: `resident-handoff:${source}:${index}`, includeContext: false, clearRefsOnSuccess: false, rememberHistory: false }))
+        .then(result => {
+          if (!result) throw new Error("推荐选择尚未发送，请重试");
+          deliveries.set(key, "accepted");
+        })
+        .catch(error => {
+          deliveries.set(key, "failed");
+          if (target.kind === "resident" && messageIdentity) window.PortalResidentProtocol.dismissSubmission(target.id, messageIdentity);
+          if (options.onError) options.onError(error);
+          else window.PortalUI.toast(error.message || String(error), "error");
+        })
+        .finally(() => redrawMessages());
     };
     // A menu item belongs to the menu's message; any other action to the row it
     // sits in, or to the message that row follows.
@@ -133,7 +156,7 @@
         return;
       }
       if (action === "resident-handoff-ask") {
-        askHandoffResident(button);
+        askHandoffResident(button, item);
         return;
       }
       const handler = state.messageRenderOptions?.onMessageAction || options.onMessageAction;

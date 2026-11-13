@@ -15,6 +15,8 @@
 
   const FORWARD_MESSAGE_TAG_RE = /^<\s*(\/?)\s*forward(?:[\s_-]+)message\s*>$/i;
   const FORWARD_REFERENCE_SPEAKER_RE = /^([A-Za-z][A-Za-z0-9_. -]{0,79}):[ \t]*(.*)$/;
+  // Receipt/pending state covers the gap before the authoritative snapshot arrives.
+  const handoffDeliveries = new Map();
 
   function residentHandoffCards(value) {
     let parsed;
@@ -265,21 +267,31 @@
       escapeHtml, resourceChips,
     } = dependencies;
 
-    function residentHandoffHtml(card) {
+    function residentHandoffHtml(card, item, index, options) {
       const params = new URLSearchParams({ resident: card.resident_id });
       if (card.lineage_id) params.set("lineage", card.lineage_id);
       const recommended = card.ask_message ? card.recommended_action : "open";
+      const source = String(item?.message_id || item?.id || "");
+      const entry = item?.content_parts?.find(part => part.type === "resident_handoff_cards")?.cards?.find(value => value.card_index === index);
+      const key = `${source}:${index}`;
+      const receipt = handoffDeliveries.get(key);
+      const submitted = entry?.submitted || receipt === "accepted"
+        || (options.handoffMessages || []).some(message => !message.local_delivery && message.content_parts?.some(part => part.type === "resident_handoff_selection" && part.source_message_id === source && part.card_index === index))
+        || (options.handoffInputStates?.() || []).some(state => state.message_id === entry?.selection_message_id);
+      const sending = receipt === "sending";
+      const label = submitted ? "已选择：替我问一下" : sending ? "发送中…" : receipt === "failed" ? "发送失败，重试" : "替我问一下";
       return `<section class="portalResidentHandoff" data-resident-handoff="${escapeHtml(card.resident_id)}">
       <strong>${escapeHtml(card.title)}</strong><small>${escapeHtml(card.lineage_title || card.lineage_id)}</small>
       <p>${escapeHtml(card.reason)}</p><div class="portalResidentHandoffActions">
       <a href="/lineage?${escapeHtml(params.toString())}" class="${recommended === "open" ? "recommended" : ""}">${window.PortalI18n.t("打开对话")}${recommended === "open" ? window.PortalI18n.t("（推荐）") : ""}</a>
-      ${card.ask_message ? `<button type="button" class="${recommended === "ask" ? "recommended" : ""}" data-portal-message-action="resident-handoff-ask" data-handoff-card="${escapeHtml(JSON.stringify(card))}">${window.PortalI18n.t("替我问一下")}${recommended === "ask" ? window.PortalI18n.t("（推荐）") : ""}</button>` : ""}
+      ${card.ask_message ? `<button type="button" class="${recommended === "ask" ? "recommended" : ""}" data-portal-message-action="resident-handoff-ask" data-handoff-index="${index}" data-handoff-message-id="${escapeHtml(entry?.selection_message_id || "")}" data-handoff-card="${escapeHtml(JSON.stringify(card))}" ${submitted || sending ? "disabled" : ""}>${window.PortalI18n.t(label)}${!submitted && !sending && recommended === "ask" ? window.PortalI18n.t("（推荐）") : ""}</button>` : ""}
       </div></section>`;
     }
 
-    function renderResidentHandoffs(content, render) {
+    function renderResidentHandoffs(content, render, item = {}, options = {}) {
+      let index = 0;
       return residentHandoffParts(content).map(part => part.cards
-        ? part.cards.map(residentHandoffHtml).join("") : render(part.text)).join("");
+        ? part.cards.map(card => residentHandoffHtml(card, item, index++, options)).join("") : render(part.text)).join("");
     }
 
     let imageEditorLoad = null;
@@ -688,6 +700,7 @@
   }
 
   window.PortalChatWorkspaceMessageContent = Object.freeze({
+    handoffDeliveries,
     createMessageContent, dependencies: DEPENDENCIES, residentHandoffCards, residentHandoffParts,
     parseForwardReference, runtimeStatusLabel, runtimeActivityPhase, requestWorkspacePreview,
     bindResponseSourcePaths, closeImagePreview, bindLinkPreview, attachmentPreviewUrl,

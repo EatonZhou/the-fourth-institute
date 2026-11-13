@@ -114,7 +114,23 @@ body {
   align-items: center;
   justify-content: space-between;
   gap: 8px;
+  flex-wrap: wrap;
 }
+.daily-news-editions { margin-right: auto; }
+.daily-news-summary {
+  padding: 10px 12px;
+  margin-bottom: 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--panel);
+  color: var(--text);
+  font-size: 12px;
+  line-height: 1.65;
+}
+.daily-news-summary li { margin-bottom: 6px; }
+.daily-news-summary > h2,
+.daily-news-details > h2:first-child { font-size: 12px; }
+.daily-news-details { overflow-wrap: anywhere; }
 .daily-news-meta {
   overflow: hidden;
   color: var(--muted);

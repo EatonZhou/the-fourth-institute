@@ -105,13 +105,14 @@ def test_daily_news_requires_authenticated_page_principal(monkeypatch, actor):
     monkeypatch.setattr(http_overview.http_auth, "_get_page_api_actor", lambda request: actor)
     monkeypatch.setattr(http_overview.http_responses, "_serve_json", lambda request, status, data: (status, data))
     monkeypatch.setattr(http_overview.http_responses, "_serve_http_error", lambda request, status, error: (status, error))
-    monkeypatch.setattr(http_overview, "_daily_news_payload", lambda edition="embodied": {"status": "ok", "content": "# News"})
+    monkeypatch.setattr(http_overview, "_daily_news_payload", lambda edition="x": {"status": "ok", "content": "# News", "edition": edition})
     route = next(r for r in http_overview.routes() if r.path == "/api/daily-news")
     assert route.phase == "dual-auth"
     status, data = route.handler(request, urlparse(route.path), None)
     assert status == (200 if actor else 401)
     if actor:
         assert data["content"] == "# News"
+        assert data["edition"] == "x"
 
 
 def test_daily_news_x_edition_reads_x_lineage_reports(monkeypatch, tmp_path):
@@ -139,8 +140,8 @@ def test_daily_news_x_edition_reads_x_lineage_reports(monkeypatch, tmp_path):
     assert data["status"] == "ok"
     assert data["edition"] == "x"
     assert data["editions"] == [
-        {"id": "embodied", "title": "具身智能"},
         {"id": "x", "title": "X 资讯"},
+        {"id": "embodied", "title": "具身智能"},
     ]
     assert data["content"] == "# X daily news\n"
 
@@ -159,4 +160,15 @@ def test_daily_news_rejects_unknown_edition(monkeypatch):
     assert status == 400
     assert data["status"] == "error"
     assert data["error"] == "unknown Daily News edition: unknown"
-    assert [edition["id"] for edition in data["editions"]] == ["embodied", "x"]
+    assert [edition["id"] for edition in data["editions"]] == ["x", "embodied"]
+
+
+def test_daily_news_default_payload_uses_x_lineage(monkeypatch, tmp_path):
+    calls = []
+    def locate(lineage_id):
+        calls.append(lineage_id)
+        return tmp_path
+    monkeypatch.setattr(http_overview, "_daily_news_root", locate)
+    result = http_overview._daily_news_payload()
+    assert result["edition"] == "x"
+    assert calls == ["lineage_c625a4bee56b"]

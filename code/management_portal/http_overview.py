@@ -18,10 +18,10 @@ from management_portal.http_routes import RouteDefinition
 
 
 _DAILY_NEWS_EDITIONS = {
-    "embodied": {"title": "具身智能", "lineage_id": "lineage_7e2464bbdb60"},
     "x": {"title": "X 资讯", "lineage_id": "lineage_c625a4bee56b"},
+    "embodied": {"title": "具身智能", "lineage_id": "lineage_7e2464bbdb60"},
 }
-_DAILY_NEWS_DEFAULT_EDITION = "embodied"
+_DAILY_NEWS_DEFAULT_EDITION = "x"
 
 
 def _daily_news_root(lineage_id: str) -> Path:
