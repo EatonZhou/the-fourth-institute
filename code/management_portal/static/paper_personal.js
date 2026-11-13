@@ -115,7 +115,7 @@
           && (!filter.venue || paper.venue === filter.venue);
       });
       const active = tokens.length || filter.year || filter.venue;
-      status.textContent = !all.length ? window.PortalI18n.t('暂无记录') : !papers.length ? window.PortalI18n.t('没有符合筛选条件的论文') : active ? `${papers.length} / ${all.length}` : '';
+      status.textContent = !all.length ? window.PortalI18n.t('暂无记录') : !papers.length ? window.PortalI18n.t('没有符合筛选条件的论文') : active ? window.PortalPaperLibraryView.paperCountLabel(papers.length) : '';
       const folders = [];
       for (const paper of papers) {
         let children = folders;

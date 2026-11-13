@@ -333,7 +333,7 @@ body {
   border-radius: 8px;
   padding: 10px;
   display: grid;
-  gap: 8px;
+  gap: 6px;
   cursor: pointer;
 }
 .paperRow:hover, .paperRow.selected { border-color: var(--accent); box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 12%, transparent); }
@@ -341,7 +341,10 @@ body {
 .paperRowActions, .paperFavoriteFilter { display: flex; align-items: center; gap: 8px; }
 .paperFavoriteFilter { font-size: 12px; cursor: pointer; }
 .paperFavoriteFilter input { width: auto; }
-.paperFavorite { flex: 0 0 auto; font-size: 14px; }
+.portalButton.paperFavorite { flex:0 0 auto; box-sizing:border-box; width:28px; height:28px; min-width:28px; min-height:28px; padding:0; display:inline-flex; align-items:center; justify-content:center; font-size:18px; line-height:1; border:0; background:transparent; box-shadow:none; color:var(--muted); }
+.paperFavorite[aria-pressed="false"], .paperFavorite[aria-pressed="true"] { background:transparent; border:0; box-shadow:none; }
+.paperFavorite:hover, .paperFavorite:focus-visible { background:var(--panel-2); }
+.paperFavorite:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
 .paperLeaf .paperFavorite { box-sizing: border-box; width: 24px; height: 24px; min-width: 24px; min-height: 24px; font-size: 12px; line-height: 18px; padding: 3px; border: 0; background: transparent; box-shadow: none; border-radius: 5px; }
 .paperLeaf .paperFavorite:hover { background: var(--panel-2); }
 .paperLeaf .paperFavorite:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
@@ -350,7 +353,7 @@ body {
 .paperFavorite[aria-pressed="true"] { color: var(--accent); }
 .paperLeaf { display: flex; align-items: center; gap: 4px; }
 .paperLeaf > .folderLine { flex: 1; min-width: 0; }
-.paperRowTitle { font-size: 14px; font-weight: 720; line-height: 1.35; overflow-wrap: anywhere; }
+.paperRowTitle { min-height:0; font-size: 14px; font-weight: 720; line-height: 1.35; overflow-wrap: anywhere; }
 .relevanceBadge {
   border: 1px solid color-mix(in srgb, var(--accent) 34%, var(--border));
   border-radius: 999px;
@@ -983,3 +986,13 @@ body:has(#paperPageFrame) #portalButtonTooltip { display:none!important; }
 .workspaceTitleRow { display:flex; flex-wrap:wrap; align-items:flex-start; column-gap:10px; min-width:0; }
 .workspaceTitleRow > .titleBlock { flex:1 1 240px; }
 .workspaceTitleRow > .workspaceModeActions { flex:0 0 auto; }
+
+/* Card-local density; shared status chips in other views retain their sizing. */
+.paperRow > :is(.workspaceMeta,.chips) { row-gap:4px; column-gap:6px; }
+.paperRow > .workspaceMeta + .chips { margin-top:-2px; }
+.paperRow :is(.portalStatus,.relevanceBadge) { font-size:11px; font-weight:500; line-height:16px; padding:1px 7px; }
+.paperRowActions { height:18.9px; }
+.paperRow > .paperCardAbstract { margin:0; }
+
+.workspaceResourceIdSlot .workspaceListCount { font-size:11px; font-weight:400; line-height:16px; color:var(--muted); white-space:nowrap; }
+.workspaceListCount + * { margin-inline-start:6px; }

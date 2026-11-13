@@ -10,6 +10,26 @@
     "paperApi", "paperStateHtml", "paperTags", "renderCcfTree", "state", "updateLeftFaceTabs",
   ]);
 
+  // Display-only cleanup for card previews; never used by search or stored data.
+  function abstractPlainText(value) {
+    return String(value ?? "")
+      .replace(/!?\[([^\]\n]+)\]\((?:[^()\n]|\([^()\n]*\))*\)/g, "$1")
+      .replace(/(?<!`)(`+)([^`\n]+?)\1(?!`)/g, "$2")
+      .replace(/^\s{0,3}#{1,6}\s+/gm, "")
+      .replace(/(\s)#{2,6}\s+/g, "$1")
+      .replace(/^\s*(?:[-+*]|\d+[.)])\s+/gm, "")
+      .replace(/\*\*/g, "") // Also remove an unmatched delimiter in a truncated preview.
+      .replace(/(^|[^\p{L}\p{N}_])__(?=\S)(.+?\S|\S)__(?![\p{L}\p{N}_])/gu, "$1$2")
+      .replace(/(^|[^\p{L}\p{N}_])_(?=\S)([^_]*?\S|\S)_(?![\p{L}\p{N}_])/gu, "$1$2")
+      .replace(/(^|[\s(（])\*(?=\S)([^*]*?\S|\S)\*(?=$|[\s.,;:!?，。；：！？)）])/g, "$1$2")
+      .replace(/\s+/g, " ").trim();
+  }
+
+  function paperCountLabel(value) {
+    const count = Math.max(0, Number(value) || 0);
+    return count === 1 ? window.PortalI18n.text`${count} paper` : window.PortalI18n.text`${count} papers`;
+  }
+
   function createLibraryView(dependencies) {
     const missing = DEPENDENCIES.filter(name => dependencies?.[name] === undefined);
     if (missing.length) throw new Error(`PortalPaperLibraryView is missing: ${missing.join(", ")}`);
@@ -55,7 +75,7 @@
       }
       if (!options) updateLeftFaceTabs();
       const meta = options?.summary || state.library?.summary || {};
-      if (!options) $("libraryMeta").textContent = window.PortalI18n.text`${meta.visible_count || 0}/${meta.paper_count || 0} papers · ${meta.analysis_count || 0} analyses`;
+      if (!options) $("libraryMeta").textContent = paperCountLabel(meta.paper_count ?? state.paperOverview?.paper_count ?? 0);
       const folders = options?.folders || state.library?.folders || [];
       if (!folders.length) {
         const hasAny = Number(meta.paper_count || 0) > 0;
@@ -254,7 +274,7 @@
               ${paper.has_analysis ? chip(window.PortalI18n.t("Analyzed"), "good") : chip(window.PortalI18n.t("Analysis missing"), "warn")}
             </div>
             ${tags ? window.PortalI18n.html`<div class="chips">${tags}</div>` : ""}
-            ${paper.abstract ? window.PortalI18n.html`<div class="paneNote paperCardAbstract">${esc(paper.abstract)}</div>` : ""}
+            ${paper.abstract ? window.PortalI18n.html`<div class="paneNote paperCardAbstract">${esc(abstractPlainText(paper.abstract))}</div>` : ""}
           </article>
         `;
     }
@@ -275,5 +295,5 @@
     });
   }
 
-  window.PortalPaperLibraryView = Object.freeze({ createLibraryView, dependencies: DEPENDENCIES });
+  window.PortalPaperLibraryView = Object.freeze({ createLibraryView, abstractPlainText, paperCountLabel, dependencies: DEPENDENCIES });
 })();

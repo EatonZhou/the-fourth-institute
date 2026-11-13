@@ -6,6 +6,30 @@
       : value >= 1e6 ? `${(value / 1e6).toFixed(1).replace(/\.0$/, '')}M`
       : value >= 1e3 ? `${(value / 1e3).toFixed(1).replace(/\.0$/, '')}K` : String(value)
     : window.PortalI18n.t('未记录');
+  function elapsedTime(job, now = Date.now()) {
+    let start = null;
+    for (const value of [job?.started_at, job?.created_at]) {
+      if (value === null || value === undefined || value === '') continue;
+      const number = Number(value);
+      const candidate = Number.isFinite(number) ? number * (number < 1e12 ? 1000 : 1) : Date.parse(value);
+      if (Number.isFinite(candidate) && candidate > 0 && candidate <= now) { start = candidate; break; }
+    }
+    if (start === null) return '';
+    const seconds = Math.floor((now - start) / 1000), minutes = Math.floor(seconds / 60);
+    if (seconds < 60) return window.PortalI18n.text`${seconds}s`;
+    if (minutes < 60) return window.PortalI18n.text`${minutes}m ${seconds % 60}s`;
+    const hours = Math.floor(minutes / 60), remainder = String(minutes % 60).padStart(2, '0');
+    return window.PortalI18n.text`${hours}h ${remainder}m`;
+  }
+  function runningTaskText(job, now = Date.now()) {
+    const key = job?.status_label_key || ({queued:'Queued', 'extracting pdf text':'Extracting PDF',
+      'waiting for Resident':'Model generation', Submitting:'Submitting',
+      'loading paper':'Loading paper', 'calling llm':'Model generation',
+      'writing analysis':'Writing analysis', 'writing exp':'结果已生成，正在保存/核对',
+      'saving result':'结果已生成，正在保存/核对', 'confirming submission':'正在确认任务状态'}[job?.step]
+      || job?.step || (job?.status === 'queued' ? 'Queued' : 'Generating...'));
+    return [window.PortalI18n.t(key), elapsedTime(job, now)].filter(Boolean).join(' · ');
+  }
   function sourceHtml(facts = {}, {omitEmpty = false} = {}) {
     const t = value => window.PortalI18n.t(value);
     const recorded = value => !value || value === '未记录' ? t('未记录') : value;
@@ -54,5 +78,5 @@
     if (title && first?.tagName==='H1' && (heading===title || heading===`exp: ${title}`)) first.remove();
     return template.innerHTML;
   }
-  window.PortalPaperArtifactPresentation = Object.freeze({sourceHtml,humanTokens,expView,renderBody});
+  window.PortalPaperArtifactPresentation = Object.freeze({sourceHtml,humanTokens,expView,renderBody,elapsedTime,runningTaskText});
 })();

@@ -147,6 +147,18 @@
         ? (semantic ? window.PortalI18n.text`Search: ${semantic.query || window.PortalI18n.t("Semantic search")}` : (collection ? window.PortalI18n.text`Collect: ${collection.direction || window.PortalI18n.t("Paper collection")}` : window.PortalI18n.t(state.paperHome?'Paper Library':state.paperListScope==='recent'?'近期阅读':state.paperListScope==='favorites'?'我的收藏':state.mode === "today" ? "今日新增" : "全库")))
         : (paper?.title || window.PortalI18n.t("Paper Research"));
       renderPaperResourceIdentity(workspaceTitle, isLibraryMode ? semantic : paper);
+      const bareHome = state.paperHome && !new URL(location.href).searchParams.toString()
+        && !String(state.query || '').trim() && !state.registeredFilter
+        && !Object.values(state.filters || {}).some(value => String(value || '').trim());
+      if (isLibraryMode && !bareHome) {
+        const slot = $("workspaceResourceIdSlot");
+        const count = document.createElement('span');
+        count.className = 'workspaceListCount';
+        count.textContent = window.PortalPaperLibraryView.paperCountLabel(librarySummary.visible_count ?? librarySummary.paper_count ?? 0);
+        slot?.prepend(count);
+        slot?.closest('.workspaceIdentityMetaRow')?.style.setProperty('--workspace-resource-id-width', `${Math.ceil(slot.scrollWidth)}px`);
+      }
+
       const summaryText = isLibraryMode
         ? String(semantic?.query_interpretation || semantic?.notes || collection?.summary || collection?.error || (state.mode === "today" ? window.PortalI18n.t("Papers registered today.") : "")).trim()
         : "";
@@ -195,8 +207,8 @@
       const done = deep && String(deep.status || "") === "done";
       const error = deep && String(deep.status || "") === "error";
       const confirming=running&&deep.step==='confirming submission';
-      const text = confirming?window.PortalI18n.t('正在确认任务状态'):running
-        ? window.PortalI18n.text`Deep Read: ${window.PortalI18n.t({queued: "Queued", "extracting pdf text": "Extracting PDF", "waiting for Resident": "Model generation", Submitting: "Submitting"}[deep.step] || deep.step || deep.status)} · ${deep.progress || 0}%`
+      const text = running
+        ? window.PortalI18n.text`Deep Read: ${window.PortalPaperArtifactPresentation.runningTaskText(deep)}`
         : done
           ? window.PortalI18n.t("Deep Read done")
           : error

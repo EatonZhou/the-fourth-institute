@@ -134,7 +134,7 @@
     }
 
     function taskBlocked(job) { return ['queued','running'].includes(job?.status) || (job?.status === 'error' && job.can_retry === false); }
-    function taskLabel(job) { return job?.status_label_key ? window.PortalI18n.t(job.status_label_key) : ''; }
+    function taskLabel(job) { return job?.status_label_key ? (['queued','running'].includes(job.status) ? window.PortalPaperArtifactPresentation.runningTaskText(job) : window.PortalI18n.t(job.status_label_key)) : ''; }
     function taskDetails(job) {
       if (!job?.status_label_key || !job.diagnostics?.error) return '';
       return `<details class="paperDisclosure"><summary>${esc(window.PortalI18n.t('Details'))}</summary><pre style="white-space:pre-wrap;overflow-wrap:anywhere">${esc(job.diagnostics.error)}</pre></details>`;

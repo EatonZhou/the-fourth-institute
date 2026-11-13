@@ -20,7 +20,7 @@
     } = dependencies;
 
     // Only an explicit public label opts into the new status contract.
-    function taskLabel(job) { return job?.status_label_key ? window.PortalI18n.t(job.status_label_key) : ''; }
+    function taskLabel(job) { return job?.status_label_key ? (['queued','running'].includes(job.status) ? window.PortalPaperArtifactPresentation.runningTaskText(job) : window.PortalI18n.t(job.status_label_key)) : ''; }
     function taskBlocked(job) { return ['queued','running'].includes(job?.status) || (job?.status === 'error' && job.can_retry === false); }
     function taskDetails(job) {
       if (!job?.status_label_key || !job.diagnostics?.error) return '';
@@ -102,9 +102,9 @@
       const expRunning = pendingExpSubmissions.has(String(state.selectedId || ""))
         || ["queued", "running"].includes(String(status.status || ""));
       const expError = String(status.status || "") === "error" ? String(status.error || "Exp generation failed.") : "";
-      const statusText = taskLabel(status) || (expRunning
-        ? `${status.step || "queued"}${Number.isFinite(Number(status.progress)) ? ` · ${Number(status.progress)}%` : ""}`
-        : (expError || window.PortalI18n.t("Extract datasets, baselines, metrics, implementation settings, results, and reproduction risks.")));
+      const statusText = expRunning
+        ? window.PortalPaperArtifactPresentation.runningTaskText(status)
+        : (taskLabel(status) || expError || window.PortalI18n.t("Extract datasets, baselines, metrics, implementation settings, results, and reproduction risks."));
       $("workspaceMain").innerHTML = window.PortalI18n.html`
           <div class="portalToolbar paperToolbar" style="justify-content:space-between;margin-bottom:10px;">
             <div class="paneNote">${esc(statusText)}</div>
