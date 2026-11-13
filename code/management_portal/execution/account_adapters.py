@@ -8,6 +8,7 @@ import time
 import os
 import re
 import subprocess
+import threading
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -15,6 +16,33 @@ from .accounts import DefaultAccountUnavailable, ExecutionAccount
 from .provider_catalog import AGENT_PROVIDERS
 
 ACCOUNT_WIDE_CLAUDE_WINDOWS = frozenset({"five_hour", "seven_day"})
+_CLAUDE_MODEL_WINDOWS: dict[str, dict[str, dict]] = {}
+_CLAUDE_MODEL_WINDOWS_LOCK = threading.Lock()
+
+
+def _keep_claude_model_windows(account_id, windows, *, now):
+    """Keep the last model-pool reading (e.g. Fable) until its reset.
+
+    Only turn events carry model pools; the periodic /usage read replaces the
+    native cache without them. The kept reading retains its own observed_at.
+    """
+    stale = any(window.get("stale") for window in windows)
+    present = {window.get("id") for window in windows}
+    with _CLAUDE_MODEL_WINDOWS_LOCK:
+        kept = _CLAUDE_MODEL_WINDOWS.setdefault(account_id, {})
+        for window in windows:
+            if window.get("id") and window["id"] not in ACCOUNT_WIDE_CLAUDE_WINDOWS:
+                kept[window["id"]] = dict(window)
+        carried = []
+        for window_id, window in list(kept.items()):
+            if window_id in present:
+                continue
+            reset = window.get("resets_at")
+            if isinstance(reset, (int, float)) and reset <= now:
+                del kept[window_id]
+                continue
+            carried.append({**window, "stale": stale or bool(window.get("stale"))})
+    return [*windows, *carried]
 
 LOGGER = logging.getLogger(__name__)
 
@@ -301,7 +329,8 @@ class ClaudeAccounts:
             if logged_in is not None:
                 login_observation = "logged_in" if logged_in else "login_expired"
                 login_observed_at = started
-        windows = snapshot.get("rate_limits") or []
+        windows = _keep_claude_model_windows(getattr(account, "account_id", account.route_id),
+                                             snapshot.get("rate_limits") or [], now=time.time())
         if not error and snapshot.get("quota_status") == "available":
             login_observation = "logged_in"
             login_observed_at = min((w["observed_at"] for w in windows if w.get("observed_at")), default=None)

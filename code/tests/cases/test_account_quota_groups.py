@@ -8,6 +8,13 @@ from unittest.mock import Mock
 
 from management_portal.execution.account_adapters import ClaudeAccounts, CodexAccounts
 from management_portal.antigravity_accounts import quota_windows
+import pytest
+
+
+@pytest.fixture(autouse=True)
+def separate_kept_model_windows(monkeypatch):
+    from management_portal.execution import account_adapters
+    monkeypatch.setattr(account_adapters, "_CLAUDE_MODEL_WINDOWS", {})
 
 
 def test_codex_subscription_windows_share_pool_without_changing_readings(monkeypatch):
@@ -57,6 +64,31 @@ def test_claude_fable_pool_neither_closes_the_account_nor_keeps_a_native_label(m
     assert [w["window"] for w in result["quota"]["windows"]] == ["five_hour", "seven_day"]
     client.account_usage.return_value["rate_limits"][2]["remaining_percent"] = None
     assert adapter.observe(SimpleNamespace(route_id="test", quota_policy="reserve"))["quota"]["status"] == "available"
+
+
+def test_claude_model_pool_survives_a_usage_read_until_its_reset(monkeypatch):
+    """/usage replaces the native cache without Fable; the last Fable reading stays until its reset."""
+    from management_portal import claude_code_client
+    from management_portal.execution import account_adapters
+    monkeypatch.setattr(account_adapters, "_CLAUDE_MODEL_WINDOWS", {})
+    clock = [1000.0]
+    monkeypatch.setattr(account_adapters.time, "time", lambda: clock[0])
+    common = [{"id": "five_hour", "remaining_percent": 80}, {"id": "seven_day", "remaining_percent": 90}]
+    fable = {"id": "seven_day_overage_included", "remaining_percent": 96, "resets_at": 2000, "observed_at": "t0"}
+    client = Mock()
+    client.account_usage.return_value = {"quota_status": "available", "rate_limits": [*common, fable]}
+    monkeypatch.setattr(claude_code_client, "shared_client", lambda: client)
+    adapter = ClaudeAccounts.__new__(ClaudeAccounts)
+    account = SimpleNamespace(account_id="claude_x", route_id="x", quota_policy="reserve")
+    adapter.observe(account)
+    client.account_usage.return_value = {"quota_status": "available", "rate_limits": common}
+    kept = adapter.observe(account)["rate_limits"][2]
+    assert (kept["label"], kept["remaining_percent"], kept["observed_at"], kept["stale"]) == ("Fable 每周", 96, "t0", False)
+    client.account_usage.return_value = {"quota_status": "stale", "rate_limits": [{**w, "stale": True} for w in common]}
+    assert adapter.observe(account)["rate_limits"][2]["stale"] is True
+    clock[0] = 2000.0
+    client.account_usage.return_value = {"quota_status": "available", "rate_limits": common}
+    assert [w["id"] for w in adapter.observe(account)["rate_limits"]] == ["five_hour", "seven_day"]
 
 
 def test_antigravity_uses_native_sections_to_keep_model_pools_independent():
