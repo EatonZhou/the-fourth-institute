@@ -532,6 +532,7 @@ modules:
       - "management_portal/article_registration.py"
       - "management_portal/article_git.py"
       - "management_portal/article_files.py"
+      - "management_portal/article_comments.py"
       - "management_portal/article_semantic_index.py"
       - "management_portal/article_build_profile.py"
       - "management_portal/article_dependencies.py"
