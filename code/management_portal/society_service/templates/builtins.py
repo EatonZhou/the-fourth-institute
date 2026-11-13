@@ -231,7 +231,7 @@ def definitions():
             "kind": "structure",
             "category": "structure",
             "title": "定时工作",
-            "description": "按周期推进目标 Resident，也可以从“运行一次”手动触发。",
+            "description": "每天在指定时区的指定时间推进目标 Resident，也可以从“运行一次”手动触发。",
             "targets": ["resident"],
             "parameters": [
                 {
@@ -240,8 +240,22 @@ def definitions():
                     "required": True,
                     "description": "每次要做的工作",
                 },
-                {"name": "interval_seconds", "type": "duration", "default": 3600},
-                {"name": "jitter_seconds", "type": "integer", "default": 0},
+                {
+                    "name": "calendar_time",
+                    "type": "text",
+                    "default": "09:00",
+                    "required": True,
+                    "description": "每天触发时间（24 小时制，如 09:00 或 21:30）",
+                    "multiline": False,
+                },
+                {
+                    "name": "timezone",
+                    "type": "text",
+                    "default": "Asia/Shanghai",
+                    "required": True,
+                    "description": "时区（如 Asia/Shanghai，UTC+8）",
+                    "multiline": False,
+                },
             ],
             "body": _structure(
                 [target],
@@ -251,8 +265,15 @@ def definitions():
                         "event_source",
                         "定时",
                         {
-                            **_timer("{{param.interval_seconds}}"),
-                            "jitter_seconds": "{{param.jitter_seconds}}",
+                            "event_type": "time.reached",
+                            "schedule_mode": "recurring",
+                            "recurrence_kind": "calendar",
+                            "calendar_frequency": "daily",
+                            "calendar_time": "{{param.calendar_time}}",
+                            "timezone": "{{param.timezone}}",
+                            "jitter_seconds": 0,
+                            "misfire_policy": "coalesce_latest",
+                            "overlap_policy": "drop",
                         },
                     ),
                     _component(

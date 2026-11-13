@@ -430,9 +430,22 @@ class StructureKind:
             config = component.get("config", {})
             event = config.get("event_type")
             if event == "time.reached":
-                steps.append(
-                    f"按周期 {config.get('interval_seconds', '')} 秒触发“{component.get('title', component['key'])}”。"
-                )
+                title = component.get("title", component["key"])
+                if config.get("recurrence_kind") == "calendar":
+                    frequency = config.get("calendar_frequency", "daily")
+                    when = {
+                        "daily": "每天",
+                        "weekly": f"每周 {config.get('calendar_weekdays', 'mon')}",
+                        "monthly": f"每月 {config.get('calendar_day', 1)} 日",
+                    }.get(frequency, "按日历")
+                    steps.append(
+                        f"{when} {config.get('calendar_time', '09:00')}"
+                        f"（时区 {config.get('timezone', 'UTC')}）触发“{title}”。"
+                    )
+                else:
+                    steps.append(
+                        f"按周期 {config.get('interval_seconds', '')} 秒触发“{title}”。"
+                    )
             elif event == "manual.triggered":
                 steps.append(
                     f"提供手动事件“{component.get('title', component['key'])}”。"
