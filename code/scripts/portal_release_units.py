@@ -61,6 +61,7 @@ LINEAGE_WORKBENCH_RELEASE_UNIT = (
     'management_portal/static/portal_resident_menu_identity.js',
     'management_portal/static/portal_resident_menu_journal.js',
     'management_portal/static/portal_resident_menu_duties.js',
+    'management_portal/static/portal_resident_menu_memory.js',
     'management_portal/static/portal_resident_menu_runtime.js',
     'management_portal/static/portal_resident_menu_events.js',
     'management_portal/static/portal_resident_menu.js',

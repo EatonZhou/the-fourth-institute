@@ -6,7 +6,7 @@ DEFINITION_MUTATIONS = frozenset({
     "CreateCandidateFork", "DeleteCandidateFork", "CreateWorkspaceHandoff", "UpdateWorkspaceHandoff",
     "DeleteWorkspaceHandoff", "CreateResident", "UpdateResident",
     "DeleteResident", "ForkResident", "PromoteSeed", "MoveResident", "MoveLineageObjects",
-    "Functionalize", "Unfunctionalize", "UpdateFunctionBlock", "DeleteFunctionBlock", "UpdateDuty", "OrderDuties",
+    "Functionalize", "Unfunctionalize", "UpdateFunctionBlock", "DeleteFunctionBlock", "CreateDuty", "UpdateDuty", "OrderDuties",
     "ApplyTemplate", "Familize", "Unfamilize", "DeleteFamily", "UpdateFamily",
 })
 

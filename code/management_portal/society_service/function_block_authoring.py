@@ -39,7 +39,30 @@ def find_block(body, function_block_id):
 # (decision_13725a7900f6): its record names the holder, one sentence saying what
 # the duty does, its category and its place in the holder's order.
 DUTY_CATEGORIES = ("fixed", "common", "custom")
-DUTY_FIELDS = {"holder_id", "description", "category", "position", "parameters"}
+DUTY_FIELDS = {"holder_id", "description", "category", "position", "parameters", "memory"}
+# A duty's prompt sits in one of four memory levels: sent with the duty's own
+# triggers, every turn, at session start and after compaction, or kept in a
+# file the Resident reads when it needs it (decision_13725a7900f6).
+MEMORY_LEVELS = ("trigger", "turn", "session", "on_demand")
+MAX_DUTY_PROMPT_CHARS = 20000
+
+
+def normalize_memory(raw):
+    """``{"level", "prompt"}``, or None when there is no prompt."""
+    if raw is None:
+        return None
+    if not isinstance(raw, dict) or set(raw) - {"level", "prompt"}:
+        raise ValueError("Duty memory has level and prompt")
+    prompt = raw.get("prompt") or ""
+    if not isinstance(prompt, str):
+        raise ValueError("Duty prompt must be text")
+    prompt = prompt.strip()
+    if len(prompt) > MAX_DUTY_PROMPT_CHARS:
+        raise ValueError(f"Duty prompt must be at most {MAX_DUTY_PROMPT_CHARS} characters")
+    level = raw.get("level") or "trigger"
+    if level not in MEMORY_LEVELS:
+        raise ValueError("Duty memory level must be trigger, turn, session or on_demand")
+    return {"level": level, "prompt": prompt} if prompt else None
 
 
 def normalize_duty(raw):
@@ -60,8 +83,30 @@ def normalize_duty(raw):
     description = raw.get("description") or ""
     if not isinstance(description, str):
         raise ValueError("Duty description must be text")
-    return {"holder_id": holder, "description": " ".join(description.split())[:280],
+    duty = {"holder_id": holder, "description": " ".join(description.split())[:280],
             "category": category, "position": position, "parameters": deepcopy(parameters)}
+    memory = normalize_memory(raw.get("memory"))
+    if memory:
+        duty["memory"] = memory
+    return duty
+
+
+def _check_memory(body, block):
+    """A prompt belongs to a Resident's memory; a trigger-time prompt needs a trigger."""
+    memory = block["duty"].get("memory")
+    if not memory:
+        return
+    holder = block["duty"]["holder_id"]
+    if element_kinds(body).get(holder) != "resident":
+        raise ValueError("Only a duty held by a Resident carries a prompt")
+    if memory["level"] == "trigger":
+        wires = {w.get("id"): w for w in (body.get("program") or {}).get("wires") or []}
+        if not any(
+            e["kind"] == "wire" and wires.get(e["id"], {}).get("target") == holder
+            and wires[e["id"]].get("kind") != "watch"
+            for e in block.get("elements") or []
+        ):
+            raise ValueError("A trigger-time prompt needs a wire in the duty that triggers its holder")
 
 
 def duties(body, holder_id):
@@ -72,7 +117,8 @@ def duties(body, holder_id):
     )
 
 
-def update_duty_in_body(body, function_block_id, actor, *, description=None, category=None):
+def update_duty_in_body(body, function_block_id, actor, *, description=None, category=None,
+                        prompt=None, memory_level=None):
     block = find_block(body, function_block_id)
     if not block.get("duty"):
         raise ValueError("Function Block is not a duty")
@@ -81,9 +127,45 @@ def update_duty_in_body(body, function_block_id, actor, *, description=None, cat
         duty["description"] = description
     if category is not None:
         duty["category"] = category
-    block["duty"] = normalize_duty(duty)
+    if prompt is not None or memory_level is not None:
+        memory = dict(duty.get("memory") or {})
+        if prompt is not None:
+            memory["prompt"] = prompt
+        if memory_level is not None:
+            memory["level"] = memory_level
+        duty["memory"] = memory
+    duty = normalize_duty(duty)
+    if not duty.get("memory") and not block.get("elements"):
+        raise ValueError("A duty without elements keeps its prompt; remove the duty instead")
+    block["duty"] = duty
+    _check_memory(body, block)
     block.update(updated_at=_now(), updated_by=actor)
     return deepcopy(block)
+
+
+def create_duty_in_body(body, holder_id, actor, *, description, prompt, memory_level="session",
+                        category="custom"):
+    """A duty made of a prompt alone: a Function Block without elements."""
+    held = duties(body, holder_id)
+    bid = "fbi_" + secrets.token_hex(6)
+    now = _now()
+    duty = normalize_duty({"holder_id": holder_id, "description": description, "category": category,
+                           "position": held[-1]["duty"]["position"] + 1 if held else 0,
+                           "memory": {"level": memory_level, "prompt": prompt}})
+    if not duty["description"]:
+        raise ValueError("A duty needs a description")
+    if not duty.get("memory"):
+        raise ValueError("A duty without elements needs a prompt")
+    block = {"id": bid, "title": duty["description"][:140], "template_id": None, "x": None, "y": None,
+             "elements": [], "duty": duty, "created_at": now, "created_by": actor,
+             "updated_at": now, "updated_by": actor}
+    candidate = {**body, "function_blocks": [*(body.get("function_blocks") or []), block]}
+    _check_memory(candidate, block)
+    body["function_blocks"] = normalize_blocks(candidate, actor, previous=body)
+    created = find_block(body, bid)
+    if "duty" not in created:
+        raise ValueError("A duty's holder must be a Resident in this Lineage")
+    return deepcopy(created)
 
 
 def order_duties_in_body(body, holder_id, function_block_ids, actor):
@@ -172,7 +254,9 @@ def normalize_blocks(body, actor, *, previous=None):
     for bid in blocks:
         visit(bid)
     while True:
-        empty = {bid for bid, b in blocks.items() if not b["elements"] and "family" not in b}
+        # A Family and a duty holding a prompt stand without elements.
+        empty = {bid for bid, b in blocks.items() if not b["elements"] and "family" not in b
+                 and not (b.get("duty") or {}).get("memory")}
         if not empty:
             break
         blocks = {bid: b for bid, b in blocks.items() if bid not in empty}

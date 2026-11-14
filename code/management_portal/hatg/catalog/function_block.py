@@ -31,11 +31,23 @@ DECLARATIONS = (
         R("resident_ids", "array", "随之删除的 Resident ID")), mutates=True),
     # A duty is a Function Block with a duty record (function_blocks[].duty in GetLineage);
     # ApplyTemplate on a Resident creates it and DeleteFunctionBlock removes it.
-    _d("UpdateDuty", ON_LINEAGE, "修改一条职责的一句话描述或类别。", (
+    _d("CreateDuty", ON_LINEAGE, "给一个 Resident 加一条只含提示词的职责，排在它已有职责之后。", (
+        R("lineage_id", description="Resident 所在的 Lineage"),
+        R("holder_id", description="持有职责的 Resident"),
+        R("description", description="一句话描述", max_length=280),
+        R("prompt", description="职责的提示词", max_length=20000),
+        P("memory_level", description="提示词所在的记忆层级：turn 每轮、session 会话开始和压缩后、on_demand 按需读取；省略为 session",
+          enum=("turn", "session", "on_demand")),
+        P("category", description="类别；省略为 custom", enum=("fixed", "common", "custom")),
+    ), (R("function_block", "object", "新职责的 Function Block，含 duty"),), mutates=True),
+    _d("UpdateDuty", ON_LINEAGE, "修改一条职责的一句话描述、类别、提示词或记忆层级。", (
         R("lineage_id", description="职责所在的 Lineage"),
         R("function_block_id", description="职责的 Function Block"),
         P("description", description="一句话描述", max_length=280),
         P("category", description="类别", enum=("fixed", "common", "custom")),
+        P("prompt", description="职责的提示词；空字符串移除提示词，只含提示词的职责须保留提示词", max_length=20000),
+        P("memory_level", description="提示词所在的记忆层级：trigger 只在这条职责触发持有者时、turn 每轮、session 会话开始和压缩后、on_demand 按需读取",
+          enum=("trigger", "turn", "session", "on_demand")),
     ), (R("function_block", "object", "修改后的 Function Block，含 duty"),), mutates=True),
     _d("OrderDuties", ON_LINEAGE, "调整一个持有者全部职责的先后顺序。", (
         R("lineage_id", description="职责所在的 Lineage"),

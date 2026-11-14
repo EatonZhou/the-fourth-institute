@@ -71,6 +71,91 @@ def test_order_and_update_duties(lineage):
     assert duties(lineage, worker)[1]["duty"]["description"] == "每轮结束提醒 继续"
 
 
+def preview_parts(resident_id):
+    return {part["id"]: part for part in ok("PreviewPromptInjection", {"resident_id": resident_id})["parts"]}
+
+
+def test_prompt_duty_enters_memory_and_leaves_with_removal(lineage):
+    """只含提示词的职责进入所选记忆层级，撤下后随之消失"""
+    from pathlib import Path
+
+    worker = resident(lineage, "Worker")
+    assert "duty_memory" not in preview_parts(worker)
+    session = ok("CreateDuty", {"lineage_id": lineage, "holder_id": worker, "description": "看守发布",
+                                "prompt": "发布后检查服务日志。"})["function_block"]
+    assert session["elements"] == [] and session["duty"]["memory"] == {"level": "session", "prompt": "发布后检查服务日志。"}
+    turn = ok("CreateDuty", {"lineage_id": lineage, "holder_id": worker, "description": "用中文",
+                             "prompt": "回复使用中文。", "memory_level": "turn"})["function_block"]
+    manual = ok("CreateDuty", {"lineage_id": lineage, "holder_id": worker, "description": "备份流程",
+                               "prompt": "第一步：检查锁。", "memory_level": "on_demand"})["function_block"]
+    assert [b["id"] for b in duties(lineage, worker)] == [session["id"], turn["id"], manual["id"]]
+
+    parts = preview_parts(worker)
+    listing = parts["duty_memory"]
+    assert listing["timing"] == "session_start_and_after_compaction" and listing["label"] == "职责清单与说明"
+    assert "1. 看守发布（说明见下）" in listing["content"] and "发布后检查服务日志。" in listing["content"]
+    assert "2. 用中文（约束每轮附在消息前）" in listing["content"]
+    assert parts["duty_memory_turn"]["timing"] == "every_turn" and "回复使用中文。" in parts["duty_memory_turn"]["content"]
+    path = Path(listing["content"].split("完整说明在 ")[1].split(" 的")[0])
+    assert path.name == "duty-manuals.md" and "第一步：检查锁。" in path.read_text(encoding="utf-8")
+    assert "第一步：检查锁。" not in listing["content"]
+
+    assert run("CreateDuty", {"lineage_id": lineage, "holder_id": worker, "description": "x",
+                              "prompt": "y", "memory_level": "trigger"}).error
+    assert run("UpdateDuty", {"lineage_id": lineage, "function_block_id": turn["id"], "prompt": ""}).error
+    ok("UpdateDuty", {"lineage_id": lineage, "function_block_id": turn["id"], "memory_level": "session",
+                      "prompt": "回复使用简体中文。"})
+    for block in (session, turn, manual):
+        ok("DeleteFunctionBlock", {"lineage_id": lineage, "function_block_id": block["id"]})
+    parts = preview_parts(worker)
+    assert "duty_memory" not in parts and "duty_memory_turn" not in parts
+    assert not path.exists()
+    assert {n["id"] for n in graph(lineage)["nodes"]} == {worker}
+
+
+def test_trigger_prompt_joins_the_duty_wires(lineage):
+    """“触发时”的提示词只随这条职责里触发持有者的连线送达"""
+    from management_portal.society_service.duty_memory import trigger_prompt
+
+    worker = resident(lineage, "Worker")
+    block_id = apply(lineage, "scheduled_work", worker, task="Check work")
+    updated = ok("UpdateDuty", {"lineage_id": lineage, "function_block_id": block_id,
+                                "prompt": "先读昨天的记录。", "memory_level": "trigger"})["function_block"]
+    body = graph(lineage)
+    wires = {w["id"]: w for w in body["program"]["wires"]}
+    owned = [e["id"] for e in updated["elements"] if e["kind"] == "wire" and wires[e["id"]]["target"] == worker]
+    assert owned
+    description = updated["duty"]["description"]
+    assert trigger_prompt(body, owned[0], worker) == f"职责：{description}\n先读昨天的记录。"
+    assert trigger_prompt(body, owned[0], "resident_000000000000") == ""
+    assert trigger_prompt(body, "wire_other", worker) == ""
+    assert "先读昨天的记录。" not in preview_parts(worker)["duty_memory"]["content"]
+
+
+def test_first_step_duty_table_gains_memory_columns(lineage):
+    """第一步建成的职责表在启动时补上提示词列，已有记录保留"""
+    from management_portal.society_service import duty_storage
+
+    worker = resident(lineage, "Worker")
+    block = apply(lineage, "scheduled_work", worker, task="Check work")
+
+    def downgrade_and_create(connection):
+        connection.execute("DROP INDEX IF EXISTS function_block_duties_holder_idx")
+        connection.execute("ALTER TABLE function_block_duties DROP COLUMN memory_level, DROP COLUMN memory_prompt")
+        duty_storage.create_schema(connection)
+        duty_storage.create_schema(connection)
+
+    state_store.get_lineage_data_store().database.write(downgrade_and_create)
+    with state_store.get_lineage_data_store().database.read() as connection:
+        columns = {row["column_name"] for row in connection.execute(
+            "SELECT column_name FROM information_schema.columns WHERE table_schema=current_schema() "
+            "AND table_name='function_block_duties'").fetchall()}
+        assert columns == set(duty_storage.COLUMNS[duty_storage.TABLE])
+        assert connection.execute("SELECT 1 FROM pg_indexes WHERE schemaname=current_schema() "
+                                  "AND indexname='function_block_duties_holder_idx'").fetchone()
+    assert [b["id"] for b in duties(lineage, worker)] == [block]
+
+
 def test_duty_goes_with_its_holder(lineage):
     """持有者被删除后，块不再是职责，记录随之清除"""
     worker = resident(lineage, "Worker")

@@ -72,6 +72,10 @@ class LineageCatalog:
             return []
         return self.state_store.lineage_ids_for_resident(target_id)
 
+    def held_duties(self, holder_id: str) -> list[dict[str, Any]]:
+        """The holder's duties in every live Lineage, with their prompts."""
+        return self.state_store.held_duties(str(holder_id or "").strip())
+
     def program_resident_observers(
         self,
         resident_id: str,

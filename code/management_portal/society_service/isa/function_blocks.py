@@ -24,7 +24,15 @@ def delete(inv):
 
 def update_duty(inv):
     block = blocks.update_duty(inv.argument("lineage_id"), inv.argument("function_block_id"), inv.caller,
-                               **{k: inv.argument(k) for k in ("description", "category") if k in inv.call.arguments})
+                               **{k: inv.argument(k) for k in ("description", "category", "prompt", "memory_level")
+                                  if k in inv.call.arguments})
+    return {"function_block": block}
+
+
+def create_duty(inv):
+    block = blocks.create_duty(inv.argument("lineage_id"), inv.argument("holder_id"), inv.caller,
+                               description=inv.argument("description"), prompt=inv.argument("prompt"),
+                               **{k: inv.argument(k) for k in ("memory_level", "category") if k in inv.call.arguments})
     return {"function_block": block}
 
 
@@ -34,4 +42,4 @@ def order_duties(inv):
 
 
 HANDLERS = {"Functionalize": functionalize, "Unfunctionalize": unfunctionalize, "UpdateFunctionBlock": update,
-            "DeleteFunctionBlock": delete, "UpdateDuty": update_duty, "OrderDuties": order_duties}
+            "DeleteFunctionBlock": delete, "CreateDuty": create_duty, "UpdateDuty": update_duty, "OrderDuties": order_duties}

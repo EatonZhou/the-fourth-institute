@@ -277,6 +277,7 @@ class PublicPagesHttp:
                     '/static/portal_resident_menu_group.js',
                     '/static/portal_resident_menu_identity.js',
                     '/static/portal_resident_menu_journal.js',
+                    '/static/portal_resident_menu_memory.js',
                     '/static/portal_resident_menu_resident.js',
                     '/static/portal_resident_menu_runtime.js',
                     '/static/portal_resident_menu_tabs.js',

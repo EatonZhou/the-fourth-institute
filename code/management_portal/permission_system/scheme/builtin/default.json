@@ -842,6 +842,9 @@
     "UpdateFunctionBlock": {
       "a": "@contributor"
     },
+    "CreateDuty": {
+      "a": "@contributor"
+    },
     "UpdateDuty": {
       "a": "@contributor"
     },

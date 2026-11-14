@@ -1445,6 +1445,9 @@ def resident_system_instructions(
             family_role = (record.get("family") or {}).get("role") in {"router", "steward"}
             parts.append(InjectionPart("personal_assistant", personal,
                 "session_start" if family_role else "every_turn", "prompt_prefix" if family_role else "system"))
+        # The duty list and duty prompts travel with resident.md's placement.
+        from .duty_memory import injection_parts
+        parts.extend(injection_parts(record, session_placement="system" if transport == "system_instructions" else "prompt_prefix"))
     parts.extend(resident_prompt_domain.reporting_instructions(record, job).parts)
     return SystemInstructions(parts=tuple(parts)).validate()
 
@@ -1495,6 +1498,8 @@ def preview_prompt_injection(record: dict[str, Any], actor: str, turn: str = "fi
         actual_prompt = f"{plan.system_context}\n\n{actual_prompt}"
     labels = {name: label for name, (label, _description, _choices) in prompt_injection.CATEGORIES.items()}
     labels["reporting_policy"] = "汇报策略（正式配置，每轮）"
+    from .duty_memory import PART_LABELS
+    labels.update(PART_LABELS)
     settings = resident_runtime_domain.read_resident_runtime_settings(record)
     return {
         "resident_id": resident_domain_common.record_resident_id(record),

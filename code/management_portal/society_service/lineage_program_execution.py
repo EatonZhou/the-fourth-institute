@@ -1156,12 +1156,18 @@ def _deliver_packet_to_agent(
         packet.get("from_node_id") or immediate_source_id
     )
     source_resident_id = str(packet.get("from_resident_id") or "")
+    from .duty_memory import trigger_prompt
+    # A duty's trigger-time prompt joins the task of the duty's own wires.
+    task = "\n\n".join(filter(None, (
+        lineage_primitives.normalize_invocation_prompt(invocation.get("prompt")),
+        trigger_prompt(lineage, str(invocation.get("source_wire_id") or ""), target_id),
+    )))
     prompt = lineage_program_packet_routing.packet_invoke_prompt(
         event,
         source_node_id=source_node_id,
         source_resident_id=source_resident_id,
         routed_by_node_id=immediate_source_id,
-        prompt=lineage_primitives.normalize_invocation_prompt(invocation.get("prompt")),
+        prompt=task,
         packet_id=str(packet.get("id") or ""),
         packet_key=str(packet.get("key") or ""),
         packet=packet,

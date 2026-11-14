@@ -30,6 +30,15 @@ def update_duty(lineage_id, function_block_id, actor, **changes):
     return block
 
 
+def create_duty(lineage_id, holder_id, actor, **fields):
+    from . import lineage_graph_edits
+    _, block = lineage_graph_edits.commit_lineage_edit(
+        lineage_id, actor,
+        lambda body: function_block_authoring.create_duty_in_body(body, holder_id, actor, **fields),
+        reason="CreateDuty", full_view=False)
+    return block
+
+
 def order_duties(lineage_id, holder_id, function_block_ids, actor):
     from . import lineage_graph_edits
     _, ids = lineage_graph_edits.commit_lineage_edit(

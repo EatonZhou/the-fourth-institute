@@ -437,6 +437,10 @@ class LineageDefinitions:
             self.project_graphs.synchronize(connection, projects)
         self.database.write(write)
 
+    def held_duties(self, holder_id: str) -> list[dict[str, Any]]:
+        with self.database.read() as connection:
+            return duty_storage.held_by(connection, holder_id)
+
     def lineage_ids_for_resident(self, resident_id: str) -> list[str]:
         with self.database.read() as connection:
             rows = connection.execute(

@@ -479,6 +479,9 @@ class LineageDataStore:
     def lineage_ids_for_resident(self, resident_id: str) -> list[str]:
         return self.definitions.lineage_ids_for_resident(resident_id)
 
+    def held_duties(self, holder_id: str) -> list[dict[str, Any]]:
+        return self.definitions.held_duties(holder_id)
+
     def lineage_snapshot(self, lineage_id: str) -> tuple[dict[str, Any], dict[str, Any]]:
         return self.definitions.lineage_snapshot(lineage_id)
 
