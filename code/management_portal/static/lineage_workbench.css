@@ -1091,3 +1091,9 @@
 .principalUnavailableCard .principalAccessLock { position: absolute; right: 10px; bottom: 9px; width: 14px; height: 14px; color: var(--muted); }
 .agentItem.locked .agentTitle { color: var(--muted); }
 .whichResidentRequestDetails { color: var(--muted); font-size: inherit; }
+/* Society navigation uses the same title owner as its Chat and HATG panels. */
+body[data-portal-workbench-entry="lineage"] .sideView > .paneHead > .paneTitle {
+  font-size:var(--portal-pane-title-size);
+  font-weight:var(--portal-pane-title-weight);
+  line-height:var(--portal-pane-title-line-height);
+}

@@ -676,6 +676,7 @@
     stableHue,
     staticAssetUrl,
     statusHtml,
+    panelSizing: Object.freeze({ conversationMinWidth: 280 }),
     titleGlyph,
     toneForStatus,
   });

@@ -189,7 +189,7 @@
   overflow: visible;
 }
 
-.portalChatWorkspaceRoot .chatHead, .portalResponsiveHead { row-gap:4px; }
+.portalChatWorkspaceRoot .chatHead, .portalResponsiveHead { row-gap:4px; --portal-header-row-gap:4px; }
 
 .portalChatWorkspaceRoot .chatHead > .paneHeadActions, .portalResponsiveHead > .paneHeadActions {
   margin-inline-start: auto;
@@ -416,11 +416,16 @@
   font-size: 10px;
 }
 
+:root {
+  --portal-pane-title-size: 13px;
+  --portal-pane-title-weight: 800;
+  --portal-pane-title-line-height: 18px;
+}
 .paneTitle {
   min-width: 0;
-  font-size: 13px;
-  font-weight: 800;
-  line-height: 18px;
+  font-size: var(--portal-pane-title-size);
+  font-weight: var(--portal-pane-title-weight);
+  line-height: var(--portal-pane-title-line-height);
   color: var(--text, #111827);
   overflow: hidden;
   text-overflow: ellipsis;

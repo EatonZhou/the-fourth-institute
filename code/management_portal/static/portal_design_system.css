@@ -210,7 +210,7 @@ body { font-family: var(--portal-font); }
   vertical-align: -0.125em;
 }
 
-.portalButton .portalIcon {
+.portalButton .portalIcon, .lineageSettingsBtn .portalIcon {
   width: 16px;
   height: 16px;
   flex: 0 0 auto;
@@ -437,6 +437,8 @@ textarea.portalControl {
 }
 
 .portalSegmented {
+  --portal-segmented-font-size: 12px;
+  --portal-segmented-padding: 5px 8px;
   max-width: 100%;
   display: inline-flex;
   flex-wrap: wrap;
@@ -452,9 +454,9 @@ textarea.portalControl {
   border-radius: calc(var(--portal-control-radius) - 2px);
   background: transparent;
   color: var(--muted, #64748b);
-  padding: 5px 8px;
+  padding: var(--portal-segmented-padding, 5px 8px);
   font: inherit;
-  font-size: 12px;
+  font-size: var(--portal-segmented-font-size, 12px);
   cursor: pointer;
 }
 

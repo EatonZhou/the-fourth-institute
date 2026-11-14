@@ -1,26 +1,33 @@
 /* Lineage panel: narrow pane, narrow window and reduced motion overrides. Pages load this file
    right after hatg_panel_dialogs.css. */
 @scope (:is(.portalHatgPanelComponent, .portalHatgOverlayComponent)) {
-/* Narrow panes keep the header on one line: the title gives up width first,
-   the Context / Workspace / Map switch stays beside it and secondary actions
-   collapse to icons or the toolbar's "more" menu. */
+/* Compact panes give the title a line, equal-width view tabs and wrapping actions.
+   Toolbar overflow continues to use the existing more-menu behavior. */
 @container lineage-hatg-pane (max-width: 760px) {
-  .hatgToolbar {
-    grid-template-columns: auto minmax(64px, 1fr) auto minmax(0, max-content);
-    gap: 6px;
+  .hatgToolbar, .hatgToolbar:has(> .graphActions[data-selection-active="true"]) {
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-areas: "rail title" "view view" "actions actions";
+    column-gap: 6px;
+    row-gap: var(--portal-header-row-gap);
   }
+  .hatgPaneRailControls { grid-area: rail; }
 
   .hatgTitleBlock {
+    grid-area: title;
     display: block;
     min-width: 0;
   }
 
   .hatgViewSwitch {
+    grid-area: view;
     min-width: 0;
-    grid-template-columns: repeat(3, minmax(44px, auto));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    width: 100%;
   }
 
   .hatgToolbar > .graphActions {
+    grid-area: actions;
+    width: 100%;
     justify-self: end;
   }
 
@@ -48,42 +55,6 @@
     height: 13px;
     padding: 0 3px;
     font-size: 7px;
-  }
-}
-
-@container lineage-hatg-pane (max-width: 480px) {
-  .hatgToolbar {
-    grid-template-columns: auto minmax(0, 1fr) minmax(0, max-content);
-    grid-template-areas:
-      "rail title actions"
-      "view view view";
-  }
-
-  .hatgPaneRailControls { grid-area: rail; }
-  .hatgTitleBlock { grid-area: title; }
-  .hatgViewSwitch { grid-area: view; grid-template-columns: repeat(3, minmax(44px, 1fr)); }
-  .hatgToolbar > .graphActions { grid-area: actions; }
-}
-
-@container lineage-hatg-pane (max-width: 420px) {
-  .hatgToolbar {
-    grid-template-columns: auto minmax(0, 1fr);
-    grid-template-areas:
-      "rail title"
-      "view view"
-      "actions actions";
-  }
-
-  .hatgToolbar > .graphActions {
-    width: 100%;
-  }
-
-  .hatgToolbar:has(> .graphActions[data-selection-active="true"]) {
-    grid-template-columns: auto minmax(0, 1fr);
-    grid-template-areas:
-      "rail title"
-      "view view"
-      "actions actions";
   }
 }
 
@@ -143,4 +114,18 @@
 :root[data-portal-motion="reduced"] .hatgNode[data-status="queued"]::after,
 :root[data-portal-motion="reduced"] .hatgNodeControl[data-busy="true"]::before,
 :root[data-portal-motion="reduced"] .programWireHintPulse { animation: none; }
+
+/* Match the shared Chat header without imposing a second content-width floor. */
+.hatgTitleBlock { min-width:0; }
+.hatgTitleRow h1 { font-size:var(--portal-pane-title-size); font-weight:var(--portal-pane-title-weight); line-height:var(--portal-pane-title-line-height); }
+.hatgToolbar > .graphActions { flex-wrap:wrap; justify-content:flex-end; row-gap:var(--portal-header-row-gap); }
+.hatgPaneRailControls .portalButton, .lineageSettingsBtn { width:var(--portal-control-height); min-width:var(--portal-control-height); height:var(--portal-control-height); min-height:var(--portal-control-height); }
+.hatgViewSwitch { min-width:0; gap:3px; padding:3px; }
+.hatgViewSwitch .hatgViewTab { min-width:0; padding:var(--portal-segmented-padding); font:inherit; font-size:var(--portal-segmented-font-size); }
+.hatgViewTab span { min-width:0; font:inherit; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.graphNavigationBar { max-width:calc(100% - 2 * var(--hatg-navigation-inset)); font-size:11px; }
+.graphViewportCluster, .graphViewportControls, .graphNavigator { flex-wrap:wrap; max-width:100%; }
+.graphNavigator .graphNavigatorToolBtn, .graphZoomResetBtn, .graphViewportHint { font-size:inherit; }
+.graphNodeSearchCluster { max-width:100%; min-width:0; }
+.graphNodeSearchResults { max-width:100%; }
 }

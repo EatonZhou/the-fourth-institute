@@ -3685,7 +3685,7 @@
     version: 1,
     component: "PortalChatWorkspace.ResidentChatPanel",
     presentation: { title: window.PortalI18n.t("Chat Workspace"), icon: "chat" },
-    sizing: { minWidth: 280, minHeight: 220 },
+    sizing: { minWidth: window.PortalUIPrimitives.panelSizing.conversationMinWidth, minHeight: 220 },
     instances: "multiple",
     capabilities: ["conversation", "runtime-settings", "references", "snapshot", "restore"],
     behavior: { canHide: true, canCollapse: true, canMove: true, closable: true },

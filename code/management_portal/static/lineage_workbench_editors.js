@@ -171,7 +171,6 @@
           type,
           title: binding.title || binding.resident_id || window.PortalI18n.t("Chat Workspace"),
           layoutTitle: window.PortalI18n.t("Chat Workspace"),
-          minWidth: 320,
           options: {
             target: binding,
             refsScope: "lineage",

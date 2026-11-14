@@ -128,8 +128,9 @@
   margin: 0;
   overflow: hidden;
   color: var(--text);
-  font-size: 15px;
-  line-height: 1.25;
+  font-size: var(--portal-pane-title-size);
+  font-weight: var(--portal-pane-title-weight);
+  line-height: var(--portal-pane-title-line-height);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -150,7 +151,7 @@
 }
 
 .lineageSettingsBtn:hover { background: var(--panel-2); color: var(--accent); }
-.lineageSettingsBtn svg { width: 14px; height: 14px; stroke: currentColor; }
+.lineageSettingsBtn svg { stroke: currentColor; }
 
 .hatgViewSwitch {
   flex: 0 0 auto;

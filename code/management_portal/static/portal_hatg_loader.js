@@ -447,7 +447,7 @@
     version: 1,
     component: "PortalHatgLoader",
     presentation: { title: "HATG", icon: "network" },
-    sizing: { minWidth: 420, minHeight: 240 },
+    sizing: { minWidth: window.PortalUIPrimitives.panelSizing.conversationMinWidth, minHeight: 240 },
     instances: "multiple",
     capabilities: ["graph-edit", "graph-history", "selection", "snapshot", "restore"],
     behavior: { canHide: true, canCollapse: true, canMove: true, closable: true },
