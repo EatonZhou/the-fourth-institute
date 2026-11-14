@@ -32,7 +32,7 @@
 @container lineage-hatg-viewport (min-width: 721px) {
   /* Limit this container rule to its consumers; a universal subject also makes
      unrelated Chat descendants candidates during streamed-message layout. */
-  .hatgViewport:has(> .programInspectorPanel:not([hidden])) > :is(.hatgCanvas, .graphNavigationBar) {
+  .hatgViewport:has(> .programInspectorPanel:not([hidden])) > :is(.hatgCanvas, .graphNavigationTools) {
     --hatg-inspector-reserved-width: min(clamp(278px, 40cqw, 362px), calc(100% - 74px));
   }
 
@@ -40,10 +40,11 @@
     right: var(--hatg-inspector-reserved-width);
   }
 
-  .hatgViewport:has(> .programInspectorPanel:not([hidden])) .graphNavigationBar {
+  .hatgViewport:has(> .programInspectorPanel:not([hidden])) .graphNavigationTools {
     right: calc(
       var(--hatg-inspector-reserved-width)
       + var(--hatg-navigation-inset)
+      + 44px
     );
   }
 }

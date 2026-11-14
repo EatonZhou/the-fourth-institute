@@ -132,10 +132,10 @@
                 <button class="graphZoomResetBtn" id="graphZoomResetBtn" type="button" aria-label="恢复 HATG 100% 视图" title="恢复 100%（0）" aria-keyshortcuts="0" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;恢复 HATG 100% 视图&quot;, &quot;title&quot;: &quot;恢复 100%（0）&quot;}"><span id="graphZoomValue">100%</span></button>
                 <button class="graphViewportBtn" id="graphZoomInBtn" type="button" aria-label="放大 HATG" title="放大（+）" aria-keyshortcuts="+" data-portal-icon="plus" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;放大 HATG&quot;, &quot;title&quot;: &quot;放大（+）&quot;}"></button>
                 <button class="graphViewportBtn graphFitBtn" data-portal-icon="fit-view" id="graphFitBtn" type="button" aria-label="适配全部 HATG 节点" title="适配全部节点（F）" aria-keyshortcuts="F" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;适配全部 HATG 节点&quot;, &quot;title&quot;: &quot;适配全部节点（F）&quot;}"></button>
-                <span class="graphViewportHint"><!--portal-i18n:"拖动画布 · 滚轮缩放"-->拖动画布 · 滚轮缩放</span>
               </div>
             </div>
-            <div class="graphNavigator" id="graphNavigator" aria-label="大图导航" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;大图导航&quot;}">
+          </div>
+            <div class="graphNavigator graphNavigationTools" id="graphNavigator" role="toolbar" aria-label="大图导航" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;大图导航&quot;}">
               <div class="graphNodeSearchCluster" id="graphNodeSearchCluster" data-expanded="false">
                 <button class="graphViewportBtn graphNodeSearchToggle" data-portal-icon="search" id="graphNodeSearchToggle" type="button" aria-label="搜索节点" title="搜索节点" aria-expanded="false" aria-controls="graphNodeSearchInput" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;搜索节点&quot;, &quot;title&quot;: &quot;搜索节点&quot;}"></button>
                 <div class="graphNodeSearch" data-portal-search-field data-portal-search-density="micro">
@@ -143,6 +143,8 @@
                   <div class="graphNodeSearchResults portalHatgOverlayComponent" id="graphNodeSearchResults" hidden></div>
                 </div>
               </div>
+              <button class="graphViewportBtn" id="graphMoreToggle" type="button" aria-label="更多画布工具" aria-controls="graphMoreMenu" aria-expanded="false" data-portal-i18n-attrs="{&quot;aria-label&quot;:&quot;更多画布工具&quot;}">…</button>
+              <div class="graphMoreMenu portalHatgOverlayComponent" id="graphMoreMenu" hidden>
               <select id="graphRelationFilter" aria-label="筛选关系类型" title="筛选关系类型" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;筛选关系类型&quot;, &quot;title&quot;: &quot;筛选关系类型&quot;}">
                 <option value="all"><!--portal-i18n:"全部关系"-->全部关系</option>
                 <option value="inheritance"><!--portal-i18n:"轨迹继承"-->轨迹继承</option>
@@ -171,6 +173,9 @@
           <svg class="hatgMinimap" data-portal-visualization="hatg-minimap" id="hatgMinimap" viewBox="0 0 100 100" preserveAspectRatio="none" role="img" aria-label="HATG 小地图；点击可移动视口" hidden data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;HATG 小地图；点击可移动视口&quot;}"></svg>
           <div class="hatgCanvasCornerTools">
           <button class="portalButton is-icon hatgToolboxToggle" id="hatgToolboxToggle" type="button" aria-label="工具箱" title="工具箱" aria-expanded="false" aria-controls="hatgToolbox" data-portal-i18n-attrs="{&quot;aria-label&quot;:&quot;工具箱&quot;,&quot;title&quot;:&quot;工具箱&quot;}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h16v12H4zM8 8V4h8v4M4 12h16M9 11v3m6-3v3"/></svg></button>
+          <button class="portalButton is-icon hatgLegendToggle" id="hatgLegendToggle" type="button" data-portal-icon="list" aria-label="图例" title="图例" aria-controls="hatgLegendPopover" aria-expanded="false" data-portal-i18n-attrs="{&quot;aria-label&quot;:&quot;图例&quot;,&quot;title&quot;:&quot;图例&quot;}"></button>
+          </div>
+          <div class="hatgLegendPopover portalHatgOverlayComponent" id="hatgLegendPopover" hidden>
           <div class="graphLegend" id="collaborationGraphLegend" aria-label="HATG 协作关系图例" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;HATG 协作关系图例&quot;}">
             <span><i class="legendLine inheritance"></i><!--portal-i18n:"Fork 继承"-->Fork 继承</span>
             <span><i class="legendLine handoff"></i><!--portal-i18n:"Workspace Handoff"-->Workspace Handoff</span>

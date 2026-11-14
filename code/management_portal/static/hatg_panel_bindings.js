@@ -48,7 +48,9 @@
 
     let stopNavigationMeasurement = null;
     let seedInspectorObserver = null;
+    const graphPopovers = [];
     function disconnectGraphObservers() {
+      graphPopovers.splice(0).forEach(popover => popover.destroy());
       stopNavigationMeasurement?.();
       stopNavigationMeasurement = null;
       seedInspectorObserver?.disconnect();
@@ -68,6 +70,13 @@
     function bindToolbox() {
       const toggle = $id("hatgToolboxToggle"), drawer = $id("hatgToolbox");
       if (!toggle || !drawer) return;
+      for (const [trigger, panel, placement] of [['graphMoreToggle','graphMoreMenu','bottom-end'], ['hatgLegendToggle','hatgLegendPopover','top-start']]) {
+        const button = $id(trigger), content = $id(panel);
+        if (!button || !content) continue;
+        const popover = window.PortalOverlay.bindPopover({trigger:button,panel:content,placement,closeOnOutside:true,closeOnEscape:true});
+        panelHost.pageStateController.listen('panel',button,'click',() => popover.toggle());
+        graphPopovers.push(popover);
+      }
       const show = open => { drawer.hidden = !open; toggle.setAttribute("aria-expanded", String(open)); };
       const listen = (node, event, handler) => panelHost.pageStateController.listen("panel", node, event, handler);
       $id("hatgToolboxStore")?.replaceChildren(toolboxStoreEntry());

@@ -38,7 +38,7 @@
       const content = bodyPage.querySelector('[data-structure-content]');
       if (mode === 'json') { content.innerHTML = '<div class="templateCodeEditor" data-code-editor></div>'; mountCode(content.firstElementChild, JSON.stringify(draft.body, null, 2), 'json'); return; }
       if (mode === 'list') { renderStructureLists(); return; }
-      content.innerHTML = `<div class="templateGraphWorkspace"><div class="templateGraphHost" data-template-graph></div><aside class="templateGraphInspector portalHatgOverlayComponent" data-graph-inspector aria-label="${esc(t('选中元素'))}"></aside></div>${functionBlockField()}`;
+      content.innerHTML = `<div class="templateGraphWorkspace ${editorState.workshop ? 'is-workshop' : ''}"><div class="templateGraphHost" data-template-graph></div><aside class="templateGraphInspector portalHatgOverlayComponent" data-graph-inspector aria-label="${esc(t('选中元素'))}"></aside></div>${functionBlockField()}`;
       editorState.graph = window.LineageTemplateGraph.mount({ root: content.querySelector('[data-template-graph]'), body: () => draft.body, workshop: editorState.workshop,
         onBeforeChange: readDraft, onChange: schedulePreview, onSelect: renderInspector });
       renderInspector('');

@@ -65,6 +65,7 @@
     const lineageEditorTypes = [
       { type: "chat", title: window.PortalI18n.t("Chat Workspace"), icon: "chat" },
       { type: "hatg", title: "HATG", icon: "network" },
+      { type: "workshop", title: window.PortalI18n.t("模板工坊"), icon: "component" },
       { type: "preview", title: window.PortalI18n.t("预览"), icon: "window" },
       ...(terminalAllowed() ? [terminalEditorType] : []),
     ];
@@ -154,6 +155,10 @@
       const projection = window.PortalProjections?.descriptor({ instanceId, type, resource });
       if (projection) return projection;
       const binding = { ...(resource || {}), kind: type };
+      if (type === 'workshop') {
+        return {id:instanceId,type,title:binding.title || window.PortalI18n.t('模板工坊'),
+          options:{target:binding},reusable:false};
+      }
       if (type === "navigation") {
         return {
           id: instanceId,

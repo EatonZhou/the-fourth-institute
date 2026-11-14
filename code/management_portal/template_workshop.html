@@ -51,17 +51,8 @@
   <script src="/static/lineage_template_workshop_draft.js"></script>
   <script src="/static/lineage_template_workshop.js"></script>
   <script src="/static/lineage_template_workshop_chat.js"></script>
+  <script src="/static/portal_template_workshop_loader.js"></script>
   <script src="/static/template_workshop_page.js"></script>
-</head><body>
-  <div class="templateWorkshop" id="templateWorkshop">
-    <section id="workshopCanvas" class="workshopCanvas"><form id="workshopEditor"></form>
-      <p id="workshopError" role="alert" hidden></p>
-      <button type="button" class="portalButton is-icon workshopToolboxButton" data-workshop-toolbox data-portal-icon="toolbox" aria-label="工具箱" data-portal-i18n-attrs="{&quot;aria-label&quot;:&quot;工具箱&quot;}"></button>
-      <aside id="workshopToolbox" class="workshopToolbox" hidden><header><strong><!--portal-i18n:"工具箱"-->工具箱</strong><button type="button" class="portalButton" data-workshop-toolbox><!--portal-i18n:"关闭"-->关闭</button></header><div id="workshopShelf" class="templateShelf"></div></aside>
-    </section>
-    <aside class="workshopChatColumn"><header><strong><!--portal-i18n:"工坊助手"-->工坊助手</strong><button type="button" class="portalButton" data-workshop-chat><!--portal-i18n:"收起"-->收起</button></header>
-      <div id="workshopChat"></div><p id="workshopChatStatus" role="status"></p>
-      <p id="workshopUnsaved" hidden><span><!--portal-i18n:"助手看到的是上次保存的版本"-->助手看到的是上次保存的版本</span> <button type="button" class="portalButton is-compact" id="workshopChatSave" translate="no">Save</button></p>
-    </aside>
-  </div>
+</head><body class="workshopStandalone">
+  <main id="workshopPage" class="workshopStandaloneHost"></main>
 </body></html>

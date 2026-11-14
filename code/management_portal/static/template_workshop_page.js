@@ -1,20 +1,20 @@
 (() => {
   'use strict';
   async function start() {
-    const root = document.querySelector('#templateWorkshop');
+    const root = document.querySelector('#workshopPage');
     try {
       await window.PortalIdentity.load();
-      await window.PortalHatgLoader.load();
       const params = new URLSearchParams(location.search);
-      const workshop = window.LineageTemplateWorkshop.mount({root,lineageId:params.get('lineage') || '',templateId:params.get('template') || ''});
-      await workshop.load();
-      const chat = window.LineageTemplateWorkshopChat.mount({root,workshop});
-      await chat.load();
-      window.addEventListener('pagehide', () => { chat.destroy(); workshop.destroy(); }, {once:true});
-    } catch (error) {
-      const node = document.querySelector('#workshopError'); node.hidden = false;
-      node.textContent = window.PortalI18n.message(error.message || error);
-    }
+      const panel = window.PortalWorkbench.createPanel('workshop', {root,id:'standaloneWorkshop',
+        target:{template_id:params.get('template') || '',lineage_id:params.get('lineage') || ''},
+        emit(event,detail) {
+          if (event !== 'workshop-saved') return;
+          const url = new URL(location.href); url.searchParams.set('template',detail.template_id);
+          history.replaceState(null,'',url);
+        }});
+      await panel.connect();
+      window.addEventListener('pagehide',() => panel.destroy(),{once:true});
+    } catch (error) { root.textContent = window.PortalI18n.message(error.message || error); }
   }
-  document.addEventListener('DOMContentLoaded', () => void start(), {once:true});
+  document.addEventListener('DOMContentLoaded',() => void start(),{once:true});
 })();

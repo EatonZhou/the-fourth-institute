@@ -40,6 +40,7 @@
         canvas: $id("hatgCanvas"),
         getContext: () => ({ lineage_id: state.lineage?.lineage_id || "", leader_resident_id: state.lineage?.leader_resident_id, residents: state.lineage?.nodes || [] }),
         resolveTarget: templateCanvasTarget,
+        onOpenWorkshop: resource => panelHost.hatgComponentOptions.emit('workshop-open', {resource}),
         residentSettingsOptions: () => state.agentBackendCatalog,
         onChange: renderGraph,
         onPromptDraft: (text, target) => {

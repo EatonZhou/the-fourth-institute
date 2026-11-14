@@ -229,6 +229,7 @@
     let hintTimer = null;
     const labels = roleLabels();
     root.classList.add('portalHatgOverlayComponent', 'templateGraph');
+    root.classList.toggle('is-workshop',workshop);
     root.innerHTML = `<div class="templateGraphPalette" ${workshop ? 'hidden' : ''} role="toolbar" aria-label="${esc(t('添加到结构'))}">
         <span class="templateGraphPaletteLabel">${esc(t('角色'))}</span>${Object.keys(ROLE_PREFIX).map(from => `<button type="button" class="templateGraphChip" data-add-role="${from}" title="${esc(t('添加角色'))}：${esc(labels[from])}">+ ${esc(labels[from])}</button>`).join('')}
         <span class="templateGraphPaletteLabel">${esc(t('组件'))}</span>${PALETTE.map(kind => {
@@ -450,7 +451,7 @@
       if (chip.dataset.addRole) addRole(chip.dataset.addRole);
       else if (chip.dataset.addComponent) addComponent(chip.dataset.addComponent);
       else if (chip.hasAttribute('data-add-found')) addFound();
-      else controller.fit({ duration: 0, maxScale: 1.1 });
+      else controller.fit({ duration: 0, maxScale: workshop ? 1 : 1.1 });
     }, { signal: abort.signal });
     root.addEventListener('dragstart', event => {
       const chip = event.target.closest('[data-add-component]');
@@ -465,12 +466,12 @@
     }, { signal: abort.signal });
 
     render();
-    controller.fit({ duration: 0, maxScale: 1.1 });
+    controller.fit({ duration: 0, maxScale: workshop ? 1 : 1.1 });
     return Object.freeze({
       render, select,
       position: event => controller.screenToPosition(event.clientX, event.clientY),
       selected: () => selected,
-      fit: () => controller.fit({ duration: 0, maxScale: 1.1 }),
+      fit: () => controller.fit({ duration: 0, maxScale: workshop ? 1 : 1.1 }),
       remove: key => change(source => { removeElement(source, key); return ''; }),
       destroy() { clearTimeout(hintTimer); abort.abort(); controller.destroy(); root.replaceChildren(); },
     });

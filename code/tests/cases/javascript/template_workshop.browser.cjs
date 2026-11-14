@@ -15,6 +15,7 @@ const {chromium} = require(path.join(repo, 'management_portal/test_framework/tau
     await page.evaluate(async lineageId => {
       PortalI18n.apply('zh-CN');
       window.PortalIdentity={username:()=>'sample_admin'};
+      window.PortalAPI={get:path=>fetch(path).then(response=>response.json())};
       window.opened=[]; window.PortalNav={openPage:url=>{opened.push(url);return Promise.resolve();}};
       window.calls=[];
       window.execute=async(instruction,args={},options={})=>{
@@ -75,18 +76,19 @@ const {chromium} = require(path.join(repo, 'management_portal/test_framework/tau
     assert.ok(validations.includes(true)&&validations.includes(false));
     const resolved=await page.evaluate(()=>execute('ReadResource',{address:workshop.template().template_id}));
     assert.equal(JSON.parse(resolved.text).title,'Workshop updated');
-    // Creating the assistant is an explicit confirmation, never a page-open mutation.
+    // Opening stays read-only; first conversation creates in the user's My Lineage.
     assert.equal(await page.evaluate(()=>calls.filter(call=>call.instruction==='ApplyTemplate').length),0);
-    const prepare=page.evaluate(()=>chat.prepare()); prepare.catch(()=>{});
-    await page.getByRole('button',{name:'创建',exact:true}).click();
-    const assistant=await prepare;
-    const graph=await page.evaluate(()=>execute('GetLineage',{lineage_id:workshop.lineageId}));
+    const assistant=await page.evaluate(()=>chat.prepare());
+    assert.equal(assistant.lineage_id,process.env.WORKSHOP_PERSONAL_LINEAGE);
+    assert.notEqual(assistant.lineage_id,process.env.WORKSHOP_TEST_LINEAGE);
+    const graph=await page.evaluate(lineage_id=>execute('GetLineage',{lineage_id}),assistant.lineage_id);
     const builtin=await page.evaluate(async()=> (await execute('ListTemplates')).templates.find(t=>t.builtin_key==='workshop_assistant').template_id);
     assert.equal(await page.evaluate(({lineage,builtin})=>LineageTemplateWorkshopChat.findAssistant(lineage,builtin),{lineage:graph.lineage,builtin}),assistant.resident_id);
     assert.ok(graph.lineage.function_blocks.some(block=>block.duty?.holder_id===assistant.resident_id&&block.duty?.category==='fixed'));
     await page.evaluate(()=>chat.prepare());
     assert.equal(await page.evaluate(()=>calls.filter(call=>call.instruction==='ApplyTemplate'&&!call.args.dry_run).length),1);
     assert.equal(await page.evaluate(()=>calls.filter(call=>call.instruction==='CreateDuty').length),1);
+    assert.equal(await page.evaluate(()=>calls.filter(call=>call.instruction==='UpdateDuty').length),0);
     assert.equal(await page.evaluate(()=>chat.context().resources[0].address),await page.evaluate(()=>workshop.template().template_id));
     await page.evaluate(()=>chatOptions.submissionContext());
     // Read a real workspace file, and preserve local changes when the user chooses so.
@@ -111,8 +113,6 @@ const {chromium} = require(path.join(repo, 'management_portal/test_framework/tau
     assert.equal(await page.locator('[data-meta="title"]').inputValue(),'Assistant replacement');
     assert.equal(await page.evaluate(()=>workshop.dirty()),true);
     assert.ok(await page.evaluate(()=>document.querySelector('#workshopUnsaved').compareDocumentPosition(document.querySelector('#workshopChat .composer')) & Node.DOCUMENT_POSITION_FOLLOWING));
-    const back=page.locator('[data-workshop-back]').click();await back;
-    await page.getByRole('button',{name:'取消',exact:true}).click();
     assert.deepEqual(await page.evaluate(()=>opened),[]);
     // Non-structure modules keep their own editor and accept assistant drafts too.
     await page.evaluate(async()=>{
@@ -153,6 +153,69 @@ const {chromium} = require(path.join(repo, 'management_portal/test_framework/tau
     await page.waitForFunction(()=>workshop.template().created_by==='sample_admin');
     assert.equal(await page.locator('[data-workshop-save]').isDisabled(),false);
     assert.equal((await page.evaluate(id=>execute('GetTemplate',{template_id:id}),builtinOriginal.id)).template.title,builtinOriginal.title);
+    // The real lineage listing captured before My Lineage exists disables Chat
+    // and prepare cannot create in the source graph as a fallback.
+    await page.evaluate(async()=>{
+      window.noPersonalBefore=calls.filter(call=>['ApplyTemplate','CreateDuty'].includes(call.instruction)).length;
+      window.chat=LineageTemplateWorkshopChat.mount({root:document.querySelector('#templateWorkshop'),workshop,execute,
+        listLineages:()=>fetch('/without-personal').then(response=>response.json())});
+      await chat.load();
+    });
+    assert.ok(await page.locator('#workshopChat').innerText().then(text=>text.includes('当前用户没有 My Lineage')));
+    assert.equal(await page.evaluate(async()=>(await chatOptions.resolveResident()).chat_workspace.composer.can_send),false);
+    await assert.rejects(page.evaluate(()=>chat.prepare()),/当前用户没有 My Lineage/);
+    assert.equal(await page.evaluate(()=>calls.filter(call=>['ApplyTemplate','CreateDuty'].includes(call.instruction)).length),await page.evaluate(()=>noPersonalBefore));
+    // Real package and Workbench lifecycle, with the production Lineage editor
+    // descriptor: split, tab, focus, close guard and persisted binding restore.
+    await page.evaluate(async templateId=>{
+      chat.destroy();workshop.destroy();
+      document.body.innerHTML='<main id="cardWorkbench" style="height:100vh"></main>';
+      PortalIdentity.peek=()=>({});
+      window.PortalInstructionClient={execute};
+      const deps=Object.fromEntries(PortalLineageWorkbenchEditors.dependencies.map(key=>[key,()=>{}]));
+      const editors=PortalLineageWorkbenchEditors.createEditors({...deps,state:{},lineageSidebarRoots:new Map()});
+      PortalWorkbench.registerPanelPackage({type:'workshop-source-fixture',version:1,
+        presentation:{title:'HATG source',icon:'network'},sizing:{minWidth:200,minHeight:100},instances:'single',
+        capabilities:[],behavior:{canHide:true,canCollapse:true,canMove:true,closable:false},context:{channels:[]},persistence:{schemaVersion:1},
+        create:({root})=>{root.textContent='HATG source fixture';return root;}});
+      const store={value:null,read(){return this.value||{};},replace(value){this.value=structuredClone(value);}};
+      window.makeCards=()=>PortalWorkbench.create({id:'workshop-cards',root:'#cardWorkbench',store,
+        initialEditors:[{id:'source',type:'workshop-source-fixture'}],defaultLayout:PortalWorkbench.model.stack(['source']),
+        editorTypes:editors.lineageEditorTypes,createEditorDescriptor:editors.lineageEditorDescriptor,
+        restorePanel:spec=>editors.lineageEditorDescriptor({instanceId:spec.id,type:spec.type,resource:spec.binding}),
+        onPanelEvent:({event,sourcePanelId,detail},controller)=>{
+          if(['workshop-saved','workshop-title'].includes(event))controller.setPanelTitle(sourcePanelId,detail.title);
+          if(event==='workshop-deleted')void controller.closePanel(sourcePanelId);
+        }});
+      window.cards=makeCards();
+      await PortalTemplateWorkshopLoader.openInWorkbench(cards,{template_id:templateId},'source');
+      await cards.getPanelsByType('workshop')[0].ready;
+    },first);
+    assert.equal(await page.evaluate(()=>cards.getLayout().type),'split');
+    const active=page.locator('.workshopPanelHost:visible');
+    await active.locator('[data-meta="title"]').fill('Card persisted title');
+    await active.locator('[data-workshop-save]').click();
+    await page.waitForFunction(()=>cards.getPanelsByType('workshop')[0].target().title==='Card persisted title');
+    await page.evaluate(async templateId=>{
+      await PortalTemplateWorkshopLoader.openInWorkbench(cards,{template_id:templateId},'source');
+      await cards.getPanelsByType('workshop')[1].ready;
+    },builtinOriginal.id);
+    assert.equal(await page.evaluate(()=>cards.getPanelsByType('workshop').length),2);
+    await page.evaluate(async templateId=>PortalTemplateWorkshopLoader.openInWorkbench(cards,{template_id:templateId},'source'),first);
+    assert.equal(await page.evaluate(()=>cards.getPanelsByType('workshop').length),2);
+    assert.equal(await active.locator('[data-meta="title"]').inputValue(),'Card persisted title');
+    await active.locator('[data-meta="title"]').fill('Unsaved card edit');
+    const closing=page.evaluate(()=>cards.closePanel(cards.getPanelsByType('workshop')[0].id));closing.catch(()=>{});
+    await page.getByRole('button',{name:'取消',exact:true}).click();
+    assert.equal(await closing,false);
+    await active.locator('[data-meta="title"]').fill('Card persisted title');
+    await page.evaluate(async()=>{cards.destroy();window.cards=makeCards();await Promise.all(cards.getPanelsByType('workshop').map(panel=>panel.ready));});
+    assert.deepEqual(await page.evaluate(()=>cards.getPanelsByType('workshop').map(panel=>panel.target().template_id).sort()),[first,builtinOriginal.id].sort());
+    await page.evaluate(templateId=>cards.focusPanel(cards.getPanelsByType('workshop').find(panel=>panel.target().template_id===templateId).id),first);
+    await active.locator('.workshopMore summary').click();
+    await active.locator('[data-action="delete"]').click();
+    await page.getByRole('alertdialog').getByRole('button',{name:'删除',exact:true}).click();
+    await page.waitForFunction(()=>cards.getPanelsByType('workshop').length===1);
     assert.deepEqual(errors,[]);
     console.log('Workshop Chromium layout, inspector, pickup/drag, real saves, assistant discovery/duty and file draft conflicts passed.');
   } finally {await browser.close();}

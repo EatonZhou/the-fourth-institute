@@ -35,11 +35,11 @@
   z-index: 8;
   top: var(--hatg-navigation-inset);
   left: var(--hatg-navigation-inset);
-  right: var(--hatg-navigation-inset);
+  right: auto;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 6px;
   min-width: 0;
   border: 1px solid color-mix(in srgb, var(--border) 85%, transparent);
@@ -110,21 +110,27 @@
 .graphNavigator {
   display: flex;
   align-items: center;
-  flex: 1 1 320px;
+  flex: 0 0 auto;
   justify-content: flex-end;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 4px;
   min-width: 0;
   max-width: 100%;
 }
+
+.graphNavigationTools { position:absolute; z-index:8; top:var(--hatg-navigation-inset); right:calc(var(--hatg-navigation-inset) + 44px); padding:3px; gap:3px; border:1px solid var(--border); border-radius:9px; background:var(--panel); box-shadow:0 3px 10px #0b102017; }
+.graphMoreMenu { min-width:180px; display:grid; gap:6px; padding:8px; border:1px solid var(--border); border-radius:9px; background:var(--panel); box-shadow:0 6px 18px #0002; }
+.graphMoreMenu[hidden] { display:none; }
+.graphMoreMenu :is(button,select) { width:100%; min-height:28px; text-align:left; }
+.graphMoreMenu .graphVisibilitySummary { display:block; padding:6px; }
 
 /* Search starts as an icon; the toggle opens the field, which closes again
    when it is left empty. */
 .graphNodeSearchCluster { display: flex; flex: 0 1 auto; align-items: center; gap: 3px; min-width: 0; }
 .graphNodeSearchCluster:not([data-expanded="true"]) > .graphNodeSearch { display: none; }
 .graphNodeSearchCluster[data-expanded="true"] > .graphNodeSearchToggle { display: none; }
-.graphNodeSearchCluster[data-expanded="true"] { flex: 1 1 200px; }
-.graphNodeSearch { position: relative; width: min(240px, 100%); }
+.graphNodeSearchCluster[data-expanded="true"] { flex:0 0 auto; width:clamp(82px, calc(100cqw - 242px), 240px); }
+.graphNodeSearch { position: relative; width:100%; }
 .graphNodeSearchToggle { width: 25px; }
 .graphNodeSearchToggle:disabled { opacity: .52; }
 .graphNodeSearch input { min-height: 0; }
@@ -223,7 +229,6 @@
 
 @container lineage-hatg-viewport (max-width: 720px) {
   .graphViewportHint { display: none; }
-  .graphVisibilitySummary { display: none; }
   .graphNavigator select { max-width: 92px; }
 }
 
@@ -234,21 +239,7 @@
   .graphViewportCluster {
     max-width: 100%;
   }
-  .graphViewportControls,
-  .graphNavigator {
-    flex-wrap: wrap;
-  }
-  .graphNavigator {
-    width: 100%;
-  }
-  .graphNavigator select { display: none; }
-  .graphNodeSearchCluster { flex: 1 1 140px; }
-  .graphNodeSearch {
-    width: auto;
-    min-width: 82px;
-    flex: 1 1 auto;
-  }
-  .graphLegend { display: none; }
+  .graphViewportControls, .graphNavigator { flex-wrap:nowrap; }
 }
 
 

@@ -124,7 +124,7 @@
 .hatgViewSwitch .hatgViewTab { min-width:0; padding:var(--portal-segmented-padding); font:inherit; font-size:var(--portal-segmented-font-size); }
 .hatgViewTab span { min-width:0; font:inherit; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .graphNavigationBar { max-width:calc(100% - 2 * var(--hatg-navigation-inset)); font-size:11px; }
-.graphViewportCluster, .graphViewportControls, .graphNavigator { flex-wrap:wrap; max-width:100%; }
+.graphViewportCluster, .graphViewportControls, .graphNavigator { flex-wrap:nowrap; max-width:100%; }
 .graphNavigator .graphNavigatorToolBtn, .graphZoomResetBtn, .graphViewportHint { font-size:inherit; }
 .graphNodeSearchCluster { max-width:100%; min-width:0; }
 .graphNodeSearchResults { max-width:100%; }

@@ -24,7 +24,7 @@ const lineageId = 'lineage_8794980b1bb7';
 const componentId = 'effect_54f65c501b86';
 const familyId = 'fbi_4215c7259082';
 
-function entry(query, {collapsed = false, hidden = true, delayed = false} = {}) {
+function entry(query, {collapsed = false, hidden = true, delayed = false, workshops = []} = {}) {
   const calls = [], targets = [], reveals = [];
   const layout = {hidden: new Set(hidden ? ['hatg'] : []), collapsed: new Set(collapsed ? ['hatg'] : []), active: 'chat'};
   const graphState = {lineage: {lineage_id: lineageId}, selectedProgramObjectId: ''};
@@ -55,6 +55,9 @@ function entry(query, {collapsed = false, hidden = true, delayed = false} = {}) 
   };
   const workbench = {
     getPanel: id => id === 'hatg' ? panel : null,
+    getPanelsByType: type => type === 'workshop' ? workshops : [],
+    isPanelExpanded: id => !layout.hidden.has(id) && !layout.collapsed.has(id),
+    showPanel: id => { calls.push('show');layout.hidden.delete(id);layout.collapsed.delete(id); },
     applyWorkspace: workspace => {
       calls.push('workspace');
       layout.workspace = JSON.parse(JSON.stringify(workspace));
@@ -90,6 +93,16 @@ function entry(query, {collapsed = false, hidden = true, delayed = false} = {}) 
     open: () => context.applyOpeningHatgNavigation(),
     pending: () => vm.runInContext('pendingProgramItemId', context)};
 }
+
+test('refreshing a canvas URL preserves a restored workshop stack and reveals the canvas only when needed', async () => {
+  for (const hidden of [false,true]) {
+    const page=entry(`?lineage=${lineageId}&view=hatg`,{hidden,workshops:[{id:'saved-workshop'}]});
+    await page.open();
+    assert.equal(page.calls.includes('workspace'),false);
+    assert.equal(page.calls.includes('show'),hidden);
+    assert.equal(page.calls.includes('focus'),true);
+  }
+});
 
 test('explicit canvas entry replaces a hidden restored layout with the existing canvas preset', async () => {
   const page = entry(`?lineage=${lineageId}&view=hatg`);

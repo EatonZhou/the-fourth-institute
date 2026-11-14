@@ -25,6 +25,13 @@
   background-size: 1000% 500%;
   filter: drop-shadow(0 2px 2px color-mix(in srgb, #0b1020 19%, transparent));
 }
+
+/* Workshop presentation belongs to the reusable template graph and editor. */
+.templateGraphWorkspace.is-workshop { height:100%; min-height:0; display:block; position:relative; }
+.templateGraphWorkspace.is-workshop > .templateGraphHost { height:100%; min-height:0; }
+.templateGraphWorkspace.is-workshop > .templateGraphInspector { position:absolute; width:320px; max-width:calc(100% - 16px); max-height:70%; overflow:auto; z-index:10; box-shadow:0 8px 30px #0003; border:1px solid var(--border); border-radius:10px; background:var(--panel); padding:10px; }
+.templateGraphWorkspace.is-workshop + .templateCheck { display:none; }
+[data-structure-content]:has(> .templateGraphWorkspace.is-workshop) { height:100%; }
 /* ∞ marks a template whose result stays on the canvas as a Function Block. */
 .templateModeIcon {
   position: absolute;

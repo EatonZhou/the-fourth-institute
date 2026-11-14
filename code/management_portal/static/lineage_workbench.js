@@ -308,7 +308,14 @@
         syncLineageHatgPanel, unavailableResidentBindings, writeLastSelection, writeLineageUiState,
       });
 
-      function onLineagePanelBinding({ event, sourcePanelId }, workbench) {
+      function onLineagePanelBinding({ event, sourcePanelId, detail }, workbench) {
+        if (event === 'workshop-open') {
+          void window.PortalTemplateWorkshopLoader.openInWorkbench(workbench, detail.resource, sourcePanelId)
+            .catch(error => window.PortalUI.toast(error.message || error,'error'));
+          return;
+        }
+        if (event === 'workshop-saved' || event === 'workshop-title') { workbench.setPanelTitle(sourcePanelId,detail.title); return; }
+        if (event === 'workshop-deleted') { void workbench.closePanel(sourcePanelId); return; }
         if (event !== "binding-unavailable" && event !== "binding-ready") return;
         const residentId = workbench?.getPanel(sourcePanelId)?.target?.()?.resident_id;
         if (!residentId) return;
@@ -1103,7 +1110,10 @@
         // Bind the explicit graph before any Resident reads can fail. Ordinary
         // navigation retains the restored layout, including a hidden canvas.
         if (openingNavigation.view !== "hatg") return applied;
-        lineageWorkbench.applyWorkspace(lineageHatgWorkspace());
+        // A restored workshop stack is part of this canvas session. Keep its
+        // tabs/split when the same HATG URL is refreshed.
+        if (!lineageWorkbench.getPanelsByType('workshop').length) lineageWorkbench.applyWorkspace(lineageHatgWorkspace());
+        else if (!lineageWorkbench.isPanelExpanded('hatg')) lineageWorkbench.showPanel('hatg');
         lineageWorkbench.focusPanel("hatg");
         return applied;
       }

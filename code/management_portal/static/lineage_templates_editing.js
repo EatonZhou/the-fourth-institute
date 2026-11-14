@@ -9,10 +9,10 @@
   const DEPENDENCIES = Object.freeze([
     'behaviorHtml', 'button', 'categories', 'clone', 'dialog', 'editorHost', 'esc', 'field', 'getContext', 'load', 'optionsHtml',
     'readField', 'renderResidentSettings', 'request', 'residentRoles', 't', 'targetLabels', 'templatePart',
-    'templatePayload', 'templatesState', 'toast',
+    'templatePayload', 'templatesState', 'toast', 'onOpenWorkshop',
   ]);
   // Fields of mount's config, which a caller may leave out.
-  const OPTIONAL = Object.freeze(['getContext', 'request', 'toast', 'editorHost']);
+  const OPTIONAL = Object.freeze(['getContext', 'request', 'toast', 'editorHost', 'onOpenWorkshop']);
 
   function createEditing(dependencies) {
     const missing = DEPENDENCIES.filter(name => !OPTIONAL.includes(name) && dependencies?.[name] === undefined);
@@ -20,7 +20,7 @@
     const {
       behaviorHtml, button, categories, clone, dialog, esc, field, getContext, load, optionsHtml, readField,
       renderResidentSettings, request, residentRoles, t, targetLabels, templatePart, templatePayload, templatesState,
-      toast, editorHost,
+      toast, editorHost, onOpenWorkshop,
     } = dependencies;
 
     function newTemplate() {
@@ -39,10 +39,8 @@
     }
 
     function openWorkshop(id = '') {
-      const params = new URLSearchParams();
-      if (id) params.set('template', id);
-      if (getContext?.().lineage_id) params.set('lineage', getContext().lineage_id);
-      return window.PortalNav.openPage(`/template-workshop?${params}`);
+      if (!onOpenWorkshop) throw new Error(t('当前工作台无法打开模板工坊'));
+      return Promise.resolve(onOpenWorkshop({kind:'workshop',template_id:id,lineage_id:getContext?.().lineage_id || ''}));
     }
 
     // edit opens the template editor on a copy of a template. Its parts:

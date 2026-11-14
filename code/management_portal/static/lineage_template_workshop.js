@@ -4,27 +4,31 @@
   const esc = text => window.PortalUIPrimitives.escapeHtml(String(text ?? ''));
   const clone = value => JSON.parse(JSON.stringify(value));
   const request = (name, args, options) => window.PortalInstructionClient.execute(name, args, options);
-  function mount({root, lineageId, templateId = '', execute = request}) {
-    let form = root.querySelector('#workshopEditor');
-    const canvas = root.querySelector('#workshopCanvas');
-    const drawer = root.querySelector('#workshopToolbox');
-    const shelf = root.querySelector('#workshopShelf');
+  function mount({root, lineageId, templateId = '', execute = request, onSaved, onDeleted}) {
+    root.querySelectorAll('[id]').forEach(node => { node.dataset.workshopId ||= node.id; });
+    const element = id => root.querySelector(`[data-workshop-id="${id}"],#${id}`);
+    let form = element('workshopEditor');
+    const canvas = element('workshopCanvas');
+    const drawer = element('workshopToolbox');
+    const shelf = element('workshopShelf');
     const sessionId = window.PortalUIPrimitives.randomUUID();
     let runtime = null, templates = null, base = '', fresh = !templateId;
+    let removed = false;
     let documentRevision = 0;
     const abort = new AbortController();
     const listen = (node, type, handler) => node.addEventListener(type, handler, {signal: abort.signal});
     const error = value => {
-      const node = root.querySelector('#workshopError');
+      const node = element('workshopError');
       node.hidden = !value;
       node.textContent = value ? window.PortalI18n.message(value.message || value) : '';
     };
     const dirty = () => {
+      if (removed) return false;
       try { return fresh || (!!runtime && JSON.stringify(runtime.readDraft()) !== base); }
       catch (_) { return true; }
     };
     const changed = () => {
-      root.querySelector('#workshopUnsaved').hidden = !dirty();
+      element('workshopUnsaved').hidden = !dirty();
       root.dispatchEvent(new CustomEvent('workshop:draft-changed'));
     };
     async function save(payload, copy = false) {
@@ -38,9 +42,7 @@
       fresh = false;
       if (copy) documentRevision += 1;
       templateId = result.template.template_id;
-      const url = new URL(location.href);
-      url.searchParams.set('template', templateId);
-      history.replaceState(null, '', url);
+      onSaved?.(result.template);
       runtime.edit(result.template);
       await templates.load();
       changed();
@@ -50,15 +52,14 @@
       create(source) {
         const previous = form;
         form = previous.cloneNode(false); previous.replaceWith(form);
-        form.innerHTML = `<header class="workshopBar"><button type="button" data-workshop-back data-portal-icon="arrow-left" aria-label="${esc(t('返回'))}"></button>
+        form.innerHTML = `<header class="workshopBar">
           <input data-meta="title" aria-label="${esc(t('模板标题'))}" value="${esc(source.title)}" required>
           <details class="workshopMore" ${source.kind === 'structure' || source.template_id ? '' : 'hidden'}><summary aria-label="${esc(t('更多'))}">…</summary><div>${source.kind === 'structure' ? [['graph', '图视图'], ['list', '列表视图'], ['json', 'JSON 视图']].map(([key,label]) => `<button type="button" data-structure-view="${key}">${esc(t(label))}</button>`).join('') : ''}${source.builtin_key ? `<button type="button" data-action="restore">${esc(t('恢复内置'))}</button>` : ''}${source.template_id ? `<button type="button" data-action="delete">${esc(t('删除'))}</button>` : ''}</div></details>
           <button type="button" data-workshop-chat data-portal-icon="chat" aria-label="${esc(t('工坊助手'))}"></button><footer></footer></header><main class="workshopEditorContent"></main>`;
         const cleanups = [], view = {
           root: form, form, content: form.querySelector('main'), footer: form.querySelector('footer'), cleanups,
           workshop: true, error, onChange: changed, save,
-          // A deleted template has nothing left to edit; leave like Back, without the unsaved prompt.
-          deleted() { abort.abort(); goBack(); },
+          deleted() { removed = true; onDeleted?.(); },
           close() { cleanups.forEach(cleanup => cleanup()); form.replaceChildren(); },
           async busy(work) {
             if (view.working) return;
@@ -82,7 +83,7 @@
         base = JSON.stringify(runtime.readDraft());
         const saveButton = form.querySelector('[data-workshop-save]');
         saveButton.disabled = !!runtime.draft.template_id && (!!runtime.draft.builtin_key || runtime.draft.created_by !== window.PortalIdentity.username());
-        root.querySelector('#workshopChatSave').disabled = saveButton.disabled;
+        element('workshopChatSave').disabled = saveButton.disabled;
         changed();
       },
     };
@@ -125,17 +126,13 @@
     listen(root, 'click', async event => {
       if (event.target.closest('[data-workshop-toolbox]')) drawer.hidden = !drawer.hidden;
       if (event.target.closest('[data-workshop-chat]')) root.classList.toggle('workshopChatCollapsed');
-      if (event.target.closest('[data-workshop-back]')) {
-        if (dirty() && !await window.PortalUI.confirm({title:t('离开工坊？'), message:t('模板有未保存的修改'), confirmLabel:t('离开')})) return;
-        goBack();
-      }
     });
-    function goBack() { window.PortalNav.openPage(lineageId ? `/lineage?lineage=${encodeURIComponent(lineageId)}&view=hatg` : '/lineage'); }
     listen(drawer, 'portal:template-picked', () => { drawer.hidden = true; runtime.editorState.graph?.select(''); });
     listen(window, 'beforeunload', event => { if (dirty()) { event.preventDefault(); event.returnValue = ''; } });
     listen(document, 'keydown', event => { if (event.key === 'Escape') drawer.hidden = true; });
     const controller = {
       sessionId, lineageId, dirty, documentKey: () => `${sessionId}:${documentRevision}`,
+      fit: () => runtime?.editorState.graph?.fit(),
       save: () => runtime.view.busy(() => save(runtime.readDraft())), template: () => runtime?.draft,
       async acceptDraft(value) {
         const payload = window.LineageTemplateWorkshopDraft.payload({...runtime.draft,...value});

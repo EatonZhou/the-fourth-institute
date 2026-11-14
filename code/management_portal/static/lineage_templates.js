@@ -138,7 +138,7 @@
     const { newTemplate, openEditor, saveSelection } = templatePart('LineageTemplatesEditing').createEditing({
       behaviorHtml, button, categories, clone, dialog, esc, field, getContext, load, optionsHtml, readField,
       renderResidentSettings, request, residentRoles, t, targetLabels, templatePart, templatePayload, templatesState,
-      toast, editorHost: config.editorHost,
+      toast, editorHost: config.editorHost, onOpenWorkshop: config.onOpenWorkshop,
     });
 
     return Object.freeze({ load, render, find, openEditor, newTemplate, apply, applyFamily, saveSelection,

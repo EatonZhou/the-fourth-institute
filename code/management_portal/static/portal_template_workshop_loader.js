@@ -1,0 +1,88 @@
+(() => {
+  'use strict';
+  if (window.PortalTemplateWorkshopLoader) return;
+  let loading = null, markup = null;
+  async function load() {
+    if (!loading) loading = (async () => {
+      await window.PortalHatgLoader.load();
+      for (const source of ['/static/lineage_templates.css','/static/template_workshop.css',
+        '/static/vendor/monaco/vs/nls/lang/zh-cn.js','/static/vendor/monaco/vs/loader.js','/static/portal_code_editor.js',
+        '/static/lineage_template_workshop_draft.js','/static/lineage_template_workshop.js','/static/lineage_template_workshop_chat.js']) {
+        await window.PortalUIPrimitives.loadAsset(source);
+      }
+    })().catch(error => { loading = null; throw error; });
+    return loading;
+  }
+  async function panelMarkup() {
+    if (!markup) markup = fetch('/static/template_workshop_panel.html').then(response => {
+      if (!response.ok) throw new Error(`Workshop HTTP ${response.status}`);
+      return response.text();
+    }).catch(error => { markup = null; throw error; });
+    return markup;
+  }
+  async function openInWorkbench(workbench, resource = {}, sourcePanelId = '') {
+    const panels = workbench.getPanelsByType('workshop');
+    const same = resource.template_id && panels.find(panel => panel.target().template_id === resource.template_id);
+    if (same) { workbench.focusPanel(same.id); return same; }
+    const sibling = panels[0];
+    return workbench.openResource({type:'workshop',mode:sibling ? 'new-tab' : 'side',side:'right',
+      targetInstanceId:sibling?.id || sourcePanelId,resource:{...resource,kind:'workshop'}});
+  }
+  function create(options = {}) {
+    const root = options.root, id = options.panelId || options.id || window.PortalUIPrimitives.randomUUID();
+    let target = {...options.target}, workshop = null, chat = null, pending = null, destroyed = false;
+    let visible = false, needsFit = true;
+    root.classList.add('workshopPanelHost');
+    async function mount() {
+      if (pending) return pending;
+      pending = (async () => {
+        await load();
+        const html = await panelMarkup();
+        if (destroyed) return;
+        root.innerHTML = html;
+        const host = root.firstElementChild;
+        host.querySelectorAll('[id]').forEach(node => { node.dataset.workshopId = node.id; node.id = `${id}-${node.id}`; });
+        window.PortalI18n.renderStatic(host);
+        if (root.getBoundingClientRect().width < 760) host.classList.add('workshopChatCollapsed');
+        workshop = window.LineageTemplateWorkshop.mount({root:host,lineageId:target.lineage_id || '',templateId:target.template_id || '',
+          onSaved: template => { target = {...target,template_id:template.template_id,title:template.title}; options.emit?.('workshop-saved',target); },
+          onDeleted: () => {
+            if (options.context) options.emit?.('workshop-deleted');
+            else { chat?.destroy(); workshop?.destroy(); root.replaceChildren(); }
+          },
+          execute:options.execute});
+        await workshop.load();
+        if (destroyed) { workshop.destroy(); return; }
+        target = {...target,title:workshop.template().title};
+        options.emit?.('workshop-title',target);
+        chat = window.LineageTemplateWorkshopChat.mount({root:host,workshop,execute:options.execute,listLineages:options.listLineages});
+        await chat.load();
+        if (destroyed) { chat.destroy(); return; }
+        if (visible) { workshop.fit(); needsFit = false; }
+      })().catch(error => { root.textContent = window.PortalI18n.message(error.message || error); throw error; });
+      return pending;
+    }
+    return {
+      id,get ready() { return mount(); },target:() => ({...target}),
+      async connect() { visible = true; await mount(); if (needsFit && !destroyed) { workshop.fit(); needsFit = false; } },
+      disconnect() { visible = false; },
+      async canClose() {
+        try { await pending; } catch (_) { return true; }
+        return !workshop?.dirty() || window.PortalUI.confirm({title:window.PortalI18n.t('关闭模板工坊？'),message:window.PortalI18n.t('模板有未保存的修改'),confirmLabel:window.PortalI18n.t('关闭')});
+      },
+      async openResource(resource) { if (resource.template_id === target.template_id) return {accepted:true}; return {accepted:false}; },
+      snapshot:() => ({...target,dirty:workshop?.dirty() || false}),
+      restore(value) { if (!pending) target = {...target,...value}; },
+      destroy() { destroyed = true; chat?.destroy(); workshop?.destroy(); root.replaceChildren(); },
+    };
+  }
+  const panelPackage = {
+    type:'workshop',version:1,component:'PortalTemplateWorkshopLoader',presentation:{title:'模板工坊',icon:'component'},
+    sizing:{minWidth:320,minHeight:240},instances:'multiple',capabilities:['template-edit','snapshot','restore'],
+    behavior:{canHide:true,canCollapse:true,canMove:true,closable:true},context:{channels:[]},
+    commands:[{id:'open-template',title:window.PortalI18n.t('打开模板'),capability:'template-edit',execute:({panel,args}) => panel.openResource(args?.resource || args || {})}],
+    persistence:{schemaVersion:1},create,
+  };
+  window.PortalTemplateWorkshopLoader = Object.freeze({load,create,openInWorkbench,panelPackage});
+  window.PortalWorkbench.registerPanelPackage(panelPackage);
+})();

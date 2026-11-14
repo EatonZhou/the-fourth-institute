@@ -3,11 +3,10 @@
    hatg_panel_navigation.css. */
 @scope (:is(.portalHatgPanelComponent, .portalHatgOverlayComponent)) {
 .graphLegend {
-  position: absolute;
-  left: 10px;
-  bottom: 9px;
+  position: static;
   z-index: 5;
   display: flex;
+  flex-wrap:wrap;
   align-items: center;
   gap: 9px;
   border: 1px solid color-mix(in srgb, var(--border) 85%, transparent);
@@ -172,8 +171,10 @@
 
 /* Leave the leftmost circular + control its own slot. */
 /* The corner tools sit at the same inset as the top navigation bar and stop short of the minimap. */
-.hatgCanvasCornerTools { position:absolute; left:var(--hatg-navigation-inset, 10px); bottom:var(--hatg-navigation-inset, 10px); z-index:9; display:flex; align-items:flex-end; gap:8px; max-width:calc(100% - 2 * var(--hatg-navigation-inset, 10px) - var(--hatg-minimap-width, 0px) - 8px); }
-.hatgCanvasCornerTools > .graphLegend { position:static; min-width:0; flex-wrap:wrap; }
+.hatgCanvasCornerTools { position:absolute; left:var(--hatg-navigation-inset, 10px); bottom:var(--hatg-navigation-inset, 10px); z-index:9; display:flex; align-items:center; gap:8px; }
+.hatgLegendPopover { max-width:min(340px, calc(100cqw - 20px)); }
+.hatgLegendPopover[hidden] { display:none; }
+.hatgLegendToggle { width:34px; height:34px; border-radius:50%; }
 .hatgToolboxToggle { flex:none; width:34px; height:34px; padding:7px; border-radius:50%; }
 .hatgToolboxToggle svg, .hatgToolboxHeaderActions svg { width:18px; height:18px; fill:none; stroke:currentColor; stroke-width:1.6; }
 .hatgToolbox { position:absolute; inset:var(--hatg-navigation-inset, 10px) auto 54px var(--hatg-navigation-inset, 10px); width:min(360px, calc(100% - 2 * var(--hatg-navigation-inset, 10px))); z-index:10; display:flex; flex-direction:column; border:1px solid var(--border); border-radius:12px; background:var(--panel); box-shadow:0 8px 28px #0002; }
