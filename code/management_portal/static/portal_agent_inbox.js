@@ -236,7 +236,7 @@
     mailboxChat = chat;
     root.dataset.chatroomOpen = "true";
     state.activePanel = "mailbox";
-    state.touchExpanded = true;
+    // Preserve the launcher's hover, keyboard or touch mode when changing content.
     container.hidden = false;
     container.textContent = window.PortalI18n.t("正在读取聊天室。");
     updateChrome();
@@ -937,7 +937,7 @@
     document.addEventListener("pointerdown", event => {
       // Pointer focus must not keep a hover panel open after the pointer leaves.
       state.focused = Boolean(event.target.closest(".portalPersonalAssistantPanel"));
-      if (!root.contains(event.target) && !mailboxChat) state.touchExpanded = false;
+      if (!root.contains(event.target)) state.touchExpanded = false;
       updateChrome();
     }, { capture: true, signal });
     root.addEventListener("pointerenter", event => {

@@ -61,12 +61,38 @@ let browser;
  await page.goto(origin);await page.waitForFunction(()=>PortalConversationStore.snapshot().loaded);
  const trigger=page.locator('[data-agent-conversation-trigger]'),list=page.locator('[data-agent-conversation-list]');
  const back=page.locator('[data-mailbox-chatroom-back]'),chat=page.locator('[data-mailbox-chatroom-view]');
+ const inbox=page.locator('.portalAgentInbox');
+ // Mouse clicks do not pin the ordinary list; entering a room must preserve this mode.
+ await trigger.click();await page.mouse.move(20,100);
+ await page.waitForFunction(()=>document.querySelector('.portalAgentInbox').dataset.expanded==='false');
  await trigger.hover();
  await page.locator('[data-agent-conversation-key="chatroom:12"]').scrollIntoViewIfNeeded();
  const position=await list.evaluate(e=>e.scrollTop);
- const open=async(key='chatroom:12')=>{await page.locator(`[data-agent-conversation-key="${key}"]`).click();await back.waitFor({state:'visible'});};
+ const open=async(key='chatroom:12')=>{await trigger.hover();await page.locator(`[data-agent-conversation-key="${key}"]`).click();await back.waitFor({state:'visible'});};
  await open();await chat.locator('.messageList > [data-message-key]').first().waitFor();
  assert.equal(await page.evaluate(()=>opened.length),0,'Chatroom does not navigate the workbench');assert.equal(page.url(),origin+'/');
+ // Moving between children is not leaving the panel. A pointer-focused draft is saved on leave.
+ await back.hover();await chat.locator('.composerInput').hover();
+ assert.equal(await back.isVisible(),true);
+ await chat.locator('.composerInput').fill('移出后保留草稿');
+ await page.locator('.portalMailboxChatroom > header').click({position:{x:250,y:20}});
+ await page.mouse.move(20,100);
+ await page.waitForFunction(()=>document.querySelector('.portalAgentInbox').dataset.expanded==='false');
+ assert.equal(await chat.evaluate(e=>e.hidden),true);
+ assert.equal(await chat.locator('[data-message-key]').count(),0);
+ const readsAfterLeave=await page.evaluate(()=>reads.length);
+ await page.waitForTimeout(750);
+ assert.equal(await page.evaluate(()=>reads.length),readsAfterLeave,'hidden room cannot mark read later');
+ await trigger.hover();assert.equal(await list.evaluate(e=>e.scrollTop),position);
+ await open();await chat.locator('.composerInput').waitFor();
+ assert.equal(await chat.locator('.composerInput').innerText(),'移出后保留草稿');
+ await chat.locator('.composerInput').fill('');
+ // Keyboard-opened rooms stay expanded without hover, then Escape closes them.
+ await back.click();await trigger.hover();await page.locator('[data-agent-conversation-key="chatroom:12"]').press('Enter');
+ await back.waitFor({state:'visible'});await page.mouse.move(20,100);
+ assert.equal(await inbox.getAttribute('data-expanded'),'true');
+ await back.press('Escape');assert.equal(await back.isVisible(),false);
+ await trigger.hover();await open();
  await page.waitForFunction(()=>reads.length>0);
  const dir=process.env.MAILBOX_CHATROOM_ARTIFACT_DIR;
  if(dir){fs.mkdirSync(dir,{recursive:true});await page.screenshot({path:path.join(dir,'mailbox-chatroom-desktop.png')});}
@@ -92,6 +118,13 @@ let browser;
  await page.evaluate(()=>{denied=false;blocked=true;});await open();await page.waitForFunction(()=>!!window.releaseRoom);
  await back.click();await page.evaluate(()=>{blocked=false;releaseRoom();});await page.waitForTimeout(750);
  assert.equal(await page.evaluate(()=>reads.length),count);assert.equal(await chat.locator('[data-message-key]').count(),0);
+ // Pointer leave while data is pending also disposes the room; late completion cannot reopen it.
+ await page.evaluate(()=>{blocked=true;delete window.releaseRoom;});await open();await page.waitForFunction(()=>!!window.releaseRoom);
+ await page.mouse.move(20,100);
+ await page.waitForFunction(()=>document.querySelector('.portalAgentInbox').dataset.expanded==='false');
+ await page.evaluate(()=>{blocked=false;releaseRoom();});await page.waitForTimeout(750);
+ assert.equal(await page.evaluate(()=>reads.length),count);assert.equal(await chat.locator('[data-message-key]').count(),0);
+ await trigger.hover();
  // Identity change during lazy loading invalidates the attempt.
  await page.evaluate(()=>{blockAssets=true;});await open();await page.waitForFunction(()=>!!window.releaseAssets);
  await page.evaluate(()=>{actor='carol';items=[];window.dispatchEvent(new Event('portal:identity-changed'));blockAssets=false;releaseAssets();});
@@ -109,5 +142,16 @@ let browser;
  // Other conversation kinds still use their existing navigation route.
  await mobile.locator('[data-agent-conversation-key="resident:one"]').scrollIntoViewIfNeeded();await mobile.locator('[data-agent-conversation-key="resident:one"]').tap();await mobile.waitForFunction(()=>opened.length===1);
  assert.equal(await mobile.evaluate(()=>opened[0].kind),'resident');
+ // Wide touch devices retain the explicit toggle, including outside-click dismissal.
+ const touch=await browser.newPage({viewport:{width:1280,height:900},hasTouch:true});touch.on('pageerror',e=>errors.push(e.message));
+ await touch.route('**/*',route=>route.request().url().startsWith(origin+'/')?route.continue():route.abort());
+ await touch.goto(origin);await touch.waitForFunction(()=>PortalConversationStore.snapshot().loaded);
+ await touch.locator('[data-agent-conversation-trigger]').tap();await touch.locator('[data-agent-conversation-key="chatroom:0"]').tap();
+ await touch.locator('[data-mailbox-chatroom-view] .composerInput').waitFor();
+ await touch.locator('.portalAgentInbox').dispatchEvent('pointerleave',{pointerType:'touch'});
+ assert.equal(await touch.locator('[data-mailbox-chatroom-back]').isVisible(),true);
+ await touch.locator('main h1').tap();
+ await touch.waitForFunction(()=>document.querySelector('.portalAgentInbox').dataset.expanded==='false');
+ assert.equal(await touch.locator('[data-mailbox-chatroom-view]').evaluate(e=>e.hidden),true);
  assert.deepEqual(errors,[]);console.log('PASS: inline Chatroom, send, back/scroll, denied access, late load, identity race, mobile layout, other conversation navigation');
 })().catch(e=>{console.error(e);process.exitCode=1}).finally(async()=>{await browser?.close();server.close()});
