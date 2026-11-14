@@ -944,11 +944,13 @@ def get_usage(inv: Invocation) -> dict[str, Any]:
 from .provider_usage_events import get_provider_usage_events
 from .account_login import HANDLERS as LOGIN_HANDLERS
 from .account_setup import HANDLERS as SETUP_HANDLERS
+from .account_configuration import HANDLERS as CONFIGURATION_HANDLERS
 
 
 HANDLERS = {
     **LOGIN_HANDLERS,
     **SETUP_HANDLERS,
+    **CONFIGURATION_HANDLERS,
     "ListProviders": list_providers,
     "RegisterProviderAccount": register_provider_account,
     "UpdateProviderAccountRegistration": update_provider_account_registration,

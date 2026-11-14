@@ -139,6 +139,14 @@ DECLARATIONS = (
     _d("GetProviderAccountSetup", FIXED, "读取账号的运行环境、授权、模型与声明能力。", (
         R("account_id", description="执行账号 ID"),
     ), (R("setup", "object", "运行环境、准备进度、授权状态、模型目录与工具能力；尚未执行测试"),), owner="execution"),
+    _d("GetProviderAccountConfiguration", FIXED, "读取 Codex 订阅账号的原生默认 Provider 与配置版本；不返回密钥、完整配置或会话。", (
+        R("account_id", description="已登记的 Codex 订阅账号"),
+    ), (R("configuration", "object", "account_id、model_provider、effective_model_provider、model_providers（自定义 ID 列表）、version"),), owner="execution"),
+    _d("UpdateProviderAccountConfiguration", FIXED, "按调用信封 expected_version 修改 Codex 订阅账号原生默认 Provider；版本取配置读取结果。不重启账号或改写已有会话。", (
+        R("account_id", description="已登记的 Codex 订阅账号"),
+        R("model_provider", description="openai 或该账号已定义的自定义 Provider ID"),
+    ), (R("configuration", "object", "写入后回读的原生配置摘要与版本"),
+        R("changed", "boolean", "是否执行了原生写入")), mutates=True, target="account_id", owner="execution"),
     _d("CheckProviderAccount", FIXED, "通过实际执行层发送最小测试消息；返回可观察的持久执行 ID。", (
         R("account_id", description="已登记的执行账号"), P("model", description="测试模型，省略时使用默认模型"),
     ), (R("execution_id", description="测试执行 ID"), R("status", description="queued")), mutates=True, target="account_id", owner="execution"),

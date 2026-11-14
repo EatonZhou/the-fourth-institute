@@ -4,12 +4,12 @@ type: decision
 project: AI员工
 created_at: '2026-09-28'
 version:
-  number: 62
+  number: 63
   created_at: "2026-09-28T10:45:00Z"
   created_by:
     user: "weihao"
     agent: "resident_2a1fc6cd272d"
-  updated_at: "2026-11-14T00:29:42Z"
+  updated_at: "2026-11-14T10:43:18Z"
   updated_by:
     user: ""
     agent: "resident_60ae6d0cdf74"
@@ -64,8 +64,6 @@ links:
 | 指令 | 改变状态 | 作用 | 默认方案要求 |
 | --- | --- | --- | --- |
 | `GetExecutionSettings` | 否 | 管理员读取全系统执行设置 | 对“共享”有 @admin |
-| `GetTelepusStatus` | 否 | 读取 Telepus 用户服务的启用与运行状态 | 对“共享”固定判定槽有 @admin；当前启用方案可调整 |
-| `SetTelepusEnabled` | 是 | 用必填 enabled 设置 Telepus 服务目标状态；保留联系人与数据 | 对“共享”固定判定槽有 @admin；当前启用方案可调整 |
 | `UpdateExecutionSettings` | 是 | 管理员通过系统 Event 修改请求计时与 Harness 记录开关，修改保留天数，开启或关闭权限系统 | 对“共享”有 @admin |
 | `GetPortalStatus` | 否 | 读取 Portal 实例与组件的运行状态 | 对“共享”有 @viewer |
 | `GetRuntimeCapacity` | 否 | 读取数据库连接、主机磁盘和执行队列的容量快照 | 对“共享”有 @viewer |
@@ -322,6 +320,8 @@ Portal 服务指令由 Portal Web 执行。Dev 与 Release 两个部署各有自
 
 `backend_priority`：有序账号种类 ID，用于默认选择及自动切换；跨种类使用目标默认模型，API/服务种类须明确列入；省略保留原值，空数组限制在参考账号同类。
 
+Telepus 绑定、提醒及服务控制改用应用工具，见 decision_692a484e9bea，不属于 ISA。
+
 ## 参数名契约
 
 下表列出 arguments 内的顶层参数名；必填条件、类型和枚举以 GetInstructionSchema 为准。调用信封中的 expected_version、idempotency_key 与 wait_seconds 不列入 arguments。
@@ -360,5 +360,3 @@ Portal 服务指令由 Portal Web 执行。Dev 与 Release 两个部署各有自
 | `ListBackendRoles` | 无 |
 | `UpdateBackendRole` | `backend_role`、`account_id`、`account_selection`、`backend_priority`、`model`、`reasoning_effort`、`verification_execution_id` |
 | `GetUsage` | `period`、`group_by`、`provider`、`account_id`、`include_cached` |
-| `GetTelepusStatus` | 无 |
-| `SetTelepusEnabled` | `enabled` |

@@ -926,6 +926,14 @@
       "a": "@viewer",
       "r": "@shared"
     },
+    "GetProviderAccountConfiguration": {
+      "a": "@admin",
+      "r": "@shared"
+    },
+    "UpdateProviderAccountConfiguration": {
+      "a": "@admin",
+      "r": "@shared"
+    },
     "UpdateSharedState": {
       "a": "@contributor"
     },
