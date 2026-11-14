@@ -60,6 +60,8 @@ class PortalSessionHttp:
         page_arguments = {name: PAGE_ARGUMENTS.get(name) for name in PAGE_INSTRUCTIONS}
         for _feature, instructions in portal_features.contributions("web.page_instructions"):
             page_arguments.update(instructions)
+        for _feature, tools in portal_features.contributions("web.page_tools"):
+            page_arguments.update(tools)
         return self.respond(request, 200, {
             "username": actor,
             "principal": {"kind": principal.kind, "id": actor},
@@ -68,7 +70,7 @@ class PortalSessionHttp:
             "build_id": self.build_id,
             "preferences": self.preferences(actor),
             "access": {
-                # Page flags, each the answer of the instruction behind it.
+                # Page flags share business permissions with their ISA or application owner.
                 "allows": {name: permission_system.allows(actor, name, arguments) for name, arguments in page_arguments.items()},
                 "user_category": permission_system.user_category(actor) if is_user else "",
                 # "open" while the permission system is off: credential and policy views hide.
