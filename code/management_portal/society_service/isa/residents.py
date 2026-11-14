@@ -139,7 +139,7 @@ def fork_resident(inv: Invocation) -> dict[str, Any]:
         payload["backend_route_id"] = account
     if inv.idempotency_key:
         payload["idempotency_key"] = inv.idempotency_key
-    result = lineage_branches().fork_lineage_resident(lineage_id, payload, inv.caller)
+    result = lineage_branches().fork_lineage_resident(lineage_id, payload, inv.caller, include_lineage=False)
     resident_id = str((result.get("created_resident") or {}).get("id") or "")
     return {
         "resident_id": resident_id,

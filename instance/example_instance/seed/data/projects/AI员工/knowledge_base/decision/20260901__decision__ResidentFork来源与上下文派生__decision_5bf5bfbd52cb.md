@@ -4,15 +4,15 @@ type: decision
 project: AI员工
 created_at: '2026-09-01'
 version:
-  number: 66
+  number: 67
   created_at: "2026-09-01"
   created_by:
     user: ""
     agent: ""
-  updated_at: "2026-11-03T04:07:36Z"
+  updated_at: "2026-11-14T09:12:21Z"
   updated_by:
     user: ""
-    agent: "resident_dbcd3920b7cc"
+    agent: "resident_60ae6d0cdf74"
 importance: 9
 metaness: 2
 ai_generated: false
@@ -113,7 +113,7 @@ Resident 是 Portal 中可以长期工作的 AI 节点；一组有协作关系�
 ### 页面创建后的视图
 
 - **页面内收敛创建结果。** Portal 的侧栏、分支表单、节点快捷菜单与 Chat 消息入口在创建成功后取得目标 Lineage 的最新状态，更新已挂载的 HATG 图并定位新 Resident。更新图和切换目标在当前页面内完成，不重新加载整张页面；未参与创建的面板和用户的页面状态保持不变。页面上的 `new session` 虽调用 `CreateResident`，也使用同一视图更新方式。
-- **Fork 成功后打开新 Resident 的 Chat。** 从画布节点「+」、快捷菜单、分支表单、侧栏或 Chat 消息发起 Fork，创建成功并取得包含新节点的 Lineage 状态后，选中新卡片，并通过统一对话导航在当前页面打开新 Resident 的 Chat。仅悬停打开菜单、创建尚未完成或创建失败时保持原对话，不提前切换。画布上的 `new session` 创建空白节点后仍只选中新卡片，由用户点击卡片打开 Chat；侧栏的 `new session` 仍直接打开新对话。
+- **Fork 成功后打开新 Resident 的 Chat。** 从画布节点「+」、快捷菜单、分支表单、侧栏或 Chat 消息发起 Fork，创建成功并通过 `GetLineage` 取得包含新节点的 Lineage 状态后，选中新卡片，并通过统一对话导航在当前页面打开新 Resident 的 Chat。仅悬停打开菜单、创建尚未完成或创建失败时保持原对话，不提前切换。画布上的 `new session` 创建空白节点后仍只选中新卡片，由用户点击卡片打开 Chat；侧栏的 `new session` 仍直接打开新对话。
 - **创建成功与页面定位分别处理。** 指令已创建 Resident，但返回的 Resident ID 或目标 Lineage 状态不完整，或页面随后无法定位新节点时，页面提示“已创建，但暂未定位”，保留当前页面供用户刷新查找；不能把它当作创建失败再自动提交一次。只有创建指令本身失败，才报告创建失败。
 
 ### 运行设置与账号
@@ -250,6 +250,9 @@ Fork 的上下文和 Provider 准备不持有 Lineage 数据库行锁。准备�
 
 ## 创建分支的完成边界
 
-Fork 成功响应必须在新 Resident 与继承边提交、Resource 身份和创建者凭证发布确认后返回。前端随后在当前页面选中新节点并直接打开它的 Chat，无需重新打开。发布暂时失败时保留已提交的分支，通过同一指令及幂等键补做投影；不得重复创建分支，确认期间不持有图或 Resident 状态锁。
+Fork 成功响应必须在新 Resident 与继承边提交、Resource 身份和创建者凭证发布确认后返回。
+
+只返回身份与创建状态的 `ForkResident` ISA 回执不装配随后会被丢弃的完整 Lineage 展示投影；内部调用显式使用 `include_lineage=False`，仍核对新 Resident 与继承边存在，并先等待 Resource 注册确认。直接图调用默认返回完整、经授权核验的展示视图。两种返回方式共享原有来源权限、版本重核、创建与 Family 归属、初始化、失败补偿及幂等恢复语义，不以无关节点的运行状态装配作为身份回执返回条件。
+前端随后在当前页面选中新节点并直接打开它的 Chat，无需重新打开。发布暂时失败时保留已提交的分支，通过同一指令及幂等键补做投影；不得重复创建分支，确认期间不持有图或 Resident 状态锁。
 
 格式名与版本须精确匹配当前规范值，校验规则见 decision_86aed2f0e8c7；本篇同时校验各字段和结构版本，不接受历史前缀或其他版本。

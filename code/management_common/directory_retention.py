@@ -8,10 +8,12 @@ from __future__ import annotations
 
 from contextlib import nullcontext
 from datetime import datetime, timedelta, timezone
+import os
 from uuid import uuid4
 
 from .directory_cleanup_store import get_directory_cleanup_store
-from .directory_paths import cleanup_location, cleanup_path, contains, lexical_path
+from .directory_paths import DirectoryComparison, cleanup_location, cleanup_path, contains, lexical_path
+from .instance_manifest import AREAS, current_instance
 from .portal_database import portal_database
 
 
@@ -40,6 +42,41 @@ CREATE TABLE IF NOT EXISTS artifacts (
 
 def utc_now():
     return datetime.now(timezone.utc)
+
+
+def _tree_location_filter(roots, instance, comparison):
+    """Conservative stored-location candidates; native membership is final.
+
+    Stored area paths and historical absolute paths can name the same tree.
+    Prefixes stop at the first uncertain native case rule. Windows historical
+    separator/drive spellings need the full fallback; no SQL case folding is
+    used as a substitute for DirectoryComparison's filesystem evidence.
+    """
+    if os.name == 'nt':
+        return 'TRUE', ()
+    exact = set()
+    for root in roots:
+        prefix = comparison.case_sensitive_prefix(root)
+        exact.add(prefix.as_posix())
+        for area in AREAS:
+            area_root = instance.area(area)
+            if area_root.is_relative_to(prefix):
+                exact.add(area + ':')
+            elif prefix.is_relative_to(area_root):
+                exact.add(area + ':' + prefix.relative_to(area_root).as_posix())
+    exact = sorted(exact)
+    children = [value if value.endswith(('/', ':')) else value + '/' for value in exact]
+    # Old absolute spellings may normalize dots, separators or '~'. Keep them
+    # in the candidate set, together with malformed locations whose existing
+    # parser must still reject them. Canonical declarations use the prefixes.
+    legacy = r'//|(^|/|:)\.{1,2}(/|$)|/$|^~|:/'
+    return (
+        '(location=ANY(%s::text[]) OR EXISTS '
+        '(SELECT 1 FROM unnest(%s::text[]) AS p(prefix) WHERE starts_with(location,p.prefix)) '
+        'OR location ~ %s OR (NOT starts_with(location,\'/\') '
+        'AND NOT split_part(location,\':\',1)=ANY(%s::text[])))',
+        (exact, children, legacy, list(AREAS)),
+    )
 
 
 def enqueue_directory_cleanup(path, *, owner_id, operation_id, actor, connection):
@@ -177,9 +214,18 @@ class RetentionStore:
         roots = tuple(lexical_path(root) for root in roots)
         if not roots:
             return 0
-        rows = connection.execute(f'SELECT location FROM {self.table} FOR UPDATE').fetchall()
-        locations = [row['location'] for row in rows
-                     if any(contains(root, cleanup_path(row['location'])) for root in roots)]
+        # Take fresh mapping/case evidence only within this locked decision.
+        # Do not lock or repeatedly parse unrelated registrations on deletion.
+        instance = current_instance()
+        comparison = DirectoryComparison()
+        predicate, params = _tree_location_filter(roots, instance, comparison)
+        rows = connection.execute(
+            f'SELECT location FROM {self.table} WHERE {predicate} FOR UPDATE', params).fetchall()
+        locations = []
+        for row in rows:
+            path = cleanup_path(row['location'], instance=instance)
+            if any(comparison.contains(root, path) for root in roots):
+                locations.append(row['location'])
         if not locations:
             return 0
         return connection.execute(f'DELETE FROM {self.table} WHERE location=ANY(%s::text[])',

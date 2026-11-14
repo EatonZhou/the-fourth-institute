@@ -274,6 +274,7 @@ def branch_response(
     *, created: bool,
     title_sync_status: str,
     title_sync_error: str,
+    include_lineage: bool = True,
 ) -> dict[str, Any]:
     child = next((
         node for node in verified.get("nodes") or []
@@ -287,7 +288,7 @@ def branch_response(
     if child is None or edge is None:
         raise RuntimeError("Fork 完成后无法读取新 Resident 或继承边")
     return {
-        "lineage": verified,
+        **({"lineage": verified} if include_lineage else {}),
         "created_resident": child,
         "inheritance_edge": edge,
         "created": created,

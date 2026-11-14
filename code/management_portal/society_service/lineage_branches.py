@@ -146,6 +146,7 @@ def _lineage_branch_response(
     created: bool,
     title_sync_status: str = "",
     title_sync_error: str = "",
+    include_lineage: bool = True,
 ) -> dict[str, Any]:
     # The child and inheritance edge have committed. Opening Chat immediately
     # also requires the Resource identity and creator credentials to be visible.
@@ -153,10 +154,12 @@ def _lineage_branch_response(
     # failure carries a projection-only receipt and must not recreate the Fork.
     resident_domain.confirm_resident_registration(created_resident_id, actor)
     return lineage_branch_transitions.branch_response(
-        lineage_state._verified_lineage_view(lineage, actor), created_resident_id,
+        lineage_state._verified_lineage_view(lineage, actor) if include_lineage else lineage,
+        created_resident_id,
         created=created,
         title_sync_status=title_sync_status,
         title_sync_error=title_sync_error,
+        include_lineage=include_lineage,
     )
 
 
@@ -164,6 +167,8 @@ def create_lineage_branch(
     lineage_id: str,
     payload: dict[str, Any],
     actor: str,
+    *,
+    include_lineage: bool = True,
 ) -> dict[str, Any]:
     """Prepare a Fork without locking; validate and attach against committed membership."""
     actor_id = _safe_actor(actor)
@@ -199,6 +204,7 @@ def create_lineage_branch(
                 actor_id,
                 created=False,
                 title_sync_status="already-created",
+                include_lineage=include_lineage,
             )
 
         lineage_source = f"lineage:{lineage_id}:{source_node_id}"
@@ -245,6 +251,7 @@ def create_lineage_branch(
             created=True,
             title_sync_status=title_sync_status,
             title_sync_error=title_sync_error,
+            include_lineage=include_lineage,
         )
 
 
@@ -343,6 +350,8 @@ def fork_lineage_resident(
     lineage_id: str,
     payload: dict[str, Any],
     actor: str,
+    *,
+    include_lineage: bool = True,
 ) -> dict[str, Any]:
     """Execute the canonical ForkResident business operation."""
 
@@ -412,6 +421,7 @@ def fork_lineage_resident(
             "title": _text(payload.get("child_title"), 120),
         },
         actor,
+        include_lineage=include_lineage,
     )
     return response
 

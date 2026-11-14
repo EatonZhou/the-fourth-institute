@@ -88,15 +88,18 @@ def test_isa_fork_default_emits_full_to_the_lineage_owner(monkeypatch, provider)
     from management_portal.society_service.isa import residents
 
     payloads = []
+    joins = []
+    def fork_reply(_lineage, payload, _actor, *, include_lineage=True):
+        assert include_lineage is False
+        payloads.append(payload)
+        return {"created_resident": {"id": "resident_bbbbbbbbbbbb"}}
     monkeypatch.setattr(residents, "_family_role", lambda _: "")
-    monkeypatch.setattr(residents, "_family_to_join", lambda *_: "")
-    monkeypatch.setattr(residents, "_join_family", lambda *_: {})
+    monkeypatch.setattr(residents, "_family_to_join", lambda *_: "fbi_cccccccccccc")
+    monkeypatch.setattr(residents, "_join_family", lambda *args: joins.append(args) or {})
     monkeypatch.setattr(residents, "lineage_of_resident", lambda _: "lineage_aaaaaaaaaaaa")
     monkeypatch.setattr(residents, "placement", lambda *_: {})
     monkeypatch.setattr(residents, "lineage_branches", lambda: SimpleNamespace(
-        fork_lineage_resident=lambda _lineage, payload, _actor: payloads.append(payload) or {
-            "created_resident": {"id": "resident_bbbbbbbbbbbb"},
-        },
+        fork_lineage_resident=fork_reply,
     ))
     inv = Invocation(
         declaration=catalog.declaration("ForkResident"),
@@ -109,6 +112,7 @@ def test_isa_fork_default_emits_full_to_the_lineage_owner(monkeypatch, provider)
         instruction_id="inst_lin_full_mode_default",
     )
     residents.fork_resident(inv)
+    assert joins == [("lineage_aaaaaaaaaaaa", "resident_bbbbbbbbbbbb", "fbi_cccccccccccc", inv)]
     assert payloads[0]["fork_mode"] == "full"
     if provider:
         assert payloads[0]["provider"] == provider

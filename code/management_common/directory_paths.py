@@ -29,12 +29,12 @@ def cleanup_location(value: str | Path) -> str:
     return path.as_posix()
 
 
-def cleanup_path(location: str) -> Path:
+def cleanup_path(location: str, *, instance=None) -> Path:
     area, separator, relative = location.partition(':')
     if separator and area in AREAS:
         from .secure_paths import relative_parts
         parts = relative_parts(relative) if relative else ()
-        return current_instance().area(area).joinpath(*parts)
+        return (current_instance() if instance is None else instance).area(area).joinpath(*parts)
     return lexical_path(location)
 
 
@@ -311,6 +311,24 @@ class DirectoryComparison:
 
     def contains(self, root: Path, path: Path) -> bool:
         return _contains(root, path, self._case_sensitive)
+
+    def case_sensitive_prefix(self, path: Path) -> Path:
+        """An exact lexical prefix shared by every possible native case alias.
+
+        This only narrows candidates, never decides membership. Stop before
+        the first uncertain/insensitive component; contains() still checks
+        candidates and propagates unknown-policy errors for possible matches.
+        """
+        path = lexical_path(path)
+        prefix = Path(path.anchor)
+        for part in path.parts[1:]:
+            try:
+                if not self._case_sensitive(prefix):
+                    break
+            except OSError:
+                break
+            prefix /= part
+        return prefix
 
     def overlaps(self, left: Path, right: Path) -> bool:
         return self.contains(left, right) or self.contains(right, left)

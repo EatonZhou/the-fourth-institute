@@ -21,7 +21,7 @@ def test_default_fork_mode_is_accepted_by_branch_contract(fork_payloads):
 def fork_payloads(monkeypatch: pytest.MonkeyPatch) -> list[dict]:
     payloads: list[dict] = []
 
-    def create_branch(lineage_id: str, payload: dict, actor: str) -> dict:
+    def create_branch(lineage_id: str, payload: dict, actor: str, *, include_lineage: bool = True) -> dict:
         assert lineage_id == LINEAGE
         assert actor in {"sample_admin", "another-owner"}
         payloads.append(payload)
