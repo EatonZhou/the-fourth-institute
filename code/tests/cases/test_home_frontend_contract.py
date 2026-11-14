@@ -52,6 +52,15 @@ def test_account_details_show_resident_information_and_billing_link() -> None:
     subprocess.run(["node", str(script)], cwd=ROOT, check=True)
 
 
+def test_account_details_layout_and_refresh_in_browser() -> None:
+    """账号详情在宽窄屏内对齐，刷新保留草稿、焦点与说明展开状态。
+
+    :design: decision_4dea0db1f45a
+    """
+    script = Path(__file__).with_name("javascript") / "home_account_details.browser.cjs"
+    subprocess.run(["node", str(script)], check=True, cwd=ROOT, timeout=60)
+
+
 def test_home_shell_reads_only_the_current_user() -> None:
     """Home 外壳只读取当前用户，各面板自行加载数据，不再请求 summary 或 config
 

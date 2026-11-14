@@ -786,57 +786,83 @@ a.agent-status-creature.queued:hover {
   justify-self: start;
 }
 .account-details.portalDetailSurface {
+  --portal-control-height: 34px;
+  --portal-control-height-compact: 34px;
   display: flex;
   flex-direction: column;
-  width: min(380px, calc(100vw - 24px));
+  width: min(440px, calc(100vw - 24px));
   /* Keep this compact limit when the floating positioner sets its viewport ceiling. */
-  max-height: min(560px, calc(100dvh - 24px)) !important;
+  max-height: min(760px, calc(100dvh - 24px)) !important;
   overflow: hidden;
-  padding: 12px;
+  padding: 0;
   border: 1px solid var(--border);
-  border-radius: 12px;
-  background: var(--panel);
-  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.18);
+  border-radius: 16px;
+  background: linear-gradient(var(--panel), var(--panel)), var(--bg);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.14);
   font-size: 13px;
   box-sizing: border-box;
 }
 .account-details[hidden] { display: none; }
 .account-details p { margin: 6px 0; }
-.account-details-body { min-height: 0; overflow: auto; overscroll-behavior: contain; scrollbar-width: thin; }
+.account-details-body { min-height: 0; overflow: auto; overscroll-behavior: contain; scrollbar-width: thin; padding: 0 20px; }
 .account-details header,
 .account-details footer {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 6px;
+  gap: 12px;
   flex-shrink: 0;
 }
-.account-details header { padding-bottom: 8px; }
-.account-details header strong { overflow-wrap: anywhere; }
-.account-details h4 { margin: 8px 0 4px; font-size: 12px; font-weight: 600; }
+.account-details header { padding: 16px 20px; border-bottom: 1px solid var(--border); }
+.account-details-title { display: grid; gap: 3px; min-width: 0; }
+.account-details-title > span { color: var(--muted); font-size: 11px; }
+.account-details header strong { overflow-wrap: anywhere; font-size: 18px; line-height: 1.3; }
+.account-details h4 { margin: 0 0 10px; font-size: 13px; font-weight: 650; }
+.account-details-overview { padding: 12px 0; }
+.account-details-overview:empty { display: none; }
 .account-details-metrics {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: 4px 12px;
-  margin: 4px 0;
+  gap: 0 16px;
+  margin: 0;
 }
-.account-details-metrics div { display: flex; align-items: baseline; justify-content: space-between; gap: 6px; min-width: 0; padding: 3px 6px; background: var(--chip); border-radius: 4px; }
+.account-details-metrics div { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; min-width: 0; padding: 6px 0; }
+.account-details-metrics dt { min-width: 0; overflow-wrap: anywhere; }
 .account-details-metrics dt,
 .account-details-note { color: var(--muted); font-size: 12px; line-height: 1.6; }
-.account-details-metrics dd { margin: 0; font-size: 13px; font-weight: 650; font-variant-numeric: tabular-nums; }
-.account-details-more { margin-top: 8px; color: var(--muted); font-size: 12px; }
-.account-details-more summary { cursor: pointer; width: fit-content; padding: 4px 0; }
-.account-details footer { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border); flex-wrap: wrap; }
+.account-details-metrics dd { margin: 0; font-size: 13px; font-weight: 650; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.account-details-more,
+.account-details-help { margin-top: 8px; color: var(--muted); font-size: 12px; }
+.account-details-more summary,
+.account-details-help summary { cursor: pointer; width: fit-content; padding: 4px 0; }
+.account-details-help[open] { padding: 8px 12px; border-radius: 8px; background: var(--chip); }
+.account-details footer { padding: 12px 20px; border-top: 1px solid var(--border); flex-wrap: wrap; }
 .account-details-actions { display: flex; flex-wrap: wrap; gap: 6px; }
-.account-concurrency form { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 6px; margin: 6px 0; }
-.account-concurrency form > span { min-width: 0; overflow-wrap: anywhere; }
-.account-concurrency label { display: grid; grid-template-columns: minmax(0, 1fr) 72px; align-items: center; gap: 6px; min-width: 0; }
+.account-concurrency,
+.account-details-stats { padding: 16px 0; border-top: 1px solid var(--border); }
+.account-concurrency form { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 8px; margin: 8px 0 0; }
+.account-concurrency label { display: grid; grid-template-columns: minmax(0, 1fr) 76px; align-items: center; gap: 10px; min-width: 0; }
 .account-concurrency label span { overflow-wrap: anywhere; font-size: 12px; }
-.account-concurrency input { width: 100%; min-width: 0; box-sizing: border-box; }
-.account-concurrency .account-credits-toggle input { width: auto; justify-self: end; }
-.account-concurrency .account-credits-toggle { grid-column: 1 / -1; }
-.account-concurrency form p { grid-column: 1 / -1; font-size: 12px; overflow-wrap: anywhere; }
-.account-details .portalButton { min-height: 30px; padding: 4px 8px; font-size: 12px; }
+.account-concurrency input[type="number"] { width: 100%; min-width: 0; height: 34px; padding: 6px 8px; border: 1px solid var(--border); border-radius: 7px; color: var(--text); background: var(--panel); font-size: 13px; font-variant-numeric: tabular-nums; box-sizing: border-box; }
+.account-concurrency input:disabled { opacity: .6; }
+.account-concurrency .account-credits-toggle { grid-column: 1 / -1; display: flex; justify-content: flex-start; gap: 8px; margin-top: 2px; cursor: pointer; }
+.account-concurrency .account-credits-toggle input { width: 15px; height: 15px; margin: 0; flex-shrink: 0; accent-color: var(--accent); }
+.account-concurrency form p { grid-column: 1 / -1; font-size: 12px; overflow-wrap: anywhere; margin: 0; }
+.account-dispatch-interval form { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; align-items: end; }
+.account-dispatch-interval label { grid-template-columns: minmax(0, 1fr); gap: 6px; }
+.account-settings-route { grid-column: 1 / -1; min-width: 0; overflow-wrap: anywhere; font-size: 12px; }
+.account-details-stats > .account-details-note { margin: 0 0 6px; }
+.account-details-stats .account-details-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.account-details-stats h4 { margin: 12px 0 2px; font-size: 12px; }
+.account-details .portalButton { min-height: 32px; padding: 5px 10px; border-radius: 7px; font-size: 12px; white-space: nowrap; }
+.account-details .portalButton[data-account-action="close"] { align-self: flex-start; min-width: 30px; min-height: 30px; padding: 2px 6px; font-size: 20px; border-color: transparent; background: transparent; color: var(--muted); }
+@media (max-width: 400px) {
+  .account-details header { padding: 14px; }
+  .account-details-body { padding: 0 14px; }
+  .account-details footer { padding: 10px 14px; gap: 8px; }
+  .account-concurrency label { grid-template-columns: minmax(0, 1fr) 64px; }
+  .account-dispatch-interval label { grid-template-columns: minmax(0, 1fr); }
+}
 .agent-status-window-name {
   color: var(--muted);
   white-space: nowrap;

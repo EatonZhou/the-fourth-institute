@@ -339,9 +339,9 @@
       const publicNode = document.querySelector('[data-summary-value="urgent-work"]');
       const mineNode = document.querySelector('[data-summary-value="contribution-window"]');
       try {
-        // GetPulse goes through the permission system, which decides who may read Pulse.
+        // The Pulse application owner checks the current user's permissions.
         const userId = await window.PortalIdentity.userId();
-        const result = await window.PortalInstructionClient.execute("GetPulse", { user_id: userId });
+        const result = await window.PortalApplicationToolClient.execute("application:pulse.read", { user_id: userId });
         renderPortalPulse(result.pulse);
       } catch (err) {
         if (publicNode) publicNode.innerHTML = window.PortalI18n.html`<div class="pulse-error">${esc(window.PortalUI.errorMessage(window.PortalI18n.t("读取 Pulse"), err))}</div>`;
@@ -352,8 +352,8 @@
     async function publishPortalPulseItem(payload) {
       try {
         const published = payload?.published === true;
-        const result = await window.PortalInstructionClient.execute(
-          "PublishPulseItem",
+        const result = await window.PortalApplicationToolClient.execute(
+          "application:pulse.publish",
           { source_period: payload.source_period, source_key: payload.source_key, item_id: payload.item_id, published },
           { idempotencyKey: `pulse:${globalThis.PortalUIPrimitives.randomUUID()}` },
         );
