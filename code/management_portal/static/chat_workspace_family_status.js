@@ -32,12 +32,12 @@
       let state = mixStates.get(residentId);
       if (!state) {
         const listeners = new Set();
-        let revision = 0, reading = null, unsubscribe = null, refreshPending = false;
+        let revision = 0, reading = null, unsubscribe = null, refreshPending = false, disposed = false;
         const notify = () => listeners.forEach(listener => listener());
         state = {
           policy: null, busy: false, available: true,
           refresh() {
-            if (!state.available) return Promise.resolve();
+            if (disposed || !state.available) return Promise.resolve();
             if (state.busy) { refreshPending = true; return Promise.resolve(); }
             if (reading) return reading;
             const started = ++revision;
@@ -54,7 +54,7 @@
             return request;
           },
           async change(button) {
-            if (state.busy || !state.policy) return;
+            if (disposed || state.busy || !state.policy) return;
             const args = {resident_id: residentId, member_id: button.dataset.member,
               control: button.dataset.familyMix, enabled: button.getAttribute('aria-pressed') !== 'true'};
             ++revision; reading = null;
@@ -65,6 +65,9 @@
               state.policy = saved;
               notify();
               window.PortalResidentProjection?.invalidate?.(residentId);
+              // A committed save still invalidates shared data for other/new
+              // views, but no longer owns a conversation read after unmount.
+              if (disposed) return;
               await window.PortalResidentProtocol.loadSnapshot(residentId, {force: true});
             } finally {
               state.busy = false; notify();
@@ -73,9 +76,13 @@
           },
           subscribe(listener) {
             listeners.add(listener);
+            let released = false;
             return () => {
+              if (released) return;
+              released = true;
               listeners.delete(listener);
               if (listeners.size) return;
+              disposed = true; refreshPending = false; reading = null;
               ++revision; unsubscribe?.(); mixStates.delete(residentId);
             };
           },
@@ -85,6 +92,7 @@
         queueMicrotask(() => {
           if (!listeners.size) return;
           unsubscribe = window.PortalResidentProjection?.subscribe(residentId, update => {
+            if (disposed) return;
             // The owning Resident projection reports deletion/access/recovery.
             // Do not turn an unavailable target into repeated preference reads
             // and global error toasts; the Chat already presents its state.

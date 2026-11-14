@@ -107,10 +107,11 @@ def quota_candidates(accounts: list[dict], source: Mapping[str, Any], *, model: 
     return sorted(eligible, key=lambda a: (-headroom(a), a["account_id"] != current, a["account_id"]))
 
 
-def select(provider: str, *, anchor: str = "", model: str = "", effort: str = "", accounts=None) -> dict:
+def select(provider: str, *, anchor: str = "", model: str = "", effort: str = "", accounts=None, registered_accounts=None) -> dict:
     from .account_registrations import registrations
     from .accounts import DefaultAccountUnavailable
-    rows = registrations(provider)
+    rows = registrations(provider) if registered_accounts is None else [
+        row for row in registered_accounts if row.get("provider") == provider]
     source = next((row for row in rows if row["account_id"] == anchor or row["route_id"] == anchor), None) if anchor else None
     if anchor and source is None:
         raise DefaultAccountUnavailable("The configured account scope no longer exists; waiting for configuration")

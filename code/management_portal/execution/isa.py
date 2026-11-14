@@ -420,12 +420,12 @@ def probe_model_api(inv: Invocation) -> dict[str, Any]:
 # -- accounts, scheduling and usage ------------------------------------------------
 
 
-def _registration_public(row, actor):
+def _registration_public(row, actor, *, login_states=None):
     from .account_login import get_login_state
     from .account_hosting import account_home, codex_socket_path
     from management_portal import permission_system
     try:
-        login_state = get_login_state(row)
+        login_state = get_login_state(row, states=login_states)
     except InstructionError as exc:
         if exc.details.get("reason") != "account.login_unavailable":
             raise
@@ -671,40 +671,68 @@ def get_execution_settings(inv: Invocation) -> dict[str, Any]:
     return {"settings": settings}
 
 
-def _accounts_snapshot(refresh: bool) -> dict[str, Any]:
+def _accounts_snapshot(refresh: bool, *, account_facts=None) -> dict[str, Any]:
     if _SERVER is not None:
         if refresh:
             _SERVER.quota_monitor.request_refresh()
+        if account_facts is not None:
+            return _SERVER.quota_monitor.snapshot(account_facts=account_facts)
         return _SERVER.quota_monitor.snapshot()
+    if account_facts is not None:
+        snapshot = _client().accounts(force_refresh=refresh, include_read_facts=True)
+        account_facts.update(snapshot.pop("account_facts", {}))
+        return snapshot
     return _client().accounts(force_refresh=refresh)
 
 
 def list_provider_accounts(inv: Invocation) -> dict[str, Any]:
-    snapshot = _accounts_snapshot(bool(inv.argument("refresh")))
-    accounts = [item for item in snapshot.get("accounts") or [] if isinstance(item, dict)]
+    account_facts = {}
+    snapshot = _accounts_snapshot(bool(inv.argument("refresh")), account_facts=account_facts)
+    observed_accounts = [dict(item) for item in snapshot.get("accounts") or [] if isinstance(item, dict)]
+    accounts = [dict(item) for item in observed_accounts]
     from .account_registrations import registrations
-    by_id = {row["account_id"]: row for row in registrations()}
+    from .account_login import login_store
+    rows = account_facts.get("registrations")
+    if rows is None:
+        rows = registrations()
+    login_states = account_facts.get("login_states")
+    if login_states is None:
+        login_states = login_store().login_states(
+            row["account_id"] for row in rows if row["kind"] == "subscription_login")
+    by_id = {row["account_id"]: row for row in rows}
+    observed_by_id = {item.get("account_id") or item.get("id"): item for item in observed_accounts}
     present = {item.get("account_id") or item.get("id") for item in accounts}
     accounts.extend({"account_id": key, "provider": row["provider"]} for key, row in by_id.items() if key not in present)
     for item in accounts:
         row = by_id.get(item.get("account_id") or item.get("id"))
         if row:
-            public = _registration_public(row, inv.caller)
+            public = _registration_public(row, inv.caller, login_states=login_states)
             item.update({"registration": public, "kind": row["kind"], "enabled": row["enabled"],
                          "login_state": public["login_state"], "registration_version": row["version"]})
+            observed = observed_by_id.get(row["account_id"])
+            if observed is not None:
+                observed.update(kind=row["kind"], enabled=row["enabled"], login_state=public["login_state"])
     account_id = inv.argument("account_id")
     if account_id:
         accounts = [item for item in accounts if str(item.get("account_id") or item.get("id") or "") == account_id]
         if not accounts:
             raise not_found(f"执行账号不存在：{account_id}")
     from .accounts import default_execution_accounts
+    from .account_selection import select
+    from .provider_catalog import AGENT_PROVIDERS
 
     catalog = default_execution_accounts(tolerate_unavailable=True)
     default_routes = {}
     for provider, adapter in catalog.adapters.items():
         if adapter.accounts():
             try:
-                default_routes[provider] = catalog.resolve(provider).route_id
+                # Default routes use the same complete observation as this list,
+                # including when the response is filtered to one account.
+                if provider in AGENT_PROVIDERS:
+                    selected = select(provider, accounts=observed_accounts, registered_accounts=rows)
+                    default_routes[provider] = catalog.resolve(provider, selected["route_id"], bound=True).route_id
+                else:
+                    default_routes[provider] = catalog.resolve(provider).route_id
             except ValueError:
                 default_routes[provider] = ""
     return {"accounts": accounts, "default_routes": default_routes}

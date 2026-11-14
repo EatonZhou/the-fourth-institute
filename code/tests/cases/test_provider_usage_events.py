@@ -78,7 +78,15 @@ class TestProviderUsageEvents(unittest.TestCase):
         from types import SimpleNamespace
         from unittest.mock import patch
         from management_portal.execution import isa
-        with patch.object(isa,'_accounts_snapshot',return_value={'accounts':[{'account_id':'codex_one'}]}),patch('management_portal.execution.accounts.default_execution_accounts',return_value=SimpleNamespace(adapters={'codex':SimpleNamespace(accounts=lambda: [object()])},resolve=lambda provider:SimpleNamespace(route_id='one'))):
+        row = {'account_id': 'codex_one', 'route_id': 'one', 'provider': 'codex',
+               'kind': 'subscription_login', 'enabled': True, 'version': 1}
+        def snapshot(refresh, *, account_facts=None):
+            account_facts.update(registrations=[row], login_states={'codex_one': 'logged_in'})
+            return {'accounts': [{**row, 'login_state': 'logged_in'}]}
+        with patch.object(isa,'_accounts_snapshot',side_effect=snapshot), \
+             patch('management_portal.execution.account_registrations.registrations', return_value=[row]), \
+             patch('management_portal.permission_system.allows', return_value=False), \
+             patch('management_portal.execution.accounts.default_execution_accounts',return_value=SimpleNamespace(adapters={'codex':SimpleNamespace(accounts=lambda: [object()])},resolve=lambda provider, route_id, **kw:SimpleNamespace(route_id=route_id))):
             result=isa.list_provider_accounts(SimpleNamespace(argument=lambda name:None, caller="CASE-A"))
         self.assertEqual(result['default_routes'], {'codex': 'one'})
         matches = [row for row in result['accounts'] if row['account_id'] == 'codex_one']

@@ -15291,8 +15291,8 @@
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260903__decision__Execution_Scheduler_的容量分区、公平准入与租约恢复__decision_8ac0b5a6c0e5.md",
-      "sha256": "8c70c0325aa53abd7f709025e5d988ba0f51e4e5ce0a318d952b97212b55b72b",
-      "size": 21943
+      "sha256": "19650b26eef6d2ddb015327fde3503763539ce2b08786db464e1952c526f3ff2",
+      "size": 23452
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260903__decision__Execution_usage_的增量记账与归因边界__decision_f1331d57be89.md",
@@ -15356,8 +15356,8 @@
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260903__decision__Portal_Chat_Workspace__decision_f560803947c6.md",
-      "sha256": "72d9766ec9406dc7820df2a365262d7f7515481b5efc051fa49c4cb8841d2469",
-      "size": 78278
+      "sha256": "9d266282926a018a6dedb7949a008fb8b6eda9e820ae9f0714025675c42c097a",
+      "size": 87433
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260903__decision__Portal_Conversation_Store：浏览器共享的对话列表、Resident_状态与操作回执__decision_18abbdef3da3.md",
@@ -15551,8 +15551,8 @@
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260903__decision__Resident_输入、执行与_Conversation_运行架构__decision_edc470e09f5a.md",
-      "sha256": "5a6a4885f53f75bb9d9e741257fdcfa3b02f95ad64f5958e011cd8ee9721bfd7",
-      "size": 42530
+      "sha256": "ad0385a4fdfcda26d984a041f9b0f2d5b10a225489d04e03ef336f0984d3728a",
+      "size": 43648
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260903__decision__ResourceService_模块与运行架构__decision_cf27d39e39cd.md",
@@ -15736,8 +15736,8 @@
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260930__decision__ExecutionService_执行账号：目录、额度保护与调度设置__decision_d40f59f5508f.md",
-      "sha256": "56803f9822d3a2279d8694be13398efa801f64d30abc916892a89b49a50cb310",
-      "size": 41062
+      "sha256": "b6e2ea945a0df986301b8700398ec005e75e4e5f7a611822434e044855823f33",
+      "size": 42837
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260930__decision__Resident_Watchboard_扩展的脚本、配置、命令与工作台应用__decision_0571f3741e23.md",

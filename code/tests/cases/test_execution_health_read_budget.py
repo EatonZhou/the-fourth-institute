@@ -11,6 +11,15 @@ from management_portal.execution.scheduler_health import SchedulerHealth
 from management_portal.execution.scheduler_quota import SchedulerQuota
 
 
+class CapacityRows:
+    """This fixture isolates configuration reads; request I/O has PG tests."""
+    def __init__(self, rows):
+        self.rows = rows
+
+    def health_requests(self, connection):
+        return [(row["status"], row["request_json"]) for row in self.rows.active]
+
+
 class HealthRows:
     def __init__(self, count):
         self.calls = []
@@ -70,6 +79,7 @@ def health_fixture(count=20, *, enabled=True):
     health = SchedulerHealth(SimpleNamespace(display_name="isolated"), changes=rows,
                              capacity=capacity, quota=quota,
                              workers=SimpleNamespace(maintenance_result=lambda: maintenance))
+    health.requests = CapacityRows(rows)
     return health, rows
 
 
@@ -80,7 +90,7 @@ def test_health_batches_configuration_reads_and_preserves_quota_visibility(count
     result = health.health()
     assert sum("FROM capacity_settings" in sql for sql, _ in rows.calls) == 1
     assert sum("FROM execution_store_meta" in sql for sql, _ in rows.calls) == 1
-    assert len(rows.calls) == 7
+    assert len(rows.calls) == 6
     partitions = result["capacity_partitions"]
     first = partitions["account:0"]
     assert (first["limit"], first["dispatch_interval_min_seconds"], first["dispatch_interval_max_seconds"]) == (17, 3, 5)

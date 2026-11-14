@@ -351,7 +351,7 @@ class AccountMonitor:
                 self._inflight.clear()
                 self._refreshing = False
 
-    def snapshot(self):
+    def snapshot(self, *, account_facts=None):
         from .account_migration_types import migration_type
         from .provider_catalog import AGENT_PROVIDERS
         health = self.scheduler.health()
@@ -361,9 +361,19 @@ class AccountMonitor:
             refreshing = self._refreshing or self.wakeup.is_set() or any(not f.done() for f in self._inflight.values())
             retry_after = max(0, 60 - (time.monotonic() - self._last_refresh_request)) if self._refresh_refused else 0
         from .account_registrations import registrations
-        enabled = {r["account_id"]: r["enabled"] for r in registrations()}
+        rows = registrations()
+        entries = self.accounts.accounts()
+        enabled = {r["account_id"]: r["enabled"] for r in rows}
+        # Missing rows stay distinguishable from a recorded logged_out state:
+        # the public registration view still owns legacy credential discovery.
+        login_states = self._login_store.login_states({
+            *(a.account_id for a in entries if _subscription(a)),
+            *(r["account_id"] for r in rows if r["kind"] == "subscription_login"),
+        })
+        if account_facts is not None:
+            account_facts.update(registrations=rows, login_states=login_states)
         items = []
-        for account in self.accounts.accounts():
+        for account in entries:
             settings = partitions.get(account.capacity_key) or {}
             sample = samples.get(account.account_id) or {"status": "loading", "refreshing": True, "rate_limits": []}
             # Raw observations feed the scheduler. Its configured quota_reserve
@@ -375,7 +385,7 @@ class AccountMonitor:
             items.append({**sample, "account_id": account.account_id, "provider": account.provider, "backend_route_id": account.route_id, "billing_account_id": account.billing_account_id,
                           "enabled": enabled.get(account.account_id, True),
                           "active_count": settings.get("active_count", 0), "queued_count": settings.get("queued_count", 0),
-                          "login_state": self._login_store.login_state(account.account_id) if _subscription(account) else "not_applicable",
+                          "login_state": login_states.get(account.account_id, "logged_out") if _subscription(account) else "not_applicable",
                           "max_concurrency": settings.get("limit", account.max_concurrency),
                           "allow_credits": settings.get("allow_credits", False),
                           "credits_supported": settings.get("credits_supported", False),

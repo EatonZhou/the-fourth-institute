@@ -252,8 +252,11 @@ class ExecutionService:
     def account_usage(self) -> dict[str, Any]:
         return self.client.request("accounts.usage", {})
 
-    def accounts(self, *, force_refresh: bool = False) -> dict[str, Any]:
-        return self.client.request("accounts.list", {"force_refresh": force_refresh})
+    def accounts(self, *, force_refresh: bool = False, include_read_facts: bool = False) -> dict[str, Any]:
+        params = {"force_refresh": force_refresh}
+        if include_read_facts:
+            params["include_read_facts"] = True
+        return self.client.request("accounts.list", params)
 
     def resolve_account(self, provider: str, backend_route_id: str = "", *, runtime_options=None,
                         allow_unassigned: bool = False) -> dict[str, Any]:

@@ -105,6 +105,16 @@ class LoginSessionStore:
             row = c.execute("SELECT state FROM login_states WHERE account_id=%s", (account_id,)).fetchone()
             return row["state"] if row else default
 
+    def login_states(self, account_ids):
+        identifiers = list(dict.fromkeys(account_ids))
+        if not identifiers:
+            return {}
+        with self.connection() as c:
+            return {row["account_id"]: row["state"] for row in c.execute(
+                "SELECT account_id,state FROM login_states WHERE account_id=ANY(%s)",
+                (identifiers,),
+            ).fetchall()}
+
     def observe(self, account_id, state, *, observed_at=None):
         if state not in {"logged_in", "login_expired", "logged_out"}:
             raise ValueError("Invalid login state")
@@ -133,12 +143,12 @@ def login_store():
     return _login_store(os.environ.get("PORTAL_DATABASE_URL", ""), os.environ.get("PORTAL_DATABASE_NAMESPACE", ""))
 
 
-def get_login_state(registration):
+def get_login_state(registration, *, states=None):
     from management_portal.native_agent_transport import NativeAgentUnavailable
     if registration.get("kind") != "subscription_login":
         return "not_applicable"
     store, account_id = login_store(), registration["account_id"]
-    state = store.login_state(account_id, default=None)
+    state = states.get(account_id) if states is not None else store.login_state(account_id, default=None)
     if state is not None:
         return state
     # Existing credentials can predate the observation table. Timestamp the read

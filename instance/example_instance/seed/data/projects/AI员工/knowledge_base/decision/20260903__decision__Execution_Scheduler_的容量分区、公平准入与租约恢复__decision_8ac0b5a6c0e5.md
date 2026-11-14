@@ -4,15 +4,15 @@ type: decision
 project: AI员工
 created_at: '2026-09-03'
 version:
-  number: 24
+  number: 25
   created_at: "2026-09-03"
   created_by:
     user: ""
     agent: ""
-  updated_at: "2026-11-05T07:41:08Z"
+  updated_at: "2026-11-14T01:04:55Z"
   updated_by:
     user: ""
-    agent: "resident_2e9ea0072551"
+    agent: "resident_60ae6d0cdf74"
 importance: 10
 metaness: 2
 ai_generated: false
@@ -109,6 +109,14 @@ completed / failed / cancelled   租约到期或 Worker 失联
 ### 维护
 
 - **健康查询只读。** 持续的恢复工作由 ExecutionService 每 5 秒一次的维护完成：回收过期租约和失联 Worker，并修正 AgentData 中的执行状态。领取不顺带回收过期租约，过期执行最多等一个维护周期回到队列。Dev 与 Release 的维护可以同时运行，各自只处理自己锁住的行。
+
+### 健康读取与请求版本复用
+
+健康报告覆盖 `queued`、`claimed`、`running` 三种非终态，分别汇总排队数量和领取／运行占用。已经提出取消意图但尚未终态的执行仍按当前状态计入；只在终态或记录删除后退出相应统计。完整健康输出、状态计数、未确认终态、Worker、额度、容量设置和派发窗口继续按原合同提供，健康读取不推进维护或恢复。
+
+健康读取复用 `ActiveRequests` 的版本化读取实现，并持有独立于领取路径的进程内 memo，避免健康集合中的排队项与领取路径的活动集合互相驱逐。每次查询从数据库现读 execution_id、status、xmin、updated_at 与请求大小；冷行或版本标识变化时补读完整请求，仅保留容量归属需要的既有调度字段。后续读取发现终态或删除时清除对应成员，路由字段发生变化时按行版本失效；同长度、同 updated_at 的修改仍须由 xmin 识别。补读再次限定当前非终态集合，调用方要求排除取消项时保留相同条件。
+
+memo 只复用请求行版本对应的字段，不缓存状态、账号权限、配置或容量键解析结果。每次健康查询仍通过当前账号和配置真值计算 capacity_key。请求正文不参与容量归属；冷启动及变更仍可能读取完整请求。两阶段 SELECT 沿用既有事务可见性，不承诺两次读取组成额外的强一致快照，也不产生新的调度权威。
 
 ## 容量键怎样确定
 

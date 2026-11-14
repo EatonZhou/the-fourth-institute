@@ -4,15 +4,15 @@ type: decision
 project: AI员工
 created_at: '2026-09-03'
 version:
-  number: 38
+  number: 39
   created_at: "2026-09-03"
   created_by:
     user: ""
     agent: ""
-  updated_at: "2026-11-04T16:23:49Z"
+  updated_at: "2026-11-14T00:51:09Z"
   updated_by:
     user: ""
-    agent: "resident_6199a7a36480"
+    agent: "resident_60ae6d0cdf74"
 importance: 10
 metaness: 3
 ai_generated: false
@@ -113,6 +113,14 @@ Conversation 投影 ──6. 回复消息、终态、事件──> 调用方 / �
 - **接收确认、实际送达模型和模型完成是三件不同的事。** 各自有独立的记录；页面上显示了消息，不代表模型已经收到。
 
 准备阶段首次预留输入时保存原接收项和成员准备事实的持久检查点，早于正文材料化和模型提示构造；后续追加 info 时补入同一检查点，不覆盖原接收项。这样准备失败或进程中断后，仍能验证原消息身份和顺序。检查点不替代不可变消息，也不授权从提示词推导缺失正文。
+
+### Send-now 已交付输入的准备与提交
+
+SocietyService 在 Resident 状态锁外读取消息、验证不可变来源和真实祖先关系，并准备 Mailbox 分组成员。准备结果只用于当前请求中的当前输入，不跨请求缓存来源证明，也不放宽身份、权限或来源校验。
+
+提交回执时，Resident 状态锁内重新读取当前工作，核对原 job 的 execution_id、已提交的 execution_id、消息 ID、control 及完整发送项（包括分组内容）。输入被撤回、重组、换轮次或控制项改变时，不消费旧准备。Conversation 协议作用域内还须重核准备对应的当前消息出现位置（occurrence）的 Segment 身份，并将这次重核与消息提交置于同一写入保护内；出现位置改变时放弃旧准备，由后续快照重新准备。
+
+已完成的控制项再次被观察时不重复准备。输入状态、持久事件、Mailbox 分组消费及已送达回执仍沿原路径幂等提交；来源身份冲突继续报错。锁外准备不取消提交阶段必要的出现位置读取、事务和状态写入。
 
 ### 投递方式
 

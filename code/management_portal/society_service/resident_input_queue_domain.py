@@ -765,6 +765,8 @@ def reconcile_queued_turn_inputs(
         # exact-turn and control checks before committing the receipt.
         if not environment:
             return False
+        prepared_input = (resident_execution_work.prepare_conversation_input(environment, item)
+                          if receipt['status'] == 'delivered' else None)
         with resident_record_domain.state_lock(resident_id):
             record = resident_record_domain.find_resident_for_admission(resident_id) or {}
             current = resident_execution_work.read(record) if record else {}
@@ -777,11 +779,22 @@ def reconcile_queued_turn_inputs(
                           and candidate.get("active_turn_input") == control), -1)
             if index < 0:
                 continue
+            if dispatched[index] != item:
+                # The same control may now name a regrouped/revised input.
+                # Its immutable preparation must be redone outside this lock.
+                resolved = False
+                continue
             now = resident_domain_common.now_iso()
             if receipt["status"] == "delivered":
                 delivered_item = {**dispatched[index], "dispatched_at": now,
                                   "delivery_mode": "inject_active_turn"}
-                resident_execution_work.materialize_conversation_input(record, delivered_item, activated_at=now)
+                from .resident_conversation_messages import PreparedInputChanged
+                try:
+                    resident_execution_work.materialize_conversation_input(
+                        record, delivered_item, activated_at=now, prepared=prepared_input)
+                except PreparedInputChanged:
+                    resolved = False
+                    continue
                 resident_conversation_stream.get_repository().set_input_state(
                     resident_id, message_id, "completed", updated_at=now,
                 )

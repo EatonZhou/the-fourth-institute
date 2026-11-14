@@ -160,7 +160,7 @@ def recover_dispatch_clock(connection: Any, *, now_epoch: float) -> dict[str, in
 
 
 class ActiveRequests:
-    """The scheduling fields of claimed and running executions, kept per row version."""
+    """Versioned scheduling fields; status is read fresh, never memoized."""
 
     def __init__(self) -> None:
         self._scheduling_memo_lock = threading.Lock()
@@ -173,7 +173,25 @@ class ActiveRequests:
         exclude: str = "",
         uncancelled: bool = False,
     ) -> list[tuple[str, dict[str, Any]]]:
-        """Scheduling fields of every claimed or running execution.
+        """Scheduling fields of every claimed or running execution."""
+
+        return [(execution_id, request) for execution_id, _status, request in self._requests(
+            connection, statuses=("claimed", "running"), exclude=exclude, uncancelled=uncancelled,
+        )]
+
+    def health_requests(self, connection) -> list[tuple[str, dict[str, Any]]]:
+        """Current status and capacity fields of all nonterminal executions.
+
+        Cancellation intent does not release capacity until the terminal status.
+        """
+        return [(status, request) for _execution_id, status, request in self._requests(
+            connection, statuses=("queued", "claimed", "running"),
+        )]
+
+    def _requests(
+        self, connection, *, statuses: tuple[str, ...], exclude: str = "", uncancelled: bool = False,
+    ) -> list[tuple[str, str, dict[str, Any]]]:
+        """Read headers each time, fetch payloads only for changed row versions.
 
         Claims and queue positions read these on every poll.  Parsing each
         active request_json there cost about a CPU core in both ExecutionService
@@ -185,20 +203,19 @@ class ActiveRequests:
         """
 
         sql = (
-            "SELECT execution_id, xmin::text AS row_version, updated_at, "
+            "SELECT execution_id, status, xmin::text AS row_version, updated_at, "
             "pg_column_size(request_json) AS request_size "
-            "FROM executions WHERE status IN ('claimed', 'running')"
+            "FROM executions WHERE status = ANY(%s)"
         )
-        params: list[Any] = []
+        params: list[Any] = [list(statuses)]
         if uncancelled:
             sql += " AND cancel_requested = '0'"
         if exclude:
             sql += " AND execution_id != %s"
             params.append(exclude)
-        keys = {
-            str(row["execution_id"]): _scheduling_memo_key(row)
-            for row in connection.execute(sql, tuple(params)).fetchall()
-        }
+        headers = connection.execute(sql, tuple(params)).fetchall()
+        keys = {str(row["execution_id"]): _scheduling_memo_key(row) for row in headers}
+        current_status = {str(row["execution_id"]): str(row["status"]) for row in headers}
         with self._scheduling_memo_lock:
             known = {execution_id: self._scheduling_memo.get(execution_id) for execution_id in keys}
         requests = {
@@ -207,18 +224,20 @@ class ActiveRequests:
             if entry is not None and entry[0] == keys[execution_id]
         }
         missing = [execution_id for execution_id in keys if execution_id not in requests]
-        fresh: dict[str, tuple[tuple[str, int], dict[str, Any]]] = {}
+        fresh: dict[str, tuple[tuple[str, str, int], dict[str, Any]]] = {}
         if missing:
             for row in connection.execute(
-                "SELECT execution_id, xmin::text AS row_version, updated_at, "
+                "SELECT execution_id, status, xmin::text AS row_version, updated_at, "
                 "pg_column_size(request_json) AS request_size, request_json "
-                "FROM executions WHERE execution_id = ANY(%s)",
-                (missing,),
+                "FROM executions WHERE execution_id = ANY(%s) AND status = ANY(%s)"
+                + (" AND cancel_requested = '0'" if uncancelled else ""),
+                (missing, list(statuses)),
             ).fetchall():
                 execution_id = str(row["execution_id"])
                 request = _scheduling_request(json_object(row["request_json"]))
                 fresh[execution_id] = (_scheduling_memo_key(row), request)
                 requests[execution_id] = request
+                current_status[execution_id] = str(row["status"])
         with self._scheduling_memo_lock:
             self._scheduling_memo.update(fresh)
             if not exclude and not uncancelled:
@@ -226,7 +245,8 @@ class ActiveRequests:
                     del self._scheduling_memo[execution_id]
             elif len(self._scheduling_memo) > SCHEDULING_MEMO_LIMIT:
                 self._scheduling_memo.clear()
-        return [(execution_id, requests[execution_id]) for execution_id in keys if execution_id in requests]
+        return [(execution_id, current_status[execution_id], requests[execution_id])
+                for execution_id in keys if execution_id in requests]
 
 
 class SchedulerCapacity:

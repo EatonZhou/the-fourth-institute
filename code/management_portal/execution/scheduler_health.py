@@ -7,10 +7,10 @@ from typing import Any
 from management_common.database_time import epoch_seconds, iso_time
 from management_common.json_columns import json_value
 
-from .scheduler_capacity import SHARED_CAPACITY_KEY, SchedulerCapacity
+from .scheduler_capacity import ActiveRequests, SHARED_CAPACITY_KEY, SchedulerCapacity
 from .scheduler_changes import SchedulerChanges
 from .scheduler_quota import SchedulerQuota
-from .scheduler_rows import ACTIVE_STATUSES, json_object
+from .scheduler_rows import ACTIVE_STATUSES
 from .scheduler_workers import WorkerRegistry
 
 
@@ -27,6 +27,9 @@ class SchedulerHealth:
         self.capacity = capacity
         self.quota = quota
         self.workers = workers
+        # Separate membership from claims' active-only memo, using the same
+        # row-version reader. Health includes queued work and cancel intent.
+        self.requests = ActiveRequests()
 
     def health(self) -> dict[str, Any]:
         maintenance = self.workers.maintenance_result()
@@ -76,21 +79,13 @@ class SchedulerHealth:
                     *configuration.settings,
                 }
             }
-            for row in connection.execute(
-                """
-                SELECT status, request_json
-                FROM executions
-                WHERE status IN ('queued', 'claimed', 'running')
-                """
-            ).fetchall():
-                capacity_key = self.capacity.capacity_key(
-                    json_object(row["request_json"])
-                )
+            for status, request in self.requests.health_requests(connection):
+                capacity_key = self.capacity.capacity_key(request)
                 partition = capacity_counts.setdefault(
                     capacity_key,
                     {"active_count": 0, "queued_count": 0},
                 )
-                if str(row["status"]) in ACTIVE_STATUSES:
+                if status in ACTIVE_STATUSES:
                     partition["active_count"] += 1
                 else:
                     partition["queued_count"] += 1

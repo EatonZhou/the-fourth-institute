@@ -94,6 +94,10 @@ def account_usage(server: Any, params: dict[str, Any]) -> Any:
 def list_accounts(server: Any, params: dict[str, Any]) -> Any:
     if params.get("force_refresh"):
         server.quota_monitor.request_refresh()
+    if params.get("include_read_facts"):
+        facts = {}
+        snapshot = server.quota_monitor.snapshot(account_facts=facts)
+        return {**snapshot, "account_facts": facts}
     return server.quota_monitor.snapshot()
 
 

@@ -202,7 +202,7 @@ def test_isa_rpc_and_monitor_share_account_settings(scheduler, monkeypatch):
     rows = {row['account_id']: row for row in monitor.snapshot()['accounts']}
     assert rows['paid_test']['allow_credits'] and rows['paid_test']['credits_supported']
     assert rows['api_test']['allow_credits'] is False and rows['api_test']['credits_supported'] is False
-    monkeypatch.setattr(isa, '_accounts_snapshot', lambda force: {'accounts': list(rows.values())})
+    monkeypatch.setattr(isa, '_accounts_snapshot', lambda force, **kw: {'accounts': list(rows.values())})
     listed = isa.list_provider_accounts(SimpleNamespace(argument=lambda key, default=None: default, caller='fixture-admin'))
     assert next(row for row in listed['accounts'] if row['account_id']=='paid_test')['allow_credits']
 

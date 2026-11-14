@@ -588,31 +588,47 @@ def publish_conversation_state(
         )
 
 
+def prepare_conversation_input(record, job):
+    """Freeze identity/provenance and group members before taking the state lock."""
+    from .resident_conversation_stream import get_repository
+    message = _conversation_input_message(record, job)
+    if message is None:
+        return None
+    return get_repository().messages.prepare_user_message(resident_lineage.resident_id(record), message)
+
+
+def _conversation_input_message(record, job):
+    raw_message = job.get('input_message')
+    if not isinstance(raw_message, Mapping):
+        return None
+    message = copy.deepcopy(dict(raw_message))
+    message_id = str(message.get('message_id') or '').strip()
+    if not message_id:
+        return None
+    from .resident_conversation_stream import get_repository
+    existing = get_repository().message(resident_lineage.resident_id(record), message_id)
+    if existing:
+        message = {**copy.deepcopy(dict(existing)), **message}
+    return message
+
+
 def materialize_conversation_input(
     record: Mapping[str, object],
     job: Mapping[str, object],
     *,
     activated_at: str = "",
+    prepared=None,
 ) -> dict[str, Any] | None:
     """Commit the active input at its execution position in Conversation."""
 
-    raw_message = job.get("input_message")
-    if not isinstance(raw_message, Mapping):
+    message = prepared.message if prepared is not None else _conversation_input_message(record, job)
+    if message is None:
         return None
-    message = copy.deepcopy(dict(raw_message))
-    message_id = str(message.get("message_id") or "").strip()
-    if not message_id:
-        return None
+    message_id = str(message['message_id'])
     from .resident_conversation_stream import get_repository
 
     resident_id = resident_lineage.resident_id(record)
     repository = get_repository()
-    existing = repository.message(resident_id, message_id)
-    if existing:
-        message = {
-            **copy.deepcopy(dict(existing)),
-            **message,
-        }
     activation_time = str(
         activated_at
         or job.get("dispatched_at")
@@ -620,11 +636,10 @@ def materialize_conversation_input(
         or job.get("updated_at")
         or utc_now_iso()
     )
-    persisted = repository.commit_user_message(
-        resident_id,
-        message,
-        activated_at=activation_time,
-    )
+    if prepared is not None:
+        persisted = repository.messages.commit_prepared_user_message(prepared, activated_at=activation_time)
+    else:
+        persisted = repository.commit_user_message(resident_id, message, activated_at=activation_time)
     repository.set_input_state(
         resident_id,
         message_id,

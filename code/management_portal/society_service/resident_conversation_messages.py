@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import copy
 from collections.abc import Mapping, Sequence
+from dataclasses import dataclass
 from typing import Any
 
 from management_portal.execution.agent_data_store import AgentDataStore, chat_segment_id
@@ -37,6 +38,19 @@ def _group_member_ids(message: Mapping[str, Any]) -> list[str]:
         for member in part.get("members") or []
         if isinstance(member, Mapping) and member.get("message_id")
     ]
+
+
+class PreparedInputChanged(ValueError):
+    """The prepared immutable input no longer names the current occurrence."""
+
+
+@dataclass(frozen=True)
+class PreparedUserMessage:
+    resident_id: str
+    message: dict[str, Any]
+    existing_segment_id: str
+    waiting: dict[str, Any] | None
+    members: list[dict[str, Any]]
 
 
 class ConversationMessages:
@@ -180,12 +194,43 @@ class ConversationMessages:
             parts[index] = copy.deepcopy(dict(canonical))
         return parts
 
+    def prepare_user_message(self, resident_id, message) -> PreparedUserMessage:
+        """Read and prove immutable provenance before the Resident state scope.
+
+        The caller must revalidate the exact queued item/group under its state
+        lock. append_message additionally fences the current Chat occurrence.
+        """
+        stream_id = required_resident_id(resident_id)
+        message = copy.deepcopy(dict(message))
+        public = protocol_message(message)
+        public.pop('activated_at', None)
+        if public['role'] != 'user':
+            raise ValueError('Only user input can be prepared')
+        existing = self.agent_data.chat_message(stream_id, public['message_id'])
+        if existing is not None:
+            self._validate_stored_message_identity(existing, public)
+        waiting = self.state_store.mailbox_entry(stream_id, public['message_id'])
+        stored = (waiting or {}).get('message') or {}
+        if stored.get('content_parts') is not None:
+            self._validate_stored_message_identity(stored, public)
+        payload = message_for_storage(public, private_fields={**stored, **message})
+        return PreparedUserMessage(stream_id, message, str((existing or {}).get('segment_id') or ''),
+                                   copy.deepcopy(waiting), self._group_members(stream_id, payload))
+
+    def commit_prepared_user_message(self, prepared, *, activated_at=''):
+        # Fence the occurrence read and commit together against other Chat
+        # writers. The scope is reentrant when append enters its writer path.
+        with self.events.protocol_scope(prepared.resident_id):
+            return self.append_message(prepared.resident_id, prepared.message,
+                                       activated_at=activated_at, _prepared=prepared)
+
     def append_message(
         self,
         resident_id: object,
         message: Mapping[str, Any],
         *,
         activated_at: str = "",
+        _prepared: PreparedUserMessage | None = None,
     ) -> dict[str, Any]:
         """Deliver a message: put it at the end of the Resident's trace, and so of its Chat.
 
@@ -200,6 +245,8 @@ class ConversationMessages:
         message_id = str(public_input["message_id"])
 
         def check(stored: Mapping[str, Any] | None) -> None:
+            if _prepared is not None:
+                return
             if stored is not None:
                 self._validate_stored_message_identity(stored, public_input)
 
@@ -207,6 +254,11 @@ class ConversationMessages:
         # A message without its durable event still enters the single writer
         # below, so recovery of a partially committed append is unchanged.
         existing = self.agent_data.chat_message(stream_id, message_id)
+        if _prepared is not None and (
+                _prepared.resident_id != stream_id
+                or _prepared.message != message
+                or str((existing or {}).get('segment_id') or '') != _prepared.existing_segment_id):
+            raise PreparedInputChanged('Conversation input changed after preparation')
         if (existing is not None
                 and str(message.get("execution_id") or "")
                 and existing.get("execution_id") == message.get("execution_id")
@@ -224,20 +276,20 @@ class ConversationMessages:
             with self.state_store.database.read() as connection:
                 if self.events.event_exists(connection, stream_id, MESSAGE_APPENDED, message_id):
                     # A requeued message that ran again leaves the Mailbox now.
-                    waiting = self.state_store.mailbox_entry(stream_id, message_id)
+                    waiting = _prepared.waiting if _prepared else self.state_store.mailbox_entry(stream_id, message_id)
                     if waiting is not None and waiting["place"] == "pending":
                         self.state_store.mailbox_forget(stream_id, [message_id], places=("pending",))
                     return message_from_storage(existing)
 
         with self.events.protocol_scope(stream_id):
-            waiting = self.state_store.mailbox_entry(stream_id, message_id)
+            waiting = _prepared.waiting if _prepared else self.state_store.mailbox_entry(stream_id, message_id)
             waiting_message = (waiting or {}).get("message") or {}
             check(waiting_message if waiting_message.get("content_parts") is not None else None)
             # What the Mailbox kept (a business reference) stays with the message.
             payload = message_for_storage(
                 public_input, private_fields={**waiting_message, **dict(message)},
             )
-            members = self._group_members(stream_id, payload)
+            members = _prepared.members if _prepared else self._group_members(stream_id, payload)
             with self.agent_data.database.transaction():
                 for member in members:
                     self.agent_data.project_chat_message(stream_id, member, activated_at=activated_at)

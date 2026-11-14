@@ -77,6 +77,15 @@ def wait_for(predicate, seconds=5):
     raise AssertionError("Login worker did not reach the expected state")
 
 
+def test_login_state_batch_matches_persisted_observations(isolated_login):
+    store = isolated_login
+    expected = {f'batch_{i}': ('logged_in', 'logged_out', 'login_expired')[i % 3] for i in range(32)}
+    for account_id, state in expected.items():
+        store.observe(account_id, state)
+    assert store.login_states([*expected, 'batch_missing', 'batch_0']) == expected
+    assert store.login_states([]) == {}
+
+
 def test_login_output_only_keeps_authorization_prompt():
     """登录解析支持分块和 ANSI 输出，只保留授权链接及设备码
 
@@ -274,7 +283,7 @@ def test_antigravity_without_runtime_registers_and_remains_manageable(tmp_path, 
     row = isa.register_provider_account(inv)["registration"]
     assert row["account_id"] == "gemini" and row["login_state"] == "unavailable"
     assert account_registrations.registration("gemini") is not None
-    monkeypatch.setattr(isa, "_accounts_snapshot", lambda _: {"accounts": []})
+    monkeypatch.setattr(isa, "_accounts_snapshot", lambda _, **kw: {"accounts": []})
     assert isa.list_provider_accounts(inv)["accounts"][0]["registration"]["account_id"] == "gemini"
     setup = account_setup.get_setup(inv)["setup"]
     assert setup["login_state"] == "unavailable" and setup["runtime_ready"] is False
