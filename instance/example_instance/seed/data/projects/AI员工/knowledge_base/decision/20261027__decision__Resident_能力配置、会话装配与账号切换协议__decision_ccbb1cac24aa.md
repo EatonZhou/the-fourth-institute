@@ -4,12 +4,12 @@ type: decision
 project: AI员工
 created_at: '2026-10-27'
 version:
-  number: 20
+  number: 21
   created_at: "2026-10-27"
   created_by:
     user: ""
     agent: "resident_2e9ea0072551"
-  updated_at: "2026-11-14T11:55:32Z"
+  updated_at: "2026-11-14T12:09:21Z"
   updated_by:
     user: ""
     agent: "resident_60ae6d0cdf74"
@@ -17,8 +17,8 @@ importance: 8
 ai_generated: true
 links:
   source:
-  - repo_711b6ab6d5c8/file/code/management_portal/tool_settings.py
-  - repo_711b6ab6d5c8/file/code/management_portal/execution/resident_mcp.py
+  - management_portal/tool_settings.py
+  - management_portal/execution/resident_mcp.py
   - https://modelcontextprotocol.io/specification/2026-07-28/server/tools
   - https://modelcontextprotocol.io/specification/2026-07-28/server/resources
   related:

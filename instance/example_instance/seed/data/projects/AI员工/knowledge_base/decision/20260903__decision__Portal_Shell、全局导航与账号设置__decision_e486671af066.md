@@ -4,12 +4,12 @@ type: decision
 project: AI员工
 created_at: '2026-09-03'
 version:
-  number: 46
+  number: 47
   created_at: "2026-09-03"
   created_by:
     user: ""
     agent: ""
-  updated_at: "2026-11-14T11:55:33Z"
+  updated_at: "2026-11-14T12:09:22Z"
   updated_by:
     user: ""
     agent: "resident_60ae6d0cdf74"
@@ -18,7 +18,7 @@ metaness: 2
 ai_generated: false
 links:
   source:
-  - repo_711b6ab6d5c8/file/code/management_portal/static/portal_tool_settings.js
+  - management_portal/static/portal_tool_settings.js
   - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/portal_nav.js
   - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/portal_components.css
   - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/portal_identity.js

@@ -1392,6 +1392,7 @@ modules:
       - "management_portal/execution/native_harness_tools.py"
       - "management_portal/execution/resident_application_tools.py"
       - "management_portal/execution/resident_capability_assembly.py"
+      - "management_portal/execution/resident_mcp*.py"
       - "management_portal/execution/kimi_tool_gateway.py"
       - "scripts/harness_evolution.py"
       - "scripts/harness_lineage.py"
