@@ -18,8 +18,8 @@ from .society_service.lineage_locations import lineage_folder
 # the items users publish from them are rows of pulse_publication_store.
 PULSE_MIGRATION_RECEIPT = ".portal-system-migration.json"
 PERIODS = ("daily", "weekly", "monthly")
-# Who may read or publish Pulse is decided by the permission scheme on GetPulse
-# and PublishPulseItem; this module keeps no user lists.
+# The application tools enforce GetPulse / PublishPulseItem permission elements;
+# these names are business permissions, not public ISA instructions.
 
 
 def _read_json(path: Path, default: Any) -> Any:

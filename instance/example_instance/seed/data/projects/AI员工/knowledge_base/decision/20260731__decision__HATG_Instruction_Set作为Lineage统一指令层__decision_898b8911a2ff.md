@@ -55,12 +55,12 @@ links:
   derived_from:
   - thinking_ca8f397a47de
 version:
-  number: 101
+  number: 103
   created_at: "2026-07-31"
   created_by:
     user: ""
     agent: ""
-  updated_at: "2026-11-14T10:04:38Z"
+  updated_at: "2026-11-14T10:49:03Z"
   updated_by:
     user: ""
     agent: "resident_60ae6d0cdf74"
@@ -126,7 +126,6 @@ HATG ISA 服务的是一个高自由度的 AI 社会。指令系统尽量少做�
 | Family 内部机制 | Family 的 Router、steward 和内部 Effect 运转时的转交、简报、故障监督与摘要检查 | decision_b77fde81e7a0 |
 | 模板 | 模板的定义与施加 | decision_b04cac4188bb |
 | 公共讨论 | 帖子与回复、聊天室（Chatroom） | decision_3e063aac15b3 |
-| Pulse | 知识动态与个人动态的公开发布 | decision_cc96fce57ab6 |
 | 组织与分工 | Project、Principal 层级、跨 Lineage 迁移 | decision_6591e7793116 |
 | 权限 | 权限系统开关与权限方案、权限表项、管理员名单、有效权限、试判定与临时凭证 | decision_22227d0ad075 |
 | 运行环境 | Portal 服务、设备状态、执行账号与用量、模型接口 | decision_4527448ad07f |
@@ -275,7 +274,7 @@ Python 入口将失败的指令结果转为业务异常时，保留外层回执�
 | `Prepare` | 生成待确认的草稿，不提交 | `PrepareWorkspaceHandoff` |
 | `Preview` | 读取将要产生的结果，不提交 | `PreviewPromptInjection` |
 | `Promote` | 把种子提升为正式对象 | `PromoteSeed` |
-| `Publish` | 发布到更大的可见范围，或撤回发布 | `PublishRelease`、`PublishPulseItem` |
+| `Publish` | 发布到更大的可见范围，或撤回发布 | `PublishRelease` |
 | `Read` | 读取对象的内容 | `ReadResource` |
 | `Register` | 把已存在的外部对象登记为资源 | `RegisterResource` |
 | `Relay` | 由中间对象转交消息 | `RelayFamilyMessage` |
@@ -293,10 +292,7 @@ Python 入口将失败的指令结果转为业务异常时，保留外层回执�
 | `Retry` | 重新进行没有完成的工作，已完成的部分不重做 | `RetryResidentInitialization` |
 | `Revoke` | 撤销凭证或邀请 | `RevokeUserAccessToken` |
 | `Run` | 执行一次脚本或动作 | `RunScript` |
-| `Set` | 设置运行服务的目标状态，由必填参数给出状态 | `SetTelepusEnabled(enabled)` |
 | `Split` | 把一项拆成多项 | `SplitMailboxItem` |
-| `Start` | 开始有生命周期的交互过程 | `StartTelepusWeixinBinding` |
-| `Export` | 按调用者权限导出资源内容 | `ExportPaperBibtex` |
 | `Submit` | 提交已完成的工作结果 | `SubmitResidentSummary` |
 | `Trigger` | 触发事件 | `TriggerEvent` |
 | `Unbind` | 解除 `Bind` 建立的关联 | `UnbindWorkspace` |
@@ -311,7 +307,7 @@ Python 入口将失败的指令结果转为业务异常时，保留外层回执�
 
 - **预览与诊断使用明确名称。** `PreviewPromptInjection` 读取提示预览，`GetLineageDiagnostics` 返回图诊断；修改仍在提交时校验。
 - **不为同一操作设置多个名称。** 调用者不同、入口不同或选项不同时，仍使用同一条指令；例如五种 Fork 方式都使用 `ForkResident`，由 `fork_mode` 参数区分。
-- **开关是一条指令加一个必填布尔参数。** 打开和关闭、设置和取消属于同一操作，用正向动词命名，由参数给出目标状态，例如 `PinPost(pinned)`、`FeaturePost(featured)`、`PinMailboxItem(pinned)`、`PauseComponent(paused)`、`OpenIntake(open)`、`PublishPulseItem(published)`（weihao 2026-10-18）。
+- **开关是一条指令加一个必填布尔参数。** 打开和关闭、设置和取消属于同一操作，用正向动词命名，由参数给出目标状态，例如 `PinPost(pinned)`、`FeaturePost(featured)`、`PinMailboxItem(pinned)`、`PauseComponent(paused)`、`OpenIntake(open)`（weihao 2026-10-18）。
 - **同一种读取覆盖多个对象时用一条指令，由参数选择对象。** 例如 `ListInputHistory`、`SearchMessages` 用 `resident_id(s)` 或 `chatroom_id` 二选一，`GetDeviceStatus` 用 `kind` 选择 GPU 或磁盘；两种对象由不同服务保存时，声明按参数分流（`argument_owners`）。
 
 ## 指令在哪里执行
@@ -366,11 +362,11 @@ Python 入口将失败的指令结果转为业务异常时，保留外层回执�
 
 目录按对象类别组织稳定语义，按发现分组控制按需展开：`general`（通用）、`application`（应用）、`internal`（内部维护）、`operations`（运维）。分组由领域声明指定，缺省为通用；它独立于类别、执行 owner 与权限。`ListInstructions` 默认只列通用能力并给出其余组的发现索引；显式 `group=all` 才展开全部，已有 `category` 单独查询仍跨组返回该类别。Harness 提供简短发现入口，避免把每个已安装应用和维护命令名反复注入每个 Agent。完整参数和返回合同见 decision_aa4fdbac8364。
 
-永久取消的功能不以固定失败的指令继续占据当前目录。删除时一并清理声明、handler、默认权限映射、已无使用者的动词和当前规范表；旧名返回 `instruction.unknown`，不保留无期限别名。只读历史绑定查询若仍有独立语义，保留在应用分组并继续原 owner 鉴权。
+永久取消的功能不以固定失败的指令继续占据当前目录。删除时一并清理声明、handler、默认权限映射、已无使用者的动词和当前规范表；旧名返回 `instruction.unknown`，不保留无期限别名。只读历史绑定查询若仍有独立应用语义，由应用工具提供并继续原 owner 鉴权。
 
 每条指令由其类别对应的声明模块登记一次。声明包含：指令名、所属类别、发现分组 `discovery_group`、拥有服务、一句话说明、参数定义、结果定义、是否改变状态、是否流式、哪个参数指向目标对象，以及判定槽（这条指令按什么判定，见“声明格式”）。指令内核在每个服务启动时合并同一份声明；两个模块声明同名指令时启动失败。
 
-可选功能的指令随功能安装：公告板、聊天室、Pulse 和 Telepus 通过 `isa.instructions` 接入点提供声明模块（`<功能>_instructions.py`），目录合并已安装功能的声明和它们新增的类别（`hatg.catalog.categories()`），`ListInstructions` 的 `category` 取值随之变化；声明的类别不在这些类别中时目录构建失败。Web 执行的功能指令，其实现由功能的 `web.instructions` 模块（`<功能>_web_isa.py`）登记到 Web 内核。功能没有安装时，它的指令不在目录中，各服务的内核也就不需要它们的实现（decision_15aab18c0ab3）。
+可选功能的指令随功能安装：公告板、聊天室等尚属 ISA 的功能通过 `isa.instructions` 接入点提供声明模块（`<功能>_instructions.py`），目录合并已安装功能的声明和它们新增的类别（`hatg.catalog.categories()`），`ListInstructions` 的 `category` 取值随之变化；声明的类别不在这些类别中时目录构建失败。Web 执行的功能指令，其实现由功能的 `web.instructions` 模块（`<功能>_web_isa.py`）登记到 Web 内核。功能没有安装时，它的指令不在目录中，各服务的内核也就不需要它们的实现（decision_15aab18c0ab3）。
 
 拥有服务启动时，指令内核核对自己登记的实现：本服务拥有的指令缺少实现，或为其他服务拥有的指令登记了实现，默认拒绝启动。目录中已不存在的旧实现只记录警告并忽略。Release Web 与共享目录短暂不一致时，采用 decision_08bb2d9141f9“共享与独立的范围”规定的发布兼容：目录先新增而 Web 实现尚未发布时，Release Web 保持启动，对该调用返回 `instruction.owner_unavailable`；Dev 与共享组件的缺失实现检查保持严格。
 
@@ -401,7 +397,7 @@ Python 入口将失败的指令结果转为业务异常时，保留外层回执�
 
 在“命名规则”和“调用格式”之外，指令声明还要满足：
 
-- **目标对象用统一 ID 指定，且必填。** 指令作用的对象写在参数中，用统一 ID 或资源地址。不允许省略参数时默认为调用者自己；读取自己的资料也写明自己的 ID。唯一的例外是 RunScript 的 `lineage_id`：Effect 内由激活确定，Resident 省略时取其所在 Lineage（decision_8b510cbd9c58）；入口按这样确定的 Lineage 判定（weihao 2026-10-19 起要求对它有 `@admin`），User 省略时拒绝，不落到其他节点或免检。声明的 `target` 指向这个参数；修改已有对象的指令都声明 `target`，调用信封的单个 `expected_version` 按它比较。没有单一目标对象的修改不声明：认领摘要队列、新开终端、按周期与条目键指定的 Pulse 条目、重启 Portal 实例，以及全站执行设置和知识标签列表。`AcceptUserAuthorization` 依据当前真实授权输入签发新凭证，不修改证据消息；`CorrectResourceLifecycleAssociation` 修改 `(scope_id, resource_id)` 定位的关联审计，不修改证据 Workspace，因此两者不声明单一资源 `target`。前者仍核验当前输入、签发者权限及重复签发；后者仍由生命周期准入锁与关联事务保证并发和幂等。此规则仅适用于这些明确语义，不按动词类别普遍豁免 target。
+- **目标对象用统一 ID 指定，且必填。** 指令作用的对象写在参数中，用统一 ID 或资源地址。不允许省略参数时默认为调用者自己；读取自己的资料也写明自己的 ID。唯一的例外是 RunScript 的 `lineage_id`：Effect 内由激活确定，Resident 省略时取其所在 Lineage（decision_8b510cbd9c58）；入口按这样确定的 Lineage 判定（weihao 2026-10-19 起要求对它有 `@admin`），User 省略时拒绝，不落到其他节点或免检。声明的 `target` 指向这个参数；修改已有对象的指令都声明 `target`，调用信封的单个 `expected_version` 按它比较。没有单一目标对象的修改不声明：认领摘要队列、新开终端、重启 Portal 实例，以及全站执行设置和知识标签列表。`AcceptUserAuthorization` 依据当前真实授权输入签发新凭证，不修改证据消息；`CorrectResourceLifecycleAssociation` 修改 `(scope_id, resource_id)` 定位的关联审计，不修改证据 Workspace，因此两者不声明单一资源 `target`。前者仍核验当前输入、签发者权限及重复签发；后者仍由生命周期准入锁与关联事务保证并发和幂等。此规则仅适用于这些明确语义，不按动词类别普遍豁免 target。
 - **一个对象只有一种写法。** 同一个对象不能既用 ID、又用路径、账号编号或执行编号指定。指令可以作用于不同类型的对象时，每种类型一个参数，声明为“恰好给一个”，每个参数都有判定槽。例如 `GetMailbox` 用 `resident_id` 或 `user_id`。按多个条件筛选的读取指令可以声明“至少给一个”，给出的每个参数都按它的判定槽判定，例如 `ListPermissionEntries` 的 `p` 和 `r`。
 - **同一类对象在所有指令中使用同一个参数名。** 例如 Resident 一律用 `resident_id`，Project 一律用 `project_id`。
 - **分页读取一组条目用 `cursor`、`limit` 和 `next_cursor`（weihao 2026-10-19）。** `limit` 是每页最多的条数；`cursor` 是上一页结果中的 `next_cursor`，原样交回，不填时读第一页；还有下一页时结果带 `next_cursor`，它不出现或为空就表示已经读完。cursor 是不透明的字符串，调用者不解析、不自己拼写。不用 `offset`、`page_token`、`before` 这类其他名字；结果可以另外给出总数 `total`。例如 `GetConversation` 返回的 `next_cursor` 交给 `ListMessages` 继续往前读，`ListPermissionEntries` 一页页列出表项。三种读取不属于这条：按位置读取一个对象内部序列的指令用 `offset`，调用者可以从任意位置读起——`ReadScriptRunOutput`（日志的字节位置）、`GetSubagentRun`（子 agent 轨迹，界面直接从末尾附近读）、`GetTriggerPath`（一个流程的步骤、边与执行四个列表共用一个位置）；只取前几条、不翻页的读取只有 `limit`；读取某个位置之后的新变化用 Watch 指令的 `after_cursor`（见“流式指令”），`ListChatroomMessages` 的 `after` 与 `change_cursor` 读取某个位置之后的新消息和变更，也不是翻页。
@@ -428,6 +424,12 @@ Python 入口将失败的指令结果转为业务异常时，保留外层回执�
 
 引擎对一次没有生成任何判定请求的调用，按未归类处理，只有管理员能通过。这样声明或分类有漏洞时，结果是拒绝，而不是对所有人放行。
 
+
+## 应用工具边界
+
+Paper 导出和历史绑定、Pulse、Telepus 绑定、提醒及服务控制使用独立应用工具，不登记 ISA 或隐藏兼容入口。ListInstructions 和 GetInstructionSchema 不返回这些工具。应用通过 resident.tools 贡献声明和 handler，Resident 显式选择 application: 引用；发现分组不代替工具注册。信封、装配、撤销与恢复见 decision_ccbb1cac24aa，业务合同归应用 Design。网页直接使用应用接口。
+
+应用操作复用公共权限引擎和执行记录机制，拥有独立操作目录。原 A 元素和判定槽由应用声明继续提供，默认方案完整性检查覆盖全部已安装业务操作；删除 ISA 声明不删除仍被应用使用的权限分类。工具注册不授予业务权限。
 
 ## 与权限系统的关系
 

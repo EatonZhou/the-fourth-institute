@@ -4,12 +4,12 @@ type: decision
 project: AI员工
 created_at: '2026-09-28'
 version:
-  number: 63
+  number: 66
   created_at: "2026-09-28T10:45:00Z"
   created_by:
     user: "weihao"
     agent: "resident_2a1fc6cd272d"
-  updated_at: "2026-11-14T10:43:18Z"
+  updated_at: "2026-11-14T11:28:20Z"
   updated_by:
     user: ""
     agent: "resident_60ae6d0cdf74"
@@ -81,6 +81,8 @@ links:
 | `UpdateProviderAccount` | 是 | 修改一个执行账号的调度设置 | 对“共享”有 @admin |
 | `PrepareProviderRuntime` | 是 | 复用已有运行时，缺失时按 Provider 异步准备 | 对“共享”有 @admin |
 | `GetProviderAccountSetup` | 否 | 读取运行环境、授权、模型与声明能力 | 对“共享”有 @viewer |
+| `GetProviderAccountConfiguration` | 否 | 读取 Codex 原生默认 Provider 与版本；按需检查定义的持久会话引用 | 对“共享”有 @admin |
+| `UpdateProviderAccountConfiguration` | 是 | 条件更新 Codex 原生默认 Provider，不重启或改写已有会话 | 对“共享”有 @admin |
 | `CheckProviderAccount` | 是 | 通过 ExecutionService 提交最小模型回复测试 | 对“共享”有 @admin |
 | `GetProviderAccountCheck` | 否 | 读取测试结果与配置有效性 | 对“共享”有 @admin |
 | `ListProviders` | 否 | 列出 Provider、账号种类、能力与运行时状态 | 对“共享”有 @viewer |
@@ -348,6 +350,8 @@ Telepus 绑定、提醒及服务控制改用应用工具，见 decision_692a484e
 | `ListProviders` | `refresh`、`include_runtime` |
 | `PrepareProviderRuntime` | `provider` |
 | `GetProviderAccountSetup` | `account_id` |
+| `GetProviderAccountConfiguration` | `account_id`、`include_provider_references` |
+| `UpdateProviderAccountConfiguration` | `account_id`、`model_provider` |
 | `CheckProviderAccount` | `account_id`、`model` |
 | `GetProviderAccountCheck` | `account_id`、`execution_id` |
 | `RegisterProviderAccount` | `account_id`、`provider`、`kind`、`route_id`、`config`、`max_concurrency`、`reuse_existing`、`enabled`、`secret` |
@@ -360,3 +364,14 @@ Telepus 绑定、提醒及服务控制改用应用工具，见 decision_692a484e
 | `ListBackendRoles` | 无 |
 | `UpdateBackendRole` | `backend_role`、`account_id`、`account_selection`、`backend_priority`、`model`、`reasoning_effort`、`verification_execution_id` |
 | `GetUsage` | `period`、`group_by`、`provider`、`account_id`、`include_cached` |
+
+
+## 执行账号的原生默认配置
+
+`GetProviderAccountConfiguration` 与 `UpdateProviderAccountConfiguration` 由 ExecutionService 管理 Codex 订阅账号的原生默认 Provider。两者默认都要求对共享拥有 @admin；查询只返回 Provider ID、自定义 Provider ID 列表及原生配置版本，不暴露完整配置、凭据或会话。API Profile 的目标仍由模型 API 登记管理，不通过这组指令改变。
+
+修改请求使用 `account_id`、`model_provider`，并在调用信封提供查询返回的 `expected_version`。服务先核对账号种类、配置层、定义和版本，再调用 Codex 原生 `config/value/write`，由原生配置 owner 完成原子写入及并发版本检查。修改后回读已保存和实际生效的 Provider；结果不明确时保留 unknown，写入成功但回读失败时明确 committed，调用者先读取实际状态，不盲目重试。
+
+默认值修改对后续新建会话生效，不重启账号进程、不重放输入，也不改写已存在会话的 Provider 身份。旧会话仍受原生 Provider 定义与管理策略约束；清理旧定义与修改默认值是不同操作，不能通过删除仍被引用的定义冒充历史会话迁移。
+
+配置查询只有显式提供 `include_provider_references=true` 时才检查自定义 Provider 的原生持久会话引用。服务按 Provider 与全部来源类型过滤，每次只取一条，并分别覆盖普通及归档会话，仅返回存在性，不返回会话 ID、预览或正文。正向结果可证明定义仍被历史引用；未命中不能证明没有尚未持久化的在途会话，不作为无损删除的承诺。

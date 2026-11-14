@@ -200,7 +200,7 @@ class PARPermissions:
         return InstructionError(code, message, details=details)
 
     def readable_ids(self, instruction, parameter, identifiers, *, actor, entry="web"):
-        from management_portal.hatg.catalog import declaration
+        from management_portal.application_tools import permission_declaration as declaration
         from management_portal.hatg.contracts import InstructionContext
         from management_portal.portal_access_control import is_active_user_or_resident
 

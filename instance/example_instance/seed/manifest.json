@@ -15091,8 +15091,8 @@
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260731__decision__HATG_Instruction_Set作为Lineage统一指令层__decision_898b8911a2ff.md",
-      "sha256": "41b7e92770b1dbc05aebe1e04ee00361e0e0ce90a3adfa6a3f59b13be3021fd3",
-      "size": 65117
+      "sha256": "56c17d16f71c1adc474cf9b7a80ba090cb49a02b7066aad9c52ef2d58a334c1f",
+      "size": 65480
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260803__decision__Portal_Core_NATS变化通知与浏览器实时刷新__decision_abaedeefca6f.md",
@@ -15106,8 +15106,8 @@
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260811__decision__Agent_Harness_的可组合插件与自适应运行管线__decision_5c62deb8253a.md",
-      "sha256": "78706e9c90dc55018b20c1af0842775013b4d260bac081e1bbcf9ed71f358f9e",
-      "size": 42336
+      "sha256": "b19422311f4d4bdbb37b1c1ddda0ac5cd2204159359484ef821a88e14c7a72db",
+      "size": 43677
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260811__decision__Portal采用协议化Panel工作台与跨页面复用架构__decision_538e155e1102.md",
@@ -15226,8 +15226,8 @@
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260901__decision__Telepus外部消息Channel与Resident投递__decision_692a484e9bea.md",
-      "sha256": "3065b78c83f4ef683b0bfd5a2098c6de31fad8b1efb746ad6d669de9f9f78b3c",
-      "size": 20521
+      "sha256": "d62ae2fcacdd1ee74da232425e7c08c393e0e3d151fe11cb7cc836c1a13f55c3",
+      "size": 24768
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260901__decision__WhichResident可见目录推荐与纠正闭环__decision_8fe87d812a4c.md",
@@ -15341,8 +15341,8 @@
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260903__decision__Paper_后台研究任务与产物协议__decision_e37f240e186d.md",
-      "sha256": "049376fd0bde19f2d92f91e505a5d13c37e1c51273f13b7357588a120ce9296e",
-      "size": 66153
+      "sha256": "a6699b764f7e5f4cc83e07f14dd8c9e16f468fa0e5f9420934e6c2b1a6076f45",
+      "size": 65808
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260903__decision__Portal_ASGI、同步_HTTP_Handler_与长连接边界__decision_ecf0f2b2de28.md",
@@ -15391,8 +15391,8 @@
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260903__decision__Portal_Pulse_与个人动态发布__decision_865ac8ebef25.md",
-      "sha256": "65eb38151f9f541d82021b89678157ca4177058d0c7ffa631da0b4c7f880499c",
-      "size": 12905
+      "sha256": "edccbb2371859c2ed6e44787356d3a583f268723f27d2663587adec02ceb3287",
+      "size": 13420
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260903__decision__Portal_Refresh_Coordinator_的刷新协调、事件订阅与共享读取__decision_6e230393221c.md",
@@ -15711,8 +15711,8 @@
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260928__decision__HATG_ISA：用户指令__decision_6eac174d85bf.md",
-      "sha256": "8bc00d3d13b4348f1431a3bd0ba3a9a7361a8108144a9a6a9832349fd86d2721",
-      "size": 24565
+      "sha256": "f809759997cf3ab3dd10212bdee00ba535b3e907ab32acbd31200f181f316219",
+      "size": 20618
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260928__decision__HATG_ISA：组织与分工指令__decision_6591e7793116.md",
@@ -15726,8 +15726,8 @@
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260928__decision__HATG_ISA：运行环境指令__decision_4527448ad07f.md",
-      "sha256": "5a868eee15f34250fd52ef0bd979f9788ded5373e64f55f795993ff0582706d1",
-      "size": 37056
+      "sha256": "8560d443177f27a46d1798f95edf959e1f3e09187551e7ce2860b775c8af11a1",
+      "size": 39200
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260930__decision__DeepSeek_Harness_Provider_的会话接入__decision_276105b5d67b.md",
@@ -15816,8 +15816,8 @@
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20261016__decision__Portal_权限默认方案：P、A、R_三棵树与表规则__decision_600ae27b0538.md",
-      "sha256": "f16b1948711713e8572068165ca51aec0d95cd24d911c91e1002c2fcda68f8ea",
-      "size": 33316
+      "sha256": "c6a20362daa2cac046ddfeee560ae482e91ebac51565e207e0d9f9b1ebebabcb",
+      "size": 33825
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20261017__decision__Portal_管理页：权限方案编辑器__decision_ea13b85216d0.md",
@@ -15841,8 +15841,8 @@
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20261018__decision__HATG_ISA：Pulse_指令__decision_cc96fce57ab6.md",
-      "sha256": "2c90267c004ed8fa1e322579a0971d988ca1cef613a21fe20baf7ffb89e78808",
-      "size": 2814
+      "sha256": "3bb74ce1433e19c620e3dddcc28bb63901a086e3f6f29f654c45a25d66c7c278",
+      "size": 777
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20261018__decision__The_Fourth_Institute_开源发行：命名、发行单元、首次部署与发布工作台__decision_15aab18c0ab3.md",
@@ -15885,6 +15885,11 @@
       "size": 39495
     },
     {
+      "path": "data/projects/AI员工/knowledge_base/decision/20261027__decision__Resident_能力配置、会话装配与账号切换协议__decision_ccbb1cac24aa.md",
+      "sha256": "ed6f0fbf903996ca6320b08abf6db39b482dd23313aebe7a4ea9949e81a02828",
+      "size": 45112
+    },
+    {
       "path": "data/projects/AI员工/knowledge_base/decision/20261029__decision__研究地图：项目研发方向的地图、修订与指令__decision_9d15ae2053c4.md",
       "sha256": "022a8cb4fd3704232bd10cdc089595e735e51d05d04b32d1127f42d16f369f37",
       "size": 15088
@@ -15908,6 +15913,16 @@
       "path": "data/projects/AI员工/knowledge_base/decision/20261107__decision__Telepus个人助手与精准路由__decision_66f5be947b67.md",
       "sha256": "581f2d73fd29d0a45753e22bee217532d601bf0f11424c49a823ad6d4b62f767",
       "size": 12994
+    },
+    {
+      "path": "data/projects/AI员工/knowledge_base/decision/20261109__decision__Telepus_微信渠道：扫码绑定个人_ClawBot_接入个人助手门面__decision_e1f177f05e4c.md",
+      "sha256": "20e980602bcd82df5718fb4a24d19f3f3bf7022e33e21bf360eed5a1804d8c3c",
+      "size": 27105
+    },
+    {
+      "path": "data/projects/AI员工/knowledge_base/decision/20261111__decision__Telepus_微信提醒：把聊天室_@_和待回答问题发到用户的微信__decision_c41e1310c463.md",
+      "sha256": "5fa5c2aa112297af7d75d61adabee3a90b304f32605a8423be22b6f5563844f0",
+      "size": 30987
     },
     {
       "path": "data/projects/AI员工/knowledge_base/idea/20260910__idea__从工作台行为反向整理_Lineage，让界面与_Agent_协作共同演化__idea_4bafb08b38d5.md",

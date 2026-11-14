@@ -4,25 +4,25 @@ type: decision
 project: AI员工
 created_at: '2026-09-28'
 version:
-  number: 43
-  created_at: '2026-09-28T12:30:00Z'
+  number: 44
+  created_at: "2026-09-28T12:30:00Z"
   created_by:
-    user: tfi-exported-user
-    agent: resident_2a1fc6cd272d
-  updated_at: '2026-11-10T19:54:05Z'
+    user: "weihao"
+    agent: "resident_2a1fc6cd272d"
+  updated_at: "2026-11-14T10:43:17Z"
   updated_by:
-    user: ''
-    agent: resident_6d2f1e2db936
+    user: ""
+    agent: "resident_60ae6d0cdf74"
 importance: 8
 metaness: 2
 ai_generated: false
 links:
   source:
-  - ${code_root}/tests/cases/test_isa_g7_audit.py
-  - ${code_root}/management_portal/web_isa.py
-  - ${code_root}/management_portal/http_account.py
-  - ${code_root}/management_portal/http_admin.py
-  - ${code_root}/management_portal/principal_favorites.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_isa_g7_audit.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/web_isa.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/http_account.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/http_admin.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/principal_favorites.py
   related:
   - decision_692a484e9bea
   - decision_b820faf42218
@@ -68,14 +68,6 @@ Project 角色和系统能力及其 ISA 已删除；资源授权见 decision_222
 | `ResetUserPassword` | 是 | 重置他人密码并撤销会话 | 对“共享”有 @admin |
 | `RevokeUserSessions` | 是 | 撤销用户的浏览器会话 | 对“共享”有 @admin |
 | `DeleteUser` | 是 | 永久删除一个用户账号 | 对“共享”有 @admin |
-| `BindTelepusContactForUser` | 是 | 为已有用户绑定 Telegram | 对“共享”有 @admin |
-| `UnbindTelepusContactForUser` | 是 | 解除指定用户的 Telegram 绑定 | 对“共享”有 @admin |
-| `StartTelepusWeixinBinding` | 是 | 开始本人或指定用户的微信扫码绑定 | 免检；处理器限定本人或 Portal 管理员 |
-| `GetTelepusWeixinBinding` | 是 | 读取绑定状态或轮询扫码会话 | 免检；处理器限定本人或 Portal 管理员 |
-| `SubmitTelepusWeixinPin` | 是 | 为目标用户提交手机 PIN | 免检；处理器限定本人或 Portal 管理员 |
-| `UnbindTelepusWeixin` | 是 | 解除目标用户的微信绑定 | 免检；处理器限定本人或 Portal 管理员 |
-| `GetTelepusWeixinNotifications` | 否 | 读取两个微信提醒开关 | 免检；处理器限定本人或 Portal 管理员 |
-| `UpdateTelepusWeixinNotifications` | 是 | 修改聊天室 @ 我与待我回答开关 | 免检；处理器限定本人或 Portal 管理员 |
 | `GetUserNavigation` | 否 | 读取用户的收藏 | 对 `user_id` 有 @admin |
 | `UpdateUserNavigation` | 是 | 收藏或取消收藏一个对象 | 对 `user_id` 有 @admin |
 | `CreateUserInvitation` | 是 | 创建绑定用户名的一次性邀请 | 对“共享”有 @admin |
@@ -145,27 +137,6 @@ Project 角色和系统能力及其 ISA 已删除；资源授权见 decision_222
 - 结果：被删除的用户名。
 - 删除撤销该用户的登录会话并清理个人数据。删除就是删除，不保留可恢复的数据；只想暂停使用、以后恢复时，改用 `UpdateUser` 把状态设为 `disabled`。
 
-### `BindTelepusContactForUser` 与 `UnbindTelepusContactForUser`
-
-管理员通过 HATG 为已登记的 Portal 用户管理 Telegram 联系人。两条指令均要求管理员，由权限系统判定；处理器不另查 owner 或用户账号的 admin。联系人文件和一致性规则见 decision_692a484e9bea。
-
-- `BindTelepusContactForUser(user_id, id_token, previous_id_token?)`：为活动用户绑定 Telegram 数字 ID。替换时原 ID 必须仍属于目标用户；重复 ID、重复用户或旧绑定变化均拒绝。结果为 `contact`，包含 `telegram_user_id`、`name`、`portal_actor`。
-- `UnbindTelepusContactForUser(user_id, id_token)`：只删除仍属于该用户的对应关系，允许清理停用账号；归属变化拒绝，不存在的 ID 视为成功。返回 `user_id`、`telegram_user_id`、`removed`。
-- 两者不创建、激活或删除 User。页面本人绑定与解绑继续从认证上下文取目标，不接受调用方指定用户名。
-
-### 微信绑定与提醒
-
-微信相关指令由 Web 执行，固定业务规则要求认证 User。六条指令都接受可选的 `user_id`：省略时取本人，操作他人必须是 Portal 管理员；即使权限系统关闭也遵守这一规则。默认方案将六条指令分类为 `@free`，固定资源为 `@portal`；表中的“免检”不取消处理器的本人或管理员检查。绑定列表的共享展示与这些指令的操作权限分开。
-
-- `StartTelepusWeixinBinding(user_id?)` 开始扫码，返回不含凭证的 `binding`（二维码、会话 ID 与状态）。
-- `GetTelepusWeixinBinding(user_id?, session_id?)` 返回 `binding` 状态；提供 `session_id` 时轮询目标用户的扫码会话，可能完成绑定，因此声明为改变状态。
-- `SubmitTelepusWeixinPin(user_id?, session_id, pin)` 提交手机显示的数字，`session_id` 与 `pin` 必填，返回 `binding`。
-- `UnbindTelepusWeixin(user_id?)` 解除绑定并清除提醒偏好，返回解除后的 `binding`。
-- `GetTelepusWeixinNotifications(user_id?)` 返回 `preferences.mention` 与 `preferences.question`，默认均为 `false`，不改变状态。
-- `UpdateTelepusWeixinNotifications(user_id?, mention?, question?)` 接受可选布尔值，仅修改提供的开关，返回更新后的 `preferences`。开启要求绑定为 `active`；已支持类别先读取完整快照，再同事务保存开关与基线，读取失败不报告开启成功。缺少 `pending_requests` 时待答类别延后到字段首次出现再建立基线。
-
-命令 `/notify` 与 Watchboard 使用同一偏好管理逻辑，绑定失效清除偏好，重新绑定后需要重新开启。细节见 decision_e1f177f05e4c、decision_c41e1310c463。
-
 ### `GetUserNavigation`
 
 **读取一位 User 收藏的 Project、Lineage 和 Resident。**
@@ -216,6 +187,8 @@ User bearer 调用同一个 `/api/instructions/execute`，身份是这个 User�
 
 新增入口需由操作者确认可信；客户端不会根据 IP、服务版本或公开响应自动推断同一实例，也不会向未批准的入口发送 token。更新入口配置不修改用户权限或身份。
 
+Telepus 绑定、提醒及服务控制改用应用工具，见 decision_692a484e9bea，不属于 ISA。
+
 ## 参数名契约
 
 下表列出 arguments 内的顶层参数名；必填条件、类型和枚举以 GetInstructionSchema 为准。
@@ -235,13 +208,5 @@ User bearer 调用同一个 `/api/instructions/execute`，身份是这个 User�
 | `ResetUserPassword` | `user_id`、`new_password` |
 | `RevokeUserSessions` | `user_id` |
 | `DeleteUser` | `user_id` |
-| `BindTelepusContactForUser` | `user_id`、`id_token`、`previous_id_token` |
-| `UnbindTelepusContactForUser` | `user_id`、`id_token` |
-| `StartTelepusWeixinBinding` | `user_id` |
-| `GetTelepusWeixinBinding` | `user_id`、`session_id` |
-| `SubmitTelepusWeixinPin` | `user_id`、`session_id`、`pin` |
-| `UnbindTelepusWeixin` | `user_id` |
-| `GetTelepusWeixinNotifications` | `user_id` |
-| `UpdateTelepusWeixinNotifications` | `user_id`、`mention`、`question` |
 | `GetUserNavigation` | `user_id` |
 | `UpdateUserNavigation` | `user_id`、`object_id`、`favorite` |

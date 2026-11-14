@@ -189,6 +189,8 @@ class InstructionKernel:
         *,
         store: ExecutionStore | None,
         authorize: Callable[[InstructionDeclaration, Mapping[str, Any], InstructionContext], None] | None = None,
+        catalog: Mapping[str, InstructionDeclaration] | None = None,
+        maintenance_lookup: Callable[[str], InstructionDeclaration] | None = None,
     ) -> None:
         self.binding = binding
         self.owner = binding.owner
@@ -196,13 +198,20 @@ class InstructionKernel:
         self._projection_cursor = ""
         self._maintenance_lock = threading.Lock()
         self._authorize = authorize
+        self._catalog = instruction_catalog() if catalog is None else dict(catalog)
+        def maintenance_declaration(name):
+            if self.owner == "web":
+                from management_portal.application_tools import permission_declaration
+                return permission_declaration(name)
+            return declaration_for(name)
+        self._maintenance_lookup = maintenance_lookup or maintenance_declaration
         missing = sorted(
             name
-            for name, item in instruction_catalog().items()
+            for name, item in self._catalog.items()
             if self.owner in item.owners
             and name not in (binding.streams if item.streaming else binding.handlers)
         )
-        if missing and _runs_published_code_against_shared_catalog():
+        if missing and catalog is None and _runs_published_code_against_shared_catalog():
             # Release Web runs a published commit against the catalog in the
             # Dev tree. An instruction the catalog gained before its Web
             # handler was published must not keep Release Web from starting
@@ -215,7 +224,7 @@ class InstructionKernel:
             raise RuntimeError(
                 f"{self.owner} 拥有的指令缺少实现：" + "、".join(missing)
             )
-        catalog = instruction_catalog()
+        catalog = self._catalog
         registered = [*binding.handlers, *binding.streams]
         foreign = sorted(name for name in registered if name in catalog and self.owner not in catalog[name].owners)
         if foreign:
@@ -231,7 +240,9 @@ class InstructionKernel:
     # -- helpers -------------------------------------------------------------
 
     def _resolve(self, call: InstructionCall, *, streaming: bool) -> InstructionDeclaration:
-        declaration = declaration_for(call.instruction)
+        declaration = self._catalog.get(call.instruction)
+        if declaration is None:
+            raise InstructionError("instruction.unknown", f"未登记的操作：{call.instruction}")
         owner = declaration.owner_for(call.arguments)
         if owner != self.owner:
             raise InstructionError(
@@ -372,6 +383,7 @@ class InstructionKernel:
             record, replayed = store.begin(
                 instruction_id=instruction_id,
                 call=call,
+                declaration=invocation.declaration,
                 caller=invocation.caller,
                 entry=invocation.entry,
                 scope=self._scope(invocation),
@@ -562,7 +574,7 @@ class InstructionKernel:
                 # owners must recover from those references and current facts.
                 try:
                     invocation = Invocation(
-                        declaration_for(record["instruction"]), InstructionCall(record["instruction"], {}),
+                        self._maintenance_lookup(record["instruction"]), InstructionCall(record["instruction"], {}),
                         InstructionContext(record["caller"], "system"), record["instruction_id"],
                     )
                     recovered = self._recover_projection(invocation, record, now=timestamp)

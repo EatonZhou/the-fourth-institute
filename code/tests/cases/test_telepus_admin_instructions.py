@@ -4,11 +4,8 @@ from types import SimpleNamespace
 import pytest
 
 from management_common.operation_errors import OperationError
-from management_common.portal_database import portal_database
-from management_portal import resources, web_isa
+from management_portal import resources, application_tools
 from management_portal.hatg.contracts import InstructionCall, InstructionContext
-from management_portal.hatg.kernel import InstructionKernel
-from management_portal.hatg.store import ExecutionStore
 from management_portal.watchboards import telepus
 from tests.cases.permission_test_support import permissions  # noqa: F401
 from tests.cases.test_telepus_binding_and_failure_notifications import contacts  # noqa: F401
@@ -21,7 +18,8 @@ ADMINISTRATION = ("BindTelepusContactForUser", "UnbindTelepusContactForUser")
 @pytest.fixture
 def runtime(contacts, monkeypatch):
     monkeypatch.setattr(resources, "get_resource_service", lambda: contacts.service)
-    return InstructionKernel(web_isa.binding(), store=ExecutionStore(portal_database(schema="web_instructions")))
+    application_tools.kernel.cache_clear()
+    return application_tools.kernel()
 
 
 @pytest.fixture

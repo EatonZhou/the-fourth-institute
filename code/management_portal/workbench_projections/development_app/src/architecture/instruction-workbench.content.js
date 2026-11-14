@@ -97,12 +97,6 @@ export const lessons = {
     {post_id:'回复哪一篇帖子。', content:'回复正文，示例文本不发送。'}, [
       variant('reply', '追加回复', ['帖子 P', 'notification_revision：8'], ['帖子 P', '└ 示例回复', 'notification_revision：9'], {notification_revision:9}, '回复对象与通知水位一起返回。通知修订变化不是改写原帖正文。'),
     ], 'management_portal/web_isa.py#L102'),
-  PublishPulseItem: lesson('公开个人动态，是发送一段任意文本吗？', 'Portal Web 根据当前调用者和来源定位原个人条目，再生成公开记录。传入的是来源身份，不是替代正文。', 'receipt',
-    {source_period:'原条目的周期：daily、weekly 或 monthly。', source_key:'该周期的来源键。', item_id:'调用者个人动态中的真实条目 ID；服务端重新核验。'}, [
-      variant('own', '公开自己的条目', ['调用者：reader_demo', 'daily / demo-day / item_demo 属于自己'], ['读取原条目正文与依据', '建立公开记录 pub_demo', '回传更新后的 Pulse'], {publication:{publication_id:'pub_demo',owner:'reader_demo',source_period:'daily',source_key:'demo-day',source_item_id:'item_demo'},pulse:{actor:'reader_demo',enabled:true,periods:{daily:{mine:{items:[{id:'item_demo',publication_id:'pub_demo'}]}}}}}, '示例只展示回执部分字段；公开正文来自服务端原条目，不能用本地改写的文本代替。'),
-      variant('repeat', '再次公开同一条目', ['同一调用者、周期、来源键和条目', '已有 pub_demo'], ['复用 pub_demo', '不新增第二条公开记录'], {publication:{publication_id:'pub_demo',owner:'reader_demo',source_item_id:'item_demo'}}, '服务端先重读并核验原条目，再复用既有公开身份；重复发布不是更新公开正文的接口。'),
-      variant('foreign', '来源不属于自己', ['item_id 指向他人个人条目'], ['不创建公开记录'], {error:'instruction.forbidden'}, '无法从调用者自己的来源集合找到原条目就拒绝；知道一个条目 ID 不等于拥有发布资格。'),
-    ], 'management_portal/web_isa.py#L246'),
   RelayFamilyMessage: lesson('Router 选好成员，原请求就一定已送达吗？', '转交保留门面请求的原作者、内容和引用，并建立门面到成员的消息关联。额度不足时先交本 Family steward 复核。', 'queue',
     {resident_id:'接到原请求的 Family 门面。', message_id:'门面上的原请求，不是改写后的任务正文。', member_id:'该 Family 中承接工作的成员。', quota_reviewed:'只能由本 Family steward 对已有额度复核放行。', reason:'放行复核必须给出判断理由。'}, [
       variant('relay', '额度充足时转交', ['门面原请求 msg_facade', 'Router 选择 member_demo', '成员额度充足'], ['原作者、内容和引用保持', '成员收到关联消息 msg_member'], {status:'relayed',member_id:'member_demo',message_id:'msg_member'}, '成员副本有可追溯的消息关联；relayed 只表示转交，不表示业务任务已经完成。'),
@@ -145,8 +139,7 @@ export const categoryNotes = {
   family:'把成员、接待、路由与团队维护组织在一起。',
   family_internal:'Family 内部转交、额度与范围复核、恢复及摘要维护；由各自职责和真实调用者约束。',
   template:'按登记类型复用结构与生成规则。',
-  discussion:'公开帖子、回复和聊天室；知识动态独立归 Pulse。',
-  pulse:'读取日、周、月动态，并公开或撤回自己的个人条目；公开内容从原来源重读。',
+  discussion:'公开帖子、回复和聊天室。',
   organization:'组织归属与迁移保持对象身份连续。',
   permission:'权限方案、权限表项、临时凭证和有效权限由权限领域负责。', environment:'查询运行环境，或请求改变服务和模型配置。',
   isa:'查询指令本身，以及仍保留的修改执行记录。',
@@ -170,7 +163,6 @@ export const declarationHashes = {
   "Familize": "6b4b2fddf16deb2521bf31d3bf784e06d04db85dcc6c7be9eaccacbed664affe",
   "ApplyTemplate": "5b39c1bae89246949f32ccb5ef379698b0737acef57b403864ac597035aa19cd",
   "CreateReply": "fe90d6d5dbee60436812f38829e4607a04206b6e0ce3acbaa82d0c2b064e43da",
-  "PublishPulseItem": "8d6fa549873e1aa9eb8ffe3a46187a33e4e0efff7e5999c4edee1fb7ed93d94f",
   "RelayFamilyMessage": "9b9681a6f4f2050e48924097eeb312ca129e1459b24772992adf6f419f0091e7",
   "MoveResident": "dbd3c8e1d2e45147f3865c5b887e12104caa846dd9e7537c17a8728cdabf1164",
   "CheckPermission": "2342ae88704aa954aed736ffaaccdc1cfe12c4393dd4fbfc225686ed80c53813",

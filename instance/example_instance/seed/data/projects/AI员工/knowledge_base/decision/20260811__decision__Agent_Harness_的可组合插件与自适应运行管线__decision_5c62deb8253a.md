@@ -4,54 +4,54 @@ type: decision
 project: AI员工
 created_at: '2026-08-11'
 version:
-  number: 37
-  created_at: '2026-08-11'
+  number: 38
+  created_at: "2026-08-11"
   created_by:
-    user: ''
-    agent: ''
-  updated_at: '2026-11-01T03:45:53Z'
+    user: ""
+    agent: ""
+  updated_at: "2026-11-14T10:43:16Z"
   updated_by:
-    user: ''
-    agent: resident_24014e2b9bf6
+    user: ""
+    agent: "resident_60ae6d0cdf74"
 importance: 9
 metaness: 3
 ai_generated: true
 links:
   source:
-  - ${code_root}/management_portal/execution/harness_settings.py
-  - ${code_root}/management_portal/execution/harness_effectiveness.py
-  - ${code_root}/management_portal/execution/harness_early_compaction.py
-  - ${code_root}/management_portal/execution/harness_jev.py
-  - ${code_root}/management_portal/execution/harness_isa_tool.py
-  - ${code_root}/management_portal/execution/harness.py
-  - ${code_root}/management_portal/execution/harness_auto_policy.py
-  - ${code_root}/management_portal/execution/harness_native_loop.py
-  - ${code_root}/management_portal/execution/harness_tool_output_offloading.py
-  - ${code_root}/tests/cases/test_agent_harness.py
-  - ${code_root}/tests/cases/test_agent_harness_benchmark.py
-  - ${code_root}/management_portal/execution/codex_recovery.py
-  - ${code_root}/tests/cases/test_codex_recovery_budget.py
-  - ${code_root}/management_portal/execution/harness_capabilities.py
-  - ${code_root}/management_portal/execution/harness_policy_table.py
-  - ${code_root}/management_portal/execution/provider_catalog.py
-  - ${code_root}/management_portal/execution/native_tool_events.py
-  - ${code_root}/management_portal/execution/backend_contracts.py
-  - ${code_root}/management_portal/execution/provider_continuation.py
-  - ${code_root}/management_portal/execution/kimi_tool_gateway.py
-  - ${code_root}/management_portal/kimi_portal_tools.py
-  - ${code_root}/management_portal/claude_tool_bridge.py
-  - ${code_root}/management_portal/dsh_client.py
-  - ${code_root}/tests/cases/test_harness_capabilities.py
-  - ${code_root}/tests/cases/capability_contracts.py
-  - ${code_root}/management_portal/execution/provider_egress.py
-  - ${code_root}/tests/cases/test_provider_error_continuation.py
-  - ${code_root}/tests/cases/test_kimi_portal_tools.py
-  - ${code_root}/tests/cases/test_portal_tool_dedup.py
-  - ${code_root}/management_portal/execution/turn_input_pump.py
-  - ${code_root}/management_portal/claude_code_daemon.py
-  - ${code_root}/management_portal/kimi_code_client.py
-  - ${code_root}/tests/cases/test_turn_input_during_turn.py
-  - ${code_root}/tests/cases/test_claude_turn_steer.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/execution/harness_settings.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/execution/harness_effectiveness.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/execution/harness_early_compaction.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/execution/harness_jev.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/execution/harness_isa_tool.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/execution/harness.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/execution/harness_auto_policy.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/execution/harness_native_loop.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/execution/harness_tool_output_offloading.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_agent_harness.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_agent_harness_benchmark.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/execution/codex_recovery.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_codex_recovery_budget.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/execution/harness_capabilities.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/execution/harness_policy_table.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/execution/provider_catalog.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/execution/native_tool_events.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/execution/backend_contracts.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/execution/provider_continuation.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/execution/kimi_tool_gateway.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/kimi_portal_tools.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/claude_tool_bridge.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/dsh_client.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_harness_capabilities.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/capability_contracts.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/execution/provider_egress.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_provider_error_continuation.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_kimi_portal_tools.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_portal_tool_dedup.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/execution/turn_input_pump.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/claude_code_daemon.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/kimi_code_client.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_turn_input_during_turn.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_claude_turn_steer.py
   related:
   - decision_6c2f91a7d84e
   - decision_91eb3626d323
@@ -61,6 +61,7 @@ links:
   - decision_425e428410e0
   - decision_b1ab45c4b3ec
   - decision_3e8c2a7f91d4
+  - decision_b3cf5f83de9b
   - decision_6ad0384e020d
   - decision_fd760e898f9a
   supersedes: []
@@ -299,10 +300,14 @@ Provider 结束，发布报告，异步记录策略效果
 
 - **每个 Resident turn 都提供 `hatg_instruction` 工具。** 执行请求的 `metadata.resident_id` 指明当前 Resident 时，这个工具在 turn 前挂载，不受本 turn 计划影响。不属于 Resident 的执行不挂载。
 - **调用者由执行层注入。** 工具以当前 Resident 作为调用者，把调用交给指令的拥有服务执行，不经过 HTTP 回环；调用只按这个 Resident 自己的权限判定，不携带发起者的授权（decision_b820faf42218）。
-- **参数**：`instruction`（指令名）、`arguments`（指令参数）、可选的 `idempotency_key` 与 `expected_version`，以及工具自己的 `wait_seconds`。工具说明中附有按类别分组的指令目录。
+- **参数**：`instruction`（指令名）、`arguments`（指令参数）、可选的 `idempotency_key` 与 `expected_version`，以及工具自己的 `wait_seconds`。工具说明提供按需发现入口，不内嵌完整指令目录。
 - **改变状态的指令自动带幂等键。** 模型没有提供幂等键时，使用 `tool:` 加本次工具调用 ID，所以执行层重试同一个工具调用时，指令只执行一次。
 - **流式指令只返回第一批结果。** 收到第一批新结果，或等待 `wait_seconds`（默认 30 秒，最长 300 秒）仍没有结果时返回，结果中带 `items`、下一次续订用的 `next_cursor` 和流是否已经结束的 `ended`。模型用 `after_cursor` 继续订阅。
 - 返回内容是 ISA 的标准返回格式（decision_898b8911a2ff）。
+
+### 应用工具
+
+应用通过 resident.tools 提供声明，Web 应用服务执行，按 decision_ccbb1cac24aa 装配。Harness 只为当前 Resident 的 capability_config.tools 中显式启用的 application: 引用生成工具，缺省不挂载。服务器回读配置防止绕过撤销，注册不授予业务权限。声明摘要、恢复依赖、缺失能力及固定 Session 待生效沿用能力快照。
 
 ### `jev_decision_tool`：结构化判定
 

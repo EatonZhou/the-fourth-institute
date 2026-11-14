@@ -51,10 +51,10 @@ def test_effect_script_patch_keeps_existing_endpoints(lineage):
     }, key="effect-patch-create")
     updated = ok("UpdateComponent", {
         "lineage_id": lineage, "component_id": created["component_id"],
-        "changes": {"script": "GetPulse"},
+        "changes": {"script": "ListInstructions"},
     }, key="effect-patch-update")
     assert updated["component"]["config"] == {
-        **created["component"]["config"], "script": "GetPulse",
+        **created["component"]["config"], "script": "ListInstructions",
     }
 
 

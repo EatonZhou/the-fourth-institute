@@ -241,26 +241,6 @@
         "streaming": false
       },
       {
-        "instruction": "BindTelepusContactForUser",
-        "category": "user",
-        "category_title": "用户",
-        "owner": "web",
-        "owner_title": "Portal Web",
-        "description": "为已登记的活动 User 绑定 Telegram；替换时原 ID 必须仍属于目标用户。",
-        "mutates": true,
-        "streaming": false
-      },
-      {
-        "instruction": "UnbindTelepusContactForUser",
-        "category": "user",
-        "category_title": "用户",
-        "owner": "web",
-        "owner_title": "Portal Web",
-        "description": "解除指定 User 与 Telegram ID 的对应关系；不删除账号，归属变化时拒绝。",
-        "mutates": true,
-        "streaming": false
-      },
-      {
         "instruction": "GetUserNavigation",
         "category": "user",
         "category_title": "用户",
@@ -1811,36 +1791,6 @@
         "streaming": false
       },
       {
-        "instruction": "GetPulse",
-        "category": "pulse",
-        "category_title": "Pulse",
-        "owner": "web",
-        "owner_title": "Portal Web",
-        "description": "读取按日、周、月整理的知识动态，以及调用者自己的个人动态条目。",
-        "mutates": false,
-        "streaming": false
-      },
-      {
-        "instruction": "PublishPulseItem",
-        "category": "pulse",
-        "category_title": "Pulse",
-        "owner": "web",
-        "owner_title": "Portal Web",
-        "description": "把调用者自己的一条个人动态条目公开。",
-        "mutates": true,
-        "streaming": false
-      },
-      {
-        "instruction": "UnpublishPulseItem",
-        "category": "pulse",
-        "category_title": "Pulse",
-        "owner": "web",
-        "owner_title": "Portal Web",
-        "description": "由所有者撤回一条已公开的条目。",
-        "mutates": true,
-        "streaming": false
-      },
-      {
         "instruction": "CreateProject",
         "category": "organization",
         "category_title": "组织与分工",
@@ -3261,90 +3211,6 @@
           }
         ],
         "target": "username"
-      },
-      "BindTelepusContactForUser": {
-        "instruction": "BindTelepusContactForUser",
-        "category": "user",
-        "category_title": "用户",
-        "owner": "web",
-        "owner_title": "Portal Web",
-        "description": "为已登记的活动 User 绑定 Telegram；替换时原 ID 必须仍属于目标用户。",
-        "mutates": true,
-        "streaming": false,
-        "parameters": [
-          {
-            "name": "username",
-            "type": "string",
-            "required": true,
-            "description": "Leader Resident，须是 definition 中的成员节点；有成员时自动补齐；整条 Family 的门面即 Leader，自动任务使用其身份及权限"
-          },
-          {
-            "name": "id_token",
-            "type": "string",
-            "required": true,
-            "description": "Telegram 数字用户 ID，5–32 位数字"
-          },
-          {
-            "name": "previous_id_token",
-            "type": "string",
-            "required": false,
-            "description": "替换目标用户的已有绑定时，填写原 Telegram ID"
-          }
-        ],
-        "result": [
-          {
-            "name": "contact",
-            "type": "object",
-            "required": true,
-            "description": "telegram_user_id、name、portal_actor"
-          }
-        ],
-        "target": "Leader Resident，须是 definition 中的成员节点；有成员时自动补齐；整条 Family 的门面即 Leader，自动任务使用其身份及权限"
-      },
-      "UnbindTelepusContactForUser": {
-        "instruction": "UnbindTelepusContactForUser",
-        "category": "user",
-        "category_title": "用户",
-        "owner": "web",
-        "owner_title": "Portal Web",
-        "description": "解除指定 User 与 Telegram ID 的对应关系；不删除账号，归属变化时拒绝。",
-        "mutates": true,
-        "streaming": false,
-        "parameters": [
-          {
-            "name": "username",
-            "type": "string",
-            "required": true,
-            "description": "Leader Resident，须是 definition 中的成员节点；有成员时自动补齐；整条 Family 的门面即 Leader，自动任务使用其身份及权限"
-          },
-          {
-            "name": "id_token",
-            "type": "string",
-            "required": true,
-            "description": "待解绑的 Telegram 数字用户 ID"
-          }
-        ],
-        "result": [
-          {
-            "name": "username",
-            "type": "string",
-            "required": true,
-            "description": "Leader Resident，须是 definition 中的成员节点；有成员时自动补齐；整条 Family 的门面即 Leader，自动任务使用其身份及权限"
-          },
-          {
-            "name": "telegram_user_id",
-            "type": "string",
-            "required": true,
-            "description": "Leader Resident，须是 definition 中的成员节点；有成员时自动补齐；整条 Family 的门面即 Leader，自动任务使用其身份及权限"
-          },
-          {
-            "name": "removed",
-            "type": "boolean",
-            "required": true,
-            "description": "是否删除了现有绑定；已不存在时为 false"
-          }
-        ],
-        "target": "Leader Resident，须是 definition 中的成员节点；有成员时自动补齐；整条 Family 的门面即 Leader，自动任务使用其身份及权限"
       },
       "GetUserNavigation": {
         "instruction": "GetUserNavigation",
@@ -11799,98 +11665,6 @@
           }
         ],
         "target": "chatroom_id"
-      },
-      "GetPulse": {
-        "instruction": "GetPulse",
-        "category": "pulse",
-        "category_title": "Pulse",
-        "owner": "web",
-        "owner_title": "Portal Web",
-        "description": "读取按日、周、月整理的知识动态，以及调用者自己的个人动态条目。",
-        "mutates": false,
-        "streaming": false,
-        "parameters": [],
-        "result": [
-          {
-            "name": "pulse",
-            "type": "object",
-            "required": true,
-            "description": "Leader Resident，须是 definition 中的成员节点；有成员时自动补齐；整条 Family 的门面即 Leader，自动任务使用其身份及权限"
-          }
-        ],
-        "target": "Leader Resident，须是 definition 中的成员节点；有成员时自动补齐；整条 Family 的门面即 Leader，自动任务使用其身份及权限"
-      },
-      "PublishPulseItem": {
-        "instruction": "PublishPulseItem",
-        "category": "pulse",
-        "category_title": "Pulse",
-        "owner": "web",
-        "owner_title": "Portal Web",
-        "description": "把调用者自己的一条个人动态条目公开。",
-        "mutates": true,
-        "streaming": false,
-        "parameters": [
-          {
-            "name": "source_period",
-            "type": "string",
-            "required": true,
-            "description": "Leader Resident，须是 definition 中的成员节点；有成员时自动补齐；整条 Family 的门面即 Leader，自动任务使用其身份及权限"
-          },
-          {
-            "name": "source_key",
-            "type": "string",
-            "required": true,
-            "description": "Leader Resident，须是 definition 中的成员节点；有成员时自动补齐；整条 Family 的门面即 Leader，自动任务使用其身份及权限"
-          },
-          {
-            "name": "item_id",
-            "type": "string",
-            "required": true,
-            "description": "Leader Resident，须是 definition 中的成员节点；有成员时自动补齐；整条 Family 的门面即 Leader，自动任务使用其身份及权限"
-          }
-        ],
-        "result": [
-          {
-            "name": "publication",
-            "type": "object",
-            "required": true,
-            "description": "Leader Resident，须是 definition 中的成员节点；有成员时自动补齐；整条 Family 的门面即 Leader，自动任务使用其身份及权限"
-          },
-          {
-            "name": "pulse",
-            "type": "object",
-            "required": true,
-            "description": "Leader Resident，须是 definition 中的成员节点；有成员时自动补齐；整条 Family 的门面即 Leader，自动任务使用其身份及权限"
-          }
-        ],
-        "target": "Leader Resident，须是 definition 中的成员节点；有成员时自动补齐；整条 Family 的门面即 Leader，自动任务使用其身份及权限"
-      },
-      "UnpublishPulseItem": {
-        "instruction": "UnpublishPulseItem",
-        "category": "pulse",
-        "category_title": "Pulse",
-        "owner": "web",
-        "owner_title": "Portal Web",
-        "description": "由所有者撤回一条已公开的条目。",
-        "mutates": true,
-        "streaming": false,
-        "parameters": [
-          {
-            "name": "publication_id",
-            "type": "string",
-            "required": true,
-            "description": "Leader Resident，须是 definition 中的成员节点；有成员时自动补齐；整条 Family 的门面即 Leader，自动任务使用其身份及权限"
-          }
-        ],
-        "result": [
-          {
-            "name": "pulse",
-            "type": "object",
-            "required": true,
-            "description": "Leader Resident，须是 definition 中的成员节点；有成员时自动补齐；整条 Family 的门面即 Leader，自动任务使用其身份及权限"
-          }
-        ],
-        "target": "Leader Resident，须是 definition 中的成员节点；有成员时自动补齐；整条 Family 的门面即 Leader，自动任务使用其身份及权限"
       },
       "CreateProject": {
         "instruction": "CreateProject",

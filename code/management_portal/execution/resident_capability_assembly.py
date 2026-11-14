@@ -43,7 +43,7 @@ def _enabled(config: dict, tool: Any) -> bool:
     for item in config.get("tools", []):
         if item["ref"] == ref:
             return item.get("enabled", True)
-    return True  # No configuration on a legacy Resident preserves its built-ins.
+    return not ref.startswith("application:")  # Legacy built-ins retain their default.
 
 
 def _guard(tool: Any, resident_id: str, execution_id: str, selected: bool, context: Any):
@@ -89,6 +89,21 @@ def prepare(invocation: Any, context: Any) -> Any:
     fixed_session = bool(provider and provider.session_tools_fixed and invocation.session.backend_session_id)
     tools = list(invocation.harness_tools)
     observations: list[dict] = []
+    application_dependencies = {}
+    selected_applications = [item for item in config.get("tools", [])
+                             if item["ref"].startswith("application:") and item.get("enabled", True)]
+    if selected_applications:
+        if "portal_tools" not in capabilities_of(invocation):
+            if any(item.get("required") for item in selected_applications):
+                raise ValueError("Required application tools unsupported by this Provider")
+            observations.extend({"ref": item["ref"], "observation": "unknown",
+                                 "reason": "provider_tools_unsupported"} for item in selected_applications)
+        else:
+            from .resident_application_tools import materialize
+            attached, observed, application_dependencies = materialize(
+                selected_applications, caller=resident_id, execution_id=request.execution_id)
+            tools.extend(attached)
+            observations.extend(observed)
     selected_connections = [item for item in config.get("mcp", [])
                             if item.get("enabled", True) and item.get("tools")]
     if selected_connections:
@@ -149,7 +164,7 @@ def prepare(invocation: Any, context: Any) -> Any:
                 "runtime_package": str(getattr(provider, "runtime_package", "") or ""),
                 "selection_digest": digest(config), "tools": declarations,
                 "observations": observations, "mcp_dependencies": dependencies,
-                "provider_managed": "unknown"}
+                "application_dependencies": application_dependencies, "provider_managed": "unknown"}
     if saved is not None:
         # Only a changed Resident configuration fails recovery. A release that
         # restarts the Worker mid-turn may change Portal tool definitions (the
@@ -157,7 +172,8 @@ def prepare(invocation: Any, context: Any) -> Any:
         # the frozen snapshot stays the record of what was accepted.
         if (saved.get("execution_id") != request.execution_id or
                 saved.get("selection_digest") != snapshot["selection_digest"] or
-                saved.get("mcp_dependencies", {}) != dependencies):
+                saved.get("mcp_dependencies", {}) != dependencies or
+                saved.get("application_dependencies", {}) != application_dependencies):
             raise ValueError("Resident capability configuration changed during execution recovery")
         changes = _contract_changes(saved.get("tools", []), declarations)
         if changes:

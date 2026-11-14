@@ -4,15 +4,15 @@ type: decision
 project: AI员工
 created_at: 2026-10-16
 version:
-  number: 52
+  number: 53
   created_at: "2026-10-16T16:03:37Z"
   created_by:
     user: "weihao"
     agent: "resident_9c94c8b365fe"
-  updated_at: "2026-11-05T02:06:30Z"
+  updated_at: "2026-11-14T10:43:24Z"
   updated_by:
     user: ""
-    agent: "resident_83d75ad3a6c7"
+    agent: "resident_60ae6d0cdf74"
 importance: 8
 metaness: 2
 ai_generated: false
@@ -78,6 +78,8 @@ A 根：全部动作（@actions）
 Lineage Effect 的执行身份、事件归属和自动运行边界以 decision_ae422b92c6f3 为唯一权威；本方案按已认证的调用者进行对应指令判定，不在此另设一套 Effect 身份或免检规则。开关开启后，开发团队的 Resident 要发布或重启 Portal，需要一条“Portal 运维”上的表项，例如 (开发团队所在 Project, `@admin`, 运维)。RunScript 按运行所属的 Lineage 要求 `@admin`（Effect 内为激活的 Lineage，Resident 省略时为其所在 Lineage，decision_8b510cbd9c58）：Lineage 挂在所属 Project 下，Project 的 admin（包括该 Project 的 Resident）能在本 Project 的 Lineage 中运行脚本，其他 Project 的主体不能。weihao 2026-10-19 接受项目 admin 因此得到无沙箱的主机脚本能力。
 
 生命周期关联纠正 `CorrectResourceLifecycleAssociation` 同时声明固定入口和目标 Workspace 两个判定槽：`:fixed` 显式归入 `@free`，固定资源为 `@portal`；`:resource_id` 显式归入 `@viewer`，目标类型限定为 Workspace。固定槽不豁免目标读取权限，也不授予注销、删除或修改 Workspace 的能力。资源处理器仍核验调用者是原生命周期的调用者、准入已关闭且没有活动请求，并从当前登记确认 Workspace 是原有持久 Project 根的隐式依赖；只纠正有证据的错误关联并保留审计，不删除资源、不代替生命周期完成。新指令的声明、实现、模板分类应共同交付，激活后通过正式 schema 和身份入口核对加载结果。
+
+应用工具与 ISA 共用业务权限元素。Paper、Pulse、Telepus 移出 ISA 后，原名称和判定槽由应用声明继续登记；默认方案的 instructions 字段仍给这些业务 A 元素分类。模板完整性检查覆盖已安装 ISA 和应用操作并集。这不把应用工具加入 ISA 目录，也不授予 Resident 注册权或资源权限。应用引用的显式启用由能力配置检查，随后仍按当前调用者 P/A/R 判定，页面显示权限也使用同一应用声明。
 
 ## 2. R 树：按对象归属分层
 

@@ -31,7 +31,6 @@
 - [HATG ISA：Family 内部机制指令](/r/decision_b77fde81e7a0)
 - [HATG ISA：模板与指令](/r/decision_b04cac4188bb)
 - [HATG ISA：公共讨论指令](/r/decision_3e063aac15b3)
-- [HATG ISA：Pulse 指令](/r/decision_cc96fce57ab6)
 - [HATG ISA：组织与分工指令](/r/decision_6591e7793116)
 - [HATG ISA：权限指令](/r/decision_22227d0ad075)
 - [HATG ISA：运行环境指令](/r/decision_4527448ad07f)

@@ -31,7 +31,7 @@ def matches(context) -> bool:
 
 def _signed_in_user(actor: str) -> bool:
     """Every User manages their own contact here, a fixed-role rule (decision_b820faf42218 §4);
-    Bind/UnbindTelepusContactForUser stay the administrators' instructions for anyone's contact."""
+    Administrative contact application tools remain separately authorized."""
     from management_common.principal import actor_principal
 
     return actor_principal(actor).kind == "user"

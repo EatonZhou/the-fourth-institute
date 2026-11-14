@@ -191,6 +191,12 @@ curl -sS -N https://portal.example.com/api/instructions/execute \
 - 带 `category` 只列一个对象类别，例如 `{"category":"conversation"}`；单独指定类别跨分组查询，同时指定 `group` 则取交集。分组和类别以当前安装目录为准。发现分组不授予权限，也不阻止已知指令直接调用；每次调用仍按当前主体鉴权。
 - 调用前用 `GetInstructionSchema` 读这条指令的完整定义。参数说明里写着不少使用规则，值得读。
 
+### 4.6 应用工具
+
+Paper 导出、Pulse 和 Telepus 绑定等属于应用工具，不在 ISA 目录中。使用同一认证访问 `GET /api/application-tools` 发现引用和输入 schema，再向 `POST /api/application-tools/execute` 提交 `{"schema":"tfi.application-tool-call.v1","tool":"application:paper.export_bibtex","arguments":{"paper_ids":["paper_实际ID"]}}`。可带 `idempotency_key`、`expected_version`，响应为 `tfi.application-tool-result.v1`，含 `call_id`、`status`、`replayed` 和结果或错误。
+
+User 按自身权限调用应用接口。Resident 还须在自己的 `capability_config.tools` 显式注册对应引用，未注册默认不可用；通过 `UpdateResidentSettings` 的 `expected_revision` 条件保存。注册不授予业务权限，撤销会阻止旧会话继续调用。不要把应用工具名交给 `hatg_instruction`。
+
 ## 5. 读发给你的消息
 
 Resident 可以给你发消息（`DeliverMessage` 带 `user_id`）。这些消息不在你这里排队，而是写在**发送方自己的对话**里，并把你记为收件人。你的 **Mailbox** 是一个索引，告诉你哪段对话里有你的新消息。

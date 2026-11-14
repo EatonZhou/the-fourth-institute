@@ -7,23 +7,22 @@ importance: 8
 ai_generated: true
 links:
   source:
-  - ${code_root}/management_portal/telepus_runtime.py
-  - ${code_root}/management_portal/telepus_instructions.py
-  - ${code_root}/management_portal/telepus_web_isa.py
-  - ${code_root}/tests/cases/test_watchboard_applications.py
-  - projects:AI员工/agents/lineage_c625a4bee56b/script/src/portal_client.py
-  - projects:AI员工/agents/lineage_c625a4bee56b/script/src/telegram_adapter.py
-  - ${code_root}/management_portal/isa_client.py
-  - ${code_root}/management_portal/http_agent_workbench.py
-  - ${code_root}/management_portal/static/watchboard_applications/telepus.js
-  - ${code_root}/management_portal/watchboards/service.py
-  - ${code_root}/management_portal/watchboards/telepus.py
-  - ${code_root}/management_portal/telepus_contacts_store.py
-  - ${code_root}/management_portal/society_service/resident_domain.py
-  - ${code_root}/management_portal/static/lineage_workbench_watchboard.js
-  - ${code_root}/management_portal/serve_management_portal.py
-  - ${code_root}/tests/cases/test_resident_forward_contacts.py
-  - ${code_root}/tests/cases/test_resident_watchboard.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/telepus/runtime.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/telepus/tools.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_watchboard_applications.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/telepus/portal_client.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/telepus/telegram_adapter.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/isa_client.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/http_agent_workbench.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/watchboard_applications/telepus.js
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/watchboards/service.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/watchboards/telepus.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/telepus/contacts_store.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/resident_domain.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/lineage_workbench_watchboard.js
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/serve_management_portal.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_resident_forward_contacts.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_resident_watchboard.py
   related:
   - decision_66f5be947b67
   - decision_4527448ad07f
@@ -39,12 +38,12 @@ links:
   supersedes: []
   derived_from: []
 version:
-  number: 25
+  number: 31
   created_at: "2026-09-01"
   created_by:
     user: ""
     agent: ""
-  updated_at: "2026-11-07T12:09:58Z"
+  updated_at: "2026-11-14T10:44:26Z"
   updated_by:
     user: ""
     agent: "resident_60ae6d0cdf74"
@@ -52,7 +51,7 @@ metaness: 2
 ---
 # Telepus 外部消息、联系人映射与 Resident 投递
 
-Telepus 是 Portal 的 Telegram 入口。用户在 Telegram 中给 Telepus 机器人发消息，Telepus 找到这个 Telegram 用户对应的 Portal 用户，以该用户的身份把消息发给选定的 Resident，再把 Resident 的回复发回 Telegram。Telepus 本身是一个 Resident，负责 Telegram 通信的程序放在它的 Lineage Folder 中，由独立基础服务运行；Watchboard 为它提供状态和联系人界面。
+Telepus 是 Portal 的 Telegram 与微信入口。用户在渠道内发消息，Telepus 按联系人或扫码绑定找到 Portal 用户，以该用户身份把消息发给个人助手门面或精准路由的 Resident，再把回复发回原聊天。微信扫码绑定和渠道特有的行为见 decision_e1f177f05e4c。Telepus 本身是一个 Resident，桥接程序位于 Portal 的 `management_portal/telepus/`，由独立基础服务运行；Watchboard 为它提供状态和联系人界面。
 
 本篇说明 Telepus 的组成、服务开关与运行状态、怎样在 Portal 中管理联系人（Telegram 用户与 Portal 用户的对应），以及消息怎样进入 Resident。消息进入 Resident 之后的排队与执行见 decision_edc470e09f5a。
 
@@ -60,13 +59,13 @@ Telepus 是 Portal 的 Telegram 入口。用户在 Telegram 中给 Telepus 机�
 
 | 部分 | 说明 |
 | --- | --- |
-| Telepus Resident | 固定 ID `resident_7fdebb465cdf`，是 Lineage `lineage_c625a4bee56b` 的 Leader。它使用普通 Resident 身份承担入口维护与协调。 |
-| Telegram 程序 | Telepus 的桥接程序，位于 `<Telepus Lineage Folder>/script`（Lineage `lineage_c625a4bee56b`），由用户级 systemd 服务 `telepus-telegram-router` 常驻运行。它从 Telegram 拉取新消息、解析命令、调用 Portal、发送回复。 |
+| Telepus Resident | Telepus 门面 `resident_7fdebb465cdf` 与成员共同维护渠道；微信联系人 Watchboard 显示在成员 `resident_a3dc51f3859d` 上。维护者使用普通 Resident 身份，收发消息按绑定的 Portal 用户鉴权。 |
+| Telegram 程序 | Telepus 的桥接程序，是 Portal 代码的一部分（`management_portal/telepus/`，测试为 `tests/cases/test_telepus_*.py`），随 Portal 一起测试和发布。Portal 内置启动器运行它的三个用户级服务：`telepus-telegram-router` 与 `telepus-weixin-router` 分别收取 Telegram 和微信消息，`telepus-portal-refresh` 读取回复并通过对应适配层发送；发布修改了它们导入的模块时自动重启。Telepus Lineage（`lineage_c625a4bee56b`）的 `script/` 目录只保存 Watchboard 定义和调用 `management_portal.telepus.cli` 的命令入口。 |
 | 联系人 | 一个 Telegram 数字用户 ID 与一个 Portal 用户的对应。 |
 | 联系人表 | PostgreSQL 表 `telepus.telegram_contacts`，每个联系人一行：`telegram_user_id`、`name`、`portal_actor`。 |
 | Contacts 区域 | Portal 在 Telepus 的 Watchboard 中提供的联系人管理界面。 |
 
-Watchboard 是 Resident 的扩展面板：Resident 可以安装一套脚本，Portal 在工作台中显示脚本的状态、配置和命令，并可以为特定 Resident 附加专用界面（Watchboard 应用）。Telepus 的联系人管理就是这样一个应用（Watchboard 见 decision_0571f3741e23）。Telepus 的展示清单不提供通用运行命令，消息桥接由 router、portal-refresh 两个 systemd 服务承担。通用 Watchboard 的 Lineage/RunScript 安装流程不迁移或停止它们；令牌、桥接数据库、联系人代表身份和故障恢复由基础服务边界另行定义。
+Watchboard 是 Resident 的扩展面板：Resident 可以安装一套脚本，Portal 在工作台中显示脚本的状态、配置和命令，并可以为特定 Resident 附加专用界面（Watchboard 应用）。Telepus 的联系人管理就是这样一个应用（Watchboard 见 decision_0571f3741e23）。Telepus 的展示清单不提供通用运行命令，消息桥接由 telegram-router、weixin-router、portal-refresh 三个 systemd 服务承担。通用 Watchboard 的 Lineage/RunScript 安装流程不迁移或停止它们；令牌、桥接数据库、联系人代表身份和故障恢复由基础服务边界另行定义。
 
 ```text
 Telegram 用户
@@ -89,18 +88,18 @@ Portal 用户 ──Contacts 区域──> 联系人表 <──读取── Tele
 
 ### 管理范围
 
-Telepus 的服务开关管理本站 Linux 用户级 systemd 中的两个固定服务：`telepus-portal-refresh.service`、`telepus-telegram-router.service`。它独立于 Resident 的接收开关、联系人绑定和 Watchboard 展示开关；服务状态直接读取 systemd，不用页面缓存或另存的布尔值代替实际状态。
+Telepus 的服务开关管理本站 Linux 用户级 systemd 中的三个固定服务：`telepus-portal-refresh.service`、`telepus-telegram-router.service`、`telepus-weixin-router.service`。它独立于 Resident 的接收开关、联系人绑定和 Watchboard 展示开关；服务状态直接读取 systemd，不用页面缓存或另存的布尔值代替实际状态。
 
-开启表示启用并启动这两个服务；关闭表示停止并禁用其中已安装的服务。关闭保留账号、令牌、联系人映射、桥接数据库和已有消息数据，也不取消已经投递到 Resident 的工作。开关不负责安装服务或依赖，不迁移运行目录，不改写联系人代表身份。
+开启表示启用并启动这三个服务；关闭表示停止并禁用其中已安装的服务。关闭保留账号、令牌、联系人映射、桥接数据库和已有消息数据，也不取消已经投递到 Resident 的工作。开关不负责安装服务或依赖，不迁移运行目录，不改写联系人代表身份。
 
-### 正式指令与权限
+### 应用工具与权限
 
 | 指令 | 参数 | 返回 | 行为 |
 | --- | --- | --- | --- |
-| `GetTelepusStatus` | 无 | `{status: object}` | 只读查询两个服务的启用、运行和安装状态。 |
+| `GetTelepusStatus` | 无 | `{status: object}` | 只读查询三个服务的启用、运行和安装状态。 |
 | `SetTelepusEnabled` | 必填 `enabled: boolean` | `{status: object}` | `true` 启用并启动，`false` 停止并禁用；返回操作后的真实状态。 |
 
-两条指令属于运行环境分类，是无对象 target 的全局服务指令。它们使用固定判定槽，按当前权限方案配置判定，不属于免检接口；处理接口还要求调用者为 Portal 管理员，否则返回 `instruction.forbidden`。指令分类、命名和参数总表见 decision_4527448ad07f 与 decision_898b8911a2ff，本篇约定 Telepus 的运行行为。
+两项能力属于应用工具，引用为 application:telepus.status、application:telepus.set_enabled，不登记 ISA；均无单一对象 target。它们使用固定判定槽，按当前权限方案配置判定，不属于免检接口；处理接口还要求调用者为 Portal 管理员，否则返回 `instruction.forbidden`。目录及信封见 decision_ccbb1cac24aa，本篇约定 Telepus 的运行行为。
 
 ### 状态含义
 
@@ -112,8 +111,8 @@ Telepus 的服务开关管理本站 Linux 用户级 systemd 中的两个固定�
 | `units` | 每个固定服务的 `name`、`loaded`、`active`、`enabled`。分别对应已加载、正在运行和已启用；`enabled-runtime` 也计为已启用。 |
 | `missing` | 未加载的固定服务名称列表。 |
 | `enabled` | 任一服务已启用或正在运行即为 `true`，用于表示尚有服务处于开启状态；不代表整体健康。 |
-| `running` | 两个服务均正在运行。 |
-| `complete` | 两个服务均已安装、已启用且正在运行。只有此状态满足完整开启要求。 |
+| `running` | 三个服务均正在运行。 |
+| `complete` | 三个服务均已安装、已启用且正在运行。只有此状态满足完整开启要求。 |
 | `error` | 查询失败或平台能力不足的诊断；查询成功时为空字符串。 |
 
 非 Linux 平台，或 `systemctl --user show` 不可执行、超时、返回失败时，`available=false`、`units=[]`、`missing` 列出全部固定服务，三个聚合布尔值均为 `false`，并给出 `error`。这些值表示状态不可读取，不能据此认定服务已经停止。查询的超时上限为 45 秒。
@@ -122,11 +121,15 @@ Telepus 的服务开关管理本站 Linux 用户级 systemd 中的两个固定�
 
 每次设置先读取状态。无法查询时拒绝操作，返回 `telepus.service_unavailable`（HTTP 503）；请求开启但有服务缺失时返回 `telepus.service_missing`（HTTP 409，`commit_state=not_committed`），不执行控制命令，也不自动安装。
 
-开启对全部两个固定服务执行 `systemctl --user enable --now`；关闭只对已加载的服务执行 `systemctl --user disable --now`，因而部分服务缺失不妨碍关闭剩余服务。关闭时若没有已加载服务，则直接返回查询结果。控制命令的超时上限为 135 秒。
+开启对全部三个固定服务执行 `systemctl --user enable --now`；关闭只对已加载的服务执行 `systemctl --user disable --now`，因而部分服务缺失不妨碍关闭剩余服务。关闭时若没有已加载服务，则直接返回查询结果。控制命令的超时上限为 135 秒。
 
 控制命令不可执行、超时或返回失败时，返回 `telepus.service_control_failed`（HTTP 503）。命令返回成功后仍须重新查询：开启必须达到 `complete=true`，关闭必须达到 `enabled=false`；查询不可用或未达到请求状态时返回 `telepus.service_control_incomplete`（HTTP 503），不以命令成功代替状态确认。
 
 多个服务的控制不是原子事务，失败也没有自动回滚保证；服务可能已部分变化。调用方应展示失败诊断并重新读取实际状态，按诊断修复环境或重试，不能把失败当作“状态未变”，也不能只按请求值显示开启或关闭。当前开关仅支持上述 Linux systemd 用户服务，不提供其他平台的等价控制实现。
+
+## 微信联系人
+
+微信绑定同样由 Contacts 区域承载。登录用户点击“绑定微信”，扫码并确认后，机器人只代表这位 Portal 用户，只接收扫码人的消息；每个 Portal 用户最多一个微信绑定。四项绑定工具为 `StartTelepusWeixinBinding`、`GetTelepusWeixinBinding`、`SubmitTelepusWeixinPin`、`UnbindTelepusWeixin`，接受可选 user_id，省略取本人，指定他人须为 Portal 管理员；Resident 身份不能代为扫码绑定。绑定凭证仅保存在桥接数据库，页面与指令返回二维码图像、会话标识和状态。解除绑定或删除 Portal 用户后停止该机器人的消息处理。协议、额度与恢复见 decision_e1f177f05e4c。
 
 ## 设计点
 
@@ -138,7 +141,7 @@ Telepus 的服务开关管理本站 Linux 用户级 systemd 中的两个固定�
 
 ### 联系人表由 Portal 写入、Telegram 程序读取
 
-- **Portal 页面、代绑和代解绑指令写入，Telegram 程序只读。** 表放在 Telegram 程序自己的 schema（`TELEPUS_DATABASE_SCHEMA`，即 `telepus`）中，由 Portal 建表并独占写入；Portal 不读写这个 schema 中的其他表。Telegram 程序收到每条消息时按发信人的 Telegram 数字 ID 查一次表，绑定变化对下一条消息立即生效。
+- **Portal 页面、代绑和代解绑指令写入，Telegram 程序只读。** 表放在 Telegram 程序自己的 schema（站点设置 `deployment.telepus.database_schema`，默认 `telepus`）中，由 Portal 建表并独占写入；Portal 不读写这个 schema 中的其他表。Telegram 程序收到每条消息时按发信人的 Telegram 数字 ID 查一次表，绑定变化对下一条消息立即生效。
 - **每次修改是一个数据库事务。** 保存、替换和删除都持有同一把 `contacts` 锁，先读出当前联系人、检查唯一性和归属，再写入；冲突时事务不提交，原联系人不变。
 - **删除 Portal 账号时一并删除它的联系人。** Telepus 在功能登记中提供 `user.deleted` 接入点（decision_15aab18c0ab3）：账号删除流程经它删除所有对应该用户名（不区分大小写）的联系人，并在 `deleted_data.telepus` 中报告（decision_30528aff7035）。
 
@@ -175,14 +178,20 @@ Contacts 区域位于 Telepus 的 Watchboard 中：
 
 ## 管理员代绑与代解绑
 
-`BindTelepusContactForUser` 与 `UnbindTelepusContactForUser` 属于 Web 执行的用户 ISA（decision_6eac174d85bf）。默认模板要求两者的调用者是管理员（对“共享”节点有 admin，decision_600ae27b0538），只对某个 User 账号有 admin 不满足此要求。处理器只校验参数、账号状态与当前绑定，不自行判断管理员或 owner；指令直接调用联系人领域，不经过 Watchboard 的应用操作权限。
+`BindTelepusContactForUser` 与 `UnbindTelepusContactForUser` 由应用服务执行，不属于 ISA，引用分别为 application:telepus.telegram_bind、application:telepus.telegram_unbind。默认模板要求两者的调用者是管理员（对“共享”节点有 admin，decision_600ae27b0538），只对某个 User 账号有 admin 不满足此要求。处理器只校验参数、账号状态与当前绑定，不自行判断管理员或 owner；指令直接调用联系人领域，不经过 Watchboard 的应用操作权限。
 
 | 指令 | 参数 | 结果 |
 | --- | --- | --- |
-| BindTelepusContactForUser | `username`、`id_token`；替换该用户已有 ID 时提供 `previous_id_token` | `contact`：`telegram_user_id`、`name`、`portal_actor` |
-| UnbindTelepusContactForUser | `username`、`id_token` | `username`、`telegram_user_id`、`removed`；不存在的 ID 返回 `removed: false` |
+| BindTelepusContactForUser | `user_id`、`id_token`；替换该用户已有 ID 时提供 `previous_id_token` | `contact`：`telegram_user_id`、`name`、`portal_actor` |
+| UnbindTelepusContactForUser | `user_id`、`id_token` | `user_id`、`telegram_user_id`、`removed`；不存在的 ID 返回 `removed: false` |
 
 两种入口共用联系人锁、账号查询和唯一性校验。替换的旧 ID 必须仍属于目标用户，不能借 `previous_id_token` 覆盖别人的联系人；要重新分配一个 ID，应先按旧用户显式解绑，再给新用户绑定。任何冲突都保留原联系人。指令执行遵循公共幂等协议，重放只返回对象引用；最新名称与归属以 Contacts 数据为准。
+
+## 应用工具注册
+
+Telepus 通过 resident.tools 登记十项工具，Resident 缺省不装配。微信引用为 application:telepus.weixin_start、application:telepus.weixin_read、application:telepus.weixin_pin、application:telepus.weixin_unbind；提醒引用为 application:telepus.weixin_notifications_read、application:telepus.weixin_notifications_update。参数与目标 User 限制见 decision_e1f177f05e4c、decision_c41e1310c463。网页直接使用认证应用接口，不要求给页面 User 注册 Resident 工具。
+
+原业务 A 元素、固定槽与目标判定保持，注册不授予管理员或 User 身份。应用执行沿公共鉴权、幂等和版本检查，联系人锁与 owner 事务继续重核归属。扫码、PIN 和提醒保留本人或 Portal 管理员限制。
 
 ## 接口
 
@@ -229,6 +238,12 @@ Resident 信息通过 `GetResident` 读取，对话通过 `GetConversation` 读�
 - **Portal 负责**联系人界面和联系人表的写入、目标 Resident 的权限检查、消息的排队与执行。
 - **Telegram 程序负责**与 Telegram 的连接、命令解析、目标模式和回复的发送；选人与改派属于 Portal 私人 Family。Resident 完成回复不代表 Telegram 已经送达。
 
+## 桥接记录的保留边界
+
+桥接库保存路由、发送回执、去重和用户回答所需的业务记录。轮询次数、扫描耗时与发送分段计时属于瞬时诊断，不为每次观察追加数据库记录；微信提醒的具体边界见 decision_c41e1310c463。
+
+按钮回调载荷只在 `expires_at` 之前可用。`telepus-portal-refresh` 每分钟通过 RouterStore 回收已过期的 `callback_tokens`，每批最多 500 条，使用固定排序、行锁和独立事务；与读取端相同，严格早于当前时间才过期。维护失败保留错误类别，下一周期再试，不阻断回复刷新。尚未过期的按钮、已发送附件回执、消息对应、授权及防重记录不随此维护删除。清理历史诊断时只选择已明确退役的诊断事件类型，不将业务审计整表清空。
+
 ## 故障与恢复
 
 | 情况 | 表现 | 处理 |
@@ -238,3 +253,9 @@ Resident 信息通过 `GetResident` 读取，对话通过 `GetConversation` 读�
 | 页面响应丢失 | 不确定是否保存成功 | 重新打开 Watchboard，以联系人表为准；重复删除是安全的 |
 | 精准路由目标已删除或不可见 | 程序提示目标不可用并回到个人助手模式 | 用 `/route` 指定新目标 |
 | Telegram 发送失败 | 该段回复未送达，事件游标不前进 | 下轮重试，或用户发送 `/refresh` |
+
+## 后台调度的身份与任务生命周期
+
+微信入口轮询、回复刷新和提醒监听分别拥有自己的在途任务。调度层只枚举当前有效绑定的 Portal 用户标识，不批量读取或保留凭据；实际工作者在原有账号锁和绑定代次检查下读取当前账号。入口长轮询沿绑定令牌代次运行，换绑后旧工作者退出，不把旧令牌复用于新绑定。
+
+进程内调度集合只保留尚未结束的工作；完成且已退出的账号不因历史任务句柄继续保留。尚未完成的任务仍参与去重，不能因账号暂时不在枚举结果中而并发启动第二份。回复刷新退出时停止提醒调度，关闭线程池并取消尚未开始的工作；已在执行的调用沿原发送复核及超时合同结束，不宣称可撤销已提交的发送。调度生命周期不产生新的诊断数据库记录。

@@ -110,13 +110,11 @@ test('updated user, mailbox and cancellation lessons explain their actual state 
     assert.equal(receipt.already_terminal,true); assert.equal(receipt.input_state.state,state);
   }
 });
-test('manual triggers, Pulse publication and Family relay retain their different meanings', () => {
+test('manual triggers and Family relay retain their different meanings', () => {
   assert.equal(experiment('TriggerEvent','system',true).result.error,'instruction.invalid_arguments');
   assert.equal(experiment('TriggerEvent','both',true).result.error,'instruction.invalid_arguments');
   assert.ok(experiment('TriggerEvent','named',true).after.some(v=>v.includes('manual.triggered')));
-  const first=experiment('PublishPulseItem','own',true).result.publication;
-  assert.equal(experiment('PublishPulseItem','repeat',true).result.publication.publication_id,first.publication_id);
-  assert.equal(experiment('PublishPulseItem','foreign',true).result.error,'instruction.forbidden');
+  assert.equal(lessonFor('PublishPulseItem'), null);
   assert.equal(experiment('RelayFamilyMessage','quota',true).result.status,'waiting_for_quota_review');
   assert.equal(experiment('RelayFamilyMessage','reviewed',true).result.status,'relayed');
   assert.equal(experiment('RelayFamilyMessage','wrong_reviewer',true).result.error,'instruction.forbidden');

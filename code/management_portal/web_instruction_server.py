@@ -23,17 +23,31 @@ class _Handler(socketserver.StreamRequestHandler):
         try:
             request = json.loads(self.rfile.readline() or b"{}")
             request_id = str(request.get("id") or "")
-            if request.get("method") != METHOD:
+            method = request.get("method")
+            if method not in {METHOD, "application.tools.list", "application.tools.execute"}:
                 raise ValueError(f"unsupported Portal Web socket method: {request.get('method')}")
             params = request.get("params")
             if not isinstance(params, dict):
                 raise ValueError("request params must be an object")
-            actor = self.server.rpc_auth.authenticate(METHOD, params, request.get("auth"))
+            actor = self.server.rpc_auth.authenticate(method, params, request.get("auth"))
         except Exception as exc:  # noqa: BLE001
             code = "instruction.forbidden" if isinstance(exc, PermissionError) else "instruction.invalid_arguments"
             self._write({"id": request_id, "ok": False, "error": {"code": code, "message": str(exc)}})
             return
         try:
+            if method != METHOD:
+                from .application_tools import execute, list_tools
+                from .hatg.contracts import InstructionContext
+                try:
+                    result = (list_tools(actor) if method == "application.tools.list" else
+                              execute(params.get("call"), InstructionContext(actor, "harness",
+                                      execution_id=str(params.get("execution_id") or ""))))
+                except Exception as exc:
+                    from .hatg.contracts import normalize_error
+                    self._write({"id": request_id, "ok": False, "error": normalize_error(exc).to_dict()})
+                    return
+                self._write({"id": request_id, "ok": True, "result": result})
+                return
             serve(params, request_id, self._write, owner="web", verified_caller=actor)
         except (BrokenPipeError, ConnectionResetError):
             return
@@ -90,7 +104,11 @@ def start_web_instruction_server() -> WebInstructionServer | None:
     from management_portal.hatg.socket_rpc import web_service_socket
     from management_portal.web_isa import build_kernel
 
-    register_kernel(build_kernel())
+    from .application_tools import permission_declaration
+    from .hatg.kernel import InstructionKernel
+    web_kernel = build_kernel()
+    register_kernel(InstructionKernel(web_kernel.binding, store=web_kernel.store,
+                                    maintenance_lookup=permission_declaration))
     if str(os.getenv("PORTAL_ISA_ROUTING") or "local").strip().lower() != "socket":
         return None
     return WebInstructionServer(web_service_socket()).start()

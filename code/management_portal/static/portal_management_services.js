@@ -40,7 +40,7 @@
     const readTelepus = async () => {
       if (telepusSection.hidden || panelState.destroyed || telepusBusy) return;
       try {
-        const result = await window.PortalInstructionClient.execute("GetTelepusStatus", {});
+        const result = await window.PortalApplicationToolClient.execute("application:telepus.status", {});
         if (!panelState.destroyed) renderTelepus(result.status);
       } catch (error) {
         if (!panelState.destroyed) { telepusToggle.disabled = true; telepusStatus.textContent = error.message; }
@@ -52,7 +52,7 @@
       telepusToggle.disabled = true;
       telepusStatus.textContent = window.PortalI18n.t(requested ? "正在启动 Telepus 服务…" : "正在停止 Telepus 服务…");
       try {
-        const result = await window.PortalInstructionClient.execute("SetTelepusEnabled", {enabled: requested},
+        const result = await window.PortalApplicationToolClient.execute("application:telepus.set_enabled", {enabled: requested},
           {idempotencyKey: `telepus-enabled:${globalThis.PortalUIPrimitives.randomUUID()}`});
         if (!panelState.destroyed) { telepusBusy = false; renderTelepus(result.status); }
       } catch (error) {

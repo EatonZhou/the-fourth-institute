@@ -252,19 +252,14 @@ def test_each_object_has_one_parameter_name():
 
 
 # Changes with no single object to name: a work queue, a new terminal session,
-# a Pulse item addressed by period, key and item, a Portal instance, and the
-# Portal-wide settings, Telepus service enablement and knowledge tag list.
+# a Portal instance, Portal-wide settings and knowledge tag list.
 # AcceptUserAuthorization creates credentials from a verified input; it does
 # not modify that message. CorrectResourceLifecycleAssociation changes the
 # (scope_id, resource_id) allocation, not the Workspace used as read evidence.
 # Neither operation has a single resource version to use as scalar CAS.
-WITHOUT_TARGET = {"ClaimResidentSummaryJobs", "OpenTerminal", "PublishPulseItem", "RestartPortal",
-                  "SetTelepusEnabled", "UpdateExecutionSettings", "UpdateKnowledgeTags",
-                  "AcceptUserAuthorization", "CorrectResourceLifecycleAssociation",
-                  # Current-user operations resolve omitted user_id from the
-                  # authenticated caller; the channel session is not a versioned resource.
-                  "StartTelepusWeixinBinding", "GetTelepusWeixinBinding", "SubmitTelepusWeixinPin",
-                  "UnbindTelepusWeixin", "UpdateTelepusWeixinNotifications"}
+WITHOUT_TARGET = {"ClaimResidentSummaryJobs", "OpenTerminal", "RestartPortal",
+                  "UpdateExecutionSettings", "UpdateKnowledgeTags",
+                  "AcceptUserAuthorization", "CorrectResourceLifecycleAssociation"}
 
 
 def test_changes_to_an_existing_object_declare_it_as_target():

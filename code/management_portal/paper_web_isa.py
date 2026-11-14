@@ -1,18 +1,4 @@
-"""Paper Web instruction adapter, sharing the HTTP export owner."""
-from management_portal.paper_bibtex import export_request
-
-
-def export_paper_bibtex(inv):
-    return export_request(inv.call.arguments, actor=inv.caller)
-
-
-def get_translation_binding(inv):
-    from management_portal.paper_translation_binding import inspect_binding
-    return inspect_binding(inv.caller)
-
-
-HANDLERS = {"ExportPaperBibtex": export_paper_bibtex,
-            'GetPaperTranslationBinding': get_translation_binding}
+"""Paper material-reference resolution for Resident input."""
 
 
 def resolve_message_context_references(inv):
@@ -27,4 +13,4 @@ def resolve_message_context_references(inv):
     return {'snapshot': resolve_reference(actor=inv.caller,
         target_resident_id=args['target_resident_id'], reference=args['reference'])}
 
-HANDLERS['ResolveMessageContextReferences'] = resolve_message_context_references
+HANDLERS = {"ResolveMessageContextReferences": resolve_message_context_references}

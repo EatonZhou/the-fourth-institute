@@ -8,7 +8,7 @@ from types import SimpleNamespace
 import pytest
 
 
-from management_portal import notice_board_backend, notice_board_web_isa, portal_pulse_backend, pulse_web_isa, web_isa
+from management_portal import notice_board_backend, notice_board_web_isa, portal_pulse_backend, pulse_tools, web_isa
 from management_portal.hatg.catalog import instruction_catalog
 from management_portal.hatg.contracts import InstructionCall, InstructionContext
 from management_portal.hatg.kernel import InstructionKernel
@@ -189,10 +189,10 @@ def test_publishing_a_pulse_item_returns_a_stable_publication(monkeypatch):
     monkeypatch.setattr(pulse, "_find_private_item", lambda *args: {"id": "item-one", "text": "work"})
     monkeypatch.setattr(pulse, "get_home_payload", lambda *args: {"publications": []})
     arguments = {"source_period": "daily", "source_key": "2026-09-29", "item_id": "item-one", "published": True}
-    result = pulse_web_isa.publish_pulse_item(call(arguments))
+    result = pulse_tools.publish_pulse_item(call(arguments))
     assert result["publication"]["publication_id"].startswith("pub_")
     assert result["publication"]["owner"] == "bob"
-    assert pulse_web_isa.publish_pulse_item(call(arguments))["publication"] == result["publication"]
+    assert pulse_tools.publish_pulse_item(call(arguments))["publication"] == result["publication"]
     assert len(pulse._read_publications()["items"]) == 1
 
 
@@ -202,10 +202,10 @@ def test_publish_pulse_item_published_false_retracts_by_item(monkeypatch):
     monkeypatch.setattr(pulse, "_find_private_item", lambda *args: {"id": "item-one", "text": "work"})
     monkeypatch.setattr(pulse, "get_home_payload", lambda *args: {"publications": []})
     item = {"source_period": "daily", "source_key": "2026-09-29", "item_id": "item-one"}
-    pulse_web_isa.publish_pulse_item(call({**item, "published": True}))
+    pulse_tools.publish_pulse_item(call({**item, "published": True}))
     with pytest.raises(PermissionError):
-        pulse_web_isa.publish_pulse_item(call({**item, "published": False}, caller="alice"))
+        pulse_tools.publish_pulse_item(call({**item, "published": False}, caller="alice"))
     assert len(pulse._read_publications()["items"]) == 1
-    retracted = pulse_web_isa.publish_pulse_item(call({**item, "published": False}))
+    retracted = pulse_tools.publish_pulse_item(call({**item, "published": False}))
     assert retracted == {"pulse": {"publications": []}}
     assert pulse._read_publications()["items"] == []

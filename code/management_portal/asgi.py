@@ -420,6 +420,27 @@ def _same_origin(request: Request) -> bool:
     return bool(http_auth._same_origin_request(handler))
 
 
+async def application_tools_api(request: Request):
+    from .application_tools import execute, list_tools
+    from .hatg.contracts import InstructionContext, ERROR_STATUS
+    caller, entry = await asyncio.to_thread(_instruction_principal, request)
+    if not caller:
+        return _json_error(401, "需要登录或有效凭证")
+    if entry == "web" and not _same_origin(request):
+        return _json_error(403, "跨站请求被拒绝")
+    if request.method == "GET":
+        return JSONResponse(await asyncio.to_thread(list_tools, caller))
+    try:
+        payload = await request.json()
+    except Exception:
+        payload = None
+    context = InstructionContext(caller, entry, execution_id=_execution_id(request, entry),
+        resource_lifecycle_id=request.headers.get("X-Portal-Resource-Lifecycle", ""))
+    result = await asyncio.to_thread(execute, payload, context)
+    status = 200 if result["status"] == "committed" else ERROR_STATUS.get(result["error"]["code"], 400)
+    return JSONResponse(result, status_code=status)
+
+
 async def instruction_execute(request: Request):
     """The one instruction address (decision_898b8911a2ff “调用入口”)."""
 
@@ -785,6 +806,8 @@ app = Starlette(
     exception_handlers={HTTPException: _route_http_error},
     routes=[
         Route("/api/events", _independent_api_error_boundary(portal_events), methods=["GET"]),
+        Route("/api/application-tools", _independent_api_error_boundary(application_tools_api), methods=["GET"]),
+        Route("/api/application-tools/execute", _independent_api_error_boundary(application_tools_api), methods=["POST"]),
         Route("/api/instructions/execute", _independent_api_error_boundary(instruction_execute), methods=["POST"]),
         Route("/api/uploads/{upload_id}", _independent_api_error_boundary(upload_bytes), methods=["PUT", "POST"]),
         Route("/api/uploads/{upload_id}", _independent_api_error_boundary(upload_content), methods=["GET"]),

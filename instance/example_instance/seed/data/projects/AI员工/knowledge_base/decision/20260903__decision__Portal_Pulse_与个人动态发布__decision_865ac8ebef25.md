@@ -4,15 +4,15 @@ type: decision
 project: AI员工
 created_at: '2026-09-03'
 version:
-  number: 22
+  number: 23
   created_at: "2026-09-03"
   created_by:
     user: ""
     agent: ""
-  updated_at: "2026-11-12T12:27:40Z"
+  updated_at: "2026-11-14T10:43:20Z"
   updated_by:
     user: ""
-    agent: "resident_6199a7a36480"
+    agent: "resident_60ae6d0cdf74"
 importance: 8
 metaness: 2
 ai_generated: true
@@ -58,7 +58,7 @@ Personal Pulse 包含当前用户在所选周期内的摘要和最多 10 条个�
 ## 设计点
 
 - Pulse 功能在前端配置中关闭时，两个子面板在原位置显示不可用状态，Workbench 布局保持不变。
-- Home 用当前用户的 `user_id` 读取 Pulse，展示公共 Knowledge Pulse 与该用户的 Personal Pulse。指令授权、个人来源所有权和发布身份的唯一合同见 decision_cc96fce57ab6；Pulse 后端不另存用户名单或公开开关。
+- Home 用当前用户的 `user_id` 读取 Pulse，展示公共 Knowledge Pulse 与该用户的 Personal Pulse。工具注册与调用入口见 decision_ccbb1cac24aa；个人来源所有权和发布身份遵循下述应用合同；Pulse 后端不另存用户名单或公开开关。
 - 日、周、月各自保持对应摘要。Knowledge Pulse 和 Personal Pulse 的范围独立切换。
 - 两个子面板可以分别拖拽、分组、折叠、关闭和恢复；这些布局操作只改变布局，时间范围和已加载内容保持不变。
 - 页面直接显示摘要和有限列表，需要进一步阅读时点击证据链接。
@@ -114,7 +114,7 @@ Portal 管理中的 Pulse 开关控制本站明确配置的事件源组。配置
 
 ### 读取
 
-Home 通过 HATG 指令 `GetPulse`（decision_cc96fce57ab6）读取 Pulse，传入当前用户的 `user_id`。一次读取返回 `daily`、`weekly`、`monthly` 三个周期的公共摘要和当前用户个人条目，以及公开记录。两个子面板在这份结果内切换 Day、Week、Month，切换时不再请求服务端。
+Home 通过应用工具 application:pulse.read（名称 GetPulse）读取 Pulse，传入当前用户的 `user_id`。一次读取返回 `daily`、`weekly`、`monthly` 三个周期的公共摘要和当前用户个人条目，以及公开记录。两个子面板在这份结果内切换 Day、Week、Month，切换时不再请求服务端。
 
 长度和数量限制：
 
@@ -129,7 +129,9 @@ Home 通过 HATG 指令 `GetPulse`（decision_cc96fce57ab6）读取 Pulse，传�
 
 ### 公开与撤回
 
-Home 把当前条目的 `source_period`、`source_key`、`item_id` 和目标 `published` 状态交给 `PublishPulseItem`。参数、来源重新核对、稳定公开记录身份及撤回所有权以 decision_cc96fce57ab6 为唯一指令合同。成功时页面使用返回的完整 `pulse` 重绘当前范围并提示结果；失败时保留原内容并显示错误。
+Home 把当前条目的 `source_period`、`source_key`、`item_id` 和目标 `published` 状态交给应用工具 application:pulse.publish（名称 PublishPulseItem）。服务重新核对当前调用者的原条目内容和所有者；公开记录由所有者和来源周期、键、条目 ID 稳定确定，重复发布复用同一身份；撤回仅作用于本人已公开记录。成功时页面使用返回的完整 `pulse` 重绘当前范围并提示结果；失败时保留原内容并显示错误。
+
+两项工具不进入 ISA。读取必填 user_id，沿原方案要求对目标 User 有 @admin；发布沿原固定判定槽，并检查当前调用者来源所有权。网页使用认证应用接口；Resident 显式注册后才装配，配置不替代权限。参数 schema 由应用目录提供，公开入口不接受 actor 替代身份。
 
 ### 写入与并发
 

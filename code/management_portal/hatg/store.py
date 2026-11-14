@@ -116,10 +116,11 @@ def references(value: Any, depth: int = 0) -> Any:
     return None
 
 
-def fingerprint(call: InstructionCall) -> str:
-    from .catalog import declaration
-
-    parameters = declaration(call.instruction).parameter_map
+def fingerprint(call: InstructionCall, declaration: Any = None) -> str:
+    if declaration is None:
+        from .catalog import declaration as lookup
+        declaration = lookup(call.instruction)
+    parameters = declaration.parameter_map
     arguments = {
         name: value for name, value in call.arguments.items()
         if value is not None or name not in parameters or parameters[name].required or parameters[name].type == "any"
@@ -230,6 +231,7 @@ class ExecutionStore:
         *,
         instruction_id: str,
         call: InstructionCall,
+        declaration: Any = None,
         caller: str,
         entry: str,
         scope: tuple[str, str],
@@ -239,7 +241,7 @@ class ExecutionStore:
         """Register an execution; return (record, replayed)."""
 
         request_key = call.idempotency_key
-        print_ = fingerprint(call)
+        print_ = fingerprint(call, declaration)
         # Maintenance never shares a transaction with a new request's lock.
         # Bound its frequency and batch size rather than deleting recent work
         # merely because this scope is busy.

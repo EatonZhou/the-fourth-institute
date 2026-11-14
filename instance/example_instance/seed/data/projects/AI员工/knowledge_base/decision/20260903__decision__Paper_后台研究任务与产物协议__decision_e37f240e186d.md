@@ -4,12 +4,12 @@ type: decision
 project: AI员工
 created_at: '2026-09-03'
 version:
-  number: 60
+  number: 61
   created_at: "2026-09-03"
   created_by:
     user: ""
     agent: ""
-  updated_at: "2026-11-14T10:04:38Z"
+  updated_at: "2026-11-14T10:43:19Z"
   updated_by:
     user: ""
     agent: "resident_60ae6d0cdf74"
@@ -507,20 +507,13 @@ model_evidence=resident_current_settings 的旧补入项不视为历史事实，
 
 原回复没有型号而仍可定位 Execution 时，Paper 补全调用 ExecutionService.generation_source，只返回原执行的 provider、实际结果账号（缺失时为请求账号）、原请求型号或 Provider 回报型号及执行时间。Execution owner 先检查当前 actor 对所属 Resident 的读取权限，再投影原 Scheduler 请求，既不借用原执行 actor，也不返回 prompt/output。原请求已清理时保留缺失。该只读投影不提交执行、不触发模型。
 
-## Paper ISA 指令
+## Paper 应用工具
 
-Paper 功能包在 `application` 发现分组提供只读导出和历史翻译绑定查询。固定判定槽在默认方案中归免检，资源 owner 仍按实际调用者过滤论文和读取工作台；免检不授予 Paper、工作台或 Resident 的权限。永久取消的 Kimi 订阅翻译实验不登记 ISA 创建或翻译指令；旧指令名返回标准 `instruction.unknown`。历史绑定查询继续只读，不创建角色。
+Paper 通过 resident.tools 提供两项只读工具，按 decision_ccbb1cac24aa 显式注册，不进入 ISA。网页继续使用 Paper HTTP 接口。固定判定槽保持原默认分类，资源 owner 按实际调用者过滤论文和读取工作台；注册和免检均不授予资源权限。
 
-| 指令 | 改变状态 | 用途 | 默认方案要求 |
+| 工具引用 | 名称 | 参数 | 行为 |
 | --- | --- | --- | --- |
-| `ExportPaperBibtex` | 否 | 导出指定论文或当前主体收藏的 BibTeX；不可读和缺失项返回 warnings | 免检；每篇论文仍由资源 owner 鉴权 |
-| `GetPaperTranslationBinding` | 否 | 读取已发布 Paper 工作台与历史翻译绑定 | 免检；工作台 owner 按调用者鉴权 |
+| application:paper.export_bibtex | ExportPaperBibtex | paper_ids 或 favorites=true，二选一 | 导出可读论文，返回实际 ID、BibTeX 和 warnings；收藏只取当前主体 |
+| application:paper.translation_binding | GetPaperTranslationBinding | 无 | 读取已发布工作台与历史翻译绑定，不创建角色 |
 
-`ExportPaperBibtex` 的 `paper_ids` 与 `favorites=true` 二选一。收藏只取当前主体；每个论文分别过滤权限，返回实际导出 ID、正文及省略原因。公开接口不接受替代调用者的身份参数。普通 Reader 翻译继续使用独立 HTTP 翻译 owner。
-
-## 参数名契约
-
-| 指令 | 参数 |
-| --- | --- |
-| `ExportPaperBibtex` | `paper_ids`、`favorites` |
-| `GetPaperTranslationBinding` | 无 |
+公开入口不接受替代调用者的身份参数。普通 Reader 翻译使用独立 HTTP 翻译 owner。已取消的 Kimi 订阅翻译实验不提供创建或翻译工具；材料引用解析仍沿既有核心对话 ISA。

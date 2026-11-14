@@ -16,7 +16,7 @@
       code: String(error.code || body?.code || "instruction.failed"),
       details: error.details || body?.details || {},
       status,
-      instructionId: String(body?.instruction_id || ""),
+      instructionId: String(body?.instruction_id || body?.call_id || ""),
       body,
     });
   }
@@ -66,9 +66,9 @@
     } catch (_) { /* Telemetry must not affect a business read. */ }
   }
 
-  function recordClosed(instruction, reason, transportId) {
+  function recordClosed(instruction, reason, transportId, endpoint = ENDPOINT) {
     const receipt = {
-      url: ENDPOINT,
+      url: endpoint,
       transport_id: transportId,
       instruction: String(instruction || ""),
       reason: String(reason || "closed"),
@@ -118,13 +118,25 @@
   // Run one non-streaming instruction and return its result object.
   // options.keepalive lets a small call finish while the page unloads.
   async function execute(instruction, args = {}, options = {}) {
-    const call = callBody(instruction, args, options);
+    return executeCall(callBody(instruction, args, options), options, ENDPOINT, instruction);
+  }
+
+  // Typed application tools share transport/retry behavior, not the ISA catalog.
+  async function executeApplicationTool(ref, args = {}, options = {}) {
+    const call = callBody(ref, args, options);
+    delete call.instruction;
+    call.schema = "tfi.application-tool-call.v1";
+    call.tool = ref;
+    return executeCall(call, options, "/api/application-tools/execute", ref);
+  }
+
+  async function executeCall(call, options, endpoint, instruction) {
     for (let attempt = 0; ; attempt += 1) {
       // One identity per HTTP attempt, including retries of one business call.
       const transportId = requestId();
       let response, body;
       try {
-        const result = await window.PortalAPI.requestResult(ENDPOINT, {
+        const result = await window.PortalAPI.requestResult(endpoint, {
           method: "POST", credentials: "same-origin", body: call,
           headers: { Accept: "application/json", "X-Portal-Request-ID": transportId },
           signal: options.signal, timeoutMs: options.timeoutMs, keepalive: !!options.keepalive,
@@ -132,7 +144,7 @@
         response = result.response;
         body = result.payload;
       } catch (error) {
-        if (options.signal?.aborted) recordClosed(instruction, abortReason(options.signal), transportId);
+        if (options.signal?.aborted) recordClosed(instruction, abortReason(options.signal), transportId, endpoint);
         throw error;
       } finally {
         recordStateRead(instruction, options.readObservation, transportId);
@@ -292,5 +304,9 @@
   window.PortalInstructionClient = Object.freeze({
     SCHEMA, ENDPOINT, execute, watch, upload,
     closedRequests: () => closedRequests.map(item => ({ ...item })),
+  });
+  window.PortalApplicationToolClient = Object.freeze({
+    SCHEMA: "tfi.application-tool-call.v1", ENDPOINT: "/api/application-tools/execute",
+    execute: executeApplicationTool,
   });
 })();

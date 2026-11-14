@@ -47,8 +47,8 @@ def test_explicit_groups_partition_the_catalog_without_changing_categories():
 
 def test_category_alone_crosses_groups_and_combined_filter_intersects():
     """现有类别查询仍完整，组加类别只返回交集"""
-    assert names(listing(category="paper")) == {"ExportPaperBibtex", "GetPaperTranslationBinding"}
-    assert names(listing(category="paper", group="general")) == set()
+    assert "GetResearchMap" in names(listing(category="research"))
+    assert names(listing(category="research", group="general")) == set()
     assert names(listing(category="resident", group="internal")) == {
         "RequestResidentSummaryRebuild", "GetResidentSummaryQueue", "ClaimResidentSummaryJobs",
         "SubmitResidentSummary", "ReleaseResidentSummaryJob",

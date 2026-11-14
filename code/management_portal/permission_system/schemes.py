@@ -538,10 +538,10 @@ def activate_scheme(context: Context, actor: str, arguments: Mapping[str, Any]) 
 
 
 def _instruction_vocabulary() -> list[dict[str, Any]]:
-    from management_portal.hatg.catalog import instruction_catalog
+    from management_portal.application_tools import permission_catalog
 
     instructions = []
-    for name, declaration in sorted(instruction_catalog().items()):
+    for name, declaration in sorted(permission_catalog().items()):
         instructions.append({
             "name": name, "description": declaration.description, "category": declaration.category,
             "mutates": declaration.mutates,
