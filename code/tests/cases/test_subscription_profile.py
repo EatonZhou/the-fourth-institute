@@ -68,3 +68,12 @@ def test_monitor_restores_attempt_success_and_tier_without_new_provider_reads(mo
     accounts.observe.assert_not_called()
     restarted = AccountMonitor(accounts, Mock(), observation_store=AccountObservationStore(), login_state_store=Mock())
     assert restarted._profiles['one']['tier']['name'] == 'Moderato'
+
+
+def test_failed_tier_read_retries_on_the_next_hourly_check_not_the_next_day():
+    store = AccountObservationStore()
+    assert store.claim('kimi', 'one', now=1000, interval=86400, profile=True)
+    store.save_profile('kimi', 'one', {'stale': True, 'error_code': 'KimiCodeUnavailable'})
+    assert store.claim('kimi', 'one', now=4600, interval=86400, profile=True)
+    store.save_profile('kimi', 'one', kimi_profile({'kind': 'ok', 'userInfo': {'userLevelName': 'Moderato'}}))
+    assert not store.claim('kimi', 'one', now=8200, interval=86400, profile=True)

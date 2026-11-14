@@ -126,9 +126,12 @@ class AccountObservationStore:
                 (now, json_text(evidence(sample)), provider, account_id))
 
     def save_profile(self, provider, account_id, profile):
+        failed = bool(profile.get('stale')) or profile.get('status') != 'observed'
         with self.connection() as c:
-            c.execute('UPDATE read_state SET profile=%s WHERE provider=%s AND account_id=%s',
-                      (json_text(profile), provider, account_id))
+            c.execute('''UPDATE read_state SET profile=%s,
+                profile_attempted_at=CASE WHEN %s THEN NULL ELSE profile_attempted_at END
+                WHERE provider=%s AND account_id=%s''',
+                      (json_text(profile), failed, provider, account_id))
             c.execute('INSERT INTO subscription_observations(provider,account_id,profile) VALUES(%s,%s,%s)',
                       (provider, account_id, json_text(profile)))
 
