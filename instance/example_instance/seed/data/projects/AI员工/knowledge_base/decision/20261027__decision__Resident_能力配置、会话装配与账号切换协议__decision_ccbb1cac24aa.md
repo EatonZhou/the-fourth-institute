@@ -4,12 +4,12 @@ type: decision
 project: AI员工
 created_at: '2026-10-27'
 version:
-  number: 19
+  number: 20
   created_at: "2026-10-27"
   created_by:
     user: ""
     agent: "resident_2e9ea0072551"
-  updated_at: "2026-11-14T11:26:43Z"
+  updated_at: "2026-11-14T11:55:32Z"
   updated_by:
     user: ""
     agent: "resident_60ae6d0cdf74"
@@ -17,6 +17,8 @@ importance: 8
 ai_generated: true
 links:
   source:
+  - repo_711b6ab6d5c8/file/code/management_portal/tool_settings.py
+  - repo_711b6ab6d5c8/file/code/management_portal/execution/resident_mcp.py
   - https://modelcontextprotocol.io/specification/2026-07-28/server/tools
   - https://modelcontextprotocol.io/specification/2026-07-28/server/resources
   related:
@@ -262,7 +264,8 @@ flowchart LR
 | --- | --- | --- |
 | 改模型、速度、推理强度 | 保存参数 | 从适用的下一轮生效；不换账号或新建 Session |
 | 换执行账号 | 切换账号 | 优先保留有效上下文；需要摘要时说明影响并由交接按钮提交，失败保留原会话 |
-| 配置 MCP、工具、Prompt、Skill | `UpdateResidentSettings` 的 capability_config（界面不提供） | 记录已生效、下轮生效、待显式重启及失败项 |
+| 注册、停用和撤销应用工具或自定义 MCP 工具 | Settings 的 Tools 面板，选择目标 Resident 后条件保存 | 显示当前选择与生效预期；默认不选，不把配置保存等同于旧 Session 已装配 |
+| 配置 Prompt、Skill | 既有运行设置与 UpdateResidentSettings | 沿各自注入时机生效，工具配置保存不覆盖这些选择 |
 | 在同账号重新建立会话 | `RestartSession` operation=restart（界面不提供） | 明确选择保留有效上下文或空白开始，不暗含账号切换 |
 | 减少上下文长度 | 压缩上下文 | 独立且可见的压缩操作，说明方法与信息损失 |
 | 继续失败任务 | 重试这条任务 | 指向具体原输入，先查是否已接受、执行或部分完成 |
@@ -273,6 +276,16 @@ flowchart LR
 提示描述当前结果，例如“账号切换失败，仍使用 two”，并显示时间。旧失败在之后成功操作后归入历史，不继续作为当前故障横幅。“当前会话在工作”也不能抹掉此前真实失败的记录。
 
 Provider 的审批/沙箱设置与 Portal 资源权限分开命名；界面不能用一个 Full Access 暗示所有对象都被授权。
+
+### 设置页的工具管理
+
+Tools 在独立 Settings 页及账号菜单共用面板，首次打开才读取目录，先展示已安装应用工具，再按用户选择的 Resident 读取配置。Resident 搜索使用已授权的搜索范围，不在初始页枚举所有节点。可查看与可编辑分别判定；没有修改权限时只读。每项应用工具显式勾选后保存，停用保留选择，撤销移除选择。required 与 enabled 不能冲突。未显示的内置工具与 Skill 选择保留，不因工具保存而覆盖其他运行设置。
+
+自定义工具沿开放的 MCP 协议接入。提供者把 tfi.mcp-connection.v1 连接文档保存为 ResourceService 可授权读取的 JSON 资源；用户在 Tools 输入或选择该连接引用，显式发现并勾选精确工具名，再保存给目标 Resident。发现只初始化连接并调用 tools/list，不调用 tools/call，不自动注册、不选择后续新增工具。工具服务维护者可替换自身实现，资源引用和每轮冻结契约仍沿现行版本与权限规则；不提供在设置页粘贴任意代码执行的旁路。密钥使用凭据资源引用，不显示或复制进工具表单。
+
+GET /api/tool-settings 投影已安装应用目录；带 resident_id 时回读该 Resident 的能力配置、settings_revision、生效预期及可编辑标记。GET 不发现 MCP 或启动工具进程。PUT 同地址仅接受 resident_id、expected_revision、capability_config，复用原 UpdateResidentSettings 的权限、CAS 与审计，不建立第二份工具状态。POST /api/tool-settings/discover 仅接受 resident_id、ref；入口先核对调用者能读并配置目标 Resident，再按目标 Resident 的资源权限读连接和凭据。页面用户自己的资源权限不能替代执行 Resident 的权限。发现复用执行时的连接、目录分页、schema、凭据脱敏和超时实现，取消会停止后续通信并清理发现进程。
+
+切换目标、关闭面板时废弃或中止未完成的读取，不让旧响应覆盖新目标；已提交的保存允许按原 CAS 完成，完成后使共享运行设置投影失效。保存版本冲突保留草稿，明确重新读取或丢弃，不能静默覆盖。保存配置不调用模型或重建会话。应用调用由 Web 的当前注册准入提供权威撤销检查，Worker 不为同一次应用调用再远程读取相同注册；本地工具与 MCP 的调用守卫仍各自检查当前选择。
 
 ## 10. 状态所有权与接口边界
 
@@ -345,7 +358,7 @@ Provider 的审批/沙箱设置与 Portal 资源权限分开命名；界面不�
 
 MCP 连接是可授权读取的 JSON 资源，schema 为 `tfi.mcp-connection.v1`，字段为 `protocol_version`、可选 `timeout_seconds` 和 `transport`。当前协议版本支持 2025-06-18；stdio 用绝对 command、argv、显式 env_allowlist，env 值是凭据资源 `{ref}`；streamable_http 用 url 与 headers 的凭据资源 `{ref}`。配置不写凭据正文。HTTP 支持 POST 的 JSON/SSE 响应，远程 HTTPS、loopback HTTP；不支持旧 HTTP+SSE、OAuth 获取刷新、GET 长订阅、自动重连重放或远端 schema 引用。prompts/resources 不自动注入。
 
-每次执行把配置摘要、工具声明摘要、MCP 非秘密连接与完整工具定义摘要、别名和 Prompt 来源记录入现有 execution/checkpoint。恢复时，Resident 能力配置摘要或冻结的 MCP 连接与工具定义改变，拒绝沿原执行继续（`Resident capability configuration changed during execution recovery`）。Portal 内置工具的定义随代码发布改变时不拒绝：发布重启 Worker 时正在执行的轮次常会遇到这种情况，例如 `hatg_instruction` 的说明列出全部 ISA 指令，新增一条指令就会改变它的摘要。这时执行用新定义继续，checkpoint 保留原快照，并发出 `resident_capability_contract_changed` 事件，按别名列出新增、移除或改变的工具。凭据引用的权限与内容在调用时重新读取。已停用能力在实际 handler 入口拒绝；模型记住旧名称不构成授权。
+每次执行把配置摘要、工具声明摘要、MCP 非秘密连接与完整工具定义摘要、别名和 Prompt 来源记录入现有 execution/checkpoint。恢复时，Resident 能力配置摘要或冻结的 MCP 连接与工具定义改变，拒绝沿原执行继续（`Resident capability configuration changed during execution recovery`）。Portal 内置工具的定义随代码发布改变时不拒绝：发布重启 Worker 时正在执行的轮次常会遇到这种情况，例如内置工具说明或参数随代码更新，声明摘要会相应变化。这时执行用新定义继续，checkpoint 保留原快照，并发出 `resident_capability_contract_changed` 事件，按别名列出新增、移除或改变的工具。凭据引用的权限与内容在调用时重新读取。已停用能力在实际 handler 入口拒绝；模型记住旧名称不构成授权。
 
 配置保存、声明发现、适配器已发送、模型已接受、业务成功分别记录。无发送证据即 unknown；空会话操作成功不证明已发送工具，固定工具目录的旧原生 Session 不因记录缺失而重建。明确新增且后端不能原地装配的工具显示 pending_session；required 无法满足则在模型接受前拒绝。用户可以显式重新开始会话，系统不会代作此选择。
 

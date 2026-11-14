@@ -159,17 +159,33 @@ def test_default_does_not_discover_apps_and_legacy_builtin_keeps_default(monkeyp
     assert not assembly._enabled({}, SimpleNamespace(capability_ref=REF))
 
 
-def test_materialization_and_call_revocation(rpc, monkeypatch):
+def test_materialization_and_call_revocation(rpc, operation, monkeypatch):
+    from management_portal.hatg import routing
+    selected = [{'ref': REF}]
+    checks = []
+    def settings(call, context):
+        checks.append(context.caller)
+        return SimpleNamespace(raise_for_error=lambda: {'settings': {'capability_config': {'tools': selected}}})
+    monkeypatch.setattr(routing, 'execute', settings)
+    remote = transport.rpc
+    def execute(method, params, *, caller):
+        if method == 'application.tools.execute':
+            rpc.append((method, params, caller))
+            return apps.execute(params['call'], InstructionContext(caller, 'harness'))
+        return remote(method, params, caller=caller)
+    monkeypatch.setattr(transport, 'rpc', execute)
+    monkeypatch.setattr(assembly, 'current_selection', lambda *args: pytest.fail('duplicate application registration read'))
     context = Context()
     result = assembly.prepare(invocation(), context)
     tool = result.harness_tools[0]
     assert (tool.name, tool.capability_ref) == (DECL.name, REF)
-    monkeypatch.setattr(assembly, "current_selection", lambda *args: {"tools": [{"ref": REF}]})
     assert json.loads(tool.handler({"arguments": {"object_id": "one"}}))["status"] == "committed"
     assert rpc[-1][2] == "resident_123456789abc"
-    monkeypatch.setattr(assembly, "current_selection", lambda *args: {})
-    with pytest.raises(PermissionError):
-        tool.handler({"object_id": "one"})
+    selected.clear()
+    denied = json.loads(tool.handler({'arguments': {'object_id': 'one'}}))
+    assert denied['error']['code'] == 'instruction.forbidden'
+    assert checks == ['resident_123456789abc', 'resident_123456789abc']
+    assert len(operation[1]) == 1
     assert context.snapshots[0]["application_dependencies"][REF]["name"] == DECL.name
 
 

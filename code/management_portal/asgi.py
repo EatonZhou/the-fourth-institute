@@ -420,6 +420,49 @@ def _same_origin(request: Request) -> bool:
     return bool(http_auth._same_origin_request(handler))
 
 
+async def tool_settings_api(request: Request):
+    from . import tool_settings
+    from .hatg.contracts import InstructionContext, ERROR_STATUS, normalize_error
+    from .execution.resident_mcp_transport import MCPError
+    caller, entry = await asyncio.to_thread(_instruction_principal, request)
+    if not caller:
+        return _json_error(401, '需要登录或有效凭证')
+    if entry == 'web' and not _same_origin(request):
+        return _json_error(403, '跨站请求被拒绝')
+    context = InstructionContext(caller, entry, execution_id=_execution_id(request, entry))
+    try:
+        if request.method == 'GET':
+            value = await asyncio.to_thread(tool_settings.view, context, request.query_params.get('resident_id'))
+        else:
+            payload = await request.json()
+            if request.method == 'PUT':
+                value = await asyncio.to_thread(tool_settings.save, context, payload)
+            else:
+                cancelled = threading.Event()
+                async def observe_disconnect():
+                    while True:
+                        if (await request.receive())['type'] == 'http.disconnect':
+                            cancelled.set()
+                            return
+                observer = asyncio.create_task(observe_disconnect())
+                try:
+                    value = await asyncio.to_thread(tool_settings.discover, context, payload,
+                        is_cancelled=cancelled.is_set)
+                finally:
+                    cancelled.set()
+                    observer.cancel()
+                    with suppress(asyncio.CancelledError):
+                        await observer
+        return JSONResponse(value)
+    except MCPError as exc:
+        return _json_error(400 if exc.status != 'unknown' else 503,
+            f'MCP 工具发现失败（{exc.reason}）', code='tools.discovery.' + exc.reason)
+    except Exception as exc:
+        error = normalize_error(exc)
+        fields = error.to_dict()
+        return _json_error(ERROR_STATUS.get(error.code, 400), fields.pop('message'), **fields)
+
+
 async def application_tools_api(request: Request):
     from .application_tools import execute, list_tools
     from .hatg.contracts import InstructionContext, ERROR_STATUS
@@ -806,6 +849,8 @@ app = Starlette(
     exception_handlers={HTTPException: _route_http_error},
     routes=[
         Route("/api/events", _independent_api_error_boundary(portal_events), methods=["GET"]),
+        Route("/api/tool-settings", _independent_api_error_boundary(tool_settings_api), methods=["GET", "PUT"]),
+        Route("/api/tool-settings/discover", _independent_api_error_boundary(tool_settings_api), methods=["POST"]),
         Route("/api/application-tools", _independent_api_error_boundary(application_tools_api), methods=["GET"]),
         Route("/api/application-tools/execute", _independent_api_error_boundary(application_tools_api), methods=["POST"]),
         Route("/api/instructions/execute", _independent_api_error_boundary(instruction_execute), methods=["POST"]),

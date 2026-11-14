@@ -50,7 +50,10 @@ def _guard(tool: Any, resident_id: str, execution_id: str, selected: bool, conte
     def handler(arguments: dict) -> str:
         if context.is_cancelled():
             raise InterruptedError("Resident tool call cancelled")
-        if not selected or not _enabled(current_selection(resident_id, execution_id), tool):
+        application = str(tool.capability_ref or '').startswith('application:')
+        # Web rechecks an application's current registration at its execution
+        # boundary. MCP and local built-ins have no such server admission.
+        if not selected or (not application and not _enabled(current_selection(resident_id, execution_id), tool)):
             raise PermissionError(f"Resident capability disabled: {tool.capability_ref or tool.name}")
         reference = tool.capability_ref or f"portal:{tool.name}"
         context.emit("resident_capability_call", {"ref": reference, "delivery": "observed_call", "result": "running"})

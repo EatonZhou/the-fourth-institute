@@ -209,6 +209,31 @@ def _run(factory):
         return pool.submit(lambda: asyncio.run(factory())).result()
 
 
+def _discover(document, caller, is_cancelled=None):
+    env, headers, secrets = _credentials(document, caller)
+    async def discover():
+        async with connect(document, env=env, headers=headers, is_cancelled=is_cancelled) as connection:
+            return await _directory(connection)
+    return _run(discover), secrets
+
+
+def discover_mcp_directory(ref, *, caller, is_cancelled=None):
+    """Explicit setup discovery; never select tools, call tools, or persist observations."""
+    document = _document(ref, caller)
+    directory, secrets = _discover(document, caller, is_cancelled)
+    tools = []
+    for item in directory.values():
+        _schema(item.get('inputSchema'))
+        if item.get('outputSchema') is not None:
+            _schema(item['outputSchema'])
+        if not isinstance(item.get('description', ''), str):
+            raise MCPError('invalid_tool')
+        _no_secret(item, secrets)
+        tools.append(copy.deepcopy({k: v for k, v in item.items()
+            if k in {'name', 'description', 'inputSchema', 'outputSchema', 'annotations'}}))
+    return {'ref': ref, 'title': ref, 'transport_type': document['transport']['type'], 'tools': tools}
+
+
 def _digest(value):
     return hashlib.sha256(encode(value).encode()).hexdigest()
 
@@ -274,11 +299,7 @@ def materialize_mcp_tools(selections, *, caller: str, execution_id: str,
             connection_digest = _digest(doc)
             if expected is not None and connection_digest != expected["connection_digest"]:
                 raise MCPError("recovery_connection_changed")
-            env, headers, secrets = _credentials(doc, caller)
-            async def discover():
-                async with connect(doc, env=env, headers=headers, is_cancelled=is_cancelled) as connection:
-                    return await _directory(connection)
-            directory = _run(discover)
+            directory, secrets = _discover(doc, caller, is_cancelled)
             selected = sorted(names)
             staged_tools, staged_observations = [], []
             for name in selected:

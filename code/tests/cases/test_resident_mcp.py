@@ -19,6 +19,23 @@ TOOL = {"name": "echo", "description": "Echo a value", "inputSchema": {
     "additionalProperties": False}}
 
 
+def test_setup_directory_discovers_without_calling_or_registering(mcp, resources, connection):
+    docs, _ = resources
+    docs[REF], log = connection
+    catalog = mcp.discover_mcp_directory(REF, caller=ACTOR)
+    assert catalog['tools'][0]['name'] == 'echo'
+    assert catalog['tools'][0]['inputSchema'] == TOOL['inputSchema']
+    assert catalog['transport_type'] == 'stdio'
+    assert 'tools/call' not in log.read_text()
+
+
+def test_setup_directory_obeys_cancellation(mcp, resources, connection):
+    docs, _ = resources
+    docs[REF], _ = connection
+    with pytest.raises(InterruptedError):
+        mcp.discover_mcp_directory(REF, caller=ACTOR, is_cancelled=lambda: True)
+
+
 def test_execution_owner_is_available_for_assembly():
     assert importlib.util.find_spec("management_portal.execution.resident_mcp") is not None
 

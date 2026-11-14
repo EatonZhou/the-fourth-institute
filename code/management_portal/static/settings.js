@@ -65,11 +65,13 @@
         <button class="nodeSettingsTab" type="button" role="tab" aria-selected="true" data-settings-tab="settings">Settings</button>
         <button class="nodeSettingsTab" type="button" role="tab" aria-selected="false" tabindex="-1" data-settings-tab="appearance">Appearance</button>
         <button class="nodeSettingsTab" type="button" role="tab" aria-selected="false" tabindex="-1" data-settings-tab="package">Package</button>
+        <button class="nodeSettingsTab" type="button" role="tab" aria-selected="false" tabindex="-1" data-settings-tab="tools">工具</button>
       </div>
       <div class="userMenuPanels">
       <div class="settingsNotice" data-settings-notice role="status" hidden></div>
       ${appearanceMarkup()}
       <div data-settings-package role="tabpanel" aria-label="Package" hidden></div>
+      <div data-settings-tools role="tabpanel" aria-label="工具" hidden></div>
       <div data-settings-content role="tabpanel" aria-label="Settings">
       <section aria-label="User avatar" data-settings-avatar></section>
       <section class="menuRow" aria-label="Password">
@@ -198,6 +200,7 @@
     let destroyed = false;
     let pending = 0;
     let packageInstance = null;
+    let toolsInstance = null;
     let enrollment = null;
     let packageEpoch = 0;
     let confirming = false;
@@ -207,11 +210,12 @@
       pending += 1;
       try { return await callback(...args); } finally { pending -= 1; }
     };
-    const isBusy = () => pending > 0 || avatarEditor?.isBusy() || enrollment?.isBusy() || packageInstance?.isBusy?.() === true;
-    const hasUnsavedChanges = () => avatarEditor?.hasUnsavedChanges() || enrollment?.hasUnsavedChanges() || settingsDirty() || packageInstance?.hasUnsavedChanges?.() === true;
+    const isBusy = () => pending > 0 || avatarEditor?.isBusy() || enrollment?.isBusy() || packageInstance?.isBusy?.() === true || toolsInstance?.isBusy() === true;
+    const hasUnsavedChanges = () => avatarEditor?.hasUnsavedChanges() || enrollment?.hasUnsavedChanges() || settingsDirty() || packageInstance?.hasUnsavedChanges?.() === true || toolsInstance?.hasUnsavedChanges() === true;
     const disposePackage = () => {
       packageEpoch += 1;
       packageInstance?.destroy?.(); packageInstance = null;
+      toolsInstance?.destroy(); toolsInstance = null;
       root.querySelector("[data-settings-package]").replaceChildren();
     };
     const noticeBox = root.querySelector("[data-settings-notice]");
@@ -657,6 +661,7 @@
     const content = root.querySelector("[data-settings-content]");
     const packagePanel = root.querySelector("[data-settings-package]");
     const appearancePanel = root.querySelector("[data-settings-appearance]");
+    const toolsPanel = root.querySelector("[data-settings-tools]");
     tabs.forEach((button, index) => button.addEventListener("keydown", event => {
       let next;
       if (["ArrowDown", "ArrowRight"].includes(event.key)) next = (index + 1) % tabs.length;
@@ -693,7 +698,19 @@
       content.hidden = target !== "settings";
       packagePanel.hidden = target !== "package";
       appearancePanel.hidden = target !== "appearance";
+      toolsPanel.hidden = target !== "tools";
       tabs.forEach(tab => { const selected = tab === button; tab.setAttribute("aria-selected", String(selected)); tab.tabIndex = selected ? 0 : -1; });
+      if (target === "tools") {
+        const current = packageEpoch;
+        toolsPanel.textContent = window.PortalI18n.t("正在加载工具设置…");
+        try {
+          await loadAsset("/static/portal_instruction_client.js", {ready: () => window.PortalInstructionClient});
+          await loadAsset("/static/portal_tool_settings.js", {ready: () => window.PortalToolSettings});
+          if (destroyed || current !== packageEpoch) return;
+          toolsInstance = window.PortalToolSettings.mount(toolsPanel);
+        } catch (error) { if (!destroyed && current === packageEpoch) toolsPanel.textContent = error.message; }
+        return;
+      }
       if (target !== "package") return;
       const current = packageEpoch;
       const container = document.createElement("div");

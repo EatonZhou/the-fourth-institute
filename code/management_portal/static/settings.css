@@ -98,3 +98,12 @@
 
 .settingsTitle h1 { font-size:var(--portal-page-title-size); font-weight:var(--portal-page-title-weight); line-height:var(--portal-page-title-line-height); }
 .settingsTitle p { font-size:var(--portal-subtitle-size); font-weight:var(--portal-subtitle-weight); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.toolSettings { display: grid; gap: 12px; min-width: 0; }
+.toolSettings p { margin: 0; line-height: 1.6; }
+.toolSettingsActions, .toolSettingsResults { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.toolSettingsActions label, .toolSettingsTool label { display: inline-flex; gap: 6px; align-items: center; }
+.toolSettingsCard { display: grid; gap: 10px; padding: 14px; border: 1px solid var(--portal-border, #8885); border-radius: 10px; margin-block: 10px; }
+.toolSettingsCard code, .toolSettingsCard pre { overflow-wrap: anywhere; white-space: pre-wrap; max-width: 100%; }
+.toolSettingsTool { display: grid; gap: 6px; padding-block: 8px; border-top: 1px solid var(--portal-border, #8885); }
+.toolSettings .portalField input { width: 100%; min-width: 0; }
+.toolSettings [role="status"] { overflow-wrap: anywhere; }

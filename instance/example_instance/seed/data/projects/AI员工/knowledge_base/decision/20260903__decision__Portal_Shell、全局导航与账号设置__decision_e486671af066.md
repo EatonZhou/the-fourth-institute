@@ -4,29 +4,30 @@ type: decision
 project: AI员工
 created_at: '2026-09-03'
 version:
-  number: 45
-  created_at: '2026-09-03'
+  number: 46
+  created_at: "2026-09-03"
   created_by:
-    user: ''
-    agent: ''
-  updated_at: '2026-10-30T12:07:20Z'
+    user: ""
+    agent: ""
+  updated_at: "2026-11-14T11:55:33Z"
   updated_by:
-    user: ''
-    agent: resident_60ae6d0cdf74
+    user: ""
+    agent: "resident_60ae6d0cdf74"
 importance: 9
 metaness: 2
 ai_generated: false
 links:
   source:
-  - ${code_root}/management_portal/static/portal_nav.js
-  - ${code_root}/management_portal/static/portal_components.css
-  - ${code_root}/management_portal/static/portal_identity.js
-  - ${code_root}/management_portal/static/portal_theme.js
-  - ${code_root}/management_portal/static/portal_themes.css
-  - ${code_root}/management_portal/static/portal_board_shell.js
-  - ${code_root}/management_portal/static/settings.js
-  - ${code_root}/management_portal/settings.html
-  - ${code_root}/tests/cases/test_portal_identity_bootstrap.py
+  - repo_711b6ab6d5c8/file/code/management_portal/static/portal_tool_settings.js
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/portal_nav.js
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/portal_components.css
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/portal_identity.js
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/portal_theme.js
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/portal_themes.css
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/portal_board_shell.js
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/settings.js
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/settings.html
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_portal_identity_bootstrap.py
   related:
   - decision_741b04821171
   - decision_9f6135cbbb22
@@ -97,7 +98,7 @@ TFI Portal 由许多业务页面组成。每个页面有自己的列表、卡片
 
 - **账号菜单列出服务端登记的 Dev 与 Release 入口。** 当前版本标为活动项；普通用户也能看到已登记版本。
 - **版本切换有独立忙碌和错误反馈。** 请求进行时对应控件禁用；成功后重载当前页面，失败后恢复控件并保留可见错误。
-- **Settings 可作为独立页面或账号菜单内面板。** 两个入口共享同一面板能力，默认打开 Settings。三个标签依次为 Settings（头像、密码、两步验证、Passkeys、个人访问令牌）、Appearance（Auto 配色、语言、动效）和 Package（当前用户的个人背包与权限配置，decision_5bc3fdfc7eec）。Settings 每项占一行：左侧是名称和当前状态，右侧是操作按钮；头像选择、密码表单、验证器设置与管理、Passkey 注册表单只在点击“编辑头像”“更改密码”“设置身份验证器”“管理”“添加 Passkey”后于该行下方展开，取消或完成后收起。有未保存的头像、表单、令牌或背包修改时，切换标签前先确认是否放弃；有操作正在处理时提示稍后再切换。标签支持方向键与 Home/End；窄屏与 Resident Menu 一样保留左侧分栏，配色控件与预览按上下顺序排列。
+- **Settings 可作为独立页面或账号菜单内面板。** 两个入口共享同一面板能力，默认打开 Settings。标签包含 Settings（头像、密码、两步验证、Passkeys、个人访问令牌）、Appearance（Auto 配色、语言、动效）、Package（当前用户的个人背包与权限配置，decision_5bc3fdfc7eec）和 Tools（按 Resident 管理应用工具及自定义 MCP 工具，decision_ccbb1cac24aa）。Settings 每项占一行：左侧是名称和当前状态，右侧是操作按钮；头像选择、密码表单、验证器设置与管理、Passkey 注册表单只在点击“编辑头像”“更改密码”“设置身份验证器”“管理”“添加 Passkey”后于该行下方展开，取消或完成后收起。有未保存的头像、表单、令牌或背包修改时，切换标签前先确认是否放弃；有操作正在处理时提示稍后再切换。标签支持方向键与 Home/End；窄屏与 Resident Menu 一样保留左侧分栏，配色控件与预览按上下顺序排列。
 - **Appearance 提供 Auto 模式的个人配色。** 用户可选预设色、自定义十六进制颜色，并在 0%–100% 范围内调整自己的消息气泡不透明度，默认 18%；0% 融入背景，100% 与发送按钮的主题色一致。主题层同时推导气泡内正文、引用、链接、资源标签和内嵌区域的可读配色；收到的消息继续保持中性色。预览包含双方消息、引用、链接和发送按钮，使用与页面相同的配色投影与共享消息样式。拖动时先更新预览，完成一次选择后自动保存到当前账号，页面随后采用该选择；失败回滚并在控件旁显示可重试的错误。恢复默认是一次正常保存。动效选择的保存中、成功与失败提示放在动效控件旁的预留状态区域，不能用顶部通栏提示推移菜单内容。
 - **引用底色可跟随气泡或自定义。** Appearance 在气泡不透明度后提供“引用底色”，默认跟随气泡；深色气泡和深色外观中的引用区进一步压暗，引用文字独立适配底色。选择“自定义”后显示取色器与颜色值，实时预览自己的消息中的引用底色，完成选择后保存到账号；更换主题色或气泡不透明度时保留自定义引用色。切回“跟随气泡”只恢复引用的自动配色，“恢复默认”清除全部自定义配色。引用、资源标签和代码区域各自保留适当的视觉层次，不能为加深引用一并压暗其他区域。
 - **Auto 配色适配系统明暗，显式主题保留原有配色。** 颜色由主题层分别推导浅色、深色强调色及按钮文字色，保证文字可读性。当前不是 Auto 模式时，Appearance 仍可预览、保存，并提供“使用 Auto”入口。新配色不影响其他用户；刷新、重开 Menu 和同账号其他设备加载偏好后继续采用已保存值。
@@ -192,6 +193,7 @@ PortalNav.openPage 统一处理宿主发起的页面体验入口。可导航目�
 - 账号菜单根据服务端部署状态列出 Dev 和 Release，并标记当前版本。版本入口不按普通用户身份隐藏。部署状态读取失败时显示错误，不生成未登记的版本按钮。
 - Settings 和 Management 面板在同一账号运行期可以复用；请求序号阻止旧响应覆盖新面板。错误显示在 `role=alert` 区域。
 - `/settings` 提供独立宿主。`PortalSettingsPanel.mount(host)` 只接受有效宿主；无效宿主不创建实例。
+- Tools 首次打开时才装配其模块与读取应用目录；选择 Resident 后回读配置与可编辑权限，不默认启用工具。MCP 发现由显式操作触发，连接资源和精确工具选择复用统一能力配置；工具注册、撤销、版本冲突与生效合同见 decision_ccbb1cac24aa。工具面板纳入宿主的繁忙与未保存检查；销毁停止读取，已提交保存按原身份完成并使共享配置观察失效。
 - Settings 偏好使用乐观更新。保存期间禁用相关输入；失败恢复先前值并显示通知。
 
 ## 公开接口

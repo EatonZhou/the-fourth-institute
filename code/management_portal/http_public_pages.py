@@ -362,6 +362,7 @@ class PublicPagesHttp:
                     '/static/resident_protocol.js',
                     '/static/settings.css',
                     '/static/settings.js',
+                    '/static/portal_tool_settings.js',
                     '/static/development_workspace.js',
                     '/static/workbench_studio.css',
                     '/static/workbench_studio.js',
