@@ -7,6 +7,7 @@ again after a reconnect or on another Worker.
 """
 
 from __future__ import annotations
+from .codex_app_server_threads import resume_thread
 
 import logging
 import time
@@ -337,8 +338,8 @@ class CodexTurnRunner:
             if value:
                 resume_params[key] = value
         try:
-            resumed = self._rpc.request(
-                "thread/resume",
+            resumed = resume_thread(
+                self._rpc.request,
                 resume_params,
                 timeout=self.timeouts.lifecycle,
                 cancellation_requested=cancellation_requested,
@@ -565,8 +566,8 @@ class CodexTurnRunner:
                 }
                 if config is not None:
                     resume_params["config"] = dict(config)
-                self._rpc.request(
-                    "thread/resume",
+                resume_thread(
+                    self._rpc.request,
                     resume_params,
                     timeout=self.timeouts.lifecycle,
                     cancellation_requested=cancellation_requested,

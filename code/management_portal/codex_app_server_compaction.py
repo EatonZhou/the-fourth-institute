@@ -6,6 +6,7 @@ deadline for progress.
 """
 
 from __future__ import annotations
+from .codex_app_server_threads import resume_thread
 
 import time
 from typing import TYPE_CHECKING, Any, Callable
@@ -113,8 +114,8 @@ class CodexCompactionRunner:
         if not safe_thread_id:
             raise ValueError("thread_id required")
         if not self._threads.is_loaded(safe_thread_id):
-            self._rpc.request(
-                "thread/resume",
+            resume_thread(
+                self._rpc.request,
                 {"threadId": safe_thread_id, "excludeTurns": True, **({"config": config} if config is not None else {})},
                 timeout=self.timeouts.lifecycle,
                 cancellation_requested=cancellation_requested,

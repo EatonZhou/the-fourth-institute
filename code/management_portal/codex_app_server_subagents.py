@@ -7,6 +7,7 @@ reach this connection, and leaves them when they end.
 """
 
 from __future__ import annotations
+from .codex_app_server_threads import resume_thread
 
 import logging
 import threading
@@ -179,7 +180,7 @@ class CodexSubagentRouter:
         """Join a running subagent thread; its own notifications then reach this client."""
 
         try:
-            result = self._rpc.request("thread/resume", {"threadId": child, "excludeTurns": True},
+            result = resume_thread(self._rpc.request, {"threadId": child, "excludeTurns": True},
                                        timeout=self.timeouts.lifecycle)
         except Exception as error:
             with self._state_lock:

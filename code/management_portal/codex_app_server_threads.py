@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import hashlib
 import logging
+import re
 import threading
 import time
 from contextlib import contextmanager
@@ -38,6 +39,30 @@ THREAD_LOCK_ROOT = portal_path("runtime") / "codex-app-server-threads"
 DEFAULT_IDLE_UNSUBSCRIBE_SECONDS = 5 * 60 * 60
 DEFAULT_MAX_LOADED_THREADS = 30
 THREAD_LOCK_POLL_INTERVAL_SECONDS = 0.25
+
+
+def resume_thread(request, params: dict[str, Any], **options: Any) -> dict[str, Any]:
+    """Recover a default-provider conflict from this thread's own native identity.
+
+    Only a rejected lifecycle load is retried. Explicit provider choices and
+    other failures stay authoritative; this never retries a model turn.
+    """
+    try:
+        return request("thread/resume", params, **options)
+    except CodexAppServerError as error:
+        match = re.fullmatch(
+            r"(?:Codex app-server request failed: )?This chat uses ([\w-]+), but your current provider is ([\w-]+)\. Switch to \1 to continue\.",
+            str(error),
+        )
+        if (not match or params.get("modelProvider")
+                or (params.get("config") or {}).get("model_provider")):
+            raise
+        observed = request("thread/read", {"threadId": params["threadId"], "includeTurns": False}, **options)
+        thread = observed.get("thread") or {}
+        provider = thread.get("modelProvider")
+        if thread.get("id") != params["threadId"] or provider != match[1]:
+            raise error
+        return request("thread/resume", {**params, "modelProvider": provider}, **options)
 
 
 @contextmanager

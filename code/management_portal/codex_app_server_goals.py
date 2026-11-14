@@ -5,6 +5,7 @@ an active goal is followed until Codex reports it done, blocked or limited.
 """
 
 from __future__ import annotations
+from .codex_app_server_threads import resume_thread
 
 import logging
 import time
@@ -153,7 +154,7 @@ class CodexGoalRunner:
                 resume_params["cwd"] = str(cwd)
             if config is not None:
                 resume_params["config"] = dict(config)
-            self._goal_request("thread/resume", resume_params, cancellation_requested)
+            resume_thread(lambda method, params: self._goal_request(method, params, cancellation_requested), resume_params)
         with self._state_lock:
             self._threads.mark_loaded(
                 thread_id,
