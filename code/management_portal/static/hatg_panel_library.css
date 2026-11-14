@@ -170,11 +170,16 @@
   }
 }
 
-.hatgToolboxToggle { position:absolute; right:12px; bottom:12px; z-index:9; }
-.hatgToolbox { position:absolute; inset:8px 8px 56px auto; width:min(360px, calc(100% - 16px)); z-index:10; display:flex; flex-direction:column; border:1px solid var(--border); border-radius:12px; background:var(--panel); box-shadow:0 8px 28px #0002; }
+/* Leave the leftmost circular + control its own slot. */
+.hatgCanvasCornerTools { position:absolute; left:54px; bottom:9px; z-index:9; display:flex; align-items:center; gap:8px; max-width:calc(100% - 64px); }
+.hatgCanvasCornerTools > .graphLegend { position:static; min-width:0; flex-wrap:wrap; }
+.hatgToolboxToggle { flex:none; width:34px; height:34px; padding:7px; border-radius:50%; }
+.hatgToolboxToggle svg, .hatgToolboxHeaderActions svg { width:18px; height:18px; fill:none; stroke:currentColor; stroke-width:1.6; }
+.hatgToolbox { position:absolute; inset:8px auto 54px 54px; width:min(360px, calc(100% - 64px)); z-index:10; display:flex; flex-direction:column; border:1px solid var(--border); border-radius:12px; background:var(--panel); box-shadow:0 8px 28px #0002; }
 .hatgToolbox[hidden] { display:none; }
 .hatgToolboxHeader { display:flex; align-items:center; justify-content:space-between; padding:10px 12px; border-bottom:1px solid var(--border); }
 .hatgToolboxHeader h3 { margin:0; font-size:14px; }
+.hatgToolboxHeaderActions { display:flex; align-items:center; gap:8px; }
 .hatgToolboxBody { overflow:auto; overscroll-behavior:contain; padding:10px; }
 .hatgToolboxActions { display:flex; justify-content:flex-end; margin-bottom:6px; }
 .primitiveBlockShelf { margin-top:12px; border-top:1px solid var(--border); padding-top:10px; }

@@ -11,7 +11,7 @@ const modules = [...new Set(['portal_state.js','portal_page_state.js','portal_te
  'portal_ui_primitives.js','portal_ui.js','portal_overlay.js','portal_resource_chips.js','portal_image_editor.js',
  'portal_editor_open_service.js','portal_command_registry.js','portal_workbench_context.js',...portalWorkbenchScripts(),
  'resident_protocol.js',...chatWorkspaceScripts(),...LINEAGE_TEMPLATES_SCRIPTS.map(n=>n+'.js'),
- 'lineage_template_graph.js','hatg_panel_template_shelf.js','lineage_workbench_selection.js'])];
+ 'lineage_template_graph.js','hatg_panel_template_shelf.js','hatg_panel_bindings.js','lineage_workbench_selection.js'])];
 const routes = execFileSync(process.env.PYTHON || 'python3', ['-c',
  'from management_portal.resources.portal import portal_route_script; print(portal_route_script().decode())'],{cwd:repo,encoding:'utf8'});
 (async()=>{
@@ -40,8 +40,7 @@ const routes = execFileSync(process.env.PYTHON || 'python3', ['-c',
     contract:{schema:'portal.chat_workspace.v3',messages:[],composer:{can_send:true,can_attach:true,attachment_upload_context:{conversation:scope},queue:{items:[]}}}});
    workspace.setDraftText('已有草稿\n');
    workspace.setAttachments([{upload_id:'upload_fixture',filename:'audio.wav',content_type:'audio/wav',size:7}]);
-   window.PortalAPI={get:async()=>({items:[]})};
-   window.PortalResourceFavorites={set:async()=>{}};
+   window.PortalIdentity={username:()=> 'alice'};
    const template={template_id:'template_prompt',builtin_key:'prompt_fixture',kind:'prompt',title:'录音整理',category:'apply',targets:['resident'],
     parameters:[{name:'kind',description:'条目类型'}],body:{message:'整理 [音频文件] 为 {{param.kind}}。<img src=x onerror=alert(1)>\n保留原意。'},behavior:{steps:[],persistent:false}};
    const structure={template_id:'template_structure',builtin_key:'structure_fixture',kind:'structure',title:'结构',category:'structure',targets:['resident','selection'],parameters:[],body:{roles:[],components:[],wires:[]},behavior:{steps:[],persistent:true}};
@@ -103,6 +102,45 @@ const routes = execFileSync(process.env.PYTHON || 'python3', ['-c',
   await page.waitForFunction(()=>calls.includes('ApplyTemplate'));
   assert.equal(await page.evaluate(()=>opened.length),1,'structure keeps its original application path');
   assert.equal(await page.evaluate(()=>sent.length),0);
+  // Picking up a card uses the same application path, without a drag gesture.
+  const beforePickup=await page.evaluate(()=>calls.filter(x=>x==='ApplyTemplate').length);
+  await page.locator('[data-template-id="template_structure"]').click();
+  await page.waitForFunction(()=>!document.querySelector('.templateCarryPreview').hidden);
+  await page.locator('[data-node-id="resident-a"]').click();
+  await page.waitForFunction(before=>calls.filter(x=>x==='ApplyTemplate').length===before+1,beforePickup);
+  assert.equal(await page.locator('.templateCarryPreview').isHidden(),true);
+  // Cancelling pickup must leave the graph untouched.
+  await page.locator('[data-template-id="template_structure"]').press('Enter');
+  await page.keyboard.press('Escape');
+  assert.equal(await page.locator('.templateCarryPreview').isHidden(),true);
+  assert.equal(await page.evaluate(()=>calls.filter(x=>x==='ApplyTemplate').length),beforePickup+1);
+  // Measure the actual dock and drawer CSS, reserving the existing + slot.
+  const layout=await page.evaluate(({html,css})=>{
+   const parsed=new DOMParser().parseFromString(html,'text/html');
+   parsed.querySelectorAll('script').forEach(node=>node.remove());
+   const host=document.createElement('div');host.className='portalHatgPanelComponent';
+   host.style.cssText='position:fixed;left:10px;top:10px;width:550px;height:620px;z-index:100;background:var(--panel)';
+   host.innerHTML=parsed.body.innerHTML;
+   const style=document.createElement('style');style.textContent=css;host.append(style);document.body.append(host);
+   const id=name=>host.querySelector('#'+CSS.escape(name));
+   const viewport=id('hatgViewport');viewport.style.cssText='position:relative;height:600px;width:550px;overflow:hidden';
+   const none=()=>{},deps=Object.fromEntries(PortalHatgPanelBindings.dependencies.map(name=>[name,none]));
+   Object.assign(deps,{$id:id,$queryAll:selector=>[...host.querySelectorAll(selector)],$eventRoot:()=>host,
+    state:{},panelHost:{pageStateController:{listen:(_scope,node,event,handler)=>node.addEventListener(event,handler)}},
+    hatgModule:()=>({observeNavigationHeight:()=>none})});
+   PortalHatgPanelBindings.createBindings(deps).bindActions();
+   const toggle=id('hatgToolboxToggle'),drawer=id('hatgToolbox');
+   const plus=document.createElement('button');plus.textContent='+';plus.style.cssText='position:absolute;left:10px;bottom:9px;width:34px;height:34px;border-radius:50%';viewport.append(plus);
+   toggle.click();
+   const a=plus.getBoundingClientRect(),b=toggle.getBoundingClientRect(),v=viewport.getBoundingClientRect(),d=drawer.getBoundingClientRect();
+   const store=id('hatgToolboxStore').querySelector('button');
+   const result={noOverlap:a.right<=b.left,atLowerLeft:b.left-v.left<100&&v.bottom-b.bottom<20,
+    drawerAbove:d.bottom<=b.top&&d.left===b.left,storeDisabled:store.disabled,storeTitle:store.title};
+   id('hatgToolboxClose').click();result.closed=drawer.hidden;
+   return result;
+  },{html:fs.readFileSync(path.join(repo,'management_portal/hatg-panel.html'),'utf8'),
+    css:fs.readFileSync(path.join(repo,'management_portal/static/hatg_panel_library.css'),'utf8')});
+  assert.deepEqual(layout,{noOverlap:true,atLowerLeft:true,drawerAbove:true,storeDisabled:true,storeTitle:'商店即将上线',closed:true});
   if(process.env.PROMPT_DRAFT_SCREENSHOT)await page.screenshot({path:process.env.PROMPT_DRAFT_SCREENSHOT});
   assert.deepEqual(errors,[]);
   console.log('PASS native shelf drag to chat and node; placeholders, literal text, undo, audio, scoped draft restore, stale target and structure application');

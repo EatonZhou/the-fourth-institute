@@ -3,7 +3,7 @@
 
   if (window.LineageTemplatesEditing) return;
 
-  // Creating and editing templates: a new template of a chosen kind, the
+  // Creating and editing templates: a new duty template, the
   // template editor, and a template saved from a selection on the canvas.
 
   const DEPENDENCIES = Object.freeze([
@@ -23,24 +23,12 @@
       toast,
     } = dependencies;
 
-    function create(kind) {
-      const defaults = {
-        prompt: { message: '', activation_policy: 'queue' },
-        structure: { roles: [], components: [], wires: [], function_block: true },
-        script: { script: '', endpoints: ['target'] },
-      };
-      const metadata = templatesState.kinds.find(item => item.key === kind);
-      return edit({ kind, category: kind === 'structure' ? 'structure' : 'apply', title: t('新模板'), description: '',
-        targets: metadata?.targets || (kind === 'prompt' ? ['resident', 'selection'] : ['resident', 'selection', 'canvas']), parameters: [], body: defaults[kind],
-        behavior: { steps: [], persistent: kind === 'structure' }, editor: metadata?.editor || { fields: [] } });
-    }
-
     function newTemplate() {
-      const view = dialog('new', t('新建模板'));
-      view.content.innerHTML = `<p>${esc(t('选择模板类型'))}</p><div class="templateKindChoices">${[
-        ['prompt', '提示词', '填入聊天草稿，编辑后发送'], ['structure', '放入结构', '组合角色、组件与连线'], ['script', '执行脚本', '执行一次 Effect 脚本'],
-      ].map(([kind, title, description]) => `<button type="button" data-kind="${kind}"><strong>${esc(t(title))}</strong><small>${esc(t(description))}</small></button>`).join('')}</div>`;
-      view.content.addEventListener('click', event => { const choice = event.target.closest('[data-kind]'); if (choice) { view.close(); create(choice.dataset.kind); } });
+      const metadata = templatesState.kinds.find(item => item.key === 'structure');
+      return edit({kind: 'structure', category: 'structure', title: t('新职责模板'), description: '',
+        targets: metadata?.targets || ['resident', 'selection', 'canvas'], parameters: [],
+        body: {roles: [], components: [], wires: [], function_block: true},
+        behavior: {steps: [], persistent: true}, editor: metadata?.editor || {fields: []}});
     }
 
     async function openEditor(id) {

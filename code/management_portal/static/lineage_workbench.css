@@ -909,9 +909,15 @@
         text-transform: uppercase;
       }
       .residentForm { --portal-detail-form-gap: 8px; padding: 11px 12px 12px; display: grid; gap: 8px; }
-      .residentFormRow { display: grid; gap: 4px; align-content: start; }
-      .residentFormGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; align-items: start; }
-      .residentRuntimeGrid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; align-items: start; }
+      .residentFormRow { display: grid; min-width: 0; gap: 4px; align-content: start; }
+      /* The same form lives in a dialog or an inline panel: use its available
+         width, not the viewport, to keep account/model choices readable. */
+      .residentFormGrid, .residentRuntimeGrid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+        gap: 8px;
+        align-items: start;
+      }
       .residentAdvancedDetails {
         border: 1px solid color-mix(in srgb, var(--border) 74%, transparent);
         border-radius: 7px;
@@ -938,7 +944,7 @@
         gap: 8px;
         padding: 0 9px 9px;
       }
-      .residentLabel { color: var(--muted); font-size: 11px; font-weight: 700; }
+      .residentLabel { color: var(--muted); font-size: 11px; font-weight: 700; line-height: 1.4; }
       .residentFieldHead {
         display: flex;
         align-items: center;
@@ -946,6 +952,7 @@
         gap: 6px;
       }
       .residentInput, .residentSelect, .residentTextarea {
+        min-width: 0;
         width: 100%;
         border: 1px solid var(--border);
         border-radius: 6px;
@@ -1068,8 +1075,6 @@
         line-height: 1.35;
       }
       @media (max-width: 720px) {
-        .residentFormGrid { grid-template-columns: 1fr; }
-        .residentRuntimeGrid { grid-template-columns: 1fr 1fr; }
         .forkCreateModeGrid { grid-template-columns: 1fr; }
       }
 

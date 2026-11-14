@@ -2,7 +2,6 @@
 .templateShelf { display:grid; gap:12px; min-width:0; }
 .templateToolboxGroup h4 { margin:0 0 8px; font-size:13px; }
 .templateToolboxCards { display:grid; grid-template-columns:repeat(auto-fill,minmax(120px,1fr)); gap:8px; }
-.templateCard { position:relative; min-width:0; }
 .templateTile { width:100%; display:grid; grid-template-rows:72px auto; gap:5px; padding:8px; border:1px solid var(--border); border-radius:8px; background:var(--panel); color:var(--text); text-align:center; cursor:grab; }
 .templateTile:active { cursor:grabbing; }
 .templateTile:is(:hover,:focus-visible) { border-color:var(--accent); background:color-mix(in srgb,var(--accent) 5%,var(--panel)); }
@@ -12,13 +11,10 @@
 .templateThumbnailNode { fill:color-mix(in srgb,var(--accent) 12%,var(--panel)); stroke:currentColor; stroke-width:1; }
 .templateThumbnailNode.is-slot { color:var(--muted); fill:var(--panel-2); stroke-dasharray:2 2; opacity:.6; }
 .templateModuleGlyph { fill:none; stroke:currentColor; stroke-width:2; }
-.templateEdit { position:absolute; top:3px; right:3px; max-width:calc(100% - 6px); border:1px solid var(--border); border-radius:5px; padding:3px 5px; background:var(--panel); color:var(--text); font-size:10px; opacity:0; cursor:pointer; }
-.templateCard:is(:hover,:focus-within) .templateEdit { opacity:1; }
-@media (hover:none) { .templateEdit { opacity:1; } }
-.templateToolboxMore { border-top:1px solid var(--border); padding-top:10px; }
-.templateToolboxMore > summary { cursor:pointer; font-size:13px; font-weight:600; }
-.templateToolboxRow { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-top:8px; font-size:12px; }
-.templateToolboxRow > span { min-width:0; overflow-wrap:anywhere; }
+.templateCarryPreview { position:fixed; width:100px; height:64px; z-index:10049; pointer-events:none; padding:5px; background:var(--panel); border:1px solid var(--accent); border-radius:8px; opacity:.85; }
+.templateCarryPreview[hidden] { display:none; }
+.templateCarryPreview .templateThumbnail { height:100%; }
+.templatePicking, .templatePicking * { cursor:copy !important; }
 .templateGlyph { position: relative; width: 43px; height: 43px; align-self: center; display: block; transition: transform 130ms ease; }
 .templatePigeon {
   width: 100%;
@@ -164,10 +160,6 @@
 .templateResidentSettings legend { padding: 0 6px; font-size: 12px; font-weight: 600; }
 .templateResidentSettings p { grid-column: 1 / -1; font-size: 12px; margin: 0; }
 .templateResidentSettings label { display: grid; gap: 7px; font-size: 12px; }
-.templateKindChoices { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
-.templateKindChoices button { padding: 20px 14px; display: grid; gap: 12px; text-align: left; border: 1px solid var(--border, #dbe2e8); border-radius: 8px; color: inherit; background: var(--panel, #fff); cursor: pointer; }
-.templateKindChoices button:hover { border-color: #8a79b7; }
-.templateKindChoices small { color: var(--muted, #64748b); line-height: 1.6; }
 @media (max-width: 780px) {
   .templateSurface { width: calc(100vw - 20px); max-height: calc(100dvh - 20px); }
   .templateDialogContent { padding: 14px; }
@@ -175,6 +167,6 @@
   .templatePreview { position: static; }
   .templateMetadata { grid-template-columns: minmax(0, 1fr) auto; }
   .templateMetadata > label:has([data-meta="category"]) { grid-column: 1 / -1; }
-  .templateResidentSettings, .templateKindChoices { grid-template-columns: 1fr; }
+  .templateResidentSettings { grid-template-columns: 1fr; }
   .templateForm .templateDialogFooter { padding: 12px; flex-wrap: wrap; }
 }

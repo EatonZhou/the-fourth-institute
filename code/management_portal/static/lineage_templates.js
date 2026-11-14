@@ -110,17 +110,7 @@
   // returns the shelf's controller; a part that calls a function of a part
   // created after it gets an arrow forwarding the call.
   function mount(config) {
-    const { shelf, canvas, request: execute, getContext, resolveTarget, toast } = config;
-    // Every creation path (new, copy, or selection) installs the result in the
-    // user's toolbox using the existing personal resource favorites service.
-    async function request(instruction, args) {
-      const result = await execute(instruction, args);
-      if (instruction === 'CreateTemplate' && !args?.dry_run && result.template?.template_id) {
-        try { await window.PortalResourceFavorites.set(result.template.template_id, true); }
-        catch (error) { toast(window.PortalI18n.text`模板已创建，但加入工具箱失败：${error.message || error}`, 'error'); }
-      }
-      return result;
-    }
+    const { shelf, canvas, request, getContext, resolveTarget, toast } = config;
     // The state the parts share: the templates and template kinds, whether
     // the shelf is destroyed, and the open editor and application dialogs.
     const templatesState = {

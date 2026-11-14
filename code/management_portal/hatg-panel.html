@@ -169,6 +169,8 @@
             </div>
           </aside>
           <svg class="hatgMinimap" data-portal-visualization="hatg-minimap" id="hatgMinimap" viewBox="0 0 100 100" preserveAspectRatio="none" role="img" aria-label="HATG 小地图；点击可移动视口" hidden data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;HATG 小地图；点击可移动视口&quot;}"></svg>
+          <div class="hatgCanvasCornerTools">
+          <button class="portalButton is-icon hatgToolboxToggle" id="hatgToolboxToggle" type="button" aria-label="工具箱" title="工具箱" aria-expanded="false" aria-controls="hatgToolbox" data-portal-i18n-attrs="{&quot;aria-label&quot;:&quot;工具箱&quot;,&quot;title&quot;:&quot;工具箱&quot;}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h16v12H4zM8 8V4h8v4M4 12h16M9 11v3m6-3v3"/></svg></button>
           <div class="graphLegend" id="collaborationGraphLegend" aria-label="HATG 协作关系图例" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;HATG 协作关系图例&quot;}">
             <span><i class="legendLine inheritance"></i><!--portal-i18n:"Fork 继承"-->Fork 继承</span>
             <span><i class="legendLine handoff"></i><!--portal-i18n:"Workspace Handoff"-->Workspace Handoff</span>
@@ -180,10 +182,10 @@
             <span><i class="legendLine program-route"></i><!--portal-i18n:"路由包"-->路由包</span>
             <span><i class="legendLine program-target"></i><!--portal-i18n:"动作目标"-->动作目标</span>
           </div>
+          </div>
           <div class="srOnly" id="graphSyncStatus" role="status" aria-live="polite"><!--portal-i18n:"等待选择 Lineage"-->等待选择 Lineage</div>
-          <button class="portalButton hatgToolboxToggle" id="hatgToolboxToggle" type="button" aria-expanded="false" aria-controls="hatgToolbox"><!--portal-i18n:"工具箱"-->工具箱</button>
           <aside class="hatgToolbox" id="hatgToolbox" aria-labelledby="hatgToolboxTitle" hidden>
-            <header class="hatgToolboxHeader"><h3 id="hatgToolboxTitle"><!--portal-i18n:"工具箱"-->工具箱</h3><button class="portalButton is-compact" id="hatgToolboxClose" type="button"><!--portal-i18n:"收起"-->收起</button></header>
+            <header class="hatgToolboxHeader"><h3 id="hatgToolboxTitle"><!--portal-i18n:"工具箱"-->工具箱</h3><div class="hatgToolboxHeaderActions"><span id="hatgToolboxStore"></span><button class="portalButton is-compact" id="hatgToolboxClose" type="button"><!--portal-i18n:"收起"-->收起</button></div></header>
             <div class="hatgToolboxBody">
               <section id="hatgFunctionLibrary" aria-label="模板" data-portal-i18n-attrs="{&quot;aria-label&quot;:&quot;模板&quot;}">
                 <div class="hatgToolboxActions"><button class="portalButton is-compact" id="addTemplateBtn" type="button"><!--portal-i18n:"新建模板"-->新建模板</button></div>

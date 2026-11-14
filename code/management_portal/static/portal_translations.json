@@ -27869,10 +27869,6 @@
     "en": "Perform Fork operation",
     "zh-CN": "执行 Fork 操作"
   },
-  "执行一次 Effect 脚本": {
-    "en": "Run an Effect script once",
-    "zh-CN": "执行一次 Effect 脚本"
-  },
   "执行关联": {
     "en": "Execution links",
     "zh-CN": "执行关联"
@@ -33989,10 +33985,6 @@
     "en": "The combined prompt exceeds {p0} characters; the truncated message will not be delivered",
     "zh-CN": "组合后的 prompt 超过 {p0} 字符，不投递截断的消息"
   },
-  "组合角色、组件与连线": {
-    "en": "Combine roles, components and wires",
-    "zh-CN": "组合角色、组件与连线"
-  },
   "终端": {
     "en": "Terminal",
     "zh-CN": "终端"
@@ -37080,10 +37072,6 @@
   "选择文件预览。": {
     "en": "Select a file to preview.",
     "zh-CN": "选择文件预览。"
-  },
-  "选择模板类型": {
-    "en": "Choose a template type",
-    "zh-CN": "选择模板类型"
   },
   "选择此条目": {
     "en": "Select this item",
@@ -42010,13 +41998,10 @@
   "拖到聊天输入框或 Resident 节点，填入草稿后编辑发送": {"zh-CN": "拖到聊天输入框或 Resident 节点，填入草稿后编辑发送", "en": "Drag onto the chat input or a Resident, then edit and send the draft"},
   "交办": {"zh-CN": "交办", "en": "Errands"},
   "还没有角色模板": {"zh-CN": "还没有角色模板", "en": "No role templates yet"},
-  "在工坊中打开": {"zh-CN": "在工坊中打开", "en": "Open in workshop"},
-  "更多模板": {"zh-CN": "更多模板", "en": "More templates"},
   "暂无模板": {"zh-CN": "暂无模板", "en": "No templates yet"},
-  "暂无更多模板": {"zh-CN": "暂无更多模板", "en": "No more templates"},
-  "加入工具箱": {"zh-CN": "加入工具箱", "en": "Add to toolbox"},
-  "移出工具箱": {"zh-CN": "移出工具箱", "en": "Remove from toolbox"},
-  "工具箱收藏读取失败": {"zh-CN": "工具箱收藏读取失败", "en": "Could not load toolbox favorites"},
-  "模板已创建，但加入工具箱失败：{p0}": {"zh-CN": "模板已创建，但加入工具箱失败：{p0}", "en": "Template created, but could not add it to the toolbox: {p0}"},
+  "商店": {"zh-CN": "商店", "en": "Store"},
+  "商店即将上线": {"zh-CN": "商店即将上线", "en": "Store coming soon"},
+  "新职责模板": {"zh-CN": "新职责模板", "en": "New duty template"},
+  "单击拿起，双击在工坊中打开；按 Escape 或右键取消": {"zh-CN": "单击拿起，双击在工坊中打开；按 Escape 或右键取消", "en": "Click to pick up, double-click to open in workshop; press Escape or right-click to cancel"},
   "{p0} · 拖到 {p1}": {"zh-CN": "{p0} · 拖到 {p1}", "en": "{p0} · Drag onto {p1}"}
 }
