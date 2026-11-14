@@ -12,7 +12,8 @@ from pathlib import Path
 from typing import Any, Callable
 from urllib.error import HTTPError, URLError
 from urllib.parse import quote, urlencode
-from urllib.request import Request, urlopen
+from urllib.request import Request
+from management_common.loopback_http import urlopen
 
 from .kimi_live_events import KimiLiveItems, KimiLiveStream
 from .native_agent_transport import NativeAgentDetached, NativeAgentUnavailable

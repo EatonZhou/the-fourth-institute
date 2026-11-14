@@ -63,7 +63,8 @@ def urlopen(request, *, timeout):
     timeouts cancellable. It runs only account observations, never model work.
     Credentials and response bytes travel through pipes, never argv or files.
     """
-    from urllib.request import urlopen as ordinary_open, Request
+    from urllib.request import Request
+    from management_common.loopback_http import urlopen as ordinary_open
     from urllib.error import HTTPError
     from urllib.response import addinfourl
     from io import BytesIO
@@ -115,7 +116,8 @@ def _http_main():
     import base64
     import json
     import sys
-    from urllib.request import Request, urlopen
+    from urllib.request import Request
+    from management_common.loopback_http import urlopen
     from urllib.error import HTTPError
     spec = json.load(sys.stdin)
     request = Request(spec["url"], data=base64.b64decode(spec["body"]) if spec["body"] is not None else None,
