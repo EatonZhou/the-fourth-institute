@@ -210,6 +210,7 @@
             lineageId: binding.lineageId,
             residentId: binding.residentId,
             programItemId: binding.programItemId,
+            functionBlockTab: binding.functionBlockTab,
             pageState: lineageStateController,
             waitForServiceReady: waitForInitialLineageReady,
             onLocationChange: syncHatgLocation,

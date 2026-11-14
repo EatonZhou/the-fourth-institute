@@ -87,7 +87,7 @@
 
     function itemHtml(item) {
       const action = item.dutyId
-        ? window.PortalI18n.html`<button class="portalButton is-compact" type="button" data-memory-duty="${esc(item.dutyId)}">在职责页编辑</button>`
+        ? window.PortalI18n.html`<button class="portalButton is-compact" type="button" data-memory-duty="${esc(item.dutyId)}">在职责页查看</button>`
         : item.harness
           ? window.PortalI18n.html`<button class="portalButton is-compact" type="button" data-memory-harness>在 Harness 中调整发送时机</button>`
           : "";

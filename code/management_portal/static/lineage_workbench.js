@@ -15,6 +15,7 @@
         chatroomId: initialChatroomIdFromUrl(),
         workspaceId: String(new URLSearchParams(window.location.search).get("workspace") || "").trim(),
         programItemId: initialProgramItemIdFromUrl(),
+        functionBlockTab: String(new URLSearchParams(window.location.search).get("function_block_tab") || "").trim(),
         view: String(new URLSearchParams(window.location.search).get("view") || "").trim(),
         openChat: initialOpenChatFromUrl(),
         messageId: String(new URLSearchParams(window.location.search).get("message") || "").trim(),
@@ -856,6 +857,7 @@
           : "";
         if (programItemId) {
           panelTarget.programItemId = programItemId;
+          if (openingNavigation.functionBlockTab === "objects") panelTarget.functionBlockTab = "objects";
         }
         if (target.revealInGraph === true) panelTarget.revealInGraph = true;
         const applied = panel.setTarget?.(panelTarget);
@@ -900,6 +902,7 @@
           ...(openingNavigation.lineageId ? { hatg: {
             lineageId: openingNavigation.lineageId, residentId: openingNavigation.residentId,
             programItemId: openingNavigation.programItemId,
+            functionBlockTab: openingNavigation.functionBlockTab,
           } } : {}),
         };
         const consoleLayout = split("horizontal", [

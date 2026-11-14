@@ -115,6 +115,7 @@
         lineageId: String(options.lineageId || ""),
         residentId: String(options.residentId || ""),
         programItemId: String(options.programItemId || ""),
+        functionBlockTab: options.functionBlockTab === "objects" ? "objects" : "",
       };
       let appliedTarget = null;
       let targetRequestSeq = 0;
@@ -278,6 +279,7 @@
               : String(state.lineage?.lineage_id === requestedLineageId
                 ? state.selectedProgramObjectId || pendingProgramItemId
                 : pendingProgramItemId),
+            functionBlockTab: next.functionBlockTab === "objects" ? "objects" : "",
           };
           target = requestedTarget;
           state.targetResidentId = requestedTarget.residentId;
@@ -310,19 +312,25 @@
               selectionHandledReveal = revealInGraph;
             }
             if (requestSeq !== targetRequestSeq) return target;
-            appliedTarget = { ...requestedTarget };
             if (revealInGraph && selectedTargetNode && !selectionHandledReveal) {
               await revealSelectedGraphNode(selectedTargetNode.id);
             }
-            return target;
+          } else if (requestedTarget.lineageId) {
+            await selectLineage(requestedTarget.lineageId, {
+              residentId: requestedTarget.residentId,
+              programItemId: requestedTarget.programItemId,
+              revealInGraph,
+            });
           }
-          if (requestedTarget.lineageId) await selectLineage(requestedTarget.lineageId, {
-            residentId: requestedTarget.residentId,
-            programItemId: requestedTarget.programItemId,
-            revealInGraph,
-          });
           if (requestSeq !== targetRequestSeq) return target;
-          if (requestSeq === targetRequestSeq) appliedTarget = { ...requestedTarget };
+          // Consume the menu request after the graph has loaded and selected the
+          // block. Ordinary refreshes and persisted panel state do not reopen it.
+          if (state.lineage?.lineage_id === requestedTarget.lineageId
+            && requestedTarget.programItemId && requestedTarget.functionBlockTab === "objects") {
+            openFunctionBlockMenu(requestedTarget.programItemId, "objects");
+          }
+          target = { ...requestedTarget, functionBlockTab: "" };
+          appliedTarget = { ...target };
           return target;
         },
         async editLineage(next = {}) {

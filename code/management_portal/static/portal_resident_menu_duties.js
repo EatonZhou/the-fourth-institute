@@ -5,10 +5,8 @@
 
   // The Duties tab (decision_13725a7900f6): one sentence per duty the Resident
   // holds, in its order. Expanding a duty lists the events, Effects and wires
-  // it added and its prompt with the memory level it sits in; a duty can be
-  // edited, moved up or down or removed, which deletes its Function Block and
-  // leaves the Resident and its other duties as they are. A duty of a prompt
-  // alone is added here (CreateDuty).
+  // it added and its prompt with the memory level it sits in. This is a viewing
+  // surface, with ordering and removal; details open the block's objects on HATG.
   // System duties are settings the platform runs for the Resident; their
   // column starts folded and links to where each is edited.
 
@@ -63,36 +61,34 @@
       });
     }
 
-    // A trigger-time prompt needs a wire in the duty that triggers its holder.
-    function triggersHolder(lineage, block) {
-      const wires = new Map((lineage.program?.wires || []).map(item => [item.id, item]));
-      return (block.elements || []).some(element => {
-        const wire = element.kind === "wire" ? wires.get(element.id) : null;
-        return wire && wire.target === block.duty.holder_id && wire.kind !== "watch";
-      });
+    function structureSummary(lineage, block) {
+      const components = new Map((lineage.program?.components || []).map(item => [item.id, item]));
+      const counts = {events: 0, effects: 0, wires: 0, others: 0};
+      for (const element of block.elements || []) {
+        const kind = element.kind === "component" ? components.get(element.id)?.kind : element.kind;
+        const key = kind === "event_source" ? "events" : kind === "effect" ? "effects" : kind === "wire" ? "wires" : "others";
+        counts[key] += 1;
+      }
+      return [
+        counts.events ? window.PortalI18n.text`${counts.events} 个事件` : "",
+        counts.effects ? window.PortalI18n.text`${counts.effects} 个 Effect` : "",
+        counts.wires ? window.PortalI18n.text`${counts.wires} 条连线` : "",
+        counts.others ? window.PortalI18n.text`${counts.others} 个其他元素` : "",
+      ].filter(Boolean).join(" · ") || t(block.duty.memory ? "仅含提示词" : "没有结构元素");
     }
 
-    function levelOptions(levels, selected) {
-      return levels.map(level => window.PortalI18n.html`<option value="${esc(level)}"${level === selected ? " selected" : ""}>${esc(t(MEMORY_LEVELS[level]))}</option>`).join("");
-    }
-
-    function memoryHtml(lineage, block, editing, busy) {
+    function memoryHtml(block) {
       const memory = block.duty.memory;
-      const levels = Object.keys(MEMORY_LEVELS).filter(level => level !== "trigger" || triggersHolder(lineage, block));
-      const shown = memory
+      return memory
         ? window.PortalI18n.html`<div class="residentMenuDutyMemory"><p class="paneNote">${esc(window.PortalI18n.text`提示词 · ${t(MEMORY_LEVELS[memory.level] || memory.level)}`)}</p><pre class="residentMenuDutyPrompt">${esc(memory.prompt)}</pre></div>`
         : window.PortalI18n.html`<p class="paneNote">这条职责没有提示词。</p>`;
-      if (!editing) return shown;
-      const disabled = busy ? " disabled" : "";
-      return window.PortalI18n.html`<form class="residentMenuDutyForm" data-duty-edit>
-        <label>一句话描述<input name="description" maxlength="280" value="${esc(block.duty.description || "")}" required></label>
-        <label>提示词<textarea name="prompt" rows="5" maxlength="20000">${esc(memory?.prompt || "")}</textarea></label>
-        <label>记忆层级<select name="memory_level">${levelOptions(levels, memory?.level || (levels.includes("trigger") ? "trigger" : "session"))}</select></label>
-        <div class="residentMenuDutyActions">
-          <button class="portalButton is-compact is-primary" type="submit"${disabled}>保存</button>
-          <button class="portalButton is-compact" type="button" data-duty-edit-cancel>取消</button>
-        </div>
-      </form>`;
+    }
+
+    // Replace this transition with the workshop's duty editor when it is ready.
+    // The URL also works from Chat and pages that have no mounted HATG panel.
+    function openDutyDetails(lineageId, functionBlockId) {
+      const params = new URLSearchParams({lineage: lineageId, view: "hatg", program_item: functionBlockId, function_block_tab: "objects"});
+      return window.PortalNav.openPage(`/lineage?${params}`);
     }
 
     function dutyHtml(lineage, block, index, count, context) {
@@ -100,35 +96,22 @@
       const rows = elementRows(lineage, block);
       const busy = context.dutiesBusy;
       const disabled = busy ? " disabled" : "";
-      const editing = context.dutiesEditing === block.id;
       return window.PortalI18n.html`<li class="residentMenuDuty" data-duty-id="${esc(block.id)}">
         <details>
-          <summary><span class="residentMenuDutyText">${esc(duty.description || block.title)}</span><span class="residentMenuDutyCategory">${esc(t(CATEGORY_LABELS[duty.category] || duty.category))}</span></summary>
+          <summary><span class="residentMenuDutyIndex">${index + 1}.</span><span class="residentMenuDutyText">${esc(duty.description || block.title)}</span><span class="residentMenuDutyCategory">${esc(t(CATEGORY_LABELS[duty.category] || duty.category))}</span><span class="residentMenuDutyStructure">${esc(structureSummary(lineage, block))}</span></summary>
           <div class="residentMenuDutyBody">
             <p class="paneNote">${esc(window.PortalI18n.text`来自：${block.title}`)}</p>
             ${rows.length ? window.PortalI18n.html`<dl class="residentMenuDutyElements">${rows.map(([kind, title]) => window.PortalI18n.html`<div><dt>${esc(kind)}</dt><dd>${esc(title)}</dd></div>`).join("")}</dl>` : ""}
-            ${memoryHtml(lineage, block, editing, busy)}
-            ${editing ? "" : window.PortalI18n.html`<div class="residentMenuDutyActions">
-              <button class="portalButton is-compact" type="button" data-duty-edit-open${disabled}>编辑</button>
+            ${memoryHtml(block)}
+            <div class="residentMenuDutyActions">
+              <button class="portalButton is-compact" type="button" data-duty-open-details${disabled}>打开详情</button>
               <button class="portalButton is-compact" type="button" data-duty-move="-1"${index === 0 ? " disabled" : disabled}>上移</button>
               <button class="portalButton is-compact" type="button" data-duty-move="1"${index === count - 1 ? " disabled" : disabled}>下移</button>
               <button class="portalButton is-compact is-danger" type="button" data-duty-remove${duty.category === "fixed" ? " disabled" : disabled}>撤下</button>
-            </div>`}
+            </div>
           </div>
         </details>
       </li>`;
-    }
-
-    function createHtml(busy) {
-      const disabled = busy ? " disabled" : "";
-      return window.PortalI18n.html`<details class="residentMenuDutyAdd"><summary>添加只含提示词的职责</summary>
-        <form class="residentMenuDutyForm" data-duty-create>
-          <label>一句话描述<input name="description" maxlength="280" required></label>
-          <label>提示词<textarea name="prompt" rows="5" maxlength="20000" required></textarea></label>
-          <label>记忆层级<select name="memory_level">${levelOptions(["session", "turn", "on_demand"], "session")}</select></label>
-          <div class="residentMenuDutyActions"><button class="portalButton is-compact is-primary" type="submit"${disabled}>添加</button></div>
-        </form>
-      </details>`;
     }
 
     function quotaHtml(settings) {
@@ -146,19 +129,15 @@
       const held = heldDuties(context.dutiesLineage, context.residentId);
       const open = new Set([...root.querySelectorAll(".residentMenuDuty details[open]")].map(item => item.closest("[data-duty-id]")?.dataset.dutyId));
       if (context.dutiesFocus) { open.add(context.dutiesFocus); context.dutiesFocus = ""; }
-      if (context.dutiesEditing) open.add(context.dutiesEditing);
       const systemOpen = root.querySelector(".residentMenuSystemDuties")?.open || false;
-      const addOpen = root.querySelector(".residentMenuDutyAdd")?.open || false;
-      root.innerHTML = window.PortalI18n.html`<p class="paneNote">每条职责一句话；展开可看到它连接的事件、Effect、连线和提示词。把模板施加到这个 Resident 上可增加带事件的职责，也可以在下面添加只含提示词的职责。</p>`
+      root.innerHTML = window.PortalI18n.html`<p class="paneNote">每条职责一行；展开可查看结构和提示词，打开详情可查看职责的内部对象。</p>`
         + (held.length
           ? window.PortalI18n.html`<ol class="residentMenuDuties">${held.map((block, index) => dutyHtml(context.dutiesLineage, block, index, held.length, context)).join("")}</ol>`
           : window.PortalI18n.html`<p class="residentMenuJournalMeta">还没有职责。</p>`)
-        + createHtml(context.dutiesBusy)
         + window.PortalI18n.html`<details class="residentMenuSystemDuties"${systemOpen ? " open" : ""}><summary>系统职责</summary><ol class="residentMenuDuties">${quotaHtml(context.dutiesSettings)}</ol></details>`;
       root.querySelectorAll("[data-duty-id]").forEach(item => {
         if (open.has(item.dataset.dutyId)) item.querySelector("details").open = true;
       });
-      if (addOpen) root.querySelector(".residentMenuDutyAdd").open = true;
     }
 
     // Another page (Memory) opens one duty here.
@@ -197,15 +176,13 @@
       render(context);
     }
 
-    // Returns whether the operation succeeded; the list is read again either way.
+    // Read the list again after ordering or removal, including failures.
     async function mutate(context, operation, message) {
-      if (context.dutiesBusy) return false;
+      if (context.dutiesBusy) return;
       context.dutiesBusy = true;
       root().querySelectorAll("button").forEach(button => { button.disabled = true; });
-      let succeeded = false;
       try {
         await operation();
-        succeeded = true;
         toast(message, "success");
         await changed({type: "duties", residentId: context.residentId, lineageId: menuState.lineage?.lineage_id});
       } catch (error) {
@@ -214,7 +191,6 @@
         if (menuState.nodeMenuContext === context) context.dutiesBusy = false;
       }
       if (menuState.nodeMenuContext === context) await loadNodeDuties();
-      return succeeded;
     }
 
     async function onClick(event) {
@@ -228,9 +204,8 @@
       const held = heldDuties(context.dutiesLineage, context.residentId);
       const block = held.find(entry => entry.id === item.dataset.dutyId);
       if (!block) return;
-      if (button.hasAttribute("data-duty-edit-open") || button.hasAttribute("data-duty-edit-cancel")) {
-        context.dutiesEditing = button.hasAttribute("data-duty-edit-open") ? block.id : "";
-        render(context);
+      if (button.hasAttribute("data-duty-open-details")) {
+        await openDutyDetails(lineageId, block.id);
         return;
       }
       if (button.hasAttribute("data-duty-move")) {
@@ -256,46 +231,8 @@
       }
     }
 
-    async function onSubmit(event) {
-      const form = event.target.closest("form[data-duty-edit], form[data-duty-create]");
-      if (!form) return;
-      event.preventDefault();
-      const context = menuState.nodeMenuContext;
-      if (!context?.dutiesLineage) return;
-      const lineageId = context.dutiesLineage.lineage_id;
-      const fields = {
-        description: form.elements.description.value.trim(),
-        prompt: form.elements.prompt.value.trim(),
-        memory_level: form.elements.memory_level.value,
-      };
-      // A failed save keeps what was typed.
-      const restore = selector => {
-        const again = root().querySelector(selector);
-        if (!again) return;
-        for (const [name, value] of Object.entries(fields)) again.elements[name].value = value;
-        again.closest("details").open = true;
-      };
-      if (form.hasAttribute("data-duty-create")) {
-        const created = await mutate(context, () => window.PortalInstructionClient.execute("CreateDuty", {
-          lineage_id: lineageId, holder_id: context.residentId, ...fields,
-        }), t("职责已添加。"));
-        if (!created) restore("form[data-duty-create]");
-        return;
-      }
-      const functionBlockId = form.closest("[data-duty-id]")?.dataset.dutyId;
-      if (!functionBlockId) return;
-      const saved = await mutate(context, async () => {
-        await window.PortalInstructionClient.execute("UpdateDuty", {lineage_id: lineageId, function_block_id: functionBlockId, ...fields});
-        context.dutiesEditing = "";
-      }, t("职责已保存。"));
-      if (!saved) restore("form[data-duty-edit]");
-    }
-
     $id("nodeDutiesRows").addEventListener("click", event => {
       void onClick(event).catch(error => toast(error.message || String(error), "error"));
-    });
-    $id("nodeDutiesRows").addEventListener("submit", event => {
-      void onSubmit(event).catch(error => toast(error.message || String(error), "error"));
     });
 
     return {

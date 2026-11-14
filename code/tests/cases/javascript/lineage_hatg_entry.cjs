@@ -3,6 +3,8 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
+const parser = require('@babel/parser');
+const traverse = require('@babel/traverse').default;
 const {readHatgModule, createHatgModule} = require('./hatg_modules.cjs');
 const {workbenchSources} = require('./lineage_workbench_modules.cjs');
 
@@ -105,6 +107,74 @@ test('explicit canvas entry expands a restored collapsed panel', async () => {
   await page.open();
   assert.equal(page.layout.collapsed.has('hatg'), false);
   assert.equal(page.layout.active, 'hatg');
+});
+
+test('duty details URL carries the objects tab with its captured block target', async () => {
+  const page = entry(`?lineage=${lineageId}&view=hatg&program_item=${familyId}&function_block_tab=objects`, {delayed: true});
+  page.context.window.location.search = '?lineage=lineage_other';
+  const opened = page.open();
+  assert.equal(page.targets[0].functionBlockTab, 'objects');
+  assert.equal(page.targets[0].programItemId, familyId);
+  page.release();
+  await opened;
+});
+
+// Exercise the production panel target method, including its initial deferred
+// target and navigation guards, without loading a browser or the whole canvas.
+function dutyDetailsPanel({hydrated = true, displayed = true, delayed = false} = {}) {
+  let method;
+  traverse(parser.parse(hatgSource), {ObjectMethod(path) {
+    if (path.node.key.name === 'setTarget') method = hatgSource.slice(path.node.start, path.node.end);
+  }});
+  assert.ok(method);
+  const menus = [], selections = [];
+  let release;
+  const ready = delayed ? new Promise(resolve => {release = resolve;}) : Promise.resolve();
+  const state = {lineage: displayed ? {lineage_id: lineageId} : null, detailSeq: 0};
+  const context = vm.createContext({
+    state, lineageCatalogHydrated: hydrated,
+    currentNode: () => null, resumeDisplayedLineage: noop, nodeResidentId: node => node.id,
+    revealSelectedGraphNode: async () => {},
+    selectProgramObject: async id => {await ready; selections.push(id);},
+    selectLineage: async (id, options) => {
+      await ready;
+      state.lineage = {lineage_id: id};
+      selections.push(options.programItemId);
+    },
+    openFunctionBlockMenu: (id, tab) => menus.push([id, tab]),
+  });
+  vm.runInContext(`let target = {}; let appliedTarget = null; let targetRequestSeq = 0;
+    const controller = ({${method}}); globalThis.panel = controller;`, context);
+  return {context, menus, selections, release,
+    set: target => context.panel.setTarget(target),
+    target: () => vm.runInContext('target', context)};
+}
+
+for (const displayed of [true, false]) {
+  test(`duty details wait for ${displayed ? 'selection' : 'lineage loading'} and open the exact block once`, async () => {
+    const panel = dutyDetailsPanel({displayed, delayed: true});
+    const opened = panel.set({lineageId, programItemId: familyId, functionBlockTab: 'objects'});
+    assert.deepEqual(panel.menus, []);
+    panel.release();
+    await opened;
+    assert.deepEqual(panel.selections, [familyId]);
+    assert.deepEqual(panel.menus, [[familyId, 'objects']]);
+    await panel.set(panel.target());
+    assert.deepEqual(panel.menus, [[familyId, 'objects']], 'refresh does not reopen the menu');
+  });
+}
+
+test('duty details survive initial loading and ignore a superseded request', async () => {
+  const panel = dutyDetailsPanel({hydrated: false, delayed: true});
+  await panel.set({lineageId, programItemId: familyId, functionBlockTab: 'objects'});
+  assert.deepEqual(panel.menus, []);
+  assert.equal(panel.target().functionBlockTab, 'objects');
+  panel.context.lineageCatalogHydrated = true;
+  const opened = panel.set(panel.target());
+  await panel.set({lineageId, programItemId: ''});
+  panel.release();
+  await opened;
+  assert.deepEqual(panel.menus, [], 'stale navigation cannot open a menu over the newer target');
 });
 
 for (const objectId of [componentId, familyId]) {

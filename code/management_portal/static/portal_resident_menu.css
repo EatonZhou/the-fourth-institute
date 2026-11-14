@@ -484,6 +484,8 @@
 .residentMenuDuty summary { display:flex; gap:8px; align-items:baseline; cursor:pointer; }
 .residentMenuDutyText { flex:1 1 auto; min-width:0; }
 .residentMenuDutyCategory { flex:none; color:var(--muted); font-size:12px; }
+.residentMenuDutyIndex { flex:none; color:var(--muted); }
+.residentMenuDutyStructure { color:var(--muted); font-size:12px; }
 .residentMenuDutyBody { margin-top:8px; display:grid; gap:8px; }
 .residentMenuDutyBody .paneNote { margin:0; }
 .residentMenuDutyElements { margin:0; display:grid; gap:2px; font-size:12px; }
@@ -495,10 +497,6 @@
 .residentMenuSystemDuties > summary { cursor:pointer; color:var(--muted); font-size:13px; margin-bottom:6px; }
 .residentMenuDutyMemory { display:grid; gap:4px; }
 .residentMenuDutyPrompt { margin:0; max-height:16em; overflow:auto; white-space:pre-wrap; overflow-wrap:anywhere; font:inherit; font-size:12px; padding:6px 8px; border-radius:6px; background:var(--bg); border:1px solid var(--border); }
-.residentMenuDutyForm { display:grid; gap:8px; font-size:13px; }
-.residentMenuDutyForm textarea { resize:vertical; min-height:5em; font:inherit; }
-.residentMenuDutyAdd { margin:0 0 12px; }
-.residentMenuDutyAdd > summary { cursor:pointer; font-size:13px; margin-bottom:6px; }
 .residentMenuMemoryLevel { margin:0 0 14px; }
 .residentMenuMemoryLevel > h3 { margin:0 0 2px; font-size:14px; display:flex; gap:8px; align-items:baseline; }
 .residentMenuMemoryLevel > .paneNote { margin:0 0 6px; }

@@ -9,22 +9,21 @@ function duty(id,position,description,elements=[]){
 
 function fixture(){
  const dom=new JSDOM('<div id="nodeDutiesRows"></div>',{runScripts:'outside-only'}),w=dom.window;
- const calls=[],changes=[],tabs=[];
+ const calls=[],changes=[],tabs=[],pages=[];
  let lineage={lineage_id:'lineage_1',nodes:[{id:'resident_a',title:'A'}],
-  program:{components:[{id:'event_1',kind:'event_source',title:'目标完成一轮'}],wires:[{id:'wire_1',kind:'route',source:'event_1',target:'resident_a',config:{invoke_profiles:{agent:{arguments:{prompt:{concat:[{value:'检查目标'},{from:'event.payload.prompt'}],separator:'\n\n'}}}}}}]},
-  function_blocks:[duty('fbi_b',1,'第二条'),duty('fbi_a',0,'第一条',[{id:'event_1',kind:'component'},{id:'wire_1',kind:'wire'}]),
+  program:{components:[{id:'event_1',kind:'event_source',title:'目标完成一轮'},{id:'event_2',kind:'event_source',title:'定时检查'},{id:'effect_1',kind:'effect',title:'检查记录'},{id:'effect_other',kind:'effect',title:'其他职责的 Effect'}],wires:[{id:'wire_1',kind:'route',source:'event_1',target:'resident_a',config:{invoke_profiles:{agent:{arguments:{prompt:{concat:[{value:'检查目标'},{from:'event.payload.prompt'}],separator:'\n\n'}}}}}},{id:'wire_2',kind:'route',source:'event_2',target:'effect_1'},{id:'wire_3',kind:'route',source:'effect_1',target:'resident_a'}]},
+  function_blocks:[duty('fbi_b',1,'第二条'),duty('fbi_a',0,'第一条',[{id:'event_1',kind:'component'},{id:'event_2',kind:'component'},{id:'effect_1',kind:'component'},{id:'wire_1',kind:'wire'},{id:'wire_2',kind:'wire'},{id:'wire_3',kind:'wire'}]),
    {id:'fbi_c',title:'别人',elements:[],duty:{holder_id:'resident_b',description:'别人的',category:'custom',position:0,parameters:{}}}]};
  const tag=(parts,...values)=>parts.reduce((s,p,i)=>s+p+(values[i]??''),'');
  w.PortalI18n={t:String,html:tag,text:tag};
  w.PortalUI={confirm:async()=>true};
+ w.PortalNav={openPage:async url=>{pages.push(url);}};
  w.PortalInstructionClient={execute:async(name,args)=>{
   calls.push([name,args]);
   if(name==='GetLineage')return {lineage:JSON.parse(JSON.stringify(lineage))};
   if(name==='GetResidentSettings')return {quota_switch:{auto_switch_on_quota:true}};
   if(name==='OrderDuties'){args.function_block_ids.forEach((id,i)=>{lineage.function_blocks.find(b=>b.id===id).duty.position=i;});return {function_block_ids:args.function_block_ids};}
   if(name==='DeleteFunctionBlock'){lineage={...lineage,function_blocks:lineage.function_blocks.filter(b=>b.id!==args.function_block_id)};return {};}
-  if(name==='UpdateDuty'){const b=lineage.function_blocks.find(b=>b.id===args.function_block_id);b.duty={...b.duty,description:args.description,memory:{level:args.memory_level,prompt:args.prompt}};return {function_block:b};}
-  if(name==='CreateDuty'){if(args.prompt==='失败')throw Error('不行');const b={id:'fbi_new',title:args.description,elements:[],duty:{holder_id:args.holder_id,description:args.description,category:'custom',position:9,parameters:{},memory:{level:args.memory_level,prompt:args.prompt}}};lineage.function_blocks.push(b);return {function_block:b};}
   if(name==='PreviewPromptInjection')return {parts:[
    {id:'core_rules',label:'Portal 核心规则',timing:'session_start_and_after_compaction',content:'规则正文'},
    {id:'runtime_identity',label:'运行身份',timing:'every_turn',content:'resident_id: resident_a'},
@@ -34,13 +33,13 @@ function fixture(){
  }};
  w.eval(fs.readFileSync(path.resolve(__dirname,'../../../management_portal/static/portal_resident_menu_duties.js'),'utf8'));
  const state={lineage:{lineage_id:'lineage_1'},nodeMenuContext:{residentId:'resident_a'}};
- const part=w.PortalResidentMenuDuties.createDuties({$id:id=>w.document.getElementById(id),esc:String,menuState:state,
-  changed:async detail=>{changes.push(detail);},switchNodeSettingsTab:async tab=>{tabs.push(tab);},toast(){}});
+ const esc=value=>String(value??'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;');
+ const part=w.PortalResidentMenuDuties.createDuties({$id:id=>w.document.getElementById(id),esc,menuState:state,
+  changed:async detail=>{changes.push(detail);},switchNodeSettingsTab:async tab=>{tabs.push(tab);if(tab==='duties')await part.loadNodeDuties();},toast(){}});
  const root=w.document.getElementById('nodeDutiesRows');
  const items=()=>[...root.querySelectorAll('[data-duty-id]')].map(item=>item.dataset.dutyId);
  const click=async el=>{el.dispatchEvent(new w.MouseEvent('click',{bubbles:true}));await tick();};
- const submit=async form=>{form.dispatchEvent(new w.Event('submit',{bubbles:true,cancelable:true}));await tick();};
- return {w,dom,calls,changes,tabs,root,items,click,submit,part,state,load:()=>part.loadNodeDuties()};
+ return {w,dom,calls,changes,tabs,pages,root,items,click,part,state,load:()=>part.loadNodeDuties()};
 }
 
 test('lists only the Resident\'s duties in order, with what each one connects',async()=>{
@@ -48,6 +47,9 @@ test('lists only the Resident\'s duties in order, with what each one connects',a
  assert.deepEqual(f.items(),['fbi_a','fbi_b']);
  assert.match(f.root.textContent,/第一条/);assert.doesNotMatch(f.root.textContent,/别人的/);
  const first=f.root.querySelector('[data-duty-id="fbi_a"]');
+ assert.equal(first.querySelector('.residentMenuDutyIndex').textContent,'1.');
+ assert.equal(first.querySelector('.residentMenuDutyStructure').textContent,'2 个事件 · 1 个 Effect · 3 条连线');
+ assert.equal(f.root.querySelector('[data-duty-id="fbi_b"] .residentMenuDutyStructure').textContent,'没有结构元素');
  assert.match(first.textContent,/目标完成一轮/);assert.match(first.textContent,/目标完成一轮 → A/);
  assert.equal(first.querySelector('[data-duty-move="-1"]').disabled,true);
  const system=f.root.querySelector('.residentMenuSystemDuties');
@@ -70,32 +72,36 @@ test('moving and removing a duty go through OrderDuties and DeleteFunctionBlock'
  f.dom.window.close();
 });
 
-test('a duty\'s prompt is edited in place and a prompt duty is added with its level',async()=>{
+test('expanded duties show read-only prompts and levels with no editing or creation controls',async()=>{
  const f=fixture();await f.load();
- const plain=value=>JSON.parse(JSON.stringify(value));
- const levels=id=>[...f.root.querySelector(`[data-duty-id="${id}"] select`).options].map(o=>o.value);
- await f.click(f.root.querySelector('[data-duty-id="fbi_a"] [data-duty-edit-open]'));
- assert.deepEqual(levels('fbi_a'),['trigger','turn','session','on_demand'],'its wire triggers the holder');
- const form=f.root.querySelector('[data-duty-id="fbi_a"] form[data-duty-edit]');
- form.elements.prompt.value='  先读记录  ';form.elements.memory_level.value='session';
- await f.submit(form);
- assert.deepEqual(plain(f.calls.find(c=>c[0]==='UpdateDuty')[1]),{lineage_id:'lineage_1',function_block_id:'fbi_a',description:'第一条',prompt:'先读记录',memory_level:'session'});
- const first=f.root.querySelector('[data-duty-id="fbi_a"]');
- assert.equal(first.querySelector('details').open,true);assert.equal(first.querySelector('form'),null);
- assert.match(first.textContent,/提示词 · 会话开始和压缩后/);assert.match(first.textContent,/先读记录/);
- await f.click(f.root.querySelector('[data-duty-id="fbi_b"] [data-duty-edit-open]'));
- assert.deepEqual(levels('fbi_b'),['turn','session','on_demand'],'no wire, no trigger-time prompt');
+ const execute=f.w.PortalInstructionClient.execute;
+ f.w.PortalInstructionClient.execute=async(name,args)=>{
+  const result=await execute(name,args);
+  if(name==='GetLineage')result.lineage.function_blocks.find(b=>b.id==='fbi_b').duty.memory={level:'session',prompt:'先读记录\n<script>正文</script>'};
+  return result;
+ };
+ await f.load();
+ await f.part.focusNodeDuty('fbi_b');
+ const first=f.root.querySelector('[data-duty-id="fbi_b"]');
+ assert.equal(first.querySelector('details').open,true);
+ assert.match(first.textContent,/提示词 · 会话开始和压缩后/);
+ assert.equal(first.querySelector('pre').textContent,'先读记录\n<script>正文</script>');
+ assert.equal(first.querySelector('script'),null);
+ assert.equal(first.querySelector('.residentMenuDutyStructure').textContent,'仅含提示词');
+ assert.match(f.root.querySelector('[data-duty-id="fbi_a"]').textContent,/这条职责没有提示词/);
+ assert.equal(f.root.querySelector('form, input, textarea, select, [contenteditable], [data-duty-edit-open], .residentMenuDutyAdd'),null);
+ assert.equal(f.calls.some(([name])=>['CreateDuty','UpdateDuty'].includes(name)),false);
+ f.dom.window.close();
+});
 
- const create=f.root.querySelector('form[data-duty-create]');
- create.elements.description.value='失败的';create.elements.prompt.value='失败';create.elements.memory_level.value='turn';
- await f.submit(create);
- const kept=f.root.querySelector('form[data-duty-create]');
- assert.equal(kept.elements.prompt.value,'失败','a failed add keeps what was typed');
- assert.equal(kept.closest('details').open,true);
- kept.elements.prompt.value='回复用中文';
- await f.submit(kept);
- assert.deepEqual(plain(f.calls.filter(c=>c[0]==='CreateDuty').at(-1)[1]),{lineage_id:'lineage_1',holder_id:'resident_a',description:'失败的',prompt:'回复用中文',memory_level:'turn'});
- assert.deepEqual(f.items(),['fbi_a','fbi_b','fbi_new']);
+test('open details uses the HATG transition with the exact lineage, block and objects tab',async()=>{
+ const f=fixture();await f.load();
+ await f.click(f.root.querySelector('[data-duty-id="fbi_a"] [data-duty-open-details]'));
+ const url=new URL(f.pages[0],'https://portal.example');
+ assert.equal(url.pathname,'/lineage');
+ assert.deepEqual(Object.fromEntries(url.searchParams),{lineage:'lineage_1',view:'hatg',program_item:'fbi_a',function_block_tab:'objects'});
+ assert.deepEqual(f.changes,[]);
+ assert.equal(f.calls.some(([name])=>!['GetLineage','GetResidentSettings'].includes(name)),false);
  f.dom.window.close();
 });
 
@@ -120,6 +126,8 @@ test('the Memory tab lists what enters the context by level and opens duties',as
  assert.match(level('turn').textContent,/运行身份/);assert.doesNotMatch(level('turn').textContent,/职责约束/);
  assert.match(level('session').textContent,/Portal 核心规则/);assert.match(level('session').textContent,/职责清单（平台生成/);
  assert.match(level('on_demand').textContent,/长流程/);
+ assert.match(level('on_demand').textContent,/在职责页查看/);
+ assert.equal(f.w.document.getElementById('nodeMemoryRows').querySelector('form, input, textarea, select, [contenteditable]'),null);
  await f.click(level('on_demand').querySelector('[data-memory-duty]'));assert.deepEqual(focused,['fbi_b']);
  await f.click(level('session').querySelector('[data-memory-harness]'));assert.deepEqual(tabs,['harness']);
  assert.deepEqual(f.calls.map(c=>c[0]),['PreviewPromptInjection']);
