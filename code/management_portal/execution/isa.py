@@ -61,7 +61,7 @@ def _registry():
     return AIProviderRegistry()
 
 
-def _public_api(item: dict[str, Any], version: int) -> dict[str, Any]:
+def _public_api(item: dict[str, Any], version: int, *, routes=None) -> dict[str, Any]:
     result: dict[str, Any] = {"api_id": str(item.get("id") or "")}
     for public, stored in MODEL_API_FIELDS.items():
         if stored in item:
@@ -73,7 +73,8 @@ def _public_api(item: dict[str, Any], version: int) -> dict[str, Any]:
     result["harness_protocols"] = [name for name in DECLARED_PROTOCOL_OPTIONS if name in offered]
     result["compatible_harness_protocols"] = AIProviderRegistry.compatible_harness_protocols(item)
     result["harness_parameter_contracts"] = AIProviderRegistry.harness_parameter_contracts(item)
-    routes = model_api_store.route_bindings(result["api_id"])
+    if routes is None:
+        routes = model_api_store.route_bindings(result["api_id"])
     if routes:
         result["routes"] = routes
     return result
@@ -177,7 +178,9 @@ def _validate_models(models: Any) -> None:
 
 
 def list_model_apis(inv: Invocation) -> dict[str, Any]:
-    return {"apis": [_public_api(item, version) for item, version in model_api_store.apis()]}
+    entries = model_api_store.apis()
+    routes = model_api_store.route_bindings_many(item["id"] for item, _version in entries)
+    return {"apis": [_public_api(item, version, routes=routes[item["id"]]) for item, version in entries]}
 
 
 def _saved_api_accounts(item, actor):

@@ -178,6 +178,31 @@
       return window.PortalI18n.html`<dl class="account-details-metrics" data-account-credits title="${esc(title)}"><div><dt>Credits</dt><dd>${esc(value)}${stale && (known || credits.unlimited) ? "*" : ""}</dd></div></dl>`;
     }
 
+    function accountSubscriptionHtml(account) {
+      if (account?.kind !== "subscription_login") return "";
+      const t = window.PortalI18n.t;
+      const subscription = account.subscription || {};
+      const tier = subscription.tier || {};
+      const stale = subscription.stale || (subscription.observed_at && Date.now() / 1000 - subscription.observed_at > 86400);
+      const tierTitle = [subscription.source, subscription.observed_at && formatDateTime(subscription.observed_at * 1000),
+        stale && t("数据已过期，数值为上次采样")].filter(Boolean).join(" · ");
+      const cards = account.refresh_cards || {};
+      const count = Number.isInteger(cards.available_count) ? cards.available_count : "—";
+      const date = value => value == null ? t("未提供") : formatDateTime(typeof value === "number" ? value * 1000 : value);
+      const lines = (cards.cards || []).map(card => [card.title || t("刷新卡"), card.status,
+        `${t("发放时间")}: ${date(card.grantedAt)}`, `${t("有效期至")}: ${date(card.expiresAt)}`,
+        card.description, card.resetType].filter(Boolean).join(" · "));
+      if (!Array.isArray(cards.cards)) lines.push(t("上游未提供刷新卡明细"));
+      if (Array.isArray(cards.cards) && cards.cards.length < (cards.available_count || 0)) lines.push(t("上游仅返回部分刷新卡明细"));
+      if (cards.observed_at) lines.push(`${t("采样时间")}: ${date(cards.observed_at)}`);
+      const cardsStale = cards.stale || account.status === "unavailable";
+      if (cardsStale) lines.push(t("数据已过期，数值为上次采样"));
+      return window.PortalI18n.html`<dl class="account-details-metrics" data-account-subscription>
+        <div><dt>套餐档位</dt><dd data-account-tier title="${esc(tierTitle)}">${esc(tier.name || tier.id || "—")}${stale ? "*" : ""}</dd></div>
+        ${account.provider === "codex" ? window.PortalI18n.html`<div><dt>刷新卡次数</dt><dd data-account-refresh-cards tabindex="0" title="${esc(lines.join("\n"))}">${esc(count)}${cardsStale && count !== "—" ? "*" : ""}</dd></div>` : ""}
+      </dl>`;
+    }
+
     function accountRows(accounts) {
       const subscriptions = [], apis = [];
       for (const account of accounts) {
@@ -616,7 +641,7 @@
       if (focusedThreshold) details.thresholdFocus = {id: focusedThreshold, name: focusedName, tag: focusedControl};
       else if (focusedElement && focusedElement !== document.body) details.thresholdFocus = null;
       details.panel.innerHTML = window.PortalI18n.html`<header><strong>${esc(details.accountId)} · ${window.PortalI18n.t("详情")}</strong><button class="portalButton is-compact" type="button" data-account-action="close" aria-label="关闭账号详情">×</button></header>
-    <div class="account-details-body">${accountQuotaWarning(account, true)}${accountCreditsHtml(account)}${accountConcurrencyHtml(account)}${accountThresholdHtml(account)}${accountIntervalHtml(account)}${body}${details.error ? window.PortalI18n.html`<p role="alert">${esc(details.error)}</p>` : ""}${details.result ? window.PortalI18n.html`<p role="status" data-account-result>${esc(details.result)}</p>` : ""}</div>
+    <div class="account-details-body">${accountQuotaWarning(account, true)}${accountSubscriptionHtml(account)}${accountCreditsHtml(account)}${accountConcurrencyHtml(account)}${accountThresholdHtml(account)}${accountIntervalHtml(account)}${body}${details.error ? window.PortalI18n.html`<p role="alert">${esc(details.error)}</p>` : ""}${details.result ? window.PortalI18n.html`<p role="status" data-account-result>${esc(details.result)}</p>` : ""}</div>
     <footer><div class="account-details-actions"><button class="portalButton is-compact" type="button" data-account-action="refresh" ${details.loading || busy ? "disabled" : ""}>刷新</button>
       ${billingUrl ? window.PortalI18n.html`<a class="portalButton is-compact" data-account-action="billing" href="${esc(billingUrl)}" title="${esc(billingUrl)}" target="_blank" rel="noopener noreferrer">充值 / 账单</a>` : ""}
       </div>

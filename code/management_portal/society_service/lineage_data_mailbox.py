@@ -153,7 +153,13 @@ def sync_mailbox_queue(connection: Any, resident_id: str, queue: object) -> None
             "ON CONFLICT (resident_id, message_id) DO UPDATE SET place = excluded.place, "
             "position = excluded.position, group_id = excluded.group_id, updated_at = excluded.updated_at, "
             "item_json = excluded.item_json, message_json = CASE WHEN resident_mailbox.message_json = '{}' "
-            "THEN excluded.message_json ELSE resident_mailbox.message_json END",
+            "THEN excluded.message_json ELSE resident_mailbox.message_json END "
+            # Job progress republishes the same waiting queue. Keep its row
+            # versions and updated_at until ordering, membership or item data
+            # actually changes; the existing FOR UPDATE serialization stays.
+            "WHERE (resident_mailbox.place, resident_mailbox.position, resident_mailbox.group_id, resident_mailbox.item_json) "
+            "IS DISTINCT FROM (excluded.place, excluded.position, excluded.group_id, excluded.item_json) "
+            "OR (resident_mailbox.message_json = '{}' AND excluded.message_json <> '{}')",
             values,
         )
     kept = {item[0] for item in desired}

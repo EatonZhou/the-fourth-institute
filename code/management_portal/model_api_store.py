@@ -95,9 +95,21 @@ def apis():
 
 
 def route_bindings(api_id):
+    return route_bindings_many([api_id])[api_id]
+
+
+def route_bindings_many(api_ids):
+    """Read bindings once for the supplied API identities, including empty lists."""
+    bindings = {api_id: [] for api_id in api_ids}
+    if not bindings:
+        return bindings
     with database().read() as c:
-        return [dict(row) for row in c.execute(
-            "SELECT backend,route_id FROM routes WHERE api_id=%s ORDER BY backend,route_id", (api_id,))]
+        for row in c.execute(
+            "SELECT api_id,backend,route_id FROM routes WHERE api_id=ANY(%s) ORDER BY backend,route_id",
+            (list(bindings),),
+        ):
+            bindings[row["api_id"]].append({"backend": row["backend"], "route_id": row["route_id"]})
+    return bindings
 
 
 def route_api_id(backend, route_id):

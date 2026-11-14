@@ -159,8 +159,8 @@ function renderAgentStatus(data) {
   const refreshButton = node.querySelector("[data-agent-status-refresh]");
   if (refreshButton) {
     refreshButton.addEventListener("click", async () => {
-      if (homeController.isComponentVisible("agent-accounts")) await loadAgentStatus(true);
       const reads = [];
+      if (homeController.isComponentVisible("agent-accounts")) reads.push(loadAgentStatus(true));
       if (homeController.isComponentVisible("system-resources")) reads.push(loadGpuStatus(), loadDiskStatus());
       if (homeController.isComponentVisible("scheduled-triggered")) reads.push(loadScheduledTriggeredStatus());
       await Promise.allSettled(reads);

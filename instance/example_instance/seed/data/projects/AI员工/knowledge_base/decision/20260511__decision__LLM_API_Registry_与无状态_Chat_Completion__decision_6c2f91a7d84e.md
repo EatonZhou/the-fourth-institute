@@ -4,31 +4,31 @@ type: decision
 project: AI员工
 created_at: '2026-05-11'
 version:
-  number: 24
-  created_at: '2026-05-11'
+  number: 34
+  created_at: "2026-05-11"
   created_by:
-    user: ''
-    agent: ''
-  updated_at: '2026-10-31T13:28:56Z'
+    user: ""
+    agent: ""
+  updated_at: "2026-11-14T08:28:09Z"
   updated_by:
-    user: ''
-    agent: resident_0caf373eeead
+    user: ""
+    agent: "resident_60ae6d0cdf74"
 importance: 8
 metaness: 2
 ai_generated: false
 links:
   source:
-  - ${code_root}/tests/cases/test_provider_transport_diagnostics.py
-  - ${code_root}/management_portal/provider_transport_diagnostics.py
-  - ${code_root}/management_portal/execution/requests.py
-  - ${code_root}/management_portal/execution/isa.py
-  - ${code_root}/management_portal/ai_provider_registry.py
-  - ${code_root}/management_portal/model_api_store.py
-  - ${code_root}/tests/cases/test_model_api_registry_postgres.py
-  - ${code_root}/management_portal/execution/chat_completion_service.py
-  - ${code_root}/management_portal/execution/contracts.py
-  - ${code_root}/tests/cases/test_ai_provider_registry.py
-  - ${code_root}/tests/cases/test_execution_service_contracts.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_provider_transport_diagnostics.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/provider_transport_diagnostics.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/execution/requests.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/execution/isa.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/ai_provider_registry.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/model_api_store.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_model_api_registry_postgres.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/execution/chat_completion_service.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/execution/contracts.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_ai_provider_registry.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_execution_service_contracts.py
   related:
   - decision_6b9e42f1c8a7
   - decision_3948ce9b9443
@@ -46,7 +46,7 @@ links:
 
 Portal 的 Resident 大多通过有状态的 Provider 运行时工作，例如 Codex App Server、Claude Code 和 Kimi Code，它们保存会话、调用工具并持续产出事件。除此之外，Portal 还需要直接调用普通的模型 HTTP 接口：一次发出一组消息，拿回一段完整回答，不建立会话。论文评审、局域网设备转发、`provider_api` 类型的 Resident 和 `CompleteChat` 指令都属于这种用法。
 
-本 Design 说明两件事：Portal 在哪里登记这些模型接口（LLM API Registry），以及 ExecutionService 怎样用登记的接口完成一次无状态生成（Chat Completion）。有状态 Provider 的会话协议见各自的 Design；局域网设备通过 Relay 调用本服务时的附加限制见 decision_c604274e21dd。
+本 Design 说明模型接口的唯一登记、无状态文本生成，以及这些能力的凭据、执行和结果边界。有状态 Provider 的会话协议见各自的 Design；局域网设备通过 Relay 调用本服务时的附加限制见 decision_c604274e21dd。
 
 ## 基本概念
 
@@ -75,7 +75,7 @@ Portal 的 Resident 大多通过有状态的 Provider 运行时工作，例如 C
   | `claude_code_subscription` | Claude 订阅登录。条目只保存 Claude CLI 的配置目录 `config_dir`，不保存地址和密钥 | Claude Code Provider（decision_3948ce9b9443） |
   | `typesafe_system_one` | Jev 接收 state 与 questions，返回结构化判定的专用协议 | Jev Provider、Model API Resident |
 
-- **Chat Completion**：一次以消息列表为输入、以完整回答为输出的无状态生成。它由 ExecutionService 中的 `ChatCompletionService` 执行，是统一执行层的两种服务之一（另一种是有状态的 `agent_session`，见 decision_6ad0384e020d）。
+- **Chat Completion**：一次以消息列表为输入、以完整回答为输出的无状态生成。它由 ExecutionService 中的 `ChatCompletionService` 执行，与 `agent_session` 共用统一执行层（见 decision_6ad0384e020d）。
 - **执行结果（ExecutionResult）**：统一执行层返回给调用方的结果对象，包含最终文本、用量（usage）、输出消息和实际使用的条目 ID。
 
 ## 设计点
@@ -95,18 +95,20 @@ Jev 每次判定只读取一次条目，以该条目校验模型并发送请求�
 ### 管理登记
 
 - **登记的读取和修改使用 HATG ISA 指令。** `ListModelApis`、`CreateModelApi`、`UpdateModelApi`、`DeleteModelApi` 由 ExecutionService 执行（decision_4527448ad07f）。
-  - `CreateModelApi` 新建条目缺省写入 `enabled: true`，协议固定为 `openai_compatible_chat`；条目 ID 已存在时返回冲突。
-  - 创建参数为 `api_id`、`base_url`、`default_model`、`secret_file`，以及可选的 `provider`、`routes`、`default_parameters`、`timeout_seconds`、`retries`、`headers`、`enabled`。`routes` 是服务路线绑定数组，每项包含 `backend` 和 `route_id`；更新指令的 `changes` 提交 `routes` 时整体替换该条目的绑定，未提交时保留原有绑定，并按修改后的条目重新检查这些绑定是否仍然成立。`provider` 供 Relay 等入口选择服务商。`secret_file` 写入 `api_key_file`，`timeout_seconds` 写入 `timeout_s`，`retries` 写入 `max_retries`，`headers` 写入 `default_headers`。更新指令的 `changes` 还可修改 `label`、`kind` 和 `models`；未知字段拒绝。
+  - `CreateModelApi` 新建条目缺省写入 `enabled: true`，主要协议 kind 缺省为 `openai_compatible_chat`，也可显式选择 `openai_responses`、`anthropic_messages` 或 `typesafe_system_one`；条目 ID 已存在时返回冲突。
+  - 创建参数为 `api_id`、`base_url`、`default_model`、`secret_file`，以及可选的 `kind`、`protocols`、 `provider`、`routes`、`default_parameters`、`timeout_seconds`、`retries`、`headers`、`enabled`。`routes` 是服务路线绑定数组，每项包含 `backend` 和 `route_id`；更新指令的 `changes` 提交 `routes` 时整体替换该条目的绑定，未提交时保留原有绑定，并按修改后的条目重新检查这些绑定是否仍然成立。`provider` 供 Relay 等入口选择服务商。`secret_file` 写入 `api_key_file`，`timeout_seconds` 写入 `timeout_s`，`retries` 写入 `max_retries`，`headers` 写入 `default_headers`。更新指令的 `changes` 还可修改 `label`、`kind` 和 `models`；未知字段拒绝。
   - `secret_file` 必须是绝对路径；`headers` 必须是映射，并且不能包含名字里带 `authorization` 的请求头。
   - `UpdateModelApi` 每次成功后把条目的 `version` 加一。调用方可以对 `UpdateModelApi` 和 `DeleteModelApi` 提交 `expected_version`，内核按 `api_id` 取该条目的当前版本比较，不一致时返回冲突、不写入。
   - 每次修改在一个数据库事务中只改动目标行，并在该行记录 `updated_at` 与 `updated_by`（执行修改的调用者）。
   - `ListModelApis` 返回每个条目的公开字段和版本，其中 `secret_file` 只是路径；已绑定服务路线的条目还返回 `routes`。
 
+模型接口列表在同一次请求中按所列 API ID 集合批读路由绑定，空集合不查询。列表与单接口读取共用同一 store 权威；显式空绑定不再回退逐项读取。接口顺序、版本、公开字段、路由排序和无绑定时省略 `routes` 的投影保持不变，批读错误照常传播。后续请求重新读取当前绑定，不引入跨请求 TTL，也不承诺接口与路由两次查询组成额外的事务快照。
+
 ### 一次 Chat Completion
 
 - **调用方必须指定条目 ID。** 条目不存在或 `enabled: false` 时，请求以“接口不可用”失败，服务不会改用其他接口。
 - **Chat Completion 只做无状态生成。** 请求的服务类型为 `chat_completion`、操作为 `generate`、会话模式为 `stateless`。它不创建 Provider 会话，也不能中断 Provider 一侧的生成。发出请求前和每次重试前都检查取消；请求发出后在自己的线程里等待回答，这时收到停止，Execution 立即以中断结束，不再等回答。那次请求在自己的超时内结束，之后返回的回答和传输记录都被丢弃；Provider 仍可能对这次回答计费，这部分用量不进入记账。
-- **执行服务按 Registry 的协议选择调用方式，不使用流式返回。** `openai_compatible_chat` 调用 `<base_url>/chat/completions`；`typesafe_system_one` 复用 Jev Provider 调用 `<base_url>/systemone`。显式登记为其他协议的条目在发送前失败。
+- **直连执行按登记的主要协议选择调用方式，不使用流式返回。** `openai_compatible_chat`、`openai_responses`、`anthropic_messages` 分别调用 Chat Completions、Responses、Messages 端点；各协议适配器负责请求参数及非空文本结果解析，不能把其他协议的返回误按 Chat choices 读取。`typesafe_system_one` 复用 Jev Provider 的结构化决策，保持独立的 questions 合同。未支持的协议或参数在发送前失败。
 - **消息按固定顺序组合。** 需要附加 Portal 系统指令时（decision_ef1d6c925955），它放在第一条；本次运行的业务系统提示（`system_prompt`）紧随其后；然后是调用方提供的业务消息。最后一条业务消息为 `user` 时，用完成注入后的本轮输入替换其正文；否则在末尾追加这条输入。之前的业务消息保持顺序。因此 prompt 位置的运行身份、授权上下文和 Skill 清单都实际进入最后一条用户消息。
 - **Chat Completion 回答取自第一个候选。** 服务从响应的 `choices[0].message.content` 提取文本；文本为空时请求失败。Jev 返回校验后的结构化 answers，规则见下节。
 - **成功后返回完整结果。** 执行结果包含回答文本、服务类型、条目 ID 和完整的原始响应；用量在响应的 `usage` 之外补充实际使用的 `api_id` 与 `model`。服务同时发出一条标记为最终输出的事件。
@@ -227,3 +229,23 @@ POST chat/completions 或 systemone（失败时按重试次数再试）
 ## API 登记与 Harness 可选路线
 
 CreateModelApi、UpdateModelApi 在保存已启用接口后，由 Execution 按已声明协议补齐兼容 Harness 的执行账号与直连账号；已有账号及其状态复用。注册一个 LLM API 后，Resident 创建目录可选择全部兼容路线，不只选择管理表单当时测试的运行器。Jev 仅提供直连。兼容协议、身份与失败修复规则见 decision_7956d7cb4bde；过程不发起模型调用。Home 展示按计费 API 聚合，执行账本与调度身份保持独立，见 decision_4dea0db1f45a。
+
+
+## 原生 Harness 与模型协议转换
+
+模型 API 的 kind 与 protocols 描述上游真实提供的协议，不描述 Portal 可转换出的能力。公开的 harness_protocols 表示原生上游协议，compatible_harness_protocols 表示包含本机转换后的 Harness 客户端协议；探测只记录上游实际支持的协议，不因转换器可用而虚报支持。具体执行器是否启用转换由 Provider 能力声明拥有。Claude Code 的 Messages 与 Codex 的 Responses 客户端可以连接已登记的 Chat Completions、Responses 或 Messages 上游；其他执行器继续按自身声明匹配，Jev 不进入文本 Agent Harness。
+
+目标上游已支持客户端协议时保持直连。需要转换时，由原生宿主进程拥有仅绑定回环地址的临时服务，以随机能力令牌绑定一个 API、可选执行账号及客户端协议；请求不能指定其他账号或任意目标 URL。每次请求重新核对已绑定 API 和账号仍启用且关联不变，密钥仍从 Registry 引用的私有文件读取，不向原生客户端交付上游密钥。宿主退出关闭转换服务，不在转换器中保存聊天历史、另建 Agent 循环或承担调度/计费账本权威。
+
+转换职责包括请求内容与工具调用、结果和用量、流式事件与结束状态。推理签名或加密推理状态按来源协议保留为不透明状态，返回原协议时恢复，不伪造另一上游的签名；无法支持的内容明确失败，不静默丢弃。连接有并发及报文大小上限；不跟随可能泄露认证信息的上游重定向，客户端断开时关闭上游读取，错误不回传上游认证或原始响应正文。支持 HTTP 协议转换并不证明模型支持所需工具语义，仍由用户触发的真实接入测试验证。
+
+兼容路线登记按 Provider 的实际原生/转换能力判断，不因用户在管理页选择了一个测试运行器而隐藏其他兼容路线；登记、能力展示和协议选择本身不运行模型。
+
+
+## Harness 参数支持合同
+
+模型 API 的协议登记拥有上游字段支持事实。openai_chat 可显式登记布尔选项 supports_prompt_cache_key；未登记时 Google/Gemini 上游默认不支持该缓存路由提示，其他上游默认支持。管理界面展示这一有效值，公开登记回读以 harness_parameter_contracts 同时给出有效支持值和明确的 omitted_advisory_fields。修改这一字段不改变 API 身份、协议种类或执行账号登记。
+
+prompt_cache_key 只承担缓存路由提示，不承担消息或工具业务语义。原生 Harness 发出该提示且登记合同不支持时，现有模型协议桥按合同投影这一字段；其余消息、工具定义、工具选择、生成参数、扩展字段、响应正文及 SSE 字节保持原样。错误类型的提示值失败，不提供任意字段删除配置，不通过丢弃业务字段伪装兼容。桥仅在实际应用投影时提供固定的省略字段响应头。原生 Chat 请求不需要跨协议转换时不经过 Messages/Responses 编解码。
+
+参数投影复用现有模型协议桥及其账号绑定、秘密读取、无重定向、并发和断连取消边界。桥由原生账号宿主拥有并随宿主退出；Worker 交接不使其失效。相同协议且无需字段投影仍直接连接登记上游，不创建独立长期代理，不修改第三方发行包。

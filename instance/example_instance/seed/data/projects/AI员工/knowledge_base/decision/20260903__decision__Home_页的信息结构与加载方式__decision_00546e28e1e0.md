@@ -4,35 +4,35 @@ type: decision
 project: AI员工
 created_at: '2026-09-03'
 version:
-  number: 19
-  created_at: '2026-09-03'
+  number: 20
+  created_at: "2026-09-03"
   created_by:
-    user: ''
-    agent: ''
-  updated_at: '2026-11-10T07:36:06Z'
+    user: ""
+    agent: ""
+  updated_at: "2026-11-14T08:28:08Z"
   updated_by:
-    user: ''
-    agent: resident_60ae6d0cdf74
+    user: ""
+    agent: "resident_60ae6d0cdf74"
 importance: 8
 metaness: 2
 ai_generated: false
 links:
   source:
-  - ${code_root}/management_portal/index.html
-  - ${code_root}/management_portal/static/portal_home_components.js
-  - ${code_root}/management_portal/static/portal_workbench.js
-  - ${code_root}/management_portal/static/portal_workbench.css
-  - ${code_root}/management_portal/static/home_workbench.css
-  - ${code_root}/management_portal/static/home.js
-  - ${code_root}/management_portal/static/home_pulse.js
-  - ${code_root}/management_portal/static/home_system_resources.js
-  - ${code_root}/management_portal/static/home_accounts.js
-  - ${code_root}/management_portal/static/home_usage.js
-  - ${code_root}/management_portal/static/home_scheduled_triggered.js
-  - ${code_root}/management_portal/static/home_activity.js
-  - ${code_root}/management_portal/static/portal_api.js
-  - ${code_root}/management_portal/static/portal_state.js
-  - ${code_root}/tests/cases/test_home_frontend_contract.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/index.html
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/portal_home_components.js
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/portal_workbench.js
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/portal_workbench.css
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/home_workbench.css
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/home.js
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/home_pulse.js
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/home_system_resources.js
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/home_accounts.js
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/home_usage.js
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/home_scheduled_triggered.js
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/home_activity.js
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/portal_api.js
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/portal_state.js
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_home_frontend_contract.py
   related:
   - decision_e486671af066
   - decision_fc26f883773d
@@ -125,7 +125,7 @@ Home 的布局使用 Portal 共享的工作台组件 Workbench（decision_538e15
 - **加载过的区域保留组件和内容。** 之后折叠、隐藏再打开不重新初始化。运行器只管理首次连接与销毁；已连接面板是否暂停定时读取、恢复可见时是否重读，由该面板的刷新合同决定。例如 Scheduled & Triggered 隐藏时停止计时、重新可见时读取当前状态（decision_481dc4e6292c）。
 - **Home 没有统一的刷新周期。** 各面板的刷新时机、后台标签页行为和错误重试由对应 Design 唯一说明：Daily News（decision_5d2bf4a72f09）、Notice Board（decision_605810a1292b）、Pulse（decision_865ac8ebef25）、账号（decision_4dea0db1f45a）、活动 Resident（decision_e30897dd3dc3）、GPU / Disk（decision_ed57c4ad1001）、Scheduled & Triggered（decision_481dc4e6292c）和 Usage Attribution（decision_fc26f883773d）。Knowledge Pulse 与 Personal Pulse 共用一次读取，两个面板各自选择时间范围。
 
-- **Agent Status 的刷新按钮只刷新可见的区域。** 按钮位于 AI Activity & Accounts 中。点击后，AI Activity & Accounts 可见时要求服务端重新采集账号数据；GPU / Disk Resources 可见时要求重新采集 GPU 和磁盘；Scheduled & Triggered 可见时重新读取列表。Usage Attribution 使用自己的刷新按钮。
+- **Agent Status 的刷新按钮只刷新可见的区域。** 按钮位于 AI Activity & Accounts 中。点击后，AI Activity & Accounts 可见时要求服务端重新采集账号数据；GPU / Disk Resources 可见时要求重新采集 GPU 和磁盘；Scheduled & Triggered 可见时重新读取列表。Usage Attribution 使用自己的刷新按钮。各可见区域的独立读取在同次点击中并发发起，不等待账号读取完成后才启动资源或定时事项读取；一个区域的慢响应或失败不推迟其他区域。各区域仍由原 owner 处理忙碌状态、错误与陈旧响应，不增加隐藏区域读取。
 - **列表中的链接只负责跳转。** 点击 Resident、帖子或资源进入对应页面，由目标页面提供完整功能并检查权限。
 - **图标按钮都有文字说明。** 箭头表示进入，刷新图标只刷新所在区域，铅笔和垃圾桶表示编辑和删除；只有图标的按钮同时提供悬停标题和无障碍名称。
 
