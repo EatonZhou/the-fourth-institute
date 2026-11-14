@@ -33,8 +33,8 @@
     let dragState = null;
 
     function updateDraggedGeometry(positionById, options = {}) {
-      renderFunctionBlockBoundaries();
       const movedNodeIds = new Set(positionById.keys());
+      renderFunctionBlockBoundaries(movedNodeIds);
       const affectedEdgeIds = new Set();
       movedNodeIds.forEach(nodeId => {
         incidentEdgeIds(nodeId)?.forEach(edgeId => {

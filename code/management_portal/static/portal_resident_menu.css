@@ -479,6 +479,20 @@
 .residentMenuJournalSection ul { margin:0; padding-left:18px; font-size:13px; line-height:1.7; }
 .residentMenuJournalSection li { white-space:pre-wrap; }
 .residentMenuJournalSection li + li { margin-top:5px; }
+.residentMenuDuties { margin:0 0 12px; padding:0; list-style:none; display:grid; gap:6px; }
+.residentMenuDuty { border:1px solid var(--border); border-radius:8px; padding:8px 10px; font-size:13px; line-height:1.6; overflow-wrap:anywhere; }
+.residentMenuDuty summary { display:flex; gap:8px; align-items:baseline; cursor:pointer; }
+.residentMenuDutyText { flex:1 1 auto; min-width:0; }
+.residentMenuDutyCategory { flex:none; color:var(--muted); font-size:12px; }
+.residentMenuDutyBody { margin-top:8px; display:grid; gap:8px; }
+.residentMenuDutyBody .paneNote { margin:0; }
+.residentMenuDutyElements { margin:0; display:grid; gap:2px; font-size:12px; }
+.residentMenuDutyElements > div { display:grid; grid-template-columns:7em minmax(0,1fr); gap:8px; }
+.residentMenuDutyElements dt { color:var(--muted); }
+.residentMenuDutyElements dd { margin:0; }
+.residentMenuDutyActions { display:flex; gap:6px; flex-wrap:wrap; }
+.residentMenuSystemDuty { display:flex; gap:8px; align-items:center; }
+.residentMenuSystemDuties > summary { cursor:pointer; color:var(--muted); font-size:13px; margin-bottom:6px; }
 @media(max-width:640px) { .residentMenuIdentity { gap:12px; align-items:flex-start; } .residentMenuName strong { font-size:18px; } .residentMenuMeta > .residentMenuIdRow { flex:1 1 100%; flex-wrap:wrap; gap:4px 8px; } .residentMenuMeta > .residentMenuLineage { flex-basis:100%; } .nodeSettingsSurface .nodeSettingsBody { grid-template-columns:var(--menu-rail-width) minmax(0,1fr); grid-template-rows:1fr; gap:10px; } .nodeSettingsSurface .nodeSettingsTabs { grid-auto-flow:row; } .nodeSettingsSurface .nodeSettingsTab { padding:7px 6px; font-size:11px; } #nodeMenuRuntime { grid-template-columns:minmax(0,1fr); } }
 
 .nodeSettingsSurface label { display:grid; gap:6px; }

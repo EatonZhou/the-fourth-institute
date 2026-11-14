@@ -3,14 +3,14 @@
 
   if (window.PortalResidentMenuTabs) return;
 
-  // The Menu's vertical tabs: Settings, Harness, Package, Mailbox and Work
-  // Journal. Switching tabs by click or arrow keys first leaves Package (an
+  // The Menu's vertical tabs: Settings, Duties, Harness, Package, Mailbox and
+  // Work Journal. Switching tabs by click or arrow keys first leaves Package (an
   // unsaved credential change asks before it is dropped), then mounts the
-  // chosen tab's panel: the Harness settings, the principal details, the
-  // Mailbox queue, the journal or the runtime settings.
+  // chosen tab's panel: the duties, the Harness settings, the principal
+  // details, the Mailbox queue, the journal or the runtime settings.
 
   const DEPENDENCIES = Object.freeze([
-    "$id", "changed", "disposeFamilySettings", "loadNodeJournal", "loadNodeMenuRuntime", "menuState",
+    "$id", "changed", "disposeFamilySettings", "loadNodeDuties", "loadNodeJournal", "loadNodeMenuRuntime", "menuState",
     "nodeResidentId", "nodeSettingsNode", "toast",
   ]);
 
@@ -18,7 +18,7 @@
     const missing = DEPENDENCIES.filter(name => dependencies?.[name] === undefined);
     if (missing.length) throw new Error(`PortalResidentMenuTabs is missing: ${missing.join(", ")}`);
     const {
-      $id, changed, disposeFamilySettings, loadNodeJournal, loadNodeMenuRuntime, menuState, nodeResidentId,
+      $id, changed, disposeFamilySettings, loadNodeDuties, loadNodeJournal, loadNodeMenuRuntime, menuState, nodeResidentId,
       nodeSettingsNode, toast,
     } = dependencies;
 
@@ -55,6 +55,7 @@
     // The node dialog's vertical navigation: tab name -> [tab button, panel].
     const NODE_SETTINGS_TABS = Object.freeze({
       display: ["nodeDisplayTab", "nodeDisplayPanel"],
+      duties: ["nodeDutiesTab", "nodeDutiesPanel"],
       harness: ["nodeHarnessTab", "nodeHarnessPanel"],
       details: ["nodeDetailsTab", "nodeDetailsPanel"],
       mailbox: ["nodeMailboxTab", "nodeMailboxPanel"],
@@ -132,6 +133,7 @@
         return;
       }
       if (tab === "journal") { await loadNodeJournal(); return; }
+      if (tab === "duties") { await loadNodeDuties(); return; }
       if (tab === "harness") {
         const residentId = nodeResidentId(node);
         nodeHarnessInstance = window.PortalChatWorkspace?.mountResidentHarnessPanel?.({

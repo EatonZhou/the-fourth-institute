@@ -154,6 +154,7 @@
   //   portal_resident_menu_group.js  a Function Block's Menu and its tabs
   //   portal_resident_menu_identity.js  the pin and the avatar editor
   //   portal_resident_menu_journal.js  the Work Journal tab
+  //   portal_resident_menu_duties.js  the Duties tab: the Resident's duties and system duties
   //   portal_resident_menu_runtime.js  the Session ID and runtime settings
   //   portal_resident_menu_events.js  the listeners of the dialog's controls
   // createMenu builds the dialog and its controller, holds the state the parts
@@ -190,6 +191,7 @@
           <div class="residentMenuGroupTabs" id="nodeMenuGroupTabs" role="tablist" aria-label="模块中的部件" aria-orientation="vertical" hidden></div>
           <div class="nodeSettingsResidentTabs" role="tablist" aria-label="节点设置分栏" aria-orientation="vertical">
           <button class="nodeSettingsTab active" id="nodeDisplayTab" type="button" role="tab" aria-selected="true" aria-controls="nodeDisplayPanel">Settings</button>
+          <button class="nodeSettingsTab" id="nodeDutiesTab" type="button" role="tab" aria-selected="false" aria-controls="nodeDutiesPanel" tabindex="-1">Duties</button>
           <button class="nodeSettingsTab" id="nodeHarnessTab" type="button" role="tab" aria-selected="false" aria-controls="nodeHarnessPanel" tabindex="-1">Harness</button>
           <button class="nodeSettingsTab" id="nodeDetailsTab" type="button" role="tab" aria-selected="false" aria-controls="nodeDetailsPanel" tabindex="-1">Package</button>
           <button class="nodeSettingsTab" id="nodeMailboxTab" type="button" role="tab" aria-selected="false" aria-controls="nodeMailboxPanel" tabindex="-1">Mailbox</button>
@@ -199,6 +201,7 @@
         <div class="nodeSettingsPanels">
         <div class="residentMenuGroupPanel" id="nodeMenuGroupPanel" role="tabpanel" hidden></div>
         <p id="nodeMenuStatus" role="status" hidden></p>
+        <section id="nodeDutiesPanel" class="nodeDutiesPanel" role="tabpanel" aria-labelledby="nodeDutiesTab" hidden><div id="nodeDutiesRows" aria-live="polite"></div></section>
         <section id="nodeHarnessPanel" class="nodeHarnessPanel" role="tabpanel" aria-labelledby="nodeHarnessTab" hidden></section>
         <section id="nodeDetailsPanel" role="tabpanel" aria-labelledby="nodeDetailsTab" hidden></section>
         <section id="nodeMailboxPanel" class="nodeMailboxPanel" role="tabpanel" aria-labelledby="nodeMailboxTab" hidden></section>
@@ -251,6 +254,7 @@
       renderNodeSettingsTab, switchNodeSettingsTab,
     } = menuPart("PortalResidentMenuTabs").createTabs({
       $id, changed, disposeFamilySettings: (...args) => disposeFamilySettings(...args),
+      loadNodeDuties: (...args) => loadNodeDuties(...args),
       loadNodeJournal: (...args) => loadNodeJournal(...args),
       loadNodeMenuRuntime: (...args) => loadNodeMenuRuntime(...args), menuState, nodeResidentId,
       nodeSettingsNode: (...args) => nodeSettingsNode(...args), toast,
@@ -287,6 +291,10 @@
     });
 
     const { loadNodeJournal } = menuPart("PortalResidentMenuJournal").createJournal({ $id, esc, menuState });
+
+    const { loadNodeDuties } = menuPart("PortalResidentMenuDuties").createDuties({
+      $id, changed, esc, menuState, switchNodeSettingsTab, toast,
+    });
 
     const { loadNodeMenuRuntime, renderNodeMenuSession } = menuPart("PortalResidentMenuRuntime").createRuntime({
       $id, esc, menuState, nodeMenuNotice, renderFamilySettings,

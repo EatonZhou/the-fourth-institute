@@ -234,7 +234,7 @@
             commitLineage(result.lineage);
           } else if (type === "intake") {
             renderGraph();
-          } else if (type === "delete-family" || type === "family-members" || type === "family-auto-migrate") {
+          } else if (type === "delete-family" || type === "family-members" || type === "family-auto-migrate" || type === "duties") {
             window.PortalResidentProjection?.invalidate?.(residentId);
             commitLineage(await societyService.loadLineage(lineageId));
           } else if (type === "move") {

@@ -39,6 +39,7 @@
         .catch(error => toast(error.message || String(error), "error"));
     });
     $id("nodeDisplayTab").addEventListener("click", () => switchNodeSettingsTab("display"));
+    $id("nodeDutiesTab").addEventListener("click", () => switchNodeSettingsTab("duties"));
     $id("nodeHarnessTab").addEventListener("click", () => switchNodeSettingsTab("harness"));
     $id("nodeDetailsTab").addEventListener("click", () => switchNodeSettingsTab("details"));
     $id("nodeMailboxTab").addEventListener("click", () => switchNodeSettingsTab("mailbox"));

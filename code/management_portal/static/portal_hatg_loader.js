@@ -104,8 +104,17 @@
     if (!d3IsReady()) throw new Error("D3 global is incomplete");
   }
 
-  function loadAsset(src) {
-    return src === D3_ASSET ? loadD3() : window.PortalUIPrimitives.loadAsset(src);
+  async function loadAsset(src) {
+    if (src === D3_ASSET) return loadD3();
+    try {
+      return await window.PortalUIPrimitives.loadAsset(src);
+    } catch {
+      // A failed download is removed by the asset owner. Retry that asset
+      // once in the same ordered pipeline, without replaying dependencies or
+      // leaving a transient network failure cached for this HATG open.
+      await new Promise(resolve => window.setTimeout(resolve, 250));
+      return window.PortalUIPrimitives.loadAsset(src);
+    }
   }
 
   // The assets must execute in order, but they need not download in order: a

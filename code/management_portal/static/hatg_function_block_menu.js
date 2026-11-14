@@ -97,6 +97,22 @@
       return rows ? window.PortalI18n.html`<section class="functionBlockInstanceBindings functionBlockInsideResidents"><span>模块内的 Resident</span><dl>${rows}</dl></section>` : "";
     }
 
+    // A duty block names its holder (decision_13725a7900f6); an organization's
+    // block lists the duties it holds itself, first duty first.
+    function functionBlockDutyHtml(block) {
+      const holderTitle = id => displayNodeById(id)?.title || functionBlockInstanceById(id)?.title || id;
+      const held = (state.lineage?.function_blocks || [])
+        .filter(item => item.duty?.holder_id === block.id)
+        .sort((a, b) => a.duty.position - b.duty.position);
+      const own = block.duty
+        ? window.PortalI18n.html`<section class="functionBlockSource" data-function-block-duty><div><h3>职责</h3><p>${esc(block.duty.description || block.title)}</p><p class="paneNote">${esc(window.PortalI18n.text`持有者：${holderTitle(block.duty.holder_id)}`)}</p></div></section>`
+        : "";
+      const list = held.length
+        ? window.PortalI18n.html`<section class="functionBlockInstanceBindings" data-function-block-held-duties><span>本组织的职责</span><ol>${held.map(item => window.PortalI18n.html`<li>${esc(item.duty.description || item.title)}</li>`).join("")}</ol></section>`
+        : "";
+      return own + list;
+    }
+
     function functionBlockSourceTitle(block) {
       return block.template_id
         ? (currentTemplateController()?.find?.(block.template_id)?.title || block.template_id)
@@ -431,6 +447,7 @@
         <button class="portalButton is-primary" type="button" data-function-block-rename${readonly ? " disabled" : ""}>保存标题</button></div>
         ${failures.length ? window.PortalI18n.html`<p data-function-block-failure>内部出错：${esc(failures.map(component => component.title || component.id).join("、"))}</p>` : ""}
         <section class="functionBlockSource"><div><h3>来源模板</h3><p>${esc(functionBlockSourceTitle(block))}</p></div>${block.template_id ? '<button class="portalButton is-quiet" type="button" data-function-block-source>查看来源模板</button>' : ""}</section>
+        ${functionBlockDutyHtml(block)}
         ${functionBlockInsideResidentsHtml(block)}
         ${roles ? window.PortalI18n.html`<div class="familyAutoMigrateSetting"><span>当前 AI 后端额度不足时自动转到别的后端</span><button class="portalButton residentMenuToggle" type="button" role="switch" aria-label="额度不足时自动转组" aria-checked="${autoMigrate}" data-family-auto-migrate${readonly ? " disabled" : ""}></button></div>` : ""}
         ${roles ? window.PortalI18n.html`<p class="paneNote">Family 默认开关仅在成员未显式设置时生效；成员显式开启时按站点默认排序切换。</p><div data-family-priority></div>` : ""}

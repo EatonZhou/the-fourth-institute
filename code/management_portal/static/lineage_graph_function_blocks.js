@@ -53,7 +53,8 @@
       const boundary = layers.nodes.node()?.querySelector(`[data-function-block-boundary="${CSS.escape(block.id)}"]`);
       // Long identities wrap. Reserve their actual unscaled header height so
       // nested blocks and member ports remain below the title at every zoom.
-      if (boundary) boundary.style.width = `${right - left}%`;
+      const width = `${right - left}%`;
+      if (boundary && boundary.style.width !== width) boundary.style.width = width;
       const headerHeight = Math.max(42, (boundary?.querySelector("header")?.offsetHeight || 0) + 12);
       return {
         left,
@@ -111,7 +112,35 @@
       return score > 0.000001 ? best : null;
     }
 
-    function renderFunctionBlockBoundaries() {
+    function positionBoundary(block) {
+      const bounds = functionBlockBoundaryBounds(block);
+      this.hidden = !bounds;
+      if (!bounds) return;
+      const { left, right, top, bottom } = bounds;
+      Object.assign(this.style, { left: `${left}%`, top: `${top}%`, width: `${right - left}%`, height: `${bottom - top}%` });
+    }
+
+    function renderFunctionBlockBoundaries(movedNodeIds) {
+      if (movedNodeIds) {
+        // A drag changes membership geometry only. Keep the existing controls
+        // and untouched frames; include every ancestor of an affected block.
+        const blocks = state.model.functionBlockBoundaries || [];
+        const parents = new Map();
+        const affected = new Set();
+        for (const block of blocks) {
+          if (block.member_ids.some(id => movedNodeIds.has(id))) affected.add(block.id);
+          for (const childId of block.child_block_ids || []) {
+            if (!parents.has(childId)) parents.set(childId, []);
+            parents.get(childId).push(block.id);
+          }
+        }
+        for (const id of affected) {
+          for (const parentId of parents.get(id) || []) affected.add(parentId);
+        }
+        if (affected.size) layers.nodes.selectAll("section.functionBlockBoundary")
+          .filter(block => affected.has(block.id)).each(positionBoundary);
+        return;
+      }
       const boundaries = layers.nodes.selectAll("section.functionBlockBoundary")
         .data(state.model.functionBlockBoundaries || [], block => block.id)
         .join(enter => {
@@ -124,12 +153,7 @@
         .attr("data-function-block-boundary", block => block.id);
       boundaries.select(".functionBlockBoundaryTitle").text(block => block.title || "Function Block");
       boundaries.select(".functionBlockBoundaryCollapse").text("−");
-      boundaries.each(function positionBoundary(block) {
-          const bounds = functionBlockBoundaryBounds(block);
-          this.hidden = !bounds;
-          if (!bounds) return;
-          const { left, right, top, bottom } = bounds;
-          Object.assign(this.style, { left: `${left}%`, top: `${top}%`, width: `${right - left}%`, height: `${bottom - top}%` });
+      boundaries.each(positionBoundary).each(function bindBoundary(block) {
           const boundary = d3.select(this);
           boundary.select(".functionBlockBoundaryTitle").text(block.title || "Function Block")
             .on("click.hatg", event => { event.stopPropagation(); options.onFunctionBlockMenu?.(block.id); });

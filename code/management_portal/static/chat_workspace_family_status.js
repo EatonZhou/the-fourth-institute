@@ -284,6 +284,39 @@
           fields.includes("service_tier") ? catalog && !(catalog.service_tiers_by_model?.[settings.model || catalog.default_model] || []).length
             ? window.PortalI18n.t("Fast 不支持") : settings.service_tier === "priority" ? window.PortalI18n.t("Fast 开") : window.PortalI18n.t("Fast 关") : ""].filter(Boolean).join(" · ");
       };
+      // A status notification may arrive between pointerdown and click. Keep
+      // the table, member rows and controls connected so native link activation
+      // and keyboard focus survive updates, including updates to other members.
+      const contentKey = node => node.nodeType !== Node.ELEMENT_NODE ? node.nodeType
+        : node.dataset.familyStatusRow ? `member:${node.dataset.familyStatusRow}`
+          : node.dataset.familyStatusDetailRow ? `details:${node.dataset.familyStatusDetailRow}` : node.tagName;
+      const patchContent = (current, next) => {
+        let cursor = current.firstChild;
+        for (const child of [...next.childNodes]) {
+          let match = cursor;
+          while (match && contentKey(match) !== contentKey(child)) match = match.nextSibling;
+          if (!match) {
+            current.insertBefore(child, cursor);
+            continue;
+          }
+          if (match !== cursor) current.insertBefore(match, cursor);
+          if (match.nodeType === Node.ELEMENT_NODE) {
+            for (const attribute of [...match.attributes]) {
+              if (!child.hasAttribute(attribute.name)) match.removeAttribute(attribute.name);
+            }
+            for (const attribute of [...child.attributes]) {
+              if (match.getAttribute(attribute.name) !== attribute.value) match.setAttribute(attribute.name, attribute.value);
+            }
+            patchContent(match, child);
+          } else if (match.nodeValue !== child.nodeValue) match.nodeValue = child.nodeValue;
+          cursor = match.nextSibling;
+        }
+        while (cursor) {
+          const nextSibling = cursor.nextSibling;
+          cursor.remove();
+          cursor = nextSibling;
+        }
+      };
       const render = () => {
         if (disposed) return;
         const chatPolicy = mix.state.policy, mixBusy = mix.state.busy;
@@ -312,7 +345,7 @@
           const mix = row.role === 'member' ? memberMixHtml(id, row.title, chatPolicy, mixBusy) : '';
           const href = `/lineage?${new URLSearchParams({ resident: id, lineage: family.lineage_id || "", open_chat: "1" })}`;
           const work = window.PortalI18n.html`<div class="familyStatusWork" data-working="${working(row)}">${escapeHtml(label(row))}</div>${queue ? window.PortalI18n.html`<div class="familyStatusQueue">排队 ${queue}</div>` : ""}`;
-          return window.PortalI18n.html`<tr data-family-status-row="${escapeHtml(id)}"><td data-label="节点"><div class="familyMemberIdentity"><a class="messageMetaLink familyStatusName" href="${escapeHtml(href)}" title="${escapeHtml(row.title || id)}">${escapeHtml(row.title || id)}</a><button type="button" class="portalButton is-quiet familyStatusDetailsToggle" data-family-status-detail="${escapeHtml(id)}" title="${escapeHtml(label(row))} · 展开工作详情" aria-label="${escapeHtml(row.title || id)} · 工作详情" aria-expanded="${row.expanded ? "true" : "false"}">···</button></div></td><td data-label="backend">${facade ? window.PortalI18n.html`<span class="familyStatusFacade">Family 门面</span>` : window.PortalI18n.html`<button type="button" class="portalButton is-quiet familyStatusAccount" data-family-status-settings="${escapeHtml(id)}" aria-haspopup="dialog" title="${escapeHtml(window.PortalI18n.text`${row.title || id} · 成员运行设置`)}" ${!canEditRuntime(row) && row.runtime?.state().canRestart !== true || row.settingsLoading || migration(row) ? "disabled" : ""}><span><span>${escapeHtml(`${backend} · ${accountLabel}`)}</span>${canEditRuntime(row) || d.runtime_settings ? window.PortalI18n.html`<span class="familyStatusRuntime"><span>${escapeHtml(row.settingsLoading ? window.PortalI18n.t("读取设置…") : runtimeLabel(row))}</span></span>` : ""}</span><span aria-hidden="true">▾</span></button>`}</td><td data-label="周剩余" ${low ? 'class="familyStatusAttention"' : ""} title="${escapeHtml(facade ? window.PortalI18n.t("门面无独立模型 Session") : note || (remain === null ? q.fresh === false ? window.PortalI18n.t("观测过期，待刷新") : window.PortalI18n.t("无有效周额度观测") : window.PortalI18n.text`周额度重置：${reset}`))}"><span class="familyStatusQuotaValue">${facade ? "—" : remain === null ? q.currency && q.fresh === true ? escapeHtml(`${q.remaining_balance} ${q.currency}`) : window.PortalI18n.t("未知") : `${remain.toFixed(0)}%`}${low ? window.PortalI18n.markup('<span class="familyStatusQuotaWarning" aria-label="低额度">!</span>') : ""}</span>${remain !== null ? window.PortalI18n.html`<span class="familyStatusQuotaTrack" aria-hidden="true"><span style="width:${remain}%"></span></span>` : ""}</td><td data-label="工作状态">${work}<button class="portalButton is-compact familyStatusIntake" role="switch" aria-checked="${closed ? "false" : "true"}" aria-label="${escapeHtml(window.PortalI18n.text`${row.title || id}接单`)}" aria-description="${escapeHtml(window.PortalI18n.t("关闭接单只暂停后续任务，当前工作继续"))}" data-portal-tooltip-opt-out="1" data-family-status-intake="${escapeHtml(id)}" ${d.allows?.OpenIntake !== true || migration(row) || row.intakeBusy ? "disabled" : ""}><span aria-hidden="true" class="familyIntakeTrack"></span><span>${closed ? "closed" : "open"}</span></button></td><td data-label="门面展示">${mix || "—"}</td></tr>${row.expanded ? window.PortalI18n.html`<tr><td colspan="5" class="familyStatusDetails"><dl>${!facade && gate.text ? `<dt>${escapeHtml(window.PortalI18n.t("执行保护"))}</dt><dd>${escapeHtml(gate.text)}</dd>` : ""}<dt>工作状态</dt><dd>${escapeHtml(label(row))}${queue ? ` · 排队 ${queue}` : ""}</dd><dt>职责</dt><dd>${escapeHtml(d.resident?.description || window.PortalI18n.t("未填写"))}</dd><dt>模型</dt><dd>${escapeHtml(facade ? window.PortalI18n.t("门面无独立模型 Session") : [settings.model, settings.reasoning_effort].filter(Boolean).join(" · ") || window.PortalI18n.t("默认"))}</dd><dt>当前任务</dt><dd>${escapeHtml(taskText.slice(0, 800) || window.PortalI18n.t("无当前任务"))}</dd><dt>开始处理</dt><dd>${escapeHtml(footerTime(task?.activated_at || task?.created_at) || "—")}</dd><dt>最近活动</dt><dd>${escapeHtml(footerTime(snap.messages?.at(-1)?.created_at) || "—")}</dd><dt>周额度重置</dt><dd>${escapeHtml(reset)}</dd>${note ? window.PortalI18n.html`<dt>额度提示</dt><dd>${escapeHtml(note)}</dd>` : ""}${error ? window.PortalI18n.html`<dt>错误</dt><dd>${escapeHtml(typeof error === "string" ? error : JSON.stringify(error))}</dd>` : ""}</dl><a class="messageMetaLink" href="/lineage?${escapeHtml(new URLSearchParams({ lineage: family.lineage_id || "", resident: id }).toString())}">在画布定位</a></td></tr>` : ""}`;
+          return window.PortalI18n.html`<tr data-family-status-row="${escapeHtml(id)}"><td data-label="节点"><div class="familyMemberIdentity"><a class="messageMetaLink familyStatusName" href="${escapeHtml(href)}" title="${escapeHtml(row.title || id)}">${escapeHtml(row.title || id)}</a><button type="button" class="portalButton is-quiet familyStatusDetailsToggle" data-family-status-detail="${escapeHtml(id)}" title="${escapeHtml(label(row))} · 展开工作详情" aria-label="${escapeHtml(row.title || id)} · 工作详情" aria-expanded="${row.expanded ? "true" : "false"}">···</button></div></td><td data-label="backend">${facade ? window.PortalI18n.html`<span class="familyStatusFacade">Family 门面</span>` : window.PortalI18n.html`<button type="button" class="portalButton is-quiet familyStatusAccount" data-family-status-settings="${escapeHtml(id)}" aria-haspopup="dialog" title="${escapeHtml(window.PortalI18n.text`${row.title || id} · 成员运行设置`)}" ${!canEditRuntime(row) && row.runtime?.state().canRestart !== true || row.settingsLoading || migration(row) ? "disabled" : ""}><span><span>${escapeHtml(`${backend} · ${accountLabel}`)}</span>${canEditRuntime(row) || d.runtime_settings ? window.PortalI18n.html`<span class="familyStatusRuntime"><span>${escapeHtml(row.settingsLoading ? window.PortalI18n.t("读取设置…") : runtimeLabel(row))}</span></span>` : ""}</span><span aria-hidden="true">▾</span></button>`}</td><td data-label="周剩余" ${low ? 'class="familyStatusAttention"' : ""} title="${escapeHtml(facade ? window.PortalI18n.t("门面无独立模型 Session") : note || (remain === null ? q.fresh === false ? window.PortalI18n.t("观测过期，待刷新") : window.PortalI18n.t("无有效周额度观测") : window.PortalI18n.text`周额度重置：${reset}`))}"><span class="familyStatusQuotaValue">${facade ? "—" : remain === null ? q.currency && q.fresh === true ? escapeHtml(`${q.remaining_balance} ${q.currency}`) : window.PortalI18n.t("未知") : `${remain.toFixed(0)}%`}${low ? window.PortalI18n.markup('<span class="familyStatusQuotaWarning" aria-label="低额度">!</span>') : ""}</span>${remain !== null ? window.PortalI18n.html`<span class="familyStatusQuotaTrack" aria-hidden="true"><span style="width:${remain}%"></span></span>` : ""}</td><td data-label="工作状态">${work}<button class="portalButton is-compact familyStatusIntake" role="switch" aria-checked="${closed ? "false" : "true"}" aria-label="${escapeHtml(window.PortalI18n.text`${row.title || id}接单`)}" aria-description="${escapeHtml(window.PortalI18n.t("关闭接单只暂停后续任务，当前工作继续"))}" data-portal-tooltip-opt-out="1" data-family-status-intake="${escapeHtml(id)}" ${d.allows?.OpenIntake !== true || migration(row) || row.intakeBusy ? "disabled" : ""}><span aria-hidden="true" class="familyIntakeTrack"></span><span>${closed ? "closed" : "open"}</span></button></td><td data-label="门面展示">${mix || "—"}</td></tr>${row.expanded ? window.PortalI18n.html`<tr data-family-status-detail-row="${escapeHtml(id)}"><td colspan="5" class="familyStatusDetails"><dl>${!facade && gate.text ? `<dt>${escapeHtml(window.PortalI18n.t("执行保护"))}</dt><dd>${escapeHtml(gate.text)}</dd>` : ""}<dt>工作状态</dt><dd>${escapeHtml(label(row))}${queue ? ` · 排队 ${queue}` : ""}</dd><dt>职责</dt><dd>${escapeHtml(d.resident?.description || window.PortalI18n.t("未填写"))}</dd><dt>模型</dt><dd>${escapeHtml(facade ? window.PortalI18n.t("门面无独立模型 Session") : [settings.model, settings.reasoning_effort].filter(Boolean).join(" · ") || window.PortalI18n.t("默认"))}</dd><dt>当前任务</dt><dd>${escapeHtml(taskText.slice(0, 800) || window.PortalI18n.t("无当前任务"))}</dd><dt>开始处理</dt><dd>${escapeHtml(footerTime(task?.activated_at || task?.created_at) || "—")}</dd><dt>最近活动</dt><dd>${escapeHtml(footerTime(snap.messages?.at(-1)?.created_at) || "—")}</dd><dt>周额度重置</dt><dd>${escapeHtml(reset)}</dd>${note ? window.PortalI18n.html`<dt>额度提示</dt><dd>${escapeHtml(note)}</dd>` : ""}${error ? window.PortalI18n.html`<dt>错误</dt><dd>${escapeHtml(typeof error === "string" ? error : JSON.stringify(error))}</dd>` : ""}</dl><a class="messageMetaLink" href="/lineage?${escapeHtml(new URLSearchParams({ lineage: family.lineage_id || "", resident: id }).toString())}">在画布定位</a></td></tr>` : ""}`;
         };
         const missingSolo = chatPolicy?.solo_member_id && !rows.has(chatPolicy.solo_member_id);
         const soloNotice = missingSolo ? `<p class="paneNote">Solo 成员已离开 <button type="button" class="portalButton is-compact" data-family-mix="solo" data-member="${escapeHtml(chatPolicy.solo_member_id)}" aria-pressed="true" ${mixBusy ? 'disabled' : ''}>取消 Solo</button></p>` : '';
@@ -325,16 +358,9 @@
         const scrollTop = root.querySelector(".familyStatusBody")?.scrollTop || 0;
         const scrollLeft = root.querySelector(".familyStatusBody")?.scrollLeft || 0;
         root.setAttribute("aria-label", window.PortalI18n.text`${family.title || "Family"} · 成员状态`);
-        const controls = new Map([...root.querySelectorAll('.familyMemberMix')].map(group => [group.querySelector('button').dataset.member, group]));
         const template = document.createElement('template');
         template.innerHTML = window.PortalI18n.html`<div class="familyStatusBody">${soloNotice}${quotaError ? window.PortalI18n.html`<p class="paneNote">额度暂不可用：${escapeHtml(quotaError)}</p>` : ""}${rows.size ? table(all) : window.PortalI18n.html`<p>${loading ? window.PortalI18n.t("正在加载…") : window.PortalI18n.t("暂无成员状态")}</p>`}</div>${rows.size ? window.PortalI18n.html`<p class="familyStatusIntakeNote">关闭接单只暂停后续任务，当前工作继续</p>` : ""}`;
-        for (const group of template.content.querySelectorAll('.familyMemberMix')) {
-          const id = group.querySelector('button').dataset.member, current = controls.get(id);
-          if (!current) continue;
-          renderMemberMix(current.parentElement, id, rows.get(id)?.title, mix.state);
-          group.replaceWith(current);
-        }
-        root.replaceChildren(template.content);
+        patchContent(root, template.content);
         root.querySelector(".familyStatusBody").scrollTop = scrollTop;
         root.querySelector(".familyStatusBody").scrollLeft = scrollLeft;
         if (focusKey && mixAction) root.querySelector(`[data-family-status-row="${CSS.escape(focusKey)}"] [data-family-mix="${CSS.escape(mixAction)}"]`)?.focus({ preventScroll: true });

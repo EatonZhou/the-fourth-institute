@@ -441,12 +441,18 @@
           // Follow the routed curve before displacing a label away from it.
           // Moving only vertically can put a Route label beside a different
           // edge, especially after a detour around a card or a geometry refresh.
-          const onPath = geometry.labelPathPoints.map(point => ({
-            x: point.x / 100 * worldSize.width, y: point.y / 100 * worldSize.height,
-          })).sort((left, right) => (
-            Math.hypot(left.x - preferredX, left.y - baseY)
-            - Math.hypot(right.x - preferredX, right.y - baseY)
-          )).find(point => isFree(point, labelWidth, labelHeight));
+          // Find the same nearest free sample in one pass. Sorting every
+          // routed curve recalculated distances for each comparison, on every
+          // drag completion. Strictly closer preserves sample order on ties.
+          let onPath = null, nearestDistance = Infinity;
+          for (const sample of geometry.labelPathPoints) {
+            const point = { x: sample.x / 100 * worldSize.width, y: sample.y / 100 * worldSize.height };
+            const distance = Math.hypot(point.x - preferredX, point.y - baseY);
+            if (distance < nearestDistance && isFree(point, labelWidth, labelHeight)) {
+              onPath = point;
+              nearestDistance = distance;
+            }
+          }
           if (onPath) {
             geometry.labelX = onPath.x / worldSize.width * 100;
             geometry.labelY = onPath.y / worldSize.height * 100;
