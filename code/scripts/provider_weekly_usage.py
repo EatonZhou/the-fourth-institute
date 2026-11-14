@@ -574,11 +574,12 @@ def collect_portal(call, since, until, max_pages, timezone_name='Asia/Hong_Kong'
     return {'schema': 'tfi.provider-weekly-usage.v1', 'since': since, 'until': until, 'accounts': result}
 
 
-def main(argv=None):
+def main(argv=None, *, portal_call=None):
     parser = argparse.ArgumentParser(description=__doc__)
     source = parser.add_mutually_exclusive_group(required=True)
     source.add_argument('--manifest', help='Deployment area reference or canonical configured host path')
     source.add_argument('--resident-id')
+    source.add_argument('--portal-script', action='store_true', help='Use the Portal RunScript injected ISA identity')
     parser.add_argument('--since', required=True)
     parser.add_argument('--until', required=True)
     parser.add_argument('--timezone', default='Asia/Hong_Kong')
@@ -608,9 +609,9 @@ def main(argv=None):
     parser.add_argument('--output-root', default='features:provider_usage', help='Deployment area reference for report artifacts')
     parser.add_argument('--knowledge-resource', help='Update this existing Knowledge resource; requires --local-records')
     args = parser.parse_args(argv)
-    if args.isa_export and (not args.resident_id or args.local_records):
+    if args.isa_export and (not (args.resident_id or args.portal_script) or args.local_records):
         parser.error('--isa-export requires --resident-id and cannot be combined with --local-records')
-    if args.resident_id and not args.isa_export:
+    if (args.resident_id or args.portal_script) and not args.isa_export:
         args.local_records = True
     if args.native_only and not args.local_records:
         parser.error('--native-only requires local records with --resident-id')
@@ -621,7 +622,7 @@ def main(argv=None):
     start, end = moment(args.since), moment(args.until)
     if not start < end or args.max_pages < 1 or not 1 <= args.workers <= 16:
         parser.error('invalid window or page budget')
-    if args.local_records and not args.resident_id:
+    if args.local_records and not (args.resident_id or args.portal_script):
         parser.error('--local-records requires --resident-id')
     if args.knowledge_resource and not args.local_records:
         parser.error('--knowledge-resource requires --local-records')
@@ -660,10 +661,17 @@ def main(argv=None):
         if not args.local_records and end - start > timedelta(days=60):
             parser.error('Portal export window must not exceed 60 days')
         from scripts.resident_hatg_instruction import execute
-        def call(name, **arguments):
+        def resident_call(name, **arguments):
             return execute(args.resident_id, {'schema': 'tfi.hatg-instruction.v2', 'instruction': name,
                            'arguments': arguments, 'idempotency_key': 'usage-report:' + uuid.uuid4().hex},
                            request_timeout=30, max_attempts=1)['result']
+        if portal_call is not None:
+            call = portal_call
+        elif args.portal_script:
+            from portal_script import isa
+            call = isa
+        else:
+            call = resident_call
         accounts = call('ListProviderAccounts', refresh=False).get('accounts') or []
         reminders = {'status': 'disabled'}
         if not args.skip_reset_reminders:

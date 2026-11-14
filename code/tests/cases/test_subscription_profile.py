@@ -64,11 +64,11 @@ def test_monitor_restores_attempt_success_and_tier_without_new_provider_reads(mo
     reader = Mock(return_value=kimi_profile({'kind': 'ok', 'userInfo': {'userLevel': 20, 'userLevelName': 'Moderato'}}))
     monkeypatch.setattr(subscription_profile, 'read_profile', reader)
     for _ in range(2):
-        monitor._refresh_work(account, read=False, force=False, passive=False, profile=True)
+        subscription_profile.collect_profiles(accounts, store=store)
     assert reader.call_count == 1
     accounts.observe.assert_not_called()
     restarted = AccountMonitor(accounts, Mock(), observation_store=AccountObservationStore(), login_state_store=Mock())
-    assert restarted._profiles['one']['tier']['name'] == 'Moderato'
+    assert store.profiles(['one'])['one']['tier']['name'] == 'Moderato'
 
 
 def test_failed_tier_read_retries_on_the_next_hourly_check_not_the_next_day():

@@ -73,7 +73,6 @@ class AccountMonitor:
         self._inflight = {}
         self._last_read_attempt = {}
         self._last_good_read = {}
-        self._profiles = {}
         for account in accounts.accounts():
             state = self._observation_store.state(account.provider, account.account_id)
             if not isinstance(state, dict):
@@ -83,7 +82,6 @@ class AccountMonitor:
             if state.get('success_at') is not None:
                 self._last_good_read[account.account_id] = state['success_at']
                 self._samples[account.account_id] = state.get('sample') or {}
-            self._profiles[account.account_id] = state.get('profile') or {}
         self._next_scheduled_check = 0.0
         self._lock = threading.RLock()
         self.stopped, self.wakeup = threading.Event(), threading.Event()
@@ -312,31 +310,6 @@ class AccountMonitor:
         observes = getattr(self.accounts, "observes_passively", None)
         return callable(observes) and observes(account) is True
 
-    def _refresh_work(self, account, *, read, force, passive, profile):
-        if read:
-            self.refresh_account(account, force=force, passive=passive)
-        if not profile or not _subscription(account) or self.stopped.is_set():
-            return
-        from .subscription_profile import read_profile
-        if not self._observation_store.claim(account.provider, account.account_id,
-                now=time.time(), interval=86400, profile=True):
-            return
-        try:
-            with self.observations.scope():
-                value = read_profile(account, self.accounts)
-                if value.get('status') != 'observed':
-                    raise ValueError('Subscription tier is unavailable')
-        except InterruptedError:
-            return
-        except Exception as error:
-            logger.warning('Account subscription read failed for %s (%s)', account.account_id, type(error).__name__)
-            with self._lock:
-                value = {**self._profiles.get(account.account_id, {}), 'stale': True,
-                         'error_code': type(error).__name__}
-        self._observation_store.save_profile(account.provider, account.account_id, value)
-        with self._lock:
-            self._profiles[account.account_id] = value
-
     def _run(self):
         # A slow account must not hold the next refresh of every other account.
         # Bound resource use and keep at most one pending observation per identity.
@@ -367,13 +340,13 @@ class AccountMonitor:
                             # Between real reads, a Provider whose turns already
                             # report quota is read from that cache only.
                             passive = self._passive_read(account)
-                            if not real and not passive and not scheduled:
+                            if not real and not passive:
                                 continue
                             with self._lock:
                                 if account.account_id not in self._inflight:
                                     self._inflight[account.account_id] = pool.submit(
-                                        self._refresh_work, account, read=real or passive,
-                                        force=force and real, passive=not real, profile=scheduled)
+                                        self.refresh_account, account,
+                                        force=force and real, passive=not real)
                         # A check that could not list the accounts runs again on the next poll.
                         if scheduled:
                             self._next_scheduled_check = now + SCHEDULED_CHECK_SECONDS
@@ -404,6 +377,9 @@ class AccountMonitor:
         from .account_registrations import registrations
         rows = registrations()
         entries = self.accounts.accounts()
+        profiles = self._observation_store.profiles([a.account_id for a in entries])
+        if not isinstance(profiles, dict):
+            profiles = {}
         enabled = {r["account_id"]: r["enabled"] for r in rows}
         # Missing rows stay distinguishable from a recorded logged_out state:
         # the public registration view still owns legacy credential discovery.
@@ -417,7 +393,7 @@ class AccountMonitor:
         for account in entries:
             settings = partitions.get(account.capacity_key) or {}
             sample = samples.get(account.account_id) or {"status": "loading", "refreshing": True, "rate_limits": []}
-            sample = {**sample, 'subscription': deepcopy(self._profiles.get(account.account_id) or {})}
+            sample = {**sample, 'subscription': deepcopy(profiles.get(account.account_id) or {})}
             # Raw observations feed the scheduler. Its configured quota_reserve
             # is the single public interpretation of the account's threshold.
             sample.pop("quota", None)

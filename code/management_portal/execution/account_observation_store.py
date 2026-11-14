@@ -125,6 +125,14 @@ class AccountObservationStore:
                 WHERE provider=%s AND account_id=%s''',
                 (now, json_text(evidence(sample)), provider, account_id))
 
+    def profiles(self, account_ids):
+        if not account_ids:
+            return {}
+        with self.connection() as c:
+            rows = c.execute('SELECT account_id,profile FROM read_state WHERE account_id=ANY(%s)',
+                             (list(account_ids),)).fetchall()
+        return {row['account_id']: json_value(row['profile']) for row in rows}
+
     def save_profile(self, provider, account_id, profile):
         failed = bool(profile.get('stale')) or profile.get('status') != 'observed'
         with self.connection() as c:

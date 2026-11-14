@@ -57,3 +57,31 @@ def read_profile(account, accounts):
         from management_portal.antigravity_accounts import catalog_snapshot
         return catalog_snapshot(account.route_id).get('subscription') or tier_sample({}, source='acp')
     return tier_sample({}, source=account.provider)
+
+
+def collect_profiles(accounts, *, store=None):
+    """The daily runner owns native tier reads; Home only reads persisted facts."""
+    import time
+    from .account_observation_store import AccountObservationStore
+    from .account_observation import ObservationLifetime
+    store = store if store is not None else AccountObservationStore()
+    results = []
+    for account in accounts.accounts():
+        if account.kind != 'subscription_login':
+            continue
+        if not store.claim(account.provider, account.account_id, now=time.time(), interval=86400, profile=True):
+            results.append({'account_id': account.account_id, 'status': 'cached'})
+            continue
+        try:
+            with ObservationLifetime().scope():
+                value = read_profile(account, accounts)
+                if value.get('status') != 'observed':
+                    raise ValueError('Subscription tier unavailable')
+        except Exception as error:
+            value = {**(store.state(account.provider, account.account_id).get('profile') or {}),
+                     'stale': True, 'error_code': type(error).__name__}
+        store.save_profile(account.provider, account.account_id, value)
+        results.append({'account_id': account.account_id,
+                        'status': 'failed' if value.get('stale') else 'observed',
+                        'tier': value.get('tier'), 'error_code': value.get('error_code')})
+    return results
