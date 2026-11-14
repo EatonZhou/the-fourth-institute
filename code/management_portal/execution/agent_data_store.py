@@ -311,11 +311,12 @@ class AgentDataStore:
     def record_subscription_native_link(
         self, *, execution_id: str, provider: str, account_id: str,
         backend_route_id: str, native_session_id: str, native_turn_id: str,
+        accepted_turn: bool = False,
     ) -> str:
         return self.executions.record_subscription_native_link(
             execution_id=execution_id, provider=provider, account_id=account_id,
             backend_route_id=backend_route_id, native_session_id=native_session_id,
-            native_turn_id=native_turn_id,
+            native_turn_id=native_turn_id, accepted_turn=accepted_turn,
         )
 
     def finish_execution(self, execution_id: str, *, status: str, finished_at: str = "",

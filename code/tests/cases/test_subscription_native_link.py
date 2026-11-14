@@ -129,6 +129,45 @@ def test_real_native_identity_conflicts_still_fail(monkeypatch, field):
         store.record_subscription_native_link(**{**values, field:'different'})
 
 
+def test_accepted_continuation_keeps_all_turns_and_survives_replay(monkeypatch):
+    store, projector, request, calls = setup(monkeypatch, mode='persistent')
+    details = {'provider':'codex', 'backend_session_id':'same-session', 'backend_route_id':'selected'}
+    for turn in ['first-turn', 'continued-turn', 'continued-turn']:
+        projector.observe_runtime_event(request.execution_id, 'provider_input_bound', {**details, 'turn_id':turn})
+    projector.complete(execution_id=request.execution_id, backend_session_id='same-session',
+                       backend_route_id='selected', turn_id='continued-turn', response='done')
+    projector.discard(request.execution_id)
+    fact, = links(store, request.execution_id)
+    assert fact['native_session_id'] == 'same-session'
+    assert fact['native_turn_id'] == 'first-turn'
+    assert fact['native_turn_ids'] == ['first-turn', 'continued-turn']
+    values = dict(execution_id=request.execution_id, provider='codex', account_id='subscription',
+                  backend_route_id='selected', native_session_id='same-session', native_turn_id='continued-turn')
+    store.record_subscription_native_link(**values)
+    with pytest.raises(ValueError, match='identity changed'):
+        store.record_subscription_native_link(**{**values, 'native_turn_id':'unaccepted-turn'})
+    for field in ['provider', 'account_id', 'backend_route_id', 'native_session_id']:
+        with pytest.raises(ValueError, match='identity changed|provider does not match'):
+            store.record_subscription_native_link(**{**values, field:'different'}, accepted_turn=True)
+    assert links(store, request.execution_id) == [fact]
+
+
+def test_continuation_acceptance_retries_a_failed_write_during_cleanup(monkeypatch):
+    store, projector, request, calls = setup(monkeypatch, mode='persistent')
+    details = {'backend_session_id':'same-session', 'backend_route_id':'selected'}
+    projector.observe_runtime_event(request.execution_id, 'provider_input_bound', {**details, 'turn_id':'first-turn'})
+    original = store.record_subscription_native_link
+    def fail(**kwargs):
+        raise RuntimeError('temporary write failure')
+    monkeypatch.setattr(store, 'record_subscription_native_link', fail)
+    with pytest.raises(RuntimeError):
+        projector.observe_runtime_event(request.execution_id, 'provider_input_bound', {**details, 'turn_id':'continued-turn'})
+    monkeypatch.setattr(store, 'record_subscription_native_link', original)
+    projector.discard(request.execution_id)
+    fact, = links(store, request.execution_id)
+    assert fact['native_turn_ids'] == ['first-turn', 'continued-turn']
+
+
 def test_cancel_cleanup_retries_failed_native_write_with_observed_route(monkeypatch):
     store, projector, request, calls = setup(monkeypatch)
     projection = projector._active[request.execution_id]

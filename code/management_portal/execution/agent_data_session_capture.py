@@ -124,6 +124,7 @@ class SessionCapture:
     def record_subscription_native_link(
         self, projection: ExecutionProjection, *, backend_session_id: str = "",
         backend_route_id: str = "", turn_id: str = "", final: bool = False,
+        accepted_turn: bool = False,
     ) -> None:
         """Observe native identity before stateless isolation replaces binding IDs."""
         request = projection.request
@@ -152,6 +153,8 @@ class SessionCapture:
             projection.native_session_id = session_id
         if turn_id:
             projection.native_turn_id = str(turn_id)
+            if accepted_turn:
+                projection.native_accepted_turn_id = projection.native_turn_id
         if not final and not (projection.native_session_id and projection.native_turn_id):
             return
         signature = (projection.native_session_id, projection.native_turn_id, route)
@@ -161,6 +164,7 @@ class SessionCapture:
             execution_id=request.execution_id, provider=request.provider,
             account_id=projection.native_account_id, backend_route_id=route,
             native_session_id=projection.native_session_id, native_turn_id=projection.native_turn_id,
+            accepted_turn=projection.native_accepted_turn_id == projection.native_turn_id,
         )
         # Cache only a committed fact: a failed write must be retryable.
         projection.native_link_signature = signature

@@ -143,6 +143,7 @@ class AgentDataProjector:
                                                    or projection.session.backend_session_id or ""),
                 backend_route_id=str(details.get("backend_route_id") or projection.session.backend_route_id),
                 turn_id=projection.turn_id,
+                accepted_turn=True,
             )
             resolved_backend_session_id = str(
                 details.get("backend_session_id")

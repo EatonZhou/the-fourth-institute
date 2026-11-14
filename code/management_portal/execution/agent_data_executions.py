@@ -181,6 +181,7 @@ class ExecutionRecords:
     def record_subscription_native_link(
         self, *, execution_id: str, provider: str, account_id: str,
         backend_route_id: str, native_session_id: str, native_turn_id: str,
+        accepted_turn: bool = False,
     ) -> str:
         """Keep native identity independently of a stateless context binding.
 
@@ -212,10 +213,20 @@ class ExecutionRecords:
                 "SELECT data_json FROM agent_operations WHERE operation_id=%s", (operation_id,),
             ).fetchone()
             old = json_value(previous["data_json"]) if previous else {}
-            for field in ("provider", "account_id", "backend_route_id", "native_session_id", "native_turn_id"):
+            for field in ("provider", "account_id", "backend_route_id", "native_session_id"):
                 if old.get(field) and data[field] and old[field] != data[field]:
                     raise ValueError("Subscription native identity changed during one execution")
                 data[field] = old.get(field) or data[field]
+            turns = list(old.get("native_turn_ids") or ([old["native_turn_id"]] if old.get("native_turn_id") else []))
+            if native_turn_id and native_turn_id not in turns:
+                if turns and not accepted_turn:
+                    raise ValueError("Subscription native identity changed during one execution")
+                turns.append(native_turn_id)
+            # The original accepted turn remains stable; continuations are
+            # independently accepted turns of the same account and session.
+            data["native_turn_id"] = old.get("native_turn_id") or native_turn_id
+            if len(turns) > 1:
+                data["native_turn_ids"] = turns
             data["identity_status"] = "observed" if data["native_session_id"] else "unavailable"
             data["raw_locator"] = {"account_id": account_id,
                                    "native_session_id": data["native_session_id"]}

@@ -35,6 +35,7 @@ class ExecutionProjection:
     native_turn_id: str = ""
     native_route_id: str = ""
     native_link_signature: tuple[str, str, str] | None = None
+    native_accepted_turn_id: str = ""
     final_segment_id: str = ""
     compaction_segment_id: str = ""
     persisted_segments: set[str] = field(default_factory=set)
