@@ -6,9 +6,10 @@ from management_portal.execution.subscription_profile import kimi_profile, reset
 
 
 def test_kimi_profile_uses_native_level_without_account_identifiers():
-    result = kimi_profile({'kind': 'ok', 'userInfo': {'userLevel': 20, 'userLevelName': 'Moderato',
+    result = kimi_profile({'kind': 'ok', 'userInfo': {'userLevel': 20, 'userLevelName': 'Moderato', 'region': 'REGION_CN',
                                                   'phone': 'SECRET', 'userId': 'SECRET'}})
     assert result['tier'] == {'id': '20', 'name': 'Moderato'}
+    assert result['region'] == 'REGION_CN'
     assert 'SECRET' not in json.dumps(result)
     assert kimi_profile({'kind': 'error'})['status'] == 'unknown'
 

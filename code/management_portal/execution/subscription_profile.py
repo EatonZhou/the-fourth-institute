@@ -12,8 +12,11 @@ def tier_sample(tier, *, source, observed_at=None):
 def kimi_profile(payload):
     info = payload.get('userInfo') or {} if payload.get('kind') == 'ok' else {}
     level = info.get('userLevel')
-    return tier_sample({'id': str(level) if type(level) is int else '',
-                        'name': info.get('userLevelName')}, source='kimi.oauth/userinfo')
+    result = tier_sample({'id': str(level) if type(level) is int else '',
+                          'name': info.get('userLevelName')}, source='kimi.oauth/userinfo')
+    if info.get('region') in ('REGION_CN', 'REGION_OVERSEA'):
+        result['region'] = info['region']
+    return result
 
 
 def reset_cards(payload, *, observed_at):

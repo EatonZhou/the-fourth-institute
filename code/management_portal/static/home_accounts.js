@@ -206,7 +206,8 @@
       const currency = account.provider === "kimi" && subscription.region === "REGION_CN" ? "¥" : "$";
       const tierValue = priced ? window.PortalI18n.text`${currency}${monthlyPrice}/月` : tier.name || tier.id || "—";
       const stale = subscription.stale || (subscription.observed_at && Date.now() / 1000 - subscription.observed_at > 86400);
-      const tierTitle = [tier.name, tier.id !== tier.name && tier.id, subscription.region,
+      const regionLabel = subscription.region === "REGION_CN" ? t("中国区") : subscription.region === "REGION_OVERSEA" ? t("国际区") : "";
+      const tierTitle = [tier.name || tier.id, account.provider !== "kimi" && tier.id !== tier.name && tier.id, regionLabel,
         priced && t("标准月价；实际扣款以账单为准"),
         subscription.observed_at && formatDateTime(subscription.observed_at * 1000),
         stale && t("数据已过期，数值为上次采样")].filter(Boolean).join(" · ");
