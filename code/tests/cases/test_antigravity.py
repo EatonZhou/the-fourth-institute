@@ -480,7 +480,10 @@ def test_account_quota_uses_native_command_without_model_tools_or_resident_histo
     assert calls[3]["params"]["prompt"] == [{"type": "text", "text": "/usage"}]
 
 
-def test_quota_reuses_its_native_session_and_updates_catalog(agent):
+@pytest.mark.parametrize('empty_load', [False, True])
+def test_quota_reuses_its_native_session_and_updates_catalog(agent, monkeypatch, empty_load):
+    if empty_load:
+        monkeypatch.setattr(accounts, 'environment', lambda _: {'GEMINI_HOME': str(agent), 'FAKE_EMPTY_LOAD': '1'})
     assert accounts.observe_account("antigravity_one")["status"] == "ok"
     assert accounts.observe_account("antigravity_one")["status"] == "ok"
     calls = requests(agent)

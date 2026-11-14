@@ -183,9 +183,16 @@ def observe_account(account_id):
                 if prior:
                     params["sessionId"] = prior
                 result = client.call("session/load" if prior else "session/new", params)
-                session_id = result["sessionId"]
+                # ACP load responses need not echo sessionId. The requested
+                # identity remains authoritative for a resumed quota session.
+                session_id = prior or result.get("sessionId", "")
+                if not isinstance(session_id, str) or not session_id:
+                    raise ValueError("Missing quota session identity")
                 atomic_write_private_bytes(saved, json.dumps({"session_id": session_id}).encode())
-                save_catalog(account_id, result, handshake.get("agentCapabilities") or {}, authenticated=authenticated)
+                # Model configuration is optional on load; missing catalog
+                # metadata must not prevent the independent /usage command.
+                if result.get("models") or result.get("configOptions"):
+                    save_catalog(account_id, result, handshake.get("agentCapabilities") or {}, authenticated=authenticated)
                 # Do not turn a missing native slash command into an LLM prompt.
                 # Google advertises commands asynchronously AFTER session/new.
                 with advertised:

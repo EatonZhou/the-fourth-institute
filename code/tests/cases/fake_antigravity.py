@@ -149,6 +149,10 @@ for line in sys.stdin:
         if method == "session/load":
             update(sid, sessionUpdate="agent_message_chunk", content={"type": "text", "text": "old history"})
         result = {"sessionId": sid, "models": {"currentModelId": "gemini-test", "availableModels": [{"modelId": "gemini-test"}]}}
+        if method == "session/load":
+            result.pop("sessionId")  # LoadSessionResponse does not echo the ID.
+            if os.environ.get('FAKE_EMPTY_LOAD'):
+                result = {}
     elif method == "session/prompt":
         threading.Thread(target=prompt, args=(message["id"], params), daemon=True).start()
         continue
