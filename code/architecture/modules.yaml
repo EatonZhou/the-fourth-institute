@@ -1598,7 +1598,6 @@ protocols:
     related_designs:
       - "decision_b77fde81e7a0"
       - "decision_c54e68a82d7a"
-      - "decision_cc96fce57ab6"
       - "decision_daba6706a788"
       - "decision_ad3e21094f14"
       - "decision_d19b9909a674"
