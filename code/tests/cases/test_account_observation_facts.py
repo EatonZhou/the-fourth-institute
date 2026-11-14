@@ -45,7 +45,7 @@ def facts_case(monkeypatch):
     monitor = account_monitor.AccountMonitor.__new__(account_monitor.AccountMonitor)
     monitor.__dict__.update(scheduler=NS(health=lambda: {}), accounts=NS(accounts=lambda: entries),
                             _lock=threading.RLock(), _samples={}, _refreshing=False,
-                            wakeup=threading.Event(), _inflight={}, _refresh_refused=False,
+                            wakeup=threading.Event(), _inflight={}, _refresh_refused=False, _profiles={},
                             _login_store=store, billing=NS(exchange_rates_snapshot=lambda: {}))
     monkeypatch.setattr(isa, '_SERVER', NS(quota_monitor=monitor))
     invoke = NS(caller='fixture', argument=lambda key: None)

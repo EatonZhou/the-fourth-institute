@@ -94,6 +94,10 @@ def make_monitor(history=None):
     accounts.observe.return_value = sample()
     accounts.runtime_catalog.return_value = {'models': []}
     history = history if history is not None else Mock()
+    durable = AccountObservationStore()
+    history.claim.side_effect = durable.claim
+    history.state.side_effect = durable.state
+    history.save_success.side_effect = durable.save_success
     return AccountMonitor(accounts, Mock(), usage_store=Mock(), login_state_store=Mock(),
                           observation_store=history), account, accounts, history
 

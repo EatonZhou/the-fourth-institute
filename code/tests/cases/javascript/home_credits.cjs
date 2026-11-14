@@ -20,7 +20,7 @@ let statements=homeStatements();
 if(process.env.HOME_ACCOUNTS_SOURCE){const text=fs.readFileSync(process.env.HOME_ACCOUNTS_SOURCE,'utf8');const ast=babelParse(text,'home_accounts.js');
  const factory=ast.program.body[0].expression.callee.body.body.find(n=>n.type==='FunctionDeclaration'&&n.id.name.startsWith('create'));
  statements=statements.filter(s=>s.file!=='home_accounts.js').concat(factory.body.body.map(node=>({node,source:text.slice(node.start,node.end)})));}
-const names=['executionAccounts','accountConcurrencyRows','accountConcurrencyHtml','accountThresholdHtml','accountIntervalHtml','accountSettingsPending','accountQuotaWindowIsStale','accountQuotaWindows','accountSummaryQuotaWindows','accountQuotaWarning','accountCreditsHtml','renderAccountDetails','loadAccountThresholds','loadAccountDetails','saveAccountThreshold'];
+const names=['executionAccounts','accountConcurrencyRows','accountConcurrencyHtml','accountThresholdHtml','accountIntervalHtml','accountSettingsPending','accountQuotaWindowIsStale','accountQuotaWindows','accountSummaryQuotaWindows','accountQuotaWarning','accountSubscriptionHtml','accountCreditsHtml','renderAccountDetails','loadAccountThresholds','loadAccountDetails','saveAccountThreshold'];
 for(const name of names)vm.runInContext(statements.find(s=>s.node.type==='FunctionDeclaration'&&s.node.id.name===name).source,context);
 const form=()=>document.querySelector('[data-account-threshold]');
 const toggle=()=>form().elements.allow_credits;

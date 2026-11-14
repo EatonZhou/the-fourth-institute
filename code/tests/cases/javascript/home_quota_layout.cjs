@@ -5,7 +5,7 @@ const root = path.resolve(__dirname, '../../..');
 const {chromium} = require(path.join(root, 'management_portal/test_framework/tau_runtime/node_modules/playwright'));
 const functions = ['executionAccounts','accountQuotaWindowIsStale','accountQuotaWindows',
   'accountSummaryQuotaWindows','accountQuotaWarning','accountLimitStatus','refreshAccountQuotaWindows','accountQuotaWindow','accountLimitRow',
-  'accountRows','accountApiRow','accountBalanceHtml','accountCreditsHtml','accountConcurrencyRows','accountConcurrencyHtml','accountIntervalHtml','accountSettingsPending','accountThresholdHtml','loadAccountThresholds','saveAccountThreshold','renderAccountDetails'];
+  'accountRows','accountApiRow','accountBalanceHtml','accountSubscriptionHtml','accountCreditsHtml','accountConcurrencyRows','accountConcurrencyHtml','accountIntervalHtml','accountSettingsPending','accountThresholdHtml','loadAccountThresholds','saveAccountThreshold','renderAccountDetails'];
 const renderer = homeStatements().filter(({node:n})=>n.type==='FunctionDeclaration' && functions.includes(n.id.name)).map(s=>s.source).join('\n');
 (async()=>{
   const browser=await chromium.launch({headless:true,args:['--no-sandbox']});

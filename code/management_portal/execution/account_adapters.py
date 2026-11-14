@@ -257,10 +257,12 @@ class CodexAccounts:
         check_cancelled()
         payload = client.request("account/rateLimits/read", {}, timeout=15.0, cancellation_requested=cancelled)
         sample = quota_sample(payload, observed_at=time.time())
+        from .subscription_profile import reset_cards
         credit_sample = credits(payload)
         if credit_sample is not None:
             credit_sample.update(observed_at=sample["observed_at"], stale=False)
         return {"status": "ok", "quota": sample, "credits": credit_sample,
+                "refresh_cards": reset_cards(payload, observed_at=sample['observed_at']),
                 "rate_limits": [{"id": window["window"], "quota_group": "codex",
                                  "label": "每周" if window.get("window_duration_mins") == 10080 else "5 小时" if window.get("window_duration_mins") == 300 else window["window"],
                                  "remaining_percent": window["remaining_percent"],

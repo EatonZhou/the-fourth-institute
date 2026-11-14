@@ -164,9 +164,6 @@ def test_native_refresh_coalesces_and_retains_observation_on_failure(monkeypatch
         await cache._refreshes[("one", "/one")]
         assert reader.await_count == 1
         assert cache.snapshot("one", "/one")["quota_status"] == "available"
-        cache.request_refresh(profile, force=True)
-        assert reader.await_count == 1
-        cache._attempts.clear()
         reader.side_effect = RuntimeError("private transport details")
         cache.request_refresh(profile)
         await cache._refreshes[("one", "/one")]

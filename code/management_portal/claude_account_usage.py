@@ -56,7 +56,6 @@ class ClaudeAccountUsage:
     def __init__(self) -> None:
         self._accounts: dict[tuple[str, str], dict[str, dict[str, Any]]] = {}
         self._refreshes: dict[tuple[str, str], asyncio.Task] = {}
-        self._attempts: dict[tuple[str, str], float] = {}
         self._errors: dict[tuple[str, str], str] = {}
         self._error_codes: dict[tuple[str, str], str] = {}
         self._error_observed_at: dict[tuple[str, str], str] = {}
@@ -64,10 +63,10 @@ class ClaudeAccountUsage:
     def request_refresh(self, profile: dict[str, Any], *, force: bool = False) -> None:
         key = (profile["id"], str(profile["config_dir"]))
         task = self._refreshes.get(key)
-        interval = 60 if force or key in self._errors else 180
-        if (task and not task.done()) or time.monotonic() - self._attempts.get(key, -float("inf")) < interval:
+        # Execution owns persisted query admission. This layer only coalesces
+        # an in-flight task; it must not add another freshness timer.
+        if task and not task.done():
             return
-        self._attempts[key] = time.monotonic()
         self._refreshes[key] = asyncio.create_task(self._refresh(profile, key))
 
     async def _refresh(self, profile: dict[str, Any], key: tuple[str, str]) -> None:

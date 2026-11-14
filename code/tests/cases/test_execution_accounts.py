@@ -200,7 +200,7 @@ def test_native_names_preserve_bound_route_and_capacity_settings():
     assert accounts.get("five") == accounts.get("codex_five")
 
 
-def test_shared_quota_policy_and_status_for_an_adapter():
+def test_shared_quota_policy_and_status_for_an_adapter(monkeypatch):
     """账号监视器为适配器账号汇报额度保留状态，原生读取失败时限额标记为过期"""
     accounts = ExecutionAccounts((Adapter(),))
     scheduler = Scheduler(accounts=accounts, quota_reserve_enabled=True, dispatch_interval_min_seconds=0, dispatch_interval_max_seconds=0)
@@ -214,6 +214,9 @@ def test_shared_quota_policy_and_status_for_an_adapter():
     assert all("quota" not in item for item in snapshot["accounts"])
     adapter = accounts.adapters["claude"]
     adapter.observe = Mock(side_effect=RuntimeError("native unavailable"))
+    from management_portal.execution import account_monitor as module
+    later = module.time.time() + module.MIN_READ_INTERVAL_SECONDS
+    monkeypatch.setattr(module.time, 'time', lambda: later)
     monitor.refresh_account(accounts.get("test_alpha"))
     assert monitor.snapshot()["accounts"][0]["rate_limits"][0]["stale"]
 

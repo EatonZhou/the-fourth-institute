@@ -1,4 +1,13 @@
 {
+  "套餐档位": {"en":"Subscription tier","zh-CN":"套餐档位"},
+  "刷新卡次数": {"en":"Available resets","zh-CN":"刷新卡次数"},
+  "刷新卡": {"en":"Reset credit","zh-CN":"刷新卡"},
+  "发放时间": {"en":"Granted at","zh-CN":"发放时间"},
+  "有效期至": {"en":"Expires at","zh-CN":"有效期至"},
+  "未提供": {"en":"Not provided","zh-CN":"未提供"},
+  "上游未提供刷新卡明细": {"en":"Reset credit details were not provided by the service","zh-CN":"上游未提供刷新卡明细"},
+  "上游仅返回部分刷新卡明细": {"en":"The service returned only some reset credit details","zh-CN":"上游仅返回部分刷新卡明细"},
+  "采样时间": {"en":"Observed at","zh-CN":"采样时间"},
   "关联类型无效。": {"en":"Invalid relation type.","zh-CN":"关联类型无效。"},
   "单条内容过长，请精简判断，完整材料通过来源关联。": {"en":"This entry is too long. Shorten the judgment and link the full material as a source.","zh-CN":"单条内容过长，请精简判断，完整材料通过来源关联。"},
   "适应": {"en":"Fit","zh-CN":"适应"},

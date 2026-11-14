@@ -73,6 +73,17 @@ class AccountMonitor:
         self._inflight = {}
         self._last_read_attempt = {}
         self._last_good_read = {}
+        self._profiles = {}
+        for account in accounts.accounts():
+            state = self._observation_store.state(account.provider, account.account_id)
+            if not isinstance(state, dict):
+                continue
+            if state.get('attempted_at') is not None:
+                self._last_read_attempt[account.account_id] = state['attempted_at']
+            if state.get('success_at') is not None:
+                self._last_good_read[account.account_id] = state['success_at']
+                self._samples[account.account_id] = state.get('sample') or {}
+            self._profiles[account.account_id] = state.get('profile') or {}
         self._next_scheduled_check = 0.0
         self._lock = threading.RLock()
         self.stopped, self.wakeup = threading.Event(), threading.Event()
@@ -93,10 +104,11 @@ class AccountMonitor:
         if not passive:
             with self._lock:
                 now = time.time()
-                attempted = self._last_read_attempt.get(account.account_id)
-                if attempted is not None and now - attempted < MIN_READ_INTERVAL_SECONDS:
+                if not self._observation_store.claim(account.provider, account.account_id,
+                        now=now, interval=MIN_READ_INTERVAL_SECONDS):
+                    state = self._observation_store.state(account.provider, account.account_id)
                     self._refresh_refused = True
-                    self._last_refresh_request = attempted
+                    self._last_refresh_request = state.get('attempted_at') or now
                     return
                 self._last_read_attempt[account.account_id] = now
         # Every refresh the monitor already performs is appended to the history log;
@@ -135,6 +147,8 @@ class AccountMonitor:
                 return  # Cancellation is not a fresh quota or login observation.
             sample["checked_at"] = time.time()
             if not passive and sample.get("status") in {"ok", "available"}:
+                self._observation_store.save_success(account.provider, account.account_id,
+                                                    sample, now=sample['checked_at'])
                 with self._lock:
                     self._last_good_read[account.account_id] = sample["checked_at"]
             if _subscription(account):
@@ -298,6 +312,31 @@ class AccountMonitor:
         observes = getattr(self.accounts, "observes_passively", None)
         return callable(observes) and observes(account) is True
 
+    def _refresh_work(self, account, *, read, force, passive, profile):
+        if read:
+            self.refresh_account(account, force=force, passive=passive)
+        if not profile or not _subscription(account) or self.stopped.is_set():
+            return
+        from .subscription_profile import read_profile
+        if not self._observation_store.claim(account.provider, account.account_id,
+                now=time.time(), interval=86400, profile=True):
+            return
+        try:
+            with self.observations.scope():
+                value = read_profile(account, self.accounts)
+                if value.get('status') != 'observed':
+                    raise ValueError('Subscription tier is unavailable')
+        except InterruptedError:
+            return
+        except Exception as error:
+            logger.warning('Account subscription read failed for %s (%s)', account.account_id, type(error).__name__)
+            with self._lock:
+                value = {**self._profiles.get(account.account_id, {}), 'stale': True,
+                         'error_code': type(error).__name__}
+        self._observation_store.save_profile(account.provider, account.account_id, value)
+        with self._lock:
+            self._profiles[account.account_id] = value
+
     def _run(self):
         # A slow account must not hold the next refresh of every other account.
         # Bound resource use and keep at most one pending observation per identity.
@@ -327,12 +366,14 @@ class AccountMonitor:
                             real = self._real_read_due(account, now, requested=force, scheduled=scheduled)
                             # Between real reads, a Provider whose turns already
                             # report quota is read from that cache only.
-                            if not real and not self._passive_read(account):
+                            passive = self._passive_read(account)
+                            if not real and not passive and not scheduled:
                                 continue
                             with self._lock:
                                 if account.account_id not in self._inflight:
                                     self._inflight[account.account_id] = pool.submit(
-                                        self.refresh_account, account, force=force and real, passive=not real)
+                                        self._refresh_work, account, read=real or passive,
+                                        force=force and real, passive=not real, profile=scheduled)
                         # A check that could not list the accounts runs again on the next poll.
                         if scheduled:
                             self._next_scheduled_check = now + SCHEDULED_CHECK_SECONDS
@@ -376,6 +417,7 @@ class AccountMonitor:
         for account in entries:
             settings = partitions.get(account.capacity_key) or {}
             sample = samples.get(account.account_id) or {"status": "loading", "refreshing": True, "rate_limits": []}
+            sample = {**sample, 'subscription': deepcopy(self._profiles.get(account.account_id) or {})}
             # Raw observations feed the scheduler. Its configured quota_reserve
             # is the single public interpretation of the account's threshold.
             sample.pop("quota", None)

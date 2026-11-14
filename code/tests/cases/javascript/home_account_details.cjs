@@ -17,11 +17,25 @@ const context = vm.createContext({document,URL,window:{PortalI18n:{t:x=>x,html:t
   changeAccountResidentsIntake:(_,action)=>actions.push(action),
   accountDetails:{accountId:'api',panel:document.querySelector('#panel'),snapshot,
     popover:{isOpen:()=>true,reposition:()=>{},close:()=>{}}}});
-for (const name of ['accountConcurrencyRows', 'accountConcurrencyHtml', 'accountThresholdHtml', 'accountIntervalHtml', 'accountSettingsPending', 'accountQuotaWindowIsStale', 'accountQuotaWindows', 'accountSummaryQuotaWindows', 'accountQuotaWarning', 'accountCreditsHtml', 'renderAccountDetails', 'refreshAccountQuotaWindows']) {
+for (const name of ['accountConcurrencyRows', 'accountConcurrencyHtml', 'accountThresholdHtml', 'accountIntervalHtml', 'accountSettingsPending', 'accountQuotaWindowIsStale', 'accountQuotaWindows', 'accountSummaryQuotaWindows', 'accountQuotaWarning', 'accountSubscriptionHtml','accountCreditsHtml', 'renderAccountDetails', 'refreshAccountQuotaWindows']) {
   vm.runInContext(homeStatements().find(({node:n})=>n.type==='FunctionDeclaration' && n.id.name===name).source,context);
 }
 try {
   context.renderAccountDetails();
+  Object.assign(account, {kind:'subscription_login',provider:'codex',subscription:{tier:{name:'promax'}},
+    refresh_cards:{available_count:3,cards:[{title:'Weekly <reset>',expiresAt:2000,status:'available'}]}});
+  context.formatDateTime = value => value ? new Date(value).toISOString() : '';
+  context.renderAccountDetails();
+  assert.equal(document.querySelector('[data-account-tier]').textContent,'promax');
+  assert.equal(document.querySelector('[data-account-refresh-cards]').textContent,'3');
+  assert.match(document.querySelector('[data-account-refresh-cards]').title,/Weekly <reset>.*1970-01-01T00:33:20/);
+  assert.match(document.querySelector('[data-account-refresh-cards]').title,/部分刷新卡明细/);
+  assert.equal(document.querySelector('[data-account-refresh-cards] reset'),null);
+  account.refresh_cards={available_count:0,cards:[]};context.renderAccountDetails();
+  assert.equal(document.querySelector('[data-account-refresh-cards]').textContent,'0');
+  account.refresh_cards={available_count:null,cards:null};context.renderAccountDetails();
+  assert.equal(document.querySelector('[data-account-refresh-cards]').textContent,'—');
+  assert.match(document.querySelector('[data-account-refresh-cards]').title,/未提供刷新卡明细/);
   assert.equal(document.querySelector('[data-account-metric="total"]').textContent,'8');
   assert.equal(document.querySelector('[data-account-metric="queued_messages"]').textContent,'3');
   assert.equal(document.querySelector('[data-account-metric="running"]').textContent,'2');

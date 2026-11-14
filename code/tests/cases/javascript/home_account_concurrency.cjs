@@ -26,7 +26,7 @@ const context=vm.createContext({document,URL,console,AbortController,
   accountIntervalEdits:new Map(),accountConcurrencyEdits:new Map(),accountThresholdEdits:new Map(),accountIntakePending:new Map(),syncAccountDetailsButtons:()=>{},
   homeApi:{get:async()=>{throw new Error('stats unavailable');}},
   accountDetails:{accountId:'api',panel:document.querySelector('#panel'),snapshot:{total:1},popover:{isOpen:()=>true,reposition:()=>{},close:()=>{}}}});
-for(const name of ['executionAccounts','accountQuotaWindowIsStale','accountQuotaWindows','accountSummaryQuotaWindows','accountQuotaWarning','accountCreditsHtml','accountConcurrencyRows','accountConcurrencyHtml','accountIntervalHtml','accountSettingsPending','saveAccountInterval','saveAccountConcurrency','accountThresholdHtml','loadAccountThresholds','saveAccountThreshold','loadAccountDetails','renderAccountDetails','refreshAccountQuotaWindows']) {
+for(const name of ['executionAccounts','accountQuotaWindowIsStale','accountQuotaWindows','accountSummaryQuotaWindows','accountQuotaWarning','accountSubscriptionHtml','accountCreditsHtml','accountConcurrencyRows','accountConcurrencyHtml','accountIntervalHtml','accountSettingsPending','saveAccountInterval','saveAccountConcurrency','accountThresholdHtml','loadAccountThresholds','saveAccountThreshold','loadAccountDetails','renderAccountDetails','refreshAccountQuotaWindows']) {
   vm.runInContext(homeStatements().find(({node:n})=>n.type==='FunctionDeclaration'&&n.id.name===name).source,context);
 }
 const form = id=>[...document.querySelectorAll('form')].find(el=>el.dataset.accountConcurrency===id);

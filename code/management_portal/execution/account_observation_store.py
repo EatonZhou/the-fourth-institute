@@ -39,6 +39,12 @@ def evidence(sample):
     for key in ('balance', 'credits'):
         if isinstance(sample.get(key), dict):
             result[key] = _fields(sample[key], FIELDS[key])
+    cards = sample.get('refresh_cards')
+    if isinstance(cards, dict):
+        result['refresh_cards'] = _fields(cards, ('status', 'available_count', 'source', 'observed_at', 'stale'))
+        result['refresh_cards']['cards'] = ([_fields(c, ('id', 'resetType', 'status', 'grantedAt', 'expiresAt', 'title', 'description'))
+                                            for c in cards['cards'] if isinstance(c, dict)]
+                                           if isinstance(cards.get('cards'), list) else None)
     if sample.get('status') == 'unavailable':
         for item in [*result['rate_limits'], result.get('balance'), result.get('credits')]:
             if isinstance(item, dict):
@@ -69,6 +75,17 @@ class AccountObservationStore:
                         )''')
                         c.execute('''CREATE INDEX IF NOT EXISTS observations_account_time
                             ON observations(provider, account_id, finished_at, id)''')
+                        c.execute('''CREATE TABLE IF NOT EXISTS read_state (
+                            provider TEXT NOT NULL, account_id TEXT NOT NULL,
+                            attempted_at DOUBLE PRECISION, success_at DOUBLE PRECISION,
+                            sample JSONB NOT NULL DEFAULT '{}',
+                            profile_attempted_at DOUBLE PRECISION,
+                            profile JSONB NOT NULL DEFAULT '{}',
+                            PRIMARY KEY(provider, account_id))''')
+                        c.execute('''CREATE TABLE IF NOT EXISTS subscription_observations (
+                            id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+                            provider TEXT NOT NULL, account_id TEXT NOT NULL,
+                            observed_at TIMESTAMPTZ NOT NULL DEFAULT now(), profile JSONB NOT NULL)''')
                     self._ready = True
         with self.database.connect() as c:
             c.execute("SET LOCAL lock_timeout = '1s'")
@@ -82,6 +99,38 @@ class AccountObservationStore:
                 VALUES(%s,%s,%s,%s,%s,%s) RETURNING id''',
                 (provider, account_id, instant(started_at), instant(finished_at), bool(forced),
                  json_text(evidence(sample)))).fetchone()['id']
+
+    def state(self, provider, account_id):
+        with self.connection() as c:
+            row = c.execute('SELECT * FROM read_state WHERE provider=%s AND account_id=%s',
+                            (provider, account_id)).fetchone()
+        return {**dict(row), 'sample': json_value(row['sample']),
+                'profile': json_value(row['profile'])} if row else {}
+
+    def claim(self, provider, account_id, *, now, interval, profile=False):
+        # Atomic across processes and deployments. A failed request still uses
+        # its slot; the Provider is never called if persistence is unavailable.
+        column = 'profile_attempted_at' if profile else 'attempted_at'
+        with self.connection() as c:
+            row = c.execute(f'''INSERT INTO read_state(provider,account_id,{column})
+                VALUES(%s,%s,%s) ON CONFLICT(provider,account_id) DO UPDATE
+                SET {column}=EXCLUDED.{column}
+                WHERE read_state.{column} IS NULL OR read_state.{column} <= %s
+                RETURNING {column}''', (provider, account_id, now, now - interval)).fetchone()
+        return row is not None
+
+    def save_success(self, provider, account_id, sample, *, now):
+        with self.connection() as c:
+            c.execute('''UPDATE read_state SET success_at=%s,sample=%s
+                WHERE provider=%s AND account_id=%s''',
+                (now, json_text(evidence(sample)), provider, account_id))
+
+    def save_profile(self, provider, account_id, profile):
+        with self.connection() as c:
+            c.execute('UPDATE read_state SET profile=%s WHERE provider=%s AND account_id=%s',
+                      (json_text(profile), provider, account_id))
+            c.execute('INSERT INTO subscription_observations(provider,account_id,profile) VALUES(%s,%s,%s)',
+                      (provider, account_id, json_text(profile)))
 
     def read(self, provider, account_id, *, since, until=None, after_id=0, limit=1000):
         if type(limit) is not int or not 1 <= limit <= 1000 or type(after_id) is not int or after_id < 0:
