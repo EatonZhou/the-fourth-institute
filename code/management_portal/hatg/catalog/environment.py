@@ -141,6 +141,7 @@ DECLARATIONS = (
     ), (R("setup", "object", "运行环境、准备进度、授权状态、模型目录与工具能力；尚未执行测试"),), owner="execution"),
     _d("GetProviderAccountConfiguration", FIXED, "读取 Codex 订阅账号的原生默认 Provider 与配置版本；不返回密钥、完整配置或会话。", (
         R("account_id", description="已登记的 Codex 订阅账号"),
+        P("include_provider_references", "boolean", "显式检查自定义 Provider 是否仍有原生持久会话引用；每种定义仅取一条，不返回会话内容。默认不查"),
     ), (R("configuration", "object", "account_id、model_provider、effective_model_provider、model_providers（自定义 ID 列表）、version"),), owner="execution"),
     _d("UpdateProviderAccountConfiguration", FIXED, "按调用信封 expected_version 修改 Codex 订阅账号原生默认 Provider；版本取配置读取结果。不重启账号或改写已有会话。", (
         R("account_id", description="已登记的 Codex 订阅账号"),

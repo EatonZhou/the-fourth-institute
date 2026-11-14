@@ -61,6 +61,25 @@ def test_native_read_is_bounded_and_does_not_expose_config(native):
     assert native.calls == [('config/read', {'includeLayers': True})]
 
 
+def test_reference_check_is_opt_in_bounded_and_never_returns_conversation(native):
+    read = native.request
+    calls = []
+    def request(method, params):
+        if method != 'thread/list':
+            return read(method, params)
+        calls.append(params)
+        return {'data': [{'id': 'private-thread', 'preview': 'private-conversation'}]}
+    native.request = request
+    args = {'account_id': 'codex_test', 'include_provider_references': True}
+    result = owner.get_configuration(SimpleNamespace(argument=args.get))
+    assert result['configuration']['provider_references'] == {
+        'openai_http': {'persisted_reference_found': True}}
+    assert len(calls) == 1
+    assert calls[0]['limit'] == 1 and calls[0]['modelProviders'] == ['openai_http']
+    assert 'subAgent' in calls[0]['sourceKinds']
+    assert 'private' not in str(result)
+
+
 def test_update_uses_native_cas_then_verifies_without_host_restart_or_turn(native):
     result = owner.update_configuration(invocation())
     assert result['changed'] is True

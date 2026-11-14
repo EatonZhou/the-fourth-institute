@@ -47,7 +47,24 @@ def _read(rpc, path, account_id):
 def get_configuration(inv):
     account_id = inv.argument("account_id")
     rpc, path = _connection(account_id)
-    return {"configuration": _read(rpc, path, account_id)}
+    result = _read(rpc, path, account_id)
+    if inv.argument("include_provider_references"):
+        # Native filters and a single result suffice to prove a persisted
+        # reference. Never return previews, thread IDs or conversation data.
+        sources = ["cli", "vscode", "exec", "appServer", "subAgent", "subAgentReview",
+                   "subAgentCompact", "subAgentThreadSpawn", "subAgentOther", "unknown"]
+        references = {}
+        for provider in result["model_providers"]:
+            found = False
+            for archived in (False, True):
+                page = rpc.request("thread/list", {"limit": 1, "modelProviders": [provider],
+                                   "sourceKinds": sources, "archived": archived})
+                if page.get("data"):
+                    found = True
+                    break
+            references[provider] = {"persisted_reference_found": found}
+        result["provider_references"] = references
+    return {"configuration": result}
 
 
 def update_configuration(inv):
