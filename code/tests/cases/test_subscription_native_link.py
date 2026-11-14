@@ -16,7 +16,7 @@ def links(store, execution_id):
             "AND data_json::jsonb->>'execution_id'=%s", (execution_id,))]
 
 
-def setup(monkeypatch, provider='codex', kind='subscription_login'):
+def setup(monkeypatch, provider='codex', kind='subscription_login', mode='stateless'):
     from management_portal.execution import account_registrations
     calls=[]
     def registrations(name):
@@ -24,8 +24,8 @@ def setup(monkeypatch, provider='codex', kind='subscription_login'):
         return [{'kind':kind,'account_id':'subscription','route_id':'selected'}]
     monkeypatch.setattr(account_registrations,'registrations',registrations)
     request=replace(_turn_request('agent_native_link'),provider=provider,
-                    session=SessionOptions(mode='stateless',backend_route_id='selected'))
-    session=replace(_runtime_session(request,''),mode='stateless',backend_route_id='selected')
+                    session=SessionOptions(mode=mode,backend_route_id='selected'))
+    session=replace(_runtime_session(request,''),mode=mode,backend_route_id='selected')
     store=AgentDataStore();projector=AgentDataProjector(store)
     projector.begin(request,session)
     projector.observe_invocation(request.execution_id,_invocation(request,session))
@@ -98,3 +98,50 @@ def test_non_subscription_backend_does_not_even_load_subscription_registration(m
     projector.complete(execution_id=request.execution_id,backend_session_id='dsh-native',
         backend_route_id='selected',turn_id='turn',response='done')
     assert calls==[] and links(store,request.execution_id)==[]
+
+
+@pytest.mark.parametrize('mode', ['persistent', 'stateless'])
+def test_cancel_cleanup_keeps_observed_native_identity_not_start_snapshot(monkeypatch, mode):
+    store, projector, request, calls = setup(monkeypatch, mode=mode)
+    projection = projector._active[request.execution_id]
+    # The immutable starting snapshot can carry an account alias/old session.
+    projection.session = replace(projection.session, mode=mode,
+        backend_session_id='starting-session' if mode == 'stateless' else 'actual-session',
+        backend_route_id='subscription')
+    projector.observe_runtime_event(request.execution_id, 'provider_input_bound', {
+        'provider': 'codex', 'turn_id': 'actual-turn',
+        'backend_session_id': 'actual-session', 'backend_route_id': 'selected'})
+    projector.discard(request.execution_id)
+    fact, = links(store, request.execution_id)
+    assert (fact['native_session_id'], fact['native_turn_id'], fact['backend_route_id']) == (
+        'actual-session', 'actual-turn', 'selected')
+    projector.discard(request.execution_id)
+    assert links(store, request.execution_id) == [fact]
+
+
+@pytest.mark.parametrize('field', ['provider', 'account_id', 'backend_route_id', 'native_session_id', 'native_turn_id'])
+def test_real_native_identity_conflicts_still_fail(monkeypatch, field):
+    store, projector, request, calls = setup(monkeypatch)
+    values = dict(execution_id=request.execution_id, provider='codex', account_id='subscription',
+        backend_route_id='selected', native_session_id='actual-session', native_turn_id='actual-turn')
+    store.record_subscription_native_link(**values)
+    with pytest.raises(ValueError, match='identity changed|provider does not match'):
+        store.record_subscription_native_link(**{**values, field:'different'})
+
+
+def test_cancel_cleanup_retries_failed_native_write_with_observed_route(monkeypatch):
+    store, projector, request, calls = setup(monkeypatch)
+    projection = projector._active[request.execution_id]
+    projection.session = replace(projection.session, backend_route_id='subscription')
+    original = store.record_subscription_native_link
+    def fail(**kwargs):
+        raise RuntimeError('audit write failed')
+    monkeypatch.setattr(store, 'record_subscription_native_link', fail)
+    with pytest.raises(RuntimeError, match='audit write failed'):
+        projector.observe_runtime_event(request.execution_id, 'provider_input_bound', {
+            'turn_id':'actual-turn', 'backend_session_id':'actual-session', 'backend_route_id':'selected'})
+    assert projection.native_link_signature is None
+    monkeypatch.setattr(store, 'record_subscription_native_link', original)
+    projector.discard(request.execution_id)
+    fact, = links(store, request.execution_id)
+    assert fact['backend_route_id'] == 'selected'

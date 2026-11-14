@@ -4,15 +4,15 @@ type: decision
 project: AI员工
 created_at: '2026-08-23'
 version:
-  number: 96
+  number: 97
   created_at: "2026-08-23"
   created_by:
     user: ""
     agent: ""
-  updated_at: "2026-11-13T21:12:23Z"
+  updated_at: "2026-11-14T00:24:50Z"
   updated_by:
     user: ""
-    agent: "resident_561324ac1c0c"
+    agent: "resident_6199a7a36480"
 importance: 10
 metaness: 3
 ai_generated: false
@@ -116,6 +116,8 @@ Execution 的最终回复在写入时选定，记入 `executions.final_message_i
 纯 UI 卡片、资源修改卡片、执行统计、输入接收回执、历史注入回执及清空动作存入运行记录，不形成 Segment。agent_operations 保存操作身份、类别、Agent、会话、时间与事实；operation_positions 保存操作相对 Sequence 的位置。它们记录发生过的动作，不保存逐条消息的显示开关。
 
 订阅原生身份独立保存为 agent_operations 中的 subscription_native_link 运行事实，仅覆盖登记类型为 subscription_login 的 Codex、Claude、Kimi 与 Antigravity 执行。记录关联 execution、Provider、实际账号、路线和已观察到的原生 session/turn；raw_locator 只包含账号与原生 session 标识，不包含凭据、正文或文件路径。stateless 的 Provider Session 仍以 execution ID 隔离上下文，该隔离标识不作为原生 session 身份。原生身份从既有运行事件和完成结果取得，不发起 usage 查询或读取原生归档补造身份。身份首次完整观察时写入；终止时仍缺原生 session 则明确记为 unavailable，不能将 execution ID 冒充原生 ID。每个 execution 使用稳定操作身份，重放幂等，后续只能补齐缺失字段，已有非空身份冲突时拒绝覆盖；流式片段不重复写入。保存失败必须向上传递，内存去重仅在落库成功后确认。
+
+原生身份采集区分运行中观察与清理刷新。执行清理仅提交本次已观察的原生 session、turn 与实际路由，不用启动 RuntimeSession 快照覆盖后端确认的身份。尚未成功持久化的观测可重试，内存幂等签名只在持久写入成功后推进。真实 Provider、账号、路由、session 或 turn 冲突继续失败，不因取消或清理而降级。
 
 清空动作结束前一个聊天窗口，旧内容仍然可供审计。调用方必须在发起清空时捕获并提供明确的 trace_position，运行记录保存这个位置，晚到的投影不能掩盖清空后提交的消息。上下文已经被 Provider 接收的回执由 Binding 保存；Execution 永久保留运行状态与用量。
 

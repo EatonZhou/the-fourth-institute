@@ -33,6 +33,7 @@ class ExecutionProjection:
     native_account_id: str = ""
     native_session_id: str = ""
     native_turn_id: str = ""
+    native_route_id: str = ""
     native_link_signature: tuple[str, str, str] | None = None
     final_segment_id: str = ""
     compaction_segment_id: str = ""

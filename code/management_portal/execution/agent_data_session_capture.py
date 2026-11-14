@@ -131,7 +131,13 @@ class SessionCapture:
             "codex", "claude", "kimi", "antigravity",
         }:
             return
-        route = backend_route_id or projection.session.backend_route_id
+        # Cleanup flushes observed identity. The immutable starting RuntimeSession
+        # may contain a route alias or an earlier stateless session, not a new
+        # provider observation. Keep even uncommitted observations for retry.
+        if backend_route_id:
+            projection.native_route_id = str(backend_route_id)
+        route = (projection.native_route_id or projection.backend_route_id
+                 or projection.session.backend_route_id)
         if not projection.native_account_checked:
             from .account_registrations import registrations
             account = next((row for row in registrations(request.provider)

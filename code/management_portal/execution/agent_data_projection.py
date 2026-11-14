@@ -490,7 +490,5 @@ class AgentDataProjector:
         with self._lock:
             projection = self._active.get(str(execution_id or ""))
             if projection is not None:
-                self.sessions.record_subscription_native_link(projection,
-                    backend_session_id=projection.session.backend_session_id,
-                    backend_route_id=projection.session.backend_route_id, final=True)
+                self.sessions.record_subscription_native_link(projection, final=True)
             self._active.pop(str(execution_id or ""), None)
