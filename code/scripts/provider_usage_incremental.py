@@ -33,6 +33,11 @@ class IncrementalCache:
         root = record_path(root)
         ensure_private_directory(root)
         self.db = sqlite3.connect(root / 'usage.sqlite', timeout=60)
+        # Reconstructible cache: avoid a filesystem journal flush per source.
+        # Events and scan checkpoints still commit/roll back together; a crash
+        # may lose recent cache work, which is safely reread from native files.
+        self.db.execute('PRAGMA journal_mode=WAL')
+        self.db.execute('PRAGMA synchronous=NORMAL')
         (root / 'usage.sqlite').chmod(0o600)
         self.db.executescript('''CREATE TABLE IF NOT EXISTS version(value TEXT);
             CREATE TABLE IF NOT EXISTS sources(key TEXT PRIMARY KEY,stamp TEXT,offset INTEGER,state TEXT,anchor TEXT,gaps TEXT);
