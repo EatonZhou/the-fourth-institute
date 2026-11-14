@@ -52,11 +52,13 @@
         form = previous.cloneNode(false); previous.replaceWith(form);
         form.innerHTML = `<header class="workshopBar"><button type="button" data-workshop-back data-portal-icon="arrow-left" aria-label="${esc(t('返回'))}"></button>
           <input data-meta="title" aria-label="${esc(t('模板标题'))}" value="${esc(source.title)}" required>
-          <details class="workshopMore" ${source.kind === 'structure' ? '' : 'hidden'}><summary aria-label="${esc(t('更多'))}">…</summary><div>${[['graph', '图视图'], ['list', '列表视图'], ['json', 'JSON 视图']].map(([key,label]) => `<button type="button" data-structure-view="${key}">${esc(t(label))}</button>`).join('')}</div></details>
+          <details class="workshopMore" ${source.kind === 'structure' || source.template_id ? '' : 'hidden'}><summary aria-label="${esc(t('更多'))}">…</summary><div>${source.kind === 'structure' ? [['graph', '图视图'], ['list', '列表视图'], ['json', 'JSON 视图']].map(([key,label]) => `<button type="button" data-structure-view="${key}">${esc(t(label))}</button>`).join('') : ''}${source.builtin_key ? `<button type="button" data-action="restore">${esc(t('恢复内置'))}</button>` : ''}${source.template_id ? `<button type="button" data-action="delete">${esc(t('删除'))}</button>` : ''}</div></details>
           <button type="button" data-workshop-chat data-portal-icon="chat" aria-label="${esc(t('工坊助手'))}"></button><footer></footer></header><main class="workshopEditorContent"></main>`;
         const cleanups = [], view = {
           root: form, form, content: form.querySelector('main'), footer: form.querySelector('footer'), cleanups,
           workshop: true, error, onChange: changed, save,
+          // A deleted template has nothing left to edit; leave like Back, without the unsaved prompt.
+          deleted() { abort.abort(); goBack(); },
           close() { cleanups.forEach(cleanup => cleanup()); form.replaceChildren(); },
           async busy(work) {
             if (view.working) return;
@@ -125,9 +127,10 @@
       if (event.target.closest('[data-workshop-chat]')) root.classList.toggle('workshopChatCollapsed');
       if (event.target.closest('[data-workshop-back]')) {
         if (dirty() && !await window.PortalUI.confirm({title:t('离开工坊？'), message:t('模板有未保存的修改'), confirmLabel:t('离开')})) return;
-        window.PortalNav.openPage(lineageId ? `/lineage?lineage=${encodeURIComponent(lineageId)}&view=hatg` : '/lineage');
+        goBack();
       }
     });
+    function goBack() { window.PortalNav.openPage(lineageId ? `/lineage?lineage=${encodeURIComponent(lineageId)}&view=hatg` : '/lineage'); }
     listen(drawer, 'portal:template-picked', () => { drawer.hidden = true; runtime.editorState.graph?.select(''); });
     listen(window, 'beforeunload', event => { if (dirty()) { event.preventDefault(); event.returnValue = ''; } });
     listen(document, 'keydown', event => { if (event.key === 'Escape') drawer.hidden = true; });

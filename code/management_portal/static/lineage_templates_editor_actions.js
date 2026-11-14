@@ -96,7 +96,7 @@
         } else if (action === 'copy') view.busy(() => save(true));
         else if (action === 'delete') view.busy(async () => {
           if (!await window.PortalUI.confirm({ title: t('删除模板？'), message: t('已施加的结果会保留。'), confirmLabel: t('删除'), tone: 'danger' })) return;
-          await request('DeleteTemplate', { template_id: draft.template_id }); await load(); view.close(); toast(t('模板已删除'), 'success');
+          await request('DeleteTemplate', { template_id: draft.template_id }); await load(); view.close(); toast(t('模板已删除'), 'success'); view.deleted?.();
         });
         else if (action === 'restore') view.busy(async () => {
           if (!await window.PortalUI.confirm({ title: t('恢复内置模板？'), message: t('当前修改将替换为内置内容。'), confirmLabel: t('恢复内置') })) return;
