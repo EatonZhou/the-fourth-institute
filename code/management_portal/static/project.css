@@ -24,18 +24,16 @@
   background: var(--panel);
   min-width: 0;
 }
-.projectsChatHead {
-  display: flex;
+.projectsChatControls {
+  display: none;
   align-items: center;
   gap: 8px;
   padding: 10px 12px;
   border-bottom: 1px solid var(--border);
 }
-.projectsChatTitle { flex: 1; min-width: 0; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .projectsChatBody { flex: 1; min-height: 0; display: flex; flex-direction: column; }
-.projectsChat[data-collapsed="true"] .projectsChatTitle,
 .projectsChat[data-collapsed="true"] .projectsChatBody { display: none; }
-.projectsChat[data-collapsed="true"] .projectsChatHead { flex-direction: column; border-bottom: 0; padding: 10px 6px; }
+.projectsChat[data-collapsed="true"] .projectsChatControls { display:flex; flex-direction: column; border-bottom: 0; padding: 10px 6px; }
 .projectsChat[data-collapsed="true"] #projectsChatToggle span { writing-mode: vertical-rl; }
 
 /* Shared pieces */
@@ -93,6 +91,24 @@ button.projectTag:hover, .projectTag.is-active { color: var(--accent); border-co
   color: var(--text);
   font-size: 12px;
 }
+.projectStatusBadge {
+  flex:none;
+  display:inline-flex;
+  align-items:center;
+  padding:2px 7px;
+  border-radius:999px;
+  font-size:11px;
+  line-height:18px;
+  color:var(--muted);
+  background:color-mix(in srgb,var(--muted) 10%,transparent);
+}
+.projectStatusBadge[data-status="active"] { color:var(--accent); background:color-mix(in srgb,var(--accent) 10%,transparent); }
+.projectStatusBadge[data-status="paused"] { color:var(--warn); background:color-mix(in srgb,var(--warn) 10%,transparent); }
+.projectStatusBadge[data-status="done"] { color:var(--ok); background:color-mix(in srgb,var(--ok) 10%,transparent); }
+/* The shared quota component keeps its normal dimensions outside Projects. */
+.projectsChat .portalChatQuotaNotice { padding:6px 8px; gap:6px; font-size:12px; line-height:18px; }
+.projectsChat .portalChatQuotaRow { gap:6px; flex-wrap:wrap; }
+.projectsChat .portalChatQuotaRow > button { min-height:28px; padding:4px 8px; font-size:12px; line-height:18px; }
 .projectPulse {
   display: inline-block;
   width: 8px;
@@ -416,7 +432,6 @@ a.projectResourceTile:hover { border-color: color-mix(in srgb, var(--accent) 45%
 }
 
 .projectListHeading h1, .projectHeroTitle h1, .projectHeroMain h1 { font-size:var(--portal-page-title-size); font-weight:var(--portal-page-title-weight); line-height:var(--portal-page-title-line-height); }
-.projectsChatTitle { font-size:var(--portal-pane-title-size); font-weight:var(--portal-pane-title-weight); line-height:var(--portal-pane-title-line-height); }
 .projectGroupHead, .projectSectionHead h2 { font-size:var(--portal-section-title-size); font-weight:var(--portal-section-title-weight); line-height:var(--portal-section-title-line-height); font-family:var(--portal-font); }
 button.projectTag { font-family:inherit; }
 .projectListHeading p, .projectHeroSubtitle { font-size:var(--portal-subtitle-size); font-weight:var(--portal-subtitle-weight); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }

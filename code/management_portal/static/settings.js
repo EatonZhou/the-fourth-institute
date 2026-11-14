@@ -745,9 +745,7 @@
     if (!host) return;
     window.PortalNav?.mount?.();
     try {
-      const result = await mount(host);
-      const label = document.querySelector("[data-settings-user]");
-      if (label) label.textContent = result.username ? window.PortalI18n.text`Menu · ${result.username}` : window.PortalI18n.t("User Menu");
+      await mount(host);
     } catch (error) {
       host.innerHTML = window.PortalI18n.html`<div class="settingsNotice error" role="alert"></div>`;
       host.firstElementChild.textContent = error.message || window.PortalI18n.t("Unable to load settings.");

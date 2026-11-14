@@ -3,7 +3,7 @@
 
   // The Project list (decision_46c37026e8ea): every Project the user can see,
   // grouped by status and ordered by its latest change.  Its data is one
-  // ListProjects call; changing a status is one UpdateProject call.
+  // ListProjects call; status changes belong to the Project detail view.
   if (window.PortalProjectList) return;
 
   const common = () => window.PortalProjectCommon;
@@ -67,11 +67,8 @@
       </div>`;
     }
 
-    function statusSelectHtml(project) {
-      const vocab = state.statusVocab.length ? state.statusVocab : Object.keys(common().STATUS_LABELS);
-      const values = vocab.includes(project.status) ? vocab : [project.status, ...vocab];
-      return `<select class="projectStatusSelect" data-project-status="${esc(project.project_id)}" data-status="${esc(project.status)}" aria-label="${esc(t("项目状态"))}">${
-        values.map(value => `<option value="${esc(value)}"${value === project.status ? " selected" : ""}>${esc(common().statusLabel(value))}</option>`).join("")}</select>`;
+    function statusBadgeHtml(project) {
+      return `<span class="projectStatusBadge" data-status="${esc(project.status)}">${esc(common().statusLabel(project.status))}</span>`;
     }
 
     function cardHtml(project) {
@@ -87,7 +84,7 @@
         <header class="projectCardHead">
           ${avatarHtml(project.project_id, project.avatar, 44)}
           <div class="projectCardTitle"><h3>${esc(project.project_id)}</h3>${project.project_type ? `<span>${esc(typeLabel(project.project_type))}</span>` : ""}</div>
-          ${statusSelectHtml(project)}
+          ${statusBadgeHtml(project)}
         </header>
         <p class="projectCardDescription">${esc(project.description || t("还没有说明"))}</p>
         ${tags ? `<div class="projectCardTags">${tags}</div>` : ""}
@@ -148,26 +145,6 @@
       renderGroups();
     }
 
-    async function changeStatus(select) {
-      const project = state.projects.find(item => item.project_id === select.dataset.projectStatus);
-      if (!project) return;
-      const before = project.status;
-      const after = select.value;
-      if (before === after) return;
-      project.status = after;
-      select.disabled = true;
-      try {
-        await common().execute("UpdateProject", { project_id: project.project_id, changes: { status: after } }, "project-status");
-        renderGroups();
-      } catch (error) {
-        project.status = before;
-        select.value = before;
-        window.PortalUI.toast(window.PortalI18n.text`保存失败：${error.message || error}`, "error");
-      } finally {
-        select.disabled = false;
-      }
-    }
-
     root.addEventListener("click", event => {
       const open = event.target.closest("[data-project-open]");
       if (open && common().plainClick(event)) {
@@ -200,7 +177,6 @@
     root.addEventListener("change", event => {
       const filter = event.target.closest("[data-project-filter]");
       if (filter) setFilters({ [filter.dataset.projectFilter]: filter.value });
-      if (event.target.matches("[data-project-status]")) void changeStatus(event.target);
     });
 
     return {

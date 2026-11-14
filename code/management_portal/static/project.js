@@ -98,6 +98,9 @@
     node.dataset.collapsed = String(collapsed);
     document.getElementById("projectsWorkspace").dataset.chat = collapsed ? "collapsed" : "open";
     const toggle = document.getElementById("projectsChatToggle");
+    const controls = document.getElementById("projectsChatControls");
+    const actions = node.querySelector(".chatHead .paneHeadActions");
+    (collapsed ? controls : actions || controls).append(toggle);
     toggle.setAttribute("aria-expanded", String(!collapsed));
     toggle.querySelector("span").textContent = common().t(collapsed ? "展开对话" : "收起对话");
     chat?.setPresented?.(!collapsed);
@@ -122,8 +125,8 @@
     }
     node.hidden = false;
     document.getElementById("projectsWorkspace").dataset.chat ||= "open";
-    document.getElementById("projectsChatTitle").textContent = window.PortalI18n.text`${projectId} 的 Project Resident`;
     if (chat && chatResident === residentId) return;
+    document.getElementById("projectsChatControls").append(document.getElementById("projectsChatToggle"));
     chat?.destroy?.();
     const body = document.getElementById("projectsChatBody");
     body.replaceChildren();
@@ -139,6 +142,7 @@
   }
 
   function hideChat() {
+    document.getElementById("projectsChatControls").append(document.getElementById("projectsChatToggle"));
     chat?.destroy?.();
     chat = null;
     chatResident = "";
