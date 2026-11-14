@@ -4,12 +4,12 @@ type: decision
 project: AI员工
 created_at: '2026-10-13'
 version:
-  number: 27
+  number: 28
   created_at: "2026-10-13"
   created_by:
     user: ""
     agent: "resident_e8fc8c899f00"
-  updated_at: "2026-11-14T22:28:44Z"
+  updated_at: "2026-11-14T23:24:50Z"
   updated_by:
     user: ""
     agent: "resident_25ac6961fafb"
@@ -188,7 +188,7 @@ Effect DSL 内的替换使用脚本专用转义器。在带引号的脚本文本
 | 修订回流 | revision_return | prompt；resident、selection | 一次投递可编辑的修订 prompt，不建立持续循环。 |
 | 扩展想法 | expand_ideas | explore；resident | Fork 探索者，生成 idea 候选 Seed；count 默认 3，task 可编辑。 |
 | 扩展方案 | expand_plans | explore；resident | Fork 探索者，生成 plan 候选 Seed；count 默认 3，task 可编辑。 |
-| 工坊助手 | workshop_assistant | structure；canvas | 一个 `from: new` 角色，`function_block: true`，Provider 与模型取默认值。由模板工坊在当前 Lineage 中创建工坊助手时施加，不在工具箱中显示。 |
+| 工坊助手 | workshop_assistant | structure；canvas | 一个 `from: new` 角色，`function_block: true`，Provider 与模型取默认值。由模板工坊在用户的 My Lineage 中创建工坊助手时施加，不在工具箱中显示。 |
 
 内置模板与用户模板一样可复制、删除和恢复，并始终显示在工具箱中；工坊助手例外，它只供工坊创建助手使用。script 是可创建的模块类型，但不占这九份内置内容中的一项。
 
@@ -216,7 +216,7 @@ Effect DSL 内的替换使用脚本专用转义器。在带引号的脚本文本
 
 工具箱和模板编辑器的样式由页面共享资源加载器加载并等待就绪，样式表留在 document head；HATG 面板替换或关闭不撤销其他面板正在使用的样式。加载失败时保留可重试的 HATG 加载状态。
 
-HATG 画布左下角有工具箱图标，点开后抽屉从左下角向上展开，可以用图标、收起按钮或 Escape 关闭，打开状态不跨页保存。抽屉按模板模块分四组，依次为职责（structure）、角色（暂无模板时显示空态）、组织（familize）、交办（prompt、explore、script，对 Resident 做一次就完的操作）。每张卡片只有缩略图和标题：结构模板的缩略图按模板的组件、连线和角色画成静态小图，施加时要绑定的目标、Leader 角色和已有元素画在两侧边缘并灰显；其他模块按模块画不同的简单图形。标题、说明和操作方式写在悬停提示中。
+HATG 画布的控件分在四角：左上是缩放（缩小、百分比、放大、适配全部）；右上是搜索和“…”菜单，整理、跳到 Leader、聚焦与关系筛选收在菜单里，并给画布右边缘的按钮留出位置；左下是工具箱与图例按钮，图例按当前视图显示，点开才出现；右下是小地图。窄画布中这些控件都保持一行。左下的工具箱图标点开后抽屉从左下角向上展开，可以用图标、收起按钮或 Escape 关闭，打开状态不跨页保存。抽屉按模板模块分四组，依次为职责（structure）、角色（暂无模板时显示空态）、组织（familize）、交办（prompt、explore、script，对 Resident 做一次就完的操作）。每张卡片只有缩略图和标题：结构模板的缩略图按模板的组件、连线和角色画成静态小图，施加时要绑定的目标、Leader 角色和已有元素画在两侧边缘并灰显；其他模块按模块画不同的简单图形。标题、说明和操作方式写在悬停提示中。
 
 工具箱只显示内置模板（有 `builtin_key`）和当前登录用户创建的模板（`created_by` 等于当前用户），身份切换时重新读取。用户新建、另存副本或从选区保存的模板，创建者就是自己，因此直接出现在工具箱中；他人创建的模板不在工具箱里显示，商店上线后通过安装复制件取得。抽屉顶部有商店入口，商店上线前显示为不可用；“新建模板”在模板工坊中打开一个新的职责模板（structure），带一个 `from: target` 角色，不提供其他模块的新建入口，已有 prompt、explore、script、familize 模板按各自模块的字段编辑。抽屉最下方是默认收起的“原语”组，可把事件、Effect、Seed 等原语拖到画布。
 
@@ -228,15 +228,15 @@ HATG 画布左下角有工具箱图标，点开后抽屉从左下角向上展开
 
 ## 模板工坊
 
-模板工坊是编辑模板的独立页面 `/template-workshop`，地址带 `template`（新建时没有）和 `lineage`（从哪张 HATG 图进入）。工具箱双击、“新建模板”、从选区保存和模板资源链接都打开工坊，HATG 页面不再弹出模板编辑对话框。页面大部分是画布，右侧一窄栏是与工坊助手的对话，可以收起。
+模板工坊是 Lineage 工作台的一种卡片，与 Chat、HATG、预览、终端用同一套工作台面板，可以打开、关闭、收起和拖动，布局随工作台保存与恢复。在 HATG 的工具箱里双击卡片、点“新建模板”或从选区保存时，HATG 请求工作台打开工坊卡片：第一张在 HATG 旁边分屏，之后打开的模板成为同一组里的标签，再次打开同一模板时聚焦已有标签。卡片大部分是画布，右侧一窄栏是与工坊助手的对话，可以收起，卡片较窄时默认收起。模板资源链接打开独立页面 `/template-workshop?template=<template_id>`，页面中挂的是同一个卡片组件。
 
-- **顶栏**：返回、可直接修改的模板名、“…”菜单，最右侧并排放英文按钮 **Save** 与 **Save As**，两者不翻译。“…”菜单放结构模板的图、列表、JSON 视图切换，以及内置模板的“恢复内置”和已保存模板的“删除”。删除后回到来源 HATG 图，已施加的结果保留。
-- **Save 与 Save As**：Save 把草稿存回当前模板，新模板第一次 Save 走 `CreateTemplate`，之后走 `UpdateTemplate`。Save As 用当前草稿 `CreateTemplate` 一份新模板并切换过去。内置模板和他人创建的模板不能 Save，按钮不可用，改动用 Save As 存成自己的模板。两者都先用 dry_run 校验，服务端错误显示在页面上。保存只写入本人的模板，与将来发布到商店是两个动作。有未保存的修改时，返回和关闭页面前提示。
-- **画布**：结构模板用编辑器的图视图铺满画布，施加时绑定的位置（目标、Lineage Leader 与已有元素）灰显。选中节点或连线时弹出浮动检查器，没有选中时不显示。图上方的添加按钮去掉，由画布左下角的工具箱代替：抽屉与 HATG 工具箱共用代码，分为原语（Event、Effect、Loop、Filter、Selector、Reducer、Seed）、空位（目标 Resident、Lineage Leader、新建 Resident、Fork、已有元素），以及工具箱中的职责、角色、组织模板。单击拿起后在画布上单击放下，或直接拖放；放下模板就是把它的元素复制进草稿，key 与参数名冲突时自动改名。交办类模板不能放进结构草稿。
+- **顶栏**：可直接修改的模板名、“…”菜单，最右侧并排放英文按钮 **Save** 与 **Save As**，两者不翻译。“…”菜单放结构模板的图、列表、JSON 视图切换，以及内置模板的“恢复内置”和已保存模板的“删除”。删除后关闭这张卡片，已施加的结果保留。
+- **Save 与 Save As**：Save 把草稿存回当前模板，新模板第一次 Save 走 `CreateTemplate`，之后走 `UpdateTemplate`。Save As 用当前草稿 `CreateTemplate` 一份新模板并切换过去。内置模板和他人创建的模板不能 Save，按钮不可用，改动用 Save As 存成自己的模板。两者都先用 dry_run 校验，服务端错误显示在页面上。保存只写入本人的模板，与将来发布到商店是两个动作。有未保存的修改时，关闭卡片或离开页面前提示。
+- **画布**：结构模板用编辑器的图视图铺满卡片，打开时适配全部节点，缩放不超过 100%；施加时绑定的位置（目标、Lineage Leader 与已有元素）灰显。选中节点或连线时弹出浮动检查器，没有选中时不显示。图上方的添加按钮去掉，由画布左下角的工具箱代替：抽屉与 HATG 工具箱共用代码，分为原语（Event、Effect、Loop、Filter、Selector、Reducer、Seed）、空位（目标 Resident、Lineage Leader、新建 Resident、Fork、已有元素），以及工具箱中的职责、角色、组织模板。单击拿起后在画布上单击放下，或直接拖放；放下模板就是把它的元素复制进草稿，key 与参数名冲突时自动改名。交办类模板不能放进结构草稿。
 - **自动计算**：结构模板的分组固定为 structure，`targets` 由图决定：有 `from: target` 角色时为 resident，否则有已有元素时为 selection，都没有时为 canvas。页面不再提供分组和目标范围的选择。说明、参数与施加预览放在默认收起的“模板信息”面板。
 - **其他模块**：prompt、explore、script、familize 模板同样在工坊中打开，画布位置显示该模块的字段，没有画布工具箱。
 
-工坊助手是当前 Lineage 中的一个普通 Resident，帮用户画职责模板的图。用户在某个 Lineage 的工坊里第一次发消息时，页面先确认“将在本 Lineage 中创建工坊助手”，然后以画布为目标施加内置模板 workshop_assistant，再用 `CreateDuty` 给它加一条固定职责（memory_level 为 session），内容是助手的操作说明。之后在这个 Lineage 新建或修改模板都与同一位助手对话。页面按 Function Block 的 `template_id` 等于该内置模板固定 ID 找到助手，不按名字查找。对话框使用 Portal 的 Chat 组件，运行设置走助手自己的对话设置。
+工坊助手每个用户一个，是用户 My Lineage（`lineage_membership` 为 personal、由该用户创建的 Lineage）中的一个普通 Resident，帮用户画职责模板的图。它不加入 My Lineage 中的个人助手 Family，Family 的初始化与同步也不吸收它。用户第一次在工坊里发消息时，页面以 My Lineage 的画布为目标施加内置模板 workshop_assistant，再用 `CreateDuty` 给它加一条固定职责（memory_level 为 session），内容是助手的操作说明；操作说明自带结构写法，不依赖某个项目的知识条目。之后在任何 Lineage 打开工坊，都与同一位助手对话。页面在 My Lineage 中按 Function Block 的 `template_id` 等于该内置模板固定 ID 找到助手，不按名字查找。用户没有 My Lineage 时，对话栏说明原因并停用发送，不在其他 Lineage 中创建助手。对话框使用 Portal 的 Chat 组件，运行设置走助手自己的对话设置。
 
 发给助手的消息只带当前模板的资源引用；新模板尚未保存时注明“新模板，尚未保存”，不附带画布内容。画布有未保存的修改时，输入框上方提示助手看到的是上次保存的版本，旁边有 Save 按钮。
 
