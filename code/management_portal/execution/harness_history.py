@@ -3,14 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 import math
-from typing import Any, Iterable, Iterator
-
-
-HARNESS_PLACEHOLDER_PREFIX = "[AgentHarness "
-
-
-
-
+from typing import Any, Iterable
 
 
 def approximate_value_tokens(value: object) -> int:
@@ -68,10 +61,6 @@ def value_sha256(value: object) -> str:
     return hashlib.sha256(canonical_json(value).encode("utf-8")).hexdigest()
 
 
-
-
-
-
 def output_text(value: object) -> str:
     if isinstance(value, str):
         return value
@@ -91,27 +80,6 @@ def output_text(value: object) -> str:
         if chunks:
             return "\n".join(chunks)
     return canonical_json(value, pretty=True)
-
-
-
-
-def is_harness_placeholder(value: object) -> bool:
-    return output_text(value).startswith(HARNESS_PLACEHOLDER_PREFIX)
-
-
-def iter_strings(value: object, *, max_depth: int = 12) -> Iterator[str]:
-    stack: list[tuple[object, int]] = [(value, 0)]
-    while stack:
-        current, depth = stack.pop()
-        if isinstance(current, str):
-            yield current
-            continue
-        if depth >= max_depth:
-            continue
-        if isinstance(current, dict):
-            stack.extend((item, depth + 1) for item in current.values())
-        elif isinstance(current, (list, tuple)):
-            stack.extend((item, depth + 1) for item in current)
 
 
 def clean_tool_names(value: object) -> tuple[str, ...]:

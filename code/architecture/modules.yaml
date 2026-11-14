@@ -956,7 +956,6 @@ modules:
       - "management_portal/resident_recommendation_backend.py"
       - "management_portal/application_bindings.py"
       - "management_portal/lineage_workflows.py"
-      - "management_portal/portal_execution_client.py"
       - "management_portal/resource_views.py"
       - "management_portal/http_knowledge.py"
       - "management_portal/board_semantic_search_backend.py"
