@@ -557,7 +557,7 @@ const homeWorkbench = window.PortalHomeComponents.createWorkbenchComposition({
       autoHideTabHeader: true,
       label: window.PortalI18n.t("Home Workbench"),
       panels: [
-        { id: "dialogue-display", title: "对话与展示", icon: "chat", source: '[data-home-component="dialogue-display"]', minHeight: 440 },
+        { id: "dialogue-display", title: window.PortalI18n.t("对话与展示"), icon: "chat", source: '[data-home-component="dialogue-display"]', minHeight: 440 },
         { id: "get-me-aligned", title: window.PortalI18n.t("Get Me Aligned"), icon: "semantic", source: '#homeOverviewCard', minHeight: 320 },
         { id: "my-pulse-publish", title: window.PortalI18n.t("My Pulse / Publish"), icon: "send", source: '[data-home-component="my-pulse-publish"]', minHeight: 240 },
         { id: "agent-status", title: window.PortalI18n.t("Agent Status"), icon: "pulse", source: '[data-home-component="agent-status"]', minHeight: 420 },

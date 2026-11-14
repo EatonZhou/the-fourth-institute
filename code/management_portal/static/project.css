@@ -414,3 +414,9 @@ a.projectResourceTile:hover { border-color: color-mix(in srgb, var(--accent) 45%
   .projectHeroActions { grid-column: 1 / -1; }
   .projectSettingsGrid { grid-template-columns: minmax(0, 1fr); }
 }
+
+.projectListHeading h1, .projectHeroTitle h1, .projectHeroMain h1 { font-size:var(--portal-page-title-size); font-weight:var(--portal-page-title-weight); line-height:var(--portal-page-title-line-height); }
+.projectsChatTitle { font-size:var(--portal-pane-title-size); font-weight:var(--portal-pane-title-weight); line-height:var(--portal-pane-title-line-height); }
+.projectGroupHead, .projectSectionHead h2 { font-size:var(--portal-section-title-size); font-weight:var(--portal-section-title-weight); line-height:var(--portal-section-title-line-height); font-family:var(--portal-font); }
+button.projectTag { font-family:inherit; }
+.projectListHeading p, .projectHeroSubtitle { font-size:var(--portal-subtitle-size); font-weight:var(--portal-subtitle-weight); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }

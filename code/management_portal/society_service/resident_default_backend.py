@@ -54,7 +54,10 @@ def configuration(record, binding):
         from management_portal.execution.account_selection import select, observations, priority_candidates, compatible
         from management_portal.execution.account_registrations import registrations
         backend = configured["backend"]
-        priority = selection_priority(record)
+        # A role is explicit authority to choose across backend kinds. A
+        # Resident configured with its own provider/model only opts into
+        # selecting a compatible account, not the site's default backend.
+        priority = selection_priority(record) if configured["runtime_settings"].get("backend_role") else []
         # Without an Agent order, direct completion needs no native account observation.
         if backend == "provider_api" and not priority:
             return configured

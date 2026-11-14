@@ -155,7 +155,7 @@
     }
 
     function resetResidentRuntimeSettings(settings = {}) {
-      setSelectValue("residentAccountSelection", settings.account_selection || "auto");
+      setSelectValue("residentAccountSelection", settings.account_selection || "fixed");
       syncResidentBackendRuntimeFields();
       const catalog = residentRuntimeCatalog();
       const model = settings.model || catalog.default_model || "";
@@ -166,7 +166,7 @@
     }
 
     function selectedResidentRuntimeSettings() {
-      const settings = {account_selection: $id("residentAccountSelection")?.value || "auto"};
+      const settings = {account_selection: $id("residentAccountSelection")?.value || "fixed"};
       const model = String($id("residentRuntimeModelSelect")?.value || "").trim();
       const effort = String($id("residentRuntimeEffortSelect")?.value || "").trim();
       const tier = String($id("residentRuntimeTierSelect")?.value || "").trim();

@@ -372,7 +372,7 @@
           <div id="newResidentFields">
             <label><!--portal-i18n:"Agent 名称"-->Agent 名称<input id="nodeTitleInput" maxlength="120" autocomplete="off" placeholder="例如：交互方案探索 Agent"  data-portal-i18n-attrs="{&quot;placeholder&quot;: &quot;例如：交互方案探索 Agent&quot;}"/></label>
             <label><!--portal-i18n:"后端"-->后端<select id="nodeBackendSelect"></select></label>
-            <label>账号选择<select id="nodeAccountSelection"><option value="auto">自动（按可用额度）</option><option value="fixed">手动固定账号</option></select></label>
+            <label>账号选择<select id="nodeAccountSelection" title="自动仅在所选后端和模型的兼容账号中选择"><option value="fixed">手动固定账号</option><option value="auto">自动（按可用额度）</option></select></label>
             <label data-node-provider-setting hidden><!--portal-i18n:"Backend Account / Route"-->Backend Account / Route<select id="nodeRouteSelect" disabled></select></label>
             <label data-node-provider-setting hidden><!--portal-i18n:"Model"-->Model<select id="nodeModelSelect" disabled></select></label>
             <label data-node-provider-setting hidden><!--portal-i18n:"Effort"-->Effort<select id="nodeEffortSelect" disabled></select></label>

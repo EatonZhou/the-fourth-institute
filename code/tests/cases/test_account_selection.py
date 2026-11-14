@@ -209,6 +209,39 @@ def test_fixed_and_bound_sessions_do_not_reselect(monkeypatch):
     assert defaults.configuration(record, {"backend_route_id": "one", "backend_session_id": "thread"}) is None
 
 
+def test_explicit_backend_auto_does_not_inherit_site_backend_order(monkeypatch):
+    from management_portal.execution import account_selection, account_registrations
+    source = account("gemini")
+    source.update(provider="antigravity")
+    source["selection_catalog"].update(models=["gemini-flash"], default_model="gemini-flash")
+    codex = account("seven")
+    codex["selection_catalog"].update(default_model="codex-model", models=["codex-model"])
+    monkeypatch.setattr(account_selection, "observations", lambda: [codex, source])
+    monkeypatch.setattr(account_registrations, "registrations", lambda provider=None: [
+        {**row, "route_id": row["backend_route_id"]} for row in [source, codex]
+        if provider is None or provider == row["provider"]])
+    monkeypatch.setattr(defaults, "selection_priority", lambda record: ["codex:subscription_login", "antigravity:subscription_login"])
+    record = {"backend": "antigravity", "backend_route_id": "gemini",
+              "execution_settings": {"model": "gemini-flash", "account_selection": "auto"}}
+    result = defaults.configuration(record, {})
+    assert result["backend"] == "antigravity"
+    assert result["backend_route_id"] == "gemini"
+    assert result["runtime_settings"]["model"] == "gemini-flash"
+
+
+def test_role_auto_keeps_explicit_cross_backend_policy(monkeypatch):
+    from management_portal.execution import account_selection, account_registrations
+    source = account("gemini");source.update(provider="antigravity")
+    codex = account("seven");codex["selection_catalog"].update(default_model="codex-model", models=["codex-model"])
+    monkeypatch.setattr(account_selection, "observations", lambda: [source, codex])
+    monkeypatch.setattr(account_registrations, "registrations", lambda provider=None: [{**source, "route_id": "gemini"}])
+    monkeypatch.setattr(defaults, "selection_priority", lambda record: ["codex:subscription_login"])
+    result = defaults.configuration({"backend": "antigravity", "backend_route_id": "gemini",
+        "execution_settings": {"backend_role": "default", "model": "model", "account_selection": "auto"}}, {})
+    assert (result["backend"], result["backend_route_id"]) == ("codex", "seven")
+    assert result["runtime_settings"]["model"] == "codex-model"
+
+
 def test_first_admission_selects_same_model_from_role_pool(monkeypatch):
     from management_portal.execution import account_selection, account_registrations
     rows = [{"account_id": n, "provider": "codex", "kind": "subscription_login", "route_id": n} for n in ("one", "two")]
@@ -278,7 +311,7 @@ def test_backend_priority_drives_first_choice_and_recovery(monkeypatch):
     monkeypatch.setattr(account_registrations, "resolve_role", lambda name: ({"backend_priority": order}, None))
     monkeypatch.setattr(account_registrations, "registrations", lambda provider: [a for a in rows if a["provider"] == provider])
     monkeypatch.setattr(account_selection, "observations", lambda: samples)
-    record = {"backend": "codex", "backend_route_id": "one", "execution_settings": {"model": "model", "reasoning_effort": "high", "account_selection": "auto"}}
+    record = {"backend": "codex", "backend_route_id": "one", "execution_settings": {"backend_role": "default", "model": "model", "reasoning_effort": "high", "account_selection": "auto"}}
     selected = defaults.configuration(record, {})
     assert selected["backend"] == "claude" and selected["runtime_settings"]["model"] == "sonnet"
     assert "reasoning_effort" not in selected["runtime_settings"]
@@ -310,7 +343,7 @@ def test_explicit_priority_applies_even_when_role_reference_is_direct_api(monkey
     monkeypatch.setattr(account_registrations, "resolve_role", lambda name: ({"backend_priority": order}, None))
     monkeypatch.setattr(account_registrations, "registrations", lambda provider: [])
     monkeypatch.setattr(account_selection, "observations", lambda: [target])
-    record = {"backend": "provider_api", "backend_route_id": "api", "execution_settings": {"account_selection": "auto"}}
+    record = {"backend": "provider_api", "backend_route_id": "api", "execution_settings": {"backend_role": "default", "account_selection": "auto"}}
     assert defaults.configuration(record, {})["backend"] == "codex"
     order.clear()
     assert defaults.configuration(record, {})["backend"] == "provider_api"

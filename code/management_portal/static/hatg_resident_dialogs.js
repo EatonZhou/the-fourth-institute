@@ -126,6 +126,7 @@
       // A new Resident starts on the first Provider of the server's catalog.
       $id("nodeBackendSelect").selectedIndex = 0;
       state.nodeRouteChosen = false;
+      if ($id("nodeAccountSelection")) $id("nodeAccountSelection").value = "fixed";
       $id("nodeTitleInput").required = true;
       renderNodeProviderFields();
       openModal("nodeModal");
@@ -160,7 +161,7 @@
         if (!title) throw new Error("新 Resident 需要名称");
         const provider = $id("nodeBackendSelect").value;
         const route = $id("nodeRouteSelect").value;
-        const settings = {model: $id("nodeModelSelect").value, account_selection: $id("nodeAccountSelection")?.value || "auto"};
+        const settings = {model: $id("nodeModelSelect").value, account_selection: $id("nodeAccountSelection")?.value || "fixed"};
         if (!$id("nodeEffortSelect").disabled) settings.reasoning_effort = $id("nodeEffortSelect").value;
         if (!$id("nodeServiceTierInput").closest("label").hidden && $id("nodeServiceTierInput").value === "fast") settings.service_tier = "priority";
         const response = await societyService.createNode({

@@ -6,6 +6,7 @@ const dom = new JSDOM(`<form id="nodeForm">
   <div id="nodeFormError" hidden></div><p id="nodeFormRuntimeStatus" hidden></p>
   <input id="nodeTitleInput" value="Fixture" />
   <select id="nodeBackendSelect"><option value="codex">Codex</option></select>
+  <select id="nodeAccountSelection"><option value="auto">Auto</option><option value="fixed">Fixed</option></select>
   <label data-node-provider-setting><select id="nodeRouteSelect"></select></label>
   <label data-node-provider-setting><select id="nodeModelSelect"></select></label>
   <label data-node-provider-setting><select id="nodeEffortSelect"></select></label>
@@ -33,6 +34,18 @@ const ui = w.PortalHatgResidentDialogs.createResidentDialogs(deps);
 (async()=>{
   try {
     pending.set('codex_two',deferred());pending.set('codex_three',deferred());
+    ui.openNodeModal();
+    assert.equal($id('nodeAccountSelection').value,'fixed','opening creation defaults to manual, even after previous auto choice');
+    $id('nodeAccountSelection').value='auto';
+    ui.openNodeModal();
+    assert.equal($id('nodeAccountSelection').value,'fixed');
+    $id('nodeTitleInput').value='Fixture';
+    state.nodeRouteChosen=true; // User route changes below follow the normal change listener.
+    for (const [file,id] of [['hatg-panel.html','nodeAccountSelection'],['lineage.html','residentAccountSelection']]) {
+      const document=new JSDOM(fs.readFileSync(path.resolve(__dirname,'../../../management_portal',file),'utf8'));
+      assert.equal(document.window.document.getElementById(id).value,'fixed','fresh page uses manual account selection');
+      document.window.close();
+    }
     ui.renderNodeProviderFields();
     assert.equal($id('nodeSubmitBtn').disabled,true,'an empty pending model select must not offer Create');
     assert.equal($id('nodeForm').getAttribute('aria-busy'),'true');
