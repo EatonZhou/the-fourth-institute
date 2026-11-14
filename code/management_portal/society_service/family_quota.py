@@ -539,6 +539,11 @@ def quota_switch_state(record: dict[str, Any], *, execution_gate: Mapping[str, A
               "auto_switch_on_quota": enabled}
     if not gate:
         return result
+    migration = role_migration(record) if enabled else {}
+    same_source = not migration.get("source_account") or migration["source_account"] == gate.get("account_id")
+    if same_source and migration.get("switch_reason") == "migration_failed":
+        return {**result, "state": "manual_required", "reason": "migration_failed",
+                "message": "后端切换未完成，原消息和会话已保留，请手动选择"}
     if gate.get("state") != "closed" or gate.get("reason") not in QUOTA_REASONS:
         if gate.get("state") != "open":
             result.update(state="unavailable", reason=gate.get("reason") or "quota_unknown")
@@ -546,7 +551,6 @@ def quota_switch_state(record: dict[str, Any], *, execution_gate: Mapping[str, A
     if not enabled:
         return {**result, "state": "disabled", "reason": "auto_switch_disabled",
                 "message": "当前帐号额度不可用，请手动选择 AI 后端"}
-    migration = role_migration(record)
     if migration.get("source_account") and gate.get("account_id") and migration["source_account"] != gate["account_id"]:
         return result  # A receipt from the previous binding cannot block the new one.
     restart = record.get("session_restart") or {}
@@ -817,6 +821,8 @@ def ensure_role_reserve(record: dict[str, Any], accounts: list[dict[str, Any]] |
             expired = (migration.get("question_facade_id"), migration.get("question_message_id"))
             migration.clear()
             migration.update({"epoch": epoch, "attempts": 0, "tried_accounts": []})
+        if migration.get("switch_reason") == "migration_failed":
+            return not override_enabled(current)
         # A manual quota release (the role's own, or the facade's for Router
         # and Steward) lets the turn run on the current account's credits when
         # no safe account takes it; a safe account is still preferred.
@@ -853,7 +859,19 @@ def ensure_role_reserve(record: dict[str, Any], accounts: list[dict[str, Any]] |
     if payload:
         if resident_record_domain.lifecycle_operations().pending(resident_id):
             return True
-        resident_domain_port.restart_resident_session(resident_id, resident_id, payload, portal_reason="steward_weekly_reserve")
+        try:
+            resident_domain_port.restart_resident_session(resident_id, resident_id, payload, portal_reason="steward_weekly_reserve")
+        except Exception as error:
+            if not definitive_migration_failure(error):
+                raise  # Retry an interrupted transport with the same durable intent.
+            with resident_record_domain.state_lock(resident_id), get_lineage_data_store().family_quota_migrations.transaction(record['lineage_id'], resident_id) as committed:
+                if resident_record_domain.lifecycle_operations().pending(resident_id):
+                    return True  # An admitted operation still owns its completion/compensation.
+                if committed.get("pending_restart") == payload:
+                    committed.update(pending_restart=None, status="unavailable", switch_reason="migration_failed",
+                                     source_account=account["account_id"], reason="后端切换未完成，原消息和会话已保留，请手动选择")
+                    logging.getLogger(__name__).warning("Family preventive migration rejected for %s: %s", resident_id, type(error).__name__)
+            return True
         with resident_record_domain.state_lock(resident_id), get_lineage_data_store().family_quota_migrations.transaction(record['lineage_id'], resident_id) as committed:
             if committed.get("pending_restart") == payload:
                 committed["pending_restart"] = None

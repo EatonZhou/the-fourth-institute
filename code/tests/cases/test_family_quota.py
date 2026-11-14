@@ -444,6 +444,65 @@ def test_proactive_migration_intent_survives_interruption(quota_family, monkeypa
     assert "family_quota_migration" not in _record(f.steward)
 
 
+@pytest.mark.parametrize("failure", [ValueError("invalid native context"),
+                                    PermissionError("context access denied")])
+def test_proactive_migration_rejection_is_durable_and_visible(quota_family, monkeypatch, failure):
+    """确定性迁移拒绝不能无限重试，也不能把等待投影成可用。
+
+    :design: decision_a64b3ea2c3c5
+    """
+    f = quota_family
+    resident_input_queue_domain.commit_resident_intake_state(_record(f.steward), "open")
+    calls = []
+
+    def restart(*args, **kwargs):
+        calls.append(args[2])
+        raise failure
+
+    monkeypatch.setattr(resident_restart_domain, "restart_resident_session", restart)
+    assert family_quota.ensure_role_reserve(_record(f.steward), f.accounts)
+    current = _record(f.steward)
+    migration = family_quota.role_migration(current)
+    assert migration["pending_restart"] is None
+    assert migration["switch_reason"] == "migration_failed"
+    assert migration["source_account"] == "codex_one"
+    with family_quota.get_lineage_data_store().family_quota_migrations.transaction(current["lineage_id"], f.steward) as state:
+        state["checked_at"] = 0
+    assert family_quota.ensure_role_reserve(_record(f.steward), f.accounts)
+    assert len(calls) == 1
+    assert _record(f.steward)["backend_route_id"] == "one"
+    projected = family_quota.quota_switch_state(current, execution_gate={"state": "open", "account_id": "codex_one"})
+    assert projected["state"] == "manual_required"
+    assert projected["reason"] == "migration_failed"
+    # A stale source receipt cannot block a different binding.
+    assert family_quota.quota_switch_state(current, execution_gate={"state": "open", "account_id": "codex_two"})["state"] == "ready"
+    # An explicit choice to keep the source disables the preventive blocker.
+    current["execution_settings"]["auto_switch_on_quota"] = False
+    assert not family_quota.ensure_role_reserve(current, f.accounts)
+    assert family_quota.quota_switch_state(current, execution_gate={"state": "open", "account_id": "codex_one"})["state"] == "disabled"
+
+
+def test_proactive_migration_admitted_operation_retains_its_intent(quota_family, monkeypatch):
+    """提交后的异常不能抢走生命周期补偿与恢复所有权。
+
+    :design: decision_a64b3ea2c3c5
+    """
+    f = quota_family
+    resident_input_queue_domain.commit_resident_intake_state(_record(f.steward), "open")
+    operations = resident_record_domain.lifecycle_operations
+
+    def restart(*args, **kwargs):
+        monkeypatch.setattr(resident_record_domain, "lifecycle_operations", lambda: SimpleNamespace(pending=lambda rid: True))
+        raise ValueError("error after lifecycle admission")
+
+    monkeypatch.setattr(resident_restart_domain, "restart_resident_session", restart)
+    assert family_quota.ensure_role_reserve(_record(f.steward), f.accounts)
+    migration = family_quota.role_migration(_record(f.steward))
+    assert migration["pending_restart"]["target_account"] == "two"
+    assert migration.get("switch_reason") != "migration_failed"
+    monkeypatch.setattr(resident_record_domain, "lifecycle_operations", operations)
+
+
 @pytest.mark.parametrize("boundary", ["family_paused", "executing", "stopped"])
 def test_steward_reserve_preserves_manual_boundaries_and_an_admitted_turn(quota_family, monkeypatch, boundary):
     """Family 周额度预防与监督
