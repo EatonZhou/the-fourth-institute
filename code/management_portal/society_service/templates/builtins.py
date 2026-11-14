@@ -82,7 +82,7 @@ def definitions():
         {
             "builtin_key": "workshop_assistant",
             "kind": "structure", "category": "structure", "title": "工坊助手",
-            "description": "为当前 Lineage 创建模板工坊助手。",
+            "description": "在用户的 My Lineage 中创建该用户的模板工坊助手。",
             "targets": ["canvas"], "parameters": [],
             "body": {"roles": [{"key": "assistant", "from": "new", "title": "工坊助手"}],
                      "components": [], "wires": [], "function_block": True},
