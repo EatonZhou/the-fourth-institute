@@ -88,6 +88,17 @@ class AccountMonitor:
             return {}
 
     def refresh_account(self, account, *, force=False, passive=False):
+        # Single admission point, including direct/manual calls. Failures count
+        # as attempts; passive observations neither consume nor obey this gate.
+        if not passive:
+            with self._lock:
+                now = time.time()
+                attempted = self._last_read_attempt.get(account.account_id)
+                if attempted is not None and now - attempted < MIN_READ_INTERVAL_SECONDS:
+                    self._refresh_refused = True
+                    self._last_refresh_request = attempted
+                    return
+                self._last_read_attempt[account.account_id] = now
         # Every refresh the monitor already performs is appended to the history log;
         # recording never triggers an extra Provider read.
         started_at, error_code = time.time(), ''
@@ -117,9 +128,6 @@ class AccountMonitor:
 
     def _refresh_account(self, account, *, force=False, passive=False):
         observed_at = login_now()
-        if not passive:
-            with self._lock:
-                self._last_read_attempt[account.account_id] = time.time()
         try:
             sample = (self.accounts.observe(account, force=force, passive=True) if passive
                       else self.accounts.observe(account, force=force))
@@ -169,7 +177,7 @@ class AccountMonitor:
                 })
             with self._lock:
                 catalog = (self._samples.get(account.account_id) or {}).get("selection_catalog") or {}
-            if not catalog.get("fresh") or time.time() - catalog.get("checked_at", 0) >= 300 or force:
+            if not passive:
                 try:
                     native = self.accounts.runtime_catalog(account.account_id)
                     catalog = {"fresh": True, "checked_at": time.time(),
@@ -267,12 +275,8 @@ class AccountMonitor:
 
     def request_refresh(self):
         with self._lock:
-            now = time.monotonic()
-            # Only a refused request reports a wait; an accepted one clears it.
-            self._refresh_refused = now - self._last_refresh_request < 60
-            if not self._refresh_refused:
-                self._last_refresh_request = now
-                self.wakeup.set()
+            self._refresh_refused = False
+            self.wakeup.set()
 
     def _reading_expired(self, account, now):
         with self._lock:
@@ -288,10 +292,6 @@ class AccountMonitor:
 
     def _real_read_due(self, account, now, *, requested, scheduled):
         """Whether to query the Provider now; see the rationing rules above."""
-        with self._lock:
-            attempted = self._last_read_attempt.get(account.account_id)
-        if attempted is not None and now - attempted < MIN_READ_INTERVAL_SECONDS:
-            return False
         return requested or (scheduled and self._reading_expired(account, now))
 
     def _passive_read(self, account):
@@ -359,7 +359,7 @@ class AccountMonitor:
         with self._lock:
             samples = deepcopy(self._samples)
             refreshing = self._refreshing or self.wakeup.is_set() or any(not f.done() for f in self._inflight.values())
-            retry_after = max(0, 60 - (time.monotonic() - self._last_refresh_request)) if self._refresh_refused else 0
+            retry_after = max(0, MIN_READ_INTERVAL_SECONDS - (time.time() - self._last_refresh_request)) if self._refresh_refused else 0
         from .account_registrations import registrations
         rows = registrations()
         entries = self.accounts.accounts()

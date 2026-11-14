@@ -36,6 +36,7 @@ def agent(monkeypatch, tmp_path):
     monkeypatch.setattr(accounts, "command", lambda: [sys.executable, str(FAKE)])
     monkeypatch.setattr(accounts, "account_for_route", lambda route: {"account_id": "antigravity_one", "route_id": "one"})
     monkeypatch.setattr(accounts, "account_home", lambda provider, account: tmp_path)
+    monkeypatch.setattr(accounts, "account_runtime", lambda *args: tmp_path)
     monkeypatch.setattr(accounts, "environment", lambda account: {"GEMINI_HOME": str(tmp_path)})
     monkeypatch.setattr(backend, "resident_process_environment", lambda options: ({}, {}))
     return tmp_path
@@ -142,19 +143,18 @@ def test_runtime_without_images_rejects_before_authentication_or_prompt(agent, m
     assert [r["method"] for r in requests(agent)] == ["initialize"]
 
 
-def test_catalog_refreshes_legacy_media_flag_and_preserves_native_capability(agent, monkeypatch):
+def test_catalog_reads_snapshots_without_starting_acp(agent, monkeypatch):
     cache = agent / "catalog"
     cache.mkdir()
     monkeypatch.setattr(accounts, "account_runtime", lambda *args: cache)
     (cache / "catalog.json").write_text(json.dumps({"observed_at": time.time(), "capabilities": {"media": False}}))
     (cache / "catalog.json").chmod(0o600)
-    assert accounts.catalog("one")["capabilities"]["media"] is True
-    assert len([r for r in requests(agent) if r["method"] == "initialize"]) == 1
-    assert accounts.catalog("one")["capabilities"]["media"] is True
-    assert len([r for r in requests(agent) if r["method"] == "initialize"]) == 1
+    assert accounts.catalog("one") == {}
+    assert not (agent / "requests.jsonl").exists()
     native = {"models": {"currentModelId": "text", "availableModels": [{"modelId": "text"}]}}
     accounts.save_catalog("antigravity_one", native, {"promptCapabilities": {"image": False}})
     assert accounts.catalog("one")["capabilities"]["media"] is False
+    assert not (agent / "requests.jsonl").exists()
 
 
 def test_input_media_validation_never_silently_drops_images(agent, monkeypatch):
@@ -478,6 +478,15 @@ def test_account_quota_uses_native_command_without_model_tools_or_resident_histo
     assert calls[2]["params"]["mcpServers"] == []
     assert calls[2]["params"]["_meta"]["antigravity"]["enabledTools"] == []
     assert calls[3]["params"]["prompt"] == [{"type": "text", "text": "/usage"}]
+
+
+def test_quota_reuses_its_native_session_and_updates_catalog(agent):
+    assert accounts.observe_account("antigravity_one")["status"] == "ok"
+    assert accounts.observe_account("antigravity_one")["status"] == "ok"
+    calls = requests(agent)
+    assert len([c for c in calls if c['method'] == 'session/new']) == 1
+    assert len([c for c in calls if c['method'] == 'session/load']) == 1
+    assert accounts.catalog('one')['models'] == ['gemini-test']
 
 
 @pytest.mark.parametrize("setting,code,prompted", [

@@ -89,18 +89,8 @@ def catalog_snapshot(route=""):
 
 
 def catalog(route=""):
-    row = account_for_route(route)
-    home = account_home("antigravity", row["account_id"])
-    value = catalog_snapshot(route)
-    if value and time.time() - value.get("observed_at", 0) < 300:
-        return value
-    with AcpClient(command(), env=environment(row["account_id"]), cwd=str(home)) as client:
-        handshake = client.initialize()
-        authenticated = client.call("authenticate", {"methodId": "oauth-personal"})
-        # An empty native session lists models, without invoking one.
-        result = client.call("session/new", {"cwd": str(home), "mcpServers": [],
-                             "_meta": {"antigravity": {"enabledTools": []}}})
-        return save_catalog(row["account_id"], result, handshake.get("agentCapabilities") or {}, authenticated=authenticated)
+    """Discovery is carried by execution or an admitted quota read, never a page read."""
+    return catalog_snapshot(route)
 
 
 def routes():
@@ -177,13 +167,25 @@ def observe_account(account_id):
     try:
         with AcpClient(command(), env=environment(account_id), on_update=update) as client, \
                 cancel_resource(lambda: client.close(timeout=1)):
-            client.initialize()
-            client.call("authenticate", {"methodId": "oauth-personal"})
+            handshake = client.initialize()
+            authenticated = client.call("authenticate", {"methodId": "oauth-personal"})
             sample.update(login_observation="logged_in", login_observed_at=datetime.now(timezone.utc).isoformat())
             try:
-                result = client.call("session/new", {"cwd": str(account_home("antigravity", account_id)),
-                    "mcpServers": [], "_meta": {"antigravity": {"enabledTools": []}}})
+                # Keep quota traffic separate from business history, but reuse
+                # its own native session across queries and process restarts.
+                saved = account_runtime("antigravity", account_id) / "usage-session.json"
+                try:
+                    prior = json.loads(saved.read_text()).get("session_id", "")
+                except (OSError, ValueError):
+                    prior = ""
+                params = {"cwd": str(account_home("antigravity", account_id)),
+                          "mcpServers": [], "_meta": {"antigravity": {"enabledTools": []}}}
+                if prior:
+                    params["sessionId"] = prior
+                result = client.call("session/load" if prior else "session/new", params)
                 session_id = result["sessionId"]
+                atomic_write_private_bytes(saved, json.dumps({"session_id": session_id}).encode())
+                save_catalog(account_id, result, handshake.get("agentCapabilities") or {}, authenticated=authenticated)
                 # Do not turn a missing native slash command into an LLM prompt.
                 # Google advertises commands asynchronously AFTER session/new.
                 with advertised:

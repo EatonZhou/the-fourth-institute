@@ -98,9 +98,12 @@ def make_monitor(history=None):
                           observation_store=history), account, accounts, history
 
 
-def test_monitor_records_each_refresh_without_extra_provider_calls():
+def test_monitor_records_each_refresh_without_extra_provider_calls(monkeypatch):
+    from management_portal.execution import account_monitor as module
+    monkeypatch.setattr(module.time, 'time', lambda: 1000)
     monitor, account, accounts, history = make_monitor()
     monitor.refresh_account(account)
+    monkeypatch.setattr(module.time, 'time', lambda: 1600)
     monitor.refresh_account(account, force=True)
     assert accounts.observe.call_count == 2
     assert history.append.call_count == 2
@@ -118,9 +121,12 @@ def test_persistence_failure_does_not_turn_fresh_quota_into_failure(caplog):
     assert 'SECRET' not in caplog.text
 
 
-def test_monitor_retains_failure_attempt_as_history():
+def test_monitor_retains_failure_attempt_as_history(monkeypatch):
+    from management_portal.execution import account_monitor as module
     monitor, account, accounts, history = make_monitor()
+    monkeypatch.setattr(module.time, 'time', lambda: 1000)
     monitor.refresh_account(account)
+    monkeypatch.setattr(module.time, 'time', lambda: 1600)
     accounts.observe.side_effect = TimeoutError('SECRET')
     monitor.refresh_account(account)
     assert history.append.call_count == 2
@@ -140,13 +146,31 @@ def test_scheduled_checks_read_only_expired_accounts_and_every_read_waits_ten_mi
     assert not due(0)                                   # no check, no request
     monitor._last_read_attempt['one'] = monitor._last_good_read['one'] = 1000
     monitor._samples['one'] = {'rate_limits': [{'id': 'weekly', 'resets_at': 20000}]}
-    assert not due(1000 + m.MIN_READ_INTERVAL_SECONDS - 1, requested=True)
+    # Scheduling chooses intent only; admission owns the 10-minute rule.
+    assert due(1000 + m.MIN_READ_INTERVAL_SECONDS - 1, requested=True)
     assert due(1000 + m.MIN_READ_INTERVAL_SECONDS, requested=True)
     assert not due(19999, scheduled=True)               # 5 h old, before its reset: still valid
     assert due(20000, scheduled=True)                   # its weekly window reset
     monitor._samples['one'] = {'rate_limits': []}
     assert not due(1000 + m.READING_EXPIRES_SECONDS - 1, scheduled=True)
     assert due(1000 + m.READING_EXPIRES_SECONDS, scheduled=True)
+
+
+def test_direct_and_concurrent_refreshes_share_one_admission_gate(monkeypatch):
+    from management_portal.execution import account_monitor as module
+    monitor, account, accounts, history = make_monitor()
+    monkeypatch.setattr(module.time, 'time', lambda: 1000)
+    with ThreadPoolExecutor(max_workers=4) as pool:
+        list(pool.map(lambda _: monitor.refresh_account(account, force=True), range(8)))
+    assert accounts.observe.call_count == history.append.call_count == 1
+    monkeypatch.setattr(module.time, 'time', lambda: 1599)
+    monitor.refresh_account(account, force=True)
+    assert accounts.observe.call_count == 1
+    monitor.refresh_account(account, passive=True)
+    assert monitor._last_read_attempt['one'] == 1000
+    monkeypatch.setattr(module.time, 'time', lambda: 1600)
+    monitor.refresh_account(account)
+    assert accounts.observe.call_count == 3
 
 
 def test_rationed_quota_stays_valid_until_expiry_or_first_reset():

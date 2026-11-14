@@ -483,8 +483,8 @@ def test_configured_routes_fail_explicitly_in_execution_and_tolerate_only_web(mo
     assert ConfiguredAccounts(definition, tolerate_unavailable=True).accounts() == ()
 
 
-def test_account_refresh_tracks_inflight_reads_and_throttles_requests(monkeypatch):
-    """账号额度刷新进行中时快照标记刷新中，期间重复请求被节流并给出等待秒数"""
+def test_account_refresh_tracks_inflight_reads_without_a_second_request_timer(monkeypatch):
+    """重复请求由进行中任务合并，查询准入统一判断账号十分钟间隔。"""
     import threading
     accounts = ExecutionAccounts((Adapter(),))
     monitor = AccountMonitor(accounts, Scheduler(accounts=accounts, quota_reserve_enabled=True))
@@ -495,18 +495,16 @@ def test_account_refresh_tracks_inflight_reads_and_throttles_requests(monkeypatc
         monitor._samples[account.account_id] = {"status": "ok"}
     monkeypatch.setattr(monitor, "refresh_account", refresh)
     monitor.request_refresh()
-    requested = monitor._last_refresh_request
     monitor.start()
     try:
         assert started.wait(2)
         assert not monitor.wakeup.is_set()
         snapshot = monitor.snapshot()
         assert snapshot["refreshing"]
-        # The accepted request reports no wait; only the refused second one does.
+        # Pending requests coalesce without a separate 60-second timer.
         assert snapshot["refresh_retry_after_seconds"] == 0
         monitor.request_refresh()
-        assert monitor._last_refresh_request == requested
-        assert monitor.snapshot()["refresh_retry_after_seconds"] > 0
+        assert monitor.snapshot()["refresh_retry_after_seconds"] == 0
     finally:
         release.set()
         monitor.close()
