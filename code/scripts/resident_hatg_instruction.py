@@ -7,7 +7,7 @@ Resident.  Each command carries one idempotency key; the client's own retries
 reuse it, so a retried mutation runs once.  Streaming instructions print one
 JSON item per line and resume from the last cursor after a dropped connection.
 
-    resident_hatg_instruction.py list [--category CATEGORY]
+    resident_hatg_instruction.py list [--category CATEGORY] [--group GROUP]
     resident_hatg_instruction.py schema INSTRUCTION
     resident_hatg_instruction.py call INSTRUCTION [--arguments-json JSON | --arguments-file PATH]
                                       [--idempotency-key KEY] [--expected-version JSON]
@@ -229,6 +229,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--resident-id", default="")
     commands = parser.add_subparsers(dest="command", required=True)
     listing = commands.add_parser("list", help="ListInstructions")
+    listing.add_argument("--group", choices=("general", "application", "internal", "operations", "all"), default="")
     listing.add_argument("--category", default="")
     schema = commands.add_parser("schema", help="GetInstructionSchema")
     schema.add_argument("instruction")
@@ -251,7 +252,8 @@ def main(argv: list[str] | None = None) -> int:
         resident_id = _resident_id(args.resident_id)
         if args.command == "list":
             body = {"schema": SCHEMA, "instruction": "ListInstructions",
-                    "arguments": {"category": args.category} if args.category else {}}
+                    "arguments": {key: value for key, value in
+                                  (("category", args.category), ("group", args.group)) if value}}
         elif args.command == "schema":
             body = {"schema": SCHEMA, "instruction": "GetInstructionSchema",
                     "arguments": {"instruction": args.instruction}}

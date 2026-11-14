@@ -1,16 +1,19 @@
 """Self-description instructions (decision_aa4fdbac8364)."""
 from __future__ import annotations
 
-from ..declarations import FIXED, Fixed, InstructionDeclaration as D, On, P, R
+from ..declarations import DISCOVERY_GROUPS, FIXED, Fixed, InstructionDeclaration as D, On, P, R
 
 
 DECLARATIONS = (
     # The catalog lists the installed categories as the enum of ``category``.
     D(name="ListInstructions", category="isa", owner="entry", decides=FIXED,
-      description="列出已登记的指令。",
-      parameters=(P("category", description="只列出这一类别的指令；省略时列出全部"),),
+      description="按需发现指令；默认仅列通用能力，其他能力按 group 或 category 展开，group=all 显式读取完整目录。发现分组不授予或限制调用权限。",
+      parameters=(P("category", description="只列出这一对象类别；单独指定时跨发现分组查询"),
+                  P("group", description="发现分组；与 category 同填时取交集；均省略时为 general",
+                    enum=(*DISCOVERY_GROUPS, "all"))),
       result=(R("instructions", "array", "指令名、类别、拥有服务、说明、是否改变状态和是否流式；"
                 "RunResourceAction 下列出各资源类型的动作"),
+              R("groups", "array", "各发现分组的名称、标题、指令数量与可查询类别；仅含已安装能力，不代表权限"),
               R("guide", "string", "Agent 指引的地址（Portal 内路径），按任务说明身份、调用方式和常用指令"))),
     D(name="GetInstructionSchema", category="isa", owner="entry", decides=FIXED,
       description="读取一条指令的完整定义。",

@@ -9,7 +9,10 @@ from ..declarations import FIXED, InstructionDeclaration as D, P, R
 def _d(name, decides, description, parameters=(), result=(), *, mutates=False, target="", owner="web"):
     return D(name=name, category="environment", owner=owner, description=description,
              parameters=tuple(parameters), result=tuple(result), mutates=mutates, target=target,
-             decides=decides)
+             decides=decides, discovery_group=("general" if name in {
+                 "GetPortalStatus", "GetRuntimeCapacity", "GetDeviceStatus", "ListProviders",
+                 "ListModelApis", "ListProviderAccounts", "ListBackendRoles", "GetUsage", "CompleteChat",
+             } else "operations"))
 
 
 COMPONENTS = ("web", "resource", "execution-service", "execution-worker", "lineage")
@@ -45,7 +48,7 @@ DECLARATIONS = (
           items={"type": "string", "enum": list(COMPONENTS)}),
     ), (R("request_id", description="执行这次重启的临时单元 tfi-pair-restart-<id>"),
         R("components", "array", "请求的组件；空列表表示默认组件")), mutates=True),
-    D(name="PublishRelease", category="environment", owner="web", decides=FIXED,
+    D(name="PublishRelease", category="environment", owner="web", decides=FIXED, discovery_group="operations",
       description="把调用者指定的 Dev 代码同步到 Release，并返回发布提交；只能在 Dev 部署执行。",
       parameters=(
           R("message", description="本次发布的提交说明"),

@@ -26,30 +26,20 @@ DEFAULT_WAIT_SECONDS = 30.0
 MAX_WAIT_SECONDS = 300.0
 
 
-def _catalog_text() -> str:
-    from management_portal.hatg.catalog import categories, instruction_catalog
-
-    groups: dict[str, list[str]] = {}
-    for name, declaration in sorted(instruction_catalog().items()):
-        groups.setdefault(declaration.category, []).append(name)
-    titles = categories()
-    return "\n".join(
-        f"- {titles.get(category, category)}: {', '.join(names)}"
-        for category, names in groups.items()
-    )
-
-
 def _description() -> str:
     return (
         "Call one Portal HATG ISA instruction as the current Resident. "
         "Pass the instruction name and its arguments; use GetInstructionSchema "
         "{instruction} to read an instruction's parameters before first use, and "
-        "ListInstructions to browse. Optional idempotency_key makes a mutation run "
+        "ListInstructions to discover capabilities on demand. With no arguments it "
+        "lists general capabilities and a group index; use group=application, "
+        "internal or operations for task/role-specific capabilities, category for "
+        "an object category, or group=all for the full catalog. Discovery does not "
+        "grant permissions or restrict direct calls. Optional idempotency_key makes a mutation run "
         "once (defaults to this tool call's ID); optional expected_version compares "
         "the target's version token before changing it. Streaming instructions "
         "(Watch*) return the first batch of new items or an empty batch after "
-        "wait_seconds, plus next_cursor to pass as arguments.after_cursor.\n"
-        "Instructions:\n" + _catalog_text()
+        "wait_seconds, plus next_cursor to pass as arguments.after_cursor."
     )
 
 

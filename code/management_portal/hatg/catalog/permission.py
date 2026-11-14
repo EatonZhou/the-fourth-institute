@@ -42,7 +42,11 @@ _SCOPE = "exact（只匹配该节点，默认）、subtree（该节点及其下�
 def _d(name, decides, description, parameters=(), result=(), *, mutates=False, target="", any_of=(), one_of=(), owner="resource"):
     return D(name=name, category="permission", owner=owner, description=description,
              parameters=tuple(parameters), result=tuple(result), mutates=mutates, target=target,
-             any_of=any_of, one_of=one_of, decides=decides)
+             any_of=any_of, one_of=one_of, decides=decides,
+             discovery_group=("operations" if name in {
+                 "CreatePermissionScheme", "UpdatePermissionScheme", "DeletePermissionScheme",
+                 "ActivatePermissionScheme", "CreatePermissionEntry", "UpdatePermissionEntry", "DeletePermissionEntry",
+             } else "general"))
 
 
 DECLARATIONS = (

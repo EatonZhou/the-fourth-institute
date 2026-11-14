@@ -264,10 +264,7 @@ WITHOUT_TARGET = {"ClaimResidentSummaryJobs", "OpenTerminal", "PublishPulseItem"
                   # Current-user operations resolve omitted user_id from the
                   # authenticated caller; the channel session is not a versioned resource.
                   "StartTelepusWeixinBinding", "GetTelepusWeixinBinding", "SubmitTelepusWeixinPin",
-                  "UnbindTelepusWeixin", "UpdateTelepusWeixinNotifications",
-                  # Retired commands keep conservative mutating declarations
-                  # for compatibility; their handlers always reject without an object.
-                  "EnsurePaperTranslationBinding", "TranslatePaperText"}
+                  "UnbindTelepusWeixin", "UpdateTelepusWeixinNotifications"}
 
 
 def test_changes_to_an_existing_object_declare_it_as_target():

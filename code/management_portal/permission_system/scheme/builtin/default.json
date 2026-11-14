@@ -601,12 +601,6 @@
     "GetPaperTranslationBinding": {
       "a": "@free"
     },
-    "EnsurePaperTranslationBinding": {
-      "a": "@free"
-    },
-    "TranslatePaperText": {
-      "a": "@free"
-    },
     "ExportPaperBibtex": {
       "a": "@free"
     },

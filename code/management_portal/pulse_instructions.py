@@ -14,7 +14,7 @@ CATEGORIES = {"pulse": "Pulse"}
 
 
 def _d(name, decides, description, parameters=(), result=(), *, mutates=False, target=""):
-    return D(name=name, category="pulse", owner="web", description=description,
+    return D(name=name, category="pulse", owner="web", description=description, discovery_group="application",
              parameters=tuple(parameters), result=tuple(result), mutates=mutates, target=target,
              decides=decides)
 

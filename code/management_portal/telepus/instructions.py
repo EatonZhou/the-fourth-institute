@@ -16,7 +16,7 @@ PAGE_INSTRUCTIONS = {"GetTelepusStatus": {}, "SetTelepusEnabled": {"enabled": Tr
 
 
 def _d(name, description, parameters=(), result=(), *, mutates=False, target="", category="user"):
-    return D(name=name, category=category, owner="web", description=description,
+    return D(name=name, category=category, owner="web", description=description, discovery_group="application",
              parameters=tuple(parameters), result=tuple(result), mutates=mutates, target=target,
              decides=FIXED)
 

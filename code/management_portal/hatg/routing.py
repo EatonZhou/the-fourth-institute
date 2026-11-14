@@ -209,11 +209,26 @@ def _resource_actions() -> list[dict[str, Any]]:
     return [action.schema() for action in resource_action_catalog().values()]
 
 
-def list_instructions(category: str = "") -> list[dict[str, Any]]:
+def discovery_groups() -> list[dict[str, Any]]:
+    from .declarations import DISCOVERY_GROUPS
+
+    catalog = instruction_catalog().values()
+    return [
+        {"group": group, "title": title,
+         "count": sum(item.discovery_group == group for item in catalog),
+         "categories": sorted({item.category for item in catalog if item.discovery_group == group})}
+        for group, title in DISCOVERY_GROUPS.items()
+    ]
+
+
+def list_instructions(category: str = "", group: str = "") -> list[dict[str, Any]]:
+    selected = group or ("all" if category else "general")
     items = []
     for name in sorted(instruction_catalog()):
         declaration = instruction_catalog()[name]
         if category and declaration.category != category:
+            continue
+        if selected != "all" and declaration.discovery_group != selected:
             continue
         summary = declaration.summary()
         if name == "RunResourceAction":
@@ -243,7 +258,9 @@ def _self_description(
         if call.instruction == "ListInstructions":
             category = str(call.arguments.get("category") or "")
             # Every caller discovers instructions here first, so the agent guide is named here too.
-            result: Any = {"instructions": list_instructions(category), "guide": "/guide/agent.md"}
+            group = str(call.arguments.get("group") or "")
+            result: Any = {"instructions": list_instructions(category, group),
+                           "groups": discovery_groups(), "guide": "/guide/agent.md"}
         elif call.instruction == "GetInstructionSchema":
             result = {"schema": instruction_schema(str(call.arguments["instruction"]))}
         elif call.instruction == "GetInstructionExecution":

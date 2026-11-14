@@ -591,7 +591,7 @@ def run(repo, call):
                 errors[address] = error
             else:
                 docs[address], versions[address] = meta, version
-    instructions = call('ListInstructions', {})['instructions']
+    instructions = call('ListInstructions', {'group': 'all'})['instructions']
     report = audit(repo, mapping, spec, improve, evolution, docs, instructions, errors,
                    resolve_resource=lambda address: call('ResolveResource', {'address': address}))
     if improve is None:

@@ -20,7 +20,7 @@ DECLARATIONS = tuple(D(
     parameters=(R('resource_id', description='被删除或产生清理任务的对象 ID'),),
     result=(R('items', 'array', '文件清理状态、尝试次数、失败原因和完成时间；与登记是否已注销分别报告'),),
 ), D(
-    name='CorrectResourceLifecycleAssociation', category='resource', owner='resource',
+    name='CorrectResourceLifecycleAssociation', category='resource', owner='resource', discovery_group='internal',
     decides=(*FIXED, On('resource_id', 'workspace')), mutates=True,
     description='原生命周期调用者凭owner核验的持久Project根依赖证据解除错误夹具关联；仅关闭准入后可用，保留审计，不注销或删除Workspace，不完成scope。',
     parameters=(R('scope_id', description='原运行生命周期ID'), R('resource_id', description='错误关联的Workspace ID'),

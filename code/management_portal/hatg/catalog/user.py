@@ -7,7 +7,9 @@ from ..declarations import FIXED, ON_USER, InstructionDeclaration as D, P, R
 def _d(name, decides, description, parameters=(), result=(), *, mutates=False, target=""):
     return D(name=name, category="user", owner="web", description=description,
              parameters=tuple(parameters), result=tuple(result), mutates=mutates, target=target,
-             decides=decides)
+             decides=decides, discovery_group=("general" if name in {
+                 "GetUser", "GetUserNavigation", "UpdateUserNavigation", "UpdateUser",
+             } else "operations"))
 
 
 USER = R("user", "object", "用户资料：用户名、显示名称、恢复邮箱、头像、账号状态和 User 分类（category：portal_admin、member 或 intern）")

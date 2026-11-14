@@ -13,7 +13,7 @@ CATEGORIES = {"discussion": "公共讨论"}
 
 
 def _d(name, decides, description, parameters=(), result=(), *, mutates=False, target=""):
-    return D(name=name, category="discussion", owner="web", description=description,
+    return D(name=name, category="discussion", owner="web", description=description, discovery_group="application",
              parameters=tuple(parameters), result=tuple(result), mutates=mutates, target=target,
              decides=decides)
 

@@ -30,6 +30,7 @@ def input_repo(tmp_path, request):
 
 def empty_catalog(name, arguments):
     assert name == 'ListInstructions'
+    assert arguments == {'group': 'all'}
     return {'instructions': []}
 
 

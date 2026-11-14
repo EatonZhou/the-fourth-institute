@@ -4,15 +4,15 @@ type: decision
 project: AI员工
 created_at: '2026-09-03'
 version:
-  number: 59
+  number: 60
   created_at: "2026-09-03"
   created_by:
     user: ""
     agent: ""
-  updated_at: "2026-11-13T20:48:58Z"
+  updated_at: "2026-11-14T10:04:38Z"
   updated_by:
     user: ""
-    agent: "resident_737599f56947"
+    agent: "resident_60ae6d0cdf74"
 importance: 9
 metaness: 2
 ai_generated: true
@@ -509,14 +509,12 @@ model_evidence=resident_current_settings 的旧补入项不视为历史事实，
 
 ## Paper ISA 指令
 
-Paper 功能包提供只读导出和历史翻译兼容入口。固定判定槽在默认方案中归免检，资源 owner 仍按实际调用者过滤论文和读取工作台；免检不授予 Paper、工作台或 Resident 的权限。两个退休写入口保持原 mutates 标记并固定拒绝执行，防止旧调用误认为已创建或翻译。
+Paper 功能包在 `application` 发现分组提供只读导出和历史翻译绑定查询。固定判定槽在默认方案中归免检，资源 owner 仍按实际调用者过滤论文和读取工作台；免检不授予 Paper、工作台或 Resident 的权限。永久取消的 Kimi 订阅翻译实验不登记 ISA 创建或翻译指令；旧指令名返回标准 `instruction.unknown`。历史绑定查询继续只读，不创建角色。
 
 | 指令 | 改变状态 | 用途 | 默认方案要求 |
 | --- | --- | --- | --- |
 | `ExportPaperBibtex` | 否 | 导出指定论文或当前主体收藏的 BibTeX；不可读和缺失项返回 warnings | 免检；每篇论文仍由资源 owner 鉴权 |
 | `GetPaperTranslationBinding` | 否 | 读取已发布 Paper 工作台与历史翻译绑定 | 免检；工作台 owner 按调用者鉴权 |
-| `EnsurePaperTranslationBinding` | 是（兼容标记，固定拒绝） | 已取消实验的旧入口，不创建或配置角色 | 免检；固定返回取消错误 |
-| `TranslatePaperText` | 是（兼容标记，固定拒绝） | 已取消实验的旧入口，不执行翻译 | 免检；固定返回取消错误 |
 
 `ExportPaperBibtex` 的 `paper_ids` 与 `favorites=true` 二选一。收藏只取当前主体；每个论文分别过滤权限，返回实际导出 ID、正文及省略原因。公开接口不接受替代调用者的身份参数。普通 Reader 翻译继续使用独立 HTTP 翻译 owner。
 
@@ -526,5 +524,3 @@ Paper 功能包提供只读导出和历史翻译兼容入口。固定判定槽�
 | --- | --- |
 | `ExportPaperBibtex` | `paper_ids`、`favorites` |
 | `GetPaperTranslationBinding` | 无 |
-| `EnsurePaperTranslationBinding` | 无 |
-| `TranslatePaperText` | `operation_id`、`text`、`source_language`、`target_language`、`terminology`、`refresh`、`task_id` |

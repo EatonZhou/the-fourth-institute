@@ -19,7 +19,7 @@ CHANGE = {"type": "object", "properties": {"op": {"type": "string", "enum": [
 
 
 def _d(name, description, parameters=(), result=(), *, mutates=False):
-    return D(name=name, category="research", owner="web", description=description,
+    return D(name=name, category="research", owner="web", description=description, discovery_group="application",
              parameters=tuple(parameters), result=tuple(result), mutates=mutates, target="project_id",
              decides=ON_PROJECT)
 

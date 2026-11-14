@@ -120,7 +120,7 @@ With the client (omitting `--url` and `--credentials` below):
 | --- | --- |
 | `portal_user.py call <instruction> --arguments '<JSON>' [--idempotency-key <key>]` | Execute an ordinary instruction and print the receipt. |
 | `portal_user.py watch <Watch instruction> --arguments '<JSON>'` | Consume a streaming instruction. |
-| `portal_user.py list [--category <category>]` | Discover instructions. |
+| `portal_user.py list [--category <category>] [--group <group>]` | Discover instructions. |
 | `portal_user.py schema <instruction>` | Read its live schema. |
 | `portal_user.py guide` | Read the guide without credentials. |
 
@@ -179,7 +179,7 @@ Events include `batch` (`{"items":[...]}`), `heartbeat`, `error`, and `end`. Res
 
 ### 4.5 Discover on demand
 
-Use `ListInstructions` with `category`, such as `conversation`. Common categories include `user`, `conversation`, `resource`, `resident`, `resident_execution`, `discussion`, `lineage_definition`, `lineage_run`, and `permission`. Read `GetInstructionSchema` before calling an unfamiliar operation; its parameter descriptions contain usage rules.
+`ListInstructions` defaults to general capabilities and returns a `groups` index. Select `group=general`, `application`, `internal`, or `operations` for the task or role; `group=all` explicitly lists the complete installed catalog. A `category` alone, such as `conversation`, searches across groups; combining it with a group returns their intersection. Discovery groups do not grant permissions or block direct calls to known instructions. Every call still uses the authenticated caller's permissions. Read `GetInstructionSchema` before calling an unfamiliar operation.
 
 ## 5. Reading messages sent to you
 

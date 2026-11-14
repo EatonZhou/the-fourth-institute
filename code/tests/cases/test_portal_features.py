@@ -89,7 +89,6 @@ print(json.dumps({
 # The instructions the installed features add (``isa.instructions``).
 FEATURE_INSTRUCTIONS = {
     "ResolveMessageContextReferences", "ExportPaperBibtex", "GetPaperTranslationBinding",
-    "EnsurePaperTranslationBinding", "TranslatePaperText",
     "ListPosts", "GetPost", "CreatePost", "UpdatePost", "DeletePost", "CreateReply", "DeleteReply", "PinPost",
     "FeaturePost", "MarkPostRead", "ListChatrooms", "GetChatroom", "CreateChatroom", "UpdateChatroom",
     "LeaveChatroom", "DeleteChatroom", "ListChatroomMessages",

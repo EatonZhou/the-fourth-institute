@@ -310,10 +310,10 @@ def test_clear_mailbox_runs_where_its_target_mailbox_is_held(monkeypatch):
 
 
 def test_self_description_is_answered_by_the_entry(monkeypatch):
-    """ListInstructions 和 GetInstructionSchema 由入口直接应答并列出完整目录"""
+    """ListInstructions 显式展开完整目录，GetInstructionSchema 由入口直接应答"""
     monkeypatch.setattr(kernel_module, "_KERNELS", {})
     monkeypatch.setenv("PORTAL_ISA_ROUTING", "socket")
-    listing = routing.execute({"instruction": "ListInstructions", "arguments": {}}, CONTEXT)
+    listing = routing.execute({"instruction": "ListInstructions", "arguments": {"group": "all"}}, CONTEXT)
     assert listing.status == "committed"
     names = {item["instruction"] if "instruction" in item else item["name"] for item in listing.result["instructions"]}
     # The entry lists the whole catalog, whatever instructions it declares.

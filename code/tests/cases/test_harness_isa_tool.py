@@ -133,7 +133,8 @@ def test_the_tool_handler_reads_the_provider_call_id(kernels):
     with tool_call_scope("provider-call-7"):
         again = json.loads(tool.handler(dict(SETTINGS)))
     assert again["replayed"] and again["instruction_id"] == first["instruction_id"]
-    assert "Instructions:" in tool.description and "UpdateProviderAccount" in tool.description
+    assert "ListInstructions" in tool.description and "group=all" in tool.description
+    assert "UpdateProviderAccount" not in tool.description
 
 
 @dataclass(frozen=True)

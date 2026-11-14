@@ -150,8 +150,10 @@ def test_list_and_schema_use_the_self_description_instructions(monkeypatch, cloc
     monkeypatch.setattr(cli, "urlopen", lambda request, timeout: sent.append(json.loads(request.data)) or committed())
     cli.main(["--resident-id", RESIDENT, "list", "--category", "lineage_run"])
     cli.main(["--resident-id", RESIDENT, "schema", "WatchTriggerPath"])
+    cli.main(["--resident-id", RESIDENT, "list", "--group", "internal", "--category", "resident"])
     assert [(body["instruction"], body["arguments"]) for body in sent] == [
         ("ListInstructions", {"category": "lineage_run"}), ("GetInstructionSchema", {"instruction": "WatchTriggerPath"}),
+        ("ListInstructions", {"group": "internal", "category": "resident"}),
     ]
 
 

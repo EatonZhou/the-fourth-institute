@@ -10,7 +10,10 @@ from ..declarations import FIXED, ON_LINEAGE, PLACEMENT, ON_RESIDENT, Instructio
 def _d(name, decides, description, parameters=(), result=(), *, mutates=False, target=""):
     return D(name=name, category="resident", owner="lineage", description=description,
              parameters=tuple(parameters), result=tuple(result), mutates=mutates, target=target,
-             decides=decides)
+             decides=decides, discovery_group=("internal" if name in {
+                 "RequestResidentSummaryRebuild", "GetResidentSummaryQueue", "ClaimResidentSummaryJobs",
+                 "SubmitResidentSummary", "ReleaseResidentSummaryJob",
+             } else "general"))
 
 
 # Every registered agent Backend; registering a Backend adds it here.

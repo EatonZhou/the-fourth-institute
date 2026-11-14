@@ -55,15 +55,15 @@ links:
   derived_from:
   - thinking_ca8f397a47de
 version:
-  number: 100
+  number: 101
   created_at: "2026-07-31"
   created_by:
     user: ""
     agent: ""
-  updated_at: "2026-11-13T20:28:27Z"
+  updated_at: "2026-11-14T10:04:38Z"
   updated_by:
     user: ""
-    agent: "resident_737599f56947"
+    agent: "resident_60ae6d0cdf74"
 metaness: 2
 ---
 # HATG ISA：指令格式、调用入口与执行规则
@@ -297,8 +297,6 @@ Python 入口将失败的指令结果转为业务异常时，保留外层回执�
 | `Split` | 把一项拆成多项 | `SplitMailboxItem` |
 | `Start` | 开始有生命周期的交互过程 | `StartTelepusWeixinBinding` |
 | `Export` | 按调用者权限导出资源内容 | `ExportPaperBibtex` |
-| `Ensure` | 确认并准备所需绑定；已退休兼容入口保留名称并拒绝 | `EnsurePaperTranslationBinding` |
-| `Translate` | 请求文本翻译；已退休兼容入口保留名称并拒绝 | `TranslatePaperText` |
 | `Submit` | 提交已完成的工作结果 | `SubmitResidentSummary` |
 | `Trigger` | 触发事件 | `TriggerEvent` |
 | `Unbind` | 解除 `Bind` 建立的关联 | `UnbindWorkspace` |
@@ -366,7 +364,11 @@ Python 入口将失败的指令结果转为业务异常时，保留外层回执�
 
 ## 指令声明与目录
 
-每条指令由其类别对应的声明模块登记一次。声明包含：指令名、所属类别、拥有服务、一句话说明、参数定义、结果定义、是否改变状态、是否流式、哪个参数指向目标对象，以及判定槽（这条指令按什么判定，见“声明格式”）。指令内核在每个服务启动时合并同一份声明；两个模块声明同名指令时启动失败。
+目录按对象类别组织稳定语义，按发现分组控制按需展开：`general`（通用）、`application`（应用）、`internal`（内部维护）、`operations`（运维）。分组由领域声明指定，缺省为通用；它独立于类别、执行 owner 与权限。`ListInstructions` 默认只列通用能力并给出其余组的发现索引；显式 `group=all` 才展开全部，已有 `category` 单独查询仍跨组返回该类别。Harness 提供简短发现入口，避免把每个已安装应用和维护命令名反复注入每个 Agent。完整参数和返回合同见 decision_aa4fdbac8364。
+
+永久取消的功能不以固定失败的指令继续占据当前目录。删除时一并清理声明、handler、默认权限映射、已无使用者的动词和当前规范表；旧名返回 `instruction.unknown`，不保留无期限别名。只读历史绑定查询若仍有独立语义，保留在应用分组并继续原 owner 鉴权。
+
+每条指令由其类别对应的声明模块登记一次。声明包含：指令名、所属类别、发现分组 `discovery_group`、拥有服务、一句话说明、参数定义、结果定义、是否改变状态、是否流式、哪个参数指向目标对象，以及判定槽（这条指令按什么判定，见“声明格式”）。指令内核在每个服务启动时合并同一份声明；两个模块声明同名指令时启动失败。
 
 可选功能的指令随功能安装：公告板、聊天室、Pulse 和 Telepus 通过 `isa.instructions` 接入点提供声明模块（`<功能>_instructions.py`），目录合并已安装功能的声明和它们新增的类别（`hatg.catalog.categories()`），`ListInstructions` 的 `category` 取值随之变化；声明的类别不在这些类别中时目录构建失败。Web 执行的功能指令，其实现由功能的 `web.instructions` 模块（`<功能>_web_isa.py`）登记到 Web 内核。功能没有安装时，它的指令不在目录中，各服务的内核也就不需要它们的实现（decision_15aab18c0ab3）。
 

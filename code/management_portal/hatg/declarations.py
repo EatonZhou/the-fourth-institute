@@ -244,6 +244,14 @@ def offset_cursor(offset: Any) -> str:
     return "" if offset is None else str(int(offset))
 
 
+DISCOVERY_GROUPS = {
+    "general": "通用",
+    "application": "应用",
+    "internal": "内部维护",
+    "operations": "运维",
+}
+
+
 @dataclass(frozen=True, slots=True)
 class InstructionDeclaration:
     name: str
@@ -264,12 +272,16 @@ class InstructionDeclaration:
     argument_owners: tuple[tuple[str, str], ...] = ()
     # The objects a call is judged on; one A element each (decision_b820faf42218 §3.2).
     decides: tuple[DecisionSlot, ...] = ()
+    # Discovery is independent of object category, routing and authorization.
+    discovery_group: str = "general"
 
     @property
     def elements(self) -> tuple[tuple[str, DecisionSlot], ...]:
         return decision_elements(self.name, self.decides)
 
     def __post_init__(self) -> None:
+        if self.discovery_group not in DISCOVERY_GROUPS:
+            raise RuntimeError(f"{self.name} 使用未知发现分组 {self.discovery_group}")
         # The category is checked when the catalog is built: a feature's
         # declarations may use a category the feature itself adds.
         if self.owner not in OWNERS:
@@ -386,6 +398,7 @@ class InstructionDeclaration:
             "instruction": self.name,
             "category": self.category,
             "category_title": categories()[self.category],
+            "discovery_group": self.discovery_group,
             "owner": self.owner,
             "owner_title": OWNERS[self.owner],
             "description": self.description,

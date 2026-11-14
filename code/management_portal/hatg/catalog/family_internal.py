@@ -7,7 +7,7 @@ from ..declarations import FIXED, ON_LINEAGE, ON_RESIDENT, InstructionDeclaratio
 def _d(name, decides, description, parameters, result, *, mutates=True, target="lineage_id"):
     return D(name=name, category="family_internal", owner="lineage", description=description,
              parameters=tuple(parameters), result=tuple(result), mutates=mutates, target=target,
-             decides=decides)
+             decides=decides, discovery_group="internal")
 
 
 DECLARATIONS = (

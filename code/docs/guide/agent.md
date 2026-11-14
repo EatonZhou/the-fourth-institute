@@ -127,7 +127,7 @@ Content-Type: application/json
 | --- | --- |
 | `portal_user.py call <指令> --arguments '<JSON>' [--idempotency-key <键>]` | 执行一条普通指令，打印 JSON 回执 |
 | `portal_user.py watch <Watch 指令> --arguments '<JSON>'` | 执行流式指令，见 4.4 |
-| `portal_user.py list [--category <类别>]` | 等于 `ListInstructions` |
+| `portal_user.py list [--category <类别>] [--group <分组>]` | 等于 `ListInstructions` |
 | `portal_user.py schema <指令>` | 等于 `GetInstructionSchema` |
 | `portal_user.py guide` | 打印本文，不需要凭据 |
 
@@ -187,7 +187,8 @@ curl -sS -N https://portal.example.com/api/instructions/execute \
 
 ### 4.5 按需发现指令
 
-- `ListInstructions`，带 `category` 只列一类，例如 `{"category": "conversation"}`。外部 agent 常用的类别是 `user`、`conversation`、`resource`；其余还有 `resident`、`resident_execution`、`discussion`、`lineage_definition`、`lineage_run`、`permission` 等，共 15 类。
+- `ListInstructions` 默认只列通用能力，并返回 `groups` 索引。按任务或职责传 `group`：`general`（通用）、`application`（应用）、`internal`（内部维护）、`operations`（运维）；`{"group":"all"}` 显式列出完整目录。
+- 带 `category` 只列一个对象类别，例如 `{"category":"conversation"}`；单独指定类别跨分组查询，同时指定 `group` 则取交集。分组和类别以当前安装目录为准。发现分组不授予权限，也不阻止已知指令直接调用；每次调用仍按当前主体鉴权。
 - 调用前用 `GetInstructionSchema` 读这条指令的完整定义。参数说明里写着不少使用规则，值得读。
 
 ## 5. 读发给你的消息

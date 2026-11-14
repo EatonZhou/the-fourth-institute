@@ -151,6 +151,7 @@ def main():
     call.add_argument("--expected-version", default="", help="Fail instead of changing the target if its version moved on")
     listing = sub.add_parser("list", help="List instructions, optionally of one category")
     listing.add_argument("--category", default="")
+    listing.add_argument("--group", choices=("general", "application", "internal", "operations", "all"), default="")
     schema = sub.add_parser("schema", help="Print the parameters and result of one instruction")
     schema.add_argument("instruction")
     stream = sub.add_parser("watch", help="Run a streaming (Watch*) instruction; one JSON line per item")
@@ -231,7 +232,8 @@ def main():
         print(f"then read the agent guide with `{command} guide` ({base}/guide/agent.md).")
         return
     if args.command == "list":
-        instruction, arguments = "ListInstructions", ({"category": args.category} if args.category else {})
+        instruction, arguments = "ListInstructions", {key: value for key, value in
+                                                    (("category", args.category), ("group", args.group)) if value}
     elif args.command == "schema":
         instruction, arguments = "GetInstructionSchema", {"instruction": args.instruction}
     else:
