@@ -1,4 +1,9 @@
 {
+  "标准月价；实际扣款以账单为准": {"en":"Standard monthly price; actual charges follow billing","zh-CN":"标准月价；实际扣款以账单为准"},
+  "{0}{1}/月": {"en":"{0}{1}/month","zh-CN":"{0}{1}/月"},
+  "更新文件": {"en":"Updating file","zh-CN":"更新文件"},
+  "创建文件": {"en":"Creating file","zh-CN":"创建文件"},
+  "移动文件": {"en":"Moving file","zh-CN":"移动文件"},
   "次数未知": {"en":"Count unknown","zh-CN":"次数未知"},
   "暂无刷新卡": {"en":"No resets available","zh-CN":"暂无刷新卡"},
   "明细未提供": {"en":"Details unavailable","zh-CN":"明细未提供"},

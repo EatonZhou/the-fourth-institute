@@ -18,6 +18,26 @@
   // Receipt/pending state covers the gap before the authoritative snapshot arrives.
   const handoffDeliveries = new Map();
 
+  // Providers may serialize an event kind as JSON or Python's str(dict).
+  // Recognize only data: never evaluate provider text as JavaScript/Python.
+  function readableRuntimeText(value) {
+    let data = value;
+    if (typeof value === "string") {
+      const text = value.trim();
+      if (text === "[object Object]") return window.PortalI18n.t("活动");
+      if (!/^[\[{]/.test(text)) return text;
+      try { data = JSON.parse(text); } catch {
+        if (!/^(?:\{\s*["'}]|\[\s*\{)/.test(text)) return text;
+        const type = text.match(/["']type["']\s*:\s*["']([\w-]+)["']/i)?.[1];
+        data = { type };
+      }
+    }
+    if (!data || typeof data !== "object") return value == null ? "" : String(value);
+    const kind = typeof data.type === "string" ? data.type.toLowerCase() : "";
+    const labels = { update: "更新文件", add: "创建文件", create: "创建文件", delete: "删除文件", move: "移动文件", rename: "移动文件" };
+    return window.PortalI18n.t(Object.hasOwn(labels, kind) ? labels[kind] : "活动");
+  }
+
   function residentHandoffCards(value) {
     let parsed;
     try { parsed = JSON.parse(value); } catch { return []; }
@@ -349,19 +369,19 @@
       // These are historical events: a start row keeps its original running status.
       // Summarize the last displayed event, including its status, just like the expanded list.
       const latest = isLive ? items[items.length - 1] : null;
-      const latestExcerpt = latest ? String(latest.content || "").trim().split("\n")[0].slice(0, 80) : "";
+      const latestExcerpt = latest ? readableRuntimeText(latest.content || "").split("\n")[0].slice(0, 80) : "";
       const latestStatus = runtimeStatusLabel(latest?.status || "");
       const latestLabel = latest
-        ? ` · ${latest.title || latest.kind || window.PortalI18n.t("活动")}${latestStatus ? ` · ${latestStatus}` : ""}${latestExcerpt ? ` · ${latestExcerpt}` : ""}`
+        ? ` · ${readableRuntimeText(latest.title || latest.kind || window.PortalI18n.t("活动"))}${latestStatus ? ` · ${latestStatus}` : ""}${latestExcerpt ? ` · ${latestExcerpt}` : ""}`
         : "";
       const summary = isLive ? window.PortalI18n.text`${options.assistantName || "Agent"} 活动${latestLabel}` : window.PortalI18n.text`活动 · ${items.length}`;
       const rows = items.map((detail) => {
-        const title = detail?.title || detail?.kind || window.PortalI18n.t("活动");
+        const title = readableRuntimeText(detail?.title || detail?.kind || window.PortalI18n.t("活动"));
         const status = runtimeStatusLabel(detail?.status || "");
         const activityTime = detail?.updated_at || detail?.started_at || detail?.created_at || "";
         const created = options.formatTime ? options.formatTime(activityTime) : String(activityTime);
         const meta = [status, created].filter(Boolean).join(" · ");
-        const content = String(detail?.content || "").trim();
+        const content = readableRuntimeText(detail?.content || "");
         return window.PortalI18n.html`<div class="${options.itemClass || "runtimeDetailItem"}">
         <div class="${options.kindClass || "runtimeDetailKind"}" title="${escapeHtml(title)}">${escapeHtml(title)}</div>
         <div class="${options.textClass || "runtimeDetailText"}">
@@ -700,6 +720,7 @@
   }
 
   window.PortalChatWorkspaceMessageContent = Object.freeze({
+    readableRuntimeText,
     handoffDeliveries,
     createMessageContent, dependencies: DEPENDENCIES, residentHandoffCards, residentHandoffParts,
     parseForwardReference, runtimeStatusLabel, runtimeActivityPhase, requestWorkspacePreview,

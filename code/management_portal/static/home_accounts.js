@@ -183,8 +183,32 @@
       const t = window.PortalI18n.t;
       const subscription = account.subscription || {};
       const tier = subscription.tier || {};
+      // Standard public monthly list prices, checked 2026-11-14. These are
+      // presentation references, never inferred account billing or FX values.
+      // Sources: help.openai.com/en/articles/9793128-about-chatgpt-pro-tiers,
+      // support.claude.com/en/articles/11049741-what-is-the-max-plan,
+      // kimi.com/help/membership/membership-pricing and kimi.ai/help/membership/membership-pricing,
+      // antigravity.google/blog/changes-to-antigravity-plans/.
+      const priceTables = {
+        codex: {plus: 20, prolite: 100, pro: 200, promax: 500},
+        claude: {pro: 20, max_5x: 100, max_20x: 200, ultra: 200},
+        antigravity: {"g1-pro-tier": 20, "g1-ultra-lite-tier": 100, "g1-ultra-tier": 200},
+      };
+      const kimiPrices = {
+        REGION_CN: {andante: 49, moderato: 99, allegretto: 199, allegro: 699,
+          go: 49, plus: 99, pro: 199, max: 699, ultra: 1399},
+        REGION_OVERSEA: {moderato: 19, allegretto: 39, allegro: 99, vivace: 199,
+          plus: 19, pro: 39, max: 99, ultra: 199},
+      };
+      const priceKey = String(account.provider === "kimi" ? tier.name || "" : tier.id || tier.name || "").toLowerCase();
+      const monthlyPrice = account.provider === "kimi" ? kimiPrices[subscription.region]?.[priceKey] : priceTables[account.provider]?.[priceKey];
+      const priced = typeof monthlyPrice === "number" && Number.isFinite(monthlyPrice);
+      const currency = account.provider === "kimi" && subscription.region === "REGION_CN" ? "¥" : "$";
+      const tierValue = priced ? window.PortalI18n.text`${currency}${monthlyPrice}/月` : tier.name || tier.id || "—";
       const stale = subscription.stale || (subscription.observed_at && Date.now() / 1000 - subscription.observed_at > 86400);
-      const tierTitle = [subscription.source, subscription.observed_at && formatDateTime(subscription.observed_at * 1000),
+      const tierTitle = [tier.name, tier.id !== tier.name && tier.id, subscription.region,
+        priced && t("标准月价；实际扣款以账单为准"),
+        subscription.observed_at && formatDateTime(subscription.observed_at * 1000),
         stale && t("数据已过期，数值为上次采样")].filter(Boolean).join(" · ");
       const cards = account.refresh_cards || {};
       const count = Number.isInteger(cards.available_count) ? cards.available_count : "—";
@@ -198,7 +222,7 @@
       const cardsStale = cards.stale || account.status === "unavailable";
       if (cardsStale) lines.push(t("上次读数"));
       return window.PortalI18n.html`<dl class="account-details-metrics" data-account-subscription>
-        <div data-account-tier-tooltip tabindex="0" title="${esc(tierTitle)}"><dt>套餐档位</dt><dd data-account-tier>${esc(tier.name || tier.id || "—")}${stale ? "*" : ""}</dd></div>
+        <div data-account-tier-tooltip tabindex="0" title="${esc(tierTitle)}"><dt>套餐档位</dt><dd data-account-tier>${esc(tierValue)}${stale ? "*" : ""}</dd></div>
         ${["codex", "claude"].includes(account.provider) ? window.PortalI18n.html`<div data-account-refresh-cards-tooltip tabindex="0" title="${esc(lines.join("\n"))}"><dt>刷新卡次数</dt><dd data-account-refresh-cards>${esc(count)}${cardsStale && count !== "—" ? "*" : ""}</dd></div>` : ""}
       </dl>`;
     }

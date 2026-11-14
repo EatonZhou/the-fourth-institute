@@ -1,6 +1,27 @@
 // Graph semantics and interaction belong to the exploration surface, not its hosts.
 import {t} from './frontier_model.js';
 let d3Ready;
+// Keep words together; CJK characters remain natural break opportunities.
+export function wrapNodeTitle(label, measureWidth, width=210) {
+  const tokens=String(label ?? '').match(/\s+|[\u2e80-\u9fff\uf900-\ufaff\u3040-\u30ff\uac00-\ud7af]|[^\s\u2e80-\u9fff\uf900-\ufaff\u3040-\u30ff\uac00-\ud7af]+/gu)||[];
+  const lines=[[]];
+  for(const token of tokens){
+    if(/^\s+$/.test(token)){if(lines.at(-1).length)lines.at(-1).push(' ');continue;}
+    const pieces=measureWidth(token)>width?Array.from(token):[token];
+    for(const piece of pieces){
+      const i=lines.length-1;
+      if(lines[i].length&&measureWidth(lines[i].join('')+piece)>width)lines.push([piece]);
+      else lines[i].push(piece);
+    }
+  }
+  const result=lines.slice(0,2).map(line=>line.join('').trim());
+  if(lines.length>2){
+    const last=lines[1].slice();
+    while(last.length&&measureWidth(last.join('').trim()+'…')>width)last.pop();
+    result[1]=last.join('').trim()+'…';
+  }
+  return result;
+}
 export function ensureD3() {
   if (window.d3?.zoom) return Promise.resolve(window.d3);
   return d3Ready ||= new Promise((resolve,reject)=>{
@@ -64,7 +85,7 @@ export function createGraph(host,{onSelect,onNew,onDirection,onTeam,onLayout}={}
   const d3=window.d3;
   const measure=document.createElement('canvas').getContext('2d');measure.font='600 14px system-ui';
   function wrap(label) {
-    const result=[''];for(const char of label){const i=result.length-1;if(measure.measureText(result[i]+char).width>210){if(i===1){result[i]=result[i].slice(0,-1)+'…';break;}result.push(char);}else result[i]+=char;}return result;
+    return wrapNodeTitle(label,text=>measure.measureText(text).width);
   }
   const svg=d3.select(host).append('svg').attr('class','frontierCanvas').attr('aria-label',t('Map')).attr('tabindex',0);
   const defs=svg.append('defs');
