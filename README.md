@@ -2,6 +2,8 @@
 
 **English** | [简体中文](README_CN.md)
 
+**Version 1.0.0** · Release tag: `v1.0.0`
+
 **One workspace for your AI agents, their teams, and continuous research.**
 
 The Fourth Institute brings agents from different AI providers into a shared browser interface, where you can direct their work, organize collaboration, and build a research environment that keeps learning over time. Our ambition is to make it possible for anyone to build their own university or research institute, with humans and agents working together.

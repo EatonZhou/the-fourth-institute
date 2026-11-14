@@ -353,7 +353,7 @@ with tempfile.TemporaryDirectory() as tmp:
         "CFBundleName": "The Fourth Institute", "CFBundleDisplayName": "The Fourth Institute",
         "CFBundleExecutable": "TheFourthInstitute", "CFBundlePackageType": "APPL",
         "CFBundleIconFile": "tfi.icns",
-        "CFBundleShortVersionString": "0.1.0",
+        "CFBundleShortVersionString": "1.0.0",
         "CFBundleVersion": json.loads((repo / "code/scripts/macos/release.json").read_text())["tag"].removeprefix("macos-preview-"),
         "LSMinimumSystemVersion": "15.0", "NSHighResolutionCapable": True,
     }
