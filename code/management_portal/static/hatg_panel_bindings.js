@@ -5,7 +5,7 @@
 
   // The panel's controls: closing its dialogs, the Escape key, every
   // toolbar button, form and select of the template, the component
-  // library splitter, and the canvas observers that follow the toolbar
+  // toolbox drawer, and the canvas observers that follow the toolbar
   // height and keep the Seed inspector next to its Seed.
 
   const DEPENDENCIES = Object.freeze([
@@ -55,67 +55,18 @@
       seedInspectorObserver = null;
     }
 
-    function bindComponentLibraryResize() {
-      panelHost.disposeLibraryResize?.();
-      const handle = $id("componentLibrarySplitter");
-      const rail = handle.parentElement;
-      const primitives = $id("hatgPrimitiveLibrary");
-      const savedRatio = panelHost.pageStateController.read().hatgLibrarySplitRatio;
-      let ratio = typeof savedRatio === "number" && Number.isFinite(savedRatio) && savedRatio > 0 && savedRatio < 1
-        ? savedRatio : 0.5;
-      const availableWidth = () => Math.max(0, rail.getBoundingClientRect().width - handle.getBoundingClientRect().width);
-      const minimum = () => Math.min(116, availableWidth() / 2);
-      const maximum = () => availableWidth() - minimum();
-      const readSize = () => primitives.getBoundingClientRect().width;
-      const valueText = value => {
-        const percent = Math.round(100 * value / (availableWidth() || 1));
-        return window.PortalI18n.text`原语 ${percent}%，功能 ${100 - percent}%`;
-      };
-      const syncAria = () => {
-        handle.setAttribute("aria-valuemin", String(Math.round(minimum())));
-        handle.setAttribute("aria-valuemax", String(Math.round(maximum())));
-        handle.setAttribute("aria-valuenow", String(Math.round(readSize())));
-        handle.setAttribute("aria-valuetext", valueText(readSize()));
-      };
-      const applySplitRatio = () => {
-        rail.style.setProperty("--hatg-library-primitives", `${ratio}fr`);
-        rail.style.setProperty("--hatg-library-functions", `${1 - ratio}fr`);
-        syncAria();
-      };
-      const persist = () => panelHost.pageStateController.write({ hatgLibrarySplitRatio: ratio });
-      applySplitRatio();
-      const unbind = window.PortalWorkbench.layout.bindSplitter({
-        handle,
-        axis: "x",
-        bodyClass: "",
-        disabled: () => availableWidth() <= 0,
-        readSize,
-        min: minimum,
-        max: maximum,
-        valueText,
-        applySize: size => {
-          ratio = size / availableWidth();
-          applySplitRatio();
-        },
-        onDone: persist,
+    function bindToolbox() {
+      const toggle = $id("hatgToolboxToggle"), drawer = $id("hatgToolbox");
+      if (!toggle || !drawer) return;
+      const show = open => { drawer.hidden = !open; toggle.setAttribute("aria-expanded", String(open)); };
+      const listen = (node, event, handler) => panelHost.pageStateController.listen("panel", node, event, handler);
+      listen(toggle, "click", () => show(drawer.hidden));
+      listen($id("hatgToolboxClose"), "click", () => { show(false); toggle.focus(); });
+      listen(drawer, "keydown", event => {
+        if (event.key !== "Escape") return;
+        event.preventDefault(); event.stopPropagation(); show(false); toggle.focus();
       });
-      panelHost.pageStateController.listen("panel", handle, "dblclick", event => {
-        event.preventDefault();
-        ratio = 0.5;
-        applySplitRatio();
-        persist();
-      });
-      // CSS keeps both groups reachable at narrow widths without overwriting the
-      // user's preferred ratio; only the separator's ARIA values need refreshing.
-      const observer = new ResizeObserver(syncAria);
-      observer.observe(rail);
-      panelHost.disposeLibraryResize = () => {
-        unbind();
-        observer.disconnect();
-        handle.classList.remove("active");
-      };
     }
-
     function bindModals() {
       $queryAll("[data-close-modal]").forEach(button => button.addEventListener("click", () => closeModal(button.dataset.closeModal || "")));
       panelHost.pageStateController.listen("panel", $eventRoot(), "keydown", event => {
@@ -126,7 +77,7 @@
     }
 
     function bindActions() {
-      bindComponentLibraryResize();
+      bindToolbox();
       bindPrimitiveLibrary();
       // Resident Menu can be opened from Chat, the canvas or another surface.
       // One panel-owned listener refreshes and reveals the retained member.

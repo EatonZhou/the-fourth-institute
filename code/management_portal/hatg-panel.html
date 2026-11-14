@@ -181,21 +181,21 @@
             <span><i class="legendLine program-target"></i><!--portal-i18n:"动作目标"-->动作目标</span>
           </div>
           <div class="srOnly" id="graphSyncStatus" role="status" aria-live="polite"><!--portal-i18n:"等待选择 Lineage"-->等待选择 Lineage</div>
-        </div>
-
-        <div class="functionShelf" aria-label="HATG 快捷操作与运行记录" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;HATG 快捷操作与运行记录&quot;}">
-          <div class="componentLibrary" id="functionBlockShelf">
-            <div class="componentLibraryRail" aria-label="HATG 编程原语与功能组件" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;HATG 编程原语与功能组件&quot;}">
-              <section
-                class="componentLibraryGroup primitiveBlockShelf"
+          <button class="portalButton hatgToolboxToggle" id="hatgToolboxToggle" type="button" aria-expanded="false" aria-controls="hatgToolbox"><!--portal-i18n:"工具箱"-->工具箱</button>
+          <aside class="hatgToolbox" id="hatgToolbox" aria-labelledby="hatgToolboxTitle" hidden>
+            <header class="hatgToolboxHeader"><h3 id="hatgToolboxTitle"><!--portal-i18n:"工具箱"-->工具箱</h3><button class="portalButton is-compact" id="hatgToolboxClose" type="button"><!--portal-i18n:"收起"-->收起</button></header>
+            <div class="hatgToolboxBody">
+              <section id="hatgFunctionLibrary" aria-label="模板" data-portal-i18n-attrs="{&quot;aria-label&quot;:&quot;模板&quot;}">
+                <div class="hatgToolboxActions"><button class="portalButton is-compact" id="addTemplateBtn" type="button"><!--portal-i18n:"新建模板"-->新建模板</button></div>
+                <div class="templateShelf" id="templateShelf"></div>
+              </section>
+              <details
+                class="primitiveBlockShelf"
                 id="hatgPrimitiveLibrary"
                 data-testid="hatg-primitive-library"
                 aria-labelledby="primitiveBlockShelfTitle"
               >
-                <div class="componentLibraryGroupHead">
-                  <span><small><!--portal-i18n:"PRIMITIVE"-->PRIMITIVE</small><strong id="primitiveBlockShelfTitle"><!--portal-i18n:"原语"-->原语</strong></span>
-                  <i class="primitiveLibraryConnector" aria-hidden="true"></i>
-                </div>
+                <summary id="primitiveBlockShelfTitle"><!--portal-i18n:"原语"-->原语</summary>
                 <div class="hatgPrimitiveBlocks" role="group" aria-label="可拖动原语" aria-describedby="primitiveLibraryInstruction" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;可拖动原语&quot;}">
                   <button
                     class="hatgPrimitiveCard event"
@@ -289,17 +289,9 @@
                   </button>
                 </div>
                 <span class="srOnly" id="primitiveLibraryInstruction"><!--portal-i18n:"拖动原语到画布创建实例；在画布上连接相同类型的输出和输入端口。"-->拖动原语到画布创建实例；在画布上连接相同类型的输出和输入端口。</span>
-              </section>
-              <div class="componentLibrarySplitter" id="componentLibrarySplitter" role="separator" tabindex="0" aria-orientation="vertical" aria-controls="hatgPrimitiveLibrary hatgFunctionLibrary" aria-label="调整原语与模板区宽度" title="左右拖动调整宽度，双击恢复等宽" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;调整原语与模板区宽度&quot;, &quot;title&quot;: &quot;左右拖动调整宽度，双击恢复等宽&quot;}"></div>
-              <section class="componentLibraryGroup templateLibraryGroup" id="hatgFunctionLibrary" aria-labelledby="templateShelfTitle">
-                <div class="componentLibraryGroupHead">
-                  <span><small>TEMPLATE</small><strong id="templateShelfTitle"><!--portal-i18n:"模板"-->模板</strong></span>
-                  <button class="componentLibraryAdd" id="addTemplateBtn" type="button" aria-label="新建模板" title="新建模板" data-portal-icon="plus" data-portal-i18n-attrs="{&quot;aria-label&quot;:&quot;新建模板&quot;,&quot;title&quot;:&quot;新建模板&quot;}"></button>
-                </div>
-                <div class="templateShelf" id="templateShelf"></div>
-              </section>
+              </details>
             </div>
-          </div>
+          </aside>
         </div>
       </section>
 

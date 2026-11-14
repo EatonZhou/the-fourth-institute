@@ -274,8 +274,7 @@
       if (!host) return false;
       const active = state.graphViewMode === "frontier" && !!state.lineage;
       host.hidden = !active;
-      const pane = $id("hatgPane");
-      [$id("hatgViewport"), pane?.querySelector(".functionShelf"), $id("graphActions")].forEach(el => {
+      [$id("hatgViewport"), $id("graphActions")].forEach(el => {
         if (el) el.style.display = active ? "none" : "";
       });
       const id = state.lineage?.lineage_id || '';

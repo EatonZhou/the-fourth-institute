@@ -60,7 +60,7 @@
   }
 
   function behaviorHtml(behavior = {}, parameters = {}, kind = '') {
-    if (kind === 'prompt') return `<p>${esc(t('拖到聊天输入框或 Resident 节点，填入草稿后编辑发送；点击编辑模板'))}</p>`;
+    if (kind === 'prompt') return `<p>${esc(t('拖到聊天输入框或 Resident 节点，填入草稿后编辑发送'))}</p>`;
     const describe = step => window.PortalI18n.message(step).replace(/\{\{param\.([A-Za-z_][A-Za-z0-9_]*)\}\}/g,
       (token, name) => Object.hasOwn(parameters, name) && parameters[name] !== '' ? String(parameters[name]) : token);
     return `<h3>${esc(t('施加后会做什么'))}</h3><ol>${(behavior.steps || []).map(step => `<li>${esc(describe(step))}</li>`).join('')}</ol>
@@ -110,7 +110,17 @@
   // returns the shelf's controller; a part that calls a function of a part
   // created after it gets an arrow forwarding the call.
   function mount(config) {
-    const { shelf, canvas, request, getContext, resolveTarget, toast } = config;
+    const { shelf, canvas, request: execute, getContext, resolveTarget, toast } = config;
+    // Every creation path (new, copy, or selection) installs the result in the
+    // user's toolbox using the existing personal resource favorites service.
+    async function request(instruction, args) {
+      const result = await execute(instruction, args);
+      if (instruction === 'CreateTemplate' && !args?.dry_run && result.template?.template_id) {
+        try { await window.PortalResourceFavorites.set(result.template.template_id, true); }
+        catch (error) { toast(window.PortalI18n.text`模板已创建，但加入工具箱失败：${error.message || error}`, 'error'); }
+      }
+      return result;
+    }
     // The state the parts share: the templates and template kinds, whether
     // the shelf is destroyed, and the open editor and application dialogs.
     const templatesState = {
@@ -121,8 +131,8 @@
       esc, pigeonHtml, t, templatesState,
     });
     const { abort, dropHint, find, load, render, unsupported } = templatePart('LineageTemplatesShelf').createShelf({
-      MIME, apply: (...args) => apply(...args), canvas, categories, config, esc, getContext,
-      openEditor: (...args) => openEditor(...args), pigeonHtml, request, resolveTarget, shelf, t, targetLabels,
+      MIME, apply: (...args) => apply(...args), canvas, config, esc, getContext,
+      openEditor: (...args) => openEditor(...args), request, resolveTarget, shelf, t, targetLabels,
       templatesState, toast, promptText,
     });
     const {

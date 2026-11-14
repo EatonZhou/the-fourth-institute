@@ -124,6 +124,47 @@
     return positions;
   }
 
+  // Toolbox/store previews use the editor's collections and topology layout,
+  // without creating an interactive graph controller for every small card.
+  function thumbnail(source) {
+    const body = collections(JSON.parse(JSON.stringify(source)));
+    const slots = [...body.roles.filter(item => !['new', 'fork'].includes(item.from)), ...foundNodes(body)];
+    const slotKeys = new Set(slots.map(item => item.key));
+    const nodes = [...body.roles, ...body.components, ...foundNodes(body)];
+    const layout = {...autoLayout(body), ...(body.layout || {})};
+    const owned = nodes.filter(item => !slotKeys.has(item.key));
+    const xs = owned.map(item => layout[item.key]?.x || 50);
+    const left = Math.min(...xs, 30) - 22, right = Math.max(...xs, 70) + 22;
+    const positions = new Map(nodes.map(item => [item.key, layout[item.key] || {x: 50, y: 50}]));
+    const sides = [slots.filter(item => body.roles.includes(item)), slots.filter(item => !body.roles.includes(item))];
+    sides.forEach((items, side) => items.forEach((item, index) => positions.set(item.key,
+      {x: side ? right : left, y: 50 + (index - (items.length - 1) / 2) * 18})));
+    const points = [...positions.values()];
+    const minX = Math.min(...points.map(point => point.x), 30) - 9;
+    const minY = Math.min(...points.map(point => point.y), 30) - 9;
+    const width = Math.max(...points.map(point => point.x), 70) - minX + 9;
+    const height = Math.max(...points.map(point => point.y), 70) - minY + 9;
+    const wires = [...body.wires, ...foundWires(body)];
+    // Watch wires can originate from another wire: use that wire's midpoint.
+    for (const wire of wires) {
+      const start = positions.get(wire.source), end = positions.get(wire.target);
+      if (start && end) positions.set(wire.key, {x: (start.x + end.x) / 2, y: (start.y + end.y) / 2});
+    }
+    return `<svg class="templateThumbnail" viewBox="${minX} ${minY} ${width} ${height}" aria-hidden="true">`
+      + wires.map(wire => {
+        const start = positions.get(wire.source), end = positions.get(wire.target);
+        return start && end ? `<path class="templateThumbnailWire" d="M${start.x} ${start.y}L${end.x} ${end.y}"/>` : '';
+      }).join('')
+      + nodes.map(item => {
+        const {x, y} = positions.get(item.key);
+        const slot = slotKeys.has(item.key);
+        const role = body.roles.includes(item) || item.kind === 'resident';
+        const shape = role ? `<circle cx="${x}" cy="${y}" r="5"/>`
+          : `<rect x="${x - 6}" y="${y - 4}" width="12" height="8" rx="${item.kind === 'event_source' ? 4 : 1}"/>`;
+        return `<g class="templateThumbnailNode${slot ? ' is-slot' : ''}" data-template-slot="${slot}"><title>${esc(item.title || item.key)}</title>${shape}</g>`;
+      }).join('') + '</svg>';
+  }
+
   function componentDetail(component) {
     const config = component.config || {};
     const program = window.PortalLineageProgram;
@@ -417,5 +458,5 @@
     });
   }
 
-  window.LineageTemplateGraph = Object.freeze({ mount, removeElement, renameKey, effectiveConfig, isWireKind });
+  window.LineageTemplateGraph = Object.freeze({ mount, thumbnail, removeElement, renameKey, effectiveConfig, isWireKind });
 })();

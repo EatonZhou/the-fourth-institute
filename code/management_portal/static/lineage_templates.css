@@ -1,46 +1,25 @@
-/* The shelf is one horizontal row of pigeon tiles, grouped by category like the old Block shelf. */
-.templateShelf {
-  min-width: 0;
-  display: flex;
-  align-items: stretch;
-  gap: 2px;
-  overflow-x: scroll;
-  overflow-y: hidden;
-  overscroll-behavior-inline: contain;
-  scrollbar-color: color-mix(in srgb, var(--accent, #8067d8) 34%, var(--border, #dce2e8)) transparent;
-  scrollbar-gutter: stable;
-  scrollbar-width: thin;
-  padding: 0 0 3px;
-}
-.templateShelf::-webkit-scrollbar { height: 5px; }
-.templateShelf::-webkit-scrollbar-thumb { border-radius: 999px; background: color-mix(in srgb, var(--accent, #8067d8) 46%, var(--border, #dce2e8)); }
-.templateCategory { flex: 0 0 auto; display: flex; align-items: stretch; gap: 2px; }
-.templateCategory + .templateCategory { margin-left: 3px; padding-left: 3px; border-left: 1px solid color-mix(in srgb, var(--border, #dce2e8) 80%, transparent); }
-.templateCategoryLabel { align-self: center; writing-mode: vertical-rl; color: var(--muted, #64748b); font-size: 7px; font-weight: 700; letter-spacing: .25em; user-select: none; }
-.templateTile {
-  position: relative;
-  width: 60px;
-  min-width: 60px;
-  height: 68px;
-  flex: 0 0 60px;
-  display: grid;
-  grid-template-rows: 46px minmax(0, 1fr);
-  justify-items: center;
-  gap: 1px;
-  border: 0;
-  border-radius: 8px;
-  background: transparent;
-  color: var(--text, #1f2933);
-  padding: 3px 4px 2px;
-  text-align: center;
-  cursor: grab;
-  user-select: none;
-  transition: background-color 130ms ease, color 130ms ease;
-}
-.templateTile:active { cursor: grabbing; }
-.templateTile:hover, .templateTile:focus-visible { background: color-mix(in srgb, #8067d8 8%, transparent); color: #8067d8; outline: none; }
+/* The toolbox uses a vertical collection of compact preview cards. */
+.templateShelf { display:grid; gap:12px; min-width:0; }
+.templateToolboxGroup h4 { margin:0 0 8px; font-size:13px; }
+.templateToolboxCards { display:grid; grid-template-columns:repeat(auto-fill,minmax(120px,1fr)); gap:8px; }
+.templateCard { position:relative; min-width:0; }
+.templateTile { width:100%; display:grid; grid-template-rows:72px auto; gap:5px; padding:8px; border:1px solid var(--border); border-radius:8px; background:var(--panel); color:var(--text); text-align:center; cursor:grab; }
+.templateTile:active { cursor:grabbing; }
+.templateTile:is(:hover,:focus-visible) { border-color:var(--accent); background:color-mix(in srgb,var(--accent) 5%,var(--panel)); }
+.templateTileTitle { display:block; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:12px; }
+.templateThumbnail { display:block; width:100%; height:72px; color:var(--accent); }
+.templateThumbnailWire { fill:none; stroke:var(--muted); stroke-width:1; }
+.templateThumbnailNode { fill:color-mix(in srgb,var(--accent) 12%,var(--panel)); stroke:currentColor; stroke-width:1; }
+.templateThumbnailNode.is-slot { color:var(--muted); fill:var(--panel-2); stroke-dasharray:2 2; opacity:.6; }
+.templateModuleGlyph { fill:none; stroke:currentColor; stroke-width:2; }
+.templateEdit { position:absolute; top:3px; right:3px; max-width:calc(100% - 6px); border:1px solid var(--border); border-radius:5px; padding:3px 5px; background:var(--panel); color:var(--text); font-size:10px; opacity:0; cursor:pointer; }
+.templateCard:is(:hover,:focus-within) .templateEdit { opacity:1; }
+@media (hover:none) { .templateEdit { opacity:1; } }
+.templateToolboxMore { border-top:1px solid var(--border); padding-top:10px; }
+.templateToolboxMore > summary { cursor:pointer; font-size:13px; font-weight:600; }
+.templateToolboxRow { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-top:8px; font-size:12px; }
+.templateToolboxRow > span { min-width:0; overflow-wrap:anywhere; }
 .templateGlyph { position: relative; width: 43px; height: 43px; align-self: center; display: block; transition: transform 130ms ease; }
-.templateTile:hover .templateGlyph, .templateTile:focus-visible .templateGlyph { transform: translateY(-1px) scale(1.05); }
 .templatePigeon {
   width: 100%;
   height: 100%;
@@ -61,8 +40,6 @@
   pointer-events: none;
   text-shadow: -1px -1px 0 var(--panel, #fff), 1px -1px 0 var(--panel, #fff), -1px 1px 0 var(--panel, #fff), 1px 1px 0 var(--panel, #fff), 0 0 4px var(--panel, #fff);
 }
-.templateTileTitle { width: 100%; min-width: 0; overflow: hidden; font-size: 8px; font-weight: 800; line-height: 1.2; text-overflow: ellipsis; white-space: nowrap; }
-.templateShelf > .templateEmpty { margin: auto 8px; font-size: 11px; }
 .templateEmpty, .templateHelp { font-size: 12px; line-height: 1.6; color: var(--muted, #64748b); }
 .templateDropHint { position: fixed; z-index: 10050; pointer-events: none; max-width: 300px; padding: 9px 12px; border-radius: 8px; background: #e8f4ee; color: #20533b; box-shadow: 0 4px 20px #0002; font-size: 12px; }
 .templateDropHint[data-allowed="false"] { background: #fce9e8; color: #9c302b; }

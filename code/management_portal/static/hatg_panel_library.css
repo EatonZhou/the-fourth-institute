@@ -170,128 +170,15 @@
   }
 }
 
-.functionShelf {
-  flex: 0 0 auto;
-  display: block;
-  min-height: 90px;
-  border-top: 1px solid var(--border);
-  background: color-mix(in srgb, var(--panel-2) 44%, var(--panel));
-  padding: 7px 10px;
-}
-
-#functionBlockShelf {
-  min-width: 0;
-  display: block;
-}
-
-#functionBlockShelf[hidden] { display: none; }
-
-.componentLibraryRail {
-  min-width: 0;
-  display: grid;
-  grid-template-columns:
-    minmax(min(116px, calc((100% - 9px) / 2)), var(--hatg-library-primitives, 1fr))
-    9px
-    minmax(min(116px, calc((100% - 9px) / 2)), var(--hatg-library-functions, 1fr));
-  align-items: stretch;
-  gap: 0;
-  overflow-x: hidden;
-  overflow-y: hidden;
-  padding-bottom: 3px;
-}
-
-.componentLibraryGroup {
-  min-width: 0;
-  display: grid;
-  grid-template-columns: 42px minmax(0, 1fr);
-  align-items: stretch;
-  gap: 4px;
-  overflow: hidden;
-}
-
-.primitiveBlockShelf {
-  min-width: 0;
-}
-
-
-.componentLibrarySplitter {
-  position: relative;
-  cursor: col-resize;
-  touch-action: none;
-  user-select: none;
-  outline: none;
-  border-radius: 4px;
-}
-
-.componentLibrarySplitter::after {
-  content: "";
-  position: absolute;
-  inset: 0 4px;
-  background: color-mix(in srgb, var(--border) 78%, transparent);
-}
-
-.componentLibrarySplitter:is(:hover, :focus-visible, .active) {
-  background: color-mix(in srgb, var(--accent) 12%, transparent);
-}
-
-.componentLibrarySplitter:is(:hover, :focus-visible, .active)::after {
-  background: var(--accent);
-}
-
-.componentLibraryRail:has(.componentLibrarySplitter.active) {
-  cursor: col-resize;
-  user-select: none;
-}
-
-.componentLibraryGroupHead {
-  width: 42px;
-  min-width: 42px;
-  display: grid;
-  grid-template-rows: minmax(0, 1fr) 24px;
-  place-items: center;
-  gap: 2px;
-  color: var(--muted);
-}
-
-.componentLibraryGroupHead > span {
-  min-width: 0;
-  display: grid;
-  justify-items: center;
-  gap: 2px;
-}
-
-.componentLibraryGroupHead small {
-  color: color-mix(in srgb, var(--accent) 70%, var(--muted));
-  font: 800 6.5px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
-  letter-spacing: .08em;
-}
-
-.primitiveBlockShelf .componentLibraryGroupHead small { color: var(--hatg-program-route-color); font-size: 5.5px; }
-.componentLibraryGroupHead strong { color: var(--text); font-size: 8px; line-height: 1; }
-
-.primitiveLibraryConnector {
-  position: relative;
-  width: 24px;
-  height: 15px;
-  display: block;
-  border-top: 1px solid color-mix(in srgb, var(--hatg-program-route-color) 38%, var(--border));
-}
-
-.primitiveLibraryConnector::before,
-.primitiveLibraryConnector::after {
-  content: "";
-  position: absolute;
-  top: -3px;
-  width: 5px;
-  height: 5px;
-  border: 1px solid color-mix(in srgb, var(--hatg-program-route-color) 58%, var(--border));
-  border-radius: 50%;
-  background: var(--panel);
-}
-
-.primitiveLibraryConnector::before { left: 0; }
-.primitiveLibraryConnector::after { right: 0; }
-
+.hatgToolboxToggle { position:absolute; right:12px; bottom:12px; z-index:9; }
+.hatgToolbox { position:absolute; inset:8px 8px 56px auto; width:min(360px, calc(100% - 16px)); z-index:10; display:flex; flex-direction:column; border:1px solid var(--border); border-radius:12px; background:var(--panel); box-shadow:0 8px 28px #0002; }
+.hatgToolbox[hidden] { display:none; }
+.hatgToolboxHeader { display:flex; align-items:center; justify-content:space-between; padding:10px 12px; border-bottom:1px solid var(--border); }
+.hatgToolboxHeader h3 { margin:0; font-size:14px; }
+.hatgToolboxBody { overflow:auto; overscroll-behavior:contain; padding:10px; }
+.hatgToolboxActions { display:flex; justify-content:flex-end; margin-bottom:6px; }
+.primitiveBlockShelf { margin-top:12px; border-top:1px solid var(--border); padding-top:10px; }
+.primitiveBlockShelf > summary { cursor:pointer; font-size:13px; font-weight:600; margin-bottom:8px; }
 .hatgPrimitiveBlocks {
   min-width: 0;
   display: flex;
@@ -392,28 +279,6 @@
   display: none;
 }
 
-.componentLibraryAdd {
-  width: 23px;
-  height: 23px;
-  display: grid;
-  place-items: center;
-  border: 1px dashed color-mix(in srgb, var(--accent) 50%, var(--border));
-  border-radius: 50%;
-  background: transparent;
-  color: var(--accent);
-  padding: 5px;
-  cursor: pointer;
-}
-
-.componentLibraryAdd svg { width: 12px; height: 12px; stroke: currentColor; }
-.componentLibraryAdd:hover:not(:disabled),
-.componentLibraryAdd:focus-visible {
-  border-style: solid;
-  background: color-mix(in srgb, var(--accent) 8%, transparent);
-  outline: none;
-}
-
-.componentLibraryAdd:disabled { opacity: .4; cursor: not-allowed; }
 .functionBlockPigeon {
   width: 100%;
   height: 100%;

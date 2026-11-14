@@ -11,14 +11,14 @@ const modules = [...new Set(['portal_state.js','portal_page_state.js','portal_te
  'portal_ui_primitives.js','portal_ui.js','portal_overlay.js','portal_resource_chips.js','portal_image_editor.js',
  'portal_editor_open_service.js','portal_command_registry.js','portal_workbench_context.js',...portalWorkbenchScripts(),
  'resident_protocol.js',...chatWorkspaceScripts(),...LINEAGE_TEMPLATES_SCRIPTS.map(n=>n+'.js'),
- 'hatg_panel_template_shelf.js','lineage_workbench_selection.js'])];
+ 'lineage_template_graph.js','hatg_panel_template_shelf.js','lineage_workbench_selection.js'])];
 const routes = execFileSync(process.env.PYTHON || 'python3', ['-c',
  'from management_portal.resources.portal import portal_route_script; print(portal_route_script().decode())'],{cwd:repo,encoding:'utf8'});
 (async()=>{
  const server=http.createServer((req,res)=>{
   const name=new URL(req.url,'http://fixture').pathname.slice(1);
   const css=/^[a-z_]+\.css$/.test(name);
-  const body=!name ? '<!doctype html><meta charset="utf-8">'+['portal_design_system','portal_components','portal_components_chat_frame','portal_components_composer','portal_components_resource_chips','lineage_templates'].map(n=>`<link rel="stylesheet" href="/${n}.css">`).join('')+'<style>#templateShelf button,#hatgCanvas button{margin:15px;padding:20px}.composerInput{min-height:120px;border:1px solid}#chat{max-width:800px;height:450px}</style><div id="templateShelf"></div><div id="hatgCanvas"><button data-node-id="resident-a">Resident A</button></div><main id="chat"></main><script src="/routes.js"></script>'+modules.map(n=>`<script src="/${n}"></script>`).join('')
+  const body=!name ? '<!doctype html><meta charset="utf-8">'+['portal_design_system','portal_components','portal_components_chat_frame','portal_components_composer','portal_components_resource_chips','lineage_templates'].map(n=>`<link rel="stylesheet" href="/${n}.css">`).join('')+'<style>#templateShelf{position:fixed;right:10px;top:10px;width:300px;max-height:calc(100vh - 20px);overflow:auto}#hatgCanvas button{margin:15px;padding:20px}.composerInput{min-height:120px;border:1px solid}#chat{max-width:800px;height:450px}</style><div id="templateShelf"></div><div id="hatgCanvas"><button data-node-id="resident-a">Resident A</button></div><main id="chat"></main><script src="/routes.js"></script>'+modules.map(n=>`<script src="/${n}"></script>`).join('')
    : name==='routes.js'?routes:modules.includes(name)||css?fs.readFileSync(path.join(repo,'management_portal/static',name)):null;
   res.writeHead(body===null?404:200,{'Content-Type':!name?'text/html':css?'text/css':'text/javascript'});res.end(body||'');
  });
@@ -40,9 +40,11 @@ const routes = execFileSync(process.env.PYTHON || 'python3', ['-c',
     contract:{schema:'portal.chat_workspace.v3',messages:[],composer:{can_send:true,can_attach:true,attachment_upload_context:{conversation:scope},queue:{items:[]}}}});
    workspace.setDraftText('已有草稿\n');
    workspace.setAttachments([{upload_id:'upload_fixture',filename:'audio.wav',content_type:'audio/wav',size:7}]);
-   const template={template_id:'template_prompt',kind:'prompt',title:'录音整理',category:'apply',targets:['resident'],
+   window.PortalAPI={get:async()=>({items:[]})};
+   window.PortalResourceFavorites={set:async()=>{}};
+   const template={template_id:'template_prompt',builtin_key:'prompt_fixture',kind:'prompt',title:'录音整理',category:'apply',targets:['resident'],
     parameters:[{name:'kind',description:'条目类型'}],body:{message:'整理 [音频文件] 为 {{param.kind}}。<img src=x onerror=alert(1)>\n保留原意。'},behavior:{steps:[],persistent:false}};
-   const structure={template_id:'template_structure',kind:'structure',title:'结构',category:'structure',targets:['resident','selection'],parameters:[],body:{roles:[],components:[],wires:[]},behavior:{steps:[],persistent:true}};
+   const structure={template_id:'template_structure',builtin_key:'structure_fixture',kind:'structure',title:'结构',category:'structure',targets:['resident','selection'],parameters:[],body:{roles:[],components:[],wires:[]},behavior:{steps:[],persistent:true}};
    const request=async(instruction,args)=>{calls.push(instruction);return instruction==='ListTemplates'?{templates:[template,structure],kinds:[]}:instruction==='GetTemplate'?{template:args.template_id==='template_prompt'?template:structure}:{};};
    window.PortalInstructionClient={execute:request};
    window.host={hatgComponentOptions:{emit:async(event,intent)=>{opened.push(intent);return selection.activateLineageChatWorkspace(panel,intent.resource,intent);}}};

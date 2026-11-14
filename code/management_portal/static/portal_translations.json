@@ -5623,10 +5623,6 @@
     "en": "HATG compact layout applied and node positions saved.",
     "zh-CN": "HATG 已紧凑整理，节点位置已保存。"
   },
-  "HATG 快捷操作与运行记录": {
-    "en": "HATG quick actions and run history",
-    "zh-CN": "HATG 快捷操作与运行记录"
-  },
   "HATG 画布导航": {
     "en": "HATG canvas navigation",
     "zh-CN": "HATG 画布导航"
@@ -5634,10 +5630,6 @@
   "HATG 画布工具": {
     "en": "HATG canvas tools",
     "zh-CN": "HATG 画布工具"
-  },
-  "HATG 编程原语与功能组件": {
-    "en": "HATG programming primitives and function components",
-    "zh-CN": "HATG 编程原语与功能组件"
   },
   "HATG 编程对象设置": {
     "en": "HATG programming object settings",
@@ -19047,10 +19039,6 @@
     "en": "{p0} · member status",
     "zh-CN": "{p0} · 成员状态"
   },
-  "{p0} · 拖到 {p1} · 点击编辑": {
-    "en": "{p0} · Drag onto {p1} · Click to edit",
-    "zh-CN": "{p0} · 拖到 {p1} · 点击编辑"
-  },
   "{p0} · 推理强度 / Fast": {
     "en": "{p0} · reasoning effort / Fast",
     "zh-CN": "{p0} · 推理强度 / Fast"
@@ -29945,10 +29933,6 @@
     "en": "No skill descriptions yet",
     "zh-CN": "暂无技能说明"
   },
-  "暂无模板，点击 + 新建": {
-    "en": "No templates yet. Click + to create one.",
-    "zh-CN": "暂无模板，点击 + 新建"
-  },
   "暂无状态内容。": {
     "en": "No status content yet.",
     "zh-CN": "暂无状态内容。"
@@ -35801,10 +35785,6 @@
     "en": "Adjust Watchboard width",
     "zh-CN": "调整 Watchboard 宽度"
   },
-  "调整原语与模板区宽度": {
-    "en": "Resize primitives and templates",
-    "zh-CN": "调整原语与模板区宽度"
-  },
   "调整发送框高度": {
     "en": "Adjust send box height",
     "zh-CN": "调整发送框高度"
@@ -40185,10 +40165,6 @@
     "en": "The original target is no longer available. Select it again.",
     "zh-CN": "原目标已不可用，请重新选择。"
   },
-  "原语 {p0}%，功能 {p1}%": {
-    "en": "Primitives {p0}%, functions {p1}%",
-    "zh-CN": "原语 {p0}%，功能 {p1}%"
-  },
   "发生时间：{p1}": {
     "en": "Occurred at: {p1}",
     "zh-CN": "发生时间：{p1}"
@@ -40272,10 +40248,6 @@
   "工作区打开失败：{p0}": {
     "en": "Unable to open workspace: {p0}",
     "zh-CN": "工作区打开失败：{p0}"
-  },
-  "左右拖动调整宽度，双击恢复等宽": {
-    "en": "Drag left or right to resize; double-click to restore equal widths",
-    "zh-CN": "左右拖动调整宽度，双击恢复等宽"
   },
   "已关闭": {
     "en": "Off",
@@ -42032,5 +42004,19 @@
   "按四级列出进入这个 Resident 上下文的内容和来源，越靠上的层级占用上下文越多。展开一项可看到正文。": {"zh-CN": "按四级列出进入这个 Resident 上下文的内容和来源，越靠上的层级占用上下文越多。展开一项可看到正文。", "en": "What enters this Resident's context and where it comes from, by four memory levels; higher levels take more context. Expand an item to read it."},
   "没有内容。": {"zh-CN": "没有内容。", "en": "Nothing here."},
   "正在读取记忆…": {"zh-CN": "正在读取记忆…", "en": "Loading memory…"},
-  "记忆读取失败：{p0}": {"zh-CN": "记忆读取失败：{p0}", "en": "Could not load memory: {p0}"}
+  "记忆读取失败：{p0}": {"zh-CN": "记忆读取失败：{p0}", "en": "Could not load memory: {p0}"},
+  "工具箱": {"zh-CN": "工具箱", "en": "Toolbox"},
+  "组织": {"zh-CN": "组织", "en": "Organizations"},
+  "拖到聊天输入框或 Resident 节点，填入草稿后编辑发送": {"zh-CN": "拖到聊天输入框或 Resident 节点，填入草稿后编辑发送", "en": "Drag onto the chat input or a Resident, then edit and send the draft"},
+  "交办": {"zh-CN": "交办", "en": "Errands"},
+  "还没有角色模板": {"zh-CN": "还没有角色模板", "en": "No role templates yet"},
+  "在工坊中打开": {"zh-CN": "在工坊中打开", "en": "Open in workshop"},
+  "更多模板": {"zh-CN": "更多模板", "en": "More templates"},
+  "暂无模板": {"zh-CN": "暂无模板", "en": "No templates yet"},
+  "暂无更多模板": {"zh-CN": "暂无更多模板", "en": "No more templates"},
+  "加入工具箱": {"zh-CN": "加入工具箱", "en": "Add to toolbox"},
+  "移出工具箱": {"zh-CN": "移出工具箱", "en": "Remove from toolbox"},
+  "工具箱收藏读取失败": {"zh-CN": "工具箱收藏读取失败", "en": "Could not load toolbox favorites"},
+  "模板已创建，但加入工具箱失败：{p0}": {"zh-CN": "模板已创建，但加入工具箱失败：{p0}", "en": "Template created, but could not add it to the toolbox: {p0}"},
+  "{p0} · 拖到 {p1}": {"zh-CN": "{p0} · 拖到 {p1}", "en": "{p0} · Drag onto {p1}"}
 }

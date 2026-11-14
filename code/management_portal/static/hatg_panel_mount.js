@@ -387,8 +387,6 @@
           destroyed = true;
           panelHost.panelActive = false;
           disconnectGraphObservers();
-          panelHost.disposeLibraryResize?.();
-          panelHost.disposeLibraryResize = null;
           destroyGraphNodeSearch();
           activateLineageEdits();
           templateRequestAbort?.abort();

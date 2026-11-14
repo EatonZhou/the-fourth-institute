@@ -354,7 +354,7 @@ test('Unfamilize from Chat Menu reaches the owning HATG panel exactly once', asy
   const bindings = owner('hatg_panel_bindings.js', ['bindActions'], {
     ...dependencies, window, state: f.state,
     handleFamilyUnfamilized: f.graph.handleFamilyUnfamilized,
-    bindComponentLibraryResize: noop, $id: () => element, $queryAll: () => [],
+    bindToolbox: noop, $id: () => element, $queryAll: () => [],
     panelHost: {pageStateController: {listen: (_scope, _target, name, handler) => listeners.set(name, handler)}},
     ResizeObserver: class {observe() {}},
     hatgModule: () => ({observeNavigationHeight: noop}),
