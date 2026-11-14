@@ -27,6 +27,10 @@ try {
   context.formatDateTime = value => value ? new Date(value).toISOString() : '';
   context.renderAccountDetails();
   assert.equal(document.querySelector('[data-account-tier]').textContent,'promax');
+  const tierTip = document.querySelector('[data-account-tier-tooltip]');
+  assert(tierTip.contains(document.querySelector('[data-account-tier]')));
+  assert(tierTip.querySelector('dt'),'the tier label and value share the tooltip target');
+  assert.equal(tierTip.getAttribute('tabindex'),'0');
   assert.equal(document.querySelector('[data-account-refresh-cards]').textContent,'3');
   const resetTip = () => document.querySelector('[data-account-refresh-cards-tooltip]');
   assert(resetTip().contains(document.querySelector('[data-account-refresh-cards]')));
