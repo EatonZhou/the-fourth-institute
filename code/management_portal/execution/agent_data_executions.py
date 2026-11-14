@@ -203,8 +203,6 @@ class ExecutionRecords:
             ).fetchone()
             if execution is None:
                 raise KeyError(execution_id)
-            if execution["provider"] != provider:
-                raise ValueError("Subscription native link provider does not match execution")
             data = {"schema": "tfi.subscription-native-link.v1", "execution_id": execution_id,
                     "provider": provider, "account_id": account_id,
                     "backend_route_id": backend_route_id, "native_session_id": native_session_id,
@@ -213,14 +211,33 @@ class ExecutionRecords:
                 "SELECT data_json FROM agent_operations WHERE operation_id=%s", (operation_id,),
             ).fetchone()
             old = json_value(previous["data_json"]) if previous else {}
-            for field in ("provider", "account_id", "backend_route_id", "native_session_id"):
-                if old.get(field) and data[field] and old[field] != data[field]:
-                    raise ValueError("Subscription native identity changed during one execution")
-                data[field] = old.get(field) or data[field]
             turns = list(old.get("native_turn_ids") or ([old["native_turn_id"]] if old.get("native_turn_id") else []))
+            conflicts = {field for field in ("provider", "account_id", "backend_route_id", "native_session_id")
+                         if old.get(field) and data[field] and old[field] != data[field]}
+            if execution["provider"] != provider:
+                conflicts.add("provider")
+            if native_turn_id and turns and native_turn_id not in turns and not accepted_turn:
+                conflicts.add("native_turn_id")
+            if conflicts:
+                # This operation is auxiliary evidence, not the execution's
+                # binding authority. Preserve the first observation and flag
+                # its incompleteness without aborting the running work.
+                diagnostic = dict(old or data)
+                diagnostic["identity_status"] = "incomplete"
+                diagnostic["conflict_fields"] = sorted(set(old.get("conflict_fields") or []) | conflicts)
+                diagnostic.setdefault("raw_locator", {"account_id": diagnostic["account_id"],
+                                                       "native_session_id": diagnostic["native_session_id"]})
+                if previous:
+                    if diagnostic != old:
+                        connection.execute("UPDATE agent_operations SET data_json=%s WHERE operation_id=%s",
+                                           (json_document(diagnostic), operation_id))
+                else:
+                    put_operation(connection, operation_id=operation_id, kind="subscription_native_link",
+                                  agent_id=execution["agent_id"], created_at=utc_now(), data=diagnostic)
+                return operation_id
+            for field in ("provider", "account_id", "backend_route_id", "native_session_id"):
+                data[field] = old.get(field) or data[field]
             if native_turn_id and native_turn_id not in turns:
-                if turns and not accepted_turn:
-                    raise ValueError("Subscription native identity changed during one execution")
                 turns.append(native_turn_id)
             # The original accepted turn remains stable; continuations are
             # independently accepted turns of the same account and session.
@@ -228,7 +245,9 @@ class ExecutionRecords:
             if len(turns) > 1:
                 data["native_turn_ids"] = turns
             data["identity_status"] = "observed" if data["native_session_id"] else "unavailable"
-            data["raw_locator"] = {"account_id": account_id,
+            if old.get("conflict_fields"):
+                data.update(identity_status="incomplete", conflict_fields=old["conflict_fields"])
+            data["raw_locator"] = {"account_id": data["account_id"],
                                    "native_session_id": data["native_session_id"]}
             if previous:
                 if data != old:

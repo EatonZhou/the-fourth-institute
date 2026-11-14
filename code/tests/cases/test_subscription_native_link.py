@@ -120,13 +120,21 @@ def test_cancel_cleanup_keeps_observed_native_identity_not_start_snapshot(monkey
 
 
 @pytest.mark.parametrize('field', ['provider', 'account_id', 'backend_route_id', 'native_session_id', 'native_turn_id'])
-def test_real_native_identity_conflicts_still_fail(monkeypatch, field):
+def test_auxiliary_identity_conflict_preserves_first_record_without_aborting(monkeypatch, field):
     store, projector, request, calls = setup(monkeypatch)
     values = dict(execution_id=request.execution_id, provider='codex', account_id='subscription',
         backend_route_id='selected', native_session_id='actual-session', native_turn_id='actual-turn')
     store.record_subscription_native_link(**values)
-    with pytest.raises(ValueError, match='identity changed|provider does not match'):
-        store.record_subscription_native_link(**{**values, field:'different'})
+    conflict = {**values, field:'different'}
+    store.record_subscription_native_link(**conflict)
+    fact, = links(store, request.execution_id)
+    assert all(fact[key] == values[key] for key in values)
+    assert fact['identity_status'] == 'incomplete'
+    assert fact['conflict_fields'] == [field]
+    assert fact['raw_locator'] == {'account_id':'subscription', 'native_session_id':'actual-session'}
+    store.record_subscription_native_link(**conflict)
+    store.record_subscription_native_link(**values)
+    assert links(store, request.execution_id) == [fact]
 
 
 def test_accepted_continuation_keeps_all_turns_and_survives_replay(monkeypatch):
@@ -144,12 +152,25 @@ def test_accepted_continuation_keeps_all_turns_and_survives_replay(monkeypatch):
     values = dict(execution_id=request.execution_id, provider='codex', account_id='subscription',
                   backend_route_id='selected', native_session_id='same-session', native_turn_id='continued-turn')
     store.record_subscription_native_link(**values)
-    with pytest.raises(ValueError, match='identity changed'):
-        store.record_subscription_native_link(**{**values, 'native_turn_id':'unaccepted-turn'})
+    store.record_subscription_native_link(**{**values, 'native_turn_id':'unaccepted-turn'})
     for field in ['provider', 'account_id', 'backend_route_id', 'native_session_id']:
-        with pytest.raises(ValueError, match='identity changed|provider does not match'):
-            store.record_subscription_native_link(**{**values, field:'different'}, accepted_turn=True)
-    assert links(store, request.execution_id) == [fact]
+        store.record_subscription_native_link(**{**values, field:'different'}, accepted_turn=True)
+    current, = links(store, request.execution_id)
+    assert all(current[k] == v for k, v in fact.items() if k != 'identity_status')
+    assert current['identity_status'] == 'incomplete'
+    assert set(current['conflict_fields']) == {'provider','account_id','backend_route_id','native_session_id','native_turn_id'}
+
+
+def test_first_provider_mismatch_does_not_change_execution_provider(monkeypatch):
+    store, projector, request, calls = setup(monkeypatch)
+    store.record_subscription_native_link(execution_id=request.execution_id, provider='different',
+        account_id='subscription', backend_route_id='selected', native_session_id='native', native_turn_id='turn')
+    fact, = links(store, request.execution_id)
+    assert fact['identity_status'] == 'incomplete'
+    assert fact['conflict_fields'] == ['provider']
+    with store.database.read() as c:
+        row = c.execute('SELECT provider FROM executions WHERE execution_id=%s', (request.execution_id,)).fetchone()
+    assert row['provider'] == request.provider
 
 
 def test_continuation_acceptance_retries_a_failed_write_during_cleanup(monkeypatch):
