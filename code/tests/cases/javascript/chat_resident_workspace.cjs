@@ -245,6 +245,34 @@ async function residentChat() {
       root.querySelector('[data-pinned-action="quote"]').click();
       assert.equal(panel.workspace.quote()?.message_id, 'reply_selected', 'header quote selects the same reply');
       assert.doesNotMatch(bar.textContent, /Earlier part|Later part/);
+
+      // Navigation changes the history scope before the next conversation has
+      // loaded. A composer update during that interval must not cache the old
+      // Resident's empty history under the new Resident's scope.
+      const nextTarget = {resident_id: 'resident_333333333333'};
+      const historyCalls = [];
+      w.PortalResidentService.inputHistory = async residentId => {
+        historyCalls.push(residentId);
+        return {messages: residentId === nextTarget.resident_id ? [{
+          message_id: 'my_earlier_input', role: 'user', author_id: 'sample_admin',
+          content_parts: [{type: 'text', text: 'Earlier personal input'}],
+        }] : []};
+      };
+      panel.workspace.setHistoryTarget(nextTarget);
+      panel.targetRevision += 1;
+      panel.workspace.setComposer({can_send: true, queue: {items: []}});
+      await settle();
+      assert.deepEqual(historyCalls, [], 'a pending target never reads the old Resident history');
+      panel.workspace.setTarget(nextTarget);
+      panel.workspace.setComposer({can_send: true, queue: {items: []}});
+      await settle();
+      panel.workspace.setDraftText('');
+      const composer = root.querySelector('.composerInput');
+      composer.focus();
+      composer.dispatchEvent(new w.KeyboardEvent('keydown', {key: 'ArrowUp', bubbles: true, cancelable: true}));
+      await settle();
+      assert.equal(panel.workspace.draftText(), 'Earlier personal input', 'Up loads the newly selected Resident history from an empty draft');
+      assert.deepEqual(historyCalls, [nextTarget.resident_id]);
     } finally { panel.destroy(); w.removeEventListener('error', onError); }
   } finally {
     observers.forEach(observer => observer.disconnect());

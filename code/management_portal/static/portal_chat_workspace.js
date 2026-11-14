@@ -3021,13 +3021,17 @@
     async loadInputHistory(scope, pageToken = "") {
       const residentId = this.workspace.target().resident_id;
       const revision = this.targetRevision;
-      if (!residentId || scope !== this.workspace.inputHistoryScope()) return null;
+      // Navigation moves the history scope before installing the conversation.
+      // Never cache the installed Resident's history under that pending scope.
+      if (!residentId || scope !== this.workspace.inputHistoryScope()
+        || scope !== this.workspace.sessionScope()) return null;
       // Rendering the unavailable state can refresh input history as the old
       // messages disappear. Keep its identity without reading that binding again;
       // an explicit reload or target switch creates a new revision.
       if (revision === this.unavailableTargetRevision) return null;
       const isCurrent = () => revision === this.targetRevision
         && residentId === this.workspace.target().resident_id
+        && scope === this.workspace.sessionScope()
         && scope === this.workspace.inputHistoryScope();
       let page;
       try {
