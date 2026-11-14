@@ -3,23 +3,24 @@
 
   if (window.PortalResidentMenuTabs) return;
 
-  // The Menu's vertical tabs: Settings, Duties, Harness, Package, Mailbox and
-  // Work Journal. Switching tabs by click or arrow keys first leaves Package (an
-  // unsaved credential change asks before it is dropped), then mounts the
-  // chosen tab's panel: the duties, the Harness settings, the principal
-  // details, the Mailbox queue, the journal or the runtime settings.
+  // The Menu's vertical tabs: Settings, Duties, Memory, Harness, Package,
+  // Mailbox and Work Journal. Switching tabs by click or arrow keys first leaves
+  // Package (an unsaved credential change asks before it is dropped), then
+  // mounts the chosen tab's panel: the duties, the memory, the Harness
+  // settings, the principal details, the Mailbox queue, the journal or the
+  // runtime settings.
 
   const DEPENDENCIES = Object.freeze([
-    "$id", "changed", "disposeFamilySettings", "loadNodeDuties", "loadNodeJournal", "loadNodeMenuRuntime", "menuState",
-    "nodeResidentId", "nodeSettingsNode", "toast",
+    "$id", "changed", "disposeFamilySettings", "loadNodeDuties", "loadNodeJournal", "loadNodeMemory",
+    "loadNodeMenuRuntime", "menuState", "nodeResidentId", "nodeSettingsNode", "toast",
   ]);
 
   function createTabs(dependencies) {
     const missing = DEPENDENCIES.filter(name => dependencies?.[name] === undefined);
     if (missing.length) throw new Error(`PortalResidentMenuTabs is missing: ${missing.join(", ")}`);
     const {
-      $id, changed, disposeFamilySettings, loadNodeDuties, loadNodeJournal, loadNodeMenuRuntime, menuState, nodeResidentId,
-      nodeSettingsNode, toast,
+      $id, changed, disposeFamilySettings, loadNodeDuties, loadNodeJournal, loadNodeMemory, loadNodeMenuRuntime, menuState,
+      nodeResidentId, nodeSettingsNode, toast,
     } = dependencies;
 
     let nodeDetailsInstance = null;
@@ -56,6 +57,7 @@
     const NODE_SETTINGS_TABS = Object.freeze({
       display: ["nodeDisplayTab", "nodeDisplayPanel"],
       duties: ["nodeDutiesTab", "nodeDutiesPanel"],
+      memory: ["nodeMemoryTab", "nodeMemoryPanel"],
       harness: ["nodeHarnessTab", "nodeHarnessPanel"],
       details: ["nodeDetailsTab", "nodeDetailsPanel"],
       mailbox: ["nodeMailboxTab", "nodeMailboxPanel"],
@@ -134,6 +136,7 @@
       }
       if (tab === "journal") { await loadNodeJournal(); return; }
       if (tab === "duties") { await loadNodeDuties(); return; }
+      if (tab === "memory") { await loadNodeMemory(); return; }
       if (tab === "harness") {
         const residentId = nodeResidentId(node);
         nodeHarnessInstance = window.PortalChatWorkspace?.mountResidentHarnessPanel?.({

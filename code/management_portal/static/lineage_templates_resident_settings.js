@@ -28,6 +28,7 @@
     function renderResidentSettings(root, roles, target, template) {
       const values = {};
       const context = getContext();
+      const siteDefault = template.kind === 'familize';
       const inheritedProvider = (role, visited = new Set()) => {
         if (!role || visited.has(role.key)) return '';
         visited.add(role.key);
@@ -39,7 +40,7 @@
       };
       roles.forEach(role => {
         const fork = role.from === 'fork';
-        values[role.key] = { ...(!fork ? { provider: role.provider || 'codex' } : {}), account: role.account || '', settings: clone(role.settings || {}) };
+        values[role.key] = { ...(!fork && (role.provider || !siteDefault) ? { provider: role.provider || 'codex' } : {}), account: role.account || '', settings: clone(role.settings || {}) };
         const panel = document.createElement('fieldset');
         panel.dataset.residentRole = role.key;
         panel.className = 'templateResidentSettings';
@@ -57,10 +58,13 @@
           const account = panel.querySelector('[data-setting="account"]');
           const model = panel.querySelector('[data-setting="model"]');
           if (provider) {
-            const providers = backends.map(item => ({ value: item.backend, label: item.label }));
-            if (!providers.some(item => item.value === chosen.provider)) providers.push({ value: chosen.provider, label: chosen.provider });
-            provider.innerHTML = optionsHtml(providers, chosen.provider);
-            chosen.provider = provider.value;
+            // A saved Provider is an explicit recipe default. Omitting an
+            // application override would retain it, not reset it to the site.
+            const providers = [...(siteDefault && !role.provider ? [{ value: '', label: t('跟随站点默认后端') }] : []), ...backends.map(item => ({ value: item.backend, label: item.label }))];
+            if (chosen.provider && !providers.some(item => item.value === chosen.provider)) providers.push({ value: chosen.provider, label: chosen.provider });
+            provider.innerHTML = optionsHtml(providers, chosen.provider || '');
+            if (provider.value) chosen.provider = provider.value;
+            else delete chosen.provider;
           }
           const definition = backends.find(item => item.backend === (fork ? inheritedProvider(role) : chosen.provider)) || {};
           const routes = definition.routes || [];
@@ -72,6 +76,7 @@
           const catalog = route ? window.PortalLineageCatalogs.routeRuntimeCatalog(route, renderFields) : null;
           const models = [...new Set([...(catalog?.models || []), ...(chosen.settings.model ? [chosen.settings.model] : [])])];
           model.innerHTML = optionsHtml([{ value: '', label: t('默认') }, ...models], chosen.settings.model || '');
+          account.disabled = model.disabled = siteDefault && !chosen.provider;
           const fields = definition.runtime_settings || [];
           const effort = panel.querySelector('[data-setting="reasoning_effort"]');
           const tier = panel.querySelector('[data-setting="service_tier"]');
@@ -85,7 +90,11 @@
         };
         panel.addEventListener('change', event => {
           const chosen = values[role.key];
-          if (event.target.dataset.setting === 'provider') { chosen.provider = event.target.value; chosen.account = ''; chosen.settings = {}; }
+          if (event.target.dataset.setting === 'provider') {
+            if (event.target.value) chosen.provider = event.target.value;
+            else delete chosen.provider;
+            chosen.account = ''; chosen.settings = {};
+          }
           if (event.target.dataset.setting === 'account') { chosen.account = event.target.value; chosen.settings = {}; }
           if (['provider', 'account'].includes(event.target.dataset.setting)) {
             const definition = config.residentSettingsOptions?.()?.backends?.find(item => item.backend === (fork ? inheritedProvider(role) : chosen.provider));

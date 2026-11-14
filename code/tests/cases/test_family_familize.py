@@ -157,10 +157,10 @@ def test_familize_hands_leadership_and_wires_to_the_facade_and_unfamilize_return
     facade, steward, router = family["facade_resident_id"], family["steward_resident_id"], family["router_resident_id"]
     view = graph(lineage)
     assert view["leader_resident_id"] == facade == family["leader_resident_id"]
-    # The Router is a Resident of its own: Codex's Sol at medium effort to start with (10-29 Router replay).
+    # Unspecified Family roles inherit the site's configured Resident default.
     assert _find_resident(router)["backend"] == "codex"
     settings = ok("GetResidentSettings", {"resident_id": router})["settings"]
-    assert (settings["model"], settings["reasoning_effort"]) == ("gpt-6.1-sol", "medium")
+    assert settings["backend_role"] == "default"
     assert "family-work-guide.md" in charters[0][1]
     assert family["rewired_wire_ids"] == [wire] and _target_of(lineage, wire) == facade
     assert family_facade.facade_configuration(_find_resident(facade))["previous_leader_id"] == first
@@ -370,10 +370,40 @@ def test_existing_lineage_family_does_not_reload_a_deleted_recipe(lineage, chart
         templates.restore(TEMPLATE_ID, ACTOR)
 
 
+@pytest.mark.empty_execution_registrations
+@pytest.mark.parametrize("entry", ["lineage", "selection", "template"])
+def test_family_creation_uses_kimi_site_default_without_codex(lineage, charters, tmp_path, monkeypatch, entry):
+    """Kimi-only installations create every Family role without probing Codex."""
+    from management_portal.execution import account_registrations as accounts
+    from management_portal import kimi_provider_catalog
+    from management_portal.society_service.templates.familize import TEMPLATE_ID
+    accounts.create_registration({"account_id": "kimi_only", "provider": "kimi",
+        "kind": "subscription_login", "route_id": "kimi_only",
+        "config": {"account_dir": str(tmp_path / "kimi-account")}}, ACTOR)
+    accounts.update_role("default", "kimi_only", "kimi-code/k3", "", 0, ACTOR)
+    monkeypatch.setattr(kimi_provider_catalog, "catalog", lambda row:
+        {"models": ["kimi-code/k3"], "default_model": "kimi-code/k3"})
+    member = ok("CreateResident", {"lineage_id": lineage, "title": "Kimi member"})["resident_id"]
+    if entry == "template":
+        family = ok("ApplyTemplate", {"lineage_id": lineage, "template_id": TEMPLATE_ID,
+            "target": {"kind": "resident", "resident_ids": [member]}})
+    else:
+        family = ok("Familize", {"lineage_id": lineage,
+            **({"scope": "lineage"} if entry == "lineage" else {"resident_ids": [member]})})
+    assert accounts.registrations("codex") == []
+    for role in ("facade", "steward", "router"):
+        record = _find_resident(family[role + "_resident_id"])
+        settings = ok("GetResidentSettings", {"resident_id": record["resident_id"]})["settings"]
+        assert (record["backend"], record["backend_route_id"]) == ("kimi", "kimi_only")
+        assert settings["backend_role"] == "default"
+        assert settings["model"] == "kimi-code/k3"
+        assert not settings.get("reasoning_effort")
+
+
 def test_the_router_and_steward_start_with_what_was_chosen_when_placing_the_family(lineage, charters):
     """放入 Family 时为 Router 与 steward 选的后端和设置用于新建它们
 
-    GetLineage 的 function_blocks 给出新建槽的 Provider 与起始设置，门面标为不可设置；Familize 的 slot_settings 让 Router 与 steward 按所选 Provider、模型与推理强度新建，换 Provider 时不带上槽自带的 Codex 设置；门面、绑定槽或字段不对的设置被拒绝。
+    未配置角色跟随站点默认后端；显式角色设置选择 Provider、模型与推理强度，门面、绑定槽或字段不对的设置被拒绝。
 
     :design: decision_44cf587c1721, decision_5b5653c3eaa5
     """
@@ -381,8 +411,8 @@ def test_the_router_and_steward_start_with_what_was_chosen_when_placing_the_fami
     register_apis(DEEPSEEK_PRIMARY)
     from management_portal.society_service.templates.familize import KIND
     roles = {role["key"]: role for role in KIND.describe({})["roles"]}
-    assert roles["router"]["provider"] == "codex"
-    assert roles["router"]["settings"] == {"model": "gpt-6.1-sol", "reasoning_effort": "medium"}
+    assert "provider" not in roles["router"]
+    assert not roles["router"].get("settings")
 
     first, second = resident(lineage, "First"), resident(lineage, "Second")
     family = ok("Familize", {"lineage_id": lineage, "resident_ids": [first], "title": "Chosen", "resident_settings": {

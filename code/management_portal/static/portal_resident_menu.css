@@ -493,6 +493,17 @@
 .residentMenuDutyActions { display:flex; gap:6px; flex-wrap:wrap; }
 .residentMenuSystemDuty { display:flex; gap:8px; align-items:center; }
 .residentMenuSystemDuties > summary { cursor:pointer; color:var(--muted); font-size:13px; margin-bottom:6px; }
+.residentMenuDutyMemory { display:grid; gap:4px; }
+.residentMenuDutyPrompt { margin:0; max-height:16em; overflow:auto; white-space:pre-wrap; overflow-wrap:anywhere; font:inherit; font-size:12px; padding:6px 8px; border-radius:6px; background:var(--bg); border:1px solid var(--border); }
+.residentMenuDutyForm { display:grid; gap:8px; font-size:13px; }
+.residentMenuDutyForm textarea { resize:vertical; min-height:5em; font:inherit; }
+.residentMenuDutyAdd { margin:0 0 12px; }
+.residentMenuDutyAdd > summary { cursor:pointer; font-size:13px; margin-bottom:6px; }
+.residentMenuMemoryLevel { margin:0 0 14px; }
+.residentMenuMemoryLevel > h3 { margin:0 0 2px; font-size:14px; display:flex; gap:8px; align-items:baseline; }
+.residentMenuMemoryLevel > .paneNote { margin:0 0 6px; }
+.residentMenuMemoryItem { border:1px solid var(--border); border-radius:8px; padding:8px 10px; font-size:13px; line-height:1.6; overflow-wrap:anywhere; }
+.residentMenuMemoryItem summary { display:flex; gap:8px; align-items:baseline; cursor:pointer; }
 @media(max-width:640px) { .residentMenuIdentity { gap:12px; align-items:flex-start; } .residentMenuName strong { font-size:18px; } .residentMenuMeta > .residentMenuIdRow { flex:1 1 100%; flex-wrap:wrap; gap:4px 8px; } .residentMenuMeta > .residentMenuLineage { flex-basis:100%; } .nodeSettingsSurface .nodeSettingsBody { grid-template-columns:var(--menu-rail-width) minmax(0,1fr); grid-template-rows:1fr; gap:10px; } .nodeSettingsSurface .nodeSettingsTabs { grid-auto-flow:row; } .nodeSettingsSurface .nodeSettingsTab { padding:7px 6px; font-size:11px; } #nodeMenuRuntime { grid-template-columns:minmax(0,1fr); } }
 
 .nodeSettingsSurface label { display:grid; gap:6px; }

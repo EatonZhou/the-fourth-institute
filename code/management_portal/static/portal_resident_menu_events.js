@@ -40,6 +40,7 @@
     });
     $id("nodeDisplayTab").addEventListener("click", () => switchNodeSettingsTab("display"));
     $id("nodeDutiesTab").addEventListener("click", () => switchNodeSettingsTab("duties"));
+    $id("nodeMemoryTab").addEventListener("click", () => switchNodeSettingsTab("memory"));
     $id("nodeHarnessTab").addEventListener("click", () => switchNodeSettingsTab("harness"));
     $id("nodeDetailsTab").addEventListener("click", () => switchNodeSettingsTab("details"));
     $id("nodeMailboxTab").addEventListener("click", () => switchNodeSettingsTab("mailbox"));

@@ -22,14 +22,11 @@ from .. import function_block_authoring
 TEMPLATE_ID = "template_" + hashlib.sha256(b"builtin-template:family").hexdigest()[:12]
 REWIRED_KINDS = frozenset({"route", "target"})
 ROLE_STOP_WAIT_SECONDS = 90.0
-# Replaying 10-29 Router requests in fresh sessions, gpt-5.6-luna mostly
-# answered without a <packet>, which sends the request to route review;
-# gpt-6.1-sol at medium effort chose like the real Routers most often, and
-# as fast as at low effort.
+# Unconfigured roles use the site's default backend, just like a new Resident.
+# A saved recipe or explicit application setting can still pin each worker.
 RESIDENT_ROLES = [
-    {"key": "steward", "title": "steward", "from": "new", "provider": "codex"},
-    {"key": "router", "title": "Router", "from": "new", "provider": "codex",
-     "settings": {"model": "gpt-6.1-sol", "reasoning_effort": "medium"}},
+    {"key": "steward", "title": "steward", "from": "new"},
+    {"key": "router", "title": "Router", "from": "new"},
 ]
 
 
@@ -488,8 +485,8 @@ def _new_role(lineage_id: str, role: str, title: str, actor: str, near: str, set
     chosen = {} if follow_default_backend else dict(settings.get(role) or {})
     payload = {"title": title if role == "facade" else f"{title} · {'Router' if role == 'router' else role}",
                "near_resident_id": near}
-    if not follow_default_backend:
-        payload["backend"] = chosen.get("provider") or "codex"
+    if chosen.get("provider"):
+        payload["backend"] = chosen["provider"]
     from ..creation_intents import operation_identity
     payload["creation_key"] = creation_key or f"familize:{operation_identity()}:{role}"
     starting = chosen.get("settings", {})

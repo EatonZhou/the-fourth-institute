@@ -1,5 +1,5 @@
 {
-  "request": "20261114.1-et-macbook-kimi-loopback-proxy",
+  "request": "20261115.1-et-macbook-family-default-backend",
   "purpose": "Build current unified main for ET MacBook native testing and data-preserving update without Lenia examples. Check common Windows packaging findings in shared source. No per-Mac source patches and no GitHub Release.",
   "delivery": "Actions artifacts only; no GitHub Release"
 }
