@@ -20,6 +20,17 @@ const context = vm.createContext({document,URL,window:{PortalI18n:{t:x=>x,html:t
 for (const name of ['accountConcurrencyRows', 'accountConcurrencyHtml', 'accountThresholdHtml', 'accountIntervalHtml', 'accountSettingsPending', 'accountQuotaWindowIsStale', 'accountQuotaWindows', 'accountSummaryQuotaWindows', 'accountQuotaWarning', 'accountSubscriptionHtml','accountCreditsHtml', 'renderAccountDetails', 'refreshAccountQuotaWindows']) {
   vm.runInContext(homeStatements().find(({node:n})=>n.type==='FunctionDeclaration' && n.id.name===name).source,context);
 }
+const fs = require('node:fs'), path = require('node:path');
+const staticRoot = path.resolve(__dirname, '../../../management_portal/static');
+const i18nSource = fs.readFileSync(path.join(staticRoot, 'portal_i18n.js'), 'utf8');
+const priceTranslation = vm.createContext({
+  catalog: JSON.parse(fs.readFileSync(path.join(staticRoot, 'portal_translations.json'), 'utf8')),
+  preference:'en', locale:()=> 'en', currency:'$', amount:19,
+});
+vm.runInContext(i18nSource.slice(i18nSource.indexOf('  function t('), i18nSource.indexOf('  function message(')), priceTranslation);
+assert.equal(vm.runInContext('text`${currency}${amount}/月`', priceTranslation), '$19/month');
+priceTranslation.locale=()=> 'zh-CN';priceTranslation.currency='¥';priceTranslation.amount=99;
+assert.equal(vm.runInContext('text`${currency}${amount}/月`', priceTranslation), '¥99/月');
 try {
   context.renderAccountDetails();
   Object.assign(account, {kind:'subscription_login',provider:'codex',subscription:{tier:{name:'promax'}},

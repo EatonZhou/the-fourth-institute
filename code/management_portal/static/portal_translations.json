@@ -2,7 +2,7 @@
   "中国区": {"en":"China","zh-CN":"中国区"},
   "国际区": {"en":"International","zh-CN":"国际区"},
   "标准月价；实际扣款以账单为准": {"en":"Standard monthly price; actual charges follow billing","zh-CN":"标准月价；实际扣款以账单为准"},
-  "{0}{1}/月": {"en":"{0}{1}/month","zh-CN":"{0}{1}/月"},
+  "{p0}{p1}/月": {"en":"{p0}{p1}/month","zh-CN":"{p0}{p1}/月"},
   "更新文件": {"en":"Updating file","zh-CN":"更新文件"},
   "创建文件": {"en":"Creating file","zh-CN":"创建文件"},
   "移动文件": {"en":"Moving file","zh-CN":"移动文件"},
