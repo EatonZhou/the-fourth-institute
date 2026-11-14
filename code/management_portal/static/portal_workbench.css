@@ -84,8 +84,8 @@
 /* Composable Workbench ----------------------------------------------------- */
 
 .portalWorkbenchViewportShell {
-  height: calc(100dvh - var(--portal-workbench-shell-offset, 72px));
-  min-height: min(var(--portal-workbench-shell-min-height, 640px), max(0px, calc(100dvh - var(--portal-workbench-shell-offset, 72px))));
+  height: var(--portal-workbench-shell-height, calc(100dvh - var(--portal-workbench-shell-offset, 72px)));
+  min-height: 0;
 }
 
 .portalWorkbenchViewportRoot {
