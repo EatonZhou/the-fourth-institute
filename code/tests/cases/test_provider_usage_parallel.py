@@ -218,7 +218,9 @@ def test_failed_batch_write_rolls_back_old_events_and_checkpoint(tmp_path):
         append(path, 99)
         job, _ = cache._job(source)
         parsed = parse_source(job)
-        parsed[0].append(({}, '{}'))  # Unsupported SQLite binding, after a valid row.
+        cache.db.execute('''CREATE TRIGGER reject_event BEFORE INSERT ON events
+                            BEGIN SELECT RAISE(ABORT, 'test write failure'); END''')
+        cache.db.commit()
         with pytest.raises(sqlite3.Error):
             cache._commit(job, parsed)
         assert cache.db.execute('SELECT * FROM sources').fetchall() == checkpoint

@@ -3,11 +3,11 @@ import hashlib
 import json
 import sqlite3
 import ast
-from datetime import datetime
 from pathlib import Path
 
 from management_common.file_permissions import ensure_private_directory
 from scripts.provider_usage_native import record_path
+from scripts import provider_usage_segments as segments
 
 
 def stamp(path):
@@ -39,10 +39,14 @@ class IncrementalCache:
             CREATE TABLE IF NOT EXISTS events(seq INTEGER PRIMARY KEY,source TEXT,at REAL,payload TEXT);
             CREATE INDEX IF NOT EXISTS events_source_time ON events(source,at);
             CREATE TABLE IF NOT EXISTS metadata(key TEXT PRIMARY KEY,stamp TEXT,payload TEXT);''')
+        segments.initialize(self.db)
+        self.db.commit()
         import management_portal.execution.provider_turn_usage as turn
         import management_portal.execution.scheduler_usage as usage
         import management_portal.codex_app_server_client as codex
-        files = [Path(__file__), Path(__file__).with_name('provider_usage_native.py'),
+        # The cache codec owns storage, not parsing. Its changes must not force
+        # native history to be reparsed; parser semantics alone own this stamp.
+        files = [Path(__file__).with_name('provider_usage_native.py'),
                  Path(turn.__file__), Path(usage.__file__), Path(codex.__file__)]
         weekly = ast.parse(Path(__file__).with_name('provider_weekly_usage.py').read_text())
         readers = [node for node in weekly.body
@@ -128,13 +132,9 @@ class IncrementalCache:
             reader_source = {**source, '_cursor': cursor} if source['format'] in ('codex', 'claude', 'kimi', 'dsh', 'requests') else source
             # One source refresh is atomic. Failed parses cannot replace a good checkpoint.
             with self.db:
-                if not append:
-                    self.db.execute('DELETE FROM events WHERE source=?', (key,))
-                for event in reader_type(reader_source, local_gaps).read():
-                    if event:
-                        at = datetime.fromisoformat(event['at'].replace('Z', '+00:00')).timestamp()
-                        self.db.execute('INSERT INTO events(source,at,payload) VALUES(?,?,?)',
-                                        (key, at, json.dumps(event)))
+                segments.write(self.db, key,
+                               (e for e in reader_type(reader_source, local_gaps).read() if e),
+                               append=append)
                 if stamp(path) != signature:
                     raise OSError('Source changed during incremental read; retry required')
                 self.db.execute('INSERT OR REPLACE INTO sources VALUES(?,?,?,?,?,?)',
@@ -145,6 +145,4 @@ class IncrementalCache:
             self.stats['raw_files_read'] += 1
             self.stats['appended_files'] += int(append)
             self.stats['jsonl_bytes_read'] += cursor.get('bytes_read', 0)
-        for row in self.db.execute('SELECT payload FROM events WHERE source=? AND at>=? AND at<? ORDER BY seq',
-                                   (key, since.timestamp(), until.timestamp())):
-            yield json.loads(row[0])
+        yield from segments.read(self.db, key, since.timestamp(), until.timestamp())

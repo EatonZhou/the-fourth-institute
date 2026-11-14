@@ -10,6 +10,7 @@ import sqlite3
 
 from scripts.provider_usage_incremental import IncrementalCache, anchors, stamp
 from scripts.provider_usage_native import record_path
+from scripts import provider_usage_segments as segments
 
 
 APPEND_FORMATS = frozenset(('codex', 'claude', 'kimi', 'dsh', 'requests'))
@@ -85,10 +86,7 @@ class ParallelIncrementalCache(IncrementalCache):
                                       (key,)).fetchone()
             if current != old or stamp(record_path(source['path'])) != signature:
                 raise OSError('Source or checkpoint changed before commit; retry required')
-            if not append:
-                self.db.execute('DELETE FROM events WHERE source=?', (key,))
-            self.db.executemany('INSERT INTO events(source,at,payload) VALUES(?,?,?)',
-                                ((key, at, payload) for at, payload in events))
+            segments.write(self.db, key, (json.loads(payload) for at, payload in events), append=append)
             self.db.execute('INSERT OR REPLACE INTO sources VALUES(?,?,?,?,?,?)',
                             (key, json.dumps(signature), cursor['offset'], json.dumps(cursor['parser']),
                              anchor, json.dumps(gaps)))
@@ -145,6 +143,4 @@ class ParallelIncrementalCache(IncrementalCache):
         if error is not None:
             raise error
         gaps.update(local_gaps)
-        for row in self.db.execute('SELECT payload FROM events WHERE source=? AND at>=? AND at<? ORDER BY seq',
-                                   (key, since.timestamp(), until.timestamp())):
-            yield json.loads(row[0])
+        yield from segments.read(self.db, key, since.timestamp(), until.timestamp())
