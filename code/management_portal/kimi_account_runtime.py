@@ -170,7 +170,7 @@ def restart_account(account_id):
     client_for_route(account_id)
 
 
-def client_for_route(route, *, for_control=False):
+def client_for_route(route, *, for_control=False, probe_timeout=3):
     from .kimi_code_client import shared_client, KimiCodeUnavailable
     account = account_for_route(route)
     if account["kind"] == "service":
@@ -190,7 +190,7 @@ def client_for_route(route, *, for_control=False):
         if _owned_process(target, state) is not None:
             client = _client(target, state["port"])
             # Never start a second daemon or kill a live turn after a failed probe.
-            sessions = client._request("GET", "sessions", timeout=3)
+            sessions = client._request("GET", "sessions", timeout=probe_timeout)
             if for_control or (state["version"] == version and state.get("runtime") == runtime
                                and state.get('host_contract') == 1):
                 return client if for_control else _subscription_tools(account, client)

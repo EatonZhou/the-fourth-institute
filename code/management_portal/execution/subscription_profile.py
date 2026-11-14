@@ -33,7 +33,9 @@ def reset_cards(payload, *, observed_at):
 def read_profile(account, accounts):
     if account.provider == 'kimi':
         from management_portal.kimi_account_runtime import client_for_route
-        return kimi_profile(client_for_route(account.route_id, for_control=True)._request('GET', 'oauth/userinfo'))
+        # Startup may be collecting all accounts concurrently. Allow the
+        # existing server's readiness probe the normal account-read budget.
+        return kimi_profile(client_for_route(account.route_id, for_control=True, probe_timeout=15)._request('GET', 'oauth/userinfo'))
     if account.provider == 'codex':
         from management_portal.codex_app_server_client import client_for_socket
         route = accounts.adapters['codex'].registry.get(account.route_id)

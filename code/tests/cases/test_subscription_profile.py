@@ -77,3 +77,18 @@ def test_failed_tier_read_retries_on_the_next_hourly_check_not_the_next_day():
     assert store.claim('kimi', 'one', now=4600, interval=86400, profile=True)
     store.save_profile('kimi', 'one', kimi_profile({'kind': 'ok', 'userInfo': {'userLevelName': 'Moderato'}}))
     assert not store.claim('kimi', 'one', now=8200, interval=86400, profile=True)
+
+
+def test_kimi_daily_reader_uses_existing_server_with_bounded_readiness_probe(monkeypatch):
+    from types import SimpleNamespace
+    from unittest.mock import Mock
+    from management_portal import kimi_account_runtime
+    from management_portal.execution.subscription_profile import read_profile
+    client = Mock()
+    client._request.return_value = {'kind': 'ok', 'userInfo': {'userLevelName': 'Moderato'}}
+    factory = Mock(return_value=client)
+    monkeypatch.setattr(kimi_account_runtime, 'client_for_route', factory)
+    result = read_profile(SimpleNamespace(provider='kimi', route_id='kimi-code'), None)
+    assert result['tier']['name'] == 'Moderato'
+    factory.assert_called_once_with('kimi-code', for_control=True, probe_timeout=15)
+    client._request.assert_called_once_with('GET', 'oauth/userinfo')
