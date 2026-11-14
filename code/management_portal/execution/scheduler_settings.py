@@ -40,14 +40,19 @@ class SchedulerSettings:
             raise ValueError("valid binding IDs and account IDs required")
         if not bindings:
             return {}
-        accounts = {account.account_id: account for account in self.accounts.accounts()}
+        # One fresh account catalog per projection, shared with quota decoding.
+        account_snapshot = self.accounts.accounts()
+        accounts = {account.account_id: account for account in account_snapshot}
         known = {binding: accounts[account] for binding, account in bindings.items() if account in accounts}
-        keys = {a.capacity_key for a in known.values()} & self.quota.quota_capacity_keys if self.quota.quota_reserve_enabled else set()
-        from .account_registrations import registrations
-        disabled = {row['account_id'] for row in registrations() if not row['enabled']}
+        quota_keys = {a.capacity_key for a in account_snapshot if a.quota_enabled}
+        keys = {a.capacity_key for a in known.values()} & quota_keys if self.quota.quota_reserve_enabled else set()
+        from .account_registrations import disabled_account_ids
+        disabled = disabled_account_ids({a.account_id for a in known.values()})
         now = time.time()
         with self.changes.connect() as connection:
-            quotas, overrides = self.quota.quota_states(connection, keys, set(known), now=now)
+            quotas, overrides = self.quota.quota_states(
+                connection, keys, set(known), now=now, account_snapshot=account_snapshot,
+            )
         result = {}
         for binding, account_id in bindings.items():
             account = known.get(binding)

@@ -504,6 +504,9 @@ class ResourceService:
     def capabilities(self, resource_type: str) -> dict[str, Any]:
         return service_providers.capabilities(self, resource_type)
 
+    def capabilities_many(self, resource_types: Iterable[str]) -> dict[str, dict[str, Any]]:
+        return service_providers.capabilities_many(self, resource_types)
+
     def refresh(self, **kwargs: Any) -> dict[str, Any]:
         return self._index().refresh(**kwargs)
 

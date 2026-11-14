@@ -16,6 +16,10 @@ if TYPE_CHECKING:
 def ensure_provider(service: "ResourceService", capability: str, resource_type: str | None) -> None:
     if resource_type is not None:
         service.resource_types.require(resource_type)
+    _load_provider(service, capability, resource_type)
+
+
+def _load_provider(service: "ResourceService", capability: str, resource_type: str | None) -> None:
     registry, loader, lock, flag = {
         "resolver": (service._resolvers, service._resolver_loader, service._resolver_lock, "_resolvers_loaded"),
         "mutation": (service._mutation_providers, service._mutation_provider_loader, service._mutation_provider_lock, "_mutation_providers_loaded"),
@@ -151,11 +155,24 @@ def register_action_provider(
 
 def capabilities(service: "ResourceService", resource_type: str) -> dict[str, Any]:
     clean_type = str(resource_type or "").strip()
-    if not service._identity.is_registered(clean_type):
-        raise ValueError(f"unregistered resource type: {clean_type}")
-    service._ensure_resolvers(clean_type)
-    service._ensure_mutation_providers(clean_type)
-    service._ensure_action_providers(clean_type)
+    return capabilities_many(service, [clean_type])[clean_type]
+
+
+def capabilities_many(service: "ResourceService", resource_types: Iterable[str]) -> dict[str, dict[str, Any]]:
+    kinds = tuple(dict.fromkeys(str(kind or "").strip() for kind in resource_types))
+    for kind in kinds:
+        if not service._identity.is_registered(kind):
+            raise ValueError(f"unregistered resource type: {kind}")
+    # One fresh deployment-state read for this inspection, not three full
+    # state reads per type merely to install its three provider capabilities.
+    service.resource_types.require_many(kinds)
+    return {kind: _capabilities(service, kind) for kind in kinds}
+
+
+def _capabilities(service: "ResourceService", clean_type: str) -> dict[str, Any]:
+    _load_provider(service, "resolver", clean_type)
+    _load_provider(service, "mutation", clean_type)
+    _load_provider(service, "action", clean_type)
     resolver_types = service._resolvers.registered_types()
     mutation_types = service._mutation_providers.registered_types()
     provider = (

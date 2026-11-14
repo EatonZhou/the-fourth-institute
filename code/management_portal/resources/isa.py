@@ -245,12 +245,13 @@ def get_resource_type(inv: Invocation) -> dict[str, Any]:
     return _resource_type_details(inv.argument("resource_type"))
 
 
-def _resource_type_details(resource_type: str, *, row=None, counts=None) -> dict[str, Any]:
+def _resource_type_details(resource_type: str, *, row=None, counts=None, capabilities=None) -> dict[str, Any]:
     from management_portal.hatg.resource_actions import actions_for_type
 
     service = _service()
     row = row if row is not None else service.resource_types.get(resource_type)
-    capabilities = service.capabilities(resource_type) if row['installed'] else {}
+    if capabilities is None:
+        capabilities = service.capabilities(resource_type) if row['installed'] else {}
     if counts is None:
         counts = service._index().type_counts()
     declared = {action.action: action for action in actions_for_type(resource_type)}
@@ -273,8 +274,10 @@ def _resource_type_details(resource_type: str, *, row=None, counts=None) -> dict
 def list_resource_types(inv: Invocation) -> dict[str, Any]:
     service = _service()
     counts = service._index().type_counts()
-    return {"types": [_resource_type_details(kind, row=row, counts=counts)
-                      for kind, row in service.resource_types.all().items()],
+    rows = service.resource_types.all()
+    capabilities = service.capabilities_many(kind for kind, row in rows.items() if row['installed'])
+    return {"types": [_resource_type_details(kind, row=row, counts=counts, capabilities=capabilities.get(kind, {}))
+                      for kind, row in rows.items()],
             "registry": service.resource_types.identity.metadata}
 
 

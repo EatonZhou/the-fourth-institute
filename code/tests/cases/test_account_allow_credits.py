@@ -117,7 +117,7 @@ def test_expiry_and_disabled_account_still_close_gate(scheduler, monkeypatch):
     with scheduler.changes.connect() as connection:
         states, _ = scheduler.quota.quota_states(connection, {'codex:paid_test'}, set(), now=time.time()+61)
     assert states['codex:paid_test']['automatic_paused']
-    monkeypatch.setattr(account_registrations, 'registrations', lambda: [{'account_id': 'paid_test', 'enabled': False}])
+    monkeypatch.setattr(account_registrations, 'disabled_account_ids', lambda ids: {'paid_test'} & ids)
     gate = scheduler.binding_quota_states({'resident:resident_0123456789ab': 'paid_test'})
     assert next(iter(gate.values()))['reason'] == 'account_disabled'
 

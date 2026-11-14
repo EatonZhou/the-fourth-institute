@@ -337,6 +337,15 @@ class InstructionKernel:
     def execute(
         self, call: InstructionCall, context: InstructionContext, *, instruction_id: str = "",
     ) -> InstructionResult:
+        # Observe the whole owning-service call, including permission checks,
+        # serialization, record I/O and replay. Handler-only timing hides
+        # precisely those shared costs that can make a fast handler slow.
+        with slow_call_profile.track(self.owner, call.instruction, scope="instruction"):
+            return self._execute(call, context, instruction_id=instruction_id)
+
+    def _execute(
+        self, call: InstructionCall, context: InstructionContext, *, instruction_id: str = "",
+    ) -> InstructionResult:
         if instruction_id != "":
             if not is_instruction_id(instruction_id, self.owner):
                 return failed_result(new_instruction_id(self.owner), call.instruction,
@@ -351,7 +360,7 @@ class InstructionKernel:
         invocation = Invocation(declaration, call, context, instruction_id)
         if not declaration.mutates or (self.binding.reads_only is not None and self.binding.reads_only(invocation)):
             try:
-                with self._identity_scope(context), slow_call_profile.track(self.owner, declaration.name):
+                with self._identity_scope(context):
                     result = self.binding.handler(declaration.name)(invocation)
             except Exception as exc:  # noqa: BLE001
                 return failed_result(instruction_id, call.instruction, normalize_error(exc))
@@ -402,8 +411,7 @@ class InstructionKernel:
         failures: list[dict[str, Any]] = []
         committed_failure: Exception | None = None
         try:
-            with self._identity_scope(invocation.context), self._instruction_scope(instruction_id), \
-                    slow_call_profile.track(self.owner, invocation.name):
+            with self._identity_scope(invocation.context), self._instruction_scope(instruction_id):
                 with collect_projection_failures() as failures:
                     try:
                         result = self.binding.handler(invocation.name)(invocation)
@@ -591,11 +599,14 @@ class InstructionKernel:
     def stream(self, call: InstructionCall, context: InstructionContext) -> Iterator[list[dict[str, Any]]]:
         """Validate and authorize, then yield batches of stream items."""
 
-        declaration = self._resolve(call, streaming=True)
-        instruction_id = new_instruction_id(self.owner)
-        self._authorize_call(declaration, call, context, instruction_id=instruction_id)
-        invocation = Invocation(declaration, call, context, instruction_id)
-        return self.binding.streams[declaration.name](invocation)
+        # A subscription's expected lifetime is not execution overhead.
+        # Observe its setup without wrapping iteration or retaining its frames.
+        with slow_call_profile.track(self.owner, call.instruction, scope="stream_setup"):
+            declaration = self._resolve(call, streaming=True)
+            instruction_id = new_instruction_id(self.owner)
+            self._authorize_call(declaration, call, context, instruction_id=instruction_id)
+            invocation = Invocation(declaration, call, context, instruction_id)
+            return self.binding.streams[declaration.name](invocation)
 
     def execution_record_for_request(
         self, instruction: str, request_key: str, context: InstructionContext,

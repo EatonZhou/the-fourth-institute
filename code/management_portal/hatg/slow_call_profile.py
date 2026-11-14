@@ -1,4 +1,4 @@
-"""Stack samples of slow instruction handlers, logged when they finish.
+"""Stack samples of slow instruction execution, logged when it finishes.
 
 py-spy cannot attach to the services (ptrace_scope=1).  Once a handler has
 run for ``SAMPLE_AFTER`` seconds, a sampler thread reads its thread's stack
@@ -79,7 +79,7 @@ def _sample() -> None:
 
 
 @contextmanager
-def track(owner: str, instruction: str) -> Iterator[None]:
+def track(owner: str, instruction: str, *, scope: str = "handler") -> Iterator[None]:
     global _sampler
     token = object()
     call = {
@@ -100,7 +100,7 @@ def track(owner: str, instruction: str) -> Iterator[None]:
         seconds = time.monotonic() - call["started"]
         if seconds >= LOG_AFTER and call["samples"]:
             print("HATG slow instruction profile: " + json.dumps({
-                "owner": owner, "instruction": instruction, "seconds": round(seconds, 3),
+                "owner": owner, "instruction": instruction, "scope": scope, "seconds": round(seconds, 3),
                 "samples": call["samples"], "interval": INTERVAL, "sampled_after": SAMPLE_AFTER,
                 "frames": call["inclusive"].most_common(16),
                 "innermost": call["innermost"].most_common(6),

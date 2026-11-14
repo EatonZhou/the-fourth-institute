@@ -78,6 +78,17 @@ def registration(account_id):
         return _decode(c.execute("SELECT * FROM registrations WHERE account_id=%s", (account_id,)).fetchone())
 
 
+def disabled_account_ids(account_ids):
+    """Read only the disable flags needed by a caller's resolved accounts."""
+    if not account_ids:
+        return set()
+    with database().read() as c:
+        return {row["account_id"] for row in c.execute(
+            "SELECT account_id FROM registrations WHERE account_id=ANY(%s) AND NOT enabled",
+            (list(account_ids),),
+        )}
+
+
 def config_fields(provider, kind):
     """The config keys a registration of this Provider and kind accepts."""
     if kind == "api_profile":

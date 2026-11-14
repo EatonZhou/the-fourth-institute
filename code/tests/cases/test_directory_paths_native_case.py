@@ -334,3 +334,51 @@ def test_unknown_empty_filesystem_reports_policy_without_probe_files(empty_root,
     with pytest.raises(OSError, match='Cannot determine filesystem case sensitivity'):
         paths._directory_case_sensitive(empty_root)
     assert list(empty_root.iterdir()) == []
+
+
+@pytest.mark.parametrize('name', ['员工资料_123', 'ÉßİıΣσςKſ', '123_456', 'ＡｂＣ', '😀项目'])
+def test_non_ascii_without_ascii_letters_supplies_no_case_evidence(empty_root, monkeypatch, name):
+    from pathlib import Path
+    (empty_root / name).write_text('unchanged')
+    monkeypatch.setattr(paths, 'sys', SimpleNamespace(platform='unknown'))
+    def unexpected_lookup(*args, **kwargs):
+        pytest.fail('A name without ASCII letters cannot supply an alternate spelling')
+    monkeypatch.setattr(Path, 'lstat', unexpected_lookup)
+    with pytest.raises(OSError, match='Cannot determine filesystem case sensitivity'):
+        paths._existing_directory_case_sensitive(empty_root)
+
+
+@pytest.mark.parametrize('name,alternate', [
+    ('Foo', 'fOO'), ('员工Foo_ßİK', '员工fOO_ßİK'),
+    ('éAΣzı', 'éaΣZı'), ('项目_123a', '项目_123A'),
+])
+def test_case_lookup_swaps_only_ascii_letters(empty_root, monkeypatch, name, alternate):
+    from pathlib import Path
+    (empty_root / name).write_text('entry')
+    original = Path.lstat
+    lookups = []
+    def lookup(path, *args, **kwargs):
+        lookups.append(path.name)
+        if path.name == alternate:
+            raise FileNotFoundError(str(path))
+        return original(path, *args, **kwargs)
+    monkeypatch.setattr(Path, 'lstat', lookup)
+    assert paths._existing_directory_case_sensitive(empty_root)
+    assert lookups == [name, alternate]
+
+
+def test_large_non_ascii_directory_probes_only_useful_entry(empty_root, monkeypatch):
+    from pathlib import Path
+    for index in range(256):
+        (empty_root / f'员工资料_{index}').touch()
+    (empty_root / '员工Foo').touch()
+    original = Path.lstat
+    lookups = []
+    def lookup(path, *args, **kwargs):
+        lookups.append(path.name)
+        if path.name == '员工fOO':
+            raise FileNotFoundError(str(path))
+        return original(path, *args, **kwargs)
+    monkeypatch.setattr(Path, 'lstat', lookup)
+    assert paths._existing_directory_case_sensitive(empty_root)
+    assert lookups == ['员工Foo', '员工fOO']

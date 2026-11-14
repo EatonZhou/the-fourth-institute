@@ -39,14 +39,16 @@ class SchedulerQuota:
         states, _ = self.quota_states(connection, {capacity_key}, set(), now=time.time())
         return states[capacity_key]
 
-    def quota_states(self, connection, capacity_keys, binding_ids, *, now):
+    def quota_states(self, connection, capacity_keys, binding_ids, *, now, account_snapshot=None):
         """Read quota samples, thresholds and overrides once for a scheduling pass."""
         keys = [prefix + key for key in capacity_keys for prefix in ("quota:", "quota_threshold:", "quota_credits:")]
         keys.extend("quota_override:" + binding for binding in binding_ids if binding)
         metadata = {row["key"]: json_object(row["value"]) for row in connection.execute(
             "SELECT key,value FROM execution_store_meta WHERE key=ANY(%s)", (keys,),
         ).fetchall()} if keys else {}
-        accounts = {account.capacity_key: account for account in self.accounts.accounts()}
+        accounts = {account.capacity_key: account for account in (
+            self.accounts.accounts() if account_snapshot is None else account_snapshot
+        )}
         states = {}
         for key in capacity_keys:
             sample = metadata.get("quota:" + key, {})

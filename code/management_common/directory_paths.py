@@ -3,11 +3,19 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
+import re
 import stat
 import sys
 
 from management_common.filesystem_paths import filesystem_path
 from .instance_manifest import AREAS, current_instance
+
+
+_ASCII_LETTER = re.compile('[a-zA-Z]')
+_ASCII_SWAPCASE = str.maketrans(
+    'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ',
+    'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz',
+)
 
 
 def lexical_path(value: str | Path) -> Path:
@@ -197,9 +205,13 @@ def _existing_directory_case_sensitive(path: Path) -> bool:
     # entry. No writes and no platform assumptions (including network mounts).
     with os.scandir(filesystem_path(path)) as entries:
         for entry in entries:
-            alternate = ''.join(c.swapcase() if c.isascii() else c for c in entry.name)
-            if alternate == entry.name:
+            # Only ASCII letters yield evidence for this lookup. Large
+            # directories of Chinese/numeric names otherwise spend Python
+            # work on every character without making a single useful probe.
+            if not _ASCII_LETTER.search(entry.name):
                 continue
+            alternate = (entry.name.swapcase() if entry.name.isascii()
+                         else entry.name.translate(_ASCII_SWAPCASE))
             # Windows DirEntry.stat() may omit st_dev/st_ino (both zero).
             # Compare two path-based queries, which include file identity,
             # rather than mistaking incomplete enumeration metadata for a

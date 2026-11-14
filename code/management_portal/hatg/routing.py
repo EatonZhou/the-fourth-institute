@@ -20,6 +20,7 @@ import os
 import threading
 from typing import Any, Iterator, Mapping
 
+from . import slow_call_profile
 from .catalog import declaration as declaration_for, instruction_catalog
 from .contracts import (
     InstructionCall,
@@ -249,6 +250,14 @@ def instruction_schema(name: str) -> dict[str, Any]:
 
 
 def _self_description(
+    call: InstructionCall, context: InstructionContext, *, local_owner: str = "",
+) -> InstructionResult:
+    # The catalog/schema/receipt entrypoints do not pass through a kernel.
+    with slow_call_profile.track(local_owner or "entry", call.instruction, scope="instruction"):
+        return _run_self_description(call, context, local_owner=local_owner)
+
+
+def _run_self_description(
     call: InstructionCall, context: InstructionContext, *, local_owner: str = "",
 ) -> InstructionResult:
     instruction_id = new_instruction_id("entry")

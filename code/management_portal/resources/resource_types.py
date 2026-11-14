@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import threading
-from typing import Any
+from typing import Any, Iterable
 
 from management_common.portal_database import portal_database
 from management_common.resource_identity import get_resource_type_registry
@@ -92,6 +92,18 @@ class ResourceTypes:
 
     def require(self, kind: str, *, registration: bool = False) -> None:
         row = self.get(kind)
+        self._require_state(kind, row, registration=registration)
+
+    def require_many(self, kinds: Iterable[str], *, registration: bool = False) -> None:
+        kinds = tuple(dict.fromkeys(kinds))
+        for kind in kinds:
+            self.identity.declaration(kind)
+        rows = self.all() if kinds else {}
+        for kind in kinds:
+            self._require_state(kind, rows[kind], registration=registration)
+
+    @staticmethod
+    def _require_state(kind: str, row: dict, *, registration: bool) -> None:
         if not row['installed'] or (registration and not row['enabled']):
             raise ResourceTypeError('resource_type.' + row['state'], f"{kind}: {row['state']}")
         if registration and not row['registerable']:
