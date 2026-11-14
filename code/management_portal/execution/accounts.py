@@ -78,6 +78,7 @@ class ExecutionAccounts:
         self.provider_registry = provider_registry or shared_ai_provider_registry
         self.dynamic = dynamic
         self._refreshed_at = time.monotonic()
+        self._refresh_lock = threading.Lock()
         self.adapters = {adapter.provider: adapter for adapter in adapters}
         entries = tuple(account for adapter in adapters for account in adapter.accounts())
         self._accounts = {account.account_id: account for account in entries}
@@ -86,9 +87,13 @@ class ExecutionAccounts:
 
     def refresh(self):
         if self.dynamic and time.monotonic() - self._refreshed_at >= 1:
-            current = default_execution_accounts(provider_registry=self.provider_registry, tolerate_unavailable=True)
-            self.adapters, self._accounts = current.adapters, current._accounts
-            self._refreshed_at = time.monotonic()
+            # Concurrent expired readers share one rebuild. Recheck after
+            # waiting; a failed rebuild leaves freshness unchanged for retry.
+            with self._refresh_lock:
+                if time.monotonic() - self._refreshed_at >= 1:
+                    current = default_execution_accounts(provider_registry=self.provider_registry, tolerate_unavailable=True)
+                    self.adapters, self._accounts = current.adapters, current._accounts
+                    self._refreshed_at = time.monotonic()
 
     def accounts(self) -> tuple[ExecutionAccount, ...]:
         self.refresh()
