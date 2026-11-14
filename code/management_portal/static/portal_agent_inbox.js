@@ -666,9 +666,13 @@
     overlay.hidden = true;
     overlay.dataset.agentNotificationDetail = "";
     overlay.innerHTML = window.PortalI18n.html`<section class="portalDetailSurface portalAgentNotificationSurface" role="dialog" aria-modal="true" aria-labelledby="portalAgentNotificationTitle" tabindex="-1">
-      <header class="portalDetailHeader"><div><h2 id="portalAgentNotificationTitle"></h2><p data-agent-notification-meta></p></div><button class="portalDetailClose" type="button" data-agent-notification-close data-portal-icon="close" aria-label="关闭通知详情"></button></header>
+      <header class="portalDetailHeader"><div class="portalAgentNotificationHeading">
+        <div class="portalAgentNotificationContext"><span class="portalAgentNotificationSeverity" data-agent-notification-severity></span><span class="portalAgentNotificationSource" data-agent-notification-origin></span></div>
+        <h2 id="portalAgentNotificationTitle"></h2>
+        <div class="portalAgentNotificationMeta" data-agent-notification-meta><span data-agent-notification-sender></span><time data-agent-notification-time></time></div>
+      </div><button class="portalDetailClose" type="button" data-agent-notification-close data-portal-icon="close" aria-label="关闭通知详情"></button></header>
       <div class="portalDetailBody"><div class="portalAgentNotificationMessage" data-agent-notification-message></div></div>
-      <footer class="portalAgentNotificationActions"><button class="portalButton" type="button" data-agent-notification-source></button><button class="portalButton is-primary" type="button" data-agent-notification-close>关闭</button></footer>
+      <footer class="portalAgentNotificationActions"><button class="portalButton" type="button" data-agent-notification-close>关闭</button><button class="portalButton is-primary" type="button" data-agent-notification-source></button></footer>
     </section>`;
     document.body.appendChild(overlay);
     const runtime = { overlay, entry: null, controller: null };
@@ -676,7 +680,7 @@
       modal: overlay,
       backdropClose: true,
       escapeClose: true,
-      initialFocus: overlay.querySelector('[role="dialog"]'),
+      initialFocus: overlay.querySelector('[data-agent-notification-close]'),
       onClose: () => {
         runtime.entry = null;
         overlay.querySelector("[data-agent-notification-message]").textContent = "";
@@ -710,14 +714,19 @@
     runtime.entry = routedEntry(entry);
     const overlay = runtime.overlay;
     overlay.querySelector("#portalAgentNotificationTitle").textContent = entry.title || window.PortalI18n.t("通知");
-    const severity = { info: "信息", warning: "提醒", error: "错误", success: "完成" }[detail.severity] || "信息";
-    const sender = detail.created_by === "portal" ? "Portal 系统" : detail.created_by;
-    overlay.querySelector("[data-agent-notification-meta]").textContent = [
-      severity,
-      detail.lineage_title || (detail.lineage_id ? "Lineage" : "Portal"),
-      sender ? window.PortalI18n.text`发送者：${sender}` : "",
-      window.PortalUI.formatDateTime(detail.created_at || entry.updated_at),
-    ].filter(Boolean).join(" · ");
+    const severities = { info: "信息", warning: "提醒", error: "错误", success: "完成" };
+    const severity = Object.hasOwn(severities, detail.severity) ? detail.severity : "info";
+    const badge = overlay.querySelector("[data-agent-notification-severity]");
+    badge.dataset.severity = severity;
+    badge.textContent = window.PortalI18n.t(severities[severity]);
+    overlay.querySelector("[data-agent-notification-origin]").textContent = detail.lineage_title || (detail.lineage_id ? "Lineage" : "Portal");
+    const sender = detail.created_by === "portal" ? window.PortalI18n.t("Portal 系统") : detail.created_by;
+    const senderLabel = overlay.querySelector("[data-agent-notification-sender]");
+    senderLabel.textContent = sender ? window.PortalI18n.text`发送者：${sender}` : "";
+    senderLabel.hidden = !sender;
+    const time = overlay.querySelector("[data-agent-notification-time]");
+    time.dateTime = detail.created_at || entry.updated_at || "";
+    time.textContent = window.PortalUI.formatDateTime(time.dateTime);
     overlay.querySelector("[data-agent-notification-message]").textContent = detail.message;
     const sourceButton = overlay.querySelector("[data-agent-notification-source]");
     sourceButton.textContent = detail.lineage_id ? window.PortalI18n.t("打开所属 Lineage") : window.PortalI18n.t("打开来源页面");

@@ -500,23 +500,117 @@ body.portalAgentInboxMounted:has(> .portalAgentInbox[data-dock-side="left"]) {
   line-height: 1.2;
 }
 
-.portalAgentNotificationSurface {
-  width: min(680px, calc(100vw - 32px));
-  max-height: calc(100dvh - 32px);
+.portalDetailOverlay[data-agent-notification-detail] {
+  padding: 16px;
+  place-items: center;
+}
+
+.portalDetailSurface.portalAgentNotificationSurface {
+  --portal-control-height: 34px;
+  --portal-control-height-sm: 34px;
+  width: min(100%, 560px);
+  max-height: min(760px, calc(100dvh - 32px));
+  border-radius: 16px;
+  background: linear-gradient(var(--panel, #fff), var(--panel, #fff)), var(--bg, #fff);
+  font-size: 14px;
+}
+
+.portalAgentNotificationSurface .portalDetailHeader {
+  align-items: flex-start;
+  padding: 20px 20px 16px;
+  gap: 12px;
+  background: transparent;
+}
+
+.portalAgentNotificationHeading {
+  flex: 1;
+  display: grid;
+  gap: 10px;
+}
+
+.portalAgentNotificationContext {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.portalAgentNotificationSeverity {
+  --notification-tone: var(--accent, #365fce);
+  flex: 0 0 auto;
+  padding: 2px 8px;
+  border-radius: 6px;
+  color: var(--notification-tone);
+  background: color-mix(in srgb, var(--notification-tone) 10%, transparent);
+  font-weight: 600;
+}
+
+.portalAgentNotificationSeverity[data-severity="error"] { --notification-tone: var(--danger, #dc2626); }
+.portalAgentNotificationSeverity[data-severity="warning"] { --notification-tone: var(--warning, var(--warn, #b45309)); }
+.portalAgentNotificationSeverity[data-severity="success"] { --notification-tone: var(--success, #15803d); }
+
+.portalAgentNotificationSource {
+  min-width: 0;
+  color: var(--muted, #64748b);
+  overflow-wrap: anywhere;
+}
+
+.portalAgentNotificationSurface .portalDetailHeader h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 650;
+  line-height: 1.4;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.portalAgentNotificationMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  color: var(--muted, #64748b);
+  font-size: 12px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.portalAgentNotificationSurface .portalDetailClose {
+  flex: 0 0 auto;
+}
+
+.portalAgentNotificationSurface .portalDetailBody {
+  padding: 20px;
+  overscroll-behavior: contain;
 }
 
 .portalAgentNotificationMessage {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
-  line-height: 1.6;
+  font-size: 14px;
+  line-height: 1.75;
 }
 
 .portalAgentNotificationActions {
   display: flex;
   justify-content: flex-end;
+  flex-wrap: wrap;
   gap: 8px;
-  padding: 12px 16px;
+  padding: 12px 20px;
   border-top: 1px solid var(--border, #cbd5e1);
+}
+
+.portalAgentNotificationActions .portalButton {
+  font-size: 13px;
+}
+
+@media (max-width: 480px) {
+  .portalDetailOverlay[data-agent-notification-detail] { padding: 12px; }
+  .portalDetailSurface.portalAgentNotificationSurface { max-height: calc(100dvh - 24px); }
+  .portalAgentNotificationSurface .portalDetailHeader { padding: 16px; }
+  .portalAgentNotificationSurface .portalDetailBody { padding: 16px; }
+  .portalAgentNotificationActions { padding: 12px 16px; }
 }
 
 .portalAgentInboxList {
