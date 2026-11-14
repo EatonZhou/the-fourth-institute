@@ -4,15 +4,15 @@ type: decision
 project: AI员工
 created_at: '2026-10-13'
 version:
-  number: 24
+  number: 25
   created_at: "2026-10-13"
   created_by:
     user: ""
     agent: "resident_e8fc8c899f00"
-  updated_at: "2026-11-13T21:11:15Z"
+  updated_at: "2026-11-14T20:39:34Z"
   updated_by:
     user: ""
-    agent: "resident_737599f56947"
+    agent: "resident_25ac6961fafb"
 importance: 8
 ai_generated: false
 links:
@@ -46,7 +46,7 @@ links:
 
 每份模板的内容字段为 `kind`、`category`、`title`、`description`、`targets`、`parameters`、`body`。`template_id` 是稳定身份；`version`、`created_at`、`created_by`、`updated_at`、`updated_by` 记录版本和真实调用者。内置条目还带 `builtin_key` 与 `builtin_source`。返回给界面时附加 `behavior`、`editor` 与 `application_parameters`，它们由模块按当前内容计算，不是第二份存储事实。`application_parameters` 是本次施加可接受的完整参数说明，原生施加表单与服务端校验使用同一份说明；模板编辑器仍保存原始 `parameters`，不把派生施加说明写回配方。
 
-`kind` 决定执行模块，现有值为 `prompt`、`structure`、`script`、`explore`、`familize`。`category` 只决定货架分组，可取 `apply`、`structure`、`team`，不参与执行派发。单份模板的 `targets` 必须是模块支持目标的非空子集。
+`kind` 决定执行模块，现有值为 `prompt`、`structure`、`script`、`explore`、`familize`。`category` 是模板资料中的分组字段，可取 `apply`、`structure`、`team`，不参与执行派发；工具箱按 `kind` 分组。单份模板的 `targets` 必须是模块支持目标的非空子集。
 
 | 目标值 | 含义与约束 |
 | --- | --- |
@@ -87,7 +87,7 @@ links:
 
 `ApplyTemplate` 的指令执行契约使用 `body: {message, activation_policy?}`。`message` 是非空文本，可引用模板参数与当前目标。`activation_policy` 默认 `queue`，表示排队并触发处理；`attach_to_next` 表示随下一条请求附加送达。模块逐个目标渲染消息，以施加者身份投递，返回 Resident 与消息 ID，不创建组件或 Function Block。
 
-提示词模板在货架中的拖放用于填写聊天草稿。正文直接用 `[音频文件]`、`[条目类型]` 等中括号标出需要用户填写的内容；已有 `{{param.name}}` 引用拖入时转换为参数名称或说明对应的中括号提示，保存的模板正文和指令渲染规则保持原样。
+提示词模板从工具箱拖出时用于填写聊天草稿。正文直接用 `[音频文件]`、`[条目类型]` 等中括号标出需要用户填写的内容；已有 `{{param.name}}` 引用拖入时转换为参数名称或说明对应的中括号提示，保存的模板正文和指令渲染规则保持原样。
 
 拖到聊天输入框时，以纯文本插入当前编辑位置，沿用输入框的附件、草稿持久化和撤销机制。拖到可访问的 Resident 节点时，打开该节点的 Chat，将正文追加到已有草稿，保留附件并聚焦输入框；即使画布有多个已选节点，也只使用鼠标实际落下的节点。聊天切换未成功或已切到另一个目标时不填入。用户补齐占位项后显式发送；拖放不调用 `ApplyTemplate`，也不自动投递消息。显式调用 `ApplyTemplate` 的消息投递语义仍按上段执行。
 
@@ -189,7 +189,7 @@ Effect DSL 内的替换使用脚本专用转义器。在带引号的脚本文本
 | 扩展想法 | expand_ideas | explore；resident | Fork 探索者，生成 idea 候选 Seed；count 默认 3，task 可编辑。 |
 | 扩展方案 | expand_plans | explore；resident | Fork 探索者，生成 plan 候选 Seed；count 默认 3，task 可编辑。 |
 
-内置模板进入货架后与用户模板一样可编辑、复制和删除。script 是可创建的模块类型，但不占这八份内置内容中的一项。
+内置模板与用户模板一样可编辑、复制和删除，并始终显示在工具箱中。script 是可创建的模块类型，但不占这八份内置内容中的一项。
 
 ## 存储与内置生命周期
 
@@ -207,15 +207,15 @@ Effect DSL 内的替换使用脚本专用转义器。在带引号的脚本文本
 
 `ApplyTemplate` 要求目标 `lineage_id` 的 contributor，因为施加可能修改图、创建 Resident 或执行指令。`CreateTemplate` 和 UpdateTemplate 一样要求对“公共内容”有 contributor，因为 Lineage 模板是所有人共用的定义；携带 `from_selection` 时还要求其中 `lineage_id` 的 viewer，因为需要读取图与角色设置。此检查也适用于带选区的 dry_run。内嵌 ISA 调用继续使用施加者身份和各指令自己的权限规则。模板不是额外授权凭证。
 
-## 货架与编辑器
+## 工具箱与编辑器
 
-模板货架和编辑器的样式由页面共享资源加载器加载并等待就绪，样式表留在 document head；HATG 面板替换或关闭不撤销其他面板正在使用的样式。加载失败时保留可重试的 HATG 加载状态。
+工具箱和模板编辑器的样式由页面共享资源加载器加载并等待就绪，样式表留在 document head；HATG 面板替换或关闭不撤销其他面板正在使用的样式。加载失败时保留可重试的 HATG 加载状态。
 
-货架沿用原 Block 区的横向排版：左侧一列是“TEMPLATE 模板”标题与新建按钮，右侧是一行可横向滚动的模板图块，依次为施加、结构、团队三组，组前有竖排的分组名。每个图块是一只鸽子加标题。内置模板沿用原 Function Block 的鸽子（Agent Loop 0、扩展想法 2、修订回流 3、Family 4、扩展方案 34、Leader 脉冲 35、固定提醒 37、定时工作 38，即鸽子图集的序号），其他模板按 template_id 取鸽子；施加后保留为 Function Block 的模板在鸽子右下角带 ∞。说明、是否保留结果、可拖放目标写在悬停提示中。拖放时按 targets 提示可接受的 Resident、选区或画布。点击模板打开编辑器；新建入口提供 Prompt、结构和脚本，已有 explore/familize 内容使用各自模块的字段描述。画布有选区时，选区工具条显示“存为模板”与“做成改写模板”；Function Block 菜单也有“存为模板”。它们都通过 CreateTemplate.from_selection 生成模板（“做成改写模板”带 `rewrite: true`，把选区作为已有结构），随后直接打开新模板的编辑器，用户接着修改标题、参数和图。
+HATG 画布角落有“工具箱”按钮，点开是画布内的侧边抽屉，可以用按钮、收起按钮或 Escape 关闭，打开状态不跨页保存。抽屉按模板模块分四组，依次为职责（structure）、角色（暂无模板时显示空态）、组织（familize）、交办（prompt、explore、script，对 Resident 做一次就完的操作）。每张卡片只有缩略图和标题：结构模板的缩略图按模板的组件、连线和角色画成静态小图，施加时要绑定的目标、Leader 角色和已有元素画在两侧边缘并灰显；其他模块按模块画不同的简单图形。说明、是否保留结果、可拖放目标写在悬停提示中。悬停或键盘聚焦时卡片出现“在工坊中打开”，工坊上线前打开下述编辑器。工具箱只显示内置模板和当前用户收藏的模板；收藏使用个人资源收藏。抽屉底部的“更多模板”列出其余模板，可以加入或移出工具箱；用户在页面上实际新建模板（新建、另存副本、从选区保存）后自动收藏，dry_run 不收藏。抽屉顶部有“新建模板”，新建入口提供 Prompt、结构和脚本，已有 explore/familize 内容使用各自模块的字段描述。抽屉最下方是默认收起的“原语”组，可把事件、Effect、Seed 等原语拖到画布。拖放时按 targets 提示可接受的 Resident、选区或画布。画布有选区时，选区工具条显示“存为模板”与“做成改写模板”；Function Block 菜单也有“存为模板”。它们都通过 CreateTemplate.from_selection 生成模板（“做成改写模板”带 `rewrite: true`，把选区作为已有结构），随后直接打开新模板的编辑器，用户接着修改标题、参数和图。
 
 模板标题、说明、行为步骤、角色说明、施加结果和服务端错误在显示时经过 Portal 的界面翻译：内置模板的中文文案在英文界面显示对应英文。翻译只作用于显示，模板正文、参数值和施加内容保持原文。
 
-编辑器提供通用标题、说明、分组、目标范围、参数页与模块内容页，标题旁显示模板的鸽子。Prompt 编辑消息正文，并说明中括号占位和填入草稿的用法；脚本使用代码编辑区；专用模块使用 editor.fields。结构模板有图、列表、JSON 三种视图，默认是图视图：
+编辑器提供通用标题、说明、分组、目标范围、参数页与模块内容页，标题旁显示模板的鸽子：内置模板沿用原 Function Block 的鸽子（Agent Loop 0、扩展想法 2、修订回流 3、Family 4、扩展方案 34、Leader 脉冲 35、固定提醒 37、定时工作 38，即鸽子图集的序号），其他模板按 template_id 取鸽子。Prompt 编辑消息正文，并说明中括号占位和填入草稿的用法；脚本使用代码编辑区；专用模块使用 editor.fields。结构模板有图、列表、JSON 三种视图，默认是图视图：
 
 - 图视图用 HATG 编辑区的图形引擎画出模板表示的图。角色画成 Resident 卡片，组件画成原语节点，连线带着端口画出；节点 ID 就是模板内的 key。
 - 工具条添加角色（目标 Resident、Lineage Leader、新建 Resident、Fork）和组件（Event、Effect、循环、Filter、Selector、Reducer）。组件可以点击加入，也可以拖进图中落在指定位置。Fork 角色以当前选中的角色或第一个角色为来源。
@@ -237,7 +237,7 @@ Effect DSL 内的替换使用脚本专用转义器。在带引号的脚本文本
 
 `editor.fields` 的字段说明包含 `name`、`type`、`label`，并可带 `default`、`options`、`multiline`、`language`、数值范围等。需要配置新建角色时，结构模板读取 body.roles 中的 new/fork；其他模块提供 `editor.resident_roles`，每项含 `key`、`title`、`from`，以及可选 Provider、账号、settings、说明。Family 提供 steward/router，探索提供 explorer。新增模块的角色表单复用这一描述。
 
-提示词以外的模板施加时存在参数或新建角色则展示参数与起始设置表单，同时显示行为预览；持续结构可填写结果标题。没有参数也没有新建角色时直接施加。带已有元素的结构模板在施加前总是打开施加表单：表单以 `ApplyTemplate` 的 dry_run 按目标列出会找到、修改、删除的元素和将新建的数量，同时在画布上标出这些元素；某个“恰好一条”的连线找到多条时，表单提供候选下拉框，选定结果作为 `match_choices` 提交。编辑器支持另存为副本、删除与恢复内置；删除或恢复只改变货架资料。改变 kind 需要创建另一份模板，不能在已有条目上换执行类型。
+提示词以外的模板施加时存在参数或新建角色则展示参数与起始设置表单，同时显示行为预览；持续结构可填写结果标题。没有参数也没有新建角色时直接施加。带已有元素的结构模板在施加前总是打开施加表单：表单以 `ApplyTemplate` 的 dry_run 按目标列出会找到、修改、删除的元素和将新建的数量，同时在画布上标出这些元素；某个“恰好一条”的连线找到多条时，表单提供候选下拉框，选定结果作为 `match_choices` 提交。编辑器支持另存为副本、删除与恢复内置；删除或恢复只改变模板资料。改变 kind 需要创建另一份模板，不能在已有条目上换执行类型。
 
 施加表单的行为说明代入当前填写的参数，并随输入更新。例如间隔填写 300 时，说明显示 300 秒。预览先翻译模板说明，再把参数值作为纯文本插入；空参数保留引用以提示尚未填写。模板编辑器继续显示参数引用，施加预览不改写模板正文或已保存的默认值。
 
