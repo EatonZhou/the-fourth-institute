@@ -1,4 +1,12 @@
 {
+  "正在加载页面…": {"zh-CN": "正在加载页面…", "en": "Loading the page…"},
+  "等待网络连接…": {"zh-CN": "等待网络连接…", "en": "Waiting for a connection…"},
+  "页面暂时未能打开": {"zh-CN": "页面暂时未能打开", "en": "The page could not open yet"},
+  "查看技术详情": {"zh-CN": "查看技术详情", "en": "Technical details"},
+  "请先保留未保存的内容，再重新加载。": {"zh-CN": "请先保留未保存的内容，再重新加载。", "en": "Keep any unsaved content before reloading."},
+  "请稍后重试，或检查网络连接。": {"zh-CN": "请稍后重试，或检查网络连接。", "en": "Try again shortly, or check your connection."},
+  "连接恢复后将继续加载。": {"zh-CN": "连接恢复后将继续加载。", "en": "Loading will continue when the connection returns."},
+  "正在准备页面，请稍候。": {"zh-CN": "正在准备页面，请稍候。", "en": "Preparing the page. Please wait."},
   "正在准备 Resident…": {"zh-CN": "正在准备 Resident…", "en": "Preparing the Resident…"},
   "连接中断，正在确认 Resident…": {"zh-CN": "连接中断，正在确认 Resident…", "en": "Connection lost; confirming the Resident…"},
   "Resident 已准备，正在重新加载对话…": {"zh-CN": "Resident 已准备，正在重新加载对话…", "en": "Resident ready; reloading the conversation…"},

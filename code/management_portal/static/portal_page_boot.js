@@ -17,6 +17,7 @@ function installPortalPageBoot(config) {
   let panel = null;
   let retryTimer = null;
   let checkTimer = null;
+  let noticeTimer = null;
   let storageAvailable = true;
   let attempts = 0;
   // Recovery starts before external scripts; translate at display time when
@@ -60,57 +61,77 @@ function installPortalPageBoot(config) {
     location.reload();
   }
 
-  function renderFailure() {
+  function renderStatus() {
+    if (hidden || status === "ready" || status === "reloading") return;
     // A parser-blocking script may stall before <body> exists.
     const host = document.body || document.documentElement;
     if (!host) return;
     if (!panel) {
       panel = document.createElement("section");
-      panel.id = "portalPageBootError";
-      panel.setAttribute("role", "alert");
-      panel.setAttribute("aria-live", "assertive");
-      panel.style.cssText = "position:fixed;z-index:2147483647;inset:16px 16px auto auto;box-sizing:border-box;max-width:calc(100vw - 32px);width:460px;padding:20px;border:1px solid #94a3b8;border-radius:10px;background:#fff;color:#172033;box-shadow:0 6px 24px #0003;font:14px/1.5 system-ui;overflow-wrap:anywhere";
+      panel.id = "portalPageBootStatus";
+      panel.style.cssText = "position:fixed;z-index:2147483647;inset:auto 16px 16px auto;box-sizing:border-box;max-width:calc(100vw - 32px);max-height:calc(100vh - 32px);overflow:auto;width:340px;padding:16px;border:1px solid var(--border,#d6dee6);border-radius:12px;background:var(--panel,#fff);color:var(--text,#172033);box-shadow:0 2px 12px #0001;font:14px/1.5 system-ui;overflow-wrap:anywhere";
+      const announcement = document.createElement("div");
+      announcement.setAttribute("role", "status");
+      announcement.setAttribute("aria-live", "polite");
       const title = document.createElement("strong");
       const message = document.createElement("p");
       message.dataset.bootMessage = "";
+      message.style.cssText = "margin:6px 0 0;color:var(--muted,#536174)";
+      announcement.append(title, message);
+      const details = document.createElement("details");
+      details.style.cssText = "margin-top:10px;font-size:12px;color:var(--muted,#536174)";
+      const summary = document.createElement("summary");
+      summary.style.cursor = "pointer";
       const detail = document.createElement("p");
       detail.dataset.bootDetail = "";
+      details.append(summary, detail);
       const retry = document.createElement("button");
       retry.type = "button";
-      retry.style.cssText = "padding:8px 14px;cursor:pointer;border:1px solid #64748b;border-radius:6px;background:#f1f5f9;color:#172033;font:inherit";
+      retry.style.cssText = "margin-top:12px;padding:7px 14px;cursor:pointer;border:1px solid var(--border,#cbd5e1);border-radius:6px;background:var(--panel,#fff);color:inherit;font:inherit";
       retry.addEventListener("click", () => {
         if (status === "reloading") return;
         clearTimeout(retryTimer);
         saveBudget(0);
         reloadPage();
       });
-      panel.append(title, message, detail, retry);
+      panel.append(announcement, retry, details);
       host.append(panel);
     }
-    panel.querySelector("strong").textContent = translate("页面未能完成加载");
+    const stopped = status === "error";
+    const offline = navigator.onLine === false;
+    panel.querySelector("strong").textContent = translate(stopped ? "页面暂时未能打开" : offline ? "等待网络连接…" : "正在加载页面…");
     panel.querySelector("button").textContent = translate("重新加载");
-    panel.querySelector("[data-boot-message]").textContent = translate(status === "retrying"
-      ? `正在自动重新加载（${attempts + 1}/${maxRetries}）…`
+    panel.querySelector("button").hidden = !stopped;
+    panel.querySelector("details").hidden = !stopped;
+    panel.querySelector("summary").textContent = translate("查看技术详情");
+    panel.querySelector("[data-boot-message]").textContent = translate(stopped
+      ? interacted ? "请先保留未保存的内容，再重新加载。" : "请稍后重试，或检查网络连接。"
+      : offline ? "连接恢复后将继续加载。" : "正在准备页面，请稍候。");
+    const reason = !storageAvailable ? "浏览器无法保存重试次数，已停止自动重载。请手动重试。"
       : interacted ? "检测到页面操作，已停止自动重载。请保留未保存内容后手动重试。"
-        : !storageAvailable ? "浏览器无法保存重试次数，已停止自动重载。请手动重试。"
-          : attempts >= maxRetries ? "自动恢复次数已用完，请手动重试。"
-            : "自动恢复已停止，请手动重试。");
-    panel.querySelector("[data-boot-detail]").textContent = [...failures].slice(0, 5).map(translate).join(translate("；"));
+        : attempts >= maxRetries ? "自动恢复次数已用完，请手动重试。" : "";
+    panel.querySelector("[data-boot-detail]").textContent = [...(reason ? [reason] : []), ...failures].slice(0, 6).map(translate).join(translate("；"));
   }
 
   function fail() {
     if (status !== "loading") return;
     clearTimeout(checkTimer);
     clearTimeout(deadline);
-    status = storageAvailable && !interacted && attempts < maxRetries ? "retrying" : "error";
-    renderFailure();
+    status = storageAvailable && !interacted && attempts < maxRetries
+      ? navigator.onLine === false ? "waiting-online" : "retrying" : "error";
+    renderStatus();
     if (status !== "retrying") return;
     retryTimer = setTimeout(() => {
       retryTimer = null;
       if (hidden) return;
+      if (navigator.onLine === false) {
+        status = "waiting-online";
+        renderStatus();
+        return;
+      }
       if (interacted || !saveBudget(attempts + 1)) {
         status = "error";
-        renderFailure();
+        renderStatus();
         return;
       }
       reloadPage();
@@ -132,6 +153,9 @@ function installPortalPageBoot(config) {
       status = "ready";
       clearTimeout(deadline);
       clearTimeout(checkTimer);
+      clearTimeout(noticeTimer);
+      panel?.remove();
+      panel = null;
       try { sessionStorage.removeItem(storageKey); } catch { /* No retry is needed. */ }
       return;
     }
@@ -165,38 +189,56 @@ function installPortalPageBoot(config) {
   }, true);
   document.addEventListener("DOMContentLoaded", () => {
     parsed = true;
-    if (status === "error" || status === "retrying") renderFailure();
+    if (panel || status !== "loading") renderStatus();
     // Other DOMContentLoaded handlers publish their own readiness first.
     checkTimer = setTimeout(check, 0);
   }, { once: true });
   function onInteraction(event) {
     if (!event.isTrusted || panel?.contains(event.target) || status === "ready") return;
     interacted = true;
-    if (status === "retrying") {
+    if (status === "retrying" || status === "waiting-online") {
       clearTimeout(retryTimer);
       status = "error";
-      renderFailure();
+      renderStatus();
     }
   }
   for (const event of ["input", "pointerdown", "keydown"]) document.addEventListener(event, onInteraction, true);
+  window.addEventListener("offline", () => {
+    if (hidden || status === "ready" || status === "reloading" || status === "error") return;
+    if (status === "retrying") {
+      clearTimeout(retryTimer);
+      status = "waiting-online";
+    }
+    renderStatus();
+  });
+  window.addEventListener("online", () => {
+    if (hidden || status === "ready" || status === "reloading" || status === "error") return;
+    if (status === "waiting-online") {
+      status = "loading";
+      fail();
+    } else if (panel) renderStatus();
+  });
   window.addEventListener("pagehide", () => {
     hidden = true;
     clearTimeout(deadline);
     clearTimeout(checkTimer);
     clearTimeout(retryTimer);
+    clearTimeout(noticeTimer);
   });
   window.addEventListener("pageshow", event => {
     if (!event.persisted) return;
     hidden = false;
     if (status === "loading") {
       deadline = setTimeout(() => check(true), deadlineMs);
+      noticeTimer = setTimeout(renderStatus, 800);
       check();
-    } else if (status === "retrying" || status === "reloading") {
+    } else if (status === "retrying" || status === "reloading" || status === "waiting-online") {
       status = "error";
-      renderFailure();
+      renderStatus();
     }
   });
   let deadline = setTimeout(() => check(true), deadlineMs);
+  noticeTimer = setTimeout(renderStatus, 800);
   window.PortalPageBoot = Object.freeze({
     ready(root) { if (root instanceof Element) readyRoots.add(root); },
     get status() { return status; },
