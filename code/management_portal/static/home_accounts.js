@@ -190,17 +190,16 @@
       const count = Number.isInteger(cards.available_count) ? cards.available_count : "—";
       const date = value => value == null ? t("未提供") : formatDateTime(typeof value === "number" ? value * 1000 : value);
       const lines = (cards.cards || []).map(card => [card.title || t("刷新卡"), card.status,
-        `${t("发放时间")}: ${date(card.grantedAt)}`, `${t("有效期至")}: ${date(card.expiresAt)}`,
-        card.description, card.resetType].filter(Boolean).join(" · "));
-      if (!Array.isArray(cards.cards)) lines.push(t("上游未提供刷新卡明细"));
-      if (count === "—") lines.unshift(t("当前原生接口未提供刷新卡次数"));
-      if (Array.isArray(cards.cards) && cards.cards.length < (cards.available_count || 0)) lines.push(t("上游仅返回部分刷新卡明细"));
-      if (cards.observed_at) lines.push(`${t("采样时间")}: ${date(cards.observed_at)}`);
+        `${t("有效期至")}: ${date(card.expiresAt)}`].filter(Boolean).join(" · "));
+      if (count === "—") lines.push(t("次数未知"));
+      else if (count === 0 && !lines.length) lines.push(t("暂无刷新卡"));
+      else if (!Array.isArray(cards.cards)) lines.push(t("明细未提供"));
+      if (Array.isArray(cards.cards) && cards.cards.length < (cards.available_count || 0)) lines.push(t("部分明细"));
       const cardsStale = cards.stale || account.status === "unavailable";
-      if (cardsStale) lines.push(t("数据已过期，数值为上次采样"));
+      if (cardsStale) lines.push(t("上次读数"));
       return window.PortalI18n.html`<dl class="account-details-metrics" data-account-subscription>
         <div><dt>套餐档位</dt><dd data-account-tier title="${esc(tierTitle)}">${esc(tier.name || tier.id || "—")}${stale ? "*" : ""}</dd></div>
-        ${["codex", "claude"].includes(account.provider) ? window.PortalI18n.html`<div><dt>刷新卡次数</dt><dd data-account-refresh-cards tabindex="0" title="${esc(lines.join("\n"))}">${esc(count)}${cardsStale && count !== "—" ? "*" : ""}</dd></div>` : ""}
+        ${["codex", "claude"].includes(account.provider) ? window.PortalI18n.html`<div data-account-refresh-cards-tooltip tabindex="0" title="${esc(lines.join("\n"))}"><dt>刷新卡次数</dt><dd data-account-refresh-cards>${esc(count)}${cardsStale && count !== "—" ? "*" : ""}</dd></div>` : ""}
       </dl>`;
     }
 

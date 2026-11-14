@@ -1,4 +1,9 @@
 {
+  "次数未知": {"en":"Count unknown","zh-CN":"次数未知"},
+  "暂无刷新卡": {"en":"No resets available","zh-CN":"暂无刷新卡"},
+  "明细未提供": {"en":"Details unavailable","zh-CN":"明细未提供"},
+  "部分明细": {"en":"Partial details","zh-CN":"部分明细"},
+  "上次读数": {"en":"Last reading","zh-CN":"上次读数"},
   "当前原生接口未提供刷新卡次数": {"en":"The current native interface did not provide the reset count","zh-CN":"当前原生接口未提供刷新卡次数"},
   "套餐档位": {"en":"Subscription tier","zh-CN":"套餐档位"},
   "刷新卡次数": {"en":"Available resets","zh-CN":"刷新卡次数"},
