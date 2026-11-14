@@ -48,6 +48,16 @@ def test_daily_profile_claim_is_separate_from_usage_and_retains_history():
         assert c.execute('SELECT count(*) AS n FROM subscription_observations').fetchone()['n'] == 1
 
 
+def test_daily_profile_does_not_skip_next_day_due_to_runtime_jitter():
+    from datetime import datetime
+    store = AccountObservationStore()
+    first = datetime.fromisoformat('2026-11-14T09:00:30+08:00').timestamp()
+    tomorrow = datetime.fromisoformat('2026-11-15T09:00:00+08:00').timestamp()
+    assert store.claim('kimi', 'daily', now=first, interval=86400, profile=True)
+    assert not store.claim('kimi', 'daily', now=first+3600, interval=86400, profile=True)
+    assert store.claim('kimi', 'daily', now=tomorrow, interval=86400, profile=True)
+
+
 def test_monitor_restores_attempt_success_and_tier_without_new_provider_reads(monkeypatch):
     from types import SimpleNamespace
     from unittest.mock import Mock

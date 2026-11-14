@@ -111,12 +111,16 @@ class AccountObservationStore:
         # Atomic across processes and deployments. A failed request still uses
         # its slot; the Provider is never called if persistence is unavailable.
         column = 'profile_attempted_at' if profile else 'attempted_at'
+        # Daily tier work uses a local calendar day, not a sliding 24-hour
+        # cooldown: a few seconds of runtime jitter must not skip tomorrow.
+        eligible = ('floor((read_state.profile_attempted_at+28800)/86400) < floor((%s+28800)/86400)'
+                    if profile else f'read_state.{column} <= %s')
         with self.connection() as c:
             row = c.execute(f'''INSERT INTO read_state(provider,account_id,{column})
                 VALUES(%s,%s,%s) ON CONFLICT(provider,account_id) DO UPDATE
                 SET {column}=EXCLUDED.{column}
-                WHERE read_state.{column} IS NULL OR read_state.{column} <= %s
-                RETURNING {column}''', (provider, account_id, now, now - interval)).fetchone()
+                WHERE read_state.{column} IS NULL OR {eligible}
+                RETURNING {column}''', (provider, account_id, now, now if profile else now - interval)).fetchone()
         return row is not None
 
     def save_success(self, provider, account_id, sample, *, now):
