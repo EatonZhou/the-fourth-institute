@@ -105,6 +105,9 @@ class PortalPagesHttp:
     def hatg_panel(self, request, parsed, actor):
         return self.document(request, 200, self.hatg_html())
 
+    def template_workshop(self, request, parsed, actor):
+        return self.document(request, 200, (self.root / "template_workshop.html").read_bytes())
+
     def chat_workspace_session(self, request, parsed, actor):
         qs = parse_qs(parsed.query)
         surface = str((qs.get("surface") or [""])[0]).strip()
@@ -173,6 +176,7 @@ class PortalPagesHttp:
             principal_route("GET", "/lineage/", self.lineage, "portal-pages-get", page=True),
             principal_route("GET", "/lineage.html", self.lineage, "portal-pages-get", page=True),
             principal_route("GET", "/hatg-panel.html", self.hatg_panel, "portal-pages-get", page=True),
+            principal_route("GET", "/template-workshop", self.template_workshop, "portal-pages-get", page=True),
             principal_route("GET", "/chat-workspace/api/session", self.chat_workspace_session, "portal-pages-get"),
             RouteDefinition("GET", "/principal-backpack", self.principal_backpack, "portal-pages-get", page=True),
             RouteDefinition("GET", "/principal-backpack/", self.principal_backpack, "portal-pages-get", page=True),

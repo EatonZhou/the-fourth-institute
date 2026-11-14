@@ -22,7 +22,7 @@ def test_hatg_toolbox():
 
 
 def test_real_template_registry_and_created_template_visibility(tmp_path):
-    """真实收藏解析不接受模板；工具箱用实际新建模板元数据展示本人内容，不访问收藏。"""
+    """模板现在有统一资源身份；工具箱仍用实际模板创建者展示本人内容，不访问收藏。"""
     from management_portal import resource_favorites
     from management_portal.society_service import templates
 
@@ -34,8 +34,7 @@ def test_real_template_registry_and_created_template_visibility(tmp_path):
     created = templates.create({**content, 'title': 'My duty'}, 'alice')
     other = templates.create({**content, 'title': 'Other duty'}, 'bob')
     assert created['created_by'] == 'alice'
-    with pytest.raises(ValueError, match='unregistered resource type: template'):
-        resource_favorites.canonical_address(created['template_id'])
+    assert resource_favorites.canonical_address(created['template_id']) == created['template_id']
     payload_file = tmp_path / 'templates.json'
     payload_file.write_text(json.dumps({
         'before': before, 'created': created, 'other': other,

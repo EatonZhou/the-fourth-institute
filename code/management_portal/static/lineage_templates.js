@@ -121,7 +121,7 @@
       esc, pigeonHtml, t, templatesState,
     });
     const { abort, dropHint, find, load, render, unsupported } = templatePart('LineageTemplatesShelf').createShelf({
-      MIME, apply: (...args) => apply(...args), canvas, config, esc, getContext,
+      MIME, apply: (...args) => config.applyTemplate ? config.applyTemplate(...args) : apply(...args), canvas, config, esc, getContext,
       openEditor: (...args) => openEditor(...args), request, resolveTarget, shelf, t, targetLabels,
       templatesState, toast, promptText,
     });
@@ -138,7 +138,7 @@
     const { newTemplate, openEditor, saveSelection } = templatePart('LineageTemplatesEditing').createEditing({
       behaviorHtml, button, categories, clone, dialog, esc, field, getContext, load, optionsHtml, readField,
       renderResidentSettings, request, residentRoles, t, targetLabels, templatePart, templatePayload, templatesState,
-      toast,
+      toast, editorHost: config.editorHost,
     });
 
     return Object.freeze({ load, render, find, openEditor, newTemplate, apply, applyFamily, saveSelection,

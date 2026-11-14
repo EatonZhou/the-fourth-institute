@@ -208,7 +208,18 @@
     }).join('\n');
   }
 
-  function mount({ root, body, onBeforeChange = () => {}, onChange = () => {}, onSelect = () => {} }) {
+  // In the workshop, the slots bound at application (target and Leader roles,
+  // found elements) are dimmed. The graph engine owns node markup, so the
+  // rules address nodes by ID, like the found-wire rules above.
+  function slotRules(body) {
+    const slots = [
+      ...(body.roles || []).filter(role => role.from === 'target' || role.from === 'lineage_leader'),
+      ...foundNodes(body),
+    ];
+    return slots.map(item => `.templateGraph .hatgNode[data-node-id="${CSS.escape(item.key)}"]{opacity:.65;background:var(--panel-2)}`).join('\n');
+  }
+
+  function mount({ root, body, workshop = false, onBeforeChange = () => {}, onChange = () => {}, onSelect = () => {} }) {
     const program = window.PortalLineageProgram;
     const factory = window.PortalHatgGraph?.createGraph;
     if (!program || !factory) throw new Error(t('HATG 图形引擎未加载'));
@@ -218,7 +229,7 @@
     let hintTimer = null;
     const labels = roleLabels();
     root.classList.add('portalHatgOverlayComponent', 'templateGraph');
-    root.innerHTML = `<div class="templateGraphPalette" role="toolbar" aria-label="${esc(t('添加到结构'))}">
+    root.innerHTML = `<div class="templateGraphPalette" ${workshop ? 'hidden' : ''} role="toolbar" aria-label="${esc(t('添加到结构'))}">
         <span class="templateGraphPaletteLabel">${esc(t('角色'))}</span>${Object.keys(ROLE_PREFIX).map(from => `<button type="button" class="templateGraphChip" data-add-role="${from}" title="${esc(t('添加角色'))}：${esc(labels[from])}">+ ${esc(labels[from])}</button>`).join('')}
         <span class="templateGraphPaletteLabel">${esc(t('组件'))}</span>${PALETTE.map(kind => {
           const definition = program.manifest.component_kinds[kind] || {};
@@ -249,6 +260,12 @@
       const source = collections(body());
       const saved = source.layout || {};
       const automatic = autoLayout(source);
+      if (workshop) {
+        const slots = [...source.roles.filter(row => ['target', 'lineage_leader'].includes(row.from)), ...foundNodes(source)];
+        slots.forEach((row, index) => {
+          automatic[row.key] = {x: source.roles.includes(row) ? 8 : 90, y: 20 + index * 18};
+        });
+      }
       const place = key => (saved[key] ? { ...saved[key] } : { ...automatic[key] });
       const found = new Set(source.match.map(item => item.key));
       const roles = [...source.roles, ...foundNodes(source).filter(item => item.kind === 'resident')]
@@ -278,7 +295,7 @@
 
     function render() {
       current = project();
-      states.textContent = edgeStateRules(body());
+      states.textContent = edgeStateRules(body()) + (workshop ? slotRules(body()) : '');
       if (selected && !current.nodes.some(node => node.id === selected) && !current.edges.some(edge => edge.id === selected)) selected = '';
       controller.render({
         nodes: current.nodes, edges: current.edges, layoutInteractive: true, selectionEnabled: false,
@@ -451,6 +468,7 @@
     controller.fit({ duration: 0, maxScale: 1.1 });
     return Object.freeze({
       render, select,
+      position: event => controller.screenToPosition(event.clientX, event.clientY),
       selected: () => selected,
       fit: () => controller.fit({ duration: 0, maxScale: 1.1 }),
       remove: key => change(source => { removeElement(source, key); return ''; }),

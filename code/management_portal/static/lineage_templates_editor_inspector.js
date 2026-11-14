@@ -170,6 +170,15 @@
     function renderInspector(key) {
       const host = bodyPage.querySelector('[data-graph-inspector]');
       if (!host) return;
+      if (editorState.workshop) {
+        host.hidden = !key;
+        if (key) requestAnimationFrame(() => {
+          const anchor = [...bodyPage.querySelectorAll('[data-node-id], [data-edge-id]')].find(node => node.dataset.nodeId === key || node.dataset.edgeId === key);
+          const bounds = bodyPage.getBoundingClientRect(), box = anchor?.getBoundingClientRect();
+          host.style.left = `${Math.max(8, Math.min((box?.right || bounds.left) - bounds.left + 10, bounds.width - 340))}px`;
+          host.style.top = `${Math.max(8, Math.min((box?.top || bounds.top) - bounds.top, bounds.height - 230))}px`;
+        });
+      }
       const list = Object.keys(listLabels).find(name => (draft.body[name] || []).some(row => row.key === key));
       if (!list) { host.innerHTML = `<p class="templateHelp">${esc(t('选中节点或连线后在这里编辑；按 Delete 删除选中的元素。'))}</p>`; return; }
       const index = draft.body[list].findIndex(row => row.key === key);

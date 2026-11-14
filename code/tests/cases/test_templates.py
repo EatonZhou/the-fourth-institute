@@ -15,7 +15,7 @@ from tests.cases.test_isa_lineage_lifecycle import (
 
 
 def test_builtin_shelf_and_dry_run(lineage):
-    """模板库列出 8 个内置模板，dry_run 创建的模板不保存"""
+    """模板库列出内置模板，dry_run 创建的模板不保存"""
     from management_portal.society_service import templates
 
     shelf = templates.list_templates()
@@ -28,6 +28,7 @@ def test_builtin_shelf_and_dry_run(lineage):
         "revision_return",
         "expand_ideas",
         "expand_plans",
+        "workshop_assistant",
     }
     for template in shelf:
         assert template["behavior"]["steps"] and template["editor"]["fields"]
@@ -37,7 +38,7 @@ def test_builtin_shelf_and_dry_run(lineage):
         dry_run=True,
     )
     assert draft["behavior"]["persistent"] is False
-    assert len(templates.list_templates()) == 8
+    assert len(templates.list_templates()) == 9
 
 
 def test_builtin_refresh_preserves_edits_and_deletions(lineage, monkeypatch):

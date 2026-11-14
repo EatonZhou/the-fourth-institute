@@ -127,10 +127,11 @@
     let draft;
     const result=vm.runInNewContext(productionFunction('lineage_templates_editing','newTemplate')+'\nnewTemplate()',{
       templatesState:{kinds:[{key:'structure',targets:['resident','canvas'],editor:{fields:[]}}]},
+      editorHost:{},
       t:String,edit:value=>{draft=plain(value);return 'editor';},
     });
     assert.equal(result,'editor');assert.equal(draft.kind,'structure');assert.equal(draft.category,'structure');
-    assert.deepEqual(draft.body,{roles:[],components:[],wires:[],function_block:true});
+    assert.deepEqual(draft.body,{roles:[{key:'target',from:'target'}],components:[],wires:[],function_block:true});
     assert.deepEqual(draft.targets,['resident','canvas']);assert.equal(draft.behavior.persistent,true);
   });
   test('real registry payload creates a visible personal template without using resource favorites',

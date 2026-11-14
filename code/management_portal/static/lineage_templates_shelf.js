@@ -27,6 +27,7 @@
     let loading = null, identity = 0, dragged = '', picked = null, pickupTimer = null;
     const username = () => window.PortalIdentity?.username() || '';
     const abort = new AbortController();
+    const onCanvas = target => canvas?.contains(target) && (!config.structureOnly || !!target?.closest('.templateGraphCanvas'));
     const listen = (node, event, handler, capture = false) => node?.addEventListener(event, handler, {signal: abort.signal, capture});
     const report = error => toast(window.PortalI18n.message(error.message || error), 'error');
     const find = id => templatesState.templates.find(item => item.template_id === id) || null;
@@ -44,9 +45,9 @@
       if (templatesState.application && templatesState.application.lineageId !== getContext().lineage_id) templatesState.application.close();
       if (picked && (picked.lineageId !== getContext().lineage_id || picked.user !== username())) cancelPlacement();
       const user = username();
-      const visible = templatesState.templates.filter(item => item.builtin_key || (user && item.created_by === user));
-      shelf.innerHTML = GROUPS.map(group => {
-        const rows = visible.filter(item => groupFor(item.kind) === group.key);
+      const visible = templatesState.templates.filter(item => item.builtin_key !== 'workshop_assistant' && (item.builtin_key || (user && item.created_by === user)) && (!config.structureOnly || item.kind === 'structure'));
+      shelf.innerHTML = [...(config.toolboxGroups || []), ...GROUPS].filter(group => !config.structureOnly || group.key !== 'errands').map(group => {
+        const rows = visible.filter(item => (item.toolbox_group || groupFor(item.kind)) === group.key);
         const cards = rows.map(item => `<button type="button" class="templateTile" draggable="true"
           data-template-id="${esc(item.template_id)}" aria-label="${esc(t(item.title))}"
           title="${esc([t(item.title), t(item.description), t('单击拿起，双击在工坊中打开；按 Escape 或右键取消')].filter(Boolean).join('\n'))}">
@@ -61,7 +62,7 @@
       const owner = identity, user = username();
       const task = request('ListTemplates', {}).then(result => {
         if (templatesState.disposed || owner !== identity || user !== username()) return;
-        templatesState.templates = result.templates || []; templatesState.kinds = result.kinds || [];
+        templatesState.templates = [...(config.toolboxItems || []), ...(result.templates || [])]; templatesState.kinds = result.kinds || [];
         render(); config.onChange?.();
       }).finally(() => { if (loading === task) loading = null; });
       loading = task;
@@ -79,12 +80,16 @@
       clearTimeout(pickupTimer); pickupTimer = null; picked = null;
       ghost.hidden = true; canvas?.classList.remove('templatePicking'); clearDrop();
     }
-    // One transition to replace when the workshop becomes available.
-    function openInWorkshop(id) { cancelPlacement(); return openEditor(id); }
+    // Saved recipes open in the workshop; palette entries are local draft elements.
+    function openInWorkshop(id) {
+      cancelPlacement();
+      if (find(id)?.toolbox_group) return Promise.resolve();
+      return openEditor(id);
+    }
     function showTarget(event, item) {
       clearDrop();
       const target = resolveTarget(event, item);
-      const supported = item.targets.includes(target.kind);
+      const supported = config.acceptTemplate ? config.acceptTemplate(item, target) : item.targets.includes(target.kind);
       canvas.classList.add(supported ? 'templateDropAllowed' : 'templateDropForbidden');
       event.target.closest('.hatgNode')?.classList.add('templateDropTarget');
       dropHint.textContent = supported ? `${t('施加到')} ${targetLabels()[target.kind]}` : `⊘ ${unsupported(item)}`;
@@ -137,10 +142,10 @@
     listen(document, 'mousemove', event => {
       const item = pickedItem(); if (!item) return;
       ghost.style.left = `${event.clientX + 14}px`; ghost.style.top = `${event.clientY + 14}px`;
-      if (canvas.contains(event.target)) showTarget(event, item); else clearDrop();
+      if (onCanvas(event.target)) showTarget(event, item); else clearDrop();
     }, true);
     listen(document, 'pointerdown', event => {
-      if (!pickedItem() || !canvas.contains(event.target) || event.button !== 0) return;
+      if (!pickedItem() || !onCanvas(event.target) || event.button !== 0) return;
       // Suppress compatibility mousedown so canvas/node drag handlers cannot
       // move the graph while the click is placing a template.
       event.preventDefault();
@@ -148,7 +153,7 @@
     }, true);
     listen(document, 'click', event => {
       const item = pickedItem();
-      if (!item || !canvas.contains(event.target) || event.button !== 0) return;
+      if (!item || !onCanvas(event.target) || event.button !== 0) return;
       event.preventDefault(); event.stopImmediatePropagation();
       const {target, supported} = showTarget(event, item);
       if (!supported) return;
@@ -172,6 +177,7 @@
     });
     listen(shelf, 'dragend', () => { dragged = ''; clearDrop(); });
     listen(canvas, 'dragover', event => {
+      if (!onCanvas(event.target)) return;
       if (!dragged && !Array.from(event.dataTransfer?.types || []).includes(MIME)) return;
       event.preventDefault(); event.stopPropagation();
       const item = find(dragged); if (!item) return;
@@ -179,6 +185,7 @@
     }, true);
     listen(canvas, 'dragleave', event => { if (!canvas.contains(event.relatedTarget)) clearDrop(); }, true);
     listen(canvas, 'drop', event => {
+      if (!onCanvas(event.target)) return;
       const id = event.dataTransfer?.getData(MIME) || dragged; if (!id) return;
       event.preventDefault(); event.stopPropagation();
       const target = resolveTarget(event, find(id)); clearDrop(); dragged = '';

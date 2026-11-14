@@ -1,0 +1,13 @@
+{
+  "type": "template",
+  "category": "resource",
+  "description": "A reusable template recipe owned by SocietyService, readable with shared viewer access and edited in the template workshop.",
+  "title": {"zh": "模板", "en": "Template"},
+  "provider": "management_portal.resources.providers.template:install_resolver",
+  "catalog_section": "",
+  "catalog_order": 0,
+  "registerable": false,
+  "scope": "shared",
+  "unit": "core",
+  "enabled_by_default": true
+}

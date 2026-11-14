@@ -40,7 +40,7 @@
 
     function readDraft() {
       view.root.querySelectorAll('[data-meta]').forEach(input => { draft[input.dataset.meta] = input.value; });
-      draft.targets = [...view.root.querySelectorAll('[data-target]:checked')].map(input => input.dataset.target);
+      if (!view.workshop) draft.targets = [...view.root.querySelectorAll('[data-target]:checked')].map(input => input.dataset.target);
       if (editorState.roleSettings) draft.body.resident_settings = clone(editorState.roleSettings);
       if (codeActive) {
         if (draft.kind === 'structure') {
@@ -73,7 +73,7 @@
           else delete parameter.default;
         } else parameter.default = value;
       });
-      return templatePayload(draft);
+      return view.workshop ? window.LineageTemplateWorkshopDraft.payload(draft) : templatePayload(draft);
     }
 
     async function preview() {
@@ -91,6 +91,7 @@
     }
 
     function schedulePreview() {
+      view.onChange?.();
       editorState.revision += 1; clearTimeout(editorState.timer);
       status.textContent = t('正在校验…'); status.dataset.state = 'pending';
       editorState.timer = setTimeout(preview, 320);

@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="zh-CN"><head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-portal-site-title="[&quot;模板工坊&quot;]">模板工坊</title>
+  <link rel="stylesheet" href="/static/portal_components.css">
+  <link rel="stylesheet" href="/static/portal_components_markdown.css">
+  <link rel="stylesheet" href="/static/portal_components_chat_frame.css">
+  <link rel="stylesheet" href="/static/portal_components_messages.css">
+  <link rel="stylesheet" href="/static/portal_components_composer.css">
+  <link rel="stylesheet" href="/static/portal_components_queue.css">
+  <link rel="stylesheet" href="/static/portal_components_resource_chips.css">
+  <link rel="stylesheet" href="/static/portal_components_agent_inbox.css">
+  <link rel="stylesheet" href="/static/portal_components_turn_cards.css">
+  <link rel="stylesheet" href="/static/portal_components_conversation.css">
+  <link rel="stylesheet" href="/static/portal_workbench.css">
+  <link rel="stylesheet" href="/static/hatg_panel.css">
+  <link rel="stylesheet" href="/static/hatg_panel_edges.css">
+  <link rel="stylesheet" href="/static/hatg_panel_nodes.css">
+  <link rel="stylesheet" href="/static/hatg_panel_navigation.css">
+  <link rel="stylesheet" href="/static/hatg_panel_library.css">
+  <link rel="stylesheet" href="/static/hatg_panel_inspector.css">
+  <link rel="stylesheet" href="/static/hatg_panel_relations.css">
+  <link rel="stylesheet" href="/static/hatg_panel_dialogs.css">
+  <link rel="stylesheet" href="/static/hatg_panel_responsive.css">
+  <link rel="stylesheet" href="/static/hatg_panel_effect_scripts.css">
+  <link rel="stylesheet" href="/static/lineage_templates.css">
+  <link rel="stylesheet" href="/static/portal_design_system.css" data-portal-skin="default">
+  <link rel="stylesheet" href="/static/portal_themes.css" data-portal-skin-provider="themes">
+  <link rel="stylesheet" href="/static/template_workshop.css">
+  <script data-portal-script-group="portal-foundation"></script>
+  <script src="/static/portal_api.js"></script>
+  <script src="/static/portal_instruction_client.js"></script>
+  <script src="/static/portal_resident_service.js"></script>
+  <script src="/static/portal_passkeys.js"></script>
+  <script src="/static/portal_identity.js"></script>
+  <script data-portal-script-group="portal-shell"></script>
+  <script src="/static/portal_form_controls.js"></script>
+  <script src="/static/portal_resource_routes.js"></script>
+  <script src="/static/portal_resource_chips.js"></script>
+  <script src="/static/portal_command_registry.js"></script>
+  <script src="/static/portal_workbench_context.js"></script>
+  <script data-portal-script-group="portal-workbench"></script>
+  <script src="/static/resident_projection.js"></script>
+  <script src="/static/portal_model_api_settings.js"></script>
+  <script src="/static/portal_resident_runtime_controller.js"></script>
+  <script data-portal-script-group="chat-workspace"></script>
+  <script src="/static/portal_code_editor.js"></script>
+  <script src="/static/vendor/monaco/vs/nls/lang/zh-cn.js"></script>
+  <script src="/static/vendor/monaco/vs/loader.js"></script>
+  <script src="/static/portal_hatg_loader.js"></script>
+  <script src="/static/lineage_template_workshop_draft.js"></script>
+  <script src="/static/lineage_template_workshop.js"></script>
+  <script src="/static/lineage_template_workshop_chat.js"></script>
+  <script src="/static/template_workshop_page.js"></script>
+</head><body>
+  <div class="templateWorkshop" id="templateWorkshop">
+    <section id="workshopCanvas" class="workshopCanvas"><form id="workshopEditor"></form>
+      <p id="workshopError" role="alert" hidden></p>
+      <button type="button" class="portalButton is-icon workshopToolboxButton" data-workshop-toolbox data-portal-icon="toolbox" aria-label="工具箱" data-portal-i18n-attrs="{&quot;aria-label&quot;:&quot;工具箱&quot;}"></button>
+      <aside id="workshopToolbox" class="workshopToolbox" hidden><header><strong><!--portal-i18n:"工具箱"-->工具箱</strong><button type="button" class="portalButton" data-workshop-toolbox><!--portal-i18n:"关闭"-->关闭</button></header><div id="workshopShelf" class="templateShelf"></div></aside>
+    </section>
+    <aside class="workshopChatColumn"><header><strong><!--portal-i18n:"工坊助手"-->工坊助手</strong><button type="button" class="portalButton" data-workshop-chat><!--portal-i18n:"收起"-->收起</button></header>
+      <div id="workshopChat"></div><p id="workshopChatStatus" role="status"></p>
+      <p id="workshopUnsaved" hidden><span><!--portal-i18n:"助手看到的是上次保存的版本"-->助手看到的是上次保存的版本</span> <button type="button" class="portalButton is-compact" id="workshopChatSave" translate="no">Save</button></p>
+    </aside>
+  </div>
+</body></html>

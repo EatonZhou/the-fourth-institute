@@ -7,12 +7,12 @@
   // template editor, and a template saved from a selection on the canvas.
 
   const DEPENDENCIES = Object.freeze([
-    'behaviorHtml', 'button', 'categories', 'clone', 'dialog', 'esc', 'field', 'getContext', 'load', 'optionsHtml',
+    'behaviorHtml', 'button', 'categories', 'clone', 'dialog', 'editorHost', 'esc', 'field', 'getContext', 'load', 'optionsHtml',
     'readField', 'renderResidentSettings', 'request', 'residentRoles', 't', 'targetLabels', 'templatePart',
     'templatePayload', 'templatesState', 'toast',
   ]);
   // Fields of mount's config, which a caller may leave out.
-  const OPTIONAL = Object.freeze(['getContext', 'request', 'toast']);
+  const OPTIONAL = Object.freeze(['getContext', 'request', 'toast', 'editorHost']);
 
   function createEditing(dependencies) {
     const missing = DEPENDENCIES.filter(name => !OPTIONAL.includes(name) && dependencies?.[name] === undefined);
@@ -20,20 +20,29 @@
     const {
       behaviorHtml, button, categories, clone, dialog, esc, field, getContext, load, optionsHtml, readField,
       renderResidentSettings, request, residentRoles, t, targetLabels, templatePart, templatePayload, templatesState,
-      toast,
+      toast, editorHost,
     } = dependencies;
 
     function newTemplate() {
+      if (!editorHost) return openWorkshop();
       const metadata = templatesState.kinds.find(item => item.key === 'structure');
       return edit({kind: 'structure', category: 'structure', title: t('新职责模板'), description: '',
         targets: metadata?.targets || ['resident', 'selection', 'canvas'], parameters: [],
-        body: {roles: [], components: [], wires: [], function_block: true},
+        body: {roles: [{key: 'target', from: 'target'}], components: [], wires: [], function_block: true},
         behavior: {steps: [], persistent: true}, editor: metadata?.editor || {fields: []}});
     }
 
     async function openEditor(id) {
+      if (!editorHost) return openWorkshop(id);
       const result = await request('GetTemplate', { template_id: id });
       if (!templatesState.disposed) edit(result.template);
+    }
+
+    function openWorkshop(id = '') {
+      const params = new URLSearchParams();
+      if (id) params.set('template', id);
+      if (getContext?.().lineage_id) params.set('lineage', getContext().lineage_id);
+      return window.PortalNav.openPage(`/template-workshop?${params}`);
     }
 
     // edit opens the template editor on a copy of a template. Its parts:
@@ -50,18 +59,22 @@
     function edit(source) {
       templatesState.editor?.close();
       const draft = clone(source);
-      const view = dialog('editor', `${t('模板编辑器')} · ${source.title}`, source);
+      const view = editorHost ? editorHost.create(source) : dialog('editor', `${t('模板编辑器')} · ${source.title}`, source);
       templatesState.editor = view;
       view.root.querySelector('.templateSurface')?.classList.toggle('templateSurface-structure', draft.kind === 'structure');
       // The state the parts share: the pending check and its revision, the
       // code editor and its generation, the graph and the role settings.
       const editorState = {
-        timer: null, revision: 0, codeEditor: null, codeGeneration: 0, graph: null, roleSettings: null,
+        timer: null, revision: 0, codeEditor: null, codeGeneration: 0, graph: null, roleSettings: null, workshop: !!editorHost,
       };
-      const templateRoles = draft.kind === 'familize' ? residentRoles(draft) : [];
+      const templateRoles = draft.kind === 'familize' && !editorHost ? residentRoles(draft) : [];
       view.cleanups.push(() => { clearTimeout(editorState.timer); editorState.revision += 1; editorState.codeGeneration += 1; editorState.codeEditor?.destroy(); editorState.graph?.destroy(); });
       const supported = templatesState.kinds.find(item => item.key === draft.kind)?.targets || (draft.kind === 'prompt' ? ['resident', 'selection'] : ['resident', 'selection', 'canvas']);
-      view.content.innerHTML = `<div class="templateMetadata">
+      view.content.innerHTML = editorHost ? `<section data-page="body"></section>
+        <details class="workshopInfo"><summary>${esc(t('模板信息'))}</summary>
+          ${field({name: 'description', label: '说明'}, draft.description, 'data-meta="description"')}
+          <section data-page="parameters"></section><section data-template-behavior></section>
+          <p data-preview-status role="status"></p></details>` : `<div class="templateMetadata">
           <label class="templateField templateTitle"><span>${esc(t('标题'))}</span><input data-meta="title" value="${esc(draft.title)}" required></label>
           <span class="templateKindBadge">${esc(draft.kind)}</span>
           <label class="templateField"><span>${esc(t('分组'))}</span><select data-meta="category">${optionsHtml(Object.entries(categories()).map(([value, label]) => ({ value, label })), draft.category)}</select></label>
@@ -71,7 +84,7 @@
         <div class="templateEditorLayout"><div class="templateEditorMain"><nav class="templateTabs" role="tablist">${[['body', '内容'], ['parameters', '参数'], ...(templateRoles.length ? [['objects', '内部对象']] : [])].map(([key, label], index) => `<button type="button" role="tab" aria-selected="${!index}" data-tab="${key}">${esc(t(label))}</button>`).join('')}</nav>
           <section data-page="body" role="tabpanel"></section><section data-page="parameters" role="tabpanel" hidden></section>${templateRoles.length ? '<section data-page="objects" role="tabpanel" hidden></section>' : ''}</div>
           <aside class="templatePreview" aria-live="polite"><section data-template-behavior>${behaviorHtml(draft.behavior, {}, draft.kind)}</section><p class="templatePreviewStatus" data-preview-status></p></aside></div>`;
-      view.footer.innerHTML = `${draft.template_id ? button('删除', 'delete', 'is-danger') : ''}${draft.builtin_key ? button('恢复内置', 'restore', 'is-quiet') : ''}<span class="modalActionSpacer"></span>${button('另存为副本', 'copy')}${button('取消', 'close')}<button type="submit" class="portalButton is-primary">${esc(t('保存'))}</button>`;
+      view.footer.innerHTML = editorHost ? '<button type="submit" class="portalButton is-primary" data-workshop-save translate="no">Save</button><button type="button" class="portalButton" data-action="copy" translate="no">Save As</button>' : `${draft.template_id ? button('删除', 'delete', 'is-danger') : ''}${draft.builtin_key ? button('恢复内置', 'restore', 'is-quiet') : ''}<span class="modalActionSpacer"></span>${button('另存为副本', 'copy')}${button('取消', 'close')}<button type="submit" class="portalButton is-primary">${esc(t('保存'))}</button>`;
       const bodyPage = view.root.querySelector('[data-page="body"]');
       const parametersPage = view.root.querySelector('[data-page="parameters"]');
       const status = view.root.querySelector('[data-preview-status]');
@@ -108,6 +121,7 @@
         editorState.roleSettings = renderResidentSettings(objectsPage, templateRoles, {}, draft);
       }
       schedulePreview();
+      editorHost?.ready({draft, view, editorState, readDraft, schedulePreview, showStructure, renderParameters, edit});
     }
 
     // With `rewrite`, the selection becomes the existing structure the template finds.

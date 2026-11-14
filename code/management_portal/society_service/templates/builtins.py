@@ -80,6 +80,14 @@ def definitions():
 
     templates = [
         {
+            "builtin_key": "workshop_assistant",
+            "kind": "structure", "category": "structure", "title": "工坊助手",
+            "description": "为当前 Lineage 创建模板工坊助手。",
+            "targets": ["canvas"], "parameters": [],
+            "body": {"roles": [{"key": "assistant", "from": "new", "title": "工坊助手"}],
+                     "components": [], "wires": [], "function_block": True},
+        },
+        {
             "builtin_key": "family",
             "kind": "familize",
             "category": "team",

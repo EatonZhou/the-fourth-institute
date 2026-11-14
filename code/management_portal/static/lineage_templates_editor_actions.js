@@ -25,6 +25,7 @@
     async function save(copy = false) {
       const payload = readDraft();
       if (!view.form.reportValidity()) return;
+      if (view.save) return view.save(payload, copy);
       const result = await request(draft.template_id && !copy ? 'UpdateTemplate' : 'CreateTemplate', draft.template_id && !copy ? { template_id: draft.template_id, ...payload } : { template: { ...payload, title: copy ? `${payload.title} · ${t('副本')}` : payload.title } });
       await load();
       toast(t('模板已保存'), 'success');

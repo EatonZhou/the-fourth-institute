@@ -25,6 +25,7 @@ RESOURCE_PORTAL_ROUTES = {
     "family": ("/lineage", "family"),
     "chatroom": ("/lineage", "chatroom"),
     "workbench": ("/workbenches/view", "id"),
+    "template": ("/template-workshop", "template"),
     "project": ("/resource/knowledge", "project"),
 }
 RESOURCE_PORTAL_CONTEXT = {"resident": {"lineage": "lineage"},

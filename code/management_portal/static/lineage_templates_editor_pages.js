@@ -39,7 +39,7 @@
       if (mode === 'json') { content.innerHTML = '<div class="templateCodeEditor" data-code-editor></div>'; mountCode(content.firstElementChild, JSON.stringify(draft.body, null, 2), 'json'); return; }
       if (mode === 'list') { renderStructureLists(); return; }
       content.innerHTML = `<div class="templateGraphWorkspace"><div class="templateGraphHost" data-template-graph></div><aside class="templateGraphInspector portalHatgOverlayComponent" data-graph-inspector aria-label="${esc(t('选中元素'))}"></aside></div>${functionBlockField()}`;
-      editorState.graph = window.LineageTemplateGraph.mount({ root: content.querySelector('[data-template-graph]'), body: () => draft.body,
+      editorState.graph = window.LineageTemplateGraph.mount({ root: content.querySelector('[data-template-graph]'), body: () => draft.body, workshop: editorState.workshop,
         onBeforeChange: readDraft, onChange: schedulePreview, onSelect: renderInspector });
       renderInspector('');
     }
@@ -51,7 +51,7 @@
             ${field({ label: '消息内容', type: 'text', required: true }, draft.body.message, 'data-body-field="message"')}
             <p class="templateHelp">${esc(t('用 [音频文件]、[条目类型] 等中括号标出待填写内容。拖到聊天输入框或 Resident 节点后编辑草稿，再发送。'))}</p>`;
       } else if (draft.kind === 'structure') {
-        bodyPage.innerHTML = `<p class="templateHelp">${esc(t('可以先在画布搭好结构，再用“存为模板”开始创作。'))}</p>
+        bodyPage.innerHTML = editorState.workshop ? '<div data-structure-content></div>' : `<p class="templateHelp">${esc(t('可以先在画布搭好结构，再用“存为模板”开始创作。'))}</p>
             <div class="templateStructureToolbar" role="group" aria-label="${esc(t('结构视图'))}">${[['graph', '图视图'], ['list', '列表视图'], ['json', 'JSON 视图']].map(([mode, label]) => `<button type="button" class="portalButton is-compact" data-structure-view="${mode}" aria-pressed="false">${esc(t(label))}</button>`).join('')}</div><div data-structure-content></div>`;
         showStructure(window.LineageTemplateGraph && window.PortalHatgGraph ? 'graph' : 'list');
       } else if (draft.kind === 'script') {
