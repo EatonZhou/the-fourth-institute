@@ -124,9 +124,13 @@ class LoginSessionStore:
 
     @staticmethod
     def _observe(connection, account_id, state, observed_at):
+        # Equal-time state changes remain valid; exact replays need no new row version.
         connection.execute("INSERT INTO login_states(account_id,state,observed_at) VALUES(%s,%s,%s) "
                            "ON CONFLICT(account_id) DO UPDATE SET state=EXCLUDED.state,observed_at=EXCLUDED.observed_at "
-                           "WHERE login_states.observed_at<=EXCLUDED.observed_at", (account_id, state, observed_at))
+                           "WHERE login_states.observed_at<=EXCLUDED.observed_at "
+                           "AND (login_states.state IS DISTINCT FROM EXCLUDED.state "
+                           "OR login_states.observed_at IS DISTINCT FROM EXCLUDED.observed_at)",
+                           (account_id, state, observed_at))
 
     def remove(self, account_id):
         with self.connection() as c:
