@@ -929,12 +929,3 @@ body.portalAgentInboxMounted:has(> .portalAgentInbox[data-dock-side="left"]) {
 }
 
 .portalAgentInboxItem { font-family:inherit; }
-/* Reserve only chrome controls and scroll tails, never a permanent page column. */
-.portalChatWorkspaceRoot :is(.composerActions,.portalChatQuotaNotice), :where(.composerFooter,.composerBottom) {
-  margin-inline-start:var(--portal-floating-left,0px);
-  margin-inline-end:var(--portal-floating-right,0px);
-}
-body.portalAgentInboxMounted :is(.workspaceMain,.projectsMain,.knowledgeMain,.portalCollectionBody,.portalCollectionBoard,.chatMessages,.messages,.settingsPageMain,main.portalPageFrame) {
-  padding-block-end:max(var(--portal-floating-tail,0px), 12px);
-  scroll-padding-block-end:var(--portal-floating-tail,0px);
-}
