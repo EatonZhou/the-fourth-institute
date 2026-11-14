@@ -11,7 +11,7 @@ from typing import Any
 from management_common.portal_database import portal_database
 from . import trigger_path_storage, family_storage, resident_storage, program_work_storage, domain_work_storage, relation_work_storage, resident_execution_storage
 from . import resident_delivery_storage
-from . import graph_storage, definition_collections, lineage_metadata_storage
+from . import graph_storage, definition_collections, lineage_metadata_storage, duty_storage
 from . import wire_delivery_storage, family_task_dispatch_storage
 from . import (
     lineage_data_definitions, lineage_data_effect_cleanup, lineage_data_executions, lineage_data_mailbox,
@@ -80,6 +80,7 @@ LINEAGE_DATA_COLUMNS = {
        for table, fields in resident_storage.DOMAIN_TABLES.items()},
     "resident_workspace_bindings": ("resident_id", "workspace_id", "purpose"),
     **family_storage.COLUMNS,
+    **duty_storage.COLUMNS,
     **trigger_path_storage.COLUMNS,
     "resident_execution_work": resident_execution_storage.COLUMNS,
     "resident_execution_release_work": ("execution_id","resident_id","actor"),
@@ -192,6 +193,7 @@ def lineage_data_schema_matches(connection: Any) -> bool:
 def create_lineage_data_schema(connection: Any) -> None:
     lineage_metadata_storage.create_schema(connection)
     graph_storage.create_schema(connection)
+    duty_storage.create_schema(connection)
     definition_collections.create_schema(connection)
     connection.executescript('\n        CREATE TABLE lineage_meta (\n            key TEXT PRIMARY KEY,\n            value TEXT NOT NULL\n        );\n\n        CREATE TABLE lineage_layout_positions (\n            lineage_id TEXT NOT NULL REFERENCES lineages(lineage_id),\n            object_id TEXT NOT NULL, x DOUBLE PRECISION NOT NULL, y DOUBLE PRECISION NOT NULL,\n            PRIMARY KEY(lineage_id,object_id)\n        );\n\n        ')
     program_work_storage.create_schema(connection)
@@ -422,6 +424,8 @@ class LineageDataStore:
         if not has_any_table:
             create_lineage_data_schema(connection)
         user_pending_question_storage.create_schema(connection)
+        # Duty records joined the store after installation; created when absent.
+        duty_storage.create_schema(connection)
         # Existing data is used by its owners. A metadata tag or an unrelated
         # table/column difference must not disable every Resident. Operations
         # requiring absent structures report their actual database error.

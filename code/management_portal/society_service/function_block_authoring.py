@@ -35,6 +35,72 @@ def find_block(body, function_block_id):
     raise ValueError("Function Block does not belong to this Lineage")
 
 
+# A duty is a Function Block held by a Resident or by an organization's block
+# (decision_13725a7900f6): its record names the holder, one sentence saying what
+# the duty does, its category and its place in the holder's order.
+DUTY_CATEGORIES = ("fixed", "common", "custom")
+DUTY_FIELDS = {"holder_id", "description", "category", "position", "parameters"}
+
+
+def normalize_duty(raw):
+    if not isinstance(raw, dict) or set(raw) - DUTY_FIELDS:
+        raise ValueError("Unknown duty fields")
+    holder = raw.get("holder_id")
+    if not isinstance(holder, str) or not holder:
+        raise ValueError("A duty needs holder_id")
+    category = raw.get("category") or "custom"
+    if category not in DUTY_CATEGORIES:
+        raise ValueError("Duty category must be fixed, common or custom")
+    position = raw.get("position", 0)
+    if isinstance(position, bool) or not isinstance(position, int) or position < 0:
+        raise ValueError("Duty position must be a non-negative integer")
+    parameters = raw.get("parameters") or {}
+    if not isinstance(parameters, dict):
+        raise ValueError("Duty parameters must be an object")
+    description = raw.get("description") or ""
+    if not isinstance(description, str):
+        raise ValueError("Duty description must be text")
+    return {"holder_id": holder, "description": " ".join(description.split())[:280],
+            "category": category, "position": position, "parameters": deepcopy(parameters)}
+
+
+def duties(body, holder_id):
+    """The holder's duty blocks, first duty first."""
+    return sorted(
+        (b for b in body.get("function_blocks") or [] if (b.get("duty") or {}).get("holder_id") == holder_id),
+        key=lambda b: (b["duty"]["position"], b.get("created_at") or "", b["id"]),
+    )
+
+
+def update_duty_in_body(body, function_block_id, actor, *, description=None, category=None):
+    block = find_block(body, function_block_id)
+    if not block.get("duty"):
+        raise ValueError("Function Block is not a duty")
+    duty = dict(block["duty"])
+    if description is not None:
+        duty["description"] = description
+    if category is not None:
+        duty["category"] = category
+    block["duty"] = normalize_duty(duty)
+    block.update(updated_at=_now(), updated_by=actor)
+    return deepcopy(block)
+
+
+def order_duties_in_body(body, holder_id, function_block_ids, actor):
+    """Renumber the holder's duties in the given order; every duty is listed once."""
+    held = {b["id"]: b for b in duties(body, holder_id)}
+    ids = list(function_block_ids)
+    if len(set(ids)) != len(ids) or set(ids) != set(held):
+        raise ValueError("function_block_ids must list each of the holder's duties exactly once")
+    now = _now()
+    for position, bid in enumerate(ids):
+        block = held[bid]
+        if block["duty"]["position"] != position:
+            block["duty"] = {**block["duty"], "position": position}
+            block.update(updated_at=now, updated_by=actor)
+    return ids
+
+
 def _coordinate(value):
     if value is None:
         return None
@@ -53,7 +119,7 @@ def normalize_blocks(body, actor, *, previous=None):
         bid = raw.get("id", "")
         if not BLOCK_ID_RE.fullmatch(bid) or bid in blocks:
             raise ValueError("Function Block id must be unique and use fbi_<12hex>")
-        unknown = set(raw) - {"id", "title", "template_id", "x", "y", "elements", "family",
+        unknown = set(raw) - {"id", "title", "template_id", "x", "y", "elements", "family", "duty",
                               "created_at", "created_by", "updated_at", "updated_by"}
         if unknown:
             raise ValueError("Unknown Function Block fields: " + ", ".join(sorted(unknown)))
@@ -69,6 +135,13 @@ def normalize_blocks(body, actor, *, previous=None):
             block["family"] = deepcopy(raw["family"])
             from .family_tasks import validate_routes
             validate_routes(body, raw)
+        if raw.get("duty") is not None:
+            if "family" in block:
+                raise ValueError("A Family is not a duty")
+            duty = normalize_duty(raw["duty"])
+            # A duty whose holder left the graph is an ordinary block again.
+            if kinds.get(duty["holder_id"]) in {"resident", "function_block"} and duty["holder_id"] != bid:
+                block["duty"] = duty
         for element in raw.get("elements") or []:
             if set(element) - {"id", "kind", "key"}:
                 raise ValueError("Unknown Function Block element fields")
@@ -120,7 +193,7 @@ def _elements(body, element_ids, element_keys=None):
 
 
 def functionalize_in_body(body, element_ids, actor, *, title="", x=None, y=None,
-                        template_id=None, element_keys=None, function_block_id=None):
+                        template_id=None, element_keys=None, function_block_id=None, duty=None):
     elements = _elements(body, element_ids, element_keys)
     if not elements:
         raise ValueError("Functionalize requires at least one element")
@@ -129,9 +202,16 @@ def functionalize_in_body(body, element_ids, actor, *, title="", x=None, y=None,
     block = {"id": bid, "title": title or "Function Block", "template_id": template_id,
              "x": x, "y": y, "elements": elements, "created_at": now, "created_by": actor,
              "updated_at": now, "updated_by": actor}
+    if duty is not None:
+        # A new duty goes last in its holder's order.
+        held = duties(body, duty.get("holder_id"))
+        block["duty"] = {**duty, "position": held[-1]["duty"]["position"] + 1 if held else 0}
     candidate = {**body, "function_blocks": [*(body.get("function_blocks") or []), block]}
     body["function_blocks"] = normalize_blocks(candidate, actor, previous=body)
-    return find_block(body, bid)
+    created = find_block(body, bid)
+    if duty is not None and "duty" not in created:
+        raise ValueError("A duty's holder must be a Resident or Function Block in this Lineage")
+    return created
 
 
 def update_in_body(body, function_block_id, actor, *, title=None, x=None, y=None,

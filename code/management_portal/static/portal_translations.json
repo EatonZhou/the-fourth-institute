@@ -41976,5 +41976,27 @@
   "额外用量": {
     "zh-CN": "额外用量",
     "en": "Extra usage"
-  }
+  },
+  "Duties": {"zh-CN": "职责", "en": "Duties"},
+  "常用": {"zh-CN": "常用", "en": "Common"},
+  "过滤": {"zh-CN": "过滤", "en": "Filter"},
+  "来自：{p0}": {"zh-CN": "来自：{p0}", "en": "From: {p0}"},
+  "上移": {"zh-CN": "上移", "en": "Move up"},
+  "下移": {"zh-CN": "下移", "en": "Move down"},
+  "撤下": {"zh-CN": "撤下", "en": "Remove"},
+  "已开启": {"zh-CN": "已开启", "en": "On"},
+  "无法读取": {"zh-CN": "无法读取", "en": "Unavailable"},
+  "额度不足时自动切换账号": {"zh-CN": "额度不足时自动切换账号", "en": "Switch accounts automatically when quota runs out"},
+  "在 Settings 中修改": {"zh-CN": "在 Settings 中修改", "en": "Change in Settings"},
+  "每条职责一句话；展开可看到它连接的事件、Effect 和连线。把模板施加到这个 Resident 上即可增加职责。": {"zh-CN": "每条职责一句话；展开可看到它连接的事件、Effect 和连线。把模板施加到这个 Resident 上即可增加职责。", "en": "One sentence per duty; expand one to see the events, Effects and wires it connects. Apply a template to this Resident to add a duty."},
+  "还没有职责。": {"zh-CN": "还没有职责。", "en": "No duties yet."},
+  "系统职责": {"zh-CN": "系统职责", "en": "System duties"},
+  "正在读取职责…": {"zh-CN": "正在读取职责…", "en": "Loading duties…"},
+  "职责读取失败：{p0}": {"zh-CN": "职责读取失败：{p0}", "en": "Could not load duties: {p0}"},
+  "职责顺序已更新。": {"zh-CN": "职责顺序已更新。", "en": "Duty order updated."},
+  "撤下这条职责？": {"zh-CN": "撤下这条职责？", "en": "Remove this duty?"},
+  "“{p0}”连接的 {p1} 个元素会从图上删除；这个 Resident 和它的其他职责不受影响。": {"zh-CN": "“{p0}”连接的 {p1} 个元素会从图上删除；这个 Resident 和它的其他职责不受影响。", "en": "The {p1} elements connected by “{p0}” will be deleted from the graph; this Resident and its other duties stay as they are."},
+  "职责已撤下。": {"zh-CN": "职责已撤下。", "en": "Duty removed."},
+  "持有者：{p0}": {"zh-CN": "持有者：{p0}", "en": "Holder: {p0}"},
+  "本组织的职责": {"zh-CN": "本组织的职责", "en": "This organization's duties"}
 }

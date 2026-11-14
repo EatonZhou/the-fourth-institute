@@ -8,7 +8,7 @@ from . import function_block_authoring, lineage_aggregate
 
 
 def functionalize(lineage_id, element_ids, actor, *, title="", x=None, y=None,
-                template_id=None, element_keys=None, edit=None, function_block_id=None):
+                template_id=None, element_keys=None, edit=None, function_block_id=None, duty=None):
     from . import lineage_graph_edits
 
     def apply(body):
@@ -16,9 +16,27 @@ def functionalize(lineage_id, element_ids, actor, *, title="", x=None, y=None,
             edit(body)
         return function_block_authoring.functionalize_in_body(body, element_ids, actor, title=title, x=x, y=y,
                                    template_id=template_id, element_keys=element_keys,
-                                   function_block_id=function_block_id)
+                                   function_block_id=function_block_id, duty=duty)
     _, block = lineage_graph_edits.commit_lineage_edit(lineage_id, actor, apply, reason="Functionalize", full_view=False)
     return block
+
+
+def update_duty(lineage_id, function_block_id, actor, **changes):
+    from . import lineage_graph_edits
+    _, block = lineage_graph_edits.commit_lineage_edit(
+        lineage_id, actor,
+        lambda body: function_block_authoring.update_duty_in_body(body, function_block_id, actor, **changes),
+        reason="UpdateDuty", full_view=False)
+    return block
+
+
+def order_duties(lineage_id, holder_id, function_block_ids, actor):
+    from . import lineage_graph_edits
+    _, ids = lineage_graph_edits.commit_lineage_edit(
+        lineage_id, actor,
+        lambda body: function_block_authoring.order_duties_in_body(body, holder_id, function_block_ids, actor),
+        reason="OrderDuties", full_view=False)
+    return ids
 
 
 def update(lineage_id, function_block_id, actor, **changes):

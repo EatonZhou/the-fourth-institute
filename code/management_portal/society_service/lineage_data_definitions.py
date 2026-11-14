@@ -8,7 +8,7 @@ from typing import Any
 from management_common.database_time import iso_time
 from .read_snapshot import request_cached
 from . import (
-    definition_collections, family_storage, graph_storage, lineage_data_runtime, lineage_metadata_storage,
+    definition_collections, duty_storage, family_storage, graph_storage, lineage_data_runtime, lineage_metadata_storage,
     lineage_state_domains, program_work_storage, trigger_path_storage, wire_delivery_storage,
 )
 from .lineage_data_columns import now_iso_millis
@@ -65,6 +65,7 @@ def _definitions_from_connection(connection: Any, lineage_ids: list[str] | None 
     graphs = graph_storage.read_many(connection, ids)
     collections = definition_collections.read_many(connection, ids)
     family_storage.hydrate_programs(connection, graphs)
+    duty_storage.hydrate_programs(connection, graphs)
     positions = {(r['lineage_id'],r['object_id']): (r['x'],r['y']) for r in connection.execute(
         'SELECT * FROM lineage_layout_positions WHERE lineage_id=ANY(%s)', (ids,)).fetchall()}
     result = []
@@ -105,6 +106,7 @@ def write_definition(
     lineage_metadata_storage.put(connection, lineage_id, dict(value))
     family_storage.store_program(connection, lineage_id, value, now)
     graph_storage.put(connection, lineage_id, value)
+    duty_storage.store_program(connection, lineage_id, value)
     graph_storage.delete_missing(connection, lineage_id, set(current), set(desired), now)
     definition_collections.put(connection, lineage_id, value)
     connection.execute('DELETE FROM lineage_layout_positions WHERE lineage_id=%s AND NOT (object_id=ANY(%s))', (lineage_id,list(desired)))

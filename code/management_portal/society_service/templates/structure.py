@@ -652,6 +652,7 @@ class StructureKind:
                         edit=edit,
                         x=ctx.target.get("x"),
                         y=ctx.target.get("y"),
+                        duty=_duty(ctx, target),
                     )
                     outcome["function_block_ids"].append(block["id"])
                 else:
@@ -673,6 +674,19 @@ class StructureKind:
                 f"删除 {len(outcome['deleted_ids'])} 个、修改 {len(outcome['updated_ids'])} 个已有元素。"
             )
         return outcome
+
+
+def _duty(ctx, target):
+    """Applied to a Resident, the block becomes that Resident's duty (decision_13725a7900f6)."""
+    if not target:
+        return None
+    template = ctx.template
+    return {
+        "holder_id": target,
+        "description": template.get("description") or template["title"],
+        "category": "common" if template.get("builtin_key") else "custom",
+        "parameters": deepcopy(ctx.parameters),
+    }
 
 
 def _find(ctx, found, anchors):

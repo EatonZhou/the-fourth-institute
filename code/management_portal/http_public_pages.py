@@ -271,6 +271,7 @@ class PublicPagesHttp:
                     '/static/portal_resident_avatar.css',
                     '/static/portal_resident_avatar.js',
                     '/static/portal_resident_menu.js',
+                    '/static/portal_resident_menu_duties.js',
                     '/static/portal_resident_menu_events.js',
                     '/static/portal_resident_menu_family.js',
                     '/static/portal_resident_menu_group.js',

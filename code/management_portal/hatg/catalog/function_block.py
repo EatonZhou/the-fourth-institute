@@ -29,4 +29,17 @@ DECLARATIONS = (
     _d("DeleteFunctionBlock", ON_LINEAGE, "删除 Function Block 及其全部内部元素；Family 请使用 DeleteFamily，保留成员则使用 Unfamilize。", TARGET,
        (R("element_ids", "array", "随之删除的内部元素 ID，含嵌套 Function Block，不含此 Function Block"),
         R("resident_ids", "array", "随之删除的 Resident ID")), mutates=True),
+    # A duty is a Function Block with a duty record (function_blocks[].duty in GetLineage);
+    # ApplyTemplate on a Resident creates it and DeleteFunctionBlock removes it.
+    _d("UpdateDuty", ON_LINEAGE, "修改一条职责的一句话描述或类别。", (
+        R("lineage_id", description="职责所在的 Lineage"),
+        R("function_block_id", description="职责的 Function Block"),
+        P("description", description="一句话描述", max_length=280),
+        P("category", description="类别", enum=("fixed", "common", "custom")),
+    ), (R("function_block", "object", "修改后的 Function Block，含 duty"),), mutates=True),
+    _d("OrderDuties", ON_LINEAGE, "调整一个持有者全部职责的先后顺序。", (
+        R("lineage_id", description="职责所在的 Lineage"),
+        R("holder_id", description="持有职责的 Resident 或组织 Function Block"),
+        R("function_block_ids", "array", "持有者的全部职责，按新顺序各列一次", items={"type": "string"}),
+    ), (R("function_block_ids", "array", "新的顺序"),), mutates=True),
 )

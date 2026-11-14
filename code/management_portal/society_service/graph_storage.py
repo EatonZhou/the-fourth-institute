@@ -167,7 +167,7 @@ def put(connection: Any, lineage_id: str, value: Mapping[str, Any]) -> None:
     connection.execute("DELETE FROM function_blocks WHERE lineage_id=%s AND NOT(function_block_id=ANY(%s))", (lineage_id, block_ids))
     block_nodes, block_rows = [], []
     for item in blocks:
-        validate_fields(item, {"id", "x", "y", "elements", "family", *BLOCK_FIELDS}, "Function Block")
+        validate_fields(item, {"id", "x", "y", "elements", "family", "duty", *BLOCK_FIELDS}, "Function Block")
         block_nodes.append({"node_id": item["id"], "lineage_id": lineage_id, "node_type": "function_block"})
         block_rows.append({"function_block_id": item["id"], "lineage_id": lineage_id, **typed_values(item, BLOCK_FIELDS), "x": item.get("x"), "y": item.get("y")})
     upsert_many(connection, 'lineage_nodes', ('node_id',), block_nodes)

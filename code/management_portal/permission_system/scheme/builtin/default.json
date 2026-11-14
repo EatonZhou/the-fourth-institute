@@ -842,6 +842,12 @@
     "UpdateFunctionBlock": {
       "a": "@contributor"
     },
+    "UpdateDuty": {
+      "a": "@contributor"
+    },
+    "OrderDuties": {
+      "a": "@contributor"
+    },
     "UpdateLineage": {
       "a": "@contributor"
     },

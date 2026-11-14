@@ -22,5 +22,16 @@ def delete(inv):
     return blocks.delete(inv.argument("lineage_id"), inv.argument("function_block_id"), inv.caller)
 
 
+def update_duty(inv):
+    block = blocks.update_duty(inv.argument("lineage_id"), inv.argument("function_block_id"), inv.caller,
+                               **{k: inv.argument(k) for k in ("description", "category") if k in inv.call.arguments})
+    return {"function_block": block}
+
+
+def order_duties(inv):
+    return {"function_block_ids": blocks.order_duties(
+        inv.argument("lineage_id"), inv.argument("holder_id"), inv.argument("function_block_ids"), inv.caller)}
+
+
 HANDLERS = {"Functionalize": functionalize, "Unfunctionalize": unfunctionalize, "UpdateFunctionBlock": update,
-            "DeleteFunctionBlock": delete}
+            "DeleteFunctionBlock": delete, "UpdateDuty": update_duty, "OrderDuties": order_duties}

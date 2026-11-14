@@ -892,6 +892,7 @@
           ["portal_resident_menu_group", "PortalResidentMenuGroup"],
           ["portal_resident_menu_identity", "PortalResidentMenuIdentity"],
           ["portal_resident_menu_journal", "PortalResidentMenuJournal"],
+          ["portal_resident_menu_duties", "PortalResidentMenuDuties"],
           ["portal_resident_menu_runtime", "PortalResidentMenuRuntime"],
           ["portal_resident_menu_events", "PortalResidentMenuEvents"],
           ["portal_resident_menu", "PortalResidentMenu"],

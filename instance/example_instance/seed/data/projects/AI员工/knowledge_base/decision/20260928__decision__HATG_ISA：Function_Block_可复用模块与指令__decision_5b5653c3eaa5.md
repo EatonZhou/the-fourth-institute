@@ -91,9 +91,27 @@ Family 的门面、steward、Router Resident、业务成员、组件和连线都
 
 通用读取指令可以读取 Family，通用更新指令可以调整它的坐标。Family 改名、成员调整、参数修改与解除必须走 [Family 文档](/r/decision_44cf587c1721)规定的接口，以同步名册、门面和内部结构。通用删除遇到 Family 或包含 Family 的子树时拒绝执行；通用解除封装遇到目标为 Family 时提示使用 `Unfamilize`。
 
+## 职责
+
+职责是由持有者承担的一组图元素，层次划分见 decision_13725a7900f6。它用一个 Function Block 承载：块的元素是这条职责新增的事件、Effect、连线和新建 Resident，块上的 `duty` 记录说明它属于谁、做什么、排在第几。持有者是一个 Resident，或者一个组织的 Function Block；持有者本身不在块内，职责对它只是引用。
+
+把结构模板施加到一个 Resident 上时，生成的块自动成为该 Resident 的职责：描述取模板的说明，内置模板的类别为“常用”（`common`），其余为“自定义”（`custom`），参数记录施加时的取值，新职责排在持有者已有职责之后。施加到画布或选区、没有目标 Resident 的模板生成普通块。“固定”（`fixed`）留给角色模板定义的职责使用。
+
+`duty` 记录包含：
+
+| 字段 | 含义 |
+| --- | --- |
+| `holder_id` | 持有者：Resident ID 或 Function Block ID |
+| `description` | 一句话描述，最长 280 字，连续空白折叠为一个空格 |
+| `category` | `fixed`、`common` 或 `custom` |
+| `position` | 在持有者全部职责中的序号，从 0 开始 |
+| `parameters` | 施加模板时的参数取值 |
+
+撤下职责就是 `DeleteFunctionBlock` 删除它的块：块内元素一起删除，持有者和它的其他职责不变。`UpdateDuty` 修改描述和类别，`OrderDuties` 一次给出持有者全部职责的新顺序。持有者离开图后，块变回普通块，记录随之删除。Family 块不能同时是职责。
+
 ## Lineage 定义形状
 
-`GetLineage` 的定义在顶层返回 `function_blocks`，读取块就读这个数组：它包含该 Lineage 的全部块，包括嵌套块和 Family，每项包含标识、标题、来源模板、坐标、创建与修改信息和直接元素列表，Family 块还包含 `family` 投影；嵌套关系由各块的 `elements` 表达，数组顺序不定义归属，读取单个块时按 `function_block_id` 选取。Resident 位于 `nodes`，执行组件和连线位于 `program.components`、`program.wires`。元素归属统一由块的 `elements` 表达。下面给出一个手动封装的示例：
+`GetLineage` 的定义在顶层返回 `function_blocks`，读取块就读这个数组：它包含该 Lineage 的全部块，包括嵌套块和 Family，每项包含标识、标题、来源模板、坐标、创建与修改信息和直接元素列表，Family 块还包含 `family` 投影，职责块还包含 `duty` 记录；嵌套关系由各块的 `elements` 表达，数组顺序不定义归属，读取单个块时按 `function_block_id` 选取。Resident 位于 `nodes`，执行组件和连线位于 `program.components`、`program.wires`。元素归属统一由块的 `elements` 表达。下面给出一个手动封装的示例：
 
 ```json
 {
@@ -151,6 +169,8 @@ Family 块还包含如下 `family` 字段。它是 Family 领域事实的读取�
 | `Unfunctionalize` | 是 | 解除普通 Function Block，保留内部元素 | 对 `lineage_id` 有 @contributor |
 | `UpdateFunctionBlock` | 是 | 修改块的名称、位置或直接元素归属 | 对 `lineage_id` 有 @contributor |
 | `DeleteFunctionBlock` | 是 | 删除普通块及其递归包含的元素 | 对 `lineage_id` 有 @contributor |
+| `UpdateDuty` | 是 | 修改一条职责的描述或类别 | 对 `lineage_id` 有 @contributor |
+| `OrderDuties` | 是 | 调整一个持有者全部职责的先后顺序 | 对 `lineage_id` 有 @contributor |
 
 ## 参数名契约
 
@@ -162,6 +182,8 @@ Family 块还包含如下 `family` 字段。它是 Family 领域事实的读取�
 | `Unfunctionalize` | `lineage_id`、`function_block_id` |
 | `UpdateFunctionBlock` | `lineage_id`、`function_block_id`、`title`、`x`、`y`、`add_element_ids`、`remove_element_ids` |
 | `DeleteFunctionBlock` | `lineage_id`、`function_block_id` |
+| `UpdateDuty` | `lineage_id`、`function_block_id`、`description`、`category` |
+| `OrderDuties` | `lineage_id`、`holder_id`、`function_block_ids` |
 
 ### Functionalize
 
@@ -193,6 +215,18 @@ Family 的成员、生成结构与普通工作流共用 `elements` 唯一直接�
 
 删除内部 Resident 使用标准 Resident 删除流程。删除组件和连线同时清理相连引用及依赖它们的观察器，释放相应算子执行器的归属。元素来源不影响删除语义。目标或其包含的子树存在 Family 时拒绝，须先通过 Family 接口处理其解除。
 
+### UpdateDuty
+
+参数：`lineage_id`、`function_block_id` 必填；`description`、`category` 可选，省略的项保持原值。目标块必须带有 `duty` 记录。
+
+结果：`function_block`，为修改后的完整块对象，含 `duty`。
+
+### OrderDuties
+
+参数：`lineage_id`、`holder_id`、`function_block_ids` 均必填。`function_block_ids` 必须恰好列出该持有者的全部职责块，每个一次；顺序即新的 `position`，从 0 开始。
+
+结果：`function_block_ids`，即新的顺序。
+
 ## 关系存储与提交
 
 | 表 | 保存的事实 |
@@ -201,10 +235,11 @@ Family 的成员、生成结构与普通工作流共用 `elements` 唯一直接�
 | `function_blocks` | `function_block_id`、`lineage_id`、`title`、`template_id`、`x`、`y`、创建与修改时间及操作者 |
 | `function_block_elements` | `function_block_id`、`element_id`、`element_kind`、`element_key` |
 | `families`、`family_residents` | Family 的参数、角色和成员事实 |
+| `function_block_duties` | 职责记录：`function_block_id`、`holder_id`、`description`、`category`、`position`、`parameters`；随块删除 |
 
 `function_block_elements` 以块和元素 ID 为联合主键，并对 `element_id` 建唯一索引，保证一个元素只有一个直接所属块。`function_blocks.x/y` 保存块坐标。组件配置、连线配置和 Resident 身份由各自的领域表保存。
 
-`graph_storage.put` 将顶层块与元素归属写入关系表，批量读取时组装定义，随后附加 Family 投影。定义合并按块 ID 处理对象，保留独立字段的并发修改；当一次编辑要封装的元素已经被另一笔编辑删除时，返回冲突。正常删除会同步清理归属及空块。
+`graph_storage.put` 将顶层块与元素归属写入关系表，`duty_storage` 在同一事务中写入职责记录；批量读取时组装定义，随后附加 Family 投影和职责记录。定义合并按块 ID 处理对象，保留独立字段的并发修改；当一次编辑要封装的元素已经被另一笔编辑删除时，返回冲突。正常删除会同步清理归属及空块。
 
 程序形状仅含 `schema`、`components`、`wires`，所有持久封装通过顶层 `function_blocks` 及其元素关系读取。
 
