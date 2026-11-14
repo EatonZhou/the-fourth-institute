@@ -193,13 +193,14 @@
         `${t("发放时间")}: ${date(card.grantedAt)}`, `${t("有效期至")}: ${date(card.expiresAt)}`,
         card.description, card.resetType].filter(Boolean).join(" · "));
       if (!Array.isArray(cards.cards)) lines.push(t("上游未提供刷新卡明细"));
+      if (count === "—") lines.unshift(t("当前原生接口未提供刷新卡次数"));
       if (Array.isArray(cards.cards) && cards.cards.length < (cards.available_count || 0)) lines.push(t("上游仅返回部分刷新卡明细"));
       if (cards.observed_at) lines.push(`${t("采样时间")}: ${date(cards.observed_at)}`);
       const cardsStale = cards.stale || account.status === "unavailable";
       if (cardsStale) lines.push(t("数据已过期，数值为上次采样"));
       return window.PortalI18n.html`<dl class="account-details-metrics" data-account-subscription>
         <div><dt>套餐档位</dt><dd data-account-tier title="${esc(tierTitle)}">${esc(tier.name || tier.id || "—")}${stale ? "*" : ""}</dd></div>
-        ${account.provider === "codex" ? window.PortalI18n.html`<div><dt>刷新卡次数</dt><dd data-account-refresh-cards tabindex="0" title="${esc(lines.join("\n"))}">${esc(count)}${cardsStale && count !== "—" ? "*" : ""}</dd></div>` : ""}
+        ${["codex", "claude"].includes(account.provider) ? window.PortalI18n.html`<div><dt>刷新卡次数</dt><dd data-account-refresh-cards tabindex="0" title="${esc(lines.join("\n"))}">${esc(count)}${cardsStale && count !== "—" ? "*" : ""}</dd></div>` : ""}
       </dl>`;
     }
 

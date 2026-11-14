@@ -36,6 +36,15 @@ try {
   account.refresh_cards={available_count:null,cards:null};context.renderAccountDetails();
   assert.equal(document.querySelector('[data-account-refresh-cards]').textContent,'—');
   assert.match(document.querySelector('[data-account-refresh-cards]').title,/未提供刷新卡明细/);
+  account.provider='claude';
+  account.refresh_cards={available_count:0,cards:[]};context.renderAccountDetails();
+  assert.equal(document.querySelector('[data-account-refresh-cards]').textContent,'0','Claude zero resets remain visible');
+  account.refresh_cards={available_count:1,cards:[{title:'Fable reset',expiresAt:3000}]};context.renderAccountDetails();
+  assert.equal(document.querySelector('[data-account-refresh-cards]').textContent,'1');
+  assert.match(document.querySelector('[data-account-refresh-cards]').title,/Fable reset.*1970-01-01T00:50:00/);
+  delete account.refresh_cards;context.renderAccountDetails();
+  assert.equal(document.querySelector('[data-account-refresh-cards]').textContent,'—');
+  assert.match(document.querySelector('[data-account-refresh-cards]').title,/原生接口未提供刷新卡次数/);
   assert.equal(document.querySelector('[data-account-metric="total"]').textContent,'8');
   assert.equal(document.querySelector('[data-account-metric="queued_messages"]').textContent,'3');
   assert.equal(document.querySelector('[data-account-metric="running"]').textContent,'2');

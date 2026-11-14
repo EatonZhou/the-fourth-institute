@@ -1,4 +1,5 @@
 {
+  "当前原生接口未提供刷新卡次数": {"en":"The current native interface did not provide the reset count","zh-CN":"当前原生接口未提供刷新卡次数"},
   "套餐档位": {"en":"Subscription tier","zh-CN":"套餐档位"},
   "刷新卡次数": {"en":"Available resets","zh-CN":"刷新卡次数"},
   "刷新卡": {"en":"Reset credit","zh-CN":"刷新卡"},
