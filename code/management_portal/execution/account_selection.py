@@ -36,7 +36,8 @@ def available(account: Mapping[str, Any], *, reserve: float = 0) -> bool:
     if account.get("kind") == "subscription_login" and account.get("login_state") in {"logged_out", "login_expired"}:
         return False
     quota = account.get("quota_reserve") or {}
-    if quota.get("status") == "reserved" or quota.get("used_up") or quota.get("automatic_paused"):
+    if quota.get("automatic_paused") or (
+            (quota.get("status") == "reserved" or quota.get("used_up")) and not quota.get("credits_active")):
         return False
     # Monitoring is advisory at startup. The Scheduler owns actual protection;
     # only preventative migration needs proof of positive headroom.

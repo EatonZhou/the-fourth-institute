@@ -36,6 +36,7 @@ def home_account_resources(accounts, exchange_rates):
             continue
         if api_id not in grouped:
             row = {"account_id": api_id, "billing_account_id": api_id, "kind": "api_profile",
+                   "allow_credits": False, "credits_supported": False,
                    "details_scope": "model_api", "execution_account_ids": [], "execution_accounts": [],
                    "capabilities": {"resident_details": True}}
             grouped[api_id] = row

@@ -201,8 +201,9 @@ DECLARATIONS = (
         R("dispatch_interval_max_seconds", "number", "相邻派发的最大间隔秒数", minimum=0, maximum=3600),
         P("close_threshold_percent", "number", "额度型账号：剩余额度 ≤ 该百分比时暂停账号上的自动工作", minimum=0, maximum=100),
         P("close_threshold_amount", "number", "余额型账号：余额 ≤ 该原币金额时暂停账号上的自动工作", minimum=0),
+        P("allow_credits", "boolean", "持久允许 Codex 订阅账号使用 credits；仅阈值为0且新鲜认证余额可用时放行原生额度耗尽，省略保留"),
     ), (R("settings", "object", "生效的调度设置：account_id、max_concurrency、dispatch_interval_min/max_seconds、"
-          "close_threshold、updated_by、updated_at"),), mutates=True, target="account_id", owner="execution"),
+          "close_threshold、allow_credits、credits_supported、updated_by、updated_at"),), mutates=True, target="account_id", owner="execution"),
     _d("GetUsage", FIXED, "读取按 Resident、Lineage、Project 和时间归因的 token 用量；Resident 的用量经它当前的 Lineage 归入该 Lineage 所属的 Project。", (
         R("period", description="统计周期：按本地时间的今天、本周、本月或今年", enum=("today", "week", "month", "year")),
         R("group_by", description="排名与时段归属按 Resident、Lineage 或 Project 分组", enum=("resident", "lineage", "project")),

@@ -833,6 +833,8 @@ a.agent-status-creature.queued:hover {
 .account-concurrency label { display: grid; grid-template-columns: minmax(0, 1fr) 72px; align-items: center; gap: 6px; min-width: 0; }
 .account-concurrency label span { overflow-wrap: anywhere; font-size: 12px; }
 .account-concurrency input { width: 100%; min-width: 0; box-sizing: border-box; }
+.account-concurrency .account-credits-toggle input { width: auto; justify-self: end; }
+.account-concurrency .account-credits-toggle { grid-column: 1 / -1; }
 .account-concurrency form p { grid-column: 1 / -1; font-size: 12px; overflow-wrap: anywhere; }
 .account-details .portalButton { min-height: 30px; padding: 4px 8px; font-size: 12px; }
 .agent-status-window-name {

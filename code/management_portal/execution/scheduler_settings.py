@@ -124,7 +124,8 @@ class SchedulerSettings:
         with self.changes.connect() as connection:
             previous = self.quota.account_quota(connection, capacity_key)
             incoming = sample.get("status", "unknown")
-            sample = quota_state(sample, now=time.time(), threshold=self.quota.close_threshold(connection, capacity_key, sample))
+            sample = quota_state(sample, now=time.time(), threshold=self.quota.close_threshold(connection, capacity_key, sample),
+                                 **self.quota.credit_settings(connection, capacity_key))
             # An unreadable sample never releases a hold, also when a zero
             # threshold would report it as available.
             if previous["status"] == "reserved" and "unknown" in (incoming, sample.get("status")):
@@ -147,6 +148,7 @@ class SchedulerSettings:
         *,
         actor: str,
         close_threshold: dict[str, Any] | None = None,
+        allow_credits: bool | None = None,
     ) -> dict[str, Any]:
         clean_key = str(capacity_key or "").strip()
         if not clean_key:
@@ -169,6 +171,18 @@ class SchedulerSettings:
             raise ValueError("actor is required")
         updated_at = execution_timestamp()
         with self.changes.connect() as connection:
+            credit_settings = self.quota.credit_settings(connection, clean_key)
+            if allow_credits is not None:
+                if type(allow_credits) is not bool:
+                    raise ValueError("allow_credits must be boolean")
+                if allow_credits and not credit_settings["credits_supported"]:
+                    raise ValueError("This account does not support credits")
+                credit_settings["allow_credits"] = allow_credits
+                connection.execute(
+                    'INSERT INTO execution_store_meta(key, value) VALUES (%s, %s) ON CONFLICT(key) DO UPDATE SET value=excluded.value',
+                    (f"quota_credits:{clean_key}", compact_json({"allow_credits": allow_credits,
+                                                              "updated_by": clean_actor, "updated_at": updated_at})),
+                )
             threshold = self.quota.close_threshold(connection, clean_key) if clean_key in self.quota.quota_capacity_keys else None
             if close_threshold is not None:
                 if threshold is None:
@@ -219,9 +233,12 @@ class SchedulerSettings:
                         clean_key,
                     ),
                 )
+            if allow_credits is not None:
+                self.quota.enforce_quota_reserve(connection, clean_key)
         self.changes.notify("execution", "control")
         return {
             "capacity_key": clean_key,
+            **credit_settings,
             "close_threshold": threshold,
             "limit": clean_limit,
             "dispatch_interval_min_seconds": interval_min,

@@ -269,6 +269,7 @@ class ExecutionService:
         *,
         actor: str,
         close_threshold: dict[str, Any] | None = None,
+        allow_credits: bool | None = None,
     ) -> dict[str, Any]:
         result = self.client.request(
             "scheduler.capacity.configure",
@@ -283,6 +284,7 @@ class ExecutionService:
                 ),
                 "actor": str(actor or "").strip(),
                 **({"close_threshold": close_threshold} if close_threshold is not None else {}),
+                **({"allow_credits": allow_credits} if allow_credits is not None else {}),
             },
         )
         return result if isinstance(result, dict) else {}

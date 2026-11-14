@@ -735,6 +735,7 @@ def update_provider_account(inv: Invocation) -> dict[str, Any]:
         high,
         actor=inv.caller,
         close_threshold=close_threshold,
+        **({"allow_credits": inv.argument("allow_credits")} if inv.argument("allow_credits") is not None else {}),
     )
     return {"settings": settings}
 

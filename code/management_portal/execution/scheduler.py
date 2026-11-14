@@ -126,10 +126,11 @@ class Scheduler:
         *,
         actor: str,
         close_threshold: dict[str, Any] | None = None,
+        allow_credits: bool | None = None,
     ) -> dict[str, Any]:
         return self.settings.configure_capacity(
             capacity_key, limit, dispatch_interval_min_seconds, dispatch_interval_max_seconds,
-            actor=actor, close_threshold=close_threshold,
+            actor=actor, close_threshold=close_threshold, allow_credits=allow_credits,
         )
 
     # Token usage

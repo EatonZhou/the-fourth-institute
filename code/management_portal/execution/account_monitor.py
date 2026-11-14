@@ -377,6 +377,8 @@ class AccountMonitor:
                           "active_count": settings.get("active_count", 0), "queued_count": settings.get("queued_count", 0),
                           "login_state": self._login_store.login_state(account.account_id) if _subscription(account) else "not_applicable",
                           "max_concurrency": settings.get("limit", account.max_concurrency),
+                          "allow_credits": settings.get("allow_credits", False),
+                          "credits_supported": settings.get("credits_supported", False),
                           "dispatch_interval_min_seconds": settings.get("dispatch_interval_min_seconds", health.get("dispatch_interval", {}).get("min_seconds", 2)),
                           "dispatch_interval_max_seconds": settings.get("dispatch_interval_max_seconds", health.get("dispatch_interval", {}).get("max_seconds", 6)),
                           "quota_reserve": quota, "close_threshold": settings.get("close_threshold"), "capabilities": {"scheduler_settings": True, "resident_details": True}})

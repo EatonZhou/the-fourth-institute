@@ -4,15 +4,15 @@ type: decision
 project: AI员工
 created_at: '2026-09-28'
 version:
-  number: 61
+  number: 62
   created_at: "2026-09-28T10:45:00Z"
   created_by:
     user: "weihao"
     agent: "resident_2a1fc6cd272d"
-  updated_at: "2026-11-05T13:23:39Z"
+  updated_at: "2026-11-14T00:29:42Z"
   updated_by:
     user: ""
-    agent: "resident_6199a7a36480"
+    agent: "resident_60ae6d0cdf74"
 importance: 8
 metaness: 2
 ai_generated: false
@@ -198,8 +198,8 @@ Portal 服务指令由 Portal Web 执行。Dev 与 Release 两个部署各有自
 
 **修改一个执行账号的调度设置。**
 
-- 参数：`account_id`、`max_concurrency`（1–256）、`dispatch_interval_min_seconds` 与 `dispatch_interval_max_seconds`（0–3600 秒，最大值不小于最小值）、`close_threshold_percent`（可选，额度进入该阈值时自动关闭该账号上 Resident 的接单）。余额型账号使用 `close_threshold_amount`（可选，余额低于这个原币金额时关闭接单）。
-- 结果：保存后的调度设置。
+- 参数：`account_id`、`max_concurrency`（1–256）、`dispatch_interval_min_seconds` 与 `dispatch_interval_max_seconds`（0–3600 秒，最大值不小于最小值）、`close_threshold_percent`（可选，额度进入该阈值时自动关闭该账号上 Resident 的接单）。余额型账号使用 `close_threshold_amount`（可选，余额低于这个原币金额时关闭接单）。另接受 `allow_credits`（可选 bool，默认 false，省略保留；仅 Codex 订阅账号可开启），原阈值/并发/间隔必填条件以声明为准。
+- 结果：`settings` 为保存后的调度设置，包含 `allow_credits`、`credits_supported`、操作者与更新时间。ListProviderAccounts 的设置及 Home 摘要同步这两个字段。账号级允许只在阈值 0 且已认证新鲜正 credits/unlimited 时解除原生耗尽自动暂停；原 used_up 事实、人工 Closed、正阈值及旧 Session scoped 授权保留。详见 decision_d40f59f5508f。
 - 设置从下一次派发开始生效，不中断正在执行的工作。
 
 ### 账号登记、登录与 Backend 角色
@@ -344,7 +344,7 @@ Portal 服务指令由 Portal Web 执行。Dev 与 Release 两个部署各有自
 | `ProbeModelApi` | `api_id`、`base_url`、`default_model`、`secret_file`、`secret`、`headers`、`anthropic_base_url` |
 | `ListProviderAccounts` | `account_id`、`refresh` |
 | `GetProviderUsageEvents` | `account_id`、`since`、`until`、`cursor`、`limit` |
-| `UpdateProviderAccount` | `account_id`、`max_concurrency`、`dispatch_interval_min_seconds`、`dispatch_interval_max_seconds`、`close_threshold_percent`、`close_threshold_amount` |
+| `UpdateProviderAccount` | `account_id`、`max_concurrency`、`dispatch_interval_min_seconds`、`dispatch_interval_max_seconds`、`close_threshold_percent`、`close_threshold_amount`、`allow_credits` |
 | `ListProviders` | `refresh`、`include_runtime` |
 | `PrepareProviderRuntime` | `provider` |
 | `GetProviderAccountSetup` | `account_id` |

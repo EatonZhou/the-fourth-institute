@@ -4,15 +4,15 @@ type: decision
 project: AI员工
 created_at: '2026-09-30'
 version:
-  number: 27
+  number: 36
   created_at: "2026-09-30T12:00:00Z"
   created_by:
     user: "weihao"
     agent: "resident_36c860ac51b6"
-  updated_at: "2026-11-03T02:47:03Z"
+  updated_at: "2026-11-14T00:29:41Z"
   updated_by:
     user: ""
-    agent: "resident_dbcd3920b7cc"
+    agent: "resident_60ae6d0cdf74"
 importance: 8
 metaness: 2
 ai_generated: false
@@ -85,11 +85,11 @@ Home 页的账号面板、Resident 的会话设置、Scheduler（持久调度器
 
 - **并发按账号计算。** 同一个账号上的原生 Agent 调用和 API 调用共同占用该账号的并发上限，不按 API 或 Provider 另分一份容量。DeepSeek API 与 Claude-on-DeepSeek 都使用 `deepseek_primary`，共用 `account:deepseek_primary` 的并发和派发间隔。
 
-- **每个执行账号有一组独立的调度设置：最大并发、两次派发之间的随机间隔范围和 Close 阈值。** 设置按容量键保存在 Scheduler 的 PostgreSQL 中，保存后立即影响这个账号的领取和发送节奏，其他账号不受影响。
+- **每个执行账号有一组独立的调度设置：最大并发、两次派发之间的随机间隔范围、Close 阈值和允许使用 credits。** 设置按容量键保存在 Scheduler 的 PostgreSQL 中，保留操作者与更新时间，保存后按统一调度规则生效，其他账号不受影响。
 - **最大并发是 1 到 256 的整数，间隔的最小值和最大值都在 0 到 3600 秒之间且最小值不大于最大值。** 布尔值、小数、非有限数和空的操作者都会被拒绝。账号没有保存过设置时，并发使用适配器声明的默认值，间隔使用服务默认的 2 到 6 秒。
 - **Close 阈值的单位由账号决定。** 百分比账号的单位是 `%`，默认 2，最大 100；余额账号的单位是它实际读到的币种，默认 0。提交的单位与账号实际单位不一致，或账号还没有读到可用的币种时，阈值不能保存。
 <!-- wall: {"key": "7e96ce327dba907d"} -->
-- **Close 阈值为 0 表示不设阈值。** 阈值为 0 时，余额账号始终可以接收新工作，即使余额为零、读数过期或未知，账号自然用光为止；百分比账号在读数过期或未知时也继续接收工作，只在额度用完时暂停（见“额度用完的百分比账号总是暂停”）。余额账号的默认阈值是 0，所以默认不做余额保护；需要保护时由管理员设置一个正数。
+- **Close 阈值为 0 表示不设阈值。** 余额账号在余额为零、过期或未知时不做阈值保护；百分比账号未知读数不触发阈值保护，已确认原生耗尽仍按耗尽保护及明确的 credits 策略处理。阈值 0 本身不构成付费授权，也不自动修改 Resident 的人工 Open/Closed。
 - **切换账号只改变尚未绑定模型会话的排队执行。** 调用方把这样的执行改到另一个账号时，账号适配器同时改写路由和与路由相关的运行选项，例如 Claude 的 `provider_profile`，避免路由已经改变而配置仍指向旧账号。已经绑定会话的执行保持原账号。
 
 ### 只读目录批次
@@ -103,12 +103,20 @@ Home 会话列表、活跃 Resident 和 Resident 状态列表等同步只读入�
 Resident 的接单开关只表达人工输入控制。额度保留、等待与恢复由 Execution Scheduler 负责；账号详情分别显示人工打开/关闭数量和 Scheduler 额度状态。
 
 - **账号额度进入保护状态后，这个账号上的自动工作暂停。** 新鲜的剩余额度或余额小于等于正数阈值时，账号状态变为 `reserved`：它的排队执行不再被领取，快照中的排队原因显示 `quota_reserve`；它正在运行、且没有 binding 例外的执行被请求取消，取消原因记为 `quota_reserve`。
-- **额度用完的百分比账号总是暂停，不论 Close 阈值。** Codex 套餐额度用完后仍会接受请求，改用账号的付费 credits 计费；Portal 的自动工作不使用 credits，只有人工放行的 binding 会继续运行并消耗 credits。新鲜读数中任一窗口剩余小于等于 0，或 Codex 报告 `ordinaryUsageAllowed=false` 或 `rateLimitReachedType` 非空时，账号进入 `reserved`，`quota_reserve.used_up` 为真，排队执行停止领取，运行中的执行按上文取消。阈值为 0 时同样如此。这个暂停沿用“只有新鲜的恢复读数才会解除”的规则，读不到额度的样本不会解除它。
-- **修改 Close 阈值时已经在运行的工作继续完成。** 新阈值从下一次派发开始生效：仅在阈值数值或单位实际改变时，把这个账号上已领取或正在运行的执行记入豁免名单，之后的额度采样也不会因为额度保护取消它们；修改之后才开始的执行仍按上一条规则受额度保护。额度用完时豁免名单不再生效，这些执行同样被取消；只有 binding 例外继续运行。
+- **百分比账号原生额度耗尽默认暂停；只有满足明确付费策略时才继续。** 新鲜读数任一窗口剩余小于等于 0、`ordinaryUsageAllowed=false` 或 `rateLimitReachedType` 非空均保留原生耗尽事实，`quota_reserve.used_up` 不因付费放行变成假。默认 `allow_credits=false` 时，阈值为 0 也保持耗尽保护。Codex 订阅账号在阈值为 0、持久允许 credits 且认证与付费余额满足下述条件时，自动暂停可解除；阈值大于 0 时仍执行原阈值保护，不用账号级 credits 选项绕过。人工 Closed 的 Resident 仍不接纳新工作。
+- **修改 Close 阈值时已经在运行的工作继续完成。** 新阈值从下一次派发开始生效：仅在阈值数值或单位实际改变时，把这个账号上已领取或正在运行的执行记入豁免名单，之后的额度采样也不会因为额度保护取消它们；修改之后才开始的执行仍按上一条规则受额度保护。额度用完时阈值调整豁免名单不再生效；只有满足账号级 credits 策略或现有 binding/Session 范围例外时才按各自合同继续。
 - **Close 阈值为正数时，读数未知的百分比账号暂停，余额账号不因此暂停。** 百分比账号读数过期、读取失败或窗口不完整时，自动工作同样暂停；阈值为 0 时仍按前文的禁用阈值及额度用完规则判断。余额账号只有明确读到低于阈值的余额才会进入保护，余额未知不会被当成零。
-- **保护阈值设置不变时，已经进入保护的账号只有取得新鲜的恢复读数才会解除。** 读取失败或仅仅过了额度重置时间，都保持 `reserved`。显式将阈值改为 0 可解除由阈值造成的保护；已确认额度用完的百分比账号仍按前文保持暂停。解除后，原来排队的工作按原顺序继续领取；被取消的执行保持取消，不会自动重放。
+- **保护阈值设置不变时，已经进入保护的账号只有取得新鲜的恢复读数才会解除。** 读取失败或仅仅过了额度重置时间，都保持 `reserved`。显式将阈值改为 0 可解除由阈值造成的保护；已确认额度用完的百分比账号仍按前文的耗尽与 credits 规则判断。解除后，原来排队的工作按原顺序继续领取；被取消的执行保持取消，不会自动重放。
 - **Resident 被人工打开接单时，会为它当前的会话记录一条 binding 例外；再被人工关闭时，这条例外改为停用。** 例外只作用于这个 binding，不会传给其他 Resident 或 Fork 出的新会话。唯一的传递发生在 Family：门面的放行由 Family 监督同步为 Router、Steward 各自 binding 的例外，规则见 decision_a64b3ea2c3c5。修改阈值不会撤销已有例外。
-- **创建或迁移模型会话前，默认检查目标账号还有剩余额度；人类可明确授权本次目标 Session 使用 credits。** 目标账号的 Close 阈值为正数时，`quota_reserve.remaining`（原币金额或百分比）必须新鲜且严格大于零，未提供本次 credits 确认时不足则不能创建新会话；阈值为 0 时只拒绝 `quota_reserve.used_up` 为真的账号，不要求新鲜的正余量。准备中的临时会话、取消迁移和保留原会话的流程见 decision_c47a13e8b962。
+- **普通创建与迁移直接提交持久执行，由 Scheduler 统一执行额度保护。** Society 不读取整份健康快照预检余额、不要求新鲜正余量，也不为普通准备会话自动授予额度豁免。仅人类明确确认本次目标 Session 使用 credits 时，读取并验证最新认证与 credits 样本，授予目标账号和唯一准备 Execution 的范围授权；同一次受理只验证一次。准备、取消及保留原会话的流程见 decision_c47a13e8b962。
+
+### 账号级允许使用 credits
+
+`UpdateProviderAccount` 接受可选布尔参数 `allow_credits`，默认未保存时为 false，省略时保留原值，显式 false 撤销账号级允许；非布尔值拒绝。仅 Provider 为 Codex 且 kind 为 `subscription_login` 的账号声明 `credits_supported=true`；其他账号不能开启。设置沿用原调度设置的权限、持久审计和容量键，不改变账号登记或权限方案。
+
+`ListProviderAccounts` 的账号设置、`UpdateProviderAccount.settings` 与 Home 账号摘要均回传 `allow_credits` 和 `credits_supported`。这两个字段描述持久偏好与支持能力，不等于当前余额可用。只有阈值为 0、原生额度已耗尽、允许且支持 credits 时，Scheduler 才以已认证、非 stale、60 秒内采样、`has_credits=true` 且余额严格大于 0 或 unlimited 的观察继续自动工作。无法确认付费余额时恢复耗尽保护；原生剩余比例、status/used_up 与采样来源保持真实，不伪造原生 headroom。人工 Closed、账号停用、实际 Provider 限流及原有并发/派发间隔规则继续优先适用。
+
+账号级策略不创建或扩大既有 Session scoped credits 授权；关闭账号级选项不删除旧授权记录，原 Session 继续按其范围、新鲜余额与生命周期合同判断。手动 Open/Close 入口保留，各自接单和放行语义沿用原合同。阈值大于 0 时账号级选项可被保存，但不能解除该阈值或原生耗尽保护。
 
 ### 人类确认本次目标 Session 使用 credits
 
@@ -128,7 +136,11 @@ Fork 初始化的付费确认由初始化自身持有。人类在正式 `RetryRe
 
 ### 额度与余额的读取
 
-- **账号观察由 ExecutionService 内的 AccountMonitor 后台线程完成，不依赖任何页面请求。** 它每 15 秒对全部账号并行读取一次；调用方请求强制刷新时立即读取，但两次强制刷新至少间隔 60 秒。
+每个订阅额度窗口 `rate_limits[]` 可携带非空 `quota_group`，表示在同一账号内共同约束一个额度池的窗口。分组由 Provider 适配器拥有：Codex 的 primary/secondary 共用一组；Claude 的 five_hour/seven_day 共用一组，模型专属窗口保留独立组；Antigravity 使用原生 /usage 的分组标题，Gemini Models、Gemini 4 Argon 与 Claude/GPT 互相独立；Kimi Code 的 5 小时、每周及原生月度限制归属同一订阅组。观察失败保留旧样本时也保留分组。未提供分组表示依赖未知，消费者不能仅凭名称、时长或同一账号猜测关联。
+
+这个字段仅供显示同组窗口的耗尽约束，原始 `remaining_percent`、采样时间、过期标记和重置时间照常保留；不改变 Scheduler 额度保护或自动恢复规则。Home 的“受限”“待确认”与刷新行为见 decision_4dea0db1f45a。
+
+- **账号观察由 ExecutionService 内的 AccountMonitor 后台线程完成，不依赖任何页面请求。** 它每 15 秒重新读取账号目录并调度各账号观察；调用方请求强制刷新时唤醒调度，但两次强制刷新至少间隔 60 秒。同一账号至多有一个未完成观察，慢账号不阻止其他账号在下一轮刷新；并行池有上限（当前为 32），新增账号随下一次目录读取进入观察。账号目录或数据库暂时不可用时保留已有样本并按轮询间隔重试；单个观察及其错误处理再次失败时只影响该账号，不退出监控线程，也不把失败视作空目录或成功样本。日志只记录账号标识与异常类型，不输出连接串或凭据。
 
 账号观察有独立关闭作用域。停止 AccountMonitor 时先拒绝新观察及后续 usage/认证探测，再取消当前观察持有的 IO，等待监测线程与并行池实际退出；不能仅缩短 join 后遗留线程或子进程。Codex 只取消当前只读 RPC 等待，原生共享服务不受影响；Claude 关闭本次观察连接，账号认证状态 CLI 和 Antigravity 独立 ACP 观察进程由本次作用域终止进程树并回收。独立 daemon 自己拥有的后台观察继续由该 daemon 管理，不取消模型执行、会话、共享服务或登录流程。
 
@@ -195,7 +207,7 @@ Provider 原生接口 ──读取──> 账号适配器（每个 Provider 一�
 | `close_threshold` | `{metric, unit, value, supported}`：`metric` 为 `percent` 或 `balance`；`supported` 为假时这个账号暂时不能设置阈值。 |
 | `quota_reserve` | 当前额度保护状态，包括 `status`（`available`、`reserved` 或 `unknown`）、`remaining`、`fresh`、`close_threshold`、`threshold_enabled`、`used_up`（百分比账号额度已用完而暂停）、`automatic_paused`、原始的 `remaining_percent` 或 `remaining_balance`，以及采样时间。 |
 | `rate_limits` | 额度窗口数组，每项包含 `id`、`label`、`remaining_percent`（未知为 null）、`resets_at`、`observed_at` 和 `stale`。 |
-| `credits` | Codex 账号的 credits：`balance`（数值，未知为 null）、`has_credits`、`unlimited`。展示原生付费余额；默认自动工作在订阅额度用完时暂停。人类按binding放行或明确确认本次目标Session后可使用credits。展示可保留失败前读数，但该旧读数不能通过新会话授权的准入与运行检查。 |
+| `credits` | Codex 账号的 credits：`balance`（数值，未知为 null）、`has_credits`、`unlimited`。展示原生付费余额；默认自动工作在订阅额度用完时暂停，账号级允许策略见上文。人类按binding放行或明确确认本次目标Session后可使用credits。展示可保留失败前读数，但该旧读数不能通过新会话授权的准入与运行检查。 |
 | `balance` | 关联了计费账号时的余额读数：`metric_kind`（`balance` 或 `availability`）、`status`、`display`、`amount`、`currency`、`updated_at`、`stale`、`source_account_id`、`billing_url`。零余额保留为零，未知不填零。 |
 | `status`、`error`、`refreshing` | 最近一次读取的结果。 |
 | `capabilities` | 这个账号是否可以修改调度设置、是否可以查看 Resident 明细。 |
@@ -217,3 +229,34 @@ Provider 原生接口 ──读取──> 账号适配器（每个 Provider 一�
 ## 同一 API 的多 Harness 展示
 
 保存模型 API 时，Execution 按声明协议自动补齐兼容路线（decision_7956d7cb4bde），已有路线优先复用。Home 的展示 owner 按 billing_account_id 把多条路线合为一个 API 行，使用一份余额；Society 的 API 节点详情跨这些路线汇总可见 Resident。执行账号目录、容量键、历史账本与逐路线调度设置不因此合并；订阅账号继续独立显示。Home 的 API 投影身份不可用作执行账号调度写入的目标。
+
+### 接入测试等待原因
+
+排队 Execution 的 Scheduler 快照携带该执行容量键对应的 quota_reserve，与同一次准入判断共用状态，不借用默认账号或其他账号的样本。账号接入测试将缺少新鲜完整样本（包括保留中的过期样本）、已确认订阅额度耗尽和触及保护阈值分别提示；排队期间展示监控刷新建议。提示不改变额度准入，不将未知视为不足或可用，不重提 Execution，也不自动发送模型测试。
+
+
+## 统一账号选择
+
+账号选择是 Execution 的独立策略，输入为后端、模型/推理强度、账号种类及计费范围和账号观察；不负责修改 Session。Backend 角色及 Resident 执行设置的 account_selection 只有 auto 和 fixed。auto 不代表某个优先账号，fixed 才是明确固定账号。旧角色迁移为 auto；已有明确路线且无角色/自动意图的 Resident 保持固定，已有 Session 不在升级时重建。
+
+新会话从已启用且计费范围符合用户意图的账号中选择。已确认登出、登录过期，以及 Scheduler 已报告 reserved、used_up 或 automatic_paused 的账号不参与自动选择。登录观察、额度样本或模型目录缺失和过期不额外阻止普通启动；目录新鲜时仍用于排除已知不兼容的模型和推理强度。没有指定模型且无可用目录时交由 Provider 使用默认模型，实际认证、模型不可用、余额不足和限流错误沿真实调用的失败路径返回。固定账号与已有会话维持原绑定。
+
+Scheduler 保留显式 Close 阈值、订阅额度耗尽和并发保护；候选选择不复制数值准入。预防性迁移要求可验证的新鲜正余量和新鲜模型兼容性，不能因普通启动允许未知而放宽。候选保持当前绑定优先，再按空余并发、可测余量和负载排序，稳定账号 ID 最终排序。选择默认限于相同运行器、账号种类和 API 计费范围；跨范围必须由后端顺序明确允许。
+
+余额查询是 API 的可选观察能力，不是已配置连接的必需能力；将其缺失等同于不可用会使已明确选择且不要求余额保护的 API 无法开始工作。这里区分“按当前策略可使用”和“有可测的正余量”，同时保留订阅额度保护、显式计费边界和预防性迁移的验证要求。
+
+现有会话有效时保持实际绑定，不能因其他账号余额更大而迁移。自动模式额度不足时沿现有 RestartSession 幂等、等待在途工作、事务回滚流程保留有效上下文；自动路径使用 preserve，不能静默 compact、fresh 或重新投递结果不确定的业务。仅原有失败输入恢复规则可恢复已确认失败的输入。没有完整保留能力时保持原会话并报告等待原因。
+
+Backend 角色以 backend_priority 持久化有序账号种类 ID，和 account_selection、模型偏好共同进行版本比较与保存。auto 新会话按该顺序寻找首个符合启动策略的种类，再按公共额度策略选择同类账号；未显式设置额度自动切换开关的现有会话，耗尽时先寻找同类兼容账号，再按角色顺序切换。跨种类采用目标账号目录的默认模型并清除来源推理强度，保留上下文。未列入的种类不参与跨种类选择；API/服务账号需用户明确加入，API 种类包含计费身份，不隐式动用订阅附加付费 credits。省略 backend_priority 更新时保留原值；空数组保持参考账号同类范围，兼容已有配置。普通自动 Resident 和带 backend_role 的自动 Resident 使用角色排序，Family 的旧显式迁移策略仅在未启用统一自动模式时适用。未显式设置额度自动切换开关时，fixed 忽略排序且不自动迁移。账号观察与模型目录由执行服务提供，UI 不猜测模型兼容性或挑选实际路线。
+
+管理页说明为“不同种类 AI 后端默认选择/自动切换的排序可手动调整，同种 AI 后端的选择由当前额度自动选择”，旁置“默认帐号选择排序”按钮。卡片统一编辑自动/固定、种类上下排序、API/服务种类加入与移除及模型偏好；推荐顺序只包含订阅种类。保存前只改本地草稿，取消不写入，保存按角色版本比较；固定模式禁用排序，窄屏说明及按钮自然换行。手动切换账号建立固定账号选择意图，但保留独立的 auto_switch_on_quota 开关；修改策略不改写已有 native session 的身份。
+
+### Resident 的额度自动切换开关
+
+Resident 的 `execution_settings.auto_switch_on_quota` 是独立的布尔策略。显式 `false` 禁止额度自动迁移；显式 `true` 仅使用站点 `default.backend_priority` 中列出的账号种类，并严格按该顺序寻找可用目标，不能先尝试排序外的同类账号。空排序即没有默认可切换目标。字段缺省保留既有角色、自动账号选择及 Family 策略，不在升级时改写旧配置。该策略优先于 `account_selection=fixed`，手动选择账号、跨 Provider 或 API 会话切换都保留它。保存只修改策略，不立即切换会话；后续额度检查按新策略执行。
+
+只有执行服务已确认 `quota_used_up` 或 `quota_reserved` 才进入此流程；未知额度、人工关闭接单、认证与权限错误、服务不可达不冒充额度耗尽。Society 统一决定有效开关、候选和迁移状态；浏览器只消费 `controls.quota_switch` 的 `state/reason/message/auto_switch_on_quota`。读取该投影不探测 Provider、不发起迁移。迁移账本变化发布对话状态通知，重连快照也返回当前状态。
+
+开启时按默认排序逐个尝试候选，沿现有 RestartSession 的幂等、preserve、在途等待与失败回滚。没有默认候选或候选已尝尽时显示“当前没有默认可切换的ai后端, 请手动选择”，并提供手动选择入口；无法完整保留上下文或迁移失败时保留原会话和输入，说明原因并提供手选。对额度阻塞但尚未开跑的 Execution，沿已有 handoff/withdraw_unstarted 流程交接同一条消息，不重新投递业务。已提交、已运行或结果不明的历史输入不因切换重发。
+
+menu → Settings 提供“在当前帐号额度用完时是否自动切换”滑动开关，显示后台的有效状态，保存使用原设置版本检查。开关关闭时，本页面发送消息被受理且确认额度不足后直接打开既有账号切换卡片。开启且默认候选耗尽时显示指定提示及入口。手选复用 Runtime Settings / Session 的原卡片，列出全部有权限切换的后端与账号，不受默认排序过滤；仍按原卡片解释上下文能力并由用户提交。单次发送只提示一次，取消后刷新不反复弹卡；浏览历史只显示状态和入口。取消手选不切换、不取消原消息、不重投；手动切换不隐式启用失败输入续接。

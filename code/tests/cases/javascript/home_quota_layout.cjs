@@ -5,7 +5,7 @@ const root = path.resolve(__dirname, '../../..');
 const {chromium} = require(path.join(root, 'management_portal/test_framework/tau_runtime/node_modules/playwright'));
 const functions = ['executionAccounts','accountQuotaWindowIsStale','accountQuotaWindows',
   'accountSummaryQuotaWindows','accountQuotaWarning','accountLimitStatus','refreshAccountQuotaWindows','accountQuotaWindow','accountLimitRow',
-  'accountRows','accountApiRow','accountBalanceHtml','accountCreditsHtml','accountConcurrencyRows','accountConcurrencyHtml','accountSettingsPending','accountIntervalHtml','accountThresholdHtml','loadAccountThresholds','saveAccountThreshold','renderAccountDetails'];
+  'accountRows','accountApiRow','accountBalanceHtml','accountCreditsHtml','accountConcurrencyRows','accountConcurrencyHtml','accountIntervalHtml','accountSettingsPending','accountThresholdHtml','loadAccountThresholds','saveAccountThreshold','renderAccountDetails'];
 const renderer = homeStatements().filter(({node:n})=>n.type==='FunctionDeclaration' && functions.includes(n.id.name)).map(s=>s.source).join('\n');
 (async()=>{
   const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
@@ -209,6 +209,27 @@ const renderer = homeStatements().filter(({node:n})=>n.type==='FunctionDeclarati
       assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
       if (process.env.PORTAL_LAYOUT_SCREENSHOT) await page.locator('.account-details').screenshot({path:process.env.PORTAL_LAYOUT_SCREENSHOT.replace('.png',`-${width}.png`)});
     }
-    console.log('Omitted quota exhaustion, stale/unknown/recovery and details refresh pass; compact summaries and six widths pass');
+    await page.evaluate(()=>{
+      data.accounts.push({account_id:'codex-fixture',provider:'codex',kind:'subscription_login',credits_supported:true,allow_credits:false,
+        max_concurrency:2,close_threshold:{supported:true,metric:'percent',unit:'%',value:0}});
+      accountDetails.accountId='codex-fixture';accountDetails.thresholds=new Map();renderAccountDetails();
+    });
+    for(const width of [1440,390,320]) {
+      await page.setViewportSize({width,height:900});
+      const before=await page.locator('.account-details').boundingBox();
+      await page.evaluate(()=>{
+        accountDetails.loading=true;
+        const row=data.accounts.find(a=>a.account_id==='codex-fixture');
+        accountDetails.thresholds.set(row.account_id,{loading:true,route:row});renderAccountDetails();
+      });
+      assert.equal((await page.locator('.account-details').boundingBox()).height,before.height,'refresh keeps panel geometry');
+      assert.equal(await page.locator('[name=close_threshold]').inputValue(),'0');
+      assert.equal(await page.locator('[name=allow_credits]').isChecked(),false);
+      assert.doesNotMatch(await page.locator('.account-details').innerText(),/正在读取/);
+      assert.equal(await page.locator('.account-details-body').evaluate(el=>el.scrollWidth>el.clientWidth),false);
+      await page.evaluate(()=>{accountDetails.loading=false;accountDetails.thresholds.get('codex-fixture').loading=false;renderAccountDetails();});
+      assert.equal((await page.locator('.account-details').boundingBox()).height,before.height);
+    }
+    console.log('Stable credits refresh and quota save contracts pass');
   } finally {await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});

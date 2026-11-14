@@ -489,11 +489,14 @@ def configure_capacity(server: Any, params: dict[str, Any]) -> Any:
         float(params.get("dispatch_interval_max_seconds") or 0),
         actor=required(params, "actor"),
         close_threshold=params.get("close_threshold"),
+        allow_credits=params.get("allow_credits"),
     )
     return {
         "ok": True,
         "account_id": account.account_id,
         "close_threshold": setting.get("close_threshold"),
+        "allow_credits": setting["allow_credits"],
+        "credits_supported": setting["credits_supported"],
         "max_concurrency": int(setting["limit"]),
         "dispatch_interval_min_seconds": float(
             setting["dispatch_interval_min_seconds"]

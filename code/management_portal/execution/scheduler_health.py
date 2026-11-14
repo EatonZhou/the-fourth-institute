@@ -125,6 +125,8 @@ class SchedulerHealth:
             key: {
                 "quota_reserve": account_quotas.get(key, {}),
                 "close_threshold": thresholds.get(key),
+                "allow_credits": quota_states.get(key, {}).get("allow_credits", False),
+                "credits_supported": quota_states.get(key, {}).get("credits_supported", False),
                 "limit": limits[key],
                 "dispatch_interval_min_seconds": (
                     intervals[key][0]

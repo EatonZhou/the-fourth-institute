@@ -50,6 +50,11 @@ def account_available(account: Mapping[str, Any]) -> bool:
     return account.get("provider") in AGENT_PROVIDERS and available(account)
 
 
+def account_credits_active(account: Mapping[str, Any]) -> bool:
+    """Consume Execution's effective paid admission without inventing quota headroom."""
+    return account_available(account) and (account.get("quota_reserve") or {}).get("credits_active") is True
+
+
 def sufficient_reserve(account: Mapping[str, Any]) -> bool:
     if not account_available(account):
         return False

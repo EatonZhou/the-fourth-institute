@@ -23,7 +23,7 @@ from .resident_session_credits import override_enabled
 from .domain_ports import execution_port
 from .resident_account_policy import (
     MIGRATION_RESERVE_PERCENT, fallback_account, resident_account, sufficient_reserve, migration_target_options,
-    reserve_remaining,
+    reserve_remaining, account_credits_active,
 )
 from .state_store import get_lineage_data_store
 from . import lineage_aggregate
@@ -256,7 +256,8 @@ def _relay_message(facade_id: str, message_id: str, member_id: str, actor: str,
     pending_notices = []
     existing_review = (get_lineage_data_store().family_quota_reviews.get(facade['lineage_id'], facade_id)
                        .get("requests") or {}).get(message_id)
-    accounts = [] if existing_review or to_facade else list(execution_port.service().accounts().get("accounts") or [])
+    needs_accounts = not existing_review or existing_review.get("status") == "waiting"
+    accounts = list(execution_port.service().accounts().get("accounts") or []) if needs_accounts and not to_facade else []
 
     def prepare(reviews):
         state = repository.input_state(facade_id, message_id).get("state")
@@ -325,8 +326,11 @@ def _relay_message(facade_id: str, message_id: str, member_id: str, actor: str,
             review = {"member_id": member_id, "account_id": account.get("account_id", ""),
                       "quota_remaining_percent": remaining, "created_at": utc_now_iso()}
             entries[message_id] = review
-            if remaining is not None and remaining < MIGRATION_RESERVE_PERCENT:
+            if remaining is not None and remaining < MIGRATION_RESERVE_PERCENT and not account_credits_active(account):
                 review["status"] = "waiting"
+        if review.get("status") == "waiting" and account_credits_active(
+                resident_account(resident_record_domain.find_resident_for_admission(member_id) or {}, accounts)):
+            review.update(status="delivering", quota_credits_active=True)
         if to_facade and review.get("status") == "waiting":
             # Close an earlier review of a facade's unused account, retaining
             # its original observation; the inner Family still checks its worker.
@@ -758,7 +762,8 @@ def ensure_role_reserve(record: dict[str, Any], accounts: list[dict[str, Any]] |
     # Family reserve headroom remains preventive. Confirmed exhaustion uses
     # the same Scheduler gate and durable handoff as an explicit Resident switch.
     reserve = (account or {}).get("quota_reserve") or {}
-    if quota_switch_policy(record) is True and reserve.get("fresh") and reserve.get("used_up"):
+    if (quota_switch_policy(record) is True and reserve.get("fresh") and reserve.get("used_up")
+            and reserve.get("automatic_paused", True)):
         return _ensure_quota_switch(record, accounts)
     if not account:
         reason = "尚未配置可用的 AI 账号；请在设置中连接 AI 并设为默认。原任务已保留，配置后将自动继续。"
@@ -780,7 +785,8 @@ def ensure_role_reserve(record: dict[str, Any], accounts: list[dict[str, Any]] |
         # migrations still require verified reserve headroom below.
         ready = available(account)
     else:
-        ready = remaining > MIGRATION_RESERVE_PERCENT if remaining is not None else sufficient_reserve(account)
+        ready = account_credits_active(account) or (
+            remaining > MIGRATION_RESERVE_PERCENT if remaining is not None else sufficient_reserve(account))
     if ready:
         if role_migration(record):
             with get_lineage_data_store().family_quota_migrations.transaction(record['lineage_id'], resident_id) as healthy:
