@@ -581,6 +581,92 @@ def test_a_familys_message_out_carries_the_members_own_uploads_and_no_one_elses(
         assert "只能发送自己上传的附件" in refused.error["message"]
 
 
+@pytest.mark.parametrize("mutation", ["none", "file", "revoked", "foreign-upload", "changed-original",
+                                     "deleted-original", "cancelled-original", "unlinked", "target-removed",
+                                     "changed-author"])
+def test_an_upload_crosses_real_nested_family_relays(delivery_resident, monkeypatch, tmp_path, permissions, mutation):
+    """A checked upload follows two persisted Family relays without changing its owner."""
+    from copy import deepcopy
+    from management_portal.society_service import resident_message_contract
+    from management_portal.society_service.domain_ports import execution_port
+
+    monkeypatch.setattr("management_portal.resources.isa.upload_root", lambda: tmp_path / "uploads")
+    monkeypatch.setattr(execution_port, "service", lambda: SimpleNamespace(accounts=lambda: {"accounts": []}))
+    uploader = delivery_resident["resident_id"]
+    sender, outer, inner, worker = [_register(name)["resident_id"] for name in
+                                  ("Source facade", "Outer facade", "Inner facade", "Worker")]
+    for rid, fid, role in ((sender, "fbi_uploadsrc", "facade"), (uploader, "fbi_uploadsrc", "member"),
+                           (outer, "fbi_uploadout", "facade"), (inner, "fbi_uploadout", "member"),
+                           (inner, "fbi_uploadin", "facade"), (worker, "fbi_uploadin", "member")):
+        set_role(rid, family_id=fid, role=role, actor="sample_admin")
+    permissions.place(Fact("resident", outer))
+    permissions.place(Fact("resident", inner))
+    permissions.grant(uploader, outer, "@contributor")
+    permissions.grant("sample_admin", outer, "@contributor")
+    permissions.grant("sample_admin", inner, "@contributor")
+    name, mime, data = ("nested.txt", "text/plain", b"reproduction steps") if mutation == "file" else (
+        "nested.png", "image/png", PNG)
+    upload = _upload(name, mime, data, owner=uploader)
+    parts = _with_uploads("Keep the original attachment", (upload, name))
+    sent = run("DeliverMessage", {"resident_id": outer, "message": {"content_parts": parts}},
+               actor=uploader).raise_for_error()
+    repo = resident_conversation_stream.get_repository()
+    original = repo.message(outer, sent["message_id"])
+    assert original["author_id"] == sender
+    assert original["origin"]["initiated_by"]["id"] == uploader
+    first = run("RelayFamilyMessage", {"resident_id": outer, "message_id": sent["message_id"],
+                                      "member_id": inner}, actor="sample_admin").raise_for_error()
+    assert family_facade.relay_source_of(inner, first["message_id"]) == (outer, sent["message_id"])
+    inner_message = repo.message(inner, first["message_id"])
+    # The router remains the real initiator. Its operation is not the upload authority.
+    assert inner_message["origin"]["initiated_by"]["id"] == "sample_admin"
+    if mutation == "revoked":
+        speaks_for = family_facade.speaks_for
+        monkeypatch.setattr(family_facade, "speaks_for", lambda facade, member:
+                            False if (facade, member) == (sender, uploader) else speaks_for(facade, member))
+    elif mutation in {"foreign-upload", "changed-original", "deleted-original", "changed-author"}:
+        message = repo.message
+        altered = deepcopy(inner_message if mutation == "foreign-upload" else original)
+        if mutation == "foreign-upload":
+            foreign = _upload("foreign.png", "image/png", PNG, owner=worker)
+            altered["content_parts"] = _with_uploads("Keep the original attachment", (foreign, "foreign.png"))
+        elif mutation == "changed-original":
+            altered["content_parts"] = [{"type": "text", "text": "changed"}]
+        elif mutation == "changed-author":
+            altered["author_id"] = worker
+        else:
+            altered = None
+        key = (inner, first["message_id"]) if mutation == "foreign-upload" else (outer, sent["message_id"])
+        monkeypatch.setattr(repo, "message", lambda rid, mid: deepcopy(altered) if (rid, mid) == key else message(rid, mid))
+    elif mutation == "cancelled-original":
+        state = repo.input_state
+        monkeypatch.setattr(repo, "input_state", lambda rid, mid: {"state": "cancelled"}
+                            if (rid, mid) == (outer, sent["message_id"]) else state(rid, mid))
+    elif mutation == "unlinked":
+        links = family_facade.relay_links
+        monkeypatch.setattr(family_facade, "relay_links", lambda record:
+                            {} if record["resident_id"] == outer else links(record))
+    elif mutation == "target-removed":
+        members = family_facade.family_member_ids
+        monkeypatch.setattr(family_facade, "family_member_ids", lambda record:
+                            set() if record["resident_id"] == outer else members(record))
+    args = {"resident_id": inner, "message_id": first["message_id"], "member_id": worker}
+    receipt = run("RelayFamilyMessage", args, actor="sample_admin")
+    if mutation not in {"none", "file"}:
+        assert receipt.status == "failed"
+        assert receipt.error["code"] == "instruction.forbidden"
+        delivered_id = resident_message_contract.derived_message_identity("family-relay", inner, first["message_id"], worker)
+        assert repo.message(worker, delivered_id) is None
+        return
+    second = receipt.raise_for_error()
+    delivered = repo.message(worker, second["message_id"])
+    assert delivered["content_parts"] == parts
+    assert delivered["author_id"] == sender
+    assert family_facade.relay_sources_of(worker, second["message_id"]) == [
+        (inner, first["message_id"]), (outer, sent["message_id"])]
+    assert run("RelayFamilyMessage", args, actor="sample_admin").raise_for_error() == second
+
+
 def test_only_a_familys_message_out_has_its_facade_send_a_members_uploads(delivery_resident, monkeypatch, tmp_path,
                                                                           permissions):
     """只有平台让门面代成员对外发送时才按成员身份核对附件
@@ -618,8 +704,9 @@ def test_only_a_familys_message_out_has_its_facade_send_a_members_uploads(delive
     assert outward_messages.speaking_for(facade) == ""
 
 
+@pytest.mark.parametrize('nested', [False, True])
 def test_another_familys_router_relays_the_members_uploads_its_facade_received(delivery_resident, monkeypatch,
-                                                                               tmp_path, permissions):
+                                                                               tmp_path, permissions, nested):
     """另一个 Family 的 Router 转交时仍按原成员的权限读取附件
 
     Family 以门面发给另一个 Family 门面的消息到达时按原成员的权限核对附件，等待那边的 Router；Router 原样转交给成员时，成员按原成员的权限读取附件；权限系统开启时，发出它的门面已不代表该成员时转交被拒绝。
@@ -664,6 +751,8 @@ def test_another_familys_router_relays_the_members_uploads_its_facade_received(d
     # The other Family's Router relays to a distinct member; facade role facts
     # cannot be removed by saving a Resident's read projection.
     recipient = _register("接收附件的成员")["resident_id"]
+    if nested:
+        set_role(recipient, family_id="fbi_family0003", actor="sample_admin")
     mark = family_facade.relay_mark(other, sent["message_id"])
     monkeypatch.setattr(family_facade, "validate_relay",
                         lambda business_ref, actor: (other, sent["message_id"]) if business_ref == mark else None)
@@ -681,6 +770,10 @@ def test_another_familys_router_relays_the_members_uploads_its_facade_received(d
     fronted.add((facade, member))
     relay("msg_0000000000000f11")
 
+    if nested:
+        assert repository.input_state(recipient, "msg_0000000000000f11")["state"] == "queued"
+        assert repository.message(recipient, "msg_0000000000000f11")["content_parts"] == parts
+        return
     job = resident_execution_work.read(_find_resident(recipient))
     assert job["user_message_id"] == "msg_0000000000000f11"
     assert [item["name"] for item in job["input_media"]] == ["shot.png"]

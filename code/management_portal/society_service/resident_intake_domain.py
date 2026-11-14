@@ -867,7 +867,7 @@ def _deliver_to_facade(
     # and the member the Router chooses reads them (decision_44cf587c1721).
     if request.input_media:
         resident_media_domain.resident_input_media(
-            request.input_media, actor=request.reader, resident_id=record_id, content=request.message,
+            request.input_media, actor=request.attachment_actor, resident_id=record_id, content=request.message,
             workspace_roots=resident_runtime_domain.resident_media_workspace_roots(environment or record),
         )
     if request.context_refs:

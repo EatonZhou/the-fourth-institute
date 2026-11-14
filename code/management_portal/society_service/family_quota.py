@@ -161,9 +161,33 @@ def _relay_failed_route(facade_id: str, message_id: str, member_id: str, actor: 
     # relay_message already owns this exact request. Re-entering its public
     # non-blocking ownership gate would reject our own recovery. Slow intake
     # runs outside the facade state lock, so withdrawal can still commit.
-    result = _relay_owned(facade_id, message_id, member_id, actor, reason=reason,
-        quota_reviewed=quota_reviewed, scope_gap=scope_gap, scope_reviewed=scope_reviewed,
-        recover=False, continue_previous=continue_previous)
+    try:
+        result = _relay_owned(facade_id, message_id, member_id, actor, reason=reason,
+            quota_reviewed=quota_reviewed, scope_gap=scope_gap, scope_reviewed=scope_reviewed,
+            recover=False, continue_previous=continue_previous)
+    except PermissionError as error:
+        # A definitive pre-admission refusal ends this routing attempt. Unknown
+        # transport outcomes retain the durable intent for retry; a committed
+        # member intake or withdrawal always wins over this failure projection.
+        with resident_record_domain.state_lock(facade_id):
+            from management_common.resident_handoff_cards import selected_card
+            from management_common.async_questions import answered_set
+            delivered_id = message_id if answered_set(original) or selected_card(original) else resident_message_contract.derived_message_identity(
+                "family-relay", facade_id, message_id, member_id)
+            accepted = (repository.message(member_id, delivered_id) is not None
+                        or resident_execution_work.input_location(member_id, delivered_id,
+                            store.resident_execution_record(member_id)) is not None)
+            if (not accepted and message_id not in family_facade.relay_links(facade)
+                    and repository.input_state(facade_id, message_id).get("state") == "queued"
+                    and getattr(error, "commit_state", "not_committed") == "not_committed"):
+                family_recovery.routing_failed({"occurred_at": entry["requested_at"], "payload": {
+                    "resident_id": facade_id, "message_id": message_id}}, str(error))
+                if repository.input_state(facade_id, message_id).get("state") == "failed":
+                    with store.family_relays.transaction(facade["lineage_id"], facade_id) as ledger:
+                        current = ledger["route_restorations"][message_id][-1]
+                        if current["requested_at"] == entry["requested_at"]:
+                            current.update(status="failed", error={"message": str(error)})
+        raise
     with store.family_relays.transaction(facade["lineage_id"], facade_id) as ledger:
         entry = ledger["route_restorations"][message_id][-1]
         entry.update(status=result["status"], result=result)

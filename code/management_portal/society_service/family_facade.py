@@ -340,6 +340,30 @@ def relay_sender(source: tuple[str, str] | None, message: Mapping[str, Any] | No
     stored = resident_conversation_stream.get_repository().message(source[0], source[1])
     if stored is None or message.get("content_parts") != stored.get("content_parts"):
         return ""
+    # Each relay records its real initiator, not the original uploader. Recover
+    # attachment authority through the existing two-way relay links instead of
+    # treating the current router as that uploader. Every copy must still have
+    # its exact original author/content and belong to its parent's Family.
+    repository = resident_conversation_stream.get_repository()
+    current = source
+    seen = set()
+    while True:
+        if current in seen or len(seen) >= MAX_RELAY_HOPS:
+            raise PermissionError("Family 附件转交来源循环或超出层级")
+        seen.add(current)
+        if repository.input_state(*current).get("state") == "cancelled":
+            raise PermissionError("Family 附件转交来源已撤回")
+        mark = parse_relay_mark(repository.message_business_ref(*current))
+        if mark is None:
+            break
+        parent = relay_source_of(*current)
+        if parent != mark or not relay_delegates(parent, current[0]):
+            raise PermissionError("Family 附件转交来源关联已失效")
+        original = repository.message(*parent)
+        if (original is None or original.get("author_id") != stored.get("author_id")
+                or original.get("content_parts") != stored.get("content_parts")):
+            raise PermissionError("Family 附件转交来源原文已变化或不存在")
+        current, stored = parent, original
     author = str(stored.get("author_id") or "")
     origin = stored.get("origin") if isinstance(stored.get("origin"), Mapping) else {}
     initiator = origin.get("initiated_by") if isinstance(origin.get("initiated_by"), Mapping) else {}

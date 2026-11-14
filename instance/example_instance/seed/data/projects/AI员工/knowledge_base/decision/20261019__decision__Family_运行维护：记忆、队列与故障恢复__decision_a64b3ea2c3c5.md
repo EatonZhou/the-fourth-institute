@@ -4,15 +4,15 @@ type: decision
 project: AI员工
 created_at: '2026-10-19'
 version:
-  number: 28
+  number: 29
   created_at: "2026-10-19"
   created_by:
     user: ""
     agent: "resident_4b1da6140cf2"
-  updated_at: "2026-11-14T11:28:22Z"
+  updated_at: "2026-11-14T21:06:18Z"
   updated_by:
     user: ""
-    agent: "resident_2e9ea0072551"
+    agent: "resident_60ae6d0cdf74"
 importance: 8
 ai_generated: true
 links:
@@ -100,6 +100,8 @@ Mailbox 操作和授权由 [Mailbox Design](/resource/knowledge?item=decision_15
 门面尚未转交、原请求处于 failed 时，修复失败原因后，通过 `DeliverMessage` 向同一门面发送正文仅为 `continue`、`message.quote.message_id` 指向原请求的恢复命令。本 Family Steward 应明确引用目标；原发送者或能管理门面的主体也可使用该入口。无引用的 continue 只选择发送者自己的请求，存在多个候选时要求明确引用，不批量恢复历史失败业务。
 
 恢复命令是控制输入，不替换业务输入：原消息 ID、作者、正文和附件保持不变，平台保存恢复意图，以控制输入 ID 形成一次独立的路由 occurrence，再重新开放原请求。重放同一控制输入只补完已保存意图；原请求已排队、运行或完成时只观察结果，不另起执行。已经转交且失败的请求沿当前承接关系恢复成员原输入，仍受检查点与权限约束。
+
+重新开放后的转交若被 PermissionError 明确拒绝，只有结果确定为 not_committed、没有成员消息或持久队列的受理事实、没有已提交转交回执，且原请求仍为 queued 时，才把本次路由尝试收尾为 failed，并记录本次恢复意图及错误。先前失败回执与本次失败分别保留，不让原请求假停留在 routing，也不把恢复命令受理称为业务完成。未知 RuntimeError 或提交结果未知时保留原幂等恢复意图供续办；取消、已受理和已提交事实优先，旧失败不得覆盖新的恢复尝试。
 
 取消优先于恢复：原请求或当前成员副本已取消时，continue 只展示取消状态，不重新入队。保存恢复意图后发生撤回，中断续跑也不得重开或再派发路由。恢复命令自身被取消后不得继续处理。取消后的新业务意图须另行明确提交。
 
