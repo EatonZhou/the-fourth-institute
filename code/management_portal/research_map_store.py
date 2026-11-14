@@ -420,10 +420,16 @@ def update_layout(project_id: str, positions: dict[str, Any], *, actor: str) -> 
     if not isinstance(positions, dict) or not positions:
         raise ValueError("positions 不能为空")
     with database().transaction(key=project_id) as connection:
-        current = _map_row(connection, project_id, lock=True)
+        # Read the identifiers from the same locked map row, without sending
+        # every direction's question, approach and other prose to Python.
+        current = connection.execute(
+            "SELECT layout, layout_revision, "
+            "jsonb_path_query_array(document, '$.directions[*].direction_id') AS direction_ids "
+            "FROM maps WHERE project_id=%s FOR UPDATE", (project_id,),
+        ).fetchone()
         if current is None:
             raise LookupError("这个项目还没有研究地图")
-        known = _index(current["document"])
+        known = set(current["direction_ids"])
         layout = dict(current["layout"])
         for direction_id, position in positions.items():
             if direction_id not in known:

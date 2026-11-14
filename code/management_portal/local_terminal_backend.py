@@ -181,7 +181,10 @@ def start_terminal(
         existing = _SESSIONS.get(str(session_id or ""))
         if existing and existing.actor == actor_id and existing.process.poll() is None:
             return _public_state(existing)
-        session = _spawn_shell(actor_id, cols, rows, cwd)
+    # Process creation may wait on the host; unrelated sessions must remain
+    # readable and controllable while this new session is not yet registered.
+    session = _spawn_shell(actor_id, cols, rows, cwd)
+    with _LOCK:
         _SESSIONS[session.session_id] = session
         return _public_state(session)
 
@@ -230,15 +233,16 @@ def start_device_terminal(
         existing = _SESSIONS.get(str(session_id or ""))
         if existing and existing.actor == actor_id and existing.process.poll() is None:
             return _public_state(existing)
-        session = _spawn_process(
-            actor_id,
-            command,
-            cols,
-            rows,
-            DEFAULT_CWD,
-            initial_password=password,
-            credential_resource_id=via_resource_id,
-        )
+    session = _spawn_process(
+        actor_id,
+        command,
+        cols,
+        rows,
+        DEFAULT_CWD,
+        initial_password=password,
+        credential_resource_id=via_resource_id,
+    )
+    with _LOCK:
         _SESSIONS[session.session_id] = session
         result = _public_state(session)
         result["resource_id"] = str(device_id)

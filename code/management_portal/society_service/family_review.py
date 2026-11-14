@@ -61,8 +61,10 @@ def _completed_position(family, event):
         state = repo.input_state(rid, mid)
     except KeyError:
         return None
+    if state.get("state") != "completed":
+        return None
     message = repo.message(rid, mid) or {}
-    if (state.get("state") != "completed" or message.get("role") != "user"
+    if (message.get("role") != "user"
             or repo.message_business_ref(rid, mid).startswith("duty/")
             or resident_held_infos.is_info({"resident_id": rid}, mid)):
         return None

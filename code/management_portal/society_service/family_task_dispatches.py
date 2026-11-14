@@ -67,12 +67,14 @@ def accepted_receipt(facade_id, target_id, trigger, message_id, *, family_id, fa
 
 def _validate_original(repository, target_id, facade_id, mid, text, business_ref):
     from . import resident_input_queue_domain, resident_message_contract
+    from .resident_conversation_records import message_from_storage
 
-    original = repository.message(target_id, mid)
-    if original is None:
+    stored = repository.stored_message(target_id, mid)
+    if stored is None:
         return None, None
+    original = message_from_storage(stored)
     if (original.get("author_id") != facade_id
-            or repository.message_business_ref(target_id, mid) != business_ref):
+            or str(stored.get("business_ref") or "").strip() != business_ref):
         raise resident_message_contract.MessageIdentityConflict("Family task message_id belongs to another task")
     candidate = resident_input_queue_domain.build_message(
         "user", text, facade_id, message_id=mid, created_at=original["created_at"],

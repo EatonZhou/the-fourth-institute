@@ -270,11 +270,12 @@ def update_lineage_layout(
     """
 
     actor_id = _safe_actor(actor)
-    current = lineage_aggregate.read_lineage(lineage_id, actor=actor_id)
+    current = lineage_aggregate.read_lineage(lineage_id, actor=actor_id, include_runtime=False)
     lineage_aggregate.ensure_manager(current, actor_id)
-    candidate = _clone_json(current)
+    # This read owns its definition. Coordinates need neither runtime state
+    # nor another copy of component configurations and graph content.
     normalized = lineage_state_domains.apply_layout_patch(
-        candidate,
+        current,
         payload.get("positions"),
         normalize_position=_position,
     )

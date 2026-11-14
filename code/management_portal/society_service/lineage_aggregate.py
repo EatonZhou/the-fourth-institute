@@ -76,10 +76,16 @@ def read_lineage_state(lineage_id: str) -> dict[str, Any]:
     return lineage_state_domains.merge_validated_runtime_state(payload, runtime_state)
 
 
-def read_lineage(lineage_id: str, *, actor: str) -> dict[str, Any]:
+def read_lineage(lineage_id: str, *, actor: str, include_runtime: bool = True) -> dict[str, Any]:
     if lineage_deletion_intent(lineage_id):
         raise LineageConflictError("Lineage deletion is in progress")
-    payload = read_lineage_state(lineage_id)
+    if include_runtime:
+        payload = read_lineage_state(lineage_id)
+    else:
+        try:
+            payload = lineage_catalog_store().get(lineage_id)
+        except KeyError:
+            raise KeyError("Lineage not found") from None
     payload = business_fact_views.canonical_view(
         payload,
         resource_id=lineage_id,

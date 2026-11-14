@@ -120,8 +120,10 @@ def check_resident_work_summary(actor: str, resident_id: str, message_id: str) -
         raise PermissionError("摘要检查只允许本 Family 或 Resident 本人执行")
     repo = resident_conversation_stream.get_repository()
     state = repo.input_state(resident_id, message_id)
+    if not state or state.get("state") != "completed":
+        return {"status": "skipped"}
     ref = repo.message_business_ref(resident_id, message_id)
-    if not state or state.get("state") != "completed" or ref.startswith((REMINDER_REF, ROLLUP_REF, "duty/family-progress")):
+    if ref.startswith((REMINDER_REF, ROLLUP_REF, "duty/family-progress")):
         return {"status": "skipped"}
     store = resident_context().store
     if not store.missing_work_round(resident_id, message_id):
