@@ -112,6 +112,18 @@ const renderer = homeStatements().filter(({node:n})=>n.type==='FunctionDeclarati
       });
       assert.deepEqual(problems,[],width+'px');
     }
+    const metricRows = await page.evaluate(()=>{
+      const probe=document.createElement('section');probe.style.width='300px';
+      const account={kind:'subscription_login',provider:'claude',subscription:{tier:{id:'max_20x'}},
+        refresh_cards:{available_count:0,cards:[]},credits:{balance:0}};
+      probe.innerHTML=accountSubscriptionHtml(account)+accountCreditsHtml(account);document.body.append(probe);
+      const rows=[...probe.querySelectorAll('.account-details-metrics > div')].map(node=>{
+        const r=node.getBoundingClientRect();return {top:r.top,left:r.left,width:r.width};
+      });probe.remove();return rows;
+    });
+    assert.equal(metricRows.length,3);
+    assert(metricRows[0].top<metricRows[1].top && metricRows[1].top<metricRows[2].top,'Tier, Resets and Credits occupy three rows');
+    assert(metricRows.every(row=>Math.abs(row.left-metricRows[0].left)<1 && Math.abs(row.width-metricRows[0].width)<1));
     await page.evaluate(()=>{
       const panel=document.createElement('section'); panel.className='account-details portalDetailSurface';
       document.body.append(panel);

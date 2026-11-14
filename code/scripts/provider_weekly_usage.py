@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Read existing usage only; no prompts, remote usage refreshes or ledger writes.
+Portal runs additionally notify administrators of reset cards expiring in 7 days.
 
 Offline: --manifest FILE --since ISO --until ISO
 Portal: --resident-id ID --since ISO --until ISO [--max-pages 100]
@@ -526,9 +527,10 @@ def declared_plans(periods, account_id):
             for p in (periods or {}).get(account_id) or []]
 
 
-def collect_portal(call, since, until, max_pages, timezone_name='Asia/Hong_Kong'):
+def collect_portal(call, since, until, max_pages, timezone_name='Asia/Hong_Kong', *, accounts=None):
     """Existing authorized ISA only. Never force native account observation."""
-    accounts = call('ListProviderAccounts', refresh=False).get('accounts') or []
+    if accounts is None:
+        accounts = call('ListProviderAccounts', refresh=False).get('accounts') or []
     result = []
     # Codex's existing sanitized export is the only native-history ISA today.
     import tempfile
@@ -590,6 +592,7 @@ def main(argv=None):
     parser.add_argument('--refresh-cache-root', default='features:provider_usage/refresh-cache')
     parser.add_argument('--skip-refresh-evidence', action='store_true', help='Skip retained Home/Claude quota evidence ingestion')
     parser.add_argument('--subscription-only', action='store_true', help='Only registered subscription accounts in local mode')
+    parser.add_argument('--skip-reset-reminders', action='store_true', help='Do not send the default Portal administrator reset-card expiry reminders')
     parser.add_argument('--account', action='append', default=[], help='Only this account ID in local mode; repeatable')
     parser.add_argument('--provider-events', help='Saved provider-wide events export (global resets, limit policy changes)')
     parser.add_argument('--ignore-provider-event', action='append', default=[], metavar='ID',
@@ -661,10 +664,18 @@ def main(argv=None):
             return execute(args.resident_id, {'schema': 'tfi.hatg-instruction.v2', 'instruction': name,
                            'arguments': arguments, 'idempotency_key': 'usage-report:' + uuid.uuid4().hex},
                            request_timeout=30, max_attempts=1)['result']
+        accounts = call('ListProviderAccounts', refresh=False).get('accounts') or []
+        reminders = {'status': 'disabled'}
+        if not args.skip_reset_reminders:
+            from scripts.provider_usage_reset_reminders import notify_expiring_resets
+            try:
+                reminders = notify_expiring_resets(call, accounts)
+            except Exception as error:
+                reminders = {'status': 'failed', 'error_code': type(error).__name__}
+                print('Reset-card reminders failed: ' + type(error).__name__, file=sys.stderr)
         if args.local_records:
             from contextlib import closing
             from scripts.provider_usage_local import local_manifest
-            accounts = call('ListProviderAccounts', refresh=False).get('accounts') or []
             if args.subscription_only:
                 accounts = [a for a in accounts if ((a.get('registration') or {}).get('kind') or a.get('kind')) == 'subscription_login']
             if args.account:
@@ -683,12 +694,14 @@ def main(argv=None):
                 result['incremental'] = dict(cache.stats)
                 result['refresh_evidence_ingestion'] = refresh
         else:
-            result = collect_portal(call, args.since, args.until, args.max_pages, args.timezone)
+            result = collect_portal(call, args.since, args.until, args.max_pages, args.timezone, accounts=accounts)
+        result['reset_card_reminders'] = reminders
     if args.write_report or args.knowledge_resource:
         from scripts.provider_usage_report import write_report, publish_report
         artifacts = write_report(result, args.output_root)
         publication = publish_report(call, args.knowledge_resource, result, artifacts) if args.knowledge_resource else None
         print(json.dumps({'artifacts': artifacts, 'publication': publication,
+                          'reset_card_reminders': result.get('reset_card_reminders', {'status': 'offline'}),
                           'provider_usage_refresh_requested': False,
                           'portal_provenance': result.get('portal_provenance'),
                           'incremental': result.get('incremental'),

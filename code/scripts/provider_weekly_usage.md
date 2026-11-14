@@ -208,6 +208,22 @@ No scheduler, service restart, provider process or remote usage refresh is
 installed or triggered. An external scheduler must supply the intended interval.
 Snapshots retain source timestamps; quota history is filtered to that interval.
 
+Portal (`--resident-id`) report runs also check the already-fetched account
+snapshot for available reset cards expiring after now and within seven days.
+One line per card lists its account, title and Hong Kong expiry time. Retained
+failed readings are marked. Missing expiry dates and spent/expired cards are
+excluded; no matching cards means no user lookup and no message.
+Active users with the authoritative `category=portal_admin` receive Mailbox
+`CreateNotification` notices. Stable per-user/day/card-set IDs prevent duplicate
+delivery on retries; administrator membership is re-evaluated each run.
+`--skip-reset-reminders` keeps a Portal report read-only. Offline manifests never
+send notices. Notification failures are reported separately without losing the
+usage report. The independent equivalent (no usage parsing or native queries) is:
+
+```bash
+python scripts/provider_usage_reset_reminders.py --resident-id YOUR_RESIDENT_ID
+```
+
 ## Reset Review Rules
 
 Evidence reports `timing_confidence`, `reset_cause`, `actual_reset_at` and an
