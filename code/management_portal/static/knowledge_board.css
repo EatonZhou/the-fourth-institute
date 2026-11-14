@@ -2330,3 +2330,7 @@ body.knowledgeInitializing main {
   min-height: calc(100vh - 120px);
   visibility: hidden;
 }
+
+.projectHeader h2 { font-size:var(--portal-section-title-size); font-weight:var(--portal-section-title-weight); line-height:var(--portal-section-title-line-height); }
+.knowledgeFilePaneTitle, .knowledgeGraphHeading > span:first-child, .detailContentPane > .paneHead .paneTitle, .knowledgeDetailHeading .modalTitle { font-size:var(--portal-pane-title-size); font-weight:var(--portal-pane-title-weight); line-height:var(--portal-pane-title-line-height); }
+.knowledgeGraphMeta { font-size:var(--portal-subtitle-size); font-weight:var(--portal-subtitle-weight); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }

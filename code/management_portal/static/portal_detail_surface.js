@@ -60,7 +60,8 @@
       button.type = "button";
       button.dataset.portalMobileRegionTarget = id;
       button.setAttribute("role", "tab");
-      button.textContent = region.dataset.portalMobileLabel || region.getAttribute("aria-label") || id;
+      const label = region.dataset.portalMobileLabel || region.getAttribute("aria-label") || id;
+      button.textContent = window.PortalI18n.t(label);
       button.addEventListener("click", () => select(id));
       tabs.append(button);
     });

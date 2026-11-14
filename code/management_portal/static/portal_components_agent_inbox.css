@@ -19,7 +19,7 @@
   color: var(--text, #172030);
   box-shadow: inset 0 1px 0 #ffffff80, inset 0 -1px 0 #ffffff1a,
     0 6px 24px #14253014, 0 1px 4px #1425300a;
-  font: 500 13px/1.3 var(--font-sans, system-ui, sans-serif);
+  font: 500 13px/1.3 var(--portal-font);
 }
 .portalMailboxAlert[hidden] { display: none; }
 .portalMailboxAlert button {
@@ -926,4 +926,15 @@ body.portalAgentInboxMounted:has(> .portalAgentInbox[data-dock-side="left"]) {
   .portalAgentInbox[data-chatroom-open="true"] [data-agent-inbox-mobile-close] { display: none; }
   .portalMailboxChatroom > header .portalButton { min-height: 40px; }
   .portalAgentInbox[data-chatroom-open="true"] .portalMailboxChatroom { grid-template-rows: 52px minmax(0, 1fr); }
+}
+
+.portalAgentInboxItem { font-family:inherit; }
+/* Reserve only chrome controls and scroll tails, never a permanent page column. */
+.portalChatWorkspaceRoot :is(.composerActions,.portalChatQuotaNotice), :where(.composerFooter,.composerBottom) {
+  margin-inline-start:var(--portal-floating-left,0px);
+  margin-inline-end:var(--portal-floating-right,0px);
+}
+body.portalAgentInboxMounted :is(.workspaceMain,.projectsMain,.knowledgeMain,.portalCollectionBody,.portalCollectionBoard,.chatMessages,.messages,.settingsPageMain,main.portalPageFrame) {
+  padding-block-end:max(var(--portal-floating-tail,0px), 12px);
+  scroll-padding-block-end:var(--portal-floating-tail,0px);
 }

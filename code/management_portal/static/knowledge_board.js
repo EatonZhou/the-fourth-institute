@@ -67,7 +67,6 @@ const state = {
   detailMetaDraft: null,
   detailEditing: false,
   detailSaving: false,
-  detailDeleting: false,
   detailGraph: {
     fileId: "",
     payload: null,
@@ -184,7 +183,6 @@ const el = {
   mText: document.getElementById("mText"),
   mDownload: document.getElementById("mDownload"),
   mFavorite: document.getElementById("mFavorite"),
-  mDelete: document.getElementById("mDelete"),
   mEdit: document.getElementById("mEdit"),
   mCancelEdit: document.getElementById("mCancelEdit"),
   mSave: document.getElementById("mSave"),
@@ -464,7 +462,6 @@ el.archiveDraftList.addEventListener("focusout", (event) => {
 el.archiveDrafts.addEventListener("click", () => generateArchiveDrafts().catch(alertError));
 el.archiveApply.addEventListener("click", () => applyArchiveDrafts().catch(alertError));
 el.mClose.addEventListener("click", closeModal);
-el.mDelete.addEventListener("click", () => deleteDetail());
 el.mEdit.addEventListener("click", () => setDetailEditing(true));
 el.mCancelEdit.addEventListener("click", () => setDetailEditing(false));
 el.mSave.addEventListener("click", () => saveDetail());

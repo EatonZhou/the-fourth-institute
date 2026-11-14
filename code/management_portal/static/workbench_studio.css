@@ -125,3 +125,7 @@
   .workbenchBreadcrumb { border-right: 0; padding-right: 0; }
   .projectionHeading p, .workbenchPreviewNote { display: none; }
 }
+
+.projectionPage.is-catalog .projectionHeading h1 { font-size:var(--portal-page-title-size); font-weight:var(--portal-page-title-weight); line-height:var(--portal-page-title-line-height); }
+.workbenchSectionHeading h3 { font-size:var(--portal-section-title-size); font-weight:var(--portal-section-title-weight); line-height:var(--portal-section-title-line-height); }
+.projectionHeading p, .workbenchPreviewNote { font-size:var(--portal-subtitle-size); font-weight:var(--portal-subtitle-weight); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }

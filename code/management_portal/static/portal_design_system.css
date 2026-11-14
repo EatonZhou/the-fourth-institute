@@ -12,6 +12,18 @@
 body { font-family: var(--portal-font); }
 
 :root {
+  --portal-page-title-size: 28px;
+  --portal-page-title-weight: 700;
+  --portal-page-title-line-height: 34px;
+  --portal-section-title-size: 16px;
+  --portal-section-title-weight: 700;
+  --portal-section-title-line-height: 22px;
+  --portal-pane-title-size: 13px;
+  --portal-pane-title-weight: 800;
+  --portal-pane-title-line-height: 18px;
+  --portal-subtitle-size: 11px;
+  --portal-subtitle-weight: 400;
+
   --portal-font: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
   --portal-shell-font: "Comic Sans MS", "Comic Sans", cursive, ui-sans-serif, system-ui, sans-serif;
   --portal-space-1: 4px;
@@ -2140,3 +2152,8 @@ dialog.portalDetailSurface::backdrop {
     transition: none;
   }
 }
+
+/* Typography for interface chrome only; Markdown, cards and site navigation opt in separately. */
+.portalPageTitle { font-size:var(--portal-page-title-size); font-weight:var(--portal-page-title-weight); line-height:var(--portal-page-title-line-height); }
+.portalSectionTitle { font-size:var(--portal-section-title-size); font-weight:var(--portal-section-title-weight); line-height:var(--portal-section-title-line-height); }
+.portalSubtitle { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:var(--portal-subtitle-size); font-weight:var(--portal-subtitle-weight); }

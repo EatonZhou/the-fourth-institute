@@ -7,7 +7,7 @@
 
 /* Heading, figures and tools */
 .workbenchListHero { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px; }
-.workbenchListHeading h1 { margin: 0 0 6px; font-size: 28px; line-height: 1.2; letter-spacing: -.01em; }
+.workbenchListHeading h1 { margin: 0 0 6px; font-size:var(--portal-page-title-size); font-weight:var(--portal-page-title-weight); line-height:var(--portal-page-title-line-height); letter-spacing: -.01em; }
 .workbenchListStats { display: flex; flex-wrap: wrap; gap: 14px; margin: 0; color: var(--muted); }
 .workbenchListStats strong { margin-right: 3px; color: var(--text); font-variant-numeric: tabular-nums; }
 .workbenchListStats .is-live strong { color: var(--ok, #15803d); }
@@ -279,3 +279,6 @@ a.workbenchChip:hover { border-color: color-mix(in srgb, var(--accent) 50%, var(
   .workbenchSearch input { width: 100%; }
   .workbenchTeamDetail { display: none; }
 }
+
+.workbenchGroupToggle { font-family:var(--portal-font); font-size:var(--portal-section-title-size); font-weight:var(--portal-section-title-weight); line-height:var(--portal-section-title-line-height); }
+.workbenchListHeading p, .workbenchGroupCount { font-size:var(--portal-subtitle-size); font-weight:var(--portal-subtitle-weight); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }

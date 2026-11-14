@@ -247,3 +247,5 @@
 .portalCollectionSemanticMatch span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 .portalCollectionTypeChip { position: absolute; right: 9px; bottom: 9px; padding: 2px 7px; border-radius: 999px; background: rgba(110, 118, 130, .42); color: #fff; font-size: 10px; font-weight: 600; letter-spacing: .02em; line-height: 1.2; pointer-events: none; white-space: nowrap; }
+
+.portalProjectTitle { font-size:var(--portal-section-title-size); font-weight:var(--portal-section-title-weight); line-height:var(--portal-section-title-line-height); font-family:var(--portal-font); }

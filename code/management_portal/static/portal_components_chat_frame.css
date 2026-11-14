@@ -416,11 +416,6 @@
   font-size: 10px;
 }
 
-:root {
-  --portal-pane-title-size: 13px;
-  --portal-pane-title-weight: 800;
-  --portal-pane-title-line-height: 18px;
-}
 .paneTitle {
   min-width: 0;
   font-size: var(--portal-pane-title-size);

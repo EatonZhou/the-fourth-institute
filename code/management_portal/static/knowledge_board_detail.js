@@ -118,7 +118,6 @@ function finalizeDetailClose(context = {}) {
   detailDocumentSession?.show?.({ status: "empty", payload: null }, { reason: "detail-close" });
   state.detailBodyDraft = "";
   state.detailMetaDraft = null;
-  state.detailDeleting = false;
   resetDetailGraph();
   resetDetailChat();
   if (!detailResourceGuest?.embedded() && context.updateLocation !== false) {
@@ -129,8 +128,6 @@ function finalizeDetailClose(context = {}) {
 function syncDetailButtons() {
   const snapshot = detailDocumentSession?.snapshot?.();
   const available = !!snapshot?.payload && !["empty", "loading", "error"].includes(snapshot.status);
-  const selectedType = String((state.selected || {}).type || "");
-  const deleteProtected = ["article", "experiment"].includes(selectedType);
   const selectedFile = detailFiles().find(value => String(value.address || "") === state.detailSelectedFileId);
   window.PortalPreview.configureDownloadLink(el.mDownload, {
     url: state.detailDownloadUrl || state.detailRawUrl,
@@ -144,16 +141,13 @@ function syncDetailButtons() {
     || state.detailSelectedFileLinked
     || state.detailEditing
     || !detailSelectedFileEditable();
-  el.mDelete.hidden = !available || state.detailReadOnly || deleteProtected || !state.detailFileId || state.detailFileId !== state.detailSelectedFileId || state.detailEditing;
   el.mCancelEdit.hidden = !state.detailEditing;
   el.mSave.hidden = !state.detailEditing;
-  el.mSave.disabled = state.detailSaving || state.detailDeleting || !detailIsDirty();
-  el.mCancelEdit.disabled = state.detailSaving || state.detailDeleting;
-  el.mEdit.disabled = state.detailSaving || state.detailDeleting;
-  el.mDelete.disabled = state.detailSaving || state.detailDeleting;
-  el.mClose.disabled = state.detailSaving || state.detailDeleting;
+  el.mSave.disabled = state.detailSaving || !detailIsDirty();
+  el.mCancelEdit.disabled = state.detailSaving;
+  el.mEdit.disabled = state.detailSaving;
+  el.mClose.disabled = state.detailSaving;
   el.mSave.textContent = state.detailSaving ? window.PortalI18n.t("保存中…") : window.PortalI18n.t("保存");
-  el.mDelete.textContent = state.detailDeleting ? window.PortalI18n.t("删除中…") : window.PortalI18n.t("删除");
 }
 
 function renderDetailBody() {
@@ -330,54 +324,6 @@ async function saveDetail() {
   });
 }
 
-async function deleteDetail() {
-  if (!state.detailFileId || state.detailReadOnly || state.detailSaving || state.detailDeleting) return;
-  const fileId = state.detailFileId;
-  const selectedFileId = state.detailSelectedFileId;
-  const item = byId(fileId) || state.selected || {};
-  const title = item.title || item.filename || fileId;
-  const isSkill = String(item.type || "") === "skill";
-  if (!await window.PortalUI.confirmAction("delete", title, {
-    consequence: isSkill
-      ? "整个 Skill（包括附属文件）会移动到对应来源的 .trash/，不会直接永久删除。"
-      : "文件会移动到项目 knowledge_base/.trash/，不会直接永久删除。",
-  })) return;
-  if (state.detailFileId !== fileId || state.detailSelectedFileId !== selectedFileId
-    || state.detailReadOnly || state.detailSaving || state.detailDeleting) return;
-  state.detailDeleting = true;
-  syncDetailButtons();
-  try {
-    const receipt = await knowledgeApi.request("/knowledge/api/detail/delete", {
-      method: "POST",
-      body: JSON.stringify({ kb_id: fileId }),
-    });
-    if (receipt?.deleted !== true || String(receipt.kb_id || receipt.skill_id || "") !== fileId) {
-      throw new Error("删除结果未确认，请刷新后核对条目状态。");
-    }
-    state.deletedKnowledgeIds.add(fileId);
-    // Invalidate both in-flight list pages and direct-ID lookups before
-    // rendering the acknowledged deletion; neither may resurrect it.
-    state.indexPaging.requestSeq += 1;
-    state.indexPaging.prefetching = false;
-    state.exactQuery = { seq: state.exactQuery.seq + 1, id: "", status: "", error: "" };
-    if (state.raw) {
-      state.raw = { ...state.raw, items: (state.raw.items || []).filter(entry => entry.kb_id !== fileId) };
-      state.indexPaging.total = Math.max(state.raw.items.length, state.indexPaging.total - 1);
-      renderAll();
-    }
-    const embedded = detailResourceGuest?.deleted({
-      resourceId: fileId,
-      kind: "deleted",
-    });
-    if (state.detailFileId === fileId) closeModal();
-    if (!embedded) await loadIndex({ refresh: true });
-  } catch (err) {
-    alertError(err);
-    state.detailDeleting = false;
-    syncDetailButtons();
-  }
-}
-
 async function openDetailFile(file, options = {}) {
   const targetFileId = String(file?.address || "").trim();
   if (!targetFileId || !state.detailFileId) return;
@@ -502,7 +448,6 @@ async function openDetail(fileId, options = {}) {
   detailDocumentSession?.show?.({ status: "empty", payload: null }, { reason: "detail-change" });
   state.detailBodyDraft = "";
   state.detailMetaDraft = null;
-  state.detailDeleting = false;
   state.detailGraph = { fileId, payload: null, loading: detailGraphEnabled(), positions: {}, basePositions: null };
   resetDetailChat();
   state.detailChat.fileId = fileId;

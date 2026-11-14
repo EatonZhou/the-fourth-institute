@@ -108,6 +108,14 @@
     root.style.setProperty("--portal-agent-inbox-top", `${Math.round(top)}px`);
     root.style.setProperty("--portal-agent-inbox-panel-max-height", `${Math.floor(below ? spaceBelow : spaceAbove)}px`);
     root.dataset.panelPlacement = below ? "below" : "above";
+    const style = document.documentElement.style;
+    const left = state.dockSide === "left";
+    const clearance = Math.ceil(triggerBounds.width + VIEWPORT_GAP);
+    style.setProperty("--portal-floating-left", left ? clearance + "px" : "0px");
+    style.setProperty("--portal-floating-right", left ? "0px" : clearance + "px");
+    style.setProperty("--portal-floating-width", Math.ceil(triggerBounds.width) + "px");
+    style.setProperty("--portal-floating-height", Math.ceil(bounds.height) + "px");
+    style.setProperty("--portal-floating-tail", Math.ceil(bounds.viewportHeight - top + VIEWPORT_GAP) + "px");
   }
 
   // The last confirmed target, per user, lets a new page draw both triggers in
@@ -135,7 +143,7 @@
     const trigger = root.querySelector("[data-personal-assistant-trigger]");
     trigger.hidden = !target;
     if (target) {
-      trigger.dataset.portalTooltip = `${target.title} · 按住拖动到左侧或右侧`;
+      trigger.dataset.portalTooltip = `${target.title} · ${window.PortalI18n.t("按住拖动到左侧或右侧")}`;
       trigger.dataset.portalTooltipSource = "explicit";
       delete trigger.dataset.portalGeneratedTooltip;
     }
@@ -606,7 +614,7 @@
     const residentId = navigationResidentId(entry);
     if (!residentId) return entry;
     if (!residentDiscovery) {
-      window.PortalUI?.toast?.("无法确认 Resident 状态，请稍后重试。", "error");
+      window.PortalUI?.toast?.(window.PortalI18n.t("无法确认 Resident 状态，请稍后重试。"), "error");
       return null;
     }
     try {
@@ -1061,6 +1069,7 @@
     state.focused = false;
     root?.remove();
     root = null;
+    for (const key of ["left","right","width","height","tail"]) document.documentElement.style.removeProperty("--portal-floating-" + key);
     document.body?.classList.remove("portalAgentInboxMounted");
     document.body?.classList.remove("portalAgentInboxOverlayOpen");
   }
