@@ -7,6 +7,17 @@
  * data-portal-* and aria contracts.
  */
 
+/* Resolve Han glyphs independently of the interface language. Restrict this
+   local face to CJK so Latin text keeps its platform UI font. No download. */
+@font-face {
+  font-family: "Portal Simplified Chinese";
+  src: local("PingFang SC"), local("Hiragino Sans GB"),
+       local("Microsoft YaHei"), local("Noto Sans CJK SC"),
+       local("Noto Sans SC"), local("Source Han Sans SC");
+  unicode-range: U+2E80-9FFF, U+F900-FAFF, U+FE10-FE1F, U+FE30-FE4F,
+                 U+FF00-FFEF, U+20000-323AF;
+}
+
 /* Every page's text uses --portal-font. Page stylesheets refer to the token
    and do not restate a font stack; a page without its own rule gets it here. */
 body { font-family: var(--portal-font); }
@@ -24,7 +35,7 @@ body { font-family: var(--portal-font); }
   --portal-subtitle-size: 11px;
   --portal-subtitle-weight: 400;
 
-  --portal-font: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+  --portal-font: "Portal Simplified Chinese", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
   --portal-shell-font: "Comic Sans MS", "Comic Sans", cursive, ui-sans-serif, system-ui, sans-serif;
   --portal-space-1: 4px;
   --portal-space-2: 8px;
