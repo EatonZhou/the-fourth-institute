@@ -16,7 +16,7 @@ from management_common.json_columns import json_text, json_value
 
 
 FIELDS = {
-    'root': ('status', 'checked_at', 'error_code', 'login_observation', 'login_observed_at'),
+    'root': ('status', 'checked_at', 'error_code', 'error_kind', 'login_observation', 'login_observed_at'),
     'window': ('id', 'label', 'source', 'status', 'quota_group', 'remaining_percent',
                'used_percent', 'window_duration_mins', 'resets_at', 'observed_at', 'stale'),
     'balance': ('status', 'amount', 'currency', 'metric_kind', 'updated_at', 'stale'),

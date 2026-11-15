@@ -68,6 +68,8 @@ def test_exhaustion_and_reset_boundaries_use_shared_quota_policy():
 
 
 def test_monitor_keeps_last_windows_on_usage_failure_and_recovers(monkeypatch):
+    # Exercise three actual observations, not the separately tested 10m gate.
+    monkeypatch.setattr('management_portal.execution.account_monitor.MIN_READ_INTERVAL_SECONDS', 0)
     from management_portal import kimi_account_runtime as runtime
     from management_portal.execution.account_adapters import KimiAccounts
     from management_portal.execution.account_monitor import AccountMonitor
@@ -97,6 +99,7 @@ def test_monitor_keeps_last_windows_on_usage_failure_and_recovers(monkeypatch):
     monitor.refresh_account(account)
     failed = monitor._samples[account.account_id]
     assert failed["status"] == "unavailable" and "secret" not in repr(failed)
+    assert failed['error_kind'] == 'native_usage_error'
     assert [w["remaining_percent"] for w in failed["rate_limits"]] == [75, 58]
     assert all(w["stale"] for w in failed["rate_limits"])
     assert {w["quota_group"] for w in failed["rate_limits"]} == {"kimi-code"}
@@ -119,7 +122,9 @@ def test_failed_quota_does_not_change_auth_and_non_subscriptions_use_api_balance
     from management_portal import kimi_account_runtime as runtime
     client = Mock()
     client._request.side_effect = [{"managed_provider": {"status": "authenticated"}}, TimeoutError()]
-    assert observe(client)["login_observation"] == "logged_in"
+    failed = observe(client)
+    assert failed["login_observation"] == "logged_in"
+    assert failed['error_kind'] == 'TimeoutError'
     client._request.reset_mock(side_effect=True)
     client._request.return_value = {"managed_provider": {"status": "expired"}}
     assert observe(client)["login_observation"] == "login_expired"

@@ -147,9 +147,10 @@ class AccountMonitor:
             if self.stopped.is_set():
                 return  # Cancellation is not a fresh quota or login observation.
             sample["checked_at"] = time.time()
-            with self._lock:
-                sample = merge_windows(sample, self._samples.get(account.account_id) or {},
-                                       now=sample['checked_at'])
+            if sample.get('status') != 'unavailable':
+                with self._lock:
+                    sample = merge_windows(sample, self._samples.get(account.account_id) or {},
+                                           now=sample['checked_at'])
             if not passive and sample.get("status") in {"ok", "available"}:
                 self._observation_store.save_success(account.provider, account.account_id,
                                                     sample, now=sample['checked_at'])

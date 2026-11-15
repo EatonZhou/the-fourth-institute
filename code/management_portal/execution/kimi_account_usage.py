@@ -4,6 +4,7 @@ The native service owns regional endpoints and credentials. These observations
 are quota windows, separate from the per-request token ledger and API balances.
 """
 from datetime import datetime
+import logging
 import time
 
 from .account_quota import MAX_SAMPLE_AGE_SECONDS, finite_number
@@ -70,9 +71,15 @@ def observe(client):
                 "error_code": "provider_authentication_failed", "error": "登录凭据失效，请重新登录"}
     try:
         payload = client._request("GET", "oauth/usage")
+        if isinstance(payload, dict) and payload.get('kind') != 'ok':
+            return {**sample, 'status': 'unavailable', 'quota': {'status': 'unknown'},
+                    'error_code': 'account_read_unavailable', 'error_kind': 'native_usage_error',
+                    'error': '账号用量暂不可读取'}
         return {**sample, **quota_sample(payload, time.time())}
-    except Exception:
+    except Exception as error:
+        kind = 'invalid_quota_payload' if isinstance(error, ValueError) else type(error).__name__
+        logging.getLogger(__name__).warning('Kimi quota observation failed (%s)', kind)
         # A quota read error says nothing about login state. The monitor keeps
         # the last successful windows, marks them stale, and admits no new quota.
         return {**sample, "status": "unavailable", "quota": {"status": "unknown"},
-                "error_code": "account_read_unavailable", "error": "账号用量暂不可读取"}
+                "error_code": "account_read_unavailable", "error_kind": kind, "error": "账号用量暂不可读取"}
