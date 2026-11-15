@@ -118,11 +118,25 @@
   max-width: 100%;
 }
 
-.graphNavigationTools { position:absolute; z-index:8; top:var(--hatg-navigation-inset); right:calc(var(--hatg-navigation-inset) + 44px); padding:3px; gap:3px; border:1px solid var(--border); border-radius:9px; background:var(--panel); box-shadow:0 3px 10px #0b102017; }
-.graphMoreMenu { min-width:180px; display:grid; gap:6px; padding:8px; border:1px solid var(--border); border-radius:9px; background:var(--panel); box-shadow:0 6px 18px #0002; }
-.graphMoreMenu[hidden] { display:none; }
-.graphMoreMenu :is(button,select) { width:100%; min-height:28px; text-align:left; }
-.graphMoreMenu .graphVisibilitySummary { display:block; padding:6px; }
+.graphNavigationTools { position:absolute; z-index:8; top:var(--hatg-navigation-inset); right:var(--hatg-navigation-inset); padding:3px; gap:3px; border:1px solid var(--border); border-radius:9px; background:var(--panel); box-shadow:0 3px 10px #0b102017; }
+.graphCanvasActions { display:flex; align-items:center; gap:1px; margin-left:3px; padding-left:6px; border-left:1px solid var(--border); }
+.graphCanvasActions > .graphNavigatorToolBtn { appearance:none; height:28px; border:0; border-radius:6px 0 0 6px; background:transparent; color:var(--text); padding:0 8px; font:500 12px/1 var(--portal-font); white-space:nowrap; }
+.graphCanvasActions > .graphViewportBtn { height:28px; border-radius:0 6px 6px 0; }
+.graphCanvasActions > button:hover:not(:disabled) { background:var(--panel-2); color:var(--accent); }
+.graphCanvasActions > button:disabled { opacity:.5; cursor:not-allowed; }
+.graphCanvasActions > button:focus-visible { outline:2px solid var(--accent); outline-offset:-2px; }
+
+/* A portalled menu is its own scope root, without graphNavigator ancestry. */
+.graphMoreMenu,
+:scope.graphMoreMenu { box-sizing:border-box; width:220px; max-width:calc(100vw - 24px); display:grid; gap:4px; padding:6px; border:1px solid var(--border); border-radius:10px; background:var(--panel); color:var(--text); font:400 12px/1.4 var(--portal-font); box-shadow:0 8px 24px color-mix(in srgb, #0b1020 16%, transparent); }
+.graphMoreMenu[hidden], :scope.graphMoreMenu[hidden] { display:none; }
+:is(.graphMoreMenu, :scope.graphMoreMenu) :is(button,select) { appearance:none; box-sizing:border-box; width:100%; min-width:0; height:32px; min-height:32px; border:0; border-radius:6px; padding:0 9px; text-align:left; background:transparent; color:var(--text); font:inherit; cursor:pointer; }
+:is(.graphMoreMenu, :scope.graphMoreMenu) select { appearance:auto; border:1px solid var(--border); background:var(--panel-2); }
+:is(.graphMoreMenu, :scope.graphMoreMenu) :is(button,select):hover:not(:disabled) { background:var(--panel-2); }
+:is(.graphMoreMenu, :scope.graphMoreMenu) :is(button,select):focus-visible { outline:2px solid var(--accent); outline-offset:-2px; }
+:is(.graphMoreMenu, :scope.graphMoreMenu) button[aria-pressed="true"] { background:color-mix(in srgb, var(--accent) 12%, var(--panel)); color:var(--accent); }
+:is(.graphMoreMenu, :scope.graphMoreMenu) :disabled { opacity:.5; cursor:not-allowed; }
+:is(.graphMoreMenu, :scope.graphMoreMenu) .graphVisibilitySummary { display:block; padding:6px 9px; border-top:1px solid var(--border); color:var(--muted); font:11px/1.4 var(--portal-font); }
 
 /* Search starts as an icon; the toggle opens the field, which closes again
    when it is left empty. */
@@ -233,6 +247,12 @@
 }
 
 @container lineage-hatg-viewport (max-width: 520px) {
+  .graphNavigationTools:has(.graphNodeSearchCluster[data-expanded="true"]) {
+    top: calc(var(--hatg-navigation-inset) + 44px);
+    left: var(--hatg-navigation-inset);
+    right: var(--hatg-navigation-inset);
+  }
+  .graphNodeSearchCluster[data-expanded="true"] { width:100%; }
   .graphNavigationBar {
     gap: 4px;
   }

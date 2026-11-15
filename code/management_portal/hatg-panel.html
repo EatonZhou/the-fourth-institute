@@ -134,6 +134,21 @@
                 <button class="graphViewportBtn graphFitBtn" data-portal-icon="fit-view" id="graphFitBtn" type="button" aria-label="适配全部 HATG 节点" title="适配全部节点（F）" aria-keyshortcuts="F" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;适配全部 HATG 节点&quot;, &quot;title&quot;: &quot;适配全部节点（F）&quot;}"></button>
               </div>
             </div>
+            <div class="graphCanvasActions">
+              <button class="graphNavigatorToolBtn autoLayoutAction graphNavigatorAction" data-portal-toolbar-item data-portal-toolbar-priority="critical" id="autoLayoutBtn" type="button" aria-label="自动整理：按分支归组节点，减少关系线交叉，并自动适配画布" data-portal-tooltip="自动整理：按分支归组节点，减少关系线交叉，并自动适配画布。" aria-busy="false" disabled data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;自动整理：按分支归组节点，减少关系线交叉，并自动适配画布&quot;}"><span><!--portal-i18n:"整理"-->整理</span></button>
+              <button class="graphViewportBtn" id="graphMoreToggle" type="button" aria-label="更多画布工具" aria-controls="graphMoreMenu" aria-expanded="false" data-portal-i18n-attrs="{&quot;aria-label&quot;:&quot;更多画布工具&quot;}" data-portal-icon="chevron-down" aria-haspopup="dialog"></button>
+              <div class="graphMoreMenu portalHatgOverlayComponent" id="graphMoreMenu" role="dialog" aria-label="更多画布工具" data-portal-i18n-attrs="{&quot;aria-label&quot;:&quot;更多画布工具&quot;}" hidden>
+              <select id="graphRelationFilter" aria-label="筛选关系类型" title="筛选关系类型" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;筛选关系类型&quot;, &quot;title&quot;: &quot;筛选关系类型&quot;}">
+                <option value="all"><!--portal-i18n:"全部关系"-->全部关系</option>
+                <option value="inheritance"><!--portal-i18n:"轨迹继承"-->轨迹继承</option>
+                <option value="handoff"><!--portal-i18n:"工作交接"-->工作交接</option>
+                <option value="program"><!--portal-i18n:"原语程序"-->原语程序</option>
+              </select>
+              <button class="graphNavigatorToolBtn graphLeaderJumpBtn" id="graphLeaderJumpBtn" type="button" aria-label="跳转到当前 Lineage 的 Leader" title="跳转到 Leader" disabled data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;跳转到当前 Lineage 的 Leader&quot;, &quot;title&quot;: &quot;跳转到 Leader&quot;}"><!--portal-i18n:"Leader"-->Leader</button>
+              <button class="graphNavigatorToolBtn graphFocusModeBtn" id="graphFocusModeBtn" type="button" aria-pressed="false" title="只显示选中节点与一跳邻居" data-portal-i18n-attrs="{&quot;title&quot;: &quot;只显示选中节点与一跳邻居&quot;}"><!--portal-i18n:"邻域"-->邻域</button>
+              <span class="graphVisibilitySummary" id="graphVisibilitySummary">0 / 0</span>
+            </div>
+            </div>
           </div>
             <div class="graphNavigator graphNavigationTools" id="graphNavigator" role="toolbar" aria-label="大图导航" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;大图导航&quot;}">
               <div class="graphNodeSearchCluster" id="graphNodeSearchCluster" data-expanded="false">
@@ -143,19 +158,6 @@
                   <div class="graphNodeSearchResults portalHatgOverlayComponent" id="graphNodeSearchResults" hidden></div>
                 </div>
               </div>
-              <button class="graphViewportBtn" id="graphMoreToggle" type="button" aria-label="更多画布工具" aria-controls="graphMoreMenu" aria-expanded="false" data-portal-i18n-attrs="{&quot;aria-label&quot;:&quot;更多画布工具&quot;}">…</button>
-              <div class="graphMoreMenu portalHatgOverlayComponent" id="graphMoreMenu" hidden>
-              <select id="graphRelationFilter" aria-label="筛选关系类型" title="筛选关系类型" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;筛选关系类型&quot;, &quot;title&quot;: &quot;筛选关系类型&quot;}">
-                <option value="all"><!--portal-i18n:"全部关系"-->全部关系</option>
-                <option value="inheritance"><!--portal-i18n:"轨迹继承"-->轨迹继承</option>
-                <option value="handoff"><!--portal-i18n:"工作交接"-->工作交接</option>
-                <option value="program"><!--portal-i18n:"原语程序"-->原语程序</option>
-              </select>
-              <button class="graphNavigatorToolBtn autoLayoutAction graphNavigatorAction" data-portal-toolbar-item data-portal-toolbar-priority="critical" id="autoLayoutBtn" type="button" aria-label="自动整理：按分支归组节点，减少关系线交叉，并自动适配画布" data-portal-tooltip="自动整理：按分支归组节点，减少关系线交叉，并自动适配画布。" aria-busy="false" disabled data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;自动整理：按分支归组节点，减少关系线交叉，并自动适配画布&quot;}"><span><!--portal-i18n:"整理"-->整理</span></button>
-              <button class="graphNavigatorToolBtn graphLeaderJumpBtn" id="graphLeaderJumpBtn" type="button" aria-label="跳转到当前 Lineage 的 Leader" title="跳转到 Leader" disabled data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;跳转到当前 Lineage 的 Leader&quot;, &quot;title&quot;: &quot;跳转到 Leader&quot;}"><!--portal-i18n:"Leader"-->Leader</button>
-              <button class="graphNavigatorToolBtn graphFocusModeBtn" id="graphFocusModeBtn" type="button" aria-pressed="false" title="只显示选中节点与一跳邻居" data-portal-i18n-attrs="{&quot;title&quot;: &quot;只显示选中节点与一跳邻居&quot;}"><!--portal-i18n:"邻域"-->邻域</button>
-              <span class="graphVisibilitySummary" id="graphVisibilitySummary">0 / 0</span>
-            </div>
           </div>
           <aside class="seedInspector" id="seedInspector" hidden aria-live="polite">
             <div class="seedInspectorHead"><span><!--portal-i18n:"种子节点"-->种子节点</span><em id="seedInspectorType"><!--portal-i18n:"候选"-->候选</em></div>
