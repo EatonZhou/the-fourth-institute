@@ -85,6 +85,51 @@ class SchedulerViews:
             "scheduler": scheduler_state,
         }
 
+    def input_diagnostics(self, execution_id: str, *, resident_id: str) -> dict[str, Any] | None:
+        """Lifecycle facts only, after the RPC has authorized the admitted input."""
+        with self.changes.connect() as connection:
+            row = connection.execute(
+                "SELECT e.status,e.owner_worker_id,e.lease_expires_at,e.updated_at,e.cancel_requested,e.attempts,"
+                "w.state AS owner_worker_state,w.heartbeat_at AS owner_worker_heartbeat_at,"
+                "NULLIF(request_json::text,'')::jsonb->>'agent_id' AS request_agent_id,"
+                "jsonb_build_object("
+                "'provider_started',NULLIF(checkpoint_json::text,'')::jsonb->'provider_started',"
+                "'provider_completed',NULLIF(checkpoint_json::text,'')::jsonb->'provider_completed',"
+                "'resumable',NULLIF(checkpoint_json::text,'')::jsonb->'resumable',"
+                "'turn_id_recorded',length(NULLIF(checkpoint_json::text,'')::jsonb->>'turn_id')>0,"
+                "'provider_phase',NULLIF(checkpoint_json::text,'')::jsonb#>'{provider_recovery_state,phase}',"
+                "'abandoned',jsonb_typeof(NULLIF(checkpoint_json::text,'')::jsonb->'abandoned')='object',"
+                "'abandoned_status',NULLIF(checkpoint_json::text,'')::jsonb#>'{abandoned,status}') AS recovery "
+                "FROM executions e LEFT JOIN execution_workers w ON w.worker_id=e.owner_worker_id "
+                "WHERE e.execution_id=%s", (execution_id,),
+            ).fetchone()
+        if row is None:
+            return None
+        if row['request_agent_id'] is not None and row['request_agent_id'] != resident_id:
+            raise KeyError(execution_id)
+        recovery = row['recovery']
+        phase = recovery.get('provider_phase')
+        abandoned_status = recovery.get('abandoned_status')
+        worker_state = row['owner_worker_state']
+        return {
+            'source': 'scheduler', 'status': row['status'],
+            'owner_worker_id': row['owner_worker_id'],
+            'lease_expires_at': iso_time(row['lease_expires_at']),
+            'updated_at': iso_time(row['updated_at']),
+            'cancel_requested': bool(row['cancel_requested']), 'attempts': row['attempts'],
+            'owner_worker': {
+                'state': worker_state if worker_state in ('standby', 'active', 'draining', 'offline') else 'unknown',
+                'heartbeat_at': iso_time(row['owner_worker_heartbeat_at']) or 'unknown',
+            },
+            'recovery': {
+                **{key: recovery[key] if type(recovery.get(key)) is bool else 'unknown'
+                   for key in ('provider_started', 'provider_completed', 'resumable', 'turn_id_recorded', 'abandoned')},
+                'provider_recovery_state': {'phase': phase if phase in ('prompt_sent', 'completed', 'ready_to_continue') else 'unknown'},
+                'abandoned_status': abandoned_status if abandoned_status in ('completed', 'failed', 'cancelled') else 'unknown',
+            },
+            'native_turn_state': 'unknown',
+        }
+
     def states(self, executions: Mapping[str, str]) -> dict[str, Any]:
         """Batch control state; never fetch prompts, results or queue ranking."""
         if not executions:

@@ -190,6 +190,46 @@ def execution_generation_source(server: Any, params: dict[str, Any]) -> Any:
         "created_at": (snapshot.get("scheduler") or {}).get("created_at") or record.get("created_at")}
 
 
+def execution_input_diagnostics(server: Any, params: dict[str, Any]) -> Any:
+    """Reauthorize the requester and bind metadata to an actually admitted input."""
+    from management_portal.society_service.resident_input_diagnostics import resolve_input_execution
+
+    actor = required(params, "actor")
+    resident_id = required(params, "resident_id")
+    message_id = required(params, "message_id")
+    if set(params) - {"actor", "resident_id", "message_id"}:
+        raise ValueError("Input diagnostics accepts no execution selector")
+    association = resolve_input_execution(actor=actor, resident_id=resident_id, message_id=message_id)
+    if not association.get("available"):
+        return {"schema": "tfi.execution-input-diagnostics.v1", **association}
+    resident_id = required(association, "resident_id")
+    message_id = required(association, "message_id")
+    execution_id = required(association, "execution_id")
+    execution_input_id = required(association, "execution_input_id")
+    record = server.agent_data.execution(execution_id)
+    if not record or record.get("agent_id") != resident_id or not any(
+        item.get("message_id") == execution_input_id for item in record.get("inputs") or []
+    ):
+        raise KeyError(execution_id)
+    lifecycle = server.scheduler.input_diagnostics(execution_id, resident_id=resident_id)
+    if lifecycle is None:
+        lifecycle = {
+            "source": "agent_data", "status": record.get("status") or "unknown",
+            **{key: "unknown" for key in (
+                "owner_worker_id", "lease_expires_at", "updated_at", "cancel_requested", "attempts",
+            )},
+            "recovery": {key: "unknown" for key in (
+                "provider_started", "provider_completed", "resumable", "turn_id_recorded", "abandoned", "abandoned_status",
+            )},
+            "owner_worker": {"state": "unknown", "heartbeat_at": "unknown"},
+            "native_turn_state": "unknown",
+        }
+        lifecycle["recovery"]["provider_recovery_state"] = {"phase": "unknown"}
+    lifecycle.update({key: record.get(key) or "unknown" for key in ("created_at", "started_at", "finished_at")})
+    return {"schema": "tfi.execution-input-diagnostics.v1", "available": True, "execution_id": execution_id,
+            "resident_id": resident_id, "message_id": message_id, **lifecycle}
+
+
 def execution_record(server: Any, params: dict[str, Any]) -> Any:
     execution_id = required(params, "execution_id")
     actor = required(params, "actor")
@@ -545,6 +585,7 @@ RPC_HANDLERS: dict[str, RpcHandler] = {
     "execution.states": execution_states,
     "execution.status": execution_status,
     "execution.generation_source": execution_generation_source,
+    "execution.input_diagnostics": execution_input_diagnostics,
     "execution.record": execution_record,
     "execution.token_usage": execution_token_usage,
     "execution.wait": wait_for_execution,

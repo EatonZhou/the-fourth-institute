@@ -91,7 +91,7 @@
 - [Lineage 的成员集合、协作定义与协调角色](/r/decision_6fc653d55c79)
 - [HATG 的可组合对象模型、Packet 路由与可恢复 Program](/r/decision_4adcc1ff2f2c)
 - [ExecutionService 模块与运行架构](/r/decision_25eb93d803a4)
-- [ExecutionService 请求、生命周期与控制协议](/r/decision_6ad0384e020d)
+- [ExecutionService 请求、生命周期与控制协议（含按输入授权的只读诊断）](/r/decision_6ad0384e020d)
 - [Portal Business Task 的进程内异步运行](/r/decision_86721bb4e8c8)
 - [Execution Scheduler 的容量分区、公平准入与租约恢复](/r/decision_8ac0b5a6c0e5)
 - [ExecutionWorker Generation 与滚动交接](/r/decision_075f66430606)

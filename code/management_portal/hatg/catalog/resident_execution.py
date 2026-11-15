@@ -44,8 +44,9 @@ DECLARATIONS = (
         P("include_progress", "boolean", "同时返回未完成消息的进度：排队时前面还有几条（ahead），运行时的 work_state、work_phase 与这条消息的实时活动（activities）"),
         P("include_context", "boolean", "同时返回 in_context：这条消息是否会进入或仍在 Resident 当前的上下文中。等待和执行中的消息会进入；"
           "已处理的消息在清空上下文、换新会话或压缩之后不再在其中，Provider 没有接收的消息也不在其中"),
+        P("include_execution_diagnostics", "boolean", "按当前调用者的输入读取权限，返回该输入关联执行的脱敏生命周期、租约和恢复标记；不含正文或凭据，不触发恢复。缺少运行事实不代表执行未开始"),
     ), (
-        R("input_state", "object", "状态、回复消息 ID 列表、更新时间和错误；work 独立给出可信执行关联、工作状态及 updated_at，送达 completed 不代表 work completed；include_progress 时另有 progress，include_context 时另有 in_context"),
+        R("input_state", "object", "状态、回复消息 ID 列表、更新时间和错误；work 独立给出可信执行关联、工作状态及 updated_at，送达 completed 不代表 work completed；include_progress 时另有 progress，include_context 时另有 in_context，include_execution_diagnostics 时另有 execution_diagnostics"),
     ), target="resident_id"),
     _d("OpenIntake", (On("resident_id", "resident", optional=True), On("resident_ids", "resident", optional=True)), "打开或关闭 Resident 的接单开关。打开后等待中的消息按顺序开始执行；"
        "关闭后新消息只排队不执行，当前工作继续完成。", (

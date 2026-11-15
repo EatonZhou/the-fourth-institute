@@ -461,6 +461,9 @@ class Scheduler:
             include_result=include_result,
         )
 
+    def input_diagnostics(self, execution_id: str, *, resident_id: str) -> dict[str, Any] | None:
+        return self.views.input_diagnostics(execution_id, resident_id=resident_id)
+
     def states(self, executions: Mapping[str, str]) -> dict[str, Any]:
         return self.views.states(executions)
 

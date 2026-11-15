@@ -362,6 +362,15 @@ class ExecutionService:
         """Safe historical model/account projection for a readable Resident."""
         return self.client.request("execution.generation_source", {"execution_id": execution_id, "actor": actor})
 
+    def input_diagnostics(
+        self, *, actor: str, resident_id: str, message_id: str,
+    ) -> dict[str, Any]:
+        """Read lifecycle metadata for one authorized, durably admitted input."""
+        return self.client.request("execution.input_diagnostics", {
+            "actor": actor,
+            "resident_id": resident_id, "message_id": message_id,
+        })
+
     def record(self, execution_id: str, *, actor: str) -> dict[str, Any]:
         """Read durable execution semantics and input references, including after queue retention."""
         return self.client.request("execution.record", {"execution_id": execution_id, "actor": actor})

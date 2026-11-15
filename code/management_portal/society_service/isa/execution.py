@@ -22,13 +22,18 @@ def list_resident_states(inv: Invocation) -> dict[str, Any]:
 
 
 def get_input_state(inv: Invocation) -> dict[str, Any]:
-    return {
-        "input_state": protocol().get_resident_input_state(
-            inv.argument("resident_id"), inv.caller, inv.argument("message_id"),
-            include_progress=inv.argument("include_progress") is True,
-            include_context=inv.argument("include_context") is True,
-        )
-    }
+    state = protocol().get_resident_input_state(
+        inv.argument("resident_id"), inv.caller, inv.argument("message_id"),
+        include_progress=inv.argument("include_progress") is True,
+        include_context=inv.argument("include_context") is True,
+    )
+    if inv.argument("include_execution_diagnostics") is True:
+        from ..resident_input_diagnostics import read_input_diagnostics
+        state = {**state, "execution_diagnostics": read_input_diagnostics(
+            actor=inv.caller, resident_id=inv.argument("resident_id"),
+            message_id=inv.argument("message_id"),
+        )}
+    return {"input_state": state}
 
 
 def _queue_revision(items: list[Any]) -> str:
