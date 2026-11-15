@@ -3,11 +3,11 @@
 The native service owns regional endpoints and credentials. These observations
 are quota windows, separate from the per-request token ledger and API balances.
 """
-from datetime import datetime
 import logging
 import time
 
 from .account_quota import MAX_SAMPLE_AGE_SECONDS, finite_number
+from .quota_reset_time import reset_epoch_seconds
 
 
 WINDOWS = {
@@ -35,13 +35,7 @@ def quota_sample(payload, observed_at):
         ratio = entry.get("usedRatio") if isinstance(entry, dict) else None
         if not finite_number(ratio) or ratio < 0:
             raise ValueError("Invalid Kimi quota ratio")
-        reset = None
-        if entry.get("resetAt"):
-            try:
-                date = datetime.fromisoformat(entry["resetAt"].replace("Z", "+00:00"))
-                reset = date.timestamp() if date.tzinfo is not None else None
-            except (ValueError, TypeError, AttributeError, OverflowError):
-                pass  # The percentage remains useful without a reset time.
+        reset = reset_epoch_seconds(entry.get('resetAt'))
         windows.append({"id": key, "label": label, "quota_group": "kimi-code", "remaining_percent": round(max(0, 1 - ratio) * 100, 6),
                         "window_duration_mins": minutes, "resets_at": reset,
                         "observed_at": observed_at, "stale": False})

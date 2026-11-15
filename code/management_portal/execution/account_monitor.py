@@ -44,8 +44,10 @@ def _rationed_quota(sample):
     if quota.get("status") == "unknown":
         return quota
     observed = quota.get("observed_at") or 0
-    resets = [w.get("resets_at") for w in sample.get("rate_limits") or [] if isinstance(w, dict)]
-    resets = [r for r in resets if isinstance(r, (int, float)) and not isinstance(r, bool) and r > observed]
+    from .quota_reset_time import reset_epoch_seconds
+    resets = [reset_epoch_seconds(w.get('resets_at'))
+              for w in quota.get('windows') or sample.get('rate_limits') or [] if isinstance(w, dict)]
+    resets = [r for r in resets if r is not None]
     quota["max_age_seconds"] = READING_EXPIRES_SECONDS
     quota["valid_until"] = min(resets) if resets else None
     return quota
@@ -155,6 +157,8 @@ class AccountMonitor:
             if self.stopped.is_set():
                 return  # Cancellation is not a fresh quota or login observation.
             sample["checked_at"] = time.time()
+            from .quota_reset_time import normalize_reset_windows
+            sample = normalize_reset_windows(sample, sample['checked_at'])
             if sample.get('status') != 'unavailable':
                 with self._lock:
                     sample = merge_windows(sample, self._samples.get(account.account_id) or {},
@@ -320,9 +324,10 @@ class AccountMonitor:
         if good is None:
             return 0.0
         deadlines = [good + READING_EXPIRES_SECONDS - READING_REFRESH_LEAD_SECONDS]
+        from .quota_reset_time import reset_epoch_seconds
         for window in sample.get('rate_limits') or []:
-            reset = window.get('resets_at') if isinstance(window, dict) else None
-            if type(reset) in (int, float) and reset > good:
+            reset = reset_epoch_seconds(window.get('resets_at')) if isinstance(window, dict) else None
+            if reset is not None and reset > good:
                 deadlines.append(reset)
         return min(deadlines)
 

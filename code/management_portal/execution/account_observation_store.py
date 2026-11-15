@@ -18,7 +18,8 @@ from management_common.json_columns import json_text, json_value
 FIELDS = {
     'root': ('status', 'checked_at', 'error_code', 'error_kind', 'quota_request_sent', 'login_observation', 'login_observed_at'),
     'window': ('id', 'label', 'source', 'status', 'quota_group', 'remaining_percent',
-               'used_percent', 'window_duration_mins', 'resets_at', 'observed_at', 'stale'),
+               'used_percent', 'window_duration_mins', 'resets_at', 'observed_at', 'stale',
+               'reset_time_semantics', 'reset_time_precision_seconds'),
     'balance': ('status', 'amount', 'currency', 'metric_kind', 'updated_at', 'stale'),
     'credits': ('balance', 'has_credits', 'unlimited', 'observed_at', 'stale'),
 }

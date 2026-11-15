@@ -4,6 +4,7 @@ import math
 from typing import Any
 
 from .account_quota import quota_state
+from .quota_reset_time import reset_epoch_seconds
 
 
 def _codex_limits(payload: dict[str, Any]) -> Any:
@@ -55,7 +56,7 @@ def rate_limit_windows(payload, *, observed_at):
             result.append({'id': name if group == 'codex' else f'{group}/{name}',
                 'quota_group': group, 'label': label if group == 'codex' else f'{title} · {label}',
                 'remaining_percent': max(0.0, 100.0-used) if valid else None,
-                'window_duration_mins': minutes, 'resets_at': window.get('resetsAt'),
+                'window_duration_mins': minutes, 'resets_at': reset_epoch_seconds(window.get('resetsAt')),
                 'observed_at': observed_at, 'stale': False})
     return result
 
@@ -79,7 +80,7 @@ def quota_sample(payload: dict[str, Any], *, observed_at: float) -> dict[str, An
             windows.append({
                 "window": name,
                 "remaining_percent": max(0.0, 100.0 - used),
-                "resets_at": window.get("resetsAt"),
+                "resets_at": reset_epoch_seconds(window.get("resetsAt")),
                 "window_duration_mins": window.get("windowDurationMins"),
             })
     remaining = min((window["remaining_percent"] for window in windows), default=None)

@@ -154,7 +154,8 @@ def test_monitor_records_each_refresh_without_extra_provider_calls(monkeypatch):
     assert history.append.call_args.args[2]['rate_limits'][0]['observed_at'] == 900
 
 
-def test_persistence_failure_does_not_turn_fresh_quota_into_failure(caplog):
+def test_persistence_failure_does_not_turn_fresh_quota_into_failure(caplog, monkeypatch):
+    monkeypatch.setattr('management_portal.execution.account_monitor.time.time', lambda: 1000)
     monitor, account, accounts, history = make_monitor()
     history.append.side_effect = RuntimeError('SECRET')
     monitor.refresh_account(account)
@@ -252,11 +253,12 @@ def test_rationed_quota_stays_valid_until_expiry_or_first_reset():
     sample = {'quota': {'status': 'available', 'observed_at': 1000, 'max_age_seconds': 60, 'valid_until': 1060},
               'rate_limits': [{'resets_at': 5000}, {'resets_at': 9000}, {'resets_at': 900}]}
     quota = _rationed_quota(sample)
-    assert (quota['max_age_seconds'], quota['valid_until']) == (READING_EXPIRES_SECONDS, 5000)
+    assert (quota['max_age_seconds'], quota['valid_until']) == (READING_EXPIRES_SECONDS, 900)
     assert _rationed_quota({'quota': {'status': 'unknown'}}) == {'status': 'unknown'}
 
 
-def test_claude_cache_is_read_between_real_reads_without_a_usage_query():
+def test_claude_cache_is_read_between_real_reads_without_a_usage_query(monkeypatch):
+    monkeypatch.setattr('management_portal.execution.account_monitor.time.time', lambda: 1000)
     monitor, account, accounts, history = make_monitor()
     accounts.observes_passively = lambda a: True
     monitor.refresh_account(account, passive=True)

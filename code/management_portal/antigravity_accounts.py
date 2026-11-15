@@ -145,14 +145,11 @@ def quota_windows(report, observed_at):
         remaining = float(percent[1]) if percent else None
         if remaining is not None and not 0 <= remaining <= 100:
             remaining = None
-        reset = None
-        if percent and percent[2]:
-            try:
-                reset = datetime.strptime(percent[2], "%b %d, %Y, %H:%M UTC").replace(tzinfo=timezone.utc).timestamp()
-            except ValueError:
-                pass
+        from management_portal.execution.quota_reset_time import reset_epoch_seconds
+        reset = reset_epoch_seconds(percent[2]) if percent and percent[2] else None
         windows.append({"id": f"{group}/{label}", "label": f"{group} · {label}", "quota_group": group,
                         "remaining_percent": remaining, "resets_at": reset,
+                        "reset_time_precision_seconds": 60 if percent and percent[2] and percent[2].endswith(' UTC') else 1,
                         "observed_at": observed_at, "stale": False})
     return windows
 
