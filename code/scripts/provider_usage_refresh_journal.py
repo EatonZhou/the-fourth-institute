@@ -58,6 +58,12 @@ class RefreshJournal:
             CREATE INDEX IF NOT EXISTS observations_account ON observations(provider,account,at);
             CREATE TABLE IF NOT EXISTS version(value INTEGER);
             CREATE TABLE IF NOT EXISTS parser_signature(value TEXT);''')
+        self.db.executescript('''CREATE TABLE IF NOT EXISTS reset_home (
+            key TEXT PRIMARY KEY, after_id INTEGER, latest TEXT);
+            CREATE TABLE IF NOT EXISTS reset_snapshots (
+            provider TEXT, account TEXT, id INTEGER, at REAL, payload TEXT,
+            PRIMARY KEY(provider,account,id));
+            CREATE INDEX IF NOT EXISTS reset_snapshot_time ON reset_snapshots(provider,account,at);''')
         version = self.db.execute('SELECT value FROM version').fetchone()
         if version is None:
             with self.db:
@@ -138,7 +144,7 @@ class RefreshJournal:
 
     def sync_home(self, provider, account, page_reader=home_pages):
         key = digest(['home', provider, account])
-        old = self.db.execute('SELECT after_id,latest FROM home WHERE key=?', (key,)).fetchone()
+        old = self.db.execute('SELECT after_id,latest FROM reset_home WHERE key=?', (key,)).fetchone()
         after, latest = old if old else (0, None)
         replay = datetime.fromisoformat(latest) - timedelta(days=1) if latest else datetime(1970, 1, 1, tzinfo=timezone.utc)
         for page in page_reader(provider, account, after, replay):
@@ -155,13 +161,27 @@ class RefreshJournal:
                     newest = max(newest, datetime.fromisoformat(current[1]))
                 changes = self.db.total_changes
                 for row in page:
+                    snapshot = {'id': row['id'], 'provider': provider, 'account_id': account,
+                                'sample': row['sample']}
+                    self.db.execute('INSERT OR IGNORE INTO reset_snapshots VALUES(?,?,?,?,?)',
+                                    (provider, account, row['id'], datetime.fromisoformat(row['finished_at'].replace('Z', '+00:00')).timestamp(),
+                                     json.dumps(snapshot)))
                     for observation in home_quota_records([row]):
                         self._put(key, provider, account, observation)
                 added = self.db.total_changes - changes
                 self.db.execute('INSERT OR REPLACE INTO home VALUES(?,?,?)', (key, new_after, newest.isoformat()))
+                self.db.execute('INSERT OR REPLACE INTO reset_home VALUES(?,?,?)', (key, new_after, newest.isoformat()))
             after, latest = new_after, newest.isoformat()
             self.stats['home_rows_replayed_or_new'] += len(page)
             self.stats['observations_added'] += added
+
+    def reset_snapshots(self, provider, account, since, until):
+        if digest(['home', provider, account]) in self.failed_sources:
+            return []
+        # Include prior history: each window needs its own preceding native observation.
+        return [json.loads(row[0]) for row in self.db.execute('''SELECT payload FROM reset_snapshots
+            WHERE provider=? AND account=? AND at<? ORDER BY at,id''',
+            (provider, account, until.timestamp()))]
 
     def observations(self, provider, account, since, until):
         from scripts.provider_weekly_usage import moment
@@ -208,6 +228,8 @@ def enrich_manifest(manifest, accounts, since, until, root='features:provider_us
                 journal.stats['failures'].append({'source': 'home', 'provider': provider,
                                                  'account': identity, 'error': type(error).__name__})
             account.setdefault('quota_observations', []).extend(journal.observations(provider, identity, since, until))
+            if provider in {'codex', 'claude'}:
+                account['reset_snapshots'] = journal.reset_snapshots(provider, identity, since, until)
         return {**journal.stats, 'status': 'partial' if journal.stats['failures'] else 'available',
                 'late_commit_policy': 'replay_last_24h_of_finished_at; older_delayed_commits_require_backfill'}
     finally:

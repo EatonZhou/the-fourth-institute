@@ -480,7 +480,25 @@ def report_account(account, since, until, timezone_name, cache=None, provider_ev
                 attribution_sink(event, attribution)
             yield event, attribution
     attribution_summary = summarize(attributed())
-    cycles = full_cycle_capacity(events.values(), quotas, moment, since, until, provider_events, plan_periods)
+    # An announcement alone is not an account reset observation.
+    cycles = full_cycle_capacity(events.values(), quotas, moment, since, until,
+                                 [p for p in provider_events if p['kind'] != 'global_reset'], plan_periods)
+    from scripts.provider_usage_resets import classify_resets
+    reset_classifications = [r for r in classify_resets(account.get('reset_snapshots') or [],
+        account['provider'], account['account_id'], moment, provider_events)
+        if since <= moment(r['observed_change_between'][1]) < until]
+    # Unscheduled recoveries can refill the same endpoint; never fit a mixed cycle.
+    for cycle in cycles:
+        interruptions = [r for r in reset_classifications if r['reset_cause'] != 'scheduled'
+                         and (r['quota_group'] == cycle['quota_group'] or not r['quota_group'])
+                         and r['window_duration_mins'] == 10080
+                         and moment(r['observed_change_between'][0]) < moment(cycle['resets_at'])
+                         and moment(r['observed_change_between'][1]) > moment(cycle['cycle_start'])]
+        if interruptions:
+            cycle.update(status='reset_interrupted', reset_classifications=interruptions,
+                         tokens_at_100_percent_same_mix=None)
+            for model in cycle['models'].values():
+                model['tokens_at_100_percent_same_mix'] = None
     measured_cycles = [c for c in cycles if c['status'] == 'measured']
     return {'provider': account['provider'], 'account_id': account['account_id'], 'source_files': scanned,
             'usage_source': 'native_session_history' if native_primary else 'existing_api_records',
@@ -489,6 +507,7 @@ def report_account(account, since, until, timezone_name, cache=None, provider_ev
             'quota_attribution': attribution_summary,
             'totals': totals, 'requests': len(events), 'buckets': sorted(buckets.values(), key=lambda b: (b['period'], b['model'])),
             'cycle_bounds': bounds, 'reset_evidence': reset_evidence(list(events.values()), quotas, moment),
+            'reset_classifications': reset_classifications,
             'resident_comparisons': comparisons,
             'weekly_cycles': cycles,
             'weekly_capacity_status': 'measured_full_cycles' if measured_cycles else 'insufficient_weekly_quota_evidence',

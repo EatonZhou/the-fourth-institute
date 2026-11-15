@@ -155,6 +155,9 @@ def test_provider_events_keep_completed_global_resets_and_policies_only():
         {'tool': 'codex', 'type': 'reset_card', 'global': False, 'stage': 'completed', 'completedAt': '2026-10-08T03:44:00Z', 'id': 'c'},
         {'tool': 'codex', 'type': 'usage_reset', 'global': True, 'stage': 'scheduled', 'completedAt': None, 'id': 's'},
         {'tool': 'claude-code', 'type': 'usage_reset', 'global': True, 'stage': 'completed', 'completedAt': '2026-10-21T00:00:00Z', 'id': 'x'}]}
+    for event in payload['events']:
+        if event['id'] in {'g', 'x'}:
+            event.update(official_verified=True, official_url='https://openai.com/news/' if event['tool'] == 'codex' else 'https://www.anthropic.com/news/')
     result = provider_events(payload, 'codex')
     assert [(e['kind'], e['id']) for e in result] == [('global_reset', 'g'), ('policy', 'p')]
     assert isinstance(result[0]['at'], datetime)

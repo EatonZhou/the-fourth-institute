@@ -44,6 +44,16 @@ def markdown(report):
              '100% projections assume the same observed model mix; their whole-account error bound is unknown.', '',
              '| Provider | Account | Requests | Recorded tokens | Positive execution residual | Unlinked Portal executions |',
              '| --- | --- | ---: | ---: | ---: | ---: |']
+    resets = [r for a in report['accounts'] for r in a.get('reset_classifications', [])]
+    if resets:
+        rows = ['', '## Reset observations', '', '| Account | Window | Cause (inferred) | Observed change interval | Card delta | Announcement |',
+                '| --- | --- | --- | --- | --- | --- |']
+        for r in resets:
+            rows.append('| ' + ' | '.join(cell(v) for v in (r['account_id'], r['window_id'], r['reset_cause'],
+                        ' to '.join(r['observed_change_between']), r['card_count_delta'], r['announcement_id'])) + ' |')
+        # Keep the account summary table contiguous.
+        insert_at = lines.index('| Provider | Account | Requests | Recorded tokens | Positive execution residual | Unlinked Portal executions |')
+        lines[insert_at:insert_at] = rows + ['']
     for a in report['accounts']:
         missing = sum(not c.get('evidence_source_present', True) for c in a.get('resident_comparisons', []))
         lines.append(f"| {cell(a['provider'])} | {cell(a['account_id'])} | {a['requests']} | {a['totals'].get('total_tokens', 0):,} | {a.get('unplaced_execution_tokens', 0):,} | {missing} |")
