@@ -13,8 +13,6 @@ import pytest
 
 @pytest.fixture(autouse=True)
 def separate_kept_model_windows(monkeypatch):
-    from management_portal.execution import account_adapters
-    monkeypatch.setattr(account_adapters, "_CLAUDE_MODEL_WINDOWS", {})
     monkeypatch.setattr(ClaudeAccounts, "_passive_routes", set())
 
 
@@ -94,13 +92,9 @@ def test_claude_passive_observation_never_starts_a_usage_read(monkeypatch):
     client.account_usage.assert_called_once_with("r", native_refresh=False)
 
 
-def test_claude_model_pool_survives_a_usage_read_until_its_reset(monkeypatch):
-    """/usage replaces the native cache without Fable; the last Fable reading stays until its reset."""
+def test_claude_adapter_returns_native_readings_without_own_retention_cache(monkeypatch):
+    """Durable monitor replay owns retention, not a second adapter memory cache."""
     from management_portal import claude_code_client
-    from management_portal.execution import account_adapters
-    monkeypatch.setattr(account_adapters, "_CLAUDE_MODEL_WINDOWS", {})
-    clock = [1000.0]
-    monkeypatch.setattr(account_adapters.time, "time", lambda: clock[0])
     common = [{"id": "five_hour", "remaining_percent": 80}, {"id": "seven_day", "remaining_percent": 90}]
     fable = {"id": "seven_day_overage_included", "remaining_percent": 96, "resets_at": 2000, "observed_at": "t0"}
     client = Mock()
@@ -109,12 +103,6 @@ def test_claude_model_pool_survives_a_usage_read_until_its_reset(monkeypatch):
     adapter = ClaudeAccounts.__new__(ClaudeAccounts)
     account = SimpleNamespace(account_id="claude_x", route_id="x", quota_policy="reserve")
     adapter.observe(account)
-    client.account_usage.return_value = {"quota_status": "available", "rate_limits": common}
-    kept = adapter.observe(account)["rate_limits"][2]
-    assert (kept["label"], kept["remaining_percent"], kept["observed_at"], kept["stale"]) == ("Fable 每周", 96, "t0", False)
-    client.account_usage.return_value = {"quota_status": "stale", "rate_limits": [{**w, "stale": True} for w in common]}
-    assert adapter.observe(account)["rate_limits"][2]["stale"] is True
-    clock[0] = 2000.0
     client.account_usage.return_value = {"quota_status": "available", "rate_limits": common}
     assert [w["id"] for w in adapter.observe(account)["rate_limits"]] == ["five_hour", "seven_day"]
 

@@ -22,7 +22,7 @@ READING_EXPIRES_SECONDS = 8 * 3600
 MIN_READ_INTERVAL_SECONDS = 600
 from .activity_redaction import redact_sensitive_text
 from .account_usage_store import AccountUsageStore
-from .account_observation_store import AccountObservationStore
+from .account_observation_store import AccountObservationStore, merge_windows
 from .account_login import login_store, now as login_now
 from .provider_failures import is_authentication_failure
 
@@ -82,6 +82,9 @@ class AccountMonitor:
             if state.get('success_at') is not None:
                 self._last_good_read[account.account_id] = state['success_at']
                 self._samples[account.account_id] = state.get('sample') or {}
+            restored = self._observation_store.restore_sample(account.provider, account.account_id, now=time.time())
+            if isinstance(restored, dict) and (restored.get('rate_limits') or restored.get('checked_at')):
+                self._samples[account.account_id] = restored
         self._next_scheduled_check = 0.0
         self._lock = threading.RLock()
         self.stopped, self.wakeup = threading.Event(), threading.Event()
@@ -144,6 +147,9 @@ class AccountMonitor:
             if self.stopped.is_set():
                 return  # Cancellation is not a fresh quota or login observation.
             sample["checked_at"] = time.time()
+            with self._lock:
+                sample = merge_windows(sample, self._samples.get(account.account_id) or {},
+                                       now=sample['checked_at'])
             if not passive and sample.get("status") in {"ok", "available"}:
                 self._observation_store.save_success(account.provider, account.account_id,
                                                     sample, now=sample['checked_at'])

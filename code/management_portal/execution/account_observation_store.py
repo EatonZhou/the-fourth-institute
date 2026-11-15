@@ -52,6 +52,19 @@ def evidence(sample):
     return result
 
 
+def merge_windows(sample, previous, *, now):
+    """An omitted window is not a new reading. Keep its source time until reset."""
+    windows = list(sample.get('rate_limits') or [])
+    present = {w.get('id') for w in windows}
+    for window in previous.get('rate_limits') or []:
+        reset = window.get('resets_at')
+        if (window.get('id') in present or type(reset) not in (int, float)
+                or not math.isfinite(reset) or reset <= now):
+            continue
+        windows.append({**window, 'stale': bool(window.get('stale')) or sample.get('status') == 'unavailable'})
+    return {**sample, 'rate_limits': windows}
+
+
 class AccountObservationStore:
     def __init__(self):
         self.database = portal_database(schema='execution_account_observations')
@@ -106,6 +119,27 @@ class AccountObservationStore:
                             (provider, account_id)).fetchone()
         return {**dict(row), 'sample': json_value(row['sample']),
                 'profile': json_value(row['profile'])} if row else {}
+
+    def restore_sample(self, provider, account_id, *, now):
+        """Replay persisted refresh evidence, including passive and omitted pools.
+
+        Read the newest observation of each window before checking expiry, so
+        an older cycle can never be resurrected over a newer expired one.
+        """
+        with self.connection() as c:
+            last = c.execute('''SELECT sample FROM observations
+                WHERE provider=%s AND account_id=%s ORDER BY finished_at DESC,id DESC LIMIT 1''',
+                (provider, account_id)).fetchone()
+            rows = c.execute('''SELECT DISTINCT ON (w->>'id') w AS window
+                FROM observations o CROSS JOIN LATERAL jsonb_array_elements(o.sample->'rate_limits') w
+                WHERE provider=%s AND account_id=%s AND finished_at >= %s AND w->>'id' IS NOT NULL
+                ORDER BY w->>'id',finished_at DESC,o.id DESC''',
+                (provider, account_id, instant(now - 8 * 86400))).fetchall()
+        latest = json_value(last['sample']) if last else {}
+        windows = [json_value(row['window']) for row in rows]
+        # All replayed windows pass the expiry check; even a latest old sample
+        # must not make an expired model pool appear current after a restart.
+        return merge_windows({**latest, 'rate_limits': []}, {'rate_limits': windows}, now=now)
 
     def claim(self, provider, account_id, *, now, interval, profile=False):
         # Atomic across processes and deployments. A failed request still uses

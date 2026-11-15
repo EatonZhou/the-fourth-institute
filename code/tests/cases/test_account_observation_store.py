@@ -6,7 +6,7 @@ import json
 
 import pytest
 
-from management_portal.execution.account_observation_store import AccountObservationStore, evidence
+from management_portal.execution.account_observation_store import AccountObservationStore, evidence, merge_windows
 from management_portal.execution.account_monitor import AccountMonitor
 
 
@@ -36,6 +36,44 @@ def test_reset_transition_does_not_overwrite_previous_observation():
     assert [r['sample']['rate_limits'][0]['resets_at'] for r in rows] == [2000, 3000]
     assert [r['sample']['rate_limits'][0]['remaining_percent'] for r in rows] == [0, 100]
     assert len(store.read('codex', 'one', since=1000, until=1100)) == 1
+
+
+def test_replay_model_pool_after_later_logs_omit_it_and_monitor_restarts():
+    store = AccountObservationStore()
+    fable = {'id': 'seven_day_overage_included', 'label': 'Fable 每周', 'remaining_percent': 0,
+             'resets_at': 2000, 'observed_at': 900, 'stale': False}
+    original = sample()
+    original['rate_limits'].append(fable)
+    store.append('claude', 'one', original, started_at=1000, finished_at=1001)
+    store.append('claude', 'one', sample(), started_at=1100, finished_at=1101)
+    restored = AccountObservationStore().restore_sample('claude', 'one', now=1200)
+    assert fable in restored['rate_limits']
+    assert AccountObservationStore().restore_sample('claude', 'two', now=1200)['rate_limits'] == []
+    accounts = Mock(adapters={'claude': SimpleNamespace()})
+    account = SimpleNamespace(provider='claude', account_id='one', quota_policy='reserve')
+    accounts.accounts.return_value = [account]
+    # Actual monitor restore is tested with an epoch-independent fake clock.
+    from unittest.mock import patch
+    with patch('management_portal.execution.account_monitor.time.time', return_value=1200):
+        monitor = AccountMonitor(accounts, Mock(), usage_store=Mock(), login_state_store=Mock(), observation_store=store)
+    assert fable in monitor._samples['one']['rate_limits']
+    next_sample = merge_windows(sample(), restored, now=1300)
+    store.append('claude', 'one', next_sample, started_at=1300, finished_at=1301)
+    assert fable in AccountObservationStore().restore_sample('claude', 'one', now=1400)['rate_limits']
+    assert all(w['id'] != fable['id'] for w in store.restore_sample('claude', 'one', now=2000)['rate_limits'])
+
+
+def test_new_model_window_supersedes_old_and_failed_refresh_does_not_freshen_it():
+    previous = {'rate_limits': [{'id': 'fable', 'resets_at': 2000, 'remaining_percent': 0,
+                                'observed_at': 900, 'stale': False}]}
+    failed = merge_windows({'status': 'unavailable'}, previous, now=1000)['rate_limits'][0]
+    assert failed['stale'] and failed['observed_at'] == 900
+    new = {'id': 'fable', 'resets_at': 3000, 'remaining_percent': 90, 'observed_at': 1200}
+    assert merge_windows({'rate_limits': [new]}, previous, now=1200)['rate_limits'] == [new]
+    store = AccountObservationStore()
+    store.append('claude', 'one', previous, started_at=1000, finished_at=1000)
+    store.append('claude', 'one', {'rate_limits': [new]}, started_at=1200, finished_at=1200)
+    assert store.restore_sample('claude', 'one', now=2500)['rate_limits'] == [{**new, 'stale': False}]
 
 
 def test_account_and_provider_scopes_are_independent():
