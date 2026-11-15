@@ -16,6 +16,7 @@ from .scheduler_capacity import (
 )
 from .scheduler_quota import SchedulerQuota
 from .scheduler_rows import json_object
+from .provider_activation import admitting_providers
 
 
 def _queue_reason(*, paused, deferred, capacity, dispatch_wait, binding_busy):
@@ -58,6 +59,8 @@ class Admission:
     def admission_snapshot(self, connection, requests, *, now=None):
         """Shared inputs for claim, a detailed queue view and batched states."""
         now = time.time() if now is None else now
+        providers = {str(request.get("provider") or "") for request in requests}
+        updating = providers - admitting_providers(connection, providers)
         active_counts = defaultdict(int)
         active_bindings = set()
         for _, request in self.active_requests.scheduling_requests(connection):
@@ -79,9 +82,11 @@ class Admission:
         disabled = {row["account_id"] for row in registrations() if not row["enabled"]}
         return {"now": now, "active_counts": active_counts, "active_bindings": active_bindings,
                 "limits": limits, "dispatch": dispatch, "quotas": quotas, "overrides": overrides,
-                "disabled_accounts": disabled}
+                "disabled_accounts": disabled, "updating_providers": updating}
 
     def admission_reason(self, request, available_at, interrupt_only, admission):
+        if request.get("provider") in admission.get("updating_providers", set()):
+            return "runtime_update"
         account = self.accounts.for_request(request)
         if not interrupt_only and account and account.account_id in admission.get("disabled_accounts", set()):
             return "account_disabled"

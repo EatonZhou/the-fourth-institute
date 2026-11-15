@@ -189,13 +189,11 @@ def test_kimi_ownership_checks_creation_and_home_before_stop(monkeypatch, tmp_pa
     terminate.assert_not_called()
 
 
-def test_kimi_busy_account_defers_without_switching_runtime(monkeypatch, tmp_path):
-    from management_portal import kimi_account_runtime as kimi
+def test_kimi_busy_account_does_not_block_runtime_replacement(monkeypatch, tmp_path):
     monkeypatch.setattr(updates,'_active_executions', lambda _:0)
-    monkeypatch.setattr(kimi,'runtime_busy', lambda:True)
-    switch=Mock(); monkeypatch.setattr(updates,'_link',switch)
-    assert updates._activate('kimi',updates.KimiRuntime(),tmp_path/'new') is False
-    switch.assert_not_called()
+    switch=Mock(return_value=True); monkeypatch.setattr(updates,'_switch_runtime',switch)
+    assert updates._activate('kimi',updates.KimiRuntime(),tmp_path/'new')
+    switch.assert_called_once()
 
 
 def test_kimi_account_restart_rolls_back_previous_runtime(monkeypatch,tmp_path):
@@ -203,7 +201,6 @@ def test_kimi_account_restart_rolls_back_previous_runtime(monkeypatch,tmp_path):
     link=tmp_path/'current'; link.symlink_to(old, target_is_directory=True)
     runtime=updates.KimiRuntime()
     monkeypatch.setattr(updates,'_active_executions',lambda _:0)
-    monkeypatch.setattr(runtime,'busy',lambda:False)
     monkeypatch.setattr(updates.KimiRuntime,'services',property(lambda _:()))
     monkeypatch.setattr(runtime,'activation_link',lambda:link)
     monkeypatch.setattr(runtime,'account_processes',lambda:('one',))

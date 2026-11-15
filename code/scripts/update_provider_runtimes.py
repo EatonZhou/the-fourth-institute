@@ -11,7 +11,7 @@ import time
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from management_portal.execution.provider_updates import activate_pending_once, run_update_pass
-from management_common.instance_manifest import load
+from management_common.instance_manifest import load, instance_runtime_root
 from management_common.code_environment import runtime_python
 
 
@@ -27,8 +27,8 @@ def _watch_pending() -> int:
         time.sleep(30)
 
 
-def _start_activation_watch() -> None:
-    """Run the watcher as the instance's own job; stopping the instance stops it."""
+def _start_job(mode: str) -> str:
+    """Run updates outside account services, as an instance-owned job."""
     from scripts.instance_services import job_unit
     from scripts.tfi_shutdown import verify_job
     instance = load()
@@ -36,26 +36,39 @@ def _start_activation_watch() -> None:
     verify_job(unit, instance.root)
     active = subprocess.run(("systemctl", "--user", "is-active", "--quiet", unit), check=False)
     if active.returncode == 0:
-        return
+        return unit
     subprocess.run(
         ("systemd-run", "--user", "--collect", f"--unit={unit}",
          '--setenv=PORTAL_INSTANCE_ROOT=' + str(instance.root),
-         str(runtime_python(instance.code_root())), str(instance.code_root() / 'scripts/update_provider_runtimes.py'), '--activate-pending'),
+         str(runtime_python(instance.code_root())), str(instance.code_root() / 'scripts/update_provider_runtimes.py'), mode),
         check=True, capture_output=True, text=True,
     )
+    return unit
+
+
+def main(arguments):
+    if arguments == ["--activate-pending"]:
+        return _watch_pending()
+    if not arguments:
+        # A Resident's command belongs to its native account service cgroup.
+        # The service being upgraded must not kill its own updater midway.
+        unit = _start_job("--run-update")
+        print(json.dumps({"accepted": True, "unit": unit,
+            "result_path": str(instance_runtime_root() / "provider-update-result.json")}, sort_keys=True), flush=True)
+        return 0
+    if arguments != ["--run-update"]:
+        raise SystemExit("Usage: update_provider_runtimes.py [--activate-pending]")
+    result = run_update_pass()
+    path = instance_runtime_root() / "provider-update-result.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = path.with_name(f".{path.name}.{os.getpid()}.tmp")
+    temporary.write_text(json.dumps({"finished_at": time.time(), **result}, ensure_ascii=False, sort_keys=True) + "\n")
+    temporary.replace(path)
+    print(json.dumps(result, ensure_ascii=False, sort_keys=True), flush=True)
+    if result.get("pending") or result.get("busy"):
+        return _watch_pending()
+    return 1 if result.get("errors") else 0
 
 
 if __name__ == "__main__":
-    if sys.argv[1:] == ["--activate-pending"]:
-        raise SystemExit(_watch_pending())
-    if sys.argv[1:]:
-        raise SystemExit("Usage: update_provider_runtimes.py [--activate-pending]")
-    result = run_update_pass()
-    if result.get("pending"):
-        try:
-            _start_activation_watch()
-            result["activation_watch"] = "started"
-        except (OSError, subprocess.CalledProcessError) as exc:
-            result["errors"]["activation_watch"] = str(exc)
-    print(json.dumps(result, ensure_ascii=False, sort_keys=True))
-    raise SystemExit(1 if result.get("busy") or result.get("errors") else 0)
+    raise SystemExit(main(sys.argv[1:]))

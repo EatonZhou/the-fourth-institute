@@ -3,7 +3,7 @@
 The System Lineage schedules a Resident to invoke this pass. Each Provider
 whose runtime Portal installs declares how (``AgentProvider.runtime_updater``,
 a ``ProviderRuntime``).  Installs are staged in versioned directories;
-activation waits for active executions.
+activation replaces native services and automatically resumes interrupted inputs.
 """
 
 from __future__ import annotations
@@ -25,6 +25,7 @@ import shutil
 import subprocess
 import sys
 import time
+import uuid
 from urllib.request import urlopen
 
 from packaging.version import Version
@@ -35,6 +36,7 @@ from management_common.process_runtime import run_process
 from management_common.portal_paths import path as portal_path
 from management_common.code_environment import provider_entry, provider_directory
 from .provider_preparation import phase, diagnosed, PreparationError
+from .provider_activation import activation_window
 
 LOGGER = logging.getLogger(__name__)
 ROOT = Path(__file__).resolve().parents[2]
@@ -202,22 +204,31 @@ class ProviderRuntime:
     def link_target(self, root: Path) -> Path:
         return root
 
-    def busy(self) -> bool:
-        """The runtime is in use beyond the Executions Portal counts."""
-
-        return False
-
-
 class CodexRuntime(ProviderRuntime):
     # Each account host is its own registered component, defined when the
     # account starts; there is no static definition to install beforehand.
     unit_files = ()
-    # The official account daemon also accepts independent native clients.
-    # Portal's claim/RPC fence does not exclude those clients at switch time.
-    # Keep the staged runtime pending until a real native exclusion contract
-    # exists; neither an idle sample nor a global queue count proves it.
-    activation_blocker = "native_admission_exclusivity_unverified"
 
+    def ensure_ready(self):
+        from .account_registrations import registrations
+        from .account_hosting import codex_instance_state, codex_socket_path
+        from management_portal.codex_app_server_client import CodexAppServerClient
+
+        for row in registrations("codex"):
+            if row["kind"] != "subscription_login" or codex_instance_state(row["account_id"])["active"] != "active":
+                continue
+            deadline = time.monotonic() + 45
+            while True:
+                client = CodexAppServerClient(codex_socket_path(row["account_id"]))
+                try:
+                    client.request("model/list", {}, timeout=5)
+                    break
+                except Exception:
+                    if time.monotonic() >= deadline:
+                        raise
+                    time.sleep(.1)
+                finally:
+                    client.close()
     @property
     def services(self) -> tuple[str, ...]:
         from .account_registrations import registrations
@@ -351,15 +362,6 @@ class ClaudeRuntime(ProviderRuntime):
     def activation_link(self) -> Path:
         return provider_entry("claude_runtime_current")
 
-    def busy(self) -> bool:
-        # The daemon also runs turns Claude Code starts by itself.
-        from management_portal.claude_code_client import ClaudeCodeClient, ClaudeCodeUnavailable
-        try:
-            return bool(int(ClaudeCodeClient().health()["active"]))
-        except ClaudeCodeUnavailable:
-            return False
-
-
 class KimiRuntime(ProviderRuntime):
     # 2.5 replaces raw live events and snapshot APIs with transcript protocol
     # v2. This adapter owns the v1 contract; install its newest compatible
@@ -376,10 +378,6 @@ class KimiRuntime(ProviderRuntime):
     def restart_account_process(self, account_id):
         from management_portal.kimi_account_runtime import restart_account
         restart_account(account_id)
-
-    def busy(self):
-        from management_portal.kimi_account_runtime import runtime_busy
-        return runtime_busy()
 
     def prerequisites_available(self) -> bool:
         from management_portal.kimi_windows_runtime import available
@@ -553,7 +551,9 @@ def _active_executions(provider: str) -> int:
     try:
         with database.transaction() as connection:
             row = connection.execute(
-                "SELECT count(*) AS total FROM executions WHERE status IN ('queued', 'claimed', 'running') "
+                "SELECT count(*) AS total FROM executions WHERE "
+                "(status IN ('claimed', 'running') OR (status='queued' AND "
+                "(checkpoint_json::jsonb->>'turn_id' IS NOT NULL OR checkpoint_json::jsonb ? 'abandoned'))) "
                 "AND request_json::jsonb->>'provider' = %s", (provider,),
             ).fetchone()
             return int(row["total"])
@@ -563,10 +563,24 @@ def _active_executions(provider: str) -> int:
 
 @diagnosed("service_activation")
 def _activate(provider: str, runtime: ProviderRuntime, root: Path, *, prepare=False) -> bool:
-    if getattr(runtime, "activation_blocker", ""):
-        return False
-    if _active_executions(provider) or runtime.busy():
-        return False
+    with activation_window(provider) as reserved:
+        if not reserved:
+            return False
+        if _active_executions(provider):
+            _prepare_execution_recovery(provider)
+        return _switch_runtime(provider, runtime, root, prepare=prepare)
+
+
+def _prepare_execution_recovery(provider):
+    from management_portal.society_service import SocietyServiceClient
+    return SocietyServiceClient(timeout=30).resident.prepare_provider_runtime_update(
+        provider=provider, update_id=uuid.uuid4().hex,
+    )
+
+
+@diagnosed("service_activation")
+def _switch_runtime(provider: str, runtime: ProviderRuntime, root: Path, *, prepare=False) -> bool:
+    """Replace the runtime while its activation window excludes new claims."""
     services = runtime.services
     accounts = runtime.account_processes()
     controller = runtime.service_control()
@@ -583,7 +597,7 @@ def _activate(provider: str, runtime: ProviderRuntime, root: Path, *, prepare=Fa
                 time.sleep(.1)
         for account_id in accounts:
             runtime.restart_account_process(account_id)
-        if prepare:
+        if prepare or services or accounts:
             runtime.ensure_ready()
     except Exception as exc:
         rollback_failed = False
@@ -711,8 +725,6 @@ def provider_runtime_status(*, refresh=False):
                             "checked_at": observed.get("checked_at", ""),
                             "pending_switch": bool((state.get("pending") or {}).get(provider)),
                             "check_error": observed.get("check_error", "")}
-        if (state.get("pending") or {}).get(provider) and getattr(runtime, "activation_blocker", ""):
-            result[provider]["activation_blocker"] = runtime.activation_blocker
     return result
 
 
@@ -819,7 +831,7 @@ def prepare_runtime(provider: str) -> dict:
                         state["pending"].pop(provider, None)
                         result.update(status="ready", source="installed")
                     else:
-                        result.update(status="pending", message="运行环境已准备，等待当前执行结束后启用。")
+                        result.update(status="pending", message="运行环境已准备，正在等待自动切换。")
             except Exception as exc:
                 failure = exc if isinstance(exc, PreparationError) else PreparationError("service_activation", exc)
                 result.update(status="failed", **failure.public())
@@ -874,7 +886,7 @@ def run_update_pass() -> dict[str, object]:
 
 
 def activate_pending_once() -> dict[str, object]:
-    """Activate staged runtimes after the triggering Resident turn has ended."""
+    """Retry staged runtime activation without waiting for executions to end."""
     result: dict[str, object] = {"activated": [], "pending": [], "errors": {}}
     with _update_state() as locked:
         if locked is None:

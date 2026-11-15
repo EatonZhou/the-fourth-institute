@@ -87,20 +87,20 @@ Codex 全部账号共用站点 `codex_binary` 和运行时版本，各账号仍�
   - DSH：将桥接脚本及其同目录的 `.mjs` 模块复制到新版本目录；桥接脚本通过语法检查，并能连同依赖模块加载和导出 Portal 调用的 `apply` 函数。
 
   通过后写入验证标记。已有验证标记的目录不再重复安装，只重新检查。
-- **Codex 共享入口激活须先具备可验证的原生准入排他。** 当前已暂存的 Codex 升级保持待切换（pending）；在能够验证独立原生 TUI 与既有 native 连接均受准入排他约束之前，更新器在改动共享运行时链接及重启任何服务之前停止该激活路径。Provider 队列空闲不能证明这些原生客户端已静默；单次或多次零活动采样也不能替代排他能力。仅当 Codex 存在待切换版本时，运行时状态才返回 `activation_blocker: native_admission_exclusivity_unverified`，没有待切换版本时不显示该原因。此限制优先于下述通用空闲切换、自动启用和失败回退流程，其他 Provider 的既有机制保持不变；安装与暂存仍可进行。这不是永久关闭升级，也不由开关或采样次数解除，恢复激活须以真实可验证的原生准入排他能力为依据。逐账号 generation、claim 与 RPC 基础、真实版本及 PID 验证、进程回退和新的生产控制器或 API 均不作为当前已具备能力。
-- **切换只在这个 Provider 没有进行中的执行时发生。** ExecutionService 中还有该 Provider 的排队、已领取或运行中的执行，或者 Claude Code 守护进程报告有运行中的轮次时，新版本进入“待切换”状态，当前版本继续服务。
+- **已验证的新版本直接自动启用。** 更新属于系统维护，不请求用户授权，也不等待在途执行、Provider 队列或独立原生客户端空闲。运行时更新器在切换前通知 Resident owner，为确切在途原输入登记一次维护恢复意图；随后切换共享程序入口并重启所选账号服务。移除以原生准入能力尚未验证为由永久阻断启用的规则。
+- **在途任务中断后自动接续。** 原生服务重启时，Execution 先按已有检查点重接原会话；若本次中断耗尽执行重试，Society coordinator 以原消息身份、发送者、附件和上下文恢复确切原输入一次，不消费网络故障重试预算。已完成、用户已取消、手动关闭接收或出现认证等明确不可恢复失败时不重放。一次维护意图只作用于所记录的 Execution，不复活后续无关失败。
 - **切换范围由 Provider 的运行时更新器给出。** 检查程序把当前链接原子地换成新版本目录，依次重启更新器返回的服务，并确认它们处于运行状态。Codex 更新器从账号登记查询模板实例，只选择当前 `active` 的实例：已停用登记但仍在服务的进程也更新，原本停止的实例保持停止。账号之间隔离身份与会话，共用运行时版本；验证更新生效时核对被更新实例实际运行的二进制和版本。服务定义由实例清单与平台渲染器生成，按已登记账号组件选择，不把运行中的实例名当作仓库 unit 文件。
 - **切换失败时退回原版本。** 任一服务重启失败，检查程序把当前链接改回原来的目录并再次重启这些服务，然后报告错误；安装失败时当前版本保持不变。
-- **待切换的版本会在空闲后自动启用。** 出现待切换版本时，检查程序启动临时的 systemd 用户服务 `portal-provider-pending-activation`，每 30 秒尝试切换一次，最多等待 24 小时。该服务通过 `EnvironmentFile` 加载 Portal 的 PostgreSQL 环境文件，默认路径为 `~/.config/tfi/portal-postgres.env`，可由 `PORTAL_POSTGRES_ENV_FILE` 指定。数据库连接用于检查 Provider 的活动 Execution；连接不可用时报告错误并保留待切换状态。连接凭据不写入启动命令参数。
+- **待切换状态表示仍有实际维护工作需要重试。** 安装或切换失败时保留当前运行时或回退，并由实例自己的 `<服务前缀>-provider-activation` 瞬态作业每 30 秒重试，最长 72 小时。作业只传入非秘密的 `PORTAL_INSTANCE_ROOT`，其余配置和数据库端点由实例清单与秘密文件解析。任务停止时释放维护期间的准入锁，不保留需要人工解除的暂停状态。
 - **同一时间只运行一次检查。** 检查程序持有文件锁 `provider-updates.lock`，位于 provider-state 区域的根目录；另一次检查正在运行时，新的调用立即返回 `busy`。待切换的版本和最近一次检查时间保存在同目录的 `provider-updates.json`。
 
-更新检查由 `scripts/update_provider_runtimes.py` 执行一次（加 `--activate-pending` 时只尝试启用待切换的版本）。它输出 JSON 结果，列出每个 Provider 的已安装版本与可用版本、本次启用的 Provider、仍在等待的 Provider 和错误；有错误或检查正忙时以非零状态退出。
+更新请求由 `scripts/update_provider_runtimes.py` 提交给实例的独立瞬态作业，返回 JSON 受理回执、单元名和结果文件路径。安装、切换和重试在该作业执行，结果写入实例 `runtime/provider-update-result.json` 并进入作业日志；更新器不属于待重启的原生账号服务，发起更新的 Resident 中断也不会杀死更新过程。加 `--activate-pending` 时只重试已暂存版本。结果区分已检查、已启用、仍待重试与实际错误。
 
 Provider 声明了仓库内的运行时包（`AgentProvider.runtime_package`，目前只有 DSH 的 `management_portal/dsh_runtime`）时，第一次部署由 `scripts/prepare_agent_runtimes.py` 按仓库中的开放版本声明安装这个目录，并在这个 Provider 的当前链接不存在时让它指向这个目录；之后的版本切换由更新检查负责。
 
 ## 原生运行时的协议兼容边界
 
-ProviderRuntime 同时声明可安装版本的来源与已安装版本是否符合当前 Adapter 的原生协议。程序能输出版本、文件存在与原生协议受支持分别判断；不兼容版本不能计为 ready。安装与更新选择受支持范围内的最新稳定版本，沿同一 stage、空闲切换和失败回退流程恢复，保留账号、会话与持久执行身份。
+ProviderRuntime 同时声明可安装版本的来源与已安装版本是否符合当前 Adapter 的原生协议。程序能输出版本、文件存在与原生协议受支持分别判断；不兼容版本不能计为 ready。安装与更新选择受支持范围内的最新稳定版本，沿同一 stage、直接切换、输入恢复和失败回退流程恢复，保留账号、会话与持久执行身份。
 
 当前 Kimi Adapter 使用原始实时事件与 snapshot 合同，兼容版本范围为 `<2.5.0`。2.4.1 的 server_hello 虽声明 protocol_version=2，仍提供 accepted_subscriptions 确认、原始事件及 snapshot/status；该版本受支持。2.5 移除这些旧合同，改用 transcript 订阅和控制合同，需要完整适配后才能扩展支持范围。握手版本号不能单独判断两者兼容性。client_hello 的空成功 ACK 不代表已订阅一个 Session；遇到不支持的协议明确拒绝，不能依赖历史拼装提供流式完成结果。当前首次接入选择该范围内最新稳定版，既有兼容运行时继续复用。
 
@@ -110,7 +110,7 @@ Claude 原生 session/close 指定 session_id 时释放该确切原生会话的�
 
 ## 首次接入的环境准备
 
-AI Backend 页面通过 PrepareProviderRuntime 准备所选 Provider。已有可用运行时直接复用，包括开发机现有程序；不强制独立安装或隔离目录，不在接入动作中升级现有可用程序。直连模型 API 无需本地 Agent 程序。缺失的运行时由原 ProviderRuntime.available/stage 和统一激活 owner 完成，沿用更新锁、空闲保护、切换与失败回退，不建立另一套安装器。
+AI Backend 页面通过 PrepareProviderRuntime 准备所选 Provider。已有可用运行时直接复用，包括开发机现有程序；不强制独立安装或隔离目录，不在接入动作中升级现有可用程序。直连模型 API 无需本地 Agent 程序。缺失的运行时由原 ProviderRuntime.available/stage 和统一激活 owner 完成，沿用更新锁、在途恢复、切换与失败回退，不建立另一套安装器。
 
 任务在服务端异步运行，preparations 记录 preparing、ready、pending、failed 及进程身份。页面可关闭并重新打开观察；进程退出或本进程任务已结束而状态仍 preparing 时标为 interrupted，可重试。准备失败仅返回安全提示；原始安装器错误不进入页面。运行时准备与账号授权、服务可执行性分别判断，实际模型回复由账号接入测试验证。Codex 在程序尚未安装时允许先登记，登录或执行检查时沿原服务控制入口补齐实例；程序路径优先使用站点配置和 PATH 里的现有程序，再用受管路径。Claude 的未运行 daemon 不视为有活跃任务。
 
@@ -122,10 +122,11 @@ AI Backend 页面通过 PrepareProviderRuntime 准备所选 Provider。已有可
         ↓
 安装到新的版本目录，运行启动检查，写入验证标记
         ↓
-该 Provider 有进行中的执行？──是──→ 记为待切换，由 portal-provider-pending-activation 每 30 秒重试
-        │否
+短暂暂缓该 Provider 的新认领 → 登记确切在途输入的恢复意图
         ↓
-原子替换当前链接 → 重启该 Provider 更新器选中的服务 → 确认服务运行
+原子替换当前链接 → 重启该 Provider 更新器选中的服务 → 验证服务就绪
+        ↓
+释放新认领 → 在途执行重接，失败的原输入由 coordinator 自动恢复
         │失败
         ↓
 链接改回原版本并重启服务，报告错误

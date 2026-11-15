@@ -51,6 +51,9 @@ def _catalog(*groups: tuple[Operation, str]) -> dict[str, Operation]:
 # The sole operation inventory: no name heuristic or positional/payload scan.
 DOMAIN_OPERATIONS = {
     "resident": _catalog(
+        (Operation('write', 'resident', implementation='management_portal.society_service.resident_work_recovery'), """
+            prepare_provider_runtime_update
+        """),
         (Operation('read', 'resident', implementation='management_portal.society_service.resident_policy_facts', in_process=True), """
             is_resident_input_open
         """),

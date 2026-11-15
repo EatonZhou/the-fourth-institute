@@ -57,7 +57,7 @@ Provider 程序属于代码层，安装在实例所运行代码旁的 `dependenc
 | `opencode-current` | OpenCode 程序包入口 |
 | `antigravity-current` | Antigravity 程序包入口 |
 
-入口保留最后一级软链接；服务定义引用入口而不是某个版本。启动方和更新器使用同一入口，更新器通过切换入口选择新版本，并继续遵守空闲检查与失败回退。不在主机 PATH 中查找 Provider 程序。更新器等待切换时启动的瞬态作业 `<前缀>-provider-activation` 属于实例：停止实例时一并停止，停止前核对它是瞬态单元且环境选择的是本实例。
+入口保留最后一级软链接；服务定义引用入口而不是某个版本。启动方和更新器使用同一入口。更新器先由 Resident owner 登记在途原输入的恢复意图，随后切换入口、重启账号服务并验证就绪；不等待长任务或队列排空，不需要用户授权。服务切换期间用随更新进程退出而释放的 PostgreSQL 锁暂缓新认领，已有执行中断后在原会话继续，自动恢复耗尽的原输入由 Society coordinator 接续；已完成或已取消的输入不重放。更新失败回退原入口和同一组服务。不在主机 PATH 中查找 Provider 程序。更新器重试切换时启动的瞬态作业 `<前缀>-provider-activation` 属于实例：停止实例时一并停止，停止前核对它是瞬态单元且环境选择的是本实例。
 
 Codex 各账号的主机目录保存凭据和会话，共用 `codex_binary`；socket 和 Portal 控制文件保存在实例 runtime。账号下由 Codex 自身生成的 `packages/app-server-daemon` 属于独立的自管理安装产物，不能充当 Portal 程序入口；清理前须检查运行进程和实际服务命令是否引用它。
 

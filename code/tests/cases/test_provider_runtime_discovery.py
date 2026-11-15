@@ -89,7 +89,6 @@ def test_claude_activation_failure_rolls_back_the_code_owned_link(isolated, monk
     assert link.is_relative_to(isolated)
     link.symlink_to(old, target_is_directory=True)
     monkeypatch.setattr(updates, "_active_executions", lambda provider: 0)
-    monkeypatch.setattr(runtime, "busy", lambda: False)
     monkeypatch.setattr(updates.ClaudeRuntime, "services", property(lambda self: ("private-claude",)))
     calls = []
 

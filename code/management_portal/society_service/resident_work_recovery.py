@@ -25,6 +25,68 @@ MAX_RECOVERY_ATTEMPTS = 2
 RECHECK_SECONDS = 600
 
 
+def prepare_provider_runtime_update(*, provider: str, update_id: str) -> dict[str, int]:
+    """Preserve exact in-flight inputs before their native service is replaced.
+
+    This is maintenance of an accepted execution, not a new user request or
+    an environmental retry. The Resident owner keeps the recovery intent in
+    its existing per-input ledger; its coordinator resumes interrupted inputs.
+    """
+    from . import resident_record_domain
+    if not provider or not update_id:
+        raise ValueError("provider and update_id are required")
+    prepared = 0
+    snapshots = resident_execution_work.pending_records()
+    jobs = resident_execution_work.read_many(snapshots)
+    for snapshot in snapshots:
+        resident_id = str(snapshot["resident_id"])
+        if (not resident_execution_work.is_active(jobs.get(resident_id, {}))
+                or resident_backend.execution_provider(snapshot) != provider):
+            continue
+        with resident_record_domain.state_lock(resident_id):
+            record = resident_record_domain.find_resident(resident_id)
+            if not record or resident_backend.execution_provider(record) != provider:
+                continue
+            job = resident_execution_work.read(record)
+            execution_id = resident_execution_work.execution_id(job)
+            message_id = str(job.get("user_message_id") or "")
+            if not execution_id or not message_id or not resident_execution_work.is_active(job) or job.get("operation"):
+                continue
+            set_recovery_entry(record, message_id, checked_at=0, provider_update={
+                "update_id": update_id, "execution_id": execution_id,
+            })
+            resident_record_domain.save_resident_record(record)
+            prepared += 1
+    return {"prepared": prepared}
+
+
+def _resume_updated_input(snapshot, failed, update):
+    """Resume this update's original input once, without spending outage retries."""
+    from . import resident_catalog, resident_record_domain
+    resident_id, message_id = str(snapshot["resident_id"]), str(failed["message_id"])
+    with resident_record_domain.state_lock(resident_id):
+        current = resident_record_domain.find_resident(resident_id)
+        if (not current or not _intake_allows_recovery(current)
+                or _recoverable_input(current) != failed
+                or recovery_entry(current, message_id).get("provider_update") != update):
+            return 0
+
+        def resume():
+            resident_input_recovery.requeue(
+                resident_id, resident_id, message_id, portal_reason="provider_runtime_update",
+            )
+            current = resident_record_domain.find_resident(resident_id)
+            entry = recovery_entry(current, message_id)
+            entry.pop("provider_update", None)
+            # Requeue owns the new preparation. Do not overwrite its record
+            # with the snapshot taken before it reserved the replacement.
+            current["work_recovery"][message_id] = entry
+            resident_record_domain.save_resident_record(current)
+
+        resident_catalog.get_catalog().state_store.transaction(resume)
+    return 1
+
+
 def latest_failed_input(record: Mapping[str, Any]) -> dict[str, Any]:
     """Only the latest round is eligible for automatic restart recovery."""
     entries = resident_input_checkpoints.checkpoints(record)
@@ -199,10 +261,16 @@ def _reconcile_failed_work(residents: list[dict[str, Any]], context: dict[str, A
         usage = is_usage_limit_failure(error)
         net = (is_network_failure(error) or is_egress_block_failure(error)
                or failure_code(error) in {"network", "timeout"})
-        if not usage and not net:
-            continue
         recovery = recovery_entry(snapshot, message_id)
         if recovery.get("disabled"):
+            continue
+        update = recovery.get("provider_update") or {}
+        if (update.get("execution_id") == failed.get("execution_id")
+                and update.get("update_id") and _intake_allows_recovery(snapshot)
+                and (net or failure_code(error) == "provider_recovery_exhausted")):
+            changed += _resume_updated_input(snapshot, failed, update)
+            continue
+        if not usage and not net:
             continue
         checked = float(recovery.get("checked_at") or 0)
         if now - checked < RECHECK_SECONDS:

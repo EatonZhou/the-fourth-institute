@@ -1,4 +1,4 @@
-"""Resident-invoked runtime checks must not replace an active backend.
+"""Provider updates stage, replace and roll back managed runtimes.
 
 :module: spec.design-governance
 :importance: P2
@@ -205,12 +205,14 @@ def test_explicit_check_stages_once_and_waits_for_idle(monkeypatch, tmp_path):
     assert len(attempts) == 2
 
 
-def test_activation_never_switches_while_execution_exists(monkeypatch, tmp_path):
-    """Provider 还有执行在运行时，激活不切换运行时"""
+def test_activation_schedules_recovery_and_switches_while_execution_exists(monkeypatch, tmp_path):
+    """在途执行先登记恢复，更新不等待长任务结束。"""
     monkeypatch.setattr(updates, "_active_executions", lambda provider: 1)
-    monkeypatch.setattr(updates.KimiRuntime, "link", lambda self: tmp_path / "current")
-    assert updates._activate("kimi", updates.KimiRuntime(), tmp_path / "staged") is False
-    assert not (tmp_path / "current").exists()
+    calls = []
+    monkeypatch.setattr(updates, "_prepare_execution_recovery", lambda provider: calls.append(provider))
+    monkeypatch.setattr(updates, "_switch_runtime", lambda *a, **kw: True)
+    assert updates._activate("kimi", updates.KimiRuntime(), tmp_path / "staged")
+    assert calls == ["kimi"]
 
 
 def test_check_refreshes_pending_version_before_activation(monkeypatch, tmp_path):
@@ -285,7 +287,7 @@ def test_activation_watch_uses_manifest_code_and_only_instance_root(monkeypatch,
     monkeypatch.setattr(tfi_shutdown, 'verify_job', lambda unit, selected: verified.append((unit, selected)))
     monkeypatch.setattr(script.subprocess, 'run', lambda command, **kwargs: (
         commands.append(command) or SimpleNamespace(returncode=1 if command[0] == 'systemctl' else 0)))
-    script._start_activation_watch()
+    script._start_job("--activate-pending")
     assert verified == [('tfi-fixture-provider-activation.service', root)]
     assert commands[0][-1] == 'tfi-fixture-provider-activation.service'
     assert '--unit=tfi-fixture-provider-activation.service' in commands[1]
@@ -299,7 +301,18 @@ def test_activation_watch_requires_explicit_instance(monkeypatch):
     monkeypatch.delenv('PORTAL_INSTANCE_ROOT', raising=False)
     monkeypatch.setattr(script.subprocess, 'run', lambda *args, **kwargs: pytest.fail('No service manager without an instance'))
     with pytest.raises(ValueError, match='Select an instance'):
-        script._start_activation_watch()
+        script._start_job("--activate-pending")
+
+
+def test_resident_requests_a_separate_instance_job_before_any_service_is_restarted(monkeypatch, capsys):
+    from scripts import update_provider_runtimes as script
+    modes = []
+    monkeypatch.setattr(script, "_start_job", lambda mode: modes.append(mode) or "tfi-fixture-provider-activation.service")
+    monkeypatch.setattr(script, "run_update_pass", lambda: pytest.fail("requesting Resident must not upgrade its own cgroup"))
+    assert script.main([]) == 0
+    assert modes == ["--run-update"]
+    receipt = json.loads(capsys.readouterr().out)
+    assert receipt["accepted"] and receipt["unit"] == "tfi-fixture-provider-activation.service"
 
 
 def test_dsh_llm_prerelease_alone_triggers_upgrade(monkeypatch, tmp_path):
@@ -363,7 +376,6 @@ def test_failed_service_restart_restores_previous_runtime(monkeypatch, tmp_path)
     # The installation's own service and account processes are not the test's.
     monkeypatch.setattr(updates.KimiRuntime, "services", ("portal-kimi-code.service",))
     monkeypatch.setattr(updates.KimiRuntime, "account_processes", lambda self: ())
-    monkeypatch.setattr(updates.KimiRuntime, "busy", lambda self: False)
     calls = []
 
     def restart(*command, **kwargs):

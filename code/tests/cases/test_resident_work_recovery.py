@@ -59,6 +59,60 @@ def test_network_recovery_preserves_input_and_does_not_duplicate_it(team, monkey
     assert recovery.recovery_entry(_record(resident_id), message_id)["attempts"] == 1
 
 
+@pytest.mark.parametrize("boundary", ["interrupted", "cancelled", "completed", "closed", "unrelated_execution", "authentication"])
+def test_provider_update_recovers_only_its_interrupted_input_once_without_outage_budget(team, monkeypatch, boundary):
+    """更新恢复原输入，不等待长任务、重复投递、消费普通重试预算或复活已停止的任务。"""
+    from management_portal.society_service import resident_input_checkpoints
+    resident_id, message_id = _failed(team, monkeypatch)
+    record = _record(resident_id)
+    checkpoint = resident_input_checkpoints.checkpoints(record)[-1]
+    execution_id = checkpoint["execution_id"]
+    recovery.set_recovery_entry(record, message_id, attempts=2, provider_update={
+        "update_id": "update-169", "execution_id": execution_id if boundary != "unrelated_execution" else "other",
+    })
+    resident_record_domain.save_resident_record(record)
+    repository = resident_conversation_stream.get_repository()
+    if boundary in {"cancelled", "completed"}:
+        repository.reopen_input(resident_id, message_id)
+        repository.set_input_state(resident_id, message_id, boundary)
+    else:
+        repository.set_input_state(resident_id, message_id, "failed", error={
+            "code": "provider_authentication_failed" if boundary == "authentication" else "provider_recovery_exhausted",
+            "message": "interrupted while replacing the native service",
+        })
+    if boundary == "closed":
+        resident_input_queue_domain.commit_resident_intake_state(_record(resident_id), "closed")
+    monkeypatch.setattr(provider_egress, "provider_network_state", lambda *_: pytest.fail("planned update does not probe egress"))
+    assert recovery.reconcile_failed_work([_record(resident_id)]) == int(boundary == "interrupted")
+    if boundary == "interrupted":
+        job = resident_execution_work.read(_record(resident_id))
+        assert job["user_message_id"] == message_id and job["actor"] == ACTOR
+        assert job["message"] == "整理本周的测试报告"
+        assert recovery.recovery_entry(_record(resident_id), message_id)["attempts"] == 2
+        assert "provider_update" not in recovery.recovery_entry(_record(resident_id), message_id)
+        assert recovery.reconcile_failed_work([_record(resident_id)]) == 0
+
+
+def test_provider_update_preparation_records_exact_active_execution_without_ending_it(team, monkeypatch):
+    from management_portal.society_service import resident_input_checkpoints
+    resident_id = team.target["resident_id"]
+    message_id, _ = _round(resident_id, state="running")
+    record = _record(resident_id)
+    checkpoint = resident_input_checkpoints.checkpoints(record)[-1]
+    job = {**checkpoint["item"], "execution_id": checkpoint["execution_id"], "outcome": "", "finished_at": ""}
+    resident_execution_work.write(record, job)
+    resident_input_queue_domain.commit_resident_intake_state(record, "open")
+    provider = resident_backend.execution_provider(_record(resident_id))
+    result = recovery.prepare_provider_runtime_update(provider=provider, update_id="update-169")
+    assert result["prepared"] == 1
+    assert resident_execution_work.read(_record(resident_id))["execution_id"] == checkpoint["execution_id"]
+    assert resident_conversation_stream.get_repository().input_state(resident_id, message_id)["state"] == "running"
+    assert recovery.recovery_entry(_record(resident_id), message_id)["provider_update"] == {
+        "update_id": "update-169", "execution_id": checkpoint["execution_id"],
+    }
+    assert recovery.prepare_provider_runtime_update(provider="other", update_id="update-other")["prepared"] == 0
+
+
 def test_network_outage_waits_without_spending_recovery_attempts(team, monkeypatch):
     """网络不可达时等待且不消耗恢复次数，十分钟内不再探测
 
@@ -278,13 +332,14 @@ def test_claude_subscription_limits_are_quota_failures(message):
 
 @pytest.mark.parametrize("enabled", [True, False])
 @pytest.mark.parametrize("automatic", [True, False])
-def test_restart_records_recovery_choice_and_only_resumes_after_promotion(monkeypatch, enabled, automatic):
+def test_restart_records_recovery_choice_and_only_resumes_after_promotion(monkeypatch, tmp_path, enabled, automatic):
     """会话重启记录是否续跑失败输入，新会话启用后才续跑
 
     :design: decision_44cf587c1721, decision_c47a13e8b962
     :design-point:
     """
     record, operations, _saved = _restart_domain(monkeypatch)
+    record["workspace_path"] = str(tmp_path / "workspace")
     monkeypatch.setattr(recovery, "latest_failed_input", lambda _: {"message_id": "msg_original"})
     calls = []
     monkeypatch.setattr(recovery, "resume_after_restart", lambda current, state: calls.append(dict(state)))
@@ -325,13 +380,14 @@ def test_configuration_only_restart_preserves_recovery_origin(monkeypatch, autom
     assert bool(calls[0].get("reason")) == automatic
 
 
-def test_failed_session_initialization_preserves_input_and_original_provider(monkeypatch):
+def test_failed_session_initialization_preserves_input_and_original_provider(monkeypatch, tmp_path):
     """新会话初始化失败时保留原 Provider，不重新排队失败输入
 
     :design: decision_44cf587c1721, decision_c47a13e8b962
     :design-point:
     """
     record, operations, _saved = _restart_domain(monkeypatch)
+    record["workspace_path"] = str(tmp_path / "workspace")
     monkeypatch.setattr(recovery, "latest_failed_input", lambda _: {"message_id": "msg_original"})
     monkeypatch.setattr(recovery, "resume_after_restart", lambda *_: pytest.fail("failed migration must not requeue"))
     resident_restart_domain.restart_resident_session(record["resident_id"], "alice", {

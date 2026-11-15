@@ -159,6 +159,7 @@ class Claims:
                 return {
                     "claimed": False,
                     "reason": (
+                        "runtime_update" if "runtime_update" in blocked else
                         "quota_reserve" if quota_blocked else
                         "capacity"
                         if capacity_blocked

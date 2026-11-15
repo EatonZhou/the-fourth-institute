@@ -93,8 +93,9 @@ class InstanceProviderUpdateTests(unittest.TestCase):
                 link.parent.mkdir(parents=True, exist_ok=True)
                 link.symlink_to(old)
                 with patch.object(updates, "_active_executions", return_value=0), \
-                        patch.object(runtime, "busy", return_value=False):
+                        patch.object(runtime, "ensure_ready") as ready:
                     self.assertTrue(updates._activate(provider, runtime, new))
+                    ready.assert_called_once()
                 self.assertIn(["systemctl", "--user", "restart", name], self.commands)
                 self.assertEqual(link.resolve(), new)
 
