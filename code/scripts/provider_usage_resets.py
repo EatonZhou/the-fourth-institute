@@ -1,4 +1,4 @@
-"""Classify Codex/Claude reset observations; never redeem cards or query upstream."""
+"""Classify retained subscription reset observations without upstream queries."""
 import math
 from urllib.parse import urlparse
 
@@ -12,7 +12,7 @@ def official_announcement(event, provider):
 
 
 def classify_resets(records, provider, account_id, parse_time, announcements=()):
-    if provider not in {'codex', 'claude'}:
+    if provider not in {'codex', 'claude', 'kimi', 'antigravity'}:
         return []
     def moment(value):
         try:
@@ -100,10 +100,20 @@ def classify_resets(records, provider, account_id, parse_time, announcements=())
                         cause = 'scheduled'
                     if cause == 'unknown':
                         reasons.append('insufficient_or_conflicting_reset_cause_evidence')
+                        if delta is None:
+                            reasons.append('refresh_card_observations_unavailable')
+                        elif delta == 0 and card_evidence == 'same_available_cards':
+                            reasons.append('matching_verified_announcement_unavailable')
+                    window_name = window_id.lower()
+                    minutes = w.get('window_duration_mins')
+                    if minutes is None:
+                        if window_name in {'limit7d', 'seven_day', 'seven_day_sonnet', 'seven_day_opus'} or window_name.endswith('/weekly limit remaining'):
+                            minutes = 10080
+                        elif window_name in {'limit5h', 'five_hour'} or window_name.endswith('/five hour limit remaining'):
+                            minutes = 300
                     result.append({'provider': provider, 'account_id': account_id,
                         'quota_group': group, 'window_id': window_id, 'reset_cause': cause,
-                        'window_duration_mins': w.get('window_duration_mins') or
-                            (10080 if window_id.startswith('seven_day') else 300 if window_id == 'five_hour' else None),
+                        'window_duration_mins': minutes,
                         'classification': 'inferred_from_logs', 'actual_reset_at': None,
                         'observed_change_between': [before_at.isoformat(), at.isoformat()],
                         'planned_reset_at': before_reset.isoformat(),

@@ -228,7 +228,7 @@ def enrich_manifest(manifest, accounts, since, until, root='features:provider_us
                 journal.stats['failures'].append({'source': 'home', 'provider': provider,
                                                  'account': identity, 'error': type(error).__name__})
             account.setdefault('quota_observations', []).extend(journal.observations(provider, identity, since, until))
-            if provider in {'codex', 'claude'}:
+            if provider in {'codex', 'claude', 'kimi', 'antigravity'}:
                 account['reset_snapshots'] = journal.reset_snapshots(provider, identity, since, until)
         return {**journal.stats, 'status': 'partial' if journal.stats['failures'] else 'available',
                 'late_commit_policy': 'replay_last_24h_of_finished_at; older_delayed_commits_require_backfill'}

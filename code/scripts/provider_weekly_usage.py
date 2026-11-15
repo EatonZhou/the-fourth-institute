@@ -534,6 +534,8 @@ def build_report(manifest, since, until, timezone_name='Asia/Hong_Kong', cache=N
             'generated_at': iso(datetime.now(timezone.utc)), 'provider_usage_refresh_requested': False,
             'portal_provenance': manifest.get('portal_provenance', {'status': 'not_supplied'}),
             'provider_events_imported': bool(manifest.get('provider_events')),
+            'announcement_evidence': {k: (manifest.get('provider_events') or {}).get(k)
+                                      for k in ('status', 'source', 'fetched_at', 'pending_review')},
             'timezone': timezone_name,
             # Also annotates measured cycles.
             'quota_weights': weight_report(reports, manifest.get('external_usage_accounts') or ()),

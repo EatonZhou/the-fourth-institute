@@ -96,3 +96,18 @@ def test_unverified_import_does_not_become_official_reset():
     event = {'tool': 'codex', 'type': 'usage_reset', 'global': True, 'stage': 'completed',
              'completedAt': '2026-11-01T01:30:00Z', 'id': 'third-party'}
     assert provider_events({'events': [event]}, 'codex') == []
+
+
+@pytest.mark.parametrize('provider,window_id', [('kimi', 'limit7d'), ('antigravity', 'gemini/Weekly limit remaining')])
+def test_other_providers_use_native_endpoints_without_assuming_weekly_period(provider, window_id):
+    rows = [row(1, 20, reset='2026-11-01T01:30:00Z'), row(2, 99, reset='2026-11-08T01:30:00Z')]
+    for r in rows:
+        r['provider'] = provider
+        r['sample'].pop('refresh_cards')
+        w = r['sample']['rate_limits'][0]
+        w.update(id=window_id, quota_group=provider)
+        w.pop('window_duration_mins')
+    found = classify_resets(rows, provider, 'a', moment)
+    assert found[0]['reset_cause'] == 'scheduled'
+    assert found[0]['window_duration_mins'] == 10080
+    assert found[0]['card_count_delta'] is None

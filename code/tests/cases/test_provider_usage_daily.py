@@ -10,11 +10,14 @@ from scripts.provider_usage_daily import run_daily
 def test_single_snapshot_no_quota_refresh_and_independent_reminders(monkeypatch, failed):
     from management_portal.execution import subscription_profile
     from scripts import provider_weekly_usage, provider_usage_reset_reminders
+    from scripts import provider_usage_announcements
+    monkeypatch.setattr(provider_usage_announcements, 'collect_announcements', lambda: {'status': 'available', 'path': 'events.json'})
     order = []
     monkeypatch.setattr(subscription_profile, 'collect_profiles', lambda accounts: order.append('tier') or [])
     def usage(argv, *, portal_call):
         order.append('usage')
         assert '--skip-reset-reminders' in argv and '--rebuild' not in argv
+        assert argv[argv.index('--provider-events')+1] == 'events.json'
         portal_call('ListProviderAccounts', refresh=False)
         if failed:
             raise SystemExit(2)

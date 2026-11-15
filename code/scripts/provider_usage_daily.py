@@ -36,13 +36,19 @@ def run_daily(call, *, since='2020-01-01T00:00:00Z', until=None,
     except Exception as error:
         result['tiers'] = {'status': 'failed', 'error_code': type(error).__name__}
     try:
+        from scripts.provider_usage_announcements import collect_announcements
+        result['announcements'] = collect_announcements()
+    except (OSError, ValueError) as error:
+        result['announcements'] = {'status': 'failed', 'error_code': type(error).__name__}
+    try:
         output = io.StringIO()
         with redirect_stdout(output):
             provider_weekly_usage.main(['--portal-script', '--since', since, '--until', until or
                 datetime.now(timezone.utc).isoformat(), '--native-only', '--subscription-only',
                 '--write-report', '--skip-reset-reminders', '--workers', str(workers),
                 '--cache-root', cache_root, '--refresh-cache-root', refresh_cache_root,
-                '--output-root', output_root], portal_call=shared_call)
+                '--output-root', output_root] +
+                (['--provider-events', result['announcements']['path']] if result['announcements'].get('path') else []), portal_call=shared_call)
         result['usage'] = {'status': 'ok', **json.loads(output.getvalue())}
     except (Exception, SystemExit) as error:
         result['usage'] = {'status': 'failed', 'error_code': type(error).__name__}
@@ -51,7 +57,7 @@ def run_daily(call, *, since='2020-01-01T00:00:00Z', until=None,
         result['reminders'] = notify_expiring_resets(shared_call, accounts)
     except Exception as error:
         result['reminders'] = {'status': 'failed', 'error_code': type(error).__name__}
-    result['ok'] = all(result[k]['status'] not in ('failed', 'partial') for k in ('tiers', 'usage', 'reminders'))
+    result['ok'] = all(result[k]['status'] not in ('failed', 'partial') for k in ('tiers', 'announcements', 'usage', 'reminders'))
     return result
 
 
