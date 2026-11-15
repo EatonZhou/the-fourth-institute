@@ -48,6 +48,8 @@ const root=path.resolve(__dirname,'../../../management_portal');
       return {parent:m.parentElement.tagName,display:style.display,font:style.fontFamily,fontSize:style.fontSize,bg:style.backgroundColor,border:style.borderRadius,rect:m.getBoundingClientRect().toJSON(),bar:bar.getBoundingClientRect().toJSON(),search:search.getBoundingClientRect().toJSON(),searchSkin:{border:skin.borderWidth,background:skin.backgroundColor,shadow:skin.boxShadow},combined:bar.contains(b)&&bar.contains(document.querySelector('#graphMoreToggle'))&&bar.contains(search),controls:[...m.querySelectorAll('button,select')].map(e=>({rect:e.getBoundingClientRect().toJSON(),fontSize:getComputedStyle(e).fontSize}))};
      });
      samples.push({width,language,theme,...s});
+     const dividers=await page.locator('#graphFitBtn, .graphCanvasActions').evaluateAll(items=>items.map(el=>getComputedStyle(el).borderLeftWidth));
+     assert.ok(dividers.every(width=>width==='0px'),'no internal divider lines in the shared toolbar');
      assert.equal(s.parent,'BODY','exercise the real portalled popover');
      assert.equal(s.display,'grid','portalled tools retain their scoped menu skin');
      assert.equal(s.combined,true,'zoom, arrange, dropdown and search share one frame');
