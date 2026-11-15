@@ -19,7 +19,7 @@ before and after it hold the same capacity.
 """
 from datetime import datetime
 
-PROVIDER_TOOLS = {'codex': 'codex', 'claude': 'claude-code'}
+PROVIDER_TOOLS = {'codex': 'codex', 'claude': 'claude-code', 'kimi': 'kimi', 'antigravity': 'antigravity'}
 
 
 def _moment(value):
@@ -56,5 +56,6 @@ def provider_events(payload, provider, ignored=()):
         result.append({'kind': kind, 'at': at, 'id': str(event.get('id') or ''),
                        'title': str(event.get('title') or ''),
                        **{k: event[k] for k in ('official_url', 'official_verified', 'account_ids', 'window_ids',
-                                              'tool', 'discovery_source', 'original_urls', 'posts', 'sources', 'scope', 'evidence_digest') if k in event}})
+                                              'tool', 'discovery_source', 'original_urls', 'posts', 'sources', 'scope', 'evidence_digest',
+                                              'quota_groups', 'time_basis', 'source_models', 'source_plans') if k in event}})
     return sorted(result, key=lambda e: e['at'])

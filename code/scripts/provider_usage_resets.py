@@ -18,7 +18,7 @@ def announcement_evidence(event, provider):
     if official_announcement(event, provider):
         return {'grade': 'official_verified', 'source': event['official_url'],
                 'original_urls': [event['official_url']]}
-    tools = {'codex': 'codex', 'claude': 'claude-code'}
+    tools = {'codex': 'codex', 'claude': 'claude-code', 'kimi': 'kimi', 'antigravity': 'antigravity'}
     source = trusted_source(event.get('discovery_source'), provider)
     if (not source or provider not in tools
             or event.get('tool') != tools[provider]):
@@ -53,7 +53,8 @@ def announcement_evidence(event, provider):
                 'source_id': source['id'], 'source_record_id': event['id'], 'evidence_digest': digest,
                 'report_url': source['home_url'], 'original_urls': [], 'scope_text': event.get('scope')}
     return {'grade': 'third_party_with_original_links', 'source': source['events_url'], 'source_id': source['id'],
-            'original_urls': sorted(set(links)), 'scope_text': event.get('scope')}
+            'original_urls': sorted(set(links)), 'scope_text': event.get('scope'),
+            'time_basis': event.get('time_basis')}
 
 
 def classify_resets(records, provider, account_id, parse_time, announcements=()):
@@ -140,7 +141,8 @@ def classify_resets(records, provider, account_id, parse_time, announcements=())
                             if (event.get('kind') == 'global_reset' and candidate_evidence
                                     and event_at and before_at < event_at <= at
                                     and (not event.get('account_ids') or account_id in event['account_ids'])
-                                    and (not event.get('window_ids') or window_id in event['window_ids'])):
+                                    and (not event.get('window_ids') or window_id in event['window_ids'])
+                                    and (not event.get('quota_groups') or group in event['quota_groups'])):
                                 cause, announcement = 'provider_global', event.get('id')
                                 evidence = candidate_evidence
                                 break
@@ -171,6 +173,8 @@ def classify_resets(records, provider, account_id, parse_time, announcements=())
                         'announcement_evidence': evidence,
                         'limitations': ['observation_interval_not_exact_reset_time', *reasons] +
                             (['announcement_original_not_independently_verified', 'announcement_scope_text_not_machine_verified'] if evidence and
-                             evidence['grade'] != 'official_verified' else [])})
+                             evidence['grade'] != 'official_verified' else []) +
+                            (['announcement_time_not_execution_time'] if evidence and
+                             evidence.get('time_basis') == 'announcement_time' else [])})
             previous = at, reset, remaining, card, row_id
     return result
