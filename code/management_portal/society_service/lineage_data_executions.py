@@ -67,8 +67,15 @@ class ResidentExecutions:
                 "progress_json::jsonb->'execution_acknowledged' AS acknowledged,"
                 "length(progress_json::jsonb->>'stop_requested_at')>0 AS stop_requested,"
                 "jsonb_typeof(preparation_json::jsonb->'execution_request')='object' AS request_persisted,"
-                "preparation_json::jsonb#>>'{execution_request,execution_id}'=execution_id AS request_matches_execution "
-                "FROM resident_execution_work WHERE resident_id=%s AND input_message_id=%s AND execution_id=%s",
+                "preparation_json::jsonb#>>'{execution_request,execution_id}'=execution_id AS request_matches_execution,"
+                "progress_json::jsonb->>'activation_policy' AS activation_policy,"
+                "length(progress_json::jsonb->>'intake_admitted_at')>0 AS intake_admitted,"
+                "(SELECT r.registration_state='ready' FROM residents r WHERE r.resident_id=w.resident_id) AS registration_ready,"
+                "(SELECT r.intake_open FROM residents r WHERE r.resident_id=w.resident_id) AS intake_open,"
+                "EXISTS(SELECT 1 FROM resident_lifecycle_operations l WHERE l.resident_id=w.resident_id) AS lifecycle_pending,"
+                "(SELECT l.payload_json::jsonb->'steps'->((l.payload_json::jsonb->>'next_step')::int)->>'kind' "
+                "FROM resident_lifecycle_operations l WHERE l.resident_id=w.resident_id) AS lifecycle_step "
+                "FROM resident_execution_work w WHERE resident_id=%s AND input_message_id=%s AND execution_id=%s",
                 (resident_id, message_id, execution_id),
             ).fetchone()
         if row is None:
@@ -82,10 +89,17 @@ class ResidentExecutions:
                 times[key] = 'unknown'
         return {
             "current_job_matches": True, **times,
+            "activation_policy": (row['activation_policy'] if row['activation_policy'] in
+                                  ('enqueue_and_trigger', 'inject_active_turn', 'attach_to_next') else
+                                  'default' if not row['activation_policy'] else 'unsupported'),
+            "lifecycle_step": (row['lifecycle_step'] if row['lifecycle_step'] in
+                               ('session_restart', 'execution_ack') else
+                               'other' if row['lifecycle_pending'] else 'none'),
             "outcome": row['outcome'] if row['outcome'] in ('completed', 'failed', 'cancelled') else 'unknown',
             "terminal_status": row['terminal_status'] if row['terminal_status'] in ('completed', 'failed', 'cancelled') else 'unknown',
             **{key: row[key] if type(row[key]) is bool else 'unknown' for key in (
-                'acknowledged', 'stop_requested', 'request_persisted', 'request_matches_execution')},
+                'acknowledged', 'stop_requested', 'request_persisted', 'request_matches_execution',
+                'registration_ready', 'intake_open', 'intake_admitted', 'lifecycle_pending')},
         }
 
     def request_resident_execution_stop(self, resident_id, execution_id, message_id, actor, now):

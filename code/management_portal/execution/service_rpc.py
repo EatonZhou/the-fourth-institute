@@ -206,11 +206,7 @@ def execution_input_diagnostics(server: Any, params: dict[str, Any]) -> Any:
     message_id = required(association, "message_id")
     execution_id = required(association, "execution_id")
     execution_input_id = required(association, "execution_input_id")
-    record = server.agent_data.execution(execution_id)
-    if not record or record.get("agent_id") != resident_id or not any(
-        item.get("message_id") == execution_input_id for item in record.get("inputs") or []
-    ):
-        raise KeyError(execution_id)
+    record = server.agent_data.input_diagnostics(execution_id, agent_id=resident_id, message_id=execution_input_id)
     lifecycle = server.scheduler.input_diagnostics(execution_id, resident_id=resident_id)
     if lifecycle is None:
         lifecycle = {
@@ -226,6 +222,7 @@ def execution_input_diagnostics(server: Any, params: dict[str, Any]) -> Any:
         }
         lifecycle["recovery"]["provider_recovery_state"] = {"phase": "unknown"}
     lifecycle.update({key: record.get(key) or "unknown" for key in ("created_at", "started_at", "finished_at")})
+    lifecycle.update({key: record[key] for key in ("execution_submission", "provider_link")})
     return {"schema": "tfi.execution-input-diagnostics.v1", "available": True, "execution_id": execution_id,
             "resident_id": resident_id, "message_id": message_id, **lifecycle}
 

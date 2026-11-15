@@ -347,6 +347,9 @@ class AgentDataStore:
     def provider_session_executions(self, provider: str, *, active_since: str) -> list[dict[str, Any]]:
         return self.executions.provider_session_executions(provider, active_since=active_since)
 
+    def input_diagnostics(self, execution_id: str, *, agent_id: str, message_id: str) -> dict[str, Any]:
+        return self.executions.input_diagnostics(execution_id, agent_id=agent_id, message_id=message_id)
+
     def execution(self, execution_id: str) -> dict[str, Any] | None:
         return self.executions.execution(execution_id)
 

@@ -33,3 +33,8 @@ request or queue bodies. A replaced or absent job returns `current_job_matches=f
 missing receipts remain `unknown`. Neither result proves that a Provider prompt
 was never sent. This section is attached only after the authorized Execution port
 has resolved and checked the association.
+The same exact-job view exposes registration readiness, intake/admission and
+pending lifecycle-work booleans plus the supported activation-policy enum.
+The pending step is limited to `session_restart`, `execution_ack`, `other` or `none`.
+These are recovery gate observations, not permission to reopen intake or replay
+an execution; lifecycle payloads remain private.

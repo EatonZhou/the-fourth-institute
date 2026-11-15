@@ -135,9 +135,9 @@ def test_isa_to_execution_reauthorizes_and_only_returns_associated_facts(boundar
     from unittest.mock import Mock
 
     server = SimpleNamespace(
-        agent_data=SimpleNamespace(execution=Mock(return_value={
-            "agent_id": "resident", "actor_ref": "original-execution-actor",
-            "inputs": [{"message_id": "input"}], "prompt": "do not disclose",
+        agent_data=SimpleNamespace(input_diagnostics=Mock(return_value={
+            "execution_submission": {"recorded": True},
+            "provider_link": {"session_ref_recorded": False, "turn_id_recorded": False},
         })),
         scheduler=SimpleNamespace(input_diagnostics=Mock(return_value={
             "source": "scheduler", "status": "running", "attempts": 1,
@@ -158,9 +158,11 @@ def test_isa_to_execution_reauthorizes_and_only_returns_associated_facts(boundar
         "source": "scheduler", "status": "running", "attempts": 1,
         "created_at": "unknown", "started_at": "unknown", "finished_at": "unknown",
         "submission": {"current_job_matches": False},
+        "execution_submission": {"recorded": True},
+        "provider_link": {"session_ref_recorded": False, "turn_id_recorded": False},
     }
     assert boundary[1] == [("resident", "reader", "input")] * 2
-    server.agent_data.execution.assert_called_once_with("execution-bound")
+    server.agent_data.input_diagnostics.assert_called_once_with("execution-bound", agent_id="resident", message_id="input")
     submission.assert_called_once_with("resident", "input", "execution-bound")
 
 
@@ -186,6 +188,8 @@ def test_submission_receipts_are_exact_read_only_and_redacted(tmp_path, monkeypa
         "updated_at": "unknown", "completion_applied_at": "unknown", "outcome": "unknown",
         "terminal_status": "unknown", "acknowledged": False, "stop_requested": "unknown",
         "request_persisted": True, "request_matches_execution": True,
+        "registration_ready": True, "intake_open": "unknown", "intake_admitted": "unknown",
+        "lifecycle_pending": False, "activation_policy": "default", "lifecycle_step": "none",
     }
     assert store.resident_execution_revision(RESIDENT) == revision
     for rid, mid, eid in [(RESIDENT, "other-input", "execution-one"),
@@ -204,3 +208,22 @@ def test_submission_missing_request_is_unknown_not_proof_of_no_provider_send(tmp
     result = store.executions.input_execution_diagnostics(RESIDENT, "input-one", "execution-preparing")
     assert result["current_job_matches"] is True
     assert result["submitted_at"] == result["request_persisted"] == result["request_matches_execution"] == "unknown"
+
+
+def test_submission_exposes_only_recovery_gates_not_lifecycle_payload(tmp_path):
+    from tests.cases.test_conversation_projection_authority import RESIDENT, _repository
+    from management_portal.society_service.resident_lifecycle import ResidentLifecycleOperations
+
+    store = _repository(tmp_path).state_store
+    store.put_resident_execution_record(RESIDENT, {
+        "execution_id": "execution-one", "user_message_id": "input-one", "actor": "sample_admin",
+        "intake_admitted_at": "2026-11-14T17:49:08Z", "activation_policy": "private-invalid-value",
+    })
+    ResidentLifecycleOperations(store).enqueue(RESIDENT, [{"kind": "session_restart", "private": "secret"}])
+    store.database.write(lambda c: c.execute("UPDATE residents SET intake_open=false WHERE resident_id=%s", (RESIDENT,)))
+    result = store.executions.input_execution_diagnostics(RESIDENT, "input-one", "execution-one")
+    assert result["lifecycle_pending"] is True
+    assert result["lifecycle_step"] == "session_restart"
+    assert result["intake_open"] is False and result["intake_admitted"] is True
+    assert result["activation_policy"] == "unsupported"
+    assert "secret" not in str(result) and "private-invalid-value" not in str(result)

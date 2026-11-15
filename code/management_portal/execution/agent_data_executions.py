@@ -574,6 +574,42 @@ class ExecutionRecords:
             session["executions"].append(((iso_time(row["started_at"]) or ""), (iso_time(row["finished_at"]) or "")))
         return list(sessions.values())
 
+    def input_diagnostics(self, execution_id: str, *, agent_id: str, message_id: str) -> dict[str, Any]:
+        """Project durable facts for an authorized, exactly admitted input without content."""
+        from .contracts import AGENT_SESSION_OPERATIONS, EXECUTION_SERVICE_TYPES, GENERATION_OPERATIONS
+
+        if not all((execution_id, agent_id, message_id)):
+            raise ValueError("Execution diagnostics requires the complete input association")
+        with self.database.snapshot() as connection:
+            row = connection.execute(
+                "SELECT e.status,e.created_at,e.started_at,e.finished_at,"
+                "NULLIF(e.provider_session_ref,'') IS NOT NULL AS session_ref_recorded,"
+                "NULLIF(e.provider_turn_id,'') IS NOT NULL AS turn_id_recorded,"
+                "o.operation_id IS NOT NULL AS submission_recorded,o.created_at AS submitted_at,"
+                "o.data_json->>'service_type' AS service_type,o.data_json->>'operation' AS operation "
+                "FROM executions e LEFT JOIN agent_operations o "
+                "ON o.operation_id=%s AND o.kind='execution_submission' AND o.agent_id=e.agent_id "
+                "WHERE e.execution_id=%s AND e.agent_id=%s AND EXISTS "
+                "(SELECT 1 FROM execution_inputs i WHERE i.execution_id=e.execution_id AND i.message_id=%s)",
+                ("execution_submission:" + execution_id, execution_id, agent_id, message_id),
+            ).fetchone()
+        if row is None:
+            raise KeyError(execution_id)
+        service_type, operation = row['service_type'], row['operation']
+        operations = (AGENT_SESSION_OPERATIONS if service_type == 'agent_session'
+                      else GENERATION_OPERATIONS if service_type == 'chat_completion' else ())
+        return {
+            'status': row['status'],
+            **{key: iso_time(row[key]) or 'unknown' for key in ('created_at', 'started_at', 'finished_at')},
+            'execution_submission': {
+                'recorded': bool(row['submission_recorded']),
+                'submitted_at': iso_time(row['submitted_at']) or 'unknown',
+                'service_type': service_type if service_type in EXECUTION_SERVICE_TYPES else 'unknown',
+                'operation': operation if operation in operations else 'unknown',
+            },
+            'provider_link': {key: bool(row[key]) for key in ('session_ref_recorded', 'turn_id_recorded')},
+        }
+
     def execution(self, execution_id: str) -> dict[str, Any] | None:
         with self.database.snapshot() as connection:
             row = connection.execute(
