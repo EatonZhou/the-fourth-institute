@@ -41,20 +41,22 @@ def test_only_own_steward_can_consolidate_and_facades_keep_their_owner(setup_wor
         work.update_resident_work_summary(roles["steward"][0], C, 0, consolidation={"phase": SUMMARY})
 
 
-def test_total_budget_covers_fields_and_layers_without_truncation(setup_work, monkeypatch):
+def test_summary_size_is_advisory_and_preserves_all_fields_and_layers(setup_work, monkeypatch):
     monkeypatch.setenv("PORTAL_SUMMARY_TOTAL_CHARS", "400")
     context, roles, *_ = setup_work
-    with pytest.raises(ValueError, match="总预算"):
-        validate_summary({"current_focus": "字" * 201, "recent_results": ["字" * 200]})
+    large = {"current_focus": "字" * 4001, "recent_results": ["字" * 4000]}
+    assert validate_summary(large)["recent_results"] == large["recent_results"]
     work.update_resident_work_summary(A, A, 0, summary={"current_focus": "字" * 290}, message_ids=["one"])
     higher = work.update_resident_work_summary(roles["steward"][0], A, 1,
         consolidation={"phase": {"current_focus": "字" * 290}})
-    with pytest.raises(ValueError, match="总预算"):
-        work.update_resident_work_summary(A, A, higher["revision"], summary={"recent_results": ["字" * 111]}, message_ids=["two"])
-    assert context.store.work_summary(A)["revision"] == higher["revision"]
-    with pytest.raises(ValueError, match="75%"):
-        work.update_resident_work_summary(roles["steward"][0], A, higher["revision"],
-            consolidation={"phase": {"current_focus": "字" * 301}})
+    saved = work.update_resident_work_summary(A, A, higher["revision"], summary=large, message_ids=["two"])
+    assert saved["layers"]["phase"] == higher["layers"]["phase"]
+    assert saved["layers"]["recent"]["current_focus"] == large["current_focus"]
+    assert saved["consolidation"]["due"]
+    merged = work.update_resident_work_summary(roles["steward"][0], A, saved["revision"],
+        consolidation={"phase": large, "long_term": {"durable_expertise": ["长期" * 4000]}})
+    assert merged["layers"]["phase"]["recent_results"] == large["recent_results"]
+    assert merged["layers"]["long_term"]["durable_expertise"] == ["长期" * 4000]
 
 
 def test_unresolved_items_survive_even_when_agent_omits_them_and_close_explicitly(setup_work):

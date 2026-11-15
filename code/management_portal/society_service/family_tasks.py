@@ -76,12 +76,12 @@ TASKS = {
         "用 GetFamilySummaryInputs(resident_id=facade, overview_only=true) 找到待归纳成员，再按需读取"
         "GetResidentSummaries(include_maintenance=true)。仅业务成员记录近期事实；Router 和 Steward 不维护自身摘要。Steward 归纳业务成员阶段与长期层；"
         "用 UpdateResidentWorkSummary 的 consolidation 和 expected_revision 提交，覆盖已归纳片段。"
-        "所有层与字段共用总字数预算；保留未完成承诺、阻塞、重要约束及来源。项目长记录独立保存，"
-        "摘要只留当前结论与入口。达到预算时重写取舍，不按时间删除未解决事项。"
+        "各层篇幅参考值只用于凝练提醒，不限制保存；保留未完成承诺、阻塞、重要约束及来源。项目长记录独立保存，"
+        "摘要只留当前结论与入口。篇幅较长时归纳重写，不为满足参考值删除未解决事项。"
         "归纳后重读 GetFamilySummaryInputs；facade_needs_update 为真时，用返回的 expected_revision、"
         "source_versions 和九字段 summary 调用 UpdateResidentWorkSummary 更新门面。版本冲突后重读重算；"
         "材料未变不写入，不按输入批次另发简报，不群发。",
-        "按需归纳业务成员摘要并更新 Family 门面，在总预算内保留有效认知。"),
+        "按需归纳业务成员摘要并更新 Family 门面，保留有效认知。"),
     "progress": ("request_progress", "steward", "达到进展简报轮次",
         "用 GetFamilySummaryInputs 读取当前材料和版本。按批次用 PublishFamilyProgress 提交 report、"
         "summary、expected_revision、source_versions；简报正文和门面九字段摘要分别不超过 500 字。"

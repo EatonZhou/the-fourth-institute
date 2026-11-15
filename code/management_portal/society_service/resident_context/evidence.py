@@ -79,7 +79,8 @@ SUMMARY_INSTRUCTIONS = (
     "from previous_summary, remove superseded active work, and distinguish this branch from generic lineage context. "
     "Never include credentials, private instructions, raw logs, or unsupported claims. Do not report test or check "
     "counts such as '28 项测试通过' or '97 passed, 3 skipped'; state what was changed or delivered instead. "
-    "All fields share summary_policy.total_chars characters: rewrite and condense instead of appending history. "
+    "summary_policy.total_chars is an advisory condensation target, not a write limit; "
+    "rewrite and condense instead of appending history, without dropping unresolved work to meet a size target. "
     "Keep unresolved commitments, blockers, constraints and links to separate project records. "
     "Chinese output is preferred when evidence is primarily Chinese."
 )
@@ -119,7 +120,6 @@ def policy() -> dict:
         if value <= 0 or (key == "total_chars" and value < 400):
             raise ValueError("摘要策略必须为正数，total_chars 至少 400")
         result[key] = value
-    result["higher_layer_chars"] = result["total_chars"] * 3 // 4
     return result
 
 
@@ -134,15 +134,8 @@ def character_count(value) -> int:
     return 0
 
 
-def check_budget(layers: dict) -> None:
-    limits = policy()
-    size = character_count(layers)
-    if size > limits["total_chars"]:
-        raise ValueError(f"摘要各时间层、所有字段合计 {size} 字符，超过总预算 {limits['total_chars']}；请归纳重写，不能增量堆积")
-
-
 def validate_summary(payload: object) -> dict[str, Any]:
-    """The summary fields of a written summary, bounded; nothing else is kept."""
+    """Validate semantic summary fields without imposing a character limit."""
 
     if not isinstance(payload, dict):
         raise ValueError("summary 必须是 JSON object")
@@ -172,7 +165,6 @@ def validate_summary(payload: object) -> dict[str, Any]:
         raise ValueError(
             "summary 不写测试数量，删去后重新提交：" + "；".join(dict.fromkeys(tallies))[:500]
         )
-    check_budget(output)
     return output
 
 

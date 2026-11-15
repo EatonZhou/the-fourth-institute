@@ -1,7 +1,7 @@
-"""Bounded temporal memory. Policy is mechanical; agents choose the synthesis."""
+"""Temporal memory with advisory condensation targets and versioned synthesis."""
 from __future__ import annotations
 
-from .evidence import SUMMARY_FIELDS, character_count, check_budget, policy, utc_now, validate_summary
+from .evidence import SUMMARY_FIELDS, character_count, policy, utc_now, validate_summary
 
 
 def project(layers: dict) -> dict:
@@ -64,9 +64,6 @@ def consolidate(layers: dict, state: dict, request: dict) -> tuple[dict, dict]:
         clean["phase"].setdefault("active_threads", []).extend(missing)
     if not character_count(clean):
         raise ValueError("归纳结果不能为空")
-    check_budget(clean)
-    if character_count(clean) > policy()["higher_layer_chars"]:
-        raise ValueError("阶段与长期层合计最多占总预算 75%，须为近期事实留出空间")
     now = utc_now()
     state = {**state, "phase_at": now, "phase_rounds": 0}
     if "long_term" in request:

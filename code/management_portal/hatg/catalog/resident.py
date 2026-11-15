@@ -173,7 +173,7 @@ DECLARATIONS = (
     ), (
         R("instructions", description="摘要写作规则，照此写作"),
         R("output_fields", "array", "提交的 summary 必须包含的字段"),
-        R("summary_policy", "object", "所有语义字段共用 total_chars 字符总预算；归纳重写，不累积细碎过程"),
+        R("summary_policy", "object", "total_chars 仅为凝练提醒参考值，不是写入上限；归纳重写，不累积细碎过程"),
         R("jobs", "array", "每项包含 claim_id、resident_id、title、lineage_id、mode（full 或 incremental）、reason、"
           "attempt、evidence_chars、lease_until，以及证据 input：mode、resident（元数据）、"
           "previous_summary（增量时的上一版）与 new_or_rebuild_context（已完成回合的对话证据）"),
@@ -197,7 +197,7 @@ DECLARATIONS = (
         R("resident_id", description="被放弃的摘要所属的 Resident"), R("status", description="retry 或 parked"),
         R("attempts", "integer", "这份摘要累计被认领的次数，含本次"),
     ), mutates=True, target="claim_id"),
-    _d("UpdateResidentWorkSummary", FIXED, "本人替换近期事实，本 Family Steward 归纳阶段与长期层或汇总门面；所有层和字段共用总预算。省略 summary 表示仅登记覆盖轮次。", (
+    _d("UpdateResidentWorkSummary", FIXED, "本人替换近期事实，本 Family Steward 归纳阶段与长期层或汇总门面；不设摘要字数上限。省略 summary 表示仅登记覆盖轮次。", (
         R("resident_id", description="摘要所属的 Resident：本人，或 Steward 汇总的本 Family 门面"),
         R("expected_revision", "integer", "GetResidentSummaries（include_maintenance）返回的 revision"),
         P("summary", "object", "供工作查看、搜索和路由共用的九个语义字段"),
