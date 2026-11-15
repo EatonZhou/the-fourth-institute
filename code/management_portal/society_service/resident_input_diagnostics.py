@@ -73,4 +73,11 @@ def read_input_diagnostics(*, actor: str, resident_id: str, message_id: str) -> 
         result = {**result, 'submission': get_lineage_data_store().executions.input_execution_diagnostics(
             result['resident_id'], result['message_id'], result['execution_id'],
         )}
+        if result['submission'].get('current_job_matches'):
+            from . import family_quota, resident_execution_work
+
+            record = resident_record_domain.find_resident(result['resident_id'])
+            if record and not record.get('deleted_at'):
+                result['reserve_admission'] = family_quota.admission_diagnostics(record)
+                result['continuation_running'] = resident_execution_work.continuation_running(record)
     return result

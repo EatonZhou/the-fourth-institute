@@ -47,6 +47,40 @@ def role_migration(record: dict[str, Any]) -> dict[str, Any]:
     return state
 
 
+def admission_diagnostics(record: dict[str, Any]) -> dict[str, Any]:
+    """Read reserve gate facts only; never refresh accounts or advance migration."""
+    from .resident_default_backend import selection_mode
+
+    state = role_migration(record)
+    status = state.get("status")
+    source = state.get("source_account") or str(state.get("epoch") or "").partition(":")[0]
+    result = {
+        "auto_migration_enabled": auto_migration_enabled(record),
+        "selection_mode": selection_mode(record),
+        "migration_status": status if status in {"waiting", "migrating", "unavailable"} else
+                            "other" if status else "none",
+        "migration_pending_restart": bool(state.get("pending_restart")),
+        "account_wait": bool(state.get("account_wait")),
+        "source_matches_current_account": "unknown",
+        "account_found": "unknown", "reserve_remaining": "unknown",
+        "quota_fresh": "unknown", "override_enabled": override_enabled(record),
+    }
+    try:
+        accounts = execution_port.service().accounts().get("accounts") or []
+    except Exception:
+        return result
+    account = resident_account(record, accounts)
+    result["account_found"] = bool(account)
+    if account:
+        remaining = reserve_remaining(account)
+        result.update(
+            source_matches_current_account=(source == account.get("account_id") if source else "unknown"),
+            reserve_remaining=remaining if remaining is not None else "unknown",
+            quota_fresh=((account.get("quota_reserve") or {}).get("fresh") is True),
+        )
+    return result
+
+
 def _validate_migration(state: dict[str, Any]) -> None:
     if set(state) - MIGRATION_FIELDS:
         raise ValueError("Unknown steward reserve migration fields")

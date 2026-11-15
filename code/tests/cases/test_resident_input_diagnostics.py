@@ -1,5 +1,6 @@
 """Input-authorized, opt-in runtime diagnostics never grants execution browsing."""
 from types import SimpleNamespace
+from unittest.mock import Mock
 
 import pytest
 
@@ -227,3 +228,59 @@ def test_submission_exposes_only_recovery_gates_not_lifecycle_payload(tmp_path):
     assert result["intake_open"] is False and result["intake_admitted"] is True
     assert result["activation_policy"] == "unsupported"
     assert "secret" not in str(result) and "private-invalid-value" not in str(result)
+
+
+@pytest.mark.parametrize("source,expected", [("codex_old", False), ("antigravity_current", True), ("", "unknown")])
+def test_reserve_diagnostics_exposes_binding_mismatch_without_migration_body(monkeypatch, source, expected):
+    from management_portal.society_service import family_quota, resident_default_backend
+
+    migration = {"status": "unavailable", "epoch": source + ":private-window" if source else "",
+                 "pending_restart": {"secret": "private restart"}, "reason": "private reason"}
+    monkeypatch.setattr(family_quota, "role_migration", lambda _: migration)
+    monkeypatch.setattr(family_quota, "auto_migration_enabled", lambda _: True)
+    monkeypatch.setattr(family_quota, "override_enabled", lambda _: False)
+    monkeypatch.setattr(resident_default_backend, "selection_mode", lambda _: "fixed")
+    monkeypatch.setattr(family_quota.execution_port, "service", lambda: SimpleNamespace(accounts=lambda: {"accounts": []}))
+    monkeypatch.setattr(family_quota, "resident_account", lambda *_: {
+        "account_id": "antigravity_current", "quota_reserve": {"fresh": False}})
+    result = family_quota.admission_diagnostics({})
+    assert result == {
+        "auto_migration_enabled": True, "selection_mode": "fixed", "migration_status": "unavailable",
+        "migration_pending_restart": True, "account_wait": False, "source_matches_current_account": expected,
+        "account_found": True, "reserve_remaining": "unknown", "quota_fresh": False, "override_enabled": False,
+    }
+    assert "private" not in str(result) and "codex_old" not in str(result)
+    assert migration["pending_restart"] == {"secret": "private restart"}
+
+
+def test_reserve_diagnostics_account_read_failure_stays_unknown(monkeypatch):
+    from management_portal.society_service import family_quota, resident_default_backend
+
+    monkeypatch.setattr(family_quota, "role_migration", lambda _: {})
+    monkeypatch.setattr(family_quota, "auto_migration_enabled", lambda _: True)
+    monkeypatch.setattr(family_quota, "override_enabled", lambda _: False)
+    monkeypatch.setattr(resident_default_backend, "selection_mode", lambda _: "fixed")
+    monkeypatch.setattr(family_quota.execution_port, "service", Mock(side_effect=RuntimeError("private transport")))
+    result = family_quota.admission_diagnostics({})
+    assert result["account_found"] == result["reserve_remaining"] == "unknown"
+    assert result["migration_status"] == "none"
+    assert "private" not in str(result)
+
+
+def test_current_input_diagnostics_reads_reserve_gate_without_starting_work(boundary, monkeypatch):
+    from management_portal.society_service import execution_client, family_quota, resident_execution_work, state_store
+
+    monkeypatch.setattr(execution_client, "service", lambda: SimpleNamespace(input_diagnostics=lambda **_: {
+        "available": True, "resident_id": "resident", "message_id": "input", "execution_id": "execution-bound"}))
+    monkeypatch.setattr(state_store, "get_lineage_data_store", lambda: SimpleNamespace(executions=SimpleNamespace(
+        input_execution_diagnostics=lambda *_: {"current_job_matches": True})))
+    record = {"resident_id": "resident"}
+    monkeypatch.setattr(diagnostics.resident_record_domain, "find_resident", lambda _: record)
+    read = Mock(return_value={"migration_status": "waiting"})
+    monkeypatch.setattr(family_quota, "admission_diagnostics", read)
+    monkeypatch.setattr(family_quota, "ensure_role_reserve", Mock(side_effect=AssertionError("must not advance")))
+    monkeypatch.setattr(resident_execution_work, "continuation_running", lambda _: False)
+    result = diagnostics.read_input_diagnostics(actor="reader", resident_id="resident", message_id="input")
+    assert result["reserve_admission"] == {"migration_status": "waiting"}
+    assert result["continuation_running"] is False
+    read.assert_called_once_with(record)

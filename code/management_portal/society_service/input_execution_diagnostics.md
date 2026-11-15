@@ -38,3 +38,11 @@ pending lifecycle-work booleans plus the supported activation-policy enum.
 The pending step is limited to `session_restart`, `execution_ack`, `other` or `none`.
 These are recovery gate observations, not permission to reopen intake or replay
 an execution; lifecycle payloads remain private.
+
+For the same current job, `reserve_admission` projects only the quota owner's
+policy, migration status, pending/account-wait booleans, whether its source
+matches the current account, and cached quota freshness/headroom. It neither
+refreshes quota nor runs migration. Account-service failure keeps observations
+`unknown`. Migration payloads, account identities and free-text reasons are not
+returned. `continuation_running` observes only this Society process's runner;
+false does not prove that another process has no continuation lease.
