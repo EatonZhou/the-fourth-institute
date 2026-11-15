@@ -3,6 +3,36 @@
   "selection_policy": "Prefer sustained updates, public readership evidence, dated records and corrections. Readership is not proof of accuracy; syndicated copies are not independent corroboration.",
   "sources": [
     {
+      "id": "antigravity_official_news",
+      "name": "Antigravity official changelog",
+      "events_url": "https://antigravity.google/docs/changelog",
+      "providers": ["antigravity"],
+      "status": "official_page_check",
+      "collector_enabled": false,
+      "check_daily": true,
+      "expected_text": "changelog"
+    },
+    {
+      "id": "kimi_official_news",
+      "name": "Kimi official bulletin",
+      "events_url": "https://www.kimi.com/en/help/kimi-blackboard",
+      "providers": ["kimi"],
+      "status": "official_page_check",
+      "collector_enabled": false,
+      "check_daily": true,
+      "expected_text": "kimi"
+    },
+    {
+      "id": "kimi_official_quota_rules",
+      "name": "Kimi official quota updates",
+      "events_url": "https://www.kimi.com/en/help/membership/membership-update-rules",
+      "providers": ["kimi"],
+      "status": "official_page_check",
+      "collector_enabled": false,
+      "check_daily": true,
+      "expected_text": "credit"
+    },
+    {
       "id": "divin",
       "name": "AI 哨兵",
       "home_url": "https://divin.cc/",

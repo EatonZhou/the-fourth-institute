@@ -30,6 +30,11 @@ def run_daily(call, *, since='2020-01-01T00:00:00Z', until=None,
         return call(name, **arguments)
     result = {'schema': 'tfi.provider-daily-run.v1', 'provider_usage_refresh_requested': False}
     try:
+        from scripts.provider_usage_official_news import check_official_news
+        result['official_reset_news'] = check_official_news()
+    except (OSError, ValueError) as error:
+        result['official_reset_news'] = {'status': 'failed', 'error_code': type(error).__name__}
+    try:
         profiles = collect_profiles(default_execution_accounts())
         result['tiers'] = {'status': 'partial' if any(r['status'] == 'failed' for r in profiles) else 'ok',
                            'accounts': profiles}
@@ -57,7 +62,7 @@ def run_daily(call, *, since='2020-01-01T00:00:00Z', until=None,
         result['reminders'] = notify_expiring_resets(shared_call, accounts)
     except Exception as error:
         result['reminders'] = {'status': 'failed', 'error_code': type(error).__name__}
-    result['ok'] = all(result[k]['status'] not in ('failed', 'partial') for k in ('tiers', 'announcements', 'usage', 'reminders'))
+    result['ok'] = all(result[k]['status'] not in ('failed', 'partial') for k in ('official_reset_news', 'tiers', 'announcements', 'usage', 'reminders'))
     return result
 
 
