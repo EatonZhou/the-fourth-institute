@@ -4,12 +4,12 @@ type: decision
 project: AI员工
 created_at: '2026-07-29'
 version:
-  number: 26
+  number: 27
   created_at: "2026-07-29"
   created_by:
     user: ""
     agent: ""
-  updated_at: "2026-11-06T01:17:37Z"
+  updated_at: "2026-11-15T08:26:30Z"
   updated_by:
     user: ""
     agent: "resident_60ae6d0cdf74"
@@ -18,18 +18,18 @@ metaness: 2
 ai_generated: false
 links:
   source:
-  - ${code_root}/scripts/instance_service_definitions.py
-  - ${code_root}/scripts/portal_service_units.py
-  - ${code_root}/scripts/instance_services.py
-  - ${code_root}/scripts/tfi_release_platform_linux.py
-  - ${code_root}/management_portal/service_runtime.py
-  - ${code_root}/management_common/instance_manifest.py
-  - ${code_root}/management_portal/execution/account_hosting.py
-  - ${code_root}/management_portal/execution/account_registrations.py
-  - ${code_root}/tests/cases/test_provider_updates.py
-  - ${code_root}/scripts/prepare_agent_runtimes.py
-  - ${code_root}/scripts/update_provider_runtimes.py
-  - ${code_root}/management_portal/execution/provider_updates.py
+  - /opt/tfi/the-fourth-institute-dev/code/scripts/instance_service_definitions.py
+  - /opt/tfi/the-fourth-institute-dev/code/scripts/portal_service_units.py
+  - /opt/tfi/the-fourth-institute-dev/code/scripts/instance_services.py
+  - /opt/tfi/the-fourth-institute-dev/code/scripts/tfi_release_platform_linux.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/service_runtime.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_common/instance_manifest.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/execution/account_hosting.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/execution/account_registrations.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_provider_updates.py
+  - /opt/tfi/the-fourth-institute-dev/code/scripts/prepare_agent_runtimes.py
+  - /opt/tfi/the-fourth-institute-dev/code/scripts/update_provider_runtimes.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/execution/provider_updates.py
   related:
   - decision_850e6248d680
   - decision_7956d7cb4bde
@@ -87,6 +87,7 @@ Codex 全部账号共用站点 `codex_binary` 和运行时版本，各账号仍�
   - DSH：将桥接脚本及其同目录的 `.mjs` 模块复制到新版本目录；桥接脚本通过语法检查，并能连同依赖模块加载和导出 Portal 调用的 `apply` 函数。
 
   通过后写入验证标记。已有验证标记的目录不再重复安装，只重新检查。
+- **Codex 共享入口激活须先具备可验证的原生准入排他。** 当前已暂存的 Codex 升级保持待切换（pending）；在能够验证独立原生 TUI 与既有 native 连接均受准入排他约束之前，更新器在改动共享运行时链接及重启任何服务之前停止该激活路径。Provider 队列空闲不能证明这些原生客户端已静默；单次或多次零活动采样也不能替代排他能力。仅当 Codex 存在待切换版本时，运行时状态才返回 `activation_blocker: native_admission_exclusivity_unverified`，没有待切换版本时不显示该原因。此限制优先于下述通用空闲切换、自动启用和失败回退流程，其他 Provider 的既有机制保持不变；安装与暂存仍可进行。这不是永久关闭升级，也不由开关或采样次数解除，恢复激活须以真实可验证的原生准入排他能力为依据。逐账号 generation、claim 与 RPC 基础、真实版本及 PID 验证、进程回退和新的生产控制器或 API 均不作为当前已具备能力。
 - **切换只在这个 Provider 没有进行中的执行时发生。** ExecutionService 中还有该 Provider 的排队、已领取或运行中的执行，或者 Claude Code 守护进程报告有运行中的轮次时，新版本进入“待切换”状态，当前版本继续服务。
 - **切换范围由 Provider 的运行时更新器给出。** 检查程序把当前链接原子地换成新版本目录，依次重启更新器返回的服务，并确认它们处于运行状态。Codex 更新器从账号登记查询模板实例，只选择当前 `active` 的实例：已停用登记但仍在服务的进程也更新，原本停止的实例保持停止。账号之间隔离身份与会话，共用运行时版本；验证更新生效时核对被更新实例实际运行的二进制和版本。服务定义由实例清单与平台渲染器生成，按已登记账号组件选择，不把运行中的实例名当作仓库 unit 文件。
 - **切换失败时退回原版本。** 任一服务重启失败，检查程序把当前链接改回原来的目录并再次重启这些服务，然后报告错误；安装失败时当前版本保持不变。

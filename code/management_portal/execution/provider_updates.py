@@ -212,6 +212,11 @@ class CodexRuntime(ProviderRuntime):
     # Each account host is its own registered component, defined when the
     # account starts; there is no static definition to install beforehand.
     unit_files = ()
+    # The official account daemon also accepts independent native clients.
+    # Portal's claim/RPC fence does not exclude those clients at switch time.
+    # Keep the staged runtime pending until a real native exclusion contract
+    # exists; neither an idle sample nor a global queue count proves it.
+    activation_blocker = "native_admission_exclusivity_unverified"
 
     @property
     def services(self) -> tuple[str, ...]:
@@ -558,6 +563,8 @@ def _active_executions(provider: str) -> int:
 
 @diagnosed("service_activation")
 def _activate(provider: str, runtime: ProviderRuntime, root: Path, *, prepare=False) -> bool:
+    if getattr(runtime, "activation_blocker", ""):
+        return False
     if _active_executions(provider) or runtime.busy():
         return False
     services = runtime.services
@@ -704,6 +711,8 @@ def provider_runtime_status(*, refresh=False):
                             "checked_at": observed.get("checked_at", ""),
                             "pending_switch": bool((state.get("pending") or {}).get(provider)),
                             "check_error": observed.get("check_error", "")}
+        if (state.get("pending") or {}).get(provider) and getattr(runtime, "activation_blocker", ""):
+            result[provider]["activation_blocker"] = runtime.activation_blocker
     return result
 
 
