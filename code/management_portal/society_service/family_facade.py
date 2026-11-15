@@ -1293,6 +1293,14 @@ def _relay_views(
     batch = _RelayBatch(links)
     rounds = resident_mailbox.InputProjection(
         [holder for _, holder in batch.holders.values()], repository).rounds(limit=MAX_PROJECTED_REPLIES)
+    # A leaf in this relay graph may itself be a facade awaiting admission,
+    # rather than a worker with executable input. Read those ledgers together
+    # so outer conversations expose the real wait without replaying routing.
+    waiting_facades = {rid for _, (rid, mid) in batch.holders.values()
+                       if is_facade(batch.record(rid))
+                       and rounds[(rid, mid)]["input_state"].get("state") == "queued"}
+    waiting_reviews = (get_lineage_data_store().family_quota_reviews.by_keys(waiting_facades)
+                       if waiting_facades else {})
     result = {}
     for message_id, link in links.items():
         via, (member_id, member_message_id) = batch.holders[message_id]
@@ -1319,6 +1327,12 @@ def _relay_views(
             relay["reassigned_from"] = [{"resident_id": item, **batch.member_view(item)} for item in moved if item]
         if members is not None and state in {"queued", "running"}:
             relay.update(input_progress(repository, member_id, group_id or member_message_id, state, members))
+        if member_id in waiting_reviews:
+            held = waiting_reviews[member_id]
+            if ((held.get("scope_requests") or {}).get(member_message_id) or {}).get("status") == "waiting":
+                relay["state"] = "scope_review"
+            elif (review := (held.get("requests") or {}).get(member_message_id) or {}).get("status") == "waiting":
+                relay.update(state="quota_review", quota_remaining_percent=review.get("quota_remaining_percent"))
         result[message_id] = relay, round_["replies"]
     return result
 
