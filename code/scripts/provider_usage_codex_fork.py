@@ -7,6 +7,10 @@ from scripts.provider_usage_native import record_path
 _homes = {}
 
 
+class ForkHistoryUnavailable(ValueError):
+    """Inherited usage cannot be separated with the retained native evidence."""
+
+
 def parent_path(source, parent_id):
     explicit = source.get('fork_parent_path')
     if explicit:
@@ -54,7 +58,9 @@ def _read_parent_turns(path_string, signature, parent_id):
                 current = str(payload.get('turn_id') or '')
                 if current:
                     turns.add(current)
-            if row.get('type') == 'event_msg' and payload.get('type') == 'token_count' and not current:
+            last = ((payload.get('info') or {}).get('last_token_usage') or {})
+            if (row.get('type') == 'event_msg' and payload.get('type') == 'token_count' and not current
+                    and (last.get('input_tokens') or last.get('output_tokens'))):
                 raise ValueError('Codex fork parent usage lacks turn identity')
     if not found:
         raise ValueError('Codex fork parent metadata missing')

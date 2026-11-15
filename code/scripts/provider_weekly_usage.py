@@ -151,12 +151,12 @@ class CodexSource(NativeSource):
                 forked = bool(p.get('forked_from_id'))
                 started = moment(row['timestamp']) if row.get('timestamp') else None
                 if forked:
-                    from scripts.provider_usage_codex_fork import inherited_turns
+                    from scripts.provider_usage_codex_fork import inherited_turns, ForkHistoryUnavailable
                     try:
                         inherited = set(inherited_turns(self.source, str(p['forked_from_id'])))
-                    except (OSError, ValueError):
+                    except (OSError, ValueError) as error:
                         self.gaps.add('fork_parent_history_unavailable_or_invalid')
-                        raise
+                        raise ForkHistoryUnavailable('Codex fork parent evidence unavailable or invalid') from error
             elif row.get('type') == 'event_msg' and p.get('type') == 'task_started':
                 current_turn = str(p.get('turn_id') or '')
             elif row.get('type') == 'turn_context':
@@ -381,6 +381,9 @@ def report_account(account, since, until, timezone_name, cache=None, provider_ev
                 quotas.extend({**q, 'evidence_source': 'native_quota'} for q in event['quotas'])
         except (OSError, ValueError, TypeError, KeyError, ImportError, sqlite3.Error) as error:
             gaps.add('source_unreadable_or_invalid:' + str(source.get('format', 'unknown')))
+            from scripts.provider_usage_codex_fork import ForkHistoryUnavailable
+            if isinstance(error, ForkHistoryUnavailable):
+                gaps.add('fork_parent_history_unavailable_or_invalid')
             kind = type(error).__name__
             if isinstance(error, sqlite3.Error):
                 kind = 'sqlite_missing_table' if 'no such table' in str(error) else getattr(error, 'sqlite_errorname', kind)

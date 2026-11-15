@@ -95,3 +95,22 @@ def test_discovery_includes_archives_and_recovers_after_parent_move(tmp_path):
     assert inherited_turns(src, parent_id) == ('old',)
     parent.rename(archive / parent.name)
     assert inherited_turns(src, parent_id) == ('old',)
+
+
+def test_missing_parent_gap_survives_incremental_reader_failure(tmp_path):
+    src = setup(tmp_path)
+    Path(src['fork_parent_path']).unlink()
+    cache = IncrementalCache(tmp_path / 'cache', rebuild=True)
+    result = report(src, cache)
+    assert 'fork_parent_history_unavailable_or_invalid' in result['gaps']
+    assert 'source_unreadable_or_invalid:codex' in result['gaps']
+    cache.close()
+
+
+def test_parent_quota_only_startup_does_not_require_request_turn(tmp_path):
+    from scripts.provider_usage_codex_fork import inherited_turns
+    src = setup(tmp_path)
+    parent = Path(src['fork_parent_path'])
+    write(parent, [{'type': 'session_meta', 'payload': {'id': 'parent'}},
+                   {'type': 'event_msg', 'payload': {'type': 'token_count', 'info': None}}, turn('old'), usage()])
+    assert inherited_turns(src, 'parent') == ('old',)
