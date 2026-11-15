@@ -46,6 +46,12 @@ def test_cycle_start_counts_and_next_reset_does_not_leak_into_previous_window():
     assert c['tokens_after_final_observation'] == 0
 
 
+def test_empty_post_observation_interval_never_subtracts_tokens():
+    at = '2026-11-03T00:00:00Z'
+    [c] = cycles([event(at, total_tokens=20)], [sample(at, 0)], until=moment(at))
+    assert c['tokens_after_final_observation'] == 0
+
+
 def test_model_tokens_are_split_by_service_tier():
     events = [event('2026-11-02T00:00:00Z', input_tokens=10, total_tokens=10),
               {**event('2026-11-02T01:00:00Z', input_tokens=30, total_tokens=30), 'service_tier': 'priority'}]

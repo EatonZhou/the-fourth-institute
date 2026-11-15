@@ -57,7 +57,7 @@ def _window_tokens(indexes, models, excluded, start, end, *, include_start=False
             continue
         left = (bisect_left if include_start else bisect_right)(times, start)
         right = (bisect_right if include_end else bisect_left)(times, end)
-        if left == right:
+        if left >= right:
             continue
         usage = {key: prefix[right][i] - prefix[left][i] for i, key in enumerate(FIELDS)}
         fields = {key: reported[right][i] - reported[left][i] for i, key in enumerate(FIELDS)}
