@@ -121,15 +121,18 @@ def classify_resets(records, provider, account_id, parse_time, announcements=())
                         if isinstance(old, list) and isinstance(new, list):
                             old = {c['id']: c for c in old if c.get('id') and c.get('status') == 'available'}
                             new = {c['id']: c for c in new if c.get('id') and c.get('status') == 'available'}
-                            if len(old) == before_card['available_count'] and len(new) == card['available_count']:
-                                lost = set(old) - set(new)
-                                if delta == -1 and len(lost) == 1 and not (set(new) - set(old)):
-                                    expiry = moment(old[next(iter(lost))].get('expiresAt'))
+                            counts = lambda rows: {key: c.get('remaining_count', 1) for key, c in rows.items()}
+                            old_counts, new_counts = counts(old), counts(new)
+                            valid_counts = all(type(n) is int and n > 0 for n in [*old_counts.values(), *new_counts.values()])
+                            if valid_counts and sum(old_counts.values()) == before_card['available_count'] and sum(new_counts.values()) == card['available_count']:
+                                changed = {key for key in set(old_counts) | set(new_counts) if old_counts.get(key, 0) != new_counts.get(key, 0)}
+                                if delta == -1 and len(changed) == 1 and next(iter(changed)) in old:
+                                    expiry = moment(old[next(iter(changed))].get('expiresAt'))
                                     if expiry and expiry > at:
                                         card_evidence = 'one_card_removed_before_expiry'
                                     else:
                                         reasons.append('card_expiry_not_excluded')
-                                elif delta == 0 and set(old) == set(new):
+                                elif delta == 0 and old_counts == new_counts:
                                     card_evidence = 'same_available_cards'
                     non_scheduled = at < before_reset and (before_reset-at).total_seconds() > precision
                     if non_scheduled and delta == -1 and card_evidence == 'one_card_removed_before_expiry':

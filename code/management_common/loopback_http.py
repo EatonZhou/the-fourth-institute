@@ -21,7 +21,14 @@ class _LoopbackProxyHandler(ProxyHandler):
         return super().proxy_open(request, proxy, type)
 
 
-def urlopen(request, *, timeout):
+def urlopen(request, *, timeout, follow_redirects=True):
     # Select per request (also after redirects), without changing global urllib
     # state, process environment, VPN settings or public API proxy behavior.
-    return build_opener(_LoopbackProxyHandler()).open(request, timeout=timeout)
+    from urllib.request import HTTPRedirectHandler
+    class NoRedirect(HTTPRedirectHandler):
+        def redirect_request(self, *args, **kwargs):
+            return None
+    handlers = [_LoopbackProxyHandler()]
+    if not follow_redirects:
+        handlers.append(NoRedirect())
+    return build_opener(*handlers).open(request, timeout=timeout)

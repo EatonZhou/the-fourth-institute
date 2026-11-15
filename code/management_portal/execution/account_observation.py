@@ -71,7 +71,7 @@ def interrupt_socket(sock):
 
 
 @contextmanager
-def urlopen(request, *, timeout):
+def urlopen(request, *, timeout, follow_redirects=True):
     """Own the complete HTTP observation, including DNS, TCP and TLS setup.
 
     A short-lived process makes even an OS resolver that ignores socket
@@ -90,14 +90,14 @@ def urlopen(request, *, timeout):
     from pathlib import Path
     from management_common.process_runtime import spawn_process, terminate_process_tree
     if _current.get() is None:
-        with ordinary_open(request, timeout=timeout) as response:
+        with ordinary_open(request, timeout=timeout, **({} if follow_redirects else {"follow_redirects": False})) as response:
             yield response
         return
     check_cancelled()
     req = Request(request) if isinstance(request, str) else request
     payload = json.dumps({"url": req.full_url, "headers": dict(req.header_items()),
         "method": req.get_method(), "body": base64.b64encode(req.data).decode() if req.data is not None else None,
-        "timeout": timeout}).encode()
+        "timeout": timeout, "follow_redirects": follow_redirects}).encode()
     process = spawn_process([sys.executable, "-c",
         "from management_portal.execution.account_observation import _http_main; _http_main()"],
         cwd=str(Path(__file__).resolve().parents[2]), stdin=subprocess.PIPE, stdout=subprocess.PIPE,
@@ -140,7 +140,8 @@ def _http_main():
     error = False
     try:
         try:
-            response = urlopen(request, timeout=spec["timeout"])
+            response = urlopen(request, timeout=spec["timeout"],
+                               **({} if spec.get("follow_redirects", True) else {"follow_redirects": False}))
         except HTTPError as failure:
             response, error = failure, True
         with response:

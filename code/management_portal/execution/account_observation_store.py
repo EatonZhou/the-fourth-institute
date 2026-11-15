@@ -43,7 +43,7 @@ def evidence(sample):
     cards = sample.get('refresh_cards')
     if isinstance(cards, dict):
         result['refresh_cards'] = _fields(cards, ('status', 'available_count', 'source', 'observed_at', 'stale'))
-        result['refresh_cards']['cards'] = ([_fields(c, ('id', 'resetType', 'status', 'grantedAt', 'expiresAt', 'title', 'description'))
+        result['refresh_cards']['cards'] = ([_fields(c, ('id', 'resetType', 'status', 'grantedAt', 'startsAt', 'expiresAt', 'title', 'description', 'remaining_count'))
                                             for c in cards['cards'] if isinstance(c, dict)]
                                            if isinstance(cards.get('cards'), list) else None)
     if sample.get('status') == 'unavailable':
@@ -63,7 +63,12 @@ def merge_windows(sample, previous, *, now):
                 or not math.isfinite(reset) or reset <= now):
             continue
         windows.append({**window, 'stale': bool(window.get('stale')) or sample.get('status') == 'unavailable'})
-    return {**sample, 'rate_limits': windows}
+    result = {**sample, 'rate_limits': windows}
+    cards = sample.get('refresh_cards') or {}
+    old_cards = previous.get('refresh_cards') or {}
+    if cards.get('status') != 'observed' and old_cards.get('status') == 'observed':
+        result['refresh_cards'] = {**old_cards, 'stale': True}
+    return result
 
 
 class AccountObservationStore:

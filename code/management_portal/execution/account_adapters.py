@@ -245,6 +245,8 @@ class ClaudeAccounts:
     provider = "claude"
 
     def __init__(self, registry=None, *, account_registry=None, provider_registry=None):
+        from .claude_reset_cards import ClaudeResetCards
+        self.reset_cards = ClaudeResetCards()
         from .account_registrations import registrations
         self.entries = {row["account_id"]: row for row in registrations("claude")}
 
@@ -314,6 +316,7 @@ class ClaudeAccounts:
                 login_observation = "logged_in" if logged_in else "login_expired"
                 login_observed_at = started
         windows = snapshot.get("rate_limits") or []
+        cards = self.reset_cards.sample(self.entries[account.account_id]['config']['account_dir'], snapshot)
         if not error and snapshot.get("quota_status") == "available":
             login_observation = "logged_in"
             login_observed_at = min((w["observed_at"] for w in windows if w.get("observed_at")), default=None)
@@ -333,7 +336,7 @@ class ClaudeAccounts:
                 "login_observation": login_observation, "login_observed_at": login_observed_at,
                 "error_code": error_code,
                 "error": error, "refreshing": bool(snapshot.get("quota_refreshing")),
-                "rate_limits": windows,
+                "rate_limits": windows, "refresh_cards": cards,
                 "quota": {"observed_at": min((w.get("observed_at_unix", 0) for w in known), default=0), "max_age_seconds": 300,
                           "valid_until": min((w.get("fresh_until", 0) for w in known), default=0),
                           "status": "available" if remaining is not None and len(known) == len(account_wide) else "unknown",
