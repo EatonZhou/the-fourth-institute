@@ -108,6 +108,19 @@ def test_claude_adapter_exports_cards_to_home_and_history(monkeypatch):
     assert evidence(result)["refresh_cards"]["available_count"] == 0
 
 
+def test_registration_rebuild_does_not_repeat_entitlement_http(monkeypatch):
+    from management_portal.execution.account_adapters import ClaudeAccounts
+    from management_portal.execution import account_registrations
+    monkeypatch.setattr(account_registrations, "registrations", lambda _: [])
+    monkeypatch.setattr(module, "shared_reset_cards", module.ClaudeResetCards())
+    reader = Mock(return_value=module.parse_cards({}, now=NOW))
+    monkeypatch.setattr(module, "read_cards", reader)
+    for _ in range(3):
+        adapter = ClaudeAccounts()
+        assert adapter.reset_cards.sample("/same-account", snapshot())["available_count"] == 0
+    assert reader.call_count == 1
+
+
 def test_multi_use_grant_consumption_classifies_once_and_excludes_expiry():
     from scripts.provider_usage_resets import classify_resets
     from scripts.provider_weekly_usage import moment

@@ -7,6 +7,7 @@ from copy import deepcopy
 from datetime import datetime, timezone
 import json
 from pathlib import Path
+import threading
 from urllib.request import Request
 
 from .account_observation import check_cancelled, urlopen
@@ -79,9 +80,14 @@ class ClaudeResetCards:
     def __init__(self):
         self._samples = {}
         self._revisions = {}
+        self._locks = {}
 
     def sample(self, config_dir, snapshot):
         key = str(config_dir)
+        with self._locks.setdefault(key, threading.RLock()):
+            return self._sample(key, snapshot)
+
+    def _sample(self, key, snapshot):
         previous = self._samples.get(key, {"status": "unknown", "available_count": None, "cards": None})
         if snapshot.get("quota_error"):
             return {**deepcopy(previous), "stale": True}
@@ -103,3 +109,8 @@ class ClaudeResetCards:
                 result["status"] = "unavailable"
         self._samples[key] = deepcopy(result)
         return result
+
+
+# Registration refresh rebuilds account adapters. The read owner must survive
+# that projection lifecycle, like the native /usage observer it follows.
+shared_reset_cards = ClaudeResetCards()

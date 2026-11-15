@@ -245,8 +245,8 @@ class ClaudeAccounts:
     provider = "claude"
 
     def __init__(self, registry=None, *, account_registry=None, provider_registry=None):
-        from .claude_reset_cards import ClaudeResetCards
-        self.reset_cards = ClaudeResetCards()
+        from .claude_reset_cards import shared_reset_cards
+        self.reset_cards = shared_reset_cards
         from .account_registrations import registrations
         self.entries = {row["account_id"]: row for row in registrations("claude")}
 
