@@ -17,6 +17,10 @@
     let documentRevision = 0;
     const abort = new AbortController();
     const listen = (node, type, handler) => node.addEventListener(type, handler, {signal: abort.signal});
+    const toolboxTrigger = root.querySelector('.workshopToolboxButton');
+    const setToolboxOpen = open => { drawer.hidden = !open; toolboxTrigger.setAttribute('aria-expanded', String(open)); };
+    const toolboxHover = window.PortalHatgPanelBindings.bindHoverPanel({trigger:toolboxTrigger,panel:drawer,
+      open:() => setToolboxOpen(true),close:() => setToolboxOpen(false),isOpen:() => !drawer.hidden});
     const error = value => {
       const node = element('workshopError');
       node.hidden = !value;
@@ -81,7 +85,7 @@
         runtime = value;
         root.dataset.templateKind = runtime.draft.kind;
         root.querySelector('[data-workshop-toolbox]').hidden = runtime.draft.kind !== 'structure';
-        if (runtime.draft.kind !== 'structure') drawer.hidden = true;
+        if (runtime.draft.kind !== 'structure') toolboxHover.close();
         base = JSON.stringify(runtime.readDraft());
         const saveButton = form.querySelector('[data-workshop-save]');
         saveButton.disabled = !!previewItem || (!!runtime.draft.template_id && (!!runtime.draft.builtin_key || runtime.draft.created_by !== window.PortalIdentity.username()));
@@ -139,20 +143,19 @@
         const key = window.LineageTemplateWorkshopDraft.appendTemplate(runtime.draft, source, target);
         if (id === 'workshop_fork') runtime.draft.body.roles.find(row => row.key === key).fork_of = incoming.roles[0].fork_of;
         runtime.renderParameters(); runtime.editorState.graph.select(key); runtime.schedulePreview();
-        drawer.hidden = true;
+        toolboxHover.close();
       },
     });
     listen(root, 'click', async event => {
       if (event.target.closest('[data-workshop-store]')) {
-        drawer.hidden = true;
+        toolboxHover.close();
         window.PortalTemplateStore.open({request:execute,lineageId,onOpenWorkshop:resource => onOpenWorkshop?.(resource)});
       }
-      if (event.target.closest('[data-workshop-toolbox]')) drawer.hidden = !drawer.hidden;
+      if (event.target.closest('[data-workshop-toolbox]') !== toolboxTrigger && event.target.closest('[data-workshop-toolbox]')) toolboxHover.close();
       if (event.target.closest('[data-workshop-chat]')) root.classList.toggle('workshopChatCollapsed');
     });
-    listen(drawer, 'portal:template-picked', () => { drawer.hidden = true; runtime.editorState.graph?.select(''); });
+    listen(drawer, 'portal:template-picked', () => { toolboxHover.close(); runtime.editorState.graph?.select(''); });
     listen(window, 'beforeunload', event => { if (dirty()) { event.preventDefault(); event.returnValue = ''; } });
-    listen(document, 'keydown', event => { if (event.key === 'Escape') drawer.hidden = true; });
     listen(window, 'portal:templates-changed', event => {
       const saved = event.detail?.template;
       if (saved?.template_id === templateId && runtime && !dirty() && !runtime.view.working) runtime.edit(saved);
@@ -180,7 +183,7 @@
         } else if (templateId) await templates.openEditor(templateId); else templates.newTemplate();
         return controller;
       },
-      destroy() { abort.abort(); runtime?.view.close(); templates.destroy(); },
+      destroy() { toolboxHover.destroy(); abort.abort(); runtime?.view.close(); templates.destroy(); },
     };
     return controller;
   }

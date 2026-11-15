@@ -51,7 +51,33 @@ const {chromium} = require(path.join(repo,'management_portal/test_framework/tau_
     await page.getByRole('button',{name:'取消',exact:true}).last().waitFor();
     await shot('workshop-publish');
     await page.getByRole('button',{name:'取消',exact:true}).last().click();
-    await page.locator('#hatgToolboxToggle').click();
+    await page.locator('#hatgToolboxToggle').hover();
+    assert.equal(await page.locator('#hatgToolbox').isVisible(),true);
+    await page.locator('#hatgToolboxTitle').hover();
+    assert.equal(await page.locator('#hatgToolbox').isVisible(),true);
+    await page.mouse.move(900,20);
+    await page.waitForFunction(()=>document.querySelector('#hatgToolbox').hidden);
+    // The actual launcher CSS must remain above the canvas when its legend opens.
+    await page.evaluate(()=>{
+      const mailbox=document.createElement('aside');
+      mailbox.className='portalAgentInbox';mailbox.id='testMailbox';
+      mailbox.style.cssText='left:360px;right:auto;top:300px';
+      mailbox.innerHTML='<button class="portalAgentInboxTrigger">Mailbox</button>';
+      document.body.append(mailbox);
+      document.querySelector('#testHatg').style.zIndex='1';
+    });
+    await page.locator('#hatgLegendToggle').hover();
+    await page.locator('#hatgLegendPopover').waitFor();
+    assert.equal(await page.evaluate(()=>{
+      const button=document.querySelector('#testMailbox button'),r=button.getBoundingClientRect();
+      return button.contains(document.elementFromPoint(r.x+r.width/2,r.y+r.height/2));
+    }),true,'legend must not lift the entire canvas over Mailbox');
+    assert.equal(await page.evaluate(()=>document.querySelector('#hatgLegendPopover').parentElement===document.body),true);
+    await page.locator('#hatgLegendPopover').hover();
+    await page.mouse.move(900,20);
+    await page.waitForFunction(()=>document.querySelector('#hatgLegendPopover').hidden);
+    await page.evaluate(()=>document.querySelector('#testMailbox').remove());
+    await page.locator('#hatgToolboxToggle').hover();
     const geometry=await page.evaluate(()=>{
       const drawer=document.querySelector('#hatgToolbox').getBoundingClientRect();
       const canvas=document.querySelector('#hatgCanvas').getBoundingClientRect();
@@ -108,6 +134,38 @@ const {chromium} = require(path.join(repo,'management_portal/test_framework/tau_
     assert.equal(await page.locator('[data-workshop-save]').isDisabled(),true);
     assert.equal(await page.locator('[data-action=copy]').isEnabled(),true);
     assert.equal(await page.locator('[data-workshop-install]').isVisible(),true);
+    await page.locator('.workshopToolboxButton').hover();
+    assert.equal(await page.locator('[data-workshop-id=workshopToolbox]').isVisible(),true);
+    await page.mouse.move(900,20);
+    await page.waitForFunction(()=>document.querySelector('[data-workshop-id=workshopToolbox]').hidden);
+    // UI geometry uses short and long content; publishing/installing is covered above.
+    await page.evaluate(()=>{
+      const base={...storeItem,instructions_used:['CreateComponent'],application_parameters:[],is_publisher:false};
+      window.geometryItems=[{...base,store_id:'short',title:'短标题',description:'短说明'},
+        {...base,store_id:'long',title:'很长的模板名称'.repeat(15),description:'完整说明\n'.repeat(100)}];
+      window.PortalTemplateStore.open({request:async()=>({items:geometryItems})});
+    });
+    await page.locator('[data-store-select=short]').waitFor();
+    const dimensions=()=>page.evaluate(()=>{
+      const size=node=>{const r=node.getBoundingClientRect();return [r.width,r.height];};
+      return {dialog:size(document.querySelector('.templateStore')),cards:[...document.querySelectorAll('.templateStoreCard')].map(size)};
+    });
+    const initial=await dimensions();
+    assert.deepEqual(initial.cards[0],initial.cards[1]);
+    await page.locator('[data-store-select=short]').click();
+    assert.deepEqual(await dimensions(),initial);
+    await page.locator('[data-store-select=long]').click();
+    assert.deepEqual(await dimensions(),initial);
+    assert.equal(await page.locator('.templateStoreDetails').evaluate(node=>node.scrollHeight>node.clientHeight),true);
+    await shot('store-fixed-size');
+    await page.locator('[data-store-back]').click();
+    assert.deepEqual(await dimensions(),initial);
+    await page.setViewportSize({width:390,height:740});
+    const narrow=(await dimensions()).dialog;
+    await page.locator('[data-store-select=long]').click();
+    assert.deepEqual((await dimensions()).dialog,narrow);
+    assert.ok(narrow[0]<=390-32);
+    await shot('store-fixed-size-mobile');
     assert.deepEqual(errors,[]);
     console.log('Chromium store interactions and screenshots verified');
   } finally { await browser.close(); }

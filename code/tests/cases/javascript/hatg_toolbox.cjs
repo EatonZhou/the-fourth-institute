@@ -176,7 +176,7 @@
         state:{},panelHost:{pageStateController:{listen:(_scope,node,event,handler)=>node.addEventListener(event,handler)}},
         bindPrimitiveLibrary:none,bindGraphNodeSearch:none,hatgModule:()=>({observeNavigationHeight:()=>none})});
       w.ResizeObserver=class{observe(){} disconnect(){}};
-      w.PortalOverlay={bindPopover:()=>({toggle(){},destroy(){}})};
+      w.PortalOverlay={bindPopover:()=>({open(){},close(){},isOpen:()=>false,toggle(){},destroy(){}})};
       w.PortalHatgPanelBindings.createBindings(deps).bindActions();
       let storeOpened=false;w.PortalTemplateStore={open:()=>{storeOpened=true;}};
       const store=w.document.querySelector('#hatgToolboxStore button');assert.equal(store.disabled,false);assert.equal(store.title,'模板商店');
