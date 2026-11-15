@@ -278,7 +278,7 @@
       host.addEventListener("gestureend", finishTouchGesture, { passive: true });
     }
 
-    async function renderPdf({ preservePosition = false } = {}) {
+    async function renderPdf({ preservePosition = true } = {}) {
       if (state.outputView !== "pdf") return;
       const host = $("articlePdfView");
       if (state.buildLoading) {
@@ -306,7 +306,10 @@
         return;
       }
       const resumePosition = state.pdfRestorePosition;
-      const readingPosition = resumePosition || (preservePosition ? captureArticlePdfPosition() : null);
+      // A rebuild replaces the preview asynchronously. Capture its latest
+      // location before clearing the old pages, scoped to this Article only.
+      const sameArticle = articlePdfController && articlePdfRenderKey.startsWith(`${state.selectedId}|`);
+      const readingPosition = resumePosition || (preservePosition && sameArticle ? captureArticlePdfPosition() : null);
       cancelPdf();
       host.innerHTML = window.PortalI18n.html`<div class="articlePdfDocument" id="articlePdfDocument"><div class="articlePdfStatus" id="articlePdfStatus">正在加载 PDF…</div></div>`;
       const documentHost = $("articlePdfDocument");

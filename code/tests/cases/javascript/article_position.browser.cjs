@@ -7,7 +7,7 @@ const { STATIC, portalWorkspaceSurfaceScripts } = require('./portal_workspace_su
 const { chromium } = require(path.join(STATIC, '../test_framework/tau_runtime/node_modules/playwright'));
 const modules = ['portal_state.js', 'portal_page_state.js', 'portal_text.js', 'portal_i18n.js', 'portal_ui_primitives.js', 'portal_ui.js',
   'portal_command_registry.js', ...portalWorkspaceSurfaceScripts(), 'article_workspace_documents.js', 'article_workspace_position.js',
-  'article_workspace_syntax.js', 'article_workspace_monaco.js', 'article_workspace_pdf.js', 'article_workspace_events.js'];
+  'article_workspace_syntax.js', 'article_workspace_monaco.js', 'article_workspace_pdf.js', 'article_workspace_build.js', 'article_workspace_events.js'];
 const html = fs.readFileSync(path.join(STATIC, '../article_workspace.html'), 'utf8')
   .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '').replace(/<link\b[^>]*>/gi, '')
   .replace('</body>', modules.map(n => `<script src="/static/${n}"></script>`).join('') + '</body>');
@@ -48,20 +48,29 @@ const html = fs.readFileSync(path.join(STATIC, '../article_workspace.html'), 'ut
         configureDownloadLink: noop, dispose: noop, createFrameCoalescer: () => ({ cancel: noop }) };
       // Deterministic PDF page geometry; exercise the production Article PDF
       // capture/restore and render completion with no external PDF service.
+      window.pdfPageCount = 5;
       window.PortalPdfPreview = { render: ({ root, scaleMultiplier }) => {
-        root.dataset.pdfPageCount = '5'; root.style.position = 'relative'; root.innerHTML = '';
-        for (let n = 1; n <= 5; n++) {
-          const p = document.createElement('div'); p.dataset.pdfPage = n;
-          p.style.cssText = `width:${500 * scaleMultiplier}px;height:${700 * scaleMultiplier}px;margin:10px;background:#eee`;
-          p.textContent = `Page ${n}`; root.append(p);
-        }
-        return { promise: Promise.resolve(), cancel: noop, ensurePage: async n => {
-          if (n < 1 || n > 5) throw new Error('page out of bounds');
+        const pageCount = window.pdfPageCount;
+        const promise = (async () => {
+          root.style.position = 'relative'; root.innerHTML = 'Loading PDF…';
+          // Match the asynchronous download: the shorter loading view resets
+          // the scroll container before PDF page geometry becomes available.
+          await new Promise(resolve => requestAnimationFrame(resolve));
+          void root.parentElement.scrollTop;
+          root.dataset.pdfPageCount = String(pageCount); root.innerHTML = '';
+          for (let n = 1; n <= pageCount; n++) {
+            const p = document.createElement('div'); p.dataset.pdfPage = n;
+            p.style.cssText = `width:${500 * scaleMultiplier}px;height:${700 * scaleMultiplier}px;margin:10px;background:#eee`;
+            p.textContent = `Page ${n}`; root.append(p);
+          }
+        })();
+        return { promise, cancel: noop, ensurePage: async n => {
+          if (n < 1 || n > pageCount) throw new Error('page out of bounds');
         } };
       } };
       window.state = { selectedId: articleId, openFile: '', openTabs: [], documents: new Map(), source: '', savedSource: '',
         filesByPath: new Map(available.map(p => [p, {}])), editorPreferences: { tabSize: 2, fontSize: 14 },
-        monacoDisposables: [], settings: {}, outputView: 'pdf', pdfZoom: 1, pdfScaleVersion: 0,
+        monacoDisposables: [], settings: {}, compilingArticles: new Set(), outputView: 'pdf', pdfZoom: 1, pdfScaleVersion: 0,
         build: { pdf_available: true, pdf_url: '/fixture.pdf' } };
       let syntax, editor, location, pdf;
       window.docs = PortalArticleWorkspaceDocuments.createDocuments({ ...deps(PortalArticleWorkspaceDocuments), $, state,
@@ -78,6 +87,12 @@ const html = fs.readFileSync(path.join(STATIC, '../article_workspace.html'), 'ut
         openArticleFile: docs.openArticleFile, activateDocument: docs.activateDocument });
       pdf = window.pdfOwner = PortalArticleWorkspacePdf.createPdf({ ...deps(PortalArticleWorkspacePdf), $, state,
         selectedArticle: () => ({ title: 'Fixture' }) });
+      window.completedPdfRenders = 0;
+      window.buildOwner = PortalArticleWorkspaceBuild.createBuild({ ...deps(PortalArticleWorkspaceBuild), $, state,
+        request: async () => new Promise(resolve => { window.finishCompile = resolve; }),
+        renderPdf: async () => { await pdf.renderPdf(); window.completedPdfRenders += 1; },
+        showPdfError: error => { throw error; },
+      });
       const shared = { $, state, activeDocument: docs.activeDocument, captureActiveDocument: docs.captureActiveDocument,
         updateDirtyState: syntax.updateDirtyState, hasDirtyDocuments: docs.hasDirtyDocuments };
       editor = PortalArticleWorkspaceMonaco.createMonaco({ ...deps(PortalArticleWorkspaceMonaco), ...shared, activateDocument: docs.activateDocument });
@@ -118,12 +133,42 @@ const html = fs.readFileSync(path.join(STATIC, '../article_workspace.html'), 'ut
     assert.ok(Math.abs(after.pdf.yRatio - before.pdf.yRatio) < .01); assert.match(after.source, /^Fresh 1/);
     const stored = await page.evaluate(() => JSON.stringify(PortalPageState.create('article-reading-position', { getUser: () => 'reader' }).read()));
     assert.ok(!stored.includes('Line 1 of the source')); assert.ok(!stored.includes('Fresh 1'));
+    // A completed build replaces the PDF through the real build -> view -> PDF
+    // path. Restore the latest reading position, even if scrolled while compiling.
+    const rebuildAt = async ({ scrollTop, pages = 5, fromScratch = false }) => {
+      const anchor = await page.evaluate(({ scrollTop, pages, fromScratch }) => {
+        const completed = window.completedPdfRenders;
+        void buildOwner.compileArticle({ fromScratch });
+        document.getElementById('articlePdfView').scrollTop = scrollTop;
+        const position = pdfOwner.captureArticlePdfPosition();
+        window.pdfPageCount = pages;
+        finishCompile({ id: state.selectedId, status: 'success', pdf_url: '/fixture.pdf', compiled_at: `build-${completed + 1}` });
+        return { position, completed, zoom: state.pdfZoom };
+      }, { scrollTop, pages, fromScratch });
+      await page.waitForFunction(completed => window.completedPdfRenders > completed, anchor.completed);
+      return { before: anchor, after: await page.evaluate(() => ({ position: pdfOwner.captureArticlePdfPosition(), zoom: state.pdfZoom })) };
+    };
+    const rebuilt = await rebuildAt({ scrollTop: 2750 });
+    assert.equal(rebuilt.after.position.page, rebuilt.before.position.page);
+    assert.ok(Math.abs(rebuilt.after.position.yRatio - rebuilt.before.position.yRatio) < .01);
+    assert.ok(Math.abs(rebuilt.after.position.xRatio - rebuilt.before.position.xRatio) < .01);
+    assert.equal(rebuilt.after.zoom, rebuilt.before.zoom);
+    const shortened = await rebuildAt({ scrollTop: 4100, pages: 3, fromScratch: true });
+    assert.equal(shortened.before.position.page, 5);
+    assert.equal(shortened.after.position.page, 3);
+    assert.ok(Math.abs(shortened.after.position.yRatio - shortened.before.position.yRatio) < .01);
+    // A cancelled view belongs to the previous Article, even if its DOM remains.
+    await page.evaluate(async () => {
+      pdfOwner.cancelPdf(); state.selectedId = 'another-article';
+      await pdfOwner.renderPdf();
+    });
+    assert.equal(await page.evaluate(() => document.getElementById('articlePdfView').scrollTop), 0);
     await enter({ user: 'other-reader' }); assert.equal(await page.evaluate(() => state.openFile), 'main.tex');
     await enter({ articleId: 'B' }); assert.equal(await page.evaluate(() => state.openFile), 'main.tex');
     await enter({ available: ['main.tex'] }); assert.equal(await page.evaluate(() => state.openFile), 'main.tex');
     await page.evaluate(async () => { state.pdfRestorePosition = { page: 90, xRatio: .5, yRatio: .5 }; pdfOwner.cancelPdf(); await pdfOwner.renderPdf(); });
     assert.equal(await page.evaluate(() => pdfOwner.captureArticlePdfPosition().page), 5);
     assert.deepEqual(errors, []);
-    console.log('PASS: return restores tabs, Monaco cursor/scroll and PDF page/zoom; fresh source, user/Article isolation and removed targets');
+    console.log('PASS: return and recompile preserve PDF page/position/zoom; fresh source, user/Article isolation and removed targets');
   } finally { await browser?.close(); await new Promise(resolve => server.close(resolve)); }
 })().catch(error => { console.error(error); process.exitCode = 1; });
