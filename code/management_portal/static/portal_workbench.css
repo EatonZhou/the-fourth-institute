@@ -1605,7 +1605,7 @@ html[data-portal-viewport="mobile"] .portalWorkbenchMobilePanel {
   border-radius: 8px;
   background: transparent;
   color: var(--muted);
-  font: 700 10px/1.1 ui-sans-serif, system-ui, sans-serif;
+  font: 700 10px/1.1 var(--portal-font);
 }
 
 html[data-portal-viewport="mobile"] .portalWorkbenchMobilePanel .portalIcon {
@@ -1691,7 +1691,7 @@ html[data-portal-viewport="mobile"] .portalWorkbenchMobilePanel.is-active {
   background: transparent;
 }
 .sideView > .paneHead > .paneTitle,
-.portalPersonalWorkspaces > .paneHead > .paneTitle { font-size: 15px; font-weight: 700; }
+.portalPersonalWorkspaces > .paneHead > .paneTitle { font-size: var(--portal-pane-title-size); font-weight: var(--portal-pane-title-weight); line-height: var(--portal-pane-title-line-height); }
 
 .portalFileTree {
   display: grid;
@@ -2342,7 +2342,7 @@ html[data-portal-viewport="mobile"] .portalWorkbenchMobilePanel.is-active {
   border-radius: 6px;
   background: transparent;
   color: var(--text);
-  font: 600 13px/1 ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font: 600 13px/1 var(--portal-font);
   cursor: pointer;
 }
 

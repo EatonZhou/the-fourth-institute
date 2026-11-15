@@ -83,7 +83,9 @@ python3 -m management_portal.workbench_projections.development_projection --comm
 
 片段与应用包均支持浏览器原生全屏：在用户点击处理器内调用 `element.requestFullscreen()`，用 `document.exitFullscreen()` 或浏览器退出操作返回；监听 `fullscreenchange` 更新按钮和画布尺寸。应用应先检查 `document.fullscreenEnabled` 并处理请求拒绝。宿主在 iframe 链上委派全屏权限，进入与退出保留原 iframe、Worker 和草稿；不改变工作台布局、sandbox、资源鉴权或网络限制。全屏需要浏览器支持与即时用户操作，不新增 SDK 消息或自动进入行为。
 
-HTML 可以引用本修订的独立 script 和 stylesheet。CSS 必须自包含：构建产物不能保留 `@import`（包括 data import）、本地或外部 `url()`，仅允许 `data:` 和 `#fragment`。应在构建时展开样式依赖并内联图片；模板为常用图片与 woff2 配置 data URL loader，但当前 CSP 未开放 font-src/media-src，字体仍使用系统字体，音视频没有正式加载入口。Worker 路径从产物根目录解析。图形动画、截图、媒体与导航的具体设计边界见 [工程 README](development_app/README.md#产品体验设计的公共能力)。
+HTML 可以引用本修订的独立 script 和 stylesheet。CSS 必须自包含：构建产物不能保留 `@import`（包括 data import）、本地或外部 `url()`，仅允许 `data:` 和 `#fragment`。应在构建时展开样式依赖并内联图片；模板为常用图片与 woff2 配置 data URL loader，但当前 CSP 未开放 font-src/media-src，字体使用共享样式声明的本地字体，音视频没有正式加载入口。Worker 路径从产物根目录解析。图形动画、截图、媒体与导航的具体设计边界见 [工程 README](development_app/README.md#产品体验设计的公共能力)。
+
+片段与应用包 iframe 共用宿主注入的 `portal_design_system.css`：界面文字使用 `var(--portal-font)`，英文平台 sans 与简体中文本地字形、粗体由共享 CSS 统一声明，应用不复制字体栈或字体文件。`paneHead` 内的 `paneTitle`、直接 h2（含一层文字容器）使用 `--portal-pane-title-size/weight/line-height`。主题 token 变化随宿主同步；代码、终端、数学和图示符号的语义字体保留。更新应用源码后，已有不可变应用修订须按正常保存、构建、发布流程更新才能获得源码样式变更，宿主不会改写已发布资产或用户自定义样式。
 
 - `await Projection.createWorker("layout.worker.js")`：创建本修订的独立 Worker，返回标准 Worker 对象；使用 postMessage 通信，用 terminate 释放，页面退出时也会清理。Worker 没有 Projection SDK 或用户凭据。
 - `await Projection.libraries()`：读取宿主登记库清单；`await Projection.loadLibrary(name)` 将登记的 UMD 入口加载到当前 sandbox，返回库元数据。应用也可以把固定 npm 依赖打包进入口。

@@ -1741,7 +1741,7 @@ body.articleOutlineResizing { cursor: row-resize; user-select: none; }
   color: var(--text);
   padding: 7px;
   text-align: left;
-  font: 12px/1.35 ui-sans-serif, system-ui, sans-serif;
+  font: 12px/1.35 var(--portal-font);
 }
 
 .articleCompileMenuItem:hover:not(:disabled),
@@ -1861,7 +1861,7 @@ body.articleOutlineResizing { cursor: row-resize; user-select: none; }
   padding: 0;
   background: transparent;
   color: var(--text);
-  font: 700 12px/1 system-ui, sans-serif;
+  font: 700 12px/1 var(--portal-font);
   cursor: pointer;
 }
 .articlePdfZoomFit { width: 46px; border-right: 0; color: var(--muted); font-size: 9px; font-weight: 650; }

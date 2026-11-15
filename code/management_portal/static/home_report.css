@@ -1,5 +1,5 @@
 /* Report controls opt into their skin; embedded components keep theirs. */
-.home-report { box-sizing:border-box; color:var(--text,#17243b); background:var(--panel,#f7f9fc); padding:clamp(16px,3vw,32px); font:15px/1.65 system-ui,sans-serif; min-width:0; overflow-wrap:anywhere; }
+.home-report { box-sizing:border-box; color:var(--text,#17243b); background:var(--panel,#f7f9fc); padding:clamp(16px,3vw,32px); font:15px/1.65 var(--portal-font); min-width:0; overflow-wrap:anywhere; }
 .home-report *, .home-report *::before, .home-report *::after {box-sizing:border-box;}
 .home-report [hidden] {display:none!important;}
 .home-report h2 {font-size:26px;line-height:1.3;margin:0 0 12px;}
@@ -33,7 +33,7 @@ summary.homeReportControl {cursor:pointer;}
 .home-report .hr-diagrams {display:grid;grid-template-columns:minmax(0,1fr);gap:12px;}
 .home-report .hr-diagrams.hr-compare {grid-template-columns:repeat(2,minmax(0,1fr));}
 .home-report .hr-diagrams figure {margin:0;min-width:0;background:var(--panel,#f7f9fc);border:1px solid var(--border,#d1dbe9);border-radius:10px;padding:10px;}
-.home-report .hr-diagrams svg {display:block;width:100%;height:auto;fill:var(--text,#17243b);font-family:system-ui,sans-serif;}
+.home-report .hr-diagrams svg {display:block;width:100%;height:auto;fill:var(--text,#17243b);font-family:var(--portal-font);}
 .home-report .hr-diagrams g {transition:opacity .6s;}
 .home-report .hr-diagrams figcaption {font-size:14px;}
 button.homeReportControl[aria-pressed=true] {background:var(--subtle,#eaf0fb);border-color:#4263c7;}

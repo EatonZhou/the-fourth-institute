@@ -3,7 +3,7 @@ body {
   min-height: 100vh;
   color: var(--text);
   background: var(--bg);
-  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  font-family: var(--portal-font);
 }
 .componentDemoShell {
   width: min(940px, calc(100vw - 32px));

@@ -1240,7 +1240,7 @@ body[data-resource-detail-hide-graph] .knowledgeGraphSection {
 
 .knowledgeGraphNodeLabel {
   fill: var(--text);
-  font: 600 10.5px ui-sans-serif, system-ui, sans-serif;
+  font: 600 10.5px var(--portal-font);
   paint-order: stroke;
   stroke: var(--panel);
   stroke-width: 3.5px;
@@ -1250,7 +1250,7 @@ body[data-resource-detail-hide-graph] .knowledgeGraphSection {
 
 .knowledgeGraphRelationLabel {
   fill: var(--muted);
-  font: 600 9px ui-sans-serif, system-ui, sans-serif;
+  font: 600 9px var(--portal-font);
   paint-order: stroke;
   stroke: var(--panel);
   stroke-width: 3px;
@@ -1322,7 +1322,7 @@ body[data-resource-detail-hide-graph] .knowledgeGraphSection {
   border-radius: 6px;
   background: transparent;
   color: var(--muted);
-  font: 600 15px ui-sans-serif, system-ui, sans-serif;
+  font: 600 15px var(--portal-font);
   cursor: pointer;
 }
 
@@ -1587,7 +1587,7 @@ body[data-resource-detail-hide-graph] .knowledgeGraphSection {
 
 .radarLabel {
   fill: var(--muted);
-  font: 11px ui-sans-serif, system-ui, sans-serif;
+  font: 11px var(--portal-font);
 }
 
 .knowledgeRadarMetrics {

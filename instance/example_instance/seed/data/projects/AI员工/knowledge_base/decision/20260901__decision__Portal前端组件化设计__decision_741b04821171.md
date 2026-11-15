@@ -4,15 +4,15 @@ type: decision
 project: AI员工
 created_at: '2026-09-01'
 version:
-  number: 32
-  created_at: '2026-09-01'
+  number: 35
+  created_at: "2026-09-01"
   created_by:
-    user: ''
-    agent: ''
-  updated_at: '2026-10-30T20:43:56Z'
+    user: ""
+    agent: ""
+  updated_at: "2026-11-15T08:32:48Z"
   updated_by:
-    user: ''
-    agent: resident_73cb83291316
+    user: ""
+    agent: "resident_511e229bc8c3"
 importance: 9
 metaness: 3
 ai_generated: false
@@ -129,7 +129,7 @@ Resident 是长期存在的 Agent 身份；Chat Workspace 是用户与 Resident 
 
 ### 页面开发者可以依赖的组合规则
 
-- **所有页面用同一套设计变量。** 间距档位为 4、8、12、16、20、24 像素（`--portal-space-1` 至 `--portal-space-6`），控件高度、圆角、最大内容宽度、阴影和层级也统一定义。
+- **所有页面用同一套设计变量。** 间距档位为 4、8、12、16、20、24 像素（`--portal-space-1` 至 `--portal-space-6`），控件高度、圆角、最大内容宽度、阴影和层级也统一定义。主题另外提供一组导航带变量（`--nav-surface`、`--nav-text`、`--nav-text-strong`、`--nav-hover`、`--nav-selected`、`--nav-divider`、`--nav-accent`），由每个主题的面板、文字、边框和强调色推导，供活动轨这类导航表面使用，使其在每个主题下与面板同色系（decision_4348ed990621）。
 - **页面样式只管页面布局和业务显示。** `portal_design_system.css`、`portal_components.css` 和 `portal_workbench.css` 负责共享组件的内部结构；`portal_components.css` 按组件拆成连续的分片（`portal_components_markdown.css`、`_chat_frame`、`_messages`、`_composer`、`_queue`、`_resource_chips`、`_agent_inbox`、`_turn_cards`、`_conversation`），每个页面在它之后按同一顺序加载全部分片，层叠顺序与单个文件相同，测试逐页检查；架构测试阻止页面样式覆盖受保护的内部选择器。
 - **基础控件按语义生成。** 有链接地址的按钮生成链接，没有的生成 `type="button"` 的按钮；字段支持输入框、下拉框和多行文本框。
 - **每个命令作用域独立登记，命令的可见和可用实时计算。** 同一作用域内命令 ID 唯一，作用域销毁时命令一起释放；当前选择或权限变化后，列表和快捷键按新的上下文计算。执行中的命令不会被重复执行。
@@ -152,7 +152,7 @@ Resident 是长期存在的 Agent 身份；Chat Workspace 是用户与 Resident 
 
 | 组件 | 全局对象 | 负责什么 |
 |---|---|---|
-| 基础构造 | `PortalUIPrimitives` | 文本转义、元素查找、静态资源地址、图标、状态标记、按钮、字段、异步状态、随机 ID、页面插入增强注册表 |
+| 基础构造 | `PortalUIPrimitives` | 文本转义、元素查找、静态资源地址、图标、状态标记、按钮、字段、异步状态、标识字形与稳定色相、随机 ID、页面插入增强注册表 |
 | 响应模式 | `PortalResponsive` | 820 像素断点、根元素标记、快照和订阅 |
 | 命令注册表 | `PortalCommandRegistry` | 作用域、命令信息、上下文、排序、快捷键、防重复执行 |
 | 共享选择 | `PortalWorkbenchContext` | 共享选择的读写、修订号和按通道订阅 |
@@ -167,6 +167,8 @@ Resident 是长期存在的 Agent 身份；Chat Workspace 是用户与 Resident 
 - `escapeHtml` 是 HTML 文本转义的唯一实现，页面的同名函数只能调用它。
 - `elementOf` 把 Element、元素 id 或选择器解析为页面中的元素（其他值得到 `null`）；`staticAssetUrl` 给按需加载的脚本和样式加上页面的发布标记（`portal_v`），使它们与页面同一版本。浮层、对话框、表单控件、详情外壳、资源标题、看板外壳、导航、设置和 Chat 都调用这两项，不保留自己的副本；加载这些模块的页面都加载 `portal_ui_primitives.js`。
 - `loadAsset(path, { ready })` 是按需加载脚本和样式的唯一入口：每个文件只插入一个带发布标记的标签，所有调用方共享同一个 Promise。页面标记里已经声明的文件视为已加载；调用方给出 `ready()` 且它不成立时，说明声明的副本没有到达，会重新加载。导航、设置、Chat 和 HATG 加载器都通过它加载头像组件、Package 和 HATG 脚本，因此一处加载过的文件不会让另一处等待一个已经发生过的 `load` 事件。
+- 紧凑标识块由 `titleGlyph(title)` 与 `stableHue(key)` 生成：前者取标题的第一个汉字、两个英文单词的首字母或单个英文单词的前两个字母；后者按稳定键（例如 Project ID 或 Resident ID）得到 0–359 的色相，同一对象在不同列表、刷新和用户之间颜色一致。活动轨的最近活动项和导航树行的 Project 标识方块都调用这两项，不保留自己的副本。
+- 头像标记让紧凑标识优先显示对象头像。`avatarMarkAttributes({kind, id, label, glyph, size})` 生成标记属性，`kind` 为 resident、lineage 或 project；元素先显示 `glyph`。`paintAvatars(root)` 在首次使用时加载头像模块，由 `PortalAvatarEditor.hydrate` 通过页面级缓存的 `read(kind, id)` 读取已保存头像并替换简写，标记获得 `has-avatar` 后去掉底色。没有头像的标记保留简写；`glyph` 为空的标记只在找到头像后显示。头像在 Menu 中被修改或清除时，`portal:avatar-changed` 事件同步更新页面上同一对象的全部标记。
 - `objectOf(value)` 读取应为对象的字段，缺失或不是普通对象时得到 `{}`。Repo、Resource 页面读取资源记录的 `attributes` 与 `source`，Project 页面和资源链接卡片读取契约字段，都使用它。
 - 图标：`iconHtml`、`createIcon`（返回 DOM 节点）、`mountIcon`（同一位置重复调用时更新原图标，不叠加）、`mountIcons`；名字先经过别名表（`canonicalIconName`）。通过共享插入增强注册表处理新插入的节点，以及 `data-portal-icon`、`data-portal-icon-class` 属性的变化；名字清空或无效时移除旧图标，附加的类名过滤掉非法字符。
 - `toneForStatus` 比较状态前统一空白、连字符和下划线，未知状态为 `neutral`；`statusHtml` 生成状态标记。
@@ -243,6 +245,16 @@ Society 工作台和 Lineage 图面板（HATG Panel）的状态分成三层，�
 | 可复用的业务状态变化 | `PortalLineageWorkbenchFeatures`（历史请求、固定目标、转发选择） | `PortalHatgPanelFeatures`（画布选择、连线草稿、放置预留） |
 
 主视图通过这些模块改变状态，不复制状态机。两个控制器不提供通用的 `transition(任意函数)` 入口；状态变化按业务命名，放进对应的功能模块。状态模块必须先于主控制器加载，缺少依赖时直接失败。
+
+## 全站中英文排版
+
+Portal 自带页面、导航、工作台页签、聊天、表单和浮层统一使用共享的 `--portal-font`。英文使用统一的平台无衬线字体栈；CJK 字符和全角标点独立选择本地简体中文字体，不随界面语言改变字形。
+
+`--portal-shell-font` 是同一字体的兼容别名，不能为导航或页签另设 Comic Sans、cursive 或局部无衬线字体栈。页面和控件通过共享变量使用字体，包含 font 简写时也不能重新写入平台字体列表。主题不另外定义字体策略。
+
+正文按常规字重显示，strong/b 和标题等强调位置使用对应字重；中文强调优先选择本地粗体字形。相同语义位置在所有页面使用同一组字号、字重和行高变量：标准 Panel 内容标题沿 `--portal-pane-title-size/weight/line-height`（13px、800、18px），页面标题和章节标题分别沿各自共享变量。页面不得覆盖同类 Panel 标题的局部字重；输入状态、未读状态和正文 Markdown 的语义强调继续保留。
+
+代码、终端输出、源文件内容与数学公式分别保留等宽或数学字体；其外围标题、按钮、菜单和表单继续使用 Portal 界面字体。使用本机已有字体，不为字体发起外部网络请求；缺少对应本地字形时按统一字体栈回退。
 
 ## 加载与验证
 

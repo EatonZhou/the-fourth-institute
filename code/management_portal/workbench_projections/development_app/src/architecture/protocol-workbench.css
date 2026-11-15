@@ -1,4 +1,4 @@
-.arch-protocol-workbench{box-sizing:border-box;width:100%;height:100%;min-height:0;overflow:auto;padding:16px 20px 24px;background:var(--bg,#f6f8f6);color:var(--text,#183c43);font:14px/1.5 system-ui,sans-serif;container-type:inline-size}
+.arch-protocol-workbench{box-sizing:border-box;width:100%;height:100%;min-height:0;overflow:auto;padding:16px 20px 24px;background:var(--bg,#f6f8f6);color:var(--text,#183c43);font:14px/1.5 var(--portal-font);container-type:inline-size}
 .arch-protocol-workbench[hidden]{display:none}
 .arch-protocol-workbench *{box-sizing:border-box}
 .arch-protocol-workbench button{font:inherit;cursor:pointer;border:1px solid var(--border,#c8d8d6);border-radius:6px;background:var(--panel,#fff);color:inherit;padding:7px 11px;min-height:36px}

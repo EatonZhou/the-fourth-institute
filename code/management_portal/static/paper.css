@@ -787,7 +787,7 @@ body {
 .paperPersonal [data-status]:empty { display: none !important; }
 
 /* Compact Zotero-like Reader chrome, scoped away from shared Chat surfaces. */
-.paperReadingDialog { font: 13px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+.paperReadingDialog { font: 13px/1.45 var(--portal-font); }
 .paperReadingDialog .paperReadingToolbar { gap:6px; padding:6px 10px; background:#f8f8f8; border-color:#dedede; }
 .paperReadingDialog .paperReadingToolbar strong { font-size:13px; font-weight:500; }
 .paperReadingDialog :is(.paperReadingToolbar,.paperReaderSidePanel) :is(button,select,textarea):not(.paperResearchChatHost *) { font:inherit; color:#303030; border:1px solid #d6d6d6; border-radius:5px; box-shadow:none; }
@@ -867,9 +867,9 @@ body.resizingReaderAI { cursor:col-resize; user-select:none; }
 
 /* Paper titles use the shared Chat Workspace title metrics; body text stays unchanged. */
 :is(#paperLibraryPane,#paperWorkspacePane) :is(.paneTitle,.readerHeadTitle,.workspaceTitle,.reviewCard h3,.apiCard h3):not(:where(.portalChatWorkspaceRoot *)) {
-  font-size:13px; font-weight:800; line-height:18px;
+  font-size:var(--portal-pane-title-size); font-weight:var(--portal-pane-title-weight); line-height:var(--portal-pane-title-line-height);
 }
-#workspaceResourceIdentity { --portal-resource-identity-title-size:13px; --portal-resource-identity-title-weight:800; --portal-resource-identity-title-line-height:18px; }
+#workspaceResourceIdentity { --portal-resource-identity-title-size:var(--portal-pane-title-size); --portal-resource-identity-title-weight:var(--portal-pane-title-weight); --portal-resource-identity-title-line-height:var(--portal-pane-title-line-height); }
 .workspaceTitle { display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; overflow-wrap:normal; -webkit-line-clamp:unset; }
 .workspaceIdentityMetaRow { grid-template-columns:max-content max-content minmax(0,1fr); align-items:center; }
 #deepReadStatusText { grid-column:3; grid-row:1; min-width:0; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; font-size:11px; line-height:16px; text-align:right; }
@@ -888,7 +888,7 @@ body.resizingReaderAI { cursor:col-resize; user-select:none; }
 /* Paper subtitles follow the existing Chat Resident ID size: 11px.
    ID-only spans retain monospace at that same size; other text stays proportional. */
 body:has(#paperPageFrame) :is(#libraryMeta,#workspaceResourceId,#workspaceDetailsToggle,#deepReadStatusText) {
-  font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  font-family:var(--portal-font);
   font-size:11px;
   font-weight:400;
   line-height:16px;
@@ -953,11 +953,11 @@ body:has(#paperPageFrame) #portalButtonTooltip { display:none!important; }
 .paperFolderIcon { width:14px; height:14px; flex:0 0 14px; fill:none; stroke:currentColor; stroke-width:1.4; }
 .paperLeaf { padding-left:0; }
 .paperLeaf > .folderLine > span { flex:1 1 auto; min-width:0; }
-#paperWorkspacePane .readerHeadText #deepReadStatusText { grid-column:auto; grid-row:auto; text-align:start; min-width:0; font:400 11px/16px ui-sans-serif,system-ui,sans-serif; }
+#paperWorkspacePane .readerHeadText #deepReadStatusText { grid-column:auto; grid-row:auto; text-align:start; min-width:0; font:400 11px/16px var(--portal-font); }
 .paperAnalysisEmpty { padding:12px; min-height:180px; height:100%; display:grid; place-items:center; }
 .paperHomeOverview { margin-bottom:12px; }
 #workspaceMain { overflow-anchor:none; }
-.readerDeepReadStatus { display:flex; align-items:center; gap:4px; min-width:0; font:400 11px/16px ui-sans-serif,system-ui,sans-serif; }
+.readerDeepReadStatus { display:flex; align-items:center; gap:4px; min-width:0; font:400 11px/16px var(--portal-font); }
 .readerDeepReadStatus > .readerDeepReadSubtitle { flex:1 1 auto; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .readerDeepReadStatus details { flex:none; }
 .readerDeepReadStatus summary { cursor:pointer; }

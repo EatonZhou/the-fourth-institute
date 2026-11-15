@@ -535,7 +535,7 @@ button.messageQuote:focus-visible {
 .portalApiHistory { display: flex; align-items: center; gap: 8px; }
 
 .familyMemberMix { display: inline-flex; vertical-align: middle; border: 1px solid color-mix(in srgb, var(--text) 20%, var(--panel)); border-radius: 5px; background: var(--panel-2); }
-.familyMemberMixButton { display: inline-flex; align-items: center; justify-content: center; width: 23px; height: 19px; padding: 0; border: 0; border-radius: 0; background: transparent; color: var(--muted); font: 600 10px/1 ui-sans-serif,system-ui,sans-serif; cursor: default; }
+.familyMemberMixButton { display: inline-flex; align-items: center; justify-content: center; width: 23px; height: 19px; padding: 0; border: 0; border-radius: 0; background: transparent; color: var(--muted); font: 600 10px/1 var(--portal-font); cursor: default; }
 .familyMemberMixButton:first-child { border-radius: 4px 0 0 4px; }
 .familyMemberMixButton + .familyMemberMixButton { border-left: 1px solid color-mix(in srgb, var(--text) 15%, transparent); }
 .familyMemberMixButton:last-child { border-radius: 0 4px 4px 0; }

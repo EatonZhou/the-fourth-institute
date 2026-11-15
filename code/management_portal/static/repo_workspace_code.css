@@ -17,7 +17,7 @@
   background: transparent;
   color: var(--accent);
   padding: 2px 0;
-  font: 650 13px/1.2 ui-sans-serif, system-ui, sans-serif;
+  font: 650 13px/1.2 var(--portal-font);
   cursor: pointer;
 }
 
@@ -110,7 +110,7 @@
   background: transparent;
   color: var(--text);
   padding: 5px;
-  font: 600 10px/1.2 ui-sans-serif, system-ui, sans-serif;
+  font: 600 10px/1.2 var(--portal-font);
   cursor: pointer;
   white-space: nowrap;
 }
@@ -594,7 +594,7 @@
   background: var(--panel);
   color: var(--muted);
   padding: 4px 9px;
-  font: 600 10px/1 ui-sans-serif, system-ui, sans-serif;
+  font: 600 10px/1 var(--portal-font);
   cursor: pointer;
 }
 

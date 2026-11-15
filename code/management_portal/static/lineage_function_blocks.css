@@ -79,7 +79,7 @@
   padding: 0 4px;
   border: 0;
   color: white;
-  font: 700 11px/20px sans-serif;
+  font: 700 11px/20px var(--portal-font);
   cursor: pointer;
   border-radius: 50%;
   background: var(--danger, #d64545);
@@ -321,7 +321,7 @@
 .functionBlockMenuIdentity code { color:var(--muted); font:13px/1.6 var(--mono); overflow-wrap:anywhere; }
 .functionBlockTitleEditor { display:flex; flex-wrap:wrap; align-items:flex-end; gap:12px; }
 .functionBlockTitleEditor > label { display:grid; flex:1 1 220px; min-width:0; gap:8px; font-size:14px; font-weight:600; }
-.functionBlockTitleEditor input { box-sizing:border-box; width:100%; min-width:0; min-height:40px; padding:8px 12px; border:1px solid var(--border); border-radius:8px; background:var(--panel); color:var(--text); font:400 16px/1.5 ui-sans-serif,system-ui,sans-serif; }
+.functionBlockTitleEditor input { box-sizing:border-box; width:100%; min-width:0; min-height:40px; padding:8px 12px; border:1px solid var(--border); border-radius:8px; background:var(--panel); color:var(--text); font:400 16px/1.5 var(--portal-font); }
 .functionBlockTitleEditor input:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
 .functionBlockTitleEditor input:disabled { opacity:.6; cursor:not-allowed; }
 .functionBlockSource { display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:12px; padding:16px; border-radius:10px; background:var(--panel-2); }
@@ -387,7 +387,7 @@
 .functionBlockInstanceBindings dt {
   min-width: 0;
   color: var(--muted);
-  font: 14px/1.5 ui-sans-serif,system-ui,sans-serif;
+  font: 14px/1.5 var(--portal-font);
   overflow-wrap: anywhere;
 }
 .functionBlockInstanceBindings dd {
@@ -400,7 +400,7 @@
 .functionBlockElementList dd code { display:block; color:var(--muted); font:13px/1.6 var(--mono); overflow-wrap:anywhere; }
 .functionBlockElementList dd > span + code { margin-top:4px; }
 .functionBlockInstanceTriggers dl > div { grid-template-columns:minmax(0,1fr) auto; }
-.functionBlockInstanceTriggers dt { color:var(--text); font:500 16px/1.5 ui-sans-serif,system-ui,sans-serif; }
+.functionBlockInstanceTriggers dt { color:var(--text); font:500 16px/1.5 var(--portal-font); }
 .functionBlockInstanceTriggers dd { justify-self:end; }
 
 .functionBlockInstanceActions {

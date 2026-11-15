@@ -106,7 +106,7 @@
   background: color-mix(in srgb, var(--family-member-tone, #2a9a8a) 10%, var(--panel));
   color: color-mix(in srgb, var(--family-member-tone, #2a9a8a) 82%, var(--text));
   padding: 2px 7px;
-  font: 760 7px/1.2 ui-sans-serif, system-ui, sans-serif;
+  font: 760 7px/1.2 var(--portal-font);
   text-overflow: ellipsis;
   white-space: nowrap;
   pointer-events: none;
@@ -195,7 +195,7 @@
   box-shadow: 0 4px 11px color-mix(in srgb, #24315e 18%, transparent);
   color: #586fca;
   padding: 0 0 1px;
-  font: 780 15px/1 ui-sans-serif, system-ui, sans-serif;
+  font: 780 15px/1 var(--portal-font);
   cursor: pointer;
 }
 
@@ -424,7 +424,7 @@
   box-shadow: 0 4px 10px color-mix(in srgb, #0b1020 14%, transparent);
   color: color-mix(in srgb, var(--accent) 72%, var(--muted));
   padding: 0 0 1px;
-  font: 500 16px/1 ui-sans-serif, system-ui, sans-serif;
+  font: 500 16px/1 var(--portal-font);
   cursor: pointer;
   opacity: .82;
   transition: border-color 140ms ease, box-shadow 140ms ease, color 140ms ease, opacity 140ms ease, transform 140ms ease;
@@ -464,7 +464,7 @@
   background: var(--panel);
   color: var(--text);
   box-shadow: var(--portal-shadow-popover);
-  font: 13px/1.45 ui-sans-serif, system-ui, sans-serif;
+  font: 13px/1.45 var(--portal-font);
 }
 
 .hatgQuickForkMenuHeading {

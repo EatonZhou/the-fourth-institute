@@ -70,7 +70,7 @@
   background: color-mix(in srgb, var(--accent, #0f766e) 3%, var(--panel, #fff));
   border: 1px solid var(--border, #cbd5e1);
   border-radius: var(--portal-surface-radius, 12px);
-  font: 13px/1.5 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  font: 13px/1.5 var(--portal-font);
 }
 .residentQuestionTitle {
   font-size: 14px;
@@ -169,7 +169,7 @@
   padding: 10px 12px;
   border: 1px solid var(--border, #cbd5e1);
   border-radius: var(--portal-surface-radius, 12px);
-  font: 13px/1.5 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  font: 13px/1.5 var(--portal-font);
 }
 .residentQuestionSummary[data-state="open"] { border-color: color-mix(in srgb, var(--accent, #0f766e) 45%, var(--border, #cbd5e1)); }
 .residentQuestionSummary[data-state="expired"],
@@ -342,7 +342,7 @@
     color-mix(in srgb, var(--subagent-color) 3%, var(--panel, #fff));
   box-shadow: 0 8px 22px -18px color-mix(in srgb, var(--subagent-color) 80%, transparent);
   color: var(--text, #172033);
-  font: 13px/1.5 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  font: 13px/1.5 var(--portal-font);
 }
 .subagentLiveCard[data-fresh] { animation: subagent-live-enter 0.32s ease-out both; }
 .subagentLiveCard::before {
@@ -480,7 +480,7 @@
   border-radius: 999px;
   background: transparent;
   color: color-mix(in srgb, var(--subagent-color) 75%, var(--text, #172033));
-  font: 500 11.5px/22px ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  font: 500 11.5px/22px var(--portal-font);
   cursor: pointer;
 }
 .subagentLiveAction:hover,

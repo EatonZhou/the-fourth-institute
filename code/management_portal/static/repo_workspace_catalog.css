@@ -145,7 +145,7 @@
   color: var(--accent);
   padding: 4px 8px;
   cursor: pointer;
-  font: 680 9.5px/1 ui-sans-serif, system-ui, sans-serif;
+  font: 680 9.5px/1 var(--portal-font);
 }
 
 .repoCardAutoButton:hover:not(:disabled) {

@@ -18,9 +18,23 @@
                  U+FF00-FFEF, U+20000-323AF;
 }
 
+/* Use the installed bold face for Chinese emphasis and shared titles. */
+@font-face {
+  font-family: "Portal Simplified Chinese";
+  font-weight: 600 900;
+  src: local("PingFang SC Semibold"), local("PingFangSC-Semibold"),
+       local("Hiragino Sans GB W6"), local("Microsoft YaHei Bold"),
+       local("Noto Sans CJK SC Bold"), local("Noto Sans SC Bold"),
+       local("Source Han Sans SC Bold");
+  unicode-range: U+2E80-9FFF, U+F900-FAFF, U+FE10-FE1F, U+FE30-FE4F,
+                 U+FF00-FFEF, U+20000-323AF;
+}
+
 /* Every page's text uses --portal-font. Page stylesheets refer to the token
    and do not restate a font stack; a page without its own rule gets it here. */
 body { font-family: var(--portal-font); }
+/* Native form controls otherwise retain the browser's independent UI font. */
+button, input, select, textarea { font-family: var(--portal-font); }
 
 :root {
   --portal-page-title-size: 28px;
@@ -36,7 +50,7 @@ body { font-family: var(--portal-font); }
   --portal-subtitle-weight: 400;
 
   --portal-font: "Portal Simplified Chinese", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
-  --portal-shell-font: "Comic Sans MS", "Comic Sans", cursive, ui-sans-serif, system-ui, sans-serif;
+  --portal-shell-font: var(--portal-font);
   --portal-space-1: 4px;
   --portal-space-2: 8px;
   --portal-space-3: 12px;
@@ -254,7 +268,7 @@ body { font-family: var(--portal-font); }
   background: color-mix(in srgb, var(--text, #172033) 94%, var(--panel, #fff));
   box-shadow: var(--portal-shadow-popover);
   color: var(--panel, #fff);
-  font: 620 11px/1.45 ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font: 620 11px/1.45 var(--portal-font);
   letter-spacing: 0;
   overflow-wrap: anywhere;
   pointer-events: none;
@@ -536,7 +550,7 @@ textarea.portalControl {
   outline: 0;
   background: transparent;
   color: var(--text, #172033);
-  font: 500 12px/1.3 ui-sans-serif, system-ui, sans-serif;
+  font: 500 12px/1.3 var(--portal-font);
 }
 
 .portalSearchField input::placeholder {
@@ -572,7 +586,7 @@ textarea.portalControl {
   border-radius: 5px;
   background: var(--panel, #fff);
   color: var(--muted, #64748b);
-  font: 600 10.5px/1.4 ui-sans-serif, system-ui, sans-serif;
+  font: 600 10.5px/1.4 var(--portal-font);
 }
 .portalSearchField:focus-within > .portalSearchFieldHint,
 .portalSearchField:has(input:not(:placeholder-shown)) > .portalSearchFieldHint { display: none; }
@@ -653,7 +667,7 @@ textarea.portalControl {
   border-radius: 6px;
   background: transparent;
   color: var(--muted, #64748b);
-  font: 500 12px/1.3 ui-sans-serif, system-ui, sans-serif;
+  font: 500 12px/1.3 var(--portal-font);
   cursor: pointer;
 }
 
@@ -977,7 +991,7 @@ textarea.portalControl {
   --portal-detail-max-height: min(72vh, 680px);
   max-height: min(72dvh, 680px);
   grid-template-rows: auto minmax(0, 1fr) auto;
-  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-family: var(--portal-font);
   box-shadow: 0 16px 48px rgba(0, 0, 0, 0.18);
 }
 
@@ -1011,7 +1025,7 @@ textarea.portalControl {
   border-radius: 4px;
   color: var(--muted, #64748b);
   background: var(--panel, #fff);
-  font: 500 10px/1.2 ui-sans-serif, system-ui, sans-serif;
+  font: 500 10px/1.2 var(--portal-font);
 }
 
 .portalCommandClose.portalButton {
@@ -2134,7 +2148,7 @@ dialog.portalDetailSurface::backdrop {
     border-radius: 7px;
     background: transparent;
     color: var(--muted);
-    font: 700 12px/1.2 ui-sans-serif, system-ui, sans-serif;
+    font: 700 12px/1.2 var(--portal-font);
   }
 
   .portalDetailMobileRegions button.is-active {

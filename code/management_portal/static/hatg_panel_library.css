@@ -79,7 +79,7 @@
     0 0 0 2px color-mix(in srgb, var(--panel) 86%, transparent);
   color: #238664;
   padding: 0 0 0 1px;
-  font: 850 10px/1 ui-sans-serif, system-ui, sans-serif;
+  font: 850 10px/1 var(--portal-font);
   cursor: pointer;
   touch-action: manipulation;
   transition: border-color 140ms ease, box-shadow 140ms ease, color 140ms ease, transform 140ms ease;

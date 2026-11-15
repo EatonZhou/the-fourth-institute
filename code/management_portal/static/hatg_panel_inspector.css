@@ -441,7 +441,7 @@ body:has(.hatgPrimitiveCard.dragging) .programInspectorPanel {
   background: color-mix(in srgb, var(--panel-2) 62%, var(--panel));
   color: var(--text);
   padding: 7px 8px;
-  font: 9px/1.35 ui-sans-serif, system-ui, sans-serif;
+  font: 9px/1.35 var(--portal-font);
 }
 .programInspectorForm textarea { min-height: 92px; resize: vertical; }
 .programInspectorForm input:focus,

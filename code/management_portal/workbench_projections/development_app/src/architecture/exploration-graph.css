@@ -1,4 +1,4 @@
-.arch-exploration-graph{position:relative;display:flex;flex-direction:column;width:100%;min-width:0;height:100%;min-height:440px;color:var(--text-color,#203d46);font:14px/1.45 system-ui,sans-serif;background:var(--panel-bg,#fafbf8);border:1px solid var(--border-color,#ccd9d3);border-radius:12px;overflow:hidden;box-sizing:border-box}
+.arch-exploration-graph{position:relative;display:flex;flex-direction:column;width:100%;min-width:0;height:100%;min-height:440px;color:var(--text-color,#203d46);font:14px/1.45 var(--portal-font);background:var(--panel-bg,#fafbf8);border:1px solid var(--border-color,#ccd9d3);border-radius:12px;overflow:hidden;box-sizing:border-box}
 .arch-exploration-graph[hidden]{display:none}
 .arch-exploration-graph *{box-sizing:border-box}
 .aeg-toolbar{display:flex;position:relative;z-index:3;align-items:center;gap:6px;padding:6px 10px;border-bottom:1px solid var(--border-color,#d6dfda);flex-shrink:0;background:var(--panel2,var(--panel-bg,#fafbf8));container-type:inline-size}
@@ -6,7 +6,7 @@
 .arch-exploration-graph button:hover{background:var(--hover-bg,#e8f2ed)}
 .arch-exploration-graph button:focus-visible{outline:3px solid #158479;outline-offset:2px}
 .aeg-hint{font-size:12px;color:var(--muted-color,#566d73);margin:4px 0;line-height:1.6}
-.aeg-toolbar button,.aeg-toolbar summary,.aeg-toolbar select{font:13px/1.3 system-ui,sans-serif;color:inherit;min-height:30px;white-space:nowrap;overflow-wrap:normal;border-radius:5px}
+.aeg-toolbar button,.aeg-toolbar summary,.aeg-toolbar select{font:13px/1.3 var(--portal-font);color:inherit;min-height:30px;white-space:nowrap;overflow-wrap:normal;border-radius:5px}
 .aeg-toolbar>button,.aeg-toolbar summary,.aeg-protocol-select{height:30px;padding:4px 8px;border:1px solid var(--border-color,#bdcec5);background:var(--surface-color,#fff);cursor:pointer}
 .aeg-toolbar>button{display:flex;align-items:center;gap:6px}
 .aeg-zoom-controls{display:flex;flex:none;border:1px solid var(--border-color,#bdcec5);border-radius:5px;background:var(--surface-color,#fff)}
@@ -38,18 +38,18 @@
 .aeg-object-boundary>rect{fill:var(--panel-bg,#f4f5f1);stroke-dasharray:6 4;stroke:#78919a}
 .aeg-object.is-related>rect{fill:#fff0c2}
 .aeg-object.is-related>text{fill:#5a4316}
-.aeg-object-title{font:600 16px system-ui,sans-serif;fill:var(--text-color,#203d46)}
-.aeg-object-description{font:13px system-ui,sans-serif;fill:var(--text-color,#37565e)}
-.aeg-object-host{font:12px system-ui,sans-serif;fill:var(--muted-color,#60797e)}
-.aeg-entry-hint{font:12px system-ui,sans-serif;fill:#08766c}
-.aeg-boundary-heading{font:12px system-ui,sans-serif;fill:#60797e}
+.aeg-object-title{font:600 16px var(--portal-font);fill:var(--text-color,#203d46)}
+.aeg-object-description{font:13px var(--portal-font);fill:var(--text-color,#37565e)}
+.aeg-object-host{font:12px var(--portal-font);fill:var(--muted-color,#60797e)}
+.aeg-entry-hint{font:12px var(--portal-font);fill:#08766c}
+.aeg-boundary-heading{font:12px var(--portal-font);fill:#60797e}
 .aeg-edge-path{fill:none;stroke:#648a82;stroke-width:1.7;stroke-linejoin:round;stroke-linecap:round}
 .aeg-edge-interrupts .aeg-edge-path{stroke:#b16a41;stroke-dasharray:7 4}
 .aeg-edge-hosts .aeg-edge-path{stroke:#7b7595;stroke-dasharray:2 4}
 .aeg-viewport marker path{fill:#426f66}
 .aeg-edge-label{cursor:pointer}
 .aeg-edge-label rect{fill:var(--panel-bg,#fffdf4);stroke:#c4d2c8;stroke-width:1}
-.aeg-relation-title{font:13px system-ui,sans-serif;fill:var(--text-color,#254b51)}
+.aeg-relation-title{font:13px var(--portal-font);fill:var(--text-color,#254b51)}
 .aeg-object:hover>rect,.aeg-object:focus>rect,.aeg-object.is-selected>rect,.aeg-object.is-endpoint>rect{stroke:#087e72;stroke-width:3}
 .aeg-edge-label:hover rect,.aeg-edge-label:focus rect,.aeg-edge-label.is-selected rect{stroke:#087e72;stroke-width:2.5;fill:#e9f5d7}
 .aeg-edge.is-selected .aeg-edge-path{stroke:#087e72;stroke-width:3.5}
@@ -85,7 +85,7 @@
 
 /* Reading emphasis never removes a physical collaboration or its label. */
 .aeg-layer-band{fill:#ecf3f0;fill-opacity:.42;stroke:none;pointer-events:none}
-.aeg-layer-heading{font:12px system-ui,sans-serif;fill:#637d79;pointer-events:none}
+.aeg-layer-heading{font:12px var(--portal-font);fill:#637d79;pointer-events:none}
 .aeg-reading .aeg-edge-path{stroke:#92a8a4;stroke-width:1.4}
 .aeg-reading .aeg-edge.is-emphasized .aeg-edge-path{stroke:#387b77;stroke-width:2}
 .aeg-reading .aeg-edge-label{opacity:1}

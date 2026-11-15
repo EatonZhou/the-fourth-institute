@@ -2,8 +2,7 @@
   color: var(--text);
   background: var(--bg);
   font:
-    15px/1.7 system-ui,
-    sans-serif;
+    15px/1.7 var(--portal-font);
   min-width: 0;
   overflow-wrap: anywhere;
   padding: 16px 22px 48px;

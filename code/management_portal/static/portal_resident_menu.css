@@ -84,7 +84,7 @@
   background: transparent;
   color: var(--muted);
   cursor: pointer;
-  font: 650 12px/1.4 ui-sans-serif, system-ui, sans-serif;
+  font: 650 12px/1.4 var(--portal-font);
   text-align: right;
   white-space: nowrap;
 }
@@ -431,7 +431,7 @@
 /* Function Block and member tabs share the Resident Menu's side rail. */
 .residentMenuGroupTabs { display:grid; align-content:start; gap:3px; min-width:0; padding-bottom:10px; border-bottom:1px solid var(--border); }
 .residentMenuGroupTabs[hidden] { display:none; }
-.residentMenuGroupTab { appearance:none; min-width:0; padding:9px 12px 9px 0; border:0; background:transparent; color:var(--muted); cursor:pointer; font:650 12px/1.4 ui-sans-serif,system-ui,sans-serif; text-align:right; overflow-wrap:anywhere; }
+.residentMenuGroupTab { appearance:none; min-width:0; padding:9px 12px 9px 0; border:0; background:transparent; color:var(--muted); cursor:pointer; font:650 12px/1.4 var(--portal-font); text-align:right; overflow-wrap:anywhere; }
 .residentMenuGroupTab:hover, .residentMenuGroupTab.active { color:var(--text); text-decoration:underline; text-underline-offset:5px; }
 .residentMenuGroupTab:focus-visible { outline:2px solid var(--accent); outline-offset:1px; }
 .nodeSettingsResidentTabs { display:grid; align-content:start; gap:3px; }

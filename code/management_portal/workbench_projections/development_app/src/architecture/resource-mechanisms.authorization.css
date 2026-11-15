@@ -30,8 +30,8 @@
 .resource-workbench .rg-edge-active { stroke:#23764e; fill:#23764e; stroke-width:4; }
 .resource-workbench .rg-edge-paused { stroke:#b77850; fill:#b77850; stroke-dasharray:5 4; }
 .resource-workbench .rg-edge-paused polygon { stroke-dasharray:none; }
-.resource-workbench .rg-missing-label { stroke:none; fill:#8a422a; font:11px system-ui,sans-serif; }
-.resource-workbench .rg-node { display:flex; flex-direction:column; justify-content:center; gap:3px; width:100%; height:100%; box-sizing:border-box; border:1px solid #a1b6b9; border-radius:10px; background:#f6fafa; color:#213338; text-align:left; padding:9px 10px; margin:0; line-height:1.25; font-family:system-ui,sans-serif; overflow-wrap:anywhere; }
+.resource-workbench .rg-missing-label { stroke:none; fill:#8a422a; font:11px var(--portal-font); }
+.resource-workbench .rg-node { display:flex; flex-direction:column; justify-content:center; gap:3px; width:100%; height:100%; box-sizing:border-box; border:1px solid #a1b6b9; border-radius:10px; background:#f6fafa; color:#213338; text-align:left; padding:9px 10px; margin:0; line-height:1.25; font-family:var(--portal-font); overflow-wrap:anywhere; }
 .resource-workbench .rg-node[data-seek] { cursor:pointer; }
 .resource-workbench .rg-node:hover { border-color:#386c75; }
 .resource-workbench .rg-node:focus-visible { outline:3px solid #276ba5; outline-offset:-4px; }

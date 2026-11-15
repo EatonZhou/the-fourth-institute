@@ -1,7 +1,7 @@
-.scheduling-workbench{box-sizing:border-box;min-width:0;width:100%;height:100%;overflow:auto;padding:18px 20px 28px;background:#f6f8fa;color:#192c38;font:15px/1.5 system-ui,sans-serif;--sched-blue:#145f83;--sched-ok:#1a6e55;--sched-danger:#a22e33}
+.scheduling-workbench{box-sizing:border-box;min-width:0;width:100%;height:100%;overflow:auto;padding:18px 20px 28px;background:#f6f8fa;color:#192c38;font:15px/1.5 var(--portal-font);--sched-blue:#145f83;--sched-ok:#1a6e55;--sched-danger:#a22e33}
 .scheduling-workbench *{box-sizing:border-box;min-width:0}
 .scheduling-workbench[hidden]{display:none}
-.scheduling-object-workbench{height:100%;min-height:0;min-width:0;display:flex;flex-direction:column;background:#f6f8fa;color:#192c38;font:15px/1.5 system-ui,sans-serif}
+.scheduling-object-workbench{height:100%;min-height:0;min-width:0;display:flex;flex-direction:column;background:#f6f8fa;color:#192c38;font:15px/1.5 var(--portal-font)}
 .scheduling-object-workbench[hidden]{display:none}
 .sched-object-heading{font-size:14px;font-weight:600;padding:10px 20px 0;overflow-wrap:anywhere}
 .sched-object-modes{display:flex;gap:6px;flex-wrap:wrap;flex:none;padding:8px 20px 12px;border-bottom:1px solid #c7d4dc}

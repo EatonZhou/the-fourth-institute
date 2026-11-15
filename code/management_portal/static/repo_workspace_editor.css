@@ -40,7 +40,7 @@
   background: transparent;
   color: var(--muted);
   padding: 0 12px;
-  font: 650 11px/1 ui-sans-serif, system-ui, sans-serif;
+  font: 650 11px/1 var(--portal-font);
   cursor: pointer;
 }
 
@@ -186,7 +186,7 @@
   color: var(--muted);
   padding: 0 9px;
   cursor: pointer;
-  font: 650 11px/1 ui-sans-serif, system-ui, sans-serif;
+  font: 650 11px/1 var(--portal-font);
 }
 
 .repoToolButton:hover:not(:disabled),
@@ -251,7 +251,7 @@
   color: var(--muted);
   padding: 0 8px;
   cursor: pointer;
-  font: 650 10.5px/1 ui-sans-serif, system-ui, sans-serif;
+  font: 650 10.5px/1 var(--portal-font);
 }
 
 .repoModeTab:hover:not(:disabled) {

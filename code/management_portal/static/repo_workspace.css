@@ -174,7 +174,7 @@ body[data-resource-category="repo"] .portalCollectionTypeChip[data-type="repo"] 
   background: transparent;
   color: var(--muted);
   padding: 0 10px;
-  font: 500 14px/1 ui-sans-serif, system-ui, sans-serif;
+  font: 500 14px/1 var(--portal-font);
   cursor: pointer;
 }
 

@@ -76,7 +76,7 @@
   color: var(--muted);
   padding: 3px 7px;
   cursor: pointer;
-  font: 650 9px/1 ui-sans-serif, system-ui, sans-serif;
+  font: 650 9px/1 var(--portal-font);
 }
 
 .repoChangesListHeader > nav > button:hover:not(:disabled),
@@ -327,7 +327,7 @@
   background: var(--panel);
   color: var(--text);
   padding: 8px 9px;
-  font: 11px/1.35 ui-sans-serif, system-ui, sans-serif;
+  font: 11px/1.35 var(--portal-font);
 }
 
 .repoCommitPanel input:focus,

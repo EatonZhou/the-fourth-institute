@@ -369,7 +369,7 @@
     frame.setAttribute("sandbox", "allow-scripts allow-forms");
     frame.referrerPolicy = "no-referrer";
     const shared = documentSource.createElement("style");
-    shared.textContent = `${sharedCss}\n*{box-sizing:border-box}html,body{margin:0;min-height:100%;background:var(--bg);color:var(--text);font:14px/1.5 system-ui,sans-serif}body{padding:12px}body [hidden]{display:none!important}h1,h2,h3{font-size:16px;margin:0 0 8px}.paneHead{padding:12px;border-bottom:1px solid var(--border);background:var(--panel-2);display:flex;align-items:center;justify-content:space-between;gap:8px}.paneBody{padding:12px;min-width:0}a{color:var(--accent)}`;
+    shared.textContent = `${sharedCss}\n*{box-sizing:border-box}html,body{margin:0;min-height:100%;background:var(--bg);color:var(--text);font:14px/1.5 var(--portal-font)}body{padding:12px}body [hidden]{display:none!important}h1,h2,h3{font-size:16px;margin:0 0 8px}.paneHead{padding:12px;border-bottom:1px solid var(--border);background:var(--panel-2);display:flex;align-items:center;justify-content:space-between;gap:8px}.paneHead .paneTitle,.paneHead>h2,.paneHead>div>h2{font-size:var(--portal-pane-title-size);font-weight:var(--portal-pane-title-weight);line-height:var(--portal-pane-title-line-height)}.paneBody{padding:12px;min-width:0}a{color:var(--accent)}`;
     const theme = documentSource.createElement("style");
     theme.id = "portalProjectionTheme"; theme.textContent = themeCss();
     const policy = documentSource.createElement("meta");

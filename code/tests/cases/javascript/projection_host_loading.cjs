@@ -124,6 +124,53 @@ async function pageFor(browser, options = {}, name) {
     while (s.pending) await sleep(10);
   } };
 }
+async function typography(browser) {
+  const mode = process.env.PROJECTION_TYPOGRAPHY_MODE || 'package';
+  const h = await pageFor(browser, { embedded: true }, `typography-${mode}`);
+  const markup = '<p id="regular">统一中文 English</p><strong id="bold">统一加粗 Bold</strong>' +
+    '<header class="paneHead"><h2 id="heading">标题 Title</h2><button class="portalButton" id="button">保存 Save</button></header>' +
+    '<header class="paneHead"><div class="paneTitle" id="title">标题 Title</div></header>' +
+    '<pre id="code" style="font-family:ui-monospace,monospace">const x = 1</pre>' +
+    '<section class="arch-app" id="arch">架构 Architecture</section><section class="progressRegion" id="progress">进展 Progress</section><section class="evolutionApp" id="evolution">演化 Evolution</section>';
+  const appRoot = path.join(repo, 'management_portal/workbench_projections/development_app');
+  const css = ['src/architecture/ui.css', 'src/progress/styles.css', 'src/evolution/style.css'].map(p => fs.readFileSync(path.join(appRoot, p), 'utf8')).join('\n');
+  try {
+    if (mode === 'package') {
+      h.s.files['architecture.html'] = '<!doctype html><html><head><link rel="stylesheet" href="./architecture.css"></head><body>' + markup + '</body></html>';
+      h.s.files['architecture.css'] = css;
+    } else {
+      delete h.s.app.manifest; delete h.s.app.application_build;
+      h.s.app.html = '<style>' + css + '</style>' + markup;
+    }
+    await h.page.evaluate(() => start());
+    await h.page.waitForFunction(() => settled);
+    assert.equal(await h.page.evaluate(() => window.openError), undefined);
+    let frame;
+    for (const candidate of h.page.frames()) if (await candidate.locator('#regular').count()) { frame = candidate; break; }
+    assert.ok(frame, 'host mounted a real sandbox');
+    const inspect = () => frame.evaluate(async () => {
+      await document.fonts.ready;
+      const styles = Object.fromEntries(['regular','bold','heading','title','button','code','arch','progress','evolution'].map(id => {
+        const s = getComputedStyle(document.getElementById(id));
+        return [id, {family:s.fontFamily, weight:s.fontWeight, size:s.fontSize, line:s.lineHeight}];
+      }));
+      return {styles, policy:document.querySelector('meta[http-equiv="Content-Security-Policy"]').content,
+        faces: Array.from(document.fonts, f => ({family:f.family, weight:f.weight, status:f.status}))};
+    });
+    const initial = await inspect(); reports.push({ name:'typography', mode, ...initial });
+    const expected = await h.page.evaluate(() => getComputedStyle(document.body).fontFamily);
+    for (const id of ['regular','bold','heading','title','button','arch','progress','evolution']) assert.equal(initial.styles[id].family, expected, `${mode}/${id} must consume shared font`);
+    for (const id of ['heading','title']) assert.deepEqual(initial.styles[id], {family:expected, weight:'800', size:'13px', line:'18px'}, 'pane heading metrics');
+    assert.match(initial.styles.code.family, /monospace/);
+    assert.ok(initial.faces.some(f => f.family === 'Portal Simplified Chinese' && f.weight === '600 900' && f.status === 'loaded'), 'local CJK bold face loads inside sandbox without network permissions');
+    assert.match(initial.policy, /connect-src 'none'/); assert.doesNotMatch(initial.policy, /font-src/);
+    await h.page.evaluate(() => document.documentElement.style.setProperty('--portal-font', 'serif'));
+    await frame.waitForFunction(() => getComputedStyle(document.getElementById('regular')).fontFamily === 'serif');
+    const updated = await inspect();
+    for (const id of ['regular','heading','button','arch','progress','evolution']) assert.equal(updated.styles[id].family, 'serif', `${id} follows host token update`);
+    assert.match(updated.styles.code.family, /monospace/);
+  } finally { await h.close(); }
+}
 async function timing(browser) {
   const h = await pageFor(browser, { delays: true, slow: 'evolution' }, 'cold-open');
   try {
@@ -403,7 +450,8 @@ async function pagesNavigation(browser) {
   let browser;
   let passed = false;
   try { browser = await chromium.launch({ headless: true });
-    if (process.argv.includes('--pages-only')) await pagesNavigation(browser);
+    if (process.argv.includes('--typography-only')) await typography(browser);
+    else if (process.argv.includes('--pages-only')) await pagesNavigation(browser);
     else { if (!process.argv.includes('--contracts-only') && !process.argv.includes('--lifecycle-only') && !process.argv.includes('--embedded-only')) await timing(browser); if (!measureOnly) { if (!process.argv.includes('--embedded-only')) await contracts(browser); await embeddedLayout(browser); await pagesNavigation(browser); } }
     passed = true;
   }

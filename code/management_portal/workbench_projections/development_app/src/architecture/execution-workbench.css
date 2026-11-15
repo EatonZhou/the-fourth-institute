@@ -1,4 +1,4 @@
-.exec-workbench{--exec-ink:#17334a;--exec-muted:#506675;--exec-line:#c8d7df;--exec-accent:#087a71;--exec-paper:#fff;box-sizing:border-box;max-width:100%;max-height:100%;overflow:auto;padding:18px;color:var(--exec-ink);background:#f5f8fa;font:14px/1.5 system-ui,sans-serif;container-type:inline-size}
+.exec-workbench{--exec-ink:#17334a;--exec-muted:#506675;--exec-line:#c8d7df;--exec-accent:#087a71;--exec-paper:#fff;box-sizing:border-box;max-width:100%;max-height:100%;overflow:auto;padding:18px;color:var(--exec-ink);background:#f5f8fa;font:14px/1.5 var(--portal-font);container-type:inline-size}
 .exec-workbench *{box-sizing:border-box;min-width:0}
 .exec-workbench [hidden]{display:none!important}
 .exec-workbench h2,.exec-workbench h3,.exec-workbench p{margin:0}

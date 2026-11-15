@@ -1,4 +1,4 @@
-.arch-graph{position:relative;display:flex;flex-direction:column;min-width:0;width:100%;height:100%;min-height:440px;background:var(--bg,#101923);color:var(--text,#e5edf4);border:1px solid var(--border,#344656);border-radius:12px;overflow:hidden;font:13px/1.5 system-ui,sans-serif}
+.arch-graph{position:relative;display:flex;flex-direction:column;min-width:0;width:100%;height:100%;min-height:440px;background:var(--bg,#101923);color:var(--text,#e5edf4);border:1px solid var(--border,#344656);border-radius:12px;overflow:hidden;font:13px/1.5 var(--portal-font)}
 .arch-graph[hidden]{display:none}
 .arch-graph-toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:9px 12px;background:var(--panel,#172431);border-bottom:1px solid var(--border,#344656)}
 .arch-graph-control{min-height:32px;min-width:32px;cursor:pointer;font:inherit;color:var(--text,#e5edf4);background:var(--panel,#172431);border:1px solid var(--border,#344656);border-radius:6px;padding:3px 9px}
@@ -56,7 +56,7 @@
 
 /* Runtime architecture: the map owns the surface; controls occupy one corner.
    No minimap overlays, no ellipsized identities, and no fixed desktop zoom. */
-.arch-runtime{position:relative;isolation:isolate;box-sizing:border-box;display:flex;min-width:0;width:100%;height:100%;min-height:520px;overflow:hidden;background:var(--bg,#f7f9fa);color:var(--text,#183b49);font:14px/1.4 system-ui,sans-serif;border:1px solid var(--border,#ccdadd);border-radius:10px}
+.arch-runtime{position:relative;isolation:isolate;box-sizing:border-box;display:flex;min-width:0;width:100%;height:100%;min-height:520px;overflow:hidden;background:var(--bg,#f7f9fa);color:var(--text,#183b49);font:14px/1.4 var(--portal-font);border:1px solid var(--border,#ccdadd);border-radius:10px}
 .arch-runtime[hidden]{display:none}
 .arch-runtime-stage{position:relative;flex:1;min-width:0;overflow-x:hidden;overflow-y:auto;overscroll-behavior:contain;scrollbar-gutter:stable}
 .arch-runtime-canvas{display:block;width:100%;touch-action:none;cursor:grab;outline:none}
