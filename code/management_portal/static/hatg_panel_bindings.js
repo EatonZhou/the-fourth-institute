@@ -95,7 +95,7 @@
 
     function toolboxStoreEntry() {
       const button = document.createElement("button");
-      button.type = "button"; button.className = "portalButton is-icon";
+      button.type = "button"; button.className = "portalButton is-icon hatgToolboxStoreButton";
       button.title = window.PortalI18n.t("模板商店");
       button.setAttribute("aria-label", window.PortalI18n.t("模板商店"));
       button.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10v10h16V10M3 10l2-6h14l2 6M8 20v-6h8v6M3 10h18"/></svg>';
@@ -126,7 +126,6 @@
           onOpenWorkshop:resource => panelHost.hatgComponentOptions.emit('workshop-open',{resource})});
       });
       listen(drawer, "portal:template-picked", () => drawerHover.close());
-      listen($id("hatgToolboxClose"), "click", () => { toggle.focus(); drawerHover.close(); });
     }
     function bindModals() {
       $queryAll("[data-close-modal]").forEach(button => button.addEventListener("click", () => closeModal(button.dataset.closeModal || "")));

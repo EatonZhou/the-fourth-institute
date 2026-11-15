@@ -184,8 +184,8 @@
 .hatgToolboxHeader { display:flex; align-items:center; justify-content:space-between; padding:10px 12px; border-bottom:1px solid var(--border); }
 .hatgToolboxHeader h3 { margin:0; font-size:14px; }
 .hatgToolboxHeaderActions { display:flex; align-items:center; gap:8px; }
+.hatgToolboxHeaderActions .hatgToolboxStoreButton { border:0; background:transparent; box-shadow:none; }
 .hatgToolboxBody { overflow:auto; overscroll-behavior:contain; padding:10px; }
-.hatgToolboxActions { display:flex; justify-content:flex-end; margin-bottom:6px; }
 .primitiveBlockShelf { margin-top:12px; border-top:1px solid var(--border); padding-top:10px; }
 .primitiveBlockShelf > summary { cursor:pointer; font-size:13px; font-weight:600; margin-bottom:8px; }
 .hatgPrimitiveBlocks {

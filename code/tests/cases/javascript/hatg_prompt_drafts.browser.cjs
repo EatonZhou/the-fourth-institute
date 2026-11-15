@@ -114,7 +114,7 @@ const routes = execFileSync(process.env.PYTHON || 'python3', ['-c',
   await page.keyboard.press('Escape');
   assert.equal(await page.locator('.templateCarryPreview').isHidden(),true);
   assert.equal(await page.evaluate(()=>calls.filter(x=>x==='ApplyTemplate').length),beforePickup+1);
-  // Measure the actual dock and drawer CSS, reserving the existing + slot.
+  // Measure the actual dock and drawer CSS and keyboard dismissal.
   const layout=await page.evaluate(({html,css})=>{
    const parsed=new DOMParser().parseFromString(html,'text/html');
    parsed.querySelectorAll('script').forEach(node=>node.remove());
@@ -130,17 +130,16 @@ const routes = execFileSync(process.env.PYTHON || 'python3', ['-c',
     hatgModule:()=>({observeNavigationHeight:()=>none})});
    PortalHatgPanelBindings.createBindings(deps).bindActions();
    const toggle=id('hatgToolboxToggle'),drawer=id('hatgToolbox');
-   const plus=document.createElement('button');plus.textContent='+';plus.style.cssText='position:absolute;left:10px;bottom:9px;width:34px;height:34px;border-radius:50%';viewport.append(plus);
    toggle.click();
-   const a=plus.getBoundingClientRect(),b=toggle.getBoundingClientRect(),v=viewport.getBoundingClientRect(),d=drawer.getBoundingClientRect();
+   const b=toggle.getBoundingClientRect(),v=viewport.getBoundingClientRect(),d=drawer.getBoundingClientRect();
    const store=id('hatgToolboxStore').querySelector('button');
-   const result={noOverlap:a.right<=b.left,atLowerLeft:b.left-v.left<100&&v.bottom-b.bottom<20,
+   const result={atLowerLeft:b.left-v.left<100&&v.bottom-b.bottom<20,
     drawerAbove:d.bottom<=b.top&&d.left===b.left,storeDisabled:store.disabled,storeTitle:store.title};
-   id('hatgToolboxClose').click();result.closed=drawer.hidden;
+   drawer.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));result.closed=drawer.hidden;
    return result;
   },{html:fs.readFileSync(path.join(repo,'management_portal/hatg-panel.html'),'utf8'),
     css:fs.readFileSync(path.join(repo,'management_portal/static/hatg_panel_library.css'),'utf8')});
-  assert.deepEqual(layout,{noOverlap:true,atLowerLeft:true,drawerAbove:true,storeDisabled:true,storeTitle:'商店即将上线',closed:true});
+  assert.deepEqual(layout,{atLowerLeft:true,drawerAbove:true,storeDisabled:false,storeTitle:'模板商店',closed:true});
   if(process.env.PROMPT_DRAFT_SCREENSHOT)await page.screenshot({path:process.env.PROMPT_DRAFT_SCREENSHOT});
   assert.deepEqual(errors,[]);
   console.log('PASS native shelf drag to chat and node; placeholders, literal text, undo, audio, scoped draft restore, stale target and structure application');
