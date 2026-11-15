@@ -553,8 +553,9 @@ def _active_executions(provider: str) -> int:
             row = connection.execute(
                 "SELECT count(*) AS total FROM executions WHERE "
                 "(status IN ('claimed', 'running') OR (status='queued' AND "
-                "(checkpoint_json::jsonb->>'turn_id' IS NOT NULL OR checkpoint_json::jsonb ? 'abandoned'))) "
-                "AND request_json::jsonb->>'provider' = %s", (provider,),
+                "(NULLIF(checkpoint_json::text,'')::jsonb->>'turn_id' IS NOT NULL "
+                "OR NULLIF(checkpoint_json::text,'')::jsonb ? 'abandoned'))) "
+                "AND NULLIF(request_json::text,'')::jsonb->>'provider' = %s", (provider,),
             ).fetchone()
             return int(row["total"])
     finally:

@@ -113,6 +113,26 @@ def test_provider_update_preparation_records_exact_active_execution_without_endi
     assert recovery.prepare_provider_runtime_update(provider="other", update_id="update-other")["prepared"] == 0
 
 
+def test_update_recovers_interrupted_input_even_after_a_successor_starts(team, monkeypatch):
+    from management_portal.society_service import resident_input_checkpoints
+    resident_id, original = _failed(team, monkeypatch)
+    record = _record(resident_id)
+    checkpoint = resident_input_checkpoints.checkpoints(record)[-1]
+    recovery.set_recovery_entry(record, original, provider_update={"update_id": "update-169", "execution_id": checkpoint["execution_id"]})
+    resident_record_domain.save_resident_record(record)
+    resident_conversation_stream.get_repository().set_input_state(resident_id, original, "failed", error={"code": "provider_recovery_exhausted"})
+    successor, _ = _round(resident_id, state="running", text="处理后续请求")
+    record = _record(resident_id)
+    next_checkpoint = resident_input_checkpoints.checkpoints(record)[-1]
+    resident_execution_work.write(record, {**next_checkpoint["item"], "execution_id": next_checkpoint["execution_id"]})
+    # The coordinator's normal scan finds maintenance work independently of
+    # the latest round's failure state or an unrelated running request.
+    assert recovery.reconcile_failed_work() == 1
+    job = resident_execution_work.read(_record(resident_id))
+    assert job["user_message_id"] == successor
+    assert [item["user_message_id"] for item in resident_execution_work.normalized_queue(job)] == [original]
+
+
 def test_network_outage_waits_without_spending_recovery_attempts(team, monkeypatch):
     """网络不可达时等待且不消耗恢复次数，十分钟内不再探测
 

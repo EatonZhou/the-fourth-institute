@@ -69,6 +69,16 @@ def test_claim_and_update_windows_are_exclusive_and_release_after_failure():
         db.close()
 
 
+def test_recovery_capture_handles_empty_legacy_checkpoints_and_retained_terminal_rows(monkeypatch):
+    database = portal_database(schema="legacy_runtime_activation")
+    with database.transaction() as connection:
+        connection.execute("CREATE TABLE executions(status TEXT,request_json TEXT,checkpoint_json TEXT)")
+        connection.execute("INSERT INTO executions VALUES ('queued',%s,''),('running',%s,'{}'),('completed','','')",
+                           ('{"provider":"codex"}', '{"provider":"codex"}'))
+    monkeypatch.setattr(updates, "portal_database", lambda **kw: database)
+    assert updates._active_executions("codex") == 1
+
+
 def test_queued_work_waits_only_during_switch_and_does_not_prevent_activation():
     scheduler = Scheduler(dispatch_interval_min_seconds=0, dispatch_interval_max_seconds=0)
     scheduler.register_worker(worker_id="worker", build_id="test", capabilities=["agent_session:codex"])

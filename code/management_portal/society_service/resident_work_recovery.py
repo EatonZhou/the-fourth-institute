@@ -67,8 +67,12 @@ def _resume_updated_input(snapshot, failed, update):
     with resident_record_domain.state_lock(resident_id):
         current = resident_record_domain.find_resident(resident_id)
         if (not current or not _intake_allows_recovery(current)
-                or _recoverable_input(current) != failed
                 or recovery_entry(current, message_id).get("provider_update") != update):
+            return 0
+        checkpoint = next((item for item in resident_input_checkpoints.checkpoints(current)
+                           if item.get("message_id") == message_id), {})
+        state = resident_conversation_stream.get_repository().input_state(resident_id, message_id)
+        if checkpoint.get("execution_id") != update["execution_id"] or state.get("state") != "failed":
             return 0
 
         def resume():
@@ -85,6 +89,39 @@ def _resume_updated_input(snapshot, failed, update):
 
         resident_catalog.get_catalog().state_store.transaction(resume)
     return 1
+
+
+def _reconcile_updated_inputs(record):
+    """Keep interrupted inputs even when the next queued request has started."""
+    from . import resident_record_domain
+    recovered = 0
+    checkpoints = {item["message_id"]: item for item in resident_input_checkpoints.checkpoints(record)}
+    repository = resident_conversation_stream.get_repository()
+    for message_id, entry in (record.get("work_recovery") or {}).items():
+        update = entry.get("provider_update") or {}
+        if not update:
+            continue
+        checkpoint = checkpoints.get(message_id, {})
+        try:
+            state = repository.input_state(record["resident_id"], message_id)
+        except KeyError:
+            state = {}
+        error = state.get("error") or {}
+        resumable_failure = is_network_failure(error) or failure_code(error) in {"network", "timeout", "provider_recovery_exhausted"}
+        if (not state or checkpoint.get("execution_id") != update.get("execution_id")
+                or state.get("state") in {"completed", "cancelled"}
+                or state.get("state") == "failed" and not resumable_failure
+                or not _intake_allows_recovery(record)):
+            with resident_record_domain.state_lock(record["resident_id"]):
+                current = resident_record_domain.find_resident(record["resident_id"])
+                if current and recovery_entry(current, message_id).get("provider_update") == update:
+                    current["work_recovery"][message_id].pop("provider_update", None)
+                    resident_record_domain.save_resident_record(current)
+            continue
+        if (not entry.get("disabled") and state.get("state") == "failed"
+                and resumable_failure):
+            recovered += _resume_updated_input(record, {**checkpoint, "input_state": state}, update)
+    return recovered
 
 
 def latest_failed_input(record: Mapping[str, Any]) -> dict[str, Any]:
@@ -191,6 +228,10 @@ def reconcile_failed_work(residents: list[dict[str, Any]] | None = None, *, jobs
         catalog = resident_catalog.get_catalog()
         with catalog.state_store.database.read() as connection:
             ids = resident_storage.failed_work_resident_ids(connection, checked_before=time.time() - RECHECK_SECONDS)
+            ids = sorted(set(ids) | {row["resident_id"] for row in connection.execute(
+                "SELECT resident_id FROM resident_recovery "
+                "WHERE jsonb_path_exists(NULLIF(work_recovery_json::text,'')::jsonb, '$.*.provider_update')"
+            )})
         residents = catalog.get_many(ids)
     if not residents:
         return 0
@@ -253,6 +294,7 @@ def _reconcile_failed_work(residents: list[dict[str, Any]], context: dict[str, A
             continue
         if resident_record_domain.lifecycle_operations().pending(resident_id):
             continue
+        changed += _reconcile_updated_inputs(snapshot)
         failed = _recoverable_input(snapshot, context.get("jobs", {}).get(resident_id))
         if not failed:
             continue
@@ -263,12 +305,6 @@ def _reconcile_failed_work(residents: list[dict[str, Any]], context: dict[str, A
                or failure_code(error) in {"network", "timeout"})
         recovery = recovery_entry(snapshot, message_id)
         if recovery.get("disabled"):
-            continue
-        update = recovery.get("provider_update") or {}
-        if (update.get("execution_id") == failed.get("execution_id")
-                and update.get("update_id") and _intake_allows_recovery(snapshot)
-                and (net or failure_code(error) == "provider_recovery_exhausted")):
-            changed += _resume_updated_input(snapshot, failed, update)
             continue
         if not usage and not net:
             continue
