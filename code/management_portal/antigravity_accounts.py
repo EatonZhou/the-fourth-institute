@@ -99,6 +99,17 @@ def routes():
             for row in registrations("antigravity") if row["enabled"]]
 
 
+def read_subscription(route):
+    """Read native account tier without creating or loading a model session."""
+    from management_portal.execution.account_observation import cancel_resource
+    row = account_for_route(route)
+    with AcpClient(command(), env=environment(row['account_id'])) as client, \
+            cancel_resource(lambda: client.close(timeout=1)):
+        client.initialize()
+        authenticated = client.call('authenticate', {'methodId': 'oauth-personal'})
+        return subscription_metadata({}, authenticated)
+
+
 def logged_in(account_id):
     try:
         with AcpClient(command(), env=environment(account_id)) as client:

@@ -29,3 +29,18 @@ def test_catalog_persists_passive_subscription_and_does_not_reuse_old_grade(tmp_
     assert stored['subscription']['tier']['id'] == 'g1-pro-tier'
     accounts.save_catalog('account', session, {})
     assert json.loads((tmp_path/'catalog.json').read_text())['subscription']['status'] == 'unknown'
+
+
+def test_daily_tier_reads_native_auth_without_session_or_usage(monkeypatch):
+    from unittest.mock import MagicMock
+    client = MagicMock()
+    client.__enter__.return_value = client
+    client.call.return_value = metadata()
+    monkeypatch.setattr(accounts, 'AcpClient', lambda *args, **kwargs: client)
+    monkeypatch.setattr(accounts, 'account_for_route', lambda route: {'account_id': 'one'})
+    monkeypatch.setattr(accounts, 'command', lambda: ['native'])
+    monkeypatch.setattr(accounts, 'environment', lambda _: {})
+    result = accounts.read_subscription('route')
+    assert result['source'] == 'acp.authenticate'
+    client.call.assert_called_once_with('authenticate', {'methodId': 'oauth-personal'})
+    client.initialize.assert_called_once()

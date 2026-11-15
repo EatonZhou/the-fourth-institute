@@ -54,8 +54,8 @@ def read_profile(account, accounts):
         return tier_sample({'id': data.get('planTier'), 'name': data.get('planTier') or data.get('subscriptionType')},
                            source='claude.auth/status')
     if account.provider == 'antigravity':
-        from management_portal.antigravity_accounts import catalog_snapshot
-        return catalog_snapshot(account.route_id).get('subscription') or tier_sample({}, source='acp')
+        from management_portal.antigravity_accounts import read_subscription
+        return read_subscription(account.route_id)
     return tier_sample({}, source=account.provider)
 
 
@@ -75,7 +75,10 @@ def collect_profiles(accounts, *, store=None):
         try:
             with ObservationLifetime().scope():
                 value = read_profile(account, accounts)
-                if value.get('status') != 'observed':
+                day_start = ((time.time() + 28800) // 86400) * 86400 - 28800
+                observed = value.get('observed_at')
+                if (value.get('status') != 'observed' or type(observed) not in (int, float)
+                        or observed < day_start):
                     raise ValueError('Subscription tier unavailable')
         except Exception as error:
             value = {**(store.state(account.provider, account.account_id).get('profile') or {}),

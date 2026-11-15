@@ -211,24 +211,23 @@ def test_unsent_release_cannot_erase_newer_reservation_or_prior_cooldown():
     assert not store.claim('kimi', 'one', now=1500, interval=600)
 
 
-def test_scheduled_checks_read_only_expired_accounts_and_every_read_waits_ten_minutes():
-    """Hourly checks read an account only after 8 h or a window reset; any read waits 10 min after the last."""
+def test_account_deadlines_are_independent_of_hourly_checks():
     from management_portal.execution import account_monitor as m
     monitor, account, accounts, history = make_monitor()
-    due = lambda now, requested=False, scheduled=False: monitor._real_read_due(
-        account, now, requested=requested, scheduled=scheduled)
-    assert due(0, scheduled=True)                       # never read: the start-up check reads it
-    assert not due(0)                                   # no check, no request
+    due = lambda now, requested=False: monitor._real_read_due(account, now, requested=requested)
+    assert due(0)                                       # no successful observation yet
     monitor._last_read_attempt['one'] = monitor._last_good_read['one'] = 1000
     monitor._samples['one'] = {'rate_limits': [{'id': 'weekly', 'resets_at': 20000}]}
     # Scheduling chooses intent only; admission owns the 10-minute rule.
     assert due(1000 + m.MIN_READ_INTERVAL_SECONDS - 1, requested=True)
     assert due(1000 + m.MIN_READ_INTERVAL_SECONDS, requested=True)
-    assert not due(19999, scheduled=True)               # 5 h old, before its reset: still valid
-    assert due(20000, scheduled=True)                   # its weekly window reset
+    assert not due(19999)                              # before its reset
+    assert due(20000)                                  # reset is due without hourly gating
     monitor._samples['one'] = {'rate_limits': []}
-    assert not due(1000 + m.READING_EXPIRES_SECONDS - 1, scheduled=True)
-    assert due(1000 + m.READING_EXPIRES_SECONDS, scheduled=True)
+    deadline = 1000 + m.READING_EXPIRES_SECONDS - m.READING_REFRESH_LEAD_SECONDS
+    assert not due(deadline - 1)
+    assert due(deadline)
+    assert due(deadline + 600)                          # failure remains due for admitted retry
 
 
 def test_direct_and_concurrent_refreshes_share_one_admission_gate(monkeypatch):

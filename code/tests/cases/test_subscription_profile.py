@@ -81,7 +81,7 @@ def test_monitor_restores_attempt_success_and_tier_without_new_provider_reads(mo
     assert store.profiles(['one'])['one']['tier']['name'] == 'Moderato'
 
 
-def test_failed_tier_read_retries_on_the_next_hourly_check_not_the_next_day():
+def test_failed_tier_read_releases_daily_admission_for_next_invocation():
     store = AccountObservationStore()
     assert store.claim('kimi', 'one', now=1000, interval=86400, profile=True)
     store.save_profile('kimi', 'one', {'stale': True, 'error_code': 'KimiCodeUnavailable'})
@@ -103,3 +103,19 @@ def test_kimi_daily_reader_uses_existing_server_with_bounded_readiness_probe(mon
     assert result['tier']['name'] == 'Moderato'
     factory.assert_called_once_with('kimi-code', for_control=True, probe_timeout=15)
     client._request.assert_called_once_with('GET', 'oauth/userinfo')
+
+
+def test_daily_collection_rejects_yesterday_cached_tier(monkeypatch):
+    import time
+    from types import SimpleNamespace
+    from unittest.mock import Mock
+    from management_portal.execution import subscription_profile as profiles
+    store = AccountObservationStore()
+    account = SimpleNamespace(provider='antigravity', account_id='old-tier', route_id='old-tier',
+                              kind='subscription_login')
+    accounts = Mock()
+    accounts.accounts.return_value = [account]
+    monkeypatch.setattr(profiles, 'read_profile', lambda *args: {
+        'status': 'observed', 'tier': {'id': 'old'}, 'observed_at': time.time() - 86400})
+    assert profiles.collect_profiles(accounts, store=store)[0]['status'] == 'failed'
+    assert store.claim('antigravity', 'old-tier', now=time.time(), interval=86400, profile=True)
