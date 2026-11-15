@@ -51,7 +51,12 @@ def test_empty_summary_material_records_failure_without_calling_model_or_writing
         mock.patch.object(paper_summaries, "_paper_store_file", return_value=path),
         mock.patch.object(paper_summaries, "_analysis_text", return_value="  "),
         mock.patch.object(paper_summaries, "_pdf_text_for_paper", return_value="\n"),
-        mock.patch.object(paper_summaries, "_resident_reply") as reply,
+        mock.patch.object(paper_summaries, "PAPER_STORE_ROOT", tmp_path),
+        mock.patch.object(paper_summaries, "_paper_run_record_by_job_id", return_value={
+            "job_id": "summary-source-test", "kind": "summary", "actor": "alice", "status": "queued",
+            "summary_input": {"schema": "tfi.paper-summary-input.v1", "phase": "new"},
+        }),
+        mock.patch("management_portal.paper_projection.turn") as reply,
         mock.patch.object(paper_summaries, "_update_paper_run_record") as record,
     ):
         with pytest.raises(ValueError, match="requires an abstract"):

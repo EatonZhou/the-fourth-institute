@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from contextlib import contextmanager
 import hashlib
 import secrets
 import time
@@ -15,6 +16,7 @@ from management_portal.paper_store import (
     _write_paper_run_record, _paper_run_record_by_job_id, _paper_run_records, PAPER_STORE_ROOT,
 )
 from management_portal.shared_state import atomic_replace_json
+from management_portal import paper_summary_input
 
 
 def retry_summary(payload: dict, actor: str) -> dict:
@@ -48,6 +50,40 @@ def retry_summary(payload: dict, actor: str) -> dict:
         return {"paper_id": paper_id, "summary_job": _paper_run_record_by_job_id(paper_id, retry_id), "reused": False}
 
 
+@contextmanager
+def _summary_job_lock(paper_id: str, job_id: str):
+    digest = hashlib.sha256(f"{paper_id}\n{job_id}".encode()).hexdigest()
+    directory = PAPER_STORE_ROOT / "_work" / "summary-inputs"
+    directory.mkdir(parents=True, exist_ok=True)
+    with (directory / f"{digest}.lock").open("a+b") as stream, lock_stream(stream):
+        yield
+
+
+def _create_summary_job(paper_id: str, *, actor: str, job_id: str, retry_of: str = "") -> bool:
+    """Create only a genuinely new job; never reset an existing input intent.
+
+    Internal owner port shared by async registration and synchronous backfill.
+    Business callers must perform their existing authorization before entry.
+    """
+    if not paper_id or not actor or not job_id:
+        raise ValueError("paper_id, current actor and job_id required")
+    with _summary_job_lock(paper_id, job_id):
+        if _paper_run_record_by_job_id(paper_id, job_id):
+            return False
+        _write_paper_run_record(paper_id, {
+            "job_id": job_id,
+            "kind": "summary",
+            "status": "queued",
+            "actor": str(actor or ""),
+            "queued_at": _now(),
+            "step": "queued",
+            "error": "",
+            "retry_of": retry_of,
+            "summary_input": paper_summary_input.new_input(),
+        })
+        return True
+
+
 def _start_summary_task(paper_id: str, *, actor: str = "", job_id: str = "", retry_of: str = "") -> None:
     from management_portal import business_tasks
 
@@ -55,25 +91,17 @@ def _start_summary_task(paper_id: str, *, actor: str = "", job_id: str = "", ret
     if not paper_id:
         return
     job_id = job_id or f"summary-{int(time.time())}-{secrets.token_hex(5)}"
-    _write_paper_run_record(paper_id, {
-        "job_id": job_id,
-        "kind": "summary",
-        "status": "queued",
-        "actor": str(actor or ""),
-        "queued_at": _now(),
-        "step": "queued",
-        "error": "",
-        "retry_of": retry_of,
-    })
+    if not _create_summary_job(paper_id, actor=actor, job_id=job_id, retry_of=retry_of):
+        return
     def fail(exc: BaseException) -> None:
-        _update_paper_run_record(paper_id, {
-            "job_id": job_id,
-            "kind": "summary",
-            "status": "error",
-            "step": "error",
-            "finished_at": _now(),
-            "error": str(exc),
-        })
+        with _summary_job_lock(paper_id, job_id):
+            if _paper_run_record_by_job_id(paper_id, job_id).get("status") == "done":
+                return
+            _update_paper_run_record(paper_id, {
+                "job_id": job_id,
+                "kind": "summary",
+                **_summary_failure(paper_id, job_id, exc),
+            })
 
     try:
         business_tasks.start(
@@ -96,7 +124,39 @@ def _start_summary_task(paper_id: str, *, actor: str = "", job_id: str = "", ret
         print(f"[paper-summary] failed to launch for {paper_id}: {exc}", flush=True)
 
 
-def _run_summary_job(
+def _summary_failure(paper_id: str, job_id: str, exc: BaseException) -> dict:
+    from management_portal.resident_handoff import ResidentInputTerminated
+    state = (_paper_run_record_by_job_id(paper_id, job_id).get("summary_input") or {})
+    if state.get("phase") == "generated" and not isinstance(exc, ValueError):
+        return {"status": "running", "step": "saving result", "error": str(exc)}
+    if state.get("phase") == "dispatching" and not isinstance(exc, ResidentInputTerminated):
+        return {"status": "running", "step": "confirming submission", "error": str(exc)}
+    return {"status": "error", "step": "error", "finished_at": _now(), "error": str(exc)}
+
+
+def _run_summary_job(paper_id: str, actor: str = "", job_id: str = "") -> None:
+    """Serialize the same job through submission, observation and artifact save.
+
+    Private worker entry, not a new authorization endpoint. Callers must use
+    their current actor; the persisted caller is checked, never impersonated.
+    """
+    if not job_id:
+        raise ValueError("summary job_id required")
+    with _summary_job_lock(paper_id, job_id):
+        job = _paper_run_record_by_job_id(paper_id, job_id)
+        if not job or not actor or job.get("actor") != actor:
+            raise PermissionError("Summary recovery requires the original current caller")
+        if job.get("kind") != "summary":
+            raise ValueError("Summary job required")
+        if job.get("status") == "done":
+            return
+        state = paper_summary_input.validate_job(job, actor)
+        if state["phase"] == "new" and job.get("status") != "queued":
+            raise ValueError("Failed summary requires explicit retry; no input resubmitted")
+        _run_summary_job_locked(paper_id, actor, job_id)
+
+
+def _run_summary_job_locked(
     paper_id: str,
     actor: str = "",
     job_id: str = "",
@@ -119,7 +179,7 @@ def _run_summary_job(
         if not paper:
             raise KeyError("paper not found")
         print(f"[paper-summary] start {paper_id}", flush=True)
-        path = _ensure_paper_summary(paper, actor=actor)
+        path = _ensure_paper_summary(paper, actor=actor, job_id=clean_job_id)
         if clean_job_id:
             _update_paper_run_record(paper_id, {
                 "job_id": clean_job_id,
@@ -136,21 +196,20 @@ def _run_summary_job(
             _update_paper_run_record(paper_id, {
                 "job_id": clean_job_id,
                 "kind": "summary",
-                "status": "error",
-                "step": "error",
-                "finished_at": _now(),
-                "error": str(exc),
+                **_summary_failure(paper_id, clean_job_id, exc),
             })
         raise
 
 
-def _ensure_paper_summary(paper: dict, *, actor: str = "", force: bool = False) -> Path | None:
+def _ensure_paper_summary(paper: dict, *, actor: str = "", force: bool = False, job_id: str = "") -> Path | None:
     path = _paper_store_file(paper, "summary")
     if not path:
         return None
-    if path.is_file() and path.read_text(encoding="utf-8", errors="replace").strip() and not force:
+    recovering = job_id and (_paper_run_record_by_job_id(str(paper.get("id") or ""), job_id)
+                             .get("summary_input") or {}).get("phase") != "new"
+    if path.is_file() and path.read_text(encoding="utf-8", errors="replace").strip() and not force and not recovering:
         return path
-    summary, usage = _generate_paper_summary(paper, actor=actor)
+    summary, usage = _generate_paper_summary(paper, actor=actor, **({"job_id": job_id} if job_id else {}))
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(summary.strip() + "\n", encoding="utf-8")
     usage_payload = {
@@ -163,7 +222,13 @@ def _ensure_paper_summary(paper: dict, *, actor: str = "", force: bool = False) 
     return path
 
 
-def _generate_paper_summary(paper: dict, *, actor: str) -> tuple[str, dict]:
+def _generate_paper_summary(paper: dict, *, actor: str, job_id: str = "") -> tuple[str, dict]:
+    if job_id:
+        state = (_paper_run_record_by_job_id(str(paper.get("id") or ""), job_id).get("summary_input") or {})
+        if state.get("phase") != "new":
+            content, usage = paper_summary_input.reply(paper_id=str(paper.get("id") or ""),
+                job_id=job_id, actor=actor, prompt="", metadata={})
+            return _clean_summary_paragraph(content), usage
     abstract = str(paper.get("abstract") or "").strip()
     source_text = abstract or _analysis_text(paper, limit=1800).strip() or _pdf_text_for_paper(paper)[:1800].strip()
     if not source_text:
@@ -176,7 +241,11 @@ def _generate_paper_summary(paper: dict, *, actor: str) -> tuple[str, dict]:
 来源：{paper.get('venue') or ''} {paper.get('year') or ''}
 摘要材料：{source_text}
 """
-    content, usage = _resident_reply(prompt, actor=actor, resident_scope="paper:summary",
-        metadata={'paper_id': paper.get('id'), 'source_identity': paper.get('title'),
-                  'material_version': hashlib.sha256(source_text.encode()).hexdigest()})
+    metadata = {'paper_id': paper.get('id'), 'source_identity': paper.get('title'),
+                'material_version': hashlib.sha256(source_text.encode()).hexdigest()}
+    if job_id:
+        content, usage = paper_summary_input.reply(paper_id=str(paper.get('id') or ''),
+            job_id=job_id, actor=actor, prompt=prompt, metadata=metadata)
+    else:
+        content, usage = _resident_reply(prompt, actor=actor, resident_scope="paper:summary", metadata=metadata)
     return _clean_summary_paragraph(content), usage
