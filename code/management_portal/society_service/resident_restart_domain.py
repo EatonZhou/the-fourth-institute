@@ -47,7 +47,7 @@ SESSION_RESTART_ACTIVE_EXECUTION_POLICIES = frozenset({"wait", "cancel"})
 # Runtime settings a restart request may choose for the target session.
 SESSION_RESTART_SETTING_FIELDS = (
     "model", "reasoning_effort", "collaboration_mode", "service_tier", "permission_preset",
-    "prompt_context", "backend_options",
+    "prompt_context", "backend_options", "account_selection",
 )
 
 
@@ -425,7 +425,7 @@ def get_resident_restart_options(
                                  "scope": "target_session"},
         "preservation_capabilities": preservation.preservation_capabilities(),
         "providers": [{"id": row["provider"], "label": row.get("label", row["provider"]),
-                       "operations": row.get("operations", [])} for row in catalog],
+                       "operations": row.get("operations", []), "account_selection": row.get("account_selection", {})} for row in catalog],
         "accounts": {row["provider"]: [{"id": route["backend_route_id"], "account_id": route.get("account_id", ""), "label": route["label"],
                                       "context_options": preservation.context_options(source_snapshot, row["provider"], route["backend_route_id"], has_context=has_context)} for route in row["routes"]]
                      for row in catalog},
@@ -620,12 +620,17 @@ def _restart_target(
     body: Mapping[str, Any], source: Mapping[str, Any], source_provider: str, target_provider: str,
 ) -> _RestartTarget:
     source_route = source["account_id"]
-    requested_route = str(body.get("target_account") or (source_route if source_provider == target_provider else ""))
+    from management_portal.execution.account_selection_contract import mode
+    automatic = "account_selection" in body and mode(body["account_selection"]) == "auto"
+    if automatic and (body.get("target_account") or target_provider == "provider_api"):
+        raise ValueError("按额度自动选择仅适用于原生后端，且不能同时指定固定账号")
+    requested_route = "" if automatic else str(body.get("target_account") or (source_route if source_provider == target_provider else ""))
     if target_provider == "provider_api" and not requested_route:
         raise ValueError("请选择 Model API 账号")
     selected_account = resolve_account_configuration(
         requested_route if target_provider == "provider_api" else target_provider,
         "" if target_provider == "provider_api" else requested_route,
+        **({"runtime_options": {key: body[key] for key in ("model", "reasoning_effort") if key in body}} if automatic else {}),
     )
     return _RestartTarget(
         source_provider=source_provider,
@@ -689,6 +694,9 @@ def _target_runtime_settings(
     if definition and native_updates:
         checked = definition.runtime_adapter().validate_updates(definition, target_route, target_runtime_settings, native_updates)
         target_runtime_settings = definition.runtime_adapter().reconcile(definition, target_route, {**target_runtime_settings, **checked})
+    if definition and "account_selection" in body:
+        from management_portal.execution.account_selection_contract import mode
+        target_runtime_settings["account_selection"] = mode(body["account_selection"])
     return target_runtime_settings
 
 

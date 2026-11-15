@@ -14,6 +14,12 @@ const service = window.PortalResidentService.createClient({api: {get: async () =
   assert.equal(mutations[1].args.operation, 'switch_account'); assert.equal(mutations[1].args.context_strategy, 'preserve');
   assert.equal(mutations[1].args.resume_failed_input, false); assert.equal(mutations[1].controls.idempotencyKey, 'switch-key');
   assert.deepEqual(mutations[1].args.credits_consent, {account_id: 'codex_three', confirmed: true});
+  await service.restartSession({resident_id: 'r1', operation: 'restart', target_provider: 'codex', account_selection: 'auto',
+    model: 'codex-model', context_strategy: 'compact', active_execution_policy: 'wait', resume_failed_input: false, idempotency_key: 'auto-key'});
+  assert.equal(mutations[2].args.account_selection, 'auto');
+  assert.equal(mutations[2].args.model, 'codex-model');
+  assert.equal(Object.hasOwn(mutations[2].args, 'account_id'), false, 'auto selection must not pin the catalog preview account');
+  assert.equal(mutations[2].controls.idempotencyKey, 'auto-key');
   vm.runInNewContext(fs.readFileSync(path.join(root, 'portal_resident_runtime_controller.js'), 'utf8'), {window});
   let revision = 'r1', config, writes = [], settings = {model: 'm'};
   const controller = window.PortalResidentRuntimeController.create({service: {

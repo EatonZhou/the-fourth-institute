@@ -141,6 +141,97 @@ const root = path.resolve(__dirname, '../../../management_portal/static');
     await inlinePanel.locator('[data-session-restart-submit]').click();
     await page.waitForFunction(() => saves.length === 2 && inlineDone === 1);
     assert.equal(await page.evaluate(() => hostSubmits), 0, 'the panel does not submit the host form');
+    // Backend is the catalog owner even before an account is selected.
+    await page.evaluate(() => {
+      inline.destroy();
+      window.catalogReads = []; window.catalogResolvers = {}; window.catalogMode = 'normal';
+      window.selectionCatalog = (provider, account = '') => ({models: [provider + '-model'], default_model: provider + '-model',
+        account_id: account || (provider === 'codex' ? 'two' : provider + '_one'),
+        account_selection: {enabled: true}, efforts_by_model: {}, service_tiers_by_model: {},
+        runtime_capabilities: {settings: ['model']}});
+      PortalResidentService.runtimeCatalog = options => {
+        catalogReads.push(options);
+        if (catalogMode === 'error') return Promise.reject(new Error('catalog unavailable'));
+        if (catalogMode === 'deferred') return new Promise(resolve => {catalogResolvers[options.backend] = resolve;});
+        return Promise.resolve(selectionCatalog(options.backend, options.accountId));
+      };
+      window.toasts = []; PortalUI.toast = message => toasts.push(message);
+      window.selectionConfig = (mode = 'fixed') => ({source: {provider: 'antigravity', account_id: 'antigravity_one'},
+        runtime_settings: {model: 'gemini-fixture', account_selection: mode},
+        runtime_catalog: {...selectionCatalog('antigravity'), models: ['gemini-fixture'], default_model: 'gemini-fixture'},
+        providers: [...config().providers, {id: 'antigravity'}, {id: 'provider_api'}].map(row => ({...row, account_selection: {enabled: row.id !== 'provider_api'}})),
+        accounts: {...config().accounts, antigravity: [{id: 'antigravity_one', context_options: config().accounts.claude[0].context_options}],
+          provider_api: [{id: 'api_one'}, {id: 'api_two'}]}});
+      openSettings(selectionConfig());
+    });
+    await page.selectOption('[data-session-backend]', 'codex');
+    await page.waitForFunction(() => !document.querySelector('[data-target-editor-host]').hidden);
+    assert.equal(await page.locator('[data-session-target]').inputValue(), '');
+    assert.equal(await page.locator('[data-runtime-editor="current"]').isVisible(), false);
+    assert.doesNotMatch(await page.locator('[data-runtime-editor="target"] [data-runtime-setting="model"]').innerText(), /gemini/);
+    assert.match(await page.locator('[data-runtime-editor="target"] [data-runtime-setting="model"]').innerText(), /codex-model/);
+    assert.equal(await page.locator('[data-session-restart-submit]').isDisabled(), true, 'fixed mode requires an account');
+    await page.selectOption('[data-session-policy]', 'auto');
+    await page.waitForFunction(() => !document.querySelector('[data-session-restart-submit]').disabled);
+    assert.equal(await page.locator('[data-session-target]').isVisible(), false, 'auto mode does not ask for an account');
+    assert.equal(await page.locator('[data-session-credits-consent]').isVisible(), false, 'automatic selection cannot grant credits to a preview');
+    assert.equal(await page.locator('[data-runtime-editor="target"] [data-runtime-setting="account_selection"]').isVisible(), false, 'only one policy control');
+    if (process.env.RUNTIME_SELECTION_SCREENSHOT) await surface.screenshot({path: process.env.RUNTIME_SELECTION_SCREENSHOT});
+    await page.click('[data-session-restart-submit]');
+    await page.waitForFunction(() => requests.length === 3);
+    assert.deepEqual(await page.evaluate(() => ({provider: requests[2].target_provider, model: requests[2].model, policy: requests[2].account_selection,
+      account: requests[2].target_account || null, resume: requests[2].resume_failed_input})),
+      {provider: 'codex', model: 'codex-model', policy: 'auto', account: null, resume: false});
+    // Changing only the policy is a settings save; it never replaces the live Session.
+    await page.evaluate(() => openSettings(selectionConfig()));
+    await page.selectOption('[data-session-policy]', 'auto');
+    await page.click('[data-session-restart-submit]');
+    await page.waitForFunction(() => saves.length === 3);
+    assert.equal(await page.evaluate(() => saves[2].account_selection), 'auto');
+    assert.equal(await page.evaluate(() => requests.length), 3);
+    // Returning to fixed mode requires an explicit target and preserves the chosen model.
+    await page.evaluate(() => openSettings(selectionConfig('auto')));
+    await page.selectOption('[data-session-backend]', 'codex');
+    await page.waitForFunction(() => !document.querySelector('[data-session-restart-submit]').disabled);
+    await page.selectOption('[data-session-policy]', 'fixed');
+    await page.waitForFunction(() => !document.querySelector('[data-target-editor-host]').hidden);
+    assert.equal(await page.locator('[data-session-restart-submit]').isDisabled(), true);
+    await page.selectOption('[data-session-target]', JSON.stringify(['codex', 'one']));
+    await page.waitForFunction(() => !document.querySelector('[data-session-restart-submit]').disabled);
+    await page.click('[data-session-restart-submit]');
+    await page.waitForFunction(() => requests.length === 4);
+    assert.equal(await page.evaluate(() => requests[3].account_selection), 'fixed');
+    assert.equal(await page.evaluate(() => requests[3].target_account), 'one');
+    // A delayed response from a previous provider must not overwrite the current catalog.
+    await page.evaluate(() => {catalogMode = 'deferred'; openSettings(selectionConfig('auto'));});
+    await page.selectOption('[data-session-backend]', 'codex');
+    assert.equal(await page.locator('[data-runtime-editor="current"]').isVisible(), false);
+    assert.equal(await page.locator('[data-runtime-editor="target"]').isVisible(), false);
+    assert.equal(await page.locator('[data-session-restart-submit]').isDisabled(), true);
+    await page.selectOption('[data-session-backend]', 'claude');
+    await page.evaluate(() => catalogResolvers.claude(selectionCatalog('claude')));
+    await page.waitForFunction(() => !document.querySelector('[data-target-editor-host]').hidden);
+    await page.evaluate(() => catalogResolvers.codex(selectionCatalog('codex')));
+    assert.match(await page.locator('[data-runtime-editor="target"] [data-runtime-setting="model"]').innerText(), /claude-model/);
+    await page.selectOption('[data-session-backend]', 'antigravity');
+    assert.equal(await page.locator('[data-runtime-editor="current"]').isVisible(), true);
+    assert.equal(await page.locator('[data-runtime-editor="current"] [data-runtime-setting="model"]').inputValue(), 'gemini-fixture');
+    // Failed catalogs expose a failure instead of an editable stale model.
+    await page.evaluate(() => {catalogMode = 'error';});
+    await page.selectOption('[data-session-backend]', 'codex');
+    await page.waitForFunction(() => toasts.length === 1);
+    assert.equal(await page.locator('[data-runtime-editor="current"]').isVisible(), false);
+    assert.equal(await page.locator('[data-runtime-editor="target"]').isVisible(), false);
+    assert.equal(await page.locator('[data-session-restart-submit]').isDisabled(), true);
+    assert.match(await page.locator('[data-target-catalog-status]').innerText(), /catalog unavailable/);
+    assert.equal(await page.locator('[data-session-policy]').isVisible(), true, 'quota/catalog failure must allow a manual choice');
+    assert.equal(await page.locator('[data-session-policy]').isDisabled(), false);
+    // API routes require a particular registered account and cannot inherit native auto selection.
+    await page.selectOption('[data-session-backend]', 'provider_api');
+    assert.equal(await page.locator('[data-session-target]').isVisible(), true);
+    assert.equal(await page.locator('[data-session-policy]').inputValue(), 'fixed');
+    assert.equal(await page.locator('[data-session-restart-submit]').isDisabled(), true);
+    await page.locator('[data-session-restart-close]').click();
     assert.deepEqual(errors, []);
     console.log('PASS runtime panel: one page in a dialog and in place, 1200/840/390px, X/Escape/backdrop/cancel, save, handoff, credits and initialization');
   } finally {await browser.close();}

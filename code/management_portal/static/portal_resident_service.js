@@ -756,7 +756,7 @@
           "idempotency_key", "target_provider", "target_account", "operation",
           "context_strategy", "active_execution_policy", "resume_failed_input",
           "credits_consent",
-          "model", "reasoning_effort", "collaboration_mode", "service_tier", "permission_preset", "prompt_context", "backend_options",
+          "model", "reasoning_effort", "collaboration_mode", "service_tier", "permission_preset", "prompt_context", "backend_options", "account_selection",
         ].filter(name => Object.prototype.hasOwnProperty.call(source, name))
           .map(name => [name, source[name]]));
         options.idempotency_key ||= `portal-session-restart:${globalThis.PortalUIPrimitives.randomUUID()}`;
@@ -783,7 +783,7 @@
             ...(options.active_execution_policy ? { active_execution_policy: options.active_execution_policy } : {}),
             ...(options.model ? { model: options.model } : {}),
             ...(options.reasoning_effort ? { reasoning_effort: options.reasoning_effort } : {}),
-            ...Object.fromEntries(["collaboration_mode", "service_tier", "permission_preset"]
+            ...Object.fromEntries(["collaboration_mode", "service_tier", "permission_preset", "account_selection"]
               .filter(key => Object.hasOwn(options, key)).map(key => [key, options[key]])),
             ...(options.prompt_context ? { prompt_context: options.prompt_context } : {}),
             ...(options.backend_options ? { backend_options: options.backend_options } : {}),

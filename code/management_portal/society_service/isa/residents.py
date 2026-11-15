@@ -535,7 +535,7 @@ def restart_session(inv: Invocation) -> dict[str, Any]:
             body[name] = inv.argument(name)
     if inv.argument("resume_failed_input") is not None:
         body["resume_failed_input"] = inv.argument("resume_failed_input")
-    for name in ("prompt_context", "backend_options", "collaboration_mode", "service_tier", "permission_preset", "credits_consent"):
+    for name in ("prompt_context", "backend_options", "collaboration_mode", "service_tier", "permission_preset", "credits_consent", "account_selection"):
         if inv.argument(name) is not None:
             body[name] = inv.argument(name)
     if inv.idempotency_key:

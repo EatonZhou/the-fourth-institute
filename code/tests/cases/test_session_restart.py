@@ -1321,3 +1321,65 @@ def test_detached_native_binding_can_be_restored_only_while_absent():
     assert restored['backend_session_id'] == 'prior'
     with pytest.raises(RuntimeError, match='changed after detachment'):
         store.restore_provider_binding(binding_id, binding=before, expected_provider_session_ref='', expected_absent=True)
+
+
+@pytest.mark.parametrize("source_provider", ["codex", "antigravity"])
+def test_explicit_auto_restart_resolves_by_target_model_without_pinning_source(monkeypatch, source_provider):
+    calls = []
+    def resolve(provider, route, **kwargs):
+        calls.append((provider, route, kwargs))
+        return {"account_id": "selected", "backend_route_id": "selected"}
+    monkeypatch.setattr(resident_restart_domain, "resolve_account_configuration", resolve)
+    target = resident_restart_domain._restart_target(
+        {"account_selection": "auto", "model": "target-model", "reasoning_effort": "high"},
+        {"account_id": "old-account"}, source_provider, "codex")
+    assert target.route == "selected"
+    assert calls == [("codex", "", {"runtime_options": {"model": "target-model", "reasoning_effort": "high"}})]
+
+
+@pytest.mark.parametrize("body,provider", [
+    ({"account_selection": "auto", "target_account": "one"}, "codex"),
+    ({"account_selection": "auto"}, "provider_api"),
+    ({"account_selection": "invalid"}, "codex"),
+])
+def test_invalid_restart_account_policy_is_rejected_before_resolution(monkeypatch, body, provider):
+    monkeypatch.setattr(resident_restart_domain, "resolve_account_configuration",
+                        lambda *a, **kw: pytest.fail("invalid requests must not resolve or mutate an account"))
+    with pytest.raises(ValueError):
+        resident_restart_domain._restart_target(body, {"account_id": "old"}, "antigravity", provider)
+
+
+@pytest.mark.parametrize("policy", ["auto", "fixed"])
+def test_cross_provider_restart_commits_account_policy(monkeypatch, isolated_portal_case, policy):
+    with isolated_portal_case():
+        record, operations, saved = _restart_domain(monkeypatch, source_provider="antigravity", source_route="ag")
+        record["backend"] = "antigravity"
+        from management_portal.execution.account_adapters import CodexAccounts
+        monkeypatch.setattr(CodexAccounts, "catalog", lambda self, account: codex_runtime_settings.codex_runtime_catalog(account_id=account.account_id))
+        monkeypatch.setattr(resident_backend, "session_record", lambda *a, **kw: {})
+        calls = []
+        def resolve(provider, route="", **kwargs):
+            calls.append((provider, route, kwargs))
+            return {"account_id": "one", "backend_route_id": "one", "capacity_key": "codex:one"}
+        monkeypatch.setattr(resident_restart_domain, "resolve_account_configuration", resolve)
+        body = {"target_provider": "codex", "account_selection": policy, "model": "gpt-6-astra", "reasoning_effort": "high"}
+        if policy == "fixed":
+            body["target_account"] = "one"
+        result = resident_domain.restart_resident_session(record["resident_id"], "alice", body)
+        assert result["configuration_only"] is True
+        assert operations == []
+        settings = runtime_settings_from_parts(saved[-1]["execution_settings"], saved[-1]["harness_config"])
+        assert settings["account_selection"] == policy
+        assert settings["model"] == "gpt-6-astra"
+        assert settings["reasoning_effort"] == "high"
+        assert calls[0][1] == ("" if policy == "auto" else "one")
+
+
+def test_restart_isa_passes_explicit_auto_account_selection(monkeypatch):
+    from management_portal.society_service.isa import residents
+    payload = {"resident_id": "test", "provider": "codex", "model": "target", "account_selection": "auto"}
+    calls = []
+    monkeypatch.setattr(resident_domain, "restart_resident_session",
+                        lambda *args: calls.append(args) or {"status": "accepted"})
+    residents.restart_session(SimpleNamespace(argument=payload.get, caller="alice", idempotency_key="same-request"))
+    assert calls == [("test", "alice", {"target_provider": "codex", "model": "target", "account_selection": "auto", "idempotency_key": "same-request"})]

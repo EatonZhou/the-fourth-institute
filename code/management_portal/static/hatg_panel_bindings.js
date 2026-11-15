@@ -3,6 +3,42 @@
 
   if (window.PortalHatgPanelBindings) return;
 
+  // Canvas drawers share pointer, keyboard and touch behavior in HATG and the workshop.
+  function bindHoverPanel({trigger, panel, open, close, isOpen}) {
+    const abort = new AbortController();
+    let timer = 0, pointerType = '';
+    const listen = (node, type, handler) => node.addEventListener(type, handler, {signal:abort.signal});
+    const cancel = () => { clearTimeout(timer); timer = 0; };
+    const contains = node => node instanceof Node && (trigger.contains(node) || panel.contains(node));
+    const keyboardFocus = () => contains(document.activeElement) && document.activeElement.matches(':focus-visible');
+    const show = () => { cancel(); open(); };
+    const hide = () => { cancel(); close(); };
+    const leave = () => {
+      cancel();
+      timer = setTimeout(() => {
+        if (!trigger.matches(':hover') && !panel.matches(':hover') && !keyboardFocus()) hide();
+      }, 160);
+    };
+    for (const node of [trigger, panel]) {
+      listen(node, 'pointerenter', event => { if (event.pointerType !== 'touch') show(); });
+      listen(node, 'pointerleave', leave);
+      listen(node, 'focusin', () => { if (keyboardFocus()) show(); });
+      listen(node, 'focusout', leave);
+      listen(node, 'keydown', event => {
+        if (event.key !== 'Escape' || !isOpen()) return;
+        event.preventDefault(); event.stopPropagation();
+        trigger.focus({preventScroll:true}); hide();
+      });
+    }
+    listen(trigger, 'pointerdown', event => { pointerType = event.pointerType; });
+    listen(trigger, 'click', () => {
+      if (pointerType === 'touch' && isOpen()) hide(); else show();
+      pointerType = '';
+    });
+    listen(document, 'pointerdown', event => { if (!contains(event.target)) hide(); });
+    return {open:show, close:hide, destroy() { cancel(); abort.abort(); close(); }};
+  }
+
   // The panel's controls: closing its dialogs, the Escape key, every
   // toolbar button, form and select of the template, the component
   // toolbox drawer, and the canvas observers that follow the toolbar
@@ -72,26 +108,25 @@
       for (const [trigger, panel, placement] of [['graphMoreToggle','graphMoreMenu','bottom-end'], ['hatgLegendToggle','hatgLegendPopover','top-start']]) {
         const button = $id(trigger), content = $id(panel);
         if (!button || !content) continue;
-        const popover = window.PortalOverlay.bindPopover({trigger:button,panel:content,placement,closeOnOutside:true,closeOnEscape:true});
-        panelHost.pageStateController.listen('panel',button,'click',() => popover.toggle());
+        const popover = window.PortalOverlay.bindPopover({trigger:button,panel:content,placement,portal:true,closeOnOutside:true,closeOnEscape:true});
+        if (trigger === 'hatgLegendToggle') {
+          graphPopovers.push(bindHoverPanel({trigger:button,panel:content,open:() => popover.open(),close:() => popover.close(),isOpen:popover.isOpen}));
+        } else panelHost.pageStateController.listen('panel',button,'click',() => popover.toggle());
         graphPopovers.push(popover);
       }
       const show = open => { drawer.hidden = !open; toggle.setAttribute("aria-expanded", String(open)); };
+      const drawerHover = bindHoverPanel({trigger:toggle,panel:drawer,open:() => show(true),close:() => show(false),isOpen:() => !drawer.hidden});
+      graphPopovers.push(drawerHover);
       const listen = (node, event, handler) => panelHost.pageStateController.listen("panel", node, event, handler);
       const storeButton = toolboxStoreEntry();
       $id("hatgToolboxStore")?.replaceChildren(storeButton);
       listen(storeButton, 'click', () => {
-        show(false);
+        drawerHover.close();
         window.PortalTemplateStore.open({lineageId:state.lineage?.lineage_id || '',
           onOpenWorkshop:resource => panelHost.hatgComponentOptions.emit('workshop-open',{resource})});
       });
-      listen(toggle, "click", () => show(drawer.hidden));
-      listen(drawer, "portal:template-picked", () => show(false));
-      listen($id("hatgToolboxClose"), "click", () => { show(false); toggle.focus(); });
-      listen(drawer, "keydown", event => {
-        if (event.key !== "Escape") return;
-        event.preventDefault(); event.stopPropagation(); show(false); toggle.focus();
-      });
+      listen(drawer, "portal:template-picked", () => drawerHover.close());
+      listen($id("hatgToolboxClose"), "click", () => { toggle.focus(); drawerHover.close(); });
     }
     function bindModals() {
       $queryAll("[data-close-modal]").forEach(button => button.addEventListener("click", () => closeModal(button.dataset.closeModal || "")));
@@ -246,5 +281,5 @@
     };
   }
 
-  window.PortalHatgPanelBindings = Object.freeze({ createBindings, dependencies: DEPENDENCIES });
+  window.PortalHatgPanelBindings = Object.freeze({ createBindings, bindHoverPanel, dependencies: DEPENDENCIES });
 })();

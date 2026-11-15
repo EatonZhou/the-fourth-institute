@@ -149,9 +149,9 @@
       };
       let currentSettings = {};
       let initialSettings = {};
-      let providerCatalog = null;
+      let providerCatalog = null, showAccountSelection = true;
       const syncModelControls = () => {
-        accountSelection.closest(".portalRuntimeSettingsField").hidden = providerCatalog?.account_selection?.enabled !== true;
+        accountSelection.closest(".portalRuntimeSettingsField").hidden = !showAccountSelection || providerCatalog?.account_selection?.enabled !== true;
         if (!providerCatalog) return;
         const selectedModel = model.value || providerCatalog.default_model;
         const knownModel = providerCatalog.models.includes(selectedModel);
@@ -239,6 +239,7 @@
           initialSettings = { ...currentSettings };
           accountSelection.value = currentSettings.account_selection || "fixed";
           providerCatalog = dialogOptions.catalog || null;
+          showAccountSelection = dialogOptions.showAccountSelection !== false;
           apiFields.open(currentSettings, providerCatalog);
           apiRoutes = providerCatalog?.api_settings ? providerCatalog.api_routes || [providerCatalog] : [];
           initialApiRoute = providerCatalog?.api_settings ? providerCatalog.backend_route_id || providerCatalog.account_id : "";
@@ -457,12 +458,14 @@
         '<section class="portalRuntimeSection" data-runtime-section="account">' +
         '<div class="portalRuntimeSettingsGrid portalRuntimeAccountGrid">' +
         '<label class="portalRuntimeSettingsField"><span>AI 后端</span><select data-session-backend></select></label>' +
-        '<label class="portalRuntimeSettingsField"><span>账号</span><select data-session-target></select></label></div>' +
+        '<label class="portalRuntimeSettingsField" data-session-policy-field><span>账号策略</span><select data-session-policy><option value="fixed">固定账号</option><option value="auto">按额度自动</option></select></label>' +
+        '<label class="portalRuntimeSettingsField" data-session-account-field><span>账号</span><select data-session-target></select></label></div>' +
+        '<p class="portalRuntimeSettingsHint" data-session-policy-hint hidden>在所选后端内，按模型支持情况和可用额度自动选择账号，无需指定账号。</p>' +
         '<p class="portalRuntimeSettingsHint" data-switch-context-status role="status"></p>' +
         '<p class="portalRuntimeSettingsHint" data-switch-context-description role="status"></p></section>' +
         '<section class="portalRuntimeSection" data-runtime-section="initialization" hidden>' +
         '<p class="portalRuntimeSettingsHint">继续当前初始化，保留继承的上下文及已排队的消息。credits 确认只适用于这次初始化及它创建的 Session。</p></section>' +
-        '<section class="portalRuntimeSection" data-runtime-section="parameters"><div data-runtime-editor-host></div><div data-target-editor-host hidden></div></section>' +
+        '<section class="portalRuntimeSection" data-runtime-section="parameters"><p class="portalRuntimeSettingsHint" data-target-catalog-status role="status" hidden></p><div data-runtime-editor-host></div><div data-target-editor-host hidden></div></section>' +
         '<label class="portalRuntimeSettingsField portalRuntimeCredits" data-session-credits-confirmation hidden><span data-session-credits-description></span>' +
         '<span><input type="checkbox" data-session-credits-consent> 我明确授权本次目标 Session 使用该账号的付费 credits；不授权后续新建、重置或迁移的会话。</span></label>' +
         '<p class="portalRuntimeSettingsHint" data-runtime-save-hint role="status"></p>' +
@@ -472,6 +475,7 @@
         '<button class="portalButton is-primary" data-session-restart-submit type="' + (inline ? "button" : "submit") + '">保存</button></div>';
       const find = selector => element.querySelector(selector);
       const target = find("[data-session-target]"), backend = find("[data-session-backend]");
+      const policy = find("[data-session-policy]");
       const submit = find("[data-session-restart-submit]"), cancel = find("[data-session-restart-cancel]");
       const reset = find("[data-runtime-panel-reset]"), saveHint = find("[data-runtime-save-hint]");
       const creditsConsent = find("[data-session-credits-consent]");
@@ -483,12 +487,17 @@
       find("[data-resident-backend-notices]").after(progress.element);
       let current = {}, restart, cancelRestart, unobserve, lastOpen = [];
       let requestKey, submitting = false, tracking = false, restartView = {}, catalogRevision = 0, targetReady = false;
-      let baseline = "";
+      let baseline = "", targetCatalog = null, catalogStatus = "";
       const restartService = window.PortalResidentService;
       const initializing = () => Boolean(current.initialization?.initialization_id)
         && ["pending", "running", "failed"].includes(current.initialization.status);
       const requestId = () => "portal-session-restart:" + globalThis.PortalUIPrimitives.randomUUID();
-      const selected = () => { try { return JSON.parse(target.value); } catch (_) { return []; } };
+      const automatic = () => policy.value === "auto" && backend.value !== "provider_api";
+      const selected = () => {
+        if (automatic()) return [backend.value, crossProvider()
+          ? targetCatalog?.account_id || targetCatalog?.backend_route_id || "" : current.source?.account_id];
+        try { return JSON.parse(target.value); } catch (_) { return [backend.value, ""]; }
+      };
       const canonicalAccount = (provider, account) => {
         const row = current.accounts?.[provider]?.find(item => item.id === account || item.account_id === account);
         return row?.account_id || account;
@@ -497,9 +506,12 @@
         const [provider, account] = selected();
         return provider === current.source?.provider && canonicalAccount(provider, account) === canonicalAccount(provider, current.source?.account_id);
       };
-      const crossProvider = () => selected()[0] && selected()[0] !== current.source?.provider;
+      const crossProvider = () => Boolean(backend.value) && backend.value !== current.source?.provider;
       const canSwitch = () => Boolean(restart) && (current.providers || []).length > 0;
-      const switching = () => canSwitch() && !initializing() && Boolean(target.value) && !sameAccount();
+      const switching = () => canSwitch() && !initializing() && (crossProvider() || (!automatic() && Boolean(target.value) && !sameAccount()));
+      const policyEnabled = () => ((crossProvider() ? targetCatalog : current.runtime_catalog)?.account_selection
+        || current.providers?.find(row => row.id === backend.value)?.account_selection)?.enabled === true;
+      const readParameters = () => ({...editor.read(), ...(policyEnabled() ? {account_selection: policy.value} : {})});
       const targetContextOptions = () => {
         const [provider, account] = selected();
         return current.accounts?.[provider]?.find(row => row.id === account || row.account_id === account)?.context_options || [];
@@ -507,11 +519,11 @@
       // The server owns transfer capabilities. Prefer preservation, then summary
       // handoff; never turn an unsupported transfer into a blank session.
       const contextChoice = () => ["preserve", "compact"].map(id => targetContextOptions().find(row => row.id === id && row.enabled)).find(Boolean);
-      const readEditor = () => { try { return JSON.stringify(editor.read()); } catch (_) { return "invalid"; } };
+      const readEditor = () => { try { return JSON.stringify(readParameters()); } catch (_) { return "invalid"; } };
       const parametersChanged = () => Boolean(current.onSave) && readEditor() !== baseline;
       const renderContext = () => {
         const choice = contextChoice();
-        find("[data-switch-context-status]").textContent = window.PortalI18n.t(!target.value || sameAccount() ? ""
+        find("[data-switch-context-status]").textContent = window.PortalI18n.t(!switching() || (crossProvider() && !targetReady) || !selected()[1] ? ""
           : choice?.id === "preserve" ? choice.description
           : choice ? "目标账号无法完整保留上下文，将通过摘要交接后继续。"
           : "目标账号暂不支持保留上下文或摘要交接，无法切换；原会话保持不变。");
@@ -524,14 +536,20 @@
         find('[data-runtime-section="initialization"]').hidden = !init;
         editor.element.hidden = cross || !current.onSave;
         find('[data-runtime-section="parameters"]').hidden = !cross && !current.onSave;
-        find("[data-target-editor-host]").hidden = !cross;
+        find("[data-target-editor-host]").hidden = !cross || !targetReady;
+        const catalogNotice = find("[data-target-catalog-status]");
+        catalogNotice.hidden = !cross || targetReady;
+        catalogNotice.textContent = window.PortalI18n.t(catalogStatus);
+        find("[data-session-policy-field]").hidden = !policyEnabled();
+        find("[data-session-account-field]").hidden = automatic();
+        find("[data-session-policy-hint]").hidden = !automatic();
         const creditTarget = init ? [current.source?.provider, current.source?.account_id] : selected();
         const showCredits = current.credits_confirmation?.allowed === true && (switchingAccount || init)
-          && creditTarget[0] === "codex" && Boolean(creditTarget[1]);
+          && (init || !automatic()) && creditTarget[0] === "codex" && Boolean(creditTarget[1]);
         find("[data-session-credits-confirmation]").hidden = !showCredits;
         creditsConsent.disabled = locked || !showCredits;
         find("[data-session-credits-description]").textContent = window.PortalI18n.t("本次目标账号：") + canonicalAccount(...creditTarget);
-        target.disabled = locked; backend.disabled = locked;
+        target.disabled = locked || automatic(); backend.disabled = locked; policy.disabled = locked;
         editor.element.disabled = locked; targetEditor.element.disabled = locked;
         const choice = contextChoice();
         find("[data-switch-context-description]").textContent = window.PortalI18n.t(switchingAccount && choice?.id === "compact" ? choice.description : "");
@@ -541,8 +559,9 @@
         else if (init) { label = "继续当前初始化"; disabled = locked || !restart; }
         else if (switchingAccount) {
           label = choice?.id === "compact" ? "交接并切换" : "切换账号";
-          disabled = locked || !choice || (cross && !targetReady);
+          disabled = locked || !choice || !selected()[1] || (cross && !targetReady);
         }
+        if (!retry && !init && !automatic() && canSwitch() && !selected()[1]) disabled = true;
         submit.disabled = disabled;
         submit.textContent = window.PortalI18n.t(submitting ? "正在提交…" : label);
         saveHint.textContent = window.PortalI18n.t(tracking || retry || init ? ""
@@ -554,16 +573,27 @@
       const loadTarget = async () => {
         const revision = ++catalogRevision;
         const cross = switching() && crossProvider();
-        targetReady = false; update();
+        targetReady = false; targetCatalog = null;
+        catalogStatus = "正在读取所选后端的模型…"; update();
         if (!cross) return;
         const [provider, account] = selected();
+        if (provider === "provider_api" && !account) {
+          catalogStatus = "请先选择 API 账号，再配置模型。"; update(); return;
+        }
         try {
-          const catalog = await restartService.runtimeCatalog({backend: provider, accountId: canonicalAccount(provider, account)});
+          const catalog = await restartService.runtimeCatalog({backend: provider,
+            ...(!automatic() && account ? {accountId: canonicalAccount(provider, account)} : {})});
           if (revision !== catalogRevision || !element.isConnected) return;
-          targetEditor.open({}, {catalog, showApiAccount: false, hint: window.PortalI18n.t("请选择目标 Provider 的模型。")});
-          targetReady = true;
+          targetCatalog = catalog;
+          if (!policyEnabled()) policy.value = "fixed";
+          targetEditor.open({}, {catalog, showApiAccount: false, showAccountSelection: false,
+            hint: window.PortalI18n.t("请选择目标后端的模型。")});
+          targetReady = true; renderContext();
         } catch (error) {
-          if (revision === catalogRevision) window.PortalUI.toast(window.PortalUI.errorMessage("读取目标模型", error), "error");
+          if (revision === catalogRevision) {
+            catalogStatus = window.PortalUI.errorMessage("读取目标模型", error);
+            window.PortalUI.toast(catalogStatus, "error");
+          }
         } finally { if (revision === catalogRevision) update(); }
       };
       const detach = () => { catalogRevision++; unobserve?.(); unobserve = null; };
@@ -580,8 +610,11 @@
           : choices.length === 1 ? choices[0].value : "";
       };
       element.addEventListener("change", event => {
-        if (event.target === backend) fillAccounts(backend.value);
-        if (event.target === target || event.target === backend) {
+        if (event.target === backend) {
+          fillAccounts(backend.value);
+          if (backend.value === "provider_api") policy.value = "fixed";
+        }
+        if (event.target === target || event.target === backend || event.target === policy) {
           creditsConsent.checked = false; requestKey = requestId(); renderContext(); void loadTarget(); return;
         }
         if (event.target === creditsConsent) { requestKey = requestId(); return; }
@@ -612,10 +645,11 @@
             if (!restart) return;
             const [provider, account] = initializing() || !switching() ? [current.source?.provider, current.source?.account_id] : selected();
             const cross = !retry && switching() && crossProvider();
-            const runtime = cross ? targetEditor.read({complete: true}) : {};
+            const runtime = {...(cross ? targetEditor.read({complete: true}) : {}),
+              ...(policyEnabled() ? {account_selection: policy.value} : {})};
             if (cross && !runtime.model) throw new Error("请选择目标 Provider 的模型。");
             // Parameters edited together with a same-Provider switch are saved first.
-            const parameters = !retry && !cross && parametersChanged() ? editor.read() : null;
+            const parameters = !retry && !cross && parametersChanged() ? readParameters() : null;
             const consent = consentFor(provider, account);
             submitting = true; update();
             if (!retry && initializing()) {
@@ -634,7 +668,7 @@
             const result = retry
               ? await restartService.retrySessionRestart(current.resident_id)
               : await restart({operation: contextChoice()?.id === "preserve" ? "switch_account" : "restart",
-                target_provider: provider, target_account: account,
+                target_provider: provider, ...(!automatic() ? {target_account: account} : {}),
                 context_strategy: contextChoice().id,
                 ...(consent ? {credits_consent: consent} : {}),
                 active_execution_policy: "wait", resume_failed_input: false, ...runtime, idempotency_key: requestKey});
@@ -643,7 +677,7 @@
             if (result?.status === "completed") done({accepted: true});
             return;
           }
-          const values = editor.read();
+          const values = readParameters();
           submitting = true; update();
           await current.onSave(values);
           done({accepted: true});
@@ -659,7 +693,7 @@
       else element.addEventListener("submit", event => { event.preventDefault(); void submitPanel(); });
       const panel = {
         element, detach,
-        focusTarget: () => (current.initial_view === "parameters" && current.onSave) || !canSwitch() ? editor.model : target,
+        focusTarget: () => (current.initial_view === "parameters" && current.onSave) || !canSwitch() ? editor.model : backend,
         open(config = {}, onRestart = null, onReload = null, onCancel = null) {
           lastOpen = [config, onRestart, onReload, onCancel];
           detach();
@@ -671,8 +705,10 @@
           backend.replaceChildren(...providers.map(provider => new Option(provider.label || provider.id, provider.id)));
           backend.value = providers.some(provider => provider.id === current.source?.provider) ? current.source.provider : providers[0]?.id || "";
           fillAccounts(backend.value);
-          renderContext();
-          editor.open(current.runtime_settings || {}, {catalog: current.runtime_catalog, showApiAccount: false, hint: ""});
+          policy.value = current.runtime_settings?.account_selection || "fixed";
+          if (backend.value === "provider_api") policy.value = "fixed";
+          targetCatalog = null; targetReady = false; renderContext();
+          editor.open(current.runtime_settings || {}, {catalog: current.runtime_catalog, showApiAccount: false, showAccountSelection: false, hint: ""});
           baseline = readEditor();
           progress.update(restartView);
           void showResidentBackendNotices(find("[data-resident-backend-notices]"), current.resident_id, {accountId: current.source?.account_id, settings: current.runtime_settings || {}});
