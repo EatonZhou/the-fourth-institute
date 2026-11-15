@@ -586,7 +586,7 @@ class ExecutionRecords:
                 "NULLIF(e.provider_session_ref,'') IS NOT NULL AS session_ref_recorded,"
                 "NULLIF(e.provider_turn_id,'') IS NOT NULL AS turn_id_recorded,"
                 "o.operation_id IS NOT NULL AS submission_recorded,o.created_at AS submitted_at,"
-                "o.data_json->>'service_type' AS service_type,o.data_json->>'operation' AS operation "
+                "o.data_json::jsonb->>'service_type' AS service_type,o.data_json::jsonb->>'operation' AS operation "
                 "FROM executions e LEFT JOIN agent_operations o "
                 "ON o.operation_id=%s AND o.kind='execution_submission' AND o.agent_id=e.agent_id "
                 "WHERE e.execution_id=%s AND e.agent_id=%s AND EXISTS "

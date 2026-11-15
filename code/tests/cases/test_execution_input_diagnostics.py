@@ -269,3 +269,14 @@ def test_durable_projection_redacts_invalid_operation_and_reads_only_exact_provi
     assert result['execution_submission']['service_type'] == ('unknown' if invalid_service else 'agent_session')
     assert result['provider_link'] == {'session_ref_recorded': True, 'turn_id_recorded': True}
     assert 'private' not in json.dumps(result) and 'request_digest' not in json.dumps(result)
+
+
+def test_durable_projection_reads_legacy_text_operation_storage(admitted_execution):
+    store, request = admitted_execution
+    Scheduler().submit(request)
+    store.database.write(lambda connection: connection.execute(
+        'ALTER TABLE agent_operations ALTER COLUMN data_json TYPE TEXT USING data_json::text'))
+    result = store.input_diagnostics(request.execution_id, agent_id=request.agent_id, message_id='input')
+    assert result['execution_submission']['recorded'] is True
+    assert result['execution_submission']['service_type'] == 'agent_session'
+    assert result['execution_submission']['operation'] == 'turn'
