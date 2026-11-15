@@ -30,6 +30,36 @@ def credits(payload: dict[str, Any]) -> dict[str, Any] | None:
             "has_credits": value.get("hasCredits") is True, "unlimited": value.get("unlimited") is True}
 
 
+def rate_limit_windows(payload, *, observed_at):
+    """Preserve every returned pool for display; account admission uses codex only."""
+    pools = payload.get('rateLimitsByLimitId')
+    pools = dict(pools) if isinstance(pools, dict) else {}
+    legacy = payload.get('rateLimits')
+    if isinstance(legacy, dict):
+        group = legacy.get('limitId') or 'codex'
+        pools.setdefault(group, legacy)
+    result = []
+    for group, limit in pools.items():
+        if not isinstance(group, str) or not isinstance(limit, dict):
+            continue
+        title = limit.get('limitName')
+        title = title if isinstance(title, str) and title.strip() else group
+        for name in ('primary', 'secondary'):
+            window = limit.get(name)
+            if not isinstance(window, dict):
+                continue  # Not returned is distinct from exhausted or unknown.
+            used = window.get('usedPercent')
+            valid = type(used) in (int, float) and math.isfinite(used) and used >= 0
+            minutes = window.get('windowDurationMins')
+            label = '每周' if minutes == 10080 else '5 小时' if minutes == 300 else name
+            result.append({'id': name if group == 'codex' else f'{group}/{name}',
+                'quota_group': group, 'label': label if group == 'codex' else f'{title} · {label}',
+                'remaining_percent': max(0.0, 100.0-used) if valid else None,
+                'window_duration_mins': minutes, 'resets_at': window.get('resetsAt'),
+                'observed_at': observed_at, 'stale': False})
+    return result
+
+
 def quota_sample(payload: dict[str, Any], *, observed_at: float) -> dict[str, Any]:
     limits = _codex_limits(payload)
     windows = []

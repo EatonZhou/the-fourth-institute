@@ -219,7 +219,7 @@ class CodexAccounts:
 
     def observe(self, account, *, force=False):
         from management_portal.codex_app_server_client import client_for_socket
-        from .codex_quota import credits, quota_sample
+        from .codex_quota import credits, quota_sample, rate_limit_windows
         from .account_observation import quota_preflight
         with quota_preflight():
             route = self.registry.get(account.route_id)
@@ -238,13 +238,7 @@ class CodexAccounts:
             credit_sample.update(observed_at=sample["observed_at"], stale=False)
         return {"status": "ok", "quota": sample, "credits": credit_sample,
                 "refresh_cards": reset_cards(payload, observed_at=sample['observed_at']),
-                "rate_limits": [{"id": window["window"], "quota_group": "codex",
-                                 "label": "每周" if window.get("window_duration_mins") == 10080 else "5 小时" if window.get("window_duration_mins") == 300 else window["window"],
-                                 "remaining_percent": window["remaining_percent"],
-                                 "window_duration_mins": window.get("window_duration_mins"),
-                                 "resets_at": window.get("resets_at"),
-                                 "observed_at": sample["observed_at"],
-                                 "stale": False} for window in sample["windows"]]}
+                "rate_limits": rate_limit_windows(payload, observed_at=sample['observed_at'])}
 
 
 class ClaudeAccounts:

@@ -217,7 +217,9 @@ def test_catalog_failure_is_observable_without_exposing_exception_text(scheduler
         caplog.clear()
         catalog.side_effect = None
         catalog.return_value = {"models": ["fixture-model"]}
-        monitor.refresh_account(account, force=True)
+        # Force also obeys the shared 10-minute admission interval.
+        with mock.patch('management_portal.execution.account_monitor.time.time', return_value=time.time() + 601):
+            monitor.refresh_account(account, force=True)
         assert catalog.call_count == 2
         recovered = next(row for row in monitor.snapshot()["accounts"] if row["account_id"] == account.account_id)
         assert recovered["selection_catalog"]["fresh"] is True
