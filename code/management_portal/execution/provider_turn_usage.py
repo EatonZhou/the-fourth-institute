@@ -330,6 +330,22 @@ def _kimi_request_usage(raw: Mapping[str, Any]) -> dict[str, int]:
     )
 
 
+def kimi_usage_identity(record: object, agent: str, occurrences: dict[str, int]) -> str:
+    """Identity of a durable UsageRecord, shared by ledger and offline readers.
+
+    Native 2.4.1 records are additive events without upstream request IDs.
+    Preserve identical occurrences; count from the beginning, before time slicing.
+    """
+    if (not isinstance(record, dict) or record.get('type') != 'usage.record'
+            or str(record.get('agentId') or 'main') != agent
+            or not isinstance(record.get('usage'), dict)):
+        return ''
+    digest = hashlib.sha256(json.dumps(record, sort_keys=True).encode()).hexdigest()
+    occurrences[digest] = occurrences.get(digest, 0) + 1
+    return str(record.get('requestId') or record.get('id') or
+               f'{agent}:{digest}:{occurrences[digest]}')
+
+
 def read_kimi_turn_usage(path: str | Path, *, since_ms: int, until_ms: int = 0) -> ObservedTurnUsage | None:
     """Sum the model requests of the Kimi session since ``since_ms``.
 
@@ -344,6 +360,7 @@ def read_kimi_turn_usage(path: str | Path, *, since_ms: int, until_ms: int = 0) 
     requests: list[dict[str, Any]] = []
     for wire in wires:
         agent = "main" if wire == main else wire.parent.name
+        occurrences: dict[str, int] = {}
         for line in _lines(wire):
             if '"usage.record"' not in line:
                 continue
@@ -351,23 +368,35 @@ def read_kimi_turn_usage(path: str | Path, *, since_ms: int, until_ms: int = 0) 
                 record = json.loads(line)
             except json.JSONDecodeError:
                 continue
+            identity = kimi_usage_identity(record, agent, occurrences)
+            if identity and not (record.get('requestId') or record.get('id')):
+                # Preserve IDs already accepted by the ledger before this fix.
+                # Only subsequent identical occurrences need a new suffix.
+                ordinal = int(identity.rsplit(':', 1)[1])
+                legacy = hashlib.sha256(line.encode('utf-8')).hexdigest()[:32]
+                identity = legacy if ordinal == 1 else f'{legacy}:{ordinal}'
             if (
-                not isinstance(record, dict)
-                or record.get("type") != "usage.record"
-                or str(record.get("agentId") or "main") != agent
-                or not isinstance(record.get("usage"), dict)
-                or _count(record.get("time")) < since_ms
+                not identity or _count(record.get("time")) < since_ms
                 or (until_ms and _count(record.get("time")) > until_ms)
             ):
                 continue
             requests.append({
-                "id": hashlib.sha256(line.encode("utf-8")).hexdigest()[:32],
+                "id": identity,
                 "usage": _kimi_request_usage(record["usage"]),
                 "at": _from_epoch_ms(_count(record.get("time"))),
                 "context": agent == "main" and str(record.get("usageScope") or "turn") == "turn",
                 "model": str(record.get("model") or ""),
             })
-    return _observed(sorted(requests, key=lambda request: request["at"]), prefix="kimi")
+    unique: dict[str, dict[str, Any]] = {}
+    for request in requests:
+        previous = unique.get(request['id'])
+        if previous is not None:
+            request['usage'] = {name: max(previous['usage'].get(name, 0), request['usage'].get(name, 0))
+                                for name in TOKEN_USAGE_KEYS
+                                if max(previous['usage'].get(name, 0), request['usage'].get(name, 0)) > 0}
+            request['at'] = min(previous['at'], request['at'])
+        unique[request['id']] = request
+    return _observed(sorted(unique.values(), key=lambda request: request["at"]), prefix="kimi")
 
 
 def kimi_reported_usage(raw: object) -> dict[str, int]:

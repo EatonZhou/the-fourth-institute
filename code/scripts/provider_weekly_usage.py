@@ -23,7 +23,7 @@ from zoneinfo import ZoneInfo
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from management_portal.execution.scheduler_usage import normalize_token_usage
-from management_portal.execution.provider_turn_usage import anthropic_request_usage, _kimi_request_usage, _CAMEL_KEYS
+from management_portal.execution.provider_turn_usage import anthropic_request_usage, _kimi_request_usage, _CAMEL_KEYS, kimi_usage_identity
 from management_portal.codex_app_server_client import codex_token_usage_delta
 from scripts.provider_usage_native import expand_sources, opencode_rows, antigravity_rows, quota_rows, record_path
 from scripts.provider_usage_quota_scope import scope_quota_rows
@@ -213,12 +213,11 @@ class KimiSource(NativeSource):
     def read(self):
         cursor = self.source.get('_cursor')
         occurrences = cursor.setdefault('parser', {}).setdefault('occurrences', {}) if cursor is not None else {}
-        agent = Path(self.source['path']).parent.name
+        parent = Path(self.source['path']).parent
+        agent = parent.name if parent.parent.name == 'agents' else 'main'
         for row in rows(self.source['path'], self.gaps, ('"usage.record"',), cursor):
-            if row.get('type') == 'usage.record':
-                digest = hashlib.sha256(json.dumps(row, sort_keys=True).encode()).hexdigest()
-                occurrences[digest] = occurrences.get(digest, 0) + 1
-                identity = row.get('requestId') or row.get('id') or f'{agent}:{digest}:{occurrences[digest]}'
+            identity = kimi_usage_identity(row, agent, occurrences)
+            if identity:
                 if not (row.get('requestId') or row.get('id')):
                     self.gaps.add('kimi_no_upstream_request_id_local_occurrence_identity')
                 if not row.get('time'):
