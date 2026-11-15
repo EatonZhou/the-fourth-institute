@@ -226,6 +226,8 @@ class PublicPagesHttp:
                     '/static/lineage_templates_editor_pages.js',
                     '/static/lineage_templates_resident_settings.js',
                     '/static/lineage_templates_shelf.js',
+                    '/static/template_store.css',
+                    '/static/template_store.js',
                     '/static/lineage_workbench.css',
                     '/static/lineage_workbench.js',
                     '/static/lineage_workbench_controller.js',

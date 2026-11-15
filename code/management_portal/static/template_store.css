@@ -1,0 +1,33 @@
+.templateStore {
+  --store-surface:var(--panel); --store-border:var(--border); --store-ink:var(--text); --store-radius:12px;
+  width:min(940px, calc(100vw - 32px)); max-width:calc(100vw - 32px); max-height:85dvh;
+  padding:16px; border:1px solid var(--store-border); border-radius:var(--store-radius);
+  background:var(--store-surface); color:var(--store-ink); overflow:auto;
+}
+.templateStore::backdrop { background:#0005; }
+.templateStoreSmall { width:min(460px,calc(100vw - 32px)); }
+.templateStoreHeader,.templateStoreFilters,.templateStoreGroups,.templateStoreActions { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+.templateStoreHeader { justify-content:space-between; margin-bottom:12px; }
+.templateStoreFilters input { flex:1; min-width:120px; }
+.templateStoreGroups button[aria-pressed=true] { background:var(--accent); color:var(--panel); }
+.templateStoreBody { display:grid; grid-template-columns:minmax(0,1fr); gap:16px; }
+.templateStore.has-detail .templateStoreBody { grid-template-columns:minmax(0,1.3fr) minmax(0,1fr); }
+.templateStoreGrid { display:grid; grid-template-columns:repeat(auto-fill,minmax(min(150px,100%),1fr)); gap:10px; align-content:start; }
+.templateStoreCard { display:grid; gap:8px; border:1px solid var(--store-border); border-radius:var(--store-radius); padding:10px; min-width:0; }
+.templateStoreCardOpen { display:grid; justify-items:center; gap:6px; border:0; background:transparent; color:inherit; cursor:pointer; min-width:0; }
+.templateStoreCardOpen > svg { width:100%; height:84px; fill:none; stroke:currentColor; stroke-width:1.6; }
+.templateStoreCardOpen strong,.templateStoreCardOpen small { max-width:100%; overflow-wrap:anywhere; }
+.templateStoreCardOpen small,.templateStoreDetails > small { opacity:.7; }
+.templateStoreDetails { min-width:0; overflow-wrap:anywhere; border-left:1px solid var(--store-border); padding-left:16px; }
+.templateStoreDetails[hidden] { display:none; }
+.templateStoreDetails p { white-space:pre-wrap; }
+.templateStoreChips { display:flex; flex-wrap:wrap; gap:6px; }
+.templateStoreChips > * { padding:3px 6px; border:1px solid var(--store-border); border-radius:6px; font-size:12px; }
+.templateStoreActions { margin-top:18px; }
+.templateStoreStatus:empty { display:none; }
+.templateStoreChoices { display:grid; gap:10px; }
+@media(max-width:620px) {
+  .templateStore.has-detail .templateStoreGrid { display:none; }
+  .templateStore.has-detail .templateStoreBody { grid-template-columns:minmax(0,1fr); }
+  .templateStoreDetails { padding-left:0; border:0; }
+}

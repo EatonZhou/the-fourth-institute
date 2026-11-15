@@ -163,7 +163,7 @@
       assert.equal(f.shelf.querySelector('[data-toolbox-group="organizations"] h4').textContent,'Organizations');
     }finally{f.close();}
   });
-  test('drawer dock, store placeholder, pickup close and retained primitive sources use actual markup/bindings',()=>{
+  test('drawer dock, store entry, pickup close and retained primitive sources use actual markup/bindings',()=>{
     const dom=new JSDOM(fs.readFileSync(path.join(root,'management_portal/hatg-panel.html'),'utf8'),{runScripts:'outside-only'}),w=dom.window;
     try{
       const drawer=w.document.getElementById('hatgToolbox'),toggle=w.document.getElementById('hatgToolboxToggle');
@@ -178,7 +178,9 @@
       w.ResizeObserver=class{observe(){} disconnect(){}};
       w.PortalOverlay={bindPopover:()=>({toggle(){},destroy(){}})};
       w.PortalHatgPanelBindings.createBindings(deps).bindActions();
-      const store=w.document.querySelector('#hatgToolboxStore button');assert.equal(store.disabled,true);assert.equal(store.title,'商店即将上线');
+      let storeOpened=false;w.PortalTemplateStore={open:()=>{storeOpened=true;}};
+      const store=w.document.querySelector('#hatgToolboxStore button');assert.equal(store.disabled,false);assert.equal(store.title,'模板商店');
+      toggle.click();store.click();assert.equal(storeOpened,true);assert.equal(drawer.hidden,true);
       toggle.click();assert.equal(drawer.hidden,false);
       drawer.dispatchEvent(new w.CustomEvent('portal:template-picked',{bubbles:true}));
       assert.equal(drawer.hidden,true);assert.equal(toggle.getAttribute('aria-expanded'),'false');

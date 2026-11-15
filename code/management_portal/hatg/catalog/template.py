@@ -33,6 +33,22 @@ CONTENT = (
 )
 TEMPLATE = (R("template", "object", "规范模板，含 behavior、editor 与本次施加参数说明 application_parameters"),)
 DECLARATIONS = (
+    _d("ListTemplateStore", FIXED, "浏览已上架的模板快照及当前调用者的安装状态。",
+       (P("search", description="搜索标题、说明、发布者"),
+        P("group", description="模板分组", enum=("duty", "role", "organization", "task")),
+        P("store_id", description="精确读取上架条目 store-<12hex>")),
+       (R("items", "array", "发布快照、施加指令、版本历史与安装状态"),), target=""),
+    _d("PublishTemplate", FIXED, "发布本人非内置模板的快照；再次发布递增版本并恢复上架。",
+       (R("template_id", description="本人创建的源模板"), P("release_note", description="可选的一句版本说明")),
+       (R("item", "object", "发布后的商店条目"), *TEMPLATE), mutates=True),
+    _d("InstallStoreTemplate", FIXED, "把上架快照安装到个人工具箱，或覆盖更新、保留本地修改并另存新版。",
+       (R("store_id", description="商店条目 store-<12hex>"),
+        P("target_template_id", description="本人从该条目安装的模板"),
+        P("mode", description="默认 install；overwrite 原地覆盖，copy 解除旧副本关联并新建安装件", enum=("install", "overwrite", "copy"))),
+       (*TEMPLATE, P("detached_template_id", description="保留本地修改并解除关联的旧模板")), mutates=True, target="store_id"),
+    _d("UnpublishTemplate", FIXED, "发布者或公共内容管理员下架条目，已安装副本保留。",
+       (R("store_id", description="要下架的商店条目"),),
+       (R("store_id", description="已下架条目"), R("active", "boolean", "固定为 false")), mutates=True, target="store_id"),
     _d(
         "ListTemplates",
         FIXED,

@@ -8,6 +8,7 @@
     {key: 'errands', label: '交办', kinds: ['prompt', 'explore', 'script']},
   ]);
   const groupFor = kind => GROUPS.find(group => group.kinds.includes(kind))?.key || 'errands';
+  const storeGroupFor = kind => ({duties:'duty',roles:'role',organizations:'organization',errands:'task'})[groupFor(kind)];
   const GLYPHS = Object.freeze({
     prompt: '<path d="M24 20h52v32H48L32 66V52h-8z"/>',
     familize: '<circle cx="50" cy="26" r="9"/><circle cx="28" cy="60" r="9"/><circle cx="72" cy="60" r="9"/><path d="M50 35v10H28v6m22-6h22v6"/>',
@@ -19,6 +20,10 @@
     'resolveTarget', 'shelf', 't', 'targetLabels', 'templatesState', 'toast', 'promptText',
   ]);
   const OPTIONAL = Object.freeze(['canvas', 'getContext', 'request', 'resolveTarget', 'shelf', 'toast']);
+  function thumbnail(item) {
+    return item.kind === 'structure' ? window.LineageTemplateGraph.thumbnail(item.body || {})
+      : `<svg class="templateThumbnail templateModuleGlyph" viewBox="0 0 100 84" aria-hidden="true">${GLYPHS[item.kind] || GLYPHS.script}</svg>`;
+  }
   function createShelf(dependencies) {
     const missing = DEPENDENCIES.filter(name => !OPTIONAL.includes(name) && dependencies?.[name] === undefined);
     if (missing.length) throw new Error(`LineageTemplatesShelf is missing: ${missing.join(', ')}`);
@@ -36,10 +41,6 @@
     const ghost = document.createElement('div');
     ghost.className = 'templateCarryPreview'; ghost.hidden = true; ghost.setAttribute('aria-hidden', 'true');
     document.body.append(dropHint, ghost);
-    function thumbnail(item) {
-      return item.kind === 'structure' ? window.LineageTemplateGraph.thumbnail(item.body || {})
-        : `<svg class="templateThumbnail templateModuleGlyph" viewBox="0 0 100 84" aria-hidden="true">${GLYPHS[item.kind] || GLYPHS.script}</svg>`;
-    }
     function render() {
       if (templatesState.disposed) return;
       if (templatesState.application && templatesState.application.lineageId !== getContext().lineage_id) templatesState.application.close();
@@ -48,10 +49,10 @@
       const visible = templatesState.templates.filter(item => item.builtin_key !== 'workshop_assistant' && (item.builtin_key || (user && item.created_by === user)) && (!config.structureOnly || item.kind === 'structure'));
       shelf.innerHTML = [...(config.toolboxGroups || []), ...GROUPS].filter(group => !config.structureOnly || group.key !== 'errands').map(group => {
         const rows = visible.filter(item => (item.toolbox_group || groupFor(item.kind)) === group.key);
-        const cards = rows.map(item => `<button type="button" class="templateTile" draggable="true"
+        const cards = rows.map(item => `<div class="templateTileWrap"><button type="button" class="templateTile" draggable="true"
           data-template-id="${esc(item.template_id)}" aria-label="${esc(t(item.title))}"
           title="${esc([t(item.title), t(item.description), t('单击拿起，双击在工坊中打开；按 Escape 或右键取消')].filter(Boolean).join('\n'))}">
-          ${thumbnail(item)}<span class="templateTileTitle">${esc(t(item.title))}</span></button>`).join('');
+          ${thumbnail(item)}<span class="templateTileTitle">${esc(t(item.title))}</span></button>${item.store_status?.has_update ? `<button type="button" class="templateUpdateBadge portalButton is-compact" data-store-update="${esc(item.template_id)}">${esc(t('有更新'))}</button>` : ''}</div>`).join('');
         return `<section class="templateToolboxGroup" data-toolbox-group="${group.key}"><h4>${esc(t(group.label))}</h4>${
           rows.length ? `<div class="templateToolboxCards">${cards}</div>`
             : `<p class="templateEmpty">${esc(t(group.key === 'roles' ? '还没有角色模板' : '暂无模板'))}</p>`}</section>`;
@@ -114,11 +115,17 @@
       return picked ? find(picked.id) : null;
     }
     listen(window, 'focus', () => { void load().catch(report); });
+    listen(window, 'portal:templates-changed', () => { void load().catch(report); });
     listen(window, 'portal:identity-changed', () => {
       identity++; loading = null; dragged = ''; cancelPlacement();
       templatesState.templates = []; render(); void load().catch(report);
     });
     listen(shelf, 'click', event => {
+      const update = event.target.closest('[data-store-update]');
+      if (update) {
+        event.preventDefault(); event.stopPropagation(); cancelPlacement();
+        void window.PortalTemplateStore.updateTemplate(find(update.dataset.storeUpdate), {request}).catch(report); return;
+      }
       const tile = event.target.closest('[data-template-id]');
       if (!tile) return;
       event.preventDefault();
@@ -194,5 +201,5 @@
     abort.signal.addEventListener('abort', () => { cancelPlacement(); ghost.remove(); });
     return {abort, dropHint, find, load, render, unsupported};
   }
-  window.LineageTemplatesShelf = Object.freeze({createShelf, groupFor, dependencies: DEPENDENCIES});
+  window.LineageTemplatesShelf = Object.freeze({createShelf, groupFor, storeGroupFor, thumbnail, dependencies: DEPENDENCIES});
 })();

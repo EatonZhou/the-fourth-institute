@@ -4,7 +4,7 @@
   const esc = text => window.PortalUIPrimitives.escapeHtml(String(text ?? ''));
   const clone = value => JSON.parse(JSON.stringify(value));
   const request = (name, args, options) => window.PortalInstructionClient.execute(name, args, options);
-  function mount({root, lineageId, templateId = '', execute = request, onSaved, onDeleted}) {
+  function mount({root, lineageId, templateId = '', storeId = '', execute = request, onSaved, onDeleted, onOpenWorkshop}) {
     root.querySelectorAll('[id]').forEach(node => { node.dataset.workshopId ||= node.id; });
     const element = id => root.querySelector(`[data-workshop-id="${id}"],#${id}`);
     let form = element('workshopEditor');
@@ -12,7 +12,7 @@
     const drawer = element('workshopToolbox');
     const shelf = element('workshopShelf');
     const sessionId = window.PortalUIPrimitives.randomUUID();
-    let runtime = null, templates = null, base = '', fresh = !templateId;
+    let runtime = null, templates = null, base = '', fresh = !templateId && !storeId, previewItem = null;
     let removed = false;
     let documentRevision = 0;
     const abort = new AbortController();
@@ -33,7 +33,7 @@
     };
     async function save(payload, copy = false) {
       const id = runtime.draft.template_id;
-      const own = !id || (!runtime.draft.builtin_key && runtime.draft.created_by === window.PortalIdentity.username());
+      const own = !previewItem && (!id || (!runtime.draft.builtin_key && runtime.draft.created_by === window.PortalIdentity.username()));
       if (!copy && !own) throw new Error(t('请用 Save As 保存为自己的模板'));
       const name = id && !copy ? 'UpdateTemplate' : 'CreateTemplate';
       const args = name === 'UpdateTemplate' ? {template_id: id, template: payload} : {template: payload};
@@ -42,8 +42,10 @@
       fresh = false;
       if (copy) documentRevision += 1;
       templateId = result.template.template_id;
+      storeId = ''; previewItem = null;
       onSaved?.(result.template);
       runtime.edit(result.template);
+      window.dispatchEvent(new CustomEvent('portal:templates-changed',{detail:{template:result.template}}));
       await templates.load();
       changed();
       return result.template;
@@ -69,7 +71,7 @@
             finally {
               view.working = false; buttons.forEach(button => { button.disabled = false; });
               const saveButton = view.root.querySelector('[data-workshop-save]');
-              if (saveButton && runtime) saveButton.disabled = !!runtime.draft.template_id && (!!runtime.draft.builtin_key || runtime.draft.created_by !== window.PortalIdentity.username());
+              if (saveButton && runtime) saveButton.disabled = !!previewItem || (!!runtime.draft.template_id && (!!runtime.draft.builtin_key || runtime.draft.created_by !== window.PortalIdentity.username()));
             }
           },
         };
@@ -82,8 +84,25 @@
         if (runtime.draft.kind !== 'structure') drawer.hidden = true;
         base = JSON.stringify(runtime.readDraft());
         const saveButton = form.querySelector('[data-workshop-save]');
-        saveButton.disabled = !!runtime.draft.template_id && (!!runtime.draft.builtin_key || runtime.draft.created_by !== window.PortalIdentity.username());
+        saveButton.disabled = !!previewItem || (!!runtime.draft.template_id && (!!runtime.draft.builtin_key || runtime.draft.created_by !== window.PortalIdentity.username()));
         element('workshopChatSave').disabled = saveButton.disabled;
+        if (previewItem) {
+          const install = document.createElement('button'); install.type = 'button'; install.className = 'portalButton'; install.textContent = t('安装'); install.dataset.workshopInstall = '';
+          install.onclick = () => void runtime.view.busy(async () => {
+            const saved = await window.PortalTemplateStore.installItem(previewItem,{request:execute});
+            if (saved) { previewItem = null; storeId = ''; templateId = saved.template_id; fresh = false; runtime.edit(saved); onSaved?.(saved); }
+          });
+          runtime.view.footer.append(install);
+        } else if (runtime.draft.template_id && !runtime.draft.builtin_key && runtime.draft.created_by === window.PortalIdentity.username()) {
+          const publish = document.createElement('button'); publish.type = 'button'; publish.className = 'portalButton'; publish.dataset.workshopPublish = '';
+          publish.textContent = t(runtime.draft.published_store?.active ? '发布新版本' : '发布到商店');
+          publish.onclick = () => void runtime.view.busy(async () => {
+            if (dirty()) { error(t('请先 Save 保存当前模板')); return; }
+            const saved = await window.PortalTemplateStore.publish(runtime.draft,{request:execute});
+            if (saved) runtime.edit(saved);
+          });
+          runtime.view.footer.append(publish);
+        }
         changed();
       },
     };
@@ -124,12 +143,20 @@
       },
     });
     listen(root, 'click', async event => {
+      if (event.target.closest('[data-workshop-store]')) {
+        drawer.hidden = true;
+        window.PortalTemplateStore.open({request:execute,lineageId,onOpenWorkshop:resource => onOpenWorkshop?.(resource)});
+      }
       if (event.target.closest('[data-workshop-toolbox]')) drawer.hidden = !drawer.hidden;
       if (event.target.closest('[data-workshop-chat]')) root.classList.toggle('workshopChatCollapsed');
     });
     listen(drawer, 'portal:template-picked', () => { drawer.hidden = true; runtime.editorState.graph?.select(''); });
     listen(window, 'beforeunload', event => { if (dirty()) { event.preventDefault(); event.returnValue = ''; } });
     listen(document, 'keydown', event => { if (event.key === 'Escape') drawer.hidden = true; });
+    listen(window, 'portal:templates-changed', event => {
+      const saved = event.detail?.template;
+      if (saved?.template_id === templateId && runtime && !dirty() && !runtime.view.working) runtime.edit(saved);
+    });
     const controller = {
       sessionId, lineageId, dirty, documentKey: () => `${sessionId}:${documentRevision}`,
       fit: () => runtime?.editorState.graph?.fit(),
@@ -144,7 +171,15 @@
         base = savedBase; changed();
         return true;
       },
-      async load() { await templates.load(); if (templateId) await templates.openEditor(templateId); else templates.newTemplate(); return controller; },
+      async load() {
+        await templates.load();
+        if (storeId) {
+          previewItem = (await execute('ListTemplateStore',{store_id:storeId})).items[0];
+          if (!previewItem) throw new Error(t('商店模板不存在或已下架'));
+          templates.edit({...previewItem,builtin_key:'store_preview'});
+        } else if (templateId) await templates.openEditor(templateId); else templates.newTemplate();
+        return controller;
+      },
       destroy() { abort.abort(); runtime?.view.close(); templates.destroy(); },
     };
     return controller;

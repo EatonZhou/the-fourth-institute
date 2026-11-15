@@ -129,7 +129,7 @@
     }
 
     return {
-      newTemplate, openEditor, saveSelection,
+      newTemplate, openEditor, edit, saveSelection,
     };
   }
 

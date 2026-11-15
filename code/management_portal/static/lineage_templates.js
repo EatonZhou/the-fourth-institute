@@ -135,13 +135,13 @@
       renderResidentSettings, request, residentRoles, t, targetLabels, templatesState, toast, unsupported,
       promptText, onPromptDraft: config.onPromptDraft,
     });
-    const { newTemplate, openEditor, saveSelection } = templatePart('LineageTemplatesEditing').createEditing({
+    const { newTemplate, openEditor, edit, saveSelection } = templatePart('LineageTemplatesEditing').createEditing({
       behaviorHtml, button, categories, clone, dialog, esc, field, getContext, load, optionsHtml, readField,
       renderResidentSettings, request, residentRoles, t, targetLabels, templatePart, templatePayload, templatesState,
       toast, editorHost: config.editorHost, onOpenWorkshop: config.onOpenWorkshop,
     });
 
-    return Object.freeze({ load, render, find, openEditor, newTemplate, apply, applyFamily, saveSelection,
+    return Object.freeze({ load, render, find, openEditor, edit, newTemplate, apply, applyFamily, saveSelection,
       destroy() { templatesState.disposed = true; abort.abort(); [...dialogs].forEach(dialog => dialog.close()); dropHint.remove(); },
     });
   }

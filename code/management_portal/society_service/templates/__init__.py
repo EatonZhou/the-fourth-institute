@@ -36,9 +36,10 @@ def list_templates(target_kind=None):
         "canvas",
     }:
         raise TemplateError("未知目标类型")
+    from .marketplace import annotate
     return [
         describe(item)
-        for item in store.all_templates()
+        for item in annotate(store.all_templates())
         if target_kind is None or target_kind in item["targets"]
     ]
 
@@ -46,7 +47,8 @@ def list_templates(target_kind=None):
 def get(template_id):
     from . import store
 
-    return describe(store.get(template_id))
+    from .marketplace import annotate
+    return describe(annotate([store.get(template_id)])[0])
 
 
 def create(template, actor, *, from_selection=None, dry_run=False):
@@ -65,7 +67,9 @@ def create(template, actor, *, from_selection=None, dry_run=False):
             **(template or {}),
         }
     normalized = kinds.normalize(template)
-    return describe(normalized if dry_run else store.save(normalized, actor))
+    if dry_run:
+        return describe(normalized)
+    return get(store.save(normalized, actor)["template_id"])
 
 
 def update(template_id, changes, actor, *, dry_run=False):
@@ -80,11 +84,10 @@ def update(template_id, changes, actor, *, dry_run=False):
             raise TemplateError("模板 kind 不可修改；请另存为副本")
         return kinds.normalize({**previous, **changes})
 
-    return describe(
-        transform(store.get(template_id))
-        if dry_run
-        else store.save({}, actor, template_id=template_id, transform=transform)
-    )
+    if dry_run:
+        return describe(transform(store.get(template_id)))
+    store.save({}, actor, template_id=template_id, transform=transform)
+    return get(template_id)
 
 
 def delete(template_id):

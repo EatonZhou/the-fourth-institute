@@ -57,12 +57,11 @@
       seedInspectorObserver = null;
     }
 
-    // Replace this entry when the template store becomes available.
     function toolboxStoreEntry() {
       const button = document.createElement("button");
-      button.type = "button"; button.className = "portalButton is-icon"; button.disabled = true;
-      button.title = window.PortalI18n.t("商店即将上线");
-      button.setAttribute("aria-label", window.PortalI18n.t("商店"));
+      button.type = "button"; button.className = "portalButton is-icon";
+      button.title = window.PortalI18n.t("模板商店");
+      button.setAttribute("aria-label", window.PortalI18n.t("模板商店"));
       button.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10v10h16V10M3 10l2-6h14l2 6M8 20v-6h8v6M3 10h18"/></svg>';
       return button;
     }
@@ -79,7 +78,13 @@
       }
       const show = open => { drawer.hidden = !open; toggle.setAttribute("aria-expanded", String(open)); };
       const listen = (node, event, handler) => panelHost.pageStateController.listen("panel", node, event, handler);
-      $id("hatgToolboxStore")?.replaceChildren(toolboxStoreEntry());
+      const storeButton = toolboxStoreEntry();
+      $id("hatgToolboxStore")?.replaceChildren(storeButton);
+      listen(storeButton, 'click', () => {
+        show(false);
+        window.PortalTemplateStore.open({lineageId:state.lineage?.lineage_id || '',
+          onOpenWorkshop:resource => panelHost.hatgComponentOptions.emit('workshop-open',{resource})});
+      });
       listen(toggle, "click", () => show(drawer.hidden));
       listen(drawer, "portal:template-picked", () => show(false));
       listen($id("hatgToolboxClose"), "click", () => { show(false); toggle.focus(); });

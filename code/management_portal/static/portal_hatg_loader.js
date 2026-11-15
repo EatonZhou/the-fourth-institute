@@ -38,6 +38,8 @@
     "/static/lineage_template_graph.js",
     "/static/lineage_templates_dialogs.js",
     "/static/lineage_templates_shelf.js",
+    "/static/template_store.css",
+    "/static/template_store.js",
     "/static/lineage_templates_resident_settings.js",
     "/static/lineage_templates_application.js",
     "/static/lineage_templates_editing.js",

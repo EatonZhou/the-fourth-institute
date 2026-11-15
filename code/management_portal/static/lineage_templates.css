@@ -1,7 +1,9 @@
 /* The toolbox uses a vertical collection of compact preview cards. */
 .templateShelf { display:grid; gap:12px; min-width:0; }
 .templateToolboxGroup h4 { margin:0 0 8px; font-size:13px; }
-.templateToolboxCards { display:grid; grid-template-columns:repeat(auto-fill,minmax(120px,1fr)); gap:8px; }
+.templateToolboxCards { display:grid; grid-template-columns:repeat(auto-fill,minmax(min(120px,100%),1fr)); gap:8px; }
+.templateTileWrap { position:relative; min-width:0; }
+.templateUpdateBadge { position:absolute; top:3px; right:3px; }
 .templateTile { width:100%; display:grid; grid-template-rows:72px auto; gap:5px; padding:8px; border:1px solid var(--border); border-radius:8px; background:var(--panel); color:var(--text); text-align:center; cursor:grab; }
 .templateTile:active { cursor:grabbing; }
 .templateTile:is(:hover,:focus-visible) { border-color:var(--accent); background:color-mix(in srgb,var(--accent) 5%,var(--panel)); }

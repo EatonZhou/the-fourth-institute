@@ -22,6 +22,9 @@ def read_rows(connection, table):
 CONTENT = ("kind", "category", "title", "description", "targets", "parameters", "body")
 FIELDS = (
     *CONTENT,
+    "installed_from_store_id",
+    "installed_store_version",
+    "installed_store_hash",
     "builtin_key",
     "builtin_source",
     "version",
@@ -38,6 +41,18 @@ CREATE TABLE IF NOT EXISTS templates (
  version INTEGER NOT NULL, created_at TIMESTAMPTZ, created_by TEXT, updated_at TIMESTAMPTZ, updated_by TEXT
 );
 CREATE TABLE IF NOT EXISTS installed_builtins (builtin_key TEXT PRIMARY KEY, installed_at TIMESTAMPTZ NOT NULL);
+ALTER TABLE templates ADD COLUMN IF NOT EXISTS installed_from_store_id TEXT;
+ALTER TABLE templates ADD COLUMN IF NOT EXISTS installed_store_version INTEGER;
+ALTER TABLE templates ADD COLUMN IF NOT EXISTS installed_store_hash TEXT;
+CREATE TABLE IF NOT EXISTS template_store_items (
+ store_id TEXT PRIMARY KEY, source_template_id TEXT NOT NULL UNIQUE, publisher TEXT NOT NULL,
+ version INTEGER NOT NULL, release_note TEXT NOT NULL DEFAULT '',
+ kind TEXT NOT NULL, category TEXT NOT NULL, title TEXT NOT NULL, description TEXT NOT NULL DEFAULT '',
+ targets JSONB NOT NULL, parameters JSONB NOT NULL, body JSONB NOT NULL,
+ content_hash TEXT NOT NULL, versions JSONB NOT NULL DEFAULT '[]'::jsonb,
+ active BOOLEAN NOT NULL DEFAULT TRUE, published_at TIMESTAMPTZ NOT NULL,
+ updated_at TIMESTAMPTZ NOT NULL, unpublished_at TIMESTAMPTZ
+);
 """
 
 
@@ -147,6 +162,8 @@ def save(template, actor, *, template_id=None, transform=None):
         identity = template_id or "template_" + secrets.token_hex(6)
         value = {
             **deepcopy(template),
+            **{key: previous.get(key) if previous else None for key in
+               ("installed_from_store_id", "installed_store_version", "installed_store_hash")},
             "template_id": identity,
             "builtin_key": previous.get("builtin_key") if previous else None,
             "builtin_source": previous.get("builtin_source") if previous else None,

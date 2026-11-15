@@ -1094,6 +1094,22 @@
       "a": "@admin",
       "r": "@public"
     },
+    "ListTemplateStore": {
+      "a": "@viewer",
+      "r": "@public"
+    },
+    "PublishTemplate": {
+      "a": "@contributor",
+      "r": "@public"
+    },
+    "InstallStoreTemplate": {
+      "a": "@contributor",
+      "r": "@public"
+    },
+    "UnpublishTemplate": {
+      "a": "@contributor",
+      "r": "@public"
+    },
     "UpdateChatroomMessage": {
       "a": "@free",
       "r": "@portal"

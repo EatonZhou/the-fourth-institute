@@ -22,7 +22,7 @@
   }
   async function openInWorkbench(workbench, resource = {}, sourcePanelId = '') {
     const panels = workbench.getPanelsByType('workshop');
-    const same = resource.template_id && panels.find(panel => panel.target().template_id === resource.template_id);
+    const same = panels.find(panel => resource.template_id ? panel.target().template_id === resource.template_id : resource.store_id && panel.target().store_id === resource.store_id);
     if (same) { workbench.focusPanel(same.id); return same; }
     const sibling = panels[0];
     return workbench.openResource({type:'workshop',mode:sibling ? 'new-tab' : 'side',side:'right',
@@ -44,8 +44,16 @@
         host.querySelectorAll('[id]').forEach(node => { node.dataset.workshopId = node.id; node.id = `${id}-${node.id}`; });
         window.PortalI18n.renderStatic(host);
         if (root.getBoundingClientRect().width < 760) host.classList.add('workshopChatCollapsed');
-        workshop = window.LineageTemplateWorkshop.mount({root:host,lineageId:target.lineage_id || '',templateId:target.template_id || '',
-          onSaved: template => { target = {...target,template_id:template.template_id,title:template.title}; options.emit?.('workshop-saved',target); },
+        workshop = window.LineageTemplateWorkshop.mount({root:host,lineageId:target.lineage_id || '',templateId:target.template_id || '',storeId:target.store_id || '',
+          onOpenWorkshop:resource => {
+            if (options.context) return options.emit?.('workshop-open',{resource});
+            const url = new URL('/template-workshop',location.href);
+            if (resource.template_id) url.searchParams.set('template',resource.template_id);
+            if (resource.store_id) url.searchParams.set('store',resource.store_id);
+            if (resource.lineage_id) url.searchParams.set('lineage',resource.lineage_id);
+            location.assign(url);
+          },
+          onSaved: template => { target = {...target,store_id:'',template_id:template.template_id,title:template.title}; options.emit?.('workshop-saved',target); },
           onDeleted: () => {
             if (options.context) options.emit?.('workshop-deleted');
             else { chat?.destroy(); workshop?.destroy(); root.replaceChildren(); }
