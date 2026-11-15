@@ -128,13 +128,16 @@ def listing(actor, *, search="", group=None, store_id=None):
 
 def publish(template_id, actor, release_note=""):
     store.ensure_builtins()
+    admin = is_admin(actor)
     with store.database().transaction("templates") as connection:
         template = next((row for row in store.read_rows(connection, "templates") if row["template_id"] == template_id), None)
         if template is None:
             raise KeyError(template_id)
         if template.get("builtin_key"):
             raise TemplateError("内置模板不能发布到商店")
-        if template["created_by"] != actor:
+        creator = str(template.get("created_by") or "")
+        resident_source = creator.startswith("resident_") and not template.get("installed_from_store_id")
+        if not (creator == actor or (resident_source and admin)):
             raise TemplateError("只能发布自己创建的模板")
         rows = {row["source_template_id"]: row for row in items(connection)}
         previous = rows.get(template_id)
@@ -142,7 +145,8 @@ def publish(template_id, actor, release_note=""):
         stamp, digest = now(), store.content_hash(template)
         item = {key: deepcopy(template[key]) for key in store.CONTENT}
         item.update(store_id=previous["store_id"] if previous else "store-" + secrets.token_hex(6),
-                    source_template_id=template_id, publisher=actor, version=version, release_note=release_note,
+                    source_template_id=template_id, publisher=previous["publisher"] if previous else creator,
+                    version=version, release_note=release_note,
                     content_hash=digest, active=True, published_at=stamp, updated_at=stamp, unpublished_at=None,
                     versions=[*(previous["versions"] if previous else []),
                               {"version": version, "release_note": release_note, "content_hash": digest, "published_at": stamp}])

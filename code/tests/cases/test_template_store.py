@@ -95,6 +95,46 @@ def test_builtin_ownership_and_save_as(lineage, users):
     assert copied['store_status'] is None and copied['installed_from_store_id'] is None
 
 
+def test_admin_publishes_resident_source_and_preserves_publisher(lineage, users):
+    from management_portal.society_service import templates
+
+    creator = 'resident_0123456789ab'
+    source = templates.create({'kind':'prompt','title':'Resident source','body':{'message':'Review carefully'}}, creator)
+    args = {'template_id':source['template_id']}
+    assert run('PublishTemplate', args, actor='store-reader').status == 'failed'
+    first = ok('PublishTemplate', args, actor='store-admin')['item']
+    assert first['publisher'] == creator and first['version'] == 1
+    installed = ok('InstallStoreTemplate', {'store_id':first['store_id']}, actor='store-reader')['template']
+    assert installed['created_by'] == 'store-reader'
+    assert installed['store_status']['publisher'] == creator
+    ok('UpdateTemplate', {**args,'title':'Updated Resident source'}, actor='store-admin')
+    second = ok('PublishTemplate', {**args,'release_note':'Updated'}, actor='store-admin')['item']
+    assert second['publisher'] == creator
+    assert second['store_id'] == first['store_id'] and second['version'] == 2
+    assert second['title'] == 'Updated Resident source' and second['release_note'] == 'Updated'
+    status = ok('GetTemplate', {'template_id':installed['template_id']}, actor='store-reader')['template']['store_status']
+    assert status['has_update'] and status['publisher'] == creator
+
+
+def test_admin_cannot_publish_human_personal_template(lineage, users):
+    source = create()
+    args = {'template_id':source['template_id']}
+    assert run('PublishTemplate', args, actor='store-admin').status == 'failed'
+    assert ok('GetTemplate', args, actor='store-author')['template']['published_store'] is None
+    item = ok('PublishTemplate', args, actor='store-author')['item']
+    assert item['publisher'] == 'store-author'
+    assert run('PublishTemplate', args, actor='store-admin').status == 'failed'
+
+
+def test_admin_cannot_publish_resident_installed_copy(lineage, users):
+    from management_portal.society_service.templates import marketplace
+
+    source = create()
+    item = ok('PublishTemplate', {'template_id':source['template_id']}, actor='store-author')['item']
+    installed = marketplace.install(item['store_id'], 'resident_0123456789ab')['template']
+    assert run('PublishTemplate', {'template_id':installed['template_id']}, actor='store-admin').status == 'failed'
+
+
 def test_structure_effect_and_rewrite_instruction_summary():
     from management_portal.society_service.templates.marketplace import instructions_used
     assert instructions_used({'kind':'structure','body':{

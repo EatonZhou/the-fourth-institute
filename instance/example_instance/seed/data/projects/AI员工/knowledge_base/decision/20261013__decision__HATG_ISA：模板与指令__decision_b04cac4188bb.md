@@ -4,12 +4,12 @@ type: decision
 project: AI员工
 created_at: '2026-10-13'
 version:
-  number: 28
+  number: 31
   created_at: "2026-10-13"
   created_by:
     user: ""
     agent: "resident_e8fc8c899f00"
-  updated_at: "2026-11-14T23:24:50Z"
+  updated_at: "2026-11-15T08:38:36Z"
   updated_by:
     user: ""
     agent: "resident_25ac6961fafb"
@@ -21,6 +21,7 @@ links:
   - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/templates
   - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/lineage_templates.js
   - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/lineage_template_graph.js
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/template_store.js
   related:
   - decision_898b8911a2ff
   - decision_5b5653c3eaa5
@@ -66,7 +67,7 @@ links:
 
 ## 模块架构
 
-`management_portal/society_service/templates/` 集中模板职责。`store` 保存模板与内置安装记录；`values` 校验参数并替换引用；`builtins` 提供内置内容；`registry` 定义各模块共用的接口、施加上下文与结果形状；`kinds` 管理模块登记并做通用规范化；`rewrite` 为结构模板查找并改写已有元素。每种执行行为由独立模块实现，ISA 适配器只处理指令参数、结果与错误映射。
+`management_portal/society_service/templates/` 集中模板职责。`store` 保存模板与内置安装记录；`values` 校验参数并替换引用；`builtins` 提供内置内容；`registry` 定义各模块共用的接口、施加上下文与结果形状；`kinds` 管理模块登记并做通用规范化；`rewrite` 为结构模板查找并改写已有元素；`marketplace` 保存已上架的商店模板快照，并为个人模板计算发布与安装更新状态。每种执行行为由独立模块实现，ISA 适配器只处理指令参数、结果与错误映射。
 
 模板入口负责从 `store` 取得 Family 配方。直接 `Familize`、创建 Lineage 时的 Familize、个人助手和质量成员的自动组装统一经过 `templates.create_family`，向 Family 组装传入配方加载回调。组装在入口授权、范围与成员准入检查以及已有整 Lineage Family 的幂等返回之后调用该回调。`ApplyTemplate` 则把已规范化、校验的同一份 `ApplyContext.template` 配方传入组装，组装期间不重新读取另一版本。Family 组装消费配方和本次参数、角色设置覆盖，不依赖模板持久存储；依赖方向保持入口到存储及执行类型、执行类型到组装。内置安装、用户编辑、删除和显式恢复沿各自既有存储规则执行。
 
@@ -79,7 +80,7 @@ links:
 - 可选的 `application_parameters(template) -> list`：按配方计算施加参数说明；未提供时使用配方的 `parameters`。模块负责补充自己支持的创建选项，不能修改传入配方。
 - `apply(ctx: ApplyContext) -> dict`：执行施加并返回统一结果。
 
-`ApplyContext` 包含 `lineage_id`、完整 `template`、已校验的 `parameters`、规范化 `target`、真实 `actor`、结果 `title`、`resident_settings`，以及施加者为“恰好一条”的已有连线选定的候选 `match_choices`。新增一种执行类型只需实现一个行为模块并登记其 `KIND`；类型特有的校验、说明、编辑字段与施加逻辑都留在该模块。通用存储与七条模板指令不复制这种行为，也不要求建立新的模板专属运行引擎。
+`ApplyContext` 包含 `lineage_id`、完整 `template`、已校验的 `parameters`、规范化 `target`、真实 `actor`、结果 `title`、`resident_settings`，以及施加者为“恰好一条”的已有连线选定的候选 `match_choices`。新增一种执行类型只需实现一个行为模块并登记其 `KIND`；类型特有的校验、说明、编辑字段与施加逻辑都留在该模块。通用存储与模板指令不复制这种行为，也不要求建立新的模板专属运行引擎。
 
 ## 各模块的 body 与行为
 
@@ -194,7 +195,7 @@ Effect DSL 内的替换使用脚本专用转义器。在带引号的脚本文本
 
 ## 存储与内置生命周期
 
-`templates` 是独立 DomainDatabase 域。`templates` 表按 `template_id` 保存模板正文、参数、元数据与版本审计；`targets`、`parameters`、`body` 使用 JSON 字段。它不保存 Lineage 中的已施加实例，Function Block 归属和图元素仍由 Lineage 存储负责。
+`templates` 是独立 DomainDatabase 域。`templates` 表按 `template_id` 保存模板正文、参数、元数据与版本审计，`targets`、`parameters`、`body` 使用 JSON 字段，并可由 `installed_from_store_id`、`installed_store_version`、`installed_store_hash` 记录个人副本的安装来源与安装时的内容哈希。`template_store_items` 表按 `store_id`（格式 `store-<12位小写十六进制>`，不占用统一资源类型前缀）保存发布快照、源模板 `source_template_id`、发布者 `publisher`、上架版本 `version`、版本说明 `release_note`、内容哈希 `content_hash`、版本历史元信息 `versions` 与上架标记 `active`。`GetTemplate` 与 `ListTemplates` 返回模板时附带 `published_store`（该模板对应的商店条目摘要）与 `store_status`（安装来源、已装版本、最新版本、是否有更新 `has_update`、本地内容哈希是否已偏离安装版本 `locally_modified`）。两张表都不保存 Lineage 中的已施加实例，Function Block 归属和图元素仍由 Lineage 存储负责。
 
 `installed_builtins` 表保存 `builtin_key` 与安装时间，区分“从未安装”和“安装后主动删除”。新版本带来的新 builtin_key 首次出现时自动安装；已经安装后被删除的模板不会因服务重启或刷新重新出现。
 
@@ -208,6 +209,8 @@ Effect DSL 内的替换使用脚本专用转义器。在带引号的脚本文本
 
 `ApplyTemplate` 要求目标 `lineage_id` 的 contributor，因为施加可能修改图、创建 Resident 或执行指令。`CreateTemplate` 和 UpdateTemplate 一样要求对“公共内容”有 contributor，因为 Lineage 模板是所有人共用的定义；携带 `from_selection` 时还要求其中 `lineage_id` 的 viewer，因为需要读取图与角色设置。此检查也适用于带选区的 dry_run。内嵌 ISA 调用继续使用施加者身份和各指令自己的权限规则。模板不是额外授权凭证。
 
+模板商店四条指令同样走公共内容权限：`ListTemplateStore` 要求对“公共内容”有 viewer，`PublishTemplate`、`InstallStoreTemplate` 与 `UnpublishTemplate` 要求对“公共内容”有 contributor。业务层同时核验所有权：`PublishTemplate` 允许创建者发布本人的非内置模板，也允许对“公共内容”持有 admin 权限的调用者发布 Resident 自建源模板（不含商店安装副本，保留原创建者归属，人类个人模板仍仅本人可发布）；`InstallStoreTemplate` 只在调用者本人名下创建或更新安装副本；`UnpublishTemplate` 只允许该条目发布者或对“公共内容”持有 admin 权限的调用者下架。
+
 ## 资源类型
 
 模板登记为统一资源类型 `template`（`config/resource-types/template.json`），`ResolveResource`、`ReadResource` 与资源引用都能解析 `template_*`。解析器经 `GetTemplate` 读取模板，返回标题、kind、创建者和可读正文，读权限与 `GetTemplate` 相同；无权读取时按资源接口的规则拒绝。模板的门户链接是 `/template-workshop?template=<template_id>`，打开模板工坊。
@@ -216,9 +219,9 @@ Effect DSL 内的替换使用脚本专用转义器。在带引号的脚本文本
 
 工具箱和模板编辑器的样式由页面共享资源加载器加载并等待就绪，样式表留在 document head；HATG 面板替换或关闭不撤销其他面板正在使用的样式。加载失败时保留可重试的 HATG 加载状态。
 
-HATG 画布的控件分在四角：左上是缩放（缩小、百分比、放大、适配全部）；右上是搜索和“…”菜单，整理、跳到 Leader、聚焦与关系筛选收在菜单里，并给画布右边缘的按钮留出位置；左下是工具箱与图例按钮，图例按当前视图显示，点开才出现；右下是小地图。窄画布中这些控件都保持一行。左下的工具箱图标点开后抽屉从左下角向上展开，可以用图标、收起按钮或 Escape 关闭，打开状态不跨页保存。抽屉按模板模块分四组，依次为职责（structure）、角色（暂无模板时显示空态）、组织（familize）、交办（prompt、explore、script，对 Resident 做一次就完的操作）。每张卡片只有缩略图和标题：结构模板的缩略图按模板的组件、连线和角色画成静态小图，施加时要绑定的目标、Leader 角色和已有元素画在两侧边缘并灰显；其他模块按模块画不同的简单图形。标题、说明和操作方式写在悬停提示中。
+HATG 画布的控件分在四角：左上是缩放（缩小、百分比、放大、适配全部）；右上是搜索和“…”菜单，整理、跳到 Leader、聚焦与关系筛选收在菜单里，并给画布右边缘的按钮留出位置；左下是工具箱与图例按钮，图例按当前视图显示，点开才出现；右下是小地图。窄画布中这些控件都保持一行。左下的工具箱图标点开后抽屉从左下角向上展开，窄画布中抽屉自动收束宽度并避开画布右缘的悬浮入口；可以用图标、收起按钮或 Escape 关闭，打开状态不跨页保存。抽屉按模板模块分四组，依次为职责（structure）、角色（暂无模板时显示空态）、组织（familize）、交办（prompt、explore、script，对 Resident 做一次就完的操作）。每张卡片只有缩略图和标题：结构模板的缩略图按模板的组件、连线和角色画成静态小图，施加时要绑定的目标、Leader 角色和已有元素画在两侧边缘并灰显；其他模块按模块画不同的简单图形。标题、说明和操作方式写在悬停提示中。
 
-工具箱只显示内置模板（有 `builtin_key`）和当前登录用户创建的模板（`created_by` 等于当前用户），身份切换时重新读取。用户新建、另存副本或从选区保存的模板，创建者就是自己，因此直接出现在工具箱中；他人创建的模板不在工具箱里显示，商店上线后通过安装复制件取得。抽屉顶部有商店入口，商店上线前显示为不可用；“新建模板”在模板工坊中打开一个新的职责模板（structure），带一个 `from: target` 角色，不提供其他模块的新建入口，已有 prompt、explore、script、familize 模板按各自模块的字段编辑。抽屉最下方是默认收起的“原语”组，可把事件、Effect、Seed 等原语拖到画布。
+工具箱只显示内置模板（有 `builtin_key`）和当前登录用户创建的模板（`created_by` 等于当前用户），身份切换时重新读取。用户新建、另存副本或从选区保存的模板，创建者就是自己，因此直接出现在工具箱中；他人创建的模板通过商店安装复制件取得。从商店安装的卡片在源条目有新版本上架时显示“可更新”标记，悬停提示注明版本与本地是否已改动。抽屉顶部的商店图标打开模板商店弹层；“新建模板”在模板工坊中打开一个新的职责模板（structure），带一个 `from: target` 角色，不提供其他模块的新建入口，已有 prompt、explore、script、familize 模板按各自模块的字段编辑。抽屉最下方是默认收起的“原语”组，可把事件、Effect、Seed 等原语拖到画布。
 
 施加模板有两种操作。单击卡片拿起模板：抽屉收起，缩略图跟随鼠标，在画布上按 targets 提示可接受的 Resident、选区或画布；在可接受的目标上单击即施加，按 Escape 或右键取消。也可以直接把卡片拖到目标上。两种操作走同一个施加流程。双击卡片在模板工坊中打开该模板。键盘聚焦卡片时，Enter 等同单击，Shift+Enter 等同双击。
 
@@ -230,8 +233,8 @@ HATG 画布的控件分在四角：左上是缩放（缩小、百分比、放大
 
 模板工坊是 Lineage 工作台的一种卡片，与 Chat、HATG、预览、终端用同一套工作台面板，可以打开、关闭、收起和拖动，布局随工作台保存与恢复。在 HATG 的工具箱里双击卡片、点“新建模板”或从选区保存时，HATG 请求工作台打开工坊卡片：第一张在 HATG 旁边分屏，之后打开的模板成为同一组里的标签，再次打开同一模板时聚焦已有标签。卡片大部分是画布，右侧一窄栏是与工坊助手的对话，可以收起，卡片较窄时默认收起。模板资源链接打开独立页面 `/template-workshop?template=<template_id>`，页面中挂的是同一个卡片组件。
 
-- **顶栏**：可直接修改的模板名、“…”菜单，最右侧并排放英文按钮 **Save** 与 **Save As**，两者不翻译。“…”菜单放结构模板的图、列表、JSON 视图切换，以及内置模板的“恢复内置”和已保存模板的“删除”。删除后关闭这张卡片，已施加的结果保留。
-- **Save 与 Save As**：Save 把草稿存回当前模板，新模板第一次 Save 走 `CreateTemplate`，之后走 `UpdateTemplate`。Save As 用当前草稿 `CreateTemplate` 一份新模板并切换过去。内置模板和他人创建的模板不能 Save，按钮不可用，改动用 Save As 存成自己的模板。两者都先用 dry_run 校验，服务端错误显示在页面上。保存只写入本人的模板，与将来发布到商店是两个动作。有未保存的修改时，关闭卡片或离开页面前提示。
+- **顶栏**：可直接修改的模板名、“…”菜单，右侧放本人非内置已保存模板的“发布到商店”（已上架时为“发布新版本”）以及并排的英文按钮 **Save** 与 **Save As**（两者不翻译）。草稿有未保存修改时点发布，会提示先 Save，使上架快照与已保存模板一致。从商店预览未安装的快照时，顶栏提供“安装到工具箱”。“…”菜单放结构模板的图、列表、JSON 视图切换，以及内置模板的“恢复内置”和已保存模板的“删除”。删除后关闭这张卡片，已施加的结果保留。
+- **Save 与 Save As**：Save 把草稿存回当前模板，新模板第一次 Save 走 `CreateTemplate`，之后走 `UpdateTemplate`。Save As 用当前草稿 `CreateTemplate` 一份新模板并切换过去。内置模板、他人创建的模板与未安装的商店预览快照（独立页地址为 `/template-workshop?store=<store_id>`）不能 Save，按钮不可用，改动用 Save As 存成自己的模板。两者都先用 dry_run 校验，服务端错误显示在页面上。保存只写入本人的模板，与发布到商店是两个动作。有未保存的修改时，关闭卡片或离开页面前提示。
 - **画布**：结构模板用编辑器的图视图铺满卡片，打开时适配全部节点，缩放不超过 100%；施加时绑定的位置（目标、Lineage Leader 与已有元素）灰显。选中节点或连线时弹出浮动检查器，没有选中时不显示。图上方的添加按钮去掉，由画布左下角的工具箱代替：抽屉与 HATG 工具箱共用代码，分为原语（Event、Effect、Loop、Filter、Selector、Reducer、Seed）、空位（目标 Resident、Lineage Leader、新建 Resident、Fork、已有元素），以及工具箱中的职责、角色、组织模板。单击拿起后在画布上单击放下，或直接拖放；放下模板就是把它的元素复制进草稿，key 与参数名冲突时自动改名。交办类模板不能放进结构草稿。
 - **自动计算**：结构模板的分组固定为 structure，`targets` 由图决定：有 `from: target` 角色时为 resident，否则有已有元素时为 selection，都没有时为 canvas。页面不再提供分组和目标范围的选择。说明、参数与施加预览放在默认收起的“模板信息”面板。
 - **其他模块**：prompt、explore、script、familize 模板同样在工坊中打开，画布位置显示该模块的字段，没有画布工具箱。
@@ -268,6 +271,18 @@ HATG 画布的控件分在四角：左上是缩放（缩小、百分比、放大
 
 施加表单的行为说明代入当前填写的参数，并随输入更新。例如间隔填写 300 时，说明显示 300 秒。预览先翻译模板说明，再把参数值作为纯文本插入；空参数保留引用以提示尚未填写。模板编辑器继续显示参数引用，施加预览不改写模板正文或已保存的默认值。
 
+## 模板商店
+
+模板商店由工具箱抽屉顶部的商店图标打开，以 `PortalOverlay` 轻量弹层承载，不单列全站页面或顶部导航入口。样式表 `template_store.css` 独立维护，弹层根节点带 `data-store-skin="default"`，保留替换商店主题皮肤（如像素风商店界面）的扩展点。
+
+弹层顶栏提供搜索框（匹配标题、说明与发布者）和分组切换：全部、职责（`duty`，对应 `structure`）、角色（`role`）、组织（`organization`，对应 `familize`）、交办（`task`，对应 `prompt`、`explore`、`script`）。卡片网格展示与工具箱同构的静态缩略图、标题、发布者、版本号及当前用户的状态标签（本人发布、已安装、可更新、已改本地）；右侧详情区展示完整说明、版本说明、参数列表，以及施加该模板会调用的 HATG 指令标签（`instructions_used`，解析模块动作与内嵌 Effect DSL 调用）。在详情区可直接安装、更新、下架，或在模板工坊中打开查看（已安装时打开本地副本，未安装时打开商店快照预览）。
+
+发布与安装以快照隔离个人编辑与全站共享：
+
+- **发布与新版本**：本人创建的已保存非内置模板可发布到商店（对“公共内容”持有管理员权限的调用者也可发布 Resident 自建源模板），可附一句 `release_note`。首次发布分配稳定的 `store-<12位小写十六进制>`、记录源模板创建者为 `publisher` 并保存版本 1 快照；之后源模板在本地的修改不会自动改动商店条目，再次发布才递增商店 `version`、追加 `versions` 历史元信息并刷新快照，曾下架的条目同步恢复上架。
+- **安装与更新冲突处理**：安装把当前上架快照复制为调用者名下的个人模板，记录 `installed_from_store_id`、`installed_store_version` 与 `installed_store_hash`。源条目发布新版本后，若本地副本的内容哈希仍等于 `installed_store_hash`（未做本地修改），更新原地覆盖该模板并保留 `template_id`；若本地已修改（`locally_modified` 为真），界面让用户选择“覆盖更新”（`mode: "overwrite"`，用商店新版覆盖当前模板）或“保留本地修改并另存新版”（`mode: "copy"`，解除旧模板的商店关联以保留本地改动，同时新建一份跟踪商店新版的模板）。
+- **下架**：发布者本人或公共内容管理员可下架条目。下架后 `active` 置为 `false`，商店列表不再返回该条目；其他用户已安装进个人工具箱的副本继续保留。
+
 ## 指令一览
 
 | 指令 | 改变状态 | 说明 | 默认方案要求 |
@@ -279,6 +294,10 @@ HATG 画布的控件分在四角：左上是缩放（缩小、百分比、放大
 | `DeleteTemplate` | 是 | 删除模板，保留已经施加的结果。 | 对“公共内容”有 @admin |
 | `RestoreTemplate` | 是 | 从代码恢复内置模板，包括已删除的内置条目。 | 对“公共内容”有 @contributor |
 | `ApplyTemplate` | 是 | 在指定 Lineage 上向目标施加模板；结构模板支持只预览的 dry_run。 | 对 `lineage_id` 有 @contributor |
+| `ListTemplateStore` | 否 | 列出已上架的模板快照、施加指令标签与调用者安装状态，支持搜索、分组与按 `store_id` 读取。 | 对“公共内容”有 @viewer |
+| `PublishTemplate` | 是 | 发布本人创建的非内置模板快照，公共内容管理员也可发布 Resident 自建源模板；再次发布递增商店版本并恢复上架。 | 对“公共内容”有 @contributor |
+| `InstallStoreTemplate` | 是 | 将上架快照安装到个人工具箱，或覆盖更新、保留本地修改并另存新版。 | 对“公共内容”有 @contributor |
+| `UnpublishTemplate` | 是 | 下架商店条目，保留各用户已安装的副本。 | 对“公共内容”有 @contributor |
 
 ## 参数名契约
 
@@ -293,6 +312,10 @@ HATG 画布的控件分在四角：左上是缩放（缩小、百分比、放大
 | `DeleteTemplate` | `template_id` |
 | `RestoreTemplate` | `template_id` |
 | `ApplyTemplate` | `lineage_id`、`template_id`、`target`、`parameters`、`title`、`resident_settings`、`match_choices`、`dry_run` |
+| `ListTemplateStore` | `search`、`group`、`store_id` |
+| `PublishTemplate` | `template_id`、`release_note` |
+| `InstallStoreTemplate` | `store_id`、`target_template_id`、`mode` |
+| `UnpublishTemplate` | `store_id` |
 
 ### ListTemplates
 
@@ -368,6 +391,30 @@ HATG 画布的控件分在四角：左上是缩放（缩小、百分比、放大
 
 `removed` 包含连带删除的连线；`ambiguous` 列出仍需选定的 key 与候选；没有标签的连线以“来源标题 → 目标标题”作为 title，便于区分候选；某个目标找不到已有元素时，`error` 给出原因，其他目标照常预览。模板编辑时的正文预览仍通过 CreateTemplate/UpdateTemplate 的 dry_run 完成。
 
+
+### ListTemplateStore
+
+参数：可选 `search`（匹配标题、说明、发布者）、`group`（`duty`、`role`、`organization`、`task`）、`store_id`（精确读取单个上架条目 `store-<12位小写十六进制>`）。
+
+结果：`{items}`。仅返回 `active` 为真的上架条目，每项包含快照正文、`behavior`、`editor`、`group`、`instructions_used`、版本历史 `versions`，以及相对于当前调用者的 `is_publisher`、`can_unpublish`、`source_available`、`installed_template_id`、`installed_version`、`has_update` 与 `locally_modified`。
+
+### PublishTemplate
+
+参数：必填 `template_id`（调用者本人创建的非内置模板，或由对“公共内容”具有 `@admin` 权限的调用者发布的 Resident 自建源模板，不含商店安装副本；人类个人模板仅本人可发布）；可选 `release_note`。
+
+结果：`{item, template}`。首次发布生成 `store_id` 与版本 1 快照；同一 `template_id` 再次发布复用原 `store_id`、递增商店 `version`、追加 `versions` 记录并将 `active` 设为 `true`。同时返回附带最新 `published_store` 摘要的源 `template`。
+
+### InstallStoreTemplate
+
+参数：必填 `store_id`；可选 `target_template_id`（本人从该商店条目安装的模板 ID）、`mode`（`install`、`overwrite`、`copy`，默认 `install`）。
+
+结果：`{template, detached_template_id?}`。首次安装新建调用者名下的个人模板并记录安装来源与内容哈希；已安装同版本时 `mode: "install"` 幂等返回现有副本；有新版本且本地未修改时自动原地覆盖更新，本地已修改时 `mode: "install"` 返回冲突错误，交由调用方显式选择 `overwrite`（原地覆盖并保留 `template_id`）或 `copy`（清空旧副本的安装关联并在 `detached_template_id` 返回其 ID，同时新建一份跟踪商店新版的模板）。
+
+### UnpublishTemplate
+
+参数：必填 `store_id`。仅该条目 `publisher` 或对“公共内容”具有 `@admin` 权限的调用者可执行。
+
+结果：`{store_id, active: false}`。条目下架后不再出现在 `ListTemplateStore` 中，已安装到各用户工具箱的副本保持不变。
 
 ## 结构模板的 Resident 设置归属
 
