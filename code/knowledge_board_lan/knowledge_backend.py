@@ -1378,6 +1378,71 @@ def update_item_text(
     }
 
 
+def create_item_file(kb_id: str, filename: str, text: str, *, actor: str,
+                     expected_version: object) -> dict:
+    """Create a text companion within the resource's already registered scope."""
+    from management_portal.resources.directory_registrations import locations
+    from management_portal.resources.registry_store import get_registry_store
+    from management_common.instance_locations import located_path
+    from management_portal.resources.content_changes import record_text_change
+
+    if (not isinstance(filename, str) or not filename or filename.startswith(".")
+            or any(char in filename for char in ("/", "\\", "\x00"))
+            or Path(filename).suffix.lower() not in _EDITABLE_TEXT_FILE_EXTENSIONS):
+        raise ValueError("filename must be a plain editable text filename")
+    if not isinstance(text, str) or len(text) > _MAX_REGISTERED_ITEM_CHARS:
+        raise ValueError("invalid companion text")
+    record = resolve_item_address(kb_id, actor=actor)
+    if record.get("type") in {"skill", "article", "experiment"}:
+        raise ValueError("a Markdown Knowledge resource is required")
+    primary = Path(record["path"])
+    with knowledge_identity_lock(kb_id), resource_mutation_lock(primary.parent, kb_id):
+        record = resolve_item_address(kb_id, actor=actor)
+        primary = Path(record["path"])
+        before = _read_file_text(str(primary))
+        version = knowledge_version_record(before)
+        number = expected_version.get("number") if isinstance(expected_version, dict) else expected_version
+        if isinstance(number, bool) or not isinstance(number, int) or number != version["number"]:
+            raise KnowledgeVersionConflict(expected_version, version)
+        root = Path(record["root_path"])
+        container = root / kb_id if root.parent.name == "knowledge_base" else root
+        owner = get_registry_store().get("knowledge", kb_id)
+        owned = {Path(located_path(item["path"])) for item in locations("knowledge", owner or {})}
+        if container not in owned:
+            raise ValueError("companion directory is not registered to this resource")
+        for parent in (container, *container.parents):
+            if parent.is_symlink():
+                raise ValueError("companion path cannot contain symbolic links")
+        destination = container / filename
+        container.mkdir(parents=True, exist_ok=True)
+        after = stamp_knowledge_version(before, actor=actor, previous_text=before)
+        # Exclusive creation also refuses dangling symlinks and concurrent writers.
+        with destination.open("x", encoding="utf-8") as stream:
+            try:
+                stream.write(text)
+            except BaseException:
+                destination.unlink()
+                raise
+        try:
+            _write_text_atomic(primary, after)
+        except BaseException:
+            destination.unlink()
+            raise
+        new_version = knowledge_version_record(after)
+        address = _nested_file_address(kb_id, destination.relative_to(root).as_posix())
+        record_text_change(address, destination, "", text,
+                           before_version=version, after_version=new_version)
+        record_text_change(kb_id, primary, before, after,
+                           before_version=version, after_version=new_version)
+        with _LOCK:
+            for path in (primary, destination):
+                _MD_CACHE.pop(str(path), None)
+                _MD_CACHE.pop(os.path.abspath(str(path)), None)
+            _invalidate_graph_caches()
+        return {"kb_id": kb_id, "path": str(primary), "address": address,
+                "version": new_version, "project_ids": _knowledge_project_ids(record)}
+
+
 def delete_item(kb_id: str, *, actor: str = "") -> dict:
     clean_id = str(kb_id or "").strip()
     if not is_canonical_kb_id(clean_id):

@@ -10,9 +10,16 @@ from functools import lru_cache
 
 from .contracts import InstructionError
 from .declarations import P, R, ResourceActionDeclaration as A
+from management_portal.resources.providers.knowledge import MARKDOWN_REGISTERABLE_RESOURCE_TYPES
 
 
 ACTIONS = (
+    *(A(kind, "knowledge.file.create", "在知识条目的已登记附件目录内新增文本文件；保留主文档和资源 ID，推进条目版本并同步在线文件列表。已有文件用 UpdateResource 更新。", (
+        R("filename", description="不含目录的文本文件名，例如 usage.md；拒绝覆盖已有文件"),
+        R("text", description="附件全文"),
+        R("expected_version", "integer", "ReadResource 返回的当前版本号", minimum=1),
+    ), (R("resource_id"), R("address"), R("version", "object")))
+      for kind in MARKDOWN_REGISTERABLE_RESOURCE_TYPES),
     A("project", "knowledge.move", "将一批知识条目和 Skill 迁入目标 Project；保留原 ID、正文、附件和包内相对路径，统一更新归属、版本、目录登记、权限和在线索引。成功返回时可按原 ID 读取。", (
         P("operation_id", description="本批稳定操作 ID；省略时由调用者、目标及条目版本列表生成；恢复重试时保持相同参数，不能复用于不同请求"),
         R("items", "array", "待迁移知识条目或 Skill，必须提供当前 expected_version；最多 100 项；按实际登记范围迁移主文件、伴随文件或 Skill 包，限同一文件系统。含独立资源、Workspace 或保留登记的目录须由其 owner 协调；Experiment 和代码层 Core Skill 不属于此动作", items={
