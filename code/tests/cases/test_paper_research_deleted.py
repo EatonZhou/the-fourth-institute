@@ -28,12 +28,18 @@ def test_deleted_reference_does_not_break_catalog(owners,monkeypatch,kind):
     if kind=='legacy':
         from management_portal import resident_workspace_adapter as adapter
         identity=adapter._workspace_identity(ACTOR,'paper','paper:paper_0123456789ab')
-        target=native.ensure('paper',actor=ACTOR,**identity,title='Old discussion',backend='codex',create_role=True)
+        # Frozen legacy reference to an already existing private Resident.
+        # New public personal roles are no longer a supported creation API.
+        from management_portal.workbench_projections.service import get_service
+        store = get_service().store
+        app = store.get('workbench_030303030177', ACTOR)
+        app['bindings']['personal-history'] = {'lineage_id': dead['lineage_id'],
+            'residents': {identity['resident_scope']: dead['resident_id']}}
+        saved = store.update(app['workbench_id'], {'bindings': app['bindings']}, ACTOR, app['revision'])
+        store.publish(app['workbench_id'], ACTOR, saved['revision'])
+        target=dead
         research.select_chat({'workspace_key':'paper:paper_0123456789ab','expected_principal':ACTOR},ACTOR)
     else:target=dead
-    if kind=='legacy':
-        owners.permissions.grant(ACTOR,target['resident_id'],'@admin')
-        owners.permissions.grant(ACTOR,target['lineage_id'],'DeleteResident')
     research.isa_client.call(ACTOR,'DeleteResident',{'lineage_id':target['lineage_id'],'resident_id':target['resident_id']},key='delete-fixture-'+kind)
     with pytest.raises(InstructionError) as error:
         research.isa_client.call(ACTOR,'GetResident',{'resident_id':target['resident_id']})

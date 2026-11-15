@@ -121,7 +121,8 @@ class Store:
                 "JOIN bindings b ON b.app_id=t.app_id AND b.revision=t.revision AND b.alias=t.alias "
                 "WHERE t.kind='residents' AND t.target_id=ANY(%s)", (resident_ids,),
             ).fetchall()
-        return [dict(row) for row in rows]
+        from .personal_bindings import personal_scope
+        return [dict(row) for row in rows if not personal_scope(row['name'])]
 
     def __init__(self):
         self.database = portal_database(schema="workbenches")

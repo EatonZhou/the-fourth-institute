@@ -13,6 +13,7 @@ from management_portal.portal_access_control import is_active_user_or_resident
 
 from .service import bound_lineage_graph, get_service, members
 from .store import ProjectionError
+from .personal_bindings import personal_scope, shared_bindings
 
 
 def _delivers_fixed_prompt(script: object) -> bool:
@@ -37,14 +38,13 @@ def with_binding_status(app: dict, actor: str) -> dict:
     page and settings show that instead of an earlier "applied" state.
     """
     issues = []
-    for alias, target in (app.get("bindings") or {}).items():
+    for alias, target in shared_bindings(app.get("bindings") or {}).items():
         try:
             available = members(bound_lineage_graph(target, actor))
             for role, resident_id in target.get("residents", {}).items():
                 if resident_id not in available:
-                    # Personal surface conversations are retained declarations,
-                    # not required application roles. A deleted conversation must
-                    # not make unrelated Library browsing look misconfigured.
+                    # Non-Paper surfaces retain their established deletion
+                    # semantics; Paper personal references have a separate owner.
                     if role.startswith('surface-chat:'):
                         from management_portal import isa_client
                         try:
@@ -65,6 +65,7 @@ def with_binding_status(app: dict, actor: str) -> dict:
 
 
 def resolve_role(app: dict, scope: str, actor: str) -> dict | None:
+    app = {**app, 'bindings': shared_bindings(app['bindings'])}
     if sum(scope in binding.get("residents", {}) for binding in app["bindings"].values()) > 1:
         raise ProjectionError("projection.role_ambiguous", f"功能角色存在多个权威绑定：{scope}；请完成迁移", 409)
     for binding in app["bindings"].values():
@@ -90,6 +91,7 @@ def workflow_definitions(name: str, role: str) -> list[dict]:
 
 
 def activation_report(app: dict, actor: str) -> dict:
+    app = {**app, 'bindings': shared_bindings(app['bindings'])}
     checked = validate_native_bindings(app, actor)
     issues = list(checked["binding_issues"])
     main = app["bindings"]["main"]
@@ -150,6 +152,12 @@ def activation_report(app: dict, actor: str) -> dict:
 
 
 def binding(name: str, options: dict, backend: str, *, create_role: bool = False) -> dict:
+    if name == 'paper' and personal_scope(str(options.get('resident_scope') or '')):
+        from management_portal.paper_conversations import lookup
+        identity = lookup(actor=options['actor'], scope=options['resident_scope'])
+        if not identity and create_role:
+            raise ProjectionError('paper.research_slot_required', '请显式新建个人研究会话', 409)
+        return identity
     service = get_service()
     actor = options["actor"]
     app = projection_application(name, actor)
@@ -207,6 +215,9 @@ def submit(name: str, **options) -> dict:
 
 
 def lookup(name: str, *, actor: str, resident_scope: str) -> dict:
+    if name == 'paper' and personal_scope(resident_scope):
+        from management_portal.paper_conversations import lookup as personal_lookup
+        return personal_lookup(actor=actor, scope=resident_scope)
     if name == "paper":
         # Session reads need one current role, not the settings page's complete
         # binding diagnostics. resolve_role still checks ambiguity, current permissions
@@ -219,6 +230,8 @@ def lookup(name: str, *, actor: str, resident_scope: str) -> dict:
 
 
 def ensure(name: str, *, create_role: bool = False, **options) -> dict:
+    if name == 'paper' and personal_scope(options['resident_scope']):
+        return binding(name, options, options.get('backend', 'codex'), create_role=create_role)
     identity = resident_handoff.ensure_invocation_resident(**options, resident_binding=binding(name, options, options.get("backend", "codex"), create_role=create_role))
     metadata = dict(options.get('metadata') or {})
     if create_role and metadata.get('resource_id'):

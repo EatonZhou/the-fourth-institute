@@ -67,6 +67,8 @@ class ProjectionService:
         return self.store.lock(scope)
 
     def create(self, payload: dict, actor: str) -> dict:
+        from .personal_bindings import check_changes
+        check_changes({}, payload.get('bindings', {}))
         graphs = self.check_bindings(payload.get("bindings", {}), actor)
         projects = sorted({graph["project_id"] for graph in graphs.values() if graph.get("project_id")})
         record = get_resource_service().register("workbench", {**payload, "project_ids": projects or payload.get("project_ids") or []}, actor=actor)
@@ -74,6 +76,8 @@ class ProjectionService:
 
     def check_bindings(self, bindings: dict, actor: str) -> dict:
         validate_manifest({"title": "Binding validation", "bindings": bindings})
+        from .personal_bindings import shared_bindings
+        bindings = shared_bindings(bindings)
         graphs = {}
         for alias, binding in bindings.items():
             graph = lineage_graph(actor, binding.get("lineage_id", ""))
@@ -90,9 +94,14 @@ class ProjectionService:
     def check_binding_changes(self, current: dict, prepared: dict, actor: str) -> dict:
         """Validate only binding identities introduced or changed by this update."""
         validate_manifest({"title": "Binding validation", "bindings": prepared})
+        from .personal_bindings import check_changes, shared_bindings
+        check_changes(current, prepared)
+        current, prepared = shared_bindings(current), shared_bindings(prepared)
         graphs = {}
         for alias, binding in prepared.items():
             previous = current.get(alias, {})
+            if previous == binding:
+                continue
             graph = lineage_graph(actor, binding.get("lineage_id", ""))
             available = members(graph)
             previous_residents = previous.get("residents", {}) if previous.get("lineage_id") == binding.get("lineage_id") else {}
@@ -222,6 +231,9 @@ class ProjectionService:
         return validate_native_bindings(app, actor)
 
     def require_role(self, app: dict, actor: str, role: str, *, title: str = "", backend: str = "codex", backend_route_id: str = "", settings: dict | None = None) -> tuple[dict, str]:
+        from .personal_bindings import personal_scope
+        if personal_scope(role):
+            raise ProjectionError('paper.research_slot_required', '请显式新建个人研究会话', 409)
         with self.lock(f"roles:{app['workbench_id']}"):
             app = self.store.get(app["workbench_id"], actor)
             binding = app["bindings"].get("main")
@@ -273,8 +285,9 @@ class ProjectionService:
         """
         available = members(graph)
         dropped = []
+        from .personal_bindings import personal_scope
         for role, resident_id in list(binding.get("residents", {}).items()):
-            if role == keep or resident_id in available:
+            if role == keep or resident_id in available or personal_scope(role):
                 continue
             identity = hashlib.sha256(role.encode()).hexdigest()[:24]
             if self.store.role_request(app["workbench_id"], binding["lineage_id"], identity).get("resident_id") != resident_id:
@@ -290,6 +303,10 @@ class ProjectionService:
         Bindings remain until deletion succeeds, so an interrupted request can
         repeat the same ordinary ISA operations. Never infer ownership by title.
         """
+        from .personal_bindings import personal_scope
+        if any(personal_scope(role) for role in roles):
+            raise ProjectionError('projection.personal_association_migration_required',
+                                  '个人会话不能按共享角色清理', 409)
         with self.lock(f"roles:{app['workbench_id']}"):
             app = self.store.get(app['workbench_id'], actor)
             if app.get('published_revision') and app['published_revision'] != app['revision']:
@@ -366,6 +383,8 @@ class ProjectionService:
     def dispatch(self, app_id: str, payload: dict, actor: str) -> dict:
         """One HATG ISA call from a Workbench page, bound to the page's Lineage."""
         app = self.store.get(app_id, actor, published=not bool(payload.get("preview")))
+        from .personal_bindings import shared_bindings
+        app = {**app, 'bindings': shared_bindings(app['bindings'])}
         alias = str(payload.get("binding") or "main")
         binding = app["bindings"].get(alias)
         if not binding:

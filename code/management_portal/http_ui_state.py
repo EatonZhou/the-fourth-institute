@@ -28,6 +28,7 @@ class UiStateHttp:
 
     def put(self, request, _parsed, actor):
         payload = self.read_json(request)
+        self._check_mutable_namespace(payload.get('namespace'))
         try:
             store = self._store()
         except Exception:
@@ -37,12 +38,18 @@ class UiStateHttp:
 
     def remove(self, request, _parsed, actor):
         payload = self.read_json(request)
+        self._check_mutable_namespace(payload.get('namespace'))
         try:
             store = self._store()
         except Exception:
             return self.respond(request, 500, {"error": "UI association storage is unavailable."})
         removed = store.remove(actor, payload.get("namespace"), payload.get("key"))
         return self.respond(request, 200, {"removed": removed})
+
+    @staticmethod
+    def _check_mutable_namespace(namespace):
+        if str(namespace or '').strip() == 'paper.conversations':
+            raise PermissionError('Paper conversation references require the controlled migration API')
 
     def routes(self, principal_route):
         """The UI association API.

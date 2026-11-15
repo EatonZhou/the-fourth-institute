@@ -65,6 +65,10 @@ def release_resource(resource_id: str, *, actor: str) -> set[str]:
     """A deleted resource owns all users' discussions, for every resource type."""
     entries = resident_handoff.get_portal_ui_state_store().list_namespace(
         resident_handoff.INVOCATION_ASSOCIATION_NAMESPACE)
+    from .personal_bindings import personal_scope
+    # Paper personal histories survive material deletion, including references
+    # still awaiting their owner's explicit association export.
+    entries = [entry for entry in entries if not personal_scope(entry.get('key', ''))]
     selected = {entry['value']['resident_id']: entry['value'] for entry in entries
                 if (entry['value'].get('metadata') or {}).get('resource_id') == resource_id
                 and entry['value'].get('resident_id')}

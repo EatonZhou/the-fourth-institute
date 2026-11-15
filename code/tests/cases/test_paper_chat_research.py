@@ -142,8 +142,8 @@ def test_legacy_catalog_reads_visible_references_without_creating_or_migrating(m
     from management_portal.workbench_projections import service
     monkeypatch.setattr(research,'selected_slot',lambda **k:None)
     monkeypatch.setattr(research,'list_slots',lambda **k:[])
-    monkeypatch.setattr(service,'get_service',lambda:SimpleNamespace(builtin_application=lambda name,actor:{'bindings':{
-        'main':{'residents':{'surface-chat:alice:paper:paper:paper_000000000001':'resident_visible',
+    monkeypatch.setattr(service,'get_service',lambda:SimpleNamespace(builtin_application=lambda name,actor:{'workbench_id':'workbench_111111111111','bindings':{
+        'main':{'lineage_id':'lineage_111111111111','residents':{'surface-chat:alice:paper:paper:paper_000000000001':'resident_visible',
                              'surface-chat:alice:paper:collection:old':'resident_denied',
                              'surface-chat:bob:paper:paper:paper_000000000002':'resident_bob'}}}}))
     calls=[]
@@ -152,7 +152,7 @@ def test_legacy_catalog_reads_visible_references_without_creating_or_migrating(m
         assert actor=='alice' and name=='GetResident'
         if args['resident_id']=='resident_denied':raise research.isa_client.InstructionError('instruction.forbidden', 'revoked')
         assert args['resident_id']=='resident_visible'
-        return {'resident':{'title':'Existing history'}}
+        return {'resident':{'title':'Existing history','lineage_id':'lineage_111111111111'}}
     monkeypatch.setattr(research.isa_client,'call',call)
     value=research.catalog({},actor='alice')
     assert value['selected'] is None and value['slots']==[]

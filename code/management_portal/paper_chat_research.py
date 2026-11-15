@@ -311,26 +311,23 @@ def catalog(params, *, actor):
     slots = list_slots(actor=actor)
     deleted = [{'workspace_key': 'research:' + item['slot_id'],
                 'resident_id': item['resident_id']} for item in slots if item['state'] == 'deleted']
-    from .workbench_projections.service import get_service
-    app = get_service().builtin_application('paper', actor)
+    from . import paper_conversations
     prefix = 'surface-chat:' + actor + ':paper:'
     legacy = []
-    for binding in app.get('bindings', {}).values():
-        for scope, resident_id in binding.get('residents', {}).items():
-            if not scope.startswith(prefix):
+    for scope, reference in paper_conversations.references(actor).items():
+        resident_id = reference['resident_id']
+        try:
+            actual = paper_conversations.resolve(actor, scope, reference)
+        except isa_client.InstructionError as error:
+            if error.code == 'instruction.forbidden':
+                # Revocation hides this item; it never deletes the reference.
                 continue
-            try:
-                actual = isa_client.call(actor, 'GetResident', {'resident_id': resident_id})['resident']
-            except isa_client.InstructionError as error:
-                if error.code == 'instruction.forbidden':
-                    # A revoked association is retained but is not a visible catalog item.
-                    continue
-                if error.code != 'instruction.not_found':
-                    raise
-                deleted.append({'workspace_key': scope[len(prefix):], 'resident_id': resident_id})
-                continue
-            legacy.append({'workspace_key': scope[len(prefix):], 'title': actual.get('title') or 'Legacy research',
-                           'resident_id': resident_id})
+            if error.code != 'instruction.not_found':
+                raise
+            deleted.append({'workspace_key': scope[len(prefix):], 'resident_id': resident_id})
+            continue
+        legacy.append({'workspace_key': scope[len(prefix):], 'title': actual.get('title') or 'Legacy research',
+                       'resident_id': resident_id})
     # Never hold the association lock over an RPC. Clear only this actor's exact
     # stale selection; retained references and Resident history are not deleted.
     with presentation_store.database().transaction('paper-research:' + actor) as connection:

@@ -54,6 +54,9 @@ def get(path: str, query: dict, actor: str):
 
 
 def post(path: str, payload: dict, actor: str):
+    if path in {'/api/workbenches/personal-conversations/export', '/api/workbenches/personal-conversations/detach'}:
+        from management_portal import paper_conversations
+        return (paper_conversations.export if path.endswith('/export') else paper_conversations.detach)(payload, actor)
     if path == "/api/workbenches/release":
         from management_portal.distribution.api import dispatch
         if payload.get("panel") != "packaging":

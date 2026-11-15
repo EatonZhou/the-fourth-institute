@@ -40,13 +40,30 @@ def bind_paper(owners, monkeypatch):
     return native
 
 
+def seed_legacy(owners, scope):
+    """Install pre-upgrade data through isolated owners, never a production API."""
+    from management_portal import isa_client
+    from management_portal.workbench_projections.service import get_service
+    target = isa_client.call(ACTOR, 'CreateResident', {'lineage_id': owners.lineage_id,
+        'title': 'Historical discussion', 'provider': 'codex'})
+    store = get_service().store
+    app = store.get('workbench_030303030177', ACTOR)
+    app['bindings']['main']['residents'][scope] = target['resident_id']
+    updated = store.update(app['workbench_id'], {'bindings': app['bindings']}, ACTOR, app['revision'])
+    store.publish(app['workbench_id'], ACTOR, updated['revision'])
+    from management_portal.permission_system.facts import collect_portal_facts
+    owners.permissions.instance.sync(collect_portal_facts(owners.resource))
+    return {'resident_id': target['resident_id'], 'lineage_id': owners.lineage_id}
+
+
 def test_reader_discussion_real_binding(owners, monkeypatch):
+    from management_portal.portal_ui_state import get_portal_ui_state_store
+    monkeypatch.setattr(get_portal_ui_state_store(), 'key_lock_root', owners.root / 'ui-locks')
     from management_portal import resident_workspace_adapter as adapter
     native = bind_paper(owners, monkeypatch)
     scope=adapter._workspace_identity(ACTOR, 'paper', 'paper-reader:paper_0123456789ab:00000000-0000-4000-8000-000000000001')
     assert native.lookup('paper', actor=ACTOR, resident_scope=scope['resident_scope']) == {}
-    result=native.ensure('paper', actor=ACTOR, **scope, title='Reader isolated discussion', backend='codex', create_role=True)
-    print('REAL_READER_BINDING', result)
+    result=seed_legacy(owners, scope['resident_scope'])
     assert result['lineage_id'] == owners.lineage_id
     assert result['resident_id'] != owners.resident_id
     assert native.lookup('paper', actor=ACTOR, resident_scope=scope['resident_scope']) == result
@@ -55,6 +72,8 @@ def test_reader_discussion_real_binding(owners, monkeypatch):
 def test_reader_legacy_prepare_http_scope_isolation(owners, monkeypatch, tmp_path):
     import json, subprocess, os, tempfile
     monkeypatch.setattr(tempfile, 'tempdir', str(tmp_path))
+    from management_portal.portal_ui_state import get_portal_ui_state_store
+    monkeypatch.setattr(get_portal_ui_state_store(), 'key_lock_root', owners.root / 'ui-locks')
     monkeypatch.setenv('TMPDIR', str(tmp_path))
     from pathlib import Path
     from starlette.applications import Starlette
@@ -108,6 +127,8 @@ def test_reader_legacy_prepare_http_scope_isolation(owners, monkeypatch, tmp_pat
         assert readonly.status_code==200, readonly.text
         assert readonly.json()['resident_id']==''
         assert len(roles())==1
+        from management_portal.resident_workspace_adapter import _workspace_identity
+        seed_legacy(owners, _workspace_identity(ACTOR, 'paper', request['workspace_key'])['resident_scope'])
         first=http.post('/chat-workspace/api/prepare',json=request,headers=headers)
         assert first.status_code==200,first.text
         resident=first.json()['resident_id']
@@ -118,8 +139,8 @@ def test_reader_legacy_prepare_http_scope_isolation(owners, monkeypatch, tmp_pat
         assert len(roles())==2
         independent_request={**request,'workspace_key':request['workspace_key'][:-1]+'2'}
         independent=http.post('/chat-workspace/api/prepare',json=independent_request,headers=headers)
-        assert independent.status_code==200,independent.text
-        assert independent.json()['resident_id']!=resident and len(roles())==3
+        assert independent.status_code==400 and '新建个人研究' in independent.json()['message'],independent.text
+        assert len(roles())==2
         stale=http.post('/chat-workspace/api/prepare',json={**request,'context':{**request['context'],'expected_principal':'someone-else'}},headers=headers)
         assert stale.status_code==403,stale.text
         mismatch=http.post('/chat-workspace/api/prepare',json={**request,'workspace_key':request['workspace_key'].replace(paper_id,'paper_222222222222')},headers=headers)

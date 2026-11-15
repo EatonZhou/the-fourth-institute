@@ -34,6 +34,8 @@ def install_mutation_provider(service):
                 raise
             locate = registration_project_ids if automatic else lambda value: explicit_project_ids(value, "Workbench")
             projects = locate(payload.get("project_ids"))
+            from management_portal.workbench_projections.personal_bindings import check_changes
+            check_changes({}, payload.get('bindings', {}))
             ProjectionService(store).check_bindings(payload.get("bindings", {}), actor)
             app = store.create(resource_id, {**payload, "project_ids": projects}, actor)
         return canonical_record(resource_id, app)
