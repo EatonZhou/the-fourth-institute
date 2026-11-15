@@ -17,6 +17,15 @@ def payload(**windows):
     return {"kind": "ok", "quota": {"usages": windows, "extraUsage": None}}
 
 
+def test_auth_transport_failure_is_proven_before_quota_dispatch():
+    from management_portal.execution.account_observation import AccountReadNotSent
+    client = Mock()
+    client._request.side_effect = ConnectionRefusedError('SECRET')
+    with pytest.raises(AccountReadNotSent):
+        observe(client)
+    client._request.assert_called_once_with('GET', 'auth')
+
+
 def test_windows_convert_used_ratios_and_do_not_invent_missing_limits():
     sample = quota_sample(payload(limit5h={"usedRatio": .25, "resetAt": "2030-01-01T01:00:00+01:00"},
         limit7d={"usedRatio": .42}, monthTotal={"usedRatio": .3}, monthCode={"usedRatio": 0}), 1000)

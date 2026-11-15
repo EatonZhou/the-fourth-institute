@@ -136,6 +136,7 @@ def make_monitor(history=None):
     history.claim.side_effect = durable.claim
     history.state.side_effect = durable.state
     history.save_success.side_effect = durable.save_success
+    history.release_unsent.side_effect = durable.release_unsent
     return AccountMonitor(accounts, Mock(), usage_store=Mock(), login_state_store=Mock(),
                           observation_store=history), account, accounts, history
 
@@ -177,6 +178,37 @@ def test_monitor_retains_failure_attempt_as_history(monkeypatch):
     assert last['error_code'] == 'account_read_timeout'
     assert last['error_kind'] == 'TimeoutError'
     assert last['rate_limits'][0]['stale'] is True
+
+
+def test_local_failure_releases_only_its_claim_and_retry_can_send(monkeypatch):
+    from management_portal.execution import account_monitor as module
+    from management_portal.execution.account_observation import quota_preflight
+    monitor, account, accounts, history = make_monitor()
+    monkeypatch.setattr(module.time, 'time', lambda: 1000)
+    def local_failure(*args, **kwargs):
+        with quota_preflight():
+            raise ConnectionRefusedError('SECRET')
+    accounts.observe.side_effect = local_failure
+    monitor.refresh_account(account)
+    assert history.state(account.provider, account.account_id)['attempted_at'] is None
+    assert history.append.call_args.args[2]['quota_request_sent'] is False
+    assert history.append.call_args.args[2]['error_kind'] == 'ConnectionRefusedError'
+    accounts.observe.side_effect = None
+    monitor.refresh_account(account)
+    assert accounts.observe.call_count == 2
+    # Successful dispatch keeps its slot; the third request is refused.
+    monitor.refresh_account(account)
+    assert accounts.observe.call_count == 2
+
+
+def test_unsent_release_cannot_erase_newer_reservation_or_prior_cooldown():
+    store = AccountObservationStore()
+    assert store.claim('kimi', 'one', now=1000, interval=600)
+    assert store.claim('kimi', 'one', now=1600, interval=600)
+    assert not store.release_unsent('kimi', 'one', attempted_at=1000, previous_attempt=None)
+    assert store.release_unsent('kimi', 'one', attempted_at=1600, previous_attempt=1000)
+    assert store.state('kimi', 'one')['attempted_at'] == 1000
+    assert not store.claim('kimi', 'one', now=1500, interval=600)
 
 
 def test_scheduled_checks_read_only_expired_accounts_and_every_read_waits_ten_minutes():

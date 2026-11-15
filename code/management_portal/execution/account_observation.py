@@ -8,6 +8,21 @@ import socket
 _current = ContextVar("account_observation", default=None)
 
 
+class AccountReadNotSent(RuntimeError):
+    """The adapter positively established failure before quota dispatch."""
+
+
+@contextmanager
+def quota_preflight():
+    """Only wrap preparation which cannot issue the Provider quota request."""
+    try:
+        yield
+    except InterruptedError:
+        raise
+    except Exception as error:
+        raise AccountReadNotSent(type(error).__name__) from error
+
+
 class ObservationLifetime:
     def __init__(self):
         self.stopped = threading.Event()

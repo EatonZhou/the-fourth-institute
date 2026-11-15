@@ -100,11 +100,14 @@ class AccountMonitor:
             return {}
 
     def refresh_account(self, account, *, force=False, passive=False):
-        # Single admission point, including direct/manual calls. Failures count
-        # as attempts; passive observations neither consume nor obey this gate.
+        # Reserve atomically before dispatch. Positively unsent failures release
+        # their own slot; dispatched/uncertain failures retain the 10m cooldown.
+        previous_attempt = None
         if not passive:
             with self._lock:
                 now = time.time()
+                previous_state = self._observation_store.state(account.provider, account.account_id)
+                previous_attempt = previous_state.get('attempted_at') if isinstance(previous_state, dict) else None
                 if not self._observation_store.claim(account.provider, account.account_id,
                         now=now, interval=MIN_READ_INTERVAL_SECONDS):
                     state = self._observation_store.state(account.provider, account.account_id)
@@ -131,6 +134,14 @@ class AccountMonitor:
                     sample = deepcopy(self._samples.get(account.account_id) or {})
                 if error_code:
                     sample.update(status='unavailable', error_code=error_code)
+                if not passive and sample.get('quota_request_sent') is False:
+                    if self._observation_store.release_unsent(account.provider, account.account_id,
+                            attempted_at=now, previous_attempt=previous_attempt):
+                        with self._lock:
+                            if previous_attempt is None:
+                                self._last_read_attempt.pop(account.account_id, None)
+                            else:
+                                self._last_read_attempt[account.account_id] = previous_attempt
                 try:
                     self._observation_store.append(account.provider, account.account_id, sample,
                         started_at=started_at, finished_at=time.time(), forced=force)
@@ -214,6 +225,10 @@ class AccountMonitor:
         except Exception as error:
             if self.stopped.is_set():
                 return
+            from .account_observation import AccountReadNotSent
+            unsent = isinstance(error, AccountReadNotSent)
+            if unsent:
+                error = error.__cause__ or error
             logger.warning('Account observation call failed for %s (%s)',
                            account.account_id, type(error).__name__)
             if is_authentication_failure(error, provider=account.provider):
@@ -227,7 +242,8 @@ class AccountMonitor:
             with self._lock:
                 self._samples[account.account_id] = self._failed_sample(account, {
                     "status": "unavailable", "error_code": error_code,
-                    "error_kind": type(error).__name__, "error": message, "refreshing": False})
+                    "error_kind": type(error).__name__, "quota_request_sent": False if unsent else None,
+                    "error": message, "refreshing": False})
             if account.quota_enabled and self.scheduler.quota_reserve_enabled:
                 self.scheduler.update_account_quota(account.account_id, {"status": "unknown", "credits": {}})
         if not self.stopped.is_set() and not passive:

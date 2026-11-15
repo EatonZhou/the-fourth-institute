@@ -60,7 +60,9 @@ def quota_sample(payload, observed_at):
 
 
 def observe(client):
-    auth = client._request("GET", "auth")
+    from .account_observation import quota_preflight
+    with quota_preflight():
+        auth = client._request("GET", "auth")
     status = (auth.get("managed_provider") or {}).get("status")
     state = ("logged_in" if status == "authenticated" else
              "login_expired" if status in {"expired", "revoked"} else "logged_out")
@@ -68,7 +70,8 @@ def observe(client):
     sample = {"login_observation": state, "login_observed_at": now().isoformat()}
     if state != "logged_in":
         return {**sample, "status": "unavailable", "quota": {"status": "unknown"},
-                "error_code": "provider_authentication_failed", "error": "登录凭据失效，请重新登录"}
+                "error_code": "provider_authentication_failed", "quota_request_sent": False,
+                "error": "登录凭据失效，请重新登录"}
     try:
         payload = client._request("GET", "oauth/usage")
         if isinstance(payload, dict) and payload.get('kind') != 'ok':

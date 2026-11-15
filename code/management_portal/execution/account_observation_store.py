@@ -16,7 +16,7 @@ from management_common.json_columns import json_text, json_value
 
 
 FIELDS = {
-    'root': ('status', 'checked_at', 'error_code', 'error_kind', 'login_observation', 'login_observed_at'),
+    'root': ('status', 'checked_at', 'error_code', 'error_kind', 'quota_request_sent', 'login_observation', 'login_observed_at'),
     'window': ('id', 'label', 'source', 'status', 'quota_group', 'remaining_percent',
                'used_percent', 'window_duration_mins', 'resets_at', 'observed_at', 'stale'),
     'balance': ('status', 'amount', 'currency', 'metric_kind', 'updated_at', 'stale'),
@@ -162,6 +162,14 @@ class AccountObservationStore:
             c.execute('''UPDATE read_state SET success_at=%s,sample=%s
                 WHERE provider=%s AND account_id=%s''',
                 (now, json_text(evidence(sample)), provider, account_id))
+
+    def release_unsent(self, provider, account_id, *, attempted_at, previous_attempt):
+        """Roll back only our own reservation; never erase a newer caller's slot."""
+        with self.connection() as c:
+            row = c.execute('''UPDATE read_state SET attempted_at=%s
+                WHERE provider=%s AND account_id=%s AND attempted_at=%s RETURNING account_id''',
+                (previous_attempt, provider, account_id, attempted_at)).fetchone()
+        return row is not None
 
     def profiles(self, account_ids):
         if not account_ids:

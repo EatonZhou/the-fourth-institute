@@ -220,11 +220,14 @@ class CodexAccounts:
     def observe(self, account, *, force=False):
         from management_portal.codex_app_server_client import client_for_socket
         from .codex_quota import credits, quota_sample
-        route = self.registry.get(account.route_id)
+        from .account_observation import quota_preflight
+        with quota_preflight():
+            route = self.registry.get(account.route_id)
         if getattr(route, "kind", "") == "api_profile":
             # Rate-limit windows belong to ChatGPT plans; an API key's spend is its balance.
             return {"status": "ok", "rate_limits": []}
-        client = client_for_socket(route.socket_path)
+        with quota_preflight():
+            client = client_for_socket(route.socket_path)
         from .account_observation import cancelled, check_cancelled
         check_cancelled()
         payload = client.request("account/rateLimits/read", {}, timeout=15.0, cancellation_requested=cancelled)
@@ -415,9 +418,12 @@ class KimiAccounts:
             return {"status": "ok", "rate_limits": []}
         from management_portal.kimi_account_runtime import client_for_route
         from .kimi_account_usage import observe
+        from .account_observation import quota_preflight
         # Monitoring must neither launch a server nor infer authentication from
         # process availability. The native managed provider owns this fact.
-        return observe(client_for_route(account.route_id, for_control=True))
+        with quota_preflight():
+            client = client_for_route(account.route_id, for_control=True)
+        return observe(client)
 
 
 class ConfiguredAccounts:
