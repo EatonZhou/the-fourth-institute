@@ -37,6 +37,15 @@ def test_cycle_counts_from_full_start_to_first_exhaustion():
     assert c['tokens_at_100_percent_same_mix']['total_tokens'] == 800
 
 
+def test_cycle_start_counts_and_next_reset_does_not_leak_into_previous_window():
+    events = [event('2026-11-01T00:00:00Z', total_tokens=10),
+              event('2026-11-03T00:00:00Z', total_tokens=20),
+              event(RESET, total_tokens=30)]
+    [c] = cycles(events, [sample('2026-11-03T00:00:00Z', 0)])
+    assert c['recorded_tokens']['total_tokens'] == 30
+    assert c['tokens_after_final_observation'] == 0
+
+
 def test_model_tokens_are_split_by_service_tier():
     events = [event('2026-11-02T00:00:00Z', input_tokens=10, total_tokens=10),
               {**event('2026-11-02T01:00:00Z', input_tokens=30, total_tokens=30), 'service_tier': 'priority'}]

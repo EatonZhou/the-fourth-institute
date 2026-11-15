@@ -6,7 +6,7 @@ consumption is the largest decline seen in the window: 100 minus the lowest
 remaining percentage. Partial segments between two samples are not used,
 because a sample can lag the usage that produced it.
 """
-from bisect import bisect_right
+from bisect import bisect_left, bisect_right
 from datetime import timedelta
 
 from scripts.provider_usage_cycles import _residual_exclusions, _weekly_quota_keys
@@ -49,13 +49,14 @@ def _token_prefix(events, parse_time):
     return indexes
 
 
-def _window_tokens(indexes, models, excluded, start, end):
-    """Tokens in (start, end] per model (split by service tier) and in total."""
+def _window_tokens(indexes, models, excluded, start, end, *, include_start=False, include_end=True):
+    """Token ranges: cycle starts inclusive, final observations inclusive, next endpoints exclusive."""
     by_model, total = {}, dict.fromkeys(FIELDS, 0)
     for (model, tier), (times, prefix, reported) in sorted(indexes.items()):
         if (models and model not in models) or model in excluded:
             continue
-        left, right = bisect_right(times, start), bisect_right(times, end)
+        left = (bisect_left if include_start else bisect_right)(times, start)
+        right = (bisect_right if include_end else bisect_left)(times, end)
         if left == right:
             continue
         usage = {key: prefix[right][i] - prefix[left][i] for i, key in enumerate(FIELDS)}
@@ -168,9 +169,9 @@ def full_cycle_capacity(events, quotas, parse_time, since, until, provider_event
                 plans = sorted({p['plan'] for p in plan_periods if p['from'] < final_at and start < p['until']})
                 plan_basis = 'declared_periods' if plans else None
             finished = reset <= until or number + 1 < len(resets)
-            by_model, total = _window_tokens(indexes, models, excluded, start, final_at)
+            by_model, total = _window_tokens(indexes, models, excluded, start, final_at, include_start=True)
             window_end = min(value for value in (reset, until, next_start) if value is not None)
-            _, after_final = _window_tokens(indexes, models, excluded, final_at, window_end)
+            _, after_final = _window_tokens(indexes, models, excluded, final_at, window_end, include_end=False)
             end_reason = _end_reason(next_start, finished, global_resets)
             policies = [p for p in policy_changes if start < p['at'] <= final_at]
             if not finished:

@@ -137,3 +137,27 @@ def test_clean_cut_off_cycles_enter_the_fit():
 
 def test_unpriced_providers_are_skipped():
     assert weight_report([{'provider': 'claude', 'weekly_cycles': [cycle(m) for m in MIXES]}]) == []
+
+
+def test_unknown_plan_is_not_silently_assigned_to_known_plan():
+    known = [cycle(m, plan=['pro']) for m in MIXES]
+    unknown = [cycle(m, scale=SCALE*3) for m in MIXES]
+    fits = {f['plan']: f for f in weight_report([{'provider': 'codex', 'weekly_cycles': known+unknown}])}
+    assert fits['pro']['cycles'] == len(known)
+    assert fits['unknown']['cycles'] == len(unknown)
+    assert fits['unknown']['usd_at_100_percent'] < fits['pro']['usd_at_100_percent']/2
+
+
+def test_partial_prices_cannot_fit_full_quota_consumption():
+    clean = [cycle(m, plan=['pro']) for m in MIXES]
+    mixed = cycle(MIXES[0], plan=['pro'])
+    mixed['models']['unpriced-model'] = {'recorded_tokens': {'input_tokens': 1000000, 'output_tokens': 0}}
+    mixed['used_percentage_points'] *= 4
+    [fit] = weight_report([{'provider': 'codex', 'weekly_cycles': clean+[mixed]}])
+    assert fit['cycles'] == len(clean)
+    assert fit['unpriced_models'] == {'unpriced-model': 1000000}
+    assert mixed['weighted_capacity'] is None
+    assert mixed['fit_exclusion_reason'] == 'unpriced_model_tokens'
+    assert fit_price_model([mixed, mixed], 'codex') is None
+    assert weight_report([{'provider': 'codex', 'weekly_cycles': [mixed, mixed]}]) == []
+    assert mixed['fit_exclusion_reason'] == 'unpriced_model_tokens'

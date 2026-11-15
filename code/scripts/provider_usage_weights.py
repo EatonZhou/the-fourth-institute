@@ -150,6 +150,8 @@ def _samples(cycles, provider):
         costs, missing = cycle_costs(cycle, provider)
         for model, tokens in missing.items():
             unpriced[model] = unpriced.get(model, 0) + tokens
+        if any(missing.values()):
+            continue  # A partial numerator cannot explain the whole quota decline.
         if any(k[0] != 'list_fast' for k in costs):
             samples.append((costs, cycle['used_percentage_points']))
     return samples, unpriced
@@ -212,6 +214,8 @@ def rescale_fit(cycles, provider, base):
 def apply_price_model(cycle, provider, fit):
     factors = {k: v for k, v in fit['line_factors'].items() if k != fit['reference_line']}
     costs, unpriced = cycle_costs(cycle, provider)
+    if any(unpriced.values()):
+        return None
     adjusted = _adjusted(costs, factors, fit['fast_multiplier'])
     used = cycle.get('used_percentage_points')
     if not adjusted or not used:
@@ -227,8 +231,7 @@ def weight_report(accounts, external_usage=()):
     """Fit per (provider, quota group, policy era, plan); annotate usable cycles in place.
 
     Usable cycles are exhausted ones and cut-off ones with a clean lowest sample
-    (``fit_basis``). Cycles without a known plan join the era's most common known
-    plan: accounts are mostly on one plan, and native Codex samples carry no plan.
+    (``fit_basis``). Cycles without a known plan remain a separate unknown group.
     Cycles whose actual/predicted ratio is outside the inclusive bounds are
     dropped and the fit repeated until the kept set settles; they are still priced
     and marked ``fit_outlier``. Accounts in ``external_usage`` (also used where no
@@ -245,6 +248,9 @@ def weight_report(accounts, external_usage=()):
             if not basis:
                 continue
             cycle['fit_basis'] = basis
+            if any(cycle_costs(cycle, account['provider'])[1].values()):
+                cycle['fit_exclusion_reason'] = 'unpriced_model_tokens'
+                cycle['weighted_capacity'] = None
             if account.get('account_id') in external_usage:
                 cycle['external_usage_declared'] = True
             groups.setdefault((account['provider'], cycle.get('quota_group'), cycle.get('policy_era')), []).append(cycle)
@@ -254,9 +260,8 @@ def weight_report(accounts, external_usage=()):
         for cycle in cycles:
             plan = cycle['plan_types'][0] if len(cycle.get('plan_types') or []) == 1 else None
             plans.setdefault(plan, []).append(cycle)
-        known = sorted((p for p in plans if p), key=lambda p: (-len(plans[p]), p))
-        for plan in sorted(set(known or [None]), key=str):
-            members = plans.get(plan, []) + (plans.get(None, []) if plan and known and plan == known[0] else [])
+        for plan in sorted(plans, key=str):
+            members = plans[plan]
             fit, outliers = trim_outliers(members, provider, lambda kept: fit_price_model(kept, provider))
             selections.append(((provider, group), era, plan, members, fit, outliers))
     bases = {}
@@ -274,7 +279,7 @@ def weight_report(accounts, external_usage=()):
         if not fit:
             continue
         dropped = {id(c) for c in outliers}
-        kept = [c for c in members if id(c) not in dropped]
+        kept = [c for c in members if id(c) not in dropped and not c.get('fit_exclusion_reason')]
         fits.append({'provider': scope[0], 'quota_group': scope[1], 'policy_era': era, 'plan': plan or 'unknown',
                      **fit, 'partial_cycles': sum(c['fit_basis'] == 'partial' for c in kept),
                      'external_usage_cycles': sum(bool(c.get('external_usage_declared')) for c in kept),
@@ -282,6 +287,8 @@ def weight_report(accounts, external_usage=()):
                      'outlier_min_ratio': OUTLIER_MIN_RATIO, 'outlier_max_ratio': OUTLIER_MAX_RATIO})
         for cycle in members:
             cycle['weighted_capacity'] = apply_price_model(cycle, scope[0], fit)
+            if cycle['weighted_capacity'] is None and any(cycle_costs(cycle, scope[0])[1].values()):
+                cycle['fit_exclusion_reason'] = 'unpriced_model_tokens'
             cycle['fit_outlier'] = id(cycle) in dropped
     return fits
 
