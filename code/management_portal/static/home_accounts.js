@@ -225,7 +225,7 @@
       if (cardsStale) lines.push(t("上次读数"));
       return window.PortalI18n.html`<dl class="account-details-metrics" data-account-subscription>
         <div data-account-tier-tooltip tabindex="0" title="${esc(tierTitle)}"><dt>套餐档位</dt><dd data-account-tier>${esc(tierValue)}${stale ? "*" : ""}</dd></div>
-        ${["codex", "claude"].includes(account.provider) ? window.PortalI18n.html`<div data-account-refresh-cards-tooltip tabindex="0" title="${esc(lines.join("\n"))}"><dt>刷新卡次数</dt><dd data-account-refresh-cards>${esc(count)}${cardsStale && count !== "—" ? "*" : ""}</dd></div>` : ""}
+        ${["codex", "claude", "antigravity"].includes(account.provider) ? window.PortalI18n.html`<div data-account-refresh-cards-tooltip tabindex="0" title="${esc(lines.join("\n"))}"><dt>刷新卡次数</dt><dd data-account-refresh-cards>${esc(count)}${cardsStale && count !== "—" ? "*" : ""}</dd></div>` : ""}
       </dl>`;
     }
 

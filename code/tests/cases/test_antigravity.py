@@ -470,6 +470,12 @@ def test_account_quota_uses_native_command_without_model_tools_or_resident_histo
     sample = accounts.observe_account("antigravity_one")
     assert sample["login_observation"] == "logged_in"
     assert sample["status"] == "ok"
+    assert sample['refresh_cards']['available_count'] == 0
+    assert sample['refresh_cards']['basis'] == 'native_field_absent_as_zero'
+    assert sample['refresh_cards']['cards'] == []
+    assert sample['refresh_cards']['observed_at'] == datetime.fromtimestamp(sample['rate_limits'][0]['observed_at'], timezone.utc).isoformat()
+    from management_portal.execution.account_observation_store import evidence
+    assert evidence(sample)['refresh_cards']['basis'] == 'native_field_absent_as_zero'
     assert [w["remaining_percent"] for w in sample["rate_limits"]] == [73, 91]
     assert sample["rate_limits"][0]["resets_at"] == datetime(2026, 11, 1, 8, 30, tzinfo=timezone.utc).timestamp()
     assert sample["rate_limits"][0]["label"] == "Gemini Models · Five Hour Limit"
@@ -499,6 +505,7 @@ def test_quota_failure_retains_auth_without_exposing_errors_or_falling_back_to_l
     sample = accounts.observe_account("antigravity_one")
     assert sample["login_observation"] == "logged_in"
     assert sample["error_code"] == code
+    assert 'refresh_cards' not in sample  # Failure cannot manufacture a zero.
     assert sample["rate_limits"] == []
     assert "secret" not in json.dumps(sample)
     assert any(c["method"] == "session/prompt" for c in requests(agent)) is prompted

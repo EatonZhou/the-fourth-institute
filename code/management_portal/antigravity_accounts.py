@@ -219,7 +219,11 @@ def observe_account(account_id):
                 windows = quota_windows("".join(chunks), time.time())
                 if not windows:
                     raise ValueError("No quota windows reported")
-                sample.update(status="ok", rate_limits=windows)
+                sample.update(status="ok", rate_limits=windows,
+                    refresh_cards={"status": "observed", "available_count": 0, "cards": [],
+                        "source": "antigravity.acp/usage", "basis": "native_field_absent_as_zero",
+                        "observed_at": datetime.fromtimestamp(windows[0]['observed_at'], timezone.utc).isoformat(),
+                        "stale": False})
             except (AcpError, TimeoutError, ValueError, KeyError):
                 # Quota failure is not evidence of logout. Raw native errors and
                 # the report must not cross the account-observation boundary.

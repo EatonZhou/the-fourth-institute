@@ -42,7 +42,7 @@ def evidence(sample):
             result[key] = _fields(sample[key], FIELDS[key])
     cards = sample.get('refresh_cards')
     if isinstance(cards, dict):
-        result['refresh_cards'] = _fields(cards, ('status', 'available_count', 'source', 'observed_at', 'stale'))
+        result['refresh_cards'] = _fields(cards, ('status', 'available_count', 'source', 'observed_at', 'stale', 'basis'))
         result['refresh_cards']['cards'] = ([_fields(c, ('id', 'resetType', 'status', 'grantedAt', 'startsAt', 'expiresAt', 'title', 'description', 'remaining_count'))
                                             for c in cards['cards'] if isinstance(c, dict)]
                                            if isinstance(cards.get('cards'), list) else None)
