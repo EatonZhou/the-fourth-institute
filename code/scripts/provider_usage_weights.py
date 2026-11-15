@@ -54,6 +54,8 @@ KINDS = ('uncached', 'cached', 'output')
 
 def fit_basis(cycle):
     """'exhausted', 'partial' (cut off with a clean lowest sample) or None (not usable for pricing)."""
+    if cycle.get('ordinary_capacity_eligible') is False:
+        return None
     used = cycle.get('used_percentage_points')
     if not used:
         return None

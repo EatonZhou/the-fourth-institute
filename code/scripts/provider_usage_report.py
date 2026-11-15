@@ -26,8 +26,11 @@ def weekly_cycle_diagnostics(account):
         gaps.append('window_still_ongoing')
     if statuses.get('not_exhausted'):
         gaps.append('partial_window_not_full_capacity_measurement')
+    if statuses.get('funding_unverified'):
+        gaps.append('ordinary_subscription_funding_not_verified')
     return {'observed_weekly_windows': len(cycles), 'window_status_counts': statuses,
             'measured_weekly_cycles': statuses.get('measured', 0),
+            'funding_unverified_cycles': statuses.get('funding_unverified', 0),
             'bounded_reset_observations': bounded, 'evidence_gaps': gaps}
 
 
@@ -99,6 +102,8 @@ def markdown(report):
                 (' (outlier)' if c.get('fit_outlier') else '')
             lines.append(f"| {cell(a['provider'])} / {cell(a['account_id'])} | {cell(c['quota_group'])} | {c['cycle_start']} | {c['final_observed_at']} | {c['used_percentage_points']:g}% | {c['recorded_tokens']['total_tokens']:,} | {format(full['total_tokens'], ',') if full else '-'} | {equivalent} | {ratio} | {status} |")
     lines += ['', 'No measured cycle means insufficient evidence or no applicable weekly subscription quota, not zero capacity.',
+              'Pure subscription fits require every recorded request in the cycle to have confirmed subscription funding. '
+              'Mixed or unknown funding excludes the whole cycle; recorded tokens and observational values remain in JSON.',
               'Per-model typed tokens for each cycle, split by service tier, are retained in the JSON artifact.', '',
               '## Quota Pricing', '',
               'Requests are priced at API list price (uncached input, cached input and output separately), then corrected by',

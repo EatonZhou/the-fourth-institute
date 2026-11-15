@@ -490,13 +490,16 @@ def report_account(account, since, until, timezone_name, cache=None, provider_ev
             bound['within_10_percent'] = None
     from scripts.provider_usage_capacity import full_cycle_capacity
     attributor = Attributor({**account, 'quota_observations': attribution_observations})
+    from scripts.provider_usage_funding_filter import funding_class, filter_cycles
     def attributed():
         for event in events.values():
             attribution = attributor.attribute(event)
+            event['capacity_funding_class'] = funding_class(attribution)
             if attribution_sink is not None:
                 attribution_sink(event, attribution)
             yield event, attribution
     attribution_summary = summarize(attributed())
+    attribution_summary['ordinary_capacity_filter_applied'] = True
     # An announcement alone is not an account reset observation.
     cycles = full_cycle_capacity(events.values(), quotas, moment, since, until,
                                  [p for p in provider_events if p['kind'] != 'global_reset'], plan_periods)
@@ -516,6 +519,7 @@ def report_account(account, since, until, timezone_name, cache=None, provider_ev
                          tokens_at_100_percent_same_mix=None)
             for model in cycle['models'].values():
                 model['tokens_at_100_percent_same_mix'] = None
+    filter_cycles(cycles, events.values(), moment, sources_failed=bool(failures))
     measured_cycles = [c for c in cycles if c['status'] == 'measured']
     return {'provider': account['provider'], 'account_id': account['account_id'], 'source_files': scanned,
             'usage_source': 'native_session_history' if native_primary else 'existing_api_records',
@@ -527,7 +531,9 @@ def report_account(account, since, until, timezone_name, cache=None, provider_ev
             'reset_classifications': reset_classifications,
             'resident_comparisons': comparisons,
             'weekly_cycles': cycles,
-            'weekly_capacity_status': 'measured_full_cycles' if measured_cycles else 'insufficient_weekly_quota_evidence',
+            'weekly_capacity_status': ('measured_full_cycles' if measured_cycles else
+                'insufficient_funding_evidence' if any(c['status'] == 'funding_unverified' for c in cycles)
+                else 'insufficient_weekly_quota_evidence'),
             'unplaced_execution_tokens': sum(max(0, c['difference']) for c in comparisons),
             'gaps': sorted(gaps)}
 
