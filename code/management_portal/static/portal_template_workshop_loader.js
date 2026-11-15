@@ -24,7 +24,8 @@
     const panels = workbench.getPanelsByType('workshop');
     const same = panels.find(panel => resource.template_id ? panel.target().template_id === resource.template_id : resource.store_id && panel.target().store_id === resource.store_id);
     if (same) { workbench.focusPanel(same.id); return same; }
-    const sibling = panels[0];
+    const hidden = workbench.getState().hidden;
+    const sibling = panels.find(panel => !hidden.includes(panel.id));
     return workbench.openResource({type:'workshop',mode:sibling ? 'new-tab' : 'side',side:'right',
       targetInstanceId:sibling?.id || sourcePanelId,resource:{...resource,kind:'workshop'}});
   }
@@ -55,8 +56,10 @@
           },
           onSaved: template => { target = {...target,store_id:'',template_id:template.template_id,title:template.title}; options.emit?.('workshop-saved',target); },
           onDeleted: () => {
+            target = {...target,template_id:'',store_id:'',title:window.PortalI18n.t('模板工坊')};
+            chat?.destroy(); workshop?.destroy(); chat = null; workshop = null; pending = null;
+            root.replaceChildren();
             if (options.context) options.emit?.('workshop-deleted');
-            else { chat?.destroy(); workshop?.destroy(); root.replaceChildren(); }
           },
           execute:options.execute});
         await workshop.load();
@@ -70,9 +73,16 @@
       })().catch(error => { root.textContent = window.PortalI18n.message(error.message || error); throw error; });
       return pending;
     }
+    async function show() {
+      visible = true;
+      await mount();
+      if (needsFit && !destroyed) { workshop.fit(); needsFit = false; }
+    }
     return {
       id,get ready() { return mount(); },target:() => ({...target}),
-      async connect() { visible = true; await mount(); if (needsFit && !destroyed) { workshop.fit(); needsFit = false; } },
+      connect() { if (!options.context) return show(); },
+      show,
+      hide() { visible = false; },
       disconnect() { visible = false; },
       async canClose() {
         try { await pending; } catch (_) { return true; }

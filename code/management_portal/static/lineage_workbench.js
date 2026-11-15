@@ -522,7 +522,7 @@
       });
 
       const {
-        terminalAllowed, terminalEditorType, lineageEditorTypes, terminalEditorDescriptor,
+        terminalAllowed, terminalEditorType, lineageEditorTypes, terminalEditorDescriptor, workshopEditorDescriptor,
         currentLineageEditorResource, lineageEditorDescriptor, lineageHatgWorkspace,
       } = workbenchModule("PortalLineageWorkbenchEditors").createEditors({
         activateLineageChatWorkspace, activePreviewPayload, apiGet, apiPost, bindChatMarkdownLinks,
@@ -952,6 +952,7 @@
               resource: currentLineageEditorResource("preview"),
             }),
             terminalEditorDescriptor(),
+            workshopEditorDescriptor(),
             lineageEditorDescriptor({
               instanceId: "hatg",
               type: "hatg",
@@ -1112,7 +1113,8 @@
         if (openingNavigation.view !== "hatg") return applied;
         // A restored workshop stack is part of this canvas session. Keep its
         // tabs/split when the same HATG URL is refreshed.
-        if (!lineageWorkbench.getPanelsByType('workshop').length) lineageWorkbench.applyWorkspace(lineageHatgWorkspace());
+        const hiddenPanels = lineageWorkbench.getState().hidden;
+        if (!lineageWorkbench.getPanelsByType('workshop').some(panel => !hiddenPanels.includes(panel.id))) lineageWorkbench.applyWorkspace(lineageHatgWorkspace());
         else if (!lineageWorkbench.isPanelExpanded('hatg')) lineageWorkbench.showPanel('hatg');
         lineageWorkbench.focusPanel("hatg");
         return applied;

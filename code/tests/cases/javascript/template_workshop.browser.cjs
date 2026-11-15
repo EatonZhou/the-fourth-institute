@@ -13,6 +13,7 @@ const {chromium} = require(path.join(repo, 'management_portal/test_framework/tau
     await page.goto(process.env.WORKSHOP_TEST_ORIGIN);
     assert.deepEqual(errors,[], 'page scripts must load before mounting');
     await page.evaluate(async lineageId => {
+      window.sourceLineageId=lineageId;
       PortalI18n.apply('zh-CN');
       window.PortalIdentity={username:()=>'sample_admin'};
       window.PortalAPI={get:path=>fetch(path).then(response=>response.json())};
@@ -168,12 +169,13 @@ const {chromium} = require(path.join(repo, 'management_portal/test_framework/tau
     // Real package and Workbench lifecycle, with the production Lineage editor
     // descriptor: split, tab, focus, close guard and persisted binding restore.
     await page.evaluate(async templateId=>{
+      const sourceLineageId=window.sourceLineageId;
       chat.destroy();workshop.destroy();
       document.body.innerHTML='<main id="cardWorkbench" style="height:100vh"></main>';
       PortalIdentity.peek=()=>({});
       window.PortalInstructionClient={execute};
       const deps=Object.fromEntries(PortalLineageWorkbenchEditors.dependencies.map(key=>[key,()=>{}]));
-      const editors=PortalLineageWorkbenchEditors.createEditors({...deps,state:{},lineageSidebarRoots:new Map()});
+      const editors=PortalLineageWorkbenchEditors.createEditors({...deps,state:{chatTarget:{lineage_id:sourceLineageId}},lineageSidebarRoots:new Map()});
       PortalWorkbench.registerPanelPackage({type:'workshop-source-fixture',version:1,
         presentation:{title:'HATG source',icon:'network'},sizing:{minWidth:200,minHeight:100},instances:'single',
         capabilities:[],behavior:{canHide:true,canCollapse:true,canMove:true,closable:false},context:{channels:[]},persistence:{schemaVersion:1},
@@ -188,6 +190,15 @@ const {chromium} = require(path.join(repo, 'management_portal/test_framework/tau
           if(event==='workshop-deleted')void controller.closePanel(sourcePanelId);
         }});
       window.cards=makeCards();
+      const componentStore={value:null,read(){return this.value||{};},replace(value){this.value=structuredClone(value);}};
+      window.makeComponentCards=()=>PortalWorkbench.create({id:'workshop-components',root:'#cardWorkbench',store:componentStore,
+        initialEditors:[{id:'source',type:'workshop-source-fixture'},editors.workshopEditorDescriptor()],
+        defaultLayout:PortalWorkbench.model.stack(['source']),editorTypes:editors.lineageEditorTypes,
+        resolveEditorResource:editors.currentLineageEditorResource,createEditorDescriptor:editors.lineageEditorDescriptor,
+        onPanelEvent:({event,sourcePanelId,detail},controller)=>{
+          if(['workshop-saved','workshop-title'].includes(event))controller.setPanelTitle(sourcePanelId,detail.title);
+          if(event==='workshop-deleted')void controller.closePanel(sourcePanelId);
+        }});
       await PortalTemplateWorkshopLoader.openInWorkbench(cards,{template_id:templateId},'source');
       await cards.getPanelsByType('workshop')[0].ready;
     },first);
@@ -216,6 +227,33 @@ const {chromium} = require(path.join(repo, 'management_portal/test_framework/tau
     await active.locator('[data-action="delete"]').click();
     await page.getByRole('alertdialog').getByRole('button',{name:'删除',exact:true}).click();
     await page.waitForFunction(()=>cards.getPanelsByType('workshop').length===1);
+    // The default component belongs to the shared hidden rail and layout menu.
+    // Hiding preserves the in-memory draft; saving restores its template after reload.
+    await page.evaluate(()=>{cards.destroy();window.cards=makeComponentCards();});
+    const entry=page.locator('[data-workbench-restore-panel="workshop"]');
+    assert.equal(await entry.isVisible(),true);
+    assert.equal(await page.locator('.templateWorkshop').count(),0,'hidden component must load lazily');
+    await entry.click();
+    await page.evaluate(()=>cards.getPanel('workshop').ready);
+    assert.equal(await page.evaluate(()=>cards.getPanel('workshop').target().lineage_id),process.env.WORKSHOP_TEST_LINEAGE);
+    await active.locator('[data-meta="title"]').fill('Component draft');
+    await page.locator('.portalWorkbenchCustomizeButton').click();
+    await page.locator('[data-workbench-panel-toggle="workshop"]').uncheck();
+    await page.locator('.portalWorkbenchCustomizeButton').click();
+    await entry.click();
+    assert.equal(await active.locator('[data-meta="title"]').inputValue(),'Component draft');
+    await active.locator('[data-workshop-save]').click();
+    await page.waitForFunction(()=>cards.getPanel('workshop').target().template_id);
+    await page.evaluate(async()=>{cards.destroy();window.cards=makeComponentCards();await cards.getPanel('workshop').ready;});
+    assert.equal(await active.locator('[data-meta="title"]').inputValue(),'Component draft');
+    await active.locator('.workshopMore summary').click();
+    await active.locator('[data-action="delete"]').click();
+    await page.getByRole('alertdialog').getByRole('button',{name:'删除',exact:true}).click();
+    await entry.waitFor({state:'visible'});
+    await entry.click();
+    await page.evaluate(()=>cards.getPanel('workshop').ready);
+    assert.equal(await page.evaluate(()=>Boolean(cards.getPanel('workshop').target().template_id)),false);
+    assert.equal(await active.locator('[data-workshop-save]').isEnabled(),true);
     assert.deepEqual(errors,[]);
     console.log('Workshop Chromium layout, inspector, pickup/drag, real saves, assistant discovery/duty and file draft conflicts passed.');
   } finally {await browser.close();}

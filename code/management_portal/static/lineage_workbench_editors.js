@@ -78,6 +78,13 @@
       });
     }
 
+    function workshopEditorDescriptor() {
+      return lineageEditorDescriptor({
+        instanceId: "workshop", type: "workshop",
+        resource: { ...currentLineageEditorResource("workshop"), defaultHidden: true },
+      });
+    }
+
     function currentLineageEditorResource(type) {
       const projection = window.PortalProjections?.resource(type);
       if (projection) return projection;
@@ -88,6 +95,7 @@
         || ""
       ).trim();
       if (type === "chat") return { kind: "chat", resident_id: residentId, lineage_id: lineageId, title: currentResident()?.name || residentId || window.PortalI18n.t("Chat Workspace") };
+      if (type === "workshop") return { kind: "workshop", lineage_id: lineageId, title: window.PortalI18n.t("模板工坊") };
       if (type === "hatg") return {
         kind: "hatg",
         lineageId,
@@ -157,6 +165,7 @@
       const binding = { ...(resource || {}), kind: type };
       if (type === 'workshop') {
         return {id:instanceId,type,title:binding.title || window.PortalI18n.t('模板工坊'),
+          layoutTitle:window.PortalI18n.t('模板工坊'),defaultHidden:binding.defaultHidden === true,
           options:{target:binding},reusable:false};
       }
       if (type === "navigation") {
@@ -272,7 +281,7 @@
     }
 
     return Object.freeze({
-      terminalAllowed, terminalEditorType, lineageEditorTypes, terminalEditorDescriptor,
+      terminalAllowed, terminalEditorType, lineageEditorTypes, terminalEditorDescriptor, workshopEditorDescriptor,
       currentLineageEditorResource, lineageEditorDescriptor, lineageHatgWorkspace,
     });
   }
