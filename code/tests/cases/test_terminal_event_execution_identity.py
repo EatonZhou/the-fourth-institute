@@ -66,3 +66,16 @@ def test_future_or_wrong_terminal_outcome_cannot_prove_an_earlier_notice():
     with pytest.raises(ValueError, match="terminal Agent Execution"):
         trigger_paths.resident_terminal_event(LINEAGE, event("completed"), RESIDENT, MESSAGE)
 
+
+@pytest.mark.parametrize("observed,finished,next_bucket", [
+    ("2026-11-01T00:01:00Z", "2026-11-01T00:01:00.123456Z", "2026-11-01T00:01:01Z"),
+    ("2026-11-01T00:01:00.123Z", "2026-11-01T00:01:00.123456Z", "2026-11-01T00:01:00.124Z"),
+    ("2026-11-01T08:01:00+08:00", "2026-11-01T00:01:00.123456Z", "2026-11-01T00:01:01Z"),
+])
+def test_notification_precision_matches_microsecond_execution_records(observed, finished, next_bucket):
+    store = get_agent_data_store()
+    attempt(store, "execution-original", at=CREATED, status="failed", finished_at=finished)
+    attempt(store, "execution-later", at=finished, status="failed", finished_at=next_bucket)
+    resolved = trigger_paths.resident_terminal_event(LINEAGE, event("failed", at=observed), RESIDENT, MESSAGE)
+    assert resolved.payload["execution_id"] == "execution-original"
+

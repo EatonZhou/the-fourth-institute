@@ -2,6 +2,8 @@
 from __future__ import annotations
 
 from typing import Any, Iterable, Mapping
+from datetime import timedelta
+import re
 from management_common.database_time import decode_times, iso_time, instant
 
 COLUMNS = ("execution_id", "message_id", "role", "accepted_at")
@@ -92,14 +94,21 @@ def terminal(store: Any, agent_id: str, message_id: str, *, status: str, observe
     """
     if status not in {"completed", "failed", "cancelled"}:
         raise ValueError("terminal execution status required")
-    cutoff = instant(observed_at)
-    if cutoff is None:
+    observed = instant(observed_at)
+    if observed is None:
         raise ValueError("terminal fact observation time required")
+    # Society's older notices serialize whole seconds, while Agent records
+    # retain microseconds. Interpret the serialized observation at its own
+    # precision, otherwise a finish at .123 would be excluded by its own
+    # notice rendered as :00Z. The next represented time bucket is excluded.
+    precision = re.search(r":\d{2}(?:\.(\d+))?(?:Z|[+-]\d{2}:?\d{2})?$", str(observed_at).strip())
+    digits = len(precision.group(1) or "") if precision else 6
+    cutoff = observed + timedelta(microseconds=10 ** max(0, 6 - digits))
     with store.database.read_current() as connection:
         row = connection.execute(
             "SELECT e.execution_id,e.status,e.created_at,e.finished_at FROM executions e "
             "JOIN execution_inputs i USING(execution_id) WHERE e.agent_id=%s AND i.message_id=%s "
-            "AND e.status=%s AND e.finished_at<=%s "
+            "AND e.status=%s AND e.finished_at<%s "
             "ORDER BY e.finished_at DESC,e.created_at DESC,e.execution_id DESC LIMIT 1",
             (agent_id, message_id, status, cutoff),
         ).fetchone()
