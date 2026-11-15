@@ -4,12 +4,12 @@ type: decision
 project: AI员工
 created_at: '2026-10-13'
 version:
-  number: 34
+  number: 35
   created_at: "2026-10-13"
   created_by:
     user: ""
     agent: "resident_e8fc8c899f00"
-  updated_at: "2026-11-15T14:44:02Z"
+  updated_at: "2026-11-15T15:07:08Z"
   updated_by:
     user: ""
     agent: "resident_25ac6961fafb"
@@ -284,6 +284,10 @@ HATG 画布的控件分在四角：左上是缩放（缩小、百分比、放大
 - **发布与新版本**：本人创建的已保存非内置模板可发布到商店（对“公共内容”持有管理员权限的调用者也可发布 Resident 自建源模板），可附一句 `release_note`。首次发布分配稳定的 `store-<12位小写十六进制>`、记录源模板创建者为 `publisher` 并保存版本 1 快照；之后源模板在本地的修改不会自动改动商店条目，再次发布才递增商店 `version`、追加 `versions` 历史元信息并刷新快照，曾下架的条目同步恢复上架。
 - **安装与更新冲突处理**：安装把当前上架快照复制为调用者名下的个人模板，记录 `installed_from_store_id`、`installed_store_version` 与 `installed_store_hash`。源条目发布新版本后，若本地副本的内容哈希仍等于 `installed_store_hash`（未做本地修改），更新原地覆盖该模板并保留 `template_id`；若本地已修改（`locally_modified` 为真），界面让用户选择“覆盖更新”（`mode: "overwrite"`，用商店新版覆盖当前模板）或“保留本地修改并另存新版”（`mode: "copy"`，解除旧模板的商店关联以保留本地改动，同时新建一份跟踪商店新版的模板）。
 - **下架**：发布者本人或公共内容管理员可下架条目。下架后 `active` 置为 `false`，商店列表不再返回该条目；其他用户已安装进个人工具箱的副本继续保留。
+
+职责实例可通过 Resident Menu 的“打开详情”或 Function Block 的“在工坊中编辑”进入同一工坊组件，资源身份为 `{lineage_id,function_block_id}`，入口 URL 为 `/lineage?lineage=<id>&view=hatg&duty=<id>`。直接拥有的组件、连线和职责记忆进入本地草稿，外部引用只读；Resident 节点配置与嵌套职责在后续角色／组织层处理。保存调用带 `expected_version` 的 ApplyLineageChanges，先 dry_run 展示同一请求的差异，再由用户确认提交。冲突保留草稿，重新载入需确认丢弃。助手草稿携带 Lineage、职责 ID、revision；每张卡片使用独立草稿路径，加载时只做校验，不直接保存。
+
+结构 body 可选 `duty:{description,category,memory:{level,prompt}}`，只保存职责定义，不保存 holder_id；须与 target 空位和 function_block:true 同用。施加到目标 Resident 时按原记忆层级建立职责，纯提示词也可建立没有程序元素的职责块。从单条职责另存模板保留这些字段，持有者转换为 target；组织持有的纯 Effect 链可保存为结构模板。包含 Resident 或嵌套职责的抽取留给角色／组织模板；无法用现有 match 关系解析的外部引用拒绝导出，不把当前实例 ID 固化成模板。
 
 ## 指令一览
 

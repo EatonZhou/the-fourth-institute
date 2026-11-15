@@ -219,7 +219,7 @@
     return slots.map(item => `.templateGraph .hatgNode[data-node-id="${CSS.escape(item.key)}"]{opacity:.65;background:var(--panel-2)}`).join('\n');
   }
 
-  function mount({ root, body, workshop = false, onBeforeChange = () => {}, onChange = () => {}, onSelect = () => {} }) {
+  function mount({ root, body, workshop = false, isReadonly = () => false, onBeforeChange = () => {}, onChange = () => {}, onSelect = () => {} }) {
     const program = window.PortalLineageProgram;
     const factory = window.PortalHatgGraph?.createGraph;
     if (!program || !factory) throw new Error(t('HATG 图形引擎未加载'));
@@ -382,6 +382,7 @@
     // anything the template creates is removed from the template.
     function deleteSelected() {
       const key = selected;
+      if (isReadonly(key)) { hint(t('外部对象只读，请编辑引用它的连线')); return; }
       const item = collections(body()).match.find(row => row.key === key);
       if (item?.kind === 'resident') { hint(t('已有 Resident 不能删除；可在右侧移出查找')); return; }
       change(source => {
@@ -468,11 +469,11 @@
     render();
     controller.fit({ duration: 0, maxScale: workshop ? 1 : 1.1 });
     return Object.freeze({
-      render, select,
+      render, select, addComponent,
       position: event => controller.screenToPosition(event.clientX, event.clientY),
       selected: () => selected,
       fit: () => controller.fit({ duration: 0, maxScale: workshop ? 1 : 1.1 }),
-      remove: key => change(source => { removeElement(source, key); return ''; }),
+      remove: key => { if (!isReadonly(key)) change(source => { removeElement(source, key); return ''; }); },
       destroy() { clearTimeout(hintTimer); abort.abort(); controller.destroy(); root.replaceChildren(); },
     });
   }

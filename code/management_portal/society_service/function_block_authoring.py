@@ -279,7 +279,7 @@ def _elements(body, element_ids, element_keys=None):
 def functionalize_in_body(body, element_ids, actor, *, title="", x=None, y=None,
                         template_id=None, element_keys=None, function_block_id=None, duty=None):
     elements = _elements(body, element_ids, element_keys)
-    if not elements:
+    if not elements and not ((duty or {}).get("memory") or {}).get("prompt"):
         raise ValueError("Functionalize requires at least one element")
     bid = function_block_id or ("fbi_" + secrets.token_hex(6))
     now = _now()

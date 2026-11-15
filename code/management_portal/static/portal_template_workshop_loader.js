@@ -5,9 +5,10 @@
   async function load() {
     if (!loading) loading = (async () => {
       await window.PortalHatgLoader.load();
-      for (const source of ['/static/lineage_templates.css','/static/template_workshop.css',
+      for (const source of ['/static/lineage_templates.css','/static/lineage_function_blocks.css','/static/template_workshop.css',
         '/static/vendor/monaco/vs/nls/lang/zh-cn.js','/static/vendor/monaco/vs/loader.js','/static/portal_code_editor.js',
-        '/static/lineage_template_workshop_draft.js','/static/lineage_template_workshop.js','/static/lineage_template_workshop_chat.js']) {
+        '/static/lineage_template_workshop_draft.js','/static/lineage_template_workshop.js',
+        '/static/lineage_duty_workshop_model.js','/static/lineage_duty_workshop.js','/static/lineage_template_workshop_chat.js']) {
         await window.PortalUIPrimitives.loadAsset(source);
       }
     })().catch(error => { loading = null; throw error; });
@@ -22,7 +23,9 @@
   }
   async function openInWorkbench(workbench, resource = {}, sourcePanelId = '') {
     const panels = workbench.getPanelsByType('workshop');
-    const same = panels.find(panel => resource.template_id ? panel.target().template_id === resource.template_id : resource.store_id && panel.target().store_id === resource.store_id);
+    const same = panels.find(panel => resource.function_block_id
+      ? panel.target().function_block_id === resource.function_block_id && panel.target().lineage_id === resource.lineage_id
+      : resource.template_id ? panel.target().template_id === resource.template_id : resource.store_id && panel.target().store_id === resource.store_id);
     if (same) { workbench.focusPanel(same.id); return same; }
     const hidden = workbench.getState().hidden;
     const sibling = panels.find(panel => !hidden.includes(panel.id));
@@ -45,16 +48,18 @@
         host.querySelectorAll('[id]').forEach(node => { node.dataset.workshopId = node.id; node.id = `${id}-${node.id}`; });
         window.PortalI18n.renderStatic(host);
         if (root.getBoundingClientRect().width < 760) host.classList.add('workshopChatCollapsed');
-        workshop = window.LineageTemplateWorkshop.mount({root:host,lineageId:target.lineage_id || '',templateId:target.template_id || '',storeId:target.store_id || '',
+        const factory = target.function_block_id ? window.LineageDutyWorkshop : window.LineageTemplateWorkshop;
+        workshop = factory.mount({root:host,lineageId:target.lineage_id || '',functionBlockId:target.function_block_id || '',templateId:target.template_id || '',storeId:target.store_id || '',
           onOpenWorkshop:resource => {
             if (options.context) return options.emit?.('workshop-open',{resource});
             const url = new URL('/template-workshop',location.href);
             if (resource.template_id) url.searchParams.set('template',resource.template_id);
             if (resource.store_id) url.searchParams.set('store',resource.store_id);
             if (resource.lineage_id) url.searchParams.set('lineage',resource.lineage_id);
+            if (resource.function_block_id) url.searchParams.set('duty',resource.function_block_id);
             location.assign(url);
           },
-          onSaved: template => { target = {...target,store_id:'',template_id:template.template_id,title:template.title}; options.emit?.('workshop-saved',target); },
+          onSaved: template => { target = {...target,store_id:'',...template}; options.emit?.('workshop-saved',target); },
           onDeleted: () => {
             target = {...target,template_id:'',store_id:'',title:window.PortalI18n.t('模板工坊')};
             chat?.destroy(); workshop?.destroy(); chat = null; workshop = null; pending = null;
@@ -86,9 +91,11 @@
       disconnect() { visible = false; },
       async canClose() {
         try { await pending; } catch (_) { return true; }
-        return !workshop?.dirty() || window.PortalUI.confirm({title:window.PortalI18n.t('关闭模板工坊？'),message:window.PortalI18n.t('模板有未保存的修改'),confirmLabel:window.PortalI18n.t('关闭')});
+        return !workshop?.dirty() || window.PortalUI.confirm({title:window.PortalI18n.t('关闭工坊？'),message:window.PortalI18n.t('有未保存的修改'),confirmLabel:window.PortalI18n.t('关闭')});
       },
-      async openResource(resource) { if (resource.template_id === target.template_id) return {accepted:true}; return {accepted:false}; },
+      async openResource(resource) {
+        return {accepted:resource.lineage_id === target.lineage_id && ['template_id','store_id','function_block_id'].every(key => (resource[key] || '') === (target[key] || ''))};
+      },
       snapshot:() => ({...target,dirty:workshop?.dirty() || false}),
       restore(value) { if (!pending) target = {...target,...value}; },
       destroy() { destroyed = true; chat?.destroy(); workshop?.destroy(); root.replaceChildren(); },

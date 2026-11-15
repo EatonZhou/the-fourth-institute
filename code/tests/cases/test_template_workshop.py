@@ -47,6 +47,7 @@ def test_workshop_browser_with_real_instructions(lineage):
         '/static/portal_code_editor.js',
         *groups['chat-workspace'], '/static/portal_hatg_loader.js',
         '/static/lineage_template_workshop_draft.js', '/static/lineage_template_workshop.js',
+        '/static/lineage_duty_workshop_model.js', '/static/lineage_duty_workshop.js',
         '/static/lineage_template_workshop_chat.js',
         '/static/portal_template_workshop_loader.js',
         '/static/lineage_workbench_editors.js',

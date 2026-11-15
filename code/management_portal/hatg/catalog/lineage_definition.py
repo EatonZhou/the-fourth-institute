@@ -149,11 +149,17 @@ DECLARATIONS = (
         R("lineage_id", description="要修改的 Lineage"),
         R("operations", "array", "每项是对组件或连线的 create、update、delete、clone，或对 Resident 的 delete；后面的操作可以引用前面创建的对象",
           items={"type": "object"}),
+        P("function_block_id", description="限定到这一条职责；须携带 expected_version，仅可改该职责拥有的组件、连线及元数据，新元素自动归属；不改 Resident 身份与外部元素"),
+        P("duty_changes", "object", "职责的 title、description、category、prompt、memory_level；仅在指定 function_block_id 时可用"),
+        P("dry_run", "boolean", "只校验并预览，不写入；正式保存须提交同一变更和版本前提"),
         *PLACEMENT,
     ), (
         R("created_ids", "array", "新建（含 clone）的组件和连线 ID"),
         R("updated_ids", "array", "被修改的组件和连线 ID"),
         R("deleted_ids", "array", "被删除的组件、连线和 Resident ID，含随之删除的对象"),
+        R("revision", "integer", "Lineage 定义版本"),
+        P("function_block", "object", "职责编辑后的 Function Block"),
+        P("preview", "object", "职责编辑前后的元素和职责记录"),
     ), mutates=True),
     _d("WatchLineage", "订阅当前 Lineage 配置失效通知；合并中间更新，收到通知后重新读取当前配置。", (
         R("lineage_id", description="要订阅的 Lineage"),

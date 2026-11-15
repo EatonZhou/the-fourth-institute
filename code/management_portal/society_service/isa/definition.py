@@ -441,10 +441,16 @@ def translate_changes(operations: list[Any]) -> tuple[list[dict[str, Any]], list
 
 def apply_lineage_changes(inv: Invocation) -> dict[str, Any]:
     lineage_id = inv.argument("lineage_id")
+    if inv.argument("function_block_id") and inv.expected_version_for(lineage_id) is None:
+        raise invalid("职责实例编辑必须携带 GetLineage revision 作为 expected_version")
     program, residents, refs = translate_changes(inv.argument("operations") or [])
     payload: dict[str, Any] = {
         "program_operations": program,
         "resident_ids": residents,
+        "function_block_id": inv.argument("function_block_id"),
+        "duty_changes": inv.argument("duty_changes"),
+        "dry_run": inv.argument("dry_run", False),
+        "expected_revision": inv.expected_version_for(lineage_id),
         **placement(inv, lineage_id),
     }
     result = lineage_graph_edits().apply_lineage_changes(lineage_id, payload, inv.caller, include_lineage=False)
@@ -453,6 +459,8 @@ def apply_lineage_changes(inv: Invocation) -> dict[str, Any]:
         "updated_ids": result.get("updated_ids") or [],
         "deleted_ids": result.get("deleted_ids") or [],
         "refs": refs,
+        "revision": result["revision"],
+        **{key: result[key] for key in ("function_block", "preview") if key in result},
     }
 
 

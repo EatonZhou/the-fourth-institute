@@ -378,6 +378,23 @@ class StructureKind:
         body.setdefault("function_block", True)
         if not isinstance(body["function_block"], bool):
             raise TemplateError("function_block 必须是布尔值")
+        if "duty" in body:
+            from ..function_block_authoring import DUTY_CATEGORIES, normalize_memory
+            duty = body["duty"]
+            if not isinstance(duty, dict) or set(duty) - {"description", "category", "memory"}:
+                raise TemplateError("职责模板仅保存说明、类别和记忆，不保存持有者身份")
+            if duty.get("category", "custom") not in DUTY_CATEGORIES:
+                raise TemplateError("未知职责类别")
+            if "description" in duty and not isinstance(duty["description"], str):
+                raise TemplateError("职责说明必须为文本")
+            if "memory" in duty:
+                duty["memory"] = normalize_memory(duty["memory"])
+            if not body["function_block"] or not any(role["from"] == "target" for role in body["roles"]):
+                raise TemplateError("职责模板需要目标 Resident 空位和 Function Block")
+            if (duty.get("memory") or {}).get("level") == "trigger":
+                targets = {role["key"] for role in body["roles"] if role["from"] == "target"}
+                if not any(wire["target"] in targets and wire["kind"] != "watch" for wire in body["wires"]):
+                    raise TemplateError("触发层职责提示词需要触发目标 Resident 的连线")
         samples = {
             spec["name"]: spec.get(
                 "default",
@@ -641,7 +658,7 @@ class StructureKind:
                     *(item["id"] for item in components),
                     *(item["id"] for item in wires),
                 ]
-                if body["function_block"] and ids:
+                if body["function_block"] and (ids or body.get("duty", {}).get("memory")):
                     block = function_block_domain.functionalize(
                         ctx.lineage_id,
                         ids,
@@ -652,7 +669,7 @@ class StructureKind:
                         edit=edit,
                         x=ctx.target.get("x"),
                         y=ctx.target.get("y"),
-                        duty=_duty(ctx, target),
+                        duty=_duty(ctx, target, roles),
                     )
                     outcome["function_block_ids"].append(block["id"])
                 else:
@@ -676,16 +693,18 @@ class StructureKind:
         return outcome
 
 
-def _duty(ctx, target):
+def _duty(ctx, target, roles):
     """Applied to a Resident, the block becomes that Resident's duty (decision_13725a7900f6)."""
     if not target:
         return None
     template = ctx.template
+    definition = _render(ctx.template["body"].get("duty", {}), ctx, roles)
     return {
         "holder_id": target,
         "description": template.get("description") or template["title"],
         "category": "common" if template.get("builtin_key") else "custom",
         "parameters": deepcopy(ctx.parameters),
+        **definition,
     }
 
 
@@ -845,6 +864,11 @@ def from_selection(lineage_id, element_ids, actor, existing=False):
     lineage = lineage_aggregate.read_lineage(lineage_id, actor=actor)
     if existing:
         return _rewrite_from_selection(lineage, element_ids)
+    if len(element_ids) == 1:
+        duty_block = next((item for item in lineage.get("function_blocks", []) if item["id"] == element_ids[0] and item.get("duty")), None)
+        if duty_block:
+            from .duty_capture import capture
+            return capture(lineage, duty_block)
     blocks = {item["id"]: item for item in lineage.get("function_blocks", [])}
     selected = set()
 

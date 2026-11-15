@@ -453,6 +453,7 @@
         ${roles ? window.PortalI18n.html`<p class="paneNote">Family 默认开关仅在成员未显式设置时生效；成员显式开启时按站点默认排序切换。</p><div data-family-priority></div>` : ""}
         ${functionBlockOverviewWorkflowHtml(block, readonly, taskDrafts, expandedTasks)}
         <div class="functionBlockInstanceActions">
+          ${block.duty ? '<button class="portalButton" type="button" data-duty-workshop>在工坊中编辑</button>' : ''}
           <button class="portalButton" type="button" data-function-block-save-template${readonly ? " disabled" : ""}>存为模板</button>
           ${roles ? window.PortalI18n.html`<button class="portalButton" type="button" data-family-fold>${familyExpanded(roles) ? window.PortalI18n.t("折叠为门面") : window.PortalI18n.t("展开成员")}</button><button class="portalButton" type="button" data-family-unfamilize${readonly ? " disabled" : ""}>Unfamilize</button>`
           : window.PortalI18n.html`<button class="portalButton" type="button" data-function-block-expand>${expandedFunctionBlockIds().has(block.id) ? window.PortalI18n.t("折叠") : window.PortalI18n.t("展开")}</button><button class="portalButton" type="button" data-function-block-unfunctionalize${readonly ? " disabled" : ""}>拆开</button><button class="portalButton is-danger" type="button" data-function-block-delete${readonly ? " disabled" : ""}>删除</button>`}
@@ -465,6 +466,7 @@
           Promise.resolve().then(callback).catch(error => toast(error.message || String(error), "error"));
         });
         const priorityRoot = root.querySelector('[data-family-priority]');
+        action('[data-duty-workshop]',() => window.PortalNav.openPage(`/lineage?${new URLSearchParams({lineage:menuLineageId,view:'hatg',duty:block.id})}`));
         if (priorityRoot) window.PortalResidentMenu.mountMigrationPriority(priorityRoot, {
           lineageId: menuLineageId, familyId: block.id, readonly,
           saved: () => applyProgramMutation(() => window.PortalInstructionClient.execute("GetLineage", {lineage_id: menuLineageId}), "账号种类顺序已保存。"),

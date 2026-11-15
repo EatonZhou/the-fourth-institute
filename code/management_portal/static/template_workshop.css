@@ -24,3 +24,11 @@
 [data-workshop-id="workshopUnsaved"], [data-workshop-id="workshopChatStatus"] { margin:0; padding:5px 10px; font-size:12px; }
 [data-workshop-id="workshopChatStatus"]:empty { display:none; }
 [data-workshop-id="workshopError"] { position:absolute; top:54px; left:12px; right:12px; z-index:25; background:var(--panel); color:var(--danger,#c44); padding:8px; }
+.dutyWorkshopContent{display:flex;flex:1;min-height:0;position:relative;overflow:hidden}
+.dutyWorkshopContent>[data-duty-graph]{flex:1;min-width:0;height:100%}
+.dutyWorkshopContent>[data-duty-inspector]{width:300px;max-width:45%;overflow:auto;padding:12px;background:var(--panel);border-left:1px solid var(--border)}
+.dutyWorkshopContent>[data-duty-inspector][hidden]{display:none}
+.dutyWorkshopContent label,.dutyWorkshopMemory label{display:flex;flex-direction:column;gap:4px;margin:8px 0}
+.dutyWorkshopContent textarea,.dutyWorkshopContent input{max-width:100%;box-sizing:border-box}
+.dutyWorkshopContent [data-duty-inspector]>header{display:flex;justify-content:space-between}
+.dutyWorkshopMemory{padding:8px 12px;border-bottom:1px solid var(--border);max-height:40%;overflow:auto}

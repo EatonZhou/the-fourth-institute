@@ -84,10 +84,9 @@
         : window.PortalI18n.html`<p class="paneNote">这条职责没有提示词。</p>`;
     }
 
-    // Replace this transition with the workshop's duty editor when it is ready.
     // The URL also works from Chat and pages that have no mounted HATG panel.
     function openDutyDetails(lineageId, functionBlockId) {
-      const params = new URLSearchParams({lineage: lineageId, view: "hatg", program_item: functionBlockId, function_block_tab: "objects"});
+      const params = new URLSearchParams({lineage: lineageId, view: "hatg", duty: functionBlockId});
       return window.PortalNav.openPage(`/lineage?${params}`);
     }
 

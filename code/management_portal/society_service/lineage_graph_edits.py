@@ -143,6 +143,8 @@ def commit_lineage_edit(
     placement_request: dict[str, Any] | None = None,
     preserve_event_source_ids: Iterable[str] = (),
     full_view: bool = True,
+    dry_run: bool = False,
+    expected_revision: Any = None,
 ) -> tuple[dict[str, Any], Any]:
     """Apply ``edit(body)`` to a copy of the definition and commit it once.
 
@@ -162,6 +164,10 @@ def commit_lineage_edit(
     with lineage_aggregate.lineage_scope(lineage_id):
         previous = lineage_aggregate.read_lineage(lineage_id, actor=actor)
         lineage_aggregate.ensure_manager(previous, actor_id)
+        if dry_run and expected_revision is not None and str(previous.get("revision")) != str(expected_revision):
+            from management_portal.hatg.contracts import InstructionError
+            raise InstructionError("instruction.conflict", "Lineage 定义已变化，请重新读取 GetLineage",
+                                   details={"current_version": previous.get("revision")})
         body = _clone_json(previous)
         outcome = edit(body)
         if deleted:
@@ -172,6 +178,8 @@ def commit_lineage_edit(
             _nodes, patch = _resident_projections_removal_patch(body, set(deleted) & present)
             body.update(patch)
         lineage = lineage_state._normalize_lineage_payload(body, previous, actor_id)
+        if dry_run:
+            return lineage, outcome
         impact = _program_execution_contract_change(previous, lineage)
 
         def commit() -> None:
@@ -225,10 +233,14 @@ def apply_lineage_changes(
     raw_operations = payload.get("program_operations") or []
     operations = lineage_program_graph_mutation.normalize_graph_mutations(raw_operations) if raw_operations else []
     resident_ids = [str(item) for item in payload.get("resident_ids") or []]
-    if not operations and not resident_ids:
+    duty_id = payload.get("function_block_id")
+    if payload.get("duty_changes") and not duty_id:
+        raise ValueError("duty_changes requires function_block_id")
+    if not operations and not resident_ids and not duty_id:
         raise ValueError("ApplyLineageChanges 需要至少一项修改")
     preserve: set[str] = set()
     previous_ids: set[str] = set()
+    duty_result = {}
 
     def graph_ids(body: dict[str, Any]) -> set[str]:
         program = body.get("program") or {}
@@ -241,13 +253,18 @@ def apply_lineage_changes(
 
     def edit(body: dict[str, Any]) -> dict[str, set[tuple[str, str]]]:
         previous_ids.update(graph_ids(body))
-        if not operations:
-            return {"created": set(), "changed": set(), "removed": set()}
-        mutation = lineage_program_graph_mutation.mutate_program_graph(body, operations, True)
-        body.clear()
-        body.update(_clone_json(mutation.candidate))
-        preserve.update(mutation.preserve_event_source_ids)
-        return {"created": set(mutation.created), "changed": set(mutation.changed), "removed": set(mutation.removed)}
+        from . import duty_graph_edits
+        scope = duty_graph_edits.begin(body, duty_id, operations, resident_ids) if duty_id else None
+        outcome = {"created": set(), "changed": set(), "removed": set()}
+        if operations:
+            mutation = lineage_program_graph_mutation.mutate_program_graph(body, operations, True)
+            body.clear()
+            body.update(_clone_json(mutation.candidate))
+            preserve.update(mutation.preserve_event_source_ids)
+            outcome = {"created": set(mutation.created), "changed": set(mutation.changed), "removed": set(mutation.removed)}
+        if scope:
+            duty_result.update(duty_graph_edits.finish(body, scope, payload.get("duty_changes") or {}, actor))
+        return outcome
 
     verified, outcome = commit_lineage_edit(
         lineage_id,
@@ -258,9 +275,12 @@ def apply_lineage_changes(
         placement_request=payload,
         preserve_event_source_ids=preserve,
         full_view=include_lineage,
+        dry_run=payload.get("dry_run") is True,
+        expected_revision=payload.get("expected_revision"),
     )
     created, changed, removed = outcome["created"], outcome["changed"], outcome["removed"]
     return {
+        **duty_result,
         "lineage": verified,
         "revision": int(verified.get("revision") or 0),
         "created_ids": sorted(item_id for _kind, item_id in created),

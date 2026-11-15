@@ -3,6 +3,7 @@
   const t = text => window.PortalI18n.t(text);
   const DUTY_DESCRIPTION = '模板工坊助手：校验并交回草稿，由用户保存';
   const DUTY_PROMPT = `你是用户自己的工坊助手，住在用户的 My Lineage，协助编辑各个工作台中的模板。当前模板 ID 与本轮草稿路径由对话附带的上下文给出；不要使用所在 Lineage 代替模板目标。
+若本轮上下文明确指定职责实例，遵循上下文中的职责草稿协议：读取目标 Lineage，限定职责边界，通过 dry_run 校验后交回草稿；禁止正式提交。下列模板协议仅适用于编辑模板。
 已保存的模板先用 GetTemplate {template_id} 读取，按其 kind 和 editor.fields 编辑原模块，不转换 kind。prompt 编辑 body.message，script 编辑 body.script 与 endpoints；explore、familize 遵循 GetTemplate 返回的字段说明。新模板尚未保存，先按用户说明创建 structure 草稿，默认包含 {key:"target",from:"target"} 空位。
 structure 的 body 包含 roles、components、wires、match、layout、function_block。所有元素的 key 必须唯一。roles 每项 {key,from,title?,settings?}，from 为 target（施加目标 Resident）、lineage_leader（目标 Lineage 的 Leader）、new（新建 Resident，可省略 provider 使用默认值）、fork（复制已有角色，须给 fork_of:角色key、fork_mode:full/compacted/recent-5/recent-10）。components 每项 {key,kind,title?,config}，kind 为 event_source/effect/loop/filter/selector/reducer/seed；先 ListComponentTypes 查原语配置定义，不猜字段。wires 每项 {key,kind,source,target,source_port?,target_port?,config?}，kind 为 route（激活）、target（对象引用）、watch（Event 观察）；两端使用角色或组件 key，watch 也可观察连线 key。角色引用使用 {{role.key.id}}、{{role.key.ids}}、{{role.key.title}}，参数用 {{param.name}}。
 match 用来在施加目标附近查找已有元素，不会匹配 Function Block 内部元素。每项 {key,kind,where?,op?,count?,config?}；op 是 keep/delete/update，count 是 one/all，已有连线另带 source/target 及可选端口，引用其他角色或 match key。op:update 的 config 变化放 update:{config:{字段:值}}，null 清除字段，保留未变字段；config 是查找时的样例配置，不是对已有元素的全量覆盖。已有元素引用 {{match.key.id}}、{{match.key.title}}。layout 是 key 到 {x,y} 的位置；不写时自动布局。function_block:true 把新建元素封装为一个职责结构，不改变已有实例。
@@ -24,7 +25,7 @@ match 用来在施加目标附近查找已有元素，不会匹配 Function Bloc
     const versions = new Map();
     const checkedTurns = new Set();
     const pageKey = workshop.sessionId;
-    const id = () => workshop.template()?.template_id || `new-${pageKey}`;
+    const id = () => workshop.draftFileKey?.() || workshop.template()?.template_id || `new-${pageKey}`;
     const relativePath = () => `workshop/${id()}.json`;
     const fileAddress = () => `${workspaceId}/file/${relativePath()}`;
     const report = error => { element('workshopChatStatus').textContent = window.PortalI18n.message(error.message || error); };
@@ -84,7 +85,7 @@ match 用来在施加目标附近查找已有元素，不会匹配 Function Bloc
         const version = result.version || result.text;
         if (versions.get(address) === version) return;
         const value = JSON.parse(result.text);
-        if (!value || !value.body || !value.kind || !value.title || !Array.isArray(value.parameters)) throw new Error(t('助手草稿不是完整模板对象'));
+        if (!workshop.assistantContext && (!value || !value.body || !value.kind || !value.title || !Array.isArray(value.parameters))) throw new Error(t('助手草稿不是完整模板对象'));
         versions.set(address,version);
         await workshop.acceptDraft(value);
       } catch (error) { if (error.code !== 'instruction.not_found') report(error); }
@@ -100,7 +101,7 @@ match 用来在施加目标附近查找已有元素，不会匹配 Function Bloc
     function context() {
       const templateId = workshop.template()?.template_id;
       return { ...(templateId ? {resources:[{address:templateId}]} : {}),
-        context_text:`${templateId ? `模板：${templateId}` : '新模板，尚未保存'}\n草稿文件：${relativePath()}\n工作区文件地址：${fileAddress()}` };
+        context_text:`${workshop.assistantContext?.() || (templateId ? `模板：${templateId}` : '新模板，尚未保存')}\n草稿文件：${relativePath()}\n工作区文件地址：${fileAddress()}` };
     }
     function updateWarning() { element('workshopUnsaved').hidden = !workshop.dirty(); }
     root.addEventListener('workshop:draft-changed', updateWarning);

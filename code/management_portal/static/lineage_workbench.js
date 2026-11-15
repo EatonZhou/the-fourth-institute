@@ -15,6 +15,7 @@
         chatroomId: initialChatroomIdFromUrl(),
         workspaceId: String(new URLSearchParams(window.location.search).get("workspace") || "").trim(),
         programItemId: initialProgramItemIdFromUrl(),
+        dutyId: String(new URLSearchParams(window.location.search).get("duty") || "").trim(),
         functionBlockTab: String(new URLSearchParams(window.location.search).get("function_block_tab") || "").trim(),
         view: String(new URLSearchParams(window.location.search).get("view") || "").trim(),
         openChat: initialOpenChatFromUrl(),
@@ -1117,6 +1118,9 @@
         if (!lineageWorkbench.getPanelsByType('workshop').some(panel => !hiddenPanels.includes(panel.id))) lineageWorkbench.applyWorkspace(lineageHatgWorkspace());
         else if (!lineageWorkbench.isPanelExpanded('hatg')) lineageWorkbench.showPanel('hatg');
         lineageWorkbench.focusPanel("hatg");
+        if (openingNavigation.dutyId) void window.PortalTemplateWorkshopLoader.openInWorkbench(lineageWorkbench,
+          {lineage_id:openingNavigation.lineageId,function_block_id:openingNavigation.dutyId},'hatg')
+          .catch(error => toast(error.message || String(error),"error"));
         return applied;
       }
 

@@ -6,9 +6,9 @@
       await window.PortalIdentity.load();
       const params = new URLSearchParams(location.search);
       const panel = window.PortalWorkbench.createPanel('workshop', {root,id:'standaloneWorkshop',
-        target:{template_id:params.get('template') || '',store_id:params.get('store') || '',lineage_id:params.get('lineage') || ''},
+        target:{template_id:params.get('template') || '',store_id:params.get('store') || '',lineage_id:params.get('lineage') || '',function_block_id:params.get('duty') || ''},
         emit(event,detail) {
-          if (event !== 'workshop-saved') return;
+          if (event !== 'workshop-saved' || !detail.template_id) return;
           const url = new URL(location.href); url.searchParams.set('template',detail.template_id);
           url.searchParams.delete('store');
           history.replaceState(null,'',url);

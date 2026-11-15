@@ -4,15 +4,15 @@ type: decision
 project: AI员工
 created_at: '2026-09-28'
 version:
-  number: 46
+  number: 47
   created_at: "2026-09-28T10:45:00Z"
   created_by:
     user: "weihao"
     agent: "resident_2a1fc6cd272d"
-  updated_at: "2026-11-05T13:23:38Z"
+  updated_at: "2026-11-15T15:07:08Z"
   updated_by:
     user: ""
-    agent: "resident_6199a7a36480"
+    agent: "resident_25ac6961fafb"
 importance: 8
 metaness: 2
 ai_generated: false
@@ -308,9 +308,12 @@ Lineage 不保存待确认的修改方案。需要先让人确认的团队结构
 
 **把多项修改作为一次原子提交：全部成功时只提交一次，任一项失败时全部不生效。**
 
-- 参数：`lineage_id`、`operations`、放置参数（可选）。
+- 参数：`lineage_id`、`operations`、`function_block_id`、`duty_changes`、`dry_run`、放置参数（后五类可选）。
 - `operations` 中每项是对组件或连线的 `create`、`update`、`delete` 或 `clone`，或对 Resident 的 `delete`。删除 Resident 采用 `DeleteResident` 的完整语义（decision_d19b9909a674）。后面的操作通过 `$ref:<名称>` 引用前面 create 或 clone 的 `ref`。clone 的 `value` 保存覆盖字段，省略新对象 ID 时由服务生成。批量删除组件或连线只清理指定对象和悬空连线，留下的观察者由诊断提示补充绑定。
-- 结果：新建、修改和删除的对象 ID。删除 Leader 后，调用者通过 `GetLineage` 读取继任者。
+- 结果：`created_ids`、`updated_ids`、`deleted_ids`、`revision`。删除 Leader 后，调用者通过 `GetLineage` 读取继任者。
+- 指定 `function_block_id` 时限定为一条职责实例，必须携带读取时的 Lineage `revision` 作为 `expected_version`。仅允许改这条职责直接拥有的组件、连线；新建元素自动归属，删除自动移除归属。拒绝 Resident 删除、外部元素修改以及会连带删除外部共享连线的操作。
+- `duty_changes` 仅在职责范围内接受 `title`、`description`、`category`、`prompt`、`memory_level`；元素变更、归属与职责记忆在同一事务提交。纯提示词职责允许空 `operations`。组织持有的职责仍不允许添加 Resident 提示词。
+- `dry_run:true` 重新核对权限、版本、图和职责边界，返回预览而不持久化；职责结果附 `function_block` 与 `preview:{elements:[{id,before,after}],duty:{before,after}}`。正式提交使用同一请求和版本，过时返回 `instruction.conflict`，失败不留下部分变更。
 - Lineage 中的 Effect 可以在脚本中调用这条指令，在 `operations` 中用 `${event.outputs.<字段名>}` 引用上游 Effect 输出的对象 ID，或用 `${变量.字段}` 引用本脚本中前面调用返回的对象 ID；引用在调用时解析。
 
 ### Route 端口与数据
@@ -347,6 +350,6 @@ Resident、Event Source、Filter、Reducer 的普通出端口为 output；Select
 | `PrepareWorkspaceHandoff` | `lineage_id`、`handoff_id`、`source_resident_id`、`target_resident_id` |
 | `GetWorkspaceHandoff` | `handoff_id` |
 | `GetLineageDiagnostics` | `lineage_id` |
-| `ApplyLineageChanges` | `lineage_id`、`operations`、`near_resident_id`、`placement`、`x`、`y` |
+| `ApplyLineageChanges` | `lineage_id`、`operations`、`function_block_id`、`duty_changes`、`dry_run`、`near_resident_id`、`placement`、`x`、`y` |
 | `WatchLineage` | `lineage_id`、`after_cursor` |
 | `RelocateWorkspaceHandoff` | `lineage_id`、`handoff_id`、`item_id`、`workspace_id`、`expected_workspace_version` |

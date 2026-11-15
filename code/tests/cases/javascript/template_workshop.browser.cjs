@@ -255,6 +255,8 @@ const {chromium} = require(path.join(repo, 'management_portal/test_framework/tau
     assert.equal(await page.evaluate(()=>Boolean(cards.getPanel('workshop').target().template_id)),false);
     assert.equal(await active.locator('[data-workshop-save]').isEnabled(),true);
     assert.deepEqual(errors,[]);
-    console.log('Workshop Chromium layout, inspector, pickup/drag, real saves, assistant discovery/duty and file draft conflicts passed.');
+    await require('./duty_workshop.browser.cjs')(page);
+    assert.deepEqual(errors,[]);
+    console.log('Workshop Chromium layout, inspector, real saves, duty scope, conflicts, assistant drafts passed.');
   } finally {await browser.close();}
 })().catch(error=>{console.error(error);process.exitCode=1;});

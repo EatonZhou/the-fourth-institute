@@ -99,7 +99,7 @@ test('open details uses the HATG transition with the exact lineage, block and ob
  await f.click(f.root.querySelector('[data-duty-id="fbi_a"] [data-duty-open-details]'));
  const url=new URL(f.pages[0],'https://portal.example');
  assert.equal(url.pathname,'/lineage');
- assert.deepEqual(Object.fromEntries(url.searchParams),{lineage:'lineage_1',view:'hatg',program_item:'fbi_a',function_block_tab:'objects'});
+ assert.deepEqual(Object.fromEntries(url.searchParams),{lineage:'lineage_1',view:'hatg',duty:'fbi_a'});
  assert.deepEqual(f.changes,[]);
  assert.equal(f.calls.some(([name])=>!['GetLineage','GetResidentSettings'].includes(name)),false);
  f.dom.window.close();
