@@ -25,3 +25,11 @@ unavailable Resident returns `available=false` with a reason. In particular,
 unknown delivery or a stale Society `queued` projection is not proof that the
 Provider never received the input. Runtime diagnostics is not evidence that
 the user's business task is complete.
+
+`submission` reports the Society owner's exact current Resident/input/execution
+association and its submission, dispatch, completion and acknowledgement receipts.
+It reads only whitelisted timestamps, enums and booleans in SQL, never the stored
+request or queue bodies. A replaced or absent job returns `current_job_matches=false`;
+missing receipts remain `unknown`. Neither result proves that a Provider prompt
+was never sent. This section is attached only after the authorized Execution port
+has resolved and checked the association.

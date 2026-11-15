@@ -131,7 +131,7 @@ def test_owner_port_does_not_reuse_original_execution_actor(boundary, monkeypatc
 
 def test_isa_to_execution_reauthorizes_and_only_returns_associated_facts(boundary, monkeypatch):
     from management_portal.execution.service_rpc import execution_input_diagnostics
-    from management_portal.society_service import execution_client
+    from management_portal.society_service import execution_client, state_store
     from unittest.mock import Mock
 
     server = SimpleNamespace(
@@ -145,6 +145,9 @@ def test_isa_to_execution_reauthorizes_and_only_returns_associated_facts(boundar
     )
     monkeypatch.setattr(execution_client, "service", lambda: SimpleNamespace(
         input_diagnostics=lambda **params: execution_input_diagnostics(server, params)))
+    submission = Mock(return_value={"current_job_matches": False})
+    monkeypatch.setattr(state_store, "get_lineage_data_store", lambda: SimpleNamespace(
+        executions=SimpleNamespace(input_execution_diagnostics=submission)))
     monkeypatch.setattr(isa, "protocol", lambda: resident_protocol)
     values = {"resident_id": "resident", "message_id": "input", "include_execution_diagnostics": True}
     inv = SimpleNamespace(caller="reader", argument=lambda key: values.get(key))
@@ -154,6 +157,50 @@ def test_isa_to_execution_reauthorizes_and_only_returns_associated_facts(boundar
         "resident_id": "resident", "message_id": "input", "execution_id": "execution-bound",
         "source": "scheduler", "status": "running", "attempts": 1,
         "created_at": "unknown", "started_at": "unknown", "finished_at": "unknown",
+        "submission": {"current_job_matches": False},
     }
     assert boundary[1] == [("resident", "reader", "input")] * 2
     server.agent_data.execution.assert_called_once_with("execution-bound")
+    submission.assert_called_once_with("resident", "input", "execution-bound")
+
+
+def test_submission_receipts_are_exact_read_only_and_redacted(tmp_path, monkeypatch):
+    from tests.cases.test_conversation_projection_authority import RESIDENT, _repository
+    from management_portal.society_service import resident_execution_storage
+
+    store = _repository(tmp_path).state_store
+    store.put_resident_execution_record(RESIDENT, {
+        "execution_id": "execution-one", "user_message_id": "input-one", "actor": "sample_admin",
+        "submitted_at": "2026-11-14T17:49:08Z", "updated_at": "private malformed value",
+        "execution_request": {"execution_id": "execution-one", "prompt": "secret prompt"},
+        "queue": [{"user_message_id": "next", "message": "secret next input"}],
+        "execution_acknowledged": False,
+    })
+    revision = store.resident_execution_revision(RESIDENT)
+    monkeypatch.setattr(resident_execution_storage, "read",
+                        lambda *a, **kw: pytest.fail("diagnostics loaded preparation/queue"))
+    result = store.executions.input_execution_diagnostics(RESIDENT, "input-one", "execution-one")
+    assert result == {
+        "current_job_matches": True, "submitted_at": "2026-11-14T17:49:08+00:00",
+        "dispatched_at": "unknown", "started_at": "unknown", "finished_at": "unknown",
+        "updated_at": "unknown", "completion_applied_at": "unknown", "outcome": "unknown",
+        "terminal_status": "unknown", "acknowledged": False, "stop_requested": "unknown",
+        "request_persisted": True, "request_matches_execution": True,
+    }
+    assert store.resident_execution_revision(RESIDENT) == revision
+    for rid, mid, eid in [(RESIDENT, "other-input", "execution-one"),
+                          (RESIDENT, "input-one", "other-execution"),
+                          ("other-resident", "input-one", "execution-one")]:
+        assert store.executions.input_execution_diagnostics(rid, mid, eid) == {"current_job_matches": False}
+
+
+def test_submission_missing_request_is_unknown_not_proof_of_no_provider_send(tmp_path):
+    from tests.cases.test_conversation_projection_authority import RESIDENT, _repository
+
+    store = _repository(tmp_path).state_store
+    store.put_resident_execution_record(RESIDENT, {
+        "execution_id": "execution-preparing", "user_message_id": "input-one", "actor": "sample_admin",
+    })
+    result = store.executions.input_execution_diagnostics(RESIDENT, "input-one", "execution-preparing")
+    assert result["current_job_matches"] is True
+    assert result["submitted_at"] == result["request_persisted"] == result["request_matches_execution"] == "unknown"

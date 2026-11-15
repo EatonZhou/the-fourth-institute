@@ -49,6 +49,45 @@ class ResidentExecutions:
             row = connection.execute('SELECT revision FROM resident_execution_work WHERE resident_id=%s',(resident_id,)).fetchone()
         return int(row['revision']) if row else 0
 
+    def input_execution_diagnostics(self, resident_id, message_id, execution_id):
+        """Exact-input submission receipts, without loading preparation or queue bodies."""
+        from datetime import datetime
+
+        with self.database.read_current() as connection:
+            row = connection.execute(
+                "SELECT jsonb_build_object("
+                "'submitted_at',progress_json::jsonb->>'submitted_at',"
+                "'dispatched_at',progress_json::jsonb->>'dispatched_at',"
+                "'started_at',progress_json::jsonb->>'started_at',"
+                "'finished_at',progress_json::jsonb->>'finished_at',"
+                "'updated_at',progress_json::jsonb->>'updated_at',"
+                "'completion_applied_at',progress_json::jsonb->>'completion_applied_at') AS times,"
+                "progress_json::jsonb->>'outcome' AS outcome,"
+                "progress_json::jsonb->>'execution_terminal_status' AS terminal_status,"
+                "progress_json::jsonb->'execution_acknowledged' AS acknowledged,"
+                "length(progress_json::jsonb->>'stop_requested_at')>0 AS stop_requested,"
+                "jsonb_typeof(preparation_json::jsonb->'execution_request')='object' AS request_persisted,"
+                "preparation_json::jsonb#>>'{execution_request,execution_id}'=execution_id AS request_matches_execution "
+                "FROM resident_execution_work WHERE resident_id=%s AND input_message_id=%s AND execution_id=%s",
+                (resident_id, message_id, execution_id),
+            ).fetchone()
+        if row is None:
+            return {"current_job_matches": False}
+        times = {}
+        for key, value in row['times'].items():
+            try:
+                parsed = datetime.fromisoformat(value.replace('Z', '+00:00'))
+                times[key] = parsed.isoformat() if parsed.tzinfo else 'unknown'
+            except (AttributeError, ValueError, TypeError):
+                times[key] = 'unknown'
+        return {
+            "current_job_matches": True, **times,
+            "outcome": row['outcome'] if row['outcome'] in ('completed', 'failed', 'cancelled') else 'unknown',
+            "terminal_status": row['terminal_status'] if row['terminal_status'] in ('completed', 'failed', 'cancelled') else 'unknown',
+            **{key: row[key] if type(row[key]) is bool else 'unknown' for key in (
+                'acknowledged', 'stop_requested', 'request_persisted', 'request_matches_execution')},
+        }
+
     def request_resident_execution_stop(self, resident_id, execution_id, message_id, actor, now):
         """Commit exact-input control without loading prompt, Workspace or Conversation.
 

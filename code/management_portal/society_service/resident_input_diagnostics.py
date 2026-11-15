@@ -62,9 +62,15 @@ def resolve_input_execution(*, actor: str, resident_id: str, message_id: str) ->
 
 def read_input_diagnostics(*, actor: str, resident_id: str, message_id: str) -> dict:
     from . import execution_client
+    from .state_store import get_lineage_data_store
 
     # The Execution RPC resolves and authorizes the association independently.
     # No original execution actor or external execution ID crosses this port.
-    return execution_client.service().input_diagnostics(
+    result = execution_client.service().input_diagnostics(
         actor=actor, resident_id=resident_id, message_id=message_id,
     )
+    if result.get('available') and all(result.get(key) for key in ('resident_id', 'message_id', 'execution_id')):
+        result = {**result, 'submission': get_lineage_data_store().executions.input_execution_diagnostics(
+            result['resident_id'], result['message_id'], result['execution_id'],
+        )}
+    return result
