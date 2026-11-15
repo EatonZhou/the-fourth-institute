@@ -72,6 +72,33 @@ def accepted_input(lineage_id: str, event_id: str) -> dict[str, Any]:
     return json_value(row["input_json"]) if row else {}
 
 
+def resident_terminal_event(lineage_id: str, event, resident_id: str, message_id: str):
+    """Bind a completion occurrence to its original terminal execution once.
+
+    The source/message occurrence is stable across delivery retries. Its first
+    accepted fact remains authoritative even after that input is reopened or
+    completed again; newer executions cannot replace its cause or payload.
+    """
+    from . import lineage_primitives
+    from management_portal.execution import execution_inputs
+    from management_portal.execution.agent_data_store import get_agent_data_store
+
+    accepted = accepted_input(lineage_id, event.id)
+    if accepted:
+        return lineage_primitives.normalize_event(accepted)
+    status = {"resident.work_finished": "completed", "resident.work_failed": "failed",
+              "resident.work_cancelled": "cancelled"}[event.type]
+    execution = execution_inputs.terminal(
+        get_agent_data_store(), resident_id, message_id, status=status, observed_at=event.occurred_at,
+    )
+    if not execution:
+        raise ValueError("Resident completion requires its terminal Agent Execution")
+    cause = {"kind": "execution", "id": execution["execution_id"]}
+    return lineage_primitives.normalize_event({**event.to_dict(), "payload": {
+        **event.payload, "execution_id": execution["execution_id"], "cause": cause,
+    }})
+
+
 def agent_executions_table() -> str:
     return '"' + _database_schema("agent") + '".executions'
 

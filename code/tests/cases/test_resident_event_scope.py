@@ -135,6 +135,39 @@ def test_a_scoped_source_never_fires_for_work_it_delivered(
     assert len(sent) == 2 and WORK_C in sent[1][1]
 
 
+@pytest.mark.parametrize("status,event_type", [
+    ("completed", "resident.work_finished"), ("failed", "resident.work_failed"),
+    ("cancelled", "resident.work_cancelled"),
+])
+def test_delayed_terminal_dispatch_survives_reexecution_without_duplicate_delivery(primitive_store, monkeypatch, status, event_type):
+    from management_portal.execution import execution_inputs
+    from management_portal.execution.agent_data_store import get_agent_data_store
+    from tests.cases.society_service_test_support import record_terminal_execution
+
+    sent = _sender(monkeypatch)
+    created = _scoped("lineage", event_type)
+    lineage_id = created["lineage_id"]
+    message = "msg_" + "a" * 32
+    record_terminal_execution(WORK_A, message, ACTOR, status=status, at="2026-10-14T00:00:00Z")
+    store = get_agent_data_store()
+    retry = "execution-retry"
+    store.begin_execution(execution_id=retry, agent_id=WORK_A, actor_ref=ACTOR, provider="codex", started_at="2026-10-14T00:01:00Z")
+    execution_inputs.attach(store, retry, [{"message_id": message, "role": "primary", "accepted_at": "2026-10-14T00:01:00Z"}])
+    ports = lineage_domain._program_terminal_ports()
+
+    def dispatch(at):
+        if status == "completed":
+            return terminal.dispatch_program_resident_work_finished(lineage_id, WORK_A, message, ACTOR, completed_at=at, ports=ports)
+        return terminal.dispatch_program_resident_terminal_event(lineage_id, WORK_A, message, ACTOR, event_type=event_type, completed_at=at, ports=ports)
+
+    # The first delivery is delayed until the same input already runs again.
+    dispatch("2026-10-14T00:00:01Z")
+    assert len(sent) == 1
+    store.finish_execution(retry, status=status, finished_at="2026-10-14T00:02:00Z")
+    dispatch("2026-10-14T00:02:01Z")
+    assert len(sent) == 1
+
+
 def test_work_delivered_through_an_effect_counts_as_the_sources_own(monkeypatch: pytest.MonkeyPatch) -> None:
     """经 Effect 投递的工作也算事件源自己的工作
 

@@ -956,6 +956,8 @@ flowchart LR
 
 ### Event 分派与终态消费
 
+Resident 终态通知表示当时已经结束的一次执行。异步消费时，按原消息、终态类型与通知发生时间解析已经结束的 Execution，不能改为跟随该消息最新的一次执行：原输入重新排队后，新执行仍在运行也不阻塞旧事实消费。同一个事件源对同一消息及终态类型的 occurrence 首次被接纳后，其原始因果、载荷和发生时间保持不变；重投复用这个已接纳事实，不因后续重试生成的新 Execution 改写来源或重复派发。
+
 
 **一条 Event 连线上的一次投递只有一个结算责任方。** 当场投递、积压重放与租约到期后的恢复共用 `lineage_event_delivery.deliver_and_settle`；屏障准备失败使用同一 `settle_delivery`。调用者负责选择与认领，唯一结算方解释投递事实、安排重试或等待处置。`lineage_program_wire_queue` 负责在 `lineage_program_runtime` 提供的短事务内按 dispatch token 比较并保存，不另定失败策略。队列拥有认领与结算的状态转换，通用运行存储拥有对象规范化、事务和持久化边界；拆分职责不产生第二份待投递状态。
 

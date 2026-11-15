@@ -1259,13 +1259,12 @@ def dispatch_program_resident_work_finished(
             occurred_at=completed_at,
             payload={
                 "message_id": message_id,
-                "execution_id": trigger_paths.execution_cause(source_resident_id, source_message_id)["id"],
-                "cause": trigger_paths.execution_cause(source_resident_id, source_message_id),
                 **extra,
             },
             correlation=correlation,
             identity=identity,
         )
+        event = trigger_paths.resident_terminal_event(lineage_id, event, source_resident_id, source_message_id)
         results.append(
             dispatch_lineage_program_event(
                 lineage_id,
@@ -1333,8 +1332,6 @@ def dispatch_program_resident_terminal_event(
             occurred_at=completed_at,
             payload={
                 "message_id": message_id,
-                "execution_id": trigger_paths.execution_cause(source_resident_id, source_message_id)["id"],
-                "cause": trigger_paths.execution_cause(source_resident_id, source_message_id),
                 **extra,
             },
             correlation=(
@@ -1342,6 +1339,7 @@ def dispatch_program_resident_terminal_event(
             ),
             identity=identity,
         )
+        event = trigger_paths.resident_terminal_event(lineage_id, event, source_resident_id, source_message_id)
         results.append(
             dispatch_lineage_program_event(
                 lineage_id,

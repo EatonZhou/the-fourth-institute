@@ -82,3 +82,26 @@ def latest(store: Any, agent_id: str, message_id: str) -> dict[str, Any] | None:
         ).fetchone()
     return decode_times(row, {"created_at", "finished_at"}) if row is not None else None
 
+
+def terminal(store: Any, agent_id: str, message_id: str, *, status: str, observed_at: str) -> dict[str, Any] | None:
+    """Resolve a historical terminal fact without following a later retry.
+
+    An input may belong to another execution by the time an asynchronous
+    completion is delivered. Only the matching outcome already finished at
+    the fact's observation time can be its cause.
+    """
+    if status not in {"completed", "failed", "cancelled"}:
+        raise ValueError("terminal execution status required")
+    cutoff = instant(observed_at)
+    if cutoff is None:
+        raise ValueError("terminal fact observation time required")
+    with store.database.read_current() as connection:
+        row = connection.execute(
+            "SELECT e.execution_id,e.status,e.created_at,e.finished_at FROM executions e "
+            "JOIN execution_inputs i USING(execution_id) WHERE e.agent_id=%s AND i.message_id=%s "
+            "AND e.status=%s AND e.finished_at<=%s "
+            "ORDER BY e.finished_at DESC,e.created_at DESC,e.execution_id DESC LIMIT 1",
+            (agent_id, message_id, status, cutoff),
+        ).fetchone()
+    return decode_times(row, {"created_at", "finished_at"}) if row is not None else None
+
