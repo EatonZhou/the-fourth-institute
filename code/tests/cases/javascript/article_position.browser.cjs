@@ -286,6 +286,14 @@ const html = fs.readFileSync(path.join(STATIC, '../article_workspace.html'), 'ut
       }).initArticleWorkbench();
       await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
       pdfOwner.cancelPdf(); window.PortalPdfPreview = window.realPdfPreview;
+      const originalRender = window.realPdfPreview.render;
+      const rendered = [];
+      window.PortalPdfPreview = { ...window.realPdfPreview, render: config => originalRender({
+        ...config, onPage: data => {
+          if (config.version === 'real-rebuild') rendered.push(data.pageNumber);
+          config.onPage?.(data);
+        },
+      }) };
       state.build.compiled_at = 'real-initial'; state.pdfZoom = 1.4;
       await pdfOwner.renderPdf();
       const host = document.getElementById('articlePdfView');
@@ -315,11 +323,13 @@ const html = fs.readFileSync(path.join(STATIC, '../article_workspace.html'), 'ut
       while (window.completedPdfRenders === completed) await new Promise(resolve => requestAnimationFrame(resolve));
       finished = true;
       await new Promise(resolve => requestAnimationFrame(resolve));
-      return { frames, target, result: pdfOwner.captureArticlePdfPosition(), scale,
+      return { frames, target, result: pdfOwner.captureArticlePdfPosition(), scale, rendered,
         newScale: Number(host.querySelector(`[data-pdf-page="${target.page}"]`).dataset.pdfScale),
         staging: Boolean(document.querySelector('[data-article-pdf-staging]')) };
     });
     assert.ok(realSwap.frames.some(frame => frame.old) && realSwap.frames.some(frame => !frame.old));
+    assert.ok(realSwap.rendered[0] > 1, 'recompile starts painting the restored viewport, not page one');
+    assert.ok(Math.abs(realSwap.rendered[0] - realSwap.target.page) <= 1, 'first painted page belongs to the reading viewport');
     assert.ok(realSwap.frames.every(frame => frame.page === realSwap.target.page), 'real renderer never exposes a different page');
     assert.ok(realSwap.frames.every(frame => Math.abs(frame.yRatio - realSwap.target.yRatio) < .01),
       `the visible page position must remain stable: ${JSON.stringify(realSwap)}`);

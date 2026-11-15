@@ -364,8 +364,23 @@
       articlePdfPending = pending;
       const current = () => articlePdfPending === pending && state.selectedId === articleId;
       pending.promise = (async () => {
+        const prepareViewport = () => {
+          const anchor = resumePosition || (preservePosition && sameArticle ? captureArticlePdfPosition() : null);
+          const readingPosition = anchor ? { ...anchor, page: Math.max(1, Math.min(
+            Number(documentHost.dataset.pdfPageCount) || anchor.page, anchor.page)) } : null;
+          restoreArticlePdfPosition(readingPosition, staging);
+          const viewport = staging.getBoundingClientRect();
+          const needed = Array.from(documentHost.querySelectorAll("[data-pdf-page]")).filter(page => {
+            const bounds = page.getBoundingClientRect();
+            return Number(page.dataset.pdfPage) === readingPosition?.page
+              || (bounds.bottom > viewport.top && bounds.top < viewport.bottom);
+          });
+          return { readingPosition, needed };
+        };
         const controller = pending.controller = window.PortalPdfPreview.render({
           root: documentHost,
+          viewport: host,
+          initialPages: () => prepareViewport().needed.map(page => Number(page.dataset.pdfPage)),
           url,
           title: selectedArticle()?.title || window.PortalI18n.t("Article"),
           version,
@@ -396,16 +411,7 @@
             prepared.clear();
             if (!current()) return;
           }
-          const anchor = resumePosition || (preservePosition && sameArticle ? captureArticlePdfPosition() : null);
-          const readingPosition = anchor ? { ...anchor, page: Math.max(1, Math.min(
-            Number(documentHost.dataset.pdfPageCount) || anchor.page, anchor.page)) } : null;
-          restoreArticlePdfPosition(readingPosition, staging);
-          const viewport = staging.getBoundingClientRect();
-          const needed = Array.from(documentHost.querySelectorAll("[data-pdf-page]")).filter(page => {
-            const bounds = page.getBoundingClientRect();
-            return Number(page.dataset.pdfPage) === readingPosition?.page
-              || (bounds.bottom > viewport.top && bounds.top < viewport.bottom);
-          });
+          const { readingPosition, needed } = prepareViewport();
           const unprepared = needed.filter(page => !prepared.has(Number(page.dataset.pdfPage)));
           if (unprepared.length) {
             for (const page of unprepared) {

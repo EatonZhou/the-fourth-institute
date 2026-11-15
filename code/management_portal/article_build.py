@@ -336,7 +336,9 @@ class _ArticleBuild:
         )
         compile_target = self._compile_target()
         pdf = self.compile_root / f"{self.source.stem}.pdf"
-        pdf.unlink(missing_ok=True)
+        # Retain latexmk's output for no-op builds, but distinguish a newly
+        # generated diagnostic PDF from an old file left by a failed command.
+        previous_pdf = pdf.stat() if pdf.is_file() else None
         completed = _run_article_build_command(
             self.article_id,
             self._command(compile_target),
@@ -351,7 +353,11 @@ class _ArticleBuild:
         except OSError:
             final_log = ""
         diagnostics = article_build_results.parse_latex_diagnostics(final_log or log)
-        if not pdf.is_file():
+        current_pdf = pdf.stat() if pdf.is_file() else None
+        unchanged_pdf = previous_pdf is not None and current_pdf is not None and (
+            previous_pdf.st_mtime_ns, previous_pdf.st_ctime_ns, previous_pdf.st_size
+        ) == (current_pdf.st_mtime_ns, current_pdf.st_ctime_ns, current_pdf.st_size)
+        if current_pdf is None or (completed.returncode != 0 and unchanged_pdf):
             self._report(
                 "error",
                 return_code=completed.returncode,
@@ -380,11 +386,12 @@ class _ArticleBuild:
         if self.compile_mode != "draft":
             return self.primary_file
         draft_wrapper = self.compile_root / "portal-draft.tex"
-        draft_wrapper.write_text(
+        content = (
             "\\PassOptionsToPackage{draft}{graphicx}\n"
-            f"\\input{{\\detokenize{{{self.primary_file}}}}}\n",
-            encoding="utf-8",
+            f"\\input{{\\detokenize{{{self.primary_file}}}}}\n"
         )
+        if not draft_wrapper.is_file() or draft_wrapper.read_text(encoding="utf-8") != content:
+            draft_wrapper.write_text(content, encoding="utf-8")
         return str(draft_wrapper)
 
     def _command(self, compile_target: str) -> list[str]:

@@ -141,6 +141,8 @@
       version: String(config.version || "").trim(),
       withCredentials: config.withCredentials,
       ensurePdfJs: config.ensurePdfJs,
+      viewport: config.viewport || root,
+      initialPages: config.initialPages,
       onPage: config.onPage,
       onReady: config.onReady,
       onFallback: config.onFallback,
@@ -332,7 +334,7 @@
           for (const entry of entries) {
             if (entry.isIntersecting) schedule(active.recordsByElement.get(entry.target));
           }
-        }, { root, rootMargin: "800px 0px" });
+        }, { root: options.viewport, rootMargin: "800px 0px" });
       }
 
       const firstPage = await pdf.getPage(1);
@@ -380,16 +382,19 @@
       }
       root.appendChild(pageFragment);
       root.dataset.pdfInitializedPages = String(active.pages.length);
+      // Layout is available before any canvas is queued. A restoring host can
+      // position its viewport and select the pages it actually needs first.
+      status?.remove();
+      const initialPages = typeof options.initialPages === "function"
+        ? options.initialPages({ root, pageCount: pdf.numPages }) : [1];
+      for (const pageNumber of initialPages) schedule(createPageRecord(pageNumber));
+      await active.renderQueue;
+      if (active.cancelled) return null;
       for (const record of active.pages) {
         if (active.observer) active.observer.observe(record.pageElement);
         else schedule(record);
       }
 
-      const firstPageRecord = active.recordsByPage.get(1);
-      schedule(firstPageRecord);
-      await active.renderQueue;
-      if (active.cancelled) return null;
-      status?.remove();
       root.dataset.pdfStatus = "done";
       options.onReady?.({ root, pdf, lazy: typeof IntersectionObserver === "function" });
       return pdf;
