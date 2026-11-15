@@ -11,7 +11,7 @@
     "$", "addArticleChatReference", "articleStateHtml", "esc", "formatDate", "hasDirtyDocuments",
     "loadArticles", "loadFiles", "loadSemanticIndex", "normalizedDiagnosticPath", "openArticleFile",
     "renderEditorLayers", "renderEditorPreferenceControls", "renderPdf", "request", "saveAllDirtyDocuments",
-    "setCompileMenu", "setSideView", "showPdfError", "showToast", "state", "updateAllEditorMarkers",
+    "setCompileMenu", "setPdfCompiling", "setSideView", "showPdfError", "showToast", "state", "updateAllEditorMarkers",
     "updateArticlePdfZoomControls",
   ]);
 
@@ -21,7 +21,7 @@
     const {
       $, addArticleChatReference, articleStateHtml, esc, formatDate, hasDirtyDocuments, loadArticles,
       loadFiles, loadSemanticIndex, normalizedDiagnosticPath, openArticleFile, renderEditorLayers,
-      renderEditorPreferenceControls, renderPdf, request, saveAllDirtyDocuments, setCompileMenu, setSideView,
+      renderEditorPreferenceControls, renderPdf, request, saveAllDirtyDocuments, setCompileMenu, setPdfCompiling, setSideView,
       showPdfError, showToast, state, updateAllEditorMarkers, updateArticlePdfZoomControls,
     } = dependencies;
 
@@ -244,7 +244,7 @@
       $("articleBackToPdf").hidden = state.outputView !== "log";
       updateArticlePdfZoomControls();
       if (state.outputView === "log") setCompileMenu(false);
-      if (state.outputView === "pdf") renderPdf().catch(error => showPdfError(error));
+      if (state.outputView === "pdf") return renderPdf().catch(error => showPdfError(error));
       else renderLog();
     }
 
@@ -450,6 +450,7 @@
       state.compilingArticles.add(articleId);
       state.stopRequested = false;
       const compileButtons = [$("articleCompile")];
+      setPdfCompiling(true);
       try {
         if (hasDirtyDocuments() && !(await saveAllDirtyDocuments({ silent: true }))) {
           if (state.queuedCompile?.articleId === articleId) state.queuedCompile = null;
@@ -480,7 +481,9 @@
         if (articleId !== state.selectedId) return;
         state.build = { ...result, pdf_available: true, pdf_url: result.pdf_url };
         renderBuildSummary();
-        setOutputView("pdf");
+        await setOutputView("pdf");
+        if (articleId !== state.selectedId) return;
+        setPdfCompiling(false);
         await loadArticles({ preserve: true, reloadSelected: false });
         if (articleId !== state.selectedId) return;
         if (!automatic) {
@@ -505,6 +508,7 @@
       } finally {
         state.compilingArticles.delete(articleId);
         if (articleId !== state.selectedId) return;
+        setPdfCompiling(false);
         state.stopRequested = false;
         compileButtons.forEach(button => {
           button.disabled = !state.selectedId;

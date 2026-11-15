@@ -21,13 +21,29 @@
     let articlePdfController = null;
     let articlePdfRenderKey = "";
     let articlePdfPending = null;
+    let articlePdfCompilation = null;
+
+    function setPdfCompiling(compiling) {
+      if (compiling && !articlePdfCompilation) {
+        const position = captureArticlePdfPosition();
+        articlePdfCompilation = { articleId: state.selectedId, position: position && {
+          page: position.page, xRatio: position.xRatio, yRatio: position.yRatio,
+        } };
+      } else if (!compiling) articlePdfCompilation = null;
+      const host = $("articlePdfView");
+      host.classList.toggle("articlePdfCompiling", compiling);
+      host.inert = compiling;
+      if (compiling) host.setAttribute("aria-busy", "true");
+      else if (!articlePdfPending) host.removeAttribute("aria-busy");
+      $("articlePdfCompileStatus").hidden = !compiling;
+    }
 
     function cancelPendingPdf() {
       const pending = articlePdfPending;
       articlePdfPending = null;
       pending?.controller?.cancel?.();
       pending?.staging?.remove();
-      $("articlePdfView")?.removeAttribute("aria-busy");
+      if (!articlePdfCompilation) $("articlePdfView")?.removeAttribute("aria-busy");
     }
 
     const articlePdfGestureFrames = window.PortalPreview.createFrameCoalescer(
@@ -35,8 +51,9 @@
       error => showPdfError(error),
     );
 
-    function cancelPdf() {
+    function cancelPdf({ keepCompilation = false } = {}) {
       cancelPendingPdf();
+      if (!keepCompilation) setPdfCompiling(false);
       window.cancelAnimationFrame(state.pdfLayoutFrame);
       articlePdfGestureFrames.cancel();
       window.clearTimeout(state.pdfRedrawTimer);
@@ -78,6 +95,7 @@
     }
 
     function captureArticlePdfPosition(point = {}) {
+      if (articlePdfCompilation?.articleId === state.selectedId) return articlePdfCompilation.position;
       const scroller = $("articlePdfView");
       if (!scroller) return null;
       const scrollerRect = scroller.getBoundingClientRect();
@@ -319,11 +337,11 @@
       const sameArticle = articlePdfController && articlePdfRenderKey.startsWith(`${articleId}|`);
       cancelPendingPdf();
       if (!sameArticle) {
-        cancelPdf();
+        cancelPdf({ keepCompilation: true });
         host.innerHTML = window.PortalI18n.html`<div class="articlePdfStatus">正在加载 PDF…</div>`;
       }
-      // Render in a separate, measurable viewport. The live PDF stays visible
-      // and scrollable until every page at the destination has been painted.
+      // Keep the compilation status (or current preview on a passive refresh)
+      // until every page at the destination has been painted.
       const staging = host.cloneNode(false);
       staging.removeAttribute("id");
       staging.setAttribute("aria-hidden", "true");
@@ -403,7 +421,7 @@
           // No await between replacing the DOM and restoring its scroll offsets:
           // the first painted frame of the new PDF is already at the destination.
           articlePdfPending = null;
-          cancelPdf();
+          cancelPdf({ keepCompilation: true });
           documentHost.id = "articlePdfDocument";
           host.replaceChildren(documentHost);
           articlePdfController = controller;
@@ -422,7 +440,7 @@
         staging.remove();
         if (articlePdfPending === pending) {
           articlePdfPending = null;
-          host.removeAttribute("aria-busy");
+          if (!articlePdfCompilation) host.removeAttribute("aria-busy");
         }
       });
       return pending.promise;
@@ -522,7 +540,7 @@
 
     return Object.freeze({
       bindArticlePdfGestures, cancelPdf, captureArticlePdfPosition, pdfUrl, renderPdf, scheduleArticlePdfLayout, setArticlePdfZoom,
-      showPdfError, syncPdfToSource, syncSourceToPdf, updateArticlePdfZoomControls,
+      setPdfCompiling, showPdfError, syncPdfToSource, syncSourceToPdf, updateArticlePdfZoomControls,
     });
   }
 

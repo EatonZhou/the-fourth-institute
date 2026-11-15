@@ -3,10 +3,12 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const http = require('node:http');
+const bootFixture = JSON.parse(fs.readFileSync(0, 'utf8'));
 const { STATIC, portalWorkspaceSurfaceScripts } = require('./portal_workspace_surface_scripts.cjs');
-const { chromium } = require(path.join(STATIC, '../test_framework/tau_runtime/node_modules/playwright'));
+const browserType = require(path.join(STATIC, '../test_framework/tau_runtime/node_modules/playwright'))[process.env.PORTAL_ARTICLE_TEST_BROWSER || 'chromium'];
+const workbenchScripts = JSON.parse(fs.readFileSync(path.join(STATIC, '../script_groups.json'), 'utf8'))['portal-workbench'].map(s => s.replace('/static/', ''));
 const modules = ['portal_state.js', 'portal_page_state.js', 'portal_text.js', 'portal_i18n.js', 'portal_ui_primitives.js', 'portal_ui.js',
-  'portal_pdf_preview.js', 'portal_command_registry.js', ...portalWorkspaceSurfaceScripts(), 'article_workspace_documents.js', 'article_workspace_position.js',
+  'portal_pdf_preview.js', 'portal_command_registry.js', 'portal_workbench_context.js', 'portal_editor_open_service.js', ...workbenchScripts, ...portalWorkspaceSurfaceScripts(), 'article_workspace_documents.js', 'article_workspace_position.js', 'article_workspace_layout.js',
   'article_workspace_syntax.js', 'article_workspace_monaco.js', 'article_workspace_pdf.js', 'article_workspace_build.js', 'article_workspace_events.js'];
 const html = fs.readFileSync(path.join(STATIC, '../article_workspace.html'), 'utf8')
   .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '').replace(/<link\b[^>]*>/gi, '')
@@ -31,11 +33,37 @@ const html = fs.readFileSync(path.join(STATIC, '../article_workspace.html'), 'ut
     + `trailer\n<< /Size ${offsets.length} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF\n`;
   const server = http.createServer((req, res) => {
     const url = new URL(req.url, 'http://fixture');
+    if (url.pathname === '/full') { res.setHeader('Content-Type', 'text/html'); return res.end(bootFixture.html); }
+    if (url.pathname === '/static/portal_resource_routes.js') {
+      res.setHeader('Content-Type', 'text/javascript'); return res.end(bootFixture.routes);
+    }
+    if (url.pathname === '/api/events') {
+      res.setHeader('Content-Type', 'text/event-stream');
+      res.write(': fixture\n\n'); return;
+    }
+    if (url.pathname.startsWith('/api/') && !url.pathname.endsWith('/file')) {
+      const id = 'article_000000000001';
+      const build = { id, pdf_available: true, pdf_url: '/fixture.pdf', status: 'success', compiled_at: 'full-initial', diagnostics: [] };
+      let data = {};
+      if (url.pathname === '/api/articles') data = { articles: [{ id, title: 'Recompile fixture', primary_file: 'main.tex', compiled_pdf: { available: true, url: '/fixture.pdf' } }] };
+      else if (url.pathname.endsWith('/build')) data = build;
+      else if (url.pathname.endsWith('/compile')) data = { ...build, compiled_at: 'full-rebuilt' };
+      else if (url.pathname.endsWith('/settings')) data = { id, primary_file: 'main.tex', synctex_available: false };
+      else if (url.pathname.endsWith('/files')) data = { id, entries: [{ path: 'main.tex', name: 'main.tex', type: 'file', kind: 'text' }] };
+      else if (url.pathname.endsWith('/preflight')) data = { id, status: 'ready', issues: [] };
+      else if (url.pathname.endsWith('/semantic')) data = { id, sections: [], labels: [], references: [] };
+      else if (url.pathname.endsWith('/comments')) data = { id, threads: [] };
+      else if (url.pathname.endsWith('/preferences')) data = { preferences: {} };
+      else if (/identity|current-user|\/me$/.test(url.pathname)) data = { username: 'fixture', user: { username: 'fixture' }, authenticated: true };
+      res.setHeader('Content-Type', 'application/json');
+      if (url.pathname.endsWith('/compile')) return setTimeout(() => res.end(JSON.stringify(data)), 5500);
+      return res.end(JSON.stringify(data));
+    }
     if (url.pathname === '/') { res.setHeader('Content-Type', 'text/html'); return res.end(html); }
     if (url.pathname === '/away') return res.end('<p>Elsewhere</p>');
     if (url.pathname === '/fixture.pdf') {
       res.setHeader('Content-Type', 'application/pdf');
-      return setTimeout(() => res.end(pdfBytes), url.searchParams.get('v') === 'real-rebuild' ? 250 : 0);
+      return setTimeout(() => res.end(pdfBytes), /rebuild|rebuilt/.test(url.searchParams.get('v')) ? 250 : 0);
     }
     const rel = url.pathname.slice('/static/'.length);
     if (url.pathname.endsWith('/file')) {
@@ -43,8 +71,7 @@ const html = fs.readFileSync(path.join(STATIC, '../article_workspace.html'), 'ut
       res.setHeader('Content-Type', 'application/json');
       return res.end(JSON.stringify({ path: name, kind: 'text', content: files[name] }));
     }
-    if (!url.pathname.startsWith('/static/') || rel.includes('..') || (!modules.includes(rel)
-      && rel !== 'article_workspace.css' && !rel.startsWith('vendor/monaco/') && !rel.startsWith('vendor/pdfjs/'))) {
+    if (!url.pathname.startsWith('/static/') || rel.includes('..')) {
       res.writeHead(404); return res.end();
     }
     res.setHeader('Content-Type', rel.endsWith('.css') ? 'text/css' : 'text/javascript');
@@ -52,7 +79,7 @@ const html = fs.readFileSync(path.join(STATIC, '../article_workspace.html'), 'ut
   });
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
   try {
-    browser = await chromium.launch({ headless: true });
+    browser = await browserType.launch({ headless: true });
     const page = await browser.newPage({ viewport: { width: 1400, height: 900 } });
     page.setDefaultTimeout(10000);
     const errors = []; page.on('pageerror', e => errors.push(e.message));
@@ -116,8 +143,11 @@ const html = fs.readFileSync(path.join(STATIC, '../article_workspace.html'), 'ut
         selectedArticle: () => ({ title: 'Fixture' }) });
       window.completedPdfRenders = 0;
       window.buildOwner = PortalArticleWorkspaceBuild.createBuild({ ...deps(PortalArticleWorkspaceBuild), $, state,
-        request: async () => new Promise(resolve => { window.finishCompile = resolve; }),
+        request: async url => url.endsWith('/compile')
+          ? new Promise((resolve, reject) => { window.finishCompile = resolve; window.failCompile = reject; })
+          : { status: 'failed', diagnostics: [], issues: [] },
         renderPdf: async () => { await pdf.renderPdf(); window.completedPdfRenders += 1; },
+        setPdfCompiling: pdf.setPdfCompiling,
         showPdfError: error => { throw error; },
       });
       const shared = { $, state, activeDocument: docs.activeDocument, captureActiveDocument: docs.captureActiveDocument,
@@ -141,6 +171,7 @@ const html = fs.readFileSync(path.join(STATIC, '../article_workspace.html'), 'ut
       await page.addScriptTag({ url: origin + '/static/vendor/monaco/vs/loader.js' });
       await page.evaluate(setup, options);
     };
+    if (!process.env.PORTAL_ARTICLE_TEST_FULL_ONLY) {
     await enter();
     await page.evaluate(async () => {
       await docs.openArticleFile('intro.tex');
@@ -161,13 +192,13 @@ const html = fs.readFileSync(path.join(STATIC, '../article_workspace.html'), 'ut
     const stored = await page.evaluate(() => JSON.stringify(PortalPageState.create('article-reading-position', { getUser: () => 'reader' }).read()));
     assert.ok(!stored.includes('Line 1 of the source')); assert.ok(!stored.includes('Fresh 1'));
     // A completed build replaces the PDF through the real build -> view -> PDF
-    // path. Restore the latest reading position, even if scrolled while compiling.
+    // path. Keep the reading position behind the compilation status until ready.
     const rebuildAt = async ({ scrollTop, pages = 5, fromScratch = false }) => {
       const anchor = await page.evaluate(({ scrollTop, pages, fromScratch }) => {
         const completed = window.completedPdfRenders;
-        void buildOwner.compileArticle({ fromScratch });
         document.getElementById('articlePdfView').scrollTop = scrollTop;
         const position = pdfOwner.captureArticlePdfPosition();
+        window.compiling = buildOwner.compileArticle({ fromScratch });
         window.pdfPageCount = pages;
         window.pdfLoadDelay = 100; window.pdfPageDelay = 60;
         window.swapFrames = [];
@@ -179,6 +210,7 @@ const html = fs.readFileSync(path.join(STATIC, '../article_workspace.html'), 'ut
             return bounds.bottom > viewport.top && bounds.top < viewport.bottom;
           });
           window.swapFrames.push({ position: pdfOwner.captureArticlePdfPosition(),
+            busy: !document.getElementById('articlePdfCompileStatus').hidden,
             version: host.querySelector('.articlePdfDocument')?.dataset.fixtureVersion,
             ready: visible.length > 0 && visible.every(p => p.dataset.pdfRenderState === 'done') });
           if (window.completedPdfRenders === completed) requestAnimationFrame(sample);
@@ -188,6 +220,7 @@ const html = fs.readFileSync(path.join(STATIC, '../article_workspace.html'), 'ut
         return { position, completed, zoom: state.pdfZoom };
       }, { scrollTop, pages, fromScratch });
       await page.waitForFunction(completed => window.completedPdfRenders > completed, anchor.completed);
+      await page.evaluate(() => window.compiling);
       await page.evaluate(() => new Promise(resolve => requestAnimationFrame(resolve)));
       return { before: anchor, after: await page.evaluate(() => ({ position: pdfOwner.captureArticlePdfPosition(), zoom: state.pdfZoom })),
         frames: await page.evaluate(() => window.swapFrames) };
@@ -198,12 +231,23 @@ const html = fs.readFileSync(path.join(STATIC, '../article_workspace.html'), 'ut
     assert.ok(Math.abs(rebuilt.after.position.xRatio - rebuilt.before.position.xRatio) < .01);
     assert.equal(rebuilt.after.zoom, rebuilt.before.zoom);
     assert.ok(rebuilt.frames.length > 2, 'observe intermediate animation frames during slow PDF rendering');
+    assert.ok(rebuilt.frames.some(frame => frame.busy), 'compilation status remains through PDF loading');
     assert.ok(rebuilt.frames.every(frame => frame.position?.page === rebuilt.before.position.page), 'never paint the loading view or PDF top');
     assert.ok(rebuilt.frames.filter(frame => frame.version === 'build-1').every(frame => frame.ready), 'new visible pages are rendered before replacement');
     const shortened = await rebuildAt({ scrollTop: 4100, pages: 3, fromScratch: true });
     assert.equal(shortened.before.position.page, 5);
     assert.equal(shortened.after.position.page, 3);
     assert.ok(Math.abs(shortened.after.position.yRatio - shortened.before.position.yRatio) < .01);
+    const failedCompile = await page.evaluate(async () => {
+      const old = document.getElementById('articlePdfDocument');
+      const compiling = buildOwner.compileArticle();
+      failCompile(new Error('Fixture compilation failed'));
+      await compiling;
+      return document.getElementById('articlePdfCompileStatus').hidden && state.outputView === 'log'
+        && !document.getElementById('articlePdfView').inert && old === document.getElementById('articlePdfDocument');
+    });
+    assert.ok(failedCompile, 'compilation failure clears the waiting status and retains the previous PDF');
+    await page.evaluate(() => buildOwner.setOutputView('pdf'));
     const failedSwap = await page.evaluate(async () => {
       const old = document.getElementById('articlePdfDocument'), scroll = document.getElementById('articlePdfView').scrollTop;
       window.pdfFailure = true; state.build.compiled_at = 'failed-update';
@@ -215,11 +259,13 @@ const html = fs.readFileSync(path.join(STATIC, '../article_workspace.html'), 'ut
     // A cancelled view belongs to the previous Article, even if its DOM remains.
     await page.evaluate(async () => {
       state.build.compiled_at = 'superseded'; const pending = pdfOwner.renderPdf();
-      pdfOwner.cancelPdf(); state.selectedId = 'another-article'; state.build.compiled_at = 'another-article-build';
+      pdfOwner.setPdfCompiling(true); pdfOwner.cancelPdf();
+      state.selectedId = 'another-article'; state.build.compiled_at = 'another-article-build';
       await pdfOwner.renderPdf();
       await pending;
     });
     assert.equal(await page.evaluate(() => document.getElementById('articlePdfView').scrollTop), 0);
+    assert.ok(await page.evaluate(() => document.getElementById('articlePdfCompileStatus').hidden));
     assert.equal(await page.evaluate(() => document.getElementById('articlePdfDocument').dataset.fixtureVersion), 'another-article-build');
     await enter({ user: 'other-reader' }); assert.equal(await page.evaluate(() => state.openFile), 'main.tex');
     await enter({ articleId: 'B' }); assert.equal(await page.evaluate(() => state.openFile), 'main.tex');
@@ -227,14 +273,24 @@ const html = fs.readFileSync(path.join(STATIC, '../article_workspace.html'), 'ut
     await page.evaluate(async () => { state.pdfRestorePosition = { page: 90, xRatio: .5, yRatio: .5 }; pdfOwner.cancelPdf(); await pdfOwner.renderPdf(); });
     assert.equal(await page.evaluate(() => pdfOwner.captureArticlePdfPosition().page), 5);
     // Exercise the same transition with production CSS, PDF.js, canvases and
-    // lazy page rendering, including scrolling while the new PDF downloads.
-    await page.addStyleTag({ url: origin + '/static/article_workspace.css' });
+    // lazy page rendering, with the compilation status replacing the old PDF.
+    const styles = Array.from(fs.readFileSync(path.join(STATIC, '../article_workspace.html'), 'utf8')
+      .matchAll(/href="(\/static\/[^\"]+\.css)"/g), m => m[1]);
+    for (const style of styles) await page.addStyleTag({ url: origin + style });
     const realSwap = await page.evaluate(async () => {
+      const $ = id => document.getElementById(id), noop = () => {};
+      for (const id of ['articleCodeEditor', 'articleMonacoEditor', 'articlePdfView']) $(id).removeAttribute('style');
+      PortalArticleWorkspaceLayout.createLayout({
+        ...Object.fromEntries(PortalArticleWorkspaceLayout.dependencies.map(k => [k, noop])), $, state,
+        articleLayoutStore: { read: () => ({}), write: noop }, scheduleArticlePdfLayout: pdfOwner.scheduleArticlePdfLayout,
+      }).initArticleWorkbench();
+      await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
       pdfOwner.cancelPdf(); window.PortalPdfPreview = window.realPdfPreview;
       state.build.compiled_at = 'real-initial'; state.pdfZoom = 1.4;
       await pdfOwner.renderPdf();
       const host = document.getElementById('articlePdfView');
-      host.scrollTop = 2800;
+      host.scrollTop = 3200;
+      const target = pdfOwner.captureArticlePdfPosition();
       const old = document.getElementById('articlePdfDocument');
       const frames = []; let finished = false;
       const sample = () => {
@@ -243,17 +299,21 @@ const html = fs.readFileSync(path.join(STATIC, '../article_workspace.html'), 'ut
           const bounds = p.getBoundingClientRect(); return bounds.bottom > rect.top && bounds.top < rect.bottom;
         });
         frames.push({ page: pdfOwner.captureArticlePdfPosition()?.page,
+          busy: !document.getElementById('articlePdfCompileStatus').hidden,
+          yRatio: pdfOwner.captureArticlePdfPosition()?.yRatio,
+          hitPage: Number(document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2)?.closest('[data-pdf-page]')?.dataset.pdfPage || 0),
           old: old === document.getElementById('articlePdfDocument'),
           ready: pages.length > 0 && pages.every(p => p.dataset.pdfRenderState === 'done' && p.querySelector('canvas')) });
         if (!finished) requestAnimationFrame(sample);
       };
       requestAnimationFrame(sample);
-      state.build.compiled_at = 'real-rebuild'; const updating = pdfOwner.renderPdf();
-      await pdfOwner.setArticlePdfZoom(1.6);
-      host.scrollTop = 3200;
-      const target = pdfOwner.captureArticlePdfPosition();
+      const completed = window.completedPdfRenders;
+      const compiling = buildOwner.compileArticle();
+      finishCompile({ id: state.selectedId, status: 'success', pdf_url: '/fixture.pdf', compiled_at: 'real-rebuild' });
       const scale = Number(old.querySelector(`[data-pdf-page="${target.page}"]`).dataset.pdfScale);
-      await updating; finished = true;
+      await compiling;
+      while (window.completedPdfRenders === completed) await new Promise(resolve => requestAnimationFrame(resolve));
+      finished = true;
       await new Promise(resolve => requestAnimationFrame(resolve));
       return { frames, target, result: pdfOwner.captureArticlePdfPosition(), scale,
         newScale: Number(host.querySelector(`[data-pdf-page="${target.page}"]`).dataset.pdfScale),
@@ -261,11 +321,70 @@ const html = fs.readFileSync(path.join(STATIC, '../article_workspace.html'), 'ut
     });
     assert.ok(realSwap.frames.some(frame => frame.old) && realSwap.frames.some(frame => !frame.old));
     assert.ok(realSwap.frames.every(frame => frame.page === realSwap.target.page), 'real renderer never exposes a different page');
+    assert.ok(realSwap.frames.every(frame => Math.abs(frame.yRatio - realSwap.target.yRatio) < .01),
+      `the visible page position must remain stable: ${JSON.stringify(realSwap)}`);
+    assert.ok(realSwap.frames.some(frame => frame.busy), 'real PDF loading shows compilation status');
+    assert.ok(realSwap.frames.every(frame => frame.busy ? frame.hitPage === 0 : frame.hitPage === realSwap.target.page),
+      'the viewport shows compilation status, then the reading page without exposing the PDF top');
     assert.ok(realSwap.frames.filter(frame => !frame.old).every(frame => frame.ready), 'new PDF has rendered canvases on its first visible frame');
     assert.ok(Math.abs(realSwap.target.yRatio - realSwap.result.yRatio) < .01);
-    assert.equal(realSwap.newScale, realSwap.scale, 'zoom changes during loading apply to the replacement');
+    assert.equal(realSwap.newScale, realSwap.scale, 'the replacement keeps the same zoom');
     assert.equal(realSwap.staging, false);
     assert.deepEqual(errors, []);
-    console.log('PASS: return and recompile preserve PDF page/position/zoom; fresh source, user/Article isolation and removed targets');
+    }
+    // Full application boot and the actual compile button, without substituted
+    // frontend owners: catalog refresh, shared controls and page events all run.
+    const full = await browser.newPage({ viewport: { width: 1400, height: 900 } });
+    const fullErrors = [];
+    const fullRequests = [];
+    full.on('request', request => { if (request.url().includes('/api/')) fullRequests.push(new URL(request.url()).pathname); });
+    full.on('pageerror', error => fullErrors.push(error.message));
+    await full.route('**/*', route => route.request().url().startsWith(origin + '/') ? route.continue() : route.abort());
+    await full.goto(origin + '/full?item=article_000000000001');
+    await full.waitForFunction(() => document.querySelectorAll('#articlePdfDocument [data-pdf-page]').length === 5, null, { timeout: 10000 }).catch(async error => {
+      throw new Error(JSON.stringify({ error: error.message, fullErrors, fullRequests, state: await full.evaluate(() => ({
+        ready: Boolean(window.ArticleWorkspaceReady), preview: document.getElementById('articlePdfView')?.textContent,
+        notices: Array.from(document.querySelectorAll('[role="alert"],[data-portal-toast-stack]')).map(n => n.textContent),
+      })) }));
+    });
+    await full.evaluate(async () => {
+      await window.ArticleWorkspaceReady;
+      const host = document.getElementById('articlePdfView');
+      host.scrollTop = 1600;
+      await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+      window.pdfFrameSamples = [];
+      window.pdfOldDocument = document.getElementById('articlePdfDocument');
+      window.pdfTargetTop = host.scrollTop;
+      window.pdfSampling = true;
+      const sample = () => {
+        const status = document.getElementById('articlePdfCompileStatus');
+        const busy = !status.hidden;
+        const rect = host.getBoundingClientRect();
+        const pages = Array.from(host.querySelectorAll('[data-pdf-page]')).filter(p => {
+          const bounds = p.getBoundingClientRect(); return bounds.bottom > rect.top && bounds.top < rect.bottom;
+        });
+        pdfFrameSamples.push({ top: host.scrollTop, old: pdfOldDocument === document.getElementById('articlePdfDocument'),
+          busy, hidden: getComputedStyle(host).visibility === 'hidden',
+          statusVisible: busy && status.getBoundingClientRect().width > 0,
+          ready: pages.length > 0 && pages.every(p => p.dataset.pdfRenderState === 'done' && p.querySelector('canvas')) });
+        if (pdfSampling) requestAnimationFrame(sample);
+      };
+      requestAnimationFrame(sample);
+    });
+    await full.click('#articleCompile');
+    await full.waitForSelector('#articlePdfCompileStatus', { state: 'visible' });
+    assert.match(await full.locator('#articlePdfCompileStatus').textContent(), /正在编译/);
+    await full.waitForFunction(() => pdfOldDocument !== document.getElementById('articlePdfDocument') && !document.querySelector('[data-article-pdf-staging]'));
+    await full.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+    const fullResult = await full.evaluate(() => { pdfSampling = false; return { frames: pdfFrameSamples, top: pdfTargetTop }; });
+    assert.ok(fullResult.frames.every(frame => Math.abs(frame.top - fullResult.top) < 2), JSON.stringify(fullResult));
+    assert.ok(fullResult.frames.some(frame => frame.busy && frame.old), 'the actual compile button immediately shows status');
+    assert.ok(fullResult.frames.filter(frame => frame.busy).every(frame => frame.hidden && frame.statusVisible),
+      'the old PDF stays hidden throughout the slow build and PDF rendering');
+    assert.ok(fullResult.frames.filter(frame => !frame.old).every(frame => frame.ready), 'replacement is painted before reveal');
+    assert.ok(!fullResult.frames.at(-1).busy && !fullResult.frames.at(-1).hidden, 'the new PDF becomes visible after compiling');
+    assert.deepEqual(fullErrors, []);
+    await full.close();
+    console.log('PASS: compilation status until rendered PDF replacement; preserved reading position; failure and navigation cleanup');
   } finally { await browser?.close(); await new Promise(resolve => server.close(resolve)); }
 })().catch(error => { console.error(error); process.exitCode = 1; });

@@ -1328,6 +1328,7 @@ body.articleOutlineResizing { cursor: row-resize; user-select: none; }
 
 .articleOutputPane {
   container-type: inline-size;
+  position: relative;
   overflow: hidden;
 }
 
@@ -1918,6 +1919,20 @@ body.articleOutlineResizing { cursor: row-resize; user-select: none; }
 }
 
 .articleOutputView.active { display: flex; }
+
+.articlePdfView.articlePdfCompiling { visibility: hidden; }
+
+.articlePdfCompileStatus {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  color: var(--muted);
+  font-size: 14px;
+  pointer-events: none;
+}
+
+.articlePdfView:not(.active) + .articlePdfCompileStatus { display: none; }
 
 .articlePdfView {
   align-items: flex-start;

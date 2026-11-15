@@ -441,6 +441,7 @@
     openArticleFile, renderEditorLayers,
     renderEditorPreferenceControls: (...args) => renderEditorPreferenceControls(...args),
     renderPdf: (...args) => renderPdf(...args), request, saveAllDirtyDocuments, setCompileMenu, setSideView,
+    setPdfCompiling: (...args) => setPdfCompiling(...args),
     showPdfError: (...args) => showPdfError(...args), showToast, state, updateAllEditorMarkers,
     updateArticlePdfZoomControls: (...args) => updateArticlePdfZoomControls(...args),
   });
@@ -455,7 +456,7 @@
 
   const {
     bindArticlePdfGestures, cancelPdf, captureArticlePdfPosition, pdfUrl, renderPdf, scheduleArticlePdfLayout, setArticlePdfZoom,
-    showPdfError, syncPdfToSource, syncSourceToPdf, updateArticlePdfZoomControls,
+    setPdfCompiling, showPdfError, syncPdfToSource, syncSourceToPdf, updateArticlePdfZoomControls,
   } = articleModule("PortalArticleWorkspacePdf").createPdf({
     $, editorPosition, esc, openArticleFile, request, selectedArticle, setOutputView, showToast, state,
   });
