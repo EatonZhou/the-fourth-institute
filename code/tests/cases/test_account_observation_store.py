@@ -175,6 +175,7 @@ def test_monitor_retains_failure_attempt_as_history(monkeypatch):
     last = history.append.call_args.args[2]
     assert last['status'] == 'unavailable'
     assert last['error_code'] == 'account_read_timeout'
+    assert last['error_kind'] == 'TimeoutError'
     assert last['rate_limits'][0]['stale'] is True
 
 

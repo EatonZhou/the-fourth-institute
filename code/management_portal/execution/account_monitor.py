@@ -214,6 +214,8 @@ class AccountMonitor:
         except Exception as error:
             if self.stopped.is_set():
                 return
+            logger.warning('Account observation call failed for %s (%s)',
+                           account.account_id, type(error).__name__)
             if is_authentication_failure(error, provider=account.provider):
                 error_code, message = "provider_authentication_failed", "登录凭据失效，请重新登录"
                 if _subscription(account):
@@ -224,7 +226,8 @@ class AccountMonitor:
                 error_code, message = "account_read_unavailable", "账号用量暂不可读取"
             with self._lock:
                 self._samples[account.account_id] = self._failed_sample(account, {
-                    "status": "unavailable", "error_code": error_code, "error": message, "refreshing": False})
+                    "status": "unavailable", "error_code": error_code,
+                    "error_kind": type(error).__name__, "error": message, "refreshing": False})
             if account.quota_enabled and self.scheduler.quota_reserve_enabled:
                 self.scheduler.update_account_quota(account.account_id, {"status": "unknown", "credits": {}})
         if not self.stopped.is_set() and not passive:
