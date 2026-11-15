@@ -79,8 +79,8 @@ SUMMARY_INSTRUCTIONS = (
     "from previous_summary, remove superseded active work, and distinguish this branch from generic lineage context. "
     "Never include credentials, private instructions, raw logs, or unsupported claims. Do not report test or check "
     "counts such as '28 项测试通过' or '97 passed, 3 skipped'; state what was changed or delivered instead. "
-    "summary_policy.total_chars is an advisory condensation target, not a write limit; "
-    "rewrite and condense instead of appending history, without dropping unresolved work to meet a size target. "
+    "summary_policy.total_chars is the combined character limit across all fields and temporal layers (default 5000); "
+    "rewrite and condense instead of appending history, while preserving unresolved work. "
     "Keep unresolved commitments, blockers, constraints and links to separate project records. "
     "Chinese output is preferred when evidence is primarily Chinese."
 )
@@ -113,7 +113,7 @@ def project_summary_metadata(metadata: dict[str, Any]) -> dict[str, Any]:
 
 
 def policy() -> dict:
-    defaults = {"total_chars": 3000, "phase_rounds": 20, "long_term_rounds": 100}
+    defaults = {"total_chars": 5000, "phase_rounds": 20, "long_term_rounds": 100}
     result = {}
     for key, default in defaults.items():
         value = int(os.environ.get("PORTAL_SUMMARY_" + key.upper(), default))
@@ -134,8 +134,14 @@ def character_count(value) -> int:
     return 0
 
 
+def check_budget(value: object) -> None:
+    limit = policy()["total_chars"]
+    if character_count(value) > limit:
+        raise ValueError(f"工作摘要各层、各字段合计超过 {limit} 字符上限，请归纳后重新提交")
+
+
 def validate_summary(payload: object) -> dict[str, Any]:
-    """Validate semantic summary fields without imposing a character limit."""
+    """Validate semantic summary fields and the total character limit."""
 
     if not isinstance(payload, dict):
         raise ValueError("summary 必须是 JSON object")
@@ -165,6 +171,7 @@ def validate_summary(payload: object) -> dict[str, Any]:
         raise ValueError(
             "summary 不写测试数量，删去后重新提交：" + "；".join(dict.fromkeys(tallies))[:500]
         )
+    check_budget(output)
     return output
 
 

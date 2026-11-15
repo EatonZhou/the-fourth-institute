@@ -21,7 +21,7 @@ REMINDER = (
     "当前输入 ID 可用 ListResidentStates（resident_ids 只含自己）返回的 states[0].state.active_message_id 获取。"
     "提交 resident_id、message_ids（覆盖的旧轮次及当前输入）、expected_revision 和 summary；"
     "内容确实无新增时可省略 summary，只登记已检查的轮次。以后每轮完成前同样维护自己的摘要。"
-    "保留未决承诺、阻塞、约束和项目记录入口；篇幅目标仅供凝练参考，不限制保存。不写测试数量。无需回复提醒。"
+    "保留未决承诺、阻塞、约束和项目记录入口，遵守 consolidation.policy.total_chars 的各层各字段合计字数上限（默认 5000）。不写测试数量。无需回复提醒。"
 )
 
 
@@ -186,7 +186,7 @@ def get_family_summary_inputs(actor: str, resident_id: str, *, overview_only: bo
                         f"Family {resident_id} 有摘要维护待办。先用 GetFamilySummaryInputs overview_only=true 查看；"
                         "对 consolidation_due 按需读取 GetResidentSummaries include_maintenance=true，"
                         "用 UpdateResidentWorkSummary 的 consolidation 归纳阶段/长期层，保留未决事项和项目记录入口。"
-                        "随后按需读取 Family 材料并更新门面；按篇幅参考值凝练而非截断，不读取成员历史。"}]}}
+                        "随后按需读取 Family 材料并更新门面；遵守各层合计字数上限，归纳而非截断，不读取成员历史。"}]}}
     return {"resident_id": resident_id, "title": family["title"], "goal": family["goal"],
             "members": members, "notices": notices, "source_versions": versions, "previous_summary": previous["summary"],
             "expected_revision": previous["revision"], "needs_update": changed or bool(pending),

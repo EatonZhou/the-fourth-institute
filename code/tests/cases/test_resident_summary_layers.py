@@ -41,22 +41,35 @@ def test_only_own_steward_can_consolidate_and_facades_keep_their_owner(setup_wor
         work.update_resident_work_summary(roles["steward"][0], C, 0, consolidation={"phase": SUMMARY})
 
 
-def test_summary_size_is_advisory_and_preserves_all_fields_and_layers(setup_work, monkeypatch):
-    monkeypatch.setenv("PORTAL_SUMMARY_TOTAL_CHARS", "400")
+def test_summary_total_limit_counts_all_fields_and_layers_atomically(setup_work, monkeypatch):
+    monkeypatch.delenv("PORTAL_SUMMARY_TOTAL_CHARS", raising=False)
     context, roles, *_ = setup_work
-    large = {"current_focus": "字" * 4001, "recent_results": ["字" * 4000]}
+    large = {"current_focus": "字" * 2500, "recent_results": ["字" * 2500]}
     assert validate_summary(large)["recent_results"] == large["recent_results"]
-    work.update_resident_work_summary(A, A, 0, summary={"current_focus": "字" * 290}, message_ids=["one"])
+    with pytest.raises(ValueError, match="5000"):
+        validate_summary({**large, "branch_delta": "超"})
+    work.update_resident_work_summary(A, A, 0, summary={"current_focus": "字" * 4000}, message_ids=["one"])
     higher = work.update_resident_work_summary(roles["steward"][0], A, 1,
-        consolidation={"phase": {"current_focus": "字" * 290}})
-    saved = work.update_resident_work_summary(A, A, higher["revision"], summary=large, message_ids=["two"])
+        consolidation={"phase": {"current_focus": "字" * 4000}})
+    before = context.store.work_summary(A)
+    with pytest.raises(ValueError, match="5000"):
+        work.update_resident_work_summary(A, A, higher["revision"],
+            summary={"current_focus": "字" * 1001}, message_ids=["two"])
+    assert context.store.work_summary(A) == before
+    saved = work.update_resident_work_summary(A, A, higher["revision"],
+        summary={"current_focus": "字" * 1000}, message_ids=["two"])
     assert saved["layers"]["phase"] == higher["layers"]["phase"]
-    assert saved["layers"]["recent"]["current_focus"] == large["current_focus"]
+    assert character_count(saved["layers"]) == 5000
     assert saved["consolidation"]["due"]
+    before = context.store.work_summary(A)
+    with pytest.raises(ValueError, match="5000"):
+        work.update_resident_work_summary(roles["steward"][0], A, saved["revision"],
+            consolidation={"phase": large, "long_term": {"durable_expertise": ["超"]}})
+    assert context.store.work_summary(A) == before
     merged = work.update_resident_work_summary(roles["steward"][0], A, saved["revision"],
-        consolidation={"phase": large, "long_term": {"durable_expertise": ["长期" * 4000]}})
+        consolidation={"phase": large, "long_term": {}})
     assert merged["layers"]["phase"]["recent_results"] == large["recent_results"]
-    assert merged["layers"]["long_term"]["durable_expertise"] == ["长期" * 4000]
+    assert character_count(merged["layers"]) == 5000
 
 
 def test_unresolved_items_survive_even_when_agent_omits_them_and_close_explicitly(setup_work):
@@ -69,6 +82,18 @@ def test_unresolved_items_survive_even_when_agent_omits_them_and_close_explicitl
         consolidation={"phase": {"recent_results": ["阶段完成"]}, "resolved_threads": {"权限分工": "已完成职责交接，记录见项目文档"}})
     assert not second["summary"]["active_threads"]
     assert second["layers"]["long_term"]["primary_ownership"] == ["登录"]
+
+
+def test_total_limit_includes_automatically_retained_unresolved_items(monkeypatch):
+    monkeypatch.delenv("PORTAL_SUMMARY_TOTAL_CHARS", raising=False)
+    previous, state = layers.initial({"active_threads": ["待办"]})
+    with pytest.raises(ValueError, match="5000"):
+        layers.consolidate(previous, state, {"phase": {"current_focus": "字" * 5000}})
+    assert previous["recent"]["active_threads"] == ["待办"]
+    merged, _ = layers.consolidate(previous, state,
+        {"phase": {"current_focus": "字" * 4998}})
+    assert merged["phase"]["active_threads"] == ["待办"]
+    assert character_count(merged) == 5000
 
 
 def test_quantity_watermarks_and_maintenance_do_not_self_trigger(setup_work, monkeypatch):
@@ -101,12 +126,14 @@ def test_quantity_watermarks_and_maintenance_do_not_self_trigger(setup_work, mon
 
 def test_legacy_oversized_is_readable_then_condensed_without_replaying_history(setup_work):
     context, roles, *_ = setup_work
-    legacy = {**SUMMARY, "recent_results": ["旧过程" * 1100]}
+    legacy = {**SUMMARY, "recent_results": ["旧过程" * 2100]}
     context.store.write_work_summary(A, A, legacy, ["one"], 0, {})
     old = context.store.work_summary(A)
     assert old["layers"]["recent"] == legacy and old["consolidation"]["due"]
+    work.update_resident_work_summary(A, A, old["revision"], message_ids=["two"])
+    assert context.store.work_summary(A)["layers"] == old["layers"]
     merged = work.update_resident_work_summary(roles["steward"][0], A, old["revision"], consolidation={"phase": SUMMARY})
-    assert character_count(merged["layers"]) <= 3000
+    assert character_count(merged["layers"]) <= 5000
     assert merged["missing_message_ids"] == []
 
 
