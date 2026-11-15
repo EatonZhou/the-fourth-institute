@@ -788,9 +788,7 @@ modules:
     designs:
       - "decision_7956d7cb4bde"
       - "decision_8ac0b5a6c0e5"
-      - "decision_d40f59f5508f"
       - "decision_075f66430606"
-      - "decision_f1331d57be89"
     layer: "service"
     level: "component"
   - id: "execution.providers"
@@ -1639,7 +1637,7 @@ protocols:
     designs:
       - "decision_96a887d83e8a"
     related_designs:
-      - "decision_f1331d57be89"
+      - "decision_4dea0db1f45a"
     description: "Linux/macOS 用 Unix socket、Windows 用按实例与服务区分的本机回环端点承载 JSON RPC；逻辑路径仍定位签名密钥。签名信封绑定原调用主体，服务校验身份与参数，返回统一错误分类。"
     example: "Web 携带用户操作身份向 ResourceService 发出 resource.read；签名或权限失效返回明确错误，调用者不更换身份重试。"
   - id: "resource-access"
@@ -1752,7 +1750,7 @@ protocols:
     related_designs:
       - "decision_25eb93d803a4"
       - "decision_8ac0b5a6c0e5"
-      - "decision_d40f59f5508f"
+      - "decision_4dea0db1f45a"
     description: "Scheduler 通过请求状态和租约限制并发，Worker 报告心跳、恢复信息和终态；服务与 Worker 可独立换代。"
     example: "Worker 领取排队请求并续租；进程退出后恢复逻辑依据请求与租约决定接管，不能因 Web 重启重复执行。"
   - id: "provider-capabilities"
@@ -2043,7 +2041,7 @@ protocols:
       - "worker"
     designs: []
     related_designs:
-      - "decision_f1331d57be89"
+      - "decision_4dea0db1f45a"
     description: "ExecutionService分派token_usage查询/增量，Scheduler按execution关联归因，AgentData登记执行输出和已计费用量。"
     example: "读取一个执行的用量：ExecutionService 接收查询，Scheduler 按 execution 关联账号，AgentData 提供已登记用量；页面展示不另记一次账。"
 
@@ -2438,10 +2436,8 @@ protocols:
       - "web.projections"
     designs: []
     related_designs:
-      - "decision_d40f59f5508f"
-      - "decision_c47a13e8b962"
       - "decision_4dea0db1f45a"
-      - "decision_f1331d57be89"
+      - "decision_c47a13e8b962"
       - "decision_fc26f883773d"
       - "decision_3dd52c0692c1"
     description: "Execution 按容量键持久保存可选 allow_credits（默认 false、省略保留），Codex 订阅声明 credits_supported；仅阈值 0 且已认证新鲜正 credits/unlimited 时解除原生耗尽的自动暂停，保留 used_up 与原始 headroom，人工 Closed 优先，正阈值及旧 Session scoped 授权独立。Home 经原 UpdateProviderAccount 权限保存并读取同一设置，后台刷新保留表单尺寸、原值与草稿，保留派发间隔和手动 Open/Close。Provider Adapter 产生原生调用用量及额度/余额观察；Execution 按账号、稳定调用标识、观察时间聚合，Lineage 投影 Resident 用量，Home 显示账号资源。原生 turn 用量、上下文用量、订阅窗口额度与货币余额保持不同字段和来源。适配器以非空 quota_group 声明共享额度池，Home 只在同组窗口之间显示明确零读数形成的约束，保留原始百分比；限制来源全部过期时显示待确认，不按名称、窗口时长或同账号猜测依赖。分组不修改 Scheduler 保护或恢复规则。 BillingObservations 按 account 锁与缓存采样；失败保留最后成功样本并标 stale/error，不填零。日用量与逐轮小时账本分开，模型目录不在该观察输出内。resident_execution_gate 根据当前 Session binding 批量读取 Scheduler quota_states，投影 open/closed/unknown 及保护原因和已确认豁免；人工 intake 和工作状态独立，查询失败不视为放行。原生状态视图消费同一保护事实和 send_hint，缺字段的工作事件不清空保护；正式批量读取刷新，不以 Conversation cursor 充当额度版本。"
@@ -2703,7 +2699,7 @@ protocols:
       - "lineage.conversation"
     designs: []
     related_designs:
-      - "decision_f1331d57be89"
+      - "decision_4dea0db1f45a"
       - "decision_fc26f883773d"
     description: "Lineage按时间窗口读取Execution小时账本，按可读Resident根和当前归属投影，保留每次观察时间和匿名量。 查询保留逐窗口观察起止时间和权限范围，不声称跨窗口原子快照。"
     example: "collect调用token_usage(start_hour,end_hour,provider=\"*\",include_accounts=True)后组织Lineage/Resident统计。"
