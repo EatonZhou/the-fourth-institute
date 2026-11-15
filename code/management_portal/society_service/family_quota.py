@@ -47,13 +47,27 @@ def role_migration(record: dict[str, Any]) -> dict[str, Any]:
     return state
 
 
+def _migration_source_account(state: Mapping[str, Any]) -> str:
+    if state.get("source_account"):
+        return str(state["source_account"])
+    # Preventive migrations written before source_account was explicit used
+    # this owner-defined epoch. Unrecognized legacy states stay conservative.
+    source, separator, window = str(state.get("epoch") or "").partition(":")
+    return source if separator and window.startswith("[") and ":automatic-handoff" in window else ""
+
+
+def _migration_applies_to_account(state: Mapping[str, Any], account_id: str) -> bool:
+    source = _migration_source_account(state)
+    return not source or not account_id or source == account_id
+
+
 def admission_diagnostics(record: dict[str, Any]) -> dict[str, Any]:
     """Read reserve gate facts only; never refresh accounts or advance migration."""
     from .resident_default_backend import selection_mode
 
     state = role_migration(record)
     status = state.get("status")
-    source = state.get("source_account") or str(state.get("epoch") or "").partition(":")[0]
+    source = _migration_source_account(state)
     result = {
         "auto_migration_enabled": auto_migration_enabled(record),
         "selection_mode": selection_mode(record),
@@ -89,6 +103,10 @@ def _validate_migration(state: dict[str, Any]) -> None:
 def role_availability(record: dict[str, Any], *, execution_gate: dict[str, Any] | None = None) -> dict[str, Any]:
     from . import resident_record_domain
     state = role_migration(record)
+    if execution_gate and not _migration_applies_to_account(state, execution_gate.get("account_id") or ""):
+        state = {key: value for key, value in state.items() if key not in {"status", "reason"}}
+        # The old incident does not block this binding; account_wait still
+        # describes a missing current account, independently of that incident.
     intake = resident_record_domain.resident_intake_state(record)
     if intake != "open":
         return {"status": "paused", "reason": "接单已关闭；门面开放时平台将恢复，关闭门面可暂停 Family", "intake": intake}
@@ -605,7 +623,7 @@ def quota_switch_state(record: dict[str, Any], *, execution_gate: Mapping[str, A
     if gate.get("state") == "open" and gate.get("override_enabled") is True:
         return result
     migration = role_migration(record) if enabled else {}
-    same_source = not migration.get("source_account") or migration["source_account"] == gate.get("account_id")
+    same_source = _migration_applies_to_account(migration, gate.get("account_id") or "")
     if same_source and migration.get("switch_reason") == "migration_failed":
         return {**result, "state": "manual_required", "reason": "migration_failed",
                 "message": "后端切换未完成，原消息和会话已保留，请手动选择"}
@@ -616,7 +634,7 @@ def quota_switch_state(record: dict[str, Any], *, execution_gate: Mapping[str, A
     if not enabled:
         return {**result, "state": "disabled", "reason": "auto_switch_disabled",
                 "message": "当前帐号额度不可用，请手动选择 AI 后端"}
-    if migration.get("source_account") and gate.get("account_id") and migration["source_account"] != gate["account_id"]:
+    if not same_source:
         return result  # A receipt from the previous binding cannot block the new one.
     restart = record.get("session_restart") or {}
     from .resident_work_recovery import latest_failed_input, recovery_entry
@@ -864,9 +882,13 @@ def ensure_role_reserve(record: dict[str, Any], accounts: list[dict[str, Any]] |
             family_role_quota_questions.close(*asked)
         return False
     if remaining is None:
-        # Stale observations cannot clear an outstanding incident; a manual
-        # quota release still lets the turn run.
-        return ((automatic or bool(role_migration(record).get("status")))
+        # Unknown quota cannot clear an incident for this account. A manually
+        # selected different account must not inherit the old binding's hold.
+        # Keep the original receipt and retry budget for audit / a switch back.
+        incident = role_migration(record)
+        current_incident = bool(incident.get("status")) and _migration_applies_to_account(
+            incident, account.get("account_id") or "")
+        return ((automatic or current_incident)
                 and not override_enabled(record))
     epoch = f"{account['account_id']}:{[(w.get('window'), w.get('resets_at')) for w in (account.get('quota_reserve') or {}).get('windows') or []]}:automatic-handoff"
     now = time.time()
@@ -885,7 +907,7 @@ def ensure_role_reserve(record: dict[str, Any], accounts: list[dict[str, Any]] |
         if migration.get("epoch") != epoch:
             expired = (migration.get("question_facade_id"), migration.get("question_message_id"))
             migration.clear()
-            migration.update({"epoch": epoch, "attempts": 0, "tried_accounts": []})
+            migration.update({"epoch": epoch, "attempts": 0, "tried_accounts": [], "source_account": account["account_id"]})
         if migration.get("switch_reason") == "migration_failed":
             return not override_enabled(current)
         # A manual quota release (the role's own, or the facade's for Router

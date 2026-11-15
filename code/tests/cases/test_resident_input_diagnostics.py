@@ -234,7 +234,7 @@ def test_submission_exposes_only_recovery_gates_not_lifecycle_payload(tmp_path):
 def test_reserve_diagnostics_exposes_binding_mismatch_without_migration_body(monkeypatch, source, expected):
     from management_portal.society_service import family_quota, resident_default_backend
 
-    migration = {"status": "unavailable", "epoch": source + ":private-window" if source else "",
+    migration = {"status": "unavailable", "epoch": source + ":[('private-window', None)]:automatic-handoff" if source else "",
                  "pending_restart": {"secret": "private restart"}, "reason": "private reason"}
     monkeypatch.setattr(family_quota, "role_migration", lambda _: migration)
     monkeypatch.setattr(family_quota, "auto_migration_enabled", lambda _: True)

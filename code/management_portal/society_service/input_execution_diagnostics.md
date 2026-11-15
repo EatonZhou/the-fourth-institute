@@ -46,3 +46,11 @@ refreshes quota nor runs migration. Account-service failure keeps observations
 `unknown`. Migration payloads, account identities and free-text reasons are not
 returned. `continuation_running` observes only this Society process's runner;
 false does not prove that another process has no continuation lease.
+
+Reserve incidents are scoped to their source account, including the source
+encoded in older preventive-migration epochs. Unknown quota on a manually
+selected different account does not inherit that incident's hold. Same-account
+or unidentifiable incidents and automatic account selection remain conservative;
+the old receipt and attempt budget are retained. Scheduler account gates still
+apply independently. Releasing this Society gate resumes its original prepared
+input through normal continuation ownership; it does not redeliver a message.

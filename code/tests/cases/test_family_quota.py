@@ -145,6 +145,59 @@ def test_missing_bound_account_wait_does_not_erase_quota_incident_or_choose_anot
     assert family_quota.role_migration(record) == {}
 
 
+@pytest.mark.parametrize("migration,mode,blocked", [
+    ({"source_account": "codex_previous"}, "fixed", False),
+    ({"epoch": "codex_previous:[]:automatic-handoff"}, "fixed", False),
+    ({"source_account": "codex_previous", "epoch": "antigravity_current:[]:automatic-handoff"}, "fixed", False),
+    ({"source_account": "antigravity_current"}, "fixed", True),
+    ({"epoch": "antigravity_current:[]:automatic-handoff"}, "fixed", True),
+    ({"epoch": "unrecognized-legacy-epoch"}, "fixed", True),
+    ({}, "fixed", True),
+    ({"source_account": "codex_previous"}, "auto", True),
+])
+def test_fixed_account_unknown_quota_does_not_inherit_another_accounts_incident(monkeypatch, migration, mode, blocked):
+    """Manual rebinding scopes old quota failures, preserving same-account protection."""
+    from copy import deepcopy
+    from management_portal.society_service import resident_default_backend
+
+    record = {"resident_id": "resident_test", "lineage_id": "lineage_test", "execution_settings": {}}
+    job = {"execution_id": "execution-original", "user_message_id": "input-original"}
+    state = {**migration, "status": "unavailable", "attempts": 2, "pending_restart": None}
+    before = deepcopy((record, job, state))
+    account = {"account_id": "antigravity_current", "quota_reserve": {"fresh": False}}
+    monkeypatch.setattr(family_quota, "auto_migration_enabled", lambda _: True)
+    monkeypatch.setattr(family_quota, "reserve_candidate", lambda record: record)
+    monkeypatch.setattr(resident_record_domain, "lifecycle_operations", lambda: SimpleNamespace(pending=lambda _: False))
+    monkeypatch.setattr(resident_execution_work, "read", lambda _: job)
+    monkeypatch.setattr(family_quota, "resident_account", lambda *_: account)
+    monkeypatch.setattr(family_quota, "role_migration", lambda _: state)
+    monkeypatch.setattr(family_quota, "quota_switch_policy", lambda _: True)
+    monkeypatch.setattr(family_quota, "override_enabled", lambda _: False)
+    monkeypatch.setattr(resident_default_backend, "selection_mode", lambda _: mode)
+    monkeypatch.setattr(family_quota, "get_lineage_data_store", lambda: pytest.fail("no migration writes"))
+    monkeypatch.setattr(family_quota, "available", lambda _: False)
+    assert family_quota.ensure_role_reserve(record, [account]) is blocked
+    assert (record, job, state) == before
+
+
+@pytest.mark.parametrize("source", [{"source_account": "codex_previous"},
+                                  {"epoch": "codex_previous:[]:automatic-handoff"}])
+def test_rebound_account_projection_scopes_old_failure_but_keeps_current_account_wait(monkeypatch, source):
+    from management_portal.society_service import resident_work_recovery
+
+    state = {**source, "status": "unavailable", "switch_reason": "migration_failed", "reason": "old failure"}
+    monkeypatch.setattr(family_quota, "auto_migration_enabled", lambda _: True)
+    monkeypatch.setattr(family_quota, "role_migration", lambda _: state)
+    monkeypatch.setattr(resident_record_domain, "resident_intake_state", lambda _: "open")
+    monkeypatch.setattr(resident_work_recovery, "latest_failed_input", lambda _: {})
+    gate = {"state": "open", "account_id": "antigravity_current"}
+    assert family_quota.quota_switch_state({}, execution_gate=gate)["state"] == "ready"
+    assert family_quota.role_availability({}, execution_gate=gate)["status"] == "available"
+    state["account_wait"] = "current account missing"
+    assert family_quota.role_availability({}, execution_gate=gate)["reason"] == "current account missing"
+    assert state["reason"] == "old failure"
+
+
 def test_low_weekly_request_waits_for_the_steward_then_relays_original_content_once(quota_family):
     """Family 周额度预防与监督
 
