@@ -133,7 +133,9 @@ class CodexSource(NativeSource):
         forked, metadata_seen = state.get('forked', False), state.get('metadata_seen', False)
         started = moment(state['started']) if state.get('started') else None
         tier = state.get('service_tier')
-        wanted = ('"session_meta"', '"turn_context"', '"token_count"', '"thread_settings_applied"')
+        inherited = set(state.get('inherited_turn_ids', []))
+        current_turn = state.get('current_turn', '')
+        wanted = ('"session_meta"', '"turn_context"', '"task_started"', '"token_count"', '"thread_settings_applied"')
         for row in rows(self.source['path'], self.gaps, wanted, cursor):
             p = row.get('payload') or {}
             if row.get('type') == 'event_msg' and p.get('type') == 'thread_settings_applied':
@@ -148,13 +150,25 @@ class CodexSource(NativeSource):
                 session = p.get('id') or session
                 forked = bool(p.get('forked_from_id'))
                 started = moment(row['timestamp']) if row.get('timestamp') else None
+                if forked:
+                    from scripts.provider_usage_codex_fork import inherited_turns
+                    try:
+                        inherited = set(inherited_turns(self.source, str(p['forked_from_id'])))
+                    except (OSError, ValueError):
+                        self.gaps.add('fork_parent_history_unavailable_or_invalid')
+                        raise
+            elif row.get('type') == 'event_msg' and p.get('type') == 'task_started':
+                current_turn = str(p.get('turn_id') or '')
             elif row.get('type') == 'turn_context':
+                current_turn = str(p.get('turn_id') or '')
                 model = p.get('model') or ''
                 if 'service_tier' in p:
                     tier = p.get('service_tier') or None
             elif row.get('type') == 'event_msg' and p.get('type') == 'token_count':
-                # Match the legacy report's exclusion of fork-import bursts.
-                if forked and started and (moment(row['timestamp']) - started).total_seconds() <= 1:
+                if forked and not current_turn:
+                    self.gaps.add('fork_request_without_turn_identity_excluded')
+                    continue
+                if forked and current_turn in inherited:
                     self.gaps.add('fork_import_records_excluded')
                     continue
                 info = p.get('info') or {}
@@ -187,7 +201,8 @@ class CodexSource(NativeSource):
                     identity = json.dumps([row.get('timestamp'), usage], sort_keys=True)
                 yield self.event(identity, row.get('timestamp'), counted, model, session, quotas, tier, evidence)
         state.update(session=session, model=model, forked=forked, metadata_seen=metadata_seen,
-                     started=iso(started) if started else None, service_tier=tier)
+                     started=iso(started) if started else None, service_tier=tier,
+                     inherited_turn_ids=sorted(inherited), current_turn=current_turn)
 
 
 class ClaudeSource(NativeSource):

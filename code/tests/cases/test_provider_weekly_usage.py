@@ -105,20 +105,30 @@ def test_codex_uses_observed_reset_without_claiming_known_start(tmp_path):
 
 def test_codex_fork_import_is_not_counted(tmp_path):
     rows = codex_records(True)
+    rows[1]['payload']['turn_id'] = 'parent-turn'
     rows[-1]['timestamp'] = START
-    result = report([source(tmp_path, 'codex', rows)])
+    parent = tmp_path / 'parent.jsonl'
+    parent.write_text('\n'.join(json.dumps(r) for r in [
+        {'type': 'session_meta', 'payload': {'id': 'parent'}}, rows[1]])+'\n')
+    src = {**source(tmp_path, 'codex', rows), 'fork_parent_path': str(parent)}
+    result = report([src])
     assert result['requests'] == 0
     assert 'fork_import_records_excluded' in result['gaps']
 
 
 def test_codex_imported_parent_metadata_cannot_replace_physical_session(tmp_path):
     rows = codex_records(True)
+    rows[1]['payload']['turn_id'] = 'parent-turn'
     rows[-1]['timestamp'] = START
     rows.insert(1, {'type': 'session_meta', 'timestamp': START, 'payload': {'id': 'parent'}})
     after = json.loads(json.dumps(rows[-1]))
     after['timestamp'] = AT
-    rows.append(after)
-    result = report([source(tmp_path, 'codex', rows)], resident_records=[{
+    rows.extend([{'type': 'turn_context', 'payload': {'turn_id': 'child-turn', 'model': 'gpt'}}, after])
+    parent = tmp_path / 'parent.jsonl'
+    parent.write_text('\n'.join(json.dumps(r) for r in [
+        {'type': 'session_meta', 'payload': {'id': 'parent'}},
+        {'type': 'turn_context', 'payload': {'turn_id': 'parent-turn'}}])+'\n')
+    result = report([{**source(tmp_path, 'codex', rows), 'fork_parent_path': str(parent)}], resident_records=[{
         'execution_id': 'e', 'session_id': 'session', 'started_at': START,
         'finished_at': END, 'usage': {'total_tokens': 15}}])
     assert result['requests'] == 1

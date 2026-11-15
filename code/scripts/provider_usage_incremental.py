@@ -52,6 +52,7 @@ class IncrementalCache:
         # The cache codec owns storage, not parsing. Its changes must not force
         # native history to be reparsed; parser semantics alone own this stamp.
         files = [Path(__file__).with_name('provider_usage_native.py'),
+                 Path(__file__).with_name('provider_usage_codex_fork.py'),
                  Path(turn.__file__), Path(usage.__file__), Path(codex.__file__)]
         weekly = ast.parse(Path(__file__).with_name('provider_weekly_usage.py').read_text())
         readers = [node for node in weekly.body
