@@ -744,6 +744,12 @@
         if (eventCursor <= this.stateCursor) continue;
         this.applyStateEvent(event);
       }
+      // A missed final SSE event has no successor to expose its gap. The
+      // normal state calibration still carries the conversation high-water
+      // mark: recover from the Chat cursor without advancing it past messages.
+      if (this.snapshot && this.cursor != null && nextCursor > this.cursor) {
+        this.scheduleRecovery(0);
+      }
       this.emitState({ type: "snapshot" });
     }
 

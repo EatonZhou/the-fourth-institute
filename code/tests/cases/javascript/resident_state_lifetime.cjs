@@ -242,6 +242,39 @@ test('focus still groups calibration of every subscribed Resident into one batch
   assert.deepEqual(f.calls.map(call => call.ids), [wanted, wanted]);
 });
 
+for (const sharedStateReader of [false, true]) {
+  test(`state calibration repairs a missed Chat tail without sending input (shared state reader: ${sharedStateReader})`, async t => {
+    const f = fixture(t), residentId = ids[0], reads = [], updates = [];
+    Object.defineProperty(f.w.document, 'hidden', {value: false});
+    f.w.PortalResidentService.snapshot = async () => ({resident: {resident_id: residentId}, cursor: 5,
+      messages: [], input_states: [], queue: {items: []}, state: {}, controls: {can_send: true}});
+    const reply = {message_id: 'msg_missed_reply', role: 'agent', content_parts: [{type: 'text', text: 'Reply already saved'}]};
+    f.w.PortalResidentService.events = async (id, options) => {
+      reads.push({id, options});
+      return {resident_id: id, high_watermark: 7, events: [
+        {cursor: 6, event_type: 'conversation.message.appended', payload: {message: reply}},
+        {cursor: 7, event_type: 'resident.state.changed', payload: {state: {work_state: 'idle'}, controls: {can_send: true}}},
+      ]};
+    };
+    const chat = f.track(f.p.acquire(residentId, update => updates.push(update), {load: false}));
+    await chat.load();
+    if (sharedStateReader) f.acquire([residentId]);
+    // The final reply's SSE notification was lost. The normal focus calibration
+    // knows a newer server cursor, even though no later event exposes a gap.
+    f.w.dispatchEvent(new f.w.Event('focus'));
+    await tick(); await new Promise(resolve => f.w.setTimeout(resolve, 25)); await tick();
+    assert.equal(chat.snapshot().messages[0]?.message_id, reply.message_id,
+      'the saved reply must appear without a new user input or page reload');
+    assert.equal(reads.length, 1, 'only the stale Chat requests event recovery');
+    assert.equal(reads[0].options.afterCursor, 5, 'state cursor cannot skip unread conversation events');
+    assert.equal(chat.snapshot().cursor, 7);
+    assert.ok(updates.some(update => update.type === 'recovery' && update.snapshot.messages[0]?.message_id === reply.message_id));
+    f.w.dispatchEvent(new f.w.Event('focus'));
+    await tick(); await new Promise(resolve => f.w.setTimeout(resolve, 25));
+    assert.equal(reads.length, 1, 'an up-to-date Chat does not refetch its messages');
+  });
+}
+
 test('invalidations during a read coalesce only the affected Residents and recover omissions', async t => {
   const f = fixture(t), wanted = ids.slice(0, 3), sub = f.acquire(wanted);
   await sub.load();
