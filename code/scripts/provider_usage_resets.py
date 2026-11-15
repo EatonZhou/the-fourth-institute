@@ -1,6 +1,8 @@
 """Classify retained subscription reset observations without upstream queries."""
 import math
+import re
 from urllib.parse import urlparse
+from scripts.provider_usage_announcement_sources import DISCOVERY_SOURCE, trusted_source
 
 
 def official_announcement(event, provider):
@@ -11,9 +13,53 @@ def official_announcement(event, provider):
             and url.hostname in hosts.get(provider, set()))
 
 
+def announcement_evidence(event, provider):
+    """Distinguish a reviewed official source from linked third-party evidence."""
+    if official_announcement(event, provider):
+        return {'grade': 'official_verified', 'source': event['official_url'],
+                'original_urls': [event['official_url']]}
+    tools = {'codex': 'codex', 'claude': 'claude-code'}
+    source = trusted_source(event.get('discovery_source'), provider)
+    if (not source or provider not in tools
+            or event.get('tool') != tools[provider]):
+        return None
+    references = [p.get('url') for name in ('posts', 'sources')
+                  for p in (event.get(name) if isinstance(event.get(name), list) else []) if isinstance(p, dict)]
+    references += event.get('original_urls') if isinstance(event.get('original_urls'), list) else []
+    links = []
+    for reference in references:
+        if not isinstance(reference, str):
+            continue
+        try:
+            url = urlparse(reference)
+        except ValueError:
+            continue
+        if url.scheme != 'https' or url.username or url.password or url.netloc != url.hostname:
+            continue
+        # Keep actual post/article links, not profile pages or aggregator mirrors.
+        if ((url.hostname in {'x.com', 'twitter.com', 'www.x.com', 'www.twitter.com'}
+             and re.fullmatch(r'/[A-Za-z0-9_]{1,15}/status/[0-9]+/?', url.path))
+                or (url.hostname in {'openai.com', 'help.openai.com', 'learn.chatgpt.com',
+                                     'anthropic.com', 'www.anthropic.com', 'claude.com', 'support.claude.com'}
+                    and len(url.path.strip('/').split('/')) >= 2)
+                or (url.hostname == 'community.openai.com' and url.path.startswith('/t/'))):
+            links.append(reference)
+    if not links:
+        digest = event.get('evidence_digest')
+        if (not source.get('allow_unannounced_reports') or not event.get('id')
+                or not isinstance(digest, str) or not re.fullmatch('[0-9a-f]{64}', digest)):
+            return None
+        return {'grade': 'trusted_third_party_report', 'source': source['events_url'],
+                'source_id': source['id'], 'source_record_id': event['id'], 'evidence_digest': digest,
+                'report_url': source['home_url'], 'original_urls': [], 'scope_text': event.get('scope')}
+    return {'grade': 'third_party_with_original_links', 'source': source['events_url'], 'source_id': source['id'],
+            'original_urls': sorted(set(links)), 'scope_text': event.get('scope')}
+
+
 def classify_resets(records, provider, account_id, parse_time, announcements=()):
     if provider not in {'codex', 'claude', 'kimi', 'antigravity'}:
         return []
+    announcements = sorted(announcements, key=lambda event: not official_announcement(event, provider))
     def moment(value):
         try:
             result = parse_time(value)
@@ -59,7 +105,7 @@ def classify_resets(records, provider, account_id, parse_time, announcements=())
                 # Any positive recovery is evidence; consuming immediately may hide 100%.
                 recovered = remaining > before_remaining
                 if recovered:
-                    cause, reasons, announcement = 'unknown', [], None
+                    cause, reasons, announcement, evidence = 'unknown', [], None, None
                     precision = max(1, w.get('reset_time_precision_seconds') or 60)
                     scheduled = before_at < before_reset <= at and reset > before_reset
                     delta = None
@@ -90,11 +136,13 @@ def classify_resets(records, provider, account_id, parse_time, announcements=())
                     elif non_scheduled and delta == 0 and card_evidence == 'same_available_cards':
                         for event in announcements:
                             event_at = moment(event.get('at'))
-                            if (event.get('kind') == 'global_reset' and official_announcement(event, provider)
+                            candidate_evidence = announcement_evidence(event, provider)
+                            if (event.get('kind') == 'global_reset' and candidate_evidence
                                     and event_at and before_at < event_at <= at
                                     and (not event.get('account_ids') or account_id in event['account_ids'])
                                     and (not event.get('window_ids') or window_id in event['window_ids'])):
                                 cause, announcement = 'provider_global', event.get('id')
+                                evidence = candidate_evidence
                                 break
                     elif scheduled and delta in (None, 0) and (reset-before_reset).total_seconds() >= 60:
                         cause = 'scheduled'
@@ -103,7 +151,7 @@ def classify_resets(records, provider, account_id, parse_time, announcements=())
                         if delta is None:
                             reasons.append('refresh_card_observations_unavailable')
                         elif delta == 0 and card_evidence == 'same_available_cards':
-                            reasons.append('matching_verified_announcement_unavailable')
+                            reasons.append('matching_eligible_announcement_unavailable')
                     window_name = window_id.lower()
                     minutes = w.get('window_duration_mins')
                     if minutes is None:
@@ -120,6 +168,9 @@ def classify_resets(records, provider, account_id, parse_time, announcements=())
                         'remaining_before': before_remaining, 'remaining_after': remaining,
                         'card_count_delta': delta, 'card_evidence': card_evidence,
                         'announcement_id': announcement, 'observation_ids': [before_id, row_id],
-                        'limitations': ['observation_interval_not_exact_reset_time', *reasons]})
+                        'announcement_evidence': evidence,
+                        'limitations': ['observation_interval_not_exact_reset_time', *reasons] +
+                            (['announcement_original_not_independently_verified', 'announcement_scope_text_not_machine_verified'] if evidence and
+                             evidence['grade'] != 'official_verified' else [])})
             previous = at, reset, remaining, card, row_id
     return result

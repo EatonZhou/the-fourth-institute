@@ -1,9 +1,9 @@
 """Provider-wide quota events from an explicit export (e.g. https://divin.cc/api/events).
 
 The report never fetches this itself; pass a saved copy with ``--provider-events``.
-Only completed events with a completion time are used. Global resets additionally
-require a manually verified official_url and official_verified=true; aggregators
-alone cannot establish official authority. Optional account_ids/window_ids scope
+Only completed events with a completion time are used. Global resets accept a
+reviewed official source or the approved aggregator with original post links;
+the latter supports inference only. Optional account_ids/window_ids scope
 the announcement. The timestamp is correlation evidence, not an exact reset time.
 
 - ``usage_reset`` with ``global: true`` -> ``global_reset``: every paid account's
@@ -23,7 +23,10 @@ PROVIDER_TOOLS = {'codex': 'codex', 'claude': 'claude-code'}
 
 
 def _moment(value):
-    return datetime.fromisoformat(str(value).replace('Z', '+00:00'))
+    result = datetime.fromisoformat(str(value).replace('Z', '+00:00'))
+    if result.tzinfo is None:
+        raise ValueError('announcement time requires timezone')
+    return result
 
 
 def provider_events(payload, provider, ignored=()):
@@ -38,8 +41,8 @@ def provider_events(payload, provider, ignored=()):
         if not event.get('completedAt'):
             continue
         if event.get('type') == 'usage_reset' and event.get('global') is True:
-            from scripts.provider_usage_resets import official_announcement
-            if not official_announcement(event, provider):
+            from scripts.provider_usage_resets import announcement_evidence
+            if not announcement_evidence(event, provider):
                 continue
             kind = 'global_reset'
         elif event.get('type') == 'policy':
@@ -52,5 +55,6 @@ def provider_events(payload, provider, ignored=()):
             continue
         result.append({'kind': kind, 'at': at, 'id': str(event.get('id') or ''),
                        'title': str(event.get('title') or ''),
-                       **{k: event[k] for k in ('official_url', 'official_verified', 'account_ids', 'window_ids') if k in event}})
+                       **{k: event[k] for k in ('official_url', 'official_verified', 'account_ids', 'window_ids',
+                                              'tool', 'discovery_source', 'original_urls', 'posts', 'sources', 'scope', 'evidence_digest') if k in event}})
     return sorted(result, key=lambda e: e['at'])

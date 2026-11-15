@@ -1,0 +1,49 @@
+{
+  "schema": "tfi.reset-announcement-sources.v1",
+  "selection_policy": "Prefer sustained updates, public readership evidence, dated records and corrections. Readership is not proof of accuracy; syndicated copies are not independent corroboration.",
+  "sources": [
+    {
+      "id": "divin",
+      "name": "AI 哨兵",
+      "home_url": "https://divin.cc/",
+      "events_url": "https://divin.cc/api/events",
+      "providers": ["codex", "claude"],
+      "status": "trusted_for_inference",
+      "collector_enabled": true,
+      "allow_unannounced_reports": true,
+      "reviewed_on": "2026-11-15",
+      "trust_basis": "Existing selected feed; 86 dated records retrieved; preserves original links and distinguishes card grants from applied resets. User accepts third-party reports combined with account logs.",
+      "continuity_evidence": "Observed archive spans 2025-09 to 2026-11; archive coverage alone does not prove how long this site has operated.",
+      "readership": {"status": "unknown", "value": null},
+      "limitations": ["not_official", "readership_not_verified", "original_posts_may_be_inaccessible"]
+    },
+    {
+      "id": "claude_resets",
+      "name": "Claude Resets",
+      "home_url": "https://clauderesets.com/",
+      "events_url": "https://clauderesets.com/api/v1/resets?limit=100",
+      "providers": ["claude"],
+      "status": "candidate",
+      "collector_enabled": false,
+      "allow_unannounced_reports": false,
+      "reviewed_on": "2026-11-15",
+      "trust_basis": "Public editorial corrections, revisions, retractions and precise time rules documented at /about and /api/docs; automated feed retrieval returned HTTPError.",
+      "continuity_evidence": "Site states coverage from 2026-04-16; operational continuity not independently verified.",
+      "readership": {"status": "unknown", "value": null}
+    },
+    {
+      "id": "reset_radar",
+      "name": "Reset Radar",
+      "home_url": "https://www.resetradar.com/",
+      "events_url": "https://www.resetradar.com/feed.json",
+      "providers": ["claude"],
+      "status": "candidate",
+      "collector_enabled": false,
+      "allow_unannounced_reports": false,
+      "reviewed_on": "2026-11-15",
+      "trust_basis": "Dated timeline and JSON feed, including explicit unannounced-reset reports. Feed tags include card grants as counter-reset; semantic mapping must be reviewed before ingestion. Automated feed retrieval returned HTTPError.",
+      "continuity_evidence": "Site states archive from July 2025; operational continuity not independently verified.",
+      "readership": {"status": "unknown", "value": null}
+    }
+  ]
+}

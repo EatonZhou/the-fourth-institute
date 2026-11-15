@@ -46,11 +46,16 @@ def markdown(report):
              '| --- | --- | ---: | ---: | ---: | ---: |']
     resets = [r for a in report['accounts'] for r in a.get('reset_classifications', [])]
     if resets:
-        rows = ['', '## Reset observations', '', '| Account | Window | Cause (inferred) | Observed change interval | Card delta | Announcement |',
-                '| --- | --- | --- | --- | --- | --- |']
+        rows = ['', '## Reset observations', '',
+                'third_party_with_original_links: 第三方整理＋原文链接＋账号日志，仅作推定，原文未独立核验。', '',
+                'trusted_third_party_report: 可信名单内第三方的明确报告＋账号日志；可无官方公告，仅作推定。', '',
+                '| Account | Window | Cause (inferred) | Observed change interval | Card delta | Announcement | Evidence grade | Original links |',
+                '| --- | --- | --- | --- | --- | --- | --- | --- |']
         for r in resets:
+            evidence = r.get('announcement_evidence') or {}
             rows.append('| ' + ' | '.join(cell(v) for v in (r['account_id'], r['window_id'], r['reset_cause'],
-                        ' to '.join(r['observed_change_between']), r['card_count_delta'], r['announcement_id'])) + ' |')
+                        ' to '.join(r['observed_change_between']), r['card_count_delta'], r['announcement_id'],
+                        evidence.get('grade', ''), ', '.join(evidence.get('original_urls', [])) or evidence.get('report_url', ''))) + ' |')
         # Keep the account summary table contiguous.
         insert_at = lines.index('| Provider | Account | Requests | Recorded tokens | Positive execution residual | Unlinked Portal executions |')
         lines[insert_at:insert_at] = rows + ['']
