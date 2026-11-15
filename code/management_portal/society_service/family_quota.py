@@ -563,6 +563,13 @@ def quota_switch_state(record: dict[str, Any], *, execution_gate: Mapping[str, A
               "auto_switch_on_quota": enabled}
     if not gate:
         return result
+    # A current Scheduler-confirmed manual release permits the original
+    # binding to keep working. Retain failed migration receipts for audit,
+    # but do not present them as a required action after that release.
+    # Open alone is insufficient: the Family preventive reserve can still
+    # require intervention above the Scheduler's own quota threshold.
+    if gate.get("state") == "open" and gate.get("override_enabled") is True:
+        return result
     migration = role_migration(record) if enabled else {}
     same_source = not migration.get("source_account") or migration["source_account"] == gate.get("account_id")
     if same_source and migration.get("switch_reason") == "migration_failed":

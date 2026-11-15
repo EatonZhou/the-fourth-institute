@@ -211,6 +211,32 @@ def test_failed_or_cancelled_handoff_projects_manual_without_replaying(switching
     assert len(f.calls) == 1
 
 
+@pytest.mark.parametrize("gate, expected", [
+    ({"state": "open", "override_enabled": True}, "ready"),
+    ({"state": "open", "override_enabled": False}, "manual_required"),
+    ({"state": "open"}, "manual_required"),
+    ({"state": "closed", "reason": "quota_used_up", "override_enabled": True}, "manual_required"),
+    ({"state": "unknown", "override_enabled": True}, "manual_required"),
+])
+def test_current_manual_release_supersedes_failed_switch_hint_only_when_gate_open(switching, monkeypatch, gate, expected):
+    from management_portal.society_service import resident_protocol
+    f = switching
+    def reject(*args, **kwargs):
+        raise ValueError("context cannot be preserved")
+    monkeypatch.setattr(restart, "restart_resident_session", reject)
+    assert quota.ensure_role_reserve(f.record, f.accounts)
+    before = quota.role_migration(f.record)
+    assert before["switch_reason"] == "migration_failed"
+    gate = {"account_id": "codex_one", **gate}
+    monkeypatch.setattr(execution_port, "service", lambda: pytest.fail("projection must not probe or mutate Execution"))
+    controls = resident_protocol._conversation_controls(SimpleNamespace(record=f.record), "CASE-A",
+        {"intake_state": "open", "execution_gate": gate}, allowed=True)
+    assert controls["quota_switch"]["state"] == expected
+    assert controls["can_send"]
+    assert quota.role_migration(f.record) == before
+    assert not f.calls
+
+
 def test_old_two_switch_limit_does_not_skip_remaining_default_candidate(switching, monkeypatch):
     f = switching
     assert quota.ensure_role_reserve(f.record, f.accounts)
