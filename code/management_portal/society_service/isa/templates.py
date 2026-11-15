@@ -2,7 +2,7 @@
 
 from management_portal.hatg.contracts import invalid, not_found
 
-from .. import templates
+from .. import templates, effect_script_authoring
 from ..templates import kinds, store, marketplace
 
 
@@ -65,6 +65,7 @@ def apply(inv):
 
 
 HANDLERS = {
+    "ReviewTemplateScript": lambda inv: effect_script_authoring.review(inv, template=True),
     "ListTemplateStore": lambda inv: {"items": _call(marketplace.listing, inv.caller, search=inv.argument("search") or "", group=inv.argument("group"), store_id=inv.argument("store_id"))},
     "PublishTemplate": lambda inv: _call(marketplace.publish, inv.argument("template_id"), inv.caller, inv.argument("release_note") or ""),
     "InstallStoreTemplate": lambda inv: _call(marketplace.install, inv.argument("store_id"), inv.caller, target_template_id=inv.argument("target_template_id"), mode=inv.argument("mode") or "install"),

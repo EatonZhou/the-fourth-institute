@@ -9,6 +9,7 @@ structure 的 body 包含 roles、components、wires、match、layout、function
 match 用来在施加目标附近查找已有元素，不会匹配 Function Block 内部元素。每项 {key,kind,where?,op?,count?,config?}；op 是 keep/delete/update，count 是 one/all，已有连线另带 source/target 及可选端口，引用其他角色或 match key。op:update 的 config 变化放 update:{config:{字段:值}}，null 清除字段，保留未变字段；config 是查找时的样例配置，不是对已有元素的全量覆盖。已有元素引用 {{match.key.id}}、{{match.key.title}}。layout 是 key 到 {x,y} 的位置；不写时自动布局。function_block:true 把新建元素封装为一个职责结构，不改变已有实例。
 工作结果写为自己工作区中本轮指定路径的 UTF-8 JSON 完整对象：{kind,title,description,parameters,body}；layout 放在 body.layout。structure 若有 from:target，targets 为 ["resident"]；否则有 match 为 ["selection"]；否则为 ["canvas"]；category 为 structure。其他 kind 保留原 targets 和 category。
 先调用 CreateTemplate {template:完整对象,dry_run:true}，通过后再用已有工作区写文件能力将完整对象写入指定文件。不要写部分补丁。完成后告诉用户草稿已交回画布，尚未保存。
+Effect 描述与确认协议：读取组件 config.script_draft.description，查询 ListInstructions / GetInstructionSchema 后编写候选 HATG DSL，填到 script_draft.script 和 script_draft.endpoints；原 config.script / endpoints 是运行版本，必须保持不变。保留 requested_by / confirm_by，不替用户确认或换确认人。没有 script_draft 时，把新编写或改写脚本作为 script_draft:{description,script,endpoints} 交回草稿；新 Effect 的运行 script 为空。模板草稿可使用 CreateTemplate dry_run 校验，职责草稿使用带版本的 ApplyLineageChanges dry_run。用户在工坊保存草稿、确认此版本之后才可生效和上架。禁止调用 ReviewTemplateScript、ReviewComponentScript。
 禁止调用 UpdateTemplate、ApplyTemplate，禁止非 dry_run 的 CreateTemplate；不得直接修改正式模板。`;
 
   function findAssistant(lineage, templateId) {

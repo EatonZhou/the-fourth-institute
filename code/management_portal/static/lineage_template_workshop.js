@@ -35,6 +35,15 @@
       element('workshopUnsaved').hidden = !dirty();
       root.dispatchEvent(new CustomEvent('workshop:draft-changed'));
     };
+    root.addEventListener('workshop:review-effect',event => void runtime.view.busy(async () => {
+      if (dirty()) throw new Error(t('请先 Save 保存草稿，再确认此版本'));
+      const {effectId,draftHash,decision} = event.detail;
+      const draft = runtime.draft.body.components.find(row => row.key === effectId)?.config?.script_draft;
+      if (!draft) throw new Error(t('请重新读取候选脚本'));
+      if (!await window.PortalUI.confirm({title:t(decision === 'confirm' ? '确认候选脚本？' : '取消脚本草稿？'),message:`${draft.description}\n\n${draft.script}\n\n${(draft.endpoints || []).join(', ')}`,confirmLabel:t(decision === 'confirm' ? '确认' : '取消草稿')})) return;
+      const result = await execute('ReviewTemplateScript',{template_id:runtime.draft.template_id,effect_id:effectId,draft_hash:draftHash,decision},{expectedVersion:runtime.draft.version});
+      runtime.edit(result.template); onSaved?.(result.template);
+    }),{signal:abort.signal});
     async function save(payload, copy = false) {
       const id = runtime.draft.template_id;
       const own = !previewItem && (!id || (!runtime.draft.builtin_key && runtime.draft.created_by === window.PortalIdentity.username()));

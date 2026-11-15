@@ -33,7 +33,7 @@ EVENT_SOURCE_AUTHORING_CONFIG_FIELDS = (
     lineage_primitive_definitions.config_field_names("event")
 )
 # An Effect runs a script of instruction calls (decision_4adcc1ff2f2c "Effect：用脚本组合指令").
-EFFECT_CONFIG_FIELDS = {"script", "endpoints", "failure_recipients"}
+EFFECT_CONFIG_FIELDS = {"script", "endpoints", "failure_recipients", "script_draft", "script_review_required"}
 EFFECT_ENDPOINT_RE = re.compile(r"^[a-z][a-z0-9_]{0,39}$")
 MAX_EFFECT_ENDPOINTS = 8
 LOOP_CONFIG_FIELDS = {"max_rounds", "completion"}

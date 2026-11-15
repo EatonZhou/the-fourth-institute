@@ -279,6 +279,11 @@ def apply_lineage_changes(
         expected_revision=payload.get("expected_revision"),
     )
     created, changed, removed = outcome["created"], outcome["changed"], outcome["removed"]
+    if duty_result.get('preview'):
+        from .duty_graph_edits import program_items
+        normalized = program_items(verified)
+        for item in duty_result['preview']['elements']:
+            item['after'] = normalized.get(item['id'])
     return {
         **duty_result,
         "lineage": verified,

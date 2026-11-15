@@ -4,6 +4,7 @@ from __future__ import annotations
 import copy
 import secrets
 import time
+from .. import effect_script_authoring
 from management_common.service_shutdown import wait_for_shutdown
 from typing import Any, Iterator
 
@@ -491,6 +492,7 @@ def watch_lineage(inv: Invocation) -> Iterator[list[dict[str, Any]]]:
 
 
 HANDLERS = {
+    "ReviewComponentScript": effect_script_authoring.review,
     "CreateLineage": create_lineage,
     "GetLineage": get_lineage,
     "UpdateLineage": update_lineage,

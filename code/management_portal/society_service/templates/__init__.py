@@ -66,6 +66,9 @@ def create(template, actor, *, from_selection=None, dry_run=False):
             ),
             **(template or {}),
         }
+    from ..effect_script_authoring import reconcile, template_items
+    template = deepcopy(template)
+    reconcile(template_items(template), [], actor, key='key')
     normalized = kinds.normalize(template)
     if dry_run:
         return describe(normalized)
@@ -82,7 +85,10 @@ def update(template_id, changes, actor, *, dry_run=False):
     def transform(previous):
         if changes.get("kind", previous["kind"]) != previous["kind"]:
             raise TemplateError("模板 kind 不可修改；请另存为副本")
-        return kinds.normalize({**previous, **changes})
+        from ..effect_script_authoring import reconcile, template_items
+        candidate = deepcopy({**previous, **changes})
+        reconcile(template_items(candidate), template_items(previous), actor, key='key')
+        return kinds.normalize(candidate)
 
     if dry_run:
         return describe(transform(store.get(template_id)))

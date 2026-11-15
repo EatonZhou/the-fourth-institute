@@ -567,6 +567,8 @@
         ? {
             script: typeof sourceConfig.script === "string" ? sourceConfig.script : "",
             endpoints: list(sourceConfig.endpoints).map(item => text(item)).filter(Boolean),
+            ...(sourceConfig.script_draft ? {script_draft:clone(sourceConfig.script_draft)} : {}),
+            ...(sourceConfig.script_review_required ? {script_review_required:true} : {}),
             ...(Object.hasOwn(sourceConfig, "failure_recipients")
               ? { failure_recipients: list(sourceConfig.failure_recipients).map(item => text(item)).filter(Boolean) }
               : {}),

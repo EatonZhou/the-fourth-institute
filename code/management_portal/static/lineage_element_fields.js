@@ -107,7 +107,15 @@
 
   // options.effectId: a live Effect, whose recipients the inspector saves on their own.
   function effectFieldsHtml(config = {}, readonly = false, options = {}) {
-    return i18n().html`<p class="programInspectorNote programEffectHelp">Effect 被 Event 或 Packet 触发时运行下面的脚本：每行调用一条 HATG ISA 指令，可以用 if、for 把多次调用串联起来。</p>
+    const original = config, pending = config.script_draft;
+    options = {...options, effectId:options.effectId || '', reviewId:options.reviewId || ''};
+    config = pending ? {...config,...pending} : config;
+    return `<div data-effect-authoring data-original="${esc(JSON.stringify(original))}">
+      <label><span>${esc(i18n().t('描述要做的事'))}</span><textarea name="effect_description" rows="3" ${readonly ? 'disabled' : ''}>${esc(pending?.description || '')}</textarea></label>
+      <p class="programInspectorNote">${esc(i18n().t('填写描述后保存草稿，再在右侧请工坊助手按描述编写候选脚本。确认后才替换运行版本。'))}</p>
+      <label><span>${esc(i18n().t('确认人（留空为发起者）'))}</span><input name="effect_confirmer" value="${esc(pending?.confirm_by || '')}" ${readonly ? 'disabled' : ''}></label>
+      ${pending ? `<p>${esc(i18n().t(pending.script ? '待确认候选脚本' : '待编写'))}</p><details><summary>${esc(i18n().t('当前运行脚本'))}</summary><pre>${esc(original.script || i18n().t('无，尚不可执行'))}</pre></details>
+        ${options.reviewId && !readonly ? `<button type="button" class="portalButton" data-effect-review="confirm" data-effect-id="${esc(options.reviewId)}" data-draft-hash="${esc(pending.hash || '')}">${esc(i18n().t('确认此版本'))}</button><button type="button" class="portalButton" data-effect-review="cancel" data-effect-id="${esc(options.reviewId)}" data-draft-hash="${esc(pending.hash || '')}">${esc(i18n().t('取消草稿'))}</button>` : ''}` : ''}</div>` + i18n().html`<p class="programInspectorNote programEffectHelp">Effect 被 Event 或 Packet 触发时运行脚本：每行调用一条 HATG ISA 指令，可以用 if、for 把多次调用串联起来。填写描述后，下面编辑的内容会作为候选脚本保存。</p>
       <div class="programEffectScriptInsert">
         <label><span>插入指令</span><select data-effect-instruction${readonly ? " disabled" : ""}>${instructionOptionsHtml("")}</select></label>
         <button type="button" class="portalButton is-compact" data-effect-insert${readonly ? " disabled" : ""}>插入调用行</button>
@@ -123,6 +131,16 @@
   function effectConfigFromFields(root) {
     const endpoints = value(root, "endpoints").split(/[,，\s]+/).map(item => item.trim()).filter(Boolean);
     const config = { script: value(root, "script"), endpoints: [...new Set(endpoints)] };
+    const authoring = root.querySelector('[data-effect-authoring]');
+    if (authoring) {
+      const original = JSON.parse(authoring.dataset.original);
+      if (original.script_review_required) config.script_review_required = true;
+      const description = value(root,'effect_description');
+      if (description.trim() || original.script_draft) {
+        config.script_draft = {...original.script_draft,description,script:config.script,endpoints:config.endpoints,confirm_by:value(root,'effect_confirmer')};
+        config.script = original.script || ''; config.endpoints = original.endpoints || [];
+      }
+    }
     // A live Effect saves its recipients on their own (the inspector has no recipients
     // field), so its script save leaves the stored list as it is.
     const recipients = field(root, "failure_recipients");
@@ -545,6 +563,9 @@
 
   // Instruction picker, parameter list and call-line insertion of the script field.
   function bindEffectFields(root, options = {}) {
+    root?.querySelectorAll('[data-effect-review]').forEach(button => button.addEventListener('click',() => {
+      root.dispatchEvent(new CustomEvent('workshop:review-effect',{bubbles:true,detail:{effectId:button.dataset.effectId,draftHash:button.dataset.draftHash,decision:button.dataset.effectReview}}));
+    }));
     const select = root?.querySelector("[data-effect-instruction]");
     const renderSchema = () => renderInstructionSchema(root, select?.value || "");
     select?.addEventListener("change", renderSchema);

@@ -159,6 +159,8 @@ def save(template, actor, *, template_id=None, transform=None):
             raise KeyError(template_id)
         if transform:
             template = transform(deepcopy(previous))
+        from ..effect_script_authoring import reconcile, template_items
+        reconcile(template_items(template), template_items(previous), actor, key='key')
         identity = template_id or "template_" + secrets.token_hex(6)
         value = {
             **deepcopy(template),

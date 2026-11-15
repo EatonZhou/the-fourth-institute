@@ -169,7 +169,10 @@
     const config = component.config || {};
     const program = window.PortalLineageProgram;
     if (component.kind === 'event_source') return program.manifest.event_types?.[config.event_type]?.title || config.event_type || t('选择系统事件');
-    if (component.kind === 'effect') return (config.endpoints || []).length ? window.PortalI18n.text`端点：${config.endpoints.join(', ')}` : t('Effect 脚本');
+    if (component.kind === 'effect') {
+      if (config.script_draft) return t(config.script_draft.script ? '待确认候选脚本' : '待编写') + (config.script ? ` · ${t('原脚本继续运行')}` : '');
+      return (config.endpoints || []).length ? window.PortalI18n.text`端点：${config.endpoints.join(', ')}` : t('Effect 脚本');
+    }
     if (component.kind === 'loop') return window.PortalI18n.text`最多 ${config.max_rounds ?? 5} 轮`;
     return program.manifest.component_kinds[component.kind]?.title || component.kind;
   }

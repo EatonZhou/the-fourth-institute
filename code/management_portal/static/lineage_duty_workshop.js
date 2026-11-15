@@ -19,6 +19,15 @@
       finally { busy = false; editor.inert = false; }
     };
     const preview = args => execute('ApplyLineageChanges',{...args,dry_run:true},{expectedVersion:model.revision});
+    root.addEventListener('workshop:review-effect',event => void run(async () => {
+      if (model.dirty()) throw new Error(t('请先保存职责草稿，再确认此版本'));
+      const {effectId,draftHash,decision} = event.detail;
+      const draft = model.draft.body.components.find(row => row.key === effectId)?.config?.script_draft;
+      if (!draft) throw new Error(t('请重新读取候选脚本'));
+      if (!await window.PortalUI.confirm({title:t(decision === 'confirm' ? '确认候选脚本？' : '取消脚本草稿？'),message:`${draft.description}\n\n${draft.script}`,confirmLabel:t(decision === 'confirm' ? '确认' : '取消草稿')})) return;
+      await execute('ReviewComponentScript',{lineage_id:lineageId,effect_id:effectId,draft_hash:draftHash,decision},{expectedVersion:model.revision});
+      await load(); onSaved({function_block_id:functionBlockId,title:model.block.title});
+    }).catch(() => {}),{signal:abort.signal});
     function inspect(key = '') {
       disposeInspector?.(); disposeInspector = null;
       selected = key;

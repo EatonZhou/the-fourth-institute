@@ -100,7 +100,9 @@
           ? window.PortalLineageProgram?.manifest?.event_types?.[config.event_type]?.title
             || "选择系统事件"
           : effect
-            ? effectScriptLabel(config.script) || "编写要运行的脚本"
+            ? config.script_draft
+              ? (config.script_draft.script ? "待确认候选脚本" : "待编写") + (config.script ? " · 原脚本继续运行" : "")
+              : effectScriptLabel(config.script) || "编写要运行的脚本"
             : node.kind === "loop"
               ? `最多 ${config.max_rounds || 5} 轮`
             : `${config.operator_implementation === "resident" ? "Resident 语义执行" : "确定性规则执行"}${node.kind === "selector" ? ` · ${(config.branches || []).length} 个分支` : ""}`;

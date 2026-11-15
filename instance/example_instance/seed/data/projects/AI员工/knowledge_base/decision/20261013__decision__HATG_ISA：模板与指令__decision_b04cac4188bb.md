@@ -4,12 +4,12 @@ type: decision
 project: AI员工
 created_at: '2026-10-13'
 version:
-  number: 35
+  number: 36
   created_at: "2026-10-13"
   created_by:
     user: ""
     agent: "resident_e8fc8c899f00"
-  updated_at: "2026-11-15T15:07:08Z"
+  updated_at: "2026-11-15T15:31:40Z"
   updated_by:
     user: ""
     agent: "resident_25ac6961fafb"
@@ -296,6 +296,7 @@ HATG 画布的控件分在四角：左上是缩放（缩小、百分比、放大
 | `ListTemplates` | 否 | 列出共享模板与模块描述，可按施加目标过滤。 | 对“共享”有 @viewer |
 | `GetTemplate` | 否 | 读取一份模板、行为预览与编辑字段。 | 对“共享”有 @viewer |
 | `CreateTemplate` | 是 | 新建模板，或从选区生成结构模板；支持只校验的 dry_run。 | 对“公共内容”有 @contributor；对 `from_selection.lineage_id` 有 @viewer |
+| `ReviewTemplateScript` | 是 | 确认或取消模板中的 Effect 脚本草稿；另须匹配确认人和内容 hash。 | 对“公共内容”有 @contributor |
 | `UpdateTemplate` | 是 | 修改模板内容；支持 dry_run，不回写已有图。 | 对“公共内容”有 @contributor |
 | `DeleteTemplate` | 是 | 删除模板，保留已经施加的结果。 | 对“公共内容”有 @admin |
 | `RestoreTemplate` | 是 | 从代码恢复内置模板，包括已删除的内置条目。 | 对“公共内容”有 @contributor |
@@ -314,6 +315,7 @@ HATG 画布的控件分在四角：左上是缩放（缩小、百分比、放大
 | `ListTemplates` | `target_kind` |
 | `GetTemplate` | `template_id` |
 | `CreateTemplate` | `template`、`from_selection`、`dry_run` |
+| `ReviewTemplateScript` | `template_id`、`effect_id`、`draft_hash`、`decision` |
 | `UpdateTemplate` | `template_id`、`template`、`kind`、`category`、`title`、`description`、`targets`、`parameters`、`body`、`dry_run` |
 | `DeleteTemplate` | `template_id` |
 | `RestoreTemplate` | `template_id` |
@@ -425,3 +427,11 @@ HATG 画布的控件分在四角：左上是缩放（缩小、百分比、放大
 ## 结构模板的 Resident 设置归属
 
 结构模板可保存角色的执行设置与 Society 汇报策略，但施加时不把 `reporting` 作为 Execution 的创建参数。执行字段继续交正式 Resident 创建入口；汇报字段先按同一设置契约校验，再由 Society 的正式运行设置入口按本次真实调用者与目标权限保存，不借模板创建者或 User 身份。后续配置失败时清理本次新建角色并传播失败，不能把半配置角色当作模板成功结果。模板、Fork 的既有失败清理路径保持一致；设置字段的具体语义与应用时机沿各自 owner 的现行合同。
+
+### Effect 描述与版本确认
+
+Effect 的运行版本保存在 config.script / endpoints；待编写、待确认版本保存在 config.script_draft：description、script、endpoints、requested_by、confirm_by、hash。发起者和内容 hash 由服务端写入，确认人默认是发起者，已有草稿只有发起者可换确认人。工坊的描述、确认人和候选脚本编辑保存到草稿；助手只交回候选内容，不替用户确认。保存候选不改变运行脚本，新建的候选 Effect 运行脚本为空，不能执行；已有 Effect 继续运行原脚本。
+
+ReviewComponentScript(lineage_id, effect_id, draft_hash, decision) 和 ReviewTemplateScript(template_id, effect_id, draft_hash, decision) 分别处理实例和模板，decision 为 confirm 或 cancel。请求必须带所属资源读取时的 expected_version（Lineage revision 或模板 version）。实例 effect_id 是组件 ID，模板中是组件 key。版本或 hash 不符拒绝；confirm 只允许指定确认人，cancel 允许发起者或确认人，且仍须具备对应资源写权限。确认先复用 Effect DSL 校验，空脚本、无效指令和参数不晋升；成功原子替换运行 script/endpoints 并清除草稿。取消只清除草稿，保留原运行版本。调用记录保留操作者和确认内容 hash。
+
+进入此流程后 script_review_required 为 true；同一 Effect 后续修改运行脚本必须再走候选与确认，不能删除标记或草稿绕过确认。既有未进入流程的直接脚本编辑保持兼容。候选字段不进入运行计划，不改变现行执行契约；失败通知收件人仍独立配置。含待确认草稿的模板不可发布商店；确认后可发布、安装并施加，模板和已施加实例仍各自独立。

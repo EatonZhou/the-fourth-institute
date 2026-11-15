@@ -201,7 +201,7 @@ def normalize_effect_config(config: dict[str, Any]) -> dict[str, Any]:
 
     unknown = sorted(set(config) - EFFECT_CONFIG_FIELDS)
     if unknown:
-        raise ValueError("Effect config 只包含 script、endpoints、failure_recipients；不接受：" + "、".join(unknown))
+        raise ValueError("Effect config 只包含 script、endpoints、failure_recipients、script_draft、script_review_required；不接受：" + "、".join(unknown))
     raw_script = config.get("script")
     if raw_script is None:
         raw_script = ""
@@ -220,6 +220,13 @@ def normalize_effect_config(config: dict[str, Any]) -> dict[str, Any]:
             raise ValueError(f"Effect endpoint 名称无效或重复：{name or '（空）'}")
         endpoints.append(name)
     result = {"script": script, "endpoints": endpoints}
+    if 'script_review_required' in config and not isinstance(config['script_review_required'], bool):
+        raise ValueError('script_review_required 必须是布尔值')
+    if config.get('script_review_required'):
+        result['script_review_required'] = True
+    if 'script_draft' in config:
+        from .effect_script_authoring import shape
+        result['script_draft'] = shape(config['script_draft'])
     if "failure_recipients" in config:
         from management_common.principal import actor_principal
         recipients = config["failure_recipients"]

@@ -485,6 +485,9 @@ def _normalize_lineage_shape(
             if kept != family.get("members"):
                 family["members"] = kept
                 reconcile_in_body(body, block, actor)
+    from .effect_script_authoring import reconcile
+    if isinstance(payload.get('program'), dict):
+        reconcile(payload['program'].get('components', []), (previous.get('program') or {}).get('components', []), actor)
     return lineage_definition_normalization._normalize_lineage_payload(
         payload, previous, actor,
         resident_references=resident_references,

@@ -50,7 +50,7 @@
           const typeId = config.event_type || window.PortalLineageProgram?.primitiveDefaultType?.('event') || '';
           return window.PortalLineagePrimitiveInspector.inspectorHtml({ typeId, config, readonly: false });
         }
-        if (row.kind === 'effect') return fields.effectFieldsHtml(config, false);
+        if (row.kind === 'effect') return fields.effectFieldsHtml(config, false, {reviewId:row.key});
         if (row.kind === 'loop') return fields.loopFieldsHtml(config, false);
         if (fields.isOperatorKind(row.kind)) return fields.operatorFieldsHtml({ kind: row.kind, config }, false);
         return `<p class="programInspectorNote">${esc(t('这个元素没有额外设置，可在下方 JSON 中编辑。'))}</p>`;

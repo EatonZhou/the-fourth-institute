@@ -4,12 +4,12 @@ type: decision
 project: AI员工
 created_at: '2026-09-28'
 version:
-  number: 47
+  number: 48
   created_at: "2026-09-28T10:45:00Z"
   created_by:
     user: "weihao"
     agent: "resident_2a1fc6cd272d"
-  updated_at: "2026-11-15T15:07:08Z"
+  updated_at: "2026-11-15T15:31:40Z"
   updated_by:
     user: ""
     agent: "resident_25ac6961fafb"
@@ -89,6 +89,7 @@ Lineage 定义的合并提交、显式 `expected_version`、冲突详情和多 L
 | `DeleteLineage` | 是 | 删除一个 Lineage | 对 `lineage_id` 有 @admin |
 | `ListComponentTypes` | 否 | 读取可用的组件类型与事件类型 | 对“共享”有 @viewer |
 | `CreateComponent` | 是 | 创建一个组件 | 对 `lineage_id` 有 @contributor |
+| `ReviewComponentScript` | 是 | 确认或取消指定版本的 Effect 脚本草稿；另须匹配确认人和内容 hash。 | 对 `lineage_id` 有 @contributor |
 | `UpdateComponent` | 是 | 修改一个组件 | 对 `lineage_id` 有 @contributor |
 | `DeleteComponent` | 是 | 删除一个组件及其连线 | 对 `lineage_id` 有 @contributor |
 | `CreateWire` | 是 | 创建一条连线 | 对 `lineage_id` 有 @contributor |
@@ -337,6 +338,7 @@ Resident、Event Source、Filter、Reducer 的普通出端口为 output；Select
 | `DeleteLineage` | `lineage_id` |
 | `ListComponentTypes` | 无 |
 | `CreateComponent` | `lineage_id`、`kind`、`title`、`config`、`client_key`、`near_resident_id`、`placement`、`x`、`y` |
+| `ReviewComponentScript` | `lineage_id`、`effect_id`、`draft_hash`、`decision` |
 | `UpdateComponent` | `lineage_id`、`component_id`、`changes` |
 | `DeleteComponent` | `lineage_id`、`component_id` |
 | `CreateWire` | `lineage_id`、`source`、`source_port`、`target`、`target_port`、`kind`、`config`、`label`、`client_key` |
@@ -353,3 +355,11 @@ Resident、Event Source、Filter、Reducer 的普通出端口为 output；Select
 | `ApplyLineageChanges` | `lineage_id`、`operations`、`function_block_id`、`duty_changes`、`dry_run`、`near_resident_id`、`placement`、`x`、`y` |
 | `WatchLineage` | `lineage_id`、`after_cursor` |
 | `RelocateWorkspaceHandoff` | `lineage_id`、`handoff_id`、`item_id`、`workspace_id`、`expected_workspace_version` |
+
+### Effect 描述与版本确认
+
+Effect 的运行版本保存在 config.script / endpoints；待编写、待确认版本保存在 config.script_draft：description、script、endpoints、requested_by、confirm_by、hash。发起者和内容 hash 由服务端写入，确认人默认是发起者，已有草稿只有发起者可换确认人。工坊的描述、确认人和候选脚本编辑保存到草稿；助手只交回候选内容，不替用户确认。保存候选不改变运行脚本，新建的候选 Effect 运行脚本为空，不能执行；已有 Effect 继续运行原脚本。
+
+ReviewComponentScript(lineage_id, effect_id, draft_hash, decision) 和 ReviewTemplateScript(template_id, effect_id, draft_hash, decision) 分别处理实例和模板，decision 为 confirm 或 cancel。请求必须带所属资源读取时的 expected_version（Lineage revision 或模板 version）。实例 effect_id 是组件 ID，模板中是组件 key。版本或 hash 不符拒绝；confirm 只允许指定确认人，cancel 允许发起者或确认人，且仍须具备对应资源写权限。确认先复用 Effect DSL 校验，空脚本、无效指令和参数不晋升；成功原子替换运行 script/endpoints 并清除草稿。取消只清除草稿，保留原运行版本。调用记录保留操作者和确认内容 hash。
+
+进入此流程后 script_review_required 为 true；同一 Effect 后续修改运行脚本必须再走候选与确认，不能删除标记或草稿绕过确认。既有未进入流程的直接脚本编辑保持兼容。候选字段不进入运行计划，不改变现行执行契约；失败通知收件人仍独立配置。含待确认草稿的模板不可发布商店；确认后可发布、安装并施加，模板和已施加实例仍各自独立。

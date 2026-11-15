@@ -832,6 +832,9 @@
     "UpdateComponent": {
       "a": "@contributor"
     },
+    "ReviewComponentScript": {
+      "a": "@contributor"
+    },
     "UpdateExecutionSettings": {
       "a": "@admin",
       "r": "@shared"
@@ -1099,6 +1102,10 @@
       "r": "@public"
     },
     "PublishTemplate": {
+      "a": "@contributor",
+      "r": "@public"
+    },
+    "ReviewTemplateScript": {
       "a": "@contributor",
       "r": "@public"
     },

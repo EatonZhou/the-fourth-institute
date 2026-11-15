@@ -135,6 +135,8 @@ def publish(template_id, actor, release_note=""):
             raise KeyError(template_id)
         if template.get("builtin_key"):
             raise TemplateError("内置模板不能发布到商店")
+        from ..effect_script_authoring import require_publishable
+        require_publishable(template)
         creator = str(template.get("created_by") or "")
         resident_source = creator.startswith("resident_") and not template.get("installed_from_store_id")
         if not (creator == actor or (resident_source and admin)):
