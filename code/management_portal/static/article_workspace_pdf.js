@@ -20,6 +20,15 @@
 
     let articlePdfController = null;
     let articlePdfRenderKey = "";
+    let articlePdfPending = null;
+
+    function cancelPendingPdf() {
+      const pending = articlePdfPending;
+      articlePdfPending = null;
+      pending?.controller?.cancel?.();
+      pending?.staging?.remove();
+      $("articlePdfView")?.removeAttribute("aria-busy");
+    }
 
     const articlePdfGestureFrames = window.PortalPreview.createFrameCoalescer(
       pending => previewArticlePdfGestureScale(pending.value, pending.point),
@@ -27,6 +36,7 @@
     );
 
     function cancelPdf() {
+      cancelPendingPdf();
       window.cancelAnimationFrame(state.pdfLayoutFrame);
       articlePdfGestureFrames.cancel();
       window.clearTimeout(state.pdfRedrawTimer);
@@ -115,9 +125,8 @@
       };
     }
 
-    function restoreArticlePdfPosition(position) {
+    function restoreArticlePdfPosition(position, scroller = $("articlePdfView")) {
       if (!position) return;
-      const scroller = $("articlePdfView");
       const page = scroller?.querySelector?.(`[data-pdf-page="${Number(position.page || 1)}"]`)
         || Array.from(scroller?.querySelectorAll?.("[data-pdf-page]") || []).at(-1);
       if (!scroller || !page) return;
@@ -172,8 +181,7 @@
       state.pdfZoom = next;
       updateArticlePdfZoomControls();
       if (await previewArticlePdfScale(point)) {
-        const version = String(state.build?.compiled_at || selectedArticle()?.compiled_pdf?.mtime_ns || "");
-        articlePdfRenderKey = `${state.selectedId}|${pdfUrl()}|${version}|${state.pdfZoom}`;
+        articlePdfRenderKey = `${articlePdfRenderKey.slice(0, articlePdfRenderKey.lastIndexOf("|"))}|${state.pdfZoom}`;
         scheduleArticlePdfRedraw();
         return;
       }
@@ -200,8 +208,7 @@
       if (!controller?.commitGestureScale) return false;
       const changed = controller.commitGestureScale({ scaleMultiplier: state.pdfZoom });
       if (changed) restoreArticlePdfPosition(position);
-      const version = String(state.build?.compiled_at || selectedArticle()?.compiled_pdf?.mtime_ns || "");
-      articlePdfRenderKey = `${state.selectedId}|${pdfUrl()}|${version}|${state.pdfZoom}`;
+      articlePdfRenderKey = `${articlePdfRenderKey.slice(0, articlePdfRenderKey.lastIndexOf("|"))}|${state.pdfZoom}`;
       if (changed) scheduleArticlePdfRedraw(80);
       return changed;
     }
@@ -300,49 +307,125 @@
       }
       updateArticlePdfZoomControls({ available: true });
       const version = String(state.build?.compiled_at || selectedArticle()?.compiled_pdf?.mtime_ns || "");
-      const renderKey = `${state.selectedId}|${url}|${version}|${state.pdfZoom}`;
+      const articleId = state.selectedId;
+      const renderBase = `${articleId}|${url}|${version}`;
+      const renderKey = `${renderBase}|${state.pdfZoom}`;
+      if (articlePdfPending?.renderKey === renderKey) return articlePdfPending.promise;
       if (articlePdfController && articlePdfRenderKey === renderKey && $("articlePdfDocument")) {
         await articlePdfController.promise;
         return;
       }
       const resumePosition = state.pdfRestorePosition;
-      // A rebuild replaces the preview asynchronously. Capture its latest
-      // location before clearing the old pages, scoped to this Article only.
-      const sameArticle = articlePdfController && articlePdfRenderKey.startsWith(`${state.selectedId}|`);
-      const readingPosition = resumePosition || (preservePosition && sameArticle ? captureArticlePdfPosition() : null);
-      cancelPdf();
-      host.innerHTML = window.PortalI18n.html`<div class="articlePdfDocument" id="articlePdfDocument"><div class="articlePdfStatus" id="articlePdfStatus">正在加载 PDF…</div></div>`;
-      const documentHost = $("articlePdfDocument");
-      articlePdfController = window.PortalPdfPreview.render({
-        root: documentHost,
-        url,
-        title: selectedArticle()?.title || window.PortalI18n.t("Article"),
-        version,
-        statusClass: "articlePdfStatus",
-        pageClass: "articlePdfPage",
-        textLayerClass: "articlePdfText",
-        horizontalPadding: 12,
-        minScale: 0.45,
-        maxScale: 4,
-        scaleMultiplier: state.pdfZoom,
-        outputScale: ratio => Math.min(2, ratio),
-        onPage: ({ pageNumber, pageElement }) => {
-          pageElement.dataset.pageLabel = `第 ${pageNumber} 页 · 双击返回源码`;
-        },
-        onError: error => showToast(window.PortalI18n.text`PDF.js fallback: ${error.message || error}`, "warning"),
+      const sameArticle = articlePdfController && articlePdfRenderKey.startsWith(`${articleId}|`);
+      cancelPendingPdf();
+      if (!sameArticle) {
+        cancelPdf();
+        host.innerHTML = window.PortalI18n.html`<div class="articlePdfStatus">正在加载 PDF…</div>`;
+      }
+      // Render in a separate, measurable viewport. The live PDF stays visible
+      // and scrollable until every page at the destination has been painted.
+      const staging = host.cloneNode(false);
+      staging.removeAttribute("id");
+      staging.setAttribute("aria-hidden", "true");
+      staging.inert = true;
+      staging.dataset.articlePdfStaging = "";
+      const sizeStaging = () => {
+        const rect = host.getBoundingClientRect();
+        Object.assign(staging.style, { position: "fixed", left: `${rect.left}px`, top: `${rect.top}px`,
+          width: `${rect.width}px`, height: `${rect.height}px`, boxSizing: "border-box",
+          visibility: "hidden", pointerEvents: "none" });
+        return `${rect.width}|${rect.height}|${state.pdfZoom}`;
+      };
+      let geometry = sizeStaging();
+      const documentHost = document.createElement("div");
+      documentHost.className = "articlePdfDocument";
+      staging.append(documentHost);
+      host.parentElement.append(staging);
+      host.setAttribute("aria-busy", "true");
+      const pending = { renderKey, staging, controller: null, promise: null };
+      articlePdfPending = pending;
+      const current = () => articlePdfPending === pending && state.selectedId === articleId;
+      pending.promise = (async () => {
+        const controller = pending.controller = window.PortalPdfPreview.render({
+          root: documentHost,
+          url,
+          title: selectedArticle()?.title || window.PortalI18n.t("Article"),
+          version,
+          statusClass: "articlePdfStatus",
+          pageClass: "articlePdfPage",
+          textLayerClass: "articlePdfText",
+          horizontalPadding: 12,
+          minScale: 0.45,
+          maxScale: 4,
+          scaleMultiplier: state.pdfZoom,
+          outputScale: ratio => Math.min(2, ratio),
+          onPage: ({ pageNumber, pageElement }) => {
+            pageElement.dataset.pageLabel = `第 ${pageNumber} 页 · 双击返回源码`;
+          },
+          onError: error => showToast(window.PortalI18n.text`PDF.js fallback: ${error.message || error}`, "warning"),
+        });
+        await controller.promise;
+        const prepared = new Set();
+        while (current() && state.outputView === "pdf") {
+          if (sameArticle && ["error", "fallback"].includes(documentHost.dataset.pdfStatus)) {
+            throw new Error(window.PortalI18n.t("新 PDF 加载失败，已保留原预览。"));
+          }
+          const nextGeometry = sizeStaging();
+          if (geometry !== nextGeometry) {
+            geometry = nextGeometry;
+            controller.previewScale?.({ scaleMultiplier: state.pdfZoom });
+            await controller.redraw?.();
+            prepared.clear();
+            if (!current()) return;
+          }
+          const anchor = resumePosition || (preservePosition && sameArticle ? captureArticlePdfPosition() : null);
+          const readingPosition = anchor ? { ...anchor, page: Math.max(1, Math.min(
+            Number(documentHost.dataset.pdfPageCount) || anchor.page, anchor.page)) } : null;
+          restoreArticlePdfPosition(readingPosition, staging);
+          const viewport = staging.getBoundingClientRect();
+          const needed = Array.from(documentHost.querySelectorAll("[data-pdf-page]")).filter(page => {
+            const bounds = page.getBoundingClientRect();
+            return Number(page.dataset.pdfPage) === readingPosition?.page
+              || (bounds.bottom > viewport.top && bounds.top < viewport.bottom);
+          });
+          const unprepared = needed.filter(page => !prepared.has(Number(page.dataset.pdfPage)));
+          if (unprepared.length) {
+            for (const page of unprepared) {
+              await controller.ensurePage?.(Number(page.dataset.pdfPage), { render: true });
+              if (!current()) return;
+              if (page.dataset.pdfRenderState === "error") throw new Error(window.PortalI18n.t("新 PDF 页面渲染失败。"));
+              prepared.add(Number(page.dataset.pdfPage));
+            }
+            // Reading can continue while the new pages render. Recheck the live
+            // position before choosing which viewport will become visible.
+            continue;
+          }
+          // No await between replacing the DOM and restoring its scroll offsets:
+          // the first painted frame of the new PDF is already at the destination.
+          articlePdfPending = null;
+          cancelPdf();
+          documentHost.id = "articlePdfDocument";
+          host.replaceChildren(documentHost);
+          articlePdfController = controller;
+          articlePdfRenderKey = `${renderBase}|${state.pdfZoom}`;
+          if (readingPosition) restoreArticlePdfPosition(readingPosition);
+          else { host.scrollTop = 0; host.scrollLeft = 0; }
+          if (resumePosition === state.pdfRestorePosition) state.pdfRestorePosition = null;
+          return;
+        }
+      })().catch(error => {
+        if (!current()) return;
+        if (sameArticle) showToast(window.PortalI18n.text`PDF 更新失败，已保留原预览：${error.message || error}`, "warning");
+        else throw error;
+      }).finally(() => {
+        if (articlePdfController !== pending.controller) pending.controller?.cancel?.();
+        staging.remove();
+        if (articlePdfPending === pending) {
+          articlePdfPending = null;
+          host.removeAttribute("aria-busy");
+        }
       });
-      const controller = articlePdfController;
-      articlePdfRenderKey = renderKey;
-      await controller.promise;
-      if (articlePdfController === controller && readingPosition?.page) {
-        const pageCount = Number(documentHost.dataset.pdfPageCount) || readingPosition.page;
-        readingPosition.page = Math.max(1, Math.min(pageCount, readingPosition.page));
-        await controller.ensurePage?.(readingPosition.page, { render: true });
-      }
-      if (articlePdfController === controller) {
-        restoreArticlePdfPosition(readingPosition);
-        if (resumePosition === state.pdfRestorePosition) state.pdfRestorePosition = null;
-      }
+      return pending.promise;
     }
 
     function revealPdfSyncMatch(match) {

@@ -6,7 +6,7 @@ const http = require('node:http');
 const { STATIC, portalWorkspaceSurfaceScripts } = require('./portal_workspace_surface_scripts.cjs');
 const { chromium } = require(path.join(STATIC, '../test_framework/tau_runtime/node_modules/playwright'));
 const modules = ['portal_state.js', 'portal_page_state.js', 'portal_text.js', 'portal_i18n.js', 'portal_ui_primitives.js', 'portal_ui.js',
-  'portal_command_registry.js', ...portalWorkspaceSurfaceScripts(), 'article_workspace_documents.js', 'article_workspace_position.js',
+  'portal_pdf_preview.js', 'portal_command_registry.js', ...portalWorkspaceSurfaceScripts(), 'article_workspace_documents.js', 'article_workspace_position.js',
   'article_workspace_syntax.js', 'article_workspace_monaco.js', 'article_workspace_pdf.js', 'article_workspace_build.js', 'article_workspace_events.js'];
 const html = fs.readFileSync(path.join(STATIC, '../article_workspace.html'), 'utf8')
   .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '').replace(/<link\b[^>]*>/gi, '')
@@ -15,17 +15,36 @@ const html = fs.readFileSync(path.join(STATIC, '../article_workspace.html'), 'ut
   const text = Array.from({ length: 200 }, (_, i) => `Line ${i + 1} of the source`).join('\n');
   const files = { 'main.tex': text, 'intro.tex': text };
   let browser;
+  // Small valid multi-page PDF for the real PDF.js rendering/swap check.
+  const objects = ['<< /Type /Catalog /Pages 2 0 R >>',
+    '<< /Type /Pages /Kids [3 0 R 5 0 R 7 0 R 9 0 R 11 0 R] /Count 5 >>'];
+  for (let n = 1; n <= 5; n++) {
+    const stream = `0.8 g 40 40 420 620 re f 0 g BT /F1 24 Tf 60 600 Td (Page ${n}) Tj ET`;
+    objects.push(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 500 700] /Resources << /Font << /F1 13 0 R >> >> /Contents ${n * 2 + 2} 0 R >>`,
+      `<< /Length ${stream.length} >>\nstream\n${stream}\nendstream`);
+  }
+  objects.push('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>');
+  let pdfBytes = '%PDF-1.4\n'; const offsets = [0];
+  objects.forEach((object, index) => { offsets.push(pdfBytes.length); pdfBytes += `${index + 1} 0 obj\n${object}\nendobj\n`; });
+  const xref = pdfBytes.length;
+  pdfBytes += `xref\n0 ${offsets.length}\n0000000000 65535 f \n` + offsets.slice(1).map(n => `${String(n).padStart(10, '0')} 00000 n \n`).join('')
+    + `trailer\n<< /Size ${offsets.length} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF\n`;
   const server = http.createServer((req, res) => {
     const url = new URL(req.url, 'http://fixture');
     if (url.pathname === '/') { res.setHeader('Content-Type', 'text/html'); return res.end(html); }
     if (url.pathname === '/away') return res.end('<p>Elsewhere</p>');
+    if (url.pathname === '/fixture.pdf') {
+      res.setHeader('Content-Type', 'application/pdf');
+      return setTimeout(() => res.end(pdfBytes), url.searchParams.get('v') === 'real-rebuild' ? 250 : 0);
+    }
     const rel = url.pathname.slice('/static/'.length);
     if (url.pathname.endsWith('/file')) {
       const name = url.searchParams.get('path');
       res.setHeader('Content-Type', 'application/json');
       return res.end(JSON.stringify({ path: name, kind: 'text', content: files[name] }));
     }
-    if (!url.pathname.startsWith('/static/') || rel.includes('..') || (!modules.includes(rel) && !rel.startsWith('vendor/monaco/'))) {
+    if (!url.pathname.startsWith('/static/') || rel.includes('..') || (!modules.includes(rel)
+      && rel !== 'article_workspace.css' && !rel.startsWith('vendor/monaco/') && !rel.startsWith('vendor/pdfjs/'))) {
       res.writeHead(404); return res.end();
     }
     res.setHeader('Content-Type', rel.endsWith('.css') ? 'text/css' : 'text/javascript');
@@ -49,23 +68,31 @@ const html = fs.readFileSync(path.join(STATIC, '../article_workspace.html'), 'ut
       // Deterministic PDF page geometry; exercise the production Article PDF
       // capture/restore and render completion with no external PDF service.
       window.pdfPageCount = 5;
-      window.PortalPdfPreview = { render: ({ root, scaleMultiplier }) => {
+      window.realPdfPreview = window.PortalPdfPreview;
+      window.PortalPdfPreview = { render: ({ root, scaleMultiplier, version }) => {
         const pageCount = window.pdfPageCount;
+        const failure = window.pdfFailure;
+        root.dataset.fixtureVersion = version || 'initial';
         const promise = (async () => {
           root.style.position = 'relative'; root.innerHTML = 'Loading PDF…';
           // Match the asynchronous download: the shorter loading view resets
           // the scroll container before PDF page geometry becomes available.
           await new Promise(resolve => requestAnimationFrame(resolve));
+          if (window.pdfLoadDelay) await new Promise(resolve => setTimeout(resolve, window.pdfLoadDelay));
+          if (failure) throw new Error('PDF download failed');
           void root.parentElement.scrollTop;
           root.dataset.pdfPageCount = String(pageCount); root.innerHTML = '';
           for (let n = 1; n <= pageCount; n++) {
             const p = document.createElement('div'); p.dataset.pdfPage = n;
+            p.dataset.pdfRenderState = n === 1 ? 'done' : 'pending';
             p.style.cssText = `width:${500 * scaleMultiplier}px;height:${700 * scaleMultiplier}px;margin:10px;background:#eee`;
             p.textContent = `Page ${n}`; root.append(p);
           }
         })();
         return { promise, cancel: noop, ensurePage: async n => {
           if (n < 1 || n > pageCount) throw new Error('page out of bounds');
+          if (window.pdfPageDelay) await new Promise(resolve => setTimeout(resolve, window.pdfPageDelay));
+          root.querySelector(`[data-pdf-page="${n}"]`).dataset.pdfRenderState = 'done';
         } };
       } };
       window.state = { selectedId: articleId, openFile: '', openTabs: [], documents: new Map(), source: '', savedSource: '',
@@ -142,32 +169,102 @@ const html = fs.readFileSync(path.join(STATIC, '../article_workspace.html'), 'ut
         document.getElementById('articlePdfView').scrollTop = scrollTop;
         const position = pdfOwner.captureArticlePdfPosition();
         window.pdfPageCount = pages;
+        window.pdfLoadDelay = 100; window.pdfPageDelay = 60;
+        window.swapFrames = [];
+        const sample = () => {
+          const host = document.getElementById('articlePdfView');
+          const viewport = host.getBoundingClientRect();
+          const visible = Array.from(host.querySelectorAll('[data-pdf-page]')).filter(p => {
+            const bounds = p.getBoundingClientRect();
+            return bounds.bottom > viewport.top && bounds.top < viewport.bottom;
+          });
+          window.swapFrames.push({ position: pdfOwner.captureArticlePdfPosition(),
+            version: host.querySelector('.articlePdfDocument')?.dataset.fixtureVersion,
+            ready: visible.length > 0 && visible.every(p => p.dataset.pdfRenderState === 'done') });
+          if (window.completedPdfRenders === completed) requestAnimationFrame(sample);
+        };
+        requestAnimationFrame(sample);
         finishCompile({ id: state.selectedId, status: 'success', pdf_url: '/fixture.pdf', compiled_at: `build-${completed + 1}` });
         return { position, completed, zoom: state.pdfZoom };
       }, { scrollTop, pages, fromScratch });
       await page.waitForFunction(completed => window.completedPdfRenders > completed, anchor.completed);
-      return { before: anchor, after: await page.evaluate(() => ({ position: pdfOwner.captureArticlePdfPosition(), zoom: state.pdfZoom })) };
+      await page.evaluate(() => new Promise(resolve => requestAnimationFrame(resolve)));
+      return { before: anchor, after: await page.evaluate(() => ({ position: pdfOwner.captureArticlePdfPosition(), zoom: state.pdfZoom })),
+        frames: await page.evaluate(() => window.swapFrames) };
     };
     const rebuilt = await rebuildAt({ scrollTop: 2750 });
     assert.equal(rebuilt.after.position.page, rebuilt.before.position.page);
     assert.ok(Math.abs(rebuilt.after.position.yRatio - rebuilt.before.position.yRatio) < .01);
     assert.ok(Math.abs(rebuilt.after.position.xRatio - rebuilt.before.position.xRatio) < .01);
     assert.equal(rebuilt.after.zoom, rebuilt.before.zoom);
+    assert.ok(rebuilt.frames.length > 2, 'observe intermediate animation frames during slow PDF rendering');
+    assert.ok(rebuilt.frames.every(frame => frame.position?.page === rebuilt.before.position.page), 'never paint the loading view or PDF top');
+    assert.ok(rebuilt.frames.filter(frame => frame.version === 'build-1').every(frame => frame.ready), 'new visible pages are rendered before replacement');
     const shortened = await rebuildAt({ scrollTop: 4100, pages: 3, fromScratch: true });
     assert.equal(shortened.before.position.page, 5);
     assert.equal(shortened.after.position.page, 3);
     assert.ok(Math.abs(shortened.after.position.yRatio - shortened.before.position.yRatio) < .01);
+    const failedSwap = await page.evaluate(async () => {
+      const old = document.getElementById('articlePdfDocument'), scroll = document.getElementById('articlePdfView').scrollTop;
+      window.pdfFailure = true; state.build.compiled_at = 'failed-update';
+      await pdfOwner.renderPdf(); window.pdfFailure = false;
+      return old === document.getElementById('articlePdfDocument') && scroll === document.getElementById('articlePdfView').scrollTop
+        && !document.querySelector('[data-article-pdf-staging]');
+    });
+    assert.ok(failedSwap, 'failed replacement keeps the visible PDF and cleans up staging');
     // A cancelled view belongs to the previous Article, even if its DOM remains.
     await page.evaluate(async () => {
-      pdfOwner.cancelPdf(); state.selectedId = 'another-article';
+      state.build.compiled_at = 'superseded'; const pending = pdfOwner.renderPdf();
+      pdfOwner.cancelPdf(); state.selectedId = 'another-article'; state.build.compiled_at = 'another-article-build';
       await pdfOwner.renderPdf();
+      await pending;
     });
     assert.equal(await page.evaluate(() => document.getElementById('articlePdfView').scrollTop), 0);
+    assert.equal(await page.evaluate(() => document.getElementById('articlePdfDocument').dataset.fixtureVersion), 'another-article-build');
     await enter({ user: 'other-reader' }); assert.equal(await page.evaluate(() => state.openFile), 'main.tex');
     await enter({ articleId: 'B' }); assert.equal(await page.evaluate(() => state.openFile), 'main.tex');
     await enter({ available: ['main.tex'] }); assert.equal(await page.evaluate(() => state.openFile), 'main.tex');
     await page.evaluate(async () => { state.pdfRestorePosition = { page: 90, xRatio: .5, yRatio: .5 }; pdfOwner.cancelPdf(); await pdfOwner.renderPdf(); });
     assert.equal(await page.evaluate(() => pdfOwner.captureArticlePdfPosition().page), 5);
+    // Exercise the same transition with production CSS, PDF.js, canvases and
+    // lazy page rendering, including scrolling while the new PDF downloads.
+    await page.addStyleTag({ url: origin + '/static/article_workspace.css' });
+    const realSwap = await page.evaluate(async () => {
+      pdfOwner.cancelPdf(); window.PortalPdfPreview = window.realPdfPreview;
+      state.build.compiled_at = 'real-initial'; state.pdfZoom = 1.4;
+      await pdfOwner.renderPdf();
+      const host = document.getElementById('articlePdfView');
+      host.scrollTop = 2800;
+      const old = document.getElementById('articlePdfDocument');
+      const frames = []; let finished = false;
+      const sample = () => {
+        const rect = host.getBoundingClientRect();
+        const pages = Array.from(host.querySelectorAll('[data-pdf-page]')).filter(p => {
+          const bounds = p.getBoundingClientRect(); return bounds.bottom > rect.top && bounds.top < rect.bottom;
+        });
+        frames.push({ page: pdfOwner.captureArticlePdfPosition()?.page,
+          old: old === document.getElementById('articlePdfDocument'),
+          ready: pages.length > 0 && pages.every(p => p.dataset.pdfRenderState === 'done' && p.querySelector('canvas')) });
+        if (!finished) requestAnimationFrame(sample);
+      };
+      requestAnimationFrame(sample);
+      state.build.compiled_at = 'real-rebuild'; const updating = pdfOwner.renderPdf();
+      await pdfOwner.setArticlePdfZoom(1.6);
+      host.scrollTop = 3200;
+      const target = pdfOwner.captureArticlePdfPosition();
+      const scale = Number(old.querySelector(`[data-pdf-page="${target.page}"]`).dataset.pdfScale);
+      await updating; finished = true;
+      await new Promise(resolve => requestAnimationFrame(resolve));
+      return { frames, target, result: pdfOwner.captureArticlePdfPosition(), scale,
+        newScale: Number(host.querySelector(`[data-pdf-page="${target.page}"]`).dataset.pdfScale),
+        staging: Boolean(document.querySelector('[data-article-pdf-staging]')) };
+    });
+    assert.ok(realSwap.frames.some(frame => frame.old) && realSwap.frames.some(frame => !frame.old));
+    assert.ok(realSwap.frames.every(frame => frame.page === realSwap.target.page), 'real renderer never exposes a different page');
+    assert.ok(realSwap.frames.filter(frame => !frame.old).every(frame => frame.ready), 'new PDF has rendered canvases on its first visible frame');
+    assert.ok(Math.abs(realSwap.target.yRatio - realSwap.result.yRatio) < .01);
+    assert.equal(realSwap.newScale, realSwap.scale, 'zoom changes during loading apply to the replacement');
+    assert.equal(realSwap.staging, false);
     assert.deepEqual(errors, []);
     console.log('PASS: return and recompile preserve PDF page/position/zoom; fresh source, user/Article isolation and removed targets');
   } finally { await browser?.close(); await new Promise(resolve => server.close(resolve)); }
