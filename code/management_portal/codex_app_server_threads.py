@@ -27,6 +27,8 @@ from .codex_app_server_protocol import (
     TASK_COMPLETE_GOAL_STATUSES,
     CodexAppServerError,
     CodexRequestTimeouts,
+    CodexThreadClosing,
+    closing_thread_id,
     config_fingerprint,
 )
 
@@ -39,30 +41,57 @@ THREAD_LOCK_ROOT = portal_path("runtime") / "codex-app-server-threads"
 DEFAULT_IDLE_UNSUBSCRIBE_SECONDS = 5 * 60 * 60
 DEFAULT_MAX_LOADED_THREADS = 30
 THREAD_LOCK_POLL_INTERVAL_SECONDS = 0.25
+THREAD_CLOSE_WAIT_SECONDS = 30.0
 
 
 def resume_thread(request, params: dict[str, Any], **options: Any) -> dict[str, Any]:
-    """Recover a default-provider conflict from this thread's own native identity.
+    """Wait for a closing thread and recover its default-provider identity.
 
     Only a rejected lifecycle load is retried. Explicit provider choices and
     other failures stay authoritative; this never retries a model turn.
     """
-    try:
-        return request("thread/resume", params, **options)
-    except CodexAppServerError as error:
-        match = re.fullmatch(
-            r"(?:Codex app-server request failed: )?This chat uses ([\w-]+), but your current provider is ([\w-]+)\. Switch to \1 to continue\.",
-            str(error),
-        )
-        if (not match or params.get("modelProvider")
-                or (params.get("config") or {}).get("model_provider")):
-            raise
-        observed = request("thread/read", {"threadId": params["threadId"], "includeTurns": False}, **options)
-        thread = observed.get("thread") or {}
-        provider = thread.get("modelProvider")
-        if thread.get("id") != params["threadId"] or provider != match[1]:
-            raise error
-        return request("thread/resume", {**params, "modelProvider": provider}, **options)
+    deadline = None
+    delay = 0.1
+    cancel = options.get("cancellation_requested")
+    last_closing = None
+    while True:
+        if cancel and cancel():
+            raise InterruptedError("Codex app-server thread/resume cancelled")
+        call_options = options
+        if deadline is not None:
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                raise CodexThreadClosing(params["threadId"], str(last_closing)) from last_closing
+            call_options = {**options, "timeout": remaining}
+        try:
+            return request("thread/resume", params, **call_options)
+        except CodexAppServerError as error:
+            if closing_thread_id(error) == params.get("threadId") and params.get("threadId"):
+                last_closing = error
+                if deadline is None:
+                    timeout = options.get("timeout")
+                    budget = min(THREAD_CLOSE_WAIT_SECONDS, float(timeout)) if isinstance(timeout, (int, float)) else THREAD_CLOSE_WAIT_SECONDS
+                    deadline = time.monotonic() + max(0.0, budget)
+                wake = min(deadline, time.monotonic() + delay)
+                while time.monotonic() < wake:
+                    if cancel and cancel():
+                        raise InterruptedError("Codex app-server thread/resume cancelled") from error
+                    time.sleep(min(0.05, max(0.0, wake - time.monotonic())))
+                delay = min(1.0, delay * 2)
+                continue
+            match = re.fullmatch(
+                r"(?:Codex app-server request failed: )?This chat uses ([\w-]+), but your current provider is ([\w-]+)\. Switch to \1 to continue\.",
+                str(error),
+            )
+            if (not match or params.get("modelProvider")
+                    or (params.get("config") or {}).get("model_provider")):
+                raise
+            observed = request("thread/read", {"threadId": params["threadId"], "includeTurns": False}, **call_options)
+            thread = observed.get("thread") or {}
+            provider = thread.get("modelProvider")
+            if thread.get("id") != params["threadId"] or provider != match[1]:
+                raise error
+            params = {**params, "modelProvider": provider}
 
 
 @contextmanager

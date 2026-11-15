@@ -415,6 +415,10 @@ def runtime_failure_summary(
         code = "provider_outcome_unknown"
     if code in {"network", "timeout", "unknown"} and folded.startswith("executionservice "):
         code = "execution_rpc"
+    from management_portal.codex_app_server_protocol import closing_thread_id
+
+    if code == "provider_thread_closing" or closing_thread_id(message):
+        return "Codex 会话关闭尚未完成，请稍后重试"
     if "app-server" in folded and any(
         marker in folded
         for marker in ("connection", "closed", "disconnected", "lost", "unavailable")

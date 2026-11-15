@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 import threading
 import time
 from dataclasses import dataclass, field
@@ -20,6 +21,27 @@ TASK_COMPLETE_GOAL_STATUSES = frozenset({"blocked", "complete", "usagelimited", 
 
 class CodexAppServerError(RuntimeError):
     pass
+
+
+def closing_thread_id(error: object) -> str:
+    """Recognize the server's explicit, pre-load lifecycle rejection."""
+    match = re.fullmatch(
+        r"(?:Codex app-server request failed: )?thread (\S+) is closing; "
+        r"retry thread/resume after the thread is closed",
+        str(error),
+    )
+    return match[1] if match else ""
+
+
+class CodexThreadClosing(CodexAppServerError):
+    """The bounded wait for a rejected thread/resume expired."""
+
+    error_code = "provider_thread_closing"
+
+    def __init__(self, thread_id: str, reason: str) -> None:
+        super().__init__(reason)
+        self.error_details = {"provider": "codex", "thread_id": thread_id,
+                              "operation": "thread/resume", "input_replayed": False}
 
 
 class CodexTurnDetached(CodexAppServerError):
