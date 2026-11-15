@@ -108,6 +108,10 @@ def provider_error_continuation(
     the egress was unavailable.
     """
 
+    constraints = getattr(getattr(invocation, 'request', None), 'runtime_options', {}).get('execution_constraints')
+    if isinstance(constraints, dict) and constraints.get('text_only') is True:
+        # A constrained business turn cannot silently become a second model request.
+        raise error
     if str(getattr(error, 'error_code', '') or '') in {
         'provider_turn_deadline', 'provider_turn_cancel_pending', 'provider_observation_lost',
     }:

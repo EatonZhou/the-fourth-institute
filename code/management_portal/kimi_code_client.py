@@ -244,6 +244,15 @@ class KimiCodeClient:
         tools = data.get("tools") if isinstance(data, dict) else None
         return [tool for tool in tools if isinstance(tool, dict)] if isinstance(tools, list) else []
 
+    def require_deny_all_tools(self, session_id: str) -> None:
+        """Check the running server contract, not a lossy session snapshot."""
+        data = self._request("GET", "tools", query={"session_id": session_id}, timeout=15.0)
+        version = data.get("portal_deny_all_version") if isinstance(data, dict) else None
+        if type(version) is not int or version != 1:
+            raise KimiCodeTurnFailed(
+                "Kimi text_only requires native deny-all-tools v1; prepare the supported runtime before submission"
+            )
+
 
     def get_snapshot(self, session_id: str) -> dict[str, Any]:
         data = self._request("GET", f"sessions/{quote(session_id, safe='')}/snapshot", timeout=30.0)
@@ -525,6 +534,10 @@ class KimiCodeClient:
         permission_mode="yolo", model="", disabled_tools=None, deny_all_tools=False, **options,
     ) -> KimiCodeTurnResult:
         allowed = list(native_tools if native_tools is not None else tools or [])
+        if deny_all_tools:
+            if allowed or permission_mode != "manual":
+                raise KimiCodeTurnFailed("Restricted Kimi turn requires no tools and manual mode")
+            self.require_deny_all_tools(session_id)
         if continue_prompt:
             if deny_all_tools:
                 raise KimiCodeTurnFailed('Restricted turn recovery requires the original native policy receipt; no resubmission allowed')
@@ -603,9 +616,6 @@ class KimiCodeClient:
         if not prompt_id:
             raise KimiCodeTurnFailed("Kimi Code prompt submission returned no prompt_id")
         policy_receipt = (submission.get('metadata') or {}).get('portal_tool_policy')
-        if deny_all_tools and policy_receipt != {'version':1,'policy':'deny_all','session_id':session_id,
-                'prompt_id':prompt_id,'effective_tools':[],'source':'kimi.native.prompt'}:
-            raise KimiCodeTurnFailed('Native restricted prompt policy receipt missing or mismatched; do not resubmit')
 
         def emit(event: dict[str, Any]) -> None:
             if event_callback:
@@ -620,6 +630,9 @@ class KimiCodeClient:
                 "userMessageId": user_message_id,
             },
         })
+        if deny_all_tools and policy_receipt != {'version':1,'policy':'deny_all','session_id':session_id,
+                'prompt_id':prompt_id,'effective_tools':[],'source':'kimi.native.prompt'}:
+            raise KimiCodeTurnFailed('Native restricted prompt policy receipt missing or mismatched; do not resubmit')
         result = self._follow_prompt(
             session_id=session_id, prompt_id=prompt_id, user_message_id=user_message_id, tools=tools,
             before_usage=before_usage, before_seq=before_seq,

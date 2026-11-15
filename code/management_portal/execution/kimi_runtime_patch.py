@@ -1,11 +1,27 @@
 """Reproducible, hash-pinned patch for the 2.4.1 native prompt contract."""
 import hashlib
 import shutil
+from functools import lru_cache
 from pathlib import Path
 
 PATCH_ID = 'portal-deny-all-v1'
 BASE_SHA256 = 'fd15d5c9b48892bb4f1d5fe82df9f790c8c19a44ca9a81054cc592b6fb9e2c90'
 MARKER = '/* portal-deny-all-v1 */'
+
+def verified(root):
+    """Verify the managed revision without mutating a running installation."""
+    bundle = Path(root)/'lib/node_modules/@moonshot-ai/kimi-code/dist/main.mjs'
+    backup = bundle.with_suffix('.portal-upstream')
+    try:
+        stamps = tuple((p.stat().st_mtime_ns, p.stat().st_size) for p in (bundle, backup))
+        return _verified(str(bundle), stamps)
+    except (OSError, ValueError):
+        return False
+
+@lru_cache(maxsize=8)
+def _verified(bundle, stamps):
+    path = Path(bundle)
+    return path.read_text() == transform(path.with_suffix('.portal-upstream').read_text())
 
 def transform(source):
     if hashlib.sha256(source.encode()).hexdigest() != BASE_SHA256:

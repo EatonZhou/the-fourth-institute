@@ -6,6 +6,7 @@ import pytest
 from management_portal.execution.native_options import KimiOptions
 from management_portal.execution.kimi_backend import KimiBackend
 from management_portal.execution.provider_turn_usage import kimi_turn_usage, read_kimi_turn_usage
+from management_portal.kimi_code_client import KimiCodeClient, KimiCodeTurnFailed
 
 POLICY = {'version': 1, 'text_only': True, 'context': 'fresh'}
 @dataclass
@@ -31,8 +32,13 @@ def test_ordinary_path_keeps_tools():
     result = KimiOptions().prepare(Invocation(Request({'runtime_settings': {}, 'is_owner': True}))).request.runtime_options
     assert 'Bash' in result['tools'] and result['permission_mode'] == 'yolo'
 
-def client(rows):
-    return SimpleNamespace(update_session_profile=Mock(), get_snapshot=Mock(return_value={'session':{'agent_config':{'tools':[],'permission_mode':'manual'}}}), _request=Mock(return_value={'tools':rows}))
+def client(version=1):
+    c = KimiCodeClient('http://127.0.0.1:1/api/v1')
+    c._request = Mock(return_value={'portal_deny_all_version': version, 'tools': [{'name': 'Read', 'active': True}]})
+    c.update_session_profile = Mock()
+    # Native 2.4.1 deliberately projects only the model here.
+    c.get_snapshot = Mock(return_value={'session': {'agent_config': {'model': 'kimi-k3'}}})
+    return c
 
 def settle(c):
     backend = KimiBackend(c)
@@ -40,42 +46,72 @@ def settle(c):
     assert backend.prepare_turn_tools(invocation, None) == ([], None)
     return backend.client_turn_options(invocation, SimpleNamespace(is_cancelled=lambda:False), [])
 
-def test_all_sources_settled_empty():
-    c = client([{'name':n,'active':False} for n in ['Bash','mcp__portal__hatg_instruction','mcp__other']])
+def test_native_policy_is_selected_without_snapshot_profile_fields():
+    c = client()
     result = settle(c)
     assert result['native_tools'] == []
-    assert set(result['disabled_tools']) >= {'Bash','mcp__portal__hatg_instruction','mcp__other'}
-    assert c.update_session_profile.call_args.kwargs['permission_mode'] == 'manual'
+    assert result['deny_all_tools'] is True
+    c.get_snapshot.assert_not_called()
+    c.update_session_profile.assert_not_called()
+    c._request.assert_called_once_with('GET', 'tools', query={'session_id': 'test'}, timeout=15.0)
 
-@pytest.mark.parametrize('rows', [[{'name':'Bash','active':True}], [{'name':'mcp__portal__x','active':True}], [{'name':'mcp__foreign','active':True}], [{'name':'unknown'}], [None]])
-def test_unknown_or_active_fails_before_prompt(rows):
-    with pytest.raises(ValueError, match='active or unverified'): settle(client(rows))
-
-def test_profile_backfill_is_rejected():
-    c = client([]); c.get_snapshot.return_value['session']['agent_config']['tools']=['Read']
-    with pytest.raises(ValueError, match='profile was not settled'): settle(c)
+@pytest.mark.parametrize('version', [None, True, '1', 0, 2])
+def test_unknown_capability_fails_before_prompt(version):
+    with pytest.raises(KimiCodeTurnFailed, match='native deny-all-tools'): settle(client(version))
 
 def test_backend_rejects_post_prepare_tool_injection():
     request = SimpleNamespace(runtime_options={'execution_constraints':POLICY, 'tools':['Read'], 'permission_mode':'yolo'},
                               session=SimpleNamespace(mode='stateless'), input_media=())
-    c = client([])
+    c = client()
     with pytest.raises(ValueError, match='final native options'):
         KimiBackend(c).execute(SimpleNamespace(request=request,session=SimpleNamespace()), None)
     c.update_session_profile.assert_not_called()
 
-def test_invalid_tool_response_is_not_an_empty_catalog():
-    c = client([]); c._request.return_value = {'other':[]}
-    with pytest.raises(ValueError, match='unverified'): settle(c)
+def test_invalid_tool_response_is_not_a_policy_capability():
+    c = client(); c._request.return_value = {'other':[]}
+    with pytest.raises(KimiCodeTurnFailed, match='native deny-all-tools'): settle(c)
 
-def test_receipt_only_after_successful_turn(monkeypatch):
-    from management_portal.execution.backend_contracts import BackendResult
-    from management_portal.execution.native_socket_backend import NativeSocketBackend
-    request = SimpleNamespace(runtime_options={'execution_constraints':POLICY,'tools':[],'permission_mode':'manual'},
-        session=SimpleNamespace(mode='stateless'),input_media=(),operation='turn')
-    invocation = SimpleNamespace(request=request,session=SimpleNamespace(backend_route_id='',backend_session_id='existing'))
-    monkeypatch.setattr(NativeSocketBackend,'execute',lambda *a: BackendResult(output={'message':'ok'}))
-    result = KimiBackend(client([])).execute(invocation,None)
-    assert result.output['execution_constraints_receipt']['settled_tools']==[]
+@pytest.mark.parametrize('bad_receipt', [False, True])
+def test_one_prompt_requires_its_own_native_receipt(tmp_path, bad_receipt):
+    from tests.cases.test_kimi_code_client import ScriptedKimiCodeClient, _snapshot, live_answer
+    receipt = {'version': 1, 'policy': 'deny_all', 'session_id': 's',
+        'prompt_id': 'wrong' if bad_receipt else 'prompt-1', 'effective_tools': [], 'source': 'kimi.native.prompt'}
+    c = ScriptedKimiCodeClient([_snapshot(seq=0, busy=False), _snapshot(seq=2, busy=False, reason='completed',
+        messages=[{'id': 'user-1', 'role': 'user', 'content': []}])], tmp_path)
+    c.live_frames = live_answer('answer')
+    original = c._request
+    def request(method, path, payload=None, **kwargs):
+        if path == 'tools': return {'portal_deny_all_version': 1}
+        value = original(method, path, payload, **kwargs)
+        if path.endswith('/prompts'): value['metadata'] = {'portal_tool_policy': receipt}
+        return value
+    c._request = request
+    if bad_receipt:
+        events = []
+        with pytest.raises(KimiCodeTurnFailed, match='receipt missing or mismatched'):
+            c.run_turn(session_id='s', prompt='input', native_tools=[], permission_mode='manual', deny_all_tools=True, event_callback=events.append)
+        assert events[0]['method'] == 'turn/started'
+        assert events[0]['params']['turn']['id'] == 'prompt-1'
+    else:
+        result = c.run_turn(session_id='s', prompt='input', native_tools=[], permission_mode='manual', deny_all_tools=True)
+        output = KimiBackend(c).turn_output(result)
+        assert output['execution_constraints_receipt']['native_policy'] == receipt
+        assert output['execution_constraints_receipt']['settled_tools'] == []
+    prompts = [item for item in c.requests if item[1].endswith('/prompts')]
+    assert len(prompts) == 1
+    assert prompts[0][2]['deny_all_tools'] is True
+
+def test_ordinary_result_does_not_get_a_restricted_receipt():
+    output = KimiBackend(client()).turn_output(SimpleNamespace(response='answer', turn_id='p', tool_policy_receipt=None))
+    assert 'execution_constraints_receipt' not in output
+
+def test_restricted_error_cannot_start_continuation():
+    from management_portal.execution.provider_continuation import provider_error_continuation
+    invocation = Invocation(Request({'execution_constraints': POLICY}))
+    error = RuntimeError('temporary network failure')
+    with pytest.raises(RuntimeError) as raised:
+        provider_error_continuation(error, invocation=invocation, context=None, provider_id='kimi', turn_started=True)
+    assert raised.value is error
 
 def test_usage_model_comes_only_from_wire(tmp_path):
     wire = tmp_path/'wire.jsonl'

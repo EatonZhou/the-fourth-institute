@@ -475,6 +475,11 @@ class NativeSocketBackend:
     def read_turn_usage(self, session_id, config_dir, since):
         return None
 
+    def turn_output(self, result: Any) -> dict[str, Any]:
+        """Provider-owned successful turn fields, including verified receipts."""
+        return {"message": str(result.response or ""), "provider": self.provider_id,
+                "turn_id": str(result.turn_id or "")}
+
     def turn_usage(self, result: Any, observed: ObservedTurnUsage | None) -> dict[str, Any]:
         """The turn's usage as Portal records it (see ``provider_turn_usage``)."""
 
@@ -640,11 +645,7 @@ class NativeTurnRun:
             usage = mark_provider_default(usage, model=self._requested_model())
         _report_context_usage(invocation, usage)
         return BackendResult(
-            output={
-                "message": str(result.response or ""),
-                "provider": backend.provider_id,
-                "turn_id": str(result.turn_id or ""),
-            },
+            output=backend.turn_output(result),
             backend_session_id=str(
                 result.session_id or session.backend_session_id
             ),

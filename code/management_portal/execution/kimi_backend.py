@@ -127,11 +127,17 @@ class KimiBackend(NativeSocketBackend):
             context.set_interrupt_target(session.backend_session_id)
             return BackendResult(output={"message": "", "provider": self.provider_id, "operation": "create"},
                                  backend_session_id=session.backend_session_id, backend_route_id=route)
-        result = super().execute(invocation, context)
-        if restricted and request.operation == 'turn':
-            result = replace(result, output={**result.output, 'execution_constraints_receipt': {
-                'version': 1, 'text_only': True, 'settled_tools': [], 'source': 'kimi.session_tools'}})
-        return result
+        return super().execute(invocation, context)
+
+    def turn_output(self, result):
+        output = super().turn_output(result)
+        receipt = getattr(result, 'tool_policy_receipt', None)
+        if receipt is not None:
+            output['execution_constraints_receipt'] = {
+                'version': 1, 'text_only': True, 'settled_tools': [],
+                'source': 'kimi.native.prompt', 'native_policy': receipt,
+            }
+        return output
 
     def deliver_turn_input(self, **kwargs):
         if self._account_client is None:
@@ -163,18 +169,8 @@ class KimiBackend(NativeSocketBackend):
         if kimi_text_only(options):
             if catalog: raise ValueError('Kimi text_only cannot offer Portal tools')
             client = self.client_factory()
-            client.update_session_profile(invocation.session.backend_session_id, tools=[],
-                permission_mode='manual', model=str(options.get('model') or ''))
-            snapshot = client.get_snapshot(invocation.session.backend_session_id)
-            profile = (snapshot.get('session') or {}).get('agent_config') or {}
-            if profile.get('tools') != [] or profile.get('permission_mode') != 'manual':
-                raise ValueError('Kimi text_only profile was not settled')
-            raw = client._request('GET', 'tools', query={'session_id': invocation.session.backend_session_id}, timeout=15.0)
-            rows = raw.get('tools') if isinstance(raw, dict) else None
-            if not isinstance(rows, list) or any(not isinstance(t, dict) or not isinstance(t.get('name'), str)
-                    or not t['name'] or t.get('active') is not False for t in rows):
-                raise ValueError('Kimi text_only tools are active or unverified')
-            return {'native_tools': [], 'disabled_tools': sorted({t['name'] for t in rows}),
+            client.require_deny_all_tools(invocation.session.backend_session_id)
+            return {'native_tools': [], 'deny_all_tools': True,
                     'cancelled': context.is_cancelled,
                     'prepend_system_prompt': invocation.attach_system_context and not invocation.is_new_backend_session}
         tools = list(options.get("tools") or [])

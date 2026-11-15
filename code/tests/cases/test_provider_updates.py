@@ -507,6 +507,66 @@ def test_kimi_missing_runtime_reports_zero(monkeypatch, tmp_path):
     assert runtime.installed() == ("0",)
 
 
+def test_kimi_native_revision_stages_separately_from_running_upstream(monkeypatch, tmp_path):
+    from management_portal.execution import kimi_runtime_patch
+    monkeypatch.setattr(updates, 'RUNTIMES', tmp_path)
+    runtime = updates.KimiRuntime()
+    monkeypatch.setattr(runtime, 'prepare_prerequisites', lambda: None)
+    calls = []
+    def command(*args, **kwargs):
+        calls.append(args)
+        if args[:2] == ('npm', 'install'):
+            root = Path(args[args.index('--prefix') + 1])
+            binary = updates.npm_binary(root, 'kimi')
+            binary.parent.mkdir(parents=True)
+            binary.write_text('fake executable')
+            return ''
+        return '2.4.1' if args[-1] == '--version' else '--no-open'
+    patched = []
+    monkeypatch.setattr(updates, 'run_command', command)
+    monkeypatch.setattr(kimi_runtime_patch, 'apply', lambda root: patched.append(root))
+    root = runtime.stage(('2.4.1',))
+    assert root.name == 'kimi-code-2.4.1-portal-deny-all-v1'
+    assert patched == [root]
+    assert not (tmp_path / 'kimi-code-2.4.1').exists()
+
+
+def test_kimi_equal_upstream_version_still_requires_native_revision(monkeypatch, tmp_path):
+    from management_portal.execution import kimi_runtime_patch
+    runtime = updates.KimiRuntime()
+    monkeypatch.setattr(runtime, 'link', lambda: tmp_path)
+    monkeypatch.setattr(runtime, 'installed', lambda: ('2.4.1',))
+    monkeypatch.setattr(runtime, 'prerequisites_available', lambda: True)
+    monkeypatch.setattr(kimi_runtime_patch, 'verified', lambda root: False)
+    assert not updates._runtime_installed(runtime)
+    monkeypatch.setattr(kimi_runtime_patch, 'verified', lambda root: True)
+    assert updates._runtime_installed(runtime)
+
+
+def test_restricted_runtime_revision_defers_while_native_turns_exist(monkeypatch, tmp_path):
+    from management_portal import kimi_account_runtime
+    from contextlib import nullcontext
+    from unittest.mock import Mock
+    runtime = updates.KimiRuntime()
+    monkeypatch.setattr(updates, 'activation_window', lambda provider: nullcontext(True))
+    recover = Mock(side_effect=AssertionError('must not recover or replay existing inputs'))
+    monkeypatch.setattr(updates, '_prepare_execution_recovery', recover)
+    switch = Mock(return_value=True)
+    monkeypatch.setattr(updates, '_switch_runtime', switch)
+    monkeypatch.setattr(updates, '_active_executions', lambda provider: 0)
+    monkeypatch.setattr(kimi_account_runtime, 'runtime_busy', lambda: True)
+    root = tmp_path / 'kimi-code-2.4.1-portal-deny-all-v1'
+    assert not updates._activate('kimi', runtime, root)
+    switch.assert_not_called()
+    monkeypatch.setattr(kimi_account_runtime, 'runtime_busy', lambda: False)
+    monkeypatch.setattr(updates, '_active_executions', lambda provider: 1)
+    assert not updates._activate('kimi', runtime, root)
+    switch.assert_not_called()
+    monkeypatch.setattr(updates, '_active_executions', lambda provider: 0)
+    assert updates._activate('kimi', runtime, root)
+    recover.assert_not_called()
+
+
 def test_kimi_incompatible_protocol_is_not_ready_or_staged(monkeypatch, tmp_path):
     runtime = updates.KimiRuntime()
     monkeypatch.setattr(runtime, 'installed', lambda: ('2.5.0',))

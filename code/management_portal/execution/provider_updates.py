@@ -192,6 +192,13 @@ class ProviderRuntime:
     def ready(self):
         return True
 
+    def installation_current(self, versions):
+        """Whether the installed upstream versions include required local revisions."""
+        return True
+
+    def activation_ready(self, root):
+        return True
+
     def account_processes(self):
         return ()
 
@@ -403,6 +410,18 @@ class KimiRuntime(ProviderRuntime):
             return ("0",)
         return (run_command(str(npm_binary(link, "kimi")), "--version", timeout=60),)
 
+    def installation_current(self, versions):
+        from .kimi_runtime_patch import verified
+        return versions != ("2.4.1",) or verified(self.link())
+
+    def activation_ready(self, root):
+        from .kimi_runtime_patch import PATCH_ID
+        if Path(root).name.endswith('-' + PATCH_ID):
+            # Installing this restriction must not replay existing business turns.
+            from management_portal.kimi_account_runtime import runtime_busy
+            return not _active_executions('kimi') and not runtime_busy()
+        return True
+
     @diagnosed("dependency_install")
     def stage(self, versions: tuple[str, ...]) -> Path:
         if not self.supports_versions(versions):
@@ -410,10 +429,17 @@ class KimiRuntime(ProviderRuntime):
         self.prepare_prerequisites()
         (version,) = versions
         root = RUNTIMES / f"kimi-code-{version}"
+        native_policy_revision = version == "2.4.1"
+        if native_policy_revision:
+            from .kimi_runtime_patch import PATCH_ID
+            root = RUNTIMES / f"kimi-code-{version}-{PATCH_ID}"
         binary = npm_binary(root, "kimi")
         marker = root / ".portal-validated"
         if not marker.is_file() or not binary.is_file():
             run_command("npm", "install", "--global", "--prefix", str(root), "--omit=dev", f"@moonshot-ai/kimi-code@{version}")
+        if native_policy_revision:
+            from .kimi_runtime_patch import apply
+            apply(root)
         with phase("executable_validation"):
             if run_command(str(binary), "--version", timeout=60) != version:
                 raise RuntimeError("Kimi staged version mismatch")
@@ -566,6 +592,8 @@ def _active_executions(provider: str) -> int:
 def _activate(provider: str, runtime: ProviderRuntime, root: Path, *, prepare=False) -> bool:
     with activation_window(provider) as reserved:
         if not reserved:
+            return False
+        if not runtime.activation_ready(root):
             return False
         if _active_executions(provider):
             _prepare_execution_recovery(provider)
@@ -755,7 +783,7 @@ def _runtime_installed(runtime):
     try:
         versions = runtime.installed()
         return bool(versions and all(v and v != "0" for v in versions) and runtime.supports_versions(versions) and runtime.link().exists()
-                    and runtime.prerequisites_available())
+                    and runtime.prerequisites_available() and runtime.installation_current(versions))
     except (OSError, ValueError, RuntimeError, subprocess.SubprocessError):
         return False
 
@@ -863,7 +891,8 @@ def run_update_pass() -> dict[str, object]:
                 installed = runtime.installed()
                 state.setdefault("observations", {})[provider] = _version_observation(installed, available)
                 result["checked"][provider] = {"installed": " ".join(installed), "available": " ".join(available)}
-                if not _newer(available, installed) and runtime.supports_versions(installed):
+                if (not _newer(available, installed) and runtime.supports_versions(installed)
+                        and runtime.installation_current(installed)):
                     if pending.pop(provider, None) is not None:
                         save()
                     continue

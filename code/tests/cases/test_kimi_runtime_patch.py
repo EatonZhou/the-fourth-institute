@@ -1,6 +1,6 @@
 import subprocess
 import pytest
-from management_portal.execution.kimi_runtime_patch import transform, apply
+from management_portal.execution.kimi_runtime_patch import transform, apply, verified
 @pytest.fixture
 def patched():
     from management_portal.kimi_code_server import DEFAULT_BINARY
@@ -34,10 +34,13 @@ def test_unknown_version_and_integrity(tmp_path,patched):
     original=DEFAULT_BINARY.resolve();backup=original.with_suffix('.portal-upstream')
     p.write_text(backup.read_text() if backup.is_file() else original.read_text())
     p.chmod(0o755)
+    assert not verified(tmp_path)
     apply(tmp_path);apply(tmp_path)
+    assert verified(tmp_path)
     assert p.read_text()==patched
     assert p.stat().st_mode & 0o777 == 0o755
     p.write_text(patched+'\n// tamper')
+    assert not verified(tmp_path)
     with pytest.raises(ValueError,match='integrity'):apply(tmp_path)
 
 def test_native_receipt_is_applied_and_bound(patched):
