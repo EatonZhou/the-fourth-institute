@@ -407,7 +407,7 @@
     const button = document.createElement("button");
     button.type = "button";
     button.className = "portalNavOverflowToggle";
-    button.textContent = window.PortalI18n.t("更多 ▾");
+    button.textContent = window.PortalI18n.t("更多");
     button.setAttribute("aria-label", window.PortalI18n.t("更多导航"));
     button.setAttribute("aria-haspopup", "true");
     button.setAttribute("aria-expanded", "false");

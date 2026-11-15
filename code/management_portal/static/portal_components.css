@@ -459,15 +459,51 @@ body.portalBoardShell .portalModuleNav::-webkit-scrollbar {
 }
 
 body.portalBoardShell .portalNavOverflowToggle {
+  appearance: none;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   flex: 0 0 auto;
-  padding: 6px 8px;
+  gap: 6px;
+  height: 28px;
+  padding: 0 9px;
   border: 1px solid var(--border);
-  border-radius: 6px;
-  background: transparent;
-  color: inherit;
+  border-radius: 7px;
+  background: var(--panel);
+  color: var(--muted);
   font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
   white-space: nowrap;
   cursor: pointer;
+}
+
+body.portalBoardShell .portalNavOverflowToggle::after {
+  content: "";
+  width: 6px;
+  height: 6px;
+  margin-top: -3px;
+  border: solid currentColor;
+  border-width: 0 1.5px 1.5px 0;
+  transform: rotate(45deg);
+}
+
+body.portalBoardShell .portalNavOverflowToggle:hover,
+body.portalBoardShell .portalNavOverflowToggle[aria-expanded="true"] {
+  background: var(--panel-2);
+  color: var(--accent);
+}
+
+body.portalBoardShell .portalNavOverflowToggle[aria-expanded="true"]::after {
+  margin-top: 3px;
+  transform: rotate(225deg);
+}
+
+body.portalBoardShell .portalNavOverflowToggle:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 body.portalBoardShell .portalNavOverflowToggle[hidden] {
