@@ -34,17 +34,18 @@ def manifest_unit_text(instance, component):
     return command_unit_text(name, [str(runtime_python(code)), '-m', 'management_portal.service_runtime',
                                     '--component', component],
                              cwd=code, log_root=instance.directory('runtime'), log_name=component,
-                             environment=instance.service_environment(component))
+                             environment=instance.service_environment(component),
+                             keep_alive=True if component.startswith('kimi-account@') else None)
 
 
-def command_unit_text(name, command, *, cwd, log_root, log_name, environment=None):
+def command_unit_text(name, command, *, cwd, log_root, log_name, environment=None, keep_alive=None):
     from scripts.portal_service_control import ServiceControl
     definition = {
         "Label": ServiceControl.label(name),
         "ProgramArguments": [str(part) for part in command],
         "WorkingDirectory": str(cwd),
         "RunAtLoad": True,
-        "KeepAlive": {"SuccessfulExit": False},
+        "KeepAlive": {"SuccessfulExit": False} if keep_alive is None else keep_alive,
         "StandardOutPath": str(Path(log_root) / f"{log_name}.log"),
         "StandardErrorPath": str(Path(log_root) / f"{log_name}.error.log"),
     }

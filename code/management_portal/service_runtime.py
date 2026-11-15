@@ -86,6 +86,15 @@ def component_command(instance: InstanceManifest, component: str) -> tuple[list[
             raise FileNotFoundError('Registered service program or working directory is unavailable')
         env['PYTHONPATH'] = os.pathsep.join((str(code), str(entrypoint.parent)))
         return [python, str(entrypoint), *program['arguments']], env
+    if component.startswith('kimi-account@'):
+        from management_common.provider_account_paths import validate_identity, registered_home
+        from management_portal.kimi_account_runtime import account_for_route
+        from management_portal.kimi_code_server import DEFAULT_BINARY
+        account_id = validate_identity(component.partition('@')[2])
+        env['KIMI_CODE_HOME'] = str(registered_home(account_for_route(account_id)))
+        return [python, '-m', 'management_portal.kimi_code_server', '--account-id', account_id,
+                '--binary', str(DEFAULT_BINARY), '--port', str(instance.listener(component)['port']),
+                '--supervised'], env
     if component.startswith('codex-app-server@'):
         from management_common.provider_account_paths import validate_identity
         account = validate_identity(component.partition('@')[2])

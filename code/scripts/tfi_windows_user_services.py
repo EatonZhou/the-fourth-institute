@@ -482,7 +482,8 @@ def supervise(path):
                                        env=env, check=True, timeout=210)
                     break
                 time.sleep(0.2)
-            if reason == "stop_requested" or process.returncode == 0:
+            if reason == "stop_requested" or (process.returncode == 0 and
+                                              not value['component'].startswith('kimi-account@')):
                 break
             # Restart=on-failure parity: a failed child restarts after a
             # backoff that resets once a generation stayed up for a minute.

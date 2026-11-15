@@ -131,7 +131,7 @@ def _write_runtime_config(
     return config_path
 
 
-def account_main(account_id, binary, port):
+def account_main(account_id, binary, port, *, supervised=False):
     """Own the API adapter for exactly as long as this native account server."""
     from . import kimi_account_runtime, kimi_provider_catalog, model_api_bridge
     from .provider_daemon_host import run
@@ -146,6 +146,8 @@ def account_main(account_id, binary, port):
         env.update(KIMI_CODE_HOME=str(target))
         env.update(kimi_windows_runtime.environment())
         env = model_api_bridge.local_proxy_bypass(env)
+        if supervised:
+            kimi_account_runtime.record_service(account, binary, port)
         close_all_database_pools()
         return run([str(binary), 'web', '--no-open', '--host', '127.0.0.1', '--port', str(port),
                     '--dangerous-bypass-auth'], env=env, cwd=target)
@@ -160,11 +162,12 @@ def main(argv=None) -> int:
     parser.add_argument('--account-id')
     parser.add_argument('--binary')
     parser.add_argument('--port', type=int)
+    parser.add_argument('--supervised', action='store_true')
     args = parser.parse_args(argv or [])
     if args.account_id:
         if not args.binary or args.port is None:
             parser.error('Account mode requires its binary and port')
-        return account_main(args.account_id, Path(args.binary), args.port)
+        return account_main(args.account_id, Path(args.binary), args.port, supervised=args.supervised)
     from management_common.instance_manifest import load
     instance = load()
     component = 'kimi-code' if 'kimi-code' in instance.document['services']['components'] else 'kimi'

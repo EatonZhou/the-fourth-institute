@@ -419,8 +419,8 @@ class KimiAccounts:
         from management_portal.kimi_account_runtime import client_for_route
         from .kimi_account_usage import observe
         from .account_observation import quota_preflight
-        # Monitoring must neither launch a server nor infer authentication from
-        # process availability. The native managed provider owns this fact.
+        # Ensure the account host without creating a model session. Native auth
+        # remains authoritative; process availability is not a login observation.
         with quota_preflight():
             client = client_for_route(account.route_id, for_control=True)
         return observe(client)

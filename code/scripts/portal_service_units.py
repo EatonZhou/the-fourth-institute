@@ -109,6 +109,33 @@ def _undefine(component: str) -> None:
     remove_service_component(instance.root, component)
 
 
+def kimi_account_service(account_id: str, *, action: str) -> dict[str, Any]:
+    """Control only an account host registered in this instance's inventory."""
+    from management_common.provider_account_paths import validate_identity
+    from scripts import instance_services
+    component = 'kimi-account@' + validate_identity(account_id)
+    if action not in {'start', 'stop', 'remove'}:
+        raise ValueError('Unknown Kimi account service action')
+    instance = _instance()
+    if action == 'start':
+        instance, _ = instance_services.register_component(instance.root, component, listener_bind='127.0.0.1')
+    elif component not in instance.document['services']['components']:
+        return {'active': 'inactive', 'pid': 0}
+    instance_services.verify_definitions(instance, exact=False, selected_components=(component,))
+    name = instance_services.unit_name(instance, component)
+    control = instance_services.controller(instance)
+    if action == 'start':
+        if sys.platform == 'linux':
+            _run('systemctl', '--user', 'enable', '--now', name)
+        elif control.status(name)['active'] != 'active':
+            control.start(name)
+    else:
+        control.stop(name)
+        if action == 'remove':
+            _undefine(component)
+    return {**control.status(name), 'port': instance.listener(component)['port']}
+
+
 def install_claude_unit(runtime: Path, package: Path) -> Path:
     """Install a packaged daemon whose environment contains only its instance."""
     instance = _instance()
