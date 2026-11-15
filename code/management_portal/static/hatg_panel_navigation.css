@@ -118,7 +118,7 @@
   max-width: 100%;
 }
 
-.graphNavigationTools { position:absolute; z-index:8; top:var(--hatg-navigation-inset); right:var(--hatg-navigation-inset); padding:3px; gap:3px; border:1px solid var(--border); border-radius:9px; background:var(--panel); box-shadow:0 3px 10px #0b102017; }
+.graphNavigationTools { position:static; padding:0; gap:3px; border:0; border-radius:0; background:transparent; box-shadow:none; }
 .graphCanvasActions { display:flex; align-items:center; gap:1px; margin-left:3px; padding-left:6px; border-left:1px solid var(--border); }
 .graphCanvasActions > .graphNavigatorToolBtn { appearance:none; height:28px; border:0; border-radius:6px 0 0 6px; background:transparent; color:var(--text); padding:0 8px; font:500 12px/1 var(--portal-font); white-space:nowrap; }
 .graphCanvasActions > .graphViewportBtn { height:28px; border-radius:0 6px 6px 0; }
@@ -247,11 +247,8 @@
 }
 
 @container lineage-hatg-viewport (max-width: 520px) {
-  .graphNavigationTools:has(.graphNodeSearchCluster[data-expanded="true"]) {
-    top: calc(var(--hatg-navigation-inset) + 44px);
-    left: var(--hatg-navigation-inset);
-    right: var(--hatg-navigation-inset);
-  }
+  .graphNavigationBar:has(.graphNodeSearchCluster[data-expanded="true"]) { width:calc(100% - 2 * var(--hatg-navigation-inset)); flex-wrap:wrap; }
+  .graphNavigationTools:has(.graphNodeSearchCluster[data-expanded="true"]) { flex:1 1 100%; justify-content:stretch; }
   .graphNodeSearchCluster[data-expanded="true"] { width:100%; }
   .graphNavigationBar {
     gap: 4px;

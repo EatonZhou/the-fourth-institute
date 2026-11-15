@@ -12,7 +12,8 @@ const root=path.resolve(__dirname,'../../../management_portal');
    const t=document.createElement('template');t.innerHTML=html;
    const viewport=t.content.querySelector('#hatgViewport').cloneNode(false);
    viewport.style.cssText='height:500px;width:100%;position:relative';
-   viewport.append(t.content.querySelector('#graphNavigationBar'),t.content.querySelector('#graphNavigator'));
+   viewport.append(t.content.querySelector('#graphNavigationBar'));
+   if (!viewport.querySelector('#graphNavigator')) viewport.append(t.content.querySelector('#graphNavigator'));
    document.querySelector('#fixture').append(viewport);
   },fs.readFileSync(path.join(root,'hatg-panel.html'),'utf8'));
   for(const name of ['portal_design_system','portal_themes','portal_components',...HATG_PANEL_STYLES])
@@ -32,7 +33,7 @@ const root=path.resolve(__dirname,'../../../management_portal');
    for(const language of ['en','zh-CN']){
     await page.evaluate(language=>{
      document.documentElement.lang=language;
-     document.querySelector('#autoLayoutBtn span').textContent=language==='en'?'Tidy up':'整理';
+     document.querySelector('#autoLayoutBtn span').textContent=language==='en'?'Spacious layout':'舒展整理';
      document.querySelector('#graphRelationFilter option').textContent=language==='en'?'All Context relationships':'全部 Context 关系';
      document.querySelector('#graphLeaderJumpBtn').textContent='Leader';
      document.querySelector('#graphFocusModeBtn').textContent=language==='en'?'Neighborhood':'邻域';
@@ -43,16 +44,18 @@ const root=path.resolve(__dirname,'../../../management_portal');
      const s=await page.evaluate(()=>{
       const bar=document.querySelector('#graphNavigationBar'),m=document.querySelector('#graphMoreMenu'),b=document.querySelector('#autoLayoutBtn'),search=document.querySelector('#graphNavigator');
       const style=getComputedStyle(m);
-      return {parent:m.parentElement.tagName,display:style.display,font:style.fontFamily,fontSize:style.fontSize,bg:style.backgroundColor,border:style.borderRadius,rect:m.getBoundingClientRect().toJSON(),bar:bar.getBoundingClientRect().toJSON(),search:search.getBoundingClientRect().toJSON(),combined:bar.contains(b)&&bar.contains(document.querySelector('#graphMoreToggle')),controls:[...m.querySelectorAll('button,select')].map(e=>({rect:e.getBoundingClientRect().toJSON(),fontSize:getComputedStyle(e).fontSize}))};
+      const skin=getComputedStyle(search);
+      return {parent:m.parentElement.tagName,display:style.display,font:style.fontFamily,fontSize:style.fontSize,bg:style.backgroundColor,border:style.borderRadius,rect:m.getBoundingClientRect().toJSON(),bar:bar.getBoundingClientRect().toJSON(),search:search.getBoundingClientRect().toJSON(),searchSkin:{border:skin.borderWidth,background:skin.backgroundColor,shadow:skin.boxShadow},combined:bar.contains(b)&&bar.contains(document.querySelector('#graphMoreToggle'))&&bar.contains(search),controls:[...m.querySelectorAll('button,select')].map(e=>({rect:e.getBoundingClientRect().toJSON(),fontSize:getComputedStyle(e).fontSize}))};
      });
      samples.push({width,language,theme,...s});
      assert.equal(s.parent,'BODY','exercise the real portalled popover');
      assert.equal(s.display,'grid','portalled tools retain their scoped menu skin');
-     assert.equal(s.combined,true,'zoom, arrange and dropdown share one frame');
+     assert.equal(s.combined,true,'zoom, arrange, dropdown and search share one frame');
      assert.equal(s.fontSize,'12px');
      assert.notEqual(s.bg,'rgba(0, 0, 0, 0)');
      assert.ok(s.rect.left>=0&&s.rect.right<=width,'menu stays in viewport');
-     assert.ok(s.bar.right<=s.search.left,'search and combined toolbar do not overlap');
+     assert.ok(s.search.left>=s.bar.left&&s.search.right<=s.bar.right,'search stays inside the shared frame');
+     assert.deepEqual(s.searchSkin,{border:'0px',background:'rgba(0, 0, 0, 0)',shadow:'none'},'search has no second box');
      for(const c of s.controls){assert.equal(c.fontSize,'12px');assert.ok(c.rect.height>=30);assert.ok(c.rect.left>=s.rect.left&&c.rect.right<=s.rect.right);}
      if(process.env.HATG_TOOLBAR_EVIDENCE){fs.mkdirSync(process.env.HATG_TOOLBAR_EVIDENCE,{recursive:true});await page.screenshot({path:path.join(process.env.HATG_TOOLBAR_EVIDENCE,`toolbar-${width}-${language}-${theme}.png`)});}
      await page.locator('#graphRelationFilter').focus();await page.keyboard.press('Escape');
@@ -61,6 +64,7 @@ const root=path.resolve(__dirname,'../../../management_portal');
      assert.equal(await page.locator('#graphMoreToggle').evaluate(e=>e===document.activeElement),true);
      await page.keyboard.press('Enter');assert.equal(await page.locator('#graphMoreMenu').isVisible(),true);
      await page.mouse.click(5,480);assert.equal(await page.locator('#graphMoreMenu').isVisible(),false);
+     if(process.env.HATG_TOOLBAR_EVIDENCE)await page.screenshot({path:path.join(process.env.HATG_TOOLBAR_EVIDENCE,`closed-${width}-${language}-${theme}.png`)});
     }
    }
   }
@@ -72,7 +76,7 @@ const root=path.resolve(__dirname,'../../../management_portal');
     const bar=document.querySelector('#graphNavigationBar').getBoundingClientRect(),search=document.querySelector('#graphNavigator').getBoundingClientRect();
     return {bar:bar.toJSON(),search:search.toJSON()};
    });
-   assert.ok(expanded.search.top>=expanded.bar.bottom || expanded.search.left>=expanded.bar.right,'expanded search does not cover the toolbar');
+   assert.ok(expanded.search.left>=expanded.bar.left&&expanded.search.right<=expanded.bar.right&&expanded.search.top>=expanded.bar.top&&expanded.search.bottom<=expanded.bar.bottom,'expanded search stays in the same frame');
    assert.ok(expanded.search.left>=0 && expanded.search.right<=width);
    await page.locator('#graphNodeSearchInput').fill('fixture query');
    assert.equal(await page.locator('#graphNodeSearchInput').inputValue(),'fixture query');
