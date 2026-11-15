@@ -1058,7 +1058,7 @@ modules:
   - id: "interface.workbenches"
     title: "工作台与投影应用"
     parent: "interface"
-    responsibility: "装载工作台区域和投影 iframe，展示地图、进展、演化并发送五字段语义焦点；独立探索前沿预览组织来源关联的工作线、介入入口和执行回执，复用原服务维护状态与结果。"
+    responsibility: "装载工作台区域和投影 iframe，展示地图、进展、演化并发送五字段语义焦点；模板工坊与商店提供编辑、发布、安装和版本更新界面；独立探索前沿预览组织来源关联的工作线、介入入口和执行回执，复用原服务维护状态与结果。"
     instruction_owners: []
     code_paths:
       - "management_portal/static/*workbench*"
@@ -1081,6 +1081,8 @@ modules:
       - "management_portal/static/hatg_panel_state.js"
       - "management_portal/static/hatg_panel_lineage_loading.js"
       - "management_portal/static/hatg_panel_template_shelf.js"
+      - "management_portal/static/template_store.*"
+      - "management_portal/static/template_workshop*"
       - "management_portal/static/hatg_panel_bindings.js"
       - "management_portal/static/hatg_panel_mount.js"
       - "management_portal/lineage.html"
@@ -2613,7 +2615,7 @@ protocols:
     example: "独立 /frontier、HATG 前沿视图或项目研究地图 → mountFrontier 按当前 Lineage/Project 加载同一共享入口 → ResolveResource/ReadResource 鉴权并内联查看来源 → D3 图与卡片共用对象 → UpdateSharedState CAS 保存并冻结投递 → DeliverMessage → GetInputState。个人布局和聚焦由 PortalPageState 保存，销毁及切换阻止旧请求更新新视图；投递回执丢失重用原请求，不根据摘要启动第二份工作。"
 
   - id: "lineage-template-view"
-    title: "Lineage 模板目录与实例化输入"
+    title: "Lineage 模板目录、商店与实例化输入"
     modules:
       - "interface.workbenches"
       - "interface.conversation"
@@ -2622,7 +2624,7 @@ protocols:
     designs: []
     related_designs:
       - "decision_b04cac4188bb"
-    description: "模板目录声明获取/应用模板的 ISA 参数，浏览器模板图按正式模板内容产生实例化输入；Lineage 校验并建立新图对象。预览中的局部图 ID 不替代实例化后的正式资源身份。提示词模板拖放由浏览器填写可编辑 Chat 草稿：输入框按当前位置插入，Resident 节点以实际落点打开聊天并追加正文，保留已有草稿和附件；异步打开后再次核对当前目标，避免串填。参数引用仅转换为待填提示，拖放不调用 ApplyTemplate，也不自动投递。显式 ApplyTemplate 仍沿服务端模板执行语义。"
+    description: "模板目录声明获取/应用模板的 ISA 参数，浏览器模板图按正式模板内容产生实例化输入；Lineage 校验并建立新图对象。工坊与商店通过模板 ISA 发布、读取和下架版本快照，按当前调用者展示安装及更新状态；安装冲突由用户选择覆盖或另存，模板与安装关系仍由 Lineage 持久保存。预览中的局部图 ID 不替代实例化后的正式资源身份。提示词模板拖放由浏览器填写可编辑 Chat 草稿：输入框按当前位置插入，Resident 节点以实际落点打开聊天并追加正文，保留已有草稿和附件；异步打开后再次核对当前目标，避免串填。参数引用仅转换为待填提示，拖放不调用 ApplyTemplate，也不自动投递。显式 ApplyTemplate 仍沿服务端模板执行语义。"
     example: "模板列表/详情 → lineage_templates/lineage_template_graph 预览 → ApplyTemplate 参数 → Lineage 返回正式图及对象 ID。"
 
   - id: "lineage-editor-metadata"
