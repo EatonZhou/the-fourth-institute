@@ -15,6 +15,27 @@ def empty_report():
     return build_report({'accounts': []}, START, END)
 
 
+def test_weekly_diagnostics_do_not_call_partial_windows_missing():
+    from scripts.provider_usage_report import weekly_cycle_diagnostics
+    account = {'weekly_cycles': [{'status': 'ongoing'}, {'status': 'not_exhausted'}],
+               'reset_evidence': [{'usable_boundary': True}]}
+    d = weekly_cycle_diagnostics(account)
+    assert d['observed_weekly_windows'] == 2 and d['measured_weekly_cycles'] == 0
+    assert d['window_status_counts'] == {'ongoing': 1, 'not_exhausted': 1}
+    assert 'window_still_ongoing' in d['evidence_gaps']
+
+
+def test_weekly_diagnostics_preserve_unmapped_scope_and_boundary_gap():
+    from scripts.provider_usage_report import weekly_cycle_diagnostics
+    d = weekly_cycle_diagnostics({'reset_evidence': [
+        {'usable_boundary': True, 'limitations': ['model_to_quota_group_unmapped']},
+        {'usable_boundary': False}]})
+    assert d['observed_weekly_windows'] == 0
+    assert d['bounded_reset_observations'] == 1
+    assert d['evidence_gaps'] == ['native_model_quota_group_map_required',
+                                  'insufficient_observed_reset_boundaries']
+
+
 def test_artifacts_use_deployment_resolver_and_have_verifiable_hashes(tmp_path, monkeypatch):
     from scripts import provider_usage_report as output
     import hashlib

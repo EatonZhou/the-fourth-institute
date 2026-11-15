@@ -9,6 +9,28 @@ from management_common.instance_manifest import current_instance
 from scripts.provider_usage_native import record_path
 
 
+def weekly_cycle_diagnostics(account):
+    """Distinguish observed windows from exhausted capacity measurements."""
+    from collections import Counter
+    cycles = account.get('weekly_cycles') or []
+    evidence = account.get('reset_evidence') or []
+    statuses = dict(Counter(c['status'] for c in cycles))
+    limitations = {v for e in evidence for v in e.get('limitations', [])}
+    bounded = sum(e.get('usable_boundary') is True for e in evidence)
+    gaps = []
+    if 'model_to_quota_group_unmapped' in limitations:
+        gaps.append('native_model_quota_group_map_required')
+    if bounded < 2:
+        gaps.append('insufficient_observed_reset_boundaries')
+    if statuses.get('ongoing'):
+        gaps.append('window_still_ongoing')
+    if statuses.get('not_exhausted'):
+        gaps.append('partial_window_not_full_capacity_measurement')
+    return {'observed_weekly_windows': len(cycles), 'window_status_counts': statuses,
+            'measured_weekly_cycles': statuses.get('measured', 0),
+            'bounded_reset_observations': bounded, 'evidence_gaps': gaps}
+
+
 def markdown(report):
     def cell(value):
         return str(value).replace('|', '\\|').replace('\n', ' ')
@@ -38,7 +60,15 @@ def markdown(report):
     for a in report['accounts']:
         for b in a['buckets']:
             lines.append(f"| {cell(a['provider'])} / {cell(a['account_id'])} | {b['period_kind']} | {cell(b['period'])} | {cell(b['model'])} | {b['usage'].get('total_tokens', 0):,} |")
-    lines += ['', '## Weekly Full Cycles', '',
+    lines += ['', '## Weekly Evidence Coverage', '',
+              '| Provider / Account | Observed weekly windows | Window statuses | Measured full cycles | Evidence gaps |',
+              '| --- | ---: | --- | ---: | --- |']
+    for a in report['accounts']:
+        d = weekly_cycle_diagnostics(a)
+        lines.append(f"| {cell(a['provider'])} / {cell(a['account_id'])} | {d['observed_weekly_windows']} | {cell(json.dumps(d['window_status_counts'], sort_keys=True))} | {d['measured_weekly_cycles']} | {cell(', '.join(d['evidence_gaps']))} |")
+    lines += ['', 'Zero measured full cycles does not mean weekly reset timestamps are absent.',
+              'Observed windows, bounded reset observations and exhausted capacity measurements are distinct.',
+              '', '## Weekly Full Cycles', '',
               'Each cycle starts full at its reset; consumption is 100% minus the lowest remaining percentage seen in it.',
               'Tokens run from the cycle start to that lowest sample. The 100% figure assumes the same model and token mix.', '',
               '"USD at 100%" restates the cycle as corrected API list-price value of the whole weekly limit (see Quota Pricing).', '',
@@ -87,6 +117,8 @@ def markdown(report):
 
 
 def write_report(report, output_root='features:provider_usage'):
+    for account in report['accounts']:
+        account['weekly_cycle_diagnostics'] = weekly_cycle_diagnostics(account)
     root = record_path(output_root)
     ensure_private_directory(root)
     stem = datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ') + '-' + uuid.uuid4().hex[:8]

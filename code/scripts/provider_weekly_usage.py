@@ -717,6 +717,7 @@ def main(argv=None, *, portal_call=None):
                                         'requests': a['requests'], 'tokens': a['totals'].get('total_tokens', 0),
                                         'measured_weekly_cycles': sum(c['status'] == 'measured'
                                                                       for c in a.get('weekly_cycles', [])),
+                                        'weekly_cycle_diagnostics': a.get('weekly_cycle_diagnostics'),
                                         'gaps': a['gaps']}
                                        for a in result['accounts']]}, ensure_ascii=False, indent=2))
     else:
