@@ -8,35 +8,53 @@ import json
 from pathlib import Path
 
 from .session_history_import import validate_codex_preservation
-from .codex_rollout_history import _is_rollback_event
+from .codex_rollout_history import _is_rollback_event, _reverse_lines
+
+
+def _native_record(line):
+    try:
+        record = json.loads(line)
+    except (ValueError, UnicodeError) as exc:
+        raise ValueError('Codex active native history contains an invalid JSON record') from exc
+    if not isinstance(record, dict) or not isinstance(record.get('payload') or {}, dict):
+        raise ValueError('Codex active native history contains an invalid record')
+    return record
 
 
 def read_native_window(path, thread_id, *, evidence=None):
     path = Path(path)
     before = path.stat()
-    items, identity = [], ''
     with path.open('rb') as source:
-        for line in source:
-            if not line.endswith(b'\n'):
-                raise ValueError('Codex native history has an incomplete record')
-            record = json.loads(line)
-            payload = record.get('payload') or {}
-            kind = record.get('type')
-            if kind == 'session_meta':
-                identity = payload.get('id') or payload.get('session_id')
-                if identity != thread_id:
-                    raise ValueError('Codex native history belongs to another session')
-            elif kind == 'compacted':
-                replacement = payload.get('replacement_history')
-                if not isinstance(replacement, list):
-                    raise ValueError('Codex native compaction history is unavailable')
-                items = list(replacement)
-            elif kind == 'response_item':
-                items.append(payload)
-            elif kind == 'event_msg' and _is_rollback_event(payload):
-                raise ValueError('Codex native rollback requires effective-history reconstruction')
+        header = _native_record(source.readline())
+        identity = header.get('payload') or {}
+        if header.get('type') != 'session_meta' or (identity.get('id') or identity.get('session_id')) != thread_id:
+            raise ValueError('Codex native history belongs to another session')
+        source.seek(-1, 2)
+        if source.read(1) != b'\n':
+            raise ValueError('Codex native history has an incomplete record')
+    # A committed replacement_history supersedes the preceding rollout. Read
+    # backwards so retired records cannot prevent preserving the actual window.
+    # Decode every record in that window strictly; never skip a damaged suffix
+    # or fall back to an older compaction after a failed newest boundary.
+    suffix, replacement = [], []
+    for line in _reverse_lines(path, max_scan_bytes=before.st_size):
+        record = _native_record(line)
+        payload = record.get('payload') or {}
+        kind = record.get('type')
+        if kind == 'compacted':
+            replacement = payload.get('replacement_history')
+            if not isinstance(replacement, list):
+                raise ValueError('Codex native compaction history is unavailable')
+            break
+        if kind == 'session_meta' and (payload.get('id') or payload.get('session_id')) != thread_id:
+            raise ValueError('Codex native history belongs to another session')
+        if kind == 'response_item':
+            suffix.append(payload)
+        elif kind == 'event_msg' and _is_rollback_event(payload):
+            raise ValueError('Codex native rollback requires effective-history reconstruction')
+    items = replacement + list(reversed(suffix))
     after = path.stat()
-    if identity != thread_id or (before.st_ino, before.st_size, before.st_mtime_ns) != (after.st_ino, after.st_size, after.st_mtime_ns):
+    if (before.st_dev, before.st_ino, before.st_size, before.st_mtime_ns) != (after.st_dev, after.st_ino, after.st_size, after.st_mtime_ns):
         raise ValueError('Codex native history changed while preserving context')
     if any(not isinstance(item, dict) or not isinstance(item.get('type'), str) for item in items):
         raise ValueError('Codex native history contains an invalid item')

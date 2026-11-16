@@ -33,6 +33,43 @@ def test_native_window_retains_compaction_ciphertext_and_tool_pairs(tmp_path):
     assert read_native_window(p,'thread')==[reasoning,call,output]
 
 
+def test_latest_native_boundary_supersedes_damaged_and_rolled_back_history(tmp_path):
+    reasoning = {'type': 'reasoning', 'encrypted_content': 'keep-exact', 'summary': []}
+    call = {'type': 'function_call', 'call_id': 'call', 'name': 'exec', 'arguments': '{"cmd":"run"}'}
+    output = {'type': 'function_call_output', 'call_id': 'call', 'output': 'keep output'}
+    p = archive(tmp_path, [record('session_meta', {'id': 'thread'}),
+        record('compacted', {'replacement_history': [{'type': 'message', 'content': 'old'}]}),
+        record('event_msg', {'type': 'thread_rolled_back'})])
+    with p.open('ab') as stream:
+        stream.write(b'{"time\n')
+        for row in [record('compacted', {'replacement_history': [reasoning]}),
+                    record('response_item', call), record('response_item', output)]:
+            stream.write((json.dumps(row) + '\n').encode())
+    assert read_native_window(p, 'thread') == [reasoning, call, output]
+    with pytest.raises(ValueError, match='another session'):
+        read_native_window(p, 'other')
+
+
+@pytest.mark.parametrize('compacted', [False, True])
+def test_damaged_effective_history_is_not_skipped_or_replaced_by_older_boundary(tmp_path, compacted):
+    rows = [record('session_meta', {'id': 'thread'})]
+    if compacted:
+        rows.append(record('compacted', {'replacement_history': []}))
+    p = archive(tmp_path, rows)
+    with p.open('ab') as stream:
+        stream.write(b'{"time\n')
+        stream.write((json.dumps(record('response_item', {'type': 'message', 'content': 'new'})) + '\n').encode())
+    with pytest.raises(ValueError, match='active native history contains an invalid JSON record'):
+        read_native_window(p, 'thread')
+
+
+def test_invalid_newest_native_boundary_never_falls_back_to_older_snapshot(tmp_path):
+    p = archive(tmp_path, [record('session_meta', {'id': 'thread'}),
+        record('compacted', {'replacement_history': []}), record('compacted', {})])
+    with pytest.raises(ValueError, match='compaction history is unavailable'):
+        read_native_window(p, 'thread')
+
+
 @pytest.mark.parametrize('change', ['wrong_session','missing_replacement','torn','rollback','missing_ciphertext'])
 def test_unknown_native_history_never_becomes_empty_success(tmp_path,change):
     rows=[record('session_meta',{'id':'thread'})]

@@ -13,6 +13,8 @@ from pathlib import Path
 from contextlib import nullcontext
 from types import SimpleNamespace
 
+from management_common.instance_manifest import load as load_instance
+
 import pytest
 
 from management_portal.execution.agent_data_store import AgentDataStore
@@ -211,6 +213,7 @@ def _restart_domain(
         "backend": "codex",
         "title": "Restart target",
         "intake_open": False,
+        "workspace_path": str(load_instance().root / "restart-target-workspace"),
     }
     history = AgentDataStore()
     history.append_agent_segments(record['resident_id'], [
