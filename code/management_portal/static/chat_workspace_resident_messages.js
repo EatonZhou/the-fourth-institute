@@ -335,11 +335,12 @@
       } else if (state === "queued") {
         const ahead = Number(status.ahead);
         const place = status.ahead === undefined || !Number.isFinite(ahead) ? "" : ahead > 0 ? `（前面还有 ${ahead} 条）` : "（下一条处理）";
-        label = phaseLabel ? `已交给 ${member} · ${phaseLabel}` : `已交给 ${member} · 排队中${place}`;
+        label = status.held === true ? `已交给 ${member} · 已暂存` : phaseLabel ? `已交给 ${member} · ${phaseLabel}` : `已交给 ${member} · 排队中${place}`;
+        if (status.held === true) body = window.PortalI18n.html`<div class="paneNote">暂存期间后续等待请求可先执行；请先在承接成员的队列中恢复，再立即注入。正在执行的工作不受影响。</div>`;
         // Disputing the Router's choice names the member that should take it, and why.
-        actions = button("family-request-inject", "立即注入",
+        actions = (status.held === true ? "" : button("family-request-inject", "立即注入",
           status.resident_id && status.message_id ? "" : "等待确认承接成员的排队消息",
-          "当前工作可接收时立即注入，否则排到下一轮；暂停接单时仍会等待")
+          "当前工作可接收时立即注入，否则排到下一轮；暂停接单时仍会等待"))
           + button("family-request-correct", "纠正 Router") + button("family-request-withdraw", "撤回");
       } else if (state === "running") {
         label = stopping ? `${member} · ${RUNTIME_PHASE_STATUS.stopping.label}` : phaseLabel ? `${member} · ${phaseLabel}` : `${member} 运行中`;

@@ -189,6 +189,34 @@ class ResidentMailboxes:
     def __init__(self, database: Any) -> None:
         self.database = database
 
+    def mailbox_holds(self, requests: Iterable[tuple[str, str]]) -> dict[tuple[str, str], bool]:
+        """Exact current waiting holds, including an unadmitted preparation.
+
+        No message body, history or unrelated queue item is loaded. A head's
+        progress supersedes its former pending Mailbox envelope.
+        """
+        wanted = list(dict.fromkeys(requests))
+        if not wanted:
+            return {}
+        with self.database.read_current() as connection:
+            rows = connection.execute(
+                "SELECT requested.resident_id, requested.message_id, CASE "
+                "WHEN work.input_message_id=requested.message_id THEN "
+                "COALESCE(work.progress_json->'mailbox_held'='true'::jsonb, false) "
+                "AND COALESCE(work.progress_json->>'submitted_at','')='' "
+                "AND COALESCE(work.progress_json->>'intake_admitted_at','')='' "
+                "AND COALESCE(work.progress_json->>'finished_at','')='' "
+                "AND COALESCE(work.progress_json->>'outcome','') NOT IN ('completed','failed','cancelled') "
+                "ELSE mailbox.place IN ('queue','group') "
+                "AND COALESCE(mailbox.item_json->'mailbox_held'='true'::jsonb, false) END AS held "
+                "FROM unnest(%s::text[], %s::text[]) requested(resident_id,message_id) "
+                "LEFT JOIN resident_execution_work work ON work.resident_id=requested.resident_id "
+                "LEFT JOIN resident_mailbox mailbox ON mailbox.resident_id=requested.resident_id "
+                "AND mailbox.message_id=requested.message_id",
+                tuple(list(column) for column in zip(*wanted)),
+            ).fetchall()
+        return {(row['resident_id'], row['message_id']): row['held'] is True for row in rows}
+
     def mailbox_accept(
         self, resident_id: str, message: Mapping[str, Any], *, group_id: str = "", position: int = 0,
     ) -> tuple[dict[str, Any], bool]:

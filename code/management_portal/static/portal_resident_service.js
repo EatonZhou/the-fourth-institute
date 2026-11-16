@@ -590,6 +590,14 @@
           ...move,
         }, keyed(payload, "queue-reorder"));
       },
+      setMailboxItemHold(payload = {}) {
+        if (typeof payload.held !== "boolean") throw new TypeError("held must be a boolean");
+        return execute("SetMailboxItemHold", {
+          resident_id: required(payload.resident_id, "resident_id"),
+          message_id: required(payload.message_id, "message_id"),
+          held: payload.held,
+        }, keyed(payload, "queue-hold"));
+      },
       // A Family request given to the wrong member goes to the one named here (decision_44cf587c1721).
       reassignFamilyRequest(payload = {}) {
         return execute("RelayFamilyMessage", {

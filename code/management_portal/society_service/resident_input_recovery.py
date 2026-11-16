@@ -442,6 +442,7 @@ def view(resident_id: str, actor: str) -> dict[str, Any]:
             **_summary(stored, item_id, fallback_author=str(item.get("author_id") or ""),
                        fallback_time=str(item.get("enqueued_at") or ""), preview=str(item.get("content_preview") or "")),
             "enqueued_at": str(item.get("enqueued_at") or ""),
+            "held": bool(item.get("held")),
         }
         if entry["kind"] == "group":
             entry["preview"] = " ".join(str(item.get("content_preview") or "").split())[:PREVIEW_CHARS]
@@ -461,6 +462,7 @@ def view(resident_id: str, actor: str) -> dict[str, Any]:
                 **_summary(message(info_id), info_id, fallback_author=str(held.get("author_id") or ""),
                            fallback_time=str(held.get("held_at") or "")),
                 "held_at": str(held.get("held_at") or ""),
+                "held": False,
             })
 
     requeueable = {

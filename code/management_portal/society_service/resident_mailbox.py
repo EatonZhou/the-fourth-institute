@@ -225,6 +225,8 @@ def check_compatible(resident_id: str, members: list[Mapping[str, Any]]) -> None
 
     if len(members) < MIN_MEMBERS:
         raise MailboxConflict(f"合并至少需要 {MIN_MEMBERS} 条原始消息")
+    if len({resident_execution_work.is_mailbox_held(item) for item in members}) > 1:
+        raise MailboxConflict("暂存和未暂存的消息不能合并，请先统一暂存状态")
     for item in members:
         if item.get("execution_id"):
             raise MailboxConflict("有消息已被执行领取，成员和顺序已经固定，不能合并")

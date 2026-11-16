@@ -111,7 +111,7 @@
       // Merge all uses the Mailbox selection contract (decision_15f7df737ed5).
       // The Menu still provides selection, splitting and reordering.
       const mailbox = options.mailbox
-        ? window.PortalI18n.html`<button class="workspaceQueueMailbox" type="button" data-workspace-queue-mailbox title="打开 Menu 的 Mailbox 页">在 Mailbox 中合并、拆分、调序 ›</button>`
+        ? window.PortalI18n.html`<button class="workspaceQueueMailbox" type="button" data-workspace-queue-mailbox title="打开 Mailbox，暂存排队消息或把请求移到队首">暂存、移到队首等队列操作 ›</button>`
         : "";
       const mergeAll = options.mergeAll && cfg.items.filter(item => item.kind !== "info").length >= 2
         ? window.PortalI18n.html`<button class="portalButton is-compact workspaceQueueBtn" type="button" data-workspace-queue-merge-all ${cfg.actionInFlight ? "disabled" : ""} title="合并全部待处理请求和群体消息，不包含背景 info；至少需要两项">合并所有</button>`
@@ -124,8 +124,8 @@
         const contentHtml = workspaceQueueItemContentHtml(item, options);
         const disabled = !actionId || cfg.actionInFlight;
         return window.PortalI18n.html`<div class="workspaceQueueItem">
-          <div class="workspaceQueueText" title="${escapeHtml(message)}"><span class="workspaceQueueMeta">#${idx + 1} ${escapeHtml(workspaceQueueItemLabel(item, options))}</span><div class="workspaceQueueContent">${contentHtml}</div></div>
-          ${canInject ?window.PortalI18n.html`<button class="portalButton is-compact workspaceQueueBtn" type="button" data-workspace-queue-inject="${escapeHtml(actionId)}" ${disabled ? "disabled" : ""} title="立即移出队列；当前执行可接收时注入，否则下一轮处理">立即注入</button>` : ""}
+          <div class="workspaceQueueText" title="${escapeHtml(message)}"><span class="workspaceQueueMeta">#${idx + 1} ${escapeHtml(workspaceQueueItemLabel(item, options))}${item.held === true ? window.PortalI18n.html` · <span title="已暂存，后续等待请求可先执行；请在队列操作中恢复">已暂存</span>` : ""}</span><div class="workspaceQueueContent">${contentHtml}</div></div>
+          ${canInject && item.held !== true ?window.PortalI18n.html`<button class="portalButton is-compact workspaceQueueBtn" type="button" data-workspace-queue-inject="${escapeHtml(actionId)}" ${disabled ? "disabled" : ""} title="立即移出队列；当前执行可接收时注入，否则下一轮处理">立即注入</button>` : ""}
           <button class="portalButton is-compact workspaceQueueBtn" type="button" data-workspace-queue-delete="${escapeHtml(actionId)}" ${disabled ? "disabled" : ""} title="${escapeHtml(cfg.delete_title || window.PortalI18n.t("删除这条排队消息"))}">${escapeHtml(cfg.delete_label || window.PortalI18n.t("删除"))}</button>
         </div>`;
       }).join("")}

@@ -110,6 +110,16 @@ async function main() {
   const button = () => panel.workspace.root.querySelector('[data-portal-message-action="family-request-inject"]');
   const injections = () => calls.filter(c => c.instruction === 'InjectMailboxItem');
   try {
+    message.relay.held = true;
+    render();
+    assert.equal(button(), null, 'held member copy has no injection bypass');
+    assert.match(panel.workspace.root.textContent, /已暂存/);
+    assert.match(panel.workspace.root.textContent, /先.*恢复.*立即注入/);
+    assert.equal(injections().length, 0, 'rendering a held request sends no business operation');
+    message.relay.held = false;
+    render();
+    assert.ok(button(), 'restored copy offers injection again');
+    delete message.relay.held;
     render();
     assert.ok(button(), 'queued facade request has an immediate-injection button');
     assert.equal(button().textContent, '立即注入');

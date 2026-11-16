@@ -97,10 +97,41 @@ def is_execution_held(job: Mapping[str, object]) -> bool:
         not submitted_execution_id(job)
         and (
             is_intake_held(job)
+            or is_mailbox_held(job)
             or str(job.get("activation_policy") or "enqueue_and_trigger")
             not in resident_message_contract.ACTIVATION_POLICIES
         )
     )
+
+
+def is_mailbox_held(item: Mapping[str, object]) -> bool:
+    """A manual waiting-message hold; distinct from the Resident intake gate."""
+    return item.get("mailbox_held") is True
+
+
+def set_mailbox_hold(item: dict[str, Any], held: bool) -> None:
+    """Groups and their originals share one manual hold while organized."""
+    item["mailbox_held"] = held
+    for member in item.get("mailbox_members") or []:
+        set_mailbox_hold(member, held)
+
+
+def pop_next_waiting(queue: list[dict[str, Any]]) -> dict[str, Any]:
+    """Take the first runnable item, retaining an unadmitted head if all wait.
+
+    Keeping the first held item as a held preparation uses the existing
+    intake/recovery lifecycle; it does not create an Execution admission.
+    """
+    position = next((i for i, item in enumerate(queue) if not is_mailbox_held(item)), 0)
+    return queue.pop(position)
+
+
+def replace_waiting_queue(job: dict[str, Any], queue: list[dict[str, Any]], timestamp: str) -> None:
+    """Organize the same public waiting list, including its unadmitted head."""
+    if is_active(job) and is_execution_held(job):
+        promote_queue_item(job, pop_next_waiting(queue), queue, timestamp)
+    else:
+        job["queue"] = queue
 
 
 def can_preserve_for_session_restart(job: Mapping[str, object]) -> bool:
@@ -307,6 +338,7 @@ def _conversation_queue_item(
                 and str(part.get("type") or "") in {"image", "file"}
             ]
         return {
+            "held": is_mailbox_held(item),
             **{
                 key: str(preview.get(key) or "")
                 for key in ("message_id", "author_id", "content_preview", "enqueued_at")
@@ -360,6 +392,7 @@ def _conversation_queue_item(
             *media_parts,
         ],
         "enqueued_at": str(item.get("enqueued_at") or message.get("created_at") or ""),
+        "held": is_mailbox_held(item),
     }
 
 
@@ -973,6 +1006,13 @@ def write(
     delivery_message_id: str = "",
 ) -> None:
     previous = read(record)
+    # A held preparation may acquire runnable followers through ordinary
+    # delivery, manual resume, merge or recovery. Select from the same durable
+    # waiting list under the caller's Resident state lock; never admit the hold.
+    if is_active(job) and is_mailbox_held(job) and not submitted_execution_id(job):
+        waiting = public_waiting_queue(job)
+        if any(not is_mailbox_held(item) for item in waiting):
+            promote_queue_item(job, pop_next_waiting(waiting), waiting, utc_now_iso())
     previous_intents = previous.get(CONVERSATION_PROJECTION_INTENTS)
     # Projection authorization is owned exclusively by the narrow helpers
     # above. General Job transitions preserve the committed set exactly, so a
@@ -1116,6 +1156,7 @@ def public_execution_state(
         return {
             "status": "held",
             "queue_reason": (
+                "mailbox_held" if is_mailbox_held(job) else
                 resident_state.INTAKE_CLOSED_QUEUE_REASON
                 if is_intake_held(job)
                 else INVALID_ACTIVATION_REASON
@@ -1229,7 +1270,11 @@ def public_waiting_queue(job: Mapping[str, object]) -> list[dict[str, Any]]:
 
     queue = normalized_queue(job)
     if is_active(job) and is_execution_held(job):
-        return [copy.deepcopy(dict(job)), *queue]
+        from .resident_execution_storage import queue_input
+        # An unadmitted preparation re-enters this waiting list as an input,
+        # without its planned Execution, continuation or nested queue. A later
+        # runnable follower may become the head while this original waits.
+        return [queue_input(job), *queue]
     return queue
 
 

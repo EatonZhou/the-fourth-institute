@@ -617,6 +617,9 @@ class LineageDataStore:
     def mailbox_entries_by_author(self, author: str) -> list[dict[str, Any]]:
         return self.mailboxes.mailbox_entries_by_author(author)
 
+    def mailbox_holds(self, requests: Iterable[tuple[str, str]]) -> dict[tuple[str, str], bool]:
+        return self.mailboxes.mailbox_holds(requests)
+
     def mailbox_actor_activity(self, author: str, *, excluded_business_ref: str = "") -> dict[str, str]:
         return self.mailboxes.mailbox_actor_activity(author, excluded_business_ref=excluded_business_ref)
 

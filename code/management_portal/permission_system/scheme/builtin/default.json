@@ -752,6 +752,9 @@
     "ReorderMailbox": {
       "a": "@contributor"
     },
+    "SetMailboxItemHold": {
+      "a": "@contributor"
+    },
     "RequestResidentSummaryRebuild": {
       "a": "@contributor"
     },

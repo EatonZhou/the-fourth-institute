@@ -4,15 +4,15 @@ type: decision
 project: AI员工
 created_at: '2026-10-18'
 version:
-  number: 16
+  number: 17
   created_at: "2026-10-18"
   created_by:
     user: ""
     agent: "resident_7765faecc45a"
-  updated_at: "2026-11-11T16:38:38Z"
+  updated_at: "2026-11-16T09:11:01Z"
   updated_by:
     user: ""
-    agent: "resident_14295614c5be"
+    agent: "resident_2e9ea0072551"
 importance: 5
 ai_generated: false
 links:
@@ -46,6 +46,7 @@ Mailbox 指令读取和整理两种收件：User 的 Mailbox 列出这位用户�
 | `PinMailboxItem` | 是 | 置顶或取消置顶调用者 Mailbox 中的对话，最多 50 个，通知不支持置顶 | 免检 |
 | `MarkMailboxItemRead` | 是 | 把调用者 Mailbox 中的条目标为已读或未读 | 免检 |
 | `ClearMailbox` | 是 | 清空一个 Mailbox：Resident 的全部等待消息，或 User 的 Mailbox 条目与未读状态 | 对 `resident_id` 有 @contributor；对 `user_id` 有 @admin |
+| `SetMailboxItemHold` | `resident_id`、`message_id`、`held` |
 | `ReorderMailbox` | 是 | 调整 Resident 等待消息的顺序，包括移到队首 | 对 `resident_id` 有 @contributor |
 | `MergeMailboxItems` | 是 | 把若干条等待消息合并为一条 Mailbox 群体消息 | 对 `resident_id` 有 @contributor |
 | `SplitMailboxItem` | 是 | 把尚未执行的群体消息拆回原来的消息 | 对 `resident_id` 有 @contributor |
@@ -127,6 +128,17 @@ Mailbox 指令读取和整理两种收件：User 的 Mailbox 列出这位用户�
 ## 整理 Resident 的等待消息
 
 以下指令都指向 Resident Mailbox 中的具体消息。默认方案要求对目标 Resident 有 contributor；领域不以 owner、发送者或同一 Lineage 成员关系另行放行。撤回一条等待消息用 `CancelInput`。
+
+### `SetMailboxItemHold`
+
+**暂存或恢复一条尚未接单的等待消息。** 人类与 Agent 共用同一 Resident 队列时，整理者可以暂存阻塞后续请求的消息，或用调序让需要先处理的请求排到前面。
+
+- 参数：`resident_id`、`message_id`、严格布尔值 `held`；`true` 暂存，`false` 恢复。权限与其他队列整理操作相同。
+- 本操作作用于成员的等待队列；Family 门面尚未转交的路由请求不支持在门面暂存，按冲突拒绝。已转交请求的展示沿真实承接成员的等待状态传播，不另存门面暂存状态。
+- 暂存项保留原消息 ID、作者、时间、正文、附件、引用与来源，仍显示在等待列表。接单跳过暂存项，选择顺序中的下一条可执行请求；全部暂存时不开始新的工作。服务重启、新消息到达和后台恢复不解除暂存。
+- 恢复改变同一消息的暂存状态，不重新发送、不取消后重建，也不自动置顶；需要提前时另用 `ReorderMailbox`。已接单或正在执行的消息不能暂存，不抢占当前工作。
+- 暂存状态不同的项不能合并；同为暂存的项合并后仍暂存，拆分继承原暂存状态。暂存项不能立即注入，须先恢复；撤回与清空仍可取消暂存项。
+- `GetMailbox.pending[].held` 和聊天等待项的 `held` 表示该状态。界面提供暂存、恢复、移到队首；调序只改变等待顺序，不自动按人类或 Agent 的身份重排。
 
 ### `ReorderMailbox`
 

@@ -188,6 +188,10 @@
     return currentActorResponse(window.PortalResidentService.reorderMailbox(payload));
   }
 
+  function setMailboxItemHold(payload) {
+    return currentActorResponse(window.PortalResidentService.setMailboxItemHold(payload));
+  }
+
   // The Mailbox tab: read what waits and what ran, and put a stopped or failed round back.
   function loadMailbox(residentId) {
     return currentActorResponse(window.PortalResidentService.mailbox(residentId));
@@ -1959,6 +1963,7 @@
     mergeMailboxItems,
     splitMailboxItem,
     reorderMailbox,
+    setMailboxItemHold,
     loadMailbox,
     requeueMessage,
     loadMessage,

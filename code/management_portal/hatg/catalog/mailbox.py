@@ -41,7 +41,7 @@ DECLARATIONS = (
           "每项含稳定 key、source_resident_id/source_message_id（源问题身份）、resident_id/message_id（可打开的对话与问题）、"
           "kind、created_at、可选 title 与相对 url；不含问题正文或答案。Family 展示沿用源问题身份，不重复提醒"),
         P("pending", "array", "带 resident_id 时：等待中的项，先是队列中的请求与群体（按处理顺序），再是等待中的 info；"
-          "每项有 kind（request、group、info）、message_id、author_id、created_at、preview，群体另有 members"),
+          "每项有 kind（request、group、info）、message_id、author_id、created_at、preview、held（手动暂存，info 为 false），群体另有 members"),
         P("active", "object", "带 resident_id 时：正在处理的一轮，请求与随它送达的 info（infos）；没有时为空"),
         P("recent", "array", "带 resident_id 时：最近结束的几轮，新的在前：请求、随行 info、结果 state（completed、cancelled、failed）、"
           "finished_at，以及能否放回队列 can_requeue"),
@@ -93,6 +93,13 @@ DECLARATIONS = (
         R("items", "array", "调整后的队列"), R("revision", description="调整后等待顺序的标识，与 GetMailbox 的 revision 相同"),
         R("reordered", "boolean", "顺序是否有变化"),
     ), mutates=True, target="resident_id", owner="lineage"),
+    _d("SetMailboxItemHold", ON_RESIDENT, "暂存或恢复一条尚未接单的等待消息。暂存项保留原消息和相对顺序，自动执行跳过它；恢复不置顶。"
+        "已接单、执行中、info 或 Family 门面路由请求不能暂存。", (
+        R("resident_id", description="Mailbox 所属的 Resident"), R("message_id", description="顶层等待消息或群体 ID"),
+        R("held", "boolean", "true 暂存，false 恢复"),
+    ), (R("resident_id"), R("message_id"), R("held", "boolean"), R("changed", "boolean", "是否改变暂存状态"),
+        R("items", "array", "更新后的等待队列，含 held"), R("revision", description="更新后的等待队列标识")),
+       mutates=True, target="resident_id", owner="lineage"),
     _d("MergeMailboxItems", ON_RESIDENT, "把若干条等待消息合并为一条 Mailbox 群体消息，放在其中最早一条的位置；成员原文与作者不变。"
         "不同发送者的消息也可合并：群体输入写明每条的发送者，由收到的 Resident 判断；单一发送者的群体按该发送者执行，多发送者的群体按整理者执行。", (
         R("resident_id", description="Mailbox 所属的 Resident"),

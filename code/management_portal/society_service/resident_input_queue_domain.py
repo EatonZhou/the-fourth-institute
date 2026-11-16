@@ -103,7 +103,7 @@ def promote_queue_after_failed_execution(
             error=runtime_error,
             updated_at=now,
         )
-    next_job = queue.pop(0)
+    next_job = resident_execution_work.pop_next_waiting(queue)
     resident_execution_work.promote_queue_item(job, next_job, queue, now)
     job["previous_execution_failure"] = {
         "execution_id": failed_execution_id,
@@ -661,6 +661,9 @@ def inject_queued_input_into_active_turn(
             return accepted_delivery(resident_id, message_id, injected=True, already_injected=True)
         if selected is None:
             raise KeyError("queue item not found")
+        if resident_execution_work.is_mailbox_held(selected):
+            from .resident_mailbox import MailboxConflict
+            raise MailboxConflict("这条消息已暂存，请先恢复再注入")
         if not resident_execution_work.is_active(job):
             raise ValueError("当前 Resident 没有活动 turn，不能插入")
         if not resident_execution_provider.provider_for(record).capabilities.supports_active_turn_input:

@@ -373,7 +373,7 @@ def _finalize_applied_execution(
         now = resident_domain_common.now_iso()
         queue = resident_execution_work.waiting_input_queue(job)
         if queue:
-            next_job = queue.pop(0)
+            next_job = resident_execution_work.pop_next_waiting(queue)
             resident_execution_work.promote_queue_item(
                 job,
                 next_job,
@@ -580,7 +580,8 @@ def _claim_job(resident_id: str, continuation_id: str, claimed: _ContinuationJob
         if not record:
             return False
         job = resident_execution_work.read(record)
-        if not resident_execution_work.matches_continuation(job, continuation_id):
+        if (not resident_execution_work.matches_continuation(job, continuation_id)
+                or resident_execution_work.is_execution_held(job)):
             return False
         if resident_restart_handoff.pending(record, job):
             return False
@@ -849,7 +850,7 @@ def _run_compaction(
         now = resident_domain_common.now_iso()
         queue = resident_execution_work.waiting_input_queue(job)
         if queue:
-            next_job = queue.pop(0)
+            next_job = resident_execution_work.pop_next_waiting(queue)
             resident_execution_work.promote_queue_item(
                 job,
                 next_job,

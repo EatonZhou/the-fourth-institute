@@ -221,20 +221,24 @@
       return window.PortalI18n.html`<button class="mailboxRead" type="button" data-mailbox-action="open" aria-haspopup="dialog" aria-label="${label}"><span class="mailboxPreview">${escapeHtml(item.preview || window.PortalI18n.t("（没有文字）"))}${item.attachments ? window.PortalI18n.html` <span class="mailboxAttachCount">附件 ${Number(item.attachments)}</span>` : ""}</span><span class="mailboxReadLabel">${label}</span></button>`;
     }
 
-    function pendingHtml(item, organize) {
+    function pendingHtml(item, organize, firstId) {
       const id = item.message_id;
       const movable = organize && item.kind !== "info";
+      const first = firstId === id;
       const actions = organize ? window.PortalI18n.html`<span class="mailboxItemActions">
+          ${movable ? window.PortalI18n.html`<button class="portalButton is-compact" type="button" data-mailbox-action="first" ${state.busy || first ? "disabled" : ""} title="排到其他待处理请求之前，不打断正在执行的工作">移到队首</button>` : ""}
+          ${movable && typeof item.held === "boolean" && protocol.setMailboxItemHold ? window.PortalI18n.html`<button class="portalButton is-compact" type="button" data-mailbox-action="${item.held ? "resume" : "hold"}" ${state.busy ? "disabled" : ""} title="${item.held ? "恢复后按当前队列顺序等待处理" : "保留消息，暂时跳过，后面的请求可继续处理"}">${item.held ? window.PortalI18n.t("恢复") : window.PortalI18n.t("暂存")}</button>` : ""}
           ${item.kind === "group" ? window.PortalI18n.html`<button class="portalButton is-compact" type="button" data-mailbox-action="split" ${state.busy ? "disabled" : ""}>拆分</button>` : ""}
           <button class="portalButton is-compact" type="button" data-mailbox-action="withdraw" ${state.busy ? "disabled" : ""}>撤回</button>
         </span>` : "";
-      return window.PortalI18n.html`<li class="mailboxItem" data-mailbox-item="${escapeHtml(id)}" data-kind="${escapeHtml(item.kind)}"${movable
+      return window.PortalI18n.html`<li class="mailboxItem" data-mailbox-item="${escapeHtml(id)}" data-kind="${escapeHtml(item.kind)}" data-held="${item.held === true}"${movable
         ? window.PortalI18n.text` draggable="true" tabindex="0" aria-keyshortcuts="Alt+ArrowUp Alt+ArrowDown" aria-label="${escapeHtml(`${kindLabel(item)}：${item.preview || ""}`)}，可拖动或用 Alt+方向键调整顺序"`
         : ""}>
         <div class="mailboxRow">
           <span class="mailboxGrip" aria-hidden="true">${movable ? "⠿" : ""}</span>
           ${movable ? window.PortalI18n.html`<input type="checkbox" data-mailbox-select aria-label="选择这一项用于合并" ${state.selected.has(id) ? "checked" : ""} ${state.busy ? "disabled" : ""}>` : ""}
           <span class="mailboxKind" data-kind="${escapeHtml(item.kind)}">${escapeHtml(kindLabel(item))}</span>
+          ${item.held === true ? window.PortalI18n.html`<span class="mailboxState" data-state="held">已暂存</span>` : ""}
           <span class="mailboxAuthor">${authorHtml(item)}</span>
           ${timeHtml(item.created_at)}
           ${actions}
@@ -282,21 +286,22 @@
       const organize = Boolean(view.can_organize);
       const movable = movableIds();
       const selected = movable.filter(id => state.selected.has(id));
+      const mixedHold = new Set(pending.filter(item => selected.includes(item.message_id)).map(item => item.held === true)).size > 1;
       const allSelected = movable.length > 0 && selected.length === movable.length;
       const status = state.error ? window.PortalI18n.text`刷新失败：${state.error}` : window.PortalI18n.text`${pending.length} 项等待`;
       return window.PortalI18n.html`
         <div class="mailboxToolbar">
           <span class="mailboxStatus" role="status">${escapeHtml(status)}</span>
           ${organize && movable.length >= 2 ? window.PortalI18n.html`<button class="portalButton is-compact" type="button" data-mailbox-action="select-all" aria-pressed="${allSelected}" ${state.busy ? "disabled" : ""}>${escapeHtml(allSelected ? window.PortalI18n.t("取消全选") : window.PortalI18n.t("全选"))}</button>` : ""}
-          ${organize ? window.PortalI18n.html`<button class="portalButton is-compact" type="button" data-mailbox-action="merge" ${selected.length >= 2 && !state.busy ? "" : "disabled"}>合并所选${selected.length ? `（${selected.length}）` : ""}</button>` : ""}
+          ${organize ? window.PortalI18n.html`<button class="portalButton is-compact" type="button" data-mailbox-action="merge" ${selected.length >= 2 && !mixedHold && !state.busy ? "" : "disabled"} title="仅可合并暂存状态相同的消息">合并所选${selected.length ? `（${selected.length}）` : ""}</button>` : ""}
           <button class="portalButton is-compact" type="button" data-mailbox-action="refresh">刷新</button>
         </div>
         <section class="mailboxSection" data-mailbox-section="pending" aria-labelledby="mailboxPendingTitle">
           <h3 id="mailboxPendingTitle">待处理 <span class="mailboxCount">${pending.length}</span></h3>
           ${pending.length
-            ? window.PortalI18n.html`<ol class="mailboxList" data-mailbox-list="pending">${pending.map(item => pendingHtml(item, organize)).join("")}</ol>`
+            ? window.PortalI18n.html`<ol class="mailboxList" data-mailbox-list="pending">${pending.map(item => pendingHtml(item, organize, movable[0])).join("")}</ol>`
             : window.PortalI18n.html`<p class="mailboxEmpty">没有等待中的消息。</p>`}
-          ${organize && movableIds().length > 1 ? window.PortalI18n.html`<p class="mailboxHint">拖动请求或群体调整处理顺序；info 随下一条请求送达，不参与调序与合并。</p>` : ""}
+          ${organize && movable.length ? window.PortalI18n.html`<p class="mailboxHint">暂存会保留并跳过这条消息，恢复后按当前顺序等待处理；移到队首不打断正在执行的工作。也可拖动或用 Alt+方向键调序。info 随下一条请求送达，不参与调序与合并。</p>` : ""}
         </section>
         <section class="mailboxSection" data-mailbox-section="active" aria-labelledby="mailboxActiveTitle">
           <h3 id="mailboxActiveTitle">处理中</h3>
@@ -562,7 +567,7 @@
       const toggle = cardOverlay.querySelector("[data-mailbox-prompt-toggle]");
       toggle.setAttribute("aria-pressed", String(state.showPrompt));
       toggle.classList.toggle("is-active", state.showPrompt);
-      const status = card.status === "pending" ? window.PortalI18n.t("等待中") : (STATE_LABELS[card.status] || card.status);
+      const status = card.status === "pending" ? window.PortalI18n.t(card.item.held === true ? "已暂存" : "等待中") : (STATE_LABELS[card.status] || card.status);
       cardOverlay.querySelector("[data-mailbox-card-meta]").innerHTML = window.PortalI18n.html`<span class="mailboxState" data-state="${escapeHtml(card.status)}">${escapeHtml(status)}</span>
         <span class="mailboxKind" data-kind="${escapeHtml(card.item.kind)}">${escapeHtml(kindLabel(card.item))}</span>
         <span class="mailboxAuthor">${authorHtml(card.item)}</span>${timeHtml(card.item.created_at)}`;
@@ -609,6 +614,18 @@
     function act(action, id) {
       if (action === "refresh") return load();
       if (action === "open") return openCard(id);
+      if (["first", "hold", "resume"].includes(action)) {
+        const item = pendingItems().find(entry => entry.message_id === id);
+        if (!state.view?.can_organize || !item || item.kind === "info") return undefined;
+        if (action === "first") {
+          const first = movableIds()[0];
+          return first && first !== id ? reorder(id, { before_message_id: first }) : undefined;
+        }
+        if (typeof item.held !== "boolean" || !protocol.setMailboxItemHold) return undefined;
+        const held = action === "hold";
+        return run(held ? "暂存" : "恢复", () => protocol.setMailboxItemHold({ resident_id: residentId, message_id: id, held }),
+          held ? "已暂存，后面的请求可继续处理" : "已恢复，按当前队列顺序等待处理");
+      }
       if (action === "infos") {
         const key = `infos:${id}`;
         if (state.expanded.has(key)) state.expanded.delete(key);
@@ -624,6 +641,7 @@
       }
       if (action === "merge") {
         const ids = movableIds().filter(item => state.selected.has(item));
+        if (new Set(pendingItems().filter(item => ids.includes(item.message_id)).map(item => item.held === true)).size > 1) return undefined;
         return run("合并", async () => {
           await protocol.mergeMailboxItems({ resident_id: residentId, message_ids: ids });
           state.selected.clear();

@@ -1301,6 +1301,10 @@ def _relay_views(
                        and rounds[(rid, mid)]["input_state"].get("state") == "queued"}
     waiting_reviews = (get_lineage_data_store().family_quota_reviews.by_keys(waiting_facades)
                        if waiting_facades else {})
+    hold_targets = {(rid, str(rounds[(rid, mid)]["input_state"].get("grouped_into_message_id") or mid))
+                    for _, (rid, mid) in batch.holders.values()
+                    if rounds[(rid, mid)]["input_state"].get("state") == "queued"}
+    waiting_holds = get_lineage_data_store().mailbox_holds(hold_targets)
     result = {}
     for message_id, link in links.items():
         via, (member_id, member_message_id) = batch.holders[message_id]
@@ -1316,6 +1320,7 @@ def _relay_views(
         if state == "failed":
             relay["error"] = round_["input_state"].get("error") or {}
         group_id = str(round_["input_state"].get("grouped_into_message_id") or "")
+        relay["held"] = state == "queued" and waiting_holds.get((member_id, group_id or member_message_id), False)
         if group_id:
             relay["grouped_into_message_id"] = group_id
         if round_.get("withdrawn"):

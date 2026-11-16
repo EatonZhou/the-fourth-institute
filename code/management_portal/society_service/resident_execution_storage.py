@@ -23,6 +23,7 @@ PREPARATION = frozenset({
     "bootstrap_session", "working_directory", "retry_of_execution_id",
 })
 PROGRESS = frozenset({
+    "mailbox_held",
     "actor", "activation_policy", "operation",
     "execution_acknowledged", "submitted_at", "intake_admitted_at", "continuation_id", "continuation_started_at", "started_at",
     "dispatched_at", "updated_at", "finished_at", "outcome", "error", "runtime_error",
@@ -40,7 +41,7 @@ EXECUTION_PREPARATION = frozenset({"execution_request",
                               "authorization_prompt", "filesystem_scope", "fork_context_input",
                               "credits_authorization", "credits_preparation_policy"})
 QUEUE_INPUT_FIELDS = (PREPARATION - EXECUTION_PREPARATION) | frozenset({
-    "user_message_id", "actor", "activation_policy", "operation", "message",
+    "user_message_id", "actor", "activation_policy", "operation", "message", "mailbox_held",
 })
 TERMINAL = frozenset({"completed", "failed", "cancelled"})
 RECOVERY_INDEXES = {

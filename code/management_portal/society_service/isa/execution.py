@@ -39,7 +39,8 @@ def get_input_state(inv: Invocation) -> dict[str, Any]:
 def _queue_revision(items: list[Any]) -> str:
     """Names one waiting order; any arrival, removal or reorder changes it."""
 
-    ids = "\n".join(str(item.get("message_id") or "") for item in items if isinstance(item, dict))
+    ids = "\n".join(str(item.get("message_id") or "") + (":held" if item.get("held") is True else "")
+                    for item in items if isinstance(item, dict))
     return "queue-" + hashlib.sha256(ids.encode("utf-8")).hexdigest()[:16]
 
 
@@ -242,6 +243,21 @@ def merge_mailbox_items(inv: Invocation) -> dict[str, Any]:
     ))
 
 
+def set_mailbox_item_hold(inv: Invocation) -> dict[str, Any]:
+    from ..resident_mailbox import MailboxConflict
+    try:
+        result = protocol().set_mailbox_item_hold(
+            inv.argument("resident_id"), inv.caller, inv.argument("message_id"), inv.argument("held"),
+        )
+    except MailboxConflict as exc:
+        raise InstructionError("instruction.conflict", str(exc)) from exc
+    queue = result.get("queue") or {}
+    items = (queue.get("items") if isinstance(queue, dict) else queue) or []
+    return {"resident_id": inv.argument("resident_id"), "message_id": inv.argument("message_id"),
+            "held": result["held"], "changed": result["changed"],
+            "items": items, "revision": _queue_revision(items)}
+
+
 def split_mailbox_item(inv: Invocation) -> dict[str, Any]:
     return _mailbox_call(lambda: protocol().split_resident_queue_item(
         inv.argument("resident_id"), inv.caller, inv.argument("message_id"),
@@ -293,6 +309,7 @@ HANDLERS = {
     "CancelSubagent": cancel_subagent,
     "ClearMailbox": clear_mailbox,
     "ReorderMailbox": reorder_mailbox,
+    "SetMailboxItemHold": set_mailbox_item_hold,
     "MergeMailboxItems": merge_mailbox_items,
     "SplitMailboxItem": split_mailbox_item,
     "RequeueMessage": requeue_message,

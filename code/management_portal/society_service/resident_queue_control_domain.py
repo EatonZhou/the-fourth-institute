@@ -209,7 +209,7 @@ def reorder_resident_queue(
         if not record:
             raise KeyError("resident not found")
         job = resident_execution_work.read(record)
-        queue = resident_execution_work.normalized_queue(job)
+        queue = resident_execution_work.public_waiting_queue(job)
         if not queue:
             raise ValueError("等待队列为空，没有可以调序的消息")
         ids = [str(item.get("user_message_id") or "") for item in queue]
@@ -222,13 +222,54 @@ def reorder_resident_queue(
         )
         if wanted != ids:
             by_id = {str(item.get("user_message_id") or ""): item for item in queue}
-            job["queue"] = [by_id[item] for item in wanted]
+            resident_execution_work.replace_waiting_queue(job, [by_id[item] for item in wanted], now)
             job["updated_at"] = now
             resident_execution_work.write(record, job)
             record["session_state"] = resident_record_domain.record_backend_session_state(record)
             record["updated_at"] = now
             resident_record_domain.save_resident_record(record)
     return resident_input_queue_domain.resident_operation_result(target.resident_id, reordered=wanted != ids, order=wanted)
+
+
+def set_mailbox_item_hold(resident_id: str, actor: str, message_id: str, held: bool) -> dict[str, Any]:
+    """Hold/resume one unadmitted request without changing its queue position."""
+    if type(held) is not bool:
+        raise ValueError("held 必须是布尔值")
+    organizer = resident_mailbox.organizer_id(actor)
+    target = resident_record_domain.resolve_resident_runtime_target(resident_id, actor, require_visible=True)
+    now = resident_domain_common.now_iso()
+    with resident_record_domain.state_lock(target.resident_id):
+        record = resident_record_domain.find_resident(target.resident_id)
+        if not record:
+            raise KeyError("resident not found")
+        if not resident_access.can_manage(record, organizer):
+            raise PermissionError("只有对该 Resident 有整理权限的主体可以暂存或恢复消息")
+        if family_facade.is_facade(record):
+            raise resident_mailbox.MailboxConflict("Family 门面的路由请求不属于成员等待队列，不能在门面暂存")
+        job = resident_execution_work.read(record)
+        head = str(job.get("user_message_id") or "") == message_id
+        selected = job if head and resident_execution_work.is_execution_held(job) else next(
+            (item for item in resident_execution_work.normalized_queue(job)
+             if item.get("user_message_id") == message_id), None)
+        if (selected is None or selected.get("submitted_at") or selected.get("intake_admitted_at")
+                or (selected is not job and selected.get("execution_id"))):
+            raise resident_mailbox.MailboxConflict("这条消息已被接单或不在等待队列中，不能暂存或恢复")
+        changed = resident_execution_work.is_mailbox_held(selected) != held
+        if changed:
+            resident_execution_work.set_mailbox_hold(selected, held)
+            if selected is not job:
+                queue = resident_execution_work.normalized_queue(job)
+                for item in queue:
+                    if item.get("user_message_id") == message_id:
+                        resident_execution_work.set_mailbox_hold(item, held)
+                job["queue"] = queue
+            job["updated_at"] = now
+            resident_execution_work.write(record, job)
+            record["updated_at"] = now
+            resident_record_domain.save_resident_record(record)
+    return resident_input_queue_domain.resident_operation_result(
+        target.resident_id, message_id=message_id, held=held, changed=changed,
+    )
 
 
 def inject_resident_queue_input_into_active_turn(
@@ -314,7 +355,7 @@ def merge_resident_queue_items(resident_id: str, actor: str, message_ids: Iterab
         if not resident_access.can_manage(record, organizer):
             raise PermissionError("只有对该 Resident 有整理权限的主体可以合并消息")
         job = resident_execution_work.read(record)
-        queue = resident_execution_work.normalized_queue(job) if resident_execution_work.is_active(job) else []
+        queue = resident_execution_work.public_waiting_queue(job) if resident_execution_work.is_active(job) else []
         members = resident_mailbox.expand(queue, ids)
         resident_mailbox.check_compatible(target.resident_id, members)
         messages = {
@@ -330,7 +371,7 @@ def merge_resident_queue_items(resident_id: str, actor: str, message_ids: Iterab
         ]
         remaining = [entry for entry in queue if str(entry.get("user_message_id") or "") not in selected]
         remaining.insert(position, item)
-        job["queue"] = remaining
+        resident_execution_work.replace_waiting_queue(job, remaining, now)
         job["updated_at"] = now
         resident_execution_work.write(record, job)
         record["session_state"] = resident_record_domain.record_backend_session_state(record)
@@ -362,7 +403,7 @@ def split_resident_queue_item(resident_id: str, actor: str, group_id: str) -> di
         if not resident_access.can_manage(record, organizer):
             raise PermissionError("只有对该 Resident 有整理权限的主体可以拆分群体消息")
         job = resident_execution_work.read(record)
-        queue = resident_execution_work.normalized_queue(job) if resident_execution_work.is_active(job) else []
+        queue = resident_execution_work.public_waiting_queue(job) if resident_execution_work.is_active(job) else []
         position = next((index for index, entry in enumerate(queue)
                          if str(entry.get("user_message_id") or "") == group_id), -1)
         if position < 0:
@@ -371,7 +412,7 @@ def split_resident_queue_item(resident_id: str, actor: str, group_id: str) -> di
         if not resident_mailbox.is_group_item(item):
             raise resident_mailbox.MailboxConflict("这条消息不是群体消息")
         members = resident_mailbox.expand(queue, [group_id])
-        job["queue"] = queue[:position] + members + queue[position + 1:]
+        resident_execution_work.replace_waiting_queue(job, queue[:position] + members + queue[position + 1:], now)
         job["updated_at"] = now
         resident_execution_work.write(record, job)
         record["session_state"] = resident_record_domain.record_backend_session_state(record)

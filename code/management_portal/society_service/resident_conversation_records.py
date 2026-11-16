@@ -303,6 +303,7 @@ def protocol_queue(resident_id: str, queue: Mapping[str, Any]) -> dict[str, Any]
             "author_id": str(item.get("author_id") or "").strip(),
             "content_preview": str(item.get("content_preview") or ""),
             "enqueued_at": str(item.get("enqueued_at") or ""),
+            "held": item.get("held") is True,
         }
         content_parts = [
             copy.deepcopy(dict(part))

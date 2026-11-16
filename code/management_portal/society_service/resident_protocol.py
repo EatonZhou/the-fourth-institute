@@ -1571,6 +1571,12 @@ def requeue_resident_message(resident_id: str, actor: str, message_id: str) -> d
     )
 
 
+def set_mailbox_item_hold(resident_id: str, actor: str, message_id: str, held: bool) -> dict[str, Any]:
+    return _with_conversation_controls(
+        resident_queue_control_domain.set_mailbox_item_hold(resident_id, actor, message_id, held), resident_id, actor,
+    )
+
+
 def get_resident_mailbox(resident_id: str, actor: str) -> dict[str, Any]:
     return resident_input_recovery.view(resident_id, actor)
 
