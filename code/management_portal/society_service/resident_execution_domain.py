@@ -984,7 +984,10 @@ def _apply_completed_turn(resident_id: str, continuation_id: str, claimed: _Cont
             or ""
         ),
         str(current_job.get("user_message_id") or ""),
-        completed_at=completed_at,
+        # A streamed answer can precede the Execution's terminal commit.
+        # The persisted application receipt is observed after that commit and
+        # remains stable if finalization is retried.
+        completed_at=str(current_job.get("completion_applied_at") or completed_at),
         **_lineage_terminal_fact_fields(current_job),
     )
     return queue_advanced

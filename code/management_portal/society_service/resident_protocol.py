@@ -1316,7 +1316,7 @@ def _completed_input_reference(
         "message_id": message_id,
         "reply_message_id": str(reply.get("message_id") or ""),
         "completed_at": str(
-            reply.get("created_at") or input_state.get("updated_at") or ""
+            input_state.get("updated_at") or ""
         ),
         "request_actor": request_actor,
     }

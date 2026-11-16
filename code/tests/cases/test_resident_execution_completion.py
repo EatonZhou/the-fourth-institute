@@ -301,7 +301,7 @@ def test_resident_success_uses_shared_applied_completion_finalizer(
             "_finalize_applied_execution",
             return_value=False,
         ) as finalize,
-        mock.patch.object(resident_execution_domain, "_notify_lineage_message_completed"),
+        mock.patch.object(resident_execution_domain, "_notify_lineage_message_completed") as notify,
     ):
         resident_execution_domain.run_resident_execution(resident_id, continuation_id)
 
@@ -310,6 +310,8 @@ def test_resident_success_uses_shared_applied_completion_finalizer(
     persisted = resident_execution_work.read(resident_record)
     assert resident_execution_work.completion_applied(persisted)
     assert finalize.call_args.args[:2] == (resident_id, continuation_id)
+    assert notify.call_args.kwargs["completed_at"] == persisted["completion_applied_at"]
+    assert notify.call_args.kwargs["completed_at"] != "2026-08-17T00:01:00Z"
 
 
 @pytest.mark.parametrize("failed_saves", [1, 2])

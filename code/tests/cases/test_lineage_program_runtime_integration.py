@@ -286,7 +286,7 @@ def test_start_requeues_completed_turns_whose_output_a_stop_dropped(
 ) -> None:
     """启动后补上停止前丢失的 Resident Output 转交
 
-    上一进程完成回合后、消费终态前停止，回复没有开启 Trigger Path；新进程启动后补回这类回合，沿 Output 投递一次。已转交、仍由 Program 交接等待、超出回看窗口、由新进程完成或没有 Output 连线的回合不补。
+    上一进程完成回合后、消费终态前停止，回复没有开启 Output Trigger Path；新进程补回一次。未完成 Family 原请求不受回看窗口限制，完成观察不能替代 Output；已取消请求、旧重试结果、已转交及仍由 Program 交接等待的回合不补。
 
     :module: lineage.hatg
     :importance: P1
@@ -333,6 +333,9 @@ def test_start_requeues_completed_turns_whose_output_a_stop_dropped(
         (PRODUCER_A, "job_dropped"): "2026-10-14T00:55:00Z",
         (PRODUCER_A, "job_handoff"): "2026-10-14T00:56:00Z",
         (PRODUCER_A, "job_too_old"): "2026-10-14T00:20:00Z",
+        (PRODUCER_A, "job_old_family"): "2026-10-12T00:20:00Z",
+        (PRODUCER_A, "job_cancelled_family"): "2026-10-12T00:21:00Z",
+        (PRODUCER_A, "job_old_retry"): "2026-10-12T00:22:00Z",
         (PRODUCER_A, "job_this_process"): "2026-10-14T00:59:00Z",
         (WORK_A, "job_no_output_wire"): "2026-10-14T00:58:00Z",
     }
@@ -344,6 +347,35 @@ def test_start_requeues_completed_turns_whose_output_a_stop_dropped(
     get_agent_data_store().database.write(lambda connection: connection.execute(
         "UPDATE executions SET final_message_id='msg_final_' || execution_id",
     ))
+    # Persistent unfinished facade inputs outlive the process-start lookback.
+    from management_portal.society_service import resident_conversation_stream, trigger_paths
+    from management_portal.execution import execution_inputs
+    repository = resident_conversation_stream.get_repository()
+    for child, state in [("job_old_family", "queued"), ("job_cancelled_family", "cancelled"),
+                         ("job_old_retry", "queued")]:
+        parent = "parent_" + child
+        repository.append_message(WORK_A, {"message_id": parent, "role": "user",
+            "author_id": ACTOR, "created_at": "2026-10-12T00:00:00Z",
+            "content_parts": [{"type": "text", "text": "family request"}]})
+        repository.set_input_state(WORK_A, parent, state)
+        with state_store.get_lineage_data_store().database.transaction() as connection:
+            connection.execute("INSERT INTO family_task_dispatches VALUES (%s,%s,%s)",
+                (lineage_id, child, json.dumps({"request": {"target": PRODUCER_A,
+                    "facade": WORK_A, "trigger": "route", "facts": {"message_id": parent}}})))
+    # A work-finished observer is not proof that the independent Output ran.
+    cause = trigger_paths.execution_cause(PRODUCER_A, "job_old_family")
+    from management_portal.society_service import lineage_primitives
+    from management_common.principal import OperationIdentity
+    observed = lineage_primitives.make_event("resident.work_finished", subject_resident_id=PRODUCER_A,
+        occurred_at=finished[(PRODUCER_A, "job_old_family")], correlation="observer-only",
+        payload={"execution_id": cause["id"]}, identity=OperationIdentity.for_actor(ACTOR).to_dict())
+    trigger_paths.begin_event(lineage_id, "event_source_manual_producer", observed.to_dict(),
+        cause_kind="execution", cause_id=cause["id"])
+    store = get_agent_data_store()
+    store.reserve_execution(execution_id="execution-newer-router-attempt", agent_id=PRODUCER_A,
+        actor_ref=ACTOR, provider="codex", created_at="2026-10-13T00:00:00Z")
+    execution_inputs.attach(store, "execution-newer-router-attempt", [{"message_id": "job_old_retry",
+        "role": "primary", "accepted_at": "2026-10-13T00:00:00Z"}])
 
     class Inputs:
         """The previous process finalized every input except the one this process did."""
@@ -358,11 +390,13 @@ def test_start_requeues_completed_turns_whose_output_a_stop_dropped(
 
     monkeypatch.setattr(lost_terminal_facts, "_repository", Inputs)
     facts = lost_terminal_facts.find(started_at)
-    assert [(fact["resident_id"], fact["message_id"]) for fact in facts] == [(PRODUCER_A, "job_dropped")]
+    assert [(fact["resident_id"], fact["message_id"]) for fact in facts] == [
+        (PRODUCER_A, "job_old_family"), (PRODUCER_A, "job_dropped")]
     assert facts[0]["actor"] == ACTOR and facts[0]["terminal_status"] == "completed"
 
-    LineageBackendRuntimeAdapter().consume_terminal(ResidentTerminalFact.from_payload(facts[0]))
-    assert sent == [(WORK_A, "job_routed"), (WORK_A, "job_dropped")]
+    for fact in facts:
+        LineageBackendRuntimeAdapter().consume_terminal(ResidentTerminalFact.from_payload(fact))
+    assert sent == [(WORK_A, "job_routed"), (WORK_A, "job_old_family"), (WORK_A, "job_dropped")]
     # The routed reply named its Execution, so a later start finds nothing.
     assert lost_terminal_facts.find(started_at) == []
 
@@ -1921,7 +1955,7 @@ def test_reconcile_baselines_program_subject_then_recovers_next_completion_once(
             "completed_at": "2026-07-30T00:00:00Z",
         }
     )
-    lineage_test_support.record_terminal_execution(WORK_A, "job_work_a_exact")
+    lineage_test_support.record_terminal_execution(WORK_A, "job_work_a_exact", at=latest_completion["completed_at"])
     work_is_busy["value"] = False
 
     first = lineage_domain.reconcile_lineage_runtime(

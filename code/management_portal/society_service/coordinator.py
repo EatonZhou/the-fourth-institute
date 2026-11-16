@@ -608,7 +608,7 @@ class LineageCoordinator:
         try:
             self._consume_terminal(fact)
         except Exception as exc:
-            self._record_error(exc)
+            self._record_error(exc, f"{fact.get('resident_id', '')}/{fact.get('message_id', '')}")
             self._retry_terminal(fact)
             return
         with self._lock:

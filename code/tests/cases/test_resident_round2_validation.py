@@ -98,6 +98,7 @@ def test_reconciliation_requires_persisted_completion_evidence(
     if state in {"completed", "failed", "cancelled"}:
         assert result["completed_at"] == "2026-10-02T00:56:41Z"
     if expected == "completed":
+        assert result["evidence"]["completed_at"] == "2026-10-02T00:56:41Z"
         assert result["evidence"]["reply"] == "synthetic final"
         assert result["evidence"]["reply_message_ids"] == reply_ids
     else:
