@@ -230,9 +230,22 @@ def test_all_held_head_reorders_merges_splits_and_cancels_as_waiting_input(team,
 
 
 @pytest.mark.parametrize("nested", [False, True], ids=["direct", "nested"])
-def test_family_relay_held_comes_only_from_current_waiting_holder(grouped_family, nested):
+@pytest.mark.parametrize("legacy_text", [False, True], ids=["jsonb", "legacy-text"])
+def test_family_relay_held_comes_only_from_current_waiting_holder(grouped_family, nested, legacy_text):
     from tests.cases.test_family_mailbox_projection import _messages, _nest
     case = grouped_family
+    if legacy_text:
+        # Upgraded installations retain TEXT JSON columns; fresh test schemas
+        # use JSONB. Exercise the same Family conversation projection on both.
+        from management_portal.society_service.state_store import get_lineage_data_store
+        from management_portal.society_service.resident_execution_storage import RECOVERY_INDEXES
+        with get_lineage_data_store().database.transaction() as connection:
+            # PostgreSQL simplifies a JSONB-to-JSONB cast in index expressions;
+            # rebuild that index after recreating the legacy column type.
+            connection.execute("DROP INDEX resident_failed_execution_idx")
+            connection.execute("ALTER TABLE resident_execution_work ALTER COLUMN progress_json TYPE TEXT USING progress_json::text")
+            connection.execute("CREATE INDEX resident_failed_execution_idx " + RECOVERY_INDEXES["resident_failed_execution_idx"])
+            connection.execute("ALTER TABLE resident_mailbox ALTER COLUMN item_json TYPE TEXT USING item_json::text")
     if nested:
         _nest(case)
     assert _hold(case.team, case.member_id, case.group_id).status == "committed"
