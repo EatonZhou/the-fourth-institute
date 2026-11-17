@@ -54,7 +54,7 @@ const root = path.resolve(__dirname, '../../../management_portal/static');
       const assertFacade = id => { if (id !== 'facade') throw new Error('Wrong preference target: ' + id); };
       window.PortalInstructionClient = {execute: async (name, args) => {
         calls.push([name, args]);
-        if (name === 'GetLineage') return {lineage: {function_blocks: [{id: 'family_fixture', family: {facade: 'facade', members: members.map(m => m.resident_id)}}]}};
+        if (name === 'GetLineage') return {lineage: {nodes: [{resident_id: 'facade', title: 'Dolty'}], function_blocks: [{id: 'family_fixture', family: {facade: 'facade', members: members.map(m => m.resident_id)}}]}};
         assertFacade(args.resident_id);
         if (name === 'GetFamilyChatPreferences' && denyRead) throw new Error('Not visible');
         if (name === 'UpdateFamilyChatPreferences') {
@@ -103,6 +103,15 @@ const root = path.resolve(__dirname, '../../../management_portal/static');
       await button(id, mode, parent).locator(`xpath=self::*[@aria-pressed='${active}'][not(@disabled)]`).waitFor();
     };
     await pressed('member_0', 'mute', false);
+    const back = page.locator('.familyChatReturn');
+    assert.equal(await back.textContent(), '←Dolty');
+    const destination = new URL(await back.getAttribute('href'), page.url());
+    assert.equal(destination.searchParams.get('resident'), 'facade');
+    assert.equal(destination.searchParams.get('open_chat'), '1');
+    await page.evaluate(() => { window.originalSetResident = panel.setResident; panel.setResident = async target => { window.returnTarget = target; }; });
+    await back.click();
+    assert.equal(await page.evaluate(() => returnTarget.resident_id), 'facade', 'return uses in-panel conversation navigation');
+    await page.evaluate(() => { panel.setResident = originalSetResident; });
     assert.equal(await page.locator('[data-family-chat-members]').count(), 0, 'no facade-wide member bar');
     assert.equal(await own.locator('button').count(), 2, 'this member has M/S controls');
     assert.equal(await page.locator('[data-family-mix="exclude"]').count(), 0);
@@ -141,7 +150,17 @@ const root = path.resolve(__dirname, '../../../management_portal/static');
     await page.evaluate(() => { panel.updateFamilyStatus(memberDetail()); panel.updateFamilyStatus(facadeDetail()); });
     await page.waitForTimeout(30);
     assert.equal(await own.isVisible(), false);
+    assert.equal(await back.count(), 0, 'no stale return link on the top-level facade');
     assert.equal(await page.evaluate(() => watchers.size), 1, 'facade controls own their one shared subscription');
+    await page.evaluate(() => panel.updateFamilyStatus(memberDetail()));
+    await pressed('member_0', 'mute', true);
+    await page.evaluate(() => {
+      const nested = memberDetail('member_0', 'facade'); nested.resident.family.family_id = 'nested_family';
+      panel.updateFamilyStatus(nested);
+    });
+    await back.waitFor({state: 'visible'});
+    assert.equal(await own.isVisible(), false, 'nested facade keeps its own controls');
+    assert.match(await back.getAttribute('href'), /resident=facade/, 'nested facade returns to its direct parent');
     await page.evaluate(() => panel.updateFamilyStatus(memberDetail()));
     await pressed('member_0', 'mute', true);
     // A denied read clears the controls instead of applying someone else's state.
@@ -158,6 +177,13 @@ const root = path.resolve(__dirname, '../../../management_portal/static');
         return {width: rect.width, height: rect.height, right: rect.right, viewport: innerWidth};
       });
       assert.ok(metrics.height <= 32 && metrics.right <= metrics.viewport, JSON.stringify(metrics));
+      const heading = await page.locator('.chatTitleLine').evaluate(node => {
+        const a = node.querySelector('.familyChatReturn').getBoundingClientRect();
+        const b = node.querySelector('.paneTitle').getBoundingClientRect();
+        return {aTop: a.top, aBottom: a.bottom, bTop: b.top, bBottom: b.bottom, width: node.scrollWidth, available: node.clientWidth};
+      });
+      assert.ok(heading.aTop < heading.bBottom && heading.bTop < heading.aBottom, JSON.stringify(heading));
+      assert.ok(heading.width <= heading.available + 1, JSON.stringify(heading));
       await button('member_0', 'solo').click(); await pressed('member_0', 'solo', true);
       await button('member_0', 'solo').click(); await pressed('member_0', 'mute', true);
       if (process.env.FAMILY_CHAT_SCREENSHOTS) await page.screenshot({path: path.join(process.env.FAMILY_CHAT_SCREENSHOTS, `member-chat-${width}.png`)});

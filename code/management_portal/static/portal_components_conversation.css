@@ -556,6 +556,16 @@ button.messageQuote:focus-visible {
 .familyStatusPanel td .familyStatusDetailsToggle { flex-shrink: 0; padding: 0 3px; color: var(--muted); }
 .chatTitleLine { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; min-width: 0; }
 .chatTitleLine .paneTitle { min-width: 0; }
+.chatTitleLine.has-family-return { flex-wrap: nowrap; }
+.chatTitleLine.has-family-return .paneTitle { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.familyChatBreadcrumb { display: inline-flex; align-items: center; gap: 6px; min-width: 32px; max-width: 35%; flex-shrink: 0; font-size: 12px; }
+.familyChatBreadcrumb[hidden] { display: none; }
+.familyChatReturn { display: inline-flex; align-items: center; gap: 4px; min-width: 0; padding-block: 3px; color: var(--accent); text-decoration: none; }
+.familyChatReturnName { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.familyChatReturn > [aria-hidden], .familyChatSeparator { flex-shrink: 0; }
+.familyChatReturn:hover { text-decoration: underline; }
+.familyChatReturn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 3px; }
+.familyChatSeparator { color: var(--muted); }
 .familyMemberChatMix { display: inline-flex; flex-shrink: 0; }
 .familyMemberChatMix[hidden] { display: none; }
 .familyMemberChatMix .familyMemberMix { margin-top: 0; }

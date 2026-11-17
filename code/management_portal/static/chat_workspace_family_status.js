@@ -189,8 +189,12 @@
 
     // A member's own Chat controls its participation in its parent Family.
     // The facade retains its existing Menu/status-panel controls only.
-    function createFamilyMemberChatControls(member, root) {
+    function createFamilyMemberChatControls(member, root, titleLine = null, openFamily = null) {
       let mix = null, disposed = false;
+      const breadcrumb = document.createElement('span');
+      breadcrumb.className = 'familyChatBreadcrumb';
+      breadcrumb.hidden = true;
+      titleLine?.prepend(breadcrumb);
       function render() {
         if (disposed) return;
         root.hidden = !mix?.state.policy;
@@ -199,10 +203,39 @@
       async function resolveFamily() {
         const {lineage} = await window.PortalInstructionClient.execute('GetLineage', {lineage_id: member.lineage_id});
         if (disposed) return;
-        const family = (lineage.function_blocks || []).find(block =>
-          block.id === member.family.family_id && (block.family?.members || []).includes(member.resident_id))?.family;
+        const block = (lineage.function_blocks || []).find(block =>
+          block.family?.facade !== member.resident_id &&
+          (block.id === member.family.family_id || (block.family?.members || []).includes(member.resident_id)));
+        const family = block?.family;
         if (!family?.facade) return;
-        mix = acquireMixState(family.facade, render);
+        const facade = (lineage.nodes || []).find(node => node.resident_id === family.facade);
+        const name = facade?.title || block.title || 'Family';
+        const link = document.createElement('a');
+        link.className = 'familyChatReturn';
+        link.href = `/lineage?${new URLSearchParams({resident: family.facade, lineage: member.lineage_id, open_chat: '1'})}`;
+        link.title = name;
+        link.addEventListener('click', event => {
+          if (!openFamily || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+          event.preventDefault();
+          Promise.resolve(openFamily({resident_id: family.facade, lineage_id: member.lineage_id, title: name}))
+            .catch(error => window.PortalUI?.toast?.(error.message, 'error'));
+        });
+        const arrow = document.createElement('span');
+        arrow.textContent = '←';
+        arrow.setAttribute('aria-hidden', 'true');
+        const label = document.createElement('span');
+        label.className = 'familyChatReturnName';
+        label.textContent = name;
+        link.append(arrow, label);
+        const separator = document.createElement('span');
+        separator.className = 'familyChatSeparator';
+        separator.textContent = '/';
+        separator.setAttribute('aria-hidden', 'true');
+        breadcrumb.replaceChildren(link, separator);
+        breadcrumb.hidden = false;
+        titleLine?.classList.add('has-family-return');
+        if ((family.members || []).includes(member.resident_id) && member.family.role !== 'facade')
+          mix = acquireMixState(family.facade, render);
         render();
       }
       async function onClick(event) {
@@ -220,7 +253,8 @@
       void resolveFamily().catch(error => { if (!disposed) window.PortalUI?.toast?.(error.message, 'error'); });
       return {
         update(value) { member = value; render(); },
-        destroy() { disposed = true; mix?.release(); root.removeEventListener('click', onClick); root.replaceChildren(); root.hidden = true; },
+        destroy() { disposed = true; mix?.release(); root.removeEventListener('click', onClick); root.replaceChildren(); root.hidden = true;
+          breadcrumb.remove(); titleLine?.classList.remove('has-family-return'); },
       };
     }
 

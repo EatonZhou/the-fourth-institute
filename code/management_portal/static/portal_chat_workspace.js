@@ -2900,13 +2900,15 @@
       }
       this.familyReplyControls?.update(this.familyStatusFamily);
       const member = detail?.snapshot?.resident || detail?.resident;
-      const memberKey = !family && member?.family?.role === 'member'
+      const memberKey = member?.family?.family_id
         ? JSON.stringify([member.resident_id, member.lineage_id, member.family.family_id]) : '';
       if (this.familyChatMemberKey !== memberKey) {
         this.familyChatMemberControls?.destroy(); this.familyChatMemberControls = null;
         this.familyChatMemberKey = memberKey;
         if (memberKey) this.familyChatMemberControls = createFamilyMemberChatControls(member,
-          this.workspace.root.querySelector('[data-family-chat-member]'));
+          this.workspace.root.querySelector('[data-family-chat-member]'),
+          this.workspace.root.querySelector('.chatTitleLine'),
+          target => this.setResident(target, { load: true }));
       }
       this.familyChatMemberControls?.update(member);
       if (changed) this.familyStatusView?.refresh();
