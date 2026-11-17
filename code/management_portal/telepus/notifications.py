@@ -302,8 +302,8 @@ class Notifications:
 
     def quoted(self, actor, quote):
         from .mention_reply import fingerprint
-        external = quote.get('svr_id') or (quote.get('message_item') or {}).get('msg_id')
-        excerpt = quote.get('title') or (quote.get('message_item') or {}).get('text_item', {}).get('text') or ''
+        from .weixin_quote import quote_excerpt, quote_id
+        external, excerpt = quote_id(quote), quote_excerpt(quote)
         with self.router.connect() as c:
             base = "SELECT * FROM notification_deliveries WHERE portal_actor=? AND status='sent' "
             rows = c.execute(base + 'AND external_message_id=?', (actor, str(external))).fetchall() if external else []

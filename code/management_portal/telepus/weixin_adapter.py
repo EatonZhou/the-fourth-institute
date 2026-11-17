@@ -32,6 +32,8 @@ class WeixinAdapter:
         self.notifications = Notifications(self.router.store, self.router.portal)
         self.client_factory = client_factory
         self.budget = max(2, int(setting('weixin_send_budget', 8)))
+        from .weixin_quote import RecentQuotes
+        self.quotes = RecentQuotes()
 
     def _failure(self, actor, error):
         code = error.code if isinstance(error, WeixinError) else type(error).__name__
@@ -79,21 +81,34 @@ class WeixinAdapter:
         self.store.update(actor, context_token=str(message.get('context_token') or account['context_token']), context_at=now_iso())
         self.store.budget(chat, reset=True)
         self.router.waiting.received(chat, f'message:{local_id}')
+        from .weixin_quote import message_text
+        # ID-only quotes of this message must still carry its text (memory only).
+        self.quotes.remember(chat, local_id, message_text(message.get('item_list')))
         from .mention_reply import reply
         match = next((found for item in message.get('item_list') or []
                       if (quote := item.get('ref_msg')) and (found := self.notifications.quoted(actor, quote))), None)
         if match:
             if match['category'] == 'question':
                 from .question_answer import reply as answer
-                self._private_receipt(actor, message['message_id'], answer(self, account, message, match))
+                carry = {}
+                text = answer(self, account, message, match, carry=carry)
+                if carry.get('text'):
+                    # Quoting the rejected text itself also brings its question along.
+                    self.quotes.remember(chat, local_id, message_text(message.get('item_list')), carry['text'])
+                self._private_receipt(actor, message['message_id'], text, carried=carry.get('text'))
             else:
                 self.respond(actor, {'messages': [{'text': reply(self, account, message, match)}]})
             with self.router.store.connect() as c:
                 c.execute("INSERT INTO processed_updates(update_id,processed_at,channel) VALUES(?,?,'weixin') ON CONFLICT DO NOTHING",
                           (-local_id, now_iso()))
             return
-        text, reference = self._content(account, message)
+        text, reference, quote_block = self._content(account, message)
         local = text.strip().split(' ', 1)[0] in {'/help', '/start', '/where', '/home', '/notify'}
+        if quote_block and text.strip() and not text.strip().startswith('/'):
+            # An unmatched quote reaches the recipient as text; commands stay commands.
+            text = quote_block + '\n\n' + text
+        else:
+            quote_block = ''
         # respond() drains the durable queue in order, including the new local
         # reply. Avoid a redundant pre-flush and typing roundtrip for local commands.
         if not local:
@@ -104,7 +119,8 @@ class WeixinAdapter:
             self.flush(actor, manual=True, one=True)
         elif text:
             response = self.router.dispatch_message(chat_id=chat, telegram_user_id=account['ilink_user_id'], portal_actor=actor,
-                text=text, telegram_message_id=local_id, reply_to_telegram_message_id=reference)
+                text=text, telegram_message_id=local_id, reply_to_telegram_message_id=reference,
+                quote_text=bool(quote_block))
             send_started = time.time()
             self.respond(actor, response)
         else:
@@ -122,8 +138,12 @@ class WeixinAdapter:
         if not local:
             self.typing(actor)
 
-    def _private_receipt(self, actor, incoming_id, text):
-        """Answer/option text must never enter the durable outbound queue."""
+    def _private_receipt(self, actor, incoming_id, text, carried=None):
+        """Answer/option text must never enter the durable outbound queue.
+
+        ``carried`` is what quoting this receipt hands on (the question and the
+        user's text after a format failure); it is kept in memory only.
+        """
         from .weixin_format import format_text
         account = self.store.account(actor)
         chat = chat_key(account['ilink_bot_id'])
@@ -133,14 +153,17 @@ class WeixinAdapter:
         if len(visible) > 3700:
             visible = visible[:3700] + '\n内容较长，请回 Portal 查看完整选项。'
         try:
-            self.client_factory(account).send([{'type': 1, 'text_item': {'text': visible}}], account['context_token'],
-                client_id=f'telepus-answer-receipt-{incoming_id}')
+            result = self.client_factory(account).send([{'type': 1, 'text_item': {'text': visible}}],
+                account['context_token'], client_id=f'telepus-answer-receipt-{incoming_id}')
         except WeixinError as exc:
             raise WeixinError(exc.code, 'answer_receipt') from None
         except Exception:
             # HTTP exceptions may include the request body; never propagate it.
             raise RuntimeError('Weixin answer receipt unavailable') from None
         self.store.budget(chat, spent=True)
+        server_id = (result or {}).get('message_id')
+        if server_id:
+            self.quotes.remember(chat, self.store.local_id(chat, server_id), visible, carried)
 
     def _reopen_pending(self, chat):
         for row in self.store.pending(chat):
@@ -151,25 +174,33 @@ class WeixinAdapter:
                 self.router.store.reopen_input(item['input'])
 
     def _content(self, account, message):
-        text, reference = [], 0
+        """Return (text, quoted local id, quote block for an unmatched quote)."""
+        from .weixin_quote import UNREADABLE, block, quote_excerpt, quote_id, quote_shape
+        text, reference, quote_block = [], 0, ''
         chat = chat_key(account['ilink_bot_id'])
         for item in message.get('item_list') or []:
             quote = item.get('ref_msg') or {}
             if quote:
-                external_id = quote.get('svr_id') or (quote.get('message_item') or {}).get('msg_id')
+                external_id = quote_id(quote)
                 reference = self.store.local_id(chat, external_id) if external_id else 0
                 linked = self.router.store.linked_message(chat, reference)
                 matched_by = 'id' if linked else 'none'
-                excerpt = quote.get('title') or (quote.get('message_item') or {}).get('text_item', {}).get('text') or ''
+                excerpt = quote_excerpt(quote)
                 if not linked:
                     linked = self.router.store.linked_message_by_text(chat, excerpt)
                     if linked:
                         reference = linked['telegram_message_id']
                         matched_by = 'text'
-                if not linked and excerpt:
-                    text.append('> ' + str(excerpt).replace('\n', '\n> '))
+                carried = ''
+                if not linked:
+                    # Messages Telepus handled itself have no Portal counterpart;
+                    # hand the quoted text on rather than dropping it.
+                    carried = self.quotes.find(chat, reference, excerpt)
+                    source = 'memory' if carried else 'quote' if excerpt else 'none'
+                    quote_block = block(carried or excerpt or UNREADABLE)
                 self.router.store.append_audit('quote_received', chat_id=chat, portal_actor=account['portal_actor'],
-                    payload={'has_id': bool(external_id), 'matched_by': matched_by})
+                    payload={'has_id': bool(external_id), 'matched_by': matched_by,
+                             **({} if linked else {'text_source': source}), 'shape': quote_shape(quote, excerpt)})
             kind = item.get('type')
             if kind == 1:
                 text.append(str((item.get('text_item') or {}).get('text') or ''))
@@ -192,7 +223,7 @@ class WeixinAdapter:
                 except Exception as exc:
                     LOGGER.warning("Weixin attachment download unavailable (%s)", type(exc).__name__)
                     text.append('[附件下载失败]')
-        return '\n\n'.join(text), reference
+        return '\n\n'.join(text), reference, quote_block
 
     def _render_controls(self, chat, item):
         item = dict(item)
@@ -306,9 +337,12 @@ class WeixinAdapter:
                 if server_id:
                     local = self.store.local_id(chat, server_id)
                     link = item.get('link') or {}
+                    shown = '\n'.join(p.get('text_item', {}).get('text', '') for p in parts)
                     if link:
-                        self.router.store.link_message(chat, local, link['resident_id'], link['message_id'],
-                            excerpt='\n'.join(p.get('text_item', {}).get('text', '') for p in parts))
+                        self.router.store.link_message(chat, local, link['resident_id'], link['message_id'], excerpt=shown)
+                    else:
+                        # Local replies (commands, receipts) have no Portal source.
+                        self.quotes.remember(chat, local, shown)
                     if item.get('question_session'):
                         self.router.store.update_question_session(item['question_session'], telegram_message_id=local)
                 if item.get('attachment_token') and attachment:

@@ -341,3 +341,25 @@ def test_real_kernel_default_policy_allows_recipient_answer_and_denies_other_use
             else:
                 assert '✅ 已回答' not in receipt and audits[-1]['payload']['reason'] in ('permission', 'unavailable')
     assert calls == [('answer_alice', 'native'), ('answer_alice', 'native'), ('answer_alice', 'async')]
+
+
+@pytest.mark.parametrize('quote_receipt', [True, False])
+def test_format_failure_text_reaches_assistant_when_quoted(answers, quote_receipt, capsys):
+    r = answers
+    r.request['questions'][0]['allow_free_text'] = False
+    deliver(r, remind(r), text=PRIVATE_ANSWER, message_id=901)
+    assert not r.submissions
+    assert '未提交' in sent_text(r) and '转给他' in sent_text(r)
+    reference = {'svr_id': str(r.server.server_id + 1)} if quote_receipt else {'svr_id': '901'}
+    deliver(r, reference, text='转给他', message_id=902)
+    text = r.portal.delivered[-1][2]['content_parts'][0]['text']
+    assert text.startswith('> ') and text.endswith('\n\n转给他')
+    assert PRIVATE_QUESTION in text and PRIVATE_ANSWER in text
+    with r.notices.router.connect() as c:
+        for table in ('notification_deliveries', 'outbound_queue', 'meta'):
+            raw = json.dumps([dict(row) for row in c.execute('SELECT * FROM ' + table).fetchall()], default=str)
+            assert PRIVATE_ANSWER not in raw
+        audits = json.dumps([dict(row) for row in c.execute(
+            "SELECT * FROM audit_events WHERE event_type IN ('quote_received','question_answer')").fetchall()], default=str)
+        assert PRIVATE_ANSWER not in audits and PRIVATE_QUESTION not in audits
+    assert PRIVATE_ANSWER not in str(capsys.readouterr())

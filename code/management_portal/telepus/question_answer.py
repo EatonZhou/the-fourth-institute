@@ -7,6 +7,15 @@ from management_common.async_questions import decode_question_content, question_
 
 
 AUTHORIZATION_HINT = '这个问题要授权，请回 Portal 回答。'
+FORWARD_HINT = '如果这段话是想转给对方，引用这条消息回复“转给他”即可。'
+
+
+def forwarded(item, questions, text):
+    """What quoting a format-failure receipt hands on: the question and the user's text."""
+    titles = [str(q.get('title') or q.get('question') or q.get('header') or '').strip() for q in questions or []]
+    lines = ['回答 ' + str(item.get('title') or item.get('resident_id') or '') + ' 的问题时，这段话没能作为答案提交：']
+    lines += ['问题：' + title for title in titles if title]
+    return '\n'.join(lines + ['我的原话：' + text])
 
 
 def answer_slot_used(portal, actor, resident, answer_id):
@@ -75,12 +84,17 @@ def parse_answers(questions, text, *, approval=False):
     return parsed
 
 
-def reply(adapter, account, message, match):
-    """Consume a recognized quote, with only identifiers/outcomes in the audit."""
+def reply(adapter, account, message, match, carry=None):
+    """Consume a recognized quote, with only identifiers/outcomes in the audit.
+
+    On a format failure ``carry['text']`` receives the question and the user's
+    text, for the caller to keep in memory against the receipt.
+    """
     actor = account['portal_actor']
     resident, source = match['source_resident_id'], match['source_message_id']
     outcome, reason = 'failed', ''
     submitting = False
+    item, questions, text = {}, [], ''
     try:
         if match['is_summary']:
             reason = 'incomplete'
@@ -160,6 +174,9 @@ def reply(adapter, account, message, match):
             for index, answer in enumerate(summary, 1))
     except AnswerFormatError as exc:
         reason = 'format'
+        if carry is not None and text.strip():
+            carry['text'] = forwarded(item, questions, text)
+            return '未提交：' + str(exc) + '\n' + FORWARD_HINT
         return '未提交：' + str(exc)
     except Exception as exc:
         code = getattr(exc, 'code', '')

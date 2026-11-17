@@ -4,6 +4,7 @@ import pytest
 
 from management_portal.telepus.router_store import RouterStore
 from management_portal.telepus.quote_text import quote_text
+from management_portal.telepus.weixin_quote import quote_excerpt, quote_shape
 from management_portal.telepus.weixin_store import chat_key
 from tests.cases.test_telepus_weixin import bridge, incoming  # noqa: F401
 from tests.cases.test_telepus_bridge import chat  # noqa: F401
@@ -26,7 +27,7 @@ def test_weixin_quotes_own_input_by_both_identifiers(bridge, reference):
     assert portal.delivered[-1][2]['quote'] == {'message_id': original}
     with adapter.router.store.connect() as c:
         row = c.execute("SELECT payload_json FROM audit_events WHERE event_type='quote_received'").fetchone()
-    assert row[0] == {'has_id': True, 'matched_by': 'id'}
+    assert row[0] == {'has_id': True, 'matched_by': 'id', 'shape': quote_shape(reference, '')}
 
 
 @pytest.mark.parametrize('reference', [
@@ -45,7 +46,9 @@ def test_unique_text_match_deduplicates_same_portal_reply(bridge, reference):
     assert portal.delivered[-1][2]['content_parts'][0]['text'] == 'follow up'
     with adapter.router.store.connect() as c:
         row = c.execute("SELECT payload_json FROM audit_events WHERE event_type='quote_received'").fetchone()
-    assert row[0] == {'has_id': bool(reference.get('svr_id')), 'matched_by': 'text'}
+    assert row[0] == {'has_id': bool(reference.get('svr_id')), 'matched_by': 'text',
+                      'shape': quote_shape(reference, quote_excerpt(reference))}
+    assert 'important' not in str(row[0])
 
 
 @pytest.mark.parametrize('ambiguous', [False, True])
@@ -59,7 +62,73 @@ def test_unresolved_or_ambiguous_quote_keeps_excerpt(bridge, ambiguous):
     assert portal.delivered[-1][2]['content_parts'][0]['text'] == '> same words\n\nfollow up'
     with adapter.router.store.connect() as c:
         row = c.execute("SELECT payload_json FROM audit_events WHERE event_type='quote_received'").fetchone()
-    assert row[0] == {'has_id': True, 'matched_by': 'none'}
+    assert row[0] == {'has_id': True, 'matched_by': 'none', 'text_source': 'quote',
+                      'shape': {'keys': ['svr_id', 'title'], 'excerpt_length': len('same words')}}
+    with adapter.router.store.connect() as c:
+        delivered = c.execute("SELECT payload_json FROM audit_events WHERE event_type='message_delivered' "
+                              "ORDER BY event_id DESC LIMIT 1").fetchone()[0]
+    assert delivered['quoted'] is False and delivered['quote_text'] is True
+
+
+def own_text(adapter, server, portal, text, message_id):
+    """A message Telepus handled itself (never reached Portal), e.g. a command."""
+    incoming(adapter, server, text, message_id)
+    return {'svr_id': str(message_id)}
+
+
+@pytest.mark.parametrize('reference', [
+    # Newer clients: ID only. Older clients: nested item list or voice transcript.
+    lambda ref: ref,
+    lambda ref: {**ref, 'message_item': {'type': 1, 'item_list': [{'type': 1, 'text_item': {'text': '/where'}}]}},
+    lambda ref: {**ref, 'message_item': {'type': 3, 'voice_item': {'text': '/where'}}},
+])
+def test_quote_of_own_locally_handled_text_carries_it(bridge, reference):
+    adapter, server, portal, _ = bridge
+    ref = reference(own_text(adapter, server, portal, '/where', 7))
+    quoted_incoming(adapter, server, ref, 8)
+    message = portal.delivered[-1][2]
+    assert 'quote' not in message
+    assert message['content_parts'][0]['text'] == '> /where\n\nfollow up'
+
+
+def test_quote_of_bot_reply_matched_by_id_and_unmatched_local_reply(bridge):
+    adapter, server, portal, _ = bridge
+    incoming(adapter, server)
+    portal.answer(FACADE, portal.delivered[0][2]['message_id'], 'reply', 'Portal reply text')
+    adapter.refresh(ACTOR)
+    linked_id = server.server_id + 1
+    quoted_incoming(adapter, server, {'svr_id': str(linked_id)}, 3)
+    assert portal.delivered[-1][2]['quote'] == {'message_id': 'reply'}
+    incoming(adapter, server, '/help', 4)
+    help_id = server.server_id + 1
+    quoted_incoming(adapter, server, {'svr_id': str(help_id)}, 5)
+    message = portal.delivered[-1][2]
+    assert 'quote' not in message and message['content_parts'][0]['text'].startswith('> ')
+    assert '/notify' in message['content_parts'][0]['text']
+
+
+def test_quote_of_image_and_unreadable_quote_use_labels(bridge):
+    adapter, server, portal, _ = bridge
+    quoted_incoming(adapter, server, {'svr_id': '404', 'message_item': {'type': 2, 'image_item': {}}}, 3)
+    assert portal.delivered[-1][2]['content_parts'][0]['text'] == '> [图片]\n\nfollow up'
+    quoted_incoming(adapter, server, {'message_item': {'type': 4, 'file_item': {'file_name': 'a.pdf'}}}, 4)
+    assert portal.delivered[-1][2]['content_parts'][0]['text'] == '> [文件 a.pdf]\n\nfollow up'
+    quoted_incoming(adapter, server, {'svr_id': '405'}, 5)
+    assert portal.delivered[-1][2]['content_parts'][0]['text'] == '> [引用了一条消息，内容未能读取]\n\nfollow up'
+    with adapter.router.store.connect() as c:
+        row = c.execute("SELECT payload_json FROM audit_events WHERE event_type='quote_received' "
+                        "ORDER BY event_id DESC LIMIT 1").fetchone()
+    assert row[0] == {'has_id': True, 'matched_by': 'none', 'text_source': 'none',
+                      'shape': {'keys': ['svr_id'], 'excerpt_length': 0}}
+
+
+def test_quoted_command_stays_a_command(bridge):
+    adapter, server, portal, _ = bridge
+    before = len(portal.delivered)
+    server.messages = [dict(message_id=9, from_user_id='scanner', message_type=1, context_token='test-context',
+        item_list=[{'type': 1, 'text_item': {'text': '/where'}, 'ref_msg': {'svr_id': '404'}}])]
+    adapter.poll_once(ACTOR)
+    assert len(portal.delivered) == before
 
 
 def test_text_match_of_old_input_and_chat_isolation(bridge):

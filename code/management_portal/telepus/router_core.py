@@ -103,6 +103,7 @@ class RouterCore:
         chat_type: str = "private",
         telegram_message_id: int = 0,
         reply_to_telegram_message_id: int = 0,
+        quote_text: bool = False,
     ) -> dict[str, Any]:
         message = str(text or "").strip()
         if not message:
@@ -124,7 +125,8 @@ class RouterCore:
         if RESIDENT_ID_RE.fullmatch(message):
             return self._route(state, message)
         quoted = self.store.linked_message(chat_id, reply_to_telegram_message_id) if reply_to_telegram_message_id else None
-        return self._deliver(state, message, telegram_message_id=telegram_message_id, quoted=quoted)
+        return self._deliver(state, message, telegram_message_id=telegram_message_id, quoted=quoted,
+                             quote_text=quote_text and not quoted)
 
     def _command(self, state: dict[str, Any], message: str) -> dict[str, Any]:
         command, _, rest = message.partition(" ")
@@ -209,7 +211,7 @@ class RouterCore:
         return "msg_" + hashlib.sha256(f"telepus:{chat_id}:{telegram_message_id}".encode()).hexdigest()[:32]
 
     def _deliver(self, state: dict[str, Any], text: str, *, telegram_message_id: int,
-                 quoted: dict[str, Any] | None, inject: bool = False) -> dict[str, Any]:
+                 quoted: dict[str, Any] | None, inject: bool = False, quote_text: bool = False) -> dict[str, Any]:
         chat_id, actor = state["chat_id"], state["portal_actor"]
         if quoted:
             # A Telegram reply goes to the Conversation the quoted message is in.
@@ -235,7 +237,7 @@ class RouterCore:
         self.store.record_input(chat_id, resident_id, message_id, telegram_message_id, excerpt=text)
         self.store.link_message(chat_id, telegram_message_id, resident_id, message_id)
         self._audit(state, "message_delivered", {"resident_id": resident_id, "message_id": message_id,
-                                                 "quoted": bool(quoted), "inject": inject})
+                                                 "quoted": bool(quoted), "quote_text": quote_text, "inject": inject})
         personal = state['mode'] != 'exact' and (not quoted or
             self.portal.personal_assistant(actor).get('resident_id') == resident_id)
         notices = self._solo_notice(state, resident_id) if personal else []
