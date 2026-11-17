@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run one provider update check; scheduled by the System Lineage Resident."""
+"""Check provider updates from a System Lineage script or a manual request."""
 
 import json
 import os
@@ -56,8 +56,9 @@ def main(arguments):
         print(json.dumps({"accepted": True, "unit": unit,
             "result_path": str(instance_runtime_root() / "provider-update-result.json")}, sort_keys=True), flush=True)
         return 0
-    if arguments != ["--run-update"]:
-        raise SystemExit("Usage: update_provider_runtimes.py [--activate-pending]")
+    lineage_run = arguments == ["--lineage-update"]
+    if not lineage_run and arguments != ["--run-update"]:
+        raise SystemExit("Usage: update_provider_runtimes.py [--activate-pending|--lineage-update]")
     result = run_update_pass()
     path = instance_runtime_root() / "provider-update-result.json"
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -66,6 +67,11 @@ def main(arguments):
     temporary.replace(path)
     print(json.dumps(result, ensure_ascii=False, sort_keys=True), flush=True)
     if result.get("pending") or result.get("busy"):
+        if lineage_run:
+            # RunScript already owns an independent process. Keep its daily
+            # check finite; waiting for idle providers belongs to the watcher.
+            _start_job("--activate-pending")
+            return 1 if result.get("errors") or result.get("busy") else 0
         return _watch_pending()
     return 1 if result.get("errors") else 0
 

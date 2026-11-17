@@ -315,6 +315,20 @@ def test_resident_requests_a_separate_instance_job_before_any_service_is_restart
     assert receipt["accepted"] and receipt["unit"] == "tfi-fixture-provider-activation.service"
 
 
+@pytest.mark.parametrize("errors,busy,expected", [({}, False, 0), ({"claude": {"phase": "download"}}, False, 1), ({}, True, 1)])
+def test_lineage_update_finishes_check_while_activation_waits(monkeypatch, tmp_path, errors, busy, expected):
+    from scripts import update_provider_runtimes as script
+    result = {"checked": {}, "pending": ["codex"], "errors": errors, "busy": busy}
+    monkeypatch.setattr(script, "run_update_pass", lambda: result)
+    monkeypatch.setattr(script, "instance_runtime_root", lambda: tmp_path)
+    modes = []
+    monkeypatch.setattr(script, "_start_job", lambda mode: modes.append(mode))
+    monkeypatch.setattr(script, "_watch_pending", lambda: pytest.fail("daily check must not wait for idle"))
+    assert script.main(["--lineage-update"]) == expected
+    assert modes == ["--activate-pending"]
+    assert json.loads((tmp_path / "provider-update-result.json").read_text())["errors"] == errors
+
+
 def test_dsh_llm_prerelease_alone_triggers_upgrade(monkeypatch, tmp_path):
     """只有 dsh-llm 发布新预发布版时也触发 dsh 运行时升级"""
     _isolated(monkeypatch, tmp_path)
