@@ -236,7 +236,7 @@ body.articleWorkbenchShell {
   border: 0;
   box-shadow: none;
   color: var(--muted);
-  font-size: 22px;
+  font-size: 16px;
 }
 #articleCurrentFavorite .resourceFavoriteButton[aria-pressed="true"] {
   color: var(--accent);

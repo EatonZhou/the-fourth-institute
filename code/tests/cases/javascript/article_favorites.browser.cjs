@@ -99,7 +99,7 @@ const html = fs.readFileSync(path.join(root, 'management_portal/article_workspac
     const star = page.locator('#articleCurrentFavorite button');
     const rows = page.locator('#articleFavoritesPanel .resourceFavoriteRow');
     assert.equal(await page.locator('[data-portal-board-actions] #articleCurrentFavorite, [data-portal-board-actions] #articleFavoritesButton').count(), 0);
-    assert.equal(await page.locator('#articlePdfIdentity + #articleCurrentFavorite button').count(), 1, 'star follows the PDF Article ID');
+    assert.equal(await page.locator('#articleBuildSummary + #articleCurrentFavorite:last-child button').count(), 1, 'star ends the PDF toolbar');
     const assertBorderless = async () => assert.deepEqual(await star.evaluate(el => {
       const style = getComputedStyle(el);
       return {border: style.borderTopWidth, background: style.backgroundColor, shadow: style.boxShadow};
