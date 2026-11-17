@@ -173,6 +173,31 @@ def test_telegram_can_reply_to_own_message(chat):
     assert chat.portal.delivered[-1][2]['quote'] == {'message_id': source}
 
 
+def received_rows(store):
+    with store.connect() as c:
+        return [row[0] for row in c.execute("SELECT payload_json FROM audit_events "
+                                             "WHERE event_type='message_received' ORDER BY event_id")]
+
+
+def test_telegram_received_audit_has_shape_not_text(chat):
+    chat.send('PRIVATE telegram words')
+    chat.send('/where')
+    rows = received_rows(chat.store)
+    assert 'PRIVATE' not in str(rows) and all('text' not in row for row in rows)
+    assert rows[0]['length'] == len('PRIVATE telegram words') and not rows[0]['is_command']
+    assert rows[-1]['command'] == '/where' and rows[-1]['is_command']
+
+
+def test_weixin_received_audit_has_shape_not_text(bridge):
+    adapter, server, portal, _ = bridge
+    incoming(adapter, server, 'PRIVATE weixin words')
+    quoted_incoming(adapter, server, {'svr_id': '404', 'title': 'PRIVATE quoted words'}, 2)
+    rows = received_rows(adapter.router.store)
+    assert 'PRIVATE' not in str(rows) and all('text' not in row for row in rows)
+    assert rows[-1]['has_reply'] and rows[-1]['quote_text'] and rows[-1]['command'] == ''
+    assert rows[-1]['length'] == len('> PRIVATE quoted words\n\nfollow up')
+
+
 def test_schema_8_upgrade_is_locked_additive_and_preserves_input(telepus_schema):
     store = RouterStore(telepus_schema)
     store.init_schema()

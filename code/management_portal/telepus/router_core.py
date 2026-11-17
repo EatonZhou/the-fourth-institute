@@ -17,6 +17,26 @@ from .portal_client import PortalClient, RESIDENT_ID_RE, is_terminal, message_te
 from .router_store import RouterStore
 from .waiting import WaitingNotices
 
+_COMMAND_RE = re.compile(r"/[a-z_]{1,32}")
+_ATTACHMENT_RE = re.compile(r"\[(image|file): [^\]\n]*\]|\[Telegram image unavailable: [^\]\n]*\]|\[附件下载失败\]")
+
+
+def received_audit(message: str, *, chat_type: str, telegram_message_id: int = 0, reply_to: int = 0,
+                   quote_text: bool = False) -> dict[str, Any]:
+    """Shape of an inbound message for diagnosis; never its text or attachment paths."""
+    head = message.split(None, 1)[0] if message else ""
+    attachments: dict[str, int] = {}
+    for match in _ATTACHMENT_RE.finditer(message):
+        kind = match.group(1) or "unavailable"
+        attachments[kind] = attachments.get(kind, 0) + 1
+    payload: dict[str, Any] = {"chat_type": chat_type, "length": len(message), "is_command": head.startswith("/"),
+                               "command":head if head.startswith("/") and _COMMAND_RE.fullmatch(head) else "",
+                               "has_reply": bool(reply_to), "quote_text": quote_text,
+                               "telegram_message_id": int(telegram_message_id or 0)}
+    if attachments:
+        payload["attachments"] = attachments
+    return payload
+
 
 HISTORY_DEFAULT_ROUNDS = 3
 HISTORY_MAX_ROUNDS = 10
@@ -112,7 +132,9 @@ class RouterCore:
         state = self.store.upsert_chat_state(chat_id, chat_type=chat_type, telegram_user_id=telegram_user_id,
                                              portal_actor=portal_actor)
         self.store.append_audit("message_received", chat_id=chat_id, telegram_user_id=telegram_user_id,
-                                portal_actor=portal_actor, payload={"text": message[:500], "chat_type": chat_type})
+                                portal_actor=portal_actor, payload=received_audit(
+                                    message, chat_type=chat_type, telegram_message_id=telegram_message_id,
+                                    reply_to=reply_to_telegram_message_id, quote_text=quote_text))
         handled = self.presentation.incoming(self, state, message)
         if handled is not None:
             return handled
