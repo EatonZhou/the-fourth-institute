@@ -173,7 +173,7 @@
     host.innerHTML = window.PortalI18n.html`<div class="portalDetailOverlay" data-portal-detail-overlay id="nodeSettingsModal" hidden aria-hidden="true">
       <section data-portal-detail-surface class="portalDetailSurface nodeSettingsSurface" role="dialog" aria-modal="true" aria-labelledby="nodeSettingsTitle">
         <div class="portalDetailHeader residentMenuHeader" data-portal-detail-header>
-          <div class="residentMenuHeading"><h2 id="nodeSettingsTitle">Menu</h2><div class="residentMenuHeaderActions"><button class="portalButton is-icon" id="nodeMenuPin" type="button" aria-label="置顶" aria-pressed="false" disabled data-portal-icon="pin"></button><button class="portalDetailClose" data-portal-detail-close type="button" aria-label="关闭" data-portal-icon="close"></button></div></div>
+          <div class="residentMenuHeading"><h2 id="nodeSettingsTitle">Menu</h2><div class="residentMenuHeaderActions"><button class="portalDetailClose" data-portal-detail-close type="button" aria-label="关闭" data-portal-icon="close"></button></div></div>
           <div class="residentMenuIdentity">
             <div class="residentMenuPortrait" id="nodeMenuPortrait"></div>
             <div class="residentMenuIdentityCopy">
@@ -210,6 +210,7 @@
         <section id="nodeMailboxPanel" class="nodeMailboxPanel" role="tabpanel" aria-labelledby="nodeMailboxTab" hidden></section>
         <section id="nodeJournalPanel" role="tabpanel" aria-labelledby="nodeJournalTab" hidden><div id="nodeJournalRows" aria-live="polite"></div><button class="portalButton" type="button" id="nodeJournalRetry" hidden>重试</button></section>
         <section id="nodeDisplayPanel" role="tabpanel" aria-labelledby="nodeDisplayTab">
+        <section id="nodeMenuExtensions" aria-label="扩展" hidden></section>
         <section id="nodeMenuReporting" aria-label="汇报设置"></section>
         <div id="nodeMenuFamilySettings" hidden></div>
         <form id="nodeSettingsForm" class="nodeSettingsForm">
@@ -290,7 +291,7 @@
       disposeGroupPanel, groupTab, renderGroupTabs, setGroupPanelMode, switchGroupTab,
     } = menuPart("PortalResidentMenuGroup").createGroup({ $id, esc, leaveNodeMenu, menuState, modal, open });
 
-    const { loadNodeMenuIdentity, toggleNodeMenuPin } = menuPart("PortalResidentMenuIdentity").createIdentity({
+    const { loadNodeMenuIdentity } = menuPart("PortalResidentMenuIdentity").createIdentity({
       $id, menuState, nodeMenuNotice,
     });
 
@@ -311,7 +312,7 @@
     menuPart("PortalResidentMenuEvents").createEvents({
       $id, dialog, loadNodeJournal, menuState, moveNodeSettingsTab, nodeMenuNotice, nodeSettingsNode,
       openNodeTransfer, removeResident, submitNodeSettings, submitNodeTransfer, switchGroupTab, switchNodeSettingsTab,
-      toast, toggleNodeMenuPin, updateIntake,
+      toast, updateIntake,
     });
 
     window.PortalUIPrimitives.mountIcons(modal);

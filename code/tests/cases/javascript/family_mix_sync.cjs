@@ -39,7 +39,9 @@ w.document.body.append(root);
 const reply = api.createFamilyReplyControls('facade', root);
 reply.update(family());
 const own = w.document.createElement('div'); w.document.body.append(own);
-const member = api.createFamilyMemberChatControls({resident_id: 'member', lineage_id: 'lineage', title: 'Member', family: {family_id: 'family'}}, own);
+own.innerHTML = root.innerHTML;
+const member = api.createFamilyReplyControls('facade', own);
+member.update(family());
 const button = host => host.querySelector('[data-family-mix="solo"]');
 (async () => {
   await tick(); await tick();
@@ -107,16 +109,16 @@ const button = host => host.querySelector('[data-family-mix="solo"]');
   await tick();
   assert.equal(reads, beforeUnavailable, 'unavailable projection must not dispatch more preference reads');
   assert.equal(errors.length, errorCount, 'late reads must not toast over the unavailable Chat');
-  assert.equal(own.hidden, true);
+  assert.equal(own.querySelector('[data-family-reply-controls]').hidden, true);
   // A recovered projection (for example after a transient read failure) can
   // restore the controls; an HTTP error alone is not a permanent tombstone.
   w.PortalResidentProjection.invalidate(); await tick();
-  assert.equal(own.hidden, false);
+  assert.equal(own.querySelector('[data-family-reply-controls]').hidden, false);
   assert.equal(reads, beforeUnavailable + 1);
   save = deferred(); snapshot = deferred(); original.click(); await tick();
   for (const fn of watchers) fn({error: Object.assign(new Error('Resident has been deleted'), {code:'resident.deleted'})});
   save.resolve(); await tick();
-  assert.equal(own.hidden, true, 'late preference save cannot revive a deleted facade');
+  assert.equal(own.querySelector('[data-family-reply-controls]').hidden, true, 'late preference save cannot revive a deleted facade');
   reply.destroy(); member.destroy(); assert.equal(watchers.size, 0);
   dom.window.close(); console.log('PASS: stable M/S nodes, shared saves, stale reads, rollback, external refresh, cleanup');
 })().catch(error => { console.error(error); dom.window.close(); process.exitCode = 1; });

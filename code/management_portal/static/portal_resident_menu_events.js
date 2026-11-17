@@ -10,7 +10,7 @@
   const DEPENDENCIES = Object.freeze([
     "$id", "dialog", "loadNodeJournal", "menuState", "moveNodeSettingsTab", "nodeMenuNotice", "nodeSettingsNode",
     "openNodeTransfer", "removeResident", "submitNodeSettings", "submitNodeTransfer", "switchGroupTab",
-    "switchNodeSettingsTab", "toast", "toggleNodeMenuPin", "updateIntake",
+    "switchNodeSettingsTab", "toast", "updateIntake",
   ]);
 
   function createEvents(dependencies) {
@@ -19,7 +19,7 @@
     const {
       $id, dialog, loadNodeJournal, menuState, moveNodeSettingsTab, nodeMenuNotice, nodeSettingsNode,
       openNodeTransfer, removeResident, submitNodeSettings, submitNodeTransfer, switchGroupTab, switchNodeSettingsTab,
-      toast, toggleNodeMenuPin, updateIntake,
+      toast, updateIntake,
     } = dependencies;
 
     $id("nodeSettingsModal").querySelector("[data-portal-detail-close]").addEventListener("click", () => dialog.close());
@@ -56,7 +56,6 @@
     });
     $id("nodeJournalTab").addEventListener("click", () => switchNodeSettingsTab("journal"));
     $id("nodeJournalRetry").addEventListener("click", () => loadNodeJournal());
-    $id("nodeMenuPin").addEventListener("click", toggleNodeMenuPin);
     $id("nodeMenuCopySession").addEventListener("click", () => {
       if (menuState.nodeMenuContext?.sessionId) {
         void window.PortalUI.copyText(menuState.nodeMenuContext.sessionId, window.PortalI18n.t("Session ID")).catch(error => nodeMenuNotice(error.message));

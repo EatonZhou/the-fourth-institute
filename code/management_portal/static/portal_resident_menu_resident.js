@@ -63,10 +63,14 @@
       $id("nodeSettingsNameLabel").textContent = window.PortalI18n.t("Resident 名称");
       $id("nodeSettingsName").value = node.title || "";
       disposeNodeMenu();
-      menuState.nodeMenuContext = { residentId: nodeResidentId(node), lineageId: menuState.lineage.lineage_id, node, pinned: false, pinReady: false, busy: false };
+      menuState.nodeMenuContext = { residentId: nodeResidentId(node), lineageId: menuState.lineage.lineage_id, node, busy: false };
       menuState.nodeMenuContext.family = (menuState.lineage.function_blocks || []).find(block => block.family?.facade === nodeResidentId(node)) || null;
       $id("nodeSettingsForm").hidden = Boolean(menuState.nodeMenuContext.family);
       $id("nodeMenuFamilySettings").hidden = !menuState.nodeMenuContext.family;
+      const extensions = $id("nodeMenuExtensions");
+      extensions.replaceChildren(); extensions.hidden = true;
+      extensions.dataset.residentId = nodeResidentId(node);
+      menuState.options.renderExtensions?.(extensions, nodeResidentId(node));
       // A Family facade has no runtime form; its avatar row sits above the Family settings instead.
       if (menuState.nodeMenuContext.family) $id("nodeMenuFamilySettings").before($id("nodeMenuAvatar"));
       else $id("nodeSettingsForm").querySelector(".nodeSettingsFooter").before($id("nodeMenuAvatar"));
@@ -110,7 +114,6 @@
     function disposeNodeMenu() {
       disposeFamilySettings();
       menuState.nodeMenuContext?.unobserveSession?.();
-      menuState.nodeMenuContext?.unobservePin?.();
       menuState.nodeMenuContext?.avatarEditor?.destroy();
       menuState.nodeMenuContext?.runtimeController?.destroy();
       $id("nodeMenuAvatar").replaceChildren();

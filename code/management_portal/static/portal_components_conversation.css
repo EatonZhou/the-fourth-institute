@@ -566,6 +566,3 @@ button.messageQuote:focus-visible {
 .familyChatReturn:hover { text-decoration: underline; }
 .familyChatReturn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 3px; }
 .familyChatSeparator { color: var(--muted); }
-.familyMemberChatMix { display: inline-flex; flex-shrink: 0; }
-.familyMemberChatMix[hidden] { display: none; }
-.familyMemberChatMix .familyMemberMix { margin-top: 0; }

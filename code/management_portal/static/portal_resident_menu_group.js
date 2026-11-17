@@ -46,7 +46,6 @@
       modal.querySelector(".nodeSettingsResidentTabs").hidden = panel;
       if (panel) modal.querySelectorAll(".nodeSettingsPanels > section").forEach(section => { section.hidden = true; });
       modal.querySelector(".residentMenuIdentity").hidden = panel;
-      $id("nodeMenuPin").hidden = panel;
       if (panel) {
         $id("nodeMenuStatus").hidden = true;
         $id("nodeTransferFields").hidden = true;

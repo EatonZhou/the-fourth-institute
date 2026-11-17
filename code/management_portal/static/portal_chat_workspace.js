@@ -205,7 +205,7 @@
   } = chatWorkspaceModule("PortalChatWorkspaceReadObserver").createReadObserver();
 
   const {
-    createFamilyStatusView, createFamilyMemberChatControls, createFamilyReplyControls, mountFamilyStatus, openFamilyStatus,
+    createFamilyStatusView, createFamilyMemberNavigation, createFamilyReplyControls, mountFamilyStatus, openFamilyStatus,
   } = chatWorkspaceModule("PortalChatWorkspaceFamilyStatus").createFamilyStatus({
     escapeHtml, footerTime, sessionRestartActive,
   });
@@ -323,8 +323,8 @@
     const loadingId = options.loadingId || "";
     return window.PortalI18n.html`<div class="paneHead chatHead portalWorkspaceHead">
       <div class="paneHeadText chatHeadText">
-        <div class="chatTitleLine"><div class="paneTitle" ${titleId ? `id="${escapeHtml(titleId)}"` : ""}>${escapeHtml(title)}</div><span class="familyMemberChatMix" data-family-chat-member role="group" aria-label="在所属 Family 中的通知、路由与单独对话" hidden></span><div class="familySoloProxy" data-family-solo="header" role="status" hidden></div></div>
-        <div class="chatSubline"><div class="paneNote" ${statusId ? `id="${escapeHtml(statusId)}"` : ""} data-workspace-status>${escapeHtml(subtitle)}</div></div>
+        <div class="chatTitleLine"><div class="paneTitle" ${titleId ? `id="${escapeHtml(titleId)}"` : ""}>${escapeHtml(title)}</div><div class="familySoloProxy" data-family-solo="header" role="status" hidden></div>
+        <div class="chatSubline"><div class="paneNote" ${statusId ? `id="${escapeHtml(statusId)}"` : ""} data-workspace-status>${escapeHtml(subtitle)}</div></div></div>
       </div>
       <div class="paneHeadActions actionGroup">
         <button class="portalButton is-icon is-quiet iconBtn" type="button" data-workspace-history-search aria-label="查找当前对话" title="浏览当前对话片段，输入关键词查找并跳转" aria-expanded="false">${window.PortalUIPrimitives.iconHtml("search")}</button>
@@ -717,6 +717,7 @@
         }
         const span = document.createElement("span");
         span.textContent = part.text;
+        span.title = part.text;
         if (part.identity) span.dataset.workspaceIdentity = part.identity;
         if (part.copy_value) {
           span.className = "chatHeaderCopyId";
@@ -1265,7 +1266,7 @@
       setAttachments,
       setTitle(title) {
         const node = root.querySelector(".portalWorkspaceHead .paneTitle");
-        if (node) node.textContent = workspaceTitleText(title);
+        if (node) { node.textContent = workspaceTitleText(title); node.title = node.textContent; }
       },
       setSubtitle(subtitle, parts = []) {
         state.subtitle = String(subtitle || "");
@@ -1900,7 +1901,6 @@
           this.readObserver?.schedule();
           this.conversationView()?.onMessagesRendered?.(root, this);
         },
-        onExtensionOpen: () => this.renderExtensions(),
         onSubagentFinished: run => this.noticeSubagentFinished(run),
       }).mount();
       this.workspace.root?.addEventListener("click", event => this.onSubagentClick(event));
@@ -1961,7 +1961,7 @@
         button.disabled = this.actionInFlight || button.dataset.actionUnavailable === "true";
       });
       const board = this.detail?.watchboard_capabilities;
-      const boardButton = this.workspace.element("extensionMenu")?.querySelector("[data-watchboard-action]");
+      const boardButton = this.extensionContainer?.querySelector("[data-watchboard-action]");
       if (boardButton) {
         boardButton.disabled = this.actionInFlight || !(board?.installed ? board.can_remove : board?.can_install);
       }
@@ -1991,9 +1991,10 @@
       }));
     }
 
-    renderExtensions() {
-      const menu = this.workspace.element("extensionMenu");
-      if (!menu) return;
+    renderExtensions(container = this.extensionContainer) {
+      const menu = container;
+      this.extensionContainer = container;
+      if (!menu || menu.dataset.residentId !== this.target().resident_id) return;
       if (this.detail?.binding_state === "unbound") {
         menu.innerHTML = window.PortalI18n.markup('<div class="paneNote" role="status">发送第一条消息后可配置会话扩展。</div>');
         return;
@@ -2009,27 +2010,12 @@
         button.dataset.watchboardAction = action;
         button.textContent = board.installed ? window.PortalI18n.t("移除 Watchboard") : window.PortalI18n.t("安装 Watchboard");
         button.disabled = this.actionInFlight || !allowed;
+        const residentId = this.target().resident_id;
         button.addEventListener("click", () => this.runAction(() =>
-          this.options.onWatchboardAction(action, this.target().resident_id)));
+          this.target().resident_id === residentId ? this.options.onWatchboardAction(action, residentId) : undefined));
         menu.append(button);
       }
-      // Harness settings live on the Resident Menu's Harness page.
-      const residentId = this.target().resident_id;
-      if (!residentId || !window.PortalNav?.openResidentMenu) return;
-      const harness = document.createElement("button");
-      harness.type = "button";
-      harness.className = "chatSessionSwitch chatSessionNav";
-      harness.dataset.harnessMenuOpen = "";
-      harness.innerHTML = window.PortalI18n.markup('<span class="chatSessionSwitchText"><strong>Harness</strong><small>Prompt 注入、sub agent、失败续跑与智能选择 Harness 在 Menu 的 Harness 页设置</small></span><span class="chatSessionNavArrow" aria-hidden="true">›</span>');
-      harness.addEventListener("click", () => {
-        this.workspace.closeExtensionMenu?.();
-        return window.PortalNav.openResidentMenu({
-          residentId,
-          tab: "harness",
-          onChanged: () => this.target().resident_id === residentId ? this.reload() : undefined,
-        });
-      });
-      menu.append(harness);
+      menu.hidden = !menu.childElementCount;
     }
 
     queueAction(command, messageId, { withdraw = false } = {}) {
@@ -2902,15 +2888,14 @@
       const member = detail?.snapshot?.resident || detail?.resident;
       const memberKey = member?.family?.family_id
         ? JSON.stringify([member.resident_id, member.lineage_id, member.family.family_id]) : '';
-      if (this.familyChatMemberKey !== memberKey) {
-        this.familyChatMemberControls?.destroy(); this.familyChatMemberControls = null;
-        this.familyChatMemberKey = memberKey;
-        if (memberKey) this.familyChatMemberControls = createFamilyMemberChatControls(member,
-          this.workspace.root.querySelector('[data-family-chat-member]'),
+      if (this.familyNavigationKey !== memberKey) {
+        this.familyMemberNavigation?.destroy(); this.familyMemberNavigation = null;
+        this.familyNavigationKey = memberKey;
+        if (memberKey) this.familyMemberNavigation = createFamilyMemberNavigation(member,
           this.workspace.root.querySelector('.chatTitleLine'),
           target => this.setResident(target, { load: true }));
       }
-      this.familyChatMemberControls?.update(member);
+      this.familyMemberNavigation?.update(member);
       if (changed) this.familyStatusView?.refresh();
     }
 
@@ -3303,6 +3288,9 @@
       const residentId = this.target().resident_id;
       return window.PortalNav.openResidentMenu({
         residentId,
+        renderExtensions: (container, id) => {
+          if (id === residentId && this.target().resident_id === id) this.renderExtensions(container);
+        },
         onChanged: () => this.target().resident_id === residentId ? this.reload() : undefined,
       });
     }

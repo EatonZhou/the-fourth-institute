@@ -187,19 +187,13 @@
       };
     }
 
-    // A member's own Chat controls its participation in its parent Family.
-    // The facade retains its existing Menu/status-panel controls only.
-    function createFamilyMemberChatControls(member, root, titleLine = null, openFamily = null) {
-      let mix = null, disposed = false;
+    // Navigation to the direct parent Family, independent of chat preferences.
+    function createFamilyMemberNavigation(member, titleLine = null, openFamily = null) {
+      let disposed = false;
       const breadcrumb = document.createElement('span');
       breadcrumb.className = 'familyChatBreadcrumb';
       breadcrumb.hidden = true;
       titleLine?.prepend(breadcrumb);
-      function render() {
-        if (disposed) return;
-        root.hidden = !mix?.state.policy;
-        if (mix) renderMemberMix(root, member.resident_id, member.title, mix.state);
-      }
       async function resolveFamily() {
         const {lineage} = await window.PortalInstructionClient.execute('GetLineage', {lineage_id: member.lineage_id});
         if (disposed) return;
@@ -234,26 +228,11 @@
         breadcrumb.replaceChildren(link, separator);
         breadcrumb.hidden = false;
         titleLine?.classList.add('has-family-return');
-        if ((family.members || []).includes(member.resident_id) && member.family.role !== 'facade')
-          mix = acquireMixState(family.facade, render);
-        render();
       }
-      async function onClick(event) {
-        const button = event.target.closest('[data-family-mix]');
-        if (!button || button.disabled || !mix || mix.state.busy) return;
-        event.preventDefault();
-        try {
-          await mix.state.change(button);
-        } catch (error) { window.PortalUI?.toast?.(error.message, 'error'); }
-        finally {
-          if (!disposed) root.querySelector(`[data-family-mix="${button.dataset.familyMix}"]`)?.focus({preventScroll: true});
-        }
-      }
-      root.addEventListener('click', onClick);
       void resolveFamily().catch(error => { if (!disposed) window.PortalUI?.toast?.(error.message, 'error'); });
       return {
-        update(value) { member = value; render(); },
-        destroy() { disposed = true; mix?.release(); root.removeEventListener('click', onClick); root.replaceChildren(); root.hidden = true;
+        update(value) { member = value; },
+        destroy() { disposed = true;
           breadcrumb.remove(); titleLine?.classList.remove('has-family-return'); },
       };
     }
@@ -562,7 +541,7 @@
     }
 
     return Object.freeze({
-      createFamilyStatusView, createFamilyMemberChatControls, createFamilyReplyControls, mountFamilyStatus, openFamilyStatus,
+      createFamilyStatusView, createFamilyMemberNavigation, createFamilyReplyControls, mountFamilyStatus, openFamilyStatus,
     });
   }
 

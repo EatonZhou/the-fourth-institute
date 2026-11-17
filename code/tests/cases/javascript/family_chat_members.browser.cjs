@@ -37,6 +37,19 @@ const root = path.resolve(__dirname, '../../../management_portal/static');
     }
     await page.evaluate(() => {
       window.PortalIdentity = {username: () => 'viewer'};
+      const pins = new Map();
+      window.pinListeners = new Set();
+      window.pinWrites = [];
+      window.PortalConversationStore = {
+        entry: key => pins.get(key),
+        subscribe: listener => { pinListeners.add(listener); return () => pinListeners.delete(listener); },
+        loadPin: async () => true,
+        setPinned: async (key, pinned) => {
+          pinWrites.push(key); pins.set(key, {pinned});
+          pinListeners.forEach(listener => listener());
+          return {item: {pinned}};
+        },
+      };
       window.calls = []; window.toasts = []; window.failNext = false; window.denyRead = false;
       PortalUI.toast = message => toasts.push(message);
       let policy = {muted_member_ids: [], solo_member_id: ''};
@@ -97,82 +110,50 @@ const root = path.resolve(__dirname, '../../../management_portal/static');
       window.panel = PortalChatWorkspace.panelPackage.create({root: document.getElementById('chat'), id: 'chat', title: 'Chat Workspace · 架构与实现', autoLoad: false, target: {resident_id: 'member_0'}});
       panel.updateFamilyStatus(memberDetail());
     });
-    const own = page.locator('[data-family-chat-member]');
-    const button = (id, mode, parent = own) => parent.locator(`[data-member="${id}"][data-family-mix="${mode}"]`);
-    const pressed = async (id, mode, active, parent = own) => {
+    const popover = page.locator('.familyStatusPanel');
+    const button = (id, mode, parent = popover) => parent.locator(`[data-member="${id}"][data-family-mix="${mode}"]`);
+    const pressed = async (id, mode, active, parent = popover) => {
       await button(id, mode, parent).locator(`xpath=self::*[@aria-pressed='${active}'][not(@disabled)]`).waitFor();
     };
-    await pressed('member_0', 'mute', false);
     const back = page.locator('.familyChatReturn');
+    await back.waitFor({state: 'visible'});
     assert.equal(await back.textContent(), '←Dolty');
+    assert.equal(await page.locator('.chatTitleLine [data-family-mix]').count(), 0, 'member header has navigation only');
     const destination = new URL(await back.getAttribute('href'), page.url());
     assert.equal(destination.searchParams.get('resident'), 'facade');
     assert.equal(destination.searchParams.get('open_chat'), '1');
     await page.evaluate(() => { window.originalSetResident = panel.setResident; panel.setResident = async target => { window.returnTarget = target; }; });
     await back.click();
-    assert.equal(await page.evaluate(() => returnTarget.resident_id), 'facade', 'return uses in-panel conversation navigation');
+    assert.equal(await page.evaluate(() => returnTarget.resident_id), 'facade');
     await page.evaluate(() => { panel.setResident = originalSetResident; });
-    assert.equal(await page.locator('[data-family-chat-members]').count(), 0, 'no facade-wide member bar');
-    assert.equal(await own.locator('button').count(), 2, 'this member has M/S controls');
-    assert.equal(await page.locator('[data-family-mix="exclude"]').count(), 0);
-    assert.match(await button('member_0', 'mute').getAttribute('title'), /隐藏.*排除后续自动路由.*Mailbox 通知不变/);
-    assert.equal(await own.evaluate(node => node.previousElementSibling.classList.contains('paneTitle')), true, 'buttons immediately follow the Chat title');
-    await button('member_0', 'mute').click(); await pressed('member_0', 'mute', true);
-    await button('member_0', 'solo').click(); await pressed('member_0', 'solo', true);
-    await pressed('member_0', 'mute', true);
-    await button('member_0', 'solo').click(); await pressed('member_0', 'mute', true);
-
-    // The original Menu/status panel remains available and shares preferences.
     await page.evaluate(async () => {
       const anchor = document.createElement('button'); anchor.id = 'family-anchor'; document.body.append(anchor);
       window.menu = await PortalChatWorkspace.openFamilyStatus('facade', {anchor});
     });
-    const popover = page.locator('.familyStatusPanel');
-    await pressed('member_0', 'mute', true, popover);
-    await button('member_0', 'mute', popover).click(); await pressed('member_0', 'mute', false);
-    await button('member_1', 'solo', popover).click(); await pressed('member_1', 'solo', true, popover);
-    await page.evaluate(() => menu.close());
-    await button('member_0', 'solo').click(); await pressed('member_0', 'solo', true);
-    await button('member_0', 'solo').click(); await pressed('member_0', 'solo', false);
+    await pressed('member_0', 'mute', false);
     await page.evaluate(() => { failNext = true; });
     await button('member_0', 'mute').click();
     await page.waitForFunction(() => toasts.includes('Save failed'));
     await pressed('member_0', 'mute', false);
-    assert.equal(await page.evaluate(() => document.activeElement.dataset.familyMix), 'mute');
     await button('member_0', 'mute').click(); await pressed('member_0', 'mute', true);
-
-    for (const role of ['facade', 'router', 'steward', 'independent']) {
-      await page.evaluate(role => panel.updateFamilyStatus(role === 'facade' ? facadeDetail() : memberDetail('other', role)), role);
-      assert.equal(await own.isVisible(), false, role + ' must not have title M/S');
-      assert.equal(await page.evaluate(() => watchers.size), role === 'facade' ? 1 : 0, 'only the current Family control owner remains subscribed');
-    }
-    // A slow lookup must not put member buttons back on a facade after switching.
+    await button('member_0', 'solo').click(); await pressed('member_0', 'solo', true);
+    await button('member_0', 'solo').click(); await pressed('member_0', 'solo', false);
+    await page.evaluate(() => menu.close());
     await page.evaluate(() => { panel.updateFamilyStatus(memberDetail()); panel.updateFamilyStatus(facadeDetail()); });
     await page.waitForTimeout(30);
-    assert.equal(await own.isVisible(), false);
-    assert.equal(await back.count(), 0, 'no stale return link on the top-level facade');
-    assert.equal(await page.evaluate(() => watchers.size), 1, 'facade controls own their one shared subscription');
-    await page.evaluate(() => panel.updateFamilyStatus(memberDetail()));
-    await pressed('member_0', 'mute', true);
+    assert.equal(await back.count(), 0, 'no stale return link on top-level facade');
     await page.evaluate(() => {
       const nested = memberDetail('member_0', 'facade'); nested.resident.family.family_id = 'nested_family';
       panel.updateFamilyStatus(nested);
     });
     await back.waitFor({state: 'visible'});
-    assert.equal(await own.isVisible(), false, 'nested facade keeps its own controls');
-    assert.match(await back.getAttribute('href'), /resident=facade/, 'nested facade returns to its direct parent');
+    assert.match(await back.getAttribute('href'), /resident=facade/);
     await page.evaluate(() => panel.updateFamilyStatus(memberDetail()));
-    await pressed('member_0', 'mute', true);
-    // A denied read clears the controls instead of applying someone else's state.
-    await page.evaluate(() => { denyRead = true; PortalResidentProjection.invalidate('facade'); });
-    await page.waitForFunction(() => toasts.includes('Not visible'));
-    assert.equal(await own.isVisible(), false);
-    await page.evaluate(() => { denyRead = false; PortalResidentProjection.invalidate('facade'); });
-    await pressed('member_0', 'mute', true);
+    await back.waitFor({state: 'visible'});
 
     for (const width of [1200, 390]) {
       await page.setViewportSize({width, height: 900});
-      const metrics = await own.evaluate(node => {
+      const metrics = await back.evaluate(node => {
         const rect = node.getBoundingClientRect();
         return {width: rect.width, height: rect.height, right: rect.right, viewport: innerWidth};
       });
@@ -184,8 +165,6 @@ const root = path.resolve(__dirname, '../../../management_portal/static');
       });
       assert.ok(heading.aTop < heading.bBottom && heading.bTop < heading.aBottom, JSON.stringify(heading));
       assert.ok(heading.width <= heading.available + 1, JSON.stringify(heading));
-      await button('member_0', 'solo').click(); await pressed('member_0', 'solo', true);
-      await button('member_0', 'solo').click(); await pressed('member_0', 'mute', true);
       if (process.env.FAMILY_CHAT_SCREENSHOTS) await page.screenshot({path: path.join(process.env.FAMILY_CHAT_SCREENSHOTS, `member-chat-${width}.png`)});
       console.log(JSON.stringify({width, ...metrics}));
     }
@@ -353,10 +332,48 @@ const root = path.resolve(__dirname, '../../../management_portal/static');
     }
     await page.evaluate(() => panel.workspace.setSubtitle('', [{identity: 'resident', text: 'resident_other'}]));
     assert.equal(await badge.count(), 0, 'ordinary Residents retain their original header');
+    await page.evaluate(() => {
+      panel.workspace.setTarget({resident_id: 'resident_other'});
+      panel.workspace.setSubtitle('', [
+        {identity: 'account', text: '账号 codex_long_account', copy_value: 'codex_long_account'},
+        {identity: 'resident', text: 'resident_other', copy_value: 'resident_other'},
+      ]);
+    });
+    const pin = page.locator('[data-portal-icon="pin"]');
+    await pin.click();
+    assert.equal(await pin.getAttribute('aria-pressed'), 'true');
+    assert.equal(await page.evaluate(() => pinWrites.at(-1)), 'resident:resident_other');
+    await page.evaluate(() => PortalConversationStore.setPinned('resident:resident_other', false));
+    assert.equal(await pin.getAttribute('aria-pressed'), 'false', 'Mailbox changes update the same shared state');
+    assert.equal(await page.locator('[aria-label="Chat Workspace 扩展"]').count(), 0);
+    for (const width of [1100, 390, 280]) {
+      await page.setViewportSize({width, height: 600});
+      const bounds = await page.locator('.chatTitleLine').evaluate(node => {
+        const title = node.querySelector('.paneTitle').getBoundingClientRect();
+        const sub = node.querySelector('.chatSubline').getBoundingClientRect();
+        return {title: {top: title.top, bottom: title.bottom}, sub: {top: sub.top, bottom: sub.bottom},
+          overflow: node.scrollWidth > node.clientWidth + 1};
+      });
+      assert.equal(bounds.overflow, false, JSON.stringify({width, bounds}));
+      assert.ok(bounds.title.top < bounds.sub.bottom && bounds.sub.top < bounds.title.bottom);
+      if (process.env.FAMILY_CHAT_SCREENSHOTS) await page.locator('.portalWorkspaceHead').screenshot({
+        path: path.join(process.env.FAMILY_CHAT_SCREENSHOTS, `resident-header-${width}.png`)});
+    }
+    await page.evaluate(() => {
+      const container = document.createElement('section');
+      container.dataset.residentId = 'resident_other';
+      panel.detail = {watchboard_capabilities: {installed: false, can_install: true}};
+      panel.options.residentFeatures = {watchboard: true};
+      panel.options.onWatchboardAction = (action, id) => { window.boardAction = [action, id]; };
+      panel.renderExtensions(container);
+      container.querySelector('[data-watchboard-action]').click();
+    });
+    assert.deepEqual(await page.evaluate(() => boardAction), ['add', 'resident_other']);
     assert.deepEqual(errors, []);
     const updates = await page.evaluate(() => calls.filter(call => call[0] === 'UpdateFamilyChatPreferences'));
     assert.ok(updates.every(([, args]) => args.resident_id === 'facade' && !args.actor && !args.username));
     await page.evaluate(() => { menu.destroy(); panel.destroy(); });
+    assert.equal(await page.evaluate(() => pinListeners.size), 0, 'destroy releases pin subscriptions');
     console.log('PASS: member Chat only, parent Family preferences, Menu sync, failure/retry, permissions, cleanup, narrow layout');
   } finally { await browser.close(); }
 })().catch(error => { console.error(error); process.exitCode = 1; });

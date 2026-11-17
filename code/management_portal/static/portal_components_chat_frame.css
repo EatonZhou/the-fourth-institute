@@ -180,8 +180,21 @@
 }
 
 .chatHeadText {
-  flex-basis: 240px;
+  flex-basis: 160px;
 }
+
+.portalWorkspaceHead { min-height: 44px; padding-block: 6px; }
+.portalWorkspaceHead .chatTitleLine { flex-wrap: nowrap; }
+.portalWorkspaceHead .chatTitleLine > .paneTitle {
+  flex: 0 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.portalWorkspaceHead .chatSubline { flex: 1 10000 240px; }
+.portalWorkspaceHead .chatSubline .paneNote { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.portalWorkspaceHead .chatSubline .paneNote.hasSessionIdentity { flex-wrap: nowrap; }
+.portalWorkspaceHead .chatHeaderCopyId {
+  min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.portalWorkspaceHead .chatHeaderSeparator { flex: 0 0 auto; }
 
 .portalChatWorkspaceRoot .chatHead {
   position: relative;

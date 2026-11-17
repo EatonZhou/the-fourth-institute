@@ -11,9 +11,7 @@
 
   const residentChromeIdSuffixes = Object.freeze({
     menu: "Menu",
-    extensionTools: "ExtensionTools",
-    extensionButton: "ExtensionButton",
-    extensionMenu: "ExtensionMenu",
+    pin: "Pin",
     forwardCancel: "ForwardCancel",
     compact: "Compact",
     resetContext: "ResetContext",
@@ -52,10 +50,7 @@
     const optionalVisible = name => features[name] === true ? "" : " hidden";
     return {
       extraActionsHtml: window.PortalI18n.html`
-        <div class="chatExtensionTools" id="${chromeIds.extensionTools}">
-          <button class="portalButton is-icon is-quiet iconBtn" id="${chromeIds.extensionButton}" type="button" aria-label="Chat Workspace 扩展" title="扩展" data-portal-icon="plus"></button>
-          <div class="filterPopover chatExtensionMenu" id="${chromeIds.extensionMenu}" role="dialog" aria-label="Chat Workspace 扩展" aria-hidden="true"></div>
-        </div>
+        <button class="portalButton is-icon is-quiet iconBtn" id="${chromeIds.pin}" type="button" aria-label="置顶" title="置顶" aria-pressed="false" disabled data-portal-icon="pin"></button>
         <button class="portalButton is-icon is-quiet iconBtn" id="${chromeIds.compact}" type="button" aria-label="压缩当前会话上下文" title="压缩当前会话上下文" hidden data-portal-icon="compact"></button>
         <button class="portalButton is-icon is-quiet iconBtn" id="${chromeIds.resetContext}" type="button" aria-label="清空 Resident 上下文" title="清空此前对话和上下文" hidden data-portal-icon="eraser"></button>
         ${options.extraActionsHtml || ""}
@@ -167,11 +162,10 @@
         this.forwardEnabled = true;
         this.forwardSelecting = false;
         this.forwardSelected = new Set();
-        this.extensionPopover = null;
+        this.pinEpoch = 0;
       }
 
       element(name) {
-        if (name === "extensionMenu" && this.extensionPopover) return this.extensionPopover.element;
         const chromeId = this.chromeIds?.[String(name || "")];
         if (chromeId) return this.root?.querySelector(`#${CSS.escape(chromeId)}`) || null;
         return super.element(name);
@@ -222,13 +216,9 @@
         });
       }
 
-      closeExtensionMenu() {
-        this.extensionPopover?.close?.();
-      }
+      closeExtensionMenu() {}
 
-      repositionExtensionMenu() {
-        this.extensionPopover?.reposition?.();
-      }
+      repositionExtensionMenu() {}
 
       focusComposer() {
         this.element("input")?.focus?.();
@@ -276,39 +266,15 @@
       }
 
       bindResidentChrome() {
-        const extensionButton = this.root?.querySelector(`#${CSS.escape(this.chromeIds.extensionButton)}`);
-        const extensionMenu = this.root?.querySelector(`#${CSS.escape(this.chromeIds.extensionMenu)}`);
-        if (extensionButton && extensionMenu && window.PortalOverlay) {
-          this.extensionPopover = window.PortalOverlay.bindPopover({
-            trigger: extensionButton,
-            panel: extensionMenu,
-            boundary: this.root,
-            placement: "bottom-end",
-            ariaHaspopup: "dialog",
-            portal: true,
-            closeOnOutside: true,
-            closeOnEscape: true,
-            onOpen: context => {
-              extensionMenu.classList.add("open");
-              extensionMenu.setAttribute("aria-hidden", "false");
-              extensionButton.classList.add("is-active");
-              this.options.onExtensionOpen?.(extensionMenu, this, context);
-              if (!extensionMenu.childElementCount) {
-                const notice = document.createElement("p");
-                notice.className = "paneNote";
-                notice.textContent = window.PortalI18n.t("当前对话没有可用扩展。");
-                extensionMenu.append(notice);
-              }
-            },
-            onClose: context => {
-              extensionMenu.classList.remove("open");
-              extensionMenu.setAttribute("aria-hidden", "true");
-              extensionButton.classList.remove("is-active");
-              this.options.onExtensionClose?.(extensionMenu, this, context);
-            },
-          });
-          extensionButton.addEventListener("click", event => this.extensionPopover?.toggle(event));
-        }
+        this.element("pin")?.addEventListener("click", async () => {
+          const id = this.target().resident_id, store = window.PortalConversationStore;
+          if (!id || !this.pinReady || this.pinBusy) return;
+          this.pinBusy = true; this.renderPin();
+          try { await store.setPinned(`resident:${id}`, !store.entry(`resident:${id}`)?.pinned); }
+          catch (error) { window.PortalUI?.toast?.(error.message, "error"); }
+          finally { this.pinBusy = false; this.renderPin(); }
+        });
+        this.loadPin();
         this.root?.querySelector(`#${CSS.escape(this.chromeIds.forwardCancel)}`)?.addEventListener("click", () => this.clearForwardSelection());
         this.root?.querySelector(`#${CSS.escape(this.chromeIds.forward)}`)?.addEventListener("click", () => {
           const items = this.selectedForwardMessages();
@@ -383,6 +349,37 @@
         return this;
       }
 
+      renderPin() {
+        const button = this.element("pin");
+        if (!button) return;
+        const pinned = Boolean(window.PortalConversationStore?.entry(`resident:${this.target().resident_id}`)?.pinned);
+        button.disabled = !this.pinReady || this.pinBusy;
+        button.setAttribute("aria-pressed", String(pinned));
+        button.classList.toggle("is-active", pinned);
+        button.title = window.PortalI18n.t(pinned ? "取消置顶" : "置顶");
+        button.setAttribute("aria-label", button.title);
+      }
+
+      loadPin() {
+        const epoch = ++this.pinEpoch, id = this.target().resident_id;
+        this.unobservePin?.(); this.pinReady = false; this.renderPin();
+        const store = window.PortalConversationStore;
+        if (!id || !store) return;
+        this.unobservePin = store.subscribe(() => this.renderPin());
+        store.loadPin(id).then(result => {
+          if (epoch !== this.pinEpoch) return;
+          this.pinReady = Boolean(result); this.renderPin();
+        }).catch(error => {
+          if (epoch === this.pinEpoch) window.PortalUI?.toast?.(error.message, "error");
+        });
+      }
+
+      destroy() {
+        ++this.pinEpoch;
+        this.unobservePin?.();
+        super.destroy();
+      }
+
       syncForwardAvailability() {
         this.root?.querySelectorAll('[data-portal-message-action="forward"]').forEach(button => {
           button.hidden = !this.forwardEnabled;
@@ -400,6 +397,7 @@
         }
         this.residentTarget = next;
         this.historyTarget = next;
+        if (previousScope !== nextScope) this.loadPin();
         this.options.onTargetChange?.(next, this);
         return next;
       }
@@ -436,7 +434,8 @@
           element.hidden = visible === false;
           element.disabled = !!disabled;
         };
-        set(this.chromeIds.extensionTools, actions.extensions !== false);
+        const pin = this.element("pin");
+        if (pin) pin.hidden = actions.extensions === false;
         set(this.chromeIds.menu, actions.extensions !== false);
         const forwardEnabled = actions.forward !== false;
         if (this.forwardEnabled !== forwardEnabled) {
