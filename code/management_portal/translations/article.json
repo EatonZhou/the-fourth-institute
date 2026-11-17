@@ -1,4 +1,8 @@
 {
+  "收藏此 Article": {"zh-CN": "收藏此 Article", "en": "Favorite this Article"},
+  "收藏的 Article": {"zh-CN": "收藏的 Article", "en": "Favorite Articles"},
+  "暂无 Article 收藏。点击当前文章旁的星标即可添加。": {"zh-CN": "暂无 Article 收藏。点击当前文章旁的星标即可添加。", "en": "No favorite Articles yet. Click the star beside the current article to add it."},
+  "正在加载收藏…": {"zh-CN": "正在加载收藏…", "en": "Loading favorites…"},
   "安装缺失依赖": {"zh-CN": "安装缺失依赖", "en": "Install missing dependencies"},
   "正在安装依赖…": {"zh-CN": "正在安装依赖…", "en": "Installing dependencies…"},
   "正在下载并安装，完成后将重新编译。": {"zh-CN": "正在下载并安装，完成后将重新编译。", "en": "Downloading and installing. The document will recompile when ready."},

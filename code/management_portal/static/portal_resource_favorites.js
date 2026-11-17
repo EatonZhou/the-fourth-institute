@@ -5,6 +5,12 @@
   const knowledgeTypes = new Set(window.PortalResourceRoutes.routes
     .filter(route => route.detail_kind === "knowledge").map(route => route.resource_type));
   const isKnowledge = address => knowledgeTypes.has(window.PortalResourceChips.resourceTypeFromAddress(address));
+  const isArticle = address => /^article_[0-9a-f]{12}$/.test(address || "");
+  const groups = {
+    knowledge: { matches: isKnowledge, title: "Knowledge", empty: "暂无知识收藏。在知识条目或其文件旁点击星标即可添加。" },
+    article: { matches: isArticle, title: "收藏的 Article", empty: "暂无 Article 收藏。点击当前文章旁的星标即可添加。" },
+  };
+  const groupFor = root => groups[root.dataset.resourceFavorites] || groups.knowledge;
   const buttons = new Map(), lists = new Map(), pending = new Set();
   const text = value => window.PortalI18n.t(value);
   let items = [], loaded = false, loading = null, error = "", revision = 0, identity = 0;
@@ -21,7 +27,7 @@
     for (const [container, button] of buttons) {
       const address = container.dataset.resourceFavorite;
       const selected = contains(address);
-      const label = selected ? "取消收藏此资源" : "收藏此资源到 My Favorite";
+      const label = selected ? "取消收藏此资源" : isArticle(address) ? "收藏此 Article" : "收藏此资源到 My Favorite";
       button.textContent = selected ? "★" : "☆";
       button.title = text(label); button.setAttribute("aria-label", text(label));
       button.setAttribute("aria-pressed", String(selected));
@@ -66,7 +72,7 @@
 
   function mountButton(container, address = container.dataset.resourceFavorite) {
     if (container.dataset.resourceFavorite !== address) container.dataset.resourceFavorite = address;
-    container.hidden = !isKnowledge(address);
+    container.hidden = !(isKnowledge(address) || isArticle(address));
     if (container.hidden) {
       removeButton(container); container.replaceChildren();
       return () => removeButton(container);
@@ -105,13 +111,14 @@
   }
 
   function renderList(root, body) {
-    const knowledge = items.filter(item => isKnowledge(item.address));
+    const group = groupFor(root);
+    const favorites = items.filter(item => group.matches(item.address));
     const count = root.querySelector("[data-resource-favorite-count]");
-    count.textContent = String(knowledge.length);
-    count.hidden = !knowledge.length;
+    count.textContent = String(favorites.length);
+    count.hidden = !favorites.length;
     body.replaceChildren();
-    if (error || !knowledge.length) {
-      const hint = node("div", "residentEmpty", error || text(loading ? "加载知识收藏…" : "暂无知识收藏。在知识条目或其文件旁点击星标即可添加。"));
+    if (error || !favorites.length) {
+      const hint = node("div", "residentEmpty", error || text(loading ? "正在加载收藏…" : group.empty));
       body.append(hint);
       if (error) {
         const retry = node("button", "portalButton is-quiet", text("重试"));
@@ -119,7 +126,7 @@
       }
       return;
     }
-    for (const item of knowledge) {
+    for (const item of favorites) {
       const row = node("div", "portalNavRow resourceFavoriteRow");
       const button = node("button", "portalNavRowMain resourceFavoriteOpen"); button.type = "button";
       const title = item.title || item.address;
@@ -138,7 +145,7 @@
     if (lists.has(root)) return;
     const section = node("details", "residentSection favoriteDisclosure portalNavSection resourceFavorites"); section.open = true;
     const summary = node("summary", "residentGroupHead portalNavSectionHead");
-    summary.append(node("span", "residentGroupName portalNavSectionLabel", "Knowledge"));
+    summary.append(node("span", "residentGroupName portalNavSectionLabel", text(groupFor(root).title)));
     const count = node("span", "portalNavSectionCount"); count.dataset.resourceFavoriteCount = "";
     summary.append(count);
     const body = node("div", "residentGroupBody portalNavSectionBody"); section.append(summary, body); root.replaceChildren(section);

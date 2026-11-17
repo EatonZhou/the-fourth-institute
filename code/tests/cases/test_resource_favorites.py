@@ -10,12 +10,13 @@ B = 'workspace_1123456789ab/file/notes.md'
 P = 'paper_2123456789ab'
 
 
-def test_persistence_isolation_dedup_and_existing_paper_bookmarks():
+@pytest.mark.parametrize('target', [A, 'article_4123456789ab'])
+def test_persistence_isolation_dedup_and_existing_paper_bookmarks(target):
     reference = Mock(side_effect=lambda address, actor: {'title': 'Readable', 'url': '/r/' + address})
-    for target in (A, B, A, P):
-        favorites.set_favorite('alice', target, True, reference)
+    for address in (target, B, target, P):
+        favorites.set_favorite('alice', address, True, reference)
     favorites.set_favorite('bob', B, True, reference)
-    assert favorites.addresses('alice') == [A, B, P]
+    assert favorites.addresses('alice') == [target, B, P]
     assert favorites.addresses('bob') == [B]
     assert presentation_store.favorite_ids('alice', 'paper') == [P]
     assert len(favorites.list_favorites('alice', reference)['items']) == 3
@@ -27,15 +28,16 @@ def test_persistence_isolation_dedup_and_existing_paper_bookmarks():
     assert presentation_store.favorite_ids('alice', 'workbench') == []
 
 
-def test_revalidation_does_not_leak_old_metadata_and_removal_needs_no_access():
+@pytest.mark.parametrize('target', [A, 'article_4123456789ab'])
+def test_revalidation_does_not_leak_old_metadata_and_removal_needs_no_access(target):
     reference = Mock(return_value={'title': 'Private title'})
-    favorites.set_favorite('alice', A, True, reference)
+    favorites.set_favorite('alice', target, True, reference)
     reference.side_effect = PermissionError('denied')
-    assert favorites.list_favorites('alice', reference)['items'] == [{'address': A, 'status': 'denied'}]
+    assert favorites.list_favorites('alice', reference)['items'] == [{'address': target, 'status': 'denied'}]
     with pytest.raises(PermissionError):
         favorites.set_favorite('alice', B, True, reference)
     reference.side_effect = AssertionError('removal must not read a resource')
-    favorites.set_favorite('alice', A, False, reference)
+    favorites.set_favorite('alice', target, False, reference)
     assert favorites.addresses('alice') == []
     with pytest.raises(ValueError):
         favorites.set_favorite('alice', A, 'true', reference)
@@ -43,7 +45,8 @@ def test_revalidation_does_not_leak_old_metadata_and_removal_needs_no_access():
         favorites.set_favorite('', A, True, reference)
 
 
-def test_http_actor_is_from_authentication(monkeypatch):
+@pytest.mark.parametrize('target', [A, 'article_4123456789ab'])
+def test_http_actor_is_from_authentication(monkeypatch, target):
     import json
     import urllib.request
     from management_portal import http_auth, web_resources
@@ -55,7 +58,7 @@ def test_http_actor_is_from_authentication(monkeypatch):
     server, thread, origin = _server()
     try:
         request = urllib.request.Request(origin + '/api/resources/favorites',
-            data=json.dumps({'address': A, 'favorite': True, 'actor': 'bob'}).encode(), headers={'Content-Type': 'application/json'})
+            data=json.dumps({'address': target, 'favorite': True, 'actor': 'bob'}).encode(), headers={'Content-Type': 'application/json'})
         with urllib.request.urlopen(request) as response:
             assert json.load(response)['favorite'] is True
         with urllib.request.urlopen(origin + '/api/resources/favorites') as response:

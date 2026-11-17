@@ -42,6 +42,7 @@
     <script src="/static/portal_file_tree.js"></script>
     <script src="/static/portal_preview_contract.js"></script>
     <script src="/static/portal_resource_chips.js"></script>
+    <script src="/static/portal_resource_favorites.js"></script>
     <script src="/static/portal_file_links.js"></script>
     <script src="/static/portal_preview_runtime.js"></script>
     <script src="/static/portal_pdf_preview.js"></script>
@@ -128,6 +129,13 @@
                   <button class="portalButton is-danger" id="articleUnregisterCurrent" type="button"><!--portal-i18n:"解除当前注册"-->解除当前注册</button>
                 </div>
               </div>
+            </div>
+            <span id="articleCurrentFavorite" data-resource-favorite="" data-portal-toolbar-priority="critical" hidden></span>
+            <button class="portalButton is-compact" id="articleFavoritesButton" data-portal-toolbar-priority="critical" type="button" aria-haspopup="dialog" aria-expanded="false" aria-controls="articleFavoritesPanel">
+              <span aria-hidden="true">☆</span><span><!--portal-i18n:"收藏"-->收藏</span>
+            </button>
+            <div class="articleFavoritesPanel" id="articleFavoritesPanel" role="dialog" aria-label="收藏的 Article" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;收藏的 Article&quot;}" hidden>
+              <div data-resource-favorites="article"></div>
             </div>
             <button class="portalButton is-compact is-primary articleRegisterPrimary" data-portal-toolbar-priority="critical" id="articleRegisterOpen" type="button" data-portal-icon="file-plus">
               <span><!--portal-i18n:"注册新 Article"-->注册新 Article</span>

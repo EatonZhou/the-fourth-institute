@@ -17,6 +17,7 @@
     let articleProjectPopover = null;
     let articleResourceSearchPopover = null;
     let articleCompilePopover = null;
+    let articleFavoritesPopover = null;
 
     function setProjectMenu(open, context) {
       if (open) articleProjectPopover?.open(context);
@@ -34,6 +35,21 @@
     }
 
     function initializeArticlePopovers() {
+      articleFavoritesPopover = window.PortalOverlay.bindPopover({
+        trigger: $("articleFavoritesButton"),
+        panel: $("articleFavoritesPanel"),
+        placement: "bottom-end",
+        ariaHaspopup: "dialog",
+        closeOnOutside: true,
+        closeOnEscape: true,
+        onOpen: () => {
+          setProjectMenu(false);
+          setCompileMenu(false);
+          setArticleResourceSearchOpen(false);
+          void window.PortalResourceFavorites.refresh();
+        },
+      });
+      $("articleFavoritesButton").addEventListener("click", event => articleFavoritesPopover.toggle(event));
       articleProjectPopover = window.PortalOverlay.bindPopover({
         trigger: $("articleProjectButton"),
         panel: $("articleProjectMenu"),
@@ -42,6 +58,7 @@
         closeOnOutside: true,
         closeOnEscape: true,
         onOpen: () => {
+          articleFavoritesPopover.close();
           setCompileMenu(false);
           setArticleResourceSearchOpen(false);
           renderArticleSelectors();
@@ -60,6 +77,7 @@
         closeOnEscape: true,
         restoreFocusOnEscape: false,
         onOpen: () => {
+          articleFavoritesPopover.close();
           state.resourceSearchOpen = true;
           setProjectMenu(false);
           setCompileMenu(false);
@@ -77,6 +95,7 @@
         closeOnOutside: true,
         closeOnEscape: true,
         onOpen: () => {
+          articleFavoritesPopover.close();
           setProjectMenu(false);
           setArticleResourceSearchOpen(false);
           renderCompileMenu();

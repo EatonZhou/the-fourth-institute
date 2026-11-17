@@ -222,6 +222,20 @@ body.articleWorkbenchShell {
   text-align: left;
 }
 
+.articleFavoritesPanel {
+  width: min(360px, calc(100vw - 24px));
+  max-height: min(480px, 70vh);
+  overflow: auto;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--panel);
+  box-shadow: 0 12px 36px #0002;
+}
+.articleFavoritesPanel .resourceFavoriteOpen { min-width: 0; flex: 1; }
+.articleFavoritesPanel .resourceFavoriteTitle { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.articleFavoritesPanel .residentEmpty { padding: 12px; color: var(--muted); font-size: 12px; }
+
 .articleProjectText small {
   color: var(--muted);
   font-size: 8px;

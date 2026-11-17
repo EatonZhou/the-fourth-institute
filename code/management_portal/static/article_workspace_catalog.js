@@ -187,6 +187,7 @@
 
     function renderProjectIdentity() {
       const article = selectedArticle();
+      $("articleCurrentFavorite").dataset.resourceFavorite = article?.id || "";
       window.PortalResourceHeader?.mount?.("articleProjectIdentity", {
         title: article?.title || window.PortalI18n.t("Select an Article project"),
         type: article ? "article" : "",
