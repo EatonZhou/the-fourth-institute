@@ -134,9 +134,8 @@ def project_session(value: object, actor: str = "") -> dict[str, Any]:
             actions.pop(name, None)
         chat_capabilities = [item for item in chat_capabilities if item not in {"runtime_settings", "session_restart"}]
         # The header says whose Chat this is: the Family's, through its facade.
-        member_count = len([item for item in family.get("members") or [] if isinstance(item, dict)])
         subtitle_parts.insert(0, {
-            "text": f"Family 门面（{member_count} 位成员）" if member_count else "Family 门面",
+            "text": "Family",
             "identity": "family",
         })
     contract = portal_chat_workspace_projection.contract(

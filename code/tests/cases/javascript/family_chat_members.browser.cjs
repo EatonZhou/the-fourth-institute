@@ -10,6 +10,7 @@ const { PORTAL_COMPONENTS_STYLES } = require('./portal_components_styles.cjs');
 const input = JSON.parse(fs.readFileSync(0, 'utf8'));
 const root = path.resolve(__dirname, '../../../management_portal/static');
 (async () => {
+  if (process.env.FAMILY_CHAT_SCREENSHOTS) fs.mkdirSync(process.env.FAMILY_CHAT_SCREENSHOTS, {recursive: true});
   const browser = await chromium.launch({headless: true});
   try {
     const page = await browser.newPage({viewport: {width: 1200, height: 900}});
@@ -265,6 +266,67 @@ const root = path.resolve(__dirname, '../../../management_portal/static');
     }
     if (process.env.FAMILY_CHAT_SCREENSHOTS) await page.screenshot({path: path.join(process.env.FAMILY_CHAT_SCREENSHOTS, 'facade-no-controls.png')});
     assert.equal(new URL(page.url()).pathname, '/', 'M/S never navigates');
+    assert.deepEqual(errors, []);
+    // The header follows aggregate Family activity, independently of the facade.
+    await page.evaluate(() => {
+      menu.destroy(); panel.destroy();
+      panel = PortalChatWorkspace.panelPackage.create({root: document.getElementById('chat'), id: 'familyHeader',
+        title: 'Dolty', autoLoad: false, target: {resident_id: 'facade'}});
+      window.renderFamilyHeader = (activity, facadeState = 'idle') => {
+        const detail = facadeDetail();
+        const projected = PortalChatWorkspace.projectResidentConversation({chat_workspace: {
+          title: 'Dolty', target: {kind: 'resident', id: 'facade'}, messages: [],
+          header: {subtitle_parts: [{identity: 'family', text: 'Family'},
+            {identity: 'resident', text: 'resident_9ced3511fde1', copy_value: 'resident_9ced3511fde1'}]},
+          composer: {can_send: true},
+        }}, {...detail, messages: [], controls: {can_send: true},
+          state: {work_state: facadeState, family_activity: {work_state: activity, running_count: activity === 'running' ? 2 : 0}}});
+        panel.workspace.applyContract(projected.chat_workspace);
+        panel.updateFamilyStatus(detail);
+      };
+      renderFamilyHeader('running');
+      window.headerBadge = document.querySelector('[data-family-status-open]');
+    });
+    const badge = page.locator('[data-family-status-open]');
+    const animation = () => badge.evaluate(node => getComputedStyle(node, '::after').animationName);
+    assert.equal(await badge.innerText(), 'Family');
+    assert.equal(await animation(), 'portalFamilyStatusPulse', 'members run while the facade itself stays idle');
+    assert.equal(await badge.evaluate(node => node.previousElementSibling.classList.contains('paneTitle')), true);
+    assert.equal(await page.locator('.chatSubline [data-workspace-identity="family"]').count(), 0);
+    assert.equal((await page.locator('[data-workspace-status]').innerText()).trim(), 'resident_9ced3511fde1', 'no leftover separator or Family text');
+    await badge.click();
+    await popover.waitFor({state: 'visible'});
+    assert.deepEqual(await popover.locator('th').allTextContents(), ['节点', 'backend', '周剩余', '工作状态', '静音 / 对话']);
+    await pressed('member_0', 'solo', false, popover);
+    for (const activity of ['idle', 'queued', 'running']) {
+      await page.evaluate(activity => renderFamilyHeader(activity, 'running'), activity);
+      assert.equal(await badge.innerText(), 'Family');
+      assert.equal(await animation(), activity === 'running' ? 'portalFamilyStatusPulse' : 'none');
+      assert.equal(await badge.evaluate(node => node === window.headerBadge), true, 'live updates retain the original popover anchor');
+      assert.equal(await popover.isVisible(), true, 'live header updates keep the menu open');
+    }
+    await page.keyboard.press('Escape');
+    await popover.waitFor({state: 'hidden'});
+    await page.evaluate(() => document.documentElement.dataset.portalMotion = 'reduced');
+    assert.equal(await animation(), 'none', 'respects the existing reduced motion preference');
+    await page.evaluate(() => document.documentElement.dataset.portalMotion = 'full');
+    for (const [width, theme] of [[640, 'light'], [390, 'light'], [640, 'dark']]) {
+      await page.setViewportSize({width, height: 600});
+      await page.evaluate(theme => document.documentElement.dataset.portalTheme = theme, theme);
+      await page.mouse.move(0, 0);
+      await badge.evaluate(node => node.blur());
+      const metrics = await badge.evaluate(node => {
+        const badge = node.getBoundingClientRect(), name = node.previousElementSibling.getBoundingClientRect();
+        return {badgeTop: badge.top, badgeBottom: badge.bottom, nameTop: name.top, nameBottom: name.bottom,
+          badgeLeft: badge.left, nameRight: name.right, right: badge.right, viewport: innerWidth};
+      });
+      assert.ok(metrics.badgeTop < metrics.nameBottom && metrics.badgeBottom > metrics.nameTop, 'Family stays on the name row');
+      assert.ok(metrics.badgeLeft >= metrics.nameRight && metrics.right <= metrics.viewport, JSON.stringify(metrics));
+      if (process.env.FAMILY_CHAT_SCREENSHOTS) await page.locator('.portalWorkspaceHead').screenshot({
+        path: path.join(process.env.FAMILY_CHAT_SCREENSHOTS, `family-header-${theme}-${width}.png`)});
+    }
+    await page.evaluate(() => panel.workspace.setSubtitle('', [{identity: 'resident', text: 'resident_other'}]));
+    assert.equal(await badge.count(), 0, 'ordinary Residents retain their original header');
     assert.deepEqual(errors, []);
     const updates = await page.evaluate(() => calls.filter(call => call[0] === 'UpdateFamilyChatPreferences'));
     assert.ok(updates.every(([, args]) => args.resident_id === 'facade' && !args.actor && !args.username));

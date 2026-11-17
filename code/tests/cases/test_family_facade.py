@@ -602,7 +602,7 @@ def test_a_relayed_request_is_answered_on_the_facade_and_is_not_the_members(faca
 def test_a_facade_chat_says_what_the_facade_is_until_a_message_goes_through_it():
     """门面的 Chat 说明它是哪个 Family 的门面，而不是提示缺少 session 历史
 
-    门面从不执行：空对话时说明这是哪个 Family 的门面、发来的消息如何处理、成员有谁；回复者名称是 Family 名称；标题行第一项标明“Family 门面（N 位成员）”；不提供运行设置、重启 Session 与 slash 指令。
+    门面从不执行：空对话时说明这是哪个 Family 的门面、发来的消息如何处理、成员有谁；回复者名称是 Family 名称；标题身份标记固定为“Family”；不提供运行设置、重启 Session 与 slash 指令。
 
     A facade never runs: no session history to miss, and its replies are the Family's.
 
@@ -634,7 +634,7 @@ def test_a_facade_chat_says_what_the_facade_is_until_a_message_goes_through_it()
     assert contract["composer"]["slash_commands"] == []
     assert contract["actions"]["send"]["instruction"] == "DeliverMessage"
     # CASE-A 10-05: the header marks a facade's Chat.
-    assert contract["header"]["subtitle_parts"][0] == {"text": "Family 门面（2 位成员）", "identity": "family"}
+    assert contract["header"]["subtitle_parts"][0] == {"text": "Family", "identity": "family"}
     assert [part["identity"] for part in contract["header"]["subtitle_parts"]] == ["family", "resident"]
     assert contract["header"]["subtitle_parts"][1]["copy_value"] == "resident_aaaaaaaaaaaa"
     assert "codex_one" not in contract["subtitle"]

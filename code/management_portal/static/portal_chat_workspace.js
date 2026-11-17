@@ -351,13 +351,14 @@
         const rawText = String(part.text || "").trim();
         const accountPrefix = part.identity === "account" && rawText.startsWith("账号 ");
         const text = accountPrefix ? window.PortalI18n.text`账号 ${rawText.slice(3)}`
-          : part.identity === "family" ? window.PortalI18n.message(rawText) : rawText;
+          : part.identity === "family" ? "Family" : rawText;
         if (!text) return null;
         return {
           text,
           copy_value: String(part.copy_value || part.copyValue || "").trim(),
           copy_label: window.PortalI18n.t(String(part.copy_label || part.copyLabel || "").trim()),
           identity: String(part.identity || "").trim(),
+          running: part.running === true,
         };
       })
       .filter(Boolean);
@@ -671,18 +672,42 @@
         }
       }
       for (const name of ["data-portal-tooltip", "title", "aria-label", "tabindex"]) els.status.removeAttribute(name);
-      if (!state.subtitleParts.length) {
+      const familyPart = state.subtitleParts.find(part => part.identity === "family");
+      let familyBadge = els.head?.querySelector('[data-workspace-identity="family"]');
+      if (familyPart && els.title) {
+        if (!familyBadge) {
+          const opensFamily = typeof options.onFamilyStatus === "function";
+          familyBadge = document.createElement(opensFamily ? "button" : "span");
+          familyBadge.dataset.workspaceIdentity = "family";
+          familyBadge.textContent = "Family";
+          if (opensFamily) {
+            familyBadge.type = "button";
+            familyBadge.dataset.familyStatusOpen = "1";
+            familyBadge.title = window.PortalI18n.t("查看 Family 成员状态");
+            familyBadge.setAttribute("aria-haspopup", "dialog");
+            familyBadge.setAttribute("aria-expanded", "false");
+            const button = familyBadge;
+            button.addEventListener("click", () => options.onFamilyStatus(button));
+          }
+          els.title.after(familyBadge);
+        }
+        familyBadge.dataset.running = String(familyPart.running);
+        familyBadge.setAttribute("aria-label", `Family · ${window.PortalI18n.t(familyPart.running ? "运行中" : "空闲")}`);
+      } else {
+        familyBadge?.remove();
+      }
+      const subtitleParts = state.subtitleParts.filter(part => part.identity !== "family");
+      if (!subtitleParts.length) {
         els.status.classList.remove("hasSessionIdentity");
-        els.status.textContent = transientStatus || state.subtitle;
+        els.status.textContent = transientStatus || (familyPart ? "" : state.subtitle);
         return;
       }
       els.status.classList.toggle(
         "hasSessionIdentity",
-        state.subtitleParts.length > 0,
+        subtitleParts.length > 0,
       );
       const fragment = document.createDocumentFragment();
-      const familyButton = els.status.querySelector("[data-family-status-open]");
-      state.subtitleParts.forEach((part, index) => {
+      subtitleParts.forEach((part, index) => {
         if (index) {
           const separator = document.createElement("span");
           separator.className = "chatHeaderSeparator";
@@ -690,16 +715,7 @@
           separator.dataset.nextIdentity = part.identity || "text";
           fragment.append(separator);
         }
-        const opensFamily = part.identity === "family" && typeof options.onFamilyStatus === "function";
-        const span = opensFamily ? familyButton || document.createElement("button") : document.createElement("span");
-        if (opensFamily && !familyButton) {
-          span.type = "button";
-          span.dataset.familyStatusOpen = "1";
-          span.title = window.PortalI18n.t("查看 Family 成员状态");
-          span.setAttribute("aria-haspopup", "dialog");
-          span.setAttribute("aria-expanded", "false");
-          span.addEventListener("click", () => options.onFamilyStatus(span));
-        }
+        const span = document.createElement("span");
         span.textContent = part.text;
         if (part.identity) span.dataset.workspaceIdentity = part.identity;
         if (part.copy_value) {

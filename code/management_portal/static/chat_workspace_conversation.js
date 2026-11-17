@@ -314,11 +314,7 @@
             ...(base.chat_workspace.header || {}),
             subtitle_parts: (base.chat_workspace.header?.subtitle_parts || []).map(part => {
               if (part.identity !== "family") return part;
-              let text = familyMembers
-                ? (familyMembers.length ? window.PortalI18n.text`Family 门面（${familyMembers.length} 位成员）` : window.PortalI18n.t("Family 门面"))
-                : window.PortalI18n.message(part.text);
-              if (state.family_activity) text += ` · ${{ running: window.PortalI18n.t("运行中"), queued: window.PortalI18n.t("排队中"), idle: window.PortalI18n.t("空闲") }[state.display_work_state]}${state.family_activity.running_count > 1 ? window.PortalI18n.text`（${state.family_activity.running_count} 个节点）` : ""}`;
-              return { ...part, text };
+              return { ...part, text: "Family", running: state.family_activity?.work_state === "running" };
             }).concat(familyIssueLabel ? [{ text: familyIssueLabel, identity: "family_availability" }] : []),
           } } : {}),
           runtime: { live, details: activities, phase },

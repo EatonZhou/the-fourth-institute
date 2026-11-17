@@ -239,7 +239,11 @@
 }
 
 /* A Family facade's Chat says so in its header (decision_44cf587c1721). */
-.chatSubline [data-workspace-identity="family"] {
+.chatTitleLine [data-workspace-identity="family"] {
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+  gap: 6px;
   background: transparent;
   font-family: inherit;
   padding: 0 7px;
@@ -251,9 +255,27 @@
   line-height: 18px;
   white-space: nowrap;
 }
-.chatSubline button[data-workspace-identity="family"] { cursor: pointer; }
-.chatSubline button[data-workspace-identity="family"]:hover { background: color-mix(in srgb, var(--accent) 10%, transparent); }
-.chatSubline button[data-workspace-identity="family"]:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.chatTitleLine [data-workspace-identity="family"]::after {
+  content: "";
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.chatTitleLine [data-workspace-identity="family"][data-running="true"]::after {
+  animation: portalFamilyStatusPulse 1.4s ease-in-out infinite;
+}
+@keyframes portalFamilyStatusPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: .25; }
+}
+html[data-portal-motion="reduced"] .chatTitleLine [data-workspace-identity="family"]::after { animation: none; }
+@media (prefers-reduced-motion: reduce) {
+  html:not([data-portal-motion="full"]) .chatTitleLine [data-workspace-identity="family"]::after { animation: none; }
+}
+.chatTitleLine button[data-workspace-identity="family"] { cursor: pointer; }
+.chatTitleLine button[data-workspace-identity="family"]:hover { background: color-mix(in srgb, var(--accent) 10%, transparent); }
+.chatTitleLine button[data-workspace-identity="family"]:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 .portalResourceIdentity {
   min-width: 0;
