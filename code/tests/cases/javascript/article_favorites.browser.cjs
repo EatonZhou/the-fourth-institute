@@ -4,6 +4,8 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { chromium } = require('../../../management_portal/test_framework/tau_runtime/node_modules/playwright');
 const root = path.resolve(__dirname, '../../..');
+const { portalWorkspaceSurfaceScripts } = require('./portal_workspace_surface_scripts.cjs');
+const workbenchScripts = JSON.parse(fs.readFileSync(path.join(root, 'management_portal/script_groups.json'), 'utf8'))['portal-workbench'].map(s => s.replace('/static/', ''));
 const source = name => fs.readFileSync(path.join(root, 'management_portal/static', name), 'utf8');
 const id = 'article_123456789abc', other = 'article_abcdef123456', knowledge = 'concept_123456789abc';
 const title = '面向低批量 MoE 推理的多芯粒系统设计';
@@ -53,6 +55,7 @@ const html = fs.readFileSync(path.join(root, 'management_portal/article_workspac
         await page.addStyleTag({url: match[1]});
       }
       await page.evaluate(() => {
+        document.documentElement.dataset.portalTheme = 'auto';
         window.PortalCompatibility = {identifier: x => x};
         window.PortalI18n = {t: x => x, message: x => x, requestLanguage: () => 'zh-CN',
           text: (parts, ...values) => String.raw({raw: parts}, ...values), html: (parts, ...values) => String.raw({raw: parts}, ...values)};
@@ -61,21 +64,33 @@ const html = fs.readFileSync(path.join(root, 'management_portal/article_workspac
         window.PortalResourceRoutes = {schema: 'tfi.resource-portal-routes.v1', routes: [
           {resource_type: 'concept', detail_kind: 'knowledge', path: '/resource/knowledge', parameter: 'item'},
           {resource_type: 'article', detail_kind: 'article', path: '/resource/article', parameter: 'item'},
-        ], text_resource_types: ['concept'], identity_parameters: []};
+        ], text_resource_types: ['concept'], navigation_resource_types: ['article'], identity_parameters: []};
       });
-      for (const name of ['portal_state.js', 'portal_api.js', 'portal_ui_primitives.js', 'portal_overlay.js',
-        'portal_resource_chips.js', 'portal_resource_header.js', 'portal_resource_favorites.js',
-        'article_workspace_catalog.js', 'article_workspace_popovers.js']) await page.addScriptTag({content: source(name)});
+      for (const name of ['portal_state.js', 'portal_page_state.js', 'portal_text.js', 'portal_api.js', 'portal_ui_primitives.js', 'portal_overlay.js',
+        'portal_command_registry.js', 'portal_workbench_context.js', 'portal_editor_open_service.js',
+        ...workbenchScripts, ...portalWorkspaceSurfaceScripts(),
+        'portal_preview_contract.js', 'portal_resource_chips.js', 'portal_resource_header.js', 'portal_resource_favorites.js',
+        'article_workspace_catalog.js', 'article_workspace_popovers.js', 'article_workspace_layout.js',
+        'article_workspace_events.js']) await page.addScriptTag({content: source(name)});
       await page.evaluate(async ({id}) => {
         const $ = name => document.getElementById(name), noop = () => {};
         const deps = module => Object.fromEntries(module.dependencies.map(k => [k, noop]));
-        window.state = {selectedId: new URLSearchParams(location.search).get('item') || id, articles: [], compilingArticles: new Set()};
+        window.state = {selectedId: new URLSearchParams(location.search).get('item') || id, articles: [], compilingArticles: new Set(), monacoDisposables: []};
         window.catalog = PortalArticleWorkspaceCatalog.createCatalog({ ...deps(PortalArticleWorkspaceCatalog), $, state,
           selectedArticle: () => state.articles.find(a => a.id === state.selectedId), articleProjects: () => [],
           esc: PortalUIPrimitives.escapeHtml, queryState: () => new URLSearchParams(location.search),
           request: url => PortalAPI.get(url),
         });
-        PortalArticleWorkspacePopovers.createPopovers({...deps(PortalArticleWorkspacePopovers), $, state}).initializeArticlePopovers();
+        const popovers = PortalArticleWorkspacePopovers.createPopovers({...deps(PortalArticleWorkspacePopovers), $, state});
+        window.layout = PortalArticleWorkspaceLayout.createLayout({...deps(PortalArticleWorkspaceLayout), $, state,
+          articleLayoutStore: PortalWorkbench.layout.createStore({storageKey: 'article-favorites-test-layout'}),
+        });
+        layout.initArticleWorkbench();
+        layout.currentArticleWorkbench().hidePanel('editor');
+        layout.restoreLayout();
+        PortalArticleWorkspaceEvents.createEvents({...deps(PortalArticleWorkspaceEvents), $, state, ...layout, ...popovers,
+          articleGitRefresh: {stop: noop}, articleContentRefresh: {stop: noop},
+        });
         await catalog.loadArticles({reloadSelected: false});
       }, {id});
       await page.waitForFunction(() => document.querySelector('#articleCurrentFavorite button')?.disabled === false);
@@ -83,23 +98,37 @@ const html = fs.readFileSync(path.join(root, 'management_portal/article_workspac
     await page.goto('http://article.test/resource/article?item=' + id); await setup();
     const star = page.locator('#articleCurrentFavorite button');
     const rows = page.locator('#articleFavoritesPanel .resourceFavoriteRow');
+    assert.equal(await page.locator('[data-portal-board-actions] #articleCurrentFavorite, [data-portal-board-actions] #articleFavoritesButton').count(), 0);
+    assert.equal(await page.locator('#articlePdfIdentity + #articleCurrentFavorite button').count(), 1, 'star follows the PDF Article ID');
+    const assertBorderless = async () => assert.deepEqual(await star.evaluate(el => {
+      const style = getComputedStyle(el);
+      return {border: style.borderTopWidth, background: style.backgroundColor, shadow: style.boxShadow};
+    }), {border: '0px', background: 'rgba(0, 0, 0, 0)', shadow: 'none'});
+    await assertBorderless();
+    assert.equal(await star.innerText(), '☆');
     await page.locator('#articleFavoritesButton').click();
     assert.match(await page.locator('#articleFavoritesPanel').innerText(), /暂无 Article 收藏/);
-    await page.keyboard.press('Escape');
+    await page.locator('#articleFavoritesButton').click();
     assert.equal(await page.locator('#articleFavoritesPanel').isVisible(), false);
+    await page.locator('#articleFavoritesButton').click();
+    assert.equal(await page.locator('#articleFavoritesPanel').isVisible(), true);
     await star.click();
     await page.waitForFunction(() => document.querySelector('#articleCurrentFavorite button').getAttribute('aria-pressed') === 'true');
+    await assertBorderless();
+    assert.equal(await star.innerText(), '★');
     await page.reload(); await setup();
     assert.equal(await star.getAttribute('aria-pressed'), 'true', 'reload restores committed state');
-    await page.locator('#articleFavoritesButton').click();
+    assert.equal(await page.locator('#articleFavoritesPanel').isVisible(), true, 'reload restores the Favorites side view');
     assert.equal(await rows.count(), 1, 'Article list excludes Knowledge');
     assert.equal(await rows.locator('.resourceFavoriteTitle').innerText(), title);
     const artifacts = process.env.ARTICLE_FAVORITES_ARTIFACT_DIR;
     if (artifacts) {
       fs.mkdirSync(artifacts, {recursive: true});
-      await page.screenshot({path: path.join(artifacts, 'article-favorites.png'), clip: {x: 800, y: 0, width: 640, height: 150}});
+      await page.screenshot({path: path.join(artifacts, 'article-favorites.png')});
     }
-    await rows.locator('.resourceFavoriteOpen').click();
+    await Promise.all([page.waitForEvent('domcontentloaded'), rows.locator('.resourceFavoriteOpen').click()]).catch(async error => {
+      throw new Error(`${error.message}: ${JSON.stringify({references, errors, toasts: await page.evaluate(() => toasts)})}`);
+    });
     await page.waitForURL('**/resource/article?item=' + id);
     await page.waitForLoadState(); await setup();
     assert.deepEqual(references, [id], 'open revalidates through shared resource reference');
@@ -125,7 +154,7 @@ const html = fs.readFileSync(path.join(root, 'management_portal/article_workspac
     await page.evaluate(() => dispatchEvent(new Event('portal:identity-changed')));
     await page.waitForFunction(() => document.querySelector('#articleCurrentFavorite button')?.getAttribute('aria-pressed') === 'false');
     finishOldRead();
-    await page.locator('#articleFavoritesButton').click();
+    if (!await page.locator('#articleFavoritesPanel').isVisible()) await page.locator('#articleFavoritesButton').click();
     await page.waitForFunction(() => document.querySelector('#articleFavoritesPanel .resourceFavoriteTitle')?.textContent === '另一篇文章');
     assert.equal(await rows.count(), 1);
     actor = 'alice'; denied = true;
@@ -136,6 +165,8 @@ const html = fs.readFileSync(path.join(root, 'management_portal/article_workspac
     await page.waitForFunction(() => document.querySelectorAll('#articleFavoritesPanel .resourceFavoriteRow').length === 0);
     assert.equal(saved.alice.has(id), false, 'denied article can still be removed');
     assert.deepEqual(errors, []);
-    console.log('PASS: Article star, popover, filtered titles, persistence, canonical opening, failure, identity isolation and denied removal.');
+    await page.locator('[data-article-view="files"]').click();
+    assert.equal(await page.locator('#articleFavoritesPanel').isVisible(), false, 'other side views still work');
+    console.log('PASS: borderless Article star, Favorites side view and restoration, filtered titles, persistence, canonical opening, failure, identity isolation and denied removal.');
   } finally { await browser.close(); }
 })().catch(error => {console.error(error); process.exitCode = 1;});

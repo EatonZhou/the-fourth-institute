@@ -23,7 +23,7 @@
     let articleWorkbench = null;
 
     function setSideView(view, { forceOpen = true } = {}) {
-      const target = ["files", "search", "git", "chat", "settings", "library"].includes(view) ? view : "files";
+      const target = ["files", "favorites", "search", "git", "chat", "settings", "library"].includes(view) ? view : "files";
       state.sideView = target;
       articleLayoutStore.write({ sideView: target });
       if (forceOpen && !articleWorkbench?.isPanelVisible("navigation")) articleWorkbench?.showPanel("navigation");
@@ -37,6 +37,7 @@
       if (target === "git") loadArticleGit({ includeHistory: true }).catch(error => showToast(error.message || error, "error"));
       if (target === "search") window.setTimeout(() => $("articleGlobalSearchInput").focus(), 0);
       if (target === "settings") setSettingsSection(state.settingsSection);
+      if (target === "favorites") void window.PortalResourceFavorites.refresh();
     }
 
     function setNavigationPanelVisible(visible) {

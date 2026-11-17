@@ -130,13 +130,6 @@
                 </div>
               </div>
             </div>
-            <span id="articleCurrentFavorite" data-resource-favorite="" data-portal-toolbar-priority="critical" hidden></span>
-            <button class="portalButton is-compact" id="articleFavoritesButton" data-portal-toolbar-priority="critical" type="button" aria-haspopup="dialog" aria-expanded="false" aria-controls="articleFavoritesPanel">
-              <span aria-hidden="true">☆</span><span><!--portal-i18n:"收藏"-->收藏</span>
-            </button>
-            <div class="articleFavoritesPanel" id="articleFavoritesPanel" role="dialog" aria-label="收藏的 Article" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;收藏的 Article&quot;}" hidden>
-              <div data-resource-favorites="article"></div>
-            </div>
             <button class="portalButton is-compact is-primary articleRegisterPrimary" data-portal-toolbar-priority="critical" id="articleRegisterOpen" type="button" data-portal-icon="file-plus">
               <span><!--portal-i18n:"注册新 Article"-->注册新 Article</span>
             </button>
@@ -155,6 +148,7 @@
       <div class="articleWorkspaceGrid" id="articleWorkspaceGrid" data-portal-boot-required="Article 工作台初始化">
         <aside class="portalActivityRail articleActivityBar" aria-label="Article workspace views" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;Article workspace views&quot;}">
           <button class="portalActivityRailView active" data-portal-icon="file-text" type="button" data-article-view="files" aria-label="File tree" title="File tree" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;File tree&quot;, &quot;title&quot;: &quot;File tree&quot;}"></button>
+          <button class="portalActivityRailView" id="articleFavoritesButton" data-portal-icon="star" type="button" data-article-view="favorites" aria-controls="articleFavoritesPanel" aria-label="收藏的 Article" title="收藏的 Article" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;收藏的 Article&quot;, &quot;title&quot;: &quot;收藏的 Article&quot;}"></button>
           <button class="portalActivityRailView" data-portal-icon="search" type="button" data-article-view="search" aria-label="Search" title="Search" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;Search&quot;, &quot;title&quot;: &quot;Search&quot;}"></button>
           <button class="portalActivityRailView" id="articleGitView" data-portal-icon="branch" type="button" data-article-view="git" aria-label="源代码管理" title="源代码管理" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;源代码管理&quot;, &quot;title&quot;: &quot;源代码管理&quot;}">
             <span class="articleGitBadge" id="articleGitBadge" hidden aria-hidden="true">0</span>
@@ -198,6 +192,10 @@
               </div>
               <div class="articleOutlineList" id="articleOutlineList"><div class="portalAsyncState is-inline" data-state="empty" data-density="inline" role="status"><span class="portalAsyncStateIcon" aria-hidden="true"></span><span class="portalAsyncStateMessage"><!--portal-i18n:"Open a .tex file to view its outline."-->Open a .tex file to view its outline.</span></div></div>
             </section>
+          </div>
+
+          <div class="sideView articleFavoritesPanel" id="articleFavoritesPanel" data-article-panel="favorites" role="region" aria-label="收藏的 Article" data-portal-i18n-attrs="{&quot;aria-label&quot;: &quot;收藏的 Article&quot;}">
+            <div data-resource-favorites="article"></div>
           </div>
 
           <div class="sideView" data-article-panel="search">
@@ -476,6 +474,7 @@
             </div>
             <span class="articleSyncHint" id="articleSyncHint" hidden><!--portal-i18n:"双击 PDF 返回源码"-->双击 PDF 返回源码</span>
             <code class="articlePdfIdentity" id="articlePdfIdentity" title="当前 Article Resource ID">未选择 Article</code>
+            <span id="articleCurrentFavorite" data-resource-favorite="" hidden></span>
             <div class="articleBuildSummary" id="articleBuildSummary"><!--portal-i18n:"尚未编译"-->尚未编译</div>
           </div>
           <div class="articleDependencyStatus" id="articleDependencyStatus" role="status" hidden></div>
