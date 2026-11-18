@@ -61,10 +61,10 @@ body[data-resource-category="repo"] .portalCollectionTypeChip[data-type="repo"] 
 .repoMastheadMain {
   box-sizing: border-box;
   display: grid;
-  grid-template-columns: minmax(0, max-content) minmax(0, 1fr) auto;
-  grid-template-areas: "identity meta actions";
+  grid-template-columns: minmax(0, max-content) minmax(0, 1fr) max-content auto;
+  grid-template-areas: "identity meta nav actions";
   align-items: center;
-  gap: 8px 16px;
+  gap: 0 12px;
   padding: 6px 16px;
 }
 
@@ -73,7 +73,7 @@ body[data-resource-category="repo"] .portalCollectionTypeChip[data-type="repo"] 
   display: flex;
   align-items: center;
   min-width: 0;
-  max-width: min(42vw, 600px);
+  max-width: min(26vw, 420px);
   gap: 10px;
 }
 
@@ -147,6 +147,7 @@ body[data-resource-category="repo"] .portalCollectionTypeChip[data-type="repo"] 
 .repoProjectPills { display: inline-flex; flex-wrap: wrap; gap: 8px; }
 
 .repoWorkspaceNav {
+  grid-area: nav;
   min-width: 0;
   min-height: 36px;
   display: flex;
@@ -160,7 +161,7 @@ body[data-resource-category="repo"] .portalCollectionTypeChip[data-type="repo"] 
   display: flex;
   align-items: center;
   gap: 2px;
-  padding: 0 10px;
+  padding: 0;
 }
 
 .repoTab {
@@ -169,6 +170,8 @@ body[data-resource-category="repo"] .portalCollectionTypeChip[data-type="repo"] 
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  flex: 0 0 auto;
+  white-space: nowrap;
   min-height: 36px;
   border: 0;
   background: transparent;
@@ -225,10 +228,12 @@ body[data-resource-category="repo"] .portalCollectionTypeChip[data-type="repo"] 
 .repoWorkspaceActions {
   min-width: 0;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
+  justify-content: flex-end;
   gap: 7px;
   margin-left: auto;
-  padding: 3px 10px 3px 0;
+  padding: 6px 16px;
 }
 
 .repoWorkspaceActions .repoListSearch {

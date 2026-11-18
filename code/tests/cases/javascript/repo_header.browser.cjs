@@ -3,6 +3,7 @@ const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('n
 const {chromium}=require('../../../management_portal/test_framework/tau_runtime/node_modules/playwright');
 const root=path.resolve(__dirname,'../../../management_portal');
 const out=process.env.REPO_HEADER_EVIDENCE;
+if(out)fs.mkdirSync(out,{recursive:true});
 (async()=>{
  const browser=await chromium.launch({headless:true});
  try {
@@ -17,10 +18,11 @@ const out=process.env.REPO_HEADER_EVIDENCE;
   await page.evaluate(()=>{
    PortalI18n.apply('zh-CN');const noop=()=>{}, asyncNoop=async()=>{};
    window.calls=[];
-   window.state={selectedId:'repo_dd656e09c207',records:[],activeTab:'code',overview:{name:'portal-multiagent-trace',ownership:'external',project_ids:['Harness芯片'],capabilities:{git:true,write_files:true},status:{dirty:false,changes:[]},branches:[{name:'main',current:true},{name:'feature/design'}],current_branch:'main',default_branch:'main',branch_count:2,tag_count:0,remotes:[{name:'origin',url:'https://example.com/repo.git',web_url:'https://example.com/repo'}],checkout_writable:true,checkout_path:'/fixture/repo'},tree:{path:'',entries:[]}};
+   window.state={selectedId:'repo_dd656e09c207',records:[],activeTab:'code',commitRevision:'HEAD',overview:{name:'portal-multiagent-trace',ownership:'external',project_ids:['Harness芯片'],capabilities:{git:true,write_files:true},status:{dirty:false,changes:[]},branches:[{name:'main',current:true},{name:'feature/design'}],current_branch:'main',default_branch:'main',branch_count:291,tag_count:0,remotes:[{name:'origin',url:'https://example.com/repo.git',web_url:'https://example.com/repo'}],checkout_writable:true,checkout_path:'/fixture/repo'},tree:{path:'',entries:[]}};
    const registerForm=document.createElement('form');registerForm.innerHTML='<input name="placement">';
    const elements=new Proxy({workspace:document.getElementById('repoWorkspace'),modeTabs:[],editorTabs:[],registerForm},{get:(o,k)=>o[k]||(o[k]=document.createElement('input'))});
    window.PortalWorkbench={model:{split:noop,stack:noop},create:()=>({destroy:noop})};
+   window.PortalRepoDevelopment={mount:({root})=>{root.textContent='Development workbench';}};
    const deps=Object.fromEntries(PortalRepoWorkspaceCodeView.dependencies.map(k=>[k,noop]));
    Object.assign(deps,{state,elements,esc:PortalUIPrimitives.escapeHtml,uiIcon:PortalUIPrimitives.iconHtml,workspaceCapability:n=>state.overview.capabilities[n]===true});
    const code=PortalRepoWorkspaceCodeView.createCodeView(deps);
@@ -33,30 +35,49 @@ const out=process.env.REPO_HEADER_EVIDENCE;
     selectTab:async tab=>{calls.push({name:'selectTab',value:tab});state.activeTab=tab;shell.renderWorkspace();}});
    PortalRepoWorkspaceEvents.createEvents(ed);
   });
-  for(const [width,theme] of JSON.parse(process.env.REPO_HEADER_VIEWS || '[[1440,"light"],[768,"light"],[390,"light"],[1440,"dark"]]')){
+  for(const [width,theme] of JSON.parse(process.env.REPO_HEADER_VIEWS || '[[1600,"light"],[1440,"light"],[1280,"light"],[1024,"light"],[768,"light"],[390,"light"],[1440,"dark"]]')){
    await page.setViewportSize({width,height:900});await page.evaluate(theme=>document.documentElement.dataset.portalTheme=theme,theme);
    await page.evaluate(()=>document.getAnimations().forEach(a=>{if(Number.isFinite(a.effect.getComputedTiming().endTime))a.finish();}));
    const observation=await page.evaluate(()=>({overflow:document.documentElement.scrollWidth>innerWidth,
     headerHeight:document.querySelector('.repoMasthead').getBoundingClientRect().height+document.querySelector('.repoCodeToolbar').getBoundingClientRect().height,
     titleWidth:document.querySelector('#repoWorkspaceTitle').getBoundingClientRect().width,
+    headerParts:['.repoIdentity','.repoIdentityMeta','.repoWorkspaceNav','.repoIdentityActions'].map(s=>{const r=document.querySelector(s).getBoundingClientRect();return {selector:s,x:r.x,y:r.y,right:r.right,bottom:r.bottom};}),
     tabs:[...document.querySelectorAll('.repoTab')].map(e=>({name:e.textContent.trim(),size:parseFloat(getComputedStyle(e).fontSize)})),
     branch:getComputedStyle(document.querySelector('.repoBranchCurrent')).fontSize,
     branchStyle:{bg:getComputedStyle(document.querySelector('.repoBranchControl')).backgroundColor,panel:getComputedStyle(document.querySelector('.repoBranchControl')).getPropertyValue('--panel'),text:getComputedStyle(document.querySelector('.repoBranchControl')).color,root:getComputedStyle(document.documentElement).getPropertyValue('--panel')},
     toolbarBorder:getComputedStyle(document.querySelector('.repoCodeToolbar')).borderTopWidth,
     visibleActions:[...document.querySelectorAll('.repoIdentityActions button')].filter(e=>e.checkVisibility()).length}));
-   if(out){fs.mkdirSync(out,{recursive:true});await page.screenshot({path:path.join(out,`${width}-${theme}.png`),fullPage:true});}
+   if(out)await page.screenshot({path:path.join(out,`${width}-${theme}.png`),fullPage:true});
    assert.equal(observation.overflow,false,JSON.stringify({width,...observation}));assert.equal(observation.toolbarBorder,'0px');assert.equal(observation.visibleActions,1);
    assert(observation.tabs.every(t=>t.size>=14));
    assert(observation.titleWidth>=140,`Repository name must remain readable: ${JSON.stringify({width,titleWidth:observation.titleWidth})}`);
    if(width>=1024)assert(observation.headerHeight<=150,'Desktop header must not push the file view down');
+   if(width>=1280){
+    const [identity,meta,nav,actions]=observation.headerParts;
+    assert(nav.x>=identity.right && nav.right<=actions.x,'Tabs sit beside the repository identity without overlapping actions');
+    assert(Math.abs((nav.y+nav.bottom-identity.y-identity.bottom)/2)<1,'Tabs share the identity row');
+    assert(meta.right<=nav.x,'Repository status does not overlap navigation');
+   }
    observations.push({width,theme,...observation});
   }
   if(!process.env.REPO_HEADER_VISUAL_ONLY){
+  await page.setViewportSize({width:1440,height:900});
+  await page.locator('[data-repo-tab="code"]').focus();await page.keyboard.press('ArrowRight');
+  assert.equal(await page.locator('.repoTab[aria-selected="true"]').getAttribute('data-repo-tab'),'develop');
+  assert.equal(await page.locator('[data-repo-development]').textContent(),'Development workbench');
+  for(const tab of ['changes','commits','branches','settings','code']){
+   await page.locator(`[data-repo-tab="${tab}"]`).click();
+   assert.equal(await page.locator('.repoTab[aria-selected="true"]').getAttribute('data-repo-tab'),tab);
+   if(['commits','branches'].includes(tab)){
+    const context=await page.locator('.repoWorkspaceActions').boundingBox(),main=await page.locator('.repoMastheadMain').boundingBox();
+    assert(context.y>=main.y+main.height,'View-specific controls occupy their own row');
+   }
+  }
   await page.setViewportSize({width:390,height:900});
   await page.locator('[data-repo-more]').focus();await page.keyboard.press('Enter');await page.locator('#repoMoreActions').waitFor({state:'visible'});
   assert(await page.locator('[data-repo-discard]').isDisabled());
   await page.keyboard.press('Escape');await page.locator('#repoMoreActions').waitFor({state:'hidden'});
-  assert(await page.locator('[data-repo-more]').evaluate(e=>e===document.activeElement));
+  await page.waitForFunction(()=>document.querySelector('[data-repo-more]')===document.activeElement);
   for(const name of ['copy-id','register','shortcuts']){
    await page.locator('[data-repo-more]').click();await page.locator(`[data-repo-action="${name}"]`).click();
    await page.locator('#repoMoreActions').waitFor({state:'hidden'});

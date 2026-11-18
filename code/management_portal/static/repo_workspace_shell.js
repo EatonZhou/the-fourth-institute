@@ -69,7 +69,7 @@
       return state.overview?.capabilities?.[name] === true;
     }
 
-    function repoSelector() {
+    function workspaceHeader() {
       const record = selectedRecord();
       const primaryRemote = state.overview?.remotes?.find(remote => remote.name === "origin")
         || state.overview?.remotes?.[0];
@@ -94,6 +94,7 @@
         <span class="repoProjectPills">${(state.overview?.project_ids || projectIds(record)).map(project => window.PortalI18n.html`<span>${esc(project)}</span>`).join("")}</span>
         ${statusSummary()}
       </div>
+      ${workspaceTabs()}
       <div class="repoIdentityActions">
         ${primaryRemote?.web_url ? window.PortalI18n.html`<a class="portalButton is-compact" href="${esc(primaryRemote.web_url)}" target="_blank" rel="noopener noreferrer" title="${esc(primaryRemote.web_url)}">${uiIcon("external-link")}<span>打开 Remote</span></a>` : ""}
         <button class="portalButton is-compact is-quiet" type="button" data-repo-more aria-label="更多仓库操作" aria-controls="repoMoreActions">${uiIcon("more-horizontal")}<span>更多</span></button>
@@ -148,7 +149,6 @@
           </button>
         `).join("")}
       </nav>
-      ${workspaceContextActions()}
     </div>`;
     }
 
@@ -177,8 +177,8 @@
       }[state.activeTab]();
       elements.workspace.innerHTML = window.PortalI18n.html`
       <header class="repoMasthead">
-        <div class="repoMastheadMain">${repoSelector()}</div>
-        ${workspaceTabs()}
+        <div class="repoMastheadMain">${workspaceHeader()}</div>
+        ${workspaceContextActions()}
       </header>
       <div class="repoWorkspaceBody">${content}</div>`;
       if (state.activeTab === "develop") {

@@ -1,5 +1,13 @@
 /* Repository workspace: narrow window overrides. Pages load this file right after
    repo_workspace_history.css. */
+@media (max-width: 1279px) {
+  .repoMastheadMain {
+    grid-template-columns: minmax(0, max-content) minmax(0, 1fr) auto;
+    grid-template-areas: "identity meta actions" "nav nav nav";
+  }
+  .repoIdentity { max-width: min(42vw, 600px); }
+}
+
 @media (max-width: 1180px) {
   .repoChangesLayout {
     grid-template-columns: 230px minmax(0, 1fr);
@@ -34,7 +42,7 @@
 @media (max-width: 920px) {
   .repoMastheadMain {
     grid-template-columns: minmax(0, 1fr) auto;
-    grid-template-areas: "identity actions" "meta meta";
+    grid-template-areas: "identity actions" "meta meta" "nav nav";
     gap: 4px 12px;
   }
   .repoIdentity { max-width: none; }
@@ -83,8 +91,7 @@
   }
 
   .repoWorkspaceActions {
-    width: 100%;
-    padding: 0 10px 8px;
+    padding: 6px 12px;
   }
 
   .repoWorkspaceActions .repoListSearch {
@@ -96,7 +103,7 @@
 @media (max-width: 600px) {
   .repoMastheadMain {
     grid-template-columns: minmax(0, 1fr);
-    grid-template-areas: "identity" "meta" "actions";
+    grid-template-areas: "identity" "meta" "actions" "nav";
   }
   .repoIdentityActions { justify-self: start; }
   .repoMoreActions { right: auto; left: 0; }
