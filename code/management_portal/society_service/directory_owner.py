@@ -46,14 +46,16 @@ def delete_folder(connection, *, table, identity, folder, actor, deleted_at=None
     directory_metadata(json_value(row['directory_json']), identity)
     from management_common.directory_move_store import cancel_owner_moves
     cancel_owner_moves(connection, identity)
-    from .resident_workspace_deletion import remove_deleted_folder, delete_workspaces
+    from .resident_workspace_deletion import remove_deleted_folder
     from .lineage_data_columns import now_iso_millis
     timestamp = deleted_at or now_iso_millis()
-    # Ownership includes separately registered directories outside this tree.
-    delete_workspaces(connection, owner_ids=[identity], deleted_at=timestamp, deleted_by=actor)
+    # Select the physical tree and owned Workspaces together, before releasing
+    # the identity's retention records. There must be no intermediate cascade.
+    result = remove_deleted_folder(folder, connection=connection, owner_id=identity,
+                                   actor=actor, deleted_at=timestamp, preserve_resources=True)
     from management_portal.resources.directory_registrations import unregister_identity
-    unregister_identity(identity, connection=connection, actor=actor)
-    return remove_deleted_folder(folder, connection=connection, owner_id=identity,
-                                 actor=actor, deleted_at=timestamp)
+    unregister_identity(identity, connection=connection, actor=actor,
+                        preserved_paths=result['preserved_paths'])
+    return result
 
 

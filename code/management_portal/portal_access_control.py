@@ -353,7 +353,11 @@ class PortalAccessStore:
             self._write(payload)
             permission_system.sync_user(clean_username, deleted=True, connection=connection)
             from management_common.directory_retention import RetentionStore
-            RetentionStore(connection=connection).release_owner(clean_username, connection=connection)
+            from management_portal.resources.directory_registrations import registered_paths
+            retention = RetentionStore(connection=connection)
+            retention.queue.lock(connection)
+            retention.release_owner(clean_username, connection=connection,
+                                    preserved_paths=registered_paths(connection=connection))
         self.audit(actor, "user_identity_deleted", target=clean_username)
         return self.user(clean_username)
 

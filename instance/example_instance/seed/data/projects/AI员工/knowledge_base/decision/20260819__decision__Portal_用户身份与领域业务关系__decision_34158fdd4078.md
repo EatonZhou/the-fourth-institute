@@ -4,34 +4,34 @@ type: decision
 project: AI员工
 created_at: '2026-08-19'
 version:
-  number: 25
-  created_at: '2026-08-19'
+  number: 26
+  created_at: "2026-08-19"
   created_by:
-    user: ''
-    agent: ''
-  updated_at: '2026-10-31T01:58:25Z'
+    user: ""
+    agent: ""
+  updated_at: "2026-11-18T03:01:00Z"
   updated_by:
-    user: ''
-    agent: resident_73cb83291316
+    user: ""
+    agent: "resident_6199a7a36480"
 importance: 10
 metaness: 3
 ai_generated: false
 links:
   source:
-  - ${code_root}/management_portal/society_service/isa/definition.py
-  - ${code_root}/management_portal/web_isa.py
-  - ${code_root}/management_portal/http_portal_session.py
-  - ${code_root}/management_portal/society_service/lineage_access_policy.py
-  - ${code_root}/management_portal/portal_access_control.py
-  - ${code_root}/management_portal/portal_two_factor.py
-  - ${code_root}/management_portal/resources/access.py
-  - ${code_root}/management_portal/serve_management_portal.py
-  - ${code_root}/management_portal/society_service/lineage_domain.py
-  - ${code_root}/management_portal/society_service/lineage_state.py
-  - ${code_root}/management_portal/society_service/resident_domain.py
-  - ${code_root}/management_portal/permission_system/__init__.py
-  - ${code_root}/tests/cases/test_portal_access_control.py
-  - ${code_root}/tests/cases/test_security_wave5.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/isa/definition.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/web_isa.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/http_portal_session.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/lineage_access_policy.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/portal_access_control.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/portal_two_factor.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/resources/access.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/serve_management_portal.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/lineage_domain.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/lineage_state.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/resident_domain.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/permission_system/__init__.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_portal_access_control.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_security_wave5.py
   related:
   - decision_5bc3fdfc7eec
   - decision_c953eab654cd
@@ -57,7 +57,9 @@ User 是稳定账户；Resident 是稳定运行节点。身份认证见 decision
 
 账号保存用户名、显示名称、恢复邮箱、头像、active/disabled/deleted 状态、分类（Portal 管理员 portal_admin、一般用户 member 或实习用户 intern，由 UpdateUser 修改）、会话版本和审计时间。用户名按既有 principal 比较规则处理；删除后的用户名不可复用。停用撤销可用会话并保留恢复所需事实；永久删除清理个人认证与个人数据，保留共享业务历史及其中的署名（例如 `created_by`），不删除停用或已删除用户名的历史关系。
 
-账号名称没有固定管理员特权，也不形成停用、删除或邀请的例外。账号写入由权限系统按当前模板逐条指令判定，/api/me 的 access.allows 报告调用者能否通过页面关心的指令；名册和审计读取要求有效登录身份。普通用户保留自己的资料、凭据、偏好和导航入口。TFI portal 仍需认证且遵守领域规则。
+**个人清理与独立资源分开。** 删除用户时，仍登记的 Article、Repo、Paper、知识条目和 Report 按各自生命周期保留，不因 `created_by` 或旧 owner 保留记录而清理其内容。服务在同一清理队列锁和用户删除事务内取得当前登记根，释放用户的保留记录时排除这些路径及必要父目录；认证撤销、会话失效和个人权限删除照常完成。显式内容删除范围及后台清理遵守《目录与路径协议》（decision_4aa13bc21e8e）。
+
+账号名称没有固定管理员特权，也不形成停用、删除或邀请的例外。账号写入由权限系统按当前模板逐条指令判定，/api/me 的 access.allows 报告调用者能否通过页面关心的指令；名册和审计读取要求有效登录身份。普通用户保留自己的资料、凭据、偏好和导航入口。portal-test 仍需认证且遵守领域规则。
 
 ## 谁能管理一个对象
 

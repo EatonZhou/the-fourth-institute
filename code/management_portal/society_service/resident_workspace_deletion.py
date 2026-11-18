@@ -6,7 +6,8 @@ from management_common.instance_locations import located_path
 from management_portal.resources.workspace_store import get_workspace_store, now
 
 
-def delete_workspaces(connection, *, workspace_ids=(), paths=(), owner_ids=(), deleted_at, deleted_by):
+def delete_workspaces(connection, *, workspace_ids=(), paths=(), owner_ids=(), deleted_at, deleted_by,
+                      preserve_resources=False):
     """An owned outer tree includes every nested registration, regardless of users.
 
     Deleting an owning identity also removes its directories outside this tree.
@@ -14,7 +15,7 @@ def delete_workspaces(connection, *, workspace_ids=(), paths=(), owner_ids=(), d
     from management_portal.resources.directory_registrations import unregister_tree
     result = unregister_tree([lexical_path(located_path(str(path))) for path in paths],
         connection=connection, actor=deleted_by, workspace_ids=workspace_ids,
-        owner_ids=owner_ids, deleted_at=deleted_at)
+        owner_ids=owner_ids, deleted_at=deleted_at, preserve_resources=preserve_resources)
     return result['workspace_paths']
 
 
@@ -32,15 +33,20 @@ def unregister_workspace(workspace_id, *, connection, actor, authorize):
     return descriptor
 
 
-def remove_deleted_folder(folder, *, connection, owner_id, actor='', deleted_at=None):
-    """Enlist the owner's entire tree in its identity transaction."""
+def remove_deleted_folder(folder, *, connection, owner_id, actor='', deleted_at=None,
+                          preserve_resources=False):
+    """Enlist only the resource owner's safe cleanup roots in this transaction."""
     if not owner_id or connection is None:
         raise ValueError('Directory cleanup requires its owner transaction')
     folder = lexical_path(located_path(str(folder)))
     validate_removal(folder)
     queue = get_directory_cleanup_store()
     queue.lock(connection)
-    delete_workspaces(connection, paths=[folder], owner_ids=[owner_id],
-                      deleted_at=deleted_at or now(), deleted_by=actor)
-    return enqueue_directory_cleanup(folder, owner_id=owner_id, operation_id='delete-folder:' + owner_id,
-                         actor=actor, connection=connection)
+    from management_portal.resources.directory_registrations import unregister_tree
+    result = unregister_tree([folder], owner_ids=[owner_id], connection=connection,
+                             deleted_at=deleted_at or now(), actor=actor,
+                             preserve_resources=preserve_resources)
+    result['cleanup_ids'] = [enqueue_directory_cleanup(
+        root, owner_id=owner_id, operation_id='delete-folder:' + owner_id,
+        actor=actor, connection=connection) for root in result['cleanup_roots']]
+    return result

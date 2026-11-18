@@ -87,6 +87,36 @@ def remove_path(path: Path, *, identity=None) -> None:
         return
 
 
+def deletion_roots(root, preserved_paths=()):
+    """Split cleanup around independent owners without traversing their data.
+
+    Only enumerate the ancestor spine of protected registrations. The returned
+    disjoint subtrees can use the normal durable, no-follow cleanup protocol.
+    Containers of surviving resources remain at their registered locations.
+    """
+    from .secure_paths import open_directory, scandir
+
+    root = lexical_path(root)
+    protected = tuple(lexical_path(path) for path in preserved_paths)
+    comparison = DirectoryComparison()
+
+    def visit(path):
+        validate_removal(path)
+        if any(comparison.contains(item, path) for item in protected):
+            return []
+        if not any(comparison.contains(path, item) for item in protected):
+            return [path]
+        try:
+            with open_directory(path) as directory:
+                with scandir(directory) as entries:
+                    children = sorted(entry.name for entry in entries)
+                return [candidate for name in children for candidate in visit(path / name)]
+        except FileNotFoundError:
+            return []
+
+    return visit(root)
+
+
 def _remove_entry(parent, name, *, identity=None):
     from .secure_paths import directory_path, open_child, scandir, unlink_child
     # Windows stat_child rejects reparse points for reads. Cleanup instead

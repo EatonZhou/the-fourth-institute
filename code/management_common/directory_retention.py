@@ -250,10 +250,24 @@ class RetentionStore:
                              operation_id='retention:' + uuid4().hex, actor='directory-retention', connection=connection)
         return True
 
-    def release_owner(self, owner_id, *, connection=None):
+    def release_owner(self, owner_id, *, connection=None, preserved_paths=()):
         with nullcontext(connection) if connection is not None else self.database.transaction() as conn:
             self.queue.lock(conn)
             rows = conn.execute(f'SELECT * FROM {self.table} WHERE owner_id=%s FOR UPDATE', (owner_id,)).fetchall()
+            if preserved_paths:
+                from .directory_paths import deletion_roots
+                released = 0
+                for row in rows:
+                    roots = deletion_roots(cleanup_path(row['location']), preserved_paths)
+                    if not conn.execute(f'DELETE FROM {self.table} WHERE location=%s',
+                                        (row['location'],)).rowcount:
+                        continue
+                    for root in roots:
+                        self.enqueue_cleanup(root, owner_id=owner_id,
+                            operation_id='retention:' + uuid4().hex,
+                            actor='directory-retention', connection=conn)
+                    released += 1
+                return released
             return sum(self._release(row, conn) for row in rows)
 
     def release_run(self, run_id):

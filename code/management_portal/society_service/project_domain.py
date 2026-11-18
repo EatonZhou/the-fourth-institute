@@ -297,9 +297,10 @@ def delete_project(project_id: str, actor: str) -> dict[str, Any]:
                 }
                 document["projects"] = _registry_without_project(document, registry_id)["projects"]
                 from .resident_workspace_deletion import delete_workspaces
-                delete_workspaces(connection, owner_ids=[registry_id], deleted_at=entry['deleted_at'], deleted_by=actor_id)
+                delete_workspaces(connection, owner_ids=[registry_id], deleted_at=entry['deleted_at'],
+                                  deleted_by=actor_id, preserve_resources=False)
                 remove_deleted_folder(project_root, connection=connection, owner_id=registry_id,
-                                      actor=actor_id)
+                                      actor=actor_id, preserve_resources=False)
                 from management_portal.resources.directory_registrations import unregister_identity
                 unregister_identity(registry_id, connection=connection, actor=actor_id)
                 writer.put(project_registry.COLLECTION, project_registry.DOCUMENT_ID, document)

@@ -63,7 +63,7 @@ def excluded_from_scan(resource_id, path):
     return is_deleted(resource_id) or bool(get_directory_cleanup_store().pending_at(path))
 
 
-def unregister_identity(resource_id, *, connection, actor=''):
+def unregister_identity(resource_id, *, connection, actor='', preserved_paths=()):
     """Identity tombstones contain no paths and prevent disk rediscovery."""
     registry = get_registry_store()
     registry._ensure()
@@ -75,7 +75,8 @@ def unregister_identity(resource_id, *, connection, actor=''):
     if connection.execute('SELECT to_regclass(%s)', (table,)).fetchone()[0]:
         connection.execute(f'UPDATE {table} SET deleted=TRUE WHERE resource_id=%s', (resource_id,))
     from management_common.directory_retention import RetentionStore
-    RetentionStore(connection=connection).release_owner(resource_id, connection=connection)
+    RetentionStore(connection=connection).release_owner(resource_id, connection=connection,
+                                                       preserved_paths=preserved_paths)
     from management_portal import permission_system
     permission_system.unregister_resources([resource_id], connection=connection)
     request_projection_release(resource_id, actor=actor, connection=connection)
@@ -193,14 +194,24 @@ def unregister_nested(roots, *, connection, actor):
     return unregister_tree(roots, connection=connection, actor=actor)['resource_ids']
 
 
-def unregister_tree(roots=(), *, connection, actor, workspace_ids=(), owner_ids=(), deleted_at=None, cleanup_owner=enqueue_directory_cleanup):
+def registered_paths(*, connection):
+    """The locked, current independently registered content locations."""
+    get_directory_cleanup_store().lock(connection)
+    with get_registry_store().writer(*COLLECTIONS, connection=connection) as writer:
+        return tuple(Path(located_path(item['path'])) for collection in COLLECTIONS
+                     for document in writer.documents(collection).values()
+                     for item in locations(collection, document))
+
+
+def unregister_tree(roots=(), *, connection, actor, workspace_ids=(), owner_ids=(), deleted_at=None,
+                    cleanup_owner=enqueue_directory_cleanup, preserve_resources=False):
     """Every directory owner uses one closure and one registration transaction.
 
     A durable artifact owner can retain filesystem cleanup responsibility.
     Workspace identity owns its deletion; Society's binding constraint reacts
     in the same database transaction without an upward Python dependency.
     """
-    from management_common.directory_paths import contains, lexical_path
+    from management_common.directory_paths import contains, lexical_path, deletion_roots
     from management_common.directory_retention import RetentionStore
     from .workspace_store import get_workspace_store, now
     queue = get_directory_cleanup_store()
@@ -214,17 +225,25 @@ def unregister_tree(roots=(), *, connection, actor, workspace_ids=(), owner_ids=
     with registry.writer(*COLLECTIONS, IGNORE_COLLECTION, connection=connection) as writer:
         documents = [(collection, identifier, locations(collection, document))
                      for collection in COLLECTIONS for identifier, document in writer.documents(collection).items()]
+        preserved = tuple(Path(located_path(item['path'])) for _, _, entries in documents
+                          for item in entries) if preserve_resources else ()
+        explicit_owners = set(owner_ids)
         while True:
             before = (len(roots), len(selected), len(owners), len(resource_ids))
             for root in roots:
                 validate_removal(root)
             for row in rows:
                 path = Path(located_path(row['path']))
+                if (row['workspace_id'] not in selected and row['owner_id'] not in explicit_owners
+                        and any(contains(protected, path) for protected in preserved)):
+                    continue
                 if row['workspace_id'] in selected or row['owner_id'] in owners or any(contains(root, path) for root in roots):
                     selected.add(row['workspace_id'])
                     owners.add(row['workspace_id'])
                     roots.add(path)
             for _collection, identifier, entries in documents:
+                if preserve_resources:
+                    continue
                 if identifier in owners or any(contains(root, Path(located_path(item['path']))) for item in entries for root in roots):
                     resource_ids.add(identifier)
                     owners.add(identifier)
@@ -234,17 +253,21 @@ def unregister_tree(roots=(), *, connection, actor, workspace_ids=(), owner_ids=
         timestamp = deleted_at or now()
         deleted_paths = []
         retention = RetentionStore(connection=connection)
-        retention.unregister_tree(roots, connection=connection)
+        cleanup_roots = list(dict.fromkeys(path for root in roots
+                             for path in deletion_roots(root, preserved)))
+        retention.unregister_tree(cleanup_roots, connection=connection)
         for owner in owners:
-            retention.release_owner(owner, connection=connection)
+            retention.release_owner(owner, connection=connection, preserved_paths=preserved)
         for row in rows:
             if row['workspace_id'] not in selected:
                 continue
             workspace.mark_deleted(row['workspace_id'], deleted_at=timestamp, deleted_by=actor, connection=connection)
-            unregister_identity(row['workspace_id'], connection=connection, actor=actor)
+            unregister_identity(row['workspace_id'], connection=connection, actor=actor,
+                                preserved_paths=preserved)
             path = located_path(row['path'])
             deleted_paths.append(path)
-            cleanup_owner(path, owner_id=row['workspace_id'], operation_id='delete:' + row['workspace_id'], actor=actor, connection=connection)
+            for cleanup_root in deletion_roots(path, preserved):
+                cleanup_owner(cleanup_root, owner_id=row['workspace_id'], operation_id='delete:' + row['workspace_id'], actor=actor, connection=connection)
         for collection, identifier, entries in documents:
             if identifier not in resource_ids:
                 continue
@@ -254,7 +277,8 @@ def unregister_tree(roots=(), *, connection, actor, workspace_ids=(), owner_ids=
             for item in entries:
                 cleanup_owner(located_path(item['path']), owner_id=identifier,
                               operation_id='delete:' + identifier, actor=actor, connection=connection)
-    return {'resource_ids': sorted(resource_ids | selected), 'workspace_paths': deleted_paths}
+    return {'resource_ids': sorted(resource_ids | selected), 'workspace_paths': deleted_paths,
+            'preserved_paths': list(preserved), 'cleanup_roots': cleanup_roots}
 
 
 def unregister_registry(collection, resource_id, *, actor='', projection_ids=()):

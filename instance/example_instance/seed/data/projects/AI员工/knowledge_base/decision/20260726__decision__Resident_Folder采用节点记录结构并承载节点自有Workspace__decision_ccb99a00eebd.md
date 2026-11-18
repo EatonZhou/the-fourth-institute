@@ -4,29 +4,29 @@ type: decision
 project: AI员工
 created_at: '2026-07-26'
 version:
-  number: 19
-  created_at: '2026-07-26'
+  number: 20
+  created_at: "2026-07-26"
   created_by:
-    user: ''
-    agent: ''
-  updated_at: '2026-10-31T03:25:59Z'
+    user: ""
+    agent: ""
+  updated_at: "2026-11-18T03:01:00Z"
   updated_by:
-    user: ''
-    agent: resident_73cb83291316
+    user: ""
+    agent: "resident_6199a7a36480"
 importance: 9
 metaness: 2
 ai_generated: false
 links:
   source:
-  - ${code_root}/management_portal/static/lineage_workbench.js
-  - ${code_root}/management_portal/http_agent_workbench.py
-  - ${code_root}/management_portal/society_service/resident_runtime_domain.py
-  - ${code_root}/management_portal/society_service/resident_record_domain.py
-  - ${code_root}/management_portal/society_service/resident_workspace_domain.py
-  - ${code_root}/management_portal/society_service/resident_catalog.py
-  - ${code_root}/management_portal/society_service/state_store.py
-  - ${code_root}/tests/cases/test_resident_folder_creation_contract.py
-  - ${code_root}/tests/cases/test_portal_resident_rule_injection.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/lineage_workbench.js
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/http_agent_workbench.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/resident_runtime_domain.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/resident_record_domain.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/resident_workspace_domain.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/resident_catalog.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/state_store.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_resident_folder_creation_contract.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_portal_resident_rule_injection.py
   related:
   - decision_0571f3741e23
   - decision_5bf5bfbd52cb
@@ -34,8 +34,15 @@ links:
   - decision_c616d197abbb
   - decision_741b04821171
   - decision_8838269736d3
+  - decision_b3cf5f83de9b
+  - concept_43444ecc6c18
+  - concept_0c95d76935f7
+  - concept_c88cec9b2984
   - decision_721c64f9bdcc
-  supersedes: []
+  - concept_a98b3b2f350f
+  - concept_0af03a4958ce
+  supersedes:
+  - concept_58c58272020c
   derived_from: []
 ---
 # Resident Folder、连续性记录与节点 owned Workspace
@@ -84,6 +91,7 @@ Resident 是 Portal 中能长期存在、持续工作的 AI 节点。每个 Resi
 
 - **Resident 在数据库中创建之后才建立目录。** 两个 Resident 不共享目录；Fork 出的 Resident 也有新目录（decision_5bf5bfbd52cb）。
 - **删除和迁移按 Resident ID 定位目录。** 服务使用准确的 `resident_id` 和已经校验过的权限找到目录，不按标题或相似路径猜测。删除 Resident 时，关联工作区按存活 Resident 引用决定去留：无人引用则清理，有其他使用者则保留目录、稳定 ID 和绑定，并继续完成 Resident 删除。工作区嵌在节点目录内时保留它及必要父目录，其余节点文件清理；具体生命周期见 decision_8838269736d3。迁到另一个 Lineage 时目录随 Resident 搬到新 Lineage Folder 下。
+- **独立登记资源保留自己的生命周期。** 删除 Resident 或 Lineage 身份时，Article、Repo、Paper、知识条目和 Report 保留稳定 ID、历史署名、全部登记根和内容；位于节点目录内时保留必要父目录。身份的撤权和自有 Workspace 注销继续执行，其他主体对保留资源的访问仍按当前权限核验。调用方使用目录 owner 返回的保留路径与清理根，避免旧 owner 保留记录再次删除内容；显式 Project 或资源删除仍按 decision_4aa13bc21e8e 级联。
 
 ### 长期说明与连续性记录
 
