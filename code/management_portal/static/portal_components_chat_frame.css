@@ -184,7 +184,7 @@
 }
 
 .portalWorkspaceHead { min-height: 44px; padding-block: 6px; }
-.portalWorkspaceHead .chatTitleLine { flex-wrap: nowrap; }
+.portalWorkspaceHead .chatTitleLine { flex-wrap: nowrap; min-height: 24px; }
 .portalWorkspaceHead .chatTitleLine > .paneTitle {
   flex: 0 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
@@ -195,6 +195,26 @@
   min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .portalWorkspaceHead .chatHeaderSeparator { flex: 0 0 auto; }
+.portalWorkspaceHead .chatSubline .paneNote > span:not(.chatHeaderSeparator) {
+  min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.chatHeaderNotice {
+  flex: 0 0 24px; width: 24px; height: 24px; padding: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  border: 0; border-radius: 50%; background: transparent;
+  color: var(--accent); font: inherit; font-weight: 700; cursor: pointer;
+}
+.chatHeaderNotice:hover { background: color-mix(in srgb, var(--accent) 10%, transparent); }
+.chatHeaderNotice:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+@container portal-chat-workspace (max-width: 420px) {
+  .portalWorkspaceHead .chatTitleLine:has(.chatHeaderNotice, .is-header-icon:not([hidden])) { gap: 4px; }
+  .portalChatWorkspaceRoot .portalWorkspaceHead .chatTitleLine:has(.chatHeaderNotice, .is-header-icon:not([hidden])) > .paneTitle { min-width: min(2.5em, 18%); }
+  .portalWorkspaceHead .chatTitleLine:has(.chatHeaderNotice, .is-header-icon:not([hidden])) .chatSubline { display: none; }
+  .portalWorkspaceHead .chatTitleLine:has(.chatHeaderNotice, .is-header-icon:not([hidden])) [data-workspace-identity="family"] { padding-inline: 4px; gap: 4px; }
+  .portalWorkspaceHead .chatTitleLine:has(.chatHeaderNotice, .is-header-icon:not([hidden])) .familySoloProxy { min-width: 68px; gap: 4px; }
+  .portalWorkspaceHead .chatHeaderNotice { flex-basis: 20px; width: 20px; }
+  .portalChatWorkspaceRoot .portalWorkspaceHead .is-header-icon .portalButton { width: 20px; }
+}
 
 .portalWorkspaceHead .portalButton.workspaceConversationPin[aria-pressed="true"] {
   color: var(--accent);

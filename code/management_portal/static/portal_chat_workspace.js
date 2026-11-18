@@ -511,6 +511,7 @@
       messageTailFollowIntent: true,
       subtitle: String(options.subtitle || ""),
       subtitleParts: normalizeWorkspaceSubtitleParts(options.subtitleParts),
+      statusNotice: "",
     };
     const dom = {
       messageListId: `${id}Messages`,
@@ -701,6 +702,7 @@
       const noticeText = [...new Set([
         ...state.subtitleParts.filter(part => part.identity === "family_availability").map(part => part.text),
         transientStatus,
+        state.statusNotice,
       ].filter(Boolean))].join("\n");
       let notice = els.head?.querySelector("[data-workspace-notice]");
       if (noticeText && els.title) {
@@ -722,7 +724,7 @@
       const subtitleParts = state.subtitleParts.filter(part => !["family", "family_availability"].includes(part.identity));
       if (!subtitleParts.length) {
         els.status.classList.remove("hasSessionIdentity");
-        els.status.textContent = familyPart ? "" : state.subtitle;
+        els.status.textContent = familyPart || state.statusNotice ? "" : state.subtitle;
         els.status.title = els.status.textContent;
         return;
       }
@@ -1283,6 +1285,7 @@
         if (node) { node.textContent = workspaceTitleText(title); node.title = node.textContent; }
       },
       setSubtitle(subtitle, parts = []) {
+        state.statusNotice = "";
         state.subtitle = String(subtitle || "");
         state.subtitleParts = normalizeWorkspaceSubtitleParts(parts);
         renderSubtitle();
@@ -1533,6 +1536,7 @@
       updateControls,
       setStatus(text) {
         state.subtitle = String(text || "");
+        state.statusNotice = state.subtitle;
         state.subtitleParts = [];
         renderSubtitle();
       },

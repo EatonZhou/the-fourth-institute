@@ -364,7 +364,70 @@ const root = path.resolve(__dirname, '../../../management_portal/static');
       if (process.env.FAMILY_CHAT_SCREENSHOTS) await page.locator('.portalWorkspaceHead').screenshot({
         path: path.join(process.env.FAMILY_CHAT_SCREENSHOTS, `family-header-${theme}-${width}.png`)});
     }
+    // Long availability reasons and account migrations must not change header height, including Solo.
+    await badge.click();
+    await popover.waitFor({state: 'visible'});
+    await button('member_0', 'solo', popover).click();
+    await proxy.waitFor({state: 'visible'});
+    await page.keyboard.press('Escape');
+    await page.evaluate(() => {
+      window.longReason = 'Steward：账号额度已用尽，发送的消息将排队等待额度恢复或人工放行。'.repeat(4);
+      window.showHeaderNotice = () => panel.workspace.setSubtitle('', [
+        {identity: 'family', text: 'Family'},
+        {identity: 'resident', text: 'resident_9ced3511fde1'},
+        {identity: 'family_availability', text: longReason},
+      ]);
+      window.restartOpens = 0;
+      window.headerProgress = PortalChatWorkspaceRuntimeSettings.createRuntimeSettings({escapeHtml: PortalUIPrimitives.escapeHtml})
+        .createSessionRestartProgress({compact: true, headerIcon: true, owner: 'viewer', onOpen: () => restartOpens++});
+      document.querySelector('.chatTitleLine').append(headerProgress.element);
+      window.updateHeaderProgress = status => headerProgress.update({
+        config: {resident_id: 'facade'},
+        restart: {restart_id: 'header-layout-regression', status, phase: 'waiting_capacity', operation: 'switch_account',
+          source: {account_id: 'a_very_long_source_account_name'}, target: {account_id: 'a_very_long_target_account_name'},
+          previous_session_retained: true, error: status === 'failed' ? '切换失败：'.repeat(60) : ''},
+      });
+    });
+    for (const width of [1200, 640, 390, 280]) {
+      await page.setViewportSize({width, height: 600});
+      await page.evaluate(() => { renderFamilyHeader('idle'); updateHeaderProgress('completed'); });
+      const baseline = await page.locator('.portalWorkspaceHead').evaluate(node => node.getBoundingClientRect().height);
+      await page.evaluate(() => { showHeaderNotice(); updateHeaderProgress('accepted'); });
+      const notice = page.locator('[data-workspace-notice]');
+      assert.equal(await notice.innerText(), '!');
+      assert.match(await notice.getAttribute('data-portal-tooltip'), /额度已用尽/);
+      await notice.focus();
+      await page.keyboard.press('Enter');
+      assert.equal(await page.evaluate(() => toasts.at(-1) === longReason), true, 'keyboard/touch can read the full reason');
+      const measure = () => page.locator('.portalWorkspaceHead').evaluate(node => ({
+        height: node.getBoundingClientRect().height, width: node.clientWidth, scroll: node.scrollWidth,
+        children: [...node.querySelector('.chatTitleLine').children].map(child => ({
+          name: child.className, width: child.getBoundingClientRect().width,
+          min: getComputedStyle(child).minWidth, display: getComputedStyle(child).display,
+          scroll: child.scrollWidth,
+        })),
+      }));
+      const active = await measure();
+      assert.ok(active.height <= baseline + 1 && active.scroll <= active.width + 1, JSON.stringify({width, baseline, active}));
+      await page.locator('.is-header-icon [data-session-restart-progress-open]').last().click();
+      assert.equal(await page.evaluate(() => restartOpens), [1200, 640, 390, 280].indexOf(width) + 1);
+      await page.evaluate(() => updateHeaderProgress('failed'));
+      const failed = await measure();
+      assert.ok(failed.height <= baseline + 1 && failed.scroll <= failed.width + 1, JSON.stringify({width, baseline, failed}));
+      if (process.env.FAMILY_CHAT_SCREENSHOTS) {
+        await page.mouse.move(0, 0);
+        await page.locator('.portalWorkspaceHead').screenshot({path: path.join(process.env.FAMILY_CHAT_SCREENSHOTS, `header-notices-${width}.png`)});
+      }
+    }
+    await page.locator('.is-header-icon [data-session-restart-dismiss]').last().click();
+    assert.equal(await page.evaluate(() => headerProgress.element.hidden), true);
+    await proxy.locator('button').click();
+    await page.evaluate(() => { headerProgress.destroy(); renderFamilyHeader('idle'); });
+    assert.equal(await page.locator('[data-workspace-notice]').count(), 0, 'recovery clears the warning');
+    await page.evaluate(() => panel.workspace.setStatus('连接已中断，正在重试。'.repeat(30)));
+    assert.equal(await page.locator('[data-workspace-notice]').innerText(), '!');
     await page.evaluate(() => panel.workspace.setSubtitle('', [{identity: 'resident', text: 'resident_other'}]));
+    assert.equal(await page.locator('[data-workspace-notice]').count(), 0, 'switching identity clears transient status');
     assert.equal(await badge.count(), 0, 'ordinary Residents retain their original header');
     await page.evaluate(() => {
       panel.workspace.setTarget({resident_id: 'resident_other'});

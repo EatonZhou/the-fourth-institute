@@ -54,6 +54,20 @@
   min-height: 24px;
 }
 .portalSessionRestartProgress.is-compact[hidden] { display: none; }
+.portalSessionRestartProgress.is-header-icon {
+  flex: 0 0 auto; margin: 0; padding: 0; gap: 2px; border: 0; background: transparent;
+}
+.portalSessionRestartProgress.is-header-icon [role="status"] {
+  position: absolute; width: 1px; height: 1px; padding: 0;
+  clip-path: inset(50%); overflow: hidden; white-space: nowrap;
+}
+.portalSessionRestartProgress.is-header-icon .portalButton {
+  width: 24px; min-width: 0; height: 24px; min-height: 24px; padding: 0;
+  border: 0; background: transparent; color: var(--accent); font-size: 16px;
+}
+.portalSessionRestartProgress.is-header-icon .portalButton:hover {
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
 .portalSessionRestartDiagnostics { margin-top: 6px; }
 .portalSessionRestartDiagnostics pre { white-space: pre-wrap; overflow-wrap: anywhere; }
 .residentQuestionCard {
