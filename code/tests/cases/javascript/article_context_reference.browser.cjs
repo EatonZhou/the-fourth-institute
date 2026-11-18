@@ -17,9 +17,9 @@ const modules = ['portal_state.js', 'portal_page_state.js', 'portal_text.js', 'p
   'portal_image_editor.js', 'portal_editor_open_service.js', 'portal_command_registry.js',
   'portal_workbench_context.js', ...portalWorkbenchScripts(), ...portalWorkspaceSurfaceScripts(), 'portal_resident_service.js',
   'portal_resident_runtime_controller.js', 'resident_protocol.js', ...chatWorkspaceScripts(),
-  'article_workspace_monaco.js', 'article_workspace_layout.js', 'article_workspace_chat.js', 'article_workspace_events.js'];
+  'article_workspace_monaco.js', 'article_workspace_tools.js', 'article_workspace_layout.js', 'article_workspace_chat.js', 'article_workspace_events.js'];
 const html = fs.readFileSync(path.join(repo, 'management_portal/article_workspace.html'), 'utf8')
-  .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '').replace(/<link\b[^>]*>/gi, '')
+  .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '')
   .replace('</body>', '<script src="/routes.js"></script>' + modules.map(n => `<script src="/static/${n}"></script>`).join('') + '</body>');
 
 (async () => {
@@ -28,7 +28,7 @@ const html = fs.readFileSync(path.join(repo, 'management_portal/article_workspac
     if (url.pathname === '/') { res.setHeader('Content-Type', 'text/html; charset=utf-8'); return res.end(html); }
     if (url.pathname === '/routes.js') { res.setHeader('Content-Type', 'text/javascript'); return res.end(routes); }
     const rel = url.pathname.slice('/static/'.length);
-    if (!url.pathname.startsWith('/static/') || (!modules.includes(rel) && !rel.startsWith('vendor/monaco/')) || rel.includes('..')) {
+    if (!url.pathname.startsWith('/static/') || (!modules.includes(rel) && !rel.startsWith('vendor/monaco/') && !rel.endsWith('.css')) || rel.includes('..')) {
       res.writeHead(404); return res.end();
     }
     try {
@@ -40,7 +40,7 @@ const html = fs.readFileSync(path.join(repo, 'management_portal/article_workspac
   let browser;
   try {
     browser = await playwright[process.env.PORTAL_TEST_BROWSER || 'chromium'].launch({ headless: true });
-    const page = await browser.newPage();
+    const page = await browser.newPage({ viewport: { width: 1920, height: 1080 } });
     page.setDefaultTimeout(6000);
     const errors = [];
     page.on('pageerror', error => errors.push(error.message));
@@ -93,7 +93,7 @@ const html = fs.readFileSync(path.join(repo, 'management_portal/article_workspac
         articleGitRefresh: { stop() {} }, articleContentRefresh: { stop() {} },
         bringCurrentContextToChat: host.bringCurrentContextToChat, showToast: text => notices.push(String(text)),
         setSideView: layout.setSideView, currentArticleWorkbench: layout.currentArticleWorkbench,
-        setNavigationPanelVisible: layout.setNavigationPanelVisible,
+        setToolVisible: layout.setToolVisible,
       });
       layout.initArticleWorkbench();
       await layout.restoreLayout({ sideView });
@@ -145,34 +145,115 @@ const html = fs.readFileSync(path.join(repo, 'management_portal/article_workspac
     assert.equal(boundResult.tokens, 1);
     assert.deepEqual(await page.evaluate(() => writes), []);
 
+    // Use the real Workbench tab drag/drop with the real Chat composer and
+    // Monaco model. Moving a tool must not mount a second conversation.
+    const stackFor = id => page.locator(`[data-portal-workbench-panel="${id}"]`).locator('xpath=ancestor::*[@data-portal-workbench-stack][1]');
+    const dragTool = async (id, target, zone) => {
+      const tab = page.locator(`[data-portal-workbench-tab="${id}"]`);
+      await tab.focus(); // Shared Workbench reveals its tab strip on focus.
+      const destination = stackFor(target);
+      const box = await destination.boundingBox();
+      assert.ok(box, `${target} stack has geometry`);
+      await tab.dragTo(destination, {
+        targetPosition: { x: box.width * (zone === 'right' ? .9 : .5), y: box.height * (zone === 'bottom' ? .9 : .5) },
+      });
+    };
+    await page.evaluate(() => {
+      layout.currentArticleWorkbench().setLayoutLocked(false);
+      state.chatController.setDraftText('Draft survives every move');
+      window.originalChat = state.chatController;
+      window.originalPayload = state.chatController.payload();
+      window.originalModel = state.editor.getModel();
+      window.originalSelection = state.editor.getSelection();
+      document.getElementById('articleGlobalSearchInput').value = 'keep search';
+    });
+    await dragTool('chat', 'output', 'right');
+    await page.locator('[data-article-view="files"]').click();
+    assert.equal(await page.locator('[data-article-panel="files"]').isVisible(), true);
+    assert.equal(await page.locator('#articleChatWorkspace').isVisible(), true, 'detached Chat remains visible next to Files');
+    const detachedLayout = await page.evaluate(() => layout.currentArticleWorkbench().getLayout());
+    await page.locator('[data-article-view="chat"]').click();
+    assert.deepEqual(await page.evaluate(() => layout.currentArticleWorkbench().getLayout()), detachedLayout, 'rail focuses Chat without relocating it');
+    await page.locator('[data-article-view="git"]').click();
+    assert.deepEqual(await page.evaluate(() => [...state.visibleTools].sort()), ['chat', 'git'], 'Git and Chat have independent visibility');
+    assert.deepEqual(await page.evaluate(() => ({
+      chat: originalChat === state.chatController, model: originalModel === state.editor.getModel(),
+      selection: state.editor.getSelection().equalsSelection(originalSelection),
+      search: document.getElementById('articleGlobalSearchInput').value,
+      draft: JSON.stringify(state.chatController.payload()) === JSON.stringify(originalPayload),
+    })), { chat: true, model: true, selection: true, search: 'keep search', draft: true });
+    const savedDetachedLayout = await page.evaluate(() => layout.currentArticleWorkbench().getLayout());
+    if (process.env.ARTICLE_TOOLS_ARTIFACT_DIR) {
+      fs.mkdirSync(process.env.ARTICLE_TOOLS_ARTIFACT_DIR, {recursive: true});
+      await page.screenshot({path: path.join(process.env.ARTICLE_TOOLS_ARTIFACT_DIR, 'detached-chat.png')});
+    }
+    await page.reload(); await page.evaluate(setup, { boundChat: true });
+    assert.deepEqual(await page.evaluate(() => [...state.visibleTools].sort()), ['chat', 'git'], 'reload restores the detached group and each active tab');
+    assert.deepEqual(await page.evaluate(() => layout.currentArticleWorkbench().getLayout()), savedDetachedLayout, 'reload retains split geometry');
+    // Re-establish editor state after the intentional reload, then test moves.
+    await page.evaluate(() => {
+      state.chatController.setDraftText('Draft survives every move');
+      window.originalChat = state.chatController;
+      window.chatRoot = document.getElementById('articleChatWorkspace');
+    });
+    await dragTool('chat', 'output', 'bottom');
+    assert.equal(await page.locator('#articleChatWorkspace').isVisible(), true);
+    await dragTool('chat', 'git', 'center');
+    assert.equal(await page.evaluate(() => originalChat === state.chatController && chatRoot === document.getElementById('articleChatWorkspace')), true);
+    assert.match(await page.evaluate(() => state.chatController.payload().text), /Draft survives every move/);
+    await page.locator('[data-article-view="files"]').click();
+    assert.equal(await page.locator('#articleChatWorkspace').isVisible(), false, 'Chat becomes a sibling tab again');
+    await page.locator('[data-article-view="chat"]').click();
+    assert.match(await page.evaluate(() => state.chatController.payload().text), /Draft survives every move/);
+
     // Recreate the page with the same browser storage, as a user reload does.
     await page.reload();
     await page.evaluate(setup, { boundChat: true });
     assert.equal(await page.evaluate(() => state.sideView), 'chat');
     assert.equal(await page.locator('[data-article-panel="chat"]').evaluate(panel => panel.classList.contains('active')), true);
     assert.equal(await page.evaluate(() => !!state.chatController), true, 'restored Chat loads the existing Resident');
-    await page.evaluate(() => layout.setNavigationPanelVisible(false));
+    await page.evaluate(() => layout.setToolVisible(false, 'chat'));
     await page.reload();
     await page.evaluate(setup, { boundChat: true });
-    assert.equal(await page.evaluate(() => layout.currentArticleWorkbench().isPanelVisible('navigation')), false, 'restore keeps a collapsed sidebar collapsed');
+    assert.equal(await page.evaluate(() => layout.currentArticleWorkbench().isPanelVisible('chat')), false, 'restore keeps a hidden tool hidden');
     await page.evaluate(() => document.querySelector('[data-article-view="files"]').click());
     await page.reload();
     await page.evaluate(setup);
     assert.equal(await page.evaluate(() => state.sideView), 'files', 'switching away from Chat is also remembered');
-    assert.equal(await page.evaluate(() => layout.currentArticleWorkbench().isPanelVisible('navigation')), true);
-    await page.evaluate(() => layout.setNavigationPanelVisible(false));
+    assert.equal(await page.evaluate(() => layout.currentArticleWorkbench().getPanel('files').isVisible()), true);
+    await page.evaluate(() => layout.setToolVisible(false, 'files'));
     await page.reload();
     await page.evaluate(setup, { boundChat: true, sideView: 'chat' });
     assert.equal(await page.evaluate(() => state.sideView), 'chat', 'an explicit Chat link overrides the saved view');
-    assert.equal(await page.evaluate(() => layout.currentArticleWorkbench().isPanelVisible('navigation')), true, 'explicit Chat opens the sidebar');
+    assert.equal(await page.evaluate(() => layout.currentArticleWorkbench().getPanel('chat').isVisible()), true, 'explicit Chat opens its panel');
     await page.evaluate(() => PortalState.storage.writeJson('portal.articleWorkspace.layout', { sideView: 'obsolete', fileTreeHeight: 180 }));
     await page.reload();
     await page.evaluate(setup);
     assert.equal(await page.evaluate(() => state.sideView), 'files', 'unknown saved views fall back to the file tree');
     assert.equal(await page.evaluate(() => PortalState.storage.readJson('portal.articleWorkspace.layout').fileTreeHeight), 180, 'view persistence preserves other layout settings');
+
+    // Migrate a user's pre-split workbench and named preset without resetting
+    // source/PDF sizes or the selected navigation tool.
+    await page.evaluate(() => {
+      const {split, stack} = PortalWorkbench.model;
+      const old = layout.currentArticleWorkbench().getState();
+      old.panelIds = ['navigation', 'editor', 'output'];
+      old.layout = split('horizontal', [stack(['navigation']), stack(['editor']), stack(['output'])], [320, 840, 600]);
+      old.hidden = []; old.collapsed = [];
+      old.savedWorkspaces = {oldProof: {name: 'Old proof', layout: split('horizontal', [stack(['editor']), stack(['output'])]), hidden: ['navigation']}};
+      layout.currentArticleWorkbench().destroy(); // Stop unload persistence before seeding an old version.
+      PortalWorkbench.storage.createUserStore({kind: 'workbench', id: 'article-workspace', user: 'article-context-fixture'}).replace(old);
+      PortalState.storage.writeJson('portal.articleWorkspace.layout', {sideView: 'search'});
+    });
+    await page.reload(); await page.evaluate(setup);
+    assert.deepEqual(await page.evaluate(() => layout.currentArticleWorkbench().getLayout().weights), [320, 840, 600]);
+    assert.deepEqual(await page.evaluate(() => [...state.visibleTools]), ['search']);
+    assert.deepEqual(await page.evaluate(() => layout.currentArticleWorkbench().getState().savedWorkspaces.oldProof.hidden),
+      ['files', 'favorites', 'search', 'git', 'chat', 'settings', 'library']);
+    assert.equal(await page.locator('[data-portal-workbench-tab="navigation"]').count(), 0);
     assert.deepEqual(errors, [], 'no page errors after reloads');
     assert.deepEqual(await page.evaluate(() => writes), [], 'restoring Chat sends no message');
-    console.log('PASS: Article Chat context reference and sidebar view survive reload; collapsed state and explicit links are respected');
+    console.log('PASS: Article tools detach right/bottom, regroup and persist with real Chat drafts, references and independent visibility');
   } finally {
     await browser?.close();
     await new Promise(resolve => server.close(resolve));

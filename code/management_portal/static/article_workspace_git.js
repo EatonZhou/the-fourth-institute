@@ -170,7 +170,7 @@
       shouldRefresh: () => !!state.selectedId && !unregisteringArticles.has(state.selectedId) && !busyArticles.has(state.selectedId),
       fetch: async ({ key, signal }) => {
         const id = encodeURIComponent(key);
-        const includeHistory = articleGitHistoryRequested || state.sideView === "git";
+        const includeHistory = articleGitHistoryRequested || state.visibleTools?.has("git") === true;
         articleGitHistoryRequested = false;
         let historyError = null;
         const [status, history] = await Promise.all([

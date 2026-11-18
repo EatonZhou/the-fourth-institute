@@ -19,7 +19,7 @@
     "renderArticleResourceSearch", "renderArticleSelectors", "renderEditorLayers", "renderLog",
     "renderSemanticNavigation", "resetEditorPreferences", "saveOpenFile", "saveSettings",
     "scheduleArticleGitRefresh", "scheduleAutoCompile", "scheduleAutoSave", "searchProject", "selectArticle", "setArticlePdfZoom",
-    "setArticleResourceSearchOpen", "setCompileMenu", "setEditorMode", "setNavigationPanelVisible",
+    "setArticleResourceSearchOpen", "setCompileMenu", "setEditorMode", "setToolVisible",
     "setOutputView", "setProjectMenu", "setSettingsSection", "setSideView", "showPdfError", "showToast",
     "state", "stopCompilation", "syncEditorScroll", "syncPdfToSource", "syncSourceToPdf",
     "toggleArticleGitDiffLayout", "toggleWordWrap", "unregisterCurrentArticle", "updateArticleGitStage",
@@ -41,7 +41,7 @@
       renderArticleGitDiffFile, renderArticleResourceSearch, renderArticleSelectors, renderEditorLayers,
       renderLog, renderSemanticNavigation, resetEditorPreferences, saveOpenFile, saveSettings,
       scheduleArticleGitRefresh, scheduleAutoCompile, scheduleAutoSave, searchProject, selectArticle, setArticlePdfZoom,
-      setArticleResourceSearchOpen, setCompileMenu, setEditorMode, setNavigationPanelVisible, setOutputView,
+      setArticleResourceSearchOpen, setCompileMenu, setEditorMode, setToolVisible, setOutputView,
       setProjectMenu, setSettingsSection, setSideView, showPdfError, showToast, state, stopCompilation,
       syncEditorScroll, syncPdfToSource, syncSourceToPdf, toggleArticleGitDiffLayout, toggleWordWrap,
       unregisterCurrentArticle, updateArticleGitStage, updateCompilePreference, updateCursorStatus,
@@ -53,12 +53,11 @@
     document.addEventListener("click", event => {
       const view = event.target.closest("[data-article-view]");
       if (view) {
-        if (view.classList.contains("active") && currentArticleWorkbench()?.isPanelVisible("navigation")) setNavigationPanelVisible(false);
-        else setSideView(view.dataset.articleView);
+        setSideView(view.dataset.articleView);
         return;
       }
       if (event.target.closest("[data-side-close]")) {
-        setNavigationPanelVisible(false);
+        setToolVisible(false, event.target.closest("[data-article-panel]")?.dataset.articlePanel);
         return;
       }
       const gitAction = event.target.closest("[data-git-action]");
@@ -240,7 +239,7 @@
     $("articleUploadInput").addEventListener("change", event => uploadFile(event.target.files?.[0]));
     [$("articleEntryClose"), $("articleEntryCancel")].forEach(button => button.addEventListener("click", () => articleEntryDialog.close()));
     $("articleEntryForm").addEventListener("submit", createEntry);
-    $("articleSideCollapse").addEventListener("click", () => setNavigationPanelVisible(false));
+    $("articleSideCollapse").addEventListener("click", () => setToolVisible(false, "files"));
 
     $("articleTreeToggle").addEventListener("click", () => {
       const open = $("articleTreeToggle").getAttribute("aria-expanded") !== "true";

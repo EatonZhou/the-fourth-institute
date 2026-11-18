@@ -351,7 +351,7 @@
   });
 
   const {
-    bindSplitters, initArticleWorkbench, restoreLayout, setNavigationPanelVisible, setSideView,
+    bindSplitters, initArticleWorkbench, restoreLayout, setToolVisible, setSideView,
     currentArticleWorkbench,
   } = articleModule("PortalArticleWorkspaceLayout").createLayout({
     $, applyEditorPreferences: (...args) => applyEditorPreferences(...args),
@@ -480,7 +480,7 @@
     renderArticleSelectors, renderEditorLayers, renderLog, renderSemanticNavigation, resetEditorPreferences,
     saveOpenFile, saveSettings, scheduleArticleGitRefresh, scheduleAutoCompile, scheduleAutoSave, searchProject, selectArticle,
     persistReadingPosition: readingPosition.persist, scheduleReadingPosition: readingPosition.schedule,
-    setArticlePdfZoom, setArticleResourceSearchOpen, setCompileMenu, setEditorMode, setNavigationPanelVisible,
+    setArticlePdfZoom, setArticleResourceSearchOpen, setCompileMenu, setEditorMode, setToolVisible,
     setOutputView, setProjectMenu, setSettingsSection, setSideView, showPdfError, showToast, state,
     stopCompilation, syncEditorScroll, syncPdfToSource, syncSourceToPdf, toggleArticleGitDiffLayout,
     toggleWordWrap, unregisterCurrentArticle, updateArticleGitStage, updateCompilePreference,
@@ -546,7 +546,7 @@
       modified: state.gitDiffModels[1]?.getValue?.() || "",
       sideBySide: state.gitDiffSideBySide,
     }),
-    refreshGit: () => loadArticleGit({ includeHistory: state.sideView === "git", silent: true }),
+    refreshGit: () => loadArticleGit({ includeHistory: state.visibleTools.has("git"), silent: true }),
   };
   const articleNavigationReady = loadArticleNavigationPreference();
   const articleListReady = articleNavigationReady.then(() => loadArticles());

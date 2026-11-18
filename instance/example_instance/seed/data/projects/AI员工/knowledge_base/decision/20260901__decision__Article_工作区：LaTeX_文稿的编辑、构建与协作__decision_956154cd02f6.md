@@ -4,15 +4,15 @@ type: decision
 project: AI员工
 created_at: '2026-09-01'
 version:
-  number: 48
+  number: 49
   created_at: "2026-09-01"
   created_by:
     user: ""
     agent: ""
-  updated_at: "2026-11-18T08:18:23Z"
+  updated_at: "2026-11-18T15:55:40Z"
   updated_by:
     user: ""
-    agent: "resident_6199a7a36480"
+    agent: "resident_62dbdb2288fb"
 importance: 8
 metaness: 2
 ai_generated: true
@@ -91,8 +91,8 @@ PDF / Build 工具栏最右侧提供单颗 16px 的无边框星标：空心表�
 
 | 区域 | 内容 |
 | --- | --- |
-| 左侧图标栏 | 七个图标，依次切换侧栏内容：文件树、收藏、全项目搜索、源代码管理（Git）、Chat Workspace、编辑器与 LaTeX 设置、Article 登记管理 |
-| 侧栏 | 显示当前图标对应的面板。文件树面板下方是“工程语义导航”，有大纲、标签、文献、图片、问题五个标签页 |
+| 左侧图标栏 | 七个工具入口：文件树、收藏、全项目搜索、源代码管理（Git）、Chat Workspace、编辑器与 LaTeX 设置、Article 登记管理；点击后聚焦工具当前所在的区域及标签，不改变它的位置 |
+| 导航工具组 | 七个独立 Panel Package 默认组合在左侧同一个标签组。文件树面板下方是“工程语义导航”，有大纲、标签、文献、图片、问题五个标签页 |
 | 编辑区 | 用文档标签打开多个文件；工具栏有保存、撤销、重做、自动换行、定位到 PDF、把当前内容发给 Chat，以及 Code / Visual 两种模式。状态栏显示行列、语言服务状态、编码和 LaTeX 状态 |
 | 输出区 | 重新编译、编译选项、停止、从头构建、LaTeX 日志、PDF 下载、缩放和 PDF 预览 |
 
@@ -100,9 +100,11 @@ PDF / Build 工具栏最右侧提供单颗 16px 的无边框星标：空心表�
 - **Code**：编辑源码。编辑器优先使用浏览器内的 Monaco 代码编辑器；Monaco 加载失败时，改用普通文本框编辑。
 - **Visual**：用 Portal 共享的预览组件显示当前文件的渲染结果，例如 Markdown 渲染后的效果或图片本身。打开图片、PDF 等非文本文件时只有 Visual 模式。
 
-侧栏可通过分隔线拖窄至 180px，文件树标题与工具按钮在空间不足时换行。宽度由工作台布局保存，刷新和折叠后展开继续使用已保存的布局；源码编辑区和 PDF 区保留各自的最小宽度。
+工具默认共用左侧标签组，源码与 PDF 继续并排显示。在工作台允许调整布局时，从组顶端的标签条将任一工具拖到其他区域的边缘，可在右侧、左侧、上方或下方建立独立区域；拖到另一组的标签条或中央则并回该组。复用 Workbench 的拖放、分隔线、隐藏和布局保存能力。各工具最小宽度为 180px，Chat 使用共享聊天组件的最小宽度；同组采用成员的约束。关闭工具只隐藏该工具，左侧图标可重新打开；反复点击已显示工具的图标只聚焦它。
 
-页面在当前浏览器保存最近使用的侧栏视图（文件、搜索、Git、Chat、设置或登记管理）。刷新后恢复该视图，打开 Chat 时重新加载当前 Article 已绑定的 Resident 对话；恢复过程不发送消息。侧栏折叠状态继续由工作台布局保存，普通刷新不强行展开；链接显式带 `chat=1`、`chat=true` 或 `chat=open` 时优先打开 Chat。首次访问或已保存的视图失效时显示文件树。
+Workbench 按账号记忆各组位置、宽度、活动标签及隐藏/折叠状态，普通刷新保持该布局。旧版单一 navigation 面板在原位置展开为工具标签组，保留原有分区尺寸、隐藏状态和具名布局。首次访问显示文件树；链接显式带 `chat=1`、`chat=true` 或 `chat=open` 时聚焦 Chat 当前所在区域。
+
+拖放移动现有工具根节点，不重建编辑器或聊天会话，保留搜索输入、Git 提交输入、聊天草稿和引用、源码选区及阅读位置。聊天复用共享 Chat Workspace；刷新恢复可见 Chat 时加载当前 Article 的既有对话，不发送消息。拖出 Chat 后，原工具组仍可切换文件树、Git 等内容；切换 Article 时，可见的 Chat 更新对话对象，可见的 Git 加载当前稿件的状态和记录。工具显隐由各面板生命周期独立管理，最近一次图标点击不再控制其他区域是否显示。
 
 阅读位置在当前浏览器按账号和 Article 分开记忆：保存源码标签顺序、当前文件、每个文件的光标/选区和滚动位置，以及 PDF 的页码、页内位置和缩放比例。离开页面或切换 Article 时立即记录，编辑器和 PDF 滚动时合并记录；再次进入后重新读取最新源码，随后恢复位置，不在位置记录中保存正文或草稿。文件已删除或无权打开时跳过，当前文件不可用时回退到可用标签或主文稿；PDF 页数减少时恢复到最后可用页。首次进入、浏览器存储不可用或没有该 Article 的记录时使用默认位置。保留最近 30 篇 Article、每篇最多 50 个源码标签的位置，侧栏视图与布局继续使用各自已有的持久状态。
 
@@ -240,6 +242,7 @@ TexLab 由 Article 后端持有并通过共享进程运行器管理整个原生�
 | 组件 | 位置 | 职责 | 出错后 |
 | --- | --- | --- | --- |
 | Article 工作区页面 | `management_portal/article_workspace.html`、`static/article_workspace.js` | 图标栏、侧栏、编辑区、输出区、未保存内容和操作反馈 | 保存失败保留编辑内容；刷新后重新读取持久状态 |
+| Article 工具面板 | `static/article_workspace_tools.js` | 登记 `article-files`、`article-favorites`、`article-search`、`article-git`、`article-chat`、`article-settings`、`article-library` 单实例 Panel Package；持有工具根节点与激活/显隐/销毁生命周期，使用注入的 Article 会话服务；`article_workspace_layout.js` 负责组合、图标聚焦及旧布局迁移 | 激活失败保留工具内容并提示；拖动不销毁实例 |
 | Article 登记提供者 | ResourceService 中的 `resources/providers/article.py` | 登记、按目录协议注销并排入所属文件清理、维护自动登记忽略列表 | 登记已注销而文件清理失败时，保留持久任务并重试 |
 | Article 后端 | 14 个 `article_*.py` 模块：文件读写与搜索 `article_files`、设置 `article_settings`、语义索引 `article_semantic_index`、构建 `article_build*`、SyncTeX `article_synctex`、Git `article_git`、登记 `article_registration` 等 | 源码根边界、文件读写、搜索、设置、语义索引、构建、SyncTeX 和 Git | 临时文件替换保存；语义索引可重建 |
 | 构建执行 | `article_build.py` | 每个 Article 最多一次编译、写构建缓存与报告 | 停止结束进程组；报告保留失败原因；从头构建只清空目标缓存 |

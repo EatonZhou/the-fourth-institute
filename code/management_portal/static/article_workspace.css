@@ -425,9 +425,14 @@ body.articleWorkbenchShell {
   border-radius: 8px;
 }
 
-.articleSidePane .sideView {
+.articleSidePane[hidden] { display: none; }
+
+.articleToolPanel {
   width: 100%;
   min-width: 0;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .articleGitPanel {

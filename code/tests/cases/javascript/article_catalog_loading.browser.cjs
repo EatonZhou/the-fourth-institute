@@ -55,6 +55,7 @@ const resolvedArticle = {
           compilingArticles: new Set(), filesByPath: new Map(), texlabVersion: 0};
         window.guestFailures = [];
         window.restoredDocuments = [];
+        window.chatLoads = []; window.gitLoads = [];
         window.catalog = PortalArticleWorkspaceCatalog.createCatalog({
           ...Object.fromEntries(PortalArticleWorkspaceCatalog.dependencies.map(name => [name, noop])), $, state,
           selectedArticle: () => state.articles.find(item => item.id === state.selectedId),
@@ -66,7 +67,8 @@ const resolvedArticle = {
           detailResourceGuest: {failed: error => guestFailures.push(error), ready: noop, setResource: noop},
           readingPosition: {persist: noop, prepare: noop,
             restoreDocuments: async (id, primary) => { restoredDocuments.push({id, primary}); }},
-          loadBuild: async () => {}, loadArticleGit: async () => {},
+          loadBuild: async () => {}, loadArticleGit: async options => { gitLoads.push(options); },
+          loadArticleChat: async () => { chatLoads.push(state.selectedId); },
           request: async url => {
             const response = await fetch(url), data = await response.json();
             if (!response.ok) throw new Error(data.error);
@@ -146,10 +148,16 @@ const resolvedArticle = {
     assert.match(page.url(), new RegExp(missingId + '$'), 'keep the failed explicit address');
     assert.equal(await page.locator('#articleMenuList [data-article-select]').count(), 1);
     assert.equal(await page.evaluate(() => guestFailures.length), 1);
-    await page.evaluate(id => catalog.selectArticle(id), article.id);
+    await page.evaluate(id => {
+      state.sideView = 'files';
+      state.visibleTools = new Set(['chat', 'git', 'files']);
+      return catalog.selectArticle(id);
+    }, article.id);
     assert.equal(await title(), article.title, 'another available Article can still be opened');
     assert.equal(await page.locator('#articleCompile').isDisabled(), false);
     assert.equal(await page.locator('#articleEditorState').innerText(), '');
+    assert.equal(await page.evaluate(() => chatLoads.at(-1)), article.id, 'detached Chat follows Article changes while Files is selected');
+    assert.equal(await page.evaluate(() => gitLoads.at(-1).includeHistory), true, 'detached Git refreshes its graph');
 
     failList = true;
     await page.evaluate(() => {

@@ -303,7 +303,7 @@
           if (state.outputView === "pdf") return renderPdf().catch(showPdfError);
         });
         loadSemanticIndex();
-        loadArticleGit({ includeHistory: state.sideView === "git", silent: true })
+        loadArticleGit({ includeHistory: state.visibleTools?.has("git") === true, silent: true })
           .then(() => { if (id === state.selectedId) scheduleArticleGitRefresh(); })
           .catch(error => { if (id === state.selectedId) showToast(window.PortalI18n.text`Git 状态：${error.message || error}`, "warning"); });
         await Promise.all([loadFiles(), loadSettings()]);
@@ -312,7 +312,7 @@
         await readingPosition.restoreDocuments(id, primary);
         if (id !== state.selectedId) return false;
         scheduleArticleContentRefresh(5000);
-        if (state.sideView === "chat") loadArticleChat().catch(error => showToast(error.message || error, "warning"));
+        if (state.visibleTools?.has("chat")) loadArticleChat().catch(error => showToast(error.message || error, "warning"));
         detailResourceGuest.setResource({ resourceId: id });
         detailResourceGuest.ready();
       } catch (error) {

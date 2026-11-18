@@ -3,8 +3,7 @@
 
   if (window.PortalArticleWorkspaceLayout) return;
 
-  // The Workbench around the editor and output: its panels, the side view
-  // shown in the navigation panel, the splitters and the kept layout.
+  // Compose Article tool packages, source and output in the shared Workbench.
   const DEPENDENCIES = Object.freeze([
     "$", "applyEditorPreferences", "applyWordWrap", "articleLayoutStore", "EDITOR_PREFERENCE_KEY",
     "loadArticleChat", "loadArticleGit", "normalizedEditorPreferences", "scheduleArticlePdfLayout",
@@ -21,28 +20,36 @@
     } = dependencies;
 
     let articleWorkbench = null;
+    state.visibleTools = new Set();
+
+    function syncActivityRail() {
+      document.querySelectorAll("[data-article-view]").forEach(button => {
+        const visible = state.visibleTools.has(button.dataset.articleView);
+        button.classList.toggle("active", visible);
+        button.setAttribute("aria-pressed", String(visible));
+      });
+    }
+
+    function activateTool(target) {
+      if (target === "chat") return loadArticleChat();
+      if (target === "git") return loadArticleGit({ includeHistory: true });
+      if (target === "search") $("articleGlobalSearchInput").focus();
+      if (target === "settings") setSettingsSection(state.settingsSection);
+      if (target === "favorites") return window.PortalResourceFavorites?.refresh();
+    }
 
     function setSideView(view, { forceOpen = true } = {}) {
       const target = ["files", "favorites", "search", "git", "chat", "settings", "library"].includes(view) ? view : "files";
       state.sideView = target;
       articleLayoutStore.write({ sideView: target });
-      if (forceOpen && !articleWorkbench?.isPanelVisible("navigation")) articleWorkbench?.showPanel("navigation");
-      document.querySelectorAll("[data-article-view]").forEach(button => {
-        button.classList.toggle("active", button.dataset.articleView === target);
-      });
-      document.querySelectorAll("[data-article-panel]").forEach(panel => {
-        panel.classList.toggle("active", panel.dataset.articlePanel === target);
-      });
-      if (target === "chat") return loadArticleChat().catch(error => showToast(error.message || error, "error"));
-      if (target === "git") loadArticleGit({ includeHistory: true }).catch(error => showToast(error.message || error, "error"));
-      if (target === "search") window.setTimeout(() => $("articleGlobalSearchInput").focus(), 0);
-      if (target === "settings") setSettingsSection(state.settingsSection);
-      if (target === "favorites") void window.PortalResourceFavorites.refresh();
+      if (!forceOpen) return;
+      articleWorkbench?.focusPanel(target);
+      return articleWorkbench?.getPanel(target)?.activate();
     }
 
-    function setNavigationPanelVisible(visible) {
-      if (visible) articleWorkbench?.showPanel("navigation");
-      else articleWorkbench?.hidePanel("navigation");
+    function setToolVisible(visible, view = state.sideView) {
+      if (visible) return setSideView(view);
+      articleWorkbench?.hidePanel(view);
     }
 
     function scheduleArticleEditorLayout() {
@@ -55,22 +62,16 @@
 
     function initArticleWorkbench() {
       const { split, stack } = window.PortalWorkbench.model;
-      // Navigation shares the authored panel lifecycle, but not the source
-      // editor's minimum width. Keep the editor and PDF pane constraints intact.
-      if (!window.PortalWorkbench.registeredPanelPackages().some(item => item.type === "article-navigation")) {
-        const authored = window.PortalWorkspaceSurface.panelPackages.authored;
-        window.PortalWorkbench.registerPanelPackage({
-          ...authored,
-          type: "article-navigation",
-          sizing: { ...authored.sizing, minWidth: 180 },
-        });
-      }
+      const tools = window.PortalArticleWorkspaceTools;
+      tools.register();
+      const toolIds = tools.definitions.map(tool => tool.id);
+      const preferred = articleLayoutStore.read().sideView || "files";
       const writing = split("horizontal", [
-        stack(["navigation"]),
+        stack(toolIds, preferred),
         stack(["editor"]),
         stack(["output"]),
       ], [308, 720, 560]);
-      const focus = split("horizontal", [stack(["navigation"]), stack(["editor"])], [308, 980]);
+      const focus = split("horizontal", [stack(toolIds, preferred), stack(["editor"])], [308, 980]);
       const proof = split("horizontal", [stack(["editor"]), stack(["output"])], [720, 720]);
       articleWorkbench = window.PortalWorkbench.create({
         id: "article-workspace",
@@ -78,15 +79,32 @@
         label: window.PortalI18n.t("Article Workbench"),
         insets: { left: 58 },
         initialEditors: [
-          { id: "navigation", type: "article-navigation", presentation: "navigation", options: { source: "#articleSidePane" }, title: window.PortalI18n.t("Navigation / Chat") },
+          ...tools.definitions.map(tool => ({
+            id: tool.id, type: `article-${tool.id}`, title: window.PortalI18n.t(tool.title), icon: tool.icon,
+            presentation: "navigation", singleton: true,
+            options: {
+              source: document.querySelector(`[data-article-panel="${tool.id}"]`),
+              controller: {
+                activate: () => activateTool(tool.id),
+                visibility: visible => {
+                  if (visible) state.visibleTools.add(tool.id);
+                  else state.visibleTools.delete(tool.id);
+                  syncActivityRail();
+                },
+                destroy: () => { if (tool.id === "chat") state.chatPanel?.destroy?.(); },
+                onError: error => showToast(error.message || error, "error"),
+              },
+            },
+          })),
           { id: "editor", type: "authored", presentation: "editor", options: { source: "#articleEditorPane" } },
           { id: "output", type: "authored", presentation: "document", options: { source: "#articleOutputPane" }, title: window.PortalI18n.t("PDF / Build") },
         ],
         defaultLayout: writing,
+        migrateState: saved => tools.migrateState(saved, articleLayoutStore.read().sideView),
         presets: [
           { id: "writing", name: window.PortalI18n.t("写作"), layout: writing },
           { id: "focus", name: window.PortalI18n.t("专注编辑"), layout: focus, hidden: ["output"] },
-          { id: "proof", name: window.PortalI18n.t("校对"), layout: proof, hidden: ["navigation"] },
+          { id: "proof", name: window.PortalI18n.t("校对"), layout: proof, hidden: toolIds },
         ],
         defaultPreset: "writing",
         onChange: () => {
@@ -94,6 +112,7 @@
           if (state.outputView === "pdf") scheduleArticlePdfLayout();
         },
       });
+      $("articleSidePane").hidden = true;
       $("articleEditorPane").addEventListener("portal:workbench-resize", scheduleArticleEditorLayout);
       if (window.ResizeObserver) {
         const editorResizeObserver = new ResizeObserver(scheduleArticleEditorLayout);
@@ -138,11 +157,15 @@
       } catch (_) {}
       applyEditorPreferences();
       applyWordWrap();
-      return setSideView(restoredSideView, { forceOpen: sideView !== undefined });
+      if (sideView !== undefined) return setSideView(sideView);
+      state.sideView = window.PortalArticleWorkspaceTools.definitions.some(tool => tool.id === restoredSideView) ? restoredSideView : "files";
+      // Each restored stack already knows its active tab. Do not let the last
+      // activity-rail click override the user's saved tab selection.
+      return Promise.all([...state.visibleTools].map(id => articleWorkbench.getPanel(id).activate()));
     }
 
     return Object.freeze({
-      bindSplitters, initArticleWorkbench, restoreLayout, setNavigationPanelVisible, setSideView,
+      bindSplitters, initArticleWorkbench, restoreLayout, setToolVisible, setSideView,
       currentArticleWorkbench: () => articleWorkbench,
     });
   }

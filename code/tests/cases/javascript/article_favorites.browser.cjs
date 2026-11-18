@@ -70,7 +70,7 @@ const html = fs.readFileSync(path.join(root, 'management_portal/article_workspac
         'portal_command_registry.js', 'portal_workbench_context.js', 'portal_editor_open_service.js',
         ...workbenchScripts, ...portalWorkspaceSurfaceScripts(),
         'portal_preview_contract.js', 'portal_resource_chips.js', 'portal_resource_header.js', 'portal_resource_favorites.js',
-        'article_workspace_catalog.js', 'article_workspace_popovers.js', 'article_workspace_layout.js',
+        'article_workspace_catalog.js', 'article_workspace_popovers.js', 'article_workspace_tools.js', 'article_workspace_layout.js',
         'article_workspace_events.js']) await page.addScriptTag({content: source(name)});
       await page.evaluate(async ({id}) => {
         const $ = name => document.getElementById(name), noop = () => {};
@@ -109,6 +109,8 @@ const html = fs.readFileSync(path.join(root, 'management_portal/article_workspac
     await page.locator('#articleFavoritesButton').click();
     assert.match(await page.locator('#articleFavoritesPanel').innerText(), /暂无 Article 收藏/);
     await page.locator('#articleFavoritesButton').click();
+    assert.equal(await page.locator('#articleFavoritesPanel').isVisible(), true, 'activity rail focuses an already visible tool');
+    await page.evaluate(() => layout.setToolVisible(false, 'favorites'));
     assert.equal(await page.locator('#articleFavoritesPanel').isVisible(), false);
     await page.locator('#articleFavoritesButton').click();
     assert.equal(await page.locator('#articleFavoritesPanel').isVisible(), true);
