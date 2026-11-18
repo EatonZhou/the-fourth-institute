@@ -59,17 +59,32 @@ class KnowledgeItemChatBackend:
         clean_id = str(resource_id or "").strip()
         if not clean_id:
             raise ValueError("kb_id required")
-        data, _content_type, resolved = self._resources.read_content(
-            clean_id,
-            actor=str(actor or ""),
-        )
+        # A Repo root identifies a directory, not a document with byte content.
+        # Resolve it through ResourceService so every read/prepare/send still
+        # checks the caller's resource access before exposing its metadata.
+        repo_root = clean_id.startswith("repo_") and "/" not in clean_id
+        if repo_root:
+            resolved = self._resources.resolve(clean_id, actor=str(actor or ""))
+            if resolved.get("resource_type") != "repo":
+                raise ValueError("knowledge resource type mismatch")
+            if not resolved.get("exists"):
+                raise FileNotFoundError(clean_id)
+            path = Path(str(resolved.get("checkout_path") or ""))
+            if not path.is_absolute():
+                raise ValueError("repo resolution requires an absolute checkout path")
+            text = f"Repository directory: {path}\nResource address: {clean_id}"
+        else:
+            data, _content_type, resolved = self._resources.read_content(
+                clean_id,
+                actor=str(actor or ""),
+            )
+            path = Path(str(resolved.get("resolved_path") or ""))
+            text = data.decode("utf-8", errors="replace")
         record = resolved.get("record")
         if not isinstance(record, dict):
             raise TypeError("knowledge resource resolution has no record")
         if str(record.get("resource_id") or "") != clean_id:
             raise ValueError("knowledge resource ID mismatch")
-        path = Path(str(resolved.get("resolved_path") or ""))
-        text = data.decode("utf-8", errors="replace")
         return clean_id, path, text, _public_item(record, path)
 
     def _ensure(

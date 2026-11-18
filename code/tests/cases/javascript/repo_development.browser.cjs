@@ -86,10 +86,16 @@ const html = `<!doctype html><html><head><meta charset="utf-8">${styles.map(n=>`
     });
     await page.evaluate(()=>session.openFile('main.js'));
     await page.waitForSelector('.monaco-editor');
+    const rail = await page.locator('.repoDevelopmentTools').boundingBox();
+    const workbench = await page.locator('.repoDevelopmentWorkbench').boundingBox();
+    assert.ok(rail.width <= 60 && rail.x + rail.width <= workbench.x + 1, 'tools form a narrow left activity rail');
+    assert.ok(Math.abs(rail.y - workbench.y) < 2, 'tools consume no row above the editing area');
+    assert.ok(workbench.height >= 900, 'workbench uses available viewport height');
+    await page.getByRole('button',{name:'刷新文件状态',exact:true}).click();
     const value=await page.evaluate(()=>session.workbench.getPanel('source').activeDocument().content);
     assert.match(value,/const value = 1/);
     await page.evaluate(()=>session.openFile('README.md'));
-    await page.locator('[data-development-tool="preview"]').click();
+    await page.locator('[data-activity-view="preview"]').click();
     await page.waitForSelector('.markdownBody h1');
     assert.equal(await page.locator('.markdownBody h1').textContent(),'Example');
     assert.equal(await page.evaluate(()=>writes.length),0,'preview must not write or compile');
@@ -114,7 +120,7 @@ const html = `<!doctype html><html><head><meta charset="utf-8">${styles.map(n=>`
     await page.evaluate(()=>retained.showDiff('main.js'));
     await page.locator('[data-source-action="use-disk"]').click();
     assert.equal(await page.evaluate(()=>session.hasDirty()),false);
-    await page.locator('[data-development-tool="git"]').click();
+    await page.locator('[data-activity-view="git"]').click();
     await page.locator('[data-repository-diff="main.js"]').click();
     await page.waitForSelector('.portalSourceEditorComparison');
     assert.match(await page.locator('.portalSourceEditorComparison').innerText(),/main.js/);
@@ -126,7 +132,7 @@ const html = `<!doctype html><html><head><meta charset="utf-8">${styles.map(n=>`
     await page.evaluate(()=>session.workbench.focusPanel('source'));
     await page.locator('.monaco-editor:visible').first().click();
     await page.keyboard.press('Control+End'); await page.keyboard.type('% edited');
-    await page.locator('[data-development-tool="preview"]').click();
+    await page.locator('[data-activity-view="preview"]').click();
     await page.evaluate(()=>session.workbench.getPanel('preview').compile());
     await page.waitForSelector('.portalRepositoryPanel-preview canvas');
     assert.deepEqual(await page.evaluate(()=>writes.map(w=>w.url.split('/').at(-1))),['file','latex']);

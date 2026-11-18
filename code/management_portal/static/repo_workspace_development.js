@@ -8,7 +8,7 @@
     window.PortalRepositoryPanels.register();
     window.PortalSourceEditorPanel.register();
     const root = document.createElement("div");
-    root.className = "repoDevelopment";
+    root.className = "repoDevelopment portalWorkbenchPageLayout";
     const tools = document.createElement("nav");
     tools.className = "repoDevelopmentTools";
     tools.setAttribute("aria-label", t("开发工作台工具"));
@@ -16,10 +16,10 @@
     host.className = "repoDevelopmentWorkbench";
     root.append(tools, host);
     const base = `/api/repos/${encodeURIComponent(repoId)}/workspace`;
-    let workbench, previewDocument = "", refreshing = null, visible = false, disposed = false;
+    let workbench, rail, selectedTool = "files", previewDocument = "", refreshing = null, visible = false, disposed = false;
     const reportError = error => onError?.(error);
     const panel = id => workbench?.getPanel(id);
-    const focus = id => workbench?.focusPanel(id);
+    const focus = id => { selectedTool = id; workbench?.focusPanel(id); rail?.setActiveView(id); };
     const readFile = path => api.get(`${base}/file?path=${encodeURIComponent(path)}`, { cache: "no-store" });
     async function openFile(path) {
       focus("source");
@@ -107,23 +107,21 @@
       defaultLayout: split("horizontal", [stack(navigationIds, "files"), stack(["source", "preview"], "source"), stack(["chat"])], [1, 2.8, 1.5]),
       fitViewport: { bottom: 18, minHeight: 360 },
     });
-    for (const descriptor of descriptors) {
-      const button = document.createElement("button");
-      button.type = "button"; button.className = "portalButton is-compact";
-      button.textContent = descriptor.title; button.dataset.developmentTool = descriptor.id;
-      button.addEventListener("click", () => {
-        focus(descriptor.id);
-        if (descriptor.id === "preview") {
+    const icons = { files: "file-text", search: "search", git: "branch", source: "code", preview: "eye", chat: "chat-room" };
+    rail = window.PortalWorkbench.createActivityRail({
+      id: `repo-development-${repoId}`, root: tools, label: t("开发工作台工具"), activeView: selectedTool,
+      views: [...descriptors.map(descriptor => ({ id: descriptor.id, label: descriptor.title, icon: icons[descriptor.id] })),
+        { id: "refresh", label: t("刷新文件状态"), icon: "refresh" }],
+      onViewSelect(id) {
+        if (id === "refresh") { rail.setActiveView(selectedTool); void refresh(); return; }
+        selectedTool = id;
+        focus(id);
+        if (id === "preview") {
           const document = panel("source").activeDocument();
           if (document) Promise.resolve(preview(document)).catch(reportError);
         }
-      });
-      tools.append(button);
-    }
-    const refreshButton = document.createElement("button");
-    refreshButton.type = "button"; refreshButton.className = "portalButton is-compact";
-    refreshButton.textContent = t("刷新文件状态"); refreshButton.addEventListener("click", () => void refresh());
-    tools.append(refreshButton);
+      },
+    });
     void panel("chat").openSurface({ kb_id: repoId }).catch(reportError);
     const visibility = () => {
       const next = root.isConnected && !root.closest("[hidden]");
@@ -138,7 +136,7 @@
     window.addEventListener("focus", onFocus);
     return {
       root, workbench, openFile, refresh, hasDirty: () => panel("source")?.hasDirty?.() || false,
-      destroy() { disposed = true; observer.disconnect(); clearInterval(timer); window.removeEventListener("focus", onFocus); workbench.destroy(); },
+      destroy() { disposed = true; observer.disconnect(); clearInterval(timer); window.removeEventListener("focus", onFocus); rail.destroy(); workbench.destroy(); },
     };
   }
 

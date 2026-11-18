@@ -206,3 +206,64 @@ def test_knowledge_resource_identity_must_match_resolution(tmp_path: Path) -> No
     chat = KnowledgeItemChatBackend(resource_service=Wrong(source))
     with pytest.raises(ValueError, match="mismatch"):
         chat.get_state("alice", "article_test")
+
+
+def test_repo_chat_resolves_directory_for_read_prepare_and_send(backend, tmp_path, monkeypatch):
+    """Repo 根不是字节文档；聊天读取、准备及发送均授权解析目录，沿用 Resident 入口。"""
+    from urllib.parse import urlparse
+    from management_portal.http_knowledge import KnowledgeHttp
+    chat, service = backend
+    repo_id = "repo_123456789abc"
+    directory = tmp_path / "checkout"
+    directory.mkdir()
+    calls = []
+
+    class RepoResources:
+        denied = False
+
+        def resolve(self, address, *, actor):
+            calls.append((address, actor))
+            if self.denied:
+                raise PermissionError("revoked")
+            assert address == repo_id and actor == "alice"
+            return {"resource_type": "repo", "target_kind": "repo", "exists": True,
+                    "checkout_path": str(directory),
+                    "record": {"resource_id": repo_id, "resource_type": "repo", "title": "Repository"}}
+
+        def read_content(self, *args, **kwargs):
+            raise AssertionError("repo root 没有字节内容")
+
+    resources = RepoResources()
+    chat._resources = resources
+    monkeypatch.setattr(discussion_residents, "resolve_resource_lineage",
+                        lambda **kw: "lineage_knowledge01" if kw["resource_type"] == "repo" else None)
+    monkeypatch.setattr(discussion_residents.resident_handoff, "lookup_invocation_resident", lambda **_: {})
+    checked = []
+    host = SimpleNamespace(
+        session_actor=lambda request: "alice",
+        require_resource=lambda resource, actor: checked.append((resource, actor)),
+        knowledge_item_chat_backend=lambda: SimpleNamespace(knowledge_item_chat_backend=chat),
+        respond=lambda request, status, body: (status, body),
+    )
+    status, state = KnowledgeHttp.get_api_item_chat(host, None,
+        urlparse(f"/knowledge/api/item-chat?kb_id={repo_id}"), "mallory")
+    assert status == 200 and state["binding_state"] == "unbound"
+    assert state["chat_workspace"]["composer"]["can_send"]
+    assert checked == [(repo_id, "alice")]
+    assert state["item"]["path"] == str(directory)
+    assert repo_id in state["initial_context"]["context_text"]
+    assert service.invocations == [], "reading must not create or send a conversation"
+    assert chat.prepare("alice", repo_id, "", purpose="settings")["resident_id"]
+    assert chat.prepare("alice", repo_id, "inspect")["resident_id"]
+    assert service.invocations == [], "preparation must not send a model task"
+    chat.send_message("alice", repo_id, "inspect")
+    context = service.invocations[0][0]["arguments"]["message"]["content_parts"][1]["context"]["context_text"]
+    assert str(directory) in context and repo_id in context
+    assert calls == [(repo_id, "alice")] * 4
+    resources.denied = True
+    for operation in [lambda: chat.get_state("alice", repo_id),
+                      lambda: chat.prepare("alice", repo_id, "inspect"),
+                      lambda: chat.send_message("alice", repo_id, "inspect")]:
+        with pytest.raises(PermissionError, match="revoked"):
+            operation()
+    assert len(service.invocations) == 1

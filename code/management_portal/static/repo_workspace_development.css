@@ -1,3 +1,6 @@
-.repoDevelopment { display: flex; flex-direction: column; min-width: 0; min-height: 360px; }
-.repoDevelopmentTools { display: flex; gap: 6px; flex-wrap: wrap; padding: 6px 10px; border-bottom: 1px solid var(--line); }
-.repoDevelopmentWorkbench { flex: 0 0 auto; min-width: 0; min-height: 360px; }
+.repoDevelopment { min-width: 0; min-height: 360px; }
+.repoDevelopmentWorkbench { min-width: 0; min-height: 360px; }
+.repoDevelopmentTools [data-activity-view="refresh"] { margin-top: auto; }
+@media (max-width: 780px) {
+  .repoDevelopmentTools [data-activity-view="refresh"] { margin-top: 0; margin-left: auto; }
+}
