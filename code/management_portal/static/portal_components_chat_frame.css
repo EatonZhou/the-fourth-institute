@@ -196,6 +196,16 @@
 }
 .portalWorkspaceHead .chatHeaderSeparator { flex: 0 0 auto; }
 
+.portalWorkspaceHead .portalButton.workspaceConversationPin[aria-pressed="true"] {
+  color: var(--accent);
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+}
+.workspaceConversationPin[aria-pressed="true"] svg path:first-child {
+  fill: currentColor;
+}
+
 .portalChatWorkspaceRoot .chatHead {
   position: relative;
   z-index: 8;

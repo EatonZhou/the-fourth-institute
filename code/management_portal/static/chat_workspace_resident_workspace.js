@@ -50,7 +50,7 @@
     const optionalVisible = name => features[name] === true ? "" : " hidden";
     return {
       extraActionsHtml: window.PortalI18n.html`
-        <button class="portalButton is-icon is-quiet iconBtn" id="${chromeIds.pin}" type="button" aria-label="置顶" title="置顶" aria-pressed="false" disabled data-portal-icon="pin"></button>
+        <button class="portalButton is-icon is-quiet iconBtn workspaceConversationPin" id="${chromeIds.pin}" type="button" aria-label="置顶" title="置顶" aria-pressed="false" disabled data-portal-icon="pin"></button>
         <button class="portalButton is-icon is-quiet iconBtn" id="${chromeIds.compact}" type="button" aria-label="压缩当前会话上下文" title="压缩当前会话上下文" hidden data-portal-icon="compact"></button>
         <button class="portalButton is-icon is-quiet iconBtn" id="${chromeIds.resetContext}" type="button" aria-label="清空 Resident 上下文" title="清空此前对话和上下文" hidden data-portal-icon="eraser"></button>
         ${options.extraActionsHtml || ""}
@@ -355,7 +355,6 @@
         const pinned = Boolean(window.PortalConversationStore?.entry(`resident:${this.target().resident_id}`)?.pinned);
         button.disabled = !this.pinReady || this.pinBusy;
         button.setAttribute("aria-pressed", String(pinned));
-        button.classList.toggle("is-active", pinned);
         button.title = window.PortalI18n.t(pinned ? "取消置顶" : "置顶");
         button.setAttribute("aria-label", button.title);
       }

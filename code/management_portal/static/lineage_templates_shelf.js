@@ -2,7 +2,7 @@
   'use strict';
   if (window.LineageTemplatesShelf) return;
   const GROUPS = Object.freeze([
-    {key: 'duties', label: '职责', kinds: ['structure']},
+    {key: 'duties', label: '职责', kinds: ['structure', 'family_duty']},
     {key: 'roles', label: '角色', kinds: []},
     {key: 'organizations', label: '组织', kinds: ['familize']},
     {key: 'errands', label: '交办', kinds: ['prompt', 'explore', 'script']},

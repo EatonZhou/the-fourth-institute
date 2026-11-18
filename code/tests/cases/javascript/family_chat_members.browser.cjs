@@ -342,6 +342,12 @@ const root = path.resolve(__dirname, '../../../management_portal/static');
     const pin = page.locator('[data-portal-icon="pin"]');
     await pin.click();
     assert.equal(await pin.getAttribute('aria-pressed'), 'true');
+    if (process.env.FAMILY_CHAT_SCREENSHOTS) {
+      await page.mouse.move(0, 0);
+      await pin.evaluate(node => node.blur());
+      await page.locator('.portalWorkspaceHead').screenshot({
+        path: path.join(process.env.FAMILY_CHAT_SCREENSHOTS, 'pinned-header.png')});
+    }
     assert.equal(await page.evaluate(() => pinWrites.at(-1)), 'resident:resident_other');
     await page.evaluate(() => PortalConversationStore.setPinned('resident:resident_other', false));
     assert.equal(await pin.getAttribute('aria-pressed'), 'false', 'Mailbox changes update the same shared state');
