@@ -126,7 +126,7 @@ const {chromium} = require(path.join(repo, 'management_portal/test_framework/tau
     assert.equal(await page.locator('[data-workshop-toolbox]').first().isVisible(),false);
     assert.equal(await page.locator('[data-body-field="message"]').inputValue(),'From assistant');
     assert.equal(await page.evaluate(()=>workshop.dirty()),true);
-    for(const kind of ['script','explore','familize']) {
+    for(const kind of ['script','explore','familize','family_duty']) {
       await page.evaluate(async kind=>{
         workshop.destroy();
         const prototype=(await execute('ListTemplates')).templates.find(template=>template.kind===kind);
@@ -139,6 +139,15 @@ const {chromium} = require(path.join(repo, 'management_portal/test_framework/tau
       assert.equal(await page.locator('[data-workshop-toolbox]').first().isVisible(),false);
       assert.equal(await page.locator('[data-meta="title"]').inputValue(),'Assistant '+kind);
       if(kind==='script') await page.waitForSelector('.monaco-editor');
+      if(kind==='family_duty') {
+        await page.locator('[data-body-field="interval_seconds"]').fill('1800');
+        await page.locator('[data-body-field="guide"]').fill('Review only completed business work.');
+        await page.locator('[data-workshop-save]').click();
+        await page.waitForFunction(()=>!workshop.dirty());
+        const saved=await page.evaluate(async()=>(await execute('GetTemplate',{template_id:workshop.template().template_id})).template);
+        assert.equal(saved.body.interval_seconds,1800);
+        assert.equal(saved.body.guide,'Review only completed business work.');
+      }
     }
     const builtinOriginal=await page.evaluate(async()=>{
       workshop.destroy();

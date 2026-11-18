@@ -214,7 +214,12 @@ def configured(body: dict, block: dict) -> dict:
     # Older stored graphs may be read before startup reconciliation adds the new arguments.
     entries = {key: value for route in {row[0] for row in TASKS.values()}
                for key, value in defaults(route).items() if key != "progress"}
-    for element in block.get("elements", []):
+    from . import family_review_duty
+    if family_review_duty.independent(block["family"]):
+        entries.pop("review", None)
+    for element in task_elements(body, block):
+        if element["id"] not in wires:
+            continue
         seed = defaults(element.get("key", ""), personal=bool(block["family"].get("personal_ama_id")))
         if not seed:
             continue
@@ -233,10 +238,16 @@ def context(record: dict) -> tuple[dict, dict]:
     return read_family(record["lineage_id"], record["family"]["family_id"], record["resident_id"])
 
 
+def task_elements(body, block):
+    from . import family_review_duty
+    review = family_review_duty.find(body, block)
+    return [*block.get("elements", []), *(review["elements"] if review else [])]
+
+
 def validate_routes(body: dict, block: dict) -> None:
     """Keep invalid edited templates out of the executing graph."""
     wires = {w["id"]: w for w in body.get("program", {}).get("wires", [])}
-    for element in block.get("elements", []):
+    for element in task_elements(body, block):
         for profile in wires.get(element["id"], {}).get("config", {}).get("invoke_profiles", {}).values():
             tasks = profile.get("arguments", {}).get("family_tasks", {}).get("value")
             if tasks is None:
@@ -305,6 +316,8 @@ def render(record: dict, trigger: str, facts: dict, *, guide_version: str | None
     entries = configured(body, block)
     # Removed automatic reports can still finish an already queued/manual batch.
     legacy_progress = trigger == "progress" and trigger not in entries
+    if trigger not in entries and not legacy_progress:
+        raise ValueError("此 Family 未安装该职责：" + trigger)
     entry = defaults("request_progress")[trigger] if legacy_progress else entries[trigger]
     path, version, _ = guide(record, body, block)
     # Only these three placeholders are interpreted. Message content never becomes a template.

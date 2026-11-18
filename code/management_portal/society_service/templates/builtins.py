@@ -78,7 +78,15 @@ def definitions():
             },
         }
 
+    from ..family_tasks import defaults
+    review = defaults("notify_periodic_review")["review"]
     templates = [
+        {
+            "builtin_key": "family_review", "kind": "family_duty", "category": "structure",
+            "title": "周期组织回顾", "description": "施加到普通 Family 的 Steward，独立管理回顾周期与指南，可编辑、撤下和再安装。",
+            "targets": ["resident"], "parameters": [],
+            "body": {"interval_seconds": 86400, "guide": review["guide"], "prompt": review["prompt"]},
+        },
         {
             "builtin_key": "workshop_assistant",
             "kind": "structure", "category": "structure", "title": "工坊助手",

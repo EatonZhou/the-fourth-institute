@@ -188,7 +188,7 @@ def _rewire(body: dict, sources: set[str], target: str, block: dict, *, removing
 def reconcile_in_body(body: dict, block: dict, actor: str) -> None:
     """Reconcile generated components and wires by local key; preserve their IDs."""
     family = block["family"]
-    from .. import personal_assistant
+    from .. import personal_assistant, family_review_duty
     personal = bool(family.get("personal_ama_id"))
     members, facade, steward, router = (family[k] for k in ("members", "facade", "steward", "router"))
     elements = block.setdefault("elements", [])
@@ -247,7 +247,7 @@ def reconcile_in_body(body: dict, block: dict, actor: str) -> None:
         for member in members:
             put(f"watch_{key}:{member}", "watch", source=source, target=member, config={})
         notify("notify_" + key, source)
-    if members:
+    if members or family_review_duty.independent(family):
         done = put("member_done", "event_source", title="工作摘要覆盖检查", config={"event_type": "resident.work_finished"})
         for member in members:
             put(f"watch_member_done:{member}", "watch", source=done, target=member, config={})
@@ -260,34 +260,35 @@ def reconcile_in_body(body: dict, block: dict, actor: str) -> None:
     rollup = put("memory_rollup" if personal else "summary_rollup", "effect", title="按需归纳工作摘要", config={"script": FAMILY_SUMMARY_ROLLUP_SCRIPT, "endpoints": []})
     put("request_memory" if personal else "request_summary", "route", source=summary_timer, target=rollup, config={"invoke_profiles": {"effect": {
         "arguments": {"facade": {"value": facade}, "steward": {"value": steward}}}}})
-    review = put("periodic_review", "event_source", title="周期回顾", config={
-        "event_type": "time.reached", "schedule_mode": "recurring", "recurrence_kind": "interval",
-        "interval_seconds": max(86400, family["review_interval_seconds"]) if personal else family["review_interval_seconds"],
-        "misfire_policy": "coalesce_latest", "overlap_policy": "drop"})
-    if personal:
-        review_args = {"lineage_id": body["lineage_id"], "steward": steward, "facade": facade,
-                       "activity_key": "family_activity_" + facade, "review_key": "family_review_" + facade}
-        activity = put("personal_activity", "event_source", title="个人对话活动", config={"event_type": "resident.message_received"})
-        for member in [facade, *members]:
-            put("watch_personal_activity:" + member, "watch", source=activity, target=member, config={})
-        for key, source, script in (("record_personal_activity", activity, personal_assistant.ACTIVITY_SCRIPT),
-                                    ("review_personal_activity", review, personal_assistant.REVIEW_SCRIPT)):
-            check = put(key, "effect", title="个人助手活动回顾", config={"script": script, "endpoints": []})
-            put("invoke_" + key, "route", source=source, target=check, config={"invoke_profiles": {"effect": {
-                "arguments": {k: {"value": v} for k, v in review_args.items()}}}})
-    else:
-        review_args = {"lineage_id": {"value": body["lineage_id"]}, "family_id": {"value": block["id"]}}
-        gated = put("notify_periodic_review_task", "effect", title="按业务活动检查组织回顾", config={
-            "script": 'CheckFamilyReview lineage_id="${arguments.lineage_id}" family_id="${arguments.family_id}"',
-            "endpoints": []})
-        put("notify_periodic_review", "route", source=review, target=gated, config={
-            "invoke_profiles": {"effect": {"arguments": review_args}}, "unavailable_policy": "latest"})
-        if members:
-            activity = put("review_activity", "effect", title="记录已完成业务活动", config={
-                "script": 'CheckFamilyReview lineage_id="${arguments.lineage_id}" family_id="${arguments.family_id}" event:=${event}',
+    if personal or not family_review_duty.independent(family):
+        review = put("periodic_review", "event_source", title="周期回顾", config={
+            "event_type": "time.reached", "schedule_mode": "recurring", "recurrence_kind": "interval",
+            "interval_seconds": max(86400, family["review_interval_seconds"]) if personal else family["review_interval_seconds"],
+            "misfire_policy": "coalesce_latest", "overlap_policy": "drop"})
+        if personal:
+            review_args = {"lineage_id": body["lineage_id"], "steward": steward, "facade": facade,
+                           "activity_key": "family_activity_" + facade, "review_key": "family_review_" + facade}
+            activity = put("personal_activity", "event_source", title="个人对话活动", config={"event_type": "resident.message_received"})
+            for member in [facade, *members]:
+                put("watch_personal_activity:" + member, "watch", source=activity, target=member, config={})
+            for key, source, script in (("record_personal_activity", activity, personal_assistant.ACTIVITY_SCRIPT),
+                                        ("review_personal_activity", review, personal_assistant.REVIEW_SCRIPT)):
+                check = put(key, "effect", title="个人助手活动回顾", config={"script": script, "endpoints": []})
+                put("invoke_" + key, "route", source=source, target=check, config={"invoke_profiles": {"effect": {
+                    "arguments": {k: {"value": v} for k, v in review_args.items()}}}})
+        else:
+            review_args = {"lineage_id": {"value": body["lineage_id"]}, "family_id": {"value": block["id"]}}
+            gated = put("notify_periodic_review_task", "effect", title="按业务活动检查组织回顾", config={
+                "script": 'CheckFamilyReview lineage_id="${arguments.lineage_id}" family_id="${arguments.family_id}"',
                 "endpoints": []})
-            put("record_review_activity", "route", source=ids["member_done"], target=activity, config={
-                "invoke_profiles": {"effect": {"arguments": review_args}}})
+            put("notify_periodic_review", "route", source=review, target=gated, config={
+                "invoke_profiles": {"effect": {"arguments": review_args}}, "unavailable_policy": "latest"})
+            if members:
+                activity = put("review_activity", "effect", title="记录已完成业务活动", config={
+                    "script": 'CheckFamilyReview lineage_id="${arguments.lineage_id}" family_id="${arguments.family_id}" event:=${event}',
+                    "endpoints": []})
+                put("record_review_activity", "route", source=ids["member_done"], target=activity, config={
+                    "invoke_profiles": {"effect": {"arguments": review_args}}})
     inbox = put("facade_inbox", "event_source", title="门面收到消息", config={"event_type": "resident.message_received"})
     put("watch_facade", "watch", source=inbox, target=facade, config={})
     effect = put("router", "effect", title="Family Router", config={"script": FAMILY_ROUTER_SCRIPT, "endpoints": []})
@@ -700,9 +701,12 @@ def update_family(lineage_id: str, family_id: str, actor: str, *, add_member_ids
         if not ownership_only:
             reconcile_in_body(body, block, actor)
             if review_interval_seconds is not None:
-                event_id = next(e["id"] for e in block["elements"] if e.get("key") == "periodic_review")
-                event = next(c for c in body["program"]["components"] if c["id"] == event_id)
-                event["config"]["interval_seconds"] = max(86400, review_interval_seconds) if family.get("personal_ama_id") else review_interval_seconds
+                from .. import family_review_duty
+                owner = family_review_duty.find(body, block) or block
+                event_id = next((e["id"] for e in owner["elements"] if e.get("key") == "periodic_review"), None)
+                event = next((c for c in body["program"]["components"] if c["id"] == event_id), None)
+                if event:
+                    event["config"]["interval_seconds"] = max(86400, review_interval_seconds) if family.get("personal_ama_id") else review_interval_seconds
         rewired = _rewire(body, actually_added, family["facade"], block)
         return {"family_id": family_id, "rewired_wire_ids": rewired, "added": sorted(actually_added),
                 "removed": sorted(actually_removed)}
@@ -778,6 +782,12 @@ def unfamilize(lineage_id: str, family_id: str, actor: str, *, successor_id: str
             if successor:
                 body["leader_resident_id"] = successor
             internals = {e["id"] for e in current["elements"] if facts.is_generated(e)} | set(roles)
+            from .. import family_review_duty
+            review = family_review_duty.find(body, current)
+            if review:
+                scope, _ = function_block_authoring.deletion_scope(body, review["id"])
+                internals.update(scope)
+                body["function_blocks"] = [b for b in body["function_blocks"] if b["id"] not in scope]
             kept = [e for e in current["elements"] if e["id"] not in internals]
             program = body["program"]
             program["components"] = [c for c in program["components"] if c["id"] not in internals]

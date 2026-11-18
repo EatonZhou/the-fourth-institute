@@ -26,7 +26,7 @@ def _write(connection, rows):
 
 
 def group_for(template):
-    return {"structure": "duty", "familize": "organization", "role": "role"}.get(template["kind"], "task")
+    return {"structure": "duty", "family_duty": "duty", "familize": "organization", "role": "role"}.get(template["kind"], "task")
 
 
 def instructions_used(template):
@@ -39,6 +39,8 @@ def instructions_used(template):
         return ["ForkResident", "CreateComponent", "DeliverMessage"]
     if kind == "familize":
         return ["Familize"]
+    if kind == "family_duty":
+        return ["CheckFamilyReview"]
     if kind == "script":
         return list(dict.fromkeys(call.instruction for call in parse(body["script"]).calls))
     names = []

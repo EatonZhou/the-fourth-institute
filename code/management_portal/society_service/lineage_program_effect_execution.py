@@ -72,8 +72,9 @@ def _family_note_context(
 
     if instruction == "CheckFamilyReview" and context.entry == "lineage":
         from .family_familize import component_family, role_of, member_ids
+        from .family_tasks import task_elements
         block = component_family(lineage, effect_id)
-        key = next((e.get("key") for e in (block or {}).get("elements", []) if e["id"] == effect_id), "")
+        key = next((e.get("key") for e in (task_elements(lineage, block) if block else []) if e["id"] == effect_id), "")
         observed = arguments.get("event") if isinstance(arguments.get("event"), dict) else {}
         observed_payload = observed.get("payload")
         valid_record = (key == "review_activity" and event is not None

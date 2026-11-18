@@ -6,10 +6,15 @@ from . import family_chat_storage
 ROLES = ("member", "facade", "router", "steward")
 COLUMNS = {
     **family_chat_storage.COLUMNS,
-    "families": ("family_id", "lineage_id", "title", "goal", "previous_leader_id", "deleted_at", "human_familizer_id", "route_threshold", "review_interval_seconds", "lineage_scope", "resource_id", "created_at", "updated_at", "personal_ama_id", "history_before", "history_before_ordinal", "auto_migrate", "auto_migrate_priority"),
+    "families": ("family_id", "lineage_id", "title", "goal", "previous_leader_id", "deleted_at", "human_familizer_id", "route_threshold", "review_interval_seconds", "lineage_scope", "resource_id", "created_at", "updated_at", "personal_ama_id", "history_before", "history_before_ordinal", "auto_migrate", "auto_migrate_priority", "independent_duties"),
     "family_residents": ("family_id", "resident_id", "role"),
 }
 RECOVERY_INDEXES = {"family_steward_recovery_idx": "ON family_residents(resident_id,family_id) WHERE role='steward'"}
+
+
+def ensure_duty_schema(connection: Any) -> None:
+    """Additive upgrade; existing Families retain legacy generation until opted in."""
+    connection.execute("ALTER TABLE families ADD COLUMN IF NOT EXISTS independent_duties TEXT[] NOT NULL DEFAULT '{}'")
 
 
 def operating_role_ids(connection: Any) -> list[str]:
@@ -34,7 +39,8 @@ def create_schema(connection: Any) -> None:
         history_before TEXT NOT NULL DEFAULT '',
         history_before_ordinal BIGINT NOT NULL DEFAULT 0,
         auto_migrate BOOLEAN NOT NULL DEFAULT TRUE,
-        auto_migrate_priority TEXT[] NOT NULL DEFAULT '{}')
+        auto_migrate_priority TEXT[] NOT NULL DEFAULT '{}',
+        independent_duties TEXT[] NOT NULL DEFAULT '{}')
     """)
     connection.execute("CREATE INDEX families_lineage_idx ON families(lineage_id) WHERE deleted_at IS NULL")
     connection.execute("CREATE UNIQUE INDEX family_lineage_scope ON families(lineage_id) WHERE lineage_scope AND deleted_at IS NULL")
@@ -80,9 +86,9 @@ def store_program(connection: Any, lineage_id: str, definition: dict, now: str) 
             (family_id,lineage_id,family["title"],family.get("goal", ""),family.get("previous_leader_id", ""),
              family.get("human_familizer_id", ""),family.get("route_threshold", 60),family.get("review_interval_seconds", 86400),
              family.get("lineage_scope", False),resource_id,block.get("created_at") or now,now))
-        connection.execute("""UPDATE families SET personal_ama_id=%s,history_before=%s,history_before_ordinal=%s,auto_migrate=%s,auto_migrate_priority=%s
+        connection.execute("""UPDATE families SET personal_ama_id=%s,history_before=%s,history_before_ordinal=%s,auto_migrate=%s,auto_migrate_priority=%s,independent_duties=%s
             WHERE family_id=%s""", (family.get("personal_ama_id", ""), family.get("history_before", ""),
-                                     family.get("history_before_ordinal", 0), family.get("auto_migrate", True), family.get("auto_migrate_priority", []), family_id))
+                                     family.get("history_before_ordinal", 0), family.get("auto_migrate", True), family.get("auto_migrate_priority", []), family.get("independent_duties", []), family_id))
         roster = [(rid, "member") for rid in family.get("members", [])]
         roster.extend((family[role], role) for role in ROLES[1:] if family.get(role))
         resident_ids = [rid for rid, _ in roster]

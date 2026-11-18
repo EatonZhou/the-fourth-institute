@@ -426,6 +426,7 @@ class LineageDataStore:
         user_pending_question_storage.create_schema(connection)
         # Duty records joined the store after installation; created when absent.
         duty_storage.create_schema(connection)
+        family_storage.ensure_duty_schema(connection)
         # Existing data is used by its owners. A metadata tag or an unrelated
         # table/column difference must not disable every Resident. Operations
         # requiring absent structures report their actual database error.

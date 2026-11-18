@@ -134,10 +134,14 @@ def facade_for_family_state(lineage: Mapping[str, Any], component_id: str, key: 
 
 
 def component_family(lineage: Mapping[str, Any], component_id: str) -> dict[str, Any] | None:
-    return next((block for block in family_blocks(lineage)
-                 if any(item["id"] == component_id and item["kind"] == "component"
-                        and is_generated(item)
-                        for item in block.get("elements") or [])), None)
+    from . import family_review_duty
+    for block in family_blocks(lineage):
+        review = family_review_duty.find(lineage, block)
+        elements = [*block.get("elements", []), *(review["elements"] if review else [])]
+        if any(item["id"] == component_id and item["kind"] == "component" and is_generated(item)
+               for item in elements):
+            return block
+    return None
 
 
 def family_of_router(lineage: Mapping[str, Any], resident_id: str) -> dict[str, Any] | None:

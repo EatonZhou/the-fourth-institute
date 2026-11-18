@@ -4,12 +4,12 @@ type: decision
 project: AI员工
 created_at: '2026-10-13'
 version:
-  number: 36
+  number: 37
   created_at: "2026-10-13"
   created_by:
     user: ""
     agent: "resident_e8fc8c899f00"
-  updated_at: "2026-11-15T15:31:40Z"
+  updated_at: "2026-11-18T02:32:56Z"
   updated_by:
     user: ""
     agent: "resident_25ac6961fafb"
@@ -435,3 +435,12 @@ Effect 的运行版本保存在 config.script / endpoints；待编写、待确�
 ReviewComponentScript(lineage_id, effect_id, draft_hash, decision) 和 ReviewTemplateScript(template_id, effect_id, draft_hash, decision) 分别处理实例和模板，decision 为 confirm 或 cancel。请求必须带所属资源读取时的 expected_version（Lineage revision 或模板 version）。实例 effect_id 是组件 ID，模板中是组件 key。版本或 hash 不符拒绝；confirm 只允许指定确认人，cancel 允许发起者或确认人，且仍须具备对应资源写权限。确认先复用 Effect DSL 校验，空脚本、无效指令和参数不晋升；成功原子替换运行 script/endpoints 并清除草稿。取消只清除草稿，保留原运行版本。调用记录保留操作者和确认内容 hash。
 
 进入此流程后 script_review_required 为 true；同一 Effect 后续修改运行脚本必须再走候选与确认，不能删除标记或草稿绕过确认。既有未进入流程的直接脚本编辑保持兼容。候选字段不进入运行计划，不改变现行执行契约；失败通知收件人仍独立配置。含待确认草稿的模板不可发布商店；确认后可发布、安装并施加，模板和已施加实例仍各自独立。
+
+
+## Family 回顾职责配方（G0）
+
+新增 family_duty 模块，作为“职责”分组，当前提供内置“周期组织回顾”。目标仅为一个普通 Family 的 Steward；body 为 interval_seconds（正整数秒）、guide 与 prompt（各 1–20000 字，prompt 保留 ${facts}，仅允许 facts、guide_path、guide_version 占位符）。模板不保存 Family、Steward 或共享事件的具体身份，施加时从目标解析；个人 AMA Family 与重复安装拒绝。
+
+ApplyTemplate 的 dry_run 使用同一安装及图校验路径，不改变定义。首次施加接管原回顾结构，后续撤下、再安装沿用职责生命周期；持久的 independent_duties 标记阻止 Family 同步重新生成。共享成员完成事件仍属 Family，职责工坊可编辑自己的组件与连线。既有任务的原请求身份、业务活动及空闲门控不变。
+
+CreateTemplate.from_selection 选择这条职责时生成 family_duty 配方，可通过工坊修改周期、指南和触发提示词，另存、发布商店、安装后用于另一 Family。任意自定义结构、Effect 脚本或附加职责记忆不静默省略：目前超出该配方可复用范围时明确拒绝导出，实例编辑仍保留。它是首个职责试拆样例，并非完整角色模板。

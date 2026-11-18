@@ -5,6 +5,10 @@ from .registry import TemplateError
 
 
 def capture(lineage, block):
+    from ..family_review_duty import capture as capture_review
+    review = capture_review(lineage, block)
+    if review is not None:
+        return review
     nodes = {item["id"]: item for item in lineage.get("nodes", [])}
     components = {item["id"]: item for item in lineage["program"]["components"]}
     wires = {item["id"]: item for item in lineage["program"]["wires"]}

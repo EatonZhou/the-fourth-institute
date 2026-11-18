@@ -4,15 +4,15 @@ type: decision
 project: AI员工
 created_at: '2026-10-01'
 version:
-  number: 167
+  number: 169
   created_at: "2026-10-01"
   created_by:
     user: ""
     agent: "resident_4b1da6140cf2"
-  updated_at: "2026-11-13T21:11:15Z"
+  updated_at: "2026-11-18T02:32:21Z"
   updated_by:
     user: ""
-    agent: "resident_737599f56947"
+    agent: "resident_25ac6961fafb"
 importance: 8
 ai_generated: false
 links:
@@ -102,7 +102,7 @@ CreateResident/ForkResident 优先遵循显式 family_id；否则成员或 Stewa
 
 **Family 创建者只记录实际人类调用者。** human_familizer_id 由 families 保存；Resident 创建的 Family 留空，不能推测为 owner、最近发送者或管理员。它是联络事实，不授予权限。业务联系人及持续角色故障升级的区别见运行维护专题。
 
-模板入口负责读取 Family 配方。直接 `Familize`、创建 Lineage 时的 Familize、个人助手和质量成员的自动组装经过 `templates.create_family`，由入口提供加载已保存配方的回调；Family 组装在入口授权、范围与成员准入检查以及已有整 Lineage Family 的幂等返回之后加载配方。`ApplyTemplate` 直接传入已规范化、校验的同一份 `ApplyContext.template`，组装期间不重新读取另一版本。Family 组装只消费配方及本次覆盖，不依赖模板持久存储。本次显式参数和角色设置覆盖配方值，分别配置 Router、Steward 的运行设置，门面无需模型配置。个人助手的初始 Backend 继续遵循站点默认角色。用户可指定名称；局部选区缺省以某个成员标题加“-family”，范围 Family 用 Lineage 标题。Family 名称同时作为门面和块标题。
+模板入口负责读取 Family 配方。直接 `Familize`、创建 Lineage 时的 Familize、个人助手和质量成员的自动组装经过 `templates.create_family`，由入口提供加载已保存配方的回调；Family 组装在入口授权、范围与成员准入检查以及已有整 Lineage Family 的幂等返回之后加载配方。`ApplyTemplate` 直接传入已规范化、校验的同一份 `ApplyContext.template`，组装期间不重新读取另一版本。Family 组装只消费配方及本次覆盖，不依赖模板持久存储。本次显式参数和角色设置覆盖配方值，分别配置 Router、Steward 的运行设置，门面无需模型配置。未显式指定 Provider 的普通 Family 角色与个人助手一样，初始 Backend 遵循站点 default 角色；模板内置配置不固定 Codex 或某个模型。显式 Router、Steward 配置仍优先，跨 Provider 时不携带原 Provider 的账号和模型设置。门面没有模型任务，其登记也不得要求存在可用 Codex 账号。站点默认角色和 Family 自动迁移策略继续各自决定实际账号选择，创建 Family 不改写站点默认账号。用户可指定名称；局部选区缺省以某个成员标题加“-family”，范围 Family 用 Lineage 标题。Family 名称同时作为门面和块标题。
 
 ## 结构维护与普通工作流
 
@@ -198,3 +198,14 @@ Family 的正式资源类型为 family，归属当前 Lineage 并投影 Project�
 | `UpdateFamily` | `lineage_id`、`family_id`、`add_member_ids`、`remove_member_ids`、`add_element_ids`、`remove_element_ids`、`title`、`goal`、`route_threshold`、`review_interval_seconds`、`auto_migrate`、`auto_migrate_priority` |
 | `GetFamilyChatPreferences` | `resident_id` |
 | `UpdateFamilyChatPreferences` | `resident_id`、`member_id`、`control`、`enabled` |
+
+
+## G0：独立周期组织回顾职责（2026-11-18）
+
+普通 Family 可将“周期组织回顾”模板施加到自己的 Steward。首次施加接管原有回顾定时器、检查 Effect、活动记录 Effect 和两条路由，保留对象 ID，并封装为 Steward 持有的子职责（父块成员键 duty:review）。member_done 仍由 Family 维护，供摘要检查和回顾共同引用；独立化后空名册也保留共享源的身份，只更新成员监听。仅首次安装绑定活动路由，后续同步不补回用户删掉的职责内容。
+
+families.independent_duties 是独立管理范围的权威记录，目前支持 review；加列默认空数组，不自动迁移已有 Family。职责撤下后 review 标记保留，成员变化、结构同步及重启不会重建回顾结构；再次施加显式重新安装。CheckFamilyReview 对已独立化但无任务配置的 Family 返回 disabled，新 DispatchFamilyTask(review) 不再回落到内置提示词；既有投递意图继续使用原消息与冻结内容，重新安装后的检查可消费已接受回执而不重复投递。
+
+独立职责仍沿用业务活动水位、空闲门控及受限的门面执行身份。嵌套职责的 Effect 只在本 Family、对应触发及参数匹配时取得该身份。UpdateFamily 的周期更新定位现有职责定时器；已撤下时不恢复结构。Unfamilize 清理这条职责及其内部元素，保留普通工作流的既有展开语义。
+
+本切片的可复用 family_duty 模板保存周期、指南和含事实占位符的触发提示词，施加时根据目标 Steward 绑定所属普通 Family；不接受个人 AMA Family。自定义结构、脚本或附加职责记忆不静默压缩进该配方，保存时明确拒绝；它们仍可作为实例编辑。完整角色模板待 Router 与 Steward 的真实职责边界稳定后确定。

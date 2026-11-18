@@ -24,9 +24,9 @@ def _load() -> None:
     global _loaded
     if _loaded:
         return
-    from . import explore, familize, prompt, script, structure
+    from . import explore, familize, family_duty, prompt, script, structure
 
-    for module in (prompt, structure, script, explore, familize):
+    for module in (prompt, structure, script, explore, familize, family_duty):
         register(module.KIND)
     _loaded = True
 
@@ -67,7 +67,7 @@ def normalize(raw: dict) -> dict:
     template.setdefault(
         "category",
         "structure"
-        if kind.key == "structure"
+        if kind.key in {"structure", "family_duty"}
         else "team"
         if kind.key == "familize"
         else "apply",

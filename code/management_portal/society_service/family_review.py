@@ -85,6 +85,9 @@ def check(lineage_id, family_id, actor, *, event=None):
         lineage_aggregate.ensure_manager(body, actor)
     if family.get("personal_ama_id"):
         return {"family_id": block["id"], "status": "not_applicable"}
+    from . import family_review_duty
+    if family_review_duty.independent(family) and not family_review_duty.task(body, block):
+        return {"family_id": block["id"], "status": "disabled"}
     facade, steward = family["facade"], family["steward"]
     store = get_lineage_data_store().family_relays
     if event is not None:
