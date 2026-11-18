@@ -303,6 +303,40 @@ const root = path.resolve(__dirname, '../../../management_portal/static');
     await popover.waitFor({state: 'visible'});
     assert.deepEqual(await popover.locator('th').allTextContents(), ['节点', 'backend', '周剩余', '工作状态', '静音 / 对话']);
     await pressed('member_0', 'solo', false, popover);
+    await button('member_0', 'solo', popover).click();
+    await proxy.waitFor({state: 'visible'});
+    await page.keyboard.press('Escape');
+    await page.evaluate(() => {
+      const detail = facadeDetail();
+      detail.family_facade.members = detail.family_facade.members.map(member => ({
+        ...member, title: 'Family 职责模块化与扩展 · 一个很长的成员名称',
+      }));
+      panel.updateFamilyStatus(detail);
+      panel.workspace.setTitle('Family 实现');
+    });
+    for (const width of [1200, 640, 390, 280]) {
+      await page.setViewportSize({width, height: 600});
+      await badge.evaluate(node => node.blur());
+      const box = await proxy.evaluate(node => {
+        const frame = node.closest('.portalWorkspaceHead').getBoundingClientRect();
+        const label = node.firstElementChild.getBoundingClientRect();
+        const exit = node.querySelector('button').getBoundingClientRect();
+        return {height: node.getBoundingClientRect().height, labelTop: label.top, labelBottom: label.bottom,
+          exitTop: exit.top, exitBottom: exit.bottom, exitLeft: exit.left, exitRight: exit.right,
+          left: frame.left, right: frame.right, fits: node.scrollWidth <= node.clientWidth + 1,
+          titleWidth: node.parentElement.querySelector('.paneTitle').getBoundingClientRect().width};
+      });
+      assert.ok(box.height <= 26 && box.fits, JSON.stringify({width, box}));
+      assert.ok(box.labelTop < box.exitBottom && box.exitTop < box.labelBottom, 'Solo stays on one line');
+      assert.ok(box.exitLeft >= box.left && box.exitRight <= box.right, 'exit remains fully accessible');
+      assert.ok(box.titleWidth >= 40, 'reserve space for the Family name');
+      if (process.env.FAMILY_CHAT_SCREENSHOTS) await page.locator('.portalWorkspaceHead').screenshot({
+        path: path.join(process.env.FAMILY_CHAT_SCREENSHOTS, `solo-header-${width}.png`)});
+    }
+    await proxy.locator('button').click();
+    await proxy.waitFor({state: 'hidden'});
+    await badge.click();
+    await popover.waitFor({state: 'visible'});
     for (const activity of ['idle', 'queued', 'running']) {
       await page.evaluate(activity => renderFamilyHeader(activity, 'running'), activity);
       assert.equal(await badge.innerText(), 'Family');
