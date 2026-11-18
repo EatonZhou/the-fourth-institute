@@ -746,6 +746,10 @@
     "RegisterResource": {
       "a": "@contributor"
     },
+    "RestoreArticle:article_id": {"a": "@admin"},
+    "RestoreArticle:resident_id": {"a": "@admin"},
+    "RestoreArticle:source_address": {"a": "@viewer"},
+    "RestoreArticle:project_id": {"a": "@contributor"},
     "PreviewArticleRestore:article_id": {
       "a": "@admin"
     },

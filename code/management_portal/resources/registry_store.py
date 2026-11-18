@@ -122,6 +122,27 @@ class RegistryWriter:
         )
         self._changed.add(collection)
 
+    def restore_article(self, article_id, document, audit):
+        """Atomic owner switch. Call only from the verified Article recovery domain.
+
+        The durable recovery audit retains the deletion evidence; no generic
+        creation API exposes this transition or accepts an allow-deleted flag.
+        """
+        self._check('article')
+        self._check('article_restorations')
+        if (document.get('id') != article_id or audit.get('resource_id') != article_id
+                or audit.get('mode') != 'partial_restore' or not audit.get('manuscript_cleanup')):
+            raise ValueError('Invalid internal Article restoration record')
+        row = self._connection.execute(f'SELECT resource_id FROM {self._schema}.deleted_identities '
+            'WHERE resource_id=%s FOR UPDATE', (article_id,)).fetchone()
+        if not row or self.get('article', article_id) is not None:
+            raise ValueError('Article identity changed before restoration')
+        # These writes and the permission/retention owner writes enlist in one
+        # transaction. Ordinary creation never observes a cleared tombstone.
+        self.put('article_restorations', article_id, audit)
+        self.put('article', article_id, document)
+        self._connection.execute(f'DELETE FROM {self._schema}.deleted_identities WHERE resource_id=%s', (article_id,))
+
     def delete(self, collection: str, document_id: str) -> bool:
         self._check(collection)
         deleted = self._connection.execute(

@@ -4,12 +4,12 @@ type: decision
 project: AI员工
 created_at: '2026-09-28'
 version:
-  number: 47
+  number: 48
   created_at: "2026-09-28T10:45:00Z"
   created_by:
     user: "weihao"
     agent: "resident_2a1fc6cd272d"
-  updated_at: "2026-11-18T04:53:15Z"
+  updated_at: "2026-11-18T07:29:57Z"
   updated_by:
     user: ""
     agent: "resident_6199a7a36480"
@@ -60,6 +60,7 @@ links:
 | `GetResourceType` | 否 | 读取某个资源类型的声明、状态与有效能力 | 对“共享”有 @viewer |
 | `UpdateResourceType` | 是 | 启用或停用一个资源类型，可选信封版本前提 | 对“共享”有 @admin |
 | `PreviewArticleRestore` | 否 | 预检原 Article 的恢复证据、目录与当前权限，不执行恢复 | Article/原 Resident @admin、源 @viewer、目标 Project @contributor；领域另核历史与继承读取 |
+| `RestoreArticle` | 是 | 按已核证据和明确共享决定部分恢复原 Article ID | Article/原 Resident @admin、源 @viewer、目标 Project @contributor；领域独立核验 |
 | `RegisterResource` | 是 | 登记一个新资源 | 对新对象的所属位置有 @contributor |
 | `CreateWorkspace` | 是 | 在空位置创建 Workspace | 固定槽免检；给出 `owner_id` 时对该所属对象有 @contributor |
 | `RegisterWorkspace` | 是 | 将现成目录接入为新的 Workspace | 固定槽免检；给出 `owner_id` 时对该所属对象有 @contributor |
@@ -203,6 +204,18 @@ CreateWorkspace 要求目标位置不存在；RegisterWorkspace 要求目标是�
 目录与清理观察遵循 decision_4aa13bc21e8e；源目录及 PDF 各有8MiB读取预算，整体响应128KiB预算。源版本变化、拟用目标占用、原项目不一致等冲突分别报告。当前共享继承按启用方案与项目祖先持久权限表读取，排除临时凭证，保留截断状态，不能称为已恢复的旧 ACL 或申请者私有。
 
 `decision.status` 保持 `unknown`：预检不核定用户是否批准恢复方案。`scope_digest` 只比较当前参数、源、目标及共享范围，不是授权 token。指令不复制、编译、占位、改墓碑或权限，不调用模型，不复活 Resident；恢复写入不在此入口内。
+
+### `RestoreArticle`
+
+将已验证的剩余内容部分恢复到同一 Article ID，声明 `mutates=true`。必需参数为原ID及历史工具定位 `article_id/resident_id/ordinal/tool_index/tool_item_id/expected_hash`，候选 `source_address/source_version/primary_file/primary_version`，目标 `project_id/target_relative_path`，当前共享摘要 `inheritance_digest`，以及保存决定的 `decision_resident_id/proposal_message_id/decision_message_id`。主文件固定 `main.md`，明确“部分恢复”和“最终版本未找齐”；源版本绑定完整递归清单，不能使用只读预检的直接子项摘要代替。调用保持稳定幂等键。
+
+四个独立权限槽要求原 Article 与原 Resident `@admin`、源 `@viewer`、目标 Project `@contributor`；Preview权限不授予提交。历史 owner 的 AMA、源文件读取、决定消息读取及当前权限表项读取继续分别鉴权。最终提交重查这些权限和决定者的当前 Restore 权限。
+
+原 canonical RegisterResource 工具回执与请求必须匹配，且原项目不变；墓碑/无活登记、原稿精确路径的已完成清理由各 owner 核验。登记账本或独立 HATG 回执缺失可记录为未知并进入交叉证据恢复，冲突或拒权不可跳过。客户端前像、模型回话、单独的清理缓存记录不能替代这些证据。
+
+方案包含人可读对象、候选、目标、部分内容及当前项目共享说明，并附服务重算的范围摘要。正式决定通过 Society 的真实 User 消息验证：固定问题组的双向回答关联，或明确引用该方案的同意答复。当前支持固定共享选项，或引用下的“同意”“同意该共享范围”等明确答案；普通请求、任意消息ID及临时凭证不构成此范围的共享决定。当前继承排除临时凭证，加入原 Article 精确持久拒绝；意外直接永久许可拒绝提交。
+
+目录事务、崩溃续办及文件回收遵循 decision_4aa13bc21e8e。结果返回原 `resource_id`、`mode=partial_restore`、`primary_file=main.md`、`final_version_recovered=false`、实际恢复时间和原资源入口。保留可证原标题与首次登记时间，原作者和历史ACL缺失保持未知，恢复人和时间单独审计。成功必须以正式动作提交和原ID可读为准；部署动作本身不恢复业务数据。
 
 ### `UpdateResource`
 

@@ -219,6 +219,15 @@ def _sync(path):
 
 
 class Creation:
+    def _check_identity(self, connection):
+        """Normal creation never reuses a deleted identity."""
+        from .directory_registrations import is_deleted
+        if is_deleted(self.resource_id, connection=connection):
+            raise KeyError(self.resource_id)
+
+    def _complete_registration(self, connection):
+        self.registrations.complete(self.resource_id, connection=connection)
+
     def __init__(self, resource_id, *, actor, payload, operation_id=''):
         operation_id = creation_operation_id(operation_id)
         self.key = 'resource-create:' + hashlib.sha256((actor + '\0' + operation_id).encode()).hexdigest()
@@ -256,11 +265,9 @@ class Creation:
                         raise ValueError('Unfinished creation belongs to another resource lifecycle')
                     self.artifacts = row['artifacts']
                     self.completed = row['completed']
-                    if is_deleted(self.resource_id, connection=conn):
-                        raise KeyError(self.resource_id)
+                    self._check_identity(conn)
                 else:
-                    if is_deleted(self.resource_id, connection=conn):
-                        raise KeyError(self.resource_id)
+                    self._check_identity(conn)
                     self.artifacts = []
                     for path, kind in artifacts:
                         path = lexical_path(path)
@@ -409,8 +416,7 @@ class Creation:
         self._assert_scope_open(connection)
         self.assert_owned(connection)
         self.queue.lock(connection)
-        if is_deleted(self.resource_id, connection=connection):
-            raise KeyError(self.resource_id)
+        self._check_identity(connection)
         if self.completed:
             raise RuntimeError('Completed creation must read its existing owner')
         for artifact in self.artifacts:
@@ -423,7 +429,7 @@ class Creation:
                 self.queue.release(artifact['stage_operation'], connection=connection)
         yield
         self.assert_owned(connection)
-        self.registrations.complete(self.resource_id, connection=connection)
+        self._complete_registration(connection)
         if self.scope_id:
             connection.execute(f'INSERT INTO "{self.lifecycle.db.schema}".allocations(resource_id,scope_id) '
                                'VALUES (%s,%s) ON CONFLICT DO NOTHING', (self.resource_id, self.scope_id))

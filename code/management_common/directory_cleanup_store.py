@@ -105,6 +105,27 @@ class DirectoryCleanupStore:
                 'overlapping_pending': overlaps[0], 'overlapping_reservations': overlaps[1],
                 'clear': not truncated and not any(overlaps), 'limit': limit}
 
+    def verify_manuscript_cleanup(self, *, owner_id, original_path, connection):
+        """Verify this manuscript, not a cache sharing the same owner ID.
+
+        Called under the existing path lock in the restoration transaction.
+        Missing tables or an incomplete bounded observation fail closed.
+        """
+        if connection.execute('SELECT to_regclass(%s)', (self.table,)).fetchone()[0] is None:
+            raise ValueError('Manuscript cleanup storage is missing')
+        rows = connection.execute(f'SELECT cleanup_id,location,completed_at FROM {self.table} '
+            'WHERE owner_id=%s ORDER BY cleanup_id LIMIT 257', (owner_id,)).fetchall()
+        if len(rows) > 256:
+            raise ValueError('Manuscript cleanup observation is indeterminate')
+        compare = DirectoryComparison()
+        target = lexical_path(original_path)
+        matches = [row for row in rows if compare.contains(target, cleanup_path(row['location']))
+                   and compare.contains(cleanup_path(row['location']), target)]
+        if not matches or any(not row['completed_at'] for row in matches):
+            raise ValueError('Original manuscript cleanup is not proven terminal')
+        return [{'cleanup_id': row['cleanup_id'], 'location': row['location'],
+                 'completed_at': row['completed_at'].isoformat()} for row in matches]
+
     def lock(self, connection):
         # Serialize short path decisions, never the physical filesystem walk.
         # Durable reservations protect overlapping paths between transactions.
