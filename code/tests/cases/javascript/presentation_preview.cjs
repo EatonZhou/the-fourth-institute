@@ -37,7 +37,7 @@ for (const input of cases) {
   assert.ok(renderer);
   renderer.render(w.document.getElementById('preview'), doc, {});
   assert.match(pdfOptions.url, /preview=pdf/);
-  assert.match(pdfOptions.loadingMessage, /转换/);
+  assert.equal(pdfOptions.loadingMessage, '正在加载演示文稿预览…');
   assert.match(pdfOptions.errorMessage, /下载/);
 }
 for (const input of [

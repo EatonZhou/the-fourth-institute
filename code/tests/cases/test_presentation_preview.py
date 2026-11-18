@@ -64,6 +64,25 @@ def test_cache_uses_content_and_releases_conversion_slot(converter):
     assert not list(first.parent.glob('convert-*'))
 
 
+def test_cached_pdf_does_not_require_converter(converter, monkeypatch):
+    first = preview.presentation_pdf(b'unchanged', 'slides.pptx')
+    original = first.stat()
+    unavailable = Mock(side_effect=preview.PresentationPreviewError('converter unavailable'))
+    monkeypatch.setattr(preview, 'libreoffice', unavailable)
+    for filename in ('slides.pptx', 'renamed.PPTX'):
+        assert preview.presentation_pdf(b'unchanged', filename) == first
+        assert first.read_bytes().startswith(b'%PDF-')
+    unavailable.assert_not_called()
+    assert converter.call_count == 1
+    assert first.stat().st_mtime_ns == original.st_mtime_ns
+    # A changed document or a different source format must not reuse stale PDF.
+    for data, filename in ((b'changed', 'slides.pptx'), (b'unchanged', 'slides.ppt')):
+        with pytest.raises(preview.PresentationPreviewError, match='converter unavailable'):
+            preview.presentation_pdf(data, filename)
+    assert first.exists()
+    assert not preview._conversion_slot.locked()
+
+
 def test_presentation_cache_is_not_deleted_by_age(converter):
     import os
     import time
@@ -197,8 +216,11 @@ def test_upload_preview_uses_authenticated_metadata(tmp_path, monkeypatch):
 @pytest.mark.skipif(os.environ.get('PORTAL_TEST_PRESENTATIONS') != '1', reason='requires LibreOffice and Poppler')
 def test_real_pptx_and_legacy_ppt(tmp_path, monkeypatch):
     executable = preview.libreoffice()
-    monkeypatch.setattr(preview, 'instance_root', lambda: tmp_path)
+    from tests.cases.instance_test_support import select_instance
+    select_instance(monkeypatch, tmp_path / 'instance')
     monkeypatch.setattr(preview, 'libreoffice', lambda: executable)
+    convert = Mock(wraps=preview.run_process)
+    monkeypatch.setattr(preview, 'run_process', convert)
     data = sample_pptx()
     source = tmp_path / 'slides.pptx'
     source.write_bytes(data)
@@ -206,12 +228,19 @@ def test_real_pptx_and_legacy_ppt(tmp_path, monkeypatch):
     assert b'Pages:           2' in subprocess.check_output(['pdfinfo', str(pdf)])
     text = subprocess.check_output(['pdftotext', str(pdf), '-']).decode()
     assert 'Portal Preview' in text and '中文幻灯片' in text and 'Second slide' in text
+    before = pdf.stat().st_mtime_ns
+    assert preview.presentation_pdf(data, 'renamed.pptx') == pdf
+    assert pdf.stat().st_mtime_ns == before
+    assert convert.call_count == 1
     preview.run_process([executable, '-env:UserInstallation=' + (tmp_path / 'export-profile').as_uri(),
                          '--headless', '--convert-to', 'ppt:MS PowerPoint 97', '--outdir', str(tmp_path), str(source)],
                         capture_output=True, timeout=60, check=True)
     legacy = preview.presentation_pdf(source.with_suffix('.ppt').read_bytes(), 'slides.ppt')
     assert b'Pages:           2' in subprocess.check_output(['pdfinfo', str(legacy)])
     assert 'Second slide' in subprocess.check_output(['pdftotext', str(legacy), '-']).decode()
+    calls = convert.call_count
+    assert preview.presentation_pdf(source.with_suffix('.ppt').read_bytes(), 'renamed.ppt') == legacy
+    assert convert.call_count == calls
 
 
 def test_browser_contract():

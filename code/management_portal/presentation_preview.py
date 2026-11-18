@@ -57,7 +57,6 @@ def presentation_pdf(data: bytes, filename: str) -> Path:
     _check_source_size(len(data))
     if not data:
         raise PresentationPreviewError("演示文稿为空，请下载原文件检查。")
-    executable = libreoffice()
     root = instance_runtime_root() / "cache/presentation-preview"
     root.mkdir(parents=True, exist_ok=True, mode=0o700)
     key = hashlib.sha256(b"ppt-pdf-v1\0" + suffix.encode() + data).hexdigest()
@@ -76,6 +75,9 @@ def presentation_pdf(data: bytes, filename: str) -> Path:
         if cached.is_file():
             with cache_file(cached, group='presentation'):
                 return cached
+        # A retained PDF is usable without starting or locating the converter.
+        # Resolve the dependency only after both cache checks miss.
+        executable = libreoffice()
         with temporary_directory(prefix="convert-", dir=root) as directory:
             work = Path(directory)
             source = work / ("slides" + suffix)
