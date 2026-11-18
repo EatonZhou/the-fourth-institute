@@ -16,7 +16,7 @@ from management_portal import article_texlab_backend
 from management_portal.portal_access_control import PortalAccessStore
 from management_portal.resources import ResourceService
 from management_portal.resources.collaboration_registry import CollaborationDescriptorStore
-from tests.cases.registry_support import registry_document, write_projects
+from tests.cases.registry_support import put_registry_document, registry_document, write_projects
 from management_portal.resources.providers import article
 from management_portal.resources.registration import ResourceRegistrationStore
 
@@ -389,6 +389,48 @@ class ArticleIdentityBackendTests(unittest.TestCase):
         settings = article_settings.load_article_settings(record["id"], build_root=build_root)
         self.assertEqual(settings["compiler"], "xelatex")
         self.assertEqual(settings["primary_file"], "main.tex")
+
+    def test_reregistering_recovered_article_preserves_provenance_and_settings(self) -> None:
+        """恢复说明切回 LaTeX 时保原 ID、恢复溯源和未指定的构建设置。"""
+        article_root = self.project / "article"
+        article_root.mkdir()
+        (article_root / "main.md").write_text("# Recovered Article\nPartial recovery.\n", encoding="utf-8")
+        first = article_registration.register_article(article_root, primary_file="main.md")
+        self.assertNotIn("recovery", first)
+        stored = registry_document("article", first["id"])
+        recovery = {
+            "mode": "partial_restore", "restored_by": "resident_0123456789ab",
+            "restored_at": "2026-11-18T07:47:11Z", "original_author": None,
+            "historical_acl": None, "final_manuscript_verified": False,
+            "source_version": "f" * 64,
+        }
+        stored["recovery"] = recovery
+        put_registry_document("article", first["id"], stored)
+        (article_root / "sections").mkdir()
+        (article_root / "sections" / "intro.tex").write_text("Historical draft.\n", encoding="utf-8")
+        (article_root / "main.tex").write_text(
+            "\\documentclass{article}\n\\title{Recovered Article}\n"
+            "\\begin{document}\\input{sections/intro}\\end{document}\n", encoding="utf-8",
+        )
+        article_settings.update_article_settings(first["id"], {
+            "primary_file": "main.tex", "compiler": "xelatex", "compile_mode": "draft",
+            "auto_compile": False, "syntax_check": False, "error_handling": "stop",
+        })
+        before_settings = article_settings.load_article_settings(first["id"])
+
+        for _ in range(2):
+            again = article_registration.register_article(article_root, primary_file="main.tex")
+            self.assertEqual(again["id"], first["id"])
+            self.assertEqual(again["primary_file"], "main.tex")
+            self.assertEqual(again["created_at"], first["created_at"])
+            self.assertEqual(again.get("recovery"), recovery)
+            self.assertEqual(registry_document("article", first["id"])["recovery"], recovery)
+            self.assertNotIn("created_by", again)
+            settings = article_settings.load_article_settings(first["id"])
+            for key in ("primary_file", "compiler", "compile_mode", "auto_compile", "syntax_check", "error_handling"):
+                self.assertEqual(settings[key], before_settings[key])
+        self.assertEqual(len(article_registry.load_article_records()), 1)
+        self.assertTrue((article_root / "main.md").is_file())
 
     def test_unregister_removes_only_the_registry_record(self) -> None:
         """注销 Article 只删除登记记录，不删除目录和文件"""

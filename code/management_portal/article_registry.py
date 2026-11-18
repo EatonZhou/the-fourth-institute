@@ -3,6 +3,7 @@ root and paths a record's operations work in.
 """
 from __future__ import annotations
 
+from copy import deepcopy
 from pathlib import Path
 from typing import Any, Iterable, Iterator
 
@@ -167,6 +168,9 @@ def _merge_record(
         "title_fingerprints": fingerprints,
         "created_at": stripped_text(previous.get("created_at")) or now,
         "updated_at": now,
+        # Source discovery can update the manuscript, but recovery provenance
+        # belongs to the existing registration, never to a discovered file.
+        **({"recovery": deepcopy(previous["recovery"])} if "recovery" in previous else {}),
     }
 
 

@@ -4,12 +4,12 @@ type: decision
 project: AI员工
 created_at: '2026-09-01'
 version:
-  number: 47
+  number: 48
   created_at: "2026-09-01"
   created_by:
     user: ""
     agent: ""
-  updated_at: "2026-11-18T08:00:30Z"
+  updated_at: "2026-11-18T08:18:23Z"
   updated_by:
     user: ""
     agent: "resident_6199a7a36480"
@@ -159,6 +159,8 @@ Article 按登记 Project 的当前权限方案放置。预检展示项目祖先
 ### 原ID部分恢复的阅读入口
 
 `RestoreArticle` 将已验证的剩余材料恢复到原 Article ID，在原 Project 内建立独立目录。主文件为 `main.md` 恢复说明，明确最终版本未找齐，并通过正式文件链接提供用户给出的旧PDF、历史LaTeX/PPT及可证修改片段。Article 主文件仍限 `.tex/.md/.markdown`，不把旧PDF直接登记为主文件，也不自动拼稿或编译成所谓最终版。
+
+部分恢复后，经授权可将保留的 LaTeX 工作树接回 Article 根目录，并通过同根 `RegisterResource` 显式指定 `primary_file=main.tex`。主文稿与相对引用的 `sections/figs/refs` 保持一致；编译工作目录仍是 Article 根，不随嵌套主文件改变。同根重新登记保持原 ID、首次登记时间和已有 `recovery` 的独立副本，未携带该字段的普通登记不生成恢复事实；独立恢复审计不改写。显式主文件同步到该 ID 的构建设置，未指定的构建选项保留。恢复说明、历史快照及版本缺口继续保留，历史稿编译成功仅证明该工作树可编译。
 
 真实登记工具、墓碑及原稿清理记录可共同建立原身份依据；独立账本或回执缺失保留未知原因，冲突仍拒绝。已证原标题及首次登记时间保留，原作者、历史权限和最终稿未知不补造。恢复人、时间、候选版本与证据分别记入恢复审计。
 
