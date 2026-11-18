@@ -108,7 +108,7 @@ const plain = value => JSON.parse(JSON.stringify(value));
   assert.equal(w.document.querySelector('[data-runtime-section="parameters"] .portalRuntimeSettingsEditor').hidden, true,
     'a cross-Provider switch shows the target parameters, not the current ones');
   assert.match(w.document.querySelector('[data-switch-context-description]').textContent, /遗漏细节/);
-  assert.equal(w.document.querySelector('[data-session-restart-submit]').textContent, w.PortalI18n.t('交接并切换'));
+  assert.equal(w.document.querySelector('[data-session-restart-submit]').textContent, w.PortalI18n.t('保存账号配置'));
   click('[data-session-restart-submit]'); await flush();
   assert.equal(changes.length, 4, 'the displayed catalog default is a valid choice for a cross-provider switch');
   assert.equal(changes[3].model, 'm'); assert.equal(changes[3].target_provider, 'claude'); assert.equal(changes[3].context_strategy, 'compact');
@@ -202,9 +202,9 @@ const plain = value => JSON.parse(JSON.stringify(value));
   selectable.open({...config, runtime_catalog: selectionCatalog,
     onSave: async values => {selectedSettings.push(plain(values)); return {settings: values};}}, async () => ({}));
   await flush();
-  const supportedSelection = w.document.querySelector('[data-runtime-editor="current"] [data-runtime-setting="account_selection"]');
+  const supportedSelection = w.document.querySelector('[data-session-policy]');
   assert.equal(supportedSelection.closest('label').hidden, false, 'explicitly supported account selection is available');
-  select('[data-runtime-editor="current"] [data-runtime-setting="account_selection"]', 'auto');
+  select('[data-session-policy]', 'auto');
   click('[data-session-restart-submit]'); await flush();
   assert.equal(selectedSettings[0].account_selection, 'auto');
   selectable.destroy();
@@ -213,9 +213,9 @@ const plain = value => JSON.parse(JSON.stringify(value));
     runtime_settings: {...config.runtime_settings, account_selection: 'auto'},
     onSave: async values => {selectedSettings.push(plain(values)); return {settings: values};}}, async () => ({}));
   await flush();
-  const restoredSelection = w.document.querySelector('[data-runtime-editor="current"] [data-runtime-setting="account_selection"]');
+  const restoredSelection = w.document.querySelector('[data-session-policy]');
   assert.equal(restoredSelection.value, 'auto', 'saved automatic policy is shown when settings reopen');
-  select('[data-runtime-editor="current"] [data-runtime-setting="account_selection"]', 'fixed');
+  select('[data-session-policy]', 'fixed');
   click('[data-session-restart-submit]'); await flush();
   assert.equal(selectedSettings[1].account_selection, 'fixed', 'switching back to fixed sends explicit policy');
   fixedSelection.destroy();

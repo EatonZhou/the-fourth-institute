@@ -418,7 +418,7 @@ def get_resident_restart_options(
         "source": source_snapshot,
         "initialization": resident_initialization.view(target.resident_id, actor_id)
         if resident_initialization.blocked(record) else {},
-        "restart": copy.deepcopy(record.get("session_restart") or {}),
+        "restart": _current_restart_view(record, source),
         "runtime_settings": resident_runtime_domain.read_resident_runtime_settings(record),
         "choose_runtime_settings": True,
         "credits_confirmation": {"allowed": resident_session_credits.human_actor(actor_id),
@@ -440,6 +440,35 @@ def get_resident_restart_options(
     }
 
 
+def _current_restart_view(record: Mapping[str, Any], binding: Mapping[str, Any]) -> dict[str, Any]:
+    """Project consumption without rewriting the immutable selection receipt."""
+    view = copy.deepcopy(record.get("session_restart") or {})
+    pending = view.get("pending_handoff")
+    if not isinstance(pending, Mapping) or view.get("context_result") != "pending_first_input":
+        return view
+    view["configuration_context_result"] = view["context_result"]
+    if ("context_reset_at" in pending
+            and pending["context_reset_at"] != str(record.get("context_reset_at") or "")):
+        view.update(context_result="discarded", handoff_state="discarded")
+        return view
+    from . import resident_pending_session_context
+    try:
+        # Validate operation, target, reset boundary and actual binding before
+        # attributing any acceptance. A merely created session is not enough.
+        resident_pending_session_context.context_seed(record, "", accepted=False)
+        accepted = bool(binding) and execution_port.sessions().has_context(
+            resident_backend.execution_binding_id(record),
+            agent_id=resident_domain_common.record_resident_id(record),
+        )
+    except (ValueError, KeyError, RuntimeError, OSError):
+        view["handoff_state"] = "unknown"
+        return view
+    view["handoff_state"] = "delivered" if accepted else "pending"
+    if accepted:
+        view["context_result"] = "delivered"
+    return view
+
+
 def get_resident_session_restart(
     resident_id: str,
     actor: str = "",
@@ -451,14 +480,15 @@ def get_resident_session_restart(
         actor,
         require_visible=True,
     )
+    binding = resident_backend.session_record(target.record)
     return {
         "resident_id": target.resident_id,
         "source": _session_restart_source(
             target.record,
-            resident_backend.session_record(target.record),
+            binding,
         ),
-        "restart": copy.deepcopy(target.record.get("session_restart") or {}),
-        "actual_binding": resident_backend.session_record(target.record),
+        "restart": _current_restart_view(target.record, binding),
+        "actual_binding": binding,
     }
 
 

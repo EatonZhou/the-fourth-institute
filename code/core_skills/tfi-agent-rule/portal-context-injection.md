@@ -58,9 +58,12 @@ Fork 子 Resident 在首条真实输入按自己的身份与规则构造注入�
 注册、配置保存与建立空会话不发送“请整理并确认初始化”的模型任务。
 普通账号切换默认 preserve；旧 smart 仅映射 preserve。保留上下文使用可验证原生
 复制或严格 canonical history 导入，不隐式 compact，不额外调用模型整理。
-仅显式 compact/visible 模型交接轮次按目标 Provider 构造完整注入计划；fresh 清空
+手动固定账号的 compact/visible 切换先冻结有界交接材料并保存配置，不启动模型轮次；
+首条真实输入按目标 Provider 构造完整注入计划并消费材料，仍遵守正常额度准入。
+其他显式或自动 compact/visible 模型交接轮次沿原独立输入合同执行；fresh 清空
 有效上下文后由下一条真实输入懒建会话，无空白初始化轮次。完整协议见
-decision_ccbb1cac24aa 与 decision_c47a13e8b962。
+repo_0cc377bb1dee/file/docs/routing/resident-capability-config.md 与
+repo_0cc377bb1dee/file/docs/routing/session-account-switch.md。
 恢复和失败续跑沿用原轮次的计划，不重复附加已经送达的部分；切换账号不自动重试失败输入。
 
 修改规则时更新源码 `code/core_skills/` 下的对应核心 Skill，随代码一起发行，

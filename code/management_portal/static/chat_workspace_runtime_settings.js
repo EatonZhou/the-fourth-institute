@@ -92,6 +92,16 @@
 
   const sessionRestartActive = restart => ["accepted", "submitting", "confirming", "cancelling"].includes(restart?.status);
 
+  const pendingSessionHandoff = restart => restart?.status === "completed"
+    && restart.configuration_only === true && restart.context_result === "pending_first_input";
+
+  function sessionConfigurationSavedText(restart) {
+    if (pendingSessionHandoff(restart)) return window.PortalI18n.t("账号配置已保存，交接材料已冻结；上下文将在首条真实输入时交接，该输入仍需满足目标账号的额度要求。");
+    if (restart?.context_result === "preserved") return window.PortalI18n.t("账号配置已保存，上下文已完整保留。");
+    if (restart?.context_result === "fresh") return window.PortalI18n.t("账号配置已保存，将在下一条真实输入时创建空白 Session。");
+    return window.PortalI18n.t("账号配置已保存，请刷新查看上下文状态。");
+  }
+
   function formatSessionRestartDuration(seconds) {
     const total = Math.max(0, Math.floor(seconds));
     const hours = Math.floor(total / 3600);
@@ -373,21 +383,22 @@
       };
       const render = () => {
         const restart = current.restart;
+        const pendingHandoff = pendingSessionHandoff(restart);
         const failed = restart?.status === "failed";
         const key = compact ? acknowledgementKey() : "";
         const acknowledged = key && (acknowledgedSessionRestarts.get(key) || window.PortalState.storage.readText(key, ""));
         element.dataset.restartStatus = restart?.status || "";
-        element.hidden = !restart?.status || ["completed", "cancelled"].includes(restart.status)
+        element.hidden = !restart?.status || (restart.status === "completed" && !pendingHandoff) || restart.status === "cancelled"
           || !!(failed && restart.restart_id && acknowledged === restart.restart_id);
         if (element.hidden) return;
-        detailsButton.textContent = failed ? window.PortalI18n.t("查看详情") : window.PortalI18n.t("查看操作进度");
+        detailsButton.textContent = failed ? window.PortalI18n.t("查看详情") : window.PortalI18n.t(pendingHandoff ? "查看交接状态" : "查看操作进度");
         dismissButton.hidden = !failed || !key || !restart.restart_id;
         const label = endpoint => endpoint?.account_id || endpoint?.provider || window.PortalI18n.t("当前 Session");
         const phase = restart.status === "accepted" ? restart.phase || "accepted" : restart.status;
-        const operation = window.PortalI18n.t(restart.operation === "switch_account" ? "账号切换" : restart.operation === "restart" ? "重新开始会话" : "会话操作");
-        const endpoints = restart.operation !== "restart" && label(restart.source) !== label(restart.target)
+        const operation = window.PortalI18n.t(pendingHandoff || restart.operation === "switch_account" ? "账号切换" : restart.operation === "restart" ? "重新开始会话" : "会话操作");
+        const endpoints = (pendingHandoff || restart.operation !== "restart") && label(restart.source) !== label(restart.target)
           ? `${label(restart.source)} → ${label(restart.target)}` : label(restart.source);
-        heading.textContent = window.PortalI18n.text`${operation}：${endpoints} · ${labels[phase] || phase || window.PortalI18n.t("进行中")}`;
+        heading.textContent = window.PortalI18n.text`${operation}：${endpoints} · ${pendingHandoff ? window.PortalI18n.t("账号配置已保存，等待首条真实输入交接") : labels[phase] || phase || window.PortalI18n.t("进行中")}`;
         if (failed && restart.submitted_at) heading.textContent += ` · ${new Date(restart.submitted_at).toLocaleString()}`;
         const started = Date.parse(restart.submitted_at || "");
         const ended = Date.parse(restart.restarted_at || restart.configured_at || "");
@@ -404,11 +415,11 @@
             : window.PortalI18n.t("操作未完成，请在诊断中核对当前绑定和原错误。"))
           : current.error ? window.PortalI18n.t("暂时无法同步迁移状态，请稍后查看；请勿重复提交。") : sessionRestartActive(restart)
           ? (restart.status === "cancelling" ? window.PortalI18n.t("取消请求已受理，原会话将继续保留。") : window.PortalI18n.t("关闭窗口不会取消操作；需要终止时请使用“取消操作”。"))
-          : restart.configuration_only ? window.PortalI18n.t("账号配置已保存，尚未创建 Session。") : window.PortalI18n.t("迁移已结束。");
+          : restart.configuration_only ? sessionConfigurationSavedText(restart) : window.PortalI18n.t("迁移已结束。");
         technicalError.textContent = String(restart.error || current.error || "");
         diagnostics.hidden = !technicalError.textContent;
         if (compact && options.headerIcon) {
-          detailsButton.textContent = failed || current.error ? "!" : "↻";
+          detailsButton.textContent = failed || current.error ? "!" : pendingHandoff ? "…" : "↻";
           const description = [heading.textContent, message.textContent, technicalError.textContent].filter(Boolean).join("\n");
           detailsButton.title = description;
           detailsButton.setAttribute("data-portal-tooltip", description);
@@ -497,6 +508,7 @@
       find("[data-resident-backend-notices]").after(progress.element);
       let current = {}, restart, cancelRestart, unobserve, lastOpen = [];
       let requestKey, submitting = false, tracking = false, restartView = {}, catalogRevision = 0, targetReady = false;
+      let finished = false;
       let baseline = "", targetCatalog = null, catalogStatus = "";
       const restartService = window.PortalResidentService;
       const initializing = () => Boolean(current.initialization?.initialization_id)
@@ -535,7 +547,8 @@
         const choice = contextChoice();
         find("[data-switch-context-status]").textContent = window.PortalI18n.t(!switching() || (crossProvider() && !targetReady) || !selected()[1] ? ""
           : choice?.id === "preserve" ? choice.description
-          : choice ? "目标账号无法完整保留上下文，将通过摘要交接后继续。"
+          : choice ? (automatic() ? "目标账号无法完整保留上下文，将通过摘要交接后继续。"
+            : "目标账号无法完整保留上下文，将冻结交接材料，在首条真实输入时交接。")
           : "目标账号暂不支持保留上下文或摘要交接，无法切换；原会话保持不变。");
       };
       const update = () => {
@@ -562,20 +575,23 @@
         target.disabled = locked || automatic(); backend.disabled = locked; policy.disabled = locked;
         editor.element.disabled = locked; targetEditor.element.disabled = locked;
         const choice = contextChoice();
-        find("[data-switch-context-description]").textContent = window.PortalI18n.t(switchingAccount && choice?.id === "compact" ? choice.description : "");
+        find("[data-switch-context-description]").textContent = window.PortalI18n.t(switchingAccount && choice?.id === "compact"
+          ? (automatic() ? choice.description : "交接材料来自已有摘要和近期对话，可能遗漏细节和工具过程；保存配置不会立即调用目标模型。") : "");
         const changed = !cross && parametersChanged();
         let label = "保存", disabled = locked || !changed;
         if (retry) { label = "重试同一请求"; disabled = submitting; }
         else if (init) { label = "继续当前初始化"; disabled = locked || !restart; }
         else if (switchingAccount) {
-          label = choice?.id === "compact" ? "交接并切换" : "切换账号";
+          label = choice?.id === "compact" ? (automatic() ? "交接并切换" : "保存账号配置") : "切换账号";
           disabled = locked || !choice || !selected()[1] || (cross && !targetReady);
         }
         if (!retry && !init && !automatic() && canSwitch() && !selected()[1]) disabled = true;
         submit.disabled = disabled;
         submit.textContent = window.PortalI18n.t(submitting ? "正在提交…" : label);
         saveHint.textContent = window.PortalI18n.t(tracking || retry || init ? ""
-          : switchingAccount ? (choice ? "等待正在运行的工作完成后切换；切换失败时保留原会话。" : "")
+          : switchingAccount ? (choice ? (!automatic() && choice.id === "compact"
+            ? "等待正在运行的工作完成后保存配置；此步骤不调用模型，不按目标额度阻塞。首条真实输入仍受额度限制。"
+            : "等待正在运行的工作完成后切换；切换失败时保留原会话。") : "")
           : changed ? "参数从下一轮生效，不会重新开始会话。" : "");
         reset.disabled = submitting || (inline && !switchingAccount && !changed);
         cancel.hidden = !tracking; cancel.disabled = submitting || restartView.restart?.status === "cancelling";
@@ -607,7 +623,12 @@
         } finally { if (revision === catalogRevision) update(); }
       };
       const detach = () => { catalogRevision++; unobserve?.(); unobserve = null; };
-      const done = context => { detach(); options.onDone?.(context); };
+      const done = context => { if (finished) return; finished = true; detach(); options.onDone?.(context); };
+      const complete = result => {
+        if (finished || !element.isConnected) return;
+        if (result?.configuration_only === true) window.PortalUI.toast(sessionConfigurationSavedText(result), "success");
+        done({accepted: true});
+      };
       // The account list follows the chosen backend; returning to the current
       // backend preselects the current account.
       const fillAccounts = provider => {
@@ -684,7 +705,7 @@
                 active_execution_policy: "wait", resume_failed_input: false, ...runtime, idempotency_key: requestKey});
             current.restart = result; restartView.restart = result;
             tracking = sessionRestartActive(result); progress.update(restartView);
-            if (result?.status === "completed") done({accepted: true});
+            if (result?.status === "completed") complete(result);
             return;
           }
           const values = readParameters();
@@ -709,7 +730,7 @@
           detach();
           current = {...config};
           restart = onRestart; cancelRestart = onCancel; requestKey = requestId();
-          submitting = false; tracking = sessionRestartActive(config.restart); restartView = {restart: config.restart};
+          finished = false; submitting = false; tracking = sessionRestartActive(config.restart); restartView = {restart: config.restart};
           creditsConsent.checked = false;
           const providers = (current.providers || []).filter(provider => (current.accounts?.[provider.id] || []).length);
           backend.replaceChildren(...providers.map(provider => new Option(provider.label || provider.id, provider.id)));
@@ -741,11 +762,12 @@
                 }
               }
               progress.update(value); update();
-              if (wasTracking && ["completed", "cancelled"].includes(value.restart?.status)) done({accepted: true});
+              if (wasTracking && value.restart?.status === "completed") complete(value.restart);
+              else if (wasTracking && value.restart?.status === "cancelled") done({accepted: true});
             });
           }
         },
-        destroy() { detach(); progress.destroy(); element.remove(); },
+        destroy() { finished = true; detach(); progress.destroy(); element.remove(); },
       };
       return panel;
     }

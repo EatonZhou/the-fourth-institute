@@ -90,7 +90,7 @@ const root = path.resolve(__dirname, '../../../management_portal/static');
     await page.waitForFunction(() => document.querySelector('[data-target-editor-host] [data-runtime-setting="model"]')?.selectedOptions[0]?.textContent === 'm (default)');
     assert.equal(await page.locator('[data-runtime-editor="current"]').isVisible(), false, 'a cross-Provider switch shows the target parameters');
     assert.match(await page.locator('[data-switch-context-description]').innerText(), /遗漏细节/);
-    assert.equal(await page.locator('[data-session-restart-submit]').innerText(), await page.evaluate(() => PortalI18n.t('交接并切换')));
+    assert.equal(await page.locator('[data-session-restart-submit]').innerText(), await page.evaluate(() => PortalI18n.t('保存账号配置')));
     await page.locator('[data-runtime-panel-reset]').click();
     assert.equal(await page.evaluate(() => requests.length), 0, 'cancel does not switch');
     await page.evaluate(() => openSettings());
@@ -232,6 +232,25 @@ const root = path.resolve(__dirname, '../../../management_portal/static');
     assert.equal(await page.locator('[data-session-policy]').inputValue(), 'fixed');
     assert.equal(await page.locator('[data-session-restart-submit]').isDisabled(), true);
     await page.locator('[data-session-restart-close]').click();
+    // A configuration receipt stays readable without pretending a model handoff finished.
+    await page.evaluate(() => {
+      dialog.destroy();
+      const runtime = PortalChatWorkspaceRuntimeSettings.createRuntimeSettings({escapeHtml: PortalUIPrimitives.escapeHtml});
+      window.dialog = runtime.createSessionRestartDialog();
+      dialog.open(config({source: {provider: 'claude', account_id: 'claude_one'}, restart: {
+        operation: 'restart', status: 'completed', configuration_only: true, context_result: 'pending_first_input',
+        context_strategy: 'compact', source: {provider: 'codex', account_id: 'one'}, target: {provider: 'claude', account_id: 'claude_one'},
+      }}), async () => {throw new Error('a receipt must not submit');});
+    });
+    for (const width of [390, 1200]) {
+      await page.setViewportSize({width, height: 900});
+      assert.match(await page.locator('.portalSessionRestartOverlay .portalSessionRestartProgress').innerText(), /账号配置已保存.*首条真实输入/s);
+      const box = await surface.boundingBox();
+      assert.ok(box.x >= 0 && box.x + box.width <= width, 'pending receipt fits the viewport');
+      assert.equal(await surface.evaluate(node => node.scrollWidth <= node.clientWidth), true, 'pending text wraps without horizontal overflow');
+      assert.equal(await page.locator('[data-session-restart-cancel]').isVisible(), false, 'waiting for input is not an in-flight migration');
+    }
+    await page.keyboard.press('Escape');
     assert.deepEqual(errors, []);
     console.log('PASS runtime panel: one page in a dialog and in place, 1200/840/390px, X/Escape/backdrop/cancel, save, handoff, credits and initialization');
   } finally {await browser.close();}

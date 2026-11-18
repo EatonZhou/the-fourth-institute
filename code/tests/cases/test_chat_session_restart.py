@@ -17,10 +17,10 @@ def test_session_restart_dialog_tracks_cancels_and_retries():
     相同稳定账号不创建操作，切换保留上下文并等待在途工作，不复发失败输入。
     参数和能力分别保存，后台刷新不覆盖草稿；版本冲突拒绝覆盖新设置。
     显式重新开始允许 preserve/fresh，受理后锁定操作并可取消或重试同一待确认请求。
-    自动优先完整保留；不支持时展示摘要影响，由交接并切换按钮提交，不自动空白开始。
+    优先完整保留；手动固定目标不支持保留时保存配置并冻结材料，首条输入才交接，不自动空白开始。
     未知交付不标失败，完成操作退出旧失败横幅。
     """
-    for script in ["chat_session_restart.cjs", "resident_setup_protocol.cjs", "resident_setup_contract.cjs"]:
+    for script in ["runtime_account_handoff.cjs", "chat_session_restart.cjs", "resident_setup_protocol.cjs", "resident_setup_contract.cjs"]:
         result = subprocess.run(
             ["node", str(Path(__file__).with_name("javascript") / script)],
             input=json.dumps({"routeScript": portal_route_script().decode()}),
