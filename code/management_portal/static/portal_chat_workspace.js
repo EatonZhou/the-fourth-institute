@@ -666,7 +666,9 @@
       if (gate?.state !== "open" && gate?.reason === "manual" && !transientStatus) transientStatus = gate.reasonText;
       if (!transientStatus && !state.loading && (!gate || gate.state === "open")) {
         if (state.composer.can_send === false) {
-          transientStatus = window.PortalI18n.t(state.composer.disabled_reason || "当前对话暂不可发送");
+          // Pending send capability has no header notice; the composer owns
+          // the disabled control until the Resident finishes loading.
+          transientStatus = state.composer.disabled_reason ? window.PortalI18n.t(state.composer.disabled_reason) : "";
         } else {
           transientStatus = String(state.composer.send_hint || "").trim();
         }
