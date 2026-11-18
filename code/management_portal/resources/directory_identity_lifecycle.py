@@ -5,6 +5,7 @@ from pathlib import Path
 from management_common import directory_dependencies as deps
 from management_common.directory_paths import cleanup_location, cleanup_path, DirectoryComparison, validate_removal
 from management_common.directory_cleanup_store import DirectoryCleanupStore
+from management_common.json_columns import json_value
 from management_common.portal_database import _database_schema
 
 
@@ -124,7 +125,7 @@ def migrate_dependencies(connection, *, identities=None, check_budget=lambda: No
     for row in connection.execute(f'SELECT collection,document_id,document_json FROM {table} WHERE collection=ANY(%s)',
                                    (list(COLLECTIONS),)).fetchall():
         check_budget()
-        refresh_directory_dependency(connection, row['collection'], row['document_id'], row['document_json'])
+        refresh_directory_dependency(connection, row['collection'], row['document_id'], json_value(row['document_json']))
     from management_common.directory_retention import RetentionStore, refresh_artifact
     retention_table = RetentionStore(connection=connection).table
     if connection.execute('SELECT to_regclass(%s)', (retention_table,)).fetchone()[0]:

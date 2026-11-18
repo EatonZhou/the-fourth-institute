@@ -4,6 +4,103 @@ from concurrent.futures import ThreadPoolExecutor
 from psycopg.errors import LockNotAvailable, RaiseException
 
 
+@pytest.fixture
+def legacy_registry_column(request):
+    """Exercise real retained column types, then restore the shared test schema."""
+    from management_common import directory_dependencies as deps
+    from management_portal.resources.registry_store import get_registry_store
+    from management_common.directory_cleanup_store import get_directory_cleanup_store
+    registry = get_registry_store()
+    registry._ensure()
+    queue = get_directory_cleanup_store()
+    table = '"' + registry.database.schema + '".registry_documents'
+    column_type = request.param
+    assert column_type in ('text', 'jsonb')
+    with registry.database.transaction() as connection:
+        connection.execute(f'ALTER TABLE {table} ALTER COLUMN document_json TYPE {column_type} USING document_json::{column_type}')
+        deps.initialize(connection)
+        connection.execute(f'UPDATE {deps.schema()}.directory_dependency_state SET ready=false')
+    try:
+        yield registry, queue, table
+    finally:
+        with registry.database.transaction() as connection:
+            deps.prepare_write(connection)
+            connection.execute(f'DELETE FROM {table} WHERE document_id LIKE %s', ('%_0000000098%',))
+            connection.execute(f'ALTER TABLE {table} ALTER COLUMN document_json TYPE jsonb USING document_json::jsonb')
+
+
+@pytest.mark.parametrize('legacy_registry_column', ['text', 'jsonb'], indirect=True)
+def test_coordinated_upgrade_decodes_retained_registry_documents(legacy_registry_column, tmp_path):
+    from management_common import directory_dependencies as deps
+    from management_common.directory_paths import cleanup_location, cleanup_path
+    from management_common.instance_locations import current_instance
+    from management_common.json_columns import json_text
+    from scripts.migrate_identity_directory_dependencies import coordinated_upgrade
+    registry, queue, table = legacy_registry_column
+    root = current_instance().area('projects') / tmp_path.name
+    expected = set()
+    with registry.database.transaction() as connection:
+        deps.prepare_write(connection)
+        for collection in ('article', 'repo', 'paper', 'knowledge', 'report'):
+            resource_id = collection + '_000000009801'
+            path = root / collection
+            field = {'article': 'roots', 'repo': 'checkouts'}.get(collection, 'directories')
+            document = {'id': resource_id, field: [{'path': str(path)}]}
+            expected.add((collection + ':' + resource_id, cleanup_location(path)))
+            if collection in ('article', 'repo'):
+                canonical = root / (collection + '-canonical')
+                document['canonical_root' if collection == 'article' else 'canonical_checkout'] = str(canonical)
+                expected.add((collection + ':' + resource_id, cleanup_location(canonical)))
+            encoded = json_text(document)
+            assert 'projects:' in encoded  # Also exercise the Registry location codec.
+            connection.execute(f'INSERT INTO {table} VALUES (%s,%s,%s,%s)',
+                               (collection, resource_id, 41, encoded))
+        cleanup_id = queue.enqueue(root, owner_id='legacy', actor='test', operation_id='legacy-upgrade', connection=connection)
+        before = [dict(row) for row in connection.execute(f'SELECT * FROM {table} ORDER BY collection,document_id').fetchall()]
+        cleanup_before = dict(connection.execute(f'SELECT * FROM {queue.table} WHERE cleanup_id=%s', (cleanup_id,)).fetchone())
+    with registry.database.transaction() as connection:
+        report = coordinated_upgrade(connection)
+    with registry.database.read() as connection:
+        deps.require_ready(connection)
+        rows = connection.execute(f"SELECT object_id,location,disposition FROM {deps.schema()}.directory_dependencies WHERE kind='resource'").fetchall()
+        assert {(row['object_id'], row['location']) for row in rows} == expected
+        assert {row['disposition'] for row in rows} == {'protected'}
+        assert [dict(row) for row in connection.execute(f'SELECT * FROM {table} ORDER BY collection,document_id').fetchall()] == before
+        cleanup_after = dict(connection.execute(f'SELECT * FROM {queue.table} WHERE cleanup_id=%s', (cleanup_id,)).fetchone())
+        assert set(cleanup_after['preserved_locations']) == {location for _, location in expected}
+        assert {k: v for k, v in cleanup_after.items() if k != 'preserved_locations'} == {k: v for k, v in cleanup_before.items() if k != 'preserved_locations'}
+    assert report['pending_tasks_augmented'] == 1
+    assert report['preserved_locations_added'] == len(expected)
+    assert report['completed_tasks_modified'] == 0
+    for object_id, location in expected:
+        collection, resource_id = object_id.split(':')
+        document = registry.get(collection, resource_id)
+        assert document['id'] == resource_id
+        assert cleanup_path(location).is_relative_to(root)
+
+
+@pytest.mark.parametrize('legacy_registry_column', ['text'], indirect=True)
+def test_coordinated_upgrade_invalid_registry_json_rolls_back(legacy_registry_column, tmp_path):
+    from json import JSONDecodeError
+    from management_common import directory_dependencies as deps
+    from scripts.migrate_identity_directory_dependencies import coordinated_upgrade
+    registry, queue, table = legacy_registry_column
+    with registry.database.transaction() as connection:
+        deps.prepare_write(connection)
+        connection.execute(f'INSERT INTO {table} VALUES (%s,%s,%s,%s)',
+                           ('article', 'article_000000009802', 42, '{invalid'))
+        cleanup_id = queue.enqueue(tmp_path / 'old', owner_id='legacy', actor='test', operation_id='invalid-upgrade', connection=connection)
+        before = dict(connection.execute(f'SELECT * FROM {queue.table} WHERE cleanup_id=%s', (cleanup_id,)).fetchone())
+        index_before = [dict(row) for row in connection.execute(f'SELECT * FROM {deps.schema()}.directory_dependencies ORDER BY kind,object_id,slot').fetchall()]
+    with pytest.raises(JSONDecodeError), registry.database.transaction() as connection:
+        coordinated_upgrade(connection)
+    with registry.database.read() as connection:
+        assert not deps.available(connection)
+        assert connection.execute(f'SELECT document_json FROM {table} WHERE document_id=%s', ('article_000000009802',)).fetchone()[0] == '{invalid'
+        assert dict(connection.execute(f'SELECT * FROM {queue.table} WHERE cleanup_id=%s', (cleanup_id,)).fetchone()) == before
+        assert [dict(row) for row in connection.execute(f'SELECT * FROM {deps.schema()}.directory_dependencies ORDER BY kind,object_id,slot').fetchall()] == index_before
+
+
 def setup_owner(tmp_path):
     from management_portal.resources.directory_identity_lifecycle import migrate_dependencies
     from management_portal.resources.workspace_store import get_workspace_store
