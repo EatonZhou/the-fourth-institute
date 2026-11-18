@@ -40,6 +40,55 @@ def _read(section, **kwargs):
     return history.read_history(RID, "manager", section=section, **kwargs)
 
 
+@pytest.mark.parametrize("column_type", ["TEXT", "JSONB"])
+def test_history_metadata_case_supports_old_and_new_storage_types(retained, column_type):
+    from psycopg import sql
+    from management_portal.execution.agent_data_history import MAX_METADATA_BYTES
+
+    segment_id = retained.agents.put_segment(
+        segment_type="input", content="Bounded body", created_by_agent_id=RID,
+        metadata={"message": {"message_id": "msg_" + "8" * 32, "role": "user"},
+                  "padding": "x" * (MAX_METADATA_BYTES + 1)},
+    )
+    retained.agents.append_agent_segments(RID, [segment_id], actor_ref="fixture")
+    # Old installations retain TEXT while fresh test schemas use JSONB. Only
+    # the disposable Agent database is altered; no production schema migration.
+    with retained.agents.database.transaction() as connection:
+        # Fresh-schema expression indexes/statistics use JSONB operators.
+        # They are not part of the legacy read fixture; remove only these
+        # derived structures before changing its physical column type.
+        if column_type == "TEXT":
+            for row in connection.execute(
+                "SELECT indexname FROM pg_indexes WHERE schemaname=current_schema() "
+                "AND tablename='segments' AND indexdef LIKE %s", ("%metadata_json%",),
+            ).fetchall():
+                connection.execute(sql.SQL("DROP INDEX {}").format(sql.Identifier(row["indexname"])))
+            for row in connection.execute(
+                "SELECT stxname AS statistics_name FROM pg_statistic_ext "
+                "WHERE stxrelid='segments'::regclass",
+            ).fetchall():
+                connection.execute(sql.SQL("DROP STATISTICS {}").format(sql.Identifier(row["statistics_name"])))
+        connection.execute(
+            "ALTER TABLE segments ALTER COLUMN metadata_json TYPE " + column_type
+            + " USING metadata_json::" + column_type,
+        )
+        observed = connection.execute(
+            "SELECT data_type FROM information_schema.columns "
+            "WHERE table_schema=current_schema() AND table_name='segments' AND column_name='metadata_json'",
+        ).fetchone()
+        assert observed["data_type"] == column_type.lower()
+    # Populate before the type change. The read must not rely on a writer to
+    # normalize metadata, and must keep both CASE arms type-compatible.
+    first = _read("messages", limit=1)
+    assert first["items"][0]["content_parts"] == [{"type": "text", "text": "Stored historical evidence"}]
+    assert first["items"][0]["content_omitted"] is False
+    second = _read("messages", limit=1, cursor=first["next_cursor"])
+    assert second["items"][0]["segment_id"] == segment_id
+    assert second["items"][0]["content_omitted"] is True
+    assert not second["next_cursor"]
+    assert _read("segments")["items"][-1]["segment_id"] == segment_id
+
+
 def test_history_reads_before_chat_reset_without_live_state_or_folders(retained, monkeypatch):
     retained.agents.record_context_reset(
         RID, reset_at="2026-10-08T00:00:00Z", actor_ref="fixture", trace_position=1,

@@ -145,7 +145,7 @@ def read_page(store: Any, agent_id: str, *, section: str, after: Any, limit: int
             "octet_length(s.metadata_json::text)>%s AS metadata_omitted, "
             "CASE WHEN octet_length(s.metadata_json::text)<=%s "
             "AND (s.created_by_agent_id='' OR s.created_by_agent_id=%s) "
-            "THEN s.metadata_json ELSE '{}'::jsonb END AS message_metadata, "
+            "THEN s.metadata_json::jsonb ELSE '{}'::jsonb END AS message_metadata, "
             "CASE WHEN p.byte_length<=%s AND (s.created_by_agent_id='' OR s.created_by_agent_id=%s) "
             "THEN p.body ELSE NULL END AS payload_body"
         ) if section == "messages" else ""
