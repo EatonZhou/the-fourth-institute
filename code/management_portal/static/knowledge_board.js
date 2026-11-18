@@ -9,7 +9,7 @@ const filter = {
   projects: null,   // null = all (Set when set)
   date: "all",      // "all" | "2d" | "7d" | "30d"
   importance: 0,    // min importance (0 = no filter)
-  status: "",       // "" = all | "__none__" | "open" | "done" | "dismiss" | "obsolete"
+  status: "",       // "" = current (non-obsolete) | "__all__" | "__none__" | "open" | "done" | "dismiss" | "obsolete"
 };
 
 const state = {

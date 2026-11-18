@@ -37,7 +37,11 @@ function knowledgeFilterSummaryItems() {
   };
   if (filter.date !== "all") items.push({ label: window.PortalI18n.t("日期"), value: dateLabels[filter.date] || filter.date });
   if (filter.status) {
-    items.push({ label: window.PortalI18n.t("状态"), value: filter.status === "__none__" ? "无状态" : filter.status });
+    const statusLabels = {
+      "__all__": window.PortalI18n.t("全部"),
+      "__none__": window.PortalI18n.t("无状态"),
+    };
+    items.push({ label: window.PortalI18n.t("状态"), value: statusLabels[filter.status] || filter.status });
   }
   if (filter.projects instanceof Set) {
     items.push({ label: window.PortalI18n.t("Project"), value: compactKnowledgeFilterValues(filter.projects) });
@@ -96,7 +100,7 @@ function applyKnowledgeUiState() {
 }
 
 function normalizeFilterStateForIndex() {
-  const allowedStatuses = new Set(["", "__none__", "open", "done", "dismiss", "obsolete"]);
+  const allowedStatuses = new Set(["", "__all__", "__none__", "open", "done", "dismiss", "obsolete"]);
   if (!allowedStatuses.has(filter.status)) filter.status = "";
 
   const allowedDates = new Set(["all", "2d", "7d", "30d"]);
@@ -182,11 +186,14 @@ function cutoffDate(range) {
 
 // ── Filter application ────────────────────────────────────────────────
 function matchesFilter(item) {
-  if (filter.status) {
-    const itemStatus = String(item.status || "").trim();
+  const itemStatus = String(item.status || "").trim();
+  if (filter.status !== "__all__") {
+    if (!filter.status) {
+      if (itemStatus === "obsolete") return false;
+    }
     if (filter.status === "__none__") {
       if (itemStatus) return false;
-    } else if (itemStatus !== filter.status) return false;
+    } else if (filter.status && itemStatus !== filter.status) return false;
   }
   // Type
   if (filter.type && item.type !== filter.type) return false;

@@ -41,6 +41,20 @@ def test_page_loads_its_parts_before_the_root_script():
     assert "<style" not in html and not re.search(r"<script>\s", html)
 
 
+def test_default_status_filter_hides_obsolete_but_keeps_history_discoverable():
+    """Knowledge 默认只显示现行条目，全部和 obsolete 仍可显式筛选"""
+    html = render_knowledge_html().decode()
+    filters = (STATIC / "knowledge_board_filters.js").read_text(encoding="utf-8")
+
+    assert 'name="fp_status" value="" checked' in html
+    assert '<!--portal-i18n:" 现行"--> 现行' in html
+    assert 'name="fp_status" value="__all__"' in html
+    assert 'name="fp_status" value="obsolete"' in html
+    assert 'new Set(["", "__all__", "__none__", "open", "done", "dismiss", "obsolete"])' in filters
+    assert 'if (filter.status !== "__all__")' in filters
+    assert 'if (itemStatus === "obsolete") return false;' in filters
+
+
 @pytest.mark.parametrize("script", [
     "knowledge_delete_refresh.cjs",
     "knowledge_detail_graph_budget.cjs",
