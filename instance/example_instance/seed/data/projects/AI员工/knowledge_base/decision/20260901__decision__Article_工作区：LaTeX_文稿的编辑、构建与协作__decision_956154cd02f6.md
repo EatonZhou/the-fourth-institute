@@ -4,15 +4,15 @@ type: decision
 project: AI员工
 created_at: '2026-09-01'
 version:
-  number: 44
+  number: 45
   created_at: "2026-09-01"
   created_by:
     user: ""
     agent: ""
-  updated_at: "2026-11-18T04:53:16Z"
+  updated_at: "2026-11-18T07:00:01Z"
   updated_by:
     user: ""
-    agent: "resident_6199a7a36480"
+    agent: "resident_62dbdb2288fb"
 importance: 8
 metaness: 2
 ai_generated: true
@@ -134,6 +134,7 @@ LaTeX 编辑区提供独立的“评论”面板。Monaco 源码编辑器选中�
 
 - **链接中显式指定 Article ID 时，页面始终打开这个资源。** 已在列表中时使用该记录；列表索引暂未收录时，通过 ResourceService 直接解析已登记资源，再加载其目录、构建配置和主文稿。资源不存在、无法读取或地址类型不符时保留原链接，显示加载错误。
 - **没有显式 ID 时，页面恢复上次选择的有效 Article。** 上次选择已不在列表时使用列表第一项；列表为空时显示未选择状态。
+- **选择器的加载提示对应实际请求。** 页面初始空壳显示选择 Article；请求列表或解析显式地址期间显示加载状态。列表为空时退出加载并显示未选择；请求失败时退出加载并显示错误，已取得的其他 Article 仍可选择。刷新列表失败时保留已打开稿件及未保存修改。
 
 **用户在页面上选择 Project 内的文稿目录登记后，Portal 为它创建一个 Article 身份。注销 Article 按《目录与路径协议》（decision_4aa13bc21e8e）处理：注销资源身份及其范围内的嵌套登记，并将其拥有的源码目录与文件排入持久清理；删除范围外的独立资源和未登记邻居不受影响。显式登记与扫描登记采用同一生命周期，不根据登记方式推断源码保留。**
 

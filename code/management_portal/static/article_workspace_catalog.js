@@ -185,11 +185,13 @@
       if (state.resourceSearchOpen) renderArticleResourceSearch();
     }
 
-    function renderProjectIdentity() {
+    function renderProjectIdentity({ loading = false, error = "" } = {}) {
       const article = selectedArticle();
       $("articleCurrentFavorite").dataset.resourceFavorite = article?.id || "";
       window.PortalResourceHeader?.mount?.("articleProjectIdentity", {
-        title: article?.title || window.PortalI18n.t("Select an Article project"),
+        title: article?.title || error || (loading
+          ? window.PortalI18n.t("正在加载 Article…")
+          : window.PortalI18n.t("Select an Article project")),
         type: article ? "article" : "",
         resource_id: article?.id || "",
         copy_label: "article_id",
@@ -200,12 +202,13 @@
         idId: "articleProjectId",
       });
       const projectButton = $("articleProjectButton");
+      projectButton.setAttribute("aria-busy", String(loading));
       projectButton.setAttribute("aria-label", article
         ? window.PortalI18n.text`切换 Article。当前：${article.title || article.id}，Article ID ${article.id}`
         : window.PortalI18n.t("选择 Article"));
       projectButton.title = article
         ? `${article.title || article.id} · ${article.id}`
-        : window.PortalI18n.t("选择 Article");
+        : error || window.PortalI18n.t("选择 Article");
       const pdfIdentity = $("articlePdfIdentity");
       pdfIdentity.textContent = article?.id || window.PortalI18n.t("未选择 Article");
       pdfIdentity.title = article ? window.PortalI18n.text`当前 Article Resource ID：${article.id}` : window.PortalI18n.t("当前未选择 Article");
@@ -320,32 +323,38 @@
     }
 
     async function loadArticles({ preserve = true, reloadSelected = true } = {}) {
-      const payload = await request("/api/articles");
-      state.articles = Array.isArray(payload.articles) ? payload.articles : [];
       const requested = String(queryState().get("item") || "");
-      if (requested && !state.articles.some(article => article.id === requested)) {
-        try {
-          const resolution = await request(`/api/resources/resolve?address=${encodeURIComponent(requested)}`);
-          if (resolution.target?.resource_type !== "article" || resolution.target.root_id !== requested) {
-            throw new Error(window.PortalI18n.t("这个地址不是可打开的 Article。"));
+      let loadError = "";
+      renderProjectIdentity({ loading: true });
+      try {
+        const payload = await request("/api/articles");
+        state.articles = Array.isArray(payload.articles) ? payload.articles : [];
+        if (requested && !state.articles.some(article => article.id === requested)) {
+          try {
+            const resolution = await request(`/api/resources/resolve?address=${encodeURIComponent(requested)}`);
+            if (resolution.target?.resource_type !== "article" || resolution.target.root_id !== requested) {
+              throw new Error(window.PortalI18n.t("这个地址不是可打开的 Article。"));
+            }
+            state.articles.push({ ...resolution.resource, id: requested });
+          } catch (error) {
+            detailResourceGuest.failed({ resourceId: requested, error: error.message || String(error) });
+            throw error;
           }
-          state.articles.push({ ...resolution.resource, id: requested });
-        } catch (error) {
-          detailResourceGuest.failed({ resourceId: requested, error: error.message || String(error) });
-          $("articleEditorState").textContent = window.PortalI18n.text`无法打开 Article：${error.message || error}`;
-          renderArticleSelectors();
-          throw error;
         }
+        const next = requested
+          || (preserve && state.articles.some(article => article.id === state.selectedId)
+            ? state.selectedId
+            : state.articles.some(article => article.id === state.lastSelectedId)
+              ? state.lastSelectedId
+            : state.articles[0]?.id || "");
+        if (reloadSelected) await selectArticle(next, { initial: true });
+      } catch (error) {
+        loadError = requested ? window.PortalI18n.t("无法打开 Article") : window.PortalI18n.t("Article 列表加载失败");
+        if (!selectedArticle()) $("articleEditorState").textContent = `${loadError}：${error.message || error}`;
+        throw error;
+      } finally {
+        renderProjectIdentity({ error: loadError });
       }
-      const next = requested
-        || (preserve && state.articles.some(article => article.id === state.selectedId)
-          ? state.selectedId
-          : state.articles.some(article => article.id === state.lastSelectedId)
-            ? state.lastSelectedId
-          : state.articles[0]?.id || "");
-      renderArticleSelectors();
-      if (reloadSelected) await selectArticle(next, { initial: true });
-      else renderProjectIdentity();
     }
 
     return Object.freeze({
