@@ -368,9 +368,9 @@
   }
 
   const definitions = [
-    ["repository-files", "文件树", "files", "navigation", 180, createFiles],
-    ["repository-search", "文件名搜索", "search", "search", 200, createSearch],
-    ["repository-git", "源代码管理", "git-branch", "source-control", 200, createGit],
+    ["repository-files", "文件树", "files", "navigation", 140, createFiles],
+    ["repository-search", "文件名搜索", "search", "search", 140, createSearch],
+    ["repository-git", "源代码管理", "git-branch", "source-control", 140, createGit],
     ["repository-preview", "预览", "window", "preview", 280, createPreview],
   ];
   function register() {

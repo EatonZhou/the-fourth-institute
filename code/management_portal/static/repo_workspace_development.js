@@ -95,9 +95,9 @@
       emptyText: t("鼠标选中代码后自动加入聊天；也可将当前文件加入聊天，讨论或修改当前仓库。"), enableLinkPreview: true, onError: reportError,
     };
     const descriptors = [
-      { id: "files", type: "repository-files", title: t("文件树"), options: shared },
-      ...(overview.capabilities?.search_files ? [{ id: "search", type: "repository-search", title: t("搜索"), options: shared }] : []),
-      ...(overview.capabilities?.git ? [{ id: "git", type: "repository-git", title: t("源代码管理"), options: shared }] : []),
+      { id: "files", type: "repository-files", collapseToRail: true, title: t("文件树"), options: shared },
+      ...(overview.capabilities?.search_files ? [{ id: "search", type: "repository-search", collapseToRail: true, title: t("搜索"), options: shared }] : []),
+      ...(overview.capabilities?.git ? [{ id: "git", type: "repository-git", collapseToRail: true, title: t("源代码管理"), options: shared }] : []),
       { id: "source", type: "source-editor", title: t("代码"), options: {
         readFile, scopeKey: repoId,
         async saveFile(path, content, expected_hash) {
@@ -125,13 +125,62 @@
       defaultLayout: split("horizontal", [stack(navigationIds, "files"), stack(["source", "preview"], "source"), stack(["chat"])], [1, 2.8, 1.5]),
       fitViewport: { bottom: 18, minHeight: 360 },
     });
+    // Navigation is still owned by the Workbench layout: collapse its stacks
+    // to the activity rail, keeping their active tabs, weights and runtimes.
+    // A user-created stack containing an editor or chat is not a sidebar.
+    function navigationStacks(node = workbench.getLayout()) {
+      if (!node) return [];
+      if (node.type === "stack") {
+        return node.children.every(child => navigationIds.includes(child.panelId)) ? [node] : [];
+      }
+      return (node.children || []).flatMap(child => navigationStacks(child));
+    }
+    function toggleSidebar() {
+      const stacks = navigationStacks();
+      if (!stacks.length) {
+        const hidden = navigationIds.find(id => !workbench.isPanelVisible(id));
+        if (hidden) focus(hidden);
+        return;
+      }
+      const expanded = stacks.filter(stack => !workbench.isPanelCollapsed(stack.activePanelId));
+      if (expanded.length) {
+        const focused = document.activeElement;
+        expanded.forEach(stack => workbench.collapsePanel(stack.activePanelId));
+        rail.setActiveView("");
+        // Do not leave keyboard focus inside the collapsed navigation panel.
+        if (focused && !focused.getClientRects().length) tools.querySelector('[data-activity-view="files"]')?.focus();
+      } else {
+        stacks.forEach(stack => workbench.expandPanel(stack.activePanelId));
+        selectedTool = stacks[0].activePanelId;
+        rail.setActiveView(selectedTool);
+      }
+    }
+    const removeSidebarCommand = window.PortalCommandRegistry.root.register({
+      id: `repo-development.${repoId}.toggle-sidebar`, title: t("显示或隐藏左侧栏"), category: "Repo",
+      keybindings: ["Ctrl+B", "Meta+B"], allowInInput: true,
+      enabled: () => {
+        if (disposed || !root.isConnected || root.closest("[hidden]") || workbench.isLayoutLocked()) return false;
+        const active = document.activeElement;
+        if (active?.closest('[role="dialog"], dialog, .portalOverlay')) return false;
+        const editable = active?.closest('input, textarea, select, [contenteditable="true"], [role="textbox"]');
+        // Monaco uses a textarea, but B is a layout shortcut in the editor.
+        // Chat and other text inputs retain their own formatting shortcuts.
+        return !editable || Boolean(root.contains(active) && active.closest(".monaco-editor"));
+      },
+      execute: ({ event }) => { if (!event?.repeat) toggleSidebar(); },
+    });
     const icons = { files: "file-text", search: "search", git: "branch", source: "code", preview: "eye", chat: "chat-room" };
     rail = window.PortalWorkbench.createActivityRail({
       id: `repo-development-${repoId}`, root: tools, label: t("开发工作台工具"), activeView: selectedTool,
-      views: [...descriptors.map(descriptor => ({ id: descriptor.id, label: descriptor.title, icon: icons[descriptor.id] })),
+      views: [...descriptors.map(descriptor => ({ id: descriptor.id, label: descriptor.title, icon: icons[descriptor.id],
+        title: navigationIds.includes(descriptor.id) ? `${descriptor.title} · Ctrl+B / ⌘B` : descriptor.title })),
         { id: "refresh", label: t("刷新文件状态"), icon: "refresh" }],
-      onViewSelect(id) {
+      onViewSelect(id, _rail, { repeated } = {}) {
         if (id === "refresh") { rail.setActiveView(selectedTool); void refresh(); return; }
+        if (repeated && navigationStacks().some(stack => stack.activePanelId === id && !workbench.isPanelCollapsed(id))) {
+          toggleSidebar();
+          return;
+        }
         selectedTool = id;
         focus(id);
         if (id === "preview") {
@@ -154,7 +203,7 @@
     window.addEventListener("focus", onFocus);
     return {
       root, workbench, openFile, refresh, hasDirty: () => panel("source")?.hasDirty?.() || false,
-      destroy() { disposed = true; observer.disconnect(); clearInterval(timer); window.removeEventListener("focus", onFocus); rail.destroy(); workbench.destroy(); },
+      destroy() { disposed = true; removeSidebarCommand(); observer.disconnect(); clearInterval(timer); window.removeEventListener("focus", onFocus); rail.destroy(); workbench.destroy(); },
     };
   }
 
