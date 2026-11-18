@@ -161,11 +161,12 @@
     const restartService = window.PortalResidentService;
     const restartProgress = createSessionRestartProgress({
       compact: true,
+      headerIcon: true,
       owner: options.draftOwner,
       onOpen: () => openResidentDialog("restart"),
       onDismiss: () => els.refresh?.focus(),
     });
-    els.status?.closest(".chatHeadText")?.append(restartProgress.element);
+    els.status?.closest(".chatTitleLine")?.append(restartProgress.element);
     let restartUnobserve = null;
     let restartResidentId = "";
     // The header follows the restarts of the contract's Resident while the Chat offers them.

@@ -698,10 +698,32 @@
       } else {
         familyBadge?.remove();
       }
-      const subtitleParts = state.subtitleParts.filter(part => part.identity !== "family");
+      const noticeText = [...new Set([
+        ...state.subtitleParts.filter(part => part.identity === "family_availability").map(part => part.text),
+        transientStatus,
+      ].filter(Boolean))].join("\n");
+      let notice = els.head?.querySelector("[data-workspace-notice]");
+      if (noticeText && els.title) {
+        if (!notice) {
+          notice = document.createElement("button");
+          notice.type = "button";
+          notice.className = "chatHeaderNotice";
+          notice.dataset.workspaceNotice = "1";
+          notice.textContent = "!";
+          notice.addEventListener("click", () => window.PortalUI.toast(notice.title, "warning", {
+            key: "chat-header-notice", duration: 0,
+          }));
+          els.title.closest(".chatTitleLine")?.append(notice);
+        }
+        notice.title = noticeText;
+        notice.setAttribute("data-portal-tooltip", noticeText);
+        notice.setAttribute("aria-label", noticeText);
+      } else notice?.remove();
+      const subtitleParts = state.subtitleParts.filter(part => !["family", "family_availability"].includes(part.identity));
       if (!subtitleParts.length) {
         els.status.classList.remove("hasSessionIdentity");
-        els.status.textContent = transientStatus || (familyPart ? "" : state.subtitle);
+        els.status.textContent = familyPart ? "" : state.subtitle;
+        els.status.title = els.status.textContent;
         return;
       }
       els.status.classList.toggle(
@@ -732,16 +754,6 @@
         }
         fragment.append(span);
       });
-      if (transientStatus) {
-        const separator = document.createElement("span");
-        separator.className = "chatHeaderSeparator";
-        separator.textContent = "·";
-        fragment.append(separator);
-        const status = document.createElement("span");
-        status.setAttribute("role", "status");
-        status.textContent = transientStatus;
-        fragment.append(status);
-      }
       els.status.replaceChildren(fragment);
     };
     const handleSubtitleCopy = event => {

@@ -324,6 +324,7 @@
       const element = document.createElement("div");
       element.className = "portalSessionRestartProgress";
       element.classList.toggle("is-compact", compact);
+      element.classList.toggle("is-header-icon", compact && !!options.headerIcon);
       element.hidden = true;
       const heading = document.createElement("div");
       heading.setAttribute("role", "status");
@@ -406,6 +407,15 @@
           : restart.configuration_only ? window.PortalI18n.t("账号配置已保存，尚未创建 Session。") : window.PortalI18n.t("迁移已结束。");
         technicalError.textContent = String(restart.error || current.error || "");
         diagnostics.hidden = !technicalError.textContent;
+        if (compact && options.headerIcon) {
+          detailsButton.textContent = failed || current.error ? "!" : "↻";
+          const description = [heading.textContent, message.textContent, technicalError.textContent].filter(Boolean).join("\n");
+          detailsButton.title = description;
+          detailsButton.setAttribute("data-portal-tooltip", description);
+          detailsButton.setAttribute("aria-label", description);
+          dismissButton.textContent = "×";
+          dismissButton.title = dismissButton.getAttribute("aria-label");
+        }
       };
       dismissButton.addEventListener("click", () => {
         const key = acknowledgementKey();

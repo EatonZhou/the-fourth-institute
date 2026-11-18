@@ -239,13 +239,24 @@
     const key = assetPath(path);
     if (assetLoads.has(key)) return assetLoads.get(key);
     const css = key.endsWith(".css");
+    const styles = css ? [...document.querySelectorAll('link[rel="stylesheet"][href]')]
+      .filter(link => assetPath(link.href) === key) : [];
+    // A link can exist after a failed request, or while it is still loading.
+    // Chromium can attach an empty sheet even after a failed request. Existing
+    // rules prove readiness; an empty/opaque sheet is verified by a new load.
     const declared = !ready && (css
-      ? [...document.querySelectorAll('link[rel="stylesheet"][href]')].some(link => assetPath(link.href) === key)
+      ? styles.some(link => {
+        try { return !link.disabled && link.sheet?.cssRules.length > 0; }
+        catch { return false; }
+      })
       : [...document.scripts].some(script => script.src && assetPath(script.src) === key));
     if (declared) return Promise.resolve();
     const element = document.createElement(css ? "link" : "script");
     const promise = new Promise((resolve, reject) => {
-      element.addEventListener("load", () => resolve(), { once: true });
+      element.addEventListener("load", () => {
+        styles.forEach(link => link.remove());
+        resolve();
+      }, { once: true });
       element.addEventListener("error", () => {
         element.remove();
         assetLoads.delete(key);
@@ -261,7 +272,10 @@
       element.async = false;
     }
     assetLoads.set(key, promise);
-    document.head.append(element);
+    // Preserve the cascade slot when repairing a page-declared stylesheet.
+    // Appending a base stylesheet after its overrides would change the UI.
+    if (styles[0]?.parentNode) styles[0].before(element);
+    else document.head.append(element);
     return promise;
   }
 

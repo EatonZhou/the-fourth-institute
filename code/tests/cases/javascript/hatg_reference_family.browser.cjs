@@ -15,7 +15,7 @@ const child = {...parent, lineage_id: childId, title: 'Research Family', revisio
   function_blocks: [{id: 'fbi_aaaaaaaaaaaa', title: 'Research Family', elements: [],
     family: {facade: facadeId, steward: '', router: '', members: []}}]};
 
-(async () => {
+async function run({route: extraRoute, beforeReady, afterReady} = {}) {
   const browser = await chromium.launch({headless: true});
   try {
     const page = await browser.newPage({viewport: {width: 1500, height: 1000}});
@@ -24,6 +24,7 @@ const child = {...parent, lineage_id: childId, title: 'Research Family', revisio
     page.on('pageerror', error => {errors.push(error.message); console.error('pageerror:', error.stack);});
     await page.route('**/*', async route => {
       const req = route.request(), url = new URL(req.url());
+      if (extraRoute && await extraRoute(route, url)) return;
       const body = req.postData() ? req.postDataJSON() : null;
       if (body?.instruction) {
         assert.match(body.instruction, /^(Get|List|Search)/, 'fixture never changes business state');
@@ -62,8 +63,10 @@ const child = {...parent, lineage_id: childId, title: 'Research Family', revisio
         onLocationChange() {}, onDeleteLineage() {},
         emit(type, payload) {if (type === 'open-resource') window.opened.push(payload.resource);},
       });
-      await panel.ready;
     }, parentId);
+    if (beforeReady) await beforeReady(page);
+    await page.evaluate(() => panel.ready);
+    if (afterReady) await afterReady(page);
     assert.equal(await page.locator('#lineageLoadError').innerText(), '');
     const card = page.locator(`.hatgNode[data-node-id="${facadeId}"]`);
     await card.locator('.nodeTitle').waitFor({state: 'attached'});
@@ -92,4 +95,6 @@ const child = {...parent, lineage_id: childId, title: 'Research Family', revisio
     }
     console.log(JSON.stringify({initialFamily: true, canonicalFamily: true, cardAndDisclosureOpenHome: true, reads, errors}));
   } finally {await browser.close();}
-})().catch(error => {console.error(error); process.exitCode = 1;});
+}
+module.exports = {run, portal};
+if (require.main === module) run().catch(error => {console.error(error); process.exitCode = 1;});

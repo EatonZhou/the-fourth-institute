@@ -1,6 +1,26 @@
 (() => {
   "use strict";
 
+  // These styles form the native panel, including its collapsed toolbox.
+  // The host's link tags may have failed or still be loading when we mount.
+  const PANEL_STYLES = [
+    "hatg_panel", "hatg_panel_edges", "hatg_panel_nodes", "hatg_panel_navigation",
+    "hatg_panel_library", "hatg_panel_inspector", "hatg_panel_relations",
+    "hatg_panel_dialogs", "hatg_panel_responsive", "hatg_panel_effect_scripts",
+    "lineage_templates",
+  ];
+
+  async function loadPanelStyles() {
+    await Promise.all(PANEL_STYLES.map(async name => {
+      const path = `/static/${name}.css`;
+      try { await window.PortalUIPrimitives.loadAsset(path); }
+      catch {
+        await new Promise(resolve => window.setTimeout(resolve, 250));
+        await window.PortalUIPrimitives.loadAsset(path);
+      }
+    }));
+  }
+
   if (window.PortalHatgPanelMount) return;
 
   // Mounting the panel: loading the panel template (with its timeout and
@@ -189,10 +209,16 @@
         const request = (async () => {
           const [response] = await Promise.all([
             fetchTemplate(),
-            window.PortalUIPrimitives.loadAsset("/static/lineage_templates.css"),
+            loadPanelStyles(),
           ]);
           if (!response.ok) throw new Error(`HATG template failed (${response.status})`);
           const parsed = new DOMParser().parseFromString(await response.text(), "text/html");
+          // Reject stale bottom-shelf templates (and sign-in/error HTML) before
+          // mixing them with the current canvas scripts and styles.
+          if (!parsed.querySelector("#hatgViewport .hatgCanvasCornerTools #hatgToolboxToggle")
+            || !parsed.querySelector("#hatgViewport #hatgToolbox[hidden]")) {
+            throw new Error(window.PortalI18n.t("HATG 模板版本不匹配，请刷新页面后重试。"));
+          }
           const fragment = document.createDocumentFragment();
           parsed.querySelectorAll("body > :not(header):not(script)").forEach(node => {
             fragment.append(document.importNode(node, true));
