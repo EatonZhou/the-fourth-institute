@@ -144,6 +144,11 @@ def prepare_backend_context_seed(backend: object, invocation: InvocationT) -> In
     seed = context_seed(invocation.request)
     if not seed:
         return invocation
+    if not seed["segments"] and seed["portable_prompt"]:
+        # A text-only handoff has no typed history for an adapter to import.
+        # Realize it once here, including for canonical-history adapters.
+        # Do not call a portable adapter afterwards: it would add it twice.
+        return realize_portable_seed(invocation)
     prepare = getattr(backend, "prepare_context_seed", None)
     if not callable(prepare):
         raise ValueError("Agent backend does not implement Provider context seed delivery")

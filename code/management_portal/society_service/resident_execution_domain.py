@@ -2032,6 +2032,24 @@ def _portable_context_execution(
     if _lineage_delivery_profile(job):
         # A fresh-context run does not use (or consume) the session's seed.
         return job
+    if (record.get("session_restart") or {}).get("pending_handoff") is not None:
+        from . import resident_pending_session_context
+
+        # Selection is configuration-only. The first real input carries the
+        # frozen, explicitly bounded handoff rather than rebuilding all trace.
+        prompt_job = dict(job)
+        prompt_job.pop("fork_context_input", None)
+        prompt_job = _prepare_resident_prompt(record, prompt_job)
+        accepted = execution_port.sessions().has_context(
+            resident_backend.execution_binding_id(record),
+            agent_id=resident_domain_common.record_resident_id(record),
+        )
+        seed = resident_pending_session_context.context_seed(
+            record, prompt_job["actual_sent_prompt"], accepted=accepted,
+        )
+        if seed:
+            prompt_job["fork_context_input"] = seed
+        return prompt_job
     if (
         _requires_initial_context_compaction(record)
         and not _initial_context_compaction_completed(record)

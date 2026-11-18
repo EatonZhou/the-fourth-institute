@@ -536,6 +536,11 @@ def restart_resident_session(
         restart_target.provider == "provider_api" or strategy == "fresh"
         or (not source["has_session"] and not unbound_previous_session)
     )
+    # A fixed, explicit selection is configuration, not a request to run the
+    # target model. Keep the chosen handoff for the first real user input.
+    if (not portal_reason and not use_credits and body.get("target_account")
+            and strategy in {"compact", "visible"}):
+        prepare_session = False
     work = _settle_active_work(
         record, target.resident_id, actor_id, body, source, restart_target, intent,
         active_execution_policy=active_execution_policy, portal_reason=portal_reason,
@@ -916,6 +921,18 @@ def _configure_session_target(restart: _SessionRestart) -> dict[str, Any]:
     from . import resident_access
 
     resident_id, actor_id, target = restart.resident_id, restart.actor_id, restart.target
+    handoff = None
+    if restart.strategy in {"compact", "visible"}:
+        handoff = {
+            "operation_id": restart.restart_id, "strategy": restart.strategy,
+            "target": {"provider": target.provider, "route": target.route},
+            "context_reset_at": str(restart.work.record.get("context_reset_at") or ""),
+            "prompt": _session_restart_handoff_prompt(
+                restart.work.record,
+                resident_conversation_stream.get_repository().snapshot(restart.target_resident_id, history_limit=36),
+                strategy=restart.strategy,
+            ),
+        }
     with resident_record_domain.state_lock(resident_id):
         current = copy.deepcopy(resident_record_domain.find_resident(resident_id) or {})
         if not current:
@@ -936,14 +953,16 @@ def _configure_session_target(restart: _SessionRestart) -> dict[str, Any]:
             target.route,
             runtime_settings=restart.target_runtime_settings,
         )
-        if restart.strategy == "fresh":
+        if restart.strategy == "fresh" or handoff is not None:
             current["session_state"] = "pending_create"
         state = _configured_restart_state(restart)
+        if handoff is not None:
+            state["pending_handoff"] = handoff
         current["session_restart"] = state
         current["updated_at"] = state["configured_at"]
         replacement = None
         try:
-            if target.provider == "provider_api" or restart.strategy == "fresh":
+            if target.provider == "provider_api" or restart.strategy == "fresh" or handoff is not None:
                 replacement = _detach_previous_session(current, restart.source_binding)
             resident_catalog.get_catalog().state_store.transaction(
                 lambda: _commit_session_configuration(current, state, restart)
@@ -963,7 +982,8 @@ def _configured_restart_state(restart: _SessionRestart) -> dict[str, Any]:
     state = {
         "operation": restart.operation, "operation_id": restart.restart_id,
         "request_signature": preservation.request_signature(restart.body),
-        "context_result": "fresh" if strategy == "fresh" else "preserved",
+        "context_result": ("fresh" if strategy == "fresh" else
+                           "pending_first_input" if strategy in {"compact", "visible"} else "preserved"),
         "model_operation": False,
         "status": "completed", "phase": "completed", "configuration_only": True,
         "restart_id": restart.restart_id, "request_id": restart.public_request_id,
@@ -1048,6 +1068,11 @@ def _admit_session_replacement(restart: _SessionRestart) -> dict[str, Any]:
             strategy=restart.strategy,
         )
     request = _session_operation_request(restart, prompt, prepared_binding_id)
+    if (not restart.portal_reason and restart.body.get("target_account")
+            and request.operation != "turn" and not authorization):
+        # These operations only create/fork/import a session. Their temporary
+        # binding may bypass quota; the Resident's future model turns may not.
+        quota_override = {"binding_id": prepared_binding_id, "revision": 1, "enabled": True}
     state = _accepted_restart_state(restart, request, quota_admission)
     if authorization:
         quota_override = resident_session_credits.prepared_policy(quota_override, authorization, request.execution_id)

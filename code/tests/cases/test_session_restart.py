@@ -824,11 +824,11 @@ def test_same_provider_smart_restart_uses_native_fork_contracts(monkeypatch, sub
             # A restart with other parameters replaces this one: test_session_restart_supersede.
 
 
-def test_normal_session_restart_does_not_read_health_or_grant_quota_override(
+def test_manual_session_preparation_does_not_read_health_or_block_on_quota(
     monkeypatch: pytest.MonkeyPatch,
     isolated_portal_case,
 ) -> None:
-    """普通会话准备直接提交，额度保护由 Scheduler 执行。"""
+    """手动固定账号的无模型准备不因额度被阻挡，业务绑定不获豁免。"""
     with isolated_portal_case():
         record, operations, _saved = _restart_domain(monkeypatch)
         monkeypatch.setattr(execution_port, "health", lambda: pytest.fail("ordinary startup must not read health"))
@@ -841,7 +841,11 @@ def test_normal_session_restart_does_not_read_health_or_grant_quota_override(
         assert result["quota_admission"] == {}
         # The new thread is the Resident's: it starts with the HATG ISA tool.
         assert operations[0]["step"]["request"]["metadata"]["resident_id"] == record["resident_id"]
-        assert operations[0]["step"]["quota_override"] == {}
+        step = operations[0]["step"]
+        assert step["quota_override"] == {
+            "binding_id": step["prepared_binding_id"], "revision": 1, "enabled": True,
+        }
+        assert not record.get("quota_reserve_override")
 
 
 def test_session_restart_cancellation_is_quota_independent_and_preserves_source(
