@@ -712,11 +712,13 @@
           notice.className = "chatHeaderNotice";
           notice.dataset.workspaceNotice = "1";
           notice.textContent = "!";
-          notice.addEventListener("click", () => window.PortalUI.toast(notice.title, "warning", {
+          notice.addEventListener("click", () => window.PortalUI.toast(notice.dataset.workspaceNoticeText, "warning", {
             key: "chat-header-notice", duration: 0,
           }));
           els.title.closest(".chatTitleLine")?.append(notice);
         }
+        // The shared tooltip enhancer removes title; keep the full, current message independently.
+        notice.dataset.workspaceNoticeText = noticeText;
         notice.title = noticeText;
         notice.setAttribute("data-portal-tooltip", noticeText);
         notice.setAttribute("aria-label", noticeText);

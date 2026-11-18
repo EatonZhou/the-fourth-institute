@@ -3,7 +3,8 @@
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
-const { chromium } = require('../../../management_portal/test_framework/tau_runtime/node_modules/playwright');
+const playwrightPath = path.resolve(__dirname, '../../../management_portal/test_framework/tau_runtime/node_modules/playwright');
+const browsers = require(fs.existsSync(playwrightPath) ? playwrightPath : 'playwright');
 const { chatWorkspaceScripts } = require('./chat_workspace_modules.cjs');
 const { portalWorkbenchScripts } = require('./portal_workbench_scripts.cjs');
 const { PORTAL_COMPONENTS_STYLES } = require('./portal_components_styles.cjs');
@@ -11,7 +12,7 @@ const input = JSON.parse(fs.readFileSync(0, 'utf8'));
 const root = path.resolve(__dirname, '../../../management_portal/static');
 (async () => {
   if (process.env.FAMILY_CHAT_SCREENSHOTS) fs.mkdirSync(process.env.FAMILY_CHAT_SCREENSHOTS, {recursive: true});
-  const browser = await chromium.launch({headless: true});
+  const browser = await browsers[process.env.PORTAL_TEST_BROWSER || 'chromium'].launch({headless: true});
   try {
     const page = await browser.newPage({viewport: {width: 1200, height: 900}});
     const errors = [];
@@ -30,7 +31,7 @@ const root = path.resolve(__dirname, '../../../management_portal/static');
       await page.addStyleTag({url: `/static/${name}.css`});
     }
     await page.addScriptTag({content: input.routeScript});
-    for (const name of ['portal_state.js', 'portal_page_state.js', 'portal_text.js', 'portal_ui_primitives.js', 'portal_ui.js',
+    for (const name of ['portal_state.js', 'portal_page_state.js', 'portal_text.js', 'portal_ui_primitives.js', 'portal_ui.js', 'portal_button_tooltips.js',
       'portal_overlay.js', 'portal_resource_chips.js', 'portal_image_editor.js', 'portal_editor_open_service.js',
       'portal_command_registry.js', 'portal_workbench_context.js', ...portalWorkbenchScripts(), 'resident_protocol.js', ...chatWorkspaceScripts()]) {
       await page.addScriptTag({url: `/static/${name}`});
@@ -51,6 +52,7 @@ const root = path.resolve(__dirname, '../../../management_portal/static');
         },
       };
       window.calls = []; window.toasts = []; window.failNext = false; window.denyRead = false;
+      window.renderToast = PortalUI.toast;
       PortalUI.toast = message => toasts.push(message);
       let policy = {muted_member_ids: [], solo_member_id: ''};
       const members = [0, 1].map(i => ({resident_id: `member_${i}`, title: `成员 ${i} · 架构与实现`, role: 'member'}));
@@ -371,6 +373,7 @@ const root = path.resolve(__dirname, '../../../management_portal/static');
     await proxy.waitFor({state: 'visible'});
     await page.keyboard.press('Escape');
     await page.evaluate(() => {
+      PortalUI.toast = (message, ...args) => { toasts.push(message); return renderToast(message, ...args); };
       window.longReason = 'Steward：账号额度已用尽，发送的消息将排队等待额度恢复或人工放行。'.repeat(4);
       window.showHeaderNotice = () => panel.workspace.setSubtitle('', [
         {identity: 'family', text: 'Family'},
@@ -396,9 +399,14 @@ const root = path.resolve(__dirname, '../../../management_portal/static');
       const notice = page.locator('[data-workspace-notice]');
       assert.equal(await notice.innerText(), '!');
       assert.match(await notice.getAttribute('data-portal-tooltip'), /额度已用尽/);
+      await page.waitForFunction(() => !document.querySelector('[data-workspace-notice]').hasAttribute('title'));
       await notice.focus();
       await page.keyboard.press('Enter');
       assert.equal(await page.evaluate(() => toasts.at(-1) === longReason), true, 'keyboard/touch can read the full reason');
+      const toast = page.locator('[data-portal-toast-key="chat-header-notice"]');
+      assert.equal(await toast.locator('.portalToastMessage').textContent(), await page.evaluate(() => longReason));
+      assert.equal(await toast.isVisible(), true, 'the real toast displays its content after tooltip enhancement');
+      await toast.locator('.portalToastClose').click();
       const measure = () => page.locator('.portalWorkspaceHead').evaluate(node => ({
         height: node.getBoundingClientRect().height, width: node.clientWidth, scroll: node.scrollWidth,
         children: [...node.querySelector('.chatTitleLine').children].map(child => ({
@@ -419,6 +427,22 @@ const root = path.resolve(__dirname, '../../../management_portal/static');
         await page.locator('.portalWorkspaceHead').screenshot({path: path.join(process.env.FAMILY_CHAT_SCREENSHOTS, `header-notices-${width}.png`)});
       }
     }
+    await page.evaluate(() => {
+      window.noticeBeforeUpdate = document.querySelector('[data-workspace-notice]');
+      window.updatedNotice = '连接已中断，正在重试。\n错误详情：<network unavailable>';
+      panel.workspace.setStatus(updatedNotice);
+    });
+    await page.waitForFunction(() => !noticeBeforeUpdate.hasAttribute('title'));
+    const updatedNotice = page.locator('[data-workspace-notice]');
+    assert.equal(await updatedNotice.evaluate(node => node === noticeBeforeUpdate), true, 'updates reuse the notice button');
+    await updatedNotice.click();
+    await updatedNotice.click();
+    const updatedToast = page.locator('[data-portal-toast-key="chat-header-notice"]');
+    assert.equal(await updatedToast.count(), 1, 'repeated clicks reuse the same toast');
+    assert.equal(await updatedToast.locator('.portalToastMessage').textContent(),
+      await page.evaluate(() => updatedNotice), 'click uses the latest full text and preserves newlines');
+    assert.equal(await updatedToast.locator('.portalToastMessage *').count(), 0, 'notice details stay plain text');
+    await updatedToast.locator('.portalToastClose').click();
     await page.locator('.is-header-icon [data-session-restart-dismiss]').last().click();
     assert.equal(await page.evaluate(() => headerProgress.element.hidden), true);
     await proxy.locator('button').click();
