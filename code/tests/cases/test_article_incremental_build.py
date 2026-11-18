@@ -4,18 +4,18 @@ import time
 
 import pytest
 
-from management_portal import article_build, article_build_results, article_toolchain
+from management_portal import article_build, article_toolchain
 
 
 @pytest.fixture
 def build(tmp_path, monkeypatch):
     # Exercise the build owner without registering or modifying live resources.
     value = article_build._ArticleBuild.__new__(article_build._ArticleBuild)
-    value.article_id = "article_111111111111"
-    value.article_root = tmp_path / "source"
-    value.article_root.mkdir()
+    value.build_id = "article_111111111111"
+    value.source_root = tmp_path / "source"
+    value.source_root.mkdir()
     value.primary_file = "main.tex"
-    value.source = value.article_root / value.primary_file
+    value.source = value.source_root / value.primary_file
     value.source.write_text(
         "\\documentclass{article}\n\\begin{document}Original text.\\end{document}\n"
     )
@@ -36,7 +36,7 @@ def build(tmp_path, monkeypatch):
     value.reports = []
     value.previous = {}
     value._report = lambda status, **kwargs: value.reports.append({"status": status, **kwargs})
-    monkeypatch.setattr(article_build_results, "load_article_build_report", lambda *a, **kw: value.previous)
+    value.load_report = lambda: value.previous
     return value
 
 

@@ -5,10 +5,10 @@ from pathlib import Path
 from urllib.parse import parse_qs
 
 from management_portal import (
-    http_auth, http_documents, http_request_body, http_responses, permission_system, repo_workspace_ai,
+    http_auth, http_documents, http_files, http_request_body, http_responses, permission_system, repo_workspace_ai,
     repo_workspace_auto_commit, repo_workspace_checkout, repo_workspace_descriptions, repo_workspace_files,
     repo_workspace_git, repo_workspace_history, repo_workspace_network, repo_workspace_operations,
-    repo_workspace_overview, repo_workspace_statistics, web_resources,
+    repo_workspace_overview, repo_workspace_statistics, repo_workspace_latex, web_resources,
 )
 from management_portal.http_routes import ROUTE_NOT_FOUND
 from management_portal.resources import get_resource_service
@@ -45,7 +45,7 @@ class RepoHttp:
     def workspace_get(self, request, parsed, route_actor, params):
         repo_id = params['repo_id']
         action = params.get('action', '')
-        if not re.fullmatch('repo_[0-9a-f]{12}', repo_id) or action not in {'', 'tree', 'stats', 'file', 'search', 'commits', 'commit', 'blame', 'diff', 'credentials'}:
+        if not re.fullmatch('repo_[0-9a-f]{12}', repo_id) or action not in {'', 'tree', 'stats', 'file', 'search', 'commits', 'commit', 'blame', 'diff', 'credentials', 'latex', 'latex-pdf'}:
             return ROUTE_NOT_FOUND
         qs = parse_qs(parsed.query)
         actor = route_actor
@@ -55,6 +55,15 @@ class RepoHttp:
                 self.require_write(repo_id, actor)
             if not action:
                 result = repo_workspace_overview.repo_overview(repo_id)
+            elif action in {'latex', 'latex-pdf'}:
+                path = str((qs.get('path') or [''])[0])
+                compiler = str((qs.get('compiler') or [''])[0])
+                if action == 'latex-pdf':
+                    from management_common.file_retention import cache_file
+                    pdf = repo_workspace_latex.repo_latex_pdf(repo_id, path, compiler=compiler)
+                    with cache_file(pdf.parent, group='article', owner_id=repo_id):
+                        return http_files._serve_media_file(request, pdf, 'application/pdf')
+                result = repo_workspace_latex.repo_latex_status(repo_id, path, compiler=compiler)
             elif action == 'tree':
                 result = repo_workspace_files.list_repo_tree(repo_id, str((qs.get('path') or [''])[0]))
             elif action == 'stats':
@@ -118,14 +127,23 @@ class RepoHttp:
         action = params["action"]
         if not re.fullmatch(r"repo_[0-9a-f]{12}", repo_id) or action not in {
             "file", "entry", "move", "commit", "auto-commit", "branch",
-            "sync", "discard", "credentials",
+            "sync", "discard", "credentials", "latex",
         }:
             return ROUTE_NOT_FOUND
         payload = self.read_json(request)
         actor = route_actor
         try:
             self.require_write(repo_id, actor)
-            if action == 'file':
+            if action == 'latex':
+                if type(payload.get('from_scratch', False)) is not bool:
+                    raise ValueError('from_scratch must be boolean')
+                result = repo_workspace_latex.compile_repo_latex(
+                    repo_id, str(payload.get('path') or ''),
+                    compiler=str(payload.get('compiler') or ''),
+                    from_scratch=payload.get('from_scratch', False),
+                )
+                return self.respond(request, 200, result)
+            elif action == 'file':
                 result = repo_workspace_files.write_repo_file(repo_id, str(payload.get('path') or ''), str(payload.get('content') or ''), expected_hash=str(payload.get('expected_hash') or ''))
                 status = 200
             elif action == 'entry':
@@ -183,6 +201,8 @@ class RepoHttp:
             return self.respond(request, 422, {'error': str(exc)})
         except repo_workspace_ai.CommitMessageGenerationError as exc:
             return self.respond(request, 502, {'error': str(exc)})
+        except repo_workspace_latex.RepoLatexError as exc:
+            return self.respond(request, 422, {'error': str(exc), 'report': exc.report})
         except Exception as exc:
             return self.exception_response(request, exc)
 

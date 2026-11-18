@@ -452,7 +452,7 @@
   const {
     destroyFileFinderPopover, renderWorkspace, workspaceCapability,
   } = repoModule("PortalRepoWorkspaceShell").createShell({
-    applyRenderedFilters, elements, esc, markdown, objectOf, projectIds, renderBranchesView,
+    applyRenderedFilters, elements, esc, getJson, postJson, markdown, objectOf, projectIds, renderBranchesView,
     renderChangesView, renderCodeView, renderCommitsView, renderRepoBoard, renderSettingsView,
     scheduleRepositoryStatistics, showToast, state, statusSummary, uiIcon, updateModeControls,
   });

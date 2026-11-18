@@ -1,0 +1,57 @@
+.portalRepositoryPanel {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--surface, #fff);
+  color: var(--text, #202634);
+}
+.portalRepositoryPanel [hidden] { display: none !important; }
+.repositoryPanelToolbar {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex: 0 0 auto;
+  min-height: 38px;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--border, #d8dee8);
+}
+.repositoryPanelToolbar strong { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; }
+.repositoryPanelStatus { margin: 0; padding: 7px 12px; font-size: 12px; color: var(--muted, #667085); flex: 0 0 auto; overflow-wrap: anywhere; }
+.repositoryPanelStatus.is-error { color: var(--danger, #b42318); }
+.repositoryPanelBody { flex: 1; min-height: 0; min-width: 0; overflow: auto; }
+.repositoryPanelHint { margin: 0; padding: 12px; font-size: 12px; color: var(--muted, #667085); line-height: 1.6; list-style: none; }
+.repositoryFileTree, .repositoryFileTree ul { margin: 0; padding: 0; list-style: none; }
+.repositoryFileTree ul { padding-left: 16px; }
+.repositoryFileRow { border: 0; border-radius: 0; width: 100%; display: flex; align-items: center; gap: 6px; background: transparent; color: inherit; padding: 6px 8px; text-align: left; cursor: pointer; font: inherit; font-size: 13px; }
+.repositoryFileRow .repositoryTreeArrow { width: 10px; flex: 0 0 10px; color: var(--muted, #667085); }
+.repositoryFileRow [data-portal-icon] { flex: 0 0 16px; width: 16px; height: 16px; }
+.repositoryFileName { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.repositoryFileRow small { font-size: 10px; color: var(--muted, #667085); }
+.repositoryFileRow:hover, .repositoryFileRow.is-selected, .repositorySearchResult:hover, .repositoryChangeRow:hover { background: var(--surface-hover, #edf2ff); }
+.portalRepositoryPanel button:focus-visible, .portalRepositoryPanel input:focus-visible, .portalRepositoryPanel select:focus-visible { outline: 2px solid var(--accent, #4565cf); outline-offset: -2px; }
+.repositorySearchForm { display: flex; gap: 6px; padding: 10px; }
+.repositorySearchForm input, .repositoryLatexToolbar input, .repositoryLatexToolbar select { border: 1px solid var(--border, #d8dee8); border-radius: 5px; padding: 6px 8px; background: var(--surface, #fff); color: inherit; font: inherit; font-size: 12px; min-width: 0; }
+.repositorySearchForm input { width: 0; flex: 1; }
+.repositorySearchResult { display: block; width: 100%; border: 0; padding: 8px 12px; background: transparent; color: inherit; text-align: left; cursor: pointer; }
+.repositorySearchResult strong, .repositoryChangeRow strong { display: block; font-size: 13px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; }
+.repositorySearchResult small, .repositoryChangeRow small { display: block; color: var(--muted, #667085); font-size: 11px; overflow: hidden; text-overflow: ellipsis; }
+.repositoryChangeRow { display: flex; align-items: center; }
+.repositoryChangeDiff { border: 0; padding: 8px 10px; display: flex; gap: 8px; min-width: 0; flex: 1; align-items: center; text-align: left; background: transparent; color: inherit; cursor: pointer; }
+.repositoryChangeDiff > span:last-child { min-width: 0; white-space: nowrap; }
+.repositoryChangeCode { font: 12px ui-monospace, monospace; color: var(--accent, #4565cf); min-width: 20px; }
+.repositoryLatexToolbar { display: flex; flex-wrap: wrap; align-items: end; gap: 6px; padding: 8px; border-bottom: 1px solid var(--border, #d8dee8); }
+.repositoryLatexToolbar label { display: flex; flex-direction: column; gap: 4px; flex: 1 1 150px; min-width: 0; font-size: 11px; color: var(--muted, #667085); }
+.repositoryLatexToolbar label input { width: 100%; box-sizing: border-box; }
+.repositoryPreviewBody { display: flex; flex-direction: column; overflow: hidden; }
+.repositoryMarkdown { flex: 1; min-height: 0; overflow: auto; padding: 20px; overflow-wrap: anywhere; }
+.repositoryMarkdown img { max-width: 100%; height: auto; }
+.repositoryMarkdown pre { overflow: auto; }
+.repositoryPdfHost { flex: 1; min-height: 0; overflow: hidden; }
+.repositoryPdfHost > div { width: 100%; height: 100%; }
+.repositoryCompileLog { max-height: 32%; flex: 0 1 auto; overflow: auto; border-top: 1px solid var(--border, #d8dee8); font-size: 12px; }
+.repositoryCompileLog summary { cursor: pointer; padding: 8px 12px; }
+.repositoryCompileLog pre { margin: 0; padding: 0 12px 12px; white-space: pre-wrap; overflow-wrap: anywhere; }

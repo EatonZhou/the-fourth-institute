@@ -1,0 +1,59 @@
+.portalSourceEditor {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
+  background: var(--panel, #fff);
+  color: var(--text, #1f2937);
+}
+.portalSourceEditor [hidden] { display: none !important; }
+.portalSourceEditor button {
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+.portalSourceEditor button:disabled { opacity: .5; cursor: default; }
+.portalSourceEditor button:focus-visible { outline: 2px solid var(--accent, #4165c4); outline-offset: -2px; }
+.portalSourceEditorTabs {
+  display: flex;
+  align-items: stretch;
+  flex: 0 0 auto;
+  overflow-x: auto;
+  border-bottom: 1px solid var(--border, #d5dce4);
+  background: var(--panel-2, #f4f6f8);
+  min-height: 34px;
+}
+.portalSourceEditorTab { display: flex; flex: 0 0 auto; border-right: 1px solid var(--border, #d5dce4); }
+.portalSourceEditorTab button { border: 0; background: transparent; padding: 6px 9px; font-size: 12px; }
+.portalSourceEditorTab [role="tab"] { max-width: 240px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.portalSourceEditorTab [aria-selected="true"] { background: var(--panel, #fff); box-shadow: inset 0 2px var(--accent, #4165c4); }
+.portalSourceEditorTab [data-source-action="close-tab"] { padding: 4px 8px; }
+.portalSourceEditorToolbar, .portalSourceEditorCompareActions, .portalSourceEditorBanner {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 5px;
+  flex: 0 0 auto;
+  padding: 5px 8px;
+  font-size: 12px;
+  border-bottom: 1px solid var(--border, #d5dce4);
+}
+.portalSourceEditorToolbar button, .portalSourceEditorCompareActions button, .portalSourceEditorBanner button {
+  padding: 3px 7px;
+  border: 1px solid var(--border, #d5dce4);
+  border-radius: 4px;
+  background: var(--panel, #fff);
+}
+.portalSourceEditorToolbar button:hover:not(:disabled), .portalSourceEditorTab button:hover { background: var(--panel-2, #eef2f8); }
+.portalSourceEditorPath { min-width: 60px; flex: 1 1 100px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.portalSourceEditorStatus { color: var(--muted, #68758a); white-space: nowrap; }
+.portalSourceEditorBanner { background: var(--panel-2, #f4f6f8); border-left: 3px solid var(--accent, #4165c4); overflow-wrap: anywhere; }
+.portalSourceEditorBanner > span { flex: 1 1 200px; }
+.portalSourceEditorBody { display: flex; flex-direction: column; flex: 1 1 0; min-width: 0; min-height: 0; overflow: hidden; }
+.portalSourceEditorEmpty { margin: auto; padding: 30px; text-align: center; color: var(--muted, #68758a); }
+.portalSourceEditorDocument, .portalSourceEditorComparison { flex: 1 1 0; min-width: 0; min-height: 0; overflow: hidden; }
+.portalSourceEditorComparison { display: flex; flex-direction: column; }
+.portalSourceEditorCompareActions > span { flex: 1 1 180px; }
+.portalSourceEditorDiff { flex: 1 1 0; min-width: 0; min-height: 0; overflow: hidden; }

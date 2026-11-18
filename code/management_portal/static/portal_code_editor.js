@@ -44,6 +44,7 @@
       jsonl: "json",
       jsx: "javascript",
       latex: "latex",
+      ltx: "latex",
       md: "markdown",
       mdx: "markdown",
       py: "python",
@@ -232,7 +233,8 @@
     const selectionInfo = () => {
       const selection = editor.getSelection?.();
       if (!selection) return null;
-      const text = String(model.getValueInRange(selection) || "").trim();
+      const rawText = String(model.getValueInRange(selection) || "");
+      const text = rawText.trim();
       if (!text) return null;
       const startPosition = selection.getStartPosition?.() || {};
       const endPosition = selection.getEndPosition?.() || {};
@@ -257,8 +259,11 @@
         : rootRect;
       return {
         text,
+        rawText,
         lineStart,
         lineEnd,
+        columnStart: Number(selection.startColumn || startPosition.column || 1),
+        columnEnd: Number(selection.endColumn || endPosition.column || 1),
         rect,
         source: "editor",
       };
@@ -270,7 +275,20 @@
       disposables.push(editor.onDidChangeCursorSelection(event => options.onSelectionChange(selectionInfo(), event)));
     }
     if (typeof options.onSave === "function") {
-      editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => options.onSave(editor.getValue()));
+      // An editor action scopes the binding to this instance. A global dynamic
+      // command can otherwise route Ctrl+S to the most recently mounted tab.
+      disposables.push(editor.addAction({
+        id: "portal.codeEditor.save", label: window.PortalI18n.t("保存"),
+        keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS],
+        precondition: "editorTextFocus", run: () => options.onSave(editor.getValue()),
+      }));
+    }
+    for (const action of options.actions || []) {
+      if (!action?.id || typeof action.run !== "function") continue;
+      disposables.push(editor.addAction({
+        ...action,
+        run: () => action.run({ value: editor.getValue(), selection: selectionInfo() }),
+      }));
     }
     const themeObserver = new MutationObserver(() => monaco.editor.setTheme(themeName()));
     themeObserver.observe(document.documentElement, {
@@ -286,6 +304,19 @@
         model.setValue(String(value ?? ""));
         editor.setScrollTop(0);
         editor.setScrollLeft(0);
+      },
+      updateValue(value) {
+        const view = editor.saveViewState();
+        model.setValue(String(value ?? ""));
+        if (view) editor.restoreViewState(view);
+      },
+      viewState: () => editor.saveViewState(),
+      restoreViewState: state => { if (state) editor.restoreViewState(state); },
+      setReadOnly: value => editor.updateOptions({ readOnly: value === true }),
+      layout: () => editor.layout(),
+      revealRange(range) {
+        editor.setSelection(range);
+        editor.revealRangeInCenterIfOutsideViewport(range);
       },
       clearSelection() {
         const selection = editor.getSelection?.();
@@ -327,6 +358,7 @@
   }
 
   window.PortalCodeEditor = Object.freeze({
+    languageForPath,
     splitDiffFiles,
     loadMonaco,
     mount,

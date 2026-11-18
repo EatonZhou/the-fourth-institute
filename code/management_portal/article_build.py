@@ -1,5 +1,7 @@
-"""Building an article's PDF with latexmk: one build per article, stopping a build, and
-the controlled build environment.
+"""Shared latexmk execution and the Article identity/settings/report adapter.
+
+LatexBuild accepts an explicit source tree and output/report owners. Article and
+Repo previews use the same command, incremental outputs and diagnostics.
 """
 from __future__ import annotations
 
@@ -10,7 +12,7 @@ import tempfile
 import threading
 import time
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 from management_common import process_runtime
 from management_common.clock import utc_now_iso
@@ -161,45 +163,45 @@ def compile_article_pdf(
     return build.run(timeout_seconds)
 
 
-class _ArticleBuild:
-    """One latexmk build of an article's primary file, and the build reports it leaves.
+class LatexBuild:
+    """Shared latexmk execution with source, cache and reporting owned by its caller.
 
     Each report is saved as the build goes: running, then success/warning,
     error (preflight, no PDF, timeout) or stopped.
     """
 
-    def __init__(self, article_id: str, *, build_root: str | Path | None, from_scratch: bool) -> None:
-        self.article_id = article_id
-        self.build_root = build_root
+    def __init__(
+        self, *, build_id: str, source_root: Path, settings: dict[str, Any],
+        output: Path, cache_root: Path, from_scratch: bool = False,
+        load_report: Callable[[], dict[str, Any]],
+        save_report: Callable[[dict[str, Any]], dict[str, Any]],
+    ) -> None:
+        self.build_id = build_id
+        self.source_root = source_root.resolve()
+        self.output = output
+        self.cache_root = cache_root
+        self.load_report = load_report
+        self.save_report = save_report
         self.from_scratch = from_scratch
         self.rerun_failed_build = False
-        _record, _root_item, self.article_root = article_registry._article_source_context(
-            article_id
-        )
-        self.settings = article_settings.load_article_settings(
-            article_id, build_root=build_root
-        )
+        self.settings = settings
         self.primary_file = article_tex._safe_relative_path(stripped_text(self.settings.get("primary_file")))
         self.compiler = stripped_text(self.settings.get("compiler")).casefold()
         self.compiler_config = article_toolchain.SUPPORTED_LATEX_COMPILERS.get(self.compiler)
         if self.compiler_config is None:
             raise ValueError(f"unsupported LaTeX compiler: {self.compiler}")
-        self.source = (self.article_root / self.primary_file).resolve(strict=False)
+        self.source = (self.source_root / self.primary_file).resolve(strict=False)
         try:
-            self.source.relative_to(self.article_root)
+            self.source.relative_to(self.source_root)
         except ValueError as exc:
-            raise ValueError("article primary file escapes the article root") from exc
-        if not self.article_root.is_dir() or not self.source.is_file():
+            raise ValueError("LaTeX primary file escapes the source root") from exc
+        if not self.source_root.is_dir() or not self.source.is_file():
             raise FileNotFoundError(self.source)
         if self.source.suffix.casefold() != ".tex":
             raise ValueError("only LaTeX (.tex) articles can be compiled to PDF")
 
     def check_preflight(self) -> None:
-        self.preflight = article_build_profile.article_build_preflight(
-            self.article_id,
-            build_root=self.build_root,
-            settings=self.settings,
-        )
+        self.preflight = self.inspect_preflight()
         if self.preflight["status"] != "blocked":
             return
         diagnostics = [
@@ -212,8 +214,7 @@ class _ArticleBuild:
             }
             for item in self.preflight["issues"]
         ]
-        article_build_results._save_article_build_report(
-            self.article_id,
+        self.save_report(
             {
                 "status": "error",
                 "started_at": utc_now_iso(),
@@ -230,23 +231,25 @@ class _ArticleBuild:
                 "preflight": self.preflight,
                 "environment_profile": self.settings["environment_profile"],
             },
-            build_root=self.build_root,
         )
         raise RuntimeError(
             "LaTeX build preflight failed\n"
             + "\n".join(item["message"] for item in diagnostics)
         )
 
+    def inspect_preflight(self) -> dict[str, Any]:
+        return article_build_profile.inspect_article_build_profile(
+            self.source_root, primary_file=self.primary_file, compiler=self.compiler,
+        )
+
     def run(self, timeout_seconds: int) -> dict[str, Any]:
         self.compile_mode = stripped_text(self.settings.get("compile_mode")).casefold() or "normal"
         if self.compile_mode not in article_settings.ARTICLE_COMPILE_MODES:
             raise ValueError(f"unsupported compile mode: {self.compile_mode}")
-        self.output = article_build_results.article_build_pdf_path(self.article_id, build_root=self.build_root)
-        self.cache_root = article_build_results.article_build_cache_path(self.article_id, build_root=self.build_root)
         self.compile_root = self.cache_root / self.compile_mode
         self.started_at = utc_now_iso()
         self.started = time.monotonic()
-        _begin_article_build(self.article_id)
+        _begin_article_build(self.build_id)
         try:
             completed, log, diagnostics, synctex_available = self._compile(timeout_seconds)
         except ArticleCompilationStopped as exc:
@@ -277,7 +280,7 @@ class _ArticleBuild:
                 f"{output_text[-8000:]}"
             ) from exc
         finally:
-            _finish_article_build(self.article_id)
+            _finish_article_build(self.build_id)
         has_diagnostics = bool(diagnostics) or completed.returncode != 0
         report = self._report(
             "warning" if has_diagnostics else "success",
@@ -305,7 +308,7 @@ class _ArticleBuild:
 
     def _compile(self, timeout_seconds: int) -> tuple[subprocess.CompletedProcess[str], str, list[dict[str, Any]], bool]:
         from management_common.file_retention import cache_file
-        with cache_file(self.cache_root, group='article', owner_id=self.article_id), cache_file(self.output, group='article', owner_id=self.article_id):
+        with cache_file(self.cache_root, group='article', owner_id=self.build_id), cache_file(self.output, group='article', owner_id=self.build_id):
             return self._compile_owned_cache(timeout_seconds)
 
     def _compile_owned_cache(self, timeout_seconds: int) -> tuple[subprocess.CompletedProcess[str], str, list[dict[str, Any]], bool]:
@@ -319,7 +322,7 @@ class _ArticleBuild:
             # latexmk tracks manuscript files only: after a failed run it answers
             # "Nothing to do" until one of them changes, even when the TeX
             # installation has since gained the missing package or font.
-            previous = article_build_results.load_article_build_report(self.article_id, build_root=self.build_root)
+            previous = self.load_report()
             self.rerun_failed_build = (previous.get("status") in {"error", "stopped"}
                                        or previous.get("return_code") not in (None, 0))
         self.compile_root.mkdir(parents=True, exist_ok=True)
@@ -340,11 +343,11 @@ class _ArticleBuild:
         # generated diagnostic PDF from an old file left by a failed command.
         previous_pdf = pdf.stat() if pdf.is_file() else None
         completed = _run_article_build_command(
-            self.article_id,
+            self.build_id,
             self._command(compile_target),
-            cwd=self.article_root,
+            cwd=self.source_root,
             timeout_seconds=timeout_seconds,
-            env=_controlled_article_build_environment(self.article_root),
+            env=self.environment(),
         )
         log = str(completed.stdout or "")
         final_log_path = self.compile_root / f"{self.source.stem}.log"
@@ -369,7 +372,7 @@ class _ArticleBuild:
                 environment_profile=self.settings["environment_profile"],
             )
             raise RuntimeError(f"LaTeX compilation failed\n{log[-12000:]}")
-        temporary_pdf = output.parent / f".{self.article_id}.pdf.tmp"
+        temporary_pdf = output.with_suffix(".pdf.tmp")
         shutil.copyfile(pdf, temporary_pdf)
         os.replace(temporary_pdf, output)
         synctex_available = any(
@@ -384,7 +387,7 @@ class _ArticleBuild:
     def _compile_target(self) -> str:
         """The file latexmk compiles: the primary file, or in draft mode a wrapper that inputs it."""
         if self.compile_mode != "draft":
-            return self.primary_file
+            return "./" + self.primary_file
         draft_wrapper = self.compile_root / "portal-draft.tex"
         content = (
             "\\PassOptionsToPackage{draft}{graphicx}\n"
@@ -404,10 +407,13 @@ class _ArticleBuild:
             "-synctex=1",
             "-interaction=nonstopmode",
             "-file-line-error",
+            # Keep relative .bib/.bst paths anchored at the manuscript, including
+            # ../ references; modern BibTeX resolves included aux paths correctly.
+            "-bibtexfudge-",
         ]
         if self.rerun_failed_build:
             command.append("-g")
-        project_latexmkrc = self.article_root / ".latexmkrc"
+        project_latexmkrc = self.source_root / ".latexmkrc"
         if settings["use_project_latexmkrc"] and project_latexmkrc.is_file():
             command.extend(["-r", str(project_latexmkrc)])
         engine_flags: list[str] = []
@@ -415,6 +421,8 @@ class _ArticleBuild:
             engine_flags.append("-halt-on-error")
         if settings["shell_escape"]:
             engine_flags.append("-shell-escape")
+        else:
+            engine_flags.append("-no-shell-escape")
         if engine_flags:
             engine = article_toolchain._tex_which(self.compiler) or self.compiler
             command.append(
@@ -435,8 +443,7 @@ class _ArticleBuild:
         self, status: str, *, return_code: int | None, diagnostics: list[dict[str, Any]], log: str,
         finished: bool = True, **details: Any,
     ) -> dict[str, Any]:
-        return article_build_results._save_article_build_report(
-            self.article_id,
+        return self.save_report(
             {
                 "status": status,
                 "started_at": self.started_at,
@@ -451,5 +458,33 @@ class _ArticleBuild:
                 "log": log,
                 **details,
             },
-            build_root=self.build_root,
         )
+
+    def environment(self) -> dict[str, str]:
+        environment = _controlled_article_build_environment(self.source_root)
+        # BibTeX stays in the source directory but writes its .bbl/.blg beside
+        # the absolute aux path. Permit only this output root under TeX's
+        # paranoid write policy; do not relax openout_any for the whole process.
+        environment["TEXMFOUTPUT"] = str(self.compile_root)
+        environment["openout_any"] = "p"
+        return environment
+
+
+class _ArticleBuild(LatexBuild):
+    """Resolve Article identity/settings and retain the Article report contract."""
+
+    def __init__(self, article_id: str, *, build_root: str | Path | None, from_scratch: bool) -> None:
+        self.article_id = article_id
+        _record, _root_item, source_root = article_registry._article_source_context(article_id)
+        super().__init__(
+            build_id=article_id, source_root=source_root,
+            settings=article_settings.load_article_settings(article_id, build_root=build_root),
+            output=article_build_results.article_build_pdf_path(article_id, build_root=build_root),
+            cache_root=article_build_results.article_build_cache_path(article_id, build_root=build_root),
+            from_scratch=from_scratch,
+            load_report=lambda: article_build_results.load_article_build_report(article_id, build_root=build_root),
+            save_report=lambda report: article_build_results._save_article_build_report(article_id, report, build_root=build_root),
+        )
+
+    def inspect_preflight(self) -> dict[str, Any]:
+        return {**super().inspect_preflight(), "id": self.article_id}

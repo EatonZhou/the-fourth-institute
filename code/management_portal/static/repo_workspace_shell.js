@@ -7,7 +7,7 @@
   // and context actions, the Workbench it mounts, the file preview panel and
   // the file finder popover; renderWorkspace draws the active tab into it.
   const DEPENDENCIES = Object.freeze([
-    "applyRenderedFilters", "elements", "esc", "markdown", "objectOf", "projectIds", "renderBranchesView",
+    "applyRenderedFilters", "elements", "esc", "getJson", "postJson", "markdown", "objectOf", "projectIds", "renderBranchesView",
     "renderChangesView", "renderCodeView", "renderCommitsView", "renderRepoBoard", "renderSettingsView",
     "scheduleRepositoryStatistics", "showToast", "state", "statusSummary", "uiIcon", "updateModeControls",
   ]);
@@ -16,7 +16,7 @@
     const missing = DEPENDENCIES.filter(name => dependencies?.[name] === undefined);
     if (missing.length) throw new Error(`PortalRepoWorkspaceShell is missing: ${missing.join(", ")}`);
     const {
-      applyRenderedFilters, elements, esc, markdown, objectOf, projectIds, renderBranchesView,
+      applyRenderedFilters, elements, esc, getJson, postJson, markdown, objectOf, projectIds, renderBranchesView,
       renderChangesView, renderCodeView, renderCommitsView, renderRepoBoard, renderSettingsView,
       scheduleRepositoryStatistics, showToast, state, statusSummary, uiIcon, updateModeControls,
     } = dependencies;
@@ -134,6 +134,7 @@
       const changes = Number(state.overview?.status?.changes?.length || 0);
       const definitions = [
         ["code", "代码", uiIcon("code"), ""],
+        ["develop", "开发工作台", uiIcon("code"), ""],
         ["changes", "Changes", uiIcon("changes"), changes ? String(changes) : ""],
         ["commits", "Commits", uiIcon("history"), ""],
         ["branches", "Branches", uiIcon("branch"), String(state.overview?.branch_count || "")],
@@ -141,7 +142,7 @@
       ];
       return window.PortalI18n.html`<div class="repoWorkspaceNav">
       <nav class="repoTabs" role="tablist" aria-label="Repo workspace">
-        ${definitions.filter(([key]) => key === "code" || workspaceCapability("git")).map(([key, label, icon, count]) => window.PortalI18n.html`
+        ${definitions.filter(([key]) => ["code", "develop"].includes(key) || workspaceCapability("git")).map(([key, label, icon, count]) => window.PortalI18n.html`
           <button class="repoTab ${state.activeTab === key ? "active" : ""}" type="button" role="tab" data-repo-tab="${key}" aria-selected="${state.activeTab === key ? "true" : "false"}" tabindex="${state.activeTab === key ? "0" : "-1"}">
             ${icon}<span>${esc(window.PortalI18n.t(label))}</span>${count ? window.PortalI18n.html`<small>${esc(count)}</small>` : ""}
           </button>
@@ -168,6 +169,7 @@
       updateModeControls();
       const content = {
         code: renderCodeView,
+        develop: () => '<div data-repo-development></div>',
         changes: renderChangesView,
         commits: renderCommitsView,
         branches: renderBranchesView,
@@ -179,6 +181,16 @@
         ${workspaceTabs()}
       </header>
       <div class="repoWorkspaceBody">${content}</div>`;
+      if (state.activeTab === "develop") {
+        const developmentRepoId = state.selectedId;
+        window.PortalRepoDevelopment.mount({
+          root: elements.workspace.querySelector("[data-repo-development]"),
+          repoId: state.selectedId, overview: state.overview, api: { get: getJson, post: postJson },
+          renderMarkdown: (content, path) => window.MD.render(content, { basePath: path, repoId: developmentRepoId }),
+          onError: error => showToast(error.message || error, "error"),
+          onOpenChanges: () => elements.workspace.querySelector('[data-repo-tab="changes"]')?.click(),
+        });
+      }
       mountRepoWorkbench();
       mountRepoFilePreview();
       bindFileFinderPopover();

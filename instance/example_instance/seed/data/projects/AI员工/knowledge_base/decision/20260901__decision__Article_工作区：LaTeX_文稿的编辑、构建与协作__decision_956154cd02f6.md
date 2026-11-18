@@ -4,12 +4,12 @@ type: decision
 project: AI员工
 created_at: '2026-09-01'
 version:
-  number: 49
+  number: 50
   created_at: "2026-09-01"
   created_by:
     user: ""
     agent: ""
-  updated_at: "2026-11-18T15:55:40Z"
+  updated_at: "2026-11-18T17:07:56Z"
   updated_by:
     user: ""
     agent: "resident_62dbdb2288fb"
@@ -184,6 +184,8 @@ Article 按登记 Project 的当前权限方案放置。预检展示项目祖先
 ## 构建 PDF
 
 **contributor 点击编译后，服务用 `latexmk` 编译主文稿，把 PDF 和日志写入构建缓存；同一个 Article 同一时间只允许一次编译。**
+
+LaTeX 命令、进程执行、日志解析和增量判断由共享构建器持有；Article 适配负责文稿身份、设置、主文件和报告位置，Repo 适配可以提供隔离源码副本及独立输出缓存。二者不互相登记资源，Article 的停止、草稿模式、诊断与 SyncTeX 合同保持在 Article 适配内。BibTeX 在所选主文件目录解析相对引用，辅助输出限定到本次构建目录，不因父目录参考文献放宽全局写权限。
 
 1. **设置。** 设置面板保存以下选项，格式为 `tfi.article-build-settings.v3`，不支持的取值会被拒绝：
    - 编译器：`pdflatex`、`xelatex` 或 `lualatex`；

@@ -4,15 +4,15 @@ type: decision
 project: AI员工
 created_at: '2026-09-01'
 version:
-  number: 35
+  number: 37
   created_at: "2026-09-01"
   created_by:
     user: ""
     agent: ""
-  updated_at: "2026-11-04T09:59:31Z"
+  updated_at: "2026-11-18T17:06:28Z"
   updated_by:
     user: ""
-    agent: "resident_dbcd3920b7cc"
+    agent: "resident_62dbdb2288fb"
 importance: 9
 metaness: 2
 ai_generated: false
@@ -106,13 +106,14 @@ Repo 也可以明确登记为不附带 Git 工作副本的导出源码树：它�
 
 ## Repo Workspace
 
-Workspace 按概览声明的能力呈现操作。Git 来源顶部是三条紧凑的工具带：Repo 身份和全局操作、五个标签页、当前分支与文件操作。空间足够时每条保持一行，不够时才换行，可用操作保持可见。
+Workspace 按概览声明的能力呈现操作。Git 来源顶部是三条紧凑的工具带：Repo 身份和全局操作、工作视图标签页、当前分支与文件操作。空间足够时每条保持一行，不够时才换行，可用操作保持可见。
 
-导出源码只显示 Code 浏览、目录与文件导航、README、文件预览和内容根。Git 专有标签、分支切换、提交、同步、History、Blame 及新建、编辑、删除入口隐藏，相关快捷键不发出请求。旧链接若指定 Git 专有标签，页面先取得概览能力，再回到 Code，继续按原目录或文件浏览。界面隐藏不能代替后端拒绝。
+导出源码提供 Code 浏览和开发工作台的只读编辑、目录、Markdown 预览与聊天；有 contributor 权限者还可以在隔离缓存中编译 LaTeX，源码仍为只读。Git 专有标签、分支切换、提交、同步、History、Blame 及新建、编辑、删除入口隐藏，相关快捷键不发出请求。旧链接若指定 Git 专有标签，页面先取得概览能力，再回到 Code，继续按原目录或文件浏览。界面隐藏不能代替后端拒绝。
 
 | 标签 | 内容 |
 | --- | --- |
 | Code | 文件树、文件查找、README 与概览、文本或 Markdown 预览、编辑入口 |
+| 开发工作台 | 可分组、拖动和恢复布局的文件导航、常驻源码编辑、Markdown/LaTeX 预览与 Chat Workspace |
 | Changes | 改动文件列表（已暂存、未暂存、未跟踪、冲突）、diff、提交说明和“Commit”按钮 |
 | Commits | 分页的提交列表，可以按版本、标题、作者、SHA 筛选；提交详情和其中的改动 |
 | Branches | 当前分支、其他分支、标签和上游分支；可以新建或切换分支 |
@@ -125,6 +126,26 @@ Workspace 按概览声明的能力呈现操作。Git 来源顶部是三条紧凑
 - 保存远端、推送策略或 SSH 私钥引用失败时，显示错误并恢复提交前的控件可用状态；保留未提交的表单值，用户可以直接修改或重试，无需刷新页面。
 - 这些设置保存成功后，如果回执中的 `index_projection.status` 为 `unconfirmed`，页面同时显示保存成功和搜索索引尚未确认更新的提示，说明搜索结果可能暂时显示旧信息、无需重复保存；索引等待失败不会把已经完成的保存显示为失败。
 
+## 开发工作台
+
+开发工作台在 Repo 身份下组合正式 Panel Package，遵循 decision_538e155e1102。文件树、文件名搜索、源代码管理、源码编辑、预览和聊天各自拥有 DOM、样式、运行状态与公开接口；Workbench 管分组、拖放、显隐、尺寸及布局持久化。默认左侧为导航工具标签组，中间为代码与预览标签组，右侧为聊天。用户可以将任意面板拖到另一侧或下方，也可以合并回标签组。入口按钮聚焦面板现有位置，不重置布局。
+
+宿主只将 Repo 的文件、差异、编译和聊天服务接到面板公开回调。编辑文档由 source-editor 单独持有，不在宿主保存第二份可编辑状态。每个文件标签保留自己的编辑实例、选区、撤销历史与阅读位置；面板移动和切换 Repo 浏览标签不销毁缓冲区。打开文件、视图位置和未保存草稿按用户与 Repo 范围随 Workbench 状态恢复，不跨 Repo 混用。源码保存仍是显式操作（按钮或 Ctrl/Cmd+S）。
+
+保存始终携带读取时的 expected_hash，并直接采用写入接口在同一 checkout 锁内返回的内容与摘要。请求期间继续输入的内容保持未保存。外部文件检查在工作台可见时定时、窗口重新聚焦及手动刷新时执行：无草稿文档更新到磁盘版本；有草稿则保留本地内容，标记冲突并提供磁盘与本地的 Monaco 差异比较。用户可以接受磁盘版本，或在比较后按最新已确认摘要保存本地版本；再次发生并发变化仍返回冲突。源代码管理面板查看 Git patch 与这种未保存冲突比较是两个公开操作，均不提交或丢弃文件。
+
+源码选区通过“加入聊天”操作加入现有共享 Chat Workspace 草稿，引用包含 Repo ID、工程目录、分支、文件路径、基准 hash、脏状态、行列范围及所选原文。添加引用只展开或聚焦聊天，不自动发送消息；实际发送继续走资源讨论的 Resident 创建、身份与权限流程。AI 对仓库的修改由相同的文件刷新与冲突规则反映到编辑器和 Git 列表。
+
+### Markdown 与 LaTeX 预览
+
+Markdown 预览即时显示当前编辑草稿；相对图片和内部文件链接按 Markdown 文件所在目录解析为同一 Repo 的稳定文件地址，内部文件点击回到编辑器。显示预览不会保存或编译。
+
+LaTeX 预览有明确的主文件输入、编译器选择和编译动作。打开包含章节的 tex 文件时可指定真正的主文件；用户手动选定的主文件在切换章节时保留。编译前等待全部源码草稿保存完成，存在冲突或保存失败则不发起编译。编译器留空时从主文件 TeX program 提示推断，缺省 pdflatex。界面区分保存、编译和 PDF 加载，显示编译日志；旧的异步结果不得覆盖另一个文件或已销毁面板。
+
+Repo 与 Article 使用同一个 LaTeX 构建实现：调用方分别提供源目录、主文件、构建目录和报告持久化，不为 Repo 注册 Article。Repo 缓存按 Repo、内容根、主文件和编译器隔离，源码副本只复制变化的普通文件，不跟随符号链接；工作目录为主文件所在目录，图片、章节及 BibTeX 引用保持相对路径含义。辅助文件与生成 PDF 留在缓存，用户 checkout 不写编译产物。保留增量构建依赖，不变的稿件不强制重建；显式 from_scratch 清理构建缓存。构建不执行项目 rc、不启用 shell-escape，BibTeX 输出只授权到本次构建目录。
+
+构建失败保留上次有效 PDF，并返回本次错误日志；可读 PDF 与本次编译成功分别表示。预览读取缓存与 PDF 需要 viewer，触发编译需要 contributor，导出源码同样可用隔离编译而不获得文件写入或 Git 能力。PDF 地址按主文件稳定，前端附 compiled_at 版本以确保新产物替换旧预览。未编译时显示空态；缓存状态读取不触发构建。
+
 ## 登记、发现和打开 Repo
 
 **两类来源都通过 `RegisterResource` 正式登记。注册窗口明确选择 Git 仓库或导出源码，不根据目录是否含 `.git` 猜测来源。Repo 领域拥有身份匹配、来源类型及内容根；调用者不直接写登记表。**
@@ -133,7 +154,7 @@ Workspace 按概览声明的能力呈现操作。Git 来源顶部是三条紧凑
 2. 登记必须明确所属 Project；公共内容在 `project_ids` 中单独给出 `@public`。已作为 Article 登记的文稿目录不能再登记为 Repo。两类来源均按目录与路径协议 decision_4aa13bc21e8e 记录实际目录归属；显式登记与扫描登记不作创建方式分类。注销 Repo 时清理它拥有的 checkout 及范围内嵌套登记，目录外的独立资源和未登记邻居不受影响；不能以外部路径、历史 adopted 分类或 Workspace 绑定推断文件保留。仅解除 Resident 的使用关系应解除 Workspace 绑定，不注销资源。
 3. 对 Git 来源，checkout 的路径、Git 目录（`git_common_dir`）或身份远端与某个已有 Repo 相同时，加入该 Repo；同时对上两个 Repo 时拒绝登记；都对不上的新代码库获得新的 Repo ID。单个 checkout 失效时，只要还存在有效副本，Repo ID 与登记继续保留；全部 checkout 均已失效时，自动核对按生命周期合同注销 Repo；注销与后台文件清理分别遵循 decision_4aa13bc21e8e 的归属边界，不按扫描或显式登记方式推断文件保留。检查无法确认有效性时保留登记并报告错误；生命周期规则见 decision_36f46b395d8e。
 4. Git Repo 的设置修改使用 `UpdateResource`，`operation` 取以下三种之一：`set_remote`（远端名称、地址和推送地址）、`set_policy`（推送开关）、`set_ssh_key`（SSH 私钥引用）。
-5. 两类来源均通过 `UnregisterResource` 撤销登记，只删除登记并加入自动登记的忽略列表；磁盘内容保持不变。
+5. 两类来源均通过 `UnregisterResource` 注销。服务按 decision_4aa13bc21e8e 在注销事务中注销资源身份及其范围内的嵌套登记和绑定，并持久保存所属内容目录的清理任务；目录外的独立资源和未登记邻居不受影响。登记注销与后台文件清理分别返回状态；清理失败保留任务并重试，不恢复登记。自动登记按规范目录位置保存忽略记录，已注销或待清理的资源不会被扫描重新登记。
 
 ## 迁移后恢复丢失的登记
 
@@ -248,6 +269,8 @@ Repo 页面、资源地址跳转及其配套 HTTP API 接受已登录 User 或 P
 | `GET /api/repos/{repo_id}/workspace/commit?sha=` | 提交详情 |
 | `GET /api/repos/{repo_id}/workspace/blame?path=` | 逐行归属 |
 | `GET /api/repos/{repo_id}/workspace/diff?path=` | 工作区改动 |
+| `GET /api/repos/{repo_id}/workspace/latex?path=&compiler=` | 读取主文件的缓存报告；未编译为 idle |
+| `GET /api/repos/{repo_id}/workspace/latex-pdf?path=&compiler=` | 读取缓存 PDF，支持媒体范围请求 |
 | `GET /api/repos/{repo_id}/workspace/credentials` | 当前用户的凭据列表（脱敏） |
 
 **修改**
@@ -256,6 +279,7 @@ Repo 页面、资源地址跳转及其配套 HTTP API 接受已登录 User 或 P
 | --- | --- |
 | `POST /api/repos/descriptions/generate` | 为缺少简介的 Repo 批量生成简介 |
 | `POST /api/repos/{repo_id}/workspace/file` | 保存文件，可带 `expected_hash` |
+| `POST /api/repos/{repo_id}/workspace/latex` | 以 path、可选 compiler / from_scratch 同步编译；成功返回报告，编译错误 422 带 report，配置/路径 400，资源 404，并发 409 |
 | `POST /api/repos/{repo_id}/workspace/entry` | 新建或删除文件、目录 |
 | `POST /api/repos/{repo_id}/workspace/move` | 移动或重命名 |
 | `POST /api/repos/{repo_id}/workspace/commit` | 手工提交 |

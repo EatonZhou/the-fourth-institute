@@ -33,7 +33,7 @@
       updateModeControls();
       const sequence = ++state.workspaceSequence;
       const current = queryState();
-      state.activeTab = ["code", "changes", "commits", "branches", "settings"].includes(tab || current.tab)
+      state.activeTab = ["code", "develop", "changes", "commits", "branches", "settings"].includes(tab || current.tab)
         ? (tab || current.tab)
         : "code";
       state.file = null;
@@ -68,7 +68,7 @@
         const overview = await getJson(base);
         if (!currentWorkspace()) return;
         state.overview = overview;
-        if (!workspaceCapability("git") && state.activeTab !== "code") {
+        if (!workspaceCapability("git") && !["code", "develop"].includes(state.activeTab)) {
           state.activeTab = "code";
           writeQuery({ tab: "code" });
         }
@@ -213,8 +213,8 @@
     }
 
     async function selectTab(tab, { historyMode = "push" } = {}) {
-      if (!["code", "changes", "commits", "branches", "settings"].includes(tab)) return;
-      if (tab !== "code" && !workspaceCapability("git")) return;
+      if (!["code", "develop", "changes", "commits", "branches", "settings"].includes(tab)) return;
+      if (!["code", "develop"].includes(tab) && !workspaceCapability("git")) return;
       const previousTab = state.activeTab;
       state.activeTab = tab;
       writeQuery(
