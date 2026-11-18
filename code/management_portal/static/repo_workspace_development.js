@@ -46,16 +46,16 @@
       const chat = panel("chat");
       await ensureChat();
       if (disposed || (automatic && revision !== selectionRevision)) return;
-      const selection = reference.selection || {};
+      const selection = reference.selection;
       const context = { repo_id: repoId, root: overview.checkout_path,
         branch: overview.current_branch || "", file: reference };
       const text = JSON.stringify(context, null, 2);
       const automaticItem = chat.workspace.attachments().find(item => item.id === automaticReferenceId);
       const replaceId = automatic || automaticItem?.reference_text === text ? automaticReferenceId : "";
       const item = chat.workspace.addReference({
-        title: reference.selection ? `${reference.path} L${selection.start_line}–${selection.end_line}` : reference.path,
+        title: selection ? `${reference.path} L${selection.start_line}–${selection.end_line}` : reference.path,
         path: `${repoId}/file/${reference.path}`, text,
-        line_start: selection.start_line || 1, line_end: selection.end_line || selection.start_line || 1,
+        ...(selection ? { line_start: selection.start_line, line_end: selection.end_line } : {}),
       }, { focus: !automatic, replaceId });
       if (automatic) automaticReferenceId = item?.id || "";
       else {

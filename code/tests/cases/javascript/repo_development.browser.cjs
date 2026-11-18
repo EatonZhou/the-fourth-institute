@@ -166,6 +166,19 @@ const html = `<!doctype html><html><head><meta charset="utf-8">${styles.map(n=>`
     const wholeFile=await page.evaluate(()=>JSON.parse(session.workbench.getPanel('chat').workspace.attachments().at(-1).reference_text).file);
     assert.equal(wholeFile.path,'main.js');assert.equal(wholeFile.dirty,true);assert.equal(wholeFile.hash,'v1');
     assert.match(wholeFile.content,/local draft/);assert.equal(wholeFile.selection,null);
+    const fileReference=await page.evaluate(()=>{
+      const workspace=session.workbench.getPanel('chat').workspace;
+      const item=workspace.attachments().at(-1);
+      const token=workspace.element('input').querySelector(`[data-portal-composer-attachment-token="${CSS.escape(item.id)}"]`);
+      return {label:token.textContent,title:token.title,payload:workspace.payload().text,
+        editorContent:session.workbench.getPanel('source').activeDocument().content};
+    });
+    assert.equal(fileReference.label,'main.js','whole-file chip must not claim to reference only L1');
+    assert.equal(fileReference.title,'repo_123456789abc/file/main.js');
+    assert.equal(wholeFile.content,fileReference.editorContent,'the complete unsaved buffer is referenced');
+    assert.match(fileReference.payload,/\[引用: repo_123456789abc\/file\/main\.js\]/);
+    assert.match(fileReference.payload,/\[引用: repo_123456789abc\/file\/main\.js#L1\]/,
+      'the separate line selection keeps its line range');
     assert.match(await page.evaluate(()=>session.workbench.getPanel('chat').workspace.payload().text),/请解释这段代码/);
     assert.equal(await page.evaluate(()=>writes.length),0,'auto selection and file shortcut do not send or save');
     await page.evaluate(()=>{window.retained=session.workbench.getPanel('source');document.getElementById('host').replaceChildren();});

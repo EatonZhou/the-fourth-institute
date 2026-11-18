@@ -4,12 +4,12 @@ type: decision
 project: AI员工
 created_at: '2026-09-01'
 version:
-  number: 41
+  number: 42
   created_at: "2026-09-01"
   created_by:
     user: ""
     agent: ""
-  updated_at: "2026-11-18T18:16:50Z"
+  updated_at: "2026-11-18T18:24:11Z"
   updated_by:
     user: ""
     agent: "resident_62dbdb2288fb"
@@ -136,7 +136,7 @@ Workspace 按概览声明的能力呈现操作。Git 来源顶部是三条紧凑
 
 鼠标完成源码选区（松开主键且存在非空选区）后，源码编辑组件通过 onSelectionCommitted 公开回调把该次选区快照交给 Repo 宿主；恢复选区、程序定位与拖动中的中间选区不触发自动引用。宿主把最新选区加入共享 Chat Workspace 草稿，不切换面板、不移动编辑焦点、不发送消息。再次选择替换前一个自动引用；用户显式加入的引用和已有输入保留。聊天未就绪时等待同一次初始化，过期选区不覆盖新的选择。
 
-工具栏“选区加入聊天”、右键“加入聊天”或 Ctrl+Alt+Enter（macOS 为 ⌘⌥Enter）仍可显式加入并聚焦聊天；对当前自动引用执行显式加入会将其保留为普通引用。“文件加入聊天”及 Ctrl+Alt+Shift+Enter（macOS 为 ⌘⌥⇧Enter）通过 onFileReference 加入当前聚焦文件的完整缓冲，包括未保存修改，不要求先选中或保存。选区引用包含 Repo ID、工程目录、分支、文件路径、基准 hash、脏状态、行列范围及所选原文；整份文件引用包含相同版本信息与完整 content，selection 为空。宿主不读取 Monaco 私有状态。
+工具栏“选区加入聊天”、右键“加入聊天”或 Ctrl+Alt+Enter（macOS 为 ⌘⌥Enter）仍可显式加入并聚焦聊天；对当前自动引用执行显式加入会将其保留为普通引用。“文件加入聊天”及 Ctrl+Alt+Shift+Enter（macOS 为 ⌘⌥⇧Enter）通过 onFileReference 加入当前聚焦文件的完整缓冲，包括未保存修改，不要求先选中或保存。选区引用包含 Repo ID、工程目录、分支、文件路径、基准 hash、脏状态、行列范围及所选原文；整份文件引用包含相同版本信息与完整 content，selection 为空。引用的行号元数据只描述真实选区；整份文件引用不设置行号范围，Composer 的标签与发送文本均显示文件路径，不附加 L1 等选区标记。宿主不读取 Monaco 私有状态。
 
 Chat Workspace 的 addReference(reference, {focus, replaceId}) 由 Composer 统一管理引用、输入标记与撤销；focus=false 时不改变当前焦点或浏览器选区，replaceId 仅替换尚在草稿中的指定引用，撤销恢复替换前的内容，其他上传附件仍保留最新状态。Repo 页面必须加载共享 PortalFileLinks，供聊天历史与发送后消息的文件、图片引用解析使用。实际发送继续走资源讨论的 Resident 创建、身份与权限流程。AI 对仓库的修改由相同的文件刷新与冲突规则反映到编辑器和 Git 列表。
 
