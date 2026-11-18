@@ -105,6 +105,14 @@ body.portalBoardShell .portalBrand {
   white-space: nowrap;
 }
 
+.portalBrandLogo {
+  display: block;
+  width: auto;
+  height: 36px;
+  border-radius: 5px;
+  background-color: light-dark(transparent, #f8f5fa);
+}
+
 body.portalBoardShell .portalUser {
   display: flex;
   flex: 0 0 auto;
@@ -584,10 +592,17 @@ html[data-portal-viewport="mobile"] body.portalBoardShell .portalBrand {
   font-size: 0;
 }
 
-html[data-portal-viewport="mobile"] body.portalBoardShell .portalBrand::after {
+html[data-portal-viewport="mobile"] body.portalBoardShell .portalBrand[data-portal-site-compact-name]::after {
   content: attr(data-portal-site-compact-name);
   font-size: 14px;
   font-weight: 750;
+}
+
+html[data-portal-viewport="mobile"] body.portalBoardShell .portalBrandLogo {
+  width: 28px;
+  height: 34px;
+  object-fit: cover;
+  object-position: 4% center;
 }
 
 html[data-portal-viewport="mobile"] body.portalBoardShell .portalModuleLink {

@@ -45,6 +45,18 @@
   }
   function apply(root = document) {
     root.querySelectorAll("[data-portal-site-name]").forEach(element => {
+      if (name() === "The Fourth Institute" && element.classList.contains("portalBrand")) {
+        if (!element.querySelector(".portalBrandLogo")) {
+          const logo = document.createElement("img");
+          logo.className = "portalBrandLogo";
+          logo.src = "/static/assets/the-fourth-institute-logo.png";
+          logo.alt = name();
+          logo.width = 2032;
+          logo.height = 774;
+          element.replaceChildren(logo);
+        }
+        return;
+      }
       element.textContent = name();
       element.dataset.portalSiteCompactName = compactName();
     });
