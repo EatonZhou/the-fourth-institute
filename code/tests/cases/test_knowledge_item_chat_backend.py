@@ -214,7 +214,7 @@ def test_repo_chat_resolves_directory_for_read_prepare_and_send(backend, tmp_pat
     from management_portal.http_knowledge import KnowledgeHttp
     chat, service = backend
     repo_id = "repo_123456789abc"
-    directory = tmp_path / "checkout"
+    directory = tmp_path / "wt-sim53"
     directory.mkdir()
     calls = []
 
@@ -228,7 +228,7 @@ def test_repo_chat_resolves_directory_for_read_prepare_and_send(backend, tmp_pat
             assert address == repo_id and actor == "alice"
             return {"resource_type": "repo", "target_kind": "repo", "exists": True,
                     "checkout_path": str(directory),
-                    "record": {"resource_id": repo_id, "resource_type": "repo", "title": "Repository"}}
+                    "record": {"resource_id": repo_id, "resource_type": "repo", "name": "ArchExplorer"}}
 
         def read_content(self, *args, **kwargs):
             raise AssertionError("repo root 没有字节内容")
@@ -238,6 +238,13 @@ def test_repo_chat_resolves_directory_for_read_prepare_and_send(backend, tmp_pat
     monkeypatch.setattr(discussion_residents, "resolve_resource_lineage",
                         lambda **kw: "lineage_knowledge01" if kw["resource_type"] == "repo" else None)
     monkeypatch.setattr(discussion_residents.resident_handoff, "lookup_invocation_resident", lambda **_: {})
+    prepared = []
+
+    def ensure(**kwargs):
+        prepared.append(kwargs)
+        return {"resident_id": "resident_knowledge01", "lineage_id": "lineage_knowledge01"}
+
+    monkeypatch.setattr(discussion_residents.resident_handoff, "ensure_invocation_resident", ensure)
     checked = []
     host = SimpleNamespace(
         session_actor=lambda request: "alice",
@@ -251,6 +258,7 @@ def test_repo_chat_resolves_directory_for_read_prepare_and_send(backend, tmp_pat
     assert state["chat_workspace"]["composer"]["can_send"]
     assert checked == [(repo_id, "alice")]
     assert state["item"]["path"] == str(directory)
+    assert state["item"]["title"] == "ArchExplorer"
     assert repo_id in state["initial_context"]["context_text"]
     assert service.invocations == [], "reading must not create or send a conversation"
     assert chat.prepare("alice", repo_id, "", purpose="settings")["resident_id"]
@@ -260,6 +268,7 @@ def test_repo_chat_resolves_directory_for_read_prepare_and_send(backend, tmp_pat
     context = service.invocations[0][0]["arguments"]["message"]["content_parts"][1]["context"]["context_text"]
     assert str(directory) in context and repo_id in context
     assert calls == [(repo_id, "alice")] * 4
+    assert [entry["title"] for entry in prepared] == ["ArchExplorer"] * 3
     resources.denied = True
     for operation in [lambda: chat.get_state("alice", repo_id),
                       lambda: chat.prepare("alice", repo_id, "inspect"),

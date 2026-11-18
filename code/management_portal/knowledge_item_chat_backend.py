@@ -33,7 +33,7 @@ def _public_item(
             record.get("type") or record.get("resource_type") or ""
         ),
         "created_at": str(record.get("created_at") or ""),
-        "title": str(record.get("title") or path.stem),
+        "title": str(record.get("title") or record.get("name") or path.stem),
         "mtime": int(path.stat().st_mtime),
     }
 

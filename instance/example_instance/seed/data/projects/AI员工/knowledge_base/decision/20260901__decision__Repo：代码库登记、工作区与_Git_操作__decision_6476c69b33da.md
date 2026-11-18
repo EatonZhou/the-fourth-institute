@@ -4,12 +4,12 @@ type: decision
 project: AI员工
 created_at: '2026-09-01'
 version:
-  number: 38
+  number: 39
   created_at: "2026-09-01"
   created_by:
     user: ""
     agent: ""
-  updated_at: "2026-11-18T17:32:38Z"
+  updated_at: "2026-11-18T17:45:54Z"
   updated_by:
     user: ""
     agent: "resident_62dbdb2288fb"
@@ -136,7 +136,7 @@ Workspace 按概览声明的能力呈现操作。Git 来源顶部是三条紧凑
 
 源码选区通过“加入聊天”操作加入现有共享 Chat Workspace 草稿，引用包含 Repo ID、工程目录、分支、文件路径、基准 hash、脏状态、行列范围及所选原文。添加引用只展开或聚焦聊天，不自动发送消息；实际发送继续走资源讨论的 Resident 创建、身份与权限流程。AI 对仓库的修改由相同的文件刷新与冲突规则反映到编辑器和 Git 列表。
 
-Repo 根是目录资源。聊天读取、准备和发送均通过 ResourceService 按当前 actor 解析 Repo 的身份与内容根，再以仓库元信息构造上下文，不对根目录调用字节正文读取。首次读取仅返回可用聊天状态，不创建 Resident 或发送消息；显式设置和发送继续沿既有资源讨论流程。每次调用重新检查资源权限，权限撤销不能通过已有聊天身份绕过。
+Repo 根是目录资源。新建讨论 Resident 的默认名称优先采用资源 title，其次采用仓库登记 name，仅在两者均缺失时回退到目录名；已有 Resident 的名称不会在打开聊天时自动覆盖。聊天读取、准备和发送均通过 ResourceService 按当前 actor 解析 Repo 的身份与内容根，再以仓库元信息构造上下文，不对根目录调用字节正文读取。首次读取仅返回可用聊天状态，不创建 Resident 或发送消息；显式设置和发送继续沿既有资源讨论流程。每次调用重新检查资源权限，权限撤销不能通过已有聊天身份绕过。
 
 ### Markdown 与 LaTeX 预览
 
