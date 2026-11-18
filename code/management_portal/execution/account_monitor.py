@@ -213,7 +213,9 @@ class AccountMonitor:
                     native = self.accounts.runtime_catalog(account.account_id)
                     catalog = {"fresh": True, "checked_at": time.time(),
                                "models": [m if isinstance(m, str) else m["id"] for m in native.get("models", []) if isinstance(m, str) or m.get("enabled", True)],
-                               "efforts_by_model": native.get("efforts_by_model", {}), "default_model": native.get("default_model", "")}
+                               "efforts_by_model": native.get("efforts_by_model", {}), "default_model": native.get("default_model", ""),
+                               "default_efforts_by_model": native.get("default_efforts_by_model", {}),
+                               "default_reasoning_effort": native.get("default_reasoning_effort", "")}
                 except Exception as error:
                     # Catalog exceptions may contain credentials or URLs. Keep
                     # the failure observable without retaining their raw text.

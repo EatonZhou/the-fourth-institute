@@ -10,7 +10,6 @@ from typing import Any, Mapping
 
 from management_portal.execution.provider_catalog import AGENT_PROVIDERS
 
-from management_portal.execution.account_migration_types import migration_type
 from management_portal.execution.account_selection import available
 
 MIGRATION_RESERVE_PERCENT = 5.0
@@ -74,7 +73,7 @@ def fallback_account(accounts: list[dict[str, Any]], provider: str, route: str,
                      tried: list[str], *, reserve: bool = False, priority: list[str] | None = None,
                      append_subscriptions: bool = False, model: str = "", effort: str = "",
                      priority_only: bool = False, pinned: bool = False) -> dict[str, Any]:
-    from management_portal.execution.account_selection import candidates
+    from management_portal.execution.account_selection import migration_candidates
     source = next((a for a in accounts if a.get("provider") == provider
                    and str(a.get("backend_route_id") or "") == route), {})
     if not source:
@@ -85,7 +84,7 @@ def fallback_account(accounts: list[dict[str, Any]], provider: str, route: str,
         own = quota_candidates(accounts, source, model=model, effort=effort, excluded=excluded)
         return own[0] if own else {}
     if not priority_only:
-        own = candidates(accounts, source, model=model, effort=effort, excluded=excluded,
+        own = migration_candidates(accounts, source, model=model, effort=effort, excluded=excluded,
                          reserve=MIGRATION_RESERVE_PERCENT if reserve else 0)
         if own:
             return own[0]
@@ -123,12 +122,19 @@ def resident_account(record: Mapping[str, Any], accounts: list[dict[str, Any]]) 
                  and str(a.get("backend_route_id") or "") == route), {})
 
 
-def migration_target_options(account: Mapping[str, Any], source_provider: str, source_account: Mapping[str, Any] | None = None) -> dict[str, Any]:
-    """Use the target model when crossing Providers or account kinds."""
+def migration_target_options(account: Mapping[str, Any], source_provider: str,
+                             *, source_settings: Mapping[str, Any] | None) -> dict[str, Any]:
+    """Freeze model/effort in every automatic restart, including same-kind moves."""
+    from management_portal.execution.account_migration_settings import migration_settings
+
     provider = str(account["provider"])
     route = str(account.get("backend_route_id") or "")
-    options = {"target_provider": provider, "target_account": route, "context_strategy": "preserve"}
-    if provider != source_provider or (source_account and migration_type(account)["id"] != migration_type(source_account)["id"]):
-        model, _ = AGENT_PROVIDERS[provider].validate_settings(route, "")
-        options.update(model=model, reasoning_effort="")
-    return options
+    catalog = account.get("selection_catalog") or {}
+    if catalog.get("fresh") is not True:
+        catalog = AGENT_PROVIDERS[provider].catalog(route)
+    settings = source_settings or {}
+    selected = migration_settings(catalog, source_provider=source_provider,
+                                  target_provider=provider, model=str(settings.get("model") or ""),
+                                  effort=str(settings.get("reasoning_effort") or ""))
+    return {"target_provider": provider, "target_account": route,
+            "context_strategy": "preserve", **selected}

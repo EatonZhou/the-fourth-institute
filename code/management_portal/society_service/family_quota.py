@@ -785,7 +785,8 @@ def _ensure_quota_switch(record: dict[str, Any], accounts: list[dict[str, Any]] 
                     state["attempts"] += 1
                     state["tried_accounts"].append(target["account_id"])
                     try:
-                        options = migration_target_options(target, str(account["provider"]), account)
+                        options = migration_target_options(target, str(account["provider"]),
+                                                           source_settings=current.get("execution_settings"))
                     except (KeyError, ValueError):
                         state.update(status="unavailable", switch_reason="migration_failed")
                     else:
@@ -931,10 +932,17 @@ def ensure_role_reserve(record: dict[str, Any], accounts: list[dict[str, Any]] |
                 from .resident_work_recovery import latest_failed_input, recovery_entry
                 failed_id = str(latest_failed_input(current).get("message_id") or "")
                 resume_failed = not resident_execution_work.is_active(current_job) and not bool(recovery_entry(current, failed_id).get("disabled"))
-                payload = {**migration_target_options(target, str(account["provider"]), account), "active_execution_policy": "wait", "resume_failed_input": resume_failed,
-                           "idempotency_key": f"steward-reserve:{resident_id}:{epoch}:{migration['attempts']}"}
-                migration["pending_restart"] = payload
-                migration.update(status="migrating", reason="正在保留上下文并切换可用后端")
+                try:
+                    options = migration_target_options(target, str(account["provider"]),
+                                                       source_settings=current.get("execution_settings"))
+                except (KeyError, ValueError):
+                    migration.update(status="unavailable", switch_reason="migration_failed",
+                                     reason="目标模型或推理设置不可用，原消息和会话已保留")
+                else:
+                    payload = {**options, "active_execution_policy": "wait", "resume_failed_input": resume_failed,
+                               "idempotency_key": f"steward-reserve:{resident_id}:{epoch}:{migration['attempts']}"}
+                    migration["pending_restart"] = payload
+                    migration.update(status="migrating", reason="正在保留上下文并切换可用后端")
         if not payload and released:
             # Keep the window's attempts so the release does not retry
             # migrations; only the waiting state ends.

@@ -392,7 +392,8 @@ def _reconcile_failed_work(residents: list[dict[str, Any]], context: dict[str, A
             # Reserve the migration intent before starting it. A crash retries
             # the same idempotent RestartSession, not a new initialization.
             try:
-                options = migration_target_options(target, provider, resident_account(record, accounts or []))
+                options = migration_target_options(target, provider,
+                                                   source_settings=record.get("execution_settings"))
             except (KeyError, ValueError):
                 if not explicit:
                     raise
@@ -404,6 +405,7 @@ def _reconcile_failed_work(residents: list[dict[str, Any]], context: dict[str, A
             with resident_record_domain.state_lock(resident_id):
                 current = resident_record_domain.find_resident(resident_id)
                 if (not current or _recoverable_input(current) != failed
+                        or current.get("execution_settings") != record.get("execution_settings")
                         or not resident_domain_port.auto_migration_enabled(current)
                         or not _intake_allows_recovery(current)):
                     continue

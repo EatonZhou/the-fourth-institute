@@ -81,10 +81,11 @@ def test_api_types_share_identity_only_with_the_same_api():
 def test_different_api_on_same_harness_uses_its_own_model(monkeypatch):
     from types import SimpleNamespace
     from management_portal.society_service import resident_account_policy as policy
-    monkeypatch.setitem(policy.AGENT_PROVIDERS, 'claude', SimpleNamespace(validate_settings=lambda route, model: ('deepseek-chat', {})))
+    monkeypatch.setitem(policy.AGENT_PROVIDERS, 'claude', SimpleNamespace(catalog=lambda route: {'models':['deepseek-chat'], 'default_model':'deepseek-chat'}))
     source = account('claude', 'subscription')
     target = account('claude', 'deepseek', 'api_profile', api='deepseek_primary')
-    assert policy.migration_target_options(target, 'claude', source)['model'] == 'deepseek-chat'
+    target['selection_catalog'] = {'fresh':True, 'models':['deepseek-chat'], 'default_model':'deepseek-chat'}
+    assert policy.migration_target_options(target, 'claude', source_settings={'model':'claude-haiku-4-5'})['model'] == 'deepseek-chat'
 
 
 from tests.cases.test_family_familize import lineage, charters, resident, graph, ok, future_creation_store
@@ -117,7 +118,7 @@ def test_admission_uses_family_type_order(quota_family, monkeypatch):
     resident_input_queue_domain.commit_resident_intake_state(_record(f.steward), 'open')
     accounts = [account('codex','one', remaining=0), account('claude','claude_one'), account('kimi','kimi_one','service')]
     get_lineage_data_store().database.write(lambda c: c.execute("UPDATE families SET auto_migrate_priority=%s WHERE family_id='fbi_test'", (['kimi:service','claude:subscription_login'],)))
-    monkeypatch.setitem(policy.AGENT_PROVIDERS, 'kimi', SimpleNamespace(validate_settings=lambda route, model: ('kimi-default', '')))
+    accounts[2]['selection_catalog'] = {'fresh':True,'models':['kimi-default'],'default_model':'kimi-default'}
     calls = []
     monkeypatch.setattr(resident_restart_domain, 'restart_resident_session', lambda *a, **k: calls.append(a[2]))
     assert family_quota.ensure_role_reserve(_record(f.steward), accounts)

@@ -196,7 +196,7 @@ def test_recovery_uses_same_candidates_and_never_implicit_cross_backend():
     other = account("other"); other["provider"] = "claude"
     assert fallback_account([source, depleted, other], "codex", "source", []) == {}
     assert fallback_account([source, good, other], "codex", "source", [], model="model") == good
-    assert migration_target_options(good, "codex", source)["context_strategy"] == "preserve"
+    assert migration_target_options(good, "codex", source_settings={"model": "model", "reasoning_effort": "high"})["context_strategy"] == "preserve"
 
 
 def test_fixed_and_bound_sessions_do_not_reselect(monkeypatch):

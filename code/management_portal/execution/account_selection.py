@@ -89,6 +89,31 @@ def candidates(accounts: list[dict], source: Mapping[str, Any], *, model: str = 
     return sorted(eligible, key=rank)
 
 
+def migration_candidates(accounts: list[dict], source: Mapping[str, Any], *, model="", effort="",
+                         excluded=(), reserve=0) -> list[dict]:
+    """Prefer exact same-kind settings, then supported migration fallbacks.
+
+    This is deliberately separate from new-session and pinned-model selection.
+    """
+    from .account_migration_settings import migration_settings
+    exact = candidates(accounts, source, model=model, effort=effort, excluded=excluded, reserve=reserve)
+    chosen = {a["account_id"] for a in exact}
+    fallbacks = []
+    for account in accounts:
+        catalog = account.get("selection_catalog") or {}
+        if account.get("account_id") in chosen or not compatible(account, source) or catalog.get("fresh") is not True:
+            continue
+        try:
+            selected = migration_settings(catalog, source_provider=source.get("provider", ""),
+                                          target_provider=account.get("provider", ""), model=model, effort=effort)
+        except ValueError:
+            continue
+        if candidates([account], source, model=selected["model"], effort=selected["reasoning_effort"],
+                      excluded=excluded, reserve=reserve):
+            fallbacks.append(account)
+    return exact + candidates(fallbacks, source, excluded=excluded, reserve=reserve)
+
+
 def observations() -> list[dict]:
     from .service import get_execution_service
     return list(get_execution_service().accounts().get("accounts") or [])
@@ -139,10 +164,19 @@ def priority_candidates(accounts: list[dict], priority: list[str], *, source=Non
                 continue
             same = source is not None and compatible(account, source)
             catalog = account.get("selection_catalog") or {}
-            target_model = model if same and model else catalog.get("default_model", "")
+            from .account_migration_settings import migration_settings
+            if catalog.get("fresh") is True:
+                try:
+                    selected = migration_settings(catalog, source_provider=(source or {}).get("provider", ""),
+                                                  target_provider=account["provider"], model=model, effort=effort)
+                except ValueError:
+                    continue
+                target_model, target_effort = selected["model"], selected["reasoning_effort"]
+            else:
+                target_model, target_effort = (model, effort) if same else ("", "")
             if reserve > 0 and (not target_model or catalog.get("fresh") is not True):
                 continue
-            if candidates([account], account, model=target_model, effort=effort if same else "",
+            if candidates([account], account, model=target_model, effort=target_effort,
                           excluded=excluded, reserve=reserve):
                 group.append(account)
         if group:
