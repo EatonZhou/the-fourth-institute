@@ -785,7 +785,7 @@
 
     function insertComposerAttachmentRef(input, item, options = {}) {
       if (!input || !item?.id) return "none";
-      input.focus?.();
+      if (options.focus !== false) input.focus?.();
       const node = composerAttachmentRefNode(item, options);
       if (!options.forceDom) {
         try {
@@ -797,7 +797,7 @@
       }
       const spacer = document.createTextNode(" ");
       const selection = window.getSelection?.();
-      let range = selection && selection.rangeCount ? selection.getRangeAt(0) : null;
+      let range = options.focus !== false && selection && selection.rangeCount ? selection.getRangeAt(0) : null;
       if (!range || !input.contains(range.commonAncestorContainer)) {
         range = document.createRange();
         range.selectNodeContents(input);
@@ -808,8 +808,10 @@
       range.insertNode(node);
       range.setStartAfter(spacer);
       range.collapse(true);
-      selection?.removeAllRanges();
-      selection?.addRange(range);
+      if (options.focus !== false) {
+        selection?.removeAllRanges();
+        selection?.addRange(range);
+      }
       input.dispatchEvent?.(new Event("input", { bubbles: true }));
       bindImagePreview(input, options);
       return "manual";

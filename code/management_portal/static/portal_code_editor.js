@@ -274,6 +274,36 @@
     if (typeof options.onSelectionChange === "function" && typeof editor.onDidChangeCursorSelection === "function") {
       disposables.push(editor.onDidChangeCursorSelection(event => options.onSelectionChange(selectionInfo(), event)));
     }
+    if (typeof options.onSelectionCommit === "function") {
+      let selecting = false, changed = false, disposed = false;
+      const start = event => { selecting = event.button === 0; changed = false; };
+      const cancel = () => { selecting = false; changed = false; };
+      const finish = () => {
+        const committed = selecting && changed;
+        cancel();
+        // Read after Monaco has finished handling the pointer release, including
+        // a drag that ends outside the editor. Programmatic selections don't commit.
+        requestAnimationFrame(() => {
+          if (committed && !disposed) {
+            const selection = selectionInfo();
+            if (selection) options.onSelectionCommit(selection);
+          }
+        });
+      };
+      root.addEventListener("pointerdown", start, true);
+      window.addEventListener("pointerup", finish, true);
+      window.addEventListener("pointercancel", cancel);
+      window.addEventListener("blur", cancel);
+      disposables.push(editor.onDidChangeCursorSelection(event => {
+        if (selecting && event.source === "mouse") changed = true;
+      }), { dispose() {
+        disposed = true;
+        root.removeEventListener("pointerdown", start, true);
+        window.removeEventListener("pointerup", finish, true);
+        window.removeEventListener("pointercancel", cancel);
+        window.removeEventListener("blur", cancel);
+      } });
+    }
     if (typeof options.onSave === "function") {
       // An editor action scopes the binding to this instance. A global dynamic
       // command can otherwise route Ctrl+S to the most recently mounted tab.

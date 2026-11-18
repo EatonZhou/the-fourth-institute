@@ -10,8 +10,13 @@ const { portalWorkbenchScripts } = require('./portal_workbench_scripts.cjs');
 const { portalWorkspaceSurfaceScripts } = require('./portal_workspace_surface_scripts.cjs');
 const { chatWorkspaceScripts } = require('./chat_workspace_modules.cjs');
 const routes = JSON.parse(fs.readFileSync(0, 'utf8')).routeScript;
+// Use the page's dependency declaration: omitting this used to break chat image
+// rendering after a send, even while editor-only integration tests passed.
+const repoHtml = fs.readFileSync(path.join(repo, 'management_portal/repo_workspace.html'), 'utf8');
+assert.ok(repoHtml.includes('<script src="/static/portal_file_links.js"></script>'));
+assert.ok(repoHtml.indexOf('portal_file_links.js') < repoHtml.indexOf('data-portal-script-group="chat-workspace"'));
 const scripts = ['portal_state.js', 'portal_page_state.js', 'portal_text.js', 'portal_i18n.js',
-  'portal_ui_primitives.js', 'portal_ui.js', 'portal_overlay.js', 'portal_resource_chips.js',
+  'portal_ui_primitives.js', 'portal_ui.js', 'portal_overlay.js', 'portal_resource_chips.js', 'portal_file_links.js',
   'portal_image_editor.js', 'portal_editor_open_service.js', 'portal_command_registry.js',
   'portal_workbench_context.js', ...portalWorkbenchScripts(), ...portalWorkspaceSurfaceScripts(),
   'portal_preview_contract.js', 'portal_preview_runtime.js', 'portal_pdf_preview.js', 'portal_preview_renderers.js',
@@ -30,6 +35,10 @@ const html = `<!doctype html><html><head><meta charset="utf-8">${styles.map(n=>`
     if (url.pathname === '/fixture.pdf') { res.setHeader('Content-Type','application/pdf'); return res.end(fs.readFileSync(path.join(repo,'tests/cases/fixtures/paper-synthetic-means.pdf'))); }
     if (url.pathname === '/') { res.setHeader('Content-Type','text/html'); return res.end(html); }
     if (url.pathname === '/routes.js') { res.setHeader('Content-Type','text/javascript'); return res.end(routes); }
+    if (url.pathname === '/api/agent-workbench/link-file-raw') {
+      res.setHeader('Content-Type', 'image/png');
+      return res.end(Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII=', 'base64'));
+    }
     const file = path.resolve(staticRoot, '.' + url.pathname.replace(/^\/static/, ''));
     if (!url.pathname.startsWith('/static/') || !file.startsWith(staticRoot + path.sep)) { res.writeHead(404); return res.end(); }
     try { res.setHeader('Content-Type',file.endsWith('.css')?'text/css':'text/javascript'); res.end(fs.readFileSync(file)); }
@@ -45,8 +54,11 @@ const html = `<!doctype html><html><head><meta charset="utf-8">${styles.map(n=>`
     const origin=`http://127.0.0.1:${server.address().port}`;
     await page.route('**/*', route=>route.request().url().startsWith(origin+'/')?route.continue():route.abort());
     await page.goto(origin);
-    await page.evaluate(() => {
+    await page.evaluate(async () => {
       window.notices=[]; window.writes=[];
+      const monaco = await PortalCodeEditor.loadMonaco(), create = monaco.editor.create.bind(monaco.editor);
+      window.editors=[];
+      monaco.editor.create=(...args)=>{const editor=create(...args);editors.push(editor);return editor;};
       window.PortalIdentity={username:()=> 'repo-development-fixture'};
       window.files={ 'main.js':{path:'main.js',content:'const value = 1;\n',hash:'v1',editable:true},
         'README.md':{path:'README.md',content:'# Example\n\n![diagram](fig.png)',hash:'md1',editable:true},
@@ -67,6 +79,7 @@ const html = `<!doctype html><html><head><meta charset="utf-8">${styles.map(n=>`
         },
         post:async (url,data)=>{
           writes.push({url,data});
+          if (window.allowSend && url === '/knowledge/api/item-chat/prepare') return { resident_id: 'resident_fixture' };
           if (url.endsWith('/file')) {
             const f=files[data.path]; if(f.hash!==data.expected_hash) throw Object.assign(new Error('conflict'),{status:409});
             Object.assign(f,{content:data.content,hash:f.hash+'x'}); return {...f};
@@ -114,6 +127,47 @@ const html = `<!doctype html><html><head><meta charset="utf-8">${styles.map(n=>`
     await page.locator('.monaco-editor:visible').first().click();
     await page.keyboard.press('Control+End'); await page.keyboard.type('// local draft');
     assert.equal(await page.evaluate(()=>session.hasDirty()),true);
+    // Mouse selection auto-adds once on release, keeps focus and replaces only
+    // the preceding automatic reference. Explicitly added references stay pinned.
+    const drag = async (start, end) => {
+      await page.evaluate(async()=>{
+        editors[0].revealLine(1, monaco.editor.ScrollType.Immediate);
+        await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+      });
+      const points=await page.evaluate(([start,end])=>{
+        const editor=editors[0],box=editor.getDomNode().getBoundingClientRect();
+        return [start,end].map(column=>{const p=editor.getScrolledVisiblePosition({lineNumber:1,column});return{x:box.left+p.left,y:box.top+p.top+p.height/2};});
+      },[start,end]);
+      await page.evaluate(points=>{
+        window.dragEvidence={points,hits:points.map(p=>document.elementFromPoint(p.x,p.y)?.outerHTML.slice(0,160)),events:[]};
+        editors[0].onDidChangeCursorSelection(event=>dragEvidence.events.push({source:event.source,selection:event.selection}));
+        for(const name of ['pointerdown','mousedown','mouseup'])window.addEventListener(name,event=>dragEvidence.events.push({name,buttons:event.buttons,target:event.target.className}),true);
+      },points);
+      const target = await page.evaluate(p=>{
+        const t=editors[0].getTargetAtClientPoint(p.x,p.y);return {type:t?.type,position:t?.position};
+      }, points[0]);
+      assert.equal(target.type, 6, JSON.stringify({target,points}));
+      await page.mouse.move(points[0].x+1,points[0].y);await page.mouse.down();
+      await page.mouse.move(points[1].x,points[1].y,{steps:8});await page.mouse.up();
+    };
+    await drag(1,6);
+    await page.waitForFunction(()=>session.workbench.getPanel('chat').workspace.attachments().length===2).catch(async error=>{
+      console.error('automatic reference', JSON.stringify(await page.evaluate(()=>({notices,dragEvidence,selection:session.workbench.getPanel('source').activeDocument().selection,
+        editors:editors.map(e=>({value:e.getValue().slice(0,60),position:e.getPosition(),focus:e.hasTextFocus()})),attachmentCount:session.workbench.getPanel('chat').workspace.attachments().length}))));
+      throw error;
+    });
+    assert.equal(await page.evaluate(()=>editors[0].hasTextFocus()),true,'automatic context never steals focus');
+    await drag(7,12);
+    await page.waitForFunction(()=>session.workbench.getPanel('chat').workspace.attachments().some(a=>JSON.parse(a.reference_text).file.selection?.text==='value'));
+    assert.equal(await page.evaluate(()=>session.workbench.getPanel('chat').workspace.attachments().length),2,'automatic reference replaces the old one');
+    assert.equal(await page.evaluate(()=>editors[0].hasTextFocus()),true);
+    await page.keyboard.press('Control+Alt+Shift+Enter');
+    await page.waitForFunction(()=>session.workbench.getPanel('chat').workspace.attachments().length===3);
+    const wholeFile=await page.evaluate(()=>JSON.parse(session.workbench.getPanel('chat').workspace.attachments().at(-1).reference_text).file);
+    assert.equal(wholeFile.path,'main.js');assert.equal(wholeFile.dirty,true);assert.equal(wholeFile.hash,'v1');
+    assert.match(wholeFile.content,/local draft/);assert.equal(wholeFile.selection,null);
+    assert.match(await page.evaluate(()=>session.workbench.getPanel('chat').workspace.payload().text),/请解释这段代码/);
+    assert.equal(await page.evaluate(()=>writes.length),0,'auto selection and file shortcut do not send or save');
     await page.evaluate(()=>{window.retained=session.workbench.getPanel('source');document.getElementById('host').replaceChildren();});
     await page.evaluate(()=>{PortalRepoDevelopment.mount(options); files['main.js']={...files['main.js'],content:'const remote = 2;\n',hash:'v2'};});
     await page.evaluate(()=>session.workbench.getPanel('source').refresh());
@@ -152,6 +206,30 @@ const html = `<!doctype html><html><head><meta charset="utf-8">${styles.map(n=>`
     await page.evaluate(()=>notices.length=0);
     assert.deepEqual(errors,[]);
     assert.deepEqual(await page.evaluate(()=>notices),[]);
+    // Send through the real Resident panel using isolated transport, then render
+    // an image-bearing reply via the same callback that failed on the Repo page.
+    await page.evaluate(async()=>{
+      window.allowSend=true;window.sent=[];
+      const snapshot={messages:[],controls:{can_send:true},queue:{items:[]}};
+      const detail={resident:{resident_id:'resident_fixture',backend:'codex'},
+        chat_workspace:{schema:'portal.chat_workspace.v3',target:{kind:'resident',id:'resident_fixture'},
+          header:{title:'Fixture chat'},messages:[],composer:{can_send:true}}};
+      window.PortalResidentProjection={load:async()=>detail,subscribe:()=>()=>{}};
+      window.PortalResidentRuntimeController=PortalResidentRuntimeController.create({service:{
+        projection:async()=>detail,runtimeSettings:async()=>({settings:{}}),runtimeCatalog:async()=>({}),
+        observeSessionRestart:()=>()=>{},sessionRestartOptions:async()=>({})}});
+      window.PortalInstructionClient={execute:async instruction=>{
+        if(instruction==='ListInputHistory')return{entries:[]};throw new Error(instruction);}};
+      window.PortalResidentProtocol={...PortalResidentProtocol,
+        acquire:()=>({load:async()=>snapshot,snapshot:()=>snapshot,destroy(){}}),
+        sendInput:async(body,options)=>{await options.prepare(body,snapshot);sent.push(body);return{message_id:body.message.message_id};}};
+      const chat=session.workbench.getPanel('chat');session.workbench.focusPanel('chat');
+      await chat.send();
+      chat.workspace.setMessages([{id:'reply',role:'assistant',content:'已收到\n\n[image: /fixture/result.png]'}]);
+    });
+    assert.equal(await page.evaluate(()=>sent.length),1);
+    await page.waitForFunction(()=>[...document.querySelectorAll('.repoDevelopment img')].some(img=>img.src.includes('link-file-raw')&&img.naturalWidth>0));
+    assert.deepEqual(errors,[]);assert.deepEqual(await page.evaluate(()=>notices),[]);
     console.log('Repo Workbench/editor/Markdown/PDF/Chat composition, selection reference, conflict/Git diff and save-before-compile passed');
   } finally {await browser?.close();await new Promise(resolve=>server.close(resolve));}
 })().catch(error=>{console.error(error);process.exitCode=1;});

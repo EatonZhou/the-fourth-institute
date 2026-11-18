@@ -105,7 +105,7 @@
       isLoading() { return this.controller?.isLoading?.() === true; }
       element(name) { return this.els?.[String(name || "")] || null; }
       addFiles(files) { return this.controller?.addFiles?.(files); }
-      addReference(reference) { return this.controller?.addReference?.(reference); }
+      addReference(reference, options) { return this.controller?.addReference?.(reference, options); }
       retryAttachment(id) { return this.controller?.retryAttachment?.(id); }
       attachments() { return this.controller?.attachments?.() || []; }
       messages() { return this.controller?.messages?.() || []; }

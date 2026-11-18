@@ -318,6 +318,25 @@ const uploaded = (id, extra = {}) => ({ upload_id: id, path: `uploads/${id}.png`
       assert.equal(uploads.length, 0);
       assert.equal(workspace.payload().attachments[0].reference_text, 'the quoted lines');
       assert.equal(workspace.addReference({ text: '' }), null, 'an empty passage is not added');
+      const pinned = workspace.addReference({ text: 'explicit reference', title: 'Pinned' });
+      const outside = w.document.createElement('button');
+      w.document.body.append(outside); outside.focus();
+      let focused = false;
+      const focus = inputEl().focus;
+      inputEl().focus = () => { focused = true; };
+      const replaced = workspace.addReference({ text: 'new mouse selection', title: 'Updated notes' }, { replaceId: reference.id, focus: false });
+      assert.equal(replaced.id, reference.id);
+      assert.equal(focused, false);
+      assert.equal(w.document.activeElement, outside);
+      assert.deepEqual(tokens(), [reference.id, pinned.id]);
+      assert.equal(workspace.attachments().length, 2);
+      assert.equal(workspace.payload().attachments[0].reference_text, 'new mouse selection');
+      inputEl().focus = focus;
+      outside.remove();
+      inputEl().dispatchEvent(new w.KeyboardEvent('keydown', { key: 'z', ctrlKey: true, bubbles: true, cancelable: true }));
+      await settle();
+      assert.equal(workspace.attachments()[0].reference_text, 'the quoted lines', 'undo restores the previous automatic reference');
+      assert.equal(workspace.attachments()[1].id, pinned.id);
     }
     {
       // Undo takes back the attachments just added.

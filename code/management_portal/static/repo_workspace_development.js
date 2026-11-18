@@ -17,6 +17,7 @@
     root.append(tools, host);
     const base = `/api/repos/${encodeURIComponent(repoId)}/workspace`;
     let workbench, rail, selectedTool = "files", previewDocument = "", refreshing = null, visible = false, disposed = false;
+    let chatReady, automaticReferenceId = "", selectionRevision = 0;
     const reportError = error => onError?.(error);
     const panel = id => workbench?.getPanel(id);
     const focus = id => { selectedTool = id; workbench?.focusPanel(id); rail?.setActiveView(id); };
@@ -32,20 +33,35 @@
         .catch(reportError).finally(() => { refreshing = null; });
       return refreshing;
     }
-    async function addSelection(reference) {
-      focus("chat");
+    function ensureChat() {
+      if (!chatReady) chatReady = panel("chat").openSurface({ kb_id: repoId }).catch(error => {
+        chatReady = null;
+        throw error;
+      });
+      return chatReady;
+    }
+    async function addReference(reference, { automatic = false } = {}) {
+      const revision = automatic ? ++selectionRevision : selectionRevision;
+      if (!automatic) focus("chat");
       const chat = panel("chat");
-      await chat.openSurface({ kb_id: repoId });
-      if (disposed) return;
+      await ensureChat();
+      if (disposed || (automatic && revision !== selectionRevision)) return;
       const selection = reference.selection || {};
       const context = { repo_id: repoId, root: overview.checkout_path,
         branch: overview.current_branch || "", file: reference };
-      chat.workspace.addReference({
-        title: `${reference.path} L${selection.start_line || 1}–${selection.end_line || selection.start_line || 1}`,
-        path: `${repoId}/file/${reference.path}`, text: JSON.stringify(context, null, 2),
+      const text = JSON.stringify(context, null, 2);
+      const automaticItem = chat.workspace.attachments().find(item => item.id === automaticReferenceId);
+      const replaceId = automatic || automaticItem?.reference_text === text ? automaticReferenceId : "";
+      const item = chat.workspace.addReference({
+        title: reference.selection ? `${reference.path} L${selection.start_line}–${selection.end_line}` : reference.path,
+        path: `${repoId}/file/${reference.path}`, text,
         line_start: selection.start_line || 1, line_end: selection.end_line || selection.start_line || 1,
-      });
-      chat.workspace.focusComposer();
+      }, { focus: !automatic, replaceId });
+      if (automatic) automaticReferenceId = item?.id || "";
+      else {
+        if (replaceId) automaticReferenceId = "";
+        chat.workspace.focusComposer();
+      }
     }
     function preview(document) {
       previewDocument = document.path;
@@ -76,7 +92,7 @@
       }),
       resolveBeforeSettings: target => api.post("/knowledge/api/item-chat/prepare", { kb_id: target.kb_id, purpose: "settings" }),
       initialContext: (_target, detail) => ({ context_text: `${detail.initial_context?.context_text || ""}\nRepo: ${repoId}\n工程目录：${overview.checkout_path || ""}` }),
-      emptyText: t("选中代码后使用“加入聊天”，讨论或修改当前仓库。"), enableLinkPreview: true, onError: reportError,
+      emptyText: t("鼠标选中代码后自动加入聊天；也可将当前文件加入聊天，讨论或修改当前仓库。"), enableLinkPreview: true, onError: reportError,
     };
     const descriptors = [
       { id: "files", type: "repository-files", title: t("文件树"), options: shared },
@@ -89,7 +105,9 @@
           void panel("git")?.refresh?.();
           return result;
         },
-        onSelection: reference => addSelection(reference).catch(reportError),
+        onSelection: reference => addReference(reference).catch(reportError),
+        onSelectionCommitted: reference => addReference(reference, { automatic: true }).catch(reportError),
+        onFileReference: reference => addReference(reference).catch(reportError),
         onChange(document) {
           if (document?.path === previewDocument) {
             Promise.resolve(panel("preview")?.setDocument(document)).catch(reportError);
@@ -122,7 +140,7 @@
         }
       },
     });
-    void panel("chat").openSurface({ kb_id: repoId }).catch(reportError);
+    void ensureChat().catch(reportError);
     const visibility = () => {
       const next = root.isConnected && !root.closest("[hidden]");
       if (next === visible) return;

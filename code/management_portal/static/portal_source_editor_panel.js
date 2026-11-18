@@ -41,6 +41,9 @@
     const chatButton = button("选区加入聊天", "chat");
     chatButton.title = text("选区加入聊天（Ctrl+Alt+Enter / ⌘⌥Enter）");
     chatButton.setAttribute("aria-keyshortcuts", "Control+Alt+Enter Meta+Alt+Enter");
+    const fileChatButton = button("文件加入聊天", "chat-file");
+    fileChatButton.title = text("当前文件加入聊天（Ctrl+Alt+Shift+Enter / ⌘⌥⇧Enter）");
+    fileChatButton.setAttribute("aria-keyshortcuts", "Control+Alt+Shift+Enter Meta+Alt+Shift+Enter");
     toolbar.append(status);
     const banner = element("div", "portalSourceEditorBanner");
     banner.setAttribute("role", "status");
@@ -129,6 +132,8 @@
       previewButton.disabled = !options.onPreview;
       chatButton.hidden = !options.onSelection;
       chatButton.disabled = !!comparison || !selected(doc);
+      fileChatButton.hidden = !options.onFileReference;
+      fileChatButton.disabled = !!comparison || !doc;
       renderBanner();
     }
 
@@ -205,12 +210,22 @@
                 if (doc.path === activePath) chatButton.disabled = !selected(doc);
                 persist();
               },
+              onSelectionCommit: options.onSelectionCommitted ? () => {
+                if (!destroyed && doc.path === activePath && !comparison) {
+                  run(() => addSelection(doc, options.onSelectionCommitted));
+                }
+              } : undefined,
               onSave: () => run(() => saveFile(doc.path)),
               actions: [
                 ...(options.onSelection ? [{ id: "portal.source.addToChat", label: text("加入聊天"),
                   keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyMod.Alt | monaco.KeyCode.Enter],
                   precondition: "editorHasSelection", contextMenuGroupId: "navigation", contextMenuOrder: 1,
                   run: () => addSelection(doc),
+                }] : []),
+                ...(options.onFileReference ? [{ id: "portal.source.addFileToChat", label: text("当前文件加入聊天"),
+                  keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyMod.Alt | monaco.KeyMod.Shift | monaco.KeyCode.Enter],
+                  precondition: "editorTextFocus", contextMenuGroupId: "navigation", contextMenuOrder: 1.1,
+                  run: () => options.onFileReference({ ...describe(doc), selection: null }),
                 }] : []),
                 ...(options.onPreview && previewable(path) ? [{ id: "portal.source.preview", label: text("预览"),
                   contextMenuGroupId: "navigation", contextMenuOrder: 2, run: () => options.onPreview(describe(doc)),
@@ -238,13 +253,13 @@
       return describe(doc);
     }
 
-    function addSelection(doc = active()) {
+    function addSelection(doc = active(), callback = options.onSelection) {
       const reference = describe(doc);
       if (!reference?.selection) return;
       // A reference carries the exact selected text, including whitespace, and
       // its base revision; the host attaches its resource identity.
       const { content, ...selectionReference } = reference;
-      return options.onSelection?.(selectionReference);
+      return callback?.(selectionReference);
     }
 
     function replaceContent(doc, value) {
@@ -446,6 +461,7 @@
       else if (action === "save") run(() => saveFile());
       else if (action === "preview") run(() => options.onPreview?.(describe(doc)));
       else if (action === "chat") run(() => addSelection());
+      else if (action === "chat-file") run(() => options.onFileReference?.({ ...describe(active()), selection: null }));
       else if (action === "compare") run(() => showDiff());
       else if (action === "close-diff") closeComparison();
       else if (action === "use-disk") run(() => resolveComparison(false));

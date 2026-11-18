@@ -312,19 +312,24 @@
       }
     };
     // A passage of a conversation or a preview, quoted into the message.
-    const addReference = (reference) => {
-      const item = reference?.content_type === "text/x-portal-preview-reference"
+    const addReference = (reference, insertOptions = {}) => {
+      let item = reference?.content_type === "text/x-portal-preview-reference"
         ? normalizeComposerAttachment(reference)
         : createConversationSelectionReference(reference);
       if (!item) return null;
+      const replaced = state.attachments.find(entry => entry.id === insertOptions.replaceId);
+      if (replaced) item = { ...item, id: replaced.id };
       const undoFrame = pushComposerUndoSnapshot();
-      if (undoFrame) {
+      if (undoFrame && replaced) undoFrame.replacedReferenceId = replaced.id;
+      if (undoFrame && !replaced) {
         undoFrame.kind = "attachment-insert";
         undoFrame.attachmentIds = [item.id];
       }
-      state.attachments = normalizeComposerAttachments([...state.attachments, item]);
+      state.attachments = normalizeComposerAttachments(replaced
+        ? state.attachments.map(entry => entry.id === replaced.id ? item : entry)
+        : [...state.attachments, item]);
       withoutAttachmentReconcile(() => {
-        insertComposerAttachmentRef(els.input, item, { forceDom: true });
+        if (!replaced) insertComposerAttachmentRef(els.input, item, { forceDom: true, focus: insertOptions.focus });
       });
       renderAttachments({ notify: true });
       markComposerUndoAfterSnapshot(undoFrame);

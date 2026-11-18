@@ -52,6 +52,7 @@ const { chromium } = require(path.join(STATIC, '../test_framework/tau_runtime/no
         'readonly.txt': { path: 'readonly.txt', content: 'Read me', hash: 'four', editable: false },
       };
       window.reads = []; window.writes = []; window.references = []; window.previews = []; window.failures = [];
+      window.committed = []; window.fileReferences = [];
       window.holdSave = false; window.failSave = false;
       window.adapter = {
         scopeKey: 'repo-fixture',
@@ -65,6 +66,8 @@ const { chromium } = require(path.join(STATIC, '../test_framework/tau_runtime/no
           return structuredClone(disk[path]);
         },
         onSelection: reference => references.push(reference), onPreview: doc => previews.push(doc),
+        onSelectionCommitted: reference => committed.push(reference),
+        onFileReference: reference => fileReferences.push(reference),
         onError: error => failures.push(error.message),
       };
       PortalWorkbench.registerPanelPackage({ type: 'source-editor-fixture', version: 1,
@@ -143,6 +146,31 @@ const { chromium } = require(path.join(STATIC, '../test_framework/tau_runtime/no
     assert.equal(await page.evaluate(() => references[1].path), 'src/main.js');
     assert.equal(await page.evaluate(() => references[1].selection.text), 'let');
     assert.equal(await page.evaluate(() => reads.filter(p => p === 'src/main.js').length), 1);
+    assert.equal(await page.evaluate(() => committed.length), 0, 'restore, keyboard and right click do not auto-add');
+    await page.evaluate(() => editors[0].setPosition({ lineNumber: 2, column: 1 }));
+    const dragPoints = await page.evaluate(() => {
+      const editor = editors[0], box = editor.getDomNode().getBoundingClientRect();
+      return [3, 6].map(column => {
+        const p = editor.getScrolledVisiblePosition({ lineNumber: 1, column });
+        return { x: box.left + p.left, y: box.top + p.top + p.height / 2 };
+      });
+    });
+    await page.mouse.move(dragPoints[0].x, dragPoints[0].y); await page.mouse.down();
+    await page.mouse.move(dragPoints[1].x, dragPoints[1].y, { steps: 8 });
+    assert.equal(await page.evaluate(() => committed.length), 0, 'dragging does not emit partial selections');
+    await page.mouse.up();
+    await page.waitForFunction(() => committed.length === 1, null, { timeout: 5000 }).catch(async error => {
+      console.error('mouse selection', await page.evaluate(() => ({ selection: invoke('activeDocument').selection, committed, focus: editors[0].hasTextFocus() })));
+      throw error;
+    });
+    assert.equal(await page.evaluate(() => committed[0].selection.text), 'let');
+    assert.equal(await page.evaluate(() => editors[0].hasTextFocus()), true);
+    await page.keyboard.press('Control+Alt+Shift+Enter');
+    await page.waitForFunction(() => fileReferences.length === 1);
+    assert.equal(await page.evaluate(() => fileReferences[0].content), '  let answer = 42;\nconst other = 1;\n');
+    assert.equal(await page.evaluate(() => fileReferences[0].dirty), true);
+    assert.equal(await page.evaluate(() => fileReferences[0].selection), null);
+    assert.equal(await page.evaluate(() => fileReferences[0].hash), 'one');
     // Changing Workbench placement moves the existing root and editor instance.
     await page.evaluate(() => {
       window.originalRoot = document.querySelector('.portalSourceEditor');

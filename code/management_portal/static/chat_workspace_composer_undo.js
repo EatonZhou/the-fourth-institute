@@ -70,7 +70,7 @@
       return withoutAttachmentReconcile(() => {
         const current = new Map(state.attachments.map(item => [String(item?.id || ""), item]));
         state.attachments = normalizeComposerAttachments((snapshot.attachments || [])
-          .map(item => current.get(String(item?.id || "")) || item));
+          .map(item => item.id === snapshot.replacedReferenceId ? item : current.get(String(item?.id || "")) || item));
         els.input.innerHTML = String(snapshot.inputHtml || "");
         renderAttachments({ notify: true });
         restoreComposerSelection(els.input, snapshot.selection);
