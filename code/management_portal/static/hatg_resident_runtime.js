@@ -128,6 +128,8 @@
       const changed = detail?.changed || {};
       const lineages = Array.isArray(changed.lineage) ? changed.lineage : [];
       if (lineages.includes(lineageId)) return true;
+      if ((state.lineage.nodes || []).some(node => node.hierarchy_reference
+        && node.accessible !== false && lineages.includes(node.home_lineage_id))) return true;
       // Retained historical identities can remain readable after deletion.
       // Their identity notification must revalidate the displayed membership,
       // even when no readable Lineage-domain notification accompanies it.

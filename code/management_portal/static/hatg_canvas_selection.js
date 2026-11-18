@@ -151,7 +151,7 @@
         residentId: nodeResidentId(node),
         lineageResidentId: node.id,
         openDetails: () => openNodeSettingsModal(node),
-        isFamilyFacade: Boolean(familyForFacade(nodeResidentId(node))),
+        isFamilyFacade: Boolean(familyForFacade(nodeResidentId(node)) || node._family_reference),
         title: node.title || nodeResidentId(node),
         trigger: trigger || event?.currentTarget || null,
         event,

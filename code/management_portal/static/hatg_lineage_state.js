@@ -74,8 +74,10 @@
     // revision. Its server fingerprint also participates in invalidation.
     return nextRevision > previousRevision || (
       nextRevision === previousRevision
-      && Boolean(incoming.refresh_signature)
-      && incoming.refresh_signature !== current.refresh_signature
+      && ((Boolean(incoming.refresh_signature)
+        && incoming.refresh_signature !== current.refresh_signature)
+        || (Object.hasOwn(incoming, "_reference_family_signature")
+          && incoming._reference_family_signature !== current._reference_family_signature))
     );
   }
 

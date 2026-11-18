@@ -217,10 +217,10 @@
         return {
           ...node,
           _is_leader: node.id === leaderNodeId,
-          ...(family ? {
+          ...(family || node._family_reference ? {
             _family_facade: true,
-            _family_expanded: familyExpanded(family.roles),
-            _family_tone: familyTone(family.roles),
+            _family_expanded: family ? familyExpanded(family.roles) : false,
+            _family_tone: familyTone(family?.roles || node._family_reference),
           } : {}),
           ...(member ? { _family_member: member } : {}),
         };

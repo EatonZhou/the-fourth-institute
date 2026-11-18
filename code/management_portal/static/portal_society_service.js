@@ -33,10 +33,36 @@
     function loadLineage(lineageId) {
       const id = requiredLineageId(lineageId);
       if (reads.has(id)) return reads.get(id);
-      const read = Promise.resolve().then(() => execute("GetLineage", { lineage_id: id })).then(result => {
+      const read = Promise.resolve().then(() => execute("GetLineage", { lineage_id: id })).then(async result => {
         const lineage = result?.lineage || {};
         if (lineage.revision !== undefined) revisions.set(id, lineage.revision);
-        return lineage;
+        // Project overviews contain references, not the child's Function Blocks.
+        // Resolve only the referenced Resident's public identity, keeping its
+        // Family in its owning Lineage and all reads under the current actor.
+        const references = (lineage.nodes || []).filter(node => node.hierarchy_reference
+          && node.accessible !== false && node.home_lineage_id && node.home_lineage_id !== id);
+        if (!references.length) return lineage;
+        const families = new Map();
+        for (let offset = 0; offset < references.length; offset += 8) {
+          await Promise.all(references.slice(offset, offset + 8).map(async node => {
+            let family = null;
+            try {
+              const { resident } = await execute("GetResident", { resident_id: node.id });
+              if (resident?.resident_id === node.id && resident.lineage_id === node.home_lineage_id
+                && resident.family?.role === "facade" && resident.family.family_id) {
+                family = { family_id: resident.family.family_id, facade: node.id };
+              }
+            } catch { /* A missing child identity must not prevent opening the overview. */ }
+            families.set(node.id, family);
+          }));
+        }
+        return {
+          ...lineage,
+          nodes: lineage.nodes.map(node => families.has(node.id)
+            ? { ...node, _family_reference: families.get(node.id) } : node),
+          // Child Family changes need not change the parent's authored revision.
+          _reference_family_signature: JSON.stringify([...families].sort(([a], [b]) => a.localeCompare(b))),
+        };
       });
       reads.set(id, read);
       const release = () => { if (reads.get(id) === read) reads.delete(id); };
