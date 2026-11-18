@@ -22,7 +22,9 @@ def delete_workspaces(connection, *, workspace_ids=(), paths=(), owner_ids=(), d
 def unregister_workspace(workspace_id, *, connection, actor, authorize):
     store = get_workspace_store()
     store.cleanup.lock(connection)
-    connection.execute(f'LOCK TABLE {store.table} IN SHARE ROW EXCLUSIVE MODE')
+    connection.execute(f'SELECT workspace_id FROM {store.table} '
+                       'WHERE workspace_id=%s AND deleted_at IS NULL FOR UPDATE',
+                       (workspace_id,)).fetchone()
     row = store.rows([workspace_id], connection=connection).get(workspace_id)
     if row is None:
         raise KeyError(workspace_id)

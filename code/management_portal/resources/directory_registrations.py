@@ -211,21 +211,30 @@ def unregister_tree(roots=(), *, connection, actor, workspace_ids=(), owner_ids=
     Workspace identity owns its deletion; Society's binding constraint reacts
     in the same database transaction without an upward Python dependency.
     """
-    from management_common.directory_paths import contains, lexical_path, deletion_roots
+    from management_common.directory_paths import DirectoryComparison, lexical_path, deletion_roots
     from management_common.directory_retention import RetentionStore
     from .workspace_store import get_workspace_store, now
     queue = get_directory_cleanup_store()
     queue.lock(connection)
     workspace = get_workspace_store()
-    connection.execute(f'LOCK TABLE {workspace.table} IN SHARE ROW EXCLUSIVE MODE')
-    rows = connection.execute(f'SELECT * FROM {workspace.table} WHERE deleted_at IS NULL ORDER BY workspace_id FOR UPDATE').fetchall()
+    # The directory queue serializes registration, movement and deletion. Read
+    # the closure without locking unrelated FK targets used by Resident writes.
+    rows = connection.execute(f'SELECT * FROM {workspace.table} WHERE deleted_at IS NULL ORDER BY workspace_id').fetchall()
     registry = get_registry_store()
     roots = {lexical_path(root) for root in roots}
     selected, owners, resource_ids = set(workspace_ids), set(owner_ids), set()
     with registry.writer(*COLLECTIONS, IGNORE_COLLECTION, connection=connection) as writer:
         documents = [(collection, identifier, locations(collection, document))
                      for collection in COLLECTIONS for identifier, document in writer.documents(collection).items()]
-        preserved = tuple(Path(located_path(item['path'])) for _, _, entries in documents
+        # Only this closure decision shares path evidence; subsequent cleanup
+        # decisions retain their own fresh filesystem/instance observations.
+        comparison = DirectoryComparison()
+        paths = {}
+        def directory_path(location):
+            if location not in paths:
+                paths[location] = Path(located_path(location))
+            return paths[location]
+        preserved = tuple(directory_path(item['path']) for _, _, entries in documents
                           for item in entries) if preserve_resources else ()
         explicit_owners = set(owner_ids)
         while True:
@@ -233,23 +242,34 @@ def unregister_tree(roots=(), *, connection, actor, workspace_ids=(), owner_ids=
             for root in roots:
                 validate_removal(root)
             for row in rows:
-                path = Path(located_path(row['path']))
+                path = directory_path(row['path'])
                 if (row['workspace_id'] not in selected and row['owner_id'] not in explicit_owners
-                        and any(contains(protected, path) for protected in preserved)):
+                        and any(comparison.contains(protected, path) for protected in preserved)):
                     continue
-                if row['workspace_id'] in selected or row['owner_id'] in owners or any(contains(root, path) for root in roots):
+                if row['workspace_id'] in selected or row['owner_id'] in owners or any(comparison.contains(root, path) for root in roots):
                     selected.add(row['workspace_id'])
                     owners.add(row['workspace_id'])
                     roots.add(path)
             for _collection, identifier, entries in documents:
                 if preserve_resources:
                     continue
-                if identifier in owners or any(contains(root, Path(located_path(item['path']))) for item in entries for root in roots):
+                if identifier in owners or any(comparison.contains(root, directory_path(item['path'])) for item in entries for root in roots):
                     resource_ids.add(identifier)
                     owners.add(identifier)
-                    roots.update(Path(located_path(item['path'])) for item in entries)
+                    roots.update(directory_path(item['path']) for item in entries)
             if before == (len(roots), len(selected), len(owners), len(resource_ids)):
                 break
+        selected_rows = [row for row in rows if row['workspace_id'] in selected]
+        rows = connection.execute(
+            f'SELECT * FROM {workspace.table} WHERE workspace_id=ANY(%s) '
+            'AND deleted_at IS NULL ORDER BY workspace_id FOR UPDATE',
+            ([row['workspace_id'] for row in selected_rows],)).fetchall()
+        # An ownership-only handoff may finish outside the directory queue.
+        # Refuse a changed selection rather than retire its previous owner view.
+        def ownership_snapshot(items):
+            return {(row['workspace_id'], row['path'], row['owner_id']) for row in items}
+        if ownership_snapshot(rows) != ownership_snapshot(selected_rows):
+            raise RuntimeError('Workspace ownership changed during deletion; retry')
         timestamp = deleted_at or now()
         deleted_paths = []
         retention = RetentionStore(connection=connection)
