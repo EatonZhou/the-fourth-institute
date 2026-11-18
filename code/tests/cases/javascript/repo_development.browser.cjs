@@ -99,12 +99,16 @@ const html = `<!doctype html><html><head><meta charset="utf-8">${styles.map(n=>`
     await page.waitForSelector('.markdownBody h1');
     assert.equal(await page.locator('.markdownBody h1').textContent(),'Example');
     assert.equal(await page.evaluate(()=>writes.length),0,'preview must not write or compile');
-    // Select actual source text and add it to the shared composer without sending.
+    // The shortcut adds actual source selection to the existing draft, without sending.
+    await page.evaluate(()=>session.workbench.getPanel('chat').workspace.setDraftText('请解释这段代码'));
     await page.evaluate(async()=>{session.workbench.focusPanel('source');await session.workbench.getPanel('source').openFile('main.js',{selection:{startLineNumber:1,startColumn:1,endLineNumber:1,endColumn:16}});});
-    await page.locator('[data-source-action="chat"]').click();
+    await page.keyboard.press('Control+Alt+Enter');
     await page.waitForFunction(()=>session.workbench.getPanel('chat').workspace.payload().text.includes('const value'));
     const refs=await page.evaluate(()=>session.workbench.getPanel('chat').workspace.payload().text);
     assert.match(refs,/repo_123456789abc/); assert.match(refs,/main.js/); assert.match(refs,/start_line/);
+    assert.match(refs,/请解释这段代码/);
+    assert.equal(await page.evaluate(()=>writes.length),0,'shortcut only adds a reference');
+    assert.equal(await page.evaluate(()=>session.workbench.getPanel('chat').workspace.element('input')===document.activeElement),true,'shortcut focuses the composer');
     // A live dirty editor survives a host tab switch and an external modification.
     await page.evaluate(async()=>{await session.openFile('main.js');session.workbench.focusPanel('source');});
     await page.locator('.monaco-editor:visible').first().click();

@@ -39,6 +39,8 @@
     saveButton.title = text("保存（Ctrl+S / ⌘S）");
     const previewButton = button("预览", "preview");
     const chatButton = button("选区加入聊天", "chat");
+    chatButton.title = text("选区加入聊天（Ctrl+Alt+Enter / ⌘⌥Enter）");
+    chatButton.setAttribute("aria-keyshortcuts", "Control+Alt+Enter Meta+Alt+Enter");
     toolbar.append(status);
     const banner = element("div", "portalSourceEditorBanner");
     banner.setAttribute("role", "status");
@@ -189,6 +191,7 @@
           body.append(doc.pane);
           render();
           try {
+            const monaco = await window.PortalCodeEditor.loadMonaco();
             doc.editor = await window.PortalCodeEditor.mount({
               root: doc.pane, value: doc.content, path, readOnly: !doc.editable, statusBar: true,
               ariaLabel: `${text("编辑")} ${path}`,
@@ -205,6 +208,7 @@
               onSave: () => run(() => saveFile(doc.path)),
               actions: [
                 ...(options.onSelection ? [{ id: "portal.source.addToChat", label: text("加入聊天"),
+                  keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyMod.Alt | monaco.KeyCode.Enter],
                   precondition: "editorHasSelection", contextMenuGroupId: "navigation", contextMenuOrder: 1,
                   run: () => addSelection(doc),
                 }] : []),

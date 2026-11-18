@@ -45,7 +45,7 @@
         path: `${repoId}/file/${reference.path}`, text: JSON.stringify(context, null, 2),
         line_start: selection.start_line || 1, line_end: selection.end_line || selection.start_line || 1,
       });
-      chat.workspace.focus?.();
+      chat.workspace.focusComposer();
     }
     function preview(document) {
       previewDocument = document.path;

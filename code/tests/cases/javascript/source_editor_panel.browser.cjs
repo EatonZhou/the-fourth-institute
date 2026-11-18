@@ -107,7 +107,7 @@ const { chromium } = require(path.join(STATIC, '../test_framework/tau_runtime/no
       return { x: box.left + p.left + 2, y: box.top + p.top + p.height / 2 };
     });
     await page.mouse.click(point.x, point.y, { button: 'right' });
-    const menu = page.getByRole('menuitem', { name: '加入聊天', exact: true });
+    const menu = page.locator('.monaco-menu .action-label').filter({ hasText: /^加入聊天$/ });
     await menu.waitFor({ timeout: 5000 }).catch(async error => {
       console.error('menu evidence', point, await page.evaluate(() => ({
         root: document.querySelector('.portalSourceEditor').getBoundingClientRect().toJSON(),
@@ -119,7 +119,7 @@ const { chromium } = require(path.join(STATIC, '../test_framework/tau_runtime/no
       throw error;
     });
     await page.waitForTimeout(150);
-    await menu.locator('.action-label').click();
+    await menu.click();
     await page.waitForFunction(() => references.length > 0, null, { timeout: 5000 });
     assert.deepEqual(await page.evaluate(() => references[0].selection), {
       start_line: 1, start_column: 1, end_line: 1, end_column: 19, text: '  let answer = 41;',
@@ -136,6 +136,12 @@ const { chromium } = require(path.join(STATIC, '../test_framework/tau_runtime/no
     await page.getByRole('tab', { name: 'main.js ●', exact: true }).click();
     assert.equal(await page.evaluate(() => editors[0].getModel() === beforeModel), true);
     assert.equal(await page.evaluate(() => invoke('activeDocument').selection.text), 'let');
+    // The shortcut routes to the focused tab even after another editor was mounted.
+    await page.evaluate(() => editors[0].focus());
+    await page.keyboard.press('Control+Alt+Enter');
+    await page.waitForFunction(() => references.length === 2);
+    assert.equal(await page.evaluate(() => references[1].path), 'src/main.js');
+    assert.equal(await page.evaluate(() => references[1].selection.text), 'let');
     assert.equal(await page.evaluate(() => reads.filter(p => p === 'src/main.js').length), 1);
     // Changing Workbench placement moves the existing root and editor instance.
     await page.evaluate(() => {
