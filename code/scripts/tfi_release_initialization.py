@@ -27,7 +27,17 @@ def initialize(engineering):
     manifest = json.loads(Path(engineering).read_text(encoding='utf-8'))
     with psycopg.connect(os.environ['PORTAL_DATABASE_URL'], autocommit=True) as connection:
         with connection.transaction():
-            return apply_defaults(manifest, connection, instance, site_config_path=instance.root / 'site.json')
+            result = apply_defaults(manifest, connection, instance, site_config_path=instance.root / 'site.json')
+            result['directory_dependencies'] = initialize_directory_dependencies(connection)
+            return result
+
+
+def initialize_directory_dependencies(connection):
+    """Installer's imported or empty database, before application services start."""
+    from management_common.postgres_database import PostgresConnection, _portal_row_factory
+    from management_portal.resources.directory_identity_lifecycle import migrate_dependencies
+    connection.row_factory = _portal_row_factory
+    return migrate_dependencies(PostgresConnection(connection))
 
 
 def restore_lineage_events(engineering):

@@ -47,8 +47,20 @@ def rewrite_project_database(change, rewriter, *, apply):
     from management_portal.project_rename import rewrite_database
     database = get_lineage_data_store().database
     with (database.transaction() if apply else database.snapshot()) as connection:
+        if apply:
+            from management_common.directory_dependencies import prepare_write
+            prepare_write(connection)
         result = rewrite_database(change, rewriter, apply=apply,
             preserve_tables=handoff_location_storage.location_tables())
+        if apply and (change.renames_id or change.moves):
+            from .directory_owner import record_lineage_directory
+            rows = connection.execute(
+                'SELECT lineage_id,project_id FROM lineages WHERE project_id=%s AND deleted_at IS NULL '
+                'ORDER BY lineage_id', (change.new_id,),
+            ).fetchall()
+            for row in rows:
+                record_lineage_directory(connection, row['lineage_id'], row['project_id'],
+                                         include_residents=True)
         if apply and change.moves:
             handoff_location_storage.relocate_references(connection, change.old_root, change.new_root)
         return result

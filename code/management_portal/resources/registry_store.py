@@ -43,6 +43,24 @@ def _encode(document: Mapping[str, Any]) -> str:
     return json_text(document, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
 
 
+def initialize_directory_owner(connection):
+    """Create an absent registry in the installer's external transaction."""
+    schema = portal_database(schema=SCHEMA).schema
+    if connection.execute('SELECT to_regclass(%s)', ('"' + schema + '".registry_documents',)).fetchone()[0]:
+        return
+    previous = connection.execute('SHOW search_path').fetchone()[0]
+    connection.execute(f'CREATE SCHEMA IF NOT EXISTS "{schema}"')
+    connection.execute("SELECT set_config('search_path',%s,true)", ('"' + schema + '"',))
+    try:
+        for statement in _DDL:
+            connection.execute(statement)
+        connection.execute('INSERT INTO registry_meta(key,value) VALUES (%s,%s)', ('schema', SCHEMA_VERSION))
+        from .directory_ownership_upgrade import upgrade_registry
+        upgrade_registry(connection, schema)
+    finally:
+        connection.execute("SELECT set_config('search_path',%s,true)", (previous,))
+
+
 class RegistryWriter:
     """Changes made inside one registry transaction."""
 
@@ -111,6 +129,9 @@ class RegistryWriter:
 
     def put(self, collection: str, document_id: str, document: Mapping[str, Any]) -> None:
         self._check(collection)
+        if collection in {'article', 'repo', 'paper', 'knowledge', 'report'}:
+            from management_common.directory_dependencies import prepare_write
+            prepare_write(self._connection)
         from .deleted_identity_boundary import check_registry_write
         check_registry_write(self._connection, self._schema_name, collection, str(document_id), document)
         revision = self._next_revision(collection)
@@ -121,6 +142,9 @@ class RegistryWriter:
             (collection, str(document_id), revision, _encode(document)),
         )
         self._changed.add(collection)
+
+        from .directory_registrations import refresh_directory_dependency
+        refresh_directory_dependency(self._connection, collection, str(document_id), document)
 
     def restore_article(self, article_id, document, audit):
         """Atomic owner switch. Call only from the verified Article recovery domain.
@@ -152,6 +176,8 @@ class RegistryWriter:
         if deleted:
             self._next_revision(collection)
             self._changed.add(collection)
+            from .directory_registrations import refresh_directory_dependency
+            refresh_directory_dependency(self._connection, collection, str(document_id), None)
         return bool(deleted)
 
     @property
@@ -224,6 +250,11 @@ class RegistryStore:
                     connection.execute(
                         "INSERT INTO registry_meta(key, value) VALUES ('schema', %s)", (SCHEMA_VERSION,),
                     )
+                    from management_common.directory_dependencies import guard_new_table
+                    guard_new_table(connection, table='"' + self.database.schema + '".registry_documents',
+                        kind='resource', key="collection || ':' || {row}.document_id",
+                        watched=['collection', 'document_id', 'document_json'],
+                        condition="NEW.collection IN ('article','repo','paper','knowledge','report')")
                 # Existing stores are used as they stand. A format label or an
                 # unrelated table cannot establish whether a particular query
                 # works; required structures are exercised by that query.
@@ -354,6 +385,11 @@ class RegistryStore:
             raise ValueError('Borrowed registry writer requires an active owning transaction')
         context = self.database.transaction() if connection is None else nullcontext(connection)
         with context as connection:
+            if names_set.intersection({'article', 'repo', 'paper', 'knowledge', 'report'}):
+                from management_common.directory_dependencies import installed
+                if installed(connection):
+                    from management_common.directory_cleanup_store import DirectoryCleanupStore
+                    DirectoryCleanupStore(connection=connection).lock(connection)
             for name in names:
                 connection.execute(
                     "SELECT pg_advisory_xact_lock(hashtextextended(%s, 0))",

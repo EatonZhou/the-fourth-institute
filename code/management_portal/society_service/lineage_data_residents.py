@@ -256,6 +256,9 @@ class ResidentRecords:
                 # precondition then prevents its compensation from deleting.
                 from .lineage_definition_versions import check_definition_version
                 check_definition_version(connection, str(record['lineage_id']))
+            if prior is None or prior['lineage_id'] != record['lineage_id']:
+                from management_common.directory_dependencies import prepare_write
+                prepare_write(connection)
             resource_client.ensure_workspaces(record, connection=connection)
             upsert(connection, 'lineage_nodes', {'node_id': resident_id}, {'lineage_id': record['lineage_id'], 'node_type': 'resident'})
             for table, fields in resident_storage.DOMAIN_TABLES.items():
@@ -263,6 +266,9 @@ class ResidentRecords:
                     continue
                 resident_storage.put_fields(connection, table, fields, resident_id, record)
             resident_workspace_storage.replace_bindings(connection, resident_id, record['workspace_bindings'])
+            if prior is None or prior['lineage_id'] != record['lineage_id']:
+                from .directory_owner import record_resident_directory
+                record_resident_directory(connection, resident_id, str(record['lineage_id']))
             lineage_id = str(record.get('lineage_id') or '')
             if lineage_id and (prior is None or prior['lineage_id'] != lineage_id):
                 self.project_graphs.materialize_members(connection, lineage_id)
@@ -312,7 +318,7 @@ class ResidentRecords:
             raise ValueError('Resident deletion requires identity and deleted_at')
 
         def write(connection: Any) -> list[str]:
-            workspace_ids = set()
+            workspace_paths = []
             for record in sorted(values, key=lambda value: value['resident_id']):
                 rid = record['resident_id']
                 prior = connection.execute(
@@ -328,11 +334,12 @@ class ResidentRecords:
                 membership = connection.execute('SELECT lineage_id FROM lineage_nodes WHERE node_id=%s', (rid,)).fetchone()
                 if membership:
                     folder = lineage_folders([membership['lineage_id']], connection=connection)[membership['lineage_id']]
-                    delete_folder(connection, table='residents', identity=rid,
-                                  folder=Path(folder) / 'residents' / rid, actor=record.get('deleted_by') or '',
-                                  deleted_at=record['deleted_at'])
-                if prior['owned_workspace_id']:
-                    workspace_ids.add(prior['owned_workspace_id'])
+                    plan = delete_folder(connection, table='residents', identity=rid,
+                                         folder=Path(folder) / 'residents' / rid, actor=record.get('deleted_by') or '',
+                                         deleted_at=record['deleted_at'])
+                    workspace_paths.extend(plan['workspace_paths'])
+                else:
+                    raise RuntimeError('Resident has no canonical Lineage directory: ' + rid)
                 connection.execute(
                     'UPDATE residents SET deleted_at=%s,deleted_by=%s,historical_project_id='
                     'COALESCE((SELECT project_id FROM lineages WHERE lineages.lineage_id=(SELECT lineage_id FROM lineage_nodes WHERE node_id=residents.resident_id)),%s) '
@@ -341,11 +348,7 @@ class ResidentRecords:
                 )
                 connection.execute('DELETE FROM resident_workspace_bindings WHERE resident_id=%s', (rid,))
                 connection.execute('DELETE FROM resident_workspace_transfers WHERE resident_id=%s', (rid,))
-            from .resident_workspace_deletion import delete_workspaces
-            return delete_workspaces(connection, workspace_ids=workspace_ids,
-                                       owner_ids=[record['resident_id'] for record in values],
-                                       deleted_at=values[0]['deleted_at'],
-                                       deleted_by=values[0].get('deleted_by') or '')
+            return list(dict.fromkeys(workspace_paths))
         return self.database.write(write)
 
     def delete_workspaces_under(self, paths, *, deleted_at: str, deleted_by: str) -> list[str]:

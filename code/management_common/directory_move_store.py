@@ -103,6 +103,7 @@ def initialize_move_schema(connection, schema):
         (schema, 'moves')).fetchall()}
     if not {'staging', 'file_identity', 'staging_identity'} <= columns:
         raise RuntimeError('Directory move safety requires the offline maintenance migration')
+    connection.execute(f'CREATE INDEX IF NOT EXISTS moves_owner_phase_idx ON "{schema}".moves(owner_id,phase)')
 
 
 def _directory_identity(path):
@@ -122,14 +123,22 @@ def relocate_pending_cleanup(connection, relocate):
     """
     from .directory_cleanup_store import DirectoryCleanupStore
     queue = DirectoryCleanupStore(connection=connection)
+    from .directory_dependencies import prepare_write
+    prepare_write(connection)
     queue.lock(connection)
-    rows = connection.execute(f'SELECT cleanup_id,location FROM {queue.table} '
+    rows = connection.execute(f'SELECT * FROM {queue.table} '
                               'WHERE completed_at IS NULL FOR UPDATE').fetchall()
     for row in rows:
         location = relocate(row['location'])
         if location != row['location']:
             connection.execute(f'UPDATE {queue.table} SET location=%s WHERE cleanup_id=%s',
                                (location, row['cleanup_id']))
+            queue.refresh_cleanup(row['cleanup_id'], connection=connection)
+        if 'preserved_locations' in dict(row):
+            cuts = [relocate(value) for value in row['preserved_locations']]
+            if cuts != row['preserved_locations']:
+                connection.execute(f'UPDATE {queue.table} SET preserved_locations=%s::jsonb WHERE cleanup_id=%s',
+                                   (json.dumps(cuts), row['cleanup_id']))
 
 
 class DirectoryMoveStore:
@@ -528,8 +537,17 @@ def cancel_owner_moves(connection, owner_id):
                            "WHERE owner_id=%s AND phase='committed' RETURNING *", (owner_id,)).fetchall()
         for row in operations:
             if row['mode'] != 'external':
-                enqueue_directory_cleanup(cleanup_path(row['source']), owner_id=row['owner_id'],
-                    operation_id=row['operation_id'], actor=row['actor'], connection=connection)
+                from . import directory_dependencies as deps
+                from .directory_paths import DirectoryComparison
+                deps.require_ready(connection)
+                source = cleanup_path(row['source'])
+                comparison = DirectoryComparison()
+                entries = deps.overlaps(connection, source, comparison=comparison,
+                    kinds=['identity', 'workspace', 'resource', 'artifact'])
+                cuts = sorted({entry['location'] for entry in entries if entry['kind'] not in {'identity', 'workspace'}
+                               or comparison.contains(source, cleanup_path(entry['location']))})
+                queue.enqueue(source, owner_id=row['owner_id'], operation_id=row['operation_id'],
+                              actor=row['actor'], connection=connection, preserved_locations=cuts)
             receipts = connection.execute(f'SELECT purpose FROM {queue.reservations} '
                 'WHERE operation_id=%s AND purpose LIKE %s',
                 (row['operation_id'], _WRITER_PREFIX + '%')).fetchall()

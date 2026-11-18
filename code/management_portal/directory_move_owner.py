@@ -19,6 +19,8 @@ def relocated(value, source, target):
 
 
 def relocate_nested(connection, source, target):
+    from management_common.directory_dependencies import prepare_write
+    prepare_write(connection)
     from management_common.directory_retention import relocate_artifacts
     from management_common.directory_move_store import relocate_pending_cleanup
     from management_portal.resources.workspace_store import get_workspace_store
@@ -33,6 +35,7 @@ def relocate_nested(connection, source, target):
             workspace.cleanup.assert_available(located_path(path), connection=connection)
             connection.execute(f'UPDATE {workspace.table} SET path=%s,updated_at=GREATEST(clock_timestamp(),'
                                "updated_at+interval '1 microsecond') WHERE workspace_id=%s", (path, row['workspace_id']))
+            workspace.refresh_directory_dependency(row['workspace_id'], connection=connection)
     registry = get_registry_store()
     with registry.writer(*COLLECTIONS, connection=connection) as writer:
         for collection in COLLECTIONS:

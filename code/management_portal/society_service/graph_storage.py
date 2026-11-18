@@ -123,6 +123,13 @@ def _reconcile(connection: Any, table: str, owner_column: str, owner: str, key_c
     ])
 
 
+def _put_nodes(connection: Any, nodes: list[dict]) -> None:
+    if nodes:
+        from management_common.directory_dependencies import prepare_write
+        prepare_write(connection)
+        upsert_many(connection, 'lineage_nodes', ('node_id',), nodes)
+
+
 def put(connection: Any, lineage_id: str, value: Mapping[str, Any]) -> None:
     assert_writable_ids(connection, value)
     program = value.get("program") or {}
@@ -146,7 +153,7 @@ def put(connection: Any, lineage_id: str, value: Mapping[str, Any]) -> None:
             continue
         validate_fields(item, {"id", *RESIDENT_FIELDS, "title", "resident_title", "backend", "created_at", "updated_at", "x", "y", "role", "workspace", "status", "last_execution"}, "Resident graph projection")
         resident_rows.append({"node_id": rid, **typed_values(item, RESIDENT_FIELDS)})
-    upsert_many(connection, "lineage_nodes", ("node_id",), new_nodes)
+    _put_nodes(connection, new_nodes)
     upsert_many(connection, "lineage_resident_nodes", ("node_id",), resident_rows)
     _reconcile(connection, "lineage_node_references", "lineage_id", lineage_id, ("node_id",), [{"node_id": rid} for rid in resident_ids if homes[rid] != lineage_id])
     component_nodes = []
@@ -155,7 +162,7 @@ def put(connection: Any, lineage_id: str, value: Mapping[str, Any]) -> None:
         validate_fields(item, {"id", "kind", "x", "y", *COMPONENT_FIELDS}, "component")
         component_nodes.append({"node_id": item["id"], "lineage_id": lineage_id, "node_type": item["kind"]})
         component_rows.append({"node_id": item["id"], **typed_values(item, COMPONENT_FIELDS)})
-    upsert_many(connection, "lineage_nodes", ("node_id",), component_nodes)
+    _put_nodes(connection, component_nodes)
     upsert_many(connection, "lineage_components", ("node_id",), component_rows)
     desired_owners = {e["id"]: b["id"] for b in blocks for e in b.get("elements") or []}
     removed_members = [(row['function_block_id'], row['element_id']) for row in connection.execute(
@@ -170,7 +177,7 @@ def put(connection: Any, lineage_id: str, value: Mapping[str, Any]) -> None:
         validate_fields(item, {"id", "x", "y", "elements", "family", "duty", *BLOCK_FIELDS}, "Function Block")
         block_nodes.append({"node_id": item["id"], "lineage_id": lineage_id, "node_type": "function_block"})
         block_rows.append({"function_block_id": item["id"], "lineage_id": lineage_id, **typed_values(item, BLOCK_FIELDS), "x": item.get("x"), "y": item.get("y")})
-    upsert_many(connection, 'lineage_nodes', ('node_id',), block_nodes)
+    _put_nodes(connection, block_nodes)
     upsert_many(connection, 'function_blocks', ('function_block_id',), block_rows)
     for item in blocks:
         elements = [{"element_id": e["id"], "element_kind": e["kind"], "element_key": e.get("key")} for e in item.get("elements") or []]
@@ -313,6 +320,9 @@ def delete_missing(connection: Any, lineage_id: str, current: set[str], desired:
 
 def transfer(connection: Any, source: str, target: str, object_ids: list[str]) -> None:
     """Transfer identities before reconciling either graph, inside the move transaction."""
+    if object_ids:
+        from management_common.directory_dependencies import prepare_write
+        prepare_write(connection)
     connection.execute('UPDATE function_blocks SET lineage_id=%s WHERE lineage_id=%s AND function_block_id=ANY(%s)', (target,source,object_ids))
     for table, key in (('lineage_nodes','node_id'), ('lineage_edges','edge_id')):
         connection.execute(f'UPDATE {table} SET lineage_id=%s WHERE lineage_id=%s AND {key}=ANY(%s) AND deleted_at IS NULL', (target,source,object_ids))

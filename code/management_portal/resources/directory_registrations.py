@@ -19,6 +19,17 @@ IGNORE_COLLECTION = 'auto_registration_ignore'
 PROJECTION_RELEASES = 'resource_projection_releases'
 
 
+def refresh_directory_dependency(connection, collection, resource_id, document):
+    if collection not in COLLECTIONS:
+        return
+    from management_common import directory_dependencies as deps
+    from management_common.directory_paths import cleanup_path
+    entries = [] if document is None else [
+        (str(index), resource_id, cleanup_path(entry['path']), 'protected')
+        for index, entry in enumerate(locations(collection, document))]
+    deps.replace(connection, 'resource', collection + ':' + resource_id, entries)
+
+
 def request_projection_release(resource_id, *, actor, connection):
     """Transactional outbox of IDs only; the projection owner performs effects."""
     with get_registry_store().writer(PROJECTION_RELEASES, connection=connection) as writer:
@@ -65,6 +76,14 @@ def excluded_from_scan(resource_id, path):
 
 def unregister_identity(resource_id, *, connection, actor='', preserved_paths=()):
     """Identity tombstones contain no paths and prevent disk rediscovery."""
+    from management_common.directory_retention import RetentionStore
+    RetentionStore(connection=connection).release_owner(resource_id, connection=connection,
+                                                       preserved_paths=preserved_paths)
+    _unregister_identity_metadata(resource_id, connection=connection, actor=actor)
+
+
+def _unregister_identity_metadata(resource_id, *, connection, actor=''):
+    """Enlist tombstone/projection/permissions after the directory owner decision."""
     registry = get_registry_store()
     registry._ensure()
     connection.execute(f'INSERT INTO "{registry.database.schema}".deleted_identities(resource_id) VALUES (%s) ON CONFLICT DO NOTHING',
@@ -74,9 +93,6 @@ def unregister_identity(resource_id, *, connection, actor='', preserved_paths=()
     table = f'"{portal_database(schema=resource_database_schema()).schema}".resource_registration_operations'
     if connection.execute('SELECT to_regclass(%s)', (table,)).fetchone()[0]:
         connection.execute(f'UPDATE {table} SET deleted=TRUE WHERE resource_id=%s', (resource_id,))
-    from management_common.directory_retention import RetentionStore
-    RetentionStore(connection=connection).release_owner(resource_id, connection=connection,
-                                                       preserved_paths=preserved_paths)
     from management_portal import permission_system
     permission_system.unregister_resources([resource_id], connection=connection)
     request_projection_release(resource_id, actor=actor, connection=connection)

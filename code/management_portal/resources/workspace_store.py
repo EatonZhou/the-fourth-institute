@@ -62,6 +62,24 @@ def now() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="microseconds")
 
 
+def refresh_directory_dependency(connection, workspace_id):
+    from management_common import directory_dependencies as deps
+    if not deps.installed(connection):
+        return
+    table = '"' + _database_schema('workspace') + '".workspaces'
+    row = connection.execute(f'SELECT path,owner_id,deleted_at FROM {table} WHERE workspace_id=%s', (workspace_id,)).fetchone()
+    entries = [] if row is None or row['deleted_at'] else [('', row['owner_id'], located_path(row['path']), 'owned')]
+    deps.replace(connection, 'workspace', workspace_id, entries)
+
+
+def initialize_directory_owner(connection):
+    store = WorkspaceStore.__new__(WorkspaceStore)
+    store.database = portal_database(schema='workspace')
+    store.table = '"' + store.database.schema + '".workspaces'
+    connection.execute(f'CREATE SCHEMA IF NOT EXISTS "{store.database.schema}"')
+    store._initialize(connection)
+
+
 class WorkspaceStore:
     def __init__(self):
         self.database = portal_database(schema="workspace")
@@ -96,6 +114,9 @@ class WorkspaceStore:
         )""")
         connection.execute(f"CREATE UNIQUE INDEX workspaces_live_path_idx "
                            f"ON {self.table}(path) WHERE deleted_at IS NULL")
+        from management_common.directory_dependencies import guard_new_table
+        guard_new_table(connection, table=self.table, kind='workspace', key='workspace_id',
+                        watched=['path', 'owner_id', 'deleted_at'], condition='NEW.deleted_at IS NULL')
 
     def lifecycle_facts(self, ids: Iterable[str]):
         """Current deletion facts without decoding or locating workspace paths."""
@@ -144,6 +165,8 @@ class WorkspaceStore:
                 if observed['path'] == path:
                     return workspace_id
             self.cleanup.lock(conn)
+            from management_common.directory_dependencies import prepare_write
+            prepare_write(conn)
             # The partial path index arbitrates concurrent registration, while
             # the row lock prevents a stale save from reviving a deletion.
             row = conn.execute(f"SELECT * FROM {self.table} WHERE workspace_id=%s FOR UPDATE",
@@ -160,6 +183,7 @@ class WorkspaceStore:
                                  "updated_at=GREATEST(%s::timestamptz, updated_at + interval '1 microsecond') "
                                  "WHERE workspace_id=%s",
                                  (path, now(), workspace_id))
+                    self.refresh_directory_dependency(workspace_id, connection=conn)
                 return workspace_id
             self._require_distinct_location(conn, absolute, workspace_id)
             self._insert(conn, workspace_id, absolute, path, title=title,
@@ -170,6 +194,8 @@ class WorkspaceStore:
     def _insert(self, connection, workspace_id, absolute, stored, *, title="", owner_id=None,
                 operation_id=None):
         """Insert after the caller's locked identity and location decision."""
+        from management_common.directory_dependencies import prepare_write
+        prepare_write(connection)
         self.cleanup.assert_available(absolute, connection=connection, operation_id=operation_id)
         timestamp = now()
         connection.execute(f"INSERT INTO {self.table} "
@@ -177,6 +203,7 @@ class WorkspaceStore:
                            "VALUES (%s,%s,%s,%s,%s,%s,%s)",
                            (workspace_id, stored, title or Path(absolute).name,
                             owner_id or workspace_id, operation_id, timestamp, timestamp))
+        self.refresh_directory_dependency(workspace_id, connection=connection)
 
     def _location(self, connection, absolute):
         # One target key for this locked decision. Never retain native-case
@@ -209,11 +236,18 @@ class WorkspaceStore:
     def restore_self_owner(self, workspace_id, *, expected_version, expected_owner,
                            expected_path, connection):
         """Repair ownership after validating the current relocation snapshot."""
+        self.cleanup.lock(connection)
+        from management_common.directory_dependencies import prepare_write
+        prepare_write(connection)
         self.require_owner(workspace_id, expected_version=expected_version,
             expected_owner=expected_owner, expected_path=expected_path, connection=connection)
         connection.execute(f'UPDATE {self.table} SET owner_id=%s,'
                            "updated_at=GREATEST(clock_timestamp(),updated_at+interval '1 microsecond') "
                            'WHERE workspace_id=%s', (workspace_id, workspace_id))
+        self.refresh_directory_dependency(workspace_id, connection=connection)
+
+    def refresh_directory_dependency(self, workspace_id, *, connection):
+        refresh_directory_dependency(connection, workspace_id)
 
     def update_metadata(self, workspace_id: str, *, title=None, summary=None, expected_version: str, authorize):
         """Compare and change metadata while holding the lifecycle row lock.
@@ -313,10 +347,13 @@ class WorkspaceStore:
         return list(dict.fromkeys(row["workspace_id"] for row in rows))
 
     def mark_deleted(self, workspace_id, *, deleted_at, deleted_by, connection):
+        from management_common.directory_dependencies import prepare_write
+        prepare_write(connection)
         connection.execute(f"UPDATE {self.table} SET deleted_at=%s,deleted_by=%s,"
                            "updated_at=GREATEST(%s::timestamptz, updated_at + interval '1 microsecond') "
                            "WHERE workspace_id=%s AND deleted_at IS NULL",
                            (deleted_at, deleted_by, deleted_at, workspace_id))
+        self.refresh_directory_dependency(workspace_id, connection=connection)
 
     @staticmethod
     def descriptor(row):

@@ -38,6 +38,10 @@ class WorkflowBindingStore:
                 "prompt_sha256 TEXT, "
                 "PRIMARY KEY(lineage_id, resident_id, name))"
             )
+            # Deletion and moves address a Resident independently of its old
+            # Lineage. Apply the same additive index to new and existing stores.
+            connection.execute('CREATE INDEX IF NOT EXISTS workflow_bindings_resident_idx '
+                               'ON workflow_bindings(resident_id)')
 
     def lineage_lock(self, lineage_id: str):
         digest = hashlib.sha256(("workflow-lineage:" + lineage_id).encode()).digest()

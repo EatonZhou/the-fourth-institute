@@ -208,10 +208,10 @@ def test_store_deletion_rejects_unknown_identity_and_rolls_back_the_batch(future
 
 
 @pytest.mark.parametrize("registration", ["create", "register"])
-def test_resident_deletion_event_time_reaches_owned_and_nested_workspaces(
+def test_resident_deletion_event_time_reaches_owned_not_independent_workspaces(
     future_creation_store, tmp_path, registration,
 ):
-    """同一注销事件时间传到外部 owned 与嵌套 Workspace，文件按来源异步清理。"""
+    """注销只随明确 owner；独立嵌套 Workspace 保留，私有目录异步清理。"""
     owner = resident_domain.register_resident(_new_session_payload("Deletion time owner"), "sample_admin")
     store = resident_catalog.get_catalog().state_store
     workspaces = get_workspace_store()
@@ -223,8 +223,8 @@ def test_resident_deletion_event_time_reaches_owned_and_nested_workspaces(
         external.mkdir()
     from management_portal.resources.workspace_creation_store import WorkspaceCreationStore
     creation = WorkspaceCreationStore()
-    # The nested registration belongs to itself; the outer created Resident
-    # folder still owns its removal. The external one follows its owner ID.
+    # A self-owned nested registration remains independent of the containing
+    # Resident. Only the default and external explicitly-owned rows retire.
     register = getattr(creation, registration)
     nested_id = register(path=nested, owner_id="", actor="sample_admin", operation_id="nested-deletion")["workspace_id"]
     external_id = register(path=external, owner_id=owner["resident_id"], actor="sample_admin", operation_id="external-deletion")["workspace_id"]
@@ -232,13 +232,14 @@ def test_resident_deletion_event_time_reaches_owned_and_nested_workspaces(
     store.remove_residents([{
         "resident_id": owner["resident_id"], "deleted_at": deleted_at, "deleted_by": "sample_admin",
     }])
-    ids = [owner["owned_workspace_id"], nested_id, external_id]
+    ids = [owner["owned_workspace_id"], external_id]
     assert not workspaces.rows(ids)
+    assert workspaces.rows([nested_id])[nested_id]['deleted_at'] is None
     assert store.resident_deletion(owner["resident_id"])["deleted_at"] == deleted_at
     assert all((row["deleted_at"], row["deleted_by"]) == (deleted_at, "sample_admin")
                for row in workspaces.rows(ids, include_deleted=True).values())
     assert owned.exists() and nested.exists() and external.exists()
     outcomes = get_directory_cleanup_store().run_pending()
     assert outcomes and all(job["status"] == "completed" for job in outcomes)
-    assert not owned.exists() and not nested.exists()
+    assert not owned.exists() and nested.exists()
     assert not external.exists()

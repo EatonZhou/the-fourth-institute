@@ -44,6 +44,17 @@ def utc_now():
     return datetime.now(timezone.utc)
 
 
+def refresh_artifact(connection, location):
+    from . import directory_dependencies as deps
+    if not deps.installed(connection):
+        return
+    table = '"' + portal_database(schema='directory_retention').schema + '".artifacts'
+    row = connection.execute(f'SELECT owner_id,category FROM {table} WHERE location=%s', (location,)).fetchone()
+    entries = [] if row is None else [('', row['owner_id'], cleanup_path(location),
+        'owned' if row['category'] in {'runtime_tmp', 'cache', 'object_data'} else 'protected')]
+    deps.replace(connection, 'artifact', location, entries)
+
+
 def _tree_location_filter(roots, instance, comparison):
     """Conservative stored-location candidates; native membership is final.
 
@@ -99,6 +110,8 @@ def relocate_artifacts(connection, relocate):
     transaction while the caller holds the shared path lock.
     """
     from .directory_cleanup_store import DirectoryCleanupStore
+    from .directory_dependencies import prepare_write
+    prepare_write(connection)
     table = f'"{portal_database(schema="directory_retention").schema}".artifacts'
     queue = DirectoryCleanupStore(connection=connection)
     queue.lock(connection)
@@ -111,6 +124,7 @@ def relocate_artifacts(connection, relocate):
             queue.assert_available(cleanup_path(location), connection=connection)
             connection.execute(f'UPDATE {table} SET location=%s WHERE location=%s',
                                (location, row['location']))
+            refresh_artifact(connection, location)
 
 
 class RetentionStore:
@@ -142,6 +156,9 @@ class RetentionStore:
             connection.execute(f'CREATE SCHEMA IF NOT EXISTS "{self.database.schema}"')
             connection.executescript(DDL.replace('CREATE TABLE IF NOT EXISTS artifacts',
                                                 f'CREATE TABLE IF NOT EXISTS {self.table}'))
+            from .directory_dependencies import guard_new_table
+            guard_new_table(connection, table=self.table, kind='artifact', key='location',
+                            watched=['location', 'owner_id', 'category'])
         if self._needs_initialize(connection):
             # One-time schema upgrade: deadlines and ownership remain intact.
             # The column's CHECK constraint is removed with the column.
@@ -162,6 +179,8 @@ class RetentionStore:
         test_run_id = scope['run_id'] if scope else ''
         with nullcontext(connection) if connection is not None else self.database.transaction() as conn:
             self.queue.assert_available(path, connection=conn)
+            from .directory_dependencies import prepare_write
+            prepare_write(conn)
             prior = conn.execute(f'SELECT owner_id,category FROM {self.table} WHERE location=%s', (location,)).fetchone()
             if prior:
                 if (prior['owner_id'], prior['category']) != (owner_id, category):
@@ -171,6 +190,7 @@ class RetentionStore:
                          (location,owner_id,category,created_at,eligible_at,last_access,bytes,cache_group,test_run_id)
                          VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)''',
                          (location, owner_id, category, created_at, expiry, created_at, bytes, cache_group, test_run_id))
+            refresh_artifact(conn, location)
 
     def finish(self, owner_id, *, at=None, connection=None):
         """The writer confirms work has ended; live Provider sessions never age out."""
@@ -187,6 +207,8 @@ class RetentionStore:
         if not owner_id:
             raise ValueError('Consumed upload requires its object owner')
         with nullcontext(connection) if connection is not None else self.database.transaction() as conn:
+            from .directory_dependencies import prepare_write
+            prepare_write(conn)
             self.queue.assert_available(path, connection=conn)
             registered = conn.execute(f'SELECT category FROM {self.table} WHERE location=%s FOR UPDATE',
                                       (cleanup_location(path),)).fetchone()
@@ -196,6 +218,7 @@ class RetentionStore:
                 raise ValueError('Only an original upload can be consumed')
             conn.execute(f"UPDATE {self.table} SET owner_id=%s,category='object_data',eligible_at=NULL WHERE location=%s AND category='unused_upload'",
                          (owner_id, cleanup_location(path)))
+            refresh_artifact(conn, cleanup_location(path))
 
     def touch(self, path, *, bytes=None, at=None):
         with self.database.transaction() as conn:

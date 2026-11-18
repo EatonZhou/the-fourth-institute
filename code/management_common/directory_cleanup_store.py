@@ -41,6 +41,7 @@ def initialize_directory_schema(connection, schema):
         completed_at TIMESTAMPTZ,
         attempts INTEGER NOT NULL DEFAULT 0,
         last_error TEXT NOT NULL DEFAULT '',
+        preserved_locations JSONB NOT NULL DEFAULT '[]',
         UNIQUE(operation_id, location)
     )''')
     connection.execute(f'CREATE INDEX cleanup_ready_idx ON {table}(available_at) WHERE completed_at IS NULL')
@@ -135,8 +136,15 @@ class DirectoryCleanupStore:
     def pending_at(self, path, *, connection=None, include_descendants=True):
         target = lexical_path(path)
         with nullcontext(connection) if connection is not None else self.database.read() as conn:
-            rows = conn.execute(f'SELECT cleanup_id,location FROM {self.table} '
-                                'WHERE completed_at IS NULL ORDER BY created_at,cleanup_id').fetchall()
+            from . import directory_dependencies as deps
+            if deps.available(conn):
+                candidates = deps.overlaps(conn, target, comparison=DirectoryComparison(), kinds=['cleanup'])
+                rows = conn.execute(f'SELECT cleanup_id,location FROM {self.table} '
+                    'WHERE completed_at IS NULL AND cleanup_id=ANY(%s::text[])',
+                    ([row['object_id'] for row in candidates],)).fetchall()
+            else:
+                rows = conn.execute(f'SELECT cleanup_id,location FROM {self.table} '
+                                    'WHERE completed_at IS NULL ORDER BY created_at,cleanup_id').fetchall()
         comparison = DirectoryComparison()
         return [row['cleanup_id'] for row in rows
                 if (comparison.overlaps(target, cleanup_path(row['location'])) if include_descendants
@@ -160,7 +168,7 @@ class DirectoryCleanupStore:
         if pending:
             raise DirectoryPendingCleanup(pending[0])
         target = lexical_path(path)
-        rows = connection.execute(f'SELECT operation_id,location,purpose FROM {self.reservations}').fetchall()
+        rows = self.reservations_at(path, connection=connection)
         comparison = DirectoryComparison()
         for row in rows:
             reserved = cleanup_path(row['location'])
@@ -171,18 +179,47 @@ class DirectoryCleanupStore:
                 raise FileExistsError('Directory is reserved by operation: ' + row['operation_id'])
 
     def reserve(self, path, *, operation_id, purpose, connection):
+        from .directory_dependencies import prepare_write
+        prepare_write(connection)
         if not operation_id or not purpose:
             raise ValueError('Directory reservation requires operation identity and purpose')
         self.assert_available(path, connection=connection, operation_id=operation_id)
-        return bool(connection.execute(f'INSERT INTO {self.reservations}(operation_id,location,purpose) VALUES (%s,%s,%s) '
+        created = bool(connection.execute(f'INSERT INTO {self.reservations}(operation_id,location,purpose) VALUES (%s,%s,%s) '
                                        'ON CONFLICT(operation_id,location) DO NOTHING',
                                        (operation_id, cleanup_location(path), purpose)).rowcount)
+        self.refresh_reservations(operation_id, connection=connection)
+        return created
+
+    def reservations_at(self, path, *, connection):
+        from . import directory_dependencies as deps
+        if not deps.available(connection):
+            return connection.execute(f'SELECT * FROM {self.reservations}').fetchall()
+        candidates = deps.overlaps(connection, lexical_path(path), comparison=DirectoryComparison(), kinds=['reservation'])
+        operations = sorted({row['object_id'] for row in candidates})
+        return connection.execute(f'SELECT * FROM {self.reservations} WHERE operation_id=ANY(%s::text[])', (operations,)).fetchall()
+
+    def refresh_reservations(self, operation_id, *, connection):
+        from . import directory_dependencies as deps
+        if deps.installed(connection):
+            rows = connection.execute(f'SELECT location FROM {self.reservations} WHERE operation_id=%s', (operation_id,)).fetchall()
+            deps.replace(connection, 'reservation', operation_id, [
+                (row['location'], operation_id, cleanup_path(row['location']), 'claim') for row in rows])
+
+    def refresh_cleanup(self, cleanup_id, *, connection):
+        from . import directory_dependencies as deps
+        if deps.installed(connection):
+            row = connection.execute(f'SELECT owner_id,location,completed_at FROM {self.table} WHERE cleanup_id=%s', (cleanup_id,)).fetchone()
+            entries = [] if not row or row['completed_at'] else [('', row['owner_id'], cleanup_path(row['location']), 'claim')]
+            deps.replace(connection, 'cleanup', cleanup_id, entries)
 
     def release(self, operation_id, *, connection):
         self.lock(connection)
         connection.execute(f'DELETE FROM {self.reservations} WHERE operation_id=%s', (operation_id,))
+        self.refresh_reservations(operation_id, connection=connection)
 
-    def enqueue(self, path, *, owner_id, operation_id, actor, connection):
+    def enqueue(self, path, *, owner_id, operation_id, actor, connection, preserved_locations=None):
+        from .directory_dependencies import prepare_write
+        prepare_write(connection)
         if not owner_id or not operation_id:
             raise ValueError('Directory cleanup requires owner and operation identity')
         self.lock(connection)
@@ -194,6 +231,17 @@ class DirectoryCleanupStore:
             ('cleanup_' + uuid4().hex, owner_id, operation_id, location, actor)).fetchone()
         if row['owner_id'] != owner_id or row['actor'] != actor:
             raise ValueError('Cleanup operation identity already belongs to another request')
+        if preserved_locations is not None:
+            import json
+            # Set once in the same transaction which freezes the owner plan.
+            # Re-entry uses identity_retirements and does not replace this cut.
+            old = connection.execute(f'SELECT preserved_locations FROM {self.table} WHERE cleanup_id=%s',
+                                     (row['cleanup_id'],)).fetchone()['preserved_locations']
+            if old and old != preserved_locations:
+                raise ValueError('Cleanup preservation manifest changed')
+            connection.execute(f'UPDATE {self.table} SET preserved_locations=%s::jsonb WHERE cleanup_id=%s',
+                               (json.dumps(preserved_locations), row['cleanup_id']))
+        self.refresh_cleanup(row['cleanup_id'], connection=connection)
         return row['cleanup_id']
 
     def status(self, *, owner_id=None, cleanup_id=None, connection=None):
@@ -206,10 +254,13 @@ class DirectoryCleanupStore:
                  'status': 'completed' if row['completed_at'] else ('retry' if row['attempts'] else 'pending')}
                 for row in rows]
 
+    def worker_lease_key(self, cleanup_id):
+        """Shared identity for physical cleanup and coordinated migration."""
+        return int.from_bytes(sha256((self.table + ':worker:' + cleanup_id).encode()).digest()[:8],
+                              'big', signed=True)
+
     def _worker_lease(self, cleanup_id):
-        key = int.from_bytes(sha256((self.table + ':worker:' + cleanup_id).encode()).digest()[:8],
-                             'big', signed=True)
-        return self.database.advisory_lock(key, blocking=False)
+        return self.database.advisory_lock(self.worker_lease_key(cleanup_id), blocking=False)
 
     @contextmanager
     def _claim_pending(self, cleanup_id):
@@ -218,21 +269,24 @@ class DirectoryCleanupStore:
         with ExitStack() as leases:
             with self.database.transaction() as connection:
                 self.lock(connection)
+                from .directory_dependencies import prepare_write
+                prepare_write(connection)
                 candidates = connection.execute(f'SELECT * FROM {self.table} '
                     'WHERE completed_at IS NULL AND available_at <= clock_timestamp() '
                     'AND (%s::text IS NULL OR cleanup_id=%s) '
-                    'ORDER BY available_at,cleanup_id FOR UPDATE SKIP LOCKED', (cleanup_id, cleanup_id)).fetchall()
-                reserved = connection.execute(f'SELECT * FROM {self.reservations}').fetchall()
+                    'ORDER BY available_at,cleanup_id LIMIT 256 FOR UPDATE SKIP LOCKED', (cleanup_id, cleanup_id)).fetchall()
                 comparison = DirectoryComparison()
                 # A move may temporarily vacate its source before committing
                 # new locations. Never complete an expiry snapshot against
                 # that temporary absence, or delete a copy still in flight.
                 # Skip blocked entries instead of starving unrelated cleanup.
                 for row in candidates:
+                    reserved = self.reservations_at(cleanup_path(row['location']), connection=connection)
                     operation = 'cleanup-worker:' + row['cleanup_id']
                     if any(item['operation_id'] != operation and
                            comparison.overlaps(cleanup_path(row['location']), cleanup_path(item['location']))
                            for item in reserved):
+                        connection.execute(f"UPDATE {self.table} SET available_at=clock_timestamp()+interval '1 second' WHERE cleanup_id=%s", (row['cleanup_id'],))
                         continue
                     with ExitStack() as attempt:
                         if not attempt.enter_context(self._worker_lease(row['cleanup_id'])):
@@ -244,6 +298,7 @@ class DirectoryCleanupStore:
                         connection.execute(f'INSERT INTO {self.reservations}(operation_id,location,purpose) '
                                            'VALUES (%s,%s,%s) ON CONFLICT DO NOTHING',
                                            (operation, row['location'], 'directory-cleanup'))
+                        self.refresh_reservations(operation, connection=connection)
                         leases.enter_context(attempt.pop_all())
                         selected = row
                         break
@@ -261,6 +316,7 @@ class DirectoryCleanupStore:
             else:
                 connection.execute(f'UPDATE {self.table} SET attempts=attempts+1,last_error=\'\','
                                    'completed_at=clock_timestamp() WHERE cleanup_id=%s', (row['cleanup_id'],))
+                self.refresh_cleanup(row['cleanup_id'], connection=connection)
             if error is None or release_on_error:
                 self.release(reservation, connection=connection)
             return self.status(cleanup_id=row['cleanup_id'], connection=connection)[0]
@@ -273,7 +329,13 @@ class DirectoryCleanupStore:
                     break
                 error = None
                 try:
-                    remove_path(cleanup_path(row['location']))
+                    from .directory_paths import deletion_roots
+                    preserved = dict(row).get('preserved_locations') or []
+                    roots = (deletion_roots(cleanup_path(row['location']),
+                             [cleanup_path(path) for path in preserved]) if preserved
+                             else [cleanup_path(row['location'])])
+                    for root in roots:
+                        remove_path(root)
                 except (OSError, ValueError) as failure:
                     error = failure
                 outcomes.append(self._finish_attempt(row, error,
@@ -296,7 +358,7 @@ class DirectoryCleanupStore:
                                          'WHERE cleanup_id=%s FOR UPDATE', (cleanup_id,)).fetchone()
                 if row is None or row['operation_id'] != operation_id:
                     raise ValueError('Reserved cleanup requires its allocation operation')
-                reservations = connection.execute(f'SELECT * FROM {self.reservations}').fetchall()
+                reservations = self.reservations_at(cleanup_path(row['location']), connection=connection)
                 comparison = DirectoryComparison()
                 if not any(item['operation_id'] == operation_id and item['location'] == row['location']
                            for item in reservations):

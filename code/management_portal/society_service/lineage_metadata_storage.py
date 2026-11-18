@@ -29,7 +29,7 @@ def put(connection: Any, lineage_id: str, value: dict) -> None:
     from .lineage_definition_versions import check_definition_version
 
     check_definition_version(connection, lineage_id)
-    existing = connection.execute("SELECT deleted_at,directory_json FROM lineages WHERE lineage_id=%s", (lineage_id,)).fetchone()
+    existing = connection.execute("SELECT deleted_at,directory_json,project_id FROM lineages WHERE lineage_id=%s", (lineage_id,)).fetchone()
     if existing and existing["deleted_at"]:
         raise ValueError("A deleted Lineage cannot be rewritten")
     from .directory_owner import directory_metadata
@@ -38,7 +38,15 @@ def put(connection: Any, lineage_id: str, value: dict) -> None:
         json_value(existing['directory_json']) if existing and existing['directory_json'] else None,
         lineage_id, creating=existing is None,
     )}
+    directory_changed = existing is None or str(existing['project_id'] or '') != str(value.get('project_id') or '')
+    if directory_changed:
+        from management_common.directory_dependencies import prepare_write
+        prepare_write(connection)
     upsert(connection, "lineages", {"lineage_id": lineage_id}, typed_values(value, FIELDS))
+    if directory_changed:
+        from .directory_owner import record_lineage_directory
+        record_lineage_directory(connection, lineage_id, str(value.get('project_id') or ''),
+                                 include_residents=existing is not None)
     level = (value.get("principal_hierarchy") or {}).get("level")
     if level == "user" and value.get("lineage_membership") != "personal":
         raise ValueError("User scope requires a personal Lineage")

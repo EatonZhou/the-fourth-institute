@@ -290,6 +290,8 @@ def rewrite_database(change: ProjectRename, rewriter: Rewriter, *, apply: bool, 
     database = portal_database(schema="lineage")
     with (database.transaction() if apply else database.snapshot()) as connection:
         if apply:
+            from management_common.directory_dependencies import prepare_write
+            prepare_write(connection)
             connection.execute("SET LOCAL lock_timeout = '60s'")
         schemas = _portal_schemas(connection)
         columns: dict[tuple[str, str], list[tuple[str, str]]] = {}
@@ -351,6 +353,16 @@ def rewrite_database(change: ProjectRename, rewriter: Rewriter, *, apply: bool, 
                         f"UPDATE {target} SET {assignments} WHERE ctid = %s::tid",
                         (*[value for _column, _type, value in updates], row["row_ctid"]),
                     )
+                    if (name, table) == ('workspace', 'workspaces'):
+                        from management_portal.resources.workspace_store import refresh_directory_dependency
+                        refresh_directory_dependency(connection, values['workspace_id'])
+                    elif (name, table) == ('resource_registry', 'registry_documents'):
+                        from management_portal.resources.directory_registrations import refresh_directory_dependency
+                        refresh_directory_dependency(connection, values['collection'], values['document_id'],
+                                                     json.loads(values['document_json']))
+                    elif (name, table) == ('directory_retention', 'artifacts'):
+                        from management_common.directory_retention import refresh_artifact
+                        refresh_artifact(connection, values['location'])
                 if name == "resource_registry" and table == "registry_documents":
                     registry_rows.setdefault(schema, {}).setdefault(values["collection"], set()).add(values["document_id"])
             if changed_rows:
