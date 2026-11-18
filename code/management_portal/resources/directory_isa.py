@@ -28,7 +28,17 @@ def cleanup_status(inv, service):
     if any(row['actor'] != inv.caller for row in rows):
         try:
             service.get(inv.argument('resource_id'), actor=inv.caller)
-        except (KeyError, PermissionError):
+        except KeyError:
+            # A current grant can authorize observing the cleanup after the
+            # identity is gone. Do not require successful content resolution.
+            from management_portal import permission_system
+            if permission_system.allows(inv.caller, 'ReadResource',
+                                        {'address': inv.argument('resource_id')}):
+                return {'items': rows}
+            rows = [row for row in rows if row['actor'] == inv.caller]
+            if not rows:
+                raise InstructionError('instruction.forbidden', 'Directory cleanup is not visible to this caller') from None
+        except PermissionError:
             rows = [row for row in rows if row['actor'] == inv.caller]
             if not rows:
                 raise InstructionError('instruction.forbidden', 'Directory cleanup is not visible to this caller') from None
