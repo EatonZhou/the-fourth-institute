@@ -94,10 +94,13 @@ def _plan_updated(event: dict[str, Any], params: dict[str, Any], context: EventC
 def _error(event: dict[str, Any], params: dict[str, Any], context: EventContext, details: RuntimeDetails) -> None:
     error = mapping(params.get("error"))
     will_retry = bool(params.get("willRetry"))
+    message = str(error.get("message") or "").strip()
+    additional = str(error.get("additionalDetails") or "").strip()
+    content = "\n".join(dict.fromkeys(part for part in (message, additional) if part))
     details.add(context.detail(
         kind="error",
         title="Reconnecting" if will_retry else "Provider error",
-        content=str(error.get("message") or error.get("additionalDetails") or "Provider error"),
+        content=content or "Provider error",
         status="running" if will_retry else "failed",
         phase="reconnecting" if will_retry else "",
     ))

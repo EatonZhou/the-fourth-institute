@@ -11,6 +11,19 @@ from management_portal.execution import event_projection
 from management_portal.execution.backend_contracts import BackendContext
 
 
+def test_retry_activity_keeps_underlying_error_details():
+    for message, additional, expected in [
+        ('Reconnecting... 2/5', 'stream disconnected: idle timeout', 'Reconnecting... 2/5\nstream disconnected: idle timeout'),
+        ('same', 'same', 'same'), ('', 'connection reset', 'connection reset'),
+        ('only message', '', 'only message'), ('', '', 'Provider error'),
+    ]:
+        event = {'type': 'provider_event', 'sequence': 42, 'details': {'method': 'error', 'params': {
+            'willRetry': True, 'error': {'message': message, 'additionalDetails': additional}}}}
+        activities = event_projection.runtime_details_from_objects(enumerate([event], 1))
+        assert activities[0]['content'] == expected
+        assert activities[0]['phase'] == 'reconnecting'
+
+
 def test_native_dynamic_tool_activity_reaches_the_runtime_projection(tmp_path):
     """原生动态工具的开始、完成和失败事件进入运行时投影并写入活动记录"""
     from management_portal.execution.native_tool_events import tool_started, tool_completed
