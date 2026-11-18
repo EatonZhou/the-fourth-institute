@@ -8,11 +8,19 @@ const html = fs.readFileSync(path.join(root, 'management_portal/article_workspac
   .replace(/<script\b[^>]*>[\s\S]*?<\/script>/g, '').replace(/<link\b[^>]*>/g, '');
 const article = {id: 'article_123456789abc', title: '可打开的稿件'};
 const missingId = 'article_abcdef123456';
+// /api/resources/resolve returns ResourceService's flat HTTP document;
+// the HATG resource/target envelope is a separate transport contract.
+const resolvedArticle = {
+  schema: 'tfi.resource_resolution.v2', resource_type: 'article', root_id: missingId,
+  target_kind: 'article', exists: true,
+  record: {resource_id: missingId, title: '部分恢复的稿件', primary_file: 'main.md'},
+};
 
 (async () => {
   const browser = await chromium.launch({headless: true});
   const errors = [];
   let list = [], failList = false, releaseList, pendingList;
+  let resolution = {status: 404, json: {error: 'Article 不存在或无法读取'}};
   try {
     const page = await browser.newPage();
     page.setDefaultTimeout(5000);
@@ -26,7 +34,7 @@ const missingId = 'article_abcdef123456';
           ? {status: 503, json: {error: '暂时无法读取列表'}}
           : {json: {articles: list}});
       }
-      if (url.pathname === '/api/resources/resolve') return route.fulfill({status: 404, json: {error: 'Article 不存在或无法读取'}});
+      if (url.pathname === '/api/resources/resolve') return route.fulfill(resolution);
       return route.abort();
     });
     async function setup(search = '') {
@@ -46,6 +54,7 @@ const missingId = 'article_abcdef123456';
         window.state = {articles: [], selectedId: '', lastSelectedId: '', openFile: '',
           compilingArticles: new Set(), filesByPath: new Map(), texlabVersion: 0};
         window.guestFailures = [];
+        window.restoredDocuments = [];
         window.catalog = PortalArticleWorkspaceCatalog.createCatalog({
           ...Object.fromEntries(PortalArticleWorkspaceCatalog.dependencies.map(name => [name, noop])), $, state,
           selectedArticle: () => state.articles.find(item => item.id === state.selectedId),
@@ -55,7 +64,8 @@ const missingId = 'article_abcdef123456';
           updateUrl: id => history.replaceState(null, '', '/resource/article' + (id ? '?item=' + id : '')),
           detailHistory: {open: id => history.pushState(null, '', '?item=' + id)},
           detailResourceGuest: {failed: error => guestFailures.push(error), ready: noop, setResource: noop},
-          readingPosition: {persist: noop, prepare: noop, restoreDocuments: async () => {}},
+          readingPosition: {persist: noop, prepare: noop,
+            restoreDocuments: async (id, primary) => { restoredDocuments.push({id, primary}); }},
           loadBuild: async () => {}, loadArticleGit: async () => {},
           request: async url => {
             const response = await fetch(url), data = await response.json();
@@ -93,6 +103,39 @@ const missingId = 'article_abcdef123456';
     await page.evaluate(() => loadDone);
     assert.equal(await title(), 'Select an Article project', 'successful retry clears the error');
 
+    resolution = {json: resolvedArticle};
+    await setup('?item=' + missingId);
+    await page.evaluate(() => startLoad());
+    assert.equal(await page.evaluate(() => loadDone), '', 'flat HTTP resolution opens an Article absent from the list');
+    assert.equal(await title(), resolvedArticle.record.title);
+    assert.equal(await page.evaluate(() => state.selectedId), missingId);
+    assert.deepEqual(await page.evaluate(() => restoredDocuments), [{id: missingId, primary: 'main.md'}]);
+    assert.deepEqual(await page.evaluate(() => guestFailures), []);
+    assert.equal(await page.locator('#articleCompile').isDisabled(), false);
+
+    for (const invalid of [
+      {...resolvedArticle, resource_type: 'repo'},
+      {...resolvedArticle, root_id: article.id},
+      {...resolvedArticle, target_kind: 'file'},
+      {...resolvedArticle, exists: false},
+      {target: resolvedArticle, resource: resolvedArticle.record},
+    ]) {
+      resolution = {json: invalid};
+      await setup('?item=' + missingId);
+      await page.evaluate(() => startLoad());
+      assert.equal(await page.evaluate(() => loadDone), '这个地址不是可打开的 Article。');
+      assert.equal(await page.evaluate(() => state.selectedId), '');
+      assert.deepEqual(await page.evaluate(() => restoredDocuments), []);
+      assert.equal(await page.evaluate(() => guestFailures.length), 1);
+    }
+    resolution = {status: 403, json: {error: '无权读取 Article'}};
+    await setup('?item=' + missingId);
+    await page.evaluate(() => startLoad());
+    assert.equal(await page.evaluate(() => loadDone), '无权读取 Article');
+    assert.equal(await page.evaluate(() => state.selectedId), '');
+    assert.deepEqual(await page.evaluate(() => restoredDocuments), []);
+
+    resolution = {status: 404, json: {error: 'Article 不存在或无法读取'}};
     list = [article];
     await setup('?item=' + missingId);
     await page.evaluate(() => startLoad());
@@ -120,7 +163,7 @@ const missingId = 'article_abcdef123456';
     assert.equal(await page.evaluate(() => state.openFile), 'main.tex');
     assert.equal(await page.locator('#articleEditorState').innerText(), '未保存修改');
     assert.deepEqual(errors, []);
-    console.log('PASS: Article loading, empty, error, recovery and active-document preservation');
+    console.log('PASS: flat HTTP fallback, exact root/type/existence, denied reads, loading and active-document preservation');
   } finally {
     await browser.close();
   }

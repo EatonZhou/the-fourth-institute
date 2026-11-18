@@ -20,6 +20,7 @@ from .article_restore_source import snapshot, prepare_files, verify_prepared
 from .creation import Creation, abort_creations
 from .directory_registrations import directory_writer, is_deleted
 from .registration import ResourceRegistrationStore, RegistrationEvidenceMissing
+from .portal import portal_url_for_address
 from .registry_store import get_registry_store, announce_registry_changes, RegistryWriter
 
 ACTION = 'RestoreArticle'
@@ -157,7 +158,9 @@ def restore(*, arguments, actor, service, receipt_store, operation_id):
             raise ValueError('The restored Article was subsequently deleted or replaced')
         if writer.get('article', rid) != old.get('stored_document'):
             raise ValueError('The restored Article registration changed')
-        return old['result']
+        # Keep the historical receipt intact; resolve its navigation URL through
+        # the current route owner, including receipts written before this fix.
+        return {**old['result'], 'portal_url': portal_url_for_address(rid, 'article')}
 
     # Replays never recopy files or mint another recovery record.
     with directory_writer('article', JOURNAL) as writer:
@@ -242,7 +245,7 @@ def restore(*, arguments, actor, service, receipt_store, operation_id):
                     stored = article_registry.ARTICLE_REGISTRY.stored(document)
                     result = {'resource_id': rid, 'mode': 'partial_restore', 'primary_file': 'main.md',
                               'final_version_recovered': False, 'restored_at': now,
-                              'portal_url': '/article?article=' + rid}
+                              'portal_url': portal_url_for_address(rid, 'article')}
                     audit = {'resource_id': rid, 'mode': 'partial_restore', 'request_hash': request_hash,
                         'creation_key': creation.key, 'scope': scope, 'approval': approval,
                         'registration_ledger': ledger, 'hatg_receipt': receipt, 'tool_registration': tool,
@@ -253,7 +256,7 @@ def restore(*, arguments, actor, service, receipt_store, operation_id):
                         resource_type='article', connection=connection)
                     RetentionStore(connection=connection).declare(destination, category='object_data',
                         owner_id=rid, bytes=source['bytes'], connection=connection)
-        announce_registry_changes('article', {rid: 'restored'}, resource_type='article')
+        announce_registry_changes('article', {rid: 'created'}, resource_type='article')
         return result
     except Exception:
         # Abort only this intent's proven inodes. No generic owner unregister

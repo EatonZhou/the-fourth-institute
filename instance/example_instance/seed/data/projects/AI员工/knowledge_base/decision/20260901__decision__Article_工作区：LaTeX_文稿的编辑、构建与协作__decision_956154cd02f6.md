@@ -4,12 +4,12 @@ type: decision
 project: AI员工
 created_at: '2026-09-01'
 version:
-  number: 46
+  number: 47
   created_at: "2026-09-01"
   created_by:
     user: ""
     agent: ""
-  updated_at: "2026-11-18T07:29:57Z"
+  updated_at: "2026-11-18T08:00:30Z"
   updated_by:
     user: ""
     agent: "resident_6199a7a36480"
@@ -132,7 +132,7 @@ LaTeX 编辑区提供独立的“评论”面板。Monaco 源码编辑器选中�
 
 ## 登记和选择 Article
 
-- **链接中显式指定 Article ID 时，页面始终打开这个资源。** 已在列表中时使用该记录；列表索引暂未收录时，通过 ResourceService 直接解析已登记资源，再加载其目录、构建配置和主文稿。资源不存在、无法读取或地址类型不符时保留原链接，显示加载错误。
+- **链接中显式指定 Article ID 时，页面始终打开这个资源。** 规范入口为 `/resource/article?item=<Article ID>`。已在列表中时使用该记录；列表索引暂未收录时，请求 `/api/resources/resolve?address=<Article ID>`，按 HTTP 的平铺响应读取 `resource_type/root_id/target_kind/exists/record`。只有类型为 `article`、根ID与请求完全相同、目标为 Article 本身且存在时，才用 `record` 加载目录、构建配置和主文稿；HATG 的 `resource/target` 包装不作为此 HTTP 响应解析。资源不存在、无法读取或地址类型不符时保留原链接，显示加载错误。
 - **没有显式 ID 时，页面恢复上次选择的有效 Article。** 上次选择已不在列表时使用列表第一项；列表为空时显示未选择状态。
 - **选择器的加载提示对应实际请求。** 页面初始空壳显示选择 Article；请求列表或解析显式地址期间显示加载状态。列表为空时退出加载并显示未选择；请求失败时退出加载并显示错误，已取得的其他 Article 仍可选择。刷新列表失败时保留已打开稿件及未保存修改。
 

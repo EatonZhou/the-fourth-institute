@@ -4,12 +4,12 @@ type: decision
 project: AI员工
 created_at: '2026-09-28'
 version:
-  number: 48
+  number: 49
   created_at: "2026-09-28T10:45:00Z"
   created_by:
     user: "weihao"
     agent: "resident_2a1fc6cd272d"
-  updated_at: "2026-11-18T07:29:57Z"
+  updated_at: "2026-11-18T08:00:30Z"
   updated_by:
     user: ""
     agent: "resident_6199a7a36480"
@@ -215,7 +215,7 @@ CreateWorkspace 要求目标位置不存在；RegisterWorkspace 要求目标是�
 
 方案包含人可读对象、候选、目标、部分内容及当前项目共享说明，并附服务重算的范围摘要。正式决定通过 Society 的真实 User 消息验证：固定问题组的双向回答关联，或明确引用该方案的同意答复。当前支持固定共享选项，或引用下的“同意”“同意该共享范围”等明确答案；普通请求、任意消息ID及临时凭证不构成此范围的共享决定。当前继承排除临时凭证，加入原 Article 精确持久拒绝；意外直接永久许可拒绝提交。
 
-目录事务、崩溃续办及文件回收遵循 decision_4aa13bc21e8e。结果返回原 `resource_id`、`mode=partial_restore`、`primary_file=main.md`、`final_version_recovered=false`、实际恢复时间和原资源入口。保留可证原标题与首次登记时间，原作者和历史ACL缺失保持未知，恢复人和时间单独审计。成功必须以正式动作提交和原ID可读为准；部署动作本身不恢复业务数据。
+目录事务、崩溃续办及文件回收遵循 decision_4aa13bc21e8e。结果返回原 `resource_id`、`mode=partial_restore`、`primary_file=main.md`、`final_version_recovered=false`、实际恢复时间和原资源入口。首次提交及幂等返回的 `portal_url` 均由统一资源路由生成，当前 Article 入口为 `/resource/article?item=<Article ID>`；旧回执重入只规范化返回副本的地址，保留原审计。提交成功后使用已有 `created` 资源变化类型通知恢复后的活登记；幂等返回不重复通知。保留可证原标题与首次登记时间，原作者和历史ACL缺失保持未知，恢复人和时间单独审计。成功必须以正式动作提交和原ID可读为准；部署动作本身不恢复业务数据。
 
 ### `UpdateResource`
 

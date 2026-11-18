@@ -332,10 +332,11 @@
         if (requested && !state.articles.some(article => article.id === requested)) {
           try {
             const resolution = await request(`/api/resources/resolve?address=${encodeURIComponent(requested)}`);
-            if (resolution.target?.resource_type !== "article" || resolution.target.root_id !== requested) {
+            if (resolution.resource_type !== "article" || resolution.root_id !== requested
+                || resolution.target_kind !== "article" || resolution.exists !== true) {
               throw new Error(window.PortalI18n.t("这个地址不是可打开的 Article。"));
             }
-            state.articles.push({ ...resolution.resource, id: requested });
+            state.articles.push({ ...resolution.record, id: requested });
           } catch (error) {
             detailResourceGuest.failed({ resourceId: requested, error: error.message || String(error) });
             throw error;

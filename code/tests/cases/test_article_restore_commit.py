@@ -107,6 +107,7 @@ def apply(world, **changes):
 def test_missing_old_ledgers_partial_restore_atomic_and_idempotent(world):
     result = apply(world)
     assert result['resource_id'] == ARTICLE and result['mode'] == 'partial_restore'
+    assert result['portal_url'] == '/resource/article?item=' + ARTICLE
     assert result['final_version_recovered'] is False
     assert world.destination.joinpath('old-source/main.tex').read_bytes() == b'old source'
     doc = world.registry.get('article', ARTICLE)
@@ -124,6 +125,35 @@ def test_missing_old_ledgers_partial_restore_atomic_and_idempotent(world):
         row = conn.execute(f'SELECT owner_id,eligible_at FROM {retention.table} WHERE location=%s',
                            (cleanup_location(world.destination),)).fetchone()
         assert row['owner_id'] == ARTICLE and row['eligible_at'] is None
+
+
+def test_legacy_replay_returns_canonical_url_without_rewriting_audit(world):
+    from management_portal.resources.directory_registrations import directory_writer
+    result = apply(world)
+    with directory_writer('article_restorations') as writer:
+        audit = writer.get('article_restorations', ARTICLE)
+        audit['result']['portal_url'] = '/article?article=' + ARTICLE
+        writer.put('article_restorations', ARTICLE, audit)
+    previous = world.registry.get('article_restorations', ARTICLE)
+    replayed = apply(world)
+    assert replayed['portal_url'] == '/resource/article?item=' + ARTICLE
+    assert replayed == result
+    assert world.registry.get('article_restorations', ARTICLE) == previous
+
+
+def test_restoration_announces_supported_creation_once(world, monkeypatch):
+    from management_portal import resources
+    from management_portal.resources.changes import ResourceChange
+    changes = []
+    def notify(**arguments):
+        changes.append(ResourceChange(**arguments))
+    monkeypatch.setattr(resources, 'get_resource_service',
+                        lambda: SimpleNamespace(notify_source_changed=notify))
+    apply(world)
+    apply(world)
+    assert len(changes) == 1
+    assert changes[0].kind == 'created'
+    assert changes[0].resource_id == ARTICLE and changes[0].resource_type == 'article'
 
 
 @pytest.mark.parametrize('fault', ['cache_only', 'pending', 'source', 'shared', 'deny', 'decision', 'forged', 'proposal', 'occupied'])
