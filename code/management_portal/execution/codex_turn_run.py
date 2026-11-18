@@ -454,6 +454,16 @@ class CodexTurnRun:
         completed_turn_id = str(
             completed_turn.get("id") or turn_id
         ).strip()
+        if completed_turn_id and completed_turn.get("status") in {"interrupted", "failed"}:
+            # Save the terminal fact before the follower raises or hands over.
+            # A replacement worker must not reconnect to this ended turn.
+            self.persist_recovery_state({
+                "kind": "terminal_turn",
+                "turn_id": completed_turn_id,
+                "turn": {key: completed_turn[key] for key in ("id", "status", "error")
+                         if key in completed_turn},
+            })
+            return
         response = codex_final_agent_response(completed_turn, [])
         if (
             completed_turn_id
@@ -615,6 +625,16 @@ class CodexTurnRun:
             raise InterruptedError(
                 f"Codex execution cancelled for {self.session.thread_id}"
             ) from failure
+        if self.provider_recovery_state.get("kind") != "terminal_turn":
+            # Some transports report the terminal exception without delivering
+            # a notification. Preserve that fact at the same recovery boundary.
+            self.persist_recovery_state({
+                "kind": "terminal_turn", "turn_id": failure.turn_id,
+                "turn": {"id": failure.turn_id,
+                         "status": "interrupted" if isinstance(failure, CodexTurnInterrupted) else "failed",
+                         "error": {"message": str(failure), **({"codexErrorInfo": "serverOverloaded"}
+                                   if isinstance(failure, CodexTurnRetryableFailure) else {})}},
+            })
         policy = self.invocation.provider_error_recovery
         if policy is None or policy.max_continue_attempts < 1:
             raise failure
@@ -645,6 +665,12 @@ class CodexTurnRun:
             raise CodexAppServerUnavailable(
                 "Codex accepted a turn but did not return its identity"
             )
+        terminal = self.provider_recovery_state
+        if terminal.get("kind") == "terminal_turn" and terminal.get("turn_id") == current_turn_id:
+            failure = terminal_turn_error(session.thread_id, terminal["turn"])
+            if isinstance(failure, (CodexTurnInterrupted, CodexTurnRetryableFailure)):
+                raise self.recover_provider_failure(failure) from failure
+            raise failure
         retry_delay = 0.25
         reconnect_deadline = time.monotonic() + 540.0
         while True:

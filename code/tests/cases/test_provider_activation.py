@@ -19,13 +19,13 @@ def _peer(call):
         return pool.submit(call).result(timeout=10)
 
 
-def test_running_execution_is_preserved_then_runtime_is_replaced_without_wait(monkeypatch, tmp_path):
+def test_codex_selection_does_not_prepare_recovery_or_wait_for_running_jobs(monkeypatch, tmp_path):
     calls = []
     monkeypatch.setattr(updates, "_active_executions", lambda _: 1)
     monkeypatch.setattr(updates, "_prepare_execution_recovery", lambda provider: calls.append(("recovery", provider)))
     monkeypatch.setattr(updates, "_switch_runtime", lambda provider, runtime, root, **kw: calls.append(("switch", root)) or True)
     assert updates._activate("codex", updates.CodexRuntime(), tmp_path)
-    assert calls == [("recovery", "codex"), ("switch", tmp_path)]
+    assert calls == [("switch", tmp_path)]
 
 
 def test_recovery_preparation_failure_keeps_previous_runtime(monkeypatch, tmp_path):
@@ -34,7 +34,7 @@ def test_recovery_preparation_failure_keeps_previous_runtime(monkeypatch, tmp_pa
     switch = Mock()
     monkeypatch.setattr(updates, "_switch_runtime", switch)
     with pytest.raises(RuntimeError):
-        updates._activate("codex", updates.CodexRuntime(), tmp_path)
+        updates._activate("claude", updates.ClaudeRuntime(), tmp_path)
     switch.assert_not_called()
     # The failed updater cannot leave dispatch paused.
     db = portal_database(schema="execution_runtime")

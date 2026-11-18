@@ -4,15 +4,15 @@ type: decision
 project: AI员工
 created_at: '2026-07-29'
 version:
-  number: 27
+  number: 30
   created_at: "2026-07-29"
   created_by:
     user: ""
     agent: ""
-  updated_at: "2026-11-15T08:26:30Z"
+  updated_at: "2026-11-18T01:49:05Z"
   updated_by:
     user: ""
-    agent: "resident_60ae6d0cdf74"
+    agent: "resident_2e9ea0072551"
 importance: 9
 metaness: 2
 ai_generated: false
@@ -53,7 +53,7 @@ Codex 会话协议见 decision_3e8c2a7f91d4，Codex 账号选择见 decision_3dd
 
 - **运行时（runtime）**：Provider 实际运行的程序包，例如 npm 包 `@openai/codex` 提供的 `codex` 命令。
 - **版本目录**：每个版本单独安装的目录，属于代码层依赖，放在代码目录的 `dependencies/` 下（《Portal 实例协议》），名称带版本号，例如 `codex-cli-0.159.2`。安装新版本只新增目录，不改动正在使用的版本。
-- **当前链接**：指向正在使用的版本目录的符号链接。服务只通过当前链接启动运行时，所以切换版本就是改变链接指向并重启服务。
+- **当前链接**：选择后续进程启动所用的版本目录。Codex 运行中的进程继续使用原不可变版本，链接变化不表示所有账号已加载新版。
 - **验证标记**：版本目录中的 `.portal-validated` 文件，表示这个目录已经装好并通过了启动检查。
 - **systemd 用户服务**：Linux 上以部署服务的操作系统账号运行的后台服务，异常退出后由 systemd 自动拉起；Windows 使用安装器的服务控制器，不依赖 systemd 或固定主机用户名。
 
@@ -70,9 +70,9 @@ Codex 会话协议见 decision_3e8c2a7f91d4，Codex 账号选择见 decision_3dd
 
 本站将每个稳定入口的绝对路径显式保存在 `config/site.json` 的 `deployment.providers` 中：Codex 用 `codex_binary`，Claude SDK 用 `claude_runtime_current`，Claude daemon 代码包用 `claude_app_server_current`，Kimi 用 `kimi_runtime_current`，DSH 用 `dsh_runtime_current`，OpenCode 用 `opencode_runtime_current`。这些字段保存软链接本身的位置，版本目录由链接目标选择；路径解析仅规范化父目录，保留最后一级链接。运行时更新器、客户端和服务安装器使用相同字段，显式路径非法时报告错误，不改用另一程序。未配置的源码安装保留首次接入发现与平台引导默认值。
 
-Codex 全部账号共用站点 `codex_binary` 和运行时版本，各账号仍有独立的 `CODEX_HOME`、会话与 socket。账号内 `packages/app-server-daemon` 是 Codex 自身的受管 daemon 安装目录，与 Portal 的共享入口分别管理；程序清理须先检查真实服务命令和进程引用，不把账号凭据或会话纳入程序包清理范围。
+Codex 全部账号共用站点 `codex_binary` 的后续启动选择，运行中的账号可保留不同版本。各账号仍有独立的 `CODEX_HOME`、会话与 socket。账号内 `packages/app-server-daemon` 是 Codex 自身的受管 daemon 安装目录，与 Portal 的共享入口分别管理；程序清理须先检查真实服务命令和进程引用，不把账号凭据或会话纳入程序包清理范围。
 
-实际运行版本以当前链接指向的版本和更新检查输出为准；待切换版本由 `provider-updates.json` 保存。DSH 首次部署的当前链接可以指向仓库中按开放版本声明安装的依赖，后续更新使用独立版本目录。每次启动 DSH 进程时，启动方从自己的 Portal 代码树复制 bridge.mjs 到该会话的 profile 目录；依赖仍通过运行时当前链接解析。Dev 与 Release 各自的桥接脚本随各自代码发布生效，不依赖第三方运行时版本更新。
+程序入口选择以当前链接和更新检查输出为准；Codex daemon 的实际版本须独立观察，不能由入口选择推断；待切换版本由 `provider-updates.json` 保存。DSH 首次部署的当前链接可以指向仓库中按开放版本声明安装的依赖，后续更新使用独立版本目录。每次启动 DSH 进程时，启动方从自己的 Portal 代码树复制 bridge.mjs 到该会话的 profile 目录；依赖仍通过运行时当前链接解析。Dev 与 Release 各自的桥接脚本随各自代码发布生效，不依赖第三方运行时版本更新。
 
 ## 设计点
 
@@ -87,20 +87,20 @@ Codex 全部账号共用站点 `codex_binary` 和运行时版本，各账号仍�
   - DSH：将桥接脚本及其同目录的 `.mjs` 模块复制到新版本目录；桥接脚本通过语法检查，并能连同依赖模块加载和导出 Portal 调用的 `apply` 函数。
 
   通过后写入验证标记。已有验证标记的目录不再重复安装，只重新检查。
-- **已验证的新版本直接自动启用。** 更新属于系统维护，不请求用户授权，也不等待在途执行、Provider 队列或独立原生客户端空闲。运行时更新器在切换前通知 Resident owner，为确切在途原输入登记一次维护恢复意图；随后切换共享程序入口并重启所选账号服务。移除以原生准入能力尚未验证为由永久阻断启用的规则。
-- **在途任务中断后自动接续。** 原生服务重启时，Execution 先按已有检查点重接原会话；若本次中断耗尽执行重试，Society coordinator 以原消息身份、发送者、附件和上下文恢复确切原输入一次，不消费网络故障重试预算。已完成、用户已取消、手动关闭接收或出现认证等明确不可恢复失败时不重放。一次维护意图只作用于所记录的 Execution，不复活后续无关失败。
-- **切换范围由 Provider 的运行时更新器给出。** 检查程序把当前链接原子地换成新版本目录，依次重启更新器返回的服务，并确认它们处于运行状态。Codex 更新器从账号登记查询模板实例，只选择当前 `active` 的实例：已停用登记但仍在服务的进程也更新，原本停止的实例保持停止。账号之间隔离身份与会话，共用运行时版本；验证更新生效时核对被更新实例实际运行的二进制和版本。服务定义由实例清单与平台渲染器生成，按已登记账号组件选择，不把运行中的实例名当作仓库 unit 文件。
+- **Codex 更新只选择后续启动版本。** 安装和启动检查成功后原子更新共享入口；自动更新不探测、重启或启动账号进程，也不登记在途输入的维护恢复意图。运行中账号继续使用旧版，停止的账号保持停止，下次正常启动使用新选择。允许账号短期运行不同版本；立即换代须单独安排维护。`installed_version` 表示选定入口版本，不能作为全部在运行 daemon 的版本证明。
+- **其他 Provider 保持既有维护恢复流程。** 激活窗口阻止新领取；需要替换已有服务时，先为确切在途原输入登记维护恢复意图，再切换入口并重启所选服务。该流程不用于 Codex 自动更新。
+- **服务切换范围由其他 Provider 的运行时更新器给出。** Claude、Kimi、DSH 保持已有服务选择、就绪检查和失败回退。Codex 仅更新程序入口，原会话、输入与运行中的账号服务保持原样；它的服务定义仍由实例清单及平台渲染器管理。
 - **切换失败时退回原版本。** 任一服务重启失败，检查程序把当前链接改回原来的目录并再次重启这些服务，然后报告错误；安装失败时当前版本保持不变。
-- **待切换状态表示仍有实际维护工作需要重试。** 安装或切换失败时保留当前运行时或回退，并由实例自己的 `<服务前缀>-provider-activation` 瞬态作业每 30 秒重试，最长 72 小时。作业只传入非秘密的 `PORTAL_INSTANCE_ROOT`，其余配置和数据库端点由实例清单与秘密文件解析。任务停止时释放维护期间的准入锁，不保留需要人工解除的暂停状态。
+- **待切换版本由独立维护作业重试。** 作业每 30 秒重试，最多等待 24 小时。Codex 重试只选择程序入口，不等待全体 Resident 空闲，也不重启账号；其他 Provider 沿用已有激活与恢复。作业使用实例 PostgreSQL 环境文件，凭据不写入命令参数。
 - **同一时间只运行一次检查。** 检查程序持有文件锁 `provider-updates.lock`，位于 provider-state 区域的根目录；另一次检查正在运行时，新的调用立即返回 `busy`。待切换的版本和最近一次检查时间保存在同目录的 `provider-updates.json`。
 
-更新请求由 `scripts/update_provider_runtimes.py` 提交给实例的独立瞬态作业，返回 JSON 受理回执、单元名和结果文件路径。安装、切换和重试在该作业执行，结果写入实例 `runtime/provider-update-result.json` 并进入作业日志；更新器不属于待重启的原生账号服务，发起更新的 Resident 中断也不会杀死更新过程。加 `--activate-pending` 时只重试已暂存版本。结果区分已检查、已启用、仍待重试与实际错误。
+更新检查由 `scripts/update_provider_runtimes.py` 执行一次（加 `--activate-pending` 时只尝试启用待切换的版本）。它输出 JSON 结果，列出每个 Provider 的已安装版本与可用版本、本次启用的 Provider、仍在等待的 Provider 和错误；有错误或检查正忙时以非零状态退出。
 
 Provider 声明了仓库内的运行时包（`AgentProvider.runtime_package`，目前只有 DSH 的 `management_portal/dsh_runtime`）时，第一次部署由 `scripts/prepare_agent_runtimes.py` 按仓库中的开放版本声明安装这个目录，并在这个 Provider 的当前链接不存在时让它指向这个目录；之后的版本切换由更新检查负责。
 
 ## 原生运行时的协议兼容边界
 
-ProviderRuntime 同时声明可安装版本的来源与已安装版本是否符合当前 Adapter 的原生协议。程序能输出版本、文件存在与原生协议受支持分别判断；不兼容版本不能计为 ready。安装与更新选择受支持范围内的最新稳定版本，沿同一 stage、直接切换、输入恢复和失败回退流程恢复，保留账号、会话与持久执行身份。
+ProviderRuntime 同时声明可安装版本的来源与已安装版本是否符合当前 Adapter 的原生协议。程序能输出版本、文件存在与原生协议受支持分别判断；不兼容版本不能计为 ready。安装与更新选择受支持范围内的最新稳定版本，沿同一 stage、空闲切换和失败回退流程恢复，保留账号、会话与持久执行身份。
 
 当前 Kimi Adapter 使用原始实时事件与 snapshot 合同，兼容版本范围为 `<2.5.0`。2.4.1 的 server_hello 虽声明 protocol_version=2，仍提供 accepted_subscriptions 确认、原始事件及 snapshot/status；该版本受支持。2.5 移除这些旧合同，改用 transcript 订阅和控制合同，需要完整适配后才能扩展支持范围。握手版本号不能单独判断两者兼容性。client_hello 的空成功 ACK 不代表已订阅一个 Session；遇到不支持的协议明确拒绝，不能依赖历史拼装提供流式完成结果。当前首次接入选择该范围内最新稳定版，既有兼容运行时继续复用。
 
@@ -110,26 +110,27 @@ Claude 原生 session/close 指定 session_id 时释放该确切原生会话的�
 
 ## 首次接入的环境准备
 
-AI Backend 页面通过 PrepareProviderRuntime 准备所选 Provider。已有可用运行时直接复用，包括开发机现有程序；不强制独立安装或隔离目录，不在接入动作中升级现有可用程序。直连模型 API 无需本地 Agent 程序。缺失的运行时由原 ProviderRuntime.available/stage 和统一激活 owner 完成，沿用更新锁、在途恢复、切换与失败回退，不建立另一套安装器。
+AI Backend 页面通过 PrepareProviderRuntime 准备所选 Provider。已有可用运行时直接复用，包括开发机现有程序；不强制独立安装或隔离目录，不在接入动作中升级现有可用程序。直连模型 API 无需本地 Agent 程序。缺失的运行时由原 ProviderRuntime.available/stage 和统一激活 owner 完成，沿用更新锁、空闲保护、切换与失败回退，不建立另一套安装器。
 
 任务在服务端异步运行，preparations 记录 preparing、ready、pending、failed 及进程身份。页面可关闭并重新打开观察；进程退出或本进程任务已结束而状态仍 preparing 时标为 interrupted，可重试。准备失败仅返回安全提示；原始安装器错误不进入页面。运行时准备与账号授权、服务可执行性分别判断，实际模型回复由账号接入测试验证。Codex 在程序尚未安装时允许先登记，登录或执行检查时沿原服务控制入口补齐实例；程序路径优先使用站点配置和 PATH 里的现有程序，再用受管路径。Claude 的未运行 daemon 不视为有活跃任务。
+
+## 每日检查与异常处理
+
+System Lineage 的每日时间事件直接调用 Effect，由 Effect 通过 RunScript 运行 `scripts/update_provider_runtimes.py --lineage-update`。同一个手动事件也进入这条路径。例行版本查询、安装、启动检查和空闲激活不经过 Resident 模型任务，因而不依赖模型账号的剩余额度。本站时间事件保持每天 Asia/Hong_Kong 09:00；脚本路径来自当前 Release 部署。
+
+每次 RunScript 使用 `provider-runtime-update` 独占键，并设四小时执行上限。更新器继续用实例状态锁防止不同入口并发修改运行时。脚本保存本次检查结果到实例 runtime 下的 `provider-update-result.json`，同时把结果输出到 ScriptRun 日志；日志、退出码与 script_run_id 保留在正式脚本运行记录中。
+
+`--lineage-update` 完成一轮检查后退出。有待启用版本时，它启动实例所属的 provider-activation 独立作业，使用 `--activate-pending` 每 30 秒检查空闲状态，最多等待 72 小时。等待启用不占住每日检查的 ScriptRun；下一天仍能重新检查版本并继续安排启用。已有活动作业直接复用。查询、安装或启动等待作业失败，以及更新锁忙而未完成检查，均不能作为成功检查返回。
+
+更新 Effect 的 `script.finished` 失败事件交给 Provider Runtime 更新维护 Resident；Effect 的失败接收者同时获得平台失败通知。维护 Resident 使用自动账号选择，并允许额度不足时自动迁移，负责异常调查与修复。常规成功检查不调用模型。待启用状态与失败分别记录，不能把“已安装、等待空闲”写成“已启用”；运行时的空闲检查与失败回退契约保持不变。
 
 ## 一次更新怎样进行
 
 ```text
-读取发布源的最新版本 ──不比当前新──→ 跳过
-        │更新
+安装独立版本目录并验证
         ↓
-安装到新的版本目录，运行启动检查，写入验证标记
-        ↓
-短暂暂缓该 Provider 的新认领 → 登记确切在途输入的恢复意图
-        ↓
-原子替换当前链接 → 重启该 Provider 更新器选中的服务 → 验证服务就绪
-        ↓
-释放新认领 → 在途执行重接，失败的原输入由 coordinator 自动恢复
-        │失败
-        ↓
-链接改回原版本并重启服务，报告错误
+Codex：原子选择后续启动入口 → 现有账号进程保持运行 → 下次正常启动采用新版
+其他 Provider：维护恢复意图 → 替换入口并重启所选服务 → 就绪检查，失败回退
 ```
 
 ## Codex App Server 的部署
@@ -189,3 +190,8 @@ Codex 原生 `threads.rollout_path` 保存 `sessions/...`、`archived_sessions/.
 迁移先用 SQLite 在线备份保存原索引，再核对账号内文件名与 session_meta 的 thread 身份，按旧值条件更新；缺文件、身份不符、路径越界或存在歧义时保留原记录并报告。备份在该账号的 `portal-index-backups/` 下。历史 JSONL、线程 ID、Portal 会话绑定与任务工作区不因索引迁移而变化。当前原生协议依赖进程启动目录解析相对路径；运行时更新须验证历史读取、resume 和 fork，以及迁移账号目录后保持这些行为。
 
 POSIX Host 使用私有临时端点完成准备后再发布正式端点；原生 CLI 提供指向其私有 daemon socket 的符号链接时，核对 socket 与父目录归属和写权限。Windows 在相同准备完成后发布私有连接描述符。Linux 服务定义显式部署刷新可以替换经本站清单与组件归属核验的自有定义；普通账号启动不会覆盖不同的服务定义。
+
+
+## 已终止 Codex turn 的恢复
+
+Execution 将收到的 interrupted/failed 终态与 turn ID 持久保存。Worker 交接后，已确认结束的 turn 直接进入统一错误分类与续接策略，不再作为运行中的 turn 重新跟随。明确可恢复的中断沿原会话和原输入继续；取消、认证、额度与安全拒绝保留原有停止语义，未知状态仍只观察。三次无新增有效工作的持久恢复上限保持不变。

@@ -595,7 +595,7 @@ def _activate(provider: str, runtime: ProviderRuntime, root: Path, *, prepare=Fa
             return False
         if not runtime.activation_ready(root):
             return False
-        if _active_executions(provider):
+        if provider != "codex" and _active_executions(provider):
             _prepare_execution_recovery(provider)
         return _switch_runtime(provider, runtime, root, prepare=prepare)
 
@@ -609,9 +609,13 @@ def _prepare_execution_recovery(provider):
 
 @diagnosed("service_activation")
 def _switch_runtime(provider: str, runtime: ProviderRuntime, root: Path, *, prepare=False) -> bool:
-    """Replace the runtime while its activation window excludes new claims."""
-    services = runtime.services
-    accounts = runtime.account_processes()
+    """Select a runtime; existing Codex processes keep their immutable version.
+
+    Codex adopts the selection on its next normal service start. Updating
+    must not stop live native work, including clients outside Portal.
+    """
+    services = () if provider == "codex" else runtime.services
+    accounts = () if provider == "codex" else runtime.account_processes()
     controller = runtime.service_control()
     link = runtime.activation_link()
     previous = link.resolve() if link.exists() else None
@@ -626,7 +630,7 @@ def _switch_runtime(provider: str, runtime: ProviderRuntime, root: Path, *, prep
                 time.sleep(.1)
         for account_id in accounts:
             runtime.restart_account_process(account_id)
-        if prepare or services or accounts:
+        if provider != "codex" and (prepare or services or accounts):
             runtime.ensure_ready()
     except Exception as exc:
         rollback_failed = False

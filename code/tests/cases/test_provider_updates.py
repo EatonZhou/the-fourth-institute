@@ -110,7 +110,7 @@ def test_activation_rollback_keeps_original_dynamic_service_snapshot(monkeypatch
         restart=lambda service: command("systemctl", "--user", "restart", service),
         status=lambda service: {"active": "active"}))
     with pytest.raises(RuntimeError, match="服务启用失败"):
-        updates._activate("codex", DynamicRuntime(), new)
+        updates._activate("claude", DynamicRuntime(), new)
     assert link.resolve() == old
     assert calls == [("systemctl", "--user", "restart", "registered.service")] * 2
 

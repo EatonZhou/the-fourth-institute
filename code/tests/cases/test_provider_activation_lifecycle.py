@@ -90,7 +90,7 @@ def test_native_first_start_rolls_back_failed_health(native, monkeypatch):
     assert 'claude-code' not in load(root).document['services']['components']
 
 
-def test_codex_update_restarts_account_hosts_through_instance_controller(monkeypatch, tmp_path):
+def test_codex_update_leaves_existing_account_hosts_running(monkeypatch, tmp_path):
     from scripts import instance_services
     from tests.cases.provider_service_test_support import provider_instance
     provider_instance(monkeypatch, tmp_path)
@@ -103,7 +103,7 @@ def test_codex_update_restarts_account_hosts_through_instance_controller(monkeyp
     monkeypatch.setattr(runtime, 'activation_link', lambda: tmp_path/'link')
     monkeypatch.setattr(updates, '_link', lambda *a: None)
     assert updates._activate('codex', runtime, tmp_path/'new')
-    own.restart.assert_called_once_with('account-host')
+    own.restart.assert_not_called()
 
 
 def test_windows_user_restart_uses_same_directory():
