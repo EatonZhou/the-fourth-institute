@@ -16,6 +16,16 @@ STREAM_POLL_SECONDS = 1.0
 STREAM_HEARTBEAT_SECONDS = 15.0
 
 
+def get_deleted_resident_history(inv: Invocation) -> dict[str, Any]:
+    from ..resident_deleted_history import read_history
+
+    return read_history(
+        inv.argument("resident_id"), inv.caller,
+        section=inv.argument("section") or "identity",
+        cursor=inv.argument("cursor") or "", limit=inv.argument("limit") or 50,
+    )
+
+
 def _message_id(inv: Invocation, message: dict[str, Any], resident_id: str) -> str:
     from management_portal.society_service import resident_message_contract
 
@@ -527,6 +537,7 @@ HANDLERS = {
     "ListRecentRounds": list_recent_rounds,
     "SearchMessages": search_messages,
     "GetMessageArtifact": get_message_artifact,
+    "GetDeletedResidentHistory": get_deleted_resident_history,
     "GetSentPrompt": get_sent_prompt,
     "GetSubagentRun": get_subagent_run,
     "ClearContext": clear_context,

@@ -35,6 +35,21 @@ DELIVERED = (
 )
 
 DECLARATIONS = (
+    _d("GetDeletedResidentHistory", ON_RESIDENT,
+       "按当前目标管理权限分页读取已删除 Resident 的保留身份、对话、执行与 Segment/产物引用索引；不恢复或运行。", (
+        R("resident_id", description="已删除 Resident 的精确统一 ID"),
+        P("section", description="默认 identity；messages 包含保留对话，executions 为执行索引，segments 仅无正文索引",
+          enum=("identity", "messages", "executions", "segments")),
+        P("cursor", description="上一页 next_cursor，仅适用于同一 Resident 和 section；每页重新鉴权"),
+        P("limit", "integer", "每页上限，默认 50", minimum=1, maximum=100),
+    ), (
+        R("resident_id", description="同一历史身份"),
+        R("identity", "object", "身份墓碑：resident_id、title、deleted_at、deleted_by"),
+        R("section", description="本页类别"),
+        R("items", "array", "有界保留事实；附件和外部来源只提供引用，不读取字节"),
+        P("next_cursor", description="有后续页时提供；游标不授予权限"),
+        P("availability", "object", "权威 Agent/trace 的保留情况；不证明原目录、原生会话或附件仍可用"),
+    ), target="resident_id"),
     _d("DeliverMessage", (On("resident_id", "resident", optional=True), On("user_id", "user", optional=True)), (
         "向 Resident 投递一条用户消息；Resident 空闲时立即开始处理，忙碌时按接收顺序排队。"
         "也可以由 Resident 发给用户：消息不进入队列，写在发送方自己的对话中并注明收件人，用户在自己的 Mailbox 中看到未读。"

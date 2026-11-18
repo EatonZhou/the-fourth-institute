@@ -4,15 +4,15 @@ type: decision
 project: AI员工
 created_at: '2026-09-28'
 version:
-  number: 59
+  number: 60
   created_at: "2026-09-28T10:45:00Z"
   created_by:
     user: "weihao"
     agent: "resident_2a1fc6cd272d"
-  updated_at: "2026-11-13T20:31:08Z"
+  updated_at: "2026-11-18T03:35:37Z"
   updated_by:
     user: ""
-    agent: "resident_737599f56947"
+    agent: "resident_6199a7a36480"
 importance: 8
 metaness: 2
 ai_generated: false
@@ -61,6 +61,7 @@ links:
 | `DeliverMessage` | 是 | 向 Resident 投递一条用户消息，或由 Resident 给用户发消息 | 对 `resident_id` 有 @message；对 `user_id` 有 @message |
 | `ForwardMessages` | 是 | 把选中的消息整理成一条新消息发给 Resident 或聊天室 | 对 `target_resident_id` 有 @message；对 `target_chatroom_id` 有 @contributor |
 | `GetConversation` | 否 | 读取对话快照 | 对 `resident_id` 有 @viewer |
+| `GetDeletedResidentHistory` | 否 | 有界读取已删除 Resident 的保留身份、对话和执行索引 | 对精确 `resident_id` 有 @admin；仍核验个人空间边界 |
 | `ListMessages` | 否 | 分页读取更早的消息 | 对 `resident_id` 有 @viewer |
 | `ResolveMessageContextReferences` | 否 | 受理前读取已鉴权材料快照，保留来源身份与范围 | 对 `target_resident_id` 有 @viewer |
 | `ListInputHistory` | 否 | 从新到旧分页读取调用者本人在一个 Resident 会话或聊天室里发过的输入，供输入框的输入历史使用 | 对 `resident_id` 有 @viewer；对 `chatroom_id` 有 @viewer |
@@ -110,6 +111,12 @@ links:
 ## 读取对话
 
 读取类指令的数量上限：快照 `history_limit` 为 1–1000，默认 200；分页 `limit` 为 1–1000，默认 200；搜索 `limit` 为 1–200，默认 50；事件订阅的单批上限为 1–2000，默认 500。参数超出范围或格式错误时返回 `instruction.invalid_arguments`；目标不存在或调用者无权看到时返回 `instruction.not_found`。
+
+### `GetDeletedResidentHistory`
+
+仅用于已删除 Resident 的保留历史。参数为精确的 `resident_id`、页面类别 `section`，以及可选的 `cursor` 和 `limit`；每页最多100项。身份页报告已保存的删除事实；对话页包含清空聊天窗口之前仍保留的通信记录；执行页包含没有生成 Segment 的失败执行；Segment 页只返回元数据和产物引用索引，不读取工具正文或附件字节。
+
+每页重新按当前调用者核验目标管理权限和个人 AMA 规则。显式 deny、撤权和过期委托仍拒绝；游标绑定目标及页面类别，不承载权限。读取不依赖原 Lineage 或工作目录仍存在，不创建 Agent、Conversation、初始化、会话或队列，也不触发模型调用。超出页面正文预算时明确标注省略，不能把当前页或省略正文称为完整历史导出。缺失、非删除目标、空历史和无权限按各自结果报告。
 
 ### `GetConversation`
 

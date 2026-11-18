@@ -4,40 +4,40 @@ type: decision
 project: AI员工
 created_at: '2026-08-05'
 version:
-  number: 58
-  created_at: '2026-08-05'
+  number: 59
+  created_at: "2026-08-05"
   created_by:
-    user: ''
-    agent: ''
-  updated_at: '2026-10-31T01:31:06Z'
+    user: ""
+    agent: ""
+  updated_at: "2026-11-18T03:35:36Z"
   updated_by:
-    user: ''
-    agent: resident_73cb83291316
+    user: ""
+    agent: "resident_6199a7a36480"
 importance: 10
 metaness: 3
 ai_generated: false
 links:
   source:
-  - ${code_root}/management_portal/society_service/resident_registration_domain.py
-  - ${code_root}/management_portal/society_service/resident_storage.py
-  - ${code_root}/management_portal/society_service/resident_lifecycle_domain.py
-  - ${code_root}/management_portal/society_service/resident_resource_projection.py
-  - ${code_root}/management_portal/society_service/resident_workspace_storage.py
-  - ${code_root}/management_portal/society_service/state_store.py
-  - ${code_root}/tests/cases/test_resident_agent_lifecycle.py
-  - ${code_root}/tests/cases/test_resident_deletion_record.py
-  - ${code_root}/management_portal/society_service/resident_hatg_credentials.py
-  - ${code_root}/management_portal/permission_system/__init__.py
-  - ${code_root}/management_portal/society_service/isa/residents.py
-  - ${code_root}/management_portal/society_service/lineage_subgraph.py
-  - ${code_root}/management_portal/society_service/resident_record_domain.py
-  - ${code_root}/management_portal/society_service/resident_workspace_domain.py
-  - ${code_root}/management_portal/static/portal_resident_discovery_service.js
-  - ${code_root}/management_portal/society_service/resident_catalog.py
-  - ${code_root}/management_portal/society_service/resident_lineage.py
-  - ${code_root}/tests/cases/test_resident_folder_creation_contract.py
-  - ${code_root}/tests/cases/test_resident_store.py
-  - ${code_root}/tests/cases/test_lineage_workbench_membership.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/resident_registration_domain.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/resident_storage.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/resident_lifecycle_domain.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/resident_resource_projection.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/resident_workspace_storage.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/state_store.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_resident_agent_lifecycle.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_resident_deletion_record.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/resident_hatg_credentials.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/permission_system/__init__.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/isa/residents.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/lineage_subgraph.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/resident_record_domain.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/resident_workspace_domain.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/static/portal_resident_discovery_service.js
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/resident_catalog.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/resident_lineage.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_resident_folder_creation_contract.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_resident_store.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_lineage_workbench_membership.py
   related:
   - decision_b820faf42218
   - decision_600ae27b0538
@@ -46,6 +46,7 @@ links:
   - decision_5bf5bfbd52cb
   - decision_c524c775e0be
   - decision_741b04821171
+  - concept_a98b3b2f350f
   - decision_d918ebebc062
   - decision_6fc653d55c79
   - decision_34158fdd4078
@@ -225,6 +226,7 @@ ResourceService 保存的协作描述按当前领域事实投影关系：Residen
 - **删除只改变同一份 Resident 身份的状态。** `residents` 永久保留原 ID、创建事实、名称、成员归属、Fork 来源及对应领域记录；第一次删除在该行填入 `deleted_at` 与 `deleted_by`。不再有另一张身份删除表或整份删除快照。重复删除保持首次删除事实，仍检查当前调用者权限。
 - **正式删除保留同 ID Agent、主 trace Sequence、Segments 与 Execution。** 删除前确保 Agent 存在。活动 graph 节点、Family 路由和调度退出；清理工作区和执行资源不删除 AgentData 历史（decision_b1ab45c4b3ec）。删除整个 Lineage 也不能级联删除已保留的 Resident 身份。
 - **正常读取统一排除已删除 Resident。** 普通目录、搜索、成员列表、初始化恢复、调度及消息投递不把已删除对象视为可用。需要已删除 Resident 的历史时，使用显式历史读取接口按同一 ID 查找身份和对话、Execution 与 trace；读取仍检查权限，身份保留不授予访问权。原 Lineage 或工作目录已清理时，历史身份读取仍可用。
+- **已删历史通过 `GetDeletedResidentHistory` 显式读取。** 接口仅接受已删除的精确 Resident ID，每页按当前调用者重新核对目标管理权限及个人空间规则；普通 viewer、历史作者和旧成员关系不授予访问权。身份、对话、执行及 Segment 引用按有界页面返回，原 Lineage 或目录缺失不妨碍读取已有事实。分页游标不能改变目标或页面类别，也不能保存授权。读取不创建 Conversation 或运行目录、不恢复模型会话、不重新投递消息；附件引用和外部来源不附带读取权限。
 
 生命周期为“正常 → 已删除”。系统不提供回收站或恢复已删除 Resident 的接口。删除确认仍用于防止误操作。
 

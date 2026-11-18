@@ -15101,8 +15101,8 @@
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260805__decision__Resident_稳定身份与_Lineage_成员归属__decision_0f57656a2acd.md",
-      "sha256": "933192d7a19e97c4c6ef25ef67c7918540ccd6a76cce67fcd876ad2e280e1057",
-      "size": 27113
+      "sha256": "e752b8ad04a2a98b18dfbde2769b1d868e1a32752973cf694a433d487ea32dda",
+      "size": 28264
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260811__decision__Agent_Harness_的可组合插件与自适应运行管线__decision_5c62deb8253a.md",
@@ -15136,8 +15136,8 @@
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260823__decision__Portal_Agent数据采用不可变Segment_当前Sequence与Canonical_Execution__decision_b1ab45c4b3ec.md",
-      "sha256": "fff986d4b13aab51a7eca6ca9ec85353cd5606c22d7ffb7220e8254dd6d43044",
-      "size": 57480
+      "sha256": "6aa1dc69f2c27f18fcae857c76087bc60c53cc2fe1e772904c5accd9c120532e",
+      "size": 58142
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260825__decision__Portal_LineageData采用结构化图事实_运行投影与投递协调__decision_71aa039e3211.md",
@@ -15696,8 +15696,8 @@
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260928__decision__HATG_ISA：对话与上下文指令__decision_2fe6fd5367fb.md",
-      "sha256": "9bca88027861a6a0a8493c5cbf8f6121f0ab4e7ccaad33d12f5deed83f4dd80f",
-      "size": 35843
+      "sha256": "853a79a530b9801c9cc0ee0c003fde66c5bfec1f354f81d74f713326a5b37796",
+      "size": 36980
     },
     {
       "path": "data/projects/AI员工/knowledge_base/decision/20260928__decision__HATG_ISA：指令集自描述指令__decision_aa4fdbac8364.md",

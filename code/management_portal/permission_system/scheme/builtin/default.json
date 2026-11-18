@@ -548,6 +548,9 @@
     "GetConversation": {
       "a": "@viewer"
     },
+    "GetDeletedResidentHistory": {
+      "a": "@admin"
+    },
     "GetExecutionSettings": {
       "a": "@admin",
       "r": "@shared"

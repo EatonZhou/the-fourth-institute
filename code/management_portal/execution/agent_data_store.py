@@ -196,6 +196,11 @@ class AgentDataStore:
     def trace_length(self, agent_id: str) -> int:
         return self.traces.trace_length(agent_id)
 
+    def retained_history_page(self, agent_id: str, *, section: str, after: Any = None,
+                              limit: int = 50) -> dict[str, Any]:
+        from .agent_data_history import read_page
+        return read_page(self, agent_id, section=section, after=after, limit=limit)
+
     def read_sequence(
         self,
         sequence_id: str,
