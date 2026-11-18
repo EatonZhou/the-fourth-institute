@@ -39,7 +39,11 @@ DECLARATIONS = (
        "按当前目标管理权限分页读取已删除 Resident 的保留身份、对话、执行与 Segment/产物引用索引；不恢复或运行。", (
         R("resident_id", description="已删除 Resident 的精确统一 ID"),
         P("section", description="默认 identity；messages 包含保留对话，executions 为执行索引，segments 仅无正文索引",
-          enum=("identity", "messages", "executions", "segments")),
+          enum=("identity", "messages", "executions", "segments", "tool_evidence")),
+        P("ordinal", "integer", "tool_evidence必填：目标原trace的精确位置", minimum=1),
+        P("tool_index", "integer", "省略只给无正文项索引；指定后只读该工具项", minimum=0),
+        P("expected_hash", description="读取工具正文时必填：索引给出的Segment内容SHA256"),
+        P("tool_item_id", description="读取工具正文时必填：索引给出的项ID；不接受任意payload/sequence"),
         P("cursor", description="上一页 next_cursor，仅适用于同一 Resident 和 section；每页重新鉴权"),
         P("limit", "integer", "每页上限，默认 50", minimum=1, maximum=100),
     ), (

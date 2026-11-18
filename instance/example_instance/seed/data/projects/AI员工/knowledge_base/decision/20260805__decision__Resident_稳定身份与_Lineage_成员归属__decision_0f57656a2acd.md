@@ -4,12 +4,12 @@ type: decision
 project: AI员工
 created_at: '2026-08-05'
 version:
-  number: 59
+  number: 60
   created_at: "2026-08-05"
   created_by:
     user: ""
     agent: ""
-  updated_at: "2026-11-18T03:35:36Z"
+  updated_at: "2026-11-18T04:13:36Z"
   updated_by:
     user: ""
     agent: "resident_6199a7a36480"
@@ -227,6 +227,7 @@ ResourceService 保存的协作描述按当前领域事实投影关系：Residen
 - **正式删除保留同 ID Agent、主 trace Sequence、Segments 与 Execution。** 删除前确保 Agent 存在。活动 graph 节点、Family 路由和调度退出；清理工作区和执行资源不删除 AgentData 历史（decision_b1ab45c4b3ec）。删除整个 Lineage 也不能级联删除已保留的 Resident 身份。
 - **正常读取统一排除已删除 Resident。** 普通目录、搜索、成员列表、初始化恢复、调度及消息投递不把已删除对象视为可用。需要已删除 Resident 的历史时，使用显式历史读取接口按同一 ID 查找身份和对话、Execution 与 trace；读取仍检查权限，身份保留不授予访问权。原 Lineage 或工作目录已清理时，历史身份读取仍可用。
 - **已删历史通过 `GetDeletedResidentHistory` 显式读取。** 接口仅接受已删除的精确 Resident ID，每页按当前调用者重新核对目标管理权限及个人空间规则；普通 viewer、历史作者和旧成员关系不授予访问权。身份、对话、执行及 Segment 引用按有界页面返回，原 Lineage 或目录缺失不妨碍读取已有事实。分页游标不能改变目标或页面类别，也不能保存授权。读取不创建 Conversation 或运行目录、不恢复模型会话、不重新投递消息；附件引用和外部来源不附带读取权限。
+- 精确工具取证使用同一接口的 `tool_evidence` 类别。调用者先按原 trace 中的 `ordinal` 读取无正文索引，再以索引返回的工具项 ID、位置和内容 hash 读取单项。只有权威类型为 `tool`、归属可证且符合标准工具结构的 Segment 可展开；普通消息中的同形 JSON 和未有写入契约的 native 封装保持证据缺口。返回原始 Segment 类型与记录状态，不凭正文存在判定成功。每次读取继续核验当前管理权限；限额、省略和附件独立授权均适用。保留的工具记录可作恢复核查材料，但不会自行恢复登记、授予资源权限或复活 Resident。
 
 生命周期为“正常 → 已删除”。系统不提供回收站或恢复已删除 Resident 的接口。删除确认仍用于防止误操作。
 

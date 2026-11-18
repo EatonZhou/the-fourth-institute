@@ -4,12 +4,12 @@ type: decision
 project: AI员工
 created_at: '2026-08-23'
 version:
-  number: 100
+  number: 101
   created_at: "2026-08-23"
   created_by:
     user: ""
     agent: ""
-  updated_at: "2026-11-18T03:35:37Z"
+  updated_at: "2026-11-18T04:13:47Z"
   updated_by:
     user: ""
     agent: "resident_6199a7a36480"
@@ -73,7 +73,9 @@ AgentData 保存 Agent 工作使用的内容。Segment 是不可变的内容版�
 
 **删除 Resident 保留同一身份和 Agent 的工作历史。** Resident 身份永久保留在 `residents`，`deleted_at` 和 `deleted_by` 记录删除事实。普通列表、调度和消息投递只读取未删除身份，历史读取使用显式入口并检查权限；原 Lineage 或 Workspace 已不存在时，也不编造缺失字段或重新创建运行目录。Portal 不提供回收站、恢复或清空回收站流程，也不再维护 `resident_deletions` 这套第二身份表。Agent、trace、Segment、Provider 会话和 Execution 历史继续使用原 ID，不保存 Resident 删除状态。删除与消息、info 和 Job 的录入在事务中协调，旧服务快照不能向已删除身份重新录入工作。
 
-显式已删历史读取由 Society 按精确 Resident ID 核验当前管理权限，再委托 AgentData 的有界只读投影。投影从权威 Agent/trace 关联分页读取通信记录、执行和 Segment 元数据，不使用当前聊天的 `chat_floor` 截断历史，不加载整个 Sequence 的正文，也不修复或新建聊天投影。执行索引按 Agent 归属包含无 Segment 的失败记录；Segment 仅给元数据和引用，不读取磁盘、Provider 或工具正文。正文预算之外的内容明确标记省略。读取不会将历史引用变成附件或外部来源的授权。外部接口参数与权限见 decision_2fe6fd5367fb。
+显式已删历史读取由 Society 按精确 Resident ID 核验当前管理权限，再委托 AgentData 的有界只读投影。投影从权威 Agent/trace 关联分页读取通信记录、执行和 Segment 元数据，不使用当前聊天的 `chat_floor` 截断历史，不加载整个 Sequence 的正文，也不修复或新建聊天投影。执行索引按 Agent 归属包含无 Segment 的失败记录；`segments` 类别仅给元数据和引用。正文预算之外的内容明确标记省略。读取不会将历史引用变成附件或外部来源的授权。
+
+精确工具证据由同一只读投影接收目标 trace 的 `ordinal`，校验成员、创建 Agent 及已记录 Execution 的归属后，只对权威类型为 `tool` 的标准工具对象提供无正文索引。正文自报 `tool_name/call_id` 不足以证明 Segment 是工具；无已知写入契约的 native 封装保持 unsupported。正文读取还须匹配索引位置、工具项 ID 和 Segment 内容 hash，返回原始类型及状态以保留成功、失败和取消的区别。SQL 内容器解析上限为 1 MiB，单项 input/result 的 JSON 文本各最多 16 KiB；不加载整条 trace，不增加超限正文续读，不读取 Provider、文件或链接，附件和媒体内容省略。每次委托仍由 Society 重新核验目标及个人空间权限，AgentData 不从历史作者、引用或客户端提供的 Sequence ID 推导授权。外部接口参数与权限见 decision_2fe6fd5367fb。
 
 **父 Agent 字段仅表达 Provider 子 Agent 的直接父级。** `agent_trace` 的 `parent_agent_id` 为空；`subagent_trace` 可以指向真正启动它的父 Agent。Portal Fork 的来源在 Resident 派生关系中保存，两端都是独立主 Agent。父级未知时不凭标题、目录相似或共享内容推断，已知父链不得自指或成环。
 

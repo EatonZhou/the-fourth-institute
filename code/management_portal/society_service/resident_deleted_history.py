@@ -21,7 +21,7 @@ from .resident_access_scope import action_for_parameter
 
 
 ACTION = "GetDeletedResidentHistory"
-SECTIONS = ("identity", "messages", "executions", "segments")
+SECTIONS = ("identity", "messages", "executions", "segments", "tool_evidence")
 IDENTITY_FIELDS = ("resident_id", "title", "deleted_at", "deleted_by")
 
 
@@ -46,6 +46,8 @@ def _position(token: str, resident_id: str, section: str) -> Any:
 
 def read_history(
     resident_id: str, actor: str, *, section: str = "identity", cursor: str = "", limit: int = 50,
+    ordinal: int | None = None, tool_index: int | None = None,
+    expected_hash: str = "", tool_item_id: str = "",
 ) -> dict[str, Any]:
     if not isinstance(resident_id, str) or not re.fullmatch(r"resident_[0-9a-f]{12}", resident_id):
         raise ValueError("An exact Resident ID is required")
@@ -66,6 +68,8 @@ def read_history(
     ):
         raise personal_ama.NotFound(resident_id)
     position = _position(cursor, resident_id, section)
+    if section != "tool_evidence" and (ordinal is not None or tool_index is not None or expected_hash or tool_item_id):
+        raise ValueError("Tool selectors only belong to tool_evidence")
     identity = {field: str(record.get(field) or "")[:4096] for field in IDENTITY_FIELDS}
     if any(len(str(record.get(field) or "")) > 4096 for field in IDENTITY_FIELDS):
         identity["metadata_truncated"] = True
@@ -80,9 +84,15 @@ def read_history(
         return result
     # Execution owns this bounded read projection. No live state, session or
     # filesystem/provider access is needed to discover retained facts.
-    page = get_agent_data_store().retained_history_page(
-        resident_id, section=section, after=position, limit=limit,
-    )
+    if section == "tool_evidence":
+        page = get_agent_data_store().retained_tool_evidence(
+            resident_id, ordinal=ordinal, tool_index=tool_index, expected_hash=expected_hash,
+            tool_item_id=tool_item_id, after=position, limit=limit,
+        )
+    else:
+        page = get_agent_data_store().retained_history_page(
+            resident_id, section=section, after=position, limit=limit,
+        )
     result["items"] = page["items"]
     result["availability"] = page["availability"]
     if page.get("next_after") is not None:

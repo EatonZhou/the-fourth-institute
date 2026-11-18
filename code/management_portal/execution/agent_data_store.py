@@ -201,6 +201,10 @@ class AgentDataStore:
         from .agent_data_history import read_page
         return read_page(self, agent_id, section=section, after=after, limit=limit)
 
+    def retained_tool_evidence(self, agent_id: str, **selectors: Any) -> dict[str, Any]:
+        from .agent_data_history import read_tool_evidence
+        return read_tool_evidence(self, agent_id, **selectors)
+
     def read_sequence(
         self,
         sequence_id: str,

@@ -4,12 +4,12 @@ type: decision
 project: AI员工
 created_at: '2026-09-28'
 version:
-  number: 60
+  number: 61
   created_at: "2026-09-28T10:45:00Z"
   created_by:
     user: "weihao"
     agent: "resident_2a1fc6cd272d"
-  updated_at: "2026-11-18T03:35:37Z"
+  updated_at: "2026-11-18T04:13:47Z"
   updated_by:
     user: ""
     agent: "resident_6199a7a36480"
@@ -61,7 +61,7 @@ links:
 | `DeliverMessage` | 是 | 向 Resident 投递一条用户消息，或由 Resident 给用户发消息 | 对 `resident_id` 有 @message；对 `user_id` 有 @message |
 | `ForwardMessages` | 是 | 把选中的消息整理成一条新消息发给 Resident 或聊天室 | 对 `target_resident_id` 有 @message；对 `target_chatroom_id` 有 @contributor |
 | `GetConversation` | 否 | 读取对话快照 | 对 `resident_id` 有 @viewer |
-| `GetDeletedResidentHistory` | 否 | 有界读取已删除 Resident 的保留身份、对话和执行索引 | 对精确 `resident_id` 有 @admin；仍核验个人空间边界 |
+| `GetDeletedResidentHistory` | 否 | 有界读取已删除 Resident 的保留历史及精确工具证据 | 对精确 `resident_id` 有 @admin；仍核验个人空间边界 |
 | `ListMessages` | 否 | 分页读取更早的消息 | 对 `resident_id` 有 @viewer |
 | `ResolveMessageContextReferences` | 否 | 受理前读取已鉴权材料快照，保留来源身份与范围 | 对 `target_resident_id` 有 @viewer |
 | `ListInputHistory` | 否 | 从新到旧分页读取调用者本人在一个 Resident 会话或聊天室里发过的输入，供输入框的输入历史使用 | 对 `resident_id` 有 @viewer；对 `chatroom_id` 有 @viewer |
@@ -114,9 +114,13 @@ links:
 
 ### `GetDeletedResidentHistory`
 
-仅用于已删除 Resident 的保留历史。参数为精确的 `resident_id`、页面类别 `section`，以及可选的 `cursor` 和 `limit`；每页最多100项。身份页报告已保存的删除事实；对话页包含清空聊天窗口之前仍保留的通信记录；执行页包含没有生成 Segment 的失败执行；Segment 页只返回元数据和产物引用索引，不读取工具正文或附件字节。
+仅用于已删除 Resident 的保留历史。参数为精确的 `resident_id`、页面类别 `section`，以及可选的 `cursor` 和 `limit`；每页最多 100 项。`identity` 报告已保存的删除事实；`messages` 包含清空聊天窗口之前仍保留的通信记录；`executions` 包含没有生成 Segment 的失败执行；`segments` 只返回元数据和产物引用索引，不读取工具正文或附件字节。
 
-每页重新按当前调用者核验目标管理权限和个人 AMA 规则。显式 deny、撤权和过期委托仍拒绝；游标绑定目标及页面类别，不承载权限。读取不依赖原 Lineage 或工作目录仍存在，不创建 Agent、Conversation、初始化、会话或队列，也不触发模型调用。超出页面正文预算时明确标注省略，不能把当前页或省略正文称为完整历史导出。缺失、非删除目标、空历史和无权限按各自结果报告。
+`section=tool_evidence` 用于精确工具取证，必须指定目标原 trace 中的正整数 `ordinal`。默认返回无 input/output 正文的工具索引；读取正文须同时提供索引返回的 `tool_index`、`tool_item_id` 和 `expected_hash`。服务重新校验 ordinal 成员关系、内容 hash、创建 Agent 及已记录执行的目标归属。只支持权威 `segment_type=tool` 且具有非空字符串 `tool_name`、`call_id` 的标准工具对象；普通消息中的同形内容，以及带 `type` 或 `tools` 封装的对象，不作为标准工具证据。未支持的类型或结构明确返回缺口，不扫描其他消息猜测工具。索引及正文均返回原始 Segment 类型和 `status`，不把 result 存在视为执行成功。
+
+工具容器仅在 SQL 内按不超过 1 MiB 的上限解析。标准对象包含单项工具；索引不附正文。单项 input/result 的 JSON 文本各最多 16 KiB，未记录或超限明确标注，正文没有分片或续读。附件和媒体块省略，不读磁盘或外链。工具索引游标还绑定 ordinal、内容 hash 和位置；正文选择不得携带游标。其他 section 不接受工具选择参数。
+
+每次读取重新按当前调用者核验目标管理权限和个人 AMA 规则。显式 deny、撤权和过期委托仍拒绝；游标绑定目标及页面类别，不承载权限。外部或无法证实归属的来源不得随目标权限展开。读取不依赖原 Lineage 或工作目录仍存在，不创建 Agent、Conversation、初始化、会话或队列，也不触发模型调用。超出预算时明确标注省略，不能把当前页或省略正文称为完整历史导出。缺失、非删除目标、空历史和无权限按各自结果报告。工具记录的读取不产生资源登记恢复或 ACL 修改许可。
 
 ### `GetConversation`
 

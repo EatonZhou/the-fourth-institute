@@ -21,6 +21,138 @@ from .message_projection import project_message
 MAX_BODY_BYTES = 8192
 MAX_METADATA_BYTES = 4096
 MAX_PAGE_BYTES = 256 * 1024
+MAX_TOOL_CONTAINER_BYTES = 1024 * 1024
+MAX_TOOL_TEXT_BYTES = 16 * 1024
+
+
+def _tool_text(value: Any) -> Any:
+    """Do not materialize inline media or attachments contained in a result."""
+    if isinstance(value, list):
+        return [_tool_text(item) for item in value]
+    if isinstance(value, dict):
+        if value.get("type") in {"image", "image_url", "input_image", "file", "input_file", "audio", "input_audio"}:
+            return {"type": value["type"], "omitted": "attachment_requires_separate_read"}
+        return {key: _tool_text(item) for key, item in value.items()
+                if key not in {"imageUrl", "image_url", "image_data", "file_data", "base64"}}
+    return value
+
+
+def read_tool_evidence(store: Any, agent_id: str, *, ordinal: int | None, tool_index: int | None,
+                       expected_hash: str, tool_item_id: str, after: Any, limit: int) -> dict[str, Any]:
+    if type(ordinal) is not int or not 1 <= ordinal < 2**63:
+        raise ValueError("Tool evidence requires an exact positive ordinal")
+    if type(limit) is not int or not 1 <= limit <= 100:
+        raise ValueError("Invalid tool evidence page limit")
+    if tool_index is not None and (type(tool_index) is not int or not 0 <= tool_index < 2**31):
+        raise ValueError("Invalid tool index")
+    if tool_index is not None and (not isinstance(expected_hash, str) or len(expected_hash) != 64
+                                  or not isinstance(tool_item_id, str) or not 1 <= len(tool_item_id) <= 256):
+        raise ValueError("Tool body requires the indexed content hash and item ID")
+    if tool_index is None and (expected_hash or tool_item_id):
+        raise ValueError("Body selectors require tool_index")
+    if tool_index is not None and after is not None:
+        raise ValueError("Tool body has no continuation cursor")
+    with store.database.snapshot() as connection:
+        trace = trace_id(connection, agent_id)
+        row = connection.execute(
+            "SELECT s.segment_id,s.segment_type,s.status,s.content_sha256,s.execution_id,p.byte_length,"
+            "s.created_by_agent_id, (s.execution_id='' OR EXISTS (SELECT 1 FROM executions e "
+            "WHERE e.execution_id=s.execution_id AND e.agent_id=%s)) AS execution_matches "
+            "FROM sequence_segments m JOIN segments s USING(segment_id) "
+            "LEFT JOIN payloads p ON p.payload_ref=s.content_ref "
+            "WHERE m.sequence_id=%s AND m.ordinal=%s", (agent_id, trace, ordinal),
+        ).fetchone()
+        if row is None:
+            raise KeyError("Tool ordinal is not a member of this Resident trace")
+        availability = {"ordinal": ordinal, "segment_id": row["segment_id"],
+                        "segment_type": row["segment_type"], "status": row["status"],
+                        "content_sha256": row["content_sha256"], "body_limit_bytes": MAX_TOOL_TEXT_BYTES,
+                        "container_limit_bytes": MAX_TOOL_CONTAINER_BYTES, "attachment_bytes_read": False,
+                        "body_continuation_supported": False}
+        result = {"items": [], "next_after": None, "availability": availability}
+        digest = str(row["content_sha256"])
+        offset = 0
+        if after is not None:
+            if (not isinstance(after, dict) or set(after) != {"ordinal", "hash", "offset"}
+                    or after["ordinal"] != ordinal or after["hash"] != digest
+                    or type(after["offset"]) is not int or not 0 <= after["offset"] < 2**31):
+                raise ValueError("Tool index cursor no longer matches ordinal/content")
+            offset = after["offset"]
+        if tool_index is not None and expected_hash != digest:
+            raise ValueError("Tool content hash changed")
+        if row["created_by_agent_id"] != agent_id or not row["execution_matches"]:
+            availability["gap"] = "external_or_unproven_source_requires_separate_authorization"
+            return result
+        if row["segment_type"] != "tool":
+            availability["gap"] = "unsupported_segment_type"
+            return result
+        if row["byte_length"] is None or row["byte_length"] > MAX_TOOL_CONTAINER_BYTES:
+            availability["gap"] = "tool_container_missing_or_exceeds_parse_limit"
+            return result
+        # JSON parsing stays inside PostgreSQL, guarded by actual payload size.
+        # Only the canonical tool writer's Segment type/shape is supported.
+        # Native-turn cards have no proven tool-container writer contract.
+        document = (
+            "SELECT CASE WHEN p.byte_length<=%s AND s.content_type='application/json' "
+            "THEN convert_from(p.body,'UTF8')::jsonb ELSE '{}'::jsonb END AS doc "
+            "FROM segments s JOIN payloads p ON p.payload_ref=s.content_ref WHERE s.segment_id=%s"
+        )
+        candidates = (
+            "WITH source AS (" + document + "), items AS (SELECT CASE "
+            "WHEN jsonb_typeof(doc)='object' AND jsonb_typeof(doc->'tool_name')='string' "
+            "AND jsonb_typeof(doc->'call_id')='string' AND doc->>'tool_name'<>'' AND doc->>'call_id'<>'' "
+            "AND NOT doc ? 'type' AND NOT doc ? 'tools' "
+            "THEN jsonb_build_array(doc) "
+            "ELSE '[]'::jsonb END AS tool_items FROM source) "
+        )
+        # An index page selects only identifiers, not arbitrary metadata/input/output.
+        index_rows = connection.execute(
+            candidates + "SELECT ordinality-1 AS item_index,left(item->>'call_id',256) AS item_id,"
+            "left(item->>'tool_name',256) AS tool_name FROM items, "
+            "jsonb_array_elements(tool_items) WITH ORDINALITY AS tool(item,ordinality) "
+            "WHERE ordinality>%s AND jsonb_typeof(item)='object' AND item ? 'call_id' AND item ? 'tool_name' "
+            "ORDER BY ordinality LIMIT %s",
+            (MAX_TOOL_CONTAINER_BYTES, row["segment_id"], tool_index if tool_index is not None else offset,
+             1 if tool_index is not None else limit + 1),
+        ).fetchall()
+        if tool_index is not None:
+            if (not index_rows or index_rows[0]["item_index"] != tool_index
+                    or index_rows[0]["item_id"] != tool_item_id):
+                raise ValueError("Tool item ID/index mismatch")
+            # Select one exact item and only bounded input/result JSON text.
+            selected = connection.execute(
+                candidates + "SELECT "
+                "CASE WHEN octet_length((tool_items->%s->'input')::text)<=%s THEN (tool_items->%s->'input')::text END AS input_text,"
+                "CASE WHEN octet_length((tool_items->%s->'result')::text)<=%s THEN (tool_items->%s->'result')::text END AS output_text,"
+                "(tool_items->%s ? 'input') AS input_recorded,(tool_items->%s ? 'result') AS output_recorded "
+                "FROM items",
+                (MAX_TOOL_CONTAINER_BYTES, row["segment_id"], tool_index, MAX_TOOL_TEXT_BYTES, tool_index,
+                 tool_index, MAX_TOOL_TEXT_BYTES, tool_index, tool_index, tool_index),
+            ).fetchone()
+            item = {"tool_index": tool_index, "tool_item_id": tool_item_id,
+                    "segment_type": row["segment_type"], "status": row["status"], "format": "canonical_tool",
+                    "tool_name": index_rows[0]["tool_name"], "ordinal": ordinal,
+                    "segment_id": row["segment_id"], "content_sha256": digest,
+                    "execution_id": row["execution_id"]}
+            for field, recorded in (("input", "input_recorded"), ("output", "output_recorded")):
+                text = selected[field + "_text"]
+                item[field + "_text"] = json.dumps(_tool_text(json.loads(text)), ensure_ascii=False) if text is not None else ""
+                item[field + "_omitted"] = text is None
+                if text is None:
+                    item[field + "_gap"] = "exceeds_text_limit" if selected[recorded] else "not_recorded"
+            result["items"] = [item]
+        else:
+            result["items"] = [{"tool_index": int(item["item_index"]), "tool_item_id": item["item_id"],
+                                "segment_type": row["segment_type"], "status": row["status"], "format": "canonical_tool",
+                                "tool_name": item["tool_name"], "ordinal": ordinal,
+                                "content_sha256": digest, "segment_id": row["segment_id"]}
+                               for item in index_rows[:limit]]
+            if len(index_rows) > limit:
+                result["next_after"] = {"ordinal": ordinal, "hash": digest,
+                                        "offset": result["items"][-1]["tool_index"] + 1}
+            if not index_rows:
+                availability["gap"] = "no_supported_retained_tool_items"
+        return result
 
 
 def _execution_position(after: Any) -> tuple[str, str]:

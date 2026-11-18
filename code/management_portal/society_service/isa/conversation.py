@@ -23,6 +23,8 @@ def get_deleted_resident_history(inv: Invocation) -> dict[str, Any]:
         inv.argument("resident_id"), inv.caller,
         section=inv.argument("section") or "identity",
         cursor=inv.argument("cursor") or "", limit=inv.argument("limit") or 50,
+        ordinal=inv.argument("ordinal"), tool_index=inv.argument("tool_index"),
+        expected_hash=inv.argument("expected_hash") or "", tool_item_id=inv.argument("tool_item_id") or "",
     )
 
 

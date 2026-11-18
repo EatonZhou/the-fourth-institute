@@ -12,6 +12,174 @@ from tests.cases.test_resident_deleted_workspace_v31_integration import RID, spa
 OTHER = "resident_444444444444"
 
 
+def _tool(retained, content=None, *, owner=RID, segment_type="tool", status="completed"):
+    segment = retained.agents.put_segment(
+        segment_type=segment_type, status=status, content=content or {"tool_name": "hatg_instruction", "call_id": "call-one",
+            "input": {"instruction": "RegisterResource"}, "result": {"resource_id": "article_111111111111"}},
+        content_type="application/json", created_by_agent_id=owner,
+    )
+    retained.agents.append_agent_segments(RID, [segment], actor_ref="fixture")
+    return retained.agents.trace_length(RID)
+
+
+def _evidence(ordinal, **selectors):
+    return _read("tool_evidence", ordinal=ordinal, **selectors)
+
+
+def _body_select(index):
+    return {"tool_index": index["tool_index"], "tool_item_id": index["tool_item_id"],
+            "expected_hash": index["content_sha256"]}
+
+
+@pytest.mark.parametrize("segment_type", ["input", "model", "harness", "compaction"])
+def test_tool_evidence_never_treats_message_json_as_tool_fact(retained, segment_type):
+    ordinal = _tool(retained, segment_type=segment_type)
+    result = _evidence(ordinal)
+    assert result["items"] == []
+    assert result["availability"]["gap"] == "unsupported_segment_type"
+    assert result["availability"]["segment_type"] == segment_type
+    assert result["availability"]["status"] == "completed"
+    assert "RegisterResource" not in json.dumps(result)
+
+
+@pytest.mark.parametrize("segment_type", ["tool", "model", "input"])
+def test_tool_evidence_unproven_native_container_is_unsupported(retained, segment_type):
+    ordinal = _tool(retained, {"type": "native_turn", "tool_name": "pretend", "call_id": "pretend",
+        "tools": [{"tool_name": "Bash", "call_id": "inside", "input": "secret"}]}, segment_type=segment_type)
+    result = _evidence(ordinal)
+    assert result["items"] == []
+    assert "secret" not in json.dumps(result)
+
+
+@pytest.mark.parametrize("status", ["completed", "failed", "cancelled"])
+def test_tool_evidence_preserves_authoritative_status_and_type(retained, status):
+    ordinal = _tool(retained, status=status)
+    index = _evidence(ordinal)["items"][0]
+    body = _evidence(ordinal, **_body_select(index))["items"][0]
+    for item in (index, body):
+        assert item["segment_type"] == "tool" and item["status"] == status
+        assert item["format"] == "canonical_tool"
+    assert "RegisterResource" in body["input_text"]
+
+
+def test_tool_evidence_exact_index_and_body_with_live_authority(retained):
+    ordinal = _tool(retained)
+    index = _evidence(ordinal)["items"][0]
+    assert "RegisterResource" not in json.dumps(index)
+    body = _evidence(ordinal, **_body_select(index))["items"][0]
+    assert json.loads(body["input_text"]) == {"instruction": "RegisterResource"}
+    assert json.loads(body["output_text"])["resource_id"] == "article_111111111111"
+    retained.allowed.clear()
+    with pytest.raises(PermissionError):
+        _evidence(ordinal, **_body_select(index))
+
+
+def test_tool_evidence_unproven_bundle_does_not_expose_neighbor_body(retained):
+    tools = [{"call_id": str(n), "tool_name": "Bash", "input": "secret-" + str(n), "result": "out-" + str(n)}
+             for n in range(3)]
+    ordinal = _tool(retained, {"type": "native_turn", "tools": tools})
+    result = _evidence(ordinal, limit=1)
+    assert result["items"] == [] and "secret-" not in json.dumps(result)
+    standard = _tool(retained)
+    index = _evidence(standard)["items"][0]
+    cursor = history._cursor(RID, "tool_evidence", {"ordinal": standard, "hash": index["content_sha256"], "offset": 1})
+    with pytest.raises(ValueError):
+        _evidence(ordinal, cursor=cursor)
+    with pytest.raises(ValueError):
+        _evidence(standard, **{**_body_select(index), "expected_hash": "0" * 64})
+    with pytest.raises(ValueError):
+        _evidence(standard, **{**_body_select(index), "tool_item_id": "not-this-item"})
+    retained.allowed.clear()
+    with pytest.raises(PermissionError):
+        _evidence(standard, cursor=cursor)
+
+
+def test_tool_evidence_target_trace_foreign_source_and_unsupported(retained, monkeypatch):
+    ordinal = _tool(retained, owner=OTHER)
+    assert "external" in _evidence(ordinal)["availability"]["gap"]
+    with pytest.raises(KeyError):
+        _evidence(ordinal + 100)
+    ordinal2 = _tool(retained, {"type": "native_turn", "diff": "not a tool body"})
+    assert _evidence(ordinal2)["availability"]["gap"] == "no_supported_retained_tool_items"
+    monkeypatch.setattr(history.permission_system, "allows", lambda *args: True)
+    retained.store.database.write(lambda c: c.execute(
+        "INSERT INTO residents(resident_id,title,deleted_at,deleted_by) VALUES (%s,%s,%s,%s)",
+        (OTHER, "Other", "2026-10-08T00:00:00Z", "fixture")))
+    with pytest.raises(KeyError):
+        history.read_history(OTHER, "manager", section="tool_evidence", ordinal=ordinal2)
+
+
+def test_tool_evidence_limits_media_and_unproven_execution(retained):
+    from management_portal.execution.agent_data_history import MAX_TOOL_TEXT_BYTES, MAX_TOOL_CONTAINER_BYTES
+    ordinal = _tool(retained, {"tool_name": "Bash", "call_id": "bounded",
+        "input": "x" * (MAX_TOOL_TEXT_BYTES + 1),
+        "result": [{"type": "image", "data": "private-media"}, {"type": "text", "text": "small text"}]})
+    index = _evidence(ordinal)["items"][0]
+    body = _evidence(ordinal, **_body_select(index))["items"][0]
+    assert body["input_omitted"] and body["input_gap"] == "exceeds_text_limit"
+    assert "private-media" not in json.dumps(body) and "small text" in body["output_text"]
+    huge = _tool(retained, {"tool_name": "Bash", "call_id": "huge", "input": "z" * MAX_TOOL_CONTAINER_BYTES})
+    assert _evidence(huge)["availability"]["gap"] == "tool_container_missing_or_exceeds_parse_limit"
+    retained.agents.reserve_execution(execution_id="execution-wrong", agent_id=OTHER, actor_ref="fixture", provider="codex")
+    wrong = retained.agents.put_segment(segment_type="tool", content={"tool_name": "x", "call_id": "x"},
+        content_type="application/json", created_by_agent_id=RID, execution_id="execution-wrong")
+    retained.agents.append_agent_segments(RID, [wrong], actor_ref="fixture")
+    assert "external" in _evidence(retained.agents.trace_length(RID))["availability"]["gap"]
+
+
+@pytest.mark.parametrize("column_type", ["TEXT", "JSONB"])
+def test_tool_evidence_supports_both_metadata_types(retained, column_type):
+    ordinal = _tool(retained)
+    # Reuse the existing legacy-schema boundary fixture before reading tools.
+    test_history_metadata_case_supports_old_and_new_storage_types(retained, column_type)
+    index = _evidence(ordinal)["items"][0]
+    assert "RegisterResource" in _evidence(ordinal, **_body_select(index))["items"][0]["input_text"]
+
+
+@pytest.mark.parametrize("selectors", [{}, {"ordinal": 0}, {"ordinal": True}, {"ordinal": 1, "tool_index": 0}])
+def test_tool_evidence_requires_exact_selection(retained, selectors):
+    with pytest.raises(ValueError):
+        _read("tool_evidence", **selectors)
+
+
+def test_tool_evidence_isa_and_stale_index_never_read_other_segment(retained, monkeypatch):
+    from management_portal.hatg.catalog import declaration
+    from management_portal.society_service.isa import conversation
+
+    ordinal = _tool(retained, {"call_id": "a", "tool_name": "Bash", "input": "one", "result": "first"})
+    first = _evidence(ordinal, limit=1)
+    index = first["items"][0]
+    cursor = history._cursor(RID, "tool_evidence", {"ordinal": ordinal, "hash": index["content_sha256"], "offset": 1})
+    args = {"resident_id": RID, "section": "tool_evidence", "ordinal": ordinal, **_body_select(index)}
+    result = conversation.HANDLERS[history.ACTION](SimpleNamespace(caller="manager", argument=lambda key: args.get(key)))
+    assert json.loads(result["items"][0]["input_text"]) == "one"
+    assert "tool_evidence" in next(p for p in declaration(history.ACTION).parameters if p.name == "section").enum
+    other_ordinal = _tool(retained)
+    # Move the first Segment away. A stale ordinal cannot select its new
+    # occupant through either an index cursor or a previously indexed body.
+    with retained.agents.database.transaction() as c:
+        trace = retained.agents.trace_sequence_id(RID)
+        c.execute("UPDATE sequence_segments SET ordinal=ordinal+1000 WHERE sequence_id=%s AND ordinal=%s", (trace, ordinal))
+        c.execute("UPDATE sequence_segments SET ordinal=%s WHERE sequence_id=%s AND ordinal=%s", (ordinal, trace, other_ordinal))
+    with pytest.raises(ValueError, match="hash changed"):
+        _evidence(ordinal, **_body_select(index))
+    with pytest.raises(ValueError, match="cursor"):
+        _evidence(ordinal, cursor=cursor)
+
+
+def test_tool_evidence_does_not_initialize_load_trace_or_resolve_files(retained, monkeypatch):
+    ordinal = _tool(retained)
+
+    def forbidden(*args, **kwargs):
+        raise AssertionError("Tool evidence must only read one indexed ordinal in its owner")
+
+    for name in ("ensure_agent", "read_sequence", "segment", "sequence_segment_ids"):
+        monkeypatch.setattr(retained.agents, name, forbidden)
+    monkeypatch.setattr(retained.agents.database, "write", forbidden)
+    index = _evidence(ordinal)["items"][0]
+    assert _evidence(ordinal, **_body_select(index))["items"]
+
+
 @pytest.fixture
 def retained(sparse_history, monkeypatch):
     fixture = sparse_history
