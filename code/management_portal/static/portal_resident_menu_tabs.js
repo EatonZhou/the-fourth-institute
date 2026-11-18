@@ -3,9 +3,9 @@
 
   if (window.PortalResidentMenuTabs) return;
 
-  // The Menu's vertical tabs: Settings, Duties, Memory, Harness, Package,
+  // The Menu's vertical tabs: Settings, Duties, Memory, Harness, Tools, Package,
   // Mailbox and Work Journal. Switching tabs by click or arrow keys first leaves
-  // Package (an unsaved credential change asks before it is dropped), then
+  // the active editor (unsaved changes ask before they are dropped), then
   // mounts the chosen tab's panel: the duties, the memory, the Harness
   // settings, the principal details, the Mailbox queue, the journal or the
   // runtime settings.
@@ -23,33 +23,35 @@
       nodeResidentId, nodeSettingsNode, toast,
     } = dependencies;
 
-    let nodeDetailsInstance = null;
-    let nodeDetailsEpoch = 0;
-    let nodeDetailsTransition = false;
+    let nodeEditorInstance = null;
+    let nodeEditorEpoch = 0;
+    let nodeEditorTransition = false;
 
-    function disposeNodeDetails() {
-      nodeDetailsEpoch += 1;
-      nodeDetailsInstance?.destroy?.();
-      nodeDetailsInstance = null;
+    function disposeNodeEditor() {
+      nodeEditorEpoch += 1;
+      nodeEditorInstance?.destroy?.();
+      nodeEditorInstance = null;
       $id("nodeDetailsPanel")?.replaceChildren();
+      $id("nodeToolsPanel")?.replaceChildren();
     }
 
-    async function leaveNodeDetails() {
-      if (nodeDetailsTransition || menuState.nodeTransferInFlight || menuState.nodeMenuContext?.busy || menuState.nodeMenuContext?.saving || menuState.nodeMenuContext?.intakeBusy) return false;
-      if (nodeDetailsInstance?.isBusy?.()) {
-        toast(window.PortalI18n.t("凭证操作正在处理，请稍后再试。"), "info");
+    async function leaveNodeEditor() {
+      if (nodeEditorTransition || menuState.nodeTransferInFlight || menuState.nodeMenuContext?.busy || menuState.nodeMenuContext?.saving || menuState.nodeMenuContext?.intakeBusy) return false;
+      if (nodeEditorInstance?.isBusy?.()) {
+        toast(window.PortalI18n.t(currentNodeSettingsTab() === "tools" ? "工具设置正在保存，请稍后再试。" : "凭证操作正在处理，请稍后再试。"), "info");
         return false;
       }
-      const epoch = nodeDetailsEpoch;
-      nodeDetailsTransition = true;
+      const epoch = nodeEditorEpoch;
+      nodeEditorTransition = true;
       try {
-        if (nodeDetailsInstance?.hasUnsavedChanges?.() && !await window.PortalUI.confirm({
-          title: window.PortalI18n.t("放弃未保存的凭证修改？"), message: window.PortalI18n.t("离开 Package 将丢失尚未保存的凭证修改。"),
+        if (nodeEditorInstance?.hasUnsavedChanges?.() && !await window.PortalUI.confirm({
+          title: window.PortalI18n.t(currentNodeSettingsTab() === "tools" ? "放弃未保存的工具修改？" : "放弃未保存的凭证修改？"),
+          message: window.PortalI18n.t(currentNodeSettingsTab() === "tools" ? "离开将清除尚未保存的工具修改。" : "离开 Package 将丢失尚未保存的凭证修改。"),
           confirmLabel: window.PortalI18n.t("放弃修改"), tone: "danger",
         })) return false;
-        return epoch === nodeDetailsEpoch && !nodeDetailsInstance?.isBusy?.();
+        return epoch === nodeEditorEpoch && !nodeEditorInstance?.isBusy?.();
       } finally {
-        nodeDetailsTransition = false;
+        nodeEditorTransition = false;
       }
     }
 
@@ -59,6 +61,7 @@
       duties: ["nodeDutiesTab", "nodeDutiesPanel"],
       memory: ["nodeMemoryTab", "nodeMemoryPanel"],
       harness: ["nodeHarnessTab", "nodeHarnessPanel"],
+      tools: ["nodeToolsTab", "nodeToolsPanel"],
       details: ["nodeDetailsTab", "nodeDetailsPanel"],
       mailbox: ["nodeMailboxTab", "nodeMailboxPanel"],
       journal: ["nodeJournalTab", "nodeJournalPanel"],
@@ -116,10 +119,10 @@
     async function switchNodeSettingsTab(tab) {
       if (currentNodeSettingsTab() === tab) return;
       if (menuState.nodeMenuContext?.avatarEditor?.isBusy()) { toast(window.PortalI18n.t("头像正在保存，请稍后再试。"), "info"); return; }
-      if (!await leaveNodeDetails()) return;
+      if (!await leaveNodeEditor()) return;
       // Leaving Settings drops an unsaved avatar choice, and the portrait shows the saved one again.
       menuState.nodeMenuContext?.avatarEditor?.close();
-      disposeNodeDetails();
+      disposeNodeEditor();
       disposeNodeMailbox();
       disposeNodeHarness();
       disposeFamilySettings();
@@ -147,25 +150,34 @@
         return;
       }
       if (tab === "display") { await loadNodeMenuRuntime(); return; }
-      if (tab !== "details") return;
-      const epoch = nodeDetailsEpoch;
+      if (tab !== "details" && tab !== "tools") return;
+      const epoch = nodeEditorEpoch;
       const container = document.createElement("div");
-      container.textContent = window.PortalI18n.t("正在加载 Package…");
-      $id("nodeDetailsPanel").replaceChildren(container);
+      container.textContent = window.PortalI18n.t(tab === "tools" ? "正在加载工具设置…" : "正在加载 Package…");
+      $id(NODE_SETTINGS_TABS[tab][1]).replaceChildren(container);
       try {
-        const instance = await window.PortalNav.mountPrincipalDetails({ container, principalId: nodeResidentId(node) });
-        if (epoch !== nodeDetailsEpoch) {
+        let instance;
+        if (tab === "tools") {
+          await window.PortalUIPrimitives.loadAsset("/static/portal_tool_settings.js", {ready: () => window.PortalToolSettings});
+          if (epoch !== nodeEditorEpoch) return;
+          instance = window.PortalToolSettings.mount(container, {residentId: nodeResidentId(node)});
+        } else {
+          instance = await window.PortalNav.mountPrincipalDetails({ container, principalId: nodeResidentId(node) });
+        }
+        if (epoch !== nodeEditorEpoch) {
           instance?.destroy?.();
           return;
         }
-        nodeDetailsInstance = instance;
+        nodeEditorInstance = instance;
       } catch (error) {
-        if (epoch === nodeDetailsEpoch) container.textContent = window.PortalI18n.text`Package 加载失败：${error.message || error}`;
+        if (epoch === nodeEditorEpoch) container.textContent = tab === "tools"
+          ? window.PortalI18n.text`工具设置加载失败：${error.message || error}`
+          : window.PortalI18n.text`Package 加载失败：${error.message || error}`;
       }
     }
 
     return {
-      disposeNodeDetails, disposeNodeHarness, disposeNodeMailbox, leaveNodeDetails, moveNodeSettingsTab,
+      disposeNodeEditor, disposeNodeHarness, disposeNodeMailbox, leaveNodeEditor, moveNodeSettingsTab,
       renderNodeSettingsTab, switchNodeSettingsTab,
     };
   }

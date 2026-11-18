@@ -4,10 +4,11 @@
   const clone = value => JSON.parse(JSON.stringify(value));
   const t = value => window.PortalI18n.t(value);
 
-  function mount(root) {
-    let destroyed = false, generation = 0, searchGeneration = 0, timer;
-    let selected = "", data = null, draft = null, baseline = "", saving = false, loading = false, confirming = false;
-    let searchController;
+  function mount(root, {residentId} = {}) {
+    const selected = String(residentId || "").trim();
+    if (!selected) throw new Error("Resident is required for tool settings");
+    let destroyed = false, generation = 0;
+    let data = null, draft = null, baseline = "", saving = false, loading = false, confirming = false;
     const reads = new Set(), discovered = new Map(), discoveries = new Map();
     const dirty = () => !!draft && JSON.stringify(draft) !== baseline;
     const current = epoch => !destroyed && epoch === generation;
@@ -23,28 +24,25 @@
       el.type = "button"; el.disabled = disabled; el.addEventListener("click", action); return el;
     }
     root.classList.add("toolSettings");
-    const intro = node("p", "查看应用工具，选择 Resident 后显式保存注册、停用或撤销。注册不授予资源权限。实际执行仍按 Resident 权限。");
-    const searchLabel = node("label", "选择 Resident", "portalField");
-    const search = node("input"); search.type = "search"; search.placeholder = t("搜索 Resident 名称或 ID"); searchLabel.append(search);
-    const results = node("div", undefined, "toolSettingsResults"); results.setAttribute("aria-live", "polite");
-    const target = node("strong", "尚未选择 Resident");
+    const intro = node("p", "为当前 Resident 注册、停用或撤销工具，修改后点击保存。注册不授予资源权限，实际执行仍按 Resident 权限。");
+    const target = node("strong", selected);
     const status = node("p"); status.setAttribute("role", "status"); status.setAttribute("aria-live", "polite");
     const content = node("div");
     const actions = node("div", undefined, "toolSettingsActions");
     const save = button("保存工具设置", saveDraft, true);
-    const reload = button("重新加载", () => load(selected));
+    const reload = button("重新加载", () => load());
     actions.append(save, reload);
     const customLabel = node("label", "添加自定义 MCP 连接资源地址", "portalField");
     const custom = node("input"); custom.type = "text"; custom.placeholder = t("资源 ID 或资源文件地址"); customLabel.append(custom);
     const discoverButton = button("发现工具", () => discover(custom.value.trim()), true);
     const customHelp = node("p", "连接资源由自定义服务提供者或资源区管理，格式为 tfi.mcp-connection.v1。发现仅列出工具，不调用工具，也不自动注册；勾选后保存。");
-    root.replaceChildren(intro, searchLabel, results, target, status, actions, content, customLabel, discoverButton, customHelp);
+    root.replaceChildren(intro, target, status, actions, content, customLabel, discoverButton, customHelp);
     function notice(text) { if (!destroyed) status.textContent = t(text); }
     function update() {
       save.disabled = !editable() || !dirty();
       reload.disabled = saving || loading;
       custom.disabled = !editable(); discoverButton.disabled = !editable();
-      target.textContent = data?.resident ? `${data.resident.title || selected} · ${selected}` : t(selected || "尚未选择 Resident");
+      target.textContent = selected;
     }
     async function read(callback) {
       const controller = new AbortController(); reads.add(controller);
@@ -55,22 +53,22 @@
       if (!dirty()) return true;
       if (confirming) return false;
       confirming = true;
-      try { return await window.PortalUI.confirm({title: t("放弃未保存的工具修改？"), message: t("重新加载或切换 Resident 将清除草稿。"), confirmLabel: t("放弃修改"), tone: "danger"}); }
+      try { return await window.PortalUI.confirm({title: t("放弃未保存的工具修改？"), message: t("重新加载将清除尚未保存的工具修改。"), confirmLabel: t("放弃修改"), tone: "danger"}); }
       finally { confirming = false; }
     }
-    async function load(id, initial = false) {
+    async function load(initial = false) {
       if (destroyed || saving || (!initial && !await discard()) || destroyed) return;
       cancelReads(); const epoch = ++generation;
-      selected = id; loading = true; data = null; draft = null; baseline = ""; discovered.clear();
+      loading = true; data = null; draft = null; baseline = ""; discovered.clear();
       content.replaceChildren(); notice("正在加载工具目录…"); update();
       try {
-        const result = await read(signal => window.PortalAPI.get(`/api/tool-settings${id ? `?resident_id=${encodeURIComponent(id)}` : ""}`, {signal}));
+        const result = await read(signal => window.PortalAPI.get(`/api/tool-settings?resident_id=${encodeURIComponent(selected)}`, {signal}));
         if (!current(epoch)) return;
         data = result;
         if (result.resident) {
           draft = clone(result.resident.capability_config); baseline = JSON.stringify(draft);
         }
-        notice(result.resident ? (result.resident.can_edit ? "选择工具后请保存。配置保存不表示旧 Session 已装配。" : "此 Resident 的工具设置只读。") : "请选择有权管理的 Resident。应用目录不会自动注册。");
+        notice(result.resident ? (result.resident.can_edit ? "选择工具后请保存。配置保存不表示旧 Session 已装配。" : "此 Resident 的工具设置只读。") : "无法读取此 Resident 的工具设置。");
       } catch (error) { if (current(epoch)) notice(error.message); }
       finally { if (current(epoch)) { loading = false; render(); } }
     }
@@ -183,22 +181,9 @@
         if (current(epoch)) notice(error.status === 409 ? "设置已被其他操作修改，草稿已保留。请重新加载最新设置后重新选择；重新加载前会确认放弃当前草稿。" : error.message);
       } finally { saving = false; if (current(epoch)) render(); }
     }
-    search.addEventListener("input", () => {
-      clearTimeout(timer); searchController?.abort(); const epoch = ++searchGeneration;
-      timer = setTimeout(async () => {
-        if (destroyed) return;
-        searchController = new AbortController();
-        try {
-          const result = await window.PortalInstructionClient.execute("SearchResidents", {q: search.value.trim(), limit: 20}, {signal: searchController.signal});
-          if (destroyed || epoch !== searchGeneration) return;
-          results.replaceChildren(...(result.residents || []).map(row => button(`${row.title || row.resident_id} · ${row.resident_id}`, () => load(row.resident_id))));
-          if (!result.residents?.length) results.append(node("p", "没有找到可见的 Resident。"));
-        } catch (error) { if (!destroyed && epoch === searchGeneration) notice(error.message); }
-      }, 250);
-    });
-    void load("", true);
+    void load(true);
     return {isBusy: () => saving, hasUnsavedChanges: dirty,
-      destroy() { destroyed = true; generation++; searchGeneration++; clearTimeout(timer); searchController?.abort(); cancelReads(); root.replaceChildren(); },
+      destroy() { destroyed = true; generation++; cancelReads(); root.replaceChildren(); },
     };
   }
   window.PortalToolSettings = Object.freeze({mount});

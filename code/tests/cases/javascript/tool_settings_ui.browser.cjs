@@ -39,10 +39,12 @@ const source = path.join(root, 'management_portal/static/portal_tool_settings.js
       window.PortalInstructionClient = {execute: async (name, args) => {calls.push(['search', args]); return {residents: [{resident_id: args.q, title: args.q}]};}};
     });
     await page.addScriptTag({path: source});
-    const mount = () => page.evaluate(() => {window.panel = PortalToolSettings.mount(document.querySelector('#host'));});
+    const mount = id => page.evaluate(id => {
+      window.panel?.destroy();
+      window.panel = PortalToolSettings.mount(document.querySelector('#host'), {residentId: id});
+    }, id);
     const select = async id => {
-      await page.getByPlaceholder('搜索 Resident 名称或 ID').fill(id);
-      await page.getByRole('button', {name: `${id} · ${id}`, exact: true}).click();
+      await mount(id);
       await page.waitForFunction(id => document.querySelector('#host strong')?.textContent.includes(id), id);
     };
     if (process.argv.includes('--corrections')) {
@@ -56,7 +58,7 @@ const source = path.join(root, 'management_portal/static/portal_tool_settings.js
           pendingDiscovery.push({ref: body.ref, signal: options.signal, resolve, reject});
         });
       });
-      await mount(); await select('editable');
+      await select('editable');
       const retired = page.locator('.toolSettingsCard').filter({hasText: 'application:retired'});
       const unavailable = page.locator('.toolSettingsCard').filter({hasText: 'application:unavailable'});
       assert.match(await retired.textContent(), /当前目录未提供/);
@@ -119,7 +121,7 @@ const source = path.join(root, 'management_portal/static/portal_tool_settings.js
       console.log('PASS corrections: same-ref cancellation plus stale success/error guard; independent refs; 409 draft preserved and reload deny/confirm; missing catalog application visibility, no schema/autoactivation, disable/revoke in explicit CAS');
       return;
     }
-    await mount();
+    await mount('readonly');
     await page.getByText('Paper2', {exact: true}).waitFor();
     assert.equal(await page.locator('img').count(), 0);
     assert.equal(await page.getByRole('button', {name: '注册', exact: true}).isDisabled(), true);
@@ -132,8 +134,7 @@ const source = path.join(root, 'management_portal/static/portal_tool_settings.js
     await app.getByLabel('必须可用').check(); await app.getByLabel('启用', {exact: true}).uncheck();
     assert.equal(await app.getByLabel('必须可用').isChecked(), false);
     assert.equal(await app.getByLabel('必须可用').isDisabled(), true);
-    await page.getByPlaceholder('搜索 Resident 名称或 ID').fill('other');
-    await page.getByRole('button', {name: 'other · other', exact: true}).click(); // confirmation denies
+    await page.getByRole('button', {name: '重新加载'}).click(); // confirmation denies
     assert.equal(await page.evaluate(() => panel.hasUnsavedChanges()), true);
     assert.match(await page.locator('#host > strong').textContent(), /editable/);
     await page.getByRole('button', {name: '保存工具设置'}).click();
@@ -165,19 +166,16 @@ const source = path.join(root, 'management_portal/static/portal_tool_settings.js
     await page.evaluate(() => {panel.destroy(); resolveSave();});
     await page.waitForFunction(() => invalidations.length === 6);
     assert.equal(await page.locator('#host').textContent(), '');
-    await mount();
     await select('slow');
     await select('fast');
     await page.evaluate(() => resolveSlow());
     assert.match(await page.locator('#host > strong').textContent(), /fast/);
     await page.evaluate(() => panel.destroy());
-    await mount();
-    await page.getByPlaceholder('搜索 Resident 名称或 ID').fill('abc');
-    await page.getByPlaceholder('搜索 Resident 名称或 ID').fill('abcd');
-    await page.getByPlaceholder('搜索 Resident 名称或 ID').fill('abcde');
-    await page.getByRole('button', {name: 'abcde · abcde', exact: true}).waitFor();
-    assert.equal(await page.evaluate(() => calls.filter(c => c[0] === 'search' && ['abc', 'abcd', 'abcde'].includes(c[1].q)).length), 1);
+    await select('editable');
+    assert.equal(await page.getByPlaceholder('搜索 Resident 名称或 ID').count(), 0);
+    assert.equal(await page.evaluate(() => calls.filter(c => c[0] === 'search').length), 0);
+    assert.equal(await page.evaluate(() => calls.some(c => c[0] === 'get' && c[1] === '/api/tool-settings')), false);
     assert.deepEqual(errors, []);
-    console.log('PASS: directory, XSS text, readonly, explicit registration/disable/revoke, required invariant, draft protection, complete config preservation, discover-only and exact selection, CAS409/retry, cache invalidation, destroyed write, stale read, throttled search');
+    console.log('PASS: directory, XSS text, readonly, explicit registration/disable/revoke, required invariant, draft protection, complete config preservation, discover-only and exact selection, CAS409/retry, cache invalidation, destroyed write, stale read, fixed Resident with no target search');
   } finally {await browser.close();}
 })().catch(error => {console.error(error); process.exitCode = 1;});

@@ -195,6 +195,7 @@
           <button class="nodeSettingsTab" id="nodeDutiesTab" type="button" role="tab" aria-selected="false" aria-controls="nodeDutiesPanel" tabindex="-1">Duties</button>
           <button class="nodeSettingsTab" id="nodeMemoryTab" type="button" role="tab" aria-selected="false" aria-controls="nodeMemoryPanel" tabindex="-1">Memory</button>
           <button class="nodeSettingsTab" id="nodeHarnessTab" type="button" role="tab" aria-selected="false" aria-controls="nodeHarnessPanel" tabindex="-1">Harness</button>
+          <button class="nodeSettingsTab" id="nodeToolsTab" type="button" role="tab" aria-selected="false" aria-controls="nodeToolsPanel" tabindex="-1">工具</button>
           <button class="nodeSettingsTab" id="nodeDetailsTab" type="button" role="tab" aria-selected="false" aria-controls="nodeDetailsPanel" tabindex="-1">Package</button>
           <button class="nodeSettingsTab" id="nodeMailboxTab" type="button" role="tab" aria-selected="false" aria-controls="nodeMailboxPanel" tabindex="-1">Mailbox</button>
           <button class="nodeSettingsTab" id="nodeJournalTab" type="button" role="tab" aria-selected="false" aria-controls="nodeJournalPanel" tabindex="-1">Work Journal</button>
@@ -206,6 +207,7 @@
         <section id="nodeDutiesPanel" class="nodeDutiesPanel" role="tabpanel" aria-labelledby="nodeDutiesTab" hidden><div id="nodeDutiesRows" aria-live="polite"></div></section>
         <section id="nodeMemoryPanel" class="nodeDutiesPanel" role="tabpanel" aria-labelledby="nodeMemoryTab" hidden><div id="nodeMemoryRows" aria-live="polite"></div></section>
         <section id="nodeHarnessPanel" class="nodeHarnessPanel" role="tabpanel" aria-labelledby="nodeHarnessTab" hidden></section>
+        <section id="nodeToolsPanel" role="tabpanel" aria-labelledby="nodeToolsTab" hidden></section>
         <section id="nodeDetailsPanel" role="tabpanel" aria-labelledby="nodeDetailsTab" hidden></section>
         <section id="nodeMailboxPanel" class="nodeMailboxPanel" role="tabpanel" aria-labelledby="nodeMailboxTab" hidden></section>
         <section id="nodeJournalPanel" role="tabpanel" aria-labelledby="nodeJournalTab" hidden><div id="nodeJournalRows" aria-live="polite"></div><button class="portalButton" type="button" id="nodeJournalRetry" hidden>重试</button></section>
@@ -250,11 +252,11 @@
         void leaveNodeMenu().then(allowed => { if (allowed && context === menuState.nodeMenuContext) dialog.close({force: true}); });
         return false;
       },
-      onClose: () => { modal.hidden = true; disposeGroupPanel(); disposeNodeMailbox(); disposeNodeHarness(); disposeNodeDetails(); disposeNodeMenu(); menuState.nodeTransferContext = null; },
+      onClose: () => { modal.hidden = true; disposeGroupPanel(); disposeNodeMailbox(); disposeNodeHarness(); disposeNodeEditor(); disposeNodeMenu(); menuState.nodeTransferContext = null; },
     });
 
     const {
-      disposeNodeDetails, disposeNodeHarness, disposeNodeMailbox, leaveNodeDetails, moveNodeSettingsTab,
+      disposeNodeEditor, disposeNodeHarness, disposeNodeMailbox, leaveNodeEditor, moveNodeSettingsTab,
       renderNodeSettingsTab, switchNodeSettingsTab,
     } = menuPart("PortalResidentMenuTabs").createTabs({
       $id, changed, disposeFamilySettings: (...args) => disposeFamilySettings(...args),
@@ -269,8 +271,8 @@
       disposeNodeMenu, leaveNodeMenu, nodeMenuNotice, nodeSettingsNode, openNodeSettingsModal, removeResident,
       removeDeletedResidents, submitNodeSettings, updateIntake,
     } = menuPart("PortalResidentMenuResident").createResident({
-      $id, changed, dialog, disposeFamilySettings: (...args) => disposeFamilySettings(...args), disposeNodeDetails,
-      disposeNodeHarness, disposeNodeMailbox, leaveNodeDetails,
+      $id, changed, dialog, disposeFamilySettings: (...args) => disposeFamilySettings(...args), disposeNodeEditor,
+      disposeNodeHarness, disposeNodeMailbox, leaveNodeEditor,
       loadNodeMenuIdentity: (...args) => loadNodeMenuIdentity(...args),
       loadNodeMenuRuntime: (...args) => loadNodeMenuRuntime(...args), menuState, nodeIntakeState, nodeResidentId,
       renderNodeMenuSession: (...args) => renderNodeMenuSession(...args), renderNodeSettingsTab,
@@ -326,7 +328,7 @@
         const tab = groupTab();
         setGroupPanelMode(Boolean(tab && !tab.residentId));
         if (tab && !tab.residentId) {
-          disposeNodeDetails();
+          disposeNodeEditor();
           disposeNodeMailbox();
           disposeNodeHarness();
           disposeNodeMenu();

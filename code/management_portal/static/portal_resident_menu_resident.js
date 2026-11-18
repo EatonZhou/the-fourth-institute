@@ -9,8 +9,8 @@
   // deleting the Resident.
 
   const DEPENDENCIES = Object.freeze([
-    "$id", "changed", "dialog", "disposeFamilySettings", "disposeNodeDetails", "disposeNodeHarness",
-    "disposeNodeMailbox", "leaveNodeDetails", "loadNodeMenuIdentity", "loadNodeMenuRuntime", "menuState",
+    "$id", "changed", "dialog", "disposeFamilySettings", "disposeNodeEditor", "disposeNodeHarness",
+    "disposeNodeMailbox", "leaveNodeEditor", "loadNodeMenuIdentity", "loadNodeMenuRuntime", "menuState",
     "nodeIntakeState", "nodeResidentId", "renderNodeMenuSession", "renderNodeSettingsTab", "switchNodeSettingsTab",
     "toast", "transferBlocker",
   ]);
@@ -19,8 +19,8 @@
     const missing = DEPENDENCIES.filter(name => dependencies?.[name] === undefined);
     if (missing.length) throw new Error(`PortalResidentMenuResident is missing: ${missing.join(", ")}`);
     const {
-      $id, changed, dialog, disposeFamilySettings, disposeNodeDetails, disposeNodeHarness, disposeNodeMailbox,
-      leaveNodeDetails, loadNodeMenuIdentity, loadNodeMenuRuntime, menuState, nodeIntakeState, nodeResidentId,
+      $id, changed, dialog, disposeFamilySettings, disposeNodeEditor, disposeNodeHarness, disposeNodeMailbox,
+      leaveNodeEditor, loadNodeMenuIdentity, loadNodeMenuRuntime, menuState, nodeIntakeState, nodeResidentId,
       renderNodeMenuSession, renderNodeSettingsTab, switchNodeSettingsTab, toast, transferBlocker,
     } = dependencies;
 
@@ -56,7 +56,7 @@
       }
       const node = requestedNode;
       if (!node) return;
-      disposeNodeDetails();
+      disposeNodeEditor();
       disposeNodeMailbox();
       disposeNodeHarness();
       renderNodeSettingsTab("display");
@@ -126,7 +126,7 @@
     }
 
     async function leaveNodeMenu() {
-      if (!await leaveNodeDetails()) return false;
+      if (!await leaveNodeEditor()) return false;
       const context = menuState.nodeMenuContext;
       const node = nodeSettingsNode();
       if (node && !$id("nodeMenuRenameFields").hidden && $id("nodeSettingsName").value.trim() !== node.title) {

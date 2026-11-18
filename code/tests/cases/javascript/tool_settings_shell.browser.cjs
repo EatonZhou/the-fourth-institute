@@ -26,22 +26,19 @@ const {chromium} = require(process.env.PORTAL_UI_PLAYWRIGHT || path.join(root, '
         window.PortalInstructionClient = {execute: async () => ({residents: []})};
         window.PortalNav = {mount() {}, mountPrincipalDetails: async () => ({destroy() {}})};
       });
-      await page.addScriptTag({path: path.join(root, 'management_portal/static/portal_tool_settings.js')});
       await page.addScriptTag({path: path.join(root, 'management_portal/static/settings.js')});
       if (!standalone) await page.evaluate(async () => {window.shell = await PortalSettingsPanel.mount(document.querySelector('#host'));});
-      await page.getByRole('tab', {name: '工具', exact: true}).waitFor();
-      assert.equal(await page.evaluate(() => gets.includes('/api/tool-settings')), false);
-      await page.getByRole('tab', {name: '工具', exact: true}).click();
-      await page.getByLabel('选择 Resident', {exact: true}).waitFor();
-      assert.equal(await page.evaluate(() => loaded.includes('/static/portal_tool_settings.js')), true);
-      assert.equal(await page.evaluate(() => gets.filter(url => url === '/api/tool-settings').length), 1);
+      await page.getByRole('tab', {name: 'Appearance', exact: true}).waitFor();
+      assert.equal(await page.getByRole('tab', {name: '工具', exact: true}).count(), 0);
+      assert.equal(await page.evaluate(() => loaded.includes('/static/portal_tool_settings.js')), false);
+      assert.equal(await page.evaluate(() => gets.some(url => url.startsWith('/api/tool-settings'))), false);
       await page.getByRole('tab', {name: 'Appearance', exact: true}).click();
-      assert.equal(await page.locator('[data-settings-tools]').isHidden(), true);
+      assert.equal(await page.locator('[data-settings-appearance]').isVisible(), true);
       await page.getByRole('tab', {name: 'Package', exact: true}).click();
       assert.equal(await page.locator('[data-settings-package]').isVisible(), true);
       assert.deepEqual(errors, []);
       await page.close();
     }
-    console.log('PASS: actual settings.js mount and standalone bootstrap, lazy tool reads/assets, Appearance and Package tab switching');
+    console.log('PASS: actual settings.js mount and standalone bootstrap, no Resident tool entry or reads, Appearance and Package tab switching');
   } finally {await browser.close();}
 })().catch(error => {console.error(error); process.exitCode = 1;});

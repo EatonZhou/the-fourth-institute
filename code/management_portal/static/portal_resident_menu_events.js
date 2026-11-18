@@ -42,6 +42,7 @@
     $id("nodeDutiesTab").addEventListener("click", () => switchNodeSettingsTab("duties"));
     $id("nodeMemoryTab").addEventListener("click", () => switchNodeSettingsTab("memory"));
     $id("nodeHarnessTab").addEventListener("click", () => switchNodeSettingsTab("harness"));
+    $id("nodeToolsTab").addEventListener("click", () => switchNodeSettingsTab("tools"));
     $id("nodeDetailsTab").addEventListener("click", () => switchNodeSettingsTab("details"));
     $id("nodeMailboxTab").addEventListener("click", () => switchNodeSettingsTab("mailbox"));
     $id("nodeDisplayTab").closest('[role="tablist"]').addEventListener("keydown", moveNodeSettingsTab);
