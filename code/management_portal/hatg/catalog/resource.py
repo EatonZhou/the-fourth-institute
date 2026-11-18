@@ -13,6 +13,27 @@ def _d(name, decides, description, parameters=(), result=(), *, mutates=False, t
 RESOURCE_RECORD = R("resource", "object", "资源记录")
 
 DECLARATIONS = (
+    _d('PreviewArticleRestore', (On('article_id', 'article'), On('resident_id', 'resident'),
+                                On('source_address'), On('project_id', 'project')),
+       '只读预检旧 Article 原 ID 的恢复证据与当前权限；分别返回工具事实、登记账本和可保留回执。'
+       '不恢复、复制、占位、修改 ACL 或签发恢复许可；can_apply 恒为 false，无 apply 参数。', (
+        R('article_id', description='原 Article ID'), R('resident_id', description='原登记工具所属的已删除 Resident'),
+        R('ordinal', 'integer', '精确工具轨迹序号', minimum=0, maximum=9223372036854775807),
+        R('tool_index', 'integer', '精确工具序号', minimum=0, maximum=10000),
+        R('tool_item_id', description='精确原工具项 ID'), R('expected_hash', description='原工具 SHA256'),
+        R('source_address', description='已登记资源的精确 file 目录地址'),
+        R('source_version', description='ReadResource 目录直接子项摘要，不代表递归文件版本'),
+        R('primary_file', description='源目录内拟主阅读 PDF 的相对路径'),
+        R('primary_version', description='主阅读 PDF 的 SHA256'),
+        R('project_id', description='现有目标 Project'), R('target_relative_path', description='Project 内新的相对目录'),
+       ), (R('mode', description='恒为 dry_run'), R('apply_supported', 'boolean', '恒为 false'),
+           R('can_apply', 'boolean', '恒为 false'), R('tool_evidence', 'object', '原工具可证事实'),
+           R('registration_ledger', 'object', '独立登记账本结果'), R('hatg_receipt', 'object', '独立回执可核字段'),
+           R('identity', 'object', '墓碑和活登记'), R('cleanup', 'object', '终态和竞争时点观察'),
+           R('source', 'object', '源版本观察'), R('target', 'object', '目标目录边界'),
+           R('current_inheritance', 'object', '当前共享继承；不声称仅申请者私有'),
+           R('decision', 'object', '真实决定关系未核实时为 unknown'), R('scope_digest', description='内容比较摘要，不是授权 token')),
+       target='article_id'),
     _d("SearchResources", FIXED, "按关键词、类型、项目和状态查找调用者可以看到的资源。", (
         P("q", description="关键词"),
         P("resource_type", description="资源类型"),

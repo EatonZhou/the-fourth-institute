@@ -58,10 +58,12 @@ def initialize_reservations_schema(connection, schema):
 
 
 class DirectoryCleanupStore:
-    def __init__(self, *, connection=None):
+    def __init__(self, *, connection=None, create=True):
         self.database = portal_database(schema='directory_lifecycle')
         self.table = f'"{self.database.schema}".cleanup'
         self.reservations = f'"{self.database.schema}".path_reservations'
+        if not create:
+            return
         if connection is None:
             self.database.write(self._initialize)
         else:
@@ -69,6 +71,39 @@ class DirectoryCleanupStore:
 
     def _initialize(self, connection):
         initialize_directory_schema(connection, self.database.schema)
+
+    def inspect_restore(self, *, owner_id, path, limit=256):
+        """Bounded point-in-time observation, without initialization or reservations.
+
+        A full overlap scan is needed because stored locations use the owner's
+        path comparison rules. An incomplete scan never establishes clearance.
+        """
+        if not owner_id or type(limit) is not int or not 1 <= limit <= 256:
+            raise ValueError('Cleanup inspection requires an owner and bounded limit')
+        target = lexical_path(path)
+        with self.database.snapshot() as connection:
+            missing = [name for name, table in (('cleanup', self.table), ('reservations', self.reservations))
+                       if connection.execute('SELECT to_regclass(%s)', (table,)).fetchone()[0] is None]
+            if missing:
+                return {'status': 'indeterminate', 'reason': 'table_not_found', 'missing': missing,
+                        'clear': False, 'truncated': False}
+            own = connection.execute(f'SELECT cleanup_id,completed_at,attempts FROM {self.table} '
+                'WHERE owner_id=%s ORDER BY created_at,cleanup_id LIMIT %s', (owner_id, limit + 1)).fetchall()
+            pending = connection.execute(f'SELECT location FROM {self.table} '
+                'WHERE completed_at IS NULL ORDER BY created_at,cleanup_id LIMIT %s', (limit + 1,)).fetchall()
+            reservations = connection.execute(f'SELECT location FROM {self.reservations} '
+                'ORDER BY operation_id,location LIMIT %s', (limit + 1,)).fetchall()
+        truncated = any(len(rows) > limit for rows in (own, pending, reservations))
+        comparison = DirectoryComparison()
+        overlaps = [sum(comparison.overlaps(target, cleanup_path(row['location']))
+                        for row in rows[:limit]) for rows in (pending, reservations)]
+        terminal = bool(own) and len(own) <= limit and all(row['completed_at'] for row in own)
+        return {'status': 'indeterminate' if truncated else 'observed', 'truncated': truncated,
+                'cleanup_terminal': terminal, 'cleanup_found': bool(own),
+                'cleanup': [{'cleanup_id': row['cleanup_id'],
+                             'status': 'completed' if row['completed_at'] else 'pending'} for row in own[:limit]],
+                'overlapping_pending': overlaps[0], 'overlapping_reservations': overlaps[1],
+                'clear': not truncated and not any(overlaps), 'limit': limit}
 
     def lock(self, connection):
         # Serialize short path decisions, never the physical filesystem walk.

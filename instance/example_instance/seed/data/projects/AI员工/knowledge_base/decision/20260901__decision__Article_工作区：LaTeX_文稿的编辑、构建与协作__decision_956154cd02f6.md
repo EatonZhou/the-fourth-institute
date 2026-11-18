@@ -4,12 +4,12 @@ type: decision
 project: AI员工
 created_at: '2026-09-01'
 version:
-  number: 43
+  number: 44
   created_at: "2026-09-01"
   created_by:
     user: ""
     agent: ""
-  updated_at: "2026-11-18T03:00:59Z"
+  updated_at: "2026-11-18T04:53:16Z"
   updated_by:
     user: ""
     agent: "resident_6199a7a36480"
@@ -146,6 +146,14 @@ LaTeX 编辑区提供独立的“评论”面板。Monaco 源码编辑器选中�
 5. **撤销登记。** 用户在选择器中确认永久删除所属目录与文件后，页面调用 `UnregisterResource`。服务按 decision_4aa13bc21e8e 在注销事务中删除 Article 登记、注销其范围内的嵌套登记和绑定，并持久保存所属目录的清理任务。登记注销与后台文件清理分别返回状态；文件清理失败保留任务并重试，不恢复登记。自动登记按规范目录位置保存忽略记录（资源登记表的 `auto_registration_ignore` 集合），已注销或待清理的资源不会被扫描重新登记。
 
 **自动登记**由 ResourceService 后台发现已登记 Project 中的有效稿件目录，复用 Article 正式登记入口。发现范围、目录判定、Article 与 Repo 的分类顺序、忽略记录和调度统一见 decision_36f46b395d8e。
+
+### 已注销 Article 的恢复证据
+
+恢复调查可通过资源指令 `PreviewArticleRestore` 核对原 ID、真实登记工具回执、独立登记账本与保留回执、源目录及主阅读 PDF、目标 Project 内的新目录、墓碑和清理竞争状态。此入口只返回当前证据，固定 `can_apply=false`，不恢复文稿，不复活创建者 Resident。
+
+原登记回执能证明的首次登记字段与删除前最终版本分别记录。较晚 PDF、较早 LaTeX/PPT 和后续修订片段可各自作为来源；不能据此声称最终源码完整，也不能从当前执行者推断原作者。历史来源、格式或预算导致的不可展开保留为明确缺口，不等同于原始记录不存在。
+
+Article 按登记 Project 的当前权限方案放置。预检展示项目祖先的持久共享继承及截断情况，排除临时凭证；给申请者增加一项许可不能消除其他主体已有的继承权限。当前继承不代表原 ACL 已被找回。原作者、旧 ACL、最终稿或具体方案的真实用户决定无法核验时，结果明确保留缺口；`scope_digest` 仅供方案比较，不能作为批准凭据。参数与权限合同见 decision_ad3e21094f14，目录观察见 decision_4aa13bc21e8e。
 
 ## 浏览、编辑和上传文件
 

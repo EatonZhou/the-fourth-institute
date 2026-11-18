@@ -11,6 +11,18 @@ from typing import Any
 from management_common.portal_database import portal_database
 
 
+class RegistrationEvidenceMissing(KeyError):
+    def __init__(self, reason):
+        self.reason = reason
+        super().__init__('Original registration ledger is missing: ' + reason)
+
+
+class RegistrationEvidenceConflict(ValueError):
+    def __init__(self, fields):
+        self.fields = fields
+        super().__init__('Original registration ledger conflicts with recovery evidence')
+
+
 def initialize_registration_schema(connection, schema=None):
     """Initialize the current schema for explicit registration request identities."""
     table = f'"{schema}".resource_registration_operations' if schema else 'resource_registration_operations'
@@ -96,6 +108,32 @@ class ResourceRegistrationStore:
             return None
         self._validate(row, self._fingerprint(resource_type, payload, actor=actor))
         return str(row['resource_id'])
+
+    def verify_deleted(self, resource_type, payload, *, actor, operation_id, resource_id, connection=None):
+        """Read original registration proof without reviving its replay fence.
+
+        Legacy providers may never have used this ledger. Absence is an explicit
+        recovery evidence gap, never permission to synthesize an allocation.
+        """
+        if not actor or not operation_id or not resource_id:
+            raise ValueError('Original registration identity is incomplete')
+        key = hashlib.sha256((actor + '\0' + operation_id).encode()).hexdigest()
+        table = f'"{self._database.schema}".resource_registration_operations'
+        with nullcontext(connection) if connection is not None else self._database.read() as conn:
+            if conn.execute('SELECT to_regclass(%s)', (table,)).fetchone()[0] is None:
+                raise RegistrationEvidenceMissing('table_not_found')
+            row = conn.execute(f'SELECT actor,resource_type,resource_id,fingerprint,completed,deleted '
+                               f'FROM {table} WHERE operation_id=%s', (key,)).fetchone()
+        if row is None:
+            raise RegistrationEvidenceMissing('row_not_found')
+        expected = (actor, resource_type, resource_id, self._fingerprint(resource_type, payload, actor=actor))
+        actual = tuple(row[name] for name in ('actor', 'resource_type', 'resource_id', 'fingerprint'))
+        conflicts = [name for name, found, wanted in zip(
+            ('actor', 'resource_type', 'resource_id', 'fingerprint'), actual, expected) if found != wanted]
+        conflicts += [name for name in ('completed', 'deleted') if not row[name]]
+        if conflicts:
+            raise RegistrationEvidenceConflict(conflicts)
+        return {name: row[name] for name in ('actor', 'resource_type', 'resource_id', 'fingerprint', 'completed', 'deleted')}
 
     @staticmethod
     def _validate(row, fingerprint):

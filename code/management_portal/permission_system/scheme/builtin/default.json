@@ -746,6 +746,18 @@
     "RegisterResource": {
       "a": "@contributor"
     },
+    "PreviewArticleRestore:article_id": {
+      "a": "@admin"
+    },
+    "PreviewArticleRestore:resident_id": {
+      "a": "@admin"
+    },
+    "PreviewArticleRestore:source_address": {
+      "a": "@viewer"
+    },
+    "PreviewArticleRestore:project_id": {
+      "a": "@contributor"
+    },
     "RelayFamilyMessage": {
       "a": "@contributor"
     },

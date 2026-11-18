@@ -156,6 +156,29 @@ class RegistryStore:
         self._ready = False
         self._lock = threading.Lock()
 
+    def inspect_article_identity(self, collection: str, resource_id: str) -> dict:
+        """Read one Article's tombstone and live registration in one snapshot.
+
+        Missing owner storage is evidence missing, never an empty initialized
+        registry. No schema bootstrap, revisions or complete collection reads.
+        """
+        import re
+        if collection != 'article' or not re.fullmatch(r'article_[0-9a-f]{12}', resource_id):
+            raise ValueError('Article inspection requires the exact article collection and ID')
+        schema = f'"{self.database.schema}"'
+        with self.database.snapshot() as connection:
+            missing = [table for table in ('registry_documents', 'deleted_identities')
+                       if connection.execute('SELECT to_regclass(%s)', (schema + '.' + table,)).fetchone()[0] is None]
+            if missing:
+                return {'status': 'indeterminate', 'reason': 'table_not_found', 'missing': missing}
+            live = connection.execute(f'SELECT revision FROM {schema}.registry_documents '
+                'WHERE collection=%s AND document_id=%s', (collection, resource_id)).fetchone()
+            deleted = connection.execute(f'SELECT 1 FROM {schema}.deleted_identities WHERE resource_id=%s',
+                                         (resource_id,)).fetchone() is not None
+        return {'status': 'conflict' if live else ('tombstoned' if deleted else 'not_found'),
+                'resource_id': resource_id, 'tombstoned': deleted, 'live': live is not None,
+                'live_revision': int(live['revision']) if live else None}
+
     def _ensure(self) -> None:
         if self._ready:
             return

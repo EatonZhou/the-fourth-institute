@@ -4,12 +4,12 @@ type: decision
 project: AI员工
 created_at: '2026-09-28'
 version:
-  number: 46
+  number: 47
   created_at: "2026-09-28T10:45:00Z"
   created_by:
     user: "weihao"
     agent: "resident_2a1fc6cd272d"
-  updated_at: "2026-11-05T13:23:37Z"
+  updated_at: "2026-11-18T04:53:15Z"
   updated_by:
     user: ""
     agent: "resident_6199a7a36480"
@@ -59,6 +59,7 @@ links:
 | `ListResourceTypes` | 否 | 列出全部资源类型的声明、状态与有效能力 | 对“共享”有 @viewer |
 | `GetResourceType` | 否 | 读取某个资源类型的声明、状态与有效能力 | 对“共享”有 @viewer |
 | `UpdateResourceType` | 是 | 启用或停用一个资源类型，可选信封版本前提 | 对“共享”有 @admin |
+| `PreviewArticleRestore` | 否 | 预检原 Article 的恢复证据、目录与当前权限，不执行恢复 | Article/原 Resident @admin、源 @viewer、目标 Project @contributor；领域另核历史与继承读取 |
 | `RegisterResource` | 是 | 登记一个新资源 | 对新对象的所属位置有 @contributor |
 | `CreateWorkspace` | 是 | 在空位置创建 Workspace | 固定槽免检；给出 `owner_id` 时对该所属对象有 @contributor |
 | `RegisterWorkspace` | 是 | 将现成目录接入为新的 Workspace | 固定槽免检；给出 `owner_id` 时对该所属对象有 @contributor |
@@ -190,6 +191,18 @@ CreateWorkspace 要求目标位置不存在；RegisterWorkspace 要求目标是�
 结果为 `items` 数组。每项包含 `cleanup_id`（清理任务 ID）、`owner_id`（产生清理任务的对象）、`operation_id`（原操作）、`location`（待清理位置）、`actor`（原操作调用者）、`created_at`、`available_at`（下次可尝试时间）、`completed_at`、`attempts`、`last_error` 和 `status`。状态为 `pending`（待执行）、`retry`（等待重试）或 `completed`（已完成）。没有清理任务时返回空数组，空数组本身不证明登记仍存在或已注销。
 
 固定槽在默认方案中免检，领域继续检查可见性：原操作调用者可以读取自己的清理记录；其他调用者必须有对应对象的读取权限，否则返回 `instruction.forbidden`。注销结果与文件清理进度分别报告；清理失败不恢复登记，后台持久重试，重启后继续。该入口不授予对象权限，不提供任意目录清理或管理员重试动作。
+
+### `PreviewArticleRestore`
+
+对已删除 Article 的原 ID 做有界只读证据预检，声明 `mutates=false`。输入为 `article_id`、原登记 Resident 的 `resident_id`、精确工具定位 `ordinal/tool_index/tool_item_id/expected_hash`、源目录 `source_address/source_version`、主阅读 PDF `primary_file/primary_version`、目标 `project_id/target_relative_path`；不接受 `apply`、客户端登记前像、ACL 或批准字典。目录版本是直接子项摘要，PDF 版本是字节 SHA256。
+
+四个权限槽分别要求 Article `@admin`、原 Resident `@admin`、源资源 `@viewer` 和目标 Project `@contributor`。Society 仍核验精确已删身份的历史权限与个人 AMA 边界，ResourceService 分别鉴权源目录和 PDF；读取当前继承表项还须通过 `ListPermissionEntries`。拒绝访问不能转换成普通证据缺失；返回前再次核验四个权限槽。
+
+结果固定 `mode=dry_run`、`apply_supported=false`、`can_apply=false`。原工具可证事实、独立登记账本及独立 HATG 回执分别报告；账本缺表、缺行、冲突及回执缺失不互相覆盖，缺失原因不能未经证实写成过期。历史 owner 明示的外部来源、格式或内容预算缺口保留为不可展开的事实，不能凭空结果断言原工具未保留。普通模型回话或客户端摘录不作为登记前像。
+
+目录与清理观察遵循 decision_4aa13bc21e8e；源目录及 PDF 各有8MiB读取预算，整体响应128KiB预算。源版本变化、拟用目标占用、原项目不一致等冲突分别报告。当前共享继承按启用方案与项目祖先持久权限表读取，排除临时凭证，保留截断状态，不能称为已恢复的旧 ACL 或申请者私有。
+
+`decision.status` 保持 `unknown`：预检不核定用户是否批准恢复方案。`scope_digest` 只比较当前参数、源、目标及共享范围，不是授权 token。指令不复制、编译、占位、改墓碑或权限，不调用模型，不复活 Resident；恢复写入不在此入口内。
 
 ### `UpdateResource`
 

@@ -1065,7 +1065,15 @@ def correct_resource_lifecycle_association(inv):
     return correct(inv, _service())
 
 
+def preview_article_restore(inv):
+    from .article_restore_preview import preview
+    from management_portal.hatg.store import ExecutionStore
+    return preview(arguments=dict(inv.arguments), actor=inv.caller, service=_service(),
+                   receipt_store=ExecutionStore(_execution_database(), create=False))
+
+
 HANDLERS = {
+    'PreviewArticleRestore': preview_article_restore,
     'CorrectResourceLifecycleAssociation': correct_resource_lifecycle_association,
     "CreateWorkspace": lambda inv: directory_isa.create_workspace(inv, _service()),
     "RegisterWorkspace": lambda inv: directory_isa.create_workspace(inv, _service()),
@@ -1099,6 +1107,8 @@ def binding() -> OwnerBinding:
 
 
 def _authorization_arguments(declaration, arguments, context):
+    if declaration.name == 'PreviewArticleRestore':
+        return {**arguments, 'source_address': _service().parse_address(arguments.get('source_address')).root_id}
     if declaration.name in {"ReadResource", "ResolveResource"}:
         from .upload_files import file_reference
 
