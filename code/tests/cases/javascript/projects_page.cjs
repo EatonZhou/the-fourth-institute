@@ -114,18 +114,12 @@ const ALPHA = {
     await page.fill('[data-project-query]', '');
     await page.click('[data-project-id="Alpha"] [data-project-tag="robot"]');
 
-    // Opening a card goes through the page; changing a status is one UpdateProject, reverted when refused.
+    // The list displays each status and opens the Project page for changes.
     await page.click('[data-project-id="Beta"] .projectCardLink');
     assert.deepEqual(await page.evaluate(() => f.opened), ['Beta']);
-    await page.selectOption('[data-project-status="Gamma"]', 'active');
-    await page.waitForFunction(() => f.calls.some(([name]) => name === 'UpdateProject'));
-    assert.deepEqual(await page.evaluate(() => f.calls.find(([name]) => name === 'UpdateProject')[1]), { project_id: 'Gamma', changes: { status: 'active' } });
-    await page.waitForFunction(() => [...document.querySelectorAll('[data-project-group="active"] .projectCard')].some(card => card.dataset.projectId === 'Gamma'));
-    await page.evaluate(() => f.fail.add('UpdateProject'));
-    await page.selectOption('[data-project-status="Beta"]', 'paused');
-    await page.waitForFunction(() => f.toasts.length === 1);
-    assert.equal(await page.$eval('[data-project-status="Beta"]', select => select.value), 'active', 'a refused change is undone');
-    await page.evaluate(() => f.fail.clear());
+    assert.equal(await page.locator('[data-project-id="Gamma"] .projectStatusBadge').getAttribute('data-status'), 'paused');
+    assert.equal(await page.locator('[data-project-status]').count(), 0);
+    assert.equal(await page.evaluate(() => f.calls.some(([name]) => name === 'UpdateProject')), false);
 
     // A Project: hero, team with live states and summaries, resources, recent changes.
     await page.evaluate(async () => {
@@ -133,7 +127,8 @@ const ALPHA = {
       f.calls.length = 0;
       f.countGate = new Promise(resolve => { f.releaseCount = resolve; });
       window.home = PortalProjectHome.create({ root: document.getElementById('home'), onOpenMap: id => { f.mapOpened = id; },
-        onRenamed: id => { f.renamed = id; }, onDeleted: id => { f.deleted = id; } });
+        onRenamed: id => { f.renamed = id; }, onDeleted: id => { f.deleted = id; },
+        onChanged: () => { f.changed = (f.changed || 0) + 1; } });
       await home.load('Alpha');
     });
     // The registry and team show at once; the resources fill in once GetProject has counted them.
@@ -161,6 +156,21 @@ const ALPHA = {
     assert.equal(await page.evaluate(() => f.mapOpened), 'Alpha');
     const reads = await page.evaluate(() => f.calls.filter(([name]) => name === 'ListResidentStates')[0][1]);
     assert.deepEqual(reads, { resident_ids: ['resident_aaaaaaaaaaaa', 'resident_cccccccccccc'], include_viewer_state: false });
+
+    // The detail status saves only the status field. Refusal restores the saved value.
+    const status = page.locator('[data-home-status]');
+    await status.selectOption('paused');
+    await page.waitForFunction(() => f.changed === 1);
+    assert.deepEqual(await page.evaluate(() => f.calls.filter(([name]) => name === 'UpdateProject').map(([, args]) => args)),
+      [{ project_id: 'Alpha', changes: { status: 'paused' } }]);
+    assert.equal(await status.inputValue(), 'paused');
+    await page.evaluate(() => f.fail.add('UpdateProject'));
+    await status.selectOption('active');
+    await page.waitForFunction(() => f.toasts.length === 1);
+    assert.equal(await status.inputValue(), 'paused');
+    assert.equal(await status.isEnabled(), true);
+    assert.equal(await page.evaluate(() => f.changed), 1);
+    await page.evaluate(() => f.fail.clear());
 
     // summary.md: edit, mark unsaved, save as one UpdateProject.
     await page.click('[data-summary-edit]');

@@ -6,7 +6,7 @@ const http = require("node:http");
 const path = require("node:path");
 const { chromium } = require("../../../management_portal/test_framework/tau_runtime/node_modules/playwright");
 const code = path.resolve(__dirname, "../../..");
-const scripts = ["portal_state", "portal_text", "portal_ui_primitives", "portal_refresh_coordinator",
+const scripts = ["portal_state", "portal_text", "portal_i18n", "portal_ui_primitives", "portal_ui", "portal_refresh_coordinator",
   "resident_protocol", "portal_conversation_store", "portal_mailbox_todos", "portal_agent_inbox", "portal_mailbox_alerts"];
 const styles = ["portal_components", "portal_components_agent_inbox", "portal_design_system"];
 const sources = new Map([...scripts.map(n => n + ".js"), ...styles.map(n => n + ".css")]
@@ -22,7 +22,6 @@ window.PortalEvents={isConnected:()=>false,connect(){}};
 window.PortalNav={personalAssistantTarget:async()=>null};
 window.PortalAPI={get:async()=>({entries:structuredClone(items),ready:true,content_signature:JSON.stringify(items),read_revision:Date.now()})};
 window.PortalInstructionClient={execute:async(name,args)=>{calls.push(name);if(name==='ListMailboxTodos')return {items:[]};if(name==='GetChatroom'){if(window.blockOpen)await new Promise(r=>window.releaseOpen=r);if(deny)throw Error('forbidden');const e=items.find(e=>e.chatroom_id===args.chatroom_id);return {chatroom:e&&{...e}};}throw Error('Unexpected write '+name);}};
-window.PortalUI={toast:()=>{}};
 window.addEventListener('portal:agent-conversation-open',event=>{window.opened.push(event.detail.entry);event.detail.handled=true});
 </script>${scripts.map(n => `<script src="/static/${n}.js"></script>`).join("")}
 <script>PortalMailboxAlerts.mount();</script></body></html>`;
