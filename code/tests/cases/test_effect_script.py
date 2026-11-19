@@ -335,7 +335,7 @@ def test_a_reclaimed_activation_reuses_completed_calls_and_registers_each_delive
     """中断后重新认领的 Effect 激活复用已完成调用，每次投递登记一次，结束后重复激活直接回放"""
     from management_portal.hatg import routing
 
-    lineage = _lineage("lineage_effectscript1")
+    lineage = _lineage('lineage_913c78f69d9f')
     event = lineage_primitives.LineageEvent(id="event_resume_1", type="manual.triggered", payload={}, identity=OperationIdentity.for_actor("CASE-A").to_dict())
     activation = lineage_primitives.EffectInvocation(id="invocation_resume_1", activation=event, arguments={"prompt": "today"})
     plan = _plan(
@@ -390,7 +390,7 @@ def test_a_reclaimed_activation_reuses_completed_calls_and_registers_each_delive
     from management_portal.society_service.state_store import get_lineage_data_store
 
     store = get_lineage_data_store()
-    assert store.effect_work.list('lineage_effectscript1') == {}
+    assert store.effect_work.list('lineage_913c78f69d9f') == {}
     assert finished["status"] == "succeeded"
     observed = journal.trigger_paths.get(lineage["lineage_id"], finished["trigger_path_id"])
     assert observed["root_kind"] == "effect" and observed["occurrence_id"] == key
@@ -401,7 +401,7 @@ def test_a_failed_script_reports_the_line_and_completed_calls(monkeypatch):
     """Effect 脚本失败时输出错误码、失败行号和已完成调用数"""
     from management_portal.hatg import routing
 
-    lineage = _lineage("lineage_effectscript2")
+    lineage = _lineage('lineage_ad5351f60270')
     event = lineage_primitives.LineageEvent(id="event_fail_1", type="manual.triggered", payload={}, identity=OperationIdentity.for_actor("CASE-A").to_dict())
     activation = lineage_primitives.EffectInvocation(id="invocation_fail_1", activation=event, arguments={})
     plan = _plan('Ping\nBoom\nPing')
@@ -428,7 +428,7 @@ def test_transient_call_failure_resumes_with_the_same_key_without_repeating_succ
     from management_portal.hatg import routing
     from management_portal.society_service.state_store import get_lineage_data_store
 
-    lineage = _lineage("lineage_effectretry1")
+    lineage = _lineage('lineage_da3100ad7693')
     event = lineage_primitives.LineageEvent(id="event_retry_1", type="manual.triggered", payload={}, identity=OperationIdentity.for_actor("CASE-A").to_dict())
     activation = lineage_primitives.EffectInvocation(id="invocation_retry_1", activation=event, arguments={})
     plan = _plan('Ping\nDeliverMessage resident_id="${endpoint.target}" message="hi"')
@@ -475,7 +475,7 @@ def test_a_script_changed_mid_activation_is_not_resumed_on_the_new_text(monkeypa
     """激活中途脚本被修改时不按新文本续跑，以 effect.script_changed 失败"""
     from management_portal.hatg import routing
 
-    lineage = _lineage("lineage_effectscript3")
+    lineage = _lineage('lineage_447a3117ec9b')
     event = lineage_primitives.LineageEvent(id="event_change_1", type="manual.triggered", payload={}, identity=OperationIdentity.for_actor("CASE-A").to_dict())
     activation = lineage_primitives.EffectInvocation(id="invocation_change_1", activation=event, arguments={})
     monkeypatch.setattr(routing, "execute", lambda call, context, **_: (_ for _ in ()).throw(SystemExit("handover")))
@@ -492,7 +492,7 @@ def test_a_failed_invocation_registration_propagates_and_is_retried_on_reclaim(m
     """投递登记失败时 Effect 抛出错误，重新认领后只补登记，不重复投递"""
     from management_portal.hatg import routing
 
-    lineage = _lineage("lineage_effectscript4")
+    lineage = _lineage('lineage_85d00731da91')
     event = lineage_primitives.LineageEvent(id="event_register_1", type="manual.triggered", payload={}, identity=OperationIdentity.for_actor("CASE-A").to_dict())
     activation = lineage_primitives.EffectInvocation(id="invocation_register_1", activation=event, arguments={})
     plan = _plan('DeliverMessage resident_id="${endpoint.target}" message="hi"')
@@ -531,7 +531,7 @@ def test_workflow_bindings_read_the_receipt_a_delivering_effect_returns(monkeypa
     from management_portal import isa_client, lineage_workflows
     from management_portal.hatg import routing
 
-    lineage = _lineage("lineage_effectscript9")
+    lineage = _lineage('lineage_14399547d1ba')
     effect_id, resident_id = "effect_aaaaaaaaaaaa", "resident_bbbbbbbbbbbb"
     event = lineage_primitives.LineageEvent(id="event_workflow_9", type="manual.triggered", payload={}, identity=OperationIdentity.for_actor("CASE-A").to_dict())
     activation = lineage_primitives.EffectInvocation(id="invocation_workflow_9", activation=event, arguments={"prompt": "today"})

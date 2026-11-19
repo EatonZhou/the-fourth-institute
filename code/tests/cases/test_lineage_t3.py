@@ -31,7 +31,7 @@ def admin(monkeypatch):
     return requests
 
 
-def unknown(lid="lineage_t3_unknown", key="effect:key"):
+def unknown(lid='lineage_a6ae685f2ec0', key="effect:key"):
     _lineage(lid)
     journal.begin(lid, key, effect_id="effect_aaaaaaaaaaaa", trigger_path_id="", script_sha="sha",
                   source={"event_id": "event_recovery", "source_wire_id": "wire_aaaaaaaaaaaa"})

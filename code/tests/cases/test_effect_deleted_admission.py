@@ -10,7 +10,7 @@ from management_portal.society_service.state_store import get_lineage_data_store
 from management_common.principal import OperationIdentity
 
 EFFECT = 'effect_aaaaaaaaaaaa'
-LID = 'lineage_deleted_effect_admission'
+LID = 'lineage_0ebdac863fc8'
 
 
 def definition(present):
