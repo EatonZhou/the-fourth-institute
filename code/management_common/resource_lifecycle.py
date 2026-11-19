@@ -24,7 +24,7 @@ class LifecycleStore:
     def __init__(self):
         self.db = portal_database(schema="resource_lifecycle")
         with self.db.read() as db:
-            ready = db.execute("SELECT to_regclass('scopes') IS NOT NULL AND to_regclass('allocation_corrections') IS NOT NULL").fetchone()[0]
+            ready = db.execute("SELECT to_regclass('scopes') IS NOT NULL AND to_regclass('allocation_corrections') IS NOT NULL AND to_regclass('retired_allocations') IS NOT NULL").fetchone()[0]
         if ready:
             return
         def initialize(db):
@@ -34,6 +34,8 @@ class LifecycleStore:
             db.execute("CREATE TABLE IF NOT EXISTS members (actor TEXT PRIMARY KEY, scope_id TEXT NOT NULL REFERENCES scopes(id))")
             db.execute("CREATE TABLE IF NOT EXISTS allocations (ordinal BIGSERIAL PRIMARY KEY, "
                        "resource_id TEXT UNIQUE NOT NULL, scope_id TEXT NOT NULL REFERENCES scopes(id), released BOOLEAN NOT NULL DEFAULT FALSE)")
+            db.execute("CREATE TABLE IF NOT EXISTS retired_allocations (ordinal BIGINT PRIMARY KEY, "
+                       "resource_id TEXT NOT NULL, scope_id TEXT NOT NULL REFERENCES scopes(id), released BOOLEAN NOT NULL)")
             db.execute("CREATE TABLE IF NOT EXISTS allocation_corrections ("
                        "scope_id TEXT NOT NULL REFERENCES scopes(id), resource_id TEXT NOT NULL, "
                        "original_ordinal BIGINT NOT NULL, actor TEXT NOT NULL, reason TEXT NOT NULL, "
@@ -144,8 +146,32 @@ class LifecycleStore:
     def owns(self, scope_id, resource_id):
         """Allocation provenance survives deletion and successful cleanup."""
         with self.db.read() as db:
-            return db.execute("SELECT 1 FROM allocations WHERE scope_id=%s AND resource_id=%s",
-                              (scope_id, resource_id)).fetchone() is not None
+            return db.execute("SELECT 1 FROM allocations WHERE scope_id=%s AND resource_id=%s UNION ALL "
+                              "SELECT 1 FROM retired_allocations WHERE scope_id=%s AND resource_id=%s",
+                              (scope_id, resource_id, scope_id, resource_id)).fetchone() is not None
+
+    def prepare_name_reuse(self, resource_id, *, connection):
+        """Detach only a finished scope; retain its immutable provenance.
+
+        The resource owner holds the name/directory exclusion and proves the
+        old instance deleted. An open request in the same scope keeps ownership
+        of its replacement. Another scope must have finished all cleanup.
+        """
+        table = f'"{self.db.schema}".allocations'
+        row = connection.execute(f'SELECT * FROM {table} WHERE resource_id=%s FOR UPDATE',
+                                 (resource_id,)).fetchone()
+        if row is None:
+            return
+        state = connection.execute(f'SELECT state FROM "{self.db.schema}".scopes WHERE id=%s FOR SHARE',
+                                   (row['scope_id'],)).fetchone()[0]
+        if row['scope_id'] == current_lifecycle() and state == 'open':
+            connection.execute(f'UPDATE {table} SET released=FALSE WHERE ordinal=%s', (row['ordinal'],))
+            return
+        if not row['released'] or state != 'complete':
+            raise RuntimeError('Previous Project resource lifecycle cleanup is pending')
+        connection.execute(f'INSERT INTO "{self.db.schema}".retired_allocations '
+                           f'SELECT * FROM {table} WHERE ordinal=%s', (row['ordinal'],))
+        connection.execute(f'DELETE FROM {table} WHERE ordinal=%s', (row['ordinal'],))
 
     def actors(self, scope_id):
         """Residents assigned to this operation, including its new identities."""

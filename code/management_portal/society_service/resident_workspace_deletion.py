@@ -36,7 +36,7 @@ def unregister_workspace(workspace_id, *, connection, actor, authorize):
 
 
 def remove_deleted_folder(folder, *, connection, owner_id, actor='', deleted_at=None,
-                          preserve_resources=False):
+                          preserve_resources=False, operation_id=None):
     """Enlist only the resource owner's safe cleanup roots in this transaction."""
     if not owner_id or connection is None:
         raise ValueError('Directory cleanup requires its owner transaction')
@@ -49,6 +49,6 @@ def remove_deleted_folder(folder, *, connection, owner_id, actor='', deleted_at=
                              deleted_at=deleted_at or now(), actor=actor,
                              preserve_resources=preserve_resources)
     result['cleanup_ids'] = [enqueue_directory_cleanup(
-        root, owner_id=owner_id, operation_id='delete-folder:' + owner_id,
+        root, owner_id=owner_id, operation_id=operation_id or 'delete-folder:' + owner_id,
         actor=actor, connection=connection) for root in result['cleanup_roots']]
     return result

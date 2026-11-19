@@ -2,6 +2,7 @@ from __future__ import annotations
 from management_common.portal_paths import path as portal_path
 
 import re
+from contextlib import contextmanager
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -12,6 +13,7 @@ from management_portal.portal_access_control import get_portal_access_store
 from management_portal import project_registry
 
 from .common import canonical_record
+from ..creation import Creation
 
 if TYPE_CHECKING:
     from ..service import ResourceService
@@ -191,6 +193,55 @@ def _resolved_project_root(project: dict[str, Any]) -> Path:
     return resolved_root
 
 
+class _ProjectCreation(Creation):
+    """Project names are reusable; durable creation operation IDs are not."""
+    @contextmanager
+    def prepare(self, artifacts):
+        from .. import project_deletion_effects as effects
+        from ..directory_registrations import is_deleted
+        from management_common.resource_lifecycle import LifecycleStore
+        with effects.exclusive(self.resource_id):
+            self._retire_previous = None
+            if is_deleted(self.resource_id):
+                self._previous_lifecycle = LifecycleStore()
+                with self.retire_previous_instance() as retire:
+                    self._retire_previous = retire
+                    with super().prepare(artifacts):
+                        yield self
+            else:
+                with super().prepare(artifacts):
+                    yield self
+
+    def _prepare_identity(self, connection):
+        from ..directory_registrations import is_deleted, PROJECTION_RELEASES
+        from ..registry_store import get_registry_store
+        if not is_deleted(self.resource_id, connection=connection):
+            return
+        if self._retire_previous is None:
+            raise RuntimeError('Project was deleted during creation; retry with a new operation')
+        registry = get_registry_store()
+        with registry.writer(project_registry.COLLECTION, 'project_deletions', 'project_instance_history',
+                             PROJECTION_RELEASES, connection=connection) as writer:
+            doc = writer.get(project_registry.COLLECTION, project_registry.DOCUMENT_ID) or {}
+            entry = writer.get('project_deletions', self.resource_id)
+            if any(item.get('id') == self.resource_id for item in doc.get('projects', [])):
+                raise FileExistsError(self.resource_id)
+            if (not entry or entry.get('project_id') != self.resource_id
+                    or entry.get('effects', {}).get('status') != 'complete'
+                    or writer.get(PROJECTION_RELEASES, self.resource_id) is not None):
+                raise RuntimeError('Previous Project deletion effects are pending')
+            if any(row['status'] != 'completed' for row in self.queue.status(
+                    owner_id=self.resource_id, connection=connection)):
+                raise RuntimeError('Previous Project directory cleanup is pending')
+            self._previous_lifecycle.prepare_name_reuse(self.resource_id, connection=connection)
+            self._retire_previous(connection)
+            # The deletion audit and old operation remain immutable history.
+            # Clearing the name and persisting its new intent commit together.
+            writer.put('project_instance_history', self.key, entry)
+            connection.execute(f'DELETE FROM "{registry.database.schema}".deleted_identities '
+                               'WHERE resource_id=%s', (self.resource_id,))
+
+
 def create_project(
     payload: dict[str, Any],
     *,
@@ -214,9 +265,8 @@ def create_project(
     if not project_root.is_relative_to(PROJECTS_ROOT.resolve(strict=False)):
         raise PermissionError(f"Project path must be under {PROJECTS_ROOT}.")
 
-    from ..creation import Creation
     from ..directory_registrations import directory_writer
-    creation = Creation(project_id, actor=actor, payload=payload, operation_id=operation_id)
+    creation = _ProjectCreation(project_id, actor=actor, payload=payload, operation_id=operation_id)
 
     def place(document: dict[str, Any], connection: Any) -> None:
         # The Project and its place in the permission trees commit together (decision_b820faf42218 §5.7).

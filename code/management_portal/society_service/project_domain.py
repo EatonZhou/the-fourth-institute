@@ -4,6 +4,7 @@ from management_common.portal_paths import path as portal_path
 from pathlib import Path
 from contextlib import ExitStack
 from typing import Any
+from uuid import uuid4
 
 
 from management_common.instance_locations import located_path
@@ -300,7 +301,8 @@ def delete_project(project_id: str, actor: str) -> dict[str, Any]:
                 delete_workspaces(connection, owner_ids=[registry_id], deleted_at=entry['deleted_at'],
                                   deleted_by=actor_id, preserve_resources=False)
                 remove_deleted_folder(project_root, connection=connection, owner_id=registry_id,
-                                      actor=actor_id, preserve_resources=False)
+                                      actor=actor_id, preserve_resources=False,
+                                      operation_id='delete-project:' + uuid4().hex)
                 from management_portal.resources.directory_registrations import unregister_identity
                 unregister_identity(registry_id, connection=connection, actor=actor_id)
                 writer.put(project_registry.COLLECTION, project_registry.DOCUMENT_ID, document)

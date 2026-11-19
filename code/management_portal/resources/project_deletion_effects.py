@@ -6,6 +6,7 @@ here. Each feature owns its relation mutation and each effect is idempotent.
 """
 from hashlib import sha256
 from copy import deepcopy
+from contextlib import contextmanager
 
 from .registry_store import get_registry_store
 
@@ -67,10 +68,18 @@ def _effects():
     return [*effects, ('index', _index)]
 
 
-def run(project_id):
+@contextmanager
+def exclusive(project_id):
+    """Serialize a name's effects and its next creation, across transactions."""
     registry = get_registry_store()
     key = int.from_bytes(sha256((registry.database.schema + ':project-effects:' + project_id).encode()).digest()[:8], 'big', signed=True)
     with registry.database.advisory_lock(key):
+        yield
+
+
+def run(project_id):
+    registry = get_registry_store()
+    with exclusive(project_id):
         entry = registry.get(COLLECTION, project_id)
         if not entry or not entry.get('effects') or entry['effects']['status'] == 'complete':
             return entry

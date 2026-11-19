@@ -219,14 +219,62 @@ def _sync(path):
 
 
 class Creation:
+    def _prepare_identity(self, connection):
+        """Domain-specific identity transition, atomic with the new intent."""
+
     def _check_identity(self, connection):
         """Normal creation never reuses a deleted identity."""
         from .directory_registrations import is_deleted
-        if is_deleted(self.resource_id, connection=connection):
+        from .registry_store import get_registry_store
+        deleted = is_deleted(self.resource_id, connection=connection)
+        registry = get_registry_store()
+        if connection.execute(f'SELECT 1 FROM "{registry.database.schema}".registry_documents '
+                              'WHERE collection=%s AND document_id=%s',
+                              ('retired_resource_creations', self.key)).fetchone():
+            raise ValueError('Creation operation belongs to a retired instance')
+        if deleted:
             raise KeyError(self.resource_id)
 
     def _complete_registration(self, connection):
         self.registrations.complete(self.resource_id, connection=connection)
+
+    @contextmanager
+    def retire_previous_instance(self):
+        """Give a name-owning domain a transaction-bound archival operation.
+
+        The domain must separately prove deletion and serialize name reuse.
+        This owner excludes the old writer/cleanup and preserves operation
+        identity forever, including its arguments and filesystem receipts.
+        """
+        from .registry_store import get_registry_store
+        with self.db.read() as conn:
+            row = conn.execute(f'SELECT operation_id FROM {self.table} WHERE resource_id=%s',
+                               (self.resource_id,)).fetchone()
+        key = row['operation_id'] if row else None
+        if key == self.key:
+            raise ValueError('Creation operation belongs to a retired instance')
+        with _creation_writer(self.db, key, cleanup=True) if key else nullcontext():
+            def archive(connection):
+                previous = connection.execute(f'SELECT * FROM {self.table} WHERE resource_id=%s FOR UPDATE',
+                                              (self.resource_id,)).fetchone()
+                if (previous['operation_id'] if previous else None) != key:
+                    raise RuntimeError('Previous creation changed before name reuse')
+                if previous is None:
+                    return
+                if not previous['completed'] or previous['aborted']:
+                    raise RuntimeError('Previous creation cleanup is pending')
+                for artifact in previous['artifacts']:
+                    locations = [artifact['path'], *([artifact['stage']] if artifact.get('stage') else []),
+                                 *[stage['path'] for stage in artifact.get('unproven_stages', [])]]
+                    for location in locations:
+                        path = cleanup_path(location)
+                        assert_missing_location(path)
+                        self.queue.assert_available(path, connection=connection)
+                registry = get_registry_store()
+                with registry.writer('retired_resource_creations', connection=connection) as writer:
+                    writer.put('retired_resource_creations', key, dict(previous))
+                connection.execute(f'DELETE FROM {self.table} WHERE operation_id=%s', (key,))
+            yield archive
 
     def __init__(self, resource_id, *, actor, payload, operation_id=''):
         operation_id = creation_operation_id(operation_id)
@@ -255,6 +303,7 @@ class Creation:
             with self.db.transaction() as conn:
                 self._assert_scope_open(conn)
                 self.queue.lock(conn)
+                self._prepare_identity(conn)
                 row = conn.execute(f'SELECT * FROM {self.table} WHERE operation_id=%s', (self.key,)).fetchone()
                 if row:
                     if row['aborted']:
@@ -558,7 +607,13 @@ def _finish_creations(*, scope_id=None, deleted_only=False, operation_keys=None,
             with _creation_writer(db, key, cleanup=True) as writer, ExitStack() as completion_scope:
                 # Commit the tombstone before deletion, including on cleanup failure.
                 with db.transaction() as conn:
-                    row = dict(conn.execute(f'SELECT * FROM {table} WHERE operation_id=%s FOR UPDATE', (key,)).fetchone())
+                    stored = conn.execute(f'SELECT * FROM {table} WHERE operation_id=%s FOR UPDATE', (key,)).fetchone()
+                    if stored is None:
+                        # A name-reuse transition may archive a completed intent
+                        # after this worker took its snapshot. Never follow its
+                        # resource_id to the replacement instance.
+                        continue
+                    row = dict(stored)
                     if validate is not None:
                         validate(row, conn)
                     if row['cleanup_complete']:
