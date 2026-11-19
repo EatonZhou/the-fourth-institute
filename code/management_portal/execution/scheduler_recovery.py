@@ -104,7 +104,7 @@ class LeaseRecovery:
             FROM executions
             WHERE status IN ('queued', 'claimed', 'running') AND cancel_requested = '0'
               AND {ACCOUNT_CHECK_DEADLINE_SQL}
-              AND (checkpoint_json::jsonb #>> '{{abandoned,status}}') IS DISTINCT FROM 'cancelled'
+              AND (NULLIF(checkpoint_json::text, '')::jsonb #>> '{{abandoned,status}}') IS DISTINCT FROM 'cancelled'
             ORDER BY created_at
             LIMIT 100
             FOR UPDATE SKIP LOCKED

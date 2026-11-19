@@ -64,7 +64,7 @@ class Claims:
             WHERE execution_id = (
                 SELECT execution_id FROM executions
                 WHERE execution_id = %s AND status = 'queued' AND cancel_requested = '0'
-                  AND (jsonb_typeof(checkpoint_json::jsonb->'abandoned') = 'object'
+                  AND (jsonb_typeof(NULLIF(checkpoint_json::text, '')::jsonb->'abandoned') = 'object'
                        OR NOT {ACCOUNT_CHECK_DEADLINE_SQL})
                 FOR UPDATE SKIP LOCKED
             )
