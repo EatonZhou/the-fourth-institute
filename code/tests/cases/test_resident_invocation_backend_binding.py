@@ -129,6 +129,42 @@ def test_invocation_identity_uses_declared_backend_when_projection_omits_it():
     identity = resident_handoff._invocation_identity({'resident_id': 'resident_123456789abc', 'lineage_id': 'lineage_123456789abc'}, resident_scope='resident-routing:alice', lineage_scope='resident-routing', backend='codex', created=False)
     assert identity['backend'] == 'codex'
 
+def test_a_business_working_directory_can_be_bound_again_after_unbind(monkeypatch, tmp_path):
+    """旧 BindWorkspace 回执不能满足当前缺失的工作区绑定"""
+    identity = {"resident_id": "resident_444444444444", "lineage_id": "lineage_333333333333"}
+    service = _SocietyService()
+    service.resident.get_resident = Mock(return_value={**identity, "backend": "codex"})
+    monkeypatch.setattr(resident_handoff, "get_society_service", lambda: service)
+    workspace = {"path": str(tmp_path.resolve())}
+    workspaces = []
+    committed = {}
+
+    def call(actor, name, arguments, *, key=""):
+        assert actor == "alice" and arguments["resident_id"] == identity["resident_id"]
+        if name == "GetResident":
+            return {"resident": {"workspaces": list(workspaces)}}
+        assert name == "BindWorkspace" and arguments["path"] == workspace["path"] and key
+        if key not in committed:
+            workspaces[:] = [workspace]
+            committed[key] = {"binding": workspace}
+        return committed[key]
+
+    monkeypatch.setattr(isa_client, "call", call)
+
+    def prepare():
+        return resident_handoff.ensure_invocation_resident(
+            actor="alice", resident_scope="tau:knowledge", resident_binding=identity, cwd=str(tmp_path),
+        )
+
+    assert prepare() == identity
+    assert workspaces == [workspace]
+    workspaces.clear()
+    assert prepare() == identity
+    assert workspaces == [workspace]
+    assert prepare() == identity
+    assert len(committed) == 2
+
+
 def test_invocation_retries_update_while_lifecycle_finalizes(monkeypatch):
     """Resident 生命周期操作尚未完成时，调用重试挂载工作目录直到成功"""
     service = _SocietyService()

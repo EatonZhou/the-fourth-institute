@@ -25,13 +25,12 @@ def existing(lineage_store, tmp_path, method):
     wid = item['target']['workspace_id']
     store = get_workspace_store()
     row = store.rows([wid])[wid]
+    assert row['owner_id'] == lid
     old = tmp_path / 'old-copy'
-    DirectoryMoveStore().move(Path(row['path']), old, owner_id=wid, actor='sample_admin',
+    DirectoryMoveStore().move(Path(row['path']), old, owner_id=row['owner_id'], actor='sample_admin',
         terminate=lambda _: None, database=get_lineage_data_store().database,
         update=directory_relocation.relocate_nested, dependencies=directory_relocation.reconcile_dependencies)
     DirectoryMoveStore().cleanup.run_pending()
-    # Historical lineage ownership is fixture input, not the repair mechanism.
-    store.database.write(lambda c: c.execute(f'UPDATE {store.table} SET owner_id=%s WHERE workspace_id=%s', (lid, wid)))
     row = store.rows([wid])[wid]
     args = dict(workspace_id=wid, expected_version=row['updated_at'], expected_owner=lid,
                 expected_path=row['path'], operation_id='test-existing-move')
@@ -52,7 +51,8 @@ def test_move_existing_identity_content_binding_nested_and_source(lineage_store,
     store.ensure('workspace_abcdefabcdef', str(nested))
     result = owner.relocate_copy(lid, h['id'], item['item_id'], 'sample_admin', **args)
     row = result['workspace']; new = Path(row['path'])
-    assert row['workspace_id'] == args['workspace_id'] == row['owner_id']
+    assert row['workspace_id'] == args['workspace_id']
+    assert row['owner_id'] == lid
     assert json.loads((home / 'workspaces.json').read_text())['cwd'] == str(new)
     assert (new / 'edited').read_text() == 'local changes survive'
     assert store.rows(['workspace_abcdefabcdef'])['workspace_abcdefabcdef']['path'] == str(new / 'nested')
@@ -64,7 +64,8 @@ def test_move_existing_identity_content_binding_nested_and_source(lineage_store,
     get_lineage_data_store().database.write(lambda c: upsert(c, 'lineage_handoff_invocations',
         {'edge_id': h['id']}, {'cwd': source['path']}))
     moved = Path(source['path']).with_name('source-moved')
-    DirectoryMoveStore().move(Path(source['path']), moved, owner_id=source['workspace_id'],
+    source_row = store.rows([source['workspace_id']])[source['workspace_id']]
+    DirectoryMoveStore().move(Path(source['path']), moved, owner_id=source_row['owner_id'],
         actor='sample_admin', terminate=lambda _: None, database=get_lineage_data_store().database,
         update=directory_relocation.relocate_nested, dependencies=directory_relocation.reconcile_dependencies)
     current = lineage_handoffs.get_handoff(lid, h['id'], 'sample_admin')['handoff']['items'][0]

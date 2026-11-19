@@ -646,9 +646,10 @@ def _bind_working_directory(actor: str, resident_id: str, cwd: str) -> None:
     }
     if target in bound:
         return
-    digest = hashlib.sha256(str(target).encode("utf-8")).hexdigest()[:24]
+    # The same directory may have been unbound since an earlier invocation.
+    # A missing binding needs a new mutation, even if its arguments are identical.
     isa_client.call(actor, "BindWorkspace", {"resident_id": resident_id, "path": str(target)},
-                    key=f"invocation-workspace:{resident_id}:{digest}")
+                    key=f"invocation-workspace:{resident_id}:{secrets.token_hex(16)}")
 
 
 def ensure_invocation_resident(

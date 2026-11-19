@@ -34,7 +34,8 @@ def test_formal_relocation_preserves_identity_content_binding_history_and_replay
     result = run('RelocateWorkspaceHandoff', call, key='relocate')
     row = result.raise_for_error()['workspace']
     assert result.result['status'] == 'completed'
-    assert row['workspace_id'] == row['owner_id'] == snapshot['workspace_id']
+    assert row['workspace_id'] == snapshot['workspace_id']
+    assert row['owner_id'] == lid
     assert not old.exists() and (Path(row['path'])/'user-edit').read_text() == 'retained'
     current = lineage_handoffs.get_handoff(lid, h['id'], 'sample_admin')['handoff']['items'][0]
     assert current['attempts'] == item['attempts']
@@ -60,7 +61,9 @@ def test_both_contributor_grants_required_by_actual_permission_scheme(lineage_st
         world.grant('borrower', lid if kind == 'lineage' else wid, '@contributor')
     result = run('RelocateWorkspaceHandoff', arguments(lid, h, item, snapshot), actor='borrower', key='authorized-move')
     if len(grants) == 2:
-        assert result.raise_for_error()['workspace']['owner_id'] == wid
+        row = result.raise_for_error()['workspace']
+        assert row['workspace_id'] == wid
+        assert row['owner_id'] == lid
     else:
         assert result.status == 'failed' and result.error['code'] == 'instruction.forbidden'
         assert Path(snapshot['expected_path']).is_dir()
