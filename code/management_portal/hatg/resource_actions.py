@@ -10,7 +10,7 @@ from functools import lru_cache
 
 from .contracts import InstructionError
 from .declarations import P, R, ResourceActionDeclaration as A
-from management_portal.resources.providers.knowledge import MARKDOWN_REGISTERABLE_RESOURCE_TYPES
+from management_common.knowledge_resource_types import MARKDOWN_REGISTERABLE_RESOURCE_TYPES
 
 
 ACTIONS = (

@@ -199,12 +199,7 @@ class InstructionKernel:
         self._maintenance_lock = threading.Lock()
         self._authorize = authorize
         self._catalog = instruction_catalog() if catalog is None else dict(catalog)
-        def maintenance_declaration(name):
-            if self.owner == "web":
-                from management_portal.application_tools import permission_declaration
-                return permission_declaration(name)
-            return declaration_for(name)
-        self._maintenance_lookup = maintenance_lookup or maintenance_declaration
+        self._maintenance_lookup = maintenance_lookup or declaration_for
         missing = sorted(
             name
             for name, item in self._catalog.items()

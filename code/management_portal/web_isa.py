@@ -772,6 +772,8 @@ def binding() -> OwnerBinding:
 
 def build_kernel() -> InstructionKernel:
     from management_common.portal_database import portal_database
+    from management_portal.application_tool_contracts import permission_declaration
     from management_portal.hatg.store import ExecutionStore
 
-    return InstructionKernel(binding(), store=ExecutionStore(portal_database(schema="web_instructions")))
+    return InstructionKernel(binding(), store=ExecutionStore(portal_database(schema="web_instructions")),
+                             maintenance_lookup=permission_declaration)

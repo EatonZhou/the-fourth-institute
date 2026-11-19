@@ -489,6 +489,7 @@ modules:
       - "management_portal/resources/timing.py"
       - "management_portal/semantic_search*.py"
       - "management_common/resource_identity.py"
+      - "management_common/knowledge_resource_types.py"
       - "management_portal/registry_sync.py"
       - "management_portal/resource_auto_registration.py"
       - "management_portal/resource_backup_backend.py"
@@ -1321,6 +1322,7 @@ modules:
     layer: "service"
     code_paths:
       - "management_portal/permission_system"
+      - "management_portal/application_tool_contracts.py"
       - "management_portal/resources/rpc_auth.py"
     responsibility: "通过统一权限端口按执行者、动作和资源判定访问；封装开放/PAR 实现、模板编译、事实适配、权限表项和临时凭证。Society 在当前输入事务中证明用户授权来源，权限 owner 核验签发者权限、签发及保存防重放回执；不解析自然语言。ResourceService 拥有实例的全量重建与管理，调用方只提交请求或其拥有的领域事实。"
     parent: "resources"

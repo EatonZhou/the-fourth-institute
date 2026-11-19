@@ -9,17 +9,10 @@ if TYPE_CHECKING:
     from ..service import ResourceService
 
 
-from .ownership import KNOWLEDGE_TYPES as RESOURCE_TYPES
-
-MUTABLE_RESOURCE_TYPES = tuple(
-    resource_type
-    for resource_type in RESOURCE_TYPES
-    if resource_type != "experiment"
-)
-MARKDOWN_REGISTERABLE_RESOURCE_TYPES = tuple(
-    resource_type
-    for resource_type in MUTABLE_RESOURCE_TYPES
-    if resource_type != "skill"
+from management_common.knowledge_resource_types import (
+    KNOWLEDGE_TYPES as RESOURCE_TYPES,
+    MUTABLE_RESOURCE_TYPES,
+    MARKDOWN_REGISTERABLE_RESOURCE_TYPES,
 )
 
 

@@ -10,6 +10,7 @@ import uuid
 
 import pytest
 
+from management_portal import application_tool_contracts as contracts
 from management_portal import application_tools as apps
 from management_portal.execution import resident_application_tools as transport
 from management_portal.execution import resident_capability_assembly as assembly
@@ -42,7 +43,7 @@ def operation(monkeypatch):
         version_of=lambda inv, obj: 7), catalog={DECL.name: DECL}, authorize=authorize,
         store=ExecutionStore(portal_database(schema="app_test_" + uuid.uuid4().hex[:8])),
         maintenance_lookup=lambda name: DECL)
-    monkeypatch.setattr(apps, "registry", lambda: ({REF: DECL}, {DECL.name: handler}, {}))
+    monkeypatch.setattr(apps, "tool_declarations", lambda: {REF: DECL})
     monkeypatch.setattr(apps, "kernel", lambda: kernel)
     return kernel, writes, authorizations
 
@@ -92,6 +93,9 @@ def test_server_reads_own_current_registration_on_every_call(operation, monkeypa
 def test_actual_catalog_and_permission_union():
     from management_portal.hatg.catalog import instruction_catalog
     from management_portal.permission_system.scheme.compiler import declared_decisions
+
+    # Already loaded permission consumers still import the old entry during a rolling restart.
+    assert apps.permission_catalog is contracts.permission_catalog
     declarations = apps.registry()[0]
     assert len(declarations) == 14
     assert sum(d.ref.startswith("application:paper.") for d in declarations.values()) == 2
@@ -308,8 +312,10 @@ def test_model_tool_exposes_call_controls_without_mixing_business_arguments(rpc,
         tool.handler({'arguments': {}, 'caller': 'someone_else'})
 
 
-def test_web_maintenance_recovers_application_receipt_without_isa_registration(operation):
+def test_web_maintenance_recovers_application_receipt_without_isa_registration(operation, monkeypatch):
+    from management_portal import web_isa
     from management_portal.hatg.kernel import now_iso
+    from management_portal.hatg import store
     original, writes, _ = operation
     receipt = apps.execute(CALL, CONTEXT)
     assert receipt['status'] == 'committed'
@@ -318,10 +324,121 @@ def test_web_maintenance_recovers_application_receipt_without_isa_registration(o
         'message': 'retry projection', 'commit_state': 'committed',
         'details': {'projection_failures': [{'kind': 'test_projection'}]}})
     recovered = []
-    maintenance = InstructionKernel(OwnerBinding('web', handlers={},
-        recover_projections=lambda failures, inv: recovered.append((inv.name, failures))),
-        store=original.store, catalog={})
+    recover = OwnerBinding("web", handlers={}, recover_projections=lambda failures, inv:
+                           recovered.append((inv.name, failures)))
+    default = InstructionKernel(recover, store=original.store, catalog={})
+    assert default.maintain()["projections"] == 0
+    assert not recovered
+
+    monkeypatch.setattr(contracts, "tool_declarations", lambda: {REF: DECL})
+    monkeypatch.setattr(web_isa, "binding", lambda: recover)
+    monkeypatch.setattr(web_isa, "InstructionKernel", lambda binding, **kwargs:
+                        InstructionKernel(binding, catalog={}, **kwargs))
+    monkeypatch.setattr(store, "ExecutionStore", lambda _database: original.store)
+    maintenance = web_isa.build_kernel()
     assert maintenance.maintain()['projections'] == 1
     assert recovered[0][0] == DECL.name
     assert original.store.get(receipt['call_id'])['status'] == 'committed'
     assert writes == ['alice']
+
+
+def test_permission_queries_and_discovery_only_load_tool_declarations(monkeypatch):
+    from management_portal import portal_features, permission_system, portal_access_control
+    from management_portal.permission_system import schemes
+    from management_portal.permission_system.par import PARPermissions
+    from management_portal.permission_system.scheme import repository
+
+    original_load = portal_features._load
+    forbidden = {feature.contributions["resident.tools"] for feature in portal_features.FEATURES
+                 if "resident.tools" in feature.contributions}
+
+    def declarations_only(reference):
+        assert reference not in forbidden, reference
+        return original_load(reference)
+
+    monkeypatch.setattr(portal_features, "_load", declarations_only)
+    portal_features.contributions.cache_clear()
+    try:
+        owner = repository.Schemes(store=None)
+        default = owner.compiled("default")
+        custom = owner.compile({**owner.get("default")["rules"], "scheme_id": "local_apps"})
+        listed = {tool["name"] for tool in apps.list_tools("alice")["tools"]}
+        vocab = {item["name"] for item in schemes._instruction_vocabulary() if item["category"] == "application"}
+        assert listed == vocab
+        assert {"GetPulse", "ExportPaperBibtex", "GetTelepusStatus"} <= listed
+        assert all(default.slots(name) == custom.slots(name) and default.slots(name) for name in listed)
+
+        par = object.__new__(PARPermissions)
+        monkeypatch.setattr(portal_access_control, "is_active_user_or_resident", lambda actor: actor == "alice")
+        seen = []
+
+        def check(declaration, arguments, context, *, log):
+            seen.append(declaration)
+            assert arguments == [{"user_id": "alice"}, {"user_id": "bob"}]
+            assert context.caller == "alice" and not log
+            return [None, PermissionError()]
+
+        monkeypatch.setattr(par, "_check", check)
+        assert par.readable_ids("GetPulse", "user_id", ["alice", "bob"], actor="alice") == {"alice"}
+        assert seen == [contracts.permission_declaration("GetPulse")]
+    finally:
+        portal_features.contributions.cache_clear()
+
+
+def test_legacy_resident_tools_contribution_keeps_declarations_and_web_bindings(monkeypatch):
+    from management_portal import portal_features
+
+    installed = portal_features.contributions("resident.tools")
+    pure = dict(portal_features.contributions("resident.tool_declarations"))
+    assert set(dict(installed)) == set(pure) == {"paper", "pulse", "telepus"}
+    for feature, module in installed:
+        assert module.DECLARATIONS is pure[feature].DECLARATIONS
+        assert module.HANDLERS.keys() == {declaration.name for declaration in module.DECLARATIONS}
+
+    def legacy_contributions(hook):
+        return installed if hook == "resident.tools" else ()
+
+    monkeypatch.setattr(contracts, "contributions", legacy_contributions)
+    monkeypatch.setattr(apps, "contributions", legacy_contributions)
+    apps.registry.cache_clear()
+    try:
+        declarations, handlers, versions = apps.registry()
+        permissions = contracts.permission_catalog()
+        for _feature, module in installed:
+            for declaration in module.DECLARATIONS:
+                assert declarations[declaration.ref] is permissions[declaration.name] is declaration
+                assert handlers[declaration.name] is module.HANDLERS[declaration.name]
+        assert versions["GetTelepusWeixinBinding"] is dict(installed)["telepus"].version_of
+    finally:
+        apps.registry.cache_clear()
+
+
+@pytest.mark.parametrize("missing_hook", ("resident.tools", "resident.tool_declarations"))
+def test_missing_tool_module_is_omitted_from_web_and_permission_schemes(monkeypatch, missing_hook):
+    from management_portal import portal_features
+    from management_portal.hatg.contracts import InstructionError
+    from management_portal.permission_system.scheme.compiler import SchemeError
+    from management_portal.permission_system.scheme import repository
+
+    features = tuple(replace(feature, contributions={
+        **feature.contributions, missing_hook: "management_portal.feature_not_installed",
+    }) if feature.key == "pulse" else feature for feature in portal_features.FEATURES)
+    monkeypatch.setattr(portal_features, "FEATURES", features)
+    monkeypatch.setattr(apps, "kernel", lambda: pytest.fail("unknown tools cannot initialize the execution kernel"))
+    portal_features.contributions.cache_clear()
+    try:
+        assert "pulse" not in dict(portal_features.contributions("resident.tools"))
+        assert "application:pulse.read" not in {tool["ref"] for tool in apps.list_tools("alice")["tools"]}
+        with pytest.raises(InstructionError) as raised:
+            contracts.permission_declaration("GetPulse")
+        assert raised.value.code == "instruction.unknown"
+        receipt = apps.execute({"schema": "tfi.application-tool-call.v1", "tool": "application:pulse.read"}, CONTEXT)
+        assert receipt["error"]["code"] == "instruction.unknown"
+
+        owner = repository.Schemes(store=None)
+        assert not owner.compiled("default").slots("GetPulse")
+        assert not owner.compile({**owner.get("default")["rules"], "scheme_id": "local_apps"}).slots("GetPulse")
+        with pytest.raises(SchemeError, match="A 元素不存在"):
+            owner.compile({**repository.builtin_documents()["default"], "scheme_id": "local_apps"})
+    finally:
+        portal_features.contributions.cache_clear()

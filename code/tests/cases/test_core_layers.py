@@ -54,7 +54,7 @@ TIERS = (
     ("common", "management_common.*"),
     ("contracts", """
     hatg hatg.catalog hatg.catalog.* hatg.contracts hatg.declarations hatg.lineage_versions hatg.resource_actions
-    portal_features business_context service_invocation_contract execution.config execution.account_migration_types execution.account_selection_contract
+    portal_features application_tool_contracts business_context service_invocation_contract execution.config execution.account_migration_types execution.account_selection_contract
     resources.config society_service.config
     """),
     ("stores", """

@@ -339,7 +339,7 @@ def _tree(name: str, value: Any, errors: _Errors) -> tuple[Tree | None, dict[str
 
 def declared_decisions() -> dict[str, tuple[DecisionSlot, ...]]:
     """instruction -> its declared decision slots, for every instruction this Portal installs."""
-    from management_portal.application_tools import permission_catalog
+    from management_portal.application_tool_contracts import permission_catalog
 
     return {name: declaration.decides for name, declaration in permission_catalog().items()}
 

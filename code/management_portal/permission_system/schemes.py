@@ -538,7 +538,7 @@ def activate_scheme(context: Context, actor: str, arguments: Mapping[str, Any]) 
 
 
 def _instruction_vocabulary() -> list[dict[str, Any]]:
-    from management_portal.application_tools import permission_catalog
+    from management_portal.application_tool_contracts import permission_catalog
 
     instructions = []
     for name, declaration in sorted(permission_catalog().items()):
