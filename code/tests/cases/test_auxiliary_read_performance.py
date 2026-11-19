@@ -22,33 +22,43 @@ def test_paper_lookup_checks_only_selected_binding_and_live_membership(monkeypat
     """
     from management_portal.workbench_projections import native, service
     from management_portal.workbench_projections.store import ProjectionError
+    from management_portal import paper_conversations
+    from management_portal.hatg.contracts import InstructionError
 
     scope = 'surface-chat:CASE-A:paper:library'
     rid = 'resident_111111111111'
-    app = {'bindings': {
+    app = {'workbench_id': 'workbench_111111111111', 'bindings': {
         'main': {'lineage_id': 'lineage_111111111111', 'residents': {scope: rid}},
         'unrelated': {'lineage_id': 'lineage_222222222222', 'residents': {'reviewer': 'resident_222222222222'}},
     }}
     reads = []
     available = [True]
+    current_lineage = ['lineage_111111111111']
     def graph(actor, lid):
-        reads.append((actor, lid))
         assert actor == 'CASE-A'
         if lid == 'lineage_222222222222':
             raise KeyError('Unrelated deleted team')
         return {'nodes': [{'id': rid}] if available[0] else []}
+    def resident(actor, instruction, arguments):
+        assert (actor, instruction, arguments) == ('CASE-A', 'GetResident', {'resident_id': rid})
+        reads.append((actor, rid))
+        if not available[0]:
+            raise InstructionError('resident.not_found', 'deleted', http_status=404)
+        return {'resident': {'resident_id': rid, 'lineage_id': current_lineage[0]}}
     def builtin(name, actor):
         assert (name, actor) == ('paper', 'CASE-A')
         return deepcopy(app)
     projection = service.ProjectionService(store=SimpleNamespace(builtin=builtin))
     monkeypatch.setattr(native, 'get_service', lambda: projection)
+    monkeypatch.setattr(service, 'get_service', lambda: projection)
     monkeypatch.setattr(service, 'lineage_graph', graph)
+    monkeypatch.setattr(paper_conversations.isa_client, 'call', resident)
 
     for _ in range(2):
         reads.clear()
         result = native.lookup('paper', actor='CASE-A', resident_scope=scope)
         assert result == {'resident_id': rid, 'lineage_id': 'lineage_111111111111'}
-        assert reads == [('CASE-A', 'lineage_111111111111')]
+        assert reads == [('CASE-A', rid)]
     reads.clear()
     app['bindings']['main']['residents'].pop(scope)
     assert native.lookup('paper', actor='CASE-A', resident_scope=scope) == {}
@@ -61,9 +71,14 @@ def test_paper_lookup_checks_only_selected_binding_and_live_membership(monkeypat
     assert reads == []
     app['bindings']['unrelated']['residents'].pop(scope)
     available[0] = False  # Deletion or a move must invalidate the next read.
+    with pytest.raises(InstructionError) as error:
+        native.lookup('paper', actor='CASE-A', resident_scope=scope)
+    assert error.value.code == 'resident.not_found'
+    available[0] = True
+    current_lineage[0] = 'lineage_333333333333'
     with pytest.raises(ProjectionError) as error:
         native.lookup('paper', actor='CASE-A', resident_scope=scope)
-    assert error.value.code == 'projection.resident_unbound'
+    assert error.value.code == 'paper.association_migration_required'
     # Retained personal conversations do not invalidate application roles;
     # the unrelated broken binding remains visible in Settings.
     detail = projection.initialize('paper', 'CASE-A')

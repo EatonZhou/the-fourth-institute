@@ -4,15 +4,15 @@ type: decision
 project: AI员工
 created_at: '2026-09-28'
 version:
-  number: 51
+  number: 52
   created_at: "2026-09-28T10:45:00Z"
   created_by:
     user: "weihao"
     agent: "resident_2a1fc6cd272d"
-  updated_at: "2026-11-04T16:23:49Z"
+  updated_at: "2026-11-19T08:46:56Z"
   updated_by:
     user: ""
-    agent: "resident_6199a7a36480"
+    agent: "resident_60ae6d0cdf74"
 importance: 8
 metaness: 2
 ai_generated: false
@@ -71,6 +71,8 @@ Resident 执行指令控制 Resident 当前在做什么：查看它是否在工�
 状态读取共用已经校验可见性的 Resident 记录，按批次取得运行状态；可用操作由该记录的后端定义派生。规范化身份中保存后端，执行模式属于后端定义，每个后端都以模型会话执行。读取不要求另存 `mode`；传入显式模式的注册或校验请求仍必须与后端一致。混合后端的批量查询包含各类合法 Resident，并保留各自的媒体、工具和实时输入能力。
 
 ### `GetInputState`
+
+可选的 `include_execution_diagnostics` 按调用者对该输入的当前读取权限，返回该输入关联执行的脱敏生命周期、租约和恢复标记。结果不含正文或凭据，也不触发恢复。缺少诊断事实时，执行是否开始仍须依据其他可信记录。
 
 **读取一条用户消息的处理状态。**
 
@@ -142,7 +144,7 @@ CancelInput 在默认方案中要求对目标 Resident 有 contributor（decisio
 | 指令名 | arguments 参数名 |
 | --- | --- |
 | `ListResidentStates` | `resident_ids`、`include_viewer_state` |
-| `GetInputState` | `resident_id`、`message_id`、`include_progress`、`include_context` |
+| `GetInputState` | `resident_id`、`message_id`、`include_progress`、`include_context`、`include_execution_diagnostics` |
 | `OpenIntake` | `resident_id`、`resident_ids`、`open` |
 | `CancelInput` | `resident_id`、`message_id` |
 | `CancelSubagent` | `resident_id`、`execution_id`、`tool_use_id` |

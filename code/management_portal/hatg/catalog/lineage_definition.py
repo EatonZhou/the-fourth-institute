@@ -20,8 +20,12 @@ HANDOFF_ITEMS = P(
 
 DECLARATIONS = (
     _d('ReviewComponentScript', '指定确认人确认某一版本的 Effect 候选脚本；或由确认人／发起者取消草稿。须携带 Lineage expected_version。', (
-        R('lineage_id'), R('effect_id'), R('draft_hash'), R('decision', enum=('confirm', 'cancel')),
-    ), (R('lineage', 'object'),), mutates=True),
+        R('lineage_id', description='候选脚本所在的 Lineage ID'),
+        R('effect_id', description='候选脚本所属的 Effect 组件 ID'),
+        R('draft_hash', description='读取时取得的候选脚本草稿哈希'),
+        R('decision', description='confirm 由指定确认人采纳草稿；cancel 由确认人或发起者撤销草稿',
+          enum=('confirm', 'cancel')),
+    ), (R('lineage', 'object', '处理草稿后的 Lineage 定义及当前 revision'),), mutates=True),
     _d("CreateLineage", "创建一个新的 Lineage，并分配独立的 Lineage ID。", (
         R("title", description="Lineage 名称，超出 140 字截断"),
         P("description", description="Lineage 说明；同时建立 Family 时作为其目标"),

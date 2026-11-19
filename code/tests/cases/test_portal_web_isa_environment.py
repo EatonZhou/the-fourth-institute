@@ -119,13 +119,16 @@ def test_resident_favorites_sit_beside_lineage_and_project_favorites(monkeypatch
 def test_web_objects_report_their_version_tokens(monkeypatch):
     """Web 对象报告各自的版本号，收件箱条目和个人导航不提供版本号"""
     from management_portal import notice_board_web_isa
+    from management_portal.hatg.catalog import instruction_catalog
 
     monkeypatch.setattr(web_isa, "_access", lambda: SimpleNamespace(_revision=lambda: 7))
     monkeypatch.setattr(notice_board_web_isa, "_board", lambda: SimpleNamespace(
         get_post=lambda caller, post_id: {"post": {"post_id": post_id, "notification_revision": 3}}))
     assert web_isa.version_of(invocation({"user_id": "alice"}, "UpdateUser"), "alice") == 7
-    # A Telepus contact is versioned by its User record (the feature's version_of).
-    assert web_isa.version_of(invocation({"user_id": "alice"}, "BindTelepusContactForUser"), "alice") == 7
+    # Telepus bindings are application tools and have no Web ISA version token.
+    bind_contact = "BindTelepusContactForUser"
+    assert bind_contact not in instruction_catalog()
+    assert web_isa.version_of(invocation({"user_id": "alice"}, bind_contact), "alice") is None
     # Personal navigation, also named by user_id, has no version token.
     assert web_isa.version_of(invocation({"user_id": "alice"}, "UpdateUserNavigation"), "alice") is None
     # A post instruction asks the Notice Board for the post's version.

@@ -4,15 +4,15 @@ type: decision
 project: AI员工
 created_at: '2026-10-18'
 version:
-  number: 17
+  number: 18
   created_at: "2026-10-18"
   created_by:
     user: ""
     agent: "resident_7765faecc45a"
-  updated_at: "2026-11-16T09:11:01Z"
+  updated_at: "2026-11-19T08:46:56Z"
   updated_by:
     user: ""
-    agent: "resident_2e9ea0072551"
+    agent: "resident_60ae6d0cdf74"
 importance: 5
 ai_generated: false
 links:
@@ -46,7 +46,7 @@ Mailbox 指令读取和整理两种收件：User 的 Mailbox 列出这位用户�
 | `PinMailboxItem` | 是 | 置顶或取消置顶调用者 Mailbox 中的对话，最多 50 个，通知不支持置顶 | 免检 |
 | `MarkMailboxItemRead` | 是 | 把调用者 Mailbox 中的条目标为已读或未读 | 免检 |
 | `ClearMailbox` | 是 | 清空一个 Mailbox：Resident 的全部等待消息，或 User 的 Mailbox 条目与未读状态 | 对 `resident_id` 有 @contributor；对 `user_id` 有 @admin |
-| `SetMailboxItemHold` | `resident_id`、`message_id`、`held` |
+| `SetMailboxItemHold` | 是 | 暂存或恢复一条尚未接单的 Resident 等待消息，保留相对顺序 | 对 `resident_id` 有 @contributor |
 | `ReorderMailbox` | 是 | 调整 Resident 等待消息的顺序，包括移到队首 | 对 `resident_id` 有 @contributor |
 | `MergeMailboxItems` | 是 | 把若干条等待消息合并为一条 Mailbox 群体消息 | 对 `resident_id` 有 @contributor |
 | `SplitMailboxItem` | 是 | 把尚未执行的群体消息拆回原来的消息 | 对 `resident_id` 有 @contributor |
@@ -227,6 +227,7 @@ Resident 的添加能力本身不授予读取或修改已有待办的权限；�
 | `PinMailboxItem` | `key`、`pinned` |
 | `MarkMailboxItemRead` | `key`、`unread` |
 | `ClearMailbox` | `resident_id`、`user_id`、`mode`、`section` |
+| `SetMailboxItemHold` | `resident_id`、`message_id`、`held` |
 | `ReorderMailbox` | `resident_id`、`message_id`、`before_message_id`、`after_message_id`、`order` |
 | `MergeMailboxItems` | `resident_id`、`message_ids` |
 | `SplitMailboxItem` | `resident_id`、`message_id` |

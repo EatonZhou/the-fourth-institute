@@ -4,15 +4,15 @@ type: decision
 project: AI员工
 created_at: '2026-09-28'
 version:
-  number: 61
+  number: 62
   created_at: "2026-09-28T10:45:00Z"
   created_by:
     user: "weihao"
     agent: "resident_2a1fc6cd272d"
-  updated_at: "2026-11-18T04:13:47Z"
+  updated_at: "2026-11-19T08:46:57Z"
   updated_by:
     user: ""
-    agent: "resident_6199a7a36480"
+    agent: "resident_60ae6d0cdf74"
 importance: 8
 metaness: 2
 ai_generated: false
@@ -302,6 +302,7 @@ Resident 使用 Provider 原生的提问或批准工具时，这一轮工作会�
 | `GetMessage` | `resident_id`、`message_id` |
 | `ListRecentRounds` | `resident_id`、`sender_id`、`before_message_id`、`limit` |
 | `SearchMessages` | `resident_ids`、`chatroom_id`、`query`、`cursor`、`limit` |
+| `GetDeletedResidentHistory` | `resident_id`、`section`、`ordinal`、`tool_index`、`expected_hash`、`tool_item_id`、`cursor`、`limit` |
 | `GetMessageArtifact` | `resident_id`、`artifact_id` |
 | `WatchConversationEvents` | `resident_id`、`after_cursor`、`limit`、`input_message_id` |
 | `GetSentPrompt` | `resident_id`、`message_id` |

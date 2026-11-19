@@ -55,12 +55,12 @@ links:
   derived_from:
   - thinking_ca8f397a47de
 version:
-  number: 103
+  number: 104
   created_at: "2026-07-31"
   created_by:
     user: ""
     agent: ""
-  updated_at: "2026-11-14T10:49:03Z"
+  updated_at: "2026-11-19T08:46:45Z"
   updated_by:
     user: ""
     agent: "resident_60ae6d0cdf74"
@@ -234,7 +234,7 @@ Python 入口将失败的指令结果转为业务异常时，保留外层回执�
 
 - **指令名由“动词 + 对象”组成。** 对象名称取自分类 Design 中的主对象名称，同一对象在所有指令中使用同一个名称，例如 `GetResident`、`UpdateResident`、`DeleteResident`。
 - **优先使用六个通用动词。** 读取一个对象、列出多个对象、按内容搜索、创建、修改和删除对象分别使用下表前六个动词。修改对象的一部分（例如表情回应、正文）也用修改动词，对象名写明修改的部分。
-- **通用动词无法准确表达时使用表中的领域动词。** 新增指令只能使用下表中的动词；需要新动词时先在表中登记含义和例子。表中每个动词都至少有一条指令在用，指令删除或改名后不再使用的动词同时从表中移除。目录测试逐条比对两边。
+- **通用动词无法准确表达时使用表中的领域动词。** 新增指令只能使用下表中适用于新指令的动词。需要新动词时先在表中登记含义和例子。历史兼容用词只适用于表中指明的现有指令。表中每个动词都至少有一条指令在用，指令删除或改名后不再使用的动词同时从表中移除。目录测试逐条比对两边。
 
 | 动词 | 含义 | 例子 |
 | --- | --- | --- |
@@ -263,6 +263,7 @@ Python 入口将失败的指令结果转为业务异常时，保留外层回执�
 | `Forward` | 把已有消息转发给其他对象 | `ForwardMessages` |
 | `Functionalize` | 把一组组件封装为 Function Block | `Functionalize` |
 | `Inject` | 把一项内容插入队列 | `InjectMailboxItem` |
+| `Install` | 从已发布快照在调用者的工具箱中安装或更新可使用的副本 | `InstallStoreTemplate` |
 | `Issue` | 签发凭证 | `IssueTemporaryCredential` |
 | `Leave` | 调用者退出对象 | `LeaveChatroom` |
 | `Mark` | 设置读取等标记 | `MarkChatroomRead` |
@@ -274,7 +275,8 @@ Python 入口将失败的指令结果转为业务异常时，保留外层回执�
 | `Prepare` | 生成待确认的草稿，不提交 | `PrepareWorkspaceHandoff` |
 | `Preview` | 读取将要产生的结果，不提交 | `PreviewPromptInjection` |
 | `Promote` | 把种子提升为正式对象 | `PromoteSeed` |
-| `Publish` | 发布到更大的可见范围，或撤回发布 | `PublishRelease` |
+| `Publish` | 发布到更大的可见范围 | `PublishRelease`、`PublishTemplate` |
+| `Unpublish` | 撤下已公开的发布项，保留此前安装的副本 | `UnpublishTemplate` |
 | `Read` | 读取对象的内容 | `ReadResource` |
 | `Register` | 把已存在的外部对象登记为资源 | `RegisterResource` |
 | `Relay` | 由中间对象转交消息 | `RelayFamilyMessage` |
@@ -282,12 +284,15 @@ Python 入口将失败的指令结果转为业务异常时，保留外层回执�
 | `Rename` | 改变对象的 ID 名称 | `RenameProject` |
 | `Renew` | 延长有效期 | `RenewTemporaryCredential` |
 | `Reorder` | 调整多项的顺序 | `ReorderMailbox` |
+| `Order` | 历史兼容用词，用于调整单个持有者全部职责的顺序 | `OrderDuties` |
+| `Set` | 历史兼容用词，用于修改一条等待消息的暂存状态 | `SetMailboxItemHold` |
 | `Request` | 提出请求，由服务稍后处理 | `RequestResidentSummaryRebuild` |
 | `Requeue` | 把结束的消息放回队列 | `RequeueMessage` |
 | `Reset` | 恢复到初始状态 | `ResetUserPassword` |
 | `Resolve` | 把地址或待决项解析为确定结果 | `ResolveResource` |
 | `Restart` | 停下后重新启动 | `RestartPortal`、`RestartSession` |
 | `Restore` | 从删除或旧版本中恢复 | `RestoreTemplate` |
+| `Review` | 对锁定版本与哈希的候选草稿按确认职责作出确认或取消决定 | `ReviewComponentScript`、`ReviewTemplateScript` |
 | `Retract` | 撤回自己发出的内容 | `RetractChatroomMessage` |
 | `Retry` | 重新进行没有完成的工作，已完成的部分不重做 | `RetryResidentInitialization` |
 | `Revoke` | 撤销凭证或邀请 | `RevokeUserAccessToken` |

@@ -97,7 +97,10 @@ DECLARATIONS = (
         "已接单、执行中、info 或 Family 门面路由请求不能暂存。", (
         R("resident_id", description="Mailbox 所属的 Resident"), R("message_id", description="顶层等待消息或群体 ID"),
         R("held", "boolean", "true 暂存，false 恢复"),
-    ), (R("resident_id"), R("message_id"), R("held", "boolean"), R("changed", "boolean", "是否改变暂存状态"),
+    ), (R("resident_id", description="Mailbox 所属的 Resident"),
+        R("message_id", description="已处理的顶层等待消息或群体 ID"),
+        R("held", "boolean", "处理后的暂存状态"),
+        R("changed", "boolean", "是否改变暂存状态"),
         R("items", "array", "更新后的等待队列，含 held"), R("revision", description="更新后的等待队列标识")),
        mutates=True, target="resident_id", owner="lineage"),
     _d("MergeMailboxItems", ON_RESIDENT, "把若干条等待消息合并为一条 Mailbox 群体消息，放在其中最早一条的位置；成员原文与作者不变。"

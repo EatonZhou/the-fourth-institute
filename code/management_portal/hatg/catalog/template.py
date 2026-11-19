@@ -34,8 +34,12 @@ CONTENT = (
 TEMPLATE = (R("template", "object", "规范模板，含 behavior、editor 与本次施加参数说明 application_parameters"),)
 DECLARATIONS = (
     _d('ReviewTemplateScript', FIXED, '指定确认人确认模板中某个 Effect 的候选脚本，或取消草稿；须携带模板 expected_version。',
-       (R('template_id'), R('effect_id'), R('draft_hash'), R('decision', enum=('confirm', 'cancel'))),
-       (R('template', 'object'),), mutates=True),
+       (R('template_id', description='候选脚本所在的模板 ID'),
+        R('effect_id', description='模板内候选脚本所属的 Effect 组件 key'),
+        R('draft_hash', description='读取时取得的候选脚本草稿哈希'),
+        R('decision', description='confirm 由指定确认人采纳草稿；cancel 由确认人或发起者撤销草稿',
+          enum=('confirm', 'cancel'))),
+       (R('template', 'object', '处理草稿后的模板及当前版本'),), mutates=True),
     _d("ListTemplateStore", FIXED, "浏览已上架的模板快照及当前调用者的安装状态。",
        (P("search", description="搜索标题、说明、发布者"),
         P("group", description="模板分组", enum=("duty", "role", "organization", "task")),

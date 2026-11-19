@@ -4,15 +4,15 @@ type: decision
 project: AI员工
 created_at: '2026-09-28'
 version:
-  number: 49
+  number: 50
   created_at: "2026-09-28T10:45:00Z"
   created_by:
     user: "weihao"
     agent: "resident_2a1fc6cd272d"
-  updated_at: "2026-11-18T08:00:30Z"
+  updated_at: "2026-11-19T08:46:58Z"
   updated_by:
     user: ""
-    agent: "resident_6199a7a36480"
+    agent: "resident_60ae6d0cdf74"
 importance: 8
 metaness: 2
 ai_generated: false
@@ -306,6 +306,8 @@ Workspace 支持 `UnregisterResource(resource_id=workspace_id)`，要求目标 W
 
 | 指令名 | arguments 参数名 |
 | --- | --- |
+| `PreviewArticleRestore` | `article_id`、`resident_id`、`ordinal`、`tool_index`、`tool_item_id`、`expected_hash`、`source_address`、`source_version`、`primary_file`、`primary_version`、`project_id`、`target_relative_path` |
+| `RestoreArticle` | `article_id`、`resident_id`、`ordinal`、`tool_index`、`tool_item_id`、`expected_hash`、`source_address`、`source_version`、`primary_file`、`primary_version`、`project_id`、`target_relative_path`、`inheritance_digest`、`decision_resident_id`、`proposal_message_id`、`decision_message_id` |
 | `SearchResources` | `q`、`resource_type`、`project_id`、`status`、`limit`、`cursor` |
 | `ResolveResource` | `address` |
 | `ReadResource` | `address`、`max_bytes`、`meta_only`、`preview` |

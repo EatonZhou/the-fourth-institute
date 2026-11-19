@@ -47,6 +47,7 @@ import management_portal.resources as resources
 from tests.cases.registry_support import ProjectRegistryYaml, write_projects
 from management_portal.execution import codex_runtime_settings
 from tests.cases.instance_test_support import lineage_folders
+from tests.cases.directory_fixture_support import install_directory_owners
 
 
 ACTOR = "storage-fixture"
@@ -186,6 +187,8 @@ def owners(tmp_path, monkeypatch):
     )
     records, source_state = project_adapter.scan()
     index_store.publish_snapshot("project", records, source_state)
+    # Install the isolated owners' dependency protocol before first identity creation.
+    install_directory_owners()
     domain_ports.project_domain_port.validate_existing_project_selection({"project_id": PROJECT})
     record = domain_ports.resident_domain_port.register_resident({
         "kind": "project", "project_id": PROJECT, "title": "Owner storage fixture",

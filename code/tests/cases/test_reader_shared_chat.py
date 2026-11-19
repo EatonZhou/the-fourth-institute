@@ -2,7 +2,7 @@
 import json
 import pytest
 from tests.cases.test_cross_owner_storage_integration import owners, ACTOR
-from tests.cases.test_reader_ai_owner_chain import bind_paper
+from tests.cases.test_reader_ai_owner_chain import bind_paper, seed_legacy
 
 
 def test_shared_paper_identity_history_and_context(owners, monkeypatch, tmp_path):
@@ -56,8 +56,13 @@ def test_shared_paper_identity_history_and_context(owners, monkeypatch, tmp_path
     prepare_route.respond=route.respond
     prepare_route.session_actor=lambda request:ACTOR
     prepare_route.read_json=lambda request:request
+    # Current Paper Chat never implicitly creates a personal research Resident.
+    status,unbound=prepare_route.chat_workspace_prepare({'surface':'paper','workspace_key':key,'message':'normal question','context':{'paper_id':pid}},None,None)
+    assert status==400 and '新建个人研究' in unbound['error']
+    scope=adapter._workspace_identity(ACTOR,'paper',key)['resident_scope']
+    historical=seed_legacy(owners,scope)
     status,normal=prepare_route.chat_workspace_prepare({'surface':'paper','workspace_key':key,'message':'normal question','context':{'paper_id':pid}},None,None)
-    assert status==200
+    assert status==200 and normal['resident_id']==historical['resident_id']
     status,_=prepare_route.chat_workspace_prepare({'surface':'paper','workspace_key':key,'message':'bad context','context':{'paper_id':pid,'collection_items':[]}},None,None)
     assert status==400
     reader_payload={'surface':'paper','workspace_key':key,'message':'selection question','context':{'document':docs[0],'expected_principal':ACTOR,'selection':'This turn selection'}}
@@ -80,8 +85,14 @@ def test_shared_paper_identity_history_and_context(owners, monkeypatch, tmp_path
     follow=adapter.prepare_workspace(ACTOR,{**reader_payload,'context':{**reader_payload['context'],'selection':''}})
     assert 'This turn selection' not in follow['initial_context']['context_text']
     assert 'Trusted bounded material' in follow['initial_context']['context_text'] and 'Library Chat' not in str(follow)
-    other=adapter.prepare_workspace('storage-outsider',{**reader_payload,'context':{**reader_payload['context'],'expected_principal':'storage-outsider'}})
-    assert other['resident_id']!=rid
+    other_payload={**reader_payload,'context':{**reader_payload['context'],'expected_principal':'storage-outsider'}}
+    other=adapter.prepare_workspace('storage-outsider',{**other_payload,'read_only':True})
+    assert other['resident_id']==''
+    from management_portal.workbench_projections.store import ProjectionError
+    with pytest.raises(ProjectionError,match='新建个人研究'):
+        adapter.prepare_workspace('storage-outsider',other_payload)
+    second_key='paper:'+docs[1]['paper_id']
+    seed_legacy(owners,adapter._workspace_identity(ACTOR,'paper',second_key)['resident_scope'])
     second=adapter.prepare_workspace(ACTOR,{**reader_payload,'workspace_key':'paper:'+docs[1]['paper_id'],'context':{**reader_payload['context'],'document':docs[1]}})
     assert second['resident_id']!=rid
     with pytest.raises(PermissionError):adapter.prepare_workspace('storage-outsider',reader_payload)

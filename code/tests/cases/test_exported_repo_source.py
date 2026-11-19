@@ -332,6 +332,17 @@ def test_plain_repo_does_not_gain_exported_tree_liveness(tmp_path, kind):
 ])
 def test_malformed_source_binding_is_rejected_without_unregistering(tmp_path, overrides):
     """契约损坏须拒绝读取并保留原记录供修复，不猜测成另一种绑定。"""
+    if overrides.get("canonical_checkout") == "relative/path":
+        # The directory owner now rejects an invalid root at the authoritative
+        # write boundary. Do not bypass that fence to manufacture a live row.
+        record, _root = _source(tmp_path)
+        with pytest.raises(ValueError, match="absolute path"):
+            _save({**record, **overrides})
+        assert get_registry_store().get("repo", record["id"]) == record
+        assert resource_identity_backend.resolve_repo_address(record["id"])["exists"]
+        result = resource_auto_registration.ResourceAutoRegistrar(service=_service()).reconcile()
+        assert result["removed"] == [] and result["resource_errors"] == []
+        return
     record, _root = _source(tmp_path, **overrides)
     with pytest.raises(ValueError):
         resource_identity_backend.resolve_repo_address(record["id"])

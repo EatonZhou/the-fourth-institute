@@ -26,15 +26,15 @@ links:
   - decision_898b8911a2ff
   - thinking_ca8f397a47de
 version:
-  number: 73
+  number: 77
   created_at: "2026-09-28T10:45:00Z"
   created_by:
     user: "weihao"
     agent: "resident_2a1fc6cd272d"
-  updated_at: "2026-11-13T20:28:05Z"
+  updated_at: "2026-11-19T08:46:57Z"
   updated_by:
     user: ""
-    agent: "resident_737599f56947"
+    agent: "resident_60ae6d0cdf74"
 metaness: 2
 ---
 # HATG ISA：Resident 指令
@@ -156,6 +156,8 @@ Resident 是可以跨多次模型会话持续存在的 Agent 身份。系统中�
 
 - 参数：`lineage_id`、`resident_id`。
 - 结果：被删除的 Resident ID，以及删除 Leader 时新选出的 Leader ID。
+- 删除范围按创建、登记及交接时维护的 owner 与删除依赖取得：注销活动身份、成员关系、连线、绑定及该主体凭证；清理其明确拥有的 Workspace 和私有目录。借用 Workspace 只解绑；独立登记的 Article、Repo、Paper、知识条目、Report 及 AgentData 历史不级联删除。不能在请求中遍历全站目录或资源登记来推断归属。
+- 目标注销和准确清理清单在短事务中提交；后台消费同一清单并持久重试。返回注销成功不等于物理文件已经删完。旧实例关系未升级完整时明确报告缺口，不能降级为全站扫描。目录合同见 decision_4aa13bc21e8e，在途工作与批量原子性见 decision_0f57656a2acd。
 - 被删除的是 Lineage 的 Leader 时，系统从该 Lineage 其余的 Resident 中随机选一个担任新的 Leader；没有其他 Resident 时，普通 Lineage 暂时没有 Leader，Project 层 Lineage 则拒绝这次删除（decision_3e07c6d35cac）。需要指定继任者时，先用 `UpdateLineage`（decision_4637ca4a69e2）更换 Leader，再删除原 Leader。
 - Resident 身份永久保留在 `residents` 表中；`deleted_at` 为空表示正常，有值表示已删除，`deleted_by` 记录删除操作者。删除状态以这两个字段表达，不另设删除身份表（decision_0f57656a2acd）。同 ID 的 Agent、主 trace、已有片段和执行历史继续保留，空 trace 也保留。
 - 正常目录、发现列表、调度和消息投递排除已删除的 Resident。按 ID 查询历史时仍遵守原有读取权限，可查看历史消息、执行轨迹和 Fork 来源；历史读取不清除删除状态，也不启动工作。
@@ -193,7 +195,7 @@ include_maintenance 另返回 layers（recent、phase、long_term）、maintenan
 
 active_threads 承载未决承诺、阻塞与重要约束。归纳遗漏的旧事项自动补入 phase；关闭必须在 resolved_threads 中提供「原事项：解决、取消或交接说明」。重要项目历史另存工作记录，摘要保留有效结论与记录入口；不改变原始日志保留策略。
 
-所有新写入共用总预算，默认 3000 字符，计算各时间层、各语义字段所有文字之和（包括重复文字、标点和空格）。超限整次写入失败，不静默截断；高层合计最多占 75%，保留近期空间。平台只按新增工作量与容量判断归纳待办，不决定信息重要性：默认阶段 20 个新覆盖轮次，长期 100 轮，达到总预算 80% 提前归纳。单纯经过时间不形成待办，没有新工作的成员摘要保持原状，闲置不会让它反复进入归纳。部署配置 PORTAL_SUMMARY_TOTAL_CHARS、PORTAL_SUMMARY_PHASE_ROUNDS、PORTAL_SUMMARY_LONG_TERM_ROUNDS；预算至少 400，其余为正整数。维护轮次不计数量，重复覆盖不重计。独立 Resident 的认领结果也返回 summary_policy，写入执行相同总预算。
+摘要各时间层、各语义字段的文字值合计最多 5000 字符（默认），重复文字逐次计数；不另设阶段与长期层占比限制。提交内容超过总量上限时整次拒绝，版本、覆盖轮次和已有内容保持原状，不静默截断。归纳时先保留未关闭事项再检查总量；身份、维护职责、版本比较与未决事项保留仍按原规则校验。历史超长摘要继续可读，省略正文时仍可登记已覆盖轮次，后续归纳须满足总量上限。平台按新增工作量与容量判断归纳待办，不决定信息重要性：默认阶段 20 个新覆盖轮次，长期 100 轮，合计文字达到上限的 80% 提醒归纳。单纯经过时间不形成待办，没有新工作的成员摘要保持原状，闲置不会让它反复进入归纳。部署配置 PORTAL_SUMMARY_TOTAL_CHARS 定义合计字符上限（默认 5000，至少 400），PORTAL_SUMMARY_PHASE_ROUNDS、PORTAL_SUMMARY_LONG_TERM_ROUNDS 为正整数。维护轮次不计数量，重复覆盖不重计。独立 Resident 的认领结果也返回同一 summary_policy，单份摘要写入受相同总量上限约束。
 
 Family 内部检查成员摘要的 CheckResidentWorkSummary 和读取门面汇总材料的 GetFamilySummaryInputs 属于 Family 内部机制类（decision_b77fde81e7a0）。
 
@@ -385,7 +387,7 @@ Family 内部检查成员摘要的 CheckResidentWorkSummary 和读取门面汇�
 | `PreviewPromptInjection` | `resident_id`、`turn` |
 | `GetResidentInitialization` | `resident_id` |
 | `RetryResidentInitialization` | `resident_id`、`expected_initialization_id`、`credits_consent` |
-| `RestartSession` | `resident_id`、`operation`、`provider`、`account_id`、`model`、`reasoning_effort`、`collaboration_mode`、`service_tier`、`permission_preset`、`prompt_context`、`backend_options`、`context_strategy`、`active_execution_policy`、`resume_failed_input`、`credits_consent` |
+| `RestartSession` | `resident_id`、`operation`、`provider`、`account_id`、`account_selection`、`model`、`reasoning_effort`、`collaboration_mode`、`service_tier`、`permission_preset`、`prompt_context`、`backend_options`、`context_strategy`、`active_execution_policy`、`resume_failed_input`、`credits_consent` |
 | `GetSessionRestart` | `resident_id` |
 | `CancelSessionRestart` | `resident_id`、`restart_id` |
 | `BindWorkspace` | `resident_id`、`path`、`purpose` |
