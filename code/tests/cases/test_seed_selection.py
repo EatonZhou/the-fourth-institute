@@ -21,12 +21,13 @@ from prepare_install import prepare
 from scripts import tfi_seed_selection as selection
 from scripts import tfi_windows_launcher as launcher
 from scripts.windows.build import bundle_seed
+from tests.cases.fixtures.published_seed import published_seed
 
 
 class SeedSelection(unittest.TestCase):
     def test_base_archive_excludes_cases_before_extraction_and_fits_user_path(self):
         """真实基础包不含案例文件，用户路径下的准备及最终路径不触发长路径。"""
-        seed = REPO / 'instance/example_instance/seed'
+        seed = self.enterContext(published_seed(REPO))
         original = json.loads((seed / 'manifest.json').read_text())
         _, _, excluded = selection.plan(seed, original['engineering'], include_examples=False)
         with tempfile.TemporaryDirectory(dir='/tmp' if os.name != 'nt' else None) as temporary:

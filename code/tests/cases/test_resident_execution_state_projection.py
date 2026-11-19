@@ -538,8 +538,9 @@ def test_conversation_snapshot_defaults_to_idle_without_runtime_projection(
     }
 
 
+@pytest.mark.parametrize("held", [False, True], ids=["legacy-queue-item", "held-queue-item"])
 def test_conversation_snapshot_reads_nonempty_canonical_activity_and_queue(
-    resident_record: dict[str, object],
+    resident_record: dict[str, object], held: bool,
 ) -> None:
     """对话快照读取已有规范活动和队列内容"""
     resident_id = str(resident_record["resident_id"])
@@ -553,6 +554,7 @@ def test_conversation_snapshot_reads_nonempty_canonical_activity_and_queue(
                 "author_id": "sample_admin",
                 "content_preview": "queued follow-up",
                 "enqueued_at": "2026-08-29T00:00:00Z",
+                "held": held,
             }
         ],
     }
@@ -561,6 +563,7 @@ def test_conversation_snapshot_reads_nonempty_canonical_activity_and_queue(
     repository.state_store.put_resident_execution_record(resident_id, {"queue": [{
         "user_message_id": "message_queued",
         "enqueued_at": "2026-08-29T00:00:00Z",
+        **({"mailbox_held": True} if held else {}),
         "input_message": {
             "message_id": "message_queued", "role": "user", "author_id": "sample_admin",
             "created_at": "2026-08-29T00:00:00Z",

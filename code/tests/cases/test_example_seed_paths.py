@@ -19,6 +19,7 @@ REPO = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(REPO))
 sys.path.insert(0, str(REPO / "code"))
 from prepare_install import inventory
+from tests.cases.fixtures.published_seed import published_seed
 
 
 class ExamplePaths(unittest.TestCase):
@@ -37,7 +38,7 @@ class ExamplePaths(unittest.TestCase):
         from psycopg.rows import dict_row
         from tests.cases.postgres_test_database import start_disposable_cluster
         from management_portal.society_service.state_store import (
-            LINEAGE_DATA_SCHEMA, lineage_data_schema_matches,
+            LineageDataStore, lineage_data_schema_matches,
         )
         from management_portal.resources.registry_store import SCHEMA_VERSION as registry_schema
         from management_portal.society_service.directory_owner import directory_metadata
@@ -62,9 +63,14 @@ class ExamplePaths(unittest.TestCase):
                 with psycopg.connect(dsn, row_factory=dict_row) as connection:
                     connection.execute(sql, prepare=False)
                     connection.execute('SET search_path TO lineage')
+                    # Imported installations run the domain's additive startup
+                    # migrations. The dump's metadata tag is not a startup gate.
+                    identities = connection.execute(
+                        'SELECT resident_id FROM residents ORDER BY resident_id').fetchall()
+                    LineageDataStore._initialize(connection)
+                    LineageDataStore._initialize(connection)
                     self.assertEqual(connection.execute(
-                        "SELECT value FROM lineage_meta WHERE key='schema'"
-                    ).fetchone()['value'], LINEAGE_DATA_SCHEMA)
+                        'SELECT resident_id FROM residents ORDER BY resident_id').fetchall(), identities)
                     self.assertTrue(lineage_data_schema_matches(connection))
                     # Imported identities must be usable without an offline
                     # migration, including their directory ownership facts.
@@ -249,9 +255,11 @@ class ExamplePaths(unittest.TestCase):
         self.assertTrue(list(data.glob("projects/*/agents/lineage_*")))
 
     def test_inventory_and_path_budget(self):
-        """安装与实例回归：inventory and path budget。"""
-        rows = [r for r in inventory(self.seed) if r["path"] != "manifest.json"]
-        expected = sorted(self.manifest["inventory"], key=lambda row: row["path"])
+        """The published seed's unchanged inventory matches its exact files."""
+        seed = self.enterContext(published_seed(REPO))
+        manifest = json.loads((seed / 'manifest.json').read_text(encoding='utf-8'))
+        rows = [r for r in inventory(seed) if r["path"] != "manifest.json"]
+        expected = sorted(manifest["inventory"], key=lambda row: row["path"])
         self.assertEqual([row['path'] for row in rows], [row['path'] for row in expected])
         for actual, recorded in zip(rows, expected):
             with self.subTest(path=actual['path']):

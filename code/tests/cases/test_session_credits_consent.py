@@ -1,9 +1,11 @@
 """Human consent stays with exactly the explicitly created target Session."""
 import time
 from types import SimpleNamespace
+from unittest.mock import Mock
 
 import pytest
 
+from management_portal.execution import account_monitor
 from management_portal.execution.agent_data_store import AgentDataStore
 from management_portal.execution.account_monitor import AccountMonitor
 from management_portal.execution.account_session_credits import admit_session
@@ -154,16 +156,28 @@ def test_credit_exhaustion_and_failed_refresh_close_scoped_override(scheduler):
 
 def test_monitor_publishes_authenticated_credit_readings_and_revokes_on_failure(monkeypatch, scheduler):
     account = scheduler.accounts.get("one")
+    clock = Mock(return_value=time.time())
+    monkeypatch.setattr(account_monitor, "time", SimpleNamespace(time=clock))
+    read = Mock(return_value={"rateLimits": {
+        "primary": {"usedPercent": 100, "windowDurationMins": 300},
+        "credits": {"hasCredits": True, "balance": "10"},
+    }})
+    monkeypatch.setattr("management_portal.codex_app_server_client.client_for_socket",
+                        lambda _: SimpleNamespace(request=read))
+    monkeypatch.setattr(scheduler.accounts, "runtime_catalog", lambda *_: {})
     monitor = AccountMonitor(scheduler.accounts, scheduler)
     monkeypatch.setattr(monitor, "refresh_usage", lambda *_: None)
-    reading = {"status": "ok", "quota": sample(100), "credits": {"has_credits": True, "balance": 10}}
-    monkeypatch.setattr(scheduler.accounts, "observe", lambda *_, **__: reading)
     monitor.refresh_account(account)
     quota = scheduler.health()["capacity_partitions"][account.capacity_key]["quota_reserve"]
+    assert quota["credits"]["authenticated"] is True
     assert admit_session({"enabled": True}, quota)
-    monkeypatch.setattr(scheduler.accounts, "observe", lambda *_, **__: (_ for _ in ()).throw(TimeoutError()))
+    read.side_effect = TimeoutError()
+    monitor.refresh_account(account)
+    assert read.call_count == 1
+    clock.return_value += account_monitor.MIN_READ_INTERVAL_SECONDS + 1
     monitor.refresh_account(account)
     quota = scheduler.health()["capacity_partitions"][account.capacity_key]["quota_reserve"]
+    assert read.call_count == 2 and quota["credits"] == {}
     with pytest.raises(ValueError, match="可用 credits"):
         admit_session({"enabled": True}, quota)
 

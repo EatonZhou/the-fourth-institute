@@ -712,8 +712,9 @@ def test_wait_migration_preserves_a_steward_input_that_has_not_entered_execution
     monkeypatch.setattr(resident_conversation_stream.get_repository(), "set_state", lambda *args, **kwargs: None)
     result = resident_restart_domain.restart_resident_session(record["resident_id"], "alice", {
         "target_account": "one", "active_execution_policy": "wait", "context_strategy": "compact",
-    })
+    }, portal_reason="steward_weekly_reserve")
     assert result["status"] == "accepted"
+    assert result["reason"] == "steward_weekly_reserve"
     assert result["preserved_held_input"] == {'execution_id': "job_pending", "message_id": "msg_pending"}
     resident_restart_domain.resume_resident_session_restart(operations[-1]["step"])
     assert record["session_restart"]["status"] == "completed"

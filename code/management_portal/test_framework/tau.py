@@ -192,9 +192,11 @@ def build_prompt(
     account_instruction = ""
     case_instructions = str(planned.get("case_instructions") or "").strip()
     if assignment and assignment.get("backend_route_id"):
+        service_tier = (assignment.get("runtime_options") or {}).get("service_tier")
+        tier_setting = "默认速度（未请求 Fast）" if service_tier == "" else service_tier
+        tier_instruction = f"，执行设置中的速度档位为 {tier_setting}" if tier_setting else ""
         account_instruction = (
-            f"\n本模块使用 Codex 账号 {assignment['backend_route_id']}，"
-            f"service tier 为 {(assignment.get('runtime_options') or {}).get('service_tier') or 'standard'}。"
+            f"\n本模块使用 Codex 账号 {assignment['backend_route_id']}{tier_instruction}。"
             "上述账号与速度设置仅用于执行测试的 TAU Resident，不约束被测业务或临时 Resident。"
             "被测业务使用页面当前支持的默认配置；仅当用例明确指定账号或速度时，"
             "才通过正式页面或用例允许的控制接口选择并验证该设置。"
@@ -255,6 +257,9 @@ def build_prompt(
 - 本模块临时资源标记：{marker}
 
 {account_instruction}
+正式读取 Codex 执行设置时，`service_tier: ""` 表示配置使用默认速度。仅当用例或本轮明确要求某个档位时才验证该配置。
+只有验收实际档位或计费行为时才需要 Provider 交付证据。按用例要求记录配置与实际交付，缺测实际档位时继续完成其他已满足前提的业务步骤。
+
 {supplemental_instruction}
 {fixture_instruction}
 

@@ -6,7 +6,7 @@ import pytest
 
 from management_portal.execution.account_adapters import CodexAccounts
 from management_portal.execution.accounts import ExecutionAccounts
-from management_portal.execution.account_monitor import AccountMonitor
+from management_portal.execution.account_monitor import AccountMonitor, MIN_READ_INTERVAL_SECONDS
 from management_portal.codex_app_server_protocol import CodexTurnAuthenticationError
 
 
@@ -94,6 +94,7 @@ def test_quota_read_errors_are_safe_specific_and_clear_after_recovery(monkeypatc
     client.request.return_value = {"rateLimits": {"primary": {"usedPercent": 20, "windowDurationMins": 300}}}
     if with_previous_sample:
         state.refresh_account(account)
+        clock[0] += MIN_READ_INTERVAL_SECONDS + 1
     client.request.side_effect = failure
     state.refresh_account(account)
     failed = state.snapshot()["accounts"][0]
@@ -105,6 +106,10 @@ def test_quota_read_errors_are_safe_specific_and_clear_after_recovery(monkeypatc
         assert failed["rate_limits"][0]["remaining_percent"] == 80
         assert failed["rate_limits"][0]["stale"] is True
     client.request.side_effect = None
+    calls = client.request.call_count
+    state.refresh_account(account)
+    assert client.request.call_count == calls
+    clock[0] += MIN_READ_INTERVAL_SECONDS + 1
     state.refresh_account(account)
     recovered = state.snapshot()["accounts"][0]
     assert recovered["status"] == "ok"

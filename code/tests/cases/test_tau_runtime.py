@@ -31,6 +31,27 @@ def test_tau_configuration_uses_current_keys_and_explicit_storage(tmp_path, monk
     assert not storage.exists()
 
 
+@pytest.mark.parametrize(("runtime_options", "expected"), [
+    ({"service_tier": ""}, "执行设置中的速度档位为 默认速度（未请求 Fast）"),
+    ({"service_tier": "priority"}, "执行设置中的速度档位为 priority"),
+    ({}, "本模块使用 Codex 账号 five。"),
+])
+def test_tau_prompt_distinguishes_speed_setting_from_delivery(tmp_path, runtime_options, expected):
+    """默认档位、显式 Fast 和缺少配置分别表达，实际交付只在相关用例验证。"""
+    from management_portal.test_framework.dev_target import VerifiedDevTarget
+
+    target = VerifiedDevTarget("dev", "http://portal.test", "dev-current", "dev-current", "component-v2", "test-actor")
+    prompt = tau.build_prompt(
+        {"case_title": "速度设置", "module": "workbench.panels", "implementation": {}},
+        tau.TauConfig(tmp_path / "storage.json"), tmp_path, target, "testrun_0123456789abcdef",
+        assignment={"backend_route_id": "five", "runtime_options": runtime_options},
+    )
+    assert expected in prompt
+    assert "service tier 为 standard" not in prompt
+    assert "只有验收实际档位或计费行为时才需要 Provider 交付证据" in prompt
+    assert "原生额度耗尽、未知或陈旧时停在发送前" in prompt
+
+
 @pytest.fixture
 def configured(tmp_path, monkeypatch):
     from management_portal import resident_handoff
