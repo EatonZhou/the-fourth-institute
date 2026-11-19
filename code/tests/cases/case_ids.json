@@ -4714,6 +4714,7 @@
     "tests/cases/test_tau_submission_recovery.py::test_owner_exception_preserves_late_causal_locator": "test_c4f6c0140512",
     "tests/cases/test_tau_submission_recovery.py::test_proven_unaccepted_request_ends_without_send_or_cancel": "test_8dff29093f41",
     "tests/cases/test_tau_submission_recovery.py::test_restarted_pending_submission_cancels_only_after_actual_identity": "test_02b25c82f464",
+    "tests/cases/test_tau_submission_recovery.py::test_settle_one_rejected_workflow_delivery": "test_3f2b9989a181",
     "tests/cases/test_tau_submission_recovery.py::test_unresolved_submission_preserves_helpers_and_checkpoint": "test_9606ea2d3a2d",
     "tests/cases/test_tau_team_cleanup.py::test_lineage_fixture_contract_defaults_to_reuse_and_survives_planning": "test_97f7c357b4df",
     "tests/cases/test_tau_team_cleanup.py::test_module_finalization_runs_on_all_exits_and_resumes_without_retesting": "test_6d4afdf4e415",

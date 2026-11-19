@@ -29,7 +29,9 @@ from management_portal.test_framework.records import (
     aggregate_status,
     now_iso,
 )
-from management_portal.test_framework.runner_adapters import RunnerAdapter, UnsupportedRunner
+from management_portal.test_framework.runner_adapters import (
+    RunnerAdapter, UnsupportedRunner, confirmed_delivery_rejection,
+)
 from management_portal.test_framework.runner_ids import TAU_RUNNER_ID
 from management_portal.test_framework.tau_limits import tau_max_parallel_modules
 from management_portal.test_framework import slots
@@ -215,7 +217,7 @@ class TauCampaignExecutor:
         run_dir: Path, actor: str,
     ) -> tuple[str, str]:
         group_id = str(group_spec["group_id"])
-        self.records.update_group(run_id, group_id, {"status": "queued"})
+        self.records.update_group(run_id, group_id, {"status": "queued"}, preserve_delivery_settlement=True)
         # Every campaign uses the same Resident for a module. Keep its entire
         # invocation and cleanup together, even when several campaigns run.
         def reserved():
@@ -231,7 +233,11 @@ class TauCampaignExecutor:
         while True:
             if (self._is_cancelled(run_id)
                     and (run_id, group_id) not in self.records.invocation_holders()):
-                self.records.update_group(run_id, group_id, {"status": "cancelled"})
+                record = self.records.update_group(run_id, group_id, {"status": "cancelled"},
+                                                   preserve_delivery_settlement=True)
+                group = next(item for item in record["groups"] if item["group_id"] == group_id)
+                if group.get("delivery_settlement"):
+                    return group["status"], group.get("error", "")
                 return "cancelled", ""
             if reserved():
                 time.sleep(1)
@@ -240,6 +246,9 @@ class TauCampaignExecutor:
                                  stop=lambda: self._is_cancelled(run_id) or reserved()) as acquired:
                 if not acquired or reserved():
                     continue
+                group = next(item for item in self.records.get(run_id)["groups"] if item["group_id"] == group_id)
+                if group.get("delivery_settlement"):
+                    return group["status"], group.get("error", "")
                 try:
                     self._recover_module_cleanup(run_id, group_id)
                 except Exception as exc:
@@ -281,6 +290,99 @@ class TauCampaignExecutor:
             receipt = json.loads(receipt_path.read_text())
         pending = not receipt.get("complete") if isinstance(receipt, dict) else bool(details.get("cleanup_error"))
         return case_dir, pending
+
+    def settle_rejected_delivery(self, run_id: str, group_id: str, case_id: str,
+                                 request_id: str, *, actor: str) -> dict[str, Any]:
+        """Record a provably rejected workflow delivery without invoking a case."""
+        from management_portal.resident_handoff import resolve_invocation_submission
+        from management_portal.test_framework.tau_residents import TAU_ACTOR
+
+        def read_scope():
+            record = self.records.get(run_id)
+            if not actor or record.get("created_by") != actor:
+                raise PermissionError("只有原运行发起者可以结算 TAU 投递失败")
+            group = next((item for item in record["groups"] if item["group_id"] == group_id), None)
+            if not group or group.get("runner") != TAU_RUNNER_ID:
+                raise KeyError(f"未知 TAU 模块组：{group_id}")
+            prior = group.get("delivery_settlement")
+            if prior and (prior["case_id"] != case_id or prior["request_id"] != request_id):
+                raise ValueError("TAU 模块组已针对其他调用结算")
+            return record, group
+
+        _, original_group = read_scope()
+        if prior := original_group.get("delivery_settlement"):
+            return prior
+        module_id = original_group["module_id"]
+        with slots.exclusive(f"tau-module:{module_id}", stop=lambda: True) as acquired:
+            if not acquired or any(owner_run != run_id and owner_group == group_id
+                                   for owner_run, owner_group in self.records.invocation_holders()):
+                raise ValueError("TAU 模块正在执行或由其他运行占用")
+            record, group = read_scope()
+            if prior := group.get("delivery_settlement"):
+                return prior
+            handle = group.get("active_invocation") or {}
+            binding_keys = (
+                "resident_id", "lineage_id", "event_source_id", "effect_id",
+                "event_id", "trigger_path_id", "request_id", "idempotency_key",
+            )
+            if (record.get("status") != "running" or group.get("status") != "running"
+                    or group.get("current_case_id") != case_id or handle.get("case_id") != case_id
+                    or not request_id or handle.get("request_id") != request_id
+                    or handle.get("instruction") != "TriggerEvent"
+                    or handle.get("submission_state") != "pending" or handle.get("message_id")
+                    or not all(isinstance(handle.get(key), str) and handle[key] for key in binding_keys)):
+                raise ValueError("原 TAU 调用不匹配或不处于待结算状态")
+            spec = next(item for item in record["plan"]["execution"]["groups"] if item["group_id"] == group_id)
+            selected = record["plan"]["selected"]
+            matches = [index for index in spec["item_indexes"] if selected[index]["case_id"] == case_id]
+            if len(matches) != 1 or any(item.get("case_id") == case_id for item in group["results"]):
+                raise ValueError("原 TAU 计划用例不唯一或已有结果")
+            index = matches[0]
+            item = selected[index]
+            case_dir = self.run_root / run_id / group_id.replace(":", "-").replace("/", "-") / item["case_id"]
+            try:
+                snapshot = json.loads((case_dir / "tau-invocation.json").read_text())
+            except (OSError, ValueError) as exc:
+                raise ValueError("无法核验原 TAU 调用快照") from exc
+            if not isinstance(snapshot, dict) or not isinstance(snapshot.get("handle"), dict):
+                raise ValueError("原 TAU 调用快照格式不正确")
+            saved = snapshot["handle"]
+            if (snapshot.get("schema") != "tfi.tau-invocation-checkpoint.v1"
+                    or snapshot.get("safe_to_cleanup") is not False
+                    or any(saved.get(key) != handle.get(key) for key in
+                           (*binding_keys, "instruction", "instruction_id", "submission_state", "message_id"))):
+                raise ValueError("原 TAU 调用与快照不一致")
+            # The Run requester authorizes this record update. The read alone
+            # uses the same configured TAU actor as the original resolver.
+            proof = resolve_invocation_submission(actor=TAU_ACTOR, handle=dict(handle))
+            if (not confirmed_delivery_rejection(proof)
+                    or proof.get("instruction") != "TriggerEvent"
+                    or any(proof.get(key) != handle[key] for key in binding_keys)
+                    or (handle.get("instruction_id") and proof["instruction_id"] != handle["instruction_id"])):
+                raise ValueError("原 TAU 调用缺少可核验的投递前拒绝证据")
+            reason = proof.get("submission_reason") or proof["submission_failure_code"]
+            receipt = {
+                "run_id": run_id, "group_id": group_id, "case_id": case_id, "request_id": request_id,
+                "actor": actor, "settled_at": now_iso(), "status": "error",
+                "case_started_at_epoch": group.get("case_started_at_epoch"),
+                "previous_group_error": group.get("error"), "delivery": proof,
+            }
+            details = interrupted_report("error", {
+                "summary": reason, "issues": [reason], "input_submitted": False, "conversation": proof,
+                **({"target_preflight": handle["target_preflight"]} if handle.get("target_preflight") else {}),
+            }, started=False)
+            result = {
+                "case_id": case_id, "implementation_id": item["implementation"]["id"], "runner": TAU_RUNNER_ID,
+                "module_id": module_id, "group_id": group_id, "item_index": index, "status": "error",
+                "returncode": None, "details": details,
+            }
+            updated = self.records.apply_progress(
+                run_id, output={}, results=[(group_id, result)],
+                groups={group_id: {"status": "error", "current_case_id": "", "active_invocation": {},
+                                   "delivery_settlement": receipt}},
+                expected_active_invocations={group_id: handle},
+            )
+            return next(item["delivery_settlement"] for item in updated["groups"] if item["group_id"] == group_id)
 
     def retry_team_cleanup(self, run_id: str, group_id: str, *, actor: str) -> dict[str, Any]:
         """Recover one terminal group's own team journal without resuming its cases."""

@@ -458,12 +458,14 @@ class RunRecords:
         item["active_case_ids"] = active
         item["current_case_id"] = active[0] if len(active) == 1 else ""
 
-    def update_group(self, run_id: str, group_id: str, patch: dict[str, Any]) -> dict[str, Any]:
+    def update_group(self, run_id: str, group_id: str, patch: dict[str, Any],
+                     *, preserve_delivery_settlement: bool = False) -> dict[str, Any]:
         patch = _redact_run_data(patch)
         def update_group_record(item):
             for group in item.get("groups") or []:
                 if group.get("group_id") == group_id:
-                    group.update(patch)
+                    if not (preserve_delivery_settlement and group.get("delivery_settlement")):
+                        group.update(patch)
                     break
             else:
                 raise KeyError(f"未知测试运行分组：{group_id}")
@@ -477,6 +479,7 @@ class RunRecords:
         output: dict[str, str],
         results: list[tuple[str, dict[str, Any]]],
         groups: dict[str, dict[str, Any]],
+        expected_active_invocations: dict[str, dict[str, Any]] | None = None,
     ) -> dict[str, Any]:
         """Write a batch of group output, results and group changes in one record update.
 
@@ -491,6 +494,12 @@ class RunRecords:
 
         def apply(item):
             by_id = {str(group.get("group_id") or ""): group for group in item.get("groups") or []}
+            for group_id, invocation in (expected_active_invocations or {}).items():
+                original = by_id.get(group_id, {})
+                if (item.get("status") != "running" or original.get("status") != "running"
+                        or original.get("active_invocation") != invocation
+                        or original.get("current_case_id") != invocation.get("case_id")):
+                    raise ValueError("原 TAU 活动调用已改变，拒绝写入结算")
             for group_id, text in output.items():
                 item["output"] = (str(item.get("output") or "") + text)[-OUTPUT_LIMIT:]
                 if group_id in by_id:

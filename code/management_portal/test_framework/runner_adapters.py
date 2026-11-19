@@ -36,6 +36,18 @@ class DeliveryRejected(RuntimeError):
         super().__init__(handle.get("submission_reason") or "原 Effect 已拒绝投递，Resident 输入未提交")
 
 
+def confirmed_delivery_rejection(handle: dict[str, str]) -> bool:
+    return (
+        handle.get("submission_state") == "not_submitted"
+        and handle.get("submission_failure_kind") == "delivery_rejected"
+        and handle.get("submission_failure_commit_state") == "not_committed"
+        and not handle.get("message_id")
+        and all(isinstance(handle.get(key), str) and handle[key].strip()
+                for key in ("instruction_id", "submission_failure_instruction_id", "submission_failure_code"))
+        and handle["submission_failure_instruction_id"] != handle["instruction_id"]
+    )
+
+
 def _confirmed_terminal_input(resident_id: str, message_id: str) -> bool:
     """A completed checkpoint cannot authorize cleanup after explicit requeue."""
     from management_portal import isa_client
@@ -659,15 +671,7 @@ class _TauCaseRun:
 
     def _finish_unsubmitted(self, handle: dict[str, str], *, reason: str) -> None:
         explicit = handle.get("submission_failure_kind") == "delivery_rejected"
-        complete = (
-            handle.get("submission_state") == "not_submitted"
-            and handle.get("submission_failure_commit_state") == "not_committed"
-            and handle.get("instruction_id")
-            and handle.get("submission_failure_instruction_id")
-            and handle["submission_failure_instruction_id"] != handle["instruction_id"]
-            and handle.get("submission_failure_code")
-        )
-        if handle.get("message_id") or (explicit and not complete):
+        if handle.get("message_id") or (explicit and not confirmed_delivery_rejection(handle)):
             pending = {**handle, "submission_state": "pending"}
             self.handle_assigned(pending)
             raise SubmissionPending("原投递回执冲突或缺少明确未提交证据")
