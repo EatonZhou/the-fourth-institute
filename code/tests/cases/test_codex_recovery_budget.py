@@ -9,7 +9,9 @@ from unittest import mock
 
 import pytest
 
+from management_portal.codex_app_server_client import CodexAppServerClient
 from management_portal.codex_app_server_protocol import (
+    CodexAppServerError,
     CodexAppServerUnavailable,
     CodexThreadWriterBusy,
     CodexTurnAuthenticationError,
@@ -298,6 +300,83 @@ def test_recovery_budget_survives_requeues_and_only_new_work_resets_it(subtests,
         assert [call.args[1] for call in client.run_turn.call_args_list] == [invocation.user_prompt] * 2
         client.interrupt_turn.assert_not_called()
         client.resume_turn.assert_not_called()
+
+
+@pytest.mark.parametrize("original_exists", [True, False])
+def test_resume_after_writer_conflict_checks_original_turn(tmp_path, original_exists):
+    invocation = _invocation()
+    thread_id = invocation.session.backend_session_id
+    original = "accepted-turn"
+    other = "unrelated-turn"
+    checkpoint = {"turn_id": original}
+    client = CodexAppServerClient(tmp_path / "unused.sock")
+    client.rpc.request = mock.Mock(side_effect=[
+        CodexThreadWriterBusy(f"thread {thread_id} already has an active writer"), {},
+    ])
+    client.reads.read_active_turn = mock.Mock(return_value={"id": other, "status": "inProgress"})
+    client.reads.read_turn = mock.Mock(return_value={"id": original, "status": "completed"} if original_exists else None)
+    started = []
+
+    def follow(waiter, **_options):
+        return CodexTurnResult(thread_id=thread_id, turn_id=waiter.turn_id, response=waiter.turn_id,
+                               turn={"id": waiter.turn_id, "status": "completed"}, token_usage={})
+
+    client.follower.follow = mock.Mock(side_effect=follow)
+    context = BackendContext(
+        emit_event=lambda *_args: None, cancellation_requested=lambda: False,
+        set_interrupt_target=lambda *_args, **_kwargs: None,
+        set_provider_recovery_state=lambda state: checkpoint.update(provider_recovery_state=copy.deepcopy(state)),
+    )
+    context.bind_input = mock.Mock(side_effect=lambda **kwargs: started.append(kwargs["turn_id"]))
+
+    def reclaim():
+        backend = CodexBackend(client_factory=lambda _socket: client)
+        return backend.execute(replace(invocation, recovery_checkpoint=copy.deepcopy(checkpoint)), context)
+
+    try:
+        with pytest.raises(ExecutionRecoveryDeferred):
+            reclaim()
+        if original_exists:
+            assert reclaim().output["message"] == original
+            assert started == [original]
+        else:
+            with pytest.raises(CodexAppServerError, match="Cannot verify the accepted Codex turn"):
+                reclaim()
+            client.follower.follow.assert_not_called()
+            assert started == []
+        assert [call.args[0] for call in client.rpc.request.call_args_list] == ["thread/resume"] * 2
+        assert thread_id not in client.work.turns
+    finally:
+        client.close()
+
+
+def test_writer_conflict_on_resume_exhausts_the_same_budget(isolated_portal_case):
+    invocation = _invocation()
+    thread_id = invocation.session.backend_session_id
+    turn_id = "accepted-turn"
+    checkpoint = {"turn_id": turn_id}
+    client = mock.Mock()
+    client.resume_turn.side_effect = CodexThreadWriterBusy(f"thread {thread_id} already has an active writer")
+    context = BackendContext(
+        emit_event=lambda *_args: None, cancellation_requested=lambda: False,
+        set_interrupt_target=lambda *_args: None,
+        set_provider_recovery_state=lambda state: checkpoint.update(provider_recovery_state=copy.deepcopy(state)),
+    )
+
+    def reclaim():
+        backend = CodexBackend(client_factory=lambda _socket: client)
+        return backend.execute(replace(invocation, recovery_checkpoint=copy.deepcopy(checkpoint)), context)
+
+    for attempt in range(1, 4):
+        with pytest.raises(ExecutionRecoveryDeferred) as deferred:
+            reclaim()
+        assert deferred.value.retry_after_seconds == 30
+        assert checkpoint["provider_recovery_state"]["recovery_budget"]["attempts"] == attempt
+    with pytest.raises(CodexRecoveryExhausted):
+        reclaim()
+    assert [call.args for call in client.resume_turn.call_args_list] == [(thread_id, turn_id)] * 4
+    assert [call.kwargs["require_exact_turn"] for call in client.resume_turn.call_args_list] == [False, True, True, True]
+    client.run_turn.assert_not_called()
 
 
 def _completed(item: dict, turn_id: str = "current") -> dict:

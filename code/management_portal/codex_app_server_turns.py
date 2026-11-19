@@ -524,6 +524,7 @@ class CodexTurnRunner:
         turn_id: str,
         *,
         cwd: str,
+        require_exact_turn: bool = False,
         config: dict[str, Any] | None = None,
         event_callback: Callable[[dict[str, Any]], None] | None = None,
         turn_snapshot_transform: Callable[[dict[str, Any]], dict[str, Any]] | None = None,
@@ -576,6 +577,10 @@ class CodexTurnRunner:
                 if (active_turn is not None
                         and str(active_turn.get("id") or "") != waiter.turn_id
                         and self._reads.read_turn(safe_thread_id, waiter.turn_id) is None):
+                    if require_exact_turn:
+                        raise CodexAppServerError(
+                            f"Cannot verify the accepted Codex turn {safe_turn_id} while another turn is active"
+                        )
                     # Only an absent checkpoint may realign to another turn.
                     # A known parent remains authoritative during native review.
                     waiter.turn_id = str(
