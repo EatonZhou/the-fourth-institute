@@ -219,7 +219,8 @@ def launch(root, record):
     if sys.platform.startswith("linux"):
         subprocess.run(["systemd-run", "--user", "--collect", "--quiet",
                         "--unit", record["unit"], "--property=Type=exec",
-                        "--property=UMask=0077", "--property=RuntimeMaxSec=1200",
+                        "--property=UMask=0077",
+                        "--property=RuntimeMaxSec=" + ("7200" if record.get('action') == 'update-code' else "1200"),
                         f"--property=WorkingDirectory={CODE}",
                         f"--property=StandardOutput=append:{log}",
                         f"--property=StandardError=append:{log}",
@@ -240,9 +241,11 @@ def launch(root, record):
         raise ValueError("Instance control is not supported on this platform")
 
 
-def enqueue(action, name):
-    if action not in {"start", "stop"}:
-        raise ValueError("Only start and stop are supported")
+def enqueue(action, name, *, offline=False):
+    if action not in {"start", "stop", "update-code"}:
+        raise ValueError("Only start, stop and update-code are supported")
+    if offline and action != 'update-code':
+        raise ValueError('Offline applies only to code updates')
     root, state = state_for(name)
     with control_lock(root):
         prior = operation(root)
@@ -256,6 +259,8 @@ def enqueue(action, name):
         identifier = uuid.uuid4().hex
         record = {"id": identifier, "unit": f"tfi-control-{identifier}",
                   "action": action, "status": "queued", "created_at": time.time()}
+        if action == 'update-code':
+            record['offline'] = offline
         atomic_json(control_path(root), record)
         try:
             launch(root, record)
@@ -279,7 +284,16 @@ def execute(name, identifier):
         record.update(status="running", pid=os.getpid())
         atomic_json(control_path(root), record)
     try:
-        if record["action"] == "stop" and sys.platform.startswith("linux"):
+        if record['action'] == 'update-code':
+            # Independent native job survives stopping the AMA/provider that
+            # requested it. Use the same updater under the same instance lock.
+            from management_common.instance_manifest import load
+            from scripts.tfi_release_install import update_code
+            with control_lock(root):
+                receipt = update_code(load(root), offline=record.get('offline', False))
+            record['update_id'] = receipt['id']
+            record['update_receipt'] = str(root / 'runtime' / 'update-code.json')
+        elif record["action"] == "stop" and sys.platform.startswith("linux"):
             # The response-delivery delay above is part of the same 20 s
             # budget, not another grace period before shutdown starts.
             from scripts.tfi_shutdown import SHUTDOWN_SECONDS
@@ -299,15 +313,16 @@ def execute(name, identifier):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("action", choices=("list", "start", "stop", "_run"))
+    parser.add_argument("action", choices=("list", "start", "stop", "update-code", "_run"))
     parser.add_argument("--name")
     parser.add_argument("--current", default="")
     parser.add_argument("--operation-id")
+    parser.add_argument("--offline", action='store_true')
     args = parser.parse_args()
     try:
         result = (catalog(args.current) if args.action == "list" else
                   execute(args.name, args.operation_id) if args.action == "_run" else
-                  enqueue(args.action, args.name))
+                  enqueue(args.action, args.name, offline=args.offline))
         print(json.dumps(result, ensure_ascii=True))
         return 0
     except Exception as exc:

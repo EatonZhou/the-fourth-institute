@@ -124,6 +124,9 @@ class InstanceManifest:
     def service_environment(self, component: str) -> dict[str, str]:
         validate_service(self, component)
         result = {"PORTAL_INSTANCE_ROOT": str(self.root)}
+        additions = self.document['services'].get('path_prefixes', {}).get(component, [])
+        if additions:
+            result['PATH'] = os.pathsep.join([*additions, os.environ.get('PATH', os.defpath)])
         if component in {"web", "dev-web"}:
             deployment = "dev" if component == "dev-web" else "release"
             if deployment not in self.deployments:
@@ -274,8 +277,17 @@ def validate_core(root: str | Path, document: dict) -> InstanceManifest:
     if any(type(p) is not int or not 1024 <= p <= 65535 for p in ports) or len(set(ports)) != len(ports):
         raise ValueError("Instance ports must be distinct nonprivileged port numbers")
     services = _object(doc["services"], "services")
-    if not {'prefix', 'components'} <= services.keys() or services.keys() - {'prefix', 'components', 'programs'} or not re.fullmatch(r"tfi-[a-z0-9][a-z0-9-]{2,39}", services["prefix"]):
+    if not {'prefix', 'components'} <= services.keys() or services.keys() - {'prefix', 'components', 'programs', 'launch_agents_directory', 'path_prefixes'} or not re.fullmatch(r"tfi-[a-z0-9][a-z0-9-]{2,39}", services["prefix"]):
         raise ValueError("Invalid service prefix")
+    if 'launch_agents_directory' in services:
+        absolute_path(services['launch_agents_directory'])
+    for component, prefixes in _object(services.get('path_prefixes', {}), 'service path prefixes').items():
+        if component not in services['components'] or not isinstance(prefixes, list):
+            raise ValueError('PATH additions require a registered service and list of directories')
+        for prefix in prefixes:
+            # Native tool directories may be OS-managed symlinks (TeX Live).
+            if not isinstance(prefix, str) or not Path(prefix).is_absolute() or any(c in prefix for c in ('\0', '\n', os.pathsep)):
+                raise ValueError('Service PATH additions must be absolute directories')
     components = services["components"]
     if (not isinstance(components, list) or not components
             or any(not isinstance(c, str) or not re.fullmatch(r"[a-z][a-z0-9-]*(?:@[A-Za-z0-9_-]+)?", c) for c in components)

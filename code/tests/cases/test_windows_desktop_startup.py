@@ -98,18 +98,40 @@ class DesktopStartup(unittest.TestCase):
     def test_replaced_code_runs_the_installers_code_update_instead_of_start(self):
         self.created()
         with patch.object(self.flow, 'definitions_current', return_value=False), \
-                patch.object(self.flow, 'running_url') as running, \
+                patch.object(self.flow, 'running_url', return_value='http://127.0.0.1:28086') as running, \
                 patch.object(self.flow, 'account_configured', return_value=True), \
                 patch.object(self.flow, 'execute') as execute:
             self.flow.run()
         self.assertEqual(execute.call_args.args[0][2:5], ['update-code', '--instance', 'example_instance'])
+        running.assert_called_once()
+
+    def test_replaced_code_starts_a_stopped_instance_after_update(self):
+        self.created()
+        with patch.object(self.flow, 'definitions_current', return_value=False), \
+                patch.object(self.flow, 'running_url', return_value=None), \
+                patch.object(self.flow, 'account_configured', return_value=True), \
+                patch.object(self.flow, 'execute') as execute:
+            self.flow.run()
+        self.assertEqual([call.args[0][2] for call in execute.call_args_list], ['update-code', 'start'])
+
+    def test_failed_update_does_not_proceed_to_start(self):
+        self.created()
+        with patch.object(self.flow, 'definitions_current', return_value=False), \
+                patch.object(self.flow, 'running_url') as running, \
+                patch.object(self.flow, 'execute', side_effect=RuntimeError('update incomplete')):
+            with self.assertRaisesRegex(RuntimeError, 'update incomplete'):
+                self.flow.run()
         running.assert_not_called()
 
     def test_definition_check_reports_a_previous_code_environment(self):
         self.created()
         instance = load(self.root)
-        with patch('scripts.instance_services.verify_definitions', return_value=None):
+        with patch('scripts.instance_services.verify_definitions', return_value=None), \
+                patch('scripts.instance_update.current', return_value=True):
             self.assertTrue(self.flow.definitions_current(instance))
+        with patch('scripts.instance_services.verify_definitions', return_value=None), \
+                patch('scripts.instance_update.current', return_value=False):
+            self.assertFalse(self.flow.definitions_current(instance))
         with patch('scripts.instance_services.verify_definitions',
                    side_effect=ValueError('Instance service definition differs from its manifest')):
             self.assertFalse(self.flow.definitions_current(instance))
