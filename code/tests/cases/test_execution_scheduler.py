@@ -31,6 +31,7 @@ from management_portal.execution.contracts import (
     ExecutionResult,
     SessionOptions,
 )
+from management_portal.execution.isa import account_busy_counts
 from management_portal.execution.scheduler import (
     Scheduler,
     SchedulerClient,
@@ -39,6 +40,82 @@ from management_portal.execution.service import ExecutionServiceServer
 from management_portal.execution.session_manager import RuntimeSession
 from management_portal.execution.transport import ExecutionClaimOwnershipLost
 from tests.cases.execution_layer_test_support import _stack, _close
+
+
+def test_provider_account_check_expires_without_polling_or_dispatch(request):
+    """接入测试过期后不能被认领，也不会和普通任务一起无限排队。"""
+    scheduler = Scheduler(quota_reserve_enabled=False)
+    request.addfinalizer(scheduler.changes.stop_waits)
+    route = SessionOptions(backend_route_id="zero")
+    requests = [
+        ExecutionRequest.new(
+            actor="sample_admin", prompt="hello", service_type="agent_session",
+            provider="codex", operation="turn", session=route, metadata=metadata,
+        )
+        for metadata in ({"provider_account_check": {"account_id": "codex_zero"}}, {})
+    ]
+    for request in requests:
+        scheduler.submit(request)
+    old_check, normal = [request.execution_id for request in requests]
+    with scheduler.changes.connect() as connection:
+        connection.execute(
+            "UPDATE executions SET created_at = CURRENT_TIMESTAMP - interval '5 minutes' "
+            "WHERE execution_id = %s", (old_check,),
+        )
+        connection.commit()
+    account_route = {"provider": "codex", "route_id": "zero", "config": {}}
+    assert account_busy_counts(account_route) == {"session_count": 0, "execution_count": 2}
+
+    worker_id = "expiry-worker"
+    capabilities = ["agent_session:codex"]
+    scheduler.register_worker(worker_id=worker_id, build_id="tests", capabilities=capabilities)
+    claim = scheduler.claim(worker_id=worker_id, capabilities=capabilities)
+    assert claim["execution"]["execution_id"] == normal
+
+    scheduler.maintain()
+    scheduler.maintain()
+    expired = scheduler.views.snapshot(old_check)
+    assert expired["status"] == "cancelled"
+    assert expired["result"]["error_code"] == "account_check_deadline"
+    assert not expired["scheduler"]["owner_worker_id"]
+    assert scheduler.views.snapshot(normal)["status"] == "claimed"
+    assert account_busy_counts(account_route) == {"session_count": 0, "execution_count": 1}
+
+
+def test_running_provider_account_check_remains_busy_until_worker_releases_it(request):
+    """到期时通知正在执行的 Worker 取消，释放租约前仍保护账号。"""
+    scheduler = Scheduler(quota_reserve_enabled=False)
+    request.addfinalizer(scheduler.changes.stop_waits)
+    probe = ExecutionRequest.new(
+        actor="sample_admin", prompt="hello", service_type="agent_session",
+        provider="codex", operation="turn", session=SessionOptions(backend_route_id="zero"),
+        metadata={"provider_account_check": {"account_id": "codex_zero"}},
+    )
+    scheduler.submit(probe)
+    worker_id = "expiry-worker"
+    capabilities = ["agent_session:codex"]
+    scheduler.register_worker(worker_id=worker_id, build_id="tests", capabilities=capabilities)
+    claim = scheduler.claim(worker_id=worker_id, capabilities=capabilities)
+    token = claim["claim_token"]
+    scheduler.start(probe.execution_id, worker_id=worker_id, claim_token=token)
+    with scheduler.changes.connect() as connection:
+        connection.execute(
+            "UPDATE executions SET created_at = CURRENT_TIMESTAMP - interval '5 minutes' "
+            "WHERE execution_id = %s", (probe.execution_id,),
+        )
+        connection.commit()
+
+    scheduler.maintain()
+    stopping = scheduler.views.snapshot(probe.execution_id)
+    assert stopping["status"] == "running" and stopping["scheduler"]["cancel_requested"]
+    account_route = {"provider": "codex", "route_id": "zero", "config": {}}
+    assert account_busy_counts(account_route)["execution_count"] == 1
+    finished = scheduler.finish(
+        ExecutionResult(execution_id=probe.execution_id, status="completed"),
+        worker_id=worker_id, claim_token=token,
+    )
+    assert finished["status"] == "cancelled"
+    assert account_busy_counts(account_route)["execution_count"] == 0
 
 
 def test_scheduler_capacity_setting_releases_an_obsolete_dispatch_window(

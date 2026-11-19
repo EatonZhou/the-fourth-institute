@@ -289,6 +289,15 @@ def test_queued_check_explains_target_account_quota_without_resubmission(check_s
     assert result["log"] == ""
 
 
+def test_expired_account_check_reports_timeout_as_terminal(check_snapshot):
+    snapshot, _ = check_snapshot
+    snapshot.update(status="cancelled", result={"error_code": "account_check_deadline"})
+    check = setup.check_result(invoke(account_id="existing", execution_id="execution_test"))["check"]
+    assert check["status"] == "cancelled" and not check["passed"]
+    assert check["diagnostic"]["reason"] == "check_deadline"
+    assert "超时结束" in check["message"]
+
+
 @pytest.mark.parametrize("http_status,kind,reason,action", [
     (401, "http_error", "authentication", "API Key"),
     (403, "http_error", "access_denied", "权限"),

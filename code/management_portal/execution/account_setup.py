@@ -19,6 +19,7 @@ from .contracts import ExecutionRequest, SessionOptions
 from .provider_catalog import AGENT_PROVIDERS
 from .activity_redaction import redact_sensitive_mapping
 from .provider_failures import failure_code, is_egress_block_failure, is_network_failure, is_usage_limit_failure
+from .scheduler_rows import ACCOUNT_CHECK_DEADLINE_CODE
 from management_portal.provider_transport_diagnostics import sanitize_transport_observation
 
 logger = logging.getLogger(__name__)
@@ -246,6 +247,7 @@ _CHECK_FAILURES = {
     "provider_unavailable": ("测试未通过：服务商或网关暂时不可用。", "请稍后重试；若持续出现，请联系接口服务商并提供下方 HTTP 状态码。"),
     "request_rejected": ("测试未通过：服务商不接受本次请求。", "请核对模型名称和接口协议是否匹配所选 Agent 运行器；不要仅因此更换 API Key。"),
     "timeout": ("测试未通过：等待服务商响应超时。", "请检查运行 Portal 的电脑能否连接服务商、网络代理是否正常，再重试。"),
+    "check_deadline": ("接入测试已超时结束。", "请检查账号额度、运行环境与网络状态后重试。"),
     "tls": ("测试未通过：无法建立安全连接。", "请检查运行 Portal 的电脑的系统时间、证书与代理配置，不要关闭证书校验。"),
     "network": ("测试未通过：Portal 无法连接服务商。", "请检查运行 Portal 的电脑的网络、Base URL 和代理配置，再重试。"),
     "invalid_response": ("测试未通过：接口返回了无法解析的响应。", "请确认 Base URL 指向模型 API，接口协议与所选运行器匹配，而非网页或登录页。"),
@@ -264,7 +266,9 @@ def _check_failure(snapshot, row):
     kind = transport.get("error_kind")
     code = failure_code(result)
     status = snapshot.get("status")
-    if status == "cancelled" or result.get("status") == "cancelled":
+    if code == ACCOUNT_CHECK_DEADLINE_CODE:
+        reason = "check_deadline"
+    elif status == "cancelled" or result.get("status") == "cancelled":
         reason = "cancelled"
     elif status == "completed" and not (result.get("error") or result.get("error_code")) and result.get("status") != "failed":
         reason = "empty_reply"

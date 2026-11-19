@@ -12,6 +12,15 @@ from .provider_catalog import AGENT_PROVIDERS
 
 ACTIVE_STATUSES = ("claimed", "running")
 
+# Onboarding checks are disposable probes. Use the durable enqueue time and
+# the existing check metadata so old checks and checks with no open UI expire too.
+ACCOUNT_CHECK_DEADLINE_SECONDS = 180
+ACCOUNT_CHECK_DEADLINE_CODE = "account_check_deadline"
+ACCOUNT_CHECK_DEADLINE_SQL = f"""
+    (NULLIF(request_json::jsonb #>> '{{metadata,provider_account_check,account_id}}', '') IS NOT NULL
+     AND created_at <= statement_timestamp() - interval '{ACCOUNT_CHECK_DEADLINE_SECONDS} seconds')
+"""
+
 
 def compact_json(value: object) -> str:
     return json_text(value, ensure_ascii=False, separators=(",", ":"), sort_keys=True)

@@ -12,7 +12,7 @@ from .contracts import TERMINAL_STATUSES, ExecutionRequest, execution_timestamp
 from .scheduler_capacity import SchedulerCapacity
 from .scheduler_changes import SchedulerChanges
 from .scheduler_recovery import LeaseRecovery
-from .scheduler_rows import compact_json, json_object, turn_kept_running
+from .scheduler_rows import compact_json, json_object
 from .scheduler_views import SchedulerViews
 
 
@@ -307,46 +307,7 @@ class ExecutionQueue:
                 connection.commit()
                 return self.views.snapshot(execution_id)
             details = {"actor": performer, "request_actor": actor, "reason": str(reason or ""), "identity": OperationIdentity.for_actor(performer).to_dict()}
-            checkpoint = json_object(row["checkpoint_json"])
-            if status == "queued" and isinstance(checkpoint.get("abandoned"), dict):
-                # A lost Worker's Provider work waits to be interrupted; the
-                # execution still ends only after that, now as cancelled.
-                connection.execute(
-                    'UPDATE executions SET checkpoint_json = %s, updated_at = %s WHERE execution_id = %s',
-                    (compact_json({**checkpoint, "abandoned": {**checkpoint["abandoned"], "status": "cancelled"}}),
-                     execution_timestamp(), execution_id),
-                )
-                self.changes.event(connection, execution_id, "cancellation_requested", details)
-            elif status == "queued" and turn_kept_running(checkpoint):
-                # A Worker handover left this turn running in the Provider; a
-                # Worker interrupts it before the execution ends as cancelled.
-                abandoned = {
-                    "status": "cancelled",
-                    "error": str(reason or "execution cancelled during worker handover"),
-                    "previous_worker_id": str((checkpoint.get("worker_handover") or {}).get("worker_id") or ""),
-                }
-                connection.execute(
-                    'UPDATE executions SET checkpoint_json = %s, updated_at = %s WHERE execution_id = %s',
-                    (compact_json({**checkpoint, "resumable": False, "abandoned": abandoned}), execution_timestamp(), execution_id),
-                )
-                self.changes.event(connection, execution_id, "cancellation_requested", details)
-            elif status == "queued":
-                self.recovery.finalize_released_cancellation(
-                    connection, row,
-                    error=str(reason or "cancelled before execution"),
-                    details=details,
-                )
-            else:
-                connection.execute(
-                    "\n                    UPDATE executions\n                    SET cancel_requested = '1', updated_at = %s\n                    WHERE execution_id = %s\n                    ",
-                    (execution_timestamp(), execution_id),
-                )
-                self.changes.event(
-                    connection,
-                    execution_id,
-                    "cancellation_requested",
-                    details,
-                )
+            self.recovery.request_cancellation(connection, row, details=details)
             connection.commit()
         self.changes.notify("control")
         return self.views.snapshot(execution_id)

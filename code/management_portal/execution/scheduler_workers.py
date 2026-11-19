@@ -377,6 +377,7 @@ class WorkerRegistry:
         """
         with self.changes.connect() as connection:
             rebased = recover_dispatch_clock(connection, now_epoch=time.time())
+            expired_account_checks = self.recovery.expire_account_checks(connection)
             recovered = self.recovery.recover_expired(connection)
             pruned_workers = self._prune_stale_workers(connection)
             connection.commit()
@@ -387,7 +388,7 @@ class WorkerRegistry:
         }
         with self.changes.lock:
             self._last_maintenance_result = result
-        if recovered or pruned_workers or any(rebased.values()):
+        if expired_account_checks or recovered or pruned_workers or any(rebased.values()):
             self.changes.notify("execution", "claim", "control")
         return dict(result)
 

@@ -11,7 +11,7 @@ from .contracts import execution_timestamp
 from .scheduler_admission import Admission, record_actor_dispatch
 from .scheduler_capacity import ActiveRequests, SchedulerCapacity
 from .scheduler_changes import SHARED_SCHEDULER_POLL_SECONDS, SchedulerChanges
-from .scheduler_rows import json_object, row_payload
+from .scheduler_rows import ACCOUNT_CHECK_DEADLINE_SQL, json_object, row_payload
 
 
 def _try_binding_claim(connection: Any, binding_id: str) -> bool:
@@ -56,7 +56,19 @@ class Claims:
                 return False
         # A row another claim is taking is skipped instead of waited for.
         return connection.execute(
-            "\n            UPDATE executions\n            SET status = 'claimed', owner_worker_id = %s, claim_token = %s,\n                lease_expires_at = %s, available_at = 'epoch'::timestamptz,\n                attempts = attempts + 1, updated_at = %s\n            WHERE execution_id = (\n                SELECT execution_id FROM executions\n                WHERE execution_id = %s AND status = 'queued' AND cancel_requested = '0'\n                FOR UPDATE SKIP LOCKED\n            )\n            ",
+            f"""
+            UPDATE executions
+            SET status = 'claimed', owner_worker_id = %s, claim_token = %s,
+                lease_expires_at = %s, available_at = 'epoch'::timestamptz,
+                attempts = attempts + 1, updated_at = %s
+            WHERE execution_id = (
+                SELECT execution_id FROM executions
+                WHERE execution_id = %s AND status = 'queued' AND cancel_requested = '0'
+                  AND (jsonb_typeof(checkpoint_json::jsonb->'abandoned') = 'object'
+                       OR NOT {ACCOUNT_CHECK_DEADLINE_SQL})
+                FOR UPDATE SKIP LOCKED
+            )
+            """,
             (worker_id, token, lease_expires_at, now, str(row["execution_id"])),
         ).rowcount == 1
 

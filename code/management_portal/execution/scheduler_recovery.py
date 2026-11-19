@@ -8,7 +8,10 @@ from management_common.database_time import instant
 
 from .contracts import ExecutionResult, execution_timestamp
 from .scheduler_changes import SchedulerChanges
-from .scheduler_rows import compact_json, json_object, turn_kept_running
+from .scheduler_rows import (
+    ACCOUNT_CHECK_DEADLINE_CODE, ACCOUNT_CHECK_DEADLINE_SQL,
+    compact_json, json_object, turn_kept_running,
+)
 from .recovery_checkpoint import checkpoint_resumable
 
 
@@ -31,6 +34,7 @@ class LeaseRecovery:
         *,
         error: str,
         details: dict[str, Any],
+        error_code: str = "",
     ) -> None:
         """Commit cancellation only when no live claim must finish it first.
 
@@ -43,6 +47,7 @@ class LeaseRecovery:
             execution_id=execution_id,
             status="cancelled",
             error=error,
+            error_code=error_code,
             backend_session_id=str(checkpoint.get("backend_session_id") or ""),
         ).to_payload())
         now = execution_timestamp()
@@ -55,6 +60,63 @@ class LeaseRecovery:
             (now, execution_id),
         )
         self.changes.event(connection, execution_id, "cancelled", details)
+
+    def request_cancellation(self, connection: Any, row: Any, *,
+                             details: dict[str, Any], error_code: str = "") -> None:
+        """Cancel a locked nonterminal row, retaining any live Provider turn for interruption."""
+        execution_id = str(row["execution_id"])
+        checkpoint = json_object(row["checkpoint_json"])
+        reason = details["reason"]
+        now = execution_timestamp()
+        if row["status"] == "queued":
+            abandoned = checkpoint.get("abandoned")
+            if isinstance(abandoned, dict):
+                checkpoint = {**checkpoint, "abandoned": {**abandoned, "status": "cancelled"}}
+            elif turn_kept_running(checkpoint):
+                abandoned = {
+                    "status": "cancelled",
+                    "error": reason or "execution cancelled during worker handover",
+                    "previous_worker_id": str((checkpoint.get("worker_handover") or {}).get("worker_id") or ""),
+                }
+                checkpoint = {**checkpoint, "resumable": False, "abandoned": abandoned}
+            else:
+                self.finalize_released_cancellation(
+                    connection, row, error=reason or "cancelled before execution",
+                    details=details, error_code=error_code,
+                )
+                return
+            connection.execute(
+                "UPDATE executions SET checkpoint_json = %s, updated_at = %s WHERE execution_id = %s",
+                (compact_json(checkpoint), now, execution_id),
+            )
+        else:
+            connection.execute(
+                "UPDATE executions SET cancel_requested = '1', updated_at = %s WHERE execution_id = %s",
+                (now, execution_id),
+            )
+        self.changes.event(connection, execution_id, "cancellation_requested", details)
+
+    def expire_account_checks(self, connection: Any) -> int:
+        """Settle account probes even if every Worker and browser is offline."""
+        rows = connection.execute(
+            f"""
+            SELECT execution_id, status, checkpoint_json, usage_accounted_json
+            FROM executions
+            WHERE status IN ('queued', 'claimed', 'running') AND cancel_requested = '0'
+              AND {ACCOUNT_CHECK_DEADLINE_SQL}
+              AND (checkpoint_json::jsonb #>> '{{abandoned,status}}') IS DISTINCT FROM 'cancelled'
+            ORDER BY created_at
+            LIMIT 100
+            FOR UPDATE SKIP LOCKED
+            """,
+        ).fetchall()
+        for row in rows:
+            self.request_cancellation(
+                connection, row,
+                details={"reason": "account check deadline exceeded", "code": ACCOUNT_CHECK_DEADLINE_CODE},
+                error_code=ACCOUNT_CHECK_DEADLINE_CODE,
+            )
+        return len(rows)
 
     def requeue_abandoned_provider_work(
         self, connection: Any, row: Any, *,
