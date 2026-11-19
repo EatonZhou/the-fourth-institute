@@ -67,7 +67,7 @@
         if (!button) return;
         event.preventDefault();
         event.stopPropagation();
-        togglePaperFavorite(button.dataset.paperFavorite).catch(alertError);
+        togglePaperFavorite(button.dataset.paperFavorite, button).catch(alertError);
       }, true);
       $("refreshBtn").addEventListener("click", () => refreshCurrentLeftFace().catch(alertError));
       $("collectorForm").addEventListener("submit", event => submitCollector(event).catch(alertError));

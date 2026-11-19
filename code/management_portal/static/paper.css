@@ -773,7 +773,13 @@ body {
 .paperPersonal [data-status]:empty { display: none; }
 .paperPersonalFilters { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; margin: 8px 0; }
 .paperPersonalFilters label { display: grid; gap: 4px; min-width: 0; font-size: 12px; }
-.paperPersonalFilters label:first-child { grid-column: 1 / -1; }
+.paperPersonalFilters .paperArchiveLayout, .paperPersonalFilters label:has([data-personal-query]) { grid-column: 1 / -1; }
+.paperPersonalFilters [data-archive-field][hidden] { display: none; }
+.paperPersonalFilters button[data-new-archive] { grid-column: auto; align-self: end; }
+.paperArchiveMenu { position: fixed; inset: auto; margin: 0; box-sizing: border-box; width: min(17rem, calc(100vw - 8px)); overflow: auto; padding: 6px; background: var(--panel, white); color: var(--text); border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 4px 18px #0002; }
+.paperArchiveMenu label { display: flex; align-items: center; gap: 8px; padding: 6px 8px; cursor: pointer; overflow-wrap: anywhere; }
+.paperArchiveMenu label:hover, .paperArchiveMenu label:focus-within { background: var(--panel-2); }
+.paperArchiveMenu input { width: auto; flex: none; }
 .paperPersonalFilters .portalControl { width: 100%; min-width: 0; box-sizing: border-box; }
 .paperPersonalFilters button { justify-self: start; grid-column: 1 / -1; }
 .searchWrap > .paperLibraryQueryGroup { border-top: 1px solid var(--border, #cbd5e1); padding-top: 8px; margin-top: 2px; }

@@ -184,7 +184,7 @@ def list_library(params: dict | None = None, *, actor: str = "") -> dict:
         options = {"year": str(params.get("year") or "").strip(),
                    "analysis": str(params.get("analysis") or "").strip().lower()}
         if str(params.get("favorite") or "").strip().lower() in {"1", "true", "yes", "on"}:
-            options["ids"] = paper_favorites.favorite_ids(actor)
+            options["ids"] = paper_favorites.favorite_ids(actor, params.get("archive", ""))
         rows = resource_index_paper_rows(
             actor=actor, options=options,
             offset=_paper_library_page_number(params.get("offset"), 0, 2**63 - 1),
@@ -197,7 +197,7 @@ def list_library(params: dict | None = None, *, actor: str = "") -> dict:
     with LOCK:
         visible = _filter_papers(papers, params or {})
     if str(params.get("favorite") or "").strip().lower() in {"1", "true", "yes", "on"}:
-        selected = set(favorites)
+        selected = set(paper_favorites.favorite_ids(actor, params["archive"]) if params.get("archive") else favorites)
         visible = [paper for paper in visible if paper.get("id") in selected]
     semantic_summary = semantic_view["summary"] if semantic_view else None
     semantic_results = semantic_view["result_map"] if semantic_view else {}
@@ -293,7 +293,9 @@ def api_docs() -> dict:
             {"method": "GET", "path": "/paper/api/highlights?id=&document=", "purpose": "Read the authenticated actor's highlights for one visible Paper and PDF fingerprint."},
             {"method": "POST", "path": "/paper/api/highlights", "purpose": "Save personal highlights with {paper_id, document, operation:add, highlight:{id,text,rects:[{page,x,y,width,height}]}} or delete with operation:delete and id. Coordinates are page-relative 0–1; each request checks Paper read access."},
             {"method": "GET", "path": "/paper/api/library", "purpose": "List visible papers, filters, folder tree, workflow metadata, and the current actor's favorite_ids. favorite=1 intersects favorites with other filters."},
-            {"method": "POST", "path": "/paper/api/favorites", "purpose": "Set the authenticated actor's personal Paper favorite with {paper_id, favorite: boolean}. Adding requires read access; removal remains possible after access loss."},
+            {"method": "GET", "path": "/paper/api/archives", "purpose": "List personal archives with membership for an optional paper_id."},
+            {"method": "POST", "path": "/paper/api/archives", "purpose": "Create a named personal archive with {name}."},
+            {"method": "POST", "path": "/paper/api/favorites", "purpose": "Set membership with {paper_id, favorite: boolean, archive?: string}. Omitting archive selects the original favorites collection. Adding requires read access; removal remains possible after access loss."},
             {"method": "GET", "path": "/paper/api/papers/detail?id=...", "purpose": "Load one paper, analysis markdown, PDF URL, and reviews."},
             {"method": "POST", "path": "/paper/api/deep-read/provenance", "purpose": "Refresh the latest completed Analysis provenance from original input/reply usage with {paper_id, job_id, expected_analysis_sha256}. Requires contributor, preserves body and generation time, and never invokes a model."},
             {"method": "GET", "path": "/paper/api/papers/provenance-candidates", "purpose": "Inventory existing nonempty analysis and summary artifacts independently of Deep Read jobs, including artifact and usage digests."},

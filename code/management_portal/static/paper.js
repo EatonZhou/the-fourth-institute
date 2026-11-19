@@ -463,7 +463,7 @@
     uploadPaperRegistrationPdf, writeUiState,
   });
 
-  window.PortalPaperPersonal.mount({state, paperApi, loadDetail, setMode, syncFavoriteButtons, renderTree, loadLibrary});
+  window.PortalPaperPersonal.mount({state, paperApi, loadDetail, setMode, syncFavoriteButtons, renderTree, renderLibraryMode, loadLibrary});
   // Identity preferences can arrive after the first projection. Refresh chrome
   // in place: never reopen the PDF or replace a task/note/figure input draft.
   window.addEventListener("portal:language-changed", () => {

@@ -1,4 +1,14 @@
 {
+  "个人档案": {"en": "Archives", "zh-CN": "个人档案"},
+  "新建档案": {"en": "New archive", "zh-CN": "新建档案"},
+  "排布方式": {"en": "Group by", "zh-CN": "排布方式"},
+  "出版地点 → 年份": {"en": "Venue → Year", "zh-CN": "出版地点 → 年份"},
+  "年份 → 出版地点": {"en": "Year → Venue", "zh-CN": "年份 → 出版地点"},
+  "标签 → 年份": {"en": "Tag → Year", "zh-CN": "标签 → 年份"},
+  "默认收藏": {"en": "Favorites", "zh-CN": "默认收藏"},
+  "档案名称": {"en": "Archive name", "zh-CN": "档案名称"},
+  "添加到档案": {"en": "Add to archive", "zh-CN": "添加到档案"},
+  "添加到 {p0} 档案": {"en": "Add to archive · {p0}", "zh-CN": "添加到 {p0} 档案"},
   "{p0} paper": {"en": "{p0} paper", "zh-CN": "{p0} 篇论文"},
 
   "{p0}s": {"en": "{p0}s", "zh-CN": "{p0}秒"},

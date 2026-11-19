@@ -41,6 +41,22 @@ def test_favorites_persist_by_actor_and_concurrent_updates_are_not_lost(resource
     assert paper_favorites.favorite_ids("bob") == [OTHER]
 
 
+def test_named_archives_are_independent_and_private(resources):
+    paper_favorites.set_favorite("alice", PAPER, True)
+    for name in ("A", "B"):
+        paper_favorites.create_archive("alice", name)
+        paper_favorites.create_archive("alice", name)
+        paper_favorites.set_favorite("alice", PAPER, True, name)
+    paper_favorites.set_favorite("alice", PAPER, False, "A")
+    assert paper_favorites.archives("alice", PAPER) == [
+        {"name": "", "saved": True}, {"name": "A", "saved": False}, {"name": "B", "saved": True},
+    ]
+    assert paper_favorites.favorite_ids("alice", "B") == [PAPER]
+    assert paper_favorites.archives("bob", PAPER) == [{"name": "", "saved": False}]
+    with pytest.raises(ValueError):
+        paper_favorites.set_favorite("bob", PAPER, True, "B")
+
+
 def test_add_checks_access_but_removal_survives_resource_access_loss(resources):
     """收藏论文时检查访问权限，失去访问权后仍可取消收藏"""
     paper_favorites.set_favorite("alice", PAPER, True)

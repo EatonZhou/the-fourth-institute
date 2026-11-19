@@ -187,7 +187,7 @@
         return;
       }
       if (paper) {
-        target.innerHTML = '';
+        target.innerHTML = window.PortalI18n.html`<button class="portalButton is-compact" type="button" data-paper-favorite="${esc(paper.id)}" aria-haspopup="dialog">${window.PortalI18n.t('添加到档案')}</button>`;
         return;
       }
       target.innerHTML = "";

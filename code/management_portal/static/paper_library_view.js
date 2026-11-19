@@ -212,47 +212,18 @@
     }
 
     function paperFavoriteButton(paperId) {
-      const favorite = state.favoriteIds.has(paperId);
-      const label = favorite ? window.PortalI18n.t("取消收藏") : window.PortalI18n.t("收藏论文");
-      return window.PortalI18n.html`<button class="portalButton is-icon is-quiet paperFavorite" type="button" data-paper-favorite="${esc(paperId)}" aria-pressed="${favorite}" aria-label="${label}" title="${label}" ${state.favoritePending.has(paperId) ? "disabled" : ""}>${favorite ? "★" : "☆"}</button>`;
+      const label = window.PortalI18n.t("添加到档案");
+      return window.PortalI18n.html`<button class="portalButton is-icon is-quiet paperFavorite" type="button" data-paper-favorite="${esc(paperId)}" aria-haspopup="dialog" aria-label="${label}" title="${label}">⊞</button>`;
     }
 
     function syncFavoriteButtons() {
       document.querySelectorAll("[data-paper-favorite]").forEach(button => {
-        const id = button.dataset.paperFavorite;
-        const favorite = state.favoriteIds.has(id);
-        const label = favorite ? window.PortalI18n.t("取消收藏") : window.PortalI18n.t("收藏论文");
-        button.setAttribute("aria-pressed", String(favorite));
-        button.setAttribute("aria-label", label);
-        button.title = label;
-        button.textContent = favorite ? "★" : "☆";
-        button.disabled = state.favoritePending.has(id);
+        button.disabled = state.favoritePending.has(button.dataset.paperFavorite);
       });
     }
 
-    async function togglePaperFavorite(paperId) {
-      if (!paperId || state.favoritePending.has(paperId)) return;
-      state.favoritePending.add(paperId);
-      state.favoriteRevision += 1;
-      syncFavoriteButtons();
-      let saved = false;
-      try {
-        const result = await paperApi.request("/paper/api/favorites", {
-          method: "POST",
-          body: { paper_id: paperId, favorite: !state.favoriteIds.has(paperId) },
-        });
-        if (result.favorite) state.favoriteIds.add(paperId);
-        else state.favoriteIds.delete(paperId);
-        window.dispatchEvent(new CustomEvent("portal:paper-favorite-changed"));
-        saved = true;
-      } finally {
-        state.favoriteRevision += 1;
-        state.favoritePending.delete(paperId);
-        syncFavoriteButtons();
-      }
-      if (saved && state.filters.favorite === "1") {
-        await loadLibrary({ keepDetail: true, hydrateDetail: false });
-      }
+    function togglePaperFavorite(paperId, button) {
+      return window.PortalPaperPersonal.openArchivePicker(paperId, button);
     }
 
     function renderPaperRow(paper) {

@@ -33,7 +33,7 @@
           if(!['search','collector'].includes(route.kind))state.paperOverview={...state.library?.summary};
           if(['recent','favorites'].includes(route.scope)){
             const papers=[];let cursor='',offset=0,more=true;
-            while(more){const result=await paperApi.request(route.scope==='recent'?`/paper/api/recent-reading?limit=50&cursor=${encodeURIComponent(cursor)}`:`/paper/api/library?compact=1&rows_only=1&favorite=1&limit=50&offset=${offset}`);if(request!==sequence)return false;papers.push(...result.papers);offset=papers.length;cursor=result.next_cursor||'';more=route.scope==='recent'?!!cursor:result.papers.length===50;}
+            while(more){const result=await paperApi.request(route.scope==='recent'?`/paper/api/recent-reading?limit=50&cursor=${encodeURIComponent(cursor)}`:`/paper/api/library?compact=1&rows_only=1&favorite=1&archive=${encodeURIComponent(state.paperArchive || '')}&limit=50&offset=${offset}`);if(request!==sequence)return false;papers.push(...result.papers);offset=papers.length;cursor=result.next_cursor||'';more=route.scope==='recent'?!!cursor:result.papers.length===50;}
             state.library={...state.library,papers,summary:{...state.library.summary,personal_scope:route.scope,visible_count:papers.length}};
             (state.paperPersonalLists||={})[route.scope]=papers;
           }

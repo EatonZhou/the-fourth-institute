@@ -164,7 +164,7 @@ class PaperHttp:
 
     def favorite(self, request, payload, actor):
         return self.respond(request, 200, paper_favorites.set_favorite(
-            actor, payload.get("paper_id"), payload.get("favorite"),
+            actor, payload.get("paper_id"), payload.get("favorite"), payload.get("archive", ""),
         ))
 
     def bibtex_export(self, request, payload, actor):
@@ -371,6 +371,12 @@ def routes(portal):
         ("POST", "research/chats/select", backend(paper_chat_research, "select_chat")),
         ("POST", "research/chats/retry", backend(paper_chat_research, "retry_chat")),
         ("POST", "research/chats/rename", backend(paper_chat_research, "rename_chat")),
+        ("GET", "archives", get(lambda request, qs, actor: http.respond(request, 200, {
+            "archives": paper_favorites.archives(actor, http._query_params(qs).get("paper_id", "")),
+        }))),
+        ("POST", "archives", http.personal_post_route(lambda request, payload, actor: http.respond(
+            request, 200, paper_favorites.create_archive(actor, payload.get("name")),
+        ))),
         ("GET", "library", get(http.library)),
         ("POST", "favorites", http.personal_post_route(http.favorite)),
         ("POST", "bibtex/export", http.personal_post_route(http.bibtex_export)),

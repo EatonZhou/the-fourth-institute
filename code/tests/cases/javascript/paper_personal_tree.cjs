@@ -7,10 +7,23 @@ const {chromium,firefox}=require('../../../management_portal/test_framework/tau_
  for(const file of ['paper_library_view.js','paper_personal.js'])await page.addScriptTag({path:path.resolve(__dirname,'../../../management_portal/static',file)});
  await page.evaluate(()=>{
  window.PortalI18n={t:x=>x,html:(s,...v)=>s.reduce((a,x,i)=>a+x+(v[i]??''),'')};window.calls=[];window.opens=[];window.reader=document.querySelector('#reader');
+ window.PortalI18n.text=window.PortalI18n.html;
  window.state={principalId:'A',selectedId:'p0',favoriteIds:new Set(),favoritePending:new Set(),paperTreeExpansion:{},paperTreeRenderLimit:200};
  const papers=Array.from({length:51},(_,i)=>({id:'p'+i,title:'Synthetic recent '+i,venue:'CoRL',year:2026,session:i<50?'General':'RoboLab',has_pdf:true}));
  const esc=x=>String(x).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('"','&quot;');
- const api={request:async(url,opts)=>{calls.push(url);if(opts)return {favorite:false};if(state.principalId==='B')throw Error('synthetic denied');return url.includes('recent-reading')?(url.includes('cursor=next')?{papers:papers.slice(50),next_cursor:''}:{papers:papers.slice(0,50),next_cursor:'next'}):{papers:papers.slice(0,2)};}};
+ const archives=new Map([['',new Set(['p0','p1'])]]);
+ const api={request:async(url,opts)=>{
+   calls.push(url);
+   if(state.principalId==='B')throw Error('synthetic denied');
+   const params=new URL(url,'http://localhost').searchParams;
+   if(url.startsWith('/paper/api/archives')){
+     if(opts){archives.set(opts.body.name,new Set());return {name:opts.body.name};}
+     return {archives:[...archives].map(([name,ids])=>({name,saved:ids.has(params.get('paper_id'))}))};
+   }
+   if(opts){const {paper_id,archive,favorite}=opts.body;const ids=archives.get(archive);if(favorite)ids.add(paper_id);else ids.delete(paper_id);return {favorite};}
+   if(url.includes('recent-reading'))return url.includes('cursor=next')?{papers:papers.slice(50),next_cursor:''}:{papers:papers.slice(0,50),next_cursor:'next'};
+   return {papers:papers.filter(p=>archives.get(params.get('archive')||'').has(p.id))};
+ }};
  const deps=Object.fromEntries(PortalPaperLibraryView.dependencies.map(k=>[k,()=>{}]));Object.assign(deps,{$:id=>document.getElementById(id),state,paperApi:api,esc,disclosureIcon:e=>e?'▾':'▸',paperStateHtml:x=>x,isCollectionMode:()=>false});
  const view=PortalPaperLibraryView.createLibraryView(deps);
  PortalPaperPersonal.mount({state,paperApi:api,renderTree:view.renderTree,syncFavoriteButtons:view.syncFavoriteButtons,loadDetail:async id=>opens.push(id),setMode:()=>{}});
@@ -37,12 +50,15 @@ const {chromium,firefox}=require('../../../management_portal/test_framework/tau_
  assert.equal(await page.locator('[data-personal-query]').inputValue(),'absent-keyword');
  await page.locator('[data-personal-clear]').click();
  assert.equal(await page.locator('[data-row]').count(),51);
- assert.equal(await page.evaluate(()=>calls.length),initialCalls+1,'filters do not issue requests');
+ assert.equal(await page.evaluate(()=>calls.length),initialCalls+2,'filters do not issue requests');
  await page.locator('[data-paper-tree-toggle]').first().click();
  await page.locator('[data-view=favorites]').click();await page.waitForFunction(()=>document.querySelectorAll('[data-row]').length===2);
  assert.equal(await page.locator('.folderCount').first().textContent(),'2');
  await page.locator('[data-personal-query]').fill('recent 0');
- await page.locator('[data-rows] [data-paper-favorite]').first().click();await page.waitForFunction(()=>document.querySelectorAll('[data-row]').length===0);
+ await page.locator('[data-rows] [data-paper-favorite]').first().click();
+ await page.locator('.paperArchiveMenu input').first().uncheck();
+ await page.waitForFunction(()=>document.querySelectorAll('[data-row]').length===0);
+ await page.keyboard.press('Escape');
  assert.equal(await page.locator('[data-status]').textContent(),'没有符合筛选条件的论文');
  await page.locator('[data-personal-clear]').click();
  assert.equal(await page.locator('.folderCount').first().textContent(),'1');
@@ -51,6 +67,20 @@ const {chromium,firefox}=require('../../../management_portal/test_framework/tau_
  await page.locator('[data-scope=repository]').click();assert.equal(await page.locator('#folderTree').textContent(),'UNCHANGED GLOBAL TREE');
  await page.locator('[data-scope=personal]').click();
  assert(await page.evaluate(()=>reader===document.querySelector('#reader')&&opens.length===0&&document.querySelector('#chat').textContent==='UNCHANGED CHAT'));
+ await page.locator('[data-layout]').selectOption('year');
+ assert.equal(await page.locator('[data-paper-tree-toggle] strong').first().textContent(),'2026');
+ page.once('dialog',dialog=>dialog.accept('Robotics'));
+ await page.locator('[data-new-archive]').click();
+ await page.waitForFunction(()=>document.querySelector('[data-archive]').value==='Robotics');
+ assert.equal(await page.locator('[data-row]').count(),0);
+ await page.locator('[data-view=recent]').click();
+ await page.locator('[data-row=p1] [data-paper-favorite]').click();
+ await page.locator('.paperArchiveMenu input').nth(1).check();
+ assert(await page.locator('.paperArchiveMenu input').first().isChecked());
+ await page.keyboard.press('Escape');
+ await page.locator('[data-view=favorites]').click();
+ await page.waitForFunction(()=>document.querySelector('[data-row=p1]'));
+ assert.equal(await page.locator('[data-row]').count(),1);
  await page.addStyleTag({path:path.resolve(__dirname,'../../../management_portal/static/paper.css')});
  assert.equal(await page.locator('[data-heading]').isVisible(),false);
  assert.equal(await page.locator('[data-personal-query]').evaluate(el=>el.closest('label').querySelector('span').textContent),'搜索');
