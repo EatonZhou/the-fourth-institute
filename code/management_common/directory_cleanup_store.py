@@ -25,6 +25,18 @@ class DirectoryPendingCleanup(FileExistsError):
 def initialize_directory_schema(connection, schema):
     table = f'"{schema}".cleanup'
     reservations = f'"{schema}".path_reservations'
+    # Installed stores can be opened inside an owner transaction which already
+    # holds cleanup:paths. Taking :init here would invert the installer->paths
+    # order used by a concurrent cleanup enqueue. Only installation needs that
+    # lock; use current catalog facts (not a process cache) for ordinary opens.
+    # Do not resolve absent relation names before a concurrent installer
+    # commits: a cached negative namespace lookup can survive the lock wait.
+    installed = connection.execute('''SELECT count(*)=2 FROM pg_class c
+        JOIN pg_namespace n ON n.oid=c.relnamespace
+        WHERE n.nspname=%s AND c.relname IN ('cleanup','path_reservations')''',
+        (schema,)).fetchone()[0]
+    if installed:
+        return
     connection.execute('SELECT pg_advisory_xact_lock(hashtextextended(%s,0))', (table + ':init',))
     if connection.execute('SELECT to_regclass(%s)', (table,)).fetchone()[0] is not None:
         if connection.execute('SELECT to_regclass(%s)', (reservations,)).fetchone()[0] is None:
