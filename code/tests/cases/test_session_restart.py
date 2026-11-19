@@ -1283,20 +1283,23 @@ def test_native_to_model_api_migration_saves_configuration_without_model_call(mo
     assert len(detached) == 1
 
 
-def test_model_api_to_native_migration_initializes_with_visible_conversation(monkeypatch):
-    """模型 API 迁移到原生后端时用可见会话初始化"""
+def test_model_api_to_native_switch_freezes_visible_conversation_for_first_input(monkeypatch):
+    """模型 API 切换到固定原生账号时，为首条真实输入冻结可见对话。"""
     from management_portal.execution.account_adapters import CodexAccounts
-    record, operations, saved = _model_api_restart(monkeypatch)
+    record, operations, _ = _model_api_restart(monkeypatch)
     monkeypatch.setattr(CodexAccounts, 'catalog', lambda self, account:
                         codex_runtime_settings.codex_runtime_catalog(account_id=account.account_id))
     record.update(backend='provider_api', backend_route_id='test-api')
     monkeypatch.setattr(resident_backend, 'session_record', lambda *a, **k: {})
     result = resident_domain.restart_resident_session(record['resident_id'], 'alice', {'target_provider': 'codex', 'target_account': 'zero', 'model': 'gpt-6-astra', 'context_strategy': 'visible'})
-    assert result['status'] == 'accepted'
+    assert result['status'] == 'completed' and result['configuration_only']
+    assert result['context_result'] == 'pending_first_input' and not result['model_operation']
     assert result['source']['provider'] == 'provider_api'
-    assert operations[0]['backend'] == 'codex'
-    assert 'old request' in operations[0]['prompt'] and 'old result' in operations[0]['prompt']
-    assert record['backend'] == 'provider_api'  # remains until native initialization succeeds
+    assert (record['backend'], record['backend_route_id']) == ('codex', 'zero')
+    assert record['session_state'] == 'pending_create' and not operations
+    handoff = record['session_restart']['pending_handoff']
+    assert handoff['operation_id'] == result['operation_id']
+    assert 'old request' in handoff['prompt'] and 'old result' in handoff['prompt']
 
 
 def test_model_api_migration_validation_and_save_failure_preserve_binding(monkeypatch):

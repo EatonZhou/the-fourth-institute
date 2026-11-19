@@ -101,7 +101,8 @@ def test_withdraw_and_real_worker_claim_have_only_one_winner(execution):
 
 
 @pytest.fixture
-def resident(monkeypatch, execution):
+def resident(monkeypatch, execution, request):
+    portal_reason = getattr(request, 'param', 'quota_switch')
     scheduler, service, request, args = execution
     store = LineageDataStore()
     transaction = store.transaction
@@ -158,15 +159,15 @@ def resident(monkeypatch, execution):
     store.put_resident_execution_record(RID, job)
     # A cross-Provider migration names its target model; RestartSession admits
     # no other request, so the deferred payload carries it (decision_ccbb1cac24aa).
-    receipt = resident_deferred_restart.schedule(
-        store.resident_record(RID), 'alice',
+    receipt = resident_restart_domain.restart_resident_session(
+        RID, 'alice',
         {'target_provider': 'codex', 'target_account': 'one', 'model': 'gpt-6-astra',
          'context_strategy': 'compact', 'active_execution_policy': 'wait',
          'idempotency_key': 'original-migration'},
-        {'provider': 'claude', 'account_id': 'deepseek_primary'},
-        {'target_provider': 'codex', 'target_account': 'one', 'context_strategy': 'compact',
-         'runtime_settings': {'model': 'gpt-6-astra'}},
+        portal_reason=portal_reason,
     )
+    assert receipt['phase'] == 'waiting_current_execution'
+    assert receipt.get('reason', '') == portal_reason
     return store, repo, operations, receipt, native
 
 
@@ -183,6 +184,8 @@ def test_original_deferred_request_advances_and_preserves_original_input(residen
     assert resident_execution_work.read(pending)['execution_id'] == request.execution_id
     assert repo.input_state(RID, MID)['state'] == 'queued'
     assert pending['intake_open'] is False
+    assert operations[-1]['operation'] == 'turn'
+    assert '[Portal Session Initialization Context]' in operations[-1]['prompt']
     if finish == 'failed':
         native.resume = lambda *a, **k: {'status': 'failed', 'result': {'status': 'failed'}, 'error': 'native preparation failed'}
     elif finish == 'cancelled':
@@ -215,6 +218,33 @@ def test_original_deferred_request_advances_and_preserves_original_input(residen
     assert records[request.execution_id]['status'] == 'cancelled'
     assert records[job['execution_id']]['provider'] == expected_provider
     assert records[job['execution_id']]['status'] == 'preparing'
+
+
+@pytest.mark.parametrize('resident', [''], indirect=True, ids=['manual-fixed-account'])
+def test_manual_deferred_switch_preserves_original_input_without_preparation(resident, execution):
+    store, repo, operations, original, _ = resident
+    scheduler, _, request, _ = execution
+    assert not original['model_operation']
+    assert repo.input_state(RID, MID)['state'] == 'queued'
+    assert not operations
+    # No preparation remains active after the configuration and queue are restored.
+    assert resident_deferred_restart.advance(store.resident_record(RID)) is False
+    current = store.resident_record(RID)
+    state = current['session_restart']
+    assert state['status'] == 'completed' and state['configuration_only']
+    assert state['context_result'] == 'pending_first_input'
+    assert state['restart_id'] == original['restart_id']
+    assert state['request_id'] == original['request_id']
+    assert state['pending_handoff']['operation_id'] == original['operation_id']
+    assert current['backend'] == 'codex' and current['backend_route_id'] == 'one'
+    assert current['intake_open'] and not state.get('deferred') and not operations
+    assert scheduler.snapshot(request.execution_id)['status'] == 'cancelled'
+    job = resident_execution_work.read(current)
+    assert job['user_message_id'] == MID and not job.get('submitted_at')
+    assert job['execution_id'] != request.execution_id
+    assert job['effective_message'] == 'original input'
+    assert [item['user_message_id'] for item in job['queue']] == ['msg_handoff_one', 'msg_handoff_two']
+    assert repo.input_state(RID, MID)['state'] == 'queued'
 
 
 def test_lost_withdraw_reply_is_reconciled_without_terminal_input(resident, execution, monkeypatch):

@@ -26,7 +26,7 @@ def test_a_new_restart_replaces_an_unfinished_one(monkeypatch, isolated_portal_c
         record, operations, saved = _restart_domain(monkeypatch)
         first = resident_domain.restart_resident_session(
             record["resident_id"], "alice",
-            {"target_provider": "codex", "target_account": "one", "context_strategy": "compact"},
+            {"target_provider": "codex", "context_strategy": "compact"},
         )
         assert first["status"] == "accepted"
         first_step = operations[-1]["step"]
@@ -55,11 +55,10 @@ def test_a_new_restart_replaces_an_unfinished_one(monkeypatch, isolated_portal_c
 
         monkeypatch.setattr("time.sleep", coordinator_tick)
 
-        # A different strategy that still prepares a session. (fresh only saves
-        # configuration and creates the session lazily, so it admits no operation.)
+        # This explicit restart uses the current account and prepares a session.
         second = resident_domain.restart_resident_session(
             record["resident_id"], "alice",
-            {"target_provider": "codex", "target_account": "one", "context_strategy": "visible"},
+            {"target_provider": "codex", "context_strategy": "visible"},
         )
 
         assert second["status"] == "accepted"
@@ -83,12 +82,13 @@ def test_the_same_restart_repeated_returns_the_unfinished_one(monkeypatch, isola
     """
     with isolated_portal_case():
         record, operations, _saved = _restart_domain(monkeypatch)
-        body = {"target_provider": "codex", "target_account": "one", "context_strategy": "compact"}
+        body = {"target_provider": "codex", "context_strategy": "compact"}
         first = resident_domain.restart_resident_session(record["resident_id"], "alice", dict(body))
+        assert first["status"] == "accepted" and first["model_operation"]
         monkeypatch.setattr(
             resident_record_domain, "lifecycle_operations",
             lambda: SimpleNamespace(pending=lambda *_: True, enqueue=lambda *_: pytest.fail("no new operation")),
         )
         again = resident_domain.restart_resident_session(record["resident_id"], "alice", dict(body))
-        assert again["restart_id"] == first["restart_id"]
+        assert again == first
         assert len(operations) == 1

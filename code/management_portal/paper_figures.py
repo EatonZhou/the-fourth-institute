@@ -334,13 +334,18 @@ def _prepare_figure_commit(store: RetentionStore, paper: dict, generation: Path,
     """Persist possible commit and replacement intents before touching metadata."""
     root = _paper_root(paper)
     extracted = (_figures_dir(paper) / "extracted").resolve()
+    from management_common.directory_dependencies import prepare_write
     from management_common.directory_paths import cleanup_location
+    from management_common.directory_retention import refresh_artifact
     with store.database.transaction() as connection:
         store.queue.lock(connection)
         # runtime_tmp proves metadata publication has not been attempted. Once
         # object_data, even missing metadata is an uncertain result, not garbage.
+        prepare_write(connection)
+        location = cleanup_location(generation)
         connection.execute(f"UPDATE {store.table} SET category='object_data' WHERE location=%s AND owner_id=%s",
-                           (cleanup_location(generation), _figure_artifact_owner(paper["id"])))
+                           (location, _figure_artifact_owner(paper["id"])))
+        refresh_artifact(connection, location)
         # A referenced generation may also contain rejected duplicate images.
         # Declare its individual outputs before commit so preserving one image
         # does not hide unreferenced files from durable reconciliation.

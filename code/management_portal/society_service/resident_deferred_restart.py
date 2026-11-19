@@ -10,7 +10,7 @@ def pending(record):
     return (record.get("session_restart") or {}).get("deferred") or {}
 
 
-def schedule(record, actor, payload, source, intent, *, portal_reason=""):
+def schedule(record, actor, payload, source, intent, *, model_operation: bool, portal_reason=""):
     from . import resident_domain_common, resident_input_queue_domain, resident_record_domain
     from .resident_session_preservation import request_signature, check_replay
     rid = record["resident_id"]
@@ -30,7 +30,7 @@ def schedule(record, actor, payload, source, intent, *, portal_reason=""):
                  "requested_strategy": intent["context_strategy"], "intent": intent, "previous_session_retained": True}
         state.update(operation=intent.get("operation", "restart"), operation_id=state["restart_id"],
                      request_signature=request_signature(payload), context_result="pending",
-                     model_operation=intent["context_strategy"] in {"compact", "visible"})
+                     model_operation=model_operation)
         if portal_reason:
             state["reason"] = portal_reason
         def commit():

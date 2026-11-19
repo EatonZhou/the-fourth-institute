@@ -2,11 +2,12 @@
 from __future__ import annotations
 
 import copy
+from types import SimpleNamespace
 
 import pytest
 
 from management_portal.society_service import resident_restart_domain as domain
-from management_portal.society_service import resident_backend
+from management_portal.society_service import resident_backend, resident_execution_domain
 from management_portal.society_service.domain_ports import execution_port
 from tests.cases.test_session_restart import _restart_domain
 from management_portal.execution.agent_data_store import AgentDataStore
@@ -251,18 +252,55 @@ def test_switch_options_report_context_limits_without_reducing_context(monkeypat
 
 
 @pytest.mark.parametrize('strategy', ['compact', 'visible'])
-def test_explicit_cross_provider_handoff_prepares_before_changing_source(monkeypatch, isolated_portal_case, strategy):
+def test_explicit_cross_provider_handoff_delivers_with_first_accepted_input(monkeypatch, isolated_portal_case, strategy):
     with isolated_portal_case():
         record, operations, _ = _restart_domain(monkeypatch)
-        original_binding = copy.deepcopy(resident_backend.session_record(record))
-        receipt = domain.restart_resident_session(record['resident_id'], 'alice', {
+        body = {
             'operation': 'restart', 'target_provider': 'claude', 'target_account': 'deepseek_primary',
-            'model': 'deepseek-v4-pro', 'context_strategy': strategy,
-        })
-        assert receipt['status'] == 'accepted' and receipt['model_operation']
+            'model': 'deepseek-v4-pro', 'context_strategy': strategy, 'idempotency_key': 'manual-handoff',
+        }
+        rid = record['resident_id']
+        binding_id = resident_backend.execution_binding_id(record)
+        receipt = domain.restart_resident_session(rid, 'alice', body)
+        assert receipt['status'] == 'completed' and receipt['configuration_only']
+        assert receipt['context_result'] == 'pending_first_input' and not receipt['model_operation']
         assert receipt['context_strategy'] == strategy and receipt['resume_failed_input'] is False
-        assert operations[-1]['operation'] == 'turn'
-        assert resident_backend.session_record(record) == original_binding
+        assert receipt['previous_session_retained']
+        assert resident_backend.session_record(record) == {} and not operations
+        assert (record['backend'], record['backend_route_id']) == ('claude', 'deepseek_primary')
+        assert domain.restart_resident_session(rid, 'alice', body) == receipt
+        frozen = copy.deepcopy(record['session_restart']['pending_handoff'])
+        assert frozen['operation_id'] == receipt['operation_id']
+
+        store = AgentDataStore()
+        monkeypatch.setattr(execution_port, 'sessions',
+                            lambda: SimpleNamespace(has_context=store.binding_has_context))
+        monkeypatch.setattr(resident_execution_domain, '_prepare_resident_prompt',
+                            lambda record, job: {**job, 'actual_sent_prompt': job['effective_message']})
+        job = {'user_message_id': 'msg_first_after_switch', 'effective_message': 'actual user task'}
+        prepare = resident_execution_domain._portable_context_execution
+        first = prepare(record, job)
+        seed = first['fork_context_input']
+        assert first['user_message_id'] == job['user_message_id']
+        assert seed['segments'] == [] and seed['prompt'] == 'actual user task'
+        assert 'old request' in seed['portable_prompt'] and 'old result' in seed['portable_prompt']
+        assert seed['portable_prompt'].endswith('actual user task')
+        assert '[Portal Session Initialization Context]' not in seed['portable_prompt']
+        assert prepare(record, job)['fork_context_input'] == seed
+
+        session = store.ensure_provider_session(
+            provider='claude', backend_route_id='deepseek_primary', backend_session_id='target-session',
+            agent_id=rid, actor_ref='alice',
+        )
+        store.bind_provider_session(binding_id, session['provider_session_ref'])
+        assert prepare(record, job)['fork_context_input'] == seed  # Empty binding has not accepted the input.
+        execution_id = 'execution-first-input-after-manual-switch'
+        store.begin_execution(execution_id=execution_id, agent_id=rid, actor_ref='alice',
+                              provider='claude', started_at='2026-11-19T00:00:00Z')
+        store.bind_execution_provider_session(execution_id, provider_session_ref=session['provider_session_ref'])
+        store.record_input_acceptance(execution_id, agent_id=rid, provider_turn_id='target-first-turn')
+        assert 'fork_context_input' not in prepare(record, job)
+        assert record['session_restart']['pending_handoff'] == frozen and not operations
 
 
 def test_account_switch_freezes_effective_window_without_model(monkeypatch, isolated_portal_case):

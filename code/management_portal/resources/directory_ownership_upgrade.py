@@ -35,6 +35,15 @@ def upgrade_registry(connection, schema):
         sql.SQL('SELECT key FROM {} WHERE key=ANY(%s)').format(meta), ([key, location_key],)).fetchall()}
     if completed == {key, location_key}:
         return 0
+    # A retained registry can already have dependency guards installed. Take
+    # the directory lock before source row locks, as ordinary registry writers
+    # do, and refresh each changed record in this same transaction.
+    from management_common import directory_dependencies as deps
+    from management_common.directory_cleanup_store import DirectoryCleanupStore
+    from .directory_registrations import refresh_directory_dependency
+    if deps.installed(connection):
+        DirectoryCleanupStore(connection=connection).lock(connection)
+    deps.prepare_write(connection)
     table = sql.Identifier(schema, 'registry_documents')
     changed = 0
     for row in connection.execute(sql.SQL(
@@ -51,6 +60,7 @@ def upgrade_registry(connection, schema):
             (sql.Identifier(schema, 'registry_revision_seq').as_string(),)).fetchone()[0]
         connection.execute(sql.SQL('UPDATE {} SET document_json=%s,revision=%s WHERE collection=%s AND document_id=%s')
             .format(table), (Jsonb(after), revision, row['collection'], row['document_id']))
+        refresh_directory_dependency(connection, row['collection'], row['document_id'], after)
         connection.execute(sql.SQL('INSERT INTO {}(collection,revision) VALUES (%s,%s) '
             'ON CONFLICT(collection) DO UPDATE SET revision=EXCLUDED.revision')
             .format(sql.Identifier(schema, 'registry_collections')), (row['collection'], revision))

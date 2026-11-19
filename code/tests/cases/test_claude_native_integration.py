@@ -297,14 +297,23 @@ def test_claude_restart_preserves_settings_only_on_the_same_route(
     :design: decision_ccbb1cac24aa
     """
     native_routes["claude_one"]["models"].append({"id": "opus", "enabled": True, "support_efforts": ["high"]})
-    record, _, _ = _restart_domain(monkeypatch, source_provider="claude", source_route="claude_one")
+    record, operations, _ = _restart_domain(monkeypatch, source_provider="claude", source_route="claude_one")
     monkeypatch.setattr(resident_runtime_domain, "read_resident_runtime_settings",
                         lambda *_: {"model": "opus", "reasoning_effort": "high"})
     state = resident_domain.restart_resident_session(record["resident_id"], "alice", {
         "target_provider": "claude", "target_account": target_route, "context_strategy": strategy,
     })
-    assert state["target_runtime_settings"]["model"] == expected_model
-    assert state["target_runtime_settings"]["reasoning_effort"] == expected_effort
+    if target_route == "claude_one":
+        assert state["status"] == "accepted"
+        settings = state["target_runtime_settings"]
+        assert operations[0]["operation"] == "fork"
+    else:
+        assert state["configuration_only"] and state["context_result"] == "pending_first_input"
+        assert record["backend_route_id"] == target_route
+        assert resident_backend.session_record(record) == {} and not operations
+        settings = record["execution_settings"]
+    assert settings["model"] == expected_model
+    assert settings["reasoning_effort"] == expected_effort
 
 
 @pytest.mark.parametrize("source_provider,source_route,expected_strategy", [
@@ -314,25 +323,37 @@ def test_claude_restart_preserves_settings_only_on_the_same_route(
 def test_native_restart_route_and_strategy(monkeypatch, native_routes, source_provider, source_route, expected_strategy):
     """重启到 Claude 时同一账户用原生 Fork，跨 Provider 或跨账户明确选择后改为压缩上下文
 
-    智能选择只是完整保留的兼容写法：跨 Provider 或跨账户无法完整保留时拒绝并保留原会话，不隐式压缩；调用方明确选择压缩交接后才压缩上下文。
+    智能选择只是完整保留的兼容写法。跨 Provider 或跨账户无法完整保留时，严格保留会拒绝请求。显式选择压缩交接并固定账号时，保存配置和首条输入的交接材料。
 
     :design: decision_ccbb1cac24aa
     """
     record, operations, saved = _restart_domain(monkeypatch, source_provider=source_provider, source_route=source_route)
     request = {"target_provider": "claude", "target_account": "claude_one", "context_strategy": "smart"}
+    original_binding = resident_backend.session_record(record)
     if source_provider != "claude":
         request["model"] = "sonnet"  # A cross-Provider switch names its target model.
     if expected_strategy == "compact":
         with pytest.raises(ValueError, match="原会话已保留"):
             resident_domain.restart_resident_session(record["resident_id"], "alice", request)
-        assert not operations
+        assert not operations and resident_backend.session_record(record) == original_binding
         request["context_strategy"] = "compact"
     result = resident_domain.restart_resident_session(record["resident_id"], "alice", request)
     assert result["context_strategy"] == expected_strategy
-    assert operations[0]["backend_route_id"] == "claude_one"
-    assert operations[0]["operation"] == ("fork" if expected_strategy == "native" else "turn")
-    assert result["target_runtime_settings"]["model"] == "sonnet"
-    resident_restart_domain.resume_resident_session_restart(operations[0]["step"])
+    if expected_strategy == "native":
+        assert result["status"] == "accepted" and not result["model_operation"]
+        assert result["target_runtime_settings"]["model"] == "sonnet"
+        assert operations[0]["backend_route_id"] == "claude_one"
+        assert operations[0]["operation"] == "fork"
+        assert resident_backend.session_record(record) == original_binding
+        resident_restart_domain.resume_resident_session_restart(operations[0]["step"])
+    else:
+        assert result["status"] == "completed" and result["configuration_only"]
+        assert result["context_result"] == "pending_first_input" and not result["model_operation"]
+        assert record["execution_settings"]["model"] == "sonnet"
+        assert record["session_restart"]["pending_handoff"]["target"] == {
+            "provider": "claude", "route": "claude_one",
+        }
+        assert not operations and resident_backend.session_record(record) == {}
     assert saved[-1]["backend_route_id"] == "claude_one"
     assert "provider_profile" not in saved[-1]
     assert "backend_binding" not in saved[-1]

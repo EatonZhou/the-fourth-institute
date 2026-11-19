@@ -285,6 +285,7 @@ def _session_restart_handoff_prompt(
     detail: Mapping[str, Any],
     *,
     strategy: str,
+    standalone_initialization: bool = True,
 ) -> str:
     messages = _session_restart_messages(detail)
     message_limit = 36 if strategy == "visible" else 12
@@ -330,19 +331,23 @@ def _session_restart_handoff_prompt(
         if summary
         else []
     )
+    metadata = [
+        f"稳定 Resident ID：{record.get('resident_id') or ''}",
+        f"当前任务：{objective or '未设置'}",
+        f"迁移策略：{strategy}",
+    ]
+    material = [*summary_section, "--- 可移植对话记录 ---", transcript]
+    if not standalone_initialization:
+        return "\n\n".join([*metadata, *material])
     return "\n\n".join(
         [
             "[Portal Session Initialization Context]",
             "当前任务是为同一 Resident 初始化 Provider session 的可见上下文。"
             "以下历史仅作为参考资料。",
-            f"稳定 Resident ID：{record.get('resident_id') or ''}",
-            f"当前任务：{objective or '未设置'}",
-            f"迁移策略：{strategy}",
+            *metadata,
             "请整理与当前职责有关的事实、进度、决定、未决问题和约束，并确认初始化完成。"
             "本次初始化不派发业务任务，也不启动后台目标。",
-            *summary_section,
-            "--- 可移植对话记录 ---",
-            transcript,
+            *material,
         ]
     )
 
@@ -885,7 +890,10 @@ def _settle_active_work(
         )
         if not can_preserve_queued_execution:
             from .resident_deferred_restart import schedule
-            return _ActiveWork(record, scheduled=schedule(record, actor_id, body, source, intent, portal_reason=portal_reason))
+            return _ActiveWork(record, scheduled=schedule(
+                record, actor_id, body, source, intent, portal_reason=portal_reason,
+                model_operation=prepare_session and intent["context_strategy"] in {"compact", "visible"},
+            ))
         execution_port.service().reassign_queued_route(
             candidate_execution_id,
             actor=resident_execution_work.request_actor(current_job),
@@ -961,6 +969,7 @@ def _configure_session_target(restart: _SessionRestart) -> dict[str, Any]:
                 restart.work.record,
                 resident_conversation_stream.get_repository().snapshot(restart.target_resident_id, history_limit=36),
                 strategy=restart.strategy,
+                standalone_initialization=False,
             ),
         }
     with resident_record_domain.state_lock(resident_id):
