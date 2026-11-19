@@ -393,6 +393,55 @@ const html = fs.readFileSync(path.join(STATIC, '../article_workspace.html'), 'ut
       'the old PDF stays hidden throughout the slow build and PDF rendering');
     assert.ok(fullResult.frames.filter(frame => !frame.old).every(frame => frame.ready), 'replacement is painted before reveal');
     assert.ok(!fullResult.frames.at(-1).busy && !fullResult.frames.at(-1).hidden, 'the new PDF becomes visible after compiling');
+    // Splitter motion must not repeatedly rescale/repaint the PDF or duplicate
+    // Monaco's own automatic layout. Check the real application and PDF.js.
+    await full.waitForTimeout(400);
+    await full.evaluate(() => {
+      const editor = monaco.editor.getEditors().find(e => document.getElementById('articleEditorPane').contains(e.getDomNode()));
+      const layout = editor.layout.bind(editor);
+      window.manualLayouts = 0;
+      editor.layout = (...args) => { manualLayouts++; return layout(...args); };
+      window.resizeEditor = editor;
+      window.resizeSnapshot = () => {
+        const host = document.getElementById('articlePdfView'), root = document.getElementById('articlePdfDocument');
+        const bounds = host.getBoundingClientRect(), y = bounds.top + bounds.height / 2;
+        const page = [...root.querySelectorAll('[data-pdf-page]')].find(p => {
+          const rect = p.getBoundingClientRect(); return rect.top <= y && rect.bottom >= y;
+        });
+        const rect = page?.getBoundingClientRect();
+        return { scales: Number(root.dataset.pdfPreviewScaleCount || 0), redraws: Number(root.dataset.pdfRedrawCount || 0),
+          page: page?.dataset.pdfPage, ratio: rect ? (y - rect.top) / rect.height : null,
+          editorWidth: editor.getLayoutInfo().width, manualLayouts, position: editor.getPosition() };
+      };
+    });
+    const resizeBefore = await full.evaluate(() => resizeSnapshot());
+    const handle = await full.evaluate(() => {
+      const edge = document.getElementById('articleEditorPane').getBoundingClientRect().right;
+      const handles = [...document.querySelectorAll('#articleWorkspaceGrid .portalWorkbenchSplitHandle')]
+        .map(el => el.getBoundingClientRect()).filter(r => r.height > r.width);
+      const rect = handles.sort((a,b) => Math.abs(a.left-edge)-Math.abs(b.left-edge))[0];
+      return {x: rect.left+rect.width/2, y: rect.top+rect.height/2};
+    });
+    await full.mouse.move(handle.x,handle.y); await full.mouse.down();
+    for (let i=1;i<=24;i++) {
+      await full.mouse.move(handle.x-i*3,handle.y);
+      await full.evaluate(() => new Promise(resolve => requestAnimationFrame(resolve)));
+    }
+    await full.waitForTimeout(350); // A pause while held must not start PDF raster work.
+    const resizeDuring = await full.evaluate(() => resizeSnapshot());
+    await full.mouse.up();
+    await full.waitForFunction(count => Number(document.getElementById('articlePdfDocument').dataset.pdfRedrawCount || 0)>count,resizeBefore.redraws);
+    const resizeAfter = await full.evaluate(() => resizeSnapshot());
+    console.log('resize work', JSON.stringify({before:resizeBefore,during:resizeDuring,after:resizeAfter}));
+    assert.ok(resizeDuring.editorWidth < resizeBefore.editorWidth-40, 'Monaco follows the live splitter');
+    assert.equal(resizeDuring.manualLayouts,0,'live drag relies on Monaco automatic layout only');
+    assert.equal(resizeDuring.scales,resizeBefore.scales,'PDF scale calculations wait for release');
+    assert.equal(resizeDuring.redraws,resizeBefore.redraws,'PDF rasterization waits for release');
+    assert.equal(resizeAfter.scales,resizeBefore.scales+1,'one final PDF scale update');
+    assert.equal(resizeAfter.redraws,resizeBefore.redraws+1,'one final PDF redraw');
+    assert.equal(resizeAfter.page,resizeBefore.page);
+    assert.ok(Math.abs(resizeAfter.ratio-resizeBefore.ratio)<.015,'resize keeps the reading anchor');
+    assert.deepEqual(resizeAfter.position,resizeBefore.position,'resize keeps the editor caret');
     assert.deepEqual(fullErrors, []);
     await full.close();
     console.log('PASS: compilation status until rendered PDF replacement; preserved reading position; failure and navigation cleanup');

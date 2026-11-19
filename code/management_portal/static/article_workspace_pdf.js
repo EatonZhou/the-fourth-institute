@@ -178,8 +178,17 @@
       return changed;
     }
 
-    function scheduleArticlePdfLayout() {
+    function scheduleArticlePdfLayout({ resizing = false } = {}) {
       window.cancelAnimationFrame(state.pdfLayoutFrame);
+      state.pdfLayoutFrame = 0;
+      if (resizing) {
+        // Keep the existing bitmap and reading position while the pointer is
+        // held, even during a pause. Invalidate work queued before this drag.
+        state.pdfScaleVersion += 1;
+        window.clearTimeout(state.pdfRedrawTimer);
+        state.pdfRedrawTimer = 0;
+        return;
+      }
       state.pdfLayoutFrame = window.requestAnimationFrame(() => {
         state.pdfLayoutFrame = 0;
         previewArticlePdfScale().then(changed => {

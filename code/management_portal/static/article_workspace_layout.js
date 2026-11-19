@@ -139,18 +139,21 @@
           { id: "proof", name: window.PortalI18n.t("校对"), layout: proof, hidden: toolIds },
         ],
         defaultPreset: "writing",
-        onChange: () => {
-          scheduleArticleEditorLayout();
-          if (state.outputView === "pdf") scheduleArticlePdfLayout();
+        onChange: ({ reason }) => {
+          const resizing = reason === "resize-live";
+          // Monaco's automaticLayout already follows the container during a
+          // drag. PDF geometry/raster work can wait until the splitter settles.
+          if (!resizing) scheduleArticleEditorLayout();
+          if (state.outputView === "pdf") scheduleArticlePdfLayout({ resizing });
         },
       });
       $("articleSidePane").hidden = true;
-      $("articleEditorPane").addEventListener("portal:workbench-resize", scheduleArticleEditorLayout);
-      if (window.ResizeObserver) {
-        const editorResizeObserver = new ResizeObserver(scheduleArticleEditorLayout);
-        editorResizeObserver.observe($("articleEditorPane"));
-        state.monacoDisposables.push({ dispose: () => editorResizeObserver.disconnect() });
-      }
+      const editorPane = $("articleEditorPane");
+      const onWorkbenchResize = event => {
+        if (event.detail?.reason !== "resize-live") scheduleArticleEditorLayout();
+      };
+      editorPane.addEventListener("portal:workbench-resize", onWorkbenchResize);
+      state.monacoDisposables.push({ dispose: () => editorPane.removeEventListener("portal:workbench-resize", onWorkbenchResize) });
     }
 
     function bindSplitters() {
