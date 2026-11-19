@@ -102,7 +102,7 @@
         <div class="avatarEditorSprites" data-avatar-sprites role="group" aria-label="选择海洋头像"></div>
         <div class="avatarEditorActions">
           <label class="portalButton is-compact avatarEditorUpload"><input data-avatar-file type="file" accept="image/png,image/jpeg,image/webp" /><span>上传图片</span></label>
-          <small>PNG / JPEG / WebP，2 MiB 以内，16–2048 像素</small>
+          <small>PNG / JPEG / WebP，2 MiB 以内，自动按比例缩小</small>
           <button class="portalButton is-compact is-quiet" data-avatar-clear type="button" hidden>恢复默认</button>
           <button class="portalButton is-compact" data-avatar-cancel type="button">Cancel</button>
           <button class="portalButton is-compact is-primary" data-avatar-save type="button" disabled>保存头像</button>

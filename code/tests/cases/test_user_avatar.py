@@ -24,11 +24,11 @@ def test_user_avatar_validates_and_normalizes_images_in_database_store(fmt):
     :design: decision_b820faf42218, decision_5bc3fdfc7eec
     """
     store = avatars.user_avatar_store()
-    result = store.update('alice', image_payload(fmt, (512, 256)))
+    result = store.update('alice', image_payload(fmt, (4032, 3024)))
     assert result['url'].startswith('/api/account/avatar/image?user=alice&v=')
     content = store.image('alice', result['version'])
     with Image.open(io.BytesIO(content)) as image:
-        assert image.format == 'PNG' and image.size == (256, 128) and not image.info
+        assert image.format == 'PNG' and image.size == (256, 192) and not image.info
     assert store.get('bob') == avatars.sprite(0)
     with pytest.raises(FileNotFoundError):
         store.image('bob', result['version'])
@@ -43,7 +43,7 @@ def test_user_avatar_validates_and_normalizes_images_in_database_store(fmt):
     {'kind': 'sprite', 'sprite_index': 1, 'path': '/tmp/other'},
     {'kind': 'upload', 'data_base64': 'not-base64'},
     {'kind': 'upload', 'data_base64': base64.b64encode(b'<svg xmlns="http://www.w3.org/2000/svg"/>').decode()},
-    image_payload('GIF'), image_payload(size=(15, 16)), image_payload(size=(2049, 16)),
+    image_payload('GIF'),
 ])
 def test_user_avatar_rejects_spoofed_targets_and_invalid_images_without_writes(payload):
     """验证 Menu / Package 的授权来源、身份隔离、交互与生命周期：test_user_avatar_rejects_spoofed_targets_and_invalid_images_without_writes。

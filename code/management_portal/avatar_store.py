@@ -55,8 +55,6 @@ def normalized_image(encoded: Any) -> bytes:
             with Image.open(io.BytesIO(raw)) as image:
                 if image.format not in {"PNG", "JPEG", "WEBP"}:
                     raise ValueError("Only PNG, JPEG and WebP images are supported")
-                if not all(16 <= side <= 2048 for side in image.size):
-                    raise ValueError("Avatar dimensions must be 16..2048 pixels")
                 if getattr(image, "n_frames", 1) != 1:
                     raise ValueError("Animated avatars are not supported")
                 image.verify()
