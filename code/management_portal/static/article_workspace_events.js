@@ -22,7 +22,7 @@
     "setArticleResourceSearchOpen", "setCompileMenu", "setEditorMode", "setToolVisible",
     "setOutputView", "setProjectMenu", "setSettingsSection", "setSideView", "showPdfError", "showToast",
     "state", "stopCompilation", "syncEditorScroll", "syncPdfToSource", "syncSourceToPdf",
-    "toggleArticleGitDiffLayout", "toggleWordWrap", "unregisterCurrentArticle", "updateArticleGitStage",
+    "toggleArticleGitDiffLayout", "toggleWordWrap", "canToggleArticleSidebar", "toggleArticleSidebar", "unregisterCurrentArticle", "updateArticleGitStage",
     "updateCompilePreference", "updateCursorStatus", "updateDirtyState", "updateEditorCodeCheck",
     "updateEditorPreference", "updateSemanticUrl", "uploadFile", "persistReadingPosition", "scheduleReadingPosition",
   ]);
@@ -43,7 +43,7 @@
       scheduleArticleGitRefresh, scheduleAutoCompile, scheduleAutoSave, searchProject, selectArticle, setArticlePdfZoom,
       setArticleResourceSearchOpen, setCompileMenu, setEditorMode, setToolVisible, setOutputView,
       setProjectMenu, setSettingsSection, setSideView, showPdfError, showToast, state, stopCompilation,
-      syncEditorScroll, syncPdfToSource, syncSourceToPdf, toggleArticleGitDiffLayout, toggleWordWrap,
+      syncEditorScroll, syncPdfToSource, syncSourceToPdf, toggleArticleGitDiffLayout, toggleWordWrap, canToggleArticleSidebar, toggleArticleSidebar,
       unregisterCurrentArticle, updateArticleGitStage, updateCompilePreference, updateCursorStatus,
       updateDirtyState, updateEditorCodeCheck, updateEditorPreference, updateSemanticUrl, uploadFile, persistReadingPosition, scheduleReadingPosition,
     } = dependencies;
@@ -335,6 +335,18 @@
     const bringContextToChat = () => bringCurrentContextToChat()
       .catch(error => showToast(error.message || error, "error"));
     $("articleSendContext").addEventListener("click", bringContextToChat);
+    window.PortalCommandRegistry.root.register({
+      id: "article.toggleSidebar", title: window.PortalI18n.t("显示或隐藏左侧栏"), category: "Article",
+      keybindings: ["Ctrl+B", "Meta+B"], allowInInput: true,
+      enabled: () => {
+        if (!canToggleArticleSidebar()) return false;
+        const active = document.activeElement;
+        if (active?.closest('[role="dialog"], dialog, .portalOverlay')) return false;
+        const editable = active?.closest('input, textarea, select, [contenteditable="true"], [role="textbox"]');
+        return !editable || active === $("articleSourceEditor") || Boolean(active?.closest("#articleMonacoEditor"));
+      },
+      execute: ({ event }) => event?.repeat ? false : toggleArticleSidebar(),
+    });
     window.PortalCommandRegistry.root.register({
       id: "article.contextToChat",
       title: "把当前选区或光标上下文带到 Chat Workspace",

@@ -94,6 +94,7 @@ const html = fs.readFileSync(path.join(repo, 'management_portal/article_workspac
         bringCurrentContextToChat: host.bringCurrentContextToChat, showToast: text => notices.push(String(text)),
         setSideView: layout.setSideView, currentArticleWorkbench: layout.currentArticleWorkbench,
         setToolVisible: layout.setToolVisible,
+        canToggleArticleSidebar: layout.canToggleArticleSidebar, toggleArticleSidebar: layout.toggleArticleSidebar,
       });
       layout.initArticleWorkbench();
       await layout.restoreLayout({ sideView });
@@ -108,6 +109,26 @@ const html = fs.readFileSync(path.join(repo, 'management_portal/article_workspac
       $('articleSourceEditor').focus();
     };
     await page.evaluate(setup, { prepareContext: true });
+    // The sidebar command also works in the plain-text fallback editor.
+    const sidebarLayout = await page.evaluate(() => layout.currentArticleWorkbench().getLayout());
+    const sidebarWidth = await page.locator('[data-article-panel="chat"]').evaluate(el => el.getBoundingClientRect().width);
+    const fallbackDraft = await page.locator('#articleSourceEditor').inputValue();
+    await page.keyboard.press('Control+b');
+    await page.waitForFunction(() => layout.currentArticleWorkbench().isPanelCollapsed('chat'));
+    assert.equal(await page.locator('[data-article-panel="chat"]').isVisible(), false);
+    await page.keyboard.press('Meta+b');
+    await page.waitForFunction(() => !layout.currentArticleWorkbench().isPanelCollapsed('chat'));
+    assert.equal(await page.locator('#articleSourceEditor').inputValue(), fallbackDraft);
+    assert.equal(await page.evaluate(() => document.activeElement.id), 'articleSourceEditor');
+    assert.deepEqual(await page.evaluate(() => layout.currentArticleWorkbench().getLayout()), sidebarLayout);
+    assert.ok(Math.abs(await page.locator('[data-article-panel="chat"]').evaluate(el => el.getBoundingClientRect().width) - sidebarWidth) < 2);
+    await page.evaluate(() => state.chatController.focusComposer());
+    await page.keyboard.press('Control+b');
+    assert.equal(await page.evaluate(() => layout.currentArticleWorkbench().isPanelCollapsed('chat')), false, 'chat retains B formatting');
+    await page.locator('#articleResourceQuery').focus();
+    await page.keyboard.press('Control+b');
+    assert.equal(await page.evaluate(() => layout.currentArticleWorkbench().isPanelCollapsed('chat')), false, 'search retains its shortcut');
+    await page.locator('#articleSourceEditor').focus();
     await page.keyboard.press('Control+Alt+Enter');
     await page.waitForFunction(() => !PortalCommandRegistry.root.list().find(c => c.id === 'article.contextToChat').busy);
     const result = await page.evaluate(() => ({
@@ -135,6 +156,13 @@ const html = fs.readFileSync(path.join(repo, 'management_portal/article_workspac
         resolve();
       });
     }));
+    const monacoBeforeToggle = await page.evaluate(() => ({ value: state.editor.getValue(), selection: state.editor.getSelection() }));
+    await page.keyboard.press('Control+b');
+    await page.waitForFunction(() => layout.currentArticleWorkbench().isPanelCollapsed('chat'));
+    await page.keyboard.press('Control+b');
+    await page.waitForFunction(() => !layout.currentArticleWorkbench().isPanelCollapsed('chat'));
+    assert.deepEqual(await page.evaluate(() => ({ value: state.editor.getValue(), selection: state.editor.getSelection() })), monacoBeforeToggle);
+    assert.equal(await page.evaluate(() => state.editor.hasTextFocus()), true, 'Monaco keeps its caret after sidebar toggle');
     await page.keyboard.press('Meta+Alt+Enter');
     await page.waitForFunction(() => state.chatController.attachments().length === 1);
     const boundResult = await page.evaluate(() => ({
@@ -198,6 +226,27 @@ const html = fs.readFileSync(path.join(repo, 'management_portal/article_workspac
     });
     await dragTool('chat', 'output', 'bottom');
     assert.equal(await page.locator('#articleChatWorkspace').isVisible(), true);
+    // A detached Chat stays visible when the left tool group folds away.
+    await page.evaluate(() => { const source = document.getElementById('articleSourceEditor'); source.disabled = false; source.value = 'Unsaved source'; source.focus(); });
+    const leftActive = await page.evaluate(() => layout.currentArticleWorkbench().getLayout().children[0].activePanelId);
+    const sourceBeforeToggle = await page.locator('#articleSourceEditor').inputValue();
+    const layoutBeforeToggle = await page.evaluate(() => layout.currentArticleWorkbench().getLayout());
+    await page.keyboard.press('Control+b');
+    await page.waitForFunction(id => layout.currentArticleWorkbench().isPanelCollapsed(id), leftActive);
+    assert.equal(await page.locator('#articleChatWorkspace').isVisible(), true, 'independent right-side Chat is not a sidebar');
+    assert.match(await page.evaluate(() => state.chatController.payload().text), /Draft survives every move/);
+    await page.keyboard.press('Control+b');
+    await page.waitForFunction(id => !layout.currentArticleWorkbench().isPanelCollapsed(id), leftActive);
+    assert.deepEqual(await page.evaluate(() => layout.currentArticleWorkbench().getLayout()), layoutBeforeToggle);
+    assert.equal(await page.locator('#articleSourceEditor').inputValue(), sourceBeforeToggle);
+    assert.equal(await page.evaluate(() => document.activeElement.id), 'articleSourceEditor');
+    await page.evaluate(() => layout.currentArticleWorkbench().setLayoutLocked(true));
+    await page.keyboard.press('Control+b');
+    assert.equal(await page.evaluate(id => layout.currentArticleWorkbench().isPanelCollapsed(id), leftActive), false, 'locked layout is respected');
+    await page.evaluate(() => { layout.currentArticleWorkbench().setLayoutLocked(false); document.getElementById('articleWorkspaceGrid').hidden = true; });
+    await page.keyboard.press('Control+b');
+    assert.equal(await page.evaluate(id => layout.currentArticleWorkbench().isPanelCollapsed(id), leftActive), false, 'invisible workspace does not claim the shortcut');
+    await page.evaluate(() => { document.getElementById('articleWorkspaceGrid').hidden = false; });
     await dragTool('chat', 'git', 'center');
     assert.equal(await page.evaluate(() => originalChat === state.chatController && chatRoot === document.getElementById('articleChatWorkspace')), true);
     assert.match(await page.evaluate(() => state.chatController.payload().text), /Draft survives every move/);
@@ -206,6 +255,16 @@ const html = fs.readFileSync(path.join(repo, 'management_portal/article_workspac
     await page.locator('[data-article-view="chat"]').click();
     assert.match(await page.evaluate(() => state.chatController.payload().text), /Draft survives every move/);
 
+    await page.locator('[data-article-view="chat"]').focus();
+    await page.keyboard.press('Control+b');
+    await page.waitForFunction(() => layout.currentArticleWorkbench().isPanelCollapsed('chat'));
+    await page.reload();
+    await page.evaluate(setup, { boundChat: true });
+    assert.equal(await page.evaluate(() => layout.currentArticleWorkbench().isPanelCollapsed('chat')), true, 'reload retains folded sidebar');
+    await page.locator('[data-article-view="chat"]').focus();
+    await page.keyboard.press('Control+b');
+    await page.waitForFunction(() => !layout.currentArticleWorkbench().isPanelCollapsed('chat'));
+    assert.equal(await page.locator('#articleChatWorkspace').isVisible(), true, 'same tool restored after reload');
     // Recreate the page with the same browser storage, as a user reload does.
     await page.reload();
     await page.evaluate(setup, { boundChat: true });

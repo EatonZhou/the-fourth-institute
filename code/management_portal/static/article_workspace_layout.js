@@ -52,6 +52,38 @@
       articleWorkbench?.hidePanel(view);
     }
 
+    // The leftmost tool group is the sidebar. Independently placed tools
+    // (for example Chat on the right) and groups containing source/PDF stay put.
+    function sidebarStack() {
+      let node = articleWorkbench?.getLayout();
+      while (node?.type === "split") node = node.children[0];
+      const ids = window.PortalArticleWorkspaceTools.definitions.map(tool => tool.id);
+      return node?.type === "stack" && node.children.every(child => ids.includes(child.panelId)) ? node : null;
+    }
+
+    function canToggleArticleSidebar() {
+      const root = $("articleWorkspaceGrid");
+      return Boolean(root?.isConnected && root.dataset.portalWorkbenchId && !root.closest("[hidden]")
+        && !articleWorkbench?.isLayoutLocked() && sidebarStack());
+    }
+
+    function toggleArticleSidebar() {
+      if (!canToggleArticleSidebar()) return false;
+      const stack = sidebarStack(), focused = document.activeElement;
+      const collapsed = articleWorkbench.isPanelCollapsed(stack.activePanelId);
+      articleWorkbench.toggleCollapsed(stack.activePanelId);
+      if (!collapsed && focused && !focused.getClientRects().length) {
+        document.querySelector(`[data-article-view="${stack.activePanelId}"]`)?.focus();
+      } else if (collapsed) {
+        // Tool activation may focus Search. Restoring the sidebar while typing
+        // in source must leave the writer's caret in that source editor.
+        Promise.resolve().then(() => {
+          if (focused?.isConnected && focused.getClientRects().length) focused.focus({ preventScroll: true });
+        });
+      }
+      return true;
+    }
+
     function scheduleArticleEditorLayout() {
       window.cancelAnimationFrame(state.editorLayoutFrame);
       state.editorLayoutFrame = window.requestAnimationFrame(() => {
@@ -81,7 +113,7 @@
         initialEditors: [
           ...tools.definitions.map(tool => ({
             id: tool.id, type: `article-${tool.id}`, title: window.PortalI18n.t(tool.title), icon: tool.icon,
-            presentation: "navigation", singleton: true,
+            presentation: "navigation", singleton: true, collapseToRail: true,
             options: {
               source: document.querySelector(`[data-article-panel="${tool.id}"]`),
               controller: {
@@ -166,6 +198,7 @@
 
     return Object.freeze({
       bindSplitters, initArticleWorkbench, restoreLayout, setToolVisible, setSideView,
+      canToggleArticleSidebar, toggleArticleSidebar,
       currentArticleWorkbench: () => articleWorkbench,
     });
   }

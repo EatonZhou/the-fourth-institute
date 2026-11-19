@@ -352,6 +352,7 @@
 
   const {
     bindSplitters, initArticleWorkbench, restoreLayout, setToolVisible, setSideView,
+    canToggleArticleSidebar, toggleArticleSidebar,
     currentArticleWorkbench,
   } = articleModule("PortalArticleWorkspaceLayout").createLayout({
     $, applyEditorPreferences: (...args) => applyEditorPreferences(...args),
@@ -473,7 +474,7 @@
     $, activeDocument, articleEntryDialog, articleGitRefresh, articleRegisterDialog, askBuildDiagnostic,
     bindArticlePdfGestures, bringCurrentContextToChat, captureActiveDocument, closeArticleGitDiff,
     commitArticleGit, compileArticle, createEntry, currentArticleCompilePopover, currentArticleProjectPopover,
-    currentArticleWorkbench, detailHistory, flushArticleNavigationPreference, goToLine, handleEditorPairing,
+    currentArticleWorkbench, canToggleArticleSidebar, toggleArticleSidebar, detailHistory, flushArticleNavigationPreference, goToLine, handleEditorPairing,
     hasDirtyDocuments, initializeArticleGit, initializeArticlePopovers, inspectRegistration, loadArticleGit,
     openArticleFile, openArticleGitCommit, openArticleGitDiff, openBuildDiagnostic, openEntryModal,
     openRegisterModal, handleArticleGitAction, pullArticleGit, queryState, registerArticle, renderArticleGitDiffFile, renderArticleResourceSearch,
