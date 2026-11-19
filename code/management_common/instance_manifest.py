@@ -126,7 +126,10 @@ class InstanceManifest:
         result = {"PORTAL_INSTANCE_ROOT": str(self.root)}
         additions = self.document['services'].get('path_prefixes', {}).get(component, [])
         if additions:
-            result['PATH'] = os.pathsep.join([*additions, os.environ.get('PATH', os.defpath)])
+            # Native definitions must not vary with the launching AMA/shell's
+            # PATH. Extra host tools are explicit prefixes, followed by the
+            # platform baseline; code-managed tools use their owned paths.
+            result['PATH'] = os.pathsep.join([*additions, os.defpath])
         if component in {"web", "dev-web"}:
             deployment = "dev" if component == "dev-web" else "release"
             if deployment not in self.deployments:

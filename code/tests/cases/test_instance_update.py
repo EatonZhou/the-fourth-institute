@@ -197,6 +197,8 @@ def test_local_service_settings_are_validated_and_rendered(tmp_path, monkeypatch
     instance = validate(instance.root, instance.document)
     unit = plistlib.loads(manifest_unit_text(instance, 'web').encode())
     assert unit['EnvironmentVariables']['PATH'].startswith('/Library/TeX/texbin:')
+    monkeypatch.setenv('PATH', '/a/different/ama/path')
+    assert plistlib.loads(manifest_unit_text(instance, 'web').encode()) == unit
     monkeypatch.setattr(update.services, 'platform_name', lambda: 'macos')
     assert update.services.definition_directory(instance) == tmp_path / 'launch-agents'
     settings['path_prefixes']['web'] = ['relative']
