@@ -8048,9 +8048,9 @@
     "en": "PDF.js fallback: {p0}",
     "zh-CN": "PDF.js fallback：{p0}"
   },
-  "PNG / JPEG / WebP，自动压缩，仅上传处理后的头像": {
-    "en": "PNG / JPEG / WebP. Automatically compressed; only the resized avatar is uploaded.",
-    "zh-CN": "PNG / JPEG / WebP，自动压缩，仅上传处理后的头像"
+  "PNG / JPEG / WebP": {
+    "en": "PNG / JPEG / WebP",
+    "zh-CN": "PNG / JPEG / WebP"
   },
   "图片无法读取，请选择有效的 PNG、JPEG 或 WebP 图片。": {
     "en": "Unable to read the image. Please select a valid PNG, JPEG, or WebP image.",
