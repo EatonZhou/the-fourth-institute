@@ -45,7 +45,7 @@ def read_tool_registration(*, article_id: str, actor: str, resident_id: str,
     Missing original fields stay missing; a temporary caller grant is never
     interpreted as a historical owner or persistent ACL.
     """
-    from management_portal.society_service.resident_deleted_history import read_history
+    from .article_restore_reads import read_tool_evidence
 
     if not re.fullmatch(r'article_[0-9a-f]{12}', article_id):
         raise ValueError('Recovery requires an exact Article ID')
@@ -55,7 +55,7 @@ def read_tool_registration(*, article_id: str, actor: str, resident_id: str,
             or not isinstance(expected_hash, str) or not re.fullmatch(r'[0-9a-f]{64}', expected_hash)
             or not isinstance(tool_item_id, str) or not 1 <= len(tool_item_id) <= 256):
         raise ValueError('Recovery requires one exact retained tool item')
-    page = read_history(resident_id, actor, section='tool_evidence', ordinal=ordinal,
+    page = read_tool_evidence(resident_id=resident_id, actor=actor, ordinal=ordinal,
                         tool_index=tool_index, tool_item_id=tool_item_id, expected_hash=expected_hash)
     if (page.get('resident_id') != resident_id or page.get('section') != 'tool_evidence'
             or page.get('identity', {}).get('resident_id') != resident_id

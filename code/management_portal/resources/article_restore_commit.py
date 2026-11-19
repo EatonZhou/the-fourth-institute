@@ -168,6 +168,12 @@ def restore(*, arguments, actor, service, receipt_store, operation_id):
         if previous is not None:
             return previous
 
+    from management_portal.portal_features import contributions
+    sources = contributions('resource.article_registration')
+    if len(sources) != 1 or not callable(getattr(sources[0][1], 'prepare_restored_document', None)):
+        raise ValueError('Article restoration requires one installed registration contribution')
+    article_source = sources[0][1]
+
     tool, ledger, receipt = _evidence(arguments, actor, receipt_store)
     inheritance = current_sharing(actor, arguments)
     if inheritance['status'] != 'observed' or inheritance['digest'] != arguments['inheritance_digest']:
@@ -231,18 +237,14 @@ def restore(*, arguments, actor, service, receipt_store, operation_id):
                 _source(arguments, actor, service)
                 with creation.registration(connection):
                     verify_prepared(destination, source)
-                    from management_portal import article_discovery, article_registry
-                    item = article_discovery.inspect_article_root(destination, primary_file='main.md')
-                    if item is None:
-                        raise ValueError('Prepared partial manuscript cannot be registered')
-                    item['title'] = tool['record']['title']
-                    document = article_registry._merge_record({'created_at': tool['record']['created_at']},
-                        rid, [item], explicit_project_ids=[arguments['project_id']])
                     now = utc_now_iso()
-                    document['recovery'] = {'mode': 'partial_restore', 'restored_by': actor, 'restored_at': now,
+                    recovery = {'mode': 'partial_restore', 'restored_by': actor, 'restored_at': now,
                         'original_author': None, 'historical_acl': None, 'final_manuscript_verified': False,
                         'source_version': source['version']}
-                    stored = article_registry.ARTICLE_REGISTRY.stored(document)
+                    document, stored = article_source.prepare_restored_document(destination,
+                        article_id=rid, title=tool['record']['title'],
+                        created_at=tool['record']['created_at'], project_id=arguments['project_id'],
+                        recovery=recovery)
                     result = {'resource_id': rid, 'mode': 'partial_restore', 'primary_file': 'main.md',
                               'final_version_recovered': False, 'restored_at': now,
                               'portal_url': portal_url_for_address(rid, 'article')}

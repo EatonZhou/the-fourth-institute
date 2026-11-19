@@ -69,7 +69,8 @@ def test_original_service_result_and_deleted_ledger_agree(evidence):
     assert 'created_by' not in result['record'] and 'acl' not in result['record']
     assert result['missing'] == ['created_by', 'acl']
     assert result['registration_actor'] == RESIDENT
-    assert evidence[2] == [(RESIDENT, ACTOR, {'section': 'tool_evidence', **{k: v for k, v in SELECTOR.items() if k != 'resident_id'}})]
+    assert evidence[2] == [(RESIDENT, ACTOR, {'section': 'tool_evidence', 'limit': 1,
+                                          **{k: v for k, v in SELECTOR.items() if k != 'resident_id'}})]
 
 
 @pytest.mark.parametrize('field,value', [

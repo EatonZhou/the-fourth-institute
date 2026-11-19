@@ -17,12 +17,12 @@ def proposal_text(scope):
 
 
 def verify(arguments, actor, scope):
-    from management_portal.society_service.resident_protocol import get_resident_message
+    from .article_restore_reads import read_message
     from management_portal import permission_system
 
     rid = arguments['decision_resident_id']
-    proposal = get_resident_message(rid, actor, arguments['proposal_message_id'])
-    answer = get_resident_message(rid, actor, arguments['decision_message_id'])
+    proposal = read_message(resident_id=rid, actor=actor, message_id=arguments['proposal_message_id'])
+    answer = read_message(resident_id=rid, actor=actor, message_id=arguments['decision_message_id'])
     parts = proposal.get('content_parts') or []
     text = '\n'.join(p.get('text', '') for p in parts if p.get('type') == 'text')
     if len(text.encode()) > 65536 or proposal_text(scope) not in text:
