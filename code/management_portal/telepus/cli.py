@@ -15,7 +15,7 @@ from pathlib import Path
 
 from .router_core import RouterCore
 from .telegram_adapter import TelegramAdapter
-from .telegram_client import TelegramClient
+from .telegram_client import TelegramClient, TelegramConfigError
 
 
 def now_iso() -> str:
@@ -148,10 +148,14 @@ def run_telegram_refresh_daemon(argv: list[str]) -> int:
     max_iterations = option_int(argv, "max_iterations", 0)
     refresh_limit = option_int(argv, "refresh_limit", 100)
     sleep_seconds = option_int(argv, "sleep_seconds", 3)
-    adapter = telegram_adapter(TelegramClient())
     from .weixin_adapter import WeixinAdapter
     from concurrent.futures import ThreadPoolExecutor
     weixin = WeixinAdapter()
+    try:
+        adapter = telegram_adapter(TelegramClient())
+    except TelegramConfigError:
+        adapter = None
+    store = adapter.router.store if adapter is not None else weixin.router.store
     from .refresh_service import NotificationScheduler
     notifications = NotificationScheduler(weixin)
     weixin_pool = ThreadPoolExecutor(max_workers=8, thread_name_prefix='telepus-weixin-refresh')
@@ -168,11 +172,11 @@ def run_telegram_refresh_daemon(argv: list[str]) -> int:
             if time.monotonic() >= cleanup_at:
                 cleanup_at = time.monotonic() + 60
                 try:
-                    adapter.router.store.prune_expired_callback_tokens()
+                    store.prune_expired_callback_tokens()
                 except Exception as exc:
                     weixin.notifications.diagnostic('', exc)
             try:
-                result = adapter.refresh_routes(limit=refresh_limit, dry_run=False)
+                result = adapter.refresh_routes(limit=refresh_limit, dry_run=False) if adapter is not None else {}
                 for actor in weixin.store.active_actors():
                     if actor not in pending or pending[actor].done():
                         pending[actor] = weixin_pool.submit(weixin.refresh, actor)
