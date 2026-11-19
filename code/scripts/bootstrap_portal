@@ -43,8 +43,11 @@ def venv_python(directory: Path) -> Path:
 
 
 def declared_requirements(path: Path) -> dict[str, str | None]:
-    """Read direct requirements and optional lower bounds, including nested files."""
-    import re
+    """Read the version constraints used by pip, including nested files."""
+    try:
+        from packaging.requirements import Requirement
+    except ImportError:
+        from pip._vendor.packaging.requirements import Requirement
     result = {}
     for raw_line in path.read_text(encoding="utf-8").splitlines():
         line = raw_line.split("#", 1)[0].strip()
@@ -53,23 +56,25 @@ def declared_requirements(path: Path) -> dict[str, str | None]:
         if line.startswith("-r "):
             result.update(declared_requirements(path.parent / line[3:].strip()))
             continue
-        match = re.fullmatch(r"([A-Za-z0-9_.-]+)(?:\s*>=\s*([A-Za-z0-9_.+-]+))?", line)
-        if not match:
+        requirement = Requirement(line)
+        if requirement.url:
             raise ValueError(f"Unsupported requirement in {path}: {line}")
-        result[match[1].lower().replace("_", "-")] = match[2]
+        if requirement.marker and not requirement.marker.evaluate():
+            continue
+        result[requirement.name.lower().replace("_", "-")] = str(requirement.specifier) or None
     return result
 
 
-def satisfies_minimum(actual: str | None, minimum: str | None) -> bool:
+def satisfies_requirement(actual: str | None, specifier: str | None) -> bool:
     if actual is None:
         return False
-    if minimum is None:
+    if specifier is None:
         return True
     try:
-        from packaging.version import Version
+        from packaging.specifiers import SpecifierSet
     except ImportError:
-        from pip._vendor.packaging.version import Version
-    return Version(actual) >= Version(minimum)
+        from pip._vendor.packaging.specifiers import SpecifierSet
+    return SpecifierSet(specifier).contains(actual)
 
 
 def installed_versions(python: Path) -> dict[str, str]:
@@ -219,10 +224,10 @@ def doctor(args: argparse.Namespace) -> int:
                        "requirements-society-service.txt": "embeddings"}[filename]
             if profile not in profiles:
                 continue
-            for name, minimum in declared_requirements(ROOT / filename).items():
+            for name, specifier in declared_requirements(ROOT / filename).items():
                 actual = installed.get(name)
-                check(f"{profile}: {name}", satisfies_minimum(actual, minimum),
-                      f"minimum {minimum or 'unspecified'}; installed {actual or 'missing'}")
+                check(f"{profile}: {name}", satisfies_requirement(actual, specifier),
+                      f"required {specifier or 'any version'}; installed {actual or 'missing'}")
 
     if "test" in profiles or "tau" in profiles or "provider" in profiles:
         major = node_major()
