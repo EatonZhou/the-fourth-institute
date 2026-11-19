@@ -131,6 +131,7 @@ def test_owned_review_effect_retains_scoped_facade_identity(team):
 
 
 def test_additive_schema_upgrade_leaves_existing_family_in_legacy_mode(lineage, charters):
+    from management_common import directory_dependencies
     from management_portal.society_service.state_store import get_lineage_data_store, LineageDataStore, lineage_data_schema_matches
     f = ok('Familize', {'lineage_id': lineage, 'resident_ids': [resident(lineage, 'Legacy')]})
     original, _ = parent(lineage, f['family_id'])
@@ -140,7 +141,16 @@ def test_additive_schema_upgrade_leaves_existing_family_in_legacy_mode(lineage, 
     body, block = parent(lineage, f['family_id'])
     assert block['family']['independent_duties'] == []
     assert body == original
-    with database.read() as connection:
+    with database.transaction() as connection:
+        assert lineage_data_schema_matches(connection)
+        connection.execute("SAVEPOINT invalid_directory_fence")
+        connection.execute("DROP TRIGGER directory_writer_fence ON lineage_nodes")
+        connection.execute(
+            "CREATE TRIGGER directory_writer_fence AFTER INSERT OR UPDATE ON lineage_nodes "
+            f"FOR EACH ROW EXECUTE FUNCTION {directory_dependencies.schema()}.fence_lineages()"
+        )
+        assert not lineage_data_schema_matches(connection)
+        connection.execute("ROLLBACK TO SAVEPOINT invalid_directory_fence")
         assert lineage_data_schema_matches(connection)
 
 

@@ -4,6 +4,7 @@
 :module: lineage.hatg
 :design: decision_4637ca4a69e2, decision_0f57656a2acd
 """
+from tests.cases.directory_fixture_support import directory_owners  # noqa: F401
 from contextlib import nullcontext
 from types import SimpleNamespace
 import pytest
@@ -19,6 +20,7 @@ def effect(lid):
     return identity, step
 
 
+@pytest.mark.usefixtures("directory_owners")
 @pytest.mark.parametrize("actual,expected", [("succeeded", "completed"), ("failed", "failed"), ("timed_out", "failed"), ("cancelled", "cancelled")])
 def test_effect_outcome_retained_after_graph_deletion(actual, expected):
     """删除 Lineage 后仍能查看 Effect 的成功、失败、超时或取消结果及其指令调用

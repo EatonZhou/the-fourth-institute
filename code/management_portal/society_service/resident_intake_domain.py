@@ -916,25 +916,33 @@ def _deliver_to_facade(
 
             invariant_locks.defer_until_state_unlock(accept_quota_answer)
         return _receipt(request)
-    if existing_resident_delivery(record_id, facade_item):
+    replayed = existing_resident_delivery(record_id, facade_item)
+    if replayed:
         if request.lending is not None:
             request.lending.replay(record_id, facade_message_id)
+    else:
+        from .state_store import get_lineage_data_store
+        with invariant_locks.resident_conversation_lock(record_id), get_lineage_data_store().database.transaction() as connection:
+            resident_lifecycle_domain.accept_resident_user_message(request.resident_id, facade_message)
+            family_recovery.register(record, facade_message)
+            resident_conversation_stream.get_repository().set_input_state(
+                request.resident_id, facade_message_id, "queued",
+            )
+            if request.lending is not None:
+                request.lending.issue(connection, request.resident_id, facade_message_id)
+
+    if request.relay.delegated and request.relay.source is not None:
+        # The inner facade has accepted the copy. Its routing effects need
+        # this verified parent link before they can relay the original content.
+        family_facade.complete_relay(request.relay.source, record_id, facade_message_id)
+
+    if replayed:
         def resume_facade():
             if not family_recovery.handle(record, facade_message_id):
                 from .domain_ports import resident_domain_port
                 resident_domain_port.resume_direct_family_delivery(record, facade_message_id, request.actor_id)
         invariant_locks.defer_until_state_unlock(resume_facade)
         return _receipt(request, deferred_delivery=True)
-
-    from .state_store import get_lineage_data_store
-    with invariant_locks.resident_conversation_lock(record_id), get_lineage_data_store().database.transaction() as connection:
-        resident_lifecycle_domain.accept_resident_user_message(request.resident_id, facade_message)
-        family_recovery.register(record, facade_message)
-        resident_conversation_stream.get_repository().set_input_state(
-            request.resident_id, facade_message_id, "queued",
-        )
-        if request.lending is not None:
-            request.lending.issue(connection, request.resident_id, facade_message_id)
 
     def publish_for_router() -> None:
         # Infos that came before this request are shown with it.

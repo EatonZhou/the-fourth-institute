@@ -1,4 +1,5 @@
 from __future__ import annotations
+from tests.cases.directory_fixture_support import directory_owners  # noqa: F401
 from management_portal.society_service import business_fact_views
 
 from tests.cases import society_service_test_support as lineage_test_support
@@ -306,6 +307,7 @@ def test_owner_reconcile_skips_a_lineage_deleted_before_notification(
     }
 
 
+@pytest.mark.usefixtures("directory_owners")
 def test_owner_reconcile_skips_a_lineage_deleted_after_catalog_read(
     lineage_store: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -552,6 +554,7 @@ def node_owned_workspace(lineage: dict, resident_id: str) -> Path:
     )
 
 
+@pytest.mark.usefixtures("directory_owners")
 def test_lineage_lifecycle_revision_and_recoverable_delete(
     lineage_store: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -606,6 +609,7 @@ def test_lineage_lifecycle_revision_and_recoverable_delete(
         assert connection.execute("SELECT deleted_at FROM lineages WHERE lineage_id=%s", (created["lineage_id"],)).fetchone()["deleted_at"]
 
 
+@pytest.mark.usefixtures("directory_owners")
 def test_empty_lineage_delete_commits_identity_when_cleanup_fails(
     lineage_store: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -2281,9 +2285,15 @@ def test_resident_completion_fact_and_async_lineage_notification(
         {"message_id": "msg_success", "role": "agent", "reply_to_message_id": "user_success", "content_parts": [{"type": "text", "text": "private output"}], "created_at": "2026-01-01T00:01:00Z"},
     ]:
         repository.append_message("resident_0123456789ab", message)
-    repository.set_input_state("resident_0123456789ab", "user_earlier", "completed")
-    repository.set_input_state("resident_0123456789ab", "user_other", "completed")
-    repository.set_input_state("resident_0123456789ab", "user_success", "completed")
+    repository.set_input_state(
+        "resident_0123456789ab", "user_earlier", "completed", updated_at="2025-12-31T23:59:01Z",
+    )
+    repository.set_input_state(
+        "resident_0123456789ab", "user_other", "completed", updated_at="2025-12-31T23:59:46Z",
+    )
+    repository.set_input_state(
+        "resident_0123456789ab", "user_success", "completed", updated_at="2026-01-01T00:01:01Z",
+    )
     completion = resident_protocol.get_latest_completed_message_reference(
         "resident_0123456789ab",
         "sample_admin",
@@ -2292,7 +2302,7 @@ def test_resident_completion_fact_and_async_lineage_notification(
         "resident_id": "resident_0123456789ab",
         "message_id": "user_success",
         "reply_message_id": "msg_success",
-        "completed_at": "2026-01-01T00:01:00Z",
+        "completed_at": "2026-01-01T00:01:01Z",
         "request_actor": "sample_admin",
     }
     references = resident_protocol.list_completed_message_references(

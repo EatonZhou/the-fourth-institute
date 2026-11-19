@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from tests.cases.directory_fixture_support import directory_owners  # noqa: F401
 from pathlib import Path
 
 import pytest
@@ -151,6 +152,7 @@ def test_retry_rebuilds_an_older_pending_snapshot_from_current_canonical_facts()
     assert store.complete_resident_resource_projections(claims)['completed'] == 1
 
 
+@pytest.mark.usefixtures("directory_owners")
 def test_tombstone_confirmation_publishes_only_the_selected_deletion() -> None:
     """确认删除墓碑只发布所选 Resident 的删除记录，其他待发记录保留"""
     store = LineageDataStore()
@@ -219,6 +221,7 @@ def test_deleted_resident_bundle_only_projects_resident_tombstone(monkeypatch) -
     assert all(item["deleted_at"] == deleted["deleted_at"] for item in descriptors)
 
 
+@pytest.mark.usefixtures("directory_owners")
 @pytest.mark.parametrize("failure", ["none", "token_store", "unlink"])
 def test_committed_tombstones_recover_credentials_without_after_commit(
     tmp_path, monkeypatch, failure,
@@ -323,6 +326,7 @@ def test_committed_tombstones_recover_credentials_without_after_commit(
     assert recovered.drain_once() == 0
 
 
+@pytest.mark.usefixtures("directory_owners")
 def test_tombstone_confirmation_retains_claim_when_revocation_fails(tmp_path, monkeypatch):
     """显式确认撤销失败不能 ACK，重建 worker 后可以确认同一持久 claim。"""
     from management_portal import agent_token_auth

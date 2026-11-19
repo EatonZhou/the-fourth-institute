@@ -1,18 +1,9 @@
-"""Old subscription entrypoints stay closed without touching live translation."""
+"""The retained cache guard keeps the subscription experiment closed.
+
+Removed ISA entrypoints are covered by test_hatg_instruction_discovery.py::
+test_retired_translation_has_no_declaration_handler_or_callable_alias.
+"""
 import pytest
-
-
-def test_old_send_is_permanently_cancelled():
-    from management_portal.paper_web_isa import translate_paper_text
-    with pytest.raises(ValueError, match='permanently cancelled'):
-        translate_paper_text(None)
-
-
-def test_old_binding_creation_is_permanently_cancelled():
-    from management_portal.paper_translation_binding import ensure_binding
-    from management_portal.workbench_projections.store import ProjectionError
-    with pytest.raises(ProjectionError, match='permanently cancelled'):
-        ensure_binding('synthetic-no-resource')
 
 
 def test_verified_experiment_cannot_be_reopened():

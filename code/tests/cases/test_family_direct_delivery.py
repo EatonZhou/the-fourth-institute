@@ -30,6 +30,12 @@ def test_solo_delivers_before_any_arrival_automation_and_replays_once(family_cha
     observed = []
 
     def wake(record, mid=''):
+        if nested and record['resident_id'] == target:
+            assert family_facade.relay_source_of(target, mid) == (facade['resident_id'], payload['message']['message_id'])
+            link = family_facade.relay_links(record)[mid]
+            assert link['resident_id'] == member
+            assert repository.message(member, link['message_id'])
+            observed.append(mid)
         if record['resident_id'] == facade['resident_id']:
             link = family_facade.relay_links(facade)[mid]
             assert repository.message(target, link['message_id'])
@@ -50,7 +56,7 @@ def test_solo_delivers_before_any_arrival_automation_and_replays_once(family_cha
     again = resident_protocol.deliver_resident_input(payload, ACTOR)
     assert again['message_id'] == first['message_id']
     assert len(repository.input_states(member)) == 1
-    assert observed
+    assert observed == ([link['message_id'], first['message_id']] if nested else [first['message_id']])
 
 
 @pytest.mark.parametrize('state', ['cancelled', 'completed', 'failed'])

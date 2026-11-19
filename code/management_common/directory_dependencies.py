@@ -78,6 +78,59 @@ def require_ready(connection):
         raise DirectoryDependenciesMissing('Directory dependency migration or owner refresh is incomplete')
 
 
+def _installed_queue(connection):
+    from .directory_cleanup_store import DirectoryCleanupStore
+    queue = DirectoryCleanupStore(create=False)
+    if any(connection.execute('SELECT to_regclass(%s)', (table,)).fetchone()[0] is None
+           for table in (queue.table, queue.reservations)):
+        raise DirectoryDependenciesMissing('Directory claim storage requires installation')
+    return queue
+
+
+def validate_initial_registration(connection, *, protection):
+    """Consume an owner's live, transaction-bound proof; never infer authority.
+
+    The owner checks completeness before its first authority write. Later
+    hooks may have their own unrefreshed dirty entry, so retain/check the ready
+    row here without mistaking that in-transaction entry for failed migration.
+    """
+    operation, roots, transaction = protection.assert_valid(connection)
+    if not installed(connection):
+        raise DirectoryDependenciesMissing('Initial registration requires the dependency migration')
+    ready = connection.execute(f'SELECT ready FROM {schema()}.directory_dependency_state '
+                               'WHERE singleton FOR SHARE').fetchone()
+    if not ready or not ready['ready']:
+        raise DirectoryDependenciesMissing('Initial registration requires a ready dependency index')
+    queue = _installed_queue(connection)
+    rows = connection.execute(f'SELECT location,purpose,xmin::text AS tx FROM {queue.reservations} '
+                              'WHERE operation_id=%s FOR SHARE', (operation,)).fetchall()
+    durable = {r['location'] for r in rows if r['purpose'] == 'resource_creation'
+               and r['tx'] != str(int(transaction) & 0xffffffff)}
+    if not roots or any(cleanup_location(root) not in durable for root in roots):
+        raise RuntimeError('Initial registration requires its durable creation reservations')
+    return roots
+
+
+def replace_initial_identity(connection, identity, root, *, protection):
+    """A first identity covered by live owner claims needs no global path lock.
+
+    Claims remain committed until the owner's final locked registration check.
+    Pending cleanup may be enqueued meanwhile but cannot be claimed; the final
+    check rejects that conflict and rolls back authority and projection alike.
+    """
+    roots = validate_initial_registration(connection, protection=protection)
+    comparison = DirectoryComparison()
+    if not any(comparison.contains(path, root) for path in roots):
+        raise ValueError('Identity directory is outside the creation reservations')
+    s = schema()
+    if connection.execute(f'SELECT 1 FROM {s}.directory_dependencies '
+                          "WHERE kind='identity' AND object_id=%s", (identity,)).fetchone():
+        raise ValueError('Reserved registration only supports a first identity directory')
+    if connection.execute(f'SELECT 1 FROM {s}.identity_retirements WHERE identity=%s', (identity,)).fetchone():
+        raise ValueError('Cannot attach a directory to a retired identity')
+    _write_entries(connection, 'identity', identity, [('', identity, root, 'owned')])
+
+
 def replace(connection, kind, object_id, entries):
     """Replace only derived entries after the authoritative write, in its TX."""
     if not installed(connection):
@@ -88,8 +141,7 @@ def replace(connection, kind, object_id, entries):
             'WHERE kind=%s AND object_id=%s AND slot=%s', (kind, object_id, entries[0][0])).fetchone()
         if row and row['location'] == cleanup_location(entries[0][2]) and row['owner_id'] == entries[0][1]:
             return
-    from .directory_cleanup_store import DirectoryCleanupStore
-    queue = DirectoryCleanupStore(connection=connection)
+    queue = _installed_queue(connection)
     queue.lock(connection)
     s = schema()
     migrating = connection.execute("SELECT current_setting('tfi.directory_dependency_migration',true)").fetchone()[0] == 'v1'
@@ -104,6 +156,11 @@ def replace(connection, kind, object_id, entries):
             if pending:
                 from .directory_cleanup_store import DirectoryPendingCleanup
                 raise DirectoryPendingCleanup(pending[0])
+    _write_entries(connection, kind, object_id, entries)
+
+
+def _write_entries(connection, kind, object_id, entries):
+    s = schema()
     connection.execute(f'DELETE FROM {s}.directory_dependencies WHERE kind=%s AND object_id=%s', (kind, object_id))
     for slot, owner, path, disposition in entries:
         key, ancestors = path_keys(path)

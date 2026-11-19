@@ -1,4 +1,5 @@
 from __future__ import annotations
+from tests.cases.directory_fixture_support import directory_owners  # noqa: F401
 from pathlib import Path
 
 import pytest
@@ -125,6 +126,7 @@ def test_deleted_resident_bearer_stops_authenticating(
     assert resident_hatg_credentials.revoke_resident_credential("not-a-resident") is False
 
 
+@pytest.mark.usefixtures("directory_owners")
 def test_resident_deletion_confirmation_disables_the_bearer(
     credential_store: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -145,6 +147,7 @@ def test_resident_deletion_confirmation_disables_the_bearer(
     assert len(deferred) == 1  # the tombstone publication is still scheduled
 
 
+@pytest.mark.usefixtures("directory_owners")
 @pytest.mark.parametrize("rollback", [False, True])
 def test_deletion_revokes_bearer_only_after_commit_before_deferred_projection(
     credential_store: Path, monkeypatch: pytest.MonkeyPatch, rollback: bool,
@@ -180,6 +183,7 @@ def test_deletion_revokes_bearer_only_after_commit_before_deferred_projection(
     assert get_lineage_data_store().resident_resource_projection_pending(RESIDENT_ID) == (not rollback)
 
 
+@pytest.mark.usefixtures("directory_owners")
 @pytest.mark.parametrize("failure", ["token_store", "unlink"])
 def test_post_commit_revocation_attempts_every_resident_and_reports_failure(
     credential_store, monkeypatch, failure, caplog,
@@ -248,6 +252,7 @@ def test_deletion_confirmation_never_revokes_a_live_resident(credential_store, m
     assert path.exists()
 
 
+@pytest.mark.usefixtures("directory_owners")
 @pytest.mark.parametrize("collect", [False, True])
 def test_failed_immediate_revocation_preserves_committed_receipt(credential_store, monkeypatch, collect):
     """立即撤销失败仍给出已提交、投影待处理的回执，并安排后续投影。"""

@@ -4,6 +4,7 @@
 """
 from __future__ import annotations
 
+from tests.cases.directory_fixture_support import directory_owners  # noqa: F401
 import copy
 from types import SimpleNamespace
 from unittest.mock import Mock
@@ -178,6 +179,7 @@ def test_projection_rpc_requires_signed_service_identity_even_when_auth_optional
         server.server_close()
 
 
+@pytest.mark.usefixtures("directory_owners")
 def test_old_outbox_retry_keeps_revision_lease_and_receipt(projection, monkeypatch):
     """删除投影重试保留修订、更新租约，权限系统只收到删除
 
@@ -461,6 +463,7 @@ def test_historical_deletion_retry_refreshes_source_only_with_authenticated_rece
     assert registry.get(EVIDENCE_COLLECTION, R) == receipt
 
 
+@pytest.mark.usefixtures("directory_owners")
 def test_deleted_identity_is_terminal_and_preserves_known_business_fields():
     """已删除身份不可更新或恢复且保留删除时的字段
 
@@ -478,6 +481,7 @@ def test_deleted_identity_is_terminal_and_preserves_known_business_fields():
     assert 'record' not in before and 'record_json' not in before
 
 
+@pytest.mark.usefixtures("directory_owners")
 def test_deleted_identity_keeps_unknown_business_fields_absent():
     """已删除身份保持未知业务字段缺失
 

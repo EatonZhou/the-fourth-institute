@@ -3,6 +3,7 @@
 :importance: P1
 """
 from __future__ import annotations
+from tests.cases.directory_fixture_support import install_directory_owners
 from tests.cases.database_test_support import IntegrityError, connect
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
@@ -185,6 +186,7 @@ def test_layout_updates_for_different_objects_do_not_overwrite_each_other_contra
             )
             connection.execute("DROP FUNCTION reject_node_b_layout_update()")
     with subtests.test(contract='test_deleted_identity_rejects_layout_and_reuse'), isolated_portal_case() as case_path:
+        install_directory_owners()
         store = _store(case_path)
         store.remove_residents([{'resident_id': 'resident_111111111111', 'deleted_at': '2026-10-11T00:00:00Z', 'deleted_by': 'sample_admin'}])
         result = store.upsert_layout_positions(LINEAGE_ID, [{'object_id': 'resident_111111111111', 'x': 10, 'y': 20}], updated_at='')

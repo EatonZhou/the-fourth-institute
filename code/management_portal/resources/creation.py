@@ -408,6 +408,32 @@ class Creation:
                     os.close(descriptor)
 
     @contextmanager
+    def identity_registration(self, connection):
+        """Publish first identity rows under this live creation's durable claims.
+
+        Enter before authority SQL, and keep registration() inside this scope.
+        Claims protect physical cleanup while the owner transaction writes;
+        registration() still performs the final locked conflict check and
+        releases those claims in that same transaction.
+        """
+        from management_common import directory_dependencies as deps
+        from .directory_identity_lifecycle import _initial_registration
+        if not connection.in_transaction:
+            raise RuntimeError('Identity registration requires an owner transaction')
+        deps.require_ready(connection)
+        protection = _InitialIdentityRegistration(self, connection)
+        deps.validate_initial_registration(connection, protection=protection)
+        try:
+            with _initial_registration(protection):
+                yield
+                row = connection.execute(f'SELECT completed FROM {self.table} WHERE operation_id=%s',
+                                         (self.key,)).fetchone()
+                if not row or not row['completed']:
+                    raise RuntimeError('Identity registration must complete in its owner transaction')
+        finally:
+            protection.active = False
+
+    @contextmanager
     def registration(self, connection):
         """Enlist completion, reservation release and scope in the owner transaction."""
         from .directory_registrations import is_deleted
@@ -434,6 +460,44 @@ class Creation:
             connection.execute(f'INSERT INTO "{self.lifecycle.db.schema}".allocations(resource_id,scope_id) '
                                'VALUES (%s,%s) ON CONFLICT DO NOTHING', (self.resource_id, self.scope_id))
         connection.execute(f'UPDATE {self.table} SET completed=TRUE WHERE operation_id=%s', (self.key,))
+
+
+class _InitialIdentityRegistration:
+    """Private owner proof; common only consumes the verified claim contract."""
+    def __init__(self, creation, connection):
+        self.creation, self.connection = creation, connection
+        self.transaction = connection.execute('SELECT pg_current_xact_id()::text').fetchone()[0]
+        self.writer = getattr(creation, 'writer', None)
+        self.active = True
+
+    def assert_directory(self, root):
+        # A descendant identity must not register an alias through a symlink
+        # inside an otherwise correctly owned/materialized creation artifact.
+        _assert_identity(root, _identity(root))
+
+    def assert_valid(self, connection):
+        if (not self.active or connection is not self.connection or not connection.in_transaction
+                or connection.execute('SELECT pg_current_xact_id()::text').fetchone()[0] != self.transaction):
+            raise RuntimeError('Identity registration protection belongs to another transaction')
+        creation = self.creation
+        if self.writer is None or getattr(creation, 'writer', None) is not self.writer:
+            raise RuntimeError('Creation execution ownership lost')
+        creation._assert_scope_open(connection)
+        creation.assert_owned(connection)
+        row = connection.execute(f'SELECT resource_id,completed,aborted,artifacts FROM {creation.table} '
+                                 'WHERE operation_id=%s', (creation.key,)).fetchone()
+        if not row or row['resource_id'] != creation.resource_id or row['completed'] or row['aborted']:
+            raise RuntimeError('Initial identity registration requires an unfinished creation')
+        roots = []
+        for artifact in row['artifacts']:
+            if artifact['kind'] not in {'directory', 'existing_directory'} or not artifact.get('ready'):
+                raise RuntimeError('Identity registration requires materialized directory artifacts')
+            path = cleanup_path(artifact['path'])
+            _assert_identity(path, artifact.get('identity'))
+            roots.append(path)
+        if not roots:
+            raise RuntimeError('Identity registration has no directory claim')
+        return creation.key, tuple(roots), self.transaction
 
 
 def finish_scope_creations(scope_id):

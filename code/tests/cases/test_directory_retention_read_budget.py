@@ -13,10 +13,16 @@ from management_common.instance_manifest import AREAS
 
 
 def seed(store, connection, locations):
+    from management_common.directory_dependencies import prepare_write
+    prepare_write(connection)
     connection.execute(
         f"INSERT INTO {store.table} (location,owner_id,category,created_at,last_access,bytes) "
         "SELECT location,'nested-other-owner','object_data',now(),now(),0 "
         "FROM unnest(%s::text[]) AS location", (locations,))
+    # Preserve historical path spellings while maintaining each artifact's
+    # owner projection in the same transaction as the low-level fixture write.
+    for location in locations:
+        retention.refresh_artifact(connection, location)
 
 
 def remaining(store, connection):
@@ -56,6 +62,8 @@ def test_unregister_tree_reads_only_candidates(location_map, monkeypatch, record
     selected = ['features:target', 'features:target/child', str(root / 'absolute')]
     unrelated = [f'features:other-{i}/child' for i in range(300)]
     unrelated += ['features:target-sibling/child', 'papers:target/child']
+    with store.database.transaction() as connection:
+        seed(store, connection, selected + unrelated)
     parsed, manifests, policies = [], [], []
     original_path, instance = retention.cleanup_path, paths.current_instance()
 
@@ -72,7 +80,6 @@ def test_unregister_tree_reads_only_candidates(location_map, monkeypatch, record
     monkeypatch.setattr(retention, 'current_instance', manifest, raising=False)
     monkeypatch.setattr(paths, '_directory_case_sensitive', lambda p: policies.append(p) or True)
     with store.database.transaction() as connection:
-        seed(store, connection, selected + unrelated)
         counted = CountReads(connection, store.table)
         assert store.unregister_tree([root, root / 'child'], connection=counted) == 3
         assert remaining(store, connection) == set(unrelated)

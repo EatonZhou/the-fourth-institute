@@ -1,4 +1,5 @@
 """:importance: P2"""
+from tests.cases.directory_fixture_support import directory_owners  # noqa: F401
 from tests.cases.agent_data_test_support import register_session
 from pathlib import Path
 from types import SimpleNamespace
@@ -142,6 +143,7 @@ def assert_archived_without_neighbor_damage(target):
     assert LINEAGE not in query_ids(target)
 
 
+@pytest.mark.usefixtures("directory_owners")
 @pytest.mark.parametrize("failure_kind", ["unknown", "confirmed"])
 def test_resource_tombstone_release_failure_recovery_and_archive(integration, monkeypatch, record_property, failure_kind):
     """资源墓碑先行发布且会话释放失败可恢复并安全归档"""
@@ -187,6 +189,7 @@ def test_resource_tombstone_release_failure_recovery_and_archive(integration, mo
     record_property("index_refresh_boundary", "real collaboration adapter catches up after first release failure, before recovery")
 
 
+@pytest.mark.usefixtures("directory_owners")
 def test_tombstone_hides_ordinary_query_before_delayed_index_refresh(integration, record_property):
     """索引延迟刷新时权威墓碑仍立即隐藏普通查询结果"""
     target = integration

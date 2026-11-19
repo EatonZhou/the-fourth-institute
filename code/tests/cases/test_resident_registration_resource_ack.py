@@ -3,6 +3,7 @@
 :aspects: functional, behavior
 """
 from __future__ import annotations
+from tests.cases.directory_fixture_support import directory_owners  # noqa: F401
 from management_portal.society_service import resident_catalog
 
 import socket
@@ -138,6 +139,7 @@ def test_replay_repairs_a_missing_outbox_only_after_a_real_ack(registration, mon
     assert execution_record(details["instruction_id"])["error"] is None
 
 
+@pytest.mark.usefixtures("directory_owners")
 @pytest.mark.parametrize("state", ["ready", "leased", "deleted", "tombstone"])
 def test_registration_projection_repair_preserves_ack_lease_and_deletion(registration, state):
     """注册发布恢复保持 ACK、租约与删除屏障
@@ -306,6 +308,7 @@ def test_committed_registration_retries_only_publication_with_same_identity(regi
     assert attempts == [resident_id, resident_id]
 
 
+@pytest.mark.usefixtures("directory_owners")
 def test_confirmation_rechecks_owner_and_deleted_identity(registration, monkeypatch):
     """确认 Resident 注册时重新检查调用者权限，已删除的 Resident 不能确认
 
@@ -330,6 +333,7 @@ def test_confirmation_rechecks_owner_and_deleted_identity(registration, monkeypa
         store.resident_record(record["resident_id"])
 
 
+@pytest.mark.usefixtures("directory_owners")
 @pytest.mark.parametrize("state", ["targeted", "leased", "newer", "deleted"])
 def test_outbox_confirmation_obeys_exact_identity_and_current_publication(registration, state):
     """注册确认复用精确身份的现有发布回执
@@ -430,6 +434,7 @@ def test_committed_registration_error_preserves_identity_over_rpc_and_http(monke
     assert payload["details"]["projection_failures"] == [failure]
 
 
+@pytest.mark.usefixtures("directory_owners")
 def test_pending_create_replay_after_deletion_is_notfound_without_recreation(registration, monkeypatch):
     """已删除创建身份的原键恢复返回 notfound
 

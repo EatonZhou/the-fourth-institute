@@ -31,6 +31,11 @@ def identities(world, monkeypatch):
             workspaces.mark_deleted(wid, deleted_at="2026-10-08T00:00:00Z",
                                     deleted_by="sample_admin", connection=connection)
     with store.database.transaction() as connection:
+        from management_common.directory_dependencies import prepare_write, replace
+        from management_portal.society_service.directory_owner import (
+            record_lineage_directory, record_resident_directory,
+        )
+        prepare_write(connection)
         connection.execute(
             "INSERT INTO lineages (lineage_id,title,project_id,leader_resident_id,revision,layout_revision,created_by) VALUES (%s,%s,%s,%s,1,1,%s)",
             (LINEAGE, "Old", "Old", ACTIVE, "sample_admin"),
@@ -55,6 +60,11 @@ def identities(world, monkeypatch):
                 # A stale graph row must not make a deleted identity runnable.
                 connection.execute("INSERT INTO lineage_nodes(node_id,lineage_id,node_type) VALUES (%s,%s,'resident')",
                                    (rid, LINEAGE))
+            if deleted:
+                replace(connection, 'identity', rid, [])
+            else:
+                record_resident_directory(connection, rid, LINEAGE)
+        record_lineage_directory(connection, LINEAGE, 'Old')
     original_paths = resource_client.workspace_paths_many
     calls = []
 

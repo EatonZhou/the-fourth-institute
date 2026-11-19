@@ -21,6 +21,7 @@ def test_builtin_shelf_and_dry_run(lineage):
     shelf = templates.list_templates()
     assert {item["builtin_key"] for item in shelf} == {
         "family",
+        "family_review",
         "agent_loop",
         "fixed_reminder",
         "scheduled_work",
@@ -38,7 +39,7 @@ def test_builtin_shelf_and_dry_run(lineage):
         dry_run=True,
     )
     assert draft["behavior"]["persistent"] is False
-    assert len(templates.list_templates()) == 9
+    assert templates.list_templates() == shelf
 
 
 def test_builtin_refresh_preserves_edits_and_deletions(lineage, monkeypatch):

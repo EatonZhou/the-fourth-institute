@@ -3,6 +3,7 @@
 :aspects: functional, behavior
 """
 from __future__ import annotations
+from tests.cases.directory_fixture_support import directory_owners  # noqa: F401
 from management_portal.society_service import resident_catalog
 
 import threading
@@ -132,6 +133,7 @@ def test_registration_state_is_always_explicit(registration):
         ))
 
 
+@pytest.mark.usefixtures("directory_owners")
 @pytest.mark.parametrize("race", ["newer", "deleted", "tombstone"])
 def test_stale_or_deleted_resource_ack_cannot_publish_registration_ready(registration, monkeypatch, race):
     """旧 ACK 和删除竞态不能发布 Resident 就绪

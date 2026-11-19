@@ -3,6 +3,7 @@
 :module: resident.fork-handoff
 :design: decision_4aa13bc21e8e, decision_7ef392b5f60d
 """
+from tests.cases.directory_fixture_support import directory_owners  # noqa: F401
 from pathlib import Path
 
 import pytest
@@ -21,6 +22,24 @@ def finish_binding_projections():
     operations = resident_record_domain.lifecycle_operations()
     for operation in operations.ready():
         operations.run(operation, resident_lifecycle_steps_domain.apply_resident_lifecycle_step)
+
+
+def cleanup_evidence():
+    """Expose the real frozen cleanup scope when a filesystem assertion fails."""
+    import json
+    from management_common.directory_dependencies import schema
+    queue = get_directory_cleanup_store()
+    with queue.database.read() as connection:
+        evidence = {
+            'cleanup': queue.status(connection=connection),
+            'reservations': [dict(row) for row in connection.execute(
+                f'SELECT operation_id,location,purpose FROM {queue.reservations}').fetchall()],
+            'dependencies': [dict(row) for row in connection.execute(
+                f'SELECT kind,object_id,owner_id,location,disposition FROM {schema()}.directory_dependencies '
+                "WHERE kind IN ('identity','workspace','artifact')").fetchall()],
+        }
+    print('DIRECTORY_CLEANUP_EVIDENCE=' + json.dumps(evidence, default=str, sort_keys=True))
+    return evidence
 
 
 def copy_item(tmp_path):
@@ -145,6 +164,7 @@ def test_preparing_crash_resumes_same_attempt(lineage_store, tmp_path, monkeypat
     assert result['items'][0]['result']['target_workspace_id'] == wid
 
 
+@pytest.mark.usefixtures("directory_owners")
 @pytest.mark.parametrize('method', ['filesystem_copy', 'git_worktree'])
 def test_lineage_deletion_removes_copy(lineage_store, tmp_path, method):
     lid, handoff, target, source = draft(lineage_store, tmp_path, method)
@@ -152,7 +172,7 @@ def test_lineage_deletion_removes_copy(lineage_store, tmp_path, method):
     copied = result['items'][0]['result']
     lineage_lifecycle.delete_lineage(lid, 'sample_admin')
     get_directory_cleanup_store().run_pending()
-    assert not Path(copied['target_path']).exists()
+    assert not Path(copied['target_path']).exists(), cleanup_evidence()
     assert not get_workspace_store().rows([copied['target_workspace_id']])
 
 
@@ -303,6 +323,7 @@ def test_live_preparer_lease_still_rejects_parallel_execution(lineage_store, tmp
             lineage_handoffs.execute_handoff(lid, handoff['id'], 'sample_admin')
 
 
+@pytest.mark.usefixtures("directory_owners")
 def test_failed_creation_does_not_block_lineage_directory_cleanup(lineage_store, tmp_path, monkeypatch):
     from management_portal import directory_maintenance
     lid, handoff, target, source = draft(lineage_store, tmp_path)
@@ -314,7 +335,7 @@ def test_failed_creation_does_not_block_lineage_directory_cleanup(lineage_store,
             lineage_handoffs.execute_handoff(lid, handoff['id'], 'sample_admin')
     lineage_lifecycle.delete_lineage(lid, 'sample_admin')
     directory_maintenance.run(test_roots=[])
-    assert not folder.exists()
+    assert not folder.exists(), cleanup_evidence()
     with portal_database(schema='directory_lifecycle').read() as conn:
         row = conn.execute('SELECT aborted,cleanup_complete FROM resource_creations WHERE actor=%s', (lid,)).fetchone()
     assert row['aborted'] and row['cleanup_complete']

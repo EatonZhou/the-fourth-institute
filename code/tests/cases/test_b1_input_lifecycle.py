@@ -1,4 +1,5 @@
 """Resident input lifecycle regressions for deletion, controls and media retention."""
+from tests.cases.directory_fixture_support import directory_owners  # noqa: F401
 from types import SimpleNamespace
 
 import pytest
@@ -22,6 +23,7 @@ from tests.cases.test_lineage_catalogs import _lineage_definition, _record
 from tests.cases.resident_execution_test_support import resident_record  # noqa: F401
 
 
+@pytest.mark.usefixtures("directory_owners")
 @pytest.mark.parametrize('fail_delete', [False, True])
 def test_catalog_deletion_archives_turn_and_queues_ack_atomically(tmp_path, monkeypatch, fail_delete):
     """目录删除原子归档执行并排队确认操作"""

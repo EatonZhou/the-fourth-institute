@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from tests.cases.directory_fixture_support import directory_owners  # noqa: F401
 from tests.cases.society_service_test_support import (
     create_lineage_with_resident_members,
     install_resource_boundary,
@@ -259,6 +260,7 @@ def test_stale_graph_form_cannot_overwrite_layout_or_runtime(
     assert _node(updated, FIRST)["last_execution"]["status"] == "queued"
 
 
+@pytest.mark.usefixtures("directory_owners")
 def test_layout_update_ignores_an_object_deleted_by_another_page(
     lineage_store: Path,
     monkeypatch: pytest.MonkeyPatch,

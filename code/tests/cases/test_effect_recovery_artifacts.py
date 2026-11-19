@@ -4,7 +4,9 @@
 :importance: P2
 :design: decision_4637ca4a69e2, decision_898b8911a2ff
 """
+from tests.cases.directory_fixture_support import directory_owners  # noqa: F401
 from dataclasses import replace
+import hashlib
 
 import pytest
 
@@ -38,7 +40,7 @@ def test_large_call_restarts_without_repeating_and_preserves_business_summary(mo
     """大结果调用中断后重启不重复执行，输出完整，调用摘要只留业务 ID，再次执行直接回放
 
     :design-point:"""
-    lineage = _lineage("lineage_large_recovery")
+    lineage = _lineage('lineage_882eaaf33dfa')
     inv = replace(activation(), source_kind="packet", source_id="event_source_recovery", source_wire_id="wire_recovery")
     payload = {"resident_id": "resident_created", "body": "完整" * journal.MAX_RESULT_BYTES}
     count = []
@@ -88,7 +90,7 @@ def test_terminal_failure_keeps_journal_and_artifact_until_transaction_commits(m
     """终态写入失败时 Effect 日志和恢复产物原样保留，不生成清理任务
 
     :design-point:"""
-    lid = _lineage("lineage_terminal_failure")["lineage_id"]
+    lid = _lineage('lineage_cdf02cff5223')["lineage_id"]
     journal.begin(lid, "key", effect_id="effect", trigger_path_id="", script_sha="sha")
     entry = journal.record_call(lid, "key", "c1", {"ok": True, "result": {"body": "x" * (journal.MAX_RESULT_BYTES + 1)}})
     original = journal.load(lid, "key")
@@ -104,7 +106,7 @@ def test_finish_unconfirmed_write_does_not_clear_journal(monkeypatch):
     """Effect 终态写入未确认时日志保持 running，不被清除
 
     :design-point:"""
-    lid = _lineage("lineage_unconfirmed_finish")["lineage_id"]
+    lid = _lineage('lineage_946aec1aa655')["lineage_id"]
     journal.begin(lid, "key", effect_id="effect", trigger_path_id="", script_sha="sha")
     monkeypatch.setattr(journal.trigger_paths, "effect_settled", lambda *a: False)
     with pytest.raises(journal.RecoveryPending):
@@ -118,7 +120,7 @@ def test_failed_release_has_durable_retry_and_does_not_erase_outputs(monkeypatch
     :importance: P1
     :design-point:
     """
-    lid = _lineage("lineage_release_retry")["lineage_id"]
+    lid = _lineage('lineage_df8c6212fede')["lineage_id"]
     journal.begin(lid, "key", effect_id="effect", trigger_path_id="", script_sha="sha")
     entry = journal.record_call(lid, "key", "c1", {"ok": True, "caller": "resident_caller", "instruction_id": "inst_lin_test", "result": {"large": "x" * (journal.MAX_RESULT_BYTES + 1)}})
     output = journal.output_reference(lid, "key", {"output": "retained"})
@@ -142,7 +144,7 @@ def test_interrupted_call_keeps_its_instruction_id_so_disposition_releases_the_h
     :importance: P1
     :design-point:
     """
-    lineage = _lineage("lineage_interrupted_hold")
+    lineage = _lineage('lineage_fa2724e80396')
     lid = lineage["lineage_id"]
     inv = activation()
     sent = []
@@ -173,7 +175,7 @@ def test_uncertain_or_projection_pending_call_is_not_terminal(monkeypatch, state
     """提交状态未知或投影待定的调用让 Effect 挂起待恢复，调用记为 unresolved
 
     :design-point:"""
-    lineage = _lineage("lineage_unknown_" + state)
+    lineage = _lineage("lineage_" + hashlib.sha256(("lineage_unknown_" + state).encode("utf-8")).hexdigest()[:12])
     monkeypatch.setattr(routing, "execute", lambda *a, **k: _Outcome("projection_pending", error={"code": "instruction.projection_pending", "commit_state": state}, instruction_id="inst_lin_unknown"))
     with pytest.raises(journal.RecoveryPending):
         execution._execute_program_effect_component(lineage, _plan("Ping"), "effect_aaaaaaaaaaaa", activation(), "CASE-A", host=_Host())
@@ -187,7 +189,7 @@ def test_known_not_committed_disposition_remains_explicit(monkeypatch, code):
     """确认未提交的取消或超时调用让 Effect 以失败结束并保留原错误
 
     :design-point:"""
-    lineage = _lineage("lineage_" + code.split(".")[-1])
+    lineage = _lineage("lineage_" + hashlib.sha256(("lineage_" + code.split(".")[-1]).encode("utf-8")).hexdigest()[:12])
     error = {"code": code, "message": "confirmed by owner", "retryable": False, "commit_state": "not_committed"}
     monkeypatch.setattr(routing, "execute", lambda *a, **k: _Outcome("failed", error=error, instruction_id="inst_lin_final"))
     monkeypatch.setattr(execution.lineage_program_effect_results, "effect_result_projection", lambda *a, **kw: {})
@@ -199,7 +201,7 @@ def test_missing_artifact_fails_recovery_without_repeating_call(monkeypatch):
     """恢复产物丢失时恢复挂起并保留日志，不重复调用
 
     :design-point:"""
-    lid = _lineage("lineage_missing_blob")["lineage_id"]
+    lid = _lineage('lineage_d694c54a41a3')["lineage_id"]
     journal.begin(lid, "key", effect_id="effect", trigger_path_id="", script_sha="sha")
     entry = journal.record_call(lid, "key", "c1", {"ok": True, "result": {"x": "x" * (journal.MAX_RESULT_BYTES + 1)}})
     ArtifactStore().clear_recovery(lid, "key")
@@ -228,7 +230,7 @@ def test_outer_transaction_rollback_does_not_release_or_delete_recovery(monkeypa
     :importance: P1
     :design-point:
     """
-    lid = _lineage("lineage_outer_rollback")["lineage_id"]
+    lid = _lineage('lineage_b0d162a22b0e')["lineage_id"]
     store = get_lineage_data_store()
     journal.begin(lid, "key", effect_id="effect", trigger_path_id="", script_sha="sha")
     entry = journal.record_call(lid, "key", "c1", {"ok": True, "caller": "resident_caller", "instruction_id": "inst_lin_test", "result": {"body": "x" * (journal.MAX_RESULT_BYTES + 1)}})
@@ -249,7 +251,7 @@ def test_aggregate_journal_budget_offloads_without_losing_results(monkeypatch):
     """Effect 日志记录超出总预算时调用结果转存为产物，恢复和摘要仍完整
 
     :design-point:"""
-    lid = _lineage("lineage_aggregate_budget")["lineage_id"]
+    lid = _lineage('lineage_a2c108b713b9')["lineage_id"]
     journal.begin(lid, "key", effect_id="effect", trigger_path_id="", script_sha="sha")
     monkeypatch.setattr(journal, "MAX_RECORD_BYTES", 512)
     result = {"script_run_id": "scriptrun_123", "body": "x" * 600}
@@ -264,7 +266,7 @@ def test_explicit_effect_disposition_keeps_actual_reason_and_rejects_unknown(sta
     """Effect 以 cancelled 或 timed_out 结束须附原因，仍有结果未知的调用时不能结束
 
     :design-point:"""
-    lid = _lineage("lineage_effect_disposition_" + status)["lineage_id"]
+    lid = _lineage("lineage_" + hashlib.sha256(("lineage_effect_disposition_" + status).encode("utf-8")).hexdigest()[:12])["lineage_id"]
     journal.begin(lid, "key", effect_id="effect", trigger_path_id="", script_sha="sha")
     with pytest.raises(ValueError, match="evidenced"):
         journal.finish(lid, "key", status=status, outputs={})
@@ -287,7 +289,7 @@ def test_recovery_release_preserves_delegated_callers_and_waits_for_history(monk
     :design-point:
     """
     from dataclasses import replace
-    lineage = _lineage("lineage_delegated_release")
+    lineage = _lineage('lineage_46f5c155c24a')
     initiator = "resident_111111111111"
     facade = "resident_222222222222"
     def context(lineage, effect_id, instruction, arguments, original, *, lineage_id, event=None):
@@ -311,6 +313,7 @@ def test_recovery_release_preserves_delegated_callers_and_waits_for_history(monk
     assert dict(released) == {initiator: ["inst_lin_Ping"], facade: ["inst_lin_FacadeCall"]}
 
 
+@pytest.mark.usefixtures("directory_owners")
 def test_committed_cleanup_survives_lineage_deletion_and_service_restart(monkeypatch):
     """Effect 清理任务在 Lineage 删除和服务重启后存续
 
@@ -353,7 +356,7 @@ def test_independent_worker_retries_cleanup_without_another_effect(monkeypatch):
     """
     import threading
     from management_portal.society_service.effect_recovery_worker import EffectRecoveryWorker
-    lid = _lineage("lineage_cleanup_tick")["lineage_id"]
+    lid = _lineage('lineage_68cabda9d4b1')["lineage_id"]
     journal.begin(lid, "key", effect_id="effect", trigger_path_id="", script_sha="sha")
     journal.record_call(lid, "key", "c1", {"ok": True, "caller": "resident_original", "instruction_id": "inst_lin_tick", "result": {}})
     monkeypatch.setattr(routing, "release_recovery", lambda *a: (_ for _ in ()).throw(OSError("disconnected owner")))
@@ -380,7 +383,7 @@ def test_success_receipt_integrity_failure_never_calls_router(monkeypatch, kind)
     :design-point:
     """
     import hashlib
-    lineage = _lineage("lineage_receipt_integrity_" + kind)
+    lineage = _lineage("lineage_" + hashlib.sha256(("lineage_receipt_integrity_" + kind).encode("utf-8")).hexdigest()[:12])
     inv = activation()
     plan = _plan("Ping")
     key = execution.effect_idempotency_key(lineage["lineage_id"], "effect_aaaaaaaaaaaa", inv)
@@ -404,6 +407,7 @@ def test_success_receipt_integrity_failure_never_calls_router(monkeypatch, kind)
     assert not journal.trigger_paths.effect_finished(lineage["lineage_id"], execution.effect_idempotency_key(lineage["lineage_id"], "effect_aaaaaaaaaaaa", activation()))
 
 
+@pytest.mark.usefixtures("directory_owners")
 def test_lineage_deletion_settles_safe_effect_and_retains_cleanup_for_tick(monkeypatch):
     """删除 Lineage 终结已确认 Effect 并保留后续清理
 
@@ -433,7 +437,7 @@ def test_lineage_deletion_preserves_in_flight_effect_until_confirmed():
 
     :design-point:
     """
-    lid = _lineage("lineage_delete_inflight")["lineage_id"]
+    lid = _lineage('lineage_2332efdb19c5')["lineage_id"]
     journal.begin(lid, "key", effect_id="effect", trigger_path_id="", script_sha="sha")
     journal.record_call_started(lid, "key", "c1", {"instruction": "CreateResident", "caller": "resident_original"})
     with pytest.raises(journal.RecoveryPending):
@@ -491,7 +495,7 @@ def test_cleanup_worker_rotates_past_failed_first_batch(monkeypatch):
     :design-point:
     """
     from management_portal.society_service.effect_recovery_worker import EffectRecoveryWorker
-    lid = _lineage("lineage_cleanup_fairness")["lineage_id"]
+    lid = _lineage('lineage_5e68ace990ff')["lineage_id"]
     store = get_lineage_data_store()
     for i in range(101):
         store.enqueue_effect_cleanup(lid, f"key_{i:03}", {"resident_original": [f"inst_lin_{i}"]})

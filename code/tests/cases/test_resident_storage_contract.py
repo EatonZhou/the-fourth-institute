@@ -4,12 +4,16 @@
 :design: decision_d918ebebc062
 """
 import pytest
+from tests.cases.directory_fixture_support import directory_owners, resident_identity_write  # noqa: F401
 from management_common.json_columns import json_value
 from management_portal.resources.workspace_store import get_workspace_store
 
 def _identity(rid, **fields):
-    workspace = get_workspace_store().ensure("workspace_" + rid[-12:], "/tmp/" + rid, title="Test Workspace")
-    return {"owned_workspace_id": workspace, **fields}
+    from tests.cases.canonical_domain_fixture import canonical_projection
+    canonical_projection(rid, **fields)
+    record = LineageDataStore().resident_record(rid)
+    return {"owned_workspace_id": record['owned_workspace_id'],
+            "directory": record['directory'], **fields}
 
 from management_portal.society_service import resident_storage as contract
 from management_portal.society_service.state_store import LineageDataStore, lineage_data_schema_matches
@@ -48,14 +52,16 @@ def test_unknown_or_deleted_fields_are_rejected(field):
         contract.validate_record_fields({field: {}})
 
 
+@pytest.mark.usefixtures("directory_owners")
 def test_configuration_backend_has_one_authority_and_closed_keys():
     """执行配置的 backend 只来自 Resident 身份，写入未知设置或更换 backend 被拒绝
 
     :design-point:"""
     store = LineageDataStore()
     rid = 'resident_111111111111'
-    with store.database.transaction() as connection:
-        contract.put_fields(connection, 'residents', contract.IDENTITY_FIELDS, rid, _identity(rid, backend='codex'))
+    identity = _identity(rid, backend='codex')
+    with store.database.transaction() as connection, resident_identity_write(connection, rid):
+        contract.put_fields(connection, 'residents', contract.IDENTITY_FIELDS, rid, identity)
         contract.put_fields(connection, 'resident_execution_configuration', contract.CONFIGURATION_FIELDS, rid,
                             {'execution_settings': {'model': 'test-model'}, 'harness_config': {}})
     actual = store.read_resident_execution_settings(rid)
@@ -80,7 +86,7 @@ def test_deleted_sparse_identity_needs_no_current_lineage_or_workspace():
     :design-point:"""
     store = LineageDataStore()
     rid = 'resident_333333333333'
-    with store.database.transaction() as connection:
+    with store.database.transaction() as connection, resident_identity_write(connection, rid):
         contract.put_fields(connection, 'residents', contract.IDENTITY_FIELDS, rid, {
             'title': 'Historical identity', 'lineage_id': 'lineage_333333333333',
             'deleted_at': '2026-10-08T10:00:00Z', 'historical_project_id': 'HistoricalProject',
@@ -100,6 +106,7 @@ def test_deleted_sparse_identity_needs_no_current_lineage_or_workspace():
         store.write_resident_execution_settings(rid, {'backend':'codex'})
 
 
+@pytest.mark.usefixtures("directory_owners")
 @pytest.mark.parametrize('entry', ['message', 'info', 'job'])
 def test_deleted_identity_cannot_accept_work_after_a_stale_service_lookup(entry):
     """已删除的 Resident 不再接受消息、info 或执行记录
@@ -107,8 +114,9 @@ def test_deleted_identity_cannot_accept_work_after_a_stale_service_lookup(entry)
     :design-point:"""
     store = LineageDataStore()
     rid = 'resident_444444444444'
-    with store.database.transaction() as connection:
-        contract.put_fields(connection, 'residents', contract.IDENTITY_FIELDS, rid, _identity(rid))
+    identity = _identity(rid)
+    with store.database.transaction() as connection, resident_identity_write(connection, rid):
+        contract.put_fields(connection, 'residents', contract.IDENTITY_FIELDS, rid, identity)
     store.remove_residents([{'resident_id': rid, 'deleted_at': '2026-10-08T10:00:00Z', 'deleted_by': 'test'}])
     message = {'message_id': 'msg-test', 'content_parts': [{'type': 'text', 'text': 'late message'}]}
     with pytest.raises(KeyError):

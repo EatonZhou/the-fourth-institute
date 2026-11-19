@@ -17,9 +17,11 @@ TIME = '2026-10-13T03:58:43Z'
 def records(tmp_path, monkeypatch):
     from management_portal.society_service.state_store import LineageDataStore
     state = LineageDataStore()
-    state.database.write(lambda c: c.execute(
-        'INSERT INTO residents(resident_id,deleted_at,deleted_by) VALUES (%s,%s,%s)',
-        (RID, TIME, 'resident_123456789def')))
+    from tests.cases.directory_fixture_support import resident_identity_write
+    with state.database.transaction() as c, resident_identity_write(c, RID):
+        c.execute(
+            'INSERT INTO residents(resident_id,deleted_at,deleted_by) VALUES (%s,%s,%s)',
+            (RID, TIME, 'resident_123456789def'))
     store = registry_store.RegistryStore()
     public = dict(schema='tfi.collaboration-descriptor.v2', resource_id=RID,
                   title='Historical title', summary='Keep original text', status='deleted',

@@ -125,61 +125,63 @@ def test_workspace_reads_are_non_creating_and_first_send_preparation_is_explicit
 
 @pytest.mark.parametrize("surface", ["paper"])
 def test_workspace_prepare_reuses_bound_resident_and_keeps_project_in_metadata(monkeypatch, isolated_portal_case, surface):
-    """Paper 首次准备复用讨论绑定并保留项目来源
+    """Paper 准备需要已有个人会话，并把项目来源交给讨论解析器
 
-    首次准备经过实际 Resident 调用接口创建绑定，重复准备与只读刷新复用同一成员；项目来源保存在 metadata，不传入未声明的 Resident 创建参数。
+    读和准备都通过当前用户的个人关联读取同一 Resident。首次准备不能创建共享角色或旧调用关联。
 
     :importance: P1
     :design: decision_f560803947c6
     :design-point:
     """
+    from management_portal import paper_conversations
     from management_portal.workbench_projections import native
+    from management_portal.workbench_projections.store import ProjectionError
 
     with isolated_portal_case():
         store = PortalUIStateStore()
-        records = {}
+        scope = f"surface-chat:alice:{surface}:item"
         lineage_id = "lineage_111111111111"
         resident_id = "resident_111111111111"
         context = {"title": "Research Chat", "project_id": "test-project", "paper_id": "paper_111111111111"}
+        reads = []
+        metadata = []
+        ensure = native.ensure
 
-        def create_resident(*_args, **_kwargs):
-            assert not records, "Repeated prepare must reuse its existing discussion"
-            records[resident_id] = {"resident_id": resident_id, "lineage_id": lineage_id}
-            return {"resident": records[resident_id]}
+        def read_resident(actor, operation, args):
+            reads.append((actor, operation, args))
+            assert (actor, operation, args) == ("alice", "GetResident", {"resident_id": resident_id})
+            return {"resident": {"resident_id": resident_id, "lineage_id": lineage_id}}
 
-        def binding(*_args, **_kwargs):
-            if not records:
-                create_resident()
-            return records[resident_id]
+        def prepare_binding(name, **options):
+            metadata.append(options["metadata"])
+            return ensure(name, **options)
 
-        service = SimpleNamespace(
-            resident=SimpleNamespace(get_resident=lambda rid, actor: records[rid]),
-            lineage=SimpleNamespace(get_lineage=lambda rid, actor: {"lineage_id": rid},
-                                    create_lineage_resident=create_resident),
-        )
-        monkeypatch.setattr(invocation, "get_society_service", lambda: service)
-        monkeypatch.setattr(invocation, "get_portal_ui_state_store", lambda: store)
-        monkeypatch.setattr(invocation, "_configure_invocation_resident", lambda service, record, actor, **kwargs: record)
+        monkeypatch.setattr(paper_conversations, "get_portal_ui_state_store", lambda: store)
+        monkeypatch.setattr(paper_conversations, "_app", lambda actor: {"bindings": {}})
+        monkeypatch.setattr(paper_conversations.isa_client, "call", read_resident)
         monkeypatch.setattr(workspace, "_context_for", lambda *args, **kwargs: context)
         monkeypatch.setattr(workspace, "_cwd", lambda context: "")
-        monkeypatch.setattr(workspace, "_runtime_context", lambda **kwargs: "Paper context")
-        monkeypatch.setattr(native, "binding", binding)
-        monkeypatch.setattr(native, "lookup", lambda *args, **kwargs: records.get(resident_id, {}))
-        monkeypatch.setattr(native, "get_service", lambda: SimpleNamespace(
-            builtin_application=lambda name, actor: {"workbench_id": "workbench_111111111111"}))
+        monkeypatch.setattr(native, "ensure", prepare_binding)
+        monkeypatch.setattr(invocation, "ensure_invocation_resident", Mock(side_effect=AssertionError("shared binding")))
 
+        payload = {"surface": surface, "workspace_key": "item", "message": "Compare", "context": context}
         assert workspace.get_workspace("alice", surface, "item")["binding_state"] == "unbound"
-        assert not records
+        with pytest.raises(ProjectionError) as absent:
+            workspace.prepare_workspace("alice", payload)
+        assert absent.value.code == "paper.research_slot_required"
+        assert not reads and not store.list("alice", paper_conversations.NAMESPACE)
+
+        reference = {"state": "exported", "resident_id": resident_id, "workbench_id": "workbench_111111111111"}
+        store.put("alice", paper_conversations.NAMESPACE, scope, reference)
         for _ in range(2):
-            prepared = workspace.prepare_workspace("alice", {
-                "surface": surface, "workspace_key": "item", "message": "Compare", "context": context,
-            })
+            prepared = workspace.prepare_workspace("alice", payload)
             assert prepared["resident_id"] == resident_id
             assert prepared["binding_state"] == "bound"
         assert workspace.get_workspace("alice", surface, "item")["resident_id"] == resident_id
-        association = store.get("alice", invocation.INVOCATION_ASSOCIATION_NAMESPACE, f"surface-chat:alice:{surface}:item")
-        assert association["value"]["metadata"]["project_id"] == "test-project"
-        assert len(records) == 1
+        assert len(reads) == 3
+        assert [value["project_id"] for value in metadata] == ["test-project"] * 3
+        assert store.get("alice", paper_conversations.NAMESPACE, scope)["value"] == reference
+        assert store.get("alice", invocation.INVOCATION_ASSOCIATION_NAMESPACE, scope) is None
 
 
 def test_resource_reads_and_first_send_revalidate_resource_access(tmp_path, monkeypatch):

@@ -1,3 +1,4 @@
+from tests.cases.directory_fixture_support import directory_owners  # noqa: F401
 from management_portal.society_service import business_fact_views
 """Definition commits and runtime recovery preserve concurrent authority."""
 from contextlib import contextmanager
@@ -218,6 +219,7 @@ def test_departed_resident_terminal_input_settles_invocation(monkeypatch):
     assert lineage_program_resident_inputs.resident_handoff(LINEAGE_ID, "resident_111111111111", "msg_departed")["status"] == "completed"
 
 
+@pytest.mark.usefixtures("directory_owners")
 def test_deleting_lineage_cleans_work_but_retains_trigger_paths():
     """删除 Lineage 清掉投递配置、事件进度和共享状态，触发路径保留并标为 cancelled"""
     from management_portal.society_service import (

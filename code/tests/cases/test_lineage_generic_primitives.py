@@ -2798,6 +2798,10 @@ def test_completion_without_an_output_wire_is_not_replayed_after_connecting(
         ACTOR,
     )
 
+    lineage_test_support.record_terminal_execution(
+        WORK_A, latest_completion["message_id"], ACTOR,
+        at=latest_completion["completed_at"],
+    )
     connected = lineage_program_edits.save_lineage_program_wire(
         created["lineage_id"],
         {'expected_revision': created['revision'], 'kind': 'route', 'source': 'event_source_unrouted_completion', 'source_port': 'output', 'target': WORK_B, 'target_port': 'invoke'},
@@ -2836,7 +2840,10 @@ def test_completion_without_an_output_wire_is_not_replayed_after_connecting(
             "completed_at": "2026-07-30T11:00:00Z",
         }
     )
-    lineage_test_support.record_terminal_execution(WORK_A, "job_after_subscriber")
+    lineage_test_support.record_terminal_execution(
+        WORK_A, latest_completion["message_id"], ACTOR,
+        at=latest_completion["completed_at"],
+    )
     assert lineage_domain.poll_all_lineage_system_events()["emitted"] == 1
     assert sent == [WORK_B]
 

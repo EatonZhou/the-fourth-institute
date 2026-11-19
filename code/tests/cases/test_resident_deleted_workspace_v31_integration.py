@@ -22,10 +22,12 @@ DELETED = "2026-10-08T00:00:00Z"
 @pytest.fixture
 def sparse_history(tmp_path, monkeypatch):
     store = LineageDataStore()
-    store.database.write(lambda connection: connection.execute(
-        "INSERT INTO residents(resident_id,title,deleted_at,deleted_by) VALUES (%s,%s,%s,%s)",
-        (RID, "Known historical title", DELETED, "sample_admin"),
-    ))
+    from tests.cases.directory_fixture_support import resident_identity_write
+    with store.database.transaction() as connection, resident_identity_write(connection, RID):
+        connection.execute(
+            "INSERT INTO residents(resident_id,title,deleted_at,deleted_by) VALUES (%s,%s,%s,%s)",
+            (RID, "Known historical title", DELETED, "sample_admin"),
+        )
     agents = AgentDataStore()
     agents.ensure_agent(RID, actor_ref="fixture")
     agents.display_chat_message(RID, {

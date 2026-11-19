@@ -496,7 +496,8 @@ def _commit_registration(
         # Serialize only this identity; unrelated registrations remain independent.
         with invariant_locks.catalog_lock(f"resident-registration:{resident_id}", operation="resident.register.commit"):
             store = resident_catalog.get_catalog().state_store
-            with store.database.transaction() as connection, directory_creation_scope(creation.key):
+            with store.database.transaction() as connection, directory_creation_scope(creation.key), \
+                    creation.identity_registration(connection):
                 # Membership writers acquire the Lineage row before reserving
                 # directory paths. Normalization can register paths too, so
                 # acquire this row before entering any of the publication work.

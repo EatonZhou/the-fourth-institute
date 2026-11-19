@@ -219,11 +219,14 @@ def install_resource_boundary(monkeypatch, *, synthetic_residents=True) -> dict[
                         # it will insert the Resident before the outer commit.
                         if connection.execute(f"SELECT 1 FROM {workspaces.table} WHERE path=%s AND deleted_at IS NULL", (owned['path'],)).fetchone():
                             continue
-                        wid = workspaces.ensure(owned["workspace_id"], owned["path"], connection=connection)
+                        wid = workspaces.ensure(owned["workspace_id"], owned["path"],
+                                                owner_id=rid, connection=connection)
                         from management_common.json_columns import json_text
-                        connection.execute("INSERT INTO residents(resident_id,title,backend,owned_workspace_id,directory_json) VALUES(%s,%s,%s,%s,%s)",
-                                           (rid, node.get("title") or rid, node.get("backend") or "codex", wid,
-                                            json_text({'owner_id': rid})))
+                        from tests.cases.directory_fixture_support import resident_identity_write
+                        with resident_identity_write(connection, rid):
+                            connection.execute("INSERT INTO residents(resident_id,title,backend,owned_workspace_id,directory_json) VALUES(%s,%s,%s,%s,%s)",
+                                               (rid, node.get("title") or rid, node.get("backend") or "codex", wid,
+                                                json_text({'owner_id': rid})))
             return result
     if synthetic_residents:
         monkeypatch.setattr(LineageCatalog, "upsert", upsert_with_synthetic_residents)

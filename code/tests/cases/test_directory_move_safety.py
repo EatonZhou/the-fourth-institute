@@ -3,6 +3,7 @@
 :module: resident.workspace-memory
 :design: decision_4aa13bc21e8e
 """
+from tests.cases.directory_fixture_support import directory_owners  # noqa: F401
 import os
 from pathlib import Path
 import shutil
@@ -73,6 +74,7 @@ def test_copy_racing_nonempty_target_keeps_every_existing_file(workspace, monkey
     assert not list(target.parent.glob('.tfi-move-*'))
 
 
+@pytest.mark.usefixtures("directory_owners")
 @pytest.mark.parametrize('phase', ['prepared', 'files_ready', 'aborted', 'committed', 'completed', 'cancelled'])
 def test_fixed_operation_retry_reports_original_state_without_mutation(workspace, phase):
     mover = DirectoryMoveStore()
@@ -236,14 +238,17 @@ def test_operation_id_cannot_be_reused_for_different_arguments(workspace, argume
     assert target.is_dir() and mover.get(operation)['phase'] == 'files_ready'
 
 
+@pytest.mark.usefixtures("directory_owners")
 def test_deleted_owner_still_cleans_old_copy_after_dependency_failure(workspace, monkeypatch):
     from management_common.directory_move_store import cancel_owner_moves
+    from management_portal.directory_move_owner import relocate_nested
     cross_device(monkeypatch, workspace.root)
     mover = DirectoryMoveStore()
     target = workspace.root.with_name('cancelled-copy')
-    operation = prepare(mover, workspace.root, target)
-    mover.database.write(lambda c: mover.commit(operation, connection=c, update=lambda *_: None))
-    mover.database.write(lambda c: cancel_owner_moves(c, 'owner'))
+    operation = mover.prepare(workspace.root, target, owner_id=WID,
+                              actor='sample_admin', terminate=lambda _: None)
+    mover.database.write(lambda c: mover.commit(operation, connection=c, update=relocate_nested))
+    mover.database.write(lambda c: cancel_owner_moves(c, WID))
     mover.cleanup.run_pending()
     assert mover.get(operation)['phase'] == 'cancelled'
     assert not workspace.root.exists() and target.is_dir()
@@ -266,6 +271,7 @@ def test_case_only_move_rejection_preserves_source_on_insensitive_filesystem(wor
     assert (workspace.root / 'keep').read_text() == 'source'
 
 
+@pytest.mark.usefixtures("directory_owners")
 def test_retirement_drains_old_copy_when_dependencies_were_pending(workspace, monkeypatch):
     from management_portal.directory_move_owner import relocate_nested
     from scripts.directory_protocol_retire import cleanup_external_owned

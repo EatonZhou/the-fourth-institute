@@ -1,4 +1,5 @@
 from __future__ import annotations
+from tests.cases.directory_fixture_support import install_directory_owners
 from management_portal.society_service import business_fact_views
 
 import json
@@ -332,6 +333,7 @@ def test_lineage_catalog_persists_and_validates_definitions_contracts(tmp_path, 
             "resident.work_failed",
         ) == {}
     with subtests.test(contract='test_lineage_runtime_is_initialized_once_and_persists_independently'), isolated_portal_case() as case_path:
+        install_directory_owners()
         tmp_path = case_path
         catalog = LineageCatalog(
             LineageDataStore(),

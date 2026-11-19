@@ -1,5 +1,7 @@
 """Exact identity retirement, separate from explicit directory-content deletion."""
 import json
+from contextlib import contextmanager
+from contextvars import ContextVar
 from pathlib import Path
 
 from management_common import directory_dependencies as deps
@@ -9,10 +11,28 @@ from management_common.json_columns import json_value
 from management_common.portal_database import _database_schema
 
 
+_INITIAL_REGISTRATION = ContextVar('initial_identity_directory_registration', default=None)
+
+
+@contextmanager
+def _initial_registration(protection):
+    """Creation owns this transaction-bound attestation and its lifetime."""
+    token = _INITIAL_REGISTRATION.set(protection)
+    try:
+        yield
+    finally:
+        _INITIAL_REGISTRATION.reset(token)
+
+
 def record_identity_directory(identity, root, *, connection):
     """Society calls after writing/locking its authoritative identity row."""
     if not identity or not root:
         raise ValueError('Identity and authoritative directory are required')
+    protection = _INITIAL_REGISTRATION.get()
+    if protection is not None:
+        protection.assert_directory(Path(root))
+        deps.replace_initial_identity(connection, identity, Path(root), protection=protection)
+        return
     deps.replace(connection, 'identity', identity, [('', identity, Path(root), 'owned')])
 
 

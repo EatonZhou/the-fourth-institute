@@ -1,5 +1,6 @@
 """:importance: P2"""
 from __future__ import annotations
+from tests.cases.directory_fixture_support import directory_owners  # noqa: F401
 from management_portal.society_service import resident_backend
 from management_portal.society_service import resident_catalog
 
@@ -163,6 +164,7 @@ def test_resident_backend_release_is_recovered_outside_state_locks(
     assert deleted == [(PEER_ID, binding["provider_session_ref"])]
 
 
+@pytest.mark.usefixtures("directory_owners")
 def test_lineage_page_delete_uses_resident_aggregate_delete(
     deletion_store: tuple[Path, dict[str, dict]],
     monkeypatch: pytest.MonkeyPatch,
@@ -230,6 +232,7 @@ def test_lineage_page_delete_uses_resident_aggregate_delete(
     }
 
 
+@pytest.mark.usefixtures("directory_owners")
 def test_lineage_deletion_projection_precedes_blocked_provider_release(
     deletion_store: tuple[Path, dict[str, dict]],
     monkeypatch: pytest.MonkeyPatch,
@@ -259,6 +262,7 @@ def test_lineage_deletion_projection_precedes_blocked_provider_release(
     assert lineage_reads.list_lineages("sample_admin")["lineages"] == []
 
 
+@pytest.mark.usefixtures("directory_owners")
 @pytest.mark.parametrize("actor", ["sample_admin", ROOT_ID, PEER_ID])
 def test_nonleader_resident_delete_removes_its_lineage_projection(
     deletion_store: tuple[Path, dict[str, dict]],
@@ -352,6 +356,7 @@ def test_lineage_delete_terminates_work_before_committing_identity(
     assert resource_records[LINEAGE_ID]["status"] == "active"
 
 
+@pytest.mark.usefixtures("directory_owners")
 def test_lineage_cleanup_failure_preserves_deleted_identity_and_retryable_files(
     deletion_store: tuple[Path, dict[str, dict]],
     monkeypatch: pytest.MonkeyPatch,
@@ -382,6 +387,7 @@ def test_lineage_cleanup_failure_preserves_deleted_identity_and_retryable_files(
     assert not folder.exists()
 
 
+@pytest.mark.usefixtures("directory_owners")
 def test_lineage_cleanup_removes_results_an_agent_sealed_read_only(
     deletion_store: tuple[Path, dict[str, dict]],
 ) -> None:
@@ -411,6 +417,7 @@ def test_lineage_cleanup_removes_results_an_agent_sealed_read_only(
     assert resident_record_domain.lifecycle_operations().health() == {"pending": 0, "failed": 0, "last_error": ""}
 
 
+@pytest.mark.usefixtures("directory_owners")
 def test_lineage_delete_rolls_back_every_authority_when_catalog_commit_fails(
     deletion_store: tuple[Path, dict[str, dict]],
     monkeypatch: pytest.MonkeyPatch,

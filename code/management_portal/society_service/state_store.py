@@ -8,6 +8,7 @@ from collections.abc import Callable, Iterable, Mapping, MutableMapping
 from contextlib import AbstractContextManager
 from typing import Any
 
+from management_common import directory_dependencies
 from management_common.portal_database import portal_database
 from . import trigger_path_storage, family_storage, resident_storage, program_work_storage, domain_work_storage, relation_work_storage, resident_execution_storage
 from . import resident_delivery_storage
@@ -176,13 +177,27 @@ def _postgres_lineage_data_schema_matches(connection: Any) -> bool:
     }
     if not (LINEAGE_DATA_INDEXES | user_pending_question_storage.INDEXES).issubset(indexes):
         return False
-    triggers = {
-        str(row["trigger_name"])
-        for row in connection.execute(
-            "SELECT DISTINCT trigger_name FROM information_schema.triggers "
-            "WHERE trigger_schema=current_schema()"
-        ).fetchall()
-    }
+    # The independent directory upgrade installs these writer fences on
+    # LineageData tables. Both installations share the same LineageData layout.
+    directory_schema = directory_dependencies.schema().strip('"')
+    triggers = set()
+    for row in connection.execute(
+        "SELECT rel.relname AS table_name, trg.tgname AS trigger_name, "
+        "proc.proname AS function_name, owner.nspname AS function_schema "
+        "FROM pg_catalog.pg_trigger AS trg "
+        "JOIN pg_catalog.pg_class AS rel ON rel.oid=trg.tgrelid "
+        "JOIN pg_catalog.pg_namespace AS ns ON ns.oid=rel.relnamespace "
+        "JOIN pg_catalog.pg_proc AS proc ON proc.oid=trg.tgfoid "
+        "JOIN pg_catalog.pg_namespace AS owner ON owner.oid=proc.pronamespace "
+        "WHERE ns.nspname=current_schema() AND NOT trg.tgisinternal"
+    ).fetchall():
+        table = row["table_name"]
+        if (row["trigger_name"] == "directory_writer_fence"
+                and table in {"lineages", "lineage_nodes", "residents"}
+                and row["function_schema"] == directory_schema
+                and row["function_name"] == f"fence_{table}"):
+            continue
+        triggers.add(row["trigger_name"])
     return triggers == POSTGRES_TRIGGERS
 
 
