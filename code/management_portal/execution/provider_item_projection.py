@@ -16,6 +16,7 @@ from typing import Any
 
 from management_common.async_questions import normalize_async_questions
 
+from .message_projection import provider_agent_message_phase
 from .runtime_details import EventContext, RuntimeDetails, arguments_text, native_command_identity
 
 # The phases in which an item is reported, as its events name them.
@@ -145,7 +146,7 @@ def _agent_message(event: ItemEvent, details: RuntimeDetails) -> None:
     )
     detail.update(
         execution_id=event.context.execution_id,
-        message_phase=str(item.get("phase") or ""),
+        message_phase=provider_agent_message_phase(item),
         turn_id=event.turn_id(),
         provider_item_id=item_id,
     )

@@ -5,7 +5,7 @@ import pytest
 from management_common.async_questions import question_set
 from management_portal.execution.agent_data_projection import AgentDataProjector
 from management_portal.execution.agent_data_store import AgentDataStore, stable_segment_id
-from management_portal.execution.message_projection import project_message
+from management_portal.execution.message_projection import model_message_id, project_message
 from management_portal.society_service.resident_conversation_records import message_from_storage
 from tests.cases.test_agent_data_projection import _turn_request, _runtime_session, _invocation
 from tests.cases.resident_execution_test_support import resident_record
@@ -90,3 +90,29 @@ def test_native_async_questions_survive_completion_and_reload(text, resident_rec
                                    resident_conversation_stream.get_repository())[1]['role'] == 'user'
     if text:
         assert any(p.get('text', '').strip() == text for p in cards[0]['content_parts'])
+
+
+def test_native_async_notification_and_final_reply_have_distinct_message_ids(resident_record):
+    store = AgentDataStore()
+    request = _turn_request(resident_record['resident_id'])
+    projector = AgentDataProjector(store)
+    session = _runtime_session(request, 'notification-session')
+    projector.begin(request, session)
+    projector.observe_invocation(request.execution_id, _invocation(request, session), [])
+    event = {'method': 'item/completed', 'params': {'turnId': 'turn-notification', 'item': {
+        'type': 'agentMessage', 'id': 'call-notification', 'phase': 'final_answer',
+        'delivery': 'async', 'text': '后台任务已完成',
+    }}}
+    for _ in range(2):
+        projector.observe(provider='codex', backend_route_id='zero',
+                          backend_session_id='notification-session',
+                          execution_id=request.execution_id, event=event)
+    final_id = projector.complete(execution_id=request.execution_id, backend_session_id='notification-session',
+                                 backend_route_id='zero', turn_id='turn-notification', response='检查已完成。')
+    notification_id = stable_segment_id('provider-model', request.execution_id, 'call-notification', 'async')
+    notification = store.segment(notification_id)
+    final = store.segment(final_id)
+    assert notification['content'] == '后台任务已完成'
+    assert notification['metadata']['message']['message_id'] == model_message_id(
+        request.execution_id, 'call-notification', 'async')
+    assert final['metadata']['message']['message_id'] != notification['metadata']['message']['message_id']

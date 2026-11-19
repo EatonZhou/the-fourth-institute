@@ -71,6 +71,12 @@ def _unwrap_file_references(text: str, templates: list[Mapping[str, Any]], origi
     return body
 
 
+def provider_agent_message_phase(item: Mapping[str, Any]) -> str:
+    if item.get("delivery") == "async" or item.get("questions"):
+        return "async"
+    return str(item.get("phase") or "").strip()
+
+
 def model_message_id(execution_id: str, item_id: str, phase: str) -> str:
     from management_common.message_identity import derived_message_identity
     key = "final" if phase in {"final", "final_answer"} else "provider:" + item_id

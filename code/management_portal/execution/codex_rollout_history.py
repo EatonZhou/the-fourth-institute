@@ -16,6 +16,8 @@ MAX_ACTIVE_HISTORY_SCAN_BYTES = 128 * 1024 * 1024
 REVERSE_READ_CHUNK_BYTES = 1024 * 1024
 MAX_CONTEXT_METADATA_SCAN_BYTES = 16 * 1024 * 1024
 MAX_USAGE_SCAN_BYTES = 4 * 1024 * 1024 * 1024
+CODEX_ASYNC_NOTIFICATION_TOOL = "send_message_to_user_async"
+CODEX_ASYNC_QUESTION_TOOL = "request_user_input_async"
 
 
 class _ActiveHistoryScanLimit(RuntimeError):
@@ -83,16 +85,16 @@ class CodexCompactionRead:
     reason: str = ""
 
 
-def read_codex_turn_async_message_ids(path: Path | str, turn_id: str) -> tuple[str, ...] | None:
-    """Resolve observed async messages to accepted native calls in this turn.
+def read_codex_turn_async_message_calls(path: Path | str, turn_id: str) -> dict[str, str] | None:
+    """Read accepted async call IDs and tool names in their original order.
 
-    The native handler uses its call_id as the AgentMessage ID. Arguments are
-    deliberately not read: this resolver cannot manufacture question content.
+    The native handlers use call_id as the AgentMessage ID. Message content
+    comes from observed items.
     """
     if not turn_id:
         return None
     accepted: set[str] = set()
-    identities: list[str] = []
+    calls: dict[str, str] = {}
     try:
         for raw_line in _reverse_lines(Path(path), complete_lines_only=True):
             entry = json.loads(raw_line)
@@ -104,9 +106,9 @@ def read_codex_turn_async_message_ids(path: Path | str, turn_id: str) -> tuple[s
                     return None
                 if payload.get("type") == "task_started":
                     if payload.get("turn_id") == turn_id:
-                        return tuple(reversed(identities))
+                        return dict(reversed(calls.items()))
                     accepted.clear()
-                    identities.clear()
+                    calls.clear()
             elif entry.get("type") == "response_item":
                 identity = payload.get("call_id")
                 if not isinstance(identity, str) or not identity.strip():
@@ -119,12 +121,13 @@ def read_codex_turn_async_message_ids(path: Path | str, turn_id: str) -> tuple[s
                         continue
                     if isinstance(output, dict) and output.get("accepted") is True:
                         accepted.add(identity)
-                elif (payload.get("type") == "function_call"
-                      and payload.get("name") == "request_user_input_async"
-                      and identity in accepted):
-                    if identity in identities:
+                elif payload.get("type") == "function_call" and identity in accepted:
+                    tool = payload.get("name")
+                    if tool not in (CODEX_ASYNC_NOTIFICATION_TOOL, CODEX_ASYNC_QUESTION_TOOL):
+                        continue
+                    if identity in calls:
                         return None
-                    identities.append(identity)
+                    calls[identity] = tool
     except (OSError, UnicodeError, json.JSONDecodeError, _ActiveHistoryScanLimit):
         return None
     return None
