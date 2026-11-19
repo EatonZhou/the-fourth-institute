@@ -1,6 +1,7 @@
 """Small typed Family fixtures for relay tests; lifecycle cases use Familize."""
 import hashlib
 
+from management_common.directory_dependencies import prepare_write
 from management_portal.society_service.state_store import get_lineage_data_store
 
 
@@ -9,6 +10,9 @@ def set_role(resident_id, *, family_id, role='facade', actor=''):
     def write(c):
         resident = c.execute('SELECT lineage_id FROM lineage_nodes WHERE node_id=%s', (resident_id,)).fetchone()
         c.execute("INSERT INTO families(family_id,lineage_id,title,goal,resource_id,created_at,updated_at) VALUES (%s,%s,'Test Family','',%s,'2026-10-14','2026-10-14') ON CONFLICT DO NOTHING", (family_id, resident['lineage_id'], 'family_' + hashlib.sha256(family_id.encode()).hexdigest()[:12]))
+        # This graph node is a Function Block. Existing Resident roots and
+        # canonical Lineage membership do not change.
+        prepare_write(c)
         c.execute("INSERT INTO lineage_nodes(node_id,lineage_id,node_type) VALUES (%s,%s,'function_block') ON CONFLICT DO NOTHING", (family_id,resident['lineage_id']))
         c.execute("INSERT INTO function_blocks(function_block_id,lineage_id,title,created_at,created_by,updated_at,updated_by) VALUES (%s,%s,'Test Family','2026-10-13',%s,'2026-10-13',%s) ON CONFLICT DO NOTHING", (family_id,resident['lineage_id'],actor,actor))
         c.execute("INSERT INTO function_block_elements VALUES (%s,%s,'resident',%s) ON CONFLICT DO NOTHING", (family_id,resident_id,role))
