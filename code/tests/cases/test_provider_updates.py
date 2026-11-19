@@ -320,6 +320,7 @@ def test_lineage_update_finishes_check_while_activation_waits(monkeypatch, tmp_p
     from scripts import update_provider_runtimes as script
     result = {"checked": {}, "pending": ["codex"], "errors": errors, "busy": busy}
     monkeypatch.setattr(script, "run_update_pass", lambda: result)
+    monkeypatch.setattr(script, "sync_model_catalogs", lambda: {"status": "ok"})
     monkeypatch.setattr(script, "instance_runtime_root", lambda: tmp_path)
     modes = []
     monkeypatch.setattr(script, "_start_job", lambda mode: modes.append(mode))

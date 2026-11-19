@@ -13,6 +13,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from management_portal.execution.provider_updates import activate_pending_once, run_update_pass
 from management_common.instance_manifest import load, instance_runtime_root
 from management_common.code_environment import runtime_python
+from scripts.provider_model_catalog_sync import run as sync_model_catalogs
 
 
 def _watch_pending() -> int:
@@ -47,6 +48,10 @@ def _start_job(mode: str) -> str:
 
 
 def main(arguments):
+    if arguments == ["--sync-model-catalogs"]:
+        result = sync_model_catalogs()
+        print(json.dumps(result, ensure_ascii=False, sort_keys=True), flush=True)
+        return 0 if result["status"] in {"ok", "skipped"} else 1
     if arguments == ["--activate-pending"]:
         return _watch_pending()
     if not arguments:
@@ -58,8 +63,11 @@ def main(arguments):
         return 0
     lineage_run = arguments == ["--lineage-update"]
     if not lineage_run and arguments != ["--run-update"]:
-        raise SystemExit("Usage: update_provider_runtimes.py [--activate-pending|--lineage-update]")
+        raise SystemExit("Usage: update_provider_runtimes.py [--activate-pending|--lineage-update|--sync-model-catalogs]")
     result = run_update_pass()
+    if lineage_run:
+        result["model_catalogs"] = sync_model_catalogs()
+    catalog_failed = result.get("model_catalogs", {}).get("status") in {"failed", "partial"}
     path = instance_runtime_root() / "provider-update-result.json"
     path.parent.mkdir(parents=True, exist_ok=True)
     temporary = path.with_name(f".{path.name}.{os.getpid()}.tmp")
@@ -71,9 +79,9 @@ def main(arguments):
             # RunScript already owns an independent process. Keep its daily
             # check finite; waiting for idle providers belongs to the watcher.
             _start_job("--activate-pending")
-            return 1 if result.get("errors") or result.get("busy") else 0
+            return 1 if result.get("errors") or result.get("busy") or catalog_failed else 0
         return _watch_pending()
-    return 1 if result.get("errors") else 0
+    return 1 if result.get("errors") or catalog_failed else 0
 
 
 if __name__ == "__main__":
