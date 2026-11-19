@@ -60,7 +60,7 @@
                 form.hidden = !needsPin;
                 const labels = { active: "微信已绑定，可以在微信发送 /help", expired: "二维码已过期，请重新开始", scaned: "已扫码，请在手机上确认" };
                 overlay.querySelector("[data-weixin-status]").textContent = window.PortalI18n.t(
-                  needsPin ? "输入手机显示的数字" : labels[current.status] || "请用微信扫码");
+                  current.service_error || (needsPin ? "输入手机显示的数字" : labels[current.status] || "请用微信扫码"));
                 if (["active", "expired", "unbound"].includes(current.status)) { renderWatchboard(); return; }
                 window.setTimeout(async () => {
                   if (epoch !== bindingEpoch || !overlay.isConnected) return;
@@ -135,11 +135,13 @@
               return window.PortalI18n.html`<div class="watchboardCompactItem" data-weixin-row="${esc(userId)}">
                 <span><strong data-weixin-account>${esc(userId)}</strong>
                   <span>${esc(window.PortalI18n.t(status === "active" ? "微信已绑定" : status === "expired" ? "需要重新扫码" : "微信未绑定"))}</span></span>
+                ${user.service_error ? window.PortalI18n.html`<span role="status" data-weixin-service-error>${esc(window.PortalI18n.t(user.service_error))}</span>` : ""}
                 <span class="watchboardNotificationSettings">
                   <label><input type="checkbox" data-weixin-notification="mention" data-weixin-user="${esc(userId)}" ${user.notifications?.mention ? "checked" : ""} ${user.can_manage && status === "active" ? "" : "disabled"}> 聊天室 @ 我</label>
                   <label><input type="checkbox" data-weixin-notification="question" data-weixin-user="${esc(userId)}" ${user.notifications?.question ? "checked" : ""} ${user.can_manage && status === "active" ? "" : "disabled"}> 待我回答</label>
                 </span>
                 <span>${user.can_manage ? window.PortalI18n.html`
+                  ${status === "active" && user.service_error ? window.PortalI18n.html`<button class="portalButton is-compact" data-weixin-bind="${esc(userId)}">启用消息服务</button>` : ""}
                   ${status !== "active" ? window.PortalI18n.html`<button class="portalButton is-compact" data-weixin-bind="${esc(userId)}">${esc(window.PortalI18n.t(status === "expired" ? "重新绑定微信" : "绑定微信"))}</button>` : ""}
                   ${["active", "expired"].includes(status) ? window.PortalI18n.html`<button class="portalButton is-compact" data-weixin-unbind="${esc(userId)}">解除微信绑定</button>` : ""}` : window.PortalI18n.html`<span>仅查看</span>`}</span>
               </div>`;

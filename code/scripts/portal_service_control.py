@@ -61,6 +61,27 @@ class ServiceControl:
     def _launch_target(self, service: str) -> str:
         return f"{self._launch_domain()}/{self.label(service)}"
 
+    def is_enabled(self, service: str) -> bool:
+        """Read persistent startup policy separately from process liveness."""
+        if self.platform == "linux":
+            result = self.run("systemctl", "--user", "is-enabled", service, check=False)
+            return result.returncode == 0 and result.stdout.strip() in {"enabled", "enabled-runtime"}
+        if self.platform == "macos":
+            result = self.run("launchctl", "print-disabled", self._launch_domain())
+            match = re.search(r'"' + re.escape(self.label(service)) + r'"\s*=>\s*(true|false)', result.stdout or "")
+            return (self.agent_root / f"{self.label(service)}.plist").is_file() and not (match and match[1] == "true")
+        raise RuntimeError("Persistent service switches require Linux or macOS")
+
+    def set_enabled(self, service: str, enabled: bool) -> None:
+        """Persist startup policy and converge the process without restarting it."""
+        if self.platform == "linux":
+            self.run("systemctl", "--user", "enable" if enabled else "disable", "--now", service)
+        elif self.platform == "macos":
+            self.run("launchctl", "enable" if enabled else "disable", self._launch_target(service))
+            (self.start if enabled else self.stop)(service)
+        else:
+            raise RuntimeError("Persistent service switches require Linux or macOS")
+
     def status(self, service: str) -> dict[str, Any]:
         if self.platform == "linux":
             result = self.run("systemctl", "--user", "show", service,

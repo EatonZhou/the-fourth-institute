@@ -68,6 +68,38 @@ def test_refresh_releases_completed_inactive_accounts_and_closes_on_exit(monkeyp
     assert all(ref() is None for ref in refs.values())
 
 
+@pytest.mark.parametrize('telegram', ['missing', 'failed'])
+def test_weixin_refresh_does_not_depend_on_telegram(monkeypatch, telegram):
+    import concurrent.futures
+    from management_portal.telepus.telegram_client import TelegramConfigError
+    sent = []
+    class Pool:
+        def __init__(self, **kwargs):
+            pass
+        def submit(self, function, actor):
+            function(actor)
+            task = Future()
+            task.set_result(None)
+            return task
+        def shutdown(self, **kwargs):
+            pass
+    def client():
+        if telegram == 'missing':
+            raise TelegramConfigError('no Telegram secret')
+        return object()
+    def failed(**kwargs):
+        raise RuntimeError('Telegram unavailable')
+    router = SimpleNamespace(store=SimpleNamespace(prune_expired_callback_tokens=lambda: None))
+    monkeypatch.setattr(concurrent.futures, 'ThreadPoolExecutor', Pool)
+    monkeypatch.setattr(cli, 'TelegramClient', client)
+    monkeypatch.setattr(cli, 'telegram_adapter', lambda _: SimpleNamespace(router=router, refresh_routes=failed))
+    monkeypatch.setattr(weixin_adapter, 'WeixinAdapter', lambda: SimpleNamespace(
+        router=router, store=SimpleNamespace(active_actors=lambda: ['alice']), refresh=sent.append))
+    monkeypatch.setattr(refresh_service, 'NotificationScheduler', lambda _: SimpleNamespace(start=lambda: None, close=lambda: None))
+    assert cli.run_telegram_refresh_daemon(['--max-iterations', '1']) == 0
+    assert sent == ['alice']
+
+
 def test_scheduler_identity_query_never_selects_credential_columns():
     calls = []
 

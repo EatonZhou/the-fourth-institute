@@ -148,7 +148,9 @@ def run_telegram_refresh_daemon(argv: list[str]) -> int:
     max_iterations = option_int(argv, "max_iterations", 0)
     refresh_limit = option_int(argv, "refresh_limit", 100)
     sleep_seconds = option_int(argv, "sleep_seconds", 3)
-    adapter = telegram_adapter(TelegramClient())
+    # WeChat replies must work in an instance with no Telegram bot configured.
+    from .telegram_client import TelegramConfigError
+    adapter = None
     from .weixin_adapter import WeixinAdapter
     from concurrent.futures import ThreadPoolExecutor
     weixin = WeixinAdapter()
@@ -165,17 +167,22 @@ def run_telegram_refresh_daemon(argv: list[str]) -> int:
             pending = {actor: task for actor, task in pending.items() if not task.done()}
             index += 1
             started_at = now_iso()
+            if adapter is None:
+                try:
+                    adapter = telegram_adapter(TelegramClient())
+                except TelegramConfigError:
+                    pass
             if time.monotonic() >= cleanup_at:
                 cleanup_at = time.monotonic() + 60
                 try:
-                    adapter.router.store.prune_expired_callback_tokens()
+                    (adapter or weixin).router.store.prune_expired_callback_tokens()
                 except Exception as exc:
                     weixin.notifications.diagnostic('', exc)
             try:
-                result = adapter.refresh_routes(limit=refresh_limit, dry_run=False)
                 for actor in weixin.store.active_actors():
                     if actor not in pending or pending[actor].done():
                         pending[actor] = weixin_pool.submit(weixin.refresh, actor)
+                result = adapter.refresh_routes(limit=refresh_limit, dry_run=False) if adapter else {}
                 payload = {"schema": "telepus.telegram.portal_refresh_iteration.v2", "started_at": started_at,
                            "finished_at": now_iso(), "status": "success", "chats": result.get("chats", 0),
                            "sent": sum(1 for item in result.get("handled") or [] if item.get("status") == "refreshed"),

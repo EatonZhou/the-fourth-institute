@@ -51,9 +51,9 @@ const {chromium} = require('../../../management_portal/test_framework/tau_runtim
       });
       document.querySelector('#board').innerHTML = controller.render(dashboard);
       controller.bind(document.querySelector('#board'), dashboard);
-      window.renderBinding = (status, user = 'alice', viewer = user) => {
+      window.renderBinding = (status, user = 'alice', viewer = user, serviceError = '') => {
         dashboard = {...dashboard, telegram_users: {...dashboard.telegram_users, current_user: viewer},
-          weixin_users: {current_user: viewer, users: [{portal_actor: user, status, can_manage: viewer === user || viewer === 'admin'}]}};
+          weixin_users: {current_user: viewer, users: [{portal_actor: user, status, service_error: serviceError, can_manage: viewer === user || viewer === 'admin'}]}};
         document.querySelector('#board').innerHTML = controller.render(dashboard);
         controller.bind(document.querySelector('#board'), dashboard);
       };
@@ -121,6 +121,9 @@ const {chromium} = require('../../../management_portal/test_framework/tau_runtim
     await page.locator('[data-weixin-unbind="bob"]').click();
     await page.locator('[data-weixin-bind="bob"]').waitFor();
     assert((await page.evaluate(() => calls.slice(calls.findIndex(call => call.args.user_id === 'bob')))).every(call => call.args.user_id === 'bob'));
-    console.log('Weixin shared list, owner/admin controls, explicit QR target and retry recovery passed');
+    await page.evaluate(() => renderBinding('active', 'bob', 'admin', '账号已绑定，但消息服务未就绪；无需重新扫码。'));
+    assert.match(await page.locator('[data-weixin-service-error]').textContent(), /消息服务未就绪/);
+    assert.equal(await page.locator('[data-weixin-bind]').textContent(), '启用消息服务');
+    console.log('Weixin shared list, owner/admin controls, explicit QR target, service readiness and retry recovery passed');
   } finally { await browser.close(); }
 })().catch(error => { console.error(error); process.exitCode = 1; });
