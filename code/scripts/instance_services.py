@@ -80,6 +80,8 @@ def owned_units(instance):
 def definition_directory(instance):
     if platform_name() == 'windows':
         return instance.directory('runtime') / 'service-units'
+    if platform_name() == 'macos' and instance.document['services'].get('launch_agents_directory'):
+        return Path(instance.document['services']['launch_agents_directory'])
     return adapter().unit_directory()
 
 
@@ -87,6 +89,9 @@ def controller(instance):
     if platform_name() == 'windows':
         from scripts.tfi_windows_user_services import WindowsServiceControl
         return WindowsServiceControl(definition_directory(instance))
+    if platform_name() == 'macos' and instance.document['services'].get('launch_agents_directory'):
+        from scripts.portal_service_control import ServiceControl
+        return ServiceControl(platform='macos', agent_root=definition_directory(instance))
     return adapter().service_controller()
 
 

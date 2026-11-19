@@ -194,6 +194,16 @@ class TestLabHttp:
         return self._post(request, actor, lambda payload, user: test_framework_api.retry_tau_team_cleanup(
             str(payload.get('run_id') or '').strip(), str(payload.get('group_id') or '').strip(), actor=user))
 
+    def settle_tau_delivery(self, request, parsed, actor):
+        def settle(payload, user):
+            fields = ("run_id", "group_id", "case_id", "request_id")
+            if any(not isinstance(payload.get(key), str) or not payload[key].strip() for key in fields):
+                raise ValueError("需要原 run_id、group_id、case_id 和 request_id")
+            return test_framework_api.settle_tau_delivery(
+                *(payload[key].strip() for key in fields), actor=user,
+            )
+        return self._post(request, actor, settle)
+
     def runs_delete(self, request, parsed, actor):
         def delete(payload, user):
             run_ids = payload.get('run_ids')
@@ -236,6 +246,7 @@ def routes(portal):
         ('POST', 'preview', http.preview), ('POST', 'run', http.run_start),
         ('POST', 'run/cancel', http.run_cancel), ('POST', 'runs/delete', http.runs_delete),
         ('POST', 'tau/cleanup/retry', http.retry_tau_team_cleanup),
+        ('POST', 'tau/delivery/settle', http.settle_tau_delivery),
         ('POST', 'tau/resident/rotate', http.tau_rotate), ('POST', 'tau/resident/configure', http.tau_configure),
         ('POST', 'tau/admission', http.tau_admission_update),
     )

@@ -233,6 +233,9 @@ def test_overlapping_cleanup_is_excluded_without_blocking_a_sibling(store, tmp_p
         finally:
             proceed.set()
         assert worker.result(5)[0]['status'] == 'completed'
+    # The refused claim deferred this row. Make only that retry due in this fixture.
+    with store.database.transaction() as connection:
+        connection.execute(f'UPDATE {store.table} SET available_at=clock_timestamp() WHERE cleanup_id=%s', (inner_id,))
     assert store.run_pending(cleanup_id=inner_id)[0]['status'] == 'completed'
     assert not root.exists() and not sibling.exists()
 

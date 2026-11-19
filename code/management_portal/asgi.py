@@ -465,7 +465,7 @@ async def tool_settings_api(request: Request):
 
 async def application_tools_api(request: Request):
     from .application_tools import execute, list_tools
-    from .hatg.contracts import InstructionContext, ERROR_STATUS
+    from .hatg.contracts import ERROR_STATUS, InstructionContext, InstructionError
     caller, entry = await asyncio.to_thread(_instruction_principal, request)
     if not caller:
         return _json_error(401, "需要登录或有效凭证")
@@ -475,8 +475,17 @@ async def application_tools_api(request: Request):
         return JSONResponse(await asyncio.to_thread(list_tools, caller))
     try:
         payload = await request.json()
-    except Exception:
-        payload = None
+    except (json.JSONDecodeError, UnicodeDecodeError):
+        from .hatg.kernel import new_instruction_id
+        error = InstructionError("instruction.invalid_arguments", "Expected tfi.application-tool-call.v1")
+        return JSONResponse({
+            "schema": "tfi.application-tool-result.v1",
+            "tool": "",
+            "call_id": new_instruction_id("web"),
+            "status": "failed",
+            "replayed": False,
+            "error": error.to_dict(),
+        }, status_code=ERROR_STATUS[error.code])
     context = InstructionContext(caller, entry, execution_id=_execution_id(request, entry),
         resource_lifecycle_id=request.headers.get("X-Portal-Resource-Lifecycle", ""))
     result = await asyncio.to_thread(execute, payload, context)

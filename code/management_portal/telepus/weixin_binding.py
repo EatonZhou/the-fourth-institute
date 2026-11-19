@@ -12,9 +12,30 @@ from .weixin_store import WeixinStore
 
 
 class WeixinBinding:
-    def __init__(self, store=None, client_factory=WeixinClient):
+    def __init__(self, store=None, client_factory=WeixinClient, runtime=None):
         self.store = WeixinStore(store or RouterStore())
         self.client_factory = client_factory
+        self._runtime = runtime
+
+    @property
+    def runtime(self):
+        if self._runtime is None:
+            from .runtime import TelepusRuntime
+            self._runtime = TelepusRuntime()
+        return self._runtime
+
+    def service_error(self):
+        from .runtime import WEIXIN_COMPONENTS
+        state = self.runtime.status(WEIXIN_COMPONENTS)
+        return '' if state['complete'] else '微信账号已绑定，但消息服务未就绪。请管理员在服务管理中启用 Telepus；无需重新扫码。'
+
+    def account_view(self, account):
+        result = self.public(account)
+        if account and account['status'] == 'active':
+            error = self.service_error()
+            if error:
+                result['service_error'] = error
+        return result
 
     @staticmethod
     def user(actor):
@@ -56,10 +77,12 @@ class WeixinBinding:
         from .notifications import Notifications
         notifications = Notifications(self.store.router)
         users = self.store.public_accounts()
+        service_error = self.service_error() if any(u['status'] == 'active' for u in users) else ''
         if actor_principal(actor).kind == 'user' and not any(same_actor(actor, u['portal_actor']) for u in users):
             users.append({'portal_actor': actor, 'status': 'unbound'})
         return {'current_user': actor, 'users': [
-            {**user, 'notifications': notifications.preferences(user['portal_actor']),
+            {**user, 'service_error': service_error if user['status'] == 'active' else '',
+             'notifications': notifications.preferences(user['portal_actor']),
              'current_actor': same_actor(actor, user['portal_actor']),
              'can_manage': self.can_manage(actor, user['portal_actor'])}
             for user in sorted(users, key=lambda u: u['portal_actor'].casefold())]}
@@ -81,17 +104,23 @@ class WeixinBinding:
                 'qr_image': 'data:image/svg+xml;base64,' + base64.b64encode(buffer.getvalue()).decode()}
 
     def start(self, actor):
+        # Do not offer a QR code when the local receiver cannot be started.
+        # A WeChat-only installation does not need Telegram credentials/services.
+        self.runtime.ensure_weixin()
         with self.store.lock(actor):
+            account = self.store.account(actor)
+            if account and account['status'] == 'active':
+                return self.account_view(account)
             return self._new_code(actor, secrets.token_hex(16), 1)
 
     def get(self, actor, session='', pin=''):
         with self.store.lock(actor):
             if not session:
-                return self.public(self.store.account(actor))
+                return self.account_view(self.store.account(actor))
             data = self.store.binding(actor, session)
             if not data:
                 account = self.store.account(actor)
-                return self.public(account) if account else {'status': 'expired'}
+                return self.account_view(account) if account else {'status': 'expired'}
             query = {'qrcode': data['qrcode']}
             if pin:
                 if not re.fullmatch(r'[0-9]{1,12}', pin):
@@ -127,10 +156,18 @@ class WeixinBinding:
                         self._move_chat(previous['ilink_bot_id'], result['ilink_bot_id'])
                 self.store.save_account(actor, result)
                 self.store.delete_binding(actor)
+                # The remote binding is committed even if local startup fails.
+                # Preserve it and report readiness separately; retry needs no QR.
+                from management_common.operation_errors import OperationError
+                try:
+                    self.runtime.ensure_weixin()
+                except OperationError:
+                    return {'status': 'active', 'service_error':
+                            '微信账号已绑定，但消息服务启动失败。请管理员在服务管理中重试启用 Telepus；无需重新扫码。'}
                 return {'status': 'active'}
             if status == 'binded_redirect':
                 self.store.delete_binding(actor)
-                return self.public(self.store.account(actor))
+                return self.account_view(self.store.account(actor))
             self.store.save_binding(actor, session, data)
             return self._view(session, data)
 

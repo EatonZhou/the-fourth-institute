@@ -213,6 +213,14 @@ FEATURES += (PortalFeature('project_resources', 'Project resources', {
     'resource.index_formatters': 'management_portal.project_resource_index:INDEX_FORMATTERS',
 }, modules=('management_portal.project_resource_index',)),)
 
+# Lifecycle contributions use the same installed-feature registry as HTTP and
+# ISA. Optional applications remain absent when their modules are not shipped.
+for _feature in FEATURES:
+    if _feature.key == 'telepus':
+        _feature.contributions['instance.update'] = 'management_portal.telepus.instance_update:update'
+    elif _feature.key == 'workbench':
+        _feature.contributions['instance.update'] = 'management_portal.workbench_projections.instance_update:update'
+
 
 def _load(reference: str) -> Any | None:
     """The attribute a reference names, or None when its module is not installed."""

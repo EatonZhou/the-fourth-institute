@@ -7,8 +7,9 @@ database and the areas, installs service definitions and records the instance
 in the host registry (~/.config/tfi/instances.json). Instance roots live outside
 code directories, by default in the OS user's data directory.
 
-A code update replaces code and restarts services; services update the database
-themselves. There is no separate upgrade operation. Retiring stops services,
+A code update prepares dependencies, reconciles owner-declared requirements,
+refreshes registered services and verifies them, preserving running intent.
+Domains own database evolution. There is no separate upgrade operation. Retiring stops services,
 deletes their definitions and root, then unregisters the instance. Host account
 directories and platform programs remain; instance-owned external directories
 are removed through the directory owner before its database is deleted.
@@ -785,13 +786,23 @@ def configure_ports(instance, changes):
             "deployments": document["deployments"]}
 
 
-def update_code(instance, *, base_python=None, offline=False):
-    """Code update: prepare the new code's dependencies, refresh definitions, restart."""
-    for code in sorted({Path(row["code_root"]) for row in instance.deployments.values()}):
-        prepare_code(code, base_python=base_python, offline=offline)
-    instance_services.lifecycle("stop", instance.root)
-    instance_services.install_definitions(instance)
-    return lifecycle("start", instance)
+def update_code(instance, *, base_python=None, offline=False, plan_only=False):
+    from scripts.instance_update import run
+    return run(instance, prepare=prepare_code, child=code_child, observe=observed_status,
+               base_python=base_python, offline=offline, plan_only=plan_only)
+
+
+def configure_services(instance, settings):
+    """Declare host adaptations once; subsequent updates render them unchanged."""
+    if set(settings) - {'launch_agents_directory', 'path_prefixes'}:
+        raise ValueError('Only launch_agents_directory and path_prefixes are local service settings')
+    original = deepcopy(instance.document)
+    changed = deepcopy(original)
+    changed['services'].update(settings)
+    updated = validate(instance.root, changed)
+    host_instances.replace_manifest(updated, expected=original)
+    return {'status': 'configured', 'instance_id': instance.instance_id,
+            'restart_required': True, 'settings': settings}
 
 
 def repair_lineage_events(instance, seed_manifest):
@@ -843,7 +854,7 @@ def main(argv=None):
             sub.add_argument("--offline", action="store_true", help="Use only dependencies bundled with the code")
             sub.add_argument("--no-start", action="store_true")
             sub.add_argument("--freeze-evidence", type=Path)
-    for command in ("status", "start", "stop", "retire", "first-admin", "configure-ports", "update-code", "relocate", "repair-lineage-events", "register-service"):
+    for command in ("status", "start", "stop", "retire", "first-admin", "configure-ports", "configure-services", "update-code", "relocate", "repair-lineage-events", "register-service"):
         sub = commands.add_parser(command)
         sub.add_argument("--instance", required=command == "retire",
                          help="Registered instance name; otherwise PORTAL_INSTANCE_ROOT")
@@ -859,6 +870,9 @@ def main(argv=None):
         if command == "update-code":
             sub.add_argument("--python", type=Path)
             sub.add_argument("--offline", action="store_true")
+            sub.add_argument("--plan", action="store_true", help="Inspect update requirements without stopping application services")
+        if command == 'configure-services':
+            sub.add_argument('--settings', type=Path, required=True, help='JSON with launch_agents_directory/path_prefixes')
         if command == "relocate":
             sub.add_argument("--target", type=Path, required=True,
                              help="New root on the same filesystem; stop the instance first")
@@ -895,10 +909,10 @@ def main(argv=None):
             # Per-component/configuration locks alone leave gaps for retirement.
             from scripts.tfi_instance_manager import control_lock, operation
             guard = (control_lock(instance.root)
-                     if args.command in {"start", "stop", "retire", "update-code"}
+                     if args.command in {"start", "stop", "retire", "update-code", "configure-services"}
                      else nullcontext())
             with guard:
-                if args.command in {"start", "stop", "retire", "update-code"}:
+                if args.command in {"start", "stop", "retire", "update-code", "configure-services"}:
                     pending = operation(instance.root)
                     if pending and pending["status"] in {"queued", "running"}:
                         raise ValueError("An operation is already running for this instance")
@@ -910,7 +924,10 @@ def main(argv=None):
                     result = configure_ports(instance, {key: value for key in ("entry", "postgres", "nats", "release", "dev")
                                                         if (value := getattr(args, key + "_port")) is not None})
                 elif args.command == "update-code":
-                    result = update_code(instance, base_python=args.python, offline=args.offline)
+                    options = {'plan_only': True} if args.plan else {}
+                    result = update_code(instance, base_python=args.python, offline=args.offline, **options)
+                elif args.command == 'configure-services':
+                    result = configure_services(instance, json.loads(args.settings.read_text(encoding='utf-8')))
                 elif args.command == "repair-lineage-events":
                     result = repair_lineage_events(instance, args.seed_manifest)
                 elif args.command == "relocate":

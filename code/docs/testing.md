@@ -71,6 +71,17 @@ running. The retry reuses the original team journal and records its outcome
 under `groups[].cleanup_recovery` in `GET /test/api/run`. The original group
 and case outcomes are preserved.
 
+The authenticated TAU Run requester can record a confirmed pre-delivery
+rejection using `POST /test/api/tau/delivery/settle` with the original
+`run_id`, `group_id`, `case_id` and `request_id`. An idle module, matching
+invocation checkpoint and a confirmed `delivery_rejected / not_committed`
+readback are required. Accepted or ambiguous inputs are refused. The affected
+case is recorded as an error with no Resident input, its group stops, and the
+original start and observation error remain available. Repeating the same
+request returns the persisted `delivery_settlement` receipt. The endpoint
+never calls TriggerEvent, starts or resumes a Run, dispatches another case,
+or changes the original cleanup journal.
+
 ## Publication evidence
 
 Record the tested source commit, any candidate patch, selected cases, runner

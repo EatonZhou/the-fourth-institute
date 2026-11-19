@@ -1,0 +1,17 @@
+{
+  "resident_7fdebb465cdf": {
+    "agent.yaml": {
+      "schema": "tfi.resident_watchboard_script.v1",
+      "id": "resident_7fdebb465cdf",
+      "title": "Telepus",
+      "description": "Telegram 联系人与 WeChat 微信绑定",
+      "commands": {}
+    },
+    "watchboard.yaml": {
+      "schema": "tfi.resident_watchboard.v1",
+      "title": "Telepus",
+      "description": "Telegram 联系人与 WeChat 微信绑定",
+      "layout": "telepus-channels"
+    }
+  }
+}

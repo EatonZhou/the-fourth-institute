@@ -56,6 +56,27 @@ class ILinkServer:
 
 
 @pytest.fixture
+def service_runtime(monkeypatch):
+    from management_portal.telepus.runtime import TelepusRuntime
+    from types import SimpleNamespace
+    runtime = SimpleNamespace(ready=True, calls=0)
+    def ensure(_self):
+        from management_common.operation_errors import OperationError
+        runtime.calls += 1
+        if not runtime.ready:
+            raise OperationError('service failed', code='telepus.service_control_failed', http_status=503)
+        return {'complete': True}
+    monkeypatch.setattr(TelepusRuntime, 'ensure_weixin', ensure)
+    monkeypatch.setattr(TelepusRuntime, 'status', lambda *args: {'complete': runtime.ready})
+    return runtime
+
+
+@pytest.fixture(autouse=True)
+def isolated_binding_services(service_runtime):
+    pass
+
+
+@pytest.fixture
 def bridge(telepus_schema):
     store = RouterStore(telepus_schema)
     store.init_schema()
@@ -77,6 +98,7 @@ def incoming(adapter, server, text='hello', message_id=1, sender='scanner', refe
 
 def test_binding_pin_redirect_expiry_and_private_result(bridge):
     adapter, server, _, binding = bridge
+    binding.unbind(ACTOR)
     first = binding.start(ACTOR)
     assert 'test-private' not in json.dumps(first)
     session = first['session_id']
@@ -96,8 +118,44 @@ def test_binding_pin_redirect_expiry_and_private_result(bridge):
     assert not adapter.store.account(ACTOR)
 
 
+def test_existing_binding_starts_services_without_rebinding(bridge, service_runtime):
+    adapter, server, _, binding = bridge
+    previous = adapter.store.account(ACTOR)
+    assert binding.start(ACTOR)['status'] == 'active'
+    assert adapter.store.account(ACTOR) == previous
+    assert not server.requests and service_runtime.calls == 1
+
+
+def test_service_failure_before_qr_preserves_existing_binding(bridge, service_runtime):
+    from management_common.operation_errors import OperationError
+    adapter, server, _, binding = bridge
+    previous = adapter.store.account(ACTOR)
+    service_runtime.ready = False
+    with pytest.raises(OperationError):
+        binding.start(ACTOR)
+    assert adapter.store.account(ACTOR) == previous
+    assert not server.requests
+
+
+def test_service_failure_after_confirmation_is_visible_and_keeps_binding(bridge, service_runtime):
+    adapter, server, _, binding = bridge
+    binding.unbind(ACTOR)
+    session = binding.start(ACTOR)['session_id']
+    service_runtime.ready = False
+    server.statuses = [dict(status='confirmed', **ACCOUNT)]
+    result = binding.get(ACTOR, session)
+    assert result['status'] == 'active' and result['service_error']
+    assert adapter.store.account(ACTOR)['status'] == 'active'
+    assert binding.get(ACTOR)['service_error']
+    calls = service_runtime.calls
+    service_runtime.ready = True
+    assert not binding.get(ACTOR).get('service_error')
+    assert service_runtime.calls == calls  # A read never re-enables an explicitly stopped service.
+
+
 def test_binding_stops_after_three_codes(bridge):
     _, server, _, binding = bridge
+    binding.unbind(ACTOR)
     session = binding.start(ACTOR)['session_id']
     server.statuses = [dict(status='expired')] * 3
     binding.get(ACTOR, session)
@@ -180,6 +238,7 @@ def test_two_users_bind_on_same_watchboard_and_reach_their_own_amas(telepus_sche
 
 def test_binding_quiet_long_poll_retries_before_web_deadline_and_recovers_confirmation(bridge):
     adapter, server, _, binding = bridge
+    binding.unbind(ACTOR)
     session = binding.start(ACTOR)['session_id']
     attempts = []
 
@@ -332,6 +391,7 @@ def test_expired_stops_delivery_and_media_round_trip(bridge):
 
 def test_untrusted_redirect_rejected_without_secret(bridge):
     _, server, _, binding = bridge
+    binding.unbind(ACTOR)
     session = binding.start(ACTOR)['session_id']
     server.statuses = [dict(status='scaned_but_redirect', redirect_host='evil.example')]
     with pytest.raises(WeixinError, match='invalid_host'):
@@ -391,6 +451,7 @@ def test_rebinding_preserves_pending_but_does_not_reuse_external_id_mapping(brid
     adapter, server, portal, binding = bridge
     incoming(adapter, server)
     adapter.store.enqueue(chat_key('bot'), {'text': 'pending'})
+    adapter.store.update(ACTOR, status='expired')
     session = binding.start(ACTOR)['session_id']
     server.statuses = [{'status': 'confirmed', **ACCOUNT, 'ilink_bot_id': 'newbot'}]
     assert binding.get(ACTOR, session)['status'] == 'active'

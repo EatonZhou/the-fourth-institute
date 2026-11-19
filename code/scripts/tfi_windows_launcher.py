@@ -333,11 +333,12 @@ class DefaultStartup:
     def definitions_current(self, instance):
         """False after a code update: the definitions still name the old code environment."""
         from scripts.instance_services import verify_definitions
+        from scripts.instance_update import current
         try:
             verify_definitions(instance)
         except (ValueError, FileNotFoundError):
             return False
-        return True
+        return current(instance)
 
     def account_configured(self, url, instance):
         from scripts.tfi_release_install import _LOCAL_HTTP
@@ -442,13 +443,13 @@ class DefaultStartup:
         url = self.entry_url(instance)
         if initialized:
             pass  # create already started and checked every component in this run.
-        elif not self.definitions_current(instance):
-            # The package replaced the code: prepare its dependencies, refresh
-            # the service definitions and restart (the protocol's code update).
-            self.progress("正在更新 Portal 程序")
-            self.timed("update_code", lambda: self.execute(self.command(
-                "update-code", "--instance", self.name, *(["--offline"] if self.offline() else []))))
         else:
+            if not self.definitions_current(instance):
+                self.progress("正在更新 Portal 程序")
+                self.timed("update_code", lambda: self.execute(self.command(
+                    "update-code", "--instance", self.name, *(["--offline"] if self.offline() else []))))
+            # update-code preserves stopped services. Opening the desktop app
+            # is an explicit start request, including after a package switch.
             self.progress("正在检查已运行的 Portal")
             if self.timed("running_check", lambda: self.running_url(instance)) is None:
                 self.progress("正在启动 Portal")

@@ -129,6 +129,10 @@ def cancel_run(run_id: str, *, actor: str) -> dict[str, Any]:
 def retry_tau_team_cleanup(run_id: str, group_id: str, *, actor: str) -> dict[str, Any]:
     return service().retry_tau_team_cleanup(run_id, group_id, actor=actor)
 
+def settle_tau_delivery(run_id: str, group_id: str, case_id: str, request_id: str,
+                        *, actor: str) -> dict[str, Any]:
+    return service().settle_tau_delivery(run_id, group_id, case_id, request_id, actor=actor)
+
 
 def delete_runs(run_ids: list[str], *, actor: str) -> dict[str, Any]:
     return service().delete_runs(run_ids, actor=actor)

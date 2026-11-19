@@ -227,6 +227,99 @@ def test_proven_unaccepted_request_ends_without_send_or_cancel(tmp_path, config,
         assert state["handle"] == rejection and state["safe_to_cleanup"]
 
 
+@pytest.mark.parametrize("scenario", ["unknown", "accepted", "wrong_request", "busy", "snapshot_drift", "proven"])
+def test_settle_one_rejected_workflow_delivery(tmp_path, monkeypatch, scenario):
+    """The authenticated Run owner records a single proven rejection without dispatch or cleanup."""
+    from management_portal import resident_handoff
+    from management_portal.test_framework import slots, web
+    from management_portal.test_framework.service import TestFrameworkService
+
+    monkeypatch.setattr(slots, "slot_root", lambda: tmp_path / "slots")
+    service = TestFrameworkService(state_root=tmp_path, launch=lambda _: pytest.fail("no launch"))
+    monkeypatch.setattr(web.test_framework_api, "service", lambda: service)
+    records = service.records
+    group_id = "module:platform.core"
+    other_id = "module:workflow.knowledge"
+    next_case = {**PLANNED, "case_id": "test_23456789abcd"}
+    plan = {"campaign": "tau", "selected": [PLANNED, next_case], "execution": {"groups": [
+        {"group_id": group_id, "module_id": "platform.core", "runner": "tau", "item_indexes": [0, 1]},
+        {"group_id": other_id, "module_id": "workflow.knowledge", "runner": "tau", "item_indexes": []},
+    ]}}
+    run_id = records.create(plan, "requester")["run_id"]
+    handle = {**PENDING, "case_id": PLANNED["case_id"], "instruction": "TriggerEvent",
+              "event_id": "event-original", "trigger_path_id": "trigger-original",
+              "idempotency_key": "workflow:original"}
+    records.update(run_id, {"status": "running", "started_at": "original", "error": "original run error"})
+    records.update_group(run_id, group_id, {"status": "running", "error": "original observation error",
+                         "current_case_id": PLANNED["case_id"], "case_started_at_epoch": 123,
+                         "active_invocation": handle})
+    records.update_group(run_id, other_id, {"status": "running", "active_invocation": {"request_id": "other"}})
+    path = (tmp_path / "run-artifacts" / run_id / "module-platform.core" / PLANNED["case_id"]
+            / "tau-invocation.json")
+    path.parent.mkdir(parents=True)
+    snap = {**handle, "effect_id": "wrong"} if scenario == "snapshot_drift" else handle
+    path.write_text(json.dumps({"schema": "tfi.tau-invocation-checkpoint.v1",
+                                "safe_to_cleanup": False, "handle": snap}))
+    seen = []
+
+    def resolve(*, actor, handle):
+        assert actor == runner_adapters.TAU_ACTOR
+        seen.append(handle)
+        if scenario == "unknown":
+            return handle
+        if scenario == "accepted":
+            return {**handle, **ACCEPTED}
+        return {**handle, "instruction_id": "inst_parent", "submission_state": "not_submitted",
+                "submission_failure_kind": "delivery_rejected", "submission_failure_instruction_id": "inst_child",
+                "submission_failure_commit_state": "not_committed", "submission_failure_code": "instruction.forbidden",
+                "submission_reason": "workspace is not bound"}
+
+    monkeypatch.setattr(resident_handoff, "resolve_invocation_submission", resolve)
+    payload = {"run_id": run_id, "group_id": group_id, "case_id": PLANNED["case_id"],
+               "request_id": "wrong" if scenario == "wrong_request" else handle["request_id"]}
+    http = web.TestLabHttp(respond=lambda _, code, body: (code, body), read_json=lambda _: payload,
+                           exception_response=lambda _, exc: pytest.fail(str(exc)),
+                           serve_bytes=None, unavailable_response=None)
+    before = records.get(run_id)
+    assert http.settle_tau_delivery(None, None, "another-actor")[0] == 403
+    if scenario == "busy":
+        with slots.exclusive("tau-module:platform.core", stop=lambda: True) as acquired:
+            assert acquired
+            assert http.settle_tau_delivery(None, None, "requester")[0] == 400
+        assert not seen
+    elif scenario != "proven":
+        assert http.settle_tau_delivery(None, None, "requester")[0] == 400
+    else:
+        code, receipt = http.settle_tau_delivery(None, None, "requester")
+        assert code == 200 and receipt["request_id"] == handle["request_id"]
+        assert http.settle_tau_delivery(None, None, "requester") == (200, receipt)
+        assert seen == [handle]
+        after = records.get(run_id)
+        group = after["groups"][0]
+        assert (group["status"], group["active_invocation"]) == ("error", {})
+        assert group["error"] == before["groups"][0]["error"]
+        assert group["case_started_at_epoch"] == 123 and group["delivery_settlement"] == receipt
+        assert after["groups"][1] == before["groups"][1]
+        assert after["started_at"] == before["started_at"] and after["error"] == before["error"]
+        assert after["results"] == group["results"] and len(after["results"]) == 1
+        result = after["results"][0]
+        assert (result["case_id"], result["status"]) == (PLANNED["case_id"], "error")
+        assert result["details"]["input_submitted"] is False
+        assert result["details"]["process"]["status"] == "not_started"
+        # An executor that selected this group before settlement must not
+        # overwrite its terminal state or start the next planned case.
+        executor = TauCampaignExecutor(records, tmp_path / "run-artifacts", object())
+        assert executor._execute_group_with_slot(run_id, plan["execution"]["groups"][0],
+                                                 plan["selected"], path.parent, "requester") == (
+            "error", "original observation error",
+        )
+        assert records.get(run_id)["results"] == after["results"]
+    assert json.loads(path.read_text())["handle"] == snap
+    assert not json.loads(path.read_text())["safe_to_cleanup"]
+    if scenario != "proven":
+        assert records.get(run_id) == before
+
+
 @pytest.mark.parametrize("scenario", ["malformed_report", "cancelled_before_input"])
 def test_campaign_finishes_malformed_report_and_reports_unstarted_cancellation(tmp_path, config, monkeypatch, scenario):
     monkeypatch.setattr(TauCampaignExecutor, "_verify_source", lambda _self, _item: None)
