@@ -6,7 +6,7 @@
   min-width: 0;
   min-height: 0;
   overflow: hidden;
-  background: var(--surface, #fff);
+  background: var(--panel, #fff);
   color: var(--text, #202634);
 }
 .portalRepositoryPanel [hidden] { display: none !important; }
@@ -31,10 +31,10 @@
 .repositoryFileRow [data-portal-icon] { flex: 0 0 16px; width: 16px; height: 16px; }
 .repositoryFileName { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .repositoryFileRow small { font-size: 10px; color: var(--muted, #667085); }
-.repositoryFileRow:hover, .repositoryFileRow.is-selected, .repositorySearchResult:hover, .repositoryChangeRow:hover { background: var(--surface-hover, #edf2ff); }
+.repositoryFileRow:hover, .repositoryFileRow.is-selected, .repositorySearchResult:hover, .repositoryChangeRow:hover { background: var(--panel-2, #edf2ff); }
 .portalRepositoryPanel button:focus-visible, .portalRepositoryPanel input:focus-visible, .portalRepositoryPanel select:focus-visible { outline: 2px solid var(--accent, #4565cf); outline-offset: -2px; }
 .repositorySearchForm { display: flex; gap: 6px; padding: 10px; }
-.repositorySearchForm input, .repositoryLatexToolbar input, .repositoryLatexToolbar select { border: 1px solid var(--border, #d8dee8); border-radius: 5px; padding: 6px 8px; background: var(--surface, #fff); color: inherit; font: inherit; font-size: 12px; min-width: 0; }
+.repositorySearchForm input, .repositoryLatexToolbar input, .repositoryLatexToolbar select { border: 1px solid var(--border, #d8dee8); border-radius: 5px; padding: 6px 8px; background: var(--panel, #fff); color: inherit; font: inherit; font-size: 12px; min-width: 0; }
 .repositorySearchForm input { width: 0; flex: 1; }
 .repositorySearchResult { display: block; width: 100%; border: 0; padding: 8px 12px; background: transparent; color: inherit; text-align: left; cursor: pointer; }
 .repositorySearchResult strong, .repositoryChangeRow strong { display: block; font-size: 13px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; }

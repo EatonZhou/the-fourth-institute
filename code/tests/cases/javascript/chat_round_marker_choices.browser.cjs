@@ -42,6 +42,8 @@ if (output) fs.mkdirSync(output, { recursive: true });
     const context = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
     const setup = async (page, legacy = false) => {
       page.on('pageerror', error => errors.push(error.message));
+      // The fixture origin is reachable over loopback in the isolated network namespace.
+      await page.addInitScript(() => Object.defineProperty(navigator, 'onLine', { value: true }));
       await page.goto(origin);
       await page.evaluate(({ legacy }) => {
         window.__PORTAL_SITE__ = { storage_namespace: 'marker-choices-test' };

@@ -43,6 +43,8 @@ if (output) fs.mkdirSync(output, { recursive: true });
     const page = await context.newPage(); page.on('pageerror', error => errors.push(error.message));
     const origin = 'http://127.0.0.1:' + server.address().port;
     const setup = async (page, { baseline = false } = {}) => {
+      // Model reachability of the loopback fixture, which Chromium reports as offline in isolation.
+      await page.addInitScript(() => Object.defineProperty(navigator, 'onLine', { value: true, writable: true }));
       await page.goto(origin);
       if (baseline) await page.evaluate(() => {
         // Same Chat renderer/viewport width; omit only this feature for a
@@ -628,9 +630,15 @@ if (output) fs.mkdirSync(output, { recursive: true });
       check('cached event cannot certify disconnected progress', await page.locator('.chatRoundNode.is-running').count() === 0);
       await page.evaluate(() => panel.applySnapshot(raw, { type: 'snapshot' })); await settle();
       check('protocol snapshot clears unknown after recovery without requiring global ready', await page.locator('[data-round-key="family-running"].is-running').count() === 1);
-      await page.evaluate(() => window.dispatchEvent(new Event('offline'))); await settle();
+      await page.evaluate(() => {
+        navigator.onLine = false;
+        window.dispatchEvent(new Event('offline'));
+      }); await settle();
       check('offline still clears running certainty', await page.locator('.chatRoundNode.is-running').count() === 0);
-      await page.evaluate(() => panel.applySnapshot(raw, { type: 'snapshot' })); await settle();
+      await page.evaluate(() => {
+        navigator.onLine = true;
+        panel.applySnapshot(raw, { type: 'snapshot' });
+      }); await settle();
       await page.evaluate(() => panel.setPresented(false));
       check('native Resident presentation suspends running certainty', await page.locator('.chatRoundNode.is-running').count() === 0);
       await page.evaluate(() => panel.setPresented(true)); await settle();

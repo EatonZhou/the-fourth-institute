@@ -39,6 +39,8 @@ if (output) fs.mkdirSync(output, { recursive: true });
     browser = await chromium.launch({ headless: true });
     const page = await browser.newPage({ viewport: { width: 1200, height: 850 } });
     page.on('pageerror', error => errors.push(error.message));
+    // The fixture origin is reachable over loopback in the isolated network namespace.
+    await page.addInitScript(() => Object.defineProperty(navigator, 'onLine', { value: true }));
     await page.goto('http://127.0.0.1:' + server.address().port);
     await page.evaluate(async ({ queuedOnly }) => {
       window.__PORTAL_SITE__ = { storage_namespace: 'work-fact-test' };

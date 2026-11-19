@@ -651,8 +651,8 @@
 .toolSettings p { margin: 0; line-height: 1.6; }
 .toolSettingsActions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
 .toolSettingsActions label, .toolSettingsTool label { display: inline-flex; gap: 6px; align-items: center; }
-.toolSettingsCard { display: grid; gap: 10px; padding: 14px; border: 1px solid var(--portal-border, #8885); border-radius: 10px; margin-block: 10px; }
+.toolSettingsCard { display: grid; gap: 10px; padding: 14px; border: 1px solid var(--border, #8885); border-radius: 10px; margin-block: 10px; }
 .toolSettingsCard code, .toolSettingsCard pre { overflow-wrap: anywhere; white-space: pre-wrap; max-width: 100%; }
-.toolSettingsTool { display: grid; gap: 6px; padding-block: 8px; border-top: 1px solid var(--portal-border, #8885); }
+.toolSettingsTool { display: grid; gap: 6px; padding-block: 8px; border-top: 1px solid var(--border, #8885); }
 .toolSettings .portalField input { width: 100%; min-width: 0; }
 .toolSettings [role="status"] { overflow-wrap: anywhere; }
