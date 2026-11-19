@@ -1,5 +1,7 @@
 // Knowledge board: the detail dialog: opening, rendering, editing, saving and deleting an item.
 
+let detailDeleting = false;
+
 function renderKnowledgeResourceIdentity(item, fallbackId = "") {
   const resourceId = String(item?.kb_id || fallbackId || "").trim();
   // Replace the observed container so the shared owner disposes the previous binding.
@@ -141,11 +143,13 @@ function syncDetailButtons() {
     || state.detailSelectedFileLinked
     || state.detailEditing
     || !detailSelectedFileEditable();
+  el.mDelete.hidden = !deletableDetail(snapshot);
+  el.mDelete.disabled = detailDeleting;
   el.mCancelEdit.hidden = !state.detailEditing;
   el.mSave.hidden = !state.detailEditing;
   el.mSave.disabled = state.detailSaving || !detailIsDirty();
   el.mCancelEdit.disabled = state.detailSaving;
-  el.mEdit.disabled = state.detailSaving;
+  el.mEdit.disabled = state.detailSaving || detailDeleting;
   el.mClose.disabled = state.detailSaving;
   el.mSave.textContent = state.detailSaving ? window.PortalI18n.t("保存中…") : window.PortalI18n.t("保存");
 }
@@ -322,6 +326,76 @@ async function saveDetail() {
       },
     }),
   });
+}
+
+function deletableDetail(snapshot = detailDocumentSession?.snapshot()) {
+  const id = state.detailFileId;
+  const item = state.selected;
+  if (!id || id.includes("/") || state.detailSelectedFileId !== id || item?.kb_id !== id
+    || !item.type || ["article", "experiment"].includes(item.type)
+    || state.detailSelectedFileLinked || state.detailReadOnly || state.detailEditing || state.detailSaving
+    || state.deletedKnowledgeIds.has(id) || !snapshot?.payload
+    || ["empty", "loading", "error"].includes(snapshot.status)) return null;
+  return item;
+}
+
+async function deleteDetail() {
+  const snapshot = detailDocumentSession?.snapshot();
+  const item = deletableDetail(snapshot);
+  if (!item || detailDeleting) return;
+  const id = item.kb_id;
+  const { requestId, payload } = snapshot;
+  const detailGeneration = state.detailLinkDiscoverySequence;
+  detailDeleting = true;
+  syncDetailButtons();
+  try {
+    const confirmed = await window.PortalUI.confirmAction("delete", item.title || item.filename || id, {
+      consequence: item.type === "skill"
+        ? "整个 Skill 及其附属文件将从对应来源移除。"
+        : "条目及其关联文件将按资源删除规则处理。",
+    });
+    const current = detailDocumentSession?.snapshot();
+    if (!confirmed || detailGeneration !== state.detailLinkDiscoverySequence
+      || current?.requestId !== requestId || current?.payload !== payload
+      || deletableDetail(current)?.kb_id !== id) return;
+
+    const receipt = await knowledgeApi.request("/knowledge/api/detail/delete", {
+      method: "POST",
+      body: JSON.stringify({ kb_id: id }),
+    });
+    const ids = [receipt?.kb_id, receipt?.skill_id, receipt?.resource_id].filter(value => value != null);
+    if (receipt?.deleted !== true || !ids.length || ids.some(value => value !== id)) {
+      throw new Error(window.PortalI18n.t("删除结果未确认，请刷新后核对条目状态。"));
+    }
+
+    state.deletedKnowledgeIds.add(id);
+    // Late list and exact-lookup responses must not restore the deleted card.
+    state.indexPaging.requestSeq += 1;
+    state.indexPaging.prefetching = false;
+    state.exactQuery = { seq: state.exactQuery.seq + 1, id: "", status: "", error: "" };
+    if (state.raw) {
+      const wasListed = (state.raw.items || []).some(entry => entry.kb_id === id);
+      state.raw = { ...state.raw, items: (state.raw.items || []).filter(entry => entry.kb_id !== id) };
+      if (wasListed) state.indexPaging.total = Math.max(state.raw.items.length, state.indexPaging.total - 1);
+      renderAll();
+    }
+    if (state.detailFileId === id) {
+      if (detailResourceGuest?.deleted({ resourceId: id, kind: "deleted" })) return;
+      await closeModal();
+    }
+    const map = state.knowledgeMap;
+    await Promise.all([
+      loadIndex({ refresh: true }),
+      (map.open || map.graph || map.loading) && loadKnowledgeGraph({ refresh: true }),
+      state.detailFileId && state.detailFileId !== id && detailGraphEnabled()
+        && loadDetailGraph(state.detailFileId),
+    ]);
+  } catch (error) {
+    alertError(error);
+  } finally {
+    detailDeleting = false;
+    syncDetailButtons();
+  }
 }
 
 async function openDetailFile(file, options = {}) {

@@ -6,25 +6,29 @@ const vm = require('node:vm');
 const script = name => fs.readFileSync(path.resolve(__dirname, '../../../management_portal/static', name), 'utf8');
 // From `start` to `end`, or to the end of the script.
 const extract = (source, start, end) => source.slice(source.indexOf(start), end ? source.indexOf(end, source.indexOf(start)) : undefined);
-const deletion = extract(script('knowledge_board_detail.js'), 'async function deleteDetail()', 'async function openDetailFile(');
+const deletion = extract(script('knowledge_board_detail.js'), 'function deletableDetail(', 'async function openDetailFile(');
 const loading = extract(script('knowledge_board_loading.js'), 'function applyIndexPage(');
 function harness(receipt = {deleted:true, kb_id:'information_1234'}) {
-  const errors = [], renders = [];
+  const errors = [], renders = [], graphRefreshes = [];
+  const item = {kb_id:'information_1234', type: receipt.skill_id ? 'skill' : 'information'};
+  const snapshot = {requestId:1, payload:item};
   const state = {raw:{items:[{kb_id:'information_1234'},{kb_id:'information_5678'}]},
     deletedKnowledgeIds:new Set(), detailFileId:'information_1234', indexPaging:{requestSeq:1,total:2},
-    exactQuery:{seq:1}, selected:null};
+    detailSelectedFileId:item.kb_id, exactQuery:{seq:1}, selected:item, knowledgeMap:{open:true}};
   const context = vm.createContext({state, URLSearchParams, setTimeout,
+    detailDocumentSession:{snapshot:()=>snapshot},
     window:{scrollY:0,requestAnimationFrame:()=>{},PortalUI:{confirmAction:async()=>true},
       PortalI18n:{t:s=>s,text:(s,...a)=>s.reduce((v,t,i)=>v+t+(a[i]??''),'')}},
     el:{meta:{textContent:'',dataset:{}}}, filter:{type:null},
     byId:id=>state.raw.items.find(x=>x.kb_id===id), syncDetailButtons:()=>{},
     detailResourceGuest:null,closeModal:()=>{state.detailFileId='';}, alertError:e=>errors.push(e),
+    loadKnowledgeGraph:options=>graphRefreshes.push(options.refresh),
     renderAll:()=>renders.push(state.raw.items.map(x=>x.kb_id)),
     normalizeFilterStateForIndex:()=>{},buildFilterOptions:()=>{},syncKnowledgeFilterInputs:()=>{},
     knowledgeBoardShell:{syncFilterState:()=>{}},indexRequestParams:()=>'',waitForRefreshedIndex:()=>{},
     knowledgeApi:{request:async()=>receipt,requireJson:r=>r.payload,requestResult:async()=>({response:{ok:false,status:503}})}});
-  vm.runInContext(loading+deletion,context);
-  return {context,state,errors,renders};
+  vm.runInContext('let detailDeleting = false;\n'+loading+deletion,context);
+  return {context,state,errors,renders,graphRefreshes};
 }
 test('acknowledged deletion removes card before refresh finishes; stale pages cannot resurrect it',async()=>{
   const h=harness(); let finish;
@@ -45,9 +49,11 @@ test('refresh failure preserves deletion and exposes an index error',async()=>{
   assert.deepEqual(h.renders.at(-1),['information_5678']);
   assert.equal(h.state.indexPaging.error,'HTTP 503');
   assert.equal(h.errors.length,1);
+  assert.deepEqual(h.graphRefreshes,[true]);
 });
 test('unconfirmed or mismatched delete receipt cannot remove a card',async()=>{
-  for(const receipt of [{deleted:false,kb_id:'information_1234'},{deleted:true,kb_id:'information_9999'},{}]){
+  for(const receipt of [{deleted:false,kb_id:'information_1234'},{deleted:true,kb_id:'information_9999'},
+    {deleted:true,kb_id:'information_1234',resource_id:'information_9999'},{}]){
     const h=harness(receipt);await h.context.deleteDetail();
     assert.equal(h.state.raw.items.length,2);assert.equal(h.state.deletedKnowledgeIds.size,0);
     assert.equal(h.state.detailFileId,'information_1234');assert.equal(h.errors.length,1);

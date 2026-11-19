@@ -184,6 +184,7 @@ const el = {
   mDownload: document.getElementById("mDownload"),
   mFavorite: document.getElementById("mFavorite"),
   mEdit: document.getElementById("mEdit"),
+  mDelete: document.getElementById("mDelete"),
   mCancelEdit: document.getElementById("mCancelEdit"),
   mSave: document.getElementById("mSave"),
   mClose: document.getElementById("mClose"),
@@ -463,6 +464,7 @@ el.archiveDrafts.addEventListener("click", () => generateArchiveDrafts().catch(a
 el.archiveApply.addEventListener("click", () => applyArchiveDrafts().catch(alertError));
 el.mClose.addEventListener("click", closeModal);
 el.mEdit.addEventListener("click", () => setDetailEditing(true));
+el.mDelete.addEventListener("click", deleteDetail);
 el.mCancelEdit.addEventListener("click", () => setDetailEditing(false));
 el.mSave.addEventListener("click", () => saveDetail());
 const openDetailGraphNode = (fileId) => {
