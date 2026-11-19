@@ -232,6 +232,8 @@ def _read_watchboard_yaml_cached(path: Path) -> tuple[Any, str]:
 
 def read_watchboard_agent_manifest(record: dict[str, Any]) -> tuple[dict[str, Any], str]:
     path = _watchboard_agent_manifest_path(record)
+    if not path.is_file():
+        return {}, "Watchboard agent.yaml is missing; restore the installed panel's manifest"
     payload, error = _read_watchboard_yaml_cached(path)
     if error:
         return {}, error

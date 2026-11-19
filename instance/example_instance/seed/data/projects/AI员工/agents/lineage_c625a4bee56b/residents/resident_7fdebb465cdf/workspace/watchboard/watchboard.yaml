@@ -1,0 +1,4 @@
+schema: tfi.resident_watchboard.v1
+title: Telepus
+description: Telegram 联系人与 WeChat 微信绑定
+layout: telepus-channels

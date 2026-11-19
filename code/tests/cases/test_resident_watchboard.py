@@ -310,7 +310,7 @@ class ResidentWatchboardTest(unittest.TestCase):
         payload = backend.get_resident_watchboard("resident_aaaaaaaaaaaa", "CASE-A")
 
         self.assertEqual(payload["watchboard"]["commands"], [])
-        self.assertTrue(payload["watchboard"]["manifest"]["error"])
+        self.assertIn("agent.yaml is missing", payload["watchboard"]["manifest"]["error"])
 
     def test_child_files_are_independent_and_need_its_own_graph(self):
         """子 Resident 继承 Watchboard 文件副本，但需自行安装图组件，命令 ID 与父级不同"""

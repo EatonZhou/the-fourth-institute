@@ -18,6 +18,8 @@ class FileScope:
         self.decisions = {}
         self.reset_roots = tuple(Path(root).resolve() for root in policy.get('reset_roots', []))
         self.skills = SkillScope()
+        self.watchboards = [(Path(item['root']), {Path(p) for p in item['files']})
+                            for item in policy.get('watchboards', [])]
 
     def _rules(self, rows, *, target=False):
         result = {}
@@ -44,6 +46,16 @@ class FileScope:
         yield from self._walk(source, source, Path('.'), frozenset())
 
     def _walk(self, logical, actual, relative, ancestors):
+        try:
+            resolved = actual.resolve() if self.watchboards else actual
+        except (OSError, RuntimeError) as error:
+            raise ValueError(f'Selected link is broken or cyclic: {logical}') from error
+        for root, files in self.watchboards:
+            if resolved == root or resolved.is_relative_to(root):
+                if resolved not in files and not any(p.is_relative_to(resolved) for p in files):
+                    self.decisions[str(logical)] = {'path': str(logical), 'action': 'excluded',
+                        'reason': 'Watchboard exports only declared portable dependencies'}
+                    return
         if self._reset(logical, actual):
             return
         excluded = next((rule for path, rule in self.excluded.items()

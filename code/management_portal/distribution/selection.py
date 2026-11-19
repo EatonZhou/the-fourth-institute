@@ -106,6 +106,7 @@ class _ExportScope:
         self.generated = {}
         self.mappings = []
         self.workspaces = {}
+        self.watchboard_scopes = []
 
     def resolve(self):
         if self.resolution and self.resolution.get("snapshot_sha256") != digest(self.snapshot):
@@ -382,11 +383,29 @@ class _ExportScope:
                 self.workspaces[identity] = row
                 continue
             self._relocate(row["path"], layout.reference(area, relative))
+            if identity in own:
+                self._collect_watchboard(own[identity], row['path'], layout.target(area, relative))
             if include:
                 self.files.append({"source": str(layout.physical(row["path"])), "target": layout.target(area, relative)})
             self.workspaces[identity] = row
         if set(self.workspaces) != workspace_ids:
             self.unresolved.append({"ids": sorted(workspace_ids - set(self.workspaces)), "reason": "Workspace identity or path missing"})
+
+    def _collect_watchboard(self, resident_id, workspace, target):
+        from management_portal.watchboards.distribution import dependencies
+        installed = any(row.get('client_key') == f'watchboard.{resident_id}.view'
+                        for row in self.rows.get(('lineage', 'lineage_components'), []))
+        if not installed:
+            return
+        try:
+            manifests, sources = dependencies(layout.physical(workspace) / 'watchboard')
+            self.watchboard_scopes.append({'root': str((layout.physical(workspace) / 'watchboard').resolve()),
+                                           'files': [str(path) for path in sources.values()]})
+            self.generated.update({target + '/watchboard/' + name: text for name, text in manifests.items()})
+            self.files.extend({'source': str(path), 'target': target + '/watchboard/' + name}
+                              for name, path in sources.items())
+        except (ValueError, OSError) as error:
+            self.unresolved.append({'id': resident_id, 'reason': str(error)})
 
     def _relocate(self, source, reference):
         """Text and rows naming ``source`` in any of its spellings name ``reference`` in the export."""
@@ -624,5 +643,6 @@ class _ExportScope:
                 "lineage_options": deepcopy(self.lineages),
                 "anonymization": deepcopy(ANONYMIZATION),
                 "file_scope_policy": {**deepcopy(resolution.get('file_scope_policy', {})),
-                                      'reset_roots': self.projection_scope.get('reset_roots', [])},
+                                      'reset_roots': self.projection_scope.get('reset_roots', []),
+                                      'watchboards': self.watchboard_scopes},
                 "code_extras": resolution.get("code_extras", []), "external_requirements": external}

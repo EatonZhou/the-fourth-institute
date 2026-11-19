@@ -13735,6 +13735,16 @@
       "size": 23
     },
     {
+      "path": "data/projects/AI员工/agents/lineage_c625a4bee56b/residents/resident_7fdebb465cdf/workspace/watchboard/agent.yaml",
+      "sha256": "2a308142128567ec5174eaeb7da9ffcfb0c085a4ab0315f7826e1309540d1b31",
+      "size": 163
+    },
+    {
+      "path": "data/projects/AI员工/agents/lineage_c625a4bee56b/residents/resident_7fdebb465cdf/workspace/watchboard/watchboard.yaml",
+      "sha256": "237d9337c7d71a6137b2571bd7f176283b146672d8cb1211883baa7d7ed6d07b",
+      "size": 130
+    },
+    {
       "path": "data/projects/AI员工/agents/lineage_c625a4bee56b/residents/resident_7fdebb465cdf/workspaces.md",
       "sha256": "d3fea11932c7877d68d67ad815222508733e52cebd48b523560f851bda76a063",
       "size": 136
