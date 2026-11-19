@@ -21,20 +21,28 @@ from management_common.file_lock import try_lock_descriptor
 from management_common.file_retention import cache_file
 from management_common.portal_paths import path as portal_path
 from management_common.secure_paths import open_target
-from management_portal import article_build, article_discovery, article_toolchain
+from management_common import latex_build, latex_source, latex_toolchain
 from management_portal.repo_workspace_checkout import (
     RepoWorkspaceConflict, _safe_relative_path, _source_root,
 )
 
 
 DEFAULT_BUILD_ROOT = portal_path("cache") / "repo_latex"
-_IGNORED_DIRECTORIES = article_discovery.ARTICLE_TREE_IGNORED_DIRECTORIES
+_IGNORED_DIRECTORIES = latex_source.IGNORED_DIRECTORIES
+_BUILDS = latex_build.BuildRuntime()
 
 
 class RepoLatexError(RuntimeError):
     def __init__(self, report: dict[str, Any]) -> None:
         super().__init__(report.get("summary") or "LaTeX compilation failed")
         self.report = report
+
+
+class _RepoBuild(latex_build.LatexBuild):
+    def inspect_preflight(self) -> dict[str, Any]:
+        # The isolated snapshot has no Project association. Preserve the report
+        # field without consulting Article registration or the Project registry.
+        return {**super().inspect_preflight(), "project_ids": []}
 
 
 def _json(path: Path) -> dict[str, Any]:
@@ -61,7 +69,7 @@ class _Preview:
             head = os.read(fd, 16 * 1024).decode("utf-8", errors="replace")
         hint = re.search(r"(?im)^\s*%\s*!\s*TeX\s+program\s*=\s*(pdflatex|xelatex|lualatex)\s*$", head)
         self.compiler = compiler.strip().lower() or (hint.group(1).lower() if hint else "pdflatex")
-        if self.compiler not in article_toolchain.SUPPORTED_LATEX_COMPILERS:
+        if self.compiler not in latex_toolchain.SUPPORTED_LATEX_COMPILERS:
             raise ValueError("unsupported LaTeX compiler")
         identity = json.dumps([str(self.checkout), self.path, self.compiler])
         key = hashlib.sha256(identity.encode()).hexdigest()
@@ -179,14 +187,15 @@ def compile_repo_latex(repo_id: str, path: str, *, compiler: str = "", from_scra
             if not try_lock_descriptor(lock.fileno()):
                 raise RepoWorkspaceConflict("This LaTeX document is already compiling")
             preview.sync_source()
-            environment = article_toolchain.latex_environment()
+            environment = latex_toolchain.latex_environment()
             settings = {
                 "primary_file": Path(preview.path).name, "compiler": preview.compiler,
                 "compile_mode": "normal", "error_handling": "stop",
                 "use_project_latexmkrc": False, "shell_escape": False,
                 "environment_profile": environment["profile_id"],
             }
-            build = article_build.LatexBuild(
+            build = _RepoBuild(
+                runtime=_BUILDS,
                 build_id=preview.build_id,
                 source_root=preview.snapshot / Path(preview.path).parent,
                 settings=settings, output=preview.output,

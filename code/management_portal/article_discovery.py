@@ -8,88 +8,15 @@ from pathlib import Path
 from typing import Any, Iterable
 
 from management_common.text_values import stripped_text
+from management_common.latex_source import (
+    IGNORED_DIRECTORIES as ARTICLE_TREE_IGNORED_DIRECTORIES,
+    _manuscript_rank, _is_standalone_tex_document, _tex_program_hint,
+    _manuscript_title, tex_candidates as _article_tex_candidates,
+)
 from management_portal import article_tex, resource_identity_backend as repo_backend
 
 
 ARTICLE_DIRECTORY_NAMES = {"article", "articles", "artical", "artical_arxiv"}
-
-ARTICLE_TREE_IGNORED_DIRECTORIES = {
-    ".git",
-    ".hg",
-    ".svn",
-    "__pycache__",
-    "node_modules",
-}
-
-
-def _manuscript_rank(path: Path) -> tuple[int, str]:
-    name = path.name.casefold()
-    if name == "main.tex":
-        rank = 0
-    elif name == "main_zwh.tex":
-        rank = 1
-    elif name.startswith("main_") and not any(token in name for token in ("old", "copy")):
-        rank = 2
-    elif name in {"article.tex", "paper.tex", "manuscript.tex"}:
-        rank = 3
-    elif name in {"main.md", "article.md", "paper.md", "manuscript.md"}:
-        rank = 4
-    elif any(token in name for token in ("sample", "template", "old", "copy")):
-        rank = 40
-    else:
-        rank = 10
-    return rank, name
-
-
-def _is_standalone_tex_document(path: Path) -> bool:
-    if path.suffix.casefold() != ".tex":
-        return False
-    try:
-        clean = article_tex._strip_tex_comments(article_tex._read_text(path))
-    except OSError:
-        return False
-    return re.search(r"\\documentclass(?:\s*\[[^\]]*\])?\s*\{", clean) is not None
-
-
-def _tex_program_hint(path: Path) -> str:
-    if path.suffix.casefold() != ".tex":
-        return ""
-    try:
-        text = article_tex._read_text(path, limit=16 * 1024)
-    except OSError:
-        return ""
-    match = re.search(
-        r"(?im)^\s*%\s*!\s*TeX\s+program\s*=\s*(pdflatex|xelatex|lualatex)\s*$",
-        text,
-    )
-    return match.group(1).casefold() if match else ""
-
-
-def _manuscript_title(path: Path) -> str:
-    title = article_tex.extract_article_title(path)
-    if title or path.suffix.casefold() != ".tex":
-        return title
-    try:
-        clean = article_tex._strip_tex_comments(article_tex._read_text(path))
-    except OSError:
-        return ""
-    preamble = re.split(r"\\begin\s*\{document\}", clean, maxsplit=1)[0]
-    root = path.parent.resolve(strict=False)
-    for match in re.finditer(r"\\(?:input|include)\s*\{([^{}]+)\}", preamble):
-        relative = match.group(1).strip()
-        if not relative or "\\" in relative:
-            continue
-        candidate = (root / relative).with_suffix(Path(relative).suffix or ".tex")
-        candidate = candidate.resolve(strict=False)
-        try:
-            candidate.relative_to(root)
-        except ValueError:
-            continue
-        if candidate.is_file():
-            title = article_tex.extract_article_title(candidate)
-            if title:
-                return title
-    return ""
 
 
 def _primary_manuscript(root: Path) -> Path | None:
@@ -110,38 +37,6 @@ def _primary_manuscript(root: Path) -> Path | None:
     titled_candidates = [path for path, title in titled if title]
     pool = titled_candidates or candidates
     return min(pool, key=_manuscript_rank) if pool else None
-
-
-def _article_tex_candidates(root: Path) -> list[dict[str, Any]]:
-    candidates: list[dict[str, Any]] = []
-    for path in sorted(root.rglob("*.tex"), key=lambda item: str(item).casefold()):
-        if any(part in ARTICLE_TREE_IGNORED_DIRECTORIES for part in path.parts):
-            continue
-        try:
-            relative = path.relative_to(root).as_posix()
-        except ValueError:
-            continue
-        standalone = _is_standalone_tex_document(path)
-        candidates.append(
-            {
-                "path": relative,
-                "title": _manuscript_title(path) or path.stem,
-                "compiler_hint": _tex_program_hint(path) or "",
-                "standalone": standalone,
-                "rank": list(_manuscript_rank(path)),
-            }
-        )
-    candidates.sort(
-        key=lambda item: (
-            not bool(item["standalone"]),
-            tuple(item["rank"]),
-            str(item["path"]).casefold(),
-        )
-    )
-    for index, candidate in enumerate(candidates):
-        candidate["recommended"] = index == 0
-        candidate.pop("rank", None)
-    return candidates
 
 
 def inspect_article_root(

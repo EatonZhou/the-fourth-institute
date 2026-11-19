@@ -6,7 +6,8 @@ from urllib.parse import urlparse
 import pytest
 
 from management_common.file_lock import try_lock_descriptor
-from management_portal import article_build, article_toolchain, http_repo, repo_workspace_latex as latex
+from management_common import latex_toolchain as article_toolchain
+from management_portal import http_repo, repo_workspace_latex as latex
 
 
 REPO = "repo_111111111111"
@@ -117,7 +118,7 @@ def test_project_rc_disabled_and_dash_filename_never_becomes_option(project, mon
         out = Path(next(arg.split("=", 1)[1] for arg in command if arg.startswith("-outdir=")))
         (out / "-shell-escape.pdf").write_bytes(b"%PDF fixture")
         return subprocess.CompletedProcess(command, 0, "OK")
-    monkeypatch.setattr(article_build, "_run_article_build_command", run)
+    monkeypatch.setattr(latex._BUILDS, "run", run)
     latex.compile_repo_latex(REPO, "-shell-escape.tex")
     assert commands[0][-1] == "./-shell-escape.tex"
     assert "-norc" in commands[0] and "-r" not in commands[0]
