@@ -103,8 +103,17 @@ def retire_identity_directory(identity, root, *, connection, actor, deleted_at):
     return plan
 
 
-def migrate_dependencies(connection, *, identities=None, check_budget=lambda: None):
-    """One explicit rebuild from owner records. Never called by deletion."""
+def migrate_dependencies(connection, *, identities=None, identity_source=None, check_budget=lambda: None):
+    """Rebuild resource dependencies and invoke an explicit identity owner port.
+
+    Installation composes the source in this same transaction. Resource-only
+    instances must explicitly pass an empty identity list; an omitted source
+    cannot certify readiness by silently skipping an installed owner.
+    """
+    if (identities is None) == (identity_source is None):
+        raise ValueError('Migration requires exactly one explicit identity source')
+    if identity_source is not None and not callable(identity_source):
+        raise ValueError('Migration identity source must be callable')
     from .directory_registrations import COLLECTIONS, refresh_directory_dependency
     from .workspace_store import initialize_directory_owner as initialize_workspaces, refresh_directory_dependency as refresh_workspace
     from .registry_store import initialize_directory_owner as initialize_registry
@@ -155,24 +164,13 @@ def migrate_dependencies(connection, *, identities=None, check_budget=lambda: No
             check_budget()
             refresh_artifact(connection, row['location'])
     check_budget()
-    if identities is None:
-        from management_portal.society_service.directory_owner import migrate_identity_directories
-        previous = connection.execute('SHOW search_path').fetchone()[0]
-        connection.execute("SELECT set_config('search_path',%s,true)", ('"' + _database_schema('lineage') + '"',))
-        try:
-            if connection.execute('SELECT to_regclass(%s)', ('"' + _database_schema('lineage') + '".residents',)).fetchone()[0]:
-                migrate_identity_directories(connection)
-        finally:
-            connection.execute("SELECT set_config('search_path',%s,true)", (previous,))
+    if identity_source is not None:
+        identity_source(connection)
     else:
         for identity, root in identities:
             check_budget()
             record_identity_directory(identity, root, connection=connection)
     check_budget()
-    for table, columns in (('residents', ['directory_json']), ('lineages', ['directory_json', 'project_id']),
-                           ('lineage_nodes', ['lineage_id', 'node_id'])):
-        deps.install_writer_fence(connection, table='"' + _database_schema('lineage') + '".' + table,
-                                  name=table, watched=columns)
     from management_common.directory_move_store import initialize_move_schema
     initialize_move_schema(connection, queue.database.schema)
     comparison = DirectoryComparison()

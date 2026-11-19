@@ -471,7 +471,10 @@ def materialize_handoff_item(
     try:
         row, result = WorkspaceCreationStore().materialize(
             path=target_root, actor=actor, operation_id=operation_id,
-            parent_id=parent_id,
+            # prepare_items passes its authoritative Lineage ID as parent_id.
+            # Persist that lifecycle owner with the creation request; a retry
+            # cannot silently adopt a previously self-owned Workspace.
+            parent_id=parent_id, owner_id=parent_id,
             title=str(target.get("label") or ""), contents=contents, initialize=initialize,
         )
     except subprocess.TimeoutExpired as exc:

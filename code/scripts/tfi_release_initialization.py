@@ -35,9 +35,9 @@ def initialize(engineering):
 def initialize_directory_dependencies(connection):
     """Installer's imported or empty database, before application services start."""
     from management_common.postgres_database import PostgresConnection, _portal_row_factory
-    from management_portal.resources.directory_identity_lifecycle import migrate_dependencies
+    from scripts.directory_dependency_migration import migrate_all_dependencies
     connection.row_factory = _portal_row_factory
-    return migrate_dependencies(PostgresConnection(connection))
+    return migrate_all_dependencies(PostgresConnection(connection))
 
 
 def restore_lineage_events(engineering):

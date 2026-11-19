@@ -34,7 +34,7 @@ def relocate_registered_copy(lineage_id, handoff_id, item_id, actor, *, workspac
         except KeyError:
             raise error
         if (not move or move['phase'] not in {'committed', 'completed'}
-                or move['owner_id'] != workspace_id or move['actor'] != actor):
+                or move['owner_id'] not in {lineage_id, workspace_id} or move['actor'] != actor):
             raise
         return {'operation_id': operation_id, 'status': 'pending',
                 'workspace': store.rows([workspace_id])[workspace_id], 'error': str(error)}
@@ -92,17 +92,17 @@ def relocate_copy(lineage_id, handoff_id, item_id, actor, *, workspace_id,
         store.database.write(check)
         def update(connection, source, destination):
             check(connection)
-            store.restore_self_owner(workspace_id, connection=connection, **snapshot)
+            store.restore_owner(workspace_id, owner_id=lineage_id, connection=connection, **snapshot)
             relocate_nested(connection, source, destination)
             return store.rows([workspace_id], connection=connection)[workspace_id]
         if Path(expected_path) == target:
             def repair(connection):
                 check(connection)
-                store.restore_self_owner(workspace_id, connection=connection, **snapshot)
+                store.restore_owner(workspace_id, owner_id=lineage_id, connection=connection, **snapshot)
                 synchronize(connection, handoff_id=handoff_id)
                 return store.rows([workspace_id], connection=connection)[workspace_id]
             return {'operation_id': '', 'workspace': store.database.write(repair)}
         op, row = move_idle_directory(Path(expected_path), target,
-            owner_id=workspace_id, actor=actor,
+            owner_id=lineage_id, actor=actor,
             database=get_lineage_data_store().database, update=update, operation_id=operation_id)
         return {'operation_id': op, 'workspace': row}

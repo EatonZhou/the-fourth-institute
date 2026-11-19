@@ -16,14 +16,14 @@ def install_directory_owners():
     """Use again only when a subtest explicitly creates a new isolated database."""
     from management_common.directory_retention import RetentionStore
     from management_portal.resources.registry_store import RegistryStore
-    from management_portal.resources.directory_identity_lifecycle import migrate_dependencies
+    from scripts.directory_dependency_migration import migrate_all_dependencies
     from management_portal.society_service.state_store import get_lineage_data_store
 
     RegistryStore()
     RetentionStore()
     state = get_lineage_data_store()
     with state.database.transaction() as connection:
-        migrate_dependencies(connection)
+        migrate_all_dependencies(connection)
     return state
 
 

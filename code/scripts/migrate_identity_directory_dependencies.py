@@ -23,8 +23,8 @@ from scripts.instance_storage_migration import require_database_alone
 
 def migrate(connection):
     require_database_alone(connection)
-    from management_portal.resources.directory_identity_lifecycle import migrate_dependencies
-    return migrate_dependencies(connection)
+    from scripts.directory_dependency_migration import migrate_all_dependencies
+    return migrate_all_dependencies(connection)
 
 
 class _BudgetConnection(PostgresConnection):
@@ -57,7 +57,7 @@ def coordinated_upgrade(connection):
     fail immediately, leaving the installation unchanged for a later retry.
     """
     from management_common.portal_database import _database_schema
-    from management_portal.resources.directory_identity_lifecycle import migrate_dependencies
+    from scripts.directory_dependency_migration import migrate_all_dependencies
     started = monotonic()
     control = connection
     def check_budget():
@@ -99,7 +99,7 @@ def coordinated_upgrade(connection):
             if connection.execute('SELECT to_regclass(%s)', (table,)).fetchone()[0]:
                 mode = 'ACCESS EXCLUSIVE' if (area, name) == ('directory_lifecycle', 'cleanup') else 'SHARE ROW EXCLUSIVE'
                 connection.execute(f'LOCK TABLE {table} IN {mode} MODE NOWAIT')
-    result = migrate_dependencies(connection, check_budget=check_budget)
+    result = migrate_all_dependencies(connection, check_budget=check_budget)
     check_budget()
     return {**result, 'transaction_budget_seconds': 30, 'elapsed_seconds': monotonic() - started}
 

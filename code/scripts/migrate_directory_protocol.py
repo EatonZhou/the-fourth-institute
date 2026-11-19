@@ -91,6 +91,26 @@ def migrate_account_directories(connection, *, schema):
 
 def migrate_schema(connection):
     """Enlist all owners in the caller's already exclusive offline transaction."""
+    from management_common import directory_dependencies as dependencies
+    from scripts.directory_dependency_migration import migrate_all_dependencies
+
+    # An older protocol may be reapplied to an instance whose derived index
+    # already has write guards. The maintenance entry, not its caller or a
+    # test fixture, owns the write protocol and the corresponding rebuild.
+    rebuild = dependencies.installed(connection)
+    dependencies.prepare_write(connection)
+    previous = connection.execute(
+        "SELECT current_setting('tfi.directory_dependency_migration',true)",
+    ).fetchone()[0]
+    connection.execute("SELECT set_config('tfi.directory_dependency_migration','v1',true)")
+    report = _migrate_schema(connection)
+    if rebuild:
+        report['directory_dependencies'] = migrate_all_dependencies(connection)
+    connection.execute("SELECT set_config('tfi.directory_dependency_migration',%s,true)", (previous or '',))
+    return report
+
+
+def _migrate_schema(connection):
     connection.execute("SET LOCAL lock_timeout='5s'")
     report = {'workspace': migrate_workspaces(connection, workspace_schema=_database_schema('workspace'),
                                               lineage_schema=_database_schema('lineage'))}

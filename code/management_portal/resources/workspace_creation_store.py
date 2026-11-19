@@ -23,13 +23,13 @@ class WorkspaceCreationStore:
                                    operation_id=operation_id, title=title, artifact_kind='existing_directory')
         return row
 
-    def materialize(self, *, path, actor, operation_id, contents, initialize, title='', parent_id=''):
-        """Create a self-owned Workspace from a durable content specification.
+    def materialize(self, *, path, actor, operation_id, contents, initialize, title='', parent_id='', owner_id=''):
+        """Create a Workspace with explicit lifecycle ownership, self-owned by default.
 
         Initializers populate only Creation's private directory. Their result is
         saved with that artifact, so a retry never recaptures a changed source.
         """
-        return self._create(path=path, owner_id='', actor=actor, operation_id=operation_id,
+        return self._create(path=path, owner_id=owner_id, actor=actor, operation_id=operation_id,
                             title=title, artifact_kind='directory', contents=contents,
                             initialize=initialize, parent_id=parent_id)
 

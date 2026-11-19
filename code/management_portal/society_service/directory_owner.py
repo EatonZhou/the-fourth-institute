@@ -84,16 +84,33 @@ def record_lineage_directory(connection, lineage_id, project_id, *, include_resi
 
 
 def migrate_identity_directories(connection):
-    """One offline backfill of authoritative roots; never called by deletion.
+    """Backfill authoritative roots and fence their writers during migration.
 
     The install/migration owner provides an external connection in the same
     transaction as its Resource/Workspace backfill. Its search_path is not a
     Society identity or schema selector.
     """
     from .lineage_storage import lineage_folder_for_project
+    from management_common.directory_dependencies import install_writer_fence
     from management_common.portal_database import _database_schema
     from management_portal.resources.directory_identity_lifecycle import record_identity_directory
     schema = '"' + _database_schema('lineage') + '"'
+    watched = {
+        'residents': ['directory_json'],
+        'lineages': ['directory_json', 'project_id'],
+        'lineage_nodes': ['lineage_id', 'node_id'],
+    }
+    tables = {name: f'{schema}.{name}' for name in watched}
+    present = {row['name'] for row in connection.execute(
+        'SELECT name FROM unnest(%s::text[]) AS source(name) WHERE to_regclass(name) IS NOT NULL',
+        (list(tables.values()),),
+    ).fetchall()}
+    if not present:
+        return {'lineages': 0, 'residents': 0}
+    missing = [name for name, table in tables.items() if table not in present]
+    if missing:
+        raise RuntimeError('Incomplete Society directory identity schema: ' + ', '.join(missing))
+
     roots = {}
     for row in connection.execute(
         f'SELECT lineage_id,project_id,directory_json FROM {schema}.lineages WHERE deleted_at IS NULL ORDER BY lineage_id',
@@ -115,6 +132,8 @@ def migrate_identity_directories(connection):
             raise RuntimeError('Live Resident has no live canonical Lineage: ' + rid)
         record_identity_directory(rid, roots[row['lineage_id']] / 'residents' / rid, connection=connection)
         resident_count += 1
+    for name, columns in watched.items():
+        install_writer_fence(connection, table=tables[name], name=name, watched=columns)
     return {'lineages': len(roots), 'residents': resident_count}
 
 

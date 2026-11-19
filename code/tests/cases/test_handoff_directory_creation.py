@@ -132,7 +132,7 @@ def test_official_copy_binding_and_standalone_unregistration(lineage_store, tmp_
     wid = copied['target_workspace_id']
     store = get_workspace_store()
     row = store.rows([wid])[wid]
-    assert row['owner_id'] == wid
+    assert row['owner_id'] == lid
     assert wid != source['workspace_id']
     assert Path(row['path']).is_relative_to(lineage_state._lineage_dir(lid) / 'handoff-workspaces')
     roots = lineage_resident_workspaces.get_node_workspaces(lid, target, 'sample_admin')['workspaces']

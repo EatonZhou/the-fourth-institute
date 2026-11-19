@@ -151,10 +151,38 @@ def test_offline_identity_backfill_uses_qualified_canonical_rows(future_creation
     resident = _resident('Offline directory source')
     store = resident_catalog.get_catalog().state_store
     with store.database.transaction() as connection:
+        schema = store.database.schema
+        for table in ('lineages', 'residents', 'lineage_nodes'):
+            connection.execute(f'DROP TRIGGER IF EXISTS directory_writer_fence ON "{schema}".{table}')
         connection.execute('SET LOCAL search_path TO public')
         result = migrate_identity_directories(connection)
+        fences = {row['relname']: row['proname'] for row in connection.execute(
+            'SELECT rel.relname, fn.proname FROM pg_trigger trg '
+            'JOIN pg_class rel ON rel.oid=trg.tgrelid '
+            'JOIN pg_namespace ns ON ns.oid=rel.relnamespace '
+            'JOIN pg_proc fn ON fn.oid=trg.tgfoid '
+            "WHERE ns.nspname=%s AND trg.tgname='directory_writer_fence'",
+            (schema,),
+        ).fetchall()}
     assert result['residents'] == result['lineages'] == 1
+    assert fences == {table: 'fence_' + table for table in ('lineages', 'residents', 'lineage_nodes')}
     _delete_member(resident['resident_id'])
+
+
+@pytest.mark.parametrize('partial', [False, True], ids=['uninstalled', 'partial'])
+def test_offline_identity_backfill_requires_all_authority_tables(monkeypatch, partial):
+    from management_common.portal_database import portal_database
+    from management_portal.society_service.directory_owner import migrate_identity_directories
+
+    with portal_database(schema='lineage').transaction() as connection, monkeypatch.context() as patch:
+        connection.execute('CREATE TEMP TABLE identity_migration_probe(id integer) ON COMMIT DROP')
+        patch.setattr('management_common.portal_database._database_schema', lambda _owner: 'pg_temp')
+        if partial:
+            connection.execute('CREATE TEMP TABLE residents(resident_id text) ON COMMIT DROP')
+            with pytest.raises(RuntimeError, match='Incomplete Society directory identity schema'):
+                migrate_identity_directories(connection)
+        else:
+            assert migrate_identity_directories(connection) == {'lineages': 0, 'residents': 0}
 
 
 def test_concurrent_repeat_deletion_keeps_first_plan(future_creation_store):

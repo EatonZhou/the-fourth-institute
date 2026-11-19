@@ -235,7 +235,16 @@ class WorkspaceStore:
 
     def restore_self_owner(self, workspace_id, *, expected_version, expected_owner,
                            expected_path, connection):
-        """Repair ownership after validating the current relocation snapshot."""
+        """Retain the explicit standalone-Workspace ownership operation."""
+        self.restore_owner(workspace_id, owner_id=workspace_id,
+            expected_version=expected_version, expected_owner=expected_owner,
+            expected_path=expected_path, connection=connection)
+
+    def restore_owner(self, workspace_id, *, owner_id, expected_version, expected_owner,
+                      expected_path, connection):
+        """Apply the lifecycle owner's declaration against a locked snapshot."""
+        if not owner_id:
+            raise ValueError('Workspace directory owner is required')
         self.cleanup.lock(connection)
         from management_common.directory_dependencies import prepare_write
         prepare_write(connection)
@@ -243,7 +252,7 @@ class WorkspaceStore:
             expected_owner=expected_owner, expected_path=expected_path, connection=connection)
         connection.execute(f'UPDATE {self.table} SET owner_id=%s,'
                            "updated_at=GREATEST(clock_timestamp(),updated_at+interval '1 microsecond') "
-                           'WHERE workspace_id=%s', (workspace_id, workspace_id))
+                           'WHERE workspace_id=%s', (owner_id, workspace_id))
         self.refresh_directory_dependency(workspace_id, connection=connection)
 
     def refresh_directory_dependency(self, workspace_id, *, connection):

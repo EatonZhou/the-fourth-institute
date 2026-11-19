@@ -76,14 +76,14 @@ def future_creation_store(
     monkeypatch.setattr(project_domain, "PROJECTS_ROOT", tmp_path)
     # This disposable instance follows installation's explicit dependency
     # migration. Production deletion never initializes or backfills the index.
-    from management_portal.resources.directory_identity_lifecycle import migrate_dependencies
+    from scripts.directory_dependency_migration import migrate_all_dependencies
     from management_portal.resources.registry_store import get_registry_store
     from management_common.directory_retention import RetentionStore
     get_registry_store()._ensure()
     RetentionStore()
     store = resident_catalog.get_catalog().state_store
     with store.database.transaction() as connection:
-        migrate_dependencies(connection)
+        migrate_all_dependencies(connection)
     return lineage_root
 
 
