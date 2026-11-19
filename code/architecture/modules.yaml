@@ -734,7 +734,6 @@ modules:
       - "decision_c524c775e0be"
       - "decision_15f7df737ed5"
       - "decision_5bf5bfbd52cb"
-      - "decision_c47a13e8b962"
       - "decision_c616d197abbb"
     layer: "service"
     level: "component"
@@ -1620,7 +1619,6 @@ protocols:
       - "decision_8b2fa224616b"
       - "decision_46c37026e8ea"
       - "decision_a6bebf4ac283"
-      - "decision_c47a13e8b962"
       - "decision_ed57c4ad1001"
       - "decision_5ff0cb51ed84"
       - "decision_3286d4167180"
@@ -1739,7 +1737,6 @@ protocols:
       - "decision_edc470e09f5a"
       - "decision_c616d197abbb"
       - "decision_5bf5bfbd52cb"
-      - "decision_c47a13e8b962"
       - "decision_1e2eb869bc10"
       - "decision_3dd52c0692c1"
     description: "Lineage 负责业务输入与轮次，Execution 负责请求、租约、模型执行及恢复；稳定关联键连接两侧状态。"
@@ -2104,7 +2101,7 @@ protocols:
       - "lineage.conversation"
     designs: []
     related_designs:
-      - "decision_c47a13e8b962"
+      - "decision_d19b9909a674"
     description: "residents ISA入口将RestartSession/ClearContext控制参数交给Resident会话实现。"
     example: "RestartSession 从 residents ISA 入口带当前 caller 和控制参数进入会话实现；执行中的输入仍受原会话控制条件约束。"
 
@@ -2418,8 +2415,7 @@ protocols:
       - "lineage.definition"
       - "execution.agent-data"
       - "worker.harness"
-    designs:
-      - "decision_ccbb1cac24aa"
+    designs: []
     related_designs:
       - "decision_3dd52c0692c1"
       - "decision_8b2fa224616b"
@@ -2440,7 +2436,6 @@ protocols:
     designs: []
     related_designs:
       - "decision_4dea0db1f45a"
-      - "decision_c47a13e8b962"
       - "decision_fc26f883773d"
       - "decision_3dd52c0692c1"
     description: "Execution 按容量键持久保存可选 allow_credits（默认 false、省略保留），Codex 订阅声明 credits_supported；仅阈值 0 且已认证新鲜正 credits/unlimited 时解除原生耗尽的自动暂停，保留 used_up 与原始 headroom，人工 Closed 优先，正阈值及旧 Session scoped 授权独立。Home 经原 UpdateProviderAccount 权限保存并读取同一设置，后台刷新保留表单尺寸、原值与草稿，保留派发间隔和手动 Open/Close。Provider Adapter 产生原生调用用量及额度/余额观察；Execution 按账号、稳定调用标识、观察时间聚合，Lineage 投影 Resident 用量，Home 显示账号资源。原生 turn 用量、上下文用量、订阅窗口额度与货币余额保持不同字段和来源。适配器以非空 quota_group 声明共享额度池，Home 只在同组窗口之间显示明确零读数形成的约束，保留原始百分比；限制来源全部过期时显示待确认，不按名称、窗口时长或同账号猜测依赖。分组不修改 Scheduler 保护或恢复规则。 BillingObservations 按 account 锁与缓存采样；失败保留最后成功样本并标 stale/error，不填零。日用量与逐轮小时账本分开，模型目录不在该观察输出内。resident_execution_gate 根据当前 Session binding 批量读取 Scheduler quota_states，投影 open/closed/unknown 及保护原因和已确认豁免；人工 intake 和工作状态独立，查询失败不视为放行。原生状态视图消费同一保护事实和 send_hint，缺字段的工作事件不清空保护；正式批量读取刷新，不以 Conversation cursor 充当额度版本。"
@@ -2741,7 +2736,6 @@ protocols:
       - "execution.providers"
     designs: []
     related_designs:
-      - "decision_c47a13e8b962"
       - "decision_91eb3626d323"
       - "decision_b1ab45c4b3ec"
     description: "Society 拥有授权、排空和重启状态，经现有进程内 Execution port 准备不可变引用；Execution 拥有原生来源发现、严格窗口校验、收据和源版本比较。短 Resident 锁内只预检和最终重核、提交引用，不扫描物化历史；无额外模型调用或服务。"
