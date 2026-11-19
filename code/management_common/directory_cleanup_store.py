@@ -30,6 +30,7 @@ def initialize_directory_schema(connection, schema):
         if connection.execute('SELECT to_regclass(%s)', (reservations,)).fetchone()[0] is None:
             raise RuntimeError('Directory reservations require the offline maintenance window')
         return
+    connection.execute(f'CREATE SCHEMA IF NOT EXISTS "{schema}"')
     connection.execute(f'''CREATE TABLE {table} (
         cleanup_id TEXT PRIMARY KEY,
         owner_id TEXT NOT NULL,
