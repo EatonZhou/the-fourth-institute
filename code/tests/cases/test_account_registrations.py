@@ -4,10 +4,13 @@
 :importance: P1
 """
 import pytest
+from concurrent.futures import ThreadPoolExecutor
+from contextlib import ExitStack
 from pathlib import Path
 from types import SimpleNamespace
 
 from management_portal.hatg.contracts import InstructionError
+from tests.cases.execution_layer_test_support import legacy_empty_checkpoints
 
 
 def test_registration_versions_and_roles(tmp_path):
@@ -175,7 +178,7 @@ def test_role_blocks_account_deletion(tmp_path, monkeypatch):
     monkeypatch.setattr(account_login, "delete_login_data", unexpected)
     monkeypatch.setattr(account_hosting, "remove_account_runtime", unexpected)
     with pytest.raises(InstructionError) as refused:
-        isa.delete_provider_account(SimpleNamespace(argument={"account_id": "claude_test"}.get))
+        isa.delete_provider_account(SimpleNamespace(caller="alice", argument={"account_id": "claude_test"}.get))
     assert refused.value.details == error.value.details
     assert store.registration("claude_test") is not None
     assert [row["role"] for row in store.roles()] == ["default", "router_fast"]
@@ -207,10 +210,92 @@ def test_delete_checks_real_session_bindings_and_scheduler_work(tmp_path):
     from types import SimpleNamespace
     from management_portal.hatg.contracts import normalize_error
     with pytest.raises(InstructionError) as refused:
-        isa.delete_provider_account(SimpleNamespace(argument={"account_id": "codex_one"}.get))
+        isa.delete_provider_account(SimpleNamespace(caller="alice", argument={"account_id": "codex_one"}.get))
     error = normalize_error(refused.value)
     assert (error.code, error.http_status) == ("instruction.conflict", 409)
     assert error.details == {"reason": "account.busy", "session_count": 1, "execution_count": 1}
+
+
+@pytest.mark.parametrize("blocker", [None, "ordinary", "claimed", "requeued", "claim-lock"])
+@pytest.mark.parametrize("legacy_empty_checkpoint", [False, True], ids=["jsonb", "legacy-text"])
+def test_delete_account_cancels_only_its_unclaimed_checks(isolated_portal_case, monkeypatch,
+                                                  blocker, legacy_empty_checkpoint):
+    """确认删除立即撤回本账号未认领的接入检查，仍保护其他执行。"""
+    with isolated_portal_case() as tmp_path, ExitStack() as cleanup:
+        _assert_delete_account_check_behavior(tmp_path, monkeypatch, cleanup, blocker, legacy_empty_checkpoint)
+
+
+def _assert_delete_account_check_behavior(tmp_path, monkeypatch, cleanup, blocker, legacy_empty_checkpoint):
+    from management_portal.execution import account_hosting, account_login, account_registrations, isa
+    from management_portal.execution.account_adapters import CodexAccounts
+    from management_portal.execution.accounts import ExecutionAccounts
+    from management_portal.execution.contracts import ExecutionRequest, SessionOptions
+    from management_portal.execution.scheduler import Scheduler
+
+    def submit(account_id, route, *, check=True):
+        probe = ExecutionRequest.new(
+            actor="alice", prompt="hello", provider="codex", service_type="agent_session", operation="turn",
+            session=SessionOptions(backend_route_id=route),
+            metadata={"provider_account_check": {"account_id": account_id}} if check else {},
+        )
+        scheduler.submit(probe)
+        return probe.execution_id
+
+    for account_id in ("codex_one", "codex_two"):
+        account_registrations.create_registration(
+            {"account_id": account_id, "provider": "codex", "kind": "subscription_login",
+             "route_id": account_id.removeprefix("codex_"),
+             "config": {"account_dir": str(tmp_path / account_id)}}, "alice",
+        )
+    scheduler = Scheduler(accounts=ExecutionAccounts((CodexAccounts(),)), quota_reserve_enabled=False)
+    cleanup.callback(scheduler.changes.stop_waits)
+    protected = (submit("codex_one", "one", check=blocker != "ordinary") if blocker else None)
+    if blocker in {"claimed", "requeued"}:
+        worker_id = "test-worker"
+        capabilities = ["agent_session:codex"]
+        scheduler.register_worker(worker_id=worker_id, build_id="test", capabilities=capabilities)
+        assert scheduler.claim(worker_id=worker_id, capabilities=capabilities)["execution"]["execution_id"] == protected
+        if blocker == "requeued":
+            with scheduler.changes.connect() as c:
+                c.execute("UPDATE executions SET lease_expires_at = 'epoch' WHERE execution_id = %s", (protected,))
+            scheduler.maintain()
+    target_check = submit("codex_one", "one")
+    other_check = submit("codex_two", "two")
+    if legacy_empty_checkpoint:
+        cleanup.enter_context(legacy_empty_checkpoints(scheduler))
+    monkeypatch.setattr(isa, "_SERVER", SimpleNamespace(scheduler=scheduler))
+    removed = []
+    monkeypatch.setattr(account_hosting, "remove_codex_instance", removed.append)
+    monkeypatch.setattr(account_hosting, "remove_account_runtime", lambda *_: None)
+    monkeypatch.setattr(account_login, "delete_login_data", lambda *_: None)
+    inv = SimpleNamespace(caller="bob", argument={"account_id": "codex_one"}.get,
+                          declaration=SimpleNamespace(name="DeleteProviderAccount"))
+
+    def delete():
+        with isa.binding().execution_scope(inv):
+            return isa.delete_provider_account(inv)
+
+    with ExitStack() as claim:
+        if blocker == "claim-lock":
+            connection = claim.enter_context(scheduler.changes.connect())
+            connection.execute("SELECT execution_id FROM executions WHERE execution_id = %s FOR UPDATE", (protected,))
+            executor = claim.enter_context(ThreadPoolExecutor(max_workers=1))
+            delete_account = lambda: executor.submit(delete).result(timeout=5)
+        else:
+            delete_account = delete
+        if blocker:
+            with pytest.raises(InstructionError) as refused:
+                delete_account()
+            assert refused.value.details == {"reason": "account.busy", "session_count": 0, "execution_count": 1}
+            assert scheduler.snapshot(protected)["status"] == ("claimed" if blocker == "claimed" else "queued")
+            assert removed == [] and account_registrations.registration("codex_one")
+        else:
+            assert delete_account() == {"account_id": "codex_one"}
+            assert removed == ["codex_one"] and account_registrations.registration("codex_one") is None
+    cancelled = scheduler.snapshot(target_check)
+    assert cancelled["status"] == "cancelled"
+    assert cancelled["events"][-1]["details"]["actor"] == "bob"
+    assert scheduler.snapshot(other_check)["status"] == "queued"
 
 
 def test_model_api_secret_is_private_file_only(tmp_path, monkeypatch):

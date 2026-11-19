@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import threading
+from contextlib import contextmanager
 from pathlib import Path
 
 from management_portal.execution.scheduler import Scheduler
@@ -12,6 +13,28 @@ from management_portal.execution.service import (
 )
 from management_portal.execution.session_manager import SessionManager
 from management_portal.execution.transport import ExecutionServiceClient
+
+
+@contextmanager
+def legacy_empty_checkpoints(scheduler):
+    """Use the deployed TEXT representation within one test, including on failure."""
+    with scheduler.changes.connect() as connection:
+        connection.execute("ALTER TABLE executions ALTER COLUMN checkpoint_json DROP DEFAULT")
+        connection.execute(
+            "ALTER TABLE executions ALTER COLUMN checkpoint_json TYPE TEXT USING checkpoint_json::text"
+        )
+        connection.execute("ALTER TABLE executions ALTER COLUMN checkpoint_json SET DEFAULT ''")
+        connection.execute("UPDATE executions SET checkpoint_json = '' WHERE checkpoint_json = '{}'")
+    try:
+        yield
+    finally:
+        with scheduler.changes.connect() as connection:
+            connection.execute("ALTER TABLE executions ALTER COLUMN checkpoint_json DROP DEFAULT")
+            connection.execute(
+                "ALTER TABLE executions ALTER COLUMN checkpoint_json TYPE JSONB "
+                "USING COALESCE(NULLIF(checkpoint_json, ''), '{}')::jsonb"
+            )
+            connection.execute("ALTER TABLE executions ALTER COLUMN checkpoint_json SET DEFAULT '{}'")
 
 
 def _bind_session(

@@ -6,8 +6,10 @@ accounts, their scheduler settings and token usage.
 from __future__ import annotations
 
 import copy
+import hashlib
 import json
 import re
+from contextlib import nullcontext
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
@@ -629,7 +631,15 @@ def delete_provider_account(inv):
     from . import account_registrations as store
     from . import account_hosting as host
     from .account_login import delete_login_data
+    from .scheduler_recovery import LeaseRecovery
     row = _registered_account(inv.argument("account_id"))
+    if _SERVER is not None:
+        recovery = _SERVER.scheduler.recovery
+    else:
+        from management_common.portal_database import portal_database
+        from .scheduler_changes import SchedulerChanges
+        recovery = LeaseRecovery(SchedulerChanges(portal_database(schema="execution_runtime")))
+    recovery.cancel_unclaimed_account_checks(row["account_id"], actor=inv.caller)
     busy = account_busy_counts(row)
     if any(busy.values()):
         raise InstructionError("instruction.conflict", "账号仍有绑定会话或排队、运行中的执行",
@@ -983,8 +993,19 @@ def version_of(inv: Invocation, object_id: str) -> Any:
     return model_api_store.api_version(object_id)
 
 
+def _account_check_scope(inv: Invocation):
+    if inv.declaration.name not in {"CheckProviderAccount", "DeleteProviderAccount"}:
+        return nullcontext()
+    from .account_registrations import database
+    db = database().database
+    name = f"{db.schema}:account-checks:{inv.argument('account_id')}"
+    key = int.from_bytes(hashlib.blake2b(name.encode(), digest_size=8).digest(), "big", signed=True)
+    return db.advisory_lock(key)
+
+
 def binding() -> OwnerBinding:
-    return OwnerBinding(owner="execution", handlers=HANDLERS, streams={}, version_of=version_of, recover_projections=recover_projections)
+    return OwnerBinding(owner="execution", handlers=HANDLERS, streams={}, version_of=version_of,
+                        execution_scope=_account_check_scope, recover_projections=recover_projections)
 
 
 def build_kernel() -> InstructionKernel:

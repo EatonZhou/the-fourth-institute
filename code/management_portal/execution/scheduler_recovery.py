@@ -118,6 +118,32 @@ class LeaseRecovery:
             )
         return len(rows)
 
+    def cancel_unclaimed_account_checks(self, account_id: str, *, actor: str) -> None:
+        """Withdraw probes selected by the authorized account deletion."""
+        with self.changes.connect() as connection:
+            if connection.execute("SELECT to_regclass('executions')").fetchone()[0] is None:
+                return
+            # The same row lock arbitrates against Worker claims. A skipped row
+            # still counts as busy in the deletion handler, as does requeued work.
+            rows = connection.execute(
+                """
+                SELECT execution_id, actor, checkpoint_json, usage_accounted_json
+                FROM executions
+                WHERE status = 'queued' AND attempts = 0 AND owner_worker_id = ''
+                  AND btrim(checkpoint_json::text) IN ('', '{}')
+                  AND request_json::jsonb #>> '{metadata,provider_account_check,account_id}' = %s
+                ORDER BY execution_id
+                FOR UPDATE SKIP LOCKED
+                """,
+                (account_id,),
+            ).fetchall()
+            reason = "account deletion requested while connection check was queued"
+            for row in rows:
+                self.finalize_released_cancellation(
+                    connection, row, error=reason,
+                    details={"actor": actor, "request_actor": row["actor"], "reason": reason},
+                )
+
     def requeue_abandoned_provider_work(
         self, connection: Any, row: Any, *,
         cancelled_error: str = "execution cancellation finalized after worker lease expired",

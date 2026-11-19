@@ -9,6 +9,7 @@ from __future__ import annotations
 from tests.cases.database_test_support import connect
 import threading
 import time
+from contextlib import nullcontext
 from datetime import datetime, timezone
 from pathlib import Path
 from unittest import mock
@@ -39,13 +40,23 @@ from management_portal.execution.scheduler import (
 from management_portal.execution.service import ExecutionServiceServer
 from management_portal.execution.session_manager import RuntimeSession
 from management_portal.execution.transport import ExecutionClaimOwnershipLost
-from tests.cases.execution_layer_test_support import _stack, _close
+from tests.cases.execution_layer_test_support import _stack, _close, legacy_empty_checkpoints
 
 
-def test_provider_account_check_expires_without_polling_or_dispatch(request):
+@pytest.mark.parametrize("legacy_empty_checkpoint", [False, True], ids=["jsonb", "legacy-text"])
+def test_provider_account_check_expires_without_polling_or_dispatch(isolated_portal_case, legacy_empty_checkpoint):
     """接入测试过期后不能被认领，也不会和普通任务一起无限排队。"""
-    scheduler = Scheduler(quota_reserve_enabled=False)
-    request.addfinalizer(scheduler.changes.stop_waits)
+    with isolated_portal_case():
+        scheduler = Scheduler(quota_reserve_enabled=False)
+        try:
+            storage = legacy_empty_checkpoints(scheduler) if legacy_empty_checkpoint else nullcontext()
+            with storage:
+                _assert_expired_account_check(scheduler)
+        finally:
+            scheduler.changes.stop_waits()
+
+
+def _assert_expired_account_check(scheduler):
     route = SessionOptions(backend_route_id="zero")
     requests = [
         ExecutionRequest.new(
