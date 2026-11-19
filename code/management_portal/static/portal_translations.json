@@ -8048,9 +8048,29 @@
     "en": "PDF.js fallback: {p0}",
     "zh-CN": "PDF.js fallback：{p0}"
   },
-  "PNG / JPEG / WebP，2 MiB 以内，16–2048 像素": {
-    "en": "PNG / JPEG / WebP, up to 2 MiB, 16–2048 pixels",
-    "zh-CN": "PNG / JPEG / WebP，2 MiB 以内，16–2048 像素"
+  "PNG / JPEG / WebP，自动压缩，仅上传处理后的头像": {
+    "en": "PNG / JPEG / WebP. Automatically compressed; only the resized avatar is uploaded.",
+    "zh-CN": "PNG / JPEG / WebP，自动压缩，仅上传处理后的头像"
+  },
+  "图片无法读取，请选择有效的 PNG、JPEG 或 WebP 图片。": {
+    "en": "Unable to read the image. Please select a valid PNG, JPEG, or WebP image.",
+    "zh-CN": "图片无法读取，请选择有效的 PNG、JPEG 或 WebP 图片。"
+  },
+  "暂不支持动画头像，请选择静态图片。": {
+    "en": "Animated avatars are not supported. Please select a still image.",
+    "zh-CN": "暂不支持动画头像，请选择静态图片。"
+  },
+  "无法处理图片，请重试。": {
+    "en": "Unable to process the image. Please try again.",
+    "zh-CN": "无法处理图片，请重试。"
+  },
+  "图片压缩失败，请重试。": {
+    "en": "Image compression failed. Please try again.",
+    "zh-CN": "图片压缩失败，请重试。"
+  },
+  "正在压缩头像…": {
+    "en": "Compressing avatar…",
+    "zh-CN": "正在压缩头像…"
   },
   "POLICY": {
     "en": "POLICY",
@@ -35606,9 +35626,9 @@
     "en": "Please select",
     "zh-CN": "请选择"
   },
-  "请选择 2 MiB 以内的 PNG、JPEG 或 WebP 图片。": {
-    "en": "Please select a PNG, JPEG, or WebP image within 2 MiB.",
-    "zh-CN": "请选择 2 MiB 以内的 PNG、JPEG 或 WebP 图片。"
+  "请选择 PNG、JPEG 或 WebP 图片。": {
+    "en": "Please select a PNG, JPEG, or WebP image.",
+    "zh-CN": "请选择 PNG、JPEG 或 WebP 图片。"
   },
   "请选择 Effect": {
     "en": "Please select an Effect",

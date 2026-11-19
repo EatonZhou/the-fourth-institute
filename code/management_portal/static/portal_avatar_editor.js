@@ -4,11 +4,58 @@
   // unfolds the ocean sprites and an upload, the Menu's portrait previews the
   // choice, and the caller's Update instruction saves it.
   const t = value => window.PortalI18n.t(value);
-  const MAX_BYTES = 2 * 1024 * 1024;
+  const AVATAR_SIZE = 256;
   const TYPES = ["image/png", "image/jpeg", "image/webp"];
   let assets = null;
   let spriteList = null;
   const reads = new Map();
+
+  // Check container animation markers before rasterizing: a canvas must not
+  // silently turn an unsupported animated avatar into a still image.
+  async function checkStillImage(file) {
+    const header = new Uint8Array(await file.slice(0, 32).arrayBuffer());
+    const tag = (bytes, start) => String.fromCharCode(...bytes.slice(start, start + 4));
+    const invalid = () => new Error(t("图片无法读取，请选择有效的 PNG、JPEG 或 WebP 图片。"));
+    const animated = () => new Error(t("暂不支持动画头像，请选择静态图片。"));
+    if (header[0] === 0xff && header[1] === 0xd8 && header[2] === 0xff) return;
+    if (tag(header, 0) === "RIFF" && tag(header, 8) === "WEBP") {
+      if (tag(header, 12) === "VP8X" && (header[20] & 2)) throw animated();
+      return;
+    }
+    if (![137, 80, 78, 71, 13, 10, 26, 10].every((byte, index) => header[index] === byte)) throw invalid();
+    for (let offset = 8; offset + 8 <= file.size;) {
+      const chunk = new Uint8Array(await file.slice(offset, offset + 8).arrayBuffer());
+      const length = new DataView(chunk.buffer).getUint32(0);
+      if (offset + length + 12 > file.size) throw invalid();
+      const type = tag(chunk, 4);
+      if (type === "acTL") throw animated();
+      if (type === "IDAT") return;
+      offset += length + 12;
+    }
+    throw invalid();
+  }
+
+  async function prepareAvatar(file) {
+    await checkStillImage(file);
+    const bitmap = await createImageBitmap(file);
+    const canvas = document.createElement("canvas");
+    try {
+      const scale = Math.min(1, AVATAR_SIZE / bitmap.width, AVATAR_SIZE / bitmap.height);
+      canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+      canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+      const context = canvas.getContext("2d");
+      if (!context) throw new Error(t("无法处理图片，请重试。"));
+      context.imageSmoothingQuality = "high";
+      context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+      const blob = await new Promise(resolve => canvas.toBlob(resolve, "image/png"));
+      if (!blob) throw new Error(t("图片压缩失败，请重试。"));
+      // Only this normalized image crosses the upload boundary, never file.
+      return new File([blob], "avatar.png", {type: "image/png"});
+    } finally {
+      bitmap.close();
+      canvas.width = canvas.height = 0;
+    }
+  }
 
   function loadAssets() {
     const loadAsset = window.PortalUIPrimitives.loadAsset;
@@ -102,7 +149,7 @@
         <div class="avatarEditorSprites" data-avatar-sprites role="group" aria-label="选择海洋头像"></div>
         <div class="avatarEditorActions">
           <label class="portalButton is-compact avatarEditorUpload"><input data-avatar-file type="file" accept="image/png,image/jpeg,image/webp" /><span>上传图片</span></label>
-          <small>PNG / JPEG / WebP，2 MiB 以内，自动按比例缩小</small>
+          <small>PNG / JPEG / WebP，自动压缩，仅上传处理后的头像</small>
           <button class="portalButton is-compact is-quiet" data-avatar-clear type="button" hidden>恢复默认</button>
           <button class="portalButton is-compact" data-avatar-cancel type="button">Cancel</button>
           <button class="portalButton is-compact is-primary" data-avatar-save type="button" disabled>保存头像</button>
@@ -183,9 +230,9 @@
       const picked = file.files[0];
       releasePreview();
       if (!picked) { reset(); return; }
-      if (picked.size > MAX_BYTES || !TYPES.includes(picked.type)) {
+      if (!TYPES.includes(picked.type)) {
         reset();
-        message(t("请选择 2 MiB 以内的 PNG、JPEG 或 WebP 图片。"), "error");
+        message(t("请选择 PNG、JPEG 或 WebP 图片。"), "error");
         return;
       }
       draft = {kind: "file", file: picked};
@@ -200,7 +247,11 @@
         let change = null;
         if (draft?.kind === "sprite") change = {sprite_index: draft.sprite_index};
         if (draft?.kind === "file") {
-          const uploaded = await window.PortalInstructionClient.upload(draft.file, {purpose: "avatar"});
+          message(t("正在压缩头像…"));
+          const image = await prepareAvatar(draft.file);
+          if (destroyed) return;
+          message(t("保存中…"));
+          const uploaded = await window.PortalInstructionClient.upload(image, {purpose: "avatar"});
           change = {upload_id: uploaded.upload_id};
         }
         if (destroyed) return;
