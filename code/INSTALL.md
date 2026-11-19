@@ -55,6 +55,12 @@ python3 code/scripts/tfi_release_install.py first-admin --instance my_portal --u
 
 `plan` 接受与 `create` 相同的参数，只校验并输出将要写入的清单，不改动主机。
 
+### 演示文稿预览
+
+PPT 和 PPTX 预览需要在 Portal 所在主机上安装 LibreOffice。macOS 可直接将
+`LibreOffice.app` 安装到 `/Applications` 或 Portal 服务账号的 `~/Applications`。
+Portal 也支持通过服务的 `PATH` 或 `PORTAL_LIBREOFFICE` 指定转换程序。
+
 ## 日常操作
 
 ```bash
