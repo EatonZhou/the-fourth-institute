@@ -16,14 +16,26 @@ def separate_kept_model_windows(monkeypatch):
     monkeypatch.setattr(ClaudeAccounts, "_passive_routes", set())
 
 
-def test_claude_cache_is_read_passively_only_after_the_daemon_says_it_can(monkeypatch):
+@pytest.fixture
+def claude_subscription(monkeypatch, tmp_path):
+    from management_portal.execution import account_registrations
+
+    registration = {
+        "account_id": "claude_fixture", "route_id": "fixture", "kind": "subscription_login",
+        "max_concurrency": 1, "config": {"account_dir": str(tmp_path)},
+    }
+    monkeypatch.setattr(account_registrations, "registrations", lambda _: [registration])
+    adapter = ClaudeAccounts()
+    return adapter, adapter.resolve("fixture", {})
+
+
+def test_claude_cache_is_read_passively_only_after_the_daemon_says_it_can(monkeypatch, claude_subscription):
     """An older daemon starts /usage on every read, so passive reads wait for native_refresh_optional."""
     from management_portal import claude_code_client
     client = Mock()
     client.account_usage.return_value = {"quota_status": "available", "rate_limits": []}
     monkeypatch.setattr(claude_code_client, "shared_client", lambda: client)
-    adapter = ClaudeAccounts.__new__(ClaudeAccounts)
-    account = SimpleNamespace(route_id="r", quota_policy="reserve")
+    adapter, account = claude_subscription
     assert not adapter.observes_passively(account)
     adapter.observe(account)
     assert not adapter.observes_passively(account)
@@ -47,7 +59,7 @@ def test_codex_subscription_windows_share_pool_without_changing_readings(monkeyp
     assert {w["quota_group"] for w in windows} == {"codex"}
 
 
-def test_claude_model_specific_limits_do_not_block_the_common_pool(monkeypatch):
+def test_claude_model_specific_limits_do_not_block_the_common_pool(monkeypatch, claude_subscription):
     from management_portal import claude_code_client
     windows = [{"id": "five_hour", "remaining_percent": 100},
                {"id": "seven_day", "remaining_percent": 0},
@@ -55,14 +67,14 @@ def test_claude_model_specific_limits_do_not_block_the_common_pool(monkeypatch):
     client = Mock()
     client.account_usage.return_value = {"quota_status": "available", "rate_limits": windows}
     monkeypatch.setattr(claude_code_client, "shared_client", lambda: client)
-    adapter = ClaudeAccounts.__new__(ClaudeAccounts)
-    result = adapter.observe(SimpleNamespace(route_id="test", quota_policy="reserve"))["rate_limits"]
+    adapter, account = claude_subscription
+    result = adapter.observe(account)["rate_limits"]
     assert [w["quota_group"] for w in result] == ["claude", "claude", "seven_day_sonnet"]
     assert [w["remaining_percent"] for w in result] == [100, 0, 0]
     assert all("quota_group" not in w for w in windows)
 
 
-def test_claude_fable_pool_neither_closes_the_account_nor_keeps_a_native_label(monkeypatch):
+def test_claude_fable_pool_neither_closes_the_account_nor_keeps_a_native_label(monkeypatch, claude_subscription):
     """An exhausted or unreadable Fable weekly pool leaves the account schedulable; labels follow window ids."""
     from management_portal import claude_code_client
     client = Mock()
@@ -71,28 +83,32 @@ def test_claude_fable_pool_neither_closes_the_account_nor_keeps_a_native_label(m
         {"id": "seven_day", "label": "每周", "remaining_percent": 90, "observed_at_unix": 1, "fresh_until": 2},
         {"id": "seven_day_overage_included", "label": "额外每周额度", "remaining_percent": 0}]}
     monkeypatch.setattr(claude_code_client, "shared_client", lambda: client)
-    adapter = ClaudeAccounts.__new__(ClaudeAccounts)
-    result = adapter.observe(SimpleNamespace(route_id="test", quota_policy="reserve"))
+    adapter, account = claude_subscription
+    result = adapter.observe(account)
     assert [w["label"] for w in result["rate_limits"]] == ["5 小时", "每周", "Fable 每周"]
     assert result["quota"]["remaining_percent"] == 80
     assert result["quota"]["complete"] is True
     assert [w["window"] for w in result["quota"]["windows"]] == ["five_hour", "seven_day"]
     client.account_usage.return_value["rate_limits"][2]["remaining_percent"] = None
-    assert adapter.observe(SimpleNamespace(route_id="test", quota_policy="reserve"))["quota"]["status"] == "available"
+    assert adapter.observe(account)["quota"]["status"] == "available"
 
 
-def test_claude_passive_observation_never_starts_a_usage_read(monkeypatch):
+def test_claude_passive_observation_never_starts_a_usage_read(monkeypatch, claude_subscription):
     """A passive read asks the daemon for its cache with native_refresh=False and skips the login probe."""
     from management_portal import claude_code_client
     client = Mock()
     client.account_usage.return_value = {"quota_status": "stale", "quota_error": "x", "rate_limits": []}
     monkeypatch.setattr(claude_code_client, "shared_client", lambda: client)
-    adapter = ClaudeAccounts.__new__(ClaudeAccounts)
-    adapter.observe(SimpleNamespace(route_id="r", quota_policy="reserve"), passive=True)
-    client.account_usage.assert_called_once_with("r", native_refresh=False)
+    from management_portal.execution import account_login
+    probe = Mock(side_effect=AssertionError("A passive observation must not probe login"))
+    monkeypatch.setattr(account_login, "provider_logged_in", probe)
+    adapter, account = claude_subscription
+    adapter.observe(account, passive=True)
+    client.account_usage.assert_called_once_with(account.route_id, native_refresh=False)
+    probe.assert_not_called()
 
 
-def test_claude_adapter_returns_native_readings_without_own_retention_cache(monkeypatch):
+def test_claude_adapter_returns_native_readings_without_own_retention_cache(monkeypatch, claude_subscription):
     """Durable monitor replay owns retention, not a second adapter memory cache."""
     from management_portal import claude_code_client
     common = [{"id": "five_hour", "remaining_percent": 80}, {"id": "seven_day", "remaining_percent": 90}]
@@ -100,8 +116,7 @@ def test_claude_adapter_returns_native_readings_without_own_retention_cache(monk
     client = Mock()
     client.account_usage.return_value = {"quota_status": "available", "rate_limits": [*common, fable]}
     monkeypatch.setattr(claude_code_client, "shared_client", lambda: client)
-    adapter = ClaudeAccounts.__new__(ClaudeAccounts)
-    account = SimpleNamespace(account_id="claude_x", route_id="x", quota_policy="reserve")
+    adapter, account = claude_subscription
     adapter.observe(account)
     client.account_usage.return_value = {"quota_status": "available", "rate_limits": common}
     assert [w["id"] for w in adapter.observe(account)["rate_limits"]] == ["five_hour", "seven_day"]

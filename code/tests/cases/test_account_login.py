@@ -382,14 +382,16 @@ def test_login_terminal_states_stop_process_and_do_not_claim_success(tmp_path, i
     assert store.get(account_id) is None
 
 
-def test_monitor_authentication_failure_and_recovery(isolated_login):
+def test_monitor_authentication_failure_and_recovery(isolated_login, monkeypatch):
     """AccountMonitor 识别 Codex 认证错误和 Claude 401，重新登录或有效读取后恢复
 
     :design: decision_7956d7cb4bde
     :importance: P1
     """
-    from management_portal.execution.account_monitor import AccountMonitor
+    from management_portal.execution import account_monitor
     from management_portal.codex_app_server_protocol import CodexTurnAuthenticationError
+    clock = Mock(return_value=account_monitor.time.time())
+    monkeypatch.setattr(account_monitor, "time", SimpleNamespace(time=clock))
     for provider, failure in (("codex", CodexTurnAuthenticationError("", "", "private detail")),
                               ("claude", RuntimeError("HTTP 401 unauthorized private detail"))):
         account = SimpleNamespace(account_id="monitor_" + provider, provider=provider, quota_policy="reserve",
@@ -397,12 +399,17 @@ def test_monitor_authentication_failure_and_recovery(isolated_login):
         accounts = Mock(adapters={provider: object()})
         accounts.accounts.return_value = (account,)
         accounts.observe.side_effect = failure
-        monitor = AccountMonitor(accounts, Mock(), usage_store=Mock(), login_state_store=isolated_login)
+        monitor = account_monitor.AccountMonitor(accounts, Mock(), usage_store=Mock(), login_state_store=isolated_login)
         monitor.refresh_account(account)
         assert isolated_login.login_state(account.account_id) == "login_expired"
         accounts.observe.side_effect = None
         accounts.observe.return_value = {"status": "ok"}
         monitor.refresh_account(account)
+        assert accounts.observe.call_count == 1
+        assert isolated_login.login_state(account.account_id) == "login_expired"
+        clock.return_value += account_monitor.MIN_READ_INTERVAL_SECONDS + 1
+        monitor.refresh_account(account)
+        assert accounts.observe.call_count == 2
         assert isolated_login.login_state(account.account_id) == "logged_in"
 
 

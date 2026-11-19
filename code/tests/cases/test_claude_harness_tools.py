@@ -86,16 +86,21 @@ def test_claude_tool_failure_remains_an_error_result():
     assert dispatch({"tool": "read_resource", "arguments": {}})["isError"]
 
 
-def test_claude_home_status_uses_daemon_not_api_credentials(monkeypatch):
+def test_claude_home_status_uses_daemon_not_api_credentials(monkeypatch, tmp_path):
     """首页 Claude 账户状态通过 daemon 读取用量，不使用 API 凭据"""
     from management_portal.execution.account_adapters import ClaudeAccounts
-    from management_portal.execution.accounts import ExecutionAccount
+    from management_portal.execution import account_registrations
     from management_portal import claude_code_client
     client = mock.Mock()
     client.account_usage.return_value = {"quota_status": "ok", "rate_limits": []}
     monkeypatch.setattr(claude_code_client, "shared_client", lambda: client)
-    account = ExecutionAccount("claude_one", "claude", "claude_one", "account:claude_one", quota_policy="reserve")
-    adapter = object.__new__(ClaudeAccounts)
+    registration = {
+        "account_id": "claude_fixture", "route_id": "fixture", "kind": "subscription_login",
+        "max_concurrency": 1, "config": {"account_dir": str(tmp_path)},
+    }
+    monkeypatch.setattr(account_registrations, "registrations", lambda _: [registration])
+    adapter = ClaudeAccounts()
+    account = adapter.resolve("fixture", {})
     payload = adapter.observe(account)
     assert payload["status"] == "ok"
-    client.account_usage.assert_called_once_with("claude_one", force_refresh=False)
+    client.account_usage.assert_called_once_with(account.route_id, force_refresh=False)

@@ -16,14 +16,47 @@ import pytest
 
 from management_portal import claude_account_usage as usage
 from management_portal.execution.account_adapters import ClaudeAccounts
-from management_portal.execution.account_monitor import AccountMonitor
+from management_portal.execution import account_monitor
+
+
+@pytest.fixture
+def claude_subscription(monkeypatch, tmp_path):
+    from management_portal.execution import account_registrations, claude_reset_cards
+
+    registration = {
+        "account_id": "synthetic", "route_id": "synthetic", "kind": "subscription_login",
+        "max_concurrency": 1, "config": {"account_dir": str(tmp_path)},
+    }
+    monkeypatch.setattr(account_registrations, "registrations", lambda _: [registration])
+    monkeypatch.setattr(ClaudeAccounts, "_passive_routes", set())
+    monkeypatch.setattr(claude_reset_cards, "shared_reset_cards", claude_reset_cards.ClaudeResetCards())
+    monkeypatch.setattr(claude_reset_cards, "read_cards", lambda _: {
+        "status": "observed", "available_count": 0, "cards": [],
+    })
+    adapter = ClaudeAccounts()
+    return adapter, adapter.resolve("synthetic", {})
+
+
+@pytest.fixture
+def next_native_observation(monkeypatch):
+    """Advance the monitor's sampling clock past its durable read interval."""
+    stamp = account_monitor.time.time()
+    clock = Mock(return_value=stamp)
+    monkeypatch.setattr(account_monitor, "time", SimpleNamespace(time=clock))
+
+    def advance():
+        clock.return_value += account_monitor.MIN_READ_INTERVAL_SECONDS + 1
+
+    return advance
 
 
 @pytest.mark.parametrize("returncode,is_error,detail", [
     (0, False, "Not logged in · Please run /login"),
     (1, True, "Failed to authenticate: OAuth session expired and could not be refreshed"),
 ])
-def test_native_auth_failure_reaches_login_observer_and_recovery(monkeypatch, returncode, is_error, detail):
+def test_native_auth_failure_reaches_login_observer_and_recovery(
+    monkeypatch, returncode, is_error, detail, claude_subscription, next_native_observation,
+):
     """Claude 认证失败跨原生查询与账号观察传播，成功查询恢复登录状态。"""
     profile = {"id": "synthetic", "config_dir": "/synthetic-account"}
     response = {"result": detail + " private-provider-body", "is_error": is_error, "total_cost_usd": 0}
@@ -39,12 +72,12 @@ def test_native_auth_failure_reaches_login_observer_and_recovery(monkeypatch, re
     snapshot = cache.snapshot(*key)
     monkeypatch.setattr("management_portal.claude_code_client.shared_client", lambda: SimpleNamespace(
         account_usage=lambda *args, **kwargs: cache.snapshot(*key)))
-    adapter = ClaudeAccounts.__new__(ClaudeAccounts)
-    account = SimpleNamespace(account_id="synthetic", route_id="synthetic", provider="claude",
-        kind="subscription_login", quota_policy="reserve", billing_account_id="", quota_enabled=False)
+    adapter, account = claude_subscription
     login_store = Mock()
     accounts = SimpleNamespace(accounts=lambda: (account,), adapters={"claude": adapter}, observe=adapter.observe)
-    monitor = AccountMonitor(accounts, Mock(), usage_store=Mock(), login_state_store=login_store)
+    monitor = account_monitor.AccountMonitor(
+        accounts, Mock(quota_reserve_enabled=False), usage_store=Mock(), login_state_store=login_store,
+    )
     monitor.refresh_account(account)
     assert login_store.observe.call_args is not None
     assert login_store.observe.call_args.args == ("synthetic", "login_expired")
@@ -55,6 +88,7 @@ def test_native_auth_failure_reaches_login_observer_and_recovery(monkeypatch, re
     process.returncode = 0
     response.update(is_error=False, result="Current session: 10% used\nCurrent week (all models): 20% used")
     asyncio.run(cache._refresh(profile, key))
+    next_native_observation()
     monitor.refresh_account(account)
     assert login_store.observe.call_args.args == ("synthetic", "logged_in")
     assert not cache.snapshot(*key)["quota_error_code"]
@@ -84,7 +118,7 @@ def test_usage_failure_without_auth_evidence_does_not_expire_login(monkeypatch, 
 
 @pytest.mark.parametrize("logged_in", [False, True, OSError("status unavailable"),
                                       subprocess.TimeoutExpired("synthetic-cli", 60)])
-def test_unclassified_usage_failure_checks_native_login_without_guessing(monkeypatch, logged_in):
+def test_unclassified_usage_failure_checks_native_login_without_guessing(monkeypatch, logged_in, claude_subscription):
     """缺用量原文不证明认证失效；只有原生登录检查明确失败才到期。"""
     snapshot = {"quota_status": "stale", "quota_error": "Claude 未返回完整的订阅用量，请稍后刷新"}
     monkeypatch.setattr("management_portal.claude_code_client.shared_client", lambda: SimpleNamespace(
@@ -92,8 +126,8 @@ def test_unclassified_usage_failure_checks_native_login_without_guessing(monkeyp
     from management_portal.execution import account_login
     probe = Mock(side_effect=logged_in) if isinstance(logged_in, Exception) else Mock(return_value=logged_in)
     monkeypatch.setattr(account_login, "provider_logged_in", probe)
-    account = SimpleNamespace(account_id="synthetic", route_id="synthetic", quota_policy="reserve")
-    sample = ClaudeAccounts.__new__(ClaudeAccounts).observe(account)
+    adapter, account = claude_subscription
+    sample = adapter.observe(account)
     probe.assert_called_once_with("claude", "synthetic")
     if logged_in is False:
         assert sample["error_code"] == "provider_authentication_failed"
@@ -138,7 +172,9 @@ def test_authentication_observation_imports_from_standalone_package(tmp_path):
     assert result.returncode == 0, result.stderr
 
 
-def test_cached_auth_failure_cannot_undo_login_and_native_success_recovers_without_quota(monkeypatch):
+def test_cached_auth_failure_cannot_undo_login_and_native_success_recovers_without_quota(
+    monkeypatch, claude_subscription, next_native_observation,
+):
     """旧认证失败保原观察时间；重新登录和原生成功不依赖完整额度数据。"""
     from management_portal.execution import account_login
     profile = {"id": "synthetic", "config_dir": "/synthetic-account"}
@@ -160,11 +196,11 @@ def test_cached_auth_failure_cannot_undo_login_and_native_success_recovers_witho
     monkeypatch.setattr("management_portal.claude_code_client.shared_client", lambda: SimpleNamespace(
         account_usage=lambda *args, **kwargs: cache.snapshot(*key)))
     monkeypatch.setattr(account_login, "provider_logged_in", Mock(return_value=True))
-    adapter = ClaudeAccounts.__new__(ClaudeAccounts)
-    account = SimpleNamespace(account_id="synthetic", route_id="synthetic", provider="claude",
-        kind="subscription_login", quota_policy="reserve", billing_account_id="", quota_enabled=False)
+    adapter, account = claude_subscription
     accounts = SimpleNamespace(accounts=lambda: (account,), adapters={"claude": adapter}, observe=adapter.observe)
-    monitor = AccountMonitor(accounts, Mock(), usage_store=Mock(), login_state_store=store)
+    monitor = account_monitor.AccountMonitor(
+        accounts, Mock(quota_reserve_enabled=False), usage_store=Mock(), login_state_store=store,
+    )
     monitor.refresh_account(account)
     assert store.state == "logged_in"
     assert store.updated == successful_login_at
@@ -174,5 +210,6 @@ def test_cached_auth_failure_cannot_undo_login_and_native_success_recovers_witho
     store.observe("synthetic", "login_expired", observed_at=datetime.now(timezone.utc))
     monkeypatch.setattr(usage, "read_native_usage", AsyncMock(side_effect=ValueError("Claude 未返回完整的订阅用量，请稍后刷新")))
     asyncio.run(cache._refresh(profile, key))
+    next_native_observation()
     monitor.refresh_account(account)
     assert store.state == "logged_in"
