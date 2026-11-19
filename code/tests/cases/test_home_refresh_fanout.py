@@ -1,6 +1,6 @@
 """Home manual refresh dispatches independent visible owners together.
 
-:module: interface.shell
+:module: workbench.notifications
 :importance: P2
 """
 from pathlib import Path

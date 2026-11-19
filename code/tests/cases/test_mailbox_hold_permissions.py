@@ -1,6 +1,6 @@
 """Mailbox queue holds use the current caller's permission on the target.
 
-:module: resources.permissions
+:module: security.identity-access
 :design: decision_600ae27b0538, decision_c54e68a82d7a
 """
 import pytest

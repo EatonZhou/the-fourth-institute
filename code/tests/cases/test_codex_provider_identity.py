@@ -1,6 +1,6 @@
 """Preserve native thread identity when the account default provider changes.
 
-:module: execution.runtime
+:module: execution.providers
 :design: decision_6ad0384e020d
 """
 from unittest.mock import Mock

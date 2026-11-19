@@ -3062,6 +3062,40 @@
       ]
     },
     {
+      "id": "test_05e761272cec",
+      "key": "tau.operations.linux-release-example-clean-deployment",
+      "title": "Linux 从 Release 源码全新安装 Portal 示例并完成首次使用",
+      "description": "从固定的 Release Git 提交导出源码，准备 Linux 安装包，在独占实例、数据库和服务上完成首次注册、进入 Home、读取示例资源及重启后恢复，最后退役本例实例。",
+      "importance": "P1",
+      "module": "operations.deployment",
+      "aspects": [
+        "functional",
+        "behavior",
+        "ui"
+      ],
+      "is_design_point": false,
+      "design_refs": [
+        "decision_37f98f8fcb4b",
+        "decision_08bb2d9141f9",
+        "decision_c953eab654cd"
+      ],
+      "lifecycle": "active",
+      "implementations": [
+        {
+          "id": "impl-05e761272cecd74a",
+          "runner": "tau",
+          "entrypoint": "tau:operations-linux-release-example-clean-deployment",
+          "source": "tests/cases/tau_cases.json",
+          "profiles": [
+            "live.controlled"
+          ],
+          "risk": "external-side-effects",
+          "lineage_fixture": "复用正式 operations.deployment TAU 执行者。Linux 安装夹具独占首次创建目录、Portal 示例实例根、PostgreSQL/NATS及端口、服务名前缀和浏览器上下文。证据写回本例合法目录，不登记共享现有实例用作夹具。只通过本例实例的正式停止与退役入口清理，核对作用范围。",
+          "task_prompt": "用户目标：在 Linux 从固定 Release 源码全新部署 Portal 示例，作为新站点的第一位用户实际开始使用。以本例计划补充说明中提供的 Release 提交和 fixture/helper 哈希作为输入。Linux、宿主支持的 Python 与用户级 systemd、依赖准备和隔离资源缺任何一项，说明实际缺失及未开始的阶段，不切换共享 Dev/Release 站点代签。调用维护者提供的 tests/cases/fixtures/run_linux_release_tau.py，依 --help/固定源码提供 --base、--release、--revision、--playwright-module。该入口负责阶段和异常退役，Linux x86_64、Python 3.12+、独立 Playwright、用户级 systemd 是准确前提。不要旁路 driver 或复制现存数据库、凭据或已安装实例。\n1. 在合法独占目录选择不存在的夹具根，用 helper 从 Release Git 树的明确 commit 导出干净源码，真实执行 Linux 依赖/示例安装准备并保存 argv/exit/源与工程包摘要。不得将候选补丁覆盖的构建当成 Release 基线。安装应生成新的示例实例，核对实例名、根、进程、Web/Postgres/NATS 监听及服务不与共享实例冲突。真实调用 installer create/status 验证资源和核心服务准备完成；health 只是其中一个证据。\n2. 在本例实例签发首次管理员注册入口，并用 tests/cases/javascript/linux_release_deployment.browser.cjs 按其实际 phase 合同完成新注册、真实登录、进入 Home、打开并读取一个示例 Design，保存安全截图、页面错误与资源 ID/内容摘要。实际入口、身份和浏览器原点均核对。注册链接、会话令牌、账号密码、私有输出不进入报告。\n3. 本例内保存可辨识的示例资源收藏状态，按正式夹具 stop/start，核对同一资源、账号和状态仍可读。报告首遇阻塞、实际退出码及已完成/未验阶段；源有 bug 时保存原证据，修后使用受影响步骤的定向复验，勿改原结果或循环新建业务。\n4. 停止并退役该独占实例，保存清理回执，核对其运行服务、端口、实例根和登记的释放情况，保留脱敏证据。如果退役本身失败，记录真实残留和作用范围，不用直接删除共享目录、关闭宿主服务或碰其他夹具。"
+        }
+      ]
+    },
+    {
       "id": "test_edc8fa208a14",
       "key": "tau.combination.windows-update-reopen-assets",
       "title": "Windows长时工作后的正常更新与持久资产恢复",

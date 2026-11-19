@@ -1,6 +1,6 @@
 """Deleted history has a separate, exact management permission.
 
-:module: resources.permissions
+:module: security.identity-access
 :design: decision_600ae27b0538
 """
 import pytest

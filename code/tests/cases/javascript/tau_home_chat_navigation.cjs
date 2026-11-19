@@ -75,6 +75,12 @@ const runtimeState = () => ({work_state:'idle', execution_gate:graphReadinessSam
       if (u.pathname === '/api/agent-conversations') result = { ready: true, entries: [] };
       if (u.pathname === '/api/workbenches') result = {workbenches:[]};
       if (u.pathname === '/api/instructions/execute') {
+        if (body.instruction === 'WatchConversationEvents' &&
+            req.headers().accept === 'text/event-stream') {
+          // These samples start with no live messages. Close the real read
+          // subscription without manufacturing conversation events.
+          return route.fulfill({contentType:'text/event-stream',body:'event: end\ndata: {}\n\n'});
+        }
         if (!/^(Get|List|Search|Read)|^MarkMailboxItemRead$/.test(body.instruction)
             && !(readinessSamples && ['ForkResident','UpdateResident'].includes(body.instruction))
             && !(lineageCreationSamples && body.instruction === 'CreateLineage')) {

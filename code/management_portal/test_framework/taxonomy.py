@@ -39,7 +39,7 @@ MODULE_GROUPS = (
              "decision_d19b9909a674", "decision_2fe6fd5367fb", "decision_2a3ff353165c", "decision_4637ca4a69e2",
              "decision_71ba0494b93e", "decision_68215b3a825b", "decision_5b5653c3eaa5", "decision_3e063aac15b3",
              "decision_6591e7793116", "decision_22227d0ad075", "decision_4527448ad07f", "decision_aa4fdbac8364",
-             "decision_8b510cbd9c58", "decision_b04cac4188bb", "decision_c54e68a82d7a", "decision_cc96fce57ab6",
+             "decision_8b510cbd9c58", "decision_b04cac4188bb", "decision_c54e68a82d7a",
              "decision_b77fde81e7a0"),
     )),
     ModuleGroup("security", "3. 用户、权限与安全", (
@@ -56,7 +56,7 @@ MODULE_GROUPS = (
     ModuleGroup("resident", "5. Resident、Session 与 Conversation", (
         node("resident.identity", "Resident 身份与发现", "decision_0f57656a2acd", "decision_44cf587c1721", "decision_8fe87d812a4c", "decision_bd5217d08c09", "decision_3e07c6d35cac", "decision_5ff0cb51ed84"),
         node("resident.conversation", "输入、Conversation 与 Channel", "decision_edc470e09f5a", "decision_725dedbe89b2", "decision_c524c775e0be", "decision_692a484e9bea", "decision_15f7df737ed5", "decision_a6bebf4ac283", "decision_0571f3741e23"),
-        node("resident.session", "Session、Generation 与 Provider", "decision_c47a13e8b962", "decision_ccbb1cac24aa"),
+        node("resident.session", "Session、Generation 与 Provider", "decision_91eb3626d323"),
         node("resident.workspace-memory", "Folder、Workspace 与上下文", "decision_721c64f9bdcc", "decision_ccb99a00eebd", "decision_8838269736d3", "decision_c616d197abbb"),
         node("resident.fork-handoff", "Fork 与 Handoff", "decision_5bf5bfbd52cb", "decision_7ef392b5f60d", "decision_6fc653d55c79"),
     )),
@@ -68,8 +68,8 @@ MODULE_GROUPS = (
     )),
     ModuleGroup("execution", "7. Execution、Provider 与 Agent Harness", (
         node("execution.scheduled-triggered", "定时与自动触发的工作", "decision_5ff0cb51ed84", "decision_86721bb4e8c8"),
-        node("execution.service", "ExecutionService、调度与 Worker", "decision_25eb93d803a4", "decision_6ad0384e020d", "decision_8ac0b5a6c0e5", "decision_075f66430606", "decision_d40f59f5508f"),
-        node("execution.persistence", "Execution 持久化与计量", "decision_b1ab45c4b3ec", "decision_f1331d57be89"),
+        node("execution.service", "ExecutionService、调度与 Worker", "decision_25eb93d803a4", "decision_6ad0384e020d", "decision_8ac0b5a6c0e5", "decision_075f66430606"),
+        node("execution.persistence", "Execution 持久化与计量", "decision_b1ab45c4b3ec"),
         node("execution.harness", "Agent Harness、Prompt Context 与 AI Relay", "decision_5c62deb8253a", "decision_c604274e21dd", "decision_ef1d6c925955", "decision_fd760e898f9a"),
         node("execution.providers", "模型 Provider 与帐号接入", "decision_91eb3626d323", "decision_425e428410e0", "decision_3e8c2a7f91d4", "decision_e587fe1c472e", "decision_6b9e42f1c8a7", "decision_3948ce9b9443", "decision_3dd52c0692c1", "decision_6c2f91a7d84e", "decision_276105b5d67b", "decision_7956d7cb4bde", "decision_44f8f67d7390"),
     )),

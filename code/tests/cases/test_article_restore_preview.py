@@ -1,6 +1,6 @@
 """Bounded preflight observes evidence without conferring recovery authority.
 
-:module: resources.lifecycle
+:module: workflow.article
 :importance: P1
 """
 from copy import deepcopy

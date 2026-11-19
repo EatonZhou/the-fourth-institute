@@ -1,6 +1,6 @@
 """Concurrent readers share the existing dynamic catalog refresh.
 
-:module: execution.accounts
+:module: execution.providers
 """
 from concurrent.futures import ThreadPoolExecutor
 from types import SimpleNamespace

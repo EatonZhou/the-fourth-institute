@@ -1,6 +1,6 @@
 """Controlled dependency traces for native Resident actions; no real mutations.
 
-:module: interface.conversation
+:module: resident.conversation
 :importance: P2
 """
 from pathlib import Path

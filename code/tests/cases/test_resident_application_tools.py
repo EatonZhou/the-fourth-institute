@@ -1,6 +1,6 @@
 """Application tools use business permissions without entering the ISA.
 
-:module: resident.execution
+:module: execution.harness
 :importance: P1
 """
 from dataclasses import dataclass, field, replace

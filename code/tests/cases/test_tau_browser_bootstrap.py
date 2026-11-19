@@ -53,7 +53,10 @@ class _Portal(BaseHTTPRequestHandler):
             self.wfile.write(json.dumps({'status':'failed','error':{'code':'fixture.read_unavailable'}}).encode())
             return
         if call['instruction'] == 'Delayed':
-            time.sleep(0.05)
+            # Give the local server time to receive the request even on a
+            # busy shard. Hold only the call exercising the explicit budget.
+            if call.get('idempotency_key') == 'same-key':
+                time.sleep(2)
             self.send_response(200)
             self.send_header('Content-Type', 'application/json')
             self.end_headers()
@@ -174,15 +177,15 @@ def test_prompt_first_refresh_waits_for_the_original_view_to_remount(tmp_path, p
 def test_instruction_has_an_explicit_finite_budget_and_never_replays_transport_timeouts(tmp_path, portal):
     result = _open(tmp_path, portal, 'test-actor',
         "const post = p.context.request.post.bind(p.context.request);"
-        "p.context.request.post = (url, options) => post(url, {timeout:5, ...options});"
+        "p.context.request.post = (url, options) => post(url, {timeout:1000, ...options});"
         "const value = await p.instruction('Delayed');"
         "if (!value.accepted) throw Error('missing original receipt');"
-        "let failed=false; try { await p.instruction('Delayed', {}, {key:'same-key', timeoutMs:5}); }"
+        "let failed=false; try { await p.instruction('Delayed', {}, {key:'same-key', timeoutMs:1000}); }"
         "catch (_) { failed=true; } if (!failed) throw Error('explicit timeout ignored');")
     assert result.returncode == 0, result.stderr
     rows = [json.loads(line) for line in (tmp_path / 'evidence/tau-helper-calls.jsonl').read_text().splitlines()]
     ends = [row for row in rows if row['kind'] == 'request_finished']
-    assert [row['timeout_ms'] for row in ends] == [180_000, 5]
+    assert [row['timeout_ms'] for row in ends] == [180_000, 1000]
     assert ends[0]['http_status'] == 200
     assert ends[1]['http_status'] is None
     assert ends[1]['error']['transport_error_name'] == 'TimeoutError'

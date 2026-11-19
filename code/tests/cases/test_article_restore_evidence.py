@@ -1,6 +1,6 @@
 """Recovery evidence never takes authority from a caller's exported JSON.
 
-:module: resources.lifecycle
+:module: workflow.article
 :importance: P1
 """
 from copy import deepcopy

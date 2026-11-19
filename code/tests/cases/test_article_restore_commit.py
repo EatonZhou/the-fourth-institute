@@ -1,6 +1,6 @@
 """Same-ID partial restoration uses owner transactions, not a new resource.
 
-:module: resources.lifecycle
+:module: workflow.article
 :importance: P1
 """
 from copy import deepcopy
