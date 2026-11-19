@@ -39,10 +39,11 @@
     saveButton.title = text("保存（Ctrl+S / ⌘S）");
     const previewButton = button("预览", "preview");
     const chatButton = button("选区加入聊天", "chat");
-    chatButton.title = text("选区加入聊天（Ctrl+Alt+Enter / ⌘⌥Enter）");
+    chatButton.title = text("选区加入聊天（鼠标选中后自动加入）");
     chatButton.setAttribute("aria-keyshortcuts", "Control+Alt+Enter Meta+Alt+Enter");
     const fileChatButton = button("文件加入聊天", "chat-file");
-    fileChatButton.title = text("当前文件加入聊天（Ctrl+Alt+Shift+Enter / ⌘⌥⇧Enter）");
+    fileChatButton.title = text("当前文件加入聊天（Ctrl+Alt+Enter / ⌘⌥Enter）");
+    fileChatButton.setAttribute("aria-keyshortcuts", "Control+Alt+Enter Meta+Alt+Enter");
     fileChatButton.setAttribute("aria-keyshortcuts", "Control+Alt+Shift+Enter Meta+Alt+Shift+Enter");
     toolbar.append(status);
     const banner = element("div", "portalSourceEditorBanner");
@@ -218,12 +219,11 @@
               onSave: () => run(() => saveFile(doc.path)),
               actions: [
                 ...(options.onSelection ? [{ id: "portal.source.addToChat", label: text("加入聊天"),
-                  keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyMod.Alt | monaco.KeyCode.Enter],
                   precondition: "editorHasSelection", contextMenuGroupId: "navigation", contextMenuOrder: 1,
                   run: () => addSelection(doc),
                 }] : []),
                 ...(options.onFileReference ? [{ id: "portal.source.addFileToChat", label: text("当前文件加入聊天"),
-                  keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyMod.Alt | monaco.KeyMod.Shift | monaco.KeyCode.Enter],
+                  keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyMod.Alt | monaco.KeyCode.Enter],
                   precondition: "editorTextFocus", contextMenuGroupId: "navigation", contextMenuOrder: 1.1,
                   run: () => options.onFileReference({ ...describe(doc), selection: null }),
                 }] : []),

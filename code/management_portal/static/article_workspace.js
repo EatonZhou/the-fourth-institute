@@ -260,6 +260,7 @@
     activeDocument: (...args) => activeDocument(...args),
     captureActiveDocument: (...args) => captureActiveDocument(...args),
     registerTexlabProviders: (...args) => registerTexlabProviders(...args),
+    onSelectionCommitted: () => bringSelectionToChat().catch(error => showToast(error.message || error, "error")),
     renderEditorLayers: (...args) => renderEditorLayers(...args),
     saveOpenFile: (...args) => saveOpenFile(...args),
     scheduleAutoCompile: (...args) => scheduleAutoCompile(...args),
@@ -463,16 +464,16 @@
   });
 
   const {
-    addArticleChatReference, bringCurrentContextToChat, loadArticleChat,
+    addArticleChatReference, bringCurrentFileToChat, bringSelectionToChat, loadArticleChat,
   } = articleModule("PortalArticleWorkspaceChat").createChat({
-    $, activeDocument, articleProjects, articleRoot, documentIsDirty, editorPosition, editorSelectionContext,
+    $, activeDocument, articleProjects, articleRoot, documentIsDirty, editorPosition, editorSelectionContext, editorValue,
     languageForPath, selectedArticle, setSideView, showToast, state,
   });
 
   articleModule("PortalArticleWorkspaceEvents").createEvents({
     articleContentRefresh, scheduleArticleContentRefresh,
     $, activeDocument, articleEntryDialog, articleGitRefresh, articleRegisterDialog, askBuildDiagnostic,
-    bindArticlePdfGestures, bringCurrentContextToChat, captureActiveDocument, closeArticleGitDiff,
+    bindArticlePdfGestures, bringCurrentFileToChat, bringSelectionToChat, captureActiveDocument, closeArticleGitDiff,
     commitArticleGit, compileArticle, createEntry, currentArticleCompilePopover, currentArticleProjectPopover,
     currentArticleWorkbench, canToggleArticleSidebar, toggleArticleSidebar, detailHistory, flushArticleNavigationPreference, goToLine, handleEditorPairing,
     hasDirtyDocuments, initializeArticleGit, initializeArticlePopovers, inspectRegistration, loadArticleGit,

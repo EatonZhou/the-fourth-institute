@@ -7,7 +7,7 @@
   // open document and selection, and references added to the message.
   const DEPENDENCIES = Object.freeze([
     "$", "activeDocument", "articleProjects", "articleRoot", "documentIsDirty", "editorPosition",
-    "editorSelectionContext", "languageForPath", "selectedArticle", "setSideView", "showToast", "state",
+    "editorSelectionContext", "editorValue", "languageForPath", "selectedArticle", "setSideView", "showToast", "state",
   ]);
 
   function createChat(dependencies) {
@@ -15,8 +15,10 @@
     if (missing.length) throw new Error(`PortalArticleWorkspaceChat is missing: ${missing.join(", ")}`);
     const {
       $, activeDocument, articleProjects, articleRoot, documentIsDirty, editorPosition,
-      editorSelectionContext, languageForPath, selectedArticle, setSideView, showToast, state,
+      editorSelectionContext, editorValue, languageForPath, selectedArticle, setSideView, showToast, state,
     } = dependencies;
+    const automaticReferences = new Map();
+    let selectionRevision = 0;
 
     function articleChatContext() {
       const article = selectedArticle();
@@ -58,26 +60,42 @@
       };
     }
 
-    function addArticleChatReference(context = articleChatContext()) {
-      const selection = context.file?.selection || {};
-      const startLine = selection.start_line || context.file?.cursor?.line || 1;
-      const endLine = selection.end_line || startLine;
+    function addArticleChatReference(context = articleChatContext(), options) {
+      const selection = context.file?.selection;
+      const path = context.file?.path ? `${context.article_id}/file/${context.file.path}` : context.article_id;
       return state.chatController?.addReference({
-        title: `${context.article_id} L${startLine}–${endLine}`,
-        path: context.article_id,
+        title: context.file?.path || context.article_id,
+        path,
         text: JSON.stringify(context, null, 2),
-        line_start: startLine,
-        line_end: endLine,
-      });
+        ...(selection ? { line_start: selection.start_line, line_end: selection.end_line } : {}),
+      }, options);
     }
 
-    async function bringCurrentContextToChat() {
-      if (!state.selectedId) return;
+    async function bringCurrentFileToChat() {
+      if (!state.selectedId || !state.openFile) return;
       const articleId = state.selectedId;
       const context = articleChatContext();
+      context.file.content = editorValue();
+      context.file.selection = null;
       const controller = await setSideView("chat");
       if (!controller || articleId !== state.selectedId) return;
       addArticleChatReference(context);
+      controller.focusComposer();
+    }
+
+    async function bringSelectionToChat() {
+      if (!state.selectedId || !state.openFile) return;
+      const selection = editorSelectionContext(Infinity);
+      if (!selection?.text) return;
+      const revision = ++selectionRevision;
+      const context = articleChatContext();
+      context.file.selection = selection;
+      const controller = await loadArticleChat();
+      if (!controller || context.article_id !== state.selectedId || revision !== selectionRevision) return;
+      const item = addArticleChatReference(context, {
+        focus: false, replaceId: automaticReferences.get(context.article_id) || "",
+      });
+      automaticReferences.set(context.article_id, item?.id || "");
     }
 
     function initChatWorkspace() {
@@ -133,7 +151,7 @@
     }
 
     return Object.freeze({
-      addArticleChatReference, bringCurrentContextToChat, loadArticleChat,
+      addArticleChatReference, bringCurrentFileToChat, bringSelectionToChat, loadArticleChat,
     });
   }
 

@@ -139,9 +139,9 @@ const { chromium } = require(path.join(STATIC, '../test_framework/tau_runtime/no
     await page.getByRole('tab', { name: 'main.js ●', exact: true }).click();
     assert.equal(await page.evaluate(() => editors[0].getModel() === beforeModel), true);
     assert.equal(await page.evaluate(() => invoke('activeDocument').selection.text), 'let');
-    // The shortcut routes to the focused tab even after another editor was mounted.
+    // The selection action routes to the active tab even after another was mounted.
     await page.evaluate(() => editors[0].focus());
-    await page.keyboard.press('Control+Alt+Enter');
+    await page.getByRole('button', { name: '选区加入聊天', exact: true }).click();
     await page.waitForFunction(() => references.length === 2);
     assert.equal(await page.evaluate(() => references[1].path), 'src/main.js');
     assert.equal(await page.evaluate(() => references[1].selection.text), 'let');
@@ -165,7 +165,7 @@ const { chromium } = require(path.join(STATIC, '../test_framework/tau_runtime/no
     });
     assert.equal(await page.evaluate(() => committed[0].selection.text), 'let');
     assert.equal(await page.evaluate(() => editors[0].hasTextFocus()), true);
-    await page.keyboard.press('Control+Alt+Shift+Enter');
+    await page.keyboard.press('Control+Alt+Enter');
     await page.waitForFunction(() => fileReferences.length === 1);
     assert.equal(await page.evaluate(() => fileReferences[0].content), '  let answer = 42;\nconst other = 1;\n');
     assert.equal(await page.evaluate(() => fileReferences[0].dirty), true);

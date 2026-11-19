@@ -1,4 +1,4 @@
-"""Article selection reaches the real Chat composer through its keyboard command."""
+"""Article file shortcut and automatic selection reach the real Chat composer."""
 import json
 from pathlib import Path
 import subprocess

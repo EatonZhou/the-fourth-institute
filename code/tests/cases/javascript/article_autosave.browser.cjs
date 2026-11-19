@@ -6,7 +6,7 @@ const path = require('node:path');
 const http = require('node:http');
 const { STATIC, portalWorkspaceSurfaceScripts } = require('./portal_workspace_surface_scripts.cjs');
 const { chromium } = require(path.join(STATIC, '../test_framework/tau_runtime/node_modules/playwright'));
-const modules = ['portal_state.js', 'portal_text.js', 'portal_i18n.js', 'portal_ui_primitives.js', 'portal_ui.js',
+const modules = ['portal_code_editor.js', 'portal_state.js', 'portal_text.js', 'portal_i18n.js', 'portal_ui_primitives.js', 'portal_ui.js',
   'portal_command_registry.js', ...portalWorkspaceSurfaceScripts(), 'article_workspace_documents.js',
   'article_workspace_syntax.js', 'article_workspace_monaco.js', 'article_workspace_events.js'];
 const html = fs.readFileSync(path.join(STATIC, '../article_workspace.html'), 'utf8')

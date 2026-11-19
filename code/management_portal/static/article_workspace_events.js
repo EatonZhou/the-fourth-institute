@@ -9,7 +9,7 @@
   // browser history navigation.
   const DEPENDENCIES = Object.freeze([
     "$", "activeDocument", "articleContentRefresh", "scheduleArticleContentRefresh", "articleEntryDialog", "articleGitRefresh", "articleRegisterDialog",
-    "askBuildDiagnostic", "bindArticlePdfGestures", "bringCurrentContextToChat", "captureActiveDocument",
+    "askBuildDiagnostic", "bindArticlePdfGestures", "bringCurrentFileToChat", "bringSelectionToChat", "captureActiveDocument",
     "closeArticleGitDiff", "commitArticleGit", "compileArticle", "createEntry",
     "currentArticleCompilePopover", "currentArticleProjectPopover", "currentArticleWorkbench",
     "detailHistory", "flushArticleNavigationPreference", "goToLine", "handleEditorPairing",
@@ -32,7 +32,7 @@
     if (missing.length) throw new Error(`PortalArticleWorkspaceEvents is missing: ${missing.join(", ")}`);
     const {
       $, activeDocument, articleContentRefresh, scheduleArticleContentRefresh, articleEntryDialog, articleGitRefresh, articleRegisterDialog, askBuildDiagnostic,
-      bindArticlePdfGestures, bringCurrentContextToChat, captureActiveDocument, closeArticleGitDiff,
+      bindArticlePdfGestures, bringCurrentFileToChat, bringSelectionToChat, captureActiveDocument, closeArticleGitDiff,
       commitArticleGit, compileArticle, createEntry, currentArticleCompilePopover,
       currentArticleProjectPopover, currentArticleWorkbench, detailHistory, flushArticleNavigationPreference,
       goToLine, handleEditorPairing, hasDirtyDocuments, initializeArticleGit, initializeArticlePopovers,
@@ -332,9 +332,16 @@
     });
     $("articleWordWrap").addEventListener("click", toggleWordWrap);
     $("articleSyncToPdf").addEventListener("click", syncSourceToPdf);
-    const bringContextToChat = () => bringCurrentContextToChat()
+    const bringFileToChat = () => bringCurrentFileToChat()
       .catch(error => showToast(error.message || error, "error"));
-    $("articleSendContext").addEventListener("click", bringContextToChat);
+    $("articleSendContext").addEventListener("click", bringFileToChat);
+    window.PortalCodeEditor.bindSelectionCommit($("articleSourceEditor"), {
+      readSelection: () => {
+        const source = $("articleSourceEditor");
+        return !state.monacoReady && source.value.slice(source.selectionStart, source.selectionEnd);
+      },
+      onCommit: () => bringSelectionToChat().catch(error => showToast(error.message || error, "error")),
+    });
     window.PortalCommandRegistry.root.register({
       id: "article.toggleSidebar", title: window.PortalI18n.t("显示或隐藏左侧栏"), category: "Article",
       keybindings: ["Ctrl+B", "Meta+B"], allowInInput: true,
@@ -348,13 +355,13 @@
       execute: ({ event }) => event?.repeat ? false : toggleArticleSidebar(),
     });
     window.PortalCommandRegistry.root.register({
-      id: "article.contextToChat",
-      title: "把当前选区或光标上下文带到 Chat Workspace",
+      id: "article.fileToChat",
+      title: "当前文件加入聊天",
       keybindings: ["Ctrl+Alt+Enter", "Meta+Alt+Enter"],
       allowInInput: true,
       enabled: () => Boolean(state.selectedId && !$("articleSendContext").disabled
         && (document.activeElement === $("articleSourceEditor") || state.editor?.hasTextFocus?.())),
-      execute: ({ event }) => event?.repeat ? false : bringContextToChat(),
+      execute: ({ event }) => event?.repeat ? false : bringFileToChat(),
     });
 
     $("articleCompile").addEventListener("click", () => compileArticle());

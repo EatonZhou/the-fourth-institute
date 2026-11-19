@@ -7,7 +7,7 @@ const http = require('node:http');
 const root = path.resolve(__dirname, '../../..');
 const staticRoot = path.join(root, 'management_portal/static');
 const { chromium } = require(path.join(root, 'management_portal/test_framework/tau_runtime/node_modules/playwright'));
-const modules = ['portal_command_registry.js', 'article_workspace_chat.js', 'article_workspace_monaco.js', 'article_workspace_events.js'];
+const modules = ['portal_code_editor.js', 'portal_command_registry.js', 'article_workspace_chat.js', 'article_workspace_monaco.js', 'article_workspace_events.js'];
 const html = fs.readFileSync(path.join(root, 'management_portal/article_workspace.html'), 'utf8')
   .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '')
   .replace(/<link\b[^>]*>/gi, '')
@@ -43,14 +43,25 @@ const html = fs.readFileSync(path.join(root, 'management_portal/article_workspac
       window.holdChat = false;
       window.state = { selectedId: 'article_fixture', openFile: 'main.tex', source: '', editorPreferences: { tabSize: 2 } };
       const $ = id => document.getElementById(id);
-      const controller = { draftText: () => draft, setDraftText: value => { draft = value; }, addReference: ref => references.push(ref) };
+      const controller = { focusComposer() {}, draftText: () => draft, setDraftText: value => { draft = value; },
+        addReference(ref, options = {}) {
+          const index = references.findIndex(r => r.id === options.replaceId);
+          const item = { ...ref, id: index < 0 ? `ref-${references.length}` : options.replaceId };
+          if (index < 0) references.push(item); else references[index] = item;
+          return item;
+        },
+      };
       state.chatController = controller;
+      state.chatPanel = { async openSurface() {
+        if (holdChat) await new Promise(resolve => { window.releaseChat = resolve; });
+        return {};
+      } };
       const depsFor = module => Object.fromEntries(module.dependencies.map(key => [key, () => {}]));
       const monaco = PortalArticleWorkspaceMonaco.createMonaco({ ...depsFor(PortalArticleWorkspaceMonaco), $, state });
       const host = PortalArticleWorkspaceChat.createChat({ ...depsFor(PortalArticleWorkspaceChat), $, state,
         selectedArticle: () => ({ title: 'Fixture', canonical_root: '/fixture' }), articleProjects: () => ['fixture'],
         activeDocument: () => ({ revision: 'revision-1' }), documentIsDirty: () => true,
-        editorPosition: monaco.editorPosition, editorSelectionContext: monaco.editorSelectionContext, languageForPath: () => 'latex',
+        editorPosition: monaco.editorPosition, editorSelectionContext: monaco.editorSelectionContext, editorValue: monaco.editorValue, languageForPath: () => 'latex',
         setSideView: async view => {
           if (view !== 'chat') throw new Error('Unexpected view');
           openings++;
@@ -59,7 +70,7 @@ const html = fs.readFileSync(path.join(root, 'management_portal/article_workspac
         },
       });
       PortalArticleWorkspaceEvents.createEvents({ ...depsFor(PortalArticleWorkspaceEvents), $, state,
-        bringCurrentContextToChat: host.bringCurrentContextToChat, showToast: error => notices.push(String(error)),
+        bringCurrentFileToChat: host.bringCurrentFileToChat, bringSelectionToChat: host.bringSelectionToChat, showToast: error => notices.push(String(error)),
       });
       $('articleSendContext').disabled = false;
       $('articleSourceEditor').disabled = false;
@@ -71,8 +82,9 @@ const html = fs.readFileSync(path.join(root, 'management_portal/article_workspac
     await page.keyboard.press('Control+Alt+Enter');
     await page.waitForFunction(() => references.length === 1);
     let context = await page.evaluate(() => JSON.parse(references[0].text));
-    assert.equal(context.file.selection.text, 'selected words');
-    assert.equal(context.file.selection.start_line, 2);
+    assert.equal(context.file.content, 'first line\nselected words\nlast line');
+    assert.equal(context.file.selection, null);
+    assert.equal(await page.evaluate(() => references[0].line_start), undefined);
     assert.equal(context.file.path, 'main.tex');
     assert.equal(context.file.revision, 'revision-1');
     assert.equal(context.article_id, 'article_fixture');
@@ -92,7 +104,7 @@ const html = fs.readFileSync(path.join(root, 'management_portal/article_workspac
     await page.waitForFunction(() => references.length === 2);
     context = await page.evaluate(() => JSON.parse(references[1].text));
     assert.equal(context.file.path, 'main.tex');
-    assert.equal(context.file.selection.text, 'selected words');
+    assert.equal(context.file.content, 'first line\nselected words\nlast line');
     assert.equal(await page.evaluate(() => openings), 2, 'pending command cannot add twice');
 
     await page.evaluate(() => {
@@ -120,7 +132,7 @@ const html = fs.readFileSync(path.join(root, 'management_portal/article_workspac
     }));
     await page.keyboard.press('Control+Alt+Enter');
     await page.waitForFunction(() => references.length === 3);
-    assert.equal(await page.evaluate(() => JSON.parse(references.at(-1).text).file.selection.text), 'Monaco selection');
+    assert.equal(await page.evaluate(() => JSON.parse(references.at(-1).text).file.content), 'alpha\nMonaco selection\nomega');
     assert.equal(await page.evaluate(() => draft), '', 'selected context adds a reference without a generated prompt');
     assert.equal(await page.evaluate(() => state.editor.getValue()), 'alpha\nMonaco selection\nomega', 'shortcut never edits source');
     await page.evaluate(() => { state.editor.setPosition({ lineNumber: 3, column: 1 }); state.editor.focus(); draft = ''; });
@@ -133,13 +145,50 @@ const html = fs.readFileSync(path.join(root, 'management_portal/article_workspac
     await page.keyboard.press('Control+Alt+Enter');
     await page.waitForFunction(() => openings === 5);
     await page.evaluate(() => { state.selectedId = 'article_other'; holdChat = false; releaseChat(); });
-    await page.waitForFunction(() => !PortalCommandRegistry.root.get('article.contextToChat') || !PortalCommandRegistry.root.list().find(c => c.id === 'article.contextToChat').busy);
+    await page.waitForFunction(() => !PortalCommandRegistry.root.list().find(c => c.id === 'article.fileToChat').busy);
     assert.equal(await page.evaluate(() => references.length), 4, 'old selection cannot enter another article');
     await page.evaluate(() => state.editor.setSelection(new monaco.Selection(2, 1, 2, 17)));
     await page.locator('#articleSendContext').click();
     await page.waitForFunction(() => references.length === 5);
-    assert.equal(await page.evaluate(() => JSON.parse(references.at(-1).text).file.selection.text), 'Monaco selection');
+    assert.equal(await page.evaluate(() => JSON.parse(references.at(-1).text).file.content), 'alpha\nMonaco selection\nomega');
     assert.equal(await page.evaluate(() => draft), '', 'toolbar adds only the reference as well');
+
+    // Real mouse selection in the fallback editor; initialization is shared and
+    // only the latest selection is added when the conversation arrives late.
+    const beforeOpenings = await page.evaluate(() => openings);
+    await page.evaluate(() => {
+      state.monacoReady = false; holdChat = true; window.releaseChat = null;
+      const source = document.getElementById('articleSourceEditor');
+      source.value = 'alpha bravo charlie';
+      source.style.cssText = 'position:fixed;left:80px;top:80px;width:600px;height:120px;font:20px monospace;line-height:24px;padding:0;border:0;z-index:99999;display:block';
+      source.setSelectionRange(0, 0); source.focus();
+    });
+    const selectFallback = async (start, end) => {
+      const points = await page.locator('#articleSourceEditor').evaluate((source, [start, end]) => {
+        const c = document.createElement('canvas').getContext('2d'); c.font = getComputedStyle(source).font;
+        const box = source.getBoundingClientRect();
+        return [start, end].map(offset => ({x: box.left + c.measureText(source.value.slice(0, offset)).width + 1, y: box.top + 12}));
+      }, [start, end]);
+      await page.mouse.move(points[0].x, points[0].y); await page.mouse.down();
+      await page.mouse.move(points[1].x, points[1].y, {steps: 5}); await page.mouse.up();
+      await page.evaluate(() => new Promise(requestAnimationFrame));
+    };
+    await selectFallback(0, 5);
+    await page.waitForFunction(() => Boolean(releaseChat)).catch(async error => {
+      console.error(await page.evaluate(() => ({notices, selection: [document.getElementById('articleSourceEditor').selectionStart,
+        document.getElementById('articleSourceEditor').selectionEnd], focus: document.activeElement.id})));
+      throw error;
+    });
+    await selectFallback(6, 11);
+    assert.equal(await page.evaluate(() => references.length), 5, 'waiting selection has not been attached yet');
+    await page.evaluate(() => { holdChat = false; releaseChat(); });
+    await page.waitForFunction(() => references.length === 6);
+    assert.equal(await page.evaluate(() => JSON.parse(references.at(-1).text).file.selection.text), 'bravo');
+    assert.equal(await page.evaluate(() => openings), beforeOpenings, 'automatic selection does not open or focus a side panel');
+    assert.equal(await page.evaluate(() => document.activeElement.id), 'articleSourceEditor');
+    await selectFallback(12, 19);
+    await page.waitForFunction(() => JSON.parse(references.at(-1).text).file.selection.text === 'charlie');
+    assert.equal(await page.evaluate(() => references.length), 6, 'replace the automatic reference, retain full files');
     assert.deepEqual(await page.evaluate(() => notices), []);
     assert.deepEqual(errors, []);
     console.log('PASS: Article context shortcut in Monaco/textarea, modifier variants, scope, frozen selection, draft preservation and button');

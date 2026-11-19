@@ -7,7 +7,7 @@
   // the themes, editor options and models, and reading the value, caret and
   // selection whether Monaco or the plain textarea is in use.
   const DEPENDENCIES = Object.freeze([
-    "$", "activateDocument", "activeDocument", "captureActiveDocument", "registerTexlabProviders",
+    "$", "activateDocument", "activeDocument", "captureActiveDocument", "registerTexlabProviders", "onSelectionCommitted",
     "renderEditorLayers", "saveOpenFile", "scheduleAutoCompile", "scheduleAutoSave", "scheduleSemanticReload",
     "scheduleTexlabSync", "state", "updateCursorStatus", "updateDirtyState",
   ]);
@@ -16,7 +16,7 @@
     const missing = DEPENDENCIES.filter(name => dependencies?.[name] === undefined);
     if (missing.length) throw new Error(`PortalArticleWorkspaceMonaco is missing: ${missing.join(", ")}`);
     const {
-      $, activateDocument, activeDocument, captureActiveDocument, registerTexlabProviders, renderEditorLayers,
+      $, activateDocument, activeDocument, captureActiveDocument, registerTexlabProviders, renderEditorLayers, onSelectionCommitted,
       saveOpenFile, scheduleAutoCompile, scheduleAutoSave, scheduleSemanticReload, scheduleTexlabSync, state,
       updateCursorStatus, updateDirtyState,
     } = dependencies;
@@ -316,6 +316,14 @@
             defineMonacoThemes(monaco);
             captureActiveDocument();
             state.editor = monaco.editor.create($("articleMonacoEditor"), monacoEditorOptions());
+            state.monacoDisposables.push(window.PortalCodeEditor.bindSelectionCommit($("articleMonacoEditor"), {
+              editor: state.editor,
+              readSelection: () => {
+                const selection = editorSelectionContext(Infinity);
+                return selection?.text ? selection : null;
+              },
+              onCommit: onSelectionCommitted,
+            }));
             state.monacoReady = true;
             $("articleCodeEditor").classList.add("monacoReady");
             applyMonacoTheme();

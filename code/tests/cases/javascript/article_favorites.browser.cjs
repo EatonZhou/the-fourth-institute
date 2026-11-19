@@ -67,7 +67,7 @@ const html = fs.readFileSync(path.join(root, 'management_portal/article_workspac
         ], text_resource_types: ['concept'], navigation_resource_types: ['article'], identity_parameters: []};
       });
       for (const name of ['portal_state.js', 'portal_page_state.js', 'portal_text.js', 'portal_api.js', 'portal_ui_primitives.js', 'portal_overlay.js',
-        'portal_command_registry.js', 'portal_workbench_context.js', 'portal_editor_open_service.js',
+        'portal_code_editor.js', 'portal_command_registry.js', 'portal_workbench_context.js', 'portal_editor_open_service.js',
         ...workbenchScripts, ...portalWorkspaceSurfaceScripts(),
         'portal_preview_contract.js', 'portal_resource_chips.js', 'portal_resource_header.js', 'portal_resource_favorites.js',
         'article_workspace_catalog.js', 'article_workspace_popovers.js', 'article_workspace_tools.js', 'article_workspace_layout.js',

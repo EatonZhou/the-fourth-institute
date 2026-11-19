@@ -7,7 +7,7 @@ const bootFixture = JSON.parse(fs.readFileSync(0, 'utf8'));
 const { STATIC, portalWorkspaceSurfaceScripts } = require('./portal_workspace_surface_scripts.cjs');
 const browserType = require(path.join(STATIC, '../test_framework/tau_runtime/node_modules/playwright'))[process.env.PORTAL_ARTICLE_TEST_BROWSER || 'chromium'];
 const workbenchScripts = JSON.parse(fs.readFileSync(path.join(STATIC, '../script_groups.json'), 'utf8'))['portal-workbench'].map(s => s.replace('/static/', ''));
-const modules = ['portal_state.js', 'portal_page_state.js', 'portal_text.js', 'portal_i18n.js', 'portal_ui_primitives.js', 'portal_ui.js',
+const modules = ['portal_code_editor.js', 'portal_state.js', 'portal_page_state.js', 'portal_text.js', 'portal_i18n.js', 'portal_ui_primitives.js', 'portal_ui.js',
   'portal_pdf_preview.js', 'portal_command_registry.js', 'portal_workbench_context.js', 'portal_editor_open_service.js', ...workbenchScripts, ...portalWorkspaceSurfaceScripts(), 'article_workspace_documents.js', 'article_workspace_position.js', 'article_workspace_tools.js', 'article_workspace_layout.js',
   'article_workspace_syntax.js', 'article_workspace_monaco.js', 'article_workspace_pdf.js', 'article_workspace_build.js', 'article_workspace_events.js'];
 const html = fs.readFileSync(path.join(STATIC, '../article_workspace.html'), 'utf8')

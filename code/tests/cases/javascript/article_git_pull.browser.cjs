@@ -7,7 +7,7 @@ const http = require('node:http');
 const root = path.resolve(__dirname, '../../..');
 const staticRoot = path.join(root, 'management_portal/static');
 const { chromium } = require(path.join(root, 'management_portal/test_framework/tau_runtime/node_modules/playwright'));
-const modules = ['portal_state', 'portal_text', 'portal_i18n', 'portal_ui_primitives', 'portal_overlay', 'portal_ui',
+const modules = ['portal_code_editor', 'portal_state', 'portal_text', 'portal_i18n', 'portal_ui_primitives', 'portal_overlay', 'portal_ui',
   'portal_refresh_coordinator', 'portal_command_registry', 'article_workspace_git', 'article_workspace_events'];
 const html = fs.readFileSync(path.join(root, 'management_portal/article_workspace.html'), 'utf8')
   .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '')

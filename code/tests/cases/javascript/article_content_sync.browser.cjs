@@ -7,7 +7,7 @@ const http = require('node:http');
 const root = path.resolve(__dirname, '../../..');
 const staticRoot = path.join(root, 'management_portal/static');
 const { chromium } = require(path.join(root, 'management_portal/test_framework/tau_runtime/node_modules/playwright'));
-const modules = ['portal_command_registry.js', 'portal_refresh_coordinator.js', 'article_workspace_documents.js',
+const modules = ['portal_code_editor.js', 'portal_command_registry.js', 'portal_refresh_coordinator.js', 'article_workspace_documents.js',
   'article_workspace_events.js', 'vendor/monaco/vs/loader.js'];
 const entry = fs.readFileSync(path.join(staticRoot, 'article_workspace.js'), 'utf8');
 const start = entry.indexOf('  const articleContentRefresh =');

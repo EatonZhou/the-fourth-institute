@@ -3,6 +3,49 @@
 
   let monacoPromise = null;
 
+  // Shared by mounted CodeEditor panels and Article's existing Monaco/textarea.
+  // Only a completed primary-button selection produces a context reference.
+  function bindSelectionCommit(root, { editor, readSelection, onCommit }) {
+    let selecting = false, changed = false, disposed = false, generation = 0, initialSelection;
+    const cancel = () => { selecting = false; changed = false; generation++; };
+    const start = event => {
+      cancel(); selecting = event.button === 0;
+      initialSelection = [root.selectionStart, root.selectionEnd];
+    };
+    const change = event => {
+      if (selecting && (!editor || event.source === "mouse")) changed = true;
+    };
+    const finish = () => {
+      const started = selecting, changedBeforeRelease = changed, initial = initialSelection;
+      cancel();
+      const current = generation;
+      const model = editor?.getModel();
+      requestAnimationFrame(() => {
+        if (!started || disposed || current !== generation || (editor && model !== editor.getModel())) return;
+        // Textarea's select event may arrive after pointerup. Compare the final
+        // native range after the browser applies its mouse-release default.
+        if (!changedBeforeRelease && (editor || (root.selectionStart === initial[0] && root.selectionEnd === initial[1]))) return;
+        const selection = readSelection();
+        if (selection) onCommit(selection);
+      });
+    };
+    root.addEventListener("pointerdown", start, true);
+    window.addEventListener("pointerup", finish, true);
+    window.addEventListener("pointercancel", cancel);
+    window.addEventListener("blur", cancel);
+    const subscription = editor?.onDidChangeCursorSelection(change);
+    if (!editor) root.addEventListener("select", change);
+    return { dispose() {
+      disposed = true;
+      subscription?.dispose();
+      root.removeEventListener("select", change);
+      root.removeEventListener("pointerdown", start, true);
+      window.removeEventListener("pointerup", finish, true);
+      window.removeEventListener("pointercancel", cancel);
+      window.removeEventListener("blur", cancel);
+    } };
+  }
+
   function loadMonaco() {
     if (window.monaco?.editor) return Promise.resolve(window.monaco);
     if (monacoPromise) return monacoPromise;
@@ -275,34 +318,9 @@
       disposables.push(editor.onDidChangeCursorSelection(event => options.onSelectionChange(selectionInfo(), event)));
     }
     if (typeof options.onSelectionCommit === "function") {
-      let selecting = false, changed = false, disposed = false;
-      const start = event => { selecting = event.button === 0; changed = false; };
-      const cancel = () => { selecting = false; changed = false; };
-      const finish = () => {
-        const committed = selecting && changed;
-        cancel();
-        // Read after Monaco has finished handling the pointer release, including
-        // a drag that ends outside the editor. Programmatic selections don't commit.
-        requestAnimationFrame(() => {
-          if (committed && !disposed) {
-            const selection = selectionInfo();
-            if (selection) options.onSelectionCommit(selection);
-          }
-        });
-      };
-      root.addEventListener("pointerdown", start, true);
-      window.addEventListener("pointerup", finish, true);
-      window.addEventListener("pointercancel", cancel);
-      window.addEventListener("blur", cancel);
-      disposables.push(editor.onDidChangeCursorSelection(event => {
-        if (selecting && event.source === "mouse") changed = true;
-      }), { dispose() {
-        disposed = true;
-        root.removeEventListener("pointerdown", start, true);
-        window.removeEventListener("pointerup", finish, true);
-        window.removeEventListener("pointercancel", cancel);
-        window.removeEventListener("blur", cancel);
-      } });
+      disposables.push(bindSelectionCommit(root, {
+        editor, readSelection: selectionInfo, onCommit: options.onSelectionCommit,
+      }));
     }
     if (typeof options.onSave === "function") {
       // An editor action scopes the binding to this instance. A global dynamic
@@ -388,6 +406,7 @@
   }
 
   window.PortalCodeEditor = Object.freeze({
+    bindSelectionCommit,
     languageForPath,
     splitDiffFiles,
     loadMonaco,

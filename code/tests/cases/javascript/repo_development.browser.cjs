@@ -165,10 +165,10 @@ const html = `<!doctype html><html><head><meta charset="utf-8">${styles.map(n=>`
     await page.waitForSelector('.markdownBody h1');
     assert.equal(await page.locator('.markdownBody h1').textContent(),'Example');
     assert.equal(await page.evaluate(()=>writes.length),0,'preview must not write or compile');
-    // The shortcut adds actual source selection to the existing draft, without sending.
+    // Explicit selection action remains available, without using the file shortcut.
     await page.evaluate(()=>session.workbench.getPanel('chat').workspace.setDraftText('请解释这段代码'));
     await page.evaluate(async()=>{session.workbench.focusPanel('source');await session.workbench.getPanel('source').openFile('main.js',{selection:{startLineNumber:1,startColumn:1,endLineNumber:1,endColumn:16}});});
-    await page.keyboard.press('Control+Alt+Enter');
+    await page.getByRole('button',{name:'选区加入聊天',exact:true}).click();
     await page.waitForFunction(()=>session.workbench.getPanel('chat').workspace.payload().text.includes('const value'));
     const refs=await page.evaluate(()=>session.workbench.getPanel('chat').workspace.payload().text);
     assert.match(refs,/repo_123456789abc/); assert.match(refs,/main.js/); assert.match(refs,/start_line/);
@@ -214,7 +214,7 @@ const html = `<!doctype html><html><head><meta charset="utf-8">${styles.map(n=>`
     await page.waitForFunction(()=>session.workbench.getPanel('chat').workspace.attachments().some(a=>JSON.parse(a.reference_text).file.selection?.text==='value'));
     assert.equal(await page.evaluate(()=>session.workbench.getPanel('chat').workspace.attachments().length),2,'automatic reference replaces the old one');
     assert.equal(await page.evaluate(()=>editors[0].hasTextFocus()),true);
-    await page.keyboard.press('Control+Alt+Shift+Enter');
+    await page.keyboard.press('Control+Alt+Enter');
     await page.waitForFunction(()=>session.workbench.getPanel('chat').workspace.attachments().length===3);
     const wholeFile=await page.evaluate(()=>JSON.parse(session.workbench.getPanel('chat').workspace.attachments().at(-1).reference_text).file);
     assert.equal(wholeFile.path,'main.js');assert.equal(wholeFile.dirty,true);assert.equal(wholeFile.hash,'v1');

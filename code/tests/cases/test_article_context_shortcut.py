@@ -1,4 +1,4 @@
-"""Article context shortcut uses the same selection action as the toolbar."""
+"""Article whole-file shortcut uses the same action as the toolbar."""
 from pathlib import Path
 import subprocess
 

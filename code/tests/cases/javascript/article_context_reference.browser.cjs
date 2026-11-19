@@ -14,7 +14,7 @@ const playwright = require(path.join(repo, 'management_portal/test_framework/tau
 const routes = JSON.parse(fs.readFileSync(0, 'utf8')).routeScript;
 const modules = ['portal_state.js', 'portal_page_state.js', 'portal_text.js', 'portal_i18n.js',
   'portal_ui_primitives.js', 'portal_ui.js', 'portal_overlay.js', 'portal_resource_chips.js',
-  'portal_image_editor.js', 'portal_editor_open_service.js', 'portal_command_registry.js',
+  'portal_image_editor.js', 'portal_editor_open_service.js', 'portal_command_registry.js', 'portal_code_editor.js',
   'portal_workbench_context.js', ...portalWorkbenchScripts(), ...portalWorkspaceSurfaceScripts(), 'portal_resident_service.js',
   'portal_resident_runtime_controller.js', 'resident_protocol.js', ...chatWorkspaceScripts(),
   'article_workspace_monaco.js', 'article_workspace_tools.js', 'article_workspace_layout.js', 'article_workspace_chat.js', 'article_workspace_events.js'];
@@ -85,13 +85,13 @@ const html = fs.readFileSync(path.join(repo, 'management_portal/article_workspac
       host = PortalArticleWorkspaceChat.createChat({ ...deps(PortalArticleWorkspaceChat), $, state,
         selectedArticle: () => ({ title: 'Fixture', canonical_root: '/fixture' }), articleProjects: () => [],
         activeDocument: () => ({ revision: 'r1' }), editorPosition: editor.editorPosition,
-        editorSelectionContext: editor.editorSelectionContext, languageForPath: () => 'latex',
+        editorSelectionContext: editor.editorSelectionContext, editorValue: editor.editorValue, languageForPath: () => 'latex',
         setSideView: layout.setSideView, showToast: text => notices.push(String(text)),
       });
       window.host = host;
       PortalArticleWorkspaceEvents.createEvents({ ...deps(PortalArticleWorkspaceEvents), $, state,
         articleGitRefresh: { stop() {} }, articleContentRefresh: { stop() {} },
-        bringCurrentContextToChat: host.bringCurrentContextToChat, showToast: text => notices.push(String(text)),
+        bringCurrentFileToChat: host.bringCurrentFileToChat, bringSelectionToChat: host.bringSelectionToChat, showToast: text => notices.push(String(text)),
         setSideView: layout.setSideView, currentArticleWorkbench: layout.currentArticleWorkbench,
         setToolVisible: layout.setToolVisible,
         canToggleArticleSidebar: layout.canToggleArticleSidebar, toggleArticleSidebar: layout.toggleArticleSidebar,
@@ -130,7 +130,7 @@ const html = fs.readFileSync(path.join(repo, 'management_portal/article_workspac
     assert.equal(await page.evaluate(() => layout.currentArticleWorkbench().isPanelCollapsed('chat')), false, 'search retains its shortcut');
     await page.locator('#articleSourceEditor').focus();
     await page.keyboard.press('Control+Alt+Enter');
-    await page.waitForFunction(() => !PortalCommandRegistry.root.list().find(c => c.id === 'article.contextToChat').busy);
+    await page.waitForFunction(() => !PortalCommandRegistry.root.list().find(c => c.id === 'article.fileToChat').busy);
     const result = await page.evaluate(() => ({
       attachments: state.chatController.attachments(), payload: state.chatController.payload(),
       tokens: state.chatController.els.input.querySelectorAll('[data-portal-composer-attachment-token]').length, notices,
@@ -139,7 +139,9 @@ const html = fs.readFileSync(path.join(repo, 'management_portal/article_workspac
     assert.deepEqual(result.notices, [], 'action errors');
     assert.equal(result.attachments.length, 1, JSON.stringify(result));
     assert.equal(result.tokens, 1, 'reference is visible inside the real composer');
-    assert.equal(JSON.parse(result.attachments[0].reference_text).file.selection.text, 'selected words');
+    assert.equal(JSON.parse(result.attachments[0].reference_text).file.content, 'first\nselected words\nlast');
+    assert.equal(JSON.parse(result.attachments[0].reference_text).file.selection, null);
+    assert.doesNotMatch(result.payload.text, /#L1/);
     assert.match(result.payload.text, /Keep my question/, 'existing text survives');
 
     // Already-bound Article and real Monaco, matching the normal editor.
@@ -152,6 +154,7 @@ const html = fs.readFileSync(path.join(repo, 'management_portal/article_workspac
         root.style.cssText = 'display:block;width:600px;height:200px';
         state.editor = monaco.editor.create(root, { value: 'alpha\nMonaco selection\nomega', language: 'plaintext', automaticLayout: true });
         state.monacoReady = true;
+        document.getElementById('articleCodeEditor').classList.add('monacoReady');
         state.editor.setSelection(new monaco.Selection(2, 1, 2, 17)); state.editor.focus();
         resolve();
       });
@@ -169,9 +172,56 @@ const html = fs.readFileSync(path.join(repo, 'management_portal/article_workspac
       reference: state.chatController.attachments()[0],
       tokens: state.chatController.els.input.querySelectorAll('[data-portal-composer-attachment-token]').length,
     }));
-    assert.equal(JSON.parse(boundResult.reference.reference_text).file.selection.text, 'Monaco selection');
+    assert.equal(JSON.parse(boundResult.reference.reference_text).file.content, 'alpha\nMonaco selection\nomega');
     assert.equal(boundResult.tokens, 1);
     assert.deepEqual(await page.evaluate(() => writes), []);
+
+    // Mouse references use the same gesture owner as Repo. They replace only
+    // the previous automatic attachment, leave the draft and editor focus alone.
+    await page.evaluate(() => {
+      PortalCodeEditor.bindSelectionCommit(document.getElementById('articleMonacoEditor'), {
+        editor: state.editor,
+        readSelection: () => {
+          const s = state.editor.getSelection(), model = state.editor.getModel();
+          return s && !s.isEmpty() ? model.getValueInRange(s) : null;
+        },
+        onCommit: () => host.bringSelectionToChat(),
+      });
+      state.chatController.setDraftText('Keep automatic context', state.chatController.attachments());
+      state.editor.setPosition({ lineNumber: 3, column: 1 });
+      state.editor.focus();
+    });
+    const dragSelection = async (start, end) => {
+      const points = await page.evaluate(([start, end]) => {
+        const box = state.editor.getDomNode().getBoundingClientRect();
+        return [start, end].map(column => {
+          const p = state.editor.getScrolledVisiblePosition({lineNumber: 2, column});
+          return {x: box.left + p.left + 1, y: box.top + p.top + p.height / 2};
+        });
+      }, [start, end]);
+      const target = await page.evaluate(p => document.elementFromPoint(p.x, p.y)?.closest('.monaco-editor') !== null, points[0]);
+      assert.equal(target, true, 'mouse drag targets the visible Monaco editor');
+      await page.mouse.move(points[0].x, points[0].y); await page.mouse.down();
+      await page.mouse.move(points[1].x, points[1].y, {steps: 6});
+      await page.mouse.up();
+    };
+    await dragSelection(1, 7);
+    await page.waitForFunction(() => state.chatController.attachments().length === 2).catch(async error => {
+      console.error(await page.evaluate(() => ({notices, selection: state.editor.getSelection(),
+        references: state.chatController.attachments().map(a => JSON.parse(a.reference_text).file),
+        focus: document.activeElement?.className})));
+      throw error;
+    });
+    assert.equal(await page.evaluate(() => JSON.parse(state.chatController.attachments().at(-1).reference_text).file.selection.text), 'Monaco');
+    assert.equal(await page.evaluate(() => state.editor.hasTextFocus()), true);
+    await dragSelection(8, 17);
+    await page.waitForFunction(() => JSON.parse(state.chatController.attachments().at(-1).reference_text).file.selection.text === 'selection');
+    assert.equal(await page.evaluate(() => state.chatController.attachments().length), 2);
+    assert.equal(await page.evaluate(() => state.editor.hasTextFocus()), true);
+    assert.match(await page.evaluate(() => state.chatController.payload().text), /Keep automatic context/);
+    await page.evaluate(() => state.editor.setSelection(new monaco.Selection(1, 1, 1, 3)));
+    await page.waitForTimeout(50);
+    assert.equal(await page.evaluate(() => JSON.parse(state.chatController.attachments().at(-1).reference_text).file.selection.text), 'selection', 'programmatic selection adds no reference');
 
     // Use the real Workbench tab drag/drop with the real Chat composer and
     // Monaco model. Moving a tool must not mount a second conversation.
