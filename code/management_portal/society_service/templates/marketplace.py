@@ -6,7 +6,8 @@ import secrets
 from management_common.database_time import decode_times, encode_times
 from management_common.relational_rows import sync_rows
 
-from . import store
+from ..effect_script_candidate import require_publishable
+from . import kinds, store
 from .registry import TemplateError, now
 
 TIMES = ("published_at", "updated_at", "unpublished_at")
@@ -91,6 +92,16 @@ def annotate(templates, records=None):
     return result
 
 
+def describe(template):
+    kind = kinds.get(template["kind"])
+    return {**template, "behavior": kind.describe(template), "editor": kind.editor(),
+            "application_parameters": kinds.application_parameters(template)}
+
+
+def get_template(template_id):
+    return describe(annotate([store.get(template_id)])[0])
+
+
 def is_admin(actor):
     from management_portal import permission_system
 
@@ -98,8 +109,6 @@ def is_admin(actor):
 
 
 def listing(actor, *, search="", group=None, store_id=None):
-    from . import describe
-
     templates = store.all_templates()
     with store.database().read() as connection:
         records = items(connection)
@@ -137,7 +146,6 @@ def publish(template_id, actor, release_note=""):
             raise KeyError(template_id)
         if template.get("builtin_key"):
             raise TemplateError("内置模板不能发布到商店")
-        from ..effect_script_authoring import require_publishable
         require_publishable(template)
         creator = str(template.get("created_by") or "")
         resident_source = creator.startswith("resident_") and not template.get("installed_from_store_id")
@@ -156,13 +164,10 @@ def publish(template_id, actor, release_note=""):
                               {"version": version, "release_note": release_note, "content_hash": digest, "published_at": stamp}])
         rows[template_id] = item
         _write(connection, rows.values())
-    from . import get
-    return {"item": next(row for row in listing(actor, store_id=item["store_id"])), "template": get(template_id)}
+    return {"item": next(row for row in listing(actor, store_id=item["store_id"])), "template": get_template(template_id)}
 
 
 def install(store_id, actor, *, target_template_id=None, mode="install"):
-    from . import describe
-
     if mode not in ("install", "overwrite", "copy"):
         raise TemplateError("未知安装方式")
     store.ensure_builtins()

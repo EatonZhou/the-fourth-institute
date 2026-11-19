@@ -8,6 +8,7 @@ import re
 from typing import Any, Callable
 
 from management_common.limit_contract import normalize_optional_limit
+from .effect_script_candidate import normalize_effect_config as normalize_effect_config
 from . import (
     lineage_graph_state, lineage_primitive_definitions, lineage_primitives,
     lineage_recurring_schedule,
@@ -18,9 +19,9 @@ from .lineage_program_fields import (
     _reject_unknown_fields, _relative_path, _resident_id,
 )
 from .lineage_program_vocabulary import (
-    DEFAULT_EVENT_SOURCE_TYPE, EFFECT_CONFIG_FIELDS, EFFECT_ENDPOINT_RE,
+    DEFAULT_EVENT_SOURCE_TYPE,
     EVENT_SOURCE_AUTHORING_CONFIG_FIELDS, EVENT_SOURCE_TYPES, LOOP_COMPLETIONS, LOOP_CONFIG_FIELDS,
-    MAX_EFFECT_ENDPOINTS, MAX_EVENT_EXPIRES_AFTER_SECONDS, MAX_EVENT_FIRES, MAX_LOOP_ROUNDS,
+    MAX_EVENT_EXPIRES_AFTER_SECONDS, MAX_EVENT_FIRES, MAX_LOOP_ROUNDS,
     MAX_PATH_CHARS, MAX_TITLE_CHARS, PACKET_OPERATOR_CONFIG_FIELDS, PACKET_OPERATOR_IMPLEMENTATIONS,
     PACKET_OPERATOR_KINDS, PROGRAM_COMPONENT_KINDS, RULE_REDUCE_STRATEGIES, SEED_CONFIG_FIELDS,
     STATE_CONDITION_OPERATORS, _COMPONENT_ID_RE, _RESIDENT_ID_RE,
@@ -187,61 +188,6 @@ def normalize_packet_operator_config(
                 "output_key": output_key,
             }
         )
-    return result
-
-
-def normalize_effect_config(config: dict[str, Any]) -> dict[str, Any]:
-    """Shape of an Effect: its script and named endpoints.
-
-    Syntax, instructions, arguments and references are reported by
-    diagnostics, so a half-written script can be saved.
-    """
-
-    from .lineage_effect_script import MAX_SCRIPT_CHARS
-
-    unknown = sorted(set(config) - EFFECT_CONFIG_FIELDS)
-    if unknown:
-        raise ValueError("Effect config 只包含 script、endpoints、failure_recipients、script_draft、script_review_required；不接受：" + "、".join(unknown))
-    raw_script = config.get("script")
-    if raw_script is None:
-        raw_script = ""
-    if not isinstance(raw_script, str):
-        raise ValueError("Effect 的 script 必须是文本")
-    script = raw_script.replace("\r\n", "\n").replace("\r", "\n")
-    if len(script) > MAX_SCRIPT_CHARS:
-        raise ValueError(f"Effect 脚本最长 {MAX_SCRIPT_CHARS} 字符")
-    raw_endpoints = config.get("endpoints") or []
-    if not isinstance(raw_endpoints, list) or len(raw_endpoints) > MAX_EFFECT_ENDPOINTS:
-        raise ValueError(f"Effect endpoints 必须是最多 {MAX_EFFECT_ENDPOINTS} 个名称的数组")
-    endpoints: list[str] = []
-    for raw in raw_endpoints:
-        name = _text(raw, 40)
-        if not EFFECT_ENDPOINT_RE.fullmatch(name) or name in endpoints:
-            raise ValueError(f"Effect endpoint 名称无效或重复：{name or '（空）'}")
-        endpoints.append(name)
-    result = {"script": script, "endpoints": endpoints}
-    if 'script_review_required' in config and not isinstance(config['script_review_required'], bool):
-        raise ValueError('script_review_required 必须是布尔值')
-    if config.get('script_review_required'):
-        result['script_review_required'] = True
-    if 'script_draft' in config:
-        from .effect_script_authoring import shape
-        result['script_draft'] = shape(config['script_draft'])
-    if "failure_recipients" in config:
-        from management_common.principal import actor_principal
-        recipients = config["failure_recipients"]
-        if not isinstance(recipients, list) or len(recipients) > 20:
-            raise ValueError("Effect failure_recipients 必须是最多 20 个用户名的数组")
-        users = []
-        for username in recipients:
-            if not isinstance(username, str) or not username.strip() or len(username) > 120:
-                raise ValueError("Effect 失败通知收件人必须是用户名")
-            username = username.strip()
-            if actor_principal(username).kind != "user":
-                raise ValueError("Effect 失败通知收件人只能是 User")
-            if username not in users:
-                users.append(username)
-        result["failure_recipients"] = users
     return result
 
 

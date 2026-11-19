@@ -1,7 +1,51 @@
-"""Family event sources and scripts; task guides live in family_tasks."""
+"""Family graph facts, event sources and scripts."""
 from __future__ import annotations
 
+import secrets
+
 FAMILY_KEY = "family"
+REVIEW_DUTY = "review"
+REVIEW_BLOCK_KEY = "duty:" + REVIEW_DUTY
+REVIEW_ELEMENT_KEYS = frozenset({
+    "periodic_review", "notify_periodic_review_task", "notify_periodic_review",
+    "review_activity", "record_review_activity",
+})
+
+
+def has_independent_review(family):
+    return REVIEW_DUTY in family.get("independent_duties", [])
+
+
+def find_review_duty(body, parent):
+    duty_id = next((e["id"] for e in parent["elements"] if e.get("key") == REVIEW_BLOCK_KEY), None)
+    return next((block for block in body["function_blocks"] if block["id"] == duty_id
+                 and block.get("duty", {}).get("holder_id") == parent["family"]["steward"]), None)
+
+
+def family_elements(body, parent):
+    review = find_review_duty(body, parent)
+    return [*parent.get("elements", []), *(review["elements"] if review else [])]
+
+
+def bind_review_activity(body, parent):
+    """Bind the review duty to the Family's shared completion event on installation."""
+    block = find_review_duty(body, parent)
+    if block is None:
+        return
+    source = next((e["id"] for e in parent["elements"] if e.get("key") == "member_done"), None)
+    target = next((e["id"] for e in block["elements"] if e.get("key") == "review_activity"), None)
+    if not source or not target:
+        return
+    wires = body["program"]["wires"]
+    if any(w["source"] == source and w["target"] == target for w in wires):
+        return
+    # A vanished shared source also deletes its wire. Replace its stale membership.
+    block["elements"] = [e for e in block["elements"] if e.get("key") != "record_review_activity"]
+    wire_id = "wire_" + secrets.token_hex(6)
+    arguments = {"lineage_id": {"value": body["lineage_id"]}, "family_id": {"value": parent["id"]}}
+    wires.append({"id": wire_id, "kind": "route", "source": source, "target": target,
+                  "config": {"invoke_profiles": {"effect": {"arguments": arguments}}}})
+    block["elements"].append({"id": wire_id, "kind": "wire", "key": "record_review_activity"})
 
 
 # One Event Source per kind of member fact watches every member; the

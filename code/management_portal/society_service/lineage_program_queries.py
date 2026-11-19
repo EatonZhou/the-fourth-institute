@@ -17,6 +17,15 @@ def _compiled_program(lineage: dict[str, Any]) -> dict[str, Any]:
     )
 
 
+def resident_route_config(lineage: dict[str, Any], wire_id: str) -> dict[str, Any]:
+    """Resolve one Route in the compiled graph while its caller holds authority."""
+    residents = {node["id"] for node in lineage.get("nodes") or []}
+    for wire in _compiled_program(lineage)["wires"]:
+        if wire["id"] == wire_id and wire["kind"] == "route" and wire["target"] in residents:
+            return wire.get("config") or {}
+    raise ValueError("只能重置指向 Resident 的 Route 发送次数")
+
+
 def _plan_packet_wires(plan: dict[str, Any], source_id: str) -> list[dict[str, Any]]:
     return [
         wire

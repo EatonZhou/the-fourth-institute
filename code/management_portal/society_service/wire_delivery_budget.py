@@ -18,7 +18,6 @@ from management_common.limit_contract import (
 )
 
 from .wire_delivery_storage import COLUMNS
-from . import lineage_aggregate
 
 
 def _database():
@@ -129,30 +128,17 @@ def release(lineage_id: str, wire_id: str, message_id: str) -> None:
             _changed(lineage_id)
 
 
-def reset(lineage_id: str, wire_id: str, actor: str) -> dict[str, Any]:
-    from .lineage_program_queries import _compiled_program
-
-    with lineage_aggregate.execution_authority(lineage_id):
-        lineage = lineage_aggregate.read_lineage(lineage_id, actor=actor)
-        lineage_aggregate.ensure_manager(lineage, actor)
-        wire = next(
-            (
-                wire
-                for wire in _compiled_program(lineage)["wires"]
-                if wire["id"] == wire_id
-            ),
-            None,
+def reset_generation(
+    lineage_id: str, wire_id: str, config: dict[str, Any]
+) -> dict[str, Any]:
+    """Advance the budget for a Route validated under the caller's authority."""
+    with _locked(lineage_id, wire_id) as (connection, _generation):
+        connection.execute(
+            "UPDATE wire_delivery_budgets SET generation=generation+1 WHERE lineage_id=%s AND wire_id=%s",
+            (lineage_id, wire_id),
         )
-        residents = {node["id"] for node in lineage.get("nodes") or []}
-        if not wire or wire["kind"] != "route" or wire["target"] not in residents:
-            raise ValueError("只能重置指向 Resident 的 Route 发送次数")
-        with _locked(lineage_id, wire_id) as (connection, _generation):
-            connection.execute(
-                "UPDATE wire_delivery_budgets SET generation=generation+1 WHERE lineage_id=%s AND wire_id=%s",
-                (lineage_id, wire_id),
-            )
-            _changed(lineage_id)
-        return views(lineage_id, {wire_id: wire.get("config") or {}})[wire_id]
+        _changed(lineage_id)
+    return views(lineage_id, {wire_id: config})[wire_id]
 
 
 def forget(lineage_id: str, wire_ids: set[str]) -> None:

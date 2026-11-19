@@ -86,14 +86,20 @@ def pause_component(inv: Invocation) -> dict[str, Any]:
 
 
 def reset_component_runtime(inv: Invocation) -> dict[str, Any]:
-    if inv.argument("wire_id"):
-        from .. import wire_delivery_budget
+    lineage_id = inv.argument("lineage_id")
+    wire_id = inv.argument("wire_id")
+    if wire_id:
+        from .. import lineage_aggregate, lineage_program_queries, wire_delivery_budget
 
-        runtime = wire_delivery_budget.reset(inv.argument("lineage_id"), inv.argument("wire_id"), inv.caller)
+        with lineage_aggregate.execution_authority(lineage_id):
+            lineage = lineage_aggregate.read_lineage(lineage_id, actor=inv.caller)
+            lineage_aggregate.ensure_manager(lineage, inv.caller)
+            config = lineage_program_queries.resident_route_config(lineage, wire_id)
+            runtime = wire_delivery_budget.reset_generation(lineage_id, wire_id, config)
     else:
         from management_portal.society_service import component_runtime
 
-        runtime = component_runtime.reset(inv.argument("lineage_id"), inv.argument("component_id"), inv.caller)
+        runtime = component_runtime.reset(lineage_id, inv.argument("component_id"), inv.caller)
     return {"runtime": runtime, "generation": int(runtime.get("generation") or 0)}
 
 

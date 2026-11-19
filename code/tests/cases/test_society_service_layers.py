@@ -41,7 +41,7 @@ LAYERS = (
     principal_hierarchy project_folders read_snapshot resident_access_scope resident_backend resident_capability_materials
     resident_context resident_context.embedder resident_context.evidence resident_context.summary_layers
     resident_default_backend resident_hatg_credentials resident_intake_admission resident_message_contract
-    resident_project_domain resident_projection resident_resource_changes resident_runtime_payload
+    resident_pending_session_context resident_project_domain resident_projection resident_resource_changes resident_runtime_payload
     resident_settings_contract resident_state resident_turn_scope resident_workspace_deletion
     runtime runtime.contracts runtime.ports script_runs
     script_runs.clients.portal_script script_runs.runner script_runs.runtime seed_state_marker
@@ -49,7 +49,7 @@ LAYERS = (
     """,
     # Tables, rows and stores.
     """
-    creation_intents definition_collections directory_execution_admission directory_owner domain_work_storage edge_storage family_chat_storage family_storage
+    creation_intents definition_collections directory_execution_admission directory_owner domain_work_storage duty_storage edge_storage family_chat_storage family_storage
     family_task_dispatch_storage graph_storage handoff_location_storage lineage_data_columns lineage_data_definitions
     lineage_data_effect_cleanup lineage_data_executions lineage_data_mailbox lineage_data_notifications
     lineage_data_project_graphs lineage_data_projection_outbox lineage_data_residents lineage_data_runtime
@@ -61,7 +61,7 @@ LAYERS = (
     """,
     # Lineage definitions, Programs, Effect scripts and Graph State.
     """
-    lineage_automation_identity lineage_branch_transitions lineage_effect_script lineage_effect_targets
+    effect_script_candidate lineage_automation_identity lineage_branch_transitions lineage_effect_script lineage_effect_targets
     lineage_execution_explanation lineage_graph_authoring lineage_graph_state lineage_handoff_backend
     lineage_handoff_execution lineage_handoff_preparation lineage_instruction_context
     lineage_node_workspaces lineage_operators lineage_primitive_definitions lineage_primitives
@@ -78,7 +78,7 @@ LAYERS = (
     __init__ business_fact_views execution_client input_progress lifecycle lineage_access_policy
     lineage_human_notifications lineage_recovery_policy lost_terminal_facts personal_assistant
     resident_account_policy resident_api_context resident_catalog resident_context.service
-    resident_context.source resident_conversation_activity resident_conversation_events
+    resident_context.source resident_conversation_activity resident_conversation_events resident_deleted_history
     resident_conversation_history resident_conversation_inputs resident_conversation_messages
     resident_conversation_records resident_conversation_state resident_conversation_stream
     resident_domain_common resident_execution_provider resident_fork_context resident_input_scope
@@ -106,7 +106,7 @@ LAYERS = (
     """,
     # Program execution and the definition rules it checks.
     """
-    effect_failure_notifications family_workflows function_block_authoring lineage_definition_merge
+    duty_memory effect_failure_notifications family_workflows function_block_authoring lineage_definition_merge
     lineage_definition_normalization lineage_program_authoring lineage_program_backlog
     lineage_program_effect_execution lineage_program_event_dispatch lineage_program_execution
     lineage_program_terminal_reconciliation watchboard_lineage
@@ -127,17 +127,19 @@ LAYERS = (
     """,
     # The Lineage domain.
     """
-    handoff_location_owner resource_creation_owner lineage_branches lineage_domain lineage_graph_edits lineage_handoffs lineage_lifecycle lineage_moves
+    duty_graph_edits handoff_location_owner resource_creation_owner lineage_branches lineage_domain lineage_graph_edits lineage_handoffs lineage_lifecycle lineage_moves
     lineage_program_edits lineage_program_services lineage_read_cache lineage_reads
     lineage_resident_controls lineage_resident_nodes lineage_resident_workspaces lineage_state
     lineage_view_projection
     """,
     # Family, template, Function Block, Project and principal operations.
     """
-    family_direct_delivery family_progress family_quality_reviewers family_quota family_quota_projection family_reassign family_resource_projection family_review family_route_facts family_supervision
+    effect_script_authoring family_direct_delivery family_progress family_quality_reviewers family_quota family_quota_projection
+    family_reassign family_resource_projection family_review family_review_duty family_route_facts family_supervision resident_input_diagnostics
     family_task_dispatches function_block_domain lineage_resident_operations principal_hierarchy_domain
-    personal_phone_assistant project_domain resident_domain templates templates.builtins templates.explore templates.familize
-    templates.kinds templates.prompt templates.registry templates.rewrite templates.script templates.store
+    personal_phone_assistant project_domain resident_domain templates templates.builtins templates.duty_capture
+    templates.explore templates.familize templates.family_duty templates.kinds templates.marketplace
+    templates.prompt templates.registry templates.rewrite templates.script templates.store
     templates.structure templates.values
     """,
     # Instruction handlers, hosts, projections and the service.

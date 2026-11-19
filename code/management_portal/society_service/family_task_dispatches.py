@@ -11,11 +11,15 @@ import json
 import re
 from string import Template
 
-from . import family_tasks, lineage_aggregate
+from . import family_familize, family_tasks, lineage_aggregate
 
 
 class FamilyTaskTargetChanged(ValueError):
     """The role changed after the caller captured its task intent."""
+
+
+def _context(record: dict) -> tuple[dict, dict]:
+    return family_familize.read_family(record["lineage_id"], record["family"]["family_id"], record["resident_id"])
 
 
 def request_tasks(facade, message_ids):
@@ -95,7 +99,7 @@ def _legacy_text(target, trigger, facts, original, text):
     """
     from . import resident_message_contract
 
-    body, block = family_tasks.context(target)
+    body, block = _context(target)
     entry = family_tasks.configured(body, block).get(trigger)
     identifiers = Template(entry["prompt"]).get_identifiers() if entry else []
     if "facts" not in identifiers:
@@ -149,7 +153,7 @@ def dispatch(facade_id: str, trigger: str, actor: str, *, facts: dict | None = N
     facade = resident_record_domain.find_resident(facade_id)
     if not family_facade.is_facade(facade) or trigger not in family_tasks.TASKS:
         raise ValueError("未知 Family 或工作触发类型")
-    body, block = family_tasks.context(facade)
+    body, block = _context(facade)
     family = block["family"]
     if actor not in {family["facade"], family["steward"], family["router"]}:
         from management_portal import permission_system

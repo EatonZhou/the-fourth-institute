@@ -13,6 +13,7 @@ from management_common.domain_database import DomainDatabase
 from management_common.relational_rows import read_rows as sql_rows, sync_rows
 from management_common.database_time import encode_times, decode_times
 
+from ..effect_script_candidate import reconcile, template_items
 from .registry import now
 
 
@@ -150,7 +151,7 @@ def get(template_id):
         return decode_times(row, ('created_at', 'updated_at'))
 
 
-def save(template, actor, *, template_id=None, transform=None):
+def save(template, actor, *, template_id=None, transform=None, reviewed_effect_id=None):
     ensure_builtins()
     with database().transaction("templates") as connection:
         rows = {row["template_id"]: row for row in read_rows(connection, "templates")}
@@ -159,8 +160,10 @@ def save(template, actor, *, template_id=None, transform=None):
             raise KeyError(template_id)
         if transform:
             template = transform(deepcopy(previous))
-        from ..effect_script_authoring import reconcile, template_items
-        reconcile(template_items(template), template_items(previous), actor, key='key')
+        reconcile(
+            template_items(template), template_items(previous), actor,
+            key='key', reviewed_effect_id=reviewed_effect_id,
+        )
         identity = template_id or "template_" + secrets.token_hex(6)
         value = {
             **deepcopy(template),

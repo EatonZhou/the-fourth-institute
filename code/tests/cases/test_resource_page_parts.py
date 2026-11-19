@@ -25,6 +25,10 @@ PAGES = (
     ("repo_workspace.html", "repo_workspace", "repoModule"),
 )
 REGISTERED = re.compile(r'window\.(\w+)\s*=\s*Object\.freeze\(\{\s*(\w+)\s*,(?:\s*\w+\s*,)*\s*dependencies:\s*DEPENDENCIES\s*\}\);')
+WORKBENCH_HOST_PARTS = {
+    "article_workspace_tools.js": ("PortalArticleWorkspaceTools", "article_workspace_layout.js"),
+    "repo_workspace_development.js": ("PortalRepoDevelopment", "repo_workspace_shell.js"),
+}
 
 
 def own_scripts(page: str, prefix: str) -> list[str]:
@@ -84,6 +88,13 @@ def test_root_creates_every_part_its_page_loads_with_exactly_its_dependencies(pa
     modules = {}
     for name in scripts[:-1]:
         source = (STATIC / name).read_text(encoding="utf-8")
+        if name in WORKBENCH_HOST_PARTS:
+            exported, consumer = WORKBENCH_HOST_PARTS[name]
+            assert re.search(rf'window\.{exported}\s*=', source)
+            assert scripts.index(name) < scripts.index(consumer)
+            assert f"window.{exported}" in (STATIC / consumer).read_text(encoding="utf-8")
+            assert exported not in created
+            continue
         standalone = {'paper_navigation.js': 'PortalPaperNavigation',
                       'paper_artifact_presentation.js': 'PortalPaperArtifactPresentation',
                       'paper_research_controls.js': 'PortalPaperResearchControls',

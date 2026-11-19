@@ -488,12 +488,12 @@ def test_route_budget_reservations_are_atomic_and_survive_reset(runtime_store: P
     budget.accept(lineage_id, wire_id, "message_retry", "accepted_retry")
     budget.accept(lineage_id, wire_id, "message_retry", "accepted_retry")
     assert budget.views(lineage_id, {wire_id: {"max_messages": 1}})[wire_id]["sent_count"] == 1
-    budget.reset(lineage_id, wire_id, ACTOR)
+    ok("ResetComponentRuntime", {"lineage_id": lineage_id, "wire_id": wire_id})
     assert budget.reserve(lineage_id, wire_id, "message_retry", 1)["status"] == "sent"
     assert budget.views(lineage_id, {wire_id: {"max_messages": 1}})[wire_id]["sent_count"] == 0
     assert budget.reserve(lineage_id, wire_id, "message_next", 1)["status"] == "reserved"
     # Reset counts accepted messages only; it cannot erase an uncertain send.
-    budget.reset(lineage_id, wire_id, ACTOR)
+    ok("ResetComponentRuntime", {"lineage_id": lineage_id, "wire_id": wire_id})
     assert budget.reserve(lineage_id, wire_id, "message_other", 1)["status"] == "limited"
     budget.accept(lineage_id, wire_id, "message_next", "accepted_next")
     assert budget.views(lineage_id, {wire_id: {"max_messages": 1}})[wire_id]["sent_count"] == 1

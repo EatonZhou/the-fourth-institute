@@ -14,9 +14,10 @@ function harness() {
   const requests = [], notices = [], renders = [], changes = [], identities = [];
   const state = {
     detailFileId: resource, detailSelectedFileId: resource,
+    deletedKnowledgeIds: new Set(),
     detailSelectedFileKind: 'markdown', detailSelectedFileLinked: false,
     detailExpandedFolders: new Set(), detailLinkedFiles: new Map(),
-    detailReadOnly: false, detailSaving: false, detailDeleting: false,
+    detailReadOnly: false, detailSaving: false,
     selected: {kb_id: resource, type: 'thinking', title: 'Fixture'},
   };
   const editor = {value: '', addEventListener() {}, focus() {}};

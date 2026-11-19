@@ -8,6 +8,8 @@ from copy import deepcopy
 from . import kinds, values
 from .registry import ApplyContext, TemplateError
 from .. import lineage_aggregate
+from ..effect_script_candidate import reconcile, template_items
+from .marketplace import describe as describe
 
 
 def create_family(lineage_id, resident_ids, actor, *, template_id=None, **options):
@@ -19,12 +21,6 @@ def create_family(lineage_id, resident_ids, actor, *, template_id=None, **option
         lineage_id, resident_ids, actor, template_id=template_id,
         load_body=lambda: store.get(template_id)["body"], **options,
     )
-
-
-def describe(template):
-    kind = kinds.get(template["kind"])
-    return {**template, "behavior": kind.describe(template), "editor": kind.editor(),
-            "application_parameters": kinds.application_parameters(template)}
 
 
 def list_templates(target_kind=None):
@@ -45,10 +41,9 @@ def list_templates(target_kind=None):
 
 
 def get(template_id):
-    from . import store
+    from .marketplace import get_template
 
-    from .marketplace import annotate
-    return describe(annotate([store.get(template_id)])[0])
+    return get_template(template_id)
 
 
 def create(template, actor, *, from_selection=None, dry_run=False):
@@ -66,7 +61,6 @@ def create(template, actor, *, from_selection=None, dry_run=False):
             ),
             **(template or {}),
         }
-    from ..effect_script_authoring import reconcile, template_items
     template = deepcopy(template)
     reconcile(template_items(template), [], actor, key='key')
     normalized = kinds.normalize(template)
@@ -85,7 +79,6 @@ def update(template_id, changes, actor, *, dry_run=False):
     def transform(previous):
         if changes.get("kind", previous["kind"]) != previous["kind"]:
             raise TemplateError("模板 kind 不可修改；请另存为副本")
-        from ..effect_script_authoring import reconcile, template_items
         candidate = deepcopy({**previous, **changes})
         reconcile(template_items(candidate), template_items(previous), actor, key='key')
         return kinds.normalize(candidate)

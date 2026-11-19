@@ -1,7 +1,12 @@
 """Reusable Family duty recipes; binding is resolved from the target Steward."""
 from string import Template
+from .familize import reconcile_in_body
 from .registry import result, TemplateError
 from .. import family_review_duty, lineage_graph_edits
+
+
+def install_review(body, steward, actor, template):
+    return family_review_duty.install(body, steward, actor, template, reconcile=reconcile_in_body)
 
 
 class FamilyDutyKind:
@@ -36,7 +41,7 @@ class FamilyDutyKind:
         if len(ctx.target['resident_ids']) != 1:
             raise TemplateError('请选择一个 Family Steward')
         def edit(body):
-            block = family_review_duty.install(body, ctx.target['resident_ids'][0], ctx.actor, ctx.template)
+            block = install_review(body, ctx.target['resident_ids'][0], ctx.actor, ctx.template)
             if ctx.title:
                 block['title'] = ctx.title
             return block['id']

@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import re
 from contextlib import contextmanager
+from contextvars import ContextVar
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable, Iterable, Iterator, Mapping
@@ -18,6 +19,7 @@ from management_common.projection_receipts import project_committed
 from management_portal.resources.workspace_files import _write_text
 
 from .errors import LineageConflictError
+from .effect_script_candidate import reconcile
 from .lineage_program_queries import _compiled_program
 from .lineage_event_conditions import _scheduled_time_reached as _event_scheduled_time_reached
 from . import lineage_definition_normalization, lineage_read_cache
@@ -436,6 +438,21 @@ def _verified_lineage_view(
     )
 
 
+_effect_under_review: ContextVar[tuple[str, str] | None] = ContextVar(
+    "lineage_effect_under_review", default=None,
+)
+
+
+@contextmanager
+def reviewing_effect(lineage_id: str, effect_id: str):
+    """Scope the validated review to one Effect inside the graph edit."""
+    token = _effect_under_review.set((lineage_id, effect_id))
+    try:
+        yield
+    finally:
+        _effect_under_review.reset(token)
+
+
 def _normalize_lineage_payload(
     payload: dict[str, Any],
     previous: dict[str, Any],
@@ -485,9 +502,14 @@ def _normalize_lineage_shape(
             if kept != family.get("members"):
                 family["members"] = kept
                 reconcile_in_body(body, block, actor)
-    from .effect_script_authoring import reconcile
     if isinstance(payload.get('program'), dict):
-        reconcile(payload['program'].get('components', []), (previous.get('program') or {}).get('components', []), actor)
+        review = _effect_under_review.get()
+        reconcile(
+            payload['program'].get('components', []),
+            (previous.get('program') or {}).get('components', []),
+            actor,
+            reviewed_effect_id=review[1] if review and review[0] == previous.get('lineage_id') else None,
+        )
     return lineage_definition_normalization._normalize_lineage_payload(
         payload, previous, actor,
         resident_references=resident_references,

@@ -12,6 +12,9 @@ import os
 import tempfile
 from string import Template
 
+from . import family_definition
+from .family_definition import family_elements as task_elements
+
 
 ROUTER_CONTINUATION_CONTRACT = (
     "续谈契约（优先于自定义指南中的历史延续规则）：只判断当前请求是否明确依赖 facts.previous_round，"
@@ -214,9 +217,8 @@ def configured(body: dict, block: dict) -> dict:
     # Older stored graphs may be read before startup reconciliation adds the new arguments.
     entries = {key: value for route in {row[0] for row in TASKS.values()}
                for key, value in defaults(route).items() if key != "progress"}
-    from . import family_review_duty
-    if family_review_duty.independent(block["family"]):
-        entries.pop("review", None)
+    if family_definition.has_independent_review(block["family"]):
+        entries.pop(family_definition.REVIEW_DUTY, None)
     for element in task_elements(body, block):
         if element["id"] not in wires:
             continue
@@ -231,17 +233,6 @@ def configured(body: dict, block: dict) -> dict:
             value.update(saved_fields(key, saved.get(key, {})))
             entries[key] = value
     return entries
-
-
-def context(record: dict) -> tuple[dict, dict]:
-    from .family_familize import read_family
-    return read_family(record["lineage_id"], record["family"]["family_id"], record["resident_id"])
-
-
-def task_elements(body, block):
-    from . import family_review_duty
-    review = family_review_duty.find(body, block)
-    return [*block.get("elements", []), *(review["elements"] if review else [])]
 
 
 def validate_routes(body: dict, block: dict) -> None:
@@ -270,11 +261,16 @@ def validate_routes(body: dict, block: dict) -> None:
                     raise ValueError("任务模板须保留 ${facts}，以便绑定原请求")
 
 
+def _guide_family(record: dict) -> tuple[dict, dict]:
+    from .family_familize import read_family
+    return read_family(record["lineage_id"], record["family"]["family_id"], record["resident_id"])
+
+
 def guide(record: dict, body: dict | None = None, block: dict | None = None) -> tuple[str, str, str]:
     """Materialize the current graph projection at a stable, atomically replaced path."""
     from . import resident_record_domain
     if body is None:
-        body, block = context(record)
+        body, block = _guide_family(record)
     family = block["family"]
     role = record["family"]["role"]
     sections = [f"# Family {role.title()} 工作指南", f"Family：{family['title']}；目标：{family.get('goal') or '未填写'}",
@@ -312,7 +308,7 @@ def guide(record: dict, body: dict | None = None, block: dict | None = None) -> 
 
 
 def render(record: dict, trigger: str, facts: dict, *, guide_version: str | None = None) -> str:
-    body, block = context(record)
+    body, block = _guide_family(record)
     entries = configured(body, block)
     # Removed automatic reports can still finish an already queued/manual batch.
     legacy_progress = trigger == "progress" and trigger not in entries

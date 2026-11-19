@@ -38,13 +38,20 @@ function deletionFixture() {
   const removal = deferred(), historyRead = deferred(), calls = [], notices = [];
   const location = new URL(`https://portal.test/lineage?resident=${target.id}`);
   const shared = vm.createContext({window: {PortalI18n: i18n,
-    PortalResidentService: {inputHistory: () => historyRead.promise}}, residentSessionScope: t => t.resident_id,
+    PortalResidentService: {inputHistory: id => {calls.push(['history', id]); return historyRead.promise;}}},
     residentProtocolMessageToWorkspace: message => message,
     RESIDENT_CHAT_WORKSPACE_SCHEMA: 'portal.chat_workspace.v3', newMessageIdentity: () => 'notice'});
-  vm.runInContext(declarations(chatWorkspaceScripts(), ['rejectUnavailableTarget', 'showError', 'loadInputHistory']), shared);
+  vm.runInContext(declarations(chatWorkspaceScripts(),
+    ['normalizeResidentTarget', 'residentSessionScope', 'rejectUnavailableTarget', 'showError', 'loadInputHistory']), shared);
+  const workspaceMethods = vm.runInNewContext(
+    declarations('chat_workspace_resident_workspace.js', ['sessionScope', 'inputHistoryScope'])
+      + '\n({sessionScope, inputHistoryScope})',
+    {residentSessionScope: shared.residentSessionScope},
+  );
   function panel(id) {
     const identity = {resident_id: id, title: 'Known title'};
-    return {target: () => identity, workspace: {target: () => identity, inputHistoryScope: () => identity.resident_id}, options: {}, questions: {reset: noop},
+    const workspace = {target: () => identity, residentTarget: identity, historyTarget: identity, ...workspaceMethods};
+    return {target: () => identity, workspace, options: {}, questions: {reset: noop},
       targetRevision: 0, protocol: {destroy: () => calls.push(['detach', id])},
       rejectUnavailableTarget: shared.rejectUnavailableTarget, showError: shared.showError,
       loadInputHistory: shared.loadInputHistory,
@@ -92,7 +99,7 @@ test('a locally deleted Resident detaches Chat and does not suggest waiting for 
 
 test('history for a deleted Resident uses the unavailable Chat state instead of a global error', async () => {
   const f = deletionFixture();
-  const pending = f.primary.loadInputHistory(f.target.id);
+  const pending = f.primary.loadInputHistory(f.primary.workspace.inputHistoryScope());
   f.historyRead.reject(Object.assign(Error('resident not found'), {status: 404}));
   assert.equal(await pending, null);
   assert.equal(f.primary.target().resident_id, f.target.id);
@@ -106,7 +113,8 @@ test('late history results cannot affect a new Chat binding, including a reload 
   for (const outcome of ['missing', 'deleted', 'success']) {
     for (const sameResident of [true, false]) {
       const f = deletionFixture();
-      const pending = f.primary.loadInputHistory(f.target.id);
+      const pending = f.primary.loadInputHistory(f.primary.workspace.inputHistoryScope());
+      assert.deepEqual(f.calls.at(-1), ['history', f.target.id]);
       f.primary.targetRevision++;
       if (!sameResident) f.primary.target().resident_id = 'resident_other';
       if (outcome === 'missing') f.historyRead.reject(Object.assign(Error('resident not found'), {status: 404}));
@@ -121,7 +129,7 @@ test('late history results cannot affect a new Chat binding, including a reload 
 
 test('history rejected by local deletion detaches only its current Chat binding', async () => {
   const f = deletionFixture();
-  const pending = f.primary.loadInputHistory(f.target.id);
+  const pending = f.primary.loadInputHistory(f.primary.workspace.inputHistoryScope());
   const error = Object.assign(Error('Resident has been deleted'), {code: 'resident.deleted'});
   f.historyRead.reject(error);
   assert.equal(await pending, null);
@@ -135,7 +143,7 @@ test('history rejected by local deletion detaches only its current Chat binding'
 test('history-specific permission and service errors still reach the error handler', async () => {
   for (const status of [403, 500]) {
     const f = deletionFixture();
-    const pending = f.primary.loadInputHistory(f.target.id);
+    const pending = f.primary.loadInputHistory(f.primary.workspace.inputHistoryScope());
     const error = Object.assign(Error('history unavailable'), {status});
     f.historyRead.reject(error);
     await assert.rejects(pending, value => value === error);

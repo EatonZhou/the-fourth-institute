@@ -14,7 +14,8 @@ from management_common.principal import actor_principal
 from .. import family_facade, family_familize as facts, family_workflows, family_tasks, family_task_dispatches
 from ..family_definition import (FAMILY_MEMBER_SIGNALS, FAMILY_ROUTER_SCRIPT,
                                 FAMILY_ROUTE_RELAY_SCRIPT, FAMILY_SUMMARY_CHECK_SCRIPT,
-                                FAMILY_SUMMARY_ROLLUP_SCRIPT)
+                                FAMILY_SUMMARY_ROLLUP_SCRIPT, find_review_duty,
+                                has_independent_review)
 from .registry import ApplyContext, TemplateError, result
 from .. import lineage_aggregate
 from .. import function_block_authoring
@@ -188,7 +189,7 @@ def _rewire(body: dict, sources: set[str], target: str, block: dict, *, removing
 def reconcile_in_body(body: dict, block: dict, actor: str) -> None:
     """Reconcile generated components and wires by local key; preserve their IDs."""
     family = block["family"]
-    from .. import personal_assistant, family_review_duty
+    from .. import personal_assistant
     personal = bool(family.get("personal_ama_id"))
     members, facade, steward, router = (family[k] for k in ("members", "facade", "steward", "router"))
     elements = block.setdefault("elements", [])
@@ -247,7 +248,7 @@ def reconcile_in_body(body: dict, block: dict, actor: str) -> None:
         for member in members:
             put(f"watch_{key}:{member}", "watch", source=source, target=member, config={})
         notify("notify_" + key, source)
-    if members or family_review_duty.independent(family):
+    if members or has_independent_review(family):
         done = put("member_done", "event_source", title="工作摘要覆盖检查", config={"event_type": "resident.work_finished"})
         for member in members:
             put(f"watch_member_done:{member}", "watch", source=done, target=member, config={})
@@ -260,7 +261,7 @@ def reconcile_in_body(body: dict, block: dict, actor: str) -> None:
     rollup = put("memory_rollup" if personal else "summary_rollup", "effect", title="按需归纳工作摘要", config={"script": FAMILY_SUMMARY_ROLLUP_SCRIPT, "endpoints": []})
     put("request_memory" if personal else "request_summary", "route", source=summary_timer, target=rollup, config={"invoke_profiles": {"effect": {
         "arguments": {"facade": {"value": facade}, "steward": {"value": steward}}}}})
-    if personal or not family_review_duty.independent(family):
+    if personal or not has_independent_review(family):
         review = put("periodic_review", "event_source", title="周期回顾", config={
             "event_type": "time.reached", "schedule_mode": "recurring", "recurrence_kind": "interval",
             "interval_seconds": max(86400, family["review_interval_seconds"]) if personal else family["review_interval_seconds"],
@@ -701,8 +702,7 @@ def update_family(lineage_id: str, family_id: str, actor: str, *, add_member_ids
         if not ownership_only:
             reconcile_in_body(body, block, actor)
             if review_interval_seconds is not None:
-                from .. import family_review_duty
-                owner = family_review_duty.find(body, block) or block
+                owner = find_review_duty(body, block) or block
                 event_id = next((e["id"] for e in owner["elements"] if e.get("key") == "periodic_review"), None)
                 event = next((c for c in body["program"]["components"] if c["id"] == event_id), None)
                 if event:
@@ -782,8 +782,7 @@ def unfamilize(lineage_id: str, family_id: str, actor: str, *, successor_id: str
             if successor:
                 body["leader_resident_id"] = successor
             internals = {e["id"] for e in current["elements"] if facts.is_generated(e)} | set(roles)
-            from .. import family_review_duty
-            review = family_review_duty.find(body, current)
+            review = find_review_duty(body, current)
             if review:
                 scope, _ = function_block_authoring.deletion_scope(body, review["id"])
                 internals.update(scope)

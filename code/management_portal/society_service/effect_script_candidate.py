@@ -13,7 +13,7 @@ from .lineage_program_vocabulary import EFFECT_CONFIG_FIELDS, EFFECT_ENDPOINT_RE
 from .lineage_values import _text
 
 
-def normalize_script(config):
+def _normalize_script(config):
     raw_script = config.get("script")
     if raw_script is None:
         raw_script = ""
@@ -44,7 +44,7 @@ def normalize_effect_config(config: dict[str, Any]) -> dict[str, Any]:
     unknown = sorted(set(config) - EFFECT_CONFIG_FIELDS)
     if unknown:
         raise ValueError("Effect config 只包含 script、endpoints、failure_recipients、script_draft、script_review_required；不接受：" + "、".join(unknown))
-    result = normalize_script(config)
+    result = _normalize_script(config)
     if 'script_review_required' in config and not isinstance(config['script_review_required'], bool):
         raise ValueError('script_review_required 必须是布尔值')
     if config.get('script_review_required'):
@@ -78,7 +78,7 @@ def shape(raw):
     description = raw.get('description', '')
     if not isinstance(description, str) or len(description) > 20000:
         raise ValueError('Effect 描述必须是不超过 20000 字符的文本')
-    value = normalize_script(raw)
+    value = _normalize_script(raw)
     for key in ('requested_by', 'confirm_by'):
         if raw.get(key):
             if not isinstance(raw[key], str) or actor_principal(raw[key]).kind not in {'user', 'resident'}:

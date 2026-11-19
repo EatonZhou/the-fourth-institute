@@ -5,7 +5,7 @@ from typing import Any, Mapping
 
 from management_common.actor_identity import canonical_actor_id
 
-from . import lineage_aggregate
+from . import family_definition, lineage_aggregate
 
 
 def find_record(resident_id: str) -> dict[str, Any]:
@@ -134,12 +134,9 @@ def facade_for_family_state(lineage: Mapping[str, Any], component_id: str, key: 
 
 
 def component_family(lineage: Mapping[str, Any], component_id: str) -> dict[str, Any] | None:
-    from . import family_review_duty
     for block in family_blocks(lineage):
-        review = family_review_duty.find(lineage, block)
-        elements = [*block.get("elements", []), *(review["elements"] if review else [])]
         if any(item["id"] == component_id and item["kind"] == "component" and is_generated(item)
-               for item in elements):
+               for item in family_definition.family_elements(lineage, block)):
             return block
     return None
 
