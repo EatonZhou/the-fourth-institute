@@ -6,12 +6,37 @@ from concurrent.futures import Future
 from contextlib import contextmanager
 import gc
 from types import SimpleNamespace
+from unittest.mock import Mock
 import weakref
 
 import pytest
 
 from management_portal.telepus import cli, refresh_service, weixin_adapter
 from management_portal.telepus.weixin_store import WeixinStore
+
+
+def test_refresh_schedules_weixin_without_telegram_credentials(monkeypatch):
+    import concurrent.futures
+    from management_portal.telepus.telegram_client import TelegramConfigError
+
+    cleanup = Mock()
+    weixin = SimpleNamespace(
+        router=SimpleNamespace(store=SimpleNamespace(prune_expired_callback_tokens=cleanup)),
+        store=SimpleNamespace(active_actors=lambda: ['user_a']),
+        refresh=Mock(),
+    )
+    scheduler = Mock()
+    pool = Mock()
+    monkeypatch.setattr(cli, 'TelegramClient', Mock(side_effect=TelegramConfigError))
+    monkeypatch.setattr(weixin_adapter, 'WeixinAdapter', lambda: weixin)
+    monkeypatch.setattr(refresh_service, 'NotificationScheduler', lambda _: scheduler)
+    monkeypatch.setattr(concurrent.futures, 'ThreadPoolExecutor', lambda **_: pool)
+
+    assert cli.run_telegram_refresh_daemon(['--max-iterations', '1']) == 0
+    cleanup.assert_called_once_with()
+    pool.submit.assert_called_once_with(weixin.refresh, 'user_a')
+    scheduler.start.assert_called_once_with()
+    scheduler.close.assert_called_once_with()
 
 
 @pytest.mark.parametrize('interrupt', [False, True])
