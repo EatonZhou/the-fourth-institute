@@ -265,7 +265,7 @@ def test_a_model_api_in_use_by_an_execution_account_is_not_deleted():
 
     _call(execution_isa.create_model_api, **MOONSHOT)
     register_accounts({"account_id": "moonshot_direct", "provider": "provider_api", "kind": "api_profile",
-                       "config": {"api_id": "moonshot_test"}, "max_concurrency": 1})
+                       "config": {"api_id": "moonshot_test"}, "max_concurrency": 2})
     with pytest.raises(InstructionError) as error:
         _call(execution_isa.delete_model_api, api_id="moonshot_test")
     assert error.value.code == "instruction.conflict"

@@ -147,7 +147,7 @@ class SchedulerSettings:
     def configure_capacity(
         self,
         capacity_key: str,
-        limit: int,
+        limit: int | None,
         dispatch_interval_min_seconds: float,
         dispatch_interval_max_seconds: float,
         *,
@@ -158,11 +158,11 @@ class SchedulerSettings:
         clean_key = str(capacity_key or "").strip()
         if not clean_key:
             raise ValueError("capacity_key is required")
-        if type(limit) is not int:
-            raise ValueError("max_concurrency must be an integer")
-        clean_limit = limit
-        if clean_limit < 1 or clean_limit > 256:
-            raise ValueError("max_concurrency must be between 1 and 256")
+        if limit is not None:
+            if type(limit) is not int:
+                raise ValueError("max_concurrency must be an integer")
+            if not 1 <= limit <= 256:
+                raise ValueError("max_concurrency must be between 1 and 256")
         interval_min = float(dispatch_interval_min_seconds)
         interval_max = float(dispatch_interval_max_seconds)
         if not math.isfinite(interval_min) or not math.isfinite(interval_max):
@@ -205,17 +205,33 @@ class SchedulerSettings:
                 )
                 if any(threshold.get(key) != previous_threshold.get(key) for key in ("value", "unit")):
                     self.quota.exempt_running_from_threshold_change(connection, clean_key)
-            connection.execute(
-                '\n                INSERT INTO capacity_settings (\n                    capacity_key, limit_value,\n                    dispatch_interval_min_seconds,\n                    dispatch_interval_max_seconds,\n                    updated_by, updated_at\n                ) VALUES (%s, %s, %s, %s, %s, %s)\n                ON CONFLICT(capacity_key) DO UPDATE SET\n                    limit_value = excluded.limit_value,\n                    dispatch_interval_min_seconds =\n                        excluded.dispatch_interval_min_seconds,\n                    dispatch_interval_max_seconds =\n                        excluded.dispatch_interval_max_seconds,\n                    updated_by = excluded.updated_by,\n                    updated_at = excluded.updated_at\n                ',
+            initial_limit = (self.capacity.default_capacity_limits.get(clean_key, self.capacity.max_concurrency)
+                             if limit is None else limit)
+            clean_limit = connection.execute(
+                """
+                INSERT INTO capacity_settings (
+                    capacity_key, limit_value,
+                    dispatch_interval_min_seconds, dispatch_interval_max_seconds,
+                    updated_by, updated_at
+                ) VALUES (%s, %s, %s, %s, %s, %s)
+                ON CONFLICT(capacity_key) DO UPDATE SET
+                    limit_value = CASE WHEN %s THEN excluded.limit_value ELSE capacity_settings.limit_value END,
+                    dispatch_interval_min_seconds = excluded.dispatch_interval_min_seconds,
+                    dispatch_interval_max_seconds = excluded.dispatch_interval_max_seconds,
+                    updated_by = excluded.updated_by,
+                    updated_at = excluded.updated_at
+                RETURNING limit_value
+                """,
                 (
                     clean_key,
-                    clean_limit,
+                    initial_limit,
                     interval_min,
                     interval_max,
                     clean_actor,
                     updated_at,
+                    limit is not None,
                 ),
-            )
+            ).fetchone()["limit_value"]
             dispatch_state = capacity_dispatch_state(
                 connection,
                 clean_key,

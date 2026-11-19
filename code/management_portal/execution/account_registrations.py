@@ -11,6 +11,11 @@ from functools import lru_cache
 
 from psycopg.types.json import Jsonb
 
+from management_common.account_concurrency import (
+    DEFAULT_ACCOUNT_CONCURRENCY,
+    MAX_ACCOUNT_CONCURRENCY,
+    MIN_ACCOUNT_CONCURRENCY,
+)
 from management_common.domain_database import DomainDatabase
 from management_portal.hatg.contracts import InstructionError, invalid, not_found
 from datetime import datetime, timezone
@@ -128,16 +133,20 @@ def _validate(data):
             raise invalid(str(exc)) from None
     if "models" in config and (not isinstance(config["models"], list) or any(not isinstance(v, (str, dict)) for v in config["models"])):
         raise invalid("models 必须是模型数组")
-    limit = data.get("max_concurrency", 8)
-    if type(limit) is not int or not 1 <= limit <= 256:
-        raise invalid("max_concurrency 必须在 1–256 之间")
     if type(data.get("enabled", True)) is not bool:
         raise invalid("enabled 必须是 boolean")
 
 
+def _validate_concurrency(limit):
+    if type(limit) is not int or not MIN_ACCOUNT_CONCURRENCY <= limit <= MAX_ACCOUNT_CONCURRENCY:
+        raise invalid(f"max_concurrency 必须在 {MIN_ACCOUNT_CONCURRENCY}–{MAX_ACCOUNT_CONCURRENCY} 之间")
+
+
 def new_registration(data):
-    """Resolve new-account defaults once; stored registrations always have a path."""
+    """Resolve and validate settings for a new account."""
     data = dict(data)
+    data.setdefault("max_concurrency", DEFAULT_ACCOUNT_CONCURRENCY)
+    _validate_concurrency(data["max_concurrency"])
     config = data.get('config', {})
     if data.get('kind') == 'subscription_login' and isinstance(config, dict) and config.get('account_dir') in (None, ''):
         from management_common.provider_account_paths import default_account_directory
@@ -189,7 +198,7 @@ def create_registration(data, actor, *, require_existing=False):
                 VALUES (%s,%s,%s,%s,%s,%s,%s,1,%s,%s,%s,%s)
                 ON CONFLICT(account_id) DO NOTHING RETURNING *""",
                 (data["account_id"], data["provider"], data["kind"], data.get("route_id", ""),
-                 Jsonb(data.get("config", {})), data.get("max_concurrency", 8), data.get("enabled", True),
+                 Jsonb(data.get("config", {})), data["max_concurrency"], data.get("enabled", True),
                  now(), actor, now(), actor)).fetchone())
     except BaseException:
         if created is not None:
@@ -208,6 +217,8 @@ def update_registration(account_id, changes, expected_version, actor):
         if row is None:
             raise not_found("执行账号不存在")
         _check_version(account_id, row["version"], expected_version, "账号登记版本已改变")
+        if "max_concurrency" in changes:
+            _validate_concurrency(changes["max_concurrency"])
         row.update(changes)
         _validate(row)
         if row["kind"] == "subscription_login":

@@ -19,6 +19,7 @@ def test_api_registration_exposes_all_compatible_harnesses_and_preserves_existin
                     default_model='chat', protocols={'anthropic_messages': {}, 'openai_responses': {}})
     rows = {r['provider']: r for r in created['accounts']}
     assert set(rows) == {'provider_api', 'kimi', 'opencode', 'dsh', 'claude', 'codex'}
+    assert {row['max_concurrency'] for row in rows.values()} == {10}
     catalog = default_execution_accounts(tolerate_unavailable=True).runtime_catalog(include_backends=True)
     for backend in catalog['backends']:
         if backend['backend'] in rows:

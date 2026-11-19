@@ -708,7 +708,7 @@ def test_uncertain_mutation_timeout_is_not_retried(monkeypatch, tmp_path):
         makefile=lambda mode: stream,
         close=lambda: closed.append("socket"),
     )
-    monkeypatch.setattr(lineage_transport.socket, "socket", lambda *args: connection)
+    monkeypatch.setattr(socket, "socket", lambda *args: connection)
     from management_common.rpc_auth import RpcAuthenticator
     RpcAuthenticator(tmp_path / "lineage.sock")
     client = SocietyServiceClient(tmp_path / "lineage.sock")

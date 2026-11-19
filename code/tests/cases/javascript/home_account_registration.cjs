@@ -94,7 +94,7 @@ const flush = async () => { for (let i = 0; i < 10; i++) await new Promise(r => 
   assert.equal(registered.length, 1);
   assert.equal(registered[0].args.account_id, 'first-ai');
   assert.equal(registered[0].args.provider, 'codex');
-  assert.equal(registered[0].args.max_concurrency, 1);
+  assert(!('max_concurrency' in registered[0].args), 'Execution supplies the new account default');
   assert(w.document.querySelector('[data-backend-setup-status]'), 'Saving continues to the existing account setup flow');
   panel.destroy(); panel = null;
   w.PortalNav.openPermissionManagement = async () => { throw Error('navigation failed'); };

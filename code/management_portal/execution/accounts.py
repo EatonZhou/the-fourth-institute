@@ -7,6 +7,7 @@ so renaming a public account never resets saved limits or dispatch timestamps.
 from __future__ import annotations
 
 from management_portal.ai_provider_registry import AIProviderRegistry
+from management_common.account_concurrency import DEFAULT_ACCOUNT_CONCURRENCY
 
 import logging
 import threading
@@ -29,7 +30,7 @@ class ExecutionAccount:
     provider: str
     route_id: str
     capacity_key: str
-    max_concurrency: int = 8
+    max_concurrency: int = DEFAULT_ACCOUNT_CONCURRENCY
     quota_policy: str = "none"
     aliases: tuple[str, ...] = ()
     billing_account_id: str = ""

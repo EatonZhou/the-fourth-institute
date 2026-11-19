@@ -196,7 +196,7 @@ const click = text => {const b = [...window.document.querySelectorAll('button')]
   const native = calls.filter(c => c.name === 'RegisterProviderAccount').at(-1).args;
   assert.equal(native.config.default_model, 'sonnet');
   assert.deepEqual(native.config.models, [{id: 'sonnet'}]);
-  assert.equal(native.max_concurrency, 1);
+  assert(!Object.hasOwn(native, 'max_concurrency'), 'The registration service supplies the account concurrency default');
   const rowActions = [...window.document.querySelectorAll('[data-backend-account] button')].map(b => b.textContent);
   for (const removed of ['接入与测试', '停用', '启用', '编辑初始并发']) assert(!rowActions.includes(removed));
   assert(rowActions.includes('登录') && rowActions.includes('删除'));

@@ -761,7 +761,7 @@ def update_provider_account(inv: Invocation) -> dict[str, Any]:
         close_threshold = {"value": float(inv.argument("close_threshold_amount")), "unit": unit}
     settings = _client().configure_account_scheduler(
         inv.argument("account_id"),
-        int(inv.argument("max_concurrency")),
+        inv.argument("max_concurrency"),
         low,
         high,
         actor=inv.caller,

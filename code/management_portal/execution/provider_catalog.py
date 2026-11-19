@@ -8,6 +8,8 @@ from dataclasses import dataclass
 from importlib import import_module
 from typing import Any
 
+from management_common.account_concurrency import DEFAULT_ACCOUNT_CONCURRENCY
+
 from .harness_capabilities import (
     ACTIVE_TURN_INPUT,
     AUTO_COMPACT_THRESHOLD,
@@ -52,7 +54,7 @@ class AgentProvider:
     # The Provider's Backend, as ``module.Class`` (``build_backend``).
     adapter: str = ""
     runtime_package: str = ""
-    default_concurrency: int = 8
+    default_concurrency: int = DEFAULT_ACCOUNT_CONCURRENCY
     # Where a Resident's resident.md travels: ``user_prompt`` in front of the
     # turn's user message, or ``system_instructions`` with Portal's system
     # instructions (resident_execution_provider.INITIAL_INSTRUCTION_TRANSPORTS,
@@ -266,7 +268,7 @@ AGENT_PROVIDERS = {
                       options_adapter="management_portal.execution.antigravity_backend.AntigravityOptions",
                       initial_instructions_transport="system_instructions", system_context_every_turn=True,
                       harness=frozenset({PORTAL_TOOLS, NATIVE_TOOL_EVENTS, CONTEXT_USAGE_EVENTS}),
-                      upstream="google", default_concurrency=4,
+                      upstream="google",
                       system_instructions_place="ACP session 的 systemPrompt.append，恢复时完整替换",
                       credential_globs=(".gemini*",),
                       runtime_updater="management_portal.antigravity_runtime.AntigravityRuntime"),

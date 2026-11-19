@@ -189,7 +189,7 @@ def test_home_cache_http_collector_window_and_browser_notice(owner_http, monkeyp
 def test_execution_owner_capacity_preserves_independent_running_workers(tmp_path, monkeypatch, record_property):
     """降低执行账号容量保留已运行进程并阻止新任务抢占
 
-    Three separate harmless worker processes use the real temporary Execution RPC owner."""
+    Four separate harmless worker processes use the real temporary Execution RPC owner."""
     from management_portal.execution import service as execution_module
     from management_portal.execution.agent_data_store import AgentDataStore
     from tests.cases.account_registration_test_support import register_codex
@@ -208,7 +208,7 @@ def test_execution_owner_capacity_preserves_independent_running_workers(tmp_path
     preparation = ExecutionPreparation(accounts=ExecutionAccounts((CodexAccounts(account_registry=accounts),)),
                                        session_manager=SessionManager(agent_data=agent_data))
     socket_path = tmp_path / "owner.sock"
-    scheduler = Scheduler(accounts=preparation.accounts, max_concurrency=3, capacity_limits={"codex:fixture": 2}, dispatch_interval_min_seconds=0, dispatch_interval_max_seconds=0)
+    scheduler = Scheduler(accounts=preparation.accounts, max_concurrency=3, capacity_limits={"codex:fixture": 3}, dispatch_interval_min_seconds=0, dispatch_interval_max_seconds=0)
     monkeypatch.setattr(execution_module, "get_notification_publisher", lambda: SimpleNamespace(publish=lambda *args, **kwargs: None, health=lambda: {}))
     server = ExecutionServiceServer(socket_path, scheduler, instance="round6", build_id="isolated-owner", preparation=preparation, agent_data=agent_data)
     thread = threading.Thread(target=server.serve_forever, daemon=True)
@@ -234,41 +234,43 @@ def test_execution_owner_capacity_preserves_independent_running_workers(tmp_path
             client = ExecutionServiceClient(socket_path, timeout=3)
             service = ExecutionService(client=client)
             client.request("scheduler.worker.register", {"worker_id": "round6:worker-pool", "state": "active", "build_id": "isolated-owner", "pid": os.getpid(), "capabilities": ["agent_session:codex"]})
-            requests = [ExecutionRequest.new(actor="isolated-owner", agent_id=f"isolated-worker-{index}", prompt="Harmless local heartbeat loop; never sent to a Provider", service_type="agent_session", provider="codex", operation="turn", session=SessionOptions(mode="persistent", binding_id=f"fixture-r6:{index}", backend_route_id="fixture"), cwd=str(tmp_path)) for index in range(3)]
+            requests = [ExecutionRequest.new(actor="isolated-owner", agent_id=f"isolated-worker-{index}", prompt="Harmless local heartbeat loop; never sent to a Provider", service_type="agent_session", provider="codex", operation="turn", session=SessionOptions(mode="persistent", binding_id=f"fixture-r6:{index}", backend_route_id="fixture"), cwd=str(tmp_path)) for index in range(4)]
             for request in requests:
                 client.request("execution.submit", request.to_payload())
-            for ordinal in range(3):
+            for ordinal in range(4):
                 parent, child = context.Pipe()
                 worker = context.Process(target=long_task_worker, args=(str(socket_path), child, ordinal))
                 worker.start()
                 child.close()
                 workers.append(worker)
                 channels.append(parent)
-                assert receive(parent)["event"] == ("running" if ordinal < 2 else "blocked")
-            assert len({worker.pid for worker in workers}) == 3
-            service.configure_account_scheduler("fixture", 1, 0, 0, actor="isolated-owner")
-            for channel in channels[:2]:
+                assert receive(parent)["event"] == ("running" if ordinal < 3 else "blocked")
+            assert len({worker.pid for worker in workers}) == 4
+            settings = service.configure_account_scheduler("fixture", 2, 0, 0, actor="isolated-owner")
+            assert settings["max_concurrency"] == 2
+            settings = service.configure_account_scheduler("fixture", None, 0, 0, actor="isolated-owner")
+            assert settings["max_concurrency"] == 2
+            for channel in channels[:3]:
                 channel.send("probe")
                 assert receive(channel)["event"] == "alive"
             assert all(worker.is_alive() for worker in workers)
-            channels[2].send("claim")
-            assert receive(channels[2])["event"] == "blocked"
-            channels[0].send("release")
-            assert receive(channels[0])["event"] == "completed"
-            channels[2].send("claim")
-            assert receive(channels[2])["event"] == "blocked"
-            channels[1].send("release")
-            assert receive(channels[1])["event"] == "completed"
-            channels[2].send("claim")
-            assert receive(channels[2])["event"] == "running"
-            channels[2].send("release")
-            assert receive(channels[2])["event"] == "completed"
+            waiting = channels[3]
+            for running in channels[:2]:
+                waiting.send("claim")
+                assert receive(waiting)["event"] == "blocked"
+                running.send("release")
+                assert receive(running)["event"] == "completed"
+            waiting.send("claim")
+            assert receive(waiting)["event"] == "running"
+            for running in channels[2:]:
+                running.send("release")
+                assert receive(running)["event"] == "completed"
             for worker in workers:
                 worker.join(timeout=5)
                 assert worker.exitcode == 0
             for request in requests:
                 assert client.request("execution.status", {"execution_id": request.execution_id, "actor": "isolated-owner"})["status"] == "completed"
-            record_property("owner_evidence", json.dumps({"processes": [worker.pid for worker in workers], "parent_pid": os.getpid(), "logical_active_worker_pools": 1, "events": received, "capacity_change": [2, 1], "provider_executions": 0, "all_completed": True}))
+            record_property("owner_evidence", json.dumps({"processes": [worker.pid for worker in workers], "parent_pid": os.getpid(), "logical_active_worker_pools": 1, "events": received, "capacity_change": [3, 2], "provider_executions": 0, "all_completed": True}))
         finally:
             for worker in workers:
                 if worker.is_alive():

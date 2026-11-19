@@ -215,6 +215,31 @@ def test_activation_schedules_recovery_and_switches_while_execution_exists(monke
     assert calls == ["kimi"]
 
 
+def test_codex_runtime_selection_keeps_existing_processes(tmp_path):
+    """Codex 仅更新下次启动的入口，不查询或重启当前账号进程。"""
+    from types import SimpleNamespace
+    from unittest.mock import Mock
+
+    staged = tmp_path / "next"
+    staged.mkdir()
+    link = tmp_path / "current"
+    controller = Mock()
+    runtime = SimpleNamespace(
+        service_control=lambda: controller,
+        activation_link=lambda: link,
+        link_target=lambda root: root,
+        account_processes=Mock(side_effect=AssertionError("must not read active Codex accounts")),
+        restart_account_process=Mock(),
+        ensure_ready=Mock(),
+    )
+    assert updates._switch_runtime("codex", runtime, staged, prepare=True)
+    assert link.resolve() == staged.resolve()
+    assert controller.mock_calls == []
+    runtime.account_processes.assert_not_called()
+    runtime.restart_account_process.assert_not_called()
+    runtime.ensure_ready.assert_not_called()
+
+
 def test_check_refreshes_pending_version_before_activation(monkeypatch, tmp_path):
     """更新检查在激活前把待激活运行时刷新到新发布的版本"""
     _isolated(monkeypatch, tmp_path)

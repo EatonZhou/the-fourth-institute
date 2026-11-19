@@ -985,7 +985,7 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
         config.api_id = value("api_id");
         if (!config.api_id) return;
       }
-      const args = {account_id: id.value.trim(), provider: provider.value, kind: kind.value, config, max_concurrency: 1};
+      const args = {account_id: id.value.trim(), provider: provider.value, kind: kind.value, config};
       if (kind.value === "subscription_login" && reuseProviders.has(provider.value)) args.reuse_existing = true;
       void run(async () => {
         await execute("RegisterProviderAccount", args);

@@ -64,8 +64,8 @@ def read_input_diagnostics(*, actor: str, resident_id: str, message_id: str) -> 
     from . import execution_client
     from .state_store import get_lineage_data_store
 
-    # The Execution RPC resolves and authorizes the association independently.
-    # No original execution actor or external execution ID crosses this port.
+    # Execution asks Society for the current association before reading its own
+    # facts. No original execution actor or caller-supplied execution ID crosses.
     result = execution_client.service().input_diagnostics(
         actor=actor, resident_id=resident_id, message_id=message_id,
     )

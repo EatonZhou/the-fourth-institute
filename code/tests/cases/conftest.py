@@ -291,10 +291,9 @@ def absent_services_fail_at_once(isolate_portal_databases, request, monkeypatch)
     del isolate_portal_databases  # set up first, so it is torn down after monkeypatch
     if request.node.get_closest_marker("service_restart_wait"):
         return
-    from management_common import service_socket
+    from management_common import service_socket, society_rpc_client
     from management_portal.execution import transport as execution_transport
     from management_portal.hatg import socket_rpc
-    from management_portal.society_service import transport as lineage_transport
     from management_portal.resources import transport as resource_transport
 
     original = service_socket.connect_service
@@ -302,7 +301,7 @@ def absent_services_fail_at_once(isolate_portal_databases, request, monkeypatch)
     def connect_at_once(paths, *, timeout, restart_wait=0.0):
         return original(paths, timeout=timeout, restart_wait=0.0)
 
-    for module in (execution_transport, lineage_transport, resource_transport, socket_rpc):
+    for module in (execution_transport, society_rpc_client, resource_transport, socket_rpc):
         monkeypatch.setattr(module, "connect_service", connect_at_once)
 
 

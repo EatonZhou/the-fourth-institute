@@ -14,7 +14,8 @@ class Operation:
     Other scopes select an aggregate from an explicitly named bound argument.
     Notifications always originate in committed domain writes, never RPC inference.
     ``in_process`` reads run in the service process instead of the read pool,
-    for reads that use process-wide resources such as the embedding model.
+    for reads that use process-wide resources or complete a cross-service call
+    initiated by a read worker.
     """
 
     mode: str
@@ -56,6 +57,11 @@ DOMAIN_OPERATIONS = {
         """),
         (Operation('read', 'resident', implementation='management_portal.society_service.resident_policy_facts', in_process=True), """
             is_resident_input_open
+        """),
+        # GetInputState may wait for Execution from a Society read worker.
+        # Its authorization and association lookups cannot wait for another worker.
+        (Operation('read', 'resident', implementation='management_portal.society_service.resident_input_diagnostics', in_process=True), """
+            resolve_input_execution
         """),
         (Operation('read', 'resident', 'resident', 'resident_id', implementation='management_portal.society_service.resident_directory_domain'), """
             get_resident_session_projection

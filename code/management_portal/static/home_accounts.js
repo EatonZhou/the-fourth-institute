@@ -333,12 +333,9 @@
       const edit = {minimum, maximum, pending: true};
       accountIntervalEdits.set(id, edit); renderAccountDetails();
       try {
-        const latest = await window.PortalInstructionClient.execute('ListProviderAccounts', {account_id: id});
-        const route = latest.accounts?.find(row => row.account_id === id);
-        if (!Number.isInteger(route?.max_concurrency)) throw new Error(window.PortalI18n.t('执行账号设置不可用，请刷新后重试'));
-        // Threshold arguments are omitted: the official owner retains them unchanged.
+        // The account keeps its current concurrency and Close threshold.
         const result = await window.PortalInstructionClient.execute('UpdateProviderAccount', {
-          account_id: id, max_concurrency: route.max_concurrency,
+          account_id: id,
           dispatch_interval_min_seconds: minimum, dispatch_interval_max_seconds: maximum,
         }, {idempotencyKey: `account-interval:${id}:${globalThis.PortalUIPrimitives.randomUUID()}`});
         for (const account of executionAccounts(currentAgentStatusData())) {
@@ -360,7 +357,7 @@
         const pending = accountSettingsPending(row.account_id);
         const label = account.details_scope === "model_api" ? row.account_id : window.PortalI18n.t("最大并行数");
         return window.PortalI18n.html`<form data-account-concurrency="${esc(row.account_id)}">
-          <label><span>${esc(label)}</span><input type="number" name="max_concurrency" min="1" max="256" step="1" required aria-label="${esc(window.PortalI18n.text`${row.account_id} 最大并行数`)}" value="${esc(edit?.value ?? (known ? row.max_concurrency : ""))}" ${!currentCanSetScheduler() || !known || pending ? "disabled" : ""}></label>
+          <label><span>${esc(label)}</span><input type="number" name="max_concurrency" min="2" max="256" step="1" required aria-label="${esc(window.PortalI18n.text`${row.account_id} 最大并行数`)}" value="${esc(edit?.value ?? (known ? row.max_concurrency : ""))}" ${!currentCanSetScheduler() || !known || pending ? "disabled" : ""}></label>
           ${currentCanSetScheduler() ? window.PortalI18n.html`<button type="submit" class="portalButton is-compact" ${!known || pending ? "disabled" : ""}>${edit?.pending ? window.PortalI18n.t("保存中…") : window.PortalI18n.t("保存")}</button>` : ""}
           ${edit?.feedback ? window.PortalI18n.html`<p role="${edit.error ? "alert" : "status"}">${esc(edit.feedback)}</p>` : !known ? window.PortalI18n.markup('<p role="status">并行数暂不可用，请刷新</p>') : ""}
         </form>`;
@@ -371,7 +368,7 @@
       const id = form.dataset.accountConcurrency;
       if (!currentCanSetScheduler() || accountSettingsPending(id) || !form.reportValidity()) return;
       const value = Number(form.elements.max_concurrency.value);
-      if (!Number.isInteger(value) || value < 1 || value > 256) return;
+      if (!Number.isInteger(value) || value < 2 || value > 256) return;
       const edit = {value, pending: true, feedback: "", error: false};
       accountConcurrencyEdits.set(id, edit);
       renderAccountDetails();
@@ -463,9 +460,9 @@
         const threshold = route?.close_threshold;
         if (!threshold?.supported || !["percent", "balance"].includes(metric) || threshold.metric !== metric || threshold.unit !== unit) throw new Error("阈值单位不可用或已变化，请刷新后重新输入");
         if (allowCredits !== undefined && (route.credits_supported !== true || route.provider !== "codex" || route.kind !== "subscription_login")) throw new Error("当前账号不支持 credits，请刷新后重试");
-        if (!Number.isInteger(route.max_concurrency) || ![route.dispatch_interval_min_seconds, route.dispatch_interval_max_seconds].every(Number.isFinite)) throw new Error("执行账号设置不可用，请刷新后重试");
+        if (![route.dispatch_interval_min_seconds, route.dispatch_interval_max_seconds].every(Number.isFinite)) throw new Error("执行账号设置不可用，请刷新后重试");
         const result = await window.PortalInstructionClient.execute("UpdateProviderAccount", {
-          account_id: id, max_concurrency: route.max_concurrency,
+          account_id: id,
           dispatch_interval_min_seconds: route.dispatch_interval_min_seconds,
           dispatch_interval_max_seconds: route.dispatch_interval_max_seconds,
           [metric === "percent" ? "close_threshold_percent" : "close_threshold_amount"]: value,

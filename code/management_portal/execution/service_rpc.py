@@ -9,7 +9,10 @@ from __future__ import annotations
 import logging
 from typing import Any, Callable
 
+from management_common.account_concurrency import MAX_ACCOUNT_CONCURRENCY, MIN_ACCOUNT_CONCURRENCY
 from management_common.format_tags import schema_matches
+from management_common import society_rpc_client
+from management_common.operation_errors import OperationError
 
 from . import provider_default_efforts
 from .activity_redaction import redact_sensitive_mapping
@@ -192,14 +195,20 @@ def execution_generation_source(server: Any, params: dict[str, Any]) -> Any:
 
 def execution_input_diagnostics(server: Any, params: dict[str, Any]) -> Any:
     """Reauthorize the requester and bind metadata to an actually admitted input."""
-    from management_portal.society_service.resident_input_diagnostics import resolve_input_execution
-
     actor = required(params, "actor")
     resident_id = required(params, "resident_id")
     message_id = required(params, "message_id")
     if set(params) - {"actor", "resident_id", "message_id"}:
         raise ValueError("Input diagnostics accepts no execution selector")
-    association = resolve_input_execution(actor=actor, resident_id=resident_id, message_id=message_id)
+    try:
+        association = society_rpc_client.resolve_input_execution(
+            actor=actor, resident_id=resident_id, message_id=message_id,
+        )
+    except OperationError as exc:
+        reason = {"lineage.busy": "society_timeout", "lineage.unavailable": "society_unavailable"}.get(exc.code)
+        if reason is None:
+            raise
+        association = {"available": False, "reason": reason}
     if not association.get("available"):
         return {"schema": "tfi.execution-input-diagnostics.v1", **association}
     resident_id = required(association, "resident_id")
@@ -517,15 +526,19 @@ def forget_quota_overrides(server: Any, params: dict[str, Any]) -> Any:
 def configure_capacity(server: Any, params: dict[str, Any]) -> Any:
     account = server.accounts.get(required(params, "account_id"))
     for key in (
-        "max_concurrency",
         "dispatch_interval_min_seconds",
         "dispatch_interval_max_seconds",
     ):
         if key not in params:
             raise ValueError(f"{key} is required")
+    limit = params.get("max_concurrency")
+    if "max_concurrency" in params and (
+        type(limit) is not int or not MIN_ACCOUNT_CONCURRENCY <= limit <= MAX_ACCOUNT_CONCURRENCY
+    ):
+        raise ValueError(f"max_concurrency must be an integer from {MIN_ACCOUNT_CONCURRENCY} to {MAX_ACCOUNT_CONCURRENCY}")
     setting = server.scheduler.configure_capacity(
         account.capacity_key,
-        params.get("max_concurrency"),
+        limit,
         float(params.get("dispatch_interval_min_seconds") or 0),
         float(params.get("dispatch_interval_max_seconds") or 0),
         actor=required(params, "actor"),

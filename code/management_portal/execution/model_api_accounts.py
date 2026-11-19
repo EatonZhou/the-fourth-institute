@@ -49,7 +49,7 @@ def ensure_routes(entry, actor):
                 raise ValueError(f"API route identity already occupied: {name}")
             row = account_registrations.create_registration({
                 "account_id": name, "provider": provider, "kind": "api_profile",
-                "config": {"api_id": api_id}, "max_concurrency": 1,
+                "config": {"api_id": api_id},
             }, actor)
             if row is None:
                 raise ValueError(f"API route registration changed concurrently: {name}")

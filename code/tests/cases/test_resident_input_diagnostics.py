@@ -131,6 +131,7 @@ def test_owner_port_does_not_reuse_original_execution_actor(boundary, monkeypatc
 
 
 def test_isa_to_execution_reauthorizes_and_only_returns_associated_facts(boundary, monkeypatch):
+    from management_common import society_rpc_client
     from management_portal.execution.service_rpc import execution_input_diagnostics
     from management_portal.society_service import execution_client, state_store
     from unittest.mock import Mock
@@ -146,6 +147,7 @@ def test_isa_to_execution_reauthorizes_and_only_returns_associated_facts(boundar
     )
     monkeypatch.setattr(execution_client, "service", lambda: SimpleNamespace(
         input_diagnostics=lambda **params: execution_input_diagnostics(server, params)))
+    monkeypatch.setattr(society_rpc_client, "resolve_input_execution", diagnostics.resolve_input_execution)
     submission = Mock(return_value={"current_job_matches": False})
     monkeypatch.setattr(state_store, "get_lineage_data_store", lambda: SimpleNamespace(
         executions=SimpleNamespace(input_execution_diagnostics=submission)))
@@ -253,18 +255,36 @@ def test_reserve_diagnostics_exposes_binding_mismatch_without_migration_body(mon
     assert migration["pending_restart"] == {"secret": "private restart"}
 
 
-def test_reserve_diagnostics_account_read_failure_stays_unknown(monkeypatch):
+@pytest.mark.parametrize(("error_kind", "level", "label"), [
+    ("unavailable", "WARNING", "unavailable"),
+    ("timeout", "WARNING", "timeout"),
+    ("response_unknown", "WARNING", "response_unknown"),
+    ("unexpected", "ERROR", "RuntimeError"),
+])
+def test_reserve_diagnostics_account_read_failure_stays_unknown(monkeypatch, caplog, error_kind, level, label):
+    from management_portal.execution.transport import ExecutionResponseUnknown, ExecutionServiceUnavailable
     from management_portal.society_service import family_quota, resident_default_backend
 
     monkeypatch.setattr(family_quota, "role_migration", lambda _: {})
     monkeypatch.setattr(family_quota, "auto_migration_enabled", lambda _: True)
     monkeypatch.setattr(family_quota, "override_enabled", lambda _: False)
     monkeypatch.setattr(resident_default_backend, "selection_mode", lambda _: "fixed")
-    monkeypatch.setattr(family_quota.execution_port, "service", Mock(side_effect=RuntimeError("private transport")))
+    error = {
+        "unavailable": ExecutionServiceUnavailable("private transport"),
+        "timeout": ExecutionResponseUnknown("private transport"),
+        "response_unknown": ExecutionResponseUnknown("private disconnect"),
+        "unexpected": RuntimeError("private transport"),
+    }[error_kind]
+    if error_kind == "timeout":
+        error.__cause__ = TimeoutError("private timeout payload")
+    monkeypatch.setattr(family_quota.execution_port, "service", Mock(side_effect=error))
     result = family_quota.admission_diagnostics({})
     assert result["account_found"] == result["reserve_remaining"] == "unknown"
     assert result["migration_status"] == "none"
     assert "private" not in str(result)
+    records = [record for record in caplog.records if record.name == family_quota.__name__]
+    assert len(records) == 1 and records[0].levelname == level
+    assert label in records[0].getMessage() and "private" not in caplog.text
 
 
 def test_current_input_diagnostics_reads_reserve_gate_without_starting_work(boundary, monkeypatch):

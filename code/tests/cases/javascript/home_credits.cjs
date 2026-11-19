@@ -30,7 +30,7 @@ const toggle=()=>form().elements.allow_credits;
  toggle().checked=true;toggle().focus();toggle().dispatchEvent(new dom.window.Event('input',{bubbles:true}));
  context.renderAccountDetails();assert.equal(toggle().checked,true);assert.equal(document.activeElement,toggle());
  await context.saveAccountThreshold(form());
- assert.equal(calls[0].name,'ListProviderAccounts');assert.equal(calls[1].args.allow_credits,true);assert.equal(calls[1].args.max_concurrency,7);
+ assert.equal(calls[0].name,'ListProviderAccounts');assert.equal(calls[1].args.allow_credits,true);assert(!('max_concurrency' in calls[1].args));
  assert.equal(calls[1].args.close_threshold_percent,0);assert.equal(account.allow_credits,true);
  assert(!calls.some(c=>/Intake|OpenResident/.test(c.name)),'saving never opens manually closed residents');
  toggle().checked=false;toggle().dispatchEvent(new dom.window.Event('input',{bubbles:true}));fail=true;

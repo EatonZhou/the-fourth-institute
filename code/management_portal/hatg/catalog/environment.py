@@ -1,6 +1,11 @@
 """Runtime environment instructions (decision_4527448ad07f)."""
 from __future__ import annotations
 
+from management_common.account_concurrency import (
+    DEFAULT_ACCOUNT_CONCURRENCY,
+    MAX_ACCOUNT_CONCURRENCY,
+    MIN_ACCOUNT_CONCURRENCY,
+)
 from management_portal.execution.service_settings import RETENTION_DAYS
 
 from ..declarations import FIXED, InstructionDeclaration as D, P, R
@@ -176,13 +181,15 @@ DECLARATIONS = (
         P("route_id", description="执行路由 ID；省略时由账号 ID 得出（codex 去掉 codex_ 前缀），provider_api 与 kimi 留空"),
         P("config", "object", "Provider 专属设置：api_profile 为 api_id；账号选择由 Backend 角色的 account_selection 管理；"
           "claude 为 models、default_model；subscription_login 的 account_dir 可省略或留空，由系统按实例/provider/account_id 生成并创建默认目录；显式路径须是主机规范绝对路径，允许尚未创建"),
-        P("max_concurrency", "integer", "并发上限，默认 8", minimum=1, maximum=256),
+        P("max_concurrency", "integer", f"并发上限，默认 {DEFAULT_ACCOUNT_CONCURRENCY}",
+          minimum=MIN_ACCOUNT_CONCURRENCY, maximum=MAX_ACCOUNT_CONCURRENCY),
         P("reuse_existing", "boolean", "默认 false；为 true 时仅复用显式指定的现有订阅登录目录，禁止空值落到默认新建目录"),
         P("enabled", "boolean", "是否启用，默认 true"), P("secret", description="api_profile 的一次性密钥"),
     ), (R("registration", "object", REGISTRATION),), mutates=True, owner="execution"),
     _d("UpdateProviderAccountRegistration", FIXED, "修改账号登记；调用信封的 expected_version 给出登记版本时按它比较，省略时直接更新。调度设置仍由 UpdateProviderAccount 修改。", (
         R("account_id", description="执行账号 ID"),
-        R("changes", "object", "要修改的登记字段：config、route_id、enabled、max_concurrency"),
+        R("changes", "object", "要修改的登记字段：config、route_id、enabled、"
+          f"max_concurrency（{MIN_ACCOUNT_CONCURRENCY}–{MAX_ACCOUNT_CONCURRENCY}）"),
     ), (R("registration", "object", "修改后的" + REGISTRATION),), mutates=True, target="account_id", owner="execution"),
     _d("DeleteProviderAccount", FIXED, "删除空闲账号登记及其服务实例，保留主机账号目录。", (R("account_id", description="执行账号 ID"),),
        (R("account_id", description="被删除的执行账号"),), mutates=True, target="account_id", owner="execution"),
@@ -208,7 +215,8 @@ DECLARATIONS = (
         R("next_cursor", description="还有后续记录时交回 cursor 读下一页；读完时为空")), owner="execution"),
     _d("UpdateProviderAccount", FIXED, "修改一个执行账号的调度设置：并发上限、相邻派发间隔与暂停阈值。", (
         R("account_id", description="执行账号 ID"),
-        R("max_concurrency", "integer", "并发上限", minimum=1, maximum=256),
+        P("max_concurrency", "integer", "并发上限，省略保留当前值",
+          minimum=MIN_ACCOUNT_CONCURRENCY, maximum=MAX_ACCOUNT_CONCURRENCY),
         R("dispatch_interval_min_seconds", "number", "相邻派发的最小间隔秒数，不能大于最大间隔", minimum=0, maximum=3600),
         R("dispatch_interval_max_seconds", "number", "相邻派发的最大间隔秒数", minimum=0, maximum=3600),
         P("close_threshold_percent", "number", "额度型账号：剩余额度 ≤ 该百分比时暂停账号上的自动工作", minimum=0, maximum=100),

@@ -6,7 +6,7 @@ const tag = (parts,...args) => parts.reduce((s,p,i) => s+p+(args[i]??''),'');
 const route = (id, limit) => ({account_id:id,max_concurrency:limit,dispatch_interval_min_seconds:2,dispatch_interval_max_seconds:6,
   close_threshold:{metric:id==='subscription'?'percent':'balance',unit:id==='subscription'?'%':'CNY',value:2,supported:true}});
 const account = {account_id:'api',details_scope:'model_api',execution_accounts:[route('direct',4),route('harness',8)]};
-const data = {accounts:[account,route('subscription',3)]}, calls=[];
+const data = {accounts:[account,route('subscription',1)]}, calls=[];
 let canWrite=true, reject=false, release, changedCurrency=false;
 const context=vm.createContext({document,URL,console,AbortController,
   window:{PortalI18n:{t:x=>x,html:tag,text:tag,markup:x=>x},PortalUI:{errorMessage:(_,e)=>e.message},
@@ -38,11 +38,12 @@ const flush=()=>new Promise(resolve=>setImmediate(resolve));
   context.renderAccountDetails();
   assert.equal(form('direct').elements.max_concurrency.value,'4');
   assert.equal(form('harness').elements.max_concurrency.value,'8');
+  assert.equal(form('harness').elements.max_concurrency.min,'2');
   input('harness','11');
   context.refreshAccountQuotaWindows();
   assert.equal(form('harness').elements.max_concurrency.value,'11');
   assert.equal(document.activeElement,form('harness').elements.max_concurrency,'polling preserves draft and focus');
-  for(const invalid of ['','0','1.5','257']) {input('harness',invalid);await context.saveAccountConcurrency(form('harness'));}
+  for(const invalid of ['','0','1','1.5','257']) {input('harness',invalid);await context.saveAccountConcurrency(form('harness'));}
   assert.equal(calls.length,0,'invalid limits never send a request');
   input('harness','11');
   const saving=context.saveAccountConcurrency(form('harness'));
@@ -65,8 +66,8 @@ const flush=()=>new Promise(resolve=>setImmediate(resolve));
   assert.equal(calls.length,prior);assert.match(interval('harness').textContent,/最小派发间隔不能大于/);
   setInterval('0','0');const savingInterval=context.saveAccountInterval(interval('harness'));await flush();
   assert(form('harness').elements.max_concurrency.disabled);
-  await context.saveAccountInterval(interval('harness'));assert.equal(calls.length,prior+2);
-  assert.deepEqual(JSON.parse(JSON.stringify(calls.at(-1).args)),{account_id:'harness',max_concurrency:4,dispatch_interval_min_seconds:0,dispatch_interval_max_seconds:0});
+  await context.saveAccountInterval(interval('harness'));assert.equal(calls.length,prior+1);
+  assert.deepEqual(JSON.parse(JSON.stringify(calls.at(-1).args)),{account_id:'harness',dispatch_interval_min_seconds:0,dispatch_interval_max_seconds:0});
   release();await savingInterval;
   assert.equal(account.execution_accounts[1].close_threshold.value,2);
   assert.equal(interval('harness').elements.minimum.value,'0');
@@ -82,7 +83,7 @@ const flush=()=>new Promise(resolve=>setImmediate(resolve));
   const count=calls.length;await context.saveAccountConcurrency(form('direct'));assert.equal(calls.length,count);
   canWrite=true;context.accountDetails.accountId='subscription';context.renderAccountDetails();
   assert.equal(document.querySelectorAll('[data-account-concurrency]').length,1);
-  assert.equal(form('subscription').elements.max_concurrency.value,'3');
+  assert.equal(form('subscription').elements.max_concurrency.value,'1');
   reject=false;
   assert.equal(threshold('subscription').elements.close_threshold.value,'2');
   assert.equal(threshold('subscription').elements.close_threshold.max,'100');
@@ -100,8 +101,9 @@ const flush=()=>new Promise(resolve=>setImmediate(resolve));
   await context.saveAccountConcurrency(form('subscription'));
   await context.saveAccountThreshold(threshold('subscription'));
   assert.equal(calls.length,countBefore+2,'pending threshold save is deduplicated');
-  assert.deepEqual(JSON.parse(JSON.stringify(calls.at(-1).args)),{account_id:'subscription',max_concurrency:4,dispatch_interval_min_seconds:9,dispatch_interval_max_seconds:12,close_threshold_percent:0});
+  assert.deepEqual(JSON.parse(JSON.stringify(calls.at(-1).args)),{account_id:'subscription',dispatch_interval_min_seconds:9,dispatch_interval_max_seconds:12,close_threshold_percent:0});
   release();await pending;
+  assert.equal(form('subscription').elements.max_concurrency.value,'1');
   assert.equal(threshold('subscription').elements.close_threshold.value,'0','zero disables protection without defaulting back to two');
   assert.match(threshold('subscription').textContent,/已保存/);
   context.accountDetails.accountId='api';context.renderAccountDetails();

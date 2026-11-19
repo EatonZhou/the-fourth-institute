@@ -2,16 +2,14 @@ from __future__ import annotations
 
 from .errors import LineageConflictError, SocietyServiceBusy, SocietyServiceUnavailable
 
-import json
-import secrets
-import socket
 from collections.abc import Mapping as MappingABC
 from pathlib import Path
 from typing import Any
 
-from management_common.service_socket import SERVICE_RESTART_WAIT_SECONDS, connect_service
+from management_common.operation_errors import OperationError
+from management_common.service_socket import SERVICE_RESTART_WAIT_SECONDS
+from management_common.society_rpc_client import request_society, society_service_socket
 
-from .config import society_service_socket
 from .contracts import DOMAIN_METHODS
 
 
@@ -66,59 +64,14 @@ class SocietyServiceClient:
         timeout: float | None = None,
         restart_wait: float = SERVICE_RESTART_WAIT_SECONDS,
     ) -> Any:
-        request_id = f"society-service-{secrets.token_hex(10)}"
-        payload = {
-            "id": request_id,
-            "method": str(method or ""),
-            "params": self._json_value(params or {}),
-        }
-        connection: socket.socket | None = None
-        stream = None
         try:
-            try:
-                connection, _path = connect_service(
-                    self.socket_path,
-                    timeout=self.timeout if timeout is None else max(0.1, float(timeout)),
-                    restart_wait=restart_wait,
-                )
-            except OSError as exc:
-                raise SocietyServiceUnavailable(
-                    f"SocietyService unavailable at {self.socket_path}: {exc}",
-                    commit_state="not_committed", retryable=True,
-                ) from exc
-            from management_common.rpc_auth import request_auth
-
-            payload["auth"] = request_auth(payload["method"], payload["params"], socket_path=self.socket_path)
-            connection.sendall(
-                json.dumps(payload, ensure_ascii=False, separators=(",", ":")).encode(
-                    "utf-8"
-                )
-                + b"\n"
+            response = request_society(
+                self.socket_path, str(method or ""), self._json_value(params or {}),
+                timeout=self.timeout if timeout is None else max(0.1, float(timeout)),
+                restart_wait=restart_wait,
             )
-            stream = connection.makefile("rb")
-            raw = stream.readline()
-            if not raw:
-                raise SocietyServiceUnavailable(
-                    "SocietyService closed the connection without a response"
-                )
-            response = json.loads(raw)
-        except socket.timeout as exc:
-            raise SocietyServiceBusy(
-                f"SocietyService busy at {self.socket_path}: {exc}"
-            ) from exc
-        except (OSError, json.JSONDecodeError) as exc:
-            raise SocietyServiceUnavailable(
-                f"SocietyService unavailable at {self.socket_path}: {exc}"
-            ) from exc
-        finally:
-            if stream is not None:
-                stream.close()
-            if connection is not None:
-                connection.close()
-        if not isinstance(response, dict) or response.get("id") != request_id:
-            raise SocietyServiceUnavailable(
-                "SocietyService returned an invalid response envelope"
-            )
+        except OperationError as exc:
+            self._raise_remote_error(exc.failure_payload())
         if not response.get("ok"):
             self._raise_remote_error(response.get("error"))
         return response.get("result")

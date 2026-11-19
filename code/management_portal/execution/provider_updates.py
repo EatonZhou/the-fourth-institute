@@ -601,8 +601,8 @@ def _activate(provider: str, runtime: ProviderRuntime, root: Path, *, prepare=Fa
 
 
 def _prepare_execution_recovery(provider):
-    from management_portal.society_service import SocietyServiceClient
-    return SocietyServiceClient(timeout=30).resident.prepare_provider_runtime_update(
+    from management_common.society_rpc_client import prepare_provider_runtime_update
+    return prepare_provider_runtime_update(
         provider=provider, update_id=uuid.uuid4().hex,
     )
 

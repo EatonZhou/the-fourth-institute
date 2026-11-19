@@ -10,6 +10,7 @@ from __future__ import annotations
 
 from .domain_ports import resident_domain_port
 from management_portal.execution.account_selection_contract import pinned_quota
+from management_portal.execution.transport import ExecutionResponseUnknown, ExecutionServiceUnavailable
 
 import hashlib
 import logging
@@ -81,7 +82,17 @@ def admission_diagnostics(record: dict[str, Any]) -> dict[str, Any]:
     }
     try:
         accounts = execution_port.service().accounts().get("accounts") or []
-    except Exception:
+    except (ExecutionServiceUnavailable, ExecutionResponseUnknown, TimeoutError) as exc:
+        if isinstance(exc, TimeoutError) or isinstance(exc.__cause__, TimeoutError):
+            reason = "timeout"
+        elif isinstance(exc, ExecutionServiceUnavailable):
+            reason = "unavailable"
+        else:
+            reason = "response_unknown"
+        logging.getLogger(__name__).warning("Reserve diagnostics account read failed: %s", reason)
+        return result
+    except Exception as exc:
+        logging.getLogger(__name__).error("Reserve diagnostics account read raised %s", type(exc).__name__)
         return result
     account = resident_account(record, accounts)
     result["account_found"] = bool(account)

@@ -61,6 +61,26 @@ def test_accounts_use_same_capacity_interval_and_postgres_settings():
         server.dispatch("scheduler.capacity.configure", {"account_id": "missing"})
 
 
+def test_account_scheduler_update_preserves_legacy_limit_unless_explicitly_changed():
+    accounts = ExecutionAccounts((Adapter(),))
+    scheduler = Scheduler(accounts=accounts)
+    server = object.__new__(ExecutionServiceServer)
+    server.accounts, server.scheduler = accounts, scheduler
+    arguments = {
+        "account_id": "test_alpha", "actor": "admin",
+        "dispatch_interval_min_seconds": 3, "dispatch_interval_max_seconds": 7,
+    }
+    omitted = server.dispatch("scheduler.capacity.configure", arguments)
+    assert omitted["max_concurrency"] == 1  # A legacy registration with no scheduler override.
+    with pytest.raises(ValueError, match="max_concurrency"):
+        server.dispatch("scheduler.capacity.configure", {**arguments, "max_concurrency": 1})
+    raised = server.dispatch("scheduler.capacity.configure", {**arguments, "max_concurrency": 2})
+    assert raised["max_concurrency"] == 2
+    retained = server.dispatch("scheduler.capacity.configure", {**arguments, "dispatch_interval_min_seconds": 5})
+    assert retained["max_concurrency"] == 2
+    assert retained["dispatch_interval_min_seconds"] == 5
+
+
 def test_api_and_native_provider_share_the_same_account_concurrency():
     """同一账号的 API 补全与原生 Provider 轮次共享并发上限
 
@@ -287,7 +307,8 @@ def test_api_completions_obey_saved_account_capacity_interval_and_close_threshol
     for key in ("api_a", "api_b"):
         scheduler.update_account_quota(key, {"status": "available", "complete": True,
             "remaining_balance": 10, "currency": "USD", "observed_at": time.time(), "max_age_seconds": 120})
-        server.dispatch("scheduler.capacity.configure", {"account_id": key, "max_concurrency": 1,
+        scheduler.configure_capacity(f"account:{key}", 1, 0, 0, actor="legacy-fixture")
+        server.dispatch("scheduler.capacity.configure", {"account_id": key,
             "dispatch_interval_min_seconds": 0, "dispatch_interval_max_seconds": 0,
             "close_threshold": {"value": 0, "unit": "USD"}, "actor": "admin"})
     for key in ("api_a", "api_a", "api_b"):
@@ -352,7 +373,7 @@ def test_configuration_preserves_native_routes_and_does_not_invent_missing_profi
     lookup = Mock(side_effect=ValueError("unavailable or disabled profile"))
     monkeypatch.setattr(shared_ai_provider_registry, "get", lookup)
     register_accounts({"config": {"account_dir": str(tmp_path / "accounts" / "test_alpha")}, "account_id": "test_alpha", "provider": "claude", "kind": "subscription_login",
-                       "route_id": "test_alpha", "enabled": enabled, "max_concurrency": 1})
+                       "route_id": "test_alpha", "enabled": enabled, "max_concurrency": 2})
     accounts = ExecutionAccounts((Adapter(),))
     assert accounts.configuration("claude", "test_alpha") == {
         "account_id": "test_alpha", "provider": "claude", "backend_route_id": "test_alpha",
@@ -383,7 +404,7 @@ def test_registered_backend_catalog_provides_accounts_without_common_layer_chang
 def test_a_dsh_route_runs_as_many_turns_at_once_as_claude_code_and_kimi_code():
     """DSH 路线的默认并发与 Claude Code、Kimi Code 一致
 
-    DSH 每个会话有独立进程；路线账号默认并发为 8，与 Claude Code、Kimi Code 相同，不再让整个 Portal 同时只运行一个 DSH 轮次。
+    DSH 每个会话有独立进程；路线账号默认并发为 10，与 Claude Code、Kimi Code 相同。
 
     :design: decision_276105b5d67b
     """
@@ -397,7 +418,7 @@ def test_a_dsh_route_runs_as_many_turns_at_once_as_claude_code_and_kimi_code():
                        "route_id": "deepseek", "config": {"api_id": DEEPSEEK_PRIMARY["id"]}})
     accounts = ConfiguredAccounts(AGENT_PROVIDERS["dsh"]).accounts()
     assert accounts and {account.max_concurrency for account in accounts} == {
-        AGENT_PROVIDERS["claude"].default_concurrency, AGENT_PROVIDERS["kimi"].default_concurrency} == {8}
+        AGENT_PROVIDERS["claude"].default_concurrency, AGENT_PROVIDERS["kimi"].default_concurrency} == {10}
 
 
 @pytest.mark.parametrize("limit", [True, 1.5, 0, 257])

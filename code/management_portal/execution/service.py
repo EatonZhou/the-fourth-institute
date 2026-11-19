@@ -266,7 +266,7 @@ class ExecutionService:
     def configure_account_scheduler(
         self,
         account_id: str,
-        max_concurrency: int,
+        max_concurrency: int | None,
         dispatch_interval_min_seconds: float,
         dispatch_interval_max_seconds: float,
         *,
@@ -278,7 +278,7 @@ class ExecutionService:
             "scheduler.capacity.configure",
             {
                 "account_id": str(account_id or "").strip(),
-                "max_concurrency": max_concurrency,
+                **({"max_concurrency": max_concurrency} if max_concurrency is not None else {}),
                 "dispatch_interval_min_seconds": float(
                     dispatch_interval_min_seconds
                 ),

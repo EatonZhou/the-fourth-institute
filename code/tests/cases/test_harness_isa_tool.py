@@ -70,9 +70,24 @@ def kernels(monkeypatch):
 
 SETTINGS = {
     "instruction": "UpdateProviderAccount",
-    "arguments": {"account_id": "one", "max_concurrency": 1,
+    "arguments": {"account_id": "one", "max_concurrency": 2,
                   "dispatch_interval_min_seconds": 1, "dispatch_interval_max_seconds": 2},
 }
+
+
+def test_scheduler_instruction_accepts_omission_and_rejects_legacy_limit_as_a_new_setting(kernels):
+    arguments = SETTINGS["arguments"]
+    invalid = harness_isa_tool.run_instruction(
+        RESIDENT, {**SETTINGS, "arguments": {**arguments, "max_concurrency": 1}}, call_id="limit-one")
+    assert invalid["status"] == "failed"
+    assert invalid["error"]["code"] == "instruction.invalid_arguments"
+    assert not kernels.calls
+
+    interval_only = {key: value for key, value in arguments.items() if key != "max_concurrency"}
+    result = harness_isa_tool.run_instruction(
+        RESIDENT, {**SETTINGS, "arguments": interval_only}, call_id="keep-limit")
+    assert result["status"] == "committed"
+    assert kernels.calls == [("UpdateProviderAccount", RESIDENT, interval_only)]
 
 
 def test_a_mutation_uses_the_tool_call_id_as_its_idempotency_key(kernels):

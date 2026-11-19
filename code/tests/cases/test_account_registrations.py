@@ -17,6 +17,7 @@ def test_registration_versions_and_roles(tmp_path):
                                      "kind": "subscription_login", "route_id": "test",
                                      "config": {"account_dir": str(tmp_path / "accounts" / "codex_test")}}, "alice")
     assert row["version"] == 1
+    assert row["max_concurrency"] == 10
     assert 'directory_origin' not in row
     assert row['directory_owner'] == 'host'
     assert store.registration("codex_test")["created_by"] == "alice"
@@ -106,6 +107,29 @@ def test_registration_rejects_invalid_identity_and_sensitive_config(tmp_path):
         with pytest.raises(InstructionError):
             store.create_registration({**base, **changes}, "alice")
     assert store.registrations() == []
+
+
+def test_account_concurrency_writes_require_two_but_legacy_value_remains_readable():
+    from management_portal.execution import account_registrations as store
+
+    account = {"account_id": "test_capacity", "provider": "opencode", "kind": "service"}
+    with pytest.raises(InstructionError, match="max_concurrency"):
+        store.create_registration({**account, "max_concurrency": 1}, "alice")
+    assert store.registration(account["account_id"]) is None
+
+    row = store.create_registration({**account, "max_concurrency": 2}, "alice")
+    assert row["max_concurrency"] == 2
+    with store.database().transaction("legacy_fixture") as connection:
+        connection.execute("UPDATE registrations SET max_concurrency=1 WHERE account_id=%s", (row["account_id"],))
+
+    assert store.registration(row["account_id"])["max_concurrency"] == 1
+    changed = store.update_registration(row["account_id"], {"enabled": False}, row["version"], "alice")
+    assert changed["max_concurrency"] == 1
+    with pytest.raises(InstructionError, match="max_concurrency"):
+        store.update_registration(row["account_id"], {"max_concurrency": 1}, changed["version"], "alice")
+    assert store.registration(row["account_id"]) == changed
+    changed = store.update_registration(row["account_id"], {"max_concurrency": 2}, changed["version"], "alice")
+    assert changed["max_concurrency"] == 2
 
 
 def test_rejected_registration_does_not_reserve_account_directory(tmp_path, monkeypatch):
@@ -324,7 +348,7 @@ def test_new_registration_refreshes_scheduler_defaults_without_overwriting_setti
     scheduler.configure_capacity("codex:one", 4, 0, 0, actor="alice")
     store.create_registration({"config": {"account_dir": str(tmp_path / "accounts" / "codex_two")}, "account_id": "codex_two", "provider": "codex", "kind": "subscription_login",
                                "route_id": "two", "max_concurrency": 3}, "alice")
-    store.update_registration("codex_one", {"max_concurrency": 1}, 1, "alice")
+    store.update_registration("codex_one", {"max_concurrency": 5}, 1, "alice")
     accounts._refreshed_at = 0
     with scheduler.changes.connect() as connection:
         assert scheduler.capacity.capacity_limit(connection, "codex:two") == 3

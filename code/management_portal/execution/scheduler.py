@@ -120,7 +120,7 @@ class Scheduler:
     def configure_capacity(
         self,
         capacity_key: str,
-        limit: int,
+        limit: int | None,
         dispatch_interval_min_seconds: float,
         dispatch_interval_max_seconds: float,
         *,

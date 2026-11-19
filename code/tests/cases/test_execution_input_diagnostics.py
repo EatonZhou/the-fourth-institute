@@ -30,10 +30,10 @@ def admitted_execution():
 
 @pytest.fixture
 def diagnostic_server(monkeypatch):
-    from management_portal.society_service import resident_input_diagnostics
+    from management_common import society_rpc_client
     authorize = Mock(return_value={"available": True, "resident_id": "resident_target",
         "message_id": "input", "execution_input_id": "input", "execution_id": "execution-target"})
-    monkeypatch.setattr(resident_input_diagnostics, "resolve_input_execution", authorize)
+    monkeypatch.setattr(society_rpc_client, "resolve_input_execution", authorize)
     server = SimpleNamespace(
         agent_data=SimpleNamespace(input_diagnostics=Mock(return_value={
             "agent_id": "resident_target", "actor_ref": "original-actor",
