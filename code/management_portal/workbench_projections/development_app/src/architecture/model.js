@@ -1,9 +1,8 @@
 import { schemaMatches } from '../shared/format-tags.js';
 import { matchesCurrentModuleMap } from '../shared/current-module-map.js';
+import { REPOSITORY, MAP_REF, EVOLUTION_REF } from '../shared/current-sources.js';
 // Architecture relations are evidence associations, never inferred call order.
-export const REPOSITORY = 'repo_711b6ab6d5c8';
-export const MAP_REF = `${REPOSITORY}/file/code/architecture/modules.yaml`;
-export const EVOLUTION_REF = `${REPOSITORY}/file/code/architecture/evolution.yaml`;
+export { REPOSITORY, MAP_REF, EVOLUTION_REF };
 export const MANIFEST_REF = 'workspace_04ad72d24263/file/release-runtime-v1/workspace_13209cb6666b/architecture-evidence/manifest.json';
 export const unique = values => [...new Set(values)];
 export const key = (type, id) => `${type}:${id}`;

@@ -2,6 +2,7 @@ import { sourceAnchors, MAP_REF } from './model.js';
 import { requireReadable } from '../shared/resources.js';
 import { workspaceSource } from './exploration-resources.js';
 import { executionCapability, hasExecutionCapability } from './exploration-reading.js';
+import { currentObjectReview } from './exploration-current-source.js';
 
 const fields = ['ref', 'kind', 'status', 'source', 'observed_at'];
 const key = object => JSON.stringify(fields.map(field => object?.[field]));
@@ -16,23 +17,36 @@ export async function readExecutionCapabilityFocus(bundle, resources, stillCurre
   if (!source || members.some(object => object.kind !== 'module' || object.identity.local_only
     || object.identity.resource_ref !== source || object.identity.focus_owner_id !== object.id
     || object.identity.focus_kind !== `module:${object.id}`)) throw unavailable('invalid_capability_members');
-  requireReadable(await resources.read(MAP_REF, 'text'), MAP_REF);
+  if (members.some(object => !currentObjectReview(bundle, object))) throw unavailable('unconfirmed_capability_members');
+  const map = requireReadable(await resources.read(MAP_REF, 'text'), MAP_REF);
+  const anchors = sourceAnchors(map.data).modules;
+  if (members.some(object => !anchors[object.id])) throw unavailable('current_map_anchor_absent');
   if (!stillCurrent()) return null;
   return { ref: MAP_REF, kind: executionCapability.focusKind, status: 'current', source: MAP_REF, observed_at: new Date().toISOString() };
 }
 
-// Use the live map's line when present; an outdated explanation still has its
-// object identity and can be discussed without a source-version certificate.
+// Current feedback requires the semantic owner to exist in the live map.
+// Historical explanations may remain readable without becoming current targets.
 export function explorationSemanticObject(bundle, target, mapText, observedAt) {
-  if (bundle.mode !== 'current' || !target || target.identity.local_only ||
+  if (!currentObjectReview(bundle, target) ||
       !['module', 'protocol'].includes(target.kind)) return null;
   const owner = bundle.model.objects.find(object => object.id === target.identity.focus_owner_id);
-  if (!owner || owner.identity.local_only || !['module', 'protocol'].includes(owner.kind)) return null;
+  if (!currentObjectReview(bundle, owner) || !['module', 'protocol'].includes(owner.kind)) return null;
   const kind = `${owner.kind}:${owner.id}`, source = workspaceSource(owner.identity.resource_ref);
   if (owner.identity.focus_kind !== kind || target.identity.focus_kind !== kind ||
       workspaceSource(target.identity.resource_ref) !== source) return null;
   const line = sourceAnchors(mapText)[owner.kind === 'module' ? 'modules' : 'protocols'][owner.id];
-  return { ref: Number.isInteger(line) && line > 0 ? `${source}#L${line}` : source, kind, status: 'current', source, observed_at: observedAt };
+  if (!Number.isInteger(line) || line <= 0) return null;
+  return { ref: `${source}#L${line}`, kind, status: 'current', source, observed_at: observedAt };
+}
+
+export async function readExplorationSemanticObject(bundle, target, resources, stillCurrent = () => true) {
+  const item = currentObjectReview(bundle, target);
+  if (!item) return null;
+  // A fresh authenticated read for every interaction, including feedback submit.
+  const result = requireReadable(await resources.read(item.address, 'text'), item.address);
+  if (!stillCurrent()) return null;
+  return explorationSemanticObject(bundle, target, result.data, new Date().toISOString());
 }
 
 // The host broadcasts before replying to focus(). Match its exact revision,

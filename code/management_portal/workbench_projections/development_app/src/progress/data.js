@@ -1,9 +1,10 @@
 import { itemKey } from "./model.js";
 import { schemaMatches } from "../shared/format-tags.js";
 import { contentDigest } from "../shared/content-digest.js";
+import { MAP_REF } from "../shared/current-sources.js";
 export const REFERENCES = Object.freeze({
   index: "workspace_f9ff5e8a76df/file/reports/stage-index.json",
-  modules: "repo_711b6ab6d5c8/file/code/architecture/modules.yaml",
+  modules: MAP_REF,
 });
 const array = (x) => (Array.isArray(x) ? x : []);
 export async function digest(text) {

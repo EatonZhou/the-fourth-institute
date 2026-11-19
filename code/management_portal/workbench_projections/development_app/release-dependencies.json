@@ -1,6 +1,6 @@
 {
   "schema": "tfi.projection-release-dependencies.v1",
-  "code_repository": "repo_711b6ab6d5c8",
+  "code_repository": "repo_2ef1aca76139",
   "files": [
     {
       "address": "workspace_04ad72d24263/file/release-runtime-v1/workspace_13209cb6666b/architecture-evidence/current/IMPROVE.md",
@@ -34,7 +34,7 @@
     },
     {
       "address": "workspace_04ad72d24263/file/release-runtime-v1/workspace_13209cb6666b/architecture-evidence/manifest.json",
-      "sha256": "38db763901af2854ae1646bb4686f7f71d0b10453b738239f96d7eea5a4bdcda",
+      "sha256": "5dfc8584065bdb89bf11e8f4ec7513619b9546c639ac599eeea3c6da34409b51",
       "size": 3406
     },
     {
@@ -54,13 +54,13 @@
     },
     {
       "address": "workspace_04ad72d24263/file/release-runtime-v1/workspace_13209cb6666b/deep-architecture/current/exploration-manifest.json",
-      "sha256": "a9bb9e9735b6c0d18a42ebbe54754eeb4808521f4243721aef5218c9712f4b03",
+      "sha256": "2c4453163b3d76c4fdd4f76ff1c1b968f6efdf8132acb278d1da2e99c7125b04",
       "size": 56681
     },
     {
       "address": "workspace_04ad72d24263/file/release-runtime-v1/workspace_13209cb6666b/deep-architecture/current/exploration-model.json",
-      "sha256": "70864a63bbe0dade54997129c0da224b1b5fb85c9f516ce9b4a685eb6defadae",
-      "size": 5836193
+      "sha256": "c6a377247ce99eb56e007b4ffa52d2dd97de2486f83b10eb2c3f4259b94d4fb9",
+      "size": 5836219
     },
     {
       "address": "workspace_04ad72d24263/file/release-runtime-v1/workspace_13209cb6666b/deep-architecture/current/lesson-manifest.json",

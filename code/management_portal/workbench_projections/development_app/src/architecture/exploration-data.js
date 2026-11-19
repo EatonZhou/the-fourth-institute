@@ -6,6 +6,7 @@ import { selectExplorationDirection } from './exploration-directions.js';
 import { MAP_REF, EVOLUTION_REF } from './model.js';
 import { schemaMatches } from '../shared/format-tags.js';
 import { contentDigest } from '../shared/content-digest.js';
+import { reviewedSources, evidenceStatus } from './exploration-current-source.js';
 
 const clone = value => structuredClone(value);
 const freeze = value => {
@@ -53,7 +54,10 @@ export function createExplorationLoader({ resources, signal }) {
     if (!declaration.manifest?.address) fail('没有提供模型入口');
     const read = reader(), entry = await read.json(declaration.manifest);
     if (!schemaMatches(entry.schema, 'tfi.portal-architecture-exploration-manifest.v1')) fail('模型入口格式不受支持');
-    const model = await read.json(entry.model);
+    const modelText = await read.text(entry.model);
+    let model;
+    try { model = JSON.parse(modelText); }
+    catch { fail('模型不是有效的 JSON'); }
     if (!schemaMatches(model.schema, 'tfi.portal-architecture-exploration.v1')) fail('模型格式不受支持');
     // Only the shape consumed by the renderers is required. Origin commits,
     // byte digests, excerpts and companion documents do not certify the prose.
@@ -66,7 +70,7 @@ export function createExplorationLoader({ resources, signal }) {
       status: 'available', mode, batchKey: JSON.stringify([declaration.manifest.address, fingerprint]),
       pinned: clone({ exploration: declaration.manifest, model: entry.model, discovery: discoveryPin, delivery: deliveryPin }),
       binding: { module_map: { address: MAP_REF }, evolution: { address: EVOLUTION_REF } },
-      model, designTitles, catalogs: clone(entry.catalogs || model.catalogs || {}),
+      model, sourceReview: reviewedSources(modelText), designTitles, catalogs: clone(entry.catalogs || model.catalogs || {}),
       catalogSupplements: clone(pair.catalog_supplements || {}),
       requiredRefs: read.refs(), verification: { model: 'read', sourceBodies: 'unread', catalogs: 'unread' },
     });
@@ -101,8 +105,9 @@ export function createExplorationLoader({ resources, signal }) {
   async function source(bundle, evidenceId) {
     const evidence = bundle.model.evidence.find(value => value.id === evidenceId);
     if (!evidence) fail('未找到这条来源');
-    const ref = workspaceSource(evidence.address), text = await reader().text(ref);
-    return freeze({ ...clone(evidence), text, excerpt: '', ref, sha256: null });
+    const ref = evidence.address, text = await reader().text(ref), status = evidenceStatus(bundle, evidence);
+    return freeze({ ...clone(evidence), text, excerpt: status === 'current' ? '' : evidence.excerpt || '',
+      ref, reviewStatus: status, sha256: null });
   }
 
   async function catalog(bundle, id, { lessonSourceSupplement = null, catalogAttachment = null } = {}) {

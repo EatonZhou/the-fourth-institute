@@ -1,5 +1,6 @@
 import { schemaMatches } from '../shared/format-tags.js';
 import {lessons, categoryNotes} from './instruction-workbench.content.js';
+import { REPOSITORY } from '../shared/current-sources.js';
 
 export const CONTENT_SCHEMA = 'tfi.hatg-instruction-workbench.v1';
 const clone = value => JSON.parse(JSON.stringify(value));
@@ -87,7 +88,7 @@ export function representativeFor(data, category) {
 }
 export function sourceForLesson(name) {
   const source = lessons[name]?.source;
-  return source ? `repo_711b6ab6d5c8/file/code/${source}` : '';
+  return source ? `${REPOSITORY}/file/code/${source}` : '';
 }
 
 // Only a local teaching view. No result is presented as an actual ISA receipt.

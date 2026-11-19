@@ -1,11 +1,11 @@
 import { projectExecutionReading, executionCapability } from './exploration-reading.js';
-import { createResources, requireReadable } from '../shared/resources.js';
-import { workspaceSource } from './exploration-resources.js';
+import { createResources } from '../shared/resources.js';
 import { createExplorationLoader } from './exploration-data.js';
 import { projectExplorationScope } from './exploration-model.js';
 import { createExplorationViewHost, instructionWorkbenchFactory } from './exploration-view-host.js';
 import { createExplorationSession } from './exploration-session.js';
-import { createExplorationFocus, explorationSemanticObject, readExecutionCapabilityFocus } from './exploration-focus.js';
+import { createExplorationFocus, readExplorationSemanticObject, readExecutionCapabilityFocus } from './exploration-focus.js';
+import { currentFeedbackEligible } from './exploration-current-source.js';
 import { createExplorationGraph } from './exploration-graph.js';
 import { createInstructionWorkbench } from './instruction-workbench.js';
 import { mechanismFactory, mechanismFactories, mechanismIdFactories, objectEntries, objectModes, objectWorkbenchFactory } from './exploration-renderers.js';
@@ -90,14 +90,8 @@ export async function mountExploration(root, context, { delivery, candidate = nu
     renderDirection();
   }
   async function semanticObject(bundle, target, stillCurrent) {
-    if (bundle.mode !== 'current' || target.identity.local_only) return null;
-    const ref = workspaceSource(target.identity.resource_ref);
-    // A failed source read is not a changed selection. Let the caller retain
-    // the actual error (and feedback draft); null is only a local/stale identity.
-    const result = requireReadable(await resources.read(ref, 'text'), ref);
-    if (!stillCurrent()) return null;
-    const object = explorationSemanticObject(bundle, target, result.data, new Date().toISOString());
-    if (!object) message('本批地图未定位到该对象的行锚，所选对象仅在本地定位。');
+    const object = await readExplorationSemanticObject(bundle, target, resources, stillCurrent);
+    if (!object && stillCurrent()) message('当前来源或地图锚点未确认；保留本地历史焦点，当前反馈不可用。');
     return object;
   }
   async function resolveView(bundle, route) {
@@ -116,16 +110,9 @@ export async function mountExploration(root, context, { delivery, candidate = nu
         catalogAttachment: bundle.mode === 'current' ? currentCatalogAttachment : null,
       });
       if (catalogBundle.status !== 'available') throw new Error('本批没有 HATG 目录；该协议仍待完成。');
-      // A concept's local route stays intact. Its catalog view uses the existing
-      // semantic owner; instruction selection still never publishes focus.
-      const identityOwner = target.identity.local_only
-        ? bundle.model.objects.find(value => value.id === target.identity.focus_owner_id) : target;
-      const protocolSubject = await semanticObject(bundle, identityOwner || target, () => session.getBundle() === bundle) || {
-        ref: bundle.binding.module_map.address, kind: target.identity.focus_kind,
-        status: 'current', source: bundle.pinned.exploration.address,
-        observed_at: catalogBundle.content.provenance.observed_at,
-      };
-      return { factory: instructionWorkbenchFactory(createInstructionWorkbench), subject: protocolSubject, content: catalogBundle.content, catalogBundle };
+      // Catalog teaching is a local reading view. Current feedback identity is
+      // resolved separately; a missing map owner must not block readable prose.
+      return { factory: instructionWorkbenchFactory(createInstructionWorkbench), subject, content: catalogBundle.content, catalogBundle };
     }
     const mechanism = bundle.model.mechanisms.find(value => value.id === route.mechanismId);
     const factory = mechanism && (objectWorkbenchFactory(target, mechanism)
@@ -144,10 +131,13 @@ export async function mountExploration(root, context, { delivery, candidate = nu
   }
   function openSource(source) {
     activeDraft = null; draftEpoch++; context.sdk.cancelFeedback?.();
-    sourcePanel.replaceChildren(); sourcePanel.hidden = false; sourcePanel.setAttribute('aria-label', '当前来源正文');
+    sourcePanel.replaceChildren(); sourcePanel.hidden = false; sourcePanel.setAttribute('aria-label', '架构来源正文');
     button('关闭来源', () => { sourcePanel.hidden = true; }, sourcePanel);
-    sourcePanel.append(element('h2', source.claim || '当前来源'), element('p', source.ref));
-    const pre = element('pre', source.excerpt || source.text); sourcePanel.append(pre);
+    sourcePanel.append(element('h2', source.claim || '架构来源'), element('p', source.ref));
+    if (source.reviewStatus) sourcePanel.append(element('p', source.reviewStatus === 'current'
+      ? '已核实的当前来源；正文按本次访问读取。' : '历史或未确认的证据；保留原地址与摘录，不作为当前反馈依据。'));
+    if (source.excerpt) sourcePanel.append(element('h3', '原记录摘录'), element('pre', source.excerpt));
+    sourcePanel.append(element('pre', source.text));
   }
   function update(state) {
     if (disposed) return;
@@ -184,7 +174,7 @@ export async function mountExploration(root, context, { delivery, candidate = nu
     }
     if (state.route?.kind === 'mechanism') breadcrumb.append(element('span', '机制演示'));
     const selected = model.objects.find(value => value.id === state.selectionId);
-    if (selected && state.mode === 'current' && !selected.identity.local_only) button('反馈', () => feedback(selected), selectionActions).setAttribute('aria-label', '反馈所选对象');
+    if (currentFeedbackEligible(session.getBundle(), selected)) button('反馈', () => feedback(selected), selectionActions).setAttribute('aria-label', '反馈所选对象');
     batchActions.append(element('small', '工作区架构说明'));
     if (context.architectureEntry) {
       button('刷新架构说明', () => { batch.open = false; return context.architectureEntry.refresh(); }, batchActions);
@@ -192,6 +182,7 @@ export async function mountExploration(root, context, { delivery, candidate = nu
   }
   function feedback(target) {
     const bundle = session.getBundle(), before = session.snapshot();
+    if (!currentFeedbackEligible(bundle, target)) return;
     const key = JSON.stringify([bundle.batchKey, target.id]);
     const draft = drafts.get(key) || { text: '', result: '', sending: false }; drafts.set(key, draft);
     activeDraft = { key, targetId: target.id, batchKey: bundle.batchKey }; draftEpoch++;
@@ -208,7 +199,8 @@ export async function mountExploration(root, context, { delivery, candidate = nu
       const valid = () => !disposed && !hidden && epoch === draftEpoch && session.getBundle() === bundle && session.snapshot().selectionId === target.id;
       try {
         await loader.revalidate(bundle); const object = await semanticObject(bundle, target, valid);
-        if (!object || !valid()) throw new Error('对象或时点已改变，草稿保留');
+        if (!valid()) throw new Error('对象或时点已改变，草稿保留');
+        if (!object) throw new Error('当前地图已无该对象，无法提交当前对象反馈');
         await focus.send(object); if (!valid()) throw new Error('所选对象已改变');
         const receipt = await context.sdk.feedback({ ref: object.ref, subject: target.title, anchor: target.id,
           scene: { region: 'architecture', mode: bundle.mode, exploration: before.scene }, text: draft.text.trim() });
@@ -220,7 +212,7 @@ export async function mountExploration(root, context, { delivery, candidate = nu
   function restoreDraft() {
     if (!activeDraft || sourcePanel.hidden === false) return;
     const bundle = session.getBundle(), target = bundle.model.objects.find(value => value.id === activeDraft.targetId);
-    if (activeDraft.batchKey === bundle.batchKey && target && !target.identity.local_only && bundle.mode === 'current') feedback(target);
+    if (activeDraft.batchKey === bundle.batchKey && currentFeedbackEligible(bundle, target)) feedback(target);
   }
   function sourceError(error) { sourcePanel.hidden = true; message(`来源暂不可用：${error.message}`); }
   function readSource(id) { return session.requestSource(id); }

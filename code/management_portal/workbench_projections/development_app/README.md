@@ -6,7 +6,7 @@
 
 发行声明的 `stage_progress` 指定同一 Workspace 下的 `index`、`content`、`schema` 精确地址及 `new_report_directory`。打包只冻结 schema 的实际摘要和大小，生成空索引、空补充表及支持空态的发行格式契约；空态不伪造生成时间、覆盖起点或最新报告引用，产生首份报告后按原契约填写。发行契约的空态扩展可重复应用，发行版再次开发和打包时不会叠加格式包装。该 Workspace 的源输出整树在复制阶段排除，生成文件复用其实际安装绑定；当前架构的 15 项文件声明保持独立。
 
-三个区域的架构地图均只读 `repo_711b6ab6d5c8/file/code/architecture/modules.yaml`。演化绑定使用当前 `ref/schema/model_version`，以实际存在的模块 ID 联动；正文与结构须来自同一字节版本，但旧 revision 不作为模块身份门控。失配、删除模块和 `needs_review` 均禁止错误联动，旧 `commit/snapshot_ref` 不触发读取。阶段进展的可选模块归属仅接受当前地图及其精确摘要/锚点，旧架构归属不读取、不订阅，保留原成果身份与普通 Git 证据。
+三个区域的架构地图均只读 `repo_2ef1aca76139/file/code/architecture/modules.yaml`。当前来源身份由 `src/shared/current-sources.js` 统一声明，与工作台应用的正式仓库登记保持一致；历史证据仍保留自己的地址，不重写旧 commit 引用。演化绑定使用当前 `ref/schema/model_version`，以实际存在的模块 ID 联动；正文与结构须来自同一字节版本，但旧 revision 不作为模块身份门控。失配、删除模块和 `needs_review` 均禁止错误联动，旧 `commit/snapshot_ref` 不触发读取。阶段进展的可选模块归属仅接受当前地图及其精确摘要/锚点，旧架构归属不读取、不订阅，保留原成果身份与普通 Git 证据。
 
 Plan 依赖的结构化入口为当前 `architecture/evolution.yaml`：架构关联读取 `plans[].id`，未来演化正文读取 `directions[status=proposed].plans[]` 与 `plans[].id` 的交集。发行需要保留这些明确声明的知识对象；Plan 正文、方向叙事与 Markdown 中的任意文本不作为递归依赖入口。现有15项架构文件闭包、阶段 `json_roots` 与这些知识资源分别由各自的显式声明负责。
 
@@ -15,6 +15,8 @@ Plan 依赖的结构化入口为当前 `architecture/evolution.yaml`：架构关
 本工程是投影协议 v2 的多入口应用包，包含架构与协议、阶段进展、未来演化、打包发布区域。`example` 是独立的平台验收入口，用 D3 与 Worker 绘制标明为模拟的本地节点。
 
 架构区展示面向当前工作区的说明，允许研究内容滞后；提交、摘要和历史绑定不作为显示条件。首屏只读取索引、模型入口和模型文档，指令目录及教学内容在打开时读取，源码点击后读取当前工作区文件。附加来源缺失不影响架构浏览；资源入口保留服务端实际错误，区分文件缺失、服务失败与明确的权限拒绝。只展示当前架构、协议与来源，不提供历史提交选择、提交比较或历史架构恢复；刷新替换当前资料与视图状态，读取入口丢弃旧历史列表。
+
+当前对象反馈使用来源作者对该模型的逐对象分类，发布时将矩阵转换为 `exploration-source-review.js`，并固定模型正文摘要；矩阵不授予资源权限，也不限制说明与指令教学的读取。历史、未核实及没有迁移映射的身份不转换为当前对象。每次当前聚焦和提交反馈仍以实际访客重新读取 canonical 地图，并要求对应 ID 的锚点存在；读取失败保持原错误，锚点消失与真正的选中对象变化分别提示，保留草稿。来源证据使用自己的原地址读取，历史摘录与本次正文分开显示，不将探测到的同路径地址自动替换为已确认来源。
 
 ## 打包发布
 
@@ -158,7 +160,7 @@ Lineage 共用画布底层通过 `await sdk.loadLibrary('portal-graph')` 加载�
 
 ```json
 {
-  "repo_id": "repo_711b6ab6d5c8",
+  "repo_id": "repo_2ef1aca76139",
   "directory": "management_portal/workbench_projections/development_app",
   "commit": "完整的40位Git提交哈希",
   "entries": {"architecture": "architecture.html", "progress": "progress.html", "evolution": "evolution.html", "packaging": "packaging.html"}

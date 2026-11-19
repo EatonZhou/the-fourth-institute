@@ -3,7 +3,7 @@ import {readContent, visibleInstructions, restoreState, declarationExplanation, 
   experiment, representativeFor, sourceForLesson, purposeSummary} from './instruction-workbench.model.js';
 
 /** An explanation view, with no transport or business execution capability. */
-export function createInstructionWorkbench(root, {subject, content, onSelect, onNavigate, onSource, onChange, onReturn, signal} = {}) {
+export function createInstructionWorkbench(root, {content, onSelect, onNavigate, onSource, onChange, onReturn, signal} = {}) {
   const doc = root.ownerDocument;
   let disposed = false, hidden = false, data, state, lastSelection = '';
   const listeners = new AbortController();
@@ -38,7 +38,8 @@ export function createInstructionWorkbench(root, {subject, content, onSelect, on
   signal?.addEventListener('abort', finish, {once: true});
   root.append(host);
   try {
-    if (!subject?.ref || !subject.kind || !subject.source || !subject.observed_at || subject.status !== 'current') throw new Error('需要父视图提供当前协议身份');
+    // This component explains a readable catalog; current feedback identities
+    // are resolved separately by its parent at the point of interaction.
     data = readContent(content);
   } catch (error) {
     host.append(node('h2', '', '无法读取指令目录'), node('p', '', error.message)); return api;

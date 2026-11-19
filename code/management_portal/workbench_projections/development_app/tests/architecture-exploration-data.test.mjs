@@ -21,7 +21,7 @@ function fixture() {
   const manifest = put('fixture:entry', { schema:'tfi.portal-architecture-exploration-manifest.v1', model: modelPin, binding: { commit: 'different' },
     contract: { address: 'gone:contract' }, sources: [{ address: 'gone:source' }] });
   const pair = { exploration: { status: 'available', manifest }, base_manifest: { address: 'gone:base' } };
-  put(MANIFEST_REF, pair); put(current, 'current workspace text'); put(MAP_REF, { modules: [
+  put(MANIFEST_REF, pair); put(current, 'current workspace text'); put(old, 'historical workspace text'); put(MAP_REF, { modules: [
     { id: 'worker', instruction_owners: ['worker'] }] });
   const resources = {
     async resolve(ref) { resolves.push(ref); return result(ref); },
@@ -54,15 +54,16 @@ test('same document addresses can refresh content without revision certificates'
   assert.equal(next.model.objects[0].title, 'Updated explanation');
   assert.equal(previous.model.objects[0].title, undefined);
 });
-test('source click reads current code every time without comparing historical excerpts', async () => {
+test('unconfirmed evidence preserves its original address and excerpt on every read', async () => {
   const f = fixture(), bundle = await f.loader.loadPair(f.pair);
-  assert.equal((await f.loader.source(bundle, 'relay')).ref, f.current);
-  f.put(f.current, 'changed after first click');
+  const source = await f.loader.source(bundle, 'relay');
+  assert.equal(source.ref, f.old); assert.equal(source.excerpt, 'old'); assert.equal(source.reviewStatus, 'unconfirmed');
+  f.put(f.old, 'changed after first click');
   assert.equal((await f.loader.source(bundle, 'relay')).text, 'changed after first click');
-  assert(!f.reads.includes(f.old)); assert(!f.reads.includes('gone:frozen'));
+  assert(!f.reads.includes(f.current)); assert(!f.reads.includes('gone:frozen'));
 });
 test('missing optional source keeps its file error and never invalidates the graph', async () => {
-  const f = fixture(), bundle = await f.loader.loadPair(f.pair); f.texts.delete(f.current);
+  const f = fixture(), bundle = await f.loader.loadPair(f.pair); f.texts.delete(f.old);
   await assert.rejects(f.loader.source(bundle, 'relay'), { code: 'file_not_found' });
   assert(await f.loader.revalidate(bundle)); assert.equal(bundle.status, 'available');
   assert(f.resolves.every(ref => [f.manifest.address, f.modelPin.address].includes(ref)));

@@ -1,13 +1,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createExplorationFocus, explorationSemanticObject, readExecutionCapabilityFocus } from '../src/architecture/exploration-focus.js';
+import { createExplorationFocus, explorationSemanticObject, readExplorationSemanticObject, readExecutionCapabilityFocus } from '../src/architecture/exploration-focus.js';
 import { MAP_REF } from '../src/architecture/model.js';
-const object = { ref: 'repo/file/map', kind: 'module:worker', status: 'current', source: 'repo/file/map', observed_at: '2026-10-15T12:00:00Z' };
+import review from '../src/architecture/exploration-source-review.js';
+const object = { ref: MAP_REF, kind: 'module:worker', status: 'current', source: MAP_REF, observed_at: '2026-10-15T12:00:00Z' };
 const mappedObject = (id, kind = 'module') => ({ id, kind, identity: {
   focus_owner_id: id, focus_kind: `${kind}:${id}`, resource_ref: object.source, local_only: false,
 } });
 const worker = mappedObject('worker'), lease = mappedObject('worker-lease', 'protocol');
-const bundle = { mode: 'current', model: { objects: [worker, lease] } };
+const bundle = { mode: 'current', sourceReview: review, model: { objects: [worker, lease] } };
 const map = 'modules:\n  - id: worker\n    responsibility: worker\nprotocols:\n  - id: worker-lease\n';
 test('current module and protocol focus use exact map rows and only the five public fields', () => {
   assert.deepEqual(explorationSemanticObject(bundle, worker, map, object.observed_at), { ...object, ref: object.ref + '#L2' });
@@ -15,7 +16,7 @@ test('current module and protocol focus use exact map rows and only the five pub
   assert.equal(explorationSemanticObject(bundle, worker, '# new map preamble\n' + map, object.observed_at).ref, object.ref + '#L3');
 });
 test('missing map rows, historical reads, local concepts and unknown owners never invent semantic identities', () => {
-  assert.equal(explorationSemanticObject(bundle, worker, 'modules:\n', object.observed_at).ref, object.source);
+  assert.equal(explorationSemanticObject(bundle, worker, 'modules:\n', object.observed_at), null);
   assert.equal(explorationSemanticObject({ ...bundle, mode: 'history' }, worker, map, object.observed_at), null);
   assert.equal(explorationSemanticObject(bundle, { ...worker, id: 'worker.runtime', kind: 'concept', identity: { ...worker.identity, local_only: true } }, map, object.observed_at), null);
   assert.equal(explorationSemanticObject(bundle, { ...worker, identity: { ...worker.identity, focus_owner_id: 'unknown' } }, map, object.observed_at), null);
@@ -58,7 +59,7 @@ test('a broadcast delivered after the acknowledgement is still the same self rev
 
 function capabilityRig(text = 'modules:\n  - id: execution\n  - id: worker\n  - id: providers\n') {
   const pin = { address:'workspace_fixed/file/modules.yaml', sha256:'obsolete', size:0 };
-  const batch = { mode:'current', binding:{module_map:pin}, model:{objects:['execution','worker','providers'].map(id=>({...mappedObject(id),parent_id:null}))} };
+  const batch = { mode:'current', sourceReview:review, binding:{module_map:pin}, model:{objects:['execution','worker','providers'].map(id=>({...mappedObject(id),parent_id:null}))} };
   const calls=[], control={readable:true,text};
   const resources={read:async ref=>{calls.push(['read',ref]);assert.equal(ref,MAP_REF);return {readable:control.readable,data:control.text,error:control.readable?undefined:{code:'permission_denied'}};}};
   return {batch,pin,resources,calls,control};
@@ -71,10 +72,25 @@ test('capability focus reads the workspace map with no source revision gate',asy
   assert.deepEqual(r.calls,[['read',MAP_REF]]);
   r.control.readable=false;await assert.rejects(readExecutionCapabilityFocus(r.batch,r.resources),{code:'permission_denied'});
 });
-test('capability focus tolerates map drift while keeping the documented object identity',async()=>{
+test('capability focus tolerates prose drift but requires each current map member',async()=>{
   const r=capabilityRig();r.control.text+='changed';assert(await readExecutionCapabilityFocus(r.batch,r.resources));
-  const absent=capabilityRig('modules: []');assert(await readExecutionCapabilityFocus(absent.batch,absent.resources));
+  const absent=capabilityRig('modules: []');await assert.rejects(readExecutionCapabilityFocus(absent.batch,absent.resources),/current_map_anchor_absent/);
   const mixed=capabilityRig();mixed.batch.model.objects[1].identity.resource_ref='other-map';await assert.rejects(readExecutionCapabilityFocus(mixed.batch,mixed.resources),/invalid_capability_members/);assert.equal(mixed.calls.length,0);
+});
+test('review status and canonical identity apply even if a historical ID reappears in the map', async () => {
+  const historical = mappedObject('lineage-service', 'protocol');
+  const batch = {...bundle, model:{objects:[...bundle.model.objects,historical]}};
+  assert.equal(explorationSemanticObject(batch,historical,map+'  - id: lineage-service\n',object.observed_at),null);
+  assert.equal(explorationSemanticObject({...bundle,sourceReview:null},worker,map,object.observed_at),null);
+  assert.equal(explorationSemanticObject(bundle,{...worker,identity:{...worker.identity,resource_ref:'repo_711b6ab6d5c8/file/code/architecture/modules.yaml'}},map,object.observed_at),null);
+  let calls=0, allowed=true;
+  const resources={read:async ref=>{calls++;assert.equal(ref,MAP_REF);return {readable:allowed,data:map,error:{code:'permission_denied'}};}};
+  assert(await readExplorationSemanticObject(bundle,worker,resources));
+  allowed=false;
+  await assert.rejects(readExplorationSemanticObject(bundle,worker,resources),{code:'permission_denied'});
+  assert.equal(calls,2);
+  assert.equal(await readExplorationSemanticObject(batch,historical,resources),null);
+  assert.equal(calls,2);
 });
 test('superseded capability selections and historical mode do not produce focus',async()=>{
   const r=capabilityRig();assert.equal(await readExecutionCapabilityFocus(r.batch,r.resources,()=>false),null);

@@ -6,7 +6,7 @@ sources:
   module_map: architecture/modules.yaml
   plan_index: IMPROVE.md
 module_map:
-  ref: repo_711b6ab6d5c8/file/code/architecture/modules.yaml
+  ref: repo_2ef1aca76139/file/code/architecture/modules.yaml
   schema: tfi.portal-architecture.v1
   model_version: 2
 semantics:
