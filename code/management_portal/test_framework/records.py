@@ -102,6 +102,14 @@ def _executor_alive(record: dict[str, Any]) -> bool:
         return False
 
 
+def _team_cleanup_active(record: dict[str, Any]) -> bool:
+    for group in record.get("groups") or []:
+        recovery = group.get("cleanup_recovery") or {}
+        if recovery.get("status") == "running" and _executor_alive(recovery):
+            return True
+    return False
+
+
 class RunRecords:
     """Owns durable Run Result records; it does not know runner commands."""
 
@@ -297,6 +305,9 @@ class RunRecords:
             active = [run_id for run_id in normalized if records[run_id].get("status") not in TERMINAL]
             if active:
                 raise ValueError(f"运行尚未结束，不能删除报告：{active[0]}")
+            for run_id, record in records.items():
+                if _team_cleanup_active(record):
+                    raise ValueError(f"TAU 团队清理正在执行，不能删除报告：{run_id}")
             deleted = [dict(records[run_id]) for run_id in normalized]
             deleting = set(normalized)
             from management_common.directory_cleanup_store import get_directory_cleanup_store
@@ -415,6 +426,8 @@ class RunRecords:
                     if datetime.fromisoformat(item['finished_at'].replace('Z', '+00:00')) > cutoff:
                         continue
                     run_id = self._run_id(item['run_id'])
+                    if _team_cleanup_active(self._read_record(run_id)):
+                        continue
                     for path in (run_root / run_id, self._record_path(run_id)):
                         enqueue_directory_cleanup(path.absolute(), owner_id=run_id, operation_id='expire:' + run_id,
                                       actor='directory-retention', connection=connection)

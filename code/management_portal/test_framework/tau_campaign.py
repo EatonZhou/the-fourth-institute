@@ -265,20 +265,75 @@ class TauCampaignExecutor:
                 if previous.get("status") not in TERMINAL and group.get("status") not in TERMINAL:
                     continue
                 for result in group.get("results") or []:
-                    details = result.get("details") or {}
-                    receipt = details.get("framework_cleanup")
-                    case_dir = self.run_root / previous_id / group_id.replace(":", "-").replace("/", "-") / result["case_id"]
-                    receipt_path = case_dir / "framework-helper-cleanup.json"
-                    # An exception prevents cleanup() from returning its receipt;
-                    # its durable file still records the incomplete cleanup.
-                    if receipt_path.exists():
-                        receipt = json.loads(receipt_path.read_text())
-                    if isinstance(receipt, dict) and receipt.get("complete"):
-                        continue
-                    if not isinstance(receipt, dict) and not details.get("cleanup_error"):
+                    case_dir, pending = self._case_cleanup(previous_id, group_id, result)
+                    if not pending:
                         continue
                     cleanup(run_dir=case_dir, emit=lambda text: self._append_group(run_id, group_id, text))
                     self._append_group(run_id, group_id, f"已补完前次测试的资源清理：{previous_id}/{result['case_id']}\n")
+
+    def _case_cleanup(self, run_id: str, group_id: str, result: dict[str, Any]) -> tuple[Path, bool]:
+        case_dir = self.run_root / run_id / group_id.replace(":", "-").replace("/", "-") / result["case_id"]
+        details = result.get("details") or {}
+        receipt = details.get("framework_cleanup")
+        receipt_path = case_dir / "framework-helper-cleanup.json"
+        # Even if cleanup raised before returning, its journal may have a receipt.
+        if receipt_path.exists():
+            receipt = json.loads(receipt_path.read_text())
+        pending = not receipt.get("complete") if isinstance(receipt, dict) else bool(details.get("cleanup_error"))
+        return case_dir, pending
+
+    def retry_team_cleanup(self, run_id: str, group_id: str, *, actor: str) -> dict[str, Any]:
+        """Recover one terminal group's own team journal without resuming its cases."""
+        def read_scope():
+            record = self.records.get(run_id)
+            if not actor or record.get("created_by") != actor:
+                raise PermissionError("只有原运行发起者可以重试 TAU 团队清理")
+            spec = next((item for item in record["plan"].get("execution", {}).get("groups", [])
+                         if item["group_id"] == group_id and item.get("runner") == TAU_RUNNER_ID), None)
+            group = next((item for item in record.get("groups") or [] if item["group_id"] == group_id), None)
+            if spec is None or group is None:
+                raise KeyError(f"未知 TAU 模块组：{group_id}")
+            if group.get("status") not in TERMINAL or group.get("active_invocation"):
+                raise ValueError("TAU 模块组尚未结束或仍有未决调用")
+            if any(self._case_cleanup(run_id, group_id, item)[1] for item in group.get("results") or []):
+                raise ValueError("该 TAU 模块组的用例资源清理尚未完成")
+            return record, spec, group
+
+        _, spec, _ = read_scope()
+        with slots.exclusive(f"tau-module:{spec['module_id']}", stop=lambda: True) as acquired:
+            if not acquired or any(owner_group == group_id for _, owner_group in self.records.invocation_holders()):
+                raise ValueError("TAU 模块存在未决调用或正由另一执行者使用")
+            record, spec, group = read_scope()
+            module_id = spec["module_id"]
+            original = (group.get("cleanup", {}).get("modules") or {}).get(module_id) or {}
+            if original.get("status") != "error":
+                raise ValueError("该 TAU 模块组没有失败的团队清理记录")
+            finalizer = getattr(self.adapter, "finalize_group", None)
+            if not callable(finalizer):
+                raise ValueError("当前 TAU 执行器不支持团队清理")
+            prior = group.get("cleanup_recovery") or {}
+            if prior.get("status") == "complete":
+                return prior
+            recovery = {
+                "run_id": run_id, "group_id": group_id, "actor": actor,
+                "status": "running", "started_at": now_iso(), "executor": process_identity(),
+                "modules": {},
+            }
+            self.records.update_group(run_id, group_id, {"cleanup_recovery": recovery})
+            try:
+                cleanup = self._finalize_team(
+                    finalizer, run_id, module_id, record["plan"]["selected"],
+                    self.run_root / run_id, emit=lambda _: None,
+                )
+                recovery["modules"][module_id] = cleanup
+                recovery["status"] = cleanup["status"]
+            finally:
+                if recovery["status"] == "running":
+                    recovery["status"] = "error"
+                recovery["finished_at"] = now_iso()
+                recovery.pop("executor")
+                updated = self.records.update_group(run_id, group_id, {"cleanup_recovery": recovery})
+            return next(item["cleanup_recovery"] for item in updated["groups"] if item["group_id"] == group_id)
 
     def _execute_group(
         self,
@@ -449,34 +504,40 @@ class TauCampaignExecutor:
         ))
         cleanup_results: dict[str, dict[str, Any]] = {}
         for module_id in modules:
-            try:
-                self.records.update_group(run_id, group_id, {
-                    "cleanup": {"status": "running", "modules": cleanup_results},
-                })
-                cleanup = finalizer(
-                    run_id=run_id, module_id=module_id,
-                    run_dir=run_dir / "team-cleanup" / module_id,
-                    emit=lambda chunk: self._append_group(run_id, group_id, chunk),
-                    lineage_fixtures={
-                        item["case_id"]: item["implementation"]["lineage_fixture"]
-                        for item in selected
-                        if item["module"] == module_id and item["runner"]["id"] == TAU_RUNNER_ID
-                        and item["implementation"].get("lineage_fixture")
-                    },
-                )
-                cleanup_results[module_id] = cleanup
-                if cleanup.get("status") != "complete":
-                    raise RuntimeError("；".join(cleanup.get("errors") or ["临时团队清理未完成"]))
-            except Exception as exc:
-                error = "；".join(value for value in (error, f"TAU 团队回收失败：{module_id}: {exc}") if value)
+            self.records.update_group(run_id, group_id, {
+                "cleanup": {"status": "running", "modules": cleanup_results},
+            })
+            cleanup = self._finalize_team(finalizer, run_id, module_id, selected, run_dir,
+                                          emit=lambda chunk: self._append_group(run_id, group_id, chunk))
+            cleanup_results[module_id] = cleanup
+            if cleanup["status"] == "error":
+                message = f"TAU 团队回收失败：{module_id}: {cleanup['error']}"
+                error = "；".join(value for value in (error, message) if value)
                 status = "error"
-                cleanup_results[module_id] = {
-                    **cleanup_results.get(module_id, {}), "status": "error", "error": str(exc),
-                }
-                self._append_group(run_id, group_id, f"TAU 团队回收失败：{module_id}: {exc}\n")
+                self._append_group(run_id, group_id, message + "\n")
         if cleanup_results:
             self.records.update_group(run_id, group_id, {"cleanup": {
                 "status": "complete" if all(result.get("status") == "complete" for result in cleanup_results.values()) else "error",
                 "modules": cleanup_results,
             }})
         return status, error
+
+    @staticmethod
+    def _finalize_team(finalizer, run_id, module_id, selected, run_dir, *, emit):
+        cleanup = {}
+        try:
+            cleanup = finalizer(
+                run_id=run_id, module_id=module_id, run_dir=run_dir / "team-cleanup" / module_id, emit=emit,
+                lineage_fixtures={
+                    item["case_id"]: item["implementation"]["lineage_fixture"]
+                    for item in selected
+                    if item["module"] == module_id and item["runner"]["id"] == TAU_RUNNER_ID
+                    and item["implementation"].get("lineage_fixture")
+                },
+            )
+            if cleanup.get("status") == "complete":
+                return cleanup
+            error = "；".join(cleanup.get("errors") or ["临时团队清理未完成"])
+        except Exception as exc:
+            error = str(exc)
+        return {**(cleanup if isinstance(cleanup, dict) else {}), "status": "error", "error": error}

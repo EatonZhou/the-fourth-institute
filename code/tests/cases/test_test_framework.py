@@ -1572,6 +1572,90 @@ def test_tau_retries_only_failed_cleanup_of_finished_runs(tmp_path, receipt_sour
     assert records.get(previous)["results"][0]["status"] == "error"
 
 
+def test_tau_retries_team_cleanup_for_one_terminal_group_without_resuming_campaign(tmp_path, monkeypatch):
+    """TAU 原发起者可补收尾终态组，活动调用阻止重试，原结果保留
+
+    :design: decision_c953eab654cd
+    :design-point:
+    """
+    import copy
+    from management_portal.test_framework import tau_campaign
+
+    module_id = "operations.deployment"
+    group_id = f"module:{module_id}"
+    sibling_id = "module:workflow.knowledge"
+    case_id = "test_0123456789ab"
+    selected = [{"case_id": case_id, "module": module_id, "runner": {"id": "tau"},
+                 "implementation": {"lineage_fixture": "temporary-team"}}]
+    groups = [{"group_id": group_id, "module_id": module_id, "item_indexes": [0], "runner": "tau"},
+              {"group_id": sibling_id, "module_id": "workflow.knowledge", "item_indexes": [], "runner": "tau"}]
+    plan = {"campaign": "tau", "selected": selected, "execution": {"groups": groups}}
+    service = FrameworkService(state_root=tmp_path, launch=lambda _: pytest.fail("Unexpected Run launch"))
+    records = service.records
+    run_id = records.create(plan, "alice")["run_id"]
+    records.update(run_id, {"status": "running"})
+    records.update_group(run_id, sibling_id, {
+        "status": "running", "current_case_id": "test_ba9876543210", "active_invocation": {"message_id": "sibling"},
+    })
+    records.update_group(run_id, group_id, {"status": "error", "error": "team discovery failed", "cleanup": {
+        "status": "error", "modules": {module_id: {"status": "error", "error": "team discovery failed"}},
+    }})
+    records.append_result(run_id, group_id, {"case_id": case_id, "status": "unsupported", "details": {
+        "input_submitted": False, "framework_cleanup": {"complete": True},
+    }})
+    before = records.get(run_id)
+    calls = []
+
+    class Adapter:
+        def finalize_group(self, **kwargs):
+            assert kwargs["run_id"] == run_id
+            assert kwargs["module_id"] == module_id
+            assert kwargs["run_dir"] == tmp_path / "run-artifacts" / run_id / "team-cleanup" / module_id
+            assert kwargs["lineage_fixtures"] == {case_id: "temporary-team"}
+            assert records.get(run_id)["groups"][0]["cleanup_recovery"]["status"] == "running"
+            calls.append(kwargs["run_dir"])
+            if len(calls) == 1:
+                raise RuntimeError("lifecycle holder still active")
+            return {"status": "complete", "teams": {}}
+
+    monkeypatch.setattr(slots, "slot_root", lambda: tmp_path / "slots")
+    monkeypatch.setattr(tau_campaign, "tau_adapter", lambda _: Adapter())
+    monkeypatch.setattr(web.test_framework_api, "service", lambda: service)
+    payload = {"run_id": run_id, "group_id": group_id}
+    http = web.TestLabHttp(respond=lambda _, code, body: (code, body), read_json=lambda _: payload,
+                           exception_response=lambda _, exc: pytest.fail(str(exc)),
+                           serve_bytes=None, unavailable_response=None)
+
+    assert http.retry_tau_team_cleanup(None, None, "bob")[0] == 403
+    other_run = records.create(plan, "alice")["run_id"]
+    records.update_group(other_run, group_id, {"active_invocation": {"message_id": "reserved"}})
+    assert http.retry_tau_team_cleanup(None, None, "alice")[0] == 400
+    records.update_group(other_run, group_id, {"active_invocation": {}})
+    with slots.exclusive(f"tau-module:{module_id}", stop=lambda: True) as acquired:
+        assert acquired
+        assert http.retry_tau_team_cleanup(None, None, "alice")[0] == 400
+    case_dir = tmp_path / "run-artifacts" / run_id / "module-operations.deployment" / case_id
+    case_dir.mkdir(parents=True)
+    receipt = case_dir / "framework-helper-cleanup.json"
+    receipt.write_text('{"complete": false}')
+    assert http.retry_tau_team_cleanup(None, None, "alice")[0] == 400
+    assert not calls
+    receipt.write_text('{"complete": true}')
+
+    code, failed = http.retry_tau_team_cleanup(None, None, "alice")
+    assert code == 200 and failed["status"] == "error"
+    assert failed["modules"][module_id]["error"] == "lifecycle holder still active"
+    code, complete = http.retry_tau_team_cleanup(None, None, "alice")
+    assert code == 200 and complete["status"] == "complete"
+    assert http.retry_tau_team_cleanup(None, None, "alice") == (200, complete)
+    assert len(calls) == 2
+    after = copy.deepcopy(records.get(run_id))
+    assert after["groups"][0].pop("cleanup_recovery") == complete
+    after.pop("updated_at")
+    before.pop("updated_at")
+    assert after == before
+
+
 @pytest.mark.parametrize("mode", ["resume", "source_changed", "cancelling", "group_error", "pending", "observation_error"])
 def test_tau_campaign_resumes_the_same_resident_invocation_after_restart(tmp_path: Path, mode: str) -> None:
     """执行器重启后 TAU 运行接续原 Resident 消息，源码变化或正在取消时也不重新发送

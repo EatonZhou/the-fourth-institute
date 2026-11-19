@@ -226,6 +226,12 @@ class TestFrameworkService:
     def cancel_run(self, run_id: str, *, actor: str) -> dict[str, Any]:
         return self.runs.cancel(run_id, actor)
 
+    def retry_tau_team_cleanup(self, run_id: str, group_id: str, *, actor: str) -> dict[str, Any]:
+        from management_portal.test_framework.tau_campaign import TauCampaignExecutor, tau_adapter
+
+        executor = TauCampaignExecutor(self.records, self.runs.run_root, tau_adapter(self.runs.run_root.parent))
+        return executor.retry_team_cleanup(run_id, group_id, actor=actor)
+
     def delete_runs(self, run_ids: list[str], *, actor: str) -> dict[str, Any]:
         return self.runs.delete_reports(run_ids, actor)
 

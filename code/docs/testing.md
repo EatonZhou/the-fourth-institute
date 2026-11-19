@@ -54,6 +54,14 @@ leaves out, such as the Projects page or Resident semantic search, is not an
 acceptance requirement of that package. Project resources and their ISA
 operations are supported in every package and keep their tests.
 
+A TAU Run owner can retry failed team cleanup with
+`POST /test/api/tau/cleanup/retry` and the original `run_id` and `group_id`.
+The group must be terminal, its case cleanup settled, and the module free of
+active or reserved invocations. Other modules of the Campaign may still be
+running. The retry reuses the original team journal and records its outcome
+under `groups[].cleanup_recovery` in `GET /test/api/run`. The original group
+and case outcomes are preserved.
+
 ## Publication evidence
 
 Record the tested source commit, any candidate patch, selected cases, runner

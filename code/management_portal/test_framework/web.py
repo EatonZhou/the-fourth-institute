@@ -190,6 +190,10 @@ class TestLabHttp:
     def run_cancel(self, request, parsed, actor):
         return self._post(request, actor, lambda payload, user: test_framework_api.cancel_run(str(payload.get('run_id') or '').strip(), actor=user))
 
+    def retry_tau_team_cleanup(self, request, parsed, actor):
+        return self._post(request, actor, lambda payload, user: test_framework_api.retry_tau_team_cleanup(
+            str(payload.get('run_id') or '').strip(), str(payload.get('group_id') or '').strip(), actor=user))
+
     def runs_delete(self, request, parsed, actor):
         def delete(payload, user):
             run_ids = payload.get('run_ids')
@@ -231,6 +235,7 @@ def routes(portal):
         ('GET', 'tau/admission', http.tau_admission),
         ('POST', 'preview', http.preview), ('POST', 'run', http.run_start),
         ('POST', 'run/cancel', http.run_cancel), ('POST', 'runs/delete', http.runs_delete),
+        ('POST', 'tau/cleanup/retry', http.retry_tau_team_cleanup),
         ('POST', 'tau/resident/rotate', http.tau_rotate), ('POST', 'tau/resident/configure', http.tau_configure),
         ('POST', 'tau/admission', http.tau_admission_update),
     )

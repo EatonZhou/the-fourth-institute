@@ -4820,6 +4820,7 @@
     "tests/cases/test_test_framework.py::test_tau_reconnection_obeys_cancellation": "test_6a856a122a4e",
     "tests/cases/test_test_framework.py::test_tau_reconnects_to_accepted_input_without_resubmitting": "test_0dc34298fe5c",
     "tests/cases/test_test_framework.py::test_tau_retries_only_failed_cleanup_of_finished_runs": "test_39889fd79d16",
+    "tests/cases/test_test_framework.py::test_tau_retries_team_cleanup_for_one_terminal_group_without_resuming_campaign": "test_65207b08b195",
     "tests/cases/test_test_framework.py::test_test_page_is_one_addressed_page_inside_the_development_page_contracts": "test_f1eef84bc31d",
     "tests/cases/test_test_framework_demo_frame.py::test_demo_caption_uses_the_existing_readable_caption_style": "test_21770196e0fe",
     "tests/cases/test_test_framework_demo_frame.py::test_sandbox_frame_inlines_canonical_routes_before_dependent_components": "test_a1707174721f",
