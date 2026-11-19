@@ -483,6 +483,7 @@ modules:
       - "management_portal/resources/index_runtime.py"
       - "management_portal/resources/registration.py"
       - "management_portal/resources/registry_store.py"
+      - "management_portal/resources/registry_directory_records.py"
       - "management_portal/resources/query.py"
       - "management_portal/resources/changes.py"
       - "management_portal/resources/portal.py"

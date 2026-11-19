@@ -465,6 +465,9 @@ class AgentDataStore:
             through_turn_id=through_turn_id, provider_session_ref=provider_session_ref,
         )
 
+    def delivery_context_snapshot(self, agent_id: str, *, message_id: str) -> dict[str, Any]:
+        return self.contexts.delivery_context_snapshot(agent_id, message_id=message_id)
+
     def context_evidence_snapshot(self, agent_id: str) -> dict[str, Any]:
         return self.contexts.context_evidence_snapshot(agent_id)
 

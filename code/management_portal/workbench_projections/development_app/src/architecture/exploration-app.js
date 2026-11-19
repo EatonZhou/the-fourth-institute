@@ -92,9 +92,9 @@ export async function mountExploration(root, context, { delivery, candidate = nu
   async function semanticObject(bundle, target, stillCurrent) {
     if (bundle.mode !== 'current' || target.identity.local_only) return null;
     const ref = workspaceSource(target.identity.resource_ref);
-    let result;
-    try { result = requireReadable(await resources.read(ref, 'text'), ref); }
-    catch (error) { if (stillCurrent()) message(error.message); return null; }
+    // A failed source read is not a changed selection. Let the caller retain
+    // the actual error (and feedback draft); null is only a local/stale identity.
+    const result = requireReadable(await resources.read(ref, 'text'), ref);
     if (!stillCurrent()) return null;
     const object = explorationSemanticObject(bundle, target, result.data, new Date().toISOString());
     if (!object) message('本批地图未定位到该对象的行锚，所选对象仅在本地定位。');

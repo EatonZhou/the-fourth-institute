@@ -2065,8 +2065,8 @@ def _portable_context_execution(
     prompt_job.pop("fork_context_input", None)
     prompt_job = _prepare_resident_prompt(record, prompt_job)
     actual_sent_prompt = prompt_job["actual_sent_prompt"]
-    snapshot = {"segments": []} if accepted else execution_port.agent_context_snapshot(
-        resident_id, before_message_id=str(job.get("user_message_id") or ""))
+    snapshot = {"segments": []} if accepted else execution_port.delivery_context_snapshot(
+        resident_id, message_id=str(job.get("user_message_id") or ""))
     if snapshot["segments"]:
         history = resident_trace_context_text(record, snapshot)
         source = str(record.get("source_resident_id") or "")

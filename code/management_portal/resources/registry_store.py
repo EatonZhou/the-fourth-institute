@@ -143,7 +143,7 @@ class RegistryWriter:
         )
         self._changed.add(collection)
 
-        from .directory_registrations import refresh_directory_dependency
+        from .registry_directory_records import refresh_directory_dependency
         refresh_directory_dependency(self._connection, collection, str(document_id), document)
 
     def restore_article(self, article_id, document, audit):
@@ -176,7 +176,7 @@ class RegistryWriter:
         if deleted:
             self._next_revision(collection)
             self._changed.add(collection)
-            from .directory_registrations import refresh_directory_dependency
+            from .registry_directory_records import refresh_directory_dependency
             refresh_directory_dependency(self._connection, collection, str(document_id), None)
         return bool(deleted)
 
@@ -466,3 +466,16 @@ def announce_registry_changes(
             logging.getLogger(__name__).warning(
                 "registry change announcement failed for %s/%s", collection, document_id, exc_info=True,
             )
+
+
+def registered_paths(*, connection):
+    """The locked, current independently registered content locations."""
+    from pathlib import Path
+    from management_common.directory_cleanup_store import get_directory_cleanup_store
+    from management_common.instance_locations import located_path
+    from .registry_directory_records import COLLECTIONS, locations
+    get_directory_cleanup_store().lock(connection)
+    with get_registry_store().writer(*COLLECTIONS, connection=connection) as writer:
+        return tuple(Path(located_path(item['path'])) for collection in COLLECTIONS
+                     for document in writer.documents(collection).values()
+                     for item in locations(collection, document))

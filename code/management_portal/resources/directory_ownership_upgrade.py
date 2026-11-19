@@ -40,7 +40,7 @@ def upgrade_registry(connection, schema):
     # do, and refresh each changed record in this same transaction.
     from management_common import directory_dependencies as deps
     from management_common.directory_cleanup_store import DirectoryCleanupStore
-    from .directory_registrations import refresh_directory_dependency
+    from .registry_directory_records import refresh_directory_dependency
     if deps.installed(connection):
         DirectoryCleanupStore(connection=connection).lock(connection)
     deps.prepare_write(connection)

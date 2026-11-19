@@ -196,7 +196,10 @@ def attach_provider_turns(connection, segments):
         item["provider_turn_id"] = turns[item["segment_id"]]
 
 
-def read_agent_context(connection: Any, agent_id: str, *, before_message_id: str = "", through_message_id: str = "", through_turn_id: str = "", provider_session_ref: str = "") -> dict[str, Any]:
+def read_agent_context(
+    connection: Any, agent_id: str, *, before_message_id: str = "", through_message_id: str = "",
+    through_turn_id: str = "", provider_session_ref: str = "", respect_latest_reset: bool = False,
+) -> dict[str, Any]:
     trace = agent_trace(connection, agent_id)
     if trace is None:
         raise KeyError(f"Agent trace not found: {agent_id}")
@@ -274,11 +277,12 @@ def read_agent_context(connection: Any, agent_id: str, *, before_message_id: str
         if cutoff["ordinal"] is None:
             raise ValueError("Fork cutoff has no recorded context in this Agent trace")
         before = int(cutoff["ordinal"]) + 1
+    reset_before = None if respect_latest_reset else before
     boundary = connection.execute(
         "SELECT COALESCE(MAX(p.ordinal),0) AS ordinal FROM operation_positions p "
         "JOIN agent_operations o USING(operation_id) WHERE p.sequence_id=%s "
         "AND o.kind IN ('context_reset','provider_context_reset') "
-        "AND (%s::bigint IS NULL OR p.ordinal < %s)", (sequence_id, before, before),
+        "AND (%s::bigint IS NULL OR p.ordinal < %s)", (sequence_id, reset_before, reset_before),
     ).fetchone()
     first = max(first, int(boundary["ordinal"]) + 1)
     rows = []
@@ -333,13 +337,22 @@ class AgentContexts:
 
         Walk backwards to the last compaction/reset. Read payloads only for the
         retained window. Execution receipts do not determine trace membership.
-        Delivery excludes its current input with before_message_id.
+        Historical cutoffs use the reset boundary applicable at that point.
         """
         if before_message_id or through_message_id:
             # The boundary messages are found by the projection (chat_member).
             self.chat.chat_traces([agent_id])
         with self.database.snapshot() as connection:
             return read_agent_context(connection, agent_id, before_message_id=before_message_id, through_message_id=through_message_id, through_turn_id=through_turn_id, provider_session_ref=provider_session_ref)
+
+    def delivery_context_snapshot(self, agent_id: str, *, message_id: str) -> dict[str, Any]:
+        """Read contextual input predecessors within the current reset window."""
+        if message_id:
+            self.chat.chat_traces([agent_id])
+        with self.database.snapshot() as connection:
+            return read_agent_context(
+                connection, agent_id, before_message_id=message_id, respect_latest_reset=True,
+            )
 
     def context_evidence_snapshot(self, agent_id: str) -> dict[str, Any]:
         """Read audit counts, effective context and bounded import facts atomically.

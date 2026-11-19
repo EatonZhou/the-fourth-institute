@@ -60,7 +60,7 @@ TIERS = (
     ("stores", """
     hatg.store execution.service_settings execution.account_registrations notifications notifications.*
     resources.collaboration_registry resources.domain_projection_evidence resources.errors resources.portal
-    resources.registry_store resources.directory_ownership_upgrade resources.deleted_identity_boundary resources.schema resources.timing
+    resources.registry_store resources.registry_directory_records resources.directory_ownership_upgrade resources.deleted_identity_boundary resources.schema resources.timing
     resources.workspace_store
     access_audit_store agent_token_auth application_targets conversation_read_state conversation_receipt_store
     identity_store project_registry resident_view_projection semantic_search_surfaces shared_state

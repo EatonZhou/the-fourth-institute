@@ -12,22 +12,12 @@ from management_common.directory_retention import enqueue_directory_cleanup
 from management_common.instance_locations import located_path
 from management_common.instance_locations import stored_location
 
-from .registry_store import get_registry_store
+from .registry_store import get_registry_store, registered_paths
+from .registry_directory_records import COLLECTIONS, locations, refresh_directory_dependency
 
-COLLECTIONS = ('repo', 'article', 'paper', 'knowledge', 'report')
 IGNORE_COLLECTION = 'auto_registration_ignore'
 PROJECTION_RELEASES = 'resource_projection_releases'
 
-
-def refresh_directory_dependency(connection, collection, resource_id, document):
-    if collection not in COLLECTIONS:
-        return
-    from management_common import directory_dependencies as deps
-    from management_common.directory_paths import cleanup_path
-    entries = [] if document is None else [
-        (str(index), resource_id, cleanup_path(entry['path']), 'protected')
-        for index, entry in enumerate(locations(collection, document))]
-    deps.replace(connection, 'resource', collection + ':' + resource_id, entries)
 
 
 def request_projection_release(resource_id, *, actor, connection):
@@ -187,36 +177,12 @@ def owned_locations(entries, resource_id):
     return entries
 
 
-def locations(collection, document):
-    if collection == 'repo':
-        entries = document.get('checkouts') or []
-        canonical = document.get('canonical_checkout')
-    elif collection == 'article':
-        entries = document.get('roots') or []
-        canonical = document.get('canonical_root')
-    elif collection in {'paper', 'knowledge', 'report'}:
-        return document.get('directories') or []
-    else:
-        raise ValueError('Registry collection has not declared its directory locations')
-    result = [entry for entry in entries if entry.get('path')]
-    if canonical and canonical not in {entry['path'] for entry in result}:
-        result.append({'path': canonical, 'owner_id': document['id']})
-    return result
-
 
 def unregister_nested(roots, *, connection, actor):
     if not roots:
         return []
     return unregister_tree(roots, connection=connection, actor=actor)['resource_ids']
 
-
-def registered_paths(*, connection):
-    """The locked, current independently registered content locations."""
-    get_directory_cleanup_store().lock(connection)
-    with get_registry_store().writer(*COLLECTIONS, connection=connection) as writer:
-        return tuple(Path(located_path(item['path'])) for collection in COLLECTIONS
-                     for document in writer.documents(collection).values()
-                     for item in locations(collection, document))
 
 
 def unregister_tree(roots=(), *, connection, actor, workspace_ids=(), owner_ids=(), deleted_at=None,

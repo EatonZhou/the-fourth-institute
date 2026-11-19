@@ -14,8 +14,10 @@ from management_portal.resources.directory_ownership_upgrade import upgrade_crea
 @pytest.mark.parametrize('text_column', [False, True])
 def test_registry_upgrade_preserves_and_repairs_stored_area_references(
         tmp_path, monkeypatch, already_migrated, text_column):
+    from management_common import directory_dependencies as dependencies
     from tests.cases.instance_test_support import select_instance
     from management_portal.resources.directory_ownership_upgrade import upgrade_registry
+    from management_portal.resources.registry_directory_records import refresh_directory_dependency
 
     instance = select_instance(monkeypatch, tmp_path / 'instance')
     registry = get_registry_store()
@@ -28,11 +30,17 @@ def test_registry_upgrade_preserves_and_repairs_stored_area_references(
     document = {'id': rid, 'canonical_root': directory['path'], 'roots': [directory],
                 'description': absolute, 'external_path': str(tmp_path / 'external')}
     registry._ensure()
-    with registry.database.transaction() as connection:
+    with registry.writer('article') as writer:
+        connection = writer.connection
         if text_column:
             connection.execute('ALTER TABLE registry_documents ALTER COLUMN document_json TYPE TEXT USING document_json::text')
+        # Keep the historical bytes: writer.put would normalize the absolute
+        # paths whose repair this upgrade must exercise. Enlist the fixture in
+        # the owner's transaction and refresh its exact dependency record.
+        dependencies.prepare_write(connection)
         connection.execute('INSERT INTO registry_documents VALUES (%s,%s,%s,%s)',
                            ('article', rid, 0, json.dumps(document)))
+        refresh_directory_dependency(connection, 'article', rid, document)
         connection.execute("DELETE FROM registry_meta WHERE key='directory_ownership_locations_v2'")
         if not already_migrated:
             connection.execute("DELETE FROM registry_meta WHERE key='directory_ownership_v1'")
