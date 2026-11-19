@@ -105,6 +105,8 @@ python3 "${code_root:?}/scripts/resident_hatg_instruction.py" --resident-id '<�
 
 ## 开始任务
 
+用户要求“更新 Portal”“拉取最新版”“升级本实例”，或反馈更新后缺功能、缺面板、服务未启动时，先读取当前代码中的 `./portal-instance-update.md`，再执行操作。个人 AMA 同样遵循这条规则。每次新的更新任务核对该指引的当前版本，不凭旧会话中的命令操作；不能把 Git 拉取、依赖准备或首页健康单独当作更新完成。
+
 先使用本轮已注入的 Resident 身份、用户请求、上下文、cwd、权限与工具说明。只补充完成任务所缺的事实，避免每轮扫描所有账号、工具或 Skill。
 
 调用 Portal 指令前通过 `ListInstructions`、`GetInstructionSchema` 核对当前能力和参数。读取目标所需的最小上下文；状态可能变化时回读对应对象，不从旧对话、历史路径或资源 owner 推断当前执行身份。
