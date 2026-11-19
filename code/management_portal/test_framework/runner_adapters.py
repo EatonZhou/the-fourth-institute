@@ -28,6 +28,14 @@ class SubmissionPending(RuntimeError):
     """Observation has no terminal business fact; keep the original work alive."""
 
 
+class DeliveryRejected(RuntimeError):
+    """The original Effect explicitly rejected the Resident delivery before commit."""
+
+    def __init__(self, handle: dict[str, str]):
+        self.handle = dict(handle)
+        super().__init__(handle.get("submission_reason") or "原 Effect 已拒绝投递，Resident 输入未提交")
+
+
 def _confirmed_terminal_input(resident_id: str, message_id: str) -> bool:
     """A completed checkpoint cannot authorize cleanup after explicit requeue."""
     from management_portal import isa_client
@@ -611,9 +619,7 @@ class _TauCaseRun:
         if isinstance(exc, (WorkflowPending, WorkflowFailed)):
             self.handle_assigned(exc.handle)
             if isinstance(exc, WorkflowFailed):
-                self.save_checkpoint(self.prepared, safe=True)
-                self.prepared.clear()
-                raise CaseNotSent(str(exc)) from exc
+                self._finish_unsubmitted(self.prepared, reason=str(exc))
         else:
             self.handle_assigned(submission_error(self.prepared, exc))
 
@@ -646,12 +652,29 @@ class _TauCaseRun:
         if resolved.get("submission_state") == "submitted" and resolved.get("message_id"):
             self.handle_submitted(resolved)
         elif resolved.get("submission_state") == "not_submitted":
-            self.save_checkpoint(resolved, safe=True)
-            self.prepared.clear()
-            raise CaseNotSent("原提交已确认未受理；本用例不自动重新发送")
+            self._finish_unsubmitted(resolved, reason="原提交已确认未受理；本用例不自动重新发送")
         else:
             self.handle_assigned(resolved)
             raise SubmissionPending(str(resolved.get("submission_reason") or resolved.get("reason") or "原提交结果尚待确认"))
+
+    def _finish_unsubmitted(self, handle: dict[str, str], *, reason: str) -> None:
+        explicit = handle.get("submission_failure_kind") == "delivery_rejected"
+        complete = (
+            handle.get("submission_state") == "not_submitted"
+            and handle.get("submission_failure_commit_state") == "not_committed"
+            and handle.get("instruction_id")
+            and handle.get("submission_failure_instruction_id")
+            and handle["submission_failure_instruction_id"] != handle["instruction_id"]
+            and handle.get("submission_failure_code")
+        )
+        if handle.get("message_id") or (explicit and not complete):
+            pending = {**handle, "submission_state": "pending"}
+            self.handle_assigned(pending)
+            raise SubmissionPending("原投递回执冲突或缺少明确未提交证据")
+        failure = DeliveryRejected(handle) if explicit else CaseNotSent(reason)
+        self.save_checkpoint(handle, safe=True)
+        self.prepared.clear()
+        raise failure
 
     def _resume(self) -> dict[str, Any]:
         if self.adapter.resume is None:
@@ -709,6 +732,13 @@ class _TauCaseRun:
                 "observation_error": str(exc) or type(exc).__name__,
                 "conversation": dict(cleanup_handle), **self.target_evidence,
                 **cancellation_details,
+            })
+        if isinstance(exc, DeliveryRejected):
+            message = str(exc)
+            self.emit(f"TAU 原 Effect 投递失败，Resident 输入未提交：{message}\n")
+            return AdapterResult(status="error", details={
+                "summary": message, "issues": [message], "evidence": ["tau-invocation.json"],
+                "conversation": exc.handle, **self.target_evidence,
             })
         if self.cancelled():
             return AdapterResult(

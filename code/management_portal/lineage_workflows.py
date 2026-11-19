@@ -449,6 +449,9 @@ class WorkflowBindings:
 
     def _read_submission_path(self, handle, *, actor, entry):
         steps, edges = {}, set()
+        anchored = bool(handle.get("event_id") or handle.get("instruction_id"))
+        complete_rejection_evidence = anchored
+        revision = None
         offset = 0
         for _ in range(OBSERVATION_PAGES):
             page = isa_client.call(actor, "GetTriggerPath", {
@@ -458,6 +461,17 @@ class WorkflowBindings:
             path = page.get("path") or {}
             if not self._matches_path(handle, path) or path.get("trigger_path_id") != handle["trigger_path_id"]:
                 return submission_handle(handle, reason="Trigger Path 与原绑定、事件或指令不匹配")
+            if offset == 0:
+                revision = path.get("revision")
+            # Establish one stable terminal snapshot. Any linked Execution
+            # rules out rejection; its further pages cannot change that fact.
+            complete_rejection_evidence = (
+                complete_rejection_evidence and revision is not None and path.get("revision") == revision
+                and path.get("status") == "failed" and bool(path.get("finished_at"))
+                and all(isinstance((page.get(key) or {}).get("items"), list) for key in ("steps", "edges"))
+                and all((page.get(key) or {}).get("items") == [] and (page.get(key) or {}).get("next_offset") is None
+                        for key in ("execution_links", "executions"))
+            )
             handle = {**handle, "event_id": path["occurrence_id"]}
             for step in (page.get("steps") or {}).get("items") or []:
                 steps[step["step_id"]] = step
@@ -472,8 +486,8 @@ class WorkflowBindings:
             offset = next_offset
         else:
             return submission_handle(handle, reason="原路径观察预算已用完，尚未确认唯一输入")
-        reachable = {key for key, step in steps.items()
-                     if step.get("kind") == "effect" and step.get("node_id") == handle["effect_id"]}
+        effects = {key: step for key, step in steps.items() if step.get("kind") == "effect"}
+        reachable = {key for key, step in effects.items() if step.get("node_id") == handle["effect_id"]}
         while True:
             expanded = reachable | {target for source, target in edges if source in reachable}
             if expanded == reachable:
@@ -482,11 +496,37 @@ class WorkflowBindings:
         candidates = {str(step.get("input_message_id") or "") for key, step in steps.items()
                       if key in reachable and step.get("kind") == "resident" and
                       step.get("node_id") == handle["resident_id"] and step.get("input_message_id")}
-        if len(candidates) != 1:
-            return submission_handle(handle, reason="原绑定 Effect 尚无唯一的已受理 Resident 输入；路径失败也不能证明未投递")
-        message_id = candidates.pop()
-        state = isa_client.call(actor, "GetInputState", {"resident_id": handle["resident_id"],
-                               "message_id": message_id}, entry=entry).get("input_state") or {}
-        if state.get("message_id") != message_id or not state.get("state"):
-            return submission_handle(handle, reason="原路径输入回执尚不可确认")
-        return submission_handle(handle, state="submitted", message_id=message_id)
+        if len(candidates) == 1:
+            message_id = candidates.pop()
+            state = isa_client.call(actor, "GetInputState", {"resident_id": handle["resident_id"],
+                                   "message_id": message_id}, entry=entry).get("input_state") or {}
+            if state.get("message_id") != message_id or not state.get("state"):
+                return submission_handle(handle, reason="原路径输入回执尚不可确认")
+            return submission_handle(handle, state="submitted", message_id=message_id)
+        if (not candidates and complete_rejection_evidence and len(effects) == 1
+                and path.get("cause_kind") == "instruction" and path.get("cause_id") and handle.get("event_id")
+                and all(step.get("finished_at") and not step.get("input_message_id") for step in steps.values())):
+            effect = next(iter(effects.values()))
+            result = effect.get("result") or {}
+            calls = result.get("calls") or {}
+            failure = result.get("failure") or {}
+            outputs = result.get("outputs") or {}
+            if (effect.get("node_id") == handle["effect_id"] and effect.get("status") == "failed"
+                    and effect.get("activation_key") and not result.get("disposition")
+                    and failure.get("completed_calls") == 0 and failure.get("retryable") is False
+                    and not any(outputs.get(key) for key in ("message_id", "execution_id", "accepted"))
+                    and isinstance(calls, dict) and len(calls) == 1):
+                call = next(iter(calls.values()))
+                error = call.get("error") or {}
+                if (call.get("instruction") == "DeliverMessage" and call.get("business_ids") == {}
+                        and call.get("instruction_id") and call["instruction_id"] != path["cause_id"]
+                        and error.get("code") and error.get("retryable") is False and submission_was_rejected(call)):
+                    return {
+                        **submission_handle({**handle, "instruction_id": path["cause_id"]}, state="not_submitted",
+                                            reason=error.get("message") or failure.get("diagnostic") or error["code"]),
+                        "submission_failure_kind": "delivery_rejected",
+                        "submission_failure_instruction_id": call["instruction_id"],
+                        "submission_failure_code": error["code"],
+                        "submission_failure_commit_state": error["commit_state"],
+                    }
+        return submission_handle(handle, reason="原绑定 Effect 尚无唯一的已受理 Resident 输入；路径失败也不能证明未投递")

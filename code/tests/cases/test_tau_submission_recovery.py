@@ -196,13 +196,35 @@ def test_failed_cancellation_is_not_cleanup_permission(tmp_path, config):
     assert outcome.details["conversation"]["message_id"] == ACCEPTED["message_id"]
 
 
-def test_proven_unaccepted_request_ends_without_send_or_cancel(tmp_path, config):
-    """确认请求未被受理时 TAU 结束为不支持，不重发也不取消"""
+@pytest.mark.parametrize("kind", ["ordinary", "delivery_rejected", "incomplete_rejection"])
+def test_proven_unaccepted_request_ends_without_send_or_cancel(tmp_path, config, kind):
+    """普通未受理保持不支持，明确未提交的交付失败保留错误与子回执，缺证继续观察"""
+    rejection = {**PENDING, "submission_state": "not_submitted", "instruction_id": "inst_lin_original"}
+    if kind != "ordinary":
+        rejection.update(
+            submission_failure_kind="delivery_rejected",
+            submission_failure_instruction_id="inst_lin_child",
+            submission_failure_code="instruction.forbidden",
+            submission_failure_commit_state="not_committed" if kind == "delivery_rejected" else "unknown",
+            submission_reason="Workspace binding missing",
+        )
     adapter = TauAdapter(config, lost_receipt, lambda _: _verified_dev_target(),
-                         resolve_submission=lambda **_: {**PENDING, "submission_state": "not_submitted"},
+                         resolve_submission=lambda **_: rejection,
                          cancel_invocation=lambda *args: pytest.fail("no input was accepted"))
-    assert execute(adapter, tmp_path).status == "unsupported"
-    assert adapter.cleanup_ready(run_dir=tmp_path / "evidence")
+    outcome = execute(adapter, tmp_path)
+    assert outcome.status == {"ordinary": "unsupported", "delivery_rejected": "error",
+                              "incomplete_rejection": "pending"}[kind]
+    assert outcome.details["input_submitted"] is False
+    assert adapter.cleanup_ready(run_dir=tmp_path / "evidence") is (kind != "incomplete_rejection")
+    if kind == "delivery_rejected":
+        proof = outcome.details["conversation"]
+        assert proof["instruction_id"] == "inst_lin_original"
+        assert proof["submission_failure_instruction_id"] == "inst_lin_child"
+        assert proof["submission_failure_code"] == "instruction.forbidden"
+        assert proof["submission_failure_commit_state"] == "not_committed"
+        assert not proof.get("message_id")
+        state = json.loads((tmp_path / "evidence" / "tau-invocation.json").read_text())
+        assert state["handle"] == rejection and state["safe_to_cleanup"]
 
 
 @pytest.mark.parametrize("scenario", ["malformed_report", "cancelled_before_input"])
@@ -306,12 +328,18 @@ def test_campaign_preserves_unresolved_work_and_recovers_without_retrigger(tmp_p
     assert records.get(run_id)["groups"][0]["active_invocation"] == {}
 
 
-@pytest.mark.parametrize("rejected", [False, True])
+@pytest.mark.parametrize("rejected", [False, True, "delivery_rejected"])
 def test_owner_exception_preserves_late_causal_locator(tmp_path, config, rejected):
-    """业务方异常中带回的新定位信息被保存，请求被拒绝时结果为不支持"""
+    """业务方异常带回的新定位信息保留，明确的 Effect 交付拒绝记录为错误"""
     from management_portal.lineage_workflows import WorkflowFailed, WorkflowPending
 
     late = {**PENDING, "instruction_id": "inst_lin_after_assignment", "event_id": "event-late"}
+    if rejected == "delivery_rejected":
+        late.update(submission_state="not_submitted", submission_failure_kind="delivery_rejected",
+                    submission_failure_instruction_id="inst_lin_child",
+                    submission_failure_code="instruction.forbidden",
+                    submission_failure_commit_state="not_committed",
+                    submission_reason="Workspace binding missing")
     persisted, observations = [], []
 
     def invoke(**kwargs):
@@ -328,7 +356,9 @@ def test_owner_exception_preserves_late_causal_locator(tmp_path, config, rejecte
                          resolve_submission=resolve, resume=lambda **_: VERDICT,
                          cancel_invocation=lambda *args: pytest.fail("no unrelated cancellation"))
     outcome = execute(adapter, tmp_path, on_submitted=persisted.append)
-    assert outcome.status == ("unsupported" if rejected else "reported")
+    assert outcome.status == {False: "reported", True: "unsupported", "delivery_rejected": "error"}[rejected]
+    if rejected == "delivery_rejected":
+        assert outcome.details["conversation"]["submission_failure_instruction_id"] == "inst_lin_child"
     assert any(handle.get("instruction_id") == late["instruction_id"] for handle in persisted)
     assert bool(observations) is not rejected
     assert adapter.cleanup_ready(run_dir=tmp_path / "evidence")

@@ -54,6 +54,15 @@ leaves out, such as the Projects page or Resident semantic search, is not an
 acceptance requirement of that package. Project resources and their ISA
 operations are supported in every package and keep their tests.
 
+A committed workflow trigger does not prove that its Resident input was sent.
+Resolve the original event and binding through complete, stable public receipts.
+A unique, non-retryable DeliverMessage rejection before commit is recorded as
+`error` with `input_submitted=false`, retaining both the parent trigger and child
+rejection IDs. Ordinary unsupported prerequisites retain their classification.
+Accepted inputs take precedence; incomplete or conflicting evidence stays
+pending and cannot authorize cleanup. Reconcile the original case without
+resending it or starting the next case as part of reconciliation.
+
 A TAU Run owner can retry failed team cleanup with
 `POST /test/api/tau/cleanup/retry` and the original `run_id` and `group_id`.
 The group must be terminal, its case cleanup settled, and the module free of
