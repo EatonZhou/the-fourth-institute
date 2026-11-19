@@ -73,7 +73,7 @@ def test_saved_proxy_is_read_back_with_its_source(network):
     assert settings["proxy_source"] == "saved"
     assert settings["proxy"] == {"http": "http://user:p%24ss@proxy.invalid:8080", "https": "https://[::1]:8443",
                                  "all": "http://fallback.invalid", "no_proxy": "example.invalid,10.0.0.0/8"}
-    assert set(settings) == {"access", "proxy", "proxy_source"}
+    assert set(settings) == {"access", "proxy", "proxy_source", "revision"}
     configure_proxy(network)
     env = network.saved_proxy_environment()
     assert env["HTTPS_PROXY"] == env["https_proxy"] == ""
@@ -121,8 +121,74 @@ def test_admin_http_shows_network_settings_to_administrators_only(network):
     assert admin.network_get(None, None, "admin")[0] == 403
     actor = "admin"
     assert admin.network_get(None, None, None) == (200, network.read_settings())
-    # The installation owns these settings: there is no route that changes them.
-    assert not any(route.path == "/api/admin/network" and route.method != "GET" for route in admin.routes())
+    assert any(route.path == "/api/admin/network" and route.method == "POST" for route in admin.routes())
+
+
+def test_proxy_save_direct_and_restore_preserve_listener_and_other_settings(network):
+    path = network.config_path()
+    path.write_text('# existing configuration\nUNRELATED="keep"\n')
+    access = network.read_settings()['access']
+    original_manifest = (network.load().root / 'instance.json').read_bytes()
+    proxy = dict(http='http://user:p%24ss@proxy.invalid:8080', https='', all='socks5h://[::1]:1080', no_proxy='localhost,10.0.0.0/8')
+    saved = network.update_proxy(proxy, expected_revision=network.read_settings()['revision'])
+    assert saved['proxy'] == proxy and saved['proxy_source'] == 'saved'
+    assert saved['access'] == access
+    assert network.saved_proxy_environment()['HTTPS_PROXY'] == proxy['all']
+    assert network._parse(path.read_bytes())['UNRELATED'] == 'keep'
+    assert '# existing configuration' in path.read_text()
+    assert path.stat().st_mode & 0o777 == 0o600
+    direct = network.update_proxy(dict.fromkeys(network.PROXY_FIELDS, ''), expected_revision=saved['revision'])
+    assert all(v == '' for v in network.saved_proxy_environment().values())
+    inherited = network.update_proxy(None, expected_revision=direct['revision'])
+    assert inherited['proxy_source'] == 'environment'
+    assert inherited['proxy']['https'] == 'http://host-egress.invalid:3128'
+    assert network.saved_proxy_environment() is None
+    assert (network.load().root / 'instance.json').read_bytes() == original_manifest
+
+
+@pytest.mark.parametrize('bad', ['file:///etc/passwd', 'http://', 'http://proxy:99999', 'http://proxy:0',
+                                 'http://proxy/path', 'http://proxy?secret', 'http://proxy\nEVIL=1', 3])
+def test_invalid_proxy_never_changes_configuration(network, bad):
+    before = network.read_settings()
+    with pytest.raises(ValueError):
+        network.update_proxy(dict(http=bad, https='', all='', no_proxy=''), expected_revision=before['revision'])
+    assert network.read_settings() == before
+    assert not network.config_path().exists()
+
+
+def test_proxy_stale_revision_and_failed_replace_keep_previous_values(network, monkeypatch):
+    initial = network.read_settings()
+    proxy = dict(http='http://new.invalid:8080', https='', all='', no_proxy='')
+    saved = network.update_proxy(proxy, expected_revision=initial['revision'])
+    with pytest.raises(network.ProxyConflict):
+        network.update_proxy(None, expected_revision=initial['revision'])
+    def fail(*args):
+        raise OSError('disk failed')
+    monkeypatch.setattr(network.os, 'replace', fail)
+    with pytest.raises(OSError):
+        network.update_proxy(None, expected_revision=saved['revision'])
+    assert network.read_settings() == saved
+    assert not list(network.config_path().parent.glob('.network-*'))
+
+
+def test_network_save_requires_session_admin_and_rejects_other_settings(network):
+    from management_portal.http_admin import AdminHttp
+    actor = None
+    payload = {'proxy': dict.fromkeys(network.PROXY_FIELDS, ''), 'expected_revision': network.read_settings()['revision']}
+    admin = AdminHttp(respond=lambda request, status, value: (status, value), session_actor=lambda _: actor,
+                      access_payload=lambda _: {}, read_json=lambda _: payload, is_admin=lambda a: a == 'admin')
+    assert admin.network_post(None, None, 'admin')[0] == 403
+    actor = 'ordinary'
+    assert admin.network_post(None, None, 'admin')[0] == 403
+    actor = 'admin'
+    assert admin.network_post(None, None, None)[0] == 200
+    assert admin.network_post(None, None, None)[0] == 409
+    payload = {'access': {'mode': 'remote'}}
+    assert admin.network_post(None, None, None)[0] == 400
+    payload = {'proxy': dict(http='http://private:password@', https='', all='', no_proxy=''),
+               'expected_revision': network.read_settings()['revision']}
+    status, error = admin.network_post(None, None, None)
+    assert status == 400 and 'password' not in error['error']
 
 
 def test_changed_port_is_used_by_runtime_registry(network, monkeypatch):
@@ -164,11 +230,8 @@ def test_new_resident_process_uses_saved_proxy_without_changing_identity(network
     assert resident_process_environment({})[0]["HTTPS_PROXY"] == ""
 
 
-def test_management_page_shows_network_settings_read_only():
-    """Portal Management 的网络设置只读展示
-
-    jsdom 中挂载管理页：打开网络设置分栏才读取一次，显示访问范围、端口、访问地址与代理，空值显示“未设置”；
-    没有表单、可编辑字段或保存按钮；非管理员不能打开；读取失败报告错误，重新读取后显示；读取中禁用重新读取。
+def test_management_page_edits_proxy_settings():
+    """Portal Management 代理编辑、保存、失败保留与离开保护。
 
     :module: platform.core
     """

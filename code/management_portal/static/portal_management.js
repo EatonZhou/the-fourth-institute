@@ -192,7 +192,6 @@
           <h2>网络设置</h2>
           <button class="portalButton" type="button" data-network-reload>重新读取</button>
         </header>
-        <p class="managementNetworkHint">网络设置由 Portal 的安装配置决定，这里只显示当前值。</p>
         <p data-network-status role="status" aria-live="polite"></p>
         <section class="managementNetworkSection" aria-label="Portal 访问地址">
           <h3>Portal 访问地址</h3>
@@ -211,12 +210,18 @@
         <section class="managementNetworkSection" aria-label="网络代理">
           <h3>网络代理</h3>
           <p data-network-source></p>
-          <dl class="managementNetworkValues">
-            <div><dt>HTTP 代理 URL</dt><dd data-network-value="http"></dd></div>
-            <div><dt>HTTPS 代理 URL</dt><dd data-network-value="https"></dd></div>
-            <div><dt>统一代理 URL</dt><dd data-network-value="all"></dd></div>
-            <div><dt>不使用代理的地址</dt><dd data-network-value="no_proxy"></dd></div>
-          </dl>
+          <form data-network-form>
+            <label class="portalField"><span>代理方式</span><select data-network-mode disabled><option value="environment">使用服务环境</option><option value="saved">手动设置</option></select></label>
+            <div class="managementNetworkValues">
+              <label class="portalField"><span>HTTP 代理 URL</span><input data-network-field="http" type="text" autocomplete="off" spellcheck="false" disabled /></label>
+              <label class="portalField"><span>HTTPS 代理 URL</span><input data-network-field="https" type="text" autocomplete="off" spellcheck="false" disabled /></label>
+              <label class="portalField"><span>统一代理 URL</span><input data-network-field="all" type="text" autocomplete="off" spellcheck="false" disabled /></label>
+              <label class="portalField"><span>不使用代理的地址</span><input data-network-field="no_proxy" type="text" autocomplete="off" spellcheck="false" disabled /></label>
+            </div>
+            <p class="managementNetworkHint">HTTP、HTTPS 留空时使用统一代理；全部留空则不使用代理。不使用代理的地址用逗号分隔。</p>
+            <p class="managementNetworkHint">保存后用于新启动的进程；已运行的服务需重启后生效，当前会话不会自动重启。</p>
+            <button class="portalButton is-primary" type="submit" data-network-save disabled>保存代理设置</button>
+          </form>
         </section>
       </div>`;
     const proxyKeys = ["http", "https", "all", "no_proxy"];
@@ -226,6 +231,20 @@
     const source = container.querySelector("[data-network-source]");
     const urls = container.querySelector("[data-network-urls]");
     const legacyNote = container.querySelector("[data-network-legacy-note]");
+    const form = container.querySelector("[data-network-form]");
+    const mode = container.querySelector("[data-network-mode]");
+    const save = container.querySelector("[data-network-save]");
+    const field = key => container.querySelector(`[data-network-field="${key}"]`);
+    let baseline = null, revision = "";
+    const draft = () => mode.value === "environment" ? null : Object.fromEntries(proxyKeys.map(key => [key, field(key).value]));
+    const dirty = () => !!revision && JSON.stringify(draft()) !== JSON.stringify(baseline);
+    const sync = () => {
+      reload.disabled = busy;
+      mode.disabled = busy || !revision;
+      for (const key of proxyKeys) field(key).disabled = busy || !revision || mode.value === "environment";
+      save.disabled = busy || !dirty();
+      container.setAttribute("aria-busy", String(busy));
+    };
     container.querySelector("[data-network-current-url]").textContent = window.location.origin;
     const updateUrls = data => {
       urls.replaceChildren();
@@ -252,33 +271,37 @@
         urls.append(row);
       }
     };
-    // The installation's target configuration owns these settings; the page only shows them.
     const show = data => {
       value("access_mode").textContent = data.access.mode === "remote" ? t("允许其他设备访问") : t("仅本机");
       value("port").textContent = String(data.access.port);
       legacyNote.hidden = !data.access.legacy_restriction;
       source.textContent = data.proxy_source === "saved" ? t("当前使用已保存的代理设置。") : t("当前代理来自服务环境。");
-      for (const key of proxyKeys) value(key).textContent = data.proxy[key] || t("未设置");
+      mode.value = data.proxy_source;
+      for (const key of proxyKeys) field(key).value = data.proxy[key];
+      revision = data.revision;
+      baseline = draft();
       updateUrls(data);
     };
     let busy = false, destroyed = false;
     const requests = new AbortController();
-    const request = async () => {
-      const response = await fetch("/api/admin/network", { credentials: "same-origin", signal: requests.signal });
+    const request = async (payload) => {
+      const response = await fetch("/api/admin/network", { credentials: "same-origin", signal: requests.signal,
+        ...(payload ? {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(payload)} : {}) });
       const data = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(typeof data.error === "string" ? data.error : t("无法读取网络设置，请重试。"));
+      if (!response.ok) throw new Error(typeof data.error === "string" ? t(data.error) : t(payload ? "无法保存代理设置，请重试" : "无法读取网络设置，请重试。"));
       if (!["local", "remote"].includes(data.access?.mode)
         || !Number.isInteger(data.access?.port) || !Array.isArray(data.access?.urls)
         || !data.access.urls.every(item => typeof item === "string")
         || !proxyKeys.every(key => typeof data.proxy?.[key] === "string")
-        || !["environment", "saved"].includes(data.proxy_source)) {
+        || !["environment", "saved"].includes(data.proxy_source) || typeof data.revision !== "string" || !data.revision) {
         throw new Error(t("服务器未返回完整的网络设置，请重新读取。"));
       }
       return data;
     };
     const read = async () => {
       if (busy || destroyed) return;
-      busy = true; container.setAttribute("aria-busy", "true"); reload.disabled = true;
+      if (dirty() && !window.confirm(t("放弃未保存的代理修改并重新读取？"))) return;
+      busy = true; sync();
       status.textContent = t("正在读取网络设置…");
       try {
         const data = await request();
@@ -289,14 +312,34 @@
         if (!destroyed) status.textContent = error.message;
       } finally {
         busy = false;
-        if (!destroyed) { container.setAttribute("aria-busy", "false"); reload.disabled = false; }
+        if (!destroyed) sync();
       }
     };
+    form.addEventListener("input", sync);
+    mode.addEventListener("change", sync);
+    form.addEventListener("submit", async event => {
+      event.preventDefault();
+      if (busy || destroyed || !dirty()) return;
+      const payload = {proxy: draft(), expected_revision: revision};
+      busy = true; sync();
+      status.textContent = t("正在保存代理设置…");
+      try {
+        const data = await request(payload);
+        if (destroyed) return;
+        show(data);
+        status.textContent = t("代理设置已保存。");
+      } catch (error) {
+        if (!destroyed) status.textContent = error.message;
+      } finally {
+        busy = false;
+        if (!destroyed) sync();
+      }
+    });
     reload.addEventListener("click", read);
     void read();
     return {
       isBusy: () => busy,
-      hasUnsavedChanges: () => false,
+      hasUnsavedChanges: dirty,
       destroy() { destroyed = true; requests.abort(); },
     };
   }

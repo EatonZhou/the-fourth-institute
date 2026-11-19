@@ -6,10 +6,14 @@ access. Listener ports and bind addresses belong only to instance.json.
 from __future__ import annotations
 
 import ipaddress
+import hashlib
+import json
 import os
 from pathlib import Path
 import shlex
 import socket
+import tempfile
+from urllib.parse import urlsplit
 
 from management_common.file_lock import lock_stream
 from management_common.instance_manifest import load
@@ -136,8 +140,9 @@ def saved_proxy_environment(instance=None) -> dict[str, str] | None:
 
 
 def read_settings() -> dict:
-    """Access range, port, reachable addresses and proxy, as the installation configured them."""
-    entries = _parse(_read(config_path()))
+    """Manifest-owned access and editable outbound proxy settings."""
+    raw = _read(config_path())
+    entries = _parse(raw)
     saved = any(key in entries for key in PROXY_KEYS)
     source = entries if saved else inherited_proxy_environment()
     access = router_access()
@@ -146,7 +151,80 @@ def read_settings() -> dict:
         "access": {"mode": mode, "port": port, "urls": _access_urls(port, mode)},
         "proxy": _proxy_values(source),
         "proxy_source": "saved" if saved else "environment",
+        "revision": hashlib.sha256(raw + json.dumps(_proxy_values(source), sort_keys=True).encode()).hexdigest(),
     }
+
+
+class ProxyConflict(ValueError):
+    pass
+
+
+def _validate_proxy(proxy) -> dict[str, str]:
+    if not isinstance(proxy, dict) or set(proxy) != set(PROXY_FIELDS):
+        raise ValueError("请提供完整的代理设置")
+    result = {}
+    for field, value in proxy.items():
+        if (not isinstance(value, str) or len(value) > 8192
+                or any(ord(char) < 32 or ord(char) == 127 for char in value)):
+            raise ValueError("代理设置包含无效字符或内容过长")
+        value = value.strip()
+        if value and field != 'no_proxy':
+            try:
+                url = urlsplit(value)
+                valid = (url.scheme in {'http', 'https', 'socks4', 'socks4a', 'socks5', 'socks5h'}
+                         and url.hostname and url.path in {'', '/'} and not url.query and not url.fragment
+                         and (url.port is None or 1 <= url.port <= 65535)
+                         and not any(char.isspace() for char in value) and '\\' not in value)
+            except ValueError:
+                valid = False
+            if not valid:
+                raise ValueError("代理 URL 必须包含有效的协议、主机和端口，不可包含路径或查询参数")
+        result[field] = value
+    return result
+
+
+def update_proxy(proxy, *, expected_revision: str) -> dict:
+    """Atomically replace proxy fields; None restores inherited egress.
+
+    Listener configuration is never changed. Existing consumers read the same
+    private EnvironmentFile when starting their next process.
+    """
+    if not isinstance(expected_revision, str) or not expected_revision:
+        raise ValueError("请先读取网络设置再保存")
+    values = None if proxy is None else _validate_proxy(proxy)
+    path = config_path()
+    with _lock(path) as stream, lock_stream(stream):
+        if path.is_symlink():
+            raise ValueError("代理配置文件不能是符号链接")
+        if read_settings()['revision'] != expected_revision:
+            raise ProxyConflict("代理设置已被修改，请重新读取后再保存")
+        raw = _read(path)
+        # Keep unrelated entries and comments verbatim.
+        owned = PROXY_KEYS | {'PORTAL_NETWORK_' + key for key in PROXY_FIELDS.values()}
+        lines = [line for line in raw.decode('utf-8').splitlines()
+                 if line.partition('=')[0].strip() not in owned]
+        if values is not None:
+            entries = {**_proxy_env(values), **{'PORTAL_NETWORK_' + key: values[field]
+                                              for field, key in PROXY_FIELDS.items()}}
+            lines.extend(f'{key}={json.dumps(value, ensure_ascii=False)}' for key, value in entries.items())
+        data = ('\n'.join(lines) + '\n').encode('utf-8')
+        if len(data) > 65536:
+            raise ValueError("代理设置内容过长")
+        descriptor, name = tempfile.mkstemp(prefix='.network-', dir=path.parent)
+        temporary = Path(name)
+        try:
+            with os.fdopen(descriptor, 'wb') as output:
+                from management_common.configuration_files import preserve_config_permissions
+                preserve_config_permissions(temporary, path)
+                if os.name != 'nt':
+                    temporary.chmod(0o600)
+                output.write(data)
+                output.flush()
+                os.fsync(output.fileno())
+            os.replace(temporary, path)
+        finally:
+            temporary.unlink(missing_ok=True)
+        return read_settings()
 
 
 def _lock(path: Path):

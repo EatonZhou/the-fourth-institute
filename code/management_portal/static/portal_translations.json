@@ -1,4 +1,52 @@
 {
+  "代理方式": {
+    "en": "Proxy mode",
+    "zh-CN": "代理方式"
+  },
+  "使用服务环境": {
+    "en": "Use service environment",
+    "zh-CN": "使用服务环境"
+  },
+  "手动设置": {
+    "en": "Manual settings",
+    "zh-CN": "手动设置"
+  },
+  "保存代理设置": {
+    "en": "Save proxy settings",
+    "zh-CN": "保存代理设置"
+  },
+  "HTTP、HTTPS 留空时使用统一代理；全部留空则不使用代理。不使用代理的地址用逗号分隔。": {
+    "en": "HTTP and HTTPS use the default proxy when left blank. Leave all proxy URLs blank to connect directly. Separate bypass addresses with commas.",
+    "zh-CN": "HTTP、HTTPS 留空时使用统一代理；全部留空则不使用代理。不使用代理的地址用逗号分隔。"
+  },
+  "保存后用于新启动的进程；已运行的服务需重启后生效，当前会话不会自动重启。": {
+    "en": "New processes will use the saved settings. Running services require a restart; current sessions will not restart automatically.",
+    "zh-CN": "保存后用于新启动的进程；已运行的服务需重启后生效，当前会话不会自动重启。"
+  },
+  "放弃未保存的代理修改并重新读取？": {
+    "en": "Discard unsaved proxy changes and reload?",
+    "zh-CN": "放弃未保存的代理修改并重新读取？"
+  },
+  "正在保存代理设置…": {
+    "en": "Saving proxy settings…",
+    "zh-CN": "正在保存代理设置…"
+  },
+  "代理设置已保存。": {
+    "en": "Proxy settings saved.",
+    "zh-CN": "代理设置已保存。"
+  },
+  "代理设置已被修改，请重新读取后再保存": {
+    "en": "The proxy settings have changed. Reload them before saving.",
+    "zh-CN": "代理设置已被修改，请重新读取后再保存"
+  },
+  "代理设置无效，请检查代理地址和字段后重试": {
+    "en": "Invalid proxy settings. Check the proxy URLs and fields, then try again.",
+    "zh-CN": "代理设置无效，请检查代理地址和字段后重试"
+  },
+  "无法保存代理设置，请重试": {
+    "en": "Unable to save proxy settings. Try again.",
+    "zh-CN": "无法保存代理设置，请重试"
+  },
   "模板工坊": {"en":"Template workshop","zh-CN":"模板工坊"},
   "打开模板": {"en":"Open template","zh-CN":"打开模板"},
   "返回": {"en":"Back","zh-CN":"返回"},

@@ -70,7 +70,7 @@ class AdminHttp:
             return self.respond(request, 503, {"error": str(exc)})
 
     def network_get(self, request, _parsed, _actor):
-        """The installation's network settings, read only: its target configuration owns them."""
+        """Read listener information and the current outbound proxy."""
         try:
             self._require_admin(request)
             return self.respond(request, 200, portal_network.read_settings())
@@ -78,6 +78,24 @@ class AdminHttp:
             return self.respond(request, 403, {'error': str(exc)})
         except Exception:
             return self.respond(request, 500, {'error': '无法读取网络设置'})
+
+    def network_post(self, request, _parsed, _actor):
+        try:
+            self._require_admin(request)
+            payload = self.read_json(request)
+            if not isinstance(payload, dict) or set(payload) != {'proxy', 'expected_revision'}:
+                raise ValueError('只接受代理设置与读取版本')
+            result = portal_network.update_proxy(payload['proxy'], expected_revision=payload['expected_revision'])
+            return self.respond(request, 200, result)
+        except PermissionError as exc:
+            return self.respond(request, 403, {'error': str(exc)})
+        except portal_network.ProxyConflict as exc:
+            return self.respond(request, 409, {'error': str(exc)})
+        except ValueError:
+            # Never echo credentials from malformed input or existing files.
+            return self.respond(request, 400, {'error': '代理设置无效，请检查代理地址和字段后重试'})
+        except Exception:
+            return self.respond(request, 500, {'error': '无法保存代理设置，请重试'})
 
     def wall_scheduling_get(self, request, _parsed, _actor):
         try:
@@ -212,6 +230,7 @@ class AdminHttp:
         return (
             RouteDefinition("GET", "/api/admin/access-control", self.access_control_get, "portal-portal-get"),
             RouteDefinition("GET", "/api/admin/network", self.network_get, "portal-portal-get"),
+            RouteDefinition("POST", "/api/admin/network", self.network_post, "portal-portal-post"),
             RouteDefinition("GET", "/api/admin/instances", self.instances_get, "portal-portal-get"),
             RouteDefinition("GET", "/api/admin/paths", self.paths_get, "portal-portal-get"),
             RouteDefinition("GET", "/api/admin/paths/usage", self.paths_usage_get, "portal-portal-get"),

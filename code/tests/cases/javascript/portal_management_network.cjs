@@ -13,6 +13,7 @@ const state = (overrides = {}) => ({
   access: { mode: 'local', port: 18084, urls: ['http://127.0.0.1:18084'], legacy_restriction: false },
   proxy: { http: 'http://proxy.example:8080', https: '', all: '', no_proxy: 'localhost,127.0.0.1,::1' },
   proxy_source: 'environment',
+  revision: 'revision-1',
   ...overrides,
 });
 const response = (body, status = 200) => ({ ok: status < 400, status, json: async () => body });
@@ -58,7 +59,7 @@ async function harness(t, { category = 'portal_admin', view = 'users', pendingAc
   }).then(value => { panel = value; return value; });
   if (pendingAccess) { await settle(); return { w, root, mounting, finishAccess }; }
   panel = await mounting;
-  const shown = key => root.querySelector(`[data-network-value="${key}"]`).textContent;
+  const shown = key => root.querySelector(`[data-network-field="${key}"]`)?.value ?? root.querySelector(`[data-network-value="${key}"]`).textContent;
   const open = async () => { const opened = await panel.openSection({ view: 'network' }); await settle(); return opened; };
   return { w, root, panel, requests, replies, shown, open };
 }
@@ -74,7 +75,7 @@ test('finishing the initial user load preserves a tab selected while it was pend
   assert.equal(h.root.querySelector('[data-management-tab="network"]').getAttribute('aria-selected'), 'true');
 });
 
-test('network settings load lazily and are shown without any way to change them', async t => {
+test('network settings load lazily, with listener read-only and editable proxy mode', async t => {
   const h = await harness(t);
   assert.equal(h.requests.length, 0);
   await h.open();
@@ -82,16 +83,54 @@ test('network settings load lazily and are shown without any way to change them'
   assert.equal(h.shown('access_mode'), '仅本机');
   assert.equal(h.shown('port'), '18084');
   assert.equal(h.shown('http'), 'http://proxy.example:8080');
-  assert.equal(h.shown('https'), '未设置');
+  assert.equal(h.shown('https'), '');
   assert.match(h.root.querySelector('[data-network-source]').textContent, /服务环境/);
   assert.equal(h.root.querySelector('[data-network-current-url]').textContent, 'https://portal.example');
   assert.equal(h.root.querySelector('.managementNetworkUrl input').value, 'http://127.0.0.1:18084');
-  // The installation owns these settings: no form, no editable field, no save.
-  assert.equal(h.root.querySelector('.managementNetwork form, .managementNetwork select, [data-network-field]'), null);
-  assert.ok([...h.root.querySelectorAll('.managementNetwork input')].every(input => input.readOnly));
+  assert.ok(h.root.querySelector('[data-network-form]'));
+  assert.equal(h.root.querySelector('[data-network-mode]').disabled, false);
+  assert.equal(h.root.querySelector('[data-network-field="http"]').disabled, true);
+  assert.ok(h.root.querySelector('.managementNetworkUrl input').readOnly);
   assert.equal(h.panel.hasUnsavedChanges(), false);
   await h.panel.openSection({ view: 'users' }); await h.open();
   assert.equal(h.requests.length, 1);
+});
+
+test('manual proxy save locks controls, keeps failed drafts and supports inherited reset', async t => {
+  const h = await harness(t);
+  await h.open();
+  const mode = h.root.querySelector('[data-network-mode]');
+  mode.value = 'saved'; mode.dispatchEvent(new h.w.Event('change', {bubbles: true}));
+  const input = h.root.querySelector('[data-network-field="http"]');
+  assert.equal(input.disabled, false);
+  input.value = 'http://new.example:8080'; input.dispatchEvent(new h.w.Event('input', {bubbles: true}));
+  assert.equal(h.panel.hasUnsavedChanges(), true);
+  const reload = h.root.querySelector('[data-network-reload]');
+  h.w.confirm = () => false;
+  reload.click(); await settle();
+  assert.equal(h.requests.length, 1);
+  assert.equal(input.value, 'http://new.example:8080');
+  const save = h.root.querySelector('[data-network-save]');
+  let complete;
+  h.replies.push(() => new Promise(resolve => { complete = resolve; }));
+  save.click(); await settle();
+  assert.equal(h.panel.isBusy(), true);
+  assert.ok(input.disabled && mode.disabled && reload.disabled && save.disabled);
+  assert.equal(h.requests.at(-1).method, 'POST');
+  assert.deepEqual(h.requests.at(-1).body, {proxy: {http: 'http://new.example:8080', https: '', all: '', no_proxy: 'localhost,127.0.0.1,::1'}, expected_revision: 'revision-1'});
+  complete(response({error: '代理设置已被修改，请重新读取后再保存'}, 409)); await settle();
+  assert.equal(input.value, 'http://new.example:8080');
+  assert.equal(h.panel.hasUnsavedChanges(), true);
+  assert.match(h.root.querySelector('[data-network-status]').textContent, /已被修改/);
+  h.replies.push(response(state({proxy_source: 'saved', revision: 'revision-2', proxy: h.requests.at(-1).body.proxy})));
+  save.click(); await settle();
+  assert.equal(h.panel.hasUnsavedChanges(), false);
+  assert.equal(save.disabled, true);
+  mode.value = 'environment'; mode.dispatchEvent(new h.w.Event('change', {bubbles: true}));
+  h.replies.push(response(state({revision: 'revision-3'})));
+  save.click(); await settle();
+  assert.deepEqual(h.requests.at(-1).body, {proxy: null, expected_revision: 'revision-2'});
+  assert.equal(h.panel.hasUnsavedChanges(), false);
 });
 
 test('remote access, legacy restriction and saved proxy are shown, and copy uses the shown address', async t => {

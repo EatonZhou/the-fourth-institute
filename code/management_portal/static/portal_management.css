@@ -35,6 +35,11 @@
 .managementNetworkUrl { display:flex; gap:8px; align-items:center; }
 .managementNetworkUrl input { flex:1; min-width:0; }
 .managementNetworkHint, .managementNetwork [data-network-source] { color:var(--muted); }
+.managementNetwork form { display:grid; gap:14px; }
+.managementNetwork form .portalField { min-width:0; }
+.managementNetwork form input, .managementNetwork form select { min-width:0; width:100%; box-sizing:border-box; }
+.managementNetwork form p { margin:0; }
+.managementNetwork [data-network-save] { justify-self:start; }
 .managementInstanceCard {
   border-top: 1px solid #ccd5df;
   padding: 1rem 0;
