@@ -69,3 +69,35 @@ def test_helper_is_selected_by_instance_root_only():
     source = (Path(installer.__file__).with_name("tfi_release_initialization.py")).read_text()
     assert "PORTAL_DATABASE_URL" in source and "instance_manifest import load" in source
     assert "installation.json" not in source and '["target"]' not in source
+
+
+@pytest.mark.parametrize("rollback", [False, True])
+def test_directory_initialization_from_raw_empty_database(monkeypatch, rollback):
+    """The real installer has a raw connection, not a schema-creating pool."""
+    import os
+    import uuid
+    import psycopg
+    from management_common.portal_database import portal_database_url, _database_schema
+    from scripts.tfi_release_initialization import initialize_directory_dependencies
+
+    monkeypatch.setenv("PORTAL_DATABASE_NAMESPACE",
+                       os.environ["PORTAL_DATABASE_NAMESPACE"] + "_fresh_" + uuid.uuid4().hex[:8])
+    schema = _database_schema("directory_lifecycle")
+    with psycopg.connect(portal_database_url(), autocommit=True) as connection:
+        assert connection.execute("SELECT to_regnamespace(%s)", (schema,)).fetchone()[0] is None
+        try:
+            with connection.transaction():
+                result = initialize_directory_dependencies(connection)
+                assert result["entries"] == 0
+                assert connection.execute(
+                    f'SELECT ready FROM "{schema}".directory_dependency_state WHERE singleton'
+                ).fetchone()[0] is True
+                assert connection.execute("SELECT to_regclass(%s)",
+                                          (f'"{schema}".cleanup',)).fetchone()[0]
+                assert initialize_directory_dependencies(connection) == result
+                if rollback:
+                    raise RuntimeError("abort installer transaction")
+        except RuntimeError as exc:
+            assert rollback and str(exc) == "abort installer transaction"
+        exists = connection.execute("SELECT to_regnamespace(%s)", (schema,)).fetchone()[0]
+        assert bool(exists) is not rollback
