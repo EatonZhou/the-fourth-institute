@@ -8,9 +8,11 @@ const { STATIC, chatWorkspaceScripts } = require("./chat_workspace_modules.cjs")
 
 const window = {
   PortalResourceChips: {}, PortalImageEditor: { open() {} },
-  PortalI18n: { t: value => value }, PortalUIPrimitives: { escapeHtml: value => String(value) },
+  PortalI18n: { t: value => value },
 };
-const context = vm.createContext({ window });
+const context = vm.createContext({ window, document: { readyState: "loading", addEventListener() {} } });
+const primitives = "portal_ui_primitives.js";
+vm.runInContext(fs.readFileSync(path.join(STATIC, primitives), "utf8"), context, { filename: primitives });
 for (const file of chatWorkspaceScripts()) vm.runInContext(fs.readFileSync(path.join(STATIC, file), "utf8"), context, { filename: file });
 const parse = text => JSON.parse(JSON.stringify(window.PortalChatWorkspace.residentHandoffParts(text)));
 const card = { resident_id: "resident_123456789abc", title: "阅读", ask_message: "请解释" };

@@ -58,7 +58,13 @@ def creations(root: str, lookup: str) -> dict[str, tuple[str, set[str]]]:
     '''
     result = subprocess.run(['node', '-e', script], cwd=ROOT.parent,
                             input=json.dumps({'source': root, 'lookup': lookup}),
-                            text=True, capture_output=True, check=True)
+                            text=True, capture_output=True)
+    if result.returncode:
+        pytest.fail(
+            f"Node dependency extraction for {lookup} exited {result.returncode}\n"
+            f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}",
+            pytrace=False,
+        )
     return {name: (factory, set(keys)) for name, (factory, keys) in json.loads(result.stdout).items()}
 
 
