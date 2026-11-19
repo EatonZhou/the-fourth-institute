@@ -10,6 +10,8 @@ from management_portal.http_routes import RouteDefinition
 
 # The Notice Board panel on Home with its dialogs, styles and script (web.home_panel).
 HOME_PANEL = Path(__file__).with_name("notice_board_home.html")
+# The existing Home panel opens the requested post after loading its list.
+RESOURCE_ROUTES = {"notice": ("/", "notice_post")}
 
 
 class NoticeBoardHttp:
