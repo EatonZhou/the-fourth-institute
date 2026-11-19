@@ -4,12 +4,12 @@ type: decision
 project: AI员工
 created_at: '2026-09-01'
 version:
-  number: 54
+  number: 56
   created_at: "2026-09-01"
   created_by:
     user: ""
     agent: ""
-  updated_at: "2026-11-19T12:51:31Z"
+  updated_at: "2026-11-19T13:08:35Z"
   updated_by:
     user: ""
     agent: "resident_62dbdb2288fb"
@@ -98,7 +98,7 @@ PDF / Build 工具栏最右侧提供单颗 16px 的无边框星标：空心表�
 
 编辑区的两种模式：
 - **Code**：编辑源码。编辑器优先使用浏览器内的 Monaco 代码编辑器；Monaco 加载失败时，改用普通文本框编辑。
-- **Visual**：用 Portal 共享的预览组件显示当前文件的渲染结果，例如 Markdown 渲染后的效果或图片本身。打开图片、PDF 等非文本文件时只有 Visual 模式。
+- **Visual**：用 Portal 共享的预览组件显示当前文件的渲染结果，例如 Markdown 渲染后的效果或图片本身。打开图片、PDF 等非文本文件时只有 Visual 模式。 打开 PPT/PPTX 时，Article 原始文件入口在 viewer 授权与源码根路径检查后，将文件交给共享演示文稿转换服务，当前文件标签显示派生 PDF，支持逐页阅读与缩放；转换和缓存遵循 decision_61e50306cc79。同内容重复打开复用缓存，文件内容改变才产生新结果。下载仍取得原始演示文稿，转换失败在预览内提示并保留下载入口，不改变文稿源码或 LaTeX 构建产物。
 
 工具默认共用左侧标签组，源码与 PDF 继续并排显示。在工作台允许调整布局时，从组顶端的标签条将任一工具拖到其他区域的边缘，可在右侧、左侧、上方或下方建立独立区域；拖到另一组的标签条或中央则并回该组。复用 Workbench 的拖放、分隔线、隐藏和布局保存能力。各工具最小宽度为 180px，Chat 使用共享聊天组件的最小宽度；同组采用成员的约束。关闭工具只隐藏该工具，左侧图标可重新打开；反复点击已显示工具的图标只聚焦它。
 
@@ -193,7 +193,7 @@ Article 按登记 Project 的当前权限方案放置。预检展示项目祖先
 
 **contributor 点击编译后，服务用 `latexmk` 编译主文稿，把 PDF 和日志写入构建缓存；同一个 Article 同一时间只允许一次编译。**
 
-LaTeX 命令、进程执行、日志解析和增量判断由共享构建器持有；Article 适配负责文稿身份、设置、主文件和报告位置，Repo 适配可以提供隔离源码副本及独立输出缓存。二者不互相登记资源，Article 的停止、草稿模式、诊断与 SyncTeX 合同保持在 Article 适配内。BibTeX 在所选主文件目录解析相对引用，辅助输出限定到本次构建目录，不因父目录参考文献放宽全局写权限。
+LaTeX 命令、进程执行、日志解析和增量判断由共享构建器持有；其实现位于 `management_common/latex_build.py` 及同层的工具链、源码识别、预检和诊断模块，不读取资源登记、权限或报告数据库。每个资源适配器持有独立的 `BuildRuntime`，活动构建与停止请求不跨适配器共享。Article 的 Project 关联与身份字段由 Article 适配器补入预检，独立预检和编译报告中的预检保持一致；Article 适配负责文稿身份、设置、主文件和报告位置，Repo 适配可以提供隔离源码副本及独立输出缓存。二者不互相登记资源，Article 的停止、草稿模式、诊断与 SyncTeX 合同保持在 Article 适配内。BibTeX 在所选主文件目录解析相对引用，辅助输出限定到本次构建目录，不因父目录参考文献放宽全局写权限。
 
 1. **设置。** 设置面板保存以下选项，格式为 `tfi.article-build-settings.v3`，不支持的取值会被拒绝：
    - 编译器：`pdflatex`、`xelatex` 或 `lualatex`；
@@ -255,7 +255,8 @@ TexLab 由 Article 后端持有并通过共享进程运行器管理整个原生�
 | Article 工具面板 | `static/article_workspace_tools.js` | 登记 `article-files`、`article-favorites`、`article-search`、`article-git`、`article-chat`、`article-settings`、`article-library` 单实例 Panel Package；持有工具根节点与激活/显隐/销毁生命周期，使用注入的 Article 会话服务；`article_workspace_layout.js` 负责组合、图标聚焦及旧布局迁移 | 激活失败保留工具内容并提示；拖动不销毁实例 |
 | Article 登记提供者 | ResourceService 中的 `resources/providers/article.py` | 登记、按目录协议注销并排入所属文件清理、维护自动登记忽略列表 | 登记已注销而文件清理失败时，保留持久任务并重试 |
 | Article 后端 | 14 个 `article_*.py` 模块：文件读写与搜索 `article_files`、设置 `article_settings`、语义索引 `article_semantic_index`、构建 `article_build*`、SyncTeX `article_synctex`、Git `article_git`、登记 `article_registration` 等 | 源码根边界、文件读写、搜索、设置、语义索引、构建、SyncTeX 和 Git | 临时文件替换保存；语义索引可重建 |
-| 构建执行 | `article_build.py` | 每个 Article 最多一次编译、写构建缓存与报告 | 停止结束进程组；报告保留失败原因；从头构建只清空目标缓存 |
+| Article 构建适配 | `article_build.py`、`article_build_profile.py`、`article_build_results.py` | 解析 Article 身份、设置、Project 关联、缓存租约与报告位置，持有独立运行状态 | 每个 Article 最多一次编译；停止范围不影响 Repo 构建 |
+| 共享构建机制 | `management_common/latex_build.py`、`latex_toolchain.py`、`latex_profile.py`、`latex_source.py`、`latex_diagnostics.py` | 按调用方提供的源目录、主文件、输出、缓存与报告回调执行构建 | 统一处理进程树、超时、增量与日志；失败保留上次有效 PDF，报告区分本次结果 |
 | TexLab 管理 | `article_texlab_backend.py` | 按资源生命周期与 Article 复用语言服务；普通编辑器独立由 Web 生命周期持有，同步编辑内容与诊断 | 开放生命周期内可重建退出或源码根变化的服务；关闭后等待当前请求、禁止重启并回收进程树，失败保留所有权重试 |
 | 自动登记 | `resource_auto_registration.py` | 按 decision_36f46b395d8e 发现稿件并调用正式登记 | 跳过忽略列表中的路径 |
 | 源码评论 | `article_comments.py`、`static/article_workspace_comments.js` | 共享讨论串、源码选区定位、回复与解决状态 | 事务保存；冲突保留草稿，无法定位时保留原始引用 |
@@ -283,7 +284,7 @@ article_* ─→ Article 登记确定源码根 ─→ 文件树与编辑内容 �
 | `POST /api/articles/{id}/comments` | create、reply、resolve、reopen、edit、delete；修改和状态变更带讨论串 version，冲突返回 409 |
 | `GET /api/articles/{id}/files` | 源码树 |
 | `GET /api/articles/{id}/file?path=` | 文本内容和内容摘要（加 `meta=1` 只返回文件信息） |
-| `GET /api/articles/{id}/raw?path=` | 原始字节，浏览器能显示的类型直接显示，加 `download=1` 强制下载 |
+| `GET /api/articles/{id}/raw?path=` | 原始字节；PPT/PPTX 加 `preview=pdf` 返回受保护的转换 PDF；`download=1` 优先下载原文件 |
 | `GET /api/articles/{id}/search?q=` | 在源码根内搜索 |
 | `GET /api/articles/{id}/settings` | 构建设置 |
 | `GET /api/articles/{id}/build` | 构建报告和编译状态 |

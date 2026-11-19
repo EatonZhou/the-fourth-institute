@@ -93,8 +93,14 @@ class ArticlesHttp:
                     raise ValueError("article file path required")
                 if action == "raw":
                     file_path = article_files.resolve_article_raw_file(article_id, relative_path)
+                    if (qs.get("download") or [""])[0] == "1":
+                        return self.serve_download(request, file_path)
+                    if (qs.get("preview") or [""])[0] == "pdf":
+                        from .presentation_preview import presentation_pdf, read_presentation
+                        converted = presentation_pdf(read_presentation(file_path), file_path.name)
+                        return self.serve_media(request, converted, "application/pdf")
                     content_type = self.media_content_type(file_path)
-                    if (qs.get("download") or [""])[0] == "1" or not content_type:
+                    if not content_type:
                         return self.serve_download(request, file_path)
                     return self.serve_media(request, file_path, content_type)
                 reader = article_files.describe_article_file if (qs.get("meta") or [""])[0] == "1" else article_files.read_article_file

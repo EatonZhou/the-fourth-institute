@@ -98,6 +98,7 @@
     if (url.origin !== window.location.origin || !(
       ["/api/resources/content", "/api/agent-workbench/link-file-raw"].includes(url.pathname)
       || /^\/api\/uploads\/upload_[a-f0-9]+$/.test(url.pathname)
+      || /^\/api\/articles\/article_[a-f0-9]{12}\/raw$/.test(url.pathname)
     )) return "";
     url.searchParams.delete("download");
     url.searchParams.set("preview", "pdf");

@@ -16,6 +16,7 @@ import pytest
 
 from management_portal import presentation_preview as preview
 from management_portal.http_agent_workbench import AgentWorkbenchHttp
+from management_portal.http_articles import ArticlesHttp
 from management_portal.http_resources import ResourceHttp
 
 
@@ -158,6 +159,60 @@ def test_resource_preview_authorizes_each_request_and_download_stays_original(tm
     handler.download_file.assert_called_once_with(None, original)
 
 
+@pytest.mark.parametrize('suffix', ['.ppt', '.pptx'])
+def test_article_preview_authorizes_caches_and_preserves_original(tmp_path, monkeypatch, converter, suffix):
+    from management_portal import article_registry, article_files
+    article_id = 'article_0123456789ab'
+    root = tmp_path / 'article'
+    root.mkdir()
+    source = root / ('幻灯片' + suffix)
+    source.write_bytes(b'original presentation')
+    monkeypatch.setattr(article_registry, '_article_source_context', lambda _id: ({}, {}, root))
+    handler = ArticlesHttp.__new__(ArticlesHttp)
+    handler.session_actor = lambda _request: 'viewer'
+    handler.require_resource = Mock()
+    handler.respond = lambda _request, status, data: (status, data)
+    handler.exception_response = lambda _request, error: (403, str(error))
+    handler.serve_media = lambda _request, path, media: (path, media)
+    handler.serve_download = lambda _request, path: ('download', path)
+    handler.media_content_type = lambda _path: 'application/vnd.ms-powerpoint'
+    params = {'article_id': article_id, 'action': 'raw'}
+    metadata = article_files.describe_article_file(article_id, source.name)
+    url = metadata['rawUrl'] + '&preview=pdf'
+    read = lambda target=url: handler.workspace_read(None, urlsplit(target), 'ignored', params)
+    pdf, media = read()
+    assert media == 'application/pdf' and pdf.read_bytes().startswith(b'%PDF-')
+    assert pdf != source and source.read_bytes() == b'original presentation'
+    assert read() == (pdf, media)
+    assert converter.call_count == 1
+    assert handler.require_resource.call_args_list == [((article_id, 'viewer'),)] * 2
+    assert read(url + '&download=1') == ('download', source)
+    assert read(metadata['downloadUrl']) == ('download', source)
+    assert read(metadata['rawUrl']) == (source, 'application/vnd.ms-powerpoint')
+    assert converter.call_count == 1
+    # Authorization runs even with a ready PDF; revoked users never reach the cache.
+    handler.require_resource.side_effect = PermissionError('revoked')
+    assert read()[0] == 403
+    assert converter.call_count == 1
+    handler.require_resource.side_effect = None
+    # The existing Article resolver still rejects traversal and symlink escapes.
+    outside = tmp_path / ('outside' + suffix)
+    outside.write_bytes(b'outside')
+    (root / ('escape' + suffix)).symlink_to(outside)
+    for relative in ('../' + outside.name, 'escape' + suffix):
+        assert read(f'/api/articles/{article_id}/raw?path={relative}&preview=pdf')[0] == 400
+    assert read(f'/api/articles/{article_id}/raw?path=missing.ppt&preview=pdf')[0] == 404
+    assert converter.call_count == 1
+    source.write_bytes(b'changed presentation')
+    assert read()[0] != pdf
+    assert converter.call_count == 2
+    source.write_bytes(b'broken presentation')
+    converter.side_effect = lambda *a, **kw: SimpleNamespace(returncode=1)
+    status, error = read()
+    assert status == 400 and '损坏或已加密' in error['error']
+    assert read(metadata['downloadUrl']) == ('download', source)
+
+
 def test_local_file_permission_checked_before_conversion(tmp_path, monkeypatch):
     handler = AgentWorkbenchHttp.__new__(AgentWorkbenchHttp)
     api = Mock()
@@ -247,7 +302,8 @@ def test_browser_contract():
     subprocess.run(['node', str(Path(__file__).with_name('javascript') / 'presentation_preview.cjs')], check=True, timeout=30)
 
 
-def test_chromium_renders_converted_pdf_pages_zoom_and_original_download():
+@pytest.mark.parametrize('mode', [[], ['--article']], ids=['shared-preview', 'article-file'])
+def test_chromium_renders_converted_pdf_pages_zoom_and_original_download(mode):
     """共享 Preview 在 Chromium 中逐页渲染演示文稿转换出的 PDF，可缩放且下载原文件
 
     用两页 PDF 夹具代替 LibreOffice 输出，经支持 Range 的本地内容路由读取；核对页数、首尾页文字、滚动渲染、放大和原 slides.pptx 下载。
@@ -257,7 +313,7 @@ def test_chromium_renders_converted_pdf_pages_zoom_and_original_download():
     pdf = Path(__file__).with_name('fixtures') / 'paper-synthetic-counts.pdf'
     result = subprocess.run(
         ['node', str(Path(__file__).with_name('javascript') / 'presentation_preview.browser.cjs'),
-         str(pdf), '2', 'Synthetic Counts Study', 'TAU SYNTHETIC SAMPLE - continued'],
+         str(pdf), '2', 'Synthetic Counts Study', 'TAU SYNTHETIC SAMPLE - continued', *mode],
         capture_output=True, text=True, timeout=90,
     )
     assert result.returncode == 0, result.stdout + result.stderr

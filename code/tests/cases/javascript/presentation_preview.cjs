@@ -25,6 +25,10 @@ const cases = [
   { kind: 'office', path: 'workspace_0123456789ab/file/slides.ppt', raw_url: '/api/resources/content?address=workspace_0123456789ab%2Ffile%2Fslides.ppt' },
   { kind: 'binary', filename: '幻灯片.pptx', raw_url: '/api/uploads/upload_0123456789abcdef01234567' },
   { content_type: 'application/vnd.ms-powerpoint', raw_url: '/api/resources/content?address=upload_0123456789ab' },
+  { name: '幻灯片.PPTX', path: 'notes/幻灯片.PPTX', binary: true,
+    raw_url: '/api/articles/article_0123456789ab/raw?path=notes%2F%E5%B9%BB%E7%81%AF%E7%89%87.PPTX',
+    download_url: '/api/articles/article_0123456789ab/raw?path=notes%2F%E5%B9%BB%E7%81%AF%E7%89%87.PPTX&download=1' },
+  { path: 'notes/slides.ppt', raw_url: '/api/articles/article_0123456789ab/raw?path=notes%2Fslides.ppt&download=1' },
 ];
 for (const input of cases) {
   const doc = contract.normalizeDocument(input);
@@ -32,6 +36,9 @@ for (const input of cases) {
   assert.match(doc.previewUrl, /preview=pdf/);
   assert.equal(doc.rawUrl, input.raw_url);
   assert.equal(doc.downloadUrl, input.download_url || '');
+  const previewUrl = new URL(doc.previewUrl, w.location.href);
+  assert.equal(previewUrl.searchParams.has('download'), false);
+  assert.equal(previewUrl.searchParams.get('path'), new URL(input.raw_url, w.location.href).searchParams.get('path'));
   assert.equal(contract.isTextDocument(doc), false);
   const renderer = renderers.find(item => item.accepts(doc) && item.id === 'pdf');
   assert.ok(renderer);
@@ -45,6 +52,9 @@ for (const input of [
   { path: '/slides.pptx', raw_url: 'https://external.test/api/resources/content?address=ppt' },
   { path: '/slides.pptx', raw_url: '/unsupported-endpoint' },
   { path: '/slides.pptx', raw_url: 'http://[' },
+  { path: '/slides.pptx', raw_url: 'https://external.test/api/articles/article_0123456789ab/raw?path=slides.pptx' },
+  { path: '/slides.pptx', raw_url: '/api/articles/article_0123456789ab/file?path=slides.pptx' },
+  { path: '/slides.pptx', raw_url: '/api/articles/invalid/raw?path=slides.pptx' },
 ]) assert.equal(contract.normalizeDocument(input).previewUrl, '');
 assert.equal(contract.normalizeDocument({ kind: 'pdf', raw_url: '/slides.pdf' }).contentKind, 'pdf');
 // Conversion failures stay in Preview and do not load the error URL in an iframe.
