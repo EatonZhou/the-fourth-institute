@@ -679,8 +679,10 @@
     };
   }
 
-  function renderServerCapacity(record, records) {
+  function renderComputeCapacity(record, records) {
     const id = String(record.resource_id || "");
+    const cloud = deviceKind(record) === "google_colab";
+    const [balance, rate, assignments] = cloud ? googleDeviceMetrics(record) : [];
     const capacity = serverCapacity(record, records);
     const busyPercent = capacity.total ? Math.min(100, capacity.busy / capacity.total * 100) : 0;
     return window.PortalI18n.html`<article
@@ -694,12 +696,16 @@
         <strong>${esc(record.title || id)}</strong>
         <span>${esc(objectOf(record?.attributes).hostname || objectOf(record?.attributes).ip || deviceKindLabel(record))}</span>
       </div>
+      ${cloud ? window.PortalI18n.html`<div class="deviceCapacityCloudRate">${esc(rate.label)} ${esc(rate.value)} ${esc(rate.unit)}</div>` : window.PortalI18n.html`
       <div class="deviceCapacityTrack" aria-label="${capacity.total} 个 GPU 中有 ${capacity.busy} 个正在使用">
         <span style="width:${busyPercent.toFixed(2)}%"></span>
-      </div>
+      </div>`}
       <div class="deviceCapacityNumbers">
-        <strong>${capacity.busy}/${capacity.total}</strong>
-        <span>${capacity.available} 个可用</span>
+        ${cloud ? window.PortalI18n.html`
+          <strong aria-label="${esc(balance.label)} ${esc(balance.value)}">${esc(balance.value)} CU</strong>
+          <span>${esc(assignments.label)} ${esc(assignments.value)}</span>` : window.PortalI18n.html`
+          <strong>${capacity.busy}/${capacity.total}</strong>
+          <span>${capacity.available} 个可用</span>`}
       </div>
     </article>`;
   }
@@ -770,6 +776,8 @@
     const recordById = new Map(records.map(record => [String(record.resource_id || ""), record]));
     const roots = records.filter(record => !String(objectOf(record?.attributes).parent_device_id || "").trim());
     const serverRecords = roots.filter(record => deviceKind(record) === "gpu_server");
+    const cloudRecords = roots.filter(record => deviceKind(record) === "google_colab");
+    const computeRecords = [...serverRecords, ...cloudRecords];
     const attentionRecords = records
       .map(record => ({ record, reason: deviceAttentionReason(record) }))
       .filter(item => item.reason)
@@ -800,11 +808,13 @@
           <section class="deviceOperationsPanel deviceCapacityPanel">
             <header>
               <div><span>容量</span><h2>计算资源池</h2></div>
-              <small>${serverRecords.length} 台服务器</small>
+              <small>${cloudRecords.length
+                ? window.PortalI18n.text`${serverRecords.length} 台服务器 · ${cloudRecords.length} 项云算力`
+                : window.PortalI18n.text`${serverRecords.length} 台服务器`}</small>
             </header>
             <div class="deviceCapacityList">
-              ${serverRecords.length
-                ? serverRecords.map(record => renderServerCapacity(record, records)).join("")
+              ${computeRecords.length
+                ? computeRecords.map(record => renderComputeCapacity(record, records)).join("")
                 : window.PortalI18n.t('<div class="devicePanelEmpty">暂无可统计容量的根设备。</div>')}
             </div>
           </section>
@@ -1283,22 +1293,24 @@
     if (isGoogleDevice(record)) {
       return window.PortalI18n.html`<section class="deviceDetailPanel deviceDetailSsh">
         <header><span>云资源</span><h3>使用说明</h3></header>
-        ${deviceKind(record) === "google_colab" ? window.PortalI18n.html`
-          <p>用官方 Colab CLI 启动共享会话 ${esc(colab?.session || "portal-colab")}，按任务选择 CPU 或 GPU。打开终端和 SSH 测试只连接已有会话。</p>
-          <p><code>colab new -s ${esc(colab?.session || "portal-colab")} --gpu A100</code></p>
-          <p>任务结束后，在官方 CLI 停止会话以结束计费。GPU 型号随当前分配而定。</p>
-          <p><code>colab stop -s ${esc(colab?.session || "portal-colab")}</code></p>
-          <a href="https://github.com/googlecolab/google-colab-cli">Colab CLI 使用文档</a>
-          ${colab?.transport === "colab" ? window.PortalI18n.html`
+        <div class="deviceUsageGuide markdownBody">
+          ${deviceKind(record) === "google_colab" ? window.PortalI18n.html`
+            <p>启动共享会话后即可使用下方的 SSH 测试和终端。GPU 型号以实际分配为准。</p>
+            <pre><code>colab new -s ${esc(colab?.session || "portal-colab")} --gpu A100</code></pre>
+            <p>任务完成后停止会话，结束计费。</p>
+            <pre><code>colab stop -s ${esc(colab?.session || "portal-colab")}</code></pre>
+            <a class="portalButton" href="https://github.com/googlecolab/google-colab-cli">Colab CLI 使用文档</a>
+          ` : window.PortalI18n.html`
+            <p>在 Colab 挂载 Drive 后，把项目文件放在 <code>MyDrive/Dirtybase Portal</code>。Portal 主机使用 <code>colab_drive:</code> 访问这个目录。</p>
+            <a class="portalButton" href="https://rclone.org/drive/">Google Drive 使用文档</a>
+          `}
+        </div>
+        ${colab?.transport === "colab" ? window.PortalI18n.html`
             <div class="deviceSshActions">
               <button class="portalButton" type="button" data-device-ssh-test="${esc(record.resource_id)}">测试 SSH 连通性</button>
               ${window.PortalIdentity?.peek()?.access?.allows?.OpenTerminal === true ? window.PortalI18n.html`<button class="portalButton is-primary" type="button" data-device-terminal-open="${esc(record.resource_id)}">打开 Terminal</button>` : ""}
               <span class="deviceSshTestResult" role="status"></span>
             </div>` : ""}
-        ` : window.PortalI18n.html`
-          <p>在 Colab Notebook 内挂载 Google Drive，用于保存训练数据、权重和检查点。Portal 主机的 rclone 连接名为 colab_drive。</p>
-          <a href="https://rclone.org/drive/">Google Drive 使用文档</a>
-        `}
       </section>`;
     }
     const ssh = deviceSshInfo(record, parent, resolution);
@@ -1486,14 +1498,18 @@
     detailRefreshRevisions.set(id, revision);
     const sequence = state.requestSequence;
     try {
-      const record = await getJson(`/api/resource-index/resources/${encodeURIComponent(id)}`);
+      let record = await getJson(`/api/resource-index/resources/${encodeURIComponent(id)}`);
       if (sequence !== state.requestSequence || detailRefreshRevisions.get(id) !== revision) return;
+      if (isGoogleDevice(record)) {
+        const previous = state.records.find(item => item.resource_id === id);
+        record = { ...record, attributes: { ...previous?.attributes, ...record.attributes } };
+      }
       state.records = state.records.map(item => item.resource_id === id ? record : item);
       if (state.lastPayload) state.lastPayload.resources = state.records;
       const byId = new Map(state.records.map(item => [item.resource_id, item]));
       elements.results.querySelectorAll(`[data-resource-open="${CSS.escape(id)}"]`).forEach(node => {
         const markup = node.classList.contains("deviceTelemetryCard") ? renderTelemetryDevice(record, byId)
-          : node.classList.contains("deviceCapacityRow") ? renderServerCapacity(record, state.records)
+          : node.classList.contains("deviceCapacityRow") ? renderComputeCapacity(record, state.records)
           : renderCard(record);
         const template = document.createElement("template");
         template.innerHTML = markup;

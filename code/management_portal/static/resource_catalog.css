@@ -342,6 +342,11 @@ body {
   text-align: right;
 }
 
+.deviceCapacityCloudRate {
+  color: var(--muted);
+  font-size: 10px;
+}
+
 .deviceCapacityTrack,
 .deviceMetricTrack {
   height: 6px;
@@ -814,6 +819,15 @@ body[data-resource-category="device"] #resourceDetailBody {
 
 .deviceDetailSsh {
   grid-column: 1 / -1;
+}
+
+.deviceUsageGuide {
+  min-width: 0;
+  padding: 12px;
+  color: var(--text);
+  font-family: var(--portal-font);
+  font-size: 12px;
+  line-height: 1.55;
 }
 
 .deviceSshActions {
