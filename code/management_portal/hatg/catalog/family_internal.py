@@ -11,6 +11,15 @@ def _d(name, decides, description, parameters, result, *, mutates=True, target="
 
 
 DECLARATIONS = (
+    _d("GetFamilyRoutingContext", ON_RESIDENT, "按需读取某条门面请求的可选成员或已冻结的唯一上一轮问答；不派发任务、不重算历史候选。", (
+        R("resident_id", description="Family 门面"),
+        R("message_id", description="门面的原请求 ID，来自路由任务 facts.message_id"),
+        P("section", description="members（默认）：当前可选直属成员/Steward 与 Solo/Mute；previous_round：受理时冻结的上一轮问答或 null",
+          enum=("members", "previous_round")),
+    ), (R("resident_id", description="Family 门面"), R("message_id", description="原请求 ID"),
+        P("members", "array", "候选 ID、角色、名称及读取可用性；摘要、状态和能力通过各自指令按需读取"),
+        P("chat_preferences", "object", "该请求原发送者的路由约束"),
+        P("previous_round", "object", "唯一上一轮问答；无冻结候选时为 null")), mutates=False, target="resident_id"),
     _d("CheckFamilyReview", ON_LINEAGE, "记录本 Family 业务成员已完成输入的活动水位，或在定时检查时合并派发有新材料的组织回顾；无新增、Steward 忙碌或门面暂停时不启动模型。", (
         R("lineage_id", description="Family 所在 Lineage"),
         R("family_id", description="Family 资源 ID 或 Function Block 键"),

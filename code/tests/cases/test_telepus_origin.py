@@ -94,14 +94,13 @@ def test_isa_delivery_uses_only_trusted_context(facade):
 
 
 def test_family_router_and_member_keep_source_channel(facade, monkeypatch):
-    from management_portal.society_service import family_facade, family_tasks, family_task_dispatches, family_route_facts
+    from management_portal.society_service import family_facade, family_tasks, family_task_dispatches
     from management_portal.society_service import resident_conversation_stream, resident_intake_domain, resident_record_domain
     facade_id = facade['resident_id']
     _register_test_member(facade, '成员')
     original = 'msg_' + 'e' * 32
     resident_intake_domain.deliver_resident_message_content(facade_id, 'CASE-A', 'hello', message_id=original, channel='weixin')
     monkeypatch.setattr(family_tasks, 'render', lambda *args: 'route hello')
-    monkeypatch.setattr(family_route_facts, 'snapshot', lambda *args: {})
     target = resident_record_domain.find_resident(MEMBER)
     routed = 'msg_' + 'f' * 32
     family_task_dispatches.deliver(facade, target, 'route', {'message_id': original, 'routing': {}}, facade_id,

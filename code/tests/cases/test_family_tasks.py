@@ -45,7 +45,7 @@ def test_saved_guide_prompt_and_event_survive_roster_sync(configured_family, mon
         {"op": "update", "kind": "component", "id": ids["periodic_review"], "changes": {"config.interval_seconds": 7200}},
     ]})
     familize.sync_generated_structure(body["lineage_id"])
-    current, current_block = family_tasks.context(_find_resident(block["family"]["router"]))
+    current, current_block = family_tasks._guide_family(_find_resident(block["family"]["router"]))
     assert family_tasks.configured(current, current_block)["route"]["guide"] == "自定义路由指南"
     assert next(c for c in current["program"]["components"] if c["id"] == ids["periodic_review"])["config"]["interval_seconds"] == 7200
     target = _find_resident(block["family"]["router"])
@@ -55,7 +55,7 @@ def test_saved_guide_prompt_and_event_survive_roster_sync(configured_family, mon
     assert Path(path).read_text() == content and "自定义路由指南" in content
     ok("UpdateFamily", {"lineage_id": body["lineage_id"], "family_id": block["id"],
                         "review_interval_seconds": 3600})
-    refreshed, _ = family_tasks.context(target)
+    refreshed, _ = family_tasks._guide_family(target)
     assert next(c for c in refreshed["program"]["components"] if c["id"] == ids["periodic_review"])["config"]["interval_seconds"] == 3600
 
 
@@ -83,8 +83,8 @@ def test_router_task_keeps_sender_original_media_and_request_binding(configured_
     assert resident_conversation_stream.get_repository().message(family["facade"], mid)["quote"] == quote
     assert "完整的 Family 资料" not in text and "成员摘要" not in text and "<packet>" not in text
     assert "family-work-guide.md" in text
-    assert json.dumps({"members": family["members"], "steward": family["steward"]}, ensure_ascii=False)[1:-1] in text
-    assert "选择其门面" in text
+    assert all(rid not in text for rid in [*family["members"], family["steward"]])
+    assert "previous_round" not in text and "routing" not in text
 
 
 def test_invalid_template_is_rejected_before_it_can_replace_current_task(configured_family):
@@ -266,7 +266,7 @@ def test_queue_default_migration_preserves_each_edited_field(configured_family, 
     ok("ApplyLineageChanges", {"lineage_id": body["lineage_id"], "operations": [
         {"op": "update", "kind": "wire", "id": wire_id, "changes": {"config.invoke_profiles": profiles}}]})
     familize.sync_generated_structure(body["lineage_id"])
-    current, current_block = family_tasks.context(_find_resident(block["family"]["steward"]))
+    current, current_block = family_tasks._guide_family(_find_resident(block["family"]["steward"]))
     projected = family_tasks.configured(current, current_block)["queue"]
     stored = next(w for w in current["program"]["wires"] if w["id"] == wire_id)["config"]["invoke_profiles"]["effect"]["arguments"]["family_tasks"]["value"]["queue"]
     assert {k: projected[k] for k in expected} == expected
@@ -285,7 +285,7 @@ def test_recovery_default_migration_preserves_edits(configured_family, custom):
     ok("ApplyLineageChanges", {"lineage_id": body["lineage_id"], "operations": [
         {"op": "update", "kind": "wire", "id": wire_id, "changes": {"config.invoke_profiles": profiles}}]})
     familize.sync_generated_structure(body["lineage_id"])
-    current, current_block = family_tasks.context(_find_resident(block["family"]["steward"]))
+    current, current_block = family_tasks._guide_family(_find_resident(block["family"]["steward"]))
     guide = family_tasks.configured(current, current_block)["recovery"]["guide"]
     assert guide == (original if custom else family_tasks.TASKS["recovery"][3])
     assert next(w for w in current["program"]["wires"] if w["id"] == wire_id)["config"]["invoke_profiles"]["effect"]["arguments"]["family_tasks"]["value"]["recovery"]["guide"] == guide
@@ -489,7 +489,7 @@ def test_quota_guide_preserves_context_and_migrates_only_shipped_defaults(config
     custom = {'guide': '保留人工额度处理指南', 'prompt': '人工任务 ${facts}'}
     assert family_tasks.saved_fields('quota', custom) == custom
     steward = _find_resident(block['family']['steward'])
-    guide = family_tasks.configured(*family_tasks.context(steward))['quota']['guide']
+    guide = family_tasks.configured(*family_tasks._guide_family(steward))['quota']['guide']
     assert '优先完整保留上下文' in guide
     assert 'context_strategy=compact' in guide
     assert '不等待用户选择，不空白重开' in guide

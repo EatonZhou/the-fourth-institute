@@ -50,6 +50,15 @@ def dispatch_family_task(inv):
     return _dispatch_family_task(inv, dispatch)
 
 
+def get_family_routing_context(inv):
+    from ..family_routing_context import read
+    try:
+        return read(inv.argument("resident_id"), inv.argument("message_id"), inv.caller,
+                    section=inv.argument("section") or "members")
+    except ValueError as exc:
+        raise invalid(str(exc)) from exc
+
+
 def recover_family_task(inv):
     from ..family_task_dispatches import recover_dispatch
     return _dispatch_family_task(inv, recover_dispatch)
@@ -116,6 +125,7 @@ def publish_family_progress(inv):
 
 
 HANDLERS = {"Familize": familize, "Unfamilize": unfamilize, "DeleteFamily": delete_family, "UpdateFamily": update_family,
+            "GetFamilyRoutingContext": get_family_routing_context,
             "ResolveFamilyRequest": archive_family_result,
             "CheckFamilyReview": check_family_review,
             "CheckFamilyRecovery": check_family_recovery, "CheckFamilyProgress": check_family_progress,

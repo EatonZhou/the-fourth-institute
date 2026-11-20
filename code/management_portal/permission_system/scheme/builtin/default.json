@@ -1440,6 +1440,9 @@
     "GetFamilyChatPreferences": {
       "a": "@viewer"
     },
+    "GetFamilyRoutingContext": {
+      "a": "@viewer"
+    },
     "UpdateFamilyChatPreferences": {
       "a": "@viewer"
     }

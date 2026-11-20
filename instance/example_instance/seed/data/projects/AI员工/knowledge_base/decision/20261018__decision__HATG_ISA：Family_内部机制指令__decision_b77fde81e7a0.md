@@ -4,15 +4,15 @@ type: decision
 project: AI员工
 created_at: '2026-10-18'
 version:
-  number: 21
+  number: 23
   created_at: "2026-10-18"
   created_by:
     user: ""
     agent: "resident_7765faecc45a"
-  updated_at: "2026-11-05T13:23:39Z"
+  updated_at: "2026-11-20T12:13:09Z"
   updated_by:
     user: ""
-    agent: "resident_6199a7a36480"
+    agent: "resident_26a8281c84cc"
 importance: 5
 ai_generated: false
 links:
@@ -33,6 +33,7 @@ Family 内部机制指令是一个 Family 自己运转时使用的步骤：Route
 
 | 指令 | 改变状态 | 作用 | 默认方案要求 |
 | --- | --- | --- | --- |
+| `GetFamilyRoutingContext` | 否 | 按需读取原请求的可选成员或冻结上一轮 | 对 `resident_id` 有 @viewer，领域再次核验门面可读 |
 | `DispatchFamilyTask` | 是 | 按 Family 当前场景模板派发精简任务 | 对 `resident_id` 有 @contributor |
 | `ResolveFamilyRequest` | 是 | 将 Steward 已完成的路由复核成果归档到原请求，保留原失败回执且不重新执行 | 对 `resident_id` 有 @contributor |
 | `RelayFamilyMessage` | 是 | 转交门面原请求，成员周额度低于 10% 时先等待 steward 复核；纯告知由门面收下 | 对 `resident_id` 有 @contributor |
@@ -74,12 +75,21 @@ Event 类型、Watch 对象、触发参数、Route 到 Effect 的连线及各场
 - 可选 facts 为本轮结构化事实；source_message_id 绑定原门面消息，route 场景必需。平台读取该消息的作者、原文、附件引用及引用信息，覆盖对应事实，不让调用者伪造原请求。
 - 可选 event 只提取事件标识、类型、主体、队列指标等本轮必要信息，不透传完整运行快照。
 - 可选 message_id 为此次派发的稳定消息 ID，用于去重；与原请求 source_message_id 不同。
+- 指令进程中断后，只有显式稳定 message_id 且已保存首次派发意图时，原幂等调用才进入领域核对：重新检查当前权限、来源范围和原目标角色，沿同一任务身份核对完整首次请求及接收回执；已接收或已取消的任务只返回原接收事实，未接收的任务续完已冻结意图。不得重渲染首次意图、重新选目标、复活已取消任务或创建新消息 ID。没有可靠意图、角色已变化或身份冲突时保留结果未知，不能以盲目重发消除错误。Effect 已要求人工处置的旧激活仍需核验领域事实后终结，不因部署新代码自动重跑。
 - 从对应 Route 的 family_tasks 参数读取 guide/prompt；物化工作区 family-work-guide.md，渲染当前事实、指南路径和版本。完整指南仅由统一上下文构造器在会话首轮注入。
 - 任务以门面为发送者、调用者为发起者投给对应内部角色，返回投递回执。内部角色不因此进入发起者的直接会话列表；不自动加载成员摘要、状态和往来。
 
-`trigger` 是任务场景，不是 Event 类型。`DispatchFamilyTask` 自动为 facts 加入 facade、lineage_id、family_id；source_message_id 另映射为 facts.message_id。event 只保留顶层 id、event_id、type、subject_resident_id，以及 payload 中的 resident_id、message_id、queue_count、pressure_metric、pressure_threshold、pressure_value、oldest_wait_seconds，并把后者平铺到 facts.event；不存在的字段不补造。
+`trigger` 是任务场景，不是 Event 类型。`DispatchFamilyTask` 在内部受理记录为 facts 加入 facade、lineage_id、family_id；source_message_id 另映射为 facts.message_id。route 渲染仅保留 facade、message_id、sender、content 及存在的 quote，其他内部事实不自动写入正文；指南路径和版本即使在自定义模板中遗漏也补齐，并给出短重读提示。event 只保留顶层 id、event_id、type、subject_resident_id，以及 payload 中的 resident_id、message_id、queue_count、pressure_metric、pressure_threshold、pressure_value、oldest_wait_seconds，并把后者平铺到 facts.event；不存在的字段不补造。
 
 当前 Effect 也可通过服务分支派发：`RelayFamilyMessage` 引出 recruit/quota，`CheckFamilyRecovery` 引出 recovery，`CheckFamilyProgress` 引出 progress，组织变更与门面 info 引出 organization。这些路径用 `tell_steward` 读取同一场景模板，但只渲染各调用方传入的 task_facts，不自动补充 `DispatchFamilyTask` 的三个公共字段；不能把配置所在连线误认为独立触发 Event。
+
+## 按需读取路由材料
+
+`GetFamilyRoutingContext(resident_id, message_id, section?)` 是只读入口。resident_id 为 Family 门面，message_id 为已经存在的门面原请求；先按当前调用者核验可见性，再读取消息和路由材料。
+
+- `section=members`（默认）：返回当前允许的直属成员和 Steward 的 ID、角色、名称及可读状态，以及该请求原发送者的 Solo/Mute 约束。已受理请求读取冻结约束；尚无快照时只读当前设置，不创建快照。嵌套团队以门面为候选；缺失／不可读成员标为 unavailable。摘要、工作状态和能力不合并返回，使用各自指令按需读取。
+- `section=previous_round`：返回受理原请求时已冻结的唯一上一轮问答，缺失为 null。读取不扫描会话、替换候选或建立续谈关系，也不派发任务。后续 `RelayFamilyMessage(continue_previous=true)` 仍由原有规则核验并携带可信背景。
+- 两类结果都包含 resident_id 与 message_id；section 不支持取全，避免把读取入口变成每轮自动整包预取。
 
 ## 转交门面请求
 
@@ -125,6 +135,7 @@ Steward 先归纳到期成员，再读取所需 Family 材料汇总门面；材�
 
 | 指令名 | arguments 参数名 |
 | --- | --- |
+| `GetFamilyRoutingContext` | `resident_id`、`message_id`、`section` |
 | `DispatchFamilyTask` | `resident_id`、`trigger`、`facts`、`source_message_id`、`message_id`、`event` |
 | `ResolveFamilyRequest` | `resident_id`、`message_id`、`steward_message_id`、`reason` |
 | `RelayFamilyMessage` | `resident_id`、`message_id`、`member_id`、`notice`、`continue_previous`、`quota_reviewed`、`scope_gap`、`scope_reviewed`、`reassign`、`recover`、`reason` |

@@ -30,12 +30,17 @@ def read_policy(c, facade_id, actor):
             'solo_member_id': row['solo_member_id']} if row else {'muted_member_ids': [], 'solo_member_id': ''}
 
 
+def read_snapshot(c, facade_id, message_id):
+    """Read an admitted routing policy without creating a snapshot."""
+    row = c.execute('SELECT excluded_member_ids,solo_member_id FROM family_chat_inputs WHERE facade_id=%s AND message_id=%s',
+                    (facade_id, message_id)).fetchone()
+    return {'muted_member_ids': list(row['excluded_member_ids']), 'solo_member_id': row['solo_member_id']} if row else None
+
+
 def capture(c, facade_id, author_id, message_id):
     """The author's policy frozen for one request: written the first time, read after that."""
     value = read_policy(c, facade_id, author_id)
     c.execute('INSERT INTO family_chat_inputs(facade_id,message_id,excluded_member_ids,solo_member_id) VALUES (%s,%s,%s,%s) ON CONFLICT DO NOTHING',
               (facade_id, message_id, value['muted_member_ids'], value['solo_member_id']))
-    row = c.execute('SELECT excluded_member_ids,solo_member_id FROM family_chat_inputs WHERE facade_id=%s AND message_id=%s',
-                    (facade_id, message_id)).fetchone()
     # The private legacy column retains immutable admitted routing snapshots.
-    return {'muted_member_ids': list(row['excluded_member_ids']), 'solo_member_id': row['solo_member_id']}
+    return read_snapshot(c, facade_id, message_id)

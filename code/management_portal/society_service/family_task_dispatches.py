@@ -248,9 +248,6 @@ def deliver(facade, target, trigger, facts, actor, *, business_ref, message_id="
         else:
             prior = repository.message(target_id, mid)
             render_facts = copy.deepcopy(facts)
-            if trigger == "route" and prior is None:
-                from . import family_route_facts
-                render_facts["routing"].update(family_route_facts.snapshot(facade, target, facts["routing"]))
             text = family_tasks.render(target, trigger, render_facts)
             if prior is not None:
                 text = _legacy_text(target, trigger, facts, prior, text)

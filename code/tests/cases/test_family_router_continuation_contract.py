@@ -69,23 +69,33 @@ def test_isa_rejects_non_boolean_values(value):
 
 def test_old_default_migrates_but_custom_route_guide_and_prompt_survive():
     assert family_tasks.saved_fields("route", {"guide": family_tasks._PRE_CONTINUATION_ROUTE_GUIDE}) == {}
+    assert family_tasks.saved_fields("route", {"guide": family_tasks._PRE_ON_DEMAND_ROUTE_GUIDE}) == {}
     custom = {"guide": "用户定制", "prompt": "自定义任务 ${facts}"}
     assert family_tasks.saved_fields("route", custom) == custom
 
 
-def test_custom_and_already_running_router_receive_previous_round_contract(monkeypatch, tmp_path):
+def test_custom_and_already_running_router_follow_versioned_guide(monkeypatch, tmp_path):
     from management_portal.society_service import resident_record_domain
     record = {"family": {"role": "router"}, "lineage_id": "lineage_test"}
     block = {"id": "fbi_test", "family": {"title": "团队", "facade": "resident_test"}}
     entry = {**family_tasks.defaults("route")["route"], "guide": "自定义路由指南",
              "prompt": "自定义任务 ${facts} ${guide_path} ${guide_version}"}
-    monkeypatch.setattr(family_tasks, "context", lambda _: ({}, block))
+    monkeypatch.setattr(family_tasks, "_guide_family", lambda _: ({}, block))
     monkeypatch.setattr(family_tasks, "configured", lambda *_: {"route": entry})
     monkeypatch.setattr(resident_record_domain, "resident_owned_workspace_path", lambda _: tmp_path)
     guide = family_tasks.guide(record)[2]
     prompt = family_tasks.render(record, "route", {"previous_round": None})
     assert "自定义路由指南" in guide
-    for text in (guide, prompt):
-        assert family_tasks.ROUTER_CONTINUATION_CONTRACT in text
-    assert "previous_round 为 null" in prompt
-    assert "同一成员、时间相邻或话题相似都不是充分证据" in prompt
+    assert family_tasks.ROUTER_CONTINUATION_CONTRACT in guide
+    assert family_tasks.ROUTER_FACTS_CONTRACT in guide
+    assert family_tasks.ROUTER_CONTINUATION_CONTRACT not in prompt
+    assert family_tasks.ROUTER_FACTS_CONTRACT not in prompt
+    assert "previous_round" not in prompt
+    assert "指南版本变化" in prompt and "family-work-guide.md" in prompt
+    old_version = family_tasks.guide(record)[1]
+    entry["guide"] = "变更后的自定义指南"
+    assert family_tasks.guide(record)[1] != old_version
+    assert family_tasks.guide(record)[1] in family_tasks.render(record, "route", {})
+    entry["prompt"] = "自定义任务 ${facts}"
+    compact = family_tasks.render(record, "route", {})
+    assert "family-work-guide.md" in compact and family_tasks.guide(record)[1] in compact
