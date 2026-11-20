@@ -1740,21 +1740,21 @@
     "en": "Merge all",
     "zh-CN": "合并所有"
   },
-  "合并全部待处理请求和群体消息，不包含背景 info；至少需要两项": {
-    "en": "Merge all pending requests and groups, excluding background info; at least two items are required",
-    "zh-CN": "合并全部待处理请求和群体消息，不包含背景 info；至少需要两项"
+  "合并未暂存的待处理请求和群体消息，跳过背景更新": {
+    "en": "Merge unheld pending requests and groups, skipping background updates",
+    "zh-CN": "合并未暂存的待处理请求和群体消息，跳过背景更新"
   },
   "没有整理此 Mailbox 的权限": {
     "en": "You do not have permission to organize this Mailbox",
     "zh-CN": "没有整理此 Mailbox 的权限"
   },
-  "至少两项待处理请求或群体消息才能合并": {
-    "en": "At least two pending requests or groups are required to merge",
-    "zh-CN": "至少两项待处理请求或群体消息才能合并"
+  "至少两项未暂存的待处理请求或群体消息才能合并": {
+    "en": "At least two unheld pending requests or groups are required to merge",
+    "zh-CN": "至少两项未暂存的待处理请求或群体消息才能合并"
   },
-  "已合并全部待处理请求和群体消息": {
-    "en": "Merged all pending requests and groups",
-    "zh-CN": "已合并全部待处理请求和群体消息"
+  "已合并未暂存的待处理请求和群体消息": {
+    "en": "Merged unheld pending requests and groups",
+    "zh-CN": "已合并未暂存的待处理请求和群体消息"
   },
   "切换 Backend／账号或重启…": {
     "en": "Switch backend/account or restart…",

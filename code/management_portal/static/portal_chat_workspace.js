@@ -140,7 +140,7 @@
   });
 
   const {
-    workspaceQueueActionId, normalizeWorkspaceQueue, workspaceQueueHtml, bindWorkspaceQueue,
+    workspaceQueueActionId, normalizeWorkspaceQueue, workspaceQueueHtml, bindWorkspaceQueue, isQueueMergeCandidate,
     createInputHistory, persistedDraftAttachments, normalizeWorkspaceDraft, workspaceDraftHasContent,
     createDraftStore,
   } = chatWorkspaceModule("PortalChatWorkspaceInputs").createInputs({
@@ -2069,15 +2069,10 @@
           if (!view?.can_organize) throw new Error(window.PortalI18n.t("没有整理此 Mailbox 的权限"));
           // Use the current Mailbox, including requests outside the Chat preview.
           const pending = (Array.isArray(view.pending) ? view.pending : [])
-            .filter(item => item.kind !== "info");
+            .filter(isQueueMergeCandidate);
           if (pending.length < 2) {
-            window.PortalUI?.toast?.(window.PortalI18n.t("至少两项待处理请求或群体消息才能合并"));
+            window.PortalUI?.toast?.(window.PortalI18n.t("至少两项未暂存的待处理请求或群体消息才能合并"));
             await this.protocol?.load({ force: true });
-            return null;
-          }
-          if (new Set(pending.map(item => item.held === true)).size > 1) {
-            window.PortalUI?.toast?.(window.PortalI18n.t("请在 Mailbox 选择暂存状态相同的消息再合并。"));
-            await this.openQueueMailbox(target.resident_id);
             return null;
           }
           const result = await window.PortalResidentProtocol.mergeMailboxItems({
@@ -2085,7 +2080,7 @@
             message_ids: pending.map(item => item.message_id),
           });
           if (!isCurrent()) return result;
-          window.PortalUI?.toast?.(window.PortalI18n.t("已合并全部待处理请求和群体消息"), "success");
+          window.PortalUI?.toast?.(window.PortalI18n.t("已合并未暂存的待处理请求和群体消息"), "success");
           await this.protocol?.load({ force: true });
           return result;
         } catch (error) {

@@ -14,6 +14,10 @@
     return String(item?.message_id || "").trim();
   }
 
+  function isQueueMergeCandidate(item) {
+    return item.kind !== "info" && item.held !== true;
+  }
+
   function workspaceQueueItemMessage(item) {
     const parts = Array.isArray(item?.content_parts) ? item.content_parts : [];
     const text = parts
@@ -108,13 +112,11 @@
       if (!cfg.items.length) return "";
       const label = cfg.label || cfg.title || window.PortalI18n.t("排队消息");
       const canInject = cfg.active_turn_input_supported === true;
-      // Merge all uses the Mailbox selection contract (decision_15f7df737ed5).
-      // The Menu still provides selection, splitting and reordering.
       const mailbox = options.mailbox
         ? window.PortalI18n.html`<button class="workspaceQueueMailbox" type="button" data-workspace-queue-mailbox title="打开 Mailbox，暂存排队消息或把请求移到队首">暂存、移到队首等队列操作 ›</button>`
         : "";
-      const mergeAll = options.mergeAll && cfg.items.filter(item => item.kind !== "info").length >= 2
-        ? window.PortalI18n.html`<button class="portalButton is-compact workspaceQueueBtn" type="button" data-workspace-queue-merge-all ${cfg.actionInFlight ? "disabled" : ""} title="合并暂存状态相同的待处理请求和群体消息，不包含背景 info；至少需要两项">合并所有</button>`
+      const mergeAll = options.mergeAll && cfg.items.filter(isQueueMergeCandidate).length >= 2
+        ? window.PortalI18n.html`<button class="portalButton is-compact workspaceQueueBtn" type="button" data-workspace-queue-merge-all ${cfg.actionInFlight ? "disabled" : ""} title="合并未暂存的待处理请求和群体消息，跳过背景更新">合并所有</button>`
         : "";
       return window.PortalI18n.html`<div class="workspaceQueue" aria-label="${escapeHtml(cfg.aria_label || window.PortalI18n.t("排队消息"))}">
       <div class="workspaceQueueHeader"><div class="workspaceQueueTitle"><span>${escapeHtml(label)}</span>${mailbox}</div><div class="workspaceQueueHeaderActions">${mergeAll}<span>${cfg.items.length}</span>${cfg.items.length > 1 ? window.PortalI18n.html`<button class="portalButton is-compact workspaceQueueBtn" type="button" data-workspace-queue-clear ${cfg.actionInFlight ? "disabled" : ""} title="清除全部排队消息，不影响正在执行的消息">全部清除</button>` : ""}</div></div>
@@ -462,7 +464,7 @@
     }
 
     return Object.freeze({
-      workspaceQueueActionId, normalizeWorkspaceQueue, workspaceQueueHtml, bindWorkspaceQueue,
+      workspaceQueueActionId, normalizeWorkspaceQueue, workspaceQueueHtml, bindWorkspaceQueue, isQueueMergeCandidate,
       createInputHistory, persistedDraftAttachments, normalizeWorkspaceDraft,
       workspaceDraftHasContent, createDraftStore,
     });

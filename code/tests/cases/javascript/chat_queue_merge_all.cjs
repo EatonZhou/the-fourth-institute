@@ -92,7 +92,8 @@ async function main() {
     render();
     assert.ok(button(), 'Resident Chat queued header exposes Merge all');
     assert.equal(button().textContent, '合并所有');
-    mailbox.pending = [...items, ...Array.from({length:60},(_,i)=>({message_id:'msg_extra_'+i,kind:'request'})), {message_id:'msg_info',kind:'info'}];
+    mailbox.pending = [...items, ...Array.from({length:60},(_,i)=>({message_id:'msg_extra_'+i,kind:'request'})),
+      {message_id:'msg_held',kind:'request',held:true}, {message_id:'msg_info',kind:'info'}];
     let releaseRead, releaseMerge;
     holdRead = new Promise(resolve=>releaseRead=resolve);
     holdMerge = new Promise(resolve=>releaseMerge=resolve);
@@ -101,7 +102,9 @@ async function main() {
     assert.equal(calls.filter(c=>c.instruction==='GetMailbox').length,1);
     assert.equal(merges().length,0);
     releaseRead();holdRead=null;await tick();
-    assert.deepEqual(merges()[0].args,{resident_id:FACADE,message_ids:mailbox.pending.filter(i=>i.kind!=='info').map(i=>i.message_id)}, 'same ordered selection as Mailbox select all, including hidden requests and whole groups, excluding info');
+    assert.deepEqual(merges()[0]?.args,{
+      resident_id:FACADE,message_ids:[...items.map(i=>i.message_id),...Array.from({length:60},(_,i)=>'msg_extra_'+i)],
+    },'one click merges unheld items in Mailbox order, including hidden requests and whole groups');
     assert.equal(refreshes,0,'no optimistic queue replacement');
     assert.equal(panel.workspace.root.querySelectorAll('.workspaceQueueItem').length,2);
     assert.equal(button().disabled,true,'remains locked through merge acknowledgement');
@@ -124,16 +127,17 @@ async function main() {
     w.PortalNav = {...w.PortalNav, openResidentMenu: options => opened.push(options)};
     mailbox.pending = [items[0], {...items[1], held:true}, {message_id:'msg_info',kind:'info'}];
     await click();
-    assert.equal(merges().length,count,'mixed holds in the fresh Mailbox are never sent to MergeMailboxItems');
-    assert.equal(opened.length,1,'mixed holds open Mailbox for an explicit selection');
-    assert.equal(opened[0].residentId,FACADE);
-    assert.equal(opened[0].tab,'mailbox');
+    assert.equal(merges().length,count,'one unheld item in the fresh Mailbox is insufficient');
+    assert.equal(opened.length,0,'Merge all never opens Mailbox selection');
     assert.match(notices.at(-1).text,/暂存/);
     assert.equal(button().disabled,false);
     mailbox.pending = items.map(item=>({...item,held:true}));
     await click();
-    assert.deepEqual(merges().at(-1).args.message_ids,items.map(item=>item.message_id),'all-held selections still merge');
-    count=merges().length;
+    assert.equal(merges().length,count,'all-held Mailbox is left alone even with a stale Chat preview');
+    assert.equal(opened.length,0);
+    render(mailbox.pending);assert.equal(button(),null,'all-held preview offers no Merge all');
+    render([items[0],mailbox.pending[1]]);assert.equal(button(),null,'a held group does not count toward the minimum');
+    render([...items,mailbox.pending[1]]);assert.ok(button(),'two unheld items and a held group offer Merge all');
     render([items[1]]);assert.equal(button(),null,'a single displayed group offers no Merge all');
     render([]);assert.equal(button(),null,'empty queue has no toolbar');
     render(); mailbox.pending=items;
