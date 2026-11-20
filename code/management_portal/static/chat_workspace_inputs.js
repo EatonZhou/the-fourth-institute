@@ -114,7 +114,7 @@
         ? window.PortalI18n.html`<button class="workspaceQueueMailbox" type="button" data-workspace-queue-mailbox title="打开 Mailbox，暂存排队消息或把请求移到队首">暂存、移到队首等队列操作 ›</button>`
         : "";
       const mergeAll = options.mergeAll && cfg.items.filter(item => item.kind !== "info").length >= 2
-        ? window.PortalI18n.html`<button class="portalButton is-compact workspaceQueueBtn" type="button" data-workspace-queue-merge-all ${cfg.actionInFlight ? "disabled" : ""} title="合并全部待处理请求和群体消息，不包含背景 info；至少需要两项">合并所有</button>`
+        ? window.PortalI18n.html`<button class="portalButton is-compact workspaceQueueBtn" type="button" data-workspace-queue-merge-all ${cfg.actionInFlight ? "disabled" : ""} title="合并暂存状态相同的待处理请求和群体消息，不包含背景 info；至少需要两项">合并所有</button>`
         : "";
       return window.PortalI18n.html`<div class="workspaceQueue" aria-label="${escapeHtml(cfg.aria_label || window.PortalI18n.t("排队消息"))}">
       <div class="workspaceQueueHeader"><div class="workspaceQueueTitle"><span>${escapeHtml(label)}</span>${mailbox}</div><div class="workspaceQueueHeaderActions">${mergeAll}<span>${cfg.items.length}</span>${cfg.items.length > 1 ? window.PortalI18n.html`<button class="portalButton is-compact workspaceQueueBtn" type="button" data-workspace-queue-clear ${cfg.actionInFlight ? "disabled" : ""} title="清除全部排队消息，不影响正在执行的消息">全部清除</button>` : ""}</div></div>

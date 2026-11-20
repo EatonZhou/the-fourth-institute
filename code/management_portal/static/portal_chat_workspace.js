@@ -1859,15 +1859,7 @@
         onQueueDelete: id => this.queueAction("cancelInput", id, { withdraw: true }),
         onQueueClear: () => this.clearQueue(),
         onQueueMergeAll: () => this.mergeQueue(),
-        onQueueMailbox: () => {
-          const residentId = this.target().resident_id;
-          if (!residentId || !window.PortalNav?.openResidentMenu) return undefined;
-          return window.PortalNav.openResidentMenu({
-            residentId,
-            tab: "mailbox",
-            onChanged: () => this.target().resident_id === residentId ? this.reload() : undefined,
-          });
-        },
+        onQueueMailbox: () => this.openQueueMailbox(),
         onCompact: () => this.runAction(() => this.send({ text: "/compact", refs: [], attachments: [] }, { clear: false, focus: false, rememberHistory: false })),
         onResetContext: () => this.resetContext(),
         onForward: items => openResidentForwardDialog(items, {
@@ -2055,6 +2047,15 @@
       });
     }
 
+    openQueueMailbox(residentId = this.target().resident_id) {
+      if (!residentId || !window.PortalNav?.openResidentMenu) return undefined;
+      return window.PortalNav.openResidentMenu({
+        residentId,
+        tab: "mailbox",
+        onChanged: () => this.target().resident_id === residentId ? this.reload() : undefined,
+      });
+    }
+
     mergeQueue() {
       const target = this.target();
       const revision = this.targetRevision;
@@ -2066,18 +2067,22 @@
           const view = await window.PortalResidentProtocol.loadMailbox(target.resident_id);
           if (!isCurrent()) return null;
           if (!view?.can_organize) throw new Error(window.PortalI18n.t("没有整理此 Mailbox 的权限"));
-          // Exactly the Mailbox tab's Select all: pending requests and groups,
-          // in queue order. Never merge only the Chat preview or expand groups here.
-          const ids = (Array.isArray(view.pending) ? view.pending : [])
-            .filter(item => item.kind !== "info").map(item => item.message_id);
-          if (ids.length < 2) {
+          // Use the current Mailbox, including requests outside the Chat preview.
+          const pending = (Array.isArray(view.pending) ? view.pending : [])
+            .filter(item => item.kind !== "info");
+          if (pending.length < 2) {
             window.PortalUI?.toast?.(window.PortalI18n.t("至少两项待处理请求或群体消息才能合并"));
             await this.protocol?.load({ force: true });
             return null;
           }
+          if (new Set(pending.map(item => item.held === true)).size > 1) {
+            window.PortalUI?.toast?.(window.PortalI18n.t("请在 Mailbox 选择暂存状态相同的消息再合并。"));
+            await this.openQueueMailbox(target.resident_id);
+            return null;
+          }
           const result = await window.PortalResidentProtocol.mergeMailboxItems({
             resident_id: target.resident_id,
-            message_ids: ids,
+            message_ids: pending.map(item => item.message_id),
           });
           if (!isCurrent()) return result;
           window.PortalUI?.toast?.(window.PortalI18n.t("已合并全部待处理请求和群体消息"), "success");
