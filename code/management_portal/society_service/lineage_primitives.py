@@ -7,10 +7,12 @@ import json
 import math
 import re
 from copy import deepcopy
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass, field, replace
 from datetime import datetime, timezone
 from pathlib import Path, PurePosixPath
 from typing import Any, Mapping
+
+from management_common.principal import OperationIdentity
 
 from . import lineage_primitive_definitions
 from .lineage_values import _text
@@ -266,7 +268,7 @@ def make_event(
 
 def normalize_event(raw: object) -> LineageEvent:
     if isinstance(raw, LineageEvent):
-        _operation_identity(raw.identity)
+        identity = _operation_identity(raw.identity)
         if raw.type not in RUNTIME_EVENT_TYPES:
             raise ValueError(f"未知的 Lineage Event：{raw.type}")
         normalize_resident_id(
@@ -274,7 +276,7 @@ def normalize_event(raw: object) -> LineageEvent:
             field_name="Event subject_resident_id",
             allow_empty=True,
         )
-        return raw
+        return raw if identity == raw.identity else replace(raw, identity=identity)
     item = raw if isinstance(raw, dict) else {}
     event_type = _text(item.get("type"), 80).lower()
     if event_type not in RUNTIME_EVENT_TYPES:
@@ -304,14 +306,24 @@ def normalize_event(raw: object) -> LineageEvent:
     )
 
 
-def _operation_identity(raw: object) -> dict[str, Any]:
-    from management_common.principal import OperationIdentity
-
-    if raw is None or raw == {}:
-        return {}
+def read_event_identity(raw: object) -> OperationIdentity:
+    """Read identity on a Lineage Event, including the original explicit form."""
     if not isinstance(raw, dict):
         raise ValueError("operation identity must be an object")
-    return OperationIdentity.from_dict(raw).to_dict()
+    if "schema" in raw:
+        return OperationIdentity.from_dict(raw)
+    return OperationIdentity.from_dict({
+        "schema": "tfi.operation-identity.v1",
+        "initiated_by": raw.get("principal"),
+        "producer": OperationIdentity.producer.to_dict(),
+        **raw,
+    })
+
+
+def _operation_identity(raw: object) -> dict[str, Any]:
+    if raw is None or raw == {}:
+        return {}
+    return read_event_identity(raw).to_dict()
 
 
 def normalize_invocation_prompt(raw: object) -> str:

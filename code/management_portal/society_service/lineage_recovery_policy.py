@@ -1,5 +1,5 @@
 """Permanent recovery failures require a new, explicitly authorized Event."""
-from management_common.principal import OperationIdentity
+from .lineage_primitives import read_event_identity
 
 
 def permanent_error(event: dict) -> str:
@@ -7,7 +7,7 @@ def permanent_error(event: dict) -> str:
     if not identity:
         return "Pending Event has no verified identity; explicit reissue is required"
     try:
-        principal = OperationIdentity.from_dict(identity).principal
+        principal = read_event_identity(identity).principal
     except (KeyError, TypeError, ValueError) as exc:
         return f"Pending Event identity is invalid; explicit reissue is required: {exc}"[:500]
     if principal.kind == "resident" and deleted_resident(principal.id):
