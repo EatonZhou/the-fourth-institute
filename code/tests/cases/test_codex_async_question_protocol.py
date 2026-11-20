@@ -1,10 +1,8 @@
 """:module: execution.service
 :design: decision_1e2eb869bc10
 
-Codex 0.166's native async handler emits an AgentMessage with id=call_id,
-phase=final_answer, delivery=async and questions, before accepted:true.
-Source: openai/codex rust-v0.166.0 core/src/tools/handlers/request_user_input_async.rs.
-The installed experimental ServerNotification schema confirms the camelCase wire.
+The Codex 0.166 async question and notification handlers emit an AgentMessage
+with id=call_id, phase=final_answer and delivery=async before accepted:true.
 """
 from __future__ import annotations
 
@@ -17,7 +15,7 @@ import pytest
 from management_portal.codex_app_server_client import CodexAppServerClient
 from management_portal.codex_app_server_protocol import TurnWaiter
 from management_portal.execution.codex_backend import CodexBackend
-from management_portal.execution.codex_rollout_history import read_codex_turn_async_message_ids
+from management_portal.execution.codex_rollout_history import read_codex_turn_async_message_calls
 from management_portal.execution.contracts import ExecutionRecoveryDeferred
 from management_portal.execution.event_projection import execution_outputs_from_events
 
@@ -25,20 +23,19 @@ from management_portal.execution.event_projection import execution_outputs_from_
 QUESTIONS = [{"title": "选择检查范围？", "options": ["定向", "全部"]}]
 
 
-def _item(identity="call-question", text="", **fields):
+def _item(identity="call-question", text="", *, questions=QUESTIONS, **fields):
     return {"type": "agentMessage", "id": identity, "text": text,
-            "delivery": "async", "questions": deepcopy(QUESTIONS), **fields}
+            "delivery": "async", "questions": deepcopy(questions), **fields}
 
 
 def _start(identity="turn-one"):
     return {"type": "event_msg", "payload": {"type": "task_started", "turn_id": identity}}
 
 
-def _async_records(identity="call-question", accepted=True):
+def _async_records(identity="call-question", accepted=True, *, tool="request_user_input_async"):
     return [
         {"type": "response_item", "payload": {
-            "type": "function_call", "name": "request_user_input_async", "call_id": identity,
-            "arguments": json.dumps({"questions": QUESTIONS}, ensure_ascii=False)}},
+            "type": "function_call", "name": tool, "call_id": identity}},
         {"type": "response_item", "payload": {
             "type": "function_call_output", "call_id": identity,
             "output": json.dumps({"accepted": accepted})}},
@@ -59,16 +56,21 @@ def _backend(tmp_path, records):
     return CodexBackend(account_registry=registry), path
 
 
-@pytest.mark.parametrize("text", ["", "选择检查范围？\n1. 定向\n2. 全部"])
+@pytest.mark.parametrize(("tool", "text", "questions"), [
+    ("request_user_input_async", "", QUESTIONS),
+    ("request_user_input_async", "选择检查范围？\n1. 定向\n2. 全部", QUESTIONS),
+    ("send_message_to_user_async", "后台任务已完成", None),
+])
 @pytest.mark.parametrize("status", ["inProgress", "completed"])
-def test_native_async_card_live_and_snapshot_keep_one_call_identity(tmp_path, text, status):
-    backend, _ = _backend(tmp_path, [_start(), *_async_records(), _ordinary()])
+def test_native_async_message_live_and_snapshot_keep_one_call_identity(tmp_path, tool, text, questions, status):
+    call_id = "call-async"
+    backend, _ = _backend(tmp_path, [_start(), *_async_records(call_id, tool=tool), _ordinary()])
     client = CodexAppServerClient(tmp_path / "unused.sock")
     events = []
     waiter = TurnWaiter("thread-one", turn_id="turn-one", event_callback=events.append,
                         turn_snapshot_transform=lambda turn: backend._canonical_replay_turn("zero", "thread-one", turn))
     client.work.turns["thread-one"] = waiter
-    observed = _item(text=text)
+    observed = _item(call_id, text=text, questions=questions)
     try:
         params = {"threadId": "thread-one", "turnId": "turn-one", "completedAtMs": 1, "item": observed}
         client.events.dispatch_notification("item/completed", params)
@@ -79,15 +81,15 @@ def test_native_async_card_live_and_snapshot_keep_one_call_identity(tmp_path, te
         assert not waiter.final_answer_seen
         assert "phase" not in observed
         snapshot = {"id": "turn-one", "status": status, "items": [
-            _item("item-2", text=text),
+            {**observed, "id": "item-2"},
             {"type": "agentMessage", "id": "item-3", "text": "等待你的回答", "phase": "final_answer"},
         ]}
         turn = client.follower.canonical_turn(waiter, snapshot)
-        assert [item["id"] for item in turn["items"]] == ["call-question", "msg-final"]
+        assert [item["id"] for item in turn["items"]] == [call_id, "msg-final"]
         client.follower.replay_completed_items(waiter, turn)
         client.follower.replay_completed_items(waiter, turn)
-        assert [event["params"]["item"]["id"] for event in events] == ["call-question", "msg-final"]
-        # A fresh follower observes the same question identity after reconnect.
+        assert [event["params"]["item"]["id"] for event in events] == [call_id, "msg-final"]
+        # A fresh follower observes the same identity after reconnect.
         reloaded = []
         fresh = TurnWaiter("thread-one", turn_id="turn-one", event_callback=reloaded.append)
         client.follower.replay_completed_items(fresh, turn)
@@ -97,13 +99,18 @@ def test_native_async_card_live_and_snapshot_keep_one_call_identity(tmp_path, te
             for index, event in enumerate(reloaded, 1)
         ])
         assert len(outputs) == 2
-        assert outputs[0]["questions"][0]["title"] == QUESTIONS[0]["title"]
+        assert outputs[0].get("questions") == (
+            [{"question_index": index, **question} for index, question in enumerate(questions)]
+            if questions else None
+        )
+        assert [output["phase"] for output in outputs] == ["async", "final_answer"]
         assert outputs[0]['output_id'] != outputs[1]['output_id']
         from management_portal.codex_app_server_protocol import codex_final_agent_response
         assert codex_final_agent_response(turn, []) == '等待你的回答'
-        assert reloaded[0]["params"]["item"]["id"] == "call-question"
-        turn["items"][0]["questions"][0]["title"] = "changed"
-        assert snapshot["items"][0]["questions"] == QUESTIONS
+        assert reloaded[0]["params"]["item"]["id"] == call_id
+        if questions:
+            turn["items"][0]["questions"][0]["title"] = "changed"
+            assert snapshot["items"][0]["questions"] == QUESTIONS
     finally:
         client.close()
 
@@ -129,6 +136,32 @@ def test_mixed_native_and_display_ids_do_not_reassign_known_async_identity(tmp_p
     turn = backend._canonical_replay_turn("zero", "thread-one", {
         "id": "turn-one", "status": "completed", "items": [_item("call-second"), _item("item-9")]})
     assert [item["id"] for item in turn["items"]] == ["call-second", "call-first"]
+
+
+@pytest.mark.parametrize("include_question", [False, True])
+def test_async_snapshot_matches_notifications_and_questions_by_tool(tmp_path, include_question):
+    backend, _ = _backend(tmp_path, [
+        _start(), *_async_records(),
+        *_async_records("call-notification", tool="send_message_to_user_async"),
+    ])
+    items = [_item("item-1", text="后台任务已完成", questions=None)]
+    expected = ["call-notification"]
+    if include_question:
+        items.append(_item("item-2"))
+        expected.append("call-question")
+    turn = backend._canonical_replay_turn("zero", "thread-one", {
+        "id": "turn-one", "status": "completed", "items": items})
+    assert [item["id"] for item in turn["items"]] == expected
+
+
+def test_async_receipt_of_wrong_tool_cannot_identify_an_item(tmp_path):
+    backend, _ = _backend(tmp_path, [
+        _start(), *_async_records(),
+        *_async_records("call-notification", tool="send_message_to_user_async"),
+    ])
+    with pytest.raises(ExecutionRecoveryDeferred):
+        backend._canonical_replay_turn("zero", "thread-one", {
+            "id": "turn-one", "status": "completed", "items": [_item("call-notification")]})
 
 
 def test_unobserved_async_receipt_cannot_disambiguate_a_display_only_subset(tmp_path):
@@ -157,8 +190,11 @@ def test_identity_reader_only_returns_accepted_async_ids_in_exact_turn(tmp_path)
         *_async_records("call-first"), *_async_records("call-second"),
         _start("next"), *_async_records("call-next"),
     ])
-    assert read_codex_turn_async_message_ids(path, "turn-one") == ("call-first", "call-second")
-    assert read_codex_turn_async_message_ids(path, "missing") is None
+    calls = read_codex_turn_async_message_calls(path, "turn-one")
+    assert list(calls.items()) == [
+        ("call-first", "request_user_input_async"), ("call-second", "request_user_input_async"),
+    ]
+    assert read_codex_turn_async_message_calls(path, "missing") is None
 
 
 def test_unphased_plain_message_keeps_existing_reconciliation(tmp_path):

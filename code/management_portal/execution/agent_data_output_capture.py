@@ -10,6 +10,7 @@ from typing import Any, Mapping
 
 from .agent_data_projection_state import ExecutionProjection, input_message_id
 from .agent_data_store import AgentDataStore, stable_segment_id, utc_now
+from .message_projection import provider_agent_message_phase
 from .provider_reasoning import ProviderReasoning, provider_reasoning
 
 
@@ -340,11 +341,7 @@ class OutputCapture:
                 # Put the fence first so decoding preserves the exact text
                 # (no separator whitespace becomes part of the message).
                 text = "```portal-question\n" + json.dumps(cards, ensure_ascii=False) + "\n```\n" + text
-            phase = str(item.get("phase") or "message").strip()
-            if questions:
-                # Native async cards use final_answer on the wire, but are
-                # independent messages, not the turn's one final reply.
-                phase = "async"
+            phase = provider_agent_message_phase(item) or "message"
             item_id = str(item.get("id") or "").strip()
         elif (
             event_type == "response_item"

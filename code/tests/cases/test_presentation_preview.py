@@ -56,6 +56,20 @@ def converter(tmp_path, monkeypatch):
     return run
 
 
+@pytest.mark.parametrize('applications', ['/Applications', '/service-home/Applications'])
+def test_discovers_macos_application_outside_path(tmp_path, monkeypatch, applications):
+    monkeypatch.delenv('PORTAL_LIBREOFFICE', raising=False)
+    monkeypatch.setattr(preview.sys, 'platform', 'darwin')
+    monkeypatch.setattr(preview.Path, 'home', lambda: Path('/service-home'))
+    monkeypatch.setattr(preview, 'instance_runtime_root', lambda: tmp_path)
+    executable = f'{applications}/LibreOffice.app/Contents/MacOS/soffice'
+    monkeypatch.setattr(preview.shutil, 'which', lambda command: executable if command == executable else None)
+
+    assert preview.libreoffice() == executable
+    monkeypatch.setenv('PORTAL_LIBREOFFICE', '/custom/soffice')
+    assert preview.libreoffice() == '/custom/soffice'
+
+
 def test_cache_uses_content_and_releases_conversion_slot(converter):
     first = preview.presentation_pdf(b'first', 'slides.pptx')
     assert preview.presentation_pdf(b'first', 'renamed.pptx') == first

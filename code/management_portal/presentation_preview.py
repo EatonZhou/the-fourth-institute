@@ -6,6 +6,7 @@ import os
 from pathlib import Path
 import shutil
 import subprocess
+import sys
 import threading
 
 from management_common.instance_manifest import instance_runtime_root
@@ -27,12 +28,18 @@ class PresentationPreviewError(ValueError):
 def libreoffice() -> str:
     executable = (os.environ.get("PORTAL_LIBREOFFICE") or shutil.which("libreoffice")
                   or shutil.which("soffice"))
-    if not executable:
-        local = instance_runtime_root() / "tools/libreoffice/soffice"
-        executable = str(local) if local.is_file() else ""
-    if not executable:
-        raise PresentationPreviewError("服务器尚未安装 LibreOffice，请下载原文件查看。")
-    return executable
+    if executable:
+        return executable
+
+    candidates = [instance_runtime_root() / "tools/libreoffice/soffice"]
+    if sys.platform == "darwin":
+        bundle = "LibreOffice.app/Contents/MacOS/soffice"
+        candidates.extend((Path("/Applications") / bundle, Path.home() / "Applications" / bundle))
+    for candidate in candidates:
+        executable = shutil.which(str(candidate))
+        if executable:
+            return executable
+    raise PresentationPreviewError("服务器尚未安装 LibreOffice，请下载原文件查看。")
 
 
 def _check_source_size(size: int) -> None:

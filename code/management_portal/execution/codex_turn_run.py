@@ -683,6 +683,7 @@ class CodexTurnRun:
                     session.thread_id,
                     current_turn_id,
                     cwd=self.request.cwd,
+                    require_exact_turn=self.provider_recovery_state.get("writer_conflict_turn_id") == current_turn_id,
                     config=self.turn_options["config"],
                     event_callback=self.observe_event,
                     turn_started_callback=self.turn_started,
@@ -702,6 +703,12 @@ class CodexTurnRun:
                 current_turn_id = str(
                     exc.turn_id or current_turn_id
                 ).strip()
+            except CodexThreadWriterBusy as exc:
+                # A delay may let another turn become active. Keep the
+                # accepted turn as the recovery target across claims.
+                self.provider_recovery_state["writer_conflict_turn_id"] = current_turn_id
+                self.reserve_recovery_attempt(exc)
+                raise ExecutionRecoveryDeferred(str(exc), retry_after_seconds=30) from exc
             except (CodexTurnInterrupted, CodexTurnRetryableFailure) as exc:
                 raise self.recover_provider_failure(exc) from exc
             except (CodexAppServerUnavailable, TimeoutError):
