@@ -282,15 +282,6 @@ def group_item(
     if len(senders(members)) > 1 and organizer:
         # Several senders: the group runs as the organizer who combined them.
         item["actor"] = organizer
-    lines = [f"Mailbox · {len(members)} 条消息"]
-    for index, member in enumerate(members, start=1):
-        text = _text(dict(member.get("input_message") or {})) or str(member.get("message") or "")
-        lines.append(f"{index}. {str(member.get('actor') or '')}：{' '.join(text.split())[:120]}")
-    # The queue shows the members' own words; the Mailbox is the visible author.
-    item["conversation_queue_preview"] = {
-        "message_id": group["message_id"], "author_id": "mailbox", "content_preview": "\n".join(lines)[:500],
-        "enqueued_at": item["enqueued_at"], "media_parts": [],
-    }
     return item
 
 

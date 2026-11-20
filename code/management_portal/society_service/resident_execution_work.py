@@ -314,65 +314,41 @@ def notify_changed(record: Mapping[str, object]) -> None:
     resident_changed(record.get("resident_id"), scope="runtime")
 
 
-def _conversation_queue_item(
-    repository: Any,
-    resident_id: str,
-    item: Mapping[str, object],
-) -> dict[str, Any]:
-    preview = item.get("conversation_queue_preview")
-    # Mailbox groups have their own synthetic display summary. Ordinary inputs
-    # must read the canonical message: scheduling previews are not recoverable
-    # message bodies and may be shorter than what the person sent.
-    if isinstance(preview, Mapping) and preview.get("author_id") == "mailbox":
-        content_preview = str(preview.get("content_preview") or "")
-        media_parts = preview.get("media_parts")
-        if not isinstance(media_parts, list):
-            stored_message = repository.public_message(
-                resident_id,
-                str(preview.get("message_id") or ""),
-            )
-            media_parts = [
-                copy.deepcopy(dict(part))
-                for part in stored_message.get("content_parts") or []
-                if isinstance(part, Mapping)
-                and str(part.get("type") or "") in {"image", "file"}
-            ]
-        return {
-            "held": is_mailbox_held(item),
-            **{
-                key: str(preview.get(key) or "")
-                for key in ("message_id", "author_id", "content_preview", "enqueued_at")
-            },
-            "content_parts": [
-                *(
-                    [{"type": "text", "text": content_preview}]
-                    if content_preview
-                    else []
-                ),
-                *[
-                    copy.deepcopy(dict(part))
-                    for part in media_parts
-                    if isinstance(part, Mapping)
-                    and str(part.get("type") or "") in {"image", "file"}
-                ],
-            ] if isinstance(media_parts, list) else (
-                [{"type": "text", "text": content_preview}]
-                if content_preview
-                else []
-            ),
-        }
-    message_id = str(item.get("user_message_id") or "")
+def _queue_message(repository: Any, resident_id: str, item: Mapping[str, Any]) -> Mapping[str, Any]:
     stored_input = item.get("input_message")
-    message = (
-        copy.deepcopy(dict(stored_input))
-        if isinstance(stored_input, Mapping)
-        else repository.public_message(resident_id, message_id)
-    )
-    content_preview = "\n".join(
+    if isinstance(stored_input, Mapping):
+        return stored_input
+    return repository.public_message(resident_id, str(item.get("user_message_id") or ""))
+
+
+def _queue_message_text(message: Mapping[str, Any]) -> str:
+    return "\n".join(
         str(part.get("text") or "")
         for part in message.get("content_parts") or []
         if isinstance(part, Mapping) and str(part.get("type") or "") == "text"
     ).strip()
+
+
+def _conversation_queue_item(
+    repository: Any,
+    resident_id: str,
+    item: Mapping[str, Any],
+) -> dict[str, Any]:
+    # A waiting group can also be the held job head. Both views have the
+    # original members, even when the transient scheduling preview is absent.
+    message = _queue_message(repository, resident_id, item)
+    members = item.get("mailbox_members") or []
+    if members:
+        content_preview = f"Mailbox · {len(members)} 条消息"
+        for index, member in enumerate(members, start=1):
+            text = _queue_message_text(_queue_message(repository, resident_id, member))
+            excerpt = " ".join(text.split())[:120]
+            content_preview += f"\n{index}. {str(member.get('actor') or '')}：{excerpt}"
+            if len(content_preview) >= 500:
+                break
+        content_preview = content_preview[:500]
+    else:
+        content_preview = _queue_message_text(message)
     media_parts = [
         copy.deepcopy(dict(part))
         for part in message.get("content_parts") or []
@@ -380,7 +356,7 @@ def _conversation_queue_item(
         and str(part.get("type") or "") in {"image", "file"}
     ]
     return {
-        "message_id": message_id,
+        "message_id": str(item.get("user_message_id") or ""),
         "author_id": str(message.get("author_id") or ""),
         "content_preview": content_preview,
         "content_parts": [

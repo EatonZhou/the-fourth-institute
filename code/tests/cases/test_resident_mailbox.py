@@ -191,6 +191,12 @@ def test_merge_puts_one_group_where_the_first_member_waited_and_split_restores_t
     assert group["origin"]["schema"] == "tfi.message-origin.v2"
     assert group["origin"]["initiated_by"]["id"] == ACTOR
     assert group["content_parts"][0]["members"] == [{"message_id": a}, {"message_id": b}]
+    queue = instruction(team, "GetConversation", {"resident_id": resident_id}).result["queue"]["items"]
+    assert [item["message_id"] for item in queue] == [group_id, x]
+    summary = queue[0]["content_preview"]
+    assert summary.startswith("Mailbox · 2 条消息\n")
+    assert f"第 1 条：{a}" in summary and f"第 3 条：{b}" in summary
+    assert queue[0]["content_parts"] == [{"type": "text", "text": summary}]
     member_state = instruction(team, "GetInputState", {"resident_id": resident_id, "message_id": a}).result["input_state"]
     assert member_state["state"] == "queued" and member_state["grouped_into_message_id"] == group_id
     record = resident_record_domain.find_resident(resident_id)

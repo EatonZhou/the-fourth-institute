@@ -221,6 +221,13 @@ def test_all_held_head_reorders_merges_splits_and_cancels_as_waiting_input(team,
     group_id = merged.result["group_message_id"]
     assert _read(resident_id)["user_message_id"] == group_id
     assert work.is_mailbox_held(_read(resident_id))
+    queue = instruction(team, "GetConversation", {"resident_id": resident_id}).result["queue"]["items"]
+    assert [item["message_id"] for item in queue] == [group_id, a]
+    assert queue[0]["held"] is True
+    summary = queue[0]["content_preview"]
+    assert summary.startswith("Mailbox · 2 条消息\n")
+    assert summary.index(b) < summary.index(c)
+    assert queue[0]["content_parts"] == [{"type": "text", "text": summary}]
     split = instruction(team, "SplitMailboxItem", {"resident_id": resident_id, "message_id": group_id})
     assert split.status == "committed", split.error
     assert [i["message_id"] for i in instruction(team, "GetMailbox", {"resident_id": resident_id}).result["pending"]] == [b, c, a]
