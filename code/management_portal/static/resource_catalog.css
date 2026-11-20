@@ -474,6 +474,11 @@ body {
   white-space: nowrap;
 }
 
+.deviceSimulationPurpose {
+  line-height: 1.5;
+  white-space: normal;
+}
+
 .deviceTelemetryCard > header > div > span {
   display: block;
   color: var(--muted);

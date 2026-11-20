@@ -464,6 +464,16 @@
       .toLowerCase();
   }
 
+  const hardwareSimulationSkills = new Map([
+    ["rtl_simulation_server", "icws-rtl-simulation"],
+    ["asic_backend_server", "ust-acf3234-postlayout"],
+    ["fpga_board_host", "fpga-board-simulation"],
+  ]);
+
+  function isHardwareSimulationDevice(record) {
+    return hardwareSimulationSkills.has(deviceKind(record));
+  }
+
   function deviceKindLabel(record) {
     const kind = deviceKind(record);
     const known = {
@@ -472,6 +482,9 @@
       gpu_server: window.PortalI18n.t("GPU 服务器"),
       google_colab: window.PortalI18n.t("按需云算力"),
       google_drive: window.PortalI18n.t("云存储"),
+      rtl_simulation_server: window.PortalI18n.t("RTL 仿真与 FPGA 设计"),
+      asic_backend_server: window.PortalI18n.t("ASIC 后端与门级后仿"),
+      fpga_board_host: window.PortalI18n.t("FPGA 板卡下载与实板验证"),
       robot: window.PortalI18n.t("机器人"),
       storage: window.PortalI18n.t("存储设备"),
       network: window.PortalI18n.t("网络设备"),
@@ -722,6 +735,7 @@
   function renderTelemetryDevice(record, recordById) {
     const attrs = objectOf(record?.attributes);
     const id = String(record.resource_id || "");
+    const simulation = isHardwareSimulationDevice(record);
     const gpu = deviceGpuUtilization(record);
     const memory = deviceMemoryUtilization(record);
     const temperature = numberValue(attrs.temperature_c);
@@ -742,9 +756,11 @@
           <span>${esc(deviceKindLabel(record))}</span>
           <h3>${esc(record.title || id)}</h3>
         </div>
-        ${renderDeviceStatus(record, { freshness: true })}
+        ${simulation && !attrs.status ? "" : renderDeviceStatus(record, { freshness: true })}
       </header>
-      ${isGoogleDevice(record) ? window.PortalI18n.html`<div class="deviceTelemetryMetrics">
+      ${simulation ? window.PortalI18n.html`
+        <div class="deviceTelemetryContext deviceSimulationPurpose">${esc(attrs.description || record.summary || "")}</div>
+      ` : isGoogleDevice(record) ? window.PortalI18n.html`<div class="deviceTelemetryMetrics">
         ${googleDeviceMetrics(record).map(metric => window.PortalI18n.html`<div class="deviceMetricGauge">
           <div><span>${esc(metric.label)}</span><strong>${esc(metric.value)} ${esc(metric.unit || "")}</strong></div>
         </div>`).join("")}
@@ -754,10 +770,10 @@
         ${renderMetricGauge(window.PortalI18n.t("温度"), temperature, "°C")}
       </div>` : window.PortalI18n.html`<div class="deviceTelemetryEmpty">暂无遥测数据</div>`}
       ${context ? window.PortalI18n.html`<div class="deviceTelemetryContext" title="${esc(context)}">${esc(context)}</div>` : ""}
-      <footer>
+      ${simulation && !attrs.observed_at ? "" : window.PortalI18n.html`<footer>
         <span>${esc(attrs.model || "")}</span>
         <span class="${deviceObservationStale(record) ? "stale" : ""}">${esc(deviceObservationLabel(record))}</span>
-      </footer>
+      </footer>`}
     </article>`;
   }
 
@@ -778,6 +794,8 @@
     const serverRecords = roots.filter(record => deviceKind(record) === "gpu_server");
     const cloudRecords = roots.filter(record => deviceKind(record) === "google_colab");
     const computeRecords = [...serverRecords, ...cloudRecords];
+    const hardwareRecords = records.filter(isHardwareSimulationDevice);
+    const otherRecords = records.filter(record => !isHardwareSimulationDevice(record));
     const attentionRecords = records
       .map(record => ({ record, reason: deviceAttentionReason(record) }))
       .filter(item => item.reason)
@@ -834,15 +852,25 @@
                 : window.PortalI18n.t('<div class="devicePanelEmpty">当前没有警告或过期观测。</div>')}
             </div>
           </section>
+          ${hardwareRecords.length ? window.PortalI18n.html`
           <section class="deviceOperationsPanel deviceTelemetryPanel">
             <header>
-              <div><span>设备清单</span><h2>已注册设备</h2></div>
-              <small>${records.length} 个设备</small>
+              <div><h2>硬件仿真与板卡</h2></div>
+              <small>${hardwareRecords.length} 个设备</small>
             </header>
             <div class="deviceTelemetryGrid">
-              ${records.map(record => renderTelemetryDevice(record, recordById)).join("")}
+              ${hardwareRecords.map(record => renderTelemetryDevice(record, recordById)).join("")}
             </div>
-          </section>
+          </section>` : ""}
+          ${otherRecords.length ? window.PortalI18n.html`<section class="deviceOperationsPanel deviceTelemetryPanel">
+            <header>
+              <div><span>设备清单</span><h2>已注册设备</h2></div>
+              <small>${otherRecords.length} 个设备</small>
+            </header>
+            <div class="deviceTelemetryGrid">
+              ${otherRecords.map(record => renderTelemetryDevice(record, recordById)).join("")}
+            </div>
+          </section>` : ""}
         </div>
       </section>`;
   }
@@ -1401,6 +1429,8 @@
       attrs.location,
     ].filter(Boolean).join(" · ");
     const metrics = deviceDetailMetrics(detailRecord);
+    const hardwareSkill = hardwareSimulationSkills.get(deviceKind(detailRecord));
+    const showObservation = !hardwareSkill || Boolean(attrs.observed_at);
 
     renderResourceDetailIdentity(detailRecord, "device");
     destroyDetailWorkbench();
@@ -1410,20 +1440,21 @@
       <section class="deviceDetailHero">
         <div class="deviceDetailHeroMain">
           <div class="deviceDetailHeroBadges">
-            ${renderDeviceStatus(detailRecord)}
+            ${showObservation ? renderDeviceStatus(detailRecord) : ""}
             <span class="deviceDetailKind">${esc(deviceKindLabel(detailRecord))}</span>
-            <span class="deviceDetailFreshness ${stale ? "stale" : ""}">
+            ${showObservation ? window.PortalI18n.html`<span class="deviceDetailFreshness ${stale ? "stale" : ""}">
               ${esc(stale ? window.PortalI18n.t("观测已过期") : window.PortalI18n.t("当前观测"))}
-            </span>
+            </span>` : ""}
           </div>
           <p>${esc(detailRecord.summary || attrs.description || attrs.model || window.PortalI18n.t("已注册设备"))}</p>
+          ${hardwareSkill ? window.PortalI18n.html`<a class="portalButton" href="/resource/skill?q=${esc(encodeURIComponent(hardwareSkill))}">查看登录与操作 Skill</a>` : ""}
           ${context ? window.PortalI18n.html`<div class="deviceDetailHeroMeta"><small>${esc(context)}</small></div>` : ""}
         </div>
-        <div class="deviceDetailObserved">
+        ${showObservation ? window.PortalI18n.html`<div class="deviceDetailObserved">
           <span>最近观测</span>
           <strong>${esc(observedLabel)}</strong>
           <small>${esc(formatDateTime(observedAt) || window.PortalI18n.t("未上报时间"))}</small>
-        </div>
+        </div>` : ""}
       </section>
 
       ${metrics.length ? window.PortalI18n.html`
