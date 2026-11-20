@@ -1209,6 +1209,31 @@ def _aggregate_disk_resources(resources: list[dict[str, Any]]) -> dict[str, Any]
     }
 
 
+def get_google_device_status(*, force_refresh: bool = False, device_id: str = "") -> list[dict[str, Any]]:
+    from management_portal import google_cloud_devices
+
+    config = google_cloud_devices.settings()
+    devices = []
+    for field, kind in (("compute_device_id", "google_colab"), ("drive_device_id", "google_drive")):
+        resource_id = config.get(field)
+        if not resource_id or (device_id and resource_id != device_id):
+            continue
+        key = f"google-device:{resource_id}"
+        cached, expired = _cached_payload_state(key)
+        if cached and not expired and not force_refresh:
+            devices.append(cached)
+            continue
+        try:
+            metrics = google_cloud_devices.read_status(config, kind)
+            if not metrics:
+                raise ValueError("Cloud status response contained no metrics")
+            report = {"device_id": resource_id, "status": "online", "observed_at": utc_now_iso(), **metrics}
+        except (ValueError, OSError, subprocess.SubprocessError):
+            report = {**(cached or {}), "device_id": resource_id, "status": "warning", "stale": True}
+        devices.append(_store_payload(key, report, {}, force=force_refresh, refresh_after_seconds=60))
+    return devices
+
+
 def get_disk_resource_status(*, force_refresh: bool = False, resource_id: str = "") -> dict[str, Any]:
     selected = _disk_resource_by_id(resource_id) if resource_id else None
     resources = [selected] if selected else _disk_resources()

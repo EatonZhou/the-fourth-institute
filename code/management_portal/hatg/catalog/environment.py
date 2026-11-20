@@ -65,8 +65,8 @@ DECLARATIONS = (
               R("health", "object", "激活状态：status 为 pending，receipt 是激活完成后写入健康检查与发布事实的文件"),
               P("push", "object", "把发布提交推送到各 Git 远端的结果")),
       mutates=True, one_of=(("paths",), ("all",))),
-    _d("GetDeviceStatus", FIXED, "读取 GPU 或磁盘的当前状态：kind 选择设备种类，省略 device_id 时读取这一种类的全部设备及汇总。", (
-        R("kind", description="gpu 为 GPU 服务器与 GPU，disk 为磁盘", enum=("gpu", "disk")),
+    _d("GetDeviceStatus", FIXED, "读取 GPU、磁盘或云设备的当前状态。省略 device_id 时读取该类设备。", (
+        R("kind", description="gpu 为 GPU 服务器与 GPU，disk 为磁盘，cloud 为云设备", enum=("gpu", "disk", "cloud")),
         P("device_id", description="只读取这一台：GPU 为 Device 的统一 ID，磁盘为磁盘资源 ID（如 nas_storage）"),
         P("refresh", "boolean", "跳过缓存重新采集"),
     ), (R("devices", "array", "GPU：全部服务器，或指定的一台，未知 ID 时为空；磁盘：全部磁盘，或指定的一块"),), target="device_id"),

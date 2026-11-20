@@ -567,6 +567,25 @@ def test_ssh_connection(
 ) -> dict[str, Any]:
     if type(timeout_seconds) is not int or not 1 <= timeout_seconds <= 45:
         raise ValueError("SSH timeout_seconds must be an integer from 1 to 45")
+    from management_portal import google_cloud_devices
+
+    if google_cloud_devices.colab_session(device_id):
+        started = time.monotonic()
+        try:
+            result = subprocess.run(
+                google_cloud_devices.colab_ssh_command(device_id, "true"),
+                stdin=subprocess.DEVNULL, capture_output=True, timeout=timeout_seconds,
+            )
+            reachable = result.returncode == 0
+            message = "SSH 连接成功" if reachable else "无法连接 Colab。请检查指定会话是否正在运行。"
+        except subprocess.TimeoutExpired:
+            reachable, message = False, f"SSH 连接在 {timeout_seconds} 秒后超时"
+        except (OSError, ValueError):
+            reachable, message = False, "Colab SSH 配置不可用。"
+        return {
+            "resource_id": device_id, "via_resource_id": device_id, "reachable": reachable,
+            "latency_ms": round((time.monotonic() - started) * 1000), "message": message, "tested_at": utc_now_iso(),
+        }
     ssh = effective_ssh_access(
         device_id,
     )
@@ -806,6 +825,10 @@ def resolve_device_address(
         access_methods = {"ssh": copy.deepcopy(ssh)}
     except ValueError:
         access_methods = {}
+    from management_portal import google_cloud_devices
+
+    if (session := google_cloud_devices.colab_session(target_id)):
+        access_methods["ssh"] = {"transport": "colab", "session": session, "via_resource_id": target_id}
     resolved_device = copy.deepcopy(target)
     resolved_device.pop("access_methods", None)
     return {

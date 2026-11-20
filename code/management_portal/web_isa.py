@@ -669,6 +669,8 @@ def get_device_status(inv: Invocation) -> dict[str, Any]:
 
     refresh = bool(inv.argument("refresh"))
     device_id = inv.argument("device_id") or ""
+    if inv.argument("kind") == "cloud":
+        return {"devices": agent_status_backend.get_google_device_status(force_refresh=refresh, device_id=device_id)}
     if inv.argument("kind") == "disk":
         result = agent_status_backend.get_disk_resource_status(force_refresh=refresh, resource_id=device_id)
         return {**result, "devices": list(result.get("resources") or ([result] if result.get("resource_id") else []))}

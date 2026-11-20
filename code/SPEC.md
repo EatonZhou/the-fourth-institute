@@ -50,6 +50,7 @@
 - [Portal 新用户指引与统一入口](/r/decision_3286d4167180)
 - [Principal 个人卡片、Package、头像与实例配置](/r/decision_5bc3fdfc7eec)
 - [Device SSH 连接与凭据安全边界](/r/decision_d397f2d99f89)
+- [Device 云资源的容量观测与 Colab 会话连接](/r/decision_2b7707be0587)
 - [Portal 网络入口、TLS 与可信代理边界](/r/decision_85222f2d316b)
 - [统一资源 ID、地址与解析协议](/r/decision_4a9ba5dfada6)
 - [Portal 内容中的 Resource Address 提取与鉴权引用](/r/decision_a4e5f03c8b9b)

@@ -196,9 +196,14 @@ def start_device_terminal(
     cols: object = None,
     rows: object = None,
 ) -> dict:
-    from management_portal import device_identity_backend
+    from management_portal import device_identity_backend, google_cloud_devices
 
     actor_id = str(actor or "anonymous")
+    if google_cloud_devices.colab_session(device_id):
+        return _start_device_process(
+            actor_id, device_id, device_id, session_id, cols, rows,
+            google_cloud_devices.colab_ssh_command(device_id, "bash", "-il"),
+        )
     ssh = device_identity_backend.effective_ssh_access(
         device_id,
     )
@@ -228,6 +233,13 @@ def start_device_terminal(
     ssh_user = str(ssh.get("user") or "").strip()
     target = f"{ssh_user}@{ssh_host}" if ssh_user else ssh_host
     command.extend(["--", target])
+    return _start_device_process(actor_id, device_id, via_resource_id, session_id, cols, rows, command, password)
+
+
+def _start_device_process(
+    actor_id: str, device_id: str, via_resource_id: str, session_id: str,
+    cols: object, rows: object, command: list[str], password: str = "",
+) -> dict:
     with _LOCK:
         _cleanup_locked()
         existing = _SESSIONS.get(str(session_id or ""))

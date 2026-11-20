@@ -470,6 +470,8 @@
       device: window.PortalI18n.t("设备"),
       gpu: "GPU",
       gpu_server: window.PortalI18n.t("GPU 服务器"),
+      google_colab: window.PortalI18n.t("按需云算力"),
+      google_drive: window.PortalI18n.t("云存储"),
       robot: window.PortalI18n.t("机器人"),
       storage: window.PortalI18n.t("存储设备"),
       network: window.PortalI18n.t("网络设备"),
@@ -534,6 +536,42 @@
 
   function deviceObservedAt(record) {
     return String(objectOf(record?.attributes).observed_at || objectOf(record?.source).modified_at || "").trim();
+  }
+
+  function isGoogleDevice(record) {
+    return ["google_colab", "google_drive"].includes(deviceKind(record));
+  }
+
+  async function googleDeviceObservations({ deviceId, refresh, signal } = {}) {
+    const result = await window.PortalInstructionClient.execute("GetDeviceStatus", {
+      kind: "cloud",
+      ...(deviceId ? { device_id: deviceId } : {}),
+      ...(refresh ? { refresh: true } : {}),
+    }, { signal });
+    return new Map((result?.devices || []).map(item => [item.device_id, item]));
+  }
+
+  function googleDeviceMetrics(record) {
+    const attrs = objectOf(record?.attributes);
+    const number = (value, decimals = 2) => numberValue(value)?.toLocaleString(undefined, {
+      maximumFractionDigits: decimals,
+    }) ?? "—";
+    if (deviceKind(record) === "google_colab") {
+      return [
+        { label: window.PortalI18n.t("剩余计算单元"), value: number(attrs.compute_units), unit: "CU" },
+        { label: window.PortalI18n.t("每小时消耗"), value: number(attrs.compute_units_per_hour), unit: "CU/h" },
+        { label: window.PortalI18n.t("活跃运行时"), value: number(attrs.active_assignments, 0) },
+      ];
+    }
+    return [
+      [window.PortalI18n.t("总容量"), attrs.storage_total_bytes],
+      [window.PortalI18n.t("已用容量"), attrs.storage_used_bytes],
+      [window.PortalI18n.t("可用容量"), attrs.storage_free_bytes],
+    ].map(([label, bytes]) => ({
+      label,
+      value: numberValue(bytes) == null ? "—" : number(bytes / 1099511627776, 3),
+      unit: "TiB",
+    }));
   }
 
   function deviceObservedTime(record) {
@@ -700,7 +738,11 @@
         </div>
         ${renderDeviceStatus(record, { freshness: true })}
       </header>
-      ${hasTelemetry ? window.PortalI18n.html`<div class="deviceTelemetryMetrics">
+      ${isGoogleDevice(record) ? window.PortalI18n.html`<div class="deviceTelemetryMetrics">
+        ${googleDeviceMetrics(record).map(metric => window.PortalI18n.html`<div class="deviceMetricGauge">
+          <div><span>${esc(metric.label)}</span><strong>${esc(metric.value)} ${esc(metric.unit || "")}</strong></div>
+        </div>`).join("")}
+      </div>` : hasTelemetry ? window.PortalI18n.html`<div class="deviceTelemetryMetrics">
         ${renderMetricGauge("GPU", gpu)}
         ${renderMetricGauge(window.PortalI18n.t("显存"), memory)}
         ${renderMetricGauge(window.PortalI18n.t("温度"), temperature, "°C")}
@@ -860,6 +902,7 @@
   async function loadResources({
     keepDetail = true,
     propagateServiceUnavailable = false,
+    refreshGoogle = false,
   } = {}) {
     window.clearTimeout(state.queryTimer);
     // A filter, refresh or service recovery can run before input debounce.
@@ -897,6 +940,19 @@
       });
       if (requestSequence !== state.requestSequence) return;
       renderResults(payload);
+      if (state.category === "device" && payload.resources?.some(isGoogleDevice)) {
+        try {
+          const observations = await googleDeviceObservations({ refresh: refreshGoogle, signal: controller.signal });
+          if (requestSequence !== state.requestSequence) return;
+          renderResults({ ...payload, resources: payload.resources.map(record => {
+            const observation = observations.get(record.resource_id);
+            return observation ? { ...record, attributes: { ...record.attributes, ...observation } } : record;
+          }) });
+        } catch {
+          // Device identities remain usable when cloud telemetry is unavailable.
+        }
+      }
+      if (requestSequence !== state.requestSequence) return;
       if (detailSequence === state.detailSequence) {
         if (keepDetail && current.item) {
           try {
@@ -962,6 +1018,7 @@
   }
 
   function deviceDetailMetrics(record) {
+    if (isGoogleDevice(record)) return googleDeviceMetrics(record);
     const attrs = objectOf(record?.attributes);
     const kind = deviceKind(record);
     const metrics = [];
@@ -1222,6 +1279,28 @@
   }
 
   function renderDeviceSshPanel(record, parent = null, resolution = null) {
+    const colab = resolution?.access_methods?.ssh;
+    if (isGoogleDevice(record)) {
+      return window.PortalI18n.html`<section class="deviceDetailPanel deviceDetailSsh">
+        <header><span>云资源</span><h3>使用说明</h3></header>
+        ${deviceKind(record) === "google_colab" ? window.PortalI18n.html`
+          <p>用官方 Colab CLI 启动共享会话 ${esc(colab?.session || "portal-colab")}，按任务选择 CPU 或 GPU。打开终端和 SSH 测试只连接已有会话。</p>
+          <p><code>colab new -s ${esc(colab?.session || "portal-colab")} --gpu A100</code></p>
+          <p>任务结束后，在官方 CLI 停止会话以结束计费。GPU 型号随当前分配而定。</p>
+          <p><code>colab stop -s ${esc(colab?.session || "portal-colab")}</code></p>
+          <a href="https://github.com/googlecolab/google-colab-cli">Colab CLI 使用文档</a>
+          ${colab?.transport === "colab" ? window.PortalI18n.html`
+            <div class="deviceSshActions">
+              <button class="portalButton" type="button" data-device-ssh-test="${esc(record.resource_id)}">测试 SSH 连通性</button>
+              ${window.PortalIdentity?.peek()?.access?.allows?.OpenTerminal === true ? window.PortalI18n.html`<button class="portalButton is-primary" type="button" data-device-terminal-open="${esc(record.resource_id)}">打开 Terminal</button>` : ""}
+              <span class="deviceSshTestResult" role="status"></span>
+            </div>` : ""}
+        ` : window.PortalI18n.html`
+          <p>在 Colab Notebook 内挂载 Google Drive，用于保存训练数据、权重和检查点。Portal 主机的 rclone 连接名为 colab_drive。</p>
+          <a href="https://rclone.org/drive/">Google Drive 使用文档</a>
+        `}
+      </section>`;
+    }
     const ssh = deviceSshInfo(record, parent, resolution);
     const credentialSaved = ssh.credentialSaved;
     return window.PortalI18n.html`<section class="deviceDetailPanel deviceDetailSsh">
@@ -1492,6 +1571,12 @@
         const resolutionResult = await getJson(
           `/api/resources/resolve?address=${encodeURIComponent(resource.resourceId)}`,
         ).catch(error => ({ __error: error }));
+        if (!resolutionResult?.__error && isGoogleDevice({ attributes: resolutionResult?.record })) {
+          const observations = await googleDeviceObservations({ deviceId: resource.resourceId }).catch(() => new Map());
+          resolutionResult.observation = observations.get(resource.resourceId)
+            || resource.payload?.attributes
+            || resolutionResult.observation;
+        }
         return {
           record: resource.payload,
           resolution: resolutionResult?.__error ? null : resolutionResult,
@@ -1897,7 +1982,7 @@
     setFilterOpen(false);
     loadResources({ keepDetail: false });
   });
-  elements.reload.addEventListener("click", () => loadResources());
+  elements.reload.addEventListener("click", () => loadResources({ refreshGoogle: true }));
   elements.deviceRegisterOpen.addEventListener("click", openDeviceRegisterModal);
   elements.deviceRegisterClose.addEventListener("click", closeDeviceRegisterModal);
   elements.deviceRegisterCancel.addEventListener("click", closeDeviceRegisterModal);
