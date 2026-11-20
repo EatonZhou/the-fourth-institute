@@ -171,7 +171,16 @@ class LineageEvent:
     identity: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
-        return asdict(self)
+        event = asdict(self)
+        if self.identity:
+            identity = read_event_identity(self.identity)
+            compact = {"principal": identity.principal.to_dict()}
+            if identity.initiated_by != identity.principal:
+                compact["initiated_by"] = identity.initiated_by.to_dict()
+            if identity.producer != OperationIdentity.producer:
+                compact["producer"] = identity.producer.to_dict()
+            event["identity"] = compact
+        return event
 
 
 @dataclass(frozen=True)

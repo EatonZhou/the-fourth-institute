@@ -501,12 +501,17 @@ def dispatch_program_event(
             return {"event_source_id": event_source_id, "paused": True, "matched_count": 0,
                     "consumed_count": 0, "results": []}
         accepted = trigger_paths.accepted_input(lineage_id, normalized_input.id)
-        if accepted and accepted.get("identity") != normalized_input.identity:
-            # Reconciliation re-observes a fact under its own actor. The first
-            # accepted initiator owns this occurrence and its recovery.
-            return {"event_source_id": event_source_id, "duplicate": True, "matched_count": 0,
-                    "consumed_count": 0, "results": [],
-                    "trigger_path_id": trigger_paths.storage.path_id(lineage_id, "event", normalized_input.id)}
+        if accepted:
+            try:
+                accepted_identity = lineage_primitives.read_event_identity(accepted.get("identity"))
+            except ValueError:
+                accepted_identity = None
+            if accepted_identity != OperationIdentity.from_dict(normalized_input.identity):
+                # Reconciliation re-observes a fact under its own actor. The first
+                # accepted initiator owns this occurrence and its recovery.
+                return {"event_source_id": event_source_id, "duplicate": True, "matched_count": 0,
+                        "consumed_count": 0, "results": [],
+                        "trigger_path_id": trigger_paths.storage.path_id(lineage_id, "event", normalized_input.id)}
         trigger_path_id = trigger_paths.begin_event(
             lineage_id, event_source_id, normalized_input.to_dict(), cause_kind=cause_kind, cause_id=cause_id,
         )

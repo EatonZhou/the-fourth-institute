@@ -55,3 +55,24 @@ def test_event_reader_keeps_unverified_identity_absent():
     event = lineage_primitives.make_event("state.condition_met")
     assert event.identity == {}
     assert "no verified identity" in lineage_recovery_policy.permanent_error(event.to_dict())
+
+
+@pytest.mark.parametrize("initiator,producer", [
+    ("alice", "portal"),
+    ("bob", "portal"),
+    ("alice", "ai-socket-relay"),
+    ("bob", "ai-socket-relay"),
+])
+def test_event_and_packet_write_only_nondefault_identity(initiator, producer):
+    identity = OperationIdentity(Principal("user", "alice"), Principal("user", initiator),
+                                 Principal("service", producer))
+    event = lineage_primitives.make_event("state.condition_met", identity=identity.to_dict())
+    expected = {"principal": identity.principal.to_dict()}
+    if initiator != "alice":
+        expected["initiated_by"] = identity.initiated_by.to_dict()
+    if producer != "portal":
+        expected["producer"] = identity.producer.to_dict()
+    encoded = event.to_dict()
+    assert encoded["identity"] == expected
+    assert lineage_primitives.event_packet(event).to_dict()["events"] == [encoded]
+    assert lineage_primitives.normalize_event(encoded) == event
