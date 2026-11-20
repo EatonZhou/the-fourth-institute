@@ -64,8 +64,7 @@ def _reply_hint_block(record: dict[str, Any], job: dict[str, Any]) -> str:
 
 
 def _sender_line(job: dict[str, Any]) -> str:
-    """Who sent this message: the job's authenticated sender, never assumed."""
-    from management_common.actor_identity import canonical_actor_id
+    """Render the sender hint for deliveries that use one."""
     from management_common.principal import actor_principal
     actor = canonical_actor_id(job.get("actor"))
     keep = "请按该 Resident 原有上下文继续协作。\n"
@@ -91,11 +90,7 @@ def _sender_line(job: dict[str, Any]) -> str:
                 "不要用 DeliverMessage 把 packet 发回门面，也不要执行业务；"
                 f"{keep}"
             )
-        # Replies stay in this Conversation (decision_c524c775e0be); say so, or the sender never hears back.
-        return (
-            f"当前消息由 Resident {actor} 发送；"
-            f"本轮回复只留在你自己的对话里，不会自动送回 {actor}，要让它收到，用 DeliverMessage 发给它；{keep}"
-        )
+        return ""
     if kind == "service":
         return f"当前消息由 Portal 服务 {actor} 投递；{keep}"
     if delivery_hint:

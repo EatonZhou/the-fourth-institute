@@ -124,19 +124,15 @@ def test_every_turn_carries_exact_cli_identity_in_front_of_the_message(
 
 @pytest.mark.parametrize("actor,expected", [
     ("sample_admin", "当前发送者是用户 sample_admin；"),
-    ("resident_2a1fc6cd272d", "当前消息由 Resident resident_2a1fc6cd272d 发送；"
-                              "本轮回复只留在你自己的对话里，不会自动送回 resident_2a1fc6cd272d，"
-                              "要让它收到，用 DeliverMessage 发给它；"),
+    ("resident_2a1fc6cd272d", None),
     ("sample_guest", "当前发送者是用户 sample_guest；"),
     ("portal", "当前消息由 Portal 服务 portal 投递；"),
     ("", "当前消息由 Portal 投递；"),
 ])
-def test_turn_prompt_names_the_real_sender(resident_record, monkeypatch, tmp_path, actor, expected):
-    """每轮提示写明真实发送者
+def test_turn_prompt_uses_the_authenticated_sender_for_sender_hints(resident_record, monkeypatch, tmp_path, actor, expected):
+    """按真实发送者选择普通消息的提示
 
-    每轮提示按任务的真实发送者说明 owner、其他用户、Resident、Portal 服务或未标明的投递，不把非 owner 的消息说成 owner 的；发送者是 Resident 时写明本轮回复只留在自己的对话里，不会自动送回，要让它收到须用 DeliverMessage 发给它。
-
-    A message from another Resident or a non-owner is not presented as the owner's.
+    用户、Portal 服务及未标明的投递沿用发送者提示。Resident 之间的普通消息省略这段提示，正文和附件引用照常送达。
 
     :design: decision_c524c775e0be
     """
@@ -147,7 +143,14 @@ def test_turn_prompt_names_the_real_sender(resident_record, monkeypatch, tmp_pat
     prompt = resident_prompt_domain.build_resident_prompt(resident_record, {
         "actor": actor, "message": "status?", "context_refs": {"resources": ["r"]},
     })
-    assert expected in prompt
+    if expected is not None:
+        assert expected in prompt
+    else:
+        assert "当前消息由 Resident" not in prompt
+        assert "本轮回复只留在你自己的对话里" not in prompt
+        assert "请按该 Resident 原有上下文继续协作" not in prompt
+    assert '<resource address="r"/>' in prompt
+    assert "<user-message>\nstatus?\n</user-message>" in prompt
     assert "本 Resident Agent 的 owner" not in prompt
     assert '"owner_ids"' not in prompt
 
@@ -173,7 +176,7 @@ def test_family_router_prompt_keeps_control_packets_off_the_facade_inbox(
         job["business_ref"] = reference
     prompt = resident_prompt_domain.build_resident_prompt(resident_record, job)
     assert ("只输出 route packet" in prompt) is internal
-    assert ("要让它收到，用 DeliverMessage 发给它" in prompt) is not internal
+    assert "要让它收到，用 DeliverMessage 发给它" not in prompt
 
 
 def test_a_model_api_resident_is_told_it_has_no_tools(resident_record) -> None:
