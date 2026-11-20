@@ -38,7 +38,7 @@ def _scoped_git_context(workspace_path: str | Path) -> tuple[Path, Path, str]:
     return workspace, repo_root, scope or "."
 
 
-def _pull_target(workspace: Path, scope: str, *, dirty: bool) -> dict[str, Any]:
+def _pull_target(workspace: Path, scope: str) -> dict[str, Any]:
     target = {"available": False, "reason": "", "remote": "", "branch": ""}
     if scope != ".":
         target["reason"] = "稿件位于更大的 Git 仓库中，请在对应 Repo 页面拉取。"
@@ -55,11 +55,7 @@ def _pull_target(workspace: Path, scope: str, *, dirty: bool) -> dict[str, Any]:
     if remote not in remotes or not merge.startswith("refs/heads/") or "\n" in merge:
         target["reason"] = "请先为当前分支配置远端跟踪分支。" if remotes else "尚未配置远端仓库。"
         return target
-    target.update(remote=remote, branch=merge.removeprefix("refs/heads/"))
-    if dirty:
-        target["reason"] = "请先提交工作区中的更改，再拉取。"
-    else:
-        target["available"] = True
+    target.update(available=True, remote=remote, branch=merge.removeprefix("refs/heads/"))
     return target
 
 
@@ -79,7 +75,7 @@ def sync_scoped_git_workspace(
         raise ValueError("unknown Git network operation")
     workspace, repo_root, scope = _scoped_git_context(workspace_path)
     with _repo_lock(f"path:{repo_root}"):
-        target = _pull_target(workspace, scope, dirty=operation in {"pull", "sync"} and _status_payload(repo_root)["dirty"])
+        target = _pull_target(workspace, scope)
         if not target["available"]:
             raise RepoWorkspaceConflict(target["reason"])
         remote, branch = target["remote"], target["branch"]
@@ -120,7 +116,7 @@ def scoped_git_status(workspace_path: str | Path) -> dict[str, Any]:
             "changes": [],
         }
     status = _status_payload(workspace, current_directory_only=True)
-    remote = _pull_target(workspace, scope, dirty=False)
+    remote = _pull_target(workspace, scope)
     upstream = _git(workspace, "rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{upstream}", allowed_returncodes=(0, 128))
     counts = _git(workspace, "rev-list", "--left-right", "--count", "HEAD...@{upstream}", allowed_returncodes=(0, 128)).split() if upstream else []
     return {
@@ -129,7 +125,7 @@ def scoped_git_status(workspace_path: str | Path) -> dict[str, Any]:
         "branch": _branch_name(workspace) or "detached HEAD",
         "scope": scope,
         "head": _head_commit(workspace),
-        "pull": _pull_target(workspace, scope, dirty=status["dirty"]),
+        "pull": remote,
         "remote": remote,
         "upstream": upstream,
         "ahead": int(counts[0]) if len(counts) == 2 else None,

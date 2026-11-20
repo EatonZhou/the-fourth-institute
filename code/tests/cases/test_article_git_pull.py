@@ -50,13 +50,35 @@ def test_pull_updates_content_and_tracks_remote_branch(repo):
     assert git(checkout, "rev-parse", "HEAD") == git(author, "rev-parse", "HEAD")
 
 
-def test_dirty_and_diverged_pulls_preserve_local_files(repo):
+def test_pull_preserves_non_overlapping_index_and_worktree_changes(repo):
+    author, checkout = repo
+    local_file = checkout / "draft.tex"
+    local_file.write_text("staged draft")
+    git(checkout, "add", "draft.tex")
+    local_file.write_text("working draft")
+    advance(author)
+
+    assert scoped.scoped_git_status(checkout)["pull"]["available"]
+    result = article_git.pull_article_git("article_0123456789ab")
+
+    assert git(checkout, "rev-parse", "HEAD") == git(author, "rev-parse", "HEAD")
+    assert (checkout / "main.tex").read_text() == "remote revision"
+    assert git(checkout, "show", ":draft.tex") == "staged draft"
+    assert local_file.read_text() == "working draft"
+    assert result["status"]["dirty"]
+
+
+def test_overlapping_and_diverged_pulls_preserve_local_files(repo):
     author, checkout = repo
     advance(author)
+    head = git(checkout, "rev-parse", "HEAD")
     (checkout / "main.tex").write_text("local work")
-    assert not scoped.scoped_git_status(checkout)["pull"]["available"]
-    with pytest.raises(ValueError, match="提交"):
+    with pytest.raises(GitOperationError, match=r"main\.tex"):
         article_git.pull_article_git("article_0123456789ab")
+    assert git(checkout, "rev-parse", "HEAD") == head
+    assert (checkout / "main.tex").read_text() == "local work"
+    assert not (checkout / "new.tex").exists()
+
     git(checkout, "add", "."); git(checkout, "commit", "-m", "local change")
     head = git(checkout, "rev-parse", "HEAD")
     with pytest.raises(GitOperationError):
@@ -125,9 +147,10 @@ def test_fetch_push_sync_and_tracking_counts(repo):
     result = scoped.sync_scoped_git_workspace(checkout, "fetch", article_id="article_0123456789ab")
     assert result["status"]["behind"] == 1
     assert (checkout / "main.tex").read_text() == "initial"
-    (checkout / "draft.tex").unlink()
-    scoped.sync_scoped_git_workspace(checkout, "sync", article_id="article_0123456789ab")
+    result = scoped.sync_scoped_git_workspace(checkout, "sync", article_id="article_0123456789ab")
     assert (checkout / "main.tex").read_text() == "remote revision"
+    assert (checkout / "draft.tex").read_text() == "unsaved to git"
+    assert result["status"]["untracked_count"] == 1
     (checkout / "local.tex").write_text("local")
     git(checkout, "add", "."); git(checkout, "commit", "-m", "local")
     assert scoped.scoped_git_status(checkout)["ahead"] == 1
