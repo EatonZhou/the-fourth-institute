@@ -4,15 +4,15 @@ type: decision
 project: AI员工
 created_at: '2026-08-27'
 version:
-  number: 96
+  number: 100
   created_at: "2026-08-27"
   created_by:
     user: ""
     agent: ""
-  updated_at: "2026-11-05T09:45:55Z"
+  updated_at: "2026-11-21T17:39:12Z"
   updated_by:
     user: ""
-    agent: "resident_2e9ea0072551"
+    agent: "resident_62dbdb2288fb"
 importance: 10
 metaness: 2
 ai_generated: false
@@ -67,6 +67,7 @@ links:
   supersedes: []
   derived_from: []
 ---
+
 # Resident Conversation、Input 与运行控制协议
 
 Resident 通过对话工作：别人给它发消息，它逐条处理并回复。本协议规定描述这段对话的几种对象——消息（Message）、输入状态（Input state）、等待队列（Queue）、Resident 状态、变化事件（Event）和对话快照（snapshot）——各自包含什么、怎样变化，以及调用方用哪些 HATG ISA 指令读取和控制它们。浏览器页面、其他 Resident、Telepus、承担定时工作的 Resident 和业务程序都通过同一套对象与指令使用 Resident。
@@ -101,7 +102,7 @@ Resident 通过对话工作：别人给它发消息，它逐条处理并回复�
 | `origin` | 可信来源信封（格式 `tfi.message-origin.v1`），记录发出者 `sender`、生成来源的 Portal 服务 `producer`，以及代为发起时的 `initiated_by`。它由入口构造，用户输入不能伪造（decision_ae422b92c6f3）。 |
 | `reply_to_message_id` | 回复消息可以带上的被回复消息 ID。 |
 | `recipients` | 可选，收件人列表，每项是 `{"kind": "user" 或 "resident", "id": "<ID>"}`，最多 20 项，同一收件人只出现一次。Resident 发给用户的消息、Family 以门面身份发出的消息在门面对话中的记录带这个字段；其他消息省略。它和正文一样写入后不再改变。只有用户收件人在自己的 Mailbox 中看到未读（decision_15f7df737ed5）。 |
-| `quote` | 可选，这条消息引用的一条消息：`{"message_id": "<被引用消息 ID>", "author_id": "<它的作者>", "text": "<摘录>"}`。只有 `role` 为 `user` 的消息可以带，一条消息只引用一条。被引用的消息必须在同一段对话中（Family 门面对话中投影的成员回复和门面的外发记录也算），普通引用要求发送者能读到它；经过收件关系核验的 Family 回信可引用对应发件记录，详见下文“回信的引用权限”；`author_id` 和 `text`（被引用正文开头最多 1000 字）由服务端在接收时填写，之后不再改变。收到消息的 Resident 在本轮提示中看到引用的作者和摘录：正文前有一个 `<quoted-message author=… author_title=… message_id=…>` 块（184acf1d，`society_service/message_quotes.py`）。 |
+| `quote` | 可选，这条消息引用的一条消息：`{"message_id": "<被引用消息 ID>", "author_id": "<它的作者>", "text": "<摘录>"}`。只有 `role` 为 `user` 的消息可以带，一条消息只引用一条。被引用的消息必须在同一段对话中（Family 门面对话中投影的成员回复和门面的外发记录也算），普通引用要求发送者能读到它；经过收件关系核验的 Family 回信可引用对应发件记录，详见下文“回信的引用权限”；`author_id` 和 `text`（正文开头和图片、文件类型及名称，合计最多 1000 字；长正文为附件说明保留空间，纯图片或文件也可引用）由服务端在接收时填写，之后不再改变。附件引用保存描述而不复制媒体或授予访问权限；用户通过引用的消息 ID 回到原消息查看。收到消息的 Resident 在本轮提示中看到引用的作者和摘录：正文前有一个 `<quoted-message author=… author_title=… message_id=…>` 块（184acf1d，`society_service/message_quotes.py`）。 |
 | `usage` | 最终回复读取关联 Execution 的单轮用量，转换为统一的 `input_tokens`、`output_tokens`、`total_tokens` 等字段；不使用会话累计或上下文窗口用量。中间进度消息不重复展示整轮统计。实时完成和历史重载都在轮末保留原有用量页脚，统计不进入 Segment。Provider 的 `final_answer` 不单独结束 Portal 这一轮：同一 Execution 续跑后，以结束时最后一条有效回复承载一次用量；成功时取 Agent 回复，失败或停止时取终止回执，运行中的 Execution 不展示结算页脚。卡片和 Harness 输入不参与选择。分页、单条读取与完整历史使用同一 Execution 的完整当前轨迹定位结束回复，截断继承到中途的分支不把过程消息变成最终回复。输入进入终态时，服务端同时发布最终回复的更新，让已打开的聊天读取结算后的用量。 |
 
 - **Provider 的完整结构化响应保存为产物。** 产物 ID 默认是 `{message_id}:provider_response`，Agent 消息用一个 `artifact_reference` 分段指向它。
@@ -114,7 +115,7 @@ Resident 通过对话工作：别人给它发消息，它逐条处理并回复�
 | --- | --- | --- |
 | `text` | `text` | 多个文本分段用换行合成执行文本，合成后必须非空 |
 | `image` | 图片引用 | 作为原生媒体输入交给模型；目标 Provider 必须支持图片 |
-| `file` | 本地文件引用 | 在执行文本中加入 `[file: 绝对路径]`；目标 Provider 必须能使用本地工具（`local_tools` 能力） |
+| `file` | 本地文件引用 | 在该分段原位置替换为 `[file: 绝对路径]`，保留前后文字与空白，不另附文件列表；目标 Provider 必须能使用本地工具（`local_tools` 能力） |
 | `artifact_reference` | `artifact_id` 或引用对象 | 作为上下文引用，不自动展开成文本 |
 | `resource_reference` | 统一资源地址或引用对象 | 作为上下文引用，由后续上下文组装按权限解析 |
 | `context_reference` | `context` 对象 | 合并进运行上下文，见下文 |
@@ -235,7 +236,7 @@ WatchConversationEvents 的首批立即返回；每批末尾提供检查点 `{cu
 - **Family 门面接受和任何 Resident 一样的消息内容。** 门面不执行；平台已核实明确目标时，受理后通过转交 owner 直接投递，不等待路由事件或 Router 模型；需要选择目标的请求才等待 Family Router。请求可以带图片、文件和引用：门面收到时按发送者检查每个附件和引用（只能发送自己上传的附件，工作区路径须在门面的 Workspace 内），不通过的整条拒收；info 消息和发给任何 Resident 的 info 一样只包含消息内容。Router 原样（`content_parts` 不变）转交时，成员按原发送者的权限读取其中的附件和引用，如同发送者直接发给它；消息带 `quote` 时，被引用的是承接成员自己的回复或它承接过的请求，转交副本的 `quote` 指向成员对话中的那条消息，否则只保留作者和摘录；转交时改动了消息的，按转交者自己的权限读取。成员读不了的附件照常被拒绝（图片要求 `accepts_images`，文件要求 `accepts_files`）。`inject_active_turn`、授权调用的隔离输入，以及门面所属 steward 发来的消息仍被拒绝（decision_44cf587c1721）。
 - **发给用户。** 给出 `user_id` 时，调用者必须是 Resident，`activation_policy` 只能省略或为 `enqueue_and_trigger`，`content_parts` 只包含文字和资源引用（`text`、`resource_reference`），并且有非空文字。消息不进入任何队列，也不开始工作：它以发送方的身份写入发送方自己的对话，`role` 为 `agent`，没有 `reply_to_message_id`，立即显示，`recipients` 记录这位用户；发送方在 Family 内时，按下一条规则写入门面的对话，以门面身份发出（decision_44cf587c1721）。收件用户必须能查看这段对话，否则以无权限拒绝。省略 `message_id` 并带幂等键时，ID 由收件用户、调用者和幂等键推导，重试得到同一条消息；同一 ID 换了正文返回冲突。结果中的 `resident_id` 是消息所在的对话（发送方或门面），`sender_id` 是实际署名，`recipients` 是收件人，`input_state` 为空对象。用户的 Mailbox 把发给自己、尚未读的消息算作未读（decision_15f7df737ed5）；用户在这段对话中回复，回复是发给这个 Resident 或门面的普通消息。给 Resident 和给用户发消息使用同一条指令，不另设通道。
 - **Family 内的成员或 steward 发给 Family 外的 Resident 时，以门面身份发出。** 署名的门面是包含发送者、但不包含收件方的最外层 Family 的门面；来源的 `sender` 记为门面，`initiated_by` 记为实际发出者。发送者自己必须能向收件方发消息，门面不替它取得权限；门面本身也要通过对收件方的检查。消息带的附件和引用按发送者本人的权限核对和读取：只能带发送者自己上传的附件，门面或别人上传的不行；只有平台代发的这次投递如此，门面以成员为发起者的其他操作仍按门面自己的权限。发到另一个 Family 的门面时，那边的 Router 原样转交，成员同样按这位发送者的权限读取，前提是署名的门面仍代表它。门面对话同时记下一条门面署名、`role` 为 `agent`、`recipients` 写明收件 Resident、正文相同的消息（记录的消息 ID 由门面和投递的消息 ID 推导，重试不重复记录）。门面 Chat 把这条记录显示为一行“发给 <收件 Resident> · 由 <实际发出者> 发出”，点开才显示正文；发给用户的消息照常展开，也不把这条记录当作最新回复展开。结果中的 `sender_id` 是门面。以下情况保留本人身份：Family 内部互发（包括成员发给自己的门面）；Family Router 带转交标注的投递；授权调用的隔离输入；收件方最近一次亲自（不经门面转交）写信的对象是发送者本人。收件方最近写给某个内层门面时，以那个内层门面发出；最近写给外层门面或从没亲自写过时，以最外层门面发出。Fork 复制来的历史早于新 Resident 的创建，不算收件方写给它。
-- **回复不自动送回发送者。** 收到消息的一方是否回复、回复给谁，由它自己决定；发送者记在来源 `origin.sender`，代为发起者记在 `initiated_by`，需要回复时用 `DeliverMessage` 发给对方。消息来自 Resident 时，收件方每轮的提示写明：本轮回复只留在它自己的对话里，不会自动送回发送者，要让发送者收到须用 `DeliverMessage` 发给它。回复 Family 门面代成员发来的消息时，平台把回复和那条消息关联起来，门面直接交给写它的成员：在处理那条消息的一轮里发给这个门面，自动引用门面的发件记录（那一轮处理的消息中恰有一条来自这个门面时）；以后的轮次用 `reply_to_message_id` 指明。这类消息的包装带一段 `<reply-hint>`，写明这两种回复方式和要填的消息 ID。
+- **回复不自动送回发送者。** 收到消息的一方是否回复、回复给谁，由它自己决定；发送者记在来源 `origin.sender`，代为发起者记在 `initiated_by`，需要回复时用 `DeliverMessage` 发给对方。普通 Resident 互发消息时，模型输入省略通用发送者与回信提示。回复 Family 门面代成员发来的消息时，平台把回复和那条消息关联起来，门面直接交给写它的成员：在处理那条消息的一轮里发给这个门面，自动引用门面的发件记录（那一轮处理的消息中恰有一条来自这个门面时）；以后的轮次用 `reply_to_message_id` 指明。这类消息的包装带一段 `<reply-hint>`，写明这两种回复方式和要填的消息 ID。
 - **回信的引用权限只覆盖对应发件记录。** 当前轮自动关联和跨轮 `reply_to_message_id` 使用同一条规则：调用者自己的对话中必须确实收到委托（也可通过正式 Family 转交链收到），门面发件记录的收件关系必须与之吻合。受托成员通过自己的 Family 门面署名回信时，仍按实际受托成员核验。平台在内部传递原收件消息 ID，并在接受引用时再次核对；调用者不能在 `message` 中自行提供这项凭证。该授权只允许引用被回复的那一条发件记录，保留服务端生成的作者、摘录及回复归属；它不授予读取整个私人门面对话的权限，也不授权普通 `quote` 引用其他私人消息。复制他人的委托消息、冒用消息 ID 或把回信凭证配到另一条发件记录，都不能获得该授权。
 - **重复投递返回原结果。** 相同 `message_id` 和相同内容的重复投递返回已有确认；相同 ID 但内容不同时返回冲突，第一次的消息保持不变。
 - **只接受上面三个 `activation_policy` 值。** `ForwardMessages` 和调用 `DeliverMessage` 的 Effect 使用相同的取值与默认值；其他值在投递、指令参数和 Lineage 组件配置中都直接拒绝。数据中残留的其他取值的未执行输入不会被恢复器自动启动，操作者可以取消后重新发送。
@@ -335,3 +336,10 @@ Resident 删除或权限变化使身份事件的目标不再可读时，实时�
 ### 原生调用的接纳事实
 
 Codex 客户端收到真实 `turn/start` 或 `review/start` 成功响应并取得原生轮次 ID 时，将实际方法、Thread ID、Turn ID 与当前 Execution 关联，保存为 Agent 的只含身份的操作回执。该回执属于 Portal 对调用结果的观察，不冒充 Provider 原生事件，不进入聊天消息或上下文片段；不保存提示词、Diff、请求参数或凭据。接管既有轮次、读取会话快照及重放历史都不得补造方法回执；同一回执再次观察时保留首次记录。原生 Review 的模式进入、退出和最终输出仍从同一 Thread/Turn 的原生记录核验，方法回执不能代替这些事实。
+
+
+## 工作流中的接收位置
+
+对话读取将出现位置与回复归属分别表达。`conversation_position` 包含实际承接 Resident 的 `resident_id` 和该 trace 的 `ordinal`；序号仅在同一 Resident 的轨迹内比较。`conversation_context.request_message_id` 表示已确认协作输入或同步 Portal 交互发生在哪段工作中，不改变其原作者、原回复关联或执行结算。
+
+确认送达的追加输入以同一执行的接收记录定位，只有原 User 补充改变后续输出的回复归属。同步指令及回执以持久 trace 的处理位置展示，不声称指令文本已交给模型。普通 Mailbox 到达、当前运行状态、墙钟时间均不能代替接收位置。Family 沿原请求的转交链将工作关联换成外层请求身份，以 `family_context` 保留实际承接成员；协作消息保持原署名。快照、单条读取、事件回读和分页沿用同一展示事实，不修改保存的输入和执行记录。

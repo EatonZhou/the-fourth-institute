@@ -88,8 +88,9 @@ def test_captured_file_references_keep_authored_position():
     """
     from management_portal.execution.message_projection import message_facts, project_message, wrap_message
     from management_portal.society_service.resident_media_domain import (
-        resident_message_with_file_references as _resident_message_with_file_references,
+        resolve_file_references,
     )
+    from management_portal.society_service.resident_message_contract import input_parts
 
     upload_id = "upload_" + "a" * 24
     original = {"message_id": "msg_file_order", "role": "user", "author_id": "sample_admin", "content_parts": [
@@ -97,9 +98,9 @@ def test_captured_file_references_keep_authored_position():
         {"type": "file", "upload_id": upload_id, "name": "paper.docx"},
         {"type": "text", "text": " After the attachment.\n"},
     ]}
-    body = "\n".join(part["text"] for part in original["content_parts"] if part["type"] == "text")
-    prompt = _resident_message_with_file_references(
-        body, [{"media_type": "file", "source": f"/uploads/{upload_id}/paper.docx"}],
+    body, *_ = input_parts(original)
+    prompt = resolve_file_references(
+        body, [{"media_type": "file", "reference_source": upload_id, "source": f"/uploads/{upload_id}/paper.docx"}],
     )
     message = project_message("segment_file_order", message_facts(original), wrap_message(prompt))
     _run("file-reference-order", message)

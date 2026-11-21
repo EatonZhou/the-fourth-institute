@@ -205,6 +205,7 @@ def test_inline_media_positions_survive_delivery_and_provider_capture(resident_r
     RetentionStore().declare(attachment.parent, category='unused_upload', owner_id=upload_id)
     monkeypatch.setattr(resident_media_domain, "resident_input_media", lambda *a, **kw: [{
         "media_type": media_type, "source_type": "local_path", "source": str(attachment),
+        "reference_source": upload_id,
         "mime_type": "image/png" if media_type == "image" else "application/octet-stream", "name": attachment.name,
     }])
     monkeypatch.setattr(resident_intake_domain, "resolve_context_refs", lambda *a, **kw: {})
@@ -225,9 +226,9 @@ def test_inline_media_positions_survive_delivery_and_provider_capture(resident_r
         waiting = resident_execution_work.waiting_input_queue(job)
         job = resident_execution_work.promote_queue_item(job, waiting[0], [], "2026-10-13T10:00:00Z")
         resident_execution_work.write(resident_record, job)
-    body = "\n".join(part["text"] for part in parts if part["type"] == "text")
+    body = "".join(part["text"] for part in parts if part["type"] == "text")
     prepared = resident_execution_domain._prepare_resident_prompt(resident_record, job)
-    provider_body = body if media_type == "image" else body + f"\n\n[file: {attachment}]"
+    provider_body = body if media_type == "image" else f"\n1. Before [file: {attachment}]\n2. After.\n"
     assert unwrap_message(prepared["actual_sent_prompt"]) == provider_body
     request = resident_execution_domain._build_resident_execution_request(resident_record, prepared)
     store = get_agent_data_store()

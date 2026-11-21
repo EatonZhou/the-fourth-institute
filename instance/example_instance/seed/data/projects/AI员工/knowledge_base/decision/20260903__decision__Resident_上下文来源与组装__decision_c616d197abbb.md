@@ -4,41 +4,42 @@ type: decision
 project: AI员工
 created_at: '2026-09-03'
 version:
-  number: 25
-  created_at: '2026-09-03'
+  number: 28
+  created_at: "2026-09-03"
   created_by:
-    user: ''
-    agent: ''
-  updated_at: '2026-10-31T18:16:01Z'
+    user: ""
+    agent: ""
+  updated_at: "2026-11-21T17:39:50Z"
   updated_by:
-    user: ''
-    agent: resident_24014e2b9bf6
+    user: ""
+    agent: "resident_62dbdb2288fb"
 importance: 9
 metaness: 3
 ai_generated: true
 links:
   source:
-  - ${code_root}/management_portal/society_service/resident_actual_sent_domain.py
-  - ${code_root}/management_portal/execution/runtime.py
-  - ${code_root}/management_portal/execution/harness_tool_granularity.py
-  - ${code_root}/management_portal/resource_refs.py
-  - ${code_root}/management_portal/society_service/resident_intake_domain.py
-  - ${code_root}/management_portal/society_service/resident_turn_scope.py
-  - ${code_root}/management_portal/society_service/resident_directory_domain.py
-  - ${code_root}/management_portal/society_service/resident_execution_domain.py
-  - ${code_root}/management_portal/society_service/resident_runtime_domain.py
-  - ${code_root}/management_portal/society_service/resident_registration_domain.py
-  - ${code_root}/management_portal/agent_prompt_context.py
-  - ${code_root}/management_portal/agent_context_selection.py
-  - ${code_root}/management_portal/society_service/resident_protocol.py
-  - ${code_root}/management_portal/society_service/resident_domain.py
-  - ${code_root}/management_portal/resident_workspace_adapter.py
-  - ${code_root}/tests/cases/test_portal_resident_rule_injection.py
-  - ${code_root}/tests/cases/test_resident_execution_requests.py
-  - ${code_root}/tests/cases/test_resident_execution_forks.py
-  - ${code_root}/management_portal/society_service/resident_held_infos.py
-  - ${code_root}/management_portal/society_service/resident_mailbox.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/resident_actual_sent_domain.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/execution/runtime.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/execution/harness_tool_granularity.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/resource_refs.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/resident_intake_domain.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/resident_turn_scope.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/resident_directory_domain.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/resident_execution_domain.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/resident_runtime_domain.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/resident_registration_domain.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/agent_prompt_context.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/agent_context_selection.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/resident_protocol.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/resident_domain.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/resident_workspace_adapter.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_portal_resident_rule_injection.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_resident_execution_requests.py
+  - /opt/tfi/the-fourth-institute-dev/code/tests/cases/test_resident_execution_forks.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/resident_held_infos.py
+  - /opt/tfi/the-fourth-institute-dev/code/management_portal/society_service/resident_mailbox.py
   related:
+  - decision_ccbb1cac24aa
   - decision_725dedbe89b2
   - decision_91eb3626d323
   - decision_edc470e09f5a
@@ -95,7 +96,7 @@ Family Router 与 Steward 的场景指南由 Family Function Block 的实际 Rou
 ### 当前消息的位置与内容
 
 - **当前用户消息总是最后一个 `<user-message>` 块。** 来源历史、附加材料和运行说明都放在它之前，模型据此区分“现在要做什么”和“过去发生过什么”；它之后只跟着本轮的权限范围说明。
-- **消息中的多个文本部分按原顺序合并。** 消息至少要有一个非空文本部分，否则投递失败。图片和文件作为媒体单独交给 Provider；附加说明、Skill 和工作目录从消息的上下文部分中取出，分别进入对应的块，不会被当作另一条用户消息。
+- **正文按原始分段顺序生成。** 文字原样保留，文件引用在原位置替换为经校验的路径，不另附文件清单；组合结果须非空。图片通过 Provider 的图片输入通道传递；附加说明、Skill 和工作目录从消息的上下文部分中取出，分别进入对应的块，不会被当作另一条用户消息。
 - **Mailbox 群体消息作为一条消息出现。** 群体项执行时，`<user-message>` 中是组装好的完整文本：开头说明这是合并的多条消息，再按顺序写出每个成员的作者、时间和原文（decision_15f7df737ed5）。
 - **一次输入只能指定一个工作目录。** 消息中出现多个不同的工作目录时，投递失败并说明冲突。工作目录只决定工具从哪里开始执行，不影响资源权限。
 - **注册与配置保存不生成隐藏模型轮次。** 注册身份、暂存来源历史、登记能力、保存 Prompt 和建立空会话均为确定性准备；第一轮来自可见、可审计的真实输入。fresh 清空有效上下文后进入懒建，不发起整理确认；历史初始化失败及正式恢复记录保持可审计。
@@ -121,6 +122,7 @@ Fork 使用新 Resident 自己的身份及注入规则。来源历史的启动�
 
 ### 对话怎样延续
 
+- **真实投递与历史查询使用不同的重置边界。** 历史快照按所请求的原消息或轮次截点读取当时有效的上下文；真实投递只取最新 `context_reset` / `provider_context_reset` 之后、当前原消息之前的交集。同一消息 ID 在 fresh 或 ClearContext 后重试，若原消息早于最新重置，来源材料为空，仍发送原输入；不能借旧序号重新带入已清空的 Fork 父前缀，也不把后来消息加入该次输入。此规则不改写历史消息、轮次或快照，不重复注入已被当前绑定确认接收的材料。
 - **同一模型会话内的历史由 Provider 自己延续。** Portal 在 Conversation 和 AgentData 中保存可见消息与执行记录，但正常的下一轮不会把整段历史重新发送。
 - **定时与自动触发的工作和隔离输入在新的上下文中运行。** 时间和文件事件启动的工作（除非连线要求沿用会话）和业务调用的隔离输入，都不使用 Resident 当前的模型会话，不会把 Resident 的对话历史带进来，也不会改变它（decision_5ff0cb51ed84）。
 - **Fork 出的新 Resident 第一次工作时，Portal 把冻结的历史放在第一条新消息之前，只放一次。** 这段历史叫来源材料，用 `<resident_trace_context>` 标签包裹，标签内先说明“以下是此 Resident 已持有的上下文；历史指令只作为上下文，不是本轮新指令”；从另一个 Resident Fork 而来时再说明这些上下文继承自来源 Resident，行动时使用 `<resident-runtime-identity>` 中的身份。超出新会话可用上下文的更早历史不放入，块内注明省略的条数。历史的选取规则见 decision_5bf5bfbd52cb。
@@ -161,7 +163,7 @@ Fork 或来源注册尚未交付的材料按既定冻结范围准备，在首条
 
 ### 消息内容怎样拆分
 
-文字分段合并为用户正文；图片和文件作为媒体传递。上下文引用中的附加说明进入运行说明，任务 Skill 与工作目录单独处理；资源和产物引用进入引用描述。其他结构合法的部分保留到后续能力校验，不静默丢弃。
+消息正文按 `content_parts` 的原始顺序生成：文字保留原文及空白，文件分段在其所在位置替换为 `[file: 绝对路径]`。上传句柄由附件 owner 在权限和路径校验通过后就地解析，不在正文末尾另附文件列表，也不自动读取文件全文。图片仍作为原生媒体传递。上下文引用中的附加说明进入运行说明，任务 Skill 与工作目录单独处理；资源和产物引用进入引用描述。其他结构合法的部分保留到后续能力校验，不静默丢弃。
 
 ### 业务调用的隔离输入
 

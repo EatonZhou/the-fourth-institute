@@ -198,8 +198,10 @@ def resident_input_media(
         if upload_id:
             # An attachment uploaded with CreateUpload: only its uploader may send it.
             media = _uploaded_input_media(upload_id, media_type, actor_id)
+            if media_type == "file":
+                media["reference_source"] = upload_id
             key = (media_type, media["source"])
-            if key not in seen:
+            if media_type == "file" or key not in seen:
                 seen.add(key)
                 normalized.append(media)
             continue
@@ -305,23 +307,27 @@ def resident_input_media(
                 raise ValueError("unsupported Resident input media source type")
             continue
         key = (media_type, media["source"])
-        if key in seen:
+        if media_type == "file":
+            media["reference_source"] = source
+        elif key in seen:
             continue
         seen.add(key)
         normalized.append(media)
     return normalized
 
 
-def resident_message_with_file_references(
+def resolve_file_references(
     message: str, attachments: list[dict[str, str]],
 ) -> str:
-    references = [
-        f"[file: {item['source']}]"
+    """Resolve authorized file handles at their authored positions; append nothing."""
+    sources = {
+        item.get("reference_source", item["source"]): item["source"]
         for item in attachments
         if item["media_type"] == "file"
-        and f"[file: {item['source']}]" not in message
-    ]
-    return "\n\n".join([message, *references])
+    }
+    return re.sub(r"\[file: ([^\]\r\n]+)\]", lambda match: (
+        f"[file: {sources[match.group(1)]}]" if match.group(1) in sources else match.group(0)
+    ), message)
 
 
 def provider_message_with_native_media(

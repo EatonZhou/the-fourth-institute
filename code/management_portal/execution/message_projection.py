@@ -9,6 +9,7 @@ from __future__ import annotations
 from collections.abc import Mapping
 from html import escape
 from pathlib import PurePosixPath
+import re
 from typing import Any
 from xml.etree import ElementTree
 
@@ -42,7 +43,7 @@ def _unwrap_quote(text: str, quote: Mapping[str, Any]) -> str:
 
 
 def _unwrap_file_references(text: str, templates: list[Mapping[str, Any]], original_length: int | None) -> str:
-    """Remove only delivery annotations beyond the accepted text's boundary.
+    """Read historical captures made before inline file substitution.
 
     File paths are added for the model's tools, while Chat already has the
     ordered file parts. Match every annotation to an accepted attachment;
@@ -69,6 +70,35 @@ def _unwrap_file_references(text: str, templates: list[Mapping[str, Any]], origi
             return text
         files.remove(matched)
     return body
+
+
+def _inline_parts(text: str, templates: list[Mapping[str, Any]]) -> list[dict[str, Any]] | None:
+    """Read the same ordered document captured by intake, without a second body."""
+    parts, offset = [], 0
+    for part in templates:
+        if part.get("type") == "text":
+            if "length" not in part:
+                return None
+            end = offset + part["length"]
+            parts.append({"type": "text", "text": text[offset:end]})
+            offset = end
+        elif part.get("type") == "file":
+            marker = re.match(r"\[file: ([^\]\r\n]+)\]", text[offset:])
+            if not marker:
+                return None
+            source = marker.group(1)
+            path = PurePosixPath(source)
+            if not (source == (part.get("source") or part.get("path") or part.get("url")) or (
+                part.get("upload_id") and (source == part["upload_id"] or (
+                    path.parent.name == part["upload_id"] and (not part.get("name") or path.name == part["name"])
+                ))
+            )):
+                return None
+            parts.append(dict(part))
+            offset += len(marker.group(0))
+        else:
+            parts.append(dict(part))
+    return parts if offset == len(text) else None
 
 
 def provider_agent_message_phase(item: Mapping[str, Any]) -> str:
@@ -133,6 +163,15 @@ def project_message(segment_id: object, facts: Mapping[str, Any], content: Any) 
         text = unwrap_message(text)
     parts: list[dict[str, Any]] = []
     templates = facts.get("parts", ({"type": "text"},))
+    if facts.get("role") == "user":
+        inline_text = text
+        quote = facts.get("quote")
+        if isinstance(quote, Mapping) and quote:
+            inline_text = _unwrap_quote(inline_text, quote)
+        inline = _inline_parts(inline_text, templates)
+        if inline is not None:
+            message.update(segment_id=str(segment_id), content_parts=inline)
+            return message
     texts = [part for part in templates if part.get("type") == "text"]
     original_length = (
         sum(part["length"] for part in texts) + len(texts) - 1

@@ -15,6 +15,10 @@ from management_common.text_values import stripped_text
 MESSAGE_IDENTITY_PATTERN = re.compile(r"msg_[0-9a-f]{16,64}")
 
 
+def file_reference_source(part: Mapping[str, Any]) -> str:
+    return str(part.get("upload_id") or part.get("source") or part.get("path") or part.get("url") or "").strip()
+
+
 def input_parts(
     message: Mapping[str, Any],
 ) -> tuple[
@@ -43,6 +47,8 @@ def input_parts(
             text_parts.append(value)
         elif part_type in {"image", "file"}:
             media.append(part)
+            if part_type == "file":
+                text_parts.append(f"[file: {file_reference_source(part)}]")
         elif part_type == "turn_review":
             if not isinstance(part.get("segment_id"), str) or not part["segment_id"]:
                 raise ValueError("turn review requires a source Segment")
@@ -88,9 +94,9 @@ def input_parts(
                 context_refs.setdefault("resources", []).append(part)
         else:
             context_refs.setdefault("content_parts", []).append(part)
-    # The stored part lengths locate inline attachments in the captured input.
-    # Validation must not change the body that those lengths describe.
-    content = "\n".join(text_parts)
+    # Content parts are an ordered inline document, including their whitespace.
+    # File handles are resolved in place after attachment authorization.
+    content = "".join(text_parts)
     if not content.strip():
         raise ValueError("Resident input requires a text content part")
     return (

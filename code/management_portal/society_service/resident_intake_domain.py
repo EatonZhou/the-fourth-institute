@@ -624,6 +624,18 @@ def _input_request(
     message = str(content or "")
     if not message.strip():
         raise ValueError("content required")
+    if protocol_input is None and isinstance(input_media, (list, tuple)) and input_media:
+        # Adapt callers of the text+media API once, at the input boundary.
+        # Attachments without an insertion position follow the supplied text.
+        parts = [{"type": "text", "text": message}]
+        for raw in input_media:
+            if not isinstance(raw, Mapping):
+                raise ValueError("input_media item must be an object")
+            part = dict(raw)
+            part.setdefault("type", part.get("media_type") or part.get("kind") or "image")
+            parts.append(part)
+        protocol_input = {"content_parts": parts}
+        message, input_media, *_ = resident_message_contract.input_parts(protocol_input)
     message_id = resident_message_contract.message_identity(message_id)
     activation = ACTIVATION_POLICIES[resident_message_contract.activation_policy(activation_policy)]
     isolated = resident_input_scope.permits(resident_id, actor_id, message_id)
@@ -1116,7 +1128,7 @@ def _prepared_input(
         )
     input_media = [item for item in attachments if item["media_type"] == "image"]
     provider_input = message_quotes.with_quote(
-        resident_media_domain.resident_message_with_file_references(message, attachments), request.quote,
+        resident_media_domain.resolve_file_references(message, attachments), request.quote,
     )
     goal_command = slash_commands.parse_goal_command(message)
     last_user_message = last_user_message_text(request.resident_id) if goal_command.get("action") == "get" else ""

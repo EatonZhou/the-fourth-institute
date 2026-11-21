@@ -149,9 +149,6 @@ def test_file_projection_preserves_inline_order_and_authored_markers(with_quote)
     :module: resident.conversation
     """
     from management_portal.execution.message_projection import message_facts, quote_block, wrap_message
-    from management_portal.society_service.resident_media_domain import (
-        resident_message_with_file_references as _resident_message_with_file_references,
-    )
 
     upload_id = "upload_" + "a" * 24
     source = f"/uploads/{upload_id}/manuscript.docx"
@@ -166,9 +163,8 @@ def test_file_projection_preserves_inline_order_and_authored_markers(with_quote)
     ]
     message = {"role": "user", "content_parts": parts}
     body = "\n".join(part["text"] for part in parts if part["type"] == "text")
-    composed = _resident_message_with_file_references(body, [
-        {"media_type": "file", "source": path} for path in (source, local, "/workspace/second.txt")
-    ])
+    # Immutable historical capture from the former append-at-end writer.
+    composed = body + f"\n\n[file: {source}]\n\n[file: /workspace/second.txt]"
     if with_quote:
         message["quote"] = {"author_id": "CASE-A", "text": "讨论附件"}
         composed = quote_block(message["quote"]) + "\n\n" + composed
