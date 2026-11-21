@@ -205,7 +205,7 @@ class WeixinPresentation(TelegramPresentation):
         '- /where 当前目标',
         '- /history [n] 最近 1–10 轮；/full <编号> 看全文；/earlier 更早',
         '- /more 长回复的下一段',
-        '- /file <编号> 发送回复中的附件',
+        '- 回复中的附件自动发送；/file <编号> 可重新发送',
         '- /back 上一题；/skip 不再回答',
         '- /queue 未完成的消息；/action <编号> 对它操作',
         '- /stop 停止；/stop current 精准路由时只停当前',
@@ -262,6 +262,17 @@ class WeixinPresentation(TelegramPresentation):
             callback = core.store.get_meta(key, '')
             if not callback:
                 return core._reply(['这个编号已失效，请重新读取回复。'])
+            if command == '/file' and callback.startswith('att:'):
+                delivery = core.store.get_attachment_delivery(
+                    chat_id=chat, telegram_user_id=state['telegram_user_id'],
+                    portal_actor=state['portal_actor'], token=callback[4:])
+                if delivery and delivery['status'] == 'sent':
+                    token = core.store.create_attachment_delivery(
+                        chat_id=chat, telegram_user_id=state['telegram_user_id'],
+                        portal_actor=state['portal_actor'], source_message_id=delivery['source_message_id'],
+                        attachment=delivery['attachment'])
+                    callback = 'att:' + token
+                    core.store.set_meta(key, callback)
             return core.dispatch_callback(chat_id=chat, telegram_user_id=state['telegram_user_id'],
                                          portal_actor=state['portal_actor'], data=callback)
         if session and not message.startswith('/'):

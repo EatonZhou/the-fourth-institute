@@ -503,6 +503,57 @@ def test_reply_images_are_sent_as_media_and_inbound_media_is_decrypted(bridge, m
     assert next(tmp_path.rglob('*.jpg')).read_bytes() == b'image bytes'
 
 
+@pytest.mark.parametrize('filename,media_type', [('report.pdf', 'application/pdf'), ('source.zip', 'application/zip')])
+def test_reply_files_auto_send_once_and_can_be_resent(bridge, monkeypatch, filename, media_type):
+    adapter, server, portal, _ = bridge
+    incoming(adapter, server)
+    monkeypatch.setattr(portal, 'attachments', lambda *args: [{'filename': filename, 'content_type': media_type}])
+    monkeypatch.setattr(portal, 'read_attachment', lambda *args: {'filename': filename, 'content_type': media_type, 'data': b'file bytes'})
+    portal.answer(FACADE, portal.delivered[0][2]['message_id'], 'file-answer', 'Your file')
+    adapter.refresh(ACTOR)
+    files = lambda: [m for m in server.sent if m['item_list'][0]['type'] == 4]
+    assert len(files()) == 1
+    assert crypt(server.encrypted, server.key, decrypt=True) == b'file bytes'
+    adapter.refresh(ACTOR)
+    assert len(files()) == 1
+    incoming(adapter, server, '/file 1', 2)
+    assert len(files()) == 2
+
+
+def test_auto_file_survives_budget_pause_and_restart(bridge, monkeypatch):
+    adapter, server, portal, _ = bridge
+    incoming(adapter, server)
+    monkeypatch.setattr(portal, 'attachments', lambda *args: [{'filename': 'report.pdf', 'content_type': 'application/pdf'}])
+    monkeypatch.setattr(portal, 'read_attachment', lambda *args: {'filename': 'report.pdf', 'content_type': 'application/pdf', 'data': b'pdf'})
+    adapter.budget = 2  # Reply uses the available slot; file remains queued.
+    portal.answer(FACADE, portal.delivered[0][2]['message_id'], 'pdf-answer', 'Your PDF')
+    adapter.refresh(ACTOR)
+    assert any(row['item'].get('attachment_token') for row in adapter.store.pending(chat_key('bot')))
+    restarted = WeixinAdapter(RouterCore(store=RouterStore(adapter.router.store.schema), portal=portal), client_factory=adapter.client_factory)
+    incoming(restarted, server, 'continue', 2)
+    assert sum(m['item_list'][0]['type'] == 4 for m in server.sent) == 1
+    assert not any(row['item'].get('attachment_token') for row in restarted.store.pending(chat_key('bot')))
+
+
+def test_auto_file_upload_failure_gives_exact_retry_command(bridge, monkeypatch):
+    adapter, server, portal, _ = bridge
+    incoming(adapter, server)
+    monkeypatch.setattr(portal, 'attachments', lambda *args: [{'filename': 'report.pdf', 'content_type': 'application/pdf'}])
+    monkeypatch.setattr(portal, 'read_attachment', lambda *args: {'filename': 'report.pdf', 'content_type': 'application/pdf', 'data': b'pdf'})
+    original = adapter.client_factory
+    def failing(account=None):
+        client = original(account)
+        client.upload = lambda *a: (_ for _ in ()).throw(WeixinError('upload unavailable', 'http'))
+        return client
+    adapter.client_factory = failing
+    portal.answer(FACADE, portal.delivered[0][2]['message_id'], 'failed-pdf', 'Your PDF')
+    adapter.refresh(ACTOR)
+    assert '文件发送失败，请发送 /file 1 重试。' in server.sent[-1]['item_list'][0]['text_item']['text']
+    adapter.client_factory = original
+    incoming(adapter, server, '/file 1', 2)
+    assert server.sent[-1]['item_list'][0]['type'] == 4
+
+
 def test_weixin_layout_separates_blocks_keeps_links_and_folds_wide_tables():
     """Weixin layout: blocks apart, lists/quotes/code intact, wide tables as rows, phone-usable links."""
     from management_portal.telepus.weixin_format import format_text, segment_text

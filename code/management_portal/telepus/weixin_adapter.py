@@ -4,7 +4,6 @@ from __future__ import annotations
 import logging
 
 import hashlib
-import mimetypes
 import secrets
 import sys
 import time
@@ -228,7 +227,7 @@ class WeixinAdapter:
     def _render_controls(self, chat, item):
         item = dict(item)
         text = item.get('text') or ''
-        image_tokens, controls = [], []
+        attachments, controls = [], []
         for row in (item.pop('reply_markup', None) or {}).get('inline_keyboard') or []:
             for button in row:
                 callback = button.get('callback_data') or ''
@@ -240,20 +239,20 @@ class WeixinAdapter:
                 self.router.store.set_meta(counter_key, str(number))
                 argument = '' if command == '/earlier' else str(number)
                 self.router.store.set_meta('weixin-control:' + chat + ':' + command + ':' + argument, callback)
-                controls.append(f"- {command}{' ' + argument if argument else ''}　{button['text']}")
+                retry_command = f"{command}{' ' + argument if argument else ''}"
+                label = '重新发送 ' + button['text'] if command == '/file' else button['text']
+                controls.append(f"- {retry_command}　{label}")
                 if command == '/file':
                     state = self.router.store.get_chat_state(chat)
                     delivery = self.router.store.get_attachment_delivery(chat_id=chat, telegram_user_id=state['telegram_user_id'],
                         portal_actor=state['portal_actor'], token=callback[4:])
-                    attachment = (delivery or {}).get('attachment') or {}
-                    filename = attachment.get('filename') or ''
-                    if str(attachment.get('content_type') or mimetypes.guess_type(filename)[0] or '').startswith('image/'):
-                        image_tokens.append(callback[4:])
+                    if delivery:
+                        attachments.append({'attachment_token': callback[4:], 'retry_command': retry_command})
         if controls:
             # The button replacements form one list after the text, apart from it.
             text = text.rstrip() + '\n\n' + '\n'.join(controls)
         item['text'] = text
-        return item, image_tokens
+        return item, attachments
 
     def respond(self, actor, response):
         account = self.store.account(actor)
@@ -272,10 +271,10 @@ class WeixinAdapter:
 
     def enqueue(self, chat, items):
         for item in items:
-            item, images = self._render_controls(chat, item)
+            item, attachments = self._render_controls(chat, item)
             self.store.enqueue(chat, item)
-            for token in images:
-                self.store.enqueue(chat, {'attachment_token': token})
+            for attachment in attachments:
+                self.store.enqueue(chat, attachment)
 
     def flush(self, actor, *, manual=False, one=False, reminders=True):
         account = self.store.account(actor)
@@ -321,7 +320,9 @@ class WeixinAdapter:
                                 raise
                             self.router.store.mark_attachment_failed(item['attachment_token'], str(exc))
                             attachment = None
-                            parts = [{'type': 1, 'text_item': {'text': '文件发送失败，请再次使用 /file 重试。'}}]
+                            retry = item.get('retry_command')
+                            hint = f'请发送 {retry} 重试。' if retry else '请重新发送刚才的 /file 命令重试。'
+                            parts = [{'type': 1, 'text_item': {'text': '文件发送失败，' + hint}}]
                     segments = []
                 else:
                     segments = item.get('segments') or split_text(item.get('text') or '（无文字）')
