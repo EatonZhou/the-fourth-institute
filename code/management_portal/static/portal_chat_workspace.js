@@ -85,7 +85,7 @@
     requireImageEditor, runtimeStatusLabel, RUNTIME_PHASE_STATUS, PRE_PROVIDER_RUNTIME_PHASES,
     runtimeActivityPhase, runtimePhaseStatusHtml, runtimeDetailsHtml, responseSourcesHtml,
     requestWorkspacePreview, bindResponseSourcePaths, messageAttachmentRefHtml, resourceSupportsTextPreview,
-    loadResourcePreview, bindResourceChips, linkifyResourceAddresses, renderMarkdownWithAttachmentRefs,
+    loadResourcePreview, bindResourceChips, linkifyResourceAddresses, renderMarkdownWithAttachmentRefs, renderMessageAttachments,
     bindAttachmentRefs, openImagePreview, closeImagePreview, bindLinkPreview, bindImagePreview,
     messagePreviewContent, messagePreviewText, releaseDeferredImages,
     attachmentPreviewUrl, attachmentKind, mediaPartPath,
@@ -151,14 +151,14 @@
 
   const {
     messageRole, newMessageIdentity, messageIdentity, messageAuthoredByViewer, messageSystemPresentation,
-    messageTitle, messageAuthorHeaderHtml, bindMessageAvatars, messageContextRefsHtml, messageAttachmentsHtml,
+    messageTitle, messageAuthorHeaderHtml, bindMessageAvatars, messageContextRefsHtml,
     messageSubmenuHtml, closeMessageSubmenus, bindMessageSubmenus, commonMessageActionsHtml,
     messageQuoteExcerpt, messageQuotable, messageQuoteHtml, composerQuoteHtml, messageCopyText,
     MESSAGE_FOLD_MIN_LINES, messageFoldChoices, messageFoldDefaults, messageFoldBodyHtml,
     applyMessageFold, normalizeMessageStream, messageRenderKey, messageInstanceKey, messageNodeKey,
     messageInstanceSelector, messageAfterKey, messageSenderIdentity,
   } = chatWorkspaceModule("PortalChatWorkspaceMessages").createMessages({
-    escapeHtml, messageAttachmentRefHtml, messageAvatarPlaceholderHtml, outwardToResidents, resourceChips,
+    escapeHtml, messageAvatarPlaceholderHtml, outwardToResidents, resourceChips,
     runtimeActivityPhase, selectedRefLabels,
   });
 
@@ -167,7 +167,7 @@
     createMessageSelectionController, preserveRuntimeDisclosureState, reconcileMessageList,
     messageViewportAtTail,
   } = chatWorkspaceModule("PortalChatWorkspaceMessageList").createMessageList({
-    commonMessageActionsHtml, escapeHtml, footerTime, messageAfterKey, messageAttachmentsHtml,
+    commonMessageActionsHtml, escapeHtml, footerTime, messageAfterKey, renderMessageAttachments,
     messageAuthoredByViewer, messageAuthorHeaderHtml, messageContextRefsHtml, messageFoldBodyHtml,
     messageFoldChoices, messageFoldDefaults, messageInstanceKey, messageNodeKey, messageQuoteHtml,
     messageRenderKey, messageRole, messageSenderIdentity, messageSystemPresentation, messageTitle,

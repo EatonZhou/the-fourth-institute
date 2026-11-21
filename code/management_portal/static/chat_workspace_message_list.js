@@ -6,7 +6,7 @@
   // and reconciling the rendered list with new messages without losing state.
   const DEPENDENCIES = Object.freeze([
     "commonMessageActionsHtml", "escapeHtml", "footerTime", "messageAfterKey",
-    "messageAttachmentsHtml", "messageAuthoredByViewer", "messageAuthorHeaderHtml",
+    "renderMessageAttachments", "messageAuthoredByViewer", "messageAuthorHeaderHtml",
     "messageContextRefsHtml", "messageFoldBodyHtml", "messageFoldChoices", "messageFoldDefaults",
     "messageInstanceKey", "messageNodeKey", "messageQuoteHtml", "messageRenderKey",
     "messageRole", "messageSenderIdentity", "messageSystemPresentation", "messageTitle",
@@ -178,7 +178,7 @@
     const missing = DEPENDENCIES.filter(name => dependencies?.[name] === undefined);
     if (missing.length) throw new Error(`PortalChatWorkspaceMessageList is missing: ${missing.join(", ")}`);
     const {
-      commonMessageActionsHtml, escapeHtml, footerTime, messageAfterKey, messageAttachmentsHtml,
+      commonMessageActionsHtml, escapeHtml, footerTime, messageAfterKey, renderMessageAttachments,
       messageAuthoredByViewer, messageAuthorHeaderHtml, messageContextRefsHtml,
       messageFoldBodyHtml, messageFoldChoices, messageFoldDefaults, messageInstanceKey,
       messageNodeKey, messageQuoteHtml, messageRenderKey, messageRole, messageSenderIdentity,
@@ -412,11 +412,10 @@
           : continued
           ? window.PortalI18n.html`<div class="messageDividerRow"><div class="messageDivider" role="separator" aria-label="${escapeHtml(options.assistantName || "Agent")} 继续回复"></div>${groupToggleHtml}${actionsHtml}</div>`
           : actionsHtml;
-        const messageBodyHtml = `${continued || selection ? "" : messageQuoteHtml(item?.quote, options)}${bodyBlockHtml}
+        const messageBodyHtml = `${continued || selection ? "" : messageQuoteHtml(item?.quote, options)}${renderMessageAttachments(bodyBlockHtml, item, options)}
         ${item.shared_reply_message_id ? `<button type="button" class="messageQuote" data-message-quote="${escapeHtml(item.shared_reply_message_id)}">${window.PortalI18n.t("查看共同回复")}</button>` : ""}
         ${responseSourcesHtml(item?.response_sources)}
-        ${messageContextRefsHtml(item?.context_refs || {}, options)}
-        ${messageAttachmentsHtml(item?.context_refs?.attachments || item?.attachments || [], options)}`;
+        ${messageContextRefsHtml(item?.context_refs || {}, options)}`;
         // Delivered Family requests retain their body after cancellation. Keep
         // the member's terminal state visible even when the sender header folds.
         const cancellationHtml = role === "human" && item?.relay?.state === "cancelled"

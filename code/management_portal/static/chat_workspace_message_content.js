@@ -495,9 +495,9 @@
         ? options.previewUrlForPath(attachmentPath)
         : "";
       const name = options.attachmentNameForPath?.(attachmentPath);
-      const label = String(name || options.label || attachmentKind);
+      const label = String(options.label || name || referenceAttachmentLabel(attachmentPath) || attachmentKind);
       const title = String(name || options.title || attachmentPath);
-      return window.PortalI18n.html`<button class="${options.buttonClass || "composerImageRef messageImageRef"}" type="button" data-message-attachment-kind="${escapeHtml(attachmentKind)}" data-message-attachment-path="${escapeHtml(attachmentPath)}" ${previewUrl ? `data-portal-preview-image="${escapeHtml(previewUrl)}" aria-label="${escapeHtml(window.PortalI18n.text`查看图片：${title}`)}"` : ""} title="${escapeHtml(title)}">
+      return window.PortalI18n.html`<button class="${options.buttonClass || "composerImageRef messageImageRef"}" type="button" data-message-attachment-kind="${escapeHtml(attachmentKind)}" data-message-attachment-path="${escapeHtml(attachmentPath)}" ${options.referencePath ? `data-message-attachment-reference="${escapeHtml(options.referencePath)}"` : ""} ${previewUrl ? `data-portal-preview-image="${escapeHtml(previewUrl)}" aria-label="${escapeHtml(window.PortalI18n.text`查看图片：${title}`)}"` : ""} title="${escapeHtml(title)}">
       ${previewUrl ? window.PortalI18n.html`<img class="${options.thumbClass || "composerImageRefThumb"}" data-portal-deferred-image="${escapeHtml(previewUrl)}" alt="" loading="lazy" decoding="async" fetchpriority="low" />` : ""}
       ${previewUrl ? "" : window.PortalI18n.html`<span class="${options.iconClass || "composerFileRefIcon"}">${attachmentKind === "file" ? "F" : "I"}</span>`}
       ${previewUrl ? "" : window.PortalI18n.html`<span class="${options.labelClass || "composerImageRefLabel"}">${escapeHtml(label)}</span>`}
@@ -570,8 +570,8 @@
         const previewUrl = options.previewUrlForPath ? options.previewUrlForPath(ref.path) : "";
         const title = [ref.path, ref.lineLabel ? `L${ref.lineLabel}` : ""].filter(Boolean).join(" ");
         return stashAttachmentRef(previewUrl
-            ? messageAttachmentRefHtml("image", ref.path, { ...options, title })
-            : messageAttachmentRefHtml("file", ref.path, { ...options, label: referenceAttachmentLabel(path), title }));
+            ? messageAttachmentRefHtml("image", ref.path, { ...options, title, referencePath: path })
+            : messageAttachmentRefHtml("file", ref.path, { ...options, label: referenceAttachmentLabel(path), title, referencePath: path }));
       });
       const attachedRefs = options.includeAttachedFiles === false ? [] : extractAttachedFileRefs(source);
       source = source.replace(/<attached_files>\s*[\s\S]*?\s*<\/attached_files>/gi, "");
@@ -582,6 +582,9 @@
         const token = stashAttachmentRef(messageAttachmentRefHtml(ref.kind, ref.path, options));
         source = `${source}${source ? "\n\n" : ""}${token}`;
       }
+      // Adjacent file tokens form one wrapping run, even when the provider's
+      // text projection puts each token in a separate paragraph.
+      source = source.replace(/(\uFFFCPORTAL_ATTACHMENT_REF_\d+\uFFFC)\s+(?=\uFFFCPORTAL_ATTACHMENT_REF_\d+\uFFFC)/g, "$1 ");
       const renderMarkdown = options.renderMarkdown || ((value) => escapeHtml(value).replace(/\n/g, "<br>"));
       let html = renderMarkdown(source);
       refs.forEach((item) => {
@@ -601,18 +604,72 @@
         .replace(/<attached_files>\s*[\s\S]*?\s*<\/attached_files>/gi, "").trim();
     }
 
-    function messagePreviewContent(item, options = {}) {
+    function messageAttachmentCatalog(item) {
       // The protocol keeps display names on media parts, while the projected
       // body contains only references. Join them before deduplicating so a body
       // reference does not hide the named copy of the same attachment.
       const extra = [...(item.content_parts || []).filter(part => part?.type === "image" || part?.type === "file"),
-        ...(item.input_media || []), ...(item.context_refs?.attachments || item.attachments || [])];
-      const referenceKey = path => window.PortalFileLinks?.describe(path)?.path || path;
+        ...(item.input_media || []), ...(item.context_refs?.attachments || []), ...(item.attachments || [])];
+      const canonical = path => window.PortalFileLinks?.describe(path)?.path || path;
+      const aliases = new Map();
       const names = new Map();
       for (const part of extra) {
         const path = mediaPartPath(part), name = String(part.name || part.filename || "").trim();
-        if (path && name && !names.has(referenceKey(path))) names.set(referenceKey(path), name);
+        if (!path) continue;
+        for (const alias of [path, part.source, part.path, part.url]) {
+          if (typeof alias === "string" && alias) aliases.set(canonical(alias), path);
+        }
+        if (name && !names.has(path)) names.set(path, name);
       }
+      const referenceKey = path => {
+        const ref = splitReferenceLocator(path);
+        const key = aliases.get(canonical(ref.path)) || canonical(ref.path);
+        return key + (ref.lineLabel ? `#L${ref.lineLabel}` : "");
+      };
+      return { extra, referenceKey, names };
+    }
+
+    // The body projection and media metadata describe the same attachments.
+    // Keep the first inline occurrence, enrich it with its filename, then add
+    // only media not already represented. Do not merge distinct line ranges.
+    function renderMessageAttachments(html, item, options = {}) {
+      const { extra, referenceKey, names } = messageAttachmentCatalog(item);
+      if (!extra.length && !html.includes("data-message-attachment-path")) return html;
+      const body = document.createElement("div");
+      body.innerHTML = html;
+      const seen = new Set();
+      body.querySelectorAll("[data-message-attachment-path]").forEach(node => {
+        const path = node.dataset.messageAttachmentPath;
+        const ref = node.dataset.messageAttachmentReference || path;
+        const key = referenceKey(ref);
+        if (seen.has(key)) { node.remove(); return; }
+        seen.add(key);
+        const name = names.get(referenceKey(path));
+        if (name) {
+          const range = splitReferenceLocator(ref).lineLabel;
+          const label = range ? `${name} L${range}` : name;
+          const labelNode = node.querySelector(".composerImageRefLabel");
+          if (labelNode) labelNode.textContent = label;
+          node.title = label;
+          if (node.hasAttribute("aria-label")) node.setAttribute("aria-label", label);
+        }
+      });
+      const tray = document.createElement("div");
+      tray.className = "composerImageTray messageAttachmentTray";
+      for (const part of extra) {
+        const path = mediaPartPath(part);
+        if (!path || seen.has(referenceKey(path))) continue;
+        seen.add(referenceKey(path));
+        tray.insertAdjacentHTML("beforeend", messageAttachmentRefHtml(attachmentKind({ ...part,
+          kind: part.kind || part.type, content_type: part.content_type || part.mime_type || part.media_type || part.type,
+        }), path, { ...options, attachmentNameForPath: path => names.get(referenceKey(path)) }));
+      }
+      if (tray.childElementCount) body.append(tray);
+      return body.innerHTML;
+    }
+
+    function messagePreviewContent(item, options = {}) {
+      const { extra, referenceKey, names } = messageAttachmentCatalog(item);
       const referenceOptions = { ...options, attachmentNameForPath: path => names.get(referenceKey(path)) };
       const body = document.createElement("div");
       body.innerHTML = renderMarkdownWithAttachmentRefs(item.content || item.text || "", { ...referenceOptions, renderMarkdown: escapeHtml });
@@ -620,7 +677,7 @@
       references.className = "composerImageTray messageAttachmentTray";
       const seen = new Set();
       const append = node => {
-        const path = node.dataset.messageAttachmentPath || node.dataset.resourceAddress || node.dataset.navigationReference;
+        const path = node.dataset.messageAttachmentReference || node.dataset.messageAttachmentPath || node.dataset.resourceAddress || node.dataset.navigationReference;
         const key = referenceKey(path);
         node.remove();
         if (!seen.has(key)) { seen.add(key); references.append(node); }
@@ -713,7 +770,7 @@
       requestWorkspacePreview, bindResponseSourcePaths, messageAttachmentRefHtml,
       resourceSupportsTextPreview, loadResourcePreview, bindResourceChips,
       linkifyResourceAddresses, renderMarkdownWithAttachmentRefs, bindAttachmentRefs,
-      messagePreviewContent, messagePreviewText, releaseDeferredImages,
+      messagePreviewContent, messagePreviewText, renderMessageAttachments, releaseDeferredImages,
       openImagePreview, closeImagePreview, bindLinkPreview, bindImagePreview,
       attachmentPreviewUrl, attachmentKind, mediaPartPath,
     });

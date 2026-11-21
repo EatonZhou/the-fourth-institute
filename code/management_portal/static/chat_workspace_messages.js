@@ -5,7 +5,7 @@
   // the references and attachments it carries, its action menu, the quote and copy
   // text it gives, folding long replies, and the keys that name it in the list.
   const DEPENDENCIES = Object.freeze([
-    "escapeHtml", "messageAttachmentRefHtml", "messageAvatarPlaceholderHtml",
+    "escapeHtml", "messageAvatarPlaceholderHtml",
     "outwardToResidents", "resourceChips", "runtimeActivityPhase", "selectedRefLabels",
   ]);
 
@@ -240,7 +240,7 @@
     const missing = DEPENDENCIES.filter(name => dependencies?.[name] === undefined);
     if (missing.length) throw new Error(`PortalChatWorkspaceMessages is missing: ${missing.join(", ")}`);
     const {
-      escapeHtml, messageAttachmentRefHtml, messageAvatarPlaceholderHtml, outwardToResidents,
+      escapeHtml, messageAvatarPlaceholderHtml, outwardToResidents,
       resourceChips, runtimeActivityPhase, selectedRefLabels,
     } = dependencies;
 
@@ -299,17 +299,6 @@
       return window.PortalI18n.html`<div class="messageRefs">
       ${labels.slice(0, 4).map(label => window.PortalI18n.html`<span class="messageRefChip" title="${escapeHtml(label)}">${escapeHtml(label)}</span>`).join("")}
       ${labels.length > 4 ? window.PortalI18n.html`<span class="messageRefChip">+${labels.length - 4}</span>` : ""}
-    </div>`;
-    }
-
-    function messageAttachmentsHtml(attachments, options = {}) {
-      const items = Array.isArray(attachments) ? attachments : [];
-      if (!items.length) return "";
-      return window.PortalI18n.html`<div class="composerImageTray messageAttachmentTray">
-      ${items.map(ref => {
-        const kind = String(ref?.kind || ref?.mime || "").startsWith("image") ? "image" : "file";
-        return messageAttachmentRefHtml(kind, ref?.path || ref?.url || "", options);
-      }).join("")}
     </div>`;
     }
 
@@ -429,7 +418,7 @@
     return Object.freeze({
       messageRole, newMessageIdentity, messageIdentity, messageAuthoredByViewer,
       messageSystemPresentation, messageTitle, messageAuthorHeaderHtml, bindMessageAvatars,
-      messageContextRefsHtml, messageAttachmentsHtml, messageSubmenuHtml, closeMessageSubmenus,
+      messageContextRefsHtml, messageSubmenuHtml, closeMessageSubmenus,
       bindMessageSubmenus, commonMessageActionsHtml, messageQuoteExcerpt, messageQuotable,
       messageQuoteHtml, composerQuoteHtml, messageCopyText, MESSAGE_FOLD_MIN_LINES,
       messageFoldChoices, messageFoldDefaults, messageFoldBodyHtml,
