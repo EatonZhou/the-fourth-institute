@@ -6,6 +6,9 @@
 :risk: no-external-side-effects
 """
 from pathlib import Path
+from urllib.parse import parse_qs, urlsplit
+
+import pytest
 
 from management_common.filesystem_paths import filesystem_path
 from management_portal import http_files
@@ -72,3 +75,27 @@ def test_text_preview_reads_only_limit_plus_one(tmp_path, monkeypatch):
     result = workspace_domain.get_workspace_link_file(str(target), actor='fixture')
     assert reads == [17]
     assert result['truncated'] and result['content'] == 'a' * 16
+
+
+@pytest.mark.parametrize('name', ['中文 #&%.PPTX', 'slides.ppt', 'report.docx'])
+def test_file_sources_declare_conversion_url(tmp_path, monkeypatch, name):
+    from management_portal.resources.providers import folder_files
+    from management_portal.resources.isa import _file_metadata
+
+    target = tmp_path / name
+    target.write_bytes(b'fixture')
+    authorize(monkeypatch, tmp_path)
+    local = workspace_domain.get_workspace_link_file(str(target), actor='fixture')
+    address = 'workspace_0123456789ab/file/' + name.replace('%', '%25')
+    resolved = folder_files.describe({'address': address, 'exists': True}, tmp_path, (name,), hide=True)
+    resource = _file_metadata(resolved)
+    for metadata, raw_key in [(local, 'raw_url'), (resource, 'content_url')]:
+        if name.endswith('.docx'):
+            assert metadata['preview_url'] == ''
+            continue
+        raw = urlsplit(metadata[raw_key])
+        preview = urlsplit(metadata['preview_url'])
+        assert preview.path == raw.path
+        assert parse_qs(preview.query) == {**parse_qs(raw.query), 'preview': ['pdf']}
+        assert not preview.fragment
+        assert 'preview' not in parse_qs(raw.query)

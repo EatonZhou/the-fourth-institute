@@ -7,6 +7,7 @@ import codecs
 import hashlib
 import mimetypes
 import os
+import re
 import tempfile
 from datetime import datetime
 from pathlib import Path
@@ -14,10 +15,17 @@ from typing import Any
 from urllib.parse import quote
 
 from management_common.text_values import stripped_text
+from management_common import secure_paths
 from management_portal import article_discovery, article_registry, article_settings
 
 
 ARTICLE_UPLOAD_MAX_BYTES = 25 * 1024 * 1024
+
+
+class ArticleFileConflict(ValueError):
+    def __init__(self, current_revision: str):
+        super().__init__("文件已被修改，请比较最新版本后再保存")
+        self.current_revision = current_revision
 
 ARTICLE_TEXT_SUFFIXES = {
     ".bib",
@@ -200,6 +208,7 @@ def describe_article_file(
         "size": stat.st_size,
         "version": str(stat.st_mtime_ns),
         "rawUrl": raw_url,
+        "preview_url": f"{raw_url}&preview=pdf" if target.suffix.lower() in {".ppt", ".pptx"} else "",
         "downloadUrl": f"{raw_url}&download=1",
     }
 
@@ -209,8 +218,11 @@ def write_article_file(
     relative_path: str,
     content: str,
     *,
+    expected_revision: str,
     max_bytes: int = 8 * 1024 * 1024,
 ) -> dict[str, Any]:
+    if not isinstance(expected_revision, str) or not re.fullmatch(r"[0-9a-f]{64}", expected_revision):
+        raise ValueError("expected_revision must be the revision returned when reading the file")
     article_root, target = article_registry._article_target_path(
         article_id, relative_path
     )
@@ -219,22 +231,27 @@ def write_article_file(
     encoded = str(content).encode("utf-8")
     if len(encoded) > max_bytes:
         raise ValueError(f"article file is too large to save ({len(encoded)} bytes)")
-    mode = target.stat().st_mode
-    fd, temporary_name = tempfile.mkstemp(prefix=f".{target.name}.", dir=target.parent)
-    try:
-        with os.fdopen(fd, "wb") as stream:
-            from management_common.file_permissions import prepare_atomic_permissions
-            prepare_atomic_permissions(Path(temporary_name), target, mode)
-            stream.write(encoded)
-            stream.flush()
-            os.fsync(stream.fileno())
-        os.replace(temporary_name, target)
-    finally:
+    # Lock the stable parent, not the file inode replaced by atomic saves.
+    with secure_paths.open_directory(target.parent) as directory, secure_paths.lock_directory(directory):
+        current_revision = hashlib.sha256(target.read_bytes()).hexdigest()
+        if current_revision != expected_revision:
+            raise ArticleFileConflict(current_revision)
+        mode = target.stat().st_mode
+        fd, temporary_name = tempfile.mkstemp(prefix=f".{target.name}.", dir=target.parent)
         try:
-            os.unlink(temporary_name)
-        except FileNotFoundError:
-            pass
-    stat = target.stat()
+            with os.fdopen(fd, "wb") as stream:
+                from management_common.file_permissions import prepare_atomic_permissions
+                prepare_atomic_permissions(Path(temporary_name), target, mode)
+                stream.write(encoded)
+                stream.flush()
+                os.fsync(stream.fileno())
+            os.replace(temporary_name, target)
+        finally:
+            try:
+                os.unlink(temporary_name)
+            except FileNotFoundError:
+                pass
+        stat = target.stat()
     return {
         "id": article_id,
         "path": target.relative_to(article_root).as_posix(),

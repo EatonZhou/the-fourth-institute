@@ -392,6 +392,7 @@
           binary: Boolean(result.binary), truncated: Boolean(result.truncated), content: String(result.text || ""),
         }),
         raw_url: contentUrl, download_url: contentUrl ? `${contentUrl}&download=1` : "",
+        preview_url: String(result.preview_url || ""),
         // allows carries the server's answer for UpdateWorkspaceFile on this address; editable adds the preview's own limits.
         editable, allows: { UpdateWorkspaceFile: allows.UpdateWorkspaceFile === true },
       };

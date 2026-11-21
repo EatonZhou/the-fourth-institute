@@ -4,7 +4,7 @@
 
   // Reading location only: never persist source, drafts or document payloads.
   const DOCUMENT_FIELDS = ["viewState", "selection", "selectionStart", "selectionEnd", "scrollTop", "scrollLeft", "viewMode"];
-  function createPosition({ state, captureActiveDocument, captureArticlePdfPosition, openArticleFile, activateDocument }) {
+  function createPosition({ outputView, state, captureActiveDocument, captureArticlePdfPosition, openArticleFile, activateDocument }) {
     const store = window.PortalPageState.create("article-reading-position", {
       getUser: () => window.PortalIdentity?.username?.() || "anonymous",
     });
@@ -17,7 +17,7 @@
       capturing = true;
       try {
         captureActiveDocument();
-        const pdf = state.pdfRestorePosition || (state.outputView === "pdf" ? captureArticlePdfPosition() : null) || record?.pdf;
+        const pdf = outputView().getReadingPosition() || record?.pdf;
         record = {
           activeFile: state.openFile,
           tabs: state.openTabs.slice(0, 50).flatMap(path => {
@@ -26,7 +26,7 @@
             return [{ path, ...Object.fromEntries(DOCUMENT_FIELDS.map(key => [key, doc[key]])) }];
           }),
           pdf: pdf ? { page: pdf.page, xRatio: pdf.xRatio, yRatio: pdf.yRatio } : null,
-          pdfZoom: state.pdfZoom,
+          pdfZoom: outputView().getZoom(),
           updatedAt: Date.now(),
         };
         const articles = { ...(store.read().articles || {}), [readyId]: record };
@@ -48,8 +48,7 @@
       timer = 0;
       readyId = "";
       try { record = store.read().articles?.[articleId] || null; } catch (_error) { record = null; }
-      state.pdfZoom = Math.max(0.6, Math.min(2.4, Number(record?.pdfZoom) || 1));
-      state.pdfRestorePosition = Number.isFinite(record?.pdf?.page) && record.pdf.page > 0 ? { ...record.pdf } : null;
+      outputView().restoreReadingPosition(record || {});
     }
 
     async function restoreDocuments(articleId, primary) {

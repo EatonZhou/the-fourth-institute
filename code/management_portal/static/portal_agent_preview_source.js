@@ -57,6 +57,7 @@
         version: versionToken(payload.version || entryVersion(payload.entry)),
       };
       document.rawUrl = rawUrl(document);
+      document.previewUrl = String(payload.previewUrl || payload.preview_url || "").trim();
       document.downloadUrl = downloadUrl(document);
       document.editable = canEdit(document);
       document.capabilities = {

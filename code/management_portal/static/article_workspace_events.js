@@ -8,45 +8,33 @@
   // compile and PDF controls, Portal change events, leaving the page and
   // browser history navigation.
   const DEPENDENCIES = Object.freeze([
-    "$", "activeDocument", "articleContentRefresh", "scheduleArticleContentRefresh", "articleEntryDialog", "articleGitRefresh", "articleRegisterDialog",
-    "askBuildDiagnostic", "bindArticlePdfGestures", "bringCurrentFileToChat", "bringSelectionToChat", "captureActiveDocument",
-    "closeArticleGitDiff", "commitArticleGit", "compileArticle", "createEntry",
-    "currentArticleCompilePopover", "currentArticleProjectPopover", "currentArticleWorkbench",
-    "detailHistory", "flushArticleNavigationPreference", "goToLine", "handleEditorPairing",
-    "hasDirtyDocuments", "initializeArticleGit", "initializeArticlePopovers", "inspectRegistration",
+    "$", "articleContentRefresh", "scheduleArticleContentRefresh", "articleEntryDialog", "articleGitRefresh", "articleRegisterDialog",
+    "askBuildDiagnostic", "captureActiveDocument",
+    "closeArticleGitDiff", "commitArticleGit", "createEntry",
+    "currentArticleProjectPopover", "detailHistory", "flushArticleNavigationPreference", "goToLine", "hasDirtyDocuments", "initializeArticleGit", "initializeArticlePopovers", "inspectRegistration",
     "loadArticleGit", "handleArticleGitAction", "openArticleFile", "openArticleGitCommit", "openArticleGitDiff", "openBuildDiagnostic",
     "openEntryModal", "openRegisterModal", "pullArticleGit", "queryState", "registerArticle", "renderArticleGitDiffFile",
-    "renderArticleResourceSearch", "renderArticleSelectors", "renderEditorLayers", "renderLog",
-    "renderSemanticNavigation", "resetEditorPreferences", "saveOpenFile", "saveSettings",
-    "scheduleArticleGitRefresh", "scheduleAutoCompile", "scheduleAutoSave", "searchProject", "selectArticle", "setArticlePdfZoom",
-    "setArticleResourceSearchOpen", "setCompileMenu", "setEditorMode", "setToolVisible",
-    "setOutputView", "setProjectMenu", "setSettingsSection", "setSideView", "showPdfError", "showToast",
-    "state", "stopCompilation", "syncEditorScroll", "syncPdfToSource", "syncSourceToPdf",
-    "toggleArticleGitDiffLayout", "toggleWordWrap", "canToggleArticleSidebar", "toggleArticleSidebar", "unregisterCurrentArticle", "updateArticleGitStage",
-    "updateCompilePreference", "updateCursorStatus", "updateDirtyState", "updateEditorCodeCheck",
-    "updateEditorPreference", "updateSemanticUrl", "uploadFile", "persistReadingPosition", "scheduleReadingPosition",
-  ]);
+    "renderArticleResourceSearch", "renderArticleSelectors", "renderLog",
+    "renderSemanticNavigation", "resetEditorPreferences", "saveSettings",
+    "scheduleArticleGitRefresh", "searchProject", "selectArticle", "setArticleResourceSearchOpen", "setToolVisible",
+    "setProjectMenu", "setSettingsSection", "setSideView", "showToast",
+    "state", "toggleArticleGitDiffLayout", "toggleWordWrap", "canToggleArticleSidebar", "toggleArticleSidebar", "unregisterCurrentArticle", "updateArticleGitStage",
+    "updateEditorCodeCheck",
+    "updateEditorPreference", "updateSemanticUrl", "uploadFile", "persistReadingPosition", ]);
 
   function createEvents(dependencies) {
     const missing = DEPENDENCIES.filter(name => dependencies?.[name] === undefined);
     if (missing.length) throw new Error(`PortalArticleWorkspaceEvents is missing: ${missing.join(", ")}`);
     const {
-      $, activeDocument, articleContentRefresh, scheduleArticleContentRefresh, articleEntryDialog, articleGitRefresh, articleRegisterDialog, askBuildDiagnostic,
-      bindArticlePdfGestures, bringCurrentFileToChat, bringSelectionToChat, captureActiveDocument, closeArticleGitDiff,
-      commitArticleGit, compileArticle, createEntry, currentArticleCompilePopover,
-      currentArticleProjectPopover, currentArticleWorkbench, detailHistory, flushArticleNavigationPreference,
-      goToLine, handleEditorPairing, hasDirtyDocuments, initializeArticleGit, initializeArticlePopovers,
+      $, articleContentRefresh, scheduleArticleContentRefresh, articleEntryDialog, articleGitRefresh, articleRegisterDialog, askBuildDiagnostic,
+      captureActiveDocument, closeArticleGitDiff,
+      commitArticleGit, createEntry, currentArticleProjectPopover, detailHistory, flushArticleNavigationPreference,
+      goToLine, hasDirtyDocuments, initializeArticleGit, initializeArticlePopovers,
       inspectRegistration, loadArticleGit, handleArticleGitAction, openArticleFile, openArticleGitCommit, openArticleGitDiff,
       openBuildDiagnostic, openEntryModal, openRegisterModal, pullArticleGit, queryState, registerArticle,
-      renderArticleGitDiffFile, renderArticleResourceSearch, renderArticleSelectors, renderEditorLayers,
-      renderLog, renderSemanticNavigation, resetEditorPreferences, saveOpenFile, saveSettings,
-      scheduleArticleGitRefresh, scheduleAutoCompile, scheduleAutoSave, searchProject, selectArticle, setArticlePdfZoom,
-      setArticleResourceSearchOpen, setCompileMenu, setEditorMode, setToolVisible, setOutputView,
-      setProjectMenu, setSettingsSection, setSideView, showPdfError, showToast, state, stopCompilation,
-      syncEditorScroll, syncPdfToSource, syncSourceToPdf, toggleArticleGitDiffLayout, toggleWordWrap, canToggleArticleSidebar, toggleArticleSidebar,
-      unregisterCurrentArticle, updateArticleGitStage, updateCompilePreference, updateCursorStatus,
-      updateDirtyState, updateEditorCodeCheck, updateEditorPreference, updateSemanticUrl, uploadFile, persistReadingPosition, scheduleReadingPosition,
-    } = dependencies;
+      renderArticleGitDiffFile, renderArticleResourceSearch, renderArticleSelectors, renderLog, renderSemanticNavigation, resetEditorPreferences, saveSettings,
+      scheduleArticleGitRefresh, searchProject, selectArticle, setArticleResourceSearchOpen, setToolVisible, setProjectMenu, setSettingsSection, setSideView, showToast, state, toggleArticleGitDiffLayout, toggleWordWrap, canToggleArticleSidebar, toggleArticleSidebar,
+      unregisterCurrentArticle, updateArticleGitStage, updateEditorCodeCheck, updateEditorPreference, updateSemanticUrl, uploadFile, persistReadingPosition, } = dependencies;
 
     initializeArticlePopovers();
 
@@ -168,12 +156,6 @@
       }
     });
 
-    document.addEventListener("dblclick", event => {
-      const page = event.target.closest(".articlePdfPage");
-      if (!page) return;
-      event.preventDefault();
-      syncPdfToSource(page, event).catch(error => showToast(error.message || error, "error"));
-    });
 
     $("articleProjectButton").addEventListener("click", event => {
       setProjectMenu(!currentArticleProjectPopover()?.isOpen(), event);
@@ -277,71 +259,6 @@
     });
     $("articleEditorSettingsReset").addEventListener("click", resetEditorPreferences);
 
-    $("articleSourceEditor").addEventListener("input", event => {
-      if (!activeDocument()?.editable) return;
-      state.source = event.currentTarget.value;
-      renderEditorLayers();
-      updateDirtyState();
-      updateCursorStatus();
-      scheduleAutoSave();
-      scheduleAutoCompile();
-    });
-    $("articleSourceEditor").addEventListener("scroll", () => {
-      syncEditorScroll();
-      captureActiveDocument();
-    });
-    ["click", "keyup", "select"].forEach(name => $("articleSourceEditor").addEventListener(name, () => {
-      updateCursorStatus();
-      captureActiveDocument();
-    }));
-    $("articleSourceEditor").addEventListener("keydown", event => {
-      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "s") {
-        event.preventDefault();
-        saveOpenFile();
-        return;
-      }
-      if (handleEditorPairing(event)) return;
-      if (event.key === "Tab") {
-        event.preventDefault();
-        const editor = event.currentTarget;
-        const start = editor.selectionStart;
-        const end = editor.selectionEnd;
-        editor.setRangeText(" ".repeat(state.editorPreferences.tabSize), start, end, "end");
-        editor.dispatchEvent(new Event("input", { bubbles: true }));
-      }
-    });
-    $("articleSaveFile").addEventListener("click", () => saveOpenFile());
-    $("articleCodeMode").addEventListener("click", () => setEditorMode("code"));
-    $("articleVisualMode").addEventListener("click", () => {
-      captureActiveDocument();
-      setEditorMode("visual");
-    });
-    $("articleUndo").addEventListener("click", () => {
-      if (state.monacoReady) state.editor?.trigger?.("article-toolbar", "undo", null);
-      else {
-        $("articleSourceEditor").focus();
-        document.execCommand("undo");
-      }
-    });
-    $("articleRedo").addEventListener("click", () => {
-      if (state.monacoReady) state.editor?.trigger?.("article-toolbar", "redo", null);
-      else {
-        $("articleSourceEditor").focus();
-        document.execCommand("redo");
-      }
-    });
-    $("articleWordWrap").addEventListener("click", toggleWordWrap);
-    $("articleSyncToPdf").addEventListener("click", syncSourceToPdf);
-    const bringFileToChat = () => bringCurrentFileToChat()
-      .catch(error => showToast(error.message || error, "error"));
-    $("articleSendContext").addEventListener("click", bringFileToChat);
-    window.PortalCodeEditor.bindSelectionCommit($("articleSourceEditor"), {
-      readSelection: () => {
-        const source = $("articleSourceEditor");
-        return !state.monacoReady && source.value.slice(source.selectionStart, source.selectionEnd);
-      },
-      onCommit: () => bringSelectionToChat().catch(error => showToast(error.message || error, "error")),
-    });
     window.PortalCommandRegistry.root.register({
       id: "article.toggleSidebar", title: window.PortalI18n.t("显示或隐藏左侧栏"), category: "Article",
       keybindings: ["Ctrl+B", "Meta+B"], allowInInput: true,
@@ -354,37 +271,7 @@
       },
       execute: ({ event }) => event?.repeat ? false : toggleArticleSidebar(),
     });
-    window.PortalCommandRegistry.root.register({
-      id: "article.fileToChat",
-      title: "当前文件加入聊天",
-      keybindings: ["Ctrl+Alt+Enter", "Meta+Alt+Enter"],
-      allowInInput: true,
-      enabled: () => Boolean(state.selectedId && !$("articleSendContext").disabled
-        && (document.activeElement === $("articleSourceEditor") || state.editor?.hasTextFocus?.())),
-      execute: ({ event }) => event?.repeat ? false : bringFileToChat(),
-    });
 
-    $("articleCompile").addEventListener("click", () => compileArticle());
-    $("articleCompileSettings").addEventListener("click", event => {
-      setCompileMenu(!currentArticleCompilePopover()?.isOpen(), event);
-    });
-    document.querySelectorAll("[data-compile-setting]").forEach(button => {
-      button.addEventListener("click", () => updateCompilePreference(button));
-    });
-    $("articleStopCompile").addEventListener("click", stopCompilation);
-    $("articleRecompileScratch").addEventListener("click", () => compileArticle({ fromScratch: true }));
-    $("articleLogButton").addEventListener("click", () => setOutputView("log"));
-    $("articleBackToPdf").addEventListener("click", () => setOutputView("pdf"));
-    $("articlePdfZoomOut").addEventListener("click", () => {
-      setArticlePdfZoom(state.pdfZoom - 0.1).catch(error => showPdfError(error));
-    });
-    $("articlePdfZoomIn").addEventListener("click", () => {
-      setArticlePdfZoom(state.pdfZoom + 0.1).catch(error => showPdfError(error));
-    });
-    $("articlePdfZoomFit").addEventListener("click", () => {
-      setArticlePdfZoom(1).catch(error => showPdfError(error));
-    });
-    bindArticlePdfGestures();
 
     window.addEventListener("portal:change", event => {
       const detail = event?.detail || {};
@@ -401,7 +288,6 @@
       }
     });
     window.addEventListener("focus", () => scheduleArticleContentRefresh(0));
-    $("articlePdfView").addEventListener("scroll", scheduleReadingPosition, { passive: true });
     document.addEventListener("visibilitychange", () => { if (document.hidden) persistReadingPosition(); });
     window.addEventListener("pagehide", () => {
       persistReadingPosition();

@@ -10,6 +10,7 @@ import json
 import os
 import stat
 from contextlib import contextmanager
+from pathlib import PurePath
 
 from management_common import secure_paths
 from management_common.upload_layout import payload_name
@@ -69,6 +70,7 @@ def _metadata(reference, meta, info):
         "content_mtime_ns": info.st_mtime_ns,
         "media_type": str(meta.get("media_type") or "application/octet-stream"),
         "portal_url": url, "content_url": url,
+        "preview_url": url + "?preview=pdf" if PurePath(name).suffix.lower() in {".ppt", ".pptx"} else "",
     }
 
 

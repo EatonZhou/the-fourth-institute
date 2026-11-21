@@ -882,70 +882,77 @@
       ensureComposerAttachmentRefs(input, items, options);
     }
 
-    function serializeComposerInput(input, items, options = {}) {
-      const itemMap = new Map((Array.isArray(items) ? items : []).map(item => [String(item?.id || ""), item]));
-      const mode = options.mode || "final";
-      const isBlockNode = (node) => node?.nodeType === Node.ELEMENT_NODE && (node.tagName === "DIV" || node.tagName === "P");
-      const appendSerializedChild = (text, child) => {
-        if (isBlockNode(child) && text && !text.endsWith("\n")) text += "\n";
-        return text + walk(child);
-      };
+    // Read the DOM once into ordered text, attachment and paragraph nodes.
+    // Attachment identity stays structural; text that resembles a draft token
+    // is still text. Only the persisted draft format uses placeholder strings.
+    function readComposerInput(input, items) {
+      const itemMap = new Map(normalizeComposerAttachments(items).map(item => [item.id, item]));
+      const text = value => [{ type: "text", text: value.replace(/\u00a0/g, " ") }];
       const walk = (node) => {
-        if (!node) return "";
-        if (node.nodeType === Node.TEXT_NODE) return node.nodeValue || "";
-        if (node.nodeType !== Node.ELEMENT_NODE) return "";
+        if (node.nodeType === Node.TEXT_NODE) return text(node.nodeValue || "");
+        if (node.nodeType !== Node.ELEMENT_NODE) return [];
         const el = node;
-        if (el.dataset?.mentionValue) return el.dataset.mentionValue;
+        if (el.dataset?.mentionValue) return text(el.dataset.mentionValue);
         const token = el.dataset?.portalComposerAttachmentToken || "";
         if (token) {
-          if (mode === "plain") return "";
           const item = itemMap.get(String(token));
           const kind = attachmentKind(item || { kind: el.dataset?.composerAttachmentKind || "image" });
-          if (mode === "draft") return composerAttachmentPlaceholder(kind, token);
-          if (!item || item.uploading || item.error) return "";
-          const referenceText = composerReferenceText(item);
-          if (referenceText) return referenceText;
-          const path = String(item?.path || item?.url || "").trim();
-          return path ? `[${kind}: ${path}]` : "";
+          return [{ type: "attachment", token, kind, item }];
         }
-        if (el.tagName === "BR") return "\n";
-        let text = "";
-        el.childNodes.forEach(child => { text = appendSerializedChild(text, child); });
-        if (el.tagName === "DIV" || el.tagName === "P") text += "\n";
-        return text;
+        if (el.tagName === "BR") return text("\n");
+        const children = Array.from(el.childNodes).flatMap(walk);
+        return el.tagName === "DIV" || el.tagName === "P" ? [{ type: "block", children }] : children;
       };
-      if (!input) return "";
-      let text = "";
-      input.childNodes.forEach(child => { text = appendSerializedChild(text, child); });
-      const normalized = text.replace(/\u00a0/g, " ");
-      return mode === "draft" ? normalized : normalized.trim();
+      return Array.from(input?.childNodes || []).flatMap(walk);
+    }
+
+    function projectComposerInput(nodes, mode) {
+      const parts = [];
+      const append = part => {
+        if (!part || (part.type === "text" && !part.text)) return;
+        const previous = parts[parts.length - 1];
+        if (previous?.type === "text" && part.type === "text") previous.text += part.text;
+        else parts.push({ ...part });
+      };
+      const appendText = text => append({ type: "text", text });
+      for (const node of nodes) {
+        if (node.type === "text") append(node);
+        else if (node.type === "block") {
+          const previous = parts[parts.length - 1];
+          if (previous && !(previous.type === "text" && previous.text.endsWith("\n"))) appendText("\n");
+          projectComposerInput(node.children, mode).forEach(append);
+          appendText("\n");
+        } else if (mode === "draft") appendText(composerAttachmentPlaceholder(node.kind, node.token));
+        else if (mode !== "plain" && node.item && !node.item.uploading && !node.item.error) {
+          const reference = composerReferenceText(node.item);
+          const media = mode === "parts" && !reference ? inputMediaPayload([node.item])[0] : null;
+          if (media) append({ ...media, type: media.media_type });
+          else appendText(reference || (node.item.path ? `[${node.kind}: ${node.item.path}]` : ""));
+        }
+      }
+      return parts;
+    }
+
+    function composerInputText(nodes, mode) {
+      const text = projectComposerInput(nodes, mode).map(part => part.text).join("");
+      return mode === "draft" ? text : text.trim();
+    }
+
+    function serializeComposerInput(input, items, options = {}) {
+      return composerInputText(readComposerInput(input, items), options.mode || "final");
     }
 
     function serializeComposerContentParts(input, items) {
-      const text = serializeComposerInput(input, items, { mode: "draft" });
-      const byId = new Map(normalizeComposerAttachments(items).map(item => [item.id, item]));
-      const parts = [];
-      const appendText = value => {
-        if (!value) return;
-        const previous = parts[parts.length - 1];
-        if (previous?.type === "text") previous.text += value;
-        else parts.push({ type: "text", text: value });
+      return projectComposerInput(readComposerInput(input, items), "parts");
+    }
+
+    function serializeComposerPayload(input, items) {
+      const nodes = readComposerInput(input, items);
+      return {
+        text: composerInputText(nodes, "final"),
+        plainText: composerInputText(nodes, "plain"),
+        content_parts: projectComposerInput(nodes, "parts"),
       };
-      let cursor = 0;
-      COMPOSER_DRAFT_ATTACHMENT_RE.lastIndex = 0;
-      for (const match of text.matchAll(COMPOSER_DRAFT_ATTACHMENT_RE)) {
-        appendText(text.slice(cursor, match.index));
-        const item = byId.get(match[2]);
-        if (item && !item.uploading && !item.error) {
-          const reference = composerReferenceText(item);
-          const media = reference ? null : inputMediaPayload([item])[0];
-          if (media) parts.push({ ...media, type: media.media_type });
-          else appendText(reference || (item.path ? `[${attachmentKind(item)}: ${item.path}]` : ""));
-        }
-        cursor = match.index + match[0].length;
-      }
-      appendText(text.slice(cursor));
-      return parts;
     }
 
     function composerAttachmentSummary(item, kind) {
@@ -1098,7 +1105,7 @@
       composerPayloadContentParts, composerPreviewReference, composerAttachmentPlaceholder,
       composerAttachmentTokenOrder, insertComposerAttachmentRef, removeComposerAttachmentRef,
       moveComposerAttachmentRef, refreshComposerAttachmentRefs, syncComposerAttachmentRefs,
-      serializeComposerInput, serializeComposerContentParts, renderComposerAttachmentTray,
+      serializeComposerInput, serializeComposerContentParts, serializeComposerPayload, renderComposerAttachmentTray,
       normalizeSlashCommands, slashCommandMatches, slashCommandMenuHtml, composerMentionToken,
       mentionMenuHtml, bindComposerAttachmentActions, inputText, setInputText,
       setComposerDraftInput, composerSelectionSnapshot, restoreComposerSelection,

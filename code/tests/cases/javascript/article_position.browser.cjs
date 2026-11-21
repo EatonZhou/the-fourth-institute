@@ -69,7 +69,7 @@ const html = fs.readFileSync(path.join(STATIC, '../article_workspace.html'), 'ut
     if (url.pathname.endsWith('/file')) {
       const name = url.searchParams.get('path');
       res.setHeader('Content-Type', 'application/json');
-      return res.end(JSON.stringify({ path: name, kind: 'text', content: files[name] }));
+      return res.end(JSON.stringify({ path: name, kind: 'text', content: files[name], revision: 'fixture-r1' }));
     }
     if (!url.pathname.startsWith('/static/') || rel.includes('..')) {
       res.writeHead(404); return res.end();
@@ -128,19 +128,35 @@ const html = fs.readFileSync(path.join(STATIC, '../article_workspace.html'), 'ut
         build: { pdf_available: true, pdf_url: '/fixture.pdf' } };
       let syntax, editor, location, pdf;
       window.docs = PortalArticleWorkspaceDocuments.createDocuments({ ...deps(PortalArticleWorkspaceDocuments), $, state,
-        editorValue: () => state.monacoReady ? state.editor.getValue() : $('articleSourceEditor').value,
+        editorView: () => editor, editorValue: () => editor.editorValue(),
         updateDirtyState: () => syntax.updateDirtyState(), monacoApi: () => window.monaco,
         articleModelUri: p => monaco.Uri.parse(`article://${articleId}/${p}`), languageForPath: () => 'latex',
         loadSemanticIndex: async () => {}, request: async url => (await fetch(url)).json(),
         scheduleReadingPosition: () => location.schedule(),
       });
-      syntax = PortalArticleWorkspaceSyntax.createSyntax({ ...deps(PortalArticleWorkspaceSyntax), $, state,
+      syntax = PortalArticleWorkspaceSyntax.createSyntax({ ...deps(PortalArticleWorkspaceSyntax), $, state, editorView: () => editor,
         activeDocument: docs.activeDocument, renderDocumentTabs: docs.renderDocumentTabs });
-      location = window.readingPosition = PortalArticleWorkspacePosition.createPosition({ state,
+      location = window.readingPosition = PortalArticleWorkspacePosition.createPosition({ outputView: () => pdf, state,
         captureActiveDocument: docs.captureActiveDocument, captureArticlePdfPosition: () => pdf.captureArticlePdfPosition(),
         openArticleFile: docs.openArticleFile, activateDocument: docs.activateDocument });
-      pdf = window.pdfOwner = PortalArticleWorkspacePdf.createPdf({ ...deps(PortalArticleWorkspacePdf), $, state,
-        selectedArticle: () => ({ title: 'Fixture' }) });
+      const editorOptions = { ...deps(PortalArticleWorkspaceMonaco),
+        activeDocument: docs.activeDocument, captureActiveDocument: docs.captureActiveDocument,
+        getSession: () => ({articleId: state.selectedId, path: state.openFile, documents: state.documents,
+          preferences: state.editorPreferences}), handleEditorPairing: () => false, syncEditorScroll: noop,
+        updateDirtyState: syntax.updateDirtyState, activateDocument: docs.activateDocument };
+      const outputOptions = { ...deps(PortalArticleWorkspacePdf),
+        getContext: () => ({articleId:state.selectedId,path:state.openFile,build:state.build,
+          buildLoading:state.buildLoading,settings:state.settings,article:{title:'Fixture'},view:state.outputView}),
+        scheduleReadingPosition: () => location.schedule(),
+        compileArticle: (...args) => buildOwner.compileArticle(...args),
+        stopCompilation: noop, setCompileMenu: noop, updateCompilePreference: noop };
+      const layout = PortalArticleWorkspaceLayout.createLayout({
+        ...deps(PortalArticleWorkspaceLayout), $, state, panelOptions: () => ({editor:editorOptions,output:outputOptions}),
+        articleLayoutStore: {read:()=>({}),write:noop},
+      });
+      layout.initArticleWorkbench();
+      editor = window.editorOwner = layout.currentArticleWorkbench().getPanel('editor');
+      pdf = window.pdfOwner = layout.currentArticleWorkbench().getPanel('output');
       window.completedPdfRenders = 0;
       window.buildOwner = PortalArticleWorkspaceBuild.createBuild({ ...deps(PortalArticleWorkspaceBuild), $, state,
         request: async url => url.endsWith('/compile')
@@ -152,8 +168,7 @@ const html = fs.readFileSync(path.join(STATIC, '../article_workspace.html'), 'ut
       });
       const shared = { $, state, activeDocument: docs.activeDocument, captureActiveDocument: docs.captureActiveDocument,
         updateDirtyState: syntax.updateDirtyState, hasDirtyDocuments: docs.hasDirtyDocuments };
-      editor = PortalArticleWorkspaceMonaco.createMonaco({ ...deps(PortalArticleWorkspaceMonaco), ...shared, activateDocument: docs.activateDocument });
-      PortalArticleWorkspaceEvents.createEvents({ ...deps(PortalArticleWorkspaceEvents), ...shared,
+      PortalArticleWorkspaceEvents.createEvents({ ...deps(PortalArticleWorkspaceEvents), ...shared, editorView: () => editor,
         articleGitRefresh: { stop: noop }, articleContentRefresh: { stop: noop },
         persistReadingPosition: location.persist, scheduleReadingPosition: location.schedule });
       $('articleCodeEditor').style.cssText = 'position:fixed;left:0;top:0;width:600px;height:600px;background:white;z-index:100';
@@ -163,7 +178,7 @@ const html = fs.readFileSync(path.join(STATIC, '../article_workspace.html'), 'ut
       await location.restoreDocuments(articleId, 'main.tex');
       await pdf.renderPdf();
       require.config({ paths: { vs: '/static/vendor/monaco/vs' } });
-      window.PortalCodeEditor = { loadMonaco: () => new Promise(resolve => require(['vs/editor/editor.main'], resolve)) };
+      window.PortalCodeEditor = { ...window.PortalCodeEditor, loadMonaco: () => new Promise(resolve => require(['vs/editor/editor.main'], resolve)) };
       if (!await editor.initializeMonacoEditor()) throw new Error('Monaco failed');
     };
     const enter = async options => {
@@ -175,16 +190,16 @@ const html = fs.readFileSync(path.join(STATIC, '../article_workspace.html'), 'ut
     await enter();
     await page.evaluate(async () => {
       await docs.openArticleFile('intro.tex');
-      state.editor.setPosition({ lineNumber: 80, column: 4 }); state.editor.setScrollTop(1400);
+      editorOwner.getEditor().setPosition({ lineNumber: 80, column: 4 }); editorOwner.getEditor().setScrollTop(1400);
       await pdfOwner.setArticlePdfZoom(1.4);
       document.getElementById('articlePdfView').scrollTop = 2150;
     });
-    const before = await page.evaluate(() => ({ position: state.editor.getPosition(), scroll: state.editor.getScrollTop(), pdf: pdfOwner.captureArticlePdfPosition() }));
+    const before = await page.evaluate(() => ({ position: editorOwner.getEditor().getPosition(), scroll: editorOwner.getEditor().getScrollTop(), pdf: pdfOwner.captureArticlePdfPosition() }));
     await page.goto(origin + '/away');
     files['intro.tex'] = text.replace('Line 1 ', 'Fresh 1 ');
     await enter();
-    const after = await page.evaluate(() => ({ active: state.openFile, tabs: state.openTabs, position: state.editor.getPosition(),
-      scroll: state.editor.getScrollTop(), pdf: pdfOwner.captureArticlePdfPosition(), zoom: state.pdfZoom, source: state.editor.getValue() }));
+    const after = await page.evaluate(() => ({ active: state.openFile, tabs: state.openTabs, position: editorOwner.getEditor().getPosition(),
+      scroll: editorOwner.getEditor().getScrollTop(), pdf: pdfOwner.captureArticlePdfPosition(), zoom: pdfOwner.getZoom(), source: editorOwner.getEditor().getValue() }));
     assert.equal(after.active, 'intro.tex'); assert.deepEqual(after.tabs, ['main.tex', 'intro.tex']);
     assert.deepEqual(after.position, before.position); assert.ok(Math.abs(after.scroll - before.scroll) < 2);
     assert.equal(after.zoom, 1.4); assert.equal(after.pdf.page, before.pdf.page);
@@ -217,12 +232,12 @@ const html = fs.readFileSync(path.join(STATIC, '../article_workspace.html'), 'ut
         };
         requestAnimationFrame(sample);
         finishCompile({ id: state.selectedId, status: 'success', pdf_url: '/fixture.pdf', compiled_at: `build-${completed + 1}` });
-        return { position, completed, zoom: state.pdfZoom };
+        return { position, completed, zoom: pdfOwner.getZoom() };
       }, { scrollTop, pages, fromScratch });
       await page.waitForFunction(completed => window.completedPdfRenders > completed, anchor.completed);
       await page.evaluate(() => window.compiling);
       await page.evaluate(() => new Promise(resolve => requestAnimationFrame(resolve)));
-      return { before: anchor, after: await page.evaluate(() => ({ position: pdfOwner.captureArticlePdfPosition(), zoom: state.pdfZoom })),
+      return { before: anchor, after: await page.evaluate(() => ({ position: pdfOwner.captureArticlePdfPosition(), zoom: pdfOwner.getZoom() })),
         frames: await page.evaluate(() => window.swapFrames) };
     };
     const rebuilt = await rebuildAt({ scrollTop: 2750 });
@@ -270,7 +285,7 @@ const html = fs.readFileSync(path.join(STATIC, '../article_workspace.html'), 'ut
     await enter({ user: 'other-reader' }); assert.equal(await page.evaluate(() => state.openFile), 'main.tex');
     await enter({ articleId: 'B' }); assert.equal(await page.evaluate(() => state.openFile), 'main.tex');
     await enter({ available: ['main.tex'] }); assert.equal(await page.evaluate(() => state.openFile), 'main.tex');
-    await page.evaluate(async () => { state.pdfRestorePosition = { page: 90, xRatio: .5, yRatio: .5 }; pdfOwner.cancelPdf(); await pdfOwner.renderPdf(); });
+    await page.evaluate(async () => { pdfOwner.restoreReadingPosition({pdf:{ page: 90, xRatio: .5, yRatio: .5 },pdfZoom:pdfOwner.getZoom()}); pdfOwner.cancelPdf(); await pdfOwner.renderPdf(); });
     assert.equal(await page.evaluate(() => pdfOwner.captureArticlePdfPosition().page), 5);
     // Exercise the same transition with production CSS, PDF.js, canvases and
     // lazy page rendering, with the compilation status replacing the old PDF.
@@ -280,10 +295,6 @@ const html = fs.readFileSync(path.join(STATIC, '../article_workspace.html'), 'ut
     const realSwap = await page.evaluate(async () => {
       const $ = id => document.getElementById(id), noop = () => {};
       for (const id of ['articleCodeEditor', 'articleMonacoEditor', 'articlePdfView']) $(id).removeAttribute('style');
-      PortalArticleWorkspaceLayout.createLayout({
-        ...Object.fromEntries(PortalArticleWorkspaceLayout.dependencies.map(k => [k, noop])), $, state,
-        articleLayoutStore: { read: () => ({}), write: noop }, scheduleArticlePdfLayout: pdfOwner.scheduleArticlePdfLayout,
-      }).initArticleWorkbench();
       await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
       pdfOwner.cancelPdf(); window.PortalPdfPreview = window.realPdfPreview;
       const originalRender = window.realPdfPreview.render;
@@ -294,7 +305,7 @@ const html = fs.readFileSync(path.join(STATIC, '../article_workspace.html'), 'ut
           config.onPage?.(data);
         },
       }) };
-      state.build.compiled_at = 'real-initial'; state.pdfZoom = 1.4;
+      state.build.compiled_at = 'real-initial'; pdfOwner.restoreReadingPosition({pdfZoom:1.4});
       await pdfOwner.renderPdf();
       const host = document.getElementById('articlePdfView');
       host.scrollTop = 3200;
@@ -443,6 +454,59 @@ const html = fs.readFileSync(path.join(STATIC, '../article_workspace.html'), 'ut
     assert.ok(Math.abs(resizeAfter.ratio-resizeBefore.ratio)<.015,'resize keeps the reading anchor');
     assert.deepEqual(resizeAfter.position,resizeBefore.position,'resize keeps the editor caret');
     assert.deepEqual(fullErrors, []);
+
+    const lifecycle = await full.evaluate(async () => {
+      const workbench = PortalWorkbench.get('article-workspace');
+      const source = workbench.getPanel('editor'), output = workbench.getPanel('output');
+      const model = source.getEditor().getModel(), root = source.root, pdf = output.root;
+      const savedLayout = workbench.getLayout();
+      source.getEditor().setPosition({lineNumber:80,column:4});
+      const sourceSnapshot = source.snapshot(), pdfSnapshot = output.snapshot();
+      await ArticleWorkspaceTest.openFile('intro.tex');
+      const other = source.getEditor().getModel();
+      source.getEditor().setPosition({lineNumber:24,column:5});
+      await ArticleWorkspaceTest.openFile('main.tex');
+      const restored = source.getEditor().getPosition();
+      workbench.applyWorkspace({name:'Moved',layout:PortalWorkbench.model.split('horizontal',[
+        PortalWorkbench.model.stack(['output']),PortalWorkbench.model.stack(['editor'])
+      ],[500,700])});
+      workbench.collapsePanel('editor'); workbench.expandPanel('editor');
+      workbench.hidePanel('output'); workbench.showPanel('output');
+      workbench.setVisible(false); workbench.setVisible(true);
+      workbench.applyWorkspace({name:'Restore',layout:savedLayout});
+      source.restore(sourceSnapshot); source.restoreViewFor('main.tex');
+      output.restore(pdfSnapshot);
+      window.lifecycleSource = source; window.lifecycleOutput = output;
+      return {
+        registered: workbench.getPanelsByType('article-editor').length === 1 && workbench.getPanelsByType('article-output').length === 1,
+        stable: source === workbench.getPanel('editor') && output === workbench.getPanel('output') &&
+          root === source.root && pdf === output.root && model === source.getEditor().getModel(),
+        distinct: other !== model, restored,
+        position: source.getEditor().getPosition(),
+        zoom: output.getZoom(), expectedZoom: pdfSnapshot.pdfZoom,
+      };
+    });
+    assert.equal(lifecycle.registered,true); assert.equal(lifecycle.stable,true); assert.equal(lifecycle.distinct,true);
+    assert.deepEqual(lifecycle.restored,{lineNumber:80,column:4});
+    assert.deepEqual(lifecycle.position,lifecycle.restored); assert.equal(lifecycle.zoom,lifecycle.expectedZoom);
+    // Real package comparison surface: complete values, explicit accept/cancel,
+    // escape and pending comparison cleanup on Workbench destruction.
+    await full.evaluate(() => { window.decision = lifecycleSource.confirmConflict({path:'main.tex',remote:'disk latest',local:'my draft'}); });
+    await full.waitForSelector('[data-conflict-cancel]',{state:'visible'});
+    assert.deepEqual(await full.evaluate(() => monaco.editor.getDiffEditors().at(-1).getModel().original.getValue()),'disk latest');
+    await full.click('[data-conflict-cancel]');
+    assert.equal(await full.evaluate(() => decision),false);
+    await full.evaluate(() => { window.decision = lifecycleSource.confirmConflict({path:'main.tex',remote:'disk latest',local:'my draft'}); });
+    await full.click('[data-conflict-save]');
+    assert.equal(await full.evaluate(() => decision),true);
+    await full.evaluate(() => { window.decision = lifecycleSource.confirmConflict({path:'main.tex',remote:'disk latest',local:'my draft'}); });
+    await full.keyboard.press('Escape');
+    assert.equal(await full.evaluate(() => decision),false);
+    await full.evaluate(() => { window.decision = lifecycleSource.confirmConflict({path:'main.tex',remote:'disk latest',local:'my draft'}); PortalWorkbench.get('article-workspace').destroy(); });
+    assert.equal(await full.evaluate(() => decision),false);
+    assert.equal(await full.evaluate(() => lifecycleSource.getEditor() === null && !lifecycleSource.root.isConnected && !lifecycleOutput.root.isConnected),true);
+    await full.waitForTimeout(300);
+    assert.deepEqual(fullErrors,[]);
     await full.close();
     console.log('PASS: compilation status until rendered PDF replacement; preserved reading position; failure and navigation cleanup');
   } finally { await browser?.close(); await new Promise(resolve => server.close(resolve)); }

@@ -106,12 +106,6 @@
     openFile: "",
     openTabs: [],
     documents: new Map(),
-    source: "",
-    savedSource: "",
-    editor: null,
-    monacoReady: false,
-    editorSuppressChange: false,
-    monacoDisposables: [],
     renderFrame: 0,
     outlineTimer: 0,
     semanticTimer: 0,
@@ -122,16 +116,6 @@
     buildLoading: false,
     logFilter: "all",
     outputView: "pdf",
-    pdfSyncLocation: null,
-    pdfSyncPending: false,
-    pdfZoom: 1,
-    pdfScaleVersion: 0,
-    pdfLayoutFrame: 0,
-    editorLayoutFrame: 0,
-    pdfRedrawTimer: 0,
-    pdfGestureCommitTimer: 0,
-    pdfGestureAnchor: null,
-    pdfTouchGesture: null,
     chatController: null,
     chatPanel: null,
     chatLoadRequest: null,
@@ -252,11 +236,12 @@
     return window.PortalUI.toast(message, kind || "success");
   }
 
-  const {
-    activeEditorModel, articleModelUri, documentForModel, editorPosition, editorSelectionContext, editorValue,
-    initializeMonacoEditor, isMarkdownPath, languageForPath, monacoApi,
-  } = articleModule("PortalArticleWorkspaceMonaco").createMonaco({
-    $, activateDocument: (...args) => activateDocument(...args),
+  const editorView = () => currentArticleWorkbench()?.getPanel("editor");
+  const outputView = () => currentArticleWorkbench()?.getPanel("output");
+  const { activeEditorModel, articleModelUri, documentForModel, editorPosition, editorSelectionContext, editorValue, initializeMonacoEditor, isMarkdownPath, languageForPath, monacoApi } = Object.fromEntries(
+    ["activeEditorModel","articleModelUri","documentForModel","editorPosition","editorSelectionContext","editorValue","initializeMonacoEditor","isMarkdownPath","languageForPath","monacoApi"].map(name => [name, (...args) => editorView()?.[name](...args)]));
+  const editorOptions = {
+    activateDocument: (...args) => activateDocument(...args),
     activeDocument: (...args) => activeDocument(...args),
     captureActiveDocument: (...args) => captureActiveDocument(...args),
     registerTexlabProviders: (...args) => registerTexlabProviders(...args),
@@ -266,14 +251,24 @@
     scheduleAutoCompile: (...args) => scheduleAutoCompile(...args),
     scheduleAutoSave: (...args) => scheduleAutoSave(...args),
     scheduleSemanticReload: (...args) => scheduleSemanticReload(...args),
-    scheduleTexlabSync: (...args) => scheduleTexlabSync(...args), state,
+    scheduleTexlabSync: (...args) => scheduleTexlabSync(...args),
+    getSession: () => ({ articleId: state.selectedId, path: state.openFile, documents: state.documents,
+      preferences: state.editorPreferences, wordWrap: state.wordWrap }),
+    destroyDocuments: () => clearEditor(),
+    handleEditorPairing: (...args) => handleEditorPairing(...args),
+    syncEditorScroll: (...args) => syncEditorScroll(...args),
+    setEditorMode: (...args) => setEditorMode(...args),
+    toggleWordWrap: () => toggleWordWrap(),
+    syncSourceToPdf: () => syncSourceToPdf(),
+    bringCurrentFileToChat: () => bringCurrentFileToChat(), showToast,
     updateCursorStatus: (...args) => updateCursorStatus(...args),
     updateDirtyState: (...args) => updateDirtyState(...args),
-  });
+  };
 
   const {
     registerTexlabProviders, scheduleTexlabSync, setTexlabStatus,
   } = articleModule("PortalArticleWorkspaceTexlab").createTexlab({
+    editorView,
     $, activeDocument: (...args) => activeDocument(...args), activeEditorModel, documentForModel,
     openArticleFile: (...args) => openArticleFile(...args), request, state,
     updateAllEditorMarkers: (...args) => updateAllEditorMarkers(...args),
@@ -308,13 +303,9 @@
     },
   });
 
-  const comments = articleModule("PortalArticleWorkspaceComments").createComments({
-    state, request, activeDocument: (...args) => activeDocument(...args), editorValue,
-    openArticleFile: (...args) => openArticleFile(...args),
-    saveAllDirtyDocuments: (...args) => saveAllDirtyDocuments(...args), showToast,
-  });
+  let comments;
   const readingPosition = articleModule("PortalArticleWorkspacePosition").createPosition({
-    state, captureActiveDocument: (...args) => captureActiveDocument(...args),
+    outputView, state, captureActiveDocument: (...args) => captureActiveDocument(...args),
     captureArticlePdfPosition: (...args) => captureArticlePdfPosition(...args),
     openArticleFile: (...args) => openArticleFile(...args),
     activateDocument: (...args) => activateDocument(...args),
@@ -340,7 +331,7 @@
     scheduleArticleContentRefresh: (...args) => scheduleArticleContentRefresh(...args),
     selectedArticle, setArticleResourceSearchOpen, setOutputView: (...args) => setOutputView(...args),
     setProjectMenu, setTexlabStatus, showPdfError: (...args) => showPdfError(...args), showToast, state,
-    updateSemanticUrl, updateUrl, readingPosition, selectComments: comments.selectArticle,
+    updateSemanticUrl, updateUrl, readingPosition, selectComments: (...args) => comments.selectArticle(...args),
   });
 
   const {
@@ -360,7 +351,7 @@
     applyWordWrap: (...args) => applyWordWrap(...args), articleLayoutStore, EDITOR_PREFERENCE_KEY,
     loadArticleChat: (...args) => loadArticleChat(...args), loadArticleGit,
     normalizedEditorPreferences: (...args) => normalizedEditorPreferences(...args),
-    scheduleArticlePdfLayout: (...args) => scheduleArticlePdfLayout(...args),
+    panelOptions: () => ({ editor: editorOptions, output: outputOptions }),
     setSettingsSection: (...args) => setSettingsSection(...args), showToast, state, WORD_WRAP_STORAGE_KEY,
   });
 
@@ -381,6 +372,7 @@
     hasDirtyDocuments, openArticleFile, openArticleLinkedFile, openArticleResourcePreview, renderDocumentTabs,
     refreshArticleDocuments, saveAllDirtyDocuments, saveOpenFile, scheduleAutoSave, setEditorMode,
   } = articleModule("PortalArticleWorkspaceDocuments").createDocuments({
+    editorView,
     $, articleAbsolutePath, articleModelUri, closeArticleGitDiff, detailResourceGuest, editorValue,
     compileArticle: (...args) => compileArticle(...args),
     isMarkdownPath, languageForPath, loadSemanticIndex: (...args) => loadSemanticIndex(...args), monacoApi,
@@ -428,6 +420,7 @@
     handleEditorPairing, normalizedDiagnosticPath, renderEditorLayers, syncEditorScroll,
     updateAllEditorMarkers, updateCursorStatus, updateDirtyState,
   } = articleModule("PortalArticleWorkspaceSyntax").createSyntax({
+    editorView,
     $, activeDocument, articleRoot, captureActiveDocument,
     compileSettingValue: (...args) => compileSettingValue(...args), editorPosition, editorSelectionContext,
     esc, monacoApi, renderDocumentTabs, renderSemanticNavigation, selectedArticle, state,
@@ -452,45 +445,61 @@
     applyEditorPreferences, applyWordWrap, normalizedEditorPreferences, renderEditorPreferenceControls,
     resetEditorPreferences, setSettingsSection, toggleWordWrap, updateEditorPreference,
   } = articleModule("PortalArticleWorkspacePreferences").createPreferences({
+    editorView,
     $, activeEditorModel, captureActiveDocument, compileSettingValue, EDITOR_PREFERENCE_DEFAULTS,
     EDITOR_PREFERENCE_KEY, renderEditorLayers, showToast, state, syncEditorScroll, WORD_WRAP_STORAGE_KEY,
   });
 
   const {
-    bindArticlePdfGestures, cancelPdf, captureArticlePdfPosition, pdfUrl, renderPdf, scheduleArticlePdfLayout, setArticlePdfZoom,
+    cancelPdf, captureArticlePdfPosition, pdfUrl, renderPdf, scheduleArticlePdfLayout, setArticlePdfZoom,
     setPdfCompiling, showPdfError, syncPdfToSource, syncSourceToPdf, updateArticlePdfZoomControls,
-  } = articleModule("PortalArticleWorkspacePdf").createPdf({
-    $, editorPosition, esc, openArticleFile, request, selectedArticle, setOutputView, showToast, state,
-  });
+  } = Object.fromEntries(
+    ["cancelPdf", "captureArticlePdfPosition", "pdfUrl", "renderPdf", "scheduleArticlePdfLayout", "setArticlePdfZoom",
+    "setPdfCompiling", "showPdfError", "syncPdfToSource", "syncSourceToPdf", "updateArticlePdfZoomControls"]
+      .map(name => [name, (...args) => outputView()?.[name](...args)]));
+  const outputOptions = {
+    editorPosition, esc, openArticleFile, request, setOutputView, showToast,
+    getContext: () => ({ articleId: state.selectedId, path: state.openFile, build: state.build,
+      buildLoading: state.buildLoading, preflight: state.buildPreflight, settings: state.settings,
+      article: selectedArticle(), view: state.outputView }),
+    scheduleReadingPosition: readingPosition.schedule,
+    compileArticle, stopCompilation, setCompileMenu, currentArticleCompilePopover, updateCompilePreference,
+    syncBusy: busy => { $("articleSyncToPdf").disabled = busy || !state.settings?.synctex_available || !pdfUrl() || !state.openFile.toLowerCase().endsWith(".tex"); },
+  };
 
   const {
     addArticleChatReference, bringCurrentFileToChat, bringSelectionToChat, loadArticleChat,
   } = articleModule("PortalArticleWorkspaceChat").createChat({
-    $, activeDocument, articleProjects, articleRoot, documentIsDirty, editorPosition, editorSelectionContext, editorValue,
+    outputView, $, activeDocument, articleProjects, articleRoot, documentIsDirty, editorPosition, editorSelectionContext, editorValue,
     languageForPath, selectedArticle, setSideView, showToast, state,
   });
 
+  initArticleWorkbench();
+  comments = articleModule("PortalArticleWorkspaceComments").createComments({
+    editorView, state, request, activeDocument: (...args) => activeDocument(...args), editorValue,
+    openArticleFile: (...args) => openArticleFile(...args),
+    saveAllDirtyDocuments: (...args) => saveAllDirtyDocuments(...args), showToast,
+  });
+
+  editorView().addDisposables(() => comments.destroy());
+
   articleModule("PortalArticleWorkspaceEvents").createEvents({
     articleContentRefresh, scheduleArticleContentRefresh,
-    $, activeDocument, articleEntryDialog, articleGitRefresh, articleRegisterDialog, askBuildDiagnostic,
-    bindArticlePdfGestures, bringCurrentFileToChat, bringSelectionToChat, captureActiveDocument, closeArticleGitDiff,
-    commitArticleGit, compileArticle, createEntry, currentArticleCompilePopover, currentArticleProjectPopover,
-    currentArticleWorkbench, canToggleArticleSidebar, toggleArticleSidebar, detailHistory, flushArticleNavigationPreference, goToLine, handleEditorPairing,
-    hasDirtyDocuments, initializeArticleGit, initializeArticlePopovers, inspectRegistration, loadArticleGit,
+    $, articleEntryDialog, articleGitRefresh, articleRegisterDialog, askBuildDiagnostic,
+    captureActiveDocument, closeArticleGitDiff,
+    commitArticleGit, createEntry, currentArticleProjectPopover,
+    canToggleArticleSidebar, toggleArticleSidebar, detailHistory, flushArticleNavigationPreference, goToLine, hasDirtyDocuments, initializeArticleGit, initializeArticlePopovers, inspectRegistration, loadArticleGit,
     openArticleFile, openArticleGitCommit, openArticleGitDiff, openBuildDiagnostic, openEntryModal,
     openRegisterModal, handleArticleGitAction, pullArticleGit, queryState, registerArticle, renderArticleGitDiffFile, renderArticleResourceSearch,
-    renderArticleSelectors, renderEditorLayers, renderLog, renderSemanticNavigation, resetEditorPreferences,
-    saveOpenFile, saveSettings, scheduleArticleGitRefresh, scheduleAutoCompile, scheduleAutoSave, searchProject, selectArticle,
-    persistReadingPosition: readingPosition.persist, scheduleReadingPosition: readingPosition.schedule,
-    setArticlePdfZoom, setArticleResourceSearchOpen, setCompileMenu, setEditorMode, setToolVisible,
-    setOutputView, setProjectMenu, setSettingsSection, setSideView, showPdfError, showToast, state,
-    stopCompilation, syncEditorScroll, syncPdfToSource, syncSourceToPdf, toggleArticleGitDiffLayout,
-    toggleWordWrap, unregisterCurrentArticle, updateArticleGitStage, updateCompilePreference,
-    updateCursorStatus, updateDirtyState, updateEditorCodeCheck, updateEditorPreference, updateSemanticUrl,
+    renderArticleSelectors, renderLog, renderSemanticNavigation, resetEditorPreferences,
+    saveSettings, scheduleArticleGitRefresh, searchProject, selectArticle,
+    persistReadingPosition: readingPosition.persist, setArticleResourceSearchOpen, setToolVisible,
+    setProjectMenu, setSettingsSection, setSideView, showToast, state,
+    toggleArticleGitDiffLayout,
+    toggleWordWrap, unregisterCurrentArticle, updateArticleGitStage, updateEditorCodeCheck, updateEditorPreference, updateSemanticUrl,
     uploadFile,
   });
 
-  initArticleWorkbench();
   restoreLayout({
     sideView: ["1", "true", "open"].includes(String(queryState().get("chat") || "").toLowerCase()) ? "chat" : undefined,
   });
@@ -505,7 +514,7 @@
   window.ArticleWorkspaceTest = {
     value: () => editorValue(),
     setValue: value => {
-      if (state.monacoReady && state.editor) state.editor.setValue(String(value ?? ""));
+      if (editorView().isReady() && editorView().getEditor()) editorView().getEditor().setValue(String(value ?? ""));
       else {
         const editor = $("articleSourceEditor");
         editor.value = String(value ?? "");
@@ -516,21 +525,21 @@
     setPosition: (line, column = 1) => goToLine(line, column),
     selection: () => editorSelectionContext(),
     setSelection: (startLine, startColumn, endLine = startLine, endColumn = startColumn) => {
-      if (state.monacoReady && state.editor) {
+      if (editorView().isReady() && editorView().getEditor()) {
         const selection = {
           startLineNumber: Number(startLine),
           startColumn: Number(startColumn),
           endLineNumber: Number(endLine),
           endColumn: Number(endColumn),
         };
-        state.editor.setSelection(selection);
-        state.editor.revealRangeInCenter(selection);
-        state.editor.focus();
+        editorView().getEditor().setSelection(selection);
+        editorView().getEditor().revealRangeInCenter(selection);
+        editorView().getEditor().focus();
       }
     },
     openFile: (path, options = {}) => openArticleFile(path, options),
     activeFile: () => state.openFile,
-    pdfZoom: () => state.pdfZoom,
+    pdfZoom: () => outputView().getZoom(),
     markers: () => {
       const monaco = monacoApi();
       const model = activeEditorModel();
@@ -538,9 +547,9 @@
         ? monaco.editor.getModelMarkers({ resource: model.uri })
         : [];
     },
-    editorOptions: () => state.editor?.getRawOptions?.() || {},
-    editorLayout: () => state.editor?.getLayoutInfo?.() || null,
-    editorLineTop: line => state.editor?.getTopForLineNumber?.(Number(line)) || 0,
+    editorOptions: () => editorView().getEditor()?.getRawOptions?.() || {},
+    editorLayout: () => editorView().getEditor()?.getLayoutInfo?.() || null,
+    editorLineTop: line => editorView().getEditor()?.getTopForLineNumber?.(Number(line)) || 0,
     gitDiff: () => ({
       files: state.gitDiffFiles.map(file => file.path),
       activeFile: state.gitDiffFiles[state.gitDiffActiveFile]?.path || "",

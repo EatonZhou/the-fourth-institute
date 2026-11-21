@@ -17,7 +17,7 @@ const modules = ['portal_state.js', 'portal_page_state.js', 'portal_text.js', 'p
   'portal_image_editor.js', 'portal_editor_open_service.js', 'portal_command_registry.js', 'portal_code_editor.js',
   'portal_workbench_context.js', ...portalWorkbenchScripts(), ...portalWorkspaceSurfaceScripts(), 'portal_resident_service.js',
   'portal_resident_runtime_controller.js', 'resident_protocol.js', ...chatWorkspaceScripts(),
-  'article_workspace_monaco.js', 'article_workspace_tools.js', 'article_workspace_layout.js', 'article_workspace_chat.js', 'article_workspace_events.js'];
+  'article_workspace_monaco.js', 'article_workspace_pdf.js', 'article_workspace_tools.js', 'article_workspace_layout.js', 'article_workspace_chat.js', 'article_workspace_events.js'];
 const html = fs.readFileSync(path.join(repo, 'management_portal/article_workspace.html'), 'utf8')
   .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '')
   .replace('</body>', '<script src="/routes.js"></script>' + modules.map(n => `<script src="/static/${n}"></script>`).join('') + '</body>');
@@ -43,6 +43,7 @@ const html = fs.readFileSync(path.join(repo, 'management_portal/article_workspac
     const page = await browser.newPage({ viewport: { width: 1920, height: 1080 } });
     page.setDefaultTimeout(6000);
     const errors = [];
+    page.on('console', message => { if(message.type()==='error') console.error(message.text()); });
     page.on('pageerror', error => errors.push(error.message));
     const origin = `http://127.0.0.1:${server.address().port}`;
     await page.route('**/*', route => route.request().url().startsWith(origin + '/') ? route.continue() : route.abort());
@@ -51,6 +52,7 @@ const html = fs.readFileSync(path.join(repo, 'management_portal/article_workspac
       const $ = id => document.getElementById(id);
       window.notices = []; window.writes = [];
       window.bound = boundChat;
+      window.PortalPreview = {createFrameCoalescer: () => ({cancel() {}, schedule() {}})};
       window.PortalIdentity = { username: () => 'article-context-fixture' };
       window.PortalInstructionClient = { execute: async () => ({ entries: [] }) };
       window.PortalAPI = {
@@ -74,21 +76,38 @@ const html = fs.readFileSync(path.join(repo, 'management_portal/article_workspac
       window.PortalResidentProtocol = { ...PortalResidentProtocol,
         acquire: () => ({ load: async () => snapshot, snapshot: () => snapshot, destroy() {} }),
       };
-      window.state = { selectedId: 'article_fixture', openFile: 'main.tex', editorPreferences: { tabSize: 2 }, monacoDisposables: [] };
+      window.state = { selectedId: 'article_fixture', openFile: 'main.tex', editorPreferences: { tabSize: 2, fontSize:14 }, monacoDisposables: [] };
       const deps = module => Object.fromEntries(module.dependencies.map(key => [key, () => {}]));
-      const editor = PortalArticleWorkspaceMonaco.createMonaco({ ...deps(PortalArticleWorkspaceMonaco), $, state });
+      const doc = {revision:'r1', source:'', editable:true, textDocument:true};
+      state.documents = new Map([['main.tex',doc]]);
+      let editor;
+      const editorOptions = { ...deps(PortalArticleWorkspaceMonaco),
+        getSession: () => ({articleId:state.selectedId,path:state.openFile,documents:state.documents,preferences:state.editorPreferences}),
+        activeDocument: () => doc, handleEditorPairing: () => false, syncEditorScroll() {},
+        captureActiveDocument: () => { if(editor) doc.source = editor.editorValue(); },
+        activateDocument: () => { doc.model = monaco.editor.createModel(doc.source,'latex'); editor.getEditor().setModel(doc.model); },
+        bringCurrentFileToChat: () => host.bringCurrentFileToChat(),
+        onSelectionCommitted: () => host.bringSelectionToChat(),
+      };
+      const outputOptions = { ...deps(PortalArticleWorkspacePdf),
+        getContext: () => ({articleId:state.selectedId,path:state.openFile,settings:{},view:'pdf'}),scheduleReadingPosition() {} };
       let host;
       const layout = window.layout = PortalArticleWorkspaceLayout.createLayout({ ...deps(PortalArticleWorkspaceLayout), $, state,
+        panelOptions: () => ({editor:editorOptions,output:outputOptions}),
+        normalizedEditorPreferences: () => ({tabSize:2,fontSize:14}),
         articleLayoutStore: PortalWorkbench.layout.createStore({ storageKey: 'portal.articleWorkspace.layout' }),
         loadArticleChat: (...args) => host.loadArticleChat(...args), showToast: text => notices.push(String(text)),
       });
       host = PortalArticleWorkspaceChat.createChat({ ...deps(PortalArticleWorkspaceChat), $, state,
         selectedArticle: () => ({ title: 'Fixture', canonical_root: '/fixture' }), articleProjects: () => [],
-        activeDocument: () => ({ revision: 'r1' }), editorPosition: editor.editorPosition,
-        editorSelectionContext: editor.editorSelectionContext, editorValue: editor.editorValue, languageForPath: () => 'latex',
+        outputView: () => layout.currentArticleWorkbench().getPanel('output'),
+        activeDocument: () => doc, editorPosition: () => editor.editorPosition(),
+        editorSelectionContext: (...args) => editor.editorSelectionContext(...args), editorValue: () => editor.editorValue(), languageForPath: () => 'latex',
         setSideView: layout.setSideView, showToast: text => notices.push(String(text)),
       });
       window.host = host;
+      layout.initArticleWorkbench();
+      editor = window.editorOwner = layout.currentArticleWorkbench().getPanel('editor');
       PortalArticleWorkspaceEvents.createEvents({ ...deps(PortalArticleWorkspaceEvents), $, state,
         articleGitRefresh: { stop() {} }, articleContentRefresh: { stop() {} },
         bringCurrentFileToChat: host.bringCurrentFileToChat, bringSelectionToChat: host.bringSelectionToChat, showToast: text => notices.push(String(text)),
@@ -96,7 +115,6 @@ const html = fs.readFileSync(path.join(repo, 'management_portal/article_workspac
         setToolVisible: layout.setToolVisible,
         canToggleArticleSidebar: layout.canToggleArticleSidebar, toggleArticleSidebar: layout.toggleArticleSidebar,
       });
-      layout.initArticleWorkbench();
       await layout.restoreLayout({ sideView });
       if (!prepareContext) return;
       await layout.setSideView('chat');
@@ -147,18 +165,16 @@ const html = fs.readFileSync(path.join(repo, 'management_portal/article_workspac
     // Already-bound Article and real Monaco, matching the normal editor.
     await page.evaluate(async () => { bound = true; await host.loadArticleChat({ force: true }); state.chatController.setDraftText(''); });
     await page.addScriptTag({ url: origin + '/static/vendor/monaco/vs/loader.js' });
-    await page.evaluate(() => new Promise(resolve => {
+    await page.evaluate(async () => {
       require.config({ paths: { vs: '/static/vendor/monaco/vs' } });
-      require(['vs/editor/editor.main'], () => {
-        const root = document.getElementById('articleMonacoEditor');
-        root.style.cssText = 'display:block;width:600px;height:200px';
-        state.editor = monaco.editor.create(root, { value: 'alpha\nMonaco selection\nomega', language: 'plaintext', automaticLayout: true });
-        state.monacoReady = true;
-        document.getElementById('articleCodeEditor').classList.add('monacoReady');
-        state.editor.setSelection(new monaco.Selection(2, 1, 2, 17)); state.editor.focus();
-        resolve();
-      });
-    }));
+      window.PortalCodeEditor = { ...window.PortalCodeEditor,
+        loadMonaco: () => new Promise(resolve => require(['vs/editor/editor.main'],resolve)) };
+      document.getElementById('articleMonacoEditor').style.cssText = 'display:block;width:600px;height:200px';
+      document.getElementById('articleSourceEditor').value = 'alpha\nMonaco selection\nomega';
+      if (!await editorOwner.initializeMonacoEditor()) throw Error('Monaco did not initialize');
+      state.editor = editorOwner.getEditor();
+      state.editor.setSelection(new monaco.Selection(2,1,2,17)); state.editor.focus();
+    });
     const monacoBeforeToggle = await page.evaluate(() => ({ value: state.editor.getValue(), selection: state.editor.getSelection() }));
     await page.keyboard.press('Control+b');
     await page.waitForFunction(() => layout.currentArticleWorkbench().isPanelCollapsed('chat'));
@@ -179,14 +195,6 @@ const html = fs.readFileSync(path.join(repo, 'management_portal/article_workspac
     // Mouse references use the same gesture owner as Repo. They replace only
     // the previous automatic attachment, leave the draft and editor focus alone.
     await page.evaluate(() => {
-      PortalCodeEditor.bindSelectionCommit(document.getElementById('articleMonacoEditor'), {
-        editor: state.editor,
-        readSelection: () => {
-          const s = state.editor.getSelection(), model = state.editor.getModel();
-          return s && !s.isEmpty() ? model.getValueInRange(s) : null;
-        },
-        onCommit: () => host.bringSelectionToChat(),
-      });
       state.chatController.setDraftText('Keep automatic context', state.chatController.attachments());
       state.editor.setPosition({ lineNumber: 3, column: 1 });
       state.editor.focus();

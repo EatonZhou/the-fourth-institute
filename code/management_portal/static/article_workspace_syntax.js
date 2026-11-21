@@ -7,12 +7,14 @@
   // markers from checks, the compiler and TexLab, the syntax status, the
   // cursor and dirty state, and bracket pairing while typing.
   const DEPENDENCIES = Object.freeze([
+    "editorView",
     "$", "activeDocument", "articleRoot", "captureActiveDocument", "compileSettingValue", "editorPosition",
     "editorSelectionContext", "esc", "monacoApi", "renderDocumentTabs", "renderSemanticNavigation",
     "selectedArticle", "state",
   ]);
 
   function createSyntax(dependencies) {
+    const editorView = dependencies.editorView;
     const missing = DEPENDENCIES.filter(name => dependencies?.[name] === undefined);
     if (missing.length) throw new Error(`PortalArticleWorkspaceSyntax is missing: ${missing.join(", ")}`);
     const {
@@ -383,7 +385,7 @@
       const monaco = monacoApi();
       const documentState = state.documents.get(path);
       const model = documentState?.model;
-      if (!state.monacoReady || !monaco || !model || model.isDisposed?.()) return;
+      if (!editorView().isReady() || !monaco || !model || model.isDisposed?.()) return;
       const syntaxItems = path === state.openFile ? state.syntaxDiagnostics : [];
       monaco.editor.setModelMarkers(model, "article-syntax", syntaxItems.map(item => ({
         ...markerRange(model, item),
@@ -467,16 +469,16 @@
 
     function renderEditorLayers() {
       window.cancelAnimationFrame(state.renderFrame);
-      state.syntaxDiagnostics = lintLatexSource(state.source);
+      state.syntaxDiagnostics = lintLatexSource((activeDocument()?.source || ""));
       renderSyntaxStatus();
-      if (state.monacoReady) {
+      if (editorView().isReady()) {
         updateEditorMarkers(state.openFile);
         window.clearTimeout(state.outlineTimer);
         state.outlineTimer = window.setTimeout(renderSemanticNavigation, 130);
         return;
       }
       state.renderFrame = window.requestAnimationFrame(() => {
-        const lines = String(state.source || "").split("\n");
+        const lines = String((activeDocument()?.source || "") || "").split("\n");
         const issuesByLine = new Map();
         state.syntaxDiagnostics.forEach(item => {
           if (!issuesByLine.has(item.line)) issuesByLine.set(item.line, []);
@@ -498,7 +500,7 @@
     }
 
     function syncEditorScroll() {
-      if (state.monacoReady) return;
+      if (editorView().isReady()) return;
       const editor = $("articleSourceEditor");
       $("articleSyntaxLayer").style.transform = `translate(${-editor.scrollLeft}px, ${-editor.scrollTop}px)`;
       const numberLayer = $("articleLineNumbers").firstElementChild;
@@ -517,15 +519,8 @@
     }
 
     function updateDirtyState() {
-      const dirty = state.openFile
-        && activeDocument()?.editable
-        && state.source !== state.savedSource;
       const documentState = activeDocument();
-      if (documentState?.editable) {
-        documentState.source = state.source;
-        documentState.savedSource = state.savedSource;
-        documentState.session?.updateDraft?.(state.source);
-      }
+      const dirty = Boolean(documentState?.editable && documentState.source !== documentState.savedSource);
       $("articleSaveFile").disabled = !state.openFile || !documentState?.editable;
       const saveStatus = documentState?.saving ? window.PortalI18n.t("Saving…")
         : documentState?.saveError ? window.PortalI18n.t("保存失败，修改已保留")

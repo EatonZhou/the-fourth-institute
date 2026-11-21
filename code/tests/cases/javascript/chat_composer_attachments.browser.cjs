@@ -49,13 +49,14 @@ if (output) fs.mkdirSync(output, { recursive: true });
     await page.goto(origin);
     await page.evaluate(() => {
       window.PortalIdentity = { username: () => 'attachment-fixture' };
-      window.opened = []; window.deleted = [];
+      window.opened = []; window.deleted = []; window.sent = [];
       window.PortalPreview = { request: request => opened.push(request) };
       window.workspace = PortalChatWorkspace.createWorkspace({
         root: document.getElementById('chat'), id: 'attachment-presentation', refs: false,
         contract: { schema: 'portal.chat_workspace.v3', messages: [], composer: { can_send: true, can_attach: true, queue: { items: [] } } },
         uploadAttachment: (file, context) => new Promise((resolve, reject) => { window.upload = { resolve, reject, id: context.item.id }; }),
         deleteAttachment: item => { deleted.push(item.upload_id); return Promise.resolve({ deleted: true }); },
+        onSend: payload => sent.push(payload),
       });
       window.adding = workspace.addFiles([new File([new Uint8Array(1536)], 'hdl.zip', { type: 'application/zip' })]);
     });
@@ -104,6 +105,37 @@ if (output) fs.mkdirSync(output, { recursive: true });
     assert.equal(await tray.count(), 0); assert.equal(await inline.count(), 0);
     assert.deepEqual(await page.evaluate(() => deleted), ['upload_aaaaaaaaaaaaaaaaaaaaaaaa']);
     result.checks.push('390px/font20/coarse pointer fits, filename ellipsis without overlap, native removal from inline clears both');
+    await page.evaluate(() => {
+      workspace.setAttachments(['a', 'b', 'c'].map((id, index) => ({
+        id, kind: 'file', upload_id: `upload_${String(index + 1).repeat(12)}`,
+        name: `${id}.txt`, content_type: 'text/plain',
+      })));
+      const input = document.querySelector('.composerInput');
+      const [a, b, c] = input.querySelectorAll('[data-portal-composer-attachment-token]');
+      input.replaceChildren(
+        document.createTextNode('  compare '), b, document.createTextNode(' with '), a,
+        document.createTextNode('\nthen '), c, document.createTextNode(' [[portal-file:a]]  '),
+      );
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+      input.focus();
+    });
+    await page.keyboard.press('Control+Enter');
+    const messages = await page.evaluate(() => sent);
+    assert.equal(messages.length, 1);
+    const parts = messages[0].content_parts;
+    assert.deepEqual(parts.filter(part => part.type === 'file').map(part => part.name), ['b.txt', 'a.txt', 'c.txt']);
+    assert.deepEqual(parts.filter(part => part.type === 'text').map(part => part.text), ['  compare ', ' with ', '\nthen ', ' [[portal-file:a]]  ']);
+    assert.equal(messages[0].attachments.length, 3);
+    result.checks.push('keyboard send preserves DOM file order and whitespace; literal draft syntax stays text, three files produce exactly three parts');
+    // Existing stored drafts can still reconstruct the same ordered nodes.
+    const restored = await page.evaluate(() => {
+      const attachments = workspace.attachments();
+      workspace.setDraftText('before [[portal-file:c]] between [[portal-file:a]] after', attachments.filter(item => item.id !== 'b'));
+      return workspace.payload().content_parts;
+    });
+    assert.deepEqual(restored.filter(part => part.type === 'file').map(part => part.name), ['c.txt', 'a.txt']);
+    assert.deepEqual(restored.filter(part => part.type === 'text').map(part => part.text), ['before ', ' between ', ' after']);
+    result.checks.push('legacy persisted draft tokens restore at the compatibility boundary and send as ordered parts');
     assert.deepEqual(result.errors, []);
     result.geometry = geometry; result.status = 'passed';
   } catch (error) {

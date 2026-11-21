@@ -33,6 +33,7 @@ const html = fs.readFileSync(path.join(root, 'management_portal/article_workspac
     const page = await browser.newPage();
     page.setDefaultTimeout(8000);
     const errors = [];
+    page.on('console', message => { if(message.type()==='error') console.error(message.text()); });
     page.on('pageerror', error => errors.push(error.message));
     const origin = `http://127.0.0.1:${server.address().port}`;
     await page.route('**/*', route => route.request().url().startsWith(origin + '/') ? route.continue() : route.abort());
@@ -41,7 +42,7 @@ const html = fs.readFileSync(path.join(root, 'management_portal/article_workspac
       window.PortalI18n = { t: text => text, text: parts => parts.join('') };
       window.references = []; window.notices = []; window.openings = 0; window.draft = 'Keep my question';
       window.holdChat = false;
-      window.state = { selectedId: 'article_fixture', openFile: 'main.tex', source: '', editorPreferences: { tabSize: 2 } };
+      window.state = { selectedId: 'article_fixture', openFile: 'main.tex', source: '', editorPreferences: { tabSize: 2, fontSize:14 } };
       const $ = id => document.getElementById(id);
       const controller = { focusComposer() {}, draftText: () => draft, setDraftText: value => { draft = value; },
         addReference(ref, options = {}) {
@@ -57,20 +58,34 @@ const html = fs.readFileSync(path.join(root, 'management_portal/article_workspac
         return {};
       } };
       const depsFor = module => Object.fromEntries(module.dependencies.map(key => [key, () => {}]));
-      const monaco = PortalArticleWorkspaceMonaco.createMonaco({ ...depsFor(PortalArticleWorkspaceMonaco), $, state });
-      const host = PortalArticleWorkspaceChat.createChat({ ...depsFor(PortalArticleWorkspaceChat), $, state,
-        selectedArticle: () => ({ title: 'Fixture', canonical_root: '/fixture' }), articleProjects: () => ['fixture'],
+      let host;
+      const doc = {revision:'revision-1',editable:true};
+      state.documents = new Map([['main.tex',doc]]);
+      let monaco;
+      const options = { ...depsFor(PortalArticleWorkspaceMonaco),
+        getSession: () => ({articleId:state.selectedId,path:state.openFile,documents:state.documents,preferences:state.editorPreferences}),
+        activeDocument: () => doc, handleEditorPairing: () => false, syncEditorScroll() {},
+        bringCurrentFileToChat: () => host.bringCurrentFileToChat(), onSelectionCommitted: () => host.bringSelectionToChat(),
+        showToast: error => notices.push(String(error)),
+        activateDocument: () => monaco.getEditor().setModel(window.monaco.editor.createModel($('articleSourceEditor').value,'latex')),
+      };
+      window.resetEditor = () => {
+        monaco?.destroy();
+        monaco = window.editorOwner = PortalArticleWorkspaceMonaco.createMonaco(options);
+        document.body.append(monaco.root); monaco.connect();
+      };
+      resetEditor();
+      document.body.append(monaco.root); monaco.connect();
+      host = PortalArticleWorkspaceChat.createChat({ ...depsFor(PortalArticleWorkspaceChat), $, state,
+        outputView: () => ({getSyncLocation:()=>null}), selectedArticle: () => ({ title: 'Fixture', canonical_root: '/fixture' }), articleProjects: () => ['fixture'],
         activeDocument: () => ({ revision: 'revision-1' }), documentIsDirty: () => true,
-        editorPosition: monaco.editorPosition, editorSelectionContext: monaco.editorSelectionContext, editorValue: monaco.editorValue, languageForPath: () => 'latex',
+        editorPosition: () => monaco.editorPosition(), editorSelectionContext: (...args) => monaco.editorSelectionContext(...args), editorValue: () => monaco.editorValue(), languageForPath: () => 'latex',
         setSideView: async view => {
           if (view !== 'chat') throw new Error('Unexpected view');
           openings++;
           if (holdChat) await new Promise(resolve => { window.releaseChat = resolve; });
           return controller;
         },
-      });
-      PortalArticleWorkspaceEvents.createEvents({ ...depsFor(PortalArticleWorkspaceEvents), $, state,
-        bringCurrentFileToChat: host.bringCurrentFileToChat, bringSelectionToChat: host.bringSelectionToChat, showToast: error => notices.push(String(error)),
       });
       $('articleSendContext').disabled = false;
       $('articleSourceEditor').disabled = false;
@@ -119,17 +134,16 @@ const html = fs.readFileSync(path.join(root, 'management_portal/article_workspac
 
     // Monaco receives its own keyboard events; the Portal command must run first.
     await page.addScriptTag({ url: origin + '/static/vendor/monaco/vs/loader.js' });
-    await page.evaluate(() => new Promise(resolve => {
-      require.config({ paths: { vs: '/static/vendor/monaco/vs' } });
-      require(['vs/editor/editor.main'], () => {
-        const root = document.getElementById('articleMonacoEditor');
-        root.style.cssText = 'display:block;width:600px;height:200px';
-        state.editor = monaco.editor.create(root, { value: 'alpha\nMonaco selection\nomega', language: 'plaintext', automaticLayout: true });
-        state.monacoReady = true; state.openFile = 'main.tex'; draft = '';
-        state.editor.setSelection(new monaco.Selection(2, 1, 2, 17)); state.editor.focus();
-        resolve();
-      });
-    }));
+    await page.evaluate(async () => {
+      require.config({paths:{vs:'/static/vendor/monaco/vs'}});
+      window.PortalCodeEditor = {...window.PortalCodeEditor,loadMonaco:()=>new Promise(resolve=>require(['vs/editor/editor.main'],resolve))};
+      document.getElementById('articleMonacoEditor').style.cssText = 'display:block;width:600px;height:200px';
+      document.getElementById('articleSourceEditor').value = 'alpha\nMonaco selection\nomega';
+      state.openFile = 'main.tex'; draft = '';
+      if(!await editorOwner.initializeMonacoEditor()) throw Error('Monaco failed');
+      state.editor = editorOwner.getEditor();
+      state.editor.setSelection(new monaco.Selection(2,1,2,17)); state.editor.focus();
+    });
     await page.keyboard.press('Control+Alt+Enter');
     await page.waitForFunction(() => references.length === 3);
     assert.equal(await page.evaluate(() => JSON.parse(references.at(-1).text).file.content), 'alpha\nMonaco selection\nomega');
@@ -157,7 +171,7 @@ const html = fs.readFileSync(path.join(root, 'management_portal/article_workspac
     // only the latest selection is added when the conversation arrives late.
     const beforeOpenings = await page.evaluate(() => openings);
     await page.evaluate(() => {
-      state.monacoReady = false; holdChat = true; window.releaseChat = null;
+      resetEditor(); document.getElementById('articleSourceEditor').disabled = false; holdChat = true; window.releaseChat = null;
       const source = document.getElementById('articleSourceEditor');
       source.value = 'alpha bravo charlie';
       source.style.cssText = 'position:fixed;left:80px;top:80px;width:600px;height:120px;font:20px monospace;line-height:24px;padding:0;border:0;z-index:99999;display:block';

@@ -26,7 +26,7 @@ const html = fs.readFileSync(path.join(STATIC, '../article_workspace.html'), 'ut
     await page.goto(origin);
     await page.evaluate(() => {
       // Use actual page markup; remove unrelated workspace regions for this owner test.
-      const pane = document.getElementById('articleEditorPane'); document.body.replaceChildren(pane);
+      const pane = document.getElementById('articleEditorTemplate').content.firstElementChild.cloneNode(true); document.body.replaceChildren(pane);
       const $ = id => document.getElementById(id);
       const text = 'before selected text after';
       const doc = { source: text, editable: true };
@@ -34,6 +34,7 @@ const html = fs.readFileSync(path.join(STATIC, '../article_workspace.html'), 'ut
       window.saved = 0; window.requests = []; window.threads = []; window.fail = false; window.canWrite = true;
       const editor = $('articleSourceEditor'); editor.disabled = false; editor.value = text;
       window.comments = PortalArticleWorkspaceComments.createComments({ state,
+        editorView: () => ({ getEditor: () => state.editor, addDisposables: (...items) => state.monacoDisposables.push(...items) }),
         activeDocument: () => doc, editorValue: () => state.editor?.getValue() || editor.value,
         openArticleFile: async p => { state.openFile = p; }, saveAllDirtyDocuments: async () => { saved++; return true; },
         showToast: text => { window.toast = text; },

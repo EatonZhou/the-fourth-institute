@@ -4,12 +4,12 @@ type: decision
 project: AI员工
 created_at: '2026-09-01'
 version:
-  number: 51
+  number: 52
   created_at: "2026-09-01"
   created_by:
     user: ""
     agent: ""
-  updated_at: "2026-11-19T13:08:35Z"
+  updated_at: "2026-11-21T17:57:30Z"
   updated_by:
     user: ""
     agent: "resident_62dbdb2288fb"
@@ -172,7 +172,7 @@ Workspace 中声明 portal-explanation/v1 的 JSON 内容包由解释页渲染�
 
 PPT 和 PPTX 以只读的静态幻灯片显示。服务端在本机用 LibreOffice Impress 转成 PDF，浏览器复用共享 PDF 渲染器的逐页显示、文字层和缩放；文件不会发送给第三方转换网站。下载按钮始终获取原始演示文稿。动画、切换效果和嵌入媒体的播放不属于静态预览，字体和复杂排版的效果取决于服务器安装的字体与 LibreOffice 的兼容性。
 
-文件来源有时把尚未解析的演示文稿标为 binary。共享类型契约可根据 PPT/PPTX 文件名或 PowerPoint MIME 将这类输入识别为 office；明确声明为其他格式的文档不改变类型。对已识别的演示文稿，契约只在同源的资源内容、文件链接原始内容、Article 原始文件和上传数据通道地址上追加 `preview=pdf`，得到独立的 `previewUrl`。已有明确预览地址优先，原始地址与下载地址保持原样，其他 Office 类型不会因此宣称可转换。
+文件来源有时把尚未解析的演示文稿标为 binary。共享类型契约可根据 PPT/PPTX 文件名或 PowerPoint MIME 将这类输入识别为 office；明确声明为其他格式的文档不改变类型。预览地址由实际文件来源提供：能够转换演示文稿的资源内容、文件链接、Article、上传与工作目录读取入口，在描述中声明独立的 `preview_url`，浏览器来源适配器原样传入 `previewUrl`。`normalizeDocument` 只整理明确提供的 `previewUrl` / `preview_url`，不解析原始 URL 的路由或据此推断转换能力。原始地址与下载地址保持原样，没有预览地址的 Office 文档显示下载入口。新增文件来源只需实现自己的地址与授权契约，不修改通用预览组件。
 
 内容入口先按原有规则验证调用者，再读取受限的原始字节并交给转换组件。统一资源由 ResourceService 读取，保留文件夹提供者的路径安全规则；本地文件沿用文件链接的路径与权限检查；上传沿用上传读取边界；Article 入口沿用文稿 viewer 授权及源码根内的路径检查，`download=1` 优先返回原始文件。每次请求，包括 PDF 分段读取和缓存命中，都经过来源授权。转换组件只接受已授权的文件内容与文件名，不从浏览器给出的任意 URL 抓取文件；缓存没有独立公开地址。
 

@@ -279,6 +279,7 @@ class ArticlesHttp:
                 result = article_files.write_article_file(
                     article_id, str(payload.get("path") or "").strip(),
                     str(payload.get("content") or ""),
+                    expected_revision=payload.get("expected_revision"),
                 )
             elif action == "entries":
                 result = article_files.create_article_entry(
@@ -296,6 +297,8 @@ class ArticlesHttp:
                 result = article_settings.update_article_settings(article_id, payload)
             self.notify_index(resource_id=article_id, resource_type="article", kind="updated")
             return self.respond(request, 201 if action in {"entries", "upload"} else 200, result)
+        except article_files.ArticleFileConflict as exc:
+            return self.respond(request, 409, {"error": str(exc), "code": "revision_conflict", "current_revision": exc.current_revision})
         except KeyError:
             return self.respond(request, 404, {"error": "article not found"})
         except FileNotFoundError as exc:

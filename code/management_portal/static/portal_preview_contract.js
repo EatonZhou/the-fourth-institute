@@ -89,22 +89,6 @@
       || [document.filename, document.name, document.path, document.rel_path, document.title].some(value => [".ppt", ".pptx"].includes(extension(value)));
   }
 
-  function presentationUrl(input) {
-    if (!isPresentation(input)) return "";
-    const raw = input.rawUrl || input.raw_url || input.content_url;
-    if (!raw) return "";
-    let url;
-    try { url = new URL(raw, window.location.href); } catch (_error) { return ""; }
-    if (url.origin !== window.location.origin || !(
-      ["/api/resources/content", "/api/agent-workbench/link-file-raw"].includes(url.pathname)
-      || /^\/api\/uploads\/upload_[a-f0-9]+$/.test(url.pathname)
-      || /^\/api\/articles\/article_[a-f0-9]{12}\/raw$/.test(url.pathname)
-    )) return "";
-    url.searchParams.delete("download");
-    url.searchParams.set("preview", "pdf");
-    return url.pathname + url.search;
-  }
-
   function normalizeDocument(input = {}) {
     if (!input || typeof input !== "object") throw new TypeError("PreviewDocument must be an object");
     const path = String(input.path || input.rel_path || input.href || "").trim();
@@ -139,7 +123,7 @@
       kind: contentKind,
       content: input.content == null ? "" : String(input.content),
       rawUrl: String(input.rawUrl || input.raw_url || "").trim(),
-      previewUrl: String(input.previewUrl || input.preview_url || (contentKind === "office" ? presentationUrl(input) : "")).trim(),
+      previewUrl: String(input.previewUrl || input.preview_url || "").trim(),
       downloadUrl: String(input.downloadUrl || input.download_url || "").trim(),
       version: String(input.version || input.etag || input.mtime_ns || input.entry?.mtime_ns || input.entry?.mtime || ""),
       capabilities,

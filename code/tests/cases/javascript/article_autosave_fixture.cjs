@@ -5,6 +5,7 @@ const path = require('node:path');
 const { STATIC, portalWorkspaceSurfaceScripts } = require('./portal_workspace_surface_scripts.cjs');
 
 function articleAutosaveFixture() {
+  const comparisons = []; let approve = true;
   const timers = new Map(), requests = [], notices = [], errors = [], builds = [];
   let timerId = 0;
   const window = {
@@ -24,27 +25,25 @@ function articleAutosaveFixture() {
     if (!elements.has(id)) elements.set(id, { value: '', textContent: '', dataset: {}, querySelector: () => null });
     return elements.get(id);
   };
-  const state = { selectedId: 'A', openFile: 'main.tex', source: 'old', savedSource: 'old',
+  const state = { selectedId: 'A', openFile: 'main.tex',
     documents: new Map(), openTabs: ['main.tex'], settings: { auto_compile: false } };
-  const session = window.PortalDocumentSession.create({ continuousEdit: true, canEdit: () => true });
-  session.present({ content: 'old', path: 'main.tex' });
-  const doc = { path: 'main.tex', editable: true, textDocument: true, source: 'old', savedSource: 'old', session };
+  const doc = { path: 'main.tex', editable: true, textDocument: true, source: 'old', savedSource: 'old', revision: 'r1' };
   state.documents.set('main.tex', doc); $('articleSourceEditor').value = 'old';
   const deps = module => Object.fromEntries(module.dependencies.map(key => [key, () => {}]));
   let syntax;
   const documents = window.PortalArticleWorkspaceDocuments.createDocuments({ ...deps(window.PortalArticleWorkspaceDocuments),
-    $, state, editorValue: () => $('articleSourceEditor').value,
+    $, state, editorView: () => ({ isReady: () => false, confirmConflict: async value => { comparisons.push(value); return approve; } }), editorValue: () => $('articleSourceEditor').value,
     updateDirtyState: () => syntax.updateDirtyState(),
     compileArticle: options => builds.push(options),
     detailResourceGuest: { changed: value => notices.push(value) }, loadSemanticIndex: async () => {},
     request: (url, options) => new Promise((resolve, reject) => requests.push({ url, options, resolve, reject })),
   });
-  syntax = window.PortalArticleWorkspaceSyntax.createSyntax({ ...deps(window.PortalArticleWorkspaceSyntax), $, state,
+  syntax = window.PortalArticleWorkspaceSyntax.createSyntax({ ...deps(window.PortalArticleWorkspaceSyntax), $, state, editorView: () => ({ isReady: () => false }),
     activeDocument: documents.activeDocument, renderDocumentTabs: documents.renderDocumentTabs,
   });
-  const edit = value => { state.source = value; $('articleSourceEditor').value = value; syntax.updateDirtyState(); };
+  const edit = value => { doc.source = value; $('articleSourceEditor').value = value; syntax.updateDirtyState(); };
   const flush = async () => { const current = [...timers.values()]; timers.clear(); current.forEach(t => t.fn()); await tick(); };
-  return { window, documents, state, doc, session, $, syntax, edit, flush, timers, requests, notices, errors, builds };
+  return { comparisons, approve: value => { approve = value; }, window, documents, state, doc, $, syntax, edit, flush, timers, requests, notices, errors, builds };
 }
 const tick = () => new Promise(resolve => setImmediate(resolve));
 module.exports = { articleAutosaveFixture, tick };

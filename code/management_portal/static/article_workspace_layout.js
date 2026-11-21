@@ -6,7 +6,7 @@
   // Compose Article tool packages, source and output in the shared Workbench.
   const DEPENDENCIES = Object.freeze([
     "$", "applyEditorPreferences", "applyWordWrap", "articleLayoutStore", "EDITOR_PREFERENCE_KEY",
-    "loadArticleChat", "loadArticleGit", "normalizedEditorPreferences", "scheduleArticlePdfLayout",
+    "loadArticleChat", "loadArticleGit", "normalizedEditorPreferences", "panelOptions",
     "setSettingsSection", "showToast", "state", "WORD_WRAP_STORAGE_KEY",
   ]);
 
@@ -15,7 +15,7 @@
     if (missing.length) throw new Error(`PortalArticleWorkspaceLayout is missing: ${missing.join(", ")}`);
     const {
       $, applyEditorPreferences, applyWordWrap, articleLayoutStore, EDITOR_PREFERENCE_KEY, loadArticleChat,
-      loadArticleGit, normalizedEditorPreferences, scheduleArticlePdfLayout, setSettingsSection, showToast,
+      loadArticleGit, normalizedEditorPreferences, panelOptions, setSettingsSection, showToast,
       state, WORD_WRAP_STORAGE_KEY,
     } = dependencies;
 
@@ -84,18 +84,13 @@
       return true;
     }
 
-    function scheduleArticleEditorLayout() {
-      window.cancelAnimationFrame(state.editorLayoutFrame);
-      state.editorLayoutFrame = window.requestAnimationFrame(() => {
-        state.editorLayoutFrame = 0;
-        state.editor?.layout?.();
-      });
-    }
-
     function initArticleWorkbench() {
       const { split, stack } = window.PortalWorkbench.model;
       const tools = window.PortalArticleWorkspaceTools;
       tools.register();
+      window.PortalArticleWorkspaceMonaco.register();
+      window.PortalArticleWorkspacePdf.register();
+      const panels = panelOptions();
       const toolIds = tools.definitions.map(tool => tool.id);
       const preferred = articleLayoutStore.read().sideView || "files";
       const writing = split("horizontal", [
@@ -128,8 +123,8 @@
               },
             },
           })),
-          { id: "editor", type: "authored", presentation: "editor", options: { source: "#articleEditorPane" } },
-          { id: "output", type: "authored", presentation: "document", options: { source: "#articleOutputPane" }, title: window.PortalI18n.t("PDF / Build") },
+          { id: "editor", type: "article-editor", presentation: "editor", options: panels.editor },
+          { id: "output", type: "article-output", presentation: "document", options: panels.output, title: window.PortalI18n.t("PDF / Build") },
         ],
         defaultLayout: writing,
         migrateState: saved => tools.migrateState(saved, articleLayoutStore.read().sideView),
@@ -139,21 +134,9 @@
           { id: "proof", name: window.PortalI18n.t("校对"), layout: proof, hidden: toolIds },
         ],
         defaultPreset: "writing",
-        onChange: ({ reason }) => {
-          const resizing = reason === "resize-live";
-          // Monaco's automaticLayout already follows the container during a
-          // drag. PDF geometry/raster work can wait until the splitter settles.
-          if (!resizing) scheduleArticleEditorLayout();
-          if (state.outputView === "pdf") scheduleArticlePdfLayout({ resizing });
-        },
       });
       $("articleSidePane").hidden = true;
-      const editorPane = $("articleEditorPane");
-      const onWorkbenchResize = event => {
-        if (event.detail?.reason !== "resize-live") scheduleArticleEditorLayout();
-      };
-      editorPane.addEventListener("portal:workbench-resize", onWorkbenchResize);
-      state.monacoDisposables.push({ dispose: () => editorPane.removeEventListener("portal:workbench-resize", onWorkbenchResize) });
+
     }
 
     function bindSplitters() {

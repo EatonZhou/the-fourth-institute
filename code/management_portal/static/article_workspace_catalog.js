@@ -227,12 +227,11 @@
       state.texlabTimer = 0;
       state.texlabVersion += 1;
       state.texlabDiagnostics = [];
-      setTexlabStatus(state.monacoReady ? "starting" : "warning");
+      setTexlabStatus(window.monaco ? "starting" : "warning");
       window.clearTimeout(state.semanticTimer);
       state.semanticTimer = 0;
       state.semanticIndex = null;
       state.activeDiagnostic = null;
-      state.pdfSyncLocation = null;
       state.chatLoadRequest = null;
 
 

@@ -412,6 +412,7 @@ def _workspace_link_file_payload(
 
     # UpdateWorkspaceFile takes only a Workspace address; "" when the file is in no registered Workspace.
     file_address = workspace_file_address(str(path)) if editable and authorization.can_write else ""
+    raw_url = f"/api/agent-workbench/link-file-raw?path={quote(str(path), safe='')}"
     return {
         **common,
         "file_address": file_address,
@@ -421,5 +422,6 @@ def _workspace_link_file_payload(
         "binary": binary,
         "truncated": truncated,
         "content": "" if binary else data.decode("utf-8", errors="replace"),
-        "raw_url": f"/api/agent-workbench/link-file-raw?path={quote(str(path), safe='')}",
+        "raw_url": raw_url,
+        "preview_url": raw_url + "&preview=pdf" if path.suffix.lower() in {".ppt", ".pptx"} else "",
     }

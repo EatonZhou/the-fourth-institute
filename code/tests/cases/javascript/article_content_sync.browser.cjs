@@ -40,6 +40,7 @@ const html = fs.readFileSync(path.join(root, 'management_portal/article_workspac
     await page.evaluate(async () => {
       require.config({ paths: { vs: '/static/vendor/monaco/vs' } });
       await new Promise(resolve => require(['vs/editor/editor.main'], resolve));
+      for (const id of ['articleEditorTemplate','articleOutputTemplate']) document.body.append(document.getElementById(id).content.cloneNode(true));
       const $ = id => document.getElementById(id);
       const text = (parts, ...values) => parts.reduce((s, part, i) => s + part + (values[i] ?? ''), '');
       window.PortalI18n = { t: s => s, text };
@@ -55,6 +56,7 @@ const html = fs.readFileSync(path.join(root, 'management_portal/article_workspac
       window.notices = []; window.reads = 0; window.fail = false; window.hold = false;
       const deps = Object.fromEntries(PortalArticleWorkspaceDocuments.dependencies.map(key => [key, () => {}]));
       window.docs = PortalArticleWorkspaceDocuments.createDocuments({ ...deps, $, state,
+        editorView: () => ({ getEditor: () => state.editor, isReady: () => true, setChangeSuppressed() {}, restoreViewFor() {} }),
         editorValue: () => state.editor.getValue(), monacoApi: () => monaco,
         articleModelUri: p => monaco.Uri.parse('file:///' + p), languageForPath: () => 'plaintext',
         showToast: message => notices.push(message),

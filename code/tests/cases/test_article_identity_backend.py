@@ -624,6 +624,7 @@ class ArticleIdentityBackendTests(unittest.TestCase):
             article_id,
             "sections/method.tex",
             "\\section{Method}\nRuntime rewiring is searchable.\n",
+            expected_revision=article_files.read_article_file(article_id, "sections/method.tex")["revision"],
         )
         self.assertGreater(saved["size"], 0)
         content = article_files.read_article_file(

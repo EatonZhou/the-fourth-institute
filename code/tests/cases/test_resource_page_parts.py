@@ -26,6 +26,8 @@ PAGES = (
 )
 REGISTERED = re.compile(r'window\.(\w+)\s*=\s*Object\.freeze\(\{\s*(\w+)\s*,(?:\s*\w+\s*,)*\s*dependencies:\s*DEPENDENCIES\s*\}\);')
 WORKBENCH_HOST_PARTS = {
+    "article_workspace_monaco.js": ("PortalArticleWorkspaceMonaco", "article_workspace_layout.js"),
+    "article_workspace_pdf.js": ("PortalArticleWorkspacePdf", "article_workspace_layout.js"),
     "article_workspace_tools.js": ("PortalArticleWorkspaceTools", "article_workspace_layout.js"),
     "repo_workspace_development.js": ("PortalRepoDevelopment", "repo_workspace_shell.js"),
 }
@@ -111,7 +113,7 @@ def test_root_creates_every_part_its_page_loads_with_exactly_its_dependencies(pa
             factory, dependencies = created.pop('PortalArticleWorkspacePosition')
             assert factory == 'createPosition'
             assert dependencies == {'state', 'captureActiveDocument', 'captureArticlePdfPosition',
-                                    'openArticleFile', 'activateDocument'}
+                                    'openArticleFile', 'activateDocument', 'outputView'}
             continue
         registered = REGISTERED.findall(source)
         assert len(registered) == 1, name

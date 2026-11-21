@@ -31,19 +31,18 @@ const cases = [
   { path: 'notes/slides.ppt', raw_url: '/api/articles/article_0123456789ab/raw?path=notes%2Fslides.ppt&download=1' },
 ];
 for (const input of cases) {
-  const doc = contract.normalizeDocument(input);
+  // Raw routes, even known Portal routes, never imply a conversion capability.
+  assert.equal(contract.normalizeDocument(input).previewUrl, '');
+  const doc = contract.normalizeDocument({ ...input, preview_url: '/converter/slides.pdf?version=7' });
   assert.equal(doc.contentKind, 'office');
-  assert.match(doc.previewUrl, /preview=pdf/);
+  assert.equal(doc.previewUrl, '/converter/slides.pdf?version=7');
   assert.equal(doc.rawUrl, input.raw_url);
   assert.equal(doc.downloadUrl, input.download_url || '');
-  const previewUrl = new URL(doc.previewUrl, w.location.href);
-  assert.equal(previewUrl.searchParams.has('download'), false);
-  assert.equal(previewUrl.searchParams.get('path'), new URL(input.raw_url, w.location.href).searchParams.get('path'));
   assert.equal(contract.isTextDocument(doc), false);
   const renderer = renderers.find(item => item.accepts(doc) && item.id === 'pdf');
   assert.ok(renderer);
   renderer.render(w.document.getElementById('preview'), doc, {});
-  assert.match(pdfOptions.url, /preview=pdf/);
+  assert.equal(pdfOptions.url, doc.previewUrl);
   assert.equal(pdfOptions.loadingMessage, '正在加载演示文稿预览…');
   assert.match(pdfOptions.errorMessage, /下载/);
 }
@@ -57,6 +56,7 @@ for (const input of [
   { path: '/slides.pptx', raw_url: '/api/articles/invalid/raw?path=slides.pptx' },
 ]) assert.equal(contract.normalizeDocument(input).previewUrl, '');
 assert.equal(contract.normalizeDocument({ kind: 'pdf', raw_url: '/slides.pdf' }).contentKind, 'pdf');
+assert.equal(contract.normalizeDocument({ path: 'slides.pptx', previewUrl: '  /declared-preview.pdf  ' }).previewUrl, '/declared-preview.pdf');
 // Conversion failures stay in Preview and do not load the error URL in an iframe.
 w.eval(fs.readFileSync(path.resolve(__dirname, '../../../management_portal/static/portal_pdf_preview.js'), 'utf8').replace('if (window.PortalPdfPreview) return;', ''));
 (async () => {

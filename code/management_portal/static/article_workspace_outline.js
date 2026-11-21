@@ -71,7 +71,7 @@
         let headings = Array.isArray(index.headings) ? index.headings.slice() : [];
         if (state.openFile.toLowerCase().endsWith(".tex")) {
           headings = headings.filter(item => item.path !== state.openFile);
-          headings.push(...parseOutline(state.source).map(item => ({
+          headings.push(...parseOutline(state.documents.get(state.openFile)?.source || "").map(item => ({
             ...item,
             path: state.openFile,
             column: 1,

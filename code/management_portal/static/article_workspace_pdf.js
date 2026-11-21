@@ -7,17 +7,46 @@
   // the reading position kept, redraws after layout changes, and SyncTeX
   // from the source to the PDF and back.
   const DEPENDENCIES = Object.freeze([
-    "$", "editorPosition", "esc", "openArticleFile", "request", "selectedArticle", "setOutputView",
-    "showToast", "state",
+    "editorPosition", "esc", "openArticleFile", "request", "getContext", "setOutputView",
+    "showToast",
   ]);
 
   function createPdf(dependencies) {
     const missing = DEPENDENCIES.filter(name => dependencies?.[name] === undefined);
     if (missing.length) throw new Error(`PortalArticleWorkspacePdf is missing: ${missing.join(", ")}`);
     const {
-      $, editorPosition, esc, openArticleFile, request, selectedArticle, setOutputView, showToast, state,
+      editorPosition, esc, openArticleFile, request, getContext, setOutputView, showToast,
     } = dependencies;
 
+    const root = document.getElementById("articleOutputTemplate").content.firstElementChild.cloneNode(true);
+    const $ = id => root.id === id ? root : root.querySelector("#" + id);
+    const view = { pdfZoom: 1, pdfScaleVersion: 0, pdfLayoutFrame: 0, pdfRedrawTimer: 0,
+      pdfGestureCommitTimer: 0, pdfGestureAnchor: null, pdfTouchGesture: null,
+      pdfSyncLocation: null, pdfSyncPending: false, pdfRestorePosition: null };
+    const events = new AbortController();
+    const listen = (node, type, handler, options = {}) => node.addEventListener(type, handler, { ...options, signal: events.signal });
+    let destroyed = false, observer = null, dragging = false;
+    function onResize(event) {
+      dragging = event.detail?.reason === "resize-live";
+      scheduleArticlePdfLayout({ resizing: dragging });
+    }
+    function connect() {
+      if (destroyed || observer) return;
+      observer = new ResizeObserver(() => scheduleArticlePdfLayout({ resizing: dragging }));
+      observer.observe(root);
+      root.addEventListener("portal:workbench-resize", onResize);
+    }
+    function disconnect() {
+      observer?.disconnect(); observer = null;
+      root.removeEventListener("portal:workbench-resize", onResize);
+      window.cancelAnimationFrame(view.pdfLayoutFrame);
+      window.clearTimeout(view.pdfRedrawTimer);
+    }
+    function restoreReadingPosition(saved = {}) {
+      view.pdfZoom = Math.max(0.6, Math.min(2.4, Number(saved.pdfZoom) || 1));
+      view.pdfRestorePosition = Number(saved.pdf?.page) > 0 ? { ...saved.pdf } : null;
+      view.pdfSyncLocation = null;
+    }
     let articlePdfController = null;
     let articlePdfRenderKey = "";
     let articlePdfPending = null;
@@ -26,7 +55,7 @@
     function setPdfCompiling(compiling) {
       if (compiling && !articlePdfCompilation) {
         const position = captureArticlePdfPosition();
-        articlePdfCompilation = { articleId: state.selectedId, position: position && {
+        articlePdfCompilation = { articleId: getContext().articleId, position: position && {
           page: position.page, xRatio: position.xRatio, yRatio: position.yRatio,
         } };
       } else if (!compiling) articlePdfCompilation = null;
@@ -54,15 +83,15 @@
     function cancelPdf({ keepCompilation = false } = {}) {
       cancelPendingPdf();
       if (!keepCompilation) setPdfCompiling(false);
-      window.cancelAnimationFrame(state.pdfLayoutFrame);
+      window.cancelAnimationFrame(view.pdfLayoutFrame);
       articlePdfGestureFrames.cancel();
-      window.clearTimeout(state.pdfRedrawTimer);
-      window.clearTimeout(state.pdfGestureCommitTimer);
-      state.pdfLayoutFrame = 0;
-      state.pdfRedrawTimer = 0;
-      state.pdfGestureCommitTimer = 0;
-      state.pdfGestureAnchor = null;
-      state.pdfScaleVersion += 1;
+      window.clearTimeout(view.pdfRedrawTimer);
+      window.clearTimeout(view.pdfGestureCommitTimer);
+      view.pdfLayoutFrame = 0;
+      view.pdfRedrawTimer = 0;
+      view.pdfGestureCommitTimer = 0;
+      view.pdfGestureAnchor = null;
+      view.pdfScaleVersion += 1;
       articlePdfController?.cancelGestureScale?.();
       articlePdfController?.cancel?.();
       articlePdfController = null;
@@ -70,16 +99,16 @@
     }
 
     function pdfUrl() {
-      if (state.build?.pdf_available) {
-        return state.build.pdf_url || `/api/articles/${encodeURIComponent(state.selectedId)}/pdf`;
+      if (getContext().build?.pdf_available) {
+        return getContext().build.pdf_url || `/api/articles/${encodeURIComponent(getContext().articleId)}/pdf`;
       }
-      return selectedArticle()?.compiled_pdf?.available
-        ? (selectedArticle().compiled_pdf.url || `/api/articles/${encodeURIComponent(state.selectedId)}/pdf`)
+      return getContext().article?.compiled_pdf?.available
+        ? (getContext().article.compiled_pdf.url || `/api/articles/${encodeURIComponent(getContext().articleId)}/pdf`)
         : "";
     }
 
     function showPdfError(error) {
-      if (state.outputView !== "pdf") return;
+      if (getContext().view !== "pdf") return;
       updateArticlePdfZoomControls({ available: false });
       $("articlePdfView").innerHTML = window.PortalI18n.html`<div class="articlePdfEmpty"><div class="articlePdfEmptyIcon">PDF</div><h2>无法渲染 PDF</h2><p>${esc(error?.message || error)}</p></div>`;
     }
@@ -87,15 +116,15 @@
     function updateArticlePdfZoomControls({ available = Boolean(pdfUrl()) } = {}) {
       const controls = $("articlePdfZoomControls");
       if (!controls) return;
-      controls.hidden = state.outputView !== "pdf" || !available;
-      $("articlePdfZoomValue").textContent = `${Math.round(state.pdfZoom * 100)}%`;
-      $("articlePdfZoomOut").disabled = state.pdfZoom <= 0.6;
-      $("articlePdfZoomIn").disabled = state.pdfZoom >= 2.4;
-      $("articlePdfZoomFit").classList.toggle("active", Math.abs(state.pdfZoom - 1) < 0.001);
+      controls.hidden = getContext().view !== "pdf" || !available;
+      $("articlePdfZoomValue").textContent = `${Math.round(view.pdfZoom * 100)}%`;
+      $("articlePdfZoomOut").disabled = view.pdfZoom <= 0.6;
+      $("articlePdfZoomIn").disabled = view.pdfZoom >= 2.4;
+      $("articlePdfZoomFit").classList.toggle("active", Math.abs(view.pdfZoom - 1) < 0.001);
     }
 
     function captureArticlePdfPosition(point = {}) {
-      if (articlePdfCompilation?.articleId === state.selectedId) return articlePdfCompilation.position;
+      if (articlePdfCompilation?.articleId === getContext().articleId) return articlePdfCompilation.position;
       const scroller = $("articlePdfView");
       if (!scroller) return null;
       const scrollerRect = scroller.getBoundingClientRect();
@@ -157,11 +186,11 @@
     }
 
     function scheduleArticlePdfRedraw(delay = 180) {
-      window.clearTimeout(state.pdfRedrawTimer);
+      window.clearTimeout(view.pdfRedrawTimer);
       const controller = articlePdfController;
-      state.pdfRedrawTimer = window.setTimeout(() => {
-        state.pdfRedrawTimer = 0;
-        if (controller !== articlePdfController || state.outputView !== "pdf") return;
+      view.pdfRedrawTimer = window.setTimeout(() => {
+        view.pdfRedrawTimer = 0;
+        if (controller !== articlePdfController || getContext().view !== "pdf") return;
         controller?.redraw?.().catch(error => showToast(window.PortalI18n.text`PDF redraw: ${error.message || error}`, "warning"));
       }, delay);
     }
@@ -169,28 +198,28 @@
     async function previewArticlePdfScale(point = {}) {
       const controller = articlePdfController;
       if (!controller?.previewScale) return false;
-      const scaleVersion = ++state.pdfScaleVersion;
+      const scaleVersion = ++view.pdfScaleVersion;
       await controller.promise;
-      if (controller !== articlePdfController || scaleVersion !== state.pdfScaleVersion) return false;
+      if (controller !== articlePdfController || scaleVersion !== view.pdfScaleVersion) return false;
       const position = captureArticlePdfPosition(point);
-      const changed = controller.previewScale({ scaleMultiplier: state.pdfZoom });
+      const changed = controller.previewScale({ scaleMultiplier: view.pdfZoom });
       if (changed) restoreArticlePdfPosition(position);
       return changed;
     }
 
     function scheduleArticlePdfLayout({ resizing = false } = {}) {
-      window.cancelAnimationFrame(state.pdfLayoutFrame);
-      state.pdfLayoutFrame = 0;
+      window.cancelAnimationFrame(view.pdfLayoutFrame);
+      view.pdfLayoutFrame = 0;
       if (resizing) {
         // Keep the existing bitmap and reading position while the pointer is
         // held, even during a pause. Invalidate work queued before this drag.
-        state.pdfScaleVersion += 1;
-        window.clearTimeout(state.pdfRedrawTimer);
-        state.pdfRedrawTimer = 0;
+        view.pdfScaleVersion += 1;
+        window.clearTimeout(view.pdfRedrawTimer);
+        view.pdfRedrawTimer = 0;
         return;
       }
-      state.pdfLayoutFrame = window.requestAnimationFrame(() => {
-        state.pdfLayoutFrame = 0;
+      view.pdfLayoutFrame = window.requestAnimationFrame(() => {
+        view.pdfLayoutFrame = 0;
         previewArticlePdfScale().then(changed => {
           if (changed) scheduleArticlePdfRedraw(220);
         }).catch(() => {});
@@ -198,17 +227,17 @@
     }
 
     async function setArticlePdfZoom(value, point = {}) {
-      window.clearTimeout(state.pdfGestureCommitTimer);
-      state.pdfGestureCommitTimer = 0;
-      state.pdfGestureAnchor = null;
+      window.clearTimeout(view.pdfGestureCommitTimer);
+      view.pdfGestureCommitTimer = 0;
+      view.pdfGestureAnchor = null;
       articlePdfGestureFrames.cancel();
       articlePdfController?.cancelGestureScale?.();
       const next = Math.round(Math.max(0.6, Math.min(2.4, Number(value) || 1)) * 100) / 100;
-      if (Math.abs(next - state.pdfZoom) < 0.001) return;
-      state.pdfZoom = next;
+      if (Math.abs(next - view.pdfZoom) < 0.001) return;
+      view.pdfZoom = next;
       updateArticlePdfZoomControls();
       if (await previewArticlePdfScale(point)) {
-        articlePdfRenderKey = `${articlePdfRenderKey.slice(0, articlePdfRenderKey.lastIndexOf("|"))}|${state.pdfZoom}`;
+        articlePdfRenderKey = `${articlePdfRenderKey.slice(0, articlePdfRenderKey.lastIndexOf("|"))}|${view.pdfZoom}`;
         scheduleArticlePdfRedraw();
         return;
       }
@@ -219,31 +248,31 @@
       const controller = articlePdfController;
       if (!controller?.previewGestureScale) return false;
       const next = Math.round(Math.max(0.6, Math.min(2.4, Number(value) || 1)) * 100) / 100;
-      if (!state.pdfGestureAnchor) state.pdfGestureAnchor = captureArticlePdfPosition(point);
-      state.pdfZoom = next;
+      if (!view.pdfGestureAnchor) view.pdfGestureAnchor = captureArticlePdfPosition(point);
+      view.pdfZoom = next;
       updateArticlePdfZoomControls();
       return controller.previewGestureScale({ scaleMultiplier: next, point });
     }
 
     async function commitArticlePdfGestureScale() {
-      window.clearTimeout(state.pdfGestureCommitTimer);
-      state.pdfGestureCommitTimer = 0;
+      window.clearTimeout(view.pdfGestureCommitTimer);
+      view.pdfGestureCommitTimer = 0;
       await Promise.resolve(articlePdfGestureFrames.flush());
       const controller = articlePdfController;
-      const position = state.pdfGestureAnchor;
-      state.pdfGestureAnchor = null;
+      const position = view.pdfGestureAnchor;
+      view.pdfGestureAnchor = null;
       if (!controller?.commitGestureScale) return false;
-      const changed = controller.commitGestureScale({ scaleMultiplier: state.pdfZoom });
+      const changed = controller.commitGestureScale({ scaleMultiplier: view.pdfZoom });
       if (changed) restoreArticlePdfPosition(position);
-      articlePdfRenderKey = `${articlePdfRenderKey.slice(0, articlePdfRenderKey.lastIndexOf("|"))}|${state.pdfZoom}`;
+      articlePdfRenderKey = `${articlePdfRenderKey.slice(0, articlePdfRenderKey.lastIndexOf("|"))}|${view.pdfZoom}`;
       if (changed) scheduleArticlePdfRedraw(80);
       return changed;
     }
 
     function scheduleArticlePdfGestureCommit(delay = 110) {
-      window.clearTimeout(state.pdfGestureCommitTimer);
-      state.pdfGestureCommitTimer = window.setTimeout(() => {
-        state.pdfGestureCommitTimer = 0;
+      window.clearTimeout(view.pdfGestureCommitTimer);
+      view.pdfGestureCommitTimer = window.setTimeout(() => {
+        view.pdfGestureCommitTimer = 0;
         commitArticlePdfGestureScale().catch(error => showPdfError(error));
       }, delay);
     }
@@ -262,60 +291,60 @@
         clientX: (touches[0].clientX + touches[1].clientX) / 2,
         clientY: (touches[0].clientY + touches[1].clientY) / 2,
       });
-      host.addEventListener("wheel", event => {
-        if (!event.ctrlKey || state.outputView !== "pdf" || !pdfUrl()) return;
+      listen(host, "wheel", event => {
+        if (!event.ctrlKey || getContext().view !== "pdf" || !pdfUrl()) return;
         event.preventDefault();
         const factor = Math.exp(-event.deltaY * 0.01);
-        const queuedZoom = Number(articlePdfGestureFrames.pending()?.value || state.pdfZoom);
+        const queuedZoom = Number(articlePdfGestureFrames.pending()?.value || view.pdfZoom);
         scheduleArticlePdfGestureZoom(queuedZoom * factor, {
           clientX: event.clientX,
           clientY: event.clientY,
         });
         scheduleArticlePdfGestureCommit();
       }, { passive: false });
-      host.addEventListener("touchstart", event => {
-        if (event.touches.length !== 2 || state.outputView !== "pdf" || !pdfUrl()) return;
+      listen(host, "touchstart", event => {
+        if (event.touches.length !== 2 || getContext().view !== "pdf" || !pdfUrl()) return;
         event.preventDefault();
-        state.pdfTouchGesture = {
+        view.pdfTouchGesture = {
           distance: Math.max(1, touchDistance(event.touches)),
-          zoom: state.pdfZoom,
+          zoom: view.pdfZoom,
         };
       }, { passive: false });
-      host.addEventListener("touchmove", event => {
-        if (event.touches.length !== 2 || !state.pdfTouchGesture) return;
+      listen(host, "touchmove", event => {
+        if (event.touches.length !== 2 || !view.pdfTouchGesture) return;
         event.preventDefault();
-        const scale = touchDistance(event.touches) / state.pdfTouchGesture.distance;
-        scheduleArticlePdfGestureZoom(state.pdfTouchGesture.zoom * scale, touchMidpoint(event.touches));
+        const scale = touchDistance(event.touches) / view.pdfTouchGesture.distance;
+        scheduleArticlePdfGestureZoom(view.pdfTouchGesture.zoom * scale, touchMidpoint(event.touches));
       }, { passive: false });
       const finishTouchGesture = () => {
-        state.pdfTouchGesture = null;
+        view.pdfTouchGesture = null;
         commitArticlePdfGestureScale().catch(error => showPdfError(error));
       };
-      host.addEventListener("touchend", event => {
+      listen(host, "touchend", event => {
         if (event.touches.length < 2) finishTouchGesture();
       }, { passive: true });
-      host.addEventListener("touchcancel", finishTouchGesture, { passive: true });
+      listen(host, "touchcancel", finishTouchGesture, { passive: true });
 
-      host.addEventListener("gesturestart", event => {
-        if (state.outputView !== "pdf" || !pdfUrl()) return;
+      listen(host, "gesturestart", event => {
+        if (getContext().view !== "pdf" || !pdfUrl()) return;
         event.preventDefault();
-        state.pdfTouchGesture = { zoom: state.pdfZoom, distance: 1 };
+        view.pdfTouchGesture = { zoom: view.pdfZoom, distance: 1 };
       }, { passive: false });
-      host.addEventListener("gesturechange", event => {
-        if (!state.pdfTouchGesture) return;
+      listen(host, "gesturechange", event => {
+        if (!view.pdfTouchGesture) return;
         event.preventDefault();
-        scheduleArticlePdfGestureZoom(state.pdfTouchGesture.zoom * Number(event.scale || 1), {
+        scheduleArticlePdfGestureZoom(view.pdfTouchGesture.zoom * Number(event.scale || 1), {
           clientX: event.clientX,
           clientY: event.clientY,
         });
       }, { passive: false });
-      host.addEventListener("gestureend", finishTouchGesture, { passive: true });
+      listen(host, "gestureend", finishTouchGesture, { passive: true });
     }
 
     async function renderPdf({ preservePosition = true } = {}) {
-      if (state.outputView !== "pdf") return;
+      if (getContext().view !== "pdf") return;
       const host = $("articlePdfView");
-      if (state.buildLoading) {
+      if (getContext().buildLoading) {
         host.innerHTML = window.PortalI18n.markup('<div class="articlePdfStatus">正在读取构建状态…</div>');
         return;
       }
@@ -323,8 +352,8 @@
       if (!url) {
         cancelPdf();
         updateArticlePdfZoomControls({ available: false });
-        const blocked = state.buildPreflight?.status === "blocked";
-        const issues = (state.buildPreflight?.issues || []).filter(issue => issue.severity === "error");
+        const blocked = getContext().preflight?.status === "blocked";
+        const issues = (getContext().preflight?.issues || []).filter(issue => issue.severity === "error");
         const title = window.PortalI18n.t(blocked ? "构建条件不完整" : "尚无 PDF");
         const detail = blocked
           ? issues.map(issue => `<p>${esc(issue.message || "")}</p>`).join("")
@@ -333,16 +362,16 @@
         return;
       }
       updateArticlePdfZoomControls({ available: true });
-      const version = String(state.build?.compiled_at || selectedArticle()?.compiled_pdf?.mtime_ns || "");
-      const articleId = state.selectedId;
+      const version = String(getContext().build?.compiled_at || getContext().article?.compiled_pdf?.mtime_ns || "");
+      const articleId = getContext().articleId;
       const renderBase = `${articleId}|${url}|${version}`;
-      const renderKey = `${renderBase}|${state.pdfZoom}`;
+      const renderKey = `${renderBase}|${view.pdfZoom}`;
       if (articlePdfPending?.renderKey === renderKey) return articlePdfPending.promise;
       if (articlePdfController && articlePdfRenderKey === renderKey && $("articlePdfDocument")) {
         await articlePdfController.promise;
         return;
       }
-      const resumePosition = state.pdfRestorePosition;
+      const resumePosition = view.pdfRestorePosition;
       const sameArticle = articlePdfController && articlePdfRenderKey.startsWith(`${articleId}|`);
       cancelPendingPdf();
       if (!sameArticle) {
@@ -361,7 +390,7 @@
         Object.assign(staging.style, { position: "fixed", left: `${rect.left}px`, top: `${rect.top}px`,
           width: `${rect.width}px`, height: `${rect.height}px`, boxSizing: "border-box",
           visibility: "hidden", pointerEvents: "none" });
-        return `${rect.width}|${rect.height}|${state.pdfZoom}`;
+        return `${rect.width}|${rect.height}|${view.pdfZoom}`;
       };
       let geometry = sizeStaging();
       const documentHost = document.createElement("div");
@@ -371,7 +400,7 @@
       host.setAttribute("aria-busy", "true");
       const pending = { renderKey, staging, controller: null, promise: null };
       articlePdfPending = pending;
-      const current = () => articlePdfPending === pending && state.selectedId === articleId;
+      const current = () => !destroyed && articlePdfPending === pending && getContext().articleId === articleId;
       pending.promise = (async () => {
         const prepareViewport = () => {
           const anchor = resumePosition || (preservePosition && sameArticle ? captureArticlePdfPosition() : null);
@@ -391,7 +420,7 @@
           viewport: host,
           initialPages: () => prepareViewport().needed.map(page => Number(page.dataset.pdfPage)),
           url,
-          title: selectedArticle()?.title || window.PortalI18n.t("Article"),
+          title: getContext().article?.title || window.PortalI18n.t("Article"),
           version,
           statusClass: "articlePdfStatus",
           pageClass: "articlePdfPage",
@@ -399,7 +428,7 @@
           horizontalPadding: 12,
           minScale: 0.45,
           maxScale: 4,
-          scaleMultiplier: state.pdfZoom,
+          scaleMultiplier: view.pdfZoom,
           outputScale: ratio => Math.min(2, ratio),
           onPage: ({ pageNumber, pageElement }) => {
             pageElement.dataset.pageLabel = `第 ${pageNumber} 页 · 双击返回源码`;
@@ -408,14 +437,14 @@
         });
         await controller.promise;
         const prepared = new Set();
-        while (current() && state.outputView === "pdf") {
+        while (current() && getContext().view === "pdf") {
           if (sameArticle && ["error", "fallback"].includes(documentHost.dataset.pdfStatus)) {
             throw new Error(window.PortalI18n.t("新 PDF 加载失败，已保留原预览。"));
           }
           const nextGeometry = sizeStaging();
           if (geometry !== nextGeometry) {
             geometry = nextGeometry;
-            controller.previewScale?.({ scaleMultiplier: state.pdfZoom });
+            controller.previewScale?.({ scaleMultiplier: view.pdfZoom });
             await controller.redraw?.();
             prepared.clear();
             if (!current()) return;
@@ -440,10 +469,10 @@
           documentHost.id = "articlePdfDocument";
           host.replaceChildren(documentHost);
           articlePdfController = controller;
-          articlePdfRenderKey = `${renderBase}|${state.pdfZoom}`;
+          articlePdfRenderKey = `${renderBase}|${view.pdfZoom}`;
           if (readingPosition) restoreArticlePdfPosition(readingPosition);
           else { host.scrollTop = 0; host.scrollLeft = 0; }
-          if (resumePosition === state.pdfRestorePosition) state.pdfRestorePosition = null;
+          if (resumePosition === view.pdfRestorePosition) view.pdfRestorePosition = null;
           return;
         }
       })().catch(error => {
@@ -483,28 +512,28 @@
     }
 
     async function syncSourceToPdf() {
-      if (state.pdfSyncPending || !state.settings?.synctex_available || !state.selectedId || !state.openFile) return;
+      if (view.pdfSyncPending || !getContext().settings?.synctex_available || !getContext().articleId || !getContext().path) return;
       const position = editorPosition();
-      state.pdfSyncPending = true;
-      $("articleSyncToPdf").disabled = true;
+      view.pdfSyncPending = true;
+      dependencies.syncBusy?.(true);
       try {
-        const payload = await request(`/api/articles/${encodeURIComponent(state.selectedId)}/synctex/source-to-pdf`, {
+        const payload = await request(`/api/articles/${encodeURIComponent(getContext().articleId)}/synctex/source-to-pdf`, {
           method: "POST",
           body: JSON.stringify({
-            path: state.openFile,
+            path: getContext().path,
             line: position.line,
             column: position.column,
-            page_hint: Number(state.pdfSyncLocation?.page || 0),
+            page_hint: Number(view.pdfSyncLocation?.page || 0),
           }),
         });
-        state.pdfSyncLocation = {
+        view.pdfSyncLocation = {
           page: Number(payload.match?.page || 0),
           x: Number(payload.match?.x || 0),
           y: Number(payload.match?.y || 0),
-          source_path: state.openFile,
+          source_path: getContext().path,
           source_line: position.line,
         };
-        if (state.outputView !== "pdf") setOutputView("pdf");
+        if (getContext().view !== "pdf") setOutputView("pdf");
         await renderPdf();
         await articlePdfController?.ensurePage?.(payload.match?.page, { render: true });
         if (!revealPdfSyncMatch(payload.match)) {
@@ -514,26 +543,26 @@
       } catch (error) {
         showToast(window.PortalI18n.text`源码 → PDF：${error.message || error}`, "warning");
       } finally {
-        state.pdfSyncPending = false;
-        $("articleSyncToPdf").disabled = !state.settings?.synctex_available || !pdfUrl() || !state.openFile.toLowerCase().endsWith(".tex");
+        view.pdfSyncPending = false;
+        dependencies.syncBusy?.(false);
       }
     }
 
     async function syncPdfToSource(pageElement, event) {
-      if (state.pdfSyncPending || !state.settings?.synctex_available || !state.selectedId || !pageElement) return;
+      if (view.pdfSyncPending || !getContext().settings?.synctex_available || !getContext().articleId || !pageElement) return;
       const page = Number(pageElement.dataset.pdfPage || 1);
       const scale = Math.max(.01, Number(pageElement.dataset.pdfScale || 1));
       const rect = pageElement.getBoundingClientRect();
       const x = Math.max(0, (event.clientX - rect.left) / scale);
       const y = Math.max(0, (event.clientY - rect.top) / scale);
-      state.pdfSyncPending = true;
+      view.pdfSyncPending = true;
       try {
-        const payload = await request(`/api/articles/${encodeURIComponent(state.selectedId)}/synctex/pdf-to-source`, {
+        const payload = await request(`/api/articles/${encodeURIComponent(getContext().articleId)}/synctex/pdf-to-source`, {
           method: "POST",
           body: JSON.stringify({ page, x, y }),
         });
         const match = payload.match || {};
-        state.pdfSyncLocation = {
+        view.pdfSyncLocation = {
           page,
           x,
           y,
@@ -549,15 +578,70 @@
       } catch (error) {
         showToast(window.PortalI18n.text`PDF → 源码：${error.message || error}`, "warning");
       } finally {
-        state.pdfSyncPending = false;
+        view.pdfSyncPending = false;
       }
     }
 
+    const { compileArticle, stopCompilation, setCompileMenu, currentArticleCompilePopover,
+      updateCompilePreference, scheduleReadingPosition } = dependencies;
+    listen($("articleCompile"), "click", () => compileArticle());
+    listen($("articleCompileSettings"), "click", event => {
+      setCompileMenu(!currentArticleCompilePopover()?.isOpen(), event);
+    });
+    root.querySelectorAll("[data-compile-setting]").forEach(button => {
+      listen(button, "click", () => updateCompilePreference(button));
+    });
+    listen($("articleStopCompile"), "click", stopCompilation);
+    listen($("articleRecompileScratch"), "click", () => compileArticle({ fromScratch: true }));
+    listen($("articleLogButton"), "click", () => setOutputView("log"));
+    listen($("articleBackToPdf"), "click", () => setOutputView("pdf"));
+    listen($("articlePdfZoomOut"), "click", () => {
+      setArticlePdfZoom(view.pdfZoom - 0.1).catch(error => showPdfError(error));
+    });
+    listen($("articlePdfZoomIn"), "click", () => {
+      setArticlePdfZoom(view.pdfZoom + 0.1).catch(error => showPdfError(error));
+    });
+    listen($("articlePdfZoomFit"), "click", () => {
+      setArticlePdfZoom(1).catch(error => showPdfError(error));
+    });
+    bindArticlePdfGestures();
+
+    listen(root, "dblclick", event => {
+      const page = event.target.closest(".articlePdfPage");
+      if (!page) return;
+      event.preventDefault();
+      syncPdfToSource(page, event).catch(error => showToast(error.message || error, "error"));
+    });
+
+    listen($("articlePdfView"), "scroll", scheduleReadingPosition, { passive: true });
     return Object.freeze({
+      root, connect, disconnect, compile: () => compileArticle(), fit: () => setArticlePdfZoom(1), getZoom: () => view.pdfZoom,
+      getSyncLocation: () => view.pdfSyncLocation, restoreReadingPosition,
+      getReadingPosition: () => view.pdfRestorePosition || captureArticlePdfPosition(),
+      show() { dragging = false; scheduleArticlePdfLayout(); },
+      hide() { window.cancelAnimationFrame(view.pdfLayoutFrame); window.clearTimeout(view.pdfRedrawTimer); },
+      snapshot() { return { articleId: getContext().articleId, pdfZoom: view.pdfZoom, pdf: captureArticlePdfPosition() }; },
+      restore(saved) { if (saved?.articleId === getContext().articleId) restoreReadingPosition(saved); },
+      destroy() { if (destroyed) return; destroyed = true; disconnect(); events.abort(); cancelPdf(); root.remove(); },
       bindArticlePdfGestures, cancelPdf, captureArticlePdfPosition, pdfUrl, renderPdf, scheduleArticlePdfLayout, setArticlePdfZoom,
       setPdfCompiling, showPdfError, syncPdfToSource, syncSourceToPdf, updateArticlePdfZoomControls,
     });
   }
 
-  window.PortalArticleWorkspacePdf = Object.freeze({ createPdf, dependencies: DEPENDENCIES });
+  function register() {
+    if (window.PortalWorkbench.registeredPanelPackages().some(pkg => pkg.type === "article-output")) return;
+    window.PortalWorkbench.registerPanelPackage({
+      type: "article-output", version: 1, component: "PortalArticleWorkspacePdf",
+      presentation: { title: "PDF / Build", icon: "file-text" }, sizing: { minWidth: 280, minHeight: 180 },
+      instances: "single", capabilities: ["preview"],
+      behavior: { canHide: true, canCollapse: true, canMove: true, closable: false },
+      context: { channels: [] }, persistence: { schemaVersion: 1 },
+      commands: [
+        { id: "compile", title: "编译", execute: ({ panel }) => panel.compile() },
+        { id: "fit", title: "PDF 适合宽度", execute: ({ panel }) => panel.fit() },
+      ],
+      create: createPdf,
+    });
+  }
+  window.PortalArticleWorkspacePdf = Object.freeze({ createPdf, register, dependencies: DEPENDENCIES });
 })();

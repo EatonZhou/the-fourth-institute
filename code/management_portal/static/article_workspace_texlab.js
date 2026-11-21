@@ -7,11 +7,13 @@
   // definition providers, sending the open document after edits, and the
   // server status shown in the status bar.
   const DEPENDENCIES = Object.freeze([
+    "editorView",
     "$", "activeDocument", "activeEditorModel", "documentForModel", "openArticleFile", "request", "state",
     "updateAllEditorMarkers",
   ]);
 
   function createTexlab(dependencies) {
+    const editorView = dependencies.editorView;
     const missing = DEPENDENCIES.filter(name => dependencies?.[name] === undefined);
     if (missing.length) throw new Error(`PortalArticleWorkspaceTexlab is missing: ${missing.join(", ")}`);
     const {
@@ -78,7 +80,7 @@
     }
 
     function registerTexlabProviders(monaco) {
-      state.monacoDisposables.push(monaco.languages.registerCompletionItemProvider("latex", {
+      editorView().addDisposables(monaco.languages.registerCompletionItemProvider("latex", {
         triggerCharacters: ["\\", "{", ",", ":"],
         provideCompletionItems: async (model, position, context) => {
           try {
@@ -111,7 +113,7 @@
           }
         },
       }));
-      state.monacoDisposables.push(monaco.languages.registerHoverProvider("latex", {
+      editorView().addDisposables(monaco.languages.registerHoverProvider("latex", {
         provideHover: async (model, position) => {
           try {
             const payload = await texlabProviderRequest("hover", model, position);
@@ -127,7 +129,7 @@
           }
         },
       }));
-      state.monacoDisposables.push(monaco.languages.registerDefinitionProvider("latex", {
+      editorView().addDisposables(monaco.languages.registerDefinitionProvider("latex", {
         provideDefinition: async (model, position) => {
           try {
             const payload = await texlabProviderRequest("definition", model, position);

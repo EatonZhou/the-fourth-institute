@@ -171,6 +171,7 @@ def _file_metadata(resolved: dict[str, Any]) -> dict[str, Any]:
         # Nanosecond timestamps exceed JavaScript's exact integer range.
         "mtime_ns": str(mtime_ns),
         "content_url": str(resolved.get("portal_url") or ""),
+        "preview_url": str(resolved.get("preview_url") or ""),
     }
 
 

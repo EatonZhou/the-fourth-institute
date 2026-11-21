@@ -2341,3 +2341,9 @@ body.articleOutlineResizing { cursor: row-resize; user-select: none; }
   font-size: 13px;
   overflow-wrap: anywhere;
 }
+
+.articleConflictDialog .portalDetailSurface { width:min(1100px,94vw); height:80vh; display:flex; flex-direction:column; }
+.articleConflictLabels { display:grid; grid-template-columns:1fr 1fr; padding:8px 16px; gap:16px; }
+.articleConflictComparison { flex:1; min-height:0; overflow:hidden; }
+.articleConflictPlain { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+.articleConflictPlain pre { overflow:auto; white-space:pre-wrap; margin:0; padding:16px; }

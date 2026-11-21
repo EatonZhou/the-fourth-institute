@@ -312,8 +312,9 @@ def test_real_pptx_and_legacy_ppt(tmp_path, monkeypatch):
     assert convert.call_count == calls
 
 
-def test_browser_contract():
-    subprocess.run(['node', str(Path(__file__).with_name('javascript') / 'presentation_preview.cjs')], check=True, timeout=30)
+@pytest.mark.parametrize('script', ['presentation_preview.cjs', 'presentation_preview_sources.cjs'])
+def test_browser_contract(script):
+    subprocess.run(['node', str(Path(__file__).with_name('javascript') / script)], check=True, timeout=30)
 
 
 @pytest.mark.parametrize('mode', [[], ['--article']], ids=['shared-preview', 'article-file'])

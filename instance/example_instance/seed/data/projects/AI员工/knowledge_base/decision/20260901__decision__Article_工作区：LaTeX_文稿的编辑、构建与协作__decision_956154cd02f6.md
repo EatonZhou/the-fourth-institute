@@ -4,12 +4,12 @@ type: decision
 project: AI员工
 created_at: '2026-09-01'
 version:
-  number: 56
+  number: 57
   created_at: "2026-09-01"
   created_by:
     user: ""
     agent: ""
-  updated_at: "2026-11-19T13:08:35Z"
+  updated_at: "2026-11-21T18:14:12Z"
   updated_by:
     user: ""
     agent: "resident_62dbdb2288fb"
@@ -98,7 +98,7 @@ PDF / Build 工具栏最右侧提供单颗 16px 的无边框星标：空心表�
 
 编辑区的两种模式：
 - **Code**：编辑源码。编辑器优先使用浏览器内的 Monaco 代码编辑器；Monaco 加载失败时，改用普通文本框编辑。
-- **Visual**：用 Portal 共享的预览组件显示当前文件的渲染结果，例如 Markdown 渲染后的效果或图片本身。打开图片、PDF 等非文本文件时只有 Visual 模式。 打开 PPT/PPTX 时，Article 原始文件入口在 viewer 授权与源码根路径检查后，将文件交给共享演示文稿转换服务，当前文件标签显示派生 PDF，支持逐页阅读与缩放；转换和缓存遵循 decision_61e50306cc79。同内容重复打开复用缓存，文件内容改变才产生新结果。下载仍取得原始演示文稿，转换失败在预览内提示并保留下载入口，不改变文稿源码或 LaTeX 构建产物。
+- **Visual**：用 Portal 共享的预览组件显示当前文件的渲染结果，例如 Markdown 渲染后的效果或图片本身。打开图片、PDF 等非文本文件时只有 Visual 模式。 打开 PPT/PPTX 时，Article 原始文件入口在 viewer 授权与源码根路径检查后，将文件交给共享演示文稿转换服务，当前文件标签显示派生 PDF，支持逐页阅读与缩放；转换和缓存遵循 decision_61e50306cc79。文件读取响应仅对 `.ppt/.pptx` 明确返回 `preview_url='/api/articles/{article_id}/raw?path={urlencode(relative_path)}&preview=pdf'`，其他文件返回空值；Article 前端原样传给 PreviewDocument，通用预览组件不再从原稿 URL 推断转换接口。同内容重复打开复用缓存，文件内容改变才产生新结果。下载仍取得原始演示文稿，转换失败在预览内提示并保留下载入口，不改变文稿源码或 LaTeX 构建产物。
 
 工具默认共用左侧标签组，源码与 PDF 继续并排显示。在工作台允许调整布局时，从组顶端的标签条将任一工具拖到其他区域的边缘，可在右侧、左侧、上方或下方建立独立区域；拖到另一组的标签条或中央则并回该组。复用 Workbench 的拖放、分隔线、隐藏和布局保存能力。各工具最小宽度为 180px，Chat 使用共享聊天组件的最小宽度；同组采用成员的约束。关闭工具只隐藏该工具，左侧图标可重新打开；反复点击已显示工具的图标只聚焦它。
 
@@ -184,7 +184,7 @@ Article 按登记 Project 的当前权限方案放置。预检展示项目祖先
 - **读取**：打开文本文件时，服务返回内容和内容摘要，单个文件最大 8 MB。图片、PDF 等文件按原始字节读取：浏览器能显示的类型直接显示，其他类型作为下载返回。
 - **打开状态**：用户打开文件时，编辑器状态栏显示正在打开的具体路径；成功激活后恢复该文件的已保存或未保存状态，失败时显示无法打开的路径。TexLab 为跳转定义进行的后台文件预加载不改写当前文件的保存状态。切换 Article 后，旧文件请求的返回和失败提示不覆盖新 Article 的状态。
 - **外部修改同步**：页面接收当前 Article 的资源变化通知后检查源码；页面可见时每 5 秒检查一次，以覆盖 Resident 直接修改文件的情况，回到页面时立即检查，隐藏时暂停定时检查。文件树与已打开文档使用同一个刷新调度，Git 拉取后的刷新也复用该流程。先比较文件元数据版本，变化时再读取正文并比较内容摘要；内容未变时保留编辑模型、光标与撤销历史。干净文档更新后保持标签顺序和阅读位置，已删除的干净文档关闭。有未保存修改的文档保留草稿，并对同一外部版本提示一次，用户核对后再保存；不自动合并或提交。请求期间的新编辑、保存、关闭文件或切换 Article 均使旧结果失效，网络失败由后续检查重试。
-- **保存**：保存时服务先写入临时文件再替换原文件，读者不会看到写了一半的内容。保存接口不比较内容摘要，两人同时保存同一文件时，后保存的内容生效。保存失败时页面保留未保存的编辑内容并显示错误。
+- **保存**：请求必须携带读取文件时获得的 `expected_revision`（文件字节的 SHA-256）。服务在同一父目录写锁内比较当前摘要，匹配后写入临时文件并原子替换，返回新 revision；缺失或格式不正确返回 400，过期返回 409 与当前 revision。浏览器不再为每次保存预读全文，保存失败保留草稿。保存期间继续输入只改变草稿，不改变本次提交；成功后以提交内容推进保存基线，后续输入仍待保存。外部文件变化沿既有刷新流程检查。出现冲突后，人工保存读取最新内容并展示与待提交草稿的比较；用户取消则保留草稿，明确确认后使用该次比较取得的 revision 再次条件保存。比较期间继续输入仍保持为未保存草稿；远端再次变化时继续返回冲突，不自动覆盖。
 - **新建文件与目录**：可以在源码根内新建空文件或目录，目标已经存在时返回 409。Article 接口不提供移动和删除。
 - **上传**：单个文件最大 25 MB，默认不覆盖已有文件。路径或格式错误返回 400，超过大小限制返回 413。
 - **工程语义导航**：服务从 LaTeX 源码中提取章节、标签、引用、图片和问题，生成语义索引，用于侧栏的五个标签页。索引可以随时从源码重新生成。章节还有自己的资源地址，例如 `article_*/section/...`，它们属于同一个 Article 资源。
@@ -251,8 +251,11 @@ TexLab 由 Article 后端持有并通过共享进程运行器管理整个原生�
 
 | 组件 | 位置 | 职责 | 出错后 |
 | --- | --- | --- | --- |
-| Article 工作区页面 | `management_portal/article_workspace.html`、`static/article_workspace.js` | 图标栏、侧栏、编辑区、输出区、未保存内容和操作反馈 | 保存失败保留编辑内容；刷新后重新读取持久状态 |
+| Article 工作区页面 | `management_portal/article_workspace.html`、`static/article_workspace.js` | 组合工作台、文章会话及领域服务，通过面板公开接口连接导航、编辑、编译和聊天 | 操作失败保留当前文稿及反馈 |
 | Article 工具面板 | `static/article_workspace_tools.js` | 登记 `article-files`、`article-favorites`、`article-search`、`article-git`、`article-chat`、`article-settings`、`article-library` 单实例 Panel Package；持有工具根节点与激活/显隐/销毁生命周期，使用注入的 Article 会话服务；`article_workspace_layout.js` 负责组合、图标聚焦及旧布局迁移 | 激活失败保留工具内容并提示；拖动不销毁实例 |
+| Article 源码面板 | `static/article_workspace_monaco.js` | `article-editor` Panel Package 持有模板生成的 DOM、编辑器实例、事件、尺寸监听和视图状态，公开编辑与保存接口；移动和隐藏保持实例，销毁释放监听与模型 | 初始化失败沿用文本编辑器；冲突比较取消保留草稿 |
+| Article 文档 | `static/article_workspace_documents.js` | 每份文档持有唯一草稿、保存基线及 revision，统一所有保存入口；页面与 DocumentSession 不再复制维护草稿 | 保存失败保留草稿；在途新输入不被保存响应覆盖 |
+| Article 输出面板 | `static/article_workspace_pdf.js` | `article-output` Panel Package 持有模板生成的 DOM、PDF 控制器、缩放、阅读位置、事件、尺寸监听和清理；通过明确上下文与编译/SyncTeX 服务联动 | 失败显示错误；旧异步渲染不覆盖新文稿 |
 | Article 登记提供者 | ResourceService 中的 `resources/providers/article.py` | 登记、按目录协议注销并排入所属文件清理、维护自动登记忽略列表 | 登记已注销而文件清理失败时，保留持久任务并重试 |
 | Article 后端 | 14 个 `article_*.py` 模块：文件读写与搜索 `article_files`、设置 `article_settings`、语义索引 `article_semantic_index`、构建 `article_build*`、SyncTeX `article_synctex`、Git `article_git`、登记 `article_registration` 等 | 源码根边界、文件读写、搜索、设置、语义索引、构建、SyncTeX 和 Git | 临时文件替换保存；语义索引可重建 |
 | Article 构建适配 | `article_build.py`、`article_build_profile.py`、`article_build_results.py` | 解析 Article 身份、设置、Project 关联、缓存租约与报告位置，持有独立运行状态 | 每个 Article 最多一次编译；停止范围不影响 Repo 构建 |

@@ -80,6 +80,9 @@ def describe(result: dict[str, Any], root: PurePath, parts: tuple[str, ...], *, 
             result["exists"] = False
     # No resolved_path: HTTP must read these bytes through the Provider, not
     # reopen a filesystem path after ResourceService's boundary checks.
+    result["preview_url"] = (result["portal_url"] + "&preview=pdf"
+                             if result["target_kind"] == "file" and PurePath(name).suffix.lower() in {".ppt", ".pptx"}
+                             else "")
     return result
 
 

@@ -108,7 +108,7 @@
     composerAttachmentPlaceholder, composerAttachmentTokenOrder,
     insertComposerAttachmentRef, removeComposerAttachmentRef, moveComposerAttachmentRef,
     refreshComposerAttachmentRefs, syncComposerAttachmentRefs, serializeComposerInput,
-    serializeComposerContentParts, renderComposerAttachmentTray, normalizeSlashCommands, slashCommandMatches,
+    serializeComposerPayload, renderComposerAttachmentTray, normalizeSlashCommands, slashCommandMatches,
     slashCommandMenuHtml, composerMentionToken, mentionMenuHtml, bindComposerAttachmentActions, inputText,
     setInputText, setComposerDraftInput, composerSelectionSnapshot, restoreComposerSelection,
     inputCaretLineState, isComposerImeActive, insertPlainText, handleAttachmentPaste, handleAttachmentDrop,
@@ -1359,9 +1359,7 @@
         if (nextScope && state.activeDraftScope !== nextScope) restoreDraftScope(nextScope, { force: true });
         reconcileAttachmentsFromInput();
         return {
-          text: serializeComposerInput(els.input, state.attachments, { mode: "final" }),
-          plainText: serializeComposerInput(els.input, state.attachments, { mode: "plain" }),
-          content_parts: serializeComposerContentParts(els.input, state.attachments),
+          ...serializeComposerPayload(els.input, state.attachments),
           attachments: state.attachments.filter(item => !item.uploading && !item.error),
           refs: normalizeRefs(state.refs),
         };

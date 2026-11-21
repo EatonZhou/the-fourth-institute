@@ -613,6 +613,10 @@
       content_type: String(options.contentType || reference.media_type || ""),
       content_url: contentUrl,
       raw_url: contentUrl,
+      preview_url: global.PortalPreviewContract.isPresentation({
+        filename: reference.filename, path: clean, title: reference.title,
+        content_type: options.contentType || reference.media_type,
+      }) ? `${contentUrl}&preview=pdf` : "",
       download_url: `${contentUrl}&download=1`,
       resource_url: String(reference.url || `/r/${encoded}`),
       version: reference.version || {},

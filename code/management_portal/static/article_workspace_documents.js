@@ -8,13 +8,14 @@
   // to a line, and saving one or every changed document.
   const DEPENDENCIES = Object.freeze([
     "$", "articleAbsolutePath", "articleModelUri", "closeArticleGitDiff", "compileArticle", "detailResourceGuest",
-    "editorValue", "isMarkdownPath", "languageForPath", "loadSemanticIndex", "monacoApi",
+    "editorView", "editorValue", "isMarkdownPath", "languageForPath", "loadSemanticIndex", "monacoApi",
     "openArticleLinkedReference", "pdfUrl", "registerArticleLinkedFiles", "renderEditorLayers",
     "renderFileTree", "renderSemanticNavigation", "request", "scheduleArticleGitRefresh",
     "scheduleTexlabSync", "scheduleReadingPosition", "showToast", "state", "syncEditorScroll", "updateCursorStatus", "updateDirtyState",
   ]);
 
   function createDocuments(dependencies) {
+    const editorView = dependencies.editorView;
     const missing = DEPENDENCIES.filter(name => dependencies?.[name] === undefined);
     if (missing.length) throw new Error(`PortalArticleWorkspaceDocuments is missing: ${missing.join(", ")}`);
     const {
@@ -29,14 +30,6 @@
     const autoSaveTimers = new Map();
     const pendingSaves = new Map();
 
-    function createArticleDocumentSession(payload) {
-      const session = window.PortalDocumentSession.create({
-        continuousEdit: true,
-        canEdit: () => true,
-      });
-      session.present(payload);
-      return session;
-    }
 
     function activeDocument() {
       return state.openFile ? state.documents.get(state.openFile) || null : null;
@@ -57,11 +50,9 @@
       if (!documentState.textDocument) return;
       const editor = $("articleSourceEditor");
       documentState.source = editorValue();
-      if (documentState.editable) documentState.session?.updateDraft?.(documentState.source);
-      documentState.savedSource = state.savedSource;
-      if (state.monacoReady && state.editor) {
-        documentState.viewState = state.editor.saveViewState();
-        const selection = state.editor.getSelection();
+      if (editorView().isReady() && editorView().getEditor()) {
+        documentState.viewState = editorView().getEditor().saveViewState();
+        const selection = editorView().getEditor().getSelection();
         if (selection) {
           documentState.selection = {
             startLineNumber: selection.startLineNumber,
@@ -181,13 +172,11 @@
       $("articleUndo").disabled = !documentState?.editable || visual;
       $("articleRedo").disabled = !documentState?.editable || visual;
       $("articleWordWrap").disabled = !textDocument || visual;
-      if (!visual && state.monacoReady) window.requestAnimationFrame(() => state.editor?.layout?.());
+      if (!visual && editorView().isReady()) window.requestAnimationFrame(() => editorView().getEditor()?.layout?.());
     }
 
     function showEmptyEditor() {
       state.openFile = "";
-      state.source = "";
-      state.savedSource = "";
       const editor = $("articleSourceEditor");
       editor.value = "";
       editor.disabled = true;
@@ -195,11 +184,11 @@
       editor.scrollLeft = 0;
       $("articleSyntaxLayer").textContent = "";
       $("articleLineNumbers").textContent = "";
-      if (state.monacoReady && state.editor) {
-        state.editorSuppressChange = true;
-        state.editor.setModel(null);
-        state.editor.updateOptions({ readOnly: false });
-        state.editorSuppressChange = false;
+      if (editorView().isReady() && editorView().getEditor()) {
+        editorView().setChangeSuppressed(true);
+        editorView().getEditor().setModel(null);
+        editorView().getEditor().updateOptions({ readOnly: false });
+        editorView().setChangeSuppressed(false);
       }
       state.syntaxDiagnostics = [];
       $("articleSyntaxStatus").hidden = true;
@@ -220,14 +209,12 @@
       closeArticleGitDiff();
       if (options.captureCurrent !== false) captureActiveDocument();
       state.openFile = path;
-      state.source = documentState.source;
-      state.savedSource = documentState.savedSource;
       const editor = $("articleSourceEditor");
       const textDocument = documentState.textDocument;
       const readOnly = !documentState.editable;
       editor.disabled = readOnly;
-      editor.value = state.source;
-      if (state.monacoReady && state.editor) {
+      editor.value = documentState.source;
+      if (editorView().isReady() && editorView().getEditor()) {
         if (textDocument && !documentState.model) {
           documentState.model = monacoApi().editor.createModel(
             documentState.source,
@@ -235,25 +222,25 @@
             articleModelUri(path),
           );
         }
-        state.editorSuppressChange = true;
-        state.editor.setModel(textDocument ? documentState.model : null);
-        state.editor.updateOptions({ readOnly });
+        editorView().setChangeSuppressed(true);
+        editorView().getEditor().setModel(textDocument ? documentState.model : null);
+        editorView().getEditor().updateOptions({ readOnly });
         documentState.model?.updateOptions({
           tabSize: state.editorPreferences.tabSize,
           insertSpaces: true,
         });
-        if (textDocument && documentState.viewState) state.editor.restoreViewState(documentState.viewState);
-        else if (textDocument && documentState.selection) state.editor.setSelection(documentState.selection);
+        if (textDocument && documentState.viewState) editorView().getEditor().restoreViewState(documentState.viewState);
+        else if (textDocument && documentState.selection) editorView().getEditor().setSelection(documentState.selection);
         else if (textDocument && documentState.selectionStart != null) {
           const start = documentState.model.getPositionAt(documentState.selectionStart);
           const end = documentState.model.getPositionAt(documentState.selectionEnd ?? documentState.selectionStart);
-          state.editor.setSelection({ startLineNumber: start.lineNumber, startColumn: start.column,
+          editorView().getEditor().setSelection({ startLineNumber: start.lineNumber, startColumn: start.column,
             endLineNumber: end.lineNumber, endColumn: end.column });
-          state.editor.setScrollPosition({ scrollTop: documentState.scrollTop || 0, scrollLeft: documentState.scrollLeft || 0 });
+          editorView().getEditor().setScrollPosition({ scrollTop: documentState.scrollTop || 0, scrollLeft: documentState.scrollLeft || 0 });
         }
-        state.editorSuppressChange = false;
-        state.source = documentState.model?.getValue() || "";
-        editor.value = state.source;
+        editorView().setChangeSuppressed(false);
+        editorView().restoreViewFor(path);
+        editor.value = documentState.source;
       } else if (textDocument) {
         const selectionStart = Math.max(0, Math.min(Number(documentState.selectionStart || 0), editor.value.length));
         const selectionEnd = Math.max(selectionStart, Math.min(Number(documentState.selectionEnd ?? selectionStart), editor.value.length));
@@ -276,7 +263,7 @@
       updateDirtyState();
       updateCursorStatus();
       if (options.line) goToLine(options.line, options.column || 1);
-      else if (state.monacoReady) window.requestAnimationFrame(() => state.editor?.layout?.());
+      else if (editorView().isReady()) window.requestAnimationFrame(() => editorView().getEditor()?.layout?.());
       else window.requestAnimationFrame(syncEditorScroll);
       scheduleTexlabSync(80);
       scheduleReadingPosition();
@@ -287,19 +274,16 @@
       const documentState = state.documents.get(path);
       if (!documentState) return;
       captureActiveDocument();
-      if (documentState.session && !await documentState.session.guardDiscard({
-        confirmDiscard: () => window.PortalUI.confirm({
+      if (documentIsDirty(documentState) && !await window.PortalUI.confirm({
           title: window.PortalI18n.t("放弃未保存的修改？"),
           message: window.PortalI18n.text`“${path}”有未保存修改。关闭后将放弃这些修改。`,
           confirmLabel: window.PortalI18n.t("放弃修改"),
           tone: "danger",
-        }),
-      })) return;
+        })) return;
       const index = state.openTabs.indexOf(path);
       cancelDocumentAutoSave(documentState);
       state.openTabs = state.openTabs.filter(item => item !== path);
       documentState.model?.dispose?.();
-      documentState.session?.destroy?.();
       state.documents.delete(path);
       if (state.openFile === path) {
         const next = state.openTabs[index] || state.openTabs[index - 1] || "";
@@ -316,7 +300,7 @@
         if (options.activate !== false) activateDocument(target, options);
         return state.documents.get(target);
       }
-      const previewDocument = window.PortalPreview.normalizeDocument({ ...payload, path: target });
+      const previewDocument = window.PortalPreview.normalizeDocument({ ...payload, path: target, previewUrl: payload.preview_url || payload.previewUrl || "" });
       const textDocument = window.PortalPreviewContract.isTextDocument(previewDocument);
       const kind = previewDocument.contentKind;
       const source = textDocument ? previewDocument.content : "";
@@ -347,7 +331,6 @@
         selectionEnd: 0,
         viewMode: !textDocument || (linked && kind === "markdown") ? "visual" : "code",
       };
-      if (editable) documentState.session = createArticleDocumentSession({ ...payload, content: source });
       state.documents.set(target, documentState);
       state.openTabs.push(target);
       if (options.activate !== false) activateDocument(target, options);
@@ -434,7 +417,7 @@
       for (const path of [...state.openTabs]) {
         if (!isCurrent()) return false;
         const previous = state.documents.get(path);
-        if (!previous || previous.linked || previous.saving || previous.session?.snapshot?.().saving) continue;
+        if (!previous || previous.linked || previous.saving) continue;
         const revision = previous.revision;
         let payload = null;
         let diskVersion = "deleted";
@@ -451,7 +434,7 @@
         if (!isCurrent()) return false;
         captureActiveDocument();
         // A save or draft can appear while the file read is in flight.
-        if (state.documents.get(path) !== previous || previous.revision !== revision || previous.saving || previous.session?.snapshot?.().saving) continue;
+        if (state.documents.get(path) !== previous || previous.revision !== revision || previous.saving) continue;
         if (payload?.revision && payload.revision === previous.revision) {
           previous.diskVersion = diskVersion;
           previous.externalChangeVersion = "";
@@ -468,11 +451,10 @@
         const tabs = [...state.openTabs];
         const active = state.openFile === path;
         if (active) {
-          state.editor?.setModel?.(null);
+          editorView().getEditor()?.setModel?.(null);
           disposeArticleDocumentPreview();
         }
         previous.model?.dispose?.();
-        previous.session?.destroy?.();
         state.documents.delete(path);
         state.openTabs = state.openTabs.filter(item => item !== path);
         if (payload) {
@@ -540,7 +522,6 @@
       for (const documentState of state.documents.values()) {
         cancelDocumentAutoSave(documentState);
         documentState.model?.dispose?.();
-        documentState.session?.destroy?.();
       }
       state.openTabs = [];
       state.documents.clear();
@@ -548,20 +529,20 @@
     }
 
     function goToLine(line, column = 1) {
-      if (state.monacoReady && state.editor) {
-        const model = state.editor.getModel();
+      if (editorView().isReady() && editorView().getEditor()) {
+        const model = editorView().getEditor().getModel();
         if (!state.openFile || !model) return;
         const lineNumber = Math.max(1, Math.min(Number(line || 1), model.getLineCount()));
         const lineColumn = Math.max(1, Math.min(Number(column || 1), model.getLineMaxColumn(lineNumber)));
-        state.editor.setPosition({ lineNumber, column: lineColumn });
-        state.editor.setSelection({
+        editorView().getEditor().setPosition({ lineNumber, column: lineColumn });
+        editorView().getEditor().setSelection({
           startLineNumber: lineNumber,
           startColumn: lineColumn,
           endLineNumber: lineNumber,
           endColumn: lineColumn,
         });
-        state.editor.revealPositionInCenterIfOutsideViewport({ lineNumber, column: lineColumn });
-        state.editor.focus();
+        editorView().getEditor().revealPositionInCenterIfOutsideViewport({ lineNumber, column: lineColumn });
+        editorView().getEditor().focus();
         captureActiveDocument();
         updateCursorStatus();
 
@@ -617,7 +598,7 @@
         if (!await pendingSaves.get(documentState)) return false;
       }
       const isCurrent = () => articleId === state.selectedId && state.documents.get(path) === documentState;
-      if (!isCurrent() || !documentState?.editable || !documentState.session) return false;
+      if (!isCurrent() || !documentState?.editable) return false;
       captureActiveDocument();
       if (!documentIsDirty(documentState)) return true;
       if (automatic && documentState.externalChangeVersion) return false;
@@ -628,44 +609,35 @@
       const saving = (async () => {
         try {
           const url = `/api/articles/${encodeURIComponent(articleId)}/file`;
-          if (automatic) {
-            // Background saves must stop when the disk has moved since opening
-            // or saving, even before the periodic external-change check runs.
-            const disk = await request(`${url}?path=${encodeURIComponent(path)}`);
+          // The document owns its draft and the acknowledged disk revision.
+          // Only acknowledge the submitted value; typing may continue in flight.
+          const submitted = documentState.source;
+          let expectedRevision = documentState.revision;
+          if (documentState.externalChangeVersion) {
+            const latest = await request(`${url}?path=${encodeURIComponent(path)}`);
             if (!isCurrent()) return false;
-            if (String(disk.content ?? "") !== documentState.savedSource) {
-              documentState.externalChangeVersion = `${disk.version || ""}:${disk.size ?? ""}`;
-              throw new Error(window.PortalI18n.t("文件已在其他地方更新，自动保存已暂停；请核对后手动保存。"));
-            }
-            captureActiveDocument();
-            if (documentState.source === documentState.savedSource) return true;
+            if (!latest.revision) throw new Error("最新文件缺少版本，修改已保留。");
+            const accepted = await editorView().confirmConflict({
+              path, local: submitted, remote: String(latest.content ?? ""),
+            });
+            if (!accepted || !isCurrent()) return false;
+            // Confirm only this visible pair. Do not adopt the conflict error's
+            // revision or acknowledge changes typed while the comparison was open.
+            expectedRevision = latest.revision;
           }
-          documentState.session.updateDraft(documentState.source);
-          const outcome = await documentState.session.save({
-            save: async ({ draft, payload }) => ({
-              ...payload,
-              ...await request(url, { method: "POST", body: JSON.stringify({ path, content: draft }) }),
-              content: draft,
-            }),
-          });
-          if (!outcome?.payload) {
-            if (outcome?.stale) return false;
-            throw outcome?.error || new Error(window.PortalI18n.text`${path} 保存失败`);
-          }
-          const result = outcome.payload;
+          const result = await request(url, { method: "POST", body: JSON.stringify({
+            path, content: submitted, expected_revision: expectedRevision,
+          }) });
+          if (!result.revision) throw new Error(window.PortalI18n.t("保存响应缺少版本，修改已保留。"));
           detailResourceGuest.changed({ resourceId: articleId, path: result.path || path });
           if (!isCurrent()) return true;
-          // Session.save acknowledges the submitted snapshot. The editor may
-          // have moved on while the request was in flight; keep that newer draft.
           captureActiveDocument();
-          documentState.savedSource = String(result.content ?? "");
-          documentState.session.updateDraft(documentState.source);
+          documentState.savedSource = submitted;
           documentState.revision = String(result.revision || documentState.revision || "");
           documentState.modifiedAt = String(result.modified_at || documentState.modifiedAt || "");
           documentState.diskVersion = "";
           documentState.externalChangeVersion = "";
           documentState.lastSaveAutomatic = automatic;
-          if (activeDocument() === documentState) state.savedSource = documentState.savedSource;
           scheduleTexlabSync(60);
           loadSemanticIndex().catch(() => {});
           scheduleArticleGitRefresh(0);
@@ -674,12 +646,12 @@
         } catch (error) {
           if (isCurrent()) {
             captureActiveDocument();
-            documentState.session.updateDraft(documentState.source);
+            if (Number(error.status || error.statusCode) === 409) documentState.externalChangeVersion = "conflict";
             documentState.saveError = String(error.message || error);
             window.PortalUI.toast(`${path}: ${documentState.saveError}`, "error", {
               retry: async () => {
-                const saved = await saveDocument(articleId, path, documentState, { automatic, silent });
-                if (saved && !automatic && isCurrent()) void compileArticle({ trigger: "save" });
+                const saved = await saveDocument(articleId, path, documentState, { automatic: false, silent });
+                if (saved && isCurrent()) void compileArticle({ trigger: "save" });
                 return saved;
               },
             });
@@ -710,9 +682,14 @@
     async function saveAllDirtyDocuments({ silent = true } = {}) {
       captureActiveDocument();
       const articleId = state.selectedId;
-      for (const path of [...state.openTabs]) {
-        const documentState = state.documents.get(path);
-        if (documentIsDirty(documentState) && !await saveDocument(articleId, path, documentState, { silent })) return false;
+      // Each awaited write may overlap typing in an earlier tab. Compile only
+      // after every current draft has been acknowledged by its own revision.
+      while (articleId === state.selectedId && hasDirtyDocuments()) {
+        for (const path of [...state.openTabs]) {
+          const documentState = state.documents.get(path);
+          if (documentIsDirty(documentState) && !await saveDocument(articleId, path, documentState, { silent })) return false;
+        }
+        captureActiveDocument();
       }
       return articleId === state.selectedId;
     }

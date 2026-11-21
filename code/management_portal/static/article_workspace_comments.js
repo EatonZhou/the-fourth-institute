@@ -1,7 +1,7 @@
 (() => {
   'use strict';
   const DEPENDENCIES = Object.freeze([
-    "state", "request", "activeDocument", "editorValue", "openArticleFile", "saveAllDirtyDocuments", "showToast",
+    "editorView", "state", "request", "activeDocument", "editorValue", "openArticleFile", "saveAllDirtyDocuments", "showToast",
   ]);
   // Resolve quoted source conservatively. Ambiguous/deleted text stays detached.
   function locate(source, anchor) {
@@ -17,12 +17,13 @@
     return at < 0 ? null : { start: at, end: at + quote.length };
   }
 
-  function createComments({ state, request, activeDocument, editorValue, openArticleFile, saveAllDirtyDocuments, showToast }) {
+  function createComments({ editorView, state, request, activeDocument, editorValue, openArticleFile, saveAllDirtyDocuments, showToast }) {
     const $ = id => document.getElementById(id);
     const panel = $('articleComments'), list = $('articleCommentList'), form = $('articleCommentForm');
     const input = $('articleCommentText'), quoteBox = $('articleCommentQuote'), status = $('articleCommentStatus');
     let articleId = '', threads = [], actor = '', writable = false, generation = 0, pending = null;
     let busy = false, loading = null, timer = null, model = null, decorationIds = [], changedTimer = null;
+    const events = new AbortController();
     const node = (tag, text, cls) => { const e = document.createElement(tag); if (text != null) e.textContent = text; if (cls) e.className = cls; return e; };
     const button = (text, action) => { const e = node('button', text, 'portalButton is-quiet'); e.type = 'button'; e.onclick = action; return e; };
     const sourceFor = t => state.documents.get(t.anchor.path)?.source;
@@ -32,7 +33,7 @@
     }
     function mark() {
       clearMarks();
-      model = state.editor?.getModel?.() || null;
+      model = editorView().getEditor()?.getModel?.() || null;
       if (!model || articleId !== state.selectedId) return;
       const marks = threads.filter(t => !t.resolved && t.anchor.path === state.openFile).flatMap(t => {
         const r = locate(model.getValue(), t.anchor); if (!r) return [];
@@ -57,10 +58,10 @@
         if (id !== state.selectedId) return;
         const source = editorValue(), r = locate(source, t.anchor);
         if (!r) { showToast('原文已变化或被删除，无法可靠定位；评论保留原始引用。', 'info'); render(); return; }
-        if (state.editor?.getModel()) {
-          const m = state.editor.getModel(), a = m.getPositionAt(r.start), b = m.getPositionAt(r.end);
+        if (editorView().getEditor()?.getModel()) {
+          const m = editorView().getEditor().getModel(), a = m.getPositionAt(r.start), b = m.getPositionAt(r.end);
           const range = { startLineNumber: a.lineNumber, startColumn: a.column, endLineNumber: b.lineNumber, endColumn: b.column };
-          state.editor.setSelection(range); state.editor.revealRangeInCenter(range); state.editor.focus();
+          editorView().getEditor().setSelection(range); editorView().getEditor().revealRangeInCenter(range); editorView().getEditor().focus();
         } else {
           const e = $('articleSourceEditor'); e.focus(); e.setSelectionRange(r.start, r.end);
           e.scrollTop = source.slice(0, r.start).split('\n').length * (parseFloat(getComputedStyle(e).lineHeight) || 20) - e.clientHeight / 2;
@@ -141,15 +142,15 @@
       if (busy || (!openPanel && !writable) || !activeDocument()?.editable || activeDocument()?.resourceAddress) return;
       const id = articleId, path = state.openFile, source = editorValue();
       let start, end;
-      if (state.editor?.getModel()) {
-        const m = state.editor.getModel(), s = state.editor.getSelection();
+      if (editorView().getEditor()?.getModel()) {
+        const m = editorView().getEditor().getModel(), s = editorView().getEditor().getSelection();
         start = m.getOffsetAt(s.getStartPosition()); end = m.getOffsetAt(s.getEndPosition());
       } else { start = $('articleSourceEditor').selectionStart; end = $('articleSourceEditor').selectionEnd; }
       if (end <= start || end - start > 8000) { showToast('请选中 1–8000 个字符再添加评论', 'info'); return; }
       const quote = source.slice(start, end);
       if (openPanel) {
         panel.hidden = false; $('articleCommentsToggle').setAttribute('aria-expanded', 'true');
-        state.editor?.layout?.();
+        editorView().getEditor()?.layout?.();
         await refresh();
       }
       if (!writable || id !== state.selectedId || path !== state.openFile || source !== editorValue()) return;
@@ -160,7 +161,7 @@
     $('articleCommentsToggle').onclick = () => {
       panel.hidden = !panel.hidden; $('articleCommentsToggle').setAttribute('aria-expanded', String(!panel.hidden));
       if (!panel.hidden) { if (articleId !== state.selectedId) selectArticle(); else void refresh(); }
-      state.editor?.layout?.();
+      editorView().getEditor()?.layout?.();
     };
     $('articleCommentClose').onclick = () => $('articleCommentsToggle').click();
     $('articleCommentNew').onclick = () => void add();
@@ -169,29 +170,29 @@
     $('articleCommentCancel').onclick = cancelCompose;
     form.onsubmit = event => { event.preventDefault(); if (pending && input.value.trim()) void send({ ...pending, text: input.value }); };
     function changed() { clearTimeout(changedTimer); changedTimer = setTimeout(mark, 150); }
-    $('articleSourceEditor').addEventListener('input', changed);
-    document.addEventListener('visibilitychange', () => { if (!document.hidden && !panel.hidden) void refresh(); });
+    $('articleSourceEditor').addEventListener('input', changed, {signal:events.signal});
+    document.addEventListener('visibilitychange', () => { if (!document.hidden && !panel.hidden) void refresh(); }, {signal:events.signal});
     timer = setInterval(() => { if (!document.hidden && !panel.hidden) void refresh(); }, 5000);
-    window.addEventListener('pagehide', () => clearInterval(timer));
-    window.addEventListener('pageshow', e => { if (e.persisted) timer = setInterval(() => { if (!document.hidden && !panel.hidden) void refresh(); }, 5000); });
+    window.addEventListener('pagehide', () => clearInterval(timer), {signal:events.signal});
+    window.addEventListener('pageshow', e => { if (e.persisted) timer = setInterval(() => { if (!document.hidden && !panel.hidden) void refresh(); }, 5000); }, {signal:events.signal});
     function bindEditor() {
-      if (!state.editor) return;
-      state.monacoDisposables.push(state.editor.addAction({
+      if (!editorView().getEditor()) return;
+      editorView().addDisposables(editorView().getEditor().addAction({
         id: 'article.addComment', label: '添加评论',
         precondition: 'editorHasSelection && !editorReadonly',
         contextMenuGroupId: '1_modification', contextMenuOrder: 1.5,
         run: () => add({ openPanel: true }),
       }));
-      state.monacoDisposables.push(state.editor.onDidChangeModel(mark), state.editor.onDidChangeModelContent(changed));
-      state.monacoDisposables.push(state.editor.onMouseDown(e => {
+      editorView().addDisposables(editorView().getEditor().onDidChangeModel(mark), editorView().getEditor().onDidChangeModelContent(changed));
+      editorView().addDisposables(editorView().getEditor().onMouseDown(e => {
         if (panel.hidden || !e.target.position) return;
-        const offset = state.editor.getModel()?.getOffsetAt(e.target.position);
+        const offset = editorView().getEditor().getModel()?.getOffsetAt(e.target.position);
         const thread = threads.find(t => !t.resolved && t.anchor.path === state.openFile && (() => { const r = locate(editorValue(), t.anchor); return r && offset >= r.start && offset <= r.end; })());
         if (thread) list.querySelector(`[data-thread-id="${thread.id}"]`)?.scrollIntoView({ block: 'nearest' });
       }));
       mark();
     }
-    return { selectArticle, bindEditor };
+    return { selectArticle, bindEditor, destroy() { generation++; articleId = ''; clearInterval(timer); clearTimeout(changedTimer); events.abort(); clearMarks(); } };
   }
   window.PortalArticleWorkspaceComments = Object.freeze({ createComments, dependencies: DEPENDENCIES });
 })();

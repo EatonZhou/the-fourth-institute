@@ -6,11 +6,13 @@
   // The Article's Chat: its Workspace in the side view, the context of the
   // open document and selection, and references added to the message.
   const DEPENDENCIES = Object.freeze([
+    "outputView",
     "$", "activeDocument", "articleProjects", "articleRoot", "documentIsDirty", "editorPosition",
     "editorSelectionContext", "editorValue", "languageForPath", "selectedArticle", "setSideView", "showToast", "state",
   ]);
 
   function createChat(dependencies) {
+    const outputView = dependencies.outputView;
     const missing = DEPENDENCIES.filter(name => dependencies?.[name] === undefined);
     if (missing.length) throw new Error(`PortalArticleWorkspaceChat is missing: ${missing.join(", ")}`);
     const {
@@ -46,7 +48,7 @@
           },
         },
         diagnostic: state.activeDiagnostic || {},
-        pdf: state.pdfSyncLocation || {},
+        pdf: outputView().getSyncLocation() || {},
         build: state.build ? {
           status: state.build.status || "",
           compiler: state.build.compiler || "",

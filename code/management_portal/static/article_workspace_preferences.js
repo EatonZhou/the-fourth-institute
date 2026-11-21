@@ -6,12 +6,14 @@
   // Editor preferences (bracket closing, cursor, font and tab size) and word
   // wrap: their controls, applying them to the editor, keeping them.
   const DEPENDENCIES = Object.freeze([
+    "editorView",
     "$", "activeEditorModel", "captureActiveDocument", "compileSettingValue", "EDITOR_PREFERENCE_DEFAULTS",
     "EDITOR_PREFERENCE_KEY", "renderEditorLayers", "showToast", "state", "syncEditorScroll",
     "WORD_WRAP_STORAGE_KEY",
   ]);
 
   function createPreferences(dependencies) {
+    const editorView = dependencies.editorView;
     const missing = DEPENDENCIES.filter(name => dependencies?.[name] === undefined);
     if (missing.length) throw new Error(`PortalArticleWorkspacePreferences is missing: ${missing.join(", ")}`);
     const {
@@ -59,7 +61,7 @@
       editorPane.style.setProperty("--article-editor-font-size", `${state.editorPreferences.fontSize}px`);
       editorPane.style.setProperty("--article-editor-tab-size", String(state.editorPreferences.tabSize));
       $("articleCodeEditor").classList.toggle("solidCursor", state.editorPreferences.solidCursor);
-      state.editor?.updateOptions?.({
+      editorView().getEditor()?.updateOptions?.({
         fontSize: state.editorPreferences.fontSize,
         lineHeight: Math.round(state.editorPreferences.fontSize * 1.68),
         tabSize: state.editorPreferences.tabSize,
@@ -107,7 +109,7 @@
       $("articleWordWrap").title = state.wordWrap ? window.PortalI18n.t("关闭自动换行") : window.PortalI18n.t("自动换行");
       editor.wrap = state.wordWrap ? "soft" : "off";
       if (state.wordWrap) editor.scrollLeft = 0;
-      state.editor?.updateOptions?.({
+      editorView().getEditor()?.updateOptions?.({
         wordWrap: state.wordWrap ? "on" : "off",
         scrollbar: { horizontal: state.wordWrap ? "hidden" : "auto" },
       });
@@ -121,7 +123,7 @@
       window.PortalState.storage.writeText(WORD_WRAP_STORAGE_KEY, state.wordWrap ? "1" : "0");
       applyWordWrap();
       window.requestAnimationFrame(() => {
-        if (state.monacoReady) state.editor?.layout?.();
+        if (editorView().isReady()) editorView().getEditor()?.layout?.();
         else syncEditorScroll();
       });
     }

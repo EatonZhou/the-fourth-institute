@@ -60,6 +60,7 @@ function serveFile(request, response, filename, contentType) {
       response.writeHead(200, { 'Content-Type': 'application/json' });
       return response.end(JSON.stringify({ path: filename, binary: true, version: '1',
         rawUrl: '/api/articles/article_0123456789ab/raw?path=' + encodeURIComponent(filename),
+        preview_url: '/api/articles/article_0123456789ab/raw?path=' + encodeURIComponent(filename) + '&preview=pdf',
         downloadUrl: '/api/articles/article_0123456789ab/raw?path=' + encodeURIComponent(filename) + '&download=1' }));
     }
     if (url.pathname === '/api/resources/content' || url.pathname === '/api/articles/article_0123456789ab/raw') {
@@ -88,7 +89,7 @@ function serveFile(request, response, filename, contentType) {
         const $ = id => window.document.getElementById(id);
         // Workbench normally assigns this pane its size; isolate that boundary
         // while retaining the production editor/Visual DOM and styles.
-        const pane = $('articleEditorPane');
+        const pane = $('articleEditorTemplate').content.firstElementChild.cloneNode(true);
         window.document.body.replaceChildren(pane);
         Object.assign(pane.style, { width: '960px', height: '760px', display: 'flex', flexDirection: 'column' });
         // Real Article document lifecycle and Preview/PDF rendering; unrelated
@@ -98,6 +99,7 @@ function serveFile(request, response, filename, contentType) {
         const state = { selectedId: 'article_0123456789ab', documents: new Map(), openTabs: [], openFile: '' };
         window.articleDocuments = module.createDocuments({
           ...Object.fromEntries(module.dependencies.map(key => [key, () => {}])), $, state,
+          editorView: () => ({ isReady: () => false, getEditor: () => null, setChangeSuppressed() {}, restoreViewFor() {} }),
           request: async url => { const response = await fetch(url); if (!response.ok) throw new Error(url); return response.json(); },
           editorValue: () => $('articleSourceEditor').value,
           showToast: message => { throw new Error(message); },
@@ -107,6 +109,7 @@ function serveFile(request, response, filename, contentType) {
       }
       const document = { path: 'workspace_0123456789ab/file/slides.pptx', kind: 'binary',
         rawUrl: '/api/resources/content?address=workspace_0123456789ab%2Ffile%2Fslides.pptx',
+        previewUrl: '/api/resources/content?address=workspace_0123456789ab%2Ffile%2Fslides.pptx&preview=pdf',
         downloadUrl: '/api/resources/content?address=workspace_0123456789ab%2Ffile%2Fslides.pptx&download=1' };
       window.PortalPreview.configureDownloadLink(window.document.getElementById('download'), { url: document.downloadUrl, filename: 'slides.pptx' });
       window.previewHandle = window.PortalPreview.render({ root: '#preview', document });

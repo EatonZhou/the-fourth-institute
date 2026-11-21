@@ -94,6 +94,48 @@ const uploaded = (id, extra = {}) => ({ upload_id: id, path: `uploads/${id}.png`
 (async () => {
   try {
     {
+      // Sending reads attachment nodes, never token-shaped text. The file,
+      // image and quoted source remain between the exact surrounding text.
+      const { workspace, inputEl } = fresh('ordered-content');
+      workspace.setAttachments([
+        { id: 'doc', kind: 'file', upload_id: 'upload_111111111111', name: 'notes.txt', content_type: 'text/plain' },
+        { id: 'picture', kind: 'image', upload_id: 'upload_222222222222', name: 'plot.png', content_type: 'image/png' },
+        { id: 'quote', kind: 'file', path: 'src/main.tex', preview_selection: { path: 'src/main.tex', line_start: 2, line_end: 3, text: 'quoted\n  source' } },
+      ]);
+      const input = inputEl();
+      const [file, picture, quote] = input.querySelectorAll('[data-portal-composer-attachment-token]');
+      const mention = w.document.createElement('span');
+      mention.dataset.mentionValue = '@resident_333333333333';
+      mention.textContent = 'Visible resident name';
+      input.replaceChildren(
+        w.document.createTextNode('  first\u00a0[[portal-file:doc]] [[portal-file:unknown]] '), file,
+        w.document.createTextNode('\n then\t'), picture, w.document.createTextNode(' '), quote,
+        w.document.createElement('br'), mention, w.document.createTextNode('  end \n'),
+      );
+      const payload = workspace.payload();
+      assert.deepEqual(JSON.parse(JSON.stringify(payload.content_parts)), [
+        { type: 'text', text: '  first [[portal-file:doc]] [[portal-file:unknown]] ' },
+        { type: 'file', media_type: 'file', upload_id: 'upload_111111111111', name: 'notes.txt', mime_type: 'text/plain' },
+        { type: 'text', text: '\n then\t' },
+        { type: 'image', media_type: 'image', upload_id: 'upload_222222222222', name: 'plot.png', mime_type: 'image/png' },
+        { type: 'text', text: ' [引用: src/main.tex#L2-L3]\n> quoted\n>   source\n@resident_333333333333  end \n' },
+      ]);
+      assert.equal(payload.plainText, 'first [[portal-file:doc]] [[portal-file:unknown]] \n then\t \n@resident_333333333333  end');
+      assert.equal(payload.attachments.length, 3);
+      assert.ok(payload.text.includes('[[portal-file:unknown]]'), 'literal draft syntax survives every send projection');
+    }
+    {
+      // Native contenteditable paragraphs, empty lines and nested markup
+      // preserve the same newlines in the text and structured projections.
+      const { workspace, inputEl } = fresh('paragraph-content');
+      inputEl().innerHTML = '<div>alpha<div>beta</div>gamma</div><p><br></p><p>delta <b>bold</b></p>';
+      const payload = workspace.payload();
+      const expected = 'alpha\nbeta\ngamma\n\n\ndelta bold\n';
+      assert.deepEqual(JSON.parse(JSON.stringify(payload.content_parts)), [{ type: 'text', text: expected }]);
+      assert.equal(payload.text, expected.trim());
+      assert.equal(payload.plainText, expected.trim());
+    }
+    {
       // Default deletion uses the browser file endpoint, never an ISA call.
       const calls = [];
       w.PortalAPI = { request: async (url, options) => { calls.push([url, options.method]); return { deleted: true }; } };
