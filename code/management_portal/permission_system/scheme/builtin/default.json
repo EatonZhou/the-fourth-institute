@@ -113,6 +113,11 @@
           "title": "共享"
         },
         {
+          "id": "@deliverable_drafts",
+          "parent": "@portal",
+          "title": "未发布成果"
+        },
+        {
           "id": "@accounts",
           "parent": "@shared",
           "title": "每个 User 账号",
@@ -163,6 +168,14 @@
           "each": "paper",
           "under": "project",
           "otherwise": "@papers"
+        },
+        {
+          "id": "@project_deliverable",
+          "parent": "@project",
+          "title": "Project 内的成果",
+          "each": "deliverable",
+          "under": "project",
+          "otherwise": "@deliverable_drafts"
         },
         {
           "id": "@project_content",
@@ -313,6 +326,14 @@
       "a": "@admin",
       "r": "@projects",
       "title": "一般用户管理全部 Project"
+    },
+    {
+      "id": "deliverable_creator",
+      "effect": "permit",
+      "relation": "creator",
+      "a": "@admin",
+      "r": "@project_deliverable",
+      "title": "成果作者与原始请求用户"
     },
     {
       "id": "project_creator",
@@ -1396,6 +1417,10 @@
       "r": "@shared"
     },
     "SearchResources": {
+      "a": "@viewer",
+      "r": "@shared"
+    },
+    "ListDeliverables": {
       "a": "@viewer",
       "r": "@shared"
     },

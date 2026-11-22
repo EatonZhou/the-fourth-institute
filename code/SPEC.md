@@ -131,6 +131,7 @@
 - [Home 页的信息结构与加载方式](/r/decision_00546e28e1e0)
 - [对话驱动的 Portal 主页与右侧展示区（目标设计）](/r/decision_b12782e7f490)
 - [汇报资源、版本与成果目录](/r/decision_e3ced6d30f6b)
+- [Resident 成果、原始资料与项目内协作](/r/decision_56aef2c2393b)
 - [Portal Pulse 与个人动态发布](/r/decision_865ac8ebef25)
 - [Daily News 的每日信息摘要](/r/decision_5d2bf4a72f09)
 - [Home Notice Board 的发布与讨论](/r/decision_605810a1292b)

@@ -187,7 +187,7 @@
         [t("研究与工程"), counts.filter(([type]) => !knowledge.has(type))],
       ].filter(([, items]) => items.length);
       return window.PortalI18n.html`<section class="projectSection" id="projectResources" aria-labelledby="projectResourcesTitle">
-        <header class="projectSectionHead"><h2 id="projectResourcesTitle">资源</h2></header>
+        <header class="projectSectionHead"><h2 id="projectResourcesTitle">资源</h2><a class="portalButton is-compact" href="/results?project_id=${esc(encodeURIComponent(projectId()))}">${esc(window.PortalI18n.locale().startsWith("en") ? "Project results" : "项目成果")}</a></header>
         ${!resourcesReady() ? resourcesPendingHtml()
           : groups.length ? groups.map(([title, items]) => `<div class="projectResourceGroup"><h3>${esc(title)}</h3><div class="projectResourceGrid">${items.map(tile).join("")}</div></div>`).join("")
           : `<p class="projectEmpty">${esc(t("这个项目还没有资源。"))}</p>`}

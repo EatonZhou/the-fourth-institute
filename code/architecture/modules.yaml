@@ -131,6 +131,9 @@ features:
   - id: "project_resources"
     title: "Project resources"
     modules: ["web.community"]
+  - id: "resident_results"
+    title: "Resident results"
+    modules: ["resources.types", "web.community"]
   - id: "article"
     title: "Article"
     modules: ["web", "resources.types"]
@@ -526,6 +529,9 @@ modules:
     code_paths:
       - "config/resource-types/"
       - "management_portal/resources/resource_types.py"
+      - "management_portal/resources/deliverables.py"
+      - "management_portal/resources/deliverable_*.py"
+      - "management_portal/deliverable_index.py"
       - "management_portal/resources/providers"
       - "management_portal/resources/knowledge_move*.py"
       - "knowledge_board_lan/knowledge_backend.py"
@@ -554,12 +560,14 @@ modules:
       - "management_portal/article_texlab_backend.py"
       - "management_portal/article_build_store.py"
       - "management_portal/device_identity_backend.py"
+      - "management_portal/google_cloud_devices.py"
       - "management_portal/repo_credentials_backend.py"
       - "management_portal/repo_workspace_*.py"
       - "management_portal/search_identity_backend.py"
       - "skill_board_lan/skill_backend.py"
     designs:
       - "decision_355ed742bca5"
+      - "decision_56aef2c2393b"
       - "decision_6476c69b33da"
       - "decision_956154cd02f6"
       - "decision_3ece26686464"
@@ -567,6 +575,7 @@ modules:
       - "decision_9ef033d79173"
       - "decision_528bf9985705"
       - "decision_d397f2d99f89"
+      - "decision_2b7707be0587"
     layer: "service"
     level: "component"
   - id: "resources.latex-build"
@@ -935,6 +944,10 @@ modules:
       - "management_portal/pulse_*.py"
       - "management_portal/discussion_residents.py"
       - "management_portal/http_projects.py"
+      - "management_portal/resident_results_http.py"
+      - "management_portal/resident_results.html"
+      - "management_portal/static/resident_results.js"
+      - "management_portal/static/resident_results.css"
       - "management_portal/projects.html"
       - "management_portal/static/project_*.js"
       - "management_portal/static/project_*.css"
@@ -1561,6 +1574,13 @@ modules:
     runtime: "由 KNOWLEDGE_ARCHIVE_AGENT_URL 配置的 HTTP 服务；源码默认回环端口 8767，不据客户端存在断言服务当前在线。"
 
 protocols:
+  - id: "resident-deliverables"
+    title: "Resident 成果版本与项目内协作"
+    modules: ["resources.types", "resources.access", "resources.permissions", "web.community", "kernel.isa", "lineage.conversation"]
+    designs: []
+    related_designs: ["decision_56aef2c2393b"]
+    description: "资源领域保存作者身份、固定Project、追加版本与原文；权限领域隔离草稿及历史草稿并实时判断项目访问。网页与Resident使用相同RegisterResource、UpdateResource、ListDeliverables和ReadResource入口。索引仅投影当前摘要，交流沿DeliverMessage保原actor、固定版本business_ref与幂等键。"
+    example: "Resident按授权任务发布成果 → 同项目另一Resident查询并读取固定版本和允许的来源 → 用户显式要求时联系原作者；退役作者不删除已经保存的原文。"
   - id: "resource-latex-build"
     title: "资源适配器与共享 LaTeX 构建契约"
     modules:

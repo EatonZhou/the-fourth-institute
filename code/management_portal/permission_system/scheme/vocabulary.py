@@ -46,6 +46,7 @@ PLACEMENTS: dict[str, dict[str, str]] = {
     "workbench": {"project": "belongs", "lineage": "belongs"},
     "workspace": {"resident": "belongs"},
     "report": {"resident": "owner", PERSONAL_SPACE: "owner"},
+    "deliverable": {"project": "belongs"},
     PERSONAL_SPACE: {"user": "owner"},
 }
 

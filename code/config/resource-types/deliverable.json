@@ -1,0 +1,13 @@
+{
+  "type": "deliverable",
+  "category": "resource",
+  "title": {"zh": "成果", "en": "Deliverable"},
+  "description": "Project-scoped Resident results with immutable revisions and source documents.",
+  "provider": "management_portal.resources.providers.deliverable:install_resolver",
+  "catalog_section": "",
+  "catalog_order": 86,
+  "registerable": true,
+  "scope": "shared",
+  "unit": "core",
+  "enabled_by_default": true
+}

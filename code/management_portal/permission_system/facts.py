@@ -159,7 +159,13 @@ def fact_from_record(record: Mapping[str, Any], kind: str) -> Fact:
     creator = principal_id(attributes.get("created_by") or record.get("created_by") or record.get("author"))
     created_for = principal_id(attributes.get("created_for") or record.get("created_for")) if creator else ""
     owners = {}
-    if kind == "report":
+    if kind == "deliverable":
+        # Drafts must not inherit their author's Lineage or Project readership.
+        if (record.get("status") or attributes.get("status")) in {"published", "withdrawn"}:
+            projects = _related(record, "project")
+            if projects:
+                owners = {"project": projects[0]}
+    elif kind == "report":
         owners = creator_owners(creator)
     elif kind == "lineage" and _text(attributes.get("lineage_membership")).lower() == "personal":
         # A personal AMA belongs to its owner User, not to a Project.

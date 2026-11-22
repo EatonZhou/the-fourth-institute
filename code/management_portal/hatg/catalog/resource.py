@@ -13,6 +13,14 @@ def _d(name, decides, description, parameters=(), result=(), *, mutates=False, t
 RESOURCE_RECORD = R("resource", "object", "资源记录")
 
 DECLARATIONS = (
+    _d("ListDeliverables", FIXED,
+       "按当前权限读取成果登记；可按 Project 或作者筛选，含固定版本与原始资料入口。每次读取当前记录，不依赖索引刷新。", (
+        P("project_id", description="可访问的 Project ID"),
+        P("author_id", description="真实 User 或 Resident 作者 ID；省略时不限定作者"),
+        P("offset", "integer", "分页位置", minimum=0),
+        P("limit", "integer", "每页上限，默认30", minimum=1, maximum=100),
+       ), (R("items", "array", "当前可读成果元数据"), R("total", "integer", "可读成果数"),
+           R("offset", "integer", "分页位置"), R("limit", "integer", "分页上限"))),
     _d('RestoreArticle', (On('article_id', 'article'), On('resident_id', 'resident'),
                          On('source_address'), On('project_id', 'project')),
        '按真实登记工具、墓碑与原稿清理记录，将已确认版本及当前项目共享方案部分恢复到原 Article ID。'

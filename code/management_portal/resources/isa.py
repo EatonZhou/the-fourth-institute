@@ -53,6 +53,13 @@ def _iso(moment: datetime) -> str:
 # -- resources ---------------------------------------------------------------------
 
 
+def list_deliverables(inv: Invocation) -> dict[str, Any]:
+    from .deliverables import DeliverableStore
+    return DeliverableStore().list(inv.caller, project_id=inv.argument("project_id") or "",
+        author_id=inv.argument("author_id") or "", offset=inv.argument("offset") or 0,
+        limit=inv.argument("limit") or 30)
+
+
 def search_resources(inv: Invocation) -> dict[str, Any]:
     offset = cursor_offset(inv.argument("cursor"))
     query: dict[str, Any] = {"actor": inv.caller, "limit": inv.argument("limit") or 50,
@@ -1082,6 +1089,7 @@ def restore_article(inv):
 
 
 HANDLERS = {
+    "ListDeliverables": list_deliverables,
     'RestoreArticle': restore_article,
     'PreviewArticleRestore': preview_article_restore,
     'CorrectResourceLifecycleAssociation': correct_resource_lifecycle_association,
