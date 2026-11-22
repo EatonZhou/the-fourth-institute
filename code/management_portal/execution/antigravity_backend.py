@@ -172,7 +172,16 @@ class AntigravityOptions(NativeOptions):
     default_permission_preset = "full-access"
 
     def native_options(self, options, settings):
-        return {**options, "native_tools_enabled": settings.get("permission_preset", self.default_permission_preset) == "full-access"}
+        preset = settings.get("permission_preset")
+        sandbox = settings.get("sandbox") or ""
+        custom_permissions = any(settings.get(field) for field in (
+            "permissions", "approval_policy", "approvals_reviewer", "profile",
+        ))
+        if not preset and not custom_permissions and sandbox in {"", "danger-full-access"}:
+            # The settings store can express the Provider default as an empty
+            # string. Unmapped custom permission settings still fail closed.
+            preset = self.default_permission_preset
+        return {**options, "native_tools_enabled": preset == "full-access"}
 
 
 class AntigravityBackend:

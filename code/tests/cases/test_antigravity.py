@@ -367,12 +367,28 @@ def test_parallel_error_flush_preserves_actual_tool_result_and_immutable_segment
     assert events[-1]["method"] == "turn/completed"
 
 
-@pytest.mark.parametrize("owner,outcome", [(True, "selected"), (False, "cancelled")])
-def test_permissions_are_enforced_in_protocol_not_prompt(agent, owner, outcome):
-    result = AntigravityBackend().execute(invocation(agent, "permission", owner=owner), context()[0])
+@pytest.mark.parametrize("sid", ["", "existing-session"])
+@pytest.mark.parametrize("owner,settings,outcome", [
+    (True, {}, "selected"),
+    (True, {"permission_preset": ""}, "selected"),
+    (True, {"permission_preset": "", "sandbox": "danger-full-access", "sandbox_explicit": True}, "selected"),
+    (True, {"permission_preset": "full-access"}, "selected"),
+    (True, {"permission_preset": "default"}, "cancelled"),
+    (True, {"permission_preset": "", "sandbox": "read-only"}, "cancelled"),
+    (True, {"permission_preset": "", "sandbox": "danger-full-access", "approval_policy": "on-request"}, "cancelled"),
+    (False, {"permission_preset": ""}, "cancelled"),
+    (False, {"permission_preset": "full-access"}, "cancelled"),
+])
+def test_permissions_are_enforced_in_protocol_not_prompt(agent, sid, owner, settings, outcome):
+    from management_portal.execution.antigravity_backend import AntigravityOptions
+
+    turn = invocation(agent, "permission", owner=owner, sid=sid)
+    turn.request.runtime_options = AntigravityOptions().native_options(turn.request.runtime_options, settings)
+    result = AntigravityBackend().execute(turn, context()[0])
     assert result.output["message"] == outcome
-    meta = next(r["params"]["_meta"]["antigravity"] for r in requests(agent) if r["method"] == "session/new")
-    assert ("enabledTools" not in meta) if owner else meta["enabledTools"] == []
+    method = "session/load" if sid else "session/new"
+    meta = next(r["params"]["_meta"]["antigravity"] for r in requests(agent) if r["method"] == method)
+    assert ("enabledTools" not in meta) if outcome == "selected" else meta["enabledTools"] == []
 
 
 @pytest.mark.parametrize("sid", ["", "existing-session"])
