@@ -53,6 +53,7 @@ window.PortalInstructionClient = {execute: async (name, args, options) => {
     case 'ListBackendRoles': return {roles};
     case 'RegisterProviderAccount': return {};
     case 'GetProviderAccountSetup':
+      if (setupError instanceof Error) throw setupError;
       if (setupError) throw new Error('暂时无法读取接入状态');
       if (holdSetup) await new Promise(resolve => { finishSetup = resolve; });
       return {setup: {provider, enabled: true, runtime_ready: !missing,
@@ -157,7 +158,13 @@ const openSetup = async () => {
   assert.equal(draft.value, 'custom-model'); assert.equal(window.document.activeElement, draft);
   draft.value = 'model';
   assert.equal(calls.filter(call => call.name === 'PrepareProviderRuntime').length, 1, 'polling must not reinstall');
+  setupError = new TypeError('Load failed');
+  tick(); await flush();
+  assert.equal(timers.size, 1, 'a transient transport error does not stop preparation polling');
+  assert.match(preparingStatus.textContent, /重新读取/);
+  setupError = false;
   missing = false; tick(); await flush();
+  assert.equal(calls.filter(call => call.name === 'PrepareProviderRuntime').length, 1);
   click('测试并完成'); await flush(); await flush();
   assert(!calls.some(call => call.name === 'UpdateBackendRole'));
   assert.match(window.document.querySelector('[data-backend-setup-status]').textContent, /未通过/);

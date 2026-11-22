@@ -48,16 +48,20 @@ def signature(row):
 
 
 def get_setup(inv):
-    from .account_login import get_login_state
+    from .account_login import get_login_state, login_store
     row = account(inv.argument("account_id"))
     preparation = provider_updates.preparation_status(row["provider"])
-    try:
-        login = get_login_state(row)
-    except InstructionError:
-        login = "unavailable"
+    runtime_ready = preparation["status"] == "ready"
+    if not runtime_ready and row["kind"] == "subscription_login":
+        login = login_store().login_state(row["account_id"], default="unavailable")
+    else:
+        try:
+            login = get_login_state(row)
+        except InstructionError:
+            login = "unavailable"
     definition = AGENT_PROVIDERS.get(row["provider"])
     result = {"account_id": row["account_id"], "provider": row["provider"], "enabled": row["enabled"],
-              "runtime_ready": preparation["status"] == "ready", "preparation": preparation,
+              "runtime_ready": runtime_ready, "preparation": preparation,
               "login_state": login, "supports_tools": bool(definition and "portal_tools" in definition.harness),
               "operations": sorted(definition.operations) if definition else [],
               "models": [], "default_model": "", "catalog_error": ""}

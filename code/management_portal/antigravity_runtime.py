@@ -67,12 +67,14 @@ class AntigravityRuntime(updates.ProviderRuntime):
         return updates.provider_entry("antigravity_runtime_current")
 
     def stage(self, versions):
-        value = manifest()
+        with updates.phase("download"):
+            value = manifest()
         Version(value["version"])
         _require_credential_storage(value["version"])
-        if tuple(versions) != (value["version"],):
-            raise RuntimeError("Antigravity registry changed; check the available version again")
-        item = value["distribution"]["binary"][platform_key()]
+        with updates.phase("download"):
+            if tuple(versions) != (value["version"],):
+                raise RuntimeError("Antigravity registry changed; check the available version again")
+            item = value["distribution"]["binary"][platform_key()]
         if Path(item["cmd"]).is_absolute() or ".." in Path(item["cmd"]).parts:
             raise ValueError("Unsafe Antigravity executable path")
         url = urlsplit(item["archive"])
@@ -84,10 +86,11 @@ class AntigravityRuntime(updates.ProviderRuntime):
         root.mkdir(parents=True, exist_ok=True)
         with tempfile.TemporaryFile() as archive:
             digest = hashlib.sha256()
-            with urlopen(item["archive"], timeout=120) as response:
-                while chunk := response.read(1024 * 1024):
-                    digest.update(chunk)
-                    archive.write(chunk)
+            with updates.phase("download"):
+                with urlopen(item["archive"], timeout=120) as response:
+                    while chunk := response.read(1024 * 1024):
+                        digest.update(chunk)
+                        archive.write(chunk)
             if digest.hexdigest() != item["sha256"]:
                 raise ValueError("Antigravity archive checksum mismatch")
             archive.seek(0)
@@ -118,10 +121,11 @@ class AntigravityRuntime(updates.ProviderRuntime):
                 env.update({allowed[key.upper()]: item for key, item in os.environ.items()
                             if key.upper() in allowed})
                 env.update(USERPROFILE=scratch, APPDATA=scratch, LOCALAPPDATA=scratch)
-            with AcpClient(command(root), env=env) as client:
-                info = client.initialize()
-                if info.get("agentInfo", {}).get("version") != value["version"]:
-                    raise RuntimeError("Antigravity staged version mismatch")
+            with updates.phase("executable_validation"):
+                with AcpClient(command(root), env=env) as client:
+                    info = client.initialize()
+                    if info.get("agentInfo", {}).get("version") != value["version"]:
+                        raise RuntimeError("Antigravity staged version mismatch")
         (root / ".portal-validated").write_text(value["version"] + "\n")
         return root
 

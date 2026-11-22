@@ -597,6 +597,25 @@ def test_installer_verifies_archive_before_activation(monkeypatch, tmp_path, pla
     monkeypatch.setenv("USERPROFILE", "operator-home-must-not-be-used")
     monkeypatch.setenv("APPDATA", "operator-appdata-must-not-be-used")
     monkeypatch.setenv("GEMINI_API_KEY", "must-not-leak")
+    if target == "darwin-aarch64":
+        from management_portal.execution.provider_preparation import PreparationError
+
+        def failed_download(*args, **kwargs):
+            raise TimeoutError("fixture connection stalled")
+
+        with monkeypatch.context() as offline:
+            offline.setattr(runtime, "urlopen", failed_download)
+            with pytest.raises(PreparationError) as failure:
+                runtime.AntigravityRuntime().stage((version,))
+            assert failure.value.public()["diagnostic"] == {
+                "phase": "download", "kind": "timeout", "rollback_failed": False,
+            }
+        with mock.patch("management_portal.antigravity_client.AcpClient") as client:
+            client.return_value.__enter__.return_value.initialize.side_effect = TimeoutError
+            with pytest.raises(PreparationError) as failure:
+                runtime.AntigravityRuntime().stage((version,))
+            assert failure.value.phase == "executable_validation"
+            assert not (tmp_path / f"antigravity-{version}" / ".portal-validated").exists()
     with mock.patch("management_portal.antigravity_client.AcpClient") as client:
         client.return_value.__enter__.return_value.initialize.return_value = {"agentInfo": {"version": version}}
         provider = runtime.AntigravityRuntime()

@@ -285,8 +285,12 @@ def test_antigravity_without_runtime_registers_and_remains_manageable(tmp_path, 
     assert account_registrations.registration("gemini") is not None
     monkeypatch.setattr(isa, "_accounts_snapshot", lambda _, **kw: {"accounts": []})
     assert isa.list_provider_accounts(inv)["accounts"][0]["registration"]["account_id"] == "gemini"
-    setup = account_setup.get_setup(inv)["setup"]
+    probe = Mock(side_effect=AssertionError("preparation status must not start ACP or OAuth"))
+    with monkeypatch.context() as preparation_poll:
+        preparation_poll.setattr(login, "provider_logged_in", probe)
+        setup = account_setup.get_setup(inv)["setup"]
     assert setup["login_state"] == "unavailable" and setup["runtime_ready"] is False
+    probe.assert_not_called()
     assert isolated_login.login_state("gemini", default=None) is None
     # Deleting the incomplete registration releases its directory, not credentials.
     home = Path(row["home_path"])

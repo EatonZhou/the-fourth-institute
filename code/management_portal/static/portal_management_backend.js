@@ -662,6 +662,7 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
     }
     document.addEventListener('visibilitychange', syncPollingVisibility);
     let preparationRequested = false, setupFailed = false;
+    let preparationReadFailures = 0;
     let progressMessage = "", startedAt = 0;
     const {view, form} = newEditor("接入并启用 AI", () => { closed = true; nextPoll = null; clearTimeout(timer); clearInterval(progressTimer); clearInterval(preparationTimer); document.removeEventListener('visibilitychange', syncPollingVisibility); });
     form.append(node("p", accountId));
@@ -705,7 +706,11 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
     const authorize = button("登录", () => {
       login = openLogin(accountId, {onChanged: () => { login?.close(); void perform(reload); }});
     }, true);
-    const retry = button("重试", () => { preparationRequested = false; void perform(reload); });
+    const retry = button("重试", () => {
+      preparationRequested = false;
+      preparationReadFailures = 0;
+      void perform(reload);
+    });
     const linkedApi = () => state.apis.find(api => api.api_id === state.accounts.find(a => a.account_id === accountId)?.config?.api_id);
     const editConnection = button("编辑连接", () => { const api = linkedApi(); if (api) apiEditor(api, {accountId}); });
     const nativeClaude = () => state.accounts.find(a => a.account_id === accountId && a.provider === "claude" &&
@@ -759,9 +764,25 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
       if (!closed) status.setAttribute("aria-busy", "false");
     }
     let modelChoices = "";
-    async function reload() {
-      const result = await execute("GetProviderAccountSetup", {account_id: accountId});
+    function pollPreparation() {
+      return perform(() => reload({polling: true}), undefined, true);
+    }
+    async function reload({polling = false} = {}) {
+      let result;
+      try {
+        result = await execute("GetProviderAccountSetup", {account_id: accountId});
+      } catch (error) {
+        if (closed) return;
+        if (!polling || !["TypeError", "TimeoutError"].includes(error.name)) throw error;
+        if (preparationReadFailures >= 3) {
+          throw new Error(t("无法读取运行环境准备状态，请重试。"));
+        }
+        status.textContent = t("暂时无法读取运行环境准备状态，正在重新读取。");
+        schedulePoll(pollPreparation, 2000 * 2 ** preparationReadFailures++);
+        return;
+      }
       if (closed) return;
+      preparationReadFailures = 0;
       setup = result.setup;
       const preparation = setup.preparation || {};
       const failed = ["failed", "interrupted"].includes(preparation.status);
@@ -782,7 +803,7 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
       }
       if (!model.value) model.value = setup.default_model || "";
       const needsLogin = !["logged_in", "succeeded", "not_applicable"].includes(setup.login_state);
-      loginHint.hidden = !needsLogin;
+      loginHint.hidden = !setup.runtime_ready || !needsLogin;
       const loginText = t(setup.provider === "codex" ? "先点击登录，获取设备码并在浏览器授权；无需填写模型名称。" : "先点击登录并在浏览器完成授权；无需填写模型名称。");
       if (loginHint.textContent !== loginText) loginHint.textContent = loginText;
       model.parentElement.hidden = useDefault.parentElement.hidden = capabilities.hidden = needsLogin;
@@ -795,7 +816,7 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
       if (!setup.runtime_ready && canWrite) {
         if (["preparing", "pending"].includes(setup.preparation?.status)) {
           preparationRequested = true;
-          schedulePoll(() => perform(reload, undefined, true), 2000);
+          schedulePoll(pollPreparation, 2000);
         } else if (!preparationRequested) {
           preparationRequested = true;
           progressMessage = "正在自动准备运行环境…";
@@ -805,7 +826,7 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
             // Another runtime update owns the lock; observe and retry without user action.
             preparationRequested = false;
             status.textContent = t("运行环境正在更新，完成后将自动继续。");
-            schedulePoll(() => perform(reload, undefined, true), 2000);
+            schedulePoll(pollPreparation, 2000);
           } else {
             await reload();
           }

@@ -968,6 +968,14 @@
     "zh-CN": "演示文稿预览失败，请稍后重试或下载原文件查看。",
     "en": "Presentation preview failed. Try again later or download the original file."
   },
+  "暂时无法读取运行环境准备状态，正在重新读取。": {
+    "zh-CN": "暂时无法读取运行环境准备状态，正在重新读取。",
+    "en": "Preparation status is temporarily unavailable. Reconnecting."
+  },
+  "无法读取运行环境准备状态，请重试。": {
+    "zh-CN": "无法读取运行环境准备状态，请重试。",
+    "en": "Unable to read preparation status. Please retry."
+  },
   "运行环境正在更新，完成后将自动继续。": {
     "zh-CN": "运行环境正在更新，完成后将自动继续。",
     "en": "The runtime is being updated. Setup will continue automatically."
