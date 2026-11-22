@@ -161,6 +161,59 @@ def test_catalog_reads_snapshots_without_starting_acp(agent, monkeypatch):
     assert not (agent / "requests.jsonl").exists()
 
 
+@pytest.mark.parametrize("legacy", [False, True])
+def test_orchestrator_selects_only_account_advertised_variants(agent, monkeypatch, legacy):
+    from management_portal.society_service import resident_session_backend_domain as commands
+
+    monkeypatch.setattr(commands.resident_backend, "execution_account",
+                        lambda record: {"backend_route_id": record["backend_route_id"]})
+    models = [("gemini-hydrogen", "Gemini Hydrogen"), ("native-planner-a", "Orchestrator (Neon)"),
+              ("gemini-pro-orchestrator", "Orchestrator (Carbon)")]
+
+    def save(choices):
+        if legacy:
+            session = {"models": {"currentModelId": choices[0][0],
+                                  "availableModels": [{"modelId": key, "name": label} for key, label in choices]}}
+        else:
+            session = {"configOptions": [{"id": "model", "category": "model", "currentValue": choices[0][0],
+                                          "options": [{"value": key, "name": label} for key, label in choices]}]}
+        accounts.save_catalog("antigravity_one", session, {})
+
+    def command(content, writable=True):
+        return commands.handle_resident_native_command(
+            {"backend": "antigravity", "backend_route_id": "one"}, content, {"model": "gemini-hydrogen"},
+            session_id="", cwd=str(agent), actor="tester", can_update_runtime=writable,
+            can_manage_permissions=False, scope_label="probe", updated_at="2026-11-22T00:00:00Z", token_usage={}, goal={})
+
+    save(models)
+    offered = command("/orchestrator")
+    assert "/orchestrator native-planner-a" in offered["content"]
+    assert "/orchestrator gemini-hydrogen" not in offered["content"]
+    assert not offered["updates"]
+    assert not command("/orchestrator gemini-hydrogen")["updates"]
+    assert not command("/orchestrator native-planner-a", writable=False)["updates"]
+    selected = command("/orchestrator native-planner-a")["updates"]
+    assert selected["model"] == "native-planner-a"
+    assert selected["runtime_settings_authority"] == "portal_manual"
+    save([models[0], models[2]])
+    assert command("/orchestrator")["updates"]["model"] == "gemini-pro-orchestrator"
+    save(models[:1])
+    assert "未提供" in command("/orchestrator")["content"]
+    swarm = command("/swarm 分工测试")
+    assert swarm["handled"] and not swarm["updates"] and not swarm["command_payload"]
+    assert "未提供原生 Swarm" in swarm["content"]
+    assert not (agent / "requests.jsonl").exists()
+
+    monkeypatch.setattr(accounts, "environment", lambda _: {
+        "GEMINI_HOME": str(agent), "FAKE_ORCHESTRATOR_MODEL": selected["model"],
+    })
+    turn = invocation(agent)
+    turn.request.runtime_options["model"] = selected["model"]
+    assert AntigravityBackend().execute(turn, context()[0]).output["model"] == "native-planner-a"
+    configured = next(call for call in requests(agent) if call["method"] == "session/set_model")
+    assert configured["params"]["modelId"] == "native-planner-a"
+
+
 def test_first_account_check_discovers_and_verifies_the_native_default(agent, monkeypatch):
     from management_portal.execution import account_setup as setup
     from management_portal.execution.backend_contracts import BackendInvocation

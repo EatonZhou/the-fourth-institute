@@ -109,6 +109,13 @@ def _result(settings: dict[str, Any], content: str, *, title: str, updates: dict
     }
 
 
+def model_selection_settings(current, updates, *, actor, updated_at):
+    from .resident_runtime_settings import mark_portal_manual_authority, merge_settings
+
+    merged = merge_settings(current, updates, actor=actor, updated_at=updated_at)
+    return mark_portal_manual_authority(merged, actor=actor, updated_at=updated_at)
+
+
 def _portal_help_content(scope_label: str, backend: str = "") -> str:
     """The help of a session of ``backend``: the commands it answers (``slash_command_catalog``) and the keys."""
 

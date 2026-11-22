@@ -53,17 +53,18 @@ def subscription_metadata(session, authenticated=None):
 
 def save_catalog(account_id, session, agent_capabilities, *, authenticated=None):
     selection = session.get("models") or {}
-    models = [str(item["modelId"]) for item in selection.get("availableModels", [])]
+    choices = {str(item["modelId"]): item.get("name", "") for item in selection.get("availableModels", [])}
     default = selection.get("currentModelId", "")
-    if not models:
+    if not choices:
         option = next((v for v in session.get("configOptions", []) if v.get("category") == "model"), {})
         for item in option.get("options", []):
-            models.extend(str(v["value"]) for v in item.get("options", [item]) if "value" in v)
+            choices.update((str(v["value"]), v.get("name", "")) for v in item.get("options", [item]) if "value" in v)
         default = option.get("currentValue", "")
-    if not models or default not in models:
+    if default not in choices:
         raise ValueError("Antigravity returned no usable model catalog")
     prompt_capabilities = agent_capabilities.get("promptCapabilities") or {}
-    value = {"models": models, "default_model": default, "efforts_by_model": {},
+    value = {"models": list(choices), "model_labels": {key: label for key, label in choices.items() if isinstance(label, str) and label},
+             "default_model": default, "efforts_by_model": {},
              "default_efforts_by_model": {}, "service_tiers_by_model": {},
              "capabilities": {"media": prompt_capabilities.get("image") is True},
              "prompt_capabilities": prompt_capabilities, "observed_at": time.time(),

@@ -149,6 +149,8 @@ for line in sys.stdin:
         if method == "session/load":
             update(sid, sessionUpdate="agent_message_chunk", content={"type": "text", "text": "old history"})
         result = {"sessionId": sid, "models": {"currentModelId": "gemini-test", "availableModels": [{"modelId": "gemini-test"}]}}
+        if orchestrator := os.environ.get("FAKE_ORCHESTRATOR_MODEL"):
+            result["models"]["availableModels"].append({"modelId": orchestrator, "name": "Orchestrator (Neon)"})
         if method == "session/load":
             result.pop("sessionId")  # LoadSessionResponse does not echo the ID.
             if os.environ.get('FAKE_EMPTY_LOAD'):

@@ -361,7 +361,7 @@ def handle_resident_native_command(
     token_usage: object,
     goal: object,
 ) -> dict[str, Any]:
-    from management_portal.execution.slash_commands import _token_usage_content
+    from management_portal.execution.slash_commands import _token_usage_content, model_selection_settings
     backend = resident_backend.execution_backend(record)
     definition = AGENT_PROVIDERS[backend]
     native_result = definition.runtime_adapter().handle_native_command(
@@ -467,11 +467,7 @@ def handle_resident_native_command(
             if len(args) > 2 or (len(args) > 1 and effort not in efforts):
                 return _backend_command_result(current, "该模型不支持指定的 reasoning effort。", title="Invalid effort")
             model_updates["reasoning_effort"] = effort if effort in efforts else ""
-        next_settings = resident_runtime_settings.mark_portal_manual_authority(
-            resident_runtime_settings.merge_settings(current, model_updates, actor=actor, updated_at=updated_at),
-            actor=actor,
-            updated_at=updated_at,
-        )
+        next_settings = model_selection_settings(current, model_updates, actor=actor, updated_at=updated_at)
         return _backend_command_result(
             next_settings,
             f"{backend_label} model 已更新为 `{model}`，后续 turn 生效。",
