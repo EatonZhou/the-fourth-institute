@@ -57,6 +57,7 @@ const html = fs.readFileSync(path.join(root, 'management_portal/article_workspac
       await page.evaluate(() => {
         document.documentElement.dataset.portalTheme = 'auto';
         window.PortalCompatibility = {identifier: x => x};
+        window.PortalIdentity = {username: () => 'article-fixture'};
         window.PortalI18n = {t: x => x, message: x => x, requestLanguage: () => 'zh-CN',
           text: (parts, ...values) => String.raw({raw: parts}, ...values), html: (parts, ...values) => String.raw({raw: parts}, ...values)};
         window.toasts = []; window.PortalUI = {toast: message => toasts.push(message)};
@@ -82,7 +83,21 @@ const html = fs.readFileSync(path.join(root, 'management_portal/article_workspac
           request: url => PortalAPI.get(url),
         });
         const popovers = PortalArticleWorkspacePopovers.createPopovers({...deps(PortalArticleWorkspacePopovers), $, state});
+        // The fixture exercises real tool packages and Workbench layout; source
+        // editing and PDF rendering are unrelated services represented by roots.
+        for (const [owner, type, template] of [
+          ['PortalArticleWorkspaceMonaco', 'article-editor', 'articleEditorTemplate'],
+          ['PortalArticleWorkspacePdf', 'article-output', 'articleOutputTemplate'],
+        ]) window[owner] = {register() {
+          PortalWorkbench.registerPanelPackage({type, version: 1, component: owner,
+            presentation: {title: type, icon: 'file'}, sizing: {minWidth: 180, minHeight: 180},
+            instances: 'single', capabilities: [], behavior: {canHide: true, canCollapse: true, canMove: true, closable: false},
+            context: {channels: []}, persistence: {schemaVersion: 1},
+            create: () => ({root: $(template).content.firstElementChild.cloneNode(true)}),
+          });
+        }};
         window.layout = PortalArticleWorkspaceLayout.createLayout({...deps(PortalArticleWorkspaceLayout), $, state,
+          panelOptions: () => ({editor: {}, output: {}}),
           articleLayoutStore: PortalWorkbench.layout.createStore({storageKey: 'article-favorites-test-layout'}),
         });
         layout.initArticleWorkbench();
@@ -109,7 +124,18 @@ const html = fs.readFileSync(path.join(root, 'management_portal/article_workspac
     await page.locator('#articleFavoritesButton').click();
     assert.match(await page.locator('#articleFavoritesPanel').innerText(), /暂无 Article 收藏/);
     await page.locator('#articleFavoritesButton').click();
-    assert.equal(await page.locator('#articleFavoritesPanel').isVisible(), true, 'activity rail focuses an already visible tool');
+    assert.equal(await page.locator('#articleFavoritesPanel').isVisible(), false, 'a second rail click retracts the tool group');
+    assert.equal(await page.locator('#articleFavoritesButton').getAttribute('aria-pressed'), 'false');
+    await page.reload(); await setup();
+    assert.equal(await page.locator('#articleFavoritesPanel').isVisible(), false, 'reload preserves the collapsed group');
+    await page.locator('#articleFavoritesButton').click();
+    assert.equal(await page.locator('#articleFavoritesPanel').isVisible(), true);
+    await page.evaluate(() => layout.setSideView('favorites'));
+    assert.equal(await page.locator('#articleFavoritesPanel').isVisible(), true, 'programmatic navigation always opens');
+    await page.locator('[data-article-view="files"]').click();
+    assert.equal(await page.locator('#articleFavoritesPanel').isVisible(), false, 'another rail button changes the active tool');
+    await page.locator('#articleFavoritesButton').click();
+    assert.equal(await page.locator('#articleFavoritesPanel').isVisible(), true);
     await page.evaluate(() => layout.setToolVisible(false, 'favorites'));
     assert.equal(await page.locator('#articleFavoritesPanel').isVisible(), false);
     await page.locator('#articleFavoritesButton').click();
@@ -169,6 +195,30 @@ const html = fs.readFileSync(path.join(root, 'management_portal/article_workspac
     assert.deepEqual(errors, []);
     await page.locator('[data-article-view="files"]').click();
     assert.equal(await page.locator('#articleFavoritesPanel').isVisible(), false, 'other side views still work');
+    await page.evaluate(() => {
+      const wb = layout.currentArticleWorkbench(), {split, stack} = PortalWorkbench.model;
+      window.favoriteRoot = wb.getPanel('favorites').root;
+      wb.applyWorkspace({layout: split('horizontal', [stack(['files']), stack(['output']), stack(['favorites'])], [230, 700, 310])});
+    });
+    const dockWidth = await page.locator('#articleFavoritesPanel').evaluate(el => el.getBoundingClientRect().width);
+    await page.locator('#articleFavoritesButton').click();
+    assert.equal(await page.locator('#articleFavoritesPanel').isVisible(), false, 'a separately docked tool retracts at its own location');
+    assert.equal(await page.locator('[data-article-panel="files"]').isVisible(), true, 'another tool group stays open');
+    await page.locator('#articleFavoritesButton').click();
+    assert.equal(await page.evaluate(() => layout.currentArticleWorkbench().getPanel('favorites').root === favoriteRoot), true);
+    assert.ok(Math.abs(await page.locator('#articleFavoritesPanel').evaluate(el => el.getBoundingClientRect().width) - dockWidth) < 2, 'dock width survives retraction');
+    await page.evaluate(() => {
+      const wb = layout.currentArticleWorkbench(), {split, stack} = PortalWorkbench.model;
+      wb.applyWorkspace({layout: split('horizontal', [stack(['files']), stack(['output', 'favorites'], 'favorites')], [230, 1000])});
+    });
+    await page.locator('#articleFavoritesButton').click();
+    assert.equal(await page.locator('#articleFavoritesPanel').isVisible(), false);
+    assert.equal(await page.locator('[data-portal-workbench-panel="output"]').isVisible(), true, 'retracting a tool keeps a mixed content group open');
+    await page.locator('#articleFavoritesButton').click();
+    await page.evaluate(() => layout.currentArticleWorkbench().setLayoutLocked(true));
+    await page.locator('#articleFavoritesButton').click();
+    assert.equal(await page.locator('#articleFavoritesPanel').isVisible(), true, 'layout lock keeps the current panel open');
+    assert.deepEqual(errors, []);
     console.log('PASS: borderless Article star, Favorites side view and restoration, filtered titles, persistence, canonical opening, failure, identity isolation and denied removal.');
   } finally { await browser.close(); }
 })().catch(error => {console.error(error); process.exitCode = 1;});

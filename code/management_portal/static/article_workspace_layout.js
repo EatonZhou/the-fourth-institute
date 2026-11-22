@@ -38,11 +38,30 @@
       if (target === "favorites") return window.PortalResourceFavorites?.refresh();
     }
 
-    function setSideView(view, { forceOpen = true } = {}) {
+    function toolStackFor(node, panelId) {
+      if (node?.type === "stack") {
+        const toolIds = window.PortalArticleWorkspaceTools.definitions.map(tool => tool.id);
+        return node.children.some(child => child.panelId === panelId)
+          && node.children.every(child => toolIds.includes(child.panelId)) ? node : null;
+      }
+      for (const child of node?.children || []) {
+        const found = toolStackFor(child, panelId);
+        if (found) return found;
+      }
+      return null;
+    }
+
+    function setSideView(view, { forceOpen = true, toggle = false } = {}) {
       const target = ["files", "favorites", "search", "git", "chat", "settings", "library"].includes(view) ? view : "files";
       state.sideView = target;
       articleLayoutStore.write({ sideView: target });
       if (!forceOpen) return;
+      if (toggle && state.visibleTools.has(target)) {
+        // Keep a tool group's position and width, including independently docked
+        // groups. A mixed editor/tool group must retain its content panels.
+        return toolStackFor(articleWorkbench.getLayout(), target)
+          ? articleWorkbench.collapsePanel(target) : articleWorkbench.hidePanel(target);
+      }
       articleWorkbench?.focusPanel(target);
       return articleWorkbench?.getPanel(target)?.activate();
     }
@@ -57,8 +76,7 @@
     function sidebarStack() {
       let node = articleWorkbench?.getLayout();
       while (node?.type === "split") node = node.children[0];
-      const ids = window.PortalArticleWorkspaceTools.definitions.map(tool => tool.id);
-      return node?.type === "stack" && node.children.every(child => ids.includes(child.panelId)) ? node : null;
+      return toolStackFor(node, node?.activePanelId);
     }
 
     function canToggleArticleSidebar() {

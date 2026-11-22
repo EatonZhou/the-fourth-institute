@@ -41,7 +41,7 @@
     document.addEventListener("click", event => {
       const view = event.target.closest("[data-article-view]");
       if (view) {
-        setSideView(view.dataset.articleView);
+        setSideView(view.dataset.articleView, { toggle: true });
         return;
       }
       if (event.target.closest("[data-side-close]")) {
