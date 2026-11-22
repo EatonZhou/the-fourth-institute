@@ -444,6 +444,7 @@ def _registration_public(row, actor, *, login_states=None):
 
 
 def list_providers(inv):
+    from management_common.antigravity_platform import supports_account_isolation
     from .account_registrations import PROVIDER_KINDS, config_fields, default_route, registrations
     from .provider_catalog import AGENT_PROVIDERS
     from .provider_updates import provider_runtime_status
@@ -454,6 +455,8 @@ def list_providers(inv):
     can_register = next(permitted(getattr(inv, 'caller', ''), 'RegisterProviderAccount', 'account_id', ['preview']))[1]
     providers = []
     for provider, kinds in PROVIDER_KINDS.items():
+        if provider == "antigravity" and not supports_account_isolation():
+            kinds = tuple(kind for kind in kinds if kind != "subscription_login")
         if provider == "kimi" and "service" in kinds:
             from management_portal.kimi_code_server import service_configured
             if not service_configured():

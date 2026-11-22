@@ -515,7 +515,7 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
   const addSubscription = button("接入订阅帐号", () => accountEditor("subscription_login"), true);
   const addApi = button("新增 API Key", () => apiEditor(), !canWrite);
   function syncAccountButton() {
-    addAccount.disabled = !canRegister || busy || !providersReady || !state.providers.length;
+    addAccount.disabled = !canRegister || busy || !providersReady || !state.providers.some(p => p.kinds.length);
     addSubscription.disabled = !canRegister || busy || !providersReady || !state.providers.some(p => p.kinds.includes("subscription_login"));
   }
   const notice = node("p", "", {role: "status", "data-backend-notice": ""}); root.append(notice);
@@ -867,13 +867,13 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
   function accountEditor(preferredKind = "") {
     if (destroyed || busy || editor) return;
     if (!canRegister) throw new Error(t("你没有新增 AI 账号的权限。"));
-    if (!providersReady || !state.providers.length) throw new Error(t("Provider 列表不可用，请刷新后重试。"));
+    const providers = state.providers.filter(p => preferredKind ? p.kinds.includes(preferredKind) : p.kinds.length);
+    if (!providersReady || !providers.length) throw new Error(t("Provider 列表不可用，请刷新后重试。"));
     let directoryBrowser = null, closed = false, scanGeneration = 0;
     const {view, form} = newEditor("新增执行账号", () => { closed = true; scanGeneration++; directoryBrowser?.close(); });
     form.append(node("p", t("在这里添加可用的 Agent 后端，作为 Portal Resident 的来源。"), {class: "backendHint"}));
     const id = field(form, "账号名称", "account_id", "", {required: true, pattern: "[a-z][a-z0-9_\\-]{0,127}", autocomplete: "off", placeholder: "my-ai"});
     hint(id, "为这个 Agent 后端添加指代名称。");
-    const providers = preferredKind ? state.providers.filter(p => p.kinds.includes(preferredKind)) : state.providers;
     const provider = select(form, "AI 后端", "provider", providers.map(p => [p.provider, p.title || p.provider]));
     const kind = select(form, "接入方式", "kind", []);
     const extra = node("div", undefined, {class: "backendForm"}); form.append(extra);

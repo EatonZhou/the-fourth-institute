@@ -4,18 +4,26 @@ import pytest
 from management_portal.http_portal_session import PortalSessionHttp
 
 
-def test_provider_catalog_does_not_probe_runtime(monkeypatch):
+@pytest.mark.parametrize(("platform", "antigravity_kinds"), [
+    ("darwin", []),
+    ("linux", ["subscription_login"]),
+    ("win32", ["subscription_login"]),
+])
+def test_provider_catalog_does_not_probe_runtime(monkeypatch, platform, antigravity_kinds):
     """新增账号只读接入目录，运行程序不可用或很慢时仍能选择 Provider。
 
     :design: decision_7956d7cb4bde
     """
     from management_portal.execution import account_registrations, isa, provider_updates
     from management_portal import kimi_code_server
+    from management_common import antigravity_platform
 
     def unexpected(*args, **kwargs):
         raise AssertionError("catalog lookup must not inspect installed runtimes")
 
     monkeypatch.setattr(account_registrations, "registrations", lambda: [])
+    monkeypatch.setattr(antigravity_platform, "sys", SimpleNamespace(platform=platform))
+    monkeypatch.setattr(antigravity_platform, "identify_host", lambda: {"architecture": "aarch64"})
     monkeypatch.setattr(kimi_code_server, "service_configured", lambda: False)
     monkeypatch.setattr(provider_updates, "provider_runtime_status", unexpected)
     monkeypatch.setattr(provider_updates, "preparation_status", unexpected)
@@ -24,6 +32,7 @@ def test_provider_catalog_does_not_probe_runtime(monkeypatch):
     assert "subscription_login" in providers["codex"]["kinds"]
     assert "service" not in providers["kimi"]["kinds"]
     assert providers["provider_api"]["kinds"] == ["api_profile"]
+    assert providers["antigravity"]["kinds"] == antigravity_kinds
     assert all("runtime" not in p and "preparation" not in p for p in providers.values())
     observations = []
     monkeypatch.setattr(provider_updates, "provider_runtime_status",

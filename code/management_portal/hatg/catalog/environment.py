@@ -136,7 +136,7 @@ DECLARATIONS = (
     _d("ListProviders", FIXED, "列出 Provider、账号种类、能力与运行时状态。", (
         P("refresh", "boolean", "检查可用版本并保存观察；不安装或激活运行时"),
         P("include_runtime", "boolean", "默认 true；false 只读接入目录，不探测版本或准备状态，并忽略 refresh"),
-    ), (R("providers", "array", "Provider：provider、title、kinds、capabilities、runtime（已装与可用版本）、"
+    ), (R("providers", "array", "Provider：provider、title、kinds（当前主机可新增的账号种类）、capabilities、runtime（已装与可用版本）、"
           "default_route_id、account_count；允许新增账号时附订阅账号的 account_directory_prefix（含末尾路径分隔符）"),), owner="execution"),
     _d("PrepareProviderRuntime", FIXED, "准备所选 Provider 的运行环境；复用已装程序，缺失时异步安装。", (
         R("provider", description="Provider 名称"),

@@ -25,6 +25,7 @@ window.PortalInstructionClient = {execute: async (name, args, options = {}) => {
     case 'ListProviders': return {providers: [
       {provider: 'codex', title: 'Codex', kinds: ['subscription_login']},
       {provider: 'claude', title: 'Claude Code', kinds: ['subscription_login']},
+      {provider: 'antigravity', title: 'Google Antigravity', kinds: []},
       {provider: 'provider_api', title: 'Model API', kinds: ['api_profile']}]};
     case 'ListProviderAccounts': return {accounts};
     case 'ListBackendRoles': return {roles};
@@ -65,11 +66,14 @@ const click = text => {const b = [...window.document.querySelectorAll('button')]
   click('接入订阅帐号');
   let form = window.document.querySelector('dialog form');
   assert.equal(form.elements.kind.value, 'subscription_login');
+  assert(!form.elements.provider.querySelector('option[value="antigravity"]'));
   assert.match(form.textContent, /添加可用的 Agent 后端/);
   assert(!form.querySelector('details'));
   assert(!form.querySelector('[name=secret]'));
   click('关闭'); click('新增执行账号');
   form = window.document.querySelector('dialog form');
+  assert(!form.elements.provider.querySelector('option[value="antigravity"]'),
+    'the general registration form only lists providers with a registrable account kind');
   form.elements.account_id.value = 'example-api';
   form.elements.provider.value = 'provider_api';
   form.elements.provider.dispatchEvent(new window.Event('change'));
