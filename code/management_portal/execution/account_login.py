@@ -193,6 +193,8 @@ def local_login_environment(provider, account_id):
     home_key = {"codex": "CODEX_HOME", "claude": "CLAUDE_CONFIG_DIR", "antigravity": "GEMINI_HOME"}[provider]
     env[home_key] = str(home)
     if provider == 'antigravity':
+        from management_portal.antigravity_runtime import credential_environment
+        env.update(credential_environment())
         # This login launches our Python ACP wrapper before the vendor
         # executable. Its imports resolve runtime paths from the selected
         # instance; this non-secret identity is required even in a fully

@@ -5,9 +5,10 @@ from management_portal.http_portal_session import PortalSessionHttp
 
 
 @pytest.mark.parametrize(("platform", "antigravity_kinds"), [
-    ("darwin", []),
+    ("darwin", ["subscription_login"]),
     ("linux", ["subscription_login"]),
     ("win32", ["subscription_login"]),
+    ("freebsd", []),
 ])
 def test_provider_catalog_does_not_probe_runtime(monkeypatch, platform, antigravity_kinds):
     """新增账号只读接入目录，运行程序不可用或很慢时仍能选择 Provider。

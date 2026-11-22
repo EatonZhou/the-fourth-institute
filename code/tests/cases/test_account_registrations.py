@@ -140,7 +140,7 @@ def test_rejected_registration_does_not_reserve_account_directory(tmp_path, monk
     from management_common import antigravity_platform
     from management_portal.execution import account_registrations as store, isa
 
-    monkeypatch.setattr(antigravity_platform, "sys", SimpleNamespace(platform="darwin"))
+    monkeypatch.setattr(antigravity_platform, "sys", SimpleNamespace(platform="freebsd"))
     directory = tmp_path / "selected-account"
     arguments = {"account_id": "Gemini Zero", "provider": "antigravity", "kind": "subscription_login",
                  "config": {"account_dir": str(directory)}}
@@ -159,6 +159,27 @@ def test_rejected_registration_does_not_reserve_account_directory(tmp_path, monk
     with pytest.raises(InstructionError, match="当前平台暂不支持"):
         store.create_registration(arguments, "alice")
     assert store.registrations() == [] and marker.read_text() == "synthetic-login"
+
+
+def test_macos_antigravity_registration_keeps_distinct_account_directories(tmp_path, monkeypatch):
+    from management_common import antigravity_platform
+    from management_portal.execution import account_registrations as store
+
+    monkeypatch.setattr(antigravity_platform, "sys", SimpleNamespace(platform="darwin"))
+    monkeypatch.setattr(antigravity_platform, "identify_host", lambda: {"architecture": "aarch64"})
+    directories = []
+    for account_id in ("agy_one", "agy_two"):
+        directory = tmp_path / account_id
+        row = store.create_registration({
+            "account_id": account_id,
+            "provider": "antigravity",
+            "kind": "subscription_login",
+            "config": {"account_dir": str(directory)},
+        }, "alice")
+        assert row["config"]["account_dir"] == str(directory)
+        assert directory.is_dir()
+        directories.append(directory)
+    assert not directories[0].samefile(directories[1])
 
 
 def test_role_blocks_account_deletion(tmp_path, monkeypatch):

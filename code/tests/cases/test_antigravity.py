@@ -555,12 +555,19 @@ def test_callback_relay_accepts_only_its_google_loopback_and_state():
         assert opener.return_value.open.call_count == 1
 
 
-def test_account_environment_and_login_parser_are_isolated(monkeypatch, tmp_path):
+@pytest.mark.parametrize("platform", ["linux", "darwin"])
+def test_account_environment_and_login_parser_are_isolated(monkeypatch, tmp_path, platform):
     from management_portal.execution import account_login as login
     monkeypatch.setattr(login, "account_home", lambda p, a: tmp_path / a)
+    monkeypatch.setattr(login.sys, "platform", platform)
     monkeypatch.setenv("GEMINI_API_KEY", "must-not-leak")
+    monkeypatch.setenv("AGY_ACP_FORCE_FILE_STORAGE", "0")
     env = login.local_login_environment("antigravity", "antigravity_one")
+    second = accounts.environment("antigravity_two")
     assert env["GEMINI_HOME"] == str(tmp_path / "antigravity_one")
+    assert second["GEMINI_HOME"] == str(tmp_path / "antigravity_two")
+    expected_storage = "1" if platform == "darwin" else None
+    assert env.get("AGY_ACP_FORCE_FILE_STORAGE") == second.get("AGY_ACP_FORCE_FILE_STORAGE") == expected_storage
     assert "GEMINI_API_KEY" not in env and "CLAUDE_CONFIG_DIR" not in env
     parser = login.LoginOutputParser("antigravity")
     _, url = parser.feed("https://accounts.google.com/o/oauth2/auth?state=123\n")
@@ -568,15 +575,21 @@ def test_account_environment_and_login_parser_are_isolated(monkeypatch, tmp_path
     assert login._session_result({"provider": "antigravity"}, {"state": "pending"})["requires_code_input"]
 
 
-@pytest.mark.parametrize("platform", ["linux", "win32"])
-def test_installer_verifies_archive_before_activation(monkeypatch, tmp_path, platform):
+@pytest.mark.parametrize(("platform", "target"), [
+    ("linux", "linux-x86_64"), ("win32", "windows-x86_64"),
+    ("darwin", "darwin-aarch64"), ("darwin", "darwin-x86_64"),
+])
+def test_installer_verifies_archive_before_activation(monkeypatch, tmp_path, platform, target):
+    from management_common import antigravity_platform
+
+    version = "1.5.2" if platform == "darwin" else "1.4.5"
     data = io.BytesIO()
     with zipfile.ZipFile(data, "w") as bundle:
         bundle.writestr("agy_acp_server.par", b"test")
     raw = data.getvalue()
     item = {"archive": "https://dl.google.com/test.zip", "cmd": "./agy_acp_server.par", "sha256": hashlib.sha256(raw).hexdigest()}
-    monkeypatch.setattr(runtime, "manifest", lambda: {"version": "1.4.5", "distribution": {"binary": {"linux-x86_64": item}}})
-    monkeypatch.setattr(runtime, "platform_key", lambda: "linux-x86_64")
+    monkeypatch.setattr(runtime, "manifest", lambda: {"version": version, "distribution": {"binary": {target: item}}})
+    monkeypatch.setattr(antigravity_platform, "identify_host", lambda: {"architecture": target.split("-", 1)[1]})
     monkeypatch.setattr(runtime.updates, "RUNTIMES", tmp_path)
     monkeypatch.setattr(runtime, "urlopen", lambda *a, **k: io.BytesIO(raw))
     monkeypatch.setattr(runtime.sys, "platform", platform)
@@ -585,20 +598,44 @@ def test_installer_verifies_archive_before_activation(monkeypatch, tmp_path, pla
     monkeypatch.setenv("APPDATA", "operator-appdata-must-not-be-used")
     monkeypatch.setenv("GEMINI_API_KEY", "must-not-leak")
     with mock.patch("management_portal.antigravity_client.AcpClient") as client:
-        client.return_value.__enter__.return_value.initialize.return_value = {"agentInfo": {"version": "1.4.5"}}
-        root = runtime.AntigravityRuntime().stage(("1.4.5",))
+        client.return_value.__enter__.return_value.initialize.return_value = {"agentInfo": {"version": version}}
+        provider = runtime.AntigravityRuntime()
+        monkeypatch.setattr(provider, "link", lambda: tmp_path / f"antigravity-{version}")
+        assert provider.available() == (version,)
+        root = provider.stage((version,))
         assert (root / ".portal-validated").is_file()
+        assert provider.installed() == (version,)
         env = client.call_args.kwargs["env"]
         assert env["HOME"] == env["GEMINI_HOME"]
         assert "GEMINI_API_KEY" not in env
+        assert env.get("AGY_ACP_FORCE_FILE_STORAGE") == ("1" if platform == "darwin" else None)
         if platform == "win32":
             assert env["SystemRoot"] == r"C:\Windows"
             assert env["USERPROFILE"] == env["APPDATA"] == env["LOCALAPPDATA"] == env["GEMINI_HOME"]
     (root / ".portal-validated").unlink()
     item["sha256"] = "0" * 64
     with pytest.raises(ValueError, match="checksum"):
-        runtime.AntigravityRuntime().stage(("1.4.5",))
+        runtime.AntigravityRuntime().stage((version,))
     assert not (root / ".portal-validated").exists()
+
+
+def test_macos_cannot_launch_or_install_an_old_acp_without_isolated_storage(monkeypatch, tmp_path):
+    from management_portal.native_agent_transport import NativeAgentUnavailable
+
+    monkeypatch.setattr(runtime.sys, "platform", "darwin")
+    monkeypatch.setattr(runtime, "manifest", lambda: {"version": "1.4.5"})
+    (tmp_path / "distribution.json").write_text('{"version": "1.4.5", "cmd": "agy_acp_server.par"}')
+    (tmp_path / ".portal-validated").touch()
+    provider = runtime.AntigravityRuntime()
+    monkeypatch.setattr(provider, "link", lambda: tmp_path)
+
+    assert provider.installed() == ("0",)
+    with pytest.raises(NativeAgentUnavailable, match="separate accounts"):
+        provider.available()
+    with pytest.raises(NativeAgentUnavailable, match="separate accounts"):
+        provider.stage(("1.4.5",))
+    with pytest.raises(NativeAgentUnavailable, match="separate accounts"):
+        runtime.command(tmp_path)
 
 
 def test_installer_rejects_archive_path_escape(monkeypatch, tmp_path):

@@ -14,13 +14,27 @@ import zipfile
 from packaging.version import Version
 
 from management_portal.execution import provider_updates as updates
-from management_common.distribution_targets import identify_host
+from management_common.antigravity_platform import platform_key
 from management_portal.native_agent_transport import NativeAgentUnavailable
 
 REGISTRY = "https://raw.githubusercontent.com/agentclientprotocol/registry/main/antigravity-acp/agent.json"
+MACOS_FILE_STORAGE_MINIMUM_VERSION = Version("1.5.2")
 
 
-from management_common.antigravity_platform import platform_key
+def credential_environment() -> dict[str, str]:
+    """Use per-account GEMINI_HOME files instead of the shared macOS Keychain."""
+    return {"AGY_ACP_FORCE_FILE_STORAGE": "1"} if sys.platform == "darwin" else {}
+
+
+def _supports_credential_storage(version: str) -> bool:
+    return sys.platform != "darwin" or Version(version) >= MACOS_FILE_STORAGE_MINIMUM_VERSION
+
+
+def _require_credential_storage(version: str) -> None:
+    if not _supports_credential_storage(version):
+        raise NativeAgentUnavailable(
+            f"Antigravity ACP {MACOS_FILE_STORAGE_MINIMUM_VERSION} or newer is required for separate accounts on macOS"
+        )
 
 
 def manifest():
@@ -34,11 +48,16 @@ def manifest():
 class AntigravityRuntime(updates.ProviderRuntime):
     def available(self):
         platform_key()
-        return (manifest()["version"],)
+        version = manifest()["version"]
+        _require_credential_storage(version)
+        return (version,)
 
     def installed(self):
         path = self.link() / "distribution.json"
-        return (json.loads(path.read_text())["version"],) if path.is_file() and (self.link() / ".portal-validated").is_file() else ("0",)
+        if not path.is_file() or not (path.parent / ".portal-validated").is_file():
+            return ("0",)
+        version = json.loads(path.read_text())["version"]
+        return (version,) if _supports_credential_storage(version) else ("0",)
 
     def prerequisites_available(self):
         platform_key()
@@ -50,6 +69,7 @@ class AntigravityRuntime(updates.ProviderRuntime):
     def stage(self, versions):
         value = manifest()
         Version(value["version"])
+        _require_credential_storage(value["version"])
         if tuple(versions) != (value["version"],):
             raise RuntimeError("Antigravity registry changed; check the available version again")
         item = value["distribution"]["binary"][platform_key()]
@@ -87,7 +107,8 @@ class AntigravityRuntime(updates.ProviderRuntime):
         # Handshake verifies the executable and framing without login or an AI call.
         from management_portal.antigravity_client import AcpClient
         with tempfile.TemporaryDirectory() as scratch:
-            env = {"PATH": os.environ.get("PATH", os.defpath), "HOME": scratch, "GEMINI_HOME": scratch}
+            env = {"PATH": os.environ.get("PATH", os.defpath), "HOME": scratch, "GEMINI_HOME": scratch,
+                   **credential_environment()}
             if sys.platform == "win32":
                 # The native binary needs a Windows user profile even for the
                 # credential-free initialize handshake. Keep every profile
@@ -111,4 +132,5 @@ def command(root: Path | None = None):
     if not path.is_file():
         raise NativeAgentUnavailable("Antigravity ACP is not installed; prepare the Provider runtime first")
     value = json.loads(path.read_text())
+    _require_credential_storage(value["version"])
     return [str(root / value["cmd"]), *value.get("args", []), "--logtostderr"]

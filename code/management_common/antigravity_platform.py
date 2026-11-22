@@ -6,8 +6,7 @@ from management_common.distribution_targets import identify_host
 
 
 def _supported_platform_key() -> str | None:
-    # macOS's global Google keychain entry is not yet verified to isolate accounts.
-    os_name = {"linux": "linux", "win32": "windows"}.get(sys.platform)
+    os_name = {"linux": "linux", "win32": "windows", "darwin": "darwin"}.get(sys.platform)
     if not os_name:
         return None
     arch = identify_host()["architecture"]
@@ -21,6 +20,6 @@ def supports_account_isolation() -> bool:
 def platform_key() -> str:
     key = _supported_platform_key()
     if key is None:
-        raise RuntimeError("Antigravity account isolation is supported on Linux and Windows only")
+        raise RuntimeError("Antigravity is supported on Linux, Windows and macOS, on x86-64 and ARM64")
     return key
 
