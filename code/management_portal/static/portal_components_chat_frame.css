@@ -238,6 +238,26 @@
   margin-inline-start: auto;
 }
 
+.portalChatWorkspaceRoot > [data-resource-project-context] {
+  box-sizing: border-box;
+  flex: 0 0 auto;
+  padding: 8px 12px 12px;
+}
+
+.portalChatWorkspaceRoot > [data-resource-project-context]:not([hidden]) {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.portalChatWorkspaceRoot > [data-resource-project-context] > select {
+  min-width: 0;
+  max-width: 100%;
+  min-height: 28px;
+  font: inherit;
+}
+
 .chatSubline {
   min-width: 0;
   display: flex;
