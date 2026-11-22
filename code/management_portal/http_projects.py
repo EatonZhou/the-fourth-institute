@@ -1,13 +1,14 @@
 """The Projects page (decision_46c37026e8ea).
 
 One page shows the Project list (``/projects``) and a Project
-(``/projects?project=<ID>``).  It reads and changes Projects only through
-HATG instructions (ListProjects, GetProject, UpdateProject, RenameProject,
-DeleteProject), so a Resident can do everything the page does.
+(``/projects?project=<ID>``). Project management uses HATG instructions;
+the private discussion list joins current resource links and the caller's
+existing discussion bindings through their authorized readers.
 """
 from __future__ import annotations
 
 from pathlib import Path
+from urllib.parse import parse_qs
 
 from management_portal.http_routes import RouteDefinition
 
@@ -27,5 +28,22 @@ def routes(portal):
     def page(request, _parsed, _actor):
         return http_documents._serve_authenticated_document(request, 200, PAGE.read_bytes())
 
-    return tuple(RouteDefinition("GET", path, page, "portal-pages-get", page=True)
-                 for path in ("/projects", "/projects/"))
+    def discussions(request, parsed, actor):
+        from . import http_responses, project_resource_discussions
+        from .resources import get_resource_service
+        query = parse_qs(parsed.query)
+        try:
+            result = project_resource_discussions.list_discussions(
+                get_resource_service(), actor, str(query.get("project_id", [""])[0]),
+                offset=int(query.get("offset", ["0"])[0]))
+        except PermissionError as exc:
+            return http_responses._serve_json(request, 403, {"error": str(exc)})
+        except (KeyError, FileNotFoundError) as exc:
+            return http_responses._serve_json(request, 404, {"error": str(exc)})
+        except ValueError as exc:
+            return http_responses._serve_json(request, 400, {"error": str(exc)})
+        return http_responses._serve_json(request, 200, result)
+
+    return (*tuple(RouteDefinition("GET", path, page, "portal-pages-get", page=True)
+                   for path in ("/projects", "/projects/")),
+            RouteDefinition("GET", "/projects/api/discussions", discussions, "projects"))

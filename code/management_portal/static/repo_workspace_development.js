@@ -86,11 +86,12 @@
     const chatOptions = {
       autoLoad: false, refsScope: `repo-development:${repoId}`,
       title: t("Chat Workspace"), draftOwner: () => window.PortalIdentity?.username?.() || "anonymous",
-      resolveResident: target => api.get(`/knowledge/api/item-chat?kb_id=${encodeURIComponent(target.kb_id)}`),
+      resourceProjectContext: true,
+      resolveResident: target => api.get(`/knowledge/api/item-chat?${new URLSearchParams({ kb_id: target.kb_id, ...(target.project_id ? { project_id: target.project_id } : {}) })}`),
       resolveBeforeSend: (target, payload) => api.post("/knowledge/api/item-chat/prepare", {
-        kb_id: target.kb_id, message: payload.text || payload.plainText,
+        kb_id: target.kb_id, ...(target.project_id ? { project_id: target.project_id } : {}), purpose: "send", message: payload.text || payload.plainText,
       }),
-      resolveBeforeSettings: target => api.post("/knowledge/api/item-chat/prepare", { kb_id: target.kb_id, purpose: "settings" }),
+      resolveBeforeSettings: target => api.post("/knowledge/api/item-chat/prepare", { kb_id: target.kb_id, ...(target.project_id ? { project_id: target.project_id } : {}), purpose: "settings" }),
       initialContext: (_target, detail) => ({ context_text: `${detail.initial_context?.context_text || ""}\nRepo: ${repoId}\n工程目录：${overview.checkout_path || ""}` }),
       emptyText: t("鼠标选中代码后自动加入聊天；也可将当前文件加入聊天，讨论或修改当前仓库。"), enableLinkPreview: true, onError: reportError,
     };

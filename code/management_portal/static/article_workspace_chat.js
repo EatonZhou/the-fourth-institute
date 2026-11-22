@@ -110,12 +110,13 @@
         refsScope: "articleWorkspaceChat",
         title: window.PortalI18n.t("Chat Workspace"),
         draftOwner: () => $("portalUsername")?.textContent || "anonymous",
-        resolveResident: target => window.PortalAPI.get(`/knowledge/api/item-chat?kb_id=${encodeURIComponent(target.kb_id || "")}`),
+        resourceProjectContext: true,
+        resolveResident: target => window.PortalAPI.get(`/knowledge/api/item-chat?${new URLSearchParams({ kb_id: target.kb_id || "", ...(target.project_id ? { project_id: target.project_id } : {}) })}`),
         resolveBeforeSend: (target, payload) => window.PortalAPI.post("/knowledge/api/item-chat/prepare", {
-          kb_id: target.kb_id, message: payload.text || payload.plainText,
+          kb_id: target.kb_id, ...(target.project_id ? { project_id: target.project_id } : {}), purpose: "send", message: payload.text || payload.plainText,
         }),
         resolveBeforeSettings: target => window.PortalAPI.post("/knowledge/api/item-chat/prepare", {
-          kb_id: target.kb_id, purpose: "settings",
+          kb_id: target.kb_id, ...(target.project_id ? { project_id: target.project_id } : {}), purpose: "settings",
         }),
         initialContext: (target, detail) => ({
           context_text: `${detail.initial_context?.context_text || ""}\nArticle: ${target.kb_id}\n工程目录：${articleRoot(selectedArticle())?.path || selectedArticle()?.canonical_root || ""}`,

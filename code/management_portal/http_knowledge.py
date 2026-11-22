@@ -159,7 +159,8 @@ class KnowledgeHttp:
         actor = self.session_actor(request) or ''
         try:
             self.require_resource(kb_id, actor)
-            return self.respond(request, 200, self.knowledge_item_chat_backend().knowledge_item_chat_backend.get_state(actor, kb_id))
+            return self.respond(request, 200, self.knowledge_item_chat_backend().knowledge_item_chat_backend.get_state(
+                actor, kb_id, project_id=str(qs.get('project_id', [''])[0]).strip()))
         except KeyError as exc:
             return self.respond(request, 404, {'error': str(exc) or 'knowledge item not found'})
         except PermissionError as exc:
@@ -238,10 +239,10 @@ class KnowledgeHttp:
     def post_chat_prepare(self, request, payload, actor):
         return self.respond(request, 200, self.knowledge_item_chat_backend().knowledge_item_chat_backend.prepare(
             actor, str(payload.get('kb_id') or ''), str(payload.get('message') or ''),
-            purpose=str(payload.get('purpose') or 'send')))
+            purpose=str(payload.get('purpose') or 'send'), project_id=str(payload.get('project_id') or '')))
 
     def post_chat(self, request, payload, actor):
-        return self.respond(request, 200, self.knowledge_item_chat_backend().knowledge_item_chat_backend.send_message(actor, str(payload.get('kb_id') or '').strip(), str(payload.get('content') or ''), payload.get('attachments') if isinstance(payload.get('attachments'), list) else [], payload.get('context_refs') if isinstance(payload.get('context_refs'), dict) else {}, message_id=str(payload.get('message_id') or '')))
+        return self.respond(request, 200, self.knowledge_item_chat_backend().knowledge_item_chat_backend.send_message(actor, str(payload.get('kb_id') or '').strip(), str(payload.get('content') or ''), payload.get('attachments') if isinstance(payload.get('attachments'), list) else [], payload.get('context_refs') if isinstance(payload.get('context_refs'), dict) else {}, message_id=str(payload.get('message_id') or ''), project_id=str(payload.get('project_id') or '')))
 
     def post_search_start(self, request, payload, actor):
         result = semantic_search_jobs.start_search('knowledge', payload, actor)

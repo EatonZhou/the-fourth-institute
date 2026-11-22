@@ -49,7 +49,8 @@ def test_projects_feature_serves_the_page_and_owns_project_links(monkeypatch):
     monkeypatch.setattr(http_documents, "_serve_authenticated_document", lambda *args: served.append(args) or "page")
     shell = type("Shell", (), {})
     routes = http_projects.routes(shell)
-    assert {(route.method, route.path) for route in routes} == {("GET", "/projects"), ("GET", "/projects/")}
+    assert {(route.method, route.path) for route in routes} == {
+        ("GET", "/projects"), ("GET", "/projects/"), ("GET", "/projects/api/discussions")}
     assert routes[0].handler("request", None, "alice") == "page"
     assert served[0][2].startswith(b"<!doctype html>")
     assert ("projects", http_projects.NAVIGATION) in portal_features.contributions("web.navigation")

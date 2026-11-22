@@ -15,6 +15,25 @@ from management_portal.knowledge_item_chat_backend import KnowledgeItemChatBacke
 class _Resources:
     def __init__(self, path: Path) -> None:
         self.path = path
+        self.project_summary = "Shared goal"
+        self.projects = ["project_test"]
+
+    def get(self, resource_id, *, actor):
+        assert actor == "alice"
+        return {"resource_id": resource_id,
+                "resource_type": "project" if resource_id.startswith("project_") else "article",
+                "title": resource_id, "projects": list(self.projects)}
+
+    def action(self, resource_id, action, *, actor):
+        assert actor == "alice" and action == "summary.read"
+        return {"text": self.project_summary}
+
+    def resolve(self, resource_id, *, actor):
+        return {"record": self.get(resource_id, actor=actor), "exists": True}
+
+    def query(self, *, actor, projects, limit):
+        assert actor == "alice"
+        return {"resources": [], "total": 0}
 
     def read_content(self, resource_id: str, *, actor: str):
         return (
@@ -26,7 +45,7 @@ class _Resources:
                     "resource_id": resource_id,
                     "title": "Test Article",
                     "type": "article",
-                    "project": "project_test",
+                    "project_ids": list(self.projects),
                 },
             },
         )
@@ -151,6 +170,26 @@ def test_knowledge_message_uses_resource_body_as_runtime_context(backend) -> Non
     assert parts[0] == {"type": "text", "text": "inspect"}
     assert parts[1]["type"] == "context_reference"
     assert "Current article" in parts[1]["context"]["context_text"]
+
+
+def test_project_context_refreshes_for_existing_resident_and_validates_before_prepare(backend, monkeypatch):
+    chat, service = backend
+    first = chat.prepare("alice", "article_test", "first")
+    assert "Shared goal" in first["initial_context"]["context_text"]
+    chat._resources.project_summary = "Updated shared goal"
+    second = chat.prepare("alice", "article_test", "second")
+    assert second["resident_id"] == first["resident_id"]
+    assert "Updated shared goal" in second["initial_context"]["context_text"]
+    chat.send_message("alice", "article_test", "send")
+    parts = service.invocations[-1][0]["arguments"]["message"]["content_parts"]
+    assert "Updated shared goal" in parts[1]["context"]["context_text"]
+    chat._resources.projects = ["project_test", "project_second"]
+    monkeypatch.setattr(chat, "_ensure", lambda *a, **kw: pytest.fail("must validate project first"))
+    with pytest.raises(ValueError, match="请选择"):
+        chat.prepare("alice", "article_test", "ambiguous")
+    with pytest.raises(PermissionError):
+        chat.send_message("alice", "article_test", "unrelated", project_id="project_foreign")
+    assert len(service.invocations) == 1
 
 
 def test_knowledge_image_is_stored_for_actor_and_delivered_as_image(backend, monkeypatch) -> None:

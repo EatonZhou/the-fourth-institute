@@ -1816,7 +1816,7 @@
       const hostOptions = Object.fromEntries([
         "root", "id", "panelId", "target", "autoLoad", "title", "emptyText", "placeholder",
         "draftOwner", "historyLimit", "residentFeatures", "pendingHistoryScope",
-        "resolveResident", "resolveBeforeSend", "resolveBeforeSettings", "initialContext", "submissionContext", "onDetail", "onAcknowledgement", "emit",
+        "resolveResident", "resolveBeforeSend", "resolveBeforeSettings", "resourceProjectContext", "initialContext", "submissionContext", "onDetail", "onAcknowledgement", "emit",
         "onSent", "onRollback", "onError", "onForkCreated", "conversationView", "onDisplayAction", "onWatchboardAction", "onInteractionChange",
       ].filter(key => Object.prototype.hasOwnProperty.call(options, key)).map(key => [key, options[key]]));
       this.options = hostOptions;
@@ -1841,6 +1841,8 @@
       this.conversationResetScope = "";
       this.surfaceRevision = 0;
       this.surfaceTarget = null;
+      this.projectContext = null;
+      this.selectedProjectId = "";
       this.workspace = new ResidentChatWorkspace({
         ...hostOptions,
         onFamilyStatus: button => this.openFamilyStatus(button),
@@ -2813,6 +2815,51 @@
       return this.setResident(target, { load: true });
     }
 
+    projectSurfaceTarget(target) {
+      return this.options.resourceProjectContext && this.selectedProjectId
+        ? { ...target, project_id: this.selectedProjectId } : target;
+    }
+
+    updateProjectContext(context) {
+      if (!this.options.resourceProjectContext) return;
+      this.projectContext = context || null;
+      this.selectedProjectId = String(context?.selected_project_id || "");
+      this.renderProjectContext();
+    }
+
+    renderProjectContext() {
+      if (!this.options.resourceProjectContext) return;
+      if (!this.projectContextControl) {
+        const label = document.createElement("label");
+        label.className = "paneNote";
+        label.dataset.resourceProjectContext = "";
+        label.append(document.createTextNode(window.PortalI18n.t("讨论背景项目") + " "));
+        const select = document.createElement("select");
+        select.className = "portalSelect";
+        select.setAttribute("aria-label", window.PortalI18n.t("讨论背景项目"));
+        select.addEventListener("change", () => {
+          if (this.preparingResident) return;
+          this.selectedProjectId = select.value;
+        });
+        label.append(select);
+        this.workspace.root.querySelector(".chatHead")?.after(label);
+        this.projectContextControl = label;
+      }
+      this.projectContextControl.hidden = !this.projectContext;
+      const select = this.projectContextControl.querySelector("select");
+      const projects = this.projectContext?.projects || [];
+      select.replaceChildren();
+      const add = (value, title) => {
+        const option = document.createElement("option");
+        option.value = value; option.textContent = title; select.append(option);
+      };
+      if (!this.selectedProjectId) add("", window.PortalI18n.t("请选择项目或仅当前资源"));
+      projects.forEach(project => add(project.project_id, project.title || project.project_id));
+      add("@none", window.PortalI18n.t("仅当前资源"));
+      select.value = this.selectedProjectId;
+      select.disabled = this.preparingResident;
+    }
+
     async openSurface(surfaceTarget = {}, options = {}) {
       if (typeof this.options.resolveResident !== "function") {
         throw new Error("ResidentChatPanel surface binding requires resolveResident");
@@ -2823,11 +2870,12 @@
         options.force !== true
         && this.surfaceTarget
         && JSON.stringify(this.surfaceTarget) === JSON.stringify(requested)
-        && this.workspace.target().resident_id
+        && (this.workspace.target().resident_id || (this.options.resourceProjectContext && this.detail?.binding_state === "unbound"))
       ) {
         return this.detail;
       }
       this.surfaceTarget = null;
+      this.updateProjectContext(null);
       void this.setResident("", { load: false });
       const binding = { revision, targetRevision: this.targetRevision };
       this.pendingSurfaceBinding = binding;
@@ -2836,6 +2884,7 @@
       try {
         const detail = await this.options.resolveResident(requested, this, options);
         if (!isCurrent()) return null;
+        this.updateProjectContext(detail?.project_context);
         const residentId = String(
           detail?.resident_id
           || detail?.resident?.resident_id
@@ -2881,6 +2930,7 @@
     closeSurface() {
       this.surfaceRevision += 1;
       this.surfaceTarget = null;
+      this.updateProjectContext(null);
       return this.setResident("", { load: false });
     }
 
@@ -3030,6 +3080,9 @@
     }
 
     async reload(options = {}) {
+      if (this.options.resourceProjectContext && this.surfaceTarget) {
+        return this.openSurface(this.surfaceTarget, { ...options, force: true });
+      }
       if (!this.workspace.target().resident_id) return null;
       return this.setResident(this.workspace.target(), {
         load: true,
@@ -3322,14 +3375,18 @@
       let identity = null;
       const initialDraft = this.workspace.draftText();
       this.preparingResident = true;
+      this.renderProjectContext();
       this.workspace.setBusy(true);
       this.workspace.setStatus(window.PortalI18n.t("正在准备 Resident…"));
       try {
-        const surface = this.surfaceTarget;
+        const surface = this.projectSurfaceTarget(this.surfaceTarget);
         try {
           identity = await resolve(surface, payload);
         } catch (error) {
           if (revision !== this.targetRevision) return null;
+          // Sending a resource discussion requires this POST's fresh context.
+          // A GET can confirm identity, but cannot replace send preparation.
+          if (this.options.resourceProjectContext && payload) throw error;
           if (!isInterruptedResidentRequest(error) || !this.options.resolveResident) throw error;
           // A lost POST response does not tell us whether preparation committed.
           // Confirm the authenticated surface binding; never repeat the write.
@@ -3340,6 +3397,7 @@
           identity = confirmed;
         }
         if (revision !== this.targetRevision) return null;
+        this.updateProjectContext(identity?.project_context);
         if (!String(identity?.resident_id || "").trim()) throw new Error(window.PortalI18n.t("未能取得对话的 Resident，请重试。"));
         const draft = this.workspace.draftText();
         const attachments = this.workspace.attachments();
@@ -3380,6 +3438,7 @@
         throw Object.assign(new Error(message), { cause: error, status: error?.status, code: error?.code });
       } finally {
         this.preparingResident = false;
+        this.renderProjectContext();
         if (preparationRevision === this.targetRevision) this.workspace.setBusy(false);
       }
     }
@@ -3395,7 +3454,11 @@
       if (!String(payload?.text || payload?.plainText || "").trim()) return null;
       const view = this.conversationView();
       if (view?.send && !String(payload.text || payload.plainText || "").startsWith("/")) return view.send(payload, submitOptions, this);
-      if (!this.target().resident_id && this.options.resolveBeforeSend) {
+      if (this.options.resolveBeforeSend && (!this.target().resident_id || this.options.resourceProjectContext)) {
+        if (this.options.resourceProjectContext && this.projectContext?.selection_required && !this.selectedProjectId) {
+          this.projectContextControl?.querySelector("select")?.focus();
+          throw new Error(window.PortalI18n.t("请选择讨论背景项目，或选择仅当前资源。"));
+        }
         const prepared = await this.prepareSurfaceResident(this.options.resolveBeforeSend, payload);
         if (!prepared) return null;
         if (prepared.draftChanged) submitOptions = { ...submitOptions, clear: false };
@@ -3420,6 +3483,7 @@
         ? this.subagentSteer
         : null;
       if (steer) this.subagentSteer = null;
+      const initialContext = this.initialContext;
       const submission = this.workspace.submit(async (submitted, context) => {
         pending.messageId = context.messageIdentity;
         this.pendingTurnSubmissions.set(context.messageIdentity, pending);
@@ -3428,7 +3492,6 @@
         if (refCount(submitted.refs)) {
           contentParts.push({ type: "context_reference", context: refsPayload(submitted.refs) });
         }
-        const initialContext = this.initialContext;
         const submittedDetail = this.detail;
         return window.PortalResidentProtocol.sendInput({
           lineage_id: target.lineage_id,
@@ -3445,7 +3508,7 @@
             if (submitOptions.includeContext === false) return;
             const currentContext = await this.options.submissionContext?.(submittedTarget, submittedDetail);
             const firstMessage = !(snapshot?.messages || []).some(item => messageRole(item) === "human");
-            if (currentContext || (initialContext && firstMessage)) {
+            if (currentContext || (initialContext && (firstMessage || this.options.resourceProjectContext))) {
               body.message.content_parts.push({ type: "context_reference", context: currentContext || initialContext });
             }
           },

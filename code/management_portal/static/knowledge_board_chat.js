@@ -95,15 +95,16 @@ function initChatWorkspaces() {
 
     placeholder: window.PortalI18n.t("讨论这个知识库条目，Ctrl/⌘ + Enter 发送"),
     refsScope: "detail",
+    resourceProjectContext: true,
     resolveResident: target => knowledgeApi.request(
-      `/knowledge/api/item-chat?kb_id=${encodeURIComponent(String(target?.kb_id || ""))}`,
+      `/knowledge/api/item-chat?${new URLSearchParams({ kb_id: target?.kb_id || "", ...(target.project_id ? { project_id: target.project_id } : {}) })}`,
       { cache: "no-store" },
     ),
     resolveBeforeSend: (target, payload) => knowledgeApi.request("/knowledge/api/item-chat/prepare", {
-      method: "POST", body: JSON.stringify({ kb_id: target.kb_id, message: payload.text || payload.plainText }),
+      method: "POST", body: JSON.stringify({ kb_id: target.kb_id, ...(target.project_id ? { project_id: target.project_id } : {}), purpose: "send", message: payload.text || payload.plainText }),
     }),
     resolveBeforeSettings: target => knowledgeApi.request("/knowledge/api/item-chat/prepare", {
-      method: "POST", body: JSON.stringify({ kb_id: target.kb_id, purpose: "settings" }),
+      method: "POST", body: JSON.stringify({ kb_id: target.kb_id, ...(target.project_id ? { project_id: target.project_id } : {}), purpose: "settings" }),
     }),
     initialContext: (_target, detail) => detail.initial_context,
 

@@ -211,5 +211,16 @@
   "为「{p0}」记了一条{p1}": {"en": "Recorded a {p1} on \"{p0}\"", "zh-CN": "为「{p0}」记了一条{p1}"},
   "产出": {"en": "Outputs", "zh-CN": "产出"},
   "不再由它负责": {"en": "No longer in charge", "zh-CN": "不再由它负责"},
-  "去掉这条关系": {"en": "Remove this relation", "zh-CN": "去掉这条关系"}
+  "去掉这条关系": {"en": "Remove this relation", "zh-CN": "去掉这条关系"},
+  "我的资源讨论": {"en": "My resource discussions", "zh-CN": "我的资源讨论"},
+  "仅展示你已开始的私有资源讨论，点击资源回到原对话。": {"en": "Your existing private discussions. Open a resource to return to its conversation.", "zh-CN": "仅展示你已开始的私有资源讨论，点击资源回到原对话。"},
+  "正在读取讨论…": {"en": "Loading discussions…", "zh-CN": "正在读取讨论…"},
+  "读取失败，请刷新重试。": {"en": "Could not load. Refresh to try again.", "zh-CN": "读取失败，请刷新重试。"},
+  "还没有资源讨论。在资源页发送第一条消息后，会出现在这里。": {"en": "No resource discussions yet. Send a message on a resource page to see it here.", "zh-CN": "还没有资源讨论。在资源页发送第一条消息后，会出现在这里。"},
+  "资源讨论分页": {"en": "Resource discussion pages", "zh-CN": "资源讨论分页"},
+  "共 {p0} 条": {"en": "{p0} in total", "zh-CN": "共 {p0} 条"},
+  "讨论背景项目": {"en": "Project context", "zh-CN": "讨论背景项目"},
+  "请选择项目或仅当前资源": {"en": "Select a project or this resource only", "zh-CN": "请选择项目或仅当前资源"},
+  "仅当前资源": {"en": "This resource only", "zh-CN": "仅当前资源"},
+  "请选择讨论背景项目，或选择仅当前资源。": {"en": "Select a project context or choose this resource only.", "zh-CN": "请选择讨论背景项目，或选择仅当前资源。"}
 }

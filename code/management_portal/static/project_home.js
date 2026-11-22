@@ -22,6 +22,8 @@
     let generation = 0;
     let editing = false;
     let menuOpen = false;
+    let discussions = { loading: true, items: [], total: 0, offset: 0, limit: 50 };
+    let discussionRequest = 0;
 
     const project = () => data?.project || {};
     const projectId = () => String(project().resource_id || "");
@@ -192,6 +194,46 @@
       </section>`;
     }
 
+    function discussionsHtml() {
+      const { loading, error, items, total, offset, limit } = discussions;
+      return window.PortalI18n.html`<section class="projectSection" id="projectDiscussions" aria-labelledby="projectDiscussionsTitle" aria-busy="${loading}">
+        <header class="projectSectionHead"><h2 id="projectDiscussionsTitle">我的资源讨论</h2>
+          <button type="button" class="portalButton is-compact" data-discussions-offset="${offset}" ${loading ? "disabled" : ""}>刷新</button></header>
+        <p class="projectEmpty">仅展示你已开始的私有资源讨论，点击资源回到原对话。</p>
+        ${loading ? `<p role="status">${esc(t("正在读取讨论…"))}</p>`
+          : error ? `<p role="alert">${esc(error)}</p>`
+          : items.length ? `<ul class="projectDiscussionsList">${items.map(item => `<li>
+              <span class="projectRecentType">${esc(common().resourceLabel(item.resource_type))}</span>
+              <a href="${esc(item.url || `/r/${encodeURIComponent(item.resource_id)}`)}">${esc(item.title || item.resource_id)}</a>
+            </li>`).join("")}</ul>` : `<p class="projectEmpty">${esc(t("还没有资源讨论。在资源页发送第一条消息后，会出现在这里。"))}</p>`}
+        <nav class="projectDiscussionPages" aria-label="资源讨论分页">
+          <button type="button" class="portalButton is-compact" data-discussions-offset="${Math.max(0, offset - limit)}" ${loading || offset === 0 ? "disabled" : ""}>上一页</button>
+          <span>${esc(window.PortalI18n.text`共 ${total} 条`)}</span>
+          <button type="button" class="portalButton is-compact" data-discussions-offset="${offset + limit}" ${loading || offset + limit >= total ? "disabled" : ""}>下一页</button>
+        </nav>
+      </section>`;
+    }
+
+    async function loadDiscussions(current, offset = 0) {
+      const request = ++discussionRequest;
+      const id = projectId();
+      discussions = { ...discussions, loading: true, error: "", offset };
+      const paint = () => {
+        const node = root.querySelector("#projectDiscussions");
+        if (node) node.outerHTML = discussionsHtml();
+      };
+      paint();
+      try {
+        const result = await window.PortalAPI.get(`/projects/api/discussions?${new URLSearchParams({ project_id: id, offset })}`);
+        if (current !== generation || request !== discussionRequest) return;
+        discussions = { items: result.items || [], total: result.total, offset: result.offset, limit: result.limit || 50, loading: false };
+      } catch (error) {
+        if (current !== generation || request !== discussionRequest) return;
+        discussions = { ...discussions, loading: false, error: error.message || t("读取失败，请刷新重试。") };
+      }
+      paint();
+    }
+
     function recentHtml() {
       const items = data.recent_changes || [];
       return window.PortalI18n.html`<section class="projectSection" id="projectRecent" aria-labelledby="projectRecentTitle">
@@ -213,6 +255,7 @@
           ${mapHtml()}
           ${summaryHtml()}
           ${teamHtml()}
+          ${discussionsHtml()}
           <div class="projectHomeColumns">${resourcesHtml()}${recentHtml()}</div>
         </div>
       </article>`;
@@ -281,6 +324,7 @@
 
     async function load(id, { statuses } = {}) {
       const current = ++generation;
+      discussions = { loading: true, items: [], total: 0, offset: 0, limit: 50 };
       editing = false;
       if (Array.isArray(statuses)) statusVocab = statuses;
       root.innerHTML = window.PortalUIPrimitives.asyncStateHtml({ state: "loading", title: t("正在读取项目…"), message: "" });
@@ -299,6 +343,7 @@
         data = { ...result, research_map: researchMap, resources_state: "loading" };
         if (result.status_vocab?.length) statusVocab = result.status_vocab;
         render();
+        void loadDiscussions(current);
         void loadTeamLive(current);
         void fillResources(current, counted);
         return data;
@@ -372,6 +417,8 @@
     }
 
     root.addEventListener("click", event => {
+      const discussionPage = event.target.closest("[data-discussions-offset]");
+      if (discussionPage && !discussionPage.disabled) { void loadDiscussions(generation, Number(discussionPage.dataset.discussionsOffset)); return; }
       const list = event.target.closest("[data-home-list]");
       if (list && common().plainClick(event)) { event.preventDefault(); onOpenList?.(); return; }
       const map = event.target.closest("[data-home-map]");
