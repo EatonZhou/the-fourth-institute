@@ -196,13 +196,18 @@ def check(inv):
         info = None
     else:
         info = None
-    model = inv.argument("model") or (info if info is not None else catalog(row)).get("default_model", "")
-    if not model:
-        raise invalid("请选择模型")
+    antigravity = row["provider"] == "antigravity"
+    model = inv.argument("model") or ""
+    if not antigravity:
+        model = model or (info if info is not None else catalog(row)).get("default_model", "")
+        if not model:
+            raise invalid("请选择模型")
+    # ACP discovers and checks the model during the admitted execution. A new
+    # registration may not have a catalog snapshot before its first test.
     if row["provider"] == "provider_api":
         from .resident_configuration import validate_api_settings
         validate_api_settings(route(row), {"model": model}, {})
-    else:
+    elif not antigravity:
         AGENT_PROVIDERS[row["provider"]].validate_settings(route(row), model)
     # A scratch cwd prevents the test from encountering the operator's project
     # instructions. It is retained while the durable execution is in flight.
@@ -219,6 +224,8 @@ def check(inv):
     if not direct:
         definition = AGENT_PROVIDERS[row["provider"]]
         settings = definition.runtime_adapter().defaults(definition, {"model": model})
+        if antigravity:
+            settings["permission_preset"] = "default"
         options.update(is_owner=True, runtime_settings={**settings, "model": model, "allow_subagents": False})
         if not route(row):
             # The shared service has an empty native route. Its registration
@@ -349,10 +356,15 @@ def _check_result(account_id, execution_id, actor):
         for key in ("message", "text", "output_text"))
     failed = bool(result.get("error") or result.get("error_code")) or result.get("status") in {"failed", "cancelled"}
     passed = status == "completed" and has_reply and not failed and current and row["enabled"]
+    model = checked.get("model", "")
+    if row["provider"] == "antigravity" and not model:
+        observed = output.get("model") if has_reply else None
+        model = observed.strip() if isinstance(observed, str) else ""
+        passed = passed and bool(model)
     queue_reason = (snapshot.get("scheduler") or {}).get("queue_reason", "") if status == "queued" else ""
     waiting = {"capacity": "账号正在处理其他任务，测试排队中。"}.get(queue_reason, "正在等待账号执行测试…")
     response = {"execution_id": snapshot["execution_id"], "status": status, "passed": bool(passed),
-                "model": checked.get("model", ""), "configuration_current": current,
+                "model": model, "configuration_current": current,
                 "message": "测试通过" if passed else "配置已变化，请重新测试" if not current else waiting,
                 "queue_reason": queue_reason, "next_step": "", "diagnostic": None, "log": ""}
     if current and queue_reason == "quota_reserve":

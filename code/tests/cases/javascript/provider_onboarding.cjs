@@ -253,6 +253,14 @@ const openSetup = async () => {
   fail = false; click('测试并完成'); await flush(); await flush();
   assert.equal(calls.filter(call => call.name === 'CheckProviderAccount').at(-1).args.model, '', 'the server may discover the account default after startup');
   assert.equal(window.document.querySelector('dialog'), null);
+  provider = 'antigravity'; emptyCatalog = false;
+  await openSetup();
+  const automaticModel = window.document.querySelector('input[name=model]');
+  assert.equal(automaticModel.value, '', 'the last observed catalog must not turn automatic selection into an override');
+  assert.equal(automaticModel.placeholder, 'model');
+  click('测试并完成'); await flush(); await flush();
+  assert.equal(calls.filter(call => call.name === 'CheckProviderAccount').at(-1).args.model, '');
+  assert.equal(window.document.querySelector('dialog'), null);
   provider = 'claude'; emptyCatalog = false; loginSession = null;
   holdCheck = true; fail = false;
   await openSetup();

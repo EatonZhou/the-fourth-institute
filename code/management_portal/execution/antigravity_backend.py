@@ -396,7 +396,7 @@ class AntigravityBackend:
                     if tool_id not in completed_tools and item.get("status") == "failed":
                         complete_tool(tool_id, item)
                 output = {"message": "".join(text_parts), "provider": self.provider_id,
-                          "operation": "turn", "turn_id": turn_id, "stop_reason": result.get("stopReason", "")}
+                          "operation": "turn", "turn_id": turn_id, "model": model, "stop_reason": result.get("stopReason", "")}
                 turn_usage = _raw_turn_usage(result.get("usage"))
                 _, steps = _read_steps(env, sid, start_idx)
                 if steps:

@@ -801,7 +801,11 @@ export async function mount(root, {me = {}, accountId = ""} = {}) {
         choices.replaceChildren(...(setup.models || []).map(item => node("option", undefined,
           {value: typeof item === "string" ? item : item.id || item.model || ""})));
       }
-      if (!model.value) model.value = setup.default_model || "";
+      if (setup.provider === "antigravity") {
+        model.placeholder = setup.default_model || t("自动使用账号默认模型");
+      } else if (!model.value) {
+        model.value = setup.default_model || "";
+      }
       const needsLogin = !["logged_in", "succeeded", "not_applicable"].includes(setup.login_state);
       loginHint.hidden = !setup.runtime_ready || !needsLogin;
       const loginText = t(setup.provider === "codex" ? "先点击登录，获取设备码并在浏览器授权；无需填写模型名称。" : "先点击登录并在浏览器完成授权；无需填写模型名称。");

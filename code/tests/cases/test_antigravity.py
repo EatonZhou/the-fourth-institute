@@ -161,6 +161,55 @@ def test_catalog_reads_snapshots_without_starting_acp(agent, monkeypatch):
     assert not (agent / "requests.jsonl").exists()
 
 
+def test_first_account_check_discovers_and_verifies_the_native_default(agent, monkeypatch):
+    from management_portal.execution import account_setup as setup
+    from management_portal.execution.backend_contracts import BackendInvocation
+    from management_portal.execution.native_options import prepare_invocation
+
+    row = {"provider": "antigravity", "kind": "subscription_login", "account_id": "antigravity_one",
+           "route_id": "one", "enabled": True, "version": 1}
+    submitted = []
+    snapshot = {}
+
+    def submit(request):
+        submitted.append(request)
+        return SimpleNamespace(execution_id=request.execution_id)
+
+    client = SimpleNamespace(submit=submit, status=lambda _, *, actor: snapshot)
+    monkeypatch.setattr(setup, "ExecutionClient", lambda: client)
+    monkeypatch.setattr(setup, "account", lambda _: row)
+    monkeypatch.setattr(setup, "catalog", lambda _: accounts.catalog("one"))
+    monkeypatch.setattr(setup.provider_updates, "runtime_available", lambda _: True)
+    monkeypatch.setattr(setup.provider_updates, "STATE_ROOT", agent)
+    arguments = {"account_id": row["account_id"], "model": ""}
+    inv = SimpleNamespace(argument=arguments.get, caller="tester")
+
+    assert accounts.catalog("one") == {}
+    receipt = setup.check(inv)
+    assert len(submitted) == 1
+    assert not (agent / "requests.jsonl").exists()
+    request = submitted[0]
+    turn = BackendInvocation(request, SimpleNamespace(backend_route_id="one", backend_session_id=""),
+                             request.prompt, "", False, True)
+    result = AntigravityBackend().execute(prepare_invocation(turn), context()[0])
+    calls = requests(agent)
+    assert [call["params"]["modelId"] for call in calls if call["method"] == "session/set_model"] == ["gemini-test"]
+    assert sum(call["method"] == "session/prompt" for call in calls) == 1
+    native_session = next(call["params"] for call in calls if call["method"] == "session/new")
+    assert native_session["_meta"]["antigravity"]["enabledTools"] == []
+    assert accounts.catalog("one")["default_model"] == "gemini-test"
+
+    execution_id = receipt["execution_id"]
+    snapshot.update(execution_id=execution_id, status="completed", request=request.to_payload(),
+                    result={"output": result.output})
+    assert setup._check_result(row["account_id"], execution_id, inv.caller)["model"] == "gemini-test"
+    arguments.update(verification_execution_id=execution_id, model="gemini-test")
+    setup.require_verified(inv)
+    snapshot["result"]["output"] = {"message": result.output["message"]}
+    with pytest.raises(setup.InstructionError):
+        setup.require_verified(inv)
+
+
 def test_input_media_validation_never_silently_drops_images(agent, monkeypatch):
     from PIL import Image
     from management_portal import antigravity_input_media as media
