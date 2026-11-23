@@ -213,6 +213,36 @@ const html = fs.readFileSync(path.join(repo, 'management_portal/article_workspac
       await page.mouse.move(points[1].x, points[1].y, {steps: 6});
       await page.mouse.up();
     };
+    // A sidebar gesture can lose capture while the user switches the layout.
+    // Exercise native pointer capture, then verify a new resize and real Monaco
+    // text selection with the sidebar still open.
+    const splitter = page.locator('#articleWorkspaceGrid .portalWorkbenchSplitHandle[data-orientation="horizontal"]:visible').first();
+    const beginResize = async () => {
+      const box = await splitter.boundingBox();
+      await splitter.evaluate(el => el.addEventListener('pointerdown', event => {
+        window.resizePointer = { handle: el, id: event.pointerId };
+      }, { once: true }));
+      await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+      await page.mouse.down();
+      await page.mouse.move(box.x + box.width / 2 + 45, box.y + box.height / 2, { steps: 4 });
+      assert.equal(await page.evaluate(() => document.body.classList.contains('resizingWorkbenchPane')), true);
+      return box;
+    };
+    const box = await beginResize();
+    await page.evaluate(() => resizePointer.handle.releasePointerCapture(resizePointer.id));
+    await page.mouse.move(box.x + box.width / 2 + 46, box.y + box.height / 2);
+    await page.waitForFunction(() => !document.body.classList.contains('resizingWorkbenchPane'));
+    await page.mouse.up();
+    await beginResize();
+    await page.keyboard.press('Control+b');
+    await page.mouse.up();
+    await page.keyboard.press('Control+b');
+    await page.waitForFunction(() => !document.body.classList.contains('resizingWorkbenchPane'));
+    const widthBefore = await splitter.evaluate(el => el.previousElementSibling.getBoundingClientRect().width);
+    await beginResize(); await page.mouse.up();
+    const widthAfter = await splitter.evaluate(el => el.previousElementSibling.getBoundingClientRect().width);
+    assert.ok(widthAfter > widthBefore + 20, 'sidebar can resize again after capture loss and collapse');
+    assert.equal(await page.evaluate(() => document.body.classList.contains('resizingWorkbenchPane')), false);
     await dragSelection(1, 7);
     await page.waitForFunction(() => state.chatController.attachments().length === 2).catch(async error => {
       console.error(await page.evaluate(() => ({notices, selection: state.editor.getSelection(),

@@ -6,6 +6,14 @@ from pathlib import Path
 import subprocess
 
 
+def test_resize_interruption_releases_pointer_and_selection():
+    source = Path(__file__).with_name("javascript") / "workbench_resize_lifecycle.cjs"
+    result = subprocess.run(
+        ["node", "--test", str(source)], capture_output=True, text=True, timeout=30,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
 def test_fixed_collapsed_sibling_selection():
     """固定折叠面板组拒绝同组内容切换
 

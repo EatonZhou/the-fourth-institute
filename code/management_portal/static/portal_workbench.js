@@ -67,34 +67,66 @@
     const axis = options.axis === "y" ? "y" : "x";
     const activeClass = options.activeClass || "active";
     const bodyClass = options.bodyClass === undefined ? "resizingWorkbenchPane" : options.bodyClass;
+    let finish = null;
     const pointerDown = event => {
       if (options.disabled?.(event)) return;
+      if (event.isPrimary === false) return;
       if (event.pointerType === "mouse" && event.button !== 0) return;
+      finish?.(event);
+      const pointerId = event.pointerId;
       const startPosition = axis === "y" ? event.clientY : event.clientX;
       const start = options.readStart?.(event);
       handle.classList.add(activeClass);
       if (bodyClass) document.body.classList.add(bodyClass);
-      handle.setPointerCapture?.(event.pointerId);
       const move = moveEvent => {
+        if (moveEvent.pointerId !== pointerId) return;
+        if ((moveEvent.pointerType === "mouse" && moveEvent.buttons === 0) || options.disabled?.(moveEvent)) {
+          finish?.(moveEvent);
+          return;
+        }
         const position = axis === "y" ? moveEvent.clientY : moveEvent.clientX;
         options.onMove({ delta: position - startPosition, event: moveEvent, start });
       };
       const done = doneEvent => {
+        if (doneEvent.pointerId !== undefined && doneEvent.pointerId !== pointerId) return;
+        finish?.(doneEvent);
+      };
+      const escape = keyEvent => { if (keyEvent.key === "Escape") done(keyEvent); };
+      const visibility = visibilityEvent => { if (document.hidden) done(visibilityEvent); };
+      // Only a live gesture owns global listeners and the removal observer.
+      // Captured nodes can disappear when their layout is replaced or destroyed.
+      const observer = new MutationObserver(() => {
+        if (!handle.isConnected) finish?.(new Event("pointercancel"));
+      });
+      const listeners = [
+        [global, "pointermove", move, true],
+        [global, "pointerup", done, true],
+        [global, "pointercancel", done, true],
+        [global, "lostpointercapture", done, true],
+        [global, "pointerdown", done, true],
+        [global, "blur", done, false],
+        [global, "pagehide", done, false],
+        [global, "keydown", escape, true],
+        [document, "visibilitychange", visibility, false],
+      ];
+      finish = doneEvent => {
+        finish = null;
+        listeners.forEach(([target, type, listener, capture]) => target.removeEventListener(type, listener, capture));
+        observer.disconnect();
         handle.classList.remove(activeClass);
         if (bodyClass) document.body.classList.remove(bodyClass);
-        if (handle.hasPointerCapture?.(doneEvent.pointerId)) handle.releasePointerCapture(doneEvent.pointerId);
-        handle.removeEventListener("pointermove", move);
-        handle.removeEventListener("pointerup", done);
-        handle.removeEventListener("pointercancel", done);
+        if (handle.hasPointerCapture?.(pointerId)) handle.releasePointerCapture(pointerId);
         options.onDone?.({ event: doneEvent, start });
       };
-      handle.addEventListener("pointermove", move);
-      handle.addEventListener("pointerup", done);
-      handle.addEventListener("pointercancel", done);
+      listeners.forEach(([target, type, listener, capture]) => target.addEventListener(type, listener, capture));
+      observer.observe(document.documentElement, { childList: true, subtree: true });
+      try { handle.setPointerCapture?.(pointerId); }
+      catch { finish(event); return; }
       event.preventDefault();
     };
     handle.addEventListener("pointerdown", pointerDown);
     return () => {
+      finish?.(new Event("pointercancel"));
       handle.removeEventListener("pointerdown", pointerDown);
       delete handle.dataset[boundKey];
     };
