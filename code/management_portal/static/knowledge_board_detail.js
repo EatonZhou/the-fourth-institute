@@ -289,6 +289,9 @@ async function saveDetail() {
       return { ...data, content: String(data.text || "") };
     },
     onSaved: async (_payload, saved) => {
+      if (address === state.detailFileId && state.selected?.type === "skill") {
+        state.detailSkillGroups = skillFileGroups(saved.payload?.content);
+      }
       // The session stays in edit mode. Rebuild from the acknowledged text,
       // including server-written metadata, before another input is accepted.
       resetDetailEditorDraft();
@@ -407,7 +410,7 @@ async function openDetailFile(file, options = {}) {
   const linkedFile = Boolean(file?.linked);
   const linkedPath = String(file?.path || "").trim();
   if (linkedFile && (!linkedPath || !window.PortalFileLinks)) return;
-  const relativeParts = String(file?.relative_path || "")
+  const relativeParts = detailTreePath(file)
     .replaceAll("\\", "/")
     .split("/")
     .filter(Boolean);
@@ -458,6 +461,8 @@ async function openDetailFile(file, options = {}) {
       state.detailSelectedFileKind = String(data.kind || current?.kind || "markdown");
       const item = state.selected || {};
       if (!linkedFile && targetFileId === state.detailFileId) {
+        state.detailSkillGroups = (data.type || item.type) === "skill"
+          ? skillFileGroups(data.content) : null;
         state.selected = {
           ...item,
           kb_id: String(data.kb_id || item.kb_id || targetFileId),
@@ -517,6 +522,7 @@ async function openDetail(fileId, options = {}) {
   state.detailLinkedFileProbes = new Set();
   state.detailLinkDiscoverySequence += 1;
   state.detailExpandedFolders = new Set([""]);
+  state.detailSkillGroups = null;
   state.detailPath = "";
   state.detailRawUrl = "";
   state.detailDownloadUrl = "";

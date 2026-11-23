@@ -296,10 +296,41 @@ async function openDetailLinkedFile(request) {
   await openDetailFile(file);
 }
 
+// A Skill may group exact filenames and directory prefixes in its main document.
+// These paths affect browsing only. Opening, saving and copying use the file address.
+function skillFileGroups(markdown) {
+  const raw = splitDetailMarkdown(markdown).rawFrontmatter;
+  const groups = new Map();
+  let inMetadata = false, inGroups = false;
+  for (const line of raw.split(/\r?\n/)) {
+    if (/^\S/.test(line)) inMetadata = line.trimEnd() === "metadata:";
+    if (!inMetadata) continue;
+    if (/^  \S/.test(line)) inGroups = line.trimEnd() === "  file_groups:";
+    if (!inGroups) continue;
+    const match = line.match(/^    ([^:]+):\s*(\[.*\])$/);
+    if (!match) continue;
+    for (const path of parseYamlListValue(match[2])) groups.set(path, match[1].trim());
+  }
+  return groups;
+}
+
+function detailTreePath(file) {
+  const path = String(file?.relative_path || "").replace(/^\/+|\/+$/g, "");
+  const groups = state.detailSkillGroups;
+  if (file?.primary || !groups?.size) return path;
+  const parts = path.split("/");
+  if (groups.has(path)) return groups.get(path) + "/" + parts.at(-1);
+  for (let i = parts.length - 1; i > 0; i--) {
+    const prefix = parts.slice(0, i).join("/") + "/";
+    if (groups.has(prefix)) return groups.get(prefix) + "/" + parts.slice(i).join("/");
+  }
+  return path;
+}
+
 function buildDetailFileTree(files) {
   const root = { dirs: new Map(), files: [] };
   for (const file of files) {
-    const rawPath = String(file.relative_path || "").replace(/^\/+|\/+$/g, "");
+    const rawPath = detailTreePath(file);
     if (!rawPath) continue;
     const parts = rawPath.split("/").filter(Boolean);
     let node = root;
@@ -372,7 +403,12 @@ function renderDetailFileTree() {
       parent.appendChild(button);
     }
   };
-  renderNode(buildDetailFileTree(files), el.mFiles);
+  if (state.detailSkillGroups?.size) {
+    renderNode(buildDetailFileTree(files.filter(file => file.primary)), el.mFiles);
+    renderNode(buildDetailFileTree(files.filter(file => !file.primary)), el.mFiles);
+  } else {
+    renderNode(buildDetailFileTree(files), el.mFiles);
+  }
   if (linkedFiles.length) {
     const linkedGroup = document.createElement("div");
     linkedGroup.className = "knowledgeLinkedFiles";
