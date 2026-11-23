@@ -1449,8 +1449,11 @@ body.articleOutlineResizing { cursor: row-resize; user-select: none; }
   position: absolute;
   top: 0;
   bottom: 0;
-  right: 8px;
-  border-right: 1px solid var(--border);
+  right: 0;
+  width: 8px;
+  box-sizing: content-box;
+  border-left: 1px solid var(--border);
+  background: var(--vscode-editor-background);
   pointer-events: none;
 }
 
