@@ -342,7 +342,7 @@
         glyphMargin: true,
         folding: true,
         lineNumbersMinChars: 2,
-        lineDecorationsWidth: 0,
+        lineDecorationsWidth: 8,
         scrollBeyondLastLine: false,
         smoothScrolling: true,
         cursorBlinking: getSession().preferences.solidCursor ? "solid" : "blink",

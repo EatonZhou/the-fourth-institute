@@ -1444,8 +1444,14 @@ body.articleOutlineResizing { cursor: row-resize; user-select: none; }
   height: 100% !important;
 }
 
-.articleMonacoEditor .monaco-editor .margin {
+.articleMonacoEditor .monaco-editor .margin::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 8px;
   border-right: 1px solid var(--border);
+  pointer-events: none;
 }
 
 .articleMonacoEditor .articleDiagnosticGlyph {
