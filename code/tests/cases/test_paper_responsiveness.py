@@ -12,7 +12,8 @@ import pytest
 from management_portal.resources.portal import portal_route_script
 
 
-@pytest.mark.parametrize('script', ['paper_reader_idle_layout.cjs', 'paper_startup_responsiveness.cjs'])
+@pytest.mark.parametrize('script', ['paper_reader_idle_layout.cjs', 'paper_startup_responsiveness.cjs',
+                                    'paper_chat_title_responsiveness.cjs'])
 def test_paper_responsiveness(script, tmp_path):
     routes = tmp_path / 'portal_resource_routes.js'
     routes.write_bytes(portal_route_script())

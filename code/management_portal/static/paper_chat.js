@@ -165,8 +165,11 @@
     function refreshResearchTitle() {
       if (!paperChatWorkspace) return;
       const selected = state.researchSlot || legacyList.find(item => researchKey(item) === currentResearchKey());
-      const title = window.PortalChatWorkspace.workspaceTitleText(selected?.title || window.PortalI18n.t('Research Chat'));
-      if (paperChatWorkspace.els.title.textContent !== title) paperChatWorkspace.setTitle(title);
+      const source = selected?.title || window.PortalI18n.t('Research Chat');
+      const title = window.PortalChatWorkspace.workspaceTitleText(source);
+      // setTitle owns normalization. Passing its output back in strips another
+      // prefix and keeps this MutationObserver rewriting the same title forever.
+      if (paperChatWorkspace.els.title.textContent !== title) paperChatWorkspace.setTitle(source);
     }
     function unavailableResearch(key) {
       if (deletedResearchKeys.has(key)) return true;
