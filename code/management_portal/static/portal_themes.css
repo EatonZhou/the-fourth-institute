@@ -923,6 +923,14 @@ html:root[data-portal-theme="liquid-glass"] .graphNavigationBar {
 }
 
 /* User account dropdown internals over translucent glass */
+html:root[data-portal-theme="liquid-glass"] .familyStatusPanel.is-inline {
+  background: transparent;
+}
+
+html:root[data-portal-theme="liquid-glass"] .familyStatusPanel [data-family-status-row]:hover {
+  background: var(--lg-tint-hover);
+}
+
 html:root[data-portal-theme="liquid-glass"] .portalUserMenuSection,
 html:root[data-portal-theme="liquid-glass"] .portalUserMenuFooter {
   border-top-color: rgba(0, 0, 0, .07);
@@ -1167,8 +1175,8 @@ html:root[data-portal-theme="liquid-glass"] :is(.homeDialogueDivider, .filter-di
   box-shadow: none;
 }
 
-/* Specular highlight Liquid Glass pill buttons */
-html:root[data-portal-theme="liquid-glass"] .portalButton {
+/* Switches already draw their own track and thumb. */
+html:root[data-portal-theme="liquid-glass"] .portalButton:where(:not([role="switch"])) {
   --portal-button-border: transparent;
   border-radius: var(--lg-radius-pill);
   background: var(--lg-btn-glass-bg);
@@ -1182,7 +1190,7 @@ html:root[data-portal-theme="liquid-glass"] .portalButton {
     transform var(--lg-duration-fast) var(--lg-ease-spring);
 }
 
-html:root[data-portal-theme="liquid-glass"] .portalButton:hover:not(:disabled, [aria-disabled="true"]) {
+html:root[data-portal-theme="liquid-glass"] .portalButton:where(:not([role="switch"])):hover:not(:disabled, [aria-disabled="true"]) {
   --portal-button-border: transparent;
   background: var(--lg-btn-glass-hover);
   box-shadow: var(--lg-btn-glass-hover-shadow);
@@ -1262,7 +1270,20 @@ html:root[data-portal-theme="liquid-glass"] .portalButton:is(.is-quiet, [data-va
   box-shadow: none;
 }
 
-html:root[data-portal-theme="liquid-glass"] .portalButton:is(.is-active, [aria-pressed="true"], [aria-expanded="true"]:not(.portalToolbarOverflowButton)) {
+html:root[data-portal-theme="liquid-glass"] .portalButton:is(.is-quiet, [data-variant="quiet"]):is(
+  .is-active,
+  [aria-pressed="true"],
+  [aria-expanded="true"]:not(.portalToolbarOverflowButton)
+) {
+  --portal-button-color: var(--accent-2);
+  background: var(--lg-tint-active);
+}
+
+html:root[data-portal-theme="liquid-glass"] .portalButton:where(:not([role="switch"], .is-quiet, [data-variant="quiet"])):is(
+  .is-active,
+  [aria-pressed="true"],
+  [aria-expanded="true"]:not(.portalToolbarOverflowButton)
+) {
   --portal-button-border: transparent;
   --portal-button-color: var(--accent-2);
   background: var(--lg-btn-glass-hover);
@@ -1272,6 +1293,11 @@ html:root[data-portal-theme="liquid-glass"] .portalButton:is(.is-active, [aria-p
     inset 0 0 0 1px rgba(255, 255, 255, .96),
     0 0 0 .5px rgba(0, 0, 0, .18),
     0 2px 6px rgba(0, 0, 0, .08);
+}
+
+html:root[data-portal-theme="liquid-glass"] .portalButton:is([role="switch"], .is-quiet, [data-variant="quiet"]):focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 /* Home widgets: specular glass filter pills, clean white inset KPI cards & recessed progress tracks */
@@ -1402,7 +1428,7 @@ html:root[data-portal-theme="liquid-glass"] .portalButtonTooltip {
   border-radius: 10px;
   background: var(--lg-surface-dialog);
   color: var(--text);
-  box-shadow: var(--liquid-glass-edge), var(--portal-shadow-popover);
+  box-shadow: var(--shadow-soft);
 }
 
 /* Shared document tabs */
