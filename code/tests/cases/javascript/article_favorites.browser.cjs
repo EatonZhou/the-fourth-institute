@@ -215,6 +215,55 @@ const html = fs.readFileSync(path.join(root, 'management_portal/article_workspac
     assert.equal(await page.locator('#articleFavoritesPanel').isVisible(), false);
     assert.equal(await page.locator('[data-portal-workbench-panel="output"]').isVisible(), true, 'retracting a tool keeps a mixed content group open');
     await page.locator('#articleFavoritesButton').click();
+    // Separate tool groups can leave a zero-width collapsed group between
+    // the visible sidebar and the document. Resize the visible neighbours.
+    await page.evaluate(() => {
+      const wb = layout.currentArticleWorkbench(), {split, stack} = PortalWorkbench.model;
+      wb.applyWorkspace({layout: split('horizontal', [
+        stack(['favorites', 'git']), stack(['files', 'search']), stack(['output']),
+      ], [300, 300, 700]), hidden: ['editor', 'chat', 'settings', 'library']});
+      wb.collapsePanel('favorites');
+    });
+    const widthOf = view => page.locator(`[data-article-panel="${view}"]`).evaluate(el => el.getBoundingClientRect().width);
+    const resizeView = async (view, delta) => {
+      const before = await widthOf(view);
+      const handle = await page.locator(`[data-article-panel="${view}"]`).evaluate(el => {
+        const edge = el.closest('.portalWorkbenchStack').nextElementSibling;
+        const rect = edge.getBoundingClientRect();
+        const x = rect.x + rect.width / 2, y = rect.y + rect.height / 2;
+        return {width: rect.width, x, y, hit: document.elementFromPoint(x, y) === edge};
+      });
+      assert.ok(handle.width > 0 && handle.hit, `${view} has a reachable resize handle`);
+      await page.mouse.move(handle.x, handle.y); await page.mouse.down();
+      await page.mouse.move(handle.x + delta, handle.y, {steps: 6}); await page.mouse.up();
+      assert.ok(Math.abs(await widthOf(view) - before - delta) < 2, `${view} follows the drag`);
+    };
+    await resizeView('files', 40);
+    await page.locator('[data-article-view="search"]').click();
+    await resizeView('search', -40);
+    await page.locator('[data-article-view="search"]').click();
+    await page.locator('#articleFavoritesButton').click();
+    await resizeView('favorites', 60);
+    await resizeView('favorites', -25);
+    await page.locator('[data-article-view="git"]').click();
+    await resizeView('git', 45);
+    await page.locator('[data-article-view="git"]').click();
+    await page.locator('[data-article-view="git"]').click();
+    await resizeView('git', -30);
+    const savedGitWidth = await widthOf('git');
+    await page.reload(); await setup();
+    assert.ok(Math.abs(await widthOf('git') - savedGitWidth) < 2, 'resize across a collapsed group survives reload');
+    assert.equal(await page.locator('[data-article-panel="search"]').isVisible(), false);
+    await resizeView('git', 30);
+    // The existing handle must target the newly expanded adjacent group.
+    await page.locator('[data-article-view="files"]').click();
+    const outputWidth = await page.locator('[data-portal-workbench-panel="output"]').evaluate(el => el.getBoundingClientRect().width);
+    const filesWidth = await widthOf('files');
+    await resizeView('git', 35);
+    assert.ok(Math.abs(await widthOf('files') - filesWidth + 35) < 2, 'expanded neighbour receives the resize');
+    assert.ok(Math.abs(await page.locator('[data-portal-workbench-panel="output"]').evaluate(el => el.getBoundingClientRect().width) - outputWidth) < 2,
+      'the document is no longer the adjacent resize target');
+    await page.locator('#articleFavoritesButton').click();
     await page.evaluate(() => layout.currentArticleWorkbench().setLayoutLocked(true));
     await page.locator('#articleFavoritesButton').click();
     assert.equal(await page.locator('#articleFavoritesPanel').isVisible(), true, 'layout lock keeps the current panel open');

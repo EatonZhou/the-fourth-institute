@@ -537,6 +537,22 @@
       : Math.max(96, ...values);
   }
 
+  // A rail-collapsed child takes no space. The visible panels on either side
+  // remain neighbours and share one separator. A retained collapsed strip is
+  // still a real boundary; do not resize across it.
+  function splitResizePairs(split, descriptors, collapsed) {
+    const axis = split.orientation === "vertical" ? "y" : "x";
+    const pairs = [];
+    let previous = -1;
+    split.children.forEach((child, index) => {
+      const extent = compactExtentForNode(child, axis, collapsed, descriptors);
+      if (extent === 0) return;
+      if (extent === null && previous >= 0) pairs.push({ before: previous, after: index });
+      previous = extent === null ? index : -1;
+    });
+    return pairs;
+  }
+
   function splitChildMinimumCss(split, child, index, descriptors, collapsed) {
     const axis = split.orientation === "vertical" ? "y" : "x";
     const compactExtents = split.children.map(item => compactExtentForNode(item, axis, collapsed, descriptors));
@@ -545,9 +561,7 @@
       sum + (compactExtents[childIndex] === null ? minimumForNode(item, axis, descriptors, collapsed) : 0)
     ), 0);
     const collapsedPixels = compactExtents.reduce((sum, value) => sum + (value ?? 0), 0);
-    const visibleHandleCount = split.children.slice(0, -1).filter((_, handleIndex) => (
-      compactExtents[handleIndex] === null && compactExtents[handleIndex + 1] === null
-    )).length;
+    const visibleHandleCount = splitResizePairs(split, descriptors, collapsed).length;
     const reservedPixels = collapsedPixels + visibleHandleCount * SPLIT_HANDLE_SIZE;
     const semanticMinimum = minimumForNode(child, axis, descriptors, collapsed);
     const minimumShare = semanticMinimum / expandedMinimum;
@@ -1028,7 +1042,7 @@
       bindTabStripReveal, bindStackDrop, bindTabDrag, bindTabGroupDrop, clamp, compactExtentForNode, descriptors,
       executeCommand, expandPanel: (...args) => expandPanel(...args), isLayoutLocked, lastOpenTargetByType,
       minimumForNode, persist, refreshPanelFrame, render: (...args) => render(...args), renderPanelFrame, shellState,
-      splitChildMinimumCss,
+      splitChildMinimumCss, splitResizePairs,
     });
 
     const {

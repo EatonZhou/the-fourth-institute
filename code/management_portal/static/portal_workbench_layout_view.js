@@ -12,7 +12,7 @@
     "announceChange", "bindKeyboardResize", "bindPointerResize", "bindTabStripReveal", "bindStackDrop",
     "bindTabDrag", "bindTabGroupDrop", "clamp", "compactExtentForNode", "descriptors", "executeCommand",
     "expandPanel", "isLayoutLocked", "lastOpenTargetByType", "minimumForNode", "persist", "refreshPanelFrame",
-    "render", "renderPanelFrame", "shellState", "splitChildMinimumCss",
+    "render", "renderPanelFrame", "shellState", "splitChildMinimumCss", "splitResizePairs",
   ]);
 
   function createLayoutView(dependencies) {
@@ -22,7 +22,7 @@
       announceChange, bindKeyboardResize, bindPointerResize, bindTabStripReveal, bindStackDrop, bindTabDrag,
       bindTabGroupDrop, clamp, compactExtentForNode, descriptors, executeCommand, expandPanel, isLayoutLocked,
       lastOpenTargetByType, minimumForNode, persist, refreshPanelFrame, render, renderPanelFrame, shellState,
-      splitChildMinimumCss,
+      splitChildMinimumCss, splitResizePairs,
     } = dependencies;
 
     function activatePanel(stack, panelId) {
@@ -177,24 +177,28 @@
       return true;
     }
 
-    function bindSplitHandle(handle, split, before, after, beforeElement, afterElement, index) {
+    function bindSplitHandle(handle, split, index) {
       const axis = split.orientation === "vertical" ? "y" : "x";
-      const bounds = total => {
+      const pair = () => splitResizePairs(split, descriptors, shellState.collapsed).find(item => item.before === index);
+      const disabled = () => isLayoutLocked() || !pair();
+      const bounds = (total, start) => {
         // Tab activation refreshes the existing split and handle. Its visible
         // panels (and their minimum sizes) can differ from the initial render.
-        const beforeMinimum = minimumForNode(before, axis, descriptors, shellState.collapsed);
-        const afterMinimum = minimumForNode(after, axis, descriptors, shellState.collapsed);
+        const beforeMinimum = minimumForNode(split.children[index], axis, descriptors, shellState.collapsed);
+        const afterMinimum = minimumForNode(split.children[start.afterIndex], axis, descriptors, shellState.collapsed);
         const usable = Math.max(2, Number(total) || 2);
         const minimum = Math.min(beforeMinimum, usable / 2);
         const afterFloor = Math.min(afterMinimum, usable - minimum);
         return { minimum, maximum: Math.max(minimum, usable - afterFloor) };
       };
       const readSizes = () => {
-        const children = [...beforeElement.parentElement.children].filter(element => element.classList.contains("portalWorkbenchSplitChild"));
+        const children = [...handle.parentElement.children].filter(element => element.classList.contains("portalWorkbenchSplitChild"));
         const sizes = children.map(element => element.getBoundingClientRect()[axis === "x" ? "width" : "height"]);
+        const afterIndex = pair()?.after ?? index + 1;
         return {
           before: sizes[index],
-          after: sizes[index + 1],
+          after: sizes[afterIndex],
+          afterIndex,
           children,
           sizes,
         };
@@ -203,7 +207,7 @@
         if (isLayoutLocked()) return;
         const sizes = start.sizes.slice();
         sizes[index] = beforeSize;
-        sizes[index + 1] = afterSize;
+        sizes[start.afterIndex] = afterSize;
         const edges = axis === "x" ? ["Left", "Right"] : ["Top", "Bottom"];
         const expanded = split.children.map((child, childIndex) => childIndex)
           .filter(childIndex => compactExtentForNode(split.children[childIndex], axis, shellState.collapsed, descriptors) === null);
@@ -223,12 +227,12 @@
       bindPointerResize({
         handle,
         axis,
-        disabled: isLayoutLocked,
+        disabled,
         bodyClass: axis === "x" ? "resizingWorkbenchPane" : "resizingWorkbenchRow",
         readStart: readSizes,
         onMove: ({ delta, start }) => {
           const total = start.before + start.after;
-          const range = bounds(total);
+          const range = bounds(total, start);
           const nextBefore = clamp(start.before + delta, range.minimum, range.maximum);
           const nextAfter = total - nextBefore;
           applySizes(nextBefore, nextAfter, start);
@@ -242,21 +246,21 @@
       bindKeyboardResize({
         handle,
         axis,
-        disabled: isLayoutLocked,
+        disabled,
         keyboardStep: 24,
         readStart: readSizes,
         readValue: () => readSizes().before,
         min: () => {
           const sizes = readSizes();
-          return bounds(sizes.before + sizes.after).minimum;
+          return bounds(sizes.before + sizes.after, sizes).minimum;
         },
         max: () => {
           const sizes = readSizes();
-          return bounds(sizes.before + sizes.after).maximum;
+          return bounds(sizes.before + sizes.after, sizes).maximum;
         },
         onMove: ({ delta, start }) => {
           const total = start.before + start.after;
-          const range = bounds(total);
+          const range = bounds(total, start);
           const nextBefore = clamp(start.before + delta, range.minimum, range.maximum);
           applySizes(nextBefore, total - nextBefore, start);
         },
@@ -289,16 +293,15 @@
         element.append(childElement);
         return childElement;
       });
+      const resizeBefore = new Set(splitResizePairs(split, descriptors, shellState.collapsed).map(pair => pair.before));
       for (let index = children.length - 2; index >= 0; index -= 1) {
         const handle = document.createElement("div");
         handle.className = "portalWorkbenchSplitHandle";
         handle.dataset.orientation = split.orientation;
         handle.setAttribute("aria-label", window.PortalI18n.t("调整工作区面板大小"));
-        handle.hidden = [split.children[index], split.children[index + 1]].some(child => (
-          compactExtentForNode(child, split.orientation === "vertical" ? "y" : "x", shellState.collapsed, descriptors) !== null
-        ));
+        handle.hidden = !resizeBefore.has(index);
         children[index].after(handle);
-        bindSplitHandle(handle, split, split.children[index], split.children[index + 1], children[index], children[index + 1], index);
+        bindSplitHandle(handle, split, index);
       }
       return element;
     }
@@ -329,12 +332,10 @@
         }
         if (!refreshNode(childElement, child, split.orientation)) return false;
       }
+      const resizeBefore = new Set(splitResizePairs(split, descriptors, shellState.collapsed).map(pair => pair.before));
       handles.forEach((handle, index) => {
         handle.dataset.orientation = split.orientation;
-        const axis = split.orientation === "vertical" ? "y" : "x";
-        handle.hidden = [split.children[index], split.children[index + 1]].some(child => (
-          compactExtentForNode(child, axis, shellState.collapsed, descriptors) !== null
-        ));
+        handle.hidden = !resizeBefore.has(index);
       });
       return true;
     }

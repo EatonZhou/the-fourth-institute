@@ -62,6 +62,44 @@ test('a rail-restored panel collapses to nothing, others keep their strip', asyn
   } finally { await harness.cleanup(); }
 });
 
+for (const orientation of ['horizontal', 'vertical']) test(`${orientation} resize crosses consecutive rail-collapsed groups`, async () => {
+  const harness = createHarness(), { window, root } = harness;
+  try {
+    const ids = ['left', 'railA', 'railB', 'right'];
+    window.PortalWorkbench.registerPanelPackage({
+      type: 'resize-fixture', version: 1,
+      presentation: {title: 'Fixture', icon: 'panel'}, sizing: {minWidth: 100, minHeight: 100},
+      instances: 'multiple', capabilities: [], behavior: {canHide: true, canCollapse: true, canMove: true},
+      context: {channels: []}, persistence: {schemaVersion: 1},
+      create: () => window.document.createElement('section'),
+    });
+    const {split, stack} = window.PortalWorkbench.model;
+    const wb = harness.create({id: 'resize-fixture',
+      initialEditors: ids.map(id => ({id, type: 'resize-fixture', collapseToRail: id.startsWith('rail')})),
+      defaultLayout: split(orientation, ids.map(id => stack([id])), [2, 1, 1, 2]),
+      store: {read: () => ({}), replace: value => value},
+    });
+    wb.collapsePanel('railA'); wb.collapsePanel('railB'); await harness.settle();
+    const children = [...root.querySelectorAll('.portalWorkbenchSplitChild')];
+    children.forEach((el, index) => {
+      el.getBoundingClientRect = () => ({width: index === 0 || index === 3 ? 300 : 0, height: index === 0 || index === 3 ? 300 : 0});
+    });
+    const handle = root.querySelector('.portalWorkbenchSplitHandle');
+    assert.equal(root.querySelectorAll('.portalWorkbenchSplitHandle:not([hidden])').length, 1);
+    assert.equal(handle.hidden, false, 'a separator follows the visible first panel');
+    handle.dispatchEvent(new window.KeyboardEvent('keydown', {key: orientation === 'horizontal' ? 'ArrowRight' : 'ArrowDown', bubbles: true}));
+    const resized = wb.getLayout().weights;
+    assert.ok(resized[0] > 2 && resized[3] < 2, 'keyboard resize changes the two visible panels');
+    assert.deepEqual(Array.from(resized.slice(1, 3)), [1, 1], 'collapsed panel weights are preserved');
+    wb.expandPanel('railA'); await harness.settle();
+    assert.equal(root.querySelectorAll('.portalWorkbenchSplitHandle:not([hidden])').length, 2,
+      'expanding a group restores its own adjacent boundaries');
+    wb.collapsePanel('right'); await harness.settle();
+    assert.equal(root.querySelectorAll('.portalWorkbenchSplitHandle:not([hidden])').length, 1,
+      'an ordinary collapsed strip remains a boundary');
+  } finally { await harness.cleanup(); }
+});
+
 test('the rail reports view hover and leave, and its pin toggles between rules', async () => {
   const harness = createHarness();
   const { window, root } = harness;
