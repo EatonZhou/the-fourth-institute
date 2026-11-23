@@ -1,11 +1,11 @@
 .nodeSettingsSurface {
   --node-settings-gutter: 16px;
+  --node-settings-column-gap: 16px;
   --menu-rail-width: 115px;
   --menu-heading-height: 34px;
   position: relative;
   --portal-detail-header-align: flex-start;
   --portal-detail-header-padding: 16px;
-  --portal-detail-footer-padding: 12px 0 0;
   --portal-detail-footer-background: transparent;
 }
 
@@ -59,7 +59,7 @@
   display: grid;
   grid-template-columns: 92px minmax(0, 1fr);
   grid-template-rows: 1fr;
-  gap: 16px;
+  gap: var(--node-settings-column-gap);
   align-items: start;
 }
 
@@ -107,7 +107,6 @@
   outline-offset: 1px;
 }
 
-/* The open tab fills the card's height, so General keeps its actions at the bottom. */
 .nodeSettingsPanels {
   min-width: 0;
   align-self: stretch;
@@ -116,6 +115,7 @@
 
 #nodeDisplayPanel:not([hidden]) {
   display: grid;
+  align-content: start;
 }
 
 /* Mailbox tab (decision_b5d349190743). */
@@ -408,20 +408,23 @@
   align-items: start;
 }
 
-/* At the card's bottom; while the form scrolls (transfer open), it stays in view. */
-.nodeSettingsForm > .nodeSettingsFooter {
-  position: sticky;
-  bottom: 0;
-  z-index: 1;
+/* Reserve a row for actions below the scroll area. */
+.nodeSettingsSurface > .nodeSettingsFooter {
   min-width: 0;
   min-height: 0;
-  margin-top: auto;
-  padding: 12px 0 0;
-  justify-content: space-between;
+  margin-inline: var(--node-settings-gutter);
+  padding: 12px 0 var(--portal-space-4);
   flex-wrap: wrap;
-  background: var(--panel, #fff);
-  /* Also covers the body's bottom padding, so scrolled rows never show below it. */
-  box-shadow: 0 var(--portal-space-4, 16px) 0 var(--panel, #fff);
+}
+
+.nodeSettingsSurface > .residentMenuFooter {
+  display: none;
+  margin-inline-start: calc(var(--node-settings-gutter) + var(--menu-rail-width) + var(--node-settings-column-gap));
+  justify-content: flex-start;
+}
+
+.nodeSettingsSurface:has(#nodeDisplayPanel:not([hidden]) > .nodeSettingsForm:not([hidden])) > .residentMenuFooter {
+  display: flex;
 }
 
 .nodeSettingsSurface > .residentMenuHeader { display:flex; flex-direction:column; gap:10px; }
@@ -502,13 +505,13 @@
 .residentMenuMemoryLevel > .paneNote { margin:0 0 6px; }
 .residentMenuMemoryItem { border:1px solid var(--border); border-radius:8px; padding:8px 10px; font-size:13px; line-height:1.6; overflow-wrap:anywhere; }
 .residentMenuMemoryItem summary { display:flex; gap:8px; align-items:baseline; cursor:pointer; }
-@media(max-width:640px) { .residentMenuIdentity { gap:12px; align-items:flex-start; } .residentMenuName strong { font-size:18px; } .residentMenuMeta > .residentMenuIdRow { flex:1 1 100%; flex-wrap:wrap; gap:4px 8px; } .residentMenuMeta > .residentMenuLineage { flex-basis:100%; } .nodeSettingsSurface .nodeSettingsBody { grid-template-columns:var(--menu-rail-width) minmax(0,1fr); grid-template-rows:1fr; gap:10px; } .nodeSettingsSurface .nodeSettingsTabs { grid-auto-flow:row; } .nodeSettingsSurface .nodeSettingsTab { padding:7px 6px; font-size:11px; } #nodeMenuRuntime { grid-template-columns:minmax(0,1fr); } }
+@media(max-width:640px) { .residentMenuIdentity { gap:12px; align-items:flex-start; } .residentMenuName strong { font-size:18px; } .residentMenuMeta > .residentMenuIdRow { flex:1 1 100%; flex-wrap:wrap; gap:4px 8px; } .residentMenuMeta > .residentMenuLineage { flex-basis:100%; } .nodeSettingsSurface .nodeSettingsBody { grid-template-columns:var(--menu-rail-width) minmax(0,1fr); grid-template-rows:1fr; } .nodeSettingsSurface .nodeSettingsTabs { grid-auto-flow:row; } .nodeSettingsSurface .nodeSettingsTab { padding:7px 6px; font-size:11px; } #nodeMenuRuntime { grid-template-columns:minmax(0,1fr); } }
 
 .nodeSettingsSurface label { display:grid; gap:6px; }
 
 .nodeSettingsSurface::before { content:""; position:absolute; top:calc(12px + var(--menu-heading-height) + 10px); bottom:16px; left:calc(var(--node-settings-gutter) + var(--menu-rail-width)); border-left:1px solid var(--border); pointer-events:none; }
 .nodeSettingsSurface > .residentMenuHeader { border-bottom:0; background:transparent; }
-@media(max-width:640px) { .nodeSettingsSurface { --menu-rail-width:95px; } }
+@media(max-width:640px) { .nodeSettingsSurface { --menu-rail-width:95px; --node-settings-column-gap:10px; } }
 
 /* The Harness page reuses the rows the Chat gear used to hold. */
 .nodeHarnessPanel .residentHarnessPanel { display:grid; gap:2px; max-width:640px; }

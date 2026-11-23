@@ -338,7 +338,6 @@ html:root[data-portal-theme="liquid-glass"] {
   --lg-surface-popover: linear-gradient(168deg, rgba(255, 255, 255, .54) 0%, rgba(244, 247, 252, .42) 100%);
   --lg-surface-panel-glass: linear-gradient(172deg, rgba(255, 255, 255, .68) 0%, rgba(245, 247, 251, .58) 100%);
   --lg-surface-dialog: linear-gradient(176deg, rgba(255, 255, 255, .72) 0%, rgba(246, 248, 252, .64) 100%);
-  --lg-surface-footer: rgba(248, 249, 252, .58);
   --lg-surface-pill-active:
     radial-gradient(ellipse 76% 48% at 50% 0%, rgba(255, 255, 255, 1) 0%, rgba(255, 255, 255, .42) 56%, transparent 100%),
     linear-gradient(180deg, rgba(255, 255, 255, .98) 0%, rgba(245, 246, 249, .90) 100%);
@@ -375,7 +374,6 @@ html:root[data-portal-theme="liquid-glass"] {
   --lg-tint-field-border: rgba(0, 0, 0, .095);
   --lg-frame-border: rgba(0, 0, 0, .085);
   --lg-frame-border-hover: rgba(0, 0, 0, .16);
-  --lg-divider-highlight: rgba(255, 255, 255, .85);
   --lg-field-shadow:
     inset 0 1px 2px rgba(0, 0, 0, .045),
     inset 0 0 0 1px rgba(255, 255, 255, .86),
@@ -384,8 +382,7 @@ html:root[data-portal-theme="liquid-glass"] {
   --lg-blur-popover: blur(13px) saturate(190%);
   --lg-blur-panel-glass: blur(18px) saturate(180%);
   --lg-blur-dialog: blur(20px) saturate(175%);
-  --portal-detail-footer-backdrop-filter: blur(14px) saturate(170%);
-  --portal-detail-footer-background: var(--lg-surface-footer);
+  --portal-detail-footer-background: transparent;
   --theme-button-border: var(--lg-rim-outer);
   --theme-button-bg: var(--lg-btn-glass-bg);
   --liquid-glass-edge:
@@ -1072,13 +1069,12 @@ html:root[data-portal-theme="liquid-glass"] .portalDetailSurface {
   border: 1px solid var(--lg-card-border);
   border-radius: var(--portal-surface-radius);
   background: var(--modal-card-bg);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, .94),
-    var(--portal-shadow-dialog);
+  box-shadow: var(--portal-shadow-dialog);
 }
 
 html:root[data-portal-theme="liquid-glass"] .portalDetailHeader {
   border-bottom-color: var(--border);
+  background: transparent;
   box-shadow: none;
 }
 
@@ -1090,17 +1086,9 @@ html:root[data-portal-theme="liquid-glass"] .portalDetailClose:hover {
   background: var(--lg-tint-hover);
 }
 
-html:root[data-portal-theme="liquid-glass"] .portalDetailSurface.portalCommandBox {
-  border: 1px solid var(--lg-card-border);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, .94),
-    var(--portal-shadow-dialog);
-}
-
 html:root[data-portal-theme="liquid-glass"] .portalCommandFooter {
   border-top-color: var(--lg-frame-border);
-  background: rgba(248, 249, 252, .42);
-  box-shadow: inset 0 1px 0 var(--lg-divider-highlight);
+  background: transparent;
 }
 
 html:root[data-portal-theme="liquid-glass"] .portalCommandBox kbd {
@@ -1374,6 +1362,22 @@ html:root[data-portal-theme="liquid-glass"] :where(select, .agent-status-usage-f
   background: var(--lg-btn-glass-bg);
   box-shadow: var(--lg-btn-glass-shadow);
   padding-inline: 10px;
+}
+
+html:root[data-portal-theme="liquid-glass"] .portalRuntimeSettingsField select {
+  border-color: var(--border-strong);
+  background: color-mix(in srgb, var(--modal-card-bg) 24%, transparent);
+  box-shadow: none;
+}
+
+html:root[data-portal-theme="liquid-glass"] .portalRuntimeSettingsField select:focus {
+  border-color: var(--accent);
+  outline: none;
+}
+
+html:root[data-portal-theme="liquid-glass"] .portalRuntimeSettingsField select:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
 }
 
 html:root[data-portal-theme="liquid-glass"] .portalSearchField {
@@ -1826,6 +1830,10 @@ html:root[data-portal-theme="liquid-glass"] .portalMailboxAlert {
   html:root[data-portal-theme="liquid-glass"] dialog.portalDetailSurface::backdrop {
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
+  }
+
+  html:root[data-portal-theme="liquid-glass"] .portalRuntimeSettingsField select {
+    background: var(--panel);
   }
   html:root[data-portal-theme="liquid-glass"] .portalSiteHeader::before,
   html:root[data-portal-theme="liquid-glass"] .portalAgentInbox::before,
