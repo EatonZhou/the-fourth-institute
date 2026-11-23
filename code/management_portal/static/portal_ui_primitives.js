@@ -157,6 +157,7 @@
     "theme-forest": strokeIcon('<path d="M5 20c8-1 13-6 14-15-8 1-13 6-14 15Z"/><path d="M6 19c4-5 7-8 12-13M9 15c-1.8-.2-3.2-.9-4.2-2.1M13 11c-.4-1.9-1.1-3.4-2.3-4.5"/>'),
     "theme-scifi": strokeIcon('<path d="M12 3 20 8v8l-8 5-8-5V8l8-5ZM12 8v8M8.5 10.2 12 8l3.5 2.2M8.5 13.8 12 16l3.5-2.2"/><circle cx="12" cy="12" r="1.4"/>'),
     "theme-moonwalker": strokeIcon('<circle cx="12" cy="12" r="7.5"/><path d="M15.6 5.4a7.5 7.5 0 0 0 0 13.2M3.6 15.1c3.9 3.3 10.5 4.1 16.8 1.7"/><circle cx="18.9" cy="7.2" r=".8" fill="currentColor" stroke="none"/>'),
+    "theme-liquid-glass": strokeIcon('<path d="M12 2.7c-3.8 4.8-7 8.4-7 12.1a7 7 0 0 0 14 0c0-3.7-3.2-7.3-7-12.1ZM8.5 15a3.5 3.5 0 0 0 3.5 3.4"/>'),
     cursor: fillIcon('<path d="M3 2.5 23.5 20l-9.2 1.4-4.8 8.1L3 2.5Z"/>', { viewBox: "0 0 28 32" }),
     "status-dot": fillIcon('<circle cx="12" cy="12" r="8"/>'),
   });
