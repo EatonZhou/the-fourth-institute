@@ -1178,7 +1178,6 @@ html:root[data-portal-theme="liquid-glass"] :is(.homeDialogueDivider, .filter-di
 /* Switches already draw their own track and thumb. */
 html:root[data-portal-theme="liquid-glass"] .portalButton:where(:not([role="switch"])) {
   --portal-button-border: transparent;
-  border-radius: var(--lg-radius-pill);
   background: var(--lg-btn-glass-bg);
   box-shadow: var(--lg-btn-glass-shadow);
   transition:
