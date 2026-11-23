@@ -219,9 +219,13 @@
     state.semanticSearch.load({ fresh: true }).catch(error => window.PortalUI.toast(window.PortalI18n.text`语义搜索：${error.message || error}`, "warning")).finally(() => {
       semanticSearchReady = true;
     });
+    const openingPaper = state.selectedId && !isCollectionMode();
     const libraryReady = loadLibrary({ keepDetail: true, hydrateDetail: false });
     renderChat();
-    await libraryReady;
+    // A direct/restored paper already has an identity. Its Reader does not
+    // depend on the catalog; loadLibrary reports failures in the sidebar.
+    if (openingPaper) libraryReady.catch(alertError);
+    else await libraryReady;
     if (state.leftFace === "ccf") {
       await loadCcfVenues();
       await ensureCcfYearsForFilter();
@@ -232,13 +236,19 @@
       await loadChatHistory({ paperId: activeChatPaperId(), workspaceId: activeChatWorkspaceId(), render: true });
     }
     if (state.selectedId && !isCollectionMode()) {
+      const paperId = state.selectedId;
+      const requestSeq = state.detailRequestSeq + 1;
       try {
-        await loadDetail(state.selectedId, { render: true });
+        // The seeded route owns both startup reads. Beginning another paper
+        // navigation here would invalidate the parallel catalog request.
+        await loadDetail(paperId, { render: true, fromNavigation: !!openingPaper });
       } catch {
-        state.selectedId = "";
-        state.detail = null;
-        writeUiState();
-        renderWorkspace();
+        if (state.selectedId === paperId && state.detailRequestSeq === requestSeq) {
+          state.selectedId = "";
+          state.detail = null;
+          writeUiState();
+          renderWorkspace();
+        }
       }
     }
     renderAssistantContext();

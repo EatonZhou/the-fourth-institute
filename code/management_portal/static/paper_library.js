@@ -134,15 +134,13 @@
     async function loadLibrary({ keepDetail = true, hydrateDetail = true } = {}) {
       const requestSeq = ++state.libraryRequestSeq;
       const favoriteRevision = state.favoriteRevision;
-      const detailBefore = state.detail;
-      const modeBefore = state.mode;
       const faceBefore = state.leftFace;
-      // Sidebar filters change the catalog, not the open document. Rebuilding
-      // it discards PDF canvases, text layers and selection and renders them all
-      // again. Only preserve a detail view that is still the same after the read.
-      const preservesDetailView = () => keepDetail && detailBefore?.paper
+      const modeBefore = state.mode;
+      // The catalog owns the sidebar. A paper may finish opening (or the user
+      // may select another one) while this read is pending; retain that view.
+      const preservesDetailView = () => keepDetail && state.detail?.paper
         && faceBefore === "library" && state.leftFace === faceBefore && state.mode === modeBefore && !isCollectionMode()
-        && state.detail === detailBefore && state.selectedId === detailBefore.paper.id;
+        && state.selectedId === state.detail.paper.id;
       state.libraryLoading = true;
       const header = $("libraryMeta");
       const renderHeaderError = error => {

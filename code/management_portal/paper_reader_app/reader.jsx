@@ -113,20 +113,25 @@ export function openReader({paper, principal, anchor, onClose, onReady, containe
   let fullscreen = !container, layoutTick;
   const layout = () => {
     if (closed) return;
-    dialog.classList.toggle('is-embedded', !fullscreen);
     // The iframe lives outside the mode's DOM to preserve its document/session.
     // Its old rectangle is not a visible host after navigation removes it.
     const target = container?.();
     const visible = isCurrent() && (fullscreen || Boolean(target?.isConnected && target.getClientRects().length));
-    dialog.hidden = !visible;
-    dialog.style.display = visible ? '' : 'none';
-    dialog.inert = closing || !visible;
-    if (!fullscreen) {
-      if (target) {
-        const rect = target.getBoundingClientRect();
-        Object.assign(dialog.style, {left: `${rect.left}px`, top: `${rect.top}px`, width: `${rect.width}px`, height: `${rect.height}px`});
-      }
-    } else Object.assign(dialog.style, {left: '0', top: '0', width: '100vw', height: '100dvh'});
+    // Read geometry before writing styles. Hidden readers retain their session,
+    // but must not keep invalidating document style on every animation frame.
+    const rect = visible && !fullscreen ? target.getBoundingClientRect() : null;
+    const geometry = visible ? (fullscreen
+      ? {left: '0px', top: '0px', width: '100vw', height: '100dvh'}
+      : {left: `${rect.left}px`, top: `${rect.top}px`, width: `${rect.width}px`, height: `${rect.height}px`}) : {};
+    dialog.classList.toggle('is-embedded', !fullscreen);
+    if (dialog.hidden !== !visible) dialog.hidden = !visible;
+    const display = visible ? '' : 'none';
+    if (dialog.style.display !== display) dialog.style.display = display;
+    const inert = closing || !visible;
+    if (dialog.inert !== inert) dialog.inert = inert;
+    for (const [name, value] of Object.entries(geometry)) {
+      if (dialog.style[name] !== value) dialog.style[name] = value;
+    }
     layoutTick = requestAnimationFrame(layout);
   };
   const setFullscreen = value => { const entering=!!value&&!fullscreen;if(entering)inheritChatWidth();fullscreen = !!value; bridge?.setFullscreen(fullscreen); dialog.classList.toggle('is-embedded', !fullscreen); dialog.setAttribute('aria-modal', String(fullscreen));if(entering)dialog.dispatchEvent(new Event('paper-reader-chat-width')); };

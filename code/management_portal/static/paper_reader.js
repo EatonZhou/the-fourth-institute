@@ -156,16 +156,13 @@
         $("workspaceMain").innerHTML = needPaperHtml();
         return;
       }
-      if (!detailSectionsLoaded(["analysis", "summary"])) {
-        $("workspaceMain").innerHTML = detailSectionLoadingHtml("Paper Reader");
-        return;
-      }
+      const analysisReady = detailSectionsLoaded(["analysis", "summary"]);
       const paper = detail.paper;
       const analysisBody = detail.analysis?.body ?? detail.analysis?.content ?? detail.summary?.content ?? "";
       const analysisKind = detail.analysis?.kind || (detail.summary?.content && !detail.analysis?.content ? "summary" : "analysis");
       const sourceHtml = analysisBody ? analysisSourceHtml(detail.analysis?.provenance || {}) : "";
-      const analysisHtml = analysisBody
-        ? sourceHtml + window.PortalPaperArtifactPresentation.renderBody(analysisBody, paper.title, md)
+      const analysisHtml = !analysisReady ? detailSectionLoadingHtml("Analysis")
+        : analysisBody ? sourceHtml + window.PortalPaperArtifactPresentation.renderBody(analysisBody, paper.title, md)
         : `<div class="paperAnalysisEmpty">${paperStateHtml("No analysis yet")}</div>`;
       return renderReaderPanels(detail, paper, analysisKind, analysisHtml);
     }
