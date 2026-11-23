@@ -501,6 +501,7 @@
         button.classList.toggle("active", active);
         button.setAttribute("aria-selected", String(active));
       });
+      state.gitDiffEditor?.setModel?.(null);
       state.gitDiffModels.forEach(model => model?.dispose?.());
       state.gitDiffModels = [];
       const monaco = monacoApi();
@@ -533,7 +534,7 @@
           scrollBeyondLastLine: false,
           fontSize: 12,
           renderOverviewRuler: true,
-          hideUnchangedRegions: { enabled: true, contextLineCount: 3, minimumLineCount: 4, revealLineCount: 8 },
+          hideUnchangedRegions: { enabled: false },
         });
       }
       const revision = `${Date.now()}-${index}`;
@@ -549,6 +550,7 @@
     }
 
     function renderArticleGitDiff(title, diff, emptyMessage, options = {}) {
+      if (options.truncated) title += window.PortalI18n.t(" · 差异过大，仅显示部分内容");
       state.gitDiffTitle = title;
       $("articleGitDiffTitle").textContent = title;
       $("articleGitDiff").textContent = diff;
@@ -580,7 +582,7 @@
       const payload = await request(`/api/articles/${encodeURIComponent(articleId)}/git/diff?path=${encodeURIComponent(path)}&staged=${staged}`);
       if (state.selectedId !== articleId) return;
       state.gitDiffPath = path;
-      renderArticleGitDiff(`${path} · ${staged ? "已暂存的更改" : "未暂存的更改"}`, String(payload.diff || ""), payload.truncated ? "差异过大，已截断。" : "该文件当前没有可显示的差异。", { fallbackPath: path, scope: payload.scope || "" });
+      renderArticleGitDiff(`${path} · ${staged ? "已暂存的更改" : "未暂存的更改"}`, String(payload.diff || ""), payload.truncated ? "差异过大，已截断。" : "该文件当前没有可显示的差异。", { fallbackPath: path, scope: payload.scope || "", truncated: payload.truncated });
     }
 
     async function openArticleGitCommit(commitSha, shortSha, subject) {
@@ -591,7 +593,7 @@
       const label = commit.short_sha || shortSha || commitSha.slice(0, 7);
       const message = commit.subject || subject || window.PortalI18n.t("(无提交信息)");
       state.gitDiffPath = `commit:${commit.sha || commitSha}`;
-      renderArticleGitDiff(`${label} · ${message}`, String(payload.diff || ""), "该提交在当前 Article 目录中没有可显示的更改。", { scope: payload.scope || "" });
+      renderArticleGitDiff(`${label} · ${message}`, String(payload.diff || ""), "该提交在当前 Article 目录中没有可显示的更改。", { scope: payload.scope || "", truncated: payload.truncated });
     }
 
     return Object.freeze({

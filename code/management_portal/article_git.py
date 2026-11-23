@@ -39,7 +39,7 @@ def article_git_diff(
     _record, _root_item, article_root = article_registry._article_source_context(
         article_id
     )
-    return git_workspace_backend.scoped_git_diff(article_root, path, staged=staged)
+    return git_workspace_backend.scoped_git_diff(article_root, path, staged=staged, full_context=True)
 
 
 def run_article_git_operation(article_id: str, operation: str, payload: dict[str, Any], *, actor: str) -> dict[str, Any]:
@@ -67,7 +67,7 @@ def article_git_commit_diff(
     _record, _root_item, article_root = article_registry._article_source_context(
         article_id
     )
-    return git_workspace_backend.scoped_git_commit_diff(article_root, sha)
+    return git_workspace_backend.scoped_git_commit_diff(article_root, sha, full_context=True)
 
 
 def initialize_article_git(

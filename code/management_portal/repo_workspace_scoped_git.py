@@ -147,7 +147,9 @@ def initialize_scoped_git_workspace(workspace_path: str | Path) -> dict[str, Any
         return scoped_git_status(workspace)
 
 
-def scoped_git_diff(workspace_path: str | Path, path: str, *, staged: bool = False) -> dict[str, Any]:
+def scoped_git_diff(
+    workspace_path: str | Path, path: str, *, staged: bool = False, full_context: bool = False,
+) -> dict[str, Any]:
     workspace, _repo_root, _scope = _scoped_git_context(workspace_path)
     relative = _safe_relative_path(path)
     status = _status_payload(workspace, current_directory_only=True)
@@ -169,6 +171,7 @@ def scoped_git_diff(workspace_path: str | Path, path: str, *, staged: bool = Fal
             "--no-index",
             "--no-ext-diff",
             "--no-color",
+            *(["--unified=2147483647"] if full_context else []),
             "--",
             "/dev/null",
             relative,
@@ -182,6 +185,7 @@ def scoped_git_diff(workspace_path: str | Path, path: str, *, staged: bool = Fal
             "--no-ext-diff",
             "--no-color",
             "--find-renames",
+            *(["--unified=2147483647"] if full_context else []),
             "--",
             relative,
             *([change["original_path"]] if change.get("original_path") else []),
@@ -194,7 +198,9 @@ def scoped_git_diff(workspace_path: str | Path, path: str, *, staged: bool = Fal
     }
 
 
-def scoped_git_commit_diff(workspace_path: str | Path, sha: str) -> dict[str, Any]:
+def scoped_git_commit_diff(
+    workspace_path: str | Path, sha: str, *, full_context: bool = False,
+) -> dict[str, Any]:
     """Return one commit patch constrained to the registered workspace directory."""
     workspace, _repo_root, scope = _scoped_git_context(workspace_path)
     clean_sha = str(sha or "").strip()
@@ -226,6 +232,7 @@ def scoped_git_commit_diff(workspace_path: str | Path, sha: str) -> dict[str, An
         "--find-renames",
         "--find-copies",
         "--patch",
+        *(["--unified=2147483647"] if full_context else []),
         verified,
         "--",
         ".",
