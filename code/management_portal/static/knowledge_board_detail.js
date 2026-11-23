@@ -154,7 +154,7 @@ function syncDetailButtons() {
   el.mSave.textContent = state.detailSaving ? window.PortalI18n.t("保存中…") : window.PortalI18n.t("保存");
 }
 
-function renderDetailBody() {
+function renderDetailBody(section = "") {
   disposeDetailPreview();
   syncDetailButtons();
   if (state.detailEditing) {
@@ -224,13 +224,16 @@ function renderDetailBody() {
     },
     context: {
       markdownLayout: "document",
-      renderMarkdown,
+      renderMarkdown: (source, options) => renderMarkdown(source, {
+        ...options, sectionAnchors: state.selected?.type === "skill",
+      }),
       unsupportedText: state.detailPath
         ? `此文件已在目录中列出，但不能直接预览：${state.detailPath}`
         : "此文件已在目录中列出，但不能直接预览。",
       bindLinks: root => {
         if (!markdown) return;
         bindSkillInternalFileLinks(el.mText);
+        if (section) scrollToSkillSection(root, section);
         window.PortalFileLinks?.enhance?.(root, {
           basePath: state.detailPath,
           resolvePath: detailFilePathResolver(parsed),
@@ -475,7 +478,7 @@ async function openDetailFile(file, options = {}) {
       const displayFile = detailFiles().find(value => String(value.address || "") === targetFileId);
       el.mSub.textContent = `${displayItem.project || ""} · ${displayItem.type || ""} · ${displayFile?.relative_path || data.filename || ""}`;
       renderDetailFileTree();
-      renderDetailBody();
+      renderDetailBody(options.section);
     },
     onError: e => {
       el.mText.textContent = window.PortalUI.errorMessage(window.PortalI18n.t("加载"), e);

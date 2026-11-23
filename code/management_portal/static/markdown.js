@@ -602,6 +602,24 @@
         continue;
       }
 
+      // Skill compatibility indexes keep old section targets above the new links.
+      // Store just the identifier as preview-local data, never as raw HTML or a global id.
+      const section = activeRenderOptions.sectionAnchors && trimmed.match(/^<a id="([\p{L}\p{M}\p{N}_.:-]+)"><\/a>$/u);
+      if (section) {
+        flushPara();
+        flushBlockquote();
+        const marker = '<span data-md-section="' + esc(section[1]) + '"></span>';
+        const bullet = lines[i + 1]?.match(/^(\s*)[-*+]\s+(\[.+)$/);
+        if (bullet && !/^\[[ xX]\]\s/.test(bullet[2])) {
+          pushListItem("ul", indentCols(bullet[1]), marker + renderInline(bullet[2]), null);
+          i++;
+        } else {
+          closeAllLists();
+          out.push(marker);
+        }
+        continue;
+      }
+
       // Heading
       const hm = line.match(/^(#{1,6})\s+(.*)$/);
       if (hm) {

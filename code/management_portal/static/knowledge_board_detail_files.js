@@ -94,10 +94,58 @@ function skillInternalFileTarget(rawTarget) {
   return target;
 }
 
+function scrollToSkillSection(root, section) {
+  const elements = root.querySelectorAll("[data-md-section], h1, h2, h3, h4, h5, h6");
+  const used = new Set();
+  for (const element of elements) {
+    let slug = element.dataset.mdSection;
+    if (!slug) {
+      const base = element.textContent.trim().toLowerCase()
+        .replace(/[^\p{L}\p{M}\p{N}\s_-]/gu, "").replace(/\s+/g, "-");
+      slug = base;
+      for (let n = 1; used.has(slug); n++) slug = `${base}-${n}`;
+    }
+    used.add(slug);
+    if (slug === section) {
+      (element.closest("li") || element).scrollIntoView({ block: "start" });
+      return;
+    }
+  }
+}
+
 function bindSkillInternalFileLinks(root) {
   if (!root || String((state.selected || {}).type || "") !== "skill") return;
+  const files = intrinsicDetailFiles();
+  const current = files.find(file => file.address === state.detailSelectedFileId);
+  root.querySelectorAll(".markdownBody a[href*='#']").forEach(link => {
+    const href = link.getAttribute("href");
+    const hash = href.indexOf("#");
+    const path = href.slice(0, hash);
+    if (!current || !href.slice(hash + 1) || (path && !/^(?![\/\\])[^:?#\\]+\.md$/i.test(path))) return;
+    let filePath, section;
+    try {
+      const packageRoot = new URL("/skill/", window.location.origin);
+      const currentUrl = new URL(current.relative_path, packageRoot);
+      const target = new URL(path, currentUrl);
+      if (!target.pathname.startsWith(packageRoot.pathname)) return;
+      filePath = decodeURIComponent(target.pathname.slice(packageRoot.pathname.length));
+      section = decodeURIComponent(href.slice(hash + 1));
+    } catch { return; }
+    const file = files.find(item => item.relative_path === filePath);
+    if (!file) return;
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "skillInternalFileLink";
+    button.append(...link.childNodes);
+    button.addEventListener("click", () => {
+      if (file.address === current.address) scrollToSkillSection(root, section);
+      else if (state.detailReadOnly) openDetailLinkedFile({});
+      else openDetailFile(file, { section });
+    });
+    link.replaceWith(button);
+  });
   root.querySelectorAll(".markdownBody code").forEach(code => {
-    if (code.closest("pre")) return;
+    if (code.closest("pre, button, a")) return;
     const file = skillInternalFileTarget(code.textContent);
     if (!file) return;
     const button = document.createElement("button");
