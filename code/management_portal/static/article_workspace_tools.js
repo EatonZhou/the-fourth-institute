@@ -9,7 +9,7 @@
     { id: "files", title: "文件树", icon: "files", capability: "navigation" },
     { id: "favorites", title: "收藏", icon: "star", capability: "navigation" },
     { id: "search", title: "搜索", icon: "search", capability: "search" },
-    { id: "git", title: "源代码管理", icon: "git-branch", capability: "source-control" },
+    { id: "git", title: "源代码管理", icon: "branch", capability: "source-control" },
     { id: "chat", title: "聊天", icon: "chat", capability: "conversation" },
     { id: "settings", title: "设置", icon: "settings", capability: "settings" },
     { id: "library", title: "Article 注册管理", icon: "book", capability: "navigation" },

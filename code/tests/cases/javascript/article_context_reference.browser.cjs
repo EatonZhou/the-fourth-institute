@@ -127,6 +127,45 @@ const html = fs.readFileSync(path.join(repo, 'management_portal/article_workspac
       $('articleSourceEditor').focus();
     };
     await page.evaluate(setup, { prepareContext: true });
+    // In a narrow writing layout, an inactive Chat tab must not reserve its
+    // larger minimum width for Git. Reusing the split handle after changing
+    // tabs must use the new visible panel's limits, for mouse and keyboard.
+    const originalLayout = await page.evaluate(() => layout.currentArticleWorkbench().getLayout());
+    await page.setViewportSize({ width: 900, height: 1080 });
+    await page.locator('[data-article-view="git"]').click();
+    const gitSplitter = page.locator('#articleWorkspaceGrid .portalWorkbenchCanvas > .portalWorkbenchSplit > .portalWorkbenchSplitHandle').first();
+    const gitWidth = () => gitSplitter.evaluate(el => el.previousElementSibling.getBoundingClientRect().width);
+    const dragGitWidth = async delta => {
+      const box = await gitSplitter.boundingBox();
+      await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+      await page.mouse.down();
+      await page.mouse.move(box.x + box.width / 2 + delta, box.y + box.height / 2, { steps: 6 });
+      await page.mouse.up();
+    };
+    const gitBefore = await gitWidth();
+    await dragGitWidth(80);
+    assert.ok(await gitWidth() > gitBefore + 35, 'Git widens even with a hidden Chat tab in a narrow window');
+    await dragGitWidth(-80);
+    assert.ok(await gitWidth() < 200, 'Git can shrink below the inactive Chat minimum');
+    const gitBeforeKeyboard = await gitWidth();
+    await gitSplitter.focus(); await page.keyboard.press('ArrowRight');
+    assert.ok(await gitWidth() > gitBeforeKeyboard + 20, 'keyboard resize also uses the active Git minimum');
+    const resizedGitLayout = await page.evaluate(() => layout.currentArticleWorkbench().getLayout());
+    const resizedGitWidth = await gitWidth();
+    await page.locator('[data-article-view="git"]').click();
+    await page.locator('[data-article-view="git"]').click();
+    assert.ok(Math.abs(await gitWidth() - resizedGitWidth) < 2, 'collapse and reopen retain the resized Git width');
+    await page.evaluate(saved => layout.currentArticleWorkbench().applyWorkspace({ layout: saved }), resizedGitLayout);
+    assert.ok(Math.abs(await gitWidth() - resizedGitWidth) < 2, 'restored layout retains the resized Git width');
+    await page.evaluate(() => layout.currentArticleWorkbench().hidePanel('git'));
+    const restoreGit = page.locator('[data-workbench-restore-panel="git"]');
+    assert.equal(await restoreGit.locator('svg').count(), 1, 'Git restore button paints its registered branch icon');
+    await restoreGit.click();
+    assert.equal(await page.locator('[data-article-panel="git"]').isVisible(), true);
+    assert.equal(await page.locator('[data-portal-workbench-tab="git"] svg').count(), 1, 'Git tab also paints its branch icon');
+    await page.setViewportSize({ width: 1920, height: 1080 });
+    await page.evaluate(saved => layout.currentArticleWorkbench().applyWorkspace({ layout: saved }), originalLayout);
+    await page.locator('#articleSourceEditor').focus();
     // The sidebar command also works in the plain-text fallback editor.
     const sidebarLayout = await page.evaluate(() => layout.currentArticleWorkbench().getLayout());
     const sidebarWidth = await page.locator('[data-article-panel="chat"]').evaluate(el => el.getBoundingClientRect().width);

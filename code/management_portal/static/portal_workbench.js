@@ -525,8 +525,11 @@
       const descriptor = descriptors.get(node.panelId);
       return axis === "y" ? descriptor?.minHeight || 100 : descriptor?.minWidth || 120;
     }
+    if (node.type === "stack") {
+      const active = (node.children || []).find(child => child.panelId === node.activePanelId);
+      return minimumForNode(active, axis, descriptors, collapsed);
+    }
     const values = (node.children || []).map(child => minimumForNode(child, axis, descriptors, collapsed));
-    if (node.type === "stack") return Math.max(96, ...values);
     const sameAxis = (axis === "x" && node.orientation === "horizontal")
       || (axis === "y" && node.orientation === "vertical");
     return sameAxis

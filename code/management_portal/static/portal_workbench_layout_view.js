@@ -179,9 +179,11 @@
 
     function bindSplitHandle(handle, split, before, after, beforeElement, afterElement, index) {
       const axis = split.orientation === "vertical" ? "y" : "x";
-      const beforeMinimum = minimumForNode(before, axis, descriptors, shellState.collapsed);
-      const afterMinimum = minimumForNode(after, axis, descriptors, shellState.collapsed);
       const bounds = total => {
+        // Tab activation refreshes the existing split and handle. Its visible
+        // panels (and their minimum sizes) can differ from the initial render.
+        const beforeMinimum = minimumForNode(before, axis, descriptors, shellState.collapsed);
+        const afterMinimum = minimumForNode(after, axis, descriptors, shellState.collapsed);
         const usable = Math.max(2, Number(total) || 2);
         const minimum = Math.min(beforeMinimum, usable / 2);
         const afterFloor = Math.min(afterMinimum, usable - minimum);
