@@ -73,7 +73,7 @@
       menuState.options.renderExtensions?.(extensions, nodeResidentId(node));
       // A Family facade has no runtime form; its avatar row sits above the Family settings instead.
       if (menuState.nodeMenuContext.family) $id("nodeMenuFamilySettings").before($id("nodeMenuAvatar"));
-      else $id("nodeSettingsForm").querySelector(".nodeSettingsFooter").before($id("nodeMenuAvatar"));
+      else $id("nodeSettingsForm").append($id("nodeMenuAvatar"));
       $id("nodeMenuName").textContent = node.title || nodeResidentId(node);
       $id("nodeMenuRenameFields").hidden = true;
       $id("nodeMenuStatus").hidden = true;
