@@ -72,8 +72,11 @@ def _decode(row):
 
 
 def registrations(provider=None):
+    # Within a provider, owned login/service accounts list before api_profile
+    # routes, so a later-added login account sits next to its siblings.
     with database().read() as c:
-        rows = c.execute("SELECT * FROM registrations WHERE (%s::text IS NULL OR provider=%s) ORDER BY created_at,account_id",
+        rows = c.execute("SELECT * FROM registrations WHERE (%s::text IS NULL OR provider=%s) "
+                         "ORDER BY kind='api_profile',created_at,account_id",
                          (provider, provider))
         return [_decode(row) for row in rows]
 

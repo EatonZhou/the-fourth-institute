@@ -39,6 +39,19 @@ def test_registration_versions_and_roles(tmp_path):
         store.update_role("default", "codex_test", "model", "low", 0, "bob")
 
 
+def test_registrations_list_owned_accounts_before_api_profiles(tmp_path):
+    """同一 provider 内，后登记的登录账号排在 api_profile 账号之前。"""
+    from management_portal.execution import account_registrations as store
+    store.create_registration({"account_id": "claude_first", "provider": "claude", "kind": "subscription_login",
+                               "route_id": "first", "config": {"account_dir": str(tmp_path / "claude_first")}}, "alice")
+    store.create_registration({"account_id": "relay_primary", "provider": "claude", "kind": "api_profile",
+                               "route_id": "relay_primary", "config": {"api_id": "relay_primary"}}, "alice")
+    store.create_registration({"account_id": "claude_second", "provider": "claude", "kind": "subscription_login",
+                               "route_id": "second", "config": {"account_dir": str(tmp_path / "claude_second")}}, "alice")
+    order = [row["account_id"] for row in store.registrations("claude")]
+    assert order.index("claude_first") < order.index("claude_second") < order.index("relay_primary")
+
+
 def test_account_routing_flags_are_replaced_by_role_selection(tmp_path):
     from management_portal.execution import account_registrations as store
     data = {"account_id": "codex_one", "provider": "codex", "kind": "subscription_login",
