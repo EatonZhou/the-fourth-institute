@@ -25,7 +25,7 @@
     return Date.parse(chatroom?.last_message?.created_at || chatroom?.updated_at || "") || 0;
   }
 
-  // The card's time is secondary: as short as it can be (today HH:mm, this year M/D, else Y/M/D); the tooltip has it in full.
+  // Keep the card time short: today HH:mm, this year M/D, else Y/M/D.
   function chatroomShortTime(timestamp, now = new Date()) {
     const date = new Date(timestamp);
     const pad = number => String(number).padStart(2, "0");
@@ -206,9 +206,6 @@
         : window.PortalI18n.text`${(chatroom.members || []).length} 位成员`;
       const activity = chatroomActivity(chatroom);
       const time = activity ? chatroomShortTime(activity) : "";
-      const fullTime = activity
-        ? (window.PortalUI?.formatDateTime?.(new Date(activity).toISOString(), { style: "calendar-minute" }) || "")
-        : "";
       const classes = ["portalNavRow", "chatroomCard", active ? "is-active" : "", pinnedAt ? "pinned" : "", attention ? "unread" : "", muted ? "muted" : ""];
       return window.PortalI18n.html`<div class="chatroomCardWrap" data-chatroom-card="${esc(id)}">
           <div class="${classes.filter(Boolean).join(" ")}">
@@ -219,7 +216,7 @@
                   <span class="portalNavRowLabel agentTitle">${esc(chatroomDisplayTitle(chatroom))}</span>
                   ${pinnedAt ? window.PortalI18n.t('<span class="chatroomPinnedMark" data-portal-icon="pin" role="img" aria-label="已置顶" title="已置顶"></span>') : ""}
                   ${muted ? window.PortalI18n.t('<span class="chatroomMutedMark" data-portal-icon="bell-off" aria-label="消息免打扰" title="消息免打扰"></span>') : ""}
-                  ${time ? window.PortalI18n.html`<span class="chatroomEntryTime" title="${esc(fullTime)}">${esc(time)}</span>` : ""}
+                  ${time ? window.PortalI18n.html`<span class="chatroomEntryTime">${esc(time)}</span>` : ""}
                 </span>
                 <span class="chatroomEntryLine">
                   <span class="portalNavRowMeta agentMeta">${esc(meta)}</span>
