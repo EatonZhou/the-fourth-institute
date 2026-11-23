@@ -478,6 +478,44 @@ const html = fs.readFileSync(path.join(repo, 'management_portal/article_workspac
     await page.locator('[data-article-view="search"]').focus();
     await page.keyboard.press('Meta+b');
     assert.deepEqual(await page.evaluate(() => [...state.visibleTools].sort()), ['chat', 'files', 'search']);
+    // Follow the visible sidebar past an older collapsed tool column. A new
+    // rail choice replaces Ctrl+B's previous restore target.
+    await page.evaluate(() => {
+      const {split, stack} = PortalWorkbench.model;
+      layout.currentArticleWorkbench().applyWorkspace({layout: split('horizontal', [
+        stack(['files', 'search']), stack(['favorites', 'git'], 'git'), stack(['editor']), stack(['chat']),
+      ], [260, 260, 700, 320]), collapsed: ['git'], hidden: ['output', 'library', 'settings']});
+    });
+    await page.locator('[data-article-view="files"]').focus();
+    await page.keyboard.press('Control+b');
+    assert.deepEqual(await page.evaluate(() => [...state.visibleTools]), ['chat']);
+    await page.locator('[data-article-view="git"]').click();
+    assert.deepEqual(await page.evaluate(() => [...state.visibleTools].sort()), ['chat', 'git']);
+    await page.keyboard.press('Control+b');
+    assert.deepEqual(await page.evaluate(() => [...state.visibleTools]), ['chat'],
+      'Ctrl+B closes the visible Git group instead of reopening the old file tree');
+    await page.keyboard.press('Control+b');
+    assert.deepEqual(await page.evaluate(() => [...state.visibleTools].sort()), ['chat', 'git'],
+      'only the group just closed by Ctrl+B is restored');
+    await page.keyboard.press('Control+b');
+    await page.reload(); await page.evaluate(setup, {boundChat: true});
+    await page.locator('[data-article-view="git"]').focus();
+    await page.keyboard.press('Meta+b');
+    assert.deepEqual(await page.evaluate(() => [...state.visibleTools].sort()), ['chat', 'git'],
+      'reload retains the subset to restore, without opening previously collapsed Files');
+    // Closing another tool using its rail button must not resurrect an old
+    // shortcut target either.
+    await page.locator('[data-article-view="git"]').click();
+    await page.locator('[data-article-view="search"]').click();
+    await page.locator('[data-article-view="search"]').click();
+    await page.keyboard.press('Control+b');
+    assert.deepEqual(await page.evaluate(() => [...state.visibleTools].sort()), ['chat', 'search']);
+    await page.keyboard.press('Control+b');
+    await page.locator('[data-article-view="favorites"]').click();
+    await page.keyboard.press('Control+b');
+    assert.deepEqual(await page.evaluate(() => [...state.visibleTools]), ['chat']);
+    await page.keyboard.press('Control+b');
+    assert.deepEqual(await page.evaluate(() => [...state.visibleTools].sort()), ['chat', 'favorites']);
     await page.evaluate(() => {
       const {split, stack} = PortalWorkbench.model;
       layout.currentArticleWorkbench().applyWorkspace({layout: split('horizontal', [stack(['editor', 'git'], 'git'), stack(['files']), stack(['output'])]),

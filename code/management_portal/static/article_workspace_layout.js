@@ -56,14 +56,22 @@
       state.sideView = target;
       articleLayoutStore.write({ sideView: target });
       if (!forceOpen) return;
+      let result;
       if (toggle && state.visibleTools.has(target)) {
         // Keep a tool group's position and width, including independently docked
         // groups. A mixed editor/tool group must retain its content panels.
-        return toolStackFor(articleWorkbench.getLayout(), target)
+        result = toolStackFor(articleWorkbench.getLayout(), target)
           ? articleWorkbench.collapsePanel(target) : articleWorkbench.hidePanel(target);
+      } else {
+        articleWorkbench?.focusPanel(target);
+        result = articleWorkbench?.getPanel(target)?.activate();
       }
-      articleWorkbench?.focusPanel(target);
-      return articleWorkbench?.getPanel(target)?.activate();
+      if (sidebarStacks().some(stack => stack.children.some(child => child.panelId === target))) {
+        // An explicit sidebar choice supersedes the previous shortcut recall.
+        // Selecting an independent right-hand tool leaves that recall alone.
+        articleLayoutStore.write({ sidebarRestorePanels: [] });
+      }
+      return result;
     }
 
     function setToolVisible(visible, view = state.sideView) {
@@ -71,15 +79,28 @@
       articleWorkbench?.hidePanel(view);
     }
 
-    // A sidebar can contain several vertically arranged tool groups. Follow
-    // the left column of horizontal splits, but retain every vertical group.
+    // Collect the leading tool region, including collapsed groups. A hidden
+    // first column must not mask an expanded tool column immediately after it.
+    // Stop at content/mixed groups so independent right-hand tools stay put.
     function sidebarStacks(node = articleWorkbench?.getLayout()) {
-      if (node?.type === "stack") {
-        return toolStackFor(node, node.activePanelId) ? [node] : [];
-      }
-      if (node?.type !== "split") return [];
-      return node.orientation === "vertical"
-        ? node.children.flatMap(child => sidebarStacks(child)) : sidebarStacks(node.children[0]);
+      const stacks = [];
+      const visit = item => {
+        if (item?.type === "stack") {
+          if (!toolStackFor(item, item.activePanelId)) return false;
+          stacks.push(item);
+          return true;
+        }
+        if (item?.type !== "split") return false;
+        let toolsOnly = true;
+        for (const child of item.children) {
+          const childToolsOnly = visit(child);
+          toolsOnly = toolsOnly && childToolsOnly;
+          if (item.orientation === "horizontal" && !childToolsOnly) break;
+        }
+        return toolsOnly;
+      };
+      visit(node);
+      return stacks;
     }
 
     function canToggleArticleSidebar() {
@@ -92,9 +113,18 @@
       if (!canToggleArticleSidebar()) return false;
       const stacks = sidebarStacks(), focused = document.activeElement;
       const expanded = stacks.filter(stack => !articleWorkbench.isPanelCollapsed(stack.activePanelId));
-      const focusedStack = stacks.find(stack => articleWorkbench.getPanel(stack.activePanelId)?.root?.contains(focused)) || stacks[0];
-      if (expanded.length) expanded.forEach(stack => articleWorkbench.collapsePanel(stack.activePanelId));
-      else stacks.forEach(stack => articleWorkbench.expandPanel(stack.activePanelId));
+      const focusedStack = expanded.find(stack => articleWorkbench.getPanel(stack.activePanelId)?.root?.contains(focused)) || expanded[0];
+      if (expanded.length) {
+        // Remember only what this action closes. Workbench remains the owner of
+        // geometry, active tabs and collapsed state; this is just a recall list.
+        articleLayoutStore.write({ sidebarRestorePanels: expanded.map(stack => stack.activePanelId) });
+        expanded.forEach(stack => articleWorkbench.collapsePanel(stack.activePanelId));
+      } else {
+        const remembered = articleLayoutStore.read().sidebarRestorePanels;
+        const restore = stacks.filter(stack => Array.isArray(remembered) && remembered.includes(stack.activePanelId));
+        if (!restore.length) restore.push(stacks.find(stack => stack.activePanelId === state.sideView) || stacks[0]);
+        restore.forEach(stack => articleWorkbench.expandPanel(stack.activePanelId));
+      }
       if (expanded.length && focused && !focused.getClientRects().length) {
         document.querySelector(`[data-article-view="${focusedStack.activePanelId}"]`)?.focus();
       } else if (!expanded.length) {
