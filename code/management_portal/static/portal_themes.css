@@ -261,6 +261,140 @@ html:root[data-portal-theme="moonwalker"] {
   --shadow-hover: 0 28px 76px rgba(0, 0, 0, .64), 0 0 24px rgba(229, 232, 235, .12);
 }
 
+html:root[data-portal-theme="liquid-glass"] {
+  color-scheme: light;
+  /* Reserved Dark-variant hook: a future liquid-glass-dark mode only needs to
+     override this palette and --lg-* material token group; component rules
+     below consume these semantic variables without duplicating selectors. */
+  --lg-scheme: light;
+
+  /* Apple Pure White Canvas & Unified Light-Gray Card Palette */
+  --bg: #ffffff;
+  --panel: #f5f5f7;
+  --panel-2: #eceef1;
+  --panel-3: #e3e5ea;
+  --text: rgba(24, 24, 27, .96);
+  --muted: rgba(63, 68, 78, .72);
+  --border: rgba(0, 0, 0, .065);
+  --border-strong: rgba(0, 0, 0, .18);
+  --chip: rgba(0, 0, 0, .06);
+
+  /* Minimalist Graphite Accent & Harmonized Accessible Semantic Palette */
+  --accent: #2c2c2e;
+  --accent-2: #18181b;
+  --on-accent: #ffffff;
+  --danger: #c62828;
+  --on-danger: #ffffff;
+  --bad: var(--danger);
+  --warn: #9a5b13;
+  --warning: var(--warn);
+  --ok: #256f46;
+  --good: var(--ok);
+  --success: var(--ok);
+
+  /* Navigation & Chat Semantics */
+  --nav-surface: #f5f5f7;
+  --nav-text: var(--muted);
+  --nav-text-strong: var(--text);
+  --nav-hover: rgba(0, 0, 0, .048);
+  --nav-selected: rgba(0, 0, 0, .08);
+  --nav-divider: var(--border);
+  --nav-accent: var(--accent);
+  --portal-message-bubble-strength: 8%;
+
+  /* Elevation & Shadows */
+  --header-bg: rgba(255, 255, 255, .82);
+  --modal-overlay: rgba(24, 24, 27, .22);
+  --modal-card-bg: #ffffff;
+  --shadow-soft: 0 2px 8px rgba(0, 0, 0, .055), 0 8px 24px rgba(0, 0, 0, .05);
+  --shadow: 0 2px 8px rgba(0, 0, 0, .06), 0 14px 36px rgba(0, 0, 0, .09);
+  --shadow-hover: 0 4px 12px rgba(0, 0, 0, .07), 0 20px 44px rgba(0, 0, 0, .11);
+  --portal-shadow-popover: 0 2px 8px rgba(0, 0, 0, .06), 0 16px 38px rgba(0, 0, 0, .11);
+  --portal-shadow-dialog: 0 4px 12px rgba(0, 0, 0, .07), 0 28px 72px rgba(0, 0, 0, .15);
+  --portal-focus-ring: 0 0 0 3.5px rgba(24, 24, 27, .15);
+
+  /* Concentric Corners & Clean Card Spacing */
+  --portal-page-gap: 10px;
+  --radius: 18px;
+  --portal-surface-radius: 22px;
+  --portal-control-radius: 999px;
+  --lg-radius-popover: 18px;
+  --lg-radius-item: 11px;
+  --lg-radius-field: 13px;
+  --lg-radius-pill: 999px;
+
+  /* Unified Apple Light-Gray Card Tokens */
+  --lg-card-bg: #f5f5f7;
+  --lg-card-border: rgba(0, 0, 0, .055);
+  --lg-card-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, .74),
+    0 1px 2px rgba(0, 0, 0, .025);
+  --lg-card-shadow-hover:
+    inset 0 1px 0 rgba(255, 255, 255, .86),
+    0 3px 10px rgba(0, 0, 0, .045);
+
+  /* Floating Liquid Glass Bar & Specular Highlight Glass Button Tokens */
+  --lg-surface-bar: linear-gradient(180deg, rgba(255, 255, 255, .58) 0%, rgba(246, 248, 252, .44) 54%, rgba(242, 245, 250, .50) 100%);
+  --lg-surface-popover: linear-gradient(168deg, rgba(255, 255, 255, .54) 0%, rgba(244, 247, 252, .42) 100%);
+  --lg-surface-panel-glass: linear-gradient(172deg, rgba(255, 255, 255, .68) 0%, rgba(245, 247, 251, .58) 100%);
+  --lg-surface-dialog: linear-gradient(176deg, rgba(255, 255, 255, .72) 0%, rgba(246, 248, 252, .64) 100%);
+  --lg-surface-pill-active:
+    radial-gradient(ellipse 76% 48% at 50% 0%, rgba(255, 255, 255, 1) 0%, rgba(255, 255, 255, .42) 56%, transparent 100%),
+    linear-gradient(180deg, rgba(255, 255, 255, .98) 0%, rgba(245, 246, 249, .90) 100%);
+
+  --lg-btn-glass-bg:
+    radial-gradient(ellipse 78% 48% at 50% 0%, rgba(255, 255, 255, 1) 0%, rgba(255, 255, 255, .42) 54%, transparent 100%),
+    linear-gradient(180deg, rgba(255, 255, 255, .96) 0%, rgba(255, 255, 255, .66) 52%, rgba(244, 245, 248, .88) 100%);
+  --lg-btn-glass-hover:
+    radial-gradient(ellipse 84% 52% at 50% 0%, rgba(255, 255, 255, 1) 0%, rgba(255, 255, 255, .56) 58%, transparent 100%),
+    linear-gradient(180deg, rgba(255, 255, 255, 1) 0%, rgba(252, 252, 254, .82) 52%, rgba(247, 248, 251, .94) 100%);
+  --lg-btn-glass-shadow:
+    inset 0 1.5px 1px rgba(255, 255, 255, 1),
+    inset 0 -1.5px 2px rgba(0, 0, 0, .065),
+    inset 0 0 0 1px rgba(255, 255, 255, .92),
+    0 0 0 .5px rgba(0, 0, 0, .105),
+    0 2px 6px rgba(0, 0, 0, .065),
+    0 1px 2px rgba(0, 0, 0, .04);
+  --lg-btn-glass-hover-shadow:
+    inset 0 1.5px 1.5px rgba(255, 255, 255, 1),
+    inset 0 -1.5px 2px rgba(0, 0, 0, .075),
+    inset 0 0 0 1px rgba(255, 255, 255, .98),
+    0 0 0 .5px rgba(0, 0, 0, .14),
+    0 4px 12px rgba(0, 0, 0, .09),
+    0 1px 3px rgba(0, 0, 0, .05);
+
+  --lg-specular-top: rgba(255, 255, 255, .74);
+  --lg-specular-bottom: rgba(255, 255, 255, .64);
+  --lg-rim-inner: rgba(255, 255, 255, .86);
+  --lg-rim-shade: rgba(0, 0, 0, .07);
+  --lg-rim-outer: rgba(0, 0, 0, .11);
+  --lg-tint-hover: rgba(0, 0, 0, .06);
+  --lg-tint-active: rgba(0, 0, 0, .09);
+  --lg-tint-field: rgba(255, 255, 255, .92);
+  --lg-tint-field-border: rgba(0, 0, 0, .095);
+  --lg-frame-border: rgba(0, 0, 0, .085);
+  --lg-frame-border-hover: rgba(0, 0, 0, .16);
+  --lg-field-shadow:
+    inset 0 1px 2px rgba(0, 0, 0, .045),
+    inset 0 0 0 1px rgba(255, 255, 255, .86),
+    0 1px 0 rgba(255, 255, 255, .92);
+  --lg-blur-bar: blur(14px) saturate(185%);
+  --lg-blur-popover: blur(13px) saturate(190%);
+  --lg-blur-panel-glass: blur(18px) saturate(180%);
+  --lg-blur-dialog: blur(20px) saturate(175%);
+  --portal-detail-footer-background: transparent;
+  --theme-button-border: var(--lg-rim-outer);
+  --theme-button-bg: var(--lg-btn-glass-bg);
+  --liquid-glass-edge:
+    inset 0 1.5px 1px var(--lg-specular-top),
+    inset 0 -1.5px 2px var(--lg-rim-shade),
+    inset 0 0 0 1px var(--lg-rim-inner),
+    0 0 0 .5px var(--lg-rim-outer);
+  --lg-ease-spring: cubic-bezier(.22, 1, .36, 1);
+  --lg-duration-fast: 160ms;
+  --lg-duration-normal: 240ms;
+}
+
 @media (prefers-color-scheme: dark) {
   html:root[data-portal-theme="auto"],
   [data-portal-auto-preview] {
@@ -327,6 +461,1571 @@ html:root[data-portal-theme="moonwalker"] {
 }
 
 html:root[data-portal-theme] body { background: var(--bg) fixed; }
+
+.portalGlassFilters {
+  position: absolute;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+html:root[data-portal-theme="liquid-glass"] body {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Floating rounded-rectangle pill site header & navigation */
+html:root[data-portal-theme="liquid-glass"] header.resourceSectionPageHeader {
+  background: transparent;
+  border-bottom-color: transparent;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+html:root[data-portal-theme="liquid-glass"] .portalSiteHeader {
+  background: transparent;
+  border-bottom-color: transparent;
+  padding-block: 7px;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+html:root[data-portal-theme="liquid-glass"] body.portalBoardShell .portalNavShell {
+  padding-inline: 26px;
+}
+
+html[data-portal-viewport="mobile"]:root[data-portal-theme="liquid-glass"] body.portalBoardShell .portalNavShell {
+  padding-inline: 14px;
+}
+
+html:root[data-portal-theme="liquid-glass"] .portalSiteHeader::before {
+  content: "";
+  position: absolute;
+  inset: 5px 12px;
+  z-index: -1;
+  border-radius: var(--lg-radius-pill);
+  background: var(--header-bg);
+  box-shadow: var(--liquid-glass-edge), var(--shadow-soft);
+  pointer-events: none;
+}
+
+html[data-portal-viewport="mobile"]:root[data-portal-theme="liquid-glass"] .portalSiteHeader::before {
+  inset: 4px 8px;
+}
+
+/* Top navigation transparent liquid-glass water-droplet slider */
+.portalNavGlassDroplet {
+  display: none;
+}
+
+html:root[data-portal-theme="liquid-glass"] body.portalBoardShell .portalModuleNav {
+  position: relative;
+  padding-block: 5px;
+  margin-block: -5px;
+  padding-inline: 3px;
+}
+
+html:root[data-portal-theme="liquid-glass"] body.portalBoardShell .portalModuleLink {
+  position: relative;
+  z-index: 1;
+  margin-right: 4px;
+  padding-right: 0;
+  color: var(--muted);
+}
+
+html:root[data-portal-theme="liquid-glass"] body.portalBoardShell .portalModuleLink:not(:last-child)::after {
+  content: none;
+}
+
+html:root[data-portal-theme="liquid-glass"] body.portalBoardShell .portalModuleLink > .portalModuleLinkLabel {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: var(--lg-radius-pill);
+  transition:
+    background-color var(--lg-duration-fast) var(--lg-ease-spring),
+    color var(--lg-duration-fast) ease,
+    box-shadow var(--lg-duration-fast) var(--lg-ease-spring);
+}
+
+html:root[data-portal-theme="liquid-glass"] body.portalBoardShell .portalModuleLink:hover > .portalModuleLinkLabel {
+  background: var(--lg-tint-hover);
+  color: var(--text);
+}
+
+html:root[data-portal-theme="liquid-glass"] body.portalBoardShell .portalModuleLink.active > .portalModuleLinkLabel {
+  background: var(--lg-surface-pill-active);
+  color: var(--accent-2);
+  box-shadow:
+    inset 0 1px 0 var(--lg-specular-top),
+    inset 0 0 0 1px rgba(255, 255, 255, .64),
+    0 1px 3px rgba(24, 24, 27, .08);
+}
+
+/* When the fluid water-droplet lens is mounted, let the droplet provide the pill highlight */
+html:root[data-portal-theme="liquid-glass"] body.portalBoardShell .portalModuleNav[data-lg-droplet-ready="true"] .portalModuleLink:hover > .portalModuleLinkLabel,
+html:root[data-portal-theme="liquid-glass"] body.portalBoardShell .portalModuleNav[data-lg-droplet-ready="true"] .portalModuleLink.active > .portalModuleLinkLabel {
+  background: transparent;
+  box-shadow: none;
+}
+
+html:root[data-portal-theme="liquid-glass"] body.portalBoardShell .portalModuleNav[data-lg-droplet-ready="true"] .portalModuleLink:hover > .portalModuleLinkLabel {
+  color: var(--text);
+}
+
+html:root[data-portal-theme="liquid-glass"] body.portalBoardShell .portalModuleNav[data-lg-droplet-ready="true"] .portalModuleLink.active > .portalModuleLinkLabel {
+  color: var(--accent-2);
+}
+
+html:root[data-portal-theme="liquid-glass"] body.portalBoardShell .portalNavGlassDroplet {
+  --liquid-glass-filter: blur(0px);
+  display: block;
+  position: absolute;
+  top: var(--lg-drop-y, 5px);
+  left: 0;
+  z-index: 2;
+  width: var(--lg-drop-w, 0px);
+  height: var(--lg-drop-h, 28px);
+  border-radius: var(--lg-radius-pill);
+  opacity: var(--lg-drop-opacity, 0);
+  transform:
+    translate3d(var(--lg-drop-x, 0px), 0, 0)
+    scaleX(var(--lg-drop-sx, 1))
+    scaleY(var(--lg-drop-sy, 1))
+    skewX(var(--lg-drop-skew, 0deg));
+  transform-origin: center center;
+  will-change: transform, width, opacity;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 68% 42% at var(--lg-drop-light, 50%) 8%, rgba(255, 255, 255, .90) 0%, rgba(255, 255, 255, .20) 58%, transparent 100%),
+    radial-gradient(ellipse 52% 30% at calc(100% - var(--lg-drop-light, 50%)) 96%, rgba(255, 255, 255, .68) 0%, transparent 100%),
+    linear-gradient(180deg, rgba(255, 255, 255, .38) 0%, rgba(255, 255, 255, .07) 48%, rgba(255, 255, 255, .22) 100%);
+  box-shadow:
+    inset 0 1.5px 1px rgba(255, 255, 255, 1),
+    inset 0 -1.5px 2px rgba(24, 24, 27, .14),
+    inset 0 0 0 1px rgba(255, 255, 255, .74),
+    0 0 0 .5px rgba(24, 24, 27, .14),
+    0 4px 14px rgba(24, 24, 27, .11),
+    0 1px 3px rgba(24, 24, 27, .08);
+  transition: opacity 180ms ease;
+}
+
+html:root[data-portal-theme="liquid-glass"] body.portalBoardShell .portalNavGlassDroplet[data-lg-dragging="true"] {
+  box-shadow:
+    inset 0 1.5px 1px rgba(255, 255, 255, 1),
+    inset 0 -1.5px 2.5px rgba(24, 24, 27, .15),
+    inset 0 0 0 1px rgba(255, 255, 255, .78),
+    0 0 0 .5px rgba(24, 24, 27, .14),
+    0 8px 20px rgba(24, 24, 27, .14),
+    0 2px 5px rgba(24, 24, 27, .09);
+}
+
+html[data-portal-viewport="mobile"]:root[data-portal-theme="liquid-glass"] body.portalBoardShell .portalModuleLink {
+  margin-right: 2px;
+  padding-right: 0;
+}
+
+html[data-portal-viewport="mobile"]:root[data-portal-theme="liquid-glass"] body.portalBoardShell .portalModuleLink > .portalModuleLinkLabel {
+  padding: 3px 8px;
+}
+
+html:root[data-portal-theme="liquid-glass"] .portalSiteHeader :is(
+  .portalButton,
+  .portalNavOverflowToggle,
+  .portalUserMenuTrigger,
+  .portalWorkbenchHiddenPanelButton,
+  .portalWorkbenchCustomizeButton,
+  .portalWorkbenchLockButton
+) {
+  border-radius: var(--lg-radius-pill);
+}
+
+html:root[data-portal-theme="liquid-glass"] .portalSiteHeader .portalButton:is(
+  .portalWorkbenchHiddenPanelButton,
+  .portalWorkbenchCustomizeButton,
+  .portalWorkbenchLockButton,
+  .portalThemeButton
+),
+html:root[data-portal-theme="liquid-glass"] .portalSiteHeader :is(
+  .portalWorkbenchHiddenPanelButton,
+  .portalWorkbenchCustomizeButton,
+  .portalWorkbenchLockButton
+) {
+  border-radius: var(--lg-radius-pill);
+  border-color: transparent;
+  background: var(--lg-btn-glass-bg);
+  color: var(--text);
+  box-shadow: var(--lg-btn-glass-shadow);
+}
+
+html:root[data-portal-theme="liquid-glass"] .portalSiteHeader .portalButton:is(
+  .portalWorkbenchHiddenPanelButton,
+  .portalWorkbenchCustomizeButton,
+  .portalWorkbenchLockButton,
+  .portalThemeButton
+):hover:not(:disabled, [aria-disabled="true"]),
+html:root[data-portal-theme="liquid-glass"] .portalSiteHeader :is(
+  .portalWorkbenchHiddenPanelButton,
+  .portalWorkbenchCustomizeButton,
+  .portalWorkbenchLockButton
+):hover {
+  background: var(--lg-btn-glass-hover);
+  color: var(--accent-2);
+  box-shadow: var(--lg-btn-glass-hover-shadow);
+}
+
+html:root[data-portal-theme="liquid-glass"] .portalUserMenuTrigger {
+  border-color: transparent;
+  background: transparent;
+}
+
+html:root[data-portal-theme="liquid-glass"] .portalUserMenuTrigger:hover,
+html:root[data-portal-theme="liquid-glass"] .portalUserMenuTrigger[aria-expanded="true"] {
+  background: var(--lg-tint-hover);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, .82),
+    0 0 0 .5px rgba(0, 0, 0, .06);
+}
+
+/* Standalone floating vertical Liquid Glass pill rail (Left Navigation Rail) */
+html:root[data-portal-theme="liquid-glass"] .portalWorkbenchPageLayout {
+  --portal-workbench-rail-width: 54px;
+  --portal-workbench-rail-gap: 10px;
+  overflow: visible;
+}
+
+html:root[data-portal-theme="liquid-glass"] .portalActivityRail,
+html:root[data-portal-theme="liquid-glass"] .portalWorkbenchPageLayout > .portalActivityRail {
+  border: 0;
+  border-radius: var(--lg-radius-pill);
+  padding: 9px 7px;
+  background: var(--header-bg);
+  box-shadow: var(--liquid-glass-edge), var(--shadow-soft);
+  color: var(--nav-text);
+}
+
+@media (min-width: 781px) {
+  html:root[data-portal-theme="liquid-glass"] .portalWorkbenchPageLayout:has(> .portalActivityRail:not([hidden])) .portalWorkbenchCanvas > .portalWorkbenchStack,
+  html:root[data-portal-theme="liquid-glass"] .portalWorkbenchPageLayout:has(> .portalActivityRail:not([hidden])) .portalWorkbenchCanvas > .portalWorkbenchSplit[data-orientation="vertical"] > .portalWorkbenchStack,
+  html:root[data-portal-theme="liquid-glass"] .portalWorkbenchPageLayout:has(> .portalActivityRail:not([hidden])) .portalWorkbenchCanvas > .portalWorkbenchSplit[data-orientation="horizontal"] > .portalWorkbenchStack:first-child,
+  html:root[data-portal-theme="liquid-glass"] .portalWorkbenchPageLayout:has(> .portalActivityRail:not([hidden])) .portalWorkbenchCanvas > .portalWorkbenchSplit[data-orientation="horizontal"] > .portalWorkbenchSplit[data-orientation="vertical"]:first-child > .portalWorkbenchStack,
+  html:root[data-portal-theme="liquid-glass"] .portalWorkbenchPageLayout:has(> .portalActivityRail:not([hidden])) .portalWorkbenchCanvas > .portalWorkbenchSplit[data-orientation="horizontal"] > .portalWorkbenchStack[data-collapsed-to-rail]:first-child + .portalWorkbenchSplitHandle + .portalWorkbenchStack {
+    border-top-left-radius: var(--radius);
+    border-bottom-left-radius: var(--radius);
+    border-left-color: var(--lg-card-border);
+  }
+}
+
+html:root[data-portal-theme="liquid-glass"] .portalActivityRailView {
+  border-radius: var(--lg-radius-pill);
+  color: var(--muted);
+  transition:
+    background-color var(--lg-duration-fast) ease,
+    color var(--lg-duration-fast) ease,
+    box-shadow var(--lg-duration-fast) ease;
+}
+
+html:root[data-portal-theme="liquid-glass"] .portalActivityRailView:hover {
+  background: var(--lg-tint-hover);
+  color: var(--text);
+}
+
+html:root[data-portal-theme="liquid-glass"] .portalActivityRailView.active {
+  background: var(--lg-btn-glass-hover);
+  color: var(--accent-2);
+  box-shadow: var(--lg-btn-glass-shadow);
+}
+
+html:root[data-portal-theme="liquid-glass"] .portalActivityRailView.active::before {
+  display: none;
+}
+
+html:root[data-portal-theme="liquid-glass"] .portalActivityRailPin,
+html:root[data-portal-theme="liquid-glass"] .portalActivityRailItems {
+  border-top-color: rgba(0, 0, 0, .07);
+}
+
+html:root[data-portal-theme="liquid-glass"] .portalActivityRailPinButton {
+  border-radius: var(--lg-radius-pill);
+}
+
+html:root[data-portal-theme="liquid-glass"] .portalActivityRailItem,
+html:root[data-portal-theme="liquid-glass"] .portalActivityRailGlyph.has-avatar {
+  border-radius: 11px;
+}
+
+html:root[data-portal-theme="liquid-glass"] .portalActivityRailItemsAction {
+  width: 34px;
+  height: 34px;
+  flex-basis: 34px;
+  border: 0;
+  border-radius: var(--lg-radius-pill);
+  background: var(--lg-btn-glass-bg);
+  box-shadow: var(--lg-btn-glass-shadow);
+  color: var(--muted);
+}
+
+html:root[data-portal-theme="liquid-glass"] .portalActivityRailItemsAction:hover {
+  background: var(--lg-btn-glass-hover);
+  color: var(--text);
+}
+
+html:root[data-portal-theme="liquid-glass"] .portalActivityRailItemsAction::before {
+  border-top-color: rgba(0, 0, 0, .07);
+  left: 2px;
+  right: 2px;
+}
+
+@media (max-width: 780px) {
+  html:root[data-portal-theme="liquid-glass"] .portalWorkbenchPageLayout > .portalActivityRail {
+    border-radius: var(--lg-radius-pill);
+    padding: 4px 8px;
+  }
+}
+
+/* Unified Apple light-gray (#f5f5f7) rounded-rectangle cards over pure white canvas */
+html:root[data-portal-theme="liquid-glass"] .portalWorkbench {
+  --portal-workbench-stack-radius: var(--radius);
+  --portal-workbench-stack-background: var(--lg-card-bg);
+  --portal-workbench-stack-border: 1px solid var(--lg-card-border);
+  --portal-workbench-stack-shadow: var(--lg-card-shadow);
+  --portal-workbench-panel-background: transparent;
+  --portal-workbench-inset-background: transparent;
+  --portal-workbench-split-handle-color: transparent;
+  --portal-workbench-split-handle-active-color: rgba(24, 24, 27, .24);
+}
+
+html:root[data-portal-theme="liquid-glass"] .portalWorkbenchSplitHandle {
+  flex: 0 0 10px;
+}
+
+html:root[data-portal-theme="liquid-glass"] .portalWorkbenchStage.is-layout-locked .portalWorkbenchSplitHandle::after {
+  background: transparent;
+}
+
+/* Outer nested Home column stays transparent so each sub-pane is its own light-gray card */
+html:root[data-portal-theme="liquid-glass"] .portalWorkbenchStack:has(.homeNestedWorkbench) {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  overflow: visible;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+html:root[data-portal-theme="liquid-glass"] .portalWorkbenchStack:not(:has(.homeNestedWorkbench)) {
+  border: 1px solid var(--lg-card-border);
+  border-radius: var(--radius);
+  background: var(--lg-card-bg);
+  box-shadow: var(--lg-card-shadow);
+}
+
+html:root[data-portal-theme="liquid-glass"] .portalWorkbenchStack :is(
+  .homeWorkbenchGroup,
+  .homeWorkbenchContentPanel,
+  .homeDialogue,
+  .home-overview-section[data-portal-workbench-panel],
+  .portalFileDocument,
+  .portalFilePreviewPane,
+  .portalFileEditor,
+  .portalSourceEditor,
+  .pane
+) {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+}
+
+/* Seamless card sub-headers matching the unified #f5f5f7 card tone with crisp hairlines */
+html:root[data-portal-theme="liquid-glass"] :is(
+  .portalWorkbenchTabs,
+  .portalWorkbenchStage.show-single-tab-header .portalWorkbenchStack:not(.is-collapsed) > .portalWorkbenchTabs,
+  .portalWorkbenchStack.is-collapsed > .portalWorkbenchTabs,
+  .paneHead,
+  .portalPanelHeadSurface,
+  .portalDocumentTabsShell,
+  .portalDocumentTabs,
+  .portalSourceEditorTabs,
+  .portalSourceEditorToolbar
+) {
+  background: transparent;
+  border-color: rgba(0, 0, 0, .065);
+  box-shadow: none;
+}
+
+html:root[data-portal-theme="liquid-glass"] .portalWorkbenchTab {
+  border-radius: 0;
+  color: var(--muted);
+}
+
+html:root[data-portal-theme="liquid-glass"] .portalWorkbenchTab.is-active,
+html:root[data-portal-theme="liquid-glass"] .portalWorkbenchStage.show-single-tab-header .portalWorkbenchStack:not(.is-collapsed) > .portalWorkbenchTabs .portalWorkbenchTab.is-active {
+  background: transparent;
+  color: var(--accent-2);
+  box-shadow: inset 0 -1.5px 0 color-mix(in srgb, var(--accent) 62%, transparent);
+}
+
+html:root[data-portal-theme="liquid-glass"] .portalWorkbenchTab:only-of-type.is-active,
+html:root[data-portal-theme="liquid-glass"] .portalWorkbenchStage.show-single-tab-header .portalWorkbenchStack:not(.is-collapsed) > .portalWorkbenchTabs .portalWorkbenchTab:only-of-type.is-active {
+  box-shadow: none;
+}
+
+/* Site-wide translucent Liquid Glass dropdowns, popovers & floating menus */
+html:root[data-portal-theme="liquid-glass"] :is(
+  [data-portal-overlay-layer="popover"],
+  .portalThemeMenu,
+  .portalUserMenuPopover,
+  .portalSecondaryNavPopover,
+  .portalToolbarOverflowPanel,
+  .portalWorkbenchMenu,
+  .composerSlashCommandMenu,
+  .portalResourceHoverCard,
+  .portalAgentInboxPinMenu,
+  .filterPopover,
+  .portalMessageMenuPanel,
+  .portalMessageSubmenuPanel,
+  .portalEditorOpenMenu,
+  .chatRoundPreview,
+  .chatSelectionContextAction,
+  .portalPreviewSelectionToolbar,
+  .portalPreviewZoomControls,
+  .graphMoreMenu,
+  .graphNodeSearchResults,
+  .hatgQuickForkMenu,
+  .hatgToolbox,
+  .agentCardMenu,
+  .chatroomCardMenu,
+  .familyStatusPanel:where(:not(.is-inline)),
+  .projectMenu,
+  .repoFileFinder,
+  .repoMoreActions,
+  .resourceKnowledgeMatrixPopover,
+  .knowledgeMapSuggestions,
+  .articleCompileMenu,
+  .articleGitCommitMenu,
+  .articleProjectMenu,
+  .articleResourceSearchPopover,
+  .paperArchiveMenu,
+  .paperResearchTitleMenu,
+  .selectionMenu
+) {
+  border-color: transparent;
+  border-radius: var(--lg-radius-popover);
+  background: var(--modal-card-bg);
+  box-shadow: var(--liquid-glass-edge), var(--portal-shadow-popover);
+}
+
+html:root[data-portal-theme="liquid-glass"] .graphNavigationBar {
+  border-color: transparent;
+  border-radius: var(--lg-radius-pill);
+  background: var(--header-bg);
+  box-shadow: var(--liquid-glass-edge), var(--shadow-soft);
+}
+
+/* User account dropdown internals over translucent glass */
+html:root[data-portal-theme="liquid-glass"] .familyStatusPanel.is-inline {
+  background: transparent;
+}
+
+html:root[data-portal-theme="liquid-glass"] .familyStatusPanel [data-family-status-row]:hover {
+  background: var(--lg-tint-hover);
+}
+
+html:root[data-portal-theme="liquid-glass"] .portalUserMenuSection,
+html:root[data-portal-theme="liquid-glass"] .portalUserMenuFooter {
+  border-top-color: rgba(0, 0, 0, .07);
+}
+
+html:root[data-portal-theme="liquid-glass"] .portalVersionSelector {
+  border-color: rgba(0, 0, 0, .06);
+  border-radius: var(--lg-radius-pill);
+  background: rgba(0, 0, 0, .055);
+  padding: 2px;
+}
+
+html:root[data-portal-theme="liquid-glass"] .portalVersionSelector button {
+  border-radius: var(--lg-radius-pill);
+  transition: background-color var(--lg-duration-fast) ease, color var(--lg-duration-fast) ease, box-shadow var(--lg-duration-fast) ease;
+}
+
+html:root[data-portal-theme="liquid-glass"] .portalVersionSelector button.selected {
+  background: var(--lg-btn-glass-hover);
+  color: var(--accent-2);
+  box-shadow: var(--lg-btn-glass-shadow);
+}
+
+html:root[data-portal-theme="liquid-glass"] :is(
+  .portalUserMenuFooter a,
+  .portalUserMenuFooter button,
+  .portalMessageMenuItem,
+  .portalWorkbenchMenuItem,
+  .graphMoreMenu button,
+  .agentCardMenu button,
+  .chatroomCardMenu button,
+  .projectMenu button,
+  .repoMoreActions button,
+  .paperArchiveMenu button,
+  .paperResearchTitleMenu button,
+  .articleCompileMenu button,
+  .articleGitCommitMenu button,
+  .articleProjectMenu button,
+  .selectionMenu button
+) {
+  border-radius: var(--lg-radius-item);
+}
+
+html:root[data-portal-theme="liquid-glass"] :is(
+  .portalUserMenuFooter a:hover,
+  .portalUserMenuFooter button:hover,
+  .portalMessageMenuItem:hover,
+  .portalWorkbenchMenuItem:hover,
+  .graphMoreMenu button:hover,
+  .agentCardMenu button:hover,
+  .chatroomCardMenu button:hover,
+  .projectMenu button:hover,
+  .repoMoreActions button:hover,
+  .paperArchiveMenu button:hover,
+  .paperResearchTitleMenu button:hover,
+  .articleCompileMenu button:hover,
+  .articleGitCommitMenu button:hover,
+  .articleProjectMenu button:hover,
+  .selectionMenu button:hover
+) {
+  background: var(--lg-tint-hover);
+}
+
+/* Prevent glass-on-glass inside secondary navigation popover */
+html:root[data-portal-theme="liquid-glass"] .portalSecondaryNavPopover {
+  border-radius: var(--lg-radius-pill);
+}
+
+html:root[data-portal-theme="liquid-glass"] .portalSecondaryNavPopover .portalSecondaryNav {
+  border: 0;
+  border-radius: inherit;
+  background: transparent;
+  box-shadow: none;
+  padding: 4px;
+}
+
+html:root[data-portal-theme="liquid-glass"] .portalSecondaryNavItem {
+  border-color: transparent;
+  border-radius: var(--lg-radius-pill);
+  transition:
+    background-color var(--lg-duration-fast) ease,
+    color var(--lg-duration-fast) ease,
+    box-shadow var(--lg-duration-fast) ease;
+}
+
+html:root[data-portal-theme="liquid-glass"] .portalSecondaryNavItem:hover {
+  border-color: transparent;
+  background: var(--lg-tint-hover);
+  color: var(--text);
+}
+
+html:root[data-portal-theme="liquid-glass"] .portalSecondaryNavItem.active,
+html:root[data-portal-theme="liquid-glass"] .portalSecondaryNavItem[aria-current="page"] {
+  border-color: var(--lg-frame-border);
+  background: var(--lg-surface-pill-active);
+  color: var(--accent-2);
+  box-shadow:
+    inset 0 1px 0 var(--lg-specular-top),
+    inset 0 0 0 1px rgba(255, 255, 255, .64),
+    0 1px 3px rgba(24, 24, 27, .08);
+}
+
+/* Clean Apple glass theme picker menu (no slider thumb) */
+html:root[data-portal-theme="liquid-glass"] .portalThemeOption {
+  position: relative;
+  border-radius: var(--lg-radius-item);
+  cursor: pointer;
+  transition:
+    background-color var(--lg-duration-fast) ease,
+    color var(--lg-duration-fast) ease,
+    box-shadow var(--lg-duration-fast) ease;
+}
+
+html:root[data-portal-theme="liquid-glass"] .portalThemeOption:focus-visible {
+  outline: none;
+  box-shadow: var(--portal-focus-ring);
+}
+
+html:root[data-portal-theme="liquid-glass"] .portalThemeOption:hover {
+  background: var(--lg-tint-hover);
+  color: var(--text);
+}
+
+html:root[data-portal-theme="liquid-glass"] .portalThemeOption[aria-checked="true"] {
+  color: var(--accent-2);
+  font-weight: 600;
+  background: rgba(24, 24, 27, .07);
+  border: 0;
+  box-shadow: none;
+}
+
+@media (max-height: 400px) {
+  html:root[data-portal-theme="liquid-glass"] .portalThemeMenu { gap: 2px; }
+  html:root[data-portal-theme="liquid-glass"] .portalThemeOption { min-height: 24px; padding-block: 3px; }
+}
+
+/* Overlays, modals & Spotlight-style command palette */
+html:root[data-portal-theme="liquid-glass"] .portalDetailOverlay,
+html:root[data-portal-theme="liquid-glass"] dialog.portalDetailSurface::backdrop {
+  background: var(--modal-overlay);
+}
+
+html:root[data-portal-theme="liquid-glass"] .portalDetailSurface {
+  border: 1px solid var(--lg-card-border);
+  border-radius: var(--portal-surface-radius);
+  background: var(--modal-card-bg);
+  box-shadow: var(--portal-shadow-dialog);
+}
+
+html:root[data-portal-theme="liquid-glass"] .portalDetailHeader {
+  border-bottom-color: var(--border);
+  background: transparent;
+  box-shadow: none;
+}
+
+html:root[data-portal-theme="liquid-glass"] .portalDetailClose {
+  border-radius: var(--lg-radius-pill);
+}
+
+html:root[data-portal-theme="liquid-glass"] .portalDetailClose:hover {
+  background: var(--lg-tint-hover);
+}
+
+html:root[data-portal-theme="liquid-glass"] .portalCommandFooter {
+  border-top-color: var(--lg-frame-border);
+  background: transparent;
+}
+
+html:root[data-portal-theme="liquid-glass"] .portalCommandBox kbd {
+  border-color: var(--lg-frame-border-hover);
+  border-radius: 6px;
+  background: linear-gradient(180deg, #ffffff 0%, #f5f5f7 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, .96),
+    0 1px 2px rgba(0, 0, 0, .07);
+}
+
+/* Standalone cards & content frames unified to the same Apple #f5f5f7 light-gray rounded card */
+html:root[data-portal-theme="liquid-glass"] :is(
+  .portalWorkbenchPanelFrame,
+  .home-overview-section:not([data-portal-workbench-panel]),
+  .filter-panel,
+  .portalProjectGroup,
+  .portalItemCard,
+  .portalSemanticPanel,
+  .card,
+  .project,
+  .settingsColorPreview,
+  .backpackPanel,
+  .projectionSection,
+  .nativeTurnCard,
+  .residentQuestionCard,
+  .messageItem.system,
+  .messageItem.portal,
+  .messageItem.error
+) {
+  border-color: var(--lg-card-border);
+  border-radius: var(--radius);
+  background: var(--lg-card-bg);
+  box-shadow: var(--lg-card-shadow);
+}
+
+html:root[data-portal-theme="liquid-glass"] :is(.portalItemCard, .project, .card):hover {
+  border-color: rgba(0, 0, 0, .095);
+  box-shadow: var(--lg-card-shadow-hover);
+}
+
+html:root[data-portal-theme="liquid-glass"] .portalResourceChip {
+  border-color: transparent;
+  border-radius: var(--lg-radius-pill);
+  background: var(--lg-btn-glass-bg);
+  box-shadow: var(--lg-btn-glass-shadow);
+}
+
+html:root[data-portal-theme="liquid-glass"] .portalResourceChip:hover {
+  background: var(--lg-btn-glass-hover);
+  box-shadow: var(--lg-btn-glass-hover-shadow);
+}
+
+/* Clean bright inset chat bubbles & runtime status strip on #f5f5f7 cards */
+html:root[data-portal-theme="liquid-glass"] .messageBubble {
+  border-radius: 18px;
+  border: 1px solid rgba(0, 0, 0, .055);
+  background: linear-gradient(180deg, #ffffff 0%, #fafbfc 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 1),
+    0 1px 4px rgba(0, 0, 0, .045);
+}
+
+html:root[data-portal-theme="liquid-glass"] .messageItem.liveRuntime {
+  border-radius: 6px 14px 14px 6px;
+  border: 1px solid rgba(0, 0, 0, .06);
+  background: #ffffff;
+  box-shadow:
+    inset 3px 0 0 color-mix(in srgb, var(--accent) 85%, transparent),
+    0 1px 3px rgba(0, 0, 0, .04);
+}
+
+/* Crisp Apple hairline dividers */
+html:root[data-portal-theme="liquid-glass"] :is(.homeDialogueDivider, .filter-divider, .settingsSection) {
+  border-color: var(--border);
+  box-shadow: none;
+}
+
+/* Switches already draw their own track and thumb. */
+html:root[data-portal-theme="liquid-glass"] .portalButton:where(:not([role="switch"])) {
+  --portal-button-border: transparent;
+  background: var(--lg-btn-glass-bg);
+  box-shadow: var(--lg-btn-glass-shadow);
+  transition:
+    border-color var(--lg-duration-fast) ease,
+    background var(--lg-duration-fast) ease,
+    color var(--lg-duration-fast) ease,
+    box-shadow var(--lg-duration-fast) ease,
+    opacity var(--lg-duration-fast) ease,
+    transform var(--lg-duration-fast) var(--lg-ease-spring);
+}
+
+html:root[data-portal-theme="liquid-glass"] .portalButton:where(:not([role="switch"])):hover:not(:disabled, [aria-disabled="true"]) {
+  --portal-button-border: transparent;
+  background: var(--lg-btn-glass-hover);
+  box-shadow: var(--lg-btn-glass-hover-shadow);
+}
+
+html:root[data-portal-theme="liquid-glass"] .portalButton:active:not(:disabled, [aria-disabled="true"]) {
+  transform: scale(.98);
+}
+
+html:root[data-portal-theme="liquid-glass"] .portalButton:is(.is-primary, [data-variant="primary"]) {
+  --portal-button-border: rgba(0, 0, 0, .38);
+  --portal-button-color: var(--on-accent);
+  background:
+    radial-gradient(ellipse 74% 46% at 50% 0%, rgba(255, 255, 255, .30) 0%, transparent 72%),
+    linear-gradient(180deg, #3e3f45 0%, #232428 54%, #1a1b1f 100%);
+  box-shadow:
+    inset 0 1.5px 1px rgba(255, 255, 255, .38),
+    inset 0 -1px 1.5px rgba(0, 0, 0, .35),
+    inset 0 0 0 1px rgba(255, 255, 255, .14),
+    0 2px 6px rgba(0, 0, 0, .20),
+    0 5px 14px rgba(0, 0, 0, .12);
+}
+
+html:root[data-portal-theme="liquid-glass"] .portalButton:is(.is-primary, [data-variant="primary"]):hover:not(:disabled, [aria-disabled="true"]) {
+  --portal-button-border: rgba(0, 0, 0, .52);
+  background:
+    radial-gradient(ellipse 78% 48% at 50% 0%, rgba(255, 255, 255, .36) 0%, transparent 74%),
+    linear-gradient(180deg, #34353a 0%, #1b1c20 54%, #121316 100%);
+  box-shadow:
+    inset 0 1.5px 1px rgba(255, 255, 255, .44),
+    inset 0 -1px 1.5px rgba(0, 0, 0, .42),
+    inset 0 0 0 1px rgba(255, 255, 255, .18),
+    0 3px 10px rgba(0, 0, 0, .24),
+    0 8px 18px rgba(0, 0, 0, .15);
+}
+
+html:root[data-portal-theme="liquid-glass"] .portalButton:is(.is-danger, [data-variant="danger"]) {
+  --portal-button-border: transparent;
+  --portal-button-color: var(--danger);
+  background:
+    radial-gradient(ellipse 76% 46% at 50% 0%, rgba(255, 255, 255, .96) 0%, rgba(255, 255, 255, .32) 56%, transparent 100%),
+    linear-gradient(180deg, rgba(255, 239, 239, .95) 0%, rgba(254, 224, 224, .78) 54%, rgba(253, 218, 218, .90) 100%);
+  box-shadow:
+    inset 0 1.5px 1px rgba(255, 255, 255, 1),
+    inset 0 -1.5px 2px rgba(198, 40, 40, .10),
+    inset 0 0 0 1px rgba(255, 255, 255, .86),
+    0 0 0 .5px rgba(198, 40, 40, .20),
+    0 2px 6px rgba(198, 40, 40, .10);
+}
+
+html:root[data-portal-theme="liquid-glass"] .portalButton:is(.is-danger, [data-variant="danger"]):hover:not(:disabled, [aria-disabled="true"]) {
+  --portal-button-border: transparent;
+  --portal-button-color: #b71c1c;
+  background:
+    radial-gradient(ellipse 80% 48% at 50% 0%, rgba(255, 255, 255, 1) 0%, rgba(255, 255, 255, .40) 56%, transparent 100%),
+    linear-gradient(180deg, rgba(255, 232, 232, .98) 0%, rgba(253, 214, 214, .88) 100%);
+  box-shadow:
+    inset 0 1.5px 1px rgba(255, 255, 255, 1),
+    inset 0 -1.5px 2px rgba(198, 40, 40, .14),
+    inset 0 0 0 1px rgba(255, 255, 255, .92),
+    0 0 0 .5px rgba(198, 40, 40, .28),
+    0 4px 10px rgba(198, 40, 40, .14);
+}
+
+html:root[data-portal-theme="liquid-glass"] .portalButton:is(.is-quiet, [data-variant="quiet"]) {
+  --portal-button-bg: transparent;
+  --portal-button-border: transparent;
+  background: transparent;
+  box-shadow: none;
+}
+
+html:root[data-portal-theme="liquid-glass"] .portalButton:is(.is-quiet, [data-variant="quiet"]):hover:not(:disabled, [aria-disabled="true"]) {
+  --portal-button-bg: var(--lg-tint-hover);
+  --portal-button-border: transparent;
+  --portal-button-color: var(--text);
+  background: var(--lg-tint-hover);
+  box-shadow: none;
+}
+
+html:root[data-portal-theme="liquid-glass"] .portalButton:is(.is-quiet, [data-variant="quiet"]):is(
+  .is-active,
+  [aria-pressed="true"],
+  [aria-expanded="true"]:not(.portalToolbarOverflowButton)
+) {
+  --portal-button-color: var(--accent-2);
+  background: var(--lg-tint-active);
+}
+
+html:root[data-portal-theme="liquid-glass"] .portalButton:where(:not([role="switch"], .is-quiet, [data-variant="quiet"])):is(
+  .is-active,
+  [aria-pressed="true"],
+  [aria-expanded="true"]:not(.portalToolbarOverflowButton)
+) {
+  --portal-button-border: transparent;
+  --portal-button-color: var(--accent-2);
+  background: var(--lg-btn-glass-hover);
+  box-shadow:
+    inset 0 1.5px 1px rgba(255, 255, 255, 1),
+    inset 0 -1.5px 2px rgba(0, 0, 0, .08),
+    inset 0 0 0 1px rgba(255, 255, 255, .96),
+    0 0 0 .5px rgba(0, 0, 0, .18),
+    0 2px 6px rgba(0, 0, 0, .08);
+}
+
+html:root[data-portal-theme="liquid-glass"] .portalButton:is([role="switch"], .is-quiet, [data-variant="quiet"]):focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Home widgets: specular glass filter pills, clean white inset KPI cards & recessed progress tracks */
+html:root[data-portal-theme="liquid-glass"] .agent-status-tab {
+  border-radius: var(--lg-radius-pill);
+  border-color: transparent;
+  background: var(--lg-btn-glass-bg);
+  color: var(--muted);
+  padding: 4px 10px;
+  box-shadow: var(--lg-btn-glass-shadow);
+  transition:
+    background var(--lg-duration-fast) ease,
+    border-color var(--lg-duration-fast) ease,
+    color var(--lg-duration-fast) ease,
+    box-shadow var(--lg-duration-fast) ease;
+}
+
+html:root[data-portal-theme="liquid-glass"] .agent-status-tab:hover {
+  background: var(--lg-btn-glass-hover);
+  color: var(--text);
+  box-shadow: var(--lg-btn-glass-hover-shadow);
+}
+
+html:root[data-portal-theme="liquid-glass"] .agent-status-tab.active {
+  border-color: transparent;
+  background: var(--lg-btn-glass-hover);
+  color: var(--accent-2);
+  font-weight: 600;
+  box-shadow:
+    inset 0 1.5px 1px rgba(255, 255, 255, 1),
+    inset 0 -1.5px 2px rgba(0, 0, 0, .09),
+    inset 0 0 0 1px rgba(255, 255, 255, .98),
+    0 0 0 1px rgba(24, 24, 27, .24),
+    0 2px 7px rgba(0, 0, 0, .08);
+}
+
+html:root[data-portal-theme="liquid-glass"] .agent-status-usage-pill {
+  border-radius: 12px;
+  border-color: rgba(0, 0, 0, .055);
+  background: #ffffff;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 1),
+    0 1px 3px rgba(0, 0, 0, .035);
+}
+
+html:root[data-portal-theme="liquid-glass"] .agent-status-limit-track {
+  background: rgba(0, 0, 0, .075);
+  border-color: rgba(0, 0, 0, .05);
+  box-shadow:
+    inset 0 1px 2px rgba(0, 0, 0, .08),
+    0 1px 0 rgba(255, 255, 255, .82);
+}
+
+html:root[data-portal-theme="liquid-glass"] .agent-status-limit-fill {
+  background: linear-gradient(90deg, #52525b 0%, #27272a 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .28);
+}
+
+/* Native text fields & specular glass pill selects (strictly excluding Monaco, xterm & code editors) */
+html:root[data-portal-theme="liquid-glass"] :where(
+  input:not([type]),
+  input:is([type="text"], [type="search"], [type="password"], [type="email"], [type="url"], [type="tel"], [type="number"], [type="date"], [type="time"], [type="datetime-local"]),
+  textarea
+):where(:not(.monaco-editor *, .xterm *, .cm-editor *, .CodeMirror *, .ace_editor *, .portalSearchField *, .composerInput)) {
+  border-radius: var(--lg-radius-field);
+  border-color: var(--lg-tint-field-border);
+  background: var(--lg-tint-field);
+  box-shadow: var(--lg-field-shadow);
+  transition:
+    background-color var(--lg-duration-fast) ease,
+    border-color var(--lg-duration-fast) ease,
+    box-shadow var(--lg-duration-fast) ease;
+}
+
+html:root[data-portal-theme="liquid-glass"] :where(
+  input:not([type]),
+  input:is([type="text"], [type="search"], [type="password"], [type="email"], [type="url"], [type="tel"], [type="number"], [type="date"], [type="time"], [type="datetime-local"]),
+  textarea
+):where(:not(.monaco-editor *, .xterm *, .cm-editor *, .CodeMirror *, .ace_editor *, .portalSearchField *, .composerInput)):focus-visible {
+  background: #ffffff;
+  border-color: rgba(24, 24, 27, .38);
+  box-shadow: var(--portal-focus-ring);
+}
+
+html:root[data-portal-theme="liquid-glass"] :where(select, .agent-status-usage-filter select):where(:not(.monaco-editor *, .xterm *)) {
+  border-radius: var(--lg-radius-pill);
+  border-color: transparent;
+  background: var(--lg-btn-glass-bg);
+  box-shadow: var(--lg-btn-glass-shadow);
+  padding-inline: 10px;
+}
+
+html:root[data-portal-theme="liquid-glass"] .portalRuntimeSettingsField select {
+  border-color: var(--border-strong);
+  background: color-mix(in srgb, var(--modal-card-bg) 24%, transparent);
+  box-shadow: none;
+}
+
+html:root[data-portal-theme="liquid-glass"] .portalRuntimeSettingsField select:focus {
+  border-color: var(--accent);
+  outline: none;
+}
+
+html:root[data-portal-theme="liquid-glass"] .portalRuntimeSettingsField select:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+html:root[data-portal-theme="liquid-glass"] .portalSearchField {
+  border-radius: var(--lg-radius-pill);
+  border-color: var(--lg-tint-field-border);
+  background: var(--lg-tint-field);
+  box-shadow: var(--lg-field-shadow);
+  transition:
+    background-color var(--lg-duration-fast) ease,
+    border-color var(--lg-duration-fast) ease,
+    box-shadow var(--lg-duration-fast) ease;
+}
+
+html:root[data-portal-theme="liquid-glass"] .portalSearchField:focus-within {
+  background: #ffffff;
+  border-color: rgba(24, 24, 27, .38);
+  box-shadow: var(--portal-focus-ring);
+}
+
+html:root[data-portal-theme="liquid-glass"] .portalButtonTooltip {
+  border-color: var(--lg-frame-border);
+  border-radius: 10px;
+  background: var(--lg-surface-dialog);
+  color: var(--text);
+  box-shadow: var(--shadow-soft);
+}
+
+/* Shared document tabs */
+html:root[data-portal-theme="liquid-glass"] .portalDocumentTab {
+  border-color: transparent;
+  border-radius: 10px 10px 0 0;
+  background: transparent;
+  color: var(--muted);
+}
+
+html:root[data-portal-theme="liquid-glass"] .portalDocumentTab:hover:not(.is-active) {
+  background: var(--lg-tint-hover);
+  color: var(--text);
+}
+
+html:root[data-portal-theme="liquid-glass"] .portalDocumentTab.is-active {
+  border-color: var(--border);
+  border-bottom-color: transparent;
+  background: #ffffff;
+  color: var(--text);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 1),
+    0 -1px 4px rgba(0, 0, 0, .035);
+}
+
+html:root[data-portal-theme="liquid-glass"] .portalSectionLink::after {
+  height: 2.5px;
+  border-radius: var(--lg-radius-pill);
+}
+
+/* Floating Liquid Glass chat composer: scrolled messages pass softly behind it with crisp legibility */
+html:root[data-portal-theme="liquid-glass"] .portalChatWorkspaceRoot:has(> .composer:not([hidden])) > .portalWorkspaceBody {
+  margin-bottom: calc(-1 * var(--lg-composer-overlap, 160px));
+}
+
+html:root[data-portal-theme="liquid-glass"] .portalChatWorkspaceRoot:has(> .composer:not([hidden])) .paneBody {
+  padding-bottom: calc(var(--lg-composer-overlap, 160px) + 16px);
+  scroll-padding-bottom: calc(var(--lg-composer-overlap, 160px) + 16px);
+}
+
+html:root[data-portal-theme="liquid-glass"] .portalChatWorkspaceRoot:has(> .composer:not([hidden])) .chatRoundRail {
+  margin-bottom: var(--lg-composer-overlap, 160px);
+  background: transparent;
+}
+
+html:root[data-portal-theme="liquid-glass"] .portalChatWorkspaceRoot:has(> .composer:not([hidden])) .portalAsyncState.portalWorkspaceEmpty {
+  bottom: calc(var(--lg-composer-overlap, 160px) + 12px);
+}
+
+html:root[data-portal-theme="liquid-glass"] .portalChatWorkspaceRoot > .forwardDock {
+  position: relative;
+  z-index: 13;
+}
+
+html:root[data-portal-theme="liquid-glass"] .composerSplitter {
+  position: relative;
+  z-index: 12;
+  background: transparent;
+  border-top-color: transparent;
+}
+
+html:root[data-portal-theme="liquid-glass"] .composerSplitter::after {
+  background: transparent;
+  box-shadow: none;
+  transition: background-color var(--lg-duration-fast) ease, height var(--lg-duration-fast) ease;
+}
+
+html:root[data-portal-theme="liquid-glass"] .composerSplitter:hover::after,
+html:root[data-portal-theme="liquid-glass"] .composerSplitter.active::after {
+  height: 3px;
+  background: rgba(24, 24, 27, .22);
+}
+
+html:root[data-portal-theme="liquid-glass"] .composer {
+  position: relative;
+  z-index: 12;
+  margin: 4px 12px 12px;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: var(--radius);
+  background: transparent;
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+html:root[data-portal-theme="liquid-glass"] .composer::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border: 1px solid rgba(0, 0, 0, .07);
+  border-radius: inherit;
+  background: rgba(255, 255, 255, .92);
+  box-shadow:
+    0 4px 16px rgba(0, 0, 0, .05),
+    0 1px 2px rgba(0, 0, 0, .03);
+  pointer-events: none;
+  transition:
+    border-color var(--lg-duration-fast) ease,
+    box-shadow var(--lg-duration-fast) ease;
+}
+
+html:root[data-portal-theme="liquid-glass"] .composer:focus-within::before {
+  border-color: rgba(0, 0, 0, .14);
+  box-shadow:
+    0 6px 20px rgba(0, 0, 0, .075),
+    0 1px 3px rgba(0, 0, 0, .04);
+}
+
+html:root[data-portal-theme="liquid-glass"] .composerInput {
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  box-shadow: none;
+  padding: 4px 4px 6px;
+}
+
+html:root[data-portal-theme="liquid-glass"] .composerInput:focus {
+  border-color: transparent;
+  box-shadow: none;
+}
+
+html:root[data-portal-theme="liquid-glass"] :is(.sendIconBtn, .portalChatWorkspaceRoot .sendIconBtn) {
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  min-height: 32px;
+  border-radius: var(--lg-radius-pill);
+  border: 1px solid rgba(0, 0, 0, .38);
+  background:
+    radial-gradient(ellipse 72% 48% at 50% 0%, rgba(255, 255, 255, .34) 0%, transparent 72%),
+    linear-gradient(180deg, #4a4c54 0%, #24252a 100%);
+  color: #ffffff;
+  box-shadow:
+    inset 0 1.5px 1px rgba(255, 255, 255, .36),
+    inset 0 -1px 1.5px rgba(0, 0, 0, .34),
+    0 2px 8px rgba(0, 0, 0, .18);
+}
+
+html:root[data-portal-theme="liquid-glass"] :is(.sendIconBtn, .portalChatWorkspaceRoot .sendIconBtn):hover:not(:disabled) {
+  background:
+    radial-gradient(ellipse 76% 50% at 50% 0%, rgba(255, 255, 255, .40) 0%, transparent 74%),
+    linear-gradient(180deg, #3a3c44 0%, #16171a 100%);
+  box-shadow:
+    inset 0 1.5px 1px rgba(255, 255, 255, .42),
+    0 4px 12px rgba(0, 0, 0, .24);
+}
+
+/* Detached floating Liquid Glass vertical pill dock (glass rendered on ::before so child flyout panels keep real backdrop blur) */
+html:root[data-portal-theme="liquid-glass"] .portalAgentInbox {
+  right: 12px;
+  width: 46px;
+  padding: 4px;
+  gap: 3px;
+  align-items: center;
+  border: 0;
+  border-radius: var(--lg-radius-pill);
+  background: transparent;
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  pointer-events: auto;
+}
+
+html:root[data-portal-theme="liquid-glass"] .portalAgentInbox::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: var(--modal-card-bg);
+  box-shadow: var(--liquid-glass-edge), var(--portal-shadow-popover);
+  pointer-events: none;
+}
+
+html:root[data-portal-theme="liquid-glass"] .portalAgentInbox[data-dock-side="left"] {
+  left: 12px;
+  right: auto;
+}
+
+html:root[data-portal-theme="liquid-glass"] .portalAgentInbox :is(
+  .portalAgentInboxTrigger,
+  [data-agent-conversation-trigger],
+  [data-agent-todo-trigger],
+  .portalPersonalAssistantTrigger
+) {
+  width: 36px;
+  height: 36px;
+  border: 1px solid transparent;
+  border-radius: var(--lg-radius-pill);
+  background: transparent;
+  color: var(--accent);
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  transition:
+    background var(--lg-duration-fast) ease,
+    border-color var(--lg-duration-fast) ease,
+    color var(--lg-duration-fast) ease,
+    box-shadow var(--lg-duration-fast) ease;
+}
+
+html:root[data-portal-theme="liquid-glass"] .portalAgentInbox .portalAgentInboxTrigger:is(:hover, :focus-visible, [aria-expanded="true"]) {
+  background: var(--lg-btn-glass-bg);
+  color: var(--accent-2);
+  box-shadow: var(--lg-btn-glass-shadow);
+}
+
+html:root[data-portal-theme="liquid-glass"] .portalAgentInboxPanel {
+  right: calc(100% + 10px);
+  border-color: transparent;
+  border-radius: var(--radius);
+  background: transparent;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  box-shadow: var(--liquid-glass-edge), var(--portal-shadow-popover);
+}
+
+html:root[data-portal-theme="liquid-glass"] .portalAgentInboxPanel::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: var(--modal-card-bg);
+  pointer-events: none;
+}
+
+html:root[data-portal-theme="liquid-glass"] .portalAgentInboxPanel > header {
+  background: rgba(255, 255, 255, .24);
+  border-bottom-color: rgba(0, 0, 0, .075);
+}
+
+html:root[data-portal-theme="liquid-glass"] .portalAgentInbox[data-dock-side="left"] .portalAgentInboxPanel {
+  left: calc(100% + 10px);
+  right: auto;
+}
+
+html:root[data-portal-theme="liquid-glass"] .portalMailboxAlert {
+  border-color: transparent;
+  border-radius: var(--lg-radius-popover);
+  box-shadow: var(--liquid-glass-edge), var(--portal-shadow-popover);
+}
+
+/* Liquid Glass optical backdrop layer (Tier 1 Chromium bevel + Tier 2 Safari/Firefox glass) */
+@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  html:root[data-portal-theme="liquid-glass"] .portalSiteHeader::before {
+    background:
+      radial-gradient(ellipse 30% 4px at var(--liquid-glass-light, 28%) 0%, var(--lg-specular-top), transparent),
+      radial-gradient(ellipse 20% 3px at 76% 100%, var(--lg-specular-bottom), transparent),
+      var(--lg-surface-bar);
+    -webkit-backdrop-filter: var(--lg-blur-bar);
+    backdrop-filter: var(--liquid-glass-filter, blur(0px)) var(--lg-blur-bar);
+  }
+
+  html:root[data-portal-theme="liquid-glass"] .portalAgentInbox::before,
+  html:root[data-portal-theme="liquid-glass"] :is(
+    .portalActivityRail,
+    .portalWorkbenchPageLayout > .portalActivityRail,
+    .graphNavigationBar
+  ) {
+    background:
+      radial-gradient(ellipse 76% 5px at 50% 0%, var(--lg-specular-top), transparent),
+      radial-gradient(ellipse 56% 4px at 50% 100%, var(--lg-specular-bottom), transparent),
+      var(--lg-surface-bar);
+    -webkit-backdrop-filter: var(--lg-blur-bar);
+    backdrop-filter: var(--liquid-glass-filter, blur(0px)) var(--lg-blur-bar);
+  }
+
+  html:root[data-portal-theme="liquid-glass"] body.portalBoardShell .portalNavGlassDroplet {
+    -webkit-backdrop-filter: saturate(145%) brightness(1.04) contrast(1.03);
+    backdrop-filter: var(--liquid-glass-filter, blur(0px)) saturate(145%) brightness(1.04) contrast(1.03);
+  }
+
+  /* Compact menus, dropdowns & secondary nav: airy crystalline Liquid Glass with crisp text contrast */
+  html:root[data-portal-theme="liquid-glass"] :is(
+    [data-portal-overlay-layer="popover"],
+    .portalThemeMenu,
+    .portalUserMenuPopover,
+    .portalSecondaryNavPopover,
+    .portalToolbarOverflowPanel,
+    .portalWorkbenchMenu,
+    .composerSlashCommandMenu,
+    .portalMailboxAlert,
+    .portalAgentInboxPinMenu,
+    .portalMessageMenuPanel,
+    .portalMessageSubmenuPanel,
+    .portalEditorOpenMenu,
+    .chatSelectionContextAction,
+    .portalPreviewSelectionToolbar,
+    .portalPreviewZoomControls,
+    .graphMoreMenu,
+    .hatgQuickForkMenu,
+    .hatgToolbox,
+    .agentCardMenu,
+    .chatroomCardMenu,
+    .projectMenu,
+    .repoMoreActions,
+    .knowledgeMapSuggestions,
+    .articleCompileMenu,
+    .articleGitCommitMenu,
+    .articleProjectMenu,
+    .articleResourceSearchPopover,
+    .paperArchiveMenu,
+    .paperResearchTitleMenu,
+    .selectionMenu
+  ) {
+    background:
+      radial-gradient(ellipse 62% 5px at 26% 0%, var(--lg-specular-top), transparent),
+      var(--lg-surface-popover);
+    -webkit-backdrop-filter: var(--lg-blur-popover);
+    backdrop-filter: var(--liquid-glass-filter, blur(0px)) var(--lg-blur-popover);
+  }
+
+  /* Dense multi-row floating drawers & reading panels: balanced frosted veil + 18px blur so glass stays visibly translucent while dense text underneath never clashes */
+  html:root[data-portal-theme="liquid-glass"] .portalAgentInboxPanel::before,
+  html:root[data-portal-theme="liquid-glass"] :is(
+    .portalResourceHoverCard,
+    .filterPopover,
+    .chatRoundPreview,
+    .graphNodeSearchResults,
+    .familyStatusPanel:where(:not(.is-inline)),
+    .repoFileFinder,
+    .resourceKnowledgeMatrixPopover
+  ) {
+    background:
+      radial-gradient(ellipse 66% 6px at 28% 0%, var(--lg-specular-top), transparent),
+      var(--lg-surface-panel-glass);
+    -webkit-backdrop-filter: var(--lg-blur-panel-glass);
+    backdrop-filter: var(--lg-blur-panel-glass);
+  }
+
+  html:root[data-portal-theme="liquid-glass"] .composer::before {
+    background: rgba(255, 255, 255, .52);
+    -webkit-backdrop-filter: blur(12px) saturate(175%);
+    backdrop-filter: blur(12px) saturate(175%);
+  }
+
+  html:root[data-portal-theme="liquid-glass"] .portalButtonTooltip {
+    background: var(--lg-surface-popover);
+    -webkit-backdrop-filter: var(--lg-blur-popover);
+    backdrop-filter: var(--lg-blur-popover);
+  }
+
+  html:root[data-portal-theme="liquid-glass"] .portalDetailSurface,
+  html:root[data-portal-theme="liquid-glass"] .portalDetailSurface.portalCommandBox {
+    background: var(--lg-surface-dialog);
+    -webkit-backdrop-filter: var(--lg-blur-dialog);
+    backdrop-filter: var(--lg-blur-dialog);
+  }
+
+  html:root[data-portal-theme="liquid-glass"] .portalDetailOverlay,
+  html:root[data-portal-theme="liquid-glass"] dialog.portalDetailSurface::backdrop {
+    -webkit-backdrop-filter: blur(4px);
+    backdrop-filter: blur(4px);
+  }
+}
+
+/* Tier 3: Accessibility & reduced transparency / high contrast fallbacks */
+@media (prefers-reduced-transparency: reduce), (prefers-contrast: more), (forced-colors: active) {
+  html:root[data-portal-theme="liquid-glass"] .portalChatWorkspaceRoot:has(> .composer:not([hidden])) > .portalWorkspaceBody {
+    margin-bottom: 0;
+  }
+  html:root[data-portal-theme="liquid-glass"] .portalChatWorkspaceRoot:has(> .composer:not([hidden])) .paneBody {
+    padding-bottom: 12px;
+    scroll-padding-bottom: 12px;
+  }
+  html:root[data-portal-theme="liquid-glass"] .portalChatWorkspaceRoot:has(> .composer:not([hidden])) .chatRoundRail {
+    margin-bottom: 0;
+  }
+  html:root[data-portal-theme="liquid-glass"] .portalSiteHeader::before,
+  html:root[data-portal-theme="liquid-glass"] .portalAgentInbox::before,
+  html:root[data-portal-theme="liquid-glass"] .portalAgentInboxPanel::before,
+  html:root[data-portal-theme="liquid-glass"] .composer::before,
+  html:root[data-portal-theme="liquid-glass"] body.portalBoardShell .portalNavGlassDroplet,
+  html:root[data-portal-theme="liquid-glass"] :is(
+    .portalActivityRail,
+    .portalWorkbenchPageLayout > .portalActivityRail,
+    .graphNavigationBar,
+    [data-portal-overlay-layer="popover"],
+    .portalAgentInboxPanel,
+    .portalAgentInboxPinMenu,
+    .portalThemeMenu,
+    .portalUserMenuPopover,
+    .portalSecondaryNavPopover,
+    .portalToolbarOverflowPanel,
+    .portalWorkbenchMenu,
+    .composerSlashCommandMenu,
+    .portalResourceHoverCard,
+    .portalMailboxAlert,
+    .filterPopover,
+    .portalMessageMenuPanel,
+    .portalMessageSubmenuPanel,
+    .portalEditorOpenMenu,
+    .chatRoundPreview,
+    .chatSelectionContextAction,
+    .portalPreviewSelectionToolbar,
+    .portalPreviewZoomControls,
+    .graphMoreMenu,
+    .graphNodeSearchResults,
+    .hatgQuickForkMenu,
+    .hatgToolbox,
+    .agentCardMenu,
+    .chatroomCardMenu,
+    .familyStatusPanel:not(.is-inline),
+    .projectMenu,
+    .repoFileFinder,
+    .repoMoreActions,
+    .resourceKnowledgeMatrixPopover,
+    .knowledgeMapSuggestions,
+    .articleCompileMenu,
+    .articleGitCommitMenu,
+    .articleProjectMenu,
+    .articleResourceSearchPopover,
+    .paperArchiveMenu,
+    .paperResearchTitleMenu,
+    .selectionMenu,
+    .portalButtonTooltip,
+    .portalDetailSurface,
+    .portalDetailSurface.portalCommandBox,
+    .portalDetailFooter,
+    .portalDetailOverlay
+  ),
+  html:root[data-portal-theme="liquid-glass"] dialog.portalDetailSurface::backdrop {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+
+  html:root[data-portal-theme="liquid-glass"] .portalRuntimeSettingsField select {
+    background: var(--panel);
+  }
+  html:root[data-portal-theme="liquid-glass"] .portalSiteHeader::before,
+  html:root[data-portal-theme="liquid-glass"] .portalAgentInbox::before,
+  html:root[data-portal-theme="liquid-glass"] .portalAgentInboxPanel::before,
+  html:root[data-portal-theme="liquid-glass"] .composer::before {
+    background: var(--modal-card-bg);
+    border: 1px solid var(--border-strong);
+  }
+  html:root[data-portal-theme="liquid-glass"] body.portalBoardShell .portalNavGlassDroplet {
+    display: none;
+  }
+  html:root[data-portal-theme="liquid-glass"] body.portalBoardShell .portalModuleNav[data-lg-droplet-ready="true"] .portalModuleLink.active > .portalModuleLinkLabel {
+    background: var(--panel-3);
+    box-shadow: inset 0 0 0 1px var(--border-strong);
+  }
+  html:root[data-portal-theme="liquid-glass"] .portalWorkbenchStack:not(:has(.homeNestedWorkbench)) {
+    border: 1px solid var(--border-strong);
+  }
+  html:root[data-portal-theme="liquid-glass"] :is(
+    .portalActivityRail,
+    .portalWorkbenchPageLayout > .portalActivityRail,
+    .graphNavigationBar,
+    [data-portal-overlay-layer="popover"],
+    .portalAgentInboxPinMenu,
+    .portalThemeMenu,
+    .portalUserMenuPopover,
+    .portalSecondaryNavPopover,
+    .portalToolbarOverflowPanel,
+    .portalWorkbenchMenu,
+    .composerSlashCommandMenu,
+    .portalResourceHoverCard,
+    .portalMailboxAlert,
+    .filterPopover,
+    .portalMessageMenuPanel,
+    .portalMessageSubmenuPanel,
+    .portalEditorOpenMenu,
+    .chatRoundPreview,
+    .chatSelectionContextAction,
+    .portalPreviewSelectionToolbar,
+    .portalPreviewZoomControls,
+    .graphMoreMenu,
+    .graphNodeSearchResults,
+    .hatgQuickForkMenu,
+    .hatgToolbox,
+    .agentCardMenu,
+    .chatroomCardMenu,
+    .familyStatusPanel:not(.is-inline),
+    .projectMenu,
+    .repoFileFinder,
+    .repoMoreActions,
+    .resourceKnowledgeMatrixPopover,
+    .knowledgeMapSuggestions,
+    .articleCompileMenu,
+    .articleGitCommitMenu,
+    .articleProjectMenu,
+    .articleResourceSearchPopover,
+    .paperArchiveMenu,
+    .paperResearchTitleMenu,
+    .selectionMenu,
+    .portalButtonTooltip,
+    .portalDetailSurface,
+    .portalDetailSurface.portalCommandBox
+  ) {
+    background: var(--modal-card-bg);
+    border: 1px solid var(--border-strong);
+  }
+}
+
+@media (forced-colors: active) {
+  html:root[data-portal-theme="liquid-glass"] .portalSiteHeader::before,
+  html:root[data-portal-theme="liquid-glass"] .portalAgentInbox::before,
+  html:root[data-portal-theme="liquid-glass"] .portalAgentInboxPanel::before,
+  html:root[data-portal-theme="liquid-glass"] .composer::before,
+  html:root[data-portal-theme="liquid-glass"] :is(
+    .portalActivityRail,
+    .portalWorkbenchPageLayout > .portalActivityRail,
+    .graphNavigationBar,
+    [data-portal-overlay-layer="popover"],
+    .portalWorkbenchStack:not(:has(.homeNestedWorkbench)),
+    .portalAgentInboxPinMenu,
+    .portalThemeMenu,
+    .portalUserMenuPopover,
+    .portalSecondaryNavPopover,
+    .portalToolbarOverflowPanel,
+    .portalWorkbenchMenu,
+    .composerSlashCommandMenu,
+    .portalResourceHoverCard,
+    .portalMailboxAlert,
+    .filterPopover,
+    .portalMessageMenuPanel,
+    .portalMessageSubmenuPanel,
+    .portalEditorOpenMenu,
+    .chatRoundPreview,
+    .chatSelectionContextAction,
+    .portalPreviewSelectionToolbar,
+    .portalPreviewZoomControls,
+    .graphMoreMenu,
+    .graphNodeSearchResults,
+    .hatgQuickForkMenu,
+    .hatgToolbox,
+    .agentCardMenu,
+    .chatroomCardMenu,
+    .familyStatusPanel:not(.is-inline),
+    .projectMenu,
+    .repoFileFinder,
+    .repoMoreActions,
+    .resourceKnowledgeMatrixPopover,
+    .knowledgeMapSuggestions,
+    .articleCompileMenu,
+    .articleGitCommitMenu,
+    .articleProjectMenu,
+    .articleResourceSearchPopover,
+    .paperArchiveMenu,
+    .paperResearchTitleMenu,
+    .selectionMenu,
+    .portalButtonTooltip,
+    .portalDetailSurface,
+    .portalDetailSurface.portalCommandBox
+  ) {
+    background: Canvas;
+    border-color: CanvasText;
+  }
+  html:root[data-portal-theme="liquid-glass"] body.portalBoardShell .portalModuleNav[data-lg-droplet-ready="true"] .portalModuleLink.active > .portalModuleLinkLabel {
+    outline: 1px solid Highlight;
+  }
+}
+
+/* Reduced motion respects PortalMotion and OS preference */
+html[data-portal-motion="reduced"][data-portal-theme="liquid-glass"] :is(
+  .portalButton,
+  .portalModuleLinkLabel,
+  .portalActivityRailView,
+  .portalVersionSelector button,
+  .portalSecondaryNavItem,
+  .portalThemeOption,
+  .agent-status-tab,
+  .portalAgentInboxTrigger
+) {
+  transition: none;
+  transform: none;
+}
+
+html[data-portal-motion="reduced"][data-portal-theme="liquid-glass"] body.portalBoardShell .portalNavGlassDroplet {
+  transition: none;
+  transform: translate3d(var(--lg-drop-x, 0px), 0, 0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html:not([data-portal-motion="full"])[data-portal-theme="liquid-glass"] :is(
+    .portalButton,
+    .portalModuleLinkLabel,
+    .portalActivityRailView,
+    .portalVersionSelector button,
+    .portalSecondaryNavItem,
+    .portalThemeOption,
+    .agent-status-tab,
+    .portalAgentInboxTrigger
+  ) {
+    transition: none;
+    transform: none;
+  }
+
+  html:not([data-portal-motion="full"])[data-portal-theme="liquid-glass"] body.portalBoardShell .portalNavGlassDroplet {
+    transition: none;
+    transform: translate3d(var(--lg-drop-x, 0px), 0, 0);
+  }
+}
 
 /* One non-interactive scene also works over full-height, opaque workbenches.
    Screen blending preserves light text; menus/dialogs keep their higher layers. */

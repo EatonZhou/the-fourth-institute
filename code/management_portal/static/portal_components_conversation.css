@@ -481,18 +481,50 @@ button.messageQuote:focus-visible {
 .familyStatusPanel tbody > tr:last-child > td { border-bottom: 0; }
 .familyStatusPanel [data-family-status-row]:hover { background: color-mix(in srgb, var(--accent) 4%, var(--panel)); }
 .familyStatusPanel .familyStatusName { display: block; font-size: 12px; font-weight: 500; line-height: 1.5; white-space: normal; overflow-wrap: anywhere; }
-.familyStatusPanel td .portalButton { min-width: 0; min-height: 24px; max-width: 100%; padding: 2px 3px; font-size: 12px; }
-.familyStatusPanel td .familyStatusAccount { font-weight: 500; text-align: left; }
-.familyStatusPanel td .familyStatusAccount, .familyStatusPanel td .familyStatusRuntime { min-height: 20px; line-height: 16px; padding-block: 1px; }
-.familyStatusAccount > span:first-child, .familyStatusRuntime > span:first-child { min-width: 0; white-space: normal; overflow-wrap: anywhere; }
-.familyStatusAccount > span:last-child { flex-shrink: 0; }
-.familyStatusRuntime { display: flex; margin-top: 0; color: var(--muted); font-weight: 400; white-space: nowrap; text-align: left; }
-.familyStatusPanel td .familyStatusRuntime { font-size: 11px; font-weight: 400; }
+.familyStatusPanel td .portalButton {
+  box-sizing: border-box;
+  min-width: 0;
+  min-height: 28px;
+  max-width: 100%;
+  padding: var(--portal-space-1) var(--portal-space-2);
+  border-radius: 8px;
+  font-size: 12px;
+}
+.familyStatusPanel td .familyStatusAccount {
+  width: 100%;
+  justify-content: space-between;
+  font-weight: 500;
+  line-height: 16px;
+  text-align: left;
+}
+.familyStatusAccount > span:first-child {
+  flex: 1;
+  min-width: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.familyStatusAccount > span:last-child { flex: none; }
+.familyStatusRuntime {
+  display: block;
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 400;
+}
 .familyStatusWork { display: flex; align-items: center; gap: 5px; line-height: 1.5; overflow-wrap: anywhere; }
 .familyStatusWork[data-working="true"] { color: var(--accent); font-weight: 600; }
 .familyStatusWork[data-working="true"]::before { content: ""; width: 6px; height: 6px; flex-shrink: 0; border-radius: 50%; background: currentColor; }
 .familyStatusQueue { color: var(--muted); font-size: 11px; line-height: 1.5; }
-.familyStatusPanel td .familyStatusIntake { display: inline-flex; align-items: center; gap: 5px; padding: 2px 0; border: 0; background: transparent; box-shadow: none; font-size: 11px; cursor: default; }
+.familyStatusPanel td .familyStatusIntake {
+  gap: 5px;
+  border: 0;
+  background: transparent;
+  font-size: 11px;
+}
+.familyStatusPanel td .familyStatusIntake:hover:not(:disabled, [aria-disabled="true"]),
+.familyStatusPanel td .familyStatusIntake:focus-visible {
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
 .familyIntakeTrack { position: relative; width: 25px; height: 14px; border-radius: 8px; background: var(--muted); flex-shrink: 0; }
 .familyIntakeTrack::after { content: ""; position: absolute; left: 2px; top: 2px; width: 10px; height: 10px; border-radius: 50%; background: var(--panel); transition: transform .12s ease; }
 .familyStatusIntake[aria-checked="true"] .familyIntakeTrack { background: var(--accent); }
@@ -555,7 +587,7 @@ button.messageQuote:focus-visible {
 
 .familyMemberIdentity { display: flex; align-items: center; gap: 6px; }
 .familyMemberIdentity .familyStatusName { flex: 1; min-width: 0; }
-.familyStatusPanel td .familyStatusDetailsToggle { flex-shrink: 0; padding: 0 3px; color: var(--muted); }
+.familyStatusPanel td .familyStatusDetailsToggle { flex-shrink: 0; min-width: 28px; color: var(--muted); }
 .chatTitleLine { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; min-width: 0; }
 .chatTitleLine .paneTitle { min-width: 0; }
 .chatTitleLine.has-family-return { flex-wrap: nowrap; }

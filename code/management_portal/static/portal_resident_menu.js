@@ -219,11 +219,11 @@
           <div id="nodeMenuRuntime"><p>正在读取运行设置…</p></div>
           <div class="residentMenuSession"><span>Session ID</span><code id="nodeMenuSessionId" role="status">读取中…</code><button class="portalButton is-icon is-quiet" id="nodeMenuCopySession" type="button" aria-label="复制 Session ID" title="复制当前后端会话的完整 Session ID" data-portal-icon="copy" disabled></button></div>
           <section id="nodeMenuAvatar" aria-label="Resident avatar"></section>
-          <div class="portalDetailFooter nodeSettingsFooter" data-portal-detail-footer><button class="portalButton is-danger" id="removeNodeBtn" type="button">删除节点</button></div>
         </form>
         </section>
         </div>
         </div>
+        <div class="portalDetailFooter nodeSettingsFooter residentMenuFooter" data-portal-detail-footer><button class="portalButton is-danger" id="removeNodeBtn" type="button">删除节点</button></div>
       </section>
     </div>`;
     const modal = host.firstElementChild;

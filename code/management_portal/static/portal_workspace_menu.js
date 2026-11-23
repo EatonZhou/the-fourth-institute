@@ -16,7 +16,7 @@
         </div>
         <div class="portalDetailBody nodeSettingsBody" data-portal-detail-body>
           <div class="nodeSettingsPanels"><section class="workspaceMenuOverview" aria-label="${esc(t("Workspace 概览"))}">
-            <form class="nodeSettingsForm" data-workspace-menu-form>
+            <form class="nodeSettingsForm" id="${key}-form" data-workspace-menu-form>
               <label class="portalField"><span>${esc(t("Workspace 名称"))}</span><input data-workspace-menu-name autocomplete="off" disabled /></label>
               <label class="portalField"><span>${esc(t("描述"))}</span><textarea data-workspace-menu-summary rows="3" maxlength="2000" placeholder="${esc(t("这个 Workspace 用来做什么"))}" disabled></textarea></label>
               <div class="workspaceMenuReadout"><span>${esc(t("Workspace ID"))}</span><div class="workspaceMenuReadoutValue"><code data-workspace-menu-identity></code><button class="portalButton" data-workspace-menu-copy-id type="button">${esc(t("复制 ID"))}</button></div></div>
@@ -26,9 +26,12 @@
               <section class="workspaceMenuMembers" data-workspace-menu-members></section>
               <p class="workspaceMenuStatus" data-workspace-menu-status role="status" aria-live="polite"></p>
               <button class="portalButton" data-workspace-menu-reload type="button" hidden>${esc(t("重新读取"))}</button>
-              <div class="portalDetailFooter nodeSettingsFooter" data-portal-detail-footer><button class="portalButton" data-workspace-menu-cancel type="button">${esc(t("取消"))}</button><button class="portalButton is-primary" data-workspace-menu-save type="submit" disabled>${esc(t("保存更改"))}</button></div>
             </form>
           </section></div>
+        </div>
+        <div class="portalDetailFooter nodeSettingsFooter" data-portal-detail-footer>
+          <button class="portalButton" data-workspace-menu-cancel type="button">${esc(t("取消"))}</button>
+          <button class="portalButton is-primary" data-workspace-menu-save type="submit" form="${key}-form" disabled>${esc(t("保存更改"))}</button>
         </div>
       </section>
     </div>`;
