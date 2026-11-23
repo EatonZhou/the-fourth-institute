@@ -71,28 +71,33 @@
       articleWorkbench?.hidePanel(view);
     }
 
-    // The leftmost tool group is the sidebar. Independently placed tools
-    // (for example Chat on the right) and groups containing source/PDF stay put.
-    function sidebarStack() {
-      let node = articleWorkbench?.getLayout();
-      while (node?.type === "split") node = node.children[0];
-      return toolStackFor(node, node?.activePanelId);
+    // A sidebar can contain several vertically arranged tool groups. Follow
+    // the left column of horizontal splits, but retain every vertical group.
+    function sidebarStacks(node = articleWorkbench?.getLayout()) {
+      if (node?.type === "stack") {
+        return toolStackFor(node, node.activePanelId) ? [node] : [];
+      }
+      if (node?.type !== "split") return [];
+      return node.orientation === "vertical"
+        ? node.children.flatMap(child => sidebarStacks(child)) : sidebarStacks(node.children[0]);
     }
 
     function canToggleArticleSidebar() {
       const root = $("articleWorkspaceGrid");
       return Boolean(root?.isConnected && root.dataset.portalWorkbenchId && !root.closest("[hidden]")
-        && !articleWorkbench?.isLayoutLocked() && sidebarStack());
+        && !articleWorkbench?.isLayoutLocked() && sidebarStacks().length);
     }
 
     function toggleArticleSidebar() {
       if (!canToggleArticleSidebar()) return false;
-      const stack = sidebarStack(), focused = document.activeElement;
-      const collapsed = articleWorkbench.isPanelCollapsed(stack.activePanelId);
-      articleWorkbench.toggleCollapsed(stack.activePanelId);
-      if (!collapsed && focused && !focused.getClientRects().length) {
-        document.querySelector(`[data-article-view="${stack.activePanelId}"]`)?.focus();
-      } else if (collapsed) {
+      const stacks = sidebarStacks(), focused = document.activeElement;
+      const expanded = stacks.filter(stack => !articleWorkbench.isPanelCollapsed(stack.activePanelId));
+      const focusedStack = stacks.find(stack => articleWorkbench.getPanel(stack.activePanelId)?.root?.contains(focused)) || stacks[0];
+      if (expanded.length) expanded.forEach(stack => articleWorkbench.collapsePanel(stack.activePanelId));
+      else stacks.forEach(stack => articleWorkbench.expandPanel(stack.activePanelId));
+      if (expanded.length && focused && !focused.getClientRects().length) {
+        document.querySelector(`[data-article-view="${focusedStack.activePanelId}"]`)?.focus();
+      } else if (!expanded.length) {
         // Tool activation may focus Search. Restoring the sidebar while typing
         // in source must leave the writer's caret in that source editor.
         Promise.resolve().then(() => {

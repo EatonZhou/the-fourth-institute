@@ -254,12 +254,12 @@ const html = fs.readFileSync(path.join(repo, 'management_portal/article_workspac
       document.getElementById('articleGlobalSearchInput').value = 'keep search';
     });
     await dragTool('chat', 'output', 'right');
-    await page.locator('[data-article-view="files"]').click();
+    await page.evaluate(() => layout.setSideView('files'));
     assert.equal(await page.locator('[data-article-panel="files"]').isVisible(), true);
     assert.equal(await page.locator('#articleChatWorkspace').isVisible(), true, 'detached Chat remains visible next to Files');
     const detachedLayout = await page.evaluate(() => layout.currentArticleWorkbench().getLayout());
-    await page.locator('[data-article-view="chat"]').click();
-    assert.deepEqual(await page.evaluate(() => layout.currentArticleWorkbench().getLayout()), detachedLayout, 'rail focuses Chat without relocating it');
+    await page.evaluate(() => layout.setSideView('chat'));
+    assert.deepEqual(await page.evaluate(() => layout.currentArticleWorkbench().getLayout()), detachedLayout, 'explicit navigation focuses Chat without relocating it');
     await page.locator('[data-article-view="git"]').click();
     assert.deepEqual(await page.evaluate(() => [...state.visibleTools].sort()), ['chat', 'git'], 'Git and Chat have independent visibility');
     assert.deepEqual(await page.evaluate(() => ({
@@ -333,7 +333,7 @@ const html = fs.readFileSync(path.join(repo, 'management_portal/article_workspac
     await page.reload();
     await page.evaluate(setup, { boundChat: true });
     assert.equal(await page.evaluate(() => layout.currentArticleWorkbench().isPanelVisible('chat')), false, 'restore keeps a hidden tool hidden');
-    await page.evaluate(() => document.querySelector('[data-article-view="files"]').click());
+    await page.evaluate(() => layout.setSideView('files'));
     await page.reload();
     await page.evaluate(setup);
     assert.equal(await page.evaluate(() => state.sideView), 'files', 'switching away from Chat is also remembered');
@@ -368,6 +368,56 @@ const html = fs.readFileSync(path.join(repo, 'management_portal/article_workspac
     assert.deepEqual(await page.evaluate(() => layout.currentArticleWorkbench().getState().savedWorkspaces.oldProof.hidden),
       ['files', 'favorites', 'search', 'git', 'chat', 'settings', 'library']);
     assert.equal(await page.locator('[data-portal-workbench-tab="navigation"]').count(), 0);
+
+    // The left column may hold multiple groups. Ctrl+B controls the column,
+    // including the active tool in each group, while a right-hand Chat stays put.
+    await page.evaluate(async () => {
+      const wb = layout.currentArticleWorkbench(), {split, stack} = PortalWorkbench.model;
+      wb.applyWorkspace({layout: split('horizontal', [
+        split('vertical', [stack(['files', 'favorites', 'library'], 'files'), stack(['search', 'git', 'settings'], 'git')], [420, 360]),
+        stack(['editor']), split('vertical', [stack(['output']), stack(['chat'])]),
+      ], [320, 840, 600])});
+      await layout.setSideView('chat');
+      state.chatController.setDraftText('Independent chat draft');
+      document.getElementById('articleGitMessage').value = 'Keep my commit message';
+      window.sidebarRoots = ['files', 'git'].map(id => wb.getPanel(id).root);
+    });
+    const columnLayout = await page.evaluate(() => layout.currentArticleWorkbench().getLayout());
+    const columnWidth = await page.locator('[data-article-panel="files"]').evaluate(el => el.getBoundingClientRect().width);
+    assert.deepEqual(await page.evaluate(() => [...state.visibleTools].sort()), ['chat', 'files', 'git']);
+    await page.locator('[data-article-view="files"]').focus();
+    await page.keyboard.press('Control+b');
+    assert.deepEqual(await page.evaluate(() => [...state.visibleTools]), ['chat'], 'both left groups retract together');
+    assert.match(await page.evaluate(() => state.chatController.payload().text), /Independent chat draft/);
+    await page.keyboard.press('Meta+b');
+    assert.deepEqual(await page.evaluate(() => [...state.visibleTools].sort()), ['chat', 'files', 'git']);
+    assert.equal(await page.locator('#articleGitMessage').inputValue(), 'Keep my commit message');
+    assert.equal(await page.evaluate(() => sidebarRoots.every((root, index) => root === layout.currentArticleWorkbench().getPanel(['files', 'git'][index]).root)), true);
+    assert.deepEqual(await page.evaluate(() => layout.currentArticleWorkbench().getLayout()), columnLayout);
+    assert.ok(Math.abs(await page.locator('[data-article-panel="files"]').evaluate(el => el.getBoundingClientRect().width) - columnWidth) < 2);
+    await page.locator('[data-article-view="search"]').click();
+    await page.locator('#articleGlobalSearchInput').fill('keep this search');
+    await page.locator('[data-article-view="search"]').focus();
+    await page.keyboard.press('Control+b');
+    assert.deepEqual(await page.evaluate(() => [...state.visibleTools]), ['chat']);
+    await page.keyboard.press('Control+b');
+    assert.deepEqual(await page.evaluate(() => [...state.visibleTools].sort()), ['chat', 'files', 'search'], 'each group restores its active tool');
+    assert.equal(await page.locator('#articleGlobalSearchInput').inputValue(), 'keep this search');
+    await page.keyboard.press('Control+b');
+    await page.reload(); await page.evaluate(setup, {boundChat: true});
+    assert.deepEqual(await page.evaluate(() => [...state.visibleTools]), ['chat'], 'every collapsed left group persists across reload');
+    await page.locator('[data-article-view="search"]').focus();
+    await page.keyboard.press('Meta+b');
+    assert.deepEqual(await page.evaluate(() => [...state.visibleTools].sort()), ['chat', 'files', 'search']);
+    await page.evaluate(() => {
+      const {split, stack} = PortalWorkbench.model;
+      layout.currentArticleWorkbench().applyWorkspace({layout: split('horizontal', [stack(['editor', 'git'], 'git'), stack(['files']), stack(['output'])]),
+        hidden: ['favorites', 'search', 'settings', 'chat', 'library']});
+    });
+    await page.locator('[data-article-view="git"]').focus();
+    await page.keyboard.press('Control+b');
+    assert.equal(await page.evaluate(() => layout.canToggleArticleSidebar()), false, 'content groups and right-side tools are not the left sidebar');
+    assert.deepEqual(await page.evaluate(() => [...state.visibleTools].sort()), ['files', 'git']);
     assert.deepEqual(errors, [], 'no page errors after reloads');
     assert.deepEqual(await page.evaluate(() => writes), [], 'restoring Chat sends no message');
     console.log('PASS: Article tools detach right/bottom, regroup and persist with real Chat drafts, references and independent visibility');
