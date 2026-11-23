@@ -6,7 +6,7 @@
   // and reconciling the rendered list with new messages without losing state.
   const DEPENDENCIES = Object.freeze([
     "commonMessageActionsHtml", "escapeHtml", "footerTime", "messageAfterKey",
-    "renderMessageAttachments", "messageAuthoredByViewer", "messageAuthorHeaderHtml",
+    "renderMessageAttachments", "renderMessageContent", "messageAuthoredByViewer", "messageAuthorHeaderHtml",
     "messageContextRefsHtml", "messageFoldBodyHtml", "messageFoldChoices", "messageFoldDefaults",
     "messageInstanceKey", "messageNodeKey", "messageQuoteHtml", "messageRenderKey",
     "messageRole", "messageSenderIdentity", "messageSystemPresentation", "messageTitle",
@@ -178,7 +178,7 @@
     const missing = DEPENDENCIES.filter(name => dependencies?.[name] === undefined);
     if (missing.length) throw new Error(`PortalChatWorkspaceMessageList is missing: ${missing.join(", ")}`);
     const {
-      commonMessageActionsHtml, escapeHtml, footerTime, messageAfterKey, renderMessageAttachments,
+      commonMessageActionsHtml, escapeHtml, footerTime, messageAfterKey, renderMessageAttachments, renderMessageContent,
       messageAuthoredByViewer, messageAuthorHeaderHtml, messageContextRefsHtml,
       messageFoldBodyHtml, messageFoldChoices, messageFoldDefaults, messageInstanceKey,
       messageNodeKey, messageQuoteHtml, messageRenderKey, messageRole, messageSenderIdentity,
@@ -358,9 +358,14 @@
         ));
         // Per-conversation semantic Markdown extensions; the default renderer
         // and attachment/reference processing remain the owners of the body.
-        const renderContent = (value, renderOptions) => renderResidentHandoffs(value, text => renderMarkdownWithAttachmentRefs(
-          text, { ...options, preserveWhitespace: typeof renderOptions?.renderCodeFence === "function", renderMarkdown: markdown => renderMarkdown(markdown, { ...renderOptions, copyCode: true }) }
-        ), item, { ...options, handoffMessages: callbackMessages });
+        const renderContent = (value, renderOptions) => {
+          const textRenderer = markdown => renderResidentHandoffs(markdown,
+            text => renderMarkdown(text, { ...renderOptions, copyCode: true }), item,
+            { ...options, handoffMessages: callbackMessages });
+          const settings = { ...options, preserveWhitespace: typeof renderOptions?.renderCodeFence === "function", renderMarkdown: textRenderer };
+          return value === content ? renderMessageContent(item, settings)
+            : renderMarkdownWithAttachmentRefs(value, settings);
+        };
         const selection = item?.content_parts?.find(part => part.type === "resident_handoff_selection");
         const selectionHtml = selection ? `<div class="residentHandoffSelection"><small>${escapeHtml(window.PortalI18n.t("已选择"))}：${escapeHtml(selection.title)} · ${escapeHtml(selection.resident_id)}</small></div>` : "";
         const defaultBodyHtml = renderContent(content) + selectionHtml;

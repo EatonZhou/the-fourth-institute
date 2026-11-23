@@ -17,8 +17,22 @@ def consume_message(message, *, owner_id, connection):
 def consume_file(path, *, owner_id, connection):
     """A feature successfully imported a file from an original ISA upload."""
     from pathlib import Path
-    from management_portal.resources.isa import upload_root, _upload_dir
+    from management_portal.resources.isa import upload_root, _upload_dir, read_upload
+    from management_portal.hatg.contracts import InstructionError
     from management_common.upload_retention import consumed
     path = Path(path).absolute()
-    if path.parent.parent == upload_root().absolute() and path.parent.name.startswith('upload_'):
-        consumed(_upload_dir(path.parent.name), owner_id=owner_id, connection=connection)
+    try:
+        relative = path.relative_to(upload_root().absolute())
+    except ValueError:
+        return
+    if len(relative.parts) < 2 or not relative.parts[0].startswith('upload_'):
+        return
+    identifier = relative.parts[0]
+    try:
+        current = read_upload(identifier)
+    except InstructionError as error:
+        if error.code == 'instruction.not_found':
+            return
+        raise
+    if path == Path(current['path']).absolute():
+        consumed(_upload_dir(identifier), owner_id=owner_id, connection=connection)

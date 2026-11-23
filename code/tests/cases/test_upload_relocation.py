@@ -30,16 +30,18 @@ class UploadRelocationTests(unittest.TestCase):
         self.environment.start()
         self.addCleanup(self.environment.stop)
 
-    def relocate(self, *, ready=True, filename="picture.png"):
+    def relocate(self, *, ready=True, filename="picture.png", storage_name=None):
         meta = {
             "upload_id": self.upload_id, "created_by": "user:alice",
             "purpose": "attachment", "file_name": filename,
             "path": str(self.directory / filename), "ready": ready,
             "size": 4, "media_type": "application/octet-stream",
         }
+        if storage_name is not None:
+            meta['storage_name'] = storage_name
         (self.directory / "meta.json").write_text(json.dumps(meta))
         if ready:
-            (self.directory / filename).write_bytes(b"data")
+            (self.directory / (storage_name or filename)).write_bytes(b"data")
         self.new.parent.mkdir(parents=True)
         shutil.move(str(self.old), str(self.new))
         return self.new / self.upload_id
@@ -50,6 +52,14 @@ class UploadRelocationTests(unittest.TestCase):
         self.assertFalse(self.old.exists())
         self.assertEqual(Path(meta["path"]), current / "picture.png")
         self.assertEqual(Path(meta["path"]).read_bytes(), b"data")
+
+    def test_old_fixed_payload_remains_in_place_and_keeps_display_name(self):
+        current = self.relocate(filename='meta.json', storage_name='payload')
+        meta = read_upload(self.upload_id)
+        self.assertEqual(Path(meta['path']), current / 'payload')
+        self.assertEqual(Path(meta['path']).read_bytes(), b'data')
+        self.assertEqual(meta['file_name'], 'meta.json')
+        self.assertFalse((current / 'files').exists())
 
     @unittest.skipIf(os.name == 'nt', 'Windows names alias metadata ignoring case')
     def test_legacy_case_distinct_payload_survives_relocation(self):

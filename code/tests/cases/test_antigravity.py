@@ -116,11 +116,10 @@ def test_file_attachments_reach_acp_and_are_read_through_offered_tools(agent, su
     media = media_domain.resident_input_media(
         [{"media_type": "file", "source": str(path)}], actor="test",
         resident_id="resident_111111111111", content="Read this file", workspace_roots=(agent,))
-    from management_portal.society_service.resident_message_contract import input_parts
-    text, *_ = input_parts({"content_parts": [
+    from management_portal.execution.message_projection import inline_message_text
+    text = inline_message_text([
         {"type": "text", "text": "Read this file "}, {"type": "file", "source": str(path)},
-    ]})
-    text = media_domain.resolve_file_references(text, media)
+    ], {item["reference_source"]: item["source"] for item in media})
     seen = []
     def read_file(args):
         assert Path(args["path"]) == path

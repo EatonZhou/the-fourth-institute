@@ -404,7 +404,7 @@ def test_multiple_text_parts_and_attachments_roundtrip_without_text_copies():
     original["content_parts"] = [{"type": "text", "text": "a\n"}, {"type": "image", "image_id": "img"}, {"type": "text", "text": "  b"}]
     facts = message_facts(original)
     assert all("text" not in p for p in facts["parts"])
-    assert project_message("segment_parts", facts, wrap_message("a\n\n  b"))["content_parts"] == original["content_parts"]
+    assert project_message("segment_parts", facts, wrap_message("a\n  b"))["content_parts"] == original["content_parts"]
 
 
 def test_completed_capture_replaces_the_earlier_ui_notice():

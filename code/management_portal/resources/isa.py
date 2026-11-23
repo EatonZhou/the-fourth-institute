@@ -20,7 +20,7 @@ from pathlib import Path, PurePosixPath
 from typing import Any, Iterator
 
 from management_common import secure_paths
-from management_common.upload_layout import PAYLOAD_NAME, payload_name
+from management_common.upload_layout import new_payload_metadata, payload_parts, payload_parent
 from management_common.file_lock import lock_stream
 
 from management_portal.hatg.contracts import InstructionError, invalid, not_found
@@ -446,21 +446,28 @@ def read_upload(upload_id: str) -> dict[str, Any]:
     if get_directory_cleanup_store().pending_at(directory):
         raise not_found(f"上传已注销：{upload_id}")
     try:
-        meta = json.loads((directory / "meta.json").read_text(encoding="utf-8"))
+        with secure_paths.open_directory(directory) as descriptor:
+            with os.fdopen(secure_paths.open_child(descriptor, "meta.json", os.O_RDONLY | getattr(os, "O_NONBLOCK", 0)), "rb") as stream:
+                info = os.fstat(stream.fileno())
+                if not stat.S_ISREG(info.st_mode) or info.st_size > 65536:
+                    raise invalid("上传元数据无效")
+                meta = json.loads(stream.read(65537))
+            parts = payload_parts(meta)
+            with payload_parent(descriptor, meta) as (parent, name):
+                try:
+                    info = secure_paths.stat_child(parent, name)
+                except FileNotFoundError:
+                    pass
+                else:
+                    if not stat.S_ISREG(info.st_mode):
+                        raise invalid("上传文件必须是普通文件")
     except FileNotFoundError:
         raise not_found(f"上传不存在：{upload_id}") from None
+    except (ValueError, OSError) as error:
+        raise invalid(str(error)) from error
     # The upload belongs to this instance. Legacy absolute paths may point at
     # a retired installation even when its complete upload store was copied.
-    name = meta.get("file_name")
-    if (not isinstance(name, str) or name in {"", ".", ".."}
-            or any(character in name for character in ("/", "\\", "\x00"))):
-        raise invalid("上传文件名无效")
-    try:
-        path = directory / payload_name(meta)
-    except ValueError as error:
-        raise invalid(str(error)) from error
-    if path.resolve().parent != directory.resolve():
-        raise invalid("上传文件不能位于上传目录之外")
+    path = directory.joinpath(*parts)
     return {**meta, "path": str(path)}
 
 
@@ -529,9 +536,39 @@ def _write_meta(meta: dict[str, Any]) -> None:
     os.replace(temporary, directory / "meta.json")
 
 
-def _safe_name(value: str) -> str:
-    name = PurePosixPath(str(value or "file")).name.replace("\x00", "")
-    return name[:180] or "file"
+def _new_upload_file(value: str) -> dict:
+    try:
+        return new_payload_metadata(value)
+    except ValueError as error:
+        raise invalid(str(error)) from error
+
+
+def _prepare_upload_payload(directory: Path, meta: dict) -> None:
+    with secure_paths.open_directory(directory, payload_parts(meta)[:-1], create=True):
+        pass
+
+
+def _write_upload_payload(directory: Path, meta: dict, data: bytes) -> None:
+    """Write exact-name bytes; readiness publishes them after the write completes."""
+    with secure_paths.open_directory(directory) as descriptor:
+        with payload_parent(descriptor, meta) as (parent, name):
+            try:
+                fd = secure_paths.open_child(parent, name, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+            except FileExistsError:
+                # Recover a completed byte write whose metadata publication was
+                # interrupted. A different file is never silently overwritten.
+                with os.fdopen(secure_paths.open_child(parent, name, os.O_RDONLY | getattr(os, "O_NONBLOCK", 0)), "rb") as stream:
+                    if not stat.S_ISREG(os.fstat(stream.fileno()).st_mode) or stream.read(len(data) + 1) != data:
+                        raise InstructionError("instruction.conflict", "上传文件已存在且内容不同")
+                return
+            try:
+                with os.fdopen(fd, "wb") as stream:
+                    stream.write(data)
+                    stream.flush()
+                    os.fsync(stream.fileno())
+            except BaseException:
+                secure_paths.unlink_child(parent, name)
+                raise
 
 
 IMAGE_PURPOSES = frozenset({"post_image", "avatar"})
@@ -607,27 +644,28 @@ def create_upload(inv: Invocation) -> dict[str, Any]:
     if source:
         data, content_type, resolved = _service().read_content(source, actor=inv.caller, max_bytes=MAX_UPLOAD_BYTES)
         media_type = _checked_media_type(purpose, bytes(data), str(content_type or ""))
-        name = _safe_name(str(resolved.get("filename") or source.rsplit("/", 1)[-1]))
+        meta.update(_new_upload_file(str(resolved.get("filename") or source.rsplit("/", 1)[-1])))
         directory = _upload_dir(upload_id)
         created(directory, upload_id=upload_id, created_at=meta['created_at'])
-        directory.mkdir(parents=True, exist_ok=True)
-        (directory / PAYLOAD_NAME).write_bytes(data)
+        _prepare_upload_payload(directory, meta)
+        _write_upload_payload(directory, meta, data)
         meta.update({
-            "file_name": name, "storage_name": PAYLOAD_NAME, "media_type": media_type,
-            "size": len(data), "path": str(directory / PAYLOAD_NAME), "ready": True, "source_address": source,
+            "media_type": media_type,
+            "size": len(data), "ready": True, "source_address": source,
         })
         _write_meta(meta)
         return {"upload_id": upload_id, "ready": True}
     size = int(inv.argument("size") or 0)
     if size > _purpose_limit(purpose):
         raise invalid(f"文件不能超过 {_purpose_limit(purpose)} 字节")
-    name = _safe_name(inv.argument("file_name"))
+    meta.update(_new_upload_file(inv.argument("file_name") or "file"))
     expires = _now() + timedelta(seconds=UPLOAD_TTL_SECONDS)
     meta.update({
-        "file_name": name, "storage_name": PAYLOAD_NAME, "media_type": inv.argument("media_type"), "size": size,
-        "path": str(_upload_dir(upload_id) / PAYLOAD_NAME), "ready": False, "expires_at": _iso(expires),
+        "media_type": inv.argument("media_type"), "size": size,
+        "ready": False, "expires_at": _iso(expires),
     })
     created(_upload_dir(upload_id), upload_id=upload_id, created_at=meta['created_at'])
+    _prepare_upload_payload(_upload_dir(upload_id), meta)
     _write_meta(meta)
     return {"upload_id": upload_id, "ready": False, "upload_url": f"/api/uploads/{upload_id}", "expires_at": meta["expires_at"]}
 
@@ -643,26 +681,19 @@ def publish_generated_file(*, owner_id: str, actor: str, file_name: str, media_t
     from management_common.upload_retention import created, consumed
     if not actor or not owner_id or not data or len(data) > MAX_UPLOAD_BYTES:
         raise ValueError("Invalid generated file")
-    name = _safe_name(file_name)
+    file_fields = _new_upload_file(file_name)
+    name = file_fields["file_name"]
     digest = hashlib.sha256(data).hexdigest()
     upload_id = "upload_" + hashlib.sha256(f"{owner_id}/{name}/{digest}".encode()).hexdigest()[:24]
     directory = _upload_dir(upload_id)
     if not (directory / "meta.json").exists():
         stamp = _iso(_now())
         created(directory, upload_id=upload_id, created_at=stamp)
-        destination = directory / PAYLOAD_NAME
-        temporary = directory / (".generated-" + secrets.token_hex(8))
-        try:
-            with temporary.open("wb") as stream:
-                stream.write(data)
-                stream.flush()
-                os.fsync(stream.fileno())
-            os.replace(temporary, destination)
-        finally:
-            temporary.unlink(missing_ok=True)
+        _prepare_upload_payload(directory, file_fields)
+        _write_upload_payload(directory, file_fields, data)
         atomic_json(directory / "meta.json", {
             "upload_id": upload_id, "purpose": "conversation_attachment", "target": "",
-            "created_by": actor, "created_at": stamp, "file_name": name, "storage_name": PAYLOAD_NAME,
+            "created_by": actor, "created_at": stamp, **file_fields,
             "media_type": media_type, "size": len(data), "ready": True,
         })
     consumed(directory, owner_id=owner_id)
@@ -720,9 +751,7 @@ def _complete_upload_locked(upload_id: str, data: bytes) -> dict[str, Any]:
     if len(data) != int(meta.get("size") or 0):
         raise invalid(f"字节数与声明的 size 不一致：{len(data)} ≠ {meta.get('size')}")
     meta["media_type"] = _checked_media_type(str(meta.get("purpose") or ""), data, str(meta.get("media_type") or ""))
-    path = Path(meta["path"])
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_bytes(data)
+    _write_upload_payload(_upload_dir(upload_id), meta, data)
     meta["ready"] = True
     meta.pop("expires_at", None)
     _write_meta(meta)

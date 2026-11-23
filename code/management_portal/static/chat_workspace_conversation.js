@@ -5,7 +5,7 @@
   // messages, infos folded into the request they came with, a Family facade's
   // request progress, and the Chat contract built from the snapshot.
   const DEPENDENCIES = Object.freeze([
-    "DEFAULT_RESIDENT_HISTORY_PAGE_SIZE", "mediaOnlyCaption", "mediaPartPath",
+    "DEFAULT_RESIDENT_HISTORY_PAGE_SIZE", "mediaPartPath",
     "normalizeResidentTarget", "subagentRunTitle",
   ]);
 
@@ -65,32 +65,16 @@
     const missing = DEPENDENCIES.filter(name => dependencies?.[name] === undefined);
     if (missing.length) throw new Error(`PortalChatWorkspaceConversation is missing: ${missing.join(", ")}`);
     const {
-      DEFAULT_RESIDENT_HISTORY_PAGE_SIZE, mediaOnlyCaption, mediaPartPath,
+      DEFAULT_RESIDENT_HISTORY_PAGE_SIZE, mediaPartPath,
       normalizeResidentTarget, subagentRunTitle,
     } = dependencies;
 
     function residentProtocolMessageToWorkspace(message = {}) {
       const parts = Array.isArray(message.content_parts) ? message.content_parts : [];
-      const media = parts.filter(part => part?.type === "image" || part?.type === "file");
-      const text = parts.filter(part => part?.type === "text").map(part => String(part.text || "")).join("\n");
-      const legacyMediaCaption = media.map(part => `[${part.type}: ${part.name || part.type}]`).join(" ");
-      // Media-only delivery has a technical text part for Resident execution.
-      // The thumbnail already labels the attachment in the conversation.
-      const captionParts = media.length && [legacyMediaCaption, mediaOnlyCaption(media)].includes(text.trim())
-        ? parts.filter(part => part.type !== "text")
-        : parts;
-      let previousType = "";
-      const orderedContent = captionParts.map(part => {
-        let value = "";
-        if (part?.type === "text") {
-          value = `${previousType === "text" ? "\n" : ""}${String(part.text || "")}`;
-        } else if (part?.type === "image" || part?.type === "file") {
-          const path = mediaPartPath(part);
-          if (path && !text.includes(path)) value = `[${part.type}: ${path}]`;
-        } else return "";
-        previousType = part.type;
-        return value;
-      }).join("");
+      // Plain text is for navigation/copy fallbacks. The body renderer consumes
+      // the original ordered nodes; never serialize files into marker syntax.
+      const orderedContent = parts.map(part => part?.type === "text" ? String(part.text || "")
+        : ["image", "file"].includes(part?.type) ? String(part.name || mediaPartPath(part)) : "").join("");
       // “审查这些修改” sends only the reviewed turn; any text beside it is Portal's wording for the agent.
       const content = (parts.some(part => part?.type === "turn_review") ? window.PortalI18n.t("请审查这一轮的修改") : "")
         || orderedContent
@@ -107,7 +91,6 @@
         role: message.role === "agent" ? "assistant" : String(message.role || "system"),
         author: String(message.origin?.sender?.id || message.author_id || ""),
         content,
-        input_media: media,
         token_usage: message.usage || {},
       };
     }

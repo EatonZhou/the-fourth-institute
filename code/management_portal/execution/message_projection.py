@@ -72,6 +72,59 @@ def _unwrap_file_references(text: str, templates: list[Mapping[str, Any]], origi
     return body
 
 
+def file_reference_source(part: Mapping[str, Any]) -> str:
+    return str(part.get("upload_id") or part.get("source") or part.get("path") or part.get("url") or "").strip()
+
+
+def inline_message_text(parts, file_sources: Mapping[str, str] | None = None) -> str:
+    """Serialize authored nodes once; text (including literal markers) is opaque."""
+    sources = file_sources or {}
+    chunks = []
+    for part in parts:
+        if part.get("type") == "text":
+            chunks.append(str(part.get("text") or ""))
+        elif part.get("type") == "file":
+            reference = file_reference_source(part)
+            chunks.append(f"[file: {sources.get(reference, reference)}]")
+        elif part.get("type") == "turn_review":
+            chunks.append("审查指定轮次的修改快照")
+    return "".join(chunks)
+
+
+def _recorded_parts(text: str, facts: Mapping[str, Any]) -> list[dict[str, Any]] | None:
+    """Use positions and resolved identities recorded at admission, never basenames."""
+    parts, offset = [], 0
+    sources = facts.get("file_references") or {}
+    for part in facts["parts"]:
+        kind = part.get("type")
+        if kind == "text":
+            end = offset + part["length"]
+            parts.append({"type": "text", "text": text[offset:end]})
+            offset = end
+        elif kind == "file":
+            reference = file_reference_source(part)
+            resolved = sources.get(reference, reference)
+            for source in dict.fromkeys((reference, resolved)):
+                marker = f"[file: {source}]"
+                if text.startswith(marker, offset):
+                    projected = dict(part)
+                    if source != reference:
+                        projected["source"] = source
+                    parts.append(projected)
+                    offset += len(marker)
+                    break
+            else:
+                return None
+        else:
+            parts.append(dict(part))
+            if kind == "turn_review":
+                marker = "审查指定轮次的修改快照"
+                if not text.startswith(marker, offset):
+                    return None
+                offset += len(marker)
+    return parts if offset == len(text) else None
+
+
 def _inline_parts(text: str, templates: list[Mapping[str, Any]]) -> list[dict[str, Any]] | None:
     """Read the same ordered document captured by intake, without a second body."""
     parts, offset = [], 0
@@ -90,11 +143,14 @@ def _inline_parts(text: str, templates: list[Mapping[str, Any]]) -> list[dict[st
             path = PurePosixPath(source)
             if not (source == (part.get("source") or part.get("path") or part.get("url")) or (
                 part.get("upload_id") and (source == part["upload_id"] or (
-                    path.parent.name == part["upload_id"] and (not part.get("name") or path.name == part["name"])
+                    path.parent.name == part["upload_id"] and (not part.get("name") or path.name in {part["name"], "payload"})
                 ))
             )):
                 return None
-            parts.append(dict(part))
+            projected = dict(part)
+            if source != file_reference_source(part):
+                projected["source"] = source
+            parts.append(projected)
             offset += len(marker.group(0))
         else:
             parts.append(dict(part))
@@ -134,7 +190,7 @@ def unwrap_message(content: object) -> str:
     return text
 
 
-def message_facts(message: Mapping[str, Any]) -> dict[str, Any]:
+def message_facts(message: Mapping[str, Any], *, file_references=None) -> dict[str, Any]:
     facts = {key: value for key, value in message.items()
              if key not in {"content_parts", "segment_id", "usage", "provider_response"}}
     # Attachments retain their order relative to text without storing that text.
@@ -142,6 +198,10 @@ def message_facts(message: Mapping[str, Any]) -> dict[str, Any]:
         {"type": "text", "length": len(str(part.get("text") or ""))} if part.get("type") == "text" else dict(part)
         for part in message.get("content_parts", ()) if isinstance(part, Mapping)
     ]
+    if message.get("role") == "user":
+        facts["parts_encoding"] = "inline-v1"
+        if file_references:
+            facts["file_references"] = dict(file_references)
     return facts
 
 
@@ -157,10 +217,20 @@ def content_text(content: Any) -> str:
 
 
 def project_message(segment_id: object, facts: Mapping[str, Any], content: Any) -> dict[str, Any]:
-    message = {key: value for key, value in facts.items() if key != "parts"}
+    message = {key: value for key, value in facts.items() if key not in {"parts", "parts_encoding", "file_references"}}
     text = content_text(content)
     if facts.get("role") == "user" or facts.get("harness_input"):
         text = unwrap_message(text)
+    if facts.get("role") == "user" and facts.get("parts_encoding") == "inline-v1":
+        inline = _recorded_parts(text, facts)
+        quote = facts.get("quote")
+        if inline is None and isinstance(quote, Mapping) and quote:
+            inline = _recorded_parts(_unwrap_quote(text, quote), facts)
+        # A transformation that no longer preserves the recorded boundaries is
+        # shown as its current text. Never append stale file cards to that text.
+        parts = inline if inline is not None else [{"type": "text", "text": text}]
+        message.update(segment_id=str(segment_id), content_parts=parts)
+        return message
     parts: list[dict[str, Any]] = []
     templates = facts.get("parts", ({"type": "text"},))
     if facts.get("role") == "user":

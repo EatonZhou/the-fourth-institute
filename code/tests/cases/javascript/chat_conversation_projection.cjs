@@ -108,17 +108,17 @@ function protocolMessages() {
   assert.equal(reply.id, 'm1');
   assert.equal(reply.role, 'assistant', 'an agent message is the assistant');
   assert.equal(reply.author, 'resident_a', 'the author is who sent it');
-  assert.equal(reply.content, 'Hello\nworld', 'text parts join line by line');
+  assert.equal(reply.content, 'Helloworld', 'text parts retain their authored boundaries without adding a newline');
   assert.deepEqual(reply.token_usage, { output_tokens: 3 });
-  assert.deepEqual(reply.input_media, []);
+  assert.equal(reply.input_media, undefined, 'conversion does not create a second attachment list');
 
   const image = { type: 'image', name: 'a.png', source: '/files/a.png' };
   const mediaOnly = one({ message_id: 'm2', role: 'user', author_id: 'sample_admin', content_parts: [text('图片附件：a.png'), image] });
-  assert.equal(mediaOnly.content, '[image: /files/a.png]', 'the technical caption of a media-only message is not shown');
+  assert.equal(mediaOnly.content, '图片附件：a.pnga.png', 'authored text is not removed by guessing a technical caption');
   assert.equal(mediaOnly.author, 'sample_admin');
-  assert.deepEqual(mediaOnly.input_media, [image]);
+  assert.deepEqual(mediaOnly.content_parts, [text('图片附件：a.png'), image]);
   assert.equal(one({ message_id: 'm3', role: 'user', content_parts: [text('see /files/b.pdf'), { type: 'file', name: 'b.pdf', path: '/files/b.pdf' }] }).content,
-    'see /files/b.pdf', 'media the text already names is not added again');
+    'see /files/b.pdfb.pdf', 'the plain summary preserves a distinct file node even when its path occurs in text');
   assert.equal(one({ message_id: 'm4', role: 'user', content_parts: [{ type: 'turn_review', segment_id: 's1' }, text('internal wording')] }).content,
     '请审查这一轮的修改', 'a review request reads as one');
   assert.equal(one({ message_id: 'm5', role: 'agent', content_parts: [{ type: 'async_questions', questions: [{ title: 'Q1' }, { title: 'Q2' }] }] }).content, 'Q1\nQ2');

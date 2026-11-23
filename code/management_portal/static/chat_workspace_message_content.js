@@ -547,6 +547,10 @@
     }
 
     function renderMarkdownWithAttachmentRefs(text, options = {}) {
+      return renderMarkdownReferences(text, options, true);
+    }
+
+    function renderMarkdownReferences(text, options, legacy) {
       const refs = [];
       function stashAttachmentRef(html) {
         // Markdown can linkify resources before attachments are restored. Object
@@ -555,7 +559,8 @@
         refs.push({ token, html });
         return token;
       }
-      let source = String(text || "").replace(MESSAGE_ATTACHMENT_REF_RE, (_match, kind, path) => {
+      let source = String(text || "");
+      if (legacy) source = source.replace(MESSAGE_ATTACHMENT_REF_RE, (_match, kind, path) => {
         return stashAttachmentRef(messageAttachmentRefHtml(kind, path, options));
       });
       source = source.replace(MARKDOWN_IMAGE_RE, (match, rawPath) => {
@@ -573,8 +578,8 @@
             ? messageAttachmentRefHtml("image", ref.path, { ...options, title, referencePath: path })
             : messageAttachmentRefHtml("file", ref.path, { ...options, label: referenceAttachmentLabel(path), title, referencePath: path }));
       });
-      const attachedRefs = options.includeAttachedFiles === false ? [] : extractAttachedFileRefs(source);
-      source = source.replace(/<attached_files>\s*[\s\S]*?\s*<\/attached_files>/gi, "");
+      const attachedRefs = !legacy || options.includeAttachedFiles === false ? [] : extractAttachedFileRefs(source);
+      if (legacy) source = source.replace(/<attached_files>\s*[\s\S]*?\s*<\/attached_files>/gi, "");
       // Semantic fence extensions need the original indentation: trimming an
       // indented example would otherwise turn it into a standalone action.
       if (!options.preserveWhitespace) source = source.trim();
@@ -593,11 +598,44 @@
       return linkifyResourceAddresses(options.renderMentions ? options.renderMentions(html) : html);
     }
 
+    function orderedMessageParts(item) {
+      const parts = item?.content_parts;
+      if (!Array.isArray(parts) || parts.some(part => part?.type === "turn_review")) return null;
+      return parts.some(part => ["text", "file", "image"].includes(part?.type)) ? parts : null;
+    }
+
+    function renderMessageContent(item, options = {}) {
+      const parts = orderedMessageParts(item);
+      if (!parts) return renderMarkdownWithAttachmentRefs(item?.content || item?.text || "", options);
+      // Keep Markdown continuous across text/media boundaries. Slots carry the
+      // already-rendered node, never a file path to be parsed back into a node.
+      const text = parts.filter(part => part?.type === "text").map(part => String(part.text || "")).join("");
+      let prefix = "\uFFFCPORTAL_MEDIA_NODE_";
+      while (text.includes(prefix)) prefix += "_";
+      const nodes = [];
+      const source = parts.map(part => {
+        if (part?.type === "text") return String(part.text || "");
+        if (!["file", "image"].includes(part?.type)) return "";
+        const path = mediaPartPath(part);
+        if (!path) return "";
+        const token = `${prefix}${nodes.length}\uFFFC`;
+        nodes.push({ token, html: messageAttachmentRefHtml(part.type, path, {
+          ...options, label: part.name, title: part.name,
+        }) });
+        return token;
+      }).join("");
+      let html = renderMarkdownReferences(source, { ...options, preserveWhitespace: true }, false);
+      for (const node of nodes) html = html.split(node.token).join(node.html);
+      return html;
+    }
+
     const deferredImageObservers = new WeakMap();
 
     // Navigation previews use the same reference markup as the message body.
     // Build only for an opened preview; no hidden historical media DOM is kept.
     function messagePreviewText(item) {
+      const parts = orderedMessageParts(item);
+      if (parts) return parts.filter(part => part?.type === "text").map(part => String(part.text || "")).join("").trim();
       return String(item.content || item.text || "")
         .replace(MESSAGE_ATTACHMENT_REF_RE, "").replace(MARKDOWN_IMAGE_RE, "")
         .replace(MESSAGE_REFERENCE_REF_RE, "")
@@ -605,11 +643,9 @@
     }
 
     function messageAttachmentCatalog(item) {
-      // The protocol keeps display names on media parts, while the projected
-      // body contains only references. Join them before deduplicating so a body
-      // reference does not hide the named copy of the same attachment.
-      const extra = [...(item.content_parts || []).filter(part => part?.type === "image" || part?.type === "file"),
-        ...(item.input_media || []), ...(item.context_refs?.attachments || []), ...(item.attachments || [])];
+      // Compatibility for messages predating ordered content_parts. Their body
+      // and sidecar media can contain several aliases for the same attachment.
+      const extra = [...(item.input_media || []), ...(item.context_refs?.attachments || []), ...(item.attachments || [])];
       const canonical = path => window.PortalFileLinks?.describe(path)?.path || path;
       const aliases = new Map();
       const names = new Map();
@@ -633,6 +669,9 @@
     // Keep the first inline occurrence, enrich it with its filename, then add
     // only media not already represented. Do not merge distinct line ranges.
     function renderMessageAttachments(html, item, options = {}) {
+      // An ordered message already owns every occurrence, including intentional
+      // repeats. Only legacy unstructured messages reconcile sidecar metadata.
+      if (Array.isArray(item?.content_parts)) return html;
       const { extra, referenceKey, names } = messageAttachmentCatalog(item);
       if (!extra.length && !html.includes("data-message-attachment-path")) return html;
       const body = document.createElement("div");
@@ -669,6 +708,14 @@
     }
 
     function messagePreviewContent(item, options = {}) {
+      if (orderedMessageParts(item)) {
+        const body = document.createElement("div");
+        body.innerHTML = renderMessageContent(item, { ...options, renderMarkdown: escapeHtml });
+        const references = document.createElement("div");
+        references.className = "composerImageTray messageAttachmentTray";
+        body.querySelectorAll("[data-message-attachment-path],.portalResourceChip").forEach(node => references.append(node));
+        return { text: body.textContent.trim(), references };
+      }
       const { extra, referenceKey, names } = messageAttachmentCatalog(item);
       const referenceOptions = { ...options, attachmentNameForPath: path => names.get(referenceKey(path)) };
       const body = document.createElement("div");
@@ -769,7 +816,7 @@
       runtimeActivityPhase, runtimePhaseStatusHtml, runtimeDetailsHtml, responseSourcesHtml,
       requestWorkspacePreview, bindResponseSourcePaths, messageAttachmentRefHtml,
       resourceSupportsTextPreview, loadResourcePreview, bindResourceChips,
-      linkifyResourceAddresses, renderMarkdownWithAttachmentRefs, bindAttachmentRefs,
+      linkifyResourceAddresses, renderMarkdownWithAttachmentRefs, renderMessageContent, bindAttachmentRefs,
       messagePreviewContent, messagePreviewText, renderMessageAttachments, releaseDeferredImages,
       openImagePreview, closeImagePreview, bindLinkPreview, bindImagePreview,
       attachmentPreviewUrl, attachmentKind, mediaPartPath,

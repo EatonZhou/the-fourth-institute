@@ -85,7 +85,7 @@
     requireImageEditor, runtimeStatusLabel, RUNTIME_PHASE_STATUS, PRE_PROVIDER_RUNTIME_PHASES,
     runtimeActivityPhase, runtimePhaseStatusHtml, runtimeDetailsHtml, responseSourcesHtml,
     requestWorkspacePreview, bindResponseSourcePaths, messageAttachmentRefHtml, resourceSupportsTextPreview,
-    loadResourcePreview, bindResourceChips, linkifyResourceAddresses, renderMarkdownWithAttachmentRefs, renderMessageAttachments,
+    loadResourcePreview, bindResourceChips, linkifyResourceAddresses, renderMarkdownWithAttachmentRefs, renderMessageContent, renderMessageAttachments,
     bindAttachmentRefs, openImagePreview, closeImagePreview, bindLinkPreview, bindImagePreview,
     messagePreviewContent, messagePreviewText, releaseDeferredImages,
     attachmentPreviewUrl, attachmentKind, mediaPartPath,
@@ -104,7 +104,7 @@
 
   const {
     COMPOSER_DRAFT_ATTACHMENT_RE, normalizeComposerAttachment, normalizeComposerAttachments,
-    createConversationSelectionReference, inputMediaPayload, mediaOnlyCaption, composerPayloadContentParts,
+    createConversationSelectionReference, inputMediaPayload, composerPayloadContentParts,
     composerAttachmentPlaceholder, composerAttachmentTokenOrder,
     insertComposerAttachmentRef, removeComposerAttachmentRef, moveComposerAttachmentRef,
     refreshComposerAttachmentRefs, syncComposerAttachmentRefs, serializeComposerInput,
@@ -122,7 +122,7 @@
     turnArtifactDisplay, residentProtocolMessageToWorkspace, FAMILY_REQUEST_ACTIONS, noticeQueueWithdrawn,
     noticeQueueCleared, projectResidentConversation, loadResidentConversation, nativeInteractionNames,
   } = chatWorkspaceModule("PortalChatWorkspaceConversation").createConversation({
-    DEFAULT_RESIDENT_HISTORY_PAGE_SIZE, mediaOnlyCaption, mediaPartPath, normalizeResidentTarget,
+    DEFAULT_RESIDENT_HISTORY_PAGE_SIZE, mediaPartPath, normalizeResidentTarget,
     subagentRunTitle,
   });
 
@@ -167,7 +167,7 @@
     createMessageSelectionController, preserveRuntimeDisclosureState, reconcileMessageList,
     messageViewportAtTail,
   } = chatWorkspaceModule("PortalChatWorkspaceMessageList").createMessageList({
-    commonMessageActionsHtml, escapeHtml, footerTime, messageAfterKey, renderMessageAttachments,
+    commonMessageActionsHtml, escapeHtml, footerTime, messageAfterKey, renderMessageAttachments, renderMessageContent,
     messageAuthoredByViewer, messageAuthorHeaderHtml, messageContextRefsHtml, messageFoldBodyHtml,
     messageFoldChoices, messageFoldDefaults, messageInstanceKey, messageNodeKey, messageQuoteHtml,
     messageRenderKey, messageRole, messageSenderIdentity, messageSystemPresentation, messageTitle,
@@ -241,10 +241,9 @@
 
   function messageHistoryMediaAttachments(item, options = {}) {
     const messageId = messageIdentity(item);
-    const contentParts = Array.isArray(item?.content_parts) ? item.content_parts : [];
-    const media = Array.isArray(item?.input_media) && item.input_media.length
-      ? item.input_media
-      : contentParts.filter(part => part?.type === "image" || part?.type === "file");
+    const contentParts = Array.isArray(item?.content_parts) ? item.content_parts : null;
+    const media = contentParts ? contentParts.filter(part => part?.type === "image" || part?.type === "file")
+      : Array.isArray(item?.input_media) ? item.input_media : [];
     return media.map((part, index) => {
       const source = mediaPartPath(part);
       if (!source) return null;
@@ -252,7 +251,7 @@
       const kind = type === "file" ? "file" : "image";
       const name = String(part?.name || part?.filename || source.split("/").filter(Boolean).pop() || kind);
       return normalizeComposerAttachment({
-        id: String(part?.file_id || part?.id || `${messageId}:media:${index}`),
+        id: contentParts ? `${messageId}:media:${index}` : String(part?.file_id || part?.id || `${messageId}:media:${index}`),
         file_id: String(part?.file_id || ""),
         upload_id: String(part?.upload_id || ""),
         kind,
@@ -267,6 +266,15 @@
 
   function messageHistoryDraft(item, options = {}) {
     const attachments = messageHistoryMediaAttachments(item, options);
+    if (Array.isArray(item?.content_parts)) {
+      let index = 0;
+      const text = item.content_parts.map(part => {
+        if (part?.type === "text") return String(part.text || "");
+        if (!["file", "image"].includes(part?.type) || !mediaPartPath(part)) return "";
+        return composerAttachmentPlaceholder(attachments[index++]);
+      }).join("");
+      return { text, attachments };
+    }
     let text = String(item?.content || "");
     for (const attachment of attachments) {
       const kind = attachmentKind(attachment);

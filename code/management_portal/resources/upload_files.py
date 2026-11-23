@@ -13,7 +13,7 @@ from contextlib import contextmanager
 from pathlib import PurePath
 
 from management_common import secure_paths
-from management_common.upload_layout import payload_name
+from management_common.upload_layout import payload_parent
 from management_portal.file_access_policy import authorize, file_reference
 
 
@@ -42,20 +42,16 @@ def _target(address, *, actor, content=False):
         meta = json.loads(raw)
         if not isinstance(meta, dict) or meta.get("ready") is not True:
             raise FileNotFoundError(handle)
-        display_name = meta.get("file_name")
-        if (not isinstance(display_name, str) or display_name in {"", ".", ".."}
-                or any(char in display_name for char in ("/", "\\", "\0"))):
-            raise ValueError("Invalid upload file name")
-        name = payload_name(meta)
-        info = secure_paths.stat_child(directory, name)
-        _regular(info)
-        if not content:
-            yield None, _metadata(reference, meta, info)
-            return
-        with os.fdopen(secure_paths.open_child(directory, name, os.O_RDONLY | getattr(os, "O_NONBLOCK", 0)), "rb") as stream:
-            info = os.fstat(stream.fileno())
+        with payload_parent(directory, meta) as (parent, name):
+            info = secure_paths.stat_child(parent, name)
             _regular(info)
-            yield stream, _metadata(reference, meta, info)
+            if not content:
+                yield None, _metadata(reference, meta, info)
+                return
+            with os.fdopen(secure_paths.open_child(parent, name, os.O_RDONLY | getattr(os, "O_NONBLOCK", 0)), "rb") as stream:
+                info = os.fstat(stream.fileno())
+                _regular(info)
+                yield stream, _metadata(reference, meta, info)
 
 
 def _metadata(reference, meta, info):

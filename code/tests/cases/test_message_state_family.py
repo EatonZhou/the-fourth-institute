@@ -86,11 +86,7 @@ def test_captured_file_references_keep_authored_position():
 
     :module: resident.conversation
     """
-    from management_portal.execution.message_projection import message_facts, project_message, wrap_message
-    from management_portal.society_service.resident_media_domain import (
-        resolve_file_references,
-    )
-    from management_portal.society_service.resident_message_contract import input_parts
+    from management_portal.execution.message_projection import inline_message_text, message_facts, project_message, wrap_message
 
     upload_id = "upload_" + "a" * 24
     original = {"message_id": "msg_file_order", "role": "user", "author_id": "sample_admin", "content_parts": [
@@ -98,9 +94,7 @@ def test_captured_file_references_keep_authored_position():
         {"type": "file", "upload_id": upload_id, "name": "paper.docx"},
         {"type": "text", "text": " After the attachment.\n"},
     ]}
-    body, *_ = input_parts(original)
-    prompt = resolve_file_references(
-        body, [{"media_type": "file", "reference_source": upload_id, "source": f"/uploads/{upload_id}/paper.docx"}],
-    )
-    message = project_message("segment_file_order", message_facts(original), wrap_message(prompt))
+    sources = {upload_id: f"/uploads/{upload_id}/files/paper.docx"}
+    prompt = inline_message_text(original["content_parts"], sources)
+    message = project_message("segment_file_order", message_facts(original, file_references=sources), wrap_message(prompt))
     _run("file-reference-order", message)

@@ -5,7 +5,7 @@ const path = require('node:path');
 const { chromium } = require('../../../management_portal/test_framework/tau_runtime/node_modules/playwright');
 const { chatWorkspaceScripts } = require('./chat_workspace_modules.cjs');
 const { portalWorkbenchScripts } = require('./portal_workbench_scripts.cjs');
-const { routeScript } = JSON.parse(fs.readFileSync(0, 'utf8'));
+const { routeScript, projectedMessages = [] } = JSON.parse(fs.readFileSync(0, 'utf8'));
 const root = path.resolve(__dirname, '../../../management_portal/static');
 (async () => {
   const browser = await chromium.launch({ headless: true });
@@ -49,7 +49,7 @@ const root = path.resolve(__dirname, '../../../management_portal/static');
       window.message = { id: 'uploaded', role: 'user', author_id: 'viewer',
         content: 'Here are the updated files.\n\n' + media.map(f => `[file: ${f.source}]`).join('\n\n') +
           '\n<attached_files>\n' + media.map(f => 'file: ' + f.url).join('\n') + '\n</attached_files>',
-        content_parts: media, input_media: media, context_refs: { attachments: media }, attachments: media,
+        input_media: media, context_refs: { attachments: media }, attachments: media,
       };
       workspace.setMessages([message]);
     });
@@ -72,7 +72,7 @@ const root = path.resolve(__dirname, '../../../management_portal/static');
     await page.evaluate(() => {
       const extra = { ...media[0], upload_id: 'upload_' + '4'.repeat(24), url: '/api/uploads/upload_' + '4'.repeat(24), source: '/uploads/other/paper.tex' };
       workspace.setMessages([{ id: 'ranges', role: 'user', content: 'Before [file: ' + media[0].url + '] After\n\n' +
-        '[引用: /repo/main.tex#L1-L2] [引用: /repo/main.tex#L4-L6]', content_parts: [media[0], extra], input_media: [extra] }]);
+        '[引用: /repo/main.tex#L1-L2] [引用: /repo/main.tex#L4-L6]', input_media: [media[0], extra] }]);
     });
     assert.equal(await page.locator('[data-message-key="ranges"] [data-message-attachment-path]').count(), 4,
       'two same-named uploads and two distinct selections are not merged');
@@ -81,8 +81,92 @@ const root = path.resolve(__dirname, '../../../management_portal/static');
     await page.evaluate(() => workspace.setMessages([{ id: 'only', role: 'user', content: 'Metadata only', input_media: media }]));
     assert.equal(await page.locator('.messageAttachmentTray [data-message-attachment-path]').count(), 3);
     assert.deepEqual(await page.locator('.messageAttachmentTray .composerImageRefLabel').allTextContents(), ['paper.tex', 'figures.csv', 'notes.md']);
+    await page.setViewportSize({ width: 1100, height: 850 });
+    await page.evaluate(() => {
+      const first = { type: 'file', upload_id: 'upload_' + '5'.repeat(24), name: '中文 稿件.tex',
+        source: '/uploads/upload_' + '5'.repeat(24) + '/files/中文 稿件.tex' };
+      const second = { type: 'file', upload_id: 'upload_' + '6'.repeat(24), name: '中文 稿件.tex',
+        source: '/uploads/upload_' + '6'.repeat(24) + '/files/中文 稿件.tex' };
+      const picture = { type: 'image', name: '图像.png', upload_id: 'upload_' + '7'.repeat(24),
+        source: '/uploads/upload_' + '7'.repeat(24) + '/files/图像.png' };
+      window.ordered = { message_id: 'ordered', role: 'user', content_parts: [
+        { type: 'text', text: '**原位 ' }, first, { type: 'text', text: ' 再次 ' }, first,
+        { type: 'text', text: ' 同名 ' }, second, { type: 'text', text: '**\n\n图片 ' }, picture,
+        { type: 'text', text: '\n\n[file: ' + first.source + '] [[portal-file:literal]]\n\n[引用: /repo/main.tex#L1-L2]' },
+      ] };
+      workspace.setMessages([PortalChatWorkspace.residentProtocolMessageToWorkspace(ordered)]);
+    });
+    assert.equal(await chips.count(), 5, 'three file occurrences, image and selection; literal file marker is ordinary text');
+    assert.equal(await page.locator('.messageContent strong [data-message-attachment-path]').count(), 3,
+      'Markdown formatting remains continuous across attachment boundaries');
+    assert.deepEqual(await chips.evaluateAll(nodes => nodes.slice(0, 3).map(node => node.dataset.messageAttachmentPath)),
+      ['5', '5', '6'].map(value => '/api/uploads/upload_' + value.repeat(24)),
+      'repeated identity stays repeated; distinct same-name uploads keep their own identity');
+    assert.equal(await page.locator('.messageContent strong').evaluate(node => {
+      const copy = node.cloneNode(true);
+      copy.querySelectorAll('[data-message-attachment-path]').forEach(ref => ref.replaceWith(ref.title));
+      return copy.textContent;
+    }), '原位 中文 稿件.tex 再次 中文 稿件.tex 同名 中文 稿件.tex');
+    assert.match(await page.locator('.messageContent').textContent(), /\[file: \/uploads\/.*?\] \[\[portal-file:literal\]\]/);
+    assert.equal(await page.locator('.messageAttachmentTray').count(), 0, 'ordered body has no secondary attachment tray');
+    const originalHtml = await page.locator('.messageContent').innerHTML();
+    await page.evaluate(() => workspace.setMessages([PortalChatWorkspace.residentProtocolMessageToWorkspace(JSON.parse(JSON.stringify(ordered)))]));
+    assert.equal(await page.locator('.messageContent').innerHTML(), originalHtml, 'refresh preserves the ordered rendering');
+    const navigation = await page.evaluate(() => {
+      const renderer = PortalChatWorkspaceMessageContent.createMessageContent({
+        escapeHtml: PortalUIPrimitives.escapeHtml, resourceChips: PortalResourceChips,
+      });
+      const preview = renderer.messagePreviewContent(ordered);
+      return { text: preview.text, count: preview.references.children.length };
+    });
+    assert.equal(navigation.count, 5, 'navigation preview retains authored repeats too');
+    assert.match(navigation.text, /\[file:.*\] \[\[portal-file:literal\]\]/);
+    await chips.nth(1).click();
+    assert.equal(await page.evaluate(() => previews.at(-1).path), '/api/uploads/upload_' + '5'.repeat(24), 'repeated attachment still opens its exact upload');
+    await page.evaluate(() => workspace.setMessages([PortalChatWorkspace.residentProtocolMessageToWorkspace({
+      message_id: 'literal', role: 'user', content_parts: [{ type: 'text', text: '[file: /tmp/literal.tex] [[portal-file:x]]' }],
+      input_media: media,
+    })]));
+    assert.equal(await chips.count(), 0, 'a current text-only projection does not resurrect stale attachment metadata');
+    assert.equal(await page.locator('.messageContent').textContent(), '[file: /tmp/literal.tex] [[portal-file:x]]');
+    await page.evaluate(() => {
+      workspace.destroy();
+      document.getElementById('chat').replaceChildren();
+      window.workspace = PortalChatWorkspace.createWorkspace({ root: document.getElementById('chat'), id: 'ordered-history',
+        refs: false, foldLongMessages: false, historyScope: () => 'ordered-history',
+        onLoadInputHistory: async () => ({ messages: [PortalChatWorkspace.residentProtocolMessageToWorkspace({ ...ordered, author_id: 'viewer' })], next_page_token: '' }),
+        contract: { schema: 'portal.chat_workspace.v3', messages: [], composer: { can_send: true } },
+      });
+      workspace.setMessages([]);
+    });
+    await page.locator('.composerInput').focus();
+    await page.keyboard.press('ArrowUp');
+    await page.waitForFunction(() => workspace.payload().content_parts.filter(part => part.type === 'file').length === 3);
+    const restored = await page.evaluate(() => workspace.payload().content_parts);
+    assert.deepEqual(restored.filter(part => part.type === 'file').map(part => part.upload_id), ['5', '5', '6'].map(value => 'upload_' + value.repeat(24)),
+      'Arrow history preserves both occurrences instead of consolidating by upload id');
+    assert.deepEqual(restored.filter(part => part.type === 'text').map(part => part.text), await page.evaluate(() => ordered.content_parts.filter(part => part.type === 'text').map(part => part.text)),
+      'history restoration preserves text boundaries, whitespace and literal markers');
+    for (const projected of projectedMessages) {
+      await page.evaluate(message => workspace.setMessages([PortalChatWorkspace.residentProtocolMessageToWorkspace(message)]), projected);
+      const expected = projected.content_parts.filter(part => part.type === 'file' || part.type === 'image');
+      assert.equal(await chips.count(), expected.length, 'actual upload projection renders exactly its authored media nodes');
+      assert.deepEqual(await chips.evaluateAll(nodes => nodes.map(node => node.title)), expected.map(part => part.name));
+      assert.deepEqual(await chips.evaluateAll(nodes => nodes.map(node => node.dataset.messageAttachmentPath)),
+        expected.map(part => '/api/uploads/' + part.upload_id), 'actual upload identities remain exact without path aliases');
+      const shown = await page.locator('.messageContent').textContent();
+      for (const part of projected.content_parts.filter(part => part.type === 'text')) {
+        assert.ok(shown.includes(part.text.replaceAll('**', '').trim()), 'actual projected text remains present around the files');
+      }
+      const rendered = await page.locator('.messageContent').innerHTML();
+      await page.evaluate(message => {
+        workspace.setMessages([]);
+        workspace.setMessages([PortalChatWorkspace.residentProtocolMessageToWorkspace(JSON.parse(JSON.stringify(message)))]);
+      }, projected);
+      assert.equal(await page.locator('.messageContent').innerHTML(), rendered, 'actual upload snapshot reload reproduces the same body');
+    }
     await page.evaluate(() => workspace.destroy());
     assert.deepEqual(errors, []);
-    console.log('PASS attachment identity, names, inline order, reload and responsive layout');
+    console.log('PASS ordered nodes, repeated identity, literal markers, Markdown, reload, preview and legacy layout');
   } finally { await browser.close(); }
 })();

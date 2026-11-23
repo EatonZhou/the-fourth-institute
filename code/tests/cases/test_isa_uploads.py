@@ -7,6 +7,9 @@
 from __future__ import annotations
 
 import io
+import json
+import os
+from pathlib import Path
 
 import pytest
 
@@ -66,9 +69,8 @@ def test_bytes_complete_an_upload_once_and_only_by_its_creator():
     assert resource_isa.read_upload(upload_id)["ready"] is True
 
 
-@pytest.mark.parametrize('name', ['meta.json', 'CON.txt', 'report:stream.txt', 'report.txt.', '中文 空格 🧪.bin'])
-def test_display_filename_cannot_collide_with_upload_storage(name, permissions):
-    from pathlib import Path
+@pytest.mark.parametrize('name', ['meta.json', 'META.JSON', '.write.lock', 'files', '中文 空格 🧪.bin'])
+def test_original_filename_is_separate_from_upload_records(name, permissions):
     from management_portal.resources import upload_files
     permissions.users('alice')
     data = b'original payload bytes'
@@ -78,9 +80,127 @@ def test_display_filename_cannot_collide_with_upload_storage(name, permissions):
     identifier = value['upload_id']
     resource_isa.complete_upload(identifier, data, actor='alice')
     meta = resource_isa.read_upload(identifier)
-    assert meta['file_name'] == name and Path(meta['path']).name == 'payload'
+    assert meta['file_name'] == name
+    assert Path(meta['path']) == resource_isa.upload_root() / identifier / 'files' / name
+    stored = json.loads((resource_isa.upload_root() / identifier / 'meta.json').read_text())
+    assert stored['storage_layout'] == 'named-v1' and 'path' not in stored
     body, _, resolved = upload_files.read_content({'upload_id': identifier}, actor='alice')
     assert body == data and resolved['filename'] == name
+
+
+@pytest.mark.parametrize('name', ['CON.txt', 'report:stream.txt', 'report.txt.'])
+def test_native_reserved_names_are_rejected_or_preserved_without_renaming(name):
+    arguments = {'purpose': 'conversation_attachment', 'file_name': name,
+                 'media_type': 'text/plain', 'size': 4}
+    if os.name == 'nt':
+        with pytest.raises(InstructionError, match='reserved Windows'):
+            resource_isa.create_upload(invoke('CreateUpload', arguments))
+        return
+    created = resource_isa.create_upload(invoke('CreateUpload', arguments))
+    resource_isa.complete_upload(created['upload_id'], b'data', actor='alice')
+    assert Path(resource_isa.read_upload(created['upload_id'])['path']).name == name
+
+
+@pytest.mark.parametrize('name', ['CON.txt', 'report:stream.txt', 'report.txt.'])
+def test_fixed_payload_legacy_names_stay_readable_on_every_host(name, permissions):
+    from management_portal.resources import upload_files
+    permissions.users('alice')
+    identifier = create('conversation_attachment', b'data', media_type='text/plain')
+    directory = resource_isa.upload_root() / identifier
+    meta = json.loads((directory / 'meta.json').read_text())
+    meta.pop('storage_layout')
+    meta.update(file_name=name, storage_name='payload', ready=True)
+    (directory / 'meta.json').write_text(json.dumps(meta))
+    (directory / 'payload').write_bytes(b'legacy')
+    assert Path(resource_isa.read_upload(identifier)['path']).name == 'payload'
+    data, _, resolved = upload_files.read_content({'upload_id': identifier}, actor='alice')
+    assert data == b'legacy' and resolved['filename'] == name
+
+
+@pytest.mark.parametrize('name', ['../outside', '/outside', r'path\outside', '.', '..', 'nul\0name'])
+def test_upload_name_is_rejected_instead_of_silently_rewritten(name, upload_root):
+    with pytest.raises(InstructionError):
+        resource_isa.create_upload(invoke('CreateUpload', {'purpose': 'conversation_attachment',
+            'file_name': name, 'media_type': 'text/plain', 'size': 4}))
+    assert not upload_root.exists()
+
+
+@pytest.mark.parametrize('name', ['稿件 第一版.txt', 'meta.json'])
+def test_real_create_put_read_download_and_copy_keep_original_name(name, permissions, monkeypatch):
+    import asyncio
+    from starlette.requests import Request
+    from management_portal.resources import ResourceService
+
+    permissions.users('alice', 'bob')
+    service = ResourceService()
+    monkeypatch.setattr(resource_isa, '_service', lambda: service)
+    monkeypatch.setattr('management_portal.resources.get_resource_service', lambda: service)
+    kernel = resource_isa.build_kernel()
+    def call(instruction, actor='alice', **arguments):
+        return kernel.execute(InstructionCall.from_payload({'instruction': instruction, 'arguments': arguments}),
+                              InstructionContext(caller=actor, entry='web')).raise_for_error()
+
+    data = '{"正文": "上传原文件"}\n'.encode()
+    first = call('CreateUpload', purpose='conversation_attachment', file_name=name,
+                 media_type='text/plain', size=len(data))
+    identifier = first['upload_id']
+    second = call('CreateUpload', purpose='conversation_attachment', file_name=name,
+                  media_type='text/plain', size=len(data))
+    assert first['upload_id'] != second['upload_id']
+    monkeypatch.setattr(asgi, '_instruction_principal', lambda request: ('alice', 'web'))
+    async def receive():
+        return {'type': 'http.request', 'body': data, 'more_body': False}
+    scope = {'type': 'http', 'scheme': 'http', 'server': ('testserver', 80),
+             'method': 'PUT', 'path': first['upload_url'], 'query_string': b'',
+             'headers': [(b'host', b'testserver'), (b'origin', b'http://testserver')],
+             'path_params': {'upload_id': identifier}}
+    response = asyncio.run(asgi.upload_bytes(Request(scope, receive)))
+    assert response.status_code == 200, response.body
+    resource_isa.complete_upload(second['upload_id'], b'X' * len(data), actor='alice')
+    value = call('ReadResource', 'bob', address={'upload_id': identifier})
+    assert value['text'] == data.decode() and value['name'] == name
+    assert call('ReadResource', 'bob', address={'upload_id': second['upload_id']})['text'] == 'X' * len(data)
+    assert Path(resource_isa.read_upload(identifier)['path']).name == name
+    copied = call('CreateUpload', purpose='conversation_attachment', source_address=first['upload_url'])
+    assert copied['ready'] is True and copied['upload_id'] != identifier
+    assert Path(resource_isa.read_upload(copied['upload_id'])['path']).name == name
+    assert call('ReadResource', 'bob', address={'upload_id': copied['upload_id']})['text'] == data.decode()
+
+    monkeypatch.setattr(asgi, '_instruction_principal', lambda request: ('bob', 'web'))
+    async def download(headers=()):
+        response = await asgi.upload_content(Request({**scope, 'method': 'GET', 'query_string': b'download=1',
+            'headers': [*scope['headers'], *headers]}))
+        content = b''.join([chunk async for chunk in response.body_iterator]) if hasattr(response, 'body_iterator') else response.body
+        return response, content
+    response, content = asyncio.run(download())
+    assert response.status_code == 200 and content == data
+    from urllib.parse import quote
+    assert quote(name) in response.headers['content-disposition']
+    response, content = asyncio.run(download([(b'range', b'bytes=2-6')]))
+    assert response.status_code == 206 and content == data[2:7]
+
+
+@pytest.mark.parametrize('target', ['directory', 'file'])
+def test_named_upload_never_follows_payload_symlinks(target, permissions, tmp_path):
+    from management_portal.resources import upload_files
+    permissions.users('alice')
+    identifier = create('conversation_attachment', b'data', media_type='text/plain')
+    directory = resource_isa.upload_root() / identifier
+    outside = tmp_path / 'outside'
+    outside.mkdir()
+    (outside / 'picture.png').write_bytes(b'secret')
+    if target == 'directory':
+        (directory / 'files').rmdir()
+        (directory / 'files').symlink_to(outside, target_is_directory=True)
+    else:
+        (directory / 'files' / 'picture.png').symlink_to(outside / 'picture.png')
+    with pytest.raises(InstructionError):
+        resource_isa.complete_upload(identifier, b'data', actor='alice')
+    assert (outside / 'picture.png').read_bytes() == b'secret'
+    meta = json.loads((directory / 'meta.json').read_text())
+    (directory / 'meta.json').write_text(json.dumps({**meta, 'ready': True}))
+    with pytest.raises((ValueError, OSError)):
+        upload_files.read_content({'upload_id': identifier}, actor='alice')
 
 
 def test_generated_meta_json_is_readable_and_repeated_publication_is_stable(permissions):
@@ -92,6 +212,48 @@ def test_generated_meta_json_is_readable_and_repeated_publication_is_stable(perm
     assert resource_isa.publish_generated_file(**args) == first
     body, _, meta = upload_files.read_content(first['file_reference'], actor='alice')
     assert body == args['data'] and meta['filename'] == 'meta.json'
+    path = Path(resource_isa.read_upload(first['file_reference']['upload_id'])['path'])
+    assert path.name == 'meta.json' and path.parent.name == 'files'
+
+
+def test_completed_bytes_can_be_recovered_after_metadata_write_interruption(monkeypatch):
+    identifier = create('conversation_attachment', b'data', media_type='text/plain')
+    original = resource_isa._write_meta
+    monkeypatch.setattr(resource_isa, '_write_meta', lambda meta: (_ for _ in ()).throw(OSError('interrupted')))
+    with pytest.raises(OSError, match='interrupted'):
+        resource_isa.complete_upload(identifier, b'data', actor='alice')
+    monkeypatch.setattr(resource_isa, '_write_meta', original)
+    with pytest.raises(InstructionError, match='内容不同'):
+        resource_isa.complete_upload(identifier, b'new!', actor='alice')
+    assert resource_isa.complete_upload(identifier, b'data', actor='alice')['ready']
+    assert Path(resource_isa.read_upload(identifier)['path']).read_bytes() == b'data'
+
+
+@pytest.mark.parametrize('layout', ['named-v1', 'fixed', 'original'])
+def test_consumption_uses_the_current_payload_path_and_ignores_internal_records(layout):
+    from management_common.directory_retention import RetentionStore
+    from management_portal.resources.upload_consumption import consume_file
+    identifier = create('conversation_attachment', b'data', media_type='text/plain')
+    resource_isa.complete_upload(identifier, b'data', actor='alice')
+    path = Path(resource_isa.read_upload(identifier)['path'])
+    directory = resource_isa.upload_root() / identifier
+    if layout != 'named-v1':
+        meta = json.loads((directory / 'meta.json').read_text())
+        meta.pop('storage_layout')
+        destination = directory / ('payload' if layout == 'fixed' else meta['file_name'])
+        if layout == 'fixed':
+            meta['storage_name'] = 'payload'
+        path.rename(destination)
+        path = destination
+        (directory / 'meta.json').write_text(json.dumps(meta))
+    retention = RetentionStore()
+    with retention.database.transaction() as connection:
+        consume_file(directory / 'meta.json', owner_id='paper_example', connection=connection)
+    assert retention.registered_children(resource_isa.upload_root(), categories=('unused_upload',)) == [directory]
+    with retention.database.transaction() as connection:
+        consume_file(path, owner_id='paper_example', connection=connection)
+    assert retention.registered_children(resource_isa.upload_root(), categories=('unused_upload',)) == []
+    assert retention.registered_children(resource_isa.upload_root(), categories=('object_data',)) == [directory]
 
 
 def test_concurrent_upload_completion_accepts_one_writer(monkeypatch):

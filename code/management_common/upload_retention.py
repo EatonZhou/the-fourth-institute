@@ -9,7 +9,7 @@ from .directory_retention import RetentionStore
 from .directory_paths import lexical_path
 from .resource_lifecycle import record_allocation
 from .secure_paths import directory_unchanged, open_child, open_directory, stat_child
-from .upload_layout import payload_name
+from .upload_layout import payload_parent
 
 
 def created(directory, *, upload_id, created_at, connection=None):
@@ -49,6 +49,14 @@ def _absent(directory, name):
     return False
 
 
+def _payload_absent(directory, meta):
+    try:
+        with payload_parent(directory, meta) as (parent, name):
+            return _absent(parent, name)
+    except FileNotFoundError:
+        return True  # The containing payload directory itself was removed.
+
+
 def _missing_reason(root, name):
     """Only stable absence of a directory or a ready payload proves deletion."""
     if _absent(root, name):
@@ -69,8 +77,7 @@ def _missing_reason(root, name):
                 return None
         if not isinstance(meta, dict) or meta.get('ready') is not True:
             return None
-        filename = payload_name(meta)
-        if not _absent(descriptor, filename):
+        if not _payload_absent(descriptor, meta):
             return None  # Content, size and mtime changes are ordinary edits.
         try:
             # An atomic metadata replacement, a new temporary metadata file or
@@ -78,7 +85,7 @@ def _missing_reason(root, name):
             if (_version(before) != _version(stat_child(descriptor, 'meta.json'))
                     or _version(directory) != _version(stat_child(root, name))):
                 return None
-            return 'payload' if _absent(descriptor, filename) else None
+            return 'payload' if _payload_absent(descriptor, meta) else None
         except FileNotFoundError:
             return None
     finally:

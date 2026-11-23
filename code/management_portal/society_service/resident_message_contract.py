@@ -10,13 +10,12 @@ from typing import Any
 
 from management_common.message_identity import derived_message_identity  # noqa: F401 - shared message identity
 from management_common.text_values import stripped_text
+from management_portal.execution.message_projection import file_reference_source, inline_message_text
 
 
 MESSAGE_IDENTITY_PATTERN = re.compile(r"msg_[0-9a-f]{16,64}")
 
 
-def file_reference_source(part: Mapping[str, Any]) -> str:
-    return str(part.get("upload_id") or part.get("source") or part.get("path") or part.get("url") or "").strip()
 
 
 def input_parts(
@@ -33,7 +32,6 @@ def input_parts(
     if not isinstance(parts, list) or not parts:
         raise ValueError("message.content_parts required")
     validate_content_parts(parts)
-    text_parts: list[str] = []
     media: list[dict[str, Any]] = []
     context_refs: dict[str, Any] = {}
     context_text: list[str] = []
@@ -43,16 +41,12 @@ def input_parts(
         part = dict(raw)
         part_type = str(part.get("type") or "").strip().casefold()
         if part_type == "text":
-            value = str(part.get("text") or "")
-            text_parts.append(value)
+            pass
         elif part_type in {"image", "file"}:
             media.append(part)
-            if part_type == "file":
-                text_parts.append(f"[file: {file_reference_source(part)}]")
         elif part_type == "turn_review":
             if not isinstance(part.get("segment_id"), str) or not part["segment_id"]:
                 raise ValueError("turn review requires a source Segment")
-            text_parts.append("审查指定轮次的修改快照")
         elif part_type in {
             "artifact_reference",
             "resource_reference",
@@ -96,7 +90,7 @@ def input_parts(
             context_refs.setdefault("content_parts", []).append(part)
     # Content parts are an ordered inline document, including their whitespace.
     # File handles are resolved in place after attachment authorization.
-    content = "".join(text_parts)
+    content = inline_message_text(parts)
     if not content.strip():
         raise ValueError("Resident input requires a text content part")
     return (

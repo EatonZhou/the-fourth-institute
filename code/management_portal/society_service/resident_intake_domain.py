@@ -131,7 +131,7 @@ class ResidentInput:
     def requested_quote(self) -> object:
         return self.protocol_input.get("quote") if isinstance(self.protocol_input, Mapping) else None
 
-    def user_message(self, resident_id: str) -> dict[str, Any]:
+    def user_message(self, resident_id: str, file_references=None) -> dict[str, Any]:
         channel = self.channel
         if self.relay.delegated and self.relay.source:
             source = resident_conversation_stream.get_repository().message(*self.relay.source)
@@ -144,6 +144,8 @@ class ResidentInput:
         # acceptance boundary; validation/preparation must never consume it.
         if self.input_media:
             item['input_media'] = self.input_media
+        if file_references:
+            item['file_references'] = file_references
         return item
 
     def with_business_ref(self, item: dict[str, Any]) -> dict[str, Any]:
@@ -164,6 +166,7 @@ class _PreparedInput:
     context_refs: dict[str, Any]
     input_media: list[dict[str, Any]]
     provider_input: str
+    file_references: dict[str, str]
     goal_command: dict[str, Any]
     last_user_message: str
 
@@ -1127,8 +1130,15 @@ def _prepared_input(
             attachments, resident_record_domain.sessions_path(environment or record), request.message_id,
         )
     input_media = [item for item in attachments if item["media_type"] == "image"]
+    file_references = {
+        item.get("reference_source", item["source"]): item["source"]
+        for item in attachments if item["media_type"] == "file"
+    }
+    authored_parts = (request.protocol_input or {}).get("content_parts")
     provider_input = message_quotes.with_quote(
-        resident_media_domain.resolve_file_references(message, attachments), request.quote,
+        resident_message_contract.inline_message_text(authored_parts, file_references)
+        if authored_parts else message,
+        request.quote,
     )
     goal_command = slash_commands.parse_goal_command(message)
     last_user_message = last_user_message_text(request.resident_id) if goal_command.get("action") == "get" else ""
@@ -1139,6 +1149,7 @@ def _prepared_input(
         context_refs=context_refs,
         input_media=input_media,
         provider_input=provider_input,
+        file_references=file_references,
         goal_command=goal_command,
         last_user_message=last_user_message,
     )
@@ -1272,7 +1283,7 @@ def _bootstrap_session(request: ResidentInput, record: dict[str, Any], prepared:
         business_ref=request.business_ref,
         lineage_id=request.lineage_id,
         delivery_message_id=request.message_id if prepared.deferred_delivery else "",
-        user_message=request.user_message(resident_domain_common.record_resident_id(record)),
+        user_message=request.user_message(resident_domain_common.record_resident_id(record), prepared.file_references),
         lending=request.lending,
     )
     if request.lending is not None and not request.lending.issued:
@@ -1296,7 +1307,7 @@ def _enqueue(
 
     now = resident_domain_common.now_iso()
     intake_state = resident_record_domain.resident_intake_state(record)
-    user_item = request.with_business_ref(request.user_message(resident_domain_common.record_resident_id(record)))
+    user_item = request.with_business_ref(request.user_message(resident_domain_common.record_resident_id(record), prepared.file_references))
     if existing_resident_delivery(
         resident_domain_common.record_resident_id(record),
         user_item,

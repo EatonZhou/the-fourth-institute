@@ -169,6 +169,7 @@ def test_file_projection_preserves_inline_order_and_authored_markers(with_quote)
         message["quote"] = {"author_id": "CASE-A", "text": "讨论附件"}
         composed = quote_block(message["quote"]) + "\n\n" + composed
     facts = message_facts(message)
+    facts.pop("parts_encoding", None)  # Pre-inline historical capture.
     for content in (body, wrap_message(composed)):
         assert project_message("segment", facts, content)["content_parts"] == parts
 
@@ -199,6 +200,7 @@ def test_file_projection_keeps_unrecognized_annotations(mismatch):
     elif mismatch == "agent":
         message["role"] = "agent"
     facts = message_facts(message)
+    facts.pop("parts_encoding", None)  # Pre-inline historical capture.
     if mismatch == "no_lengths":
         for part in facts["parts"]:
             part.pop("length", None)

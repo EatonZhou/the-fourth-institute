@@ -32,6 +32,24 @@ def registered(root):
     return set(RetentionStore().registered_children(root, categories=('unused_upload', 'object_data')))
 
 
+@pytest.mark.parametrize('removed', ['file', 'files_directory'])
+def test_named_payload_retention_tracks_only_the_real_file(tmp_path, removed):
+    root = tmp_path / 'uploads'
+    directory = upload(root, 'named', payload=False)
+    (directory / 'meta.json').write_text(json.dumps({'upload_id': directory.name,
+        'ready': True, 'file_name': 'meta.json', 'storage_layout': 'named-v1'}))
+    (directory / 'files').mkdir()
+    (directory / 'files' / 'meta.json').write_bytes(b'original upload')
+    assert uploads.reconcile_missing(root)['released'] == 0
+    if removed == 'file':
+        (directory / 'files' / 'meta.json').unlink()
+    else:
+        shutil.rmtree(directory / 'files')
+    report = uploads.reconcile_missing(root)
+    assert report['released'] == 1 and report['missing_payloads'] == 1
+    assert not registered(root)
+
+
 def test_direct_deletion_releases_used_and_unused_uploads_and_cleans_sidecars(tmp_path):
     root = tmp_path / 'uploads'
     used = upload(root, 'used', payload=False)

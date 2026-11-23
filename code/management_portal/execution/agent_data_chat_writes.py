@@ -177,7 +177,7 @@ def _append_chat_message(
         "created_by_actor_ref": actor_ref,
         "performed_by_actor_ref": actor_ref if segment_type != "model" else "portal",
         "content_type": "text/plain; charset=utf-8",
-        "metadata": {"role": role, "kind": "user_message" if role == "user" else "assistant_message" if role == "agent" else "portal_notice", "message": message_facts(canonical)},
+        "metadata": {"role": role, "kind": "user_message" if role == "user" else "assistant_message" if role == "agent" else "portal_notice", "message": message_facts(canonical, file_references=message.get("file_references"))},
         "created_by_agent_id": agent_id,
         "execution_id": str(canonical.get("execution_id") or ""),
     }
@@ -291,7 +291,7 @@ class ChatWrites:
             content = chat_message_text(canonical)
             if canonical["role"] == "user":
                 content = wrap_message(content)
-            metadata = {"role": str(canonical["role"]), "kind": "user_message" if canonical["role"] == "user" else "assistant_message" if canonical["role"] == "agent" else "portal_notice", "message": message_facts(canonical)}
+            metadata = {"role": str(canonical["role"]), "kind": "user_message" if canonical["role"] == "user" else "assistant_message" if canonical["role"] == "agent" else "portal_notice", "message": message_facts(canonical, file_references=message.get("file_references"))}
             digest = hashlib.sha256(
                 (content + "\0" + canonical_json(canonical)).encode("utf-8")
             ).hexdigest()[:24]

@@ -26,6 +26,9 @@ def chat_role(value: object) -> str:
 
 
 def chat_message_text(message: Mapping[str, Any]) -> str:
+    if message.get("role") == "user":
+        from .message_projection import inline_message_text
+        return inline_message_text(message.get("content_parts") or [])
     return "\n".join(
         str(part.get("text") or "")
         for part in message.get("content_parts") or []

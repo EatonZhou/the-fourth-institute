@@ -316,20 +316,6 @@ def resident_input_media(
     return normalized
 
 
-def resolve_file_references(
-    message: str, attachments: list[dict[str, str]],
-) -> str:
-    """Resolve authorized file handles at their authored positions; append nothing."""
-    sources = {
-        item.get("reference_source", item["source"]): item["source"]
-        for item in attachments
-        if item["media_type"] == "file"
-    }
-    return re.sub(r"\[file: ([^\]\r\n]+)\]", lambda match: (
-        f"[file: {sources[match.group(1)]}]" if match.group(1) in sources else match.group(0)
-    ), message)
-
-
 def provider_message_with_native_media(
     record: dict[str, Any],
     message: str,
