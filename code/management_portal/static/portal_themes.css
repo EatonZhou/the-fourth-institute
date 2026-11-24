@@ -539,7 +539,7 @@ html:root[data-portal-theme="liquid-glass"] body.portalBoardShell .portalModuleL
 
 html:root[data-portal-theme="liquid-glass"] body.portalBoardShell .portalModuleLink > .portalModuleLinkLabel {
   display: inline-block;
-  padding: 4px 12px;
+  padding: 4px 8px;
   border-radius: var(--lg-radius-pill);
   transition:
     background-color var(--lg-duration-fast) var(--lg-ease-spring),
@@ -625,7 +625,7 @@ html[data-portal-viewport="mobile"]:root[data-portal-theme="liquid-glass"] body.
 }
 
 html[data-portal-viewport="mobile"]:root[data-portal-theme="liquid-glass"] body.portalBoardShell .portalModuleLink > .portalModuleLinkLabel {
-  padding: 3px 8px;
+  padding: 3px 6px;
 }
 
 html:root[data-portal-theme="liquid-glass"] .portalSiteHeader :is(
