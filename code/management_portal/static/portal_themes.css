@@ -836,11 +836,20 @@ html:root[data-portal-theme="liquid-glass"] .portalWorkbenchStack :is(
   box-shadow: none;
 }
 
-/* Seamless card sub-headers matching the unified #f5f5f7 card tone with crisp hairlines */
+/* Tab strips overlay panel headers when revealed, so their backing must hide
+   the underlying text rather than share the transparent inline-header surface. */
 html:root[data-portal-theme="liquid-glass"] :is(
   .portalWorkbenchTabs,
   .portalWorkbenchStage.show-single-tab-header .portalWorkbenchStack:not(.is-collapsed) > .portalWorkbenchTabs,
-  .portalWorkbenchStack.is-collapsed > .portalWorkbenchTabs,
+  .portalWorkbenchStack.is-collapsed > .portalWorkbenchTabs
+) {
+  background: var(--lg-card-bg);
+  border-color: rgba(0, 0, 0, .065);
+  box-shadow: none;
+}
+
+/* Seamless card sub-headers matching the unified #f5f5f7 card tone with crisp hairlines */
+html:root[data-portal-theme="liquid-glass"] :is(
   .paneHead,
   .portalPanelHeadSurface,
   .portalDocumentTabsShell,
