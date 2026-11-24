@@ -5,8 +5,8 @@ const w = new JSDOM('<body><div id="controls"></div></body>', {url:'https://fixt
 w.CSS = {escape: x=>x}; w.matchMedia = ()=>({matches:false,addEventListener(){},removeEventListener(){}});
 for(const name of ['portal_text','portal_state','portal_translations','portal_i18n','portal_ui_primitives','portal_overlay','portal_ui','portal_model_api_settings','chat_workspace_runtime_settings','portal_lineage_catalogs']) w.eval(fs.readFileSync(path.resolve(__dirname,'../../../management_portal/static',name+'.js'),'utf8'));
 const config = {source:{provider:'codex'},runtime_settings:{model:'luna',reasoning_effort:'max'},accounts:{codex:[
- {id:'seven',account_id:'codex_seven',context_options:[{id:'native',label:'厂商原生 Fork',enabled:true},{id:'local',label:'本地摘要与 trace',enabled:true}]},
- {id:'eight',account_id:'codex_eight',context_options:[{id:'native',label:'厂商原生 Fork',enabled:false},{id:'local',label:'本地摘要与 trace',enabled:true}]}
+ {id:'seven',account_id:'codex_seven',context_options:[{id:'local',label:'摘要重组',enabled:true}],fork_context_options:[{id:'native',label:'厂商原生 Fork',enabled:true},{id:'local',label:'摘要重组',enabled:true}]},
+ {id:'eight',account_id:'codex_eight',context_options:[{id:'local',label:'摘要重组',enabled:true}],fork_context_options:[{id:'native',label:'厂商原生 Fork',enabled:false},{id:'local',label:'摘要重组',enabled:true}]}
 ]}};
 const calls=[];
 w.PortalResidentService={sessionRestartOptions:async()=>config};

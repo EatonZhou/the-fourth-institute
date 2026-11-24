@@ -285,7 +285,7 @@ DECLARATIONS = (
         P("permission_preset", description="目标 Provider 的权限预设；切换成功后生效"),
         P("prompt_context", "object", "仅 Model API：固定上下文和 history 设置"),
         P("backend_options", "object", "仅 Model API：协议参数、超时和重试"),
-        P("context_strategy", description="记忆交接：原生 Fork 或本地摘要与 trace；缺省优先可用的原生 Fork。仅保存配置，第一条新消息才交接", enum=FORK_MODES),
+        P("context_strategy", description="账号迁移仅支持 local（摘要重组），缺省即 local；第一条新消息才交接。同账号只改参数使用 UpdateResidentSettings，不做记忆交接", enum=("local",)),
         P("active_execution_policy", description="有正在进行的轮次时：wait 等本轮结束再切换（默认），cancel 先取消它",
           enum=("wait", "cancel")),
     ), (

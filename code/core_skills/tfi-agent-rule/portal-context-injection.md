@@ -57,12 +57,13 @@ instructions 属于哪个 Portal role。创建、Fork、显式压缩与释放操
 
 Fork 子 Resident 在首条真实输入按自己的身份与规则构造注入计划。
 注册、配置保存与建立空会话不发送“请整理并确认初始化”的模型任务。
-普通账号切换默认 preserve；旧 smart 仅映射 preserve。保留上下文使用可验证原生
-复制或严格 canonical history 导入，不隐式 compact，不额外调用模型整理。
-手动固定账号的 compact/visible 切换先冻结有界交接材料并保存配置，不启动模型轮次；
-首条真实输入按目标 Provider 构造完整注入计划并消费材料，仍遵守正常额度准入。
-其他显式或自动 compact/visible 模型交接轮次沿原独立输入合同执行；fresh 清空
-有效上下文后由下一条真实输入懒建会话，无空白初始化轮次。完整协议见
+账号迁移只使用 local（摘要重组），保存配置和有界交接材料，不调用模型、
+不修改原 Segment 或 Resident trace。首条真实输入携带已有摘要、记忆索引和最近三轮，
+按目标 Provider 注入核心规则并消费材料，仍遵守正常额度准入。
+同账号只改模型或 effort 沿原生会话更新参数，不做 Portal 记忆交接。
+只有 Fork 提供 native/local 两种方式；原生 Fork 可用时默认选用，
+也在首条真实输入附上目标自己的核心规则和记忆索引。清空仍用独立 ClearContext。
+完整协议见
 repo_0cc377bb1dee/file/docs/routing/resident-capability-config.md 与
 repo_0cc377bb1dee/file/docs/routing/session-account-switch.md。
 恢复和失败续跑沿用原轮次的计划，不重复附加已经送达的部分；切换账号不自动重试失败输入。

@@ -218,7 +218,7 @@
           })
           .then(([config, account, catalog]) => {
             if (ticket !== generation) return;
-            const choices = account?.context_options || [];
+            const choices = account?.fork_context_options || [];
             method.replaceChildren(...choices.map(row => {const o = new Option(row.label, row.id); o.disabled = !row.enabled; return o;}));
             method.value = choices.find(row => row.enabled)?.id || "";
             if (!method.value) throw new Error("账号交接能力不可用，请重新打开窗口");

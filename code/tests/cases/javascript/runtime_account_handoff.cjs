@@ -41,17 +41,16 @@ w.PortalUI.toast = (message, tone) => toasts.push([message, tone]);
     observeSessionRestart: (_id, callback) => {observe = callback; return () => {};}};
   const config = {resident_id: 'fixture', runtime_settings: {model: 'm'}, runtime_catalog: catalog,
     source: pending.source, providers: [{id: 'codex'}, {id: 'claude'}], accounts: {
-      codex: [{id: 'codex_two', context_options: [{id: 'native', enabled: true}]}],
+      codex: [{id: 'codex_two', context_options: [{id: 'local', label: '摘要重组', enabled: true}]}],
       claude: [{id: 'claude_one', context_options: [{id: 'local', enabled: true, description: '首条真实输入携带本地摘要、索引和最近三轮。'}]}]}};
   for (const inline of [false, true]) {
     const selection = api.createRuntimePanel({inline});
     w.document.body.append(selection.element);
     selection.open({...config, accounts: {...config.accounts, claude: [
       {id: 'claude_one', context_options: [
-        {id: 'native', label: '原厂 Fork', enabled: true, description: '保留原厂记忆'},
-        {id: 'local', label: '本地摘要与 Trace', enabled: true, description: '首条真实输入携带本地记忆'}]},
+        {id: 'local', label: '摘要重组', enabled: true, description: '首条真实输入携带本地记忆'}]},
       {id: 'claude_two', context_options: []},
-      {id: 'claude_three', context_options: [{id: 'native', label: '原厂 Fork', enabled: false}]}
+      {id: 'claude_three', context_options: [{id: 'local', label: '摘要重组', enabled: false}]}
     ]}}, () => {throw new Error('an incomplete selection must not submit');});
     await flush();
     const backend = selection.element.querySelector('[data-session-backend]');
@@ -70,8 +69,8 @@ w.PortalUI.toast = (message, tone) => toasts.push([message, tone]);
     await change(account, JSON.stringify(['claude', 'claude_one']));
     assert.equal(memory.closest('label').hidden, false);
     assert.equal(memory.disabled, false);
-    assert.equal(memory.value, 'native', 'use the first supported method supplied by the server');
-    assert.deepEqual(Array.from(memory.options, option => option.textContent), ['原厂 Fork', '本地摘要与 Trace']);
+    assert.equal(memory.value, 'local', 'account migration only reconstructs local memory');
+    assert.deepEqual(Array.from(memory.options, option => option.textContent), ['摘要重组']);
     assert.equal(submit.disabled, false);
     await change(memory, 'local');
     assert.match(status.textContent, /首条真实输入携带本地记忆/);
@@ -90,6 +89,32 @@ w.PortalUI.toast = (message, tone) => toasts.push([message, tone]);
     assert.equal(status.textContent, '', 'returning to the current account clears the handoff warning');
     selection.destroy();
   }
+  for (const inline of [false, true]) {
+    const parameterWrites = [], restartWrites = [];
+    const parameters = api.createRuntimePanel({inline});
+    w.document.body.append(parameters.element);
+    parameters.open({...config, runtime_settings: {model: 'm', reasoning_effort: 'low'},
+      runtime_catalog: {...catalog, models: ['m', 'm2'], efforts_by_model: {m: ['low', 'high'], m2: ['low', 'high']},
+        runtime_capabilities: {settings: ['model', 'reasoning_effort']}},
+      onSave: async values => {parameterWrites.push(values); return {settings: values};}}, async values => {restartWrites.push(values);});
+    await flush();
+    const memory = parameters.element.querySelector('[data-memory-method]');
+    assert.equal(memory.closest('label').hidden, true);
+    for (const [field, value] of [['model', 'm2'], ['reasoning_effort', 'high']]) {
+      const input = parameters.element.querySelector(`[data-runtime-editor="current"] [data-runtime-setting="${field}"]`);
+      input.value = value; input.dispatchEvent(new w.Event('change', {bubbles: true})); await flush();
+    }
+    assert.equal(memory.closest('label').hidden, true, 'parameter changes never ask for memory transfer');
+    const submit = parameters.element.querySelector('[data-session-restart-submit]');
+    assert.equal(submit.disabled, false); submit.click(); await flush();
+    assert.equal(parameterWrites.length, 1);
+    assert.equal(parameterWrites[0].model, 'm2');
+    assert.equal(parameterWrites[0].reasoning_effort, 'high');
+    assert.equal(restartWrites.length, 0, 'parameter saves keep the current session');
+    assert.equal(parameterWrites[0].context_strategy, undefined);
+    parameters.destroy();
+  }
+  toasts.length = 0;
   const panel = api.createRuntimePanel({onDone: () => closed++});
   w.document.body.append(panel.element);
   for (const deferred of [false, true]) {

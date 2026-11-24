@@ -40,7 +40,7 @@ from . import resident_domain_common, resident_session_preservation as preservat
 from . import resident_session_credits, resident_memory_handoff
 
 LOGGER = logging.getLogger(__name__)
-SESSION_RESTART_STRATEGIES = frozenset({"", "native", "local"})
+SESSION_RESTART_STRATEGIES = frozenset({"", "local"})
 SESSION_RESTART_ACTIVE_EXECUTION_POLICIES = frozenset({"wait", "cancel"})
 # Runtime settings a restart request may choose for the target session.
 SESSION_RESTART_SETTING_FIELDS = (
@@ -432,10 +432,10 @@ def get_resident_restart_options(
         "providers": [{"id": row["provider"], "label": row.get("label", row["provider"]),
                        "operations": row.get("operations", []), "account_selection": row.get("account_selection", {})} for row in catalog],
         "accounts": {row["provider"]: [{"id": route["backend_route_id"], "account_id": route.get("account_id", ""), "label": route["label"],
-                                      "context_options": resident_memory_handoff.options(source_snapshot, row["provider"], route["backend_route_id"])} for route in row["routes"]]
+                                      "context_options": resident_memory_handoff.account_switch_options(),
+                                      "fork_context_options": resident_memory_handoff.options(source_snapshot, row["provider"], route["backend_route_id"])} for route in row["routes"]]
                      for row in catalog},
-        "strategies": [{"id": "native", "label": "厂商原生 Fork"},
-                       {"id": "local", "label": "本地摘要与 trace"}],
+        "strategies": resident_memory_handoff.account_switch_options(),
         "active_job_policies": ["wait", "cancel"],
     }
 
@@ -537,19 +537,24 @@ def restart_resident_session(
         replayed = _replayed_restart(previous_restart, deferred, request_id, body)
         if replayed is not None:
             return replayed
+        admitted_strategy = _admitted_restart_strategy(previous_restart, deferred, body, actor_id)
         source_binding = resident_backend.session_record(record)
         source_configuration = preservation.configuration_version(record)
     source = _session_restart_source(record, source_binding)
     source_provider, target_provider = _restart_providers(body, source)
-    if requested_strategy not in SESSION_RESTART_STRATEGIES:
-        raise ValueError("未知的 session 重启上下文策略")
+    if requested_strategy not in SESSION_RESTART_STRATEGIES and not (
+        requested_strategy == "native" and admitted_strategy == "native"
+    ):
+        raise ValueError("账号迁移只支持 local（摘要重组）；厂商原生仅用于 Fork")
     active_execution_policy = str(body.get("active_execution_policy") or "wait").strip().lower()
     if active_execution_policy not in SESSION_RESTART_ACTIVE_EXECUTION_POLICIES:
         raise ValueError("active_execution_policy 必须是 wait 或 cancel")
     restart_target = _restart_target(body, source, source_provider, target_provider)
     if body.get("credits_consent"):
         raise ValueError("切换仅保存配置；请在首次真实输入的额度提示中授权 credits")
-    if operation == "switch_account" and restart_target.same_route and not any(key in body for key in SESSION_RESTART_SETTING_FIELDS):
+    if operation == "switch_account" and restart_target.same_route and not admitted_strategy:
+        if any(key in body for key in SESSION_RESTART_SETTING_FIELDS):
+            raise ValueError("同账号参数修改请使用 UpdateResidentSettings；无需记忆交接或重建会话")
         return _unchanged_restart(resident_id, operation, source_binding)
     target_runtime_settings = _target_runtime_settings(record, body, restart_target, actor_id)
     if body.get("target_account") and not portal_reason:
@@ -558,6 +563,8 @@ def restart_resident_session(
         record, source, restart_target, requested_strategy,
         automatic_handoff=portal_reason in {"quota_switch", "steward_weekly_reserve", "steward_quota_recovery"},
     )
+    if admitted_strategy:
+        strategy = admitted_strategy
     intent = _restart_intent(body, operation, source, restart_target, strategy, active_execution_policy)
     failed_input = _failed_input_to_resume(record, body, intent, restart_target)
     pending = _pending_restart(resident_id, actor_id, record, intent)
@@ -626,6 +633,17 @@ def _replayed_restart(
         preservation.check_replay(previous_restart, body)
         return copy.deepcopy(previous_restart)
     return None
+
+
+def _admitted_restart_strategy(previous: Mapping[str, Any], deferred: Mapping[str, Any],
+                               body: Mapping[str, Any], actor_id: str) -> str:
+    """Honor an already admitted intent, never a caller-supplied legacy flag."""
+    if not deferred:
+        return ""
+    if body != deferred.get("payload") or actor_id != canonical_actor_id(deferred.get("actor")):
+        raise ValueError("延迟迁移必须沿原提交者与原请求继续")
+    strategy = str((previous.get("intent") or {}).get("context_strategy") or "")
+    return strategy if strategy in {"native", "local"} else ""
 
 
 def _restart_providers(body: Mapping[str, Any], source: Mapping[str, Any]) -> tuple[str, str]:
@@ -746,7 +764,7 @@ def _restart_strategy(
 ) -> tuple[str, bool]:
     """How context moves to the new session, and whether an unbound previous session holds work."""
 
-    return resident_memory_handoff.choose(source, target.provider, target.route, requested_strategy), False
+    return "local", False
 
 
 def _restart_intent(

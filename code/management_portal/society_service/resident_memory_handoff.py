@@ -1,4 +1,4 @@
-"""The two memory transfers shared by account selection and Resident Fork."""
+"""Fork capabilities and local memory material for Resident handoff."""
 from collections.abc import Mapping
 
 from . import resident_backend
@@ -10,6 +10,12 @@ SUMMARY_LIMIT = 1800
 TURN_LIMIT = 1200
 
 
+def account_switch_options():
+    """Changing an account reconstructs memory; native Fork creates a child."""
+    return [{"id": "local", "label": "摘要重组", "enabled": True,
+             "description": "首条新消息携带本地摘要、记忆索引和最近三轮；按需读取完整 trace。"}]
+
+
 def options(source, provider, route):
     definition = AGENT_PROVIDERS.get(provider)
     native = bool(source.get("has_session") and source.get("provider") == provider
@@ -18,8 +24,7 @@ def options(source, provider, route):
     return [
         {"id": "native", "label": "厂商原生 Fork", "enabled": native,
          "description": "首条新消息到来时继承厂商会话，同时提供 Portal 规则和记忆索引。"},
-        {"id": "local", "label": "本地摘要与 trace", "enabled": True,
-         "description": "首条新消息携带本地摘要、记忆索引和最近三轮；按需读取完整 trace。"},
+        *account_switch_options(),
     ]
 
 

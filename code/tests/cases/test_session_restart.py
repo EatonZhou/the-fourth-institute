@@ -474,7 +474,7 @@ def test_retired_model_handoff_modes_do_not_submit(monkeypatch, subtests, isolat
             with monkeypatch.context() as patch:
                 record, operations, saved = _restart_domain(patch)
                 before = copy.deepcopy(resident_backend.session_record(record))
-                with pytest.raises(ValueError, match='未知'):
+                with pytest.raises(ValueError, match='只支持 local'):
                     resident_domain.restart_resident_session(record['resident_id'],'alice',{'context_strategy':strategy})
                 assert not operations and not saved
                 assert resident_backend.session_record(record) == before
@@ -491,7 +491,7 @@ def test_session_initialization_preserves_user_words_contracts(subtests, isolate
         parameters = {parameter.name: parameter for parameter in restart.parameters}
         assert restart.owner == 'lineage' and restart.mutates and restart.target == 'resident_id'
         assert parameters['resident_id'].required is True
-        assert parameters['context_strategy'].enum == ('native', 'local')
+        assert parameters['context_strategy'].enum == ('local',)
         assert parameters['active_execution_policy'].enum == ('wait', 'cancel')
         assert 'active_job_policy' not in parameters
         cancel = {parameter.name: parameter for parameter in catalog.declaration('CancelSessionRestart').parameters}
