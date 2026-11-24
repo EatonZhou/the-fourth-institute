@@ -577,7 +577,11 @@ html:root[data-portal-theme="liquid-glass"] body.portalBoardShell .portalModuleN
 }
 
 html:root[data-portal-theme="liquid-glass"] body.portalBoardShell .portalNavGlassDroplet {
-  --liquid-glass-filter: blur(0px);
+  /* Keep the resizing lens on its own translucent paint layer to avoid
+     resizing a backdrop sampling surface in Safari. The stationary header
+     supplies the glass backdrop beneath this highlight. */
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
   display: block;
   position: absolute;
   top: var(--lg-drop-y, 5px);
@@ -1723,11 +1727,6 @@ html:root[data-portal-theme="liquid-glass"] .portalMailboxAlert {
       var(--lg-surface-bar);
     -webkit-backdrop-filter: var(--lg-blur-bar);
     backdrop-filter: var(--liquid-glass-filter, blur(0px)) var(--lg-blur-bar);
-  }
-
-  html:root[data-portal-theme="liquid-glass"] body.portalBoardShell .portalNavGlassDroplet {
-    -webkit-backdrop-filter: saturate(145%) brightness(1.04) contrast(1.03);
-    backdrop-filter: var(--liquid-glass-filter, blur(0px)) saturate(145%) brightness(1.04) contrast(1.03);
   }
 
   /* Compact menus, dropdowns & secondary nav: airy crystalline Liquid Glass with crisp text contrast */

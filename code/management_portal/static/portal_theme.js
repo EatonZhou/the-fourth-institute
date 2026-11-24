@@ -188,7 +188,6 @@
   function attachGlassRefraction(svgElement, header, reducedTransparency, signal) {
     const surfaceSelector = [
       ".portalActivityRail",
-      ".portalNavGlassDroplet",
       ".portalAgentInbox",
       ".graphNavigationBar",
       '[data-portal-overlay-layer="popover"]',
@@ -293,8 +292,7 @@
         image.setAttribute("result", "bevel");
         displacement.setAttribute("in", "SourceGraphic");
         displacement.setAttribute("in2", "bevel");
-        const isGentle = target.classList.contains("portalNavGlassDroplet");
-        displacement.setAttribute("scale", isGentle ? "14" : "22");
+        displacement.setAttribute("scale", "22");
         displacement.setAttribute("xChannelSelector", "R");
         displacement.setAttribute("yChannelSelector", "G");
         filter.append(image, displacement);
