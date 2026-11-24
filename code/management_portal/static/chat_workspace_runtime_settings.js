@@ -550,8 +550,10 @@
       const parametersChanged = () => Boolean(current.onSave) && readEditor() !== baseline;
       const renderContext = () => {
         const choice = contextChoice();
-        find("[data-switch-context-status]").textContent = window.PortalI18n.t(!switching() || (crossProvider() && !targetReady) || !selected()[1] ? ""
-          : choice ? choice.description
+        find("[data-switch-context-status]").textContent = window.PortalI18n.t(!canSwitch() || initializing() ? ""
+          : !automatic() && !selected()[1] ? "请先选择账号，再选择记忆交接方式。"
+          : !switching() || (crossProvider() && !targetReady) ? ""
+          : choice ? choice.description || ""
           : "目标账号交接能力暂不可用，请刷新后重试。");
       };
       const update = () => {
@@ -562,7 +564,6 @@
           memoryMethod.value = choices.find(row => row.enabled)?.id || "";
           memoryMethod.dataset.options = signature;
         }
-        memoryMethod.closest("label").hidden = !switching();
         const locked = submitting || tracking;
         const retry = restartView.restart?.status === "confirming";
         const init = initializing(), switchingAccount = switching(), cross = switchingAccount && crossProvider();
@@ -586,6 +587,8 @@
         target.disabled = locked || automatic(); backend.disabled = locked; policy.disabled = locked;
         editor.element.disabled = locked; targetEditor.element.disabled = locked;
         const choice = contextChoice();
+        memoryMethod.closest("label").hidden = !switchingAccount || !choice;
+        memoryMethod.disabled = locked || !choice || (cross && !targetReady);
         find("[data-switch-context-description]").textContent = window.PortalI18n.t(switchingAccount && choice?.id === "local"
           ? (automatic() ? choice.description : "交接材料来自已有摘要和近期对话，可能遗漏细节和工具过程；保存配置不会立即调用目标模型。") : "");
         const changed = !cross && parametersChanged();
@@ -606,8 +609,9 @@
           : changed ? "参数从下一轮生效，不会重新开始会话。" : "");
         reset.disabled = submitting || (inline && !switchingAccount && !changed);
         cancel.hidden = !tracking; cancel.disabled = submitting || restartView.restart?.status === "cancelling";
+        renderContext();
       };
-      memoryMethod.addEventListener("change", () => { update(); renderContext(); });
+      memoryMethod.addEventListener("change", update);
       const loadTarget = async () => {
         const revision = ++catalogRevision;
         const cross = switching() && crossProvider();

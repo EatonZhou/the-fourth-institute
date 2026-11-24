@@ -43,6 +43,53 @@ w.PortalUI.toast = (message, tone) => toasts.push([message, tone]);
     source: pending.source, providers: [{id: 'codex'}, {id: 'claude'}], accounts: {
       codex: [{id: 'codex_two', context_options: [{id: 'native', enabled: true}]}],
       claude: [{id: 'claude_one', context_options: [{id: 'local', enabled: true, description: '首条真实输入携带本地摘要、索引和最近三轮。'}]}]}};
+  for (const inline of [false, true]) {
+    const selection = api.createRuntimePanel({inline});
+    w.document.body.append(selection.element);
+    selection.open({...config, accounts: {...config.accounts, claude: [
+      {id: 'claude_one', context_options: [
+        {id: 'native', label: '原厂 Fork', enabled: true, description: '保留原厂记忆'},
+        {id: 'local', label: '本地摘要与 Trace', enabled: true, description: '首条真实输入携带本地记忆'}]},
+      {id: 'claude_two', context_options: []},
+      {id: 'claude_three', context_options: [{id: 'native', label: '原厂 Fork', enabled: false}]}
+    ]}}, () => {throw new Error('an incomplete selection must not submit');});
+    await flush();
+    const backend = selection.element.querySelector('[data-session-backend]');
+    const account = selection.element.querySelector('[data-session-target]');
+    const memory = selection.element.querySelector('[data-memory-method]');
+    const status = selection.element.querySelector('[data-switch-context-status]');
+    const submit = selection.element.querySelector('[data-session-restart-submit]');
+    const change = async (element, value) => {
+      element.value = value; element.dispatchEvent(new w.Event('change', {bubbles: true})); await flush();
+    };
+    await change(backend, 'claude');
+    assert.equal(account.value, '');
+    assert.equal(memory.closest('label').hidden, true, 'no empty handoff control before choosing an account');
+    assert.match(status.textContent, /请先选择账号/);
+    assert.equal(submit.disabled, true); submit.click();
+    await change(account, JSON.stringify(['claude', 'claude_one']));
+    assert.equal(memory.closest('label').hidden, false);
+    assert.equal(memory.disabled, false);
+    assert.equal(memory.value, 'native', 'use the first supported method supplied by the server');
+    assert.deepEqual(Array.from(memory.options, option => option.textContent), ['原厂 Fork', '本地摘要与 Trace']);
+    assert.equal(submit.disabled, false);
+    await change(memory, 'local');
+    assert.match(status.textContent, /首条真实输入携带本地记忆/);
+    await change(account, '');
+    assert.equal(memory.closest('label').hidden, true);
+    assert.match(status.textContent, /请先选择账号/);
+    assert.equal(selection.element.querySelector('[data-switch-context-description]').textContent, '');
+    for (const id of ['claude_two', 'claude_three']) {
+      await change(account, JSON.stringify(['claude', id]));
+      assert.equal(memory.closest('label').hidden, true, 'missing or unsupported capabilities must not show a blank control');
+      assert.match(status.textContent, /交接能力暂不可用/);
+      assert.equal(submit.disabled, true); submit.click();
+    }
+    await change(backend, 'codex');
+    assert.equal(memory.closest('label').hidden, true);
+    assert.equal(status.textContent, '', 'returning to the current account clears the handoff warning');
+    selection.destroy();
+  }
   const panel = api.createRuntimePanel({onDone: () => closed++});
   w.document.body.append(panel.element);
   for (const deferred of [false, true]) {
