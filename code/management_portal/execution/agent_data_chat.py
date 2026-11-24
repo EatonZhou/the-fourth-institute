@@ -11,7 +11,7 @@ from .agent_data_segments import existing_segment_ids, read_segments
 from .agent_data_store import canonical_json, in_batches
 from .agent_data_traces import PROVIDER_TURN_SQL, trace_id
 from .conversation_projection import CHAT_PREDICATE, TYPED_BY_USER
-from .message_projection import project_message
+from .message_projection import content_text, inline_message_text, project_message, unwrap_message, wrap_message
 from . import chat_position_index
 
 
@@ -165,6 +165,60 @@ def message_contents(connection: Any, identities: Sequence[str]) -> dict[str, An
     return contents
 
 
+def _chat_input_contents(
+    connection: Any, metadata: dict[str, Any], contents: dict[str, Any],
+) -> dict[str, Any]:
+    """Locate an unwrapped message body inside a recorded Provider input."""
+    unwrapped = {}
+    for segment_id, facts in metadata.items():
+        if facts.get("kind") not in {"provider_input", "effective_provider_input", "appended_provider_input"}:
+            continue
+        if (facts.get("message") or {}).get("role") != "user":
+            continue
+        text = content_text(contents[segment_id])
+        if unwrap_message(text) == text:
+            unwrapped[segment_id] = text
+    if not unwrapped:
+        return contents
+    sources = connection.execute("""
+        SELECT direct.target_segment_id AS target_id,
+               COALESCE(composed.source_segment_id, direct.source_segment_id) AS source_id
+        FROM segment_relations direct
+        LEFT JOIN segment_relations composed ON composed.target_segment_id = direct.source_segment_id
+            AND direct.operation_type = 'agent_harness.prepare_invocation'
+            AND composed.relation_type = 'transformed_from'
+            AND composed.operation_type = 'provider_input.compose'
+        WHERE direct.target_segment_id = ANY(%s)
+          AND direct.relation_type = 'transformed_from'
+          AND (direct.operation_type IN ('provider_input.compose', 'provider_input.append')
+               OR composed.source_segment_id IS NOT NULL)
+        """, (list(unwrapped),)).fetchall()
+    records = {item["segment_id"]: item for item in read_segments(
+        connection, list(dict.fromkeys(source["source_id"] for source in sources)),
+    )}
+    for source in sources:
+        target_id = source["target_id"]
+        original = records.get(source["source_id"])
+        if original is None:
+            continue
+        facts = original["metadata"].get("message") or {}
+        if facts.get("message_id") != metadata[target_id]["message"].get("message_id"):
+            continue
+        # The accepted Segment identifies the current body, including the
+        # recorded file substitutions used when it was prepared for tools.
+        body = unwrap_message(content_text(original["content"]))
+        candidates = [body]
+        if facts.get("parts_encoding") == "inline-v1" and facts.get("file_references"):
+            accepted = project_message(source["source_id"], facts, original["content"])
+            candidates.insert(0, inline_message_text(accepted["content_parts"], facts["file_references"]))
+        bounded = "\n" + unwrapped[target_id] + "\n"
+        for candidate in dict.fromkeys(candidates):
+            if candidate and "\n" + candidate + "\n" in bounded:
+                contents[target_id] = wrap_message(candidate)
+                break
+    return contents
+
+
 def group_source_members(connection: Any, sequence_id: str, message_ids: Sequence[str]) -> list[Any]:
     return group_source_members_for_traces(connection, [(sequence_id, message) for message in message_ids])
 
@@ -307,6 +361,7 @@ class ChatReads:
         metadata = {str(row["segment_id"]): json_value(row["metadata_json"]) for row in rows}
         with self.database.read() as connection:
             contents = message_contents(connection, [row["segment_id"] for row in rows])
+            contents = _chat_input_contents(connection, metadata, contents)
             from .chat_reply_placement import message_contexts, reply_placements
             contexts = message_contexts(connection, list(metadata),
                 [value.get("message", {}).get("message_id", "") for value in metadata.values()])

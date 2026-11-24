@@ -751,4 +751,7 @@ def test_a_model_api_residents_inputs_read_from_the_session_each_one_ran_in():
     for message_id, prompt in sent.items():
         prompts = store.message_provider_prompts(agent_id, message_id)
         assert [item.get("actual_sent_prompt") or item.get("content") for item in prompts] == [prompt]
+        assert store.chat_message(agent_id, message_id)["content_parts"] == [
+            {"type": "text", "text": prompt.split("\n")[1]},
+        ]
     assert store.message_provider_prompts(agent_id, "msg_" + "f" * 32) == []

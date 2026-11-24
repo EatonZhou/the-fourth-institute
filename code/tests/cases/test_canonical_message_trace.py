@@ -269,6 +269,40 @@ def test_current_input_is_the_only_trace_member_and_chat_uses_its_body(isolated_
     assert store.trace_length("resident_current") == 2
 
 
+@pytest.mark.parametrize("include_file", [False, True])
+def test_unwrapped_provider_input_shows_only_the_chat_body(isolated_portal_case, include_file):
+    """无消息包装的 Provider 输入仍能定位 Chat 正文"""
+    store = AgentDataStore()
+    agent = "resident_current"
+    message_id = "msg_input"
+    body = "original"
+    original = message(message_id, body)
+    file_ref = "upload_123"
+    path = "/workspace/upload_123/notes.txt"
+    if include_file:
+        original["content_parts"].append({"type": "file", "upload_id": file_ref, "name": "notes.txt"})
+        original["file_references"] = {file_ref: path}
+        body += f"[file: {path}]"
+    store.display_chat_message(agent, original)
+    request = replace(_turn_request(agent), prompt=body, metadata={"user_message_id": message_id})
+    session = _runtime_session(request, "thread-current")
+    projector = AgentDataProjector(store)
+    projector.begin(request, session)
+    sent = (
+        "<agent-harness-tool-granularity-policy>\nBatch reads\n</agent-harness-tool-granularity-policy>\n"
+        "<resident-runtime-identity>\nIdentity\n</resident-runtime-identity>\n\n"
+        + body + "\n\n<portal-authorization-context>\nCurrent actor\n</portal-authorization-context>"
+    )
+    projector.observe_invocation(request.execution_id, replace(_invocation(request, session), user_prompt=sent))
+    shown, = store.read_chat_messages(agent)
+    assert shown["content_parts"][0] == {"type": "text", "text": "original"}
+    assert len(shown["content_parts"]) == 1 + include_file
+    if include_file:
+        assert shown["content_parts"][1]["source"] == path
+    assert store.chat_message(agent, message_id)["content_parts"] == shown["content_parts"]
+    assert store.segment(shown["segment_id"])["content"] == sent
+
+
 def test_many_to_one_replaces_only_named_occurrences(isolated_portal_case):
     """多项合并仅替换指定消息的出现位置
 
