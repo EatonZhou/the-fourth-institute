@@ -4380,7 +4380,7 @@
                   "off",
                   "every_turn"
                 ],
-                "description": "消息包装：<user-message> 标签、会话说明，以及从正文识别的资源引用。主动附加的资源随消息送达"
+                "description": "附加消息上下文：会话说明以及从正文识别的资源引用。普通消息保留 <user-message> 正文边界"
               },
               "turn_skills": {
                 "type": "string",

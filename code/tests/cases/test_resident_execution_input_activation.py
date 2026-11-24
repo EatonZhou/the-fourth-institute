@@ -658,8 +658,7 @@ def test_normal_delivery_starts_idle_and_advances_busy_queue(input_delivery, mon
     monkeypatch.setattr(resident_prompt_domain, "build_resident_prompt", prompt_builder)
     prepared = resident_execution_domain._portable_context_execution(input_delivery, job)
     assert prepared["prompt_builder_version"] == resident_execution_work.PROMPT_BUILDER_VERSION
-    assert first_message in prepared["actual_sent_prompt"]
-    assert "<user-message>" not in prepared["actual_sent_prompt"]
+    assert f"<user-message>\n{first_message}\n</user-message>" in prepared["actual_sent_prompt"]
     assert "<attached_references>" not in prepared["actual_sent_prompt"]
     assert resident_execution_work.execution_id(job)
     assert resident_execution_work.continuation_needed(input_delivery, job)

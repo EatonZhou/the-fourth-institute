@@ -52,8 +52,8 @@ CATEGORIES: dict[str, tuple[str, str, tuple[str, ...]]] = {
         TIMINGS,
     ),
     "message_envelope": (
-        "消息包装",
-        "<user-message> 标签、会话说明，以及从正文识别的资源引用。主动附加的资源随消息送达",
+        "附加消息上下文",
+        "会话说明以及从正文识别的资源引用。普通消息保留 <user-message> 正文边界",
         ENVELOPE_CHOICES,
     ),
     "turn_skills": (
@@ -203,7 +203,7 @@ def placements(provider: str) -> dict[str, str]:
         "resident_md": system if resident_md_transport(provider) == "system_instructions" else "本轮消息前",
         "runtime_identity": "本轮消息前",
         "authorization_context": "本轮消息后",
-        "message_envelope": "包住本轮消息",
+        "message_envelope": "本轮消息前",
         "turn_skills": "本轮消息前；连同核心规则重发时随核心规则",
     }
 

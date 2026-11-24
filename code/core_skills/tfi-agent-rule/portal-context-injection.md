@@ -47,7 +47,7 @@ Portal 上游明确选择：
 
 - 无状态模型请求每次都是新调用，因此每次附带 system instructions。
 - Resident 默认使用 `standard` 预设；共用规则、角色规则、节点 `resident.md`、运行身份与授权是不同注入部分，各自按设置发送。不要把节点身份文档当作共用角色文件。
-- `standard` 和 `minimal` 默认省略消息包装。消息中的资源地址保留为原文，主动附加的资源随消息送达。`full` 或显式开启 `message_envelope` 时，Portal 也会解析正文里的资源地址，并附上引用清单。
+- 普通 Resident 消息保留 `<user-message>` 正文边界。`standard` 和 `minimal` 默认关闭附加消息上下文，正文里的资源地址原样送达，主动附加的资源随消息送达。`full` 或显式开启 `message_envelope` 时，Portal 也会解析正文里的资源地址，并附上引用清单。
 - 通过 Prompt 注入面板，或 `GetResidentSettings`（结果的 `prompt_injection`）、`UpdateResidentSettings`（`changes.prompt_injection`）、`GetPromptInjectionPreview` 读取、修改和预览各部分的时机。
 - Provider 声明系统位置跨压缩保留时，压缩后不重复发送该位置的首轮规则；Codex 属于这种情况。prompt 位置仍按各自时机发送。
 - Claude 与 DSH 每轮需要完整系统提示；Provider API 将 prompt 位置的部分写入最后一条用户消息。

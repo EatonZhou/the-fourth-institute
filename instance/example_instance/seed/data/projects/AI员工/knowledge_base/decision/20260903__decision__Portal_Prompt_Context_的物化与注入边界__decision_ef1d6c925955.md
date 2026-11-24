@@ -151,13 +151,13 @@ Resident 的运行设置 `prompt_injection` 决定它的每一轮带哪些 Porta
 | `resident_md` | Resident 的长期身份说明 `<resident-identity>` | 同上 | Claude Code、Kimi Code、Provider API 在系统位置；Codex、DSH 在消息前 |
 | `runtime_identity` 运行身份 | `<resident-runtime-identity>`：resident_id、lineage_id、以本 Resident 身份调用 HATG ISA 的说明 | 同上 | 消息前 |
 | `authorization_context` 授权上下文 | `<portal-authorization-context>`：本轮执行者、消息来源、工作目录参考 | 同上 | 消息后 |
-| `message_envelope` 消息包装 | 开启时用 `<user-message>` 包住正文。Portal 解析正文里的资源地址并附上引用清单，有引用时还附加会话说明与 Resident 信息。 | 关闭、每轮 | 本轮消息 |
+| `message_envelope` 附加消息上下文 | Portal 解析正文里的资源地址并附上引用清单，有引用时还附加会话说明与 Resident 信息。 | 关闭、每轮 | 消息前 |
 | `business_instructions` 业务指令 | `prompt_context.system_prompt` | 每轮 | 系统位置 |
 | `turn_skills` 任务 Skill 清单 | 某条消息额外要求读取的 Skill | 关闭、只发清单、连同核心规则重发 | 消息前；连同核心规则重发时随核心规则 |
 
 预设：
 
-| 预设 | 核心规则 | resident.md | 运行身份 | 授权上下文 | 消息包装 | 任务 Skill |
+| 预设 | 核心规则 | resident.md | 运行身份 | 授权上下文 | 附加消息上下文 | 任务 Skill |
 | --- | --- | --- | --- | --- | --- | --- |
 | `standard` 标准（默认） | 首轮 + 压缩后 | 首轮 + 压缩后 | 每轮 | 每轮 | 关闭 | 只发清单 |
 | `full` 每轮完整 | 每轮 | 每轮 | 每轮 | 每轮 | 每轮 | 只发清单 |
@@ -168,7 +168,7 @@ Resident 的运行设置 `prompt_injection` 决定它的每一轮带哪些 Porta
 
 **纯 TUI 关闭表中可关闭的注入项。** Provider 自带的系统提示（例如 Claude Code 的 preset）照常保留。
 
-**关闭消息包装时，正文里的资源地址保留原样。** 主动附加的引用、Fork 继承的历史和本轮运行上下文仍随消息送达。标准和精简预设也会送达经核验的门面回复指引。Agent Harness 的运行提示由 Harness 自己的设置控制。
+**普通消息使用 `<user-message>` 标记正文边界。** 关闭附加消息上下文时，正文里的资源地址保留原样。 主动附加的引用、Fork 继承的历史和本轮运行上下文仍随消息送达。标准和精简预设也会送达经核验的门面回复指引。Agent Harness 的运行提示由 Harness 自己的设置控制。
 
 **规则与权限的边界：** 关闭运行身份和授权上下文只是不再告诉模型这些信息，服务端仍按当前 Resident 检查权限。
 

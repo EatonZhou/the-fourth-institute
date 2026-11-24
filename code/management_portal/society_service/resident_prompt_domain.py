@@ -140,14 +140,15 @@ def _build_resident_prompt(record: dict[str, Any], job: dict[str, Any]) -> str:
     Portal's other injected input (rules, resident.md, runtime identity,
     authorization context) travels as parts of the turn's system instructions
     and ExecutionService adds the due ones (``_resident_system_instructions``).
-    The envelope follows the Resident's ``prompt_injection`` setting.
-    Explicit attachments and runtime context travel with a bare message too.
+    The optional envelope follows the Resident's ``prompt_injection`` setting.
+    The ordinary message body keeps its delimiter for the Chat projection.
     """
     from management_portal import prompt_injection
     if resident_input_scope.get(resident_domain_common.record_resident_id(record), str(job.get("user_message_id") or "")):
         return str(job.get("raw_message") or job.get("message") or "")
     choices = prompt_injection.resolve(resident_runtime_domain.read_resident_runtime_settings(record).get("prompt_injection"))
     envelope = choices["message_envelope"] != "off"
+    pure = choices == prompt_injection.PRESETS["pure"]
     context_refs = job.get("context_refs") if isinstance(job.get("context_refs"), dict) else {}
     attached_refs = attached_references_text(context_refs)
     message = _message_text(job)
@@ -167,7 +168,7 @@ def _build_resident_prompt(record: dict[str, Any], job: dict[str, Any]) -> str:
             f"{json.dumps(resident_summary, ensure_ascii=False, indent=2)}\n"
             "</resident_agent>"
         )
-    elif choices != prompt_injection.PRESETS["pure"]:
+    elif not pure:
         delivery_hint = _sender_line(job, envelope=False)
         if delivery_hint:
             blocks.append(delivery_hint)
@@ -180,9 +181,9 @@ def _build_resident_prompt(record: dict[str, Any], job: dict[str, Any]) -> str:
     runtime_block = _runtime_context_block(job)
     if runtime_block:
         blocks.append(runtime_block)
-    if choices != prompt_injection.PRESETS["pure"]:
+    if not pure:
         reply_block = _reply_hint_block(record, job)
         if reply_block:
             blocks.append(reply_block)
-    blocks.append(_user_message_block(message).strip() if envelope else message)
-    return "\n\n".join(blocks) + ("\n" if envelope or len(blocks) > 1 else "")
+    blocks.append(message if pure else _user_message_block(message).strip())
+    return "\n\n".join(blocks) + ("\n" if not pure or len(blocks) > 1 else "")

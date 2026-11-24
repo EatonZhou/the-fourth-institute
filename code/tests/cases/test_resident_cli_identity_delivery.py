@@ -157,16 +157,15 @@ def test_turn_prompt_uses_the_authenticated_sender_for_sender_hints(resident_rec
     assert '"owner_ids"' not in prompt
 
 
-def test_standard_prompt_keeps_explicit_references_without_wrapping_the_message(resident_record):
+def test_standard_prompt_keeps_explicit_references_and_the_body_boundary(resident_record):
     prompt = resident_prompt_domain.build_resident_message(resident_record, {
         "actor": "resident_2a1fc6cd272d",
         "message": "status?",
         "context_refs": {"resources": ["lineage_1fac8ce84383"]},
     })
     assert 'address="lineage_1fac8ce84383"' in prompt
-    assert prompt.endswith("status?\n")
+    assert prompt.endswith("<user-message>\nstatus?\n</user-message>\n")
     assert "<resident_agent>" not in prompt
-    assert "<user-message>" not in prompt
 
 
 @pytest.mark.parametrize("reference,embedded,internal", [
