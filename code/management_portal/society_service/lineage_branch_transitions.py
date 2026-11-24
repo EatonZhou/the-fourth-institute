@@ -42,12 +42,12 @@ def branch_request(payload: dict[str, Any]) -> tuple[str, str, str, str]:
     source_id = _text(payload.get("source_resident_id"), 80).lower()
     context_source_id = _text(payload.get("context_source_resident_id"), 80).lower() or source_id
     edge_id = _text(payload.get("edge_id"), 80).lower()
-    mode = _text(payload.get("mode"), 24).lower() or "full"
+    mode = _text(payload.get("mode"), 24).lower()
     if not source_id:
         raise ValueError("创建轨迹分支需要来源节点")
     if not edge_id or not ITEM_ID_RE.fullmatch(edge_id):
         raise ValueError("创建轨迹分支需要有效的 edge_id")
-    if mode not in {"full", "compacted", "recent-5", "recent-10", "message"}:
+    if mode not in {"", "native", "local"}:
         raise ValueError("不支持的轨迹分支模式")
     return source_id, context_source_id, edge_id, mode
 
@@ -193,13 +193,7 @@ def branch_edge(
     *, edge_id: str, source_id: str, target_id: str,
     context_source_resident_id: str, mode: str, message: dict[str, Any], now: str,
 ) -> dict[str, Any]:
-    label = {
-        "message": "从消息继续",
-        "full": "完整轨迹",
-        "compacted": "压缩继承",
-        "recent-5": "最近 5 轮",
-        "recent-10": "最近 10 轮",
-    }[mode]
+    label = {"": "记忆交接", "native": "厂商原生 Fork", "local": "本地摘要与 trace"}[mode]
     return {
         "id": edge_id,
         "source": source_id,
@@ -220,51 +214,17 @@ def create_derived_resident(
     context_source_resident_id = _text(
         payload.get("context_source_resident_id"), 80,
     ).lower() or source_resident_id
-    mode = _text(payload.get("mode"), 24).lower() or "full"
-    if mode not in {"full", "compacted", "recent-5", "recent-10", "message"}:
+    mode = _text(payload.get("mode"), 24).lower()
+    if mode not in {"", "native", "local"}:
         raise ValueError("不支持的轨迹分支模式")
-    if mode != "message" and context_source_resident_id != source_resident_id:
-        raise ValueError("context_source_resident_id 与 source_resident_id 不同时只支持 message 模式")
-    backend_route_id = _text(payload.get("backend_route_id"), 160)
-    provider = _text(payload.get("provider"), 64)
-    fork_title = _text(payload.get("title"), 120)
-    if mode == "message":
-        return resident_authority.create_resident_fork_from_message(
-            context_source_resident_id,
-            actor,
-            payload.get("message") if isinstance(payload.get("message"), dict) else {},
-            source_resident_id,
-            lineage_source,
-            backend_route_id=backend_route_id,
-            provider=provider,
-            fork_title=fork_title,
-        )
-    if mode in {"recent-5", "recent-10"}:
-        return resident_authority.create_resident_context_fork(
-            source_resident_id,
-            actor,
-            5 if mode == "recent-5" else 10,
-            lineage_source,
-            backend_route_id=backend_route_id,
-            provider=provider,
-            fork_title=fork_title,
-        )
-    if mode == "compacted":
-        return resident_authority.create_resident_compacted_context_fork(
-            source_resident_id,
-            actor,
-            lineage_source,
-            backend_route_id=backend_route_id,
-            provider=provider,
-            fork_title=fork_title,
-        )
+    if context_source_resident_id != source_resident_id:
+        raise ValueError("Fork 的上下文来源必须为来源 Resident")
     return resident_authority.create_resident_full_context_fork(
-        source_resident_id,
-        actor,
-        lineage_source,
-        backend_route_id=backend_route_id,
-        provider=provider,
-        fork_title=fork_title,
+        source_resident_id, actor, lineage_source,
+        backend_route_id=_text(payload.get("backend_route_id"), 160),
+        provider=_text(payload.get("provider"), 64), fork_title=_text(payload.get("title"), 120),
+        memory_method=mode, model=_text(payload.get("model"), 160),
+        reasoning_effort=payload.get("reasoning_effort"),
     )
 
 

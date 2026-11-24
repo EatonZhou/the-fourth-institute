@@ -252,7 +252,7 @@ def create_role(ctx, role, roles, near=""):
     else:
         payload = {
             "source": source,
-            "fork_mode": role.get("fork_mode", "full"),
+            "fork_mode": role.get("fork_mode", ""),
             "child_title": title,
         }
         if account:
@@ -312,12 +312,7 @@ class StructureKind:
                         raise TemplateError("未知角色来源")
                     if item["from"] == "fork" and item.get("fork_of") not in role_keys:
                         raise TemplateError("Fork 来源必须是前面已定义的角色")
-                    if item.get("fork_mode", "full") not in {
-                        "full",
-                        "compacted",
-                        "recent-5",
-                        "recent-10",
-                    }:
+                    if item.get("fork_mode", "") not in {"", "native", "local"}:
                         raise TemplateError("未知 Fork 模式")
                     if not isinstance(item.get("settings", {}), dict):
                         raise TemplateError("角色 settings 必须是对象")

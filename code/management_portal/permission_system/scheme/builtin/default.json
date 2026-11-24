@@ -551,9 +551,6 @@
     "ForkResident:source_resident_id": {
       "a": "@viewer"
     },
-    "ForkResident:context_source_resident_id": {
-      "a": "@viewer"
-    },
     "ForwardMessages:target_resident_id": {
       "a": "@message"
     },

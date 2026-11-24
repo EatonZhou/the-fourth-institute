@@ -116,7 +116,7 @@ TASKS = {
         "关闭整个 Family 门面表示暂停自维护，单个成员关闭不再自动免除恢复职责。",
         "核验并处理当前未解决故障。"),
     "quota": ("recheck_recovery", "steward", "业务成员额度不足",
-        "先用 GetResidentSettings 核对执行者有效自动切换策略，并用 GetLineage 读取 Family 配置；成员明确设置的开关优先，关闭时等待原额度或用户明确授权。继承 Family 时同种类可用账号优先，否则按有效种类排序；成员明确开启时使用站点默认排序。未排序的订阅种类按默认顺序追加，服务账号和 API 只在与原账号同种类或有效排序明确允许时可选。用 ListProviderAccounts.migration_type 区分订阅、服务账号及不同 API 接入，不能只按 harness 选择。检查五小时、周等所有窗口，自动迁移优先完整保留上下文；不支持完整导入时自动在目标账号整理交接，不等待用户选择，不空白重开；旧会话和历史保留，目标准备好后继续原任务。Steward 必要时使用 RestartSession(context_strategy=compact) 完成跨后端交接；跨 Provider 须明确目标账号的默认 model，"
+        "先用 GetResidentSettings 核对执行者有效自动切换策略，并用 GetLineage 读取 Family 配置；成员明确设置的开关优先，关闭时等待原额度或用户明确授权。继承 Family 时同种类可用账号优先，否则按有效种类排序；成员明确开启时使用站点默认排序。未排序的订阅种类按默认顺序追加，服务账号和 API 只在与原账号同种类或有效排序明确允许时可选。用 ListProviderAccounts.migration_type 区分订阅、服务账号及不同 API 接入，不能只按 harness 选择。检查五小时、周等所有窗口，自动迁移优先厂商原生 Fork，不兼容时用已有本地摘要与 trace 索引及最近三轮交接；切换不调用模型、不改 Segment 和 trace，第一条实际输入才交付，失败输入不自动重投。Steward 必要时使用 RestartSession(context_strategy=local) 完成跨后端交接；跨 Provider 须明确目标账号的默认 model，"
         "完成后 RelayFamilyMessage(quota_reviewed=true, reason=理由) 继续原请求。"
         "Router 和 Steward 自身的可用性由运行时保障；无可用后端时通知实际创建人。",
         "评估额度受限成员，安排原请求继续执行。"),
@@ -161,12 +161,12 @@ _VERSIONED_SUMMARY_GUIDE = "用 GetFamilySummaryInputs(resident_id=facade, overv
 _VERSIONED_PROGRESS_GUIDE = "用 GetFamilySummaryInputs 读取当前材料和版本。按批次用 PublishFamilyProgress 提交 report、summary、expected_revision、source_versions；简报正文和门面九字段摘要分别不超过 500 字。区分已完成、进行中、阻塞及未覆盖，不代写成员事实，不群发；冲突后重读再提交。"
 
 _PRE_SUBSCRIPTION_QUOTA_GUIDE = (
-    "先用 GetLineage 核对 Family.auto_migrate；关闭时不自动更换账号，等待原额度或用户明确授权。同种类可用账号优先，否则按 auto_migrate_priority 的种类顺序，未列种类排末尾；用 ListProviderAccounts.migration_type 区分订阅、服务账号及不同 API 接入，不能只按 harness 选择。检查五小时、周等所有窗口，必要时 RestartSession(context_strategy=compact) 迁移；跨 Provider 须明确目标账号的默认 model，"
+    "先用 GetLineage 核对 Family.auto_migrate；关闭时不自动更换账号，等待原额度或用户明确授权。同种类可用账号优先，否则按 auto_migrate_priority 的种类顺序，未列种类排末尾；用 ListProviderAccounts.migration_type 区分订阅、服务账号及不同 API 接入，不能只按 harness 选择。检查五小时、周等所有窗口，必要时 RestartSession(context_strategy=local) 迁移；跨 Provider 须明确目标账号的默认 model，"
     "完成后 RelayFamilyMessage(quota_reviewed=true, reason=理由) 继续原请求。"
     "Router 和 Steward 自身的可用性由运行时保障；无可用后端时通知实际创建人。")
 
 _PRE_PRESERVE_QUOTA_GUIDE = (
-    "先用 GetLineage 核对 Family.auto_migrate；关闭时不自动更换账号，等待原额度或用户明确授权。同种类可用账号优先，否则按 auto_migrate_priority 的种类顺序；自动更换只在订阅账号之间进行，服务账号和 API 只在与原账号同种类或用户已列入 auto_migrate_priority 时可选，否则等待原额度或请用户明确授权；用 ListProviderAccounts.migration_type 区分订阅、服务账号及不同 API 接入，不能只按 harness 选择。检查五小时、周等所有窗口，必要时 RestartSession(context_strategy=compact) 迁移；跨 Provider 须明确目标账号的默认 model，"
+    "先用 GetLineage 核对 Family.auto_migrate；关闭时不自动更换账号，等待原额度或用户明确授权。同种类可用账号优先，否则按 auto_migrate_priority 的种类顺序；自动更换只在订阅账号之间进行，服务账号和 API 只在与原账号同种类或用户已列入 auto_migrate_priority 时可选，否则等待原额度或请用户明确授权；用 ListProviderAccounts.migration_type 区分订阅、服务账号及不同 API 接入，不能只按 harness 选择。检查五小时、周等所有窗口，必要时 RestartSession(context_strategy=local) 迁移；跨 Provider 须明确目标账号的默认 model，"
     "完成后 RelayFamilyMessage(quota_reviewed=true, reason=理由) 继续原请求。"
     "Router 和 Steward 自身的可用性由运行时保障；无可用后端时通知实际创建人。")
 

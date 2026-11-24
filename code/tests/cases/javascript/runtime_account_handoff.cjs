@@ -17,7 +17,7 @@ w.PortalUI.toast = (message, tone) => toasts.push([message, tone]);
   for (const compact of [false, true]) {
     const progress = api.createSessionRestartProgress({compact, headerIcon: compact});
     w.document.body.append(progress.element);
-    for (const strategy of ['compact', 'visible']) {
+    for (const strategy of ['native', 'local']) {
       progress.update({restart: {...pending, context_strategy: strategy}});
       assert.equal(progress.element.hidden, false, 'configuration completion must expose pending context');
       assert.match(progress.element.textContent, /账号配置已保存/);
@@ -41,13 +41,13 @@ w.PortalUI.toast = (message, tone) => toasts.push([message, tone]);
     observeSessionRestart: (_id, callback) => {observe = callback; return () => {};}};
   const config = {resident_id: 'fixture', runtime_settings: {model: 'm'}, runtime_catalog: catalog,
     source: pending.source, providers: [{id: 'codex'}, {id: 'claude'}], accounts: {
-      codex: [{id: 'codex_two', context_options: [{id: 'preserve', enabled: true}]}],
-      claude: [{id: 'claude_one', context_options: [{id: 'compact', enabled: true, description: '新会话成功后才切换，可能遗漏细节'}]}]}};
+      codex: [{id: 'codex_two', context_options: [{id: 'native', enabled: true}]}],
+      claude: [{id: 'claude_one', context_options: [{id: 'local', enabled: true, description: '首条真实输入携带本地摘要、索引和最近三轮。'}]}]}};
   const panel = api.createRuntimePanel({onDone: () => closed++});
   w.document.body.append(panel.element);
   for (const deferred of [false, true]) {
     panel.open(config, async values => {
-      requests++; assert.equal(values.context_strategy, 'compact');
+      requests++; assert.equal(values.context_strategy, 'local');
       assert.equal(values.active_execution_policy, 'wait'); assert.equal(values.resume_failed_input, false);
       assert.ok(values.idempotency_key);
       return deferred ? {...pending, status: 'accepted'} : pending;
@@ -63,7 +63,7 @@ w.PortalUI.toast = (message, tone) => toasts.push([message, tone]);
     assert.equal(submit.textContent, '保存账号配置');
     submit.click(); submit.click(); await flush();
     if (deferred) {observe({restart: pending}); await flush(); observe({restart: pending}); await flush();}
-    assert.equal(requests, deferred ? 2 : 1, 'double submit admits one write');
+    assert.equal(requests, deferred ? 2 : 1, 'double submit admits one write: ' + JSON.stringify(toasts));
     assert.equal(closed, deferred ? 2 : 1, 'repeated receipt closes only once');
     assert.equal(toasts.length, deferred ? 2 : 1, 'one completion notice per submission');
     assert.match(toasts.at(-1)[0], /账号配置已保存.*首条真实输入/);

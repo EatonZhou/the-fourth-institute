@@ -16,7 +16,13 @@ def context_seed(record: Mapping, prompt: str, *, accepted: bool) -> dict:
     operation = pending.get("operation_id")
     if not operation or operation != (record.get("session_restart") or {}).get("restart_id"):
         raise ValueError("Pending session handoff operation has changed")
-    if pending.get("strategy") not in {"compact", "visible"}:
+    # Read-only compatibility for an already committed pre-v2 handoff.
+    # New requests cannot select these strategies; never regenerate its material.
+    state = record.get("session_restart") or {}
+    legacy = (state.get("configuration_only") is True and state.get("status") == "completed"
+              and pending.get("strategy") in {"compact", "visible"}
+              and state.get("context_strategy") == pending.get("strategy"))
+    if pending.get("strategy") not in {"native", "local"} and not legacy:
         raise ValueError("Pending session handoff strategy is unsupported")
     if "context_reset_at" not in pending:
         raise ValueError("Pending session handoff context was reset")
@@ -25,7 +31,7 @@ def context_seed(record: Mapping, prompt: str, *, accepted: bool) -> dict:
         # boundary discards this old material, without blocking a fresh input.
         return {}
     target = pending.get("target")
-    if not isinstance(target, Mapping) or not target.get("provider") or not target.get("route"):
+    if not isinstance(target, Mapping) or not target.get("provider") or not isinstance(target.get("route"), str):
         raise ValueError("Pending session handoff target is missing")
     expected = (target["provider"], target["route"])
     if expected != (resident_backend.execution_backend(record), record.get("backend_route_id")):

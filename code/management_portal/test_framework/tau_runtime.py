@@ -299,7 +299,7 @@ def apply_configuration(assignment: dict[str, Any]) -> dict[str, Any]:
             "account_id": assignment["backend_route_id"],
             # A native fork keeps the old thread's tools, so a session without
             # a required tool is replaced by a compact handoff.
-            "context_strategy": "compact" if tools_stale else "preserve",
+            "context_strategy": "local" if tools_stale else "",
             "active_execution_policy": "wait",
         }, key=idempotency_key, version={resident_id: source["generation"]})
     return resident_status(assignment)

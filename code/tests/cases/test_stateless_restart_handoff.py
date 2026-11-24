@@ -36,9 +36,8 @@ def execution(tmp_path):
         _close(server, thread)
 
 
-@pytest.mark.parametrize('finish', ['completed', 'failed', 'cancelled'])
-def test_stateless_original_input_and_queue_survive_migration(resident, execution, finish):
-    _roundtrip(resident, execution, finish)
+def test_stateless_original_input_and_queue_survive_migration(resident, execution):
+    _roundtrip(resident, execution)
 
 
 def test_stateless_receipt_replay_retains_actor_and_operation_scope(execution):

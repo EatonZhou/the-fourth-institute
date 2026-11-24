@@ -282,7 +282,7 @@ class SessionManager:
                     "execution context source belongs to another backend route"
                 )
             backend_route_id = source_route_id or backend_route_id
-            session_context = source_binding
+            session_context = {} if request.operation == "fork" else source_binding
         return RuntimeSession(
             mode=options.mode,
             binding_id=options.binding_id,

@@ -123,7 +123,7 @@ def test_fork_without_workspace_authority_stays_read_only() -> None:
 
 
 @pytest.mark.parametrize("provider", ["claude", "kimi", "dsh", "opencode", "provider_api"])
-@pytest.mark.parametrize("mode", ["full", "recent-5"])
+@pytest.mark.parametrize("mode", ["", "local"])
 def test_cross_provider_fork_keeps_trace_and_uses_target_account(resident_record, monkeypatch, provider, mode):
     """跨 Provider 分叉保留上下文轨迹并使用目标账号"""
     from management_portal.ai_provider_registry import AIProviderRegistry
@@ -159,10 +159,7 @@ def test_cross_provider_fork_keeps_trace_and_uses_target_account(resident_record
                else next(a for a in default_execution_accounts().accounts() if a.provider == provider))
     source_settings = resident_runtime_domain.read_resident_runtime_settings(resident_record)
     args = {"provider": provider, "backend_route_id": account.account_id}
-    if mode == "full":
-        created = backend.create_resident_full_context_fork(resident_record["resident_id"], "CASE-A", **args)
-    else:
-        created = backend.create_resident_context_fork(resident_record["resident_id"], "CASE-A", 5, **args)
+    created = backend.create_resident_full_context_fork(resident_record["resident_id"], "CASE-A", memory_method=mode, **args)
     child = resident_catalog.get_catalog().get(created["resident_id"])
     assert child["backend"] == provider
     assert child["backend_route_id"] == account.route_id
@@ -189,7 +186,7 @@ def test_cross_provider_fork_keeps_trace_and_uses_target_account(resident_record
         assert request.runtime_options["messages"][-1]["content"].endswith("Continue")
         assert request.provider == account.route_id
 
-    if mode == "full":
+    if mode == "":
         returned = backend.create_resident_full_context_fork(
             child["resident_id"], "CASE-A", provider="codex", backend_route_id="zero", defer_backend_start=True,
         )
@@ -209,10 +206,10 @@ def test_model_api_fork_requires_an_account_when_switching_provider(resident_rec
         backend.create_resident_full_context_fork(resident_record["resident_id"], "CASE-A", provider="provider_api")
 
 
-def test_compacted_fork_checks_target_provider_before_creating(resident_record):
-    """压缩分叉在创建前检查目标 Provider 支持能力"""
+def test_native_fork_checks_target_provider_before_creating(resident_record):
+    """原生分叉在创建前检查目标账号兼容性"""
     from tests.cases.fork_context_test_support import record_session_turn
 
     record_session_turn(resident_record)
-    with pytest.raises(ValueError, match="目标 Provider kimi 不支持压缩继承"):
-        backend.create_resident_compacted_context_fork(resident_record["resident_id"], "CASE-A", provider="kimi")
+    with pytest.raises(ValueError, match="不支持来源会话的原生 Fork"):
+        backend.create_resident_full_context_fork(resident_record["resident_id"], "CASE-A", provider="kimi", memory_method="native")

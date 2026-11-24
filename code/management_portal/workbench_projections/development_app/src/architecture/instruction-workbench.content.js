@@ -18,7 +18,7 @@ export const lessons = {
       variant('invalid', '混入未知字段', ['changes：{ nickname: "新名" }'], ['原用户资料保持'], {error:'instruction.invalid_arguments'}, '服务拒绝不在允许字段中的 nickname；不能用任意字典偷偷扩展用户资料。'),
     ], 'management_portal/web_isa.py#L615'),
   ForkResident: lesson('Fork 产生新成员，哪些上下文跟过去？', '从具体成员派生新 Resident。来源身份和新身份不同，继承方式决定新会话得到的上下文范围。', 'graph',
-    {lineage_id:'新成员所在 Lineage。', source_resident_id:'被派生的具体成员；Family 门面不能 Fork。', fork_mode:'full / compacted / recent-5 / recent-10 / message 选择上下文来源。', message:'message 模式必须提供的历史截止点 {message_id}。'}, [
+    {lineage_id:'新成员所在 Lineage。', source_resident_id:'被派生的具体成员；Family 门面不能 Fork。', fork_mode:'native / local；省略时优先原生 Fork，首条新消息才交接。'}, [
       variant('full', '完整上下文', ['来源成员 R₁', '已存在的模型上下文'], ['来源 R₁ → 派生 R₂', 'R₂ 获得所选上下文', '继承关系有独立 ID'], {resident_id:'resident_demo_child',inheritance_edge_id:'demo_edge'}, '派生关系记录来源，新成员仍是独立 Resident。此图不表示共用一个可写会话。'),
       variant('message', '缺少历史截止点', ['fork_mode = message', '未提供 message: {message_id}'], ['没有新成员'], {error:'instruction.invalid_arguments'}, '按历史消息截取上下文必须指定截止消息；缺少截止点，在派生前即拒绝。'),
       variant('facade', '选了 Family 门面', ['source = Family 门面'], ['不创建派生成员'], {error:'instruction.conflict'}, '门面代表整个 Family；需要 Fork 其中的具体成员。'),

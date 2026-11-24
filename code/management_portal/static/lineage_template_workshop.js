@@ -147,7 +147,7 @@
         if (id === 'workshop_fork') {
           const origin = runtime.draft.body.roles.find(row => row.key === runtime.editorState.graph.selected()) || runtime.draft.body.roles[0];
           if (!origin) throw new Error(t('先添加一个角色，Fork 才有来源'));
-          incoming.roles[0].fork_of = origin.key; incoming.roles[0].fork_mode = 'full';
+          incoming.roles[0].fork_of = origin.key; incoming.roles[0].fork_mode = '';
         }
         const key = window.LineageTemplateWorkshopDraft.appendTemplate(runtime.draft, source, target);
         if (id === 'workshop_fork') runtime.draft.body.roles.find(row => row.key === key).fork_of = incoming.roles[0].fork_of;

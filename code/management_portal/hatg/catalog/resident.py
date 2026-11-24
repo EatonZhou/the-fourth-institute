@@ -18,7 +18,7 @@ def _d(name, decides, description, parameters=(), result=(), *, mutates=False, t
 
 # Every registered agent Backend; registering a Backend adds it here.
 PROVIDERS = tuple(AGENT_PROVIDERS)
-FORK_MODES = ("full", "compacted", "recent-5", "recent-10", "message")
+FORK_MODES = ("native", "local")
 # A Resident's prompt injection (decision_ef1d6c925955).
 PROMPT_INJECTION_PARTS = {
     name: {"type": "string", "enum": list(choices), "description": f"{label}：{description}"}
@@ -92,13 +92,11 @@ DECLARATIONS = (
         FAMILY_TO_JOIN,
         *PLACEMENT,
     ), CREATED, mutates=True, target="lineage_id"),
-    _d("ForkResident", (On("lineage_id", "lineage"), On("source_resident_id", "resident"),
-                        On("context_source_resident_id", "resident", optional=True)), "从来源 Resident Fork 出一个新 Resident，新 Resident 按选定方式继承来源的上下文。", (R("lineage_id", description="对象当前所属的源 Lineage"),
+    _d("ForkResident", (On("lineage_id", "lineage"), On("source_resident_id", "resident")), "从来源 Resident Fork 出一个新 Resident，新 Resident 按选定方式继承来源的上下文。", (R("lineage_id", description="对象当前所属的源 Lineage"),
         R("source_resident_id", description="被 Fork 的来源 Resident"),
-        P("fork_mode", description="上下文继承方式，默认 full", enum=FORK_MODES),
-        P("context_source_resident_id", description="上下文来源，默认与 source_resident_id 相同"),
-        P("message", "object", "fork_mode=message 时的历史截止点 {message_id}",
-          properties={"message_id": {"type": "string"}}),
+        P("fork_mode", description="记忆交接；省略时优先原生 Fork，不可用则本地摘要与 trace。创建不调用模型，第一条新消息才交接", enum=FORK_MODES),
+        P("model", description="目标账号支持的模型；与切换账号使用同一校验"),
+        P("reasoning_effort", description="目标模型支持的推理强度"),
         P("title", description="新 Resident 名称"),
         P("provider", description="目标 Provider；省略时继承上下文来源的 Provider", enum=(*PROVIDERS, "provider_api")),
         P("account_id", description="目标 Provider 的账号；同 Provider 默认继承来源账号，切换原生 Provider 使用目标默认账号，切换到 Model API 须指定账号"),
@@ -274,7 +272,7 @@ DECLARATIONS = (
         R("candidate_agent_id", description="恢复所用候选会话的 agent ID；没有时为空"),
         R("candidate_binding_id", description="候选会话的绑定 ID；没有时为空"),
     ), mutates=True, target="resident_id"),
-    _d("RestartSession", ON_RESIDENT, "切换 Resident 后端、账号与上下文；原生后端建立新会话，Model API 保存直连配置。", (
+    _d("RestartSession", ON_RESIDENT, "保存 Resident 后端、账号及记忆交接配置；不调用模型，第一条新消息才交接。", (
         R("resident_id", description="要切换的 Resident"),
         P("operation", description="switch_account切换账号并保留上下文；restart显式重新开始会话", enum=("switch_account", "restart")),
         P("provider", description="目标 Provider；省略时保持当前 Provider", enum=(*PROVIDERS, "provider_api")),
@@ -287,13 +285,9 @@ DECLARATIONS = (
         P("permission_preset", description="目标 Provider 的权限预设；切换成功后生效"),
         P("prompt_context", "object", "仅 Model API：固定上下文和 history 设置"),
         P("backend_options", "object", "仅 Model API：协议参数、超时和重试"),
-        P("context_strategy", description="默认 preserve：保留有效上下文，无法完整保留则不切换；switch_account只允许preserve。"
-          "fresh显式空会话；compact/visible为明确选择的有损交接，smart仅兼容旧请求且不得隐式精简",
-          enum=("preserve", "smart", "native", "compact", "visible", "fresh")),
+        P("context_strategy", description="记忆交接：原生 Fork 或本地摘要与 trace；缺省优先可用的原生 Fork。仅保存配置，第一条新消息才交接", enum=FORK_MODES),
         P("active_execution_policy", description="有正在进行的轮次时：wait 等本轮结束再切换（默认），cancel 先取消它",
           enum=("wait", "cancel")),
-        P("resume_failed_input", "boolean", "显式请求恢复失败输入；账号切换不自动重试，默认false"),
-        P("credits_consent", "object", "仅已登录人类可提交：{account_id:目标稳定账号ID,confirmed:true}；明确授权本次新建/迁移目标Session使用credits，必须携带幂等键，不继承给后续Session"),
     ), (
         R("restart_id", description="这次重启的 ID，供 GetSessionRestart、CancelSessionRestart 使用"),
         R("status", description="当前进度"),

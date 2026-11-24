@@ -1895,7 +1895,7 @@
           ? window.PortalI18n.markup('<button type="button" data-portal-message-action="quote">引用回复</button>')
           : "") + (messageRole(item) === "human" && this.target().resident_id
           && this.detail?.backend_capabilities?.portal_fork === true && this.detail?.allows?.ForkResident === true
-          ? window.PortalI18n.markup('<button type="button" data-portal-message-action="fork-current">在当前 Lineage 中创建分支</button><button type="button" data-portal-message-action="fork-other">在其他 Lineage 中创建分支…</button>')
+          ? ''
           : "") + familyReassignMenuItems(item, this.familyStatusFamily),
         onMessageAction: ({ action, key, item, button }) => (action === "submission-retry"
           ? window.PortalResidentProtocol.retrySubmission(this.target().resident_id, key).catch(error => this.reportError(error))
@@ -2452,46 +2452,6 @@
     messageAction(action, key) {
       if (action === "withdrawn-edit") return this.reeditWithdrawnMessage(key);
       if (action === "quote") return this.quoteMessage(key);
-      if (!["fork-current", "fork-other"].includes(action)) return;
-      const source = { ...this.target() };
-      const item = this.workspace.state?.messages?.find(message => messageIdentity(message) === key);
-      if (!item || messageRole(item) !== "human") return;
-      const fork = async target => {
-        const lineageId = target.lineage_id;
-        if (!lineageId) throw new Error("Resident 缺少所属 Lineage");
-        const societyService = window.PortalSocietyService.createClient();
-        const graph = await societyService.loadLineage(lineageId);
-        const nodes = graph?.graph?.nodes || graph?.nodes || [];
-        const parent = nodes.find(node => node.id === target.resident_id);
-        if (!parent) throw new Error("目标 Lineage 中找不到父 Resident");
-        const result = await societyService.branchNode({
-          lineage_id: lineageId,
-          source_resident_id: parent.id,
-          context_source_resident_id: source.resident_id,
-          fork_mode: "message",
-          message: { message_id: item.id },
-        });
-        const residentId = String(result?.resident_id || "");
-        if (this.options.onForkCreated) {
-          await this.options.onForkCreated({ lineageId, residentId, lineage: result?.lineage, result }, this);
-        } else if (!residentId || result?.lineage?.lineage_id !== lineageId) {
-          window.PortalUI?.toast?.("分支已创建，但返回结果不完整；请刷新 Lineage 后定位新 Resident。", "warning");
-        } else {
-          window.PortalUI?.toast?.("分支已创建。", "success");
-        }
-        return result;
-      };
-      if (action === "fork-current") return this.runAction(() => fork(source));
-      return openResidentForwardDialog([{ content: item.content || "对话分支" }], {
-        title: window.PortalI18n.t("在其他 Lineage 中创建分支"),
-        submitLabel: "创建分支",
-        summary: "选择新分支所属的 Lineage 和父 Resident。",
-        selectTargetOnly: true,
-        successMessage: "已创建分支。",
-        preferredLineageId: source.lineage_id,
-        loadTargets: query => window.PortalResidentService.forwardTargets(query),
-        submit: body => fork({ lineage_id: body.target_lineage_id, resident_id: body.target_resident_id }),
-      });
     }
 
     rejectUnavailableTarget(error) {

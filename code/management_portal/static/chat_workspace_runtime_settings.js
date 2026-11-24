@@ -159,7 +159,7 @@
       };
       let currentSettings = {};
       let initialSettings = {};
-      let providerCatalog = null, showAccountSelection = true;
+      let providerCatalog = null, showAccountSelection = true, modelOnly = false;
       const syncModelControls = () => {
         accountSelection.closest(".portalRuntimeSettingsField").hidden = !showAccountSelection || providerCatalog?.account_selection?.enabled !== true;
         if (!providerCatalog) return;
@@ -240,17 +240,20 @@
             if (!effort.closest(".portalRuntimeSettingsField").hidden) selected.reasoning_effort = String(effort.value || "").trim();
             if (!tier.disabled && !tier.closest(".portalRuntimeSettingsField").hidden) selected.service_tier = String(tier.value || "").trim();
           }
-          Object.assign(selected, apiFields.read());
+          if (!modelOnly) Object.assign(selected, apiFields.read());
           if (initialApiRoute && apiAccount.value !== initialApiRoute) selected.backend_route_id = apiAccount.value;
           return selected;
         },
         open(settings = {}, dialogOptions = {}) {
+          modelOnly = dialogOptions.modelOnly === true;
           currentSettings = settings && typeof settings === "object" ? settings : {};
           initialSettings = { ...currentSettings };
           accountSelection.value = currentSettings.account_selection || "fixed";
           providerCatalog = dialogOptions.catalog || null;
           showAccountSelection = dialogOptions.showAccountSelection !== false;
           apiFields.open(currentSettings, providerCatalog);
+          if (modelOnly) apiFields.element.hidden = true;
+          if (dialogOptions.modelOnly) providerCatalog = {...providerCatalog, runtime_capabilities: {...providerCatalog?.runtime_capabilities, settings: ["model", "reasoning_effort"]}};
           apiRoutes = providerCatalog?.api_settings ? providerCatalog.api_routes || [providerCatalog] : [];
           initialApiRoute = providerCatalog?.api_settings ? providerCatalog.backend_route_id || providerCatalog.account_id : "";
           apiAccount.closest(".portalRuntimeSettingsField").hidden = dialogOptions.showApiAccount === false || !apiRoutes.length;
@@ -482,6 +485,7 @@
         '<label class="portalRuntimeSettingsField" data-session-policy-field><span>账号策略</span><select data-session-policy><option value="fixed">固定账号</option><option value="auto">按额度自动</option></select></label>' +
         '<label class="portalRuntimeSettingsField" data-session-account-field><span>账号</span><select data-session-target></select></label></div>' +
         '<p class="portalRuntimeSettingsHint" data-session-policy-hint hidden>在所选后端内，按模型支持情况和可用额度自动选择账号，无需指定账号。</p>' +
+        '<label class="portalRuntimeSettingsField"><span>记忆交接</span><select data-memory-method></select></label>' +
         '<p class="portalRuntimeSettingsHint" data-switch-context-status role="status"></p>' +
         '<p class="portalRuntimeSettingsHint" data-switch-context-description role="status"></p></section>' +
         '<section class="portalRuntimeSection" data-runtime-section="initialization" hidden>' +
@@ -500,6 +504,7 @@
       const submit = find("[data-session-restart-submit]"), cancel = find("[data-session-restart-cancel]");
       const reset = find("[data-runtime-panel-reset]"), saveHint = find("[data-runtime-save-hint]");
       const creditsConsent = find("[data-session-credits-consent]");
+      const memoryMethod = find("[data-memory-method]");
       const editor = createRuntimeSettingsEditor(), targetEditor = createRuntimeSettingsEditor();
       editor.element.dataset.runtimeEditor = "current"; targetEditor.element.dataset.runtimeEditor = "target";
       find("[data-runtime-editor-host]").replaceWith(editor.element);
@@ -540,18 +545,24 @@
       };
       // The server owns transfer capabilities. Prefer preservation, then summary
       // handoff; never turn an unsupported transfer into a blank session.
-      const contextChoice = () => ["preserve", "compact"].map(id => targetContextOptions().find(row => row.id === id && row.enabled)).find(Boolean);
+      const contextChoice = () => targetContextOptions().find(row => row.id === memoryMethod.value && row.enabled) || targetContextOptions().find(row => row.enabled);
       const readEditor = () => { try { return JSON.stringify(readParameters()); } catch (_) { return "invalid"; } };
       const parametersChanged = () => Boolean(current.onSave) && readEditor() !== baseline;
       const renderContext = () => {
         const choice = contextChoice();
         find("[data-switch-context-status]").textContent = window.PortalI18n.t(!switching() || (crossProvider() && !targetReady) || !selected()[1] ? ""
-          : choice?.id === "preserve" ? choice.description
-          : choice ? (automatic() ? "目标账号无法完整保留上下文，将通过摘要交接后继续。"
-            : "目标账号无法完整保留上下文，将冻结交接材料，在首条真实输入时交接。")
-          : "目标账号暂不支持保留上下文或摘要交接，无法切换；原会话保持不变。");
+          : choice ? choice.description
+          : "目标账号交接能力暂不可用，请刷新后重试。");
       };
       const update = () => {
+        const choices = targetContextOptions();
+        const signature = JSON.stringify(choices);
+        if (memoryMethod.dataset.options !== signature) {
+          memoryMethod.replaceChildren(...choices.map(row => {const option = new Option(row.label, row.id); option.disabled = !row.enabled; return option;}));
+          memoryMethod.value = choices.find(row => row.enabled)?.id || "";
+          memoryMethod.dataset.options = signature;
+        }
+        memoryMethod.closest("label").hidden = !switching();
         const locked = submitting || tracking;
         const retry = restartView.restart?.status === "confirming";
         const init = initializing(), switchingAccount = switching(), cross = switchingAccount && crossProvider();
@@ -567,7 +578,7 @@
         find("[data-session-account-field]").hidden = automatic();
         find("[data-session-policy-hint]").hidden = !automatic();
         const creditTarget = init ? [current.source?.provider, current.source?.account_id] : selected();
-        const showCredits = current.credits_confirmation?.allowed === true && (switchingAccount || init)
+        const showCredits = current.credits_confirmation?.allowed === true && init
           && (init || !automatic()) && creditTarget[0] === "codex" && Boolean(creditTarget[1]);
         find("[data-session-credits-confirmation]").hidden = !showCredits;
         creditsConsent.disabled = locked || !showCredits;
@@ -575,27 +586,28 @@
         target.disabled = locked || automatic(); backend.disabled = locked; policy.disabled = locked;
         editor.element.disabled = locked; targetEditor.element.disabled = locked;
         const choice = contextChoice();
-        find("[data-switch-context-description]").textContent = window.PortalI18n.t(switchingAccount && choice?.id === "compact"
+        find("[data-switch-context-description]").textContent = window.PortalI18n.t(switchingAccount && choice?.id === "local"
           ? (automatic() ? choice.description : "交接材料来自已有摘要和近期对话，可能遗漏细节和工具过程；保存配置不会立即调用目标模型。") : "");
         const changed = !cross && parametersChanged();
         let label = "保存", disabled = locked || !changed;
         if (retry) { label = "重试同一请求"; disabled = submitting; }
         else if (init) { label = "继续当前初始化"; disabled = locked || !restart; }
         else if (switchingAccount) {
-          label = choice?.id === "compact" ? (automatic() ? "交接并切换" : "保存账号配置") : "切换账号";
+          label = choice?.id === "local" ? (automatic() ? "交接并切换" : "保存账号配置") : "切换账号";
           disabled = locked || !choice || !selected()[1] || (cross && !targetReady);
         }
         if (!retry && !init && !automatic() && canSwitch() && !selected()[1]) disabled = true;
         submit.disabled = disabled;
         submit.textContent = window.PortalI18n.t(submitting ? "正在提交…" : label);
         saveHint.textContent = window.PortalI18n.t(tracking || retry || init ? ""
-          : switchingAccount ? (choice ? (!automatic() && choice.id === "compact"
+          : switchingAccount ? (choice ? (!automatic() && choice.id === "local"
             ? "等待正在运行的工作完成后保存配置；此步骤不调用模型，不按目标额度阻塞。首条真实输入仍受额度限制。"
             : "等待正在运行的工作完成后切换；切换失败时保留原会话。") : "")
           : changed ? "参数从下一轮生效，不会重新开始会话。" : "");
         reset.disabled = submitting || (inline && !switchingAccount && !changed);
         cancel.hidden = !tracking; cancel.disabled = submitting || restartView.restart?.status === "cancelling";
       };
+      memoryMethod.addEventListener("change", () => { update(); renderContext(); });
       const loadTarget = async () => {
         const revision = ++catalogRevision;
         const cross = switching() && crossProvider();
@@ -698,7 +710,7 @@
             }
             const result = retry
               ? await restartService.retrySessionRestart(current.resident_id)
-              : await restart({operation: contextChoice()?.id === "preserve" ? "switch_account" : "restart",
+              : await restart({operation: "switch_account",
                 target_provider: provider, ...(!automatic() ? {target_account: account} : {}),
                 context_strategy: contextChoice().id,
                 ...(consent ? {credits_consent: consent} : {}),
@@ -803,7 +815,7 @@
     }
     return Object.freeze({
       residentRuntimeSettingRows, residentRuntimeStatusText, residentRuntimeMetaHtml,
-      notifyRuntimeSettingsSaved, showResidentBackendNotices, createRuntimeSettingsDialog,
+      notifyRuntimeSettingsSaved, showResidentBackendNotices, createRuntimeSettingsDialog, createRuntimeSettingsEditor,
       sessionRestartActive, createSessionRestartProgress, createRuntimePanel, createSessionRestartDialog,
     });
   }

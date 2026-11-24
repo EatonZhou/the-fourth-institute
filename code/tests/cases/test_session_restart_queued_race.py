@@ -1,51 +1,37 @@
-"""A newly queued, unadmitted message cannot abort an already preparing restart."""
+"""Work arriving before the configuration commit must retain its original route."""
 import copy
 
 import pytest
 
 from tests.cases.test_session_restart import _restart_domain
 from management_portal.society_service import (
-    resident_domain, resident_execution_work, resident_input_queue_domain,
-    resident_restart_domain,
+    resident_domain, resident_backend, resident_execution_work, resident_memory_handoff,
 )
 
 
-@pytest.mark.parametrize("race", ["held", "submitted", "admitted", "reopened", "changed_transition"])
-def test_message_arrives_during_session_preparation(monkeypatch, race):
+@pytest.mark.parametrize("race", ["queued", "submitted", "admitted"])
+def test_message_arrives_before_session_configuration_commit(monkeypatch, race):
     is_active = resident_execution_work.is_active
     record, operations, _ = _restart_domain(monkeypatch)
     monkeypatch.setattr(resident_execution_work, "is_active", is_active)
-    record["intake_open"] = True
-
-    def intake(current, state):
-        record.update(intake_open=state == "open", intake_transition_id="restart-closure" if state == "closed" else "reopened")
-        current.update(record)
-
-    monkeypatch.setattr(resident_input_queue_domain, "commit_resident_intake_state", intake)
-    resident_domain.restart_resident_session(
-        record["resident_id"], "alice",
-        {"target_provider": "claude", "model": "deepseek-v4-pro", "context_strategy": "compact"},
-    )
-    step = operations[0]["step"]
-    assert step["intake_transition_id"] == "restart-closure"
-    job = {"execution_id": "execution-queued", "user_message_id": "msg_queued", "intake_state": "closed"}
+    before_binding = copy.deepcopy(resident_backend.session_record(record))
+    job = {"execution_id": "execution-queued", "user_message_id": "msg_queued"}
     if race == "submitted":
-        job["submitted_at"] = "2026-11-13T13:33:43Z"
+        job["submitted_at"] = "2026-11-24T01:00:00Z"
     elif race == "admitted":
-        job["intake_admitted_at"] = "2026-11-13T13:33:43Z"
-    elif race == "reopened":
-        record["intake_open"] = True
-    elif race == "changed_transition":
-        record["intake_transition_id"] = "manual-closure"
+        job["intake_admitted_at"] = "2026-11-24T01:00:00Z"
     before = copy.deepcopy(job)
-    monkeypatch.setattr(resident_execution_work, "read", lambda *_: copy.deepcopy(job))
-    resident_restart_domain.resume_resident_session_restart(step)
+    material = resident_memory_handoff.material
+    def arrives(*args, **kwargs):
+        monkeypatch.setattr(resident_execution_work, "read", lambda *_: copy.deepcopy(job))
+        return material(*args, **kwargs)
+    monkeypatch.setattr(resident_memory_handoff, "material", arrives)
+    with pytest.raises(ValueError, match="已开始新的工作"):
+        resident_domain.restart_resident_session(
+            record["resident_id"], "alice",
+            {"target_provider": "claude", "model": "deepseek-v4-pro", "context_strategy": "local"},
+        )
     assert job == before
-    if race == "held":
-        assert record["session_restart"]["status"] == "completed"
-        assert record["backend"] == "claude"
-        assert record["intake_open"] is True
-    else:
-        assert record["session_restart"]["status"] == "failed"
-        assert "已开始新的工作" in record["session_restart"]["error"]
-        assert record["backend"] == "codex"
+    assert record["backend"] == "codex"
+    assert resident_backend.session_record(record) == before_binding
+    assert not operations

@@ -466,9 +466,11 @@
     }
 
     function updateBranchAccountHint() {
+      if (branchSourceSnapshot) window.PortalLineageCatalogs.forkControls($id("branchModeChoices")).open(
+        branchSourceSnapshot.residentId, $id("branchProviderInput").value, $id("branchAccountInput").value);
       const mode = state.branchMessageContext
         ? "message"
-        : ($id("branchModeChoices").querySelector('input[name="branchMode"]:checked')?.value || "full");
+        : ($id("branchModeChoices").querySelector('input[name="branchMode"]:checked')?.value || "");
       $id("branchSubmitBtn").textContent = mode === "new-session"
         ? window.PortalI18n.t("创建 new session")
         : (mode === "message" ? window.PortalI18n.t("从这里创建分支") : window.PortalI18n.t("创建继承分支"));
@@ -499,13 +501,7 @@
         ...branchSourceSnapshot,
         providerSelect: $id("branchProviderInput"), accountSelect: $id("branchAccountInput"), provider,
       });
-      const compacted = $id("branchModeChoices").querySelector('[value="compacted"]');
-      compacted.disabled = !!branchSourceSnapshot.message || !selection.definition?.seeded_compaction;
-      compacted.closest("label").title = compacted.disabled
-        ? window.PortalI18n.t("目标 Provider 不支持压缩继承。") : "";
-      if (compacted.disabled && compacted.checked) {
-        $id("branchModeChoices").querySelector('[value="full"]').checked = true;
-      }
+      window.PortalLineageCatalogs.forkControls($id("branchModeChoices")).open(branchSourceSnapshot.residentId, selection.provider, selection.account);
       $id("branchSubmitBtn").disabled = !selection.available;
       updateBranchAccountHint();
     }
@@ -517,6 +513,7 @@
     // A closed Fork dialog drops its source and ignores replies still on the way.
     function resetBranchModalState() {
       branchModalRequestSeq += 1;
+      $id("branchModeChoices")?._memoryControls?.reset();
       branchSourceSnapshot = null;
       state.branchMessageContext = null;
     }
@@ -544,9 +541,7 @@
       if (requestSeq !== branchModalRequestSeq || selectionSeq !== state.detailSeq
         || currentNode()?.id !== node.id || state.lineage?.lineage_id !== lineageId
         || familyForFacade(node.id)) return;
-      const anchoredMessage = message && branchMessageRole(message) === "human"
-        ? messageSelector(message)
-        : null;
+      const anchoredMessage = null;
       // A dialog owns the displayed source until it is explicitly reopened.
       // Selection and metadata refreshes must not retarget an accepted form.
       branchSourceSnapshot = Object.freeze({ residentId: node.id, lineageId, revision: state.lineage.revision, message: anchoredMessage,
@@ -564,11 +559,6 @@
         : "";
       $id("branchModeChoices").hidden = !!anchoredMessage;
       $id("branchTitleInput").value = anchoredMessage ? `${node.title} · 从此处继续` : `${node.title} · 分支`;
-      $id("branchModeChoices").querySelectorAll('input[name="branchMode"]').forEach(input => {
-        if (anchoredMessage) input.disabled = true;
-        else input.disabled = false;
-        input.checked = input.value === "full";
-      });
       configureBranchProvider();
       $id("branchSubmitBtn").textContent = anchoredMessage ? window.PortalI18n.t("从这里创建分支") : window.PortalI18n.t("创建继承分支");
       openModal("branchModal");
@@ -588,7 +578,7 @@
         toast(window.PortalI18n.t("另一项图结构操作正在进行，请稍候。"), "warning", 4200);
         return null;
       }
-      const mode = String(options.mode || "full");
+      const mode = String(options.mode || "");
       const fresh = mode === "new-session";
       const actionLabel = fresh ? window.PortalI18n.t("创建会话") : window.PortalI18n.t("创建分支");
       const button = options.button || null;
@@ -615,12 +605,14 @@
           ...(!fresh ? { expected_version: sourceRevision } : {}),
           ...(fresh
             ? { provider: options.provider || source.backend }
-            : { source_resident_id: source.id, fork_mode: mode }),
+            : { source_resident_id: source.id, ...(mode ? {fork_mode: mode} : {}) }),
           title: String(options.title || "").trim() || `${source.title || source.id} · ${fresh ? window.PortalI18n.t("new session") : window.PortalI18n.t("分支")}`,
           near_resident_id: source.id,
           placement: residentPlacementGeometry(source, options),
         };
         const family = familyForNewResident(source.id);
+        if (options.model) payload.model = options.model;
+        if (options.reasoning_effort !== undefined) payload.reasoning_effort = options.reasoning_effort;
         if (options.provider) payload.provider = options.provider;
         if (family) payload.family_id = family.instance.id;
         if (options.backendRouteId) payload.account_id = String(options.backendRouteId);
@@ -731,15 +723,16 @@
         toast(window.PortalI18n.t("来源节点已不在当前 HATG 中，请重新打开分支对话框"), "error", 6000);
         return;
       }
-      const mode = source.message
-        ? "message"
-        : ($id("branchModeChoices").querySelector('input[name="branchMode"]:checked')?.value || "full");
+      let memory;
+      try { memory = window.PortalLineageCatalogs.forkControls($id("branchModeChoices")).read(); }
+      catch (error) {toast(error.message, "error"); return;}
+      const mode = memory.fork_mode;
       const accountField = $id("branchAccountField");
       const accountInput = $id("branchAccountInput");
       await createAdjacentResident(source.residentId, {
         sourceLineageId: source.lineageId,
         sourceRevision: source.revision,
-        mode,
+        mode, ...memory,
         title: $id("branchTitleInput").value.trim(),
         provider: $id("branchProviderInput").value,
         backendRouteId: !accountField.hidden && accountInput.value ? accountInput.value : "",

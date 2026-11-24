@@ -119,15 +119,13 @@ def fork_resident(inv: Invocation) -> dict[str, Any]:
         raise InstructionError("instruction.conflict", "Family 门面不能 Fork；请 Fork 具体的成员")
     lineage_id = inv.argument("lineage_id")
     family = _family_to_join(lineage_id, inv)
-    fork_mode = inv.argument("fork_mode") or "full"
-    if fork_mode == "message" and not inv.argument("message"):
-        raise invalid("fork_mode=message 需要 message")
+    fork_mode = inv.argument("fork_mode") or ""
     payload: dict[str, Any] = {
         "source": source,
         "fork_mode": fork_mode,
         **placement(inv, lineage_id),
     }
-    for name in ("context_source_resident_id", "message"):
+    for name in ("model", "reasoning_effort"):
         if inv.argument(name) is not None:
             payload[name] = inv.argument(name)
     if inv.argument("title"):

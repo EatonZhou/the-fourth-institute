@@ -398,14 +398,7 @@
         <form id="branchForm" class="portalDetailForm lineageForm">
           <div class="sourceNodeSummary" id="branchSourceSummary"></div>
           <div class="modalInfo" id="branchMessageAnchor" hidden><strong><!--portal-i18n:"从这条消息继续"-->从这条消息继续</strong><span id="branchMessageAnchorText"></span></div>
-          <fieldset class="choiceCards" id="branchModeChoices">
-            <legend><!--portal-i18n:"创建方式"-->创建方式</legend>
-            <label><input type="radio" name="branchMode" value="full" checked /><span><strong><!--portal-i18n:"完整上下文"-->完整上下文</strong><small><!--portal-i18n:"继承当前有效上下文，建立独立轨迹。"-->继承当前有效上下文，建立独立轨迹。</small></span></label>
-            <label><input type="radio" name="branchMode" value="compacted" /><span><strong><!--portal-i18n:"压缩继承"-->压缩继承</strong><small><!--portal-i18n:"先压缩继承的上下文，再开始工作；历史轨迹保留。"-->先压缩继承的上下文，再开始工作；历史轨迹保留。</small></span></label>
-            <label><input type="radio" name="branchMode" value="recent-5" /><span><strong><!--portal-i18n:"最近 5 轮"-->最近 5 轮</strong><small><!--portal-i18n:"继承当前节点最近五轮对话。"-->继承当前节点最近五轮对话。</small></span></label>
-            <label><input type="radio" name="branchMode" value="recent-10" /><span><strong><!--portal-i18n:"最近 10 轮"-->最近 10 轮</strong><small><!--portal-i18n:"继承当前节点最近十轮对话。"-->继承当前节点最近十轮对话。</small></span></label>
-            <label><input type="radio" name="branchMode" value="new-session" /><span><strong><!--portal-i18n:"new session"-->new session</strong><small><!--portal-i18n:"创建空白会话，不继承历史，也不创建继承边。"-->创建空白会话，不继承历史，也不创建继承边。</small></span></label>
-          </fieldset>
+          <div id="branchModeChoices"></div>
           <label>AI Provider<select id="branchProviderInput" required></select></label>
           <label id="branchAccountField"><!--portal-i18n:"账号"-->账号
             <select id="branchAccountInput"></select>

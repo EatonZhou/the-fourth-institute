@@ -303,7 +303,7 @@ class ExploreKind:
                 "key": "explorer",
                 "from": "fork",
                 "fork_of": "target",
-                "fork_mode": "full",
+
                 "title": "{{role.target.title}} · {{block.title}}",
             },
             roles,

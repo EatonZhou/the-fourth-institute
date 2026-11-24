@@ -137,4 +137,4 @@ def migration_target_options(account: Mapping[str, Any], source_provider: str,
                                   target_provider=provider, model=str(settings.get("model") or ""),
                                   effort=str(settings.get("reasoning_effort") or ""))
     return {"target_provider": provider, "target_account": route,
-            "context_strategy": "preserve", **selected}
+            "context_strategy": "", **selected}

@@ -268,24 +268,8 @@
             <select class="residentSelect" id="residentForkAccountInput"></select>
             <div class="residentHint" id="residentForkAccountHint"></div>
           </div>
-          <div class="forkCreateModeGrid">
-            <button class="forkCreateModeBtn" type="button" data-fork-create-action="full" title="从 PostgreSQL 继承来源 Resident 当前有效上下文，并保留完整历史轨迹" data-portal-i18n-attrs="{&quot;title&quot;: &quot;从 PostgreSQL 继承来源 Resident 当前有效上下文，并保留完整历史轨迹&quot;}">
-              <span class="forkCreateModeTitle"><!--portal-i18n:"完整分支"-->完整分支</span>
-              <span class="forkCreateModeMeta"><!--portal-i18n:"继承来源当前有效上下文，完整历史轨迹仍可追溯。"-->继承来源当前有效上下文，完整历史轨迹仍可追溯。</span>
-            </button>
-            <button class="forkCreateModeBtn" type="button" data-fork-create-action="compacted" title="继承来源 Resident 当前有效上下文，并在新 Session 首次工作前完成压缩" data-portal-i18n-attrs="{&quot;title&quot;: &quot;继承来源 Resident 当前有效上下文，并在新 Session 首次工作前完成压缩&quot;}">
-              <span class="forkCreateModeTitle"><!--portal-i18n:"压缩继承"-->压缩继承</span>
-              <span class="forkCreateModeMeta"><!--portal-i18n:"保留完整历史轨迹，新 Session 先压缩继承上下文再开始工作。"-->保留完整历史轨迹，新 Session 先压缩继承上下文再开始工作。</span>
-            </button>
-            <button class="forkCreateModeBtn" type="button" data-fork-create-action="recent-5" title="从来源 Resident 最近 5 轮对话创建分支" data-portal-i18n-attrs="{&quot;title&quot;: &quot;从来源 Resident 最近 5 轮对话创建分支&quot;}">
-              <span class="forkCreateModeTitle"><!--portal-i18n:"最近 5 轮"-->最近 5 轮</span>
-              <span class="forkCreateModeMeta"><!--portal-i18n:"把来源 Resident 最近 5 轮保存到新 Resident 的独立上下文。"-->把来源 Resident 最近 5 轮保存到新 Resident 的独立上下文。</span>
-            </button>
-            <button class="forkCreateModeBtn" type="button" data-fork-create-action="recent-10" title="从来源 Resident 最近 10 轮对话创建分支" data-portal-i18n-attrs="{&quot;title&quot;: &quot;从来源 Resident 最近 10 轮对话创建分支&quot;}">
-              <span class="forkCreateModeTitle"><!--portal-i18n:"最近 10 轮"-->最近 10 轮</span>
-              <span class="forkCreateModeMeta"><!--portal-i18n:"把来源 Resident 最近 10 轮保存到新 Resident 的独立上下文。"-->把来源 Resident 最近 10 轮保存到新 Resident 的独立上下文。</span>
-            </button>
-          </div>
+          <div id="residentForkMemoryControls"></div>
+          <button class="portalButton is-primary" type="button" data-fork-create-action="memory">创建分支</button>
           <div class="portalDetailFooter" data-portal-detail-footer>
             <button class="portalButton" type="button" id="residentForkCreateCancel"><!--portal-i18n:"取消"-->取消</button>
           </div>

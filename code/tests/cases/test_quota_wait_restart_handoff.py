@@ -22,6 +22,7 @@ from management_portal.society_service import (
     resident_execution_engine_domain,
     resident_execution_work,
     resident_input_queue_domain,
+    resident_memory_handoff,
     resident_record_domain,
     resident_restart_domain,
 )
@@ -120,6 +121,7 @@ def resident(monkeypatch, execution, request):
     # actual durable Job, restart and Mailbox repositories for the whole handoff.
     monkeypatch.setattr(store, 'transaction', transaction)
     monkeypatch.setattr(resident_catalog, 'get_catalog', lambda: SimpleNamespace(state_store=store))
+    monkeypatch.setattr(resident_memory_handoff, 'existing_summary', lambda *a: '')
     monkeypatch.setattr(resident_execution_work, 'read', real_read)
     monkeypatch.setattr(resident_execution_work, 'is_active', real_active)
     monkeypatch.setattr(resident_execution_work, '_post_execution_commit', lambda *a, **k: None)
@@ -162,7 +164,7 @@ def resident(monkeypatch, execution, request):
     receipt = resident_restart_domain.restart_resident_session(
         RID, 'alice',
         {'target_provider': 'codex', 'target_account': 'one', 'model': 'gpt-6-astra',
-         'context_strategy': 'compact', 'active_execution_policy': 'wait',
+         'context_strategy': 'local', 'active_execution_policy': 'wait',
          'idempotency_key': 'original-migration'},
         portal_reason=portal_reason,
     )
@@ -171,31 +173,18 @@ def resident(monkeypatch, execution, request):
     return store, repo, operations, receipt, native
 
 
-@pytest.mark.parametrize('finish', ['completed', 'failed', 'cancelled'])
-def test_original_deferred_request_advances_and_preserves_original_input(resident, execution, finish):
+def test_original_deferred_request_advances_and_preserves_original_input(resident, execution):
     store, repo, operations, original, native = resident
     scheduler, _, request, _ = execution
-    advanced = resident_deferred_restart.advance(store.resident_record(RID))
-    assert advanced is True, store.resident_record(RID)['session_restart']
-    pending = store.resident_record(RID)
-    assert pending['session_restart']['restart_id'] == original['restart_id']
-    assert pending['session_restart']['request_id'] == original['request_id']
-    assert pending['session_restart']['deferred']['handoff']['phase'] == 'withdrawn'
-    assert resident_execution_work.read(pending)['execution_id'] == request.execution_id
-    assert repo.input_state(RID, MID)['state'] == 'queued'
-    assert pending['intake_open'] is False
-    assert operations[-1]['operation'] == 'turn'
-    assert '[Portal Session Initialization Context]' in operations[-1]['prompt']
-    if finish == 'failed':
-        native.resume = lambda *a, **k: {'status': 'failed', 'result': {'status': 'failed'}, 'error': 'native preparation failed'}
-    elif finish == 'cancelled':
-        pending['session_restart']['status'] = 'cancelling'
-        store.put_resident_record(RID, pending)
-    resident_restart_domain.resume_resident_session_restart(operations[-1]['step'])
-    resident_deferred_restart.advance(store.resident_record(RID))
+    # Migration completes synchronously after an unstarted withdrawal. It never
+    # creates a preparation turn; the preserved business input runs later.
+    assert resident_deferred_restart.advance(store.resident_record(RID)) is False
     current = store.resident_record(RID)
     job = resident_execution_work.read(current)
-    assert current['session_restart']['status'] == finish
+    assert current['session_restart']['status'] == 'completed'
+    assert current['session_restart']['configuration_only']
+    assert current['session_restart']['context_result'] == 'pending_first_input'
+    assert not operations
     assert current['session_restart']['restart_id'] == original['restart_id']
     assert current['session_restart']['request_id'] == original['request_id']
     assert current['intake_open'] is True
@@ -208,7 +197,7 @@ def test_original_deferred_request_advances_and_preserves_original_input(residen
     assert job['effective_message'] == 'original input'
     assert 'old provider preparation' not in str(job)
     assert repo.input_state(RID, MID)['state'] == 'queued'
-    expected_provider = 'codex' if finish == 'completed' else 'claude'
+    expected_provider = 'codex'
     with AgentDataStore().database.read() as connection:
         records = {r['execution_id']: dict(r) for r in connection.execute(
             'SELECT execution_id,provider,status FROM executions WHERE execution_id=ANY(%s)',
@@ -259,10 +248,14 @@ def test_lost_withdraw_reply_is_reconciled_without_terminal_input(resident, exec
     assert repo.input_state(RID, MID)['state'] == 'queued'
     assert not operations
     monkeypatch.setattr(native, 'withdraw_unstarted', original_withdraw)
-    assert resident_deferred_restart.advance(store.resident_record(RID)) is True
-    assert len(operations) == 1
-    assert resident_deferred_restart.advance(store.resident_record(RID)) is True
-    assert len(operations) == 1
+    assert resident_deferred_restart.advance(store.resident_record(RID)) is False
+    current = store.resident_record(RID)
+    assert current['session_restart']['status'] == 'completed'
+    assert current['session_restart']['restart_id'] == original['restart_id']
+    replacement = resident_execution_work.read(current)['execution_id']
+    assert resident_deferred_restart.advance(current) is False
+    assert resident_execution_work.read(store.resident_record(RID))['execution_id'] == replacement
+    assert not operations
 
 
 def test_receipt_save_failure_keeps_exact_intent_for_recovery(resident, monkeypatch):
@@ -279,8 +272,13 @@ def test_receipt_save_failure_keeps_exact_intent_for_recovery(resident, monkeypa
     assert not intent.get('phase')
     assert repo.input_state(RID, MID)['state'] == 'queued'
     monkeypatch.setattr(resident_record_domain, 'save_resident_record', save)
-    assert resident_deferred_restart.advance(store.resident_record(RID)) is True
-    assert store.resident_record(RID)['session_restart']['deferred']['handoff'] == {**intent, 'phase': 'withdrawn'}
+    assert resident_deferred_restart.advance(store.resident_record(RID)) is False
+    current = store.resident_record(RID)
+    assert current['session_restart']['status'] == 'completed'
+    assert resident_execution_work.read(current)['execution_id'] == intent['replacement_execution_id']
+    assert current['session_restart']['restart_id'] == original['restart_id']
+    assert repo.input_state(RID, MID)['state'] == 'queued'
+    assert not operations
 
 
 @pytest.mark.parametrize('manual_close', [False, True])

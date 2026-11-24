@@ -244,39 +244,6 @@ def _queue_derived_resident_session_creation(
     return resident
 
 
-def _ensure_derived_resident_session(
-    record: dict[str, Any],
-    registry: dict[str, Any],
-    resident: dict[str, Any],
-    actor: str,
-) -> dict[str, Any]:
-    _freeze_fork_child(resident)
-    ensure_resident_supports_forks(record)
-    resident.pop("backend_start_deferred", None)
-    resident.pop("backend_start_gate", None)
-    execution_backend = resident_backend.execution_backend(resident)
-    definition = AGENT_PROVIDERS.get(execution_backend)
-    resident.update({
-        "backend": execution_backend,
-        "session_state": "active",
-        "last_error": "",
-        "updated_at": resident_domain_common.now_iso(),
-    })
-    if definition and not resident_backend.record_session_id(resident) and "create" in definition.operations:
-        return _queue_derived_resident_session_creation(
-            record,
-            resident,
-            actor,
-        )
-    if definition and not resident_backend.record_session_id(resident) and not definition.resume_without_session:
-        raise ValueError(
-            f"{definition.label} cannot create a fresh context-seeded session"
-        )
-    resident_session_backend_domain.materialize_pending_agent_data_fork(resident, actor)
-    _persist_derived_resident(record, resident)
-    return resident
-
-
 def _create_resident_by_full_context_fork(
     record: dict,
     registry: dict[str, Any],
@@ -287,7 +254,9 @@ def _create_resident_by_full_context_fork(
     provider: str = "",
     defer_backend_start: bool = False,
     fork_title: str = "",
-    compact_context: bool = False,
+    memory_method: str = "",
+    model: str = "",
+    reasoning_effort: str | None = None,
 ) -> dict[str, Any]:
     """Create a full Fork from a frozen PostgreSQL effective-context snapshot."""
 
@@ -304,14 +273,7 @@ def _create_resident_by_full_context_fork(
     # Freeze the effective model window before publishing the child. Chat and
     # the audit trace are copied independently and are not an input fallback.
     context_snapshot = _fork_provider_context_snapshot(record)
-    if not context_snapshot or (not context_snapshot.get("segments") and not context_snapshot.get("empty_context")):
-        raise ValueError("Fork 来源缺少 PostgreSQL 中的有效模型上下文；不能创建空白分支")
-    if compact_context:
-        definition = AGENT_PROVIDERS.get(target_backend)
-        if definition is None or not definition.seeded_compaction:
-            raise ValueError(f"目标 Provider {target_backend} 不支持压缩继承")
-        if not context_snapshot.get("segments"):
-            raise ValueError("压缩继承需要非空的有效模型上下文")
+    context_snapshot = context_snapshot or {"segments": []}
     target_resident_id = _fork_resident_id()
     sequence = len(derived_residents) + 1
     child = {
@@ -353,30 +315,44 @@ def _create_resident_by_full_context_fork(
         now,
     )
     registry["residents"].append(child)
-    child["fork_mode"] = "full"
-    if compact_context:
-        child.update({
-            "fork_mode": "compacted",
-            "context_compaction_policy": "before_first_turn",
-            "context_compaction_state": "pending",
-        })
-    stage_agent_data_fork(
-        child,
-        str(child["source_resident_id"]),
-        segment_ids=[item["segment_id"] for item in resident_fork_context.select_segments(context_snapshot)],
-    )
-    if defer_backend_start:
-        _freeze_fork_child(child)
-        resident_session_backend_domain.materialize_pending_agent_data_fork(child, actor_id)
-        child["updated_at"] = resident_domain_common.now_iso()
-        _persist_derived_resident(record, child)
-        return child
-    return _ensure_derived_resident_session(
-        record,
-        registry,
-        child,
-        actor_id,
-    )
+    from . import resident_memory_handoff as memory, resident_restart_domain as restart
+    source_binding = resident_backend.session_record(record) or {}
+    source = restart._session_restart_source(record, source_binding)
+    method = memory.choose(source, target_backend, child["backend_route_id"], memory_method)
+    body = {"target_account": backend_route_id or child["backend_route_id"]}
+    if model:
+        body["model"] = model
+    if reasoning_effort is not None:
+        body["reasoning_effort"] = reasoning_effort
+    target = restart._restart_target(body, source, source["provider"], target_backend)
+    settings = restart._target_runtime_settings(record, body, target, actor_id)
+    # Workspace authorization remains the Fork owner's rule, including read-only inheritance.
+    settings = resident_runtime_domain.fork_runtime_settings(
+        settings, settings, actor=actor_id, updated_at=now, workspace_authority=owner)
+    stage_runtime_settings(child, settings)
+    child["fork_mode"] = method
+    child["session_state"] = "pending_create"
+    operation_id = "fork:" + target_resident_id
+    detail = {"messages": resident_fork_context.seed_messages(context_snapshot, recent_turns=3)} if method == "local" else {}
+    pending = {
+        "operation_id": operation_id, "strategy": method,
+        "target": {"provider": target.provider, "route": target.route},
+        "context_reset_at": str(child.get("context_reset_at") or ""),
+        "prompt": memory.material(child, detail, method,
+            memory.existing_summary(record["resident_id"], actor_id) if method == "local" else ""),
+    }
+    if method == "native":
+        pending["source_binding_id"] = resident_backend.execution_binding_id(record)
+        pending["source_provider_session_ref"] = source_binding["provider_session_ref"]
+    child["session_restart"] = {"restart_id": operation_id, "operation": "fork",
+        "status": "completed", "configuration_only": True, "model_operation": False,
+        "context_strategy": method, "pending_handoff": pending}
+    stage_agent_data_fork(child, str(child["source_resident_id"]),
+        segment_ids=[item["segment_id"] for item in resident_fork_context.select_segments(context_snapshot)])
+    _freeze_fork_child(child)
+    resident_session_backend_domain.materialize_pending_agent_data_fork(child, actor_id)
+    _persist_derived_resident(record, child)
+    return child
 
 
 def _derived_resident_creation_result(
@@ -412,6 +388,9 @@ def create_resident_full_context_fork(
     provider: str = "",
     defer_backend_start: bool = False,
     fork_title: str = "",
+    memory_method: str = "",
+    model: str = "",
+    reasoning_effort: str | None = None,
 ) -> dict[str, Any]:
     actor_id = canonical_actor_id(actor)
     if not actor_id:
@@ -434,55 +413,9 @@ def create_resident_full_context_fork(
             provider=provider,
             defer_backend_start=defer_backend_start,
             fork_title=fork_title,
+            memory_method=memory_method, model=model, reasoning_effort=reasoning_effort,
         )
     return _derived_resident_creation_result(record, child, actor_id)
-
-
-@_creation_request
-def create_resident_compacted_context_fork(
-    source_resident_id: str,
-    actor: str,
-    lineage_source: str = "",
-    *,
-    backend_route_id: str = "",
-    provider: str = "",
-    fork_title: str = "",
-) -> dict[str, Any]:
-    """Create a child whose frozen effective context is compacted before use."""
-
-    actor_id = canonical_actor_id(actor)
-    if not actor_id:
-        raise ValueError("需要登录后执行 Fork")
-    with resident_lineage.access_snapshot_scope():
-        source = resident_record_domain.resolve_resident_runtime_target(
-            source_resident_id,
-            actor_id,
-            require_visible=True,
-        )
-        record = source.record
-        ensure_resident_supports_forks(record)
-        registry = resident_lineage.snapshot(record)
-        child = _create_resident_by_full_context_fork(
-            record,
-            registry,
-            actor_id,
-            lineage_source=lineage_source or "fork:compacted-context",
-            backend_route_id=backend_route_id,
-            provider=provider,
-            fork_title=fork_title,
-            compact_context=True,
-        )
-    return _derived_resident_creation_result(record, child, actor_id)
-
-
-def _message_matches_selector(
-    item: Mapping[str, Any],
-    selector: Mapping[str, Any],
-) -> bool:
-    message_id = str(selector.get("message_id") or "").strip()
-    if not message_id:
-        raise ValueError("message_id is required")
-    return str(item.get("message_id") or "") == message_id
 
 
 def _fork_provider_context_snapshot(
@@ -490,217 +423,6 @@ def _fork_provider_context_snapshot(
 ) -> dict[str, Any]:
     return execution_port.agent_context_snapshot(resident_domain_common.record_resident_id(record),
         through_message_id=through_message_id, through_turn_id=through_turn_id)
-
-
-@_creation_request
-def create_resident_fork_from_message(
-    source_resident_id: str,
-    actor: str,
-    selector: dict[str, Any],
-    target_lineage_resident_id: str = "",
-    lineage_source: str = "",
-    *,
-    backend_route_id: str = "",
-    provider: str = "",
-    fork_title: str = "",
-) -> dict[str, Any]:
-    from . import resident_access
-    actor_id = canonical_actor_id(actor)
-    if not actor_id:
-        raise ValueError("需要登录后执行 Fork")
-    with resident_lineage.access_snapshot_scope():
-        source = resident_record_domain.resolve_resident_runtime_target(
-            source_resident_id,
-            actor_id,
-            require_visible=True,
-        )
-        record = source.record
-        ensure_resident_supports_forks(record)
-        registry = resident_lineage.snapshot(record)
-        ensure_resident_visible_to_actor(record, actor_id)
-        messages = resident_conversation_stream.get_repository().messages_through_turn(
-            source.resident_id,
-            [selector.get("message_id")],
-            limit=resident_domain_common.MAX_TIMELINE_ITEMS,
-        )
-        target_index = next(
-            (
-                idx
-                for idx, item in enumerate(messages)
-                if _message_matches_selector(item, selector)
-            ),
-            -1,
-        )
-        if target_index < 0:
-            raise ValueError("未找到所选消息")
-        target_item = messages[target_index]
-        if str(target_item.get("role") or "") != "user":
-            raise ValueError("只能从用户消息执行 Fork")
-        target_message_id = str(target_item.get("message_id") or "")
-        target_id = str(target_lineage_resident_id or "").strip()
-        target_record = record
-        target_registry = registry
-        if target_id and target_id != str(record.get("resident_id") or ""):
-            target_record = resident_record_domain.find_resident(target_id)
-            if not target_record:
-                raise KeyError("target resident not found")
-            ensure_resident_visible_to_actor(target_record, actor_id)
-            if not resident_access.can_manage(target_record, actor_id):
-                raise manage_refusal(target_record)
-            target_registry = resident_lineage.snapshot(target_record)
-        target_owner = resident_access.can_manage(target_record, actor_id)
-        derived_residents = resident_runtime_domain.managed_derived_residents(
-            target_record,
-            target_registry,
-            actor_id,
-        )
-        now = resident_domain_common.now_iso()
-        target_resident_id = _fork_resident_id()
-        sequence = len(derived_residents) + 1
-        snapshot = _fork_provider_context_snapshot(
-            record,
-            through_message_id=target_message_id,
-        )
-        if not snapshot:
-            raise ValueError("Fork 截止位置缺少有效模型上下文")
-        # Conversation owns its display boundary. Its canonical Messages do
-        # not carry Provider IDs; retain the selected turn's existing replies,
-        # not just the input, without using Chat text as model context.
-        segments = resident_fork_context.select_segments(snapshot)
-        child = {
-            "resident_id": target_resident_id,
-            "title": str(fork_title or "").strip()
-            or f"Fork from here {sequence} · {resident_domain_common.date_part(now)}",
-            "title_origin": "custom" if str(fork_title or "").strip() else "generated",
-            "session_state": "active",
-            "created_by": actor_id,
-            "created_at": now,
-            "updated_at": now,
-            "last_interaction_at": now,
-            "forked_from_at": now,
-            "backend": _fork_target_backend(record, provider),
-            "last_error": "",
-            "fork_mode": "message",
-            "source_resident_id": str(target_record["resident_id"]),
-            "context_source_resident_id": source.resident_id,
-            "source_message_id": target_message_id,
-        }
-        inherit_derived_resident_runtime_from_source(
-            target_record,
-            child,
-            record,
-            None,
-            actor_id,
-            now,
-            target_workspace_authority=target_owner,
-        )
-        resident_runtime_domain.assign_derived_resident_account_route(
-            target_record,
-            child,
-            record,
-            requested_account_id=backend_route_id,
-        )
-        complete_derived_resident_identity(
-            target_record,
-            child,
-            actor_id,
-            lineage_source or ("branch:message" if target_record is not record else "fork:message"),
-            now,
-        )
-        stage_agent_data_fork(
-            child,
-            source.resident_id,
-            segment_ids=[item["segment_id"] for item in segments],
-        )
-        target_registry["residents"].append(child)
-        child = _ensure_derived_resident_session(target_record, target_registry, child, actor_id)
-    return _derived_resident_creation_result(target_record, child, actor_id)
-
-
-@_creation_request
-def create_resident_context_fork(
-    source_resident_id: str,
-    actor: str,
-    turns: int,
-    lineage_source: str = "",
-    *,
-    backend_route_id: str = "",
-    provider: str = "",
-    fork_title: str = "",
-) -> dict[str, Any]:
-    actor_id = canonical_actor_id(actor)
-    if not actor_id:
-        raise ValueError("需要登录后执行 Fork")
-    turn_count = int(turns or 0)
-    if turn_count not in {5, 10}:
-        raise ValueError("turns must be 5 or 10")
-    with resident_lineage.access_snapshot_scope():
-        source = resident_record_domain.resolve_resident_runtime_target(
-            source_resident_id,
-            actor_id,
-            require_visible=True,
-        )
-        record = source.record
-        ensure_resident_supports_forks(record)
-        registry = resident_lineage.snapshot(record)
-        ensure_resident_visible_to_actor(record, actor_id)
-        owner = _can_manage_resident(record, actor_id)
-        context_snapshot = _fork_provider_context_snapshot(record)
-        if not context_snapshot:
-            raise ValueError("Fork 来源缺少有效模型上下文")
-        segments = resident_fork_context.select_segments(context_snapshot, recent_turns=turn_count)
-        derived_residents = resident_runtime_domain.managed_derived_residents(
-            record,
-            registry,
-            actor_id,
-        )
-        now = resident_domain_common.now_iso()
-        target_resident_id = _fork_resident_id()
-        sequence = len(derived_residents) + 1
-        child = {
-            "resident_id": target_resident_id,
-            "title": str(fork_title or "").strip()
-            or f"Fork-{turn_count} {sequence} · {resident_domain_common.date_part(now)}",
-            "title_origin": "custom" if str(fork_title or "").strip() else "generated",
-            "session_state": "active",
-            "created_by": actor_id,
-            "created_at": now,
-            "updated_at": now,
-            "last_interaction_at": now,
-            "forked_from_at": now,
-            "backend": _fork_target_backend(record, provider),
-            "last_error": "",
-            "fork_mode": f"recent-{turn_count}",
-            "source_resident_id": source.resident_id,
-            "context_source_resident_id": source.resident_id,
-        }
-        inherit_derived_resident_runtime_from_source(
-            record,
-            child,
-            record,
-            None,
-            actor_id,
-            now,
-            target_workspace_authority=owner,
-        )
-        resident_runtime_domain.assign_derived_resident_account_route(
-            record,
-            child,
-            record,
-            requested_account_id=backend_route_id,
-        )
-        complete_derived_resident_identity(
-            record,
-            child,
-            actor_id,
-            lineage_source or "fork:recent_context",
-            now,
-        )
-        stage_agent_data_fork(child, source.resident_id,
-            segment_ids=[item["segment_id"] for item in segments])
-        registry["residents"].append(child)
-        child = _ensure_derived_resident_session(record, registry, child, actor_id)
-    return _derived_resident_creation_result(record, child, actor_id)
 
 
 def initialize_resident_context_from_source(

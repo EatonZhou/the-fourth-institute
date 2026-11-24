@@ -22,7 +22,7 @@ def configuration_version(record):
 def request_signature(body):
     return digest({**{key: value for key, value in body.items() if key != "idempotency_key"},
                    "operation": body.get("operation") or "restart",
-                   "context_strategy": body.get("context_strategy") or "preserve",
+                   "context_strategy": body.get("context_strategy") or "",
                    "active_execution_policy": body.get("active_execution_policy") or "wait",
                    "resume_failed_input": body.get("resume_failed_input", False)})
 
