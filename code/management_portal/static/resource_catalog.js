@@ -1329,10 +1329,8 @@
             <pre><code>colab stop -s ${esc(colab?.session || "portal-colab")}</code></pre>
             <a class="portalButton" href="https://github.com/googlecolab/google-colab-cli">Colab CLI 使用文档</a>
           ` : window.PortalI18n.html`
-            <p>在 Colab 挂载 Drive 后，把项目文件放在 <code>MyDrive/Dirtybase Portal</code>。在 Portal 主机上用 <code>portal-drive</code> 传输文件，默认走站点配置的直连。</p>
-            <pre><code>portal-drive copy ./results colab_drive:results
-portal-drive copy colab_drive:results ./results</code></pre>
-            <a class="portalButton" href="https://rclone.org/drive/">Google Drive 使用文档</a>
+            <p>在 Colab 挂载 Drive 后，把项目文件放在 <code>MyDrive/Dirtybase Portal</code>。</p>
+            <a class="portalButton" href="/r/decision_b06ae321a668">Portal 备份指令用法</a>
           `}
         </div>
         ${colab?.transport === "colab" ? window.PortalI18n.html`
