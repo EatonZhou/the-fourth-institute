@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 import re
 import subprocess
@@ -49,8 +50,8 @@ def colab_ssh_command(device_id: str, *remote_command: str) -> list[str]:
     return [*_colab_command(settings()), "ssh", "-s", session, "-i", str(key), "--", *remote_command]
 
 
-def _read(command: list[str]) -> str:
-    result = subprocess.run(command, stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=12)
+def _read(command: list[str], *, env: dict | None = None) -> str:
+    result = subprocess.run(command, stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=12, env=env)
     if result.returncode:
         raise ValueError("Cloud status unavailable. Check the CLI configuration and Google authorization.")
     return result.stdout
@@ -70,10 +71,14 @@ def read_status(config: dict, kind: str) -> dict:
                 raise ValueError("Colab did not return all usage fields")
             values[field] = cast(match[1])
         return values
-    data = json.loads(_read([
+    from management_common.transfer_network import GOOGLE_DRIVE_HOSTS, resolve_route, transfer_environment
+
+    command = [
         _executable(config, "rclone"), "--config", str(portal_path("secrets") / "colab-drive.conf"),
         "--retries", "1", "--low-level-retries", "1", "about", "colab_drive:", "--json",
-    ]))
+    ]
+    with transfer_environment(dict(os.environ), resolve_route(), GOOGLE_DRIVE_HOSTS) as env:
+        data = json.loads(_read(command, env=env))
     return {
         field: data[key]
         for field, key in (("storage_total_bytes", "total"), ("storage_used_bytes", "used"),

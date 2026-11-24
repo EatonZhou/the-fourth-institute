@@ -665,20 +665,25 @@ def publish_release(inv: Invocation) -> dict[str, Any]:
 
 
 def start_google_drive_backup(inv: Invocation) -> dict[str, Any]:
+    from management_common.transfer_network import resolve_route
     from management_portal import backup_lineage
     from management_portal.hatg import routing
     from management_portal.hatg.contracts import InstructionContext
 
     lineage_id = backup_lineage.lineage_id()
+    route = resolve_route(inv.argument("network_route"))
     result = routing.execute_or_raise({
         "instruction": "RunScript",
         "arguments": {
             "lineage_id": lineage_id, "path": backup_lineage.script_path(), "runtime": "python",
-            "argv": [f"drive-{inv.argument('profile')}"], "exclusive_key": "resource-backup",
+            "argv": [f"drive-{inv.argument('profile')}", route], "exclusive_key": "resource-backup",
         },
         "idempotency_key": inv.instruction_id,
     }, InstructionContext(caller=inv.caller, entry="web"))
-    return {**result, "lineage_id": lineage_id}
+    return {
+        **result, "lineage_id": lineage_id,
+        **({"network_route": route} if result.get("status") != "already_running" else {}),
+    }
 
 
 def get_device_status(inv: Invocation) -> dict[str, Any]:

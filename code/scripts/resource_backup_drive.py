@@ -16,7 +16,16 @@ OPERATIONS = {"drive-probe", "drive-critical", "drive-content"}
 DESTINATION = "colab_drive:Backups/Portal"
 
 
-def run(operation: str, service_root: Path) -> dict:
+def run(operation: str, service_root: Path, network_route: str | None = None) -> dict:
+    from management_common.transfer_network import GOOGLE_DRIVE_HOSTS, resolve_route, transfer_environment
+
+    route = resolve_route(network_route)
+    env = {key: value for key, value in os.environ.items() if not key.startswith(("RCLONE_", "RESTIC_"))}
+    with transfer_environment(env, route, GOOGLE_DRIVE_HOSTS) as scoped:
+        return {**_run(operation, service_root, scoped), "network_route": route}
+
+
+def _run(operation: str, service_root: Path, env: dict) -> dict:
     from management_common.portal_paths import path as portal_path
     from management_common.site_config import read_site_config
 
@@ -35,7 +44,6 @@ def run(operation: str, service_root: Path) -> dict:
     password_file = Path(settings["password_file"])
     if password_file.stat().st_mode & 0o077:
         raise ValueError("The backup password file must be private")
-    env = {key: value for key, value in os.environ.items() if not key.startswith(("RCLONE_", "RESTIC_"))}
     env["RCLONE_CONFIG"] = str(config_path)
     dest = DESTINATION
     prefix = [settings["binary"], "--password-file", str(password_file)]

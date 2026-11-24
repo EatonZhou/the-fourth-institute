@@ -21,7 +21,8 @@ def test_colab_terminal_connects_to_named_existing_runtime(monkeypatch):
 def test_cloud_metrics_only_expose_public_numeric_fields(monkeypatch):
     monkeypatch.setattr(google_cloud_devices, "portal_path", lambda _: Path("/instance/secrets"))
     monkeypatch.setattr(Path, "is_file", lambda _: True)
-    monkeypatch.setattr(google_cloud_devices, "_read", lambda command: (
+    monkeypatch.setattr("management_common.transfer_network.resolve_route", lambda: "inherited")
+    monkeypatch.setattr(google_cloud_devices, "_read", lambda command, **_: (
         "Current balance: 1072.88 compute units\nUsage rate: 0.08/hr\nActive assignments: 1\n"
         if command[-1] == "usage"
         else '{"total": 1000, "used": 4, "free": 994, "trashed": 2, "account": "private"}'
