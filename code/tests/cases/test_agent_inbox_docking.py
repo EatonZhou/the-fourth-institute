@@ -5,12 +5,14 @@
 :design: decision_15f7df737ed5
 """
 from pathlib import Path
+import os
 import subprocess
 
 import pytest
 
 
-def test_shared_inbox_edge_docking():
+@pytest.mark.parametrize("case", ["standard", "glass-hover"])
+def test_shared_inbox_edge_docking(case):
     """Three entries dock together; independent To Do retains editing and mobile access.
 
     :risk: no-external-side-effects
@@ -23,5 +25,6 @@ def test_shared_inbox_edge_docking():
     result = subprocess.run(
         ["node", str(Path(__file__).with_name("javascript") / "agent_inbox_docking.cjs")],
         capture_output=True, text=True, timeout=90,
+        env={**os.environ, "DOCKING_CASE": case},
     )
     assert result.returncode == 0, result.stdout + result.stderr

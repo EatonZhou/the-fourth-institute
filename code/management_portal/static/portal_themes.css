@@ -1579,6 +1579,7 @@ html:root[data-portal-theme="liquid-glass"] :is(.sendIconBtn, .portalChatWorkspa
 
 /* Detached floating Liquid Glass vertical pill dock (glass rendered on ::before so child flyout panels keep real backdrop blur) */
 html:root[data-portal-theme="liquid-glass"] .portalAgentInbox {
+  --portal-agent-inbox-panel-gap: 10px;
   right: 12px;
   width: 46px;
   padding: 4px;
@@ -1606,6 +1607,23 @@ html:root[data-portal-theme="liquid-glass"] .portalAgentInbox::before {
 
 html:root[data-portal-theme="liquid-glass"] .portalAgentInbox[data-dock-side="left"] {
   left: 12px;
+  right: auto;
+}
+
+/* Keep the detached flyout reachable, including when the pointer rests in the
+   visual gap. Only an open desktop dock owns this transparent hit area. */
+html:root[data-portal-theme="liquid-glass"] .portalAgentInbox[data-expanded="true"][data-mobile-overlay="false"]::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 100%;
+  width: var(--portal-agent-inbox-panel-gap);
+  pointer-events: auto;
+}
+
+html:root[data-portal-theme="liquid-glass"] .portalAgentInbox[data-dock-side="left"]::after {
+  left: 100%;
   right: auto;
 }
 
@@ -1638,7 +1656,7 @@ html:root[data-portal-theme="liquid-glass"] .portalAgentInbox .portalAgentInboxT
 }
 
 html:root[data-portal-theme="liquid-glass"] .portalAgentInboxPanel {
-  right: calc(100% + 10px);
+  right: calc(100% + var(--portal-agent-inbox-panel-gap));
   border-color: transparent;
   border-radius: var(--radius);
   background: transparent;
@@ -1663,7 +1681,7 @@ html:root[data-portal-theme="liquid-glass"] .portalAgentInboxPanel > header {
 }
 
 html:root[data-portal-theme="liquid-glass"] .portalAgentInbox[data-dock-side="left"] .portalAgentInboxPanel {
-  left: calc(100% + 10px);
+  left: calc(100% + var(--portal-agent-inbox-panel-gap));
   right: auto;
 }
 

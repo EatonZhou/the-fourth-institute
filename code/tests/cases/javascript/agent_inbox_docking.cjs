@@ -10,6 +10,7 @@ const code = path.resolve(__dirname, "../../..");
 const scripts = ["portal_state", "portal_text", "portal_ui_primitives", "portal_refresh_coordinator",
   "resident_protocol", "portal_conversation_store", "portal_mailbox_todos", "portal_agent_inbox"];
 const styles = ["portal_components", "portal_components_agent_inbox", "wall"];
+if (process.env.DOCKING_CASE === "glass-hover") styles.push("portal_themes");
 const sources = new Map([...scripts.map(n => n + ".js"), ...styles.map(n => n + ".css")]
   .map(name => ["/static/" + name, fs.readFileSync(path.join(code, "management_portal/static", name))]));
 const html = `<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
@@ -123,6 +124,54 @@ async function touch(page, cdp, selector, destination) {
   await page.waitForTimeout(80);
   await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
 }
+async function glassHover(page) {
+  await page.evaluate(() => { document.documentElement.dataset.portalTheme = "liquid-glass"; });
+  for (const width of [1100, 720]) {
+    await page.setViewportSize({ width, height: 900 });
+    for (const side of ["right", "left"]) {
+      for (const verticalRatio of [0, 1]) {
+        await page.mouse.move(width / 2, 20);
+        await page.evaluate(({side, verticalRatio}) => {
+          PortalAgentInbox.destroy();
+          PortalState.replace("agent-inbox", "device", {dockSide: side, verticalRatio});
+          PortalAgentInbox.mount();
+        }, {side, verticalRatio});
+        await page.waitForSelector(assistant);
+        await page.waitForFunction(side => document.querySelector('[data-portal-agent-inbox]').dataset.dockSide === side, side);
+        for (const trigger of [mailbox, todo, assistant]) {
+          const name = await page.locator(trigger).getAttribute("data-inbox-trigger");
+          const panel = `[data-inbox-panel="${name}"]`;
+          await page.locator(trigger).hover();
+          await visiblePanel(page, panel);
+          const dock = await box(page), flyout = await box(page, panel), button = await box(page, trigger);
+          const left = side === "right" ? flyout.x + flyout.width : dock.x + dock.width;
+          const right = side === "right" ? dock.x : flyout.x;
+          assert.ok(right - left >= 9, "the visible glass spacing is preserved");
+          const x = (left + right) / 2, y = button.y + button.height / 2;
+          await page.mouse.move(x, y, {steps: 6});
+          await page.waitForTimeout(250);
+          assert.equal(await page.locator(rootSelector).getAttribute("data-expanded"), "true",
+            `${width}px ${side} ${verticalRatio} ${name}: pausing in gap keeps panel open`);
+          assert.ok(await page.evaluate(({x,y}) => document.querySelector('[data-portal-agent-inbox]')
+            .contains(document.elementFromPoint(x,y)), {x,y}), "gap belongs to dock hit area");
+          await page.mouse.move(side === "right" ? flyout.x + flyout.width - 24 : flyout.x + 24, y, {steps: 6});
+          assert.equal(await page.locator(trigger).getAttribute("aria-expanded"), "true");
+          await page.mouse.move(x, y, {steps: 6});
+          await page.waitForTimeout(250);
+          assert.equal(await page.locator(trigger).getAttribute("aria-expanded"), "true", "return across gap stays open");
+          if (width === 1100 && verticalRatio === 1 && name === "mailbox") await screenshot(page, `glass-${side}-gap`);
+          await page.mouse.move(button.x + button.width / 2, y, {steps: 6});
+          await page.mouse.move(width / 2, 20);
+          await page.waitForFunction(() => document.querySelector('[data-portal-agent-inbox]').dataset.expanded === "false");
+          assert.equal(await page.evaluate(({x,y}) => document.querySelector('[data-portal-agent-inbox]')
+            .contains(document.elementFromPoint(x,y)), {x,y}), false, "closed bridge does not capture page input");
+        }
+      }
+    }
+  }
+  assert.deepEqual(errors, [], "no browser errors");
+  console.log(JSON.stringify({status:"passed",checks:["glass gap pause and crossing in both directions", "all three panels", "both dock sides and vertical placements", "wide and narrow desktop", "outside closes and collapsed gap releases hit area"],screenshots:saved}));
+}
 (async () => {
   try {
     await new Promise(resolve => server.listen(0, "127.0.0.1", resolve));
@@ -134,6 +183,7 @@ async function touch(page, cdp, selector, destination) {
     const origin = `http://127.0.0.1:${server.address().port}`;
     await page.goto(origin);
     await page.waitForSelector(assistant);
+    if (process.env.DOCKING_CASE === "glass-hover") { await glassHover(page); return; }
     // A legacy record contains no side, and unrelated fields must survive.
     await page.evaluate(() => {
       PortalAgentInbox.destroy();
