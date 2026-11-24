@@ -29,6 +29,9 @@ LOGIN_SESSION = ("登录会话：account_id、state（pending、awaiting_user、
 REGISTRATION = "账号登记：account_id、provider、kind、route_id、config、max_concurrency、enabled、version、login_state…"
 
 DECLARATIONS = (
+    _d("StartGoogleDriveBackup", FIXED, "异步复制最新 Portal 加密快照到已配置的 Google Drive，或执行合成文件的上传和恢复校验。", (
+        R("profile", description="critical 或 content 选择本地快照，probe 检查上传与恢复", enum=("critical", "content", "probe")),
+    ), (R("lineage_id"), R("script_run_id"), R("status")), mutates=True),
     _d("GetExecutionSettings", FIXED, "管理员读取全系统执行设置。", (),
        (R("settings", "object", SETTINGS),), owner="execution"),
     _d("UpdateExecutionSettings", FIXED, "管理员修改全系统执行设置：请求时间记录和 Harness 记录通过系统 Event 开关，另有权限系统开关和 Harness 保留天数；至少提供一项。", (

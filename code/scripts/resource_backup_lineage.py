@@ -12,6 +12,8 @@ import sys
 from pathlib import Path
 from typing import Any
 
+from scripts import resource_backup_drive
+
 
 OPERATIONS = {
     "critical": ("run-once", "--profile", "critical", "--apply"),
@@ -24,7 +26,7 @@ OPERATIONS = {
 
 
 def run_operation(operation: str, *, service_root: Path | None = None) -> dict[str, Any]:
-    if operation not in OPERATIONS:
+    if operation not in OPERATIONS and operation not in resource_backup_drive.OPERATIONS:
         raise ValueError("Unsupported backup operation")
     if service_root is None:
         from management_common.instance_manifest import load
@@ -35,6 +37,12 @@ def run_operation(operation: str, *, service_root: Path | None = None) -> dict[s
         service_root = program.parent.parent
     else:
         program = service_root / 'src/main.py'
+    if operation in resource_backup_drive.OPERATIONS:
+        try:
+            return resource_backup_drive.run(operation, service_root)
+        except (KeyError, RuntimeError, OSError, ValueError):
+            return {"operation": operation, "status": "failed", "succeeded": False,
+                    "error": "Check the scoped Drive connection and local backup repository."}
     completed = subprocess.run(
         ["/usr/bin/nice", "-n", "10", "/usr/bin/ionice", "-c", "2", "-n", "7",
          "/usr/bin/python3", str(program), *OPERATIONS[operation]],

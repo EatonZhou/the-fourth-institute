@@ -1171,6 +1171,10 @@
       "a": "@viewer",
       "r": "@shared"
     },
+    "StartGoogleDriveBackup": {
+      "a": "@admin",
+      "r": "@shared"
+    },
     "GetEffectivePermissions": {
       "a": "@admin"
     },
