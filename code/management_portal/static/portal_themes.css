@@ -836,8 +836,8 @@ html:root[data-portal-theme="liquid-glass"] .portalWorkbenchStack :is(
   box-shadow: none;
 }
 
-/* Tab strips overlay panel headers when revealed, so their backing must hide
-   the underlying text rather than share the transparent inline-header surface. */
+/* Tab strips overlay panel headers. Keep a readable fallback; supported
+   browsers use the same frosted material as the dense floating panels below. */
 html:root[data-portal-theme="liquid-glass"] :is(
   .portalWorkbenchTabs,
   .portalWorkbenchStage.show-single-tab-header .portalWorkbenchStack:not(.is-collapsed) > .portalWorkbenchTabs,
@@ -1771,6 +1771,19 @@ html:root[data-portal-theme="liquid-glass"] .portalMailboxAlert {
   }
 
   /* Dense multi-row floating drawers & reading panels: balanced frosted veil + 18px blur so glass stays visibly translucent while dense text underneath never clashes */
+  html:root[data-portal-theme="liquid-glass"] :is(
+    .portalWorkbenchTabs,
+    .portalWorkbenchStage.show-single-tab-header .portalWorkbenchStack:not(.is-collapsed) > .portalWorkbenchTabs,
+    .portalWorkbenchStack.is-collapsed > .portalWorkbenchTabs
+  ) {
+    background:
+      radial-gradient(ellipse 66% 6px at 28% 0%, var(--lg-specular-top), transparent),
+      var(--lg-surface-panel-glass);
+    -webkit-backdrop-filter: var(--lg-blur-panel-glass);
+    backdrop-filter: var(--lg-blur-panel-glass);
+    box-shadow: inset 0 1px 0 var(--lg-specular-top);
+  }
+
   html:root[data-portal-theme="liquid-glass"] .portalAgentInboxPanel::before,
   html:root[data-portal-theme="liquid-glass"] :is(
     .portalResourceHoverCard,
@@ -1816,6 +1829,17 @@ html:root[data-portal-theme="liquid-glass"] .portalMailboxAlert {
 
 /* Tier 3: Accessibility & reduced transparency / high contrast fallbacks */
 @media (prefers-reduced-transparency: reduce), (prefers-contrast: more), (forced-colors: active) {
+  html:root[data-portal-theme="liquid-glass"] :is(
+    .portalWorkbenchTabs,
+    .portalWorkbenchStage.show-single-tab-header .portalWorkbenchStack:not(.is-collapsed) > .portalWorkbenchTabs,
+    .portalWorkbenchStack.is-collapsed > .portalWorkbenchTabs
+  ) {
+    background: var(--lg-card-bg);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    box-shadow: none;
+  }
+
   html:root[data-portal-theme="liquid-glass"] .portalChatWorkspaceRoot:has(> .composer:not([hidden])) > .portalWorkspaceBody {
     margin-bottom: 0;
   }
