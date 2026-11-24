@@ -255,6 +255,12 @@ const assertFresh = (workspace, label, contract = null) => {
     live.setRuntime([{ kind: 'subagent', status: 'in_progress', execution_id: 'exec_live', subagent }, { kind: 'text', text: 'thinking' }], true);
     assert.deepEqual(rowKeys(live).slice(-3), ['__subagents__', '__runtime__', '__scroll_anchor__'],
       'a subagent row joins before the runtime row');
+    live.setRuntime([{ kind: 'assistant_preview', status: 'running', content: 'first\nsecond <text>' }], true);
+    const preview = live.els.messages.querySelector('[data-message-key="__assistant_preview__"] .messageContent');
+    assert.equal(preview?.innerHTML, 'first<br>second &lt;text&gt;');
+    assertFresh(live, 'a reply preview received during the turn');
+    live.setRuntime([], true);
+    assert.equal(live.els.messages.querySelector('[data-message-key="__assistant_preview__"]'), null);
     drawn();
     live.setRuntime([], false);
     assert.deepEqual(drawn(), ['l1', 'l2'], 'a turn that ends renders its replies again');

@@ -550,18 +550,28 @@
       });
       const showRuntimeActivity = !PRE_PROVIDER_RUNTIME_PHASES.has(stream.runtimePhase)
         && (stream.runtimeLive || stream.runtimeDetails.length);
+      const activity = stream.runtimeDetails.filter(item => item.kind !== "assistant_preview");
+      const preview = showRuntimeActivity && stream.runtimeLive
+        ? stream.runtimeDetails.findLast(item => item.kind === "assistant_preview" && item.content)
+        : null;
+      const previewHtml = preview
+        ? window.PortalI18n.html`<article class="messageItem agent" data-message-key="__assistant_preview__">
+          <div class="messageHead"><span class="messageTitle">${escapeHtml(options.assistantName || "Agent")}</span></div>
+          <div class="messageContent">${window.PortalI18n.markup(escapeHtml(preview.content).replace(/\n/g, "<br>"))}</div>
+        </article>`
+        : "";
       const runtimeHtml = showRuntimeActivity
         ? window.PortalI18n.html`<article class="messageItem agent liveRuntime" data-message-key="__runtime__">
           <div class="messageHead"><span class="messageTitle">${escapeHtml(options.assistantName || "Agent")}</span><span>${stream.runtimeLive ? window.PortalI18n.t("运行中") : window.PortalI18n.t("活动")}</span></div>
-          ${runtimeDetailsHtml(stream.runtimeDetails, {
+          ${runtimeDetailsHtml(activity, {
             live: stream.runtimeLive,
             formatTime: options.formatTime,
             assistantName: options.assistantName,
-            emptyLiveHtml: options.emptyLiveHtml || window.PortalI18n.html`<div class="paneNote">${escapeHtml(options.assistantName || "Agent")} 已开始运行，等待活动事件。</div>`,
+            emptyLiveHtml: preview ? "" : options.emptyLiveHtml || window.PortalI18n.html`<div class="paneNote">${escapeHtml(options.assistantName || "Agent")} 已开始运行，等待活动事件。</div>`,
           })}
         </article>`
         : "";
-      return `${runtimePhaseStatusHtml(stream.runtimePhase)}${stream.runtimeLive ? nativePlanLiveHtml(stream.runtimeDetails, options.messages) + subagentLiveHtml(stream.runtimeDetails) : ""}${runtimeHtml}`;
+      return `${runtimePhaseStatusHtml(stream.runtimePhase)}${stream.runtimeLive ? nativePlanLiveHtml(activity, options.messages) + subagentLiveHtml(activity) : ""}${previewHtml}${runtimeHtml}`;
     }
 
     function createMessageSelectionController(options = {}) {

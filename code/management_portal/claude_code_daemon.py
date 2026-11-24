@@ -994,13 +994,15 @@ class ClaudeTurn:
 
     async def _complete(self) -> dict[str, Any]:
         result = self._final_result()
+        # Completing the same item replaces its live preview in Chat.
+        item_id = self.pending_text_items[0]["id"] if self.pending_text_items else f"{self.turn_id}:final"
         response = str(result.result or "").strip() or "".join(
             item["text"] for item in self.pending_text_items
         ).strip()
         self.pending_text_items.clear()
         if response:
             await self._emit_text({
-                "id": f"{self.turn_id}:final", "type": "agentMessage",
+                "id": item_id, "type": "agentMessage",
                 "phase": "final_answer", "text": response,
             })
         usage, model_usage, duration_ms = self._totals(result)
@@ -1137,6 +1139,20 @@ class ClaudeTurn:
             "id": f"{self.turn_id}:{self.assistant_message_index}:text:{block_index}",
             "type": "agentMessage", "text": block.text,
             "_request_timing": timing,
+        })
+        # The next native event determines whether this text is commentary or
+        # the answer. Show it immediately without committing either role yet.
+        await self.emit({
+            "method": "item/progress",
+            "params": {
+                "threadId": self.handle.session_id,
+                "turnId": self.turn_id,
+                "item": {
+                    "id": self.pending_text_items[0]["id"],
+                    "type": "agentMessage",
+                    "text": "".join(item["text"] for item in self.pending_text_items),
+                },
+            },
         })
 
     async def _on_thinking_block(self, block: ThinkingBlock, block_index: int, timing: dict[str, Any]) -> None:

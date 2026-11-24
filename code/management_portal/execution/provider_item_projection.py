@@ -140,7 +140,7 @@ def _agent_message(event: ItemEvent, details: RuntimeDetails) -> None:
     item_id = str(item.get("id") or "").strip()
     update_id = event.context.scoped(item_id)
     detail = event.context.detail(
-        kind="update", title="Update",
+        kind="assistant_preview" if event.phase == "progress" else "update", title="Update",
         content=_item_text(item) or details.streamed_text.get(update_id, ""),
         status=event.status(),
     )

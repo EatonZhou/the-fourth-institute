@@ -603,6 +603,61 @@ class ClaudeCodeDaemonTest(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(thoughts[0]["id"], "turn-test:1:thinking:0")
         self.assertEqual(result["response"], "done")
 
+    async def test_assistant_text_is_previewed_before_the_native_result(self) -> None:
+        """正文一收到就出现在运行中，正式结果替换同一条预览。"""
+        from management_portal.execution.event_projection import execution_projection_from_path
+
+        daemon = daemon_module.ClaudeCodeDaemon()
+        session_id = "87b35417-8848-497f-91a9-10e58bfa74b0"
+        events = []
+        case = self
+
+        def project():
+            with tempfile.TemporaryDirectory() as directory:
+                path = Path(directory) / "execution-1234567890abcdef12345678.jsonl"
+                path.write_text("".join(json.dumps(event) + "\n" for event in events), encoding="utf-8")
+                return execution_projection_from_path(path)
+
+        class FakeClient:
+            async def query(self, prompt):
+                self.prompt_uuid = await _prompt_uuid(prompt)
+
+            async def receive_response(self):
+                yield _echo(self.prompt_uuid)
+                yield daemon_module.AssistantMessage(
+                    content=[daemon_module.TextBlock("first "), daemon_module.TextBlock("second")],
+                    model="test-model", session_id=session_id,
+                )
+                items = [
+                    event["params"]["item"] for event in events
+                    if event.get("method") == "item/progress"
+                ]
+                case.assertEqual([item["text"] for item in items], ["first ", "first second"])
+                case.assertEqual(len({item["id"] for item in items}), 1)
+                running = project()
+                case.assertEqual(running["outputs"], [])
+                case.assertEqual(
+                    running["runtime_details"][-1]["kind"], "assistant_preview",
+                )
+                yield daemon_module.ResultMessage(
+                    subtype="success", duration_ms=10, duration_api_ms=8, is_error=False, num_turns=1,
+                    session_id=session_id, result="first second",
+                )
+
+        client = FakeClient()
+        handle = daemon_module.SessionHandle(key="resident:main", signature=(), client=client)
+
+        async def emit(event):
+            events.append(event)
+
+        with mock.patch.object(daemon, "_handle_for", mock.AsyncMock(return_value=handle)):
+            await daemon.run_turn({"session_key": handle.key, "prompt": "hello", "turn_id": "turn-1"}, emit)
+
+        completed = project()
+        self.assertEqual([(o["phase"], o["text"]) for o in completed["outputs"]],
+                         [("final_answer", "first second")])
+        self.assertFalse(any(x["kind"] == "assistant_preview" for x in completed["runtime_details"]))
+
     async def test_a_subagents_own_steps_are_not_the_residents_reply(self) -> None:
         """子 agent 自己的文本和工具步骤只进子 agent 事件，不算作 Resident 的回复
 

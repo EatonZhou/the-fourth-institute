@@ -151,7 +151,7 @@
     // Rows the list draws besides messages: above them the history loader and
     // the inheritance card, after them the live runtime and the scroll anchor.
     const MESSAGE_LIST_HEAD_KEYS = ["__history__", "__inheritance__"];
-    const RUNTIME_ROW_KEYS = ["__runtime_phase__", "__plans__", "__subagents__", "__runtime__"];
+    const RUNTIME_ROW_KEYS = ["__runtime_phase__", "__plans__", "__subagents__", "__assistant_preview__", "__runtime__"];
     const MESSAGE_LIST_TAIL_KEYS = [...RUNTIME_ROW_KEYS, "__scroll_anchor__"];
     // A message's rows: its own and the block shown after it.
     const messageRowKeys = items => items.flatMap(item => [messageInstanceKey(item), messageAfterKey(messageInstanceKey(item))]);
