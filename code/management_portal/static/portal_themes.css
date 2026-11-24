@@ -378,10 +378,10 @@ html:root[data-portal-theme="liquid-glass"] {
     inset 0 1px 2px rgba(0, 0, 0, .045),
     inset 0 0 0 1px rgba(255, 255, 255, .86),
     0 1px 0 rgba(255, 255, 255, .92);
-  --lg-blur-bar: blur(14px) saturate(185%);
-  --lg-blur-popover: blur(13px) saturate(190%);
-  --lg-blur-panel-glass: blur(18px) saturate(180%);
-  --lg-blur-dialog: blur(20px) saturate(175%);
+  --lg-blur-bar: blur(10px) saturate(185%);
+  --lg-blur-popover: blur(9px) saturate(190%);
+  --lg-blur-panel-glass: blur(12px) saturate(180%);
+  --lg-blur-dialog: blur(16px) saturate(175%);
   --portal-detail-footer-background: transparent;
   --theme-button-border: var(--lg-rim-outer);
   --theme-button-bg: var(--lg-btn-glass-bg);
@@ -1769,7 +1769,8 @@ html:root[data-portal-theme="liquid-glass"] .portalMailboxAlert {
     backdrop-filter: var(--liquid-glass-filter, blur(0px)) var(--lg-blur-popover);
   }
 
-  /* Dense multi-row floating drawers & reading panels: balanced frosted veil + 18px blur so glass stays visibly translucent while dense text underneath never clashes */
+  /* Dense drawers and reading panels retain a tinted veil for legible text
+     while the shared blur lets more background structure show through. */
   html:root[data-portal-theme="liquid-glass"] :is(
     .portalWorkbenchTabs,
     .portalWorkbenchStage.show-single-tab-header .portalWorkbenchStack:not(.is-collapsed) > .portalWorkbenchTabs,
