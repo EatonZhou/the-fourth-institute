@@ -11,7 +11,9 @@ import copy
 import json
 import os
 import re
+import stat
 import subprocess
+import tempfile
 import sys
 import threading
 import time
@@ -560,6 +562,54 @@ def effective_ssh_access(
     raise ValueError("device has no SSH access method")
 
 
+def managed_ssh_profile(device_id: str) -> Path | None:
+    """Only instance-owned per-device profiles can delegate a remote shell."""
+    _RESOURCE_SERVICE.validate_id(device_id, "device")
+    path = DEFAULT_DEVICE_SECRET_ROOT / f"{device_id}.ssh_config"
+    try:
+        info = path.lstat()
+    except FileNotFoundError:
+        return None
+    if not stat.S_ISREG(info.st_mode) or info.st_uid != os.geteuid() or info.st_mode & 0o077:
+        raise PermissionError("Device SSH profile must be a private, backend-owned regular file")
+    ssh = effective_ssh_access(device_id)
+    if ssh["via_resource_id"] == device_id and ssh.get("config_path") == str(path) and ssh.get("host") == "portal-device":
+        return path
+    return None
+
+
+def allows_device_ssh(actor: str, device_id: str) -> bool:
+    from management_portal import permission_system
+
+    return permission_system.allows(actor, "RunResourceAction", {"resource_id": device_id, "action": "ssh.run"})
+
+
+def managed_ssh_command(profile: Path) -> list[str]:
+    return [ssh_executable(needs_askpass=False), "-F", str(profile), "--", "portal-device"]
+
+
+def run_device_ssh(device_id: str, command: str, *, actor: str) -> dict[str, Any]:
+    if not allows_device_ssh(actor, device_id):
+        raise PermissionError("SSH requires action permission on this device")
+    profile = managed_ssh_profile(device_id)
+    if profile is None:
+        raise ValueError("Device has no managed SSH profile")
+    if not isinstance(command, str) or not command.strip() or len(command) > 8192:
+        raise ValueError("Provide a remote command of 1 to 8192 characters")
+    with tempfile.TemporaryFile() as output:
+        try:
+            completed = subprocess.run(
+                [*managed_ssh_command(profile), command], stdin=subprocess.DEVNULL,
+                stdout=output, stderr=subprocess.STDOUT, timeout=30,
+            )
+        except subprocess.TimeoutExpired as exc:
+            raise TimeoutError("Device SSH command timed out after 30 seconds") from exc
+        output.seek(0)
+        data = output.read(32769)
+    return {"exit_code": completed.returncode, "output": data[:32768].decode("utf-8", errors="replace"),
+            "truncated": len(data) > 32768}
+
+
 def test_ssh_connection(
     device_id: str,
     *,
@@ -569,19 +619,27 @@ def test_ssh_connection(
         raise ValueError("SSH timeout_seconds must be an integer from 1 to 45")
     from management_portal import google_cloud_devices
 
-    if google_cloud_devices.colab_session(device_id):
+    profile = managed_ssh_profile(device_id)
+    if profile or google_cloud_devices.colab_session(device_id):
+        command = ([*managed_ssh_command(profile), "true"] if profile
+                   else google_cloud_devices.colab_ssh_command(device_id, "true"))
         started = time.monotonic()
         try:
             result = subprocess.run(
-                google_cloud_devices.colab_ssh_command(device_id, "true"),
+                command,
                 stdin=subprocess.DEVNULL, capture_output=True, timeout=timeout_seconds,
             )
             reachable = result.returncode == 0
-            message = "SSH 连接成功" if reachable else "无法连接 Colab。请检查指定会话是否正在运行。"
+            if reachable:
+                message = "SSH 连接成功"
+            elif profile:
+                message = result.stderr.decode(errors="replace").strip()[-300:] or f"SSH 退出码 {result.returncode}"
+            else:
+                message = "无法连接 Colab。请检查指定会话是否正在运行。"
         except subprocess.TimeoutExpired:
             reachable, message = False, f"SSH 连接在 {timeout_seconds} 秒后超时"
         except (OSError, ValueError):
-            reachable, message = False, "Colab SSH 配置不可用。"
+            reachable, message = False, "SSH 配置不可用。"
         return {
             "resource_id": device_id, "via_resource_id": device_id, "reachable": reachable,
             "latency_ms": round((time.monotonic() - started) * 1000), "message": message, "tested_at": utc_now_iso(),
@@ -784,6 +842,7 @@ def resolve_device_address(
     address: str,
     *,
     status_path: str | Path | None = None,
+    actor: str = "",
 ) -> dict[str, Any]:
     parsed = _RESOURCE_SERVICE.parse_address(address)
     if parsed.resource_type != "device":
@@ -823,6 +882,8 @@ def resolve_device_address(
             target_id,
         )
         access_methods = {"ssh": copy.deepcopy(ssh)}
+        if actor and managed_ssh_profile(target_id):
+            access_methods["ssh"]["can_open_terminal"] = allows_device_ssh(actor, target_id)
     except ValueError:
         access_methods = {}
     from management_portal import google_cloud_devices

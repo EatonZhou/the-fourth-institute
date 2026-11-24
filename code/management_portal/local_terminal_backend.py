@@ -243,7 +243,8 @@ def _start_device_process(
     with _LOCK:
         _cleanup_locked()
         existing = _SESSIONS.get(str(session_id or ""))
-        if existing and existing.actor == actor_id and existing.process.poll() is None:
+        if (existing and existing.actor == actor_id and existing.credential_resource_id == via_resource_id
+                and existing.process.poll() is None):
             return _public_state(existing)
     session = _spawn_process(
         actor_id,
@@ -280,6 +281,15 @@ def open_terminal(
     cwd: object = None,
 ) -> dict:
     """A host shell, or an SSH terminal on ``device_id``, for an actor that may run OpenTerminal."""
+    if device_id:
+        from management_portal import device_identity_backend as devices
+
+        profile = devices.managed_ssh_profile(device_id)
+        if profile is not None:
+            if not devices.allows_device_ssh(actor, device_id):
+                require_open_terminal(actor, {"device_id": device_id})
+            return _start_device_process(actor, device_id, device_id, session_id, cols, rows,
+                                         devices.managed_ssh_command(profile))
     require_open_terminal(actor, {"device_id": device_id} if device_id else {})
     if device_id:
         return start_device_terminal(actor, device_id, session_id, cols, rows)

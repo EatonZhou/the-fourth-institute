@@ -14,7 +14,7 @@ def install_resolver(service: "ResourceService") -> None:
     service.register_resolver(
         "device",
         lambda address, **context: canonical_resolution(
-            device_identity_backend.resolve_device_address(address)
+            device_identity_backend.resolve_device_address(address, actor=context.get("actor", ""))
         ),
     )
 
@@ -115,6 +115,9 @@ def install_action_provider(service: "ResourceService") -> None:
         "device",
         {
             "ssh.test": test_ssh,
+            "ssh.run": lambda rid, payload, *, actor: device_identity_backend.run_device_ssh(
+                rid, payload.get("command"), actor=actor,
+            ),
             "ssh.credential.save": save_ssh_credential,
             "ssh.credential.delete": delete_ssh_credential,
         },

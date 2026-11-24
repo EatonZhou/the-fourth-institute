@@ -187,3 +187,25 @@ def test_a_users_category_is_its_account_record_and_moves_it_in_the_same_transac
 
     get_portal_access_store().delete_user("bob", actor="test-actor")
     assert store.paths("P", ["bob"]) == {} and Categories().all() == {}
+
+
+def test_managed_device_access_is_bound_to_the_target(permissions, monkeypatch, tmp_path):
+    from management_portal import device_identity_backend as devices
+
+    device = "device_111111111111"
+    other = "device_222222222222"
+    profile = tmp_path / (device + ".ssh_config")
+    profile.touch(mode=0o600)
+    monkeypatch.setattr(devices, "DEFAULT_DEVICE_SECRET_ROOT", tmp_path)
+    monkeypatch.setattr(devices, "effective_ssh_access", lambda rid: {
+        "via_resource_id": rid, "host": "portal-device", "config_path": str(profile)})
+    monkeypatch.setattr(permission_system, "allows", lambda actor, instruction, args:
+                        actor == "alice" and instruction == "RunResourceAction" and args["resource_id"] == device)
+    monkeypatch.setattr(local_terminal_backend, "_start_device_process", lambda *args: args[-1])
+
+    assert local_terminal_backend.open_terminal("alice", device_id=device) == devices.managed_ssh_command(profile)
+    for actor, rid in [("alice", other), ("bob", device), ("alice", "")]:
+        with pytest.raises(PermissionError):
+            local_terminal_backend.open_terminal(actor, device_id=rid)
+    with pytest.raises(PermissionError):
+        devices.run_device_ssh(device, "hostname", actor="bob")

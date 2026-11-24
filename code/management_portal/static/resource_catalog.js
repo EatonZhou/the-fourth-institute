@@ -1357,7 +1357,7 @@
         </dl>
         <div class="deviceSshActions">
           <button class="portalButton" type="button" data-device-ssh-test="${esc(record.resource_id)}">测试 SSH 连通性</button>
-          ${window.PortalIdentity?.peek()?.access?.allows?.OpenTerminal === true ? window.PortalI18n.html`<button class="portalButton is-primary" type="button" data-device-terminal-open="${esc(record.resource_id)}">打开 Terminal</button>` : ""}
+          ${(resolution?.access_methods?.ssh?.can_open_terminal || window.PortalIdentity?.peek()?.access?.allows?.OpenTerminal === true) ? window.PortalI18n.html`<button class="portalButton is-primary" type="button" data-device-terminal-open="${esc(record.resource_id)}">打开 Terminal</button>` : ""}
           <span class="deviceSshTestResult" role="status"></span>
         </div>
         <form class="deviceSshPasswordForm" data-device-ssh-password-form="${esc(record.resource_id)}">

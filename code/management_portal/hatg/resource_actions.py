@@ -33,6 +33,9 @@ ACTIONS = (
     A("device", "ssh.test", "测试到设备的 SSH 连接。", (
         P("timeout_seconds", "integer", "超时秒数，默认 15", minimum=1, maximum=45),
     ), (R("ok", "boolean"), P("error")), mutates=False),
+    A("device", "ssh.run", "使用此设备绑定的 SSH 身份在远端执行命令（30 秒）。", (
+        R("command", description="远端 shell 命令，最多 8192 个字符"),
+    ), (R("exit_code", "integer"), R("output", description="合并输出，最多 32 KiB"), R("truncated", "boolean"))),
     A("device", "ssh.credential.save", "保存设备的 SSH 密码凭据（不回显内容）。", (
         R("password", description="SSH 密码"),
     ), (R("resource_id"), R("via_resource_id"), R("credential_saved", "boolean"))),
