@@ -1778,7 +1778,7 @@ html:root[data-portal-theme="liquid-glass"] .portalMailboxAlert {
   ) {
     background:
       radial-gradient(ellipse 66% 6px at 28% 0%, var(--lg-specular-top), transparent),
-      var(--lg-surface-panel-glass);
+      var(--lg-surface-popover);
     -webkit-backdrop-filter: var(--lg-blur-panel-glass);
     backdrop-filter: var(--lg-blur-panel-glass);
     box-shadow: inset 0 1px 0 var(--lg-specular-top);
